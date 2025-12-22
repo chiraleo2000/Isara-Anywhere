@@ -407,7 +407,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 📞 Support
 
 For support and inquiries:
-- 📧 Email: support@izara-health.com
+- 📧 Email: chirapathleo.saeliM@gmail.com / chirapath.s@betimes.biz
 - 📖 Documentation: [Explains/README.md](Explains/README.md)
 - 🐛 Issues: GitHub Issues
 
