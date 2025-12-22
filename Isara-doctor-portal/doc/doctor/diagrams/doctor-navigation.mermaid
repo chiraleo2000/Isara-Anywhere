@@ -1,0 +1,88 @@
+%% Doctor Navigation Structure
+%% Izara Doctor Portal
+
+flowchart LR
+    subgraph Main["Main Navigation"]
+        direction TB
+        Nav1[🏠 Dashboard]
+        Nav2[📅 Schedule]
+        Nav3[👥 Patients]
+        Nav4[📋 Consultations]
+        Nav5[🎥 Health Meeting]
+        Nav6[👨‍⚕️ Doctors]
+        Nav7[🏥 Consultants]
+        Nav8[📚 Medical Content]
+        Nav9[📖 Resources]
+        Nav10[⚙️ Availability]
+    end
+
+    subgraph Dashboard["Dashboard Views"]
+        D1[Health Data Column]
+        D2[Health Meeting Column]
+        D3[Health Studio Column]
+    end
+
+    subgraph HealthData["Health Data"]
+        HD1[Patient List]
+        HD2[EMR Records]
+        HD3[Lab Results]
+        HD4[Prescriptions]
+    end
+
+    subgraph HealthMeeting["Health Meeting"]
+        HM1[Investigation Tab]
+        HM2[Treatment Tab]
+        HM3[Refer Tab]
+    end
+
+    subgraph HealthStudio["Health Studio"]
+        HS1[Diagnosis Panel]
+        HS2[Treatment Plan]
+        HS3[System Reports]
+        HS4[Radiology]
+        HS5[Laboratory]
+        HS6[Pathology]
+    end
+
+    subgraph PatientView["Patient Management"]
+        PV1[Patient List]
+        PV2[Patient Details]
+        PV3[EMR History]
+        PV4[Create EMR]
+        PV5[Prescribe]
+        PV6[Order Labs]
+    end
+
+    subgraph ScheduleView["Schedule Management"]
+        SV1[Day View]
+        SV2[Week View]
+        SV3[Month View]
+        SV4[Availability Settings]
+    end
+
+    subgraph Modals["Modal Components"]
+        M1[EMR Editor]
+        M2[E-Prescribing]
+        M3[Lab Orders]
+        M4[Virtual Meeting]
+        M5[AI Studio]
+        M6[Patient Record Viewer]
+    end
+
+    %% Navigation Connections
+    Nav1 --> Dashboard
+    Nav2 --> ScheduleView
+    Nav3 --> PatientView
+    Nav4 --> Queue[Queue Management]
+    Nav5 --> MeetingMgmt[Meeting Management]
+
+    Dashboard --> D1 & D2 & D3
+    D1 --> HealthData
+    D2 --> HealthMeeting
+    D3 --> HealthStudio
+
+    PatientView --> Modals
+
+    style Main fill:#e8f5e9
+    style Dashboard fill:#e3f2fd
+    style Modals fill:#fff3e0

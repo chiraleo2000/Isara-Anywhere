@@ -1,0 +1,7 @@
+{
+  "name": "Izara Anywhere Patient App MockUp DEMO Version",
+  "description": "A telemedicine application for patients to manage appointments, consult with doctors, and handle post-visit follow-ups, built with React and powered by Gemini.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}

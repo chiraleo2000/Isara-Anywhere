@@ -1,0 +1,43 @@
+# ============================================================================
+# DOCTOR PORTAL - GCS API SERVER DOCKERFILE
+# For Google Cloud Run Deployment (Internal Service)
+# Port: 3012 (or PORT env var)
+# ============================================================================
+
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apk add --no-cache \
+    curl \
+    bash \
+    && rm -rf /var/cache/apk/*
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm ci --only=production && npm cache clean --force
+
+# Copy server files
+COPY server/gcsApiServer.cjs ./server/
+COPY server/security ./server/security/
+
+# Create directories
+RUN mkdir -p /var/secrets/google server/logs
+
+# Environment variables
+ENV NODE_ENV=production
+ENV PORT=8080
+ENV GCS_PORT=8080
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+  CMD curl -f http://localhost:${PORT}/health || exit 1
+
+# Expose port
+EXPOSE 8080
+
+# Run GCS API server
+CMD ["node", "server/gcsApiServer.cjs"]

@@ -1,0 +1,112 @@
+%% Izara Doctor Portal - Complete Data Flow v2.0
+%% Shows all data operations and storage patterns
+
+flowchart TB
+    subgraph Client["🌐 CLIENT LAYER"]
+        direction LR
+        
+        subgraph Pages["Pages"]
+            P1["Dashboard"]
+            P2["Patients"]
+            P3["EMR"]
+            P4["Prescribing"]
+            P5["Schedule"]
+        end
+        
+        subgraph Services["Service Layer"]
+            S1["authServices"]
+            S2["patientDataService"]
+            S3["emrService"]
+            S4["appointmentService"]
+            S5["geminiService"]
+        end
+    end
+    
+    subgraph Backend["🖥️ BACKEND SERVERS"]
+        direction TB
+        
+        AUTH["🔐 Auth Server<br/>Port 3011"]
+        GCS_API["📦 GCS API Server<br/>Port 3012"]
+        MAIN["⚙️ Main API Server<br/>Port 3009"]
+        WS["📡 WebSocket"]
+    end
+    
+    subgraph GCS["☁️ GOOGLE CLOUD STORAGE"]
+        direction TB
+        
+        subgraph Credentials["izara-users-credentials"]
+            UC1["users/index.json"]
+            UC2["users/{id}.json"]
+            UC3["sessions/{token}.json"]
+        end
+        
+        subgraph Doctors["izara-doctors-data"]
+            DD1["doctors.json"]
+            DD2["queue/{doctorId}.json"]
+            DD3["schedules/{doctorId}/*.json"]
+        end
+        
+        subgraph Patients["izara-patients-data"]
+            PD1["patients.json"]
+            PD2["patients/{id}/<br/>profile.json"]
+            PD3["emr/{patientId}/<br/>*.json"]
+            PD4["prescriptions/<br/>{patientId}/*.json"]
+            PD5["lab-orders/<br/>{patientId}/*.json"]
+        end
+        
+        subgraph Appointments["izara-appointments"]
+            AD1["appointments.json"]
+            AD2["appointments/<br/>{id}.json"]
+            AD3["meetings/<br/>{id}.json"]
+        end
+        
+        subgraph Meta["izara-meta-data"]
+            MD1["medications.json"]
+            MD2["lab-tests.json"]
+            MD3["icd-10-codes.json"]
+            MD4["audit/{date}.json"]
+        end
+    end
+    
+    subgraph External["🌐 EXTERNAL APIS"]
+        direction TB
+        AI["🤖 Gemini AI"]
+        MEET["📹 Google Meet"]
+        CAL["📅 Calendar"]
+        MAIL["✉️ Gmail"]
+    end
+    
+    %% Client to Services
+    Pages --> Services
+    
+    %% Services to Backend
+    S1 --> AUTH
+    S2 --> GCS_API
+    S3 --> GCS_API
+    S4 --> MAIN
+    S5 --> AI
+    
+    %% Backend to Storage
+    AUTH --> Credentials
+    GCS_API --> Doctors
+    GCS_API --> Patients
+    GCS_API --> Appointments
+    GCS_API --> Meta
+    MAIN --> GCS_API
+    MAIN --> MEET
+    MAIN --> CAL
+    MAIN --> MAIL
+    
+    %% Real-time
+    WS <-.-> Client
+    
+    %% Styling
+    classDef client fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
+    classDef backend fill:#fff3e0,stroke:#ef6c00,stroke-width:2px
+    classDef storage fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+    classDef external fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+    
+    class P1,P2,P3,P4,P5,S1,S2,S3,S4,S5 client
+    class AUTH,GCS_API,MAIN,WS backend
+    class UC1,UC2,UC3,DD1,DD2,DD3,PD1,PD2,PD3,PD4,PD5,AD1,AD2,AD3,MD1,MD2,MD3,MD4 storage
+    class AI,MEET,CAL,MAIL external

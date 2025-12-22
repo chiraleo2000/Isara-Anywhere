@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Izara Anywhere - แพลตฟอร์มสุขภาพดิจิทัล</title>
+    
+    <!-- Tailwind CSS with dark mode -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              emerald: {
+                50: '#ecfdf5',
+                100: '#d1fae5',
+                200: '#a7f3d0',
+                300: '#6ee7b7',
+                400: '#34d399',
+                500: '#10b981',
+                600: '#059669',
+                700: '#047857',
+                800: '#065f46',
+                900: '#064e3b',
+              }
+            }
+          }
+        }
+      }
+    </script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+      body {
+        font-family: 'Sarabun', sans-serif;
+      }
+      
+      /* Custom scrollbar */
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      
+      ::-webkit-scrollbar-track {
+        background: #f1f1f1;
+      }
+      
+      ::-webkit-scrollbar-thumb {
+        background: #059669;
+        border-radius: 4px;
+      }
+      
+      ::-webkit-scrollbar-thumb:hover {
+        background: #047857;
+      }
+
+      /* Dark mode scrollbar */
+      .dark ::-webkit-scrollbar-track {
+        background: #374151;
+      }
+      
+      .dark ::-webkit-scrollbar-thumb {
+        background: #10b981;
+      }
+      
+      .dark ::-webkit-scrollbar-thumb:hover {
+        background: #34d399;
+      }
+      
+      /* Smooth transitions */
+      * {
+        transition-property: background-color, border-color, color, fill, stroke;
+        transition-duration: 150ms;
+        transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      
+      /* Loading animation */
+      @keyframes shimmer {
+        0% {
+          background-position: -468px 0;
+        }
+        100% {
+          background-position: 468px 0;
+        }
+      }
+      
+      .loading-shimmer {
+        animation: shimmer 1.2s ease-in-out infinite;
+        background: linear-gradient(to right, #f6f7f8 0%, #edeef1 20%, #f6f7f8 40%, #f6f7f8 100%);
+        background-size: 800px 104px;
+      }
+
+      /* Loading spinner for Google APIs */
+      .google-loading {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 9999;
+        background: rgba(255, 255, 255, 0.95);
+        padding: 2rem;
+        border-radius: 1rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        display: none;
+      }
+
+      .google-loading.active {
+        display: block;
+      }
+
+      .spinner {
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #059669;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto;
+      }
+
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    </style>
+    
+    <!-- Import Map for React and other dependencies -->
+    <script type="importmap">
+{
+  "imports": {
+    "react": "https://aistudiocdn.com/react@^19.1.1",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
+    "@google/generative-ai": "https://aistudiocdn.com/@google/generative-ai@^1.20.0",
+    "react/": "https://aistudiocdn.com/react@^19.1.1/"
+  }
+}
+</script>
+
+    <!-- 
+      ============================================
+      GOOGLE APIS CONFIGURATION
+      ============================================
+      Load order is important:
+      1. Google Maps API
+      2. Google API Client Library (gapi)
+      3. Google Identity Services (GIS)
+    -->
+    
+    <!-- 1. Google Maps API with Places Library -->
+    <script 
+      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAYbKd-Sk4G_vMwzt0Sac6Jgc-8y39vPxs&libraries=places" 
+      async 
+      defer
+      onload="window.googleMapsLoaded = true; console.log('✅ Google Maps loaded');"
+      onerror="console.error('❌ Failed to load Google Maps');"
+    ></script>
+    
+    <!-- 2. Google API Client Library (GAPI) - for Calendar API -->
+    <script 
+      src="https://apis.google.com/js/api.js" 
+      async 
+      defer
+      onload="window.gapiLoaded = true; console.log('✅ GAPI loaded');"
+      onerror="console.error('❌ Failed to load GAPI');"
+    ></script>
+    
+    <!-- 3. Google Identity Services (GIS) - for OAuth 2.0 -->
+    <script 
+      src="https://accounts.google.com/gsi/client" 
+      async 
+      defer
+      onload="window.gisLoaded = true; console.log('✅ GIS loaded');"
+      onerror="console.error('❌ Failed to load GIS');"
+    ></script>
+
+    <!-- Google OAuth Configuration Script -->
+    <script>
+      // Configuration object for Google OAuth
+      window.GOOGLE_CONFIG = {
+        // These will be loaded from environment variables in your app
+        // Don't hardcode credentials here - they should come from .env
+        API_DISCOVERY_DOCS: [
+          'https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest'
+        ],
+        SCOPES: 'https://www.googleapis.com/auth/calendar.events',
+        
+        // Status tracking
+        status: {
+          mapsLoaded: false,
+          gapiLoaded: false,
+          gisLoaded: false,
+          gapiInitialized: false
+        },
+
+        // Check if all APIs are ready
+        isReady: function() {
+          return this.status.mapsLoaded && 
+                 this.status.gapiLoaded && 
+                 this.status.gisLoaded &&
+                 this.status.gapiInitialized;
+        },
+
+        // Log status
+        logStatus: function() {
+          console.log('🔍 Google APIs Status:', {
+            'Google Maps': this.status.mapsLoaded ? '✅' : '⏳',
+            'GAPI': this.status.gapiLoaded ? '✅' : '⏳',
+            'GIS': this.status.gisLoaded ? '✅' : '⏳',
+            'GAPI Initialized': this.status.gapiInitialized ? '✅' : '⏳',
+            'All Ready': this.isReady() ? '✅' : '⏳'
+          });
+        }
+      };
+
+      // Wait for all Google APIs to load
+      window.addEventListener('load', function() {
+        console.log('📱 Page loaded, checking Google APIs...');
+        
+        // Check every 100ms for up to 10 seconds
+        let attempts = 0;
+        const maxAttempts = 100;
+        
+        const checkInterval = setInterval(function() {
+          attempts++;
+          
+          // Update status
+          window.GOOGLE_CONFIG.status.mapsLoaded = !!window.googleMapsLoaded;
+          window.GOOGLE_CONFIG.status.gapiLoaded = !!window.gapiLoaded;
+          window.GOOGLE_CONFIG.status.gisLoaded = !!window.gisLoaded;
+          
+          // Check if all loaded
+          if (window.GOOGLE_CONFIG.status.mapsLoaded && 
+              window.GOOGLE_CONFIG.status.gapiLoaded && 
+              window.GOOGLE_CONFIG.status.gisLoaded) {
+            
+            clearInterval(checkInterval);
+            console.log('✅ All Google APIs loaded successfully!');
+            window.GOOGLE_CONFIG.logStatus();
+            
+            // Hide loading indicator if exists
+            const loadingEl = document.getElementById('google-loading');
+            if (loadingEl) {
+              loadingEl.classList.remove('active');
+            }
+            
+            // Dispatch custom event for React app
+            window.dispatchEvent(new CustomEvent('googleApisReady', {
+              detail: { 
+                status: window.GOOGLE_CONFIG.status,
+                timestamp: new Date().toISOString()
+              }
+            }));
+          }
+          
+          // Timeout after max attempts
+          if (attempts >= maxAttempts) {
+            clearInterval(checkInterval);
+            console.warn('⚠️ Timeout waiting for Google APIs');
+            window.GOOGLE_CONFIG.logStatus();
+            
+            // Hide loading indicator
+            const loadingEl = document.getElementById('google-loading');
+            if (loadingEl) {
+              loadingEl.classList.remove('active');
+            }
+            
+            // Dispatch timeout event
+            window.dispatchEvent(new CustomEvent('googleApisTimeout', {
+              detail: { 
+                status: window.GOOGLE_CONFIG.status,
+                timestamp: new Date().toISOString()
+              }
+            }));
+          }
+        }, 100);
+      });
+
+      // Helper function to check OAuth configuration
+      window.checkGoogleOAuthConfig = function() {
+        const clientId = localStorage.getItem('google_client_id') || 
+                        'NOT_CONFIGURED';
+        const apiKey = localStorage.getItem('google_api_key') || 
+                      'NOT_CONFIGURED';
+        
+        console.log('🔐 Google OAuth Configuration:');
+        console.log('Client ID:', clientId.substring(0, 20) + '...');
+        console.log('API Key:', apiKey.substring(0, 20) + '...');
+        console.log('APIs Status:', window.GOOGLE_CONFIG.status);
+        
+        return {
+          hasClientId: !clientId.includes('NOT_CONFIGURED'),
+          hasApiKey: !apiKey.includes('NOT_CONFIGURED'),
+          apisReady: window.GOOGLE_CONFIG.isReady()
+        };
+      };
+
+      // Console helper for debugging
+      console.log(`
+╔═══════════════════════════════════════════════════════════╗
+║         🏥 Izara Anywhere - Google APIs Loader          ║
+╠═══════════════════════════════════════════════════════════╣
+║                                                           ║
+║  Debug commands:                                          ║
+║  • window.GOOGLE_CONFIG.logStatus()                       ║
+║  • window.checkGoogleOAuthConfig()                        ║
+║                                                           ║
+║  Events:                                                  ║
+║  • googleApisReady - All APIs loaded                      ║
+║  • googleApisTimeout - Loading timeout                    ║
+║                                                           ║
+╚═══════════════════════════════════════════════════════════╝
+      `);
+    </script>
+  </head>
+  
+  <body class="antialiased">
+    <!-- Optional: Loading indicator for Google APIs -->
+    <div id="google-loading" class="google-loading">
+      <div class="spinner"></div>
+      <p style="text-align: center; margin-top: 1rem; color: #059669; font-weight: 600;">
+        กำลังโหลด Google APIs...
+      </p>
+    </div>
+
+    <!-- Main app container -->
+    <div id="root"></div>
+    
+    <!-- Your React app -->
+    <script type="module" src="/src/index.tsx"></script>
+
+    <!-- Show/hide loading indicator based on readiness -->
+    <script>
+      // Show loading indicator initially if needed
+      // Comment out these lines if you don't want the loading indicator
+      /*
+      const loadingEl = document.getElementById('google-loading');
+      if (loadingEl) {
+        loadingEl.classList.add('active');
+      }
+      */
+    </script>
+  </body>
+</html>

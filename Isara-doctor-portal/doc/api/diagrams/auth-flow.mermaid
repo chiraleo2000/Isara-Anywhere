@@ -1,0 +1,86 @@
+%% Izara Doctor Portal - Authentication & Authorization Flow v2.0
+%% Complete security workflow
+
+sequenceDiagram
+    autonumber
+    
+    participant U as User (Doctor/Admin)
+    participant UI as React Frontend
+    participant AUTH as Auth Server :3011
+    participant GCS as Cloud Storage
+    participant WS as WebSocket
+    
+    rect rgb(230, 245, 255)
+        Note over U,GCS: LOGIN FLOW
+        U->>UI: Enter email & password
+        UI->>AUTH: POST /api/auth/login
+        AUTH->>GCS: Read users/{email}.json
+        GCS-->>AUTH: User data with hashed password
+        AUTH->>AUTH: bcrypt.compare(password, hash)
+        
+        alt Valid Credentials
+            AUTH->>AUTH: Generate session token
+            AUTH->>GCS: Write sessions/{token}.json
+            AUTH-->>UI: { success, token, user }
+            UI->>UI: Store token in localStorage
+            UI->>WS: Connect with token
+            WS-->>UI: Connected
+            UI-->>U: Redirect to Dashboard
+        else Invalid Credentials
+            AUTH-->>UI: { error: "Invalid credentials" }
+            UI-->>U: Show error message
+        end
+    end
+    
+    rect rgb(255, 248, 230)
+        Note over U,GCS: SESSION VALIDATION
+        U->>UI: Access protected page
+        UI->>UI: Check localStorage for token
+        
+        alt Token exists
+            UI->>AUTH: GET /api/auth/validate
+            Note right of UI: Authorization: Bearer {token}
+            AUTH->>GCS: Read sessions/{token}.json
+            
+            alt Valid & Not Expired
+                GCS-->>AUTH: Session data
+                AUTH-->>UI: { valid: true, user }
+                UI-->>U: Allow access
+            else Invalid/Expired
+                AUTH-->>UI: { valid: false }
+                UI->>UI: Clear localStorage
+                UI-->>U: Redirect to login
+            end
+        else No token
+            UI-->>U: Redirect to login
+        end
+    end
+    
+    rect rgb(255, 230, 240)
+        Note over U,GCS: DOCTOR APPROVAL CHECK
+        U->>UI: Doctor attempts login
+        UI->>AUTH: POST /api/auth/login
+        AUTH->>GCS: Read user data
+        AUTH->>AUTH: Check approval status
+        
+        alt Status: APPROVED
+            AUTH-->>UI: Full access granted
+        else Status: PENDING
+            AUTH-->>UI: { status: "pending_approval" }
+            UI-->>U: Show "Awaiting approval" page
+        else Status: REJECTED
+            AUTH-->>UI: { status: "rejected", reason }
+            UI-->>U: Show rejection message
+        end
+    end
+    
+    rect rgb(230, 255, 230)
+        Note over U,GCS: LOGOUT FLOW
+        U->>UI: Click logout
+        UI->>AUTH: POST /api/auth/logout
+        AUTH->>GCS: Delete sessions/{token}.json
+        AUTH-->>UI: { success: true }
+        UI->>UI: Clear localStorage
+        UI->>WS: Disconnect
+        UI-->>U: Redirect to login
+    end

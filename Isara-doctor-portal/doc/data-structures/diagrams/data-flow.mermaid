@@ -1,0 +1,98 @@
+flowchart TB
+    %% Izara Doctor Portal - Data Flow Architecture
+    
+    subgraph CLIENT["🖥️ Client Layer"]
+        WEB["React Web App<br/>Port 3010"]
+    end
+    
+    subgraph SERVERS["🖧 Server Layer"]
+        AUTH["Auth Server<br/>Port 3011"]
+        GCS_API["GCS API Server<br/>Port 3012"]
+        MAIN_API["Main API Server<br/>Port 3009"]
+    end
+    
+    subgraph GCS["☁️ Google Cloud Storage"]
+        subgraph CREDS["izara-users-credentials"]
+            USERS_IDX["users/index.json"]
+            USERS_DATA["users/{id}.json"]
+            SESSIONS["sessions/{token}.json"]
+        end
+        
+        subgraph DOCTORS_BUCKET["izara-doctors-data"]
+            DOCTORS_LIST["doctors.json"]
+            QUEUE_DATA["queue/{doctorId}.json"]
+            SCHEDULES["schedules/{doctorId}/*.json"]
+        end
+        
+        subgraph PATIENTS_BUCKET["izara-patients-data"]
+            PATIENTS_IDX["patients.json"]
+            PATIENTS_DATA["patients/{id}.json"]
+            EMR_DATA["emr/{patientId}/*.json"]
+            RX_DATA["prescriptions/{patientId}/*.json"]
+            LAB_DATA["lab-orders/{patientId}/*.json"]
+            PDPA["patients/{id}/pdpa/*.json"]
+        end
+        
+        subgraph APT_BUCKET["izara-appointments"]
+            APT_IDX["appointments.json"]
+            APT_DATA["appointments/{id}.json"]
+            MEETINGS["meetings/{id}.json"]
+        end
+        
+        subgraph META_BUCKET["izara-meta-data"]
+            MEDS_REF["medications.json"]
+            LABS_REF["lab-tests.json"]
+            ICD_REF["icd-10-codes.json"]
+            AUDIT_LOG["audit/{date}.json"]
+        end
+    end
+    
+    subgraph AI["🤖 AI Services"]
+        GEMINI["Google Gemini API<br/>gemini-2.0-flash-exp"]
+    end
+    
+    %% Client to Server connections
+    WEB -->|"Auth Requests"| AUTH
+    WEB -->|"Data Requests"| GCS_API
+    WEB -->|"Business Logic"| MAIN_API
+    WEB -->|"AI Features"| GEMINI
+    
+    %% Auth Server to GCS
+    AUTH -->|"R/W Users"| USERS_IDX
+    AUTH -->|"R/W Users"| USERS_DATA
+    AUTH -->|"R/W Sessions"| SESSIONS
+    
+    %% GCS API to Buckets
+    GCS_API -->|"R/W Doctors"| DOCTORS_LIST
+    GCS_API -->|"R/W Queue"| QUEUE_DATA
+    GCS_API -->|"R/W Schedules"| SCHEDULES
+    GCS_API -->|"R/W Patients"| PATIENTS_IDX
+    GCS_API -->|"R/W Patients"| PATIENTS_DATA
+    GCS_API -->|"R/W EMR"| EMR_DATA
+    GCS_API -->|"R/W Rx"| RX_DATA
+    GCS_API -->|"R/W Labs"| LAB_DATA
+    GCS_API -->|"R/W Consent"| PDPA
+    GCS_API -->|"R/W Appointments"| APT_IDX
+    GCS_API -->|"R/W Appointments"| APT_DATA
+    GCS_API -->|"R/W Meetings"| MEETINGS
+    GCS_API -->|"Read Reference"| MEDS_REF
+    GCS_API -->|"Read Reference"| LABS_REF
+    GCS_API -->|"Read Reference"| ICD_REF
+    GCS_API -->|"Write Audit"| AUDIT_LOG
+    
+    %% Main API connections
+    MAIN_API -->|"Read Auth"| AUTH
+    MAIN_API -->|"Data Operations"| GCS_API
+    
+    %% Styling
+    classDef client fill:#e1f5fe,stroke:#01579b
+    classDef server fill:#fff3e0,stroke:#e65100
+    classDef storage fill:#e8f5e9,stroke:#2e7d32
+    classDef ai fill:#f3e5f5,stroke:#7b1fa2
+    classDef bucket fill:#fce4ec,stroke:#c2185b
+    
+    class WEB client
+    class AUTH,GCS_API,MAIN_API server
+    class GCS storage
+    class GEMINI ai
+    class CREDS,DOCTORS_BUCKET,PATIENTS_BUCKET,APT_BUCKET,META_BUCKET bucket

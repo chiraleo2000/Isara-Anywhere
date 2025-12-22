@@ -1,0 +1,98 @@
+%% Izara Doctor Portal - AI Integration Flow v2.0
+%% Shows all AI-powered features and their interactions
+
+flowchart TB
+    subgraph Input["📥 AI INPUT SOURCES"]
+        direction TB
+        I1["🎤 Voice Input<br/>(Transcription)"]
+        I2["💬 Text Input<br/>(Chat/Notes)"]
+        I3["📊 Patient Data<br/>(History/Meds)"]
+        I4["🩺 Clinical Data<br/>(Symptoms/Vitals)"]
+    end
+    
+    subgraph GeminiAI["🤖 GOOGLE GEMINI AI ENGINE"]
+        direction TB
+        G1["gemini-2.0-flash-exp"]
+        
+        subgraph Capabilities["AI Capabilities"]
+            C1["🗣️ Speech-to-Text"]
+            C2["📝 Text Analysis"]
+            C3["🔬 Clinical Reasoning"]
+            C4["💊 Drug Knowledge"]
+            C5["📋 Summarization"]
+        end
+    end
+    
+    subgraph Features["🎯 AI-POWERED FEATURES"]
+        direction TB
+        
+        subgraph Transcription["Real-time Transcription"]
+            T1["🎤 Live voice capture"]
+            T2["📝 Real-time text conversion"]
+            T3["🏷️ Speaker identification"]
+        end
+        
+        subgraph ClinicalSupport["Clinical Decision Support"]
+            CS1["⚠️ Symptom analysis"]
+            CS2["❓ Suggested questions"]
+            CS3["🔍 Differential diagnosis"]
+            CS4["🚨 Red flag detection"]
+        end
+        
+        subgraph Coding["Medical Coding"]
+            MC1["🏥 ICD-10 suggestions"]
+            MC2["📊 Confidence scores"]
+            MC3["🔗 Code relationships"]
+        end
+        
+        subgraph DrugSafety["Drug Safety"]
+            DS1["💊 Interaction checking"]
+            DS2["⚠️ Allergy cross-reference"]
+            DS3["📋 Dosage validation"]
+            DS4["🚫 Contraindications"]
+        end
+        
+        subgraph Documentation["Documentation"]
+            D1["📝 SOAP note generation"]
+            D2["📋 Visit summaries"]
+            D3["✉️ Patient instructions"]
+        end
+    end
+    
+    subgraph Output["📤 AI OUTPUTS"]
+        direction TB
+        O1["🖥️ UI Suggestions"]
+        O2["⚠️ Safety Alerts"]
+        O3["📄 Generated Documents"]
+        O4["📊 Analytics Data"]
+    end
+    
+    %% Connections
+    I1 --> G1
+    I2 --> G1
+    I3 --> G1
+    I4 --> G1
+    
+    G1 --> Transcription
+    G1 --> ClinicalSupport
+    G1 --> Coding
+    G1 --> DrugSafety
+    G1 --> Documentation
+    
+    Transcription --> O1
+    ClinicalSupport --> O1
+    ClinicalSupport --> O2
+    Coding --> O1
+    DrugSafety --> O2
+    Documentation --> O3
+    
+    %% Styling
+    classDef input fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
+    classDef ai fill:#fff3e0,stroke:#ef6c00,stroke-width:3px
+    classDef feature fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+    classDef output fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+    
+    class I1,I2,I3,I4 input
+    class G1,C1,C2,C3,C4,C5 ai
+    class T1,T2,T3,CS1,CS2,CS3,CS4,MC1,MC2,MC3,DS1,DS2,DS3,DS4,D1,D2,D3 feature
+    class O1,O2,O3,O4 output

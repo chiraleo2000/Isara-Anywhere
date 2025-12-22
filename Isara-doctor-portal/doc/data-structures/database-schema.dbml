@@ -1,0 +1,795 @@
+// Izara Doctor Portal Database Schema (DBML)
+// Database Markup Language for GCS Storage Structure
+// https://dbml.dbdiagram.io/
+
+// =====================================================
+// USER & AUTHENTICATION MODELS
+// Bucket: izara-users-credentials
+// =====================================================
+
+Table users {
+  id varchar [pk, note: 'Format: DOC-XXXX-XXX']
+  email varchar [unique, not null]
+  password_hash varchar [not null, note: 'SHA256 hash']
+  role enum('doctor', 'admin', 'patient') [not null]
+  doctor_id varchar [note: 'Same as id for doctors']
+  patient_id varchar [note: 'For patient role users']
+  medical_license_number varchar [note: 'Format: MD-123456']
+  is_admin boolean [default: false]
+  is_active boolean [default: true]
+  email_verified boolean [default: false]
+  approval_status enum('pending', 'approved', 'rejected') [default: 'pending']
+  is_approved boolean [default: false]
+  created_at timestamp [not null]
+  last_login timestamp
+  login_attempts int [default: 0]
+  locked_until timestamp
+  
+  // Profile
+  name varchar
+  phone varchar
+  date_of_birth date
+  avatar_url varchar
+  specialty varchar
+  
+  indexes {
+    email [unique]
+    medical_license_number [unique]
+  }
+  
+  Note: 'Storage: izara-users-credentials/users/{id}.json'
+}
+
+Table user_preferences {
+  id varchar [pk, ref: - users.id]
+  theme enum('light', 'dark', 'system') [default: 'system']
+  language enum('en', 'th') [default: 'en']
+  notification_email boolean [default: true]
+  notification_push boolean [default: true]
+  notification_sms boolean [default: false]
+  
+  Note: 'Embedded in user document'
+}
+
+Table admin_privileges {
+  id varchar [pk, ref: - users.id]
+  can_manage_doctors boolean [default: false]
+  can_manage_patients boolean [default: false]
+  can_manage_appointments boolean [default: false]
+  can_view_analytics boolean [default: false]
+  can_manage_settings boolean [default: false]
+  can_assign_roles boolean [default: false]
+  level enum('super_admin', 'admin', 'moderator')
+  
+  Note: 'Embedded in user document for admin users'
+}
+
+Table sessions {
+  token varchar [pk, note: 'JWT/Session token']
+  user_id varchar [ref: > users.id, not null]
+  created_at timestamp [not null]
+  expires_at timestamp [not null]
+  user_agent varchar
+  ip_address varchar
+  is_valid boolean [default: true]
+  
+  indexes {
+    user_id
+    expires_at
+  }
+  
+  Note: 'Storage: izara-users-credentials/sessions/{token}.json'
+}
+
+// =====================================================
+// DOCTOR MODELS
+// Bucket: izara-doctors-data
+// =====================================================
+
+Table doctors {
+  id varchar [pk, ref: - users.id]
+  name varchar [not null]
+  specialty varchar [not null]
+  email varchar
+  avatar_url varchar
+  rating decimal
+  experience varchar
+  is_approved boolean [default: false]
+  medical_license_number varchar [unique]
+  
+  indexes {
+    specialty
+    is_approved
+  }
+  
+  Note: 'Storage: izara-doctors-data/doctors.json (array)'
+}
+
+Table doctor_qualifications {
+  id varchar [pk]
+  doctor_id varchar [ref: > doctors.id, not null]
+  qualification varchar [not null]
+  institution varchar
+  year int
+  
+  Note: 'Embedded in doctor document as array'
+}
+
+Table doctor_available_slots {
+  id varchar [pk]
+  doctor_id varchar [ref: > doctors.id, not null]
+  day_of_week int [note: '0=Sunday, 6=Saturday']
+  start_time time
+  end_time time
+  is_available boolean [default: true]
+  
+  Note: 'Embedded in doctor document as array'
+}
+
+// =====================================================
+// PATIENT MODELS
+// Bucket: izara-patients-data
+// =====================================================
+
+Table patients {
+  id varchar [pk]
+  // Demographics
+  name varchar [not null]
+  date_of_birth date [not null]
+  age int
+  gender enum('male', 'female', 'other')
+  photo varchar
+  id_number varchar [unique, note: 'National ID']
+  // Contact
+  phone varchar
+  email varchar
+  address text
+  // Medical
+  blood_type varchar
+  risk_level enum('low', 'medium', 'high')
+  is_active boolean [default: true]
+  last_visit timestamp
+  next_appointment timestamp
+  
+  indexes {
+    id_number [unique]
+    email
+    risk_level
+  }
+  
+  Note: 'Storage: izara-patients-data/patients/{id}.json'
+}
+
+Table emergency_contacts {
+  id varchar [pk]
+  patient_id varchar [ref: > patients.id, not null]
+  name varchar [not null]
+  relationship varchar [not null]
+  phone varchar [not null]
+  email varchar
+  
+  Note: 'Embedded in patient.contact document'
+}
+
+Table patient_allergies {
+  id varchar [pk]
+  patient_id varchar [ref: > patients.id, not null]
+  allergen varchar [not null]
+  reaction varchar
+  severity enum('mild', 'moderate', 'severe')
+  
+  Note: 'Embedded in patient.medicalInfo.allergies'
+}
+
+Table patient_chronic_conditions {
+  id varchar [pk]
+  patient_id varchar [ref: > patients.id, not null]
+  condition varchar [not null]
+  diagnosed_date date
+  status enum('active', 'managed', 'resolved')
+  
+  Note: 'Embedded in patient.medicalInfo.chronicConditions'
+}
+
+Table patient_medications {
+  id varchar [pk]
+  patient_id varchar [ref: > patients.id, not null]
+  medication varchar [not null]
+  dosage varchar
+  frequency varchar
+  start_date date
+  
+  Note: 'Embedded in patient.medicalInfo.currentMedications'
+}
+
+Table patient_consents {
+  id varchar [pk]
+  patient_id varchar [ref: > patients.id, not null]
+  has_consent boolean [default: false]
+  expires_at timestamp
+  
+  Note: 'Embedded in patient.consentStatus'
+}
+
+Table consent_data_types {
+  id varchar [pk]
+  consent_id varchar [ref: > patient_consents.id, not null]
+  data_type varchar [not null, note: 'Type of data patient allowed']
+  
+  Note: 'Embedded in patient.consentStatus.dataTypesAllowed'
+}
+
+// =====================================================
+// EMR (ELECTRONIC MEDICAL RECORDS)
+// Bucket: izara-patients-data
+// =====================================================
+
+Table emr_records {
+  id varchar [pk]
+  patient_id varchar [ref: > patients.id, not null]
+  doctor_id varchar [ref: > doctors.id, not null]
+  doctor_name varchar [not null]
+  encounter_date timestamp [not null]
+  encounter_type enum('consultation', 'follow-up', 'emergency', 'procedure')
+  chief_complaint text [not null]
+  history_of_present_illness text
+  assessment text
+  treatment_plan text
+  follow_up_instructions text
+  follow_up_date date
+  status enum('draft', 'finalized', 'amended') [default: 'draft']
+  digital_signature varchar
+  version int [default: 1]
+  created_at timestamp [not null]
+  last_modified timestamp
+  
+  indexes {
+    patient_id
+    doctor_id
+    encounter_date
+    status
+  }
+  
+  Note: 'Storage: izara-patients-data/emr/{patientId}/{emrId}.json'
+}
+
+Table emr_previous_versions {
+  id varchar [pk]
+  emr_id varchar [ref: > emr_records.id, not null]
+  version int [not null]
+  snapshot_url varchar [not null]
+  modified_at timestamp [not null]
+  modified_by varchar [ref: > users.id]
+  
+  Note: 'Tracks EMR amendments'
+}
+
+Table vital_signs {
+  id varchar [pk]
+  emr_id varchar [ref: > emr_records.id, not null]
+  bp_systolic int
+  bp_diastolic int
+  heart_rate int
+  temperature decimal
+  temperature_unit enum('celsius', 'fahrenheit') [default: 'celsius']
+  respiratory_rate int
+  oxygen_saturation decimal
+  weight decimal
+  weight_unit enum('kg', 'lbs') [default: 'kg']
+  height decimal
+  height_unit enum('cm', 'inches') [default: 'cm']
+  bmi decimal
+  measured_at timestamp
+  
+  Note: 'Embedded in EMR document'
+}
+
+Table diagnoses {
+  id varchar [pk]
+  emr_id varchar [ref: > emr_records.id, not null]
+  code varchar [not null, note: 'ICD-10 code']
+  description varchar [not null]
+  type enum('primary', 'secondary') [default: 'secondary']
+  onset date
+  status enum('active', 'resolved', 'chronic')
+  
+  indexes {
+    code
+    emr_id
+  }
+  
+  Note: 'Embedded in EMR document as array'
+}
+
+Table review_of_systems {
+  id varchar [pk, ref: - emr_records.id]
+  constitutional text
+  eyes text
+  ent_nose_throat text
+  cardiovascular text
+  respiratory text
+  gastrointestinal text
+  genitourinary text
+  musculoskeletal text
+  integumentary text
+  neurological text
+  psychiatric text
+  endocrine text
+  hematologic_lymphatic text
+  allergic_immunologic text
+  
+  Note: 'Embedded in EMR document'
+}
+
+Table physical_examination {
+  id varchar [pk, ref: - emr_records.id]
+  general_appearance text
+  heent text [note: 'Head, Eyes, Ears, Nose, Throat']
+  neck text
+  cardiovascular text
+  respiratory text
+  abdomen text
+  extremities text
+  neurological text
+  skin text
+  psychiatric text
+  
+  Note: 'Embedded in EMR document'
+}
+
+// =====================================================
+// PRESCRIPTIONS
+// Bucket: izara-patients-data
+// =====================================================
+
+Table prescriptions {
+  id varchar [pk]
+  patient_id varchar [ref: > patients.id, not null]
+  doctor_id varchar [ref: > doctors.id, not null]
+  emr_id varchar [ref: > emr_records.id]
+  encounter_date timestamp [not null]
+  pharmacy_id varchar
+  status enum('pending', 'sent', 'dispensed', 'cancelled') [default: 'pending']
+  digital_signature varchar
+  created_at timestamp [not null]
+  valid_until timestamp
+  
+  indexes {
+    patient_id
+    doctor_id
+    status
+  }
+  
+  Note: 'Storage: izara-patients-data/prescriptions/{patientId}/{rxId}.json'
+}
+
+Table prescription_items {
+  id varchar [pk]
+  prescription_id varchar [ref: > prescriptions.id, not null]
+  drug_name varchar [not null]
+  generic_name varchar [not null]
+  brand_name varchar
+  dosage varchar [not null]
+  strength varchar [not null]
+  route enum('oral', 'injection', 'topical', 'inhaled', 'rectal', 'other') [default: 'oral']
+  frequency varchar [not null]
+  duration varchar [not null]
+  quantity int [not null]
+  refills int [default: 0]
+  instructions text
+  
+  Note: 'Embedded in prescription document'
+}
+
+Table drug_interactions {
+  id varchar [pk]
+  prescription_item_id varchar [ref: > prescription_items.id, not null]
+  interacting_drug varchar [not null]
+  severity enum('mild', 'moderate', 'severe', 'contraindicated')
+  description text
+  
+  Note: 'Embedded in prescription item'
+}
+
+// =====================================================
+// LAB ORDERS
+// Bucket: izara-patients-data
+// =====================================================
+
+Table lab_orders {
+  id varchar [pk]
+  patient_id varchar [ref: > patients.id, not null]
+  doctor_id varchar [ref: > doctors.id, not null]
+  emr_id varchar [ref: > emr_records.id]
+  order_date timestamp [not null]
+  clinical_indication text [not null]
+  urgency enum('routine', 'urgent', 'stat') [default: 'routine']
+  status enum('ordered', 'collected', 'in_progress', 'completed', 'cancelled') [default: 'ordered']
+  completed_at timestamp
+  
+  indexes {
+    patient_id
+    doctor_id
+    status
+    urgency
+  }
+  
+  Note: 'Storage: izara-patients-data/lab-orders/{patientId}/{orderId}.json'
+}
+
+Table lab_tests {
+  id varchar [pk]
+  lab_order_id varchar [ref: > lab_orders.id, not null]
+  test_code varchar [not null]
+  test_name varchar [not null]
+  category varchar
+  specimen_type varchar
+  instructions text
+  
+  indexes {
+    test_code
+  }
+  
+  Note: 'Embedded in lab order document'
+}
+
+Table lab_results {
+  id varchar [pk]
+  lab_test_id varchar [ref: > lab_tests.id, not null]
+  value varchar [not null]
+  unit varchar [not null]
+  reference_range varchar
+  status enum('normal', 'abnormal', 'critical') [not null]
+  notes text
+  resulted_at timestamp
+  
+  Note: 'Embedded in lab test document'
+}
+
+// =====================================================
+// APPOINTMENTS
+// Bucket: izara-appointments
+// =====================================================
+
+Table appointments {
+  id varchar [pk]
+  patient_id varchar [ref: > patients.id, not null]
+  doctor_id varchar [ref: > doctors.id, not null]
+  date timestamp [not null]
+  type enum('Telehealth', 'In-person', 'Emergency', 'Follow-up', 'Consultation')
+  status enum('Pending', 'Confirmed', 'In Progress', 'Completed', 'Cancelled', 'No Show', 'Rescheduled') [default: 'Pending']
+  notes text
+  meet_link varchar
+  calendar_event_id varchar
+  diagnosis text
+  summary text
+  payment_status enum('unpaid', 'partial', 'paid', 'refunded') [default: 'unpaid']
+  created_at timestamp [not null]
+  updated_at timestamp
+  confirmed_at timestamp
+  
+  indexes {
+    patient_id
+    doctor_id
+    date
+    status
+    type
+  }
+  
+  Note: 'Storage: izara-appointments/appointments/{id}.json'
+}
+
+Table appointment_symptoms {
+  id varchar [pk]
+  appointment_id varchar [ref: > appointments.id, not null]
+  symptom varchar [not null]
+  severity enum('mild', 'moderate', 'severe')
+  duration varchar
+  
+  Note: 'Embedded in appointment document'
+}
+
+Table appointment_results {
+  id varchar [pk, ref: - appointments.id]
+  diagnosis text
+  prescriptions_count int
+  lab_orders_count int
+  radiology_orders_count int
+  follow_up_date date
+  ai_summary text
+  clinical_notes text
+  created_at timestamp [not null]
+  
+  Note: 'Embedded in appointment document'
+}
+
+// =====================================================
+// QUEUE MANAGEMENT
+// Bucket: izara-doctors-data
+// =====================================================
+
+Table queue_patients {
+  id varchar [pk]
+  doctor_id varchar [ref: > doctors.id, not null]
+  patient_id varchar [ref: > patients.id, not null]
+  patient_name varchar [not null]
+  appointment_id varchar [ref: > appointments.id, not null]
+  appointment_time timestamp [not null]
+  check_in_time timestamp
+  reason_for_visit text
+  reason text
+  priority enum('routine', 'urgent', 'emergency', 'high') [default: 'routine']
+  status enum('waiting', 'in-consultation', 'in-progress', 'completed', 'no-show', 'skipped') [default: 'waiting']
+  estimated_wait_time int [note: 'In minutes']
+  queue_position int [not null]
+  queue_number int
+  added_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    doctor_id
+    status
+    queue_position
+    priority
+  }
+  
+  Note: 'Storage: izara-doctors-data/queue/{doctorId}.json'
+}
+
+// =====================================================
+// MEETING/TELEMEDICINE
+// Bucket: izara-appointments
+// =====================================================
+
+Table meeting_sessions {
+  id varchar [pk]
+  appointment_id varchar [ref: - appointments.id, not null]
+  start_time timestamp [not null]
+  end_time timestamp
+  duration int [note: 'In minutes']
+  recording_url varchar
+  notes text
+  status enum('scheduled', 'waiting', 'active', 'completed', 'cancelled') [default: 'scheduled']
+  meet_link varchar
+  calendar_event_id varchar
+  patient_joined_at timestamp
+  doctor_joined_at timestamp
+  consent_recorded boolean [default: false]
+  
+  indexes {
+    appointment_id
+    status
+    start_time
+  }
+  
+  Note: 'Storage: izara-appointments/meetings/{id}.json'
+}
+
+Table meeting_participants {
+  id varchar [pk]
+  meeting_id varchar [ref: > meeting_sessions.id, not null]
+  user_id varchar [ref: > users.id, not null]
+  role enum('doctor', 'patient', 'observer')
+  joined_at timestamp
+  left_at timestamp
+  video_enabled boolean [default: true]
+  audio_enabled boolean [default: true]
+  
+  Note: 'Embedded in meeting document'
+}
+
+Table meeting_ai_summaries {
+  id varchar [pk, ref: - meeting_sessions.id]
+  chief_complaint text
+  diagnosis text
+  follow_up_recommended boolean [default: false]
+  follow_up_date date
+  confidence decimal [note: 'AI confidence score 0-1']
+  generated_at timestamp [not null]
+  
+  Note: 'Embedded in meeting document'
+}
+
+Table meeting_symptoms {
+  id varchar [pk]
+  summary_id varchar [ref: > meeting_ai_summaries.id, not null]
+  symptom varchar [not null]
+  
+  Note: 'Embedded in AI summary'
+}
+
+Table meeting_treatment_plans {
+  id varchar [pk]
+  summary_id varchar [ref: > meeting_ai_summaries.id, not null]
+  plan_item varchar [not null]
+  order_num int
+  
+  Note: 'Embedded in AI summary'
+}
+
+Table meeting_red_flags {
+  id varchar [pk]
+  summary_id varchar [ref: > meeting_ai_summaries.id, not null]
+  flag varchar [not null]
+  severity enum('warning', 'critical')
+  
+  Note: 'Embedded in AI summary'
+}
+
+// =====================================================
+// PAYMENTS
+// Bucket: izara-appointments
+// =====================================================
+
+Table payment_transactions {
+  id varchar [pk]
+  appointment_id varchar [ref: > appointments.id, not null]
+  transaction_date timestamp [not null]
+  total_amount decimal [not null, note: 'Thai Baht']
+  paid_amount decimal [not null]
+  remaining_balance decimal
+  currency varchar [default: 'THB']
+  payment_method enum('cash', 'credit_card', 'debit_card', 'bank_transfer', 'promptpay', 'insurance')
+  status enum('pending', 'partial', 'completed', 'refunded', 'cancelled', 'failed') [default: 'pending']
+  receipt_url varchar
+  invoice_url varchar
+  notes text
+  transaction_reference varchar
+  
+  indexes {
+    appointment_id
+    status
+    transaction_date
+  }
+  
+  Note: 'Embedded in appointment.result.payment'
+}
+
+Table service_costs {
+  id varchar [pk]
+  transaction_id varchar [ref: > payment_transactions.id, not null]
+  service_name varchar [not null]
+  unit_price decimal [not null]
+  quantity int [default: 1]
+  total decimal [not null]
+  
+  Note: 'Embedded in payment document'
+}
+
+// =====================================================
+// CONSENT RECORDS (PDPA)
+// Bucket: izara-patients-data
+// =====================================================
+
+Table consent_records {
+  id varchar [pk]
+  patient_id varchar [ref: > patients.id, not null]
+  doctor_id varchar [ref: > doctors.id, not null]
+  consent_type enum('phr-access', 'ehr-access', 'data-sharing', 'research', 'recording')
+  granted boolean [default: false]
+  granted_at timestamp
+  expires_at timestamp
+  signature_url varchar
+  witness_name varchar
+  
+  indexes {
+    patient_id
+    consent_type
+    granted
+  }
+  
+  Note: 'Storage: izara-patients-data/patients/{patientId}/pdpa/consents.json'
+}
+
+Table consent_scopes {
+  id varchar [pk]
+  consent_id varchar [ref: > consent_records.id, not null]
+  scope varchar [not null, note: 'Data type or access scope']
+  
+  Note: 'Embedded in consent record'
+}
+
+// =====================================================
+// REFERENCE DATA
+// Bucket: izara-meta-data
+// =====================================================
+
+Table medications_reference {
+  id varchar [pk]
+  name varchar [not null]
+  generic_name varchar [not null]
+  brand_names varchar [note: 'JSON array']
+  category varchar
+  dosage_forms varchar [note: 'JSON array']
+  strengths varchar [note: 'JSON array']
+  contraindications text
+  side_effects text
+  interactions text
+  
+  indexes {
+    generic_name
+    category
+  }
+  
+  Note: 'Storage: izara-meta-data/medications.json'
+}
+
+Table lab_tests_reference {
+  id varchar [pk]
+  code varchar [not null, unique]
+  name varchar [not null]
+  category varchar
+  specimen_type varchar
+  reference_ranges text [note: 'JSON object']
+  description text
+  
+  indexes {
+    code [unique]
+    category
+  }
+  
+  Note: 'Storage: izara-meta-data/lab-tests.json'
+}
+
+Table icd10_codes {
+  code varchar [pk]
+  description varchar [not null]
+  category varchar
+  chapter varchar
+  
+  indexes {
+    category
+    chapter
+  }
+  
+  Note: 'Storage: izara-meta-data/icd-10-codes.json'
+}
+
+// =====================================================
+// AUDIT LOGGING
+// Bucket: izara-meta-data
+// =====================================================
+
+Table audit_logs {
+  id varchar [pk]
+  user_id varchar [ref: > users.id, not null]
+  action varchar [not null]
+  resource_type varchar [not null]
+  resource_id varchar
+  old_value text [note: 'JSON']
+  new_value text [note: 'JSON']
+  ip_address varchar
+  user_agent varchar
+  timestamp timestamp [not null]
+  
+  indexes {
+    user_id
+    action
+    resource_type
+    timestamp
+  }
+  
+  Note: 'Storage: izara-meta-data/audit/{YYYY-MM-DD}.json'
+}
+
+// =====================================================
+// RELATIONSHIPS SUMMARY
+// =====================================================
+// users 1--1 doctors (for doctor users)
+// users 1--1 admin_privileges (for admin users)
+// doctors 1--* queue_patients
+// doctors 1--* appointments
+// patients 1--* appointments
+// patients 1--* emr_records
+// patients 1--* prescriptions
+// patients 1--* lab_orders
+// patients 1--* consent_records
+// emr_records 1--* diagnoses
+// emr_records 1--1 vital_signs
+// emr_records 1--1 review_of_systems
+// prescriptions 1--* prescription_items
+// lab_orders 1--* lab_tests
+// lab_tests 1--* lab_results
+// appointments 1--1 meeting_sessions
+// appointments 1--1 appointment_results
+// meeting_sessions 1--* meeting_participants

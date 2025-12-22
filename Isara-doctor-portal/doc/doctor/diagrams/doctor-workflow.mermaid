@@ -1,0 +1,112 @@
+%% Doctor Workflow - Main Navigation and Features
+%% Izara Doctor Portal
+
+flowchart TB
+    subgraph Login["🔐 Authentication"]
+        L1[Login Page] --> L2{Validate Credentials}
+        L2 -->|Valid| L3{Check Approval}
+        L2 -->|Invalid| L4[Show Error]
+        L3 -->|Approved| L5[Create Session]
+        L3 -->|Pending| L6[Show Pending Message]
+        L3 -->|Rejected| L7[Show Rejection]
+        L5 --> Dashboard
+    end
+
+    subgraph Dashboard["🏠 Dashboard - Health Studio"]
+        D1[View Stats]
+        D2[Patient Queue]
+        D3[Quick Actions]
+        D4[AI Chat]
+    end
+
+    subgraph PatientMgmt["👥 Patient Management"]
+        P1[Patient List]
+        P2[Search/Filter]
+        P3[Patient Details]
+        P4[View EMR History]
+        P5[Consent Status]
+    end
+
+    subgraph Consultation["💊 Consultation"]
+        C1[Call Patient]
+        C2[Record Consent]
+        C3[Video Call]
+        C4[AI Transcription]
+        C5[Create EMR]
+        C6[Prescribe]
+        C7[Order Labs]
+        C8[Schedule Follow-up]
+    end
+
+    subgraph EMR["📝 EMR Creation"]
+        E1[Select Template]
+        E2[Enter Chief Complaint]
+        E3[Document HPI]
+        E4[Vital Signs]
+        E5[Physical Exam]
+        E6[Assessment]
+        E7[AI ICD-10 Suggestion]
+        E8[Treatment Plan]
+        E9[Sign & Finalize]
+    end
+
+    subgraph Prescribing["💊 E-Prescribing"]
+        RX1[Search Drug]
+        RX2[Safety Check]
+        RX3[Allergy Alert]
+        RX4[Interaction Check]
+        RX5[Set Dosage]
+        RX6[Add Instructions]
+        RX7[Sign Prescription]
+    end
+
+    subgraph LabOrders["🧪 Lab Orders"]
+        LAB1[Select Panel]
+        LAB2[Add Individual Tests]
+        LAB3[Set Urgency]
+        LAB4[Clinical Indication]
+        LAB5[Submit Order]
+        LAB6[Track Status]
+        LAB7[View Results]
+    end
+
+    subgraph Schedule["📅 Schedule"]
+        S1[Set Availability]
+        S2[View Calendar]
+        S3[Book Appointment]
+        S4[Manage Slots]
+    end
+
+    %% Connections
+    Dashboard --> PatientMgmt
+    Dashboard --> Schedule
+    Dashboard --> Consultation
+    
+    PatientMgmt --> Consultation
+    Consultation --> EMR
+    Consultation --> Prescribing
+    Consultation --> LabOrders
+    
+    C1 --> C2 --> C3 --> C4 --> C5
+    C5 --> C6
+    C5 --> C7
+    C5 --> C8
+
+    E1 --> E2 --> E3 --> E4 --> E5 --> E6 --> E7 --> E8 --> E9
+
+    RX1 --> RX2
+    RX2 --> RX3
+    RX2 --> RX4
+    RX3 --> RX5
+    RX4 --> RX5
+    RX5 --> RX6 --> RX7
+
+    LAB1 --> LAB3
+    LAB2 --> LAB3
+    LAB3 --> LAB4 --> LAB5 --> LAB6 --> LAB7
+
+    style Dashboard fill:#e8f5e9
+    style Consultation fill:#e3f2fd
+    style EMR fill:#fff3e0
+    style Prescribing fill:#f3e5f5
+    style LabOrders fill:#fce4ec

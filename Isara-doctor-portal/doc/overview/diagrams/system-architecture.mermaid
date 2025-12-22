@@ -1,0 +1,103 @@
+flowchart TB
+    %% Izara Doctor Portal - System Architecture Diagram
+    
+    subgraph Client["🌐 Client Layer"]
+        direction TB
+        WEB["React Web Application<br/>TypeScript + Vite<br/>Port 3010"]
+        
+        subgraph Components["UI Components"]
+            AUTH_UI["Authentication"]
+            DASH["Dashboard"]
+            PAT_MGT["Patient Management"]
+            EMR_UI["EMR Editor"]
+            RX_UI["Prescribing"]
+            LAB_UI["Lab Orders"]
+            QUEUE_UI["Queue Management"]
+            MEET_UI["Video Meeting"]
+            AI_UI["AI Copilot"]
+        end
+    end
+    
+    subgraph Services["🔧 Frontend Services"]
+        direction TB
+        AUTH_SVC["Auth Service"]
+        GCS_SVC["GCS Data Service"]
+        APT_SVC["Appointment Service"]
+        EMR_SVC["EMR Service"]
+        PAT_SVC["Patient Service"]
+        GEMINI_SVC["Gemini AI Service"]
+    end
+    
+    subgraph Backend["🖧 Backend Servers"]
+        direction TB
+        AUTH_SERVER["Auth Server<br/>Port 3011<br/>Express.js"]
+        GCS_SERVER["GCS API Server<br/>Port 3012<br/>Express.js"]
+        MAIN_SERVER["Main API Server<br/>Port 3009<br/>Express.js"]
+        WS_SERVER["WebSocket Server<br/>Socket.io<br/>/ws"]
+    end
+    
+    subgraph External["☁️ External Services"]
+        direction TB
+        GCS["Google Cloud Storage<br/>5 Buckets"]
+        GEMINI["Google Gemini AI<br/>gemini-2.0-flash-exp"]
+        GMAIL["Gmail API<br/>Notifications"]
+        GCAL["Google Calendar<br/>Scheduling"]
+        MEET["Google Meet<br/>Video Calls"]
+    end
+    
+    subgraph Storage["📦 GCS Buckets"]
+        direction TB
+        CREDS_BUCKET["izara-users-credentials<br/>Users, Sessions"]
+        DOCTORS_BUCKET["izara-doctors-data<br/>Doctors, Queues"]
+        PATIENTS_BUCKET["izara-patients-data<br/>Patients, EMRs, Rx"]
+        APT_BUCKET["izara-appointments<br/>Appointments, Meetings"]
+        META_BUCKET["izara-meta-data<br/>Reference Data, Audit"]
+    end
+    
+    %% Client to Services
+    WEB --> AUTH_SVC
+    WEB --> GCS_SVC
+    WEB --> APT_SVC
+    WEB --> EMR_SVC
+    WEB --> PAT_SVC
+    WEB --> GEMINI_SVC
+    
+    %% Services to Backend
+    AUTH_SVC --> AUTH_SERVER
+    GCS_SVC --> GCS_SERVER
+    APT_SVC --> MAIN_SERVER
+    EMR_SVC --> GCS_SERVER
+    PAT_SVC --> GCS_SERVER
+    GEMINI_SVC --> GEMINI
+    
+    %% Backend to External
+    AUTH_SERVER --> GCS
+    GCS_SERVER --> GCS
+    MAIN_SERVER --> GCS
+    MAIN_SERVER --> GMAIL
+    MAIN_SERVER --> GCAL
+    MAIN_SERVER --> MEET
+    
+    %% GCS to Buckets
+    GCS --> CREDS_BUCKET
+    GCS --> DOCTORS_BUCKET
+    GCS --> PATIENTS_BUCKET
+    GCS --> APT_BUCKET
+    GCS --> META_BUCKET
+    
+    %% Real-time connection
+    WEB <-.->|WebSocket| WS_SERVER
+    WS_SERVER --> MAIN_SERVER
+    
+    %% Styling
+    classDef client fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
+    classDef service fill:#fff3e0,stroke:#ef6c00,stroke-width:2px
+    classDef backend fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+    classDef external fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+    classDef storage fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    
+    class WEB,AUTH_UI,DASH,PAT_MGT,EMR_UI,RX_UI,LAB_UI,QUEUE_UI,MEET_UI,AI_UI client
+    class AUTH_SVC,GCS_SVC,APT_SVC,EMR_SVC,PAT_SVC,GEMINI_SVC service
+    class AUTH_SERVER,GCS_SERVER,MAIN_SERVER,WS_SERVER backend
+    class GCS,GEMINI,GMAIL,GCAL,MEET external
+    class CREDS_BUCKET,DOCTORS_BUCKET,PATIENTS_BUCKET,APT_BUCKET,META_BUCKET storage
