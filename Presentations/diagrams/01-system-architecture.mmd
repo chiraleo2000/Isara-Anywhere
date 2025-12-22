@@ -1,0 +1,99 @@
+%%{init: {
+  'theme': 'base',
+  'themeVariables': {
+    'primaryColor': '#E8F5E9',
+    'primaryTextColor': '#1B5E20',
+    'primaryBorderColor': '#4CAF50',
+    'lineColor': '#2E7D32',
+    'secondaryColor': '#E3F2FD',
+    'tertiaryColor': '#FFF3E0',
+    'fontSize': '28px',
+    'fontFamily': 'Segoe UI, Arial'
+  }
+}}%%
+
+flowchart TB
+    subgraph USERS["👥 USERS"]
+        direction LR
+        P["🧑‍🤝‍🧑 Patients<br/>ผู้ป่วย"]
+        D["👨‍⚕️ Doctors<br/>แพทย์"]
+    end
+
+    subgraph FRONTENDS["🌐 WEB PORTALS"]
+        direction LR
+        PP["📱 Patient Portal<br/>React + Vite :5174"]
+        DP["💻 Doctor Portal<br/>React + Vite :5173"]
+    end
+
+    subgraph CLOUD["☁️ GOOGLE CLOUD RUN"]
+        direction LR
+        PP_SVC["🚀 Patient Service<br/>asia-southeast1"]
+        DP_SVC["🚀 Doctor Service<br/>asia-southeast1"]
+    end
+
+    subgraph BACKENDS["⚙️ BACKEND SERVERS"]
+        direction LR
+        AUTH["🔐 Auth Server<br/>Express :3011"]
+        GCS_API["📦 GCS API<br/>Express :3012"]
+    end
+
+    subgraph GCS["📦 GCS - 5 BUCKETS"]
+        direction TB
+        B1["🔑 izara-users-credentials<br/>Authentication Data"]
+        B2["💚 izara-patients-data<br/>PHR & Patient Profiles"]
+        B3["💙 izara-doctors-data<br/>EMR & Doctor Profiles"]
+        B4["📅 izara-appointments<br/>Scheduling & Meetings"]
+        B5["📚 izara-meta-data<br/>Content & System Config"]
+    end
+
+    subgraph GOOGLE["🔗 GOOGLE SERVICES"]
+        direction LR
+        JITSI["📹 Jitsi Meet<br/>Video Calls"]
+        GEMINI["🤖 Gemini AI<br/>Health Assistant"]
+        MAPS["🗺️ Maps API<br/>Healthcare Locations"]
+    end
+
+    %% User to Portal connections
+    P --> PP
+    D --> DP
+
+    %% Portal to Cloud Run
+    PP --> PP_SVC
+    DP --> DP_SVC
+
+    %% Cloud Run to Backends
+    PP_SVC --> AUTH
+    PP_SVC --> GCS_API
+    DP_SVC --> AUTH
+    DP_SVC --> GCS_API
+
+    %% Backends to Storage
+    AUTH --> B1
+    GCS_API --> B1
+    GCS_API --> B2
+    GCS_API --> B3
+    GCS_API --> B4
+    GCS_API --> B5
+
+    %% Portal to Google Services (dotted lines)
+    PP -.-> JITSI
+    PP -.-> GEMINI
+    PP -.-> MAPS
+    DP -.-> JITSI
+    DP -.-> GEMINI
+
+    %% Styling
+    classDef userStyle fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px,color:#1B5E20
+    classDef frontendStyle fill:#E3F2FD,stroke:#2196F3,stroke-width:2px,color:#0D47A1
+    classDef cloudStyle fill:#FFF3E0,stroke:#FF9800,stroke-width:2px,color:#E65100
+    classDef backendStyle fill:#F3E5F5,stroke:#9C27B0,stroke-width:2px,color:#4A148C
+    classDef storageStyle fill:#ECEFF1,stroke:#607D8B,stroke-width:2px,color:#37474F
+    classDef googleStyle fill:#E0F7FA,stroke:#00BCD4,stroke-width:2px,color:#006064
+
+    class P,D userStyle
+    class PP,DP frontendStyle
+    class PP_SVC,DP_SVC cloudStyle
+    class AUTH,GCS_API backendStyle
+    class B1,B2,B3,B4,B5 storageStyle
+    class JITSI,GEMINI,MAPS googleStyle
+

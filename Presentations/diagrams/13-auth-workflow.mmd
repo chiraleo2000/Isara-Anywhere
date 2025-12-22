@@ -1,0 +1,93 @@
+%%{init: {
+  'theme': 'base',
+  'themeVariables': {
+    'primaryColor': '#E8F5E9',
+    'primaryTextColor': '#1B5E20',
+    'primaryBorderColor': '#4CAF50',
+    'lineColor': '#388E3C',
+    'secondaryColor': '#E3F2FD',
+    'tertiaryColor': '#FFF3E0',
+    'fontSize': '28px',
+    'fontFamily': 'Arial, sans-serif'
+  }
+}}%%
+
+flowchart TB
+    subgraph TITLE["🔐 AUTHENTICATION WORKFLOW<br/>ขั้นตอนการยืนยันตัวตน"]
+        direction TB
+    end
+
+    START(["🚀 START<br/>เริ่มต้น"]) --> ENTER_EMAIL
+
+    subgraph EMAIL["📧 EMAIL AUTH<br/>ยืนยันทางอีเมล"]
+        ENTER_EMAIL["📝 Enter Email<br/>กรอกอีเมล"]
+        ENTER_PASS["🔒 Enter Password<br/>กรอกรหัสผ่าน"]
+        VALIDATE_CRED["✅ Validate<br/>ตรวจสอบ"]
+        EMAIL_ERROR{{"❌ Valid?<br/>ถูกต้อง?"}}
+    end
+
+    subgraph BACKEND_AUTH["🔐 PASSWORD CHECKING<br/>ตรวจสอบรหัสผ่าน"]
+        HASH_CHECK["🔒 Check Password Match<br/>เช็ครหัสผ่านตรงกันไหม"]
+        VALIDATE_CREDS["✅ Match Password<br/>จับคู่รหัสผ่าน"]
+        CREDS_VALID{{"✅ Correct?<br/>ถูกต้อง?"}}
+        GENERATE_SESSION["🎫 Create Login Key<br/>สร้างกุญแจเข้าระบบ"]
+    end
+
+    subgraph GCS_AUTH["☁️ USER DATABASE<br/>ฐานข้อมูลผู้ใช้"]
+        CHECK_USER["🔍 Find User Account<br/>ค้นหาบัญชีผู้ใช้"]
+        USER_EXISTS{{"👤 Account Found?<br/>เจอบัญชีไหม?"}}
+        CREATE_USER["➕ Create New Account<br/>สร้างบัญชีใหม่"]
+        LOAD_PROFILE["📂 Get User Info<br/>ดึงข้อมูลผู้ใช้"]
+        SAVE_GCS["💾 Save User Data<br/>บันทึกข้อมูล"]
+    end
+
+    subgraph SESSION["🎫 REMEMBER LOGIN<br/>จดจำการเข้าสู่ระบบ"]
+        CREATE_SESSION["🎫 Start Login Session<br/>เริ่มเซสชั่นเข้าระบบ"]
+        SET_COOKIE["🍪 Remember Me<br/>จดจำฉัน"]
+        STORE_LOCAL["💾 Save Login Info<br/>บันทึกข้อมูลล็อกอิน"]
+    end
+
+    subgraph COMPLETE["✅ COMPLETION<br/>เสร็จสิ้น"]
+        REDIRECT["🔄 Redirect<br/>เปลี่ยนหน้า"]
+        DASHBOARD["🏠 Dashboard<br/>หน้าหลัก"]
+    end
+
+    ERROR_BOX["❌ LOGIN FAILED<br/>ข้อมูลไม่ถูกต้อง<br/>กรุณาลองใหม่"]
+    END_NODE(["🎉 LOGGED IN<br/>เข้าสู่ระบบสำเร็จ"])
+
+    %% Flows
+    ENTER_EMAIL --> ENTER_PASS --> VALIDATE_CRED --> EMAIL_ERROR
+    EMAIL_ERROR -->|No| ERROR_BOX --> ENTER_EMAIL
+    EMAIL_ERROR -->|Yes| CHECK_USER
+    
+    CHECK_USER --> USER_EXISTS
+    USER_EXISTS -->|Yes| LOAD_PROFILE --> HASH_CHECK
+    USER_EXISTS -->|No| ERROR_BOX
+    
+    HASH_CHECK --> VALIDATE_CREDS --> CREDS_VALID
+    CREDS_VALID -->|No| ERROR_BOX
+    CREDS_VALID -->|Yes| GENERATE_SESSION --> CREATE_SESSION
+    
+    CREATE_SESSION --> SET_COOKIE --> STORE_LOCAL --> REDIRECT --> DASHBOARD --> END_NODE
+
+    %% Styling
+    classDef titleStyle fill:#1B5E20,stroke:#004D40,stroke-width:3px,color:#FFFFFF,font-size:20px,font-weight:bold
+    classDef startStyle fill:#4CAF50,stroke:#2E7D32,stroke-width:2px,color:#FFFFFF,font-size:16px
+    classDef emailStyle fill:#FFF3E0,stroke:#FF9800,stroke-width:2px,color:#E65100,font-size:14px
+    classDef passwordStyle fill:#FFEBEE,stroke:#F44336,stroke-width:2px,color:#B71C1C,font-size:14px
+    classDef databaseStyle fill:#E0F7FA,stroke:#00BCD4,stroke-width:2px,color:#006064,font-size:14px
+    classDef rememberStyle fill:#FFF8E1,stroke:#FFC107,stroke-width:2px,color:#FF6F00,font-size:14px
+    classDef completeStyle fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px,color:#1B5E20,font-size:14px
+    classDef errorStyle fill:#FFCDD2,stroke:#F44336,stroke-width:2px,color:#B71C1C,font-size:14px
+    classDef decisionStyle fill:#FFECB3,stroke:#FFA000,stroke-width:2px,color:#E65100,font-size:14px
+    classDef endStyle fill:#4CAF50,stroke:#2E7D32,stroke-width:2px,color:#FFFFFF,font-size:16px
+
+    class TITLE titleStyle
+    class START,END_NODE startStyle
+    class ENTER_EMAIL,ENTER_PASS,VALIDATE_CRED,EMAIL_ERROR emailStyle
+    class HASH_CHECK,VALIDATE_CREDS,CREDS_VALID,GENERATE_SESSION passwordStyle
+    class CHECK_USER,USER_EXISTS,CREATE_USER,LOAD_PROFILE,SAVE_GCS databaseStyle
+    class CREATE_SESSION,SET_COOKIE,STORE_LOCAL rememberStyle
+    class REDIRECT,DASHBOARD completeStyle
+    class ERROR_BOX errorStyle
+

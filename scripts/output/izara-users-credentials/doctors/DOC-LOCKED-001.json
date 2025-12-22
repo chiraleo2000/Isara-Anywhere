@@ -1,0 +1,27 @@
+{
+  "id": "DOC-LOCKED-001",
+  "email": "locked.doctor@izara.com",
+  "passwordHash": "$2b$10$MRJKb6TxmpeUlf1hvuPeCOo1L2NKu8rsOfYJZYQoDvdQ1L7cQiCwa",
+  "role": "doctor",
+  "name": "Dr. Locked Doctor",
+  "nameThai": "นพ. ถูกล็อค",
+  "avatarUrl": "https://api.dicebear.com/7.x/avataaars/svg?seed=doc-locked",
+  "specialty": "Dermatology",
+  "specialtyThai": "ผิวหนัง",
+  "hospital": "Bumrungrad Hospital",
+  "medicalLicenseNumber": "MD-LOCKED-001",
+  "isActive": false,
+  "isVerified": true,
+  "isApproved": true,
+  "status": "locked",
+  "approvalStatus": "approved",
+  "lockReason": "Too many failed login attempts",
+  "lockedAt": "2025-12-03T16:41:23.398Z",
+  "createdAt": "2024-11-05T16:41:23.398Z",
+  "lastLogin": "2025-12-03T16:41:23.398Z",
+  "preferences": {
+    "language": "th",
+    "notifications": true,
+    "theme": "light"
+  }
+}

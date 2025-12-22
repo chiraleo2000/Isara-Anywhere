@@ -1,0 +1,20 @@
+{
+  "timestamp": "2025-12-18T02:51:16.351Z",
+  "summary": {
+    "total": 1,
+    "passed": 1,
+    "failed": 0,
+    "passRate": "100.0",
+    "totalDuration": "40.04"
+  },
+  "suites": [
+    {
+      "suite": "jitsi",
+      "name": "Jitsi Video Meeting",
+      "passed": true,
+      "duration": 38.03,
+      "exitCode": 0,
+      "output": ""
+    }
+  ]
+}

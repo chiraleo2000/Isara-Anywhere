@@ -1,0 +1,94 @@
+%%{init: {
+  'theme': 'base',
+  'themeVariables': {
+    'primaryColor': '#ECEFF1',
+    'primaryTextColor': '#263238',
+    'primaryBorderColor': '#607D8B',
+    'lineColor': '#455A64',
+    'secondaryColor': '#E3F2FD',
+    'tertiaryColor': '#FFF3E0',
+    'fontSize': '28px',
+    'fontFamily': 'Segoe UI, Arial'
+  }
+}}%%
+
+flowchart TB
+    INTERNET(["🌍 INTERNET"]) --> LB
+
+    subgraph NETWORK["🌐 NETWORKING"]
+        LB["⚖️ Load Balancer"]
+        DNS["🌐 Cloud DNS"]
+        ARMOR["🛡️ Cloud Armor"]
+    end
+
+    subgraph COMPUTE["⚡ CLOUD RUN"]
+        CR_PAT["📱 Patient Portal<br/>asia-southeast1"]
+        CR_DOC["💻 Doctor Portal<br/>asia-southeast1"]
+    end
+
+    subgraph STORAGE["☁️ 5 GCS BUCKETS"]
+        B1["🔑 izara-users-credentials"]
+        B2["💚 izara-patients-data"]
+        B3["💙 izara-doctors-data"]
+        B4["📅 izara-appointments"]
+        B5["📚 izara-meta-data"]
+    end
+
+    subgraph IAM["🔒 SECURITY"]
+        SVC_ACC["👤 Service Accounts"]
+        IAM_ROLES["🎭 IAM Roles"]
+    end
+
+    subgraph BUILD["🔧 CI/CD"]
+        GCB["🏗️ Cloud Build"]
+        AR["📦 Artifact Registry"]
+    end
+
+    subgraph MONITOR["📊 MONITORING"]
+        LOG["📋 Cloud Logging"]
+        MON["📈 Cloud Monitoring"]
+    end
+
+    %% Connections
+    LB --> CR_PAT
+    LB --> CR_DOC
+    ARMOR --> LB
+    DNS --> LB
+    
+    CR_PAT --> B1
+    CR_PAT --> B2
+    CR_PAT --> B4
+    CR_PAT --> B5
+    
+    CR_DOC --> B1
+    CR_DOC --> B3
+    CR_DOC --> B4
+    CR_DOC --> B5
+    
+    SVC_ACC --> CR_PAT
+    SVC_ACC --> CR_DOC
+    IAM_ROLES --> STORAGE
+    
+    GCB --> AR
+    AR --> CR_PAT
+    AR --> CR_DOC
+    
+    CR_PAT --> LOG
+    CR_DOC --> LOG
+    LOG --> MON
+
+    %% Styling
+    classDef netStyle fill:#F3E5F5,stroke:#9C27B0,stroke-width:2px,color:#4A148C
+    classDef computeStyle fill:#E3F2FD,stroke:#2196F3,stroke-width:2px,color:#0D47A1
+    classDef storageStyle fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px,color:#1B5E20
+    classDef iamStyle fill:#FFF3E0,stroke:#FF9800,stroke-width:2px,color:#E65100
+    classDef buildStyle fill:#FFF8E1,stroke:#FFC107,stroke-width:2px,color:#FF6F00
+    classDef monitorStyle fill:#E0F7FA,stroke:#00BCD4,stroke-width:2px,color:#006064
+
+    class LB,DNS,ARMOR netStyle
+    class CR_PAT,CR_DOC computeStyle
+    class B1,B2,B3,B4,B5 storageStyle
+    class SVC_ACC,IAM_ROLES iamStyle
+    class GCB,AR buildStyle
+    class LOG,MON monitorStyle
+

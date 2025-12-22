@@ -1,0 +1,200 @@
+{
+  "patientId": "PATIENT-001",
+  "events": [
+    {
+      "id": "timeline-001",
+      "date": "2025-12-05T16:57:16.794Z",
+      "type": "consultation",
+      "title": "Follow-up Consultation",
+      "titleThai": "ตรวจติดตามอาการ",
+      "description": "Hypertension follow-up - BP controlled, continue current medication",
+      "descriptionThai": "ติดตามโรคความดันสูง - ความดันคุมได้ดี ใช้ยาเดิมต่อ",
+      "doctorName": "Dr. Test Doctor",
+      "hospitalName": "X Hospital Bangkok",
+      "documents": [],
+      "metadata": {
+        "emrId": "EMR-DEMO-001",
+        "appointmentId": "APT-DEMO-002"
+      }
+    },
+    {
+      "id": "timeline-002",
+      "date": "2025-09-08T16:57:16.794Z",
+      "type": "lab",
+      "title": "Laboratory Tests",
+      "titleThai": "ตรวจเลือด",
+      "description": "Lipid Profile and Renal Function tests - slight elevation in LDL",
+      "descriptionThai": "ตรวจไขมันในเลือดและการทำงานของไต - LDL สูงเล็กน้อย",
+      "doctorName": "Dr. Test Doctor",
+      "hospitalName": "X Hospital Bangkok",
+      "documents": [],
+      "metadata": {
+        "labOrderIds": [
+          "LAB-DEMO-001",
+          "LAB-DEMO-002"
+        ]
+      }
+    },
+    {
+      "id": "timeline-003",
+      "date": "2025-09-08T16:57:16.794Z",
+      "type": "imaging",
+      "title": "Chest X-Ray",
+      "titleThai": "เอกซเรย์ทรวงอก",
+      "description": "Baseline chest X-ray - Normal findings",
+      "descriptionThai": "เอกซเรย์ทรวงอกพื้นฐาน - ผลปกติ",
+      "doctorName": "Dr. Test Doctor",
+      "hospitalName": "X Hospital Bangkok",
+      "documents": [],
+      "metadata": {
+        "imagingOrderId": "IMG-DEMO-001"
+      }
+    },
+    {
+      "id": "timeline-004",
+      "date": "2025-09-06T16:57:16.794Z",
+      "type": "diagnosis",
+      "title": "Hypertension Diagnosis",
+      "titleThai": "วินิจฉัยโรคความดันโลหิตสูง",
+      "description": "Initial diagnosis of essential hypertension - Started Amlodipine 5mg",
+      "descriptionThai": "วินิจฉัยโรคความดันโลหิตสูงปฐมภูมิ - เริ่มยา Amlodipine 5mg",
+      "doctorName": "Dr. Test Doctor",
+      "hospitalName": "X Hospital Bangkok",
+      "documents": [],
+      "metadata": {
+        "emrId": "EMR-DEMO-002",
+        "appointmentId": "APT-DEMO-003",
+        "icd10": "I10"
+      }
+    },
+    {
+      "id": "timeline-005",
+      "date": "2025-10-11T16:57:16.794Z",
+      "type": "vaccination",
+      "title": "Influenza Vaccination",
+      "titleThai": "รับวัคซีนไข้หวัดใหญ่",
+      "description": "2025 Influenza Vaccine administered",
+      "descriptionThai": "รับวัคซีนไข้หวัดใหญ่ประจำปี 2025",
+      "hospitalName": "X Hospital Bangkok",
+      "documents": [],
+      "metadata": {
+        "vaccineName": "Influenza 2025",
+        "manufacturer": "Sanofi"
+      }
+    },
+    {
+      "id": "timeline-006",
+      "date": "2025-06-13T16:57:16.794Z",
+      "type": "consultation",
+      "title": "Sick Visit",
+      "titleThai": "ตรวจรักษาอาการป่วย",
+      "description": "Acute upper respiratory infection",
+      "descriptionThai": "การติดเชื้อทางเดินหายใจส่วนบนเฉียบพลัน",
+      "doctorName": "Dr. Test Doctor",
+      "hospitalName": "X Hospital Bangkok",
+      "documents": [],
+      "metadata": {
+        "emrId": "EMR-DEMO-003",
+        "appointmentId": "APT-DEMO-004",
+        "icd10": "J06.9"
+      }
+    },
+    {
+      "id": "timeline-007",
+      "date": "2025-05-25T16:57:16.794Z",
+      "type": "lab",
+      "title": "Annual Health Screening Labs",
+      "titleThai": "ตรวจเลือดเพื่อสุขภาพประจำปี",
+      "description": "Complete Blood Count and Metabolic Panel - All results within normal limits",
+      "descriptionThai": "ตรวจเลือดสมบูรณ์และระดับน้ำตาล - ผลทุกอย่างปกติ",
+      "doctorName": "Dr. Test Doctor",
+      "hospitalName": "X Hospital Bangkok",
+      "documents": [],
+      "metadata": {
+        "labOrderIds": [
+          "LAB-DEMO-003",
+          "LAB-DEMO-004"
+        ]
+      }
+    },
+    {
+      "id": "timeline-008",
+      "date": "2025-05-24T16:57:16.794Z",
+      "type": "consultation",
+      "title": "Annual Physical Examination",
+      "titleThai": "ตรวจสุขภาพประจำปี",
+      "description": "Comprehensive annual health check - Overall good health status",
+      "descriptionThai": "ตรวจสุขภาพประจำปีอย่างละเอียด - สุขภาพโดยรวมดี",
+      "doctorName": "Dr. Test Doctor",
+      "hospitalName": "X Hospital Bangkok",
+      "documents": [],
+      "metadata": {
+        "emrId": "EMR-DEMO-004",
+        "icd10": "Z00.00"
+      }
+    },
+    {
+      "id": "timeline-009",
+      "date": "2025-04-04T16:57:16.794Z",
+      "type": "consultation",
+      "title": "Acute Back Pain",
+      "titleThai": "อาการปวดหลังเฉียบพลัน",
+      "description": "Lower back pain after lifting - Treated with NSAIDs and rest",
+      "descriptionThai": "ปวดหลังส่วนล่างหลังยกของหนัก - รักษาด้วยยาแก้ปวดและพักผ่อน",
+      "doctorName": "Dr. Test Doctor",
+      "hospitalName": "X Hospital Bangkok",
+      "documents": [],
+      "metadata": {
+        "emrId": "EMR-DEMO-005",
+        "icd10": "M54.5"
+      }
+    },
+    {
+      "id": "timeline-010",
+      "date": "2025-02-05T16:57:16.794Z",
+      "type": "lab",
+      "title": "H. pylori Test",
+      "titleThai": "ตรวจเชื้อ H. pylori",
+      "description": "Stool antigen test for H. pylori - Negative result",
+      "descriptionThai": "ตรวจหาเชื้อ H. pylori ในอุจจาระ - ผลเป็นลบ",
+      "doctorName": "Dr. Test Doctor",
+      "hospitalName": "X Hospital Bangkok",
+      "documents": [],
+      "metadata": {
+        "labOrderId": "LAB-DEMO-005"
+      }
+    },
+    {
+      "id": "timeline-011",
+      "date": "2025-02-03T16:57:16.794Z",
+      "type": "diagnosis",
+      "title": "GERD Diagnosis",
+      "titleThai": "วินิจฉัยโรคกรดไหลย้อน",
+      "description": "Diagnosed with gastroesophageal reflux disease - Started PPI therapy",
+      "descriptionThai": "วินิจฉัยโรคกรดไหลย้อน - เริ่มยาลดกรด",
+      "doctorName": "Dr. Test Doctor",
+      "hospitalName": "X Hospital Bangkok",
+      "documents": [],
+      "metadata": {
+        "emrId": "EMR-DEMO-006",
+        "icd10": "K21.0"
+      }
+    },
+    {
+      "id": "timeline-012",
+      "date": "2024-12-10T16:57:16.794Z",
+      "type": "vaccination",
+      "title": "COVID-19 Booster",
+      "titleThai": "วัคซีนโควิด-19 เข็มกระตุ้น",
+      "description": "COVID-19 booster vaccine (Pfizer) - No adverse reactions",
+      "descriptionThai": "วัคซีนโควิด-19 เข็มกระตุ้น (ไฟเซอร์) - ไม่มีผลข้างเคียง",
+      "hospitalName": "Bangkok Hospital",
+      "documents": [],
+      "metadata": {
+        "vaccineName": "COVID-19 Booster",
+        "manufacturer": "Pfizer-BioNTech",
+        "dose": "Booster"
+      }
+    }
+  ]
+}

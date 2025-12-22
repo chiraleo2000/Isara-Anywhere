@@ -1,0 +1,80 @@
+%%{init: {
+  'theme': 'base',
+  'themeVariables': {
+    'primaryColor': '#F3E5F5',
+    'primaryTextColor': '#4A148C',
+    'primaryBorderColor': '#9C27B0',
+    'lineColor': '#7B1FA2',
+    'secondaryColor': '#E3F2FD',
+    'tertiaryColor': '#E8F5E9',
+    'fontSize': '28px',
+    'fontFamily': 'Segoe UI, Arial'
+  }
+}}%%
+
+flowchart LR
+    subgraph ACCESS["🔐 ACCESS"]
+        A1["🔑 Login"]
+        A2["🆔 Verify Identity"]
+        A3["📂 Load PHR"]
+    end
+
+    subgraph VIEW["👀 VIEW RECORDS"]
+        B1["📊 Summary"]
+        B2["💓 Vitals"]
+        B3["⚠️ Allergies"]
+        B4["💊 Medications"]
+        B5["🧪 Lab Results"]
+    end
+
+    subgraph MANAGE["✏️ MANAGE"]
+        C1["➕ Add Vitals"]
+        C2["⚠️ Add Allergy"]
+        C3["📄 Upload Doc"]
+        C4["👤 Edit Profile"]
+    end
+
+    subgraph SHARE["🔗 SHARE"]
+        D1["👨‍⚕️ Share Doctor"]
+        D2["👨‍👩‍👧 Share Family"]
+        D3["🔐 Set Access"]
+    end
+
+    subgraph SYNC["🔄 SYNC"]
+        E1["🔄 Auto Sync"]
+        E2["📋 Sync from EMR"]
+        E3["☁️ Save GCS<br/>izara-patients-data"]
+    end
+
+    subgraph EXPORT["📤 EXPORT"]
+        F1["📄 Export PDF"]
+        F2["🖨️ Print"]
+        F3["⬇️ Download"]
+    end
+
+    %% Flows
+    A1 --> A2 --> A3
+    A3 --> B1 --> B2 --> B3 --> B4 --> B5
+    B5 --> C1 --> C2 --> C3 --> C4
+    C4 --> D1 --> D2 --> D3
+    D3 --> E1 --> E2 --> E3
+    E3 --> F1 --> F2 --> F3
+
+    %% Styling
+    classDef accessStyle fill:#E3F2FD,stroke:#2196F3,stroke-width:2px,color:#0D47A1
+    classDef viewStyle fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px,color:#1B5E20
+    classDef manageStyle fill:#F3E5F5,stroke:#9C27B0,stroke-width:2px,color:#4A148C
+    classDef shareStyle fill:#FFF8E1,stroke:#FFC107,stroke-width:2px,color:#FF6F00
+    classDef syncStyle fill:#FFEBEE,stroke:#F44336,stroke-width:2px,color:#B71C1C
+    classDef exportStyle fill:#ECEFF1,stroke:#607D8B,stroke-width:2px,color:#263238
+
+    class A1,A2,A3 accessStyle
+    class B1,B2,B3,B4,B5 viewStyle
+    class C1,C2,C3,C4 manageStyle
+    class D1,D2,D3 shareStyle
+    class E1,E2,E3 syncStyle
+    class F1,F2,F3 exportStyle
+    class SHARE_DOCTOR,SHARE_FAMILY,SET_ACCESS,REVOKE_ACCESS shareStyle
+    class AUTO_SYNC,SYNC_EMR,SYNC_APPT,GCS_SAVE syncStyle
+    class EXPORT_PDF,EXPORT_PRINT,DOWNLOAD exportStyle
+

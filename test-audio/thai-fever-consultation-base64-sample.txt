@@ -1,0 +1,35 @@
+# Base64 Audio Sample for Testing
+# Script: thai-fever-consultation
+# Language: th-TH
+
+## Sample (minimal valid audio):
+UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA=
+
+## Usage:
+POST /api/video-meeting/:appointmentId/transcribe-audio
+{
+  "audioBase64": "<paste-base64-here>",
+  "encoding": "LINEAR16",
+  "languageCode": "th-TH"
+}
+
+## Expected Transcript:
+หมอ: สวัสดีครับ มีอะไรให้ช่วยครับ
+
+ผู้ป่วย: มีไข้มาสามวันแล้วครับ ตัวร้อนมาก
+
+หมอ: วัดไข้ได้เท่าไหร่ครับ
+
+ผู้ป่วย: ประมาณ 38.5 องศาครับ
+
+หมอ: มีอาการอื่นร่วมด้วยไหมครับ เช่น ไอ น้ำมูก เจ็บคอ
+
+ผู้ป่วย: มีเจ็บคอนิดหน่อยครับ กลืนน้ำลายแล้วเจ็บ
+
+หมอ: ขอดูคอหน่อยนะครับ
+
+หมอ: คอแดงเล็กน้อย น่าจะเป็นไข้หวัดทั่วไปครับ
+
+หมอ: ผมจะสั่งยาลดไข้และยาแก้อักเสบให้ ทานยาตามที่สั่ง ดื่มน้ำมากๆ และพักผ่อนให้เพียงพอนะครับ
+
+ผู้ป่วย: ครับ ขอบคุณครับหมอ

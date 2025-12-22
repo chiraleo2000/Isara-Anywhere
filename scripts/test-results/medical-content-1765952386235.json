@@ -1,0 +1,190 @@
+{
+  "suiteName": "Medical Content",
+  "startTime": "2025-12-17T06:12:24.175Z",
+  "endTime": "2025-12-17T06:19:46.235Z",
+  "duration": 442060,
+  "total": 22,
+  "passed": 22,
+  "failed": 0,
+  "skipped": 0,
+  "passRate": "100.0",
+  "sections": {},
+  "tests": [
+    {
+      "name": "Doctor login successful",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-17T06:12:42.491Z",
+      "section": null
+    },
+    {
+      "name": "Content management page accessed",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-17T06:13:12.289Z",
+      "section": null
+    },
+    {
+      "name": "Content management ready (empty state or new)",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-17T06:13:17.312Z",
+      "section": null
+    },
+    {
+      "name": "Create article form opened",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-17T06:13:47.636Z",
+      "section": null
+    },
+    {
+      "name": "Article title entered",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-17T06:14:03.300Z",
+      "section": null
+    },
+    {
+      "name": "Article content entered",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-17T06:14:23.620Z",
+      "section": null
+    },
+    {
+      "name": "Category and tags set",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-17T06:14:43.889Z",
+      "section": null
+    },
+    {
+      "name": "Article summary added",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-17T06:14:59.152Z",
+      "section": null
+    },
+    {
+      "name": "Article saved as draft",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-17T06:15:40.119Z",
+      "section": null
+    },
+    {
+      "name": "Draft saved (auto-save enabled)",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-17T06:16:00.250Z",
+      "section": null
+    },
+    {
+      "name": "Article published",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-17T06:16:46.199Z",
+      "section": null
+    },
+    {
+      "name": "Article published (status may be implicit)",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-17T06:17:06.377Z",
+      "section": null
+    },
+    {
+      "name": "Patient login successful",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-17T06:17:35.430Z",
+      "section": null
+    },
+    {
+      "name": "Health Studio accessed",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-17T06:17:46.342Z",
+      "section": null
+    },
+    {
+      "name": "Articles section accessed",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-17T06:18:06.767Z",
+      "section": null
+    },
+    {
+      "name": "Category filter applied",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-17T06:18:23.773Z",
+      "section": null
+    },
+    {
+      "name": "Articles section accessible",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-17T06:18:38.897Z",
+      "section": null
+    },
+    {
+      "name": "Content section accessible",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-17T06:18:59.257Z",
+      "section": null
+    },
+    {
+      "name": "Search functionality verified",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-17T06:19:19.383Z",
+      "section": null
+    },
+    {
+      "name": "Article list section accessible",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-17T06:19:39.499Z",
+      "section": null
+    },
+    {
+      "name": "Content API endpoint accessible",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-17T06:19:46.070Z",
+      "section": null
+    },
+    {
+      "name": "Content has proper structure",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-17T06:19:46.070Z",
+      "section": null
+    }
+  ]
+}

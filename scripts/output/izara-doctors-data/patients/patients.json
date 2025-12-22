@@ -1,0 +1,69 @@
+[
+  {
+    "id": "PATIENT-001",
+    "demographics": {
+      "name": "Demo Test User",
+      "nameThai": "นาย ทดสอบ ระบบ",
+      "dateOfBirth": "1990-01-15T00:00:00.000Z",
+      "age": 34,
+      "gender": "female",
+      "photo": "https://api.dicebear.com/7.x/avataaars/svg?seed=patient-001",
+      "idNumber": "1234567890123"
+    },
+    "contact": {
+      "phone": "+66 81 234 5678",
+      "email": "demo.test@gmail.com",
+      "address": "123 Demo Street, Sukhumvit, Bangkok, Thailand 10110",
+      "emergencyContact": {
+        "name": "Demo Emergency Contact",
+        "nameThai": "นาง สมใจ ระบบ",
+        "relationship": "Spouse",
+        "phone": "+66 82 345 6789"
+      }
+    },
+    "medicalInfo": {
+      "bloodType": "O+",
+      "allergies": [
+        "Penicillin"
+      ],
+      "chronicConditions": [
+        "Hypertension"
+      ],
+      "currentMedications": [
+        "Amlodipine 5mg OD"
+      ],
+      "familyHistory": [
+        "Father - Hypertension",
+        "Mother - Type 2 Diabetes"
+      ],
+      "socialHistory": {
+        "smoking": "Never",
+        "alcohol": "Occasional",
+        "exercise": "2-3 times/week"
+      }
+    },
+    "insurance": {
+      "provider": "Thai National Health Insurance",
+      "policyNumber": "NHSO-1234567890",
+      "validUntil": "2026-12-10T16:57:16.786Z"
+    },
+    "lastVisit": "2025-12-05T16:57:16.786Z",
+    "nextAppointment": "2025-12-11T16:57:16.786Z",
+    "consentStatus": {
+      "hasConsent": true,
+      "dataTypesAllowed": [
+        "medicalHistory",
+        "labResults",
+        "prescriptions",
+        "consultationNotes",
+        "imagingResults",
+        "vitalSigns"
+      ],
+      "consentDate": "2025-06-13T16:57:16.786Z",
+      "expiresAt": "2027-06-08T16:57:16.786Z"
+    },
+    "riskLevel": "medium",
+    "status": "active",
+    "createdAt": "2024-12-10T16:57:16.786Z"
+  }
+]

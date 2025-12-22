@@ -1,0 +1,78 @@
+%%{init: {
+  'theme': 'base',
+  'themeVariables': {
+    'primaryColor': '#E8F5E9',
+    'primaryTextColor': '#1B5E20',
+    'primaryBorderColor': '#4CAF50',
+    'lineColor': '#2E7D32',
+    'secondaryColor': '#E3F2FD',
+    'tertiaryColor': '#FFF3E0',
+    'fontSize': '28px',
+    'fontFamily': 'Segoe UI, Arial'
+  }
+}}%%
+
+flowchart LR
+    subgraph PREP["🔧 PREPARATION"]
+        A1["⏰ Check Time"]
+        A2["👤 Patient Joins"]
+        A3["👨‍⚕️ Doctor Joins"]
+    end
+
+    subgraph VIDEO["📹 JITSI MEET"]
+        B1["📹 Start Call<br/>meet.jit.si/izara-ID"]
+        B2["👋 Greeting"]
+        B3["📋 Take History"]
+        B4["🎥 Recording"]
+    end
+
+    subgraph EXAM["🔍 EXAMINATION"]
+        C1["👀 Visual Exam"]
+        C2["📋 Self-Exam Guide"]
+        C3["🤖 AI Analysis"]
+    end
+
+    subgraph DIAGNOSIS["🔬 DIAGNOSIS"]
+        D1["📊 Assessment"]
+        D2["🏥 ICD-10 Code"]
+        D3["💬 Patient Explain"]
+    end
+
+    subgraph TREATMENT["💊 TREATMENT"]
+        E1["💊 Prescribe Meds"]
+        E2["🧪 Order Labs"]
+        E3["📝 Advice"]
+    end
+
+    subgraph COMPLETE["✅ COMPLETION"]
+        F1["📝 SOAP Notes"]
+        F2["✍️ Sign Record"]
+        F3["☁️ Upload GCS"]
+        F4["🤖 AI Summary"]
+        F5["📅 Follow-up"]
+    end
+
+    %% Linear flow
+    A1 --> A2 --> A3
+    A3 --> B1 --> B2 --> B3 --> B4
+    B4 --> C1 --> C2 --> C3
+    C3 --> D1 --> D2 --> D3
+    D3 --> E1 --> E2 --> E3
+    E3 --> F1 --> F2 --> F3 --> F4 --> F5
+
+    %% Styling
+    classDef prepStyle fill:#E3F2FD,stroke:#2196F3,stroke-width:2px,color:#0D47A1
+    classDef videoStyle fill:#FFEBEE,stroke:#F44336,stroke-width:2px,color:#B71C1C
+    classDef examStyle fill:#F3E5F5,stroke:#9C27B0,stroke-width:2px,color:#4A148C
+    classDef diagStyle fill:#FFF3E0,stroke:#FF9800,stroke-width:2px,color:#E65100
+    classDef treatStyle fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px,color:#1B5E20
+    classDef completeStyle fill:#E0F7FA,stroke:#00BCD4,stroke-width:2px,color:#006064
+
+    class A1,A2,A3 prepStyle
+    class B1,B2,B3,B4 videoStyle
+    class C1,C2,C3 examStyle
+    class D1,D2,D3 diagStyle
+    class E1,E2,E3 treatStyle
+    class F1,F2,F3,F4,F5 completeStyle
+    class END_CALL,UPDATE_STATUS,SYNC,FOLLOWUP completeStyle
+

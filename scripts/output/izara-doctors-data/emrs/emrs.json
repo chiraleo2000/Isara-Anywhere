@@ -1,0 +1,330 @@
+[
+  {
+    "id": "EMR-DEMO-001",
+    "patientId": "PATIENT-001",
+    "doctorId": "DOC-001",
+    "doctorName": "Dr. Test Doctor",
+    "encounterDate": "2025-12-05T16:57:16.787Z",
+    "encounterType": "follow-up",
+    "chiefComplaint": "Routine follow-up for hypertension management",
+    "chiefComplaintThai": "ติดตามการรักษาโรคความดันโลหิตสูงตามนัด",
+    "historyOfPresentIllness": "Patient reports good medication compliance with Amlodipine 5mg OD. Blood pressure has been stable at home readings (130-140/80-85 mmHg). No side effects noted. Occasional headaches but mild and infrequent. Patient has been exercising 2-3 times per week and following low-sodium diet.",
+    "vitalSigns": {
+      "bloodPressure": "135/82",
+      "heartRate": 72,
+      "temperature": 36.8,
+      "respiratoryRate": 16,
+      "oxygenSaturation": 98,
+      "weight": 75,
+      "height": 175,
+      "bmi": 24.5
+    },
+    "physicalExamination": {
+      "general": "Alert, well-nourished, no acute distress",
+      "cardiovascular": "Regular rate and rhythm, no murmurs, S1S2 normal",
+      "respiratory": "Clear to auscultation bilaterally, no wheezes or rales",
+      "abdomen": "Soft, non-tender, no organomegaly, normoactive bowel sounds",
+      "neurological": "Cranial nerves intact, no focal deficits"
+    },
+    "diagnosis": [
+      {
+        "code": "I10",
+        "description": "Essential (primary) hypertension - controlled",
+        "descriptionThai": "โรคความดันโลหิตสูงปฐมภูมิ - ควบคุมได้",
+        "type": "primary"
+      }
+    ],
+    "treatmentPlan": "Continue current medication (Amlodipine 5mg OD). Patient responding well to therapy. Advised to continue lifestyle modifications including low-salt diet and regular exercise. Monitor BP at home weekly. Follow-up in 3 months or sooner if symptoms worsen.",
+    "medications": [
+      {
+        "name": "Amlodipine",
+        "dose": "5mg",
+        "frequency": "Once daily",
+        "route": "Oral",
+        "duration": "Ongoing"
+      }
+    ],
+    "labOrders": [],
+    "imagingOrders": [],
+    "referrals": [],
+    "followUpDate": "2026-03-10T16:57:16.787Z",
+    "followUpReason": "Hypertension monitoring",
+    "status": "finalized",
+    "createdBy": "DOC-001",
+    "createdAt": "2025-12-05T16:57:16.787Z",
+    "updatedAt": "2025-12-05T16:57:16.787Z"
+  },
+  {
+    "id": "EMR-DEMO-002",
+    "patientId": "PATIENT-001",
+    "doctorId": "DOC-001",
+    "doctorName": "Dr. Test Doctor",
+    "encounterDate": "2025-09-06T16:57:16.787Z",
+    "encounterType": "consultation",
+    "chiefComplaint": "Elevated blood pressure detected during routine checkup",
+    "chiefComplaintThai": "ตรวจพบความดันโลหิตสูงระหว่างการตรวจสุขภาพประจำปี",
+    "historyOfPresentIllness": "Patient reports occasional headaches over past 2 months, described as mild pressure-type headaches, mostly in the evening. Denies chest pain, shortness of breath, or palpitations. Family history significant for hypertension (father diagnosed at age 50). Lifestyle assessment reveals sedentary work, high sodium intake, occasional alcohol use.",
+    "vitalSigns": {
+      "bloodPressure": "148/92",
+      "heartRate": 78,
+      "temperature": 36.7,
+      "respiratoryRate": 16,
+      "oxygenSaturation": 99,
+      "weight": 76,
+      "height": 175,
+      "bmi": 24.8
+    },
+    "physicalExamination": {
+      "general": "Alert, slightly overweight, no acute distress",
+      "cardiovascular": "Regular rate and rhythm, S1S2 normal, no murmurs",
+      "respiratory": "Clear bilaterally",
+      "abdomen": "Soft, non-tender, no organomegaly",
+      "neurological": "No focal deficits, fundoscopy normal"
+    },
+    "diagnosis": [
+      {
+        "code": "I10",
+        "description": "Essential (primary) hypertension - newly diagnosed",
+        "descriptionThai": "โรคความดันโลหิตสูงปฐมภูมิ - วินิจฉัยใหม่",
+        "type": "primary"
+      }
+    ],
+    "treatmentPlan": "Initiate antihypertensive therapy with Amlodipine 5mg once daily in the morning. Comprehensive lifestyle modifications counseling provided: reduce sodium intake to <2g/day, DASH diet recommended, increase physical activity to 30min moderate exercise 5x/week, limit alcohol. Blood pressure monitoring at home recommended. Ordered baseline labs including lipid panel and renal function. Follow-up in 4 weeks to assess response.",
+    "medications": [
+      {
+        "name": "Amlodipine",
+        "dose": "5mg",
+        "frequency": "Once daily",
+        "route": "Oral",
+        "duration": "Ongoing"
+      }
+    ],
+    "labOrders": [
+      "LAB-DEMO-001",
+      "LAB-DEMO-002"
+    ],
+    "imagingOrders": [
+      "IMG-DEMO-001"
+    ],
+    "referrals": [],
+    "followUpDate": "2025-10-06T16:57:16.787Z",
+    "followUpReason": "Blood pressure recheck and medication adjustment",
+    "status": "finalized",
+    "createdBy": "DOC-001",
+    "createdAt": "2025-09-06T16:57:16.787Z",
+    "updatedAt": "2025-09-06T16:57:16.787Z"
+  },
+  {
+    "id": "EMR-DEMO-003",
+    "patientId": "PATIENT-001",
+    "doctorId": "DOC-001",
+    "doctorName": "Dr. Test Doctor",
+    "encounterDate": "2025-06-13T16:57:16.787Z",
+    "encounterType": "consultation",
+    "chiefComplaint": "Fever and sore throat for 2 days",
+    "chiefComplaintThai": "มีไข้และเจ็บคอมา 2 วัน",
+    "historyOfPresentIllness": "Patient presents with fever (max 38.5C), sore throat, and mild cough. No difficulty breathing. No travel history.",
+    "vitalSigns": {
+      "bloodPressure": "120/80",
+      "heartRate": 90,
+      "temperature": 38.2,
+      "respiratoryRate": 18,
+      "oxygenSaturation": 98,
+      "weight": 75,
+      "height": 175,
+      "bmi": 24.5
+    },
+    "physicalExamination": {
+      "general": "Febrile, looks tired",
+      "headNeck": "Pharynx injected, tonsils enlarged but no exudate",
+      "respiratory": "Clear lungs",
+      "cardiovascular": "Tachycardic but regular"
+    },
+    "diagnosis": [
+      {
+        "code": "J06.9",
+        "description": "Acute upper respiratory infection",
+        "descriptionThai": "การติดเชื้อทางเดินหายใจส่วนบนเฉียบพลัน",
+        "type": "primary"
+      }
+    ],
+    "treatmentPlan": "Symptomatic treatment. Paracetamol for fever. Rest and hydration.",
+    "medications": [
+      {
+        "name": "Paracetamol",
+        "dose": "500mg",
+        "frequency": "Every 4-6 hours prn",
+        "route": "Oral",
+        "duration": "5 days"
+      }
+    ],
+    "labOrders": [],
+    "imagingOrders": [],
+    "referrals": [],
+    "status": "finalized",
+    "createdBy": "DOC-001",
+    "createdAt": "2025-06-13T16:57:16.787Z",
+    "updatedAt": "2025-06-13T16:57:16.787Z"
+  },
+  {
+    "id": "EMR-DEMO-004",
+    "patientId": "PATIENT-001",
+    "doctorId": "DOC-001",
+    "doctorName": "Dr. Test Doctor",
+    "encounterDate": "2025-05-24T16:57:16.787Z",
+    "encounterType": "consultation",
+    "chiefComplaint": "Annual health checkup",
+    "chiefComplaintThai": "ตรวจสุขภาพประจำปี",
+    "historyOfPresentIllness": "Patient presents for annual preventive health examination. No acute complaints. Reports generally good health. Exercises regularly (2-3 times/week). Works as software engineer with predominantly desk work. Non-smoker, occasional alcohol consumption.",
+    "vitalSigns": {
+      "bloodPressure": "128/78",
+      "heartRate": 70,
+      "temperature": 36.6,
+      "respiratoryRate": 14,
+      "oxygenSaturation": 99,
+      "weight": 74,
+      "height": 175,
+      "bmi": 24.2
+    },
+    "physicalExamination": {
+      "general": "Well-appearing, appropriate for stated age",
+      "cardiovascular": "S1S2 regular, no murmurs, rubs, or gallops",
+      "respiratory": "Clear to auscultation, normal respiratory effort",
+      "abdomen": "Soft, non-distended, non-tender, no masses",
+      "neurological": "Alert and oriented x3, normal gait",
+      "skin": "No suspicious lesions",
+      "musculoskeletal": "Full range of motion, no joint swelling"
+    },
+    "diagnosis": [
+      {
+        "code": "Z00.00",
+        "description": "General adult medical examination",
+        "descriptionThai": "ตรวจสุขภาพทั่วไปผู้ใหญ่",
+        "type": "primary"
+      }
+    ],
+    "treatmentPlan": "Patient in good general health. Continue current lifestyle habits. Ordered comprehensive metabolic panel, CBC, lipid panel, and urinalysis for baseline screening. Recommend annual flu vaccination. Continue regular exercise and maintain healthy diet. Return in 1 year for next annual physical or sooner if concerns arise.",
+    "medications": [],
+    "labOrders": [
+      "LAB-DEMO-003",
+      "LAB-DEMO-004"
+    ],
+    "imagingOrders": [],
+    "referrals": [],
+    "followUpDate": "2026-05-24T16:57:16.787Z",
+    "followUpReason": "Annual health checkup",
+    "status": "finalized",
+    "createdBy": "DOC-001",
+    "createdAt": "2025-05-24T16:57:16.787Z",
+    "updatedAt": "2025-05-24T16:57:16.787Z"
+  },
+  {
+    "id": "EMR-DEMO-005",
+    "patientId": "PATIENT-001",
+    "doctorId": "DOC-001",
+    "doctorName": "Dr. Test Doctor",
+    "encounterDate": "2025-04-04T16:57:16.787Z",
+    "encounterType": "consultation",
+    "chiefComplaint": "Lower back pain after lifting heavy object",
+    "chiefComplaintThai": "ปวดหลังส่วนล่างหลังยกของหนัก",
+    "historyOfPresentIllness": "Patient reports acute onset lower back pain after lifting heavy furniture 2 days ago. Pain is localized to lumbar region, worsens with movement and bending. Rates pain 6/10. No radiation to legs. No numbness or tingling. No bowel/bladder dysfunction. Taking over-the-counter ibuprofen with minimal relief.",
+    "vitalSigns": {
+      "bloodPressure": "122/76",
+      "heartRate": 72,
+      "temperature": 36.5,
+      "respiratoryRate": 16,
+      "oxygenSaturation": 98,
+      "weight": 74,
+      "height": 175,
+      "bmi": 24.2
+    },
+    "physicalExamination": {
+      "general": "Moves cautiously due to pain",
+      "musculoskeletal": "Tenderness over L4-L5 paraspinal muscles. No midline tenderness. Negative straight leg raise bilaterally. Normal lower extremity strength and sensation. Normal reflexes.",
+      "neurological": "No focal neurological deficits"
+    },
+    "diagnosis": [
+      {
+        "code": "M54.5",
+        "description": "Low back pain - acute mechanical",
+        "descriptionThai": "อาการปวดหลังส่วนล่าง - เฉียบพลันจากการเคลื่อนไหว",
+        "type": "primary"
+      }
+    ],
+    "treatmentPlan": "Conservative management for acute mechanical low back pain. Continue NSAIDs (Ibuprofen 400mg TID with food) for pain and inflammation. Apply heat/ice alternately. Gentle stretching exercises. Avoid heavy lifting for 2 weeks. Physical therapy referral if not improved in 1 week. Red flag symptoms reviewed (weakness, numbness, bowel/bladder changes).",
+    "medications": [
+      {
+        "name": "Ibuprofen",
+        "dose": "400mg",
+        "frequency": "Three times daily with food",
+        "route": "Oral",
+        "duration": "7 days"
+      }
+    ],
+    "labOrders": [],
+    "imagingOrders": [],
+    "referrals": [],
+    "followUpDate": "2025-04-11T16:57:16.787Z",
+    "followUpReason": "Back pain reassessment",
+    "status": "finalized",
+    "createdBy": "DOC-001",
+    "createdAt": "2025-04-04T16:57:16.787Z",
+    "updatedAt": "2025-04-04T16:57:16.787Z"
+  },
+  {
+    "id": "EMR-DEMO-006",
+    "patientId": "PATIENT-001",
+    "doctorId": "DOC-001",
+    "doctorName": "Dr. Test Doctor",
+    "encounterDate": "2025-02-03T16:57:16.787Z",
+    "encounterType": "consultation",
+    "chiefComplaint": "Persistent heartburn and indigestion",
+    "chiefComplaintThai": "อาการแสบร้อนกลางอกและอาหารไม่ย่อยเรื้อรัง",
+    "historyOfPresentIllness": "Patient complains of burning chest discomfort after meals, especially with spicy or fatty foods, for past 3 weeks. Symptoms worse when lying down. Occasionally wakes up at night with sour taste in mouth. Denies weight loss, difficulty swallowing, or blood in stool. No radiation of pain to arms or jaw. Takes antacids occasionally with temporary relief.",
+    "vitalSigns": {
+      "bloodPressure": "126/80",
+      "heartRate": 75,
+      "temperature": 36.7,
+      "respiratoryRate": 15,
+      "oxygenSaturation": 98,
+      "weight": 74,
+      "height": 175,
+      "bmi": 24.2
+    },
+    "physicalExamination": {
+      "general": "Well-appearing, no distress",
+      "cardiovascular": "Regular rate and rhythm, no murmurs",
+      "abdomen": "Soft, mild epigastric tenderness, no guarding or rebound",
+      "respiratory": "Clear bilaterally"
+    },
+    "diagnosis": [
+      {
+        "code": "K21.0",
+        "description": "Gastroesophageal reflux disease (GERD)",
+        "descriptionThai": "โรคกรดไหลย้อน",
+        "type": "primary"
+      }
+    ],
+    "treatmentPlan": "Initiated PPI therapy with Omeprazole 20mg once daily before breakfast for 8 weeks. Lifestyle modifications counseled: elevate head of bed, avoid late meals, reduce caffeine, spicy foods, and alcohol. Weight loss if overweight. H. pylori testing ordered. If symptoms persist after PPI trial, consider endoscopy. Follow-up in 4 weeks to assess response.",
+    "medications": [
+      {
+        "name": "Omeprazole",
+        "dose": "20mg",
+        "frequency": "Once daily before breakfast",
+        "route": "Oral",
+        "duration": "8 weeks"
+      }
+    ],
+    "labOrders": [
+      "LAB-DEMO-005"
+    ],
+    "imagingOrders": [],
+    "referrals": [],
+    "followUpDate": "2025-03-03T16:57:16.787Z",
+    "followUpReason": "GERD symptom reassessment",
+    "status": "finalized",
+    "createdBy": "DOC-001",
+    "createdAt": "2025-02-03T16:57:16.787Z",
+    "updatedAt": "2025-02-03T16:57:16.787Z"
+  }
+]

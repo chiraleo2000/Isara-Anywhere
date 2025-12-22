@@ -1,0 +1,76 @@
+%%{init: {
+  'theme': 'base',
+  'themeVariables': {
+    'primaryColor': '#E8F5E9',
+    'primaryTextColor': '#1B5E20',
+    'primaryBorderColor': '#4CAF50',
+    'lineColor': '#2E7D32',
+    'secondaryColor': '#E3F2FD',
+    'tertiaryColor': '#FFF3E0',
+    'fontSize': '28px',
+    'fontFamily': 'Segoe UI, Arial'
+  }
+}}%%
+
+flowchart LR
+    subgraph CENTER["💻 DOCTOR PORTAL"]
+        HOME["🏠 Dashboard<br/>หน้าแรก"]
+    end
+
+    subgraph CLINICAL["📋 CLINICAL TOOLS"]
+        E1["📝 EMR Editor<br/>บันทึก SOAP"]
+        E2["💊 Prescribing<br/>สั่งยา"]
+        E3["🧪 Lab Orders<br/>สั่งตรวจ"]
+        E4["🤖 AI Copilot<br/>Gemini AI"]
+    end
+
+    subgraph PATIENTS["👥 PATIENT MANAGEMENT"]
+        P1["📋 Patient List<br/>รายชื่อผู้ป่วย"]
+        P2["👁️ View Records<br/>ดูประวัติ"]
+        P3["📊 Queue<br/>คิวผู้ป่วย"]
+    end
+
+    subgraph SCHEDULE["📅 SCHEDULING"]
+        S1["📅 Calendar<br/>ปฏิทินนัดหมาย"]
+        S2["⏰ Availability<br/>ตั้งเวลาว่าง"]
+        S3["📹 Video Call<br/>Jitsi Meet"]
+    end
+
+    subgraph RESOURCES["📚 RESOURCES"]
+        R1["📖 Clinical Resources<br/>แนวทางรักษา"]
+        R2["📄 Medical Content<br/>สร้างเนื้อหา"]
+        R3["👨‍⚕️ Consultants<br/>ที่ปรึกษา"]
+    end
+
+    subgraph ADMIN["⚙️ ADMIN"]
+        A1["👨‍⚕️ Doctor Mgmt<br/>จัดการแพทย์"]
+        A2["📅 Appointment Pool<br/>จัดการ Pool"]
+    end
+
+    %% Connections from Dashboard
+    HOME --> CLINICAL
+    HOME --> PATIENTS
+    HOME --> SCHEDULE
+    HOME --> RESOURCES
+    HOME --> ADMIN
+
+    %% Internal flows
+    E1 --> E4
+    P1 --> P2
+    S1 --> S3
+
+    %% Styling
+    classDef centerStyle fill:#E8F5E9,stroke:#4CAF50,stroke-width:3px,color:#1B5E20
+    classDef clinicalStyle fill:#E3F2FD,stroke:#2196F3,stroke-width:2px,color:#0D47A1
+    classDef patientStyle fill:#FFF3E0,stroke:#FF9800,stroke-width:2px,color:#E65100
+    classDef scheduleStyle fill:#F3E5F5,stroke:#9C27B0,stroke-width:2px,color:#4A148C
+    classDef resourceStyle fill:#E0F7FA,stroke:#00BCD4,stroke-width:2px,color:#006064
+    classDef adminStyle fill:#FFF8E1,stroke:#FFC107,stroke-width:2px,color:#FF6F00
+
+    class HOME centerStyle
+    class E1,E2,E3,E4 clinicalStyle
+    class P1,P2,P3 patientStyle
+    class S1,S2,S3 scheduleStyle
+    class R1,R2,R3 resourceStyle
+    class A1,A2 adminStyle
+

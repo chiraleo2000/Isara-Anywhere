@@ -1,0 +1,272 @@
+[
+  {
+    "id": "DOC-001",
+    "name": "Dr. Test Doctor",
+    "nameThai": "นพ. ทดสอบ แพทย์",
+    "email": "doctor.test@izara.com",
+    "role": "doctor",
+    "medicalLicenseNumber": "MD-001-2024",
+    "specialty": "General Practice",
+    "specialtyThai": "เวชปฏิบัติทั่วไป",
+    "phone": "+66 2 123 4567",
+    "avatarUrl": "https://api.dicebear.com/7.x/avataaars/svg?seed=doc-001",
+    "dateOfBirth": "1980-01-01T00:00:00.000Z",
+    "createdAt": "2024-12-10T16:57:16.782Z",
+    "status": "approved",
+    "qualifications": [
+      "Doctor of Medicine (MD) - Chulalongkorn University",
+      "Board Certified - General Practice",
+      "Advanced Cardiac Life Support (ACLS)",
+      "Diploma in Family Medicine"
+    ],
+    "experience": "15 years",
+    "languages": [
+      "Thai",
+      "English"
+    ],
+    "consultationFee": 500,
+    "hospital": "Izara Hospital Bangkok",
+    "department": "General Medicine",
+    "availableHours": {
+      "monday": [
+        "09:00-12:00",
+        "13:00-17:00"
+      ],
+      "tuesday": [
+        "09:00-12:00",
+        "13:00-17:00"
+      ],
+      "wednesday": [
+        "09:00-12:00",
+        "13:00-17:00"
+      ],
+      "thursday": [
+        "09:00-12:00",
+        "13:00-17:00"
+      ],
+      "friday": [
+        "09:00-12:00",
+        "13:00-16:00"
+      ],
+      "saturday": [
+        "09:00-12:00"
+      ],
+      "sunday": []
+    },
+    "statistics": {
+      "totalPatients": 1250,
+      "totalConsultations": 3500,
+      "patientSatisfaction": 4.8,
+      "averageRating": 4.9
+    }
+  },
+  {
+    "id": "DOC-002",
+    "name": "Dr. Pending Doctor",
+    "nameThai": "นพ. รอการอนุมัติ",
+    "email": "doctor02.test@izara.com",
+    "role": "doctor",
+    "medicalLicenseNumber": "MD-002-2024",
+    "specialty": "Internal Medicine",
+    "specialtyThai": "อายุรกรรม",
+    "phone": "+66 2 234 5678",
+    "avatarUrl": "https://api.dicebear.com/7.x/avataaars/svg?seed=doc-002",
+    "dateOfBirth": "1985-05-15T00:00:00.000Z",
+    "createdAt": "2025-11-10T16:57:16.782Z",
+    "status": "pending",
+    "qualifications": [
+      "Doctor of Medicine (MD) - Mahidol University",
+      "Board Certified - Internal Medicine"
+    ],
+    "experience": "5 years",
+    "languages": [
+      "Thai",
+      "English"
+    ],
+    "consultationFee": 600,
+    "hospital": "Bangkok Hospital",
+    "department": "Internal Medicine",
+    "availableHours": {
+      "monday": [
+        "09:00-12:00"
+      ],
+      "tuesday": [
+        "09:00-12:00"
+      ],
+      "wednesday": [],
+      "thursday": [
+        "09:00-12:00"
+      ],
+      "friday": [
+        "09:00-12:00"
+      ],
+      "saturday": [],
+      "sunday": []
+    },
+    "statistics": {
+      "totalPatients": 0,
+      "totalConsultations": 0,
+      "patientSatisfaction": 0,
+      "averageRating": 0
+    }
+  },
+  {
+    "id": "DOC-003",
+    "name": "Dr. Cardio Specialist",
+    "nameThai": "นพ. หัวใจ ผู้เชี่ยวชาญ",
+    "email": "cardio.doctor@izara.com",
+    "role": "doctor",
+    "medicalLicenseNumber": "MD-003-2024",
+    "specialty": "Cardiology",
+    "specialtyThai": "โรคหัวใจและหลอดเลือด",
+    "phone": "+66 2 345 6789",
+    "avatarUrl": "https://api.dicebear.com/7.x/avataaars/svg?seed=doc-003",
+    "dateOfBirth": "1975-08-20T00:00:00.000Z",
+    "createdAt": "2025-05-24T16:57:16.782Z",
+    "status": "approved",
+    "qualifications": [
+      "Doctor of Medicine (MD) - Siriraj Hospital",
+      "Board Certified - Cardiology",
+      "Fellowship in Interventional Cardiology",
+      "Advanced Cardiac Life Support (ACLS)"
+    ],
+    "experience": "20 years",
+    "languages": [
+      "Thai",
+      "English",
+      "Chinese"
+    ],
+    "consultationFee": 1500,
+    "hospital": "Bangkok Heart Hospital",
+    "department": "Cardiology",
+    "availableHours": {
+      "monday": [
+        "09:00-12:00",
+        "14:00-17:00"
+      ],
+      "tuesday": [
+        "09:00-12:00"
+      ],
+      "wednesday": [
+        "09:00-12:00",
+        "14:00-17:00"
+      ],
+      "thursday": [
+        "09:00-12:00"
+      ],
+      "friday": [
+        "09:00-12:00"
+      ],
+      "saturday": [],
+      "sunday": []
+    },
+    "statistics": {
+      "totalPatients": 2500,
+      "totalConsultations": 8000,
+      "patientSatisfaction": 4.9,
+      "averageRating": 4.95
+    }
+  },
+  {
+    "id": "DOC-INACTIVE-001",
+    "name": "Dr. Inactive Doctor",
+    "nameThai": "นพ. ไม่ใช้งาน",
+    "email": "inactive.doctor@izara.com",
+    "role": "doctor",
+    "medicalLicenseNumber": "MD-INACTIVE-001",
+    "specialty": "Pediatrics",
+    "specialtyThai": "กุมารเวชกรรม",
+    "phone": "+66 2 456 7890",
+    "avatarUrl": "https://api.dicebear.com/7.x/avataaars/svg?seed=doc-inactive",
+    "dateOfBirth": "1982-03-10T00:00:00.000Z",
+    "createdAt": "2024-07-28T16:57:16.782Z",
+    "status": "inactive",
+    "qualifications": [
+      "Doctor of Medicine (MD) - Prince of Songkla University"
+    ],
+    "experience": "12 years",
+    "languages": [
+      "Thai",
+      "English"
+    ],
+    "consultationFee": 700,
+    "hospital": "Samitivej Hospital",
+    "department": "Pediatrics",
+    "availableHours": {},
+    "statistics": {
+      "totalPatients": 800,
+      "totalConsultations": 2000,
+      "patientSatisfaction": 4.5,
+      "averageRating": 4.6
+    }
+  },
+  {
+    "id": "DOC-REJECTED-001",
+    "name": "Dr. Rejected Doctor",
+    "nameThai": "นพ. ถูกปฏิเสธ",
+    "email": "rejected.doctor@izara.com",
+    "role": "doctor",
+    "medicalLicenseNumber": "MD-REJECTED-001",
+    "specialty": "Orthopedics",
+    "specialtyThai": "ศัลยกรรมกระดูก",
+    "phone": "+66 2 567 8901",
+    "avatarUrl": "https://api.dicebear.com/7.x/avataaars/svg?seed=doc-rejected",
+    "dateOfBirth": "1988-11-25T00:00:00.000Z",
+    "createdAt": "2025-10-11T16:57:16.782Z",
+    "status": "rejected",
+    "rejectionReason": "Invalid medical license number",
+    "qualifications": [
+      "Claimed MD - Unverified"
+    ],
+    "experience": "3 years",
+    "languages": [
+      "Thai"
+    ],
+    "consultationFee": 400,
+    "hospital": "Unknown Hospital",
+    "department": "Orthopedics",
+    "availableHours": {},
+    "statistics": {
+      "totalPatients": 0,
+      "totalConsultations": 0,
+      "patientSatisfaction": 0,
+      "averageRating": 0
+    }
+  },
+  {
+    "id": "DOC-LOCKED-001",
+    "name": "Dr. Locked Doctor",
+    "nameThai": "นพ. ถูกล็อค",
+    "email": "locked.doctor@izara.com",
+    "role": "doctor",
+    "medicalLicenseNumber": "MD-LOCKED-001",
+    "specialty": "Dermatology",
+    "specialtyThai": "ผิวหนัง",
+    "phone": "+66 2 678 9012",
+    "avatarUrl": "https://api.dicebear.com/7.x/avataaars/svg?seed=doc-locked",
+    "dateOfBirth": "1979-07-05T00:00:00.000Z",
+    "createdAt": "2024-11-05T16:57:16.782Z",
+    "status": "locked",
+    "lockReason": "Too many failed login attempts",
+    "lockedAt": "2025-12-03T16:57:16.782Z",
+    "qualifications": [
+      "Doctor of Medicine (MD) - Khon Kaen University",
+      "Board Certified - Dermatology"
+    ],
+    "experience": "18 years",
+    "languages": [
+      "Thai",
+      "English"
+    ],
+    "consultationFee": 800,
+    "hospital": "Bumrungrad Hospital",
+    "department": "Dermatology",
+    "availableHours": {},
+    "statistics": {
+      "totalPatients": 1500,
+      "totalConsultations": 4000,
+      "patientSatisfaction": 4.7,
+      "averageRating": 4.8
+    }
+  }
+]

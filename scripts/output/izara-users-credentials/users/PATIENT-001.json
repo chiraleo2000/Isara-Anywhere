@@ -1,0 +1,32 @@
+{
+  "id": "PATIENT-001",
+  "patientId": "PATIENT-001",
+  "email": "demo.test@gmail.com",
+  "passwordHash": "$2b$10$hckin3vq/lHw/5sb7gfyy.FMNgx/t.E1QBY6Kd9LxNyMIOt72IKTm",
+  "role": "patient",
+  "name": "Demo Test User",
+  "nameThai": "นาย ทดสอบ ระบบ",
+  "avatarUrl": "https://api.dicebear.com/7.x/avataaars/svg?seed=patient-001",
+  "isActive": true,
+  "isVerified": true,
+  "isApproved": true,
+  "approvalStatus": "approved",
+  "status": "active",
+  "createdAt": "2024-12-10T16:57:16.778Z",
+  "lastLogin": "2025-12-10T16:57:16.778Z",
+  "profile": {
+    "id": "PATIENT-001",
+    "patientId": "PATIENT-001",
+    "name": "Demo Test User",
+    "email": "demo.test@gmail.com",
+    "phone": "+66-81-111-1111",
+    "avatarUrl": "https://api.dicebear.com/7.x/avataaars/svg?seed=patient-001",
+    "dateOfBirth": "1990-01-01",
+    "gender": "female"
+  },
+  "preferences": {
+    "language": "th",
+    "notifications": true,
+    "theme": "light"
+  }
+}

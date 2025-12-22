@@ -1,0 +1,627 @@
+import { Router, Request, Response } from 'express';
+import { GoogleGenerativeAI, GenerativeModel, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
+import { authMiddleware } from '../middleware/auth';
+import path from 'path';
+import fs from 'fs';
+
+// Load env from project root - custom parser to handle duplicate keys
+const envPath = path.resolve(process.cwd(), '.env');
+let GEMINI_API_KEY: string | null = null;
+let GEMINI_MODEL: string = 'gemini-2.5-flash-lite';
+
+if (fs.existsSync(envPath)) {
+  console.log('[AI Config] Reading .env file from:', envPath);
+  const envContent = fs.readFileSync(envPath, 'utf-8');
+  // Handle both Windows (\r\n) and Unix (\n) line endings
+  const lines = envContent.split(/\r?\n/);
+  
+  console.log('[AI Config] Total lines in .env:', lines.length);
+  
+  for (const line of lines) {
+    // Skip comments and empty lines
+    const trimmedLine = line.trim();
+    if (!trimmedLine || trimmedLine.startsWith('#')) continue;
+    
+    // Parse key=value pairs
+    const eqIndex = trimmedLine.indexOf('=');
+    if (eqIndex === -1) continue;
+    
+    const key = trimmedLine.substring(0, eqIndex).trim();
+    const value = trimmedLine.substring(eqIndex + 1).trim();
+    
+    // Handle GEMINI_API_KEY - only accept if value starts with 'AIza' (valid Google API key format)
+    if (key.includes('GEMINI_API_KEY') && value.startsWith('AIza')) {
+      GEMINI_API_KEY = value;
+      console.log('[AI Config] ✅ Found valid Gemini API key:', value.substring(0, 15) + '...');
+    }
+    
+    // Handle GEMINI_MODEL - only accept if it's a valid model name (not an API key)
+    if ((key.includes('GEMINI_MODEL') || key.includes('GEMINI_API_KEY')) && 
+        value.startsWith('gemini-') && !value.startsWith('AIza')) {
+      // This looks like a model name, treat it as model config
+      GEMINI_MODEL = value;
+      console.log('[AI Config] Found model name in env:', value);
+    }
+  }
+} else {
+  console.log('[AI Config] ⚠️ .env file not found at:', envPath);
+}
+
+// Log final configuration
+console.log('[AI Config] Final configuration:');
+console.log('[AI Config] - API Key:', GEMINI_API_KEY ? `${GEMINI_API_KEY.substring(0, 10)}...` : 'NOT FOUND');
+console.log('[AI Config] - Model:', GEMINI_MODEL);
+
+const router = Router();
+
+// AI Configuration for different tasks
+interface AIConfig {
+  model: string;
+  temperature: number;
+  maxOutputTokens: number;
+  systemInstruction: string;
+}
+
+const AI_CONFIGS: Record<string, AIConfig> = {
+  chat: {
+    model: GEMINI_MODEL,
+    temperature: 0.3,
+    maxOutputTokens: 2048,
+    systemInstruction: `คุณคือ "Izara AI" ผู้ช่วยด้านสุขภาพอัจฉริยะ พูดภาษาไทยได้อย่างเป็นธรรมชาติ
+
+บทบาทของคุณ:
+- ให้ข้อมูลสุขภาพทั่วไปที่ถูกต้องและเป็นประโยชน์
+- ตอบคำถามด้วยความเห็นอกเห็นใจและเข้าใจ
+- ใช้ภาษาที่เข้าใจง่าย ไม่ใช้ศัพท์ทางการแพทย์มากเกินไป
+- แนะนำให้ปรึกษาแพทย์เมื่อจำเป็น
+
+ข้อห้าม:
+- ห้ามวินิจฉัยโรค
+- ห้ามสั่งยาหรือแนะนำยาเฉพาะ
+- ห้ามทำให้ผู้ใช้ตกใจโดยไม่จำเป็น
+
+รูปแบบการตอบ:
+- ตอบกระชับ ชัดเจน
+- ใช้อิโมจิบ้างเพื่อความเป็นมิตร
+- จบด้วยการเตือนให้พบแพทย์หากอาการไม่ดีขึ้น`
+  },
+  symptomChecker: {
+    model: GEMINI_MODEL,
+    temperature: 0.3,
+    maxOutputTokens: 2048,
+    systemInstruction: `คุณคือระบบคัดกรองอาการเบื้องต้น (Triage System) สำหรับผู้ป่วย
+
+หน้าที่:
+1. วิเคราะห์อาการที่ผู้ป่วยบอก
+2. ประเมินระดับความเร่งด่วน (Emergency/Urgent/Routine/Self-care)
+3. ให้คำแนะนำเบื้องต้น
+4. บอกอาการที่ต้องระวัง
+
+ข้อสำคัญ:
+- นี่คือการคัดกรองเบื้องต้นเท่านั้น ไม่ใช่การวินิจฉัย
+- ให้ข้อมูลเป็นภาษาไทย
+- ตอบในรูปแบบ JSON ตามที่กำหนด`
+  },
+  riskAssessment: {
+    model: GEMINI_MODEL,
+    temperature: 0.2,
+    maxOutputTokens: 2048,
+    systemInstruction: `คุณคือระบบประเมินความเสี่ยงด้านสุขภาพ
+
+วิเคราะห์ข้อมูลผู้ป่วยและประเมิน:
+1. ความเสี่ยงโรคหัวใจและหลอดเลือด
+2. ความเสี่ยงเบาหวาน
+3. ความเสี่ยงจากน้ำหนักเกิน/โรคอ้วน
+4. ความเสี่ยงจากพฤติกรรม
+
+ให้คำแนะนำที่เป็นประโยชน์และสามารถปฏิบัติได้จริง
+ตอบเป็น JSON ตามรูปแบบที่กำหนด`
+  }
+};
+
+// Gemini AI Instance Management
+let genAI: GoogleGenerativeAI | null = null;
+let initialized = false;
+
+function initializeAI(): boolean {
+  if (initialized) return genAI !== null;
+  
+  initialized = true;
+  
+  // Use our parsed API key from module-level parsing
+  if (!GEMINI_API_KEY || !GEMINI_API_KEY.startsWith('AIza')) {
+    console.error('[AI] ❌ Invalid or missing Gemini API key');
+    console.error('[AI] Please check your .env file has: GEMINI_API_KEY=AIzaSy...');
+    console.error('[AI] Current value:', GEMINI_API_KEY ? `${GEMINI_API_KEY.substring(0, 10)}...` : 'null');
+    return false;
+  }
+  
+  console.log('[AI] ✅ Gemini API Key found (length:', GEMINI_API_KEY.length, ')');
+  
+  try {
+    genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+    console.log('[AI] ✅ GoogleGenerativeAI initialized successfully');
+    return true;
+  } catch (error: any) {
+    console.error('[AI] ❌ Failed to initialize GoogleGenerativeAI:', error.message);
+    return false;
+  }
+}
+
+function getModel(config: AIConfig): GenerativeModel | null {
+  if (!initializeAI() || !genAI) {
+    return null;
+  }
+  
+  try {
+    const modelConfig: any = {
+      model: config.model,
+      generationConfig: {
+        temperature: config.temperature,
+        maxOutputTokens: config.maxOutputTokens,
+        topP: 0.95,
+        topK: 40,
+      },
+      safetySettings: [
+        { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+        { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+        { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+        { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
+      ],
+    };
+    
+    return genAI.getGenerativeModel(modelConfig);
+  } catch (error: any) {
+    console.error('[AI] Failed to get model:', error.message);
+    return null;
+  }
+}
+
+// Health Q&A Chatbot - Main endpoint
+router.post('/chat', authMiddleware, async (req: Request, res: Response) => {
+  const startTime = Date.now();
+  
+  try {
+    const { message, conversationHistory } = req.body;
+
+    if (!message || typeof message !== 'string') {
+      return res.status(400).json({ error: 'Message is required' });
+    }
+
+    console.log(`[AI Chat] 📝 Message: "${message.substring(0, 50)}..."`);
+    
+    const model = getModel(AI_CONFIGS.chat);
+    if (!model) {
+      console.error('[AI Chat] ❌ Model not available');
+      return res.status(500).json({ 
+        error: 'AI service not configured',
+        reply: 'ขออภัย ระบบ AI ไม่พร้อมใช้งานในขณะนี้ กรุณาลองใหม่ภายหลัง หรือติดต่อเจ้าหน้าที่'
+      });
+    }
+
+    // Build prompt with system instruction and conversation history
+    let fullPrompt = AI_CONFIGS.chat.systemInstruction + '\n\n';
+    
+    if (conversationHistory && Array.isArray(conversationHistory) && conversationHistory.length > 0) {
+      fullPrompt += '=== บทสนทนาก่อนหน้า ===\n';
+      for (const msg of conversationHistory.slice(-6)) { // Keep last 6 messages for context
+        fullPrompt += `${msg.role === 'user' ? 'ผู้ใช้' : 'AI'}: ${msg.content}\n`;
+      }
+      fullPrompt += '\n';
+    }
+    
+    fullPrompt += `ผู้ใช้: ${message}\n\nAI:`;
+
+    console.log('[AI Chat] 🚀 Sending to Gemini...');
+    
+    const result = await model.generateContent(fullPrompt);
+    const response = result.response;
+    const text = response.text();
+    
+    const duration = Date.now() - startTime;
+    console.log(`[AI Chat] ✅ Response received (${text.length} chars, ${duration}ms)`);
+
+    res.json({ reply: text });
+    
+  } catch (error: any) {
+    const duration = Date.now() - startTime;
+    console.error(`[AI Chat] ❌ Error after ${duration}ms:`, error.message);
+    
+    // Return user-friendly error message
+    res.status(500).json({ 
+      error: error.message,
+      reply: 'ขออภัย เกิดข้อผิดพลาดในการประมวลผล กรุณาลองใหม่อีกครั้ง หากปัญหายังคงอยู่ กรุณาติดต่อเจ้าหน้าที่'
+    });
+  }
+});
+
+// Symptom Checker - AI-assisted triage
+router.post('/symptom-checker', authMiddleware, async (req: Request, res: Response) => {
+  const startTime = Date.now();
+  
+  try {
+    const { symptoms, patientContext } = req.body;
+
+    if (!symptoms || typeof symptoms !== 'string') {
+      return res.status(400).json({ error: 'Symptoms description is required' });
+    }
+
+    console.log(`[AI Symptom] 📋 Analyzing: "${symptoms.substring(0, 50)}..."`);
+    
+    const model = getModel(AI_CONFIGS.symptomChecker);
+    if (!model) {
+      return res.status(500).json({ error: 'AI service not configured' });
+    }
+
+    const prompt = `${AI_CONFIGS.symptomChecker.systemInstruction}
+
+=== ข้อมูลผู้ป่วย ===
+${patientContext ? JSON.stringify(patientContext, null, 2) : 'ไม่มีข้อมูลเพิ่มเติม'}
+
+=== อาการที่ผู้ป่วยแจ้ง ===
+${symptoms}
+
+=== คำสั่ง ===
+วิเคราะห์อาการและตอบเป็น JSON ในรูปแบบนี้เท่านั้น (ไม่ต้องมี markdown code block):
+{
+  "triageLevel": "Emergency|Urgent|Routine|Self-care",
+  "triageLevelThai": "ฉุกเฉิน|เร่งด่วน|ปกติ|ดูแลตัวเอง",
+  "reasoning": "เหตุผลในการประเมิน...",
+  "possibleCauses": ["สาเหตุที่เป็นไปได้ 1", "สาเหตุที่เป็นไปได้ 2"],
+  "selfCareRecommendations": ["คำแนะนำ 1", "คำแนะนำ 2"],
+  "whenToSeekCare": "ควรพบแพทย์เมื่อ...",
+  "warningSigns": ["อาการที่ต้องระวัง 1", "อาการที่ต้องระวัง 2"],
+  "suggestedSpecialties": ["สาขาแพทย์ที่แนะนำ"]
+}`;
+
+    const result = await model.generateContent(prompt);
+    const response = result.response;
+    let text = response.text().trim();
+    
+    const duration = Date.now() - startTime;
+    console.log(`[AI Symptom] ✅ Analysis complete (${duration}ms)`);
+
+    // Parse JSON response
+    let analysis;
+    try {
+      // Remove markdown code blocks if present
+      text = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      analysis = JSON.parse(text);
+    } catch {
+      console.warn('[AI Symptom] ⚠️ Failed to parse JSON, using fallback');
+      analysis = {
+        triageLevel: 'Routine',
+        triageLevelThai: 'ปกติ',
+        reasoning: text,
+        possibleCauses: [],
+        selfCareRecommendations: ['พักผ่อนให้เพียงพอ', 'ดื่มน้ำมากๆ'],
+        whenToSeekCare: 'หากอาการไม่ดีขึ้นใน 2-3 วัน ควรพบแพทย์',
+        warningSigns: ['ไข้สูงเกิน 39°C', 'หายใจลำบาก', 'เจ็บหน้าอกรุนแรง'],
+        suggestedSpecialties: ['อายุรกรรมทั่วไป']
+      };
+    }
+
+    res.json(analysis);
+    
+  } catch (error: any) {
+    console.error('[AI Symptom] ❌ Error:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Risk Assessment
+router.post('/risk-assessment', authMiddleware, async (req: Request, res: Response) => {
+  const startTime = Date.now();
+  
+  try {
+    const { patientData } = req.body;
+
+    if (!patientData) {
+      return res.status(400).json({ error: 'Patient data is required' });
+    }
+
+    console.log('[AI Risk] 📊 Running risk assessment...');
+    
+    const model = getModel(AI_CONFIGS.riskAssessment);
+    if (!model) {
+      return res.status(500).json({ error: 'AI service not configured' });
+    }
+
+    const prompt = `${AI_CONFIGS.riskAssessment.systemInstruction}
+
+=== ข้อมูลผู้ป่วย ===
+${JSON.stringify(patientData, null, 2)}
+
+=== คำสั่ง ===
+วิเคราะห์ความเสี่ยงและตอบเป็น JSON (ไม่ต้องมี markdown code block):
+{
+  "cardiovascularRisk": { 
+    "level": "low|medium|high", 
+    "levelThai": "ต่ำ|ปานกลาง|สูง",
+    "score": 0-100,
+    "factors": ["ปัจจัยเสี่ยง..."] 
+  },
+  "diabetesRisk": { 
+    "level": "low|medium|high",
+    "levelThai": "ต่ำ|ปานกลาง|สูง", 
+    "score": 0-100,
+    "factors": ["ปัจจัยเสี่ยง..."] 
+  },
+  "obesityRisk": { 
+    "level": "low|medium|high",
+    "levelThai": "ต่ำ|ปานกลาง|สูง",
+    "bmi": null,
+    "bmiCategory": "ผอม|ปกติ|น้ำหนักเกิน|อ้วน" 
+  },
+  "lifestyleRisks": ["ความเสี่ยงจากพฤติกรรม..."],
+  "recommendations": ["คำแนะนำ 1", "คำแนะนำ 2"],
+  "priorityActions": ["สิ่งที่ควรทำเป็นอันดับแรก"]
+}`;
+
+    const result = await model.generateContent(prompt);
+    const response = result.response;
+    let text = response.text().trim();
+    
+    const duration = Date.now() - startTime;
+    console.log(`[AI Risk] ✅ Assessment complete (${duration}ms)`);
+
+    // Parse JSON response
+    let assessment;
+    try {
+      text = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      assessment = JSON.parse(text);
+    } catch {
+      console.warn('[AI Risk] ⚠️ Failed to parse JSON');
+      assessment = {
+        error: 'Failed to parse assessment',
+        rawResponse: text
+      };
+    }
+
+    res.json(assessment);
+    
+  } catch (error: any) {
+    console.error('[AI Risk] ❌ Error:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Health info endpoint - Quick health facts
+router.post('/health-info', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const { topic } = req.body;
+
+    if (!topic) {
+      return res.status(400).json({ error: 'Topic is required' });
+    }
+
+    const model = getModel(AI_CONFIGS.chat);
+    if (!model) {
+      return res.status(500).json({ error: 'AI service not configured' });
+    }
+
+    const prompt = `ให้ข้อมูลสุขภาพสั้นๆ เกี่ยวกับ: ${topic}
+
+ตอบเป็นภาษาไทย กระชับ ไม่เกิน 3 ย่อหน้า
+รวมคำแนะนำที่ปฏิบัติได้จริง`;
+
+    const result = await model.generateContent(prompt);
+    const text = result.response.text();
+
+    res.json({ info: text });
+    
+  } catch (error: any) {
+    console.error('[AI Info] Error:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// AI Status check endpoint
+router.get('/status', async (_req: Request, res: Response) => {
+  const isReady = initializeAI();
+  
+  res.json({
+    status: isReady ? 'ready' : 'not_configured',
+    model: GEMINI_MODEL,
+    hasApiKey: !!GEMINI_API_KEY,
+    apiKeyValid: GEMINI_API_KEY?.startsWith('AIza') || false,
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Multimodal Symptom Analysis - handles text, audio, and images
+router.post('/symptom-analysis', authMiddleware, async (req: Request, res: Response) => {
+  const startTime = Date.now();
+  
+  try {
+    // For multipart form data, we need to handle files
+    // The actual file handling depends on multer or similar middleware
+    const { symptoms, patientContext } = req.body;
+    
+    // Parse patient context if it's a string
+    let context = patientContext;
+    if (typeof patientContext === 'string') {
+      try {
+        context = JSON.parse(patientContext);
+      } catch (e) {
+        context = { raw: patientContext };
+      }
+    }
+
+    console.log(`[AI Analysis] 🔍 Multimodal analysis request`);
+    console.log(`[AI Analysis] - Symptoms text: ${symptoms ? 'Yes (' + symptoms.length + ' chars)' : 'No'}`);
+    console.log(`[AI Analysis] - Symptoms content preview: ${symptoms ? symptoms.substring(0, 200) : 'none'}...`);
+    
+    const model = getModel(AI_CONFIGS.symptomChecker);
+    if (!model) {
+      console.error('[AI Analysis] ❌ Model not available');
+      return res.status(500).json({ 
+        error: 'AI service not configured',
+        triageLevel: 'Routine',
+        reasoning: 'ไม่สามารถวิเคราะห์ได้ กรุณาปรึกษาแพทย์',
+        selfCareRecommendations: ['พักผ่อนให้เพียงพอ', 'ดื่มน้ำมากๆ'],
+        whenToSeekCare: 'หากอาการไม่ดีขึ้นใน 24 ชั่วโมง ควรพบแพทย์',
+        warningSigns: []
+      });
+    }
+
+    // Build comprehensive prompt with all symptom data
+    const symptomData = symptoms || 'ไม่ได้ระบุอาการ';
+    
+    const prompt = `คุณคือระบบคัดกรองอาการเบื้องต้น (Triage System) สำหรับผู้ป่วยชาวไทย
+
+หน้าที่:
+1. วิเคราะห์อาการที่ผู้ป่วยบอกอย่างละเอียด
+2. ประเมินระดับความเร่งด่วน (Emergency/Urgent/Routine/Self-care) ตามอาการจริง
+3. ให้คำแนะนำเบื้องต้นที่เป็นประโยชน์
+4. บอกอาการที่ต้องระวัง
+
+ข้อมูลอาการของผู้ป่วย:
+${symptomData}
+
+${context?.name ? `ชื่อผู้ป่วย: ${context.name}` : ''}
+${context?.previousTreatment ? `การรักษาก่อนหน้า: ${context.previousTreatment}` : ''}
+${context?.medicalHistory ? `ประวัติการแพทย์: ${context.medicalHistory}` : ''}
+
+คำสั่งสำคัญ:
+- อ่านข้อมูลอาการอย่างละเอียด ไม่ใช่บอกว่า "ไม่ได้ระบุอาการ" หากมีข้อมูลอยู่
+- วิเคราะห์ทุกอาการที่ผู้ป่วยบอก รวมถึงอุณหภูมิไข้ ความรุนแรง ระยะเวลา
+- ถ้ามีไข้สูง (>38°C) ร่วมกับอาการอื่น ควรพิจารณาเป็น Urgent หรือสูงกว่า
+- ตอบเป็นภาษาไทย
+
+ตอบเป็น JSON เท่านั้น ในรูปแบบ:
+{
+  "triageLevel": "Emergency" | "Urgent" | "Routine" | "Self-care",
+  "reasoning": "เหตุผลในการประเมินโดยอ้างอิงจากอาการที่ผู้ป่วยบอก",
+  "selfCareRecommendations": ["คำแนะนำ 1", "คำแนะนำ 2", "คำแนะนำ 3"],
+  "whenToSeekCare": "เมื่อไหร่ควรพบแพทย์",
+  "warningSigns": ["อาการเตือน 1", "อาการเตือน 2"],
+  "suggestedSpecialties": ["สาขาแพทย์ที่แนะนำ"],
+  "possibleConditions": ["โรคที่อาจเป็นได้ (เรียงตามความเป็นไปได้)"]
+}`;
+
+    console.log('[AI Analysis] 🚀 Sending to Gemini...');
+    
+    const result = await model.generateContent(prompt);
+    const response = result.response;
+    let text = response.text();
+    
+    // Clean up response - remove markdown code blocks if present
+    text = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    
+    const duration = Date.now() - startTime;
+    console.log(`[AI Analysis] ✅ Response received (${text.length} chars, ${duration}ms)`);
+    console.log(`[AI Analysis] Response preview: ${text.substring(0, 300)}...`);
+
+    try {
+      const assessment = JSON.parse(text);
+      res.json(assessment);
+    } catch (parseError) {
+      console.error('[AI Analysis] ⚠️ Failed to parse JSON, returning raw text');
+      res.json({
+        triageLevel: 'Routine',
+        reasoning: text,
+        selfCareRecommendations: ['พักผ่อนให้เพียงพอ', 'ดื่มน้ำมากๆ', 'ติดตามอาการ'],
+        whenToSeekCare: 'หากอาการไม่ดีขึ้นใน 24-48 ชั่วโมง',
+        warningSigns: [],
+        suggestedSpecialties: ['อายุรกรรมทั่วไป']
+      });
+    }
+    
+  } catch (error: any) {
+    const duration = Date.now() - startTime;
+    console.error(`[AI Analysis] ❌ Error after ${duration}ms:`, error.message);
+    
+    res.status(500).json({ 
+      error: error.message,
+      triageLevel: 'Routine',
+      reasoning: 'เกิดข้อผิดพลาดในการวิเคราะห์ กรุณาลองใหม่',
+      selfCareRecommendations: ['พักผ่อนให้เพียงพอ'],
+      whenToSeekCare: 'ควรปรึกษาแพทย์',
+      warningSigns: []
+    });
+  }
+});
+
+// AI Suggest - helps user improve symptom description
+router.post('/symptom-suggest', authMiddleware, async (req: Request, res: Response) => {
+  const startTime = Date.now();
+  
+  try {
+    const { currentDescription, selectedSymptoms } = req.body;
+
+    console.log(`[AI Suggest] 💡 Symptom suggestion request`);
+    console.log(`[AI Suggest] - Current description: ${currentDescription ? currentDescription.substring(0, 100) : 'none'}...`);
+    console.log(`[AI Suggest] - Selected symptoms: ${selectedSymptoms || 'none'}`);
+    
+    const model = getModel(AI_CONFIGS.chat);
+    if (!model) {
+      console.error('[AI Suggest] ❌ Model not available');
+      return res.status(500).json({ 
+        error: 'AI service not configured',
+        suggestions: []
+      });
+    }
+
+    const prompt = `คุณคือผู้ช่วยแนะนำการอธิบายอาการให้ผู้ป่วย
+
+ผู้ป่วยกำลังกรอกอาการ:
+- อาการที่เลือก: ${selectedSymptoms || 'ยังไม่ได้เลือก'}
+- คำอธิบายปัจจุบัน: ${currentDescription || 'ยังไม่ได้พิมพ์'}
+
+ช่วยแนะนำคำถามหรือข้อมูลเพิ่มเติมที่ผู้ป่วยควรระบุ เพื่อให้แพทย์เข้าใจอาการได้ดีขึ้น
+
+ตอบเป็น JSON:
+{
+  "suggestions": [
+    "คำแนะนำ/คำถามที่ควรตอบเพิ่ม 1",
+    "คำแนะนำ/คำถามที่ควรตอบเพิ่ม 2",
+    "คำแนะนำ/คำถามที่ควรตอบเพิ่ม 3"
+  ],
+  "improvedDescription": "ตัวอย่างคำอธิบายที่ปรับปรุงแล้ว (ถ้ามีคำอธิบายเดิม)",
+  "followUpQuestions": [
+    "คำถามติดตาม 1",
+    "คำถามติดตาม 2"
+  ]
+}
+
+ตอบเป็นภาษาไทย กระชับ เข้าใจง่าย`;
+
+    const result = await model.generateContent(prompt);
+    const response = result.response;
+    let text = response.text();
+    
+    // Clean up response
+    text = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    
+    const duration = Date.now() - startTime;
+    console.log(`[AI Suggest] ✅ Response received (${text.length} chars, ${duration}ms)`);
+
+    try {
+      const suggestions = JSON.parse(text);
+      res.json(suggestions);
+    } catch (parseError) {
+      console.error('[AI Suggest] ⚠️ Failed to parse JSON');
+      res.json({
+        suggestions: [
+          'ลองอธิบายว่าอาการเริ่มเมื่อไหร่',
+          'บอกว่าอาการเป็นมากแค่ไหน (1-10)',
+          'มีอะไรที่ทำให้อาการดีขึ้นหรือแย่ลงไหม'
+        ],
+        improvedDescription: '',
+        followUpQuestions: []
+      });
+    }
+    
+  } catch (error: any) {
+    const duration = Date.now() - startTime;
+    console.error(`[AI Suggest] ❌ Error after ${duration}ms:`, error.message);
+    
+    res.status(500).json({ 
+      error: error.message,
+      suggestions: ['กรุณาอธิบายอาการให้ละเอียด']
+    });
+  }
+});
+
+export default router;

@@ -1,0 +1,230 @@
+{
+  "suiteName": "Appointment Workflow",
+  "startTime": "2025-12-15T10:07:12.186Z",
+  "endTime": "2025-12-15T10:15:53.117Z",
+  "duration": 520931,
+  "total": 27,
+  "passed": 27,
+  "failed": 0,
+  "skipped": 0,
+  "passRate": "100.0",
+  "sections": {},
+  "tests": [
+    {
+      "name": "Patient login successful",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-15T10:07:26.949Z",
+      "section": null
+    },
+    {
+      "name": "Navigated to booking page",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-15T10:07:31.553Z",
+      "section": null
+    },
+    {
+      "name": "Symptom information entered",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-15T10:07:46.977Z",
+      "section": null
+    },
+    {
+      "name": "Appointment type selected",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-15T10:08:07.107Z",
+      "section": null
+    },
+    {
+      "name": "Date and time selected",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-15T10:08:27.441Z",
+      "section": null
+    },
+    {
+      "name": "Appointment booked successfully",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-15T10:09:11.448Z",
+      "section": null
+    },
+    {
+      "name": "Doctor login successful",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-15T10:09:52.537Z",
+      "section": null
+    },
+    {
+      "name": "Navigated to appointments page",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-15T10:10:03.130Z",
+      "section": null
+    },
+    {
+      "name": "Patient queue displayed (appointment being processed)",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-15T10:10:09.651Z",
+      "section": null
+    },
+    {
+      "name": "Appointment confirmation flow completed",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-15T10:10:29.792Z",
+      "section": null
+    },
+    {
+      "name": "Scheduled meetings tab accessed",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-15T10:10:45.079Z",
+      "section": null
+    },
+    {
+      "name": "Meeting access flow completed",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-15T10:10:55.165Z",
+      "section": null
+    },
+    {
+      "name": "EMR editor opened",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-15T10:11:27.303Z",
+      "section": null
+    },
+    {
+      "name": "EMR Subjective section filled",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-15T10:11:57.516Z",
+      "section": null
+    },
+    {
+      "name": "EMR Objective section filled",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-15T10:12:12.823Z",
+      "section": null
+    },
+    {
+      "name": "EMR Assessment section filled",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-15T10:12:28.968Z",
+      "section": null
+    },
+    {
+      "name": "EMR Plan section filled",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-15T10:12:40.060Z",
+      "section": null
+    },
+    {
+      "name": "Prescribing module opened",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-15T10:13:00.452Z",
+      "section": null
+    },
+    {
+      "name": "Medication details entered",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-15T10:13:45.940Z",
+      "section": null
+    },
+    {
+      "name": "Prescription saved",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-15T10:14:01.203Z",
+      "section": null
+    },
+    {
+      "name": "AI Summary tab viewed",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-15T10:14:06.454Z",
+      "section": null
+    },
+    {
+      "name": "AI summary generated",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-15T10:14:21.761Z",
+      "section": null
+    },
+    {
+      "name": "EMR signed and sent to patient",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-15T10:14:47.146Z",
+      "section": null
+    },
+    {
+      "name": "Patient login successful",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-15T10:15:07.892Z",
+      "section": null
+    },
+    {
+      "name": "Health Studio accessed",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-15T10:15:12.560Z",
+      "section": null
+    },
+    {
+      "name": "Health records section accessible (EMR syncing)",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-15T10:15:27.625Z",
+      "section": null
+    },
+    {
+      "name": "Prescribed medications visible to patient",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-15T10:15:27.910Z",
+      "section": null
+    }
+  ]
+}

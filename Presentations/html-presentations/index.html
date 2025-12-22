@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IZARA Telemedicine - Presentations</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 1920px;
+            background: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 4rem;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding-bottom: 2rem;
+            border-bottom: 4px solid #667eea;
+        }
+        
+        h1 {
+            font-size: 4.5rem;
+            color: #2d3748;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+        }
+        
+        .subtitle {
+            font-size: 2.2rem;
+            color: #667eea;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+        
+        .description {
+            font-size: 1.4rem;
+            color: #718096;
+            max-width: 900px;
+            margin: 0 auto;
+            line-height: 1.8;
+        }
+        
+        .presentations-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(450px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+        
+        .presentation-card {
+            background: linear-gradient(135deg, #f6f8fb 0%, #ffffff 100%);
+            border: 3px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 2rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            text-decoration: none;
+            display: block;
+        }
+        
+        .presentation-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.3);
+            border-color: #667eea;
+        }
+        
+        .card-icon {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .card-title {
+            font-size: 1.8rem;
+            color: #2d3748;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+        }
+        
+        .card-description {
+            font-size: 1.2rem;
+            color: #718096;
+            line-height: 1.6;
+        }
+        
+        .category-section {
+            margin-bottom: 3rem;
+        }
+        
+        .category-title {
+            font-size: 2.5rem;
+            color: #2d3748;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            padding-left: 1rem;
+            border-left: 6px solid #667eea;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 2px solid #e2e8f0;
+            color: #718096;
+            font-size: 1.1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🏥 IZARA TELEMEDICINE</h1>
+            <div class="subtitle">Interactive Presentation Suite</div>
+            <div class="description">
+                Comprehensive visual documentation of the IZARA Telemedicine platform architecture,
+                workflows, and features. Click any card below to explore detailed diagrams.
+            </div>
+        </header>
+        
+        <div class="category-section">
+            <h2 class="category-title">System Architecture & Infrastructure</h2>
+            <div class="presentations-grid">
+                <a href="01-system-architecture.html" class="presentation-card">
+                    <div class="card-icon">🏥</div>
+                    <div class="card-title">System Architecture</div>
+                    <div class="card-description">
+                        Complete overview of IZARA platform architecture, services, and cloud infrastructure
+                    </div>
+                </a>
+                
+                <a href="09-gcs-bucket-architecture.html" class="presentation-card">
+                    <div class="card-icon">☁️</div>
+                    <div class="card-title">GCS Bucket Architecture</div>
+                    <div class="card-description">
+                        Google Cloud Storage bucket structure and data organization
+                    </div>
+                </a>
+                
+                <a href="10-gcp-services.html" class="presentation-card">
+                    <div class="card-icon">🌐</div>
+                    <div class="card-title">GCP Services</div>
+                    <div class="card-description">
+                        Google Cloud Platform services integration and configuration
+                    </div>
+                </a>
+                
+                <a href="11-google-services.html" class="presentation-card">
+                    <div class="card-icon">🔗</div>
+                    <div class="card-title">Google Services Integration</div>
+                    <div class="card-description">
+                        Integration with Google Meet, Calendar, Maps, Gemini AI, and Gmail
+                    </div>
+                </a>
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Portal Features</h2>
+            <div class="presentations-grid">
+                <a href="02-patient-features.html" class="presentation-card">
+                    <div class="card-icon">📱</div>
+                    <div class="card-title">Patient Portal Features</div>
+                    <div class="card-description">
+                        Complete feature set available to patients including appointments, PHR, and health studio
+                    </div>
+                </a>
+                
+                <a href="03-doctor-features.html" class="presentation-card">
+                    <div class="card-icon">💻</div>
+                    <div class="card-title">Doctor Portal Features</div>
+                    <div class="card-description">
+                        EMR system, e-prescribing, lab orders, and clinical tools for doctors
+                    </div>
+                </a>
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Core Workflows</h2>
+            <div class="presentations-grid">
+                <a href="04-appointment-workflow.html" class="presentation-card">
+                    <div class="card-icon">📅</div>
+                    <div class="card-title">Appointment Booking</div>
+                    <div class="card-description">
+                        Step-by-step appointment scheduling workflow with AI symptom analysis
+                    </div>
+                </a>
+                
+                <a href="05-consultation-workflow.html" class="presentation-card">
+                    <div class="card-icon">📹</div>
+                    <div class="card-title">Video Consultation</div>
+                    <div class="card-description">
+                        Complete telemedicine consultation flow from preparation to documentation
+                    </div>
+                </a>
+                
+                <a href="06-emr-workflow.html" class="presentation-card">
+                    <div class="card-icon">📋</div>
+                    <div class="card-title">EMR Documentation</div>
+                    <div class="card-description">
+                        Electronic Medical Record creation using SOAP format with AI assistance
+                    </div>
+                </a>
+                
+                <a href="07-prescribing-workflow.html" class="presentation-card">
+                    <div class="card-icon">💊</div>
+                    <div class="card-title">E-Prescribing</div>
+                    <div class="card-description">
+                        Digital prescription workflow with drug interaction and allergy checking
+                    </div>
+                </a>
+                
+                <a href="12-lab-imaging-workflow.html" class="presentation-card">
+                    <div class="card-icon">🔬</div>
+                    <div class="card-title">Lab & Imaging Orders</div>
+                    <div class="card-description">
+                        Laboratory and radiology ordering system workflow
+                    </div>
+                </a>
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Data Management</h2>
+            <div class="presentations-grid">
+                <a href="13-auth-workflow.html" class="presentation-card">
+                    <div class="card-icon">🔐</div>
+                    <div class="card-title">Authentication</div>
+                    <div class="card-description">
+                        User authentication flow with Firebase and GCS integration
+                    </div>
+                </a>
+                
+                <a href="14-phr-workflow.html" class="presentation-card">
+                    <div class="card-icon">📁</div>
+                    <div class="card-title">PHR Management</div>
+                    <div class="card-description">
+                        Personal Health Record viewing, editing, and sharing workflow
+                    </div>
+                </a>
+                
+                <a href="16-data-sync-workflow.html" class="presentation-card">
+                    <div class="card-icon">🔄</div>
+                    <div class="card-title">Data Synchronization</div>
+                    <div class="card-description">
+                        Real-time data sync architecture between portals and cloud storage
+                    </div>
+                </a>
+                
+                <a href="08-content-workflow.html" class="presentation-card">
+                    <div class="card-icon">📚</div>
+                    <div class="card-title">Medical Content Management</div>
+                    <div class="card-description">
+                        Content creation, review, approval, and publishing workflow
+                    </div>
+                </a>
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="category-title">Additional Features</h2>
+            <div class="presentations-grid">
+                <a href="15-healthcare-map-workflow.html" class="presentation-card">
+                    <div class="card-icon">🗺️</div>
+                    <div class="card-title">Healthcare Map</div>
+                    <div class="card-description">
+                        Interactive map for finding hospitals, clinics, and pharmacies
+                    </div>
+                </a>
+            </div>
+        </div>
+        
+        <footer>
+            <p><strong>IZARA Telemedicine Platform</strong> | Version 0.0.2 | © 2024</p>
+            <p>Built with React, TypeScript, Express.js, and Google Cloud Platform</p>
+        </footer>
+    </div>
+</body>
+</html>

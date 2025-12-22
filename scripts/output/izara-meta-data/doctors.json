@@ -1,0 +1,176 @@
+[
+  {
+    "id": "DOC-001",
+    "name": "Dr. Test Doctor",
+    "nameThai": "นพ. ทดสอบ แพทย์",
+    "specialty": "General Practice",
+    "specialtyThai": "เวชปฏิบัติทั่วไป",
+    "hospital": "Izara Hospital Bangkok",
+    "avatarUrl": "https://api.dicebear.com/7.x/avataaars/svg?seed=dr-example-doctor",
+    "email": "doctor.test@izara.com",
+    "rating": 4.9,
+    "reviewCount": 247,
+    "experience": "15 years",
+    "languages": [
+      "Thai",
+      "English"
+    ],
+    "availability": [
+      {
+        "day": "Monday",
+        "slots": [
+          "09:00",
+          "10:00",
+          "11:00",
+          "14:00",
+          "15:00",
+          "16:00"
+        ]
+      },
+      {
+        "day": "Tuesday",
+        "slots": [
+          "09:00",
+          "10:00",
+          "11:00",
+          "14:00",
+          "15:00",
+          "16:00"
+        ]
+      },
+      {
+        "day": "Wednesday",
+        "slots": [
+          "09:00",
+          "10:00",
+          "11:00",
+          "14:00",
+          "15:00"
+        ]
+      },
+      {
+        "day": "Thursday",
+        "slots": [
+          "09:00",
+          "10:00",
+          "11:00",
+          "14:00",
+          "15:00",
+          "16:00"
+        ]
+      },
+      {
+        "day": "Friday",
+        "slots": [
+          "09:00",
+          "10:00",
+          "11:00",
+          "14:00",
+          "15:00"
+        ]
+      },
+      {
+        "day": "Saturday",
+        "slots": [
+          "09:00",
+          "10:00",
+          "11:00"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "DOC-005",
+    "name": "Dr. Kittisak Phromrak",
+    "nameThai": "นพ. กิตติศักดิ์ พร้อมรักษ์",
+    "specialty": "Cardiology",
+    "specialtyThai": "โรคหัวใจและหลอดเลือด",
+    "hospital": "Bangkok Heart Hospital",
+    "avatarUrl": "https://i.pravatar.cc/150?u=doc005",
+    "email": "kittisak.p@bangkokheart.com",
+    "rating": 4.9,
+    "reviewCount": 423,
+    "experience": "20 years",
+    "languages": [
+      "Thai",
+      "English",
+      "Japanese"
+    ],
+    "availability": [
+      {
+        "day": "Monday",
+        "slots": [
+          "08:00",
+          "09:00",
+          "10:00",
+          "14:00",
+          "15:00"
+        ]
+      },
+      {
+        "day": "Wednesday",
+        "slots": [
+          "08:00",
+          "09:00",
+          "10:00",
+          "14:00",
+          "15:00"
+        ]
+      },
+      {
+        "day": "Thursday",
+        "slots": [
+          "08:00",
+          "09:00",
+          "10:00"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "DOC-006",
+    "name": "Dr. Kanya Rattanaporn",
+    "nameThai": "พญ. กัญญา รัตนพร",
+    "specialty": "Dermatology",
+    "specialtyThai": "ผิวหนัง",
+    "hospital": "Siriraj Hospital",
+    "avatarUrl": "https://i.pravatar.cc/150?u=doc006",
+    "email": "kanya.r@siriraj.ac.th",
+    "rating": 4.8,
+    "reviewCount": 198,
+    "experience": "10 years",
+    "languages": [
+      "Thai",
+      "English"
+    ],
+    "availability": [
+      {
+        "day": "Tuesday",
+        "slots": [
+          "09:00",
+          "10:00",
+          "11:00",
+          "14:00",
+          "15:00"
+        ]
+      },
+      {
+        "day": "Thursday",
+        "slots": [
+          "09:00",
+          "10:00",
+          "11:00",
+          "14:00",
+          "15:00"
+        ]
+      },
+      {
+        "day": "Saturday",
+        "slots": [
+          "09:00",
+          "10:00"
+        ]
+      }
+    ]
+  }
+]

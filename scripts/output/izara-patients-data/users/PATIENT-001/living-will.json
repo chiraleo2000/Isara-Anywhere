@@ -1,0 +1,32 @@
+{
+  "id": "lw-PATIENT-001",
+  "patientId": "PATIENT-001",
+  "healthcareProxy": {
+    "primary": {
+      "name": "Demo Emergency Contact",
+      "nameThai": "นาง สมใจ ระบบ",
+      "relationship": "Spouse",
+      "phone": "+66 82 345 6789",
+      "email": "emergency.contact@example.com",
+      "address": "123 Demo Street, Sukhumvit, Bangkok, Thailand 10110"
+    }
+  },
+  "preferences": {
+    "cpr": true,
+    "mechanicalVentilation": false,
+    "artificialNutrition": true,
+    "dialysis": true,
+    "organDonation": true,
+    "painManagement": "Full pain management desired",
+    "painManagementThai": "ต้องการการบรรเทาอาการปวดอย่างเต็มที่",
+    "additionalWishes": "Prefer to spend final moments with family at home",
+    "additionalWishesThai": "ต้องการใช้เวลาสุดท้ายกับครอบครัวที่บ้าน"
+  },
+  "religiousPreferences": "Buddhist",
+  "digitalSignature": "DEMO_SIGNATURE_BASE64_DATA",
+  "createdAt": "2025-06-13T16:57:16.791Z",
+  "updatedAt": "2025-11-10T16:57:16.791Z",
+  "sharedWith": [
+    "DOC-001"
+  ]
+}

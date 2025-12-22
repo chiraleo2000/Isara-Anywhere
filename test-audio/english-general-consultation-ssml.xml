@@ -1,0 +1,37 @@
+<speak>
+  <voice name="en-US-Standard-B">
+    Good morning. How can I help you today?
+  </voice>
+  <break time="1s"/>
+  <voice name="en-US-Standard-C">
+    Good morning doctor. I have been experiencing some stomach pain for the past few days.
+  </voice>
+  <break time="1s"/>
+  <voice name="en-US-Standard-B">
+    Can you describe the pain? Where exactly is it located?
+  </voice>
+  <break time="1s"/>
+  <voice name="en-US-Standard-C">
+    It is in my upper abdomen, more on the right side. It gets worse after eating.
+  </voice>
+  <break time="1s"/>
+  <voice name="en-US-Standard-B">
+    Do you have any other symptoms like nausea or vomiting?
+  </voice>
+  <break time="1s"/>
+  <voice name="en-US-Standard-C">
+    Yes, I feel nauseous sometimes, especially after meals.
+  </voice>
+  <break time="1s"/>
+  <voice name="en-US-Standard-B">
+    Based on your symptoms, this could be gastritis. I will prescribe some medication and recommend avoiding spicy and fatty foods.
+  </voice>
+  <break time="1s"/>
+  <voice name="en-US-Standard-C">
+    Thank you doctor. How long should I take the medication?
+  </voice>
+  <break time="1s"/>
+  <voice name="en-US-Standard-B">
+    Take the medication for one week. If symptoms persist, please come back for a follow-up.
+  </voice>
+</speak>

@@ -1,0 +1,128 @@
+[
+  {
+    "id": "mc-001",
+    "title": "COVID-19 Prevention and Care Guidelines",
+    "titleThai": "แนวทางป้องกันและดูแลตัวเองจาก COVID-19",
+    "category": "infectious_disease",
+    "type": "article",
+    "content": "COVID-19 prevention includes proper hand hygiene, wearing masks in crowded places, maintaining social distance, and staying up to date with vaccinations. If infected, monitor symptoms, stay hydrated, rest well, and seek medical attention if symptoms worsen.",
+    "contentThai": "การป้องกัน COVID-19 รวมถึงการล้างมือบ่อยๆ สวมหน้ากากในที่แออัด รักษาระยะห่าง และฉีดวัคซีนให้ครบ หากติดเชื้อให้เฝ้าระวังอาการ ดื่มน้ำมากๆ พักผ่อนให้เพียงพอ และพบแพทย์หากอาการรุนแรงขึ้น",
+    "author": "Dr. Apirak Chaiyasit",
+    "authorId": "DOC-001",
+    "publishDate": "2025-12-03T16:57:16.801Z",
+    "status": "published",
+    "tags": [
+      "covid",
+      "prevention",
+      "guidelines"
+    ],
+    "imageUrl": "https://images.unsplash.com/photo-1584036561566-baf8f5f1b144?w=800",
+    "views": 1250,
+    "likes": 89
+  },
+  {
+    "id": "mc-002",
+    "title": "Managing High Blood Pressure at Home",
+    "titleThai": "การจัดการความดันโลหิตสูงที่บ้าน",
+    "category": "cardiovascular",
+    "type": "article",
+    "content": "High blood pressure (hypertension) can be managed through lifestyle changes: regular exercise (30 min/day), reducing sodium intake (<2000mg/day), eating fruits and vegetables (DASH diet), limiting alcohol, maintaining healthy weight, and taking medications as prescribed.",
+    "contentThai": "ความดันโลหิตสูงสามารถจัดการได้ด้วยการปรับเปลี่ยนวิถีชีวิต: ออกกำลังกายสม่ำเสมอ (30 นาที/วัน) ลดเกลือ (<2000 มก./วัน) กินผักผลไม้ (DASH diet) จำกัดแอลกอฮอล์ รักษาน้ำหนักให้เหมาะสม และทานยาตามแพทย์สั่ง",
+    "author": "Dr. Somchai Prasert",
+    "authorId": "DOC-002",
+    "publishDate": "2025-11-26T16:57:16.801Z",
+    "status": "published",
+    "tags": [
+      "hypertension",
+      "home-care",
+      "lifestyle"
+    ],
+    "imageUrl": "https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=800",
+    "views": 2340,
+    "likes": 156
+  },
+  {
+    "id": "mc-003",
+    "title": "Diabetes Diet Guide: What to Eat and Avoid",
+    "titleThai": "คู่มืออาหารสำหรับผู้เป็นเบาหวาน",
+    "category": "diabetes",
+    "type": "article",
+    "content": "For diabetes management, focus on: complex carbohydrates (whole grains, legumes), lean proteins, healthy fats (olive oil, nuts), and plenty of vegetables. Avoid: sugary drinks, refined carbs, processed foods, and excessive fruit juice. Monitor carb portions and pair with protein.",
+    "contentThai": "สำหรับการจัดการเบาหวาน: เน้นคาร์บเชิงซ้อน (ธัญพืช ถั่ว) โปรตีนไขมันต่ำ ไขมันดี (น้ำมันมะกอก ถั่ว) และผักมากๆ หลีกเลี่ยง: เครื่องดื่มหวาน คาร์บขัดสี อาหารแปรรูป และน้ำผลไม้มากเกินไป ควบคุมปริมาณคาร์บและกินคู่กับโปรตีน",
+    "author": "Izara Nutrition Team",
+    "authorId": null,
+    "publishDate": "2025-11-19T16:57:16.801Z",
+    "status": "published",
+    "tags": [
+      "diabetes",
+      "nutrition",
+      "diet"
+    ],
+    "imageUrl": "https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=800",
+    "views": 3150,
+    "likes": 234
+  },
+  {
+    "id": "mc-004",
+    "title": "Understanding Your Lab Results",
+    "titleThai": "ทำความเข้าใจผลตรวจแลปของคุณ",
+    "category": "general_health",
+    "type": "article",
+    "content": "Common lab tests explained: CBC (blood cell counts), FBS (fasting blood sugar, normal <100 mg/dL), HbA1c (diabetes control, normal <5.7%), Lipid Panel (cholesterol, LDL <100, HDL >40), Creatinine (kidney function), and Liver enzymes (ALT, AST). Always discuss results with your doctor.",
+    "contentThai": "การตรวจแลปทั่วไป: CBC (นับเม็ดเลือด), FBS (น้ำตาลอดอาหาร ปกติ <100), HbA1c (ควบคุมเบาหวาน ปกติ <5.7%), Lipid Panel (ไขมัน LDL <100 HDL >40), Creatinine (ไต), Liver enzymes (ตับ) ควรปรึกษาแพทย์เพื่อแปลผล",
+    "author": "Dr. Malee Srisombat",
+    "authorId": "DOC-003",
+    "publishDate": "2025-11-12T16:57:16.801Z",
+    "status": "published",
+    "tags": [
+      "lab-results",
+      "health-checkup",
+      "education"
+    ],
+    "imageUrl": "https://images.unsplash.com/photo-1579165466741-7f35e4755660?w=800",
+    "views": 4200,
+    "likes": 312
+  },
+  {
+    "id": "mc-005",
+    "title": "Mental Health: Recognizing Signs of Depression",
+    "titleThai": "สุขภาพจิต: สัญญาณของภาวะซึมเศร้า",
+    "category": "mental_health",
+    "type": "article",
+    "content": "Warning signs of depression include: persistent sadness, loss of interest in activities, changes in sleep/appetite, fatigue, difficulty concentrating, feelings of worthlessness, and thoughts of self-harm. If you experience these for more than 2 weeks, seek professional help.",
+    "contentThai": "สัญญาณเตือนของภาวะซึมเศร้า: เศร้าต่อเนื่อง หมดความสนใจในกิจกรรม เปลี่ยนแปลงการนอน/กิน อ่อนเพลีย สมาธิลดลง รู้สึกไร้ค่า และคิดทำร้ายตัวเอง หากมีอาการนานกว่า 2 สัปดาห์ ควรพบแพทย์",
+    "author": "Dr. Nattaporn Wongsiri",
+    "authorId": "DOC-004",
+    "publishDate": "2025-11-05T16:57:16.801Z",
+    "status": "published",
+    "tags": [
+      "mental-health",
+      "depression",
+      "awareness"
+    ],
+    "imageUrl": "https://images.unsplash.com/photo-1493836512294-502baa1986e2?w=800",
+    "views": 1890,
+    "likes": 145
+  },
+  {
+    "id": "mc-006",
+    "title": "Exercise Guidelines for Seniors",
+    "titleThai": "แนวทางการออกกำลังกายสำหรับผู้สูงอายุ",
+    "category": "elderly_care",
+    "type": "article",
+    "content": "Seniors should aim for: 150 min moderate aerobic activity/week (walking, swimming), strength training 2x/week, balance exercises daily. Start slow, stay hydrated, warm up properly. Avoid high-impact activities. Always consult doctor before starting new exercise programs.",
+    "contentThai": "ผู้สูงอายุควร: ออกกำลังกายแอโรบิกปานกลาง 150 นาที/สัปดาห์ (เดิน ว่ายน้ำ) ฝึกกล้ามเนื้อ 2 ครั้ง/สัปดาห์ ฝึกทรงตัวทุกวัน เริ่มช้าๆ ดื่มน้ำมากๆ อบอุ่นร่างกายก่อน หลีกเลี่ยงกิจกรรมหนัก ปรึกษาแพทย์ก่อนเริ่มโปรแกรมใหม่",
+    "author": "Izara Rehabilitation Team",
+    "authorId": null,
+    "publishDate": "2025-10-29T16:57:16.801Z",
+    "status": "published",
+    "tags": [
+      "elderly",
+      "exercise",
+      "wellness"
+    ],
+    "imageUrl": "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800",
+    "views": 1560,
+    "likes": 98
+  }
+]

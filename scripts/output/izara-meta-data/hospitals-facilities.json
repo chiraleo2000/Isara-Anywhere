@@ -1,0 +1,91 @@
+[
+  {
+    "id": "hosp-001",
+    "name": "X Hospital Bangkok",
+    "nameThai": "โรงพยาบาล X กรุงเทพ",
+    "type": "hospital",
+    "address": "123 Sukhumvit Rd, Bangkok 10110",
+    "coords": {
+      "lat": 13.7563,
+      "lng": 100.5018
+    },
+    "phone": "02-123-4567",
+    "rating": 4.7,
+    "services": [
+      "Emergency 24h",
+      "Cardiology",
+      "General Medicine"
+    ]
+  },
+  {
+    "id": "hosp-002",
+    "name": "Bangkok Hospital",
+    "nameThai": "โรงพยาบาลกรุงเทพ",
+    "type": "hospital",
+    "address": "2 Soi Soonvijai 7, New Petchburi Rd",
+    "coords": {
+      "lat": 13.7465,
+      "lng": 100.565
+    },
+    "phone": "02-310-3000",
+    "rating": 4.5,
+    "services": [
+      "Emergency 24h",
+      "Heart Center",
+      "Cancer Center"
+    ]
+  },
+  {
+    "id": "hosp-003",
+    "name": "Samitivej Hospital",
+    "nameThai": "โรงพยาบาลสมิติเวช",
+    "type": "hospital",
+    "address": "133 Sukhumvit 49, Bangkok",
+    "coords": {
+      "lat": 13.7246,
+      "lng": 100.5698
+    },
+    "phone": "02-022-2222",
+    "rating": 4.6,
+    "services": [
+      "Emergency 24h",
+      "Pediatrics",
+      "OB-GYN"
+    ]
+  },
+  {
+    "id": "pharm-001",
+    "name": "Boots Pharmacy",
+    "nameThai": "ร้านขายยา Boots",
+    "type": "pharmacy",
+    "address": "Terminal 21, Sukhumvit Rd",
+    "coords": {
+      "lat": 13.7387,
+      "lng": 100.5598
+    },
+    "phone": "02-108-0888",
+    "rating": 4.3,
+    "services": [
+      "Prescription",
+      "OTC",
+      "Consultation"
+    ]
+  },
+  {
+    "id": "clinic-001",
+    "name": "Sukjai Clinic",
+    "nameThai": "คลินิกสุขใจ",
+    "type": "clinic",
+    "address": "456 Rama 4 Rd, Bangkok",
+    "coords": {
+      "lat": 13.7307,
+      "lng": 100.5418
+    },
+    "phone": "02-234-5678",
+    "rating": 4.4,
+    "services": [
+      "General Practice",
+      "Health Checkup"
+    ]
+  }
+]

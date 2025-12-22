@@ -1,0 +1,25 @@
+{
+  "id": "DOC-002",
+  "email": "doctor02.test@izara.com",
+  "passwordHash": "$2b$10$Tr5vbN5abeOQPkeMy.rG.eBReM/p6a5F3EgONrfQIT1LhkCKibjte",
+  "role": "doctor",
+  "name": "Dr. Pending Doctor",
+  "nameThai": "นพ. รอการอนุมัติ",
+  "avatarUrl": "https://api.dicebear.com/7.x/avataaars/svg?seed=doc-002",
+  "specialty": "Internal Medicine",
+  "specialtyThai": "อายุรกรรม",
+  "hospital": "Bangkok Hospital",
+  "medicalLicenseNumber": "MD-002-2024",
+  "isActive": false,
+  "isVerified": false,
+  "isApproved": false,
+  "status": "pending",
+  "approvalStatus": "pending",
+  "createdAt": "2025-11-10T16:41:23.194Z",
+  "lastLogin": null,
+  "preferences": {
+    "language": "th",
+    "notifications": true,
+    "theme": "light"
+  }
+}

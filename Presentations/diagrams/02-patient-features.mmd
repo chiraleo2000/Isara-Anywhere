@@ -1,0 +1,71 @@
+%%{init: {
+  'theme': 'base',
+  'themeVariables': {
+    'primaryColor': '#E3F2FD',
+    'primaryTextColor': '#0D47A1',
+    'primaryBorderColor': '#2196F3',
+    'lineColor': '#1976D2',
+    'secondaryColor': '#E8F5E9',
+    'tertiaryColor': '#FFF8E1',
+    'fontSize': '20px',
+    'fontFamily': 'Segoe UI, Arial'
+  }
+}}%%
+
+flowchart LR
+    subgraph CENTER["📱 PATIENT PORTAL"]
+        HOME["🏠 Dashboard<br/>หน้าแรก"]
+    end
+
+    subgraph BOOKING["📅 APPOINTMENTS"]
+        B1["📝 Book Appointment<br/>นัดพบแพทย์"]
+        B2["📋 My Appointments<br/>รายการนัดหมาย"]
+        B3["📹 Video Call<br/>Jitsi Meet"]
+    end
+
+    subgraph PHR["📋 HEALTH RECORDS"]
+        P1["📊 PHR Dashboard<br/>ข้อมูลสุขภาพ"]
+        P2["💊 Medications<br/>รายการยา"]
+        P3["⚠️ Allergies<br/>ประวัติแพ้ยา"]
+        P4["📈 Vitals<br/>สัญญาณชีพ"]
+    end
+
+    subgraph HEALTH["🏥 HEALTH STUDIO"]
+        H1["🤖 AI Health Chat<br/>Gemini AI"]
+        H2["📚 Medical Library<br/>คลังความรู้"]
+        H3["📋 Treatment Results<br/>ผลการรักษา"]
+    end
+
+    subgraph EXTRA["🔧 UTILITIES"]
+        M1["🗺️ Healthcare Map<br/>แผนที่รพ."]
+        PR1["👤 Profile<br/>โปรไฟล์"]
+        PR2["📜 PDPA<br/>ความยินยอม"]
+        LW["📄 Living Will<br/>พินัยกรรมชีวิต"]
+    end
+
+    %% Connections from Dashboard
+    HOME --> BOOKING
+    HOME --> PHR
+    HOME --> HEALTH
+    HOME --> EXTRA
+
+    %% Internal flows
+    B1 --> B2
+    B2 --> B3
+    P1 --> P2
+    P1 --> P3
+    P1 --> P4
+
+    %% Styling
+    classDef centerStyle fill:#E3F2FD,stroke:#2196F3,stroke-width:3px,color:#0D47A1
+    classDef bookingStyle fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px,color:#1B5E20
+    classDef phrStyle fill:#FFF3E0,stroke:#FF9800,stroke-width:2px,color:#E65100
+    classDef healthStyle fill:#F3E5F5,stroke:#9C27B0,stroke-width:2px,color:#4A148C
+    classDef extraStyle fill:#ECEFF1,stroke:#607D8B,stroke-width:2px,color:#37474F
+
+    class HOME centerStyle
+    class B1,B2,B3 bookingStyle
+    class P1,P2,P3,P4 phrStyle
+    class H1,H2,H3 healthStyle
+    class M1,PR1,PR2,LW extraStyle
+

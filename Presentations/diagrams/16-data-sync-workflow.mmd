@@ -1,0 +1,91 @@
+%%{init: {
+  'theme': 'base',
+  'themeVariables': {
+    'primaryColor': '#FFF8E1',
+    'primaryTextColor': '#FF6F00',
+    'primaryBorderColor': '#FFC107',
+    'lineColor': '#FFA000',
+    'secondaryColor': '#E8F5E9',
+    'tertiaryColor': '#E3F2FD',
+    'fontSize': '28px',
+    'fontFamily': 'Arial, sans-serif'
+  }
+}}%%
+
+flowchart LR
+    subgraph TITLE["🔄 DATA SYNC ARCHITECTURE<br/>สถาปัตยกรรมการซิงค์ข้อมูล"]
+        direction TB
+    end
+
+    subgraph PATIENT["👨‍⚕️ PATIENT PORTAL<br/>ระบบผู้ป่วย"]
+        direction TB
+        P_PHR["📁 PHR<br/>เวชระเบียน"]
+        P_APPT["📅 Appointments<br/>นัดหมาย"]
+        P_PROFILE["👤 Profile<br/>โปรไฟล์"]
+        P_DOCS["📄 Documents<br/>เอกสาร"]
+    end
+
+    subgraph DOCTOR["👨‍⚕️ DOCTOR PORTAL<br/>ระบบแพทย์"]
+        direction TB
+        D_EMR["📋 EMR<br/>เวชระเบียน"]
+        D_RX["💊 Prescriptions<br/>ใบสั่งยา"]
+        D_ORDERS["🧪 Lab Orders<br/>คำสั่งตรวจ"]
+        D_NOTES["📝 Clinical Notes<br/>บันทึกทางคลินิก"]
+    end
+
+    subgraph SYNC["🔄 SYNC ENGINE<br/>เอนจิ้นซิงค์"]
+        direction TB
+        SYNC_SVC["⚙️ Sync Service<br/>บริการซิงค์"]
+        CONFLICT["⚡ Conflict Resolution<br/>แก้ไขข้อขัดแย้ง"]
+        QUEUE["📋 Sync Queue<br/>คิวซิงค์"]
+        RETRY["🔁 Retry Logic<br/>ลองใหม่"]
+    end
+
+    subgraph GCS["☁️ GOOGLE CLOUD STORAGE<br/>Cloud Storage"]
+        direction TB
+        PAT_BUCKET["💚 izara-patients-data"]
+        DOC_BUCKET["💙 izara-doctors-data"]
+        APPT_BUCKET["📅 izara-appointments"]
+    end
+
+    %% Patient to Sync
+    P_PHR -->|"Update"| SYNC_SVC
+    P_APPT -->|"Book/Cancel"| SYNC_SVC
+    P_PROFILE -->|"Edit"| SYNC_SVC
+    P_DOCS -->|"Upload"| SYNC_SVC
+
+    %% Doctor to Sync
+    D_EMR -->|"Create/Update"| SYNC_SVC
+    D_RX -->|"Prescribe"| SYNC_SVC
+    D_ORDERS -->|"Order"| SYNC_SVC
+    D_NOTES -->|"Document"| SYNC_SVC
+
+    %% Sync to GCS
+    SYNC_SVC --> CONFLICT --> QUEUE --> RETRY
+    RETRY --> PAT_BUCKET
+    RETRY --> DOC_BUCKET
+    RETRY --> APPT_BUCKET
+
+    %% GCS back to Portals
+    PAT_BUCKET -->|"Read"| P_PHR
+    DOC_BUCKET -->|"Read"| D_EMR
+    APPT_BUCKET -->|"Read"| P_APPT
+    APPT_BUCKET -->|"Read"| D_EMR
+
+    %% Cross-sync
+    PAT_BUCKET -.->|"Patient Data"| D_EMR
+    DOC_BUCKET -.->|"EMR Records"| P_PHR
+
+    %% Styling
+    classDef titleStyle fill:#FF6F00,stroke:#E65100,stroke-width:3px,color:#FFFFFF,font-size:18px,font-weight:bold
+    classDef patientStyle fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px,color:#1B5E20,font-size:14px
+    classDef doctorStyle fill:#E3F2FD,stroke:#2196F3,stroke-width:2px,color:#0D47A1,font-size:14px
+    classDef syncStyle fill:#FFF3E0,stroke:#FF9800,stroke-width:2px,color:#E65100,font-size:14px
+    classDef gcsStyle fill:#F3E5F5,stroke:#9C27B0,stroke-width:2px,color:#4A148C,font-size:14px
+
+    class TITLE titleStyle
+    class P_PHR,P_APPT,P_PROFILE,P_DOCS patientStyle
+    class D_EMR,D_RX,D_ORDERS,D_NOTES doctorStyle
+    class SYNC_SVC,CONFLICT,QUEUE,RETRY syncStyle
+    class PAT_BUCKET,DOC_BUCKET,APPT_BUCKET gcsStyle
+

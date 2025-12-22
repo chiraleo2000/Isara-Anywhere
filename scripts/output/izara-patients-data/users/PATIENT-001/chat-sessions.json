@@ -1,0 +1,26 @@
+[
+  {
+    "id": "chat-PATIENT-001-001",
+    "patientId": "PATIENT-001",
+    "title": "Headache consultation",
+    "titleThai": "ปรึกษาอาการปวดหัว",
+    "messages": [
+      {
+        "id": "msg-001",
+        "role": "user",
+        "content": "I have been having headaches for the past 3 days",
+        "timestamp": "2025-11-30T16:57:16.793Z"
+      },
+      {
+        "id": "msg-002",
+        "role": "assistant",
+        "content": "Thank you for sharing your symptoms. Let me ask a few questions to better understand your condition:\n\n1. Where exactly do you feel the headache? (front, back, sides, or all over)\n2. How would you describe the pain? (throbbing, pressure, sharp)\n3. On a scale of 1-10, how severe is the pain?\n4. Do you have any other symptoms like nausea, sensitivity to light, or neck stiffness?",
+        "timestamp": "2025-11-30T16:57:16.793Z"
+      }
+    ],
+    "context": "symptom_checker",
+    "aiModel": "gemini-2.5-flash-lite",
+    "createdAt": "2025-11-30T16:57:16.793Z",
+    "updatedAt": "2025-11-30T16:57:16.793Z"
+  }
+]

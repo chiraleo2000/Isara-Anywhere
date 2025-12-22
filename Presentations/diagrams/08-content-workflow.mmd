@@ -1,0 +1,71 @@
+%%{init: {
+  'theme': 'base',
+  'themeVariables': {
+    'primaryColor': '#E8F5E9',
+    'primaryTextColor': '#1B5E20',
+    'primaryBorderColor': '#4CAF50',
+    'lineColor': '#388E3C',
+    'secondaryColor': '#FFF3E0',
+    'tertiaryColor': '#E3F2FD',
+    'fontSize': '28px',
+    'fontFamily': 'Segoe UI, Arial'
+  }
+}}%%
+
+flowchart LR
+    subgraph CREATE["✏️ CREATE"]
+        A1["📑 Select Type<br/>Article/Video/News"]
+        A2["✍️ Create Content"]
+        A3["🖼️ Add Media"]
+        A4["🏷️ Metadata"]
+    end
+
+    subgraph UPLOAD["📤 UPLOAD"]
+        B1["🖼️ Images"]
+        B2["🎬 Videos"]
+        B3["📄 Documents"]
+        B4["☁️ Store GCS<br/>izara-meta-data"]
+    end
+
+    subgraph REVIEW["👀 REVIEW"]
+        C1["📨 Submit"]
+        C2["👨‍⚕️ Medical Review"]
+        C3["👨‍💼 Admin Approval"]
+    end
+
+    subgraph PUBLISH["📢 PUBLISH"]
+        D1["📅 Schedule"]
+        D2["🚀 Publish Now"]
+        D3["🔍 Update Index"]
+        D4["🔔 Notify Users"]
+    end
+
+    subgraph MANAGE["⚙️ MANAGE"]
+        E1["📊 Analytics"]
+        E2["✏️ Edit"]
+        E3["📦 Archive"]
+    end
+
+    %% Linear flow
+    A1 --> A2 --> A3 --> A4
+    A4 --> B1 --> B2 --> B3 --> B4
+    B4 --> C1 --> C2 --> C3
+    C3 --> D1 --> D2 --> D3 --> D4
+    D4 --> E1 --> E2 --> E3
+
+    %% Styling
+    classDef createStyle fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px,color:#1B5E20
+    classDef uploadStyle fill:#E3F2FD,stroke:#2196F3,stroke-width:2px,color:#0D47A1
+    classDef reviewStyle fill:#FFF3E0,stroke:#FF9800,stroke-width:2px,color:#E65100
+    classDef publishStyle fill:#E0F7FA,stroke:#00BCD4,stroke-width:2px,color:#006064
+    classDef manageStyle fill:#FFF8E1,stroke:#FFC107,stroke-width:2px,color:#FF6F00
+
+    class A1,A2,A3,A4 createStyle
+    class B1,B2,B3,B4 uploadStyle
+    class C1,C2,C3 reviewStyle
+    class D1,D2,D3,D4 publishStyle
+    class E1,E2,E3 manageStyle
+    class REJECT_CONTENT rejectStyle
+    class SCHEDULE,PUBLISH_NOW,UPDATE_INDEX,NOTIFY_USERS publishStyle
+    class VIEW_ANALYTICS,EDIT_CONTENT,ARCHIVE_CONTENT,DELETE_CONTENT manageStyle
+

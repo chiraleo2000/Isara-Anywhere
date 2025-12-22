@@ -1,0 +1,17 @@
+[
+  {
+    "id": "Q-DEMO-001",
+    "patientId": "PATIENT-001",
+    "patientName": "Demo Test User",
+    "patientPhoto": "https://api.dicebear.com/7.x/avataaars/svg?seed=demotest-patient",
+    "appointmentId": "APT-DEMO-001",
+    "queuePosition": 1,
+    "appointmentTime": "2025-12-10T16:57:16.790Z",
+    "estimatedWaitTime": 15,
+    "status": "waiting",
+    "priority": "routine",
+    "reason": "Hypertension follow-up",
+    "reasonThai": "ติดตามโรคความดันโลหิตสูง",
+    "checkInTime": "2025-12-10T16:57:16.790Z"
+  }
+]

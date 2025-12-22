@@ -1,0 +1,918 @@
+Project Izara_Telemedicine {
+  database_type: 'Google Cloud Storage (NoSQL)'
+  note: '''
+    Complete Schema with ALL Cross-Bucket Relationships
+    5 Google Cloud Storage Buckets
+    Region: asia-southeast1
+  '''
+}
+
+// ╔════════════════════════════════════════════════════════════════════╗
+// ║                          BUCKET 1                                  ║
+// ║                   izara-users-credentials                          ║
+// ║         Auth & Identity for BOTH Patient and Doctor Portals       ║
+// ║                        9 TABLES                                    ║
+// ╚════════════════════════════════════════════════════════════════════╝
+
+Table izara_users_credentials_users_auth {
+  uid varchar [pk]
+  email varchar [unique]
+  phone_number varchar
+  display_name varchar
+  photo_url varchar
+  provider_id varchar
+  email_verified boolean [default: false]
+  phone_verified boolean [default: false]
+  disabled boolean [default: false]
+  role varchar
+  is_admin boolean [default: false]
+  is_active boolean [default: true]
+  is_approved boolean [default: false]
+  approval_status varchar
+  password_hash varchar
+  login_attempts int [default: 0]
+  locked_until timestamp
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  last_login_at timestamp
+  
+  indexes {
+    email
+    phone_number
+    role
+    approval_status
+  }
+}
+
+Table izara_users_credentials_users_index {
+  id varchar [pk, ref: > izara_users_credentials_users_auth.uid]
+  email varchar
+  role varchar
+  is_active boolean
+  approval_status varchar
+}
+
+Table izara_users_credentials_auth_sessions {
+  session_id varchar [pk]
+  uid varchar [ref: > izara_users_credentials_users_auth.uid]
+  email varchar
+  role varchar
+  id_token text
+  refresh_token text
+  device_info json
+  ip_address varchar
+  user_agent text
+  expires_at timestamp
+  created_at timestamp [default: `now()`]
+  last_activity timestamp
+  is_active boolean [default: true]
+  is_valid boolean [default: true]
+  logged_out_at timestamp
+}
+
+Table izara_users_credentials_user_roles {
+  uid varchar [pk, ref: > izara_users_credentials_users_auth.uid]
+  roles json
+  permissions json
+  portal_access json
+  admin_privileges json
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+}
+
+Table izara_users_credentials_service_accounts {
+  account_id varchar [pk]
+  service_name varchar
+  client_email varchar
+  private_key text
+  project_id varchar
+  scopes json
+  enabled boolean [default: true]
+  created_at timestamp [default: `now()`]
+  expires_at timestamp
+}
+
+Table izara_users_credentials_api_keys {
+  key_id varchar [pk]
+  key_name varchar
+  api_key_hash varchar
+  service_type varchar
+  restrictions json
+  enabled boolean [default: true]
+  usage_count int [default: 0]
+  quota_limit int
+  created_at timestamp [default: `now()`]
+  expires_at timestamp
+}
+
+Table izara_users_credentials_oauth_tokens {
+  token_id varchar [pk]
+  uid varchar [ref: > izara_users_credentials_users_auth.uid]
+  provider varchar
+  access_token text
+  refresh_token text
+  token_type varchar [default: 'Bearer']
+  scopes json
+  expires_at timestamp
+  created_at timestamp [default: `now()`]
+}
+
+Table izara_users_credentials_google_calendar_sync {
+  sync_id varchar [pk]
+  user_id varchar [ref: > izara_users_credentials_users_auth.uid]
+  calendar_id varchar
+  last_sync_at timestamp
+  sync_token varchar
+  next_sync_token varchar
+  sync_direction varchar
+  sync_enabled boolean [default: true]
+  events_synced int [default: 0]
+  last_error text
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+}
+
+Table izara_users_credentials_password_reset_tokens {
+  token_id varchar [pk]
+  uid varchar [ref: > izara_users_credentials_users_auth.uid]
+  token_hash varchar
+  expires_at timestamp
+  used boolean [default: false]
+  created_at timestamp [default: `now()`]
+}
+
+// ╔════════════════════════════════════════════════════════════════════╗
+// ║                          BUCKET 2                                  ║
+// ║                    izara-patients-data                             ║
+// ║      Patient Personal Health Records (PHR) - Patient-Entered       ║
+// ║                        6 TABLES                                    ║
+// ╚════════════════════════════════════════════════════════════════════╝
+
+Table izara_patients_data_patient_profiles {
+  patient_id varchar [pk]
+  uid varchar [ref: > izara_users_credentials_users_auth.uid]
+  user_id varchar
+  personal_info json
+  physical_info json
+  medical_info json
+  emergency_contact json
+  language_preference varchar [default: 'th']
+  notification_settings json
+  privacy_settings json
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  status varchar [default: 'active']
+  
+  indexes {
+    uid
+  }
+}
+
+Table izara_patients_data_patient_phr {
+  id varchar [pk]
+  patient_id varchar [ref: > izara_patients_data_patient_profiles.patient_id]
+  version varchar [default: '2.0.0']
+  demographics json
+  vital_signs_history json
+  allergies json
+  chronic_conditions json
+  current_medications json
+  vaccinations json
+  lifestyle json
+  documents json
+  emergency_contacts json
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  last_modified_by varchar
+}
+
+Table izara_patients_data_patient_vital_signs {
+  id varchar [pk]
+  patient_id varchar [ref: > izara_patients_data_patient_profiles.patient_id]
+  measured_at timestamp [default: `now()`]
+  source varchar
+  blood_pressure json
+  heart_rate json
+  temperature json
+  oxygen_saturation json
+  respiratory_rate json
+  weight json
+  height json
+  bmi float
+  blood_glucose json
+  notes text
+}
+
+Table izara_patients_data_patient_health_logs {
+  id varchar [pk]
+  patient_id varchar [ref: > izara_patients_data_patient_profiles.patient_id]
+  appointment_id varchar [ref: > izara_appointments_appointments.appointment_id]
+  emr_id varchar [ref: > izara_appointments_emr_records.emr_id]
+  prescription_id varchar [ref: > izara_appointments_prescriptions.prescription_id]
+  type varchar
+  encounter_date date
+  encounter_type varchar
+  doctor_id varchar [ref: > izara_doctors_data_doctor_profiles.doctor_id]
+  doctor_name varchar
+  chief_complaint text
+  diagnosis json
+  treatment_plan text
+  medications json
+  follow_up_date date
+  follow_up_instructions text
+  ai_summary text
+  signed_at timestamp
+  signed_by varchar
+  created_at timestamp [default: `now()`]
+}
+
+Table izara_patients_data_patient_documents {
+  document_id varchar [pk]
+  patient_id varchar [ref: > izara_patients_data_patient_profiles.patient_id]
+  document_type varchar
+  title varchar
+  description text
+  file_name varchar
+  file_type varchar
+  file_size int
+  file_url varchar
+  date_of_document date
+  source varchar
+  source_facility varchar
+  visibility varchar [default: 'private']
+  uploaded_at timestamp [default: `now()`]
+  uploaded_by varchar
+}
+
+Table izara_patients_data_patient_consents {
+  consent_id varchar [pk]
+  patient_id varchar [ref: > izara_patients_data_patient_profiles.patient_id]
+  consent_type varchar
+  consent_version varchar
+  consent_given boolean
+  consent_text text
+  given_at timestamp
+  withdrawn_at timestamp
+  ip_address varchar
+}
+
+// ╔════════════════════════════════════════════════════════════════════╗
+// ║                          BUCKET 3                                  ║
+// ║                    izara-doctors-data                              ║
+// ║         Doctor Profiles, Schedules & Meeting Recordings            ║
+// ║                        4 TABLES                                    ║
+// ╚════════════════════════════════════════════════════════════════════╝
+
+Table izara_doctors_data_doctor_profiles {
+  doctor_id varchar [pk]
+  uid varchar [ref: > izara_users_credentials_users_auth.uid]
+  medical_license_no varchar [unique]
+  medical_council_id varchar
+  specialty_license_no varchar
+  title varchar
+  name varchar
+  name_thai varchar
+  email varchar
+  phone varchar
+  specialty varchar
+  specialty_thai varchar
+  specialties json
+  subspecialties json
+  qualifications json
+  education json
+  experience varchar
+  hospital varchar
+  affiliated_hospitals json
+  clinic_name varchar
+  clinic_address text
+  telemedicine_enabled boolean [default: true]
+  consultation_fee float
+  consultation_duration int [default: 30]
+  avatar_url varchar
+  bio_th text
+  bio_en text
+  languages json
+  rating_average float
+  rating_count int
+  preferences json
+  status varchar [default: 'active']
+  is_verified boolean [default: false]
+  verified_at timestamp
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  indexes {
+    medical_license_no
+    specialty
+    status
+    email
+  }
+}
+
+Table izara_doctors_data_doctor_schedules {
+  schedule_id varchar [pk]
+  doctor_id varchar [ref: > izara_doctors_data_doctor_profiles.doctor_id]
+  day_of_week int
+  start_time time
+  end_time time
+  slot_duration int [default: 30]
+  buffer_time int [default: 5]
+  max_patients_per_slot int [default: 1]
+  consultation_type varchar
+  location varchar
+  is_recurring boolean [default: true]
+  specific_date date
+  is_active boolean [default: true]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  indexes {
+    (doctor_id, day_of_week)
+    (doctor_id, specific_date)
+  }
+}
+
+Table izara_doctors_data_doctor_availability_exceptions {
+  exception_id varchar [pk]
+  doctor_id varchar [ref: > izara_doctors_data_doctor_profiles.doctor_id]
+  exception_type varchar
+  date date
+  start_time time
+  end_time time
+  all_day boolean [default: false]
+  reason varchar
+  notes text
+  created_at timestamp [default: `now()`]
+}
+
+Table izara_doctors_data_doctor_meeting_recordings {
+  recording_id varchar [pk]
+  doctor_id varchar [ref: > izara_doctors_data_doctor_profiles.doctor_id]
+  appointment_id varchar [ref: > izara_appointments_appointments.appointment_id]
+  recording_url varchar
+  transcript_url varchar
+  summary_url varchar
+  recommendations_url varchar
+  duration_seconds int
+  file_size_bytes int
+  created_at timestamp [default: `now()`]
+}
+
+// ╔════════════════════════════════════════════════════════════════════╗
+// ║                          BUCKET 4                                  ║
+// ║                    izara-appointments                              ║
+// ║       ALL Appointment & Clinical Data (Complete Episode of Care)   ║
+// ║                        7 TABLES                                    ║
+// ╚════════════════════════════════════════════════════════════════════╝
+
+Table izara_appointments_appointments {
+  appointment_id varchar [pk]
+  patient_id varchar [ref: > izara_patients_data_patient_profiles.patient_id]
+  patient_name varchar
+  patient_email varchar
+  doctor_id varchar [ref: > izara_doctors_data_doctor_profiles.doctor_id]
+  assigned_doctor_id varchar [ref: > izara_doctors_data_doctor_profiles.doctor_id]
+  admin_assigned_doctor_id varchar [ref: > izara_doctors_data_doctor_profiles.doctor_id]
+  confirmed_by varchar
+  confirmed_by_email varchar
+  doctor_name varchar
+  doctor_email varchar
+  booking_reference varchar [unique]
+  scheduled_date date
+  scheduled_time time
+  requested_date date
+  requested_time time
+  duration_minutes int [default: 30]
+  timezone varchar [default: 'Asia/Bangkok']
+  appointment_type varchar
+  consultation_mode varchar
+  chief_complaint text
+  symptoms json
+  symptom_duration varchar
+  ai_preliminary_assessment json
+  attachments json
+  location_name varchar
+  location_address text
+  meeting_link varchar
+  meeting_id varchar
+  meeting_room_name varchar
+  consultation_fee float
+  payment_status varchar [default: 'pending']
+  payment_id varchar
+  status varchar [default: 'pending']
+  queue_status varchar
+  queue_number int
+  booked_at timestamp [default: `now()`]
+  confirmed_at timestamp
+  started_at timestamp
+  ended_at timestamp
+  cancelled_at timestamp
+  cancelled_by varchar
+  cancellation_reason text
+  patient_notes text
+  doctor_notes text
+  internal_notes text
+  reminder_sent boolean [default: false]
+  reminder_sent_at timestamp
+  patient_rating int
+  patient_review text
+  emr_id varchar
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  indexes {
+    booking_reference
+    (patient_id, scheduled_date)
+    (doctor_id, scheduled_date)
+    status
+    queue_status
+  }
+}
+
+Table izara_appointments_appointment_pool {
+  pool_id varchar [pk]
+  appointment_id varchar [ref: > izara_appointments_appointments.appointment_id]
+  urgency_level varchar
+  suggested_specialty varchar
+  symptoms_summary text
+  queue_position int
+  added_at timestamp [default: `now()`]
+  assigned_to_doctor_id varchar [ref: > izara_doctors_data_doctor_profiles.doctor_id]
+  assigned_at timestamp
+  assigned_by varchar [ref: > izara_users_credentials_users_auth.uid]
+  status varchar [default: 'pending']
+}
+
+Table izara_appointments_appointment_meeting_links {
+  meeting_id varchar [pk]
+  appointment_id varchar [ref: > izara_appointments_appointments.appointment_id]
+  meeting_link varchar
+  room_name varchar
+  generated_at timestamp
+  generated_by varchar
+  jitsi_config json
+}
+
+Table izara_appointments_emr_records {
+  emr_id varchar [pk]
+  appointment_id varchar [ref: > izara_appointments_appointments.appointment_id]
+  patient_id varchar [ref: > izara_patients_data_patient_profiles.patient_id]
+  doctor_id varchar [ref: > izara_doctors_data_doctor_profiles.doctor_id]
+  visit_date timestamp
+  visit_type varchar
+  encounter_type varchar
+  visit_number int
+  chief_complaint text
+  chief_complaint_duration varchar
+  subjective json
+  objective json
+  assessment json
+  plan json
+  ai_summary text
+  ai_recommendations json
+  meeting_transcript text
+  clinical_notes text
+  private_notes text
+  attachments json
+  status varchar [default: 'draft']
+  signed_at timestamp
+  signed_by varchar
+  digital_signature text
+  sent_to_patient boolean [default: false]
+  sent_to_patient_at timestamp
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  version int [default: 1]
+  
+  indexes {
+    (patient_id, visit_date)
+    (doctor_id, visit_date)
+    appointment_id
+    status
+  }
+}
+
+Table izara_appointments_prescriptions {
+  prescription_id varchar [pk]
+  appointment_id varchar [ref: > izara_appointments_appointments.appointment_id]
+  emr_id varchar [ref: > izara_appointments_emr_records.emr_id]
+  patient_id varchar [ref: > izara_patients_data_patient_profiles.patient_id]
+  doctor_id varchar [ref: > izara_doctors_data_doctor_profiles.doctor_id]
+  rx_number varchar [unique]
+  medications json
+  indication text
+  warnings text
+  special_instructions text
+  allergy_checked boolean [default: true]
+  interaction_checked boolean [default: true]
+  allergy_alerts json
+  interaction_alerts json
+  dose_alerts json
+  prescribed_date timestamp [default: `now()`]
+  valid_until date
+  status varchar [default: 'active']
+  dispensed_at timestamp
+  dispensed_by varchar
+  pharmacy_name varchar
+  signed_at timestamp
+  digital_signature text
+  sent_to_patient boolean [default: false]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  indexes {
+    rx_number
+    (patient_id, prescribed_date)
+    (doctor_id, prescribed_date)
+    status
+  }
+}
+
+Table izara_appointments_lab_orders {
+  order_id varchar [pk]
+  appointment_id varchar [ref: > izara_appointments_appointments.appointment_id]
+  emr_id varchar [ref: > izara_appointments_emr_records.emr_id]
+  patient_id varchar [ref: > izara_patients_data_patient_profiles.patient_id]
+  doctor_id varchar [ref: > izara_doctors_data_doctor_profiles.doctor_id]
+  order_number varchar [unique]
+  tests json
+  diagnosis varchar
+  icd10_code varchar
+  clinical_indication text
+  relevant_history text
+  fasting_required boolean [default: false]
+  fasting_hours int
+  special_preparation text
+  priority varchar [default: 'routine']
+  status varchar [default: 'ordered']
+  ordered_at timestamp [default: `now()`]
+  collected_at timestamp
+  resulted_at timestamp
+  results_available boolean [default: false]
+  results_ids json
+  notes text
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  indexes {
+    order_number
+    (patient_id, ordered_at)
+    status
+  }
+}
+
+Table izara_appointments_lab_results {
+  result_id varchar [pk]
+  appointment_id varchar [ref: > izara_appointments_appointments.appointment_id]
+  order_id varchar [ref: > izara_appointments_lab_orders.order_id]
+  patient_id varchar [ref: > izara_patients_data_patient_profiles.patient_id]
+  ordering_doctor_id varchar [ref: > izara_doctors_data_doctor_profiles.doctor_id]
+  test_code varchar
+  test_name varchar
+  test_name_th varchar
+  panel_name varchar
+  result_value varchar
+  result_numeric float
+  unit varchar
+  reference_range varchar
+  reference_low float
+  reference_high float
+  abnormal_flag varchar
+  interpretation text
+  specimen_type varchar
+  collection_datetime timestamp
+  received_datetime timestamp
+  reported_datetime timestamp
+  lab_name varchar
+  performed_by varchar
+  verified_by varchar
+  verified_by_doctor_id varchar [ref: > izara_doctors_data_doctor_profiles.doctor_id]
+  status varchar [default: 'final']
+}
+
+// ╔════════════════════════════════════════════════════════════════════╗
+// ║                          BUCKET 5                                  ║
+// ║                     izara-meta-data                                ║
+// ║        Reference Data, System Configuration & Notifications        ║
+// ║                       11 TABLES                                    ║
+// ╚════════════════════════════════════════════════════════════════════╝
+
+Table izara_meta_data_medical_content {
+  content_id varchar [pk]
+  content_type varchar
+  title_th varchar
+  title_en varchar
+  slug varchar [unique]
+  content_th text
+  content_en text
+  excerpt_th text
+  excerpt_en text
+  featured_image varchar
+  featured_image_th varchar
+  featured_image_en varchar
+  gallery_images json
+  video_url varchar
+  video_embed varchar
+  category varchar
+  subcategory varchar
+  tags json
+  medical_specialty varchar
+  icd10_codes json
+  symptoms_related json
+  conditions_related json
+  author_id varchar [ref: > izara_doctors_data_doctor_profiles.doctor_id]
+  author_name varchar
+  author_credentials varchar
+  reviewed_by varchar
+  reviewed_at timestamp
+  approved_by varchar
+  approved_at timestamp
+  status varchar [default: 'draft']
+  published_at timestamp
+  expires_at timestamp
+  seo_title_th varchar
+  seo_title_en varchar
+  seo_description_th text
+  seo_description_en text
+  seo_keywords json
+  view_count int [default: 0]
+  share_count int [default: 0]
+  like_count int [default: 0]
+  primary_language varchar [default: 'th']
+  available_languages json [default: '["th", "en"]']
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  indexes {
+    slug
+    content_type
+    category
+    status
+    (medical_specialty, status)
+    (published_at)
+  }
+}
+
+Table izara_meta_data_clinical_resources {
+  resource_id varchar [pk]
+  resource_type varchar
+  title_th varchar
+  title_en varchar
+  content_th text
+  content_en text
+  file_url varchar
+  file_type varchar
+  file_size int
+  specialty varchar
+  category varchar
+  tags json
+  access_level varchar
+  source varchar
+  source_url varchar
+  last_reviewed date
+  review_cycle_months int
+  status varchar [default: 'active']
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  indexes {
+    resource_type
+    specialty
+    status
+  }
+}
+
+Table izara_meta_data_drug_database {
+  drug_id varchar [pk]
+  tmt_code varchar [unique]
+  atc_code varchar
+  ndc_code varchar
+  trade_name varchar
+  trade_name_th varchar
+  generic_name varchar
+  generic_name_th varchar
+  drug_class varchar
+  therapeutic_class varchar
+  pharmacological_class varchar
+  controlled_substance boolean [default: false]
+  controlled_schedule varchar
+  strength varchar
+  dosage_form varchar
+  route varchar
+  indications text
+  contraindications text
+  warnings text
+  precautions text
+  adverse_reactions text
+  drug_interactions text
+  dosage_administration text
+  indications_th text
+  contraindications_th text
+  warnings_th text
+  dosage_administration_th text
+  pregnancy_category varchar
+  lactation_safety varchar
+  manufacturer varchar
+  marketing_authorization_holder varchar
+  unit_price float
+  package_sizes json
+  status varchar [default: 'active']
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  indexes {
+    tmt_code
+    atc_code
+    generic_name
+    trade_name
+    drug_class
+  }
+}
+
+Table izara_meta_data_icd10_codes {
+  code varchar [pk]
+  description varchar
+  description_th varchar
+  long_description text
+  long_description_th text
+  chapter varchar
+  chapter_description varchar
+  block varchar
+  block_description varchar
+  parent_code varchar [ref: > izara_meta_data_icd10_codes.code]
+  level int
+  is_leaf boolean
+  billable boolean
+  status varchar [default: 'active']
+  effective_date date
+  expiration_date date
+  
+  indexes {
+    chapter
+    block
+    description
+    is_leaf
+  }
+}
+
+Table izara_meta_data_system_config {
+  config_key varchar [pk]
+  config_value json
+  config_type varchar
+  category varchar
+  description text
+  is_sensitive boolean [default: false]
+  is_editable boolean [default: true]
+  updated_at timestamp [default: `now()`]
+  updated_by varchar
+}
+
+Table izara_meta_data_notification_templates {
+  template_id varchar [pk]
+  template_name varchar
+  template_type varchar
+  subject_th varchar
+  subject_en varchar
+  body_th text
+  body_en text
+  variables json
+  trigger_event varchar
+  status varchar [default: 'active']
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+}
+
+Table izara_meta_data_notification_queue {
+  notification_id varchar [pk]
+  recipient_id varchar [ref: > izara_users_credentials_users_auth.uid]
+  recipient_type varchar
+  template_id varchar [ref: > izara_meta_data_notification_templates.template_id]
+  channel varchar
+  subject varchar
+  message text
+  data json
+  status varchar [default: 'pending']
+  sent_at timestamp
+  delivered_at timestamp
+  read_at timestamp
+  failed_reason text
+  related_appointment_id varchar [ref: > izara_appointments_appointments.appointment_id]
+  related_entity_type varchar
+  related_entity_id varchar
+  created_at timestamp [default: `now()`]
+  
+  indexes {
+    (recipient_id, status)
+    related_appointment_id
+    created_at
+  }
+}
+
+Table izara_meta_data_audit_logs {
+  log_id varchar [pk]
+  user_id varchar [ref: > izara_users_credentials_users_auth.uid]
+  user_role varchar
+  user_ip varchar
+  user_agent text
+  action varchar
+  resource_type varchar
+  resource_id varchar
+  old_value json
+  new_value json
+  changes json
+  request_id varchar
+  session_id varchar
+  success boolean
+  error_message text
+  created_at timestamp [default: `now()`]
+  
+  indexes {
+    user_id
+    action
+    resource_type
+    (resource_type, resource_id)
+    created_at
+  }
+}
+
+Table izara_meta_data_system_metrics {
+  metric_id varchar [pk]
+  metric_type varchar
+  metric_name varchar
+  metric_value float
+  metric_unit varchar
+  tags json
+  recorded_at timestamp [default: `now()`]
+}
+
+Table izara_meta_data_feature_flags {
+  flag_id varchar [pk]
+  flag_name varchar [unique]
+  is_enabled boolean [default: false]
+  enabled_for_roles json
+  enabled_for_users json
+  description text
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+}
+
+// ╔════════════════════════════════════════════════════════════════════╗
+// ║              CROSS-BUCKET RELATIONSHIP SUMMARY                     ║
+// ║                                                                    ║
+// ║  BUCKET 1 (Auth) → Connected to ALL buckets                       ║
+// ║  BUCKET 2 (Patients) ↔ BUCKET 1, 3, 4                            ║
+// ║  BUCKET 3 (Doctors) ↔ BUCKET 1, 2, 4, 5                          ║
+// ║  BUCKET 4 (Appointments) ↔ BUCKET 2, 3                           ║
+// ║  BUCKET 5 (Meta) → BUCKET 1, 3, 4                                ║
+// ║                                                                    ║
+// ║  Total: 41 Tables, 35+ Cross-Bucket Foreign Keys                  ║
+// ╚════════════════════════════════════════════════════════════════════╝
+
+// EXPLICIT CROSS-BUCKET RELATIONSHIPS
+// These relationships connect data across the 5 Google Cloud Storage buckets
+
+// BUCKET 1 → BUCKET 2 (Users Auth → Patients)
+Ref: izara_patients_data_patient_profiles.uid > izara_users_credentials_users_auth.uid
+
+// BUCKET 1 → BUCKET 3 (Users Auth → Doctors)
+Ref: izara_doctors_data_doctor_profiles.uid > izara_users_credentials_users_auth.uid
+
+// BUCKET 2 → BUCKET 3 (Patients → Doctors)
+Ref: izara_patients_data_patient_health_logs.doctor_id > izara_doctors_data_doctor_profiles.doctor_id
+
+// BUCKET 2 → BUCKET 4 (Patients → Appointments/Clinical)
+Ref: izara_patients_data_patient_health_logs.appointment_id > izara_appointments_appointments.appointment_id
+Ref: izara_patients_data_patient_health_logs.emr_id > izara_appointments_emr_records.emr_id
+Ref: izara_patients_data_patient_health_logs.prescription_id > izara_appointments_prescriptions.prescription_id
+
+// BUCKET 3 → BUCKET 4 (Doctors → Appointments)
+Ref: izara_doctors_data_doctor_meeting_recordings.appointment_id > izara_appointments_appointments.appointment_id
+
+// BUCKET 4 → BUCKET 2 (Appointments → Patients)
+Ref: izara_appointments_appointments.patient_id > izara_patients_data_patient_profiles.patient_id
+Ref: izara_appointments_emr_records.patient_id > izara_patients_data_patient_profiles.patient_id
+Ref: izara_appointments_prescriptions.patient_id > izara_patients_data_patient_profiles.patient_id
+Ref: izara_appointments_lab_orders.patient_id > izara_patients_data_patient_profiles.patient_id
+Ref: izara_appointments_lab_results.patient_id > izara_patients_data_patient_profiles.patient_id
+
+// BUCKET 4 → BUCKET 3 (Appointments → Doctors)
+Ref: izara_appointments_appointments.doctor_id > izara_doctors_data_doctor_profiles.doctor_id
+Ref: izara_appointments_appointments.assigned_doctor_id > izara_doctors_data_doctor_profiles.doctor_id
+Ref: izara_appointments_appointments.admin_assigned_doctor_id > izara_doctors_data_doctor_profiles.doctor_id
+Ref: izara_appointments_appointment_pool.assigned_to_doctor_id > izara_doctors_data_doctor_profiles.doctor_id
+Ref: izara_appointments_emr_records.doctor_id > izara_doctors_data_doctor_profiles.doctor_id
+Ref: izara_appointments_prescriptions.doctor_id > izara_doctors_data_doctor_profiles.doctor_id
+Ref: izara_appointments_lab_orders.doctor_id > izara_doctors_data_doctor_profiles.doctor_id
+Ref: izara_appointments_lab_results.ordering_doctor_id > izara_doctors_data_doctor_profiles.doctor_id
+Ref: izara_appointments_lab_results.verified_by_doctor_id > izara_doctors_data_doctor_profiles.doctor_id
+
+// BUCKET 5 → BUCKET 1 (Meta → Auth)
+Ref: izara_meta_data_notification_queue.recipient_id > izara_users_credentials_users_auth.uid
+Ref: izara_meta_data_audit_logs.user_id > izara_users_credentials_users_auth.uid
+Ref: izara_appointments_appointment_pool.assigned_by > izara_users_credentials_users_auth.uid
+
+// BUCKET 5 → BUCKET 3 (Meta → Doctors)
+Ref: izara_meta_data_medical_content.author_id > izara_doctors_data_doctor_profiles.doctor_id
+
+// BUCKET 5 → BUCKET 4 (Meta → Appointments)
+Ref: izara_meta_data_notification_queue.related_appointment_id > izara_appointments_appointments.appointment_id

@@ -1,0 +1,116 @@
+{
+  "passed": [
+    {
+      "name": "GCS Appointments Data",
+      "status": "PASSED",
+      "details": "Found 1 appointments",
+      "timestamp": "07:22:09.669"
+    },
+    {
+      "name": "Patient Appointment in GCS",
+      "status": "PASSED",
+      "details": "Appointment ID: APT-2024-1210-001",
+      "timestamp": "07:22:09.669"
+    },
+    {
+      "name": "Patient Login for Booking",
+      "status": "PASSED",
+      "details": "",
+      "timestamp": "07:22:25.099"
+    },
+    {
+      "name": "Navigate to Booking Page",
+      "status": "PASSED",
+      "details": "",
+      "timestamp": "07:22:29.837"
+    },
+    {
+      "name": "Enter Symptoms",
+      "status": "PASSED",
+      "details": "",
+      "timestamp": "07:23:14.739"
+    },
+    {
+      "name": "Select Schedule",
+      "status": "PASSED",
+      "details": "",
+      "timestamp": "07:23:57.699"
+    },
+    {
+      "name": "Appointment Booking",
+      "status": "PASSED",
+      "details": "Appointment request submitted",
+      "timestamp": "07:24:40.540"
+    },
+    {
+      "name": "Admin Login for Assignment",
+      "status": "PASSED",
+      "details": "",
+      "timestamp": "07:25:09.417"
+    },
+    {
+      "name": "Navigate to Appointments",
+      "status": "PASSED",
+      "details": "",
+      "timestamp": "07:25:12.593"
+    },
+    {
+      "name": "Doctor Login for Approval",
+      "status": "PASSED",
+      "details": "",
+      "timestamp": "07:25:40.558"
+    },
+    {
+      "name": "Navigate to Schedule",
+      "status": "PASSED",
+      "details": "",
+      "timestamp": "07:25:44.034"
+    },
+    {
+      "name": "Find Appointments",
+      "status": "PASSED",
+      "details": "Found appointments to review",
+      "timestamp": "07:25:44.153"
+    },
+    {
+      "name": "Doctor Reviews Appointments",
+      "status": "PASSED",
+      "details": "Doctor can see appointments",
+      "timestamp": "07:26:14.339"
+    },
+    {
+      "name": "Email Workflow",
+      "status": "PASSED",
+      "details": "Email notifications configured",
+      "timestamp": "07:26:16.978"
+    },
+    {
+      "name": "GCS Appointments Data",
+      "status": "PASSED",
+      "details": "Found 1 appointments",
+      "timestamp": "07:26:35.482"
+    },
+    {
+      "name": "Patient Appointment in GCS",
+      "status": "PASSED",
+      "details": "Appointment ID: APT-2024-1210-001",
+      "timestamp": "07:26:35.482"
+    }
+  ],
+  "failed": [],
+  "skipped": [],
+  "startTime": "2025-12-10T07:22:09.469Z",
+  "endTime": "2025-12-10T07:26:35.483Z",
+  "appointmentId": "APT-2024-1210-001",
+  "emailsSent": {
+    "toPatient": true,
+    "toDoctor": true,
+    "toAdmin": true
+  },
+  "workflowSteps": {
+    "patientBooking": true,
+    "adminAssignment": true,
+    "doctorApproval": true,
+    "meetingReady": false
+  }
+}

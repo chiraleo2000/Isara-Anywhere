@@ -1,0 +1,83 @@
+%%{init: {
+  'theme': 'base',
+  'themeVariables': {
+    'primaryColor': '#FFEBEE',
+    'primaryTextColor': '#B71C1C',
+    'primaryBorderColor': '#F44336',
+    'lineColor': '#D32F2F',
+    'secondaryColor': '#E8F5E9',
+    'tertiaryColor': '#FFF3E0',
+    'fontSize': '28px',
+    'fontFamily': 'Segoe UI, Arial'
+  }
+}}%%
+
+flowchart LR
+    subgraph INIT["🔧 INIT"]
+        A1["👤 Select Patient"]
+        A2["📂 Drug History"]
+        A3["⚠️ Allergies"]
+    end
+
+    subgraph SEARCH["🔍 SEARCH"]
+        B1["🔍 Search Drug"]
+        B2["💊 Select Drug"]
+        B3["📋 View Info"]
+    end
+
+    subgraph SAFETY["🛡️ SAFETY"]
+        C1["⚠️ Allergy Check"]
+        C2["💊 Interaction"]
+        C3["📏 Dose Check"]
+    end
+
+    subgraph PRESCRIBE["📝 PRESCRIBE"]
+        D1["📏 Set Dosage"]
+        D2["⏰ Set Frequency"]
+        D3["📅 Set Duration"]
+        D4["📝 Instructions"]
+    end
+
+    subgraph FINALIZE["✅ FINALIZE"]
+        E1["📋 Review Rx"]
+        E2["✅ Confirm"]
+        E3["✍️ Digital Sign"]
+        E4["💾 Save EMR"]
+        E5["🏪 Send Pharmacy"]
+    end
+
+    %% Linear flow
+    A1 --> A2 --> A3
+    A3 --> B1 --> B2 --> B3
+    B3 --> C1 --> C2 --> C3
+    C3 --> D1 --> D2 --> D3 --> D4
+    D4 --> E1 --> E2 --> E3 --> E4 --> E5
+
+    %% Styling
+    classDef initStyle fill:#E3F2FD,stroke:#2196F3,stroke-width:2px,color:#0D47A1
+    classDef searchStyle fill:#FFF3E0,stroke:#FF9800,stroke-width:2px,color:#E65100
+    classDef safetyStyle fill:#FFEBEE,stroke:#F44336,stroke-width:2px,color:#B71C1C
+    classDef prescribeStyle fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px,color:#1B5E20
+    classDef finalStyle fill:#E0F7FA,stroke:#00BCD4,stroke-width:2px,color:#006064
+
+    class A1,A2,A3 initStyle
+    class B1,B2,B3 searchStyle
+    class C1,C2,C3 safetyStyle
+    class D1,D2,D3,D4 prescribeStyle
+    class E1,E2,E3,E4,E5 finalStyle
+    classDef decisionStyle fill:#FFF8E1,stroke:#FFC107,stroke-width:2px,color:#FF6F00,font-size:14px
+    classDef endStyle fill:#4CAF50,stroke:#2E7D32,stroke-width:2px,color:#FFFFFF,font-size:16px
+    classDef cancelStyle fill:#FFEBEE,stroke:#F44336,stroke-width:2px,color:#B71C1C,font-size:16px
+
+    class TITLE titleStyle
+    class START,END_NODE startStyle
+    class SELECT_PAT,LOAD_HISTORY,LOAD_ALLERGY initStyle
+    class SEARCH_DRUG,SELECT_DRUG,VIEW_INFO searchStyle
+    class CHECK_ALLERGY,CHECK_INTERACT,CHECK_DOSE safetyStyle
+    class ALLERGY_ALERT,INTERACT_ALERT,DOSE_ALERT decisionStyle
+    class SET_DOSE,SET_FREQ,SET_DURATION,SET_QTY,ADD_NOTES prescribeStyle
+    class REVIEW_ALL,ADD_MORE,CONFIRM reviewStyle
+    class SIGN,SAVE,PRINT,SEND_PHARMACY finalStyle
+    class ALERT_BOX1,ALERT_BOX2,ALERT_BOX3 alertStyle
+    class CANCEL_NODE cancelStyle
+

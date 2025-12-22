@@ -1,0 +1,136 @@
+{
+  "passed": [
+    {
+      "name": "Patient Login",
+      "status": "PASSED",
+      "details": "",
+      "timestamp": "04:03:35.348"
+    },
+    {
+      "name": "Navigate to Booking Form",
+      "status": "PASSED",
+      "details": "",
+      "timestamp": "04:03:43.611"
+    },
+    {
+      "name": "Appointment Submitted",
+      "status": "PASSED",
+      "details": "",
+      "timestamp": "04:04:47.460"
+    },
+    {
+      "name": "Appointment Found in GCS",
+      "status": "PASSED",
+      "details": "ID: APT-2024-1210-001",
+      "timestamp": "04:04:50.468"
+    },
+    {
+      "name": "Admin Login",
+      "status": "PASSED",
+      "details": "",
+      "timestamp": "04:05:14.018"
+    },
+    {
+      "name": "Navigate to Schedule",
+      "status": "PASSED",
+      "details": "",
+      "timestamp": "04:05:18.136"
+    },
+    {
+      "name": "View Pending Appointments",
+      "status": "PASSED",
+      "details": "Found appointments awaiting action",
+      "timestamp": "04:05:18.138"
+    },
+    {
+      "name": "Doctor Login",
+      "status": "PASSED",
+      "details": "",
+      "timestamp": "04:06:05.706"
+    },
+    {
+      "name": "Navigate to Schedule",
+      "status": "PASSED",
+      "details": "",
+      "timestamp": "04:06:10.383"
+    },
+    {
+      "name": "View Appointments",
+      "status": "PASSED",
+      "details": "Found appointments to review",
+      "timestamp": "04:06:10.383"
+    },
+    {
+      "name": "Patient Login",
+      "status": "PASSED",
+      "details": "",
+      "timestamp": "04:06:50.277"
+    },
+    {
+      "name": "Meeting Ready for Patient",
+      "status": "PASSED",
+      "details": "Patient can see join meeting option",
+      "timestamp": "04:06:54.440"
+    },
+    {
+      "name": "Meeting Access Controls",
+      "status": "PASSED",
+      "details": "Patient has meeting controls available",
+      "timestamp": "04:07:14.376"
+    },
+    {
+      "name": "Copy Link Button",
+      "status": "PASSED",
+      "details": "Share link functionality available",
+      "timestamp": "04:07:19.519"
+    }
+  ],
+  "failed": [],
+  "skipped": [],
+  "startTime": "2025-12-11T04:03:18.525Z",
+  "endTime": "2025-12-11T04:07:19.851Z",
+  "appointmentData": {
+    "id": "APT-2024-1210-001",
+    "status": "confirmed",
+    "meetingLink": null
+  },
+  "workflowPhases": {
+    "phase1_patientBooking": {
+      "status": "PASSED",
+      "details": "Appointment request submitted successfully"
+    },
+    "phase2_appointmentPool": {
+      "status": "PASSED",
+      "details": "Appointment status: confirmed"
+    },
+    "phase3_adminAssignment": {
+      "status": "PASSED",
+      "details": "Admin can view and manage appointments"
+    },
+    "phase4_doctorConfirmation": {
+      "status": "PASSED",
+      "details": "Doctor can view and confirm appointments"
+    },
+    "phase5_meetingLinkGenerated": {
+      "status": "PENDING",
+      "details": "Link pending - appointment may need confirmation"
+    },
+    "phase6_patientSeesUpdate": {
+      "status": "PASSED",
+      "details": "Meeting link visible to patient"
+    },
+    "phase7_meetingAccessControl": {
+      "status": "PASSED",
+      "details": "Meeting access controls available"
+    },
+    "phase8_postMeeting": {
+      "status": "DOCUMENTED",
+      "details": "Post-meeting workflow documented"
+    }
+  },
+  "emailNotifications": {
+    "toPatient": [],
+    "toDoctor": [],
+    "toAdmin": []
+  }
+}

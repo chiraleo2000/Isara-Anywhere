@@ -1,0 +1,33 @@
+{
+  "id": "DOC-REJECTED-001",
+  "name": "Dr. Rejected Doctor",
+  "nameThai": "นพ. ถูกปฏิเสธ",
+  "email": "rejected.doctor@izara.com",
+  "role": "doctor",
+  "medicalLicenseNumber": "MD-REJECTED-001",
+  "specialty": "Orthopedics",
+  "specialtyThai": "ศัลยกรรมกระดูก",
+  "phone": "+66 2 567 8901",
+  "avatarUrl": "https://api.dicebear.com/7.x/avataaars/svg?seed=doc-rejected",
+  "dateOfBirth": "1988-11-25T00:00:00.000Z",
+  "createdAt": "2025-10-11T16:57:16.782Z",
+  "status": "rejected",
+  "rejectionReason": "Invalid medical license number",
+  "qualifications": [
+    "Claimed MD - Unverified"
+  ],
+  "experience": "3 years",
+  "languages": [
+    "Thai"
+  ],
+  "consultationFee": 400,
+  "hospital": "Unknown Hospital",
+  "department": "Orthopedics",
+  "availableHours": {},
+  "statistics": {
+    "totalPatients": 0,
+    "totalConsultations": 0,
+    "patientSatisfaction": 0,
+    "averageRating": 0
+  }
+}

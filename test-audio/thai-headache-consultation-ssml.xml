@@ -1,0 +1,57 @@
+<speak>
+  <voice name="th-TH-Standard-A">
+    สวัสดีครับ คุณมีอาการอย่างไรบ้างครับ
+  </voice>
+  <break time="1s"/>
+  <voice name="th-TH-Standard-C">
+    สวัสดีค่ะหมอ หนูปวดหัวมาสองวันแล้วค่ะ
+  </voice>
+  <break time="1s"/>
+  <voice name="th-TH-Standard-A">
+    ปวดตรงไหนครับ และปวดแบบไหน
+  </voice>
+  <break time="1s"/>
+  <voice name="th-TH-Standard-C">
+    ปวดตรงหน้าผากและขมับค่ะ ปวดตื้อๆ เป็นพักๆ
+  </voice>
+  <break time="1s"/>
+  <voice name="th-TH-Standard-A">
+    มีอาการอื่นร่วมด้วยไหมครับ เช่น คลื่นไส้ ตาพร่ามัว
+  </voice>
+  <break time="1s"/>
+  <voice name="th-TH-Standard-C">
+    มีคลื่นไส้เล็กน้อยค่ะ แต่ไม่มีตาพร่ามัว
+  </voice>
+  <break time="1s"/>
+  <voice name="th-TH-Standard-A">
+    ได้ทานยาอะไรมาบ้างไหมครับ
+  </voice>
+  <break time="1s"/>
+  <voice name="th-TH-Standard-C">
+    ทานพาราเซตามอลไปสองเม็ดค่ะ แต่ดีขึ้นแค่ชั่วคราว
+  </voice>
+  <break time="1s"/>
+  <voice name="th-TH-Standard-A">
+    นอนพักผ่อนเป็นอย่างไรครับ ได้นอนกี่ชั่วโมง
+  </voice>
+  <break time="1s"/>
+  <voice name="th-TH-Standard-C">
+    นอนวันละประมาณ 5-6 ชั่วโมงค่ะ ทำงานเครียดมาก
+  </voice>
+  <break time="1s"/>
+  <voice name="th-TH-Standard-A">
+    จากอาการที่คุณบอกมา น่าจะเป็น tension headache ครับ ซึ่งเกิดจากความเครียดและการพักผ่อนไม่เพียงพอ
+  </voice>
+  <break time="1s"/>
+  <voice name="th-TH-Standard-A">
+    ผมจะสั่งยาแก้ปวดให้และแนะนำให้พักผ่อนให้เพียงพอ อย่างน้อย 7-8 ชั่วโมงต่อคืน
+  </voice>
+  <break time="1s"/>
+  <voice name="th-TH-Standard-C">
+    ขอบคุณค่ะหมอ แล้วถ้าอาการไม่ดีขึ้นล่ะคะ
+  </voice>
+  <break time="1s"/>
+  <voice name="th-TH-Standard-A">
+    ถ้าอาการไม่ดีขึ้นใน 1 สัปดาห์ หรือมีอาการรุนแรงขึ้น ให้กลับมาพบอีกครั้งนะครับ
+  </voice>
+</speak>

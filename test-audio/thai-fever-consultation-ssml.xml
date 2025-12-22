@@ -1,0 +1,41 @@
+<speak>
+  <voice name="th-TH-Standard-A">
+    สวัสดีครับ มีอะไรให้ช่วยครับ
+  </voice>
+  <break time="1s"/>
+  <voice name="th-TH-Standard-C">
+    มีไข้มาสามวันแล้วครับ ตัวร้อนมาก
+  </voice>
+  <break time="1s"/>
+  <voice name="th-TH-Standard-A">
+    วัดไข้ได้เท่าไหร่ครับ
+  </voice>
+  <break time="1s"/>
+  <voice name="th-TH-Standard-C">
+    ประมาณ 38.5 องศาครับ
+  </voice>
+  <break time="1s"/>
+  <voice name="th-TH-Standard-A">
+    มีอาการอื่นร่วมด้วยไหมครับ เช่น ไอ น้ำมูก เจ็บคอ
+  </voice>
+  <break time="1s"/>
+  <voice name="th-TH-Standard-C">
+    มีเจ็บคอนิดหน่อยครับ กลืนน้ำลายแล้วเจ็บ
+  </voice>
+  <break time="1s"/>
+  <voice name="th-TH-Standard-A">
+    ขอดูคอหน่อยนะครับ
+  </voice>
+  <break time="1s"/>
+  <voice name="th-TH-Standard-A">
+    คอแดงเล็กน้อย น่าจะเป็นไข้หวัดทั่วไปครับ
+  </voice>
+  <break time="1s"/>
+  <voice name="th-TH-Standard-A">
+    ผมจะสั่งยาลดไข้และยาแก้อักเสบให้ ทานยาตามที่สั่ง ดื่มน้ำมากๆ และพักผ่อนให้เพียงพอนะครับ
+  </voice>
+  <break time="1s"/>
+  <voice name="th-TH-Standard-C">
+    ครับ ขอบคุณครับหมอ
+  </voice>
+</speak>

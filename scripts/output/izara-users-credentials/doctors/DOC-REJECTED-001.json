@@ -1,0 +1,26 @@
+{
+  "id": "DOC-REJECTED-001",
+  "email": "rejected.doctor@izara.com",
+  "passwordHash": "$2b$10$8q6HhLFqj.b0A4Cp27OZ/egwzbMLGA3maVeR4ivhuvhFQy0uErA0K",
+  "role": "doctor",
+  "name": "Dr. Rejected Doctor",
+  "nameThai": "นพ. ถูกปฏิเสธ",
+  "avatarUrl": "https://api.dicebear.com/7.x/avataaars/svg?seed=doc-rejected",
+  "specialty": "Orthopedics",
+  "specialtyThai": "ศัลยกรรมกระดูก",
+  "hospital": "Unknown Hospital",
+  "medicalLicenseNumber": "MD-REJECTED-001",
+  "isActive": false,
+  "isVerified": false,
+  "isApproved": false,
+  "status": "rejected",
+  "approvalStatus": "rejected",
+  "rejectionReason": "Invalid medical license number",
+  "createdAt": "2025-10-11T16:41:23.348Z",
+  "lastLogin": null,
+  "preferences": {
+    "language": "th",
+    "notifications": true,
+    "theme": "light"
+  }
+}

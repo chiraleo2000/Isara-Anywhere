@@ -1,0 +1,17 @@
+หมอ: Good morning. How can I help you today?
+
+ผู้ป่วย: Good morning doctor. I have been experiencing some stomach pain for the past few days.
+
+หมอ: Can you describe the pain? Where exactly is it located?
+
+ผู้ป่วย: It is in my upper abdomen, more on the right side. It gets worse after eating.
+
+หมอ: Do you have any other symptoms like nausea or vomiting?
+
+ผู้ป่วย: Yes, I feel nauseous sometimes, especially after meals.
+
+หมอ: Based on your symptoms, this could be gastritis. I will prescribe some medication and recommend avoiding spicy and fatty foods.
+
+ผู้ป่วย: Thank you doctor. How long should I take the medication?
+
+หมอ: Take the medication for one week. If symptoms persist, please come back for a follow-up.

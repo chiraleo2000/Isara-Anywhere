@@ -1,0 +1,609 @@
+// Isara Patient Portal - Database Schema (DBML)
+// This represents the logical data model stored in Google Cloud Storage
+// Note: Actual storage is JSON files in GCS, not a relational database
+
+// ==================== USER & AUTHENTICATION ====================
+
+Table users {
+  id varchar [pk, note: 'user_timestamp_random']
+  patient_id varchar [unique, note: 'Associated patient ID']
+  email varchar [unique, not null]
+  password_hash varchar [not null, note: 'Base64 encoded']
+  name varchar [not null]
+  phone varchar
+  date_of_birth date
+  gender enum('male', 'female', 'other')
+  blood_type varchar
+  avatar_url varchar
+  address text
+  created_at timestamp [default: `now()`]
+  updated_at timestamp
+  
+  indexes {
+    email
+    patient_id
+  }
+}
+
+Table sessions {
+  id varchar [pk, note: 'session_timestamp_random']
+  user_id varchar [ref: > users.id]
+  token varchar [unique, not null]
+  created_at timestamp [default: `now()`]
+  expires_at timestamp [not null]
+  
+  indexes {
+    token
+    user_id
+  }
+}
+
+Table emergency_contacts {
+  id varchar [pk]
+  user_id varchar [ref: > users.id]
+  name varchar [not null]
+  relationship varchar
+  phone varchar [not null]
+}
+
+// ==================== PATIENT & PHR ====================
+
+Table patients {
+  id varchar [pk, note: 'patient_timestamp_random']
+  user_id varchar [unique, ref: > users.id]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp
+}
+
+Table personal_health_records {
+  id varchar [pk]
+  patient_id varchar [unique, ref: > patients.id]
+  
+  // Demographics
+  height decimal [note: 'cm']
+  weight decimal [note: 'kg']
+  bmi decimal [note: 'Calculated']
+  ethnicity varchar
+  occupation varchar
+  
+  // Lifestyle
+  smoking_status enum('never', 'former', 'current')
+  alcohol_consumption enum('never', 'occasional', 'moderate', 'heavy')
+  exercise_frequency enum('sedentary', 'light', 'moderate', 'active', 'very_active')
+  diet_type enum('omnivore', 'vegetarian', 'vegan', 'other')
+  sleep_hours decimal
+  stress_level enum('low', 'moderate', 'high')
+  
+  updated_at timestamp
+}
+
+Table allergies {
+  id varchar [pk]
+  patient_id varchar [ref: > patients.id]
+  allergen varchar [not null]
+  severity enum('mild', 'moderate', 'severe')
+  reaction varchar
+  created_at timestamp [default: `now()`]
+}
+
+Table chronic_conditions {
+  id varchar [pk]
+  patient_id varchar [ref: > patients.id]
+  condition_name varchar [not null]
+  diagnosed_date date
+  status enum('active', 'managed', 'resolved')
+  notes text
+}
+
+Table vital_signs_history {
+  id varchar [pk]
+  patient_id varchar [ref: > patients.id]
+  
+  // Blood Pressure
+  bp_systolic int [note: 'mmHg']
+  bp_diastolic int [note: 'mmHg']
+  
+  // Heart Rate
+  heart_rate int [note: 'bpm']
+  
+  // Temperature
+  temperature decimal
+  temperature_unit enum('celsius', 'fahrenheit')
+  
+  // Respiratory
+  respiratory_rate int [note: 'breaths/min']
+  oxygen_saturation decimal [note: '%']
+  
+  // Blood Glucose
+  blood_glucose decimal [note: 'mg/dL']
+  glucose_test_type enum('fasting', 'random', 'postprandial')
+  
+  // Measurements
+  weight decimal [note: 'kg']
+  height decimal [note: 'cm']
+  
+  measured_at timestamp [not null]
+  notes text
+  
+  indexes {
+    patient_id
+    measured_at
+  }
+}
+
+// ==================== DOCTORS ====================
+
+Table doctors {
+  id varchar [pk]
+  name varchar [not null]
+  email varchar [unique]
+  phone varchar
+  specialty varchar [not null]
+  sub_specialty varchar
+  hospital_id varchar [ref: > hospitals.id]
+  avatar_url varchar
+  rating decimal
+  review_count int
+  experience varchar
+  consultation_fee decimal
+  created_at timestamp [default: `now()`]
+  updated_at timestamp
+  
+  indexes {
+    specialty
+    hospital_id
+  }
+}
+
+Table doctor_education {
+  id varchar [pk]
+  doctor_id varchar [ref: > doctors.id]
+  institution varchar [not null]
+  degree varchar [not null]
+  year int
+}
+
+Table doctor_languages {
+  id varchar [pk]
+  doctor_id varchar [ref: > doctors.id]
+  language varchar [not null]
+}
+
+Table doctor_availability {
+  id varchar [pk]
+  doctor_id varchar [ref: > doctors.id]
+  day_of_week varchar [not null]
+  time_slot varchar [not null, note: 'HH:mm-HH:mm']
+}
+
+// ==================== HOSPITALS ====================
+
+Table hospitals {
+  id varchar [pk]
+  name varchar [not null]
+  address text
+  phone varchar
+  email varchar
+  website varchar
+  lat decimal
+  lng decimal
+}
+
+// ==================== APPOINTMENTS ====================
+
+Table appointments {
+  id varchar [pk, note: 'apt_timestamp_random']
+  patient_id varchar [ref: > patients.id]
+  doctor_id varchar [ref: > doctors.id]
+  hospital_id varchar [ref: > hospitals.id]
+  
+  appointment_date date [not null]
+  appointment_time time [not null]
+  
+  type enum('telehealth', 'in_person', 'emergency', 'consultation', 'follow_up') [not null]
+  status enum('pending', 'confirmed', 'in_progress', 'completed', 'cancelled', 'no_show', 'rescheduled') [default: 'pending']
+  
+  reason text
+  notes text
+  urgency enum('normal', 'urgent', 'emergency') [default: 'normal']
+  
+  // Telehealth
+  meeting_link varchar [note: 'Google Meet URL']
+  calendar_event_id varchar [note: 'Google Calendar event ID']
+  
+  // AI Analysis
+  ai_analysis text
+  
+  created_at timestamp [default: `now()`]
+  updated_at timestamp
+  
+  indexes {
+    patient_id
+    doctor_id
+    appointment_date
+    status
+  }
+}
+
+Table appointment_symptoms {
+  id varchar [pk]
+  appointment_id varchar [ref: > appointments.id]
+  main_symptom varchar [not null]
+  description text
+  duration varchar
+  severity int [note: '1-10']
+  fever varchar
+  current_medications text
+  previous_treatment text
+  additional_notes text
+}
+
+Table appointment_body_parts {
+  id varchar [pk]
+  appointment_id varchar [ref: > appointments.id]
+  body_part varchar [not null]
+}
+
+Table appointment_results {
+  id varchar [pk]
+  appointment_id varchar [unique, ref: > appointments.id]
+  diagnosis text [not null]
+  follow_up_date date
+  notes text
+  created_at timestamp [default: `now()`]
+}
+
+// ==================== PRESCRIPTIONS ====================
+
+Table prescriptions {
+  id varchar [pk]
+  appointment_id varchar [ref: > appointments.id]
+  patient_id varchar [ref: > patients.id]
+  doctor_id varchar [ref: > doctors.id]
+  
+  date date [not null]
+  instructions text
+  status enum('active', 'completed', 'cancelled') [default: 'active']
+  refills_allowed int
+  valid_until date
+  
+  created_at timestamp [default: `now()`]
+}
+
+Table prescription_medications {
+  id varchar [pk]
+  prescription_id varchar [ref: > prescriptions.id]
+  
+  name varchar [not null]
+  generic_name varchar
+  dosage varchar [not null]
+  frequency varchar [not null]
+  route enum('oral', 'injection', 'topical', 'inhalation', 'other')
+  start_date date
+  end_date date
+  purpose varchar
+  instructions text
+  status enum('active', 'completed', 'discontinued') [default: 'active']
+}
+
+// ==================== LAB & IMAGING ====================
+
+Table lab_orders {
+  id varchar [pk]
+  appointment_id varchar [ref: > appointments.id]
+  patient_id varchar [ref: > patients.id]
+  doctor_id varchar [ref: > doctors.id]
+  
+  order_date timestamp [default: `now()`]
+  test_name varchar [not null]
+  test_code varchar
+  priority enum('routine', 'urgent', 'stat') [default: 'routine']
+  instructions text
+  status enum('ordered', 'collected', 'processing', 'completed', 'cancelled') [default: 'ordered']
+  
+  indexes {
+    patient_id
+    status
+  }
+}
+
+Table lab_results {
+  id varchar [pk]
+  lab_order_id varchar [ref: > lab_orders.id]
+  
+  test_name varchar [not null]
+  value varchar [not null]
+  unit varchar
+  normal_range varchar
+  status enum('normal', 'abnormal', 'critical')
+  date timestamp [not null]
+  notes text
+}
+
+Table imaging_orders {
+  id varchar [pk]
+  appointment_id varchar [ref: > appointments.id]
+  patient_id varchar [ref: > patients.id]
+  doctor_id varchar [ref: > doctors.id]
+  
+  order_date timestamp [default: `now()`]
+  imaging_type enum('x-ray', 'ct', 'mri', 'ultrasound', 'other') [not null]
+  body_part varchar [not null]
+  priority enum('routine', 'urgent', 'stat') [default: 'routine']
+  instructions text
+  status enum('ordered', 'scheduled', 'completed', 'cancelled') [default: 'ordered']
+  scheduled_date timestamp
+}
+
+Table imaging_results {
+  id varchar [pk]
+  imaging_order_id varchar [ref: > imaging_orders.id]
+  
+  imaging_type varchar [not null]
+  date timestamp [not null]
+  findings text [not null]
+  impression text
+  radiologist_name varchar
+}
+
+// ==================== PDPA CONSENT ====================
+
+Table pdpa_consents {
+  id varchar [pk, note: 'consent_timestamp_random']
+  patient_id varchar [ref: > patients.id]
+  doctor_id varchar [ref: > doctors.id]
+  hospital_id varchar [ref: > hospitals.id]
+  
+  purpose text
+  status enum('pending', 'granted', 'revoked', 'expired') [default: 'pending']
+  granted_at timestamp
+  expires_at timestamp
+  revoked_at timestamp
+  revoke_reason text
+  
+  digital_signature text [not null]
+  ip_address varchar
+  user_agent varchar
+  
+  created_at timestamp [default: `now()`]
+  updated_at timestamp
+  
+  indexes {
+    patient_id
+    doctor_id
+    status
+  }
+}
+
+Table pdpa_consent_data_types {
+  id varchar [pk]
+  consent_id varchar [ref: > pdpa_consents.id]
+  data_type enum('demographics', 'medical_history', 'medications', 'allergies', 'lab_results', 'imaging_results', 'prescriptions', 'vital_signs', 'emr_records', 'phr', 'living_will', 'all') [not null]
+}
+
+Table pdpa_access_logs {
+  id varchar [pk]
+  consent_id varchar [ref: > pdpa_consents.id]
+  
+  doctor_id varchar [ref: > doctors.id]
+  data_accessed varchar [not null]
+  purpose text
+  ip_address varchar
+  
+  timestamp timestamp [default: `now()`]
+  
+  indexes {
+    consent_id
+    timestamp
+  }
+}
+
+// ==================== LIVING WILL ====================
+
+Table living_wills {
+  id varchar [pk]
+  patient_id varchar [unique, ref: > patients.id]
+  
+  // Healthcare Proxy
+  primary_proxy_name varchar [not null]
+  primary_proxy_relationship varchar
+  primary_proxy_phone varchar
+  primary_proxy_email varchar
+  primary_proxy_address text
+  
+  alternate_proxy_name varchar
+  alternate_proxy_relationship varchar
+  alternate_proxy_phone varchar
+  alternate_proxy_email varchar
+  
+  // Preferences
+  pref_cpr boolean [default: false]
+  pref_mechanical_ventilation boolean [default: false]
+  pref_artificial_nutrition boolean [default: false]
+  pref_dialysis boolean [default: false]
+  pref_organ_donation boolean [default: false]
+  pref_pain_management text
+  pref_additional_wishes text
+  
+  religious_preferences text
+  digital_signature text [not null]
+  
+  created_at timestamp [default: `now()`]
+  updated_at timestamp
+}
+
+Table living_will_witnesses {
+  id varchar [pk]
+  living_will_id varchar [ref: > living_wills.id]
+  signature text [not null]
+  signed_at timestamp [default: `now()`]
+}
+
+Table living_will_shared_doctors {
+  id varchar [pk]
+  living_will_id varchar [ref: > living_wills.id]
+  doctor_id varchar [ref: > doctors.id]
+  shared_at timestamp [default: `now()`]
+}
+
+Table living_will_versions {
+  id varchar [pk, note: 'version_timestamp_random']
+  living_will_id varchar [ref: > living_wills.id]
+  version_number int [not null]
+  data json [not null, note: 'Full living will snapshot']
+  reason text
+  created_at timestamp [default: `now()`]
+  
+  indexes {
+    living_will_id
+    version_number
+  }
+}
+
+// ==================== MEDICAL DOCUMENTS ====================
+
+Table medical_documents {
+  id varchar [pk]
+  patient_id varchar [ref: > patients.id]
+  
+  type enum('lab_result', 'imaging', 'prescription', 'report', 'other') [not null]
+  title varchar [not null]
+  description text
+  file_url varchar [not null]
+  file_name varchar [not null]
+  file_size int
+  mime_type varchar
+  
+  upload_date timestamp [default: `now()`]
+  
+  indexes {
+    patient_id
+    type
+  }
+}
+
+Table document_tags {
+  id varchar [pk]
+  document_id varchar [ref: > medical_documents.id]
+  tag varchar [not null]
+}
+
+// ==================== VACCINATIONS ====================
+
+Table vaccinations {
+  id varchar [pk]
+  patient_id varchar [ref: > patients.id]
+  
+  name varchar [not null]
+  date date [not null]
+  manufacturer varchar
+  lot_number varchar
+  site varchar
+  administered_by varchar
+  next_due date
+  notes text
+}
+
+// ==================== CHAT & AI ====================
+
+Table chat_sessions {
+  id varchar [pk]
+  patient_id varchar [ref: > patients.id]
+  
+  title varchar
+  context text
+  ai_model varchar [default: 'gemini']
+  
+  created_at timestamp [default: `now()`]
+  updated_at timestamp
+  
+  indexes {
+    patient_id
+  }
+}
+
+Table chat_messages {
+  id varchar [pk]
+  session_id varchar [ref: > chat_sessions.id]
+  
+  role enum('user', 'assistant', 'system') [not null]
+  content text [not null]
+  metadata json
+  
+  timestamp timestamp [default: `now()`]
+  
+  indexes {
+    session_id
+    timestamp
+  }
+}
+
+// ==================== NOTIFICATIONS ====================
+
+Table notifications {
+  id varchar [pk]
+  user_id varchar [ref: > users.id]
+  
+  type enum('appointment', 'medication', 'lab_result', 'message', 'system') [not null]
+  title varchar [not null]
+  message text [not null]
+  read boolean [default: false]
+  action_url varchar
+  metadata json
+  
+  created_at timestamp [default: `now()`]
+  
+  indexes {
+    user_id
+    read
+  }
+}
+
+// ==================== MEDICAL TIMELINE ====================
+
+Table timeline_events {
+  id varchar [pk]
+  patient_id varchar [ref: > patients.id]
+  
+  date timestamp [not null]
+  type enum('consultation', 'diagnosis', 'prescription', 'lab', 'imaging', 'hospitalization', 'surgery', 'vaccination') [not null]
+  title varchar [not null]
+  description text
+  doctor_id varchar [ref: > doctors.id]
+  hospital_id varchar [ref: > hospitals.id]
+  metadata json
+  
+  indexes {
+    patient_id
+    date
+    type
+  }
+}
+
+// ==================== METADATA ====================
+
+Table medication_catalog {
+  id varchar [pk]
+  name varchar [not null]
+  generic_name varchar
+  category varchar
+  description text
+  common_dosages varchar[]
+  side_effects text
+}
+
+Table specialties {
+  id varchar [pk]
+  name varchar [not null]
+  thai_name varchar
+  description text
+}
+
+Table health_tips {
+  id varchar [pk]
+  title varchar [not null]
+  content text [not null]
+  category varchar
+  priority int
+  active boolean [default: true]
+}

@@ -1,0 +1,62 @@
+[
+  {
+    "id": "sp-001",
+    "name": "General Practice",
+    "nameThai": "เวชปฏิบัติทั่วไป"
+  },
+  {
+    "id": "sp-002",
+    "name": "Internal Medicine",
+    "nameThai": "อายุรกรรม"
+  },
+  {
+    "id": "sp-003",
+    "name": "Pediatrics",
+    "nameThai": "กุมารเวชกรรม"
+  },
+  {
+    "id": "sp-004",
+    "name": "Cardiology",
+    "nameThai": "โรคหัวใจและหลอดเลือด"
+  },
+  {
+    "id": "sp-005",
+    "name": "Orthopedics",
+    "nameThai": "ศัลยกรรมกระดูกและข้อ"
+  },
+  {
+    "id": "sp-006",
+    "name": "Dermatology",
+    "nameThai": "ผิวหนัง"
+  },
+  {
+    "id": "sp-007",
+    "name": "Psychiatry",
+    "nameThai": "จิตเวชกรรม"
+  },
+  {
+    "id": "sp-008",
+    "name": "ENT",
+    "nameThai": "โสต ศอ นาสิกวิทยา"
+  },
+  {
+    "id": "sp-009",
+    "name": "Ophthalmology",
+    "nameThai": "จักษุวิทยา"
+  },
+  {
+    "id": "sp-010",
+    "name": "Obstetrics & Gynecology",
+    "nameThai": "สูติ-นรีเวชกรรม"
+  },
+  {
+    "id": "sp-011",
+    "name": "Gastroenterology",
+    "nameThai": "ระบบทางเดินอาหาร"
+  },
+  {
+    "id": "sp-012",
+    "name": "Endocrinology",
+    "nameThai": "ต่อมไร้ท่อและเมตาบอลิสม"
+  }
+]

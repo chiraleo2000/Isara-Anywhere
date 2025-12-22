@@ -1,0 +1,74 @@
+%%{init: {
+  'theme': 'base',
+  'themeVariables': {
+    'primaryColor': '#E3F2FD',
+    'primaryTextColor': '#0D47A1',
+    'primaryBorderColor': '#2196F3',
+    'lineColor': '#1976D2',
+    'secondaryColor': '#E8F5E9',
+    'tertiaryColor': '#FFF3E0',
+    'fontSize': '28px',
+    'fontFamily': 'Segoe UI, Arial'
+  }
+}}%%
+
+flowchart LR
+    subgraph INIT["🔧 INIT"]
+        A1["👤 Select Patient"]
+        A2["📂 Load History"]
+        A3["📋 View Previous"]
+    end
+
+    subgraph TYPE["📑 TYPE"]
+        B1["🧪 Lab Order"]
+        B2["📷 Imaging Order"]
+    end
+
+    subgraph LAB["🧪 LAB TESTS"]
+        C1["🔍 Search Tests"]
+        C2["📋 Add Panels<br/>CBC, LFT, Lipid"]
+        C3["⏰ Urgent Flag"]
+        C4["🍽️ Fasting?"]
+    end
+
+    subgraph IMG["📷 IMAGING"]
+        D1["🔍 Search Imaging"]
+        D2["📐 Modality<br/>X-Ray/CT/MRI/US"]
+        D3["🦴 Body Part"]
+        D4["💉 Contrast?"]
+    end
+
+    subgraph CLINICAL["📝 CLINICAL"]
+        E1["🏥 Add Diagnosis"]
+        E2["📋 Add Indication"]
+        E3["💰 Est. Cost"]
+    end
+
+    subgraph FINALIZE["✅ FINALIZE"]
+        F1["📋 Review Order"]
+        F2["✍️ Digital Sign"]
+        F3["💾 Save EMR"]
+        F4["🔔 Notify Lab/Rad"]
+    end
+
+    %% Flows
+    A1 --> A2 --> A3
+    A3 --> B1 --> C1 --> C2 --> C3 --> C4 --> E1
+    A3 --> B2 --> D1 --> D2 --> D3 --> D4 --> E1
+    E1 --> E2 --> E3 --> F1 --> F2 --> F3 --> F4
+
+    %% Styling
+    classDef initStyle fill:#E3F2FD,stroke:#2196F3,stroke-width:2px,color:#0D47A1
+    classDef typeStyle fill:#FFF3E0,stroke:#FF9800,stroke-width:2px,color:#E65100
+    classDef labStyle fill:#F3E5F5,stroke:#9C27B0,stroke-width:2px,color:#4A148C
+    classDef imgStyle fill:#E0F7FA,stroke:#00BCD4,stroke-width:2px,color:#006064
+    classDef clinicalStyle fill:#FFF8E1,stroke:#FFC107,stroke-width:2px,color:#FF6F00
+    classDef finalStyle fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px,color:#1B5E20
+
+    class A1,A2,A3 initStyle
+    class B1,B2 typeStyle
+    class C1,C2,C3,C4 labStyle
+    class D1,D2,D3,D4 imgStyle
+    class E1,E2,E3 clinicalStyle
+    class F1,F2,F3,F4 finalStyle
+

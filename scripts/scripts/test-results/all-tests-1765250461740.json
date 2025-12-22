@@ -1,0 +1,148 @@
+{
+  "summary": {
+    "total": 19,
+    "passed": 16,
+    "failed": 2,
+    "skipped": 1,
+    "passRate": "84.2%",
+    "duration": "1.0s",
+    "timestamp": "2025-12-09T03:21:01.740Z"
+  },
+  "sections": {
+    "Server Health": {
+      "passed": 4,
+      "failed": 1,
+      "skipped": 0,
+      "tests": [
+        {
+          "name": "Doctor Portal Frontend",
+          "status": "passed",
+          "details": "Running on http://localhost:3010"
+        },
+        {
+          "name": "Patient Portal Frontend",
+          "status": "passed",
+          "details": "Running on http://localhost:3005"
+        },
+        {
+          "name": "GCS API Server",
+          "status": "passed",
+          "details": "Running on http://localhost:3012"
+        },
+        {
+          "name": "Patient API Server",
+          "status": "passed",
+          "details": "Running on http://localhost:3004"
+        },
+        {
+          "name": "Auth API Server",
+          "status": "failed",
+          "details": "Not accessible"
+        }
+      ]
+    },
+    "API Endpoints": {
+      "passed": 3,
+      "failed": 0,
+      "skipped": 1,
+      "tests": [
+        {
+          "name": "GET /api/content/medical",
+          "status": "passed",
+          "details": "Status: 200"
+        },
+        {
+          "name": "GET /api/content/clinical",
+          "status": "passed",
+          "details": "Status: 200"
+        },
+        {
+          "name": "GET /api/appointments",
+          "status": "passed",
+          "details": "Status: 404"
+        },
+        {
+          "name": "Auth API Endpoints",
+          "status": "skipped",
+          "details": "Auth API not running"
+        }
+      ]
+    },
+    "Content Management": {
+      "passed": 4,
+      "failed": 1,
+      "skipped": 0,
+      "tests": [
+        {
+          "name": "Create Medical Content",
+          "status": "failed",
+          "details": "Status: 400"
+        },
+        {
+          "name": "Get Medical Content List",
+          "status": "passed",
+          "details": "Status: 200"
+        },
+        {
+          "name": "Get Specific Article",
+          "status": "passed",
+          "details": "Status: 404"
+        },
+        {
+          "name": "Update Medical Content",
+          "status": "passed",
+          "details": "Status: 404"
+        },
+        {
+          "name": "Delete Medical Content",
+          "status": "passed",
+          "details": "Status: 404"
+        }
+      ]
+    },
+    "Appointment Workflow": {
+      "passed": 5,
+      "failed": 0,
+      "skipped": 0,
+      "tests": [
+        {
+          "name": "Get Appointments List",
+          "status": "passed",
+          "details": "Status: 404"
+        },
+        {
+          "name": "Get Appointment Pool",
+          "status": "passed",
+          "details": "Status: 401"
+        },
+        {
+          "name": "Get Available Doctors",
+          "status": "passed",
+          "details": "Status: 401"
+        },
+        {
+          "name": "Create Appointment",
+          "status": "passed",
+          "details": "Status: 401"
+        },
+        {
+          "name": "Meeting Time Check",
+          "status": "passed",
+          "details": "Status: 404"
+        }
+      ]
+    }
+  },
+  "failures": [
+    {
+      "section": "Server Health",
+      "name": "Auth API Server",
+      "details": "Not accessible"
+    },
+    {
+      "section": "Content Management",
+      "name": "Create Medical Content",
+      "details": "Status: 400"
+    }
+  ]
+}

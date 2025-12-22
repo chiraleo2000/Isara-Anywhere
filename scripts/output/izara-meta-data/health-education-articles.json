@@ -1,0 +1,36 @@
+[
+  {
+    "id": "article-001",
+    "title": "Understanding Hypertension",
+    "titleThai": "ทำความเข้าใจโรคความดันโลหิตสูง",
+    "category": "cardiovascular",
+    "content": "Hypertension, or high blood pressure, is a common condition where the force of blood against artery walls is consistently too high...",
+    "contentThai": "โรคความดันโลหิตสูงคือภาวะที่แรงดันเลือดที่กระทำต่อผนังหลอดเลือดแดงสูงกว่าปกติอย่างต่อเนื่อง...",
+    "author": "Izara Medical Team",
+    "publishDate": "2025-11-10T16:57:16.800Z",
+    "tags": [
+      "hypertension",
+      "heart",
+      "prevention"
+    ],
+    "imageUrl": "https://images.unsplash.com/photo-1628348070889-cb656235b4eb?w=400",
+    "readTime": 7
+  },
+  {
+    "id": "article-002",
+    "title": "Type 2 Diabetes Prevention",
+    "titleThai": "การป้องกันโรคเบาหวานชนิดที่ 2",
+    "category": "diabetes",
+    "content": "Type 2 diabetes is a chronic condition that affects how your body processes blood sugar...",
+    "contentThai": "โรคเบาหวานชนิดที่ 2 เป็นโรคเรื้อรังที่ร่างกายไม่สามารถควบคุมระดับน้ำตาลในเลือดได้อย่างเหมาะสม...",
+    "author": "Izara Medical Team",
+    "publishDate": "2025-10-11T16:57:16.800Z",
+    "tags": [
+      "diabetes",
+      "prevention",
+      "lifestyle"
+    ],
+    "imageUrl": "https://images.unsplash.com/photo-1526256262350-7da7584cf5eb?w=400",
+    "readTime": 5
+  }
+]

@@ -1,0 +1,25 @@
+{
+  "id": "DOC-001",
+  "email": "doctor.test@izara.com",
+  "passwordHash": "$2b$10$bu1Au2RePpX8dFlvIDF.XeHiXGPLZudqXDhWIo75.eau7UMnFMdca",
+  "role": "doctor",
+  "name": "Dr. Test Doctor",
+  "nameThai": "นพ. ทดสอบ แพทย์",
+  "avatarUrl": "https://api.dicebear.com/7.x/avataaars/svg?seed=doc-001",
+  "specialty": "General Practice",
+  "specialtyThai": "เวชปฏิบัติทั่วไป",
+  "hospital": "Izara Hospital Bangkok",
+  "medicalLicenseNumber": "MD-001-2024",
+  "isActive": true,
+  "isVerified": true,
+  "isApproved": true,
+  "status": "approved",
+  "approvalStatus": "approved",
+  "createdAt": "2024-12-10T16:57:16.724Z",
+  "lastLogin": "2025-12-10T16:57:16.724Z",
+  "preferences": {
+    "language": "th",
+    "notifications": true,
+    "theme": "light"
+  }
+}

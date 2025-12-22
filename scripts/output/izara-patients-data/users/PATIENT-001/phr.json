@@ -1,0 +1,174 @@
+{
+  "id": "phr-PATIENT-001",
+  "patientId": "PATIENT-001",
+  "demographics": {
+    "name": "Demo Test User",
+    "nameThai": "นาย ทดสอบ ระบบ",
+    "dateOfBirth": "1990-01-15",
+    "gender": "male",
+    "bloodType": "O+",
+    "height": 175,
+    "weight": 75,
+    "ethnicity": "Thai",
+    "occupation": "Software Engineer"
+  },
+  "vitalSignsHistory": [
+    {
+      "bloodPressure": {
+        "systolic": 135,
+        "diastolic": 82,
+        "unit": "mmHg"
+      },
+      "heartRate": {
+        "value": 72,
+        "unit": "bpm"
+      },
+      "temperature": {
+        "value": 36.8,
+        "unit": "celsius"
+      },
+      "oxygenSaturation": {
+        "value": 98,
+        "unit": "%"
+      },
+      "weight": {
+        "value": 75,
+        "unit": "kg"
+      },
+      "height": {
+        "value": 175,
+        "unit": "cm"
+      },
+      "bmi": 24.5,
+      "measuredAt": "2025-12-05T16:57:16.791Z"
+    },
+    {
+      "bloodPressure": {
+        "systolic": 148,
+        "diastolic": 92,
+        "unit": "mmHg"
+      },
+      "heartRate": {
+        "value": 78,
+        "unit": "bpm"
+      },
+      "temperature": {
+        "value": 36.7,
+        "unit": "celsius"
+      },
+      "oxygenSaturation": {
+        "value": 99,
+        "unit": "%"
+      },
+      "weight": {
+        "value": 76,
+        "unit": "kg"
+      },
+      "height": {
+        "value": 175,
+        "unit": "cm"
+      },
+      "bmi": 24.8,
+      "measuredAt": "2025-09-06T16:57:16.791Z"
+    },
+    {
+      "bloodPressure": {
+        "systolic": 120,
+        "diastolic": 80,
+        "unit": "mmHg"
+      },
+      "heartRate": {
+        "value": 90,
+        "unit": "bpm"
+      },
+      "temperature": {
+        "value": 38.2,
+        "unit": "celsius"
+      },
+      "oxygenSaturation": {
+        "value": 98,
+        "unit": "%"
+      },
+      "weight": {
+        "value": 75,
+        "unit": "kg"
+      },
+      "height": {
+        "value": 175,
+        "unit": "cm"
+      },
+      "bmi": 24.5,
+      "measuredAt": "2025-06-13T16:57:16.791Z"
+    }
+  ],
+  "lifestyle": {
+    "smokingStatus": "never",
+    "alcoholConsumption": "occasional",
+    "exerciseFrequency": "moderate",
+    "dietType": "omnivore",
+    "sleepHours": 7,
+    "stressLevel": "moderate",
+    "occupation": "Software Engineer"
+  },
+  "allergies": [
+    "Penicillin"
+  ],
+  "chronicConditions": [
+    "Hypertension"
+  ],
+  "currentMedications": [
+    {
+      "id": "med-001",
+      "name": "Amlodipine",
+      "genericName": "Amlodipine besylate",
+      "dosage": "5mg",
+      "frequency": "Once daily",
+      "route": "oral",
+      "startDate": "2025-09-06T16:57:16.791Z",
+      "prescribedBy": "Dr. Test Doctor",
+      "purpose": "Blood pressure control",
+      "status": "active"
+    }
+  ],
+  "vaccinations": [
+    {
+      "id": "vac-001",
+      "name": "COVID-19 (Pfizer)",
+      "date": "2024-12-10T16:57:16.791Z",
+      "manufacturer": "Pfizer-BioNTech",
+      "lotNumber": "FF1234",
+      "site": "Left arm",
+      "administeredBy": "Bangkok Hospital"
+    },
+    {
+      "id": "vac-002",
+      "name": "Influenza Vaccine 2025",
+      "date": "2025-10-11T16:57:16.791Z",
+      "manufacturer": "Sanofi",
+      "lotNumber": "FLU2025",
+      "site": "Left arm",
+      "administeredBy": "X Hospital Bangkok"
+    },
+    {
+      "id": "vac-003",
+      "name": "Tetanus-Diphtheria (Td)",
+      "date": "2022-12-11T16:57:16.791Z",
+      "manufacturer": "Sanofi Pasteur",
+      "lotNumber": "TD2022",
+      "site": "Right arm",
+      "administeredBy": "X Hospital Bangkok"
+    },
+    {
+      "id": "vac-004",
+      "name": "Hepatitis B (Complete Series)",
+      "date": "2015-12-13T16:57:16.791Z",
+      "manufacturer": "GSK",
+      "lotNumber": "HEPB2015",
+      "site": "Left arm",
+      "administeredBy": "Bangkok Hospital",
+      "notes": "3-dose series completed"
+    }
+  ],
+  "documents": [],
+  "updatedAt": "2025-12-10T16:57:16.791Z"
+}

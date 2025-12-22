@@ -1,0 +1,465 @@
+// Izara Telehealth - Complete Database Schema
+// Storage: Google Cloud Storage (GCS)
+// File Format: JSON documents
+
+// ============================================================================
+// BUCKET: izara-users-auth (Patient Authentication)
+// ============================================================================
+
+Table patient_user {
+  id varchar [pk, note: 'Format: PAT-timestamp-random']
+  email varchar [unique]
+  passwordHash varchar [note: 'bcrypt hash']
+  role varchar [default: 'patient']
+  
+  // Profile
+  name varchar
+  nameThai varchar
+  phone varchar
+  dateOfBirth date
+  avatarUrl varchar
+  
+  // Status
+  isActive boolean [default: true]
+  emailVerified boolean [default: false]
+  
+  // Security
+  loginAttempts int [default: 0]
+  lockedUntil timestamp
+  lastLogin timestamp
+  
+  // Consent
+  pdpaConsent boolean
+  pdpaConsentDate timestamp
+  marketingConsent boolean
+  
+  // Timestamps
+  createdAt timestamp
+  updatedAt timestamp
+
+  Note: 'Location: izara-users-auth/users/{userId}.json'
+}
+
+Table patient_session {
+  id varchar [pk, note: '64 hex chars']
+  userId varchar [ref: > patient_user.id]
+  email varchar
+  role varchar
+  createdAt timestamp
+  expiresAt timestamp
+  lastActivity timestamp
+  ip varchar
+  userAgent varchar
+  isValid boolean [default: true]
+  loggedOutAt timestamp
+
+  Note: 'Location: izara-users-auth/sessions/{token}.json'
+}
+
+// ============================================================================
+// BUCKET: izara-users-credentials (Doctor/Admin Authentication)
+// ============================================================================
+
+Table doctor_user {
+  id varchar [pk, note: 'Format: DOC-timestamp-random']
+  email varchar [unique]
+  passwordHash varchar [note: 'bcrypt hash']
+  role enum('doctor', 'admin')
+  doctorId varchar
+  medicalLicenseNumber varchar
+  
+  // Status
+  isAdmin boolean
+  isActive boolean
+  isApproved boolean
+  approvalStatus enum('pending', 'approved', 'rejected')
+  emailVerified boolean
+  
+  // Profile
+  name varchar
+  nameThai varchar
+  phone varchar
+  dateOfBirth date
+  avatarUrl varchar
+  specialty varchar
+  specialtyThai varchar
+  hospital varchar
+  qualifications json
+  experience varchar
+  
+  // Security
+  loginAttempts int [default: 0]
+  lockedUntil timestamp
+  lastLogin timestamp
+  
+  // Approval
+  approvedAt timestamp
+  approvedBy varchar
+  rejectedAt timestamp
+  rejectedBy varchar
+  rejectionReason varchar
+  
+  // Timestamps
+  createdAt timestamp
+  updatedAt timestamp
+
+  Note: 'Location: izara-users-credentials/users/{userId}.json'
+}
+
+Table admin_privileges {
+  user_id varchar [pk, ref: > doctor_user.id]
+  canManageDoctors boolean
+  canManagePatients boolean
+  canManageAppointments boolean
+  canViewAnalytics boolean
+  canManageSettings boolean
+  canAssignRoles boolean
+  level enum('super_admin', 'admin', 'moderator')
+
+  Note: 'Embedded in doctor_user.adminPrivileges'
+}
+
+Table doctor_session {
+  id varchar [pk]
+  userId varchar [ref: > doctor_user.id]
+  email varchar
+  role varchar
+  createdAt timestamp
+  expiresAt timestamp
+  lastActivity timestamp
+  ip varchar
+  userAgent varchar
+  isValid boolean
+  loggedOutAt timestamp
+
+  Note: 'Location: izara-users-credentials/sessions/{token}.json'
+}
+
+// ============================================================================
+// BUCKET: izara-patients-data (Patient Profiles & Health Records)
+// ============================================================================
+
+Table patient_profile {
+  patientId varchar [pk, ref: > patient_user.id]
+  name varchar
+  
+  // Demographics (embedded object)
+  demographics_name varchar
+  demographics_nameThai varchar
+  demographics_dateOfBirth date
+  demographics_gender enum('male', 'female', 'other')
+  demographics_bloodType varchar
+  demographics_phone varchar
+  demographics_email varchar
+  demographics_address text
+  demographics_emergencyContact json
+  
+  // Timestamps
+  createdAt timestamp
+  updatedAt timestamp
+
+  Note: 'Location: izara-patients-data/patients/{patientId}/profile.json'
+}
+
+Table patient_phr {
+  patientId varchar [pk, ref: > patient_user.id]
+  
+  // Vital Signs
+  vitalSigns_height decimal
+  vitalSigns_weight decimal
+  vitalSigns_bloodPressure_systolic int
+  vitalSigns_bloodPressure_diastolic int
+  vitalSigns_heartRate int
+  vitalSigns_temperature decimal
+  vitalSigns_respiratoryRate int
+  vitalSigns_oxygenSaturation int
+  vitalSigns_lastUpdated timestamp
+  
+  // Lifestyle
+  lifestyle_smoking varchar
+  lifestyle_alcohol varchar
+  lifestyle_exercise varchar
+  lifestyle_diet varchar
+  lifestyle_sleepHours int
+  
+  lastUpdated timestamp
+
+  Note: 'Location: izara-patients-data/patients/{patientId}/phr.json'
+}
+
+Table patient_allergy {
+  id varchar [pk]
+  patientId varchar [ref: > patient_phr.patientId]
+  allergen varchar
+  severity enum('mild', 'moderate', 'severe')
+  reaction varchar
+  diagnosedDate date
+  notes text
+
+  Note: 'Embedded array in patient_phr.allergies'
+}
+
+Table patient_medication {
+  id varchar [pk]
+  patientId varchar [ref: > patient_phr.patientId]
+  name varchar
+  dosage varchar
+  frequency varchar
+  startDate date
+  endDate date
+  prescribedBy varchar
+  purpose varchar
+  isActive boolean
+
+  Note: 'Embedded array in patient_phr.medications'
+}
+
+Table patient_medical_history {
+  id varchar [pk]
+  patientId varchar [ref: > patient_phr.patientId]
+  condition varchar
+  diagnosedDate date
+  status enum('active', 'resolved', 'chronic')
+  treatment varchar
+  notes text
+
+  Note: 'Embedded array in patient_phr.medicalHistory'
+}
+
+// ============================================================================
+// BUCKET: izara-doctors-data (Doctor Public Profiles)
+// ============================================================================
+
+Table doctor_profile {
+  id varchar [pk, ref: > doctor_user.id]
+  doctorId varchar
+  name varchar
+  specialty varchar
+  hospital varchar
+  phone varchar
+  email varchar
+  photo varchar
+  bio text
+  qualifications json
+  experience int
+  rating decimal
+  reviewCount int
+  available boolean
+  createdAt timestamp
+  updatedAt timestamp
+
+  Note: 'Location: izara-doctors-data/doctors/{doctorId}.json'
+}
+
+// ============================================================================
+// BUCKET: izara-appointments (Appointments & EMRs)
+// ============================================================================
+
+Table appointment {
+  id varchar [pk, note: 'Format: APT-timestamp-random']
+  patientId varchar [ref: > patient_user.id]
+  doctorId varchar [ref: > doctor_user.id]
+  
+  // Status
+  status enum('pending', 'in_pool', 'confirmed', 'completed', 'declined', 'cancelled')
+  
+  // Type
+  appointmentType enum('online', 'in_person')
+  
+  // Patient Request
+  symptoms text
+  duration varchar
+  severity enum('normal', 'urgent', 'emergency')
+  requestedDate date
+  requestedTime time
+  notes text
+  
+  // AI Analysis
+  aiAnalysis json
+  urgencyScore int
+  
+  // Confirmation
+  confirmedDate date
+  confirmedTime time
+  confirmedBy varchar
+  confirmedAt timestamp
+  
+  // Meeting
+  meetLink varchar
+  calendarEventId varchar
+  
+  // Decline
+  declinedBy varchar
+  declinedAt timestamp
+  declineReason varchar
+  
+  // Completion
+  completedAt timestamp
+  completedBy varchar
+  
+  // Timestamps
+  createdAt timestamp
+  updatedAt timestamp
+
+  Note: 'Location: izara-appointments/appointments/{appointmentId}.json'
+}
+
+Table emr {
+  id varchar [pk]
+  appointmentId varchar [ref: > appointment.id]
+  patientId varchar
+  doctorId varchar
+  
+  // Encounter
+  encounterDate timestamp
+  encounterType enum('general', 'follow_up', 'emergency', 'procedure')
+  
+  // Subjective
+  subjective_chiefComplaint text
+  subjective_historyOfPresentIllness text
+  subjective_pastMedicalHistory text
+  subjective_familyHistory text
+  subjective_socialHistory text
+  subjective_reviewOfSystems json
+  
+  // Objective
+  objective_vitalSigns json
+  objective_physicalExamination text
+  objective_generalAppearance text
+  
+  // Assessment
+  assessment_primaryDiagnosis varchar
+  assessment_primaryDiagnosisCode varchar
+  assessment_secondaryDiagnoses json
+  assessment_differentialDiagnoses json
+  
+  // Plan
+  plan_treatmentPlan text
+  plan_medications json
+  plan_labOrders json
+  plan_imaging json
+  plan_referrals json
+  plan_followUp text
+  plan_patientInstructions text
+  
+  // AI Summary (for patient)
+  aiSummary text
+  aiSummaryApproved boolean
+  
+  // Status
+  status enum('draft', 'signed', 'amended')
+  signedAt timestamp
+  signedBy varchar
+  
+  createdAt timestamp
+  updatedAt timestamp
+
+  Note: 'Embedded in appointment or izara-appointments/emr/{emrId}.json'
+}
+
+// ============================================================================
+// BUCKET: izara-meta-data (Resources & Consultants)
+// ============================================================================
+
+Table clinical_resource {
+  id varchar [pk]
+  title varchar
+  titleTh varchar
+  description text
+  descriptionTh text
+  content text
+  contentTh text
+  category varchar
+  tags json
+  resourceType enum('guideline', 'protocol', 'research', 'template', 'reference')
+  source varchar
+  references json
+  
+  status enum('draft', 'pending', 'published', 'rejected', 'archived')
+  version int
+  history json
+  comments json
+  rejectionReason varchar
+  
+  createdBy varchar [ref: > doctor_user.id]
+  createdByName varchar
+  createdAt timestamp
+  updatedBy varchar
+  updatedByName varchar
+  updatedAt timestamp
+  submittedAt timestamp
+  reviewedBy varchar
+  reviewedByName varchar
+  reviewedAt timestamp
+  publishedAt timestamp
+
+  Note: 'Location: izara-meta-data/clinical-resources/resources.json (array)'
+}
+
+Table medical_consultant {
+  id varchar [pk]
+  name varchar
+  specialty varchar
+  hospital varchar
+  phone varchar
+  email varchar
+  photo varchar
+  available boolean
+  languages json
+  experience int
+  rating decimal
+  reviewCount int
+  bio text
+  certifications json
+  consultationFee decimal
+  availableSlots json
+  notes text
+  reviews json
+  
+  createdBy varchar
+  createdByName varchar
+  createdAt timestamp
+  updatedBy varchar
+  updatedByName varchar
+  updatedAt timestamp
+
+  Note: 'Location: izara-meta-data/consultants/consultants.json (array)'
+}
+
+Table consultant_review {
+  id varchar [pk]
+  consultantId varchar [ref: > medical_consultant.id]
+  userId varchar [ref: > doctor_user.id]
+  userName varchar
+  rating int
+  comment text
+  createdAt timestamp
+  updatedAt timestamp
+
+  Note: 'Embedded in medical_consultant.reviews'
+}
+
+// ============================================================================
+// RELATIONSHIPS
+// ============================================================================
+
+// Patient owns their profile and PHR
+Ref: patient_profile.patientId - patient_user.id
+Ref: patient_phr.patientId - patient_user.id
+
+// Doctor has public profile
+Ref: doctor_profile.id - doctor_user.id
+
+// Appointments link patients and doctors
+Ref: appointment.patientId > patient_user.id
+Ref: appointment.doctorId > doctor_user.id
+
+// EMR belongs to appointment
+Ref: emr.appointmentId - appointment.id
+
+// Resources created by doctors
+Ref: clinical_resource.createdBy > doctor_user.id
+
+// Consultants reviewed by doctors
+Ref: consultant_review.consultantId > medical_consultant.id
+Ref: consultant_review.userId > doctor_user.id

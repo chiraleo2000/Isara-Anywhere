@@ -1,0 +1,40 @@
+[
+  {
+    "id": "pdpa-PATIENT-001-DOC-001",
+    "patientId": "PATIENT-001",
+    "doctorId": "DOC-001",
+    "doctorName": "Dr. Test Doctor",
+    "dataTypes": [
+      "phr",
+      "emr",
+      "prescriptions",
+      "labs",
+      "imaging"
+    ],
+    "status": "granted",
+    "grantedAt": "2025-06-13T16:57:16.791Z",
+    "expiresAt": "2027-06-08T16:57:16.791Z",
+    "digitalSignature": "DEMO_PDPA_SIGNATURE_BASE64",
+    "ipAddress": "192.168.1.100",
+    "auditLog": [
+      {
+        "timestamp": "2025-12-05T16:57:16.791Z",
+        "doctorId": "DOC-001",
+        "doctorName": "Dr. Test Doctor",
+        "dataAccessed": "PHR - Vital Signs, Medical History",
+        "purpose": "Routine consultation and follow-up",
+        "purposeThai": "ตรวจรักษาและติดตามอาการตามนัด",
+        "ipAddress": "10.0.0.50"
+      },
+      {
+        "timestamp": "2025-09-06T16:57:16.791Z",
+        "doctorId": "DOC-001",
+        "doctorName": "Dr. Test Doctor",
+        "dataAccessed": "PHR - Complete Medical Record",
+        "purpose": "Initial consultation for hypertension",
+        "purposeThai": "ตรวจวินิจฉัยโรคความดันโลหิตสูงครั้งแรก",
+        "ipAddress": "10.0.0.50"
+      }
+    ]
+  }
+]

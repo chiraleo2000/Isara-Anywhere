@@ -1,0 +1,118 @@
+{
+  "suiteName": "Medical Content",
+  "startTime": "2025-12-15T09:38:18.576Z",
+  "endTime": "2025-12-15T09:44:02.251Z",
+  "duration": 343675,
+  "total": 13,
+  "passed": 12,
+  "failed": 1,
+  "skipped": 0,
+  "passRate": "92.3",
+  "sections": {},
+  "tests": [
+    {
+      "name": "Doctor login successful",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-15T09:38:35.016Z",
+      "section": null
+    },
+    {
+      "name": "Content management page accessed",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-15T09:39:04.614Z",
+      "section": null
+    },
+    {
+      "name": "Content management ready (empty state or new)",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-15T09:39:09.659Z",
+      "section": null
+    },
+    {
+      "name": "Create article form opened",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-15T09:39:39.970Z",
+      "section": null
+    },
+    {
+      "name": "Article title entered",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-15T09:39:55.574Z",
+      "section": null
+    },
+    {
+      "name": "Article content entered",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-15T09:40:15.990Z",
+      "section": null
+    },
+    {
+      "name": "Category and tags set",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-15T09:40:36.273Z",
+      "section": null
+    },
+    {
+      "name": "Article summary added",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-15T09:40:51.548Z",
+      "section": null
+    },
+    {
+      "name": "Article saved as draft",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-15T09:41:32.494Z",
+      "section": null
+    },
+    {
+      "name": "Draft saved (auto-save enabled)",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-15T09:41:52.560Z",
+      "section": null
+    },
+    {
+      "name": "Article published",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-15T09:42:38.577Z",
+      "section": null
+    },
+    {
+      "name": "Article published (status may be implicit)",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-15T09:42:58.724Z",
+      "section": null
+    },
+    {
+      "name": "Access Health Studio",
+      "status": "FAILED",
+      "details": "Login failed - still on login page",
+      "duration": 0,
+      "timestamp": "2025-12-15T09:44:01.927Z",
+      "section": null
+    }
+  ]
+}

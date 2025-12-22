@@ -1,0 +1,79 @@
+{
+  "mode": "cloud",
+  "urls": {
+    "patientPortal": "https://izara-patient-portal-724889190329.asia-southeast1.run.app",
+    "doctorPortal": "https://izara-doctor-portal-724889190329.asia-southeast1.run.app"
+  },
+  "summary": {
+    "total": 10,
+    "passed": 8,
+    "failed": 2,
+    "skipped": 0,
+    "passRate": 80
+  },
+  "tests": [
+    {
+      "name": "Patient Portal Health Check",
+      "status": "passed",
+      "duration": 352,
+      "error": null
+    },
+    {
+      "name": "Doctor Portal Health Check",
+      "status": "passed",
+      "duration": 124,
+      "error": null
+    },
+    {
+      "name": "Patient Portal GCS Connection",
+      "status": "passed",
+      "duration": 127,
+      "error": null
+    },
+    {
+      "name": "Doctor Portal GCS Connection",
+      "status": "passed",
+      "duration": 51,
+      "error": null
+    },
+    {
+      "name": "Jitsi Meeting Link Format",
+      "status": "passed",
+      "duration": 2,
+      "error": null
+    },
+    {
+      "name": "Cross-Portal Data Sync",
+      "status": "passed",
+      "duration": 114,
+      "error": null
+    },
+    {
+      "name": "Patient Portal Login Page",
+      "status": "passed",
+      "duration": 2587,
+      "error": null
+    },
+    {
+      "name": "Doctor Portal Login Page",
+      "status": "passed",
+      "duration": 3203,
+      "error": null
+    },
+    {
+      "name": "Patient Portal Authentication",
+      "status": "failed",
+      "duration": 22375,
+      "error": "Login did not redirect to dashboard"
+    },
+    {
+      "name": "Doctor Portal Authentication",
+      "status": "failed",
+      "duration": 8424,
+      "error": "Login did not redirect to dashboard"
+    }
+  ],
+  "startTime": "2025-12-18T04:41:40.340Z",
+  "endTime": "2025-12-18T04:42:19.937Z",
+  "duration": 39.597
+}

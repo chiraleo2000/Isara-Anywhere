@@ -1,0 +1,15 @@
+[
+  {
+    "id": "PATIENT-001",
+    "name": "Demo Test User",
+    "email": "demo.test@gmail.com",
+    "phone": "+66-81-111-1111",
+    "gender": "female",
+    "age": 34,
+    "dateOfBirth": "1990-01-01",
+    "consentStatus": {
+      "hasConsent": true
+    },
+    "status": "active"
+  }
+]

@@ -1,0 +1,13 @@
+{
+  "name": "english-general-consultation",
+  "language": "en-US",
+  "estimatedDuration": 60,
+  "dialogueCount": 9,
+  "speakers": [
+    "doctor",
+    "patient"
+  ],
+  "generatedAt": "2025-12-15T04:11:08.043Z",
+  "purpose": "Testing Speech-to-Text transcription",
+  "format": "Reference transcript for comparison"
+}

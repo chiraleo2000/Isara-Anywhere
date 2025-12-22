@@ -1,0 +1,206 @@
+// Izara Patient Portal - Database Schema
+// Storage: Google Cloud Storage (izara-users-auth, izara-patients-data)
+
+// ============================================================================
+// PATIENT USER CREDENTIALS
+// Location: izara-users-auth/users/{userId}.json
+// ============================================================================
+
+Table patient_user {
+  id varchar [pk, note: 'Format: user_timestamp_random']
+  patientId varchar [unique, note: 'Format: patient_timestamp_random']
+  email varchar [unique]
+  passwordHash varchar [note: 'Base64 encoded']
+  createdAt timestamp
+  updatedAt timestamp
+
+  Note: 'Stored in izara-users-auth bucket'
+}
+
+Table patient_profile_embedded {
+  id varchar [pk]
+  patientId varchar
+  name varchar
+  email varchar
+  phone varchar
+  avatarUrl varchar
+  dateOfBirth date
+  gender enum('male', 'female', 'other')
+  createdAt timestamp
+  updatedAt timestamp
+
+  Note: 'Embedded in patient_user.profile'
+}
+
+// ============================================================================
+// PATIENT PHR (Personal Health Record)
+// Location: izara-patients-data/patients/{patientId}/phr.json
+// ============================================================================
+
+Table patient_phr {
+  id varchar [pk, note: 'Format: phr_{patientId}']
+  patientId varchar [ref: > patient_user.patientId]
+  version varchar [default: '2.0.0']
+  createdAt timestamp
+  updatedAt timestamp
+  lastModifiedBy varchar
+
+  Note: 'Main PHR document in izara-patients-data'
+}
+
+Table phr_demographics {
+  phr_id varchar [pk, ref: > patient_phr.id]
+  name varchar
+  dateOfBirth date
+  age int
+  gender varchar
+  bloodType varchar [note: 'A+, A-, B+, B-, O+, O-, AB+, AB-']
+  height decimal [note: 'cm']
+  weight decimal [note: 'kg']
+
+  Note: 'Embedded in patient_phr.demographics'
+}
+
+Table phr_vital_sign {
+  id varchar [pk]
+  phr_id varchar [ref: > patient_phr.id]
+  bloodPressureSystolic int [note: 'mmHg']
+  bloodPressureDiastolic int [note: 'mmHg']
+  heartRate int [note: 'BPM']
+  temperature decimal [note: 'Celsius']
+  weight decimal [note: 'kg']
+  oxygenSaturation int [note: 'Percentage']
+  bloodGlucose int [note: 'mg/dL']
+  measuredAt timestamp
+  source varchar [note: 'patient-entered, device, clinic']
+
+  Note: 'Array in patient_phr.vitalSignsHistory'
+}
+
+Table phr_allergy {
+  id varchar [pk]
+  phr_id varchar [ref: > patient_phr.id]
+  allergen varchar
+  type enum('medication', 'food', 'environmental', 'other')
+  severity enum('mild', 'moderate', 'severe')
+  reaction varchar
+
+  Note: 'Array in patient_phr.allergies'
+}
+
+Table phr_chronic_condition {
+  id varchar [pk]
+  phr_id varchar [ref: > patient_phr.id]
+  condition varchar
+  diagnosedDate date
+  status enum('active', 'managed', 'resolved')
+
+  Note: 'Array in patient_phr.chronicConditions'
+}
+
+Table phr_medication {
+  id varchar [pk]
+  phr_id varchar [ref: > patient_phr.id]
+  name varchar
+  dosage varchar
+  frequency varchar
+  purpose varchar
+  status enum('active', 'inactive')
+  source enum('prescription', 'self-reported')
+  startDate date
+  endDate date
+
+  Note: 'Array in patient_phr.currentMedications'
+}
+
+Table phr_vaccination {
+  id varchar [pk]
+  phr_id varchar [ref: > patient_phr.id]
+  vaccineName varchar
+  dateAdministered date
+  provider varchar
+  lotNumber varchar
+
+  Note: 'Array in patient_phr.vaccinations'
+}
+
+Table phr_lifestyle {
+  phr_id varchar [pk, ref: > patient_phr.id]
+  smokingStatus enum('never', 'former', 'current')
+  alcoholConsumption enum('never', 'occasional', 'moderate', 'frequent')
+  exerciseFrequency enum('none', 'light', 'moderate', 'active')
+  diet enum('regular', 'vegetarian', 'vegan', 'keto', 'low-carb', 'other')
+  sleepHours int
+  supplements text
+  otherTreatments text
+
+  Note: 'Embedded in patient_phr.lifestyle'
+}
+
+Table phr_emergency_contact {
+  id varchar [pk]
+  phr_id varchar [ref: > patient_phr.id]
+  name varchar
+  phone varchar
+  relation varchar
+
+  Note: 'Array in patient_phr.emergencyContacts'
+}
+
+// ============================================================================
+// PATIENT SESSIONS
+// Location: izara-users-auth/sessions/{sessionId}.json
+// ============================================================================
+
+Table patient_session {
+  id varchar [pk, note: 'Session token']
+  userId varchar [ref: > patient_user.id]
+  email varchar
+  createdAt timestamp
+  expiresAt timestamp [note: '+30 minutes']
+  lastActivity timestamp
+  ip varchar
+  userAgent varchar
+  isValid boolean [default: true]
+
+  Note: 'Stored in izara-users-auth/sessions/'
+}
+
+// ============================================================================
+// APPOINTMENTS (Patient perspective)
+// Location: izara-appointments/appointments/{appointmentId}.json
+// ============================================================================
+
+Table appointment {
+  id varchar [pk, note: 'Format: APT-timestamp-random']
+  patientId varchar [ref: > patient_user.patientId]
+  patientName varchar
+  patientEmail varchar
+  doctorId varchar
+  doctorName varchar
+  
+  // Request details
+  requestedDate date
+  requestedTime time
+  confirmedDate date
+  confirmedTime time
+  type enum('online', 'onsite')
+  urgency enum('normal', 'urgent', 'emergency')
+  
+  // Symptoms
+  symptoms text
+  symptomDescription text
+  aiAnalysis json
+  
+  // Status
+  status enum('pending', 'in_pool', 'confirmed', 'completed', 'declined', 'cancelled')
+  meetingLink varchar
+  
+  // Timestamps
+  createdAt timestamp
+  updatedAt timestamp
+  confirmedAt timestamp
+  completedAt timestamp
+
+  Note: 'Stored in izara-appointments bucket'
+}

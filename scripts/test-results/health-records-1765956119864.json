@@ -1,0 +1,190 @@
+{
+  "suiteName": "Health Records",
+  "startTime": "2025-12-17T07:13:27.119Z",
+  "endTime": "2025-12-17T07:21:59.863Z",
+  "duration": 512744,
+  "total": 22,
+  "passed": 22,
+  "failed": 0,
+  "skipped": 0,
+  "passRate": "100.0",
+  "sections": {},
+  "tests": [
+    {
+      "name": "Patient login successful",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-17T07:13:47.006Z",
+      "section": null
+    },
+    {
+      "name": "PHR section accessed",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-17T07:13:54.141Z",
+      "section": null
+    },
+    {
+      "name": "Demographics tab accessed",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-17T07:14:15.676Z",
+      "section": null
+    },
+    {
+      "name": "Demographics information edited",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-17T07:14:42.146Z",
+      "section": null
+    },
+    {
+      "name": "Demographics saved",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-17T07:15:19.274Z",
+      "section": null
+    },
+    {
+      "name": "Vitals tab accessed",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-17T07:15:40.682Z",
+      "section": null
+    },
+    {
+      "name": "Weight entry added",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-17T07:16:12.171Z",
+      "section": null
+    },
+    {
+      "name": "Vitals saved",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-17T07:17:04.604Z",
+      "section": null
+    },
+    {
+      "name": "BMI auto-calculated and displayed",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-17T07:17:06.211Z",
+      "section": null
+    },
+    {
+      "name": "Thai BMI category displayed",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-17T07:17:06.309Z",
+      "section": null
+    },
+    {
+      "name": "Lifestyle tab accessed",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-17T07:17:29.107Z",
+      "section": null
+    },
+    {
+      "name": "Lifestyle information filled",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-17T07:18:00.731Z",
+      "section": null
+    },
+    {
+      "name": "Lifestyle information saved",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-17T07:18:33.372Z",
+      "section": null
+    },
+    {
+      "name": "EMR section accessed",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-17T07:19:15.280Z",
+      "section": null
+    },
+    {
+      "name": "EMR section accessible (records sync from consultations)",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-17T07:19:35.485Z",
+      "section": null
+    },
+    {
+      "name": "Health Logs section accessed",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-17T07:19:59.393Z",
+      "section": null
+    },
+    {
+      "name": "Health logs section accessible (synced from appointments)",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-17T07:20:14.521Z",
+      "section": null
+    },
+    {
+      "name": "Medications section accessible (synced from prescriptions)",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-17T07:20:14.521Z",
+      "section": null
+    },
+    {
+      "name": "AI summary section accessible",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-17T07:20:34.662Z",
+      "section": null
+    },
+    {
+      "name": "Doctor login successful",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-17T07:21:21.123Z",
+      "section": null
+    },
+    {
+      "name": "Consultation list accessed",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-17T07:21:31.483Z",
+      "section": null
+    },
+    {
+      "name": "Doctor consultation access verified",
+      "status": "PASSED",
+      "details": "",
+      "duration": 0,
+      "timestamp": "2025-12-17T07:21:46.626Z",
+      "section": null
+    }
+  ]
+}
