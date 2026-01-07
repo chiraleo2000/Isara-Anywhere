@@ -1,0 +1,108 @@
+{
+  "passed": 14,
+  "failed": 3,
+  "tests": [
+    {
+      "name": "Patient Portal GCS Health",
+      "passed": true,
+      "details": "Patient GCS connected",
+      "timestamp": "2026-01-07T04:41:27.597Z"
+    },
+    {
+      "name": "Doctor Portal GCS Health",
+      "passed": false,
+      "details": "GCS health check failed: 200",
+      "timestamp": "2026-01-07T04:41:27.611Z"
+    },
+    {
+      "name": "Auth Bucket (izara-users-credentials) Access",
+      "passed": true,
+      "details": "Auth bucket accessible",
+      "timestamp": "2026-01-07T04:41:27.680Z"
+    },
+    {
+      "name": "Patient Bucket (izara-patients-data) Access",
+      "passed": true,
+      "details": "Patient bucket accessible",
+      "timestamp": "2026-01-07T04:41:27.781Z"
+    },
+    {
+      "name": "Doctor Bucket (izara-doctors-data) Access",
+      "passed": true,
+      "details": "Doctor bucket accessible",
+      "timestamp": "2026-01-07T04:41:28.012Z"
+    },
+    {
+      "name": "Appointments Bucket (izara-appointments) Access",
+      "passed": true,
+      "details": "Appointments bucket accessible",
+      "timestamp": "2026-01-07T04:41:28.222Z"
+    },
+    {
+      "name": "Metadata Bucket (izara-meta-data) Access",
+      "passed": true,
+      "details": "Metadata bucket accessible",
+      "timestamp": "2026-01-07T04:41:28.314Z"
+    },
+    {
+      "name": "Read Doctors List from GCS",
+      "passed": true,
+      "details": "Read 3 doctors",
+      "timestamp": "2026-01-07T04:41:28.479Z"
+    },
+    {
+      "name": "Read Medical Articles from GCS",
+      "passed": false,
+      "details": "Read failed: 200",
+      "timestamp": "2026-01-07T04:41:28.793Z"
+    },
+    {
+      "name": "Read Appointments from GCS",
+      "passed": true,
+      "details": "Read 13 appointments",
+      "timestamp": "2026-01-07T04:41:29.032Z"
+    },
+    {
+      "name": "Write Test File to GCS",
+      "passed": true,
+      "details": "Write operation successful",
+      "timestamp": "2026-01-07T04:41:29.513Z"
+    },
+    {
+      "name": "Read After Write Verification",
+      "passed": true,
+      "details": "Write-read cycle verified",
+      "timestamp": "2026-01-07T04:41:30.670Z"
+    },
+    {
+      "name": "Cleanup Test File",
+      "passed": true,
+      "details": "Test file cleaned up",
+      "timestamp": "2026-01-07T04:41:30.870Z"
+    },
+    {
+      "name": "Patient Portal Reads GCS Content",
+      "passed": false,
+      "details": "Read failed: 404",
+      "timestamp": "2026-01-07T04:41:30.876Z"
+    },
+    {
+      "name": "Doctor Portal Reads GCS Content",
+      "passed": true,
+      "details": "Doctor portal GCS read successful",
+      "timestamp": "2026-01-07T04:41:31.070Z"
+    },
+    {
+      "name": "Patient Data Structure Validation",
+      "passed": true,
+      "details": "Patient data structure: 23 items",
+      "timestamp": "2026-01-07T04:41:31.154Z"
+    },
+    {
+      "name": "Doctor Data Structure Validation",
+      "passed": true,
+      "details": "Doctor data structure: 3 items",
+      "timestamp": "2026-01-07T04:41:31.255Z"
+    }
+  ]
+}

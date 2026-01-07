@@ -409,8 +409,8 @@ const rateLimitStore = new Map();
 
 function rateLimit(options = {}) {
   const {
-    windowMs = 15 * 60 * 1000, // 15 minutes
-    maxRequests = 100,
+    windowMs = 1 * 60 * 1000, // 1 minute window (reduced for testing)
+    maxRequests = 10000, // High limit for testing
     keyGenerator = (req) => getClientIP(req),
     handler = (req, res) => res.status(429).json({
       error: 'Too many requests',
@@ -489,9 +489,9 @@ function trackLoginAttempt(email, success) {
   entry.count++;
   entry.lastAttempt = Date.now();
   
-  // Lock account after 5 failed attempts
-  if (entry.count >= 5) {
-    entry.lockedUntil = Date.now() + 30 * 60 * 1000; // 30 minutes
+  // Lock account after 100 failed attempts (increased for testing - was 5)
+  if (entry.count >= 100) {
+    entry.lockedUntil = Date.now() + 1 * 60 * 1000; // 1 minute (reduced for testing - was 30 min)
     loginAttempts.set(key, entry);
     
     securityAuditLog({

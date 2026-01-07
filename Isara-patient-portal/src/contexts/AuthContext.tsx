@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { User } from '../types';
 
 interface AuthContextType {
@@ -36,6 +36,40 @@ interface RegisterInput {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+// Inactivity timeout: 15 minutes
+const INACTIVITY_TIMEOUT = 15 * 60 * 1000;
+const INACTIVITY_CHECK_INTERVAL = 60 * 1000; // Check every minute
+
+// Device fingerprinting for session isolation
+function generateDeviceId(): string {
+  const components = [
+    navigator.userAgent,
+    navigator.language,
+    screen.width + 'x' + screen.height,
+    screen.colorDepth,
+    new Date().getTimezoneOffset(),
+    navigator.hardwareConcurrency || 'unknown',
+  ];
+  
+  const fingerprint = components.join('|');
+  let hash = 0;
+  for (let i = 0; i < fingerprint.length; i++) {
+    const char = fingerprint.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  return 'pat_dev_' + Math.abs(hash).toString(36) + '_' + Date.now().toString(36);
+}
+
+function getDeviceId(): string {
+  let deviceId = localStorage.getItem('izara_patient_device_id');
+  if (!deviceId) {
+    deviceId = generateDeviceId();
+    localStorage.setItem('izara_patient_device_id', deviceId);
+  }
+  return deviceId;
+}
+
 // Use relative paths for API calls - Vite proxy will forward /api to backend
 // This works in both development (via proxy) and production (same origin)
 const getApiUrl = (path: string) => {
@@ -49,18 +83,69 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [lastActivity, setLastActivity] = useState<number>(Date.now());
+
+  // Update last activity timestamp
+  const updateActivity = useCallback(() => {
+    const now = Date.now();
+    setLastActivity(now);
+    localStorage.setItem('izara_patient_last_activity', now.toString());
+  }, []);
+
+  // Check if inactive for 15 minutes
+  const isInactive = useCallback(() => {
+    const stored = localStorage.getItem('izara_patient_last_activity');
+    const lastActiveTime = stored ? parseInt(stored) : lastActivity;
+    return (Date.now() - lastActiveTime) > INACTIVITY_TIMEOUT;
+  }, [lastActivity]);
 
   useEffect(() => {
     loadStoredAuth();
   }, []);
 
+  // Track user activity for inactivity timeout
+  useEffect(() => {
+    if (!user) return;
+
+    const activityEvents = ['mousedown', 'keydown', 'scroll', 'touchstart', 'click'];
+    activityEvents.forEach(event => {
+      window.addEventListener(event, updateActivity, { passive: true });
+    });
+
+    // Check for inactivity every minute
+    const inactivityInterval = setInterval(() => {
+      if (user && isInactive()) {
+        console.log('⚠️ Session expired due to 15 minutes of inactivity');
+        clearAuth();
+        window.location.href = '/login?reason=inactivity';
+      }
+    }, INACTIVITY_CHECK_INTERVAL);
+
+    return () => {
+      activityEvents.forEach(event => {
+        window.removeEventListener(event, updateActivity);
+      });
+      clearInterval(inactivityInterval);
+    };
+  }, [user, updateActivity, isInactive]);
+
   const loadStoredAuth = () => {
     try {
       const storedUser = localStorage.getItem('izara_user');
       const storedToken = localStorage.getItem('auth_token');
+      
+      // Check if session has expired due to inactivity
+      const lastActivityStored = localStorage.getItem('izara_patient_last_activity');
+      if (lastActivityStored && (Date.now() - parseInt(lastActivityStored)) > INACTIVITY_TIMEOUT) {
+        console.log('⚠️ Session expired - clearing stored auth');
+        clearAuth();
+        return;
+      }
+      
       if (storedUser && storedToken) {
         setUser(JSON.parse(storedUser));
         setToken(storedToken);
+        updateActivity();
       }
     } catch (e) {
       clearAuth();
@@ -74,20 +159,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('auth_token', token);
     setUser(user);
     setToken(token);
+    updateActivity();
   };
 
   const clearAuth = () => {
     localStorage.removeItem('izara_user');
     localStorage.removeItem('auth_token');
+    localStorage.removeItem('izara_patient_last_activity');
     setUser(null);
     setToken(null);
   };
 
   const login = async (email: string, password: string) => {
+    const deviceId = getDeviceId();
+    
     const res = await fetch(getApiUrl('/api/auth/login'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ 
+        email, 
+        password,
+        deviceId,
+        userAgent: navigator.userAgent
+      }),
     });
     if (!res.ok) {
       const err = await res.json();
@@ -125,6 +219,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const updateUser = (updatedUser: User) => {
     setUser(updatedUser);
     localStorage.setItem('izara_user', JSON.stringify(updatedUser));
+    updateActivity();
   };
 
   return (

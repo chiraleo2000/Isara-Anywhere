@@ -24,11 +24,74 @@ const STORAGE_KEYS = {
   CURRENT_USER: 'izara_current_user',
   AUTH_TOKEN: 'izara_auth_token',
   SESSION_EXPIRY: 'izara_session_expiry',
+  DEVICE_ID: 'izara_device_id',
+  LAST_ACTIVITY: 'izara_last_activity',
 } as const;
 
 const SESSION_TIMEOUT = config.security.sessionTimeout;
+const INACTIVITY_TIMEOUT = 15 * 60 * 1000; // 15 minutes inactivity timeout
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOCKOUT_DURATION = 15 * 60 * 1000; // 15 minutes
+
+// ============================================================================
+// DEVICE/SESSION FINGERPRINTING
+// ============================================================================
+
+/**
+ * Generate a unique device fingerprint based on browser characteristics
+ * This helps identify when a user is logging in from a different device/browser
+ */
+function generateDeviceFingerprint(): string {
+  const components = [
+    navigator.userAgent,
+    navigator.language,
+    screen.width + 'x' + screen.height,
+    screen.colorDepth,
+    new Date().getTimezoneOffset(),
+    navigator.hardwareConcurrency || 'unknown',
+    navigator.platform || 'unknown',
+  ];
+  
+  // Create a simple hash from components
+  const fingerprint = components.join('|');
+  let hash = 0;
+  for (let i = 0; i < fingerprint.length; i++) {
+    const char = fingerprint.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  return 'dev_' + Math.abs(hash).toString(36);
+}
+
+/**
+ * Get or create a device ID for this browser
+ * This is stored in localStorage to persist across sessions
+ */
+function getDeviceId(): string {
+  let deviceId = localStorage.getItem(STORAGE_KEYS.DEVICE_ID);
+  if (!deviceId) {
+    deviceId = generateDeviceFingerprint() + '_' + Date.now().toString(36);
+    localStorage.setItem(STORAGE_KEYS.DEVICE_ID, deviceId);
+  }
+  return deviceId;
+}
+
+/**
+ * Update last activity timestamp
+ * Called on user interactions to track activity
+ */
+function updateLastActivity(): void {
+  localStorage.setItem(STORAGE_KEYS.LAST_ACTIVITY, Date.now().toString());
+}
+
+/**
+ * Check if session has timed out due to inactivity
+ */
+function isInactive(): boolean {
+  const lastActivity = localStorage.getItem(STORAGE_KEYS.LAST_ACTIVITY);
+  if (!lastActivity) return true;
+  return (Date.now() - parseInt(lastActivity)) > INACTIVITY_TIMEOUT;
+}
 
 // ============================================================================
 // PASSWORD HASHING (SHA256)
@@ -296,6 +359,7 @@ export class AuthService {
   /**
    * Login with email and password
    * Uses the auth server which handles bcrypt password verification
+   * Includes device fingerprinting for multi-device session management
    */
   async login(data: LoginData): Promise<{ user: User; token: string }> {
     console.log('\n========================================');
@@ -310,7 +374,9 @@ export class AuthService {
     }
 
     const emailKey = data.email.toLowerCase().trim();
+    const deviceId = getDeviceId();
     console.log(`📧 Logging in: ${emailKey}`);
+    console.log(`📱 Device ID: ${deviceId}`);
 
     try {
       // Call auth server for login (handles bcrypt verification)
@@ -325,6 +391,8 @@ export class AuthService {
         body: JSON.stringify({
           email: emailKey,
           password: data.password,
+          deviceId: deviceId, // Include device ID for session tracking
+          userAgent: navigator.userAgent,
         }),
       });
 
@@ -449,14 +517,30 @@ export class AuthService {
   }
 
   /**
-   * Refresh session expiry
+   * Refresh session expiry and update activity timestamp
+   * Called periodically and on user interactions
    */
   refreshSession(): void {
     const user = this.getCurrentUser();
     const token = this.getToken();
     if (user && token) {
       this.saveLocalSession(user, token);
+      updateLastActivity();
     }
+  }
+
+  /**
+   * Check and enforce inactivity timeout
+   * Returns true if session is still valid, false if logged out
+   */
+  checkInactivityTimeout(): boolean {
+    if (isInactive()) {
+      console.log('⚠️ Session expired due to 15 minutes of inactivity');
+      this.logout();
+      return false;
+    }
+    updateLastActivity();
+    return true;
   }
 
   /**
@@ -562,7 +646,18 @@ export class AuthService {
   private isSessionValid(): boolean {
     const expiry = localStorage.getItem(STORAGE_KEYS.SESSION_EXPIRY);
     if (!expiry) return false;
-    return Date.now() < parseInt(expiry);
+    
+    // Check absolute session expiry
+    if (Date.now() >= parseInt(expiry)) return false;
+    
+    // Check inactivity timeout (15 minutes)
+    if (isInactive()) {
+      console.log('⚠️ Session expired due to inactivity');
+      this.logout();
+      return false;
+    }
+    
+    return true;
   }
 
   private saveLocalSession(user: User, token: string): void {
@@ -570,6 +665,7 @@ export class AuthService {
     localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(user));
     localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, token);
     localStorage.setItem(STORAGE_KEYS.SESSION_EXPIRY, expiry.toString());
+    updateLastActivity(); // Start activity tracking
   }
 
   private generateToken(userId: string): string {
@@ -619,3 +715,7 @@ export const isAuthenticated = () => authService.isAuthenticated();
 export const getToken = () => authService.getToken();
 export const getAuthHeaders = () => authService.getAuthHeaders();
 export const refreshSession = () => authService.refreshSession();
+export const checkInactivityTimeout = () => authService.checkInactivityTimeout();
+
+// Export device functions for session management
+export { getDeviceId, updateLastActivity, isInactive };

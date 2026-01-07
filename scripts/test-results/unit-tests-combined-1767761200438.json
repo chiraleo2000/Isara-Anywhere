@@ -1,0 +1,69 @@
+{
+  "timestamp": "2026-01-07T04:46:40.438Z",
+  "duration": "14.30",
+  "summary": {
+    "totalSuites": 6,
+    "suitesPassed": 6,
+    "suitesFailed": 0,
+    "totalTests": 78,
+    "testsPassed": 78,
+    "testsFailed": 0,
+    "passRate": 100
+  },
+  "suites": [
+    {
+      "suite": "auth",
+      "name": "Authentication",
+      "passed": 11,
+      "failed": 0,
+      "duration": "8.80",
+      "success": true,
+      "timestamp": "2026-01-07T04:46:35.139Z"
+    },
+    {
+      "suite": "phr",
+      "name": "PHR (Personal Health Records)",
+      "passed": 14,
+      "failed": 0,
+      "duration": "0.46",
+      "success": true,
+      "timestamp": "2026-01-07T04:46:35.599Z"
+    },
+    {
+      "suite": "appointment",
+      "name": "Appointments",
+      "passed": 13,
+      "failed": 0,
+      "duration": "0.38",
+      "success": true,
+      "timestamp": "2026-01-07T04:46:35.978Z"
+    },
+    {
+      "suite": "content",
+      "name": "Medical Content",
+      "passed": 12,
+      "failed": 0,
+      "duration": "0.39",
+      "success": true,
+      "timestamp": "2026-01-07T04:46:36.369Z"
+    },
+    {
+      "suite": "gcs",
+      "name": "GCS Data Sync",
+      "passed": 17,
+      "failed": 0,
+      "duration": "3.98",
+      "success": true,
+      "timestamp": "2026-01-07T04:46:40.353Z"
+    },
+    {
+      "suite": "emr",
+      "name": "EMR & Prescribing",
+      "passed": 11,
+      "failed": 0,
+      "duration": "0.08",
+      "success": true,
+      "timestamp": "2026-01-07T04:46:40.435Z"
+    }
+  ]
+}

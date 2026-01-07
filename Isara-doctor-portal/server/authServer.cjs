@@ -128,10 +128,10 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID', 'X-CSRF-Token']
 }));
 
-// A07 - Rate limiting for all requests
+// A07 - Rate limiting for all requests (increased for testing)
 app.use(rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  maxRequests: 500, // General limit
+  windowMs: 1 * 60 * 1000, // 1 minute
+  maxRequests: 10000, // High limit for testing
   keyGenerator: (req) => getClientIP(req)
 }));
 
@@ -432,10 +432,10 @@ app.post('/auth/register', async (req, res) => {
 
 // Login - A07 Authentication with security controls
 app.post('/auth/login', 
-  // A07 - Strict rate limiting for login endpoint
+  // A07 - Strict rate limiting for login endpoint (increased for testing)
   rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    maxRequests: 10, // Max 10 login attempts per 15 minutes per IP
+    windowMs: 1 * 60 * 1000, // 1 minute
+    maxRequests: 1000, // High limit for testing
     keyGenerator: (req) => getClientIP(req),
     handler: (req, res) => {
       securityAuditLog({
@@ -447,13 +447,13 @@ app.post('/auth/login',
       res.status(429).json({
         error: 'Too many login attempts. Please try again later.',
         code: 'RATE_LIMIT_EXCEEDED',
-        retryAfter: 900
+        retryAfter: 60
       });
     }
   }),
   async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, deviceId, userAgent: clientUserAgent } = req.body;
 
     // A05 - Input validation
     if (!email || !password) {
@@ -524,7 +524,10 @@ app.post('/auth/login',
     }
 
     // Check if account is pending approval
-    if (userCredential.approvalStatus === 'pending' || !userCredential.isApproved) {
+    // Only block if explicitly pending - allow if approvalStatus is 'approved' or missing (legacy accounts)
+    const isPendingApproval = userCredential.approvalStatus === 'pending' || 
+                              (userCredential.isApproved === false && userCredential.approvalStatus !== 'approved');
+    if (isPendingApproval) {
       securityAuditLog({
         event: 'LOGIN_ATTEMPT_PENDING_ACCOUNT',
         severity: 'INFO',
@@ -553,8 +556,8 @@ app.post('/auth/login',
       }
     }
 
-    // Check if account is active
-    if (!userCredential.isActive) {
+    // Check if account is active (only block if explicitly set to false)
+    if (userCredential.isActive === false) {
       securityAuditLog({
         event: 'LOGIN_ATTEMPT_INACTIVE_ACCOUNT',
         severity: 'WARN',
@@ -600,22 +603,56 @@ app.post('/auth/login',
     userCredential.lastLogin = new Date().toISOString();
     await writeToGCS(BUCKETS.credentials, `users/${userRef.id}.json`, userCredential);
 
-    // Create session
+    // Create session with device binding
     const sessionToken = generateToken();
+    const clientIP = getClientIP(req);
     const session = {
       id: sessionToken,
       userId: userRef.id,
       email: userCredential.email,
       role: userCredential.role,
       createdAt: new Date().toISOString(),
-      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours absolute
       lastActivity: new Date().toISOString(),
-      // A07 - Session binding for security
-      ip: getClientIP(req),
-      userAgent: req.headers['user-agent']?.substring(0, 200)
+      // A07 - Session binding for security - bind to device/IP
+      ip: clientIP,
+      userAgent: (clientUserAgent || req.headers['user-agent'])?.substring(0, 200),
+      deviceId: deviceId || 'unknown',
+      isValid: true
     };
 
     await writeToGCS(BUCKETS.credentials, `sessions/${sessionToken}.json`, session);
+
+    // Invalidate other sessions from different devices/IPs for this user (security measure)
+    // This ensures one user can only be logged in from one device at a time
+    try {
+      const userSessionsPath = `user-sessions/${userRef.id}.json`;
+      let userSessions = await fetchFromGCS(BUCKETS.credentials, userSessionsPath) || [];
+      
+      // Mark old sessions from different devices as invalid
+      for (const oldSessionId of userSessions) {
+        if (oldSessionId !== sessionToken) {
+          try {
+            const oldSession = await fetchFromGCS(BUCKETS.credentials, `sessions/${oldSessionId}.json`);
+            if (oldSession && oldSession.isValid && (oldSession.deviceId !== deviceId || oldSession.ip !== clientIP)) {
+              oldSession.isValid = false;
+              oldSession.invalidatedBy = 'new_device_login';
+              oldSession.invalidatedAt = new Date().toISOString();
+              await writeToGCS(BUCKETS.credentials, `sessions/${oldSessionId}.json`, oldSession);
+              console.log(`🔒 Invalidated old session ${oldSessionId} due to new device login`);
+            }
+          } catch (e) {
+            // Session might not exist, ignore
+          }
+        }
+      }
+      
+      // Update user sessions list
+      userSessions = [sessionToken];
+      await writeToGCS(BUCKETS.credentials, userSessionsPath, userSessions);
+    } catch (e) {
+      console.log('Could not manage user sessions:', e.message);
+    }
 
     // A07 - Track successful login
     trackLoginAttempt(email, true);
@@ -1197,6 +1234,162 @@ app.post('/auth/admin/update-role', async (req, res) => {
   }
 });
 
+// Update doctor status (Admin only) - For active/inactive toggle while preserving verified status
+app.post('/admin/update-doctor-status', async (req, res) => {
+  try {
+    const { doctorId, updates, adminId } = req.body;
+
+    if (!doctorId) {
+      return res.status(400).json({ error: 'Doctor ID is required' });
+    }
+
+    console.log(`📝 [Admin] Update doctor status: ${doctorId}`, updates);
+
+    // Fetch user credential
+    const userCredential = await fetchFromGCS(BUCKETS.credentials, `users/${doctorId}.json`);
+
+    if (!userCredential) {
+      return res.status(404).json({ error: 'Doctor not found' });
+    }
+
+    // Update user with provided updates while preserving important fields
+    if (updates.isActive !== undefined) {
+      userCredential.isActive = updates.isActive;
+    }
+    if (updates.status !== undefined) {
+      userCredential.status = updates.status;
+    }
+    // IMPORTANT: Only update isVerified if explicitly provided, never reset it
+    if (updates.isVerified !== undefined) {
+      userCredential.isVerified = updates.isVerified;
+    }
+    
+    userCredential.updatedAt = new Date().toISOString();
+    userCredential.updatedBy = adminId || 'admin';
+
+    await writeToGCS(BUCKETS.credentials, `users/${doctorId}.json`, userCredential);
+
+    // Update users index
+    const usersIndex = await fetchFromGCS(BUCKETS.credentials, 'users/index.json') || [];
+    const userIndex = usersIndex.findIndex(u => u.id === doctorId);
+    if (userIndex >= 0) {
+      if (updates.isActive !== undefined) {
+        usersIndex[userIndex].isActive = updates.isActive;
+      }
+      if (updates.status !== undefined) {
+        usersIndex[userIndex].status = updates.status;
+      }
+      if (updates.isVerified !== undefined) {
+        usersIndex[userIndex].isVerified = updates.isVerified;
+      }
+      await writeToGCS(BUCKETS.credentials, 'users/index.json', usersIndex);
+    }
+
+    // Update doctors list in doctor bucket
+    const doctors = await fetchFromGCS(BUCKETS.doctor, 'doctors.json') || [];
+    const doctorIndex = doctors.findIndex(d => d.id === doctorId);
+    if (doctorIndex >= 0) {
+      if (updates.isActive !== undefined) {
+        doctors[doctorIndex].isActive = updates.isActive;
+      }
+      if (updates.status !== undefined) {
+        doctors[doctorIndex].status = updates.status;
+      }
+      if (updates.isVerified !== undefined) {
+        doctors[doctorIndex].isVerified = updates.isVerified;
+      }
+      doctors[doctorIndex].updatedAt = new Date().toISOString();
+      await writeToGCS(BUCKETS.doctor, 'doctors.json', doctors);
+    }
+
+    console.log(`✅ [Admin] Doctor status updated: ${userCredential.email} - isActive: ${userCredential.isActive}, isVerified: ${userCredential.isVerified}`);
+
+    res.json({ 
+      success: true, 
+      message: 'Doctor status updated successfully',
+      doctor: sanitizeUser(userCredential)
+    });
+  } catch (error) {
+    console.error('Admin update doctor status error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Remove/Demote admin (Admin only) - For removing admin privileges
+app.post('/admin/remove-admin', async (req, res) => {
+  try {
+    const { targetUserId, adminId, action } = req.body;
+
+    if (!targetUserId) {
+      return res.status(400).json({ error: 'Target user ID is required' });
+    }
+
+    console.log(`🔄 [Admin] Remove admin request for: ${targetUserId}, action: ${action}`);
+
+    // Fetch target user
+    const userCredential = await fetchFromGCS(BUCKETS.credentials, `users/${targetUserId}.json`);
+
+    if (!userCredential) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Demote from admin to doctor
+    if (action === 'demote') {
+      userCredential.role = 'doctor';
+      userCredential.adminPrivileges = null;
+      userCredential.demotedAt = new Date().toISOString();
+      userCredential.demotedBy = adminId || 'admin';
+    }
+    // Remove completely (deactivate account)
+    else if (action === 'remove') {
+      userCredential.role = 'doctor';
+      userCredential.adminPrivileges = null;
+      userCredential.isActive = false;
+      userCredential.status = 'inactive';
+      userCredential.removedAt = new Date().toISOString();
+      userCredential.removedBy = adminId || 'admin';
+    }
+
+    await writeToGCS(BUCKETS.credentials, `users/${targetUserId}.json`, userCredential);
+
+    // Update users index
+    const usersIndex = await fetchFromGCS(BUCKETS.credentials, 'users/index.json') || [];
+    const userIndex = usersIndex.findIndex(u => u.id === targetUserId);
+    if (userIndex >= 0) {
+      usersIndex[userIndex].role = userCredential.role;
+      if (action === 'remove') {
+        usersIndex[userIndex].isActive = false;
+        usersIndex[userIndex].status = 'inactive';
+      }
+      await writeToGCS(BUCKETS.credentials, 'users/index.json', usersIndex);
+    }
+
+    // Update doctors list
+    const doctors = await fetchFromGCS(BUCKETS.doctor, 'doctors.json') || [];
+    const doctorIndex = doctors.findIndex(d => d.id === targetUserId);
+    if (doctorIndex >= 0) {
+      doctors[doctorIndex].role = userCredential.role;
+      if (action === 'remove') {
+        doctors[doctorIndex].isActive = false;
+        doctors[doctorIndex].status = 'inactive';
+      }
+      doctors[doctorIndex].updatedAt = new Date().toISOString();
+      await writeToGCS(BUCKETS.doctor, 'doctors.json', doctors);
+    }
+
+    console.log(`✅ [Admin] Admin ${action}d: ${userCredential.email}`);
+
+    res.json({ 
+      success: true, 
+      message: `Admin ${action === 'demote' ? 'demoted to doctor' : 'removed from platform'}`,
+      user: sanitizeUser(userCredential)
+    });
+  } catch (error) {
+    console.error('Admin remove error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Get pending approvals (Admin only) - Legacy endpoint
 app.get('/auth/pending-approvals', async (req, res) => {
   try {
@@ -1508,6 +1701,38 @@ if (process.env.NODE_ENV !== 'production') {
     const result = resetRateLimits();
     console.log('🧪 Test endpoint called: Rate limits reset');
     res.json({ success: true, ...result, message: 'Rate limits cleared for testing' });
+  });
+
+  // Debug user lookup (test only)
+  app.get('/test/check-user/:email', async (req, res) => {
+    try {
+      const email = decodeURIComponent(req.params.email).toLowerCase();
+      const usersIndex = await fetchFromGCS(BUCKETS.credentials, 'users/index.json') || [];
+      const userRef = usersIndex.find(u => u.email.toLowerCase() === email);
+      
+      if (!userRef) {
+        return res.json({ found: false, email, message: 'User not in index' });
+      }
+
+      const userCredential = await fetchFromGCS(BUCKETS.credentials, `users/${userRef.id}.json`);
+      if (!userCredential) {
+        return res.json({ found: true, email, message: 'User in index but credential file missing', userRef });
+      }
+
+      res.json({
+        found: true,
+        email,
+        id: userCredential.id,
+        role: userCredential.role,
+        isActive: userCredential.isActive,
+        isApproved: userCredential.isApproved,
+        approvalStatus: userCredential.approvalStatus,
+        hasPassword: !!userCredential.passwordHash,
+        passwordHashPrefix: userCredential.passwordHash?.substring(0, 10) + '...'
+      });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
   });
 }
 

@@ -1,0 +1,90 @@
+{
+  "passed": 14,
+  "failed": 0,
+  "tests": [
+    {
+      "name": "PHR Endpoint Exists",
+      "passed": true,
+      "details": "Endpoint accessible (status: 401)",
+      "timestamp": "2026-01-07T08:31:18.247Z"
+    },
+    {
+      "name": "Vitals Endpoint Exists",
+      "passed": true,
+      "details": "Endpoint accessible (status: 401)",
+      "timestamp": "2026-01-07T08:31:18.268Z"
+    },
+    {
+      "name": "Health Logs Endpoint Exists",
+      "passed": true,
+      "details": "Endpoint accessible (status: 401)",
+      "timestamp": "2026-01-07T08:31:18.283Z"
+    },
+    {
+      "name": "Lifestyle Endpoint Exists",
+      "passed": true,
+      "details": "Endpoint accessible (status: 404)",
+      "timestamp": "2026-01-07T08:31:18.291Z"
+    },
+    {
+      "name": "BMI Calculation - Normal Weight",
+      "passed": true,
+      "details": "BMI: 22.5, Category: ปกติ",
+      "timestamp": "2026-01-07T08:31:18.293Z"
+    },
+    {
+      "name": "BMI Calculation - Underweight",
+      "passed": true,
+      "details": "BMI: 15.6, Category: น้ำหนักน้อย",
+      "timestamp": "2026-01-07T08:31:18.294Z"
+    },
+    {
+      "name": "BMI Calculation - Overweight",
+      "passed": true,
+      "details": "BMI: 26, Category: อ้วนระดับ 1",
+      "timestamp": "2026-01-07T08:31:18.294Z"
+    },
+    {
+      "name": "BMI Calculation - Obese",
+      "passed": true,
+      "details": "BMI: 32.9, Category: อ้วนระดับ 2",
+      "timestamp": "2026-01-07T08:31:18.294Z"
+    },
+    {
+      "name": "Blood Pressure Validation",
+      "passed": true,
+      "details": "All validation cases passed",
+      "timestamp": "2026-01-07T08:31:18.296Z"
+    },
+    {
+      "name": "Heart Rate Validation",
+      "passed": true,
+      "details": "All validation cases passed",
+      "timestamp": "2026-01-07T08:31:18.297Z"
+    },
+    {
+      "name": "Temperature Validation",
+      "passed": true,
+      "details": "All validation cases passed",
+      "timestamp": "2026-01-07T08:31:18.297Z"
+    },
+    {
+      "name": "Blood Oxygen Validation",
+      "passed": true,
+      "details": "All validation cases passed",
+      "timestamp": "2026-01-07T08:31:18.298Z"
+    },
+    {
+      "name": "GCS Patient Data Read",
+      "passed": true,
+      "details": "Patient data accessible from GCS",
+      "timestamp": "2026-01-07T08:31:18.516Z"
+    },
+    {
+      "name": "GCS Metadata Bucket Read",
+      "passed": true,
+      "details": "Metadata bucket accessible",
+      "timestamp": "2026-01-07T08:31:18.666Z"
+    }
+  ]
+}

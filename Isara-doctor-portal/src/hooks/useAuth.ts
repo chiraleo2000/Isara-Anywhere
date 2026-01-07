@@ -2,6 +2,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { User } from '../types';
 import * as authService from '../services/simpleAuth';
 
+// Inactivity timeout: 15 minutes
+const INACTIVITY_CHECK_INTERVAL = 60 * 1000; // Check every minute
+
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -48,15 +51,46 @@ export function useAuth() {
     authService.refreshSession();
   }, []);
 
+  // Track user activity for inactivity timeout
+  const handleUserActivity = useCallback(() => {
+    if (user) {
+      authService.refreshSession();
+    }
+  }, [user]);
+
   useEffect(() => {
     checkAuth();
 
+    // Refresh session every 5 minutes
     const refreshInterval = setInterval(() => {
       refreshSession();
     }, 5 * 60 * 1000);
 
-    return () => clearInterval(refreshInterval);
-  }, [checkAuth, refreshSession]);
+    // Check for inactivity every minute
+    const inactivityInterval = setInterval(() => {
+      if (user && authService.checkInactivityTimeout) {
+        const isStillValid = authService.checkInactivityTimeout();
+        if (!isStillValid) {
+          setUser(null);
+          window.location.href = '/login?reason=inactivity';
+        }
+      }
+    }, INACTIVITY_CHECK_INTERVAL);
+
+    // Track user activity events
+    const activityEvents = ['mousedown', 'keydown', 'scroll', 'touchstart', 'click'];
+    activityEvents.forEach(event => {
+      window.addEventListener(event, handleUserActivity, { passive: true });
+    });
+
+    return () => {
+      clearInterval(refreshInterval);
+      clearInterval(inactivityInterval);
+      activityEvents.forEach(event => {
+        window.removeEventListener(event, handleUserActivity);
+      });
+    };
+  }, [checkAuth, refreshSession, handleUserActivity, user]);
 
   return {
     user,

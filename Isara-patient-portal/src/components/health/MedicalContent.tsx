@@ -47,7 +47,9 @@ interface ContentTag {
 }
 
 // Constants
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3004';
+// In production, use relative URLs (proxied by nginx)
+// In development, use relative URLs (proxied by vite)
+const API_BASE = '';
 
 const CATEGORIES = [
   { id: 'all', name: 'ทั้งหมด', icon: BookOpen, color: 'emerald' },
@@ -96,11 +98,22 @@ export const MedicalContent: React.FC<MedicalContentProps> = ({ className = '' }
       setLoading(true);
       setError(null);
       
-      // Use the patient portal content API
-      const response = await fetch(`${API_BASE}/api/content/medical`);
+      // Use the patient portal content API with timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+      const response = await fetch(`${API_BASE}/api/content/medical`, {
+        signal: controller.signal,
+        headers: {
+          'Accept': 'application/json',
+          'Cache-Control': 'no-cache'
+        }
+      });
+      
+      clearTimeout(timeoutId);
       
       if (!response.ok) {
-        throw new Error('Failed to fetch articles');
+        throw new Error(`Failed to fetch articles (${response.status})`);
       }
       
       const data = await response.json();
@@ -109,7 +122,11 @@ export const MedicalContent: React.FC<MedicalContentProps> = ({ className = '' }
       setArticles(data.articles || []);
     } catch (err) {
       console.error('Error fetching articles:', err);
-      setError('ไม่สามารถโหลดเนื้อหาได้ กรุณาลองใหม่อีกครั้ง');
+      if (err instanceof Error && err.name === 'AbortError') {
+        setError('การเชื่อมต่อหมดเวลา กรุณาลองใหม่อีกครั้ง');
+      } else {
+        setError('ไม่สามารถโหลดเนื้อหาได้ กรุณาลองใหม่อีกครั้ง');
+      }
       // Fallback to sample data for demo
       setArticles(getSampleArticles());
     } finally {

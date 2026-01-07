@@ -272,6 +272,160 @@ const AdminAppointmentManagement: React.FC = () => {
     }
   };
 
+  // Auto-assign appointment based on specialty and availability
+  const handleAutoAssign = async (request: AppointmentRequest) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      console.log('🤖 Auto-assigning appointment:', request.id);
+      
+      // Find doctors matching the required specialty based on symptoms/reason
+      const matchingDoctors = doctors.filter(doctor => {
+        // Match based on specialty keywords in reason or symptoms
+        const reasonLower = request.reason?.toLowerCase() || '';
+        const symptomsLower = request.symptoms?.map(s => s.toLowerCase()).join(' ') || '';
+        const searchText = `${reasonLower} ${symptomsLower}`;
+        
+        const specialtyLower = doctor.specialty?.toLowerCase() || '';
+        
+        // Specialty matching logic
+        const specialtyMatches: Record<string, string[]> = {
+          'general': ['general', 'ทั่วไป', 'checkup', 'ตรวจสุขภาพ'],
+          'cardiology': ['heart', 'หัวใจ', 'cardiac', 'เจ็บหน้าอก', 'chest pain', 'ความดัน', 'blood pressure'],
+          'dermatology': ['skin', 'ผิวหนัง', 'rash', 'ผื่น', 'allergy', 'แพ้'],
+          'neurology': ['headache', 'ปวดหัว', 'migraine', 'ไมเกรน', 'brain', 'สมอง', 'dizziness', 'เวียนหัว'],
+          'orthopedics': ['bone', 'กระดูก', 'joint', 'ข้อ', 'back pain', 'ปวดหลัง', 'injury', 'บาดเจ็บ'],
+          'pediatrics': ['child', 'เด็ก', 'kid', 'baby', 'ทารก'],
+          'psychiatry': ['mental', 'จิต', 'depression', 'ซึมเศร้า', 'anxiety', 'วิตกกังวล', 'stress', 'เครียด'],
+          'gynecology': ['women', 'ผู้หญิง', 'pregnancy', 'ตั้งครรภ์', 'menstrual', 'ประจำเดือน'],
+          'internal medicine': ['อายุรกรรม', 'internal', 'diabetes', 'เบาหวาน', 'fever', 'ไข้'],
+          'ent': ['ear', 'หู', 'nose', 'จมูก', 'throat', 'คอ', 'sore throat', 'เจ็บคอ'],
+          'ophthalmology': ['eye', 'ตา', 'vision', 'การมองเห็น'],
+        };
+        
+        // Check if doctor's specialty matches any keywords
+        for (const [specialty, keywords] of Object.entries(specialtyMatches)) {
+          if (specialtyLower.includes(specialty)) {
+            if (keywords.some(kw => searchText.includes(kw))) {
+              return true;
+            }
+          }
+        }
+        
+        // Default: include general practitioners
+        if (specialtyLower.includes('general') || specialtyLower.includes('ทั่วไป')) {
+          return true;
+        }
+        
+        return false;
+      });
+      
+      console.log(`📊 Found ${matchingDoctors.length} matching doctors`);
+      
+      if (matchingDoctors.length === 0) {
+        // No matching doctors - keep in admin pool for manual assignment
+        setError('No matching doctors found. Please assign manually.');
+        setSelectedRequest(request);
+        setShowAssignModal(true);
+        return;
+      }
+      
+      // Sort by availability (doctors with available slots first)
+      // For now, we'll randomly pick one from matching doctors
+      const randomIndex = Math.floor(Math.random() * matchingDoctors.length);
+      const selectedDoctor = matchingDoctors[randomIndex];
+      
+      // Get next available date/time (default to requested date or tomorrow)
+      const requestedDate = new Date(request.requestedDate);
+      const assignDate = requestedDate > new Date() 
+        ? requestedDate.toISOString().split('T')[0]
+        : new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      
+      // Parse preferred time or default to morning
+      let assignTime = '10:00';
+      if (request.preferredTime) {
+        if (request.preferredTime.includes('morning') || request.preferredTime.includes('เช้า')) {
+          assignTime = '10:00';
+        } else if (request.preferredTime.includes('afternoon') || request.preferredTime.includes('บ่าย')) {
+          assignTime = '14:00';
+        } else if (request.preferredTime.includes('evening') || request.preferredTime.includes('เย็น')) {
+          assignTime = '17:00';
+        } else {
+          assignTime = request.preferredTime;
+        }
+      }
+      
+      const assignedDateTime = `${assignDate}T${assignTime}:00`;
+      
+      console.log(`🎯 Auto-assigning to: ${selectedDoctor.name} (${selectedDoctor.specialty})`);
+      console.log(`📅 Date: ${assignDate}, Time: ${assignTime}`);
+      
+      const result = await appointmentService.updateAppointment(request.id, {
+        doctorId: selectedDoctor.id,
+        assignedDoctorId: selectedDoctor.id,
+        adminAssignedDoctorId: selectedDoctor.id,
+        doctor: { id: selectedDoctor.id, name: selectedDoctor.name },
+        doctorName: selectedDoctor.name,
+        assignedDoctorName: selectedDoctor.name,
+        status: 'awaiting_doctor_response',
+        assignmentMethod: 'ai_matched',
+        assignedDateTime,
+        appointmentDate: assignDate,
+        appointmentTime: assignTime,
+        date: new Date(assignedDateTime),
+        notes: `Auto-assigned to ${selectedDoctor.specialty} specialist based on symptoms`,
+        updatedAt: new Date(),
+        assignedBy: 'system',
+        assignedAt: new Date(),
+        autoAssigned: true
+      } as any);
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to auto-assign appointment');
+      }
+      
+      setSuccessMessage(`✅ Auto-assigned to ${selectedDoctor.name} (${selectedDoctor.specialty || 'General'}) - awaiting doctor confirmation`);
+      fetchAppointmentRequests();
+      
+      setTimeout(() => setSuccessMessage(null), 5000);
+    } catch (err) {
+      console.error('Error auto-assigning appointment:', err);
+      setError(`Failed to auto-assign: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Auto-assign all pending appointments
+  const handleAutoAssignAll = async () => {
+    const pendingRequests = appointmentRequests.filter(r => r.status === 'pending');
+    
+    if (pendingRequests.length === 0) {
+      setSuccessMessage('No pending appointments to auto-assign');
+      setTimeout(() => setSuccessMessage(null), 3000);
+      return;
+    }
+    
+    setLoading(true);
+    let successCount = 0;
+    let failCount = 0;
+    
+    for (const request of pendingRequests) {
+      try {
+        await handleAutoAssign(request);
+        successCount++;
+      } catch (err) {
+        console.error(`Failed to auto-assign ${request.id}:`, err);
+        failCount++;
+      }
+    }
+    
+    setLoading(false);
+    setSuccessMessage(`Auto-assignment complete: ${successCount} assigned, ${failCount} failed`);
+    setTimeout(() => setSuccessMessage(null), 5000);
+  };
+
   // Filter appointments
   const filteredRequests = appointmentRequests.filter(req => {
     const matchesSearch = 
@@ -389,7 +543,7 @@ const AdminAppointmentManagement: React.FC = () => {
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-6">
           <div className="p-4 border-b border-gray-200">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div className="flex space-x-2">
+              <div className="flex flex-wrap gap-2">
                 {(['pending', 'assigned', 'all'] as const).map(tab => (
                   <button
                     key={tab}
@@ -408,6 +562,20 @@ const AdminAppointmentManagement: React.FC = () => {
                     )}
                   </button>
                 ))}
+                {/* Auto-assign button for pending tab */}
+                {activeTab === 'pending' && pendingCount > 0 && (
+                  <button
+                    onClick={handleAutoAssignAll}
+                    disabled={loading}
+                    className="px-4 py-2 rounded-lg text-sm font-medium bg-purple-600 text-white hover:bg-purple-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+                    title="Automatically assign all pending appointments based on specialty matching"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    🤖 Auto-Assign All ({pendingCount})
+                  </button>
+                )}
               </div>
               <input
                 type="text"
@@ -475,7 +643,15 @@ const AdminAppointmentManagement: React.FC = () => {
                         </div>
                       </div>
                       {request.status === 'pending' && (
-                        <div className="flex gap-2">
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            onClick={() => handleAutoAssign(request)}
+                            disabled={loading}
+                            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm disabled:opacity-50 flex items-center gap-1"
+                            title="Auto-assign based on symptoms and specialty"
+                          >
+                            🤖 Auto
+                          </button>
                           <button
                             onClick={() => {
                               setSelectedRequest(request);

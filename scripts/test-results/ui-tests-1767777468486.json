@@ -1,0 +1,119 @@
+{
+  "timestamp": "2026-01-07T09:17:48.486Z",
+  "duration": "430.12",
+  "summary": {
+    "passed": 19,
+    "failed": 1,
+    "passRate": 95
+  },
+  "results": {
+    "patient": [
+      {
+        "name": "Patient Login",
+        "passed": true,
+        "message": "Form interaction OK"
+      },
+      {
+        "name": "Patient Dashboard",
+        "passed": true,
+        "message": "Dashboard loaded"
+      },
+      {
+        "name": "Patient Appointments Page",
+        "passed": true,
+        "message": "Navigation OK"
+      },
+      {
+        "name": "Patient Health Records (PHR)",
+        "passed": true,
+        "message": "PHR loaded"
+      },
+      {
+        "name": "Patient Medical Content",
+        "passed": true,
+        "message": "Content loaded"
+      },
+      {
+        "name": "Patient Video Meeting",
+        "passed": true,
+        "message": "Meeting page loaded"
+      },
+      {
+        "name": "Patient Login",
+        "passed": true,
+        "message": "Form interaction OK"
+      }
+    ],
+    "doctor": [
+      {
+        "name": "Doctor Login",
+        "passed": true,
+        "message": "Form interaction OK"
+      },
+      {
+        "name": "Doctor Dashboard",
+        "passed": true,
+        "message": "Dashboard loaded"
+      },
+      {
+        "name": "Doctor Patient List",
+        "passed": true,
+        "message": "List loaded"
+      },
+      {
+        "name": "Doctor Queue Management",
+        "passed": true,
+        "message": "Queue loaded"
+      },
+      {
+        "name": "Doctor EMR",
+        "passed": true,
+        "message": "EMR loaded"
+      },
+      {
+        "name": "Doctor Prescribing",
+        "passed": true,
+        "message": "Prescribing loaded"
+      },
+      {
+        "name": "Doctor Clinical Resources",
+        "passed": true,
+        "message": "Resources loaded"
+      },
+      {
+        "name": "Doctor Login",
+        "passed": false,
+        "message": "timeout: Timed out receiving message from renderer: -0.000\n  (Session info: chrome=143.0.7499.170)"
+      }
+    ],
+    "admin": [
+      {
+        "name": "Admin Login",
+        "passed": true,
+        "message": "Form interaction OK"
+      },
+      {
+        "name": "Admin Dashboard",
+        "passed": true,
+        "message": "Dashboard loaded"
+      },
+      {
+        "name": "Admin User Management",
+        "passed": true,
+        "message": "Management loaded"
+      },
+      {
+        "name": "Admin Appointment Management",
+        "passed": true,
+        "message": "Navigation OK"
+      }
+    ],
+    "crossPortal": [
+      {
+        "name": "Complete Meeting Workflow",
+        "passed": true,
+        "message": "Workflow tested"
+      }
+    ]
+  }
+}

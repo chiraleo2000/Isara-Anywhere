@@ -351,11 +351,17 @@ RUN printf '%s\n' \
 'directory=/app' \
 'autostart=true' \
 'autorestart=true' \
-'environment=NODE_ENV="production",PORT="3009",GCS_API_URL="http://127.0.0.1:3012"' \
+'environment=NODE_ENV="production",PORT="3009",GCS_API_URL="http://127.0.0.1:3012",GEMINI_API_KEY="%(ENV_GEMINI_API_KEY)s",GEMINI_MODEL="%(ENV_GEMINI_MODEL)s",JITSI_DOMAIN="%(ENV_JITSI_DOMAIN)s",GOOGLE_SPEECH_API_KEY="%(ENV_GOOGLE_SPEECH_API_KEY)s"' \
 'stdout_logfile=/dev/stdout' \
 'stdout_logfile_maxbytes=0' \
 'stderr_logfile=/dev/stderr' \
 'stderr_logfile_maxbytes=0' > /etc/supervisord.conf
+
+# Set default environment variables for Gemini AI and Jitsi
+ENV GEMINI_API_KEY=AIzaSyDqERDgZ1l41zfGiQ4FZV62B58DXMbGWj4 \
+    GEMINI_MODEL=gemini-2.5-flash-lite \
+    JITSI_DOMAIN=meet.jit.si \
+    GOOGLE_SPEECH_API_KEY=AIzaSyAl924pIkpbrJBfCQ1MlpA6yb8XZ3L8WZQ
 
 # Entrypoint script
 RUN printf '%s\n' \

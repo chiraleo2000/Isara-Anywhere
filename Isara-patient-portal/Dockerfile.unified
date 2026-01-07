@@ -11,7 +11,8 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install all dependencies (including dev)
-RUN npm ci || npm install
+# Remove package-lock to avoid platform-specific rollup issues
+RUN rm -f package-lock.json && npm install
 RUN npm install bcryptjs @types/bcryptjs tsx --save
 
 # Copy source code
@@ -172,7 +173,7 @@ RUN apk add --no-cache curl
 # Copy package files and install ALL dependencies (need tsx for server)
 COPY package*.json ./
 RUN npm install
-RUN npm install bcryptjs tsx --save
+RUN npm install bcryptjs tsx dotenv --save
 
 # Copy built frontend (static files)
 COPY --from=builder /app/dist ./dist
@@ -183,10 +184,18 @@ COPY --from=builder /app/server ./server
 # Copy credentials if exists
 COPY --from=builder /app/credentials ./credentials
 
-# Set environment variables
+# Set environment variables for production runtime
+# These are used by the Node.js backend (non-VITE prefix for server-side)
 ENV NODE_ENV=production
 ENV PORT=3004
 ENV GCP_PROJECT_ID=izara-telemedicine
+# Gemini AI - Server-side environment variables
+ENV GEMINI_API_KEY=AIzaSyDqERDgZ1l41zfGiQ4FZV62B58DXMbGWj4
+ENV GEMINI_MODEL=gemini-2.5-flash-lite
+# Jitsi Meet - Server-side
+ENV JITSI_DOMAIN=meet.jit.si
+# Google Speech API - Server-side  
+ENV GOOGLE_SPEECH_API_KEY=AIzaSyAl924pIkpbrJBfCQ1MlpA6yb8XZ3L8WZQ
 
 # The backend serves both API and static frontend files
 EXPOSE 3004

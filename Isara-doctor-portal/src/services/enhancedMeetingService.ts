@@ -5,7 +5,15 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { aiClinicalService, type CopilotMessage, type CopilotContext } from './aiClinicalCopilot';
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-const genAI = GEMINI_API_KEY ? new GoogleGenerativeAI(GEMINI_API_KEY) : null;
+const GEMINI_MODEL = import.meta.env.VITE_GEMINI_MODEL || 'gemini-2.5-flash-lite';
+const genAI = (GEMINI_API_KEY && GEMINI_API_KEY.startsWith('AIza')) ? new GoogleGenerativeAI(GEMINI_API_KEY) : null;
+
+// Log initialization status
+if (genAI) {
+  console.log('✅ Enhanced Meeting Service: Gemini AI initialized with model:', GEMINI_MODEL);
+} else {
+  console.warn('⚠️ Enhanced Meeting Service: Gemini API key not configured');
+}
 
 // ============================================================================
 // PATIENT CONNECTION TYPES - For bidirectional telemedicine

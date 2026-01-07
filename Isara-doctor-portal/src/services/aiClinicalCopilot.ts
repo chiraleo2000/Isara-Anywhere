@@ -19,22 +19,22 @@ import type {
 } from '../types';
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-const GEMINI_MODEL = import.meta.env.VITE_GEMINI_MODEL || 'gemini-2.0-flash-exp';
+const GEMINI_MODEL = import.meta.env.VITE_GEMINI_MODEL || 'gemini-2.5-flash-lite';
 
 // Initialize Gemini AI
 let genAI: GoogleGenerativeAI | null = null;
 let isConfigured = false;
 
-if (GEMINI_API_KEY && GEMINI_API_KEY !== 'xxx') {
+if (GEMINI_API_KEY && GEMINI_API_KEY !== 'xxx' && GEMINI_API_KEY.startsWith('AIza')) {
   try {
     genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
     isConfigured = true;
-    console.log('✅ AI Clinical Copilot initialized');
+    console.log('✅ AI Clinical Copilot initialized with model:', GEMINI_MODEL);
   } catch (error) {
     console.error('❌ Failed to initialize AI Copilot:', error);
   }
 } else {
-  console.warn('⚠️ AI Copilot: Gemini API key not configured');
+  console.warn('⚠️ AI Copilot: Gemini API key not configured or invalid');
 }
 
 // Task-specific configurations

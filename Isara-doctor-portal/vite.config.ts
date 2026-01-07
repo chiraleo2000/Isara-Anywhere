@@ -17,6 +17,24 @@ export default defineConfig(({ mode }) => {
             changeOrigin: true,
             secure: false,
           },
+          // Proxy /api/content requests to GCS API server (medical content, clinical resources)
+          '/api/content': {
+            target: 'http://localhost:3012',
+            changeOrigin: true,
+            secure: false,
+          },
+          // Proxy /api/consultants requests to GCS API server
+          '/api/consultants': {
+            target: 'http://localhost:3012',
+            changeOrigin: true,
+            secure: false,
+          },
+          // Proxy /api/doctors requests to GCS API server
+          '/api/doctors': {
+            target: 'http://localhost:3012',
+            changeOrigin: true,
+            secure: false,
+          },
           // Proxy /api requests to Main API server (clinical operations)
           '/api': {
             target: 'http://localhost:3009',

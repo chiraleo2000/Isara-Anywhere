@@ -20,9 +20,14 @@ export const AIHealthChat: React.FC<AIHealthChatProps> = ({ className = '', comp
   const [loading, setLoading] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    // Only scroll within the chat container when messages are added, not on initial render
+    if (messages.length > 0 && chatContainerRef.current) {
+      // Use scrollTop instead of scrollIntoView to prevent page-level scrolling
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
   }, [messages]);
 
   const handleSend = async () => {
@@ -94,7 +99,10 @@ export const AIHealthChat: React.FC<AIHealthChatProps> = ({ className = '', comp
       </div>
 
       {/* Chat Area */}
-      <div className={`flex-1 overflow-y-auto p-3 space-y-3 ${compact && !isExpanded ? 'max-h-48' : 'max-h-80'}`}>
+      <div 
+        ref={chatContainerRef}
+        className={`flex-1 overflow-y-auto p-3 space-y-3 ${compact && !isExpanded ? 'max-h-48' : 'max-h-80'}`}
+      >
         {messages.length === 0 ? (
           <div className="text-center py-4">
             <Bot className="w-10 h-10 text-gray-300 mx-auto mb-2" />
