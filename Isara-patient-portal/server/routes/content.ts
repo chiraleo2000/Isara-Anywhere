@@ -185,4 +185,116 @@ router.get('/health-education', async (_req: Request, res: Response) => {
   }
 });
 
+/**
+ * GET /api/content/tags/:type
+ * Get tags for content filtering (medical or clinical)
+ */
+router.get('/tags/:type', async (req: Request, res: Response) => {
+  try {
+    const { type } = req.params;
+    const bucket = storage.bucket(GCS_BUCKETS.METADATA);
+    
+    // Determine file path based on type
+    const filePath = type === 'clinical' 
+      ? 'clinical-resources/tags.json'
+      : 'medical-content/tags.json';
+    
+    const file = bucket.file(filePath);
+    
+    const [exists] = await file.exists();
+    if (!exists) {
+      // Return default tags if file doesn't exist
+      return res.json({ 
+        tags: getDefaultTags(type),
+        lastUpdated: new Date().toISOString()
+      });
+    }
+
+    const [content] = await file.download();
+    const data = JSON.parse(content.toString());
+
+    res.json({ 
+      tags: data.tags || data || [],
+      lastUpdated: data.lastUpdated || new Date().toISOString()
+    });
+  } catch (error: any) {
+    console.error('Error fetching tags:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch tags',
+      message: error.message 
+    });
+  }
+});
+
+/**
+ * POST /api/content/medical/:id/view
+ * Track article view (increment view count)
+ */
+router.post('/medical/:id/view', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const bucket = storage.bucket(GCS_BUCKETS.METADATA);
+    const file = bucket.file('medical-content/articles.json');
+    
+    const [exists] = await file.exists();
+    if (!exists) {
+      return res.status(404).json({ error: 'Content not found' });
+    }
+
+    const [content] = await file.download();
+    const data = JSON.parse(content.toString());
+    const articles = data.articles || [];
+    
+    const articleIndex = articles.findIndex((a: any) => a.id === id);
+    
+    if (articleIndex === -1) {
+      return res.status(404).json({ error: 'Article not found' });
+    }
+
+    // Increment view count
+    articles[articleIndex].views = (articles[articleIndex].views || 0) + 1;
+    articles[articleIndex].viewCount = articles[articleIndex].views;
+    data.articles = articles;
+    data.lastUpdated = new Date().toISOString();
+
+    // Save back to GCS
+    await file.save(JSON.stringify(data, null, 2), {
+      contentType: 'application/json',
+      metadata: { cacheControl: 'public, max-age=60' }
+    });
+
+    res.json({ 
+      success: true,
+      views: articles[articleIndex].views 
+    });
+  } catch (error: any) {
+    console.error('Error tracking view:', error);
+    // Silent fail for analytics - don't break the user experience
+    res.json({ success: false });
+  }
+});
+
+/**
+ * Helper function to get default tags
+ */
+function getDefaultTags(type: string): Array<{id: string, name: string, nameTh?: string}> {
+  if (type === 'medical') {
+    return [
+      { id: 'diabetes', name: 'Diabetes', nameTh: 'เบาหวาน' },
+      { id: 'heart-health', name: 'Heart Health', nameTh: 'สุขภาพหัวใจ' },
+      { id: 'nutrition', name: 'Nutrition', nameTh: 'โภชนาการ' },
+      { id: 'exercise', name: 'Exercise', nameTh: 'การออกกำลังกาย' },
+      { id: 'mental-health', name: 'Mental Health', nameTh: 'สุขภาพจิต' },
+      { id: 'prevention', name: 'Prevention', nameTh: 'การป้องกัน' },
+      { id: 'chronic-disease', name: 'Chronic Disease', nameTh: 'โรคเรื้อรัง' },
+      { id: 'wellness', name: 'Wellness', nameTh: 'สุขภาวะ' },
+    ];
+  }
+  return [
+    { id: 'guidelines', name: 'Guidelines', nameTh: 'แนวทาง' },
+    { id: 'protocols', name: 'Protocols', nameTh: 'โปรโตคอล' },
+    { id: 'research', name: 'Research', nameTh: 'งานวิจัย' },
+  ];
+}
+
 export default router;

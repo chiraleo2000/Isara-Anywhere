@@ -81,7 +81,9 @@ function Deploy-To-CloudRun {
         [hashtable]$EnvVars
     )
     
-    $imagePath = "$REGISTRY/${ServiceName}:${ImageTag}"
+    # Image name uses isara- prefix (not izara-)
+    $imageName = $ServiceName -replace "izara-", "isara-"
+    $imagePath = "$REGISTRY/${imageName}:${ImageTag}"
     
     Write-Host ""
     Write-Host "=========================================" -ForegroundColor Cyan

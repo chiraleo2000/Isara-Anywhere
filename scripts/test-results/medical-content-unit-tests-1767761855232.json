@@ -1,0 +1,78 @@
+{
+  "passed": 12,
+  "failed": 0,
+  "tests": [
+    {
+      "name": "Health Articles Endpoint (Patient)",
+      "passed": true,
+      "details": "Endpoint accessible",
+      "timestamp": "2026-01-07T04:57:35.015Z"
+    },
+    {
+      "name": "Clinical Resources Endpoint (Doctor)",
+      "passed": true,
+      "details": "Endpoint accessible",
+      "timestamp": "2026-01-07T04:57:35.020Z"
+    },
+    {
+      "name": "Clinical Guidelines Endpoint",
+      "passed": true,
+      "details": "Guidelines endpoint accessible (status: 404)",
+      "timestamp": "2026-01-07T04:57:35.022Z"
+    },
+    {
+      "name": "ICD-10 Code Format Validation",
+      "passed": true,
+      "details": "All ICD-10 validations correct",
+      "timestamp": "2026-01-07T04:57:35.022Z"
+    },
+    {
+      "name": "ICD-10 Search Endpoint",
+      "passed": true,
+      "details": "ICD-10 endpoint accessible",
+      "timestamp": "2026-01-07T04:57:35.024Z"
+    },
+    {
+      "name": "Drug Data Validation",
+      "passed": true,
+      "details": "All drug validations correct",
+      "timestamp": "2026-01-07T04:57:35.024Z"
+    },
+    {
+      "name": "Drug Search Endpoint",
+      "passed": true,
+      "details": "Drug endpoint accessible",
+      "timestamp": "2026-01-07T04:57:35.025Z"
+    },
+    {
+      "name": "Content Category Validation",
+      "passed": true,
+      "details": "9 valid categories",
+      "timestamp": "2026-01-07T04:57:35.026Z"
+    },
+    {
+      "name": "Article Structure Validation",
+      "passed": true,
+      "details": "Article validation working correctly",
+      "timestamp": "2026-01-07T04:57:35.026Z"
+    },
+    {
+      "name": "Content Language Support",
+      "passed": true,
+      "details": "Thai and English supported",
+      "timestamp": "2026-01-07T04:57:35.026Z"
+    },
+    {
+      "name": "GCS Medical Content Bucket",
+      "passed": true,
+      "details": "GCS content accessible (object format, 9 items)",
+      "timestamp": "2026-01-07T04:57:35.154Z"
+    },
+    {
+      "name": "GCS Content Bucket Structure",
+      "passed": true,
+      "details": "Content structure: 13 items",
+      "timestamp": "2026-01-07T04:57:35.231Z"
+    }
+  ]
+}

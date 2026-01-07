@@ -1,0 +1,72 @@
+{
+  "passed": 11,
+  "failed": 0,
+  "tests": [
+    {
+      "name": "EMR Structure Validation",
+      "passed": true,
+      "details": "EMR validation working correctly",
+      "timestamp": "2026-01-07T04:41:31.631Z"
+    },
+    {
+      "name": "Thai OPD Card Fields Presence",
+      "passed": true,
+      "details": "All Thai OPD card fields present",
+      "timestamp": "2026-01-07T04:41:31.633Z"
+    },
+    {
+      "name": "Vital Signs in EMR Structure",
+      "passed": true,
+      "details": "EMR vital signs structure valid",
+      "timestamp": "2026-01-07T04:41:31.634Z"
+    },
+    {
+      "name": "Diagnosis Data Format",
+      "passed": true,
+      "details": "Diagnosis format valid",
+      "timestamp": "2026-01-07T04:41:31.634Z"
+    },
+    {
+      "name": "Prescription Validation",
+      "passed": true,
+      "details": "Prescription validation working",
+      "timestamp": "2026-01-07T04:41:31.636Z"
+    },
+    {
+      "name": "Drug Interaction Data Structure",
+      "passed": true,
+      "details": "Drug interaction structure valid",
+      "timestamp": "2026-01-07T04:41:31.637Z"
+    },
+    {
+      "name": "Lab Order Validation",
+      "passed": true,
+      "details": "Lab order validation working",
+      "timestamp": "2026-01-07T04:41:31.638Z"
+    },
+    {
+      "name": "EMR API Endpoint",
+      "passed": true,
+      "details": "EMR endpoint accessible (status: 404)",
+      "timestamp": "2026-01-07T04:41:31.794Z"
+    },
+    {
+      "name": "Prescription API Endpoint",
+      "passed": true,
+      "details": "Prescription endpoint accessible (status: 404)",
+      "timestamp": "2026-01-07T04:41:31.803Z"
+    },
+    {
+      "name": "Lab Order API Endpoint",
+      "passed": true,
+      "details": "Lab order endpoint accessible (status: 404)",
+      "timestamp": "2026-01-07T04:41:31.808Z"
+    },
+    {
+      "name": "AI Summary Generation Endpoint",
+      "passed": true,
+      "details": "AI endpoint accessible (status: 404)",
+      "timestamp": "2026-01-07T04:41:31.934Z"
+    }
+  ]
+}

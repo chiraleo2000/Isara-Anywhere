@@ -3,54 +3,60 @@ import { GoogleGenerativeAI, GenerativeModel, HarmCategory, HarmBlockThreshold }
 import { authMiddleware } from '../middleware/auth';
 import path from 'path';
 import fs from 'fs';
+import dotenv from 'dotenv';
 
-// Load env from project root - custom parser to handle duplicate keys
-const envPath = path.resolve(process.cwd(), '.env');
-let GEMINI_API_KEY: string | null = null;
-let GEMINI_MODEL: string = 'gemini-2.5-flash-lite';
+// =============================================================================
+// GEMINI AI CONFIGURATION - Works in both local dev and Cloud Run production
+// =============================================================================
 
-if (fs.existsSync(envPath)) {
-  console.log('[AI Config] Reading .env file from:', envPath);
-  const envContent = fs.readFileSync(envPath, 'utf-8');
-  // Handle both Windows (\r\n) and Unix (\n) line endings
-  const lines = envContent.split(/\r?\n/);
+// First, try to load dotenv for local development
+dotenv.config();
+
+// Get API key and model from environment variables (works in both local and production)
+// Priority: process.env (Cloud Run) > .env file parsing (local fallback)
+let GEMINI_API_KEY: string | null = process.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY || null;
+let GEMINI_MODEL: string = process.env.VITE_GEMINI_MODEL || process.env.GEMINI_MODEL || 'gemini-2.5-flash-lite';
+
+// If not found in process.env, try to parse .env file (local development fallback)
+if (!GEMINI_API_KEY || !GEMINI_API_KEY.startsWith('AIza')) {
+  const envPath = path.resolve(process.cwd(), '.env');
   
-  console.log('[AI Config] Total lines in .env:', lines.length);
-  
-  for (const line of lines) {
-    // Skip comments and empty lines
-    const trimmedLine = line.trim();
-    if (!trimmedLine || trimmedLine.startsWith('#')) continue;
+  if (fs.existsSync(envPath)) {
+    console.log('[AI Config] Parsing .env file from:', envPath);
+    const envContent = fs.readFileSync(envPath, 'utf-8');
+    const lines = envContent.split(/\r?\n/);
     
-    // Parse key=value pairs
-    const eqIndex = trimmedLine.indexOf('=');
-    if (eqIndex === -1) continue;
-    
-    const key = trimmedLine.substring(0, eqIndex).trim();
-    const value = trimmedLine.substring(eqIndex + 1).trim();
-    
-    // Handle GEMINI_API_KEY - only accept if value starts with 'AIza' (valid Google API key format)
-    if (key.includes('GEMINI_API_KEY') && value.startsWith('AIza')) {
-      GEMINI_API_KEY = value;
-      console.log('[AI Config] ✅ Found valid Gemini API key:', value.substring(0, 15) + '...');
-    }
-    
-    // Handle GEMINI_MODEL - only accept if it's a valid model name (not an API key)
-    if ((key.includes('GEMINI_MODEL') || key.includes('GEMINI_API_KEY')) && 
-        value.startsWith('gemini-') && !value.startsWith('AIza')) {
-      // This looks like a model name, treat it as model config
-      GEMINI_MODEL = value;
-      console.log('[AI Config] Found model name in env:', value);
+    for (const line of lines) {
+      const trimmedLine = line.trim();
+      if (!trimmedLine || trimmedLine.startsWith('#')) continue;
+      
+      const eqIndex = trimmedLine.indexOf('=');
+      if (eqIndex === -1) continue;
+      
+      const key = trimmedLine.substring(0, eqIndex).trim();
+      const value = trimmedLine.substring(eqIndex + 1).trim();
+      
+      // Handle GEMINI_API_KEY - only accept if value starts with 'AIza' (valid Google API key format)
+      if (key.includes('GEMINI_API_KEY') && value.startsWith('AIza')) {
+        GEMINI_API_KEY = value;
+        console.log('[AI Config] ✅ Found valid Gemini API key from .env:', value.substring(0, 15) + '...');
+      }
+      
+      // Handle GEMINI_MODEL - only accept if it's a valid model name
+      if (key.includes('GEMINI_MODEL') && value.startsWith('gemini-')) {
+        GEMINI_MODEL = value;
+        console.log('[AI Config] Found model name in .env:', value);
+      }
     }
   }
-} else {
-  console.log('[AI Config] ⚠️ .env file not found at:', envPath);
 }
 
 // Log final configuration
-console.log('[AI Config] Final configuration:');
-console.log('[AI Config] - API Key:', GEMINI_API_KEY ? `${GEMINI_API_KEY.substring(0, 10)}...` : 'NOT FOUND');
-console.log('[AI Config] - Model:', GEMINI_MODEL);
+console.log('[AI Config] ===== Final Configuration =====');
+console.log('[AI Config] Environment:', process.env.NODE_ENV || 'development');
+console.log('[AI Config] API Key:', GEMINI_API_KEY ? `${GEMINI_API_KEY.substring(0, 15)}... (length: ${GEMINI_API_KEY.length})` : '❌ NOT FOUND');
+console.log('[AI Config] Model:', GEMINI_MODEL);
+console.log('[AI Config] ================================');
 
 const router = Router();
 

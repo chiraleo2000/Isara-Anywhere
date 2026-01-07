@@ -1,0 +1,118 @@
+{
+  "passed": [
+    {
+      "name": "Patient Portal Backend Health",
+      "status": "passed",
+      "duration": 31,
+      "timestamp": "2026-01-07T05:16:37.054Z"
+    },
+    {
+      "name": "Doctor Portal Main API Health",
+      "status": "passed",
+      "duration": 6,
+      "timestamp": "2026-01-07T05:16:37.060Z"
+    },
+    {
+      "name": "Doctor Portal GCS API Health",
+      "status": "passed",
+      "duration": 6,
+      "timestamp": "2026-01-07T05:16:37.066Z"
+    },
+    {
+      "name": "Doctor Portal Auth Server Health",
+      "status": "passed",
+      "duration": 4,
+      "timestamp": "2026-01-07T05:16:37.071Z"
+    },
+    {
+      "name": "Patient Portal GCS Connection",
+      "status": "passed",
+      "duration": 65,
+      "timestamp": "2026-01-07T05:16:37.136Z"
+    },
+    {
+      "name": "Doctor Portal GCS Connection",
+      "status": "passed",
+      "duration": 109,
+      "timestamp": "2026-01-07T05:16:37.245Z"
+    },
+    {
+      "name": "Medical Content from GCS (Patient Portal)",
+      "status": "passed",
+      "duration": 157,
+      "timestamp": "2026-01-07T05:16:37.402Z"
+    },
+    {
+      "name": "Medical Content from GCS (Doctor Portal)",
+      "status": "passed",
+      "duration": 135,
+      "timestamp": "2026-01-07T05:16:37.537Z"
+    },
+    {
+      "name": "Clinical Resources from GCS",
+      "status": "passed",
+      "duration": 132,
+      "timestamp": "2026-01-07T05:16:37.669Z"
+    },
+    {
+      "name": "Patient Portal Login API",
+      "status": "passed",
+      "duration": 775,
+      "timestamp": "2026-01-07T05:16:38.444Z"
+    },
+    {
+      "name": "Doctor Portal Login API",
+      "status": "passed",
+      "duration": 120,
+      "timestamp": "2026-01-07T05:16:38.564Z"
+    },
+    {
+      "name": "Video Meeting Service",
+      "status": "passed",
+      "duration": 1,
+      "timestamp": "2026-01-07T05:16:38.565Z"
+    },
+    {
+      "name": "Create Meeting API",
+      "status": "passed",
+      "duration": 2,
+      "timestamp": "2026-01-07T05:16:38.567Z"
+    },
+    {
+      "name": "Patient PHR API",
+      "status": "passed",
+      "duration": 1,
+      "timestamp": "2026-01-07T05:16:38.568Z"
+    },
+    {
+      "name": "Appointments API",
+      "status": "passed",
+      "duration": 1,
+      "timestamp": "2026-01-07T05:16:38.569Z"
+    },
+    {
+      "name": "Doctors List API",
+      "status": "passed",
+      "duration": 1,
+      "timestamp": "2026-01-07T05:16:38.570Z"
+    },
+    {
+      "name": "Doctor Patients API",
+      "status": "passed",
+      "duration": 1,
+      "timestamp": "2026-01-07T05:16:38.571Z"
+    },
+    {
+      "name": "Doctor Queue API",
+      "status": "passed",
+      "duration": 0,
+      "timestamp": "2026-01-07T05:16:38.571Z"
+    }
+  ],
+  "failed": [],
+  "skipped": [],
+  "startTime": 1767762997016,
+  "errors": [],
+  "endTime": 1767762998573,
+  "totalDuration": 1557
+}

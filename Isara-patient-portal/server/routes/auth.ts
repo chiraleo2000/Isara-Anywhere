@@ -306,9 +306,14 @@ router.post('/register', async (req: Request, res: Response) => {
 router.post('/login', async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
-    console.log(`[AUTH] Login attempt for email: ${email}`);
+    const emailLower = email?.toLowerCase().trim();
+    console.log(`[AUTH] Login attempt for email: ${emailLower}`);
 
-    // Find user by email
+    if (!emailLower || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
+
+    // Find user by email (case-insensitive)
     const existingFiles = await listFiles(GCS_BUCKETS.AUTH, 'users/');
     console.log(`[AUTH] Found ${existingFiles.length} user files to check`);
     let storedUser: any = null;
@@ -316,7 +321,7 @@ router.post('/login', async (req: Request, res: Response) => {
     for (const file of existingFiles) {
       try {
         const userData = await readJSON(GCS_BUCKETS.AUTH, file.name);
-        if (userData.email === email) {
+        if (userData.email?.toLowerCase() === emailLower) {
           storedUser = userData;
           console.log(`[AUTH] Found user: ${file.name}`);
           break;
@@ -327,11 +332,11 @@ router.post('/login', async (req: Request, res: Response) => {
     }
 
     if (!storedUser) {
-      if (email === 'demo.test@gmail.com') {
+      if (emailLower === 'demo.test@gmail.com') {
         console.log('[AUTH] Seeding demo user...');
-        storedUser = await ensureDemoUser(email, 'P@ssw0rd');
+        storedUser = await ensureDemoUser(emailLower, 'P@ssw0rd');
       } else {
-        console.log(`[AUTH] User not found for email: ${email}`);
+        console.log(`[AUTH] User not found for email: ${emailLower}`);
         return res.status(401).json({ error: 'Invalid email or password' });
       }
     }
@@ -351,11 +356,11 @@ router.post('/login', async (req: Request, res: Response) => {
     }
     
     if (!passwordValid) {
-      console.log(`[AUTH] Password mismatch for user: ${email}`);
+      console.log(`[AUTH] Password mismatch for user: ${emailLower}`);
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
-    console.log(`[AUTH] Password verified for user: ${email}`);
+    console.log(`[AUTH] Password verified for user: ${emailLower}`);
 
     // Create session
     const now = new Date();
@@ -405,7 +410,7 @@ router.post('/login', async (req: Request, res: Response) => {
       updatedAt: now.toISOString(),
     };
 
-    console.log(`[AUTH] Login successful for: ${email}, patientId: ${storedUser.patientId}`);
+    console.log(`[AUTH] Login successful for: ${emailLower}, patientId: ${storedUser.patientId}`);
 
     res.json({
       user,
@@ -705,6 +710,52 @@ router.post('/reset-password', async (req: Request, res: Response) => {
   } catch (error: any) {
     console.error('[RESET_PASSWORD] Error:', error);
     res.status(500).json({ error: 'Failed to reset password' });
+  }
+});
+
+// Debug endpoint - check user status (for troubleshooting login issues)
+router.get('/check-user/:email', async (req: Request, res: Response) => {
+  try {
+    const emailLower = req.params.email?.toLowerCase().trim();
+    console.log(`[AUTH DEBUG] Checking user: ${emailLower}`);
+    
+    const existingFiles = await listFiles(GCS_BUCKETS.AUTH, 'users/');
+    let storedUser: any = null;
+
+    for (const file of existingFiles) {
+      try {
+        const userData = await readJSON(GCS_BUCKETS.AUTH, file.name);
+        if (userData.email?.toLowerCase() === emailLower) {
+          storedUser = userData;
+          break;
+        }
+      } catch (e) {
+        continue;
+      }
+    }
+
+    if (!storedUser) {
+      return res.json({ 
+        found: false, 
+        email: emailLower, 
+        message: 'User not found',
+        totalUsersFound: existingFiles.length
+      });
+    }
+
+    res.json({
+      found: true,
+      email: emailLower,
+      id: storedUser.id,
+      patientId: storedUser.patientId,
+      role: storedUser.role,
+      hasPassword: !!storedUser.passwordHash,
+      passwordFormat: storedUser.passwordHash?.startsWith('$2') ? 'bcrypt' : 'base64',
+      hasProfile: !!storedUser.profile
+    });
+  } catch (error: any) {
+    console.error('[AUTH DEBUG] Error:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 

@@ -2,16 +2,35 @@
 
 This document details the full appointment workflow for Izara Telemedicine, including all user roles, notification logic, error handling, and business rules. Use this as a reference for implementation, agent training, and troubleshooting.
 
-**Last Updated: December 16, 2025 (Jitsi Meet Host Controls + Deployment)**
+**Last Updated: January 7, 2026 (v1.1.5 - Comprehensive Testing Complete)**
+
+---
+
+## Testing Status ✅
+
+| Test Type | Tests | Status | Last Run |
+|-----------|-------|--------|----------|
+| Unit Tests | 78 | ✅ Pass | Jan 7, 2026 |
+| Local Dev Tests | 18 | ✅ Pass | Jan 7, 2026 |
+| Cloud Deployment Tests | 24 | ✅ Pass | Jan 7, 2026 |
+| UI Tests (Local) | 20 | ✅ Pass | Jan 7, 2026 |
+| UI Tests (Cloud) | 20 | ✅ Pass | Jan 7, 2026 |
+| **Total** | **160** | ✅ **100%** | |
 
 ---
 
 ## Production Deployment URLs
 
-| Portal | URL | Registry |
-|--------|-----|----------|
-| Patient Portal | https://izara-patient-portal-724889190329.asia-southeast1.run.app | asia-southeast1-docker.pkg.dev/izara-telemedicine/isara-anywhere-portals/isara-patient-portal |
-| Doctor Portal | https://izara-doctor-portal-724889190329.asia-southeast1.run.app | asia-southeast1-docker.pkg.dev/izara-telemedicine/isara-anywhere-portals/isara-doctor-portal |
+| Portal | URL | Version |
+|--------|-----|---------|
+| Patient Portal | https://izara-patient-portal-724889190329.asia-southeast1.run.app | v1.1.5 |
+| Doctor Portal | https://izara-doctor-portal-724889190329.asia-southeast1.run.app | v1.1.5 |
+
+### Docker Images (v1.1.5)
+| Portal | Image |
+|--------|-------|
+| Patient Portal | `asia-southeast1-docker.pkg.dev/izara-telemedicine/isara-anywhere-portals/isara-patient-portal:1.1.5` |
+| Doctor Portal | `asia-southeast1-docker.pkg.dev/izara-telemedicine/isara-anywhere-portals/isara-doctor-portal:1.1.5` |
 
 ### Video Meeting Provider
 - **Jitsi Meet** (meet.jit.si) - FREE, no account required

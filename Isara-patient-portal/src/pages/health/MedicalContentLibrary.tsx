@@ -6,7 +6,9 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3004';
+// In production, use relative URLs (proxied by nginx)
+// In development, use relative URLs (proxied by vite) 
+const API_BASE = '';
 
 // Types
 interface MedicalContentArticle {
@@ -119,11 +121,22 @@ const MedicalContentLibrary: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      // Fetch from patient portal API
-      const response = await fetch(`${API_BASE}/api/content/medical`);
+      // Fetch from patient portal API with timeout and retry
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+
+      const response = await fetch(`${API_BASE}/api/content/medical`, {
+        signal: controller.signal,
+        headers: {
+          'Accept': 'application/json',
+          'Cache-Control': 'no-cache'
+        }
+      });
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
-        throw new Error('Failed to fetch medical content');
+        throw new Error(`Failed to fetch medical content (${response.status})`);
       }
 
       const data = await response.json();
@@ -131,7 +144,11 @@ const MedicalContentLibrary: React.FC = () => {
       setContent(data.articles || []);
     } catch (err) {
       console.error('Error fetching content:', err);
-      setError(err instanceof Error ? err.message : 'เกิดข้อผิดพลาดในการโหลดเนื้อหา');
+      if (err instanceof Error && err.name === 'AbortError') {
+        setError('การเชื่อมต่อหมดเวลา กรุณาลองใหม่อีกครั้ง');
+      } else {
+        setError(err instanceof Error ? err.message : 'เกิดข้อผิดพลาดในการโหลดเนื้อหา');
+      }
     } finally {
       setLoading(false);
     }

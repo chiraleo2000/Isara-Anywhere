@@ -22,6 +22,16 @@ const { Server } = require('socket.io');
 const path = require('path');
 const fs = require('fs');
 
+// Load environment variables from .env file (for local development only)
+// In production (Cloud Run), env vars are already set via --set-env-vars
+try {
+  const dotenv = require('dotenv');
+  dotenv.config();
+  console.log('[ENV] Loaded .env file for local development');
+} catch (e) {
+  console.log('[ENV] dotenv not available - using process.env from Cloud Run');
+}
+
 const app = express();
 const server = http.createServer(app);
 const PORT = process.env.PORT || 3009;
@@ -962,18 +972,25 @@ app.get('/api/appointments/:appointmentId', authenticateToken, async (req, res) 
 
 const crypto = require('crypto');
 
-// Jitsi Meet Configuration (FREE)
-const JITSI_DOMAIN = process.env.JITSI_DOMAIN || 'meet.jit.si';
+// Jitsi Meet Configuration (FREE) - Works in both local and Cloud Run
+const JITSI_DOMAIN = process.env.JITSI_DOMAIN || process.env.VITE_JITSI_DOMAIN || 'meet.jit.si';
 
 // Google Cloud Speech-to-Text API Configuration
-const GOOGLE_SPEECH_API_KEY = process.env.VITE_GOOGLE_SPEECH_API_KEY || 
+const GOOGLE_SPEECH_API_KEY = process.env.GOOGLE_SPEECH_API_KEY ||
+                              process.env.VITE_GOOGLE_SPEECH_API_KEY || 
                               process.env.VITE_GOOGLE_MEET_API_KEY || 
-                              process.env.GOOGLE_API_KEY ||
                               'AIzaSyAl924pIkpbrJBfCQ1MlpA6yb8XZ3L8WZQ';
 
-// Gemini AI Configuration (for summary & recommendations)
-const GEMINI_API_KEY = process.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
-const GEMINI_MODEL = process.env.VITE_GEMINI_MODEL || 'gemini-2.5-flash-lite';
+// Gemini AI Configuration (for summary & recommendations) - with default fallback
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || 'AIzaSyDqERDgZ1l41zfGiQ4FZV62B58DXMbGWj4';
+const GEMINI_MODEL = process.env.GEMINI_MODEL || process.env.VITE_GEMINI_MODEL || 'gemini-2.5-flash-lite';
+
+// Log video meeting configuration
+console.log('[Video Meeting] ===== Configuration =====');
+console.log('[Video Meeting] Jitsi Domain:', JITSI_DOMAIN);
+console.log('[Video Meeting] Gemini API Key:', GEMINI_API_KEY ? `${GEMINI_API_KEY.substring(0, 15)}...` : '❌ NOT FOUND');
+console.log('[Video Meeting] Gemini Model:', GEMINI_MODEL);
+console.log('[Video Meeting] ===========================');
 
 // In-memory meeting storage
 const meetingSessions = new Map();

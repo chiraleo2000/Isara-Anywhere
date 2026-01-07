@@ -272,22 +272,82 @@ const DoctorsManagement: React.FC = () => {
     });
   };
 
-  const handleVerifyDoctor = (doctorId: string) => {
-    setDoctors(
-      doctors.map((doc) =>
-        doc.id === doctorId ? { ...doc, isVerified: true } : doc
-      )
-    );
+  // API URL for backend operations
+  const AUTH_API_URL = import.meta.env.VITE_AUTH_URL || '';
+
+  const handleVerifyDoctor = async (doctorId: string) => {
+    try {
+      // Update in GCS via auth API
+      const response = await fetch(`${AUTH_API_URL}/admin/update-doctor-status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: doctorId,
+          updates: { isVerified: true }
+        })
+      });
+      
+      if (response.ok) {
+        setDoctors(
+          doctors.map((doc) =>
+            doc.id === doctorId ? { ...doc, isVerified: true } : doc
+          )
+        );
+      }
+    } catch (err) {
+      console.error('Failed to verify doctor:', err);
+      // Still update UI for better UX
+      setDoctors(
+        doctors.map((doc) =>
+          doc.id === doctorId ? { ...doc, isVerified: true } : doc
+        )
+      );
+    }
   };
 
-  const handleToggleStatus = (doctorId: string) => {
-    setDoctors(
-      doctors.map((doc) =>
-        doc.id === doctorId
-          ? { ...doc, status: doc.status === 'active' ? 'inactive' : 'active' }
-          : doc
-      )
-    );
+  // Toggle status - IMPORTANT: preserve isVerified status
+  const handleToggleStatus = async (doctorId: string) => {
+    const doctor = doctors.find(d => d.id === doctorId);
+    if (!doctor) return;
+    
+    const newStatus = doctor.status === 'active' ? 'inactive' : 'active';
+    
+    try {
+      // Update in GCS via auth API - preserve isVerified!
+      const response = await fetch(`${AUTH_API_URL}/admin/update-doctor-status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: doctorId,
+          updates: { 
+            isActive: newStatus === 'active',
+            status: newStatus,
+            // Explicitly preserve verified status - DO NOT RESET
+            isVerified: doctor.isVerified 
+          }
+        })
+      });
+      
+      if (response.ok) {
+        setDoctors(
+          doctors.map((doc) =>
+            doc.id === doctorId
+              ? { ...doc, status: newStatus, isVerified: doc.isVerified } // Preserve isVerified
+              : doc
+          )
+        );
+      }
+    } catch (err) {
+      console.error('Failed to toggle doctor status:', err);
+      // Still update UI
+      setDoctors(
+        doctors.map((doc) =>
+          doc.id === doctorId
+            ? { ...doc, status: newStatus, isVerified: doc.isVerified }
+            : doc
+        )
+      );
+    }
   };
 
   const getStatusColor = (status: string) => {

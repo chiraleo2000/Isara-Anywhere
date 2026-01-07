@@ -22,27 +22,37 @@
 
 import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
+import dotenv from 'dotenv';
+
+// Load environment variables
+dotenv.config();
 
 const router = Router();
 
 // ============================================================================
-// CONFIGURATION
+// CONFIGURATION - Works in both local development and Cloud Run production
 // ============================================================================
 
-// Jitsi Meet Configuration (FREE)
-const JITSI_DOMAIN = process.env.JITSI_DOMAIN || 'meet.jit.si';
-const JITSI_APP_ID = process.env.JITSI_APP_ID || 'izara-telemedicine';
+// Jitsi Meet Configuration (FREE) - public.jit.si is more reliable than meet.jit.si
+const JITSI_DOMAIN = process.env.JITSI_DOMAIN || process.env.VITE_JITSI_DOMAIN || 'meet.jit.si';
+const JITSI_APP_ID = process.env.JITSI_APP_ID || process.env.VITE_JITSI_APP_ID || 'izara-telemedicine';
 
 // Google Cloud Speech-to-Text Configuration
-// Uses the same API key as other Google APIs
-const GOOGLE_SPEECH_API_KEY = process.env.VITE_GOOGLE_SPEECH_API_KEY || 
+const GOOGLE_SPEECH_API_KEY = process.env.GOOGLE_SPEECH_API_KEY || 
+                               process.env.VITE_GOOGLE_SPEECH_API_KEY || 
                                process.env.VITE_GOOGLE_MEET_API_KEY || 
-                               process.env.GOOGLE_API_KEY ||
                                'AIzaSyAl924pIkpbrJBfCQ1MlpA6yb8XZ3L8WZQ';
 
 // Gemini AI Configuration (for summary & recommendations)
-const GEMINI_API_KEY = process.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
-const GEMINI_MODEL = process.env.VITE_GEMINI_MODEL || 'gemini-2.5-flash-lite';
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || 'AIzaSyDqERDgZ1l41zfGiQ4FZV62B58DXMbGWj4';
+const GEMINI_MODEL = process.env.GEMINI_MODEL || process.env.VITE_GEMINI_MODEL || 'gemini-2.5-flash-lite';
+
+// Log configuration at startup
+console.log('[Video Meeting] ===== Configuration =====');
+console.log('[Video Meeting] Jitsi Domain:', JITSI_DOMAIN);
+console.log('[Video Meeting] Gemini API Key:', GEMINI_API_KEY ? `${GEMINI_API_KEY.substring(0, 15)}...` : '❌ NOT FOUND');
+console.log('[Video Meeting] Gemini Model:', GEMINI_MODEL);
+console.log('[Video Meeting] ===========================');
 
 // ============================================================================
 // TYPES
@@ -624,6 +634,55 @@ router.post('/create', async (req: Request, res: Response) => {
 });
 
 /**
+ * Health check with API info
+ * GET /api/video-meeting/health
+ * NOTE: This route MUST be defined BEFORE /:appointmentId routes to avoid being captured
+ */
+router.get('/health', (req: Request, res: Response) => {
+  res.json({
+    status: 'healthy',
+    service: 'Jitsi Meet + Google Speech-to-Text + Gemini AI Video Meeting Service',
+    timestamp: new Date().toISOString(),
+    config: {
+      jitsiDomain: JITSI_DOMAIN,
+      speechToTextConfigured: !!GOOGLE_SPEECH_API_KEY,
+      geminiConfigured: !!GEMINI_API_KEY,
+      geminiModel: GEMINI_MODEL,
+      activeMeetings: meetingSessions.size,
+      activeInvites: inviteTokens.size
+    },
+    features: {
+      videoConferencing: 'Jitsi Meet (FREE)',
+      googleAccountAuth: 'Supported',
+      anonymousAccess: 'Supported',
+      guestInviteLinks: 'Supported (patient relatives, doctor specialists)',
+      transcription: 'Google Cloud Speech-to-Text API',
+      summarization: `Gemini AI (${GEMINI_MODEL})`,
+      doctorRecommendations: `Gemini AI (${GEMINI_MODEL})`,
+      recording: 'Jitsi Built-in (FREE)'
+    },
+    guestRoles: {
+      doctorCanInvite: ['doctor_specialist', 'doctor_advisor', 'other'],
+      patientCanInvite: ['patient_relative', 'patient_partner', 'other']
+    },
+    workflow: {
+      step1: 'Doctor creates meeting and acts as host',
+      step2: 'Patient joins meeting via appointment link',
+      step3: 'Doctor/Patient can invite guests (specialists, relatives)',
+      step4: 'Guests join via secure invite links',
+      step5: 'Meeting recorded and transcribed',
+      step6: 'AI generates EMR summary and recommendations'
+    },
+    costs: {
+      video: '$0 (Jitsi Meet)',
+      transcription: '~$0.006/15s (Google Speech-to-Text)',
+      summarization: '~$0.001/1K tokens (Gemini)',
+      total: 'Low cost - pay only for API usage'
+    }
+  });
+});
+
+/**
  * Get meeting by appointment ID
  * GET /api/video-meeting/:appointmentId
  */
@@ -1072,45 +1131,321 @@ router.post('/:appointmentId/recommendations', async (req: Request, res: Respons
   }
 });
 
+// ============================================================================
+// GUEST INVITE LINK SYSTEM
+// Support for patient relatives/partners and doctor specialists to join meetings
+// ============================================================================
+
+// In-memory store for invite tokens (in production, use Redis/DB)
+const inviteTokens = new Map<string, {
+  token: string;
+  appointmentId: string;
+  meetingId: string;
+  invitedBy: string;
+  inviterRole: 'doctor' | 'patient';
+  guestEmail?: string;
+  guestName?: string;
+  guestRole: 'patient_relative' | 'patient_partner' | 'doctor_specialist' | 'doctor_advisor' | 'other';
+  createdAt: Date;
+  expiresAt: Date;
+  usedAt?: Date;
+  usedByIp?: string;
+}>();
+
 /**
- * Health check with API info
- * GET /api/video-meeting/health
+ * Generate a guest invite link for the meeting
+ * POST /api/video-meeting/:appointmentId/invite
+ * 
+ * Allows doctors to invite specialists/advisors
+ * Allows patients to invite relatives/partners
+ * 
+ * Similar to MS Teams/Google Meet invite links
  */
-router.get('/health', (req: Request, res: Response) => {
-  res.json({
-    status: 'healthy',
-    service: 'Jitsi Meet + Google Speech-to-Text + Gemini AI Video Meeting Service',
-    timestamp: new Date().toISOString(),
-    config: {
-      jitsiDomain: JITSI_DOMAIN,
-      speechToTextConfigured: !!GOOGLE_SPEECH_API_KEY,
-      geminiConfigured: !!GEMINI_API_KEY,
-      geminiModel: GEMINI_MODEL,
-      activeMeetings: meetingSessions.size
-    },
-    features: {
-      videoConferencing: 'Jitsi Meet (FREE)',
-      googleAccountAuth: 'Supported',
-      anonymousAccess: 'Supported',
-      transcription: 'Google Cloud Speech-to-Text API',
-      summarization: `Gemini AI (${GEMINI_MODEL})`,
-      doctorRecommendations: `Gemini AI (${GEMINI_MODEL})`,
-      recording: 'Jitsi Built-in (FREE)'
-    },
-    workflow: {
-      step1: 'Meeting ends with audio recording',
-      step2: 'Audio transcribed via Google Cloud Speech-to-Text',
-      step3: 'Transcript sent to Gemini for EMR summary',
-      step4: 'Gemini generates doctor recommendations',
-      step5: 'Results saved to patient health records'
-    },
-    costs: {
-      video: '$0 (Jitsi Meet)',
-      transcription: '~$0.006/15s (Google Speech-to-Text)',
-      summarization: '~$0.001/1K tokens (Gemini)',
-      total: 'Low cost - pay only for API usage'
+router.post('/:appointmentId/invite', async (req: Request, res: Response) => {
+  try {
+    const { appointmentId } = req.params;
+    const { 
+      invitedBy,
+      inviterRole,
+      guestEmail,
+      guestName,
+      guestRole,
+      expiresInHours = 24
+    } = req.body;
+    
+    // Validate required fields
+    if (!invitedBy || !inviterRole) {
+      return res.status(400).json({ error: 'invitedBy and inviterRole are required' });
     }
-  });
+    
+    // Validate guest role
+    const validGuestRoles = ['patient_relative', 'patient_partner', 'doctor_specialist', 'doctor_advisor', 'other'];
+    if (guestRole && !validGuestRoles.includes(guestRole)) {
+      return res.status(400).json({ 
+        error: 'Invalid guestRole. Must be one of: ' + validGuestRoles.join(', ')
+      });
+    }
+    
+    // Find meeting
+    const meeting = Array.from(meetingSessions.values())
+      .find(m => m.appointmentId === appointmentId && m.status !== 'ended');
+    
+    if (!meeting) {
+      return res.status(404).json({ error: 'Active meeting not found for this appointment' });
+    }
+    
+    // Validate inviter role permissions
+    // Doctors can invite doctor_specialist, doctor_advisor
+    // Patients can invite patient_relative, patient_partner
+    // Both can invite 'other'
+    const doctorGuestRoles = ['doctor_specialist', 'doctor_advisor', 'other'];
+    const patientGuestRoles = ['patient_relative', 'patient_partner', 'other'];
+    
+    if (inviterRole === 'doctor' && guestRole && !doctorGuestRoles.includes(guestRole)) {
+      return res.status(403).json({ 
+        error: 'Doctors can only invite specialists, advisors, or other guests'
+      });
+    }
+    
+    if (inviterRole === 'patient' && guestRole && !patientGuestRoles.includes(guestRole)) {
+      return res.status(403).json({ 
+        error: 'Patients can only invite relatives, partners, or other guests'
+      });
+    }
+    
+    // Generate secure invite token
+    const inviteToken = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + expiresInHours * 60 * 60 * 1000);
+    
+    // Store invite token
+    const invite = {
+      token: inviteToken,
+      appointmentId,
+      meetingId: meeting.id,
+      invitedBy,
+      inviterRole: inviterRole as 'doctor' | 'patient',
+      guestEmail,
+      guestName,
+      guestRole: guestRole || 'other',
+      createdAt: new Date(),
+      expiresAt
+    };
+    
+    inviteTokens.set(inviteToken, invite);
+    
+    // Generate the invite URL
+    // This URL should be shared with the guest
+    const baseUrl = process.env.APP_URL || 'https://izara-patient-portal-724889190329.asia-southeast1.run.app';
+    const inviteUrl = `${baseUrl}/meeting/join?token=${inviteToken}`;
+    
+    // Also create direct Jitsi URL for the guest
+    const directJitsiUrl = createJitsiUrl(meeting.roomName, meeting.config, {
+      name: guestName || 'Guest',
+      email: guestEmail,
+      role: 'guest'
+    });
+    
+    console.log(`📨 Guest invite created for meeting ${appointmentId}`);
+    console.log(`   Guest: ${guestName || 'Unknown'} (${guestRole})`);
+    console.log(`   Invited by: ${invitedBy} (${inviterRole})`);
+    console.log(`   Expires: ${expiresAt.toISOString()}`);
+    
+    res.json({
+      success: true,
+      invite: {
+        token: inviteToken,
+        inviteUrl,
+        directMeetingUrl: directJitsiUrl,
+        roomName: meeting.roomName,
+        guestEmail,
+        guestName,
+        guestRole,
+        invitedBy,
+        inviterRole,
+        expiresAt: expiresAt.toISOString(),
+        createdAt: invite.createdAt.toISOString()
+      },
+      message: 'Invite link generated. Share this link with your guest to join the meeting.'
+    });
+    
+  } catch (error) {
+    console.error('Error creating invite:', error);
+    res.status(500).json({ error: 'Failed to create invite link' });
+  }
+});
+
+/**
+ * Validate and join meeting using invite token
+ * POST /api/video-meeting/join-with-invite
+ * 
+ * Used by guests who received an invite link
+ */
+router.post('/join-with-invite', async (req: Request, res: Response) => {
+  try {
+    const { token, guestEmail, guestName } = req.body;
+    
+    if (!token) {
+      return res.status(400).json({ error: 'Invite token is required' });
+    }
+    
+    // Find invite
+    const invite = inviteTokens.get(token);
+    
+    if (!invite) {
+      return res.status(404).json({ error: 'Invalid or expired invite link' });
+    }
+    
+    // Check expiration
+    if (new Date() > invite.expiresAt) {
+      inviteTokens.delete(token);
+      return res.status(410).json({ error: 'Invite link has expired' });
+    }
+    
+    // Check if already used (allow same token to be used multiple times for simplicity)
+    // In production, you might want to limit this
+    
+    // Find meeting
+    const meeting = Array.from(meetingSessions.values())
+      .find(m => m.id === invite.meetingId);
+    
+    if (!meeting) {
+      return res.status(404).json({ error: 'Meeting no longer exists' });
+    }
+    
+    if (meeting.status === 'ended') {
+      return res.status(410).json({ error: 'Meeting has already ended' });
+    }
+    
+    // Mark invite as used
+    invite.usedAt = new Date();
+    invite.usedByIp = req.ip || req.socket.remoteAddress || 'unknown';
+    
+    // Add guest to participants
+    const guestParticipant: MeetingParticipant = {
+      id: `guest-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`,
+      name: guestName || invite.guestName || 'Guest',
+      role: 'guest',
+      email: guestEmail || invite.guestEmail,
+      joinedAt: new Date(),
+      authMethod: 'anonymous'
+    };
+    
+    meeting.participants.push(guestParticipant);
+    
+    // Generate personalized Jitsi URL
+    const displayName = guestName || invite.guestName || 'Guest';
+    const joinUrl = createJitsiUrl(meeting.roomName, meeting.config, {
+      name: displayName,
+      email: guestEmail || invite.guestEmail,
+      role: 'guest'
+    });
+    
+    console.log(`👤 Guest joined via invite: ${displayName}`);
+    console.log(`   Role: ${invite.guestRole}`);
+    console.log(`   Meeting: ${meeting.roomName}`);
+    
+    res.json({
+      success: true,
+      meetingUrl: joinUrl,
+      meeting: {
+        id: meeting.id,
+        appointmentId: meeting.appointmentId,
+        roomName: meeting.roomName,
+        status: meeting.status,
+        participantCount: meeting.participants.length
+      },
+      guest: {
+        id: guestParticipant.id,
+        name: displayName,
+        role: invite.guestRole,
+        invitedBy: invite.invitedBy
+      },
+      message: 'Welcome! You can now join the meeting.'
+    });
+    
+  } catch (error) {
+    console.error('Error joining with invite:', error);
+    res.status(500).json({ error: 'Failed to join meeting' });
+  }
+});
+
+/**
+ * Get all active invites for a meeting
+ * GET /api/video-meeting/:appointmentId/invites
+ */
+router.get('/:appointmentId/invites', async (req: Request, res: Response) => {
+  try {
+    const { appointmentId } = req.params;
+    
+    const meeting = Array.from(meetingSessions.values())
+      .find(m => m.appointmentId === appointmentId);
+    
+    if (!meeting) {
+      return res.status(404).json({ error: 'Meeting not found' });
+    }
+    
+    // Find all invites for this meeting
+    const meetingInvites = Array.from(inviteTokens.values())
+      .filter(inv => inv.meetingId === meeting.id)
+      .map(inv => ({
+        guestEmail: inv.guestEmail,
+        guestName: inv.guestName,
+        guestRole: inv.guestRole,
+        invitedBy: inv.invitedBy,
+        inviterRole: inv.inviterRole,
+        createdAt: inv.createdAt.toISOString(),
+        expiresAt: inv.expiresAt.toISOString(),
+        isExpired: new Date() > inv.expiresAt,
+        isUsed: !!inv.usedAt,
+        usedAt: inv.usedAt?.toISOString()
+      }));
+    
+    res.json({
+      success: true,
+      appointmentId,
+      meetingId: meeting.id,
+      invites: meetingInvites,
+      totalInvites: meetingInvites.length,
+      activeInvites: meetingInvites.filter(i => !i.isExpired && !i.isUsed).length
+    });
+    
+  } catch (error) {
+    console.error('Error getting invites:', error);
+    res.status(500).json({ error: 'Failed to get invites' });
+  }
+});
+
+/**
+ * Revoke an invite
+ * DELETE /api/video-meeting/:appointmentId/invite/:token
+ */
+router.delete('/:appointmentId/invite/:token', async (req: Request, res: Response) => {
+  try {
+    const { appointmentId, token } = req.params;
+    
+    const invite = inviteTokens.get(token);
+    
+    if (!invite) {
+      return res.status(404).json({ error: 'Invite not found' });
+    }
+    
+    if (invite.appointmentId !== appointmentId) {
+      return res.status(403).json({ error: 'Invite does not belong to this appointment' });
+    }
+    
+    inviteTokens.delete(token);
+    
+    console.log(`🗑️ Invite revoked for meeting ${appointmentId}`);
+    
+    res.json({
+      success: true,
+      message: 'Invite has been revoked'
+    });
+    
+  } catch (error) {
+    console.error('Error revoking invite:', error);
+    res.status(500).json({ error: 'Failed to revoke invite' });
+  }
 });
 
 export default router;

@@ -1,0 +1,72 @@
+{
+  "passed": 11,
+  "failed": 0,
+  "tests": [
+    {
+      "name": "Patient Auth Health Endpoint",
+      "passed": true,
+      "details": "Status: healthy",
+      "timestamp": "2026-01-07T05:16:24.591Z"
+    },
+    {
+      "name": "Patient Valid Login",
+      "passed": true,
+      "details": "Login successful with valid credentials",
+      "timestamp": "2026-01-07T05:16:26.115Z"
+    },
+    {
+      "name": "Patient Invalid Login Rejection",
+      "passed": true,
+      "details": "Correctly rejected invalid credentials",
+      "timestamp": "2026-01-07T05:16:26.960Z"
+    },
+    {
+      "name": "Patient Malformed Request Handling",
+      "passed": true,
+      "details": "Correctly rejected malformed request",
+      "timestamp": "2026-01-07T05:16:26.962Z"
+    },
+    {
+      "name": "Patient Empty Credentials Handling",
+      "passed": true,
+      "details": "Correctly rejected empty credentials",
+      "timestamp": "2026-01-07T05:16:26.963Z"
+    },
+    {
+      "name": "Doctor Auth Health Endpoint",
+      "passed": true,
+      "details": "Status: healthy",
+      "timestamp": "2026-01-07T05:16:26.967Z"
+    },
+    {
+      "name": "Doctor Valid Login",
+      "passed": true,
+      "details": "Doctor login successful",
+      "timestamp": "2026-01-07T05:16:29.641Z"
+    },
+    {
+      "name": "Doctor Admin Login",
+      "passed": true,
+      "details": "Admin login endpoint working",
+      "timestamp": "2026-01-07T05:16:31.963Z"
+    },
+    {
+      "name": "Doctor Invalid Login Rejection",
+      "passed": true,
+      "details": "Correctly rejected invalid doctor credentials",
+      "timestamp": "2026-01-07T05:16:32.086Z"
+    },
+    {
+      "name": "Protected Endpoint Without Token",
+      "passed": true,
+      "details": "Protected endpoint correctly requires auth",
+      "timestamp": "2026-01-07T05:16:32.089Z"
+    },
+    {
+      "name": "Protected Endpoint With Invalid Token",
+      "passed": true,
+      "details": "Invalid token correctly rejected",
+      "timestamp": "2026-01-07T05:16:32.090Z"
+    }
+  ]
+}

@@ -3,6 +3,39 @@ import { storage, GCS_BUCKETS } from '../index';
 
 const router = Router();
 
+// GCS Status endpoint - Check if connected to GCS
+router.get('/status', async (_req: Request, res: Response) => {
+  try {
+    // Test connection by listing one bucket
+    const bucket = storage.bucket(GCS_BUCKETS.METADATA);
+    const [exists] = await bucket.exists();
+    
+    if (exists) {
+      res.json({
+        status: 'connected',
+        connected: true,
+        timestamp: new Date().toISOString(),
+        buckets: Object.keys(GCS_BUCKETS)
+      });
+    } else {
+      res.json({
+        status: 'disconnected',
+        connected: false,
+        timestamp: new Date().toISOString(),
+        error: 'Bucket not accessible'
+      });
+    }
+  } catch (error: any) {
+    console.error('GCS status check error:', error);
+    res.status(500).json({
+      status: 'error',
+      connected: false,
+      timestamp: new Date().toISOString(),
+      error: error.message
+    });
+  }
+});
+
 router.get('/signed-url/download', async (req: Request, res: Response) => {
   try {
     const { bucket, filePath } = req.query;

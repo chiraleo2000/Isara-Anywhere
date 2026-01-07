@@ -136,10 +136,10 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID'],
 }));
 
-// A07 - Rate Limiting
+// A07 - Rate Limiting (increased for development/testing)
 app.use(rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  maxRequests: 300, // General limit
+  windowMs: 1 * 60 * 1000, // 1 minute window
+  maxRequests: 10000, // High limit for testing - 10000 requests per minute
   keyGenerator: (req) => getClientIP(req)
 }));
 
@@ -170,6 +170,17 @@ app.get('/health', (_req: Request, res: Response) => {
     status: 'healthy',
     timestamp: new Date().toISOString(),
     service: 'Izara Patient Portal API',
+    security: 'OWASP Top 10:2025 Compliant'
+  });
+});
+
+// API Health check endpoint (for compatibility)
+app.get('/api/health', (_req: Request, res: Response) => {
+  res.json({
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    service: 'Izara Patient Portal API',
+    version: '1.1.6',
     security: 'OWASP Top 10:2025 Compliant'
   });
 });

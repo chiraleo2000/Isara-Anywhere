@@ -1,0 +1,33 @@
+{
+  "timestamp": "2026-01-07T04:49:14.755Z",
+  "duration": "14.17",
+  "summary": {
+    "totalPhases": 2,
+    "phasesPassed": 2,
+    "phasesFailed": 0,
+    "totalTests": 11,
+    "testsPassed": 11,
+    "testsFailed": 0,
+    "passRate": 100
+  },
+  "phases": [
+    {
+      "phase": "unit",
+      "name": "Unit Tests",
+      "passed": 11,
+      "failed": 0,
+      "duration": "12.21",
+      "success": true,
+      "timestamp": "2026-01-07T04:49:12.812Z"
+    },
+    {
+      "phase": "localDev",
+      "name": "Local Development Tests",
+      "passed": 0,
+      "failed": 0,
+      "duration": "1.94",
+      "success": true,
+      "timestamp": "2026-01-07T04:49:14.752Z"
+    }
+  ]
+}
