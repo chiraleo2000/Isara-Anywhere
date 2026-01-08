@@ -15,13 +15,14 @@
 flowchart LR
     subgraph PREP["🔧 PREPARATION"]
         A1["⏰ Check Time"]
-        A2["👤 Patient Joins"]
-        A3["👨‍⚕️ Doctor Joins"]
+        A2["👤 Patient Joins Lobby"]
+        A3["👨‍⚕️ Doctor as HOST"]
+        A4["👥 External Guests Join"]
     end
 
     subgraph VIDEO["📹 JITSI MEET"]
         B1["📹 Start Call<br/>meet.jit.si/izara-ID"]
-        B2["👋 Greeting"]
+        B2["🚪 Lobby Approval"]
         B3["📋 Take History"]
         B4["🎥 Recording"]
     end
@@ -48,13 +49,13 @@ flowchart LR
         F1["📝 SOAP Notes"]
         F2["✍️ Sign Record"]
         F3["☁️ Upload GCS"]
-        F4["🤖 AI Summary"]
+        F4["🤖 AI Summary<br/>Gemini 2.5 Flash"]
         F5["📅 Follow-up"]
     end
 
     %% Linear flow
-    A1 --> A2 --> A3
-    A3 --> B1 --> B2 --> B3 --> B4
+    A1 --> A2 --> A3 --> A4
+    A4 --> B1 --> B2 --> B3 --> B4
     B4 --> C1 --> C2 --> C3
     C3 --> D1 --> D2 --> D3
     D3 --> E1 --> E2 --> E3
@@ -68,7 +69,7 @@ flowchart LR
     classDef treatStyle fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px,color:#1B5E20
     classDef completeStyle fill:#E0F7FA,stroke:#00BCD4,stroke-width:2px,color:#006064
 
-    class A1,A2,A3 prepStyle
+    class A1,A2,A3,A4 prepStyle
     class B1,B2,B3,B4 videoStyle
     class C1,C2,C3 examStyle
     class D1,D2,D3 diagStyle

@@ -16,6 +16,8 @@
     "@google-cloud/storage": "^7.18.0",
     "bcryptjs": "^3.0.3",
     "chromedriver": "^143.0.0",
+    "node-fetch": "^2.7.0",
+    "puppeteer": "^24.34.0",
     "selenium-webdriver": "^4.39.0"
   }
 }

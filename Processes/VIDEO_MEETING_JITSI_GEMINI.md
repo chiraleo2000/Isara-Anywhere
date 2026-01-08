@@ -3,10 +3,47 @@
 ## Overview
 
 This document describes the video meeting implementation using:
-- **Jitsi Meet** (FREE) for video conferencing
+- **Jitsi Meet** (FREE) for video conferencing with lobby control
 - **Google Cloud Speech-to-Text** for accurate post-meeting transcription
 - **Gemini AI** for EMR summary and doctor recommendation generation
 - **GCS Storage** for video recording, transcript, and summary files
+
+## Key Features
+
+### 1. Doctor as Meeting HOST
+- **Only the Doctor can START the meeting** - Doctor acts as moderator/host
+- Doctor controls lobby admission, recording, and meeting settings
+- Doctor receives meeting link in appointment timetable/calendar
+
+### 2. Lobby System for Guest Approval
+- **Patient waits in lobby** until Doctor joins and admits them
+- **Patient Relatives** can be invited via email and must be approved by Doctor
+- **Doctor Consultants/Specialists** can be invited and must be approved by Doctor
+- Lobby prevents unauthorized access to the consultation
+
+### 3. Guest Invite System
+- **Token-based invites** generated for each guest
+- Invites sent via email with unique join links
+- Invite types: `patient_relative`, `doctor_consultant`, `family_member`
+- Doctor can revoke invites at any time
+
+### 4. Media Controls (Default: ON)
+- **Camera**: Enabled by default (`startWithVideoMuted=false`)
+- **Microphone**: Enabled by default (`startWithAudioMuted=false`)
+- **Text Chat**: Always available for communication
+- Users can mute/unmute at any time
+
+### 5. Video Recording & Storage
+- Recording stored to `izara-doctors-data` bucket
+- Path: `doctors/{doctorId}/meetings/{appointmentId}/recording.webm`
+- Maximum file size: 200MB
+- Private storage (not public)
+
+### 6. AI-Powered Summary with 30-Minute Sections
+- **Long videos (>30 min)** are summarized in 30-minute sections
+- Each section generates its own summary
+- Sections are combined into a final comprehensive summary
+- Summary sent to Doctor Portal for review and reports
 
 ## Storage Architecture
 
@@ -18,15 +55,19 @@ This document describes the video meeting implementation using:
 │  izara-doctors-data/                                                    │
 │  └── doctors/{doctorId}/                                                │
 │      └── meetings/{appointmentId}/                                      │
-│          ├── recording.webm      # Video recording (doctor as host)    │
-│          ├── transcript.txt      # Speech-to-Text transcription         │
-│          ├── summary.txt         # AI-generated EMR summary             │
-│          └── recommendations.txt # AI clinical decision support         │
+│          ├── recording.webm         # Video recording (doctor as host) │
+│          ├── transcript.txt         # Speech-to-Text transcription      │
+│          ├── summary.txt            # AI-generated EMR summary          │
+│          ├── recommendations.txt    # AI clinical decision support      │
+│          ├── section-0-summary.txt  # 30-min section summary (if >30m) │
+│          ├── section-1-summary.txt  # Next 30-min section summary      │
+│          └── final-combined.txt     # Combined summary from all sections│
 │                                                                          │
 │  izara-appointments/                                                    │
 │  └── appointments/{appointmentId}/                                      │
-│      ├── meeting-link.json       # Jitsi room info                      │
-│      └── meeting-data.json       # Complete meeting metadata            │
+│      ├── meeting-link.json          # Jitsi room info                   │
+│      ├── meeting-data.json          # Complete meeting metadata         │
+│      └── guest-invites.json         # Guest invite records              │
 │                                                                          │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
@@ -35,18 +76,44 @@ This document describes the video meeting implementation using:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│                      POST-MEETING WORKFLOW                               │
+│                      MEETING WORKFLOW WITH LOBBY                         │
 ├─────────────────────────────────────────────────────────────────────────┤
 │                                                                          │
-│  1. VIDEO MEETING (Jitsi Meet - FREE)                                   │
+│  0. MEETING CREATION (Appointment Calendar/Timetable)                   │
 │  ┌─────────────────────────────────────────────────────────────────┐   │
-│  │  • Doctor and Patient join Jitsi meeting                        │   │
-│  │  • Meeting recorded locally (FREE)                               │   │
-│  │  • Doctor acts as HOST with recording permissions               │   │
-│  │  • Meeting ends                                                   │   │
+│  │  • Meeting link generated when appointment is confirmed          │   │
+│  │  • Link appears in doctor's timetable/calendar                   │   │
+│  │  • Link available in patient's appointment details               │   │
+│  │  • Guest invites can be sent to relatives/consultants            │   │
 │  └───────────────────────────┬─────────────────────────────────────┘   │
 │                              ▼                                          │
-│  2. VIDEO UPLOAD (GCS - izara-doctors-data)                            │
+│  1. DOCTOR STARTS MEETING (HOST CONTROL)                                │
+│  ┌─────────────────────────────────────────────────────────────────┐   │
+│  │  • Only Doctor can START the meeting                             │   │
+│  │  • Doctor acts as HOST/MODERATOR                                 │   │
+│  │  • Doctor enables lobby, recording, chat                         │   │
+│  │  • Default: Camera ON, Microphone ON, Chat ON                    │   │
+│  └───────────────────────────┬─────────────────────────────────────┘   │
+│                              ▼                                          │
+│  2. PATIENT & GUESTS JOIN VIA LOBBY                                     │
+│  ┌─────────────────────────────────────────────────────────────────┐   │
+│  │  • Patient clicks join → waits in lobby                          │   │
+│  │  • Patient relatives receive invite email → wait in lobby        │   │
+│  │  • Doctor consultants receive invite email → wait in lobby       │   │
+│  │  • Doctor APPROVES each participant from lobby                   │   │
+│  │  • Unauthorized guests are rejected by Doctor                    │   │
+│  └───────────────────────────┬─────────────────────────────────────┘   │
+│                              ▼                                          │
+│  3. VIDEO CONSULTATION (Jitsi Meet - FREE)                              │
+│  ┌─────────────────────────────────────────────────────────────────┐   │
+│  │  • All participants in meeting with video/audio/chat             │   │
+│  │  • Meeting recorded locally (FREE)                               │   │
+│  │  • Doctor acts as HOST with recording permissions                │   │
+│  │  • Users can mute mic/camera at any time                         │   │
+│  │  • Meeting ends when Doctor closes                               │   │
+│  └───────────────────────────┬─────────────────────────────────────┘   │
+│                              ▼                                          │
+│  4. VIDEO UPLOAD (GCS - izara-doctors-data)                            │
 │  ┌─────────────────────────────────────────────────────────────────┐   │
 │  │  • Video recording uploaded to doctor's storage                  │   │
 │  │  • Path: doctors/{doctorId}/meetings/{appointmentId}/           │   │
@@ -54,7 +121,7 @@ This document describes the video meeting implementation using:
 │  │  • Private storage (not public)                                  │   │
 │  └───────────────────────────┬─────────────────────────────────────┘   │
 │                              ▼                                          │
-│  3. TRANSCRIPTION (Google Cloud Speech-to-Text)                         │
+│  5. TRANSCRIPTION (Google Cloud Speech-to-Text)                         │
 │  ┌─────────────────────────────────────────────────────────────────┐   │
 │  │  • Audio sent to Speech-to-Text API                              │   │
 │  │  • Thai/English medical speech recognition                       │   │
@@ -63,16 +130,17 @@ This document describes the video meeting implementation using:
 │  │  Cost: ~$0.006 per 15 seconds                                    │   │
 │  └───────────────────────────┬─────────────────────────────────────┘   │
 │                              ▼                                          │
-│  4. EMR SUMMARY (Gemini AI)                                             │
+│  6. EMR SUMMARY (Gemini AI with 30-Min Sections)                        │
 │  ┌─────────────────────────────────────────────────────────────────┐   │
-│  │  • Transcript sent to Gemini                                     │   │
-│  │  • Generates structured Thai medical summary                     │   │
+│  │  • IF video > 30 min: split into 30-min sections                 │   │
+│  │  • Each section generates separate summary                       │   │
+│  │  • Sections combined into final comprehensive summary            │   │
 │  │  • SOAP format: Chief Complaint, HPI, Exam, Assessment, Plan    │   │
-│  │  • Output: summary.txt in GCS                                    │   │
+│  │  • Output: summary.txt + section-X-summary.txt in GCS            │   │
 │  │  Cost: ~$0.001 per 1K tokens                                     │   │
 │  └───────────────────────────┬─────────────────────────────────────┘   │
 │                              ▼                                          │
-│  5. DOCTOR RECOMMENDATIONS (Gemini AI)                                  │
+│  7. DOCTOR RECOMMENDATIONS (Gemini AI)                                  │
 │  ┌─────────────────────────────────────────────────────────────────┐   │
 │  │  • Generates clinical decision support for doctor                │   │
 │  │  • Differential diagnosis suggestions                            │   │
@@ -81,11 +149,12 @@ This document describes the video meeting implementation using:
 │  │  • Output: recommendations.txt in GCS                            │   │
 │  └───────────────────────────┬─────────────────────────────────────┘   │
 │                              ▼                                          │
-│  6. EMR INTEGRATION                                                     │
+│  8. DOCTOR PORTAL DELIVERY                                              │
 │  ┌─────────────────────────────────────────────────────────────────┐   │
-│  │  • Results saved to GCS for patient health records              │   │
+│  │  • Summary and recommendations sent to Doctor Portal             │   │
+│  │  • Appears in appointment details and reports                    │   │
 │  │  • Doctor reviews and approves summary                           │   │
-│  │  • Patient can view in Health Studio                             │   │
+│  │  • Can be added to patient's medical records                     │   │
 │  └─────────────────────────────────────────────────────────────────┘   │
 │                                                                          │
 └─────────────────────────────────────────────────────────────────────────┘
@@ -111,7 +180,7 @@ This document describes the video meeting implementation using:
 |----------|--------|-------------|
 | `/create` | POST | Create new video meeting |
 | `/:appointmentId` | GET | Get meeting details |
-| `/:appointmentId/join` | POST | Generate join URL |
+| `/:appointmentId/join` | POST | Generate join URL (waits in lobby) |
 | `/:appointmentId/transcript` | POST | Add transcript entry (manual) |
 | `/:appointmentId/transcribe-audio` | POST | **Transcribe audio with Speech-to-Text** |
 | `/:appointmentId/end` | POST | End meeting, transcribe, generate summary & recommendations |
@@ -124,9 +193,11 @@ This document describes the video meeting implementation using:
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/create` | POST | Create new video meeting |
+| `/create` | POST | Create new video meeting (Doctor as HOST) |
 | `/:appointmentId` | GET | Get meeting details |
-| `/:appointmentId/join` | POST | Generate doctor join URL |
+| `/:appointmentId/join` | POST | Generate doctor join URL (HOST) |
+| `/:appointmentId/invite` | POST | **Send guest invite (relatives/consultants)** |
+| `/:appointmentId/join-with-invite` | POST | **Join meeting with invite token** |
 | `/:appointmentId/transcript` | POST | Add transcript entry |
 | `/:appointmentId/transcribe-audio` | POST | **Transcribe audio with Speech-to-Text** |
 | `/:appointmentId/end` | POST | End meeting with full AI processing + video upload |
@@ -134,6 +205,144 @@ This document describes the video meeting implementation using:
 | `/:appointmentId/files` | GET | **Get meeting files (video, transcript, summary)** |
 | `/:appointmentId/recommendations` | POST | Generate doctor recommendations |
 | `/health` | GET | Health check |
+
+### Guest Invite Endpoints (New)
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/:appointmentId/invite` | POST | Create guest invite |
+| `/:appointmentId/invite/:inviteId` | DELETE | Revoke guest invite |
+| `/:appointmentId/join-with-invite` | POST | Join using invite token |
+| `/:appointmentId/invites` | GET | List all invites for meeting |
+
+## Guest Invite System
+
+### Invite Types
+- **patient_relative**: Family members who can observe/support patient
+- **doctor_consultant**: Specialist doctors for second opinions
+- **family_member**: General family members
+
+### Create Guest Invite
+```http
+POST /api/video-meeting/:appointmentId/invite
+Authorization: Bearer <doctor-token>
+Content-Type: application/json
+
+{
+  "guestEmail": "relative@example.com",
+  "guestName": "คุณแม่ของผู้ป่วย",
+  "guestType": "patient_relative",
+  "doctorId": "DOC-001"
+}
+
+Response:
+{
+  "success": true,
+  "inviteId": "invite-uuid-123",
+  "inviteToken": "secure-token-abc",
+  "joinUrl": "https://meet.jit.si/Izara-APT2025-a7b3c9d1?inviteToken=secure-token-abc",
+  "expiresAt": "2025-01-15T15:00:00Z"
+}
+```
+
+### Join with Invite Token
+```http
+POST /api/video-meeting/:appointmentId/join-with-invite
+Content-Type: application/json
+
+{
+  "inviteToken": "secure-token-abc",
+  "displayName": "คุณแม่ของผู้ป่วย"
+}
+
+Response:
+{
+  "success": true,
+  "joinUrl": "https://meet.jit.si/Izara-APT2025-a7b3c9d1#config.lobby=true...",
+  "roomName": "Izara-APT2025-a7b3c9d1",
+  "guestType": "patient_relative"
+}
+```
+
+### Lobby Behavior
+- All guests join via lobby first
+- Doctor (HOST) sees notification of waiting guests
+- Doctor can **Approve** or **Reject** each guest
+- Approved guests join the meeting
+- Rejected guests receive error message
+
+## 30-Minute Sectioned Summaries
+
+For long consultations (>30 minutes), the system automatically creates sectioned summaries:
+
+### Section Processing
+```javascript
+// If meeting duration > 30 minutes
+// Split transcript into 30-minute sections
+// Generate summary for each section
+// Combine all section summaries into final summary
+
+const SECTION_DURATION_MS = 30 * 60 * 1000; // 30 minutes
+
+function splitIntoSections(transcript, totalDuration) {
+  const sections = [];
+  const numSections = Math.ceil(totalDuration / SECTION_DURATION_MS);
+  
+  for (let i = 0; i < numSections; i++) {
+    const startTime = i * SECTION_DURATION_MS;
+    const endTime = Math.min((i + 1) * SECTION_DURATION_MS, totalDuration);
+    sections.push({
+      sectionIndex: i,
+      startTime,
+      endTime,
+      transcript: getTranscriptForTimeRange(transcript, startTime, endTime)
+    });
+  }
+  return sections;
+}
+```
+
+### Section Summary Output
+```json
+{
+  "sections": [
+    {
+      "sectionIndex": 0,
+      "timeRange": "0:00 - 30:00",
+      "summary": {
+        "chiefComplaint": "อาการหลักที่กล่าวถึงใน 30 นาทีแรก",
+        "discussion": "รายละเอียดการสนทนา..."
+      }
+    },
+    {
+      "sectionIndex": 1,
+      "timeRange": "30:00 - 60:00",
+      "summary": {
+        "examination": "การตรวจร่างกาย...",
+        "discussion": "รายละเอียดการสนทนา..."
+      }
+    }
+  ],
+  "combinedSummary": {
+    "chiefComplaint": "สรุปอาการหลักรวม",
+    "presentIllness": "ประวัติการเจ็บป่วยปัจจุบันรวม",
+    "assessment": "การประเมินรวม",
+    "plan": "แผนการรักษารวม"
+  },
+  "totalDuration": 3720,
+  "totalSections": 2
+}
+```
+
+### Storage for Sectioned Summaries
+```
+izara-doctors-data/doctors/{doctorId}/meetings/{appointmentId}/
+├── section-0-summary.txt    # First 30-min summary
+├── section-1-summary.txt    # Second 30-min summary
+├── section-2-summary.txt    # Third 30-min summary (if needed)
+├── final-combined.txt       # Combined summary from all sections
+└── summary.txt              # Same as final-combined.txt
+```
 
 ## New Endpoints for Video Recording
 
@@ -220,18 +429,31 @@ POST https://speech.googleapis.com/v1/speech:recognize?key={API_KEY}
 
 ## Jitsi Meet Configuration
 
-### URL Format
+### URL Format for Doctor (HOST)
 ```
-https://meet.jit.si/Izara-{appointmentId}-{hash}#config.prejoinConfig.enabled=true&config.startWithVideoMuted=false&config.startWithAudioMuted=false&userInfo.displayName={displayName}
+https://meet.jit.si/Izara-{appointmentId}-{hash}#config.prejoinConfig.enabled=true&config.startWithVideoMuted=false&config.startWithAudioMuted=false&config.lobby.enabled=true&config.moderator=true&userInfo.displayName={doctorName}
+```
+
+### URL Format for Patient (LOBBY)
+```
+https://meet.jit.si/Izara-{appointmentId}-{hash}#config.prejoinConfig.enabled=true&config.startWithVideoMuted=false&config.startWithAudioMuted=false&userInfo.displayName={patientName}
+```
+
+### URL Format for Guest (INVITE + LOBBY)
+```
+https://meet.jit.si/Izara-{appointmentId}-{hash}?inviteToken={token}#config.prejoinConfig.enabled=true&config.startWithVideoMuted=false&config.startWithAudioMuted=false&userInfo.displayName={guestName}
 ```
 
 ### Features Enabled
 - **Pre-join Page**: Allows users to test camera/mic before joining
+- **Lobby Mode**: All non-host participants wait for approval
 - **Google Login**: Users can sign in with Google account
-- **Anonymous Access**: Patients can join without account
+- **Anonymous Access**: Guests can join with invite token
 - **Screen Sharing**: For sharing medical images, reports
 - **Local Recording**: FREE recording stored locally
 - **End-to-End Encryption**: Secure communication
+- **Text Chat**: Always enabled for communication
+- **Default Media**: Camera ON, Microphone ON (can be muted by user)
 
 ### Room Naming Convention
 ```javascript
@@ -451,6 +673,42 @@ node scripts/tests/e2e/dualPortalMeetingTests.cjs
 
 # Run with headless browsers
 node scripts/tests/e2e/dualPortalMeetingTests.cjs --headless
+```
+
+### 4-User Meeting UI Test (NEW)
+```bash
+# Test with 4 visible browser windows (Doctor, Patient, Relative, Admin)
+node scripts/tests/fourUserMeetingUITest.cjs
+
+# Run against cloud deployments
+node scripts/tests/fourUserMeetingUITest.cjs --cloud
+
+# Test users:
+# - Doctor: doctor@demo.com
+# - Patient: patient@demo.com  
+# - Patient Relative: demo2@demo.com (invited by doctor)
+# - Admin: admin@demo.com
+```
+
+### Comprehensive Meeting Tests (NEW)
+```bash
+# Run comprehensive meeting API tests
+node scripts/tests/comprehensiveMeetingTests.cjs
+
+# Run against cloud deployments
+node scripts/tests/comprehensiveMeetingTests.cjs --cloud
+
+# Tests cover:
+# - Health check endpoints
+# - Meeting creation (Doctor as HOST)
+# - Host control verification
+# - Patient joining (waits in lobby)
+# - Guest invite creation
+# - Guest joining with token
+# - Transcript entries
+# - AI summary generation
+# - 30-minute sectioned summaries
+# - Meeting end workflow
 ```
 
 ### Generate Test Audio

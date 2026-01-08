@@ -93,6 +93,60 @@ Use these accounts for testing in development environment.
 
 ---
 
+## 👥 Patient Relative (Demo2) Account
+
+| Field | Value |
+|-------|-------|
+| Email | `demo2.test@gmail.com` |
+| Password | `P@ssw0rd` |
+| User ID | `PAT-DEMO2-001` |
+| Portal | http://localhost:3005 |
+| Role | Patient Relative |
+
+### Test Patient Relative Profile
+
+```json
+{
+  "id": "PAT-DEMO2-001",
+  "email": "demo2.test@gmail.com",
+  "name": "Demo Patient Relative",
+  "nameThai": "ญาติผู้ป่วยทดสอบ",
+  "dateOfBirth": "1985-08-20",
+  "gender": "female",
+  "phone": "0899876543"
+}
+```
+
+---
+
+## 👨‍⚕️ Unit Test Doctor Account
+
+| Field | Value |
+|-------|-------|
+| Email | `doctorunit.test@izara.com` |
+| Password | `P@ssw0rd` |
+| User ID | `DOC-UNIT-001` |
+| Portal | http://localhost:3010 |
+| Role | Doctor |
+
+### Test Unit Doctor Profile
+
+```json
+{
+  "id": "DOC-UNIT-001",
+  "email": "doctorunit.test@izara.com",
+  "name": "Dr. Unit Test",
+  "nameThai": "หมอทดสอบยูนิต",
+  "specialty": "Family Medicine",
+  "medicalLicenseNumber": "MD-UNIT-001",
+  "hospital": "Izara Test Hospital",
+  "isApproved": true,
+  "isActive": true
+}
+```
+
+---
+
 ## 🧪 Testing Scenarios
 
 ### Patient Portal Tests
@@ -175,24 +229,31 @@ curl -X POST http://localhost:3011/auth/register \
 
 ---
 
-## ✅ E2E Test Results (December 15, 2025)
+## ✅ E2E Test Results (January 8, 2026 - v1.1.8)
 
 | Test Suite | Tests | Passed | Duration | Status |
 |------------|-------|--------|----------|--------|
-| Appointment Workflow | 27 | 27 | 527.73s | ✅ 100% |
-| Medical Content | - | - | 430.91s | ✅ PASSED |
-| Health Records | - | - | 509.62s | ✅ PASSED |
-| Dual Portal Video Meeting | 24 | 24 | 304.70s | ✅ 100% |
+| Meeting API Tests (Local) | 51 | 51 | ~60s | ✅ 100% |
+| Meeting API Tests (Cloud) | 51 | 51 | ~90s | ✅ 100% |
+| 4-User Meeting UI Tests (Local) | 33 | 33 | ~45s | ✅ 100% |
+| 4-User Meeting UI Tests (Cloud) | 33 | 33 | ~60s | ✅ 100% |
+| External Guest Access Tests (Local) | 105 | 105 | ~120s | ✅ 100% |
+| External Guest Access Tests (Cloud) | 105 | 105 | ~180s | ✅ 100% |
 
-**Total Pass Rate: 100%**
+**Total Pass Rate: 378/378 (100%)**
 
 ### Test Features Verified:
 - ✅ Patient login with demo.test@gmail.com
 - ✅ Doctor login with doctor.test@izara.com
-- ✅ Admin login with admin.test@izara.com
-- ✅ Telehealth video meeting access
-- ✅ Microphone and camera permissions
-- ✅ Jitsi Meet integration
+- ✅ Patient Relative login with demo2.test@gmail.com
+- ✅ Unit Test Doctor login with doctorunit.test@izara.com
+- ✅ Doctor as HOST with moderator controls
+- ✅ Patient joins via lobby (doctor approval)
+- ✅ External guest invites (non-registered users)
+- ✅ All email domains supported (Gmail, Hotmail, Yahoo, Outlook, .co.th, .ac.th)
+- ✅ Video/Audio controls (ON by default)
+- ✅ Video recording & transcription
+- ✅ AI-powered meeting summaries (Gemini 2.5 Flash Lite)
 - ✅ EMR SOAP documentation
 - ✅ E-Prescribing workflow
 - ✅ Health records management
@@ -217,4 +278,5 @@ curl -X POST http://localhost:3011/auth/register \
 5. **Account lockout** - 5 failed attempts = 30 minute lockout
 
 ---
-**Last Updated:** December 15, 2025
+**Last Updated:** January 8, 2026
+**Version:** 1.1.8

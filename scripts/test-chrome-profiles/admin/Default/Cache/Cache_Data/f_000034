@@ -1,0 +1,358 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/src/components/common/SettingsDropdown.tsx");import __vite__cjsImport0_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=28e55781"; const jsxDEV = __vite__cjsImport0_react_jsxDevRuntime["jsxDEV"];
+import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== "undefined" && self instanceof WorkerGlobalScope;
+let prevRefreshReg;
+let prevRefreshSig;
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react can't detect preamble. Something is wrong."
+    );
+  }
+  prevRefreshReg = window.$RefreshReg$;
+  prevRefreshSig = window.$RefreshSig$;
+  window.$RefreshReg$ = RefreshRuntime.getRefreshReg("C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/components/common/SettingsDropdown.tsx");
+  window.$RefreshSig$ = RefreshRuntime.createSignatureFunctionForTransform;
+}
+var _s = $RefreshSig$();
+import __vite__cjsImport3_react from "/node_modules/.vite/deps/react.js?v=28e55781"; const useState = __vite__cjsImport3_react["useState"]; const useRef = __vite__cjsImport3_react["useRef"]; const useEffect = __vite__cjsImport3_react["useEffect"];
+import { useSettings } from "/src/hooks/useSettings.tsx";
+const SunIcon = ({ className }) => /* @__PURE__ */ jsxDEV("svg", { className, fill: "none", stroke: "currentColor", viewBox: "0 0 24 24", children: /* @__PURE__ */ jsxDEV("path", { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" }, void 0, false, {
+  fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/components/common/SettingsDropdown.tsx",
+  lineNumber: 31,
+  columnNumber: 5
+}, this) }, void 0, false, {
+  fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/components/common/SettingsDropdown.tsx",
+  lineNumber: 30,
+  columnNumber: 1
+}, this);
+_c = SunIcon;
+const MoonIcon = ({ className }) => /* @__PURE__ */ jsxDEV("svg", { className, fill: "none", stroke: "currentColor", viewBox: "0 0 24 24", children: /* @__PURE__ */ jsxDEV("path", { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" }, void 0, false, {
+  fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/components/common/SettingsDropdown.tsx",
+  lineNumber: 37,
+  columnNumber: 5
+}, this) }, void 0, false, {
+  fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/components/common/SettingsDropdown.tsx",
+  lineNumber: 36,
+  columnNumber: 1
+}, this);
+_c2 = MoonIcon;
+const LanguageIcon = ({ className }) => /* @__PURE__ */ jsxDEV("svg", { className, fill: "none", stroke: "currentColor", viewBox: "0 0 24 24", children: /* @__PURE__ */ jsxDEV("path", { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" }, void 0, false, {
+  fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/components/common/SettingsDropdown.tsx",
+  lineNumber: 43,
+  columnNumber: 5
+}, this) }, void 0, false, {
+  fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/components/common/SettingsDropdown.tsx",
+  lineNumber: 42,
+  columnNumber: 1
+}, this);
+_c3 = LanguageIcon;
+const SettingsIcon = ({ className }) => /* @__PURE__ */ jsxDEV("svg", { className, fill: "none", stroke: "currentColor", viewBox: "0 0 24 24", children: [
+  /* @__PURE__ */ jsxDEV("path", { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" }, void 0, false, {
+    fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/components/common/SettingsDropdown.tsx",
+    lineNumber: 49,
+    columnNumber: 5
+  }, this),
+  /* @__PURE__ */ jsxDEV("path", { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M15 12a3 3 0 11-6 0 3 3 0 016 0z" }, void 0, false, {
+    fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/components/common/SettingsDropdown.tsx",
+    lineNumber: 50,
+    columnNumber: 5
+  }, this)
+] }, void 0, true, {
+  fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/components/common/SettingsDropdown.tsx",
+  lineNumber: 48,
+  columnNumber: 1
+}, this);
+_c4 = SettingsIcon;
+const CheckIcon = ({ className }) => /* @__PURE__ */ jsxDEV("svg", { className, fill: "none", stroke: "currentColor", viewBox: "0 0 24 24", children: /* @__PURE__ */ jsxDEV("path", { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M5 13l4 4L19 7" }, void 0, false, {
+  fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/components/common/SettingsDropdown.tsx",
+  lineNumber: 56,
+  columnNumber: 5
+}, this) }, void 0, false, {
+  fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/components/common/SettingsDropdown.tsx",
+  lineNumber: 55,
+  columnNumber: 1
+}, this);
+_c5 = CheckIcon;
+export const SettingsDropdown = () => {
+  _s();
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
+  const { theme, language, setTheme, setLanguage, t } = useSettings();
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+  return /* @__PURE__ */ jsxDEV("div", { className: "relative", ref: dropdownRef, children: [
+    /* @__PURE__ */ jsxDEV(
+      "button",
+      {
+        onClick: () => setIsOpen(!isOpen),
+        "data-testid": "settings-button",
+        className: "p-2.5 rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 transition-colors relative shadow-sm border border-gray-200 dark:border-gray-600",
+        "aria-label": "Settings",
+        title: t("settings.settings"),
+        children: /* @__PURE__ */ jsxDEV(SettingsIcon, { className: "w-5 h-5 text-gray-700 dark:text-gray-200" }, void 0, false, {
+          fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/components/common/SettingsDropdown.tsx",
+          lineNumber: 87,
+          columnNumber: 9
+        }, this)
+      },
+      void 0,
+      false,
+      {
+        fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/components/common/SettingsDropdown.tsx",
+        lineNumber: 80,
+        columnNumber: 7
+      },
+      this
+    ),
+    isOpen && /* @__PURE__ */ jsxDEV(
+      "div",
+      {
+        "data-testid": "settings-dropdown",
+        className: "absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-600 z-50 overflow-hidden",
+        children: [
+          /* @__PURE__ */ jsxDEV("div", { className: "px-4 py-3 bg-gradient-to-r from-emerald-100 to-teal-100 dark:from-emerald-800/50 dark:to-teal-800/50 border-b border-gray-200 dark:border-gray-600", children: /* @__PURE__ */ jsxDEV("p", { className: "font-semibold text-gray-900 dark:text-white text-sm", children: t("settings.settings") }, void 0, false, {
+            fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/components/common/SettingsDropdown.tsx",
+            lineNumber: 98,
+            columnNumber: 13
+          }, this) }, void 0, false, {
+            fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/components/common/SettingsDropdown.tsx",
+            lineNumber: 97,
+            columnNumber: 11
+          }, this),
+          /* @__PURE__ */ jsxDEV("div", { className: "p-3 border-b border-gray-100 dark:border-gray-700", children: [
+            /* @__PURE__ */ jsxDEV("p", { className: "px-2 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide", children: [
+              t("settings.theme"),
+              " / ธีม"
+            ] }, void 0, true, {
+              fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/components/common/SettingsDropdown.tsx",
+              lineNumber: 103,
+              columnNumber: 13
+            }, this),
+            /* @__PURE__ */ jsxDEV(
+              "button",
+              {
+                onClick: () => setTheme("light"),
+                "data-testid": "theme-light",
+                className: `w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-all duration-200 ${theme === "light" ? "bg-emerald-100 dark:bg-emerald-800/50 text-emerald-800 dark:text-emerald-200 ring-2 ring-emerald-500" : "hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200"}`,
+                children: [
+                  /* @__PURE__ */ jsxDEV("div", { className: "flex items-center gap-3", children: [
+                    /* @__PURE__ */ jsxDEV(SunIcon, { className: "w-5 h-5" }, void 0, false, {
+                      fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/components/common/SettingsDropdown.tsx",
+                      lineNumber: 116,
+                      columnNumber: 17
+                    }, this),
+                    /* @__PURE__ */ jsxDEV("span", { className: "text-sm font-medium", children: "Light / สว่าง" }, void 0, false, {
+                      fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/components/common/SettingsDropdown.tsx",
+                      lineNumber: 117,
+                      columnNumber: 17
+                    }, this)
+                  ] }, void 0, true, {
+                    fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/components/common/SettingsDropdown.tsx",
+                    lineNumber: 115,
+                    columnNumber: 15
+                  }, this),
+                  theme === "light" && /* @__PURE__ */ jsxDEV(CheckIcon, { className: "w-5 h-5 text-emerald-600 dark:text-emerald-400" }, void 0, false, {
+                    fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/components/common/SettingsDropdown.tsx",
+                    lineNumber: 119,
+                    columnNumber: 37
+                  }, this)
+                ]
+              },
+              void 0,
+              true,
+              {
+                fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/components/common/SettingsDropdown.tsx",
+                lineNumber: 106,
+                columnNumber: 13
+              },
+              this
+            ),
+            /* @__PURE__ */ jsxDEV(
+              "button",
+              {
+                onClick: () => setTheme("dark"),
+                "data-testid": "theme-dark",
+                className: `w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-all duration-200 mt-1 ${theme === "dark" ? "bg-emerald-100 dark:bg-emerald-800/50 text-emerald-800 dark:text-emerald-200 ring-2 ring-emerald-500" : "hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200"}`,
+                children: [
+                  /* @__PURE__ */ jsxDEV("div", { className: "flex items-center gap-3", children: [
+                    /* @__PURE__ */ jsxDEV(MoonIcon, { className: "w-5 h-5" }, void 0, false, {
+                      fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/components/common/SettingsDropdown.tsx",
+                      lineNumber: 131,
+                      columnNumber: 17
+                    }, this),
+                    /* @__PURE__ */ jsxDEV("span", { className: "text-sm font-medium", children: "Dark / มืด" }, void 0, false, {
+                      fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/components/common/SettingsDropdown.tsx",
+                      lineNumber: 132,
+                      columnNumber: 17
+                    }, this)
+                  ] }, void 0, true, {
+                    fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/components/common/SettingsDropdown.tsx",
+                    lineNumber: 130,
+                    columnNumber: 15
+                  }, this),
+                  theme === "dark" && /* @__PURE__ */ jsxDEV(CheckIcon, { className: "w-5 h-5 text-emerald-600 dark:text-emerald-400" }, void 0, false, {
+                    fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/components/common/SettingsDropdown.tsx",
+                    lineNumber: 134,
+                    columnNumber: 36
+                  }, this)
+                ]
+              },
+              void 0,
+              true,
+              {
+                fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/components/common/SettingsDropdown.tsx",
+                lineNumber: 121,
+                columnNumber: 13
+              },
+              this
+            )
+          ] }, void 0, true, {
+            fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/components/common/SettingsDropdown.tsx",
+            lineNumber: 102,
+            columnNumber: 11
+          }, this),
+          /* @__PURE__ */ jsxDEV("div", { className: "p-3", children: [
+            /* @__PURE__ */ jsxDEV("p", { className: "px-2 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide", children: [
+              t("settings.language"),
+              " / ภาษา"
+            ] }, void 0, true, {
+              fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/components/common/SettingsDropdown.tsx",
+              lineNumber: 140,
+              columnNumber: 13
+            }, this),
+            /* @__PURE__ */ jsxDEV(
+              "button",
+              {
+                onClick: () => setLanguage("th"),
+                "data-testid": "lang-thai",
+                className: `w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-all duration-200 ${language === "th" ? "bg-emerald-100 dark:bg-emerald-800/50 text-emerald-800 dark:text-emerald-200 ring-2 ring-emerald-500" : "hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200"}`,
+                children: [
+                  /* @__PURE__ */ jsxDEV("div", { className: "flex items-center gap-3", children: [
+                    /* @__PURE__ */ jsxDEV("span", { className: "text-xl", children: "🇹🇭" }, void 0, false, {
+                      fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/components/common/SettingsDropdown.tsx",
+                      lineNumber: 153,
+                      columnNumber: 17
+                    }, this),
+                    /* @__PURE__ */ jsxDEV("span", { className: "text-sm font-medium", children: "ไทย (Thai)" }, void 0, false, {
+                      fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/components/common/SettingsDropdown.tsx",
+                      lineNumber: 154,
+                      columnNumber: 17
+                    }, this)
+                  ] }, void 0, true, {
+                    fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/components/common/SettingsDropdown.tsx",
+                    lineNumber: 152,
+                    columnNumber: 15
+                  }, this),
+                  language === "th" && /* @__PURE__ */ jsxDEV(CheckIcon, { className: "w-5 h-5 text-emerald-600 dark:text-emerald-400" }, void 0, false, {
+                    fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/components/common/SettingsDropdown.tsx",
+                    lineNumber: 156,
+                    columnNumber: 37
+                  }, this)
+                ]
+              },
+              void 0,
+              true,
+              {
+                fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/components/common/SettingsDropdown.tsx",
+                lineNumber: 143,
+                columnNumber: 13
+              },
+              this
+            ),
+            /* @__PURE__ */ jsxDEV(
+              "button",
+              {
+                onClick: () => setLanguage("en"),
+                "data-testid": "lang-english",
+                className: `w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-all duration-200 mt-1 ${language === "en" ? "bg-emerald-100 dark:bg-emerald-800/50 text-emerald-800 dark:text-emerald-200 ring-2 ring-emerald-500" : "hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200"}`,
+                children: [
+                  /* @__PURE__ */ jsxDEV("div", { className: "flex items-center gap-3", children: [
+                    /* @__PURE__ */ jsxDEV("span", { className: "text-xl", children: "🇺🇸" }, void 0, false, {
+                      fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/components/common/SettingsDropdown.tsx",
+                      lineNumber: 168,
+                      columnNumber: 17
+                    }, this),
+                    /* @__PURE__ */ jsxDEV("span", { className: "text-sm font-medium", children: "English" }, void 0, false, {
+                      fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/components/common/SettingsDropdown.tsx",
+                      lineNumber: 169,
+                      columnNumber: 17
+                    }, this)
+                  ] }, void 0, true, {
+                    fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/components/common/SettingsDropdown.tsx",
+                    lineNumber: 167,
+                    columnNumber: 15
+                  }, this),
+                  language === "en" && /* @__PURE__ */ jsxDEV(CheckIcon, { className: "w-5 h-5 text-emerald-600 dark:text-emerald-400" }, void 0, false, {
+                    fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/components/common/SettingsDropdown.tsx",
+                    lineNumber: 171,
+                    columnNumber: 37
+                  }, this)
+                ]
+              },
+              void 0,
+              true,
+              {
+                fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/components/common/SettingsDropdown.tsx",
+                lineNumber: 158,
+                columnNumber: 13
+              },
+              this
+            )
+          ] }, void 0, true, {
+            fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/components/common/SettingsDropdown.tsx",
+            lineNumber: 139,
+            columnNumber: 11
+          }, this)
+        ]
+      },
+      void 0,
+      true,
+      {
+        fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/components/common/SettingsDropdown.tsx",
+        lineNumber: 92,
+        columnNumber: 7
+      },
+      this
+    )
+  ] }, void 0, true, {
+    fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/components/common/SettingsDropdown.tsx",
+    lineNumber: 78,
+    columnNumber: 5
+  }, this);
+};
+_s(SettingsDropdown, "TudIAZKVzLCZ3PkTiWeQXTGFIrI=", false, function() {
+  return [useSettings];
+});
+_c6 = SettingsDropdown;
+export default SettingsDropdown;
+var _c, _c2, _c3, _c4, _c5, _c6;
+$RefreshReg$(_c, "SunIcon");
+$RefreshReg$(_c2, "MoonIcon");
+$RefreshReg$(_c3, "LanguageIcon");
+$RefreshReg$(_c4, "SettingsIcon");
+$RefreshReg$(_c5, "CheckIcon");
+$RefreshReg$(_c6, "SettingsDropdown");
+if (import.meta.hot && !inWebWorker) {
+  window.$RefreshReg$ = prevRefreshReg;
+  window.$RefreshSig$ = prevRefreshSig;
+}
+if (import.meta.hot && !inWebWorker) {
+  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {
+    RefreshRuntime.registerExportsForReactRefresh("C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/components/common/SettingsDropdown.tsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/components/common/SettingsDropdown.tsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+
+//# sourceMappingURL=data:application/json;base64,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OEIsTUFIdERsQjtBQXdIYixlQUFlQTtBQUFpQixJQUFBVCxJQUFBRSxLQUFBRSxLQUFBRSxLQUFBRSxLQUFBbUI7QUFBQUMsYUFBQTVCLElBQUE7QUFBQTRCLGFBQUExQixLQUFBO0FBQUEwQixhQUFBeEIsS0FBQTtBQUFBd0IsYUFBQXRCLEtBQUE7QUFBQXNCLGFBQUFwQixLQUFBO0FBQUFvQixhQUFBRCxLQUFBIiwibmFtZXMiOlsidXNlU3RhdGUiLCJ1c2VSZWYiLCJ1c2VFZmZlY3QiLCJ1c2VTZXR0aW5ncyIsIlN1bkljb24iLCJjbGFzc05hbWUiLCJfYyIsIk1vb25JY29uIiwiX2MyIiwiTGFuZ3VhZ2VJY29uIiwiX2MzIiwiU2V0dGluZ3NJY29uIiwiX2M0IiwiQ2hlY2tJY29uIiwiX2M1IiwiU2V0dGluZ3NEcm9wZG93biIsIl9zIiwiaXNPcGVuIiwic2V0SXNPcGVuIiwiZHJvcGRvd25SZWYiLCJ0aGVtZSIsImxhbmd1YWdlIiwic2V0VGhlbWUiLCJzZXRMYW5ndWFnZSIsInQiLCJoYW5kbGVDbGlja091dHNpZGUiLCJldmVudCIsImN1cnJlbnQiLCJjb250YWlucyIsInRhcmdldCIsImRvY3VtZW50IiwiYWRkRXZlbnRMaXN0ZW5lciIsInJlbW92ZUV2ZW50TGlzdGVuZXIiLCJfYzYiLCIkUmVmcmVzaFJlZyQiXSwiaWdub3JlTGlzdCI6W10sInNvdXJjZXMiOlsiU2V0dGluZ3NEcm9wZG93bi50c3giXSwic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IFJlYWN0LCB7IHVzZVN0YXRlLCB1c2VSZWYsIHVzZUVmZmVjdCB9IGZyb20gJ3JlYWN0JztcclxuaW1wb3J0IHsgdXNlU2V0dGluZ3MgfSBmcm9tICcuLi8uLi9ob29rcy91c2VTZXR0aW5ncyc7XHJcblxyXG4vKipcclxuICogU2V0dGluZ3MgRHJvcGRvd24gQ29tcG9uZW50XHJcbiAqIEFsbG93cyB1c2VycyB0byBzd2l0Y2ggdGhlbWUgYW5kIGxhbmd1YWdlXHJcbiAqL1xyXG5cclxuLy8gSWNvbnNcclxuY29uc3QgU3VuSWNvbjogUmVhY3QuRkM8eyBjbGFzc05hbWU/OiBzdHJpbmcgfT4gPSAoeyBjbGFzc05hbWUgfSkgPT4gKFxyXG4gIDxzdmcgY2xhc3NOYW1lPXtjbGFzc05hbWV9IGZpbGw9XCJub25lXCIgc3Ryb2tlPVwiY3VycmVudENvbG9yXCIgdmlld0JveD1cIjAgMCAyNCAyNFwiPlxyXG4gICAgPHBhdGggc3Ryb2tlTGluZWNhcD1cInJvdW5kXCIgc3Ryb2tlTGluZWpvaW49XCJyb3VuZFwiIHN0cm9rZVdpZHRoPXsyfSBkPVwiTTEyIDN2MW0wIDE2djFtOS05aC0xTTQgMTJIM20xNS4zNjQgNi4zNjRsLS43MDctLjcwN002LjM0MyA2LjM0M2wtLjcwNy0uNzA3bTEyLjcyOCAwbC0uNzA3LjcwN002LjM0MyAxNy42NTdsLS43MDcuNzA3TTE2IDEyYTQgNCAwIDExLTggMCA0IDQgMCAwMTggMHpcIiAvPlxyXG4gIDwvc3ZnPlxyXG4pO1xyXG5cclxuY29uc3QgTW9vbkljb246IFJlYWN0LkZDPHsgY2xhc3NOYW1lPzogc3RyaW5nIH0+ID0gKHsgY2xhc3NOYW1lIH0pID0+IChcclxuICA8c3ZnIGNsYXNzTmFtZT17Y2xhc3NOYW1lfSBmaWxsPVwibm9uZVwiIHN0cm9rZT1cImN1cnJlbnRDb2xvclwiIHZpZXdCb3g9XCIwIDAgMjQgMjRcIj5cclxuICAgIDxwYXRoIHN0cm9rZUxpbmVjYXA9XCJyb3VuZFwiIHN0cm9rZUxpbmVqb2luPVwicm91bmRcIiBzdHJva2VXaWR0aD17Mn0gZD1cIk0yMC4zNTQgMTUuMzU0QTkgOSAwIDAxOC42NDYgMy42NDYgOS4wMDMgOS4wMDMgMCAwMDEyIDIxYTkuMDAzIDkuMDAzIDAgMDA4LjM1NC01LjY0NnpcIiAvPlxyXG4gIDwvc3ZnPlxyXG4pO1xyXG5cclxuY29uc3QgTGFuZ3VhZ2VJY29uOiBSZWFjdC5GQzx7IGNsYXNzTmFtZT86IHN0cmluZyB9PiA9ICh7IGNsYXNzTmFtZSB9KSA9PiAoXHJcbiAgPHN2ZyBjbGFzc05hbWU9e2NsYXNzTmFtZX0gZmlsbD1cIm5vbmVcIiBzdHJva2U9XCJjdXJyZW50Q29sb3JcIiB2aWV3Qm94PVwiMCAwIDI0IDI0XCI+XHJcbiAgICA8cGF0aCBzdHJva2VMaW5lY2FwPVwicm91bmRcIiBzdHJva2VMaW5lam9pbj1cInJvdW5kXCIgc3Ryb2tlV2lkdGg9ezJ9IGQ9XCJNMyA1aDEyTTkgM3YybTEuMDQ4IDkuNUExOC4wMjIgMTguMDIyIDAgMDE2LjQxMiA5bTYuMDg4IDloN00xMSAyMWw1LTEwIDUgMTBNMTIuNzUxIDVDMTEuNzgzIDEwLjc3IDguMDcgMTUuNjEgMyAxOC4xMjlcIiAvPlxyXG4gIDwvc3ZnPlxyXG4pO1xyXG5cclxuY29uc3QgU2V0dGluZ3NJY29uOiBSZWFjdC5GQzx7IGNsYXNzTmFtZT86IHN0cmluZyB9PiA9ICh7IGNsYXNzTmFtZSB9KSA9PiAoXHJcbiAgPHN2ZyBjbGFzc05hbWU9e2NsYXNzTmFtZX0gZmlsbD1cIm5vbmVcIiBzdHJva2U9XCJjdXJyZW50Q29sb3JcIiB2aWV3Qm94PVwiMCAwIDI0IDI0XCI+XHJcbiAgICA8cGF0aCBzdHJva2VMaW5lY2FwPVwicm91bmRcIiBzdHJva2VMaW5lam9pbj1cInJvdW5kXCIgc3Ryb2tlV2lkdGg9ezJ9IGQ9XCJNMTAuMzI1IDQuMzE3Yy40MjYtMS43NTYgMi45MjQtMS43NTYgMy4zNSAwYTEuNzI0IDEuNzI0IDAgMDAyLjU3MyAxLjA2NmMxLjU0My0uOTQgMy4zMS44MjYgMi4zNyAyLjM3YTEuNzI0IDEuNzI0IDAgMDAxLjA2NSAyLjU3MmMxLjc1Ni40MjYgMS43NTYgMi45MjQgMCAzLjM1YTEuNzI0IDEuNzI0IDAgMDAtMS4wNjYgMi41NzNjLjk0IDEuNTQzLS44MjYgMy4zMS0yLjM3IDIuMzdhMS43MjQgMS43MjQgMCAwMC0yLjU3MiAxLjA2NWMtLjQyNiAxLjc1Ni0yLjkyNCAxLjc1Ni0zLjM1IDBhMS43MjQgMS43MjQgMCAwMC0yLjU3My0xLjA2NmMtMS41NDMuOTQtMy4zMS0uODI2LTIuMzctMi4zN2ExLjcyNCAxLjcyNCAwIDAwLTEuMDY1LTIuNTcyYy0xLjc1Ni0uNDI2LTEuNzU2LTIuOTI0IDAtMy4zNWExLjcyNCAxLjcyNCAwIDAwMS4wNjYtMi41NzNjLS45NC0xLjU0My44MjYtMy4zMSAyLjM3LTIuMzcuOTk2LjYwOCAyLjI5Ni4wNyAyLjU3Mi0xLjA2NXpcIiAvPlxyXG4gICAgPHBhdGggc3Ryb2tlTGluZWNhcD1cInJvdW5kXCIgc3Ryb2tlTGluZWpvaW49XCJyb3VuZFwiIHN0cm9rZVdpZHRoPXsyfSBkPVwiTTE1IDEyYTMgMyAwIDExLTYgMCAzIDMgMCAwMTYgMHpcIiAvPlxyXG4gIDwvc3ZnPlxyXG4pO1xyXG5cclxuY29uc3QgQ2hlY2tJY29uOiBSZWFjdC5GQzx7IGNsYXNzTmFtZT86IHN0cmluZyB9PiA9ICh7IGNsYXNzTmFtZSB9KSA9PiAoXHJcbiAgPHN2ZyBjbGFzc05hbWU9e2NsYXNzTmFtZX0gZmlsbD1cIm5vbmVcIiBzdHJva2U9XCJjdXJyZW50Q29sb3JcIiB2aWV3Qm94PVwiMCAwIDI0IDI0XCI+XHJcbiAgICA8cGF0aCBzdHJva2VMaW5lY2FwPVwicm91bmRcIiBzdHJva2VMaW5lam9pbj1cInJvdW5kXCIgc3Ryb2tlV2lkdGg9ezJ9IGQ9XCJNNSAxM2w0IDRMMTkgN1wiIC8+XHJcbiAgPC9zdmc+XHJcbik7XHJcblxyXG5leHBvcnQgY29uc3QgU2V0dGluZ3NEcm9wZG93bjogUmVhY3QuRkMgPSAoKSA9PiB7XHJcbiAgY29uc3QgW2lzT3Blbiwgc2V0SXNPcGVuXSA9IHVzZVN0YXRlKGZhbHNlKTtcclxuICBjb25zdCBkcm9wZG93blJlZiA9IHVzZVJlZjxIVE1MRGl2RWxlbWVudD4obnVsbCk7XHJcbiAgY29uc3QgeyB0aGVtZSwgbGFuZ3VhZ2UsIHNldFRoZW1lLCBzZXRMYW5ndWFnZSwgdCB9ID0gdXNlU2V0dGluZ3MoKTtcclxuXHJcbiAgLy8gQ2xvc2UgZHJvcGRvd24gd2hlbiBjbGlja2luZyBvdXRzaWRlXHJcbiAgdXNlRWZmZWN0KCgpID0+IHtcclxuICAgIGNvbnN0IGhhbmRsZUNsaWNrT3V0c2lkZSA9IChldmVudDogTW91c2VFdmVudCkgPT4ge1xyXG4gICAgICBpZiAoZHJvcGRvd25SZWYuY3VycmVudCAmJiAhZHJvcGRvd25SZWYuY3VycmVudC5jb250YWlucyhldmVudC50YXJnZXQgYXMgTm9kZSkpIHtcclxuICAgICAgICBzZXRJc09wZW4oZmFsc2UpO1xyXG4gICAgICB9XHJcbiAgICB9O1xyXG5cclxuICAgIGRvY3VtZW50LmFkZEV2ZW50TGlzdGVuZXIoJ21vdXNlZG93bicsIGhhbmRsZUNsaWNrT3V0c2lkZSk7XHJcbiAgICByZXR1cm4gKCkgPT4gZG9jdW1lbnQucmVtb3ZlRXZlbnRMaXN0ZW5lcignbW91c2Vkb3duJywgaGFuZGxlQ2xpY2tPdXRzaWRlKTtcclxuICB9LCBbXSk7XHJcblxyXG4gIHJldHVybiAoXHJcbiAgICA8ZGl2IGNsYXNzTmFtZT1cInJlbGF0aXZlXCIgcmVmPXtkcm9wZG93blJlZn0+XHJcbiAgICAgIHsvKiBTZXR0aW5ncyBCdXR0b24gLSBNYWRlIG1vcmUgdmlzaWJsZSBhbmQgdGVzdC1mcmllbmRseSAqL31cclxuICAgICAgPGJ1dHRvblxyXG4gICAgICAgIG9uQ2xpY2s9eygpID0+IHNldElzT3BlbighaXNPcGVuKX1cclxuICAgICAgICBkYXRhLXRlc3RpZD1cInNldHRpbmdzLWJ1dHRvblwiXHJcbiAgICAgICAgY2xhc3NOYW1lPVwicC0yLjUgcm91bmRlZC1sZyBiZy1ncmF5LTEwMCBob3ZlcjpiZy1ncmF5LTIwMCBkYXJrOmJnLWdyYXktNzAwIGRhcms6aG92ZXI6YmctZ3JheS02MDAgdHJhbnNpdGlvbi1jb2xvcnMgcmVsYXRpdmUgc2hhZG93LXNtIGJvcmRlciBib3JkZXItZ3JheS0yMDAgZGFyazpib3JkZXItZ3JheS02MDBcIlxyXG4gICAgICAgIGFyaWEtbGFiZWw9XCJTZXR0aW5nc1wiXHJcbiAgICAgICAgdGl0bGU9e3QoJ3NldHRpbmdzLnNldHRpbmdzJyl9XHJcbiAgICAgID5cclxuICAgICAgICA8U2V0dGluZ3NJY29uIGNsYXNzTmFtZT1cInctNSBoLTUgdGV4dC1ncmF5LTcwMCBkYXJrOnRleHQtZ3JheS0yMDBcIiAvPlxyXG4gICAgICA8L2J1dHRvbj5cclxuXHJcbiAgICAgIHsvKiBEcm9wZG93biBNZW51ICovfVxyXG4gICAgICB7aXNPcGVuICYmIChcclxuICAgICAgICA8ZGl2IFxyXG4gICAgICAgICAgZGF0YS10ZXN0aWQ9XCJzZXR0aW5ncy1kcm9wZG93blwiXHJcbiAgICAgICAgICBjbGFzc05hbWU9XCJhYnNvbHV0ZSByaWdodC0wIG10LTIgdy02NCBiZy13aGl0ZSBkYXJrOmJnLWdyYXktODAwIHJvdW5kZWQteGwgc2hhZG93LTJ4bCBib3JkZXIgYm9yZGVyLWdyYXktMjAwIGRhcms6Ym9yZGVyLWdyYXktNjAwIHotNTAgb3ZlcmZsb3ctaGlkZGVuXCJcclxuICAgICAgICA+XHJcbiAgICAgICAgICB7LyogSGVhZGVyICovfVxyXG4gICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJweC00IHB5LTMgYmctZ3JhZGllbnQtdG8tciBmcm9tLWVtZXJhbGQtMTAwIHRvLXRlYWwtMTAwIGRhcms6ZnJvbS1lbWVyYWxkLTgwMC81MCBkYXJrOnRvLXRlYWwtODAwLzUwIGJvcmRlci1iIGJvcmRlci1ncmF5LTIwMCBkYXJrOmJvcmRlci1ncmF5LTYwMFwiPlxyXG4gICAgICAgICAgICA8cCBjbGFzc05hbWU9XCJmb250LXNlbWlib2xkIHRleHQtZ3JheS05MDAgZGFyazp0ZXh0LXdoaXRlIHRleHQtc21cIj57dCgnc2V0dGluZ3Muc2V0dGluZ3MnKX08L3A+XHJcbiAgICAgICAgICA8L2Rpdj5cclxuXHJcbiAgICAgICAgICB7LyogVGhlbWUgU2VjdGlvbiAqL31cclxuICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwicC0zIGJvcmRlci1iIGJvcmRlci1ncmF5LTEwMCBkYXJrOmJvcmRlci1ncmF5LTcwMFwiPlxyXG4gICAgICAgICAgICA8cCBjbGFzc05hbWU9XCJweC0yIHB5LTEuNSB0ZXh0LXhzIGZvbnQtc2VtaWJvbGQgdGV4dC1ncmF5LTYwMCBkYXJrOnRleHQtZ3JheS0zMDAgdXBwZXJjYXNlIHRyYWNraW5nLXdpZGVcIj5cclxuICAgICAgICAgICAgICB7dCgnc2V0dGluZ3MudGhlbWUnKX0gLyDguJjguLXguKFcclxuICAgICAgICAgICAgPC9wPlxyXG4gICAgICAgICAgICA8YnV0dG9uXHJcbiAgICAgICAgICAgICAgb25DbGljaz17KCkgPT4gc2V0VGhlbWUoJ2xpZ2h0Jyl9XHJcbiAgICAgICAgICAgICAgZGF0YS10ZXN0aWQ9XCJ0aGVtZS1saWdodFwiXHJcbiAgICAgICAgICAgICAgY2xhc3NOYW1lPXtgdy1mdWxsIGZsZXggaXRlbXMtY2VudGVyIGp1c3RpZnktYmV0d2VlbiBweC0zIHB5LTIuNSByb3VuZGVkLWxnIHRyYW5zaXRpb24tYWxsIGR1cmF0aW9uLTIwMCAke1xyXG4gICAgICAgICAgICAgICAgdGhlbWUgPT09ICdsaWdodCcgXHJcbiAgICAgICAgICAgICAgICAgID8gJ2JnLWVtZXJhbGQtMTAwIGRhcms6YmctZW1lcmFsZC04MDAvNTAgdGV4dC1lbWVyYWxkLTgwMCBkYXJrOnRleHQtZW1lcmFsZC0yMDAgcmluZy0yIHJpbmctZW1lcmFsZC01MDAnIFxyXG4gICAgICAgICAgICAgICAgICA6ICdob3ZlcjpiZy1ncmF5LTEwMCBkYXJrOmhvdmVyOmJnLWdyYXktNzAwIHRleHQtZ3JheS04MDAgZGFyazp0ZXh0LWdyYXktMjAwJ1xyXG4gICAgICAgICAgICAgIH1gfVxyXG4gICAgICAgICAgICA+XHJcbiAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGl0ZW1zLWNlbnRlciBnYXAtM1wiPlxyXG4gICAgICAgICAgICAgICAgPFN1bkljb24gY2xhc3NOYW1lPVwidy01IGgtNVwiIC8+XHJcbiAgICAgICAgICAgICAgICA8c3BhbiBjbGFzc05hbWU9XCJ0ZXh0LXNtIGZvbnQtbWVkaXVtXCI+TGlnaHQgLyDguKrguKfguYjguLLguIc8L3NwYW4+XHJcbiAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgICAge3RoZW1lID09PSAnbGlnaHQnICYmIDxDaGVja0ljb24gY2xhc3NOYW1lPVwidy01IGgtNSB0ZXh0LWVtZXJhbGQtNjAwIGRhcms6dGV4dC1lbWVyYWxkLTQwMFwiIC8+fVxyXG4gICAgICAgICAgICA8L2J1dHRvbj5cclxuICAgICAgICAgICAgPGJ1dHRvblxyXG4gICAgICAgICAgICAgIG9uQ2xpY2s9eygpID0+IHNldFRoZW1lKCdkYXJrJyl9XHJcbiAgICAgICAgICAgICAgZGF0YS10ZXN0aWQ9XCJ0aGVtZS1kYXJrXCJcclxuICAgICAgICAgICAgICBjbGFzc05hbWU9e2B3LWZ1bGwgZmxleCBpdGVtcy1jZW50ZXIganVzdGlmeS1iZXR3ZWVuIHB4LTMgcHktMi41IHJvdW5kZWQtbGcgdHJhbnNpdGlvbi1hbGwgZHVyYXRpb24tMjAwIG10LTEgJHtcclxuICAgICAgICAgICAgICAgIHRoZW1lID09PSAnZGFyaycgXHJcbiAgICAgICAgICAgICAgICAgID8gJ2JnLWVtZXJhbGQtMTAwIGRhcms6YmctZW1lcmFsZC04MDAvNTAgdGV4dC1lbWVyYWxkLTgwMCBkYXJrOnRleHQtZW1lcmFsZC0yMDAgcmluZy0yIHJpbmctZW1lcmFsZC01MDAnIFxyXG4gICAgICAgICAgICAgICAgICA6ICdob3ZlcjpiZy1ncmF5LTEwMCBkYXJrOmhvdmVyOmJnLWdyYXktNzAwIHRleHQtZ3JheS04MDAgZGFyazp0ZXh0LWdyYXktMjAwJ1xyXG4gICAgICAgICAgICAgIH1gfVxyXG4gICAgICAgICAgICA+XHJcbiAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGl0ZW1zLWNlbnRlciBnYXAtM1wiPlxyXG4gICAgICAgICAgICAgICAgPE1vb25JY29uIGNsYXNzTmFtZT1cInctNSBoLTVcIiAvPlxyXG4gICAgICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPVwidGV4dC1zbSBmb250LW1lZGl1bVwiPkRhcmsgLyDguKHguLfguJQ8L3NwYW4+XHJcbiAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgICAge3RoZW1lID09PSAnZGFyaycgJiYgPENoZWNrSWNvbiBjbGFzc05hbWU9XCJ3LTUgaC01IHRleHQtZW1lcmFsZC02MDAgZGFyazp0ZXh0LWVtZXJhbGQtNDAwXCIgLz59XHJcbiAgICAgICAgICAgIDwvYnV0dG9uPlxyXG4gICAgICAgICAgPC9kaXY+XHJcblxyXG4gICAgICAgICAgey8qIExhbmd1YWdlIFNlY3Rpb24gKi99XHJcbiAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInAtM1wiPlxyXG4gICAgICAgICAgICA8cCBjbGFzc05hbWU9XCJweC0yIHB5LTEuNSB0ZXh0LXhzIGZvbnQtc2VtaWJvbGQgdGV4dC1ncmF5LTYwMCBkYXJrOnRleHQtZ3JheS0zMDAgdXBwZXJjYXNlIHRyYWNraW5nLXdpZGVcIj5cclxuICAgICAgICAgICAgICB7dCgnc2V0dGluZ3MubGFuZ3VhZ2UnKX0gLyDguKDguLLguKnguLJcclxuICAgICAgICAgICAgPC9wPlxyXG4gICAgICAgICAgICA8YnV0dG9uXHJcbiAgICAgICAgICAgICAgb25DbGljaz17KCkgPT4gc2V0TGFuZ3VhZ2UoJ3RoJyl9XHJcbiAgICAgICAgICAgICAgZGF0YS10ZXN0aWQ9XCJsYW5nLXRoYWlcIlxyXG4gICAgICAgICAgICAgIGNsYXNzTmFtZT17YHctZnVsbCBmbGV4IGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWJldHdlZW4gcHgtMyBweS0yLjUgcm91bmRlZC1sZyB0cmFuc2l0aW9uLWFsbCBkdXJhdGlvbi0yMDAgJHtcclxuICAgICAgICAgICAgICAgIGxhbmd1YWdlID09PSAndGgnIFxyXG4gICAgICAgICAgICAgICAgICA/ICdiZy1lbWVyYWxkLTEwMCBkYXJrOmJnLWVtZXJhbGQtODAwLzUwIHRleHQtZW1lcmFsZC04MDAgZGFyazp0ZXh0LWVtZXJhbGQtMjAwIHJpbmctMiByaW5nLWVtZXJhbGQtNTAwJyBcclxuICAgICAgICAgICAgICAgICAgOiAnaG92ZXI6YmctZ3JheS0xMDAgZGFyazpob3ZlcjpiZy1ncmF5LTcwMCB0ZXh0LWdyYXktODAwIGRhcms6dGV4dC1ncmF5LTIwMCdcclxuICAgICAgICAgICAgICB9YH1cclxuICAgICAgICAgICAgPlxyXG4gICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTNcIj5cclxuICAgICAgICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT1cInRleHQteGxcIj7wn4e58J+HrTwvc3Bhbj5cclxuICAgICAgICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT1cInRleHQtc20gZm9udC1tZWRpdW1cIj7guYTguJfguKIgKFRoYWkpPC9zcGFuPlxyXG4gICAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICAgIHtsYW5ndWFnZSA9PT0gJ3RoJyAmJiA8Q2hlY2tJY29uIGNsYXNzTmFtZT1cInctNSBoLTUgdGV4dC1lbWVyYWxkLTYwMCBkYXJrOnRleHQtZW1lcmFsZC00MDBcIiAvPn1cclxuICAgICAgICAgICAgPC9idXR0b24+XHJcbiAgICAgICAgICAgIDxidXR0b25cclxuICAgICAgICAgICAgICBvbkNsaWNrPXsoKSA9PiBzZXRMYW5ndWFnZSgnZW4nKX1cclxuICAgICAgICAgICAgICBkYXRhLXRlc3RpZD1cImxhbmctZW5nbGlzaFwiXHJcbiAgICAgICAgICAgICAgY2xhc3NOYW1lPXtgdy1mdWxsIGZsZXggaXRlbXMtY2VudGVyIGp1c3RpZnktYmV0d2VlbiBweC0zIHB5LTIuNSByb3VuZGVkLWxnIHRyYW5zaXRpb24tYWxsIGR1cmF0aW9uLTIwMCBtdC0xICR7XHJcbiAgICAgICAgICAgICAgICBsYW5ndWFnZSA9PT0gJ2VuJyBcclxuICAgICAgICAgICAgICAgICAgPyAnYmctZW1lcmFsZC0xMDAgZGFyazpiZy1lbWVyYWxkLTgwMC81MCB0ZXh0LWVtZXJhbGQtODAwIGRhcms6dGV4dC1lbWVyYWxkLTIwMCByaW5nLTIgcmluZy1lbWVyYWxkLTUwMCcgXHJcbiAgICAgICAgICAgICAgICAgIDogJ2hvdmVyOmJnLWdyYXktMTAwIGRhcms6aG92ZXI6YmctZ3JheS03MDAgdGV4dC1ncmF5LTgwMCBkYXJrOnRleHQtZ3JheS0yMDAnXHJcbiAgICAgICAgICAgICAgfWB9XHJcbiAgICAgICAgICAgID5cclxuICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggaXRlbXMtY2VudGVyIGdhcC0zXCI+XHJcbiAgICAgICAgICAgICAgICA8c3BhbiBjbGFzc05hbWU9XCJ0ZXh0LXhsXCI+8J+HuvCfh7g8L3NwYW4+XHJcbiAgICAgICAgICAgICAgICA8c3BhbiBjbGFzc05hbWU9XCJ0ZXh0LXNtIGZvbnQtbWVkaXVtXCI+RW5nbGlzaDwvc3Bhbj5cclxuICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgICB7bGFuZ3VhZ2UgPT09ICdlbicgJiYgPENoZWNrSWNvbiBjbGFzc05hbWU9XCJ3LTUgaC01IHRleHQtZW1lcmFsZC02MDAgZGFyazp0ZXh0LWVtZXJhbGQtNDAwXCIgLz59XHJcbiAgICAgICAgICAgIDwvYnV0dG9uPlxyXG4gICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgPC9kaXY+XHJcbiAgICAgICl9XHJcbiAgICA8L2Rpdj5cclxuICApO1xyXG59O1xyXG5cclxuZXhwb3J0IGRlZmF1bHQgU2V0dGluZ3NEcm9wZG93bjtcclxuIl0sImZpbGUiOiJDOi9Vc2Vycy9jaGlyYS9Eb2N1bWVudHMvSXNhcmEtdGVsZW1lZC9Jc2FyYS1hbnl3aGVyZS1WMC4wLjMvSXNhcmEtZG9jdG9yLXBvcnRhbC9zcmMvY29tcG9uZW50cy9jb21tb24vU2V0dGluZ3NEcm9wZG93bi50c3gifQ==

@@ -474,6 +474,10 @@ TableGroup izara_appointments {
   izara_appointments.appointments
   izara_appointments.appointment_pool
   izara_appointments.appointment_meeting_links
+  izara_appointments.meeting_guest_invites
+  izara_appointments.meeting_participants
+  izara_appointments.meeting_transcripts
+  izara_appointments.meeting_ai_summaries
   izara_appointments.emr_records
   izara_appointments.prescriptions
   izara_appointments.prescription_items
@@ -622,10 +626,86 @@ Table izara_appointments.appointment_meeting_links {
   provider varchar [note: 'jitsi']
   generated_at timestamp
   generated_by varchar
-  jitsi_config json [note: '{lobby, recording, language, screenShare}']
+  jitsi_config json [note: '{lobby, recording, language, screenShare, prejoinPageEnabled, startWithAudioMuted, startWithVideoMuted}']
   status varchar [note: 'active | expired | ended']
   started_at timestamp
   ended_at timestamp
+  recording_url varchar
+  transcript json [note: '[{id, participantId, participantName, text, timestamp, confidence, language}]']
+  ai_summary json [note: '{chiefComplaint, presentIllness, physicalExam, assessment, plan, followUp, rawText, generatedAt}']
+  ai_recommendations json [note: '{differentialDiagnosis, suggestedTests, treatmentOptions, redFlags, clinicalNotes, references, generatedAt}']
+}
+
+// NEW: Meeting Guest Invites - For patient relatives and doctor specialists
+Table izara_appointments.meeting_guest_invites {
+  invite_id varchar [pk]
+  token varchar [unique, note: '32-byte hex token for secure access']
+  appointment_id varchar [ref: > izara_appointments.appointments.appointment_id]
+  meeting_id varchar [ref: > izara_appointments.appointment_meeting_links.meeting_id]
+  invited_by varchar [ref: > izara_users_credentials.users_auth.uid]
+  inviter_role varchar [note: 'doctor | patient']
+  guest_email varchar
+  guest_name varchar
+  guest_role varchar [note: 'patient_relative | patient_partner | doctor_specialist | doctor_advisor | other']
+  invite_url varchar
+  direct_meeting_url varchar
+  created_at timestamp [default: `now()`]
+  expires_at timestamp
+  used_at timestamp
+  used_by_ip varchar
+  status varchar [note: 'pending | used | expired | revoked']
+}
+
+// NEW: Meeting Participants - Track who joined the meeting
+Table izara_appointments.meeting_participants {
+  participant_id varchar [pk]
+  meeting_id varchar [ref: > izara_appointments.appointment_meeting_links.meeting_id]
+  user_id varchar
+  display_name varchar
+  role varchar [note: 'doctor | patient | guest']
+  email varchar
+  auth_method varchar [note: 'google | anonymous']
+  joined_at timestamp
+  left_at timestamp
+  duration_seconds int
+  audio_enabled boolean [default: true]
+  video_enabled boolean [default: true]
+  joined_via_invite boolean [default: false]
+  invite_id varchar [ref: > izara_appointments.meeting_guest_invites.invite_id]
+}
+
+// NEW: Meeting Transcripts - Individual transcript entries
+Table izara_appointments.meeting_transcripts {
+  transcript_id varchar [pk]
+  meeting_id varchar [ref: > izara_appointments.appointment_meeting_links.meeting_id]
+  appointment_id varchar [ref: > izara_appointments.appointments.appointment_id]
+  participant_id varchar
+  participant_name varchar
+  text text
+  timestamp timestamp
+  confidence float [note: '0.0 to 1.0']
+  language varchar [note: 'th-TH | en-US']
+  source varchar [note: 'speech-to-text | manual']
+  segment_index int [note: 'For 30-min segments in long meetings']
+}
+
+// NEW: Meeting AI Summaries - Segmented summaries for long meetings
+Table izara_appointments.meeting_ai_summaries {
+  summary_id varchar [pk]
+  meeting_id varchar [ref: > izara_appointments.appointment_meeting_links.meeting_id]
+  appointment_id varchar [ref: > izara_appointments.appointments.appointment_id]
+  doctor_id varchar [ref: > izara_doctors_data.doctor_profiles.doctor_id]
+  segment_index int [note: 'For 30-min segments: 0, 1, 2, etc.']
+  segment_start_time timestamp
+  segment_end_time timestamp
+  duration_seconds int
+  summary json [note: '{chiefComplaint, presentIllness, physicalExam, assessment, plan, followUp}']
+  recommendations json [note: '{differentialDiagnosis, suggestedTests, treatmentOptions, redFlags}']
+  is_combined_summary boolean [default: false, note: 'True for final combined summary of all segments']
+  ai_model varchar [note: 'gemini-2.5-flash-lite']
+  generated_at timestamp
+  delivered_to_doctor boolean [default: false]
+  delivered_at timestamp
 }
 
 Table izara_appointments.emr_records {

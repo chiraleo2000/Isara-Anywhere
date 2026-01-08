@@ -2,10 +2,11 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.1.8-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Platform](https://img.shields.io/badge/platform-web-lightgrey.svg)
 ![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)
+![Tests](https://img.shields.io/badge/tests-378%20passing-brightgreen.svg)
 
 **A comprehensive telemedicine platform built for Thailand's healthcare system**
 
@@ -32,7 +33,8 @@ The platform consists of two main portals:
 
 ### For Patients 👤
 - 📅 **Appointment Booking** - Multi-step booking with AI symptom analysis
-- 📹 **Video Consultations** - Jitsi Meet integration (no account required)
+- 📹 **Video Consultations** - Jitsi Meet integration (FREE, no account required)
+- 👥 **Invite Family Members** - External guests can join meetings via invite links
 - 📋 **Personal Health Records (PHR)** - Vitals, allergies, medications, lifestyle data
 - 🔔 **Real-time Notifications** - Appointment updates, meeting reminders
 - 🤖 **AI Health Assistant** - Powered by Google Gemini
@@ -41,6 +43,10 @@ The platform consists of two main portals:
 
 ### For Healthcare Providers 👨‍⚕️
 - 📝 **Electronic Medical Records (EMR)** - Thai OPD card format with SOAP notes
+- 📹 **Video Meeting HOST Controls** - Doctor as moderator with lobby management
+- 🎥 **Meeting Recording** - Save consultations to cloud storage
+- 🤖 **AI Meeting Summaries** - Gemini-powered clinical summaries
+- 👥 **Invite Specialists** - External consultants can join via invite links
 - 💊 **E-Prescribing** - Drug interaction checks, medication management
 - 🧪 **Lab & Imaging Orders** - Complete diagnostic workflow
 - 📊 **Patient Queue Management** - Priority-based scheduling
@@ -78,10 +84,10 @@ The platform consists of two main portals:
 │                            │                                         │
 │                            ▼                                         │
 │   ┌─────────────────────────────────────────────────────────────┐   │
-│   │              Google Cloud Storage (6 Buckets)               │   │
+│   │              Google Cloud Storage (5 Buckets)               │   │
 │   ├─────────────────────────────────────────────────────────────┤   │
-│   │ izara-users-auth │ izara-patients-data │ izara-appointments │   │
-│   │ izara-users-credentials │ izara-doctors-data │ izara-meta-data │
+│   │ izara-users-credentials │ izara-patients-data │ izara-appointments │
+│   │ izara-doctors-data │ izara-meta-data                          │
 │   └─────────────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────────────┘
 ```
@@ -177,10 +183,9 @@ See `.env.example` in each portal for complete configuration.
 
 | Bucket | Purpose |
 |--------|---------|
-| `izara-users-auth` | Patient authentication data |
-| `izara-users-credentials` | Doctor/Admin authentication |
-| `izara-patients-data` | Patient PHR and profiles |
-| `izara-doctors-data` | Doctor profiles |
+| `izara-users-credentials` | Patient/Doctor/Admin authentication |
+| `izara-patients-data` | Patient PHR, profiles, living will |
+| `izara-doctors-data` | Doctor profiles, EMR, meeting recordings |
 | `izara-appointments` | Appointment records |
 | `izara-meta-data` | Clinical resources, specialties |
 
@@ -242,10 +247,16 @@ npm run docker:run
 
 ## 🧪 Demo Accounts
 
-### Patient Account
+### Patient Accounts
 | Field | Value |
 |-------|-------|
 | Email | `demo.test@gmail.com` |
+| Password | `P@ssw0rd` |
+| Portal | http://localhost:3005 |
+
+| Field | Value |
+|-------|-------|
+| Email | `demo2.test@gmail.com` (Patient Relative) |
 | Password | `P@ssw0rd` |
 | Portal | http://localhost:3005 |
 
@@ -254,6 +265,13 @@ npm run docker:run
 |-------|-------|
 | Email | `doctor.test@izara.com` |
 | Password | `IzaraDoctor@2024` |
+| Portal | http://localhost:3010 |
+
+### Unit Test Doctor Account
+| Field | Value |
+|-------|-------|
+| Email | `doctorunit.test@izara.com` |
+| Password | `P@ssw0rd` |
 | Portal | http://localhost:3010 |
 
 ### Admin Account
@@ -417,6 +435,6 @@ For support and inquiries:
 
 **Made with ❤️ for Thailand's Healthcare**
 
-© 2024-2025 Izara Telemedicine. All rights reserved.
+© 2024-2026 Izara Telemedicine. All rights reserved.
 
 </div>

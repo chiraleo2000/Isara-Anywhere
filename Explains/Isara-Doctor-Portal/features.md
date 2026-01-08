@@ -244,4 +244,45 @@ Doctor availability and calendar.
 | Consultants | `MedicalConsultants.tsx` | Specialist directory |
 
 ---
-**Last Updated:** December 14, 2025
+
+## 11. Video Meeting (Jitsi Meet - HOST Controls)
+
+### Doctor as HOST Features
+| Feature | Description | Thai |
+|---------|-------------|------|
+| **HOST Controls** | Start/end meeting, moderator controls | ควบคุมการประชุม |
+| **Lobby Management** | Approve/reject participants | จัดการล็อบบี้ |
+| **Camera** | Default ON (startWithVideoMuted=false) | เปิดกล้องอัตโนมัติ |
+| **Microphone** | Default ON (startWithAudioMuted=false) | เปิดไมค์อัตโนมัติ |
+| **Recording** | Record session to izara-doctors-data | บันทึกการประชุม |
+| **Transcription** | Google Speech-to-Text API | ถอดเสียงอัตโนมัติ |
+| **AI Summary** | Gemini-generated meeting summary | สรุปการประชุมด้วย AI |
+
+### Invite External Guests
+Doctors can invite specialists or advisors (non-registered users):
+
+| Guest Type | Description | Thai |
+|------------|-------------|------|
+| doctor_specialist | Specialist for consultation | แพทย์เฉพาะทาง |
+| doctor_advisor | Medical advisor | ที่ปรึกษาทางการแพทย์ |
+| other | Other professional | อื่นๆ |
+
+**Permission Boundaries:**
+- Patient can invite: patient_relative, patient_partner, other
+- Doctor can invite: doctor_specialist, doctor_advisor, other
+- Token-based secure invites
+- Invalid/revoked tokens rejected
+
+### Meeting Recording Storage
+```
+izara-doctors-data/
+└── doctors/{doctorId}/
+    └── meetings/{appointmentId}/
+        ├── recording.webm      # Video recording
+        ├── transcript.json     # Speech-to-text output
+        └── ai-summary.json     # Gemini summary
+```
+
+---
+**Last Updated:** January 8, 2026
+**Version:** 1.1.8

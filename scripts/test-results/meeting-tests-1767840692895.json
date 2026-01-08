@@ -1,0 +1,54 @@
+{
+  "timestamp": "2026-01-08T02:51:32.895Z",
+  "mode": "local",
+  "api": "http://localhost:3004",
+  "passed": 0,
+  "failed": 9,
+  "tests": [
+    {
+      "name": "Video Meeting API health",
+      "status": "FAIL",
+      "details": "Status: 500"
+    },
+    {
+      "name": "Meeting creation",
+      "status": "FAIL",
+      "details": "Failed"
+    },
+    {
+      "name": "Doctor host test",
+      "status": "FAIL",
+      "details": "No meeting data"
+    },
+    {
+      "name": "Patient lobby test",
+      "status": "FAIL",
+      "details": "No meeting data"
+    },
+    {
+      "name": "Guest invite test",
+      "status": "FAIL",
+      "details": "No meeting data"
+    },
+    {
+      "name": "Media controls test",
+      "status": "FAIL",
+      "details": "No meeting data"
+    },
+    {
+      "name": "Transcription test",
+      "status": "FAIL",
+      "details": "No meeting data"
+    },
+    {
+      "name": "AI summary test",
+      "status": "FAIL",
+      "details": "No meeting data"
+    },
+    {
+      "name": "End meeting test",
+      "status": "FAIL",
+      "details": "No meeting data"
+    }
+  ]
+}

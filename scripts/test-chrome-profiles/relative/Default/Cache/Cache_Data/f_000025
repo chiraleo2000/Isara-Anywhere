@@ -1,0 +1,1113 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/src/pages/map/MapPage.tsx");import.meta.env = {"BASE_URL": "/", "DEV": true, "MODE": "development", "PROD": false, "SSR": false, "VITE_AI_CLINICAL_ASSIST": "true", "VITE_AI_DRUG_INFO": "true", "VITE_AI_ICD_CODING_ASSIST": "true", "VITE_AI_NOTE_SUMMARIZATION": "true", "VITE_AI_VOICE_TRANSCRIPTION": "true", "VITE_API_URL": "http://localhost:3004", "VITE_APP_NAME": "Izara Patient Portal", "VITE_APP_VERSION": "1.0.0", "VITE_AUDIT_LOGGING_ENABLED": "true", "VITE_AUTH_PORTAL_URL": "http://localhost:3005/auth", "VITE_CONSENT_REQUIRED": "true", "VITE_DRUG_INTERACTION_CHECK": "true", "VITE_EMR_AUTO_SAVE_INTERVAL": "30000", "VITE_EMR_PATIENT_ACCESS_CONTROL": "true", "VITE_EMR_VERSION_CONTROL": "true", "VITE_ENCRYPTION_ENABLED": "true", "VITE_E_PRESCRIBING_ENABLED": "true", "VITE_GCP_PROJECT_ID": "izara-telemedicine", "VITE_GCP_REGION": "asia-southeast1", "VITE_GCS_BUCKET_APPOINTMENTS": "izara-appointments", "VITE_GCS_BUCKET_AUTH": "izara-users-credentials", "VITE_GCS_BUCKET_DOCTOR": "izara-doctors-data", "VITE_GCS_BUCKET_METADATA": "izara-meta-data", "VITE_GCS_BUCKET_PATIENT": "izara-patients-data", "VITE_GEMINI_API_KEY": "AIzaSyDqERDgZ1l41zfGiQ4FZV62B58DXMbGWj4", "VITE_GEMINI_MAX_TOKENS": "8192", "VITE_GEMINI_MODEL": "gemini-2.5-flash-lite", "VITE_GEMINI_TEMPERATURE": "0.3", "VITE_GOOGLE_CALENDAR_API_KEY": "AIzaSyAl924pIkpbrJBfCQ1MlpA6yb8XZ3L8WZQ", "VITE_GOOGLE_CLIENT_ID": "724889190329-svf2733fjqklfic9tet9d2qkmhkgmu0l.apps.googleusercontent.com", "VITE_GOOGLE_GMAIL_API_KEY": "AIzaSyAl924pIkpbrJBfCQ1MlpA6yb8XZ3L8WZQ", "VITE_GOOGLE_MAPS_API_KEY": "AIzaSyAl924pIkpbrJBfCQ1MlpA6yb8XZ3L8WZQ", "VITE_GOOGLE_MEET_API_KEY": "AIzaSyAl924pIkpbrJBfCQ1MlpA6yb8XZ3L8WZQ", "VITE_GOOGLE_SHEETS_API_KEY": "AIzaSyAl924pIkpbrJBfCQ1MlpA6yb8XZ3L8WZQ", "VITE_GOOGLE_SPEECH_API_KEY": "AIzaSyAl924pIkpbrJBfCQ1MlpA6yb8XZ3L8WZQ", "VITE_IMAGING_ORDERING_ENABLED": "true", "VITE_JITSI_APP_ID": "izara-telemedicine", "VITE_JITSI_DOMAIN": "meet.jit.si", "VITE_LAB_ORDERING_ENABLED": "true", "VITE_LIVING_WILL_ENABLED": "true", "VITE_MFA_ENABLED": "false", "VITE_OAUTH_REDIRECT_URI": "http://localhost:3004/auth/callback", "VITE_OFFLINE_MODE_ENABLED": "true", "VITE_PATIENT_URL": "http://localhost:3005/home", "VITE_PDPA_ENABLED": "true", "VITE_PHR_WEARABLES_ENABLED": "true", "VITE_PUSH_NOTIFICATIONS_ENABLED": "true", "VITE_PWA_ENABLED": "true", "VITE_QUEUE_MANAGEMENT_ENABLED": "true", "VITE_REAL_TIME_UPDATES": "true", "VITE_SESSION_TIMEOUT": "1800000", "VITE_VIDEO_CONSULTATION_ENABLED": "true", "VITE_WEBSOCKET_URL": "ws://localhost:3005/ws"};import __vite__cjsImport0_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=e95c9919"; const Fragment = __vite__cjsImport0_react_jsxDevRuntime["Fragment"]; const jsxDEV = __vite__cjsImport0_react_jsxDevRuntime["jsxDEV"];
+import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== "undefined" && self instanceof WorkerGlobalScope;
+let prevRefreshReg;
+let prevRefreshSig;
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react can't detect preamble. Something is wrong."
+    );
+  }
+  prevRefreshReg = window.$RefreshReg$;
+  prevRefreshSig = window.$RefreshSig$;
+  window.$RefreshReg$ = RefreshRuntime.getRefreshReg("C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx");
+  window.$RefreshSig$ = RefreshRuntime.createSignatureFunctionForTransform;
+}
+var _s = $RefreshSig$();
+import __vite__cjsImport3_react from "/node_modules/.vite/deps/react.js?v=e95c9919"; const useState = __vite__cjsImport3_react["useState"]; const useEffect = __vite__cjsImport3_react["useEffect"]; const useRef = __vite__cjsImport3_react["useRef"];
+import { MapPin, Search, Building2, Navigation, Loader2, AlertCircle, Pill, Stethoscope, Heart, User, RefreshCw, Star, ExternalLink, Target, AlertTriangle } from "/node_modules/.vite/deps/lucide-react.js?v=e95c9919";
+const MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
+const DEFAULT_LOCATION = { lat: 13.7563, lng: 100.5018 };
+export default function MapPage() {
+  _s();
+  const mapRef = useRef(null);
+  const mapInstance = useRef(null);
+  const placesService = useRef(null);
+  const markers = useRef([]);
+  const infoWindow = useRef(null);
+  const userMarkerRef = useRef(null);
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("all");
+  const [facilities, setFacilities] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [userLocation, setUserLocation] = useState(DEFAULT_LOCATION);
+  const [mapReady, setMapReady] = useState(false);
+  const [selectedId, setSelectedId] = useState(null);
+  const [locationStatus, setLocationStatus] = useState("loading");
+  const [locationAccuracy, setLocationAccuracy] = useState(null);
+  const [watchId, setWatchId] = useState(null);
+  const calcDistance = (lat1, lng1, lat2, lng2) => {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  };
+  const formatDist = (km) => km < 1 ? `${Math.round(km * 1e3)} ม.` : `${km.toFixed(1)} กม.`;
+  const markerColors = {
+    hospital: "#DC2626",
+    clinic: "#2563EB",
+    pharmacy: "#16A34A",
+    health_center: "#9333EA"
+  };
+  const searchPlaces = (loc, keyword, type) => {
+    return new Promise((resolve) => {
+      if (!placesService.current) {
+        resolve([]);
+        return;
+      }
+      placesService.current.nearbySearch({
+        location: new google.maps.LatLng(loc.lat, loc.lng),
+        radius: 15e3,
+        keyword
+      }, (results, status) => {
+        console.log(`[${keyword}] ${status}: ${results?.length || 0} results`);
+        if (status === google.maps.places.PlacesServiceStatus.OK && results) {
+          const items = results.map((p) => {
+            const lat = p.geometry?.location?.lat() || 0;
+            const lng = p.geometry?.location?.lng() || 0;
+            const dist = calcDistance(loc.lat, loc.lng, lat, lng);
+            return {
+              id: p.place_id || String(Math.random()),
+              name: p.name || "Unknown",
+              type,
+              address: p.vicinity || "",
+              rating: p.rating,
+              ratingCount: p.user_ratings_total,
+              isOpen: p.opening_hours?.open_now,
+              distance: dist,
+              distanceText: formatDist(dist),
+              location: { lat, lng }
+            };
+          }).filter((f) => f.distance <= 15);
+          resolve(items);
+        } else {
+          resolve([]);
+        }
+      });
+    });
+  };
+  const loadFacilities = async (loc) => {
+    if (!placesService.current) return;
+    setLoading(true);
+    console.log("Loading near:", loc);
+    try {
+      const results = await Promise.all(
+        [
+          searchPlaces(loc, "hospital โรงพยาบาล", "hospital"),
+          searchPlaces(loc, "clinic คลินิก doctor", "clinic"),
+          searchPlaces(loc, "pharmacy ร้านยา", "pharmacy"),
+          searchPlaces(loc, "health center ศูนย์สุขภาพ", "health_center")
+        ]
+      );
+      const all = results.flat();
+      const unique = all.reduce((acc, f) => {
+        if (!acc.find((x) => x.id === f.id)) acc.push(f);
+        return acc;
+      }, []);
+      unique.sort((a, b) => a.distance - b.distance);
+      console.log("Total facilities:", unique.length);
+      setFacilities(unique);
+      addMarkers(unique);
+    } catch (e) {
+      console.error(e);
+      setError("เกิดข้อผิดพลาด");
+    } finally {
+      setLoading(false);
+    }
+  };
+  const addMarkers = (list) => {
+    markers.current.forEach((m) => m.setMap(null));
+    markers.current = [];
+    if (!mapInstance.current) return;
+    if (!infoWindow.current) infoWindow.current = new google.maps.InfoWindow();
+    list.forEach((f) => {
+      const m = new google.maps.Marker({
+        position: f.location,
+        map: mapInstance.current,
+        title: f.name,
+        icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: 10,
+          fillColor: markerColors[f.type] || "#666",
+          fillOpacity: 1,
+          strokeColor: "#fff",
+          strokeWeight: 2
+        },
+        animation: google.maps.Animation.DROP
+      });
+      m.addListener("click", () => {
+        setSelectedId(f.id);
+        infoWindow.current?.setContent(`
+          <div style="padding:8px;max-width:200px;">
+            <b>${f.name}</b>
+            <p style="font-size:11px;color:#666;margin:4px 0;">${f.address}</p>
+            ${f.rating ? `<p style="font-size:11px;">⭐ ${f.rating}</p>` : ""}
+            <p style="color:#059669;font-weight:600;">${f.distanceText}</p>
+            <a href="https://www.google.com/maps/dir/?api=1&destination=${f.location.lat},${f.location.lng}" 
+               target="_blank" style="display:inline-block;margin-top:6px;padding:5px 10px;background:#059669;color:#fff;border-radius:4px;text-decoration:none;font-size:11px;">
+              นำทาง
+            </a>
+          </div>
+        `);
+        infoWindow.current?.open(mapInstance.current, m);
+      });
+      markers.current.push(m);
+    });
+  };
+  const initMap = (loc) => {
+    if (!mapRef.current || mapInstance.current) return;
+    console.log("Init map at:", loc);
+    const map = new google.maps.Map(mapRef.current, {
+      center: loc,
+      zoom: 13,
+      mapTypeControl: false,
+      streetViewControl: false
+    });
+    mapInstance.current = map;
+    placesService.current = new google.maps.places.PlacesService(map);
+    userMarkerRef.current = new google.maps.Marker({
+      position: loc,
+      map,
+      title: "คุณอยู่ที่นี่",
+      icon: {
+        path: google.maps.SymbolPath.CIRCLE,
+        scale: 12,
+        fillColor: "#3B82F6",
+        fillOpacity: 1,
+        strokeColor: "#fff",
+        strokeWeight: 3
+      },
+      zIndex: 1e3
+    });
+    new google.maps.Marker({
+      position: loc,
+      map,
+      icon: {
+        path: google.maps.SymbolPath.CIRCLE,
+        scale: 24,
+        fillColor: "#3B82F6",
+        fillOpacity: 0.25,
+        strokeWeight: 0
+      },
+      zIndex: 999
+    });
+    setMapReady(true);
+    loadFacilities(loc);
+  };
+  const updateUserMarker = (loc) => {
+    if (userMarkerRef.current && mapInstance.current) {
+      userMarkerRef.current.setPosition(loc);
+    }
+  };
+  const getHighAccuracyLocation = () => {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject(new Error("Geolocation not supported"));
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          resolve({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+            accuracy: position.coords.accuracy
+          });
+        },
+        (error2) => {
+          console.warn("High accuracy failed, trying low accuracy:", error2.message);
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              resolve({
+                lat: position.coords.latitude,
+                lng: position.coords.longitude,
+                accuracy: position.coords.accuracy
+              });
+            },
+            reject,
+            {
+              enableHighAccuracy: false,
+              timeout: 1e4,
+              maximumAge: 6e4
+            }
+          );
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 15e3,
+          maximumAge: 0
+        }
+      );
+    });
+  };
+  useEffect(() => {
+    if (!MAPS_API_KEY) {
+      setError("ไม่พบ API Key");
+      setLoading(false);
+      setLocationStatus("error");
+      return;
+    }
+    let retryCount = 0;
+    const maxRetries = 3;
+    const loadGoogleMapsScript = (loc) => {
+      return new Promise((resolve, reject) => {
+        if (window.google?.maps) {
+          resolve();
+          return;
+        }
+        const existingScript = document.querySelector('script[src*="maps.googleapis.com"]');
+        if (existingScript) {
+          existingScript.remove();
+        }
+        const s = document.createElement("script");
+        s.src = `https://maps.googleapis.com/maps/api/js?key=${MAPS_API_KEY}&libraries=places&language=th`;
+        s.async = true;
+        s.defer = true;
+        s.onload = () => {
+          console.log("Google Maps loaded successfully");
+          resolve();
+        };
+        s.onerror = () => {
+          console.error("Failed to load Google Maps script, attempt:", retryCount + 1);
+          reject(new Error("Script load failed"));
+        };
+        document.head.appendChild(s);
+      });
+    };
+    const setupMap = async (loc) => {
+      if (window.google?.maps) {
+        initMap(loc);
+        return;
+      }
+      while (retryCount < maxRetries) {
+        try {
+          await loadGoogleMapsScript(loc);
+          initMap(loc);
+          return;
+        } catch (err) {
+          retryCount++;
+          if (retryCount < maxRetries) {
+            console.log(`Retrying Google Maps load (${retryCount}/${maxRetries})...`);
+            await new Promise((r) => setTimeout(r, 1e3 * retryCount));
+          }
+        }
+      }
+      setError("โหลด Google Maps ไม่สำเร็จ กรุณารีเฟรชหน้า");
+      setLoading(false);
+    };
+    const initWithLocation = async () => {
+      if (!navigator.geolocation) {
+        console.log("Geolocation not supported, using default location");
+        setLocationStatus("unavailable");
+        setupMap(DEFAULT_LOCATION);
+        return;
+      }
+      setLocationStatus("loading");
+      try {
+        const locationData = await getHighAccuracyLocation();
+        const loc = { lat: locationData.lat, lng: locationData.lng };
+        console.log("Got location with accuracy:", locationData.accuracy, "meters");
+        setUserLocation(loc);
+        setLocationAccuracy(locationData.accuracy);
+        setLocationStatus("success");
+        setupMap(loc);
+        const id = navigator.geolocation.watchPosition(
+          (position) => {
+            const newLoc = {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude
+            };
+            const newAccuracy = position.coords.accuracy;
+            if (!locationAccuracy || newAccuracy < locationAccuracy * 0.8) {
+              console.log("Location updated, new accuracy:", newAccuracy, "meters");
+              setUserLocation(newLoc);
+              setLocationAccuracy(newAccuracy);
+              updateUserMarker(newLoc);
+              const distance = calcDistance(userLocation.lat, userLocation.lng, newLoc.lat, newLoc.lng);
+              if (distance > 0.5) {
+                loadFacilities(newLoc);
+              }
+            }
+          },
+          (error2) => {
+            console.warn("Watch position error:", error2.message);
+          },
+          {
+            enableHighAccuracy: true,
+            maximumAge: 3e4,
+            timeout: 2e4
+          }
+        );
+        setWatchId(id);
+      } catch (err) {
+        console.error("Location error:", err.message);
+        if (err.code === 1) {
+          setLocationStatus("denied");
+        } else {
+          setLocationStatus("error");
+        }
+        setupMap(DEFAULT_LOCATION);
+      }
+    };
+    initWithLocation();
+    return () => {
+      markers.current.forEach((m) => m.setMap(null));
+      if (watchId !== null) {
+        navigator.geolocation.clearWatch(watchId);
+      }
+    };
+  }, []);
+  const refresh = async () => {
+    setLoading(true);
+    setLocationStatus("loading");
+    try {
+      const locationData = await getHighAccuracyLocation();
+      const loc = { lat: locationData.lat, lng: locationData.lng };
+      console.log("Refreshed location with accuracy:", locationData.accuracy, "meters");
+      setUserLocation(loc);
+      setLocationAccuracy(locationData.accuracy);
+      setLocationStatus("success");
+      mapInstance.current?.setCenter(loc);
+      updateUserMarker(loc);
+      loadFacilities(loc);
+    } catch (err) {
+      console.error("Refresh location error:", err.message);
+      if (err.code === 1) {
+        setLocationStatus("denied");
+      } else {
+        setLocationStatus("error");
+      }
+      setLoading(false);
+    }
+  };
+  const requestLocation = async () => {
+    setLocationStatus("loading");
+    try {
+      const locationData = await getHighAccuracyLocation();
+      const loc = { lat: locationData.lat, lng: locationData.lng };
+      setUserLocation(loc);
+      setLocationAccuracy(locationData.accuracy);
+      setLocationStatus("success");
+      if (mapInstance.current) {
+        mapInstance.current.setCenter(loc);
+        updateUserMarker(loc);
+        loadFacilities(loc);
+      }
+    } catch (err) {
+      if (err.code === 1) {
+        setLocationStatus("denied");
+      } else {
+        setLocationStatus("error");
+      }
+    }
+  };
+  const filtered = facilities.filter((f) => {
+    const matchSearch = !search || f.name.toLowerCase().includes(search.toLowerCase()) || f.address.toLowerCase().includes(search.toLowerCase());
+    const matchFilter = filter === "all" || f.type === filter;
+    return matchSearch && matchFilter;
+  });
+  useEffect(() => {
+    markers.current.forEach((m, i) => {
+      const f = facilities[i];
+      if (f) {
+        const show = (filter === "all" || f.type === filter) && (!search || f.name.toLowerCase().includes(search.toLowerCase()));
+        m.setVisible(show);
+      }
+    });
+  }, [filter, search, facilities]);
+  const labels = { hospital: "โรงพยาบาล", clinic: "คลินิก", pharmacy: "ร้านยา", health_center: "ศูนย์สุขภาพ" };
+  const colors = { hospital: "bg-red-100 text-red-600", clinic: "bg-blue-100 text-blue-600", pharmacy: "bg-green-100 text-green-600", health_center: "bg-purple-100 text-purple-600" };
+  const icons = { hospital: Building2, clinic: Stethoscope, pharmacy: Pill, health_center: Heart };
+  const focusFacility = (f) => {
+    setSelectedId(f.id);
+    mapInstance.current?.setCenter(f.location);
+    mapInstance.current?.setZoom(16);
+    const m = markers.current.find((x) => x.getTitle() === f.name);
+    if (m) google.maps.event.trigger(m, "click");
+  };
+  const navigate = (f) => {
+    window.open(`https://www.google.com/maps/dir/?api=1&destination=${f.location.lat},${f.location.lng}`, "_blank");
+  };
+  return /* @__PURE__ */ jsxDEV("div", { className: "flex flex-col h-[calc(100vh-100px)] -mx-4 sm:-mx-6 -mt-4 sm:-mt-6", children: [
+    /* @__PURE__ */ jsxDEV("div", { className: "bg-white border-b px-4 py-3 flex items-center justify-between shrink-0", children: [
+      /* @__PURE__ */ jsxDEV("div", { className: "flex items-center gap-3", children: [
+        /* @__PURE__ */ jsxDEV("div", { className: "w-10 h-10 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl flex items-center justify-center", children: /* @__PURE__ */ jsxDEV(MapPin, { className: "w-5 h-5 text-white" }, void 0, false, {
+          fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+          lineNumber: 530,
+          columnNumber: 13
+        }, this) }, void 0, false, {
+          fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+          lineNumber: 529,
+          columnNumber: 11
+        }, this),
+        /* @__PURE__ */ jsxDEV("div", { children: [
+          /* @__PURE__ */ jsxDEV("h1", { className: "text-lg font-bold text-gray-800", children: "สถานพยาบาลใกล้เคียง" }, void 0, false, {
+            fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+            lineNumber: 533,
+            columnNumber: 13
+          }, this),
+          /* @__PURE__ */ jsxDEV("div", { className: "flex items-center gap-2", children: [
+            /* @__PURE__ */ jsxDEV("p", { className: "text-xs text-gray-500", children: [
+              "รัศมี 15 กม. • ",
+              userLocation.lat.toFixed(4),
+              ", ",
+              userLocation.lng.toFixed(4)
+            ] }, void 0, true, {
+              fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+              lineNumber: 535,
+              columnNumber: 15
+            }, this),
+            locationStatus === "success" && locationAccuracy && /* @__PURE__ */ jsxDEV("span", { className: "text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full flex items-center gap-1", children: [
+              /* @__PURE__ */ jsxDEV(Target, { className: "w-3 h-3" }, void 0, false, {
+                fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+                lineNumber: 540,
+                columnNumber: 19
+              }, this),
+              "±",
+              locationAccuracy < 1e3 ? `${Math.round(locationAccuracy)}m` : `${(locationAccuracy / 1e3).toFixed(1)}km`
+            ] }, void 0, true, {
+              fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+              lineNumber: 539,
+              columnNumber: 15
+            }, this),
+            locationStatus === "denied" && /* @__PURE__ */ jsxDEV("span", { className: "text-xs bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded-full flex items-center gap-1", children: [
+              /* @__PURE__ */ jsxDEV(AlertTriangle, { className: "w-3 h-3" }, void 0, false, {
+                fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+                lineNumber: 546,
+                columnNumber: 19
+              }, this),
+              "ใช้ตำแหน่งเริ่มต้น"
+            ] }, void 0, true, {
+              fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+              lineNumber: 545,
+              columnNumber: 15
+            }, this)
+          ] }, void 0, true, {
+            fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+            lineNumber: 534,
+            columnNumber: 13
+          }, this)
+        ] }, void 0, true, {
+          fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+          lineNumber: 532,
+          columnNumber: 11
+        }, this)
+      ] }, void 0, true, {
+        fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+        lineNumber: 528,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ jsxDEV("div", { className: "flex items-center gap-2", children: [
+        (locationStatus === "denied" || locationStatus === "error") && /* @__PURE__ */ jsxDEV(
+          "button",
+          {
+            onClick: requestLocation,
+            className: "px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs rounded-lg flex items-center gap-1",
+            children: [
+              /* @__PURE__ */ jsxDEV(Target, { className: "w-3.5 h-3.5" }, void 0, false, {
+                fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+                lineNumber: 559,
+                columnNumber: 15
+              }, this),
+              "ใช้ตำแหน่งจริง"
+            ]
+          },
+          void 0,
+          true,
+          {
+            fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+            lineNumber: 555,
+            columnNumber: 11
+          },
+          this
+        ),
+        /* @__PURE__ */ jsxDEV("button", { onClick: refresh, disabled: loading, className: "p-2 bg-gray-100 hover:bg-gray-200 rounded-lg", children: /* @__PURE__ */ jsxDEV(RefreshCw, { className: `w-5 h-5 text-gray-600 ${loading ? "animate-spin" : ""}` }, void 0, false, {
+          fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+          lineNumber: 564,
+          columnNumber: 13
+        }, this) }, void 0, false, {
+          fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+          lineNumber: 563,
+          columnNumber: 11
+        }, this)
+      ] }, void 0, true, {
+        fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+        lineNumber: 553,
+        columnNumber: 9
+      }, this)
+    ] }, void 0, true, {
+      fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+      lineNumber: 527,
+      columnNumber: 7
+    }, this),
+    locationStatus === "denied" && /* @__PURE__ */ jsxDEV("div", { className: "bg-amber-50 border-b border-amber-200 px-4 py-2 flex items-center gap-3 shrink-0", children: [
+      /* @__PURE__ */ jsxDEV(AlertTriangle, { className: "w-5 h-5 text-amber-600 shrink-0" }, void 0, false, {
+        fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+        lineNumber: 572,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ jsxDEV("div", { className: "flex-1 min-w-0", children: [
+        /* @__PURE__ */ jsxDEV("p", { className: "text-sm text-amber-800", children: "ไม่ได้รับอนุญาตเข้าถึงตำแหน่ง" }, void 0, false, {
+          fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+          lineNumber: 574,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ jsxDEV("p", { className: "text-xs text-amber-600", children: "กรุณาอนุญาตการเข้าถึงตำแหน่งในการตั้งค่าเบราว์เซอร์ เพื่อค้นหาสถานพยาบาลใกล้คุณ" }, void 0, false, {
+          fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+          lineNumber: 575,
+          columnNumber: 13
+        }, this)
+      ] }, void 0, true, {
+        fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+        lineNumber: 573,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ jsxDEV(
+        "button",
+        {
+          onClick: requestLocation,
+          className: "px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs rounded-lg whitespace-nowrap",
+          children: "ลองอีกครั้ง"
+        },
+        void 0,
+        false,
+        {
+          fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+          lineNumber: 577,
+          columnNumber: 11
+        },
+        this
+      )
+    ] }, void 0, true, {
+      fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+      lineNumber: 571,
+      columnNumber: 7
+    }, this),
+    /* @__PURE__ */ jsxDEV("div", { className: "bg-white border-b px-4 py-2 flex gap-2 overflow-x-auto shrink-0", children: ["all", "hospital", "clinic", "pharmacy", "health_center"].map((t) => {
+      const Icon = t === "all" ? MapPin : icons[t];
+      const cnt = t === "all" ? facilities.length : facilities.filter((f) => f.type === t).length;
+      return /* @__PURE__ */ jsxDEV(
+        "button",
+        {
+          onClick: () => setFilter(t),
+          className: `flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap ${filter === t ? "bg-emerald-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`,
+          children: [
+            /* @__PURE__ */ jsxDEV(Icon, { className: "w-3.5 h-3.5" }, void 0, false, {
+              fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+              lineNumber: 594,
+              columnNumber: 15
+            }, this),
+            t === "all" ? "ทั้งหมด" : labels[t],
+            /* @__PURE__ */ jsxDEV("span", { className: `ml-1 px-1.5 py-0.5 rounded-full text-xs ${filter === t ? "bg-white/20" : "bg-gray-200"}`, children: cnt }, void 0, false, {
+              fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+              lineNumber: 596,
+              columnNumber: 15
+            }, this)
+          ]
+        },
+        t,
+        true,
+        {
+          fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+          lineNumber: 592,
+          columnNumber: 13
+        },
+        this
+      );
+    }) }, void 0, false, {
+      fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+      lineNumber: 587,
+      columnNumber: 7
+    }, this),
+    /* @__PURE__ */ jsxDEV("div", { className: "flex-1 relative min-h-[45vh]", children: error ? /* @__PURE__ */ jsxDEV("div", { className: "absolute inset-0 flex items-center justify-center bg-gray-100", children: /* @__PURE__ */ jsxDEV("div", { className: "text-center p-6", children: [
+      /* @__PURE__ */ jsxDEV(AlertCircle, { className: "w-16 h-16 mx-auto mb-4 text-red-400" }, void 0, false, {
+        fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+        lineNumber: 607,
+        columnNumber: 15
+      }, this),
+      /* @__PURE__ */ jsxDEV("p", { className: "text-lg font-medium text-gray-700 mb-4", children: error }, void 0, false, {
+        fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+        lineNumber: 608,
+        columnNumber: 15
+      }, this),
+      /* @__PURE__ */ jsxDEV(
+        "button",
+        {
+          onClick: () => window.location.reload(),
+          className: "px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg flex items-center gap-2 mx-auto",
+          children: [
+            /* @__PURE__ */ jsxDEV(RefreshCw, { className: "w-4 h-4" }, void 0, false, {
+              fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+              lineNumber: 613,
+              columnNumber: 17
+            }, this),
+            "รีเฟรชหน้า"
+          ]
+        },
+        void 0,
+        true,
+        {
+          fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+          lineNumber: 609,
+          columnNumber: 15
+        },
+        this
+      )
+    ] }, void 0, true, {
+      fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+      lineNumber: 606,
+      columnNumber: 13
+    }, this) }, void 0, false, {
+      fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+      lineNumber: 605,
+      columnNumber: 9
+    }, this) : /* @__PURE__ */ jsxDEV(Fragment, { children: [
+      /* @__PURE__ */ jsxDEV("div", { ref: mapRef, className: "w-full h-full" }, void 0, false, {
+        fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+        lineNumber: 620,
+        columnNumber: 13
+      }, this),
+      !mapReady && /* @__PURE__ */ jsxDEV("div", { className: "absolute inset-0 bg-white/90 flex items-center justify-center", children: /* @__PURE__ */ jsxDEV("div", { className: "text-center", children: [
+        /* @__PURE__ */ jsxDEV(Loader2, { className: "w-12 h-12 animate-spin text-emerald-600 mx-auto mb-3" }, void 0, false, {
+          fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+          lineNumber: 624,
+          columnNumber: 19
+        }, this),
+        /* @__PURE__ */ jsxDEV("p", { className: "text-gray-600", children: "กำลังโหลดแผนที่..." }, void 0, false, {
+          fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+          lineNumber: 625,
+          columnNumber: 19
+        }, this)
+      ] }, void 0, true, {
+        fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+        lineNumber: 623,
+        columnNumber: 17
+      }, this) }, void 0, false, {
+        fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+        lineNumber: 622,
+        columnNumber: 11
+      }, this),
+      mapReady && /* @__PURE__ */ jsxDEV(Fragment, { children: [
+        /* @__PURE__ */ jsxDEV("div", { className: "absolute top-3 right-3 bg-white/95 backdrop-blur rounded-lg shadow p-2 text-xs z-10", children: /* @__PURE__ */ jsxDEV("div", { className: "space-y-1", children: [
+          /* @__PURE__ */ jsxDEV("div", { className: "flex items-center gap-2", children: [
+            /* @__PURE__ */ jsxDEV("div", { className: "w-2.5 h-2.5 bg-red-500 rounded-full" }, void 0, false, {
+              fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+              lineNumber: 634,
+              columnNumber: 62
+            }, this),
+            /* @__PURE__ */ jsxDEV("span", { children: "โรงพยาบาล" }, void 0, false, {
+              fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+              lineNumber: 634,
+              columnNumber: 117
+            }, this)
+          ] }, void 0, true, {
+            fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+            lineNumber: 634,
+            columnNumber: 21
+          }, this),
+          /* @__PURE__ */ jsxDEV("div", { className: "flex items-center gap-2", children: [
+            /* @__PURE__ */ jsxDEV("div", { className: "w-2.5 h-2.5 bg-blue-500 rounded-full" }, void 0, false, {
+              fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+              lineNumber: 635,
+              columnNumber: 62
+            }, this),
+            /* @__PURE__ */ jsxDEV("span", { children: "คลินิก" }, void 0, false, {
+              fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+              lineNumber: 635,
+              columnNumber: 118
+            }, this)
+          ] }, void 0, true, {
+            fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+            lineNumber: 635,
+            columnNumber: 21
+          }, this),
+          /* @__PURE__ */ jsxDEV("div", { className: "flex items-center gap-2", children: [
+            /* @__PURE__ */ jsxDEV("div", { className: "w-2.5 h-2.5 bg-green-500 rounded-full" }, void 0, false, {
+              fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+              lineNumber: 636,
+              columnNumber: 62
+            }, this),
+            /* @__PURE__ */ jsxDEV("span", { children: "ร้านยา" }, void 0, false, {
+              fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+              lineNumber: 636,
+              columnNumber: 119
+            }, this)
+          ] }, void 0, true, {
+            fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+            lineNumber: 636,
+            columnNumber: 21
+          }, this),
+          /* @__PURE__ */ jsxDEV("div", { className: "flex items-center gap-2", children: [
+            /* @__PURE__ */ jsxDEV("div", { className: "w-2.5 h-2.5 bg-purple-500 rounded-full" }, void 0, false, {
+              fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+              lineNumber: 637,
+              columnNumber: 62
+            }, this),
+            /* @__PURE__ */ jsxDEV("span", { children: "ศูนย์สุขภาพ" }, void 0, false, {
+              fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+              lineNumber: 637,
+              columnNumber: 120
+            }, this)
+          ] }, void 0, true, {
+            fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+            lineNumber: 637,
+            columnNumber: 21
+          }, this),
+          /* @__PURE__ */ jsxDEV("div", { className: "flex items-center gap-2 border-t pt-1 mt-1", children: [
+            /* @__PURE__ */ jsxDEV("div", { className: "w-2.5 h-2.5 bg-blue-500 rounded-full ring-2 ring-blue-200" }, void 0, false, {
+              fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+              lineNumber: 638,
+              columnNumber: 81
+            }, this),
+            /* @__PURE__ */ jsxDEV("span", { children: "ตำแหน่งคุณ" }, void 0, false, {
+              fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+              lineNumber: 638,
+              columnNumber: 158
+            }, this)
+          ] }, void 0, true, {
+            fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+            lineNumber: 638,
+            columnNumber: 21
+          }, this)
+        ] }, void 0, true, {
+          fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+          lineNumber: 633,
+          columnNumber: 19
+        }, this) }, void 0, false, {
+          fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+          lineNumber: 632,
+          columnNumber: 17
+        }, this),
+        /* @__PURE__ */ jsxDEV(
+          "button",
+          {
+            onClick: () => {
+              mapInstance.current?.setCenter(userLocation);
+              mapInstance.current?.setZoom(13);
+            },
+            className: "absolute bottom-4 right-4 bg-white rounded-full p-3 shadow-lg hover:bg-gray-50 z-10",
+            children: /* @__PURE__ */ jsxDEV(User, { className: "w-5 h-5 text-blue-600" }, void 0, false, {
+              fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+              lineNumber: 644,
+              columnNumber: 19
+            }, this)
+          },
+          void 0,
+          false,
+          {
+            fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+            lineNumber: 642,
+            columnNumber: 17
+          },
+          this
+        )
+      ] }, void 0, true, {
+        fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+        lineNumber: 630,
+        columnNumber: 11
+      }, this)
+    ] }, void 0, true, {
+      fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+      lineNumber: 619,
+      columnNumber: 9
+    }, this) }, void 0, false, {
+      fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+      lineNumber: 603,
+      columnNumber: 7
+    }, this),
+    /* @__PURE__ */ jsxDEV("div", { className: "bg-white border-t px-4 py-3 shrink-0", children: [
+      /* @__PURE__ */ jsxDEV("div", { className: "relative", children: [
+        /* @__PURE__ */ jsxDEV(Search, { className: "absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" }, void 0, false, {
+          fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+          lineNumber: 655,
+          columnNumber: 11
+        }, this),
+        /* @__PURE__ */ jsxDEV(
+          "input",
+          {
+            type: "text",
+            value: search,
+            onChange: (e) => setSearch(e.target.value),
+            placeholder: "ค้นหาชื่อหรือที่อยู่...",
+            className: "w-full pl-10 pr-4 py-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-emerald-500"
+          },
+          void 0,
+          false,
+          {
+            fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+            lineNumber: 656,
+            columnNumber: 11
+          },
+          this
+        )
+      ] }, void 0, true, {
+        fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+        lineNumber: 654,
+        columnNumber: 9
+      }, this),
+      mapReady && facilities.length === 0 && !loading && /* @__PURE__ */ jsxDEV("div", { className: "mt-2 p-3 bg-amber-50 border border-amber-200 rounded-lg", children: [
+        /* @__PURE__ */ jsxDEV("p", { className: "text-sm text-amber-800 font-medium", children: "⚠️ ไม่พบสถานพยาบาลในรัศมี 15 กม." }, void 0, false, {
+          fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+          lineNumber: 662,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ jsxDEV("p", { className: "text-xs text-amber-600 mt-1", children: [
+          "กรุณาเปิดใช้งาน ",
+          /* @__PURE__ */ jsxDEV("b", { children: "Places API" }, void 0, false, {
+            fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+            lineNumber: 663,
+            columnNumber: 72
+          }, this),
+          " ใน Google Cloud Console"
+        ] }, void 0, true, {
+          fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+          lineNumber: 663,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ jsxDEV(
+          "a",
+          {
+            href: "https://console.cloud.google.com/apis/library/places-backend.googleapis.com",
+            target: "_blank",
+            rel: "noopener noreferrer",
+            className: "inline-flex items-center gap-1 mt-2 text-xs text-blue-600 hover:underline",
+            children: [
+              /* @__PURE__ */ jsxDEV(ExternalLink, { className: "w-3 h-3" }, void 0, false, {
+                fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+                lineNumber: 666,
+                columnNumber: 15
+              }, this),
+              " เปิด Google Cloud Console"
+            ]
+          },
+          void 0,
+          true,
+          {
+            fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+            lineNumber: 664,
+            columnNumber: 13
+          },
+          this
+        )
+      ] }, void 0, true, {
+        fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+        lineNumber: 661,
+        columnNumber: 9
+      }, this)
+    ] }, void 0, true, {
+      fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+      lineNumber: 653,
+      columnNumber: 7
+    }, this),
+    /* @__PURE__ */ jsxDEV("div", { className: "bg-gray-50 shrink-0 max-h-60 overflow-y-auto", children: [
+      /* @__PURE__ */ jsxDEV("div", { className: "px-4 py-2 bg-white border-b sticky top-0 z-10 flex items-center justify-between", children: [
+        /* @__PURE__ */ jsxDEV("h2", { className: "text-sm font-semibold text-gray-700", children: [
+          "พบ ",
+          filtered.length,
+          " แห่ง"
+        ] }, void 0, true, {
+          fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+          lineNumber: 675,
+          columnNumber: 11
+        }, this),
+        loading && /* @__PURE__ */ jsxDEV(Loader2, { className: "w-4 h-4 animate-spin text-emerald-600" }, void 0, false, {
+          fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+          lineNumber: 676,
+          columnNumber: 23
+        }, this)
+      ] }, void 0, true, {
+        fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+        lineNumber: 674,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ jsxDEV("div", { className: "divide-y", children: loading && facilities.length === 0 ? /* @__PURE__ */ jsxDEV("div", { className: "flex items-center justify-center py-8", children: /* @__PURE__ */ jsxDEV(Loader2, { className: "w-6 h-6 animate-spin text-emerald-600" }, void 0, false, {
+        fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+        lineNumber: 680,
+        columnNumber: 66
+      }, this) }, void 0, false, {
+        fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+        lineNumber: 680,
+        columnNumber: 11
+      }, this) : filtered.length === 0 ? /* @__PURE__ */ jsxDEV("div", { className: "text-center py-8 text-gray-500", children: [
+        /* @__PURE__ */ jsxDEV(MapPin, { className: "w-10 h-10 mx-auto mb-2 opacity-50" }, void 0, false, {
+          fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+          lineNumber: 682,
+          columnNumber: 59
+        }, this),
+        /* @__PURE__ */ jsxDEV("p", { className: "text-sm", children: "ไม่พบสถานพยาบาล" }, void 0, false, {
+          fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+          lineNumber: 682,
+          columnNumber: 115
+        }, this)
+      ] }, void 0, true, {
+        fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+        lineNumber: 682,
+        columnNumber: 11
+      }, this) : filtered.slice(0, 30).map((f) => {
+        const Icon = icons[f.type] || Building2;
+        const sel = selectedId === f.id;
+        return /* @__PURE__ */ jsxDEV(
+          "div",
+          {
+            onClick: () => focusFacility(f),
+            className: `p-3 bg-white hover:bg-emerald-50 cursor-pointer transition ${sel ? "bg-emerald-50 border-l-4 border-emerald-500" : ""}`,
+            children: /* @__PURE__ */ jsxDEV("div", { className: "flex items-start gap-3", children: [
+              /* @__PURE__ */ jsxDEV("div", { className: `w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${colors[f.type]}`, children: /* @__PURE__ */ jsxDEV(Icon, { className: "w-4 h-4" }, void 0, false, {
+                fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+                lineNumber: 692,
+                columnNumber: 23
+              }, this) }, void 0, false, {
+                fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+                lineNumber: 691,
+                columnNumber: 21
+              }, this),
+              /* @__PURE__ */ jsxDEV("div", { className: "flex-1 min-w-0", children: [
+                /* @__PURE__ */ jsxDEV("div", { className: "flex justify-between gap-2", children: [
+                  /* @__PURE__ */ jsxDEV("div", { children: [
+                    /* @__PURE__ */ jsxDEV("h3", { className: "font-medium text-gray-800 text-sm", children: f.name }, void 0, false, {
+                      fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+                      lineNumber: 697,
+                      columnNumber: 27
+                    }, this),
+                    /* @__PURE__ */ jsxDEV("span", { className: `inline-block px-1.5 py-0.5 text-xs rounded mt-0.5 ${colors[f.type]}`, children: labels[f.type] }, void 0, false, {
+                      fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+                      lineNumber: 698,
+                      columnNumber: 27
+                    }, this)
+                  ] }, void 0, true, {
+                    fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+                    lineNumber: 696,
+                    columnNumber: 25
+                  }, this),
+                  /* @__PURE__ */ jsxDEV("div", { className: "text-right shrink-0", children: [
+                    /* @__PURE__ */ jsxDEV("p", { className: "text-sm font-semibold text-emerald-600", children: f.distanceText }, void 0, false, {
+                      fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+                      lineNumber: 701,
+                      columnNumber: 27
+                    }, this),
+                    f.isOpen !== void 0 && /* @__PURE__ */ jsxDEV("p", { className: `text-xs ${f.isOpen ? "text-green-600" : "text-red-500"}`, children: f.isOpen ? "เปิด" : "ปิด" }, void 0, false, {
+                      fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+                      lineNumber: 702,
+                      columnNumber: 54
+                    }, this)
+                  ] }, void 0, true, {
+                    fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+                    lineNumber: 700,
+                    columnNumber: 25
+                  }, this)
+                ] }, void 0, true, {
+                  fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+                  lineNumber: 695,
+                  columnNumber: 23
+                }, this),
+                /* @__PURE__ */ jsxDEV("p", { className: "text-xs text-gray-500 mt-1 truncate", children: f.address }, void 0, false, {
+                  fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+                  lineNumber: 705,
+                  columnNumber: 23
+                }, this),
+                f.rating && /* @__PURE__ */ jsxDEV("div", { className: "flex items-center gap-1 mt-1", children: [
+                  /* @__PURE__ */ jsxDEV(Star, { className: "w-3 h-3 text-yellow-500 fill-yellow-500" }, void 0, false, {
+                    fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+                    lineNumber: 708,
+                    columnNumber: 27
+                  }, this),
+                  /* @__PURE__ */ jsxDEV("span", { className: "text-xs text-gray-600", children: f.rating }, void 0, false, {
+                    fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+                    lineNumber: 709,
+                    columnNumber: 27
+                  }, this),
+                  /* @__PURE__ */ jsxDEV("span", { className: "text-xs text-gray-400", children: [
+                    "(",
+                    f.ratingCount,
+                    ")"
+                  ] }, void 0, true, {
+                    fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+                    lineNumber: 710,
+                    columnNumber: 27
+                  }, this)
+                ] }, void 0, true, {
+                  fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+                  lineNumber: 707,
+                  columnNumber: 21
+                }, this)
+              ] }, void 0, true, {
+                fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+                lineNumber: 694,
+                columnNumber: 21
+              }, this),
+              /* @__PURE__ */ jsxDEV(
+                "button",
+                {
+                  onClick: (e) => {
+                    e.stopPropagation();
+                    navigate(f);
+                  },
+                  className: "p-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 shrink-0",
+                  children: /* @__PURE__ */ jsxDEV(Navigation, { className: "w-4 h-4" }, void 0, false, {
+                    fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+                    lineNumber: 716,
+                    columnNumber: 23
+                  }, this)
+                },
+                void 0,
+                false,
+                {
+                  fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+                  lineNumber: 714,
+                  columnNumber: 21
+                },
+                this
+              )
+            ] }, void 0, true, {
+              fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+              lineNumber: 690,
+              columnNumber: 19
+            }, this)
+          },
+          f.id,
+          false,
+          {
+            fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+            lineNumber: 688,
+            columnNumber: 15
+          },
+          this
+        );
+      }) }, void 0, false, {
+        fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+        lineNumber: 678,
+        columnNumber: 9
+      }, this)
+    ] }, void 0, true, {
+      fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+      lineNumber: 673,
+      columnNumber: 7
+    }, this)
+  ] }, void 0, true, {
+    fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx",
+    lineNumber: 525,
+    columnNumber: 5
+  }, this);
+}
+_s(MapPage, "tSAH5JLsRHwR12v0qhzwVLS5uHc=");
+_c = MapPage;
+var _c;
+$RefreshReg$(_c, "MapPage");
+if (import.meta.hot && !inWebWorker) {
+  window.$RefreshReg$ = prevRefreshReg;
+  window.$RefreshSig$ = prevRefreshSig;
+}
+if (import.meta.hot && !inWebWorker) {
+  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {
+    RefreshRuntime.registerExportsForReactRefresh("C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/pages/map/MapPage.tsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+
+//# sourceMappingURL=data:application/json;base64,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QSxtQkFqQko7QUFBQTtBQUFBO0FBQUE7QUFBQSxxQkFtQkE7QUFBQSxjQUNBO0FBQUEsZ0JBQUM7QUFBQTtBQUFBLGtCQUFPLFNBQVMsQ0FBQW9CLE1BQUs7QUFBRUEsc0JBQUUwRyxnQkFBZ0I7QUFBR1YsNkJBQVM3RyxDQUFDO0FBQUEsa0JBQUc7QUFBQSxrQkFDeEQsV0FBVTtBQUFBLGtCQUNWLGlDQUFDLGNBQVcsV0FBVSxhQUF0QjtBQUFBO0FBQUE7QUFBQTtBQUFBLHlCQUErQjtBQUFBO0FBQUEsZ0JBRmpDO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQSxjQUdBO0FBQUEsaUJBM0JGO0FBQUE7QUFBQTtBQUFBO0FBQUEsbUJBNEJBO0FBQUE7QUFBQSxVQTlCUUEsRUFBRWY7QUFBQUEsVUFBWjtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBLFFBK0JBO0FBQUEsTUFFSixDQUFDLEtBM0NMO0FBQUE7QUFBQTtBQUFBO0FBQUEsYUE2Q0E7QUFBQSxTQWxERjtBQUFBO0FBQUE7QUFBQTtBQUFBLFdBbURBO0FBQUEsT0F2TUY7QUFBQTtBQUFBO0FBQUE7QUFBQSxTQXdNQTtBQUVKO0FBQUMvRSxHQTlxQnVCRCxTQUFPO0FBQUF1TixLQUFQdk47QUFBTyxJQUFBdU47QUFBQUMsYUFBQUQsSUFBQSIsIm5hbWVzIjpbInVzZVN0YXRlIiwidXNlRWZmZWN0IiwidXNlUmVmIiwiTWFwUGluIiwiU2VhcmNoIiwiQnVpbGRpbmcyIiwiTmF2aWdhdGlvbiIsIkxvYWRlcjIiLCJBbGVydENpcmNsZSIsIlBpbGwiLCJTdGV0aG9zY29wZSIsIkhlYXJ0IiwiVXNlciIsIlJlZnJlc2hDdyIsIlN0YXIiLCJFeHRlcm5hbExpbmsiLCJUYXJnZXQiLCJBbGVydFRyaWFuZ2xlIiwiTUFQU19BUElfS0VZIiwiaW1wb3J0IiwiZW52IiwiVklURV9HT09HTEVfTUFQU19BUElfS0VZIiwiREVGQVVMVF9MT0NBVElPTiIsImxhdCIsImxuZyIsIk1hcFBhZ2UiLCJfcyIsIm1hcFJlZiIsIm1hcEluc3RhbmNlIiwicGxhY2VzU2VydmljZSIsIm1hcmtlcnMiLCJpbmZvV2luZG93IiwidXNlck1hcmtlclJlZiIsInNlYXJjaCIsInNldFNlYXJjaCIsImZpbHRlciIsInNldEZpbHRlciIsImZhY2lsaXRpZXMiLCJzZXRGYWNpbGl0aWVzIiwibG9hZGluZyIsInNldExvYWRpbmciLCJlcnJvciIsInNldEVycm9yIiwidXNlckxvY2F0aW9uIiwic2V0VXNlckxvY2F0aW9uIiwibWFwUmVhZHkiLCJzZXRNYXBSZWFkeSIsInNlbGVjdGVkSWQiLCJzZXRTZWxlY3RlZElkIiwibG9jYXRpb25TdGF0dXMiLCJzZXRMb2NhdGlvblN0YXR1cyIsImxvY2F0aW9uQWNjdXJhY3kiLCJzZXRMb2NhdGlvbkFjY3VyYWN5Iiwid2F0Y2hJZCIsInNldFdhdGNoSWQiLCJjYWxjRGlzdGFuY2UiLCJsYXQxIiwibG5nMSIsImxhdDIiLCJsbmcyIiwiUiIsImRMYXQiLCJNYXRoIiwiUEkiLCJkTG5nIiwiYSIsInNpbiIsImNvcyIsImF0YW4yIiwic3FydCIsImZvcm1hdERpc3QiLCJrbSIsInJvdW5kIiwidG9GaXhlZCIsIm1hcmtlckNvbG9ycyIsImhvc3BpdGFsIiwiY2xpbmljIiwicGhhcm1hY3kiLCJoZWFsdGhfY2VudGVyIiwic2VhcmNoUGxhY2VzIiwibG9jIiwia2V5d29yZCIsInR5cGUiLCJQcm9taXNlIiwicmVzb2x2ZSIsImN1cnJlbnQiLCJuZWFyYnlTZWFyY2giLCJsb2NhdGlvbiIsImdvb2dsZSIsIm1hcHMiLCJMYXRMbmciLCJyYWRpdXMiLCJyZXN1bHRzIiwic3RhdHVzIiwiY29uc29sZSIsImxvZyIsImxlbmd0aCIsInBsYWNlcyIsIlBsYWNlc1NlcnZpY2VTdGF0dXMiLCJPSyIsIml0ZW1zIiwibWFwIiwicCIsImdlb21ldHJ5IiwiZGlzdCIsImlkIiwicGxhY2VfaWQiLCJTdHJpbmciLCJyYW5kb20iLCJuYW1lIiwiYWRkcmVzcyIsInZpY2luaXR5IiwicmF0aW5nIiwicmF0aW5nQ291bnQiLCJ1c2VyX3JhdGluZ3NfdG90YWwiLCJpc09wZW4iLCJvcGVuaW5nX2hvdXJzIiwib3Blbl9ub3ciLCJkaXN0YW5jZSIsImRpc3RhbmNlVGV4dCIsImYiLCJsb2FkRmFjaWxpdGllcyIsImFsbCIsImZsYXQiLCJ1bmlxdWUiLCJyZWR1Y2UiLCJhY2MiLCJmaW5kIiwieCIsInB1c2giLCJzb3J0IiwiYiIsImFkZE1hcmtlcnMiLCJlIiwibGlzdCIsImZvckVhY2giLCJtIiwic2V0TWFwIiwiSW5mb1dpbmRvdyIsIk1hcmtlciIsInBvc2l0aW9uIiwidGl0bGUiLCJpY29uIiwicGF0aCIsIlN5bWJvbFBhdGgiLCJDSVJDTEUiLCJzY2FsZSIsImZpbGxDb2xvciIsImZpbGxPcGFjaXR5Iiwic3Ryb2tlQ29sb3IiLCJzdHJva2VXZWlnaHQiLCJhbmltYXRpb24iLCJBbmltYXRpb24iLCJEUk9QIiwiYWRkTGlzdGVuZXIiLCJzZXRDb250ZW50Iiwib3BlbiIsImluaXRNYXAiLCJNYXAiLCJjZW50ZXIiLCJ6b29tIiwibWFwVHlwZUNvbnRyb2wiLCJzdHJlZXRWaWV3Q29udHJvbCIsIlBsYWNlc1NlcnZpY2UiLCJ6SW5kZXgiLCJ1cGRhdGVVc2VyTWFya2VyIiwic2V0UG9zaXRpb24iLCJnZXRIaWdoQWNjdXJhY3lMb2NhdGlvbiIsInJlamVjdCIsIm5hdmlnYXRvciIsImdlb2xvY2F0aW9uIiwiRXJyb3IiLCJnZXRDdXJyZW50UG9zaXRpb24iLCJjb29yZHMiLCJsYXRpdHVkZSIsImxvbmdpdHVkZSIsImFjY3VyYWN5Iiwid2FybiIsIm1lc3NhZ2UiLCJlbmFibGVIaWdoQWNjdXJhY3kiLCJ0aW1lb3V0IiwibWF4aW11bUFnZSIsInJldHJ5Q291bnQiLCJtYXhSZXRyaWVzIiwibG9hZEdvb2dsZU1hcHNTY3JpcHQiLCJ3aW5kb3ciLCJleGlzdGluZ1NjcmlwdCIsImRvY3VtZW50IiwicXVlcnlTZWxlY3RvciIsInJlbW92ZSIsInMiLCJjcmVhdGVFbGVtZW50Iiwic3JjIiwiYXN5bmMiLCJkZWZlciIsIm9ubG9hZCIsIm9uZXJyb3IiLCJoZWFkIiwiYXBwZW5kQ2hpbGQiLCJzZXR1cE1hcCIsImVyciIsInIiLCJzZXRUaW1lb3V0IiwiaW5pdFdpdGhMb2NhdGlvbiIsImxvY2F0aW9uRGF0YSIsIndhdGNoUG9zaXRpb24iLCJuZXdMb2MiLCJuZXdBY2N1cmFjeSIsImNvZGUiLCJjbGVhcldhdGNoIiwicmVmcmVzaCIsInNldENlbnRlciIsInJlcXVlc3RMb2NhdGlvbiIsImZpbHRlcmVkIiwibWF0Y2hTZWFyY2giLCJ0b0xvd2VyQ2FzZSIsImluY2x1ZGVzIiwibWF0Y2hGaWx0ZXIiLCJpIiwic2hvdyIsInNldFZpc2libGUiLCJsYWJlbHMiLCJjb2xvcnMiLCJpY29ucyIsImZvY3VzRmFjaWxpdHkiLCJzZXRab29tIiwiZ2V0VGl0bGUiLCJldmVudCIsInRyaWdnZXIiLCJuYXZpZ2F0ZSIsInQiLCJJY29uIiwiY250IiwicmVsb2FkIiwidGFyZ2V0IiwidmFsdWUiLCJzbGljZSIsInNlbCIsInVuZGVmaW5lZCIsInN0b3BQcm9wYWdhdGlvbiIsIl9jIiwiJFJlZnJlc2hSZWckIl0sImlnbm9yZUxpc3QiOltdLCJzb3VyY2VzIjpbIk1hcFBhZ2UudHN4Il0sInNvdXJjZXNDb250ZW50IjpbImltcG9ydCB7IHVzZVN0YXRlLCB1c2VFZmZlY3QsIHVzZVJlZiB9IGZyb20gJ3JlYWN0JztcclxuaW1wb3J0IHsgTWFwUGluLCBTZWFyY2gsIEJ1aWxkaW5nMiwgTmF2aWdhdGlvbiwgTG9hZGVyMiwgQWxlcnRDaXJjbGUsIFBpbGwsIFN0ZXRob3Njb3BlLCBIZWFydCwgVXNlciwgUmVmcmVzaEN3LCBTdGFyLCBFeHRlcm5hbExpbmssIFRhcmdldCwgQWxlcnRUcmlhbmdsZSB9IGZyb20gJ2x1Y2lkZS1yZWFjdCc7XHJcblxyXG5jb25zdCBNQVBTX0FQSV9LRVkgPSBpbXBvcnQubWV0YS5lbnYuVklURV9HT09HTEVfTUFQU19BUElfS0VZIHx8ICcnO1xyXG5cclxuaW50ZXJmYWNlIEZhY2lsaXR5IHtcclxuICBpZDogc3RyaW5nO1xyXG4gIG5hbWU6IHN0cmluZztcclxuICB0eXBlOiAnaG9zcGl0YWwnIHwgJ2NsaW5pYycgfCAncGhhcm1hY3knIHwgJ2hlYWx0aF9jZW50ZXInO1xyXG4gIGFkZHJlc3M6IHN0cmluZztcclxuICByYXRpbmc/OiBudW1iZXI7XHJcbiAgcmF0aW5nQ291bnQ/OiBudW1iZXI7XHJcbiAgaXNPcGVuPzogYm9vbGVhbjtcclxuICBkaXN0YW5jZTogbnVtYmVyO1xyXG4gIGRpc3RhbmNlVGV4dDogc3RyaW5nO1xyXG4gIGxvY2F0aW9uOiB7IGxhdDogbnVtYmVyOyBsbmc6IG51bWJlciB9O1xyXG59XHJcblxyXG4vLyBEZWZhdWx0IGxvY2F0aW9uIGZhbGxiYWNrIC0gQmFuZ2tva1xyXG5jb25zdCBERUZBVUxUX0xPQ0FUSU9OID0geyBsYXQ6IDEzLjc1NjMsIGxuZzogMTAwLjUwMTggfTtcclxuXHJcbmV4cG9ydCBkZWZhdWx0IGZ1bmN0aW9uIE1hcFBhZ2UoKSB7XHJcbiAgY29uc3QgbWFwUmVmID0gdXNlUmVmPEhUTUxEaXZFbGVtZW50PihudWxsKTtcclxuICBjb25zdCBtYXBJbnN0YW5jZSA9IHVzZVJlZjxnb29nbGUubWFwcy5NYXAgfCBudWxsPihudWxsKTtcclxuICBjb25zdCBwbGFjZXNTZXJ2aWNlID0gdXNlUmVmPGdvb2dsZS5tYXBzLnBsYWNlcy5QbGFjZXNTZXJ2aWNlIHwgbnVsbD4obnVsbCk7XHJcbiAgY29uc3QgbWFya2VycyA9IHVzZVJlZjxnb29nbGUubWFwcy5NYXJrZXJbXT4oW10pO1xyXG4gIGNvbnN0IGluZm9XaW5kb3cgPSB1c2VSZWY8Z29vZ2xlLm1hcHMuSW5mb1dpbmRvdyB8IG51bGw+KG51bGwpO1xyXG4gIGNvbnN0IHVzZXJNYXJrZXJSZWYgPSB1c2VSZWY8Z29vZ2xlLm1hcHMuTWFya2VyIHwgbnVsbD4obnVsbCk7XHJcbiAgXHJcbiAgY29uc3QgW3NlYXJjaCwgc2V0U2VhcmNoXSA9IHVzZVN0YXRlKCcnKTtcclxuICBjb25zdCBbZmlsdGVyLCBzZXRGaWx0ZXJdID0gdXNlU3RhdGU8J2FsbCcgfCAnaG9zcGl0YWwnIHwgJ2NsaW5pYycgfCAncGhhcm1hY3knIHwgJ2hlYWx0aF9jZW50ZXInPignYWxsJyk7XHJcbiAgY29uc3QgW2ZhY2lsaXRpZXMsIHNldEZhY2lsaXRpZXNdID0gdXNlU3RhdGU8RmFjaWxpdHlbXT4oW10pO1xyXG4gIGNvbnN0IFtsb2FkaW5nLCBzZXRMb2FkaW5nXSA9IHVzZVN0YXRlKHRydWUpO1xyXG4gIGNvbnN0IFtlcnJvciwgc2V0RXJyb3JdID0gdXNlU3RhdGU8c3RyaW5nIHwgbnVsbD4obnVsbCk7XHJcbiAgY29uc3QgW3VzZXJMb2NhdGlvbiwgc2V0VXNlckxvY2F0aW9uXSA9IHVzZVN0YXRlKERFRkFVTFRfTE9DQVRJT04pO1xyXG4gIGNvbnN0IFttYXBSZWFkeSwgc2V0TWFwUmVhZHldID0gdXNlU3RhdGUoZmFsc2UpO1xyXG4gIGNvbnN0IFtzZWxlY3RlZElkLCBzZXRTZWxlY3RlZElkXSA9IHVzZVN0YXRlPHN0cmluZyB8IG51bGw+KG51bGwpO1xyXG4gIGNvbnN0IFtsb2NhdGlvblN0YXR1cywgc2V0TG9jYXRpb25TdGF0dXNdID0gdXNlU3RhdGU8J2xvYWRpbmcnIHwgJ3N1Y2Nlc3MnIHwgJ2RlbmllZCcgfCAnZXJyb3InIHwgJ3VuYXZhaWxhYmxlJz4oJ2xvYWRpbmcnKTtcclxuICBjb25zdCBbbG9jYXRpb25BY2N1cmFjeSwgc2V0TG9jYXRpb25BY2N1cmFjeV0gPSB1c2VTdGF0ZTxudW1iZXIgfCBudWxsPihudWxsKTtcclxuICBjb25zdCBbd2F0Y2hJZCwgc2V0V2F0Y2hJZF0gPSB1c2VTdGF0ZTxudW1iZXIgfCBudWxsPihudWxsKTtcclxuXHJcbiAgLy8gRGlzdGFuY2UgY2FsY3VsYXRpb25cclxuICBjb25zdCBjYWxjRGlzdGFuY2UgPSAobGF0MTogbnVtYmVyLCBsbmcxOiBudW1iZXIsIGxhdDI6IG51bWJlciwgbG5nMjogbnVtYmVyKTogbnVtYmVyID0+IHtcclxuICAgIGNvbnN0IFIgPSA2MzcxO1xyXG4gICAgY29uc3QgZExhdCA9IChsYXQyIC0gbGF0MSkgKiBNYXRoLlBJIC8gMTgwO1xyXG4gICAgY29uc3QgZExuZyA9IChsbmcyIC0gbG5nMSkgKiBNYXRoLlBJIC8gMTgwO1xyXG4gICAgY29uc3QgYSA9IE1hdGguc2luKGRMYXQvMikgKiogMiArIE1hdGguY29zKGxhdDEgKiBNYXRoLlBJLzE4MCkgKiBNYXRoLmNvcyhsYXQyICogTWF0aC5QSS8xODApICogTWF0aC5zaW4oZExuZy8yKSAqKiAyO1xyXG4gICAgcmV0dXJuIFIgKiAyICogTWF0aC5hdGFuMihNYXRoLnNxcnQoYSksIE1hdGguc3FydCgxLWEpKTtcclxuICB9O1xyXG5cclxuICBjb25zdCBmb3JtYXREaXN0ID0gKGttOiBudW1iZXIpID0+IGttIDwgMSA/IGAke01hdGgucm91bmQoa20gKiAxMDAwKX0g4LihLmAgOiBgJHtrbS50b0ZpeGVkKDEpfSDguIHguKEuYDtcclxuXHJcbiAgLy8gTWFya2VyIGNvbG9yc1xyXG4gIGNvbnN0IG1hcmtlckNvbG9yczogUmVjb3JkPHN0cmluZywgc3RyaW5nPiA9IHtcclxuICAgIGhvc3BpdGFsOiAnI0RDMjYyNicsXHJcbiAgICBjbGluaWM6ICcjMjU2M0VCJyxcclxuICAgIHBoYXJtYWN5OiAnIzE2QTM0QScsXHJcbiAgICBoZWFsdGhfY2VudGVyOiAnIzkzMzNFQScsXHJcbiAgfTtcclxuXHJcbiAgLy8gU2VhcmNoIHBsYWNlc1xyXG4gIGNvbnN0IHNlYXJjaFBsYWNlcyA9IChsb2M6IHsgbGF0OiBudW1iZXI7IGxuZzogbnVtYmVyIH0sIGtleXdvcmQ6IHN0cmluZywgdHlwZTogc3RyaW5nKTogUHJvbWlzZTxGYWNpbGl0eVtdPiA9PiB7XHJcbiAgICByZXR1cm4gbmV3IFByb21pc2UoKHJlc29sdmUpID0+IHtcclxuICAgICAgaWYgKCFwbGFjZXNTZXJ2aWNlLmN1cnJlbnQpIHsgcmVzb2x2ZShbXSk7IHJldHVybjsgfVxyXG5cclxuICAgICAgcGxhY2VzU2VydmljZS5jdXJyZW50Lm5lYXJieVNlYXJjaCh7XHJcbiAgICAgICAgbG9jYXRpb246IG5ldyBnb29nbGUubWFwcy5MYXRMbmcobG9jLmxhdCwgbG9jLmxuZyksXHJcbiAgICAgICAgcmFkaXVzOiAxNTAwMCxcclxuICAgICAgICBrZXl3b3JkLFxyXG4gICAgICB9LCAocmVzdWx0cywgc3RhdHVzKSA9PiB7XHJcbiAgICAgICAgY29uc29sZS5sb2coYFske2tleXdvcmR9XSAke3N0YXR1c306ICR7cmVzdWx0cz8ubGVuZ3RoIHx8IDB9IHJlc3VsdHNgKTtcclxuICAgICAgICBpZiAoc3RhdHVzID09PSBnb29nbGUubWFwcy5wbGFjZXMuUGxhY2VzU2VydmljZVN0YXR1cy5PSyAmJiByZXN1bHRzKSB7XHJcbiAgICAgICAgICBjb25zdCBpdGVtcyA9IHJlc3VsdHMubWFwKHAgPT4ge1xyXG4gICAgICAgICAgICBjb25zdCBsYXQgPSBwLmdlb21ldHJ5Py5sb2NhdGlvbj8ubGF0KCkgfHwgMDtcclxuICAgICAgICAgICAgY29uc3QgbG5nID0gcC5nZW9tZXRyeT8ubG9jYXRpb24/LmxuZygpIHx8IDA7XHJcbiAgICAgICAgICAgIGNvbnN0IGRpc3QgPSBjYWxjRGlzdGFuY2UobG9jLmxhdCwgbG9jLmxuZywgbGF0LCBsbmcpO1xyXG4gICAgICAgICAgICByZXR1cm4ge1xyXG4gICAgICAgICAgICAgIGlkOiBwLnBsYWNlX2lkIHx8IFN0cmluZyhNYXRoLnJhbmRvbSgpKSxcclxuICAgICAgICAgICAgICBuYW1lOiBwLm5hbWUgfHwgJ1Vua25vd24nLFxyXG4gICAgICAgICAgICAgIHR5cGU6IHR5cGUgYXMgRmFjaWxpdHlbJ3R5cGUnXSxcclxuICAgICAgICAgICAgICBhZGRyZXNzOiBwLnZpY2luaXR5IHx8ICcnLFxyXG4gICAgICAgICAgICAgIHJhdGluZzogcC5yYXRpbmcsXHJcbiAgICAgICAgICAgICAgcmF0aW5nQ291bnQ6IHAudXNlcl9yYXRpbmdzX3RvdGFsLFxyXG4gICAgICAgICAgICAgIGlzT3BlbjogcC5vcGVuaW5nX2hvdXJzPy5vcGVuX25vdyxcclxuICAgICAgICAgICAgICBkaXN0YW5jZTogZGlzdCxcclxuICAgICAgICAgICAgICBkaXN0YW5jZVRleHQ6IGZvcm1hdERpc3QoZGlzdCksXHJcbiAgICAgICAgICAgICAgbG9jYXRpb246IHsgbGF0LCBsbmcgfSxcclxuICAgICAgICAgICAgfTtcclxuICAgICAgICAgIH0pLmZpbHRlcihmID0+IGYuZGlzdGFuY2UgPD0gMTUpO1xyXG4gICAgICAgICAgcmVzb2x2ZShpdGVtcyk7XHJcbiAgICAgICAgfSBlbHNlIHtcclxuICAgICAgICAgIHJlc29sdmUoW10pO1xyXG4gICAgICAgIH1cclxuICAgICAgfSk7XHJcbiAgICB9KTtcclxuICB9O1xyXG5cclxuICAvLyBMb2FkIGFsbCBmYWNpbGl0aWVzXHJcbiAgY29uc3QgbG9hZEZhY2lsaXRpZXMgPSBhc3luYyAobG9jOiB7IGxhdDogbnVtYmVyOyBsbmc6IG51bWJlciB9KSA9PiB7XHJcbiAgICBpZiAoIXBsYWNlc1NlcnZpY2UuY3VycmVudCkgcmV0dXJuO1xyXG4gICAgc2V0TG9hZGluZyh0cnVlKTtcclxuICAgIGNvbnNvbGUubG9nKCdMb2FkaW5nIG5lYXI6JywgbG9jKTtcclxuXHJcbiAgICB0cnkge1xyXG4gICAgICBjb25zdCByZXN1bHRzID0gYXdhaXQgUHJvbWlzZS5hbGwoW1xyXG4gICAgICAgIHNlYXJjaFBsYWNlcyhsb2MsICdob3NwaXRhbCDguYLguKPguIfguJ7guKLguLLguJrguLLguKUnLCAnaG9zcGl0YWwnKSxcclxuICAgICAgICBzZWFyY2hQbGFjZXMobG9jLCAnY2xpbmljIOC4hOC4peC4tOC4meC4tOC4gSBkb2N0b3InLCAnY2xpbmljJyksXHJcbiAgICAgICAgc2VhcmNoUGxhY2VzKGxvYywgJ3BoYXJtYWN5IOC4o+C5ieC4suC4meC4ouC4sicsICdwaGFybWFjeScpLFxyXG4gICAgICAgIHNlYXJjaFBsYWNlcyhsb2MsICdoZWFsdGggY2VudGVyIOC4qOC4ueC4meC4ouC5jOC4quC4uOC4guC4oOC4suC4nicsICdoZWFsdGhfY2VudGVyJyksXHJcbiAgICAgIF0pO1xyXG5cclxuICAgICAgY29uc3QgYWxsID0gcmVzdWx0cy5mbGF0KCk7XHJcbiAgICAgIGNvbnN0IHVuaXF1ZSA9IGFsbC5yZWR1Y2U8RmFjaWxpdHlbXT4oKGFjYywgZikgPT4ge1xyXG4gICAgICAgIGlmICghYWNjLmZpbmQoeCA9PiB4LmlkID09PSBmLmlkKSkgYWNjLnB1c2goZik7XHJcbiAgICAgICAgcmV0dXJuIGFjYztcclxuICAgICAgfSwgW10pO1xyXG4gICAgICB1bmlxdWUuc29ydCgoYSwgYikgPT4gYS5kaXN0YW5jZSAtIGIuZGlzdGFuY2UpO1xyXG5cclxuICAgICAgY29uc29sZS5sb2coJ1RvdGFsIGZhY2lsaXRpZXM6JywgdW5pcXVlLmxlbmd0aCk7XHJcbiAgICAgIHNldEZhY2lsaXRpZXModW5pcXVlKTtcclxuICAgICAgYWRkTWFya2Vycyh1bmlxdWUpO1xyXG4gICAgfSBjYXRjaCAoZSkge1xyXG4gICAgICBjb25zb2xlLmVycm9yKGUpO1xyXG4gICAgICBzZXRFcnJvcign4LmA4LiB4Li04LiU4LiC4LmJ4Lit4Lic4Li04LiU4Lie4Lil4Liy4LiUJyk7XHJcbiAgICB9IGZpbmFsbHkge1xyXG4gICAgICBzZXRMb2FkaW5nKGZhbHNlKTtcclxuICAgIH1cclxuICB9O1xyXG5cclxuICAvLyBBZGQgbWFya2Vyc1xyXG4gIGNvbnN0IGFkZE1hcmtlcnMgPSAobGlzdDogRmFjaWxpdHlbXSkgPT4ge1xyXG4gICAgbWFya2Vycy5jdXJyZW50LmZvckVhY2gobSA9PiBtLnNldE1hcChudWxsKSk7XHJcbiAgICBtYXJrZXJzLmN1cnJlbnQgPSBbXTtcclxuICAgIGlmICghbWFwSW5zdGFuY2UuY3VycmVudCkgcmV0dXJuO1xyXG4gICAgaWYgKCFpbmZvV2luZG93LmN1cnJlbnQpIGluZm9XaW5kb3cuY3VycmVudCA9IG5ldyBnb29nbGUubWFwcy5JbmZvV2luZG93KCk7XHJcblxyXG4gICAgbGlzdC5mb3JFYWNoKGYgPT4ge1xyXG4gICAgICBjb25zdCBtID0gbmV3IGdvb2dsZS5tYXBzLk1hcmtlcih7XHJcbiAgICAgICAgcG9zaXRpb246IGYubG9jYXRpb24sXHJcbiAgICAgICAgbWFwOiBtYXBJbnN0YW5jZS5jdXJyZW50LFxyXG4gICAgICAgIHRpdGxlOiBmLm5hbWUsXHJcbiAgICAgICAgaWNvbjoge1xyXG4gICAgICAgICAgcGF0aDogZ29vZ2xlLm1hcHMuU3ltYm9sUGF0aC5DSVJDTEUsXHJcbiAgICAgICAgICBzY2FsZTogMTAsXHJcbiAgICAgICAgICBmaWxsQ29sb3I6IG1hcmtlckNvbG9yc1tmLnR5cGVdIHx8ICcjNjY2JyxcclxuICAgICAgICAgIGZpbGxPcGFjaXR5OiAxLFxyXG4gICAgICAgICAgc3Ryb2tlQ29sb3I6ICcjZmZmJyxcclxuICAgICAgICAgIHN0cm9rZVdlaWdodDogMixcclxuICAgICAgICB9LFxyXG4gICAgICAgIGFuaW1hdGlvbjogZ29vZ2xlLm1hcHMuQW5pbWF0aW9uLkRST1AsXHJcbiAgICAgIH0pO1xyXG5cclxuICAgICAgbS5hZGRMaXN0ZW5lcignY2xpY2snLCAoKSA9PiB7XHJcbiAgICAgICAgc2V0U2VsZWN0ZWRJZChmLmlkKTtcclxuICAgICAgICBpbmZvV2luZG93LmN1cnJlbnQ/LnNldENvbnRlbnQoYFxyXG4gICAgICAgICAgPGRpdiBzdHlsZT1cInBhZGRpbmc6OHB4O21heC13aWR0aDoyMDBweDtcIj5cclxuICAgICAgICAgICAgPGI+JHtmLm5hbWV9PC9iPlxyXG4gICAgICAgICAgICA8cCBzdHlsZT1cImZvbnQtc2l6ZToxMXB4O2NvbG9yOiM2NjY7bWFyZ2luOjRweCAwO1wiPiR7Zi5hZGRyZXNzfTwvcD5cclxuICAgICAgICAgICAgJHtmLnJhdGluZyA/IGA8cCBzdHlsZT1cImZvbnQtc2l6ZToxMXB4O1wiPuKtkCAke2YucmF0aW5nfTwvcD5gIDogJyd9XHJcbiAgICAgICAgICAgIDxwIHN0eWxlPVwiY29sb3I6IzA1OTY2OTtmb250LXdlaWdodDo2MDA7XCI+JHtmLmRpc3RhbmNlVGV4dH08L3A+XHJcbiAgICAgICAgICAgIDxhIGhyZWY9XCJodHRwczovL3d3dy5nb29nbGUuY29tL21hcHMvZGlyLz9hcGk9MSZkZXN0aW5hdGlvbj0ke2YubG9jYXRpb24ubGF0fSwke2YubG9jYXRpb24ubG5nfVwiIFxyXG4gICAgICAgICAgICAgICB0YXJnZXQ9XCJfYmxhbmtcIiBzdHlsZT1cImRpc3BsYXk6aW5saW5lLWJsb2NrO21hcmdpbi10b3A6NnB4O3BhZGRpbmc6NXB4IDEwcHg7YmFja2dyb3VuZDojMDU5NjY5O2NvbG9yOiNmZmY7Ym9yZGVyLXJhZGl1czo0cHg7dGV4dC1kZWNvcmF0aW9uOm5vbmU7Zm9udC1zaXplOjExcHg7XCI+XHJcbiAgICAgICAgICAgICAg4LiZ4Liz4LiX4Liy4LiHXHJcbiAgICAgICAgICAgIDwvYT5cclxuICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgIGApO1xyXG4gICAgICAgIGluZm9XaW5kb3cuY3VycmVudD8ub3BlbihtYXBJbnN0YW5jZS5jdXJyZW50LCBtKTtcclxuICAgICAgfSk7XHJcblxyXG4gICAgICBtYXJrZXJzLmN1cnJlbnQucHVzaChtKTtcclxuICAgIH0pO1xyXG4gIH07XHJcblxyXG4gIC8vIEluaXRpYWxpemUgbWFwXHJcbiAgY29uc3QgaW5pdE1hcCA9IChsb2M6IHsgbGF0OiBudW1iZXI7IGxuZzogbnVtYmVyIH0pID0+IHtcclxuICAgIGlmICghbWFwUmVmLmN1cnJlbnQgfHwgbWFwSW5zdGFuY2UuY3VycmVudCkgcmV0dXJuO1xyXG4gICAgY29uc29sZS5sb2coJ0luaXQgbWFwIGF0OicsIGxvYyk7XHJcblxyXG4gICAgY29uc3QgbWFwID0gbmV3IGdvb2dsZS5tYXBzLk1hcChtYXBSZWYuY3VycmVudCwge1xyXG4gICAgICBjZW50ZXI6IGxvYyxcclxuICAgICAgem9vbTogMTMsXHJcbiAgICAgIG1hcFR5cGVDb250cm9sOiBmYWxzZSxcclxuICAgICAgc3RyZWV0Vmlld0NvbnRyb2w6IGZhbHNlLFxyXG4gICAgfSk7XHJcblxyXG4gICAgbWFwSW5zdGFuY2UuY3VycmVudCA9IG1hcDtcclxuICAgIHBsYWNlc1NlcnZpY2UuY3VycmVudCA9IG5ldyBnb29nbGUubWFwcy5wbGFjZXMuUGxhY2VzU2VydmljZShtYXApO1xyXG5cclxuICAgIC8vIFVzZXIgbWFya2VyIC0gc2F2ZSByZWZlcmVuY2UgZm9yIHVwZGF0ZXNcclxuICAgIHVzZXJNYXJrZXJSZWYuY3VycmVudCA9IG5ldyBnb29nbGUubWFwcy5NYXJrZXIoe1xyXG4gICAgICBwb3NpdGlvbjogbG9jLFxyXG4gICAgICBtYXAsXHJcbiAgICAgIHRpdGxlOiAn4LiE4Li44LiT4Lit4Lii4Li54LmI4LiX4Li14LmI4LiZ4Li14LmIJyxcclxuICAgICAgaWNvbjoge1xyXG4gICAgICAgIHBhdGg6IGdvb2dsZS5tYXBzLlN5bWJvbFBhdGguQ0lSQ0xFLFxyXG4gICAgICAgIHNjYWxlOiAxMixcclxuICAgICAgICBmaWxsQ29sb3I6ICcjM0I4MkY2JyxcclxuICAgICAgICBmaWxsT3BhY2l0eTogMSxcclxuICAgICAgICBzdHJva2VDb2xvcjogJyNmZmYnLFxyXG4gICAgICAgIHN0cm9rZVdlaWdodDogMyxcclxuICAgICAgfSxcclxuICAgICAgekluZGV4OiAxMDAwLFxyXG4gICAgfSk7XHJcblxyXG4gICAgLy8gUHVsc2UgZWZmZWN0IG1hcmtlclxyXG4gICAgbmV3IGdvb2dsZS5tYXBzLk1hcmtlcih7XHJcbiAgICAgIHBvc2l0aW9uOiBsb2MsXHJcbiAgICAgIG1hcCxcclxuICAgICAgaWNvbjoge1xyXG4gICAgICAgIHBhdGg6IGdvb2dsZS5tYXBzLlN5bWJvbFBhdGguQ0lSQ0xFLFxyXG4gICAgICAgIHNjYWxlOiAyNCxcclxuICAgICAgICBmaWxsQ29sb3I6ICcjM0I4MkY2JyxcclxuICAgICAgICBmaWxsT3BhY2l0eTogMC4yNSxcclxuICAgICAgICBzdHJva2VXZWlnaHQ6IDAsXHJcbiAgICAgIH0sXHJcbiAgICAgIHpJbmRleDogOTk5LFxyXG4gICAgfSk7XHJcblxyXG4gICAgc2V0TWFwUmVhZHkodHJ1ZSk7XHJcbiAgICBsb2FkRmFjaWxpdGllcyhsb2MpO1xyXG4gIH07XHJcblxyXG4gIC8vIFVwZGF0ZSB1c2VyIG1hcmtlciBwb3NpdGlvblxyXG4gIGNvbnN0IHVwZGF0ZVVzZXJNYXJrZXIgPSAobG9jOiB7IGxhdDogbnVtYmVyOyBsbmc6IG51bWJlciB9KSA9PiB7XHJcbiAgICBpZiAodXNlck1hcmtlclJlZi5jdXJyZW50ICYmIG1hcEluc3RhbmNlLmN1cnJlbnQpIHtcclxuICAgICAgdXNlck1hcmtlclJlZi5jdXJyZW50LnNldFBvc2l0aW9uKGxvYyk7XHJcbiAgICB9XHJcbiAgfTtcclxuXHJcbiAgLy8gR2V0IGhpZ2ggYWNjdXJhY3kgbG9jYXRpb25cclxuICBjb25zdCBnZXRIaWdoQWNjdXJhY3lMb2NhdGlvbiA9ICgpOiBQcm9taXNlPHsgbGF0OiBudW1iZXI7IGxuZzogbnVtYmVyOyBhY2N1cmFjeTogbnVtYmVyIH0+ID0+IHtcclxuICAgIHJldHVybiBuZXcgUHJvbWlzZSgocmVzb2x2ZSwgcmVqZWN0KSA9PiB7XHJcbiAgICAgIGlmICghbmF2aWdhdG9yLmdlb2xvY2F0aW9uKSB7XHJcbiAgICAgICAgcmVqZWN0KG5ldyBFcnJvcignR2VvbG9jYXRpb24gbm90IHN1cHBvcnRlZCcpKTtcclxuICAgICAgICByZXR1cm47XHJcbiAgICAgIH1cclxuXHJcbiAgICAgIC8vIFRyeSBoaWdoIGFjY3VyYWN5IGZpcnN0XHJcbiAgICAgIG5hdmlnYXRvci5nZW9sb2NhdGlvbi5nZXRDdXJyZW50UG9zaXRpb24oXHJcbiAgICAgICAgKHBvc2l0aW9uKSA9PiB7XHJcbiAgICAgICAgICByZXNvbHZlKHtcclxuICAgICAgICAgICAgbGF0OiBwb3NpdGlvbi5jb29yZHMubGF0aXR1ZGUsXHJcbiAgICAgICAgICAgIGxuZzogcG9zaXRpb24uY29vcmRzLmxvbmdpdHVkZSxcclxuICAgICAgICAgICAgYWNjdXJhY3k6IHBvc2l0aW9uLmNvb3Jkcy5hY2N1cmFjeSxcclxuICAgICAgICAgIH0pO1xyXG4gICAgICAgIH0sXHJcbiAgICAgICAgKGVycm9yKSA9PiB7XHJcbiAgICAgICAgICAvLyBJZiBoaWdoIGFjY3VyYWN5IGZhaWxzLCB0cnkgd2l0aCBsb3dlciBhY2N1cmFjeVxyXG4gICAgICAgICAgY29uc29sZS53YXJuKCdIaWdoIGFjY3VyYWN5IGZhaWxlZCwgdHJ5aW5nIGxvdyBhY2N1cmFjeTonLCBlcnJvci5tZXNzYWdlKTtcclxuICAgICAgICAgIG5hdmlnYXRvci5nZW9sb2NhdGlvbi5nZXRDdXJyZW50UG9zaXRpb24oXHJcbiAgICAgICAgICAgIChwb3NpdGlvbikgPT4ge1xyXG4gICAgICAgICAgICAgIHJlc29sdmUoe1xyXG4gICAgICAgICAgICAgICAgbGF0OiBwb3NpdGlvbi5jb29yZHMubGF0aXR1ZGUsXHJcbiAgICAgICAgICAgICAgICBsbmc6IHBvc2l0aW9uLmNvb3Jkcy5sb25naXR1ZGUsXHJcbiAgICAgICAgICAgICAgICBhY2N1cmFjeTogcG9zaXRpb24uY29vcmRzLmFjY3VyYWN5LFxyXG4gICAgICAgICAgICAgIH0pO1xyXG4gICAgICAgICAgICB9LFxyXG4gICAgICAgICAgICByZWplY3QsXHJcbiAgICAgICAgICAgIHsgXHJcbiAgICAgICAgICAgICAgZW5hYmxlSGlnaEFjY3VyYWN5OiBmYWxzZSwgXHJcbiAgICAgICAgICAgICAgdGltZW91dDogMTAwMDAsIFxyXG4gICAgICAgICAgICAgIG1heGltdW1BZ2U6IDYwMDAwIFxyXG4gICAgICAgICAgICB9XHJcbiAgICAgICAgICApO1xyXG4gICAgICAgIH0sXHJcbiAgICAgICAgeyBcclxuICAgICAgICAgIGVuYWJsZUhpZ2hBY2N1cmFjeTogdHJ1ZSwgXHJcbiAgICAgICAgICB0aW1lb3V0OiAxNTAwMCwgXHJcbiAgICAgICAgICBtYXhpbXVtQWdlOiAwIFxyXG4gICAgICAgIH1cclxuICAgICAgKTtcclxuICAgIH0pO1xyXG4gIH07XHJcblxyXG4gIC8vIExvYWQgc2NyaXB0IHdpdGggcmV0cnlcclxuICB1c2VFZmZlY3QoKCkgPT4ge1xyXG4gICAgaWYgKCFNQVBTX0FQSV9LRVkpIHtcclxuICAgICAgc2V0RXJyb3IoJ+C5hOC4oeC5iOC4nuC4miBBUEkgS2V5Jyk7XHJcbiAgICAgIHNldExvYWRpbmcoZmFsc2UpO1xyXG4gICAgICBzZXRMb2NhdGlvblN0YXR1cygnZXJyb3InKTtcclxuICAgICAgcmV0dXJuO1xyXG4gICAgfVxyXG5cclxuICAgIGxldCByZXRyeUNvdW50ID0gMDtcclxuICAgIGNvbnN0IG1heFJldHJpZXMgPSAzO1xyXG5cclxuICAgIGNvbnN0IGxvYWRHb29nbGVNYXBzU2NyaXB0ID0gKGxvYzogeyBsYXQ6IG51bWJlcjsgbG5nOiBudW1iZXIgfSk6IFByb21pc2U8dm9pZD4gPT4ge1xyXG4gICAgICByZXR1cm4gbmV3IFByb21pc2UoKHJlc29sdmUsIHJlamVjdCkgPT4ge1xyXG4gICAgICAgIC8vIENoZWNrIGlmIGFscmVhZHkgbG9hZGVkXHJcbiAgICAgICAgaWYgKHdpbmRvdy5nb29nbGU/Lm1hcHMpIHtcclxuICAgICAgICAgIHJlc29sdmUoKTtcclxuICAgICAgICAgIHJldHVybjtcclxuICAgICAgICB9XHJcblxyXG4gICAgICAgIC8vIFJlbW92ZSBhbnkgZXhpc3RpbmcgZmFpbGVkIHNjcmlwdFxyXG4gICAgICAgIGNvbnN0IGV4aXN0aW5nU2NyaXB0ID0gZG9jdW1lbnQucXVlcnlTZWxlY3Rvcignc2NyaXB0W3NyYyo9XCJtYXBzLmdvb2dsZWFwaXMuY29tXCJdJyk7XHJcbiAgICAgICAgaWYgKGV4aXN0aW5nU2NyaXB0KSB7XHJcbiAgICAgICAgICBleGlzdGluZ1NjcmlwdC5yZW1vdmUoKTtcclxuICAgICAgICB9XHJcblxyXG4gICAgICAgIGNvbnN0IHMgPSBkb2N1bWVudC5jcmVhdGVFbGVtZW50KCdzY3JpcHQnKTtcclxuICAgICAgICBzLnNyYyA9IGBodHRwczovL21hcHMuZ29vZ2xlYXBpcy5jb20vbWFwcy9hcGkvanM/a2V5PSR7TUFQU19BUElfS0VZfSZsaWJyYXJpZXM9cGxhY2VzJmxhbmd1YWdlPXRoYDtcclxuICAgICAgICBzLmFzeW5jID0gdHJ1ZTtcclxuICAgICAgICBzLmRlZmVyID0gdHJ1ZTtcclxuICAgICAgICBcclxuICAgICAgICBzLm9ubG9hZCA9ICgpID0+IHtcclxuICAgICAgICAgIGNvbnNvbGUubG9nKCdHb29nbGUgTWFwcyBsb2FkZWQgc3VjY2Vzc2Z1bGx5Jyk7XHJcbiAgICAgICAgICByZXNvbHZlKCk7XHJcbiAgICAgICAgfTtcclxuICAgICAgICBcclxuICAgICAgICBzLm9uZXJyb3IgPSAoKSA9PiB7XHJcbiAgICAgICAgICBjb25zb2xlLmVycm9yKCdGYWlsZWQgdG8gbG9hZCBHb29nbGUgTWFwcyBzY3JpcHQsIGF0dGVtcHQ6JywgcmV0cnlDb3VudCArIDEpO1xyXG4gICAgICAgICAgcmVqZWN0KG5ldyBFcnJvcignU2NyaXB0IGxvYWQgZmFpbGVkJykpO1xyXG4gICAgICAgIH07XHJcbiAgICAgICAgXHJcbiAgICAgICAgZG9jdW1lbnQuaGVhZC5hcHBlbmRDaGlsZChzKTtcclxuICAgICAgfSk7XHJcbiAgICB9O1xyXG5cclxuICAgIGNvbnN0IHNldHVwTWFwID0gYXN5bmMgKGxvYzogeyBsYXQ6IG51bWJlcjsgbG5nOiBudW1iZXIgfSkgPT4ge1xyXG4gICAgICBpZiAod2luZG93Lmdvb2dsZT8ubWFwcykge1xyXG4gICAgICAgIGluaXRNYXAobG9jKTtcclxuICAgICAgICByZXR1cm47XHJcbiAgICAgIH1cclxuXHJcbiAgICAgIHdoaWxlIChyZXRyeUNvdW50IDwgbWF4UmV0cmllcykge1xyXG4gICAgICAgIHRyeSB7XHJcbiAgICAgICAgICBhd2FpdCBsb2FkR29vZ2xlTWFwc1NjcmlwdChsb2MpO1xyXG4gICAgICAgICAgaW5pdE1hcChsb2MpO1xyXG4gICAgICAgICAgcmV0dXJuO1xyXG4gICAgICAgIH0gY2F0Y2ggKGVycikge1xyXG4gICAgICAgICAgcmV0cnlDb3VudCsrO1xyXG4gICAgICAgICAgaWYgKHJldHJ5Q291bnQgPCBtYXhSZXRyaWVzKSB7XHJcbiAgICAgICAgICAgIGNvbnNvbGUubG9nKGBSZXRyeWluZyBHb29nbGUgTWFwcyBsb2FkICgke3JldHJ5Q291bnR9LyR7bWF4UmV0cmllc30pLi4uYCk7XHJcbiAgICAgICAgICAgIGF3YWl0IG5ldyBQcm9taXNlKHIgPT4gc2V0VGltZW91dChyLCAxMDAwICogcmV0cnlDb3VudCkpOyAvLyBFeHBvbmVudGlhbCBiYWNrb2ZmXHJcbiAgICAgICAgICB9XHJcbiAgICAgICAgfVxyXG4gICAgICB9XHJcbiAgICAgIFxyXG4gICAgICBzZXRFcnJvcign4LmC4Lir4Lil4LiUIEdvb2dsZSBNYXBzIOC5hOC4oeC5iOC4quC4s+C5gOC4o+C5h+C4iCDguIHguKPguLjguJPguLLguKPguLXguYDguJ/guKPguIrguKvguJnguYnguLInKTtcclxuICAgICAgc2V0TG9hZGluZyhmYWxzZSk7XHJcbiAgICB9O1xyXG5cclxuICAgIGNvbnN0IGluaXRXaXRoTG9jYXRpb24gPSBhc3luYyAoKSA9PiB7XHJcbiAgICAgIGlmICghbmF2aWdhdG9yLmdlb2xvY2F0aW9uKSB7XHJcbiAgICAgICAgY29uc29sZS5sb2coJ0dlb2xvY2F0aW9uIG5vdCBzdXBwb3J0ZWQsIHVzaW5nIGRlZmF1bHQgbG9jYXRpb24nKTtcclxuICAgICAgICBzZXRMb2NhdGlvblN0YXR1cygndW5hdmFpbGFibGUnKTtcclxuICAgICAgICBzZXR1cE1hcChERUZBVUxUX0xPQ0FUSU9OKTtcclxuICAgICAgICByZXR1cm47XHJcbiAgICAgIH1cclxuXHJcbiAgICAgIHNldExvY2F0aW9uU3RhdHVzKCdsb2FkaW5nJyk7XHJcbiAgICAgIFxyXG4gICAgICB0cnkge1xyXG4gICAgICAgIGNvbnN0IGxvY2F0aW9uRGF0YSA9IGF3YWl0IGdldEhpZ2hBY2N1cmFjeUxvY2F0aW9uKCk7XHJcbiAgICAgICAgY29uc3QgbG9jID0geyBsYXQ6IGxvY2F0aW9uRGF0YS5sYXQsIGxuZzogbG9jYXRpb25EYXRhLmxuZyB9O1xyXG4gICAgICAgIGNvbnNvbGUubG9nKCdHb3QgbG9jYXRpb24gd2l0aCBhY2N1cmFjeTonLCBsb2NhdGlvbkRhdGEuYWNjdXJhY3ksICdtZXRlcnMnKTtcclxuICAgICAgICBzZXRVc2VyTG9jYXRpb24obG9jKTtcclxuICAgICAgICBzZXRMb2NhdGlvbkFjY3VyYWN5KGxvY2F0aW9uRGF0YS5hY2N1cmFjeSk7XHJcbiAgICAgICAgc2V0TG9jYXRpb25TdGF0dXMoJ3N1Y2Nlc3MnKTtcclxuICAgICAgICBzZXR1cE1hcChsb2MpO1xyXG5cclxuICAgICAgICAvLyBTZXQgdXAgY29udGludW91cyBsb2NhdGlvbiB3YXRjaGluZyBmb3IgYmV0dGVyIGFjY3VyYWN5XHJcbiAgICAgICAgY29uc3QgaWQgPSBuYXZpZ2F0b3IuZ2VvbG9jYXRpb24ud2F0Y2hQb3NpdGlvbihcclxuICAgICAgICAgIChwb3NpdGlvbikgPT4ge1xyXG4gICAgICAgICAgICBjb25zdCBuZXdMb2MgPSB7IFxyXG4gICAgICAgICAgICAgIGxhdDogcG9zaXRpb24uY29vcmRzLmxhdGl0dWRlLCBcclxuICAgICAgICAgICAgICBsbmc6IHBvc2l0aW9uLmNvb3Jkcy5sb25naXR1ZGUgXHJcbiAgICAgICAgICAgIH07XHJcbiAgICAgICAgICAgIGNvbnN0IG5ld0FjY3VyYWN5ID0gcG9zaXRpb24uY29vcmRzLmFjY3VyYWN5O1xyXG4gICAgICAgICAgICBcclxuICAgICAgICAgICAgLy8gT25seSB1cGRhdGUgaWYgYWNjdXJhY3kgaW1wcm92ZWQgc2lnbmlmaWNhbnRseVxyXG4gICAgICAgICAgICBpZiAoIWxvY2F0aW9uQWNjdXJhY3kgfHwgbmV3QWNjdXJhY3kgPCBsb2NhdGlvbkFjY3VyYWN5ICogMC44KSB7XHJcbiAgICAgICAgICAgICAgY29uc29sZS5sb2coJ0xvY2F0aW9uIHVwZGF0ZWQsIG5ldyBhY2N1cmFjeTonLCBuZXdBY2N1cmFjeSwgJ21ldGVycycpO1xyXG4gICAgICAgICAgICAgIHNldFVzZXJMb2NhdGlvbihuZXdMb2MpO1xyXG4gICAgICAgICAgICAgIHNldExvY2F0aW9uQWNjdXJhY3kobmV3QWNjdXJhY3kpO1xyXG4gICAgICAgICAgICAgIHVwZGF0ZVVzZXJNYXJrZXIobmV3TG9jKTtcclxuICAgICAgICAgICAgICBcclxuICAgICAgICAgICAgICAvLyBSZWxvYWQgZmFjaWxpdGllcyBpZiBsb2NhdGlvbiBjaGFuZ2VkIHNpZ25pZmljYW50bHkgKG1vcmUgdGhhbiA1MDBtKVxyXG4gICAgICAgICAgICAgIGNvbnN0IGRpc3RhbmNlID0gY2FsY0Rpc3RhbmNlKHVzZXJMb2NhdGlvbi5sYXQsIHVzZXJMb2NhdGlvbi5sbmcsIG5ld0xvYy5sYXQsIG5ld0xvYy5sbmcpO1xyXG4gICAgICAgICAgICAgIGlmIChkaXN0YW5jZSA+IDAuNSkge1xyXG4gICAgICAgICAgICAgICAgbG9hZEZhY2lsaXRpZXMobmV3TG9jKTtcclxuICAgICAgICAgICAgICB9XHJcbiAgICAgICAgICAgIH1cclxuICAgICAgICAgIH0sXHJcbiAgICAgICAgICAoZXJyb3IpID0+IHtcclxuICAgICAgICAgICAgY29uc29sZS53YXJuKCdXYXRjaCBwb3NpdGlvbiBlcnJvcjonLCBlcnJvci5tZXNzYWdlKTtcclxuICAgICAgICAgIH0sXHJcbiAgICAgICAgICB7IFxyXG4gICAgICAgICAgICBlbmFibGVIaWdoQWNjdXJhY3k6IHRydWUsIFxyXG4gICAgICAgICAgICBtYXhpbXVtQWdlOiAzMDAwMCwgXHJcbiAgICAgICAgICAgIHRpbWVvdXQ6IDIwMDAwIFxyXG4gICAgICAgICAgfVxyXG4gICAgICAgICk7XHJcbiAgICAgICAgc2V0V2F0Y2hJZChpZCk7XHJcbiAgICAgIH0gY2F0Y2ggKGVycjogYW55KSB7XHJcbiAgICAgICAgY29uc29sZS5lcnJvcignTG9jYXRpb24gZXJyb3I6JywgZXJyLm1lc3NhZ2UpO1xyXG4gICAgICAgIFxyXG4gICAgICAgIC8vIEhhbmRsZSBzcGVjaWZpYyBlcnJvciBjb2Rlc1xyXG4gICAgICAgIGlmIChlcnIuY29kZSA9PT0gMSkge1xyXG4gICAgICAgICAgc2V0TG9jYXRpb25TdGF0dXMoJ2RlbmllZCcpO1xyXG4gICAgICAgIH0gZWxzZSB7XHJcbiAgICAgICAgICBzZXRMb2NhdGlvblN0YXR1cygnZXJyb3InKTtcclxuICAgICAgICB9XHJcbiAgICAgICAgXHJcbiAgICAgICAgLy8gVXNlIGRlZmF1bHQgbG9jYXRpb25cclxuICAgICAgICBzZXR1cE1hcChERUZBVUxUX0xPQ0FUSU9OKTtcclxuICAgICAgfVxyXG4gICAgfTtcclxuXHJcbiAgICBpbml0V2l0aExvY2F0aW9uKCk7XHJcblxyXG4gICAgcmV0dXJuICgpID0+IHsgXHJcbiAgICAgIG1hcmtlcnMuY3VycmVudC5mb3JFYWNoKG0gPT4gbS5zZXRNYXAobnVsbCkpOyBcclxuICAgICAgaWYgKHdhdGNoSWQgIT09IG51bGwpIHtcclxuICAgICAgICBuYXZpZ2F0b3IuZ2VvbG9jYXRpb24uY2xlYXJXYXRjaCh3YXRjaElkKTtcclxuICAgICAgfVxyXG4gICAgfTtcclxuICB9LCBbXSk7XHJcblxyXG4gIC8vIFJlZnJlc2ggd2l0aCBoaWdoIGFjY3VyYWN5XHJcbiAgY29uc3QgcmVmcmVzaCA9IGFzeW5jICgpID0+IHtcclxuICAgIHNldExvYWRpbmcodHJ1ZSk7XHJcbiAgICBzZXRMb2NhdGlvblN0YXR1cygnbG9hZGluZycpO1xyXG4gICAgXHJcbiAgICB0cnkge1xyXG4gICAgICBjb25zdCBsb2NhdGlvbkRhdGEgPSBhd2FpdCBnZXRIaWdoQWNjdXJhY3lMb2NhdGlvbigpO1xyXG4gICAgICBjb25zdCBsb2MgPSB7IGxhdDogbG9jYXRpb25EYXRhLmxhdCwgbG5nOiBsb2NhdGlvbkRhdGEubG5nIH07XHJcbiAgICAgIGNvbnNvbGUubG9nKCdSZWZyZXNoZWQgbG9jYXRpb24gd2l0aCBhY2N1cmFjeTonLCBsb2NhdGlvbkRhdGEuYWNjdXJhY3ksICdtZXRlcnMnKTtcclxuICAgICAgc2V0VXNlckxvY2F0aW9uKGxvYyk7XHJcbiAgICAgIHNldExvY2F0aW9uQWNjdXJhY3kobG9jYXRpb25EYXRhLmFjY3VyYWN5KTtcclxuICAgICAgc2V0TG9jYXRpb25TdGF0dXMoJ3N1Y2Nlc3MnKTtcclxuICAgICAgbWFwSW5zdGFuY2UuY3VycmVudD8uc2V0Q2VudGVyKGxvYyk7XHJcbiAgICAgIHVwZGF0ZVVzZXJNYXJrZXIobG9jKTtcclxuICAgICAgbG9hZEZhY2lsaXRpZXMobG9jKTtcclxuICAgIH0gY2F0Y2ggKGVycjogYW55KSB7XHJcbiAgICAgIGNvbnNvbGUuZXJyb3IoJ1JlZnJlc2ggbG9jYXRpb24gZXJyb3I6JywgZXJyLm1lc3NhZ2UpO1xyXG4gICAgICBpZiAoZXJyLmNvZGUgPT09IDEpIHtcclxuICAgICAgICBzZXRMb2NhdGlvblN0YXR1cygnZGVuaWVkJyk7XHJcbiAgICAgIH0gZWxzZSB7XHJcbiAgICAgICAgc2V0TG9jYXRpb25TdGF0dXMoJ2Vycm9yJyk7XHJcbiAgICAgIH1cclxuICAgICAgc2V0TG9hZGluZyhmYWxzZSk7XHJcbiAgICB9XHJcbiAgfTtcclxuXHJcbiAgLy8gUmVxdWVzdCBsb2NhdGlvbiBwZXJtaXNzaW9uIGV4cGxpY2l0bHlcclxuICBjb25zdCByZXF1ZXN0TG9jYXRpb24gPSBhc3luYyAoKSA9PiB7XHJcbiAgICBzZXRMb2NhdGlvblN0YXR1cygnbG9hZGluZycpO1xyXG4gICAgdHJ5IHtcclxuICAgICAgY29uc3QgbG9jYXRpb25EYXRhID0gYXdhaXQgZ2V0SGlnaEFjY3VyYWN5TG9jYXRpb24oKTtcclxuICAgICAgY29uc3QgbG9jID0geyBsYXQ6IGxvY2F0aW9uRGF0YS5sYXQsIGxuZzogbG9jYXRpb25EYXRhLmxuZyB9O1xyXG4gICAgICBzZXRVc2VyTG9jYXRpb24obG9jKTtcclxuICAgICAgc2V0TG9jYXRpb25BY2N1cmFjeShsb2NhdGlvbkRhdGEuYWNjdXJhY3kpO1xyXG4gICAgICBzZXRMb2NhdGlvblN0YXR1cygnc3VjY2VzcycpO1xyXG4gICAgICBcclxuICAgICAgaWYgKG1hcEluc3RhbmNlLmN1cnJlbnQpIHtcclxuICAgICAgICBtYXBJbnN0YW5jZS5jdXJyZW50LnNldENlbnRlcihsb2MpO1xyXG4gICAgICAgIHVwZGF0ZVVzZXJNYXJrZXIobG9jKTtcclxuICAgICAgICBsb2FkRmFjaWxpdGllcyhsb2MpO1xyXG4gICAgICB9XHJcbiAgICB9IGNhdGNoIChlcnI6IGFueSkge1xyXG4gICAgICBpZiAoZXJyLmNvZGUgPT09IDEpIHtcclxuICAgICAgICBzZXRMb2NhdGlvblN0YXR1cygnZGVuaWVkJyk7XHJcbiAgICAgIH0gZWxzZSB7XHJcbiAgICAgICAgc2V0TG9jYXRpb25TdGF0dXMoJ2Vycm9yJyk7XHJcbiAgICAgIH1cclxuICAgIH1cclxuICB9O1xyXG5cclxuICAvLyBGaWx0ZXJcclxuICBjb25zdCBmaWx0ZXJlZCA9IGZhY2lsaXRpZXMuZmlsdGVyKGYgPT4ge1xyXG4gICAgY29uc3QgbWF0Y2hTZWFyY2ggPSAhc2VhcmNoIHx8IGYubmFtZS50b0xvd2VyQ2FzZSgpLmluY2x1ZGVzKHNlYXJjaC50b0xvd2VyQ2FzZSgpKSB8fCBmLmFkZHJlc3MudG9Mb3dlckNhc2UoKS5pbmNsdWRlcyhzZWFyY2gudG9Mb3dlckNhc2UoKSk7XHJcbiAgICBjb25zdCBtYXRjaEZpbHRlciA9IGZpbHRlciA9PT0gJ2FsbCcgfHwgZi50eXBlID09PSBmaWx0ZXI7XHJcbiAgICByZXR1cm4gbWF0Y2hTZWFyY2ggJiYgbWF0Y2hGaWx0ZXI7XHJcbiAgfSk7XHJcblxyXG4gIC8vIFVwZGF0ZSBtYXJrZXIgdmlzaWJpbGl0eVxyXG4gIHVzZUVmZmVjdCgoKSA9PiB7XHJcbiAgICBtYXJrZXJzLmN1cnJlbnQuZm9yRWFjaCgobSwgaSkgPT4ge1xyXG4gICAgICBjb25zdCBmID0gZmFjaWxpdGllc1tpXTtcclxuICAgICAgaWYgKGYpIHtcclxuICAgICAgICBjb25zdCBzaG93ID0gKGZpbHRlciA9PT0gJ2FsbCcgfHwgZi50eXBlID09PSBmaWx0ZXIpICYmICghc2VhcmNoIHx8IGYubmFtZS50b0xvd2VyQ2FzZSgpLmluY2x1ZGVzKHNlYXJjaC50b0xvd2VyQ2FzZSgpKSk7XHJcbiAgICAgICAgbS5zZXRWaXNpYmxlKHNob3cpO1xyXG4gICAgICB9XHJcbiAgICB9KTtcclxuICB9LCBbZmlsdGVyLCBzZWFyY2gsIGZhY2lsaXRpZXNdKTtcclxuXHJcbiAgY29uc3QgbGFiZWxzOiBSZWNvcmQ8c3RyaW5nLCBzdHJpbmc+ID0geyBob3NwaXRhbDogJ+C5guC4o+C4h+C4nuC4ouC4suC4muC4suC4pScsIGNsaW5pYzogJ+C4hOC4peC4tOC4meC4tOC4gScsIHBoYXJtYWN5OiAn4Lij4LmJ4Liy4LiZ4Lii4LiyJywgaGVhbHRoX2NlbnRlcjogJ+C4qOC4ueC4meC4ouC5jOC4quC4uOC4guC4oOC4suC4nicgfTtcclxuICBjb25zdCBjb2xvcnM6IFJlY29yZDxzdHJpbmcsIHN0cmluZz4gPSB7IGhvc3BpdGFsOiAnYmctcmVkLTEwMCB0ZXh0LXJlZC02MDAnLCBjbGluaWM6ICdiZy1ibHVlLTEwMCB0ZXh0LWJsdWUtNjAwJywgcGhhcm1hY3k6ICdiZy1ncmVlbi0xMDAgdGV4dC1ncmVlbi02MDAnLCBoZWFsdGhfY2VudGVyOiAnYmctcHVycGxlLTEwMCB0ZXh0LXB1cnBsZS02MDAnIH07XHJcbiAgY29uc3QgaWNvbnM6IFJlY29yZDxzdHJpbmcsIHR5cGVvZiBCdWlsZGluZzI+ID0geyBob3NwaXRhbDogQnVpbGRpbmcyLCBjbGluaWM6IFN0ZXRob3Njb3BlLCBwaGFybWFjeTogUGlsbCwgaGVhbHRoX2NlbnRlcjogSGVhcnQgfTtcclxuXHJcbiAgY29uc3QgZm9jdXNGYWNpbGl0eSA9IChmOiBGYWNpbGl0eSkgPT4ge1xyXG4gICAgc2V0U2VsZWN0ZWRJZChmLmlkKTtcclxuICAgIG1hcEluc3RhbmNlLmN1cnJlbnQ/LnNldENlbnRlcihmLmxvY2F0aW9uKTtcclxuICAgIG1hcEluc3RhbmNlLmN1cnJlbnQ/LnNldFpvb20oMTYpO1xyXG4gICAgY29uc3QgbSA9IG1hcmtlcnMuY3VycmVudC5maW5kKHggPT4geC5nZXRUaXRsZSgpID09PSBmLm5hbWUpO1xyXG4gICAgaWYgKG0pIGdvb2dsZS5tYXBzLmV2ZW50LnRyaWdnZXIobSwgJ2NsaWNrJyk7XHJcbiAgfTtcclxuXHJcbiAgY29uc3QgbmF2aWdhdGUgPSAoZjogRmFjaWxpdHkpID0+IHtcclxuICAgIHdpbmRvdy5vcGVuKGBodHRwczovL3d3dy5nb29nbGUuY29tL21hcHMvZGlyLz9hcGk9MSZkZXN0aW5hdGlvbj0ke2YubG9jYXRpb24ubGF0fSwke2YubG9jYXRpb24ubG5nfWAsICdfYmxhbmsnKTtcclxuICB9O1xyXG5cclxuICByZXR1cm4gKFxyXG4gICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGZsZXgtY29sIGgtW2NhbGMoMTAwdmgtMTAwcHgpXSAtbXgtNCBzbTotbXgtNiAtbXQtNCBzbTotbXQtNlwiPlxyXG4gICAgICB7LyogSGVhZGVyICovfVxyXG4gICAgICA8ZGl2IGNsYXNzTmFtZT1cImJnLXdoaXRlIGJvcmRlci1iIHB4LTQgcHktMyBmbGV4IGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWJldHdlZW4gc2hyaW5rLTBcIj5cclxuICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggaXRlbXMtY2VudGVyIGdhcC0zXCI+XHJcbiAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInctMTAgaC0xMCBiZy1ncmFkaWVudC10by1iciBmcm9tLW9yYW5nZS01MDAgdG8tcmVkLTUwMCByb3VuZGVkLXhsIGZsZXggaXRlbXMtY2VudGVyIGp1c3RpZnktY2VudGVyXCI+XHJcbiAgICAgICAgICAgIDxNYXBQaW4gY2xhc3NOYW1lPVwidy01IGgtNSB0ZXh0LXdoaXRlXCIgLz5cclxuICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgPGRpdj5cclxuICAgICAgICAgICAgPGgxIGNsYXNzTmFtZT1cInRleHQtbGcgZm9udC1ib2xkIHRleHQtZ3JheS04MDBcIj7guKrguJbguLLguJnguJ7guKLguLLguJrguLLguKXguYPguIHguKXguYnguYDguITguLXguKLguIc8L2gxPlxyXG4gICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggaXRlbXMtY2VudGVyIGdhcC0yXCI+XHJcbiAgICAgICAgICAgICAgPHAgY2xhc3NOYW1lPVwidGV4dC14cyB0ZXh0LWdyYXktNTAwXCI+XHJcbiAgICAgICAgICAgICAgICDguKPguLHguKjguKHguLUgMTUg4LiB4LihLiDigKIge3VzZXJMb2NhdGlvbi5sYXQudG9GaXhlZCg0KX0sIHt1c2VyTG9jYXRpb24ubG5nLnRvRml4ZWQoNCl9XHJcbiAgICAgICAgICAgICAgPC9wPlxyXG4gICAgICAgICAgICAgIHtsb2NhdGlvblN0YXR1cyA9PT0gJ3N1Y2Nlc3MnICYmIGxvY2F0aW9uQWNjdXJhY3kgJiYgKFxyXG4gICAgICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPVwidGV4dC14cyBiZy1ncmVlbi0xMDAgdGV4dC1ncmVlbi03MDAgcHgtMS41IHB5LTAuNSByb3VuZGVkLWZ1bGwgZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTFcIj5cclxuICAgICAgICAgICAgICAgICAgPFRhcmdldCBjbGFzc05hbWU9XCJ3LTMgaC0zXCIgLz5cclxuICAgICAgICAgICAgICAgICAgwrF7bG9jYXRpb25BY2N1cmFjeSA8IDEwMDAgPyBgJHtNYXRoLnJvdW5kKGxvY2F0aW9uQWNjdXJhY3kpfW1gIDogYCR7KGxvY2F0aW9uQWNjdXJhY3kvMTAwMCkudG9GaXhlZCgxKX1rbWB9XHJcbiAgICAgICAgICAgICAgICA8L3NwYW4+XHJcbiAgICAgICAgICAgICAgKX1cclxuICAgICAgICAgICAgICB7bG9jYXRpb25TdGF0dXMgPT09ICdkZW5pZWQnICYmIChcclxuICAgICAgICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT1cInRleHQteHMgYmctb3JhbmdlLTEwMCB0ZXh0LW9yYW5nZS03MDAgcHgtMS41IHB5LTAuNSByb3VuZGVkLWZ1bGwgZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTFcIj5cclxuICAgICAgICAgICAgICAgICAgPEFsZXJ0VHJpYW5nbGUgY2xhc3NOYW1lPVwidy0zIGgtM1wiIC8+XHJcbiAgICAgICAgICAgICAgICAgIOC5g+C4iuC5ieC4leC4s+C5geC4q+C4meC5iOC4h+C5gOC4o+C4tOC5iOC4oeC4leC5ieC4mVxyXG4gICAgICAgICAgICAgICAgPC9zcGFuPlxyXG4gICAgICAgICAgICAgICl9XHJcbiAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGl0ZW1zLWNlbnRlciBnYXAtMlwiPlxyXG4gICAgICAgICAgeyhsb2NhdGlvblN0YXR1cyA9PT0gJ2RlbmllZCcgfHwgbG9jYXRpb25TdGF0dXMgPT09ICdlcnJvcicpICYmIChcclxuICAgICAgICAgICAgPGJ1dHRvbiBcclxuICAgICAgICAgICAgICBvbkNsaWNrPXtyZXF1ZXN0TG9jYXRpb259IFxyXG4gICAgICAgICAgICAgIGNsYXNzTmFtZT1cInB4LTMgcHktMS41IGJnLWVtZXJhbGQtNjAwIGhvdmVyOmJnLWVtZXJhbGQtNzAwIHRleHQtd2hpdGUgdGV4dC14cyByb3VuZGVkLWxnIGZsZXggaXRlbXMtY2VudGVyIGdhcC0xXCJcclxuICAgICAgICAgICAgPlxyXG4gICAgICAgICAgICAgIDxUYXJnZXQgY2xhc3NOYW1lPVwidy0zLjUgaC0zLjVcIiAvPlxyXG4gICAgICAgICAgICAgIOC5g+C4iuC5ieC4leC4s+C5geC4q+C4meC5iOC4h+C4iOC4o+C4tOC4h1xyXG4gICAgICAgICAgICA8L2J1dHRvbj5cclxuICAgICAgICAgICl9XHJcbiAgICAgICAgICA8YnV0dG9uIG9uQ2xpY2s9e3JlZnJlc2h9IGRpc2FibGVkPXtsb2FkaW5nfSBjbGFzc05hbWU9XCJwLTIgYmctZ3JheS0xMDAgaG92ZXI6YmctZ3JheS0yMDAgcm91bmRlZC1sZ1wiPlxyXG4gICAgICAgICAgICA8UmVmcmVzaEN3IGNsYXNzTmFtZT17YHctNSBoLTUgdGV4dC1ncmF5LTYwMCAke2xvYWRpbmcgPyAnYW5pbWF0ZS1zcGluJyA6ICcnfWB9IC8+XHJcbiAgICAgICAgICA8L2J1dHRvbj5cclxuICAgICAgICA8L2Rpdj5cclxuICAgICAgPC9kaXY+XHJcblxyXG4gICAgICB7LyogTG9jYXRpb24gUGVybWlzc2lvbiBCYW5uZXIgKi99XHJcbiAgICAgIHtsb2NhdGlvblN0YXR1cyA9PT0gJ2RlbmllZCcgJiYgKFxyXG4gICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiYmctYW1iZXItNTAgYm9yZGVyLWIgYm9yZGVyLWFtYmVyLTIwMCBweC00IHB5LTIgZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTMgc2hyaW5rLTBcIj5cclxuICAgICAgICAgIDxBbGVydFRyaWFuZ2xlIGNsYXNzTmFtZT1cInctNSBoLTUgdGV4dC1hbWJlci02MDAgc2hyaW5rLTBcIiAvPlxyXG4gICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4LTEgbWluLXctMFwiPlxyXG4gICAgICAgICAgICA8cCBjbGFzc05hbWU9XCJ0ZXh0LXNtIHRleHQtYW1iZXItODAwXCI+4LmE4Lih4LmI4LmE4LiU4LmJ4Lij4Lix4Lia4Lit4LiZ4Li44LiN4Liy4LiV4LmA4LiC4LmJ4Liy4LiW4Li24LiH4LiV4Liz4LmB4Lir4LiZ4LmI4LiHPC9wPlxyXG4gICAgICAgICAgICA8cCBjbGFzc05hbWU9XCJ0ZXh0LXhzIHRleHQtYW1iZXItNjAwXCI+4LiB4Lij4Li44LiT4Liy4Lit4LiZ4Li44LiN4Liy4LiV4LiB4Liy4Lij4LmA4LiC4LmJ4Liy4LiW4Li24LiH4LiV4Liz4LmB4Lir4LiZ4LmI4LiH4LmD4LiZ4LiB4Liy4Lij4LiV4Lix4LmJ4LiH4LiE4LmI4Liy4LmA4Lia4Lij4Liy4Lin4LmM4LmA4LiL4Lit4Lij4LmMIOC5gOC4nuC4t+C5iOC4reC4hOC5ieC4meC4q+C4suC4quC4luC4suC4meC4nuC4ouC4suC4muC4suC4peC5g+C4geC4peC5ieC4hOC4uOC4kzwvcD5cclxuICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgPGJ1dHRvbiBcclxuICAgICAgICAgICAgb25DbGljaz17cmVxdWVzdExvY2F0aW9ufVxyXG4gICAgICAgICAgICBjbGFzc05hbWU9XCJweC0zIHB5LTEuNSBiZy1hbWJlci02MDAgaG92ZXI6YmctYW1iZXItNzAwIHRleHQtd2hpdGUgdGV4dC14cyByb3VuZGVkLWxnIHdoaXRlc3BhY2Utbm93cmFwXCJcclxuICAgICAgICAgID5cclxuICAgICAgICAgICAg4Lil4Lit4LiH4Lit4Li14LiB4LiE4Lij4Lix4LmJ4LiHXHJcbiAgICAgICAgICA8L2J1dHRvbj5cclxuICAgICAgICA8L2Rpdj5cclxuICAgICAgKX1cclxuXHJcbiAgICAgIHsvKiBGaWx0ZXIgKi99XHJcbiAgICAgIDxkaXYgY2xhc3NOYW1lPVwiYmctd2hpdGUgYm9yZGVyLWIgcHgtNCBweS0yIGZsZXggZ2FwLTIgb3ZlcmZsb3cteC1hdXRvIHNocmluay0wXCI+XHJcbiAgICAgICAgeyhbJ2FsbCcsICdob3NwaXRhbCcsICdjbGluaWMnLCAncGhhcm1hY3knLCAnaGVhbHRoX2NlbnRlciddIGFzIGNvbnN0KS5tYXAodCA9PiB7XHJcbiAgICAgICAgICBjb25zdCBJY29uID0gdCA9PT0gJ2FsbCcgPyBNYXBQaW4gOiBpY29uc1t0XTtcclxuICAgICAgICAgIGNvbnN0IGNudCA9IHQgPT09ICdhbGwnID8gZmFjaWxpdGllcy5sZW5ndGggOiBmYWNpbGl0aWVzLmZpbHRlcihmID0+IGYudHlwZSA9PT0gdCkubGVuZ3RoO1xyXG4gICAgICAgICAgcmV0dXJuIChcclxuICAgICAgICAgICAgPGJ1dHRvbiBrZXk9e3R9IG9uQ2xpY2s9eygpID0+IHNldEZpbHRlcih0KX1cclxuICAgICAgICAgICAgICBjbGFzc05hbWU9e2BmbGV4IGl0ZW1zLWNlbnRlciBnYXAtMS41IHB4LTMgcHktMS41IHJvdW5kZWQtZnVsbCB0ZXh0LXhzIGZvbnQtbWVkaXVtIHdoaXRlc3BhY2Utbm93cmFwICR7ZmlsdGVyID09PSB0ID8gJ2JnLWVtZXJhbGQtNjAwIHRleHQtd2hpdGUnIDogJ2JnLWdyYXktMTAwIHRleHQtZ3JheS02MDAgaG92ZXI6YmctZ3JheS0yMDAnfWB9PlxyXG4gICAgICAgICAgICAgIDxJY29uIGNsYXNzTmFtZT1cInctMy41IGgtMy41XCIgLz5cclxuICAgICAgICAgICAgICB7dCA9PT0gJ2FsbCcgPyAn4LiX4Lix4LmJ4LiH4Lir4Lih4LiUJyA6IGxhYmVsc1t0XX1cclxuICAgICAgICAgICAgICA8c3BhbiBjbGFzc05hbWU9e2BtbC0xIHB4LTEuNSBweS0wLjUgcm91bmRlZC1mdWxsIHRleHQteHMgJHtmaWx0ZXIgPT09IHQgPyAnYmctd2hpdGUvMjAnIDogJ2JnLWdyYXktMjAwJ31gfT57Y250fTwvc3Bhbj5cclxuICAgICAgICAgICAgPC9idXR0b24+XHJcbiAgICAgICAgICApO1xyXG4gICAgICAgIH0pfVxyXG4gICAgICA8L2Rpdj5cclxuXHJcbiAgICAgIHsvKiBNYXAgKi99XHJcbiAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleC0xIHJlbGF0aXZlIG1pbi1oLVs0NXZoXVwiPlxyXG4gICAgICAgIHtlcnJvciA/IChcclxuICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiYWJzb2x1dGUgaW5zZXQtMCBmbGV4IGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWNlbnRlciBiZy1ncmF5LTEwMFwiPlxyXG4gICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInRleHQtY2VudGVyIHAtNlwiPlxyXG4gICAgICAgICAgICAgIDxBbGVydENpcmNsZSBjbGFzc05hbWU9XCJ3LTE2IGgtMTYgbXgtYXV0byBtYi00IHRleHQtcmVkLTQwMFwiIC8+XHJcbiAgICAgICAgICAgICAgPHAgY2xhc3NOYW1lPVwidGV4dC1sZyBmb250LW1lZGl1bSB0ZXh0LWdyYXktNzAwIG1iLTRcIj57ZXJyb3J9PC9wPlxyXG4gICAgICAgICAgICAgIDxidXR0b24gXHJcbiAgICAgICAgICAgICAgICBvbkNsaWNrPXsoKSA9PiB3aW5kb3cubG9jYXRpb24ucmVsb2FkKCl9IFxyXG4gICAgICAgICAgICAgICAgY2xhc3NOYW1lPVwicHgtNCBweS0yIGJnLWVtZXJhbGQtNjAwIGhvdmVyOmJnLWVtZXJhbGQtNzAwIHRleHQtd2hpdGUgcm91bmRlZC1sZyBmbGV4IGl0ZW1zLWNlbnRlciBnYXAtMiBteC1hdXRvXCJcclxuICAgICAgICAgICAgICA+XHJcbiAgICAgICAgICAgICAgICA8UmVmcmVzaEN3IGNsYXNzTmFtZT1cInctNCBoLTRcIiAvPlxyXG4gICAgICAgICAgICAgICAg4Lij4Li14LmA4Lif4Lij4LiK4Lir4LiZ4LmJ4LiyXHJcbiAgICAgICAgICAgICAgPC9idXR0b24+XHJcbiAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgKSA6IChcclxuICAgICAgICAgIDw+XHJcbiAgICAgICAgICAgIDxkaXYgcmVmPXttYXBSZWZ9IGNsYXNzTmFtZT1cInctZnVsbCBoLWZ1bGxcIiAvPlxyXG4gICAgICAgICAgICB7IW1hcFJlYWR5ICYmIChcclxuICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImFic29sdXRlIGluc2V0LTAgYmctd2hpdGUvOTAgZmxleCBpdGVtcy1jZW50ZXIganVzdGlmeS1jZW50ZXJcIj5cclxuICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwidGV4dC1jZW50ZXJcIj5cclxuICAgICAgICAgICAgICAgICAgPExvYWRlcjIgY2xhc3NOYW1lPVwidy0xMiBoLTEyIGFuaW1hdGUtc3BpbiB0ZXh0LWVtZXJhbGQtNjAwIG14LWF1dG8gbWItM1wiIC8+XHJcbiAgICAgICAgICAgICAgICAgIDxwIGNsYXNzTmFtZT1cInRleHQtZ3JheS02MDBcIj7guIHguLPguKXguLHguIfguYLguKvguKXguJTguYHguJzguJnguJfguLXguYguLi48L3A+XHJcbiAgICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgKX1cclxuICAgICAgICAgICAge21hcFJlYWR5ICYmIChcclxuICAgICAgICAgICAgICA8PlxyXG4gICAgICAgICAgICAgICAgey8qIExlZ2VuZCAqL31cclxuICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiYWJzb2x1dGUgdG9wLTMgcmlnaHQtMyBiZy13aGl0ZS85NSBiYWNrZHJvcC1ibHVyIHJvdW5kZWQtbGcgc2hhZG93IHAtMiB0ZXh0LXhzIHotMTBcIj5cclxuICAgICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJzcGFjZS15LTFcIj5cclxuICAgICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggaXRlbXMtY2VudGVyIGdhcC0yXCI+PGRpdiBjbGFzc05hbWU9XCJ3LTIuNSBoLTIuNSBiZy1yZWQtNTAwIHJvdW5kZWQtZnVsbFwiIC8+PHNwYW4+4LmC4Lij4LiH4Lie4Lii4Liy4Lia4Liy4LilPC9zcGFuPjwvZGl2PlxyXG4gICAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTJcIj48ZGl2IGNsYXNzTmFtZT1cInctMi41IGgtMi41IGJnLWJsdWUtNTAwIHJvdW5kZWQtZnVsbFwiIC8+PHNwYW4+4LiE4Lil4Li04LiZ4Li04LiBPC9zcGFuPjwvZGl2PlxyXG4gICAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTJcIj48ZGl2IGNsYXNzTmFtZT1cInctMi41IGgtMi41IGJnLWdyZWVuLTUwMCByb3VuZGVkLWZ1bGxcIiAvPjxzcGFuPuC4o+C5ieC4suC4meC4ouC4sjwvc3Bhbj48L2Rpdj5cclxuICAgICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggaXRlbXMtY2VudGVyIGdhcC0yXCI+PGRpdiBjbGFzc05hbWU9XCJ3LTIuNSBoLTIuNSBiZy1wdXJwbGUtNTAwIHJvdW5kZWQtZnVsbFwiIC8+PHNwYW4+4Lio4Li54LiZ4Lii4LmM4Liq4Li44LiC4Lig4Liy4LiePC9zcGFuPjwvZGl2PlxyXG4gICAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTIgYm9yZGVyLXQgcHQtMSBtdC0xXCI+PGRpdiBjbGFzc05hbWU9XCJ3LTIuNSBoLTIuNSBiZy1ibHVlLTUwMCByb3VuZGVkLWZ1bGwgcmluZy0yIHJpbmctYmx1ZS0yMDBcIiAvPjxzcGFuPuC4leC4s+C5geC4q+C4meC5iOC4h+C4hOC4uOC4kzwvc3Bhbj48L2Rpdj5cclxuICAgICAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgICAgIHsvKiBDZW50ZXIgYnRuICovfVxyXG4gICAgICAgICAgICAgICAgPGJ1dHRvbiBvbkNsaWNrPXsoKSA9PiB7IG1hcEluc3RhbmNlLmN1cnJlbnQ/LnNldENlbnRlcih1c2VyTG9jYXRpb24pOyBtYXBJbnN0YW5jZS5jdXJyZW50Py5zZXRab29tKDEzKTsgfX1cclxuICAgICAgICAgICAgICAgICAgY2xhc3NOYW1lPVwiYWJzb2x1dGUgYm90dG9tLTQgcmlnaHQtNCBiZy13aGl0ZSByb3VuZGVkLWZ1bGwgcC0zIHNoYWRvdy1sZyBob3ZlcjpiZy1ncmF5LTUwIHotMTBcIj5cclxuICAgICAgICAgICAgICAgICAgPFVzZXIgY2xhc3NOYW1lPVwidy01IGgtNSB0ZXh0LWJsdWUtNjAwXCIgLz5cclxuICAgICAgICAgICAgICAgIDwvYnV0dG9uPlxyXG4gICAgICAgICAgICAgIDwvPlxyXG4gICAgICAgICAgICApfVxyXG4gICAgICAgICAgPC8+XHJcbiAgICAgICAgKX1cclxuICAgICAgPC9kaXY+XHJcblxyXG4gICAgICB7LyogU2VhcmNoICovfVxyXG4gICAgICA8ZGl2IGNsYXNzTmFtZT1cImJnLXdoaXRlIGJvcmRlci10IHB4LTQgcHktMyBzaHJpbmstMFwiPlxyXG4gICAgICAgIDxkaXYgY2xhc3NOYW1lPVwicmVsYXRpdmVcIj5cclxuICAgICAgICAgIDxTZWFyY2ggY2xhc3NOYW1lPVwiYWJzb2x1dGUgbGVmdC0zIHRvcC0xLzIgLXRyYW5zbGF0ZS15LTEvMiB3LTQgaC00IHRleHQtZ3JheS00MDBcIiAvPlxyXG4gICAgICAgICAgPGlucHV0IHR5cGU9XCJ0ZXh0XCIgdmFsdWU9e3NlYXJjaH0gb25DaGFuZ2U9e2UgPT4gc2V0U2VhcmNoKGUudGFyZ2V0LnZhbHVlKX1cclxuICAgICAgICAgICAgcGxhY2Vob2xkZXI9XCLguITguYnguJnguKvguLLguIrguLfguYjguK3guKvguKPguLfguK3guJfguLXguYjguK3guKLguLnguYguLi5cIlxyXG4gICAgICAgICAgICBjbGFzc05hbWU9XCJ3LWZ1bGwgcGwtMTAgcHItNCBweS0yLjUgYm9yZGVyIHJvdW5kZWQteGwgdGV4dC1zbSBmb2N1czpyaW5nLTIgZm9jdXM6cmluZy1lbWVyYWxkLTUwMFwiIC8+XHJcbiAgICAgICAgPC9kaXY+XHJcbiAgICAgICAge21hcFJlYWR5ICYmIGZhY2lsaXRpZXMubGVuZ3RoID09PSAwICYmICFsb2FkaW5nICYmIChcclxuICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwibXQtMiBwLTMgYmctYW1iZXItNTAgYm9yZGVyIGJvcmRlci1hbWJlci0yMDAgcm91bmRlZC1sZ1wiPlxyXG4gICAgICAgICAgICA8cCBjbGFzc05hbWU9XCJ0ZXh0LXNtIHRleHQtYW1iZXItODAwIGZvbnQtbWVkaXVtXCI+4pqg77iPIOC5hOC4oeC5iOC4nuC4muC4quC4luC4suC4meC4nuC4ouC4suC4muC4suC4peC5g+C4meC4o+C4seC4qOC4oeC4tSAxNSDguIHguKEuPC9wPlxyXG4gICAgICAgICAgICA8cCBjbGFzc05hbWU9XCJ0ZXh0LXhzIHRleHQtYW1iZXItNjAwIG10LTFcIj7guIHguKPguLjguJPguLLguYDguJvguLTguJTguYPguIrguYnguIfguLLguJkgPGI+UGxhY2VzIEFQSTwvYj4g4LmD4LiZIEdvb2dsZSBDbG91ZCBDb25zb2xlPC9wPlxyXG4gICAgICAgICAgICA8YSBocmVmPVwiaHR0cHM6Ly9jb25zb2xlLmNsb3VkLmdvb2dsZS5jb20vYXBpcy9saWJyYXJ5L3BsYWNlcy1iYWNrZW5kLmdvb2dsZWFwaXMuY29tXCIgdGFyZ2V0PVwiX2JsYW5rXCIgcmVsPVwibm9vcGVuZXIgbm9yZWZlcnJlclwiXHJcbiAgICAgICAgICAgICAgY2xhc3NOYW1lPVwiaW5saW5lLWZsZXggaXRlbXMtY2VudGVyIGdhcC0xIG10LTIgdGV4dC14cyB0ZXh0LWJsdWUtNjAwIGhvdmVyOnVuZGVybGluZVwiPlxyXG4gICAgICAgICAgICAgIDxFeHRlcm5hbExpbmsgY2xhc3NOYW1lPVwidy0zIGgtM1wiIC8+IOC5gOC4m+C4tOC4lCBHb29nbGUgQ2xvdWQgQ29uc29sZVxyXG4gICAgICAgICAgICA8L2E+XHJcbiAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICApfVxyXG4gICAgICA8L2Rpdj5cclxuXHJcbiAgICAgIHsvKiBMaXN0ICovfVxyXG4gICAgICA8ZGl2IGNsYXNzTmFtZT1cImJnLWdyYXktNTAgc2hyaW5rLTAgbWF4LWgtNjAgb3ZlcmZsb3cteS1hdXRvXCI+XHJcbiAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJweC00IHB5LTIgYmctd2hpdGUgYm9yZGVyLWIgc3RpY2t5IHRvcC0wIHotMTAgZmxleCBpdGVtcy1jZW50ZXIganVzdGlmeS1iZXR3ZWVuXCI+XHJcbiAgICAgICAgICA8aDIgY2xhc3NOYW1lPVwidGV4dC1zbSBmb250LXNlbWlib2xkIHRleHQtZ3JheS03MDBcIj7guJ7guJoge2ZpbHRlcmVkLmxlbmd0aH0g4LmB4Lir4LmI4LiHPC9oMj5cclxuICAgICAgICAgIHtsb2FkaW5nICYmIDxMb2FkZXIyIGNsYXNzTmFtZT1cInctNCBoLTQgYW5pbWF0ZS1zcGluIHRleHQtZW1lcmFsZC02MDBcIiAvPn1cclxuICAgICAgICA8L2Rpdj5cclxuICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImRpdmlkZS15XCI+XHJcbiAgICAgICAgICB7bG9hZGluZyAmJiBmYWNpbGl0aWVzLmxlbmd0aCA9PT0gMCA/IChcclxuICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWNlbnRlciBweS04XCI+PExvYWRlcjIgY2xhc3NOYW1lPVwidy02IGgtNiBhbmltYXRlLXNwaW4gdGV4dC1lbWVyYWxkLTYwMFwiIC8+PC9kaXY+XHJcbiAgICAgICAgICApIDogZmlsdGVyZWQubGVuZ3RoID09PSAwID8gKFxyXG4gICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInRleHQtY2VudGVyIHB5LTggdGV4dC1ncmF5LTUwMFwiPjxNYXBQaW4gY2xhc3NOYW1lPVwidy0xMCBoLTEwIG14LWF1dG8gbWItMiBvcGFjaXR5LTUwXCIgLz48cCBjbGFzc05hbWU9XCJ0ZXh0LXNtXCI+4LmE4Lih4LmI4Lie4Lia4Liq4LiW4Liy4LiZ4Lie4Lii4Liy4Lia4Liy4LilPC9wPjwvZGl2PlxyXG4gICAgICAgICAgKSA6IChcclxuICAgICAgICAgICAgZmlsdGVyZWQuc2xpY2UoMCwgMzApLm1hcChmID0+IHtcclxuICAgICAgICAgICAgICBjb25zdCBJY29uID0gaWNvbnNbZi50eXBlXSB8fCBCdWlsZGluZzI7XHJcbiAgICAgICAgICAgICAgY29uc3Qgc2VsID0gc2VsZWN0ZWRJZCA9PT0gZi5pZDtcclxuICAgICAgICAgICAgICByZXR1cm4gKFxyXG4gICAgICAgICAgICAgICAgPGRpdiBrZXk9e2YuaWR9IG9uQ2xpY2s9eygpID0+IGZvY3VzRmFjaWxpdHkoZil9XHJcbiAgICAgICAgICAgICAgICAgIGNsYXNzTmFtZT17YHAtMyBiZy13aGl0ZSBob3ZlcjpiZy1lbWVyYWxkLTUwIGN1cnNvci1wb2ludGVyIHRyYW5zaXRpb24gJHtzZWwgPyAnYmctZW1lcmFsZC01MCBib3JkZXItbC00IGJvcmRlci1lbWVyYWxkLTUwMCcgOiAnJ31gfT5cclxuICAgICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGl0ZW1zLXN0YXJ0IGdhcC0zXCI+XHJcbiAgICAgICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9e2B3LTkgaC05IHJvdW5kZWQtbGcgZmxleCBpdGVtcy1jZW50ZXIganVzdGlmeS1jZW50ZXIgc2hyaW5rLTAgJHtjb2xvcnNbZi50eXBlXX1gfT5cclxuICAgICAgICAgICAgICAgICAgICAgIDxJY29uIGNsYXNzTmFtZT1cInctNCBoLTRcIiAvPlxyXG4gICAgICAgICAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleC0xIG1pbi13LTBcIj5cclxuICAgICAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBqdXN0aWZ5LWJldHdlZW4gZ2FwLTJcIj5cclxuICAgICAgICAgICAgICAgICAgICAgICAgPGRpdj5cclxuICAgICAgICAgICAgICAgICAgICAgICAgICA8aDMgY2xhc3NOYW1lPVwiZm9udC1tZWRpdW0gdGV4dC1ncmF5LTgwMCB0ZXh0LXNtXCI+e2YubmFtZX08L2gzPlxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT17YGlubGluZS1ibG9jayBweC0xLjUgcHktMC41IHRleHQteHMgcm91bmRlZCBtdC0wLjUgJHtjb2xvcnNbZi50eXBlXX1gfT57bGFiZWxzW2YudHlwZV19PC9zcGFuPlxyXG4gICAgICAgICAgICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJ0ZXh0LXJpZ2h0IHNocmluay0wXCI+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgPHAgY2xhc3NOYW1lPVwidGV4dC1zbSBmb250LXNlbWlib2xkIHRleHQtZW1lcmFsZC02MDBcIj57Zi5kaXN0YW5jZVRleHR9PC9wPlxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgIHtmLmlzT3BlbiAhPT0gdW5kZWZpbmVkICYmIDxwIGNsYXNzTmFtZT17YHRleHQteHMgJHtmLmlzT3BlbiA/ICd0ZXh0LWdyZWVuLTYwMCcgOiAndGV4dC1yZWQtNTAwJ31gfT57Zi5pc09wZW4gPyAn4LmA4Lib4Li04LiUJyA6ICfguJvguLTguJQnfTwvcD59XHJcbiAgICAgICAgICAgICAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgICAgICAgICAgICA8cCBjbGFzc05hbWU9XCJ0ZXh0LXhzIHRleHQtZ3JheS01MDAgbXQtMSB0cnVuY2F0ZVwiPntmLmFkZHJlc3N9PC9wPlxyXG4gICAgICAgICAgICAgICAgICAgICAge2YucmF0aW5nICYmIChcclxuICAgICAgICAgICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGl0ZW1zLWNlbnRlciBnYXAtMSBtdC0xXCI+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgPFN0YXIgY2xhc3NOYW1lPVwidy0zIGgtMyB0ZXh0LXllbGxvdy01MDAgZmlsbC15ZWxsb3ctNTAwXCIgLz5cclxuICAgICAgICAgICAgICAgICAgICAgICAgICA8c3BhbiBjbGFzc05hbWU9XCJ0ZXh0LXhzIHRleHQtZ3JheS02MDBcIj57Zi5yYXRpbmd9PC9zcGFuPlxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT1cInRleHQteHMgdGV4dC1ncmF5LTQwMFwiPih7Zi5yYXRpbmdDb3VudH0pPC9zcGFuPlxyXG4gICAgICAgICAgICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgICAgICAgICAgICl9XHJcbiAgICAgICAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgICAgICAgICAgPGJ1dHRvbiBvbkNsaWNrPXtlID0+IHsgZS5zdG9wUHJvcGFnYXRpb24oKTsgbmF2aWdhdGUoZik7IH19XHJcbiAgICAgICAgICAgICAgICAgICAgICBjbGFzc05hbWU9XCJwLTIgYmctZW1lcmFsZC02MDAgdGV4dC13aGl0ZSByb3VuZGVkLWxnIGhvdmVyOmJnLWVtZXJhbGQtNzAwIHNocmluay0wXCI+XHJcbiAgICAgICAgICAgICAgICAgICAgICA8TmF2aWdhdGlvbiBjbGFzc05hbWU9XCJ3LTQgaC00XCIgLz5cclxuICAgICAgICAgICAgICAgICAgICA8L2J1dHRvbj5cclxuICAgICAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgICApO1xyXG4gICAgICAgICAgICB9KVxyXG4gICAgICAgICAgKX1cclxuICAgICAgICA8L2Rpdj5cclxuICAgICAgPC9kaXY+XHJcbiAgICA8L2Rpdj5cclxuICApO1xyXG59XHJcbiJdLCJmaWxlIjoiQzovVXNlcnMvY2hpcmEvRG9jdW1lbnRzL0lzYXJhLXRlbGVtZWQvSXNhcmEtYW55d2hlcmUtVjAuMC4zL0lzYXJhLXBhdGllbnQtcG9ydGFsL3NyYy9wYWdlcy9tYXAvTWFwUGFnZS50c3gifQ==

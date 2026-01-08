@@ -153,4 +153,34 @@ Digital advance directive:
 - Account Settings (Password, Notifications, Language)
 
 ---
-**Last Updated:** December 14, 2025
+
+## 9. Video Meeting (Jitsi Meet)
+
+### Features
+| Feature | Description | Thai |
+|---------|-------------|------|
+| **Lobby** | Wait for doctor approval before joining | รอแพทย์อนุมัติ |
+| **Camera** | Default ON (startWithVideoMuted=false) | เปิดกล้องอัตโนมัติ |
+| **Microphone** | Default ON (startWithAudioMuted=false) | เปิดไมค์อัตโนมัติ |
+| **Text Chat** | Always available | แชทข้อความ |
+| **Recording** | Doctor can record for medical records | บันทึกวิดีโอ |
+
+### Invite External Guests
+Patients can invite family members or relatives (non-registered users):
+
+| Guest Type | Description | Thai |
+|------------|-------------|------|
+| patient_relative | Family member | ญาติผู้ป่วย |
+| patient_partner | Spouse/Partner | คู่สมรส |
+| other | Other person | อื่นๆ |
+
+**Supported Email Domains:**
+- Gmail (@gmail.com)
+- Hotmail/Outlook (@hotmail.com, @outlook.com)
+- Yahoo (@yahoo.com)
+- Thai domains (.co.th, .ac.th)
+- Any valid email domain
+
+---
+**Last Updated:** January 8, 2026
+**Version:** 1.1.8

@@ -195,7 +195,7 @@ Doctor Portal                       Patient Portal
 ## 📁 Repository Structure
 
 ```
-Isara-anywhere-V0.0.2/
+Isara-anywhere-V0.0.3/
 ├── Isara-patient-portal/     # Patient web app
 │   ├── src/                  # React source
 │   ├── server/               # Express backends
@@ -206,8 +206,9 @@ Isara-anywhere-V0.0.2/
 │   ├── server/               # Express backends
 │   └── Dockerfile            # Container config
 │
-├── Documents/                # Legacy documentation
 ├── Explains/                 # Organized documentation
+├── Presentations/            # Workflow diagrams & HTML presentations
+├── Processes/                # Business process documentation
 ├── scripts/                  # Utilities & tests
 └── data/                     # Schema references
 ```
@@ -249,4 +250,5 @@ npm run dev
 ```
 
 ---
-**Last Updated:** December 14, 2025
+**Last Updated:** January 8, 2026
+**Version:** 1.1.8

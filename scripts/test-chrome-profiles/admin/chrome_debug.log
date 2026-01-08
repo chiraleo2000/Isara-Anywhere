@@ -1,0 +1,57 @@
+[62552:94100:0108/130907.413:INFO:components\enterprise\browser\controller\chrome_browser_cloud_management_controller.cc:206] No machine level policy manager exists.
+[62552:94100:0108/130920.761:INFO:CONSOLE:64] "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation", source: https://cdn.tailwindcss.com/ (64)
+[62552:94100:0108/130920.789:INFO:CONSOLE:296] "
+╔═══════════════════════════════════════════════════════════╗
+║         🏥 Izara Anywhere - Google APIs Loader          ║
+╠═══════════════════════════════════════════════════════════╣
+║                                                           ║
+║  Debug commands:                                          ║
+║  • window.GOOGLE_CONFIG.logStatus()                       ║
+║  • window.checkGoogleOAuthConfig()                        ║
+║                                                           ║
+║  Events:                                                  ║
+║  • googleApisReady - All APIs loaded                      ║
+║  • googleApisTimeout - Loading timeout                    ║
+║                                                           ║
+╚═══════════════════════════════════════════════════════════╝
+      ", source: https://izara-doctor-portal-724889190329.asia-southeast1.run.app/ (296)
+[62552:94100:0108/130921.482:INFO:CONSOLE:23] "✅ Gemini AI initialized successfully", source: https://izara-doctor-portal-724889190329.asia-southeast1.run.app/assets/index-CLpRUz94.js (23)
+[62552:94100:0108/130921.483:INFO:CONSOLE:281] "✅ AI Clinical Copilot initialized with model: gemini-2.5-flash-lite", source: https://izara-doctor-portal-724889190329.asia-southeast1.run.app/assets/index-CLpRUz94.js (281)
+[62552:94100:0108/130921.484:INFO:CONSOLE:445] "✅ Enhanced Meeting Service: Gemini AI initialized with model: gemini-2.5-flash-lite", source: https://izara-doctor-portal-724889190329.asia-southeast1.run.app/assets/index-CLpRUz94.js (445)
+[62552:94100:0108/130921.487:INFO:CONSOLE:445] "⚠️ No voices available yet", source: https://izara-doctor-portal-724889190329.asia-southeast1.run.app/assets/index-CLpRUz94.js (445)
+[62552:94100:0108/130921.489:INFO:CONSOLE:534] "⚠️ simpleAuth.ts is deprecated. Please use authServices.ts instead.", source: https://izara-doctor-portal-724889190329.asia-southeast1.run.app/assets/index-CLpRUz94.js (534)
+[62552:94100:0108/130921.501:INFO:CONSOLE:445] "⚠️ No voices available yet", source: https://izara-doctor-portal-724889190329.asia-southeast1.run.app/assets/index-CLpRUz94.js (445)
+[62552:94100:0108/130921.569:INFO:CONSOLE:23] "⚠️ Google Calendar API credentials not configured.", source: https://izara-doctor-portal-724889190329.asia-southeast1.run.app/assets/externalServices-DWS9I0j5.js (23)
+[62552:94100:0108/130921.569:INFO:CONSOLE:23] "ℹ️ To enable Google Meet integration:", source: https://izara-doctor-portal-724889190329.asia-southeast1.run.app/assets/externalServices-DWS9I0j5.js (23)
+[62552:94100:0108/130921.569:INFO:CONSOLE:23] "1. Set VITE_GOOGLE_CLIENT_ID in your .env file", source: https://izara-doctor-portal-724889190329.asia-southeast1.run.app/assets/externalServices-DWS9I0j5.js (23)
+[62552:94100:0108/130921.569:INFO:CONSOLE:23] "2. Set VITE_GOOGLE_API_KEY in your .env file", source: https://izara-doctor-portal-724889190329.asia-southeast1.run.app/assets/externalServices-DWS9I0j5.js (23)
+[62552:94100:0108/130921.569:INFO:CONSOLE:23] "3. Enable Google Calendar API in Google Cloud Console", source: https://izara-doctor-portal-724889190329.asia-southeast1.run.app/assets/externalServices-DWS9I0j5.js (23)
+[62552:94100:0108/130922.093:INFO:CONSOLE:0] "[DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o", source: https://izara-doctor-portal-724889190329.asia-southeast1.run.app/login (0)
+[62552:94100:0108/130922.238:INFO:CONSOLE:1339] "Google Maps JavaScript API has been loaded directly without loading=async. This can result in suboptimal performance. For best-practice loading patterns please see https://goo.gle/js-api-loading", source: https://maps.googleapis.com/maps/api/js?key=AIzaSyAYbKd-Sk4G_vMwzt0Sac6Jgc-8y39vPxs&libraries=places (1339)
+[62552:94100:0108/130922.262:INFO:CONSOLE:154] "✅ Google Maps loaded", source: https://izara-doctor-portal-724889190329.asia-southeast1.run.app/ (154)
+[62552:94100:0108/130922.283:INFO:CONSOLE:163] "✅ GAPI loaded", source: https://izara-doctor-portal-724889190329.asia-southeast1.run.app/ (163)
+[62552:94100:0108/130922.286:INFO:CONSOLE:445] "🔢 Available voices: 3", source: https://izara-doctor-portal-724889190329.asia-southeast1.run.app/assets/index-CLpRUz94.js (445)
+[62552:94100:0108/130922.287:INFO:CONSOLE:445] "🔍 Searching for Thai voices...", source: https://izara-doctor-portal-724889190329.asia-southeast1.run.app/assets/index-CLpRUz94.js (445)
+[62552:94100:0108/130922.287:INFO:CONSOLE:445] "⚠️ No Thai voice found", source: https://izara-doctor-portal-724889190329.asia-southeast1.run.app/assets/index-CLpRUz94.js (445)
+[62552:94100:0108/130922.287:INFO:CONSOLE:445] "⚠️ No Thai voice found, using default", source: https://izara-doctor-portal-724889190329.asia-southeast1.run.app/assets/index-CLpRUz94.js (445)
+[62552:94100:0108/130922.288:INFO:CONSOLE:445] "ℹ️ Using fallback voice: Microsoft David - English (United States) en-US", source: https://izara-doctor-portal-724889190329.asia-southeast1.run.app/assets/index-CLpRUz94.js (445)
+[62552:94100:0108/130923.123:INFO:CONSOLE:172] "✅ GIS loaded", source: https://izara-doctor-portal-724889190329.asia-southeast1.run.app/ (172)
+[62552:94100:0108/130924.113:INFO:CONSOLE:215] "📱 Page loaded, checking Google APIs...", source: https://izara-doctor-portal-724889190329.asia-southeast1.run.app/ (215)
+[62552:94100:0108/130924.554:INFO:CONSOLE:235] "✅ All Google APIs loaded successfully!", source: https://izara-doctor-portal-724889190329.asia-southeast1.run.app/ (235)
+[62552:94100:0108/130924.554:INFO:CONSOLE:203] "🔍 Google APIs Status: [object Object]", source: https://izara-doctor-portal-724889190329.asia-southeast1.run.app/ (203)
+[62552:94100:0108/130952.525:INFO:CONSOLE:6] "
+========================================", source: https://izara-doctor-portal-724889190329.asia-southeast1.run.app/assets/index-CLpRUz94.js (6)
+[62552:94100:0108/130952.527:INFO:CONSOLE:7] "🔐 LOGIN - Auth Server", source: https://izara-doctor-portal-724889190329.asia-southeast1.run.app/assets/index-CLpRUz94.js (7)
+[62552:94100:0108/130952.527:INFO:CONSOLE:7] "========================================", source: https://izara-doctor-portal-724889190329.asia-southeast1.run.app/assets/index-CLpRUz94.js (7)
+[62552:94100:0108/130952.527:INFO:CONSOLE:7] "📧 Logging in: doctorunit.test@izara.com", source: https://izara-doctor-portal-724889190329.asia-southeast1.run.app/assets/index-CLpRUz94.js (7)
+[62552:94100:0108/130952.527:INFO:CONSOLE:7] "📱 Device ID: dev_wzuav4_mk4utj7q", source: https://izara-doctor-portal-724889190329.asia-southeast1.run.app/assets/index-CLpRUz94.js (7)
+[62552:94100:0108/130952.527:INFO:CONSOLE:7] "🔗 Calling auth server: /auth/login", source: https://izara-doctor-portal-724889190329.asia-southeast1.run.app/assets/index-CLpRUz94.js (7)
+[62552:94100:0108/130952.645:INFO:CONSOLE:7] "❌ Auth server login failed: Invalid credentials", source: https://izara-doctor-portal-724889190329.asia-southeast1.run.app/assets/index-CLpRUz94.js (7)
+[62552:94100:0108/130952.645:INFO:CONSOLE:8] "❌ Login error: Invalid credentials", source: https://izara-doctor-portal-724889190329.asia-southeast1.run.app/assets/index-CLpRUz94.js (8)
+[62552:94100:0108/130952.646:INFO:CONSOLE:4] "🌐 Fetching via API: credentials/login-history/unknown.json", source: https://izara-doctor-portal-724889190329.asia-southeast1.run.app/assets/index-CLpRUz94.js (4)
+[62552:94100:0108/130952.998:INFO:CONSOLE:4] "✅ Fetched: credentials/login-history/unknown.json", source: https://izara-doctor-portal-724889190329.asia-southeast1.run.app/assets/index-CLpRUz94.js (4)
+[62552:94100:0108/130952.999:INFO:CONSOLE:4] "💾 Writing to GCS: credentials/login-history/unknown.json", source: https://izara-doctor-portal-724889190329.asia-southeast1.run.app/assets/index-CLpRUz94.js (4)
+[62552:94100:0108/130953.343:INFO:CONSOLE:4] "✅ Written to GCS: credentials/login-history/unknown.json", source: https://izara-doctor-portal-724889190329.asia-southeast1.run.app/assets/index-CLpRUz94.js (4)
+[62552:94100:0108/130953.343:INFO:CONSOLE:8] "Login error: Error: Invalid credentials", source: https://izara-doctor-portal-724889190329.asia-southeast1.run.app/assets/index-CLpRUz94.js (8)
+[62552:94100:0108/130953.836:INFO:CONSOLE:0] "[DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq)", source: https://izara-doctor-portal-724889190329.asia-southeast1.run.app/login (0)
+[62552:45688:0108/131034.620:ERROR:google_apis\gcm\engine\registration_request.cc:292] Registration response error message: DEPRECATED_ENDPOINT

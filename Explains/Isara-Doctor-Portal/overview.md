@@ -14,6 +14,7 @@ The Izara Doctor Portal is a clinical workflow management platform for healthcar
 | Role | Email | Password |
 |------|-------|----------|
 | Doctor | doctor.test@izara.com | IzaraDoctor@2024 |
+| Unit Test Doctor | doctorunit.test@izara.com | P@ssw0rd |
 | Admin | admin.test@izara.com | IzaraAdmin@2024 |
 
 ## 👥 User Types
@@ -97,10 +98,23 @@ Isara-doctor-portal/
 | Bucket | Purpose |
 |--------|---------|
 | `izara-users-credentials` | Doctor/Admin credentials & sessions |
-| `izara-doctors-data` | Doctor profiles |
+| `izara-doctors-data` | Doctor profiles, EMR, meeting recordings |
 | `izara-patients-data` | Patient data (read-only for assigned) |
 | `izara-appointments` | Appointment & EMR records |
 | `izara-meta-data` | Clinical resources, consultants |
 
+## 📹 Video Meeting (Jitsi Meet - HOST Controls)
+
+| Feature | Description |
+|---------|-------------|
+| Provider | Jitsi Meet (meet.jit.si) - FREE |
+| Role | Doctor acts as HOST (moderator) |
+| Lobby | Approve/reject participants |
+| Recording | Save to izara-doctors-data |
+| Transcription | Google Speech-to-Text API |
+| AI Summary | Gemini 2.5 Flash Lite |
+| External Guests | Invite specialists (non-registered) |
+
 ---
-**Last Updated:** December 15, 2025
+**Last Updated:** January 8, 2026
+**Version:** 1.1.8

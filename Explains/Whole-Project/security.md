@@ -70,11 +70,14 @@ Auth endpoints: 10 requests per 15 minutes per IP
 ```javascript
 // Allowed origins
 const allowedOrigins = [
-  'http://localhost:5173',  // Doctor Portal
-  'http://localhost:5174',  // Patient Portal
-  'http://localhost:3000',  // Patient API
+  'http://localhost:3005',  // Patient Portal (Vite)
+  'http://localhost:3010',  // Doctor Portal (Vite)
+  'http://localhost:3004',  // Patient API
+  'http://localhost:3009',  // Doctor Main API
   'http://localhost:3011',  // Auth Server
-  'http://localhost:3012'   // GCS API
+  'http://localhost:3012',  // GCS API
+  'https://izara-patient-portal-724889190329.asia-southeast1.run.app',
+  'https://izara-doctor-portal-724889190329.asia-southeast1.run.app'
 ];
 
 // Allowed methods
@@ -286,4 +289,40 @@ app.use(checkPermissions);       // Authorization
 ```
 
 ---
-**Last Updated:** December 14, 2025
+
+## 🎥 Video Meeting Security (v1.1.8)
+
+### Jitsi Meet Integration
+
+| Feature | Security Measure |
+|---------|------------------|
+| Meeting URLs | Random ID + timestamp + hash |
+| Lobby | Doctor approval required for all guests |
+| Token-based invites | Secure invite links with expiration |
+| Guest validation | Token verified before joining |
+| Recording access | Doctor-only, stored in GCS |
+
+### External Guest Invite Security
+
+```javascript
+// Guest invite flow
+1. User creates invite → Generate secure token
+2. Token stored server-side with expiration
+3. Guest clicks link → Token validated
+4. Invalid/expired/revoked tokens rejected
+5. Guest enters lobby → Doctor approves
+```
+
+### Permission Boundaries
+
+| Inviter | Can Invite |
+|---------|------------|
+| Patient | patient_relative, patient_partner, other |
+| Doctor | doctor_specialist, doctor_advisor, other |
+
+**Patients CANNOT invite doctor_specialist or doctor_advisor**
+**Doctors CANNOT invite patient_relative or patient_partner**
+
+---
+**Last Updated:** January 8, 2026
+**Version:** 1.1.8

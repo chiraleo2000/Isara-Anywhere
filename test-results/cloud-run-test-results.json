@@ -6,34 +6,34 @@
   },
   "summary": {
     "total": 51,
-    "passed": 51,
-    "failed": 0,
+    "passed": 43,
+    "failed": 8,
     "skipped": 0,
-    "passRate": 100
+    "passRate": 84.31372549019608
   },
   "tests": [
     {
       "name": "Patient Portal Health Check",
       "status": "passed",
-      "duration": 449,
+      "duration": 409,
       "error": null
     },
     {
       "name": "Doctor Portal Health Check",
       "status": "passed",
-      "duration": 212,
+      "duration": 210,
       "error": null
     },
     {
       "name": "Patient Portal GCS Connection",
       "status": "passed",
-      "duration": 88,
+      "duration": 299,
       "error": null
     },
     {
       "name": "Doctor Portal GCS Connection",
       "status": "passed",
-      "duration": 49,
+      "duration": 51,
       "error": null
     },
     {
@@ -45,281 +45,281 @@
     {
       "name": "Cross-Portal Data Sync",
       "status": "passed",
-      "duration": 102,
+      "duration": 110,
       "error": null
     },
     {
       "name": "Admin Update Doctor Status API",
       "status": "passed",
-      "duration": 64,
+      "duration": 109,
       "error": null
     },
     {
       "name": "Admin Remove Admin API",
       "status": "passed",
-      "duration": 50,
+      "duration": 51,
       "error": null
     },
     {
       "name": "Video Meeting Service Health",
       "status": "passed",
-      "duration": 50,
+      "duration": 53,
       "error": null
     },
     {
       "name": "Create Meeting API",
       "status": "passed",
-      "duration": 105,
+      "duration": 121,
       "error": null
     },
     {
       "name": "Guest Invite Link API",
       "status": "passed",
-      "duration": 100,
+      "duration": 104,
       "error": null
     },
     {
       "name": "Join Meeting with Invite API",
       "status": "passed",
-      "duration": 45,
+      "duration": 50,
       "error": null
     },
     {
       "name": "Get Meeting Invites API",
       "status": "passed",
-      "duration": 45,
+      "duration": 49,
       "error": null
     },
     {
       "name": "Patient PHR API (Health Studio)",
       "status": "passed",
-      "duration": 44,
+      "duration": 43,
       "error": null
     },
     {
       "name": "Patient Vitals API",
       "status": "passed",
-      "duration": 45,
+      "duration": 44,
       "error": null
     },
     {
       "name": "Patient Appointments API",
       "status": "passed",
-      "duration": 47,
+      "duration": 46,
       "error": null
     },
     {
       "name": "AI Health Chat API",
       "status": "passed",
-      "duration": 43,
+      "duration": 52,
       "error": null
     },
     {
       "name": "PDPA Consent API",
       "status": "passed",
-      "duration": 43,
+      "duration": 49,
       "error": null
     },
     {
       "name": "Living Will API",
       "status": "passed",
-      "duration": 44,
+      "duration": 45,
       "error": null
     },
     {
       "name": "Patient Health Timeline API",
       "status": "passed",
-      "duration": 43,
+      "duration": 46,
       "error": null
     },
     {
       "name": "Health Logs API",
       "status": "passed",
-      "duration": 44,
+      "duration": 45,
       "error": null
     },
     {
       "name": "Doctor GCS Data API",
       "status": "passed",
-      "duration": 109,
+      "duration": 104,
       "error": null
     },
     {
       "name": "Clinical Resources API",
       "status": "passed",
-      "duration": 93,
+      "duration": 97,
       "error": null
     },
     {
       "name": "Medical Consultants API",
       "status": "passed",
-      "duration": 49,
+      "duration": 47,
       "error": null
     },
     {
       "name": "EMR Service API",
       "status": "passed",
-      "duration": 47,
+      "duration": 50,
       "error": null
     },
     {
       "name": "Appointment Queue API",
       "status": "passed",
-      "duration": 49,
+      "duration": 47,
       "error": null
     },
     {
       "name": "Doctor Invites Admin to Meeting",
       "status": "passed",
-      "duration": 89,
+      "duration": 96,
       "error": null
     },
     {
       "name": "Patient Invites Family to Meeting",
       "status": "passed",
-      "duration": 93,
+      "duration": 94,
       "error": null
     },
     {
       "name": "Guest Join with Valid Invite",
       "status": "passed",
-      "duration": 45,
+      "duration": 50,
       "error": null
     },
     {
       "name": "Medical Content API",
       "status": "passed",
-      "duration": 147,
+      "duration": 171,
       "error": null
     },
     {
       "name": "Doctor Portal Content",
       "status": "passed",
-      "duration": 50,
+      "duration": 49,
       "error": null
     },
     {
       "name": "Notification Service API",
       "status": "passed",
-      "duration": 41,
+      "duration": 46,
       "error": null
     },
     {
       "name": "Device-Bound Session API",
       "status": "passed",
-      "duration": 114,
+      "duration": 149,
       "error": null
     },
     {
       "name": "Session Validation API",
       "status": "passed",
-      "duration": 46,
+      "duration": 49,
       "error": null
     },
     {
       "name": "Patient Portal Session Handling",
       "status": "passed",
-      "duration": 542,
+      "duration": 1103,
       "error": null
     },
     {
       "name": "Patient Portal Login Page",
       "status": "passed",
-      "duration": 2496,
+      "duration": 2852,
       "error": null
     },
     {
       "name": "Doctor Portal Login Page",
       "status": "passed",
-      "duration": 4203,
+      "duration": 3936,
       "error": null
     },
     {
       "name": "Patient Portal Authentication",
       "status": "passed",
-      "duration": 11153,
+      "duration": 13024,
       "error": null
     },
     {
       "name": "Doctor Portal Authentication",
       "status": "passed",
-      "duration": 20023,
+      "duration": 24444,
       "error": null
     },
     {
       "name": "Simultaneous Patient Login",
       "status": "passed",
-      "duration": 10749,
+      "duration": 11347,
       "error": null
     },
     {
       "name": "Simultaneous Doctor Login",
       "status": "passed",
-      "duration": 3214,
+      "duration": 5134,
       "error": null
     },
     {
       "name": "Simultaneous Admin Login",
       "status": "passed",
-      "duration": 8986,
+      "duration": 10319,
       "error": null
     },
     {
       "name": "Admin Doctor Management - Admins Tab",
       "status": "passed",
-      "duration": 35264,
+      "duration": 35389,
       "error": null
     },
     {
       "name": "Admin Appointment Management - Auto-Assign",
-      "status": "passed",
-      "duration": 50335,
-      "error": null
+      "status": "failed",
+      "duration": 19466,
+      "error": "ECONNREFUSED connect ECONNREFUSED 127.0.0.1:49908"
     },
     {
       "name": "AI Doctor Page Scroll Behavior",
-      "status": "passed",
-      "duration": 15497,
-      "error": null
+      "status": "failed",
+      "duration": 185,
+      "error": "ECONNREFUSED connect ECONNREFUSED 127.0.0.1:49908"
     },
     {
       "name": "Medical Content Library Page",
-      "status": "passed",
-      "duration": 6945,
-      "error": null
+      "status": "failed",
+      "duration": 185,
+      "error": "ECONNREFUSED connect ECONNREFUSED 127.0.0.1:49908"
     },
     {
       "name": "Patient Dashboard Scroll Position",
-      "status": "passed",
-      "duration": 5654,
-      "error": null
+      "status": "failed",
+      "duration": 182,
+      "error": "ECONNREFUSED connect ECONNREFUSED 127.0.0.1:49908"
     },
     {
       "name": "Patient Timeline Scroll Position",
-      "status": "passed",
-      "duration": 4839,
-      "error": null
+      "status": "failed",
+      "duration": 186,
+      "error": "ECONNREFUSED connect ECONNREFUSED 127.0.0.1:49908"
     },
     {
       "name": "Patient Appointments Scroll Position",
-      "status": "passed",
-      "duration": 5113,
-      "error": null
+      "status": "failed",
+      "duration": 190,
+      "error": "ECONNREFUSED connect ECONNREFUSED 127.0.0.1:49908"
     },
     {
       "name": "Health Studio Scroll Position",
-      "status": "passed",
-      "duration": 5576,
-      "error": null
+      "status": "failed",
+      "duration": 180,
+      "error": "ECONNREFUSED connect ECONNREFUSED 127.0.0.1:49908"
     },
     {
       "name": "Doctor Dashboard Scroll Position",
-      "status": "passed",
-      "duration": 13143,
-      "error": null
+      "status": "failed",
+      "duration": 187,
+      "error": "ECONNREFUSED connect ECONNREFUSED 127.0.0.1:49908"
     }
   ],
-  "startTime": "2026-01-07T03:16:31.219Z",
-  "endTime": "2026-01-07T03:20:02.460Z",
-  "duration": 211.241
+  "startTime": "2026-01-08T05:56:29.134Z",
+  "endTime": "2026-01-08T05:58:44.725Z",
+  "duration": 135.591
 }

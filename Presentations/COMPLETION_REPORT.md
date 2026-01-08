@@ -116,7 +116,27 @@ All 16 mermaid diagrams have been **corrected, simplified, and regenerated** wit
    - Videos
    - Educational resources
 
-## 🎯 Key Features
+## 🎯 Key Features (v1.1.8)
+
+### Video Meeting Features:
+- ✅ Doctor as HOST with moderator controls
+- ✅ Patient joins via lobby (doctor approval)
+- ✅ External guest access (non-registered users)
+- ✅ Camera & microphone ON by default
+- ✅ Video recording & transcription
+- ✅ AI-powered meeting summaries (Gemini 2.5 Flash Lite)
+- ✅ All email domains supported (Gmail, Hotmail, Yahoo, Outlook, .co.th, etc.)
+
+### Test Results (January 8, 2026):
+| Test Suite | Tests | Status |
+|------------|-------|--------|
+| Meeting API Tests (Local) | 51 | ✅ 100% |
+| Meeting API Tests (Cloud) | 51 | ✅ 100% |
+| 4-User Meeting UI Tests (Local) | 33 | ✅ 100% |
+| 4-User Meeting UI Tests (Cloud) | 33 | ✅ 100% |
+| External Guest Access Tests (Local) | 105 | ✅ 100% |
+| External Guest Access Tests (Cloud) | 105 | ✅ 100% |
+| **Total** | **378** | ✅ **100%** |
 
 ### All Presentations Include:
 - ✅ 16:9 aspect ratio for projection
@@ -185,6 +205,9 @@ All corrections verified against:
 ---
 
 **Status:** ✅ COMPLETED  
+**Version:** 1.1.8  
+**Last Updated:** January 8, 2026  
 **Total Files Updated:** 16 mermaid + 16 HTML + 1 index = 33 files  
 **Total Corrections:** 100+ changes across all diagrams  
+**Total Tests Passing:** 378/378 (100%)  
 **Quality:** Production-ready ⭐⭐⭐⭐⭐

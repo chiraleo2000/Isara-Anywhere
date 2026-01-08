@@ -1,0 +1,372 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/src/components/health/LatestAppointmentResult.tsx");import __vite__cjsImport0_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=e95c9919"; const jsxDEV = __vite__cjsImport0_react_jsxDevRuntime["jsxDEV"];
+import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== "undefined" && self instanceof WorkerGlobalScope;
+let prevRefreshReg;
+let prevRefreshSig;
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react can't detect preamble. Something is wrong."
+    );
+  }
+  prevRefreshReg = window.$RefreshReg$;
+  prevRefreshSig = window.$RefreshSig$;
+  window.$RefreshReg$ = RefreshRuntime.getRefreshReg("C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/components/health/LatestAppointmentResult.tsx");
+  window.$RefreshSig$ = RefreshRuntime.createSignatureFunctionForTransform;
+}
+import { Calendar, Clock, Video, MapPin, FileText, Pill, Stethoscope, AlertCircle, ExternalLink } from "/node_modules/.vite/deps/lucide-react.js?v=e95c9919";
+export const LatestAppointmentResult = ({
+  appointment,
+  className = ""
+}) => {
+  if (!appointment) {
+    return /* @__PURE__ */ jsxDEV("div", { className: `text-center py-8 ${className}`, children: [
+      /* @__PURE__ */ jsxDEV(FileText, { className: "w-16 h-16 mx-auto text-gray-300 mb-4" }, void 0, false, {
+        fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/components/health/LatestAppointmentResult.tsx",
+        lineNumber: 36,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ jsxDEV("p", { className: "text-gray-500 mb-2", children: "ยังไม่มีผลการรักษา" }, void 0, false, {
+        fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/components/health/LatestAppointmentResult.tsx",
+        lineNumber: 37,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ jsxDEV("p", { className: "text-sm text-gray-400", children: "เมื่อพบแพทย์แล้ว ผลการรักษาจะแสดงที่นี่" }, void 0, false, {
+        fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/components/health/LatestAppointmentResult.tsx",
+        lineNumber: 38,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ jsxDEV(
+        "a",
+        {
+          href: "/appointments/book",
+          className: "inline-flex items-center gap-2 mt-4 px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-medium hover:bg-emerald-700 transition-colors",
+          children: "นัดหมายแพทย์"
+        },
+        void 0,
+        false,
+        {
+          fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/components/health/LatestAppointmentResult.tsx",
+          lineNumber: 41,
+          columnNumber: 9
+        },
+        this
+      )
+    ] }, void 0, true, {
+      fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/components/health/LatestAppointmentResult.tsx",
+      lineNumber: 35,
+      columnNumber: 7
+    }, this);
+  }
+  const formatDate = (date) => {
+    return new Date(date).toLocaleDateString("th-TH", {
+      day: "numeric",
+      month: "long",
+      year: "numeric"
+    });
+  };
+  return /* @__PURE__ */ jsxDEV("div", { className: `space-y-4 ${className}`, children: [
+    /* @__PURE__ */ jsxDEV("div", { className: "bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl p-4 border border-emerald-100", children: /* @__PURE__ */ jsxDEV("div", { className: "flex items-start gap-4", children: [
+      /* @__PURE__ */ jsxDEV(
+        "img",
+        {
+          src: appointment.doctorAvatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(appointment.doctorId)}`,
+          alt: appointment.doctorName,
+          className: "w-14 h-14 rounded-full border-2 border-white shadow-sm"
+        },
+        void 0,
+        false,
+        {
+          fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/components/health/LatestAppointmentResult.tsx",
+          lineNumber: 64,
+          columnNumber: 11
+        },
+        this
+      ),
+      /* @__PURE__ */ jsxDEV("div", { className: "flex-1", children: [
+        /* @__PURE__ */ jsxDEV("h4", { className: "font-semibold text-gray-800", children: appointment.doctorName }, void 0, false, {
+          fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/components/health/LatestAppointmentResult.tsx",
+          lineNumber: 70,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ jsxDEV("p", { className: "text-sm text-emerald-600", children: appointment.doctorSpecialty }, void 0, false, {
+          fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/components/health/LatestAppointmentResult.tsx",
+          lineNumber: 71,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ jsxDEV("div", { className: "flex flex-wrap items-center gap-3 mt-2 text-sm text-gray-600", children: [
+          /* @__PURE__ */ jsxDEV("span", { className: "flex items-center gap-1", children: [
+            /* @__PURE__ */ jsxDEV(Calendar, { className: "w-4 h-4" }, void 0, false, {
+              fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/components/health/LatestAppointmentResult.tsx",
+              lineNumber: 74,
+              columnNumber: 17
+            }, this),
+            formatDate(appointment.appointmentDate)
+          ] }, void 0, true, {
+            fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/components/health/LatestAppointmentResult.tsx",
+            lineNumber: 73,
+            columnNumber: 15
+          }, this),
+          /* @__PURE__ */ jsxDEV("span", { className: "flex items-center gap-1", children: [
+            /* @__PURE__ */ jsxDEV(Clock, { className: "w-4 h-4" }, void 0, false, {
+              fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/components/health/LatestAppointmentResult.tsx",
+              lineNumber: 78,
+              columnNumber: 17
+            }, this),
+            appointment.appointmentTime
+          ] }, void 0, true, {
+            fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/components/health/LatestAppointmentResult.tsx",
+            lineNumber: 77,
+            columnNumber: 15
+          }, this),
+          /* @__PURE__ */ jsxDEV("span", { className: "flex items-center gap-1", children: [
+            appointment.type === "telehealth" ? /* @__PURE__ */ jsxDEV(Video, { className: "w-4 h-4" }, void 0, false, {
+              fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/components/health/LatestAppointmentResult.tsx",
+              lineNumber: 82,
+              columnNumber: 54
+            }, this) : /* @__PURE__ */ jsxDEV(MapPin, { className: "w-4 h-4" }, void 0, false, {
+              fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/components/health/LatestAppointmentResult.tsx",
+              lineNumber: 82,
+              columnNumber: 86
+            }, this),
+            appointment.type === "telehealth" ? "ออนไลน์" : "ที่โรงพยาบาล"
+          ] }, void 0, true, {
+            fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/components/health/LatestAppointmentResult.tsx",
+            lineNumber: 81,
+            columnNumber: 15
+          }, this)
+        ] }, void 0, true, {
+          fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/components/health/LatestAppointmentResult.tsx",
+          lineNumber: 72,
+          columnNumber: 13
+        }, this)
+      ] }, void 0, true, {
+        fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/components/health/LatestAppointmentResult.tsx",
+        lineNumber: 69,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ jsxDEV("span", { className: "px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium", children: "เสร็จสิ้น" }, void 0, false, {
+        fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/components/health/LatestAppointmentResult.tsx",
+        lineNumber: 87,
+        columnNumber: 11
+      }, this)
+    ] }, void 0, true, {
+      fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/components/health/LatestAppointmentResult.tsx",
+      lineNumber: 63,
+      columnNumber: 9
+    }, this) }, void 0, false, {
+      fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/components/health/LatestAppointmentResult.tsx",
+      lineNumber: 62,
+      columnNumber: 7
+    }, this),
+    appointment.diagnosis && /* @__PURE__ */ jsxDEV("div", { className: "bg-white rounded-xl p-4 border border-gray-200", children: [
+      /* @__PURE__ */ jsxDEV("h5", { className: "font-medium text-gray-800 flex items-center gap-2 mb-2", children: [
+        /* @__PURE__ */ jsxDEV(Stethoscope, { className: "w-5 h-5 text-blue-600" }, void 0, false, {
+          fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/components/health/LatestAppointmentResult.tsx",
+          lineNumber: 97,
+          columnNumber: 13
+        }, this),
+        "การวินิจฉัย"
+      ] }, void 0, true, {
+        fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/components/health/LatestAppointmentResult.tsx",
+        lineNumber: 96,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ jsxDEV("p", { className: "text-gray-700", children: appointment.diagnosis }, void 0, false, {
+        fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/components/health/LatestAppointmentResult.tsx",
+        lineNumber: 100,
+        columnNumber: 11
+      }, this)
+    ] }, void 0, true, {
+      fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/components/health/LatestAppointmentResult.tsx",
+      lineNumber: 95,
+      columnNumber: 7
+    }, this),
+    appointment.notes && /* @__PURE__ */ jsxDEV("div", { className: "bg-white rounded-xl p-4 border border-gray-200", children: [
+      /* @__PURE__ */ jsxDEV("h5", { className: "font-medium text-gray-800 flex items-center gap-2 mb-2", children: [
+        /* @__PURE__ */ jsxDEV(FileText, { className: "w-5 h-5 text-purple-600" }, void 0, false, {
+          fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/components/health/LatestAppointmentResult.tsx",
+          lineNumber: 108,
+          columnNumber: 13
+        }, this),
+        "บันทึกการรักษา"
+      ] }, void 0, true, {
+        fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/components/health/LatestAppointmentResult.tsx",
+        lineNumber: 107,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ jsxDEV("p", { className: "text-gray-700 text-sm whitespace-pre-wrap", children: appointment.notes }, void 0, false, {
+        fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/components/health/LatestAppointmentResult.tsx",
+        lineNumber: 111,
+        columnNumber: 11
+      }, this)
+    ] }, void 0, true, {
+      fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/components/health/LatestAppointmentResult.tsx",
+      lineNumber: 106,
+      columnNumber: 7
+    }, this),
+    appointment.prescription && appointment.prescription.medications && appointment.prescription.medications.length > 0 && /* @__PURE__ */ jsxDEV("div", { className: "bg-white rounded-xl p-4 border border-gray-200", children: [
+      /* @__PURE__ */ jsxDEV("h5", { className: "font-medium text-gray-800 flex items-center gap-2 mb-3", children: [
+        /* @__PURE__ */ jsxDEV(Pill, { className: "w-5 h-5 text-green-600" }, void 0, false, {
+          fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/components/health/LatestAppointmentResult.tsx",
+          lineNumber: 119,
+          columnNumber: 13
+        }, this),
+        "ยาที่สั่ง"
+      ] }, void 0, true, {
+        fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/components/health/LatestAppointmentResult.tsx",
+        lineNumber: 118,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ jsxDEV("div", { className: "space-y-2", children: (appointment.prescription.medications || []).map(
+        (item, index) => /* @__PURE__ */ jsxDEV("div", { className: "flex items-start gap-3 p-3 bg-gray-50 rounded-lg", children: [
+          /* @__PURE__ */ jsxDEV("div", { className: "w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0", children: /* @__PURE__ */ jsxDEV(Pill, { className: "w-4 h-4 text-green-600" }, void 0, false, {
+            fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/components/health/LatestAppointmentResult.tsx",
+            lineNumber: 126,
+            columnNumber: 19
+          }, this) }, void 0, false, {
+            fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/components/health/LatestAppointmentResult.tsx",
+            lineNumber: 125,
+            columnNumber: 17
+          }, this),
+          /* @__PURE__ */ jsxDEV("div", { className: "flex-1", children: [
+            /* @__PURE__ */ jsxDEV("p", { className: "font-medium text-gray-800", children: item.name || item.drugName }, void 0, false, {
+              fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/components/health/LatestAppointmentResult.tsx",
+              lineNumber: 129,
+              columnNumber: 19
+            }, this),
+            /* @__PURE__ */ jsxDEV("p", { className: "text-sm text-gray-600", children: [
+              item.dosage,
+              " - ",
+              item.frequency
+            ] }, void 0, true, {
+              fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/components/health/LatestAppointmentResult.tsx",
+              lineNumber: 130,
+              columnNumber: 19
+            }, this),
+            item.instructions && /* @__PURE__ */ jsxDEV("p", { className: "text-xs text-gray-500 mt-1", children: item.instructions }, void 0, false, {
+              fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/components/health/LatestAppointmentResult.tsx",
+              lineNumber: 134,
+              columnNumber: 15
+            }, this)
+          ] }, void 0, true, {
+            fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/components/health/LatestAppointmentResult.tsx",
+            lineNumber: 128,
+            columnNumber: 17
+          }, this)
+        ] }, index, true, {
+          fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/components/health/LatestAppointmentResult.tsx",
+          lineNumber: 124,
+          columnNumber: 11
+        }, this)
+      ) }, void 0, false, {
+        fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/components/health/LatestAppointmentResult.tsx",
+        lineNumber: 122,
+        columnNumber: 11
+      }, this)
+    ] }, void 0, true, {
+      fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/components/health/LatestAppointmentResult.tsx",
+      lineNumber: 117,
+      columnNumber: 7
+    }, this),
+    appointment.followUpDate && /* @__PURE__ */ jsxDEV("div", { className: "bg-yellow-50 rounded-xl p-4 border border-yellow-200", children: [
+      /* @__PURE__ */ jsxDEV("h5", { className: "font-medium text-yellow-800 flex items-center gap-2 mb-2", children: [
+        /* @__PURE__ */ jsxDEV(AlertCircle, { className: "w-5 h-5" }, void 0, false, {
+          fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/components/health/LatestAppointmentResult.tsx",
+          lineNumber: 147,
+          columnNumber: 13
+        }, this),
+        "นัดติดตามผล"
+      ] }, void 0, true, {
+        fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/components/health/LatestAppointmentResult.tsx",
+        lineNumber: 146,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ jsxDEV("p", { className: "text-yellow-700", children: [
+        "วันที่ ",
+        formatDate(appointment.followUpDate)
+      ] }, void 0, true, {
+        fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/components/health/LatestAppointmentResult.tsx",
+        lineNumber: 150,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ jsxDEV(
+        "a",
+        {
+          href: "/appointments",
+          className: "inline-flex items-center gap-1 mt-2 text-sm text-yellow-800 hover:underline",
+          children: [
+            "ดูนัดหมาย ",
+            /* @__PURE__ */ jsxDEV(ExternalLink, { className: "w-3 h-3" }, void 0, false, {
+              fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/components/health/LatestAppointmentResult.tsx",
+              lineNumber: 157,
+              columnNumber: 23
+            }, this)
+          ]
+        },
+        void 0,
+        true,
+        {
+          fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/components/health/LatestAppointmentResult.tsx",
+          lineNumber: 153,
+          columnNumber: 11
+        },
+        this
+      )
+    ] }, void 0, true, {
+      fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/components/health/LatestAppointmentResult.tsx",
+      lineNumber: 145,
+      columnNumber: 7
+    }, this),
+    /* @__PURE__ */ jsxDEV("div", { className: "text-center", children: /* @__PURE__ */ jsxDEV(
+      "a",
+      {
+        href: `/appointments/${appointment.id}`,
+        className: "inline-flex items-center gap-2 text-emerald-600 hover:text-emerald-700 text-sm font-medium",
+        children: [
+          "ดูรายละเอียดทั้งหมด",
+          /* @__PURE__ */ jsxDEV(ExternalLink, { className: "w-4 h-4" }, void 0, false, {
+            fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/components/health/LatestAppointmentResult.tsx",
+            lineNumber: 169,
+            columnNumber: 11
+          }, this)
+        ]
+      },
+      void 0,
+      true,
+      {
+        fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/components/health/LatestAppointmentResult.tsx",
+        lineNumber: 164,
+        columnNumber: 9
+      },
+      this
+    ) }, void 0, false, {
+      fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/components/health/LatestAppointmentResult.tsx",
+      lineNumber: 163,
+      columnNumber: 7
+    }, this)
+  ] }, void 0, true, {
+    fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/components/health/LatestAppointmentResult.tsx",
+    lineNumber: 60,
+    columnNumber: 5
+  }, this);
+};
+_c = LatestAppointmentResult;
+var _c;
+$RefreshReg$(_c, "LatestAppointmentResult");
+if (import.meta.hot && !inWebWorker) {
+  window.$RefreshReg$ = prevRefreshReg;
+  window.$RefreshSig$ = prevRefreshSig;
+}
+if (import.meta.hot && !inWebWorker) {
+  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {
+    RefreshRuntime.registerExportsForReactRefresh("C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/components/health/LatestAppointmentResult.tsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-patient-portal/src/components/health/LatestAppointmentResult.tsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+
+//# sourceMappingURL=data:application/json;base64,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QTtBQUFBO0FBQUE7QUFBQSxhQUdBO0FBQUEsTUFDQSx1QkFBQyxPQUFFLFdBQVUsbUJBQWtCO0FBQUE7QUFBQSxRQUNyQjVCLFdBQVlGLFlBQW9COEIsWUFBWTtBQUFBLFdBRHREO0FBQUE7QUFBQTtBQUFBO0FBQUEsYUFFQTtBQUFBLE1BQ0E7QUFBQSxRQUFDO0FBQUE7QUFBQSxVQUNDLE1BQUs7QUFBQSxVQUNMLFdBQVU7QUFBQSxVQUE2RTtBQUFBO0FBQUEsWUFFN0UsdUJBQUMsZ0JBQWEsV0FBVSxhQUF4QjtBQUFBO0FBQUE7QUFBQTtBQUFBLG1CQUFpQztBQUFBO0FBQUE7QUFBQSxRQUo3QztBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUEsTUFLQTtBQUFBLFNBYkY7QUFBQTtBQUFBO0FBQUE7QUFBQSxXQWNBO0FBQUEsSUFJRix1QkFBQyxTQUFJLFdBQVUsZUFDYjtBQUFBLE1BQUM7QUFBQTtBQUFBLFFBQ0MsTUFBTSxpQkFBaUI5QixZQUFZK0IsRUFBRTtBQUFBLFFBQ3JDLFdBQVU7QUFBQSxRQUE0RjtBQUFBO0FBQUEsVUFHdEcsdUJBQUMsZ0JBQWEsV0FBVSxhQUF4QjtBQUFBO0FBQUE7QUFBQTtBQUFBLGlCQUFpQztBQUFBO0FBQUE7QUFBQSxNQUxuQztBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUEsSUFNQSxLQVBGO0FBQUE7QUFBQTtBQUFBO0FBQUEsV0FRQTtBQUFBLE9BL0dGO0FBQUE7QUFBQTtBQUFBO0FBQUEsU0FnSEE7QUFFSjtBQUFFQyxLQWpKV2pDO0FBQStELElBQUFpQztBQUFBQyxhQUFBRCxJQUFBIiwibmFtZXMiOlsiQ2FsZW5kYXIiLCJDbG9jayIsIlZpZGVvIiwiTWFwUGluIiwiRmlsZVRleHQiLCJQaWxsIiwiU3RldGhvc2NvcGUiLCJBbGVydENpcmNsZSIsIkV4dGVybmFsTGluayIsIkxhdGVzdEFwcG9pbnRtZW50UmVzdWx0IiwiYXBwb2ludG1lbnQiLCJjbGFzc05hbWUiLCJmb3JtYXREYXRlIiwiZGF0ZSIsIkRhdGUiLCJ0b0xvY2FsZURhdGVTdHJpbmciLCJkYXkiLCJtb250aCIsInllYXIiLCJkb2N0b3JBdmF0YXIiLCJlbmNvZGVVUklDb21wb25lbnQiLCJkb2N0b3JJZCIsImRvY3Rvck5hbWUiLCJkb2N0b3JTcGVjaWFsdHkiLCJhcHBvaW50bWVudERhdGUiLCJhcHBvaW50bWVudFRpbWUiLCJ0eXBlIiwiZGlhZ25vc2lzIiwibm90ZXMiLCJwcmVzY3JpcHRpb24iLCJtZWRpY2F0aW9ucyIsImxlbmd0aCIsIm1hcCIsIml0ZW0iLCJpbmRleCIsIm5hbWUiLCJkcnVnTmFtZSIsImRvc2FnZSIsImZyZXF1ZW5jeSIsImluc3RydWN0aW9ucyIsImZvbGxvd1VwRGF0ZSIsImlkIiwiX2MiLCIkUmVmcmVzaFJlZyQiXSwiaWdub3JlTGlzdCI6W10sInNvdXJjZXMiOlsiTGF0ZXN0QXBwb2ludG1lbnRSZXN1bHQudHN4Il0sInNvdXJjZXNDb250ZW50IjpbImltcG9ydCBSZWFjdCBmcm9tICdyZWFjdCc7XHJcbmltcG9ydCB7IENhbGVuZGFyLCBDbG9jaywgVmlkZW8sIE1hcFBpbiwgRmlsZVRleHQsIFBpbGwsIFN0ZXRob3Njb3BlLCBBbGVydENpcmNsZSwgRXh0ZXJuYWxMaW5rIH0gZnJvbSAnbHVjaWRlLXJlYWN0JztcclxuaW1wb3J0IHsgQXBwb2ludG1lbnQgfSBmcm9tICcuLi8uLi90eXBlcyc7XHJcblxyXG5pbnRlcmZhY2UgTGF0ZXN0QXBwb2ludG1lbnRSZXN1bHRQcm9wcyB7XHJcbiAgYXBwb2ludG1lbnQ6IEFwcG9pbnRtZW50IHwgbnVsbDtcclxuICBjbGFzc05hbWU/OiBzdHJpbmc7XHJcbn1cclxuXHJcbmV4cG9ydCBjb25zdCBMYXRlc3RBcHBvaW50bWVudFJlc3VsdDogUmVhY3QuRkM8TGF0ZXN0QXBwb2ludG1lbnRSZXN1bHRQcm9wcz4gPSAoe1xyXG4gIGFwcG9pbnRtZW50LFxyXG4gIGNsYXNzTmFtZSA9ICcnLFxyXG59KSA9PiB7XHJcbiAgaWYgKCFhcHBvaW50bWVudCkge1xyXG4gICAgcmV0dXJuIChcclxuICAgICAgPGRpdiBjbGFzc05hbWU9e2B0ZXh0LWNlbnRlciBweS04ICR7Y2xhc3NOYW1lfWB9PlxyXG4gICAgICAgIDxGaWxlVGV4dCBjbGFzc05hbWU9XCJ3LTE2IGgtMTYgbXgtYXV0byB0ZXh0LWdyYXktMzAwIG1iLTRcIiAvPlxyXG4gICAgICAgIDxwIGNsYXNzTmFtZT1cInRleHQtZ3JheS01MDAgbWItMlwiPuC4ouC4seC4h+C5hOC4oeC5iOC4oeC4teC4nOC4peC4geC4suC4o+C4o+C4seC4geC4qeC4sjwvcD5cclxuICAgICAgICA8cCBjbGFzc05hbWU9XCJ0ZXh0LXNtIHRleHQtZ3JheS00MDBcIj5cclxuICAgICAgICAgIOC5gOC4oeC4t+C5iOC4reC4nuC4muC5geC4nuC4l+C4ouC5jOC5geC4peC5ieC4pyDguJzguKXguIHguLLguKPguKPguLHguIHguKnguLLguIjguLDguYHguKrguJTguIfguJfguLXguYjguJnguLXguYhcclxuICAgICAgICA8L3A+XHJcbiAgICAgICAgPGFcclxuICAgICAgICAgIGhyZWY9XCIvYXBwb2ludG1lbnRzL2Jvb2tcIlxyXG4gICAgICAgICAgY2xhc3NOYW1lPVwiaW5saW5lLWZsZXggaXRlbXMtY2VudGVyIGdhcC0yIG10LTQgcHgtNCBweS0yIGJnLWVtZXJhbGQtNjAwIHRleHQtd2hpdGUgcm91bmRlZC14bCB0ZXh0LXNtIGZvbnQtbWVkaXVtIGhvdmVyOmJnLWVtZXJhbGQtNzAwIHRyYW5zaXRpb24tY29sb3JzXCJcclxuICAgICAgICA+XHJcbiAgICAgICAgICDguJnguLHguJTguKvguKHguLLguKLguYHguJ7guJfguKLguYxcclxuICAgICAgICA8L2E+XHJcbiAgICAgIDwvZGl2PlxyXG4gICAgKTtcclxuICB9XHJcblxyXG4gIGNvbnN0IGZvcm1hdERhdGUgPSAoZGF0ZTogc3RyaW5nIHwgRGF0ZSkgPT4ge1xyXG4gICAgcmV0dXJuIG5ldyBEYXRlKGRhdGUpLnRvTG9jYWxlRGF0ZVN0cmluZygndGgtVEgnLCB7XHJcbiAgICAgIGRheTogJ251bWVyaWMnLFxyXG4gICAgICBtb250aDogJ2xvbmcnLFxyXG4gICAgICB5ZWFyOiAnbnVtZXJpYycsXHJcbiAgICB9KTtcclxuICB9O1xyXG5cclxuICByZXR1cm4gKFxyXG4gICAgPGRpdiBjbGFzc05hbWU9e2BzcGFjZS15LTQgJHtjbGFzc05hbWV9YH0+XHJcbiAgICAgIHsvKiBBcHBvaW50bWVudCBTdW1tYXJ5ICovfVxyXG4gICAgICA8ZGl2IGNsYXNzTmFtZT1cImJnLWdyYWRpZW50LXRvLWJyIGZyb20tZW1lcmFsZC01MCB0by10ZWFsLTUwIHJvdW5kZWQteGwgcC00IGJvcmRlciBib3JkZXItZW1lcmFsZC0xMDBcIj5cclxuICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggaXRlbXMtc3RhcnQgZ2FwLTRcIj5cclxuICAgICAgICAgIDxpbWdcclxuICAgICAgICAgICAgc3JjPXthcHBvaW50bWVudC5kb2N0b3JBdmF0YXIgfHwgYGh0dHBzOi8vYXBpLmRpY2ViZWFyLmNvbS83LngvYXZhdGFhYXJzL3N2Zz9zZWVkPSR7ZW5jb2RlVVJJQ29tcG9uZW50KGFwcG9pbnRtZW50LmRvY3RvcklkKX1gfVxyXG4gICAgICAgICAgICBhbHQ9e2FwcG9pbnRtZW50LmRvY3Rvck5hbWV9XHJcbiAgICAgICAgICAgIGNsYXNzTmFtZT1cInctMTQgaC0xNCByb3VuZGVkLWZ1bGwgYm9yZGVyLTIgYm9yZGVyLXdoaXRlIHNoYWRvdy1zbVwiXHJcbiAgICAgICAgICAvPlxyXG4gICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4LTFcIj5cclxuICAgICAgICAgICAgPGg0IGNsYXNzTmFtZT1cImZvbnQtc2VtaWJvbGQgdGV4dC1ncmF5LTgwMFwiPnthcHBvaW50bWVudC5kb2N0b3JOYW1lfTwvaDQ+XHJcbiAgICAgICAgICAgIDxwIGNsYXNzTmFtZT1cInRleHQtc20gdGV4dC1lbWVyYWxkLTYwMFwiPnthcHBvaW50bWVudC5kb2N0b3JTcGVjaWFsdHl9PC9wPlxyXG4gICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggZmxleC13cmFwIGl0ZW1zLWNlbnRlciBnYXAtMyBtdC0yIHRleHQtc20gdGV4dC1ncmF5LTYwMFwiPlxyXG4gICAgICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT1cImZsZXggaXRlbXMtY2VudGVyIGdhcC0xXCI+XHJcbiAgICAgICAgICAgICAgICA8Q2FsZW5kYXIgY2xhc3NOYW1lPVwidy00IGgtNFwiIC8+XHJcbiAgICAgICAgICAgICAgICB7Zm9ybWF0RGF0ZShhcHBvaW50bWVudC5hcHBvaW50bWVudERhdGUpfVxyXG4gICAgICAgICAgICAgIDwvc3Bhbj5cclxuICAgICAgICAgICAgICA8c3BhbiBjbGFzc05hbWU9XCJmbGV4IGl0ZW1zLWNlbnRlciBnYXAtMVwiPlxyXG4gICAgICAgICAgICAgICAgPENsb2NrIGNsYXNzTmFtZT1cInctNCBoLTRcIiAvPlxyXG4gICAgICAgICAgICAgICAge2FwcG9pbnRtZW50LmFwcG9pbnRtZW50VGltZX1cclxuICAgICAgICAgICAgICA8L3NwYW4+XHJcbiAgICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPVwiZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTFcIj5cclxuICAgICAgICAgICAgICAgIHthcHBvaW50bWVudC50eXBlID09PSAndGVsZWhlYWx0aCcgPyA8VmlkZW8gY2xhc3NOYW1lPVwidy00IGgtNFwiIC8+IDogPE1hcFBpbiBjbGFzc05hbWU9XCJ3LTQgaC00XCIgLz59XHJcbiAgICAgICAgICAgICAgICB7YXBwb2ludG1lbnQudHlwZSA9PT0gJ3RlbGVoZWFsdGgnID8gJ+C4reC4reC4meC5hOC4peC4meC5jCcgOiAn4LiX4Li14LmI4LmC4Lij4LiH4Lie4Lii4Liy4Lia4Liy4LilJ31cclxuICAgICAgICAgICAgICA8L3NwYW4+XHJcbiAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICA8c3BhbiBjbGFzc05hbWU9XCJweC0zIHB5LTEgYmctZ3JlZW4tMTAwIHRleHQtZ3JlZW4tNzAwIHJvdW5kZWQtZnVsbCB0ZXh0LXhzIGZvbnQtbWVkaXVtXCI+XHJcbiAgICAgICAgICAgIOC5gOC4quC4o+C5h+C4iOC4quC4tOC5ieC4mVxyXG4gICAgICAgICAgPC9zcGFuPlxyXG4gICAgICAgIDwvZGl2PlxyXG4gICAgICA8L2Rpdj5cclxuXHJcbiAgICAgIHsvKiBEaWFnbm9zaXMgKi99XHJcbiAgICAgIHthcHBvaW50bWVudC5kaWFnbm9zaXMgJiYgKFxyXG4gICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiYmctd2hpdGUgcm91bmRlZC14bCBwLTQgYm9yZGVyIGJvcmRlci1ncmF5LTIwMFwiPlxyXG4gICAgICAgICAgPGg1IGNsYXNzTmFtZT1cImZvbnQtbWVkaXVtIHRleHQtZ3JheS04MDAgZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTIgbWItMlwiPlxyXG4gICAgICAgICAgICA8U3RldGhvc2NvcGUgY2xhc3NOYW1lPVwidy01IGgtNSB0ZXh0LWJsdWUtNjAwXCIgLz5cclxuICAgICAgICAgICAg4LiB4Liy4Lij4Lin4Li04LiZ4Li04LiI4LiJ4Lix4LiiXHJcbiAgICAgICAgICA8L2g1PlxyXG4gICAgICAgICAgPHAgY2xhc3NOYW1lPVwidGV4dC1ncmF5LTcwMFwiPnthcHBvaW50bWVudC5kaWFnbm9zaXN9PC9wPlxyXG4gICAgICAgIDwvZGl2PlxyXG4gICAgICApfVxyXG5cclxuICAgICAgey8qIFRyZWF0bWVudCBOb3RlcyAqL31cclxuICAgICAge2FwcG9pbnRtZW50Lm5vdGVzICYmIChcclxuICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImJnLXdoaXRlIHJvdW5kZWQteGwgcC00IGJvcmRlciBib3JkZXItZ3JheS0yMDBcIj5cclxuICAgICAgICAgIDxoNSBjbGFzc05hbWU9XCJmb250LW1lZGl1bSB0ZXh0LWdyYXktODAwIGZsZXggaXRlbXMtY2VudGVyIGdhcC0yIG1iLTJcIj5cclxuICAgICAgICAgICAgPEZpbGVUZXh0IGNsYXNzTmFtZT1cInctNSBoLTUgdGV4dC1wdXJwbGUtNjAwXCIgLz5cclxuICAgICAgICAgICAg4Lia4Lix4LiZ4LiX4Li24LiB4LiB4Liy4Lij4Lij4Lix4LiB4Lip4LiyXHJcbiAgICAgICAgICA8L2g1PlxyXG4gICAgICAgICAgPHAgY2xhc3NOYW1lPVwidGV4dC1ncmF5LTcwMCB0ZXh0LXNtIHdoaXRlc3BhY2UtcHJlLXdyYXBcIj57YXBwb2ludG1lbnQubm90ZXN9PC9wPlxyXG4gICAgICAgIDwvZGl2PlxyXG4gICAgICApfVxyXG5cclxuICAgICAgey8qIFByZXNjcmlwdGlvbiAqL31cclxuICAgICAge2FwcG9pbnRtZW50LnByZXNjcmlwdGlvbiAmJiAoYXBwb2ludG1lbnQucHJlc2NyaXB0aW9uIGFzIGFueSkubWVkaWNhdGlvbnMgJiYgKGFwcG9pbnRtZW50LnByZXNjcmlwdGlvbiBhcyBhbnkpLm1lZGljYXRpb25zLmxlbmd0aCA+IDAgJiYgKFxyXG4gICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiYmctd2hpdGUgcm91bmRlZC14bCBwLTQgYm9yZGVyIGJvcmRlci1ncmF5LTIwMFwiPlxyXG4gICAgICAgICAgPGg1IGNsYXNzTmFtZT1cImZvbnQtbWVkaXVtIHRleHQtZ3JheS04MDAgZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTIgbWItM1wiPlxyXG4gICAgICAgICAgICA8UGlsbCBjbGFzc05hbWU9XCJ3LTUgaC01IHRleHQtZ3JlZW4tNjAwXCIgLz5cclxuICAgICAgICAgICAg4Lii4Liy4LiX4Li14LmI4Liq4Lix4LmI4LiHXHJcbiAgICAgICAgICA8L2g1PlxyXG4gICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJzcGFjZS15LTJcIj5cclxuICAgICAgICAgICAgeygoYXBwb2ludG1lbnQucHJlc2NyaXB0aW9uIGFzIGFueSkubWVkaWNhdGlvbnMgfHwgW10pLm1hcCgoaXRlbTogYW55LCBpbmRleDogbnVtYmVyKSA9PiAoXHJcbiAgICAgICAgICAgICAgPGRpdiBrZXk9e2luZGV4fSBjbGFzc05hbWU9XCJmbGV4IGl0ZW1zLXN0YXJ0IGdhcC0zIHAtMyBiZy1ncmF5LTUwIHJvdW5kZWQtbGdcIj5cclxuICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwidy04IGgtOCBiZy1ncmVlbi0xMDAgcm91bmRlZC1mdWxsIGZsZXggaXRlbXMtY2VudGVyIGp1c3RpZnktY2VudGVyIGZsZXgtc2hyaW5rLTBcIj5cclxuICAgICAgICAgICAgICAgICAgPFBpbGwgY2xhc3NOYW1lPVwidy00IGgtNCB0ZXh0LWdyZWVuLTYwMFwiIC8+XHJcbiAgICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleC0xXCI+XHJcbiAgICAgICAgICAgICAgICAgIDxwIGNsYXNzTmFtZT1cImZvbnQtbWVkaXVtIHRleHQtZ3JheS04MDBcIj57aXRlbS5uYW1lIHx8IGl0ZW0uZHJ1Z05hbWV9PC9wPlxyXG4gICAgICAgICAgICAgICAgICA8cCBjbGFzc05hbWU9XCJ0ZXh0LXNtIHRleHQtZ3JheS02MDBcIj5cclxuICAgICAgICAgICAgICAgICAgICB7aXRlbS5kb3NhZ2V9IC0ge2l0ZW0uZnJlcXVlbmN5fVxyXG4gICAgICAgICAgICAgICAgICA8L3A+XHJcbiAgICAgICAgICAgICAgICAgIHtpdGVtLmluc3RydWN0aW9ucyAmJiAoXHJcbiAgICAgICAgICAgICAgICAgICAgPHAgY2xhc3NOYW1lPVwidGV4dC14cyB0ZXh0LWdyYXktNTAwIG10LTFcIj57aXRlbS5pbnN0cnVjdGlvbnN9PC9wPlxyXG4gICAgICAgICAgICAgICAgICApfVxyXG4gICAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgICkpfVxyXG4gICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgPC9kaXY+XHJcbiAgICAgICl9XHJcblxyXG4gICAgICB7LyogRm9sbG93LXVwICovfVxyXG4gICAgICB7KGFwcG9pbnRtZW50IGFzIGFueSkuZm9sbG93VXBEYXRlICYmIChcclxuICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImJnLXllbGxvdy01MCByb3VuZGVkLXhsIHAtNCBib3JkZXIgYm9yZGVyLXllbGxvdy0yMDBcIj5cclxuICAgICAgICAgIDxoNSBjbGFzc05hbWU9XCJmb250LW1lZGl1bSB0ZXh0LXllbGxvdy04MDAgZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTIgbWItMlwiPlxyXG4gICAgICAgICAgICA8QWxlcnRDaXJjbGUgY2xhc3NOYW1lPVwidy01IGgtNVwiIC8+XHJcbiAgICAgICAgICAgIOC4meC4seC4lOC4leC4tOC4lOC4leC4suC4oeC4nOC4pVxyXG4gICAgICAgICAgPC9oNT5cclxuICAgICAgICAgIDxwIGNsYXNzTmFtZT1cInRleHQteWVsbG93LTcwMFwiPlxyXG4gICAgICAgICAgICDguKfguLHguJnguJfguLXguYgge2Zvcm1hdERhdGUoKGFwcG9pbnRtZW50IGFzIGFueSkuZm9sbG93VXBEYXRlKX1cclxuICAgICAgICAgIDwvcD5cclxuICAgICAgICAgIDxhXHJcbiAgICAgICAgICAgIGhyZWY9XCIvYXBwb2ludG1lbnRzXCJcclxuICAgICAgICAgICAgY2xhc3NOYW1lPVwiaW5saW5lLWZsZXggaXRlbXMtY2VudGVyIGdhcC0xIG10LTIgdGV4dC1zbSB0ZXh0LXllbGxvdy04MDAgaG92ZXI6dW5kZXJsaW5lXCJcclxuICAgICAgICAgID5cclxuICAgICAgICAgICAg4LiU4Li54LiZ4Lix4LiU4Lir4Lih4Liy4LiiIDxFeHRlcm5hbExpbmsgY2xhc3NOYW1lPVwidy0zIGgtM1wiIC8+XHJcbiAgICAgICAgICA8L2E+XHJcbiAgICAgICAgPC9kaXY+XHJcbiAgICAgICl9XHJcblxyXG4gICAgICB7LyogVmlldyBGdWxsIERldGFpbHMgTGluayAqL31cclxuICAgICAgPGRpdiBjbGFzc05hbWU9XCJ0ZXh0LWNlbnRlclwiPlxyXG4gICAgICAgIDxhXHJcbiAgICAgICAgICBocmVmPXtgL2FwcG9pbnRtZW50cy8ke2FwcG9pbnRtZW50LmlkfWB9XHJcbiAgICAgICAgICBjbGFzc05hbWU9XCJpbmxpbmUtZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTIgdGV4dC1lbWVyYWxkLTYwMCBob3Zlcjp0ZXh0LWVtZXJhbGQtNzAwIHRleHQtc20gZm9udC1tZWRpdW1cIlxyXG4gICAgICAgID5cclxuICAgICAgICAgIOC4lOC4ueC4o+C4suC4ouC4peC4sOC5gOC4reC4teC4ouC4lOC4l+C4seC5ieC4h+C4q+C4oeC4lFxyXG4gICAgICAgICAgPEV4dGVybmFsTGluayBjbGFzc05hbWU9XCJ3LTQgaC00XCIgLz5cclxuICAgICAgICA8L2E+XHJcbiAgICAgIDwvZGl2PlxyXG4gICAgPC9kaXY+XHJcbiAgKTtcclxufTtcclxuIl0sImZpbGUiOiJDOi9Vc2Vycy9jaGlyYS9Eb2N1bWVudHMvSXNhcmEtdGVsZW1lZC9Jc2FyYS1hbnl3aGVyZS1WMC4wLjMvSXNhcmEtcGF0aWVudC1wb3J0YWwvc3JjL2NvbXBvbmVudHMvaGVhbHRoL0xhdGVzdEFwcG9pbnRtZW50UmVzdWx0LnRzeCJ9

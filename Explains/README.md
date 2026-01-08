@@ -79,8 +79,9 @@ Explains/
 | Role | Email | Password | Portal |
 |------|-------|----------|--------|
 | Patient | demo.test@gmail.com | P@ssw0rd | Patient Portal |
+| Patient Relative | demo2.test@gmail.com | P@ssw0rd | Patient Portal |
 | Doctor | doctor.test@izara.com | IzaraDoctor@2024 | Doctor Portal |
-| Admin | admin.test@izara.com | IzaraAdmin@2024 | Doctor Portal |
+| Admin/Unit Test | doctorunit.test@izara.com | P@ssw0rd | Doctor Portal |
 
 ## 🔗 Portal URLs (Development)
 
@@ -104,12 +105,11 @@ Explains/
 
 | Bucket | Purpose | Thai |
 |--------|---------|------|
-| `izara-users-auth` | Authentication & sessions | ข้อมูลยืนยันตัวตน |
-| `izara-users-credentials` | Service credentials | ข้อมูลรับรอง |
-| `izara-patients-data` | Patient health records | ข้อมูลสุขภาพผู้ป่วย |
-| `izara-doctors-data` | Doctor profiles & EMR | ข้อมูลแพทย์และ EMR |
+| `izara-users-credentials` | Authentication & credentials | ข้อมูลยืนยันตัวตน |
+| `izara-patients-data` | Patient health records & PHR | ข้อมูลสุขภาพผู้ป่วย |
+| `izara-doctors-data` | Doctor profiles, EMR & meeting recordings | ข้อมูลแพทย์และ EMR |
 | `izara-appointments` | Appointments & scheduling | ข้อมูลการนัดหมาย |
-| `izara-meta-data` | System config & content | เนื้อหาและการตั้งค่า |
+| `izara-meta-data` | System config, clinical resources & content | เนื้อหาและการตั้งค่า |
 
 ---
 
@@ -127,11 +127,19 @@ Explains/
 - ☁️ Google Cloud Storage SDK
 
 ### Google Services
-- 📹 Google Meet API
+- 📹 Jitsi Meet (meet.jit.si) - FREE video conferencing
 - 📅 Google Calendar API
 - 🗺️ Google Maps JavaScript API
-- 🤖 Google Gemini AI API
+- 🤖 Google Gemini AI API (gemini-2.5-flash-lite)
+- 🗣️ Google Speech-to-Text API
 - 📧 Gmail API
+
+### Video Meeting Features
+- 👨‍⚕️ Doctor as HOST with lobby/moderator controls
+- 🚪 Patient joins via lobby (doctor approval)
+- 👥 External guest invites (non-registered users)
+- 🎥 Video recording & transcription
+- 🤖 AI-powered meeting summaries
 
 ---
 
@@ -144,18 +152,28 @@ See `Presentations/` folder for:
 
 ---
 
-## ✅ E2E Test Results (December 15, 2025)
+## ✅ E2E Test Results (January 8, 2026 - v1.1.8)
 
 | Test Suite | Tests | Pass Rate |
 |------------|-------|-----------|
-| Appointment Workflow | 27 | 100% |
-| Medical Content | - | 100% |
-| Health Records | - | 100% |
-| Dual Portal Video Meeting | 24 | 100% |
+| Meeting API Tests (Local) | 51 | ✅ 100% |
+| Meeting API Tests (Cloud) | 51 | ✅ 100% |
+| 4-User Meeting UI Tests (Local) | 33 | ✅ 100% |
+| 4-User Meeting UI Tests (Cloud) | 33 | ✅ 100% |
+| External Guest Access Tests (Local) | 105 | ✅ 100% |
+| External Guest Access Tests (Cloud) | 105 | ✅ 100% |
+| **Total** | **378** | ✅ **100%** |
 
-**All workflows verified with video meeting access (camera/microphone enabled)**
+### Test Features Verified:
+- ✅ Doctor as HOST with moderator controls
+- ✅ Patient lobby with doctor approval
+- ✅ External guest access (non-registered users)
+- ✅ Camera & microphone ON by default
+- ✅ Video recording & transcription
+- ✅ AI-powered meeting summaries (Gemini)
+- ✅ All email domains supported (Gmail, Hotmail, Yahoo, Outlook, .co.th, etc.)
 
 ---
 
-**Last Updated:** December 15, 2025
-**Version:** 1.2.0
+**Last Updated:** January 8, 2026
+**Version:** 1.1.8

@@ -10,10 +10,11 @@ The Izara Patient Portal is a healthcare platform enabling patients to manage th
 |-------------|----------|-------------|
 | Development | http://localhost:3005 | http://localhost:3004 |
 
-### Test Account
+### Test Accounts
 | Role | Email | Password |
 |------|-------|----------|
 | Patient | demo.test@gmail.com | P@ssw0rd |
+| Patient Relative | demo2.test@gmail.com | P@ssw0rd |
 
 ## 👤 User Type
 
@@ -76,9 +77,20 @@ Isara-patient-portal/
 
 | Bucket | Purpose |
 |--------|---------|
-| `izara-users-auth` | Patient credentials & sessions |
+| `izara-users-credentials` | Patient credentials & sessions |
 | `izara-patients-data` | Patient profiles, PHR, health logs |
 | `izara-appointments` | Appointment records |
 
+## 📹 Video Meeting (Jitsi Meet)
+
+| Feature | Description |
+|---------|-------------|
+| Provider | Jitsi Meet (meet.jit.si) - FREE |
+| Lobby | Wait for doctor approval |
+| Camera | ON by default |
+| Microphone | ON by default |
+| External Guests | Invite family members (non-registered) |
+
 ---
-**Last Updated:** December 15, 2025
+**Last Updated:** January 8, 2026
+**Version:** 1.1.8

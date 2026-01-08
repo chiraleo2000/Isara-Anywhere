@@ -1,0 +1,1146 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/src/pages/DoctorAvailabilitySettings.tsx");import.meta.env = {"BASE_URL": "/", "DEV": true, "MODE": "development", "PROD": false, "SSR": false, "VITE_AI_CLINICAL_ASSIST": "true", "VITE_AI_DRUG_INFO": "true", "VITE_AI_ICD_CODING_ASSIST": "true", "VITE_AI_NOTE_SUMMARIZATION": "true", "VITE_AI_VOICE_TRANSCRIPTION": "true", "VITE_API_URL": "http://localhost:3009", "VITE_APP_ENV": "development", "VITE_APP_NAME": "Izara Doctor Portal", "VITE_APP_VERSION": "1.0.0", "VITE_AUDIT_LOGGING_ENABLED": "true", "VITE_AUTH_URL": "http://localhost:3011/auth", "VITE_CONSENT_REQUIRED": "true", "VITE_DOCTOR_URL": "http://localhost:3010", "VITE_DRUG_INTERACTION_CHECK": "true", "VITE_EMR_AUTO_SAVE_INTERVAL": "30000", "VITE_EMR_PATIENT_ACCESS_CONTROL": "true", "VITE_EMR_VERSION_CONTROL": "true", "VITE_ENCRYPTION_ENABLED": "true", "VITE_E_PRESCRIBING_ENABLED": "true", "VITE_GCP_PROJECT_ID": "izara-telemedicine", "VITE_GCP_REGION": "asia-southeast1", "VITE_GCS_BUCKET_APPOINTMENTS": "izara-appointments", "VITE_GCS_BUCKET_AUTH": "izara-users-credentials", "VITE_GCS_BUCKET_CREDENTIALS": "izara-users-credentials", "VITE_GCS_BUCKET_DOCTOR": "izara-doctors-data", "VITE_GCS_BUCKET_METADATA": "izara-meta-data", "VITE_GCS_BUCKET_PATIENT": "izara-patients-data", "VITE_GEMINI_API_KEY": "AIzaSyDqERDgZ1l41zfGiQ4FZV62B58DXMbGWj4", "VITE_GEMINI_MAX_TOKENS": "8192", "VITE_GEMINI_MODEL": "gemini-2.5-flash-lite", "VITE_GEMINI_TEMPERATURE": "0.3", "VITE_GOOGLE_CALENDAR_API_KEY": "AIzaSyAl924pIkpbrJBfCQ1MlpA6yb8XZ3L8WZQ", "VITE_GOOGLE_CLIENT_ID": "724889190329-svf2733fjqklfic9tet9d2qkmhkgmu0l.apps.googleusercontent.com", "VITE_GOOGLE_CLIENT_SECRET": "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", "VITE_GOOGLE_GMAIL_API_KEY": "AIzaSyAl924pIkpbrJBfCQ1MlpA6yb8XZ3L8WZQ", "VITE_GOOGLE_MAPS_API_KEY": "AIzaSyAl924pIkpbrJBfCQ1MlpA6yb8XZ3L8WZQ", "VITE_GOOGLE_MEET_API_KEY": "AIzaSyAl924pIkpbrJBfCQ1MlpA6yb8XZ3L8WZQ", "VITE_GOOGLE_SHEETS_API_KEY": "AIzaSyAl924pIkpbrJBfCQ1MlpA6yb8XZ3L8WZQ", "VITE_GOOGLE_SPEECH_API_KEY": "AIzaSyAl924pIkpbrJBfCQ1MlpA6yb8XZ3L8WZQ", "VITE_IMAGING_ORDERING_ENABLED": "true", "VITE_JITSI_APP_ID": "izara-telemedicine", "VITE_JITSI_DOMAIN": "meet.jit.si", "VITE_LAB_ORDERING_ENABLED": "true", "VITE_LIVING_WILL_ENABLED": "true", "VITE_MFA_ENABLED": "false", "VITE_OAUTH_REDIRECT_URI": "http://localhost:3010/auth/callback", "VITE_OFFLINE_MODE_ENABLED": "true", "VITE_PDPA_ENABLED": "true", "VITE_PHR_WEARABLES_ENABLED": "true", "VITE_PUSH_NOTIFICATIONS_ENABLED": "true", "VITE_PWA_ENABLED": "true", "VITE_QUEUE_MANAGEMENT_ENABLED": "true", "VITE_REAL_TIME_UPDATES": "true", "VITE_SESSION_TIMEOUT": "1800000", "VITE_VIDEO_CONSULTATION_ENABLED": "true", "VITE_WEBSOCKET_URL": "ws://localhost:3011/ws"};import __vite__cjsImport0_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=28e55781"; const jsxDEV = __vite__cjsImport0_react_jsxDevRuntime["jsxDEV"];
+import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== "undefined" && self instanceof WorkerGlobalScope;
+let prevRefreshReg;
+let prevRefreshSig;
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react can't detect preamble. Something is wrong."
+    );
+  }
+  prevRefreshReg = window.$RefreshReg$;
+  prevRefreshSig = window.$RefreshSig$;
+  window.$RefreshReg$ = RefreshRuntime.getRefreshReg("C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx");
+  window.$RefreshSig$ = RefreshRuntime.createSignatureFunctionForTransform;
+}
+var _s = $RefreshSig$();
+import __vite__cjsImport3_react from "/node_modules/.vite/deps/react.js?v=28e55781"; const useState = __vite__cjsImport3_react["useState"]; const useEffect = __vite__cjsImport3_react["useEffect"]; const useCallback = __vite__cjsImport3_react["useCallback"];
+import { useAuth } from "/src/components/common/AuthProvider.tsx";
+import { useNavigate } from "/node_modules/.vite/deps/react-router-dom.js?v=28e55781";
+const DAYS_OF_WEEK = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const DoctorAvailabilitySettings = () => {
+  _s();
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
+  const [availability, setAvailability] = useState({
+    doctorId: "",
+    weeklySchedule: [],
+    exceptions: [],
+    consultationDuration: 30,
+    breakBetweenConsultations: 5
+  });
+  const [pendingAppointments, setPendingAppointments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
+  const [successMessage, setSuccessMessage] = useState(null);
+  const [activeTab, setActiveTab] = useState("schedule");
+  const [showTimeSlotModal, setShowTimeSlotModal] = useState(false);
+  const [showApproveModal, setShowApproveModal] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState(null);
+  const [newSlot, setNewSlot] = useState({
+    dayOfWeek: 1,
+    startTime: "09:00",
+    endTime: "17:00",
+    isRecurring: true
+  });
+  const [approvalData, setApprovalData] = useState({
+    date: "",
+    time: "",
+    notes: ""
+  });
+  const API_URL = import.meta.env.VITE_AUTH_URL || "";
+  const MAIN_API_URL = import.meta.env.VITE_API_URL || "";
+  useEffect(() => {
+    if (authLoading) return;
+    if (!isAuthenticated || !user) {
+      navigate("/login");
+      return;
+    }
+  }, [authLoading, isAuthenticated, user, navigate]);
+  const loadAvailability = useCallback(async () => {
+    if (!user?.id) return;
+    try {
+      setLoading(true);
+      const response = await fetch(`${API_URL}/api/storage/read?bucket=credentials&path=doctors/${user.id}/availability.json`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.data) {
+          setAvailability(data.data);
+        } else {
+          setAvailability((prev) => ({ ...prev, doctorId: user.id }));
+        }
+      } else {
+        setAvailability((prev) => ({ ...prev, doctorId: user.id }));
+      }
+    } catch (err) {
+      console.error("Error loading availability:", err);
+      setAvailability((prev) => ({ ...prev, doctorId: user.id }));
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.id]);
+  const loadPendingAppointments = useCallback(async () => {
+    if (!user?.id) return;
+    try {
+      const response = await fetch(`${MAIN_API_URL}/api/appointments`, {
+        headers: {
+          "Authorization": `Bearer ${localStorage.getItem("token") || ""}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const appointments = (data.appointments || data || []).filter(
+          (apt) => apt.doctorId === user.id && (apt.status === "assigned" || apt.status === "pending")
+        ).map((apt) => ({
+          id: apt.id,
+          patientId: apt.patientId || apt.user?.id,
+          patientName: apt.user?.name || apt.patientName || "Unknown",
+          patientEmail: apt.user?.email || apt.patientEmail || "",
+          requestedDate: apt.date || apt.requestedDate,
+          preferredTime: apt.preferredTime,
+          reason: apt.reason || apt.symptoms?.join(", ") || "Consultation",
+          symptoms: apt.symptoms || [],
+          urgency: apt.urgency || "medium",
+          status: apt.status,
+          assignedDateTime: apt.assignedDateTime,
+          notes: apt.notes,
+          createdAt: apt.createdAt
+        }));
+        setPendingAppointments(appointments);
+      }
+    } catch (err) {
+      console.error("Error loading appointments:", err);
+    }
+  }, [user?.id]);
+  useEffect(() => {
+    loadAvailability();
+    loadPendingAppointments();
+  }, [loadAvailability, loadPendingAppointments]);
+  const saveAvailability = async () => {
+    try {
+      setSaving(true);
+      setError(null);
+      const response = await fetch(`${API_URL}/api/storage/write`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem("token") || ""}`
+        },
+        body: JSON.stringify({
+          bucket: "credentials",
+          path: `doctors/${user?.id}/availability.json`,
+          data: availability
+        })
+      });
+      if (!response.ok) {
+        throw new Error("Failed to save availability");
+      }
+      setSuccessMessage("Availability saved successfully!");
+      setTimeout(() => setSuccessMessage(null), 3e3);
+    } catch (err) {
+      console.error("Error saving availability:", err);
+      setError("Failed to save availability settings");
+    } finally {
+      setSaving(false);
+    }
+  };
+  const addTimeSlot = () => {
+    const slot = {
+      id: `slot_${Date.now()}`,
+      dayOfWeek: newSlot.dayOfWeek,
+      startTime: newSlot.startTime,
+      endTime: newSlot.endTime,
+      isRecurring: newSlot.isRecurring
+    };
+    setAvailability((prev) => ({
+      ...prev,
+      weeklySchedule: [...prev.weeklySchedule, slot]
+    }));
+    setShowTimeSlotModal(false);
+    setNewSlot({ dayOfWeek: 1, startTime: "09:00", endTime: "17:00", isRecurring: true });
+  };
+  const removeTimeSlot = (slotId) => {
+    setAvailability((prev) => ({
+      ...prev,
+      weeklySchedule: prev.weeklySchedule.filter((s) => s.id !== slotId)
+    }));
+  };
+  const handleApproveAppointment = async () => {
+    if (!selectedAppointment || !approvalData.date || !approvalData.time) {
+      setError("Please select a date and time");
+      return;
+    }
+    try {
+      setSaving(true);
+      const confirmedDateTime = `${approvalData.date}T${approvalData.time}:00`;
+      const response = await fetch(`${MAIN_API_URL}/api/appointments/${selectedAppointment.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem("token") || ""}`
+        },
+        body: JSON.stringify({
+          status: "confirmed",
+          confirmedAt: (/* @__PURE__ */ new Date()).toISOString(),
+          assignedDateTime: confirmedDateTime,
+          date: new Date(confirmedDateTime),
+          doctorNotes: approvalData.notes,
+          confirmedByDoctor: user?.id
+        })
+      });
+      if (!response.ok) {
+        throw new Error("Failed to confirm appointment");
+      }
+      setSuccessMessage("Appointment confirmed successfully!");
+      setShowApproveModal(false);
+      setSelectedAppointment(null);
+      setApprovalData({ date: "", time: "", notes: "" });
+      loadPendingAppointments();
+      setTimeout(() => setSuccessMessage(null), 3e3);
+    } catch (err) {
+      console.error("Error confirming appointment:", err);
+      setError("Failed to confirm appointment");
+    } finally {
+      setSaving(false);
+    }
+  };
+  const handleRejectAppointment = async (appointmentId) => {
+    const reason = prompt("Please enter reason for rejection:");
+    if (!reason) return;
+    try {
+      const response = await fetch(`${MAIN_API_URL}/api/appointments/${appointmentId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem("token") || ""}`
+        },
+        body: JSON.stringify({
+          status: "rejected",
+          rejectedAt: (/* @__PURE__ */ new Date()).toISOString(),
+          rejectionReason: reason,
+          rejectedByDoctor: user?.id
+        })
+      });
+      if (!response.ok) {
+        throw new Error("Failed to reject appointment");
+      }
+      setSuccessMessage("Appointment rejected");
+      loadPendingAppointments();
+      setTimeout(() => setSuccessMessage(null), 3e3);
+    } catch (err) {
+      console.error("Error rejecting appointment:", err);
+      setError("Failed to reject appointment");
+    }
+  };
+  const getAvailableTimeSlotsForDate = (dateStr) => {
+    const date = new Date(dateStr);
+    const dayOfWeek = date.getDay();
+    const daySlots = availability.weeklySchedule.filter((s) => s.dayOfWeek === dayOfWeek);
+    const exception = availability.exceptions.find((e) => e.date === dateStr);
+    if (exception && !exception.isAvailable) {
+      return [];
+    }
+    const slots = [];
+    daySlots.forEach((slot) => {
+      let currentTime = slot.startTime;
+      while (currentTime < slot.endTime) {
+        slots.push(currentTime);
+        const [hours, mins] = currentTime.split(":").map(Number);
+        const totalMins = hours * 60 + mins + availability.consultationDuration + availability.breakBetweenConsultations;
+        const newHours = Math.floor(totalMins / 60);
+        const newMins = totalMins % 60;
+        currentTime = `${newHours.toString().padStart(2, "0")}:${newMins.toString().padStart(2, "0")}`;
+      }
+    });
+    return slots;
+  };
+  if (authLoading || loading) {
+    return /* @__PURE__ */ jsxDEV("div", { className: "min-h-screen bg-gray-50 flex items-center justify-center", children: /* @__PURE__ */ jsxDEV("div", { className: "text-center", children: [
+      /* @__PURE__ */ jsxDEV("div", { className: "animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto" }, void 0, false, {
+        fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+        lineNumber: 366,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ jsxDEV("p", { className: "mt-4 text-gray-600", children: "Loading..." }, void 0, false, {
+        fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+        lineNumber: 367,
+        columnNumber: 11
+      }, this)
+    ] }, void 0, true, {
+      fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+      lineNumber: 365,
+      columnNumber: 9
+    }, this) }, void 0, false, {
+      fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+      lineNumber: 364,
+      columnNumber: 7
+    }, this);
+  }
+  return /* @__PURE__ */ jsxDEV("div", { className: "min-h-screen bg-gray-50 p-6", children: [
+    /* @__PURE__ */ jsxDEV("div", { className: "max-w-5xl mx-auto", children: [
+      /* @__PURE__ */ jsxDEV("div", { className: "mb-6", children: [
+        /* @__PURE__ */ jsxDEV("h1", { className: "text-2xl font-bold text-gray-900", children: "Availability & Appointments" }, void 0, false, {
+          fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+          lineNumber: 378,
+          columnNumber: 11
+        }, this),
+        /* @__PURE__ */ jsxDEV("p", { className: "text-gray-600 mt-1", children: "Manage your schedule and approve patient appointments" }, void 0, false, {
+          fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+          lineNumber: 379,
+          columnNumber: 11
+        }, this)
+      ] }, void 0, true, {
+        fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+        lineNumber: 377,
+        columnNumber: 9
+      }, this),
+      error && /* @__PURE__ */ jsxDEV("div", { className: "mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700", children: [
+        error,
+        /* @__PURE__ */ jsxDEV("button", { onClick: () => setError(null), className: "ml-2 text-red-500", children: "×" }, void 0, false, {
+          fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+          lineNumber: 386,
+          columnNumber: 13
+        }, this)
+      ] }, void 0, true, {
+        fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+        lineNumber: 384,
+        columnNumber: 9
+      }, this),
+      successMessage && /* @__PURE__ */ jsxDEV("div", { className: "mb-4 p-4 bg-green-50 border border-green-200 rounded-lg text-green-700", children: successMessage }, void 0, false, {
+        fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+        lineNumber: 390,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ jsxDEV("div", { className: "flex space-x-2 mb-6", children: [
+        /* @__PURE__ */ jsxDEV(
+          "button",
+          {
+            onClick: () => setActiveTab("schedule"),
+            className: `px-6 py-3 rounded-lg font-medium transition-colors ${activeTab === "schedule" ? "bg-emerald-600 text-white" : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"}`,
+            children: "My Schedule"
+          },
+          void 0,
+          false,
+          {
+            fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+            lineNumber: 397,
+            columnNumber: 11
+          },
+          this
+        ),
+        /* @__PURE__ */ jsxDEV(
+          "button",
+          {
+            onClick: () => setActiveTab("appointments"),
+            className: `px-6 py-3 rounded-lg font-medium transition-colors ${activeTab === "appointments" ? "bg-emerald-600 text-white" : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"}`,
+            children: [
+              "Pending Appointments",
+              pendingAppointments.length > 0 && /* @__PURE__ */ jsxDEV("span", { className: "ml-2 px-2 py-0.5 bg-red-500 text-white text-xs rounded-full", children: pendingAppointments.length }, void 0, false, {
+                fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+                lineNumber: 417,
+                columnNumber: 13
+              }, this)
+            ]
+          },
+          void 0,
+          true,
+          {
+            fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+            lineNumber: 407,
+            columnNumber: 11
+          },
+          this
+        )
+      ] }, void 0, true, {
+        fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+        lineNumber: 396,
+        columnNumber: 9
+      }, this),
+      activeTab === "schedule" && /* @__PURE__ */ jsxDEV("div", { className: "bg-white rounded-xl shadow-sm border border-gray-200 p-6", children: [
+        /* @__PURE__ */ jsxDEV("div", { className: "flex items-center justify-between mb-6", children: [
+          /* @__PURE__ */ jsxDEV("h2", { className: "text-lg font-semibold text-gray-900", children: "Weekly Schedule" }, void 0, false, {
+            fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+            lineNumber: 428,
+            columnNumber: 15
+          }, this),
+          /* @__PURE__ */ jsxDEV(
+            "button",
+            {
+              onClick: () => setShowTimeSlotModal(true),
+              className: "px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors",
+              children: "+ Add Time Slot"
+            },
+            void 0,
+            false,
+            {
+              fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+              lineNumber: 429,
+              columnNumber: 15
+            },
+            this
+          )
+        ] }, void 0, true, {
+          fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+          lineNumber: 427,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ jsxDEV("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 p-4 bg-gray-50 rounded-lg", children: [
+          /* @__PURE__ */ jsxDEV("div", { children: [
+            /* @__PURE__ */ jsxDEV("label", { className: "block text-sm font-medium text-gray-700 mb-1", children: "Consultation Duration (minutes)" }, void 0, false, {
+              fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+              lineNumber: 440,
+              columnNumber: 17
+            }, this),
+            /* @__PURE__ */ jsxDEV(
+              "input",
+              {
+                type: "number",
+                value: availability.consultationDuration,
+                onChange: (e) => setAvailability((prev) => ({ ...prev, consultationDuration: parseInt(e.target.value) || 30 })),
+                min: 15,
+                max: 120,
+                step: 5,
+                className: "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+              },
+              void 0,
+              false,
+              {
+                fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+                lineNumber: 443,
+                columnNumber: 17
+              },
+              this
+            )
+          ] }, void 0, true, {
+            fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+            lineNumber: 439,
+            columnNumber: 15
+          }, this),
+          /* @__PURE__ */ jsxDEV("div", { children: [
+            /* @__PURE__ */ jsxDEV("label", { className: "block text-sm font-medium text-gray-700 mb-1", children: "Break Between Consultations (minutes)" }, void 0, false, {
+              fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+              lineNumber: 454,
+              columnNumber: 17
+            }, this),
+            /* @__PURE__ */ jsxDEV(
+              "input",
+              {
+                type: "number",
+                value: availability.breakBetweenConsultations,
+                onChange: (e) => setAvailability((prev) => ({ ...prev, breakBetweenConsultations: parseInt(e.target.value) || 5 })),
+                min: 0,
+                max: 60,
+                step: 5,
+                className: "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+              },
+              void 0,
+              false,
+              {
+                fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+                lineNumber: 457,
+                columnNumber: 17
+              },
+              this
+            )
+          ] }, void 0, true, {
+            fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+            lineNumber: 453,
+            columnNumber: 15
+          }, this)
+        ] }, void 0, true, {
+          fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+          lineNumber: 438,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ jsxDEV("div", { className: "space-y-4", children: DAYS_OF_WEEK.map((day, dayIndex) => {
+          const daySlots = availability.weeklySchedule.filter((s) => s.dayOfWeek === dayIndex);
+          return /* @__PURE__ */ jsxDEV("div", { className: "border border-gray-200 rounded-lg p-4", children: [
+            /* @__PURE__ */ jsxDEV("div", { className: "flex items-center justify-between mb-2", children: [
+              /* @__PURE__ */ jsxDEV("h3", { className: "font-medium text-gray-900", children: day }, void 0, false, {
+                fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+                lineNumber: 476,
+                columnNumber: 23
+              }, this),
+              daySlots.length === 0 && /* @__PURE__ */ jsxDEV("span", { className: "text-sm text-gray-400", children: "No slots" }, void 0, false, {
+                fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+                lineNumber: 478,
+                columnNumber: 21
+              }, this)
+            ] }, void 0, true, {
+              fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+              lineNumber: 475,
+              columnNumber: 21
+            }, this),
+            /* @__PURE__ */ jsxDEV("div", { className: "flex flex-wrap gap-2", children: daySlots.map(
+              (slot) => /* @__PURE__ */ jsxDEV(
+                "div",
+                {
+                  className: "flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-lg text-sm",
+                  children: [
+                    /* @__PURE__ */ jsxDEV("span", { children: [
+                      slot.startTime,
+                      " - ",
+                      slot.endTime
+                    ] }, void 0, true, {
+                      fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+                      lineNumber: 487,
+                      columnNumber: 27
+                    }, this),
+                    /* @__PURE__ */ jsxDEV(
+                      "button",
+                      {
+                        onClick: () => removeTimeSlot(slot.id),
+                        className: "text-emerald-600 hover:text-red-600",
+                        children: "×"
+                      },
+                      void 0,
+                      false,
+                      {
+                        fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+                        lineNumber: 488,
+                        columnNumber: 27
+                      },
+                      this
+                    )
+                  ]
+                },
+                slot.id,
+                true,
+                {
+                  fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+                  lineNumber: 483,
+                  columnNumber: 21
+                },
+                this
+              )
+            ) }, void 0, false, {
+              fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+              lineNumber: 481,
+              columnNumber: 21
+            }, this)
+          ] }, day, true, {
+            fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+            lineNumber: 474,
+            columnNumber: 17
+          }, this);
+        }) }, void 0, false, {
+          fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+          lineNumber: 470,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ jsxDEV("div", { className: "mt-6 flex justify-end", children: /* @__PURE__ */ jsxDEV(
+          "button",
+          {
+            onClick: saveAvailability,
+            disabled: saving,
+            className: "px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors",
+            children: saving ? "Saving..." : "Save Schedule"
+          },
+          void 0,
+          false,
+          {
+            fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+            lineNumber: 504,
+            columnNumber: 15
+          },
+          this
+        ) }, void 0, false, {
+          fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+          lineNumber: 503,
+          columnNumber: 13
+        }, this)
+      ] }, void 0, true, {
+        fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+        lineNumber: 426,
+        columnNumber: 9
+      }, this),
+      activeTab === "appointments" && /* @__PURE__ */ jsxDEV("div", { className: "bg-white rounded-xl shadow-sm border border-gray-200 p-6", children: [
+        /* @__PURE__ */ jsxDEV("h2", { className: "text-lg font-semibold text-gray-900 mb-4", children: "Pending Appointment Requests" }, void 0, false, {
+          fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+          lineNumber: 518,
+          columnNumber: 13
+        }, this),
+        pendingAppointments.length === 0 ? /* @__PURE__ */ jsxDEV("div", { className: "text-center py-12", children: [
+          /* @__PURE__ */ jsxDEV("svg", { className: "w-16 h-16 text-gray-300 mx-auto mb-4", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24", children: /* @__PURE__ */ jsxDEV("path", { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" }, void 0, false, {
+            fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+            lineNumber: 523,
+            columnNumber: 19
+          }, this) }, void 0, false, {
+            fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+            lineNumber: 522,
+            columnNumber: 17
+          }, this),
+          /* @__PURE__ */ jsxDEV("h3", { className: "text-lg font-medium text-gray-700 mb-2", children: "No Pending Appointments" }, void 0, false, {
+            fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+            lineNumber: 525,
+            columnNumber: 17
+          }, this),
+          /* @__PURE__ */ jsxDEV("p", { className: "text-gray-500", children: "You're all caught up! No appointments waiting for approval." }, void 0, false, {
+            fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+            lineNumber: 526,
+            columnNumber: 17
+          }, this)
+        ] }, void 0, true, {
+          fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+          lineNumber: 521,
+          columnNumber: 11
+        }, this) : /* @__PURE__ */ jsxDEV("div", { className: "space-y-4", children: pendingAppointments.map(
+          (apt) => /* @__PURE__ */ jsxDEV(
+            "div",
+            {
+              className: "border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow",
+              children: /* @__PURE__ */ jsxDEV("div", { className: "flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4", children: [
+                /* @__PURE__ */ jsxDEV("div", { className: "flex-1", children: [
+                  /* @__PURE__ */ jsxDEV("div", { className: "flex items-center gap-2 mb-2", children: [
+                    /* @__PURE__ */ jsxDEV("h3", { className: "font-semibold text-gray-900", children: apt.patientName }, void 0, false, {
+                      fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+                      lineNumber: 538,
+                      columnNumber: 27
+                    }, this),
+                    /* @__PURE__ */ jsxDEV("span", { className: `px-2 py-0.5 text-xs font-medium rounded-full ${apt.urgency === "emergency" ? "bg-red-100 text-red-800" : apt.urgency === "high" ? "bg-orange-100 text-orange-800" : apt.urgency === "medium" ? "bg-yellow-100 text-yellow-800" : "bg-green-100 text-green-800"}`, children: apt.urgency }, void 0, false, {
+                      fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+                      lineNumber: 539,
+                      columnNumber: 27
+                    }, this),
+                    /* @__PURE__ */ jsxDEV("span", { className: `px-2 py-0.5 text-xs font-medium rounded-full ${apt.status === "assigned" ? "bg-blue-100 text-blue-800" : "bg-yellow-100 text-yellow-800"}`, children: apt.status }, void 0, false, {
+                      fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+                      lineNumber: 547,
+                      columnNumber: 27
+                    }, this)
+                  ] }, void 0, true, {
+                    fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+                    lineNumber: 537,
+                    columnNumber: 25
+                  }, this),
+                  /* @__PURE__ */ jsxDEV("p", { className: "text-sm text-gray-600", children: apt.patientEmail }, void 0, false, {
+                    fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+                    lineNumber: 553,
+                    columnNumber: 25
+                  }, this),
+                  /* @__PURE__ */ jsxDEV("div", { className: "mt-2 text-sm", children: [
+                    /* @__PURE__ */ jsxDEV("p", { children: [
+                      /* @__PURE__ */ jsxDEV("span", { className: "font-medium", children: "Reason:" }, void 0, false, {
+                        fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+                        lineNumber: 555,
+                        columnNumber: 30
+                      }, this),
+                      " ",
+                      apt.reason
+                    ] }, void 0, true, {
+                      fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+                      lineNumber: 555,
+                      columnNumber: 27
+                    }, this),
+                    /* @__PURE__ */ jsxDEV("p", { children: [
+                      /* @__PURE__ */ jsxDEV("span", { className: "font-medium", children: "Requested:" }, void 0, false, {
+                        fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+                        lineNumber: 556,
+                        columnNumber: 30
+                      }, this),
+                      " ",
+                      new Date(apt.requestedDate).toLocaleDateString()
+                    ] }, void 0, true, {
+                      fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+                      lineNumber: 556,
+                      columnNumber: 27
+                    }, this),
+                    apt.preferredTime && /* @__PURE__ */ jsxDEV("p", { children: [
+                      /* @__PURE__ */ jsxDEV("span", { className: "font-medium", children: "Preferred Time:" }, void 0, false, {
+                        fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+                        lineNumber: 558,
+                        columnNumber: 24
+                      }, this),
+                      " ",
+                      apt.preferredTime
+                    ] }, void 0, true, {
+                      fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+                      lineNumber: 558,
+                      columnNumber: 21
+                    }, this),
+                    apt.assignedDateTime && /* @__PURE__ */ jsxDEV("p", { className: "text-blue-600", children: [
+                      /* @__PURE__ */ jsxDEV("span", { className: "font-medium", children: "Assigned:" }, void 0, false, {
+                        fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+                        lineNumber: 562,
+                        columnNumber: 31
+                      }, this),
+                      " ",
+                      new Date(apt.assignedDateTime).toLocaleString()
+                    ] }, void 0, true, {
+                      fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+                      lineNumber: 561,
+                      columnNumber: 21
+                    }, this)
+                  ] }, void 0, true, {
+                    fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+                    lineNumber: 554,
+                    columnNumber: 25
+                  }, this)
+                ] }, void 0, true, {
+                  fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+                  lineNumber: 536,
+                  columnNumber: 23
+                }, this),
+                /* @__PURE__ */ jsxDEV("div", { className: "flex gap-2", children: [
+                  /* @__PURE__ */ jsxDEV(
+                    "button",
+                    {
+                      onClick: () => {
+                        setSelectedAppointment(apt);
+                        setApprovalData({
+                          date: apt.assignedDateTime ? apt.assignedDateTime.split("T")[0] : "",
+                          time: apt.assignedDateTime ? apt.assignedDateTime.split("T")[1]?.substring(0, 5) : "",
+                          notes: ""
+                        });
+                        setShowApproveModal(true);
+                      },
+                      className: "px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm",
+                      children: "Approve & Schedule"
+                    },
+                    void 0,
+                    false,
+                    {
+                      fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+                      lineNumber: 568,
+                      columnNumber: 25
+                    },
+                    this
+                  ),
+                  /* @__PURE__ */ jsxDEV(
+                    "button",
+                    {
+                      onClick: () => handleRejectAppointment(apt.id),
+                      className: "px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors text-sm",
+                      children: "Reject"
+                    },
+                    void 0,
+                    false,
+                    {
+                      fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+                      lineNumber: 582,
+                      columnNumber: 25
+                    },
+                    this
+                  )
+                ] }, void 0, true, {
+                  fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+                  lineNumber: 567,
+                  columnNumber: 23
+                }, this)
+              ] }, void 0, true, {
+                fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+                lineNumber: 535,
+                columnNumber: 21
+              }, this)
+            },
+            apt.id,
+            false,
+            {
+              fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+              lineNumber: 531,
+              columnNumber: 13
+            },
+            this
+          )
+        ) }, void 0, false, {
+          fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+          lineNumber: 529,
+          columnNumber: 11
+        }, this)
+      ] }, void 0, true, {
+        fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+        lineNumber: 517,
+        columnNumber: 9
+      }, this)
+    ] }, void 0, true, {
+      fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+      lineNumber: 375,
+      columnNumber: 7
+    }, this),
+    showTimeSlotModal && /* @__PURE__ */ jsxDEV("div", { className: "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50", children: /* @__PURE__ */ jsxDEV("div", { className: "bg-white rounded-xl p-6 max-w-md w-full mx-4", children: [
+      /* @__PURE__ */ jsxDEV("h3", { className: "text-xl font-bold text-gray-900 mb-4", children: "Add Available Time Slot" }, void 0, false, {
+        fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+        lineNumber: 602,
+        columnNumber: 13
+      }, this),
+      /* @__PURE__ */ jsxDEV("div", { className: "space-y-4", children: [
+        /* @__PURE__ */ jsxDEV("div", { children: [
+          /* @__PURE__ */ jsxDEV("label", { className: "block text-sm font-medium text-gray-700 mb-1", children: "Day of Week" }, void 0, false, {
+            fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+            lineNumber: 606,
+            columnNumber: 17
+          }, this),
+          /* @__PURE__ */ jsxDEV(
+            "select",
+            {
+              value: newSlot.dayOfWeek,
+              onChange: (e) => setNewSlot({ ...newSlot, dayOfWeek: parseInt(e.target.value) }),
+              className: "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500",
+              children: DAYS_OF_WEEK.map(
+                (day, index) => /* @__PURE__ */ jsxDEV("option", { value: index, children: day }, day, false, {
+                  fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+                  lineNumber: 613,
+                  columnNumber: 17
+                }, this)
+              )
+            },
+            void 0,
+            false,
+            {
+              fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+              lineNumber: 607,
+              columnNumber: 17
+            },
+            this
+          )
+        ] }, void 0, true, {
+          fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+          lineNumber: 605,
+          columnNumber: 15
+        }, this),
+        /* @__PURE__ */ jsxDEV("div", { className: "grid grid-cols-2 gap-4", children: [
+          /* @__PURE__ */ jsxDEV("div", { children: [
+            /* @__PURE__ */ jsxDEV("label", { className: "block text-sm font-medium text-gray-700 mb-1", children: "Start Time" }, void 0, false, {
+              fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+              lineNumber: 620,
+              columnNumber: 19
+            }, this),
+            /* @__PURE__ */ jsxDEV(
+              "input",
+              {
+                type: "time",
+                value: newSlot.startTime,
+                onChange: (e) => setNewSlot({ ...newSlot, startTime: e.target.value }),
+                className: "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+              },
+              void 0,
+              false,
+              {
+                fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+                lineNumber: 621,
+                columnNumber: 19
+              },
+              this
+            )
+          ] }, void 0, true, {
+            fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+            lineNumber: 619,
+            columnNumber: 17
+          }, this),
+          /* @__PURE__ */ jsxDEV("div", { children: [
+            /* @__PURE__ */ jsxDEV("label", { className: "block text-sm font-medium text-gray-700 mb-1", children: "End Time" }, void 0, false, {
+              fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+              lineNumber: 629,
+              columnNumber: 19
+            }, this),
+            /* @__PURE__ */ jsxDEV(
+              "input",
+              {
+                type: "time",
+                value: newSlot.endTime,
+                onChange: (e) => setNewSlot({ ...newSlot, endTime: e.target.value }),
+                className: "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+              },
+              void 0,
+              false,
+              {
+                fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+                lineNumber: 630,
+                columnNumber: 19
+              },
+              this
+            )
+          ] }, void 0, true, {
+            fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+            lineNumber: 628,
+            columnNumber: 17
+          }, this)
+        ] }, void 0, true, {
+          fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+          lineNumber: 618,
+          columnNumber: 15
+        }, this)
+      ] }, void 0, true, {
+        fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+        lineNumber: 604,
+        columnNumber: 13
+      }, this),
+      /* @__PURE__ */ jsxDEV("div", { className: "flex gap-3 mt-6", children: [
+        /* @__PURE__ */ jsxDEV(
+          "button",
+          {
+            onClick: () => setShowTimeSlotModal(false),
+            className: "flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50",
+            children: "Cancel"
+          },
+          void 0,
+          false,
+          {
+            fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+            lineNumber: 641,
+            columnNumber: 15
+          },
+          this
+        ),
+        /* @__PURE__ */ jsxDEV(
+          "button",
+          {
+            onClick: addTimeSlot,
+            className: "flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700",
+            children: "Add Slot"
+          },
+          void 0,
+          false,
+          {
+            fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+            lineNumber: 647,
+            columnNumber: 15
+          },
+          this
+        )
+      ] }, void 0, true, {
+        fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+        lineNumber: 640,
+        columnNumber: 13
+      }, this)
+    ] }, void 0, true, {
+      fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+      lineNumber: 601,
+      columnNumber: 11
+    }, this) }, void 0, false, {
+      fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+      lineNumber: 600,
+      columnNumber: 7
+    }, this),
+    showApproveModal && selectedAppointment && /* @__PURE__ */ jsxDEV("div", { className: "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50", children: /* @__PURE__ */ jsxDEV("div", { className: "bg-white rounded-xl p-6 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto", children: [
+      /* @__PURE__ */ jsxDEV("h3", { className: "text-xl font-bold text-gray-900 mb-4", children: "Confirm Appointment" }, void 0, false, {
+        fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+        lineNumber: 662,
+        columnNumber: 13
+      }, this),
+      /* @__PURE__ */ jsxDEV("div", { className: "mb-4 p-3 bg-gray-50 rounded-lg", children: [
+        /* @__PURE__ */ jsxDEV("p", { className: "font-medium", children: selectedAppointment.patientName }, void 0, false, {
+          fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+          lineNumber: 665,
+          columnNumber: 15
+        }, this),
+        /* @__PURE__ */ jsxDEV("p", { className: "text-sm text-gray-600", children: selectedAppointment.reason }, void 0, false, {
+          fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+          lineNumber: 666,
+          columnNumber: 15
+        }, this)
+      ] }, void 0, true, {
+        fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+        lineNumber: 664,
+        columnNumber: 13
+      }, this),
+      /* @__PURE__ */ jsxDEV("div", { className: "space-y-4", children: [
+        /* @__PURE__ */ jsxDEV("div", { children: [
+          /* @__PURE__ */ jsxDEV("label", { className: "block text-sm font-medium text-gray-700 mb-1", children: "Select Date *" }, void 0, false, {
+            fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+            lineNumber: 671,
+            columnNumber: 17
+          }, this),
+          /* @__PURE__ */ jsxDEV(
+            "input",
+            {
+              type: "date",
+              value: approvalData.date,
+              onChange: (e) => setApprovalData({ ...approvalData, date: e.target.value }),
+              min: (/* @__PURE__ */ new Date()).toISOString().split("T")[0],
+              className: "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+            },
+            void 0,
+            false,
+            {
+              fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+              lineNumber: 672,
+              columnNumber: 17
+            },
+            this
+          )
+        ] }, void 0, true, {
+          fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+          lineNumber: 670,
+          columnNumber: 15
+        }, this),
+        /* @__PURE__ */ jsxDEV("div", { children: [
+          /* @__PURE__ */ jsxDEV("label", { className: "block text-sm font-medium text-gray-700 mb-1", children: "Select Time *" }, void 0, false, {
+            fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+            lineNumber: 682,
+            columnNumber: 17
+          }, this),
+          approvalData.date ? /* @__PURE__ */ jsxDEV("div", { className: "flex flex-wrap gap-2", children: getAvailableTimeSlotsForDate(approvalData.date).length > 0 ? getAvailableTimeSlotsForDate(approvalData.date).map(
+            (time) => /* @__PURE__ */ jsxDEV(
+              "button",
+              {
+                onClick: () => setApprovalData({ ...approvalData, time }),
+                className: `px-3 py-2 rounded-lg text-sm ${approvalData.time === time ? "bg-emerald-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`,
+                children: time
+              },
+              time,
+              false,
+              {
+                fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+                lineNumber: 687,
+                columnNumber: 17
+              },
+              this
+            )
+          ) : /* @__PURE__ */ jsxDEV("div", { children: [
+            /* @__PURE__ */ jsxDEV("p", { className: "text-sm text-yellow-600 mb-2", children: "No preset slots for this day. Enter time manually:" }, void 0, false, {
+              fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+              lineNumber: 701,
+              columnNumber: 25
+            }, this),
+            /* @__PURE__ */ jsxDEV(
+              "input",
+              {
+                type: "time",
+                value: approvalData.time,
+                onChange: (e) => setApprovalData({ ...approvalData, time: e.target.value }),
+                className: "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+              },
+              void 0,
+              false,
+              {
+                fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+                lineNumber: 702,
+                columnNumber: 25
+              },
+              this
+            )
+          ] }, void 0, true, {
+            fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+            lineNumber: 700,
+            columnNumber: 17
+          }, this) }, void 0, false, {
+            fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+            lineNumber: 684,
+            columnNumber: 15
+          }, this) : /* @__PURE__ */ jsxDEV("p", { className: "text-sm text-gray-500", children: "Select a date first" }, void 0, false, {
+            fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+            lineNumber: 712,
+            columnNumber: 15
+          }, this)
+        ] }, void 0, true, {
+          fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+          lineNumber: 681,
+          columnNumber: 15
+        }, this),
+        /* @__PURE__ */ jsxDEV("div", { children: [
+          /* @__PURE__ */ jsxDEV("label", { className: "block text-sm font-medium text-gray-700 mb-1", children: "Notes for Patient" }, void 0, false, {
+            fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+            lineNumber: 717,
+            columnNumber: 17
+          }, this),
+          /* @__PURE__ */ jsxDEV(
+            "textarea",
+            {
+              value: approvalData.notes,
+              onChange: (e) => setApprovalData({ ...approvalData, notes: e.target.value }),
+              rows: 3,
+              className: "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500",
+              placeholder: "Any instructions or notes..."
+            },
+            void 0,
+            false,
+            {
+              fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+              lineNumber: 718,
+              columnNumber: 17
+            },
+            this
+          )
+        ] }, void 0, true, {
+          fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+          lineNumber: 716,
+          columnNumber: 15
+        }, this)
+      ] }, void 0, true, {
+        fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+        lineNumber: 669,
+        columnNumber: 13
+      }, this),
+      /* @__PURE__ */ jsxDEV("div", { className: "flex gap-3 mt-6", children: [
+        /* @__PURE__ */ jsxDEV(
+          "button",
+          {
+            onClick: () => {
+              setShowApproveModal(false);
+              setSelectedAppointment(null);
+              setApprovalData({ date: "", time: "", notes: "" });
+            },
+            className: "flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50",
+            children: "Cancel"
+          },
+          void 0,
+          false,
+          {
+            fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+            lineNumber: 729,
+            columnNumber: 15
+          },
+          this
+        ),
+        /* @__PURE__ */ jsxDEV(
+          "button",
+          {
+            onClick: handleApproveAppointment,
+            disabled: !approvalData.date || !approvalData.time || saving,
+            className: "flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed",
+            children: saving ? "Confirming..." : "Confirm Appointment"
+          },
+          void 0,
+          false,
+          {
+            fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+            lineNumber: 739,
+            columnNumber: 15
+          },
+          this
+        )
+      ] }, void 0, true, {
+        fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+        lineNumber: 728,
+        columnNumber: 13
+      }, this)
+    ] }, void 0, true, {
+      fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+      lineNumber: 661,
+      columnNumber: 11
+    }, this) }, void 0, false, {
+      fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+      lineNumber: 660,
+      columnNumber: 7
+    }, this)
+  ] }, void 0, true, {
+    fileName: "C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx",
+    lineNumber: 374,
+    columnNumber: 5
+  }, this);
+};
+_s(DoctorAvailabilitySettings, "wctu/U/EDiEM7508rbG6W/qrGvc=", false, function() {
+  return [useAuth, useNavigate];
+});
+_c = DoctorAvailabilitySettings;
+export default DoctorAvailabilitySettings;
+var _c;
+$RefreshReg$(_c, "DoctorAvailabilitySettings");
+if (import.meta.hot && !inWebWorker) {
+  window.$RefreshReg$ = prevRefreshReg;
+  window.$RefreshSig$ = prevRefreshSig;
+}
+if (import.meta.hot && !inWebWorker) {
+  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {
+    RefreshRuntime.registerExportsForReactRefresh("C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("C:/Users/chira/Documents/Isara-telemed/Isara-anywhere-V0.0.3/Isara-doctor-portal/src/pages/DoctorAvailabilitySettings.tsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+
+//# sourceMappingURL=data:application/json;base64,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QUFBQTtBQUFBO0FBQUEsZUFTQTtBQUFBLFdBeERGO0FBQUE7QUFBQTtBQUFBO0FBQUEsYUF5REE7QUFBQSxNQUVBLHVCQUFDLFNBQUksV0FBVSxtQkFDYjtBQUFBO0FBQUEsVUFBQztBQUFBO0FBQUEsWUFDQyxTQUFTLE1BQU07QUFDYjFHLGtDQUFvQixLQUFLO0FBQ3pCRSxxQ0FBdUIsSUFBSTtBQUMzQlEsOEJBQWdCLEVBQUVDLE1BQU0sSUFBSUMsTUFBTSxJQUFJQyxPQUFPLEdBQUcsQ0FBQztBQUFBLFlBQ25EO0FBQUEsWUFDQSxXQUFVO0FBQUEsWUFBbUY7QUFBQTtBQUFBLFVBTi9GO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQSxRQVNBO0FBQUEsUUFDQTtBQUFBLFVBQUM7QUFBQTtBQUFBLFlBQ0MsU0FBU3VEO0FBQUFBLFlBQ1QsVUFBVSxDQUFDM0QsYUFBYUUsUUFBUSxDQUFDRixhQUFhRyxRQUFRdkI7QUFBQUEsWUFDdEQsV0FBVTtBQUFBLFlBRVRBLG1CQUFTLGtCQUFrQjtBQUFBO0FBQUEsVUFMOUI7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBLFFBTUE7QUFBQSxXQWpCRjtBQUFBO0FBQUE7QUFBQTtBQUFBLGFBa0JBO0FBQUEsU0FyRkY7QUFBQTtBQUFBO0FBQUE7QUFBQSxXQXNGQSxLQXZGRjtBQUFBO0FBQUE7QUFBQTtBQUFBLFdBd0ZBO0FBQUEsT0F0WEo7QUFBQTtBQUFBO0FBQUE7QUFBQSxTQXdYQTtBQUVKO0FBQUVoQixHQXpxQklELDRCQUFvQztBQUFBLFVBQ2dCSCxTQUN2Q0MsV0FBVztBQUFBO0FBQUErSSxLQUZ4QjdJO0FBMnFCTixlQUFlQTtBQUEyQixJQUFBNkk7QUFBQUMsYUFBQUQsSUFBQSIsIm5hbWVzIjpbInVzZVN0YXRlIiwidXNlRWZmZWN0IiwidXNlQ2FsbGJhY2siLCJ1c2VBdXRoIiwidXNlTmF2aWdhdGUiLCJEQVlTX09GX1dFRUsiLCJEb2N0b3JBdmFpbGFiaWxpdHlTZXR0aW5ncyIsIl9zIiwidXNlciIsImlzQXV0aGVudGljYXRlZCIsImxvYWRpbmciLCJhdXRoTG9hZGluZyIsIm5hdmlnYXRlIiwiYXZhaWxhYmlsaXR5Iiwic2V0QXZhaWxhYmlsaXR5IiwiZG9jdG9ySWQiLCJ3ZWVrbHlTY2hlZHVsZSIsImV4Y2VwdGlvbnMiLCJjb25zdWx0YXRpb25EdXJhdGlvbiIsImJyZWFrQmV0d2VlbkNvbnN1bHRhdGlvbnMiLCJwZW5kaW5nQXBwb2ludG1lbnRzIiwic2V0UGVuZGluZ0FwcG9pbnRtZW50cyIsInNldExvYWRpbmciLCJzYXZpbmciLCJzZXRTYXZpbmciLCJlcnJvciIsInNldEVycm9yIiwic3VjY2Vzc01lc3NhZ2UiLCJzZXRTdWNjZXNzTWVzc2FnZSIsImFjdGl2ZVRhYiIsInNldEFjdGl2ZVRhYiIsInNob3dUaW1lU2xvdE1vZGFsIiwic2V0U2hvd1RpbWVTbG90TW9kYWwiLCJzaG93QXBwcm92ZU1vZGFsIiwic2V0U2hvd0FwcHJvdmVNb2RhbCIsInNlbGVjdGVkQXBwb2ludG1lbnQiLCJzZXRTZWxlY3RlZEFwcG9pbnRtZW50IiwibmV3U2xvdCIsInNldE5ld1Nsb3QiLCJkYXlPZldlZWsiLCJzdGFydFRpbWUiLCJlbmRUaW1lIiwiaXNSZWN1cnJpbmciLCJhcHByb3ZhbERhdGEiLCJzZXRBcHByb3ZhbERhdGEiLCJkYXRlIiwidGltZSIsIm5vdGVzIiwiQVBJX1VSTCIsImltcG9ydCIsImVudiIsIlZJVEVfQVVUSF9VUkwiLCJNQUlOX0FQSV9VUkwiLCJWSVRFX0FQSV9VUkwiLCJsb2FkQXZhaWxhYmlsaXR5IiwiaWQiLCJyZXNwb25zZSIsImZldGNoIiwib2siLCJkYXRhIiwianNvbiIsInByZXYiLCJlcnIiLCJjb25zb2xlIiwibG9hZFBlbmRpbmdBcHBvaW50bWVudHMiLCJoZWFkZXJzIiwibG9jYWxTdG9yYWdlIiwiZ2V0SXRlbSIsImFwcG9pbnRtZW50cyIsImZpbHRlciIsImFwdCIsInN0YXR1cyIsIm1hcCIsInBhdGllbnRJZCIsInBhdGllbnROYW1lIiwibmFtZSIsInBhdGllbnRFbWFpbCIsImVtYWlsIiwicmVxdWVzdGVkRGF0ZSIsInByZWZlcnJlZFRpbWUiLCJyZWFzb24iLCJzeW1wdG9tcyIsImpvaW4iLCJ1cmdlbmN5IiwiYXNzaWduZWREYXRlVGltZSIsImNyZWF0ZWRBdCIsInNhdmVBdmFpbGFiaWxpdHkiLCJtZXRob2QiLCJib2R5IiwiSlNPTiIsInN0cmluZ2lmeSIsImJ1Y2tldCIsInBhdGgiLCJFcnJvciIsInNldFRpbWVvdXQiLCJhZGRUaW1lU2xvdCIsInNsb3QiLCJEYXRlIiwibm93IiwicmVtb3ZlVGltZVNsb3QiLCJzbG90SWQiLCJzIiwiaGFuZGxlQXBwcm92ZUFwcG9pbnRtZW50IiwiY29uZmlybWVkRGF0ZVRpbWUiLCJjb25maXJtZWRBdCIsInRvSVNPU3RyaW5nIiwiZG9jdG9yTm90ZXMiLCJjb25maXJtZWRCeURvY3RvciIsImhhbmRsZVJlamVjdEFwcG9pbnRtZW50IiwiYXBwb2ludG1lbnRJZCIsInByb21wdCIsInJlamVjdGVkQXQiLCJyZWplY3Rpb25SZWFzb24iLCJyZWplY3RlZEJ5RG9jdG9yIiwiZ2V0QXZhaWxhYmxlVGltZVNsb3RzRm9yRGF0ZSIsImRhdGVTdHIiLCJnZXREYXkiLCJkYXlTbG90cyIsImV4Y2VwdGlvbiIsImZpbmQiLCJlIiwiaXNBdmFpbGFibGUiLCJzbG90cyIsImZvckVhY2giLCJjdXJyZW50VGltZSIsInB1c2giLCJob3VycyIsIm1pbnMiLCJzcGxpdCIsIk51bWJlciIsInRvdGFsTWlucyIsIm5ld0hvdXJzIiwiTWF0aCIsImZsb29yIiwibmV3TWlucyIsInRvU3RyaW5nIiwicGFkU3RhcnQiLCJsZW5ndGgiLCJwYXJzZUludCIsInRhcmdldCIsInZhbHVlIiwiZGF5IiwiZGF5SW5kZXgiLCJ0b0xvY2FsZURhdGVTdHJpbmciLCJ0b0xvY2FsZVN0cmluZyIsInN1YnN0cmluZyIsImluZGV4IiwiX2MiLCIkUmVmcmVzaFJlZyQiXSwiaWdub3JlTGlzdCI6W10sInNvdXJjZXMiOlsiRG9jdG9yQXZhaWxhYmlsaXR5U2V0dGluZ3MudHN4Il0sInNvdXJjZXNDb250ZW50IjpbIi8qKlxyXG4gKiBEb2N0b3IgQXZhaWxhYmlsaXR5IFNldHRpbmdzIFBhZ2VcclxuICogQWxsb3dzIGRvY3RvcnMgdG86XHJcbiAqIC0gU2V0IHRoZWlyIGF2YWlsYWJsZSB0aW1lIHNsb3RzXHJcbiAqIC0gVmlldyBhbmQgbWFuYWdlIGluY29taW5nIGFwcG9pbnRtZW50c1xyXG4gKiAtIEFwcHJvdmUvcmVqZWN0IGFwcG9pbnRtZW50cyB3aXRoIHRpbWUgc2VsZWN0aW9uXHJcbiAqL1xyXG5cclxuaW1wb3J0IFJlYWN0LCB7IHVzZVN0YXRlLCB1c2VFZmZlY3QsIHVzZUNhbGxiYWNrIH0gZnJvbSAncmVhY3QnO1xyXG5pbXBvcnQgeyB1c2VBdXRoIH0gZnJvbSAnLi4vY29tcG9uZW50cy9jb21tb24vQXV0aFByb3ZpZGVyJztcclxuaW1wb3J0IHsgdXNlTmF2aWdhdGUgfSBmcm9tICdyZWFjdC1yb3V0ZXItZG9tJztcclxuXHJcbmludGVyZmFjZSBUaW1lU2xvdCB7XHJcbiAgaWQ6IHN0cmluZztcclxuICBkYXlPZldlZWs6IG51bWJlcjsgLy8gMCA9IFN1bmRheSwgMSA9IE1vbmRheSwgZXRjLlxyXG4gIHN0YXJ0VGltZTogc3RyaW5nO1xyXG4gIGVuZFRpbWU6IHN0cmluZztcclxuICBpc1JlY3VycmluZzogYm9vbGVhbjtcclxuICBzcGVjaWZpY0RhdGU/OiBzdHJpbmc7IC8vIEZvciBvbmUtdGltZSBzbG90c1xyXG59XHJcblxyXG5pbnRlcmZhY2UgRG9jdG9yQXZhaWxhYmlsaXR5IHtcclxuICBkb2N0b3JJZDogc3RyaW5nO1xyXG4gIHdlZWtseVNjaGVkdWxlOiBUaW1lU2xvdFtdO1xyXG4gIGV4Y2VwdGlvbnM6IHtcclxuICAgIGRhdGU6IHN0cmluZztcclxuICAgIGlzQXZhaWxhYmxlOiBib29sZWFuO1xyXG4gICAgcmVhc29uPzogc3RyaW5nO1xyXG4gIH1bXTtcclxuICBjb25zdWx0YXRpb25EdXJhdGlvbjogbnVtYmVyOyAvLyBtaW51dGVzXHJcbiAgYnJlYWtCZXR3ZWVuQ29uc3VsdGF0aW9uczogbnVtYmVyOyAvLyBtaW51dGVzXHJcbn1cclxuXHJcbmludGVyZmFjZSBQZW5kaW5nQXBwb2ludG1lbnQge1xyXG4gIGlkOiBzdHJpbmc7XHJcbiAgcGF0aWVudElkOiBzdHJpbmc7XHJcbiAgcGF0aWVudE5hbWU6IHN0cmluZztcclxuICBwYXRpZW50RW1haWw6IHN0cmluZztcclxuICByZXF1ZXN0ZWREYXRlOiBzdHJpbmc7XHJcbiAgcHJlZmVycmVkVGltZT86IHN0cmluZztcclxuICByZWFzb246IHN0cmluZztcclxuICBzeW1wdG9tcz86IHN0cmluZ1tdO1xyXG4gIHVyZ2VuY3k6ICdsb3cnIHwgJ21lZGl1bScgfCAnaGlnaCcgfCAnZW1lcmdlbmN5JztcclxuICBzdGF0dXM6ICdhc3NpZ25lZCcgfCAnY29uZmlybWVkJyB8ICdwZW5kaW5nJztcclxuICBhc3NpZ25lZERhdGVUaW1lPzogc3RyaW5nO1xyXG4gIG5vdGVzPzogc3RyaW5nO1xyXG4gIGNyZWF0ZWRBdDogc3RyaW5nO1xyXG59XHJcblxyXG5jb25zdCBEQVlTX09GX1dFRUsgPSBbJ1N1bmRheScsICdNb25kYXknLCAnVHVlc2RheScsICdXZWRuZXNkYXknLCAnVGh1cnNkYXknLCAnRnJpZGF5JywgJ1NhdHVyZGF5J107XHJcblxyXG5jb25zdCBEb2N0b3JBdmFpbGFiaWxpdHlTZXR0aW5nczogUmVhY3QuRkMgPSAoKSA9PiB7XHJcbiAgY29uc3QgeyB1c2VyLCBpc0F1dGhlbnRpY2F0ZWQsIGxvYWRpbmc6IGF1dGhMb2FkaW5nIH0gPSB1c2VBdXRoKCk7XHJcbiAgY29uc3QgbmF2aWdhdGUgPSB1c2VOYXZpZ2F0ZSgpO1xyXG5cclxuICBjb25zdCBbYXZhaWxhYmlsaXR5LCBzZXRBdmFpbGFiaWxpdHldID0gdXNlU3RhdGU8RG9jdG9yQXZhaWxhYmlsaXR5Pih7XHJcbiAgICBkb2N0b3JJZDogJycsXHJcbiAgICB3ZWVrbHlTY2hlZHVsZTogW10sXHJcbiAgICBleGNlcHRpb25zOiBbXSxcclxuICAgIGNvbnN1bHRhdGlvbkR1cmF0aW9uOiAzMCxcclxuICAgIGJyZWFrQmV0d2VlbkNvbnN1bHRhdGlvbnM6IDVcclxuICB9KTtcclxuICBjb25zdCBbcGVuZGluZ0FwcG9pbnRtZW50cywgc2V0UGVuZGluZ0FwcG9pbnRtZW50c10gPSB1c2VTdGF0ZTxQZW5kaW5nQXBwb2ludG1lbnRbXT4oW10pO1xyXG4gIGNvbnN0IFtsb2FkaW5nLCBzZXRMb2FkaW5nXSA9IHVzZVN0YXRlKHRydWUpO1xyXG4gIGNvbnN0IFtzYXZpbmcsIHNldFNhdmluZ10gPSB1c2VTdGF0ZShmYWxzZSk7XHJcbiAgY29uc3QgW2Vycm9yLCBzZXRFcnJvcl0gPSB1c2VTdGF0ZTxzdHJpbmcgfCBudWxsPihudWxsKTtcclxuICBjb25zdCBbc3VjY2Vzc01lc3NhZ2UsIHNldFN1Y2Nlc3NNZXNzYWdlXSA9IHVzZVN0YXRlPHN0cmluZyB8IG51bGw+KG51bGwpO1xyXG4gIGNvbnN0IFthY3RpdmVUYWIsIHNldEFjdGl2ZVRhYl0gPSB1c2VTdGF0ZTwnc2NoZWR1bGUnIHwgJ2FwcG9pbnRtZW50cyc+KCdzY2hlZHVsZScpO1xyXG4gIGNvbnN0IFtzaG93VGltZVNsb3RNb2RhbCwgc2V0U2hvd1RpbWVTbG90TW9kYWxdID0gdXNlU3RhdGUoZmFsc2UpO1xyXG4gIGNvbnN0IFtzaG93QXBwcm92ZU1vZGFsLCBzZXRTaG93QXBwcm92ZU1vZGFsXSA9IHVzZVN0YXRlKGZhbHNlKTtcclxuICBjb25zdCBbc2VsZWN0ZWRBcHBvaW50bWVudCwgc2V0U2VsZWN0ZWRBcHBvaW50bWVudF0gPSB1c2VTdGF0ZTxQZW5kaW5nQXBwb2ludG1lbnQgfCBudWxsPihudWxsKTtcclxuICBjb25zdCBbbmV3U2xvdCwgc2V0TmV3U2xvdF0gPSB1c2VTdGF0ZSh7XHJcbiAgICBkYXlPZldlZWs6IDEsXHJcbiAgICBzdGFydFRpbWU6ICcwOTowMCcsXHJcbiAgICBlbmRUaW1lOiAnMTc6MDAnLFxyXG4gICAgaXNSZWN1cnJpbmc6IHRydWVcclxuICB9KTtcclxuICBjb25zdCBbYXBwcm92YWxEYXRhLCBzZXRBcHByb3ZhbERhdGFdID0gdXNlU3RhdGUoe1xyXG4gICAgZGF0ZTogJycsXHJcbiAgICB0aW1lOiAnJyxcclxuICAgIG5vdGVzOiAnJ1xyXG4gIH0pO1xyXG5cclxuICAvLyBBUEkgVVJMcyAtIEVtcHR5IHN0cmluZyBmb3IgcmVsYXRpdmUgcGF0aHMgaW4gcHJvZHVjdGlvbiAoQ2xvdWQgUnVuKVxyXG4gIGNvbnN0IEFQSV9VUkwgPSBpbXBvcnQubWV0YS5lbnYuVklURV9BVVRIX1VSTCB8fCAnJztcclxuICBjb25zdCBNQUlOX0FQSV9VUkwgPSBpbXBvcnQubWV0YS5lbnYuVklURV9BUElfVVJMIHx8ICcnO1xyXG5cclxuICAvLyBDaGVjayBhdXRoZW50aWNhdGlvblxyXG4gIHVzZUVmZmVjdCgoKSA9PiB7XHJcbiAgICBpZiAoYXV0aExvYWRpbmcpIHJldHVybjtcclxuICAgIFxyXG4gICAgaWYgKCFpc0F1dGhlbnRpY2F0ZWQgfHwgIXVzZXIpIHtcclxuICAgICAgbmF2aWdhdGUoJy9sb2dpbicpO1xyXG4gICAgICByZXR1cm47XHJcbiAgICB9XHJcbiAgfSwgW2F1dGhMb2FkaW5nLCBpc0F1dGhlbnRpY2F0ZWQsIHVzZXIsIG5hdmlnYXRlXSk7XHJcblxyXG4gIC8vIExvYWQgZG9jdG9yJ3MgYXZhaWxhYmlsaXR5XHJcbiAgY29uc3QgbG9hZEF2YWlsYWJpbGl0eSA9IHVzZUNhbGxiYWNrKGFzeW5jICgpID0+IHtcclxuICAgIGlmICghdXNlcj8uaWQpIHJldHVybjtcclxuICAgIFxyXG4gICAgdHJ5IHtcclxuICAgICAgc2V0TG9hZGluZyh0cnVlKTtcclxuICAgICAgXHJcbiAgICAgIC8vIFRyeSB0byBmZXRjaCBleGlzdGluZyBhdmFpbGFiaWxpdHkgZnJvbSBHQ1NcclxuICAgICAgY29uc3QgcmVzcG9uc2UgPSBhd2FpdCBmZXRjaChgJHtBUElfVVJMfS9hcGkvc3RvcmFnZS9yZWFkP2J1Y2tldD1jcmVkZW50aWFscyZwYXRoPWRvY3RvcnMvJHt1c2VyLmlkfS9hdmFpbGFiaWxpdHkuanNvbmApO1xyXG4gICAgICBcclxuICAgICAgaWYgKHJlc3BvbnNlLm9rKSB7XHJcbiAgICAgICAgY29uc3QgZGF0YSA9IGF3YWl0IHJlc3BvbnNlLmpzb24oKTtcclxuICAgICAgICBpZiAoZGF0YS5kYXRhKSB7XHJcbiAgICAgICAgICBzZXRBdmFpbGFiaWxpdHkoZGF0YS5kYXRhKTtcclxuICAgICAgICB9IGVsc2Uge1xyXG4gICAgICAgICAgLy8gU2V0IGRlZmF1bHQgYXZhaWxhYmlsaXR5IHdpdGggZG9jdG9yIElEXHJcbiAgICAgICAgICBzZXRBdmFpbGFiaWxpdHkocHJldiA9PiAoeyAuLi5wcmV2LCBkb2N0b3JJZDogdXNlci5pZCB9KSk7XHJcbiAgICAgICAgfVxyXG4gICAgICB9IGVsc2Uge1xyXG4gICAgICAgIHNldEF2YWlsYWJpbGl0eShwcmV2ID0+ICh7IC4uLnByZXYsIGRvY3RvcklkOiB1c2VyLmlkIH0pKTtcclxuICAgICAgfVxyXG4gICAgfSBjYXRjaCAoZXJyKSB7XHJcbiAgICAgIGNvbnNvbGUuZXJyb3IoJ0Vycm9yIGxvYWRpbmcgYXZhaWxhYmlsaXR5OicsIGVycik7XHJcbiAgICAgIHNldEF2YWlsYWJpbGl0eShwcmV2ID0+ICh7IC4uLnByZXYsIGRvY3RvcklkOiB1c2VyLmlkIH0pKTtcclxuICAgIH0gZmluYWxseSB7XHJcbiAgICAgIHNldExvYWRpbmcoZmFsc2UpO1xyXG4gICAgfVxyXG4gIH0sIFt1c2VyPy5pZF0pO1xyXG5cclxuICAvLyBMb2FkIHBlbmRpbmcgYXBwb2ludG1lbnRzIGZvciB0aGlzIGRvY3RvclxyXG4gIGNvbnN0IGxvYWRQZW5kaW5nQXBwb2ludG1lbnRzID0gdXNlQ2FsbGJhY2soYXN5bmMgKCkgPT4ge1xyXG4gICAgaWYgKCF1c2VyPy5pZCkgcmV0dXJuO1xyXG4gICAgXHJcbiAgICB0cnkge1xyXG4gICAgICBjb25zdCByZXNwb25zZSA9IGF3YWl0IGZldGNoKGAke01BSU5fQVBJX1VSTH0vYXBpL2FwcG9pbnRtZW50c2AsIHtcclxuICAgICAgICBoZWFkZXJzOiB7XHJcbiAgICAgICAgICAnQXV0aG9yaXphdGlvbic6IGBCZWFyZXIgJHtsb2NhbFN0b3JhZ2UuZ2V0SXRlbSgndG9rZW4nKSB8fCAnJ31gXHJcbiAgICAgICAgfVxyXG4gICAgICB9KTtcclxuICAgICAgXHJcbiAgICAgIGlmIChyZXNwb25zZS5vaykge1xyXG4gICAgICAgIGNvbnN0IGRhdGEgPSBhd2FpdCByZXNwb25zZS5qc29uKCk7XHJcbiAgICAgICAgY29uc3QgYXBwb2ludG1lbnRzID0gKGRhdGEuYXBwb2ludG1lbnRzIHx8IGRhdGEgfHwgW10pXHJcbiAgICAgICAgICAuZmlsdGVyKChhcHQ6IGFueSkgPT4gXHJcbiAgICAgICAgICAgIGFwdC5kb2N0b3JJZCA9PT0gdXNlci5pZCAmJiBcclxuICAgICAgICAgICAgKGFwdC5zdGF0dXMgPT09ICdhc3NpZ25lZCcgfHwgYXB0LnN0YXR1cyA9PT0gJ3BlbmRpbmcnKVxyXG4gICAgICAgICAgKVxyXG4gICAgICAgICAgLm1hcCgoYXB0OiBhbnkpID0+ICh7XHJcbiAgICAgICAgICAgIGlkOiBhcHQuaWQsXHJcbiAgICAgICAgICAgIHBhdGllbnRJZDogYXB0LnBhdGllbnRJZCB8fCBhcHQudXNlcj8uaWQsXHJcbiAgICAgICAgICAgIHBhdGllbnROYW1lOiBhcHQudXNlcj8ubmFtZSB8fCBhcHQucGF0aWVudE5hbWUgfHwgJ1Vua25vd24nLFxyXG4gICAgICAgICAgICBwYXRpZW50RW1haWw6IGFwdC51c2VyPy5lbWFpbCB8fCBhcHQucGF0aWVudEVtYWlsIHx8ICcnLFxyXG4gICAgICAgICAgICByZXF1ZXN0ZWREYXRlOiBhcHQuZGF0ZSB8fCBhcHQucmVxdWVzdGVkRGF0ZSxcclxuICAgICAgICAgICAgcHJlZmVycmVkVGltZTogYXB0LnByZWZlcnJlZFRpbWUsXHJcbiAgICAgICAgICAgIHJlYXNvbjogYXB0LnJlYXNvbiB8fCBhcHQuc3ltcHRvbXM/LmpvaW4oJywgJykgfHwgJ0NvbnN1bHRhdGlvbicsXHJcbiAgICAgICAgICAgIHN5bXB0b21zOiBhcHQuc3ltcHRvbXMgfHwgW10sXHJcbiAgICAgICAgICAgIHVyZ2VuY3k6IGFwdC51cmdlbmN5IHx8ICdtZWRpdW0nLFxyXG4gICAgICAgICAgICBzdGF0dXM6IGFwdC5zdGF0dXMsXHJcbiAgICAgICAgICAgIGFzc2lnbmVkRGF0ZVRpbWU6IGFwdC5hc3NpZ25lZERhdGVUaW1lLFxyXG4gICAgICAgICAgICBub3RlczogYXB0Lm5vdGVzLFxyXG4gICAgICAgICAgICBjcmVhdGVkQXQ6IGFwdC5jcmVhdGVkQXRcclxuICAgICAgICAgIH0pKTtcclxuICAgICAgICBzZXRQZW5kaW5nQXBwb2ludG1lbnRzKGFwcG9pbnRtZW50cyk7XHJcbiAgICAgIH1cclxuICAgIH0gY2F0Y2ggKGVycikge1xyXG4gICAgICBjb25zb2xlLmVycm9yKCdFcnJvciBsb2FkaW5nIGFwcG9pbnRtZW50czonLCBlcnIpO1xyXG4gICAgfVxyXG4gIH0sIFt1c2VyPy5pZF0pO1xyXG5cclxuICB1c2VFZmZlY3QoKCkgPT4ge1xyXG4gICAgbG9hZEF2YWlsYWJpbGl0eSgpO1xyXG4gICAgbG9hZFBlbmRpbmdBcHBvaW50bWVudHMoKTtcclxuICB9LCBbbG9hZEF2YWlsYWJpbGl0eSwgbG9hZFBlbmRpbmdBcHBvaW50bWVudHNdKTtcclxuXHJcbiAgLy8gU2F2ZSBhdmFpbGFiaWxpdHkgdG8gR0NTXHJcbiAgY29uc3Qgc2F2ZUF2YWlsYWJpbGl0eSA9IGFzeW5jICgpID0+IHtcclxuICAgIHRyeSB7XHJcbiAgICAgIHNldFNhdmluZyh0cnVlKTtcclxuICAgICAgc2V0RXJyb3IobnVsbCk7XHJcbiAgICAgIFxyXG4gICAgICBjb25zdCByZXNwb25zZSA9IGF3YWl0IGZldGNoKGAke0FQSV9VUkx9L2FwaS9zdG9yYWdlL3dyaXRlYCwge1xyXG4gICAgICAgIG1ldGhvZDogJ1BPU1QnLFxyXG4gICAgICAgIGhlYWRlcnM6IHtcclxuICAgICAgICAgICdDb250ZW50LVR5cGUnOiAnYXBwbGljYXRpb24vanNvbicsXHJcbiAgICAgICAgICAnQXV0aG9yaXphdGlvbic6IGBCZWFyZXIgJHtsb2NhbFN0b3JhZ2UuZ2V0SXRlbSgndG9rZW4nKSB8fCAnJ31gXHJcbiAgICAgICAgfSxcclxuICAgICAgICBib2R5OiBKU09OLnN0cmluZ2lmeSh7XHJcbiAgICAgICAgICBidWNrZXQ6ICdjcmVkZW50aWFscycsXHJcbiAgICAgICAgICBwYXRoOiBgZG9jdG9ycy8ke3VzZXI/LmlkfS9hdmFpbGFiaWxpdHkuanNvbmAsXHJcbiAgICAgICAgICBkYXRhOiBhdmFpbGFiaWxpdHlcclxuICAgICAgICB9KVxyXG4gICAgICB9KTtcclxuICAgICAgXHJcbiAgICAgIGlmICghcmVzcG9uc2Uub2spIHtcclxuICAgICAgICB0aHJvdyBuZXcgRXJyb3IoJ0ZhaWxlZCB0byBzYXZlIGF2YWlsYWJpbGl0eScpO1xyXG4gICAgICB9XHJcbiAgICAgIFxyXG4gICAgICBzZXRTdWNjZXNzTWVzc2FnZSgnQXZhaWxhYmlsaXR5IHNhdmVkIHN1Y2Nlc3NmdWxseSEnKTtcclxuICAgICAgc2V0VGltZW91dCgoKSA9PiBzZXRTdWNjZXNzTWVzc2FnZShudWxsKSwgMzAwMCk7XHJcbiAgICB9IGNhdGNoIChlcnIpIHtcclxuICAgICAgY29uc29sZS5lcnJvcignRXJyb3Igc2F2aW5nIGF2YWlsYWJpbGl0eTonLCBlcnIpO1xyXG4gICAgICBzZXRFcnJvcignRmFpbGVkIHRvIHNhdmUgYXZhaWxhYmlsaXR5IHNldHRpbmdzJyk7XHJcbiAgICB9IGZpbmFsbHkge1xyXG4gICAgICBzZXRTYXZpbmcoZmFsc2UpO1xyXG4gICAgfVxyXG4gIH07XHJcblxyXG4gIC8vIEFkZCB0aW1lIHNsb3RcclxuICBjb25zdCBhZGRUaW1lU2xvdCA9ICgpID0+IHtcclxuICAgIGNvbnN0IHNsb3Q6IFRpbWVTbG90ID0ge1xyXG4gICAgICBpZDogYHNsb3RfJHtEYXRlLm5vdygpfWAsXHJcbiAgICAgIGRheU9mV2VlazogbmV3U2xvdC5kYXlPZldlZWssXHJcbiAgICAgIHN0YXJ0VGltZTogbmV3U2xvdC5zdGFydFRpbWUsXHJcbiAgICAgIGVuZFRpbWU6IG5ld1Nsb3QuZW5kVGltZSxcclxuICAgICAgaXNSZWN1cnJpbmc6IG5ld1Nsb3QuaXNSZWN1cnJpbmdcclxuICAgIH07XHJcbiAgICBcclxuICAgIHNldEF2YWlsYWJpbGl0eShwcmV2ID0+ICh7XHJcbiAgICAgIC4uLnByZXYsXHJcbiAgICAgIHdlZWtseVNjaGVkdWxlOiBbLi4ucHJldi53ZWVrbHlTY2hlZHVsZSwgc2xvdF1cclxuICAgIH0pKTtcclxuICAgIHNldFNob3dUaW1lU2xvdE1vZGFsKGZhbHNlKTtcclxuICAgIHNldE5ld1Nsb3QoeyBkYXlPZldlZWs6IDEsIHN0YXJ0VGltZTogJzA5OjAwJywgZW5kVGltZTogJzE3OjAwJywgaXNSZWN1cnJpbmc6IHRydWUgfSk7XHJcbiAgfTtcclxuXHJcbiAgLy8gUmVtb3ZlIHRpbWUgc2xvdFxyXG4gIGNvbnN0IHJlbW92ZVRpbWVTbG90ID0gKHNsb3RJZDogc3RyaW5nKSA9PiB7XHJcbiAgICBzZXRBdmFpbGFiaWxpdHkocHJldiA9PiAoe1xyXG4gICAgICAuLi5wcmV2LFxyXG4gICAgICB3ZWVrbHlTY2hlZHVsZTogcHJldi53ZWVrbHlTY2hlZHVsZS5maWx0ZXIocyA9PiBzLmlkICE9PSBzbG90SWQpXHJcbiAgICB9KSk7XHJcbiAgfTtcclxuXHJcbiAgLy8gQXBwcm92ZSBhcHBvaW50bWVudFxyXG4gIGNvbnN0IGhhbmRsZUFwcHJvdmVBcHBvaW50bWVudCA9IGFzeW5jICgpID0+IHtcclxuICAgIGlmICghc2VsZWN0ZWRBcHBvaW50bWVudCB8fCAhYXBwcm92YWxEYXRhLmRhdGUgfHwgIWFwcHJvdmFsRGF0YS50aW1lKSB7XHJcbiAgICAgIHNldEVycm9yKCdQbGVhc2Ugc2VsZWN0IGEgZGF0ZSBhbmQgdGltZScpO1xyXG4gICAgICByZXR1cm47XHJcbiAgICB9XHJcbiAgICBcclxuICAgIHRyeSB7XHJcbiAgICAgIHNldFNhdmluZyh0cnVlKTtcclxuICAgICAgXHJcbiAgICAgIGNvbnN0IGNvbmZpcm1lZERhdGVUaW1lID0gYCR7YXBwcm92YWxEYXRhLmRhdGV9VCR7YXBwcm92YWxEYXRhLnRpbWV9OjAwYDtcclxuICAgICAgXHJcbiAgICAgIGNvbnN0IHJlc3BvbnNlID0gYXdhaXQgZmV0Y2goYCR7TUFJTl9BUElfVVJMfS9hcGkvYXBwb2ludG1lbnRzLyR7c2VsZWN0ZWRBcHBvaW50bWVudC5pZH1gLCB7XHJcbiAgICAgICAgbWV0aG9kOiAnUFVUJyxcclxuICAgICAgICBoZWFkZXJzOiB7XHJcbiAgICAgICAgICAnQ29udGVudC1UeXBlJzogJ2FwcGxpY2F0aW9uL2pzb24nLFxyXG4gICAgICAgICAgJ0F1dGhvcml6YXRpb24nOiBgQmVhcmVyICR7bG9jYWxTdG9yYWdlLmdldEl0ZW0oJ3Rva2VuJykgfHwgJyd9YFxyXG4gICAgICAgIH0sXHJcbiAgICAgICAgYm9keTogSlNPTi5zdHJpbmdpZnkoe1xyXG4gICAgICAgICAgc3RhdHVzOiAnY29uZmlybWVkJyxcclxuICAgICAgICAgIGNvbmZpcm1lZEF0OiBuZXcgRGF0ZSgpLnRvSVNPU3RyaW5nKCksXHJcbiAgICAgICAgICBhc3NpZ25lZERhdGVUaW1lOiBjb25maXJtZWREYXRlVGltZSxcclxuICAgICAgICAgIGRhdGU6IG5ldyBEYXRlKGNvbmZpcm1lZERhdGVUaW1lKSxcclxuICAgICAgICAgIGRvY3Rvck5vdGVzOiBhcHByb3ZhbERhdGEubm90ZXMsXHJcbiAgICAgICAgICBjb25maXJtZWRCeURvY3RvcjogdXNlcj8uaWRcclxuICAgICAgICB9KVxyXG4gICAgICB9KTtcclxuICAgICAgXHJcbiAgICAgIGlmICghcmVzcG9uc2Uub2spIHtcclxuICAgICAgICB0aHJvdyBuZXcgRXJyb3IoJ0ZhaWxlZCB0byBjb25maXJtIGFwcG9pbnRtZW50Jyk7XHJcbiAgICAgIH1cclxuICAgICAgXHJcbiAgICAgIHNldFN1Y2Nlc3NNZXNzYWdlKCdBcHBvaW50bWVudCBjb25maXJtZWQgc3VjY2Vzc2Z1bGx5IScpO1xyXG4gICAgICBzZXRTaG93QXBwcm92ZU1vZGFsKGZhbHNlKTtcclxuICAgICAgc2V0U2VsZWN0ZWRBcHBvaW50bWVudChudWxsKTtcclxuICAgICAgc2V0QXBwcm92YWxEYXRhKHsgZGF0ZTogJycsIHRpbWU6ICcnLCBub3RlczogJycgfSk7XHJcbiAgICAgIGxvYWRQZW5kaW5nQXBwb2ludG1lbnRzKCk7XHJcbiAgICAgIFxyXG4gICAgICBzZXRUaW1lb3V0KCgpID0+IHNldFN1Y2Nlc3NNZXNzYWdlKG51bGwpLCAzMDAwKTtcclxuICAgIH0gY2F0Y2ggKGVycikge1xyXG4gICAgICBjb25zb2xlLmVycm9yKCdFcnJvciBjb25maXJtaW5nIGFwcG9pbnRtZW50OicsIGVycik7XHJcbiAgICAgIHNldEVycm9yKCdGYWlsZWQgdG8gY29uZmlybSBhcHBvaW50bWVudCcpO1xyXG4gICAgfSBmaW5hbGx5IHtcclxuICAgICAgc2V0U2F2aW5nKGZhbHNlKTtcclxuICAgIH1cclxuICB9O1xyXG5cclxuICAvLyBSZWplY3QgYXBwb2ludG1lbnRcclxuICBjb25zdCBoYW5kbGVSZWplY3RBcHBvaW50bWVudCA9IGFzeW5jIChhcHBvaW50bWVudElkOiBzdHJpbmcpID0+IHtcclxuICAgIGNvbnN0IHJlYXNvbiA9IHByb21wdCgnUGxlYXNlIGVudGVyIHJlYXNvbiBmb3IgcmVqZWN0aW9uOicpO1xyXG4gICAgaWYgKCFyZWFzb24pIHJldHVybjtcclxuICAgIFxyXG4gICAgdHJ5IHtcclxuICAgICAgY29uc3QgcmVzcG9uc2UgPSBhd2FpdCBmZXRjaChgJHtNQUlOX0FQSV9VUkx9L2FwaS9hcHBvaW50bWVudHMvJHthcHBvaW50bWVudElkfWAsIHtcclxuICAgICAgICBtZXRob2Q6ICdQVVQnLFxyXG4gICAgICAgIGhlYWRlcnM6IHtcclxuICAgICAgICAgICdDb250ZW50LVR5cGUnOiAnYXBwbGljYXRpb24vanNvbicsXHJcbiAgICAgICAgICAnQXV0aG9yaXphdGlvbic6IGBCZWFyZXIgJHtsb2NhbFN0b3JhZ2UuZ2V0SXRlbSgndG9rZW4nKSB8fCAnJ31gXHJcbiAgICAgICAgfSxcclxuICAgICAgICBib2R5OiBKU09OLnN0cmluZ2lmeSh7XHJcbiAgICAgICAgICBzdGF0dXM6ICdyZWplY3RlZCcsXHJcbiAgICAgICAgICByZWplY3RlZEF0OiBuZXcgRGF0ZSgpLnRvSVNPU3RyaW5nKCksXHJcbiAgICAgICAgICByZWplY3Rpb25SZWFzb246IHJlYXNvbixcclxuICAgICAgICAgIHJlamVjdGVkQnlEb2N0b3I6IHVzZXI/LmlkXHJcbiAgICAgICAgfSlcclxuICAgICAgfSk7XHJcbiAgICAgIFxyXG4gICAgICBpZiAoIXJlc3BvbnNlLm9rKSB7XHJcbiAgICAgICAgdGhyb3cgbmV3IEVycm9yKCdGYWlsZWQgdG8gcmVqZWN0IGFwcG9pbnRtZW50Jyk7XHJcbiAgICAgIH1cclxuICAgICAgXHJcbiAgICAgIHNldFN1Y2Nlc3NNZXNzYWdlKCdBcHBvaW50bWVudCByZWplY3RlZCcpO1xyXG4gICAgICBsb2FkUGVuZGluZ0FwcG9pbnRtZW50cygpO1xyXG4gICAgICBzZXRUaW1lb3V0KCgpID0+IHNldFN1Y2Nlc3NNZXNzYWdlKG51bGwpLCAzMDAwKTtcclxuICAgIH0gY2F0Y2ggKGVycikge1xyXG4gICAgICBjb25zb2xlLmVycm9yKCdFcnJvciByZWplY3RpbmcgYXBwb2ludG1lbnQ6JywgZXJyKTtcclxuICAgICAgc2V0RXJyb3IoJ0ZhaWxlZCB0byByZWplY3QgYXBwb2ludG1lbnQnKTtcclxuICAgIH1cclxuICB9O1xyXG5cclxuICAvLyBHZXQgYXZhaWxhYmxlIHRpbWUgc2xvdHMgZm9yIGEgZGF0ZVxyXG4gIGNvbnN0IGdldEF2YWlsYWJsZVRpbWVTbG90c0ZvckRhdGUgPSAoZGF0ZVN0cjogc3RyaW5nKSA9PiB7XHJcbiAgICBjb25zdCBkYXRlID0gbmV3IERhdGUoZGF0ZVN0cik7XHJcbiAgICBjb25zdCBkYXlPZldlZWsgPSBkYXRlLmdldERheSgpO1xyXG4gICAgXHJcbiAgICAvLyBHZXQgc2xvdHMgZm9yIHRoaXMgZGF5IG9mIHdlZWtcclxuICAgIGNvbnN0IGRheVNsb3RzID0gYXZhaWxhYmlsaXR5LndlZWtseVNjaGVkdWxlLmZpbHRlcihzID0+IHMuZGF5T2ZXZWVrID09PSBkYXlPZldlZWspO1xyXG4gICAgXHJcbiAgICAvLyBDaGVjayBpZiB0aGlzIGRhdGUgaXMgYW4gZXhjZXB0aW9uXHJcbiAgICBjb25zdCBleGNlcHRpb24gPSBhdmFpbGFiaWxpdHkuZXhjZXB0aW9ucy5maW5kKGUgPT4gZS5kYXRlID09PSBkYXRlU3RyKTtcclxuICAgIGlmIChleGNlcHRpb24gJiYgIWV4Y2VwdGlvbi5pc0F2YWlsYWJsZSkge1xyXG4gICAgICByZXR1cm4gW107XHJcbiAgICB9XHJcbiAgICBcclxuICAgIC8vIEdlbmVyYXRlIHRpbWUgc2xvdHMgYmFzZWQgb24gY29uc3VsdGF0aW9uIGR1cmF0aW9uXHJcbiAgICBjb25zdCBzbG90czogc3RyaW5nW10gPSBbXTtcclxuICAgIGRheVNsb3RzLmZvckVhY2goc2xvdCA9PiB7XHJcbiAgICAgIGxldCBjdXJyZW50VGltZSA9IHNsb3Quc3RhcnRUaW1lO1xyXG4gICAgICB3aGlsZSAoY3VycmVudFRpbWUgPCBzbG90LmVuZFRpbWUpIHtcclxuICAgICAgICBzbG90cy5wdXNoKGN1cnJlbnRUaW1lKTtcclxuICAgICAgICAvLyBBZGQgZHVyYXRpb24gKyBicmVha1xyXG4gICAgICAgIGNvbnN0IFtob3VycywgbWluc10gPSBjdXJyZW50VGltZS5zcGxpdCgnOicpLm1hcChOdW1iZXIpO1xyXG4gICAgICAgIGNvbnN0IHRvdGFsTWlucyA9IGhvdXJzICogNjAgKyBtaW5zICsgYXZhaWxhYmlsaXR5LmNvbnN1bHRhdGlvbkR1cmF0aW9uICsgYXZhaWxhYmlsaXR5LmJyZWFrQmV0d2VlbkNvbnN1bHRhdGlvbnM7XHJcbiAgICAgICAgY29uc3QgbmV3SG91cnMgPSBNYXRoLmZsb29yKHRvdGFsTWlucyAvIDYwKTtcclxuICAgICAgICBjb25zdCBuZXdNaW5zID0gdG90YWxNaW5zICUgNjA7XHJcbiAgICAgICAgY3VycmVudFRpbWUgPSBgJHtuZXdIb3Vycy50b1N0cmluZygpLnBhZFN0YXJ0KDIsICcwJyl9OiR7bmV3TWlucy50b1N0cmluZygpLnBhZFN0YXJ0KDIsICcwJyl9YDtcclxuICAgICAgfVxyXG4gICAgfSk7XHJcbiAgICBcclxuICAgIHJldHVybiBzbG90cztcclxuICB9O1xyXG5cclxuICBpZiAoYXV0aExvYWRpbmcgfHwgbG9hZGluZykge1xyXG4gICAgcmV0dXJuIChcclxuICAgICAgPGRpdiBjbGFzc05hbWU9XCJtaW4taC1zY3JlZW4gYmctZ3JheS01MCBmbGV4IGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWNlbnRlclwiPlxyXG4gICAgICAgIDxkaXYgY2xhc3NOYW1lPVwidGV4dC1jZW50ZXJcIj5cclxuICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiYW5pbWF0ZS1zcGluIHJvdW5kZWQtZnVsbCBoLTEyIHctMTIgYm9yZGVyLWItMiBib3JkZXItZW1lcmFsZC02MDAgbXgtYXV0b1wiPjwvZGl2PlxyXG4gICAgICAgICAgPHAgY2xhc3NOYW1lPVwibXQtNCB0ZXh0LWdyYXktNjAwXCI+TG9hZGluZy4uLjwvcD5cclxuICAgICAgICA8L2Rpdj5cclxuICAgICAgPC9kaXY+XHJcbiAgICApO1xyXG4gIH1cclxuXHJcbiAgcmV0dXJuIChcclxuICAgIDxkaXYgY2xhc3NOYW1lPVwibWluLWgtc2NyZWVuIGJnLWdyYXktNTAgcC02XCI+XHJcbiAgICAgIDxkaXYgY2xhc3NOYW1lPVwibWF4LXctNXhsIG14LWF1dG9cIj5cclxuICAgICAgICB7LyogSGVhZGVyICovfVxyXG4gICAgICAgIDxkaXYgY2xhc3NOYW1lPVwibWItNlwiPlxyXG4gICAgICAgICAgPGgxIGNsYXNzTmFtZT1cInRleHQtMnhsIGZvbnQtYm9sZCB0ZXh0LWdyYXktOTAwXCI+QXZhaWxhYmlsaXR5ICYgQXBwb2ludG1lbnRzPC9oMT5cclxuICAgICAgICAgIDxwIGNsYXNzTmFtZT1cInRleHQtZ3JheS02MDAgbXQtMVwiPk1hbmFnZSB5b3VyIHNjaGVkdWxlIGFuZCBhcHByb3ZlIHBhdGllbnQgYXBwb2ludG1lbnRzPC9wPlxyXG4gICAgICAgIDwvZGl2PlxyXG5cclxuICAgICAgICB7LyogTWVzc2FnZXMgKi99XHJcbiAgICAgICAge2Vycm9yICYmIChcclxuICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwibWItNCBwLTQgYmctcmVkLTUwIGJvcmRlciBib3JkZXItcmVkLTIwMCByb3VuZGVkLWxnIHRleHQtcmVkLTcwMFwiPlxyXG4gICAgICAgICAgICB7ZXJyb3J9XHJcbiAgICAgICAgICAgIDxidXR0b24gb25DbGljaz17KCkgPT4gc2V0RXJyb3IobnVsbCl9IGNsYXNzTmFtZT1cIm1sLTIgdGV4dC1yZWQtNTAwXCI+w5c8L2J1dHRvbj5cclxuICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICl9XHJcbiAgICAgICAge3N1Y2Nlc3NNZXNzYWdlICYmIChcclxuICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwibWItNCBwLTQgYmctZ3JlZW4tNTAgYm9yZGVyIGJvcmRlci1ncmVlbi0yMDAgcm91bmRlZC1sZyB0ZXh0LWdyZWVuLTcwMFwiPlxyXG4gICAgICAgICAgICB7c3VjY2Vzc01lc3NhZ2V9XHJcbiAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICApfVxyXG5cclxuICAgICAgICB7LyogVGFicyAqL31cclxuICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggc3BhY2UteC0yIG1iLTZcIj5cclxuICAgICAgICAgIDxidXR0b25cclxuICAgICAgICAgICAgb25DbGljaz17KCkgPT4gc2V0QWN0aXZlVGFiKCdzY2hlZHVsZScpfVxyXG4gICAgICAgICAgICBjbGFzc05hbWU9e2BweC02IHB5LTMgcm91bmRlZC1sZyBmb250LW1lZGl1bSB0cmFuc2l0aW9uLWNvbG9ycyAke1xyXG4gICAgICAgICAgICAgIGFjdGl2ZVRhYiA9PT0gJ3NjaGVkdWxlJ1xyXG4gICAgICAgICAgICAgICAgPyAnYmctZW1lcmFsZC02MDAgdGV4dC13aGl0ZSdcclxuICAgICAgICAgICAgICAgIDogJ2JnLXdoaXRlIHRleHQtZ3JheS02MDAgaG92ZXI6YmctZ3JheS0xMDAgYm9yZGVyIGJvcmRlci1ncmF5LTIwMCdcclxuICAgICAgICAgICAgfWB9XHJcbiAgICAgICAgICA+XHJcbiAgICAgICAgICAgIE15IFNjaGVkdWxlXHJcbiAgICAgICAgICA8L2J1dHRvbj5cclxuICAgICAgICAgIDxidXR0b25cclxuICAgICAgICAgICAgb25DbGljaz17KCkgPT4gc2V0QWN0aXZlVGFiKCdhcHBvaW50bWVudHMnKX1cclxuICAgICAgICAgICAgY2xhc3NOYW1lPXtgcHgtNiBweS0zIHJvdW5kZWQtbGcgZm9udC1tZWRpdW0gdHJhbnNpdGlvbi1jb2xvcnMgJHtcclxuICAgICAgICAgICAgICBhY3RpdmVUYWIgPT09ICdhcHBvaW50bWVudHMnXHJcbiAgICAgICAgICAgICAgICA/ICdiZy1lbWVyYWxkLTYwMCB0ZXh0LXdoaXRlJ1xyXG4gICAgICAgICAgICAgICAgOiAnYmctd2hpdGUgdGV4dC1ncmF5LTYwMCBob3ZlcjpiZy1ncmF5LTEwMCBib3JkZXIgYm9yZGVyLWdyYXktMjAwJ1xyXG4gICAgICAgICAgICB9YH1cclxuICAgICAgICAgID5cclxuICAgICAgICAgICAgUGVuZGluZyBBcHBvaW50bWVudHNcclxuICAgICAgICAgICAge3BlbmRpbmdBcHBvaW50bWVudHMubGVuZ3RoID4gMCAmJiAoXHJcbiAgICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPVwibWwtMiBweC0yIHB5LTAuNSBiZy1yZWQtNTAwIHRleHQtd2hpdGUgdGV4dC14cyByb3VuZGVkLWZ1bGxcIj5cclxuICAgICAgICAgICAgICAgIHtwZW5kaW5nQXBwb2ludG1lbnRzLmxlbmd0aH1cclxuICAgICAgICAgICAgICA8L3NwYW4+XHJcbiAgICAgICAgICAgICl9XHJcbiAgICAgICAgICA8L2J1dHRvbj5cclxuICAgICAgICA8L2Rpdj5cclxuXHJcbiAgICAgICAgey8qIFNjaGVkdWxlIFRhYiAqL31cclxuICAgICAgICB7YWN0aXZlVGFiID09PSAnc2NoZWR1bGUnICYmIChcclxuICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiYmctd2hpdGUgcm91bmRlZC14bCBzaGFkb3ctc20gYm9yZGVyIGJvcmRlci1ncmF5LTIwMCBwLTZcIj5cclxuICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWJldHdlZW4gbWItNlwiPlxyXG4gICAgICAgICAgICAgIDxoMiBjbGFzc05hbWU9XCJ0ZXh0LWxnIGZvbnQtc2VtaWJvbGQgdGV4dC1ncmF5LTkwMFwiPldlZWtseSBTY2hlZHVsZTwvaDI+XHJcbiAgICAgICAgICAgICAgPGJ1dHRvblxyXG4gICAgICAgICAgICAgICAgb25DbGljaz17KCkgPT4gc2V0U2hvd1RpbWVTbG90TW9kYWwodHJ1ZSl9XHJcbiAgICAgICAgICAgICAgICBjbGFzc05hbWU9XCJweC00IHB5LTIgYmctZW1lcmFsZC02MDAgdGV4dC13aGl0ZSByb3VuZGVkLWxnIGhvdmVyOmJnLWVtZXJhbGQtNzAwIHRyYW5zaXRpb24tY29sb3JzXCJcclxuICAgICAgICAgICAgICA+XHJcbiAgICAgICAgICAgICAgICArIEFkZCBUaW1lIFNsb3RcclxuICAgICAgICAgICAgICA8L2J1dHRvbj5cclxuICAgICAgICAgICAgPC9kaXY+XHJcblxyXG4gICAgICAgICAgICB7LyogQ29uc3VsdGF0aW9uIFNldHRpbmdzICovfVxyXG4gICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImdyaWQgZ3JpZC1jb2xzLTEgc206Z3JpZC1jb2xzLTIgZ2FwLTQgbWItNiBwLTQgYmctZ3JheS01MCByb3VuZGVkLWxnXCI+XHJcbiAgICAgICAgICAgICAgPGRpdj5cclxuICAgICAgICAgICAgICAgIDxsYWJlbCBjbGFzc05hbWU9XCJibG9jayB0ZXh0LXNtIGZvbnQtbWVkaXVtIHRleHQtZ3JheS03MDAgbWItMVwiPlxyXG4gICAgICAgICAgICAgICAgICBDb25zdWx0YXRpb24gRHVyYXRpb24gKG1pbnV0ZXMpXHJcbiAgICAgICAgICAgICAgICA8L2xhYmVsPlxyXG4gICAgICAgICAgICAgICAgPGlucHV0XHJcbiAgICAgICAgICAgICAgICAgIHR5cGU9XCJudW1iZXJcIlxyXG4gICAgICAgICAgICAgICAgICB2YWx1ZT17YXZhaWxhYmlsaXR5LmNvbnN1bHRhdGlvbkR1cmF0aW9ufVxyXG4gICAgICAgICAgICAgICAgICBvbkNoYW5nZT17KGUpID0+IHNldEF2YWlsYWJpbGl0eShwcmV2ID0+ICh7IC4uLnByZXYsIGNvbnN1bHRhdGlvbkR1cmF0aW9uOiBwYXJzZUludChlLnRhcmdldC52YWx1ZSkgfHwgMzAgfSkpfVxyXG4gICAgICAgICAgICAgICAgICBtaW49ezE1fVxyXG4gICAgICAgICAgICAgICAgICBtYXg9ezEyMH1cclxuICAgICAgICAgICAgICAgICAgc3RlcD17NX1cclxuICAgICAgICAgICAgICAgICAgY2xhc3NOYW1lPVwidy1mdWxsIHB4LTMgcHktMiBib3JkZXIgYm9yZGVyLWdyYXktMzAwIHJvdW5kZWQtbGcgZm9jdXM6cmluZy0yIGZvY3VzOnJpbmctZW1lcmFsZC01MDBcIlxyXG4gICAgICAgICAgICAgICAgLz5cclxuICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgICA8ZGl2PlxyXG4gICAgICAgICAgICAgICAgPGxhYmVsIGNsYXNzTmFtZT1cImJsb2NrIHRleHQtc20gZm9udC1tZWRpdW0gdGV4dC1ncmF5LTcwMCBtYi0xXCI+XHJcbiAgICAgICAgICAgICAgICAgIEJyZWFrIEJldHdlZW4gQ29uc3VsdGF0aW9ucyAobWludXRlcylcclxuICAgICAgICAgICAgICAgIDwvbGFiZWw+XHJcbiAgICAgICAgICAgICAgICA8aW5wdXRcclxuICAgICAgICAgICAgICAgICAgdHlwZT1cIm51bWJlclwiXHJcbiAgICAgICAgICAgICAgICAgIHZhbHVlPXthdmFpbGFiaWxpdHkuYnJlYWtCZXR3ZWVuQ29uc3VsdGF0aW9uc31cclxuICAgICAgICAgICAgICAgICAgb25DaGFuZ2U9eyhlKSA9PiBzZXRBdmFpbGFiaWxpdHkocHJldiA9PiAoeyAuLi5wcmV2LCBicmVha0JldHdlZW5Db25zdWx0YXRpb25zOiBwYXJzZUludChlLnRhcmdldC52YWx1ZSkgfHwgNSB9KSl9XHJcbiAgICAgICAgICAgICAgICAgIG1pbj17MH1cclxuICAgICAgICAgICAgICAgICAgbWF4PXs2MH1cclxuICAgICAgICAgICAgICAgICAgc3RlcD17NX1cclxuICAgICAgICAgICAgICAgICAgY2xhc3NOYW1lPVwidy1mdWxsIHB4LTMgcHktMiBib3JkZXIgYm9yZGVyLWdyYXktMzAwIHJvdW5kZWQtbGcgZm9jdXM6cmluZy0yIGZvY3VzOnJpbmctZW1lcmFsZC01MDBcIlxyXG4gICAgICAgICAgICAgICAgLz5cclxuICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgPC9kaXY+XHJcblxyXG4gICAgICAgICAgICB7LyogVGltZSBTbG90cyBieSBEYXkgKi99XHJcbiAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwic3BhY2UteS00XCI+XHJcbiAgICAgICAgICAgICAge0RBWVNfT0ZfV0VFSy5tYXAoKGRheSwgZGF5SW5kZXgpID0+IHtcclxuICAgICAgICAgICAgICAgIGNvbnN0IGRheVNsb3RzID0gYXZhaWxhYmlsaXR5LndlZWtseVNjaGVkdWxlLmZpbHRlcihzID0+IHMuZGF5T2ZXZWVrID09PSBkYXlJbmRleCk7XHJcbiAgICAgICAgICAgICAgICByZXR1cm4gKFxyXG4gICAgICAgICAgICAgICAgICA8ZGl2IGtleT17ZGF5fSBjbGFzc05hbWU9XCJib3JkZXIgYm9yZGVyLWdyYXktMjAwIHJvdW5kZWQtbGcgcC00XCI+XHJcbiAgICAgICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWJldHdlZW4gbWItMlwiPlxyXG4gICAgICAgICAgICAgICAgICAgICAgPGgzIGNsYXNzTmFtZT1cImZvbnQtbWVkaXVtIHRleHQtZ3JheS05MDBcIj57ZGF5fTwvaDM+XHJcbiAgICAgICAgICAgICAgICAgICAgICB7ZGF5U2xvdHMubGVuZ3RoID09PSAwICYmIChcclxuICAgICAgICAgICAgICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPVwidGV4dC1zbSB0ZXh0LWdyYXktNDAwXCI+Tm8gc2xvdHM8L3NwYW4+XHJcbiAgICAgICAgICAgICAgICAgICAgICApfVxyXG4gICAgICAgICAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBmbGV4LXdyYXAgZ2FwLTJcIj5cclxuICAgICAgICAgICAgICAgICAgICAgIHtkYXlTbG90cy5tYXAoc2xvdCA9PiAoXHJcbiAgICAgICAgICAgICAgICAgICAgICAgIDxkaXYgXHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAga2V5PXtzbG90LmlkfVxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgIGNsYXNzTmFtZT1cImZsZXggaXRlbXMtY2VudGVyIGdhcC0yIHB4LTMgcHktMS41IGJnLWVtZXJhbGQtNTAgdGV4dC1lbWVyYWxkLTcwMCByb3VuZGVkLWxnIHRleHQtc21cIlxyXG4gICAgICAgICAgICAgICAgICAgICAgICA+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgPHNwYW4+e3Nsb3Quc3RhcnRUaW1lfSAtIHtzbG90LmVuZFRpbWV9PC9zcGFuPlxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgIDxidXR0b25cclxuICAgICAgICAgICAgICAgICAgICAgICAgICAgIG9uQ2xpY2s9eygpID0+IHJlbW92ZVRpbWVTbG90KHNsb3QuaWQpfVxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgY2xhc3NOYW1lPVwidGV4dC1lbWVyYWxkLTYwMCBob3Zlcjp0ZXh0LXJlZC02MDBcIlxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgID5cclxuICAgICAgICAgICAgICAgICAgICAgICAgICAgIMOXXHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgPC9idXR0b24+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICAgICAgICAgICAgKSl9XHJcbiAgICAgICAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICAgICAgKTtcclxuICAgICAgICAgICAgICB9KX1cclxuICAgICAgICAgICAgPC9kaXY+XHJcblxyXG4gICAgICAgICAgICB7LyogU2F2ZSBCdXR0b24gKi99XHJcbiAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwibXQtNiBmbGV4IGp1c3RpZnktZW5kXCI+XHJcbiAgICAgICAgICAgICAgPGJ1dHRvblxyXG4gICAgICAgICAgICAgICAgb25DbGljaz17c2F2ZUF2YWlsYWJpbGl0eX1cclxuICAgICAgICAgICAgICAgIGRpc2FibGVkPXtzYXZpbmd9XHJcbiAgICAgICAgICAgICAgICBjbGFzc05hbWU9XCJweC02IHB5LTMgYmctZW1lcmFsZC02MDAgdGV4dC13aGl0ZSByb3VuZGVkLWxnIGhvdmVyOmJnLWVtZXJhbGQtNzAwIGRpc2FibGVkOm9wYWNpdHktNTAgdHJhbnNpdGlvbi1jb2xvcnNcIlxyXG4gICAgICAgICAgICAgID5cclxuICAgICAgICAgICAgICAgIHtzYXZpbmcgPyAnU2F2aW5nLi4uJyA6ICdTYXZlIFNjaGVkdWxlJ31cclxuICAgICAgICAgICAgICA8L2J1dHRvbj5cclxuICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICApfVxyXG5cclxuICAgICAgICB7LyogQXBwb2ludG1lbnRzIFRhYiAqL31cclxuICAgICAgICB7YWN0aXZlVGFiID09PSAnYXBwb2ludG1lbnRzJyAmJiAoXHJcbiAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImJnLXdoaXRlIHJvdW5kZWQteGwgc2hhZG93LXNtIGJvcmRlciBib3JkZXItZ3JheS0yMDAgcC02XCI+XHJcbiAgICAgICAgICAgIDxoMiBjbGFzc05hbWU9XCJ0ZXh0LWxnIGZvbnQtc2VtaWJvbGQgdGV4dC1ncmF5LTkwMCBtYi00XCI+UGVuZGluZyBBcHBvaW50bWVudCBSZXF1ZXN0czwvaDI+XHJcbiAgICAgICAgICAgIFxyXG4gICAgICAgICAgICB7cGVuZGluZ0FwcG9pbnRtZW50cy5sZW5ndGggPT09IDAgPyAoXHJcbiAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJ0ZXh0LWNlbnRlciBweS0xMlwiPlxyXG4gICAgICAgICAgICAgICAgPHN2ZyBjbGFzc05hbWU9XCJ3LTE2IGgtMTYgdGV4dC1ncmF5LTMwMCBteC1hdXRvIG1iLTRcIiBmaWxsPVwibm9uZVwiIHN0cm9rZT1cImN1cnJlbnRDb2xvclwiIHZpZXdCb3g9XCIwIDAgMjQgMjRcIj5cclxuICAgICAgICAgICAgICAgICAgPHBhdGggc3Ryb2tlTGluZWNhcD1cInJvdW5kXCIgc3Ryb2tlTGluZWpvaW49XCJyb3VuZFwiIHN0cm9rZVdpZHRoPXsyfSBkPVwiTTkgMTJsMiAyIDQtNG02IDJhOSA5IDAgMTEtMTggMCA5IDkgMCAwMTE4IDB6XCIgLz5cclxuICAgICAgICAgICAgICAgIDwvc3ZnPlxyXG4gICAgICAgICAgICAgICAgPGgzIGNsYXNzTmFtZT1cInRleHQtbGcgZm9udC1tZWRpdW0gdGV4dC1ncmF5LTcwMCBtYi0yXCI+Tm8gUGVuZGluZyBBcHBvaW50bWVudHM8L2gzPlxyXG4gICAgICAgICAgICAgICAgPHAgY2xhc3NOYW1lPVwidGV4dC1ncmF5LTUwMFwiPllvdSdyZSBhbGwgY2F1Z2h0IHVwISBObyBhcHBvaW50bWVudHMgd2FpdGluZyBmb3IgYXBwcm92YWwuPC9wPlxyXG4gICAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICApIDogKFxyXG4gICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwic3BhY2UteS00XCI+XHJcbiAgICAgICAgICAgICAgICB7cGVuZGluZ0FwcG9pbnRtZW50cy5tYXAoYXB0ID0+IChcclxuICAgICAgICAgICAgICAgICAgPGRpdiBcclxuICAgICAgICAgICAgICAgICAgICBrZXk9e2FwdC5pZH1cclxuICAgICAgICAgICAgICAgICAgICBjbGFzc05hbWU9XCJib3JkZXIgYm9yZGVyLWdyYXktMjAwIHJvdW5kZWQtbGcgcC00IGhvdmVyOnNoYWRvdy1tZCB0cmFuc2l0aW9uLXNoYWRvd1wiXHJcbiAgICAgICAgICAgICAgICAgID5cclxuICAgICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggZmxleC1jb2wgc206ZmxleC1yb3cgc206aXRlbXMtc3RhcnQgc206anVzdGlmeS1iZXR3ZWVuIGdhcC00XCI+XHJcbiAgICAgICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXgtMVwiPlxyXG4gICAgICAgICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggaXRlbXMtY2VudGVyIGdhcC0yIG1iLTJcIj5cclxuICAgICAgICAgICAgICAgICAgICAgICAgICA8aDMgY2xhc3NOYW1lPVwiZm9udC1zZW1pYm9sZCB0ZXh0LWdyYXktOTAwXCI+e2FwdC5wYXRpZW50TmFtZX08L2gzPlxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT17YHB4LTIgcHktMC41IHRleHQteHMgZm9udC1tZWRpdW0gcm91bmRlZC1mdWxsICR7XHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICBhcHQudXJnZW5jeSA9PT0gJ2VtZXJnZW5jeScgPyAnYmctcmVkLTEwMCB0ZXh0LXJlZC04MDAnIDpcclxuICAgICAgICAgICAgICAgICAgICAgICAgICAgIGFwdC51cmdlbmN5ID09PSAnaGlnaCcgPyAnYmctb3JhbmdlLTEwMCB0ZXh0LW9yYW5nZS04MDAnIDpcclxuICAgICAgICAgICAgICAgICAgICAgICAgICAgIGFwdC51cmdlbmN5ID09PSAnbWVkaXVtJyA/ICdiZy15ZWxsb3ctMTAwIHRleHQteWVsbG93LTgwMCcgOlxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgJ2JnLWdyZWVuLTEwMCB0ZXh0LWdyZWVuLTgwMCdcclxuICAgICAgICAgICAgICAgICAgICAgICAgICB9YH0+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICB7YXB0LnVyZ2VuY3l9XHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgPC9zcGFuPlxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT17YHB4LTIgcHktMC41IHRleHQteHMgZm9udC1tZWRpdW0gcm91bmRlZC1mdWxsICR7XHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICBhcHQuc3RhdHVzID09PSAnYXNzaWduZWQnID8gJ2JnLWJsdWUtMTAwIHRleHQtYmx1ZS04MDAnIDogJ2JnLXllbGxvdy0xMDAgdGV4dC15ZWxsb3ctODAwJ1xyXG4gICAgICAgICAgICAgICAgICAgICAgICAgIH1gfT5cclxuICAgICAgICAgICAgICAgICAgICAgICAgICAgIHthcHQuc3RhdHVzfVxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgIDwvc3Bhbj5cclxuICAgICAgICAgICAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgIDxwIGNsYXNzTmFtZT1cInRleHQtc20gdGV4dC1ncmF5LTYwMFwiPnthcHQucGF0aWVudEVtYWlsfTwvcD5cclxuICAgICAgICAgICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJtdC0yIHRleHQtc21cIj5cclxuICAgICAgICAgICAgICAgICAgICAgICAgICA8cD48c3BhbiBjbGFzc05hbWU9XCJmb250LW1lZGl1bVwiPlJlYXNvbjo8L3NwYW4+IHthcHQucmVhc29ufTwvcD5cclxuICAgICAgICAgICAgICAgICAgICAgICAgICA8cD48c3BhbiBjbGFzc05hbWU9XCJmb250LW1lZGl1bVwiPlJlcXVlc3RlZDo8L3NwYW4+IHtuZXcgRGF0ZShhcHQucmVxdWVzdGVkRGF0ZSkudG9Mb2NhbGVEYXRlU3RyaW5nKCl9PC9wPlxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgIHthcHQucHJlZmVycmVkVGltZSAmJiAoXHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICA8cD48c3BhbiBjbGFzc05hbWU9XCJmb250LW1lZGl1bVwiPlByZWZlcnJlZCBUaW1lOjwvc3Bhbj4ge2FwdC5wcmVmZXJyZWRUaW1lfTwvcD5cclxuICAgICAgICAgICAgICAgICAgICAgICAgICApfVxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgIHthcHQuYXNzaWduZWREYXRlVGltZSAmJiAoXHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICA8cCBjbGFzc05hbWU9XCJ0ZXh0LWJsdWUtNjAwXCI+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT1cImZvbnQtbWVkaXVtXCI+QXNzaWduZWQ6PC9zcGFuPiB7bmV3IERhdGUoYXB0LmFzc2lnbmVkRGF0ZVRpbWUpLnRvTG9jYWxlU3RyaW5nKCl9XHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICA8L3A+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgKX1cclxuICAgICAgICAgICAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBnYXAtMlwiPlxyXG4gICAgICAgICAgICAgICAgICAgICAgICA8YnV0dG9uXHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgb25DbGljaz17KCkgPT4ge1xyXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgc2V0U2VsZWN0ZWRBcHBvaW50bWVudChhcHQpO1xyXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgc2V0QXBwcm92YWxEYXRhKHtcclxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgZGF0ZTogYXB0LmFzc2lnbmVkRGF0ZVRpbWUgPyBhcHQuYXNzaWduZWREYXRlVGltZS5zcGxpdCgnVCcpWzBdIDogJycsXHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHRpbWU6IGFwdC5hc3NpZ25lZERhdGVUaW1lID8gYXB0LmFzc2lnbmVkRGF0ZVRpbWUuc3BsaXQoJ1QnKVsxXT8uc3Vic3RyaW5nKDAsIDUpIDogJycsXHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIG5vdGVzOiAnJ1xyXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgfSk7XHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICBzZXRTaG93QXBwcm92ZU1vZGFsKHRydWUpO1xyXG4gICAgICAgICAgICAgICAgICAgICAgICAgIH19XHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgY2xhc3NOYW1lPVwicHgtNCBweS0yIGJnLWVtZXJhbGQtNjAwIHRleHQtd2hpdGUgcm91bmRlZC1sZyBob3ZlcjpiZy1lbWVyYWxkLTcwMCB0cmFuc2l0aW9uLWNvbG9ycyB0ZXh0LXNtXCJcclxuICAgICAgICAgICAgICAgICAgICAgICAgPlxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgIEFwcHJvdmUgJiBTY2hlZHVsZVxyXG4gICAgICAgICAgICAgICAgICAgICAgICA8L2J1dHRvbj5cclxuICAgICAgICAgICAgICAgICAgICAgICAgPGJ1dHRvblxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgIG9uQ2xpY2s9eygpID0+IGhhbmRsZVJlamVjdEFwcG9pbnRtZW50KGFwdC5pZCl9XHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgY2xhc3NOYW1lPVwicHgtNCBweS0yIGJnLXJlZC0xMDAgdGV4dC1yZWQtNzAwIHJvdW5kZWQtbGcgaG92ZXI6YmctcmVkLTIwMCB0cmFuc2l0aW9uLWNvbG9ycyB0ZXh0LXNtXCJcclxuICAgICAgICAgICAgICAgICAgICAgICAgPlxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgIFJlamVjdFxyXG4gICAgICAgICAgICAgICAgICAgICAgICA8L2J1dHRvbj5cclxuICAgICAgICAgICAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgICAgICkpfVxyXG4gICAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICApfVxyXG4gICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgKX1cclxuICAgICAgPC9kaXY+XHJcblxyXG4gICAgICB7LyogQWRkIFRpbWUgU2xvdCBNb2RhbCAqL31cclxuICAgICAge3Nob3dUaW1lU2xvdE1vZGFsICYmIChcclxuICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZpeGVkIGluc2V0LTAgYmctYmxhY2sgYmctb3BhY2l0eS01MCBmbGV4IGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWNlbnRlciB6LTUwXCI+XHJcbiAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImJnLXdoaXRlIHJvdW5kZWQteGwgcC02IG1heC13LW1kIHctZnVsbCBteC00XCI+XHJcbiAgICAgICAgICAgIDxoMyBjbGFzc05hbWU9XCJ0ZXh0LXhsIGZvbnQtYm9sZCB0ZXh0LWdyYXktOTAwIG1iLTRcIj5BZGQgQXZhaWxhYmxlIFRpbWUgU2xvdDwvaDM+XHJcbiAgICAgICAgICAgIFxyXG4gICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInNwYWNlLXktNFwiPlxyXG4gICAgICAgICAgICAgIDxkaXY+XHJcbiAgICAgICAgICAgICAgICA8bGFiZWwgY2xhc3NOYW1lPVwiYmxvY2sgdGV4dC1zbSBmb250LW1lZGl1bSB0ZXh0LWdyYXktNzAwIG1iLTFcIj5EYXkgb2YgV2VlazwvbGFiZWw+XHJcbiAgICAgICAgICAgICAgICA8c2VsZWN0XHJcbiAgICAgICAgICAgICAgICAgIHZhbHVlPXtuZXdTbG90LmRheU9mV2Vla31cclxuICAgICAgICAgICAgICAgICAgb25DaGFuZ2U9eyhlKSA9PiBzZXROZXdTbG90KHsgLi4ubmV3U2xvdCwgZGF5T2ZXZWVrOiBwYXJzZUludChlLnRhcmdldC52YWx1ZSkgfSl9XHJcbiAgICAgICAgICAgICAgICAgIGNsYXNzTmFtZT1cInctZnVsbCBweC0zIHB5LTIgYm9yZGVyIGJvcmRlci1ncmF5LTMwMCByb3VuZGVkLWxnIGZvY3VzOnJpbmctMiBmb2N1czpyaW5nLWVtZXJhbGQtNTAwXCJcclxuICAgICAgICAgICAgICAgID5cclxuICAgICAgICAgICAgICAgICAge0RBWVNfT0ZfV0VFSy5tYXAoKGRheSwgaW5kZXgpID0+IChcclxuICAgICAgICAgICAgICAgICAgICA8b3B0aW9uIGtleT17ZGF5fSB2YWx1ZT17aW5kZXh9PntkYXl9PC9vcHRpb24+XHJcbiAgICAgICAgICAgICAgICAgICkpfVxyXG4gICAgICAgICAgICAgICAgPC9zZWxlY3Q+XHJcbiAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgICAgXHJcbiAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJncmlkIGdyaWQtY29scy0yIGdhcC00XCI+XHJcbiAgICAgICAgICAgICAgICA8ZGl2PlxyXG4gICAgICAgICAgICAgICAgICA8bGFiZWwgY2xhc3NOYW1lPVwiYmxvY2sgdGV4dC1zbSBmb250LW1lZGl1bSB0ZXh0LWdyYXktNzAwIG1iLTFcIj5TdGFydCBUaW1lPC9sYWJlbD5cclxuICAgICAgICAgICAgICAgICAgPGlucHV0XHJcbiAgICAgICAgICAgICAgICAgICAgdHlwZT1cInRpbWVcIlxyXG4gICAgICAgICAgICAgICAgICAgIHZhbHVlPXtuZXdTbG90LnN0YXJ0VGltZX1cclxuICAgICAgICAgICAgICAgICAgICBvbkNoYW5nZT17KGUpID0+IHNldE5ld1Nsb3QoeyAuLi5uZXdTbG90LCBzdGFydFRpbWU6IGUudGFyZ2V0LnZhbHVlIH0pfVxyXG4gICAgICAgICAgICAgICAgICAgIGNsYXNzTmFtZT1cInctZnVsbCBweC0zIHB5LTIgYm9yZGVyIGJvcmRlci1ncmF5LTMwMCByb3VuZGVkLWxnIGZvY3VzOnJpbmctMiBmb2N1czpyaW5nLWVtZXJhbGQtNTAwXCJcclxuICAgICAgICAgICAgICAgICAgLz5cclxuICAgICAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICAgICAgPGRpdj5cclxuICAgICAgICAgICAgICAgICAgPGxhYmVsIGNsYXNzTmFtZT1cImJsb2NrIHRleHQtc20gZm9udC1tZWRpdW0gdGV4dC1ncmF5LTcwMCBtYi0xXCI+RW5kIFRpbWU8L2xhYmVsPlxyXG4gICAgICAgICAgICAgICAgICA8aW5wdXRcclxuICAgICAgICAgICAgICAgICAgICB0eXBlPVwidGltZVwiXHJcbiAgICAgICAgICAgICAgICAgICAgdmFsdWU9e25ld1Nsb3QuZW5kVGltZX1cclxuICAgICAgICAgICAgICAgICAgICBvbkNoYW5nZT17KGUpID0+IHNldE5ld1Nsb3QoeyAuLi5uZXdTbG90LCBlbmRUaW1lOiBlLnRhcmdldC52YWx1ZSB9KX1cclxuICAgICAgICAgICAgICAgICAgICBjbGFzc05hbWU9XCJ3LWZ1bGwgcHgtMyBweS0yIGJvcmRlciBib3JkZXItZ3JheS0zMDAgcm91bmRlZC1sZyBmb2N1czpyaW5nLTIgZm9jdXM6cmluZy1lbWVyYWxkLTUwMFwiXHJcbiAgICAgICAgICAgICAgICAgIC8+XHJcbiAgICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgIFxyXG4gICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggZ2FwLTMgbXQtNlwiPlxyXG4gICAgICAgICAgICAgIDxidXR0b25cclxuICAgICAgICAgICAgICAgIG9uQ2xpY2s9eygpID0+IHNldFNob3dUaW1lU2xvdE1vZGFsKGZhbHNlKX1cclxuICAgICAgICAgICAgICAgIGNsYXNzTmFtZT1cImZsZXgtMSBweC00IHB5LTIgYm9yZGVyIGJvcmRlci1ncmF5LTMwMCB0ZXh0LWdyYXktNzAwIHJvdW5kZWQtbGcgaG92ZXI6YmctZ3JheS01MFwiXHJcbiAgICAgICAgICAgICAgPlxyXG4gICAgICAgICAgICAgICAgQ2FuY2VsXHJcbiAgICAgICAgICAgICAgPC9idXR0b24+XHJcbiAgICAgICAgICAgICAgPGJ1dHRvblxyXG4gICAgICAgICAgICAgICAgb25DbGljaz17YWRkVGltZVNsb3R9XHJcbiAgICAgICAgICAgICAgICBjbGFzc05hbWU9XCJmbGV4LTEgcHgtNCBweS0yIGJnLWVtZXJhbGQtNjAwIHRleHQtd2hpdGUgcm91bmRlZC1sZyBob3ZlcjpiZy1lbWVyYWxkLTcwMFwiXHJcbiAgICAgICAgICAgICAgPlxyXG4gICAgICAgICAgICAgICAgQWRkIFNsb3RcclxuICAgICAgICAgICAgICA8L2J1dHRvbj5cclxuICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICA8L2Rpdj5cclxuICAgICAgKX1cclxuXHJcbiAgICAgIHsvKiBBcHByb3ZlIE1vZGFsICovfVxyXG4gICAgICB7c2hvd0FwcHJvdmVNb2RhbCAmJiBzZWxlY3RlZEFwcG9pbnRtZW50ICYmIChcclxuICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZpeGVkIGluc2V0LTAgYmctYmxhY2sgYmctb3BhY2l0eS01MCBmbGV4IGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWNlbnRlciB6LTUwXCI+XHJcbiAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImJnLXdoaXRlIHJvdW5kZWQteGwgcC02IG1heC13LW1kIHctZnVsbCBteC00IG1heC1oLVs5MHZoXSBvdmVyZmxvdy15LWF1dG9cIj5cclxuICAgICAgICAgICAgPGgzIGNsYXNzTmFtZT1cInRleHQteGwgZm9udC1ib2xkIHRleHQtZ3JheS05MDAgbWItNFwiPkNvbmZpcm0gQXBwb2ludG1lbnQ8L2gzPlxyXG4gICAgICAgICAgICBcclxuICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJtYi00IHAtMyBiZy1ncmF5LTUwIHJvdW5kZWQtbGdcIj5cclxuICAgICAgICAgICAgICA8cCBjbGFzc05hbWU9XCJmb250LW1lZGl1bVwiPntzZWxlY3RlZEFwcG9pbnRtZW50LnBhdGllbnROYW1lfTwvcD5cclxuICAgICAgICAgICAgICA8cCBjbGFzc05hbWU9XCJ0ZXh0LXNtIHRleHQtZ3JheS02MDBcIj57c2VsZWN0ZWRBcHBvaW50bWVudC5yZWFzb259PC9wPlxyXG4gICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgXHJcbiAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwic3BhY2UteS00XCI+XHJcbiAgICAgICAgICAgICAgPGRpdj5cclxuICAgICAgICAgICAgICAgIDxsYWJlbCBjbGFzc05hbWU9XCJibG9jayB0ZXh0LXNtIGZvbnQtbWVkaXVtIHRleHQtZ3JheS03MDAgbWItMVwiPlNlbGVjdCBEYXRlICo8L2xhYmVsPlxyXG4gICAgICAgICAgICAgICAgPGlucHV0XHJcbiAgICAgICAgICAgICAgICAgIHR5cGU9XCJkYXRlXCJcclxuICAgICAgICAgICAgICAgICAgdmFsdWU9e2FwcHJvdmFsRGF0YS5kYXRlfVxyXG4gICAgICAgICAgICAgICAgICBvbkNoYW5nZT17KGUpID0+IHNldEFwcHJvdmFsRGF0YSh7IC4uLmFwcHJvdmFsRGF0YSwgZGF0ZTogZS50YXJnZXQudmFsdWUgfSl9XHJcbiAgICAgICAgICAgICAgICAgIG1pbj17bmV3IERhdGUoKS50b0lTT1N0cmluZygpLnNwbGl0KCdUJylbMF19XHJcbiAgICAgICAgICAgICAgICAgIGNsYXNzTmFtZT1cInctZnVsbCBweC0zIHB5LTIgYm9yZGVyIGJvcmRlci1ncmF5LTMwMCByb3VuZGVkLWxnIGZvY3VzOnJpbmctMiBmb2N1czpyaW5nLWVtZXJhbGQtNTAwXCJcclxuICAgICAgICAgICAgICAgIC8+XHJcbiAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgICAgXHJcbiAgICAgICAgICAgICAgPGRpdj5cclxuICAgICAgICAgICAgICAgIDxsYWJlbCBjbGFzc05hbWU9XCJibG9jayB0ZXh0LXNtIGZvbnQtbWVkaXVtIHRleHQtZ3JheS03MDAgbWItMVwiPlNlbGVjdCBUaW1lICo8L2xhYmVsPlxyXG4gICAgICAgICAgICAgICAge2FwcHJvdmFsRGF0YS5kYXRlID8gKFxyXG4gICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggZmxleC13cmFwIGdhcC0yXCI+XHJcbiAgICAgICAgICAgICAgICAgICAge2dldEF2YWlsYWJsZVRpbWVTbG90c0ZvckRhdGUoYXBwcm92YWxEYXRhLmRhdGUpLmxlbmd0aCA+IDAgPyAoXHJcbiAgICAgICAgICAgICAgICAgICAgICBnZXRBdmFpbGFibGVUaW1lU2xvdHNGb3JEYXRlKGFwcHJvdmFsRGF0YS5kYXRlKS5tYXAodGltZSA9PiAoXHJcbiAgICAgICAgICAgICAgICAgICAgICAgIDxidXR0b25cclxuICAgICAgICAgICAgICAgICAgICAgICAgICBrZXk9e3RpbWV9XHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgb25DbGljaz17KCkgPT4gc2V0QXBwcm92YWxEYXRhKHsgLi4uYXBwcm92YWxEYXRhLCB0aW1lIH0pfVxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgIGNsYXNzTmFtZT17YHB4LTMgcHktMiByb3VuZGVkLWxnIHRleHQtc20gJHtcclxuICAgICAgICAgICAgICAgICAgICAgICAgICAgIGFwcHJvdmFsRGF0YS50aW1lID09PSB0aW1lXHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgID8gJ2JnLWVtZXJhbGQtNjAwIHRleHQtd2hpdGUnXHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIDogJ2JnLWdyYXktMTAwIHRleHQtZ3JheS03MDAgaG92ZXI6YmctZ3JheS0yMDAnXHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgfWB9XHJcbiAgICAgICAgICAgICAgICAgICAgICAgID5cclxuICAgICAgICAgICAgICAgICAgICAgICAgICB7dGltZX1cclxuICAgICAgICAgICAgICAgICAgICAgICAgPC9idXR0b24+XHJcbiAgICAgICAgICAgICAgICAgICAgICApKVxyXG4gICAgICAgICAgICAgICAgICAgICkgOiAoXHJcbiAgICAgICAgICAgICAgICAgICAgICA8ZGl2PlxyXG4gICAgICAgICAgICAgICAgICAgICAgICA8cCBjbGFzc05hbWU9XCJ0ZXh0LXNtIHRleHQteWVsbG93LTYwMCBtYi0yXCI+Tm8gcHJlc2V0IHNsb3RzIGZvciB0aGlzIGRheS4gRW50ZXIgdGltZSBtYW51YWxseTo8L3A+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgIDxpbnB1dFxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgIHR5cGU9XCJ0aW1lXCJcclxuICAgICAgICAgICAgICAgICAgICAgICAgICB2YWx1ZT17YXBwcm92YWxEYXRhLnRpbWV9XHJcbiAgICAgICAgICAgICAgICAgICAgICAgICAgb25DaGFuZ2U9eyhlKSA9PiBzZXRBcHByb3ZhbERhdGEoeyAuLi5hcHByb3ZhbERhdGEsIHRpbWU6IGUudGFyZ2V0LnZhbHVlIH0pfVxyXG4gICAgICAgICAgICAgICAgICAgICAgICAgIGNsYXNzTmFtZT1cInctZnVsbCBweC0zIHB5LTIgYm9yZGVyIGJvcmRlci1ncmF5LTMwMCByb3VuZGVkLWxnIGZvY3VzOnJpbmctMiBmb2N1czpyaW5nLWVtZXJhbGQtNTAwXCJcclxuICAgICAgICAgICAgICAgICAgICAgICAgLz5cclxuICAgICAgICAgICAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICAgICAgICAgICl9XHJcbiAgICAgICAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICAgICAgKSA6IChcclxuICAgICAgICAgICAgICAgICAgPHAgY2xhc3NOYW1lPVwidGV4dC1zbSB0ZXh0LWdyYXktNTAwXCI+U2VsZWN0IGEgZGF0ZSBmaXJzdDwvcD5cclxuICAgICAgICAgICAgICAgICl9XHJcbiAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgICAgXHJcbiAgICAgICAgICAgICAgPGRpdj5cclxuICAgICAgICAgICAgICAgIDxsYWJlbCBjbGFzc05hbWU9XCJibG9jayB0ZXh0LXNtIGZvbnQtbWVkaXVtIHRleHQtZ3JheS03MDAgbWItMVwiPk5vdGVzIGZvciBQYXRpZW50PC9sYWJlbD5cclxuICAgICAgICAgICAgICAgIDx0ZXh0YXJlYVxyXG4gICAgICAgICAgICAgICAgICB2YWx1ZT17YXBwcm92YWxEYXRhLm5vdGVzfVxyXG4gICAgICAgICAgICAgICAgICBvbkNoYW5nZT17KGUpID0+IHNldEFwcHJvdmFsRGF0YSh7IC4uLmFwcHJvdmFsRGF0YSwgbm90ZXM6IGUudGFyZ2V0LnZhbHVlIH0pfVxyXG4gICAgICAgICAgICAgICAgICByb3dzPXszfVxyXG4gICAgICAgICAgICAgICAgICBjbGFzc05hbWU9XCJ3LWZ1bGwgcHgtMyBweS0yIGJvcmRlciBib3JkZXItZ3JheS0zMDAgcm91bmRlZC1sZyBmb2N1czpyaW5nLTIgZm9jdXM6cmluZy1lbWVyYWxkLTUwMFwiXHJcbiAgICAgICAgICAgICAgICAgIHBsYWNlaG9sZGVyPVwiQW55IGluc3RydWN0aW9ucyBvciBub3Rlcy4uLlwiXHJcbiAgICAgICAgICAgICAgICAvPlxyXG4gICAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgXHJcbiAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBnYXAtMyBtdC02XCI+XHJcbiAgICAgICAgICAgICAgPGJ1dHRvblxyXG4gICAgICAgICAgICAgICAgb25DbGljaz17KCkgPT4ge1xyXG4gICAgICAgICAgICAgICAgICBzZXRTaG93QXBwcm92ZU1vZGFsKGZhbHNlKTtcclxuICAgICAgICAgICAgICAgICAgc2V0U2VsZWN0ZWRBcHBvaW50bWVudChudWxsKTtcclxuICAgICAgICAgICAgICAgICAgc2V0QXBwcm92YWxEYXRhKHsgZGF0ZTogJycsIHRpbWU6ICcnLCBub3RlczogJycgfSk7XHJcbiAgICAgICAgICAgICAgICB9fVxyXG4gICAgICAgICAgICAgICAgY2xhc3NOYW1lPVwiZmxleC0xIHB4LTQgcHktMiBib3JkZXIgYm9yZGVyLWdyYXktMzAwIHRleHQtZ3JheS03MDAgcm91bmRlZC1sZyBob3ZlcjpiZy1ncmF5LTUwXCJcclxuICAgICAgICAgICAgICA+XHJcbiAgICAgICAgICAgICAgICBDYW5jZWxcclxuICAgICAgICAgICAgICA8L2J1dHRvbj5cclxuICAgICAgICAgICAgICA8YnV0dG9uXHJcbiAgICAgICAgICAgICAgICBvbkNsaWNrPXtoYW5kbGVBcHByb3ZlQXBwb2ludG1lbnR9XHJcbiAgICAgICAgICAgICAgICBkaXNhYmxlZD17IWFwcHJvdmFsRGF0YS5kYXRlIHx8ICFhcHByb3ZhbERhdGEudGltZSB8fCBzYXZpbmd9XHJcbiAgICAgICAgICAgICAgICBjbGFzc05hbWU9XCJmbGV4LTEgcHgtNCBweS0yIGJnLWVtZXJhbGQtNjAwIHRleHQtd2hpdGUgcm91bmRlZC1sZyBob3ZlcjpiZy1lbWVyYWxkLTcwMCBkaXNhYmxlZDpvcGFjaXR5LTUwIGRpc2FibGVkOmN1cnNvci1ub3QtYWxsb3dlZFwiXHJcbiAgICAgICAgICAgICAgPlxyXG4gICAgICAgICAgICAgICAge3NhdmluZyA/ICdDb25maXJtaW5nLi4uJyA6ICdDb25maXJtIEFwcG9pbnRtZW50J31cclxuICAgICAgICAgICAgICA8L2J1dHRvbj5cclxuICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICA8L2Rpdj5cclxuICAgICAgKX1cclxuICAgIDwvZGl2PlxyXG4gICk7XHJcbn07XHJcblxyXG5leHBvcnQgZGVmYXVsdCBEb2N0b3JBdmFpbGFiaWxpdHlTZXR0aW5ncztcclxuIl0sImZpbGUiOiJDOi9Vc2Vycy9jaGlyYS9Eb2N1bWVudHMvSXNhcmEtdGVsZW1lZC9Jc2FyYS1hbnl3aGVyZS1WMC4wLjMvSXNhcmEtZG9jdG9yLXBvcnRhbC9zcmMvcGFnZXMvRG9jdG9yQXZhaWxhYmlsaXR5U2V0dGluZ3MudHN4In0=

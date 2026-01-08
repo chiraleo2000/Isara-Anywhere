@@ -2,7 +2,7 @@
 
 This document details the full appointment workflow for Izara Telemedicine, including all user roles, notification logic, error handling, and business rules. Use this as a reference for implementation, agent training, and troubleshooting.
 
-**Last Updated: January 7, 2026 (v1.1.5 - Comprehensive Testing Complete)**
+**Last Updated: January 8, 2026 (v1.1.8 - External Guest Access Tests Complete)**
 
 ---
 
@@ -15,7 +15,60 @@ This document details the full appointment workflow for Izara Telemedicine, incl
 | Cloud Deployment Tests | 24 | ✅ Pass | Jan 7, 2026 |
 | UI Tests (Local) | 20 | ✅ Pass | Jan 7, 2026 |
 | UI Tests (Cloud) | 20 | ✅ Pass | Jan 7, 2026 |
-| **Total** | **160** | ✅ **100%** | |
+| Meeting API Tests (Local) | 51 | ✅ Pass | Jan 8, 2026 |
+| Meeting API Tests (Cloud) | 51 | ✅ Pass | Jan 8, 2026 |
+| 4-User Meeting UI Tests (Local) | 33 | ✅ Pass | Jan 8, 2026 |
+| 4-User Meeting UI Tests (Cloud) | 33 | ✅ Pass | Jan 8, 2026 |
+| External Guest Access Tests (Local) | 105 | ✅ Pass | Jan 8, 2026 |
+| External Guest Access Tests (Cloud) | 105 | ✅ Pass | Jan 8, 2026 |
+| **Total** | **538** | ✅ **100%** | |
+
+---
+
+## Meeting Feature Summary ✅
+
+| Feature | Status | Description |
+|---------|--------|-------------|
+| Doctor as HOST | ✅ | Only doctor can start/control meeting |
+| Patient Lobby | ✅ | Patient waits for doctor approval |
+| Guest Invites | ✅ | Relatives/consultants via email |
+| Guest Lobby | ✅ | All guests wait for doctor approval |
+| **External Guest Access** | ✅ | **Non-registered users can join via invite links** |
+| Camera (Default ON) | ✅ | `startWithVideoMuted=false` |
+| Microphone (Default ON) | ✅ | `startWithAudioMuted=false` |
+| Text Chat | ✅ | Always available |
+| Video Recording | ✅ | Stored to izara-doctors-data |
+| Transcription | ✅ | Google Speech-to-Text |
+| AI Summary | ✅ | Gemini AI with 30-min sections |
+| Doctor Portal Delivery | ✅ | Summary in reports |
+
+### Test Users
+
+| Role | Email | Password | Portal |
+|------|-------|----------|--------|
+| Doctor | doctor.test@izara.com | IzaraDoctor@2024 | localhost:3010 |
+| Patient | demo.test@gmail.com | P@ssw0rd | localhost:3005 |
+| Patient Relative (demo2) | demo2.test@gmail.com | P@ssw0rd | localhost:3005 |
+| Admin/Unit Test Doctor | doctorunit.test@izara.com | P@ssw0rd | localhost:3010 |
+
+### External Guest Access (Non-Registered Users) ✅
+
+External guests who are **NOT registered** in the Izara system can join meetings:
+
+| Guest Type | Who Can Invite | Example Emails |
+|------------|----------------|----------------|
+| Patient Relative | Patient | mother@gmail.com, father@hotmail.com |
+| Patient Partner | Patient | spouse@outlook.com |
+| Doctor Specialist | Doctor | dr.cardio@privatehospital.co.th |
+| Doctor Advisor | Doctor | professor@university.ac.th |
+| Other | Both | any.guest@anydomain.xyz |
+
+**How External Guests Join:**
+1. Doctor/Patient creates invite → System generates secure token
+2. Guest receives invite URL (via email or shared link)
+3. Guest clicks link → No login required
+4. Guest enters lobby → Doctor approves
+5. Guest joins meeting with video/audio ON
 
 ---
 
@@ -23,14 +76,14 @@ This document details the full appointment workflow for Izara Telemedicine, incl
 
 | Portal | URL | Version |
 |--------|-----|---------|
-| Patient Portal | https://izara-patient-portal-724889190329.asia-southeast1.run.app | v1.1.5 |
-| Doctor Portal | https://izara-doctor-portal-724889190329.asia-southeast1.run.app | v1.1.5 |
+| Patient Portal | https://izara-patient-portal-724889190329.asia-southeast1.run.app | v1.1.8 |
+| Doctor Portal | https://izara-doctor-portal-724889190329.asia-southeast1.run.app | v1.1.8 |
 
-### Docker Images (v1.1.5)
+### Docker Images (v1.1.8)
 | Portal | Image |
 |--------|-------|
-| Patient Portal | `asia-southeast1-docker.pkg.dev/izara-telemedicine/isara-anywhere-portals/isara-patient-portal:1.1.5` |
-| Doctor Portal | `asia-southeast1-docker.pkg.dev/izara-telemedicine/isara-anywhere-portals/isara-doctor-portal:1.1.5` |
+| Patient Portal | `asia-southeast1-docker.pkg.dev/izara-telemedicine/isara-anywhere-portals/isara-patient-portal:1.1.8` |
+| Doctor Portal | `asia-southeast1-docker.pkg.dev/izara-telemedicine/isara-anywhere-portals/isara-doctor-portal:1.1.8` |
 
 ### Video Meeting Provider
 - **Jitsi Meet** (meet.jit.si) - FREE, no account required
@@ -189,15 +242,30 @@ This document details the full appointment workflow for Izara Telemedicine, incl
   - **Room name format**: `Izara-Med-{appointmentId}-{timestamp}-{hash}`
   - **Three URL variants generated**:
     - `doctorMeetingUrl` - Doctor joins as HOST (first to join gets moderator rights)
-    - `patientMeetingUrl` - Patient URL with pre-filled name
-    - `guestMeetingUrl` - For family members or other consultants
+    - `patientMeetingUrl` - Patient URL with pre-filled name (waits in lobby)
+    - `guestMeetingUrl` - For family members or other consultants (waits in lobby)
   - **Features enabled**:
-    - Lobby feature (doctor approves participants)
-    - Local recording (browser-based)
+    - Lobby feature (doctor approves ALL participants)
+    - Local recording (browser-based, max 200MB)
     - Thai language interface
     - Screen sharing for medical images
     - No Jitsi account required
+    - Camera ON by default
+    - Microphone ON by default
+    - Text chat always available
   - If meeting link fails to generate, fallback notification is sent to all parties
+
+### Guest Invite System (NEW)
+- **Patient Relatives**: Can be invited by doctor via email
+- **Doctor Consultants/Specialists**: Can be invited for second opinions
+- **Process**:
+  1. Doctor clicks "Invite Guest" in meeting controls
+  2. Enters guest email, name, and type (relative/consultant)
+  3. System generates unique invite token
+  4. Email sent to guest with join link containing invite token
+  5. Guest clicks link → waits in lobby
+  6. Doctor approves guest from lobby
+  7. Guest joins meeting
 
 - **Onsite Appointments**
   - No meeting link generated
@@ -209,41 +277,61 @@ This document details the full appointment workflow for Izara Telemedicine, incl
 
 ### Meeting Flow (Jitsi Meet with Host Controls)
 
-1. **Doctor starts meeting** (acts as HOST/MODERATOR)
+1. **Doctor starts meeting** (acts as HOST/MODERATOR - ONLY DOCTOR CAN START)
    - Doctor opens Scheduled Meetings tab
    - Clicks "Join Meeting" / "🎥 เข้าร่วมประชุม"
    - Uses `doctorMeetingUrl` which grants moderator privileges
    - Jitsi pre-join screen shows camera/mic preview
+   - **Default: Camera ON, Microphone ON**
    - Doctor clicks "Join" to enter room AS HOST
    - **HOST CONTROLS AVAILABLE**:
-     - Enable/disable lobby
+     - Enable/disable lobby (default: enabled)
      - Kick participants
      - Mute all
      - Start/stop recording
-     - Invite additional participants
+     - Invite additional participants (guests)
+     - Approve/reject participants from lobby
 
-2. **Patient joins meeting**
+2. **Patient joins meeting (WAITS IN LOBBY)**
    - Patient sees meeting link in "นัดหมายของฉัน" page
    - Clicks "เข้าห้องประชุมเลย" button
    - Uses `patientMeetingUrl` with pre-filled display name
-   - **If lobby enabled**: Patient waits in lobby until doctor approves
+   - **Patient enters LOBBY automatically**
+   - **Waits for doctor approval**
+   - Doctor sees "Patient waiting in lobby" notification
+   - Doctor clicks "Admit" to allow patient in
+   - **Default: Camera ON, Microphone ON**
    - Enters Jitsi room as participant (not moderator)
 
-3. **Guest/Family joins meeting** (optional)
-   - Uses `guestMeetingUrl` shared by doctor
-   - Must enter display name
-   - Waits in lobby for doctor approval
-   - Joins as participant
+3. **Guest/Family joins meeting** (LOBBY REQUIRED)
+   - Doctor sends invite via "Invite Guest" button
+   - Guest receives email with unique invite token
+   - Guest clicks invite link
+   - **Guest enters LOBBY automatically**
+   - **Waits for doctor approval**
+   - Doctor sees "Guest waiting in lobby" notification
+   - Doctor can see guest name and type (relative/consultant)
+   - Doctor clicks "Admit" or "Reject"
+   - **Default: Camera ON, Microphone ON**
+   - Joins as participant (not moderator)
 
 4. **During meeting**
-   - Video/audio consultation
-   - Optional screen sharing for medical images
-   - Local recording (if enabled by doctor)
-   - Chat available for messaging
+   - Video/audio consultation (all participants)
+   - **Text chat available** for all participants
+   - **Screen sharing** for medical images
+   - **Local recording** (if enabled by doctor)
+   - Users can mute/unmute their camera/mic at any time
 
 5. **Meeting ends**
    - Doctor ends the meeting (host control)
    - Recording saved locally on doctor's device
+   - **Automatic post-meeting processing**:
+     - Video uploaded to izara-doctors-data
+     - Audio transcribed via Speech-to-Text
+     - AI summary generated via Gemini
+     - 30-minute sections for long meetings
+     - Recommendations generated for doctor
+     - Summary delivered to Doctor Portal
 
 ### Meeting Link Data Structure
 ```json
@@ -266,7 +354,9 @@ Doctor's device → POST /api/video-meeting/:appointmentId/end
                   └─→ Video uploaded to GCS (izara-doctors-data)
                   └─→ Audio transcribed via Speech-to-Text
                   └─→ AI summary generated via Gemini
+                  └─→ 30-min section summaries (for long meetings)
                   └─→ Recommendations generated for doctor
+                  └─→ Summary delivered to Doctor Portal
 ```
 
 ### GCS Storage Structure
@@ -274,11 +364,22 @@ Doctor's device → POST /api/video-meeting/:appointmentId/end
 izara-doctors-data/
 └── doctors/{doctorId}/
     └── meetings/{appointmentId}/
-        ├── recording.webm      # Video recording (max 200MB)
-        ├── transcript.txt      # Thai transcription
-        ├── summary.txt         # AI-generated SOAP summary
-        └── recommendations.txt # Clinical decision support
+        ├── recording.webm         # Video recording (max 200MB)
+        ├── transcript.txt         # Thai transcription
+        ├── summary.txt            # AI-generated SOAP summary
+        ├── recommendations.txt    # Clinical decision support
+        ├── section-0-summary.txt  # First 30-min section (if >30 min)
+        ├── section-1-summary.txt  # Second 30-min section
+        └── final-combined.txt     # Combined summary from all sections
 ```
+
+### 30-Minute Sectioned Summaries
+For meetings longer than 30 minutes:
+1. Transcript split into 30-minute sections
+2. Each section generates its own summary
+3. All sections combined into final comprehensive summary
+4. Both individual and combined summaries stored
+5. Doctor sees combined summary in portal
 
 ---
 

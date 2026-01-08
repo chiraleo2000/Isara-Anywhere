@@ -1,0 +1,454 @@
+{
+  "timestamp": "2026-01-08T06:00:06.874Z",
+  "environment": "Cloud External Guest Tests",
+  "passed": [
+    {
+      "name": "Video meeting API is healthy",
+      "details": ""
+    },
+    {
+      "name": "Guest invite links feature available",
+      "details": "Supported (patient relatives, doctor specialists)"
+    },
+    {
+      "name": "Anonymous access supported (for external guests)",
+      "details": ""
+    },
+    {
+      "name": "Guest roles defined",
+      "details": "Doctor can invite: doctor_specialist, doctor_advisor, other"
+    },
+    {
+      "name": "Patient guest roles",
+      "details": "Patient can invite: patient_relative, patient_partner, other"
+    },
+    {
+      "name": "Test meeting created",
+      "details": "ID: meet-1767852003787-abaf6125"
+    },
+    {
+      "name": "Patient invited patient_relative",
+      "details": "patient.mother@gmail.com"
+    },
+    {
+      "name": "Invite URL generated for Mother (External)",
+      "details": ""
+    },
+    {
+      "name": "Direct Jitsi URL generated for Mother (External)",
+      "details": ""
+    },
+    {
+      "name": "Secure token generated for Mother (External)",
+      "details": "Token: 5a3dc7c54baa2301..."
+    },
+    {
+      "name": "Patient invited patient_relative",
+      "details": "patient.father@hotmail.com"
+    },
+    {
+      "name": "Invite URL generated for Father (External)",
+      "details": ""
+    },
+    {
+      "name": "Direct Jitsi URL generated for Father (External)",
+      "details": ""
+    },
+    {
+      "name": "Secure token generated for Father (External)",
+      "details": "Token: f53252e96288fef1..."
+    },
+    {
+      "name": "Patient invited patient_relative",
+      "details": "patient.sister@yahoo.com"
+    },
+    {
+      "name": "Invite URL generated for Sister (External)",
+      "details": ""
+    },
+    {
+      "name": "Direct Jitsi URL generated for Sister (External)",
+      "details": ""
+    },
+    {
+      "name": "Secure token generated for Sister (External)",
+      "details": "Token: 3c465cfa8baaf1e3..."
+    },
+    {
+      "name": "Patient invited patient_partner",
+      "details": "patient.spouse@outlook.com"
+    },
+    {
+      "name": "Invite URL generated for Spouse (External)",
+      "details": ""
+    },
+    {
+      "name": "Direct Jitsi URL generated for Spouse (External)",
+      "details": ""
+    },
+    {
+      "name": "Secure token generated for Spouse (External)",
+      "details": "Token: f20a7bd47be680f0..."
+    },
+    {
+      "name": "Doctor invited doctor_specialist",
+      "details": "Dr. Cardiologist (External) - Cardiology"
+    },
+    {
+      "name": "Doctor invited doctor_specialist",
+      "details": "Dr. Neurologist (External) - Neurology"
+    },
+    {
+      "name": "Doctor invited doctor_advisor",
+      "details": "Prof. Medical Advisor (External) - Internal Medicine"
+    },
+    {
+      "name": "External guest can join",
+      "details": "patient.mother@gmail.com"
+    },
+    {
+      "name": "Meeting URL provided for Mother (External)",
+      "details": ""
+    },
+    {
+      "name": "Jitsi URL valid for Mother (External)",
+      "details": ""
+    },
+    {
+      "name": "Guest identity preserved",
+      "details": "Mother (External)"
+    },
+    {
+      "name": "External guest can join",
+      "details": "patient.father@hotmail.com"
+    },
+    {
+      "name": "Meeting URL provided for Father (External)",
+      "details": ""
+    },
+    {
+      "name": "Jitsi URL valid for Father (External)",
+      "details": ""
+    },
+    {
+      "name": "Guest identity preserved",
+      "details": "Father (External)"
+    },
+    {
+      "name": "External guest can join",
+      "details": "patient.sister@yahoo.com"
+    },
+    {
+      "name": "Meeting URL provided for Sister (External)",
+      "details": ""
+    },
+    {
+      "name": "Jitsi URL valid for Sister (External)",
+      "details": ""
+    },
+    {
+      "name": "Guest identity preserved",
+      "details": "Sister (External)"
+    },
+    {
+      "name": "External guest can join",
+      "details": "patient.spouse@outlook.com"
+    },
+    {
+      "name": "Meeting URL provided for Spouse (External)",
+      "details": ""
+    },
+    {
+      "name": "Jitsi URL valid for Spouse (External)",
+      "details": ""
+    },
+    {
+      "name": "Guest identity preserved",
+      "details": "Spouse (External)"
+    },
+    {
+      "name": "External guest can join",
+      "details": "dr.cardio@privatehospital.co.th"
+    },
+    {
+      "name": "Meeting URL provided for Dr. Cardiologist (External)",
+      "details": ""
+    },
+    {
+      "name": "Jitsi URL valid for Dr. Cardiologist (External)",
+      "details": ""
+    },
+    {
+      "name": "Guest identity preserved",
+      "details": "Dr. Cardiologist (External)"
+    },
+    {
+      "name": "External guest can join",
+      "details": "neuro.specialist@regionalhospital.go.th"
+    },
+    {
+      "name": "Meeting URL provided for Dr. Neurologist (External)",
+      "details": ""
+    },
+    {
+      "name": "Jitsi URL valid for Dr. Neurologist (External)",
+      "details": ""
+    },
+    {
+      "name": "Guest identity preserved",
+      "details": "Dr. Neurologist (External)"
+    },
+    {
+      "name": "External guest can join",
+      "details": "medical.advisor@university.ac.th"
+    },
+    {
+      "name": "Meeting URL provided for Prof. Medical Advisor (External)",
+      "details": ""
+    },
+    {
+      "name": "Jitsi URL valid for Prof. Medical Advisor (External)",
+      "details": ""
+    },
+    {
+      "name": "Guest identity preserved",
+      "details": "Prof. Medical Advisor (External)"
+    },
+    {
+      "name": "Edge case email accepted",
+      "details": "guest@randomdomain123.xyz"
+    },
+    {
+      "name": "Edge case guest can join",
+      "details": "guest@randomdomain123.xyz"
+    },
+    {
+      "name": "Edge case email accepted",
+      "details": "thai.relative@thailandmail.co.th"
+    },
+    {
+      "name": "Edge case guest can join",
+      "details": "thai.relative@thailandmail.co.th"
+    },
+    {
+      "name": "Permission boundary enforced",
+      "details": "Patient cannot invite doctor_specialist"
+    },
+    {
+      "name": "Permission boundary enforced",
+      "details": "Doctor cannot invite patient_relative"
+    },
+    {
+      "name": "Invalid token rejected",
+      "details": "Status 404 - Invalid or expired"
+    },
+    {
+      "name": "Empty token rejected",
+      "details": "Status 400"
+    },
+    {
+      "name": "Invites list retrieved",
+      "details": "Total: 9"
+    },
+    {
+      "name": "Invites by role: patient_relative",
+      "details": "Count: 4"
+    },
+    {
+      "name": "Invites by role: patient_partner",
+      "details": "Count: 1"
+    },
+    {
+      "name": "Invites by role: doctor_specialist",
+      "details": "Count: 2"
+    },
+    {
+      "name": "Invites by role: doctor_advisor",
+      "details": "Count: 1"
+    },
+    {
+      "name": "Invites by role: other",
+      "details": "Count: 1"
+    },
+    {
+      "name": "Active invites count",
+      "details": "Active: 0"
+    },
+    {
+      "name": "Invite revoked successfully",
+      "details": "Prof. Medical Advisor (External)"
+    },
+    {
+      "name": "Revoked token rejected",
+      "details": "Guest cannot join with revoked invite"
+    },
+    {
+      "name": "Valid Jitsi domain for Mother (External)",
+      "details": ""
+    },
+    {
+      "name": "Video ON by default for Mother (External)",
+      "details": ""
+    },
+    {
+      "name": "Audio ON by default for Mother (External)",
+      "details": ""
+    },
+    {
+      "name": "Prejoin page enabled for Mother (External)",
+      "details": ""
+    },
+    {
+      "name": "Display name configured for Mother (External)",
+      "details": ""
+    },
+    {
+      "name": "Valid Jitsi domain for Father (External)",
+      "details": ""
+    },
+    {
+      "name": "Video ON by default for Father (External)",
+      "details": ""
+    },
+    {
+      "name": "Audio ON by default for Father (External)",
+      "details": ""
+    },
+    {
+      "name": "Prejoin page enabled for Father (External)",
+      "details": ""
+    },
+    {
+      "name": "Display name configured for Father (External)",
+      "details": ""
+    },
+    {
+      "name": "Valid Jitsi domain for Sister (External)",
+      "details": ""
+    },
+    {
+      "name": "Video ON by default for Sister (External)",
+      "details": ""
+    },
+    {
+      "name": "Audio ON by default for Sister (External)",
+      "details": ""
+    },
+    {
+      "name": "Prejoin page enabled for Sister (External)",
+      "details": ""
+    },
+    {
+      "name": "Display name configured for Sister (External)",
+      "details": ""
+    },
+    {
+      "name": "Valid Jitsi domain for Spouse (External)",
+      "details": ""
+    },
+    {
+      "name": "Video ON by default for Spouse (External)",
+      "details": ""
+    },
+    {
+      "name": "Audio ON by default for Spouse (External)",
+      "details": ""
+    },
+    {
+      "name": "Prejoin page enabled for Spouse (External)",
+      "details": ""
+    },
+    {
+      "name": "Display name configured for Spouse (External)",
+      "details": ""
+    },
+    {
+      "name": "Valid Jitsi domain for Dr. Cardiologist (External)",
+      "details": ""
+    },
+    {
+      "name": "Video ON by default for Dr. Cardiologist (External)",
+      "details": ""
+    },
+    {
+      "name": "Audio ON by default for Dr. Cardiologist (External)",
+      "details": ""
+    },
+    {
+      "name": "Prejoin page enabled for Dr. Cardiologist (External)",
+      "details": ""
+    },
+    {
+      "name": "Display name configured for Dr. Cardiologist (External)",
+      "details": ""
+    },
+    {
+      "name": "Valid Jitsi domain for Dr. Neurologist (External)",
+      "details": ""
+    },
+    {
+      "name": "Video ON by default for Dr. Neurologist (External)",
+      "details": ""
+    },
+    {
+      "name": "Audio ON by default for Dr. Neurologist (External)",
+      "details": ""
+    },
+    {
+      "name": "Prejoin page enabled for Dr. Neurologist (External)",
+      "details": ""
+    },
+    {
+      "name": "Display name configured for Dr. Neurologist (External)",
+      "details": ""
+    },
+    {
+      "name": "Valid Jitsi domain for Prof. Medical Advisor (External)",
+      "details": ""
+    },
+    {
+      "name": "Video ON by default for Prof. Medical Advisor (External)",
+      "details": ""
+    },
+    {
+      "name": "Audio ON by default for Prof. Medical Advisor (External)",
+      "details": ""
+    },
+    {
+      "name": "Prejoin page enabled for Prof. Medical Advisor (External)",
+      "details": ""
+    },
+    {
+      "name": "Display name configured for Prof. Medical Advisor (External)",
+      "details": ""
+    }
+  ],
+  "failed": [],
+  "warnings": [],
+  "totals": {
+    "passed": 105,
+    "failed": 0,
+    "warnings": 0
+  },
+  "externalGuestsTested": [
+    "motherGmail",
+    "fatherHotmail",
+    "sisterYahoo",
+    "spouseOutlook",
+    "cardiologist",
+    "neurologist",
+    "advisor",
+    "unknownDomain",
+    "thaiEmail"
+  ],
+  "meetingData": {
+    "appointmentId": "APT-GUEST-TEST-1767852005022",
+    "meetingId": "meet-1767852003787-abaf6125",
+    "roomName": "Izara-APT-GUES-035a9567",
+    "urls": {
+      "doctor": "https://meet.jit.si/Izara-APT-GUES-035a9567#config.prejoinPageEnabled=true&config.startWithAudioMuted=false&config.startWithVideoMuted=false&config.enableClosePage=true&config.disableDeepLinking=true&config.defaultLanguage=th&config.enableInsecureRoomNameWarning=false&config.requireDisplayName=true&config.enableLobbyChat=true&config.fileRecordingsEnabled=true&config.localRecording.enabled=true&config.liveStreamingEnabled=false&config.transcribingEnabled=false&interfaceConfig.TOOLBAR_BUTTONS=%5B%22microphone%22%2C%22camera%22%2C%22desktop%22%2C%22chat%22%2C%22raisehand%22%2C%22participants-pane%22%2C%22tileview%22%2C%22hangup%22%2C%22settings%22%2C%22recording%22%5D&interfaceConfig.SETTINGS_SECTIONS=%5B%22devices%22%2C%22language%22%2C%22profile%22%5D&interfaceConfig.DISABLE_JOIN_LEAVE_NOTIFICATIONS=false&interfaceConfig.SHOW_CHROME_EXTENSION_BANNER=false&interfaceConfig.MOBILE_APP_PROMO=false&interfaceConfig.SHOW_PROMOTIONAL_CLOSE_PAGE=false&interfaceConfig.APP_NAME=Izara+Telemedicine&interfaceConfig.DEFAULT_LOGO_URL=&interfaceConfig.JITSI_WATERMARK_LINK=&userInfo.displayName=Dr.+Test+Doctor",
+      "patient": "https://meet.jit.si/Izara-APT-GUES-035a9567#config.prejoinPageEnabled=true&config.startWithAudioMuted=false&config.startWithVideoMuted=false&config.enableClosePage=true&config.disableDeepLinking=true&config.defaultLanguage=th&config.enableInsecureRoomNameWarning=false&config.requireDisplayName=true&config.enableLobbyChat=true&config.fileRecordingsEnabled=true&config.localRecording.enabled=true&config.liveStreamingEnabled=false&config.transcribingEnabled=false&interfaceConfig.TOOLBAR_BUTTONS=%5B%22microphone%22%2C%22camera%22%2C%22desktop%22%2C%22chat%22%2C%22raisehand%22%2C%22participants-pane%22%2C%22tileview%22%2C%22hangup%22%2C%22settings%22%2C%22recording%22%5D&interfaceConfig.SETTINGS_SECTIONS=%5B%22devices%22%2C%22language%22%2C%22profile%22%5D&interfaceConfig.DISABLE_JOIN_LEAVE_NOTIFICATIONS=false&interfaceConfig.SHOW_CHROME_EXTENSION_BANNER=false&interfaceConfig.MOBILE_APP_PROMO=false&interfaceConfig.SHOW_PROMOTIONAL_CLOSE_PAGE=false&interfaceConfig.APP_NAME=Izara+Telemedicine&interfaceConfig.DEFAULT_LOGO_URL=&interfaceConfig.JITSI_WATERMARK_LINK=&userInfo.displayName=Demo+Patient",
+      "generic": "https://meet.jit.si/Izara-APT-GUES-035a9567#config.prejoinPageEnabled=true&config.startWithAudioMuted=false&config.startWithVideoMuted=false&config.enableClosePage=true&config.disableDeepLinking=true&config.defaultLanguage=th&config.enableInsecureRoomNameWarning=false&config.requireDisplayName=true&config.enableLobbyChat=true&config.fileRecordingsEnabled=true&config.localRecording.enabled=true&config.liveStreamingEnabled=false&config.transcribingEnabled=false&interfaceConfig.TOOLBAR_BUTTONS=%5B%22microphone%22%2C%22camera%22%2C%22desktop%22%2C%22chat%22%2C%22raisehand%22%2C%22participants-pane%22%2C%22tileview%22%2C%22hangup%22%2C%22settings%22%2C%22recording%22%5D&interfaceConfig.SETTINGS_SECTIONS=%5B%22devices%22%2C%22language%22%2C%22profile%22%5D&interfaceConfig.DISABLE_JOIN_LEAVE_NOTIFICATIONS=false&interfaceConfig.SHOW_CHROME_EXTENSION_BANNER=false&interfaceConfig.MOBILE_APP_PROMO=false&interfaceConfig.SHOW_PROMOTIONAL_CLOSE_PAGE=false&interfaceConfig.APP_NAME=Izara+Telemedicine&interfaceConfig.DEFAULT_LOGO_URL=&interfaceConfig.JITSI_WATERMARK_LINK="
+    }
+  }
+}

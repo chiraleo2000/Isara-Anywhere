@@ -6,35 +6,34 @@ All data is stored in Google Cloud Storage (GCS) buckets as JSON files.
 
 ```
 ┌────────────────────────────────────────────────────────────────┐
-│                    Google Cloud Storage                        │
+│                    Google Cloud Storage (5 Buckets)            │
 ├────────────────────────────────────────────────────────────────┤
 │                                                                │
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐            │
-│  │ izara-users │  │ izara-users │  │ izara-      │            │
-│  │ -auth       │  │ -credentials│  │ patients-   │            │
-│  │             │  │             │  │ data        │            │
-│  │ (Patient    │  │ (Doctor     │  │             │            │
-│  │  Auth)      │  │  Auth)      │  │ (Patient    │            │
-│  │             │  │             │  │  Profiles)  │            │
+│  │ izara-users │  │ izara-      │  │ izara-      │            │
+│  │ -credentials│  │ patients-   │  │ doctors-    │            │
+│  │             │  │ data        │  │ data        │            │
+│  │ (All User   │  │             │  │             │            │
+│  │  Auth)      │  │ (Patient    │  │ (Doctor     │            │
+│  │             │  │  Profiles)  │  │  + Meetings)│            │
 │  └─────────────┘  └─────────────┘  └─────────────┘            │
 │                                                                │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐            │
-│  │ izara-      │  │ izara-      │  │ izara-      │            │
-│  │ doctors-    │  │ appointments│  │ meta-data   │            │
-│  │ data        │  │             │  │             │            │
-│  │             │  │             │  │ (Clinical   │            │
-│  │ (Doctor     │  │ (Booking    │  │  Resources, │            │
-│  │  Profiles)  │  │  Records)   │  │  Consult.)  │            │
-│  └─────────────┘  └─────────────┘  └─────────────┘            │
+│  ┌─────────────┐  ┌─────────────┐                             │
+│  │ izara-      │  │ izara-      │                             │
+│  │ appointments│  │ meta-data   │                             │
+│  │             │  │             │                             │
+│  │ (Booking    │  │ (Clinical   │                             │
+│  │  Records)   │  │  Resources) │                             │
+│  └─────────────┘  └─────────────┘                             │
 │                                                                │
 └────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 1. izara-users-auth
+## 1. izara-users-credentials
 
-**Purpose:** Patient authentication data
+**Purpose:** All user authentication data (Patients, Doctors, Admins)
 
 ### Structure
 ```
@@ -196,14 +195,20 @@ izara-patients-data/
 
 ## 4. izara-doctors-data
 
-**Purpose:** Doctor public profiles
+**Purpose:** Doctor public profiles and meeting recordings
 
 ### Structure
 ```
 izara-doctors-data/
 ├── doctors/
 │   ├── index.json              # List of all doctors
-│   ├── DOC-xxx-xxx.json        # Doctor profile
+│   ├── DOC-xxx-xxx/
+│   │   ├── profile.json        # Doctor profile
+│   │   └── meetings/           # Meeting recordings (NEW v1.1.8)
+│   │       └── APT-xxx/
+│   │           ├── recording.webm
+│   │           ├── transcript.json
+│   │           └── ai-summary.json
 │   └── ...
 ```
 
@@ -327,12 +332,12 @@ izara-meta-data/
 
 | Bucket | Patient | Doctor | Admin |
 |--------|---------|--------|-------|
-| izara-users-auth | Own only | ❌ | ❌ |
-| izara-users-credentials | ❌ | Own only | All |
+| izara-users-credentials | Own only | Own only | All |
 | izara-patients-data | Own only | Assigned | All |
-| izara-doctors-data | Read all | Own only | All |
+| izara-doctors-data | Read all | Own + Meetings | All |
 | izara-appointments | Own only | Assigned | All |
 | izara-meta-data | Read | Read/Write | Full |
 
 ---
-**Last Updated:** December 14, 2025
+**Last Updated:** January 8, 2026
+**Version:** 1.1.8

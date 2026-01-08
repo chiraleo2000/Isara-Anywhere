@@ -198,6 +198,7 @@ Part of the IZARA Telemedicine Platform project.
 
 ---
 
-**Generated**: December 15, 2025  
-**Version**: 0.0.2  
-**Total Presentations**: 17 (16 diagrams + 1 index)
+**Generated**: January 8, 2026  
+**Version**: 1.1.8  
+**Total Presentations**: 17 (16 diagrams + 1 index)  
+**Tests Passing**: 378/378 (100%)

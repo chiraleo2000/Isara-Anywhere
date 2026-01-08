@@ -327,4 +327,54 @@ All endpoints return errors in this format:
 | `Accept-Language` | `th` or `en` | Response language |
 
 ---
-**Last Updated:** December 15, 2025
+
+## Video Meeting API (Patient Portal - Port 3004)
+
+### Meeting Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/video-meeting/invite-guest` | Invite external guest |
+| POST | `/api/video-meeting/validate-invite` | Validate invite token |
+| POST | `/api/video-meeting/revoke-invite` | Revoke guest invite |
+| GET | `/api/video-meeting/:appointmentId/invites` | List invites |
+
+### Guest Types
+
+| Type | Who Can Invite | Description |
+|------|----------------|-------------|
+| `patient_relative` | Patient | Family member |
+| `patient_partner` | Patient | Spouse/Partner |
+| `doctor_specialist` | Doctor | Medical specialist |
+| `doctor_advisor` | Doctor | Medical advisor |
+| `other` | Both | Other guests |
+
+### Invite Guest Example
+
+```http
+POST /api/video-meeting/invite-guest
+Content-Type: application/json
+Authorization: Bearer {token}
+
+{
+  "appointmentId": "APT-xxx",
+  "guestEmail": "relative@gmail.com",
+  "guestName": "Family Member",
+  "relationship": "patient_relative"
+}
+```
+
+**Success Response:**
+```json
+{
+  "success": true,
+  "inviteId": "INV-xxx",
+  "inviteToken": "abc123...",
+  "inviteUrl": "https://izara-patient-portal.../join?token=abc123...",
+  "expiresAt": "2026-01-08T12:00:00Z"
+}
+```
+
+---
+**Last Updated:** January 8, 2026
+**Version:** 1.1.8
