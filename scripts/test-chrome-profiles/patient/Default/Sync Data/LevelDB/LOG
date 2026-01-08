@@ -1,3 +1,3 @@
-2026/01/08-13:08:59.340 14e20 Reusing MANIFEST C:\Users\chira\Documents\Isara-telemed\Isara-anywhere-V0.0.3\scripts\test-chrome-profiles\patient\Default\Sync Data\LevelDB/MANIFEST-000001
-2026/01/08-13:08:59.361 14e20 Recovering log #3
-2026/01/08-13:08:59.369 14e20 Reusing old log C:\Users\chira\Documents\Isara-telemed\Isara-anywhere-V0.0.3\scripts\test-chrome-profiles\patient\Default\Sync Data\LevelDB/000003.log 
+2026/01/08-14:03:09.761 602c Reusing MANIFEST C:\Users\chira\Documents\Isara-telemed\Isara-anywhere-V0.0.3\scripts\test-chrome-profiles\patient\Default\Sync Data\LevelDB/MANIFEST-000001
+2026/01/08-14:03:09.763 602c Recovering log #3
+2026/01/08-14:03:09.764 602c Reusing old log C:\Users\chira\Documents\Isara-telemed\Isara-anywhere-V0.0.3\scripts\test-chrome-profiles\patient\Default\Sync Data\LevelDB/000003.log 
