@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect, useLayoutEffect } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { SettingsProvider } from './contexts/SettingsContext';
 
@@ -20,12 +20,20 @@ import MapPage from './pages/map/MapPage';
 import TimelinePage from './pages/timeline/TimelinePage';
 import GCSStatusPage from './pages/admin/GCSStatusPage';
 
-// Scroll to top on route change
+// Enhanced Scroll to top on route change - uses useLayoutEffect for immediate scroll
 function ScrollToTop() {
   const { pathname } = useLocation();
   
-  useEffect(() => {
-    window.scrollTo(0, 0);
+  // Use useLayoutEffect for synchronous scroll before paint
+  useLayoutEffect(() => {
+    // Scroll to top immediately
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    
+    // Also scroll any scrollable containers
+    const mainContent = document.querySelector('main');
+    if (mainContent) {
+      mainContent.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    }
   }, [pathname]);
   
   return null;

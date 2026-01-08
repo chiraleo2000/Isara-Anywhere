@@ -1,5 +1,6 @@
 import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useSettings } from '../../contexts/SettingsContext';
 import { NotificationBell } from '../notifications/NotificationBell';
 import { SettingsDropdown } from '../ui/SettingsDropdown';
 import {
@@ -20,7 +21,7 @@ import {
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
-// Mini Calendar Component
+// Mini Calendar Component - Static (not using settings)
 function MiniCalendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const today = new Date();
@@ -116,39 +117,43 @@ function MiniMap() {
   );
 }
 
-const navItems = [
-  { icon: Home, label: 'หน้าหลัก', path: '/' },
-  { icon: Calendar, label: 'นัดหมาย', path: '/appointments' },
-  { icon: MessageCircle, label: 'ปรึกษา AI', path: '/ai-doctor' },
-  { icon: BookOpen, label: 'คลังความรู้สุขภาพ', path: '/health-library' },
-  { icon: FileText, label: 'ประวัติสุขภาพ', path: '/phr' },
-  { icon: Activity, label: 'เส้นทางสุขภาพ', path: '/timeline' },
-  { icon: Shield, label: 'PDPA & Living Will', path: '/pdpa' },
-  { icon: MapPin, label: 'แผนที่', path: '/map' },
-  { icon: Settings, label: 'ตั้งค่า', path: '/settings' },
-];
-
 export default function MainLayout() {
   const { user, logout } = useAuth();
+  const { theme, t, language } = useSettings();
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  
+  const isDarkMode = theme === 'dark';
 
   const handleLogout = async () => {
     await logout();
     navigate('/login');
   };
 
+  // Navigation items with language support
+  const navItems = [
+    { icon: Home, label: language === 'th' ? 'หน้าหลัก' : 'Home', path: '/' },
+    { icon: Calendar, label: language === 'th' ? 'นัดหมาย' : 'Appointments', path: '/appointments' },
+    { icon: MessageCircle, label: language === 'th' ? 'ปรึกษา AI' : 'AI Doctor', path: '/ai-doctor' },
+    { icon: BookOpen, label: language === 'th' ? 'คลังความรู้สุขภาพ' : 'Health Library', path: '/health-library' },
+    { icon: FileText, label: language === 'th' ? 'ประวัติสุขภาพ' : 'Health Records', path: '/phr' },
+    { icon: Activity, label: language === 'th' ? 'เส้นทางสุขภาพ' : 'Health Timeline', path: '/timeline' },
+    { icon: Shield, label: language === 'th' ? 'PDPA & Living Will' : 'PDPA & Living Will', path: '/pdpa' },
+    { icon: MapPin, label: language === 'th' ? 'แผนที่' : 'Map', path: '/map' },
+    { icon: Settings, label: language === 'th' ? 'ตั้งค่า' : 'Settings', path: '/settings' },
+  ];
+
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transform transition-transform duration-200 lg:translate-x-0 lg:static ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+    <div className={`min-h-screen flex ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+      <aside className={`fixed inset-y-0 left-0 z-50 w-64 transform transition-transform duration-200 lg:translate-x-0 lg:static ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-r`}>
         <div className="flex flex-col h-full">
-          <div className="p-4 border-b border-gray-100">
+          <div className={`p-4 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-100'}`}>
             <Link to="/" className="flex items-center gap-3">
               <img src="/IzaraLogo.png" alt="Izara" className="w-10 h-10 object-contain" />
               <div>
-                <h1 className="font-bold text-gray-800">Izara</h1>
-                <p className="text-xs text-gray-500">Patient Portal</p>
+                <h1 className={`font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>Izara</h1>
+                <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Patient Portal</p>
               </div>
             </Link>
           </div>
@@ -164,11 +169,13 @@ export default function MainLayout() {
                   onClick={() => setSidebarOpen(false)}
                   className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${
                     isActive
-                      ? 'bg-emerald-50 text-emerald-700'
-                      : 'text-gray-600 hover:bg-gray-50'
+                      ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300'
+                      : isDarkMode 
+                        ? 'text-gray-300 hover:bg-gray-700' 
+                        : 'text-gray-600 hover:bg-gray-50'
                   }`}
                 >
-                  <item.icon className={`w-5 h-5 ${isActive ? 'text-emerald-600' : ''}`} />
+                  <item.icon className={`w-5 h-5 ${isActive ? 'text-emerald-600 dark:text-emerald-400' : ''}`} />
                   <span className="font-medium">{item.label}</span>
                 </Link>
               );
@@ -181,7 +188,7 @@ export default function MainLayout() {
             <MiniMap />
           </div>
 
-          <div className="p-4 border-t border-gray-100">
+          <div className={`p-4 border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-100'}`}>
             <div className="flex items-center gap-3 mb-4">
               <img
                 src={user?.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(user?.id || 'default')}`}
@@ -189,21 +196,25 @@ export default function MainLayout() {
                 className="w-10 h-10 rounded-full"
               />
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-gray-800 truncate">{user?.name}</p>
-                <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+                <p className={`font-medium truncate ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>{user?.name}</p>
+                <p className={`text-xs truncate ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>{user?.email}</p>
               </div>
             </div>
             <div className="flex gap-2">
               <Link
                 to="/profile"
-                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200"
+                className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm rounded-lg ${
+                  isDarkMode 
+                    ? 'text-gray-300 bg-gray-700 hover:bg-gray-600' 
+                    : 'text-gray-600 bg-gray-100 hover:bg-gray-200'
+                }`}
               >
                 <User className="w-4 h-4" />
-                โปรไฟล์
+                {language === 'th' ? 'โปรไฟล์' : 'Profile'}
               </Link>
               <button
                 onClick={handleLogout}
-                className="flex items-center justify-center gap-2 px-3 py-2 text-sm text-red-600 bg-red-50 rounded-lg hover:bg-red-100"
+                className="flex items-center justify-center gap-2 px-3 py-2 text-sm text-red-600 bg-red-50 rounded-lg hover:bg-red-100 dark:bg-red-900/30 dark:hover:bg-red-900/50"
               >
                 <LogOut className="w-4 h-4" />
               </button>
@@ -220,17 +231,17 @@ export default function MainLayout() {
       )}
 
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="sticky top-0 z-30 bg-white border-b border-gray-200 px-4 py-3 lg:hidden">
+        <header className={`sticky top-0 z-30 border-b px-4 py-3 lg:hidden ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
           <div className="flex items-center justify-between">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+              className={`p-2 rounded-lg ${isDarkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-100'}`}
             >
               <Menu className="w-6 h-6" />
             </button>
             <div className="flex items-center gap-2">
               <img src="/IzaraLogo.png" alt="Izara" className="w-8 h-8 object-contain" />
-              <span className="font-bold text-gray-800">Izara</span>
+              <span className={`font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>Izara</span>
             </div>
             <div className="flex items-center gap-2">
               <SettingsDropdown />
@@ -245,7 +256,7 @@ export default function MainLayout() {
         </header>
 
         {/* Desktop Header with Notifications */}
-        <header className="hidden lg:flex sticky top-0 z-30 bg-white border-b border-gray-200 px-6 py-3 items-center justify-end">
+        <header className={`hidden lg:flex sticky top-0 z-30 border-b px-6 py-3 items-center justify-end ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
           <div className="flex items-center gap-4">
             <SettingsDropdown />
             <NotificationBell />
@@ -256,13 +267,13 @@ export default function MainLayout() {
                 className="w-9 h-9 rounded-full"
               />
               <div className="hidden xl:block">
-                <p className="text-sm font-medium text-gray-800">{user?.name}</p>
+                <p className={`text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>{user?.name}</p>
               </div>
             </div>
           </div>
         </header>
 
-        <main className="flex-1 p-4 lg:p-6 overflow-auto">
+        <main className={`flex-1 p-4 lg:p-6 overflow-auto ${isDarkMode ? 'bg-gray-900' : ''}`}>
           <Outlet />
         </main>
       </div>

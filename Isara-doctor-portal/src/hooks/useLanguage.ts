@@ -198,14 +198,33 @@ const translations: Translations = {
 };
 
 export const useLanguage = () => {
-  const [language, setLanguage] = useState<Language>(() => {
+  // Use the centralized useSettings for language management
+  // This ensures language is synced across all components
+  const [language, setLanguageState] = useState<Language>(() => {
     const saved = localStorage.getItem('doctor-portal-language');
     return (saved as Language) || 'th'; // Default to Thai
   });
 
+  const setLanguage = (newLang: Language) => {
+    setLanguageState(newLang);
+    localStorage.setItem('doctor-portal-language', newLang);
+    document.documentElement.lang = newLang;
+  };
+
   useEffect(() => {
-    localStorage.setItem('doctor-portal-language', language);
+    // Listen for storage changes to sync language across tabs/components
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'doctor-portal-language' && e.newValue) {
+        setLanguageState(e.newValue as Language);
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Set initial lang attribute
     document.documentElement.lang = language;
+    
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, [language]);
 
   const t = (key: string): string => {
@@ -213,7 +232,8 @@ export const useLanguage = () => {
   };
 
   const toggleLanguage = () => {
-    setLanguage((prev) => (prev === 'en' ? 'th' : 'en'));
+    const newLang = language === 'en' ? 'th' : 'en';
+    setLanguage(newLang);
   };
 
   return {

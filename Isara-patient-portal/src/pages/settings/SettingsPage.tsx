@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useSettings } from '../../contexts/SettingsContext';
 import { Bell, Lock, Globe, Moon, LogOut, ChevronRight, Shield } from 'lucide-react';
 
-// Helper to get/set localStorage values
+// Helper to get/set localStorage values for notifications only
 const getStoredValue = <T,>(key: string, defaultValue: T): T => {
   try {
     const stored = localStorage.getItem(key);
@@ -22,39 +23,21 @@ const setStoredValue = <T,>(key: string, value: T): void => {
 
 export default function SettingsPage() {
   const { logout } = useAuth();
+  // Use the global settings context for theme and language
+  const { theme, language, setTheme, setLanguage } = useSettings();
+  
   const [notifications, setNotifications] = useState(() => 
     getStoredValue('izara_notifications', {
       appointments: true,
       medications: true,
     })
   );
-  const [darkMode, setDarkMode] = useState(() => 
-    getStoredValue('izara_dark_mode', false)
-  );
-  const [language, setLanguage] = useState(() => 
-    getStoredValue('izara_language', 'th')
-  );
 
-  // Apply dark mode to document
-  useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add('dark');
-      document.body.style.backgroundColor = '#1a1a2e';
-      document.body.style.color = '#ffffff';
-    } else {
-      document.documentElement.classList.remove('dark');
-      document.body.style.backgroundColor = '';
-      document.body.style.color = '';
-    }
-    setStoredValue('izara_dark_mode', darkMode);
-  }, [darkMode]);
-
-  // Save language preference
-  useEffect(() => {
-    setStoredValue('izara_language', language);
-    // Update html lang attribute
-    document.documentElement.lang = language;
-  }, [language]);
+  // Derive darkMode from theme for backward compatibility
+  const darkMode = theme === 'dark';
+  const setDarkMode = (value: boolean) => {
+    setTheme(value ? 'dark' : 'light');
+  };
 
   // Save notifications preference
   useEffect(() => {
@@ -141,7 +124,7 @@ export default function SettingsPage() {
             </div>
             <select
               value={language}
-              onChange={(e) => setLanguage(e.target.value)}
+              onChange={(e) => setLanguage(e.target.value as 'en' | 'th')}
               className={`px-4 py-2 border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent ${
                 darkMode 
                   ? 'bg-gray-700 border-gray-600 text-white' 

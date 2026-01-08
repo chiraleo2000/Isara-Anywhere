@@ -410,6 +410,10 @@ class NotificationService {
 
   /**
    * Create a notification record
+   * Stores in:
+   * - General notifications list (metadata bucket)
+   * - User-specific notifications for patient portal
+   * - Doctor-specific notifications for doctor portal (when recipient is a doctor)
    */
   async createNotification(notification: Omit<Notification, 'id' | 'status' | 'createdAt'>): Promise<Notification> {
     const id = `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -420,7 +424,7 @@ class NotificationService {
       createdAt: new Date().toISOString()
     };
 
-    // Store notification
+    // Store notification in general list
     let notifications = await readJSON(GCS_BUCKETS.METADATA, 'notifications.json') || [];
     notifications.push(fullNotification);
     await writeJSON(GCS_BUCKETS.METADATA, 'notifications.json', notifications);
@@ -432,6 +436,66 @@ class NotificationService {
     // Keep only last 100 notifications per user
     userNotifications = userNotifications.slice(0, 100);
     await writeJSON(GCS_BUCKETS.METADATA, userNotificationsPath, userNotifications);
+
+    // IMPORTANT: Also store in doctor-portal-specific location for doctors
+    // The doctor portal reads from GCS_BUCKETS.DOCTOR: doctors/{doctorId}/notifications.json
+    if (notification.recipientRole === 'doctor' && notification.recipientId && notification.recipientId !== 'unassigned') {
+      try {
+        const doctorNotificationPath = `doctors/${notification.recipientId}/notifications.json`;
+        
+        // Read existing doctor notifications
+        let doctorData: any = null;
+        try {
+          doctorData = await readJSON(GCS_BUCKETS.DOCTOR, doctorNotificationPath);
+        } catch (err) {
+          // File doesn't exist yet
+        }
+        
+        if (!doctorData) {
+          doctorData = {
+            doctorId: notification.recipientId,
+            notifications: [],
+            lastUpdated: new Date().toISOString()
+          };
+        }
+        
+        // Format notification for doctor portal
+        const doctorNotification = {
+          id: fullNotification.id,
+          type: fullNotification.type,
+          title: fullNotification.title,
+          message: fullNotification.message,
+          data: {
+            appointmentId: fullNotification.data?.appointmentId,
+            patientId: fullNotification.data?.patientId,
+            patientName: fullNotification.data?.patientName,
+            meetingLink: fullNotification.data?.meetingLink,
+            appointmentDate: fullNotification.data?.appointmentDate,
+            appointmentTime: fullNotification.data?.appointmentTime,
+            urgency: fullNotification.data?.urgency,
+            symptoms: fullNotification.data?.symptoms,
+          },
+          isRead: false,
+          createdAt: fullNotification.createdAt
+        };
+        
+        doctorData.notifications = doctorData.notifications || [];
+        doctorData.notifications.unshift(doctorNotification);
+        
+        // Keep only last 100 notifications
+        if (doctorData.notifications.length > 100) {
+          doctorData.notifications = doctorData.notifications.slice(0, 100);
+        }
+        
+        doctorData.lastUpdated = new Date().toISOString();
+        
+        await writeJSON(GCS_BUCKETS.DOCTOR, doctorNotificationPath, doctorData);
+        console.log(`✅ [NOTIFICATION] Doctor notification stored for ${notification.recipientId}: ${fullNotification.type}`);
+      } catch (err) {
+        console.error(`⚠️ [NOTIFICATION] Failed to store doctor notification:`, err);
+        // Don't fail the main notification creation
+      }
+    }
 
     return fullNotification;
   }

@@ -231,7 +231,8 @@ Started: ${new Date().toISOString()}
 
   if (doctorAvailable) {
     await runner.test('Auth Server Health Check', async () => {
-      const url = useCloud ? `${CONFIG.doctorPortal.cloud}/health` : `${CONFIG.doctorPortal.authServer}/health`;
+      // Auth server exposes /api/health, not /health
+      const url = useCloud ? `${CONFIG.doctorPortal.cloud}/api/health` : `${CONFIG.doctorPortal.authServer}/api/health`;
       const response = await runner.fetch(url);
       runner.assert(response.status === 200, `Expected 200, got ${response.status}`);
     });

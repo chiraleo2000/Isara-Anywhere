@@ -2397,6 +2397,36 @@ app.post('/api/appointment-pool/:poolId/admin-assign', authenticateToken, async 
     const io = req.app.get('io');
     io.emit('pool-updated', { poolId, action: 'admin_assigned', doctorId, adminId });
 
+    // Create notification for the assigned doctor
+    try {
+      const GCS_API_URL = process.env.GCS_API_URL || 'http://localhost:3012';
+      await fetch(`${GCS_API_URL}/api/notifications/doctor`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          doctorId: doctorId,
+          type: 'appointment_assigned',
+          title: 'นัดหมายใหม่มอบหมายให้คุณ',
+          message: `มีนัดหมายใหม่จาก ${poolItem.patientName} รอการยืนยันของคุณ`,
+          data: {
+            appointmentId: poolItem.appointmentId || poolId,
+            poolId: poolId,
+            patientId: poolItem.patientId,
+            patientName: poolItem.patientName,
+            appointmentDate: assignedDate,
+            appointmentTime: assignedTime,
+            urgency: poolItem.urgency,
+            symptoms: poolItem.symptoms,
+            assignedBy: adminName || adminId
+          }
+        })
+      });
+      console.log(`📬 Notification sent to doctor ${doctorId} for appointment assignment`);
+    } catch (notifError) {
+      console.error('⚠️ Failed to send notification to doctor:', notifError.message);
+      // Don't fail the assignment if notification fails
+    }
+
     console.log(`✅ Pool item ${poolId} assigned by admin ${adminId} to doctor ${doctorId}`);
     res.json({
       success: true,

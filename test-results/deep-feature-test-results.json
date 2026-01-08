@@ -1,0 +1,468 @@
+{
+  "timestamp": "2026-01-08T11:18:46.216Z",
+  "duration": "50.71",
+  "summary": {
+    "total": 65,
+    "passed": 65,
+    "failed": 0,
+    "skipped": 0,
+    "passRate": "100.0"
+  },
+  "results": [
+    {
+      "suite": "1. API Health & Connectivity Tests",
+      "name": "Patient Portal API Health",
+      "status": "passed",
+      "duration": 105,
+      "category": "unit"
+    },
+    {
+      "suite": "1. API Health & Connectivity Tests",
+      "name": "Doctor Main API Health",
+      "status": "passed",
+      "duration": 12,
+      "category": "unit"
+    },
+    {
+      "suite": "1. API Health & Connectivity Tests",
+      "name": "Doctor GCS API Health",
+      "status": "passed",
+      "duration": 11,
+      "category": "unit"
+    },
+    {
+      "suite": "1. API Health & Connectivity Tests",
+      "name": "Doctor Auth Server Health",
+      "status": "passed",
+      "duration": 12,
+      "category": "unit"
+    },
+    {
+      "suite": "2. Authentication & Security Tests",
+      "name": "Patient Login Endpoint Accepts POST",
+      "status": "passed",
+      "duration": 982,
+      "category": "unit"
+    },
+    {
+      "suite": "2. Authentication & Security Tests",
+      "name": "Doctor Login Endpoint Accepts POST",
+      "status": "passed",
+      "duration": 158,
+      "category": "unit"
+    },
+    {
+      "suite": "2. Authentication & Security Tests",
+      "name": "Registration Validates Required Fields",
+      "status": "passed",
+      "duration": 6,
+      "category": "unit"
+    },
+    {
+      "suite": "2. Authentication & Security Tests",
+      "name": "Protected Endpoints Require Auth Token",
+      "status": "passed",
+      "duration": 5,
+      "category": "unit"
+    },
+    {
+      "suite": "2. Authentication & Security Tests",
+      "name": "Admin Endpoints Protected",
+      "status": "passed",
+      "duration": 8,
+      "category": "unit"
+    },
+    {
+      "suite": "3. GCS Storage Operations Tests",
+      "name": "GCS Medical Content Retrieval",
+      "status": "passed",
+      "duration": 163,
+      "category": "unit"
+    },
+    {
+      "suite": "3. GCS Storage Operations Tests",
+      "name": "GCS Doctor Data API",
+      "status": "passed",
+      "duration": 4,
+      "category": "unit"
+    },
+    {
+      "suite": "3. GCS Storage Operations Tests",
+      "name": "GCS Patient Data API",
+      "status": "passed",
+      "duration": 383,
+      "category": "unit"
+    },
+    {
+      "suite": "3. GCS Storage Operations Tests",
+      "name": "GCS File Upload Endpoint Exists",
+      "status": "passed",
+      "duration": 4,
+      "category": "unit"
+    },
+    {
+      "suite": "3. GCS Storage Operations Tests",
+      "name": "GCS Buckets Connection",
+      "status": "passed",
+      "duration": 5,
+      "category": "unit"
+    },
+    {
+      "suite": "4. Video Meeting & Jitsi Integration Tests",
+      "name": "Video Meeting Service Health",
+      "status": "passed",
+      "duration": 4,
+      "category": "unit"
+    },
+    {
+      "suite": "4. Video Meeting & Jitsi Integration Tests",
+      "name": "Create Meeting API",
+      "status": "passed",
+      "duration": 6,
+      "category": "unit"
+    },
+    {
+      "suite": "4. Video Meeting & Jitsi Integration Tests",
+      "name": "Create Guest Invite API",
+      "status": "passed",
+      "duration": 4,
+      "category": "unit"
+    },
+    {
+      "suite": "4. Video Meeting & Jitsi Integration Tests",
+      "name": "Join Meeting with Invite",
+      "status": "passed",
+      "duration": 3,
+      "category": "unit"
+    },
+    {
+      "suite": "4. Video Meeting & Jitsi Integration Tests",
+      "name": "Get Meeting Invites",
+      "status": "passed",
+      "duration": 4,
+      "category": "unit"
+    },
+    {
+      "suite": "5. Notification System Tests",
+      "name": "Notification Service Endpoint",
+      "status": "passed",
+      "duration": 4,
+      "category": "unit"
+    },
+    {
+      "suite": "5. Notification System Tests",
+      "name": "Doctor Notification Storage Path",
+      "status": "passed",
+      "duration": 4,
+      "category": "unit"
+    },
+    {
+      "suite": "5. Notification System Tests",
+      "name": "Send Notification API",
+      "status": "passed",
+      "duration": 4,
+      "category": "unit"
+    },
+    {
+      "suite": "5. Notification System Tests",
+      "name": "Mark Notification Read API",
+      "status": "passed",
+      "duration": 4,
+      "category": "unit"
+    },
+    {
+      "suite": "6. Appointment & Queue Management Tests",
+      "name": "List Patient Appointments",
+      "status": "passed",
+      "duration": 3,
+      "category": "unit"
+    },
+    {
+      "suite": "6. Appointment & Queue Management Tests",
+      "name": "Create Appointment API",
+      "status": "passed",
+      "duration": 5,
+      "category": "unit"
+    },
+    {
+      "suite": "6. Appointment & Queue Management Tests",
+      "name": "Doctor Queue API",
+      "status": "passed",
+      "duration": 5,
+      "category": "unit"
+    },
+    {
+      "suite": "6. Appointment & Queue Management Tests",
+      "name": "Update Appointment Status",
+      "status": "passed",
+      "duration": 4,
+      "category": "unit"
+    },
+    {
+      "suite": "7. EMR & Prescription System Tests",
+      "name": "EMR Endpoint Exists",
+      "status": "passed",
+      "duration": 4,
+      "category": "unit"
+    },
+    {
+      "suite": "7. EMR & Prescription System Tests",
+      "name": "Create Prescription API",
+      "status": "passed",
+      "duration": 4,
+      "category": "unit"
+    },
+    {
+      "suite": "7. EMR & Prescription System Tests",
+      "name": "Get Patient Prescriptions",
+      "status": "passed",
+      "duration": 4,
+      "category": "unit"
+    },
+    {
+      "suite": "7. EMR & Prescription System Tests",
+      "name": "Medical History API",
+      "status": "passed",
+      "duration": 5,
+      "category": "unit"
+    },
+    {
+      "suite": "8. Health Journey & PHR Tests",
+      "name": "Patient PHR API",
+      "status": "passed",
+      "duration": 5,
+      "category": "unit"
+    },
+    {
+      "suite": "8. Health Journey & PHR Tests",
+      "name": "Patient Vitals API",
+      "status": "passed",
+      "duration": 4,
+      "category": "unit"
+    },
+    {
+      "suite": "8. Health Journey & PHR Tests",
+      "name": "Health Logs API",
+      "status": "passed",
+      "duration": 3,
+      "category": "unit"
+    },
+    {
+      "suite": "8. Health Journey & PHR Tests",
+      "name": "Health Timeline API",
+      "status": "passed",
+      "duration": 6,
+      "category": "unit"
+    },
+    {
+      "suite": "8. Health Journey & PHR Tests",
+      "name": "Living Will API",
+      "status": "passed",
+      "duration": 3,
+      "category": "unit"
+    },
+    {
+      "suite": "9. Clinical Resources & Medical Library Tests",
+      "name": "Medical Articles API",
+      "status": "passed",
+      "duration": 173,
+      "category": "unit"
+    },
+    {
+      "suite": "9. Clinical Resources & Medical Library Tests",
+      "name": "Clinical Guidelines API",
+      "status": "passed",
+      "duration": 4,
+      "category": "unit"
+    },
+    {
+      "suite": "9. Clinical Resources & Medical Library Tests",
+      "name": "Drug Reference API",
+      "status": "passed",
+      "duration": 3,
+      "category": "unit"
+    },
+    {
+      "suite": "9. Clinical Resources & Medical Library Tests",
+      "name": "Medical Content Search",
+      "status": "passed",
+      "duration": 6,
+      "category": "unit"
+    },
+    {
+      "suite": "10. PDPA Compliance & Data Protection Tests",
+      "name": "PDPA Consent API",
+      "status": "passed",
+      "duration": 4,
+      "category": "unit"
+    },
+    {
+      "suite": "10. PDPA Compliance & Data Protection Tests",
+      "name": "Data Export Request API",
+      "status": "passed",
+      "duration": 5,
+      "category": "unit"
+    },
+    {
+      "suite": "10. PDPA Compliance & Data Protection Tests",
+      "name": "Audit Log API",
+      "status": "passed",
+      "duration": 5,
+      "category": "unit"
+    },
+    {
+      "suite": "11. Browser UI & Navigation Tests",
+      "name": "Patient Portal Loads Successfully",
+      "status": "passed",
+      "duration": 2697,
+      "category": "browser"
+    },
+    {
+      "suite": "11. Browser UI & Navigation Tests",
+      "name": "Patient Portal Login Page Elements",
+      "status": "passed",
+      "duration": 857,
+      "category": "browser"
+    },
+    {
+      "suite": "11. Browser UI & Navigation Tests",
+      "name": "Patient Portal Scroll Position on Load",
+      "status": "passed",
+      "duration": 1463,
+      "category": "browser"
+    },
+    {
+      "suite": "11. Browser UI & Navigation Tests",
+      "name": "Doctor Portal Loads Successfully",
+      "status": "passed",
+      "duration": 2351,
+      "category": "browser"
+    },
+    {
+      "suite": "11. Browser UI & Navigation Tests",
+      "name": "Doctor Portal Login Page Elements",
+      "status": "passed",
+      "duration": 1355,
+      "category": "browser"
+    },
+    {
+      "suite": "11. Browser UI & Navigation Tests",
+      "name": "Doctor Portal Scroll Position on Load",
+      "status": "passed",
+      "duration": 2223,
+      "category": "browser"
+    },
+    {
+      "suite": "12. Theme & Language Settings Sync Tests",
+      "name": "Patient Portal Theme Persistence",
+      "status": "passed",
+      "duration": 4249,
+      "category": "browser"
+    },
+    {
+      "suite": "12. Theme & Language Settings Sync Tests",
+      "name": "Patient Portal Language Persistence",
+      "status": "passed",
+      "duration": 3000,
+      "category": "browser"
+    },
+    {
+      "suite": "12. Theme & Language Settings Sync Tests",
+      "name": "Doctor Portal Theme Persistence",
+      "status": "passed",
+      "duration": 4629,
+      "category": "browser"
+    },
+    {
+      "suite": "12. Theme & Language Settings Sync Tests",
+      "name": "Doctor Portal Language Persistence",
+      "status": "passed",
+      "duration": 3214,
+      "category": "browser"
+    },
+    {
+      "suite": "13. Navigation & Routing Tests",
+      "name": "Patient Portal Root Route",
+      "status": "passed",
+      "duration": 1867,
+      "category": "browser"
+    },
+    {
+      "suite": "13. Navigation & Routing Tests",
+      "name": "Doctor Portal Root Route",
+      "status": "passed",
+      "duration": 2181,
+      "category": "browser"
+    },
+    {
+      "suite": "13. Navigation & Routing Tests",
+      "name": "Patient Portal Hash Routes Work",
+      "status": "passed",
+      "duration": 1485,
+      "category": "browser"
+    },
+    {
+      "suite": "13. Navigation & Routing Tests",
+      "name": "Doctor Portal Hash Routes Work",
+      "status": "passed",
+      "duration": 1327,
+      "category": "browser"
+    },
+    {
+      "suite": "14. Performance & Response Time Tests",
+      "name": "Patient API Response < 2s",
+      "status": "passed",
+      "duration": 8,
+      "category": "unit"
+    },
+    {
+      "suite": "14. Performance & Response Time Tests",
+      "name": "Doctor API Response < 2s",
+      "status": "passed",
+      "duration": 8,
+      "category": "unit"
+    },
+    {
+      "suite": "14. Performance & Response Time Tests",
+      "name": "GCS API Response < 3s",
+      "status": "passed",
+      "duration": 10,
+      "category": "unit"
+    },
+    {
+      "suite": "14. Performance & Response Time Tests",
+      "name": "Medical Content Load < 5s",
+      "status": "passed",
+      "duration": 170,
+      "category": "unit"
+    },
+    {
+      "suite": "15. Security & Vulnerability Tests",
+      "name": "SQL Injection Protection",
+      "status": "passed",
+      "duration": 970,
+      "category": "unit"
+    },
+    {
+      "suite": "15. Security & Vulnerability Tests",
+      "name": "XSS Protection Headers",
+      "status": "passed",
+      "duration": 4,
+      "category": "unit"
+    },
+    {
+      "suite": "15. Security & Vulnerability Tests",
+      "name": "CORS Headers Present",
+      "status": "passed",
+      "duration": 3,
+      "category": "unit"
+    },
+    {
+      "suite": "15. Security & Vulnerability Tests",
+      "name": "API Responds Under Multiple Requests",
+      "status": "passed",
+      "duration": 23,
+      "category": "unit"
+    }
+  ]
+}

@@ -3,9 +3,11 @@
  * รองรับหน้าจอมือถือ แท็บเล็ต และเดสก์ท็อป
  */
 
-import React, { useState, ReactNode } from 'react';
+import React, { useState, ReactNode, useLayoutEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { User } from '../../types';
 import { useResponsive } from '../../hooks/useResponsive';
+import { useSettings } from '../../hooks/useSettings';
 import { DoctorNotificationBell } from '../notifications/DoctorNotificationBell';
 import { SettingsDropdown } from './SettingsDropdown';
 import {
@@ -193,25 +195,27 @@ export const MobileNav: React.FC<MobileNavProps> = ({
   onLogout,
 }) => {
   const [showMenu, setShowMenu] = useState(false);
+  const { theme, language } = useSettings();
+  const isDarkMode = theme === 'dark';
 
   const isAdmin = user.isAdmin || user.role === 'admin';
 
-  // Base nav items - Thai labels primary
+  // Base nav items with language support
   const baseNavItems = [
-    { id: 'dashboard', label: 'แดชบอร์ด', icon: HomeIcon },
-    { id: 'schedule', label: 'ตารางนัด', icon: CalendarDaysIcon },
-    { id: 'availability', label: 'เวลาว่าง', icon: ClockIcon },
-    { id: 'patients', label: 'ผู้ป่วย', icon: ClipboardDocumentListIcon },
-    { id: 'health-meeting', label: 'นัดหมาย', icon: VideoCameraIcon },
-    { id: 'medical-consultants', label: 'ที่ปรึกษา', icon: UserGroupIcon },
-    { id: 'medical-content', label: 'เนื้อหา', icon: BookOpenIcon },
-    { id: 'clinical-resources', label: 'ทรัพยากร', icon: AcademicCapIcon },
+    { id: 'dashboard', label: language === 'th' ? 'แดชบอร์ด' : 'Dashboard', icon: HomeIcon },
+    { id: 'schedule', label: language === 'th' ? 'ตารางนัด' : 'Schedule', icon: CalendarDaysIcon },
+    { id: 'availability', label: language === 'th' ? 'เวลาว่าง' : 'Available', icon: ClockIcon },
+    { id: 'patients', label: language === 'th' ? 'ผู้ป่วย' : 'Patients', icon: ClipboardDocumentListIcon },
+    { id: 'health-meeting', label: language === 'th' ? 'นัดหมาย' : 'Meetings', icon: VideoCameraIcon },
+    { id: 'medical-consultants', label: language === 'th' ? 'ที่ปรึกษา' : 'Consults', icon: UserGroupIcon },
+    { id: 'medical-content', label: language === 'th' ? 'เนื้อหา' : 'Content', icon: BookOpenIcon },
+    { id: 'clinical-resources', label: language === 'th' ? 'ทรัพยากร' : 'Resources', icon: AcademicCapIcon },
   ];
 
-  // Admin-only menu items - Thai labels
+  // Admin-only menu items with language support
   const adminNavItems = [
-    { id: 'doctors', label: 'จัดการแพทย์', icon: UserGroupIcon },
-    { id: 'doctor-management', label: 'อนุมัติแพทย์', icon: ShieldCheckIcon },
+    { id: 'doctors', label: language === 'th' ? 'จัดการแพทย์' : 'Doctors', icon: UserGroupIcon },
+    { id: 'doctor-management', label: language === 'th' ? 'อนุมัติแพทย์' : 'Approve', icon: ShieldCheckIcon },
   ];
 
   const navItems = isAdmin ? [...baseNavItems, ...adminNavItems] : baseNavItems;
@@ -219,7 +223,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({
   return (
     <>
       {/* Mobile Header */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-50">
+      <header className={`lg:hidden fixed top-0 left-0 right-0 ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-b z-50`}>
         <div className="flex items-center justify-between p-4">
           {/* Logo - Clickable */}
           <button
@@ -230,7 +234,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({
             className="flex items-center space-x-2 hover:opacity-80 transition-opacity"
           >
             <img src="/IzaraLogo.png" alt="Izara" className="h-8 w-auto" />
-            <span className="font-bold text-gray-900">Doctor</span>
+            <span className={`font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Doctor</span>
           </button>
 
           {/* Notification Bell and Settings */}
@@ -242,7 +246,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({
           {/* Menu Button */}
           <button
             onClick={() => setShowMenu(!showMenu)}
-            className="p-2 rounded-lg hover:bg-gray-100"
+            className={`p-2 rounded-lg ${isDarkMode ? 'hover:bg-gray-700 text-gray-200' : 'hover:bg-gray-100 text-gray-900'}`}
           >
             {showMenu ? (
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -258,8 +262,8 @@ export const MobileNav: React.FC<MobileNavProps> = ({
 
         {/* Mobile Menu Dropdown */}
         {showMenu && (
-          <div className="border-t border-gray-200 bg-white">
-            <div className="p-4 border-b border-gray-100">
+          <div className={`border-t ${isDarkMode ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white'}`}>
+            <div className={`p-4 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-100'}`}>
               <div className="flex items-center space-x-3">
                 <img
                   src={user.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(user.email || user.id)}`}
@@ -267,8 +271,8 @@ export const MobileNav: React.FC<MobileNavProps> = ({
                   className="w-10 h-10 rounded-full"
                 />
                 <div>
-                  <p className="font-medium text-gray-900">{user.name}</p>
-                  <p className="text-xs text-gray-500">{user.email}</p>
+                  <p className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{user.name}</p>
+                  <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>{user.email}</p>
                 </div>
               </div>
             </div>
@@ -285,8 +289,12 @@ export const MobileNav: React.FC<MobileNavProps> = ({
                     }}
                     className={`w-full flex items-center space-x-3 px-4 py-3 text-left transition-colors ${
                       currentView === item.id
-                        ? 'bg-emerald-50 text-emerald-600 border-l-4 border-emerald-600'
-                        : 'text-gray-700 hover:bg-gray-50'
+                        ? isDarkMode
+                          ? 'bg-emerald-900/50 text-emerald-400 border-l-4 border-emerald-400'
+                          : 'bg-emerald-50 text-emerald-600 border-l-4 border-emerald-600'
+                        : isDarkMode
+                          ? 'text-gray-300 hover:bg-gray-700'
+                          : 'text-gray-700 hover:bg-gray-50'
                     }`}
                   >
                     <Icon className="w-5 h-5" />
@@ -296,12 +304,12 @@ export const MobileNav: React.FC<MobileNavProps> = ({
               })}
             </nav>
 
-            <div className="border-t border-gray-200 p-4">
+            <div className={`border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-200'} p-4`}>
               <button
                 onClick={onLogout}
-                className="w-full py-2 px-4 bg-red-50 text-red-600 rounded-lg font-medium hover:bg-red-100"
+                className={`w-full py-2 px-4 ${isDarkMode ? 'bg-red-900/50 text-red-400 hover:bg-red-900/70' : 'bg-red-50 text-red-600 hover:bg-red-100'} rounded-lg font-medium transition-colors`}
               >
-                Logout
+                {language === 'th' ? 'ออกจากระบบ' : 'Logout'}
               </button>
             </div>
           </div>
@@ -309,7 +317,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({
       </header>
 
       {/* Bottom Navigation Bar */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
+      <nav className={`lg:hidden fixed bottom-0 left-0 right-0 ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-t z-50`}>
         <div className="grid grid-cols-5 gap-1">
           {navItems.slice(0, 5).map((item) => {
             const Icon = item.icon;
@@ -320,7 +328,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({
                 className={`flex flex-col items-center justify-center py-2 transition-colors ${
                   currentView === item.id
                     ? 'text-emerald-600'
-                    : 'text-gray-500'
+                    : isDarkMode ? 'text-gray-400' : 'text-gray-500'
                 }`}
               >
                 <Icon className="w-6 h-6" />
@@ -352,39 +360,41 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
   onLogout,
 }) => {
   const isAdmin = user.isAdmin || user.role === 'admin';
+  const { theme, language } = useSettings();
+  const isDarkMode = theme === 'dark';
 
-  // Base nav items - Thai labels primary
+  // Base nav items with language support
   const baseNavItems = [
-    { id: 'dashboard', label: 'แดชบอร์ด', icon: HomeIcon },
-    { id: 'schedule', label: 'ตารางนัดหมาย', icon: CalendarDaysIcon },
-    { id: 'availability', label: 'เวลาว่างของฉัน', icon: ClockIcon },
-    { id: 'patients', label: 'ผู้ป่วย', icon: ClipboardDocumentListIcon },
-    { id: 'health-meeting', label: 'นัดหมาย & ประชุม', icon: VideoCameraIcon },
-    { id: 'medical-consultants', label: 'ที่ปรึกษาแพทย์', icon: UserGroupIcon },
-    { id: 'medical-content', label: 'เนื้อหาทางการแพทย์', icon: BookOpenIcon },
-    { id: 'clinical-resources', label: 'ทรัพยากรทางคลินิก', icon: AcademicCapIcon },
+    { id: 'dashboard', label: language === 'th' ? 'แดชบอร์ด' : 'Dashboard', icon: HomeIcon },
+    { id: 'schedule', label: language === 'th' ? 'ตารางนัดหมาย' : 'Schedule', icon: CalendarDaysIcon },
+    { id: 'availability', label: language === 'th' ? 'เวลาว่างของฉัน' : 'My Availability', icon: ClockIcon },
+    { id: 'patients', label: language === 'th' ? 'ผู้ป่วย' : 'Patients', icon: ClipboardDocumentListIcon },
+    { id: 'health-meeting', label: language === 'th' ? 'นัดหมาย & ประชุม' : 'Appointments & Meetings', icon: VideoCameraIcon },
+    { id: 'medical-consultants', label: language === 'th' ? 'ที่ปรึกษาแพทย์' : 'Medical Consultants', icon: UserGroupIcon },
+    { id: 'medical-content', label: language === 'th' ? 'เนื้อหาทางการแพทย์' : 'Medical Content', icon: BookOpenIcon },
+    { id: 'clinical-resources', label: language === 'th' ? 'ทรัพยากรทางคลินิก' : 'Clinical Resources', icon: AcademicCapIcon },
   ];
 
-  // Admin-only menu items - Thai labels
+  // Admin-only menu items with language support
   const adminNavItems = [
-    { id: 'doctors', label: 'จัดการแพทย์', icon: UserGroupIcon },
-    { id: 'doctor-management', label: 'อนุมัติแพทย์ใหม่', icon: ShieldCheckIcon },
+    { id: 'doctors', label: language === 'th' ? 'จัดการแพทย์' : 'Manage Doctors', icon: UserGroupIcon },
+    { id: 'doctor-management', label: language === 'th' ? 'อนุมัติแพทย์ใหม่' : 'Doctor Approval', icon: ShieldCheckIcon },
   ];
 
   const navItems = isAdmin ? [...baseNavItems, ...adminNavItems] : baseNavItems;
 
   return (
-    <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 bg-white border-r border-gray-200">
+    <aside className={`hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-r`}>
       {/* Logo - Clickable */}
-      <div className="flex items-center justify-between p-6 border-b border-gray-200">
+      <div className={`flex items-center justify-between p-6 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
         <button
           onClick={() => onNavigate('dashboard')}
-          className="flex items-center space-x-3 hover:bg-gray-50 transition-colors text-left"
+          className={`flex items-center space-x-3 ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'} transition-colors text-left rounded-lg p-1`}
         >
           <img src="/IzaraLogo.png" alt="Izara" className="h-10 w-auto" />
           <div>
-            <h1 className="text-lg font-bold text-gray-900">Izara</h1>
-            <p className="text-xs text-gray-500">พอร์ทัลแพทย์</p>
+            <h1 className={`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Izara</h1>
+            <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>{language === 'th' ? 'พอร์ทัลแพทย์' : 'Doctor Portal'}</p>
           </div>
         </button>
         <div className="flex items-center gap-2">
@@ -403,8 +413,12 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
               onClick={() => onNavigate(item.id)}
               className={`w-full flex items-center space-x-3 px-6 py-3 text-left transition-colors ${
                 currentView === item.id
-                  ? 'bg-emerald-50 text-emerald-600 border-r-4 border-emerald-600'
-                  : 'text-gray-700 hover:bg-gray-50'
+                  ? isDarkMode 
+                    ? 'bg-emerald-900/50 text-emerald-400 border-r-4 border-emerald-400'
+                    : 'bg-emerald-50 text-emerald-600 border-r-4 border-emerald-600'
+                  : isDarkMode
+                    ? 'text-gray-300 hover:bg-gray-700'
+                    : 'text-gray-700 hover:bg-gray-50'
               }`}
             >
               <Icon className="w-5 h-5" />
@@ -420,7 +434,7 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
       </div>
 
       {/* User Profile */}
-      <div className="border-t border-gray-200 p-4">
+      <div className={`border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-200'} p-4`}>
         <div className="flex items-center space-x-3 mb-3">
           <img
             src={user.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(user.email || user.id)}`}
@@ -428,15 +442,15 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
             className="w-10 h-10 rounded-full"
           />
           <div className="flex-1 min-w-0">
-            <p className="font-medium text-gray-900 truncate">{user.name}</p>
-            <p className="text-xs text-gray-500 truncate">{user.email}</p>
+            <p className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'} truncate`}>{user.name}</p>
+            <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'} truncate`}>{user.email}</p>
           </div>
         </div>
         <button
           onClick={onLogout}
-          className="w-full py-2 px-4 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+          className={`w-full py-2 px-4 ${isDarkMode ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'} rounded-lg font-medium transition-colors`}
         >
-          ออกจากระบบ
+          {language === 'th' ? 'ออกจากระบบ' : 'Logout'}
         </button>
       </div>
     </aside>
@@ -491,6 +505,9 @@ export const Card: React.FC<CardProps> = ({
   padding = 'md',
   onClick,
 }) => {
+  const { theme } = useSettings();
+  const isDarkMode = theme === 'dark';
+  
   const paddingClasses = {
     none: '',
     sm: 'p-3',
@@ -501,7 +518,7 @@ export const Card: React.FC<CardProps> = ({
   return (
     <div
       onClick={onClick}
-      className={`bg-white rounded-xl shadow-sm border border-gray-200 ${paddingClasses[padding]} ${
+      className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-xl shadow-sm border ${paddingClasses[padding]} ${
         onClick ? 'cursor-pointer hover:shadow-md transition-shadow' : ''
       } ${className}`}
     >
@@ -530,9 +547,21 @@ export const ResponsiveLayout: React.FC<ResponsiveLayoutProps> = ({
   children,
 }) => {
   const { isMobile } = useResponsive();
+  const { theme } = useSettings();
+  const location = useLocation();
+  const isDarkMode = theme === 'dark';
+
+  // Scroll to top on route/view change
+  useLayoutEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    const mainContent = document.querySelector('main');
+    if (mainContent) {
+      mainContent.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    }
+  }, [location.pathname, currentView]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className={`min-h-screen ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
       {/* Desktop Sidebar */}
       <DesktopSidebar
         user={user}
@@ -554,6 +583,7 @@ export const ResponsiveLayout: React.FC<ResponsiveLayoutProps> = ({
         className={`
           ${isMobile ? 'pt-16 pb-20' : 'lg:pl-64'}
           min-h-screen overflow-y-auto
+          ${isDarkMode ? 'bg-gray-900 text-white' : ''}
         `}
       >
         {children}

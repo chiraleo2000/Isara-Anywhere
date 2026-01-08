@@ -15,6 +15,17 @@ body {
   -moz-osx-font-smoothing: grayscale;
   background: linear-gradient(to bottom, #f0fdf4, #ffffff);
   min-height: 100vh;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Dark mode styles */
+html.dark body {
+  background: linear-gradient(to bottom, #1a1a2e, #16213e);
+  color: #e5e5e5;
+}
+
+html.dark {
+  color-scheme: dark;
 }
 
 code {
@@ -62,5 +73,10 @@ code {
 
   .input-primary {
     @apply w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all;
+  }
+  
+  /* Dark mode input styling */
+  html.dark .input-primary {
+    @apply border-gray-600 bg-gray-800 text-white;
   }
 }
