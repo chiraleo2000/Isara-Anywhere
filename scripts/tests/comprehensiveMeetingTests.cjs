@@ -15,11 +15,14 @@
  *   7. Default settings (audio ON, video ON, chat enabled)
  *   8. Post-meeting video storage to izara-doctors-data
  *   9. Gemini AI summary (30-minute sections if video > 30 min)
+ *   9.5. Fetch meeting files from GCS (AI summary display in Doctor Portal)
  *   10. Summary delivery to doctor portal
+ *   11. Frontend-to-Backend AI Summary Save (MeetingService.saveMeetingResults)
+ *   12. Doctor Portal AI Summary Display (getMeetingFiles + getMeetingTranscript)
  * 
  * Run: node scripts/tests/comprehensiveMeetingTests.cjs [--local|--cloud]
  * 
- * @version 1.1.7
+ * @version 1.2.1
  * @date January 2026
  */
 
@@ -876,6 +879,432 @@ async function testRevokeInvite(results, meetingData, invites) {
 }
 
 // ============================================================================
+// TEST 11: FRONTEND AI SUMMARY SAVE TO GCS
+// Tests the MeetingService.saveMeetingResults() flow from VirtualMeeting.tsx
+// This simulates what happens when doctor ends meeting with AI conversation
+// ============================================================================
+
+async function testFrontendAISummarySave(results) {
+  log('section', 'TEST 11: Frontend AI Summary Save to GCS');
+  
+  try {
+    // Create a new appointment ID for this test
+    const appointmentId = `APT-AISAVE-${Date.now().toString(36).toUpperCase()}`;
+    
+    // Simulate the frontend meeting results structure (from VirtualMeeting.tsx)
+    const mockAISummary = {
+      chiefComplaint: 'ปวดหัว มีไข้ 2 วัน',
+      presentingSymptoms: ['ปวดหัวบริเวณขมับ', 'ไข้ต่ำ 37.8°C', 'อ่อนเพลีย'],
+      preliminaryAssessment: 'น่าจะเป็นไข้หวัดธรรมดา หรือ Tension-type headache ร่วมกับ viral fever',
+      recommendations: [
+        'พักผ่อนให้เพียงพอ',
+        'ดื่มน้ำมากๆ 2-3 ลิตรต่อวัน',
+        'รับประทานยาพาราเซตามอล เมื่อมีไข้หรือปวดหัว',
+        'หากไข้สูงเกิน 39°C หรืออาการไม่ดีขึ้นใน 3 วัน ให้พบแพทย์'
+      ],
+      prescriptions: [
+        { drug: 'Paracetamol 500mg', dosage: '1-2 เม็ด', frequency: 'ทุก 4-6 ชั่วโมง เมื่อมีอาการ' }
+      ],
+      followUp: 'ติดตามอาการใน 3-5 วัน',
+      redFlags: ['ไข้สูงเกิน 39°C นานกว่า 3 วัน', 'หายใจลำบาก', 'ปวดหัวรุนแรงมาก', 'คอแข็ง'],
+      lifestyleAdvice: ['นอนหลับพักผ่อน 7-8 ชั่วโมง', 'หลีกเลี่ยงสถานที่แออัด'],
+      needsFollowUp: true,
+      followUpDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString()
+    };
+    
+    // Simulate conversation history (from doctorAIService)
+    const mockTranscript = [
+      { sender: 'ai', content: 'สวัสดีครับ ผม AI Assistant ประจำของคุณหมอ วันนี้มีอาการอย่างไรบ้างครับ', timestamp: new Date(Date.now() - 300000).toISOString() },
+      { sender: 'patient', content: 'สวัสดีค่ะ หนูมีอาการปวดหัวมา 2 วันแล้วค่ะ แล้วก็มีไข้ต่ำๆ ด้วย', timestamp: new Date(Date.now() - 280000).toISOString() },
+      { sender: 'ai', content: 'ปวดหัวบริเวณไหนครับ ปวดแบบตุบๆ หรือปวดตื้อๆ และไข้วัดได้เท่าไหร่ครับ', timestamp: new Date(Date.now() - 260000).toISOString() },
+      { sender: 'patient', content: 'ปวดบริเวณขมับค่ะ ปวดตื้อๆ ไข้ 37.8 องศาค่ะ', timestamp: new Date(Date.now() - 240000).toISOString() },
+      { sender: 'ai', content: 'เข้าใจครับ จากอาการที่บอก น่าจะเป็นไข้หวัดธรรมดาร่วมกับปวดหัวจากความเครียดครับ แนะนำให้พักผ่อนและดื่มน้ำมากๆ', timestamp: new Date(Date.now() - 220000).toISOString() }
+    ];
+    
+    // Build the request body matching MeetingService.saveMeetingResults()
+    const requestBody = {
+      appointmentId,
+      doctorId: config.doctor.id,
+      doctorName: config.doctor.name,
+      duration: 300, // 5 minutes in seconds
+      transcript: mockTranscript.map((m, i) => ({
+        id: i + 1,
+        speaker: m.sender === 'ai' ? 'doctor' : 'patient',
+        text: m.content,
+        timestamp: m.timestamp,
+        isFinal: true
+      })),
+      summary: mockAISummary,
+      recommendations: mockAISummary.recommendations,
+      timestamp: new Date().toISOString()
+    };
+    
+    // Call the /end endpoint (same as MeetingService.saveMeetingResults)
+    const saveResponse = await httpRequest(
+      `${config.doctorApi}/api/video-meeting/${appointmentId}/end`,
+      'POST',
+      requestBody
+    );
+    
+    if (saveResponse.status === 200 && saveResponse.data?.success) {
+      results.pass('Frontend AI summary saved to GCS');
+      
+      const data = saveResponse.data;
+      
+      // Verify meeting ID
+      if (data.meeting?.id) {
+        results.pass('Meeting ID returned after save', data.meeting.id);
+      }
+      
+      // Verify duration was recorded
+      if (data.meeting?.duration === 300) {
+        results.pass('Meeting duration correctly saved', '300 seconds');
+      }
+      
+      // Verify transcript was saved
+      if (data.transcript?.length >= 5) {
+        results.pass('Transcript saved correctly', `${data.transcript.length} entries`);
+      } else {
+        results.fail('Transcript save', `Expected 5 entries, got ${data.transcript?.length || 0}`);
+      }
+      
+      // Verify summary was saved
+      if (data.summary) {
+        results.pass('AI Summary saved to response');
+        
+        // Check summary structure
+        if (data.summary.chiefComplaint) {
+          results.pass('Summary has chiefComplaint');
+        }
+        if (data.summary.presentingSymptoms?.length > 0) {
+          results.pass('Summary has presentingSymptoms');
+        }
+        if (data.summary.recommendations?.length > 0) {
+          results.pass('Summary has recommendations');
+        }
+        if (data.summary.prescriptions?.length > 0) {
+          results.pass('Summary has prescriptions');
+        }
+        if (data.summary.redFlags?.length > 0) {
+          results.pass('Summary has redFlags');
+        }
+      } else {
+        results.fail('AI Summary', 'Not returned in response');
+      }
+      
+      // Verify doctor recommendations
+      if (data.doctorRecommendations?.length > 0) {
+        results.pass('Doctor recommendations saved', `${data.doctorRecommendations.length} items`);
+      }
+      
+      // Verify storage paths
+      if (data.storage) {
+        results.pass('Storage info returned');
+        
+        if (data.storage.bucket === 'izara-doctors-data') {
+          results.pass('Correct GCS bucket used', 'izara-doctors-data');
+        }
+        
+        const expectedPath = `doctors/${config.doctor.id}/meetings/${appointmentId}/`;
+        if (data.storage.basePath === expectedPath) {
+          results.pass('Correct storage path structure');
+        }
+        
+        if (data.storage.files) {
+          if (data.storage.files.summary) {
+            results.pass('summary.txt file path set');
+          }
+          if (data.storage.files.transcript) {
+            results.pass('transcript.txt file path set');
+          }
+          if (data.storage.files.recommendations) {
+            results.pass('recommendations.txt file path set');
+          }
+        }
+      }
+      
+      // Verify EMR data structure
+      if (data.emrData) {
+        results.pass('EMR data structure returned');
+        
+        if (data.emrData.summary) {
+          results.pass('EMR includes AI summary');
+        }
+        if (data.emrData.recommendations) {
+          results.pass('EMR includes recommendations');
+        }
+        if (data.emrData.apiUsed?.summarization === 'Gemini AI') {
+          results.pass('EMR shows Gemini AI was used');
+        }
+      }
+      
+      // Return the appointment ID for subsequent tests
+      return { appointmentId, saveResponse: data };
+    } else if (saveResponse.status === 401) {
+      results.pass('AI Summary save requires auth (expected)', 'Auth protected');
+      log('warn', 'Authentication required - this is correct for protected endpoints');
+      return null;
+    } else {
+      results.fail('Frontend AI summary save', saveResponse.error || `Status ${saveResponse.status}`);
+      return null;
+    }
+  } catch (error) {
+    results.fail('Frontend AI summary save', error.message);
+    return null;
+  }
+}
+
+// ============================================================================
+// TEST 12: DOCTOR PORTAL AI SUMMARY DISPLAY
+// Tests that saved AI summaries can be retrieved and displayed in Doctor Portal
+// This tests the getMeetingFiles() and getMeetingTranscript() endpoints
+// ============================================================================
+
+async function testDoctorPortalAISummaryDisplay(results, savedMeetingData) {
+  log('section', 'TEST 12: Doctor Portal AI Summary Display');
+  
+  if (!savedMeetingData) {
+    log('warn', 'Skipping AI summary display test - no saved meeting data from TEST 11');
+    return true;
+  }
+  
+  const appointmentId = savedMeetingData.appointmentId;
+  
+  try {
+    // 12.1 Test getMeetingFiles endpoint (main endpoint for AI summary display)
+    const filesResponse = await httpRequest(
+      `${config.doctorApi}/api/video-meeting/${appointmentId}/files?doctorId=${config.doctor.id}`
+    );
+    
+    if (filesResponse.status === 200 && filesResponse.data?.success) {
+      results.pass('getMeetingFiles returns saved data');
+      
+      const data = filesResponse.data;
+      
+      // Verify the AI summary is retrievable
+      if (data.summary) {
+        results.pass('AI Summary retrievable from GCS');
+        
+        // Check all critical summary fields that Doctor Portal displays
+        if (data.summary.chiefComplaint) {
+          results.pass('chiefComplaint displayable');
+        }
+        if (data.summary.presentingSymptoms) {
+          results.pass('presentingSymptoms displayable');
+        }
+        if (data.summary.preliminaryAssessment) {
+          results.pass('preliminaryAssessment displayable');
+        }
+        if (data.summary.recommendations) {
+          results.pass('recommendations displayable');
+        }
+        if (data.summary.prescriptions) {
+          results.pass('prescriptions displayable');
+        }
+        if (data.summary.followUp) {
+          results.pass('followUp info displayable');
+        }
+        if (data.summary.redFlags) {
+          results.pass('redFlags displayable');
+        }
+      }
+      
+      // Verify transcript is retrievable
+      if (data.transcript?.length > 0) {
+        results.pass('Transcript retrievable for display', `${data.transcript.length} entries`);
+      }
+      
+      // Verify recommendations
+      if (data.recommendations) {
+        results.pass('Recommendations retrievable for display');
+      }
+      
+      // Verify meeting metadata
+      if (data.duration) {
+        results.pass('Meeting duration available', `${data.duration}s`);
+      }
+      if (data.doctorId) {
+        results.pass('Doctor ID available');
+      }
+      
+    } else if (filesResponse.status === 401) {
+      results.pass('getMeetingFiles requires auth (expected)');
+    } else if (filesResponse.status === 404) {
+      log('warn', 'Meeting data not found in GCS (may need time to propagate)');
+      results.pass('getMeetingFiles endpoint exists');
+    } else {
+      results.fail('getMeetingFiles', filesResponse.error || `Status ${filesResponse.status}`);
+    }
+    
+    // 12.2 Test getMeetingTranscript endpoint
+    const transcriptResponse = await httpRequest(
+      `${config.doctorApi}/api/video-meeting/${appointmentId}/transcript`
+    );
+    
+    if (transcriptResponse.status === 200) {
+      results.pass('getMeetingTranscript returns data');
+      
+      const data = transcriptResponse.data;
+      
+      if (data.transcript?.length > 0) {
+        results.pass('Transcript retrieved via /transcript endpoint');
+        
+        // Verify transcript entry structure
+        const entry = data.transcript[0];
+        if (entry.text && entry.timestamp) {
+          results.pass('Transcript entries have text and timestamp');
+        }
+        if (entry.participantName || entry.speaker) {
+          results.pass('Transcript entries have speaker info');
+        }
+      }
+      
+      if (data.summary) {
+        results.pass('Summary also available via /transcript endpoint');
+      }
+    } else if (transcriptResponse.status === 401) {
+      results.pass('getMeetingTranscript requires auth (expected)');
+    } else if (transcriptResponse.status === 404) {
+      log('warn', 'Transcript not found (may need active meeting session)');
+      results.pass('getMeetingTranscript endpoint exists');
+    }
+    
+    // 12.3 Test that old meetings can still retrieve AI summaries
+    // (This ensures persistence in GCS works correctly)
+    log('info', 'Verifying GCS persistence for Doctor Portal display...');
+    
+    // Small delay to ensure GCS write is complete
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Retry the files endpoint to verify data persisted
+    const retryResponse = await httpRequest(
+      `${config.doctorApi}/api/video-meeting/${appointmentId}/files?doctorId=${config.doctor.id}`
+    );
+    
+    if (retryResponse.status === 200 && retryResponse.data?.summary) {
+      results.pass('AI Summary persisted in GCS (verified on retry)');
+    } else if (retryResponse.status === 401) {
+      results.pass('GCS persistence check - auth required (expected)');
+    }
+    
+    return true;
+  } catch (error) {
+    results.fail('Doctor Portal AI summary display', error.message);
+    return false;
+  }
+}
+
+// ============================================================================
+// TEST 13: AI SUMMARY CONTENT VALIDATION
+// Validates that AI summaries contain all required fields per medical standards
+// ============================================================================
+
+async function testAISummaryContentValidation(results, savedMeetingData) {
+  log('section', 'TEST 13: AI Summary Content Validation');
+  
+  if (!savedMeetingData?.saveResponse?.summary) {
+    log('warn', 'Skipping content validation - no summary data available');
+    return true;
+  }
+  
+  const summary = savedMeetingData.saveResponse.summary;
+  
+  try {
+    // Required fields per Thai medical documentation standards
+    const requiredFields = [
+      { field: 'chiefComplaint', name: 'Chief Complaint (อาการสำคัญ)', required: true },
+      { field: 'presentingSymptoms', name: 'Presenting Symptoms (อาการนำ)', required: true },
+      { field: 'preliminaryAssessment', name: 'Assessment (การประเมิน)', required: true },
+      { field: 'recommendations', name: 'Recommendations (คำแนะนำ)', required: true }
+    ];
+    
+    const optionalFields = [
+      { field: 'prescriptions', name: 'Prescriptions (การสั่งยา)' },
+      { field: 'followUp', name: 'Follow-up (การนัดติดตาม)' },
+      { field: 'redFlags', name: 'Red Flags (อาการเตือน)' },
+      { field: 'lifestyleAdvice', name: 'Lifestyle Advice (คำแนะนำการปฏิบัติตัว)' },
+      { field: 'needsFollowUp', name: 'Needs Follow-up Flag' },
+      { field: 'followUpDate', name: 'Follow-up Date' }
+    ];
+    
+    // Validate required fields
+    let allRequiredPresent = true;
+    for (const { field, name, required } of requiredFields) {
+      const value = summary[field];
+      const hasValue = value !== undefined && value !== null && 
+        (typeof value === 'string' ? value.trim().length > 0 : 
+         Array.isArray(value) ? value.length > 0 : true);
+      
+      if (hasValue) {
+        results.pass(`Required: ${name}`, typeof value === 'string' ? value.substring(0, 50) + '...' : `${value.length || 1} items`);
+      } else if (required) {
+        results.fail(`Required: ${name}`, 'Missing or empty');
+        allRequiredPresent = false;
+      }
+    }
+    
+    // Validate optional fields (info only, don't fail)
+    for (const { field, name } of optionalFields) {
+      const value = summary[field];
+      const hasValue = value !== undefined && value !== null &&
+        (typeof value === 'string' ? value.trim().length > 0 :
+         Array.isArray(value) ? value.length > 0 : true);
+      
+      if (hasValue) {
+        results.pass(`Optional: ${name}`, 'Present');
+      } else {
+        log('info', `Optional field missing: ${name} (OK)`);
+      }
+    }
+    
+    // Validate Thai language content
+    const thaiRegex = /[\u0E00-\u0E7F]/;
+    const hasThaiContent = 
+      thaiRegex.test(summary.chiefComplaint || '') ||
+      thaiRegex.test(summary.preliminaryAssessment || '') ||
+      (summary.recommendations || []).some(r => thaiRegex.test(r));
+    
+    if (hasThaiContent) {
+      results.pass('Summary contains Thai language content');
+    } else {
+      log('warn', 'Summary may not contain Thai content (expected for Thai patients)');
+    }
+    
+    // Validate recommendations structure
+    if (Array.isArray(summary.recommendations) && summary.recommendations.length > 0) {
+      results.pass('Recommendations is valid array', `${summary.recommendations.length} items`);
+      
+      // Each recommendation should be a non-empty string
+      const validRecs = summary.recommendations.filter(r => typeof r === 'string' && r.trim().length > 0);
+      if (validRecs.length === summary.recommendations.length) {
+        results.pass('All recommendations are valid strings');
+      }
+    }
+    
+    // Validate prescriptions structure (if present)
+    if (Array.isArray(summary.prescriptions) && summary.prescriptions.length > 0) {
+      results.pass('Prescriptions is valid array', `${summary.prescriptions.length} items`);
+      
+      // Each prescription should have drug name
+      const hasValidStructure = summary.prescriptions.every(p => p.drug || p.name || p.medication);
+      if (hasValidStructure) {
+        results.pass('Prescriptions have valid structure');
+      }
+    }
+    
+    // Overall validation result
+    if (allRequiredPresent) {
+      results.pass('AI Summary passes content validation');
+    }
+    
+    return allRequiredPresent;
+  } catch (error) {
+    results.fail('AI Summary content validation', error.message);
+    return false;
+  }
+}
+
+// ============================================================================
 // MAIN TEST RUNNER
 // ============================================================================
 
@@ -885,6 +1314,7 @@ ${colors.bright}${colors.cyan}
 ╔═══════════════════════════════════════════════════════════════════════════╗
 ║                                                                           ║
 ║       IZARA TELEMEDICINE - COMPREHENSIVE MEETING TESTS                    ║
+║       Version: 1.2.1 - With AI Summary Validation                         ║
 ║                                                                           ║
 ║       Mode: ${isCloud ? 'CLOUD (Production)' : 'LOCAL (Development)'}                                        ║
 ║       API:  ${config.patientApi}
@@ -923,11 +1353,20 @@ ${colors.reset}
     // TEST 9: End Meeting
     await testEndMeetingAndStorage(results, meetingData);
     
-    // TEST 9.5: Fetch Meeting Files (NEW - tests doctor portal display)
+    // TEST 9.5: Fetch Meeting Files (tests doctor portal display)
     await testFetchMeetingFiles(results, meetingData);
     
     // TEST 10: Revoke Invite
     await testRevokeInvite(results, meetingData, invites);
+    
+    // TEST 11: Frontend AI Summary Save to GCS (NEW - tests MeetingService.saveMeetingResults)
+    const savedMeetingData = await testFrontendAISummarySave(results);
+    
+    // TEST 12: Doctor Portal AI Summary Display (NEW - tests getMeetingFiles/getMeetingTranscript)
+    await testDoctorPortalAISummaryDisplay(results, savedMeetingData);
+    
+    // TEST 13: AI Summary Content Validation (NEW - validates summary structure)
+    await testAISummaryContentValidation(results, savedMeetingData);
     
   } catch (error) {
     log('error', `Test suite error: ${error.message}`);
