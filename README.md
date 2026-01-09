@@ -2,11 +2,11 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-1.1.8-blue.svg)
+![Version](https://img.shields.io/badge/version-1.2.1-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Platform](https://img.shields.io/badge/platform-web-lightgrey.svg)
 ![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)
-![Tests](https://img.shields.io/badge/tests-378%20passing-brightgreen.svg)
+![Tests](https://img.shields.io/badge/tests-400%2B%20passing-brightgreen.svg)
 
 **A comprehensive telemedicine platform built for Thailand's healthcare system**
 

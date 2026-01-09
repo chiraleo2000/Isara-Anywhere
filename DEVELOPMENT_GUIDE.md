@@ -183,6 +183,8 @@ GCS_API_URL=http://localhost:3012
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.2.1 | 2026-01-09 | Meeting AI summary storage to GCS, doctor portal display, .gitignore |
+| 1.2.0 | 2026-01-08 | Theme/language sync, scroll position fixes, notification improvements |
 | 1.1.4 | 2026-01-07 | Rate limit fixes, test improvements |
 | 1.1.3 | 2026-01-06 | Video meeting, admin features |
 | 1.1.0 | 2025-12-15 | Initial Cloud Run deployment |
