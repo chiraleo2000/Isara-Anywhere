@@ -283,9 +283,200 @@ export class QueueService {
   }
 }
 
+// Meeting Service - Handles video meeting AI summaries and storage
+export interface MeetingResults {
+  summary: {
+    chiefComplaint: string;
+    presentingSymptoms: string[];
+    preliminaryAssessment: string;
+    recommendations: string[];
+    prescriptions: any[];
+    followUp: string;
+    redFlags: string[];
+    lifestyleAdvice: string[];
+    needsFollowUp: boolean;
+    followUpDate: string | null;
+  };
+  duration: number;
+  messages: any[];
+  doctor: any;
+  recordingUrl?: string | null;
+  conversationComplete: boolean;
+  timestamp: string;
+}
+
+export interface MeetingFilesResponse {
+  success: boolean;
+  appointmentId: string;
+  meetingId?: string;
+  duration?: number;
+  endedAt?: string;
+  files: {
+    video: string | null;
+    transcript: string | null;
+    summary: string | null;
+    recommendations: string | null;
+  };
+  storage?: {
+    bucket: string;
+    basePath: string;
+  };
+  transcript?: any[];
+  summary?: any;
+  recommendations?: any;
+}
+
+export class MeetingService {
+  /**
+   * Save meeting results to the backend (stores in GCS)
+   * This is called when the meeting ends to persist AI summary to cloud storage
+   */
+  async saveMeetingResults(appointmentId: string, results: MeetingResults, doctorId: string, doctorName: string): Promise<any> {
+    try {
+      console.log('📤 Saving meeting results to GCS via API...', { appointmentId, doctorId });
+      
+      // Convert the frontend format to backend format
+      const requestBody = {
+        appointmentId,
+        doctorId,
+        doctorName,
+        duration: results.duration,
+        transcript: results.messages.map((m, i) => ({
+          id: i + 1,
+          speaker: m.sender === 'ai' ? 'doctor' : 'patient',
+          text: m.content,
+          timestamp: m.timestamp,
+          isFinal: true
+        })),
+        summary: results.summary,
+        recommendations: results.summary.recommendations,
+        timestamp: results.timestamp
+      };
+
+      const response = await fetch(`${API_BASE_URL}/api/video-meeting/${appointmentId}/end`, {
+        method: 'POST',
+        headers: {
+          ...authService.getAuthHeaders(),
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to save meeting results');
+      }
+
+      const data = await response.json();
+      console.log('✅ Meeting results saved to GCS:', data);
+      return data;
+    } catch (error: any) {
+      console.error('❌ Error saving meeting results:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get meeting files and AI summary from GCS
+   */
+  async getMeetingFiles(appointmentId: string, doctorId?: string): Promise<MeetingFilesResponse> {
+    try {
+      const url = doctorId 
+        ? `${API_BASE_URL}/api/video-meeting/${appointmentId}/files?doctorId=${doctorId}`
+        : `${API_BASE_URL}/api/video-meeting/${appointmentId}/files`;
+        
+      const response = await fetch(url, {
+        headers: authService.getAuthHeaders(),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to fetch meeting files');
+      }
+
+      return await response.json();
+    } catch (error: any) {
+      console.error('Error fetching meeting files:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get meeting transcript and summary
+   */
+  async getMeetingTranscript(appointmentId: string): Promise<{ transcript: any[]; summary: any }> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/video-meeting/${appointmentId}/transcript`, {
+        headers: authService.getAuthHeaders(),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to fetch transcript');
+      }
+
+      const data = await response.json();
+      return {
+        transcript: data.transcript || [],
+        summary: data.summary || null
+      };
+    } catch (error: any) {
+      console.error('Error fetching meeting transcript:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Generate recommendations on demand
+   */
+  async generateRecommendations(appointmentId: string, patientInfo: any): Promise<any> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/video-meeting/${appointmentId}/recommendations`, {
+        method: 'POST',
+        headers: {
+          ...authService.getAuthHeaders(),
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ patientInfo }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to generate recommendations');
+      }
+
+      return await response.json();
+    } catch (error: any) {
+      console.error('Error generating recommendations:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Check video meeting service health
+   */
+  async checkHealth(): Promise<any> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/video-meeting/health`, {
+        headers: authService.getAuthHeaders(),
+      });
+
+      if (!response.ok) {
+        throw new Error('Video meeting service unhealthy');
+      }
+
+      return await response.json();
+    } catch (error: any) {
+      console.error('Error checking meeting service health:', error);
+      throw error;
+    }
+  }
+}
+
 export const appointmentService = new AppointmentService();
 export const recordsService = new RecordsService();
 export const emrService = new EMRService();
 export const prescriptionService = new PrescriptionService();
 export const labOrderService = new LabOrderService();
 export const queueService = new QueueService();
+export const meetingService = new MeetingService();

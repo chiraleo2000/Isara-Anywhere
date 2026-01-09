@@ -3,6 +3,7 @@ import { Appointment } from '../types';
 import { doctorAIService } from '../services/enhancedMeetingService';
 import { recordingStorage } from '../services/storageServices';
 import meetingTimeService, { MeetingTimeCheck } from '../services/meetingTimeService';
+import { meetingService } from '../services/apiServices';
 
 interface VirtualMeetingProps {
   appointment: Appointment;
@@ -490,6 +491,29 @@ const VirtualMeeting: React.FC<VirtualMeetingProps> = ({
         reportKeys: Object.keys(report)
       });
 
+      // 🔥 NEW: Save meeting results to GCS via backend API
+      setRecordingStatus('Saving meeting summary to cloud...');
+      try {
+        const doctorId = appointment.user?.doctorId || appointment.user?.id || 'unknown-doctor';
+        const doctorName = appointment.doctor?.name || appointment.user?.name || 'Doctor';
+        
+        const savedData = await meetingService.saveMeetingResults(
+          appointment.id,
+          results,
+          doctorId,
+          doctorName
+        );
+        console.log('☁️ Meeting results saved to GCS:', savedData);
+        
+        // Update results with storage info from backend
+        if (savedData.storage) {
+          results.recordingUrl = savedData.storage.files?.video || null;
+        }
+      } catch (saveError) {
+        console.warn('⚠️ Could not save to cloud (will use local only):', saveError);
+        // Continue anyway - local results still work
+      }
+
       setRecordingStatus('Meeting ended successfully');
       onMeetingEnd(appointment.id, results);
       
@@ -524,6 +548,15 @@ const VirtualMeeting: React.FC<VirtualMeetingProps> = ({
         duration: actualDuration,
         messageCount: conversationHistory.length
       });
+      
+      // Try to save fallback results too
+      try {
+        const doctorId = appointment.user?.doctorId || appointment.user?.id || 'unknown-doctor';
+        const doctorName = appointment.doctor?.name || appointment.user?.name || 'Doctor';
+        await meetingService.saveMeetingResults(appointment.id, results, doctorId, doctorName);
+      } catch {
+        console.warn('⚠️ Could not save fallback results to cloud');
+      }
       
       onMeetingEnd(appointment.id, results);
     }

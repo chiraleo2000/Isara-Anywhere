@@ -1483,6 +1483,7 @@ app.post('/api/video-meeting/:appointmentId/transcribe-audio', authenticateToken
 });
 
 // End meeting - transcribe audio, generate summary & recommendations, upload recording
+// Also handles frontend-submitted meeting results (when using local AI service)
 app.post('/api/video-meeting/:appointmentId/end', authenticateToken, async (req, res) => {
   try {
     const { appointmentId } = req.params;
@@ -1497,19 +1498,43 @@ app.post('/api/video-meeting/:appointmentId/end', authenticateToken, async (req,
       videoBase64,
       videoMimeType = 'video/webm',
       doctorId,
-      doctorName
+      doctorName,
+      // NEW: Frontend-submitted meeting data (when using local AI)
+      transcript: frontendTranscript,
+      summary: frontendSummary,
+      recommendations: frontendRecommendations,
+      duration: frontendDuration,
+      timestamp: frontendTimestamp
     } = req.body;
     
-    const meeting = Array.from(meetingSessions.values())
+    // Check for active server meeting session
+    let meeting = Array.from(meetingSessions.values())
       .find(m => m.appointmentId === appointmentId && m.status !== 'ended');
     
-    if (!meeting) {
+    // If no active session but frontend submitted data, create a virtual meeting record
+    const isFrontendSubmission = frontendTranscript || frontendSummary;
+    if (!meeting && isFrontendSubmission) {
+      console.log('📱 Processing frontend-submitted meeting data (no server session)');
+      meeting = {
+        id: `frontend-${appointmentId}-${Date.now()}`,
+        appointmentId,
+        roomName: `meeting-${appointmentId}`,
+        createdBy: doctorId || 'unknown-doctor',
+        startedAt: new Date(Date.now() - (frontendDuration || 0) * 1000),
+        endedAt: new Date(),
+        status: 'ended',
+        participants: [],
+        transcript: frontendTranscript || [],
+        summary: frontendSummary,
+        recommendations: frontendRecommendations
+      };
+    } else if (!meeting) {
       return res.status(404).json({ error: 'Active meeting not found' });
+    } else {
+      meeting.participants.forEach(p => { if (!p.leftAt) p.leftAt = new Date(); });
+      meeting.status = 'ended';
+      meeting.endedAt = new Date();
     }
-    
-    meeting.participants.forEach(p => { if (!p.leftAt) p.leftAt = new Date(); });
-    meeting.status = 'ended';
-    meeting.endedAt = new Date();
     
     const effectiveDoctorId = doctorId || meeting.createdBy || 'unknown-doctor';
     
@@ -1556,25 +1581,26 @@ app.post('/api/video-meeting/:appointmentId/end', authenticateToken, async (req,
       }
     }
     
-    // Step 3: Generate EMR summary using Gemini
-    let summary = null;
-    if (generateSummary && meeting.transcript.length > 0) {
+    // Step 3: Generate EMR summary using Gemini (or use frontend-submitted summary)
+    let summary = frontendSummary || null;
+    if (!summary && generateSummary && meeting.transcript.length > 0) {
       console.log('📝 Generating EMR summary with Gemini AI...');
       summary = await generateEMRSummary(meeting.transcript, patientInfo);
-      meeting.summary = summary;
     }
+    meeting.summary = summary;
     
-    // Step 4: Generate doctor recommendations using Gemini
-    let recommendations = null;
-    if (generateRecommendations && meeting.transcript.length > 0) {
+    // Step 4: Generate doctor recommendations using Gemini (or use frontend-submitted)
+    let recommendations = frontendRecommendations || null;
+    if (!recommendations && generateRecommendations && meeting.transcript.length > 0) {
       console.log('💡 Generating doctor recommendations with Gemini AI...');
       recommendations = await generateDoctorRecommendations(meeting.transcript, summary, patientInfo);
-      meeting.recommendations = recommendations;
     }
+    meeting.recommendations = recommendations;
     
-    const duration = meeting.startedAt 
+    // Use frontend duration if provided, otherwise calculate from meeting times
+    const duration = frontendDuration || (meeting.startedAt 
       ? Math.floor((meeting.endedAt.getTime() - meeting.startedAt.getTime()) / 1000)
-      : 0;
+      : 0);
     
     // Step 5: Save transcript.txt to GCS (izara-doctors-data)
     if (meeting.transcript.length > 0) {

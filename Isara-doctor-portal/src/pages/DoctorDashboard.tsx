@@ -5,6 +5,7 @@
  * 
  * Updated: Now fetches real appointments from GCS
  * Updated: Stats cards clickable - link to Appointments & Meetings page
+ * Updated: Now fetches meeting AI summaries from GCS after meetings end
  */
 
 import React, { useState, useEffect } from 'react';
@@ -24,6 +25,7 @@ import {
   fetchPatientPrescriptions,
   clearCache
 } from '../services/gcsDataService';
+import { meetingService } from '../services/apiServices';
 import { geminiClinicalService } from '../services/geminiClinicalService';
 
 // ============================================================================
@@ -320,6 +322,37 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
       const patient = patients.find(p => p.id === patientId);
       if (patient) {
         setSelectedPatient(patient);
+      }
+      
+      // Try to load meeting summary from most recent completed appointment
+      try {
+        // Find the patient's most recent appointment with this doctor
+        const patientAppointments = upcomingAppointments.filter(apt => 
+          apt.patientId === patientId && 
+          (apt.status === 'completed' || apt.status === 'Completed')
+        );
+        
+        if (patientAppointments.length > 0) {
+          // Get the most recent completed appointment
+          const recentAppointment = patientAppointments.sort((a: any, b: any) => 
+            new Date(b.date || b.appointmentDate).getTime() - new Date(a.date || a.appointmentDate).getTime()
+          )[0];
+          
+          // Fetch meeting files/summary from GCS
+          const meetingData = await meetingService.getMeetingFiles(recentAppointment.id, doctor.id);
+          
+          if (meetingData.success && meetingData.summary) {
+            // Format the summary for display
+            const summaryText = typeof meetingData.summary === 'string' 
+              ? meetingData.summary 
+              : JSON.stringify(meetingData.summary, null, 2);
+            setAiMeetingSummary(summaryText);
+            console.log('📋 Loaded meeting summary from GCS:', meetingData);
+          }
+        }
+      } catch (meetingError) {
+        // Silent fail - meeting summary is optional
+        console.log('ℹ️ No meeting summary found for patient:', patientId);
       }
     } catch (error) {
       console.error('Error loading patient clinical data:', error);
