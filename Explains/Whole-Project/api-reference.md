@@ -6,7 +6,8 @@ Both portals share common backend services running on Express.js.
 
 | Server | Port | Base URL |
 |--------|------|----------|
-| Patient API | 3000 | http://localhost:3000/api |
+| Patient API | 3004 | http://localhost:3004/api |
+| Doctor Main API | 3009 | http://localhost:3009/api |
 | Auth Server | 3011 | http://localhost:3011/auth |
 | GCS API | 3012 | http://localhost:3012/api |
 
@@ -376,5 +377,5 @@ Authorization: Bearer {token}
 ```
 
 ---
-**Last Updated:** January 8, 2026
-**Version:** 1.1.8
+**Last Updated:** January 9, 2026
+**Version:** 1.2.1

@@ -2,7 +2,7 @@
 
 This document details the full appointment workflow for Izara Telemedicine, including all user roles, notification logic, error handling, and business rules. Use this as a reference for implementation, agent training, and troubleshooting.
 
-**Last Updated: January 8, 2026 (v1.1.8 - External Guest Access Tests Complete)**
+**Last Updated: January 9, 2026 (v1.2.1 - Meeting AI Summary Storage & Display)**
 
 ---
 
@@ -76,14 +76,14 @@ External guests who are **NOT registered** in the Izara system can join meetings
 
 | Portal | URL | Version |
 |--------|-----|---------|
-| Patient Portal | https://izara-patient-portal-724889190329.asia-southeast1.run.app | v1.1.8 |
-| Doctor Portal | https://izara-doctor-portal-724889190329.asia-southeast1.run.app | v1.1.8 |
+| Patient Portal | https://izara-patient-portal-724889190329.asia-southeast1.run.app | v1.2.1 |
+| Doctor Portal | https://izara-doctor-portal-724889190329.asia-southeast1.run.app | v1.2.1 |
 
-### Docker Images (v1.1.8)
+### Docker Images (v1.2.1)
 | Portal | Image |
 |--------|-------|
-| Patient Portal | `asia-southeast1-docker.pkg.dev/izara-telemedicine/isara-anywhere-portals/isara-patient-portal:1.1.8` |
-| Doctor Portal | `asia-southeast1-docker.pkg.dev/izara-telemedicine/isara-anywhere-portals/isara-doctor-portal:1.1.8` |
+| Patient Portal | `asia-southeast1-docker.pkg.dev/izara-telemedicine/isara-anywhere-portals/isara-patient-portal:1.2.1` |
+| Doctor Portal | `asia-southeast1-docker.pkg.dev/izara-telemedicine/isara-anywhere-portals/isara-doctor-portal:1.2.1` |
 
 ### Video Meeting Provider
 - **Jitsi Meet** (meet.jit.si) - FREE, no account required

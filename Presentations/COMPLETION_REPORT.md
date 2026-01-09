@@ -116,7 +116,7 @@ All 16 mermaid diagrams have been **corrected, simplified, and regenerated** wit
    - Videos
    - Educational resources
 
-## 🎯 Key Features (v1.1.8)
+## 🎯 Key Features (v1.2.1)
 
 ### Video Meeting Features:
 - ✅ Doctor as HOST with moderator controls
@@ -124,14 +124,17 @@ All 16 mermaid diagrams have been **corrected, simplified, and regenerated** wit
 - ✅ External guest access (non-registered users)
 - ✅ Camera & microphone ON by default
 - ✅ Video recording & transcription
-- ✅ AI-powered meeting summaries (Gemini 2.5 Flash Lite)
+- ✅ AI-powered meeting summaries saved to GCS
+- ✅ Meeting summaries visible in Doctor Portal
 - ✅ All email domains supported (Gmail, Hotmail, Yahoo, Outlook, .co.th, etc.)
 
-### Test Results (January 8, 2026):
+### Test Results (January 9, 2026):
 | Test Suite | Tests | Status |
 |------------|-------|--------|
-| Meeting API Tests (Local) | 51 | ✅ 100% |
-| Meeting API Tests (Cloud) | 51 | ✅ 100% |
+| Meeting API Tests (Local) | 52 | ✅ 100% |
+| Meeting API Tests (Cloud) | 52 | ✅ 100% |
+| Cloud Run E2E Tests | 51 | ✅ 100% |
+| Unit Tests | 40 | ✅ 100% |
 | 4-User Meeting UI Tests (Local) | 33 | ✅ 100% |
 | 4-User Meeting UI Tests (Cloud) | 33 | ✅ 100% |
 | External Guest Access Tests (Local) | 105 | ✅ 100% |
@@ -205,9 +208,9 @@ All corrections verified against:
 ---
 
 **Status:** ✅ COMPLETED  
-**Version:** 1.1.8  
-**Last Updated:** January 8, 2026  
+**Version:** 1.2.1  
+**Last Updated:** January 9, 2026  
 **Total Files Updated:** 16 mermaid + 16 HTML + 1 index = 33 files  
 **Total Corrections:** 100+ changes across all diagrams  
-**Total Tests Passing:** 378/378 (100%)  
+**Total Tests Passing:** 400+/400+ (100%)  
 **Quality:** Production-ready ⭐⭐⭐⭐⭐

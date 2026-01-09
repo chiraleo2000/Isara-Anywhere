@@ -116,5 +116,5 @@ Isara-doctor-portal/
 | External Guests | Invite specialists (non-registered) |
 
 ---
-**Last Updated:** January 8, 2026
-**Version:** 1.1.8
+**Last Updated:** January 9, 2026
+**Version:** 1.2.1

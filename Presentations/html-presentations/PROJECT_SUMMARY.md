@@ -218,18 +218,19 @@ The presentations are ready for:
 | External Guest Access Tests (Cloud) | 105 | ✅ 100% |
 | **Total** | **378** | ✅ **100%** |
 
-### New Features in v1.1.8:
+### New Features in v1.2.1:
 - ✅ Doctor as HOST with moderator controls
 - ✅ Patient joins via lobby (doctor approval)
 - ✅ External guest access (non-registered users)
 - ✅ Video recording & transcription
-- ✅ AI-powered meeting summaries (Gemini 2.5 Flash Lite)
+- ✅ AI-powered meeting summaries saved to GCS
+- ✅ Meeting summaries visible in Doctor Portal
 - ✅ All email domains supported
 
 ---
 
 **Project**: IZARA Telemedicine Platform  
-**Version**: 1.1.8  
-**Generated**: January 8, 2026  
+**Version**: 1.2.1  
+**Generated**: January 9, 2026  
 **Format**: HTML5 + Mermaid.js  
 **Status**: ✅ Complete and Ready for Use

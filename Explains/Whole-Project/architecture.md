@@ -29,7 +29,7 @@ Izara is a telehealth platform with two web portals sharing cloud backend servic
 │                        │                                            │
 │                        ▼                                            │
 │   ┌─────────────────────────────────────────────────────────────┐  │
-│   │              Google Cloud Storage (6 Buckets)               │  │
+│   │              Google Cloud Storage (5 Buckets)               │  │
 │   ├───────────┬────────────┬────────────┬──────────┬────────────┤  │
 │   │ users-    │ users-     │ patients-  │ doctors- │ appoint-   │  │
 │   │ auth      │ credentials│ data       │ data     │ ments      │  │
@@ -250,5 +250,5 @@ npm run dev
 ```
 
 ---
-**Last Updated:** January 8, 2026
-**Version:** 1.1.8
+**Last Updated:** January 9, 2026
+**Version:** 1.2.1

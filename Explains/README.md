@@ -152,28 +152,25 @@ See `Presentations/` folder for:
 
 ---
 
-## ✅ E2E Test Results (January 8, 2026 - v1.1.8)
+## ✅ E2E Test Results (January 9, 2026 - v1.2.1)
 
 | Test Suite | Tests | Pass Rate |
 |------------|-------|-----------|
-| Meeting API Tests (Local) | 51 | ✅ 100% |
-| Meeting API Tests (Cloud) | 51 | ✅ 100% |
+| Meeting API Tests (Local) | 52 | ✅ 100% |
+| Meeting API Tests (Cloud) | 52 | ✅ 100% |
+| Cloud Run E2E Tests | 51 | ✅ 100% |
+| Unit Tests | 40 | ✅ 100% |
 | 4-User Meeting UI Tests (Local) | 33 | ✅ 100% |
 | 4-User Meeting UI Tests (Cloud) | 33 | ✅ 100% |
 | External Guest Access Tests (Local) | 105 | ✅ 100% |
 | External Guest Access Tests (Cloud) | 105 | ✅ 100% |
-| **Total** | **378** | ✅ **100%** |
+| **Total** | **400+** | ✅ **100%** |
 
-### Test Features Verified:
-- ✅ Doctor as HOST with moderator controls
-- ✅ Patient lobby with doctor approval
-- ✅ External guest access (non-registered users)
-- ✅ Camera & microphone ON by default
-- ✅ Video recording & transcription
-- ✅ AI-powered meeting summaries (Gemini)
+- ✅ AI-powered meeting summaries saved to GCS
+- ✅ Meeting summaries visible in Doctor Portal
 - ✅ All email domains supported (Gmail, Hotmail, Yahoo, Outlook, .co.th, etc.)
 
 ---
 
-**Last Updated:** January 8, 2026
-**Version:** 1.1.8
+**Last Updated:** January 9, 2026
+**Version:** 1.2.1

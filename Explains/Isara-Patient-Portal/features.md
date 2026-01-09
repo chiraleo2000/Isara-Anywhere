@@ -182,5 +182,5 @@ Patients can invite family members or relatives (non-registered users):
 - Any valid email domain
 
 ---
-**Last Updated:** January 8, 2026
-**Version:** 1.1.8
+**Last Updated:** January 9, 2026
+**Version:** 1.2.1

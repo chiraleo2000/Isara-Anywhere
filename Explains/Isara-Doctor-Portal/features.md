@@ -284,5 +284,5 @@ izara-doctors-data/
 ```
 
 ---
-**Last Updated:** January 8, 2026
-**Version:** 1.1.8
+**Last Updated:** January 9, 2026
+**Version:** 1.2.1
