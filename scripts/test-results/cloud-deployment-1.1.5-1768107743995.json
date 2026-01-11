@@ -1,0 +1,168 @@
+{
+  "patient": [
+    {
+      "name": "Portal Health Check",
+      "passed": false,
+      "duration": 3,
+      "message": "Cannot find package 'node-fetch' imported from C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-anywhere-V0.0.3\\scripts\\tests\\cloudDeploymentTests.cjs"
+    },
+    {
+      "name": "Root Page Serves HTML",
+      "passed": false,
+      "duration": 2,
+      "message": "Cannot find package 'node-fetch' imported from C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-anywhere-V0.0.3\\scripts\\tests\\cloudDeploymentTests.cjs"
+    },
+    {
+      "name": "API Health Endpoint",
+      "passed": false,
+      "duration": 1,
+      "message": "Cannot find package 'node-fetch' imported from C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-anywhere-V0.0.3\\scripts\\tests\\cloudDeploymentTests.cjs"
+    },
+    {
+      "name": "GCS Connection",
+      "passed": false,
+      "duration": 1,
+      "message": "Cannot find package 'node-fetch' imported from C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-anywhere-V0.0.3\\scripts\\tests\\cloudDeploymentTests.cjs"
+    },
+    {
+      "name": "Medical Content API",
+      "passed": false,
+      "duration": 3,
+      "message": "Cannot find package 'node-fetch' imported from C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-anywhere-V0.0.3\\scripts\\tests\\cloudDeploymentTests.cjs"
+    },
+    {
+      "name": "Authentication Endpoint",
+      "passed": false,
+      "duration": 1,
+      "message": "Cannot find package 'node-fetch' imported from C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-anywhere-V0.0.3\\scripts\\tests\\cloudDeploymentTests.cjs"
+    },
+    {
+      "name": "Appointments API",
+      "passed": false,
+      "duration": 2,
+      "message": "Cannot find package 'node-fetch' imported from C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-anywhere-V0.0.3\\scripts\\tests\\cloudDeploymentTests.cjs"
+    },
+    {
+      "name": "PHR API",
+      "passed": false,
+      "duration": 0,
+      "message": "Cannot find package 'node-fetch' imported from C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-anywhere-V0.0.3\\scripts\\tests\\cloudDeploymentTests.cjs"
+    },
+    {
+      "name": "Doctors List API",
+      "passed": false,
+      "duration": 0,
+      "message": "Cannot find package 'node-fetch' imported from C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-anywhere-V0.0.3\\scripts\\tests\\cloudDeploymentTests.cjs"
+    },
+    {
+      "name": "Video Meeting Service",
+      "passed": false,
+      "duration": 0,
+      "message": "Cannot find package 'node-fetch' imported from C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-anywhere-V0.0.3\\scripts\\tests\\cloudDeploymentTests.cjs"
+    },
+    {
+      "name": "Static Assets",
+      "passed": false,
+      "duration": 1,
+      "message": "Cannot find package 'node-fetch' imported from C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-anywhere-V0.0.3\\scripts\\tests\\cloudDeploymentTests.cjs"
+    },
+    {
+      "name": "Cross-Portal CORS",
+      "passed": false,
+      "duration": 0,
+      "message": "Cannot find package 'node-fetch' imported from C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-anywhere-V0.0.3\\scripts\\tests\\cloudDeploymentTests.cjs"
+    }
+  ],
+  "doctor": [
+    {
+      "name": "Portal Health Check",
+      "passed": false,
+      "duration": 1,
+      "message": "Cannot find package 'node-fetch' imported from C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-anywhere-V0.0.3\\scripts\\tests\\cloudDeploymentTests.cjs"
+    },
+    {
+      "name": "Root Page Serves HTML",
+      "passed": false,
+      "duration": 1,
+      "message": "Cannot find package 'node-fetch' imported from C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-anywhere-V0.0.3\\scripts\\tests\\cloudDeploymentTests.cjs"
+    },
+    {
+      "name": "API Health Endpoint",
+      "passed": false,
+      "duration": 1,
+      "message": "Cannot find package 'node-fetch' imported from C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-anywhere-V0.0.3\\scripts\\tests\\cloudDeploymentTests.cjs"
+    },
+    {
+      "name": "GCS Connection",
+      "passed": false,
+      "duration": 1,
+      "message": "Cannot find package 'node-fetch' imported from C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-anywhere-V0.0.3\\scripts\\tests\\cloudDeploymentTests.cjs"
+    },
+    {
+      "name": "Authentication Endpoint",
+      "passed": false,
+      "duration": 1,
+      "message": "Cannot find package 'node-fetch' imported from C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-anywhere-V0.0.3\\scripts\\tests\\cloudDeploymentTests.cjs"
+    },
+    {
+      "name": "Patients API",
+      "passed": false,
+      "duration": 1,
+      "message": "Cannot find package 'node-fetch' imported from C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-anywhere-V0.0.3\\scripts\\tests\\cloudDeploymentTests.cjs"
+    },
+    {
+      "name": "Queue API",
+      "passed": false,
+      "duration": 1,
+      "message": "Cannot find package 'node-fetch' imported from C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-anywhere-V0.0.3\\scripts\\tests\\cloudDeploymentTests.cjs"
+    },
+    {
+      "name": "Appointments API",
+      "passed": false,
+      "duration": 0,
+      "message": "Cannot find package 'node-fetch' imported from C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-anywhere-V0.0.3\\scripts\\tests\\cloudDeploymentTests.cjs"
+    },
+    {
+      "name": "Clinical Resources",
+      "passed": false,
+      "duration": 2,
+      "message": "Cannot find package 'node-fetch' imported from C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-anywhere-V0.0.3\\scripts\\tests\\cloudDeploymentTests.cjs"
+    },
+    {
+      "name": "Prescription API",
+      "passed": false,
+      "duration": 1,
+      "message": "Cannot find package 'node-fetch' imported from C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-anywhere-V0.0.3\\scripts\\tests\\cloudDeploymentTests.cjs"
+    },
+    {
+      "name": "EMR API",
+      "passed": false,
+      "duration": 1,
+      "message": "Cannot find package 'node-fetch' imported from C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-anywhere-V0.0.3\\scripts\\tests\\cloudDeploymentTests.cjs"
+    },
+    {
+      "name": "Static Assets",
+      "passed": false,
+      "duration": 1,
+      "message": "Cannot find package 'node-fetch' imported from C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-anywhere-V0.0.3\\scripts\\tests\\cloudDeploymentTests.cjs"
+    }
+  ],
+  "timestamp": "2026-01-11T05:02:23.946Z",
+  "version": "1.1.5",
+  "summary": {
+    "version": "1.1.5",
+    "patientPortal": {
+      "url": "https://izara-patient-portal-724889190329.asia-southeast1.run.app",
+      "passed": 0,
+      "failed": 12
+    },
+    "doctorPortal": {
+      "url": "https://izara-doctor-portal-724889190329.asia-southeast1.run.app",
+      "passed": 0,
+      "failed": 12
+    },
+    "totalPassed": 0,
+    "totalFailed": 24,
+    "passRate": 0
+  }
+}
