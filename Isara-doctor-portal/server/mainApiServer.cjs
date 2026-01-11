@@ -299,7 +299,6 @@ app.get('/api/health', (req, res) => {
     status: 'healthy',
     timestamp: new Date().toISOString(),
     service: 'Izara Doctor Portal API',
-    version: '1.2.1',
     port: PORT,
     gcsApiServer: GCS_API_URL
   });

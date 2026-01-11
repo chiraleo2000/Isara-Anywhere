@@ -28,16 +28,45 @@ const chrome = require('selenium-webdriver/chrome');
 // CONFIGURATION
 // ============================================================================
 
-const CONFIG = {
+// Check for cloud mode
+const isCloudMode = process.argv.includes('--cloud');
+
+const CLOUD_URLS = {
   patientPortal: {
-    url: process.env.PATIENT_URL || 'http://localhost:3005',
-    api: process.env.PATIENT_API || 'http://localhost:3004'
+    url: 'https://izara-patient-portal-724889190329.asia-southeast1.run.app',
+    api: 'https://izara-patient-portal-724889190329.asia-southeast1.run.app'
   },
   doctorPortal: {
-    url: process.env.DOCTOR_URL || 'http://localhost:3010',
-    api: process.env.DOCTOR_API || 'http://localhost:3009',
-    gcsApi: process.env.DOCTOR_GCS_API || 'http://localhost:3012',
-    authServer: process.env.DOCTOR_AUTH || 'http://localhost:3011'
+    url: 'https://izara-doctor-portal-724889190329.asia-southeast1.run.app',
+    api: 'https://izara-doctor-portal-724889190329.asia-southeast1.run.app',
+    gcsApi: 'https://izara-doctor-portal-724889190329.asia-southeast1.run.app',
+    authServer: 'https://izara-doctor-portal-724889190329.asia-southeast1.run.app'
+  }
+};
+
+const LOCAL_URLS = {
+  patientPortal: {
+    url: 'http://localhost:3005',
+    api: 'http://localhost:3004'
+  },
+  doctorPortal: {
+    url: 'http://localhost:3010',
+    api: 'http://localhost:3009',
+    gcsApi: 'http://localhost:3012',
+    authServer: 'http://localhost:3011'
+  }
+};
+
+const CONFIG = {
+  patientPortal: isCloudMode ? CLOUD_URLS.patientPortal : {
+    url: process.env.PATIENT_URL || LOCAL_URLS.patientPortal.url,
+    api: process.env.PATIENT_API || LOCAL_URLS.patientPortal.api
+  },
+  doctorPortal: isCloudMode ? CLOUD_URLS.doctorPortal : {
+    url: process.env.DOCTOR_URL || LOCAL_URLS.doctorPortal.url,
+    api: process.env.DOCTOR_API || LOCAL_URLS.doctorPortal.api,
+    gcsApi: process.env.DOCTOR_GCS_API || LOCAL_URLS.doctorPortal.gcsApi,
+    authServer: process.env.DOCTOR_AUTH || LOCAL_URLS.doctorPortal.authServer
   },
   testCredentials: {
     patient: {
@@ -899,11 +928,13 @@ async function runSecurityTests(runner) {
 // ============================================================================
 
 async function main() {
+  const modeText = isCloudMode ? 'CLOUD (Production)' : 'LOCAL (Development)';
   console.log(`
 ${colors.cyan}${colors.bright}╔══════════════════════════════════════════════════════════════╗
 ║         IZARA TELEMEDICINE - Deep Feature Tests              ║
 ║                    Version 1.0.0                             ║
 ╠══════════════════════════════════════════════════════════════╣
+║  Mode: ${modeText.padEnd(52)}║
 ║  Patient Portal: ${CONFIG.patientPortal.url.padEnd(41)}║
 ║  Doctor Portal:  ${CONFIG.doctorPortal.url.padEnd(41)}║
 ╚══════════════════════════════════════════════════════════════╝${colors.reset}

@@ -180,7 +180,7 @@ app.get('/api/health', (_req: Request, res: Response) => {
     status: 'healthy',
     timestamp: new Date().toISOString(),
     service: 'Izara Patient Portal API',
-    version: '1.2.1',
+    version: '1.1.6',
     security: 'OWASP Top 10:2025 Compliant'
   });
 });
