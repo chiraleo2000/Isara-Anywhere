@@ -162,10 +162,10 @@ COPY server/ ./server/
 RUN mkdir -p ./public
 COPY --from=frontend-builder /app/dist /usr/share/nginx/html
 
-# Nginx configuration for reverse proxy (listen on 3010 for external access)
+# Nginx configuration for reverse proxy (listen on 8080 for Cloud Run)
 RUN printf '%s\n' \
 'server {' \
-'    listen 3010;' \
+'    listen 8080;' \
 '    server_name localhost;' \
 '    root /usr/share/nginx/html;' \
 '    index index.html;' \
@@ -359,13 +359,19 @@ RUN printf '%s\n' \
 'stderr_logfile=/dev/stderr' \
 'stderr_logfile_maxbytes=0' > /etc/supervisord.conf
 
-# Set environment variables for Gemini AI and Jitsi
+# Set environment variables for Gemini AI, Jitsi, and Database
 # These should be provided at runtime via docker run -e or docker-compose environment
 # DO NOT hardcode API keys here - use secrets management in production
 ENV GEMINI_API_KEY=${GEMINI_API_KEY:-} \
     GEMINI_MODEL=gemini-2.5-flash-lite \
     JITSI_DOMAIN=meet.jit.si \
-    GOOGLE_SPEECH_API_KEY=${GOOGLE_SPEECH_API_KEY:-}
+    GOOGLE_SPEECH_API_KEY=${GOOGLE_SPEECH_API_KEY:-} \
+    VITE_USE_POSTGRESQL=true \
+    DB_HOST=${DB_HOST:-} \
+    DB_NAME=${DB_NAME:-} \
+    DB_USER=${DB_USER:-} \
+    DB_PASSWORD=${DB_PASSWORD:-} \
+    DB_PORT=${DB_PORT:-5432}
 
 # Entrypoint script
 RUN printf '%s\n' \
@@ -385,11 +391,11 @@ RUN chmod +x /docker-entrypoint.sh && \
     mkdir -p /app/server/logs /var/secrets/google
 
 ENV NODE_ENV=production \
-    PORT=3010
+    PORT=8080
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-  CMD curl -f http://localhost:3010/health || exit 1
+  CMD curl -f http://localhost:8080/health || exit 1
 
-EXPOSE 3009 3010 3011 3012
+EXPOSE 8080 3009 3011 3012
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
