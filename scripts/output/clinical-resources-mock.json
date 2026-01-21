@@ -1,0 +1,275 @@
+{
+  "version": "3.0.0",
+  "lastUpdated": "2026-01-20",
+  "phase": "Phase 1",
+  "description": "Clinical resources for doctor reference - Guidelines, protocols, drug information",
+  
+  "resources": [
+    {
+      "id": "CR-HTN-001",
+      "category": "treatment",
+      "specialty": "Cardiology",
+      "titleThai": "แนวทางการรักษาความดันโลหิตสูง 2024",
+      "titleEnglish": "Thai Hypertension Society Guidelines 2024",
+      "source": "Thai Hypertension Society",
+      "guidelineYear": 2024,
+      "status": "published",
+      "approvedBy": "ADMIN-001",
+      "tags": ["hypertension", "guideline", "treatment", "ความดันโลหิตสูง"],
+      "highlights": [
+        "Target BP <130/80 mmHg for most patients",
+        "ACE inhibitor or ARB preferred for DM/CKD",
+        "Calcium channel blockers (Amlodipine) as alternative",
+        "Monitor potassium with ACEi/ARB"
+      ],
+      "quickReference": {
+        "targets": {
+          "general": "<130/80 mmHg",
+          "elderly_over_80": "<140/90 mmHg",
+          "with_ckd": "<130/80 mmHg",
+          "with_diabetes": "<130/80 mmHg"
+        },
+        "firstLine": [
+          "ACE inhibitor (e.g., Enalapril, Lisinopril)",
+          "ARB (e.g., Losartan, Valsartan)",
+          "Calcium channel blocker (e.g., Amlodipine)",
+          "Thiazide diuretic (e.g., HCTZ, Indapamide)"
+        ]
+      }
+    },
+    {
+      "id": "CR-DM-001",
+      "category": "treatment",
+      "specialty": "Endocrinology",
+      "titleThai": "แนวทางการดูแลผู้ป่วยเบาหวาน 2024",
+      "titleEnglish": "Thai Diabetes Association Guidelines 2024",
+      "source": "Thai Diabetes Association",
+      "guidelineYear": 2024,
+      "status": "published",
+      "approvedBy": "ADMIN-001",
+      "tags": ["diabetes", "guideline", "treatment", "เบาหวาน"],
+      "highlights": [
+        "Target HbA1c <7% for most adults",
+        "Metformin remains first-line (adjust for CKD)",
+        "SGLT2 inhibitor for patients with CKD/HF",
+        "GLP-1 RA for weight management"
+      ],
+      "quickReference": {
+        "hba1cTargets": {
+          "general": "<7%",
+          "elderly_comorbid": "<8%",
+          "pregnancy": "<6.5%"
+        },
+        "medications": [
+          {
+            "class": "Biguanide",
+            "example": "Metformin",
+            "notes": "First-line. Reduce if eGFR 30-45, stop if <30"
+          },
+          {
+            "class": "SGLT2 inhibitor",
+            "example": "Empagliflozin, Dapagliflozin",
+            "notes": "Add for CKD or heart failure. Renoprotective."
+          },
+          {
+            "class": "GLP-1 RA",
+            "example": "Liraglutide, Semaglutide",
+            "notes": "Weight reduction. Injectable or oral."
+          },
+          {
+            "class": "Sulfonylurea",
+            "example": "Glipizide, Glimepiride",
+            "notes": "Hypoglycemia risk. Start low dose."
+          }
+        ]
+      }
+    },
+    {
+      "id": "CR-CKD-001",
+      "category": "treatment",
+      "specialty": "Nephrology",
+      "titleThai": "แนวทาง KDIGO 2024 โรคไตเรื้อรัง",
+      "titleEnglish": "KDIGO 2024 CKD Guidelines Summary",
+      "source": "KDIGO",
+      "guidelineYear": 2024,
+      "status": "published",
+      "approvedBy": "ADMIN-001",
+      "tags": ["CKD", "kidney", "guideline", "โรคไต", "drug adjustment"],
+      "highlights": [
+        "CKD staged by eGFR and albuminuria",
+        "NSAID contraindicated - high AKI risk",
+        "Metformin dose reduction required",
+        "ACEi/ARB for renal protection"
+      ],
+      "quickReference": {
+        "staging": [
+          {"stage": "1", "eGFR": "≥90", "description": "Normal (with kidney damage)"},
+          {"stage": "2", "eGFR": "60-89", "description": "Mildly decreased"},
+          {"stage": "3a", "eGFR": "45-59", "description": "Moderately decreased"},
+          {"stage": "3b", "eGFR": "30-44", "description": "Moderately-severely decreased"},
+          {"stage": "4", "eGFR": "15-29", "description": "Severely decreased"},
+          {"stage": "5", "eGFR": "<15", "description": "Kidney failure"}
+        ],
+        "drugCautions": [
+          {
+            "drug": "Metformin",
+            "eGFR_60": "Normal dose",
+            "eGFR_45_59": "Normal dose, monitor",
+            "eGFR_30_44": "Reduce 50%",
+            "eGFR_below_30": "STOP"
+          },
+          {
+            "drug": "NSAIDs",
+            "eGFR_60": "Use with caution",
+            "eGFR_45_59": "Avoid if possible",
+            "eGFR_30_44": "CONTRAINDICATED",
+            "eGFR_below_30": "CONTRAINDICATED"
+          }
+        ]
+      }
+    },
+    {
+      "id": "CR-DRUG-001",
+      "category": "pharmacology",
+      "specialty": "Nephrology",
+      "titleThai": "ตารางปรับขนาดยาในผู้ป่วยโรคไต",
+      "titleEnglish": "Drug Dose Adjustment in Renal Impairment",
+      "source": "NKDEP/KDOQI",
+      "guidelineYear": 2024,
+      "status": "published",
+      "approvedBy": "ADMIN-001",
+      "tags": ["drug adjustment", "CKD", "pharmacy", "ปรับยา"],
+      "highlights": [
+        "Critical drug adjustments for common medications",
+        "NSAIDs contraindicated in CKD",
+        "Antibiotics require dose adjustment"
+      ],
+      "quickReference": {
+        "adjustments": [
+          {
+            "drug": "Metformin",
+            "normal": "500-2000mg/day",
+            "eGFR_30_59": "Max 1000mg/day",
+            "eGFR_15_29": "Stop",
+            "eGFR_below_15": "Stop"
+          },
+          {
+            "drug": "Gabapentin",
+            "normal": "300-3600mg/day",
+            "eGFR_30_59": "Max 700mg/day",
+            "eGFR_15_29": "Max 300mg/day",
+            "eGFR_below_15": "Max 150mg/day"
+          },
+          {
+            "drug": "Acyclovir",
+            "normal": "Standard dose",
+            "eGFR_30_59": "50%",
+            "eGFR_15_29": "25%",
+            "eGFR_below_15": "25%"
+          },
+          {
+            "drug": "Ciprofloxacin",
+            "normal": "250-750mg BID",
+            "eGFR_30_59": "50%",
+            "eGFR_15_29": "50%",
+            "eGFR_below_15": "50% or avoid"
+          }
+        ],
+        "contraindicated": [
+          {
+            "drug": "NSAIDs",
+            "examples": ["Ibuprofen", "Naproxen", "Diclofenac"],
+            "reason": "High risk of acute kidney injury"
+          },
+          {
+            "drug": "Spironolactone",
+            "condition": "eGFR <30",
+            "reason": "Hyperkalemia risk"
+          }
+        ]
+      }
+    },
+    {
+      "id": "CR-DRUG-INTERACT-001",
+      "category": "pharmacology",
+      "specialty": "Pharmacy",
+      "titleThai": "ปฏิกิริยาระหว่างยาที่สำคัญ",
+      "titleEnglish": "Critical Drug Interactions",
+      "source": "Clinical Pharmacology Database",
+      "guidelineYear": 2024,
+      "status": "published",
+      "approvedBy": "ADMIN-001",
+      "tags": ["drug interactions", "pharmacy", "ยา"],
+      "quickReference": {
+        "interactions": [
+          {
+            "drug1": "Warfarin",
+            "drug2": "NSAIDs",
+            "severity": "high",
+            "effect": "Increased bleeding risk"
+          },
+          {
+            "drug1": "ACE inhibitor",
+            "drug2": "Potassium supplements",
+            "severity": "high",
+            "effect": "Hyperkalemia"
+          },
+          {
+            "drug1": "Metformin",
+            "drug2": "IV Contrast",
+            "severity": "high",
+            "effect": "Lactic acidosis risk. Hold before/after contrast."
+          },
+          {
+            "drug1": "Fluoroquinolones",
+            "drug2": "QT-prolonging drugs",
+            "severity": "high",
+            "effect": "Torsades de pointes"
+          }
+        ]
+      }
+    },
+    {
+      "id": "CR-ALLERGY-001",
+      "category": "allergy",
+      "specialty": "Immunology",
+      "titleThai": "การจัดการอาการแพ้ยา",
+      "titleEnglish": "Drug Allergy Management",
+      "source": "WAO Guidelines",
+      "guidelineYear": 2024,
+      "status": "published",
+      "approvedBy": "ADMIN-001",
+      "tags": ["allergy", "drug allergy", "แพ้ยา"],
+      "quickReference": {
+        "penicillinAllergy": {
+          "crossReactivity": "1-2% with cephalosporins",
+          "alternatives": ["Azithromycin", "Fluoroquinolones", "Trimethoprim-sulfamethoxazole"],
+          "notes": "Most 'penicillin allergies' are not true allergies. Consider allergy testing."
+        },
+        "sulfaAllergy": {
+          "crossReactivity": "Not with non-antibiotic sulfonamides",
+          "alternatives": ["Depends on indication"],
+          "notes": "Sulfa antibiotics (TMP-SMX) vs non-antibiotic sulfonamides (furosemide) - different structures"
+        }
+      }
+    }
+  ],
+  
+  "specialties": [
+    {"id": "Cardiology", "nameThai": "โรคหัวใจ", "resourceCount": 8},
+    {"id": "Endocrinology", "nameThai": "ต่อมไร้ท่อ", "resourceCount": 6},
+    {"id": "Nephrology", "nameThai": "โรคไต", "resourceCount": 7},
+    {"id": "Gastroenterology", "nameThai": "ระบบทางเดินอาหาร", "resourceCount": 5},
+    {"id": "Pulmonology", "nameThai": "โรคทางเดินหายใจ", "resourceCount": 4},
+    {"id": "Neurology", "nameThai": "ระบบประสาท", "resourceCount": 3},
+    {"id": "Pharmacy", "nameThai": "เภสัชกรรม", "resourceCount": 10}
+  ],
+  
+  "categories": [
+    {"id": "treatment", "nameThai": "แนวทางการรักษา", "nameEnglish": "Treatment Guidelines"},
+    {"id": "diagnosis", "nameThai": "แนวทางการวินิจฉัย", "nameEnglish": "Diagnostic Guidelines"},
+    {"id": "pharmacology", "nameThai": "เภสัชวิทยา", "nameEnglish": "Pharmacology"},
+    {"id": "emergency", "nameThai": "ฉุกเฉิน", "nameEnglish": "Emergency"},
+    {"id": "allergy", "nameThai": "ภูมิแพ้", "nameEnglish": "Allergy/Immunology"}
+  ]
+}

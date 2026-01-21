@@ -10,12 +10,24 @@
  * - Patient Queue: Shows ALL appointments awaiting confirmation (pending, in_pool, awaiting_doctor_response)
  * - Scheduled Meetings: Confirmed appointments with meeting links
  * - All Appointments (Admin only): Full list with search/filter
+ * 
+ * UPDATED: Now uses PostgreSQL backend via apiDataService - NO GCS!
  */
 
 import React, { useState, useEffect } from 'react';
 import { User, QueuePatient } from '../types';
 import { doctorDataService } from '../services/doctorDataService';
-import { fetchDoctorAppointments, fetchAllAppointments, fetchAllPatients, fetchAllDoctors, saveAllAppointments, saveAppointment, writeToGCS, clearCache, fetchDoctorQueue } from '../services/gcsDataService';
+// PostgreSQL-backed API service - NO GCS!
+import { 
+  fetchDoctorAppointments, 
+  fetchAllAppointments, 
+  fetchAllPatients, 
+  fetchAllDoctors, 
+  saveAllAppointments, 
+  saveAppointment, 
+  clearCache, 
+  fetchDashboardData as fetchDoctorQueue
+} from '../services/apiDataService';
 import { googleMeetService } from '../services/externalServices';
 import appointmentService from '../services/appointmentService';
 import {
@@ -1055,20 +1067,16 @@ Izara Telehealth Team
       if (!saveResult.success) {
         throw new Error('Failed to save appointment to GCS: ' + (saveResult.error || 'Unknown error'));
       }
-      console.log('✅ Appointment saved to GCS (individual file + master list)');
+      console.log('✅ Appointment saved to PostgreSQL');
       
-      // CRITICAL: Clear cache again after save to ensure fresh reads
-      clearCache('appointments');
+      // No need to wait for cache/propagation - PostgreSQL is instant
       
-      // Small delay to allow GCS to propagate
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      // Verify the save worked by reading back (no cache)
-      const verifyAppointments = await fetchAllAppointments({ cache: false });
+      // Verify the save worked by reading back
+      const verifyAppointments = await fetchAllAppointments();
       const verifiedApt = verifyAppointments.find((apt: any) => apt.id === selectedAppointment.id);
-      if (!verifiedApt || verifiedApt.status !== 'confirmed') {
+      if (!verifiedApt || (verifiedApt.status !== 'confirmed' && verifiedApt.status !== 'scheduled')) {
         console.error('❌ Verification failed! Appointment status:', verifiedApt?.status);
-        console.error('❌ Expected status: confirmed, doctorId:', doctor.id);
+        console.error('❌ Expected status: confirmed/scheduled, doctorId:', doctor.id);
         throw new Error('Failed to verify appointment update. Please try again.');
       }
       console.log('✅ Verified: Appointment status is now:', verifiedApt.status, 'doctorId:', verifiedApt.doctorId);
@@ -1084,36 +1092,12 @@ Izara Telehealth Team
         meetingLink: verifiedApt.meetingLink
       }, null, 2));
       
-      // Step 5: Also save individual meeting link file for quick access
-      // Include all URL variants for different participants
-      const meetingLinkData = {
-        appointmentId: selectedAppointment.id,
-        patientId: selectedAppointment.patientId,
-        doctorId: doctorIdentifier,  // Use same identifier as in appointment
-        // All Jitsi Meet URLs
-        meetLink: meetingDetails.patientUrl || meetingDetails.meetLink,
-        meetCode: meetingDetails.meetCode,
-        jitsiRoomName: meetingDetails.meetCode,
-        doctorUrl: meetingDetails.doctorUrl,   // Doctor joins as host
-        patientUrl: meetingDetails.patientUrl,  // Patient sees this
-        guestUrl: meetingDetails.guestUrl,      // For family/consultants
-        // Calendar and schedule info
-        calendarUrl: googleCalendarUrl,
-        scheduledDate: appointmentDate,
-        scheduledTime: appointmentTime,
-        // Metadata
-        createdAt: new Date().toISOString(),
-        status: 'active',
-        provider: 'jitsi'
-      };
+      // Meeting link data is already included in the appointment - no separate write needed
+      // PostgreSQL stores all data in one place
+      console.log('✅ Meeting link included in appointment data');
       
-      await writeToGCS('appointments', `appointments/${selectedAppointment.id}/meeting-link.json`, meetingLinkData);
-      console.log('✅ Meeting link saved separately with all URL variants');
-      
-      // Step 5b: Save full appointment details for patient portal compatibility
-      // Use the updatedAppointment we already built (not updatedAppointments array)
-      await writeToGCS('appointments', `appointments/${selectedAppointment.id}/details.json`, updatedAppointment);
-      console.log('✅ Full appointment details saved for patient portal');
+      // All meeting data is already saved in the appointment record above
+      // No need for separate writeToGCS calls - PostgreSQL handles everything
       
       // Step 6: Send confirmation email
       console.log('📧 Sending confirmation email...');
@@ -1128,10 +1112,7 @@ Izara Telehealth Team
       setConfirmTime('');
       setEmailRecipients({ sendToPatient: true, sendToDoctor: true, additionalEmails: '' });
       
-      // CRITICAL: Clear cache and add small delay before reload to ensure GCS propagation
-      clearCache('appointments');
-      console.log('⏳ Waiting 1 second for GCS propagation...');
-      await new Promise(resolve => setTimeout(resolve, 1000)); // 1 second delay
+      // No need for cache clearing or delays - PostgreSQL is instant
       
       // Reload all data to reflect changes
       console.log('🔄 Reloading all data...');

@@ -1,0 +1,235 @@
+{
+  "version": "3.0.0",
+  "lastUpdated": "2026-01-20",
+  "phase": "Phase 1",
+  "description": "Medical content for health library - Thai-first with English translation",
+  
+  "articles": [
+    {
+      "id": "MC-BP-001",
+      "category": "general-health",
+      "titleThai": "ทำความเข้าใจความดันโลหิต: คู่มือฉบับสมบูรณ์",
+      "titleEnglish": "Understanding Blood Pressure: A Complete Guide",
+      "slug": "understanding-blood-pressure",
+      "excerpt": "ความดันโลหิตคือแรงที่เลือดกดผนังหลอดเลือดแดง เรียนรู้ค่าปกติ การควบคุม และเมื่อไหร่ต้องพบแพทย์",
+      "tags": ["hypertension", "cardiovascular", "prevention", "ความดันโลหิต"],
+      "author": "ADMIN-001",
+      "status": "published",
+      "viewCount": 1250,
+      "readTimeMinutes": 5,
+      "createdAt": "2025-11-20",
+      "publishedAt": "2025-11-22",
+      "contentSections": [
+        {
+          "heading": "ความดันโลหิตคืออะไร?",
+          "content": "ความดันโลหิตคือแรงที่เลือดกดผนังหลอดเลือดแดง วัดเป็น mmHg โดยมี 2 ค่า: ค่าบน (Systolic) คือแรงดันขณะหัวใจบีบตัว และค่าล่าง (Diastolic) คือแรงดันขณะหัวใจคลายตัว"
+        },
+        {
+          "heading": "ค่าความดันปกติ",
+          "content": "ปกติ: น้อยกว่า 120/80 mmHg, สูงเล็กน้อย: 120-129/<80 mmHg, ความดันสูงระดับ 1: 130-139/80-89 mmHg, ความดันสูงระดับ 2: ≥140/90 mmHg"
+        },
+        {
+          "heading": "วิธีควบคุมความดันโลหิต",
+          "content": "1. อาหาร: ลดเกลือ รับประทานผักผลไม้ 2. ออกกำลังกาย: 150 นาทีต่อสัปดาห์ 3. น้ำหนัก: รักษา BMI ให้อยู่ในเกณฑ์ปกติ 4. ยา: รับประทานตามแพทย์สั่ง 5. ตรวจวัด: วัดความดันสม่ำเสมอ"
+        }
+      ]
+    },
+    {
+      "id": "MC-DM-001",
+      "category": "chronic-disease",
+      "titleThai": "อยู่กับเบาหวาน: คู่มือประจำวัน",
+      "titleEnglish": "Living with Diabetes: Your Daily Guide",
+      "slug": "living-with-diabetes",
+      "excerpt": "เรียนรู้การดูแลตัวเองเมื่อเป็นเบาหวาน ตั้งแต่ระดับน้ำตาลเป้าหมาย การรับประทานยา และเมื่อไหร่ต้องพบแพทย์",
+      "tags": ["diabetes", "chronic-care", "lifestyle", "เบาหวาน"],
+      "author": "ADMIN-001",
+      "status": "published",
+      "viewCount": 980,
+      "readTimeMinutes": 6,
+      "createdAt": "2025-12-05",
+      "publishedAt": "2025-12-07",
+      "contentSections": [
+        {
+          "heading": "เข้าใจระดับน้ำตาลในเลือด",
+          "content": "เป้าหมายระดับน้ำตาล: ก่อนอาหาร 80-130 mg/dL, หลังอาหาร 2 ชม. <180 mg/dL, HbA1c <7%"
+        },
+        {
+          "heading": "การดูแลตัวเองประจำวัน",
+          "content": "1. ตรวจน้ำตาลสม่ำเสมอ 2. รับประทานยาตรงเวลา 3. ควบคุมอาหาร 4. ออกกำลังกาย 30 นาทีทุกวัน 5. ตรวจเท้าทุกวัน"
+        },
+        {
+          "heading": "เมื่อไหร่ต้องพบแพทย์",
+          "content": "น้ำตาล >300 mg/dL, อาการน้ำตาลต่ำ, มีไข้หรือป่วย, แผลที่หายช้า"
+        }
+      ]
+    },
+    {
+      "id": "MC-KIDNEY-001",
+      "category": "nephrology",
+      "titleThai": "ดูแลไต ป้องกันโรคไตเรื้อรัง",
+      "titleEnglish": "Kidney Care & CKD Prevention",
+      "slug": "kidney-care-ckd-prevention",
+      "excerpt": "ไตทำหน้าที่สำคัญในร่างกาย เรียนรู้ปัจจัยเสี่ยง วิธีป้องกัน และยาที่ต้องหลีกเลี่ยง",
+      "tags": ["kidney", "CKD", "prevention", "โรคไต", "NSAIDs"],
+      "author": "ADMIN-001",
+      "status": "published",
+      "viewCount": 750,
+      "readTimeMinutes": 5,
+      "createdAt": "2025-12-20",
+      "publishedAt": "2025-12-22",
+      "contentSections": [
+        {
+          "heading": "ไตทำหน้าที่อะไร?",
+          "content": "ไตทำหน้าที่: กรองของเสียจากเลือด, ควบคุมความดันโลหิต, ผลิตฮอร์โมนสำคัญ, รักษาสมดุลเกลือแร่"
+        },
+        {
+          "heading": "ปัจจัยเสี่ยงโรคไตเรื้อรัง",
+          "content": "1. เบาหวาน (สาเหตุอันดับ 1) 2. ความดันโลหิตสูง 3. อายุ >60 ปี 4. ประวัติครอบครัวโรคไต 5. ใช้ยาแก้ปวด NSAIDs บ่อย"
+        },
+        {
+          "heading": "วิธีป้องกันโรคไต",
+          "content": "1. ควบคุมน้ำตาลและความดัน 2. หลีกเลี่ยงยา NSAIDs (เช่น Ibuprofen) 3. ดื่มน้ำเพียงพอ 4. ลดอาหารเค็ม 5. ตรวจเลือดประจำปี"
+        }
+      ]
+    },
+    {
+      "id": "MC-HEART-001",
+      "category": "cardiovascular",
+      "titleThai": "ดูแลหัวใจให้แข็งแรง",
+      "titleEnglish": "Heart Health Basics",
+      "slug": "heart-health-basics",
+      "excerpt": "5 วิธีดูแลหัวใจและสัญญาณอันตรายที่ต้องรีบพบแพทย์",
+      "tags": ["heart", "cardiovascular", "prevention", "หัวใจ"],
+      "author": "DOC-003",
+      "status": "published",
+      "viewCount": 890,
+      "readTimeMinutes": 4,
+      "createdAt": "2025-12-25",
+      "publishedAt": "2025-12-27",
+      "contentSections": [
+        {
+          "heading": "5 วิธีดูแลหัวใจ",
+          "content": "1. ออกกำลังกายสม่ำเสมอ 150 นาที/สัปดาห์ 2. อาหารเพื่อสุขภาพ ลดไขมัน เพิ่มผักผลไม้ 3. งดสูบบุหรี่ 4. ควบคุมความเครียด 5. ตรวจสุขภาพประจำปี"
+        },
+        {
+          "heading": "สัญญาณอันตราย",
+          "content": "⚠️ ต้องไปโรงพยาบาลทันที: เจ็บแน่นหน้าอก, หายใจลำบาก, เหงื่อออกมาก ใจสั่น, ปวดร้าวไปแขนซ้าย"
+        }
+      ]
+    },
+    {
+      "id": "MC-SLEEP-001",
+      "category": "wellness",
+      "titleThai": "นอนหลับดี สุขภาพดี",
+      "titleEnglish": "Better Sleep for Better Health",
+      "slug": "better-sleep-health",
+      "excerpt": "การนอนหลับที่ดีส่งผลต่อสุขภาพอย่างไร และเคล็ดลับการนอนหลับที่ดี",
+      "tags": ["sleep", "wellness", "lifestyle", "การนอน"],
+      "author": "ADMIN-001",
+      "status": "published",
+      "viewCount": 650,
+      "readTimeMinutes": 4,
+      "createdAt": "2025-12-30",
+      "publishedAt": "2026-01-02",
+      "contentSections": [
+        {
+          "heading": "ทำไมการนอนหลับสำคัญ",
+          "content": "ผู้ใหญ่ต้องนอน 7-9 ชั่วโมง การนอนไม่พอเพิ่มความเสี่ยง: โรคหัวใจ, เบาหวาน, ซึมเศร้า, ภูมิคุ้มกันอ่อนแอ"
+        },
+        {
+          "heading": "เคล็ดลับนอนหลับดี",
+          "content": "1. เข้านอนเวลาเดียวกันทุกวัน 2. ห้องนอนเย็นมืด 24-26°C 3. งดหน้าจอ 1 ชม.ก่อนนอน 4. งดคาเฟอีนหลังบ่าย 2 5. ผ่อนคลายด้วยการอ่านหนังสือหรือทำสมาธิ"
+        }
+      ]
+    },
+    {
+      "id": "MC-COVID-001",
+      "category": "infectious-disease",
+      "titleThai": "โควิด-19 และการดูแลตัวเอง",
+      "titleEnglish": "COVID-19 Self-Care Guide",
+      "slug": "covid-19-self-care",
+      "excerpt": "การดูแลตัวเองเมื่อติดเชื้อโควิด-19 และเมื่อไหร่ต้องไปโรงพยาบาล",
+      "tags": ["covid", "respiratory", "self-care", "โควิด"],
+      "author": "ADMIN-001",
+      "status": "published",
+      "viewCount": 2150,
+      "readTimeMinutes": 6,
+      "createdAt": "2025-11-15",
+      "publishedAt": "2025-11-17"
+    },
+    {
+      "id": "MC-STRESS-001",
+      "category": "mental-health",
+      "titleThai": "จัดการความเครียด ดูแลจิตใจ",
+      "titleEnglish": "Managing Stress and Mental Wellness",
+      "slug": "stress-management-mental-wellness",
+      "excerpt": "เทคนิคจัดการความเครียดและดูแลสุขภาพจิต",
+      "tags": ["stress", "mental-health", "wellness", "ความเครียด"],
+      "author": "ADMIN-001",
+      "status": "published",
+      "viewCount": 480,
+      "readTimeMinutes": 5,
+      "createdAt": "2026-01-05",
+      "publishedAt": "2026-01-07"
+    }
+  ],
+  
+  "categories": [
+    {
+      "id": "general-health",
+      "nameThai": "สุขภาพทั่วไป",
+      "nameEnglish": "General Health",
+      "icon": "heart-pulse",
+      "articleCount": 15
+    },
+    {
+      "id": "chronic-disease",
+      "nameThai": "โรคเรื้อรัง",
+      "nameEnglish": "Chronic Diseases",
+      "icon": "activity",
+      "articleCount": 12
+    },
+    {
+      "id": "cardiovascular",
+      "nameThai": "หัวใจและหลอดเลือด",
+      "nameEnglish": "Cardiovascular",
+      "icon": "heart",
+      "articleCount": 8
+    },
+    {
+      "id": "nephrology",
+      "nameThai": "โรคไต",
+      "nameEnglish": "Nephrology",
+      "icon": "droplet",
+      "articleCount": 5
+    },
+    {
+      "id": "wellness",
+      "nameThai": "สุขภาพดี",
+      "nameEnglish": "Wellness",
+      "icon": "smile",
+      "articleCount": 10
+    },
+    {
+      "id": "mental-health",
+      "nameThai": "สุขภาพจิต",
+      "nameEnglish": "Mental Health",
+      "icon": "brain",
+      "articleCount": 7
+    },
+    {
+      "id": "infectious-disease",
+      "nameThai": "โรคติดเชื้อ",
+      "nameEnglish": "Infectious Disease",
+      "icon": "virus",
+      "articleCount": 6
+    },
+    {
+      "id": "nutrition",
+      "nameThai": "โภชนาการ",
+      "nameEnglish": "Nutrition",
+      "icon": "apple",
+      "articleCount": 9
+    }
+  ]
+}

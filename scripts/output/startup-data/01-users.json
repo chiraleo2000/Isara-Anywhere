@@ -1,0 +1,132 @@
+{
+  "description": "User accounts for Izara Telemedicine Platform",
+  "tables": ["users", "doctor_profiles", "patient_profiles"],
+  "data": {
+    "users": [
+      {
+        "id": "PATIENT-DEMO",
+        "email": "demo.test@gmail.com",
+        "name": "Demo Test Patient",
+        "name_thai": "นายทดสอบ ระบบ",
+        "role": "patient",
+        "phone": "0891234567",
+        "date_of_birth": "1985-06-15",
+        "gender": "male",
+        "is_active": true
+      },
+      {
+        "id": "PATIENT-SOMCHAI",
+        "email": "Somchai.Mankong@gmail.com",
+        "name": "Somchai Mankong",
+        "name_thai": "สมชาย มั่นคง",
+        "role": "patient",
+        "phone": "0812345678",
+        "date_of_birth": "1978-03-20",
+        "gender": "male",
+        "is_active": true
+      },
+      {
+        "id": "PATIENT-ANAN",
+        "email": "Anan.Khayanrian@gmail.com",
+        "name": "Anan Khayanrian",
+        "name_thai": "อนันต์ ขยันเรียน",
+        "role": "patient",
+        "phone": "0823456789",
+        "date_of_birth": "1990-11-08",
+        "gender": "male",
+        "is_active": true
+      },
+      {
+        "id": "DOC-TEST-001",
+        "email": "doctor.test@izara.com",
+        "name": "Doctor Test",
+        "name_thai": "นายแพทย์ ทดสอบ ระบบ",
+        "role": "doctor",
+        "phone": "0834567890",
+        "date_of_birth": "1975-08-12",
+        "gender": "male",
+        "is_active": true
+      },
+      {
+        "id": "DOC-SPECIALIST-001",
+        "email": "specialist.test@izara.com",
+        "name": "Specialist Test",
+        "name_thai": "แพทย์หญิง ผู้เชี่ยวชาญ ทดสอบ",
+        "role": "doctor",
+        "phone": "0845678901",
+        "date_of_birth": "1980-04-25",
+        "gender": "female",
+        "is_active": true
+      },
+      {
+        "id": "ADMIN-TEST-001",
+        "email": "admin.test@izara.com",
+        "name": "Admin Test",
+        "name_thai": "ผู้ดูแลระบบ ทดสอบ",
+        "role": "admin",
+        "phone": "0856789012",
+        "date_of_birth": "1982-12-01",
+        "gender": "male",
+        "is_active": true,
+        "is_admin": true
+      }
+    ],
+    "doctor_profiles": [
+      {
+        "doctor_id": "DOC-TEST-001",
+        "specialty": "Internal Medicine",
+        "hospital_name": "Izara Medical Center",
+        "qualifications": ["MD, Chulalongkorn University", "Thai Board of Internal Medicine"],
+        "years_of_experience": 15,
+        "consultation_fee": 500.00,
+        "is_available": true
+      },
+      {
+        "doctor_id": "DOC-SPECIALIST-001",
+        "specialty": "Cardiology",
+        "hospital_name": "Izara Heart Center",
+        "qualifications": ["MD, Mahidol University", "Thai Board of Cardiology", "FACC"],
+        "years_of_experience": 12,
+        "consultation_fee": 800.00,
+        "is_available": true
+      }
+    ],
+    "patient_profiles": [
+      {
+        "patient_id": "PATIENT-DEMO",
+        "emergency_contact_name": "Emergency Contact",
+        "emergency_contact_phone": "0899999999",
+        "allergies": ["Penicillin"],
+        "chronic_conditions": ["Hypertension"]
+      },
+      {
+        "patient_id": "PATIENT-SOMCHAI",
+        "emergency_contact_name": "Wife Contact",
+        "emergency_contact_phone": "0888888888",
+        "allergies": ["Sulfa drugs"],
+        "chronic_conditions": ["Type 2 Diabetes", "Hypertension"]
+      },
+      {
+        "patient_id": "PATIENT-ANAN",
+        "emergency_contact_name": "Parent Contact",
+        "emergency_contact_phone": "0877777777",
+        "allergies": [],
+        "chronic_conditions": []
+      }
+    ]
+  },
+  "test_credentials": {
+    "patient": {
+      "email": "demo.test@gmail.com",
+      "password": "P@ssw0rd"
+    },
+    "doctor": {
+      "email": "doctor.test@izara.com",
+      "password": "IzaraDoctor@2024"
+    },
+    "admin": {
+      "email": "admin.test@izara.com",
+      "password": "IzaraAdmin@2024"
+    }
+  }
+}

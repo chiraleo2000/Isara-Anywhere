@@ -5,7 +5,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { User } from '../types';
-import { fetchAllAppointments } from '../services/gcsDataService';
+// PostgreSQL-backed API service - NO GCS!
+import { fetchAllAppointments } from '../services/apiDataService';
 
 interface CompleteScheduleProps {
   doctor: User;

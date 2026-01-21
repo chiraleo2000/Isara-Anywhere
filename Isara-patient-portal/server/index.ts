@@ -2,9 +2,9 @@ import express, { Express, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { Storage } from '@google-cloud/storage';
-import path from 'path';
-import fs from 'fs';
-import { fileURLToPath } from 'url';
+import path from 'node:path';
+import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
 dotenv.config();
 
@@ -24,6 +24,7 @@ import gcsRoutes from './routes/gcs';
 import googleServicesRoutes from './routes/google-services';
 import contentRoutes from './routes/content';
 import videoMeetingRoutes from './routes/video-meeting';
+import notificationRoutes from './routes/notifications';
 
 const app: Express = express();
 const PORT = process.env.PORT || 3004;
@@ -36,7 +37,8 @@ const GCS_BUCKETS = {
   METADATA: process.env.GCS_BUCKET_METADATA || process.env.VITE_GCS_BUCKET_METADATA || 'izara-meta-data',
 };
 
-let storage: Storage;
+// Storage will be initialized later after determining PostgreSQL/GCS mode
+let storage: Storage | null = null;
 
 function initializeStorage(): Storage {
   const projectId = process.env.GCP_PROJECT_ID || process.env.VITE_GCP_PROJECT_ID || 'izara-telemedicine';
@@ -68,16 +70,22 @@ function initializeStorage(): Storage {
   return new Storage({ projectId });
 }
 
-try {
-  storage = initializeStorage();
-  console.log('✅ Google Cloud Storage initialized');
-} catch (error) {
-  console.error('❌ Failed to initialize GCS:', error);
-  process.exit(1);
-}
+// PostgreSQL is the PRIMARY and ONLY data store - NO GCS for data interaction
+// GCS is ONLY used for backup, not for live data
+const USE_POSTGRESQL = true; // ALWAYS use PostgreSQL
+const USE_GCS = false; // GCS is disabled for data interaction
 
-// Export storage instance for use in routes
-export { storage, GCS_BUCKETS };
+console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+console.log('📊 Data Configuration:');
+console.log('   ✅ PostgreSQL: ENABLED (Primary Data Store)');
+console.log('   ❌ GCS: DISABLED (No GCS for data interaction)');
+console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+// Storage is null - we don't use GCS for data
+storage = null;
+
+// Export storage instance for use in routes (may be null if PostgreSQL mode)
+export { storage, GCS_BUCKETS, USE_POSTGRESQL, USE_GCS };
 
 // Import OWASP Security Middleware
 import {
@@ -86,8 +94,7 @@ import {
   securityAuditLog,
   requestLogger,
   secureErrorHandler,
-  getClientIP,
-  sanitizeRequestBody
+  getClientIP
 } from './security/owasp-middleware';
 
 // A02 - Allowed origins for CORS
@@ -97,6 +104,11 @@ const ALLOWED_ORIGINS: (string | RegExp | boolean)[] = process.env.NODE_ENV === 
       'https://izara.com',
       'https://izara-patient-portal-724889190329.asia-southeast1.run.app',
       'https://izara-doctor-portal-724889190329.asia-southeast1.run.app',
+      // Allow localhost for testing Docker containers locally
+      'http://localhost:3005',
+      'http://localhost:3004',
+      'http://127.0.0.1:3005',
+      'http://127.0.0.1:3004',
       /\.run\.app$/
     ]
   : ['http://localhost:3005', 'http://localhost:3004', 'http://127.0.0.1:3005', 'http://0.0.0.0:3005', true];
@@ -188,6 +200,21 @@ app.get('/api/health', (_req: Request, res: Response) => {
 // GCS connection check endpoint
 app.get('/api/health/gcs', async (_req: Request, res: Response) => {
   try {
+    // If PostgreSQL mode is enabled, GCS is not primary storage
+    if (USE_POSTGRESQL || !storage) {
+      return res.json({
+        status: 'disabled',
+        message: 'GCS disabled - using PostgreSQL as primary storage',
+        timestamp: new Date().toISOString(),
+        buckets: Object.entries(GCS_BUCKETS).map(([name, bucketName]) => ({
+          name,
+          bucket: bucketName,
+          connected: false,
+          reason: 'PostgreSQL mode enabled'
+        }))
+      });
+    }
+
     // Test connection to each bucket
     const bucketStatus = await Promise.all(
       Object.entries(GCS_BUCKETS).map(async ([name, bucketName]) => {
@@ -238,6 +265,7 @@ app.use('/api/gcs', gcsRoutes);
 app.use('/api/google', googleServicesRoutes);
 app.use('/api/content', contentRoutes);
 app.use('/api/video-meeting', videoMeetingRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Serve static frontend files in production (unified Docker image)
 if (process.env.NODE_ENV === 'production') {
@@ -293,42 +321,12 @@ app.use((req: Request, res: Response) => {
 
 // Verify GCS connection before starting server
 async function verifyGCSConnection(): Promise<boolean> {
-  console.log('\n🔍 Verifying Google Cloud Storage connection...\n');
-
-  try {
-    const results = await Promise.all(
-      Object.entries(GCS_BUCKETS).map(async ([name, bucketName]) => {
-        try {
-          const bucket = storage.bucket(bucketName);
-          const [exists] = await bucket.exists();
-
-          if (exists) {
-            console.log(`✅ ${name.padEnd(15)} | ${bucketName}`);
-            return true;
-          } else {
-            console.log(`❌ ${name.padEnd(15)} | ${bucketName} (bucket not found)`);
-            return false;
-          }
-        } catch (error: any) {
-          console.log(`❌ ${name.padEnd(15)} | ${bucketName} (${error.message})`);
-          return false;
-        }
-      })
-    );
-
-    const allConnected = results.every(r => r);
-
-    if (allConnected) {
-      console.log('\n✅ All GCS buckets are accessible!\n');
-    } else {
-      console.log('\n⚠️  Some GCS buckets are not accessible. Please check your configuration.\n');
-    }
-
-    return allConnected;
-  } catch (error: any) {
-    console.error('\n❌ Failed to verify GCS connection:', error.message, '\n');
-    return false;
-  }
+  // GCS is disabled - we use PostgreSQL only
+  console.log('\n📊 Storage Configuration:');
+  console.log('   ✅ PostgreSQL: ENABLED (Primary Data Store)');
+  console.log('   ❌ GCS: DISABLED (PostgreSQL Only Mode)');
+  console.log('');
+  return true; // Always return true since GCS is disabled
 }
 
 // Start server

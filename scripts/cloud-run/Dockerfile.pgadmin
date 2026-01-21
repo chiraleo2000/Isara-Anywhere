@@ -1,0 +1,17 @@
+# pgAdmin for Cloud Run
+
+FROM dpage/pgadmin4:latest
+
+# Set environment variables
+ENV PGADMIN_DEFAULT_EMAIL=admin@izara.com
+ENV PGADMIN_DEFAULT_PASSWORD=P@ssw0rd
+ENV PGADMIN_LISTEN_PORT=8080
+ENV PGADMIN_CONFIG_ENHANCED_COOKIE_PROTECTION=False
+ENV PGADMIN_CONFIG_WTF_CSRF_ENABLED=False
+
+# Pre-configure server connection
+COPY servers.json /pgadmin4/servers.json
+
+EXPOSE 8080
+
+# Use default pgadmin entrypoint

@@ -1,0 +1,93 @@
+[
+  {
+    "id": "APT-COMPLETED-001",
+    "patientId": "PATIENT-ANAN",
+    "patientName": "นายอนันต์ ขยันเรียน",
+    "patientEmail": "Anan.Khayanrian@gmail.com",
+    "doctorId": "DOC-001",
+    "doctorName": "นพ. ทดสอบ แพทย์",
+    "doctorSpecialty": "อายุรศาสตร์",
+    "appointmentDate": "2026-01-18T10:06:48.920Z",
+    "appointmentTime": "10:00",
+    "duration": 30,
+    "type": "telehealth",
+    "status": "completed",
+    "reason": "ติดตามเบาหวานและโรคไต",
+    "symptoms": [
+      "เหนื่อยง่าย",
+      "น้ำตาลสูง"
+    ],
+    "aiPreSummary": {
+      "generatedAt": "2026-01-18T08:06:48.920Z",
+      "summary": "## สรุปข้อมูลผู้ป่วยก่อนพบ\n\n### โรคประจำตัว\n- เบาหวานชนิดที่ 2 (12 ปี)\n- โรคไตเรื้อรังระยะ 3b (eGFR 38)\n- ความดันโลหิตสูง\n\n### ⚠️ ข้อควรระวัง\n- แพ้ Sulfonamides รุนแรง (SJS)\n- ต้องปรับยาตาม eGFR\n\n### Lab ล่าสุด\n- HbA1c: 7.8%\n- eGFR: 38\n- K+: 5.1 (ขอบบน)\n\n### 📝 CDS Alerts\n- พิจารณาลด Metformin 50%",
+      "reviewed": true,
+      "reviewedAt": "2026-01-18T09:06:48.920Z"
+    },
+    "result": {
+      "emrId": "EMR-ANAN-001",
+      "diagnosis": "DM-CKD Stage 3b",
+      "prescriptionChanges": "Metformin reduced to OD",
+      "followUpDate": "2026-02-18T10:06:48.920Z"
+    },
+    "meetingRecord": {
+      "recordingId": "MEETING-RECORD-001",
+      "duration": 25,
+      "hasTranscript": true,
+      "hasAiSummary": true
+    },
+    "patientInstruction": {
+      "instructionId": "PI-ANAN-001",
+      "sentAt": "2026-01-18T10:06:48.920Z",
+      "delivered": true
+    },
+    "createdAt": "2026-01-16T10:06:48.920Z",
+    "completedAt": "2026-01-18T10:06:48.920Z"
+  },
+  {
+    "id": "APT-UPCOMING-ANAN",
+    "patientId": "PATIENT-ANAN",
+    "patientName": "นายอนันต์ ขยันเรียน",
+    "doctorId": "DOC-001",
+    "doctorName": "นพ. ทดสอบ แพทย์",
+    "appointmentDate": "2026-02-16T10:06:48.920Z",
+    "appointmentTime": "10:00",
+    "duration": 30,
+    "type": "telehealth",
+    "status": "confirmed",
+    "reason": "ติดตามหลังปรับยา",
+    "aiPreSummary": {
+      "status": "pending",
+      "scheduledGeneration": "2026-02-15T10:06:48.920Z"
+    },
+    "createdAt": "2026-01-18T10:06:48.920Z"
+  },
+  {
+    "id": "APT-SOMCHAI-001",
+    "patientId": "PATIENT-SOMCHAI",
+    "patientName": "นายสมชาย มั่นคง",
+    "patientEmail": "Somchai.Mankong@gmail.com",
+    "doctorId": "DOC-001",
+    "doctorName": "นพ. ทดสอบ แพทย์",
+    "appointmentDate": "2026-01-12T10:06:48.920Z",
+    "appointmentTime": "14:00",
+    "duration": 30,
+    "type": "telehealth",
+    "status": "completed",
+    "reason": "ปวดศีรษะ สงสัยความดันสูง",
+    "aiPreSummary": {
+      "generatedAt": "2026-01-12T08:06:48.920Z",
+      "summary": "## ผู้ป่วยใหม่\n\n### ข้อมูลเบื้องต้น\n- ชาย 55 ปี\n- อาชีพ: พนักงานบริษัท\n- ประวัติครอบครัว: บิดามีความดันสูง\n\n### อาการหลัก\nปวดศีรษะท้ายทอยเป็นพักๆ มา 2 สัปดาห์\n\n### ⚠️ แพ้ยา\nPenicillin - ผื่นลมพิษ",
+      "reviewed": true
+    },
+    "result": {
+      "emrId": "EMR-SOMCHAI-001",
+      "diagnosis": "Essential hypertension - newly diagnosed",
+      "newMedications": [
+        "Amlodipine 5mg OD"
+      ],
+      "followUpDate": "2026-02-11T10:06:48.920Z"
+    },
+    "createdAt": "2026-01-09T10:06:48.920Z",
+    "completedAt": "2026-01-12T10:06:48.920Z"
+  }
+]

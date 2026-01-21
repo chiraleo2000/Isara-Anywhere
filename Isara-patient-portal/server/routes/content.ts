@@ -1,50 +1,79 @@
 /**
- * Content Routes - Medical Content Library API
- * Serves health education content from GCS
+ * Content Routes - PostgreSQL ONLY
+ * Medical Content Library API
+ * NO GCS - All data stored in PostgreSQL
  */
 
 import { Router, Request, Response } from 'express';
-import { storage, GCS_BUCKETS } from '../index';
+import postgresDataService from '../services/postgresDataService';
+
+const { ContentService } = postgresDataService;
+const { pool } = postgresDataService;
 
 const router = Router();
+
+// ============================================================================
+// MEDICAL CONTENT ROUTES (คลังความรู้สุขภาพ)
+// ============================================================================
 
 /**
  * GET /api/content/medical
  * Get all published medical content articles
- * NOTE: Reads from medical-content/articles.json - same path as doctor portal writes to
  */
-router.get('/medical', async (_req: Request, res: Response) => {
+router.get('/medical', async (req: Request, res: Response) => {
   try {
-    const bucket = storage.bucket(GCS_BUCKETS.METADATA);
-    // Updated path to match doctor portal's write path
-    const file = bucket.file('medical-content/articles.json');
-    
-    const [exists] = await file.exists();
-    if (!exists) {
-      return res.json({ 
-        articles: [],
-        message: 'No medical content found' 
-      });
+    const { category, limit } = req.query;
+    const limitNum = Number.parseInt(limit as string, 10) || 50;
+    console.log(`[CONTENT] Getting medical content, category: ${category || 'all'}`);
+
+    let query = `
+      SELECT mc.*, u.name as author_name, u.name_thai as author_name_thai
+      FROM medical_content mc
+      LEFT JOIN users u ON mc.author_id = u.id
+      WHERE mc.status = 'published'
+    `;
+    const params: any[] = [];
+
+    if (category) {
+      query += ` AND mc.category = $${params.length + 1}`;
+      params.push(category);
     }
 
-    const [content] = await file.download();
-    const data = JSON.parse(content.toString());
-    
-    // Return only published articles for patient portal
-    const publishedArticles = (data.articles || data || []).filter(
-      (article: any) => article.status === 'published'
-    );
+    query += ` ORDER BY mc.published_at DESC NULLS LAST, mc.created_at DESC LIMIT $${params.length + 1}`;
+    params.push(limitNum);
 
-    res.json({ 
-      articles: publishedArticles,
-      total: publishedArticles.length,
-      lastUpdated: data.lastUpdated || new Date().toISOString()
+    const result = await pool.query(query, params);
+
+    // Transform to match expected format
+    const articles = result.rows.map((row: any) => ({
+      id: row.id,
+      title: row.title_thai || row.title_english,
+      titleThai: row.title_thai,
+      titleEnglish: row.title_english,
+      content: row.content_thai || row.content_english,
+      contentThai: row.content_thai,
+      contentEnglish: row.content_english,
+      category: row.category,
+      tags: row.tags || [],
+      author: row.author_name_thai || row.author_name,
+      authorId: row.author_id,
+      status: row.status,
+      viewCount: row.view_count || 0,
+      publishedAt: row.published_at,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
+    }));
+
+    res.json({
+      articles: articles,
+      total: articles.length,
+      lastUpdated: new Date().toISOString()
     });
   } catch (error: any) {
-    console.error('Error fetching medical content:', error);
+    console.error('[CONTENT] Get medical content error:', error);
     res.status(500).json({ 
       error: 'Failed to fetch medical content',
-      message: error.message 
+      articles: []
     });
   }
 });
@@ -56,173 +85,44 @@ router.get('/medical', async (_req: Request, res: Response) => {
 router.get('/medical/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const bucket = storage.bucket(GCS_BUCKETS.METADATA);
-    // Updated path to match doctor portal's write path
-    const file = bucket.file('medical-content/articles.json');
-    
-    const [exists] = await file.exists();
-    if (!exists) {
-      return res.status(404).json({ error: 'Content not found' });
-    }
+    console.log(`[CONTENT] Getting article: ${id}`);
 
-    const [content] = await file.download();
-    const data = JSON.parse(content.toString());
-    const articles = data.articles || data || [];
-    
-    const article = articles.find((a: any) => a.id === id);
-    
-    if (!article) {
+    const result = await pool.query(
+      `SELECT mc.*, u.name as author_name, u.name_thai as author_name_thai
+       FROM medical_content mc
+       LEFT JOIN users u ON mc.author_id = u.id
+       WHERE mc.id = $1 AND mc.status = 'published'`,
+      [id]
+    );
+
+    if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Article not found' });
     }
 
-    // Only return published articles to patients
-    if (article.status !== 'published') {
-      return res.status(404).json({ error: 'Article not found' });
-    }
+    const row = result.rows[0];
+    const article = {
+      id: row.id,
+      title: row.title_thai || row.title_english,
+      titleThai: row.title_thai,
+      titleEnglish: row.title_english,
+      content: row.content_thai || row.content_english,
+      contentThai: row.content_thai,
+      contentEnglish: row.content_english,
+      category: row.category,
+      tags: row.tags || [],
+      author: row.author_name_thai || row.author_name,
+      authorId: row.author_id,
+      status: row.status,
+      viewCount: row.view_count || 0,
+      publishedAt: row.published_at,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
+    };
 
-    // Increment view count (optional - could save back to GCS)
     res.json({ article });
   } catch (error: any) {
-    console.error('Error fetching article:', error);
-    res.status(500).json({ 
-      error: 'Failed to fetch article',
-      message: error.message 
-    });
-  }
-});
-
-/**
- * GET /api/content/clinical-resources
- * Get clinical resources for health education
- */
-router.get('/clinical-resources', async (_req: Request, res: Response) => {
-  try {
-    const bucket = storage.bucket(GCS_BUCKETS.METADATA);
-    const file = bucket.file('clinical-resources.json');
-    
-    const [exists] = await file.exists();
-    if (!exists) {
-      return res.json({ 
-        resources: [],
-        message: 'No clinical resources found' 
-      });
-    }
-
-    const [content] = await file.download();
-    const data = JSON.parse(content.toString());
-
-    res.json({ 
-      resources: data.resources || data || [],
-      categories: data.categories || [],
-      lastUpdated: data.lastUpdated || new Date().toISOString()
-    });
-  } catch (error: any) {
-    console.error('Error fetching clinical resources:', error);
-    res.status(500).json({ 
-      error: 'Failed to fetch clinical resources',
-      message: error.message 
-    });
-  }
-});
-
-/**
- * GET /api/content/health-tips
- * Get health tips for patient education
- */
-router.get('/health-tips', async (_req: Request, res: Response) => {
-  try {
-    const bucket = storage.bucket(GCS_BUCKETS.METADATA);
-    const file = bucket.file('health-tips.json');
-    
-    const [exists] = await file.exists();
-    if (!exists) {
-      return res.json({ tips: [] });
-    }
-
-    const [content] = await file.download();
-    const data = JSON.parse(content.toString());
-
-    res.json({ 
-      tips: data.tips || data || [],
-      lastUpdated: data.lastUpdated || new Date().toISOString()
-    });
-  } catch (error: any) {
-    console.error('Error fetching health tips:', error);
-    res.status(500).json({ 
-      error: 'Failed to fetch health tips',
-      message: error.message 
-    });
-  }
-});
-
-/**
- * GET /api/content/health-education
- * Get health education articles
- */
-router.get('/health-education', async (_req: Request, res: Response) => {
-  try {
-    const bucket = storage.bucket(GCS_BUCKETS.METADATA);
-    const file = bucket.file('health-education-articles.json');
-    
-    const [exists] = await file.exists();
-    if (!exists) {
-      return res.json({ articles: [] });
-    }
-
-    const [content] = await file.download();
-    const data = JSON.parse(content.toString());
-
-    res.json({ 
-      articles: data.articles || data || [],
-      lastUpdated: data.lastUpdated || new Date().toISOString()
-    });
-  } catch (error: any) {
-    console.error('Error fetching health education:', error);
-    res.status(500).json({ 
-      error: 'Failed to fetch health education',
-      message: error.message 
-    });
-  }
-});
-
-/**
- * GET /api/content/tags/:type
- * Get tags for content filtering (medical or clinical)
- */
-router.get('/tags/:type', async (req: Request, res: Response) => {
-  try {
-    const { type } = req.params;
-    const bucket = storage.bucket(GCS_BUCKETS.METADATA);
-    
-    // Determine file path based on type
-    const filePath = type === 'clinical' 
-      ? 'clinical-resources/tags.json'
-      : 'medical-content/tags.json';
-    
-    const file = bucket.file(filePath);
-    
-    const [exists] = await file.exists();
-    if (!exists) {
-      // Return default tags if file doesn't exist
-      return res.json({ 
-        tags: getDefaultTags(type),
-        lastUpdated: new Date().toISOString()
-      });
-    }
-
-    const [content] = await file.download();
-    const data = JSON.parse(content.toString());
-
-    res.json({ 
-      tags: data.tags || data || [],
-      lastUpdated: data.lastUpdated || new Date().toISOString()
-    });
-  } catch (error: any) {
-    console.error('Error fetching tags:', error);
-    res.status(500).json({ 
-      error: 'Failed to fetch tags',
-      message: error.message 
-    });
+    console.error('[CONTENT] Get article error:', error);
+    res.status(500).json({ error: 'Failed to fetch article' });
   }
 });
 
@@ -233,68 +133,243 @@ router.get('/tags/:type', async (req: Request, res: Response) => {
 router.post('/medical/:id/view', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const bucket = storage.bucket(GCS_BUCKETS.METADATA);
-    const file = bucket.file('medical-content/articles.json');
     
-    const [exists] = await file.exists();
-    if (!exists) {
-      return res.status(404).json({ error: 'Content not found' });
+    const result = await pool.query(
+      `UPDATE medical_content 
+       SET view_count = COALESCE(view_count, 0) + 1 
+       WHERE id = $1 
+       RETURNING view_count`,
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.json({ success: false });
     }
-
-    const [content] = await file.download();
-    const data = JSON.parse(content.toString());
-    const articles = data.articles || [];
-    
-    const articleIndex = articles.findIndex((a: any) => a.id === id);
-    
-    if (articleIndex === -1) {
-      return res.status(404).json({ error: 'Article not found' });
-    }
-
-    // Increment view count
-    articles[articleIndex].views = (articles[articleIndex].views || 0) + 1;
-    articles[articleIndex].viewCount = articles[articleIndex].views;
-    data.articles = articles;
-    data.lastUpdated = new Date().toISOString();
-
-    // Save back to GCS
-    await file.save(JSON.stringify(data, null, 2), {
-      contentType: 'application/json',
-      metadata: { cacheControl: 'public, max-age=60' }
-    });
 
     res.json({ 
       success: true,
-      views: articles[articleIndex].views 
+      views: result.rows[0].view_count 
     });
   } catch (error: any) {
-    console.error('Error tracking view:', error);
-    // Silent fail for analytics - don't break the user experience
+    console.error('[CONTENT] Track view error:', error);
     res.json({ success: false });
   }
 });
 
+// ============================================================================
+// CLINICAL RESOURCES ROUTES
+// ============================================================================
+
 /**
- * Helper function to get default tags
+ * GET /api/content/clinical-resources
+ * Get clinical resources for health education
  */
-function getDefaultTags(type: string): Array<{id: string, name: string, nameTh?: string}> {
-  if (type === 'medical') {
-    return [
-      { id: 'diabetes', name: 'Diabetes', nameTh: 'เบาหวาน' },
-      { id: 'heart-health', name: 'Heart Health', nameTh: 'สุขภาพหัวใจ' },
-      { id: 'nutrition', name: 'Nutrition', nameTh: 'โภชนาการ' },
-      { id: 'exercise', name: 'Exercise', nameTh: 'การออกกำลังกาย' },
-      { id: 'mental-health', name: 'Mental Health', nameTh: 'สุขภาพจิต' },
-      { id: 'prevention', name: 'Prevention', nameTh: 'การป้องกัน' },
-      { id: 'chronic-disease', name: 'Chronic Disease', nameTh: 'โรคเรื้อรัง' },
-      { id: 'wellness', name: 'Wellness', nameTh: 'สุขภาวะ' },
-    ];
+router.get('/clinical-resources', async (req: Request, res: Response) => {
+  try {
+    const { category } = req.query;
+    console.log(`[CONTENT] Getting clinical resources, category: ${category || 'all'}`);
+
+    let query = `
+      SELECT cr.*, u.name as author_name, u.name_thai as author_name_thai
+      FROM clinical_resources cr
+      LEFT JOIN users u ON cr.approved_by = u.id
+      WHERE cr.status = 'published'
+    `;
+    const params: any[] = [];
+
+    if (category) {
+      query += ` AND cr.category = $${params.length + 1}`;
+      params.push(category);
+    }
+
+    query += ' ORDER BY cr.updated_at DESC LIMIT 100';
+
+    const result = await pool.query(query, params);
+
+    const resources = result.rows.map((row: any) => ({
+      id: row.id,
+      title: row.title_thai || row.title_english,
+      titleThai: row.title_thai,
+      titleEnglish: row.title_english,
+      content: row.content_thai || row.content_english,
+      contentThai: row.content_thai,
+      contentEnglish: row.content_english,
+      category: row.category,
+      specialty: row.specialty,
+      guidelineYear: row.guideline_year,
+      source: row.source,
+      tags: row.tags || [],
+      status: row.status,
+      approvedBy: row.author_name_thai || row.author_name,
+      approvedAt: row.approved_at,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
+    }));
+
+    res.json({
+      resources: resources,
+      categories: [],
+      lastUpdated: new Date().toISOString()
+    });
+  } catch (error: any) {
+    console.error('[CONTENT] Get clinical resources error:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch clinical resources',
+      resources: []
+    });
   }
-  return [
-    { id: 'guidelines', name: 'Guidelines', nameTh: 'แนวทาง' },
-    { id: 'protocols', name: 'Protocols', nameTh: 'โปรโตคอล' },
-    { id: 'research', name: 'Research', nameTh: 'งานวิจัย' },
-  ];
-}
+});
+
+// ============================================================================
+// HEALTH TIPS ROUTES
+// ============================================================================
+
+/**
+ * GET /api/content/health-tips
+ * Get health tips for patient education
+ */
+router.get('/health-tips', async (_req: Request, res: Response) => {
+  try {
+    // For now, return static health tips
+    // In future, these can be stored in medical_content with category='health-tip'
+    const tips = [
+      {
+        id: 'tip-1',
+        title: 'ดื่มน้ำให้เพียงพอ',
+        content: 'ควรดื่มน้ำอย่างน้อย 8 แก้วต่อวัน',
+        category: 'hydration'
+      },
+      {
+        id: 'tip-2',
+        title: 'ออกกำลังกายสม่ำเสมอ',
+        content: 'ออกกำลังกายอย่างน้อย 30 นาทีต่อวัน',
+        category: 'exercise'
+      },
+      {
+        id: 'tip-3',
+        title: 'นอนหลับให้เพียงพอ',
+        content: 'ควรนอนหลับ 7-8 ชั่วโมงต่อคืน',
+        category: 'sleep'
+      }
+    ];
+
+    res.json({ 
+      tips,
+      lastUpdated: new Date().toISOString()
+    });
+  } catch (error: any) {
+    console.error('[CONTENT] Get health tips error:', error);
+    res.status(500).json({ tips: [] });
+  }
+});
+
+// ============================================================================
+// HEALTH EDUCATION ROUTES
+// ============================================================================
+
+/**
+ * GET /api/content/health-education
+ * Get health education articles
+ */
+router.get('/health-education', async (_req: Request, res: Response) => {
+  try {
+    // Same as medical content but filtered for education category
+    const result = await pool.query(
+      `SELECT mc.*, u.name as author_name, u.name_thai as author_name_thai
+       FROM medical_content mc
+       LEFT JOIN users u ON mc.author_id = u.id
+       WHERE mc.status = 'published'
+       ORDER BY mc.published_at DESC NULLS LAST, mc.created_at DESC
+       LIMIT 50`
+    );
+
+    const articles = result.rows.map((row: any) => ({
+      id: row.id,
+      title: row.title_thai || row.title_english,
+      titleThai: row.title_thai,
+      content: row.content_thai || row.content_english,
+      category: row.category,
+      author: row.author_name_thai || row.author_name,
+      publishedAt: row.published_at,
+      viewCount: row.view_count || 0
+    }));
+
+    res.json({ 
+      articles,
+      lastUpdated: new Date().toISOString()
+    });
+  } catch (error: any) {
+    console.error('[CONTENT] Get health education error:', error);
+    res.status(500).json({ articles: [] });
+  }
+});
+
+// ============================================================================
+// TAGS ROUTES
+// ============================================================================
+
+/**
+ * GET /api/content/tags/:type
+ * Get tags for content filtering (medical or clinical)
+ */
+router.get('/tags/:type', async (req: Request, res: Response) => {
+  try {
+    const { type } = req.params;
+    
+    // Default tags
+    const defaultTags = type === 'medical' 
+      ? [
+          { id: 'diabetes', name: 'Diabetes', nameTh: 'เบาหวาน' },
+          { id: 'heart-health', name: 'Heart Health', nameTh: 'สุขภาพหัวใจ' },
+          { id: 'nutrition', name: 'Nutrition', nameTh: 'โภชนาการ' },
+          { id: 'exercise', name: 'Exercise', nameTh: 'การออกกำลังกาย' },
+          { id: 'mental-health', name: 'Mental Health', nameTh: 'สุขภาพจิต' },
+          { id: 'prevention', name: 'Prevention', nameTh: 'การป้องกัน' },
+          { id: 'chronic-disease', name: 'Chronic Disease', nameTh: 'โรคเรื้อรัง' },
+          { id: 'wellness', name: 'Wellness', nameTh: 'สุขภาวะ' },
+        ]
+      : [
+          { id: 'guidelines', name: 'Guidelines', nameTh: 'แนวทาง' },
+          { id: 'protocols', name: 'Protocols', nameTh: 'โปรโตคอล' },
+          { id: 'research', name: 'Research', nameTh: 'งานวิจัย' },
+        ];
+
+    res.json({ 
+      tags: defaultTags,
+      lastUpdated: new Date().toISOString()
+    });
+  } catch (error: any) {
+    console.error('[CONTENT] Get tags error:', error);
+    res.status(500).json({ tags: [] });
+  }
+});
+
+// ============================================================================
+// CATEGORIES ROUTES
+// ============================================================================
+
+/**
+ * GET /api/content/categories
+ * Get content categories
+ */
+router.get('/categories', async (_req: Request, res: Response) => {
+  try {
+    const categories = [
+      { id: 'diabetes', name: 'เบาหวาน', nameEn: 'Diabetes' },
+      { id: 'hypertension', name: 'ความดันโลหิตสูง', nameEn: 'Hypertension' },
+      { id: 'heart-disease', name: 'โรคหัวใจ', nameEn: 'Heart Disease' },
+      { id: 'nutrition', name: 'โภชนาการ', nameEn: 'Nutrition' },
+      { id: 'exercise', name: 'การออกกำลังกาย', nameEn: 'Exercise' },
+      { id: 'mental-health', name: 'สุขภาพจิต', nameEn: 'Mental Health' },
+      { id: 'elderly-care', name: 'ผู้สูงอายุ', nameEn: 'Elderly Care' },
+      { id: 'general-health', name: 'สุขภาพทั่วไป', nameEn: 'General Health' }
+    ];
+
+    res.json({ categories });
+  } catch (error: any) {
+    console.error('[CONTENT] Get categories error:', error);
+    res.status(500).json({ categories: [] });
+  }
+});
 
 export default router;

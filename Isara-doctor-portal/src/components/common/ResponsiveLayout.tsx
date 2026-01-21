@@ -18,7 +18,7 @@ import {
   UserGroupIcon,
   AcademicCapIcon,
   BookOpenIcon,
-  ClockIcon,
+  // ClockIcon removed - availability page removed
 } from '../../assets/NewSvgIcons';
 
 // Shield icon for admin
@@ -200,11 +200,10 @@ export const MobileNav: React.FC<MobileNavProps> = ({
 
   const isAdmin = user.isAdmin || user.role === 'admin';
 
-  // Base nav items with language support
+  // Base nav items with language support (เวลาว่างของฉัน removed as per requirements)
   const baseNavItems = [
     { id: 'dashboard', label: language === 'th' ? 'แดชบอร์ด' : 'Dashboard', icon: HomeIcon },
     { id: 'schedule', label: language === 'th' ? 'ตารางนัด' : 'Schedule', icon: CalendarDaysIcon },
-    { id: 'availability', label: language === 'th' ? 'เวลาว่าง' : 'Available', icon: ClockIcon },
     { id: 'patients', label: language === 'th' ? 'ผู้ป่วย' : 'Patients', icon: ClipboardDocumentListIcon },
     { id: 'health-meeting', label: language === 'th' ? 'นัดหมาย' : 'Meetings', icon: VideoCameraIcon },
     { id: 'medical-consultants', label: language === 'th' ? 'ที่ปรึกษา' : 'Consults', icon: UserGroupIcon },
@@ -363,11 +362,10 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
   const { theme, language } = useSettings();
   const isDarkMode = theme === 'dark';
 
-  // Base nav items with language support
+  // Base nav items with language support (เวลาว่างของฉัน removed as per requirements)
   const baseNavItems = [
     { id: 'dashboard', label: language === 'th' ? 'แดชบอร์ด' : 'Dashboard', icon: HomeIcon },
     { id: 'schedule', label: language === 'th' ? 'ตารางนัดหมาย' : 'Schedule', icon: CalendarDaysIcon },
-    { id: 'availability', label: language === 'th' ? 'เวลาว่างของฉัน' : 'My Availability', icon: ClockIcon },
     { id: 'patients', label: language === 'th' ? 'ผู้ป่วย' : 'Patients', icon: ClipboardDocumentListIcon },
     { id: 'health-meeting', label: language === 'th' ? 'นัดหมาย & ประชุม' : 'Appointments & Meetings', icon: VideoCameraIcon },
     { id: 'medical-consultants', label: language === 'th' ? 'ที่ปรึกษาแพทย์' : 'Medical Consultants', icon: UserGroupIcon },

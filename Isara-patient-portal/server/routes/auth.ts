@@ -1,457 +1,306 @@
 import { Router, Request, Response } from 'express';
-import { storage, GCS_BUCKETS } from '../index';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
+import { AuthService, PHRService, NotificationService } from '../services/postgresDataService';
+import postgresDataService from '../services/postgresDataService';
 
+const { pool } = postgresDataService;
 const router = Router();
 
-// Helper function to read JSON from GCS
-async function readJSON(bucket: string, filePath: string): Promise<any> {
-  try {
-    const file = storage.bucket(bucket).file(filePath);
-    const [contents] = await file.download();
-    return JSON.parse(contents.toString());
-  } catch (error: any) {
-    if (error.code === 404) {
-      throw new Error(`File not found: ${filePath}`);
-    }
-    throw error;
+// ============================================================================
+// POSTGRESQL-ONLY AUTHENTICATION - NO GCS
+// ============================================================================
+
+// Helper: Generate secure random token
+function generateSecureToken(length: number = 64): string {
+  return crypto.randomBytes(length).toString('hex');
+}
+
+// Helper: Generate session token
+function generateSessionToken(): string {
+  return `token_${Date.now()}_${generateSecureToken(32)}`;
+}
+
+// Helper: Validate email format
+function isValidEmail(email: string): boolean {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+}
+
+// Helper: Hash password with bcrypt
+async function hashPassword(password: string): Promise<string> {
+  const salt = await bcrypt.genSalt(12);
+  return bcrypt.hash(password, salt);
+}
+
+// Helper: Verify password (supports bcrypt and legacy base64)
+async function verifyPassword(password: string, hash: string): Promise<boolean> {
+  if (hash.startsWith('$2')) {
+    // bcrypt hash
+    return bcrypt.compare(password, hash);
   }
+  // Legacy base64 fallback
+  const base64Hash = Buffer.from(password).toString('base64');
+  return hash === base64Hash;
 }
 
-// Helper function to write JSON to GCS
-async function writeJSON(bucket: string, filePath: string, data: any): Promise<void> {
-  const file = storage.bucket(bucket).file(filePath);
-  await file.save(JSON.stringify(data, null, 2), {
-    contentType: 'application/json',
-  });
-}
-
-// Ensure a demo account exists for smoke testing
-async function ensureDemoUser(email: string, plainPassword: string) {
-  const passwordHash = Buffer.from(plainPassword).toString('base64');
-  const userId = 'demo-user-001';
-  const patientId = 'demo-patient-001';
-  const now = new Date();
-
-  const storedUser = {
-    id: userId,
-    patientId,
-    email,
-    passwordHash,
-    profile: {
-      id: userId,
-      patientId,
-      name: 'Demo User',
-      email,
-      phone: '+66-81-111-1111',
-      avatarUrl: 'https://i.pravatar.cc/150?u=demo.user',
-      dateOfBirth: '1990-01-01',
-      gender: 'female',
-      createdAt: now.toISOString(),
-      updatedAt: now.toISOString(),
-    },
-    createdAt: now.toISOString(),
-    updatedAt: now.toISOString(),
-  };
-
-  // Persist user and patient profile if not already there
-  await writeJSON(GCS_BUCKETS.AUTH, `users/${userId}.json`, storedUser);
-
-  const patientProfile = {
-    patientId,
-    userId,
-    personalInfo: {
-      name: 'Demo User',
-      dateOfBirth: '1990-01-01',
-      gender: 'female',
-      phone: '+66-81-111-1111',
-      email,
-      nationalId: '1234567890123',
-      address: 'Bangkok, Thailand',
-    },
-    physicalInfo: {
-      height: 165,
-      weight: 60,
-      bloodType: 'O',
-      bmi: 22.0,
-    },
-    medicalInfo: {
-      allergies: ['Penicillin'],
-      chronicConditions: ['Hypertension'],
-      currentMedications: ['Amlodipine 5mg OD'],
-      bloodPressure: '125/78',
-      heartRate: 72,
-      bloodSugar: '95',
-    },
-    emergencyContact: {
-      name: 'Prasert Demo',
-      phone: '+66-81-222-2222',
-      relation: 'Spouse',
-    },
-    vitalHistory: [],
-    labResults: [],
-    immunizations: [],
-    createdAt: now.toISOString(),
-    updatedAt: now.toISOString(),
-  };
-
-  await writeJSON(GCS_BUCKETS.PATIENT, `patients/${patientId}/profile.json`, patientProfile);
-  await writeJSON(GCS_BUCKETS.PATIENT, `patients/${patientId}/phr.json`, patientProfile);
-
-  // Ensure aggregated patients.json contains demo patient for cross-portal views
-  try {
-    let patientsIndex: any[] = [];
-    try {
-      patientsIndex = await readJSON(GCS_BUCKETS.PATIENT, 'patients.json');
-    } catch {
-      patientsIndex = [];
-    }
-
-    const exists = patientsIndex.find((p: any) => p.id === patientId);
-    if (!exists) {
-      patientsIndex.push({
-        id: patientId,
-        name: 'Demo User',
-        email,
-        phone: '+66-81-111-1111',
-        gender: 'female',
-        age: 34,
-        consentStatus: { hasConsent: true },
-      });
-      await writeJSON(GCS_BUCKETS.PATIENT, 'patients.json', patientsIndex);
-    }
-  } catch (err) {
-    console.error('Failed to update patients.json for demo user', err);
-  }
-
-  return storedUser;
-}
-
-// Helper function to list files
-async function listFiles(bucket: string, prefix?: string): Promise<any[]> {
-  const [files] = await storage.bucket(bucket).getFiles({ prefix });
-  return files.map(file => ({
-    name: file.name,
-    metadata: file.metadata,
-  }));
-}
-
-// Register new user
+// ============================================================================
+// REGISTER NEW USER
+// ============================================================================
 router.post('/register', async (req: Request, res: Response) => {
   try {
     const { 
       name, email, password, confirmPassword, phone, dateOfBirth, gender,
-      // Health Info
       height, weight, bloodType, allergies, chronicConditions, currentMedications,
-      // Emergency Contact
       emergencyContactName, emergencyContactPhone, emergencyContactRelation
     } = req.body;
 
     // Validation
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
+
+    if (!isValidEmail(email)) {
+      return res.status(400).json({ error: 'Invalid email format' });
+    }
+
     if (password !== confirmPassword) {
       return res.status(400).json({ error: 'Passwords do not match' });
     }
+
     if (password.length < 6) {
       return res.status(400).json({ error: 'Password must be at least 6 characters' });
     }
 
+    const emailLower = email.toLowerCase().trim();
+
     // Check if email already exists
-    const existingFiles = await listFiles(GCS_BUCKETS.AUTH, 'users/');
-    for (const file of existingFiles) {
-      try {
-        const userData = await readJSON(GCS_BUCKETS.AUTH, file.name);
-        if (userData.email === email) {
-          return res.status(400).json({ error: 'Email already exists' });
-        }
-      } catch (e) {
-        continue;
-      }
+    const existingUser = await pool.query(
+      'SELECT id FROM users WHERE LOWER(email) = LOWER($1)',
+      [emailLower]
+    );
+
+    if (existingUser.rows.length > 0) {
+      return res.status(400).json({ error: 'Email already exists' });
     }
 
-    // Generate user ID and patient ID
-    const userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const patientId = `patient_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    // Generate IDs and hash password
+    const userId = `user_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+    const patientId = `patient_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+    const passwordHash = await hashPassword(password);
     const now = new Date();
 
-    // Parse allergies and conditions into arrays
+    // Parse list inputs
     const parseList = (str: string | undefined): string[] => {
       if (!str) return [];
       return str.split(/[,;]/).map(s => s.trim()).filter(s => s);
     };
 
-    const user = {
-      id: userId,
-      patientId,
-      name,
-      email,
-      avatarUrl: `https://i.pravatar.cc/150?u=${userId}`,
-      dateOfBirth,
-      phone,
-      gender,
-      createdAt: now.toISOString(),
-      updatedAt: now.toISOString(),
-    };
+    // Insert user into PostgreSQL
+    await pool.query(
+      `INSERT INTO users (id, patient_id, email, password_hash, name, phone, date_of_birth, gender, role, is_active, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'patient', true, $9, $9)`,
+      [userId, patientId, emailLower, passwordHash, name || 'User', phone, dateOfBirth, gender, now]
+    );
 
-    const storedUser = {
-      id: userId,
-      patientId,
-      email,
-      passwordHash: Buffer.from(password).toString('base64'), // In production, use bcrypt
-      profile: user,
-      createdAt: now.toISOString(),
-      updatedAt: now.toISOString(),
-    };
-
-    // Write user to GCS: users/{userId}.json
-    await writeJSON(GCS_BUCKETS.AUTH, `users/${userId}.json`, storedUser);
-
-    // Create initial PHR data with health information
-    const patientData = {
-      patientId,
-      userId,
-      personalInfo: {
-        name,
-        dateOfBirth,
-        gender,
-        phone,
-        email,
-        nationalId: '',
-        address: '',
-      },
-      physicalInfo: {
-        height: height ? parseFloat(height) : null,
-        weight: weight ? parseFloat(weight) : null,
-        bloodType: bloodType || null,
-        bmi: height && weight ? (parseFloat(weight) / Math.pow(parseFloat(height) / 100, 2)).toFixed(1) : null,
-      },
-      medicalInfo: {
-        allergies: parseList(allergies),
-        chronicConditions: parseList(chronicConditions),
-        currentMedications: parseList(currentMedications),
-        bloodPressure: null,
-        heartRate: null,
-        bloodSugar: null,
-      },
-      emergencyContact: {
-        name: emergencyContactName || '',
-        phone: emergencyContactPhone || '',
-        relation: emergencyContactRelation || '',
-      },
-      vitalHistory: [],
-      labResults: [],
-      immunizations: [],
-      createdAt: now.toISOString(),
-      updatedAt: now.toISOString(),
-    };
-
-    // Write patient data to patients bucket (both profile.json and phr.json for compatibility)
-    await writeJSON(GCS_BUCKETS.PATIENT, `patients/${patientId}/profile.json`, patientData);
-    await writeJSON(GCS_BUCKETS.PATIENT, `patients/${patientId}/phr.json`, patientData);
+    // Create initial PHR record
+    const bmi = height && weight ? (parseFloat(weight) / Math.pow(parseFloat(height) / 100, 2)).toFixed(1) : null;
+    
+    await pool.query(
+      `INSERT INTO phr (id, patient_id, blood_type, allergies, chronic_conditions, medications, emergency_contact_name, emergency_contact_phone, emergency_contact_relation, height_cm, weight_kg, bmi, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $13)
+       ON CONFLICT (patient_id) DO UPDATE SET
+         blood_type = EXCLUDED.blood_type,
+         allergies = EXCLUDED.allergies,
+         chronic_conditions = EXCLUDED.chronic_conditions,
+         medications = EXCLUDED.medications,
+         updated_at = NOW()`,
+      [
+        `phr_${patientId}`,
+        patientId,
+        bloodType || null,
+        JSON.stringify(parseList(allergies)),
+        JSON.stringify(parseList(chronicConditions)),
+        JSON.stringify(parseList(currentMedications)),
+        emergencyContactName || null,
+        emergencyContactPhone || null,
+        emergencyContactRelation || null,
+        height ? parseFloat(height) : null,
+        weight ? parseFloat(weight) : null,
+        bmi ? parseFloat(bmi) : null,
+        now
+      ]
+    );
 
     // Create session
-    const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const expiresAt = new Date(now.getTime() + 30 * 60 * 1000); // 30 minutes
+    const sessionToken = generateSessionToken();
+    const expiresAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
-    const session = {
-      id: sessionId,
-      userId,
-      patientId,
-      token: `token_${sessionId}_${Date.now()}`,
-      createdAt: now.toISOString(),
-      expiresAt: expiresAt.toISOString(),
-    };
-
-    // Write session to GCS: sessions/{sessionId}.json
-    await writeJSON(GCS_BUCKETS.AUTH, `sessions/${sessionId}.json`, session);
-
-    // Log registration
-    try {
-      let history: any[] = [];
-      try {
-        history = await readJSON(GCS_BUCKETS.AUTH, 'audit/login-history.json');
-      } catch {
-        // File doesn't exist yet
-      }
-
-      history.push({
+    await pool.query(
+      `INSERT INTO sessions (id, user_id, token, ip_address, user_agent, expires_at, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [
+        `session_${Date.now()}`,
         userId,
-        patientId,
-        timestamp: now.toISOString(),
-        success: true,
-        method: 'password',
-        action: 'register',
-      });
+        sessionToken,
+        req.ip || 'unknown',
+        req.headers['user-agent'] || 'unknown',
+        expiresAt,
+        now
+      ]
+    );
 
-      // Keep only last 1000 entries
-      if (history.length > 1000) {
-        history = history.slice(-1000);
-      }
-
-      await writeJSON(GCS_BUCKETS.AUTH, 'audit/login-history.json', history);
-    } catch (error) {
-      console.error('Failed to log registration:', error);
-    }
+    console.log(`[AUTH] User registered successfully: ${emailLower}, patientId: ${patientId}`);
 
     res.json({
-      user: { ...user, patientId },
-      token: session.token,
+      user: {
+        id: userId,
+        patientId,
+        name: name || 'User',
+        email: emailLower,
+        phone,
+        dateOfBirth,
+        gender,
+        avatarUrl: `https://i.pravatar.cc/150?u=${userId}`,
+        createdAt: now.toISOString(),
+        updatedAt: now.toISOString(),
+      },
+      token: sessionToken,
     });
   } catch (error: any) {
-    console.error('Registration error:', error);
-    res.status(500).json({ error: error.message });
+    console.error('[AUTH] Registration error:', error);
+    res.status(500).json({ error: 'Registration failed: ' + error.message });
   }
 });
 
-// Login with email/password
+// ============================================================================
+// LOGIN
+// ============================================================================
 router.post('/login', async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
     const emailLower = email?.toLowerCase().trim();
-    console.log(`[AUTH] Login attempt for email: ${emailLower}`);
+
+    console.log(`[AUTH] Login attempt for: ${emailLower}`);
 
     if (!emailLower || !password) {
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
-    // Find user by email (case-insensitive)
-    const existingFiles = await listFiles(GCS_BUCKETS.AUTH, 'users/');
-    console.log(`[AUTH] Found ${existingFiles.length} user files to check`);
-    let storedUser: any = null;
+    // Find user in PostgreSQL
+    const userResult = await pool.query(
+      `SELECT id, patient_id, email, password_hash, name, name_thai, phone, avatar_url, date_of_birth, gender, role, is_active
+       FROM users WHERE LOWER(email) = LOWER($1)`,
+      [emailLower]
+    );
 
-    for (const file of existingFiles) {
-      try {
-        const userData = await readJSON(GCS_BUCKETS.AUTH, file.name);
-        if (userData.email?.toLowerCase() === emailLower) {
-          storedUser = userData;
-          console.log(`[AUTH] Found user: ${file.name}`);
-          break;
-        }
-      } catch (e) {
-        continue;
-      }
-    }
-
-    if (!storedUser) {
-      if (emailLower === 'demo.test@gmail.com') {
-        console.log('[AUTH] Seeding demo user...');
-        storedUser = await ensureDemoUser(emailLower, 'P@ssw0rd');
-      } else {
-        console.log(`[AUTH] User not found for email: ${emailLower}`);
-        return res.status(401).json({ error: 'Invalid email or password' });
-      }
-    }
-
-    // Verify password - support both bcrypt and legacy base64
-    let passwordValid = false;
-    
-    // Try bcrypt first (new format starts with $2b$)
-    if (storedUser.passwordHash && storedUser.passwordHash.startsWith('$2')) {
-      passwordValid = bcrypt.compareSync(password, storedUser.passwordHash);
-      console.log(`[AUTH] Using bcrypt verification: ${passwordValid}`);
-    } else {
-      // Fallback to legacy base64
-      const passwordHash = Buffer.from(password).toString('base64');
-      passwordValid = storedUser.passwordHash === passwordHash;
-      console.log(`[AUTH] Using base64 verification: ${passwordValid}`);
-    }
-    
-    if (!passwordValid) {
-      console.log(`[AUTH] Password mismatch for user: ${emailLower}`);
+    if (userResult.rows.length === 0) {
+      console.log(`[AUTH] User not found: ${emailLower}`);
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
-    console.log(`[AUTH] Password verified for user: ${emailLower}`);
+    const user = userResult.rows[0];
 
-    // Create session
-    const now = new Date();
-    const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const expiresAt = new Date(now.getTime() + 30 * 60 * 1000); // 30 minutes
-
-    const session = {
-      id: sessionId,
-      userId: storedUser.id,
-      token: `token_${sessionId}_${Date.now()}`,
-      createdAt: now.toISOString(),
-      expiresAt: expiresAt.toISOString(),
-    };
-
-    // Write session to GCS
-    await writeJSON(GCS_BUCKETS.AUTH, `sessions/${sessionId}.json`, session);
-    console.log(`[AUTH] Session created: ${sessionId}`);
-
-    // Log login
-    try {
-      let history: any[] = [];
-      try {
-        history = await readJSON(GCS_BUCKETS.AUTH, 'audit/login-history.json');
-      } catch {
-        // File doesn't exist yet
-      }
-
-      history.push({
-        userId: storedUser.id,
-        timestamp: now.toISOString(),
-        success: true,
-        method: 'password',
-      });
-
-      if (history.length > 1000) {
-        history = history.slice(-1000);
-      }
-
-      await writeJSON(GCS_BUCKETS.AUTH, 'audit/login-history.json', history);
-    } catch (error) {
-      console.error('Failed to log login:', error);
+    if (!user.is_active) {
+      return res.status(401).json({ error: 'Account is deactivated' });
     }
 
-    const user = {
-      ...storedUser.profile,
-      patientId: storedUser.patientId,
-      updatedAt: now.toISOString(),
-    };
+    // Verify password
+    const passwordValid = await verifyPassword(password, user.password_hash);
+    if (!passwordValid) {
+      console.log(`[AUTH] Password mismatch for: ${emailLower}`);
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
 
-    console.log(`[AUTH] Login successful for: ${emailLower}, patientId: ${storedUser.patientId}`);
+    console.log(`[AUTH] Password verified for: ${emailLower}`);
+
+    // Create session
+    const sessionToken = generateSessionToken();
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // 7 days
+
+    await pool.query(
+      `INSERT INTO sessions (id, user_id, token, ip_address, user_agent, expires_at, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [
+        `session_${Date.now()}`,
+        user.id,
+        sessionToken,
+        req.ip || 'unknown',
+        req.headers['user-agent'] || 'unknown',
+        expiresAt,
+        now
+      ]
+    );
+
+    // Update last login
+    await pool.query(
+      'UPDATE users SET last_login = $1 WHERE id = $2',
+      [now, user.id]
+    );
+
+    console.log(`[AUTH] Login successful for: ${emailLower}, patientId: ${user.patient_id}`);
 
     res.json({
-      user,
-      token: session.token,
+      user: {
+        id: user.id,
+        patientId: user.patient_id || user.id,
+        name: user.name,
+        nameThai: user.name_thai,
+        email: user.email,
+        phone: user.phone,
+        avatarUrl: user.avatar_url || `https://i.pravatar.cc/150?u=${user.id}`,
+        dateOfBirth: user.date_of_birth,
+        gender: user.gender,
+        role: user.role,
+        updatedAt: now.toISOString(),
+      },
+      token: sessionToken,
     });
   } catch (error: any) {
     console.error('[AUTH] Login error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Login failed: ' + error.message });
   }
 });
 
-// Validate session
+// ============================================================================
+// VALIDATE SESSION
+// ============================================================================
 router.post('/validate', async (req: Request, res: Response) => {
   try {
     const { token } = req.body;
 
     if (!token) {
-      return res.status(400).json({ error: 'Token is required' });
+      return res.status(400).json({ valid: false, error: 'Token is required' });
     }
 
-    // Extract session ID from token
-    const sessionId = token.replace('token_', '').split('_')[0];
+    const sessionResult = await pool.query(
+      `SELECT s.*, u.id as user_id, u.patient_id, u.name, u.email
+       FROM sessions s
+       JOIN users u ON s.user_id = u.id
+       WHERE s.token = $1 AND s.expires_at > NOW()`,
+      [token]
+    );
 
-    try {
-      const session = await readJSON(GCS_BUCKETS.AUTH, `sessions/session_${sessionId}.json`);
-
-      if (new Date(session.expiresAt) < new Date()) {
-        return res.json({ valid: false, error: 'Session expired' });
-      }
-
-      res.json({ valid: true, userId: session.userId });
-    } catch (error) {
-      res.json({ valid: false, error: 'Invalid session' });
+    if (sessionResult.rows.length === 0) {
+      return res.json({ valid: false, error: 'Session expired or invalid' });
     }
+
+    const session = sessionResult.rows[0];
+    res.json({ 
+      valid: true, 
+      userId: session.user_id,
+      patientId: session.patient_id 
+    });
   } catch (error: any) {
-    console.error('Validation error:', error);
-    res.status(500).json({ error: error.message });
+    console.error('[AUTH] Validation error:', error);
+    res.status(500).json({ valid: false, error: 'Validation failed' });
   }
 });
 
-// Logout
+// ============================================================================
+// LOGOUT
+// ============================================================================
 router.post('/logout', async (req: Request, res: Response) => {
   try {
     const { token } = req.body;
@@ -460,24 +309,20 @@ router.post('/logout', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Token is required' });
     }
 
-    // Extract session ID from token
-    const sessionId = token.replace('token_', '').split('_')[0];
+    // Delete session from PostgreSQL
+    await pool.query('DELETE FROM sessions WHERE token = $1', [token]);
 
-    try {
-      // Delete session from GCS
-      await storage.bucket(GCS_BUCKETS.AUTH).file(`sessions/session_${sessionId}.json`).delete();
-    } catch (error) {
-      console.error('Failed to delete session:', error);
-    }
-
+    console.log('[AUTH] Logout successful');
     res.json({ success: true });
   } catch (error: any) {
-    console.error('Logout error:', error);
-    res.status(500).json({ error: error.message });
+    console.error('[AUTH] Logout error:', error);
+    res.status(500).json({ error: 'Logout failed' });
   }
 });
 
-// Get current user profile
+// ============================================================================
+// GET CURRENT USER PROFILE (/me)
+// ============================================================================
 router.get('/me', async (req: Request, res: Response) => {
   try {
     const token = req.headers.authorization?.replace('Bearer ', '');
@@ -486,50 +331,177 @@ router.get('/me', async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    // Validate session
-    const sessionId = token.replace('token_', '').split('_')[0];
-    const session = await readJSON(GCS_BUCKETS.AUTH, `sessions/session_${sessionId}.json`);
+    // Validate session and get user
+    const sessionResult = await pool.query(
+      `SELECT s.*, u.*
+       FROM sessions s
+       JOIN users u ON s.user_id = u.id
+       WHERE s.token = $1 AND s.expires_at > NOW() AND u.is_active = true`,
+      [token]
+    );
 
-    if (new Date(session.expiresAt) < new Date()) {
-      return res.status(401).json({ error: 'Session expired' });
+    if (sessionResult.rows.length === 0) {
+      return res.status(401).json({ error: 'Session expired or invalid' });
     }
 
-    // Get user data
-    const storedUser = await readJSON(GCS_BUCKETS.AUTH, `users/${session.userId}.json`);
+    const user = sessionResult.rows[0];
 
-    res.json({ user: storedUser.profile });
+    res.json({
+      user: {
+        id: user.user_id,
+        patientId: user.patient_id || user.user_id,
+        name: user.name,
+        nameThai: user.name_thai,
+        email: user.email,
+        phone: user.phone,
+        avatarUrl: user.avatar_url || `https://i.pravatar.cc/150?u=${user.user_id}`,
+        dateOfBirth: user.date_of_birth,
+        gender: user.gender,
+        role: user.role,
+      }
+    });
   } catch (error: any) {
-    console.error('Get user error:', error);
+    console.error('[AUTH] Get user error:', error);
     res.status(401).json({ error: 'Unauthorized' });
   }
 });
 
 // ============================================================================
-// PASSWORD RESET FUNCTIONALITY
+// UPDATE USER PROFILE
 // ============================================================================
+router.put('/profile', async (req: Request, res: Response) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
 
-// Generate secure random token
-function generateResetToken(): string {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let token = '';
-  for (let i = 0; i < 64; i++) {
-    token += chars.charAt(Math.floor(Math.random() * chars.length));
+    // Validate session
+    const sessionResult = await pool.query(
+      `SELECT user_id FROM sessions WHERE token = $1 AND expires_at > NOW()`,
+      [token]
+    );
+
+    if (sessionResult.rows.length === 0) {
+      return res.status(401).json({ error: 'Session expired or invalid' });
+    }
+
+    const userId = sessionResult.rows[0].user_id;
+    const { name, nameThai, phone, dateOfBirth, gender, avatarUrl } = req.body;
+
+    const updateResult = await pool.query(
+      `UPDATE users SET
+         name = COALESCE($1, name),
+         name_thai = COALESCE($2, name_thai),
+         phone = COALESCE($3, phone),
+         date_of_birth = COALESCE($4, date_of_birth),
+         gender = COALESCE($5, gender),
+         avatar_url = COALESCE($6, avatar_url),
+         updated_at = NOW()
+       WHERE id = $7
+       RETURNING *`,
+      [name, nameThai, phone, dateOfBirth, gender, avatarUrl, userId]
+    );
+
+    if (updateResult.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const user = updateResult.rows[0];
+    console.log(`[AUTH] Profile updated for user: ${userId}`);
+
+    res.json({
+      user: {
+        id: user.id,
+        patientId: user.patient_id,
+        name: user.name,
+        nameThai: user.name_thai,
+        email: user.email,
+        phone: user.phone,
+        avatarUrl: user.avatar_url,
+        dateOfBirth: user.date_of_birth,
+        gender: user.gender,
+        role: user.role,
+      }
+    });
+  } catch (error: any) {
+    console.error('[AUTH] Profile update error:', error);
+    res.status(500).json({ error: 'Profile update failed: ' + error.message });
   }
-  return token;
-}
+});
 
-// Validate email format
-function isValidEmail(email: string): boolean {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
-}
+// ============================================================================
+// CHANGE PASSWORD (for logged in users)
+// ============================================================================
+router.post('/change-password', async (req: Request, res: Response) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
 
-// Request password reset - send email with reset link
+    const { currentPassword, newPassword, confirmPassword } = req.body;
+
+    // Validation
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      return res.status(400).json({ error: 'All password fields are required' });
+    }
+
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({ error: 'New passwords do not match' });
+    }
+
+    if (newPassword.length < 8) {
+      return res.status(400).json({ error: 'Password must be at least 8 characters' });
+    }
+
+    // Validate session and get user
+    const sessionResult = await pool.query(
+      `SELECT s.user_id, u.password_hash, u.email
+       FROM sessions s
+       JOIN users u ON s.user_id = u.id
+       WHERE s.token = $1 AND s.expires_at > NOW()`,
+      [token]
+    );
+
+    if (sessionResult.rows.length === 0) {
+      return res.status(401).json({ error: 'Session expired or invalid' });
+    }
+
+    const { user_id, password_hash, email } = sessionResult.rows[0];
+
+    // Verify current password
+    const currentPasswordValid = await verifyPassword(currentPassword, password_hash);
+    if (!currentPasswordValid) {
+      return res.status(400).json({ error: 'Current password is incorrect' });
+    }
+
+    // Hash new password and update
+    const newPasswordHash = await hashPassword(newPassword);
+    await pool.query(
+      'UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2',
+      [newPasswordHash, user_id]
+    );
+
+    console.log(`[AUTH] Password changed for user: ${email}`);
+
+    res.json({ 
+      success: true, 
+      message: 'Password changed successfully' 
+    });
+  } catch (error: any) {
+    console.error('[AUTH] Change password error:', error);
+    res.status(500).json({ error: 'Failed to change password' });
+  }
+});
+
+// ============================================================================
+// REQUEST PASSWORD RESET (for forgotten password)
+// ============================================================================
 router.post('/request-password-reset', async (req: Request, res: Response) => {
   try {
     const { email } = req.body;
 
-    // Input validation
     if (!email) {
       return res.status(400).json({ error: 'Email is required', code: 'MISSING_EMAIL' });
     }
@@ -538,68 +510,58 @@ router.post('/request-password-reset', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Invalid email format', code: 'INVALID_EMAIL' });
     }
 
-    console.log(`[PASSWORD_RESET] Request received for: ${email}`);
+    const emailLower = email.toLowerCase().trim();
+    console.log(`[PASSWORD_RESET] Request received for: ${emailLower}`);
 
-    // Find user by email
-    const existingFiles = await listFiles(GCS_BUCKETS.AUTH, 'users/');
-    let foundUser: any = null;
-
-    for (const file of existingFiles) {
-      try {
-        const userData = await readJSON(GCS_BUCKETS.AUTH, file.name);
-        if (userData.email && userData.email.toLowerCase() === email.toLowerCase()) {
-          foundUser = userData;
-          break;
-        }
-      } catch (e) {
-        continue;
-      }
-    }
+    // Find user
+    const userResult = await pool.query(
+      'SELECT id, name, email FROM users WHERE LOWER(email) = LOWER($1)',
+      [emailLower]
+    );
 
     // Always return same response to prevent user enumeration
-    if (!foundUser) {
-      console.log(`[PASSWORD_RESET] User not found: ${email}`);
+    if (userResult.rows.length === 0) {
+      console.log(`[PASSWORD_RESET] User not found: ${emailLower}`);
       return res.json({ 
         success: true, 
         message: 'If the email exists, a reset link will be sent.' 
       });
     }
 
-    // Generate reset token with 1 hour expiry
-    const resetToken = generateResetToken();
-    const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // 1 hour
+    const user = userResult.rows[0];
 
-    // Store reset token
-    const resetData = {
-      userId: foundUser.id,
-      email: email.toLowerCase().trim(),
-      token: resetToken,
-      createdAt: new Date().toISOString(),
-      expiresAt,
-      used: false
-    };
+    // Generate reset token
+    const resetToken = generateSecureToken(32);
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
-    await writeJSON(GCS_BUCKETS.AUTH, `password-resets/${resetToken}.json`, resetData);
+    // Store reset token in database
+    await pool.query(
+      `INSERT INTO password_resets (id, user_id, token, expires_at, created_at)
+       VALUES ($1, $2, $3, $4, NOW())
+       ON CONFLICT (user_id) DO UPDATE SET
+         token = EXCLUDED.token,
+         expires_at = EXCLUDED.expires_at,
+         used = false,
+         created_at = NOW()`,
+      [`reset_${Date.now()}`, user.id, resetToken, expiresAt]
+    );
 
     // Generate reset link
     const baseUrl = process.env.APP_URL || 'http://localhost:3005';
     const resetLink = `${baseUrl}/reset-password?token=${resetToken}`;
 
-    // Log for development
     console.log(`\n📧 PASSWORD RESET REQUEST`);
-    console.log(`   Email: ${email}`);
-    console.log(`   User: ${foundUser.profile?.name || foundUser.name || 'Unknown'}`);
+    console.log(`   Email: ${emailLower}`);
+    console.log(`   User: ${user.name}`);
     console.log(`   Token: ${resetToken}`);
     console.log(`   Reset Link: ${resetLink}`);
-    console.log(`   Expires: ${expiresAt}\n`);
+    console.log(`   Expires: ${expiresAt.toISOString()}\n`);
 
-    // Send email notification (would use email service in production)
-    // For now, we log the reset link
-    
+    // In production, send email here
+    // For development, return token
     res.json({ 
       success: true, 
       message: 'Password reset link sent to your email. Please check your inbox.',
-      // Include for development/testing only - remove in production
       devToken: process.env.NODE_ENV !== 'production' ? resetToken : undefined
     });
   } catch (error: any) {
@@ -608,7 +570,9 @@ router.post('/request-password-reset', async (req: Request, res: Response) => {
   }
 });
 
-// Verify reset token is valid
+// ============================================================================
+// VERIFY RESET TOKEN
+// ============================================================================
 router.get('/verify-reset-token/:token', async (req: Request, res: Response) => {
   try {
     const { token } = req.params;
@@ -617,19 +581,25 @@ router.get('/verify-reset-token/:token', async (req: Request, res: Response) => 
       return res.status(400).json({ valid: false, error: 'Token is required' });
     }
 
-    // Fetch reset token data
-    let resetData: any;
-    try {
-      resetData = await readJSON(GCS_BUCKETS.AUTH, `password-resets/${token}.json`);
-    } catch (e) {
+    const resetResult = await pool.query(
+      `SELECT pr.*, u.email 
+       FROM password_resets pr
+       JOIN users u ON pr.user_id = u.id
+       WHERE pr.token = $1`,
+      [token]
+    );
+
+    if (resetResult.rows.length === 0) {
       return res.json({ valid: false, error: 'Invalid or expired reset token' });
     }
+
+    const resetData = resetResult.rows[0];
 
     if (resetData.used) {
       return res.json({ valid: false, error: 'Reset token has already been used' });
     }
 
-    if (new Date(resetData.expiresAt) < new Date()) {
+    if (new Date(resetData.expires_at) < new Date()) {
       return res.json({ valid: false, error: 'Reset token has expired' });
     }
 
@@ -643,7 +613,9 @@ router.get('/verify-reset-token/:token', async (req: Request, res: Response) => 
   }
 });
 
-// Reset password with token
+// ============================================================================
+// RESET PASSWORD WITH TOKEN
+// ============================================================================
 router.post('/reset-password', async (req: Request, res: Response) => {
   try {
     const { token, newPassword, confirmPassword } = req.body;
@@ -666,40 +638,40 @@ router.post('/reset-password', async (req: Request, res: Response) => {
     }
 
     // Verify token
-    let resetData: any;
-    try {
-      resetData = await readJSON(GCS_BUCKETS.AUTH, `password-resets/${token}.json`);
-    } catch (e) {
+    const resetResult = await pool.query(
+      `SELECT pr.*, u.email 
+       FROM password_resets pr
+       JOIN users u ON pr.user_id = u.id
+       WHERE pr.token = $1`,
+      [token]
+    );
+
+    if (resetResult.rows.length === 0) {
       return res.status(400).json({ error: 'Invalid or expired reset token' });
     }
+
+    const resetData = resetResult.rows[0];
 
     if (resetData.used) {
       return res.status(400).json({ error: 'Reset token has already been used' });
     }
 
-    if (new Date(resetData.expiresAt) < new Date()) {
+    if (new Date(resetData.expires_at) < new Date()) {
       return res.status(400).json({ error: 'Reset token has expired' });
     }
 
-    // Fetch user
-    let storedUser: any;
-    try {
-      storedUser = await readJSON(GCS_BUCKETS.AUTH, `users/${resetData.userId}.json`);
-    } catch (e) {
-      return res.status(400).json({ error: 'User not found' });
-    }
-
-    // Update password with bcrypt hash
-    const salt = bcrypt.genSaltSync(12);
-    storedUser.passwordHash = bcrypt.hashSync(newPassword, salt);
-    storedUser.updatedAt = new Date().toISOString();
-
-    await writeJSON(GCS_BUCKETS.AUTH, `users/${resetData.userId}.json`, storedUser);
+    // Hash new password and update user
+    const newPasswordHash = await hashPassword(newPassword);
+    await pool.query(
+      'UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2',
+      [newPasswordHash, resetData.user_id]
+    );
 
     // Mark token as used
-    resetData.used = true;
-    resetData.usedAt = new Date().toISOString();
-    await writeJSON(GCS_BUCKETS.AUTH, `password-resets/${token}.json`, resetData);
+    await pool.query(
+      'UPDATE password_resets SET used = true, used_at = NOW() WHERE token = $1',
+      [token]
+    );
 
     console.log(`[PASSWORD_RESET] Password reset successful for: ${resetData.email}`);
 
@@ -713,45 +685,43 @@ router.post('/reset-password', async (req: Request, res: Response) => {
   }
 });
 
-// Debug endpoint - check user status (for troubleshooting login issues)
+// ============================================================================
+// DEBUG: CHECK USER STATUS
+// ============================================================================
 router.get('/check-user/:email', async (req: Request, res: Response) => {
   try {
     const emailLower = req.params.email?.toLowerCase().trim();
     console.log(`[AUTH DEBUG] Checking user: ${emailLower}`);
-    
-    const existingFiles = await listFiles(GCS_BUCKETS.AUTH, 'users/');
-    let storedUser: any = null;
 
-    for (const file of existingFiles) {
-      try {
-        const userData = await readJSON(GCS_BUCKETS.AUTH, file.name);
-        if (userData.email?.toLowerCase() === emailLower) {
-          storedUser = userData;
-          break;
-        }
-      } catch (e) {
-        continue;
-      }
-    }
+    const userResult = await pool.query(
+      `SELECT id, patient_id, email, name, role, is_active, password_hash IS NOT NULL as has_password,
+              CASE WHEN password_hash LIKE '$2%' THEN 'bcrypt' ELSE 'base64' END as password_format,
+              created_at, last_login
+       FROM users WHERE LOWER(email) = LOWER($1)`,
+      [emailLower]
+    );
 
-    if (!storedUser) {
+    if (userResult.rows.length === 0) {
       return res.json({ 
         found: false, 
         email: emailLower, 
-        message: 'User not found',
-        totalUsersFound: existingFiles.length
+        message: 'User not found'
       });
     }
 
+    const user = userResult.rows[0];
     res.json({
       found: true,
       email: emailLower,
-      id: storedUser.id,
-      patientId: storedUser.patientId,
-      role: storedUser.role,
-      hasPassword: !!storedUser.passwordHash,
-      passwordFormat: storedUser.passwordHash?.startsWith('$2') ? 'bcrypt' : 'base64',
-      hasProfile: !!storedUser.profile
+      id: user.id,
+      patientId: user.patient_id,
+      name: user.name,
+      role: user.role,
+      isActive: user.is_active,
+      hasPassword: user.has_password,
+      passwordFormat: user.password_format,
+      createdAt: user.created_at,
+      lastLogin: user.last_login
     });
   } catch (error: any) {
     console.error('[AUTH DEBUG] Error:', error);

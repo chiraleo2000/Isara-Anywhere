@@ -4,7 +4,8 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { fetchAllDoctors } from '../services/gcsDataService';
+// PostgreSQL-backed API service - NO GCS!
+import { fetchAllDoctors } from '../services/apiDataService';
 import {
   UserGroupIcon,
   PhoneIcon,

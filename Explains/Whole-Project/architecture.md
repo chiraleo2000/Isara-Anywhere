@@ -57,8 +57,7 @@ Izara is a telehealth platform with two web portals sharing cloud backend servic
 
 | Bucket | Purpose |
 |--------|---------|
-| `izara-users-auth` | Patient auth data |
-| `izara-users-credentials` | Doctor/Admin auth data |
+| `izara-users-credentials` | All user authentication (Patients, Doctors, Admins) |
 | `izara-patients-data` | Patient PHR and profiles |
 | `izara-doctors-data` | Doctor profiles |
 | `izara-appointments` | Appointment records |
@@ -127,19 +126,20 @@ Doctor Portal                       Patient Portal
 
 ## 🔐 Authentication Architecture
 
-### Patient Auth (izara-users-auth)
+### All Users Auth (izara-users-credentials)
 ```
 ┌─────────────────────────────────────┐
-│           Patient Auth              │
+│     Unified Auth (All Users)        │
 ├─────────────────────────────────────┤
-│ Sessions: sessions/{token}.json     │
-│ Users:    users/index.json          │
-│           users/{userId}.json       │
-│ History:  login-history/{id}.json   │
+│ Patients:  users/PATIENT-xxx.json   │
+│ Doctors:   doctors/DOC-xxx.json     │
+│ Admins:    admins/ADMIN-xxx.json    │
+│ Sessions:  sessions/{token}.json    │
+│ History:   login-history/{id}.json  │
 └─────────────────────────────────────┘
 ```
 
-### Doctor Auth (izara-users-credentials)
+### Doctor/Admin Auth (izara-users-credentials)
 ```
 ┌─────────────────────────────────────┐
 │           Doctor Auth               │

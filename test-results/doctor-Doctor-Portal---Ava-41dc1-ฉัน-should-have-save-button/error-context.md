@@ -1,0 +1,97 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - complementary [ref=e4]:
+    - generic [ref=e5]:
+      - button "Izara Izara พอร์ทัลแพทย์" [ref=e6] [cursor=pointer]:
+        - img "Izara" [ref=e7]
+        - generic [ref=e8]:
+          - heading "Izara" [level=1] [ref=e9]
+          - paragraph [ref=e10]: พอร์ทัลแพทย์
+      - generic [ref=e11]:
+        - button "Settings" [ref=e13] [cursor=pointer]:
+          - img [ref=e14]
+        - button "การแจ้งเตือน" [ref=e18] [cursor=pointer]:
+          - img [ref=e19]
+    - navigation [ref=e21]:
+      - button "แดชบอร์ด" [ref=e22] [cursor=pointer]:
+        - img [ref=e23]
+        - generic [ref=e25]: แดชบอร์ด
+      - button "ตารางนัดหมาย" [ref=e26] [cursor=pointer]:
+        - img [ref=e27]
+        - generic [ref=e29]: ตารางนัดหมาย
+      - button "ผู้ป่วย" [ref=e30] [cursor=pointer]:
+        - img [ref=e31]
+        - generic [ref=e33]: ผู้ป่วย
+      - button "นัดหมาย & ประชุม" [ref=e34] [cursor=pointer]:
+        - img [ref=e35]
+        - generic [ref=e37]: นัดหมาย & ประชุม
+      - button "ที่ปรึกษาแพทย์" [ref=e38] [cursor=pointer]:
+        - img [ref=e39]
+        - generic [ref=e41]: ที่ปรึกษาแพทย์
+      - button "เนื้อหาทางการแพทย์" [ref=e42] [cursor=pointer]:
+        - img [ref=e43]
+        - generic [ref=e45]: เนื้อหาทางการแพทย์
+      - button "ทรัพยากรทางคลินิก" [ref=e46] [cursor=pointer]:
+        - img [ref=e47]
+        - generic [ref=e51]: ทรัพยากรทางคลินิก
+    - generic [ref=e53]:
+      - generic [ref=e54]:
+        - button [ref=e55] [cursor=pointer]:
+          - img [ref=e56]
+        - generic [ref=e58]: Jan 2026
+        - button [ref=e59] [cursor=pointer]:
+          - img [ref=e60]
+      - generic [ref=e62]:
+        - generic [ref=e63]: Su
+        - generic [ref=e64]: Mo
+        - generic [ref=e65]: Tu
+        - generic [ref=e66]: We
+        - generic [ref=e67]: Th
+        - generic [ref=e68]: Fr
+        - generic [ref=e69]: Sa
+      - generic [ref=e70]:
+        - button "1" [ref=e75] [cursor=pointer]
+        - button "2" [ref=e76] [cursor=pointer]
+        - button "3" [ref=e77] [cursor=pointer]
+        - button "4" [ref=e78] [cursor=pointer]
+        - button "5" [ref=e79] [cursor=pointer]
+        - button "6" [ref=e80] [cursor=pointer]
+        - button "7" [ref=e81] [cursor=pointer]
+        - button "8" [ref=e82] [cursor=pointer]
+        - button "9" [ref=e83] [cursor=pointer]
+        - button "10" [ref=e84] [cursor=pointer]
+        - button "11" [ref=e85] [cursor=pointer]
+        - button "12" [ref=e86] [cursor=pointer]
+        - button "13" [ref=e87] [cursor=pointer]
+        - button "14" [ref=e88] [cursor=pointer]
+        - button "15" [ref=e89] [cursor=pointer]
+        - button "16" [ref=e90] [cursor=pointer]
+        - button "17" [ref=e91] [cursor=pointer]
+        - button "18" [ref=e92] [cursor=pointer]
+        - button "19" [ref=e93] [cursor=pointer]
+        - button "20" [ref=e94] [cursor=pointer]
+        - button "21" [ref=e95] [cursor=pointer]
+        - button "22" [ref=e96] [cursor=pointer]
+        - button "23" [ref=e97] [cursor=pointer]
+        - button "24" [ref=e98] [cursor=pointer]
+        - button "25" [ref=e99] [cursor=pointer]
+        - button "26" [ref=e100] [cursor=pointer]
+        - button "27" [ref=e101] [cursor=pointer]
+        - button "28" [ref=e102] [cursor=pointer]
+        - button "29" [ref=e103] [cursor=pointer]
+        - button "30" [ref=e104] [cursor=pointer]
+        - button "31" [ref=e105] [cursor=pointer]
+      - paragraph [ref=e107]: "Selected: Wed, Jan 21"
+    - generic [ref=e108]:
+      - generic [ref=e109]:
+        - img "Doctor Test" [ref=e110]
+        - generic [ref=e111]:
+          - paragraph [ref=e112]: Doctor Test
+          - paragraph [ref=e113]: doctor.test@izara.com
+      - button "ออกจากระบบ" [ref=e114] [cursor=pointer]
+  - main [ref=e115]:
+    - button "AI Assistant" [ref=e116] [cursor=pointer]:
+      - img [ref=e117]
+```

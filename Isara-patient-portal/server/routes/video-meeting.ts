@@ -17,12 +17,15 @@
  * 1. Meeting ends with audio recording
  * 2. Audio sent to Google Cloud Speech-to-Text for transcription
  * 3. Transcript sent to Gemini for summary + doctor recommendations
- * 4. Results saved to patient's health records/EMR
+ * 4. Results saved to PostgreSQL meeting_records table
+ * 
+ * STORAGE: PostgreSQL meeting_records table (NOT GCS or in-memory)
  */
 
 import { Router, Request, Response } from 'express';
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 import dotenv from 'dotenv';
+import { MeetingService } from '../services/postgresDataService';
 
 // Load environment variables
 dotenv.config();
@@ -38,13 +41,15 @@ const JITSI_DOMAIN = process.env.JITSI_DOMAIN || process.env.VITE_JITSI_DOMAIN |
 const JITSI_APP_ID = process.env.JITSI_APP_ID || process.env.VITE_JITSI_APP_ID || 'izara-telemedicine';
 
 // Google Cloud Speech-to-Text Configuration
+// Note: API key should be set via environment variable in production
 const GOOGLE_SPEECH_API_KEY = process.env.GOOGLE_SPEECH_API_KEY || 
                                process.env.VITE_GOOGLE_SPEECH_API_KEY || 
                                process.env.VITE_GOOGLE_MEET_API_KEY || 
-                               'AIzaSyAl924pIkpbrJBfCQ1MlpA6yb8XZ3L8WZQ';
+                               '';
 
 // Gemini AI Configuration (for summary & recommendations)
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || 'AIzaSyDqERDgZ1l41zfGiQ4FZV62B58DXMbGWj4';
+// Note: API key should be set via environment variable in production
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || '';
 const GEMINI_MODEL = process.env.GEMINI_MODEL || process.env.VITE_GEMINI_MODEL || 'gemini-2.5-flash-lite';
 
 // Log configuration at startup
@@ -513,6 +518,7 @@ IMPORTANT: These are suggestions for the doctor to consider, not final diagnoses
 /**
  * Create a new video meeting
  * POST /api/video-meeting/create
+ * USES POSTGRESQL - NOT IN-MEMORY
  */
 router.post('/create', async (req: Request, res: Response) => {
   try {
@@ -533,14 +539,25 @@ router.post('/create', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'appointmentId is required' });
     }
     
-    // Check if meeting already exists
-    const existingMeeting = Array.from(meetingSessions.values())
-      .find(m => m.appointmentId === appointmentId && m.status !== 'ended');
+    // Check if meeting already exists in PostgreSQL
+    const existingMeeting = await MeetingService.getActiveMeeting(appointmentId);
     
     if (existingMeeting) {
+      // Return existing meeting from PostgreSQL
       return res.json({
         success: true,
-        meeting: existingMeeting,
+        meeting: {
+          id: existingMeeting.id,
+          appointmentId: existingMeeting.appointment_id,
+          roomName: existingMeeting.room_id,
+          status: existingMeeting.status,
+          createdAt: existingMeeting.created_at
+        },
+        urls: {
+          doctor: existingMeeting.doctor_url,
+          patient: existingMeeting.patient_url,
+          generic: existingMeeting.meeting_url
+        },
         message: 'Existing meeting found'
       });
     }
@@ -559,63 +576,68 @@ router.post('/create', async (req: Request, res: Response) => {
       language
     };
     
-    // Create meeting session
-    const meeting: MeetingSession = {
-      id: `meet-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`,
+    // Generate URLs for different participants
+    const genericUrl = createJitsiUrl(roomName, config);
+    const doctorUrl = createJitsiUrl(roomName, config, {
+      name: doctorName || 'Doctor',
+      role: 'doctor'
+    });
+    const patientUrl = createJitsiUrl(roomName, { ...config, enableAnonymousAccess: true }, {
+      name: patientName || 'Patient',
+      role: 'patient'
+    });
+    
+    // Save meeting to PostgreSQL
+    const meeting = await MeetingService.createMeeting({
+      appointmentId,
+      doctorId: doctorId || 'unassigned',
+      doctorName,
+      patientId: patientId || 'unknown',
+      patientName,
+      roomId: roomName,
+      meetingUrl: genericUrl,
+      doctorUrl,
+      patientUrl,
+      guestUrl: genericUrl,
+      config: {
+        ...config,
+        jitsiDomain: JITSI_DOMAIN
+      }
+    });
+    
+    // Also store in memory for quick lookup during active sessions
+    const memoryMeeting: MeetingSession = {
+      id: meeting.id,
       appointmentId,
       roomName,
-      jitsiUrl: createJitsiUrl(roomName, config),
-      createdAt: new Date(),
+      jitsiUrl: genericUrl,
+      createdAt: new Date(meeting.created_at),
       createdBy: doctorId || 'system',
       participants: [],
       status: 'waiting',
       transcript: [],
       config
     };
-    
-    // Add doctor as first participant if provided
-    if (doctorId) {
-      meeting.participants.push({
-        id: doctorId,
-        name: doctorName || 'Doctor',
-        role: 'doctor',
-        authMethod: 'google'
-      });
-    }
-    
-    // Store meeting
-    meetingSessions.set(meeting.id, meeting);
-    
-    // Generate URLs for different participants
-    const doctorUrl = createJitsiUrl(roomName, config, {
-      name: doctorName || 'Doctor',
-      role: 'doctor'
-    });
-    
-    const patientUrl = createJitsiUrl(roomName, { ...config, enableAnonymousAccess: true }, {
-      name: patientName || 'Patient',
-      role: 'patient'
-    });
+    meetingSessions.set(meeting.id, memoryMeeting);
     
     console.log(`🎥 Created Jitsi meeting for appointment ${appointmentId}`);
     console.log(`   Room: ${roomName}`);
     console.log(`   URL: https://${JITSI_DOMAIN}/${roomName}`);
-    console.log(`   Google Auth: ${enableGoogleAuth}`);
-    console.log(`   Anonymous: ${enableAnonymousAccess}`);
+    console.log(`   Stored in: PostgreSQL meeting_records`);
     
     res.json({
       success: true,
       meeting: {
         id: meeting.id,
-        appointmentId: meeting.appointmentId,
-        roomName: meeting.roomName,
+        appointmentId: meeting.appointment_id,
+        roomName: meeting.room_id,
         status: meeting.status,
-        createdAt: meeting.createdAt
+        createdAt: meeting.created_at
       },
       urls: {
         doctor: doctorUrl,
         patient: patientUrl,
-        generic: meeting.jitsiUrl
+        generic: genericUrl
       },
       config: {
         jitsiDomain: JITSI_DOMAIN,
@@ -685,29 +707,59 @@ router.get('/health', (req: Request, res: Response) => {
 /**
  * Get meeting by appointment ID
  * GET /api/video-meeting/:appointmentId
+ * USES POSTGRESQL - Falls back to in-memory
  */
 router.get('/:appointmentId', async (req: Request, res: Response) => {
   try {
     const { appointmentId } = req.params;
     
-    const meeting = Array.from(meetingSessions.values())
+    // First try PostgreSQL
+    const dbMeeting = await MeetingService.getActiveMeeting(appointmentId);
+    
+    if (dbMeeting) {
+      // Parse meeting_config for participants
+      const config = dbMeeting.meeting_config || {};
+      const participants = config.participants || [];
+      
+      return res.json({
+        success: true,
+        meeting: {
+          id: dbMeeting.id,
+          appointmentId: dbMeeting.appointment_id,
+          roomName: dbMeeting.room_id,
+          jitsiUrl: dbMeeting.meeting_url,
+          status: dbMeeting.status,
+          participants: participants,
+          createdAt: dbMeeting.created_at,
+          startedAt: dbMeeting.started_at
+        },
+        urls: {
+          doctor: dbMeeting.doctor_url,
+          patient: dbMeeting.patient_url,
+          generic: dbMeeting.meeting_url
+        }
+      });
+    }
+    
+    // Fallback to in-memory for active sessions
+    const memMeeting = Array.from(meetingSessions.values())
       .find(m => m.appointmentId === appointmentId && m.status !== 'ended');
     
-    if (!meeting) {
+    if (!memMeeting) {
       return res.status(404).json({ error: 'Meeting not found' });
     }
     
     res.json({
       success: true,
       meeting: {
-        id: meeting.id,
-        appointmentId: meeting.appointmentId,
-        roomName: meeting.roomName,
-        jitsiUrl: meeting.jitsiUrl,
-        status: meeting.status,
-        participants: meeting.participants,
-        createdAt: meeting.createdAt,
-        startedAt: meeting.startedAt
+        id: memMeeting.id,
+        appointmentId: memMeeting.appointmentId,
+        roomName: memMeeting.roomName,
+        jitsiUrl: memMeeting.jitsiUrl,
+        status: memMeeting.status,
+        participants: memMeeting.participants,
+        createdAt: memMeeting.createdAt,
+        startedAt: memMeeting.startedAt
       }
     });
     
@@ -720,54 +772,86 @@ router.get('/:appointmentId', async (req: Request, res: Response) => {
 /**
  * Join a meeting
  * POST /api/video-meeting/:appointmentId/join
+ * USES POSTGRESQL for persistence, in-memory for active sessions
  */
 router.post('/:appointmentId/join', async (req: Request, res: Response) => {
   try {
     const { appointmentId } = req.params;
     const { participantId, participantName, role, email, authMethod = 'anonymous' } = req.body;
     
-    const meeting = Array.from(meetingSessions.values())
+    // First try PostgreSQL
+    let dbMeeting = await MeetingService.getActiveMeeting(appointmentId);
+    
+    // Fall back to in-memory
+    const memMeeting = Array.from(meetingSessions.values())
       .find(m => m.appointmentId === appointmentId && m.status !== 'ended');
     
-    if (!meeting) {
+    if (!dbMeeting && !memMeeting) {
       return res.status(404).json({ error: 'Meeting not found' });
     }
     
-    // Add participant
-    const participant: MeetingParticipant = {
-      id: participantId || `guest-${Date.now()}`,
-      name: participantName || 'Guest',
-      role: role || 'guest',
-      email,
-      joinedAt: new Date(),
-      authMethod: authMethod as 'google' | 'anonymous'
-    };
-    
-    meeting.participants.push(participant);
-    
-    // Update meeting status
-    if (meeting.status === 'waiting') {
-      meeting.status = 'active';
-      meeting.startedAt = new Date();
+    // Add participant to PostgreSQL
+    if (dbMeeting) {
+      await MeetingService.addParticipant(dbMeeting.id, {
+        id: participantId || `guest-${Date.now()}`,
+        name: participantName || 'Guest',
+        role: role || 'guest'
+      });
+      // Refresh meeting data
+      dbMeeting = await MeetingService.getMeetingById(dbMeeting.id);
     }
     
+    // Also add to in-memory for quick access
+    if (memMeeting) {
+      const participant: MeetingParticipant = {
+        id: participantId || `guest-${Date.now()}`,
+        name: participantName || 'Guest',
+        role: role || 'guest',
+        email,
+        joinedAt: new Date(),
+        authMethod: authMethod as 'google' | 'anonymous'
+      };
+      memMeeting.participants.push(participant);
+      
+      if (memMeeting.status === 'waiting') {
+        memMeeting.status = 'active';
+        memMeeting.startedAt = new Date();
+      }
+    }
+    
+    // Get roomName and config from either source
+    const roomName = dbMeeting?.room_id || memMeeting?.roomName || '';
+    const config = dbMeeting?.meeting_config || memMeeting?.config || {
+      enableGoogleAuth: true,
+      enableAnonymousAccess: true,
+      enableRecording: true,
+      enableTranscription: true,
+      enableChat: true,
+      enableScreenShare: true,
+      maxParticipants: 10,
+      language: 'th'
+    };
+    
     // Generate personalized URL
-    const personalUrl = createJitsiUrl(meeting.roomName, meeting.config, {
+    const personalUrl = createJitsiUrl(roomName, config as JitsiConfig, {
       name: participantName,
       email,
       role
     });
     
-    console.log(`👤 ${participantName} joined meeting ${meeting.roomName} (${authMethod})`);
+    const participants = dbMeeting?.meeting_config?.participants || memMeeting?.participants || [];
+    
+    console.log(`👤 ${participantName} joined meeting ${roomName} (${authMethod})`);
+    console.log(`   Participant saved to: PostgreSQL meeting_records`);
     
     res.json({
       success: true,
       meetingUrl: personalUrl,
       meeting: {
-        id: meeting.id,
-        roomName: meeting.roomName,
-        status: meeting.status,
-        participants: meeting.participants.length
+        id: dbMeeting?.id || memMeeting?.id,
+        roomName: roomName,
+        status: dbMeeting?.status || memMeeting?.status,
+        participants: Array.isArray(participants) ? participants.length : 0
       }
     });
     
@@ -888,13 +972,15 @@ router.post('/:appointmentId/transcribe-audio', async (req: Request, res: Respon
 /**
  * End meeting, transcribe audio, and generate summary + doctor recommendations
  * POST /api/video-meeting/:appointmentId/end
+ * USES POSTGRESQL - All data saved to meeting_records table
  * 
  * Workflow:
- * 1. Mark meeting as ended
+ * 1. Mark meeting as ended (PostgreSQL)
  * 2. If audioBase64 provided, transcribe using Google Cloud Speech-to-Text
  * 3. Generate EMR summary using Gemini AI
  * 4. Generate doctor recommendations using Gemini AI
- * 5. Return all results for EMR integration
+ * 5. Save all to PostgreSQL meeting_records
+ * 6. Return results for EMR integration
  */
 router.post('/:appointmentId/end', async (req: Request, res: Response) => {
   try {
@@ -905,25 +991,34 @@ router.post('/:appointmentId/end', async (req: Request, res: Response) => {
       patientInfo,
       audioBase64,
       audioEncoding,
-      languageCode 
+      languageCode,
+      recordingUrl
     } = req.body;
     
-    const meeting = Array.from(meetingSessions.values())
+    // Get meeting from PostgreSQL first
+    let dbMeeting = await MeetingService.getActiveMeeting(appointmentId);
+    
+    // Fall back to in-memory
+    const memMeeting = Array.from(meetingSessions.values())
       .find(m => m.appointmentId === appointmentId && m.status !== 'ended');
     
-    if (!meeting) {
+    if (!dbMeeting && !memMeeting) {
       return res.status(404).json({ error: 'Active meeting not found' });
     }
     
-    // Mark all participants as left
-    meeting.participants.forEach(p => {
-      if (!p.leftAt) {
-        p.leftAt = new Date();
-      }
-    });
+    // Update in-memory meeting if exists
+    if (memMeeting) {
+      memMeeting.participants.forEach(p => {
+        if (!p.leftAt) {
+          p.leftAt = new Date();
+        }
+      });
+      memMeeting.status = 'ended';
+      memMeeting.endedAt = new Date();
+    }
     
-    meeting.status = 'ended';
-    meeting.endedAt = new Date();
+    // Get transcript from memory
+    let transcriptData = memMeeting?.transcript || [];
     
     // Step 1: Transcribe audio if provided (POST-MEETING transcription)
     if (audioBase64) {
@@ -945,7 +1040,11 @@ router.post('/:appointmentId/end', async (req: Request, res: Response) => {
           confidence: transcriptionResult.confidence,
           language: languageCode || 'th-TH'
         };
-        meeting.transcript.push(entry);
+        transcriptData.push(entry);
+        
+        if (memMeeting) {
+          memMeeting.transcript.push(entry);
+        }
         
         console.log(`✅ Transcription complete: ${transcriptionResult.transcript.length} characters`);
       }
@@ -953,55 +1052,83 @@ router.post('/:appointmentId/end', async (req: Request, res: Response) => {
     
     // Step 2: Generate EMR summary using Gemini
     let summary: MeetingSummary | null = null;
-    if (generateSummary && meeting.transcript.length > 0) {
+    if (generateSummary && transcriptData.length > 0) {
       console.log('📝 Generating meeting summary using Gemini AI...');
-      summary = await generateMeetingSummary(meeting.transcript, patientInfo);
-      meeting.summary = summary || undefined;
+      summary = await generateMeetingSummary(transcriptData, patientInfo);
+      if (memMeeting) {
+        memMeeting.summary = summary || undefined;
+      }
     }
     
     // Step 3: Generate doctor recommendations using Gemini
     let recommendations: DoctorRecommendation | null = null;
-    if (generateRecommendations && meeting.transcript.length > 0) {
+    if (generateRecommendations && transcriptData.length > 0) {
       console.log('💡 Generating doctor recommendations using Gemini AI...');
-      recommendations = await generateDoctorRecommendations(meeting.transcript, summary, patientInfo);
-      meeting.doctorRecommendations = recommendations || undefined;
+      recommendations = await generateDoctorRecommendations(transcriptData, summary, patientInfo);
+      if (memMeeting) {
+        memMeeting.doctorRecommendations = recommendations || undefined;
+      }
     }
     
     // Calculate duration
-    const duration = meeting.startedAt 
-      ? Math.floor((meeting.endedAt.getTime() - meeting.startedAt.getTime()) / 1000)
+    const startTime = dbMeeting?.started_at || memMeeting?.startedAt;
+    const endTime = new Date();
+    const duration = startTime 
+      ? Math.floor((endTime.getTime() - new Date(startTime).getTime()) / 1000)
       : 0;
     
-    console.log(`📋 Meeting ended: ${meeting.roomName}`);
+    // Step 4: Save to PostgreSQL
+    const meetingId = dbMeeting?.id || memMeeting?.id;
+    if (meetingId) {
+      await MeetingService.endMeeting(meetingId, {
+        transcript: {
+          entries: transcriptData,
+          savedAt: new Date().toISOString()
+        },
+        summary: summary ? { ...summary, savedAt: new Date().toISOString() } : undefined,
+        recommendations: recommendations ? { ...recommendations, savedAt: new Date().toISOString() } : undefined,
+        recordingUrl,
+        duration
+      });
+      
+      console.log(`💾 Meeting data saved to PostgreSQL: ${meetingId}`);
+    }
+    
+    const roomName = dbMeeting?.room_id || memMeeting?.roomName;
+    const participants = memMeeting?.participants || [];
+    
+    console.log(`📋 Meeting ended: ${roomName}`);
     console.log(`   Duration: ${Math.floor(duration / 60)}m ${duration % 60}s`);
-    console.log(`   Transcript entries: ${meeting.transcript.length}`);
+    console.log(`   Transcript entries: ${transcriptData.length}`);
     console.log(`   Summary generated: ${!!summary}`);
     console.log(`   Recommendations generated: ${!!recommendations}`);
+    console.log(`   Storage: PostgreSQL meeting_records table`);
     
     res.json({
       success: true,
       meeting: {
-        id: meeting.id,
-        appointmentId: meeting.appointmentId,
-        status: meeting.status,
+        id: meetingId,
+        appointmentId: appointmentId,
+        status: 'ended',
         duration,
-        participantCount: meeting.participants.length,
-        transcriptEntries: meeting.transcript.length
+        participantCount: participants.length,
+        transcriptEntries: transcriptData.length
       },
-      transcript: meeting.transcript,
+      transcript: transcriptData,
       summary: summary,
       doctorRecommendations: recommendations,
+      storage: 'PostgreSQL',
       // EMR-ready data for integration
       emrData: {
-        meetingId: meeting.id,
-        appointmentId: meeting.appointmentId,
-        date: meeting.createdAt,
+        meetingId: meetingId,
+        appointmentId: appointmentId,
+        date: dbMeeting?.created_at || memMeeting?.createdAt,
         duration,
-        participants: meeting.participants.map(p => ({
+        participants: participants.map(p => ({
           name: p.name,
           role: p.role
         })),
-        transcript: meeting.transcript,
+        transcript: transcriptData,
         summary: summary,
         recommendations: recommendations,
         generatedAt: new Date().toISOString(),
@@ -1022,24 +1149,43 @@ router.post('/:appointmentId/end', async (req: Request, res: Response) => {
 /**
  * Get meeting transcript
  * GET /api/video-meeting/:appointmentId/transcript
+ * USES POSTGRESQL - Falls back to in-memory
  */
 router.get('/:appointmentId/transcript', async (req: Request, res: Response) => {
   try {
     const { appointmentId } = req.params;
     
-    const meeting = Array.from(meetingSessions.values())
+    // Try PostgreSQL first
+    const dbMeeting = await MeetingService.getActiveMeeting(appointmentId);
+    
+    if (dbMeeting) {
+      const transcript = dbMeeting.transcript || {};
+      const summary = dbMeeting.ai_summary || {};
+      
+      return res.json({
+        success: true,
+        appointmentId: dbMeeting.appointment_id,
+        transcript: transcript.entries || transcript,
+        summary: summary,
+        status: dbMeeting.status,
+        storage: 'PostgreSQL'
+      });
+    }
+    
+    // Fallback to in-memory
+    const memMeeting = Array.from(meetingSessions.values())
       .find(m => m.appointmentId === appointmentId);
     
-    if (!meeting) {
+    if (!memMeeting) {
       return res.status(404).json({ error: 'Meeting not found' });
     }
     
     res.json({
       success: true,
-      appointmentId: meeting.appointmentId,
-      transcript: meeting.transcript,
-      summary: meeting.summary,
-      status: meeting.status
+      appointmentId: memMeeting.appointmentId,
+      transcript: memMeeting.transcript,
+      summary: memMeeting.summary,
+      status: memMeeting.status
     });
     
   } catch (error) {

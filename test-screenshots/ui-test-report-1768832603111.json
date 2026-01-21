@@ -1,0 +1,65 @@
+[
+  {
+    "category": "PATIENT_UI",
+    "testName": "Login Page Loads",
+    "passed": true,
+    "details": "Login form visible",
+    "timestamp": "2026-01-19T14:22:33.160Z"
+  },
+  {
+    "category": "PATIENT_UI",
+    "testName": "Patient Login",
+    "passed": true,
+    "details": "Navigated to: http://localhost:3005/",
+    "timestamp": "2026-01-19T14:22:40.088Z"
+  },
+  {
+    "category": "PATIENT_UI",
+    "testName": "Dashboard Navigation",
+    "passed": true,
+    "details": "12 nav items found",
+    "timestamp": "2026-01-19T14:22:42.405Z"
+  },
+  {
+    "category": "DOCTOR_UI",
+    "testName": "Login Page Loads",
+    "passed": true,
+    "details": "Login form visible",
+    "timestamp": "2026-01-19T14:22:50.291Z"
+  },
+  {
+    "category": "DOCTOR_UI",
+    "testName": "Doctor Login",
+    "passed": true,
+    "details": "Navigated to: http://localhost:3010/doctor/DOC-001/dashboard",
+    "timestamp": "2026-01-19T14:22:57.395Z"
+  },
+  {
+    "category": "DOCTOR_UI",
+    "testName": "Patient List Navigation",
+    "passed": true,
+    "details": "Patient list accessed",
+    "timestamp": "2026-01-19T14:23:02.703Z"
+  },
+  {
+    "category": "DOCTOR_UI",
+    "testName": "Schedule Navigation",
+    "passed": false,
+    "details": "No navigation button found",
+    "timestamp": "2026-01-19T14:23:02.755Z"
+  },
+  {
+    "category": "ADMIN_UI",
+    "testName": "Admin Login",
+    "passed": true,
+    "details": "Navigated to: http://localhost:3010/doctor/ADMIN-001/dashboard",
+    "timestamp": "2026-01-19T14:23:17.732Z"
+  },
+  {
+    "category": "ADMIN_UI",
+    "testName": "Admin Dashboard",
+    "passed": true,
+    "details": "0 admin links found",
+    "timestamp": "2026-01-19T14:23:20.037Z"
+  }
+]

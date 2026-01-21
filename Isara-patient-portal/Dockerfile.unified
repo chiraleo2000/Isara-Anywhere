@@ -10,10 +10,11 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install all dependencies (including dev)
+# Install all dependencies (including dev) - merged RUN instructions
 # Remove package-lock to avoid platform-specific rollup issues
-RUN rm -f package-lock.json && npm install
-RUN npm install bcryptjs @types/bcryptjs tsx --save
+RUN rm -f package-lock.json && \
+    npm install && \
+    npm install bcryptjs @types/bcryptjs tsx --save
 
 # Copy source code
 COPY . .
@@ -42,19 +43,20 @@ ARG VITE_GCS_BUCKET_DOCTOR=izara-doctors-data
 ARG VITE_GCS_BUCKET_APPOINTMENTS=izara-appointments
 ARG VITE_GCS_BUCKET_METADATA=izara-meta-data
 
-# Google APIs
-ARG VITE_GOOGLE_CALENDAR_API_KEY=AIzaSyAl924pIkpbrJBfCQ1MlpA6yb8XZ3L8WZQ
-ARG VITE_GOOGLE_MEET_API_KEY=AIzaSyAl924pIkpbrJBfCQ1MlpA6yb8XZ3L8WZQ
-ARG VITE_GOOGLE_MAPS_API_KEY=AIzaSyAl924pIkpbrJBfCQ1MlpA6yb8XZ3L8WZQ
-ARG VITE_GOOGLE_GMAIL_API_KEY=AIzaSyAl924pIkpbrJBfCQ1MlpA6yb8XZ3L8WZQ
-ARG VITE_GOOGLE_SHEETS_API_KEY=AIzaSyAl924pIkpbrJBfCQ1MlpA6yb8XZ3L8WZQ
+# Google APIs - These must be passed as build args from CI/CD or .env file
+# Example: docker build --build-arg VITE_GOOGLE_MAPS_API_KEY=$GOOGLE_MAPS_API_KEY ...
+ARG VITE_GOOGLE_CALENDAR_API_KEY
+ARG VITE_GOOGLE_MEET_API_KEY
+ARG VITE_GOOGLE_MAPS_API_KEY
+ARG VITE_GOOGLE_GMAIL_API_KEY
+ARG VITE_GOOGLE_SHEETS_API_KEY
 
 # Google Cloud Speech-to-Text API (for post-meeting transcription)
-ARG VITE_GOOGLE_SPEECH_API_KEY=AIzaSyAl924pIkpbrJBfCQ1MlpA6yb8XZ3L8WZQ
-ARG GOOGLE_SPEECH_API_KEY=AIzaSyAl924pIkpbrJBfCQ1MlpA6yb8XZ3L8WZQ
+ARG VITE_GOOGLE_SPEECH_API_KEY
+ARG GOOGLE_SPEECH_API_KEY
 
-# Gemini AI Configuration
-ARG VITE_GEMINI_API_KEY=AIzaSyDqERDgZ1l41zfGiQ4FZV62B58DXMbGWj4
+# Gemini AI Configuration - API key must be passed as build arg
+ARG VITE_GEMINI_API_KEY
 ARG VITE_GEMINI_MODEL=gemini-2.5-flash-lite
 ARG VITE_GEMINI_TEMPERATURE=0.3
 ARG VITE_GEMINI_MAX_TOKENS=8192
@@ -181,28 +183,39 @@ COPY --from=builder /app/dist ./dist
 # Copy server source (run with tsx directly)
 COPY --from=builder /app/server ./server
 
-# Copy credentials if exists
-COPY --from=builder /app/credentials ./credentials
+# Create credentials directory (will be mounted at runtime if needed)
+RUN mkdir -p ./credentials
 
 # Set environment variables for production runtime
 # These are used by the Node.js backend (non-VITE prefix for server-side)
 ENV NODE_ENV=production
-ENV PORT=3004
+# Use port 3005 as main entry point - Express serves BOTH frontend and API
+ENV PORT=3005
 ENV GCP_PROJECT_ID=izara-telemedicine
-# Gemini AI - Server-side environment variables
-ENV GEMINI_API_KEY=AIzaSyDqERDgZ1l41zfGiQ4FZV62B58DXMbGWj4
+ENV GOOGLE_APPLICATION_CREDENTIALS=/app/credentials/service-account.json
+# Gemini AI - Server-side environment variables (must be set at runtime)
+# DO NOT hardcode API keys - use docker run -e or docker-compose environment
+ENV GEMINI_API_KEY=${GEMINI_API_KEY:-}
 ENV GEMINI_MODEL=gemini-2.5-flash-lite
 # Jitsi Meet - Server-side
 ENV JITSI_DOMAIN=meet.jit.si
-# Google Speech API - Server-side  
-ENV GOOGLE_SPEECH_API_KEY=AIzaSyAl924pIkpbrJBfCQ1MlpA6yb8XZ3L8WZQ
+# Google Speech API - Server-side (must be set at runtime)
+ENV GOOGLE_SPEECH_API_KEY=${GOOGLE_SPEECH_API_KEY:-}
 
-# The backend serves both API and static frontend files
-EXPOSE 3004
+# Expose single port - Express serves frontend + API
+EXPOSE 3005
 
 # Healthcheck
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-  CMD curl -f http://localhost:3004/health || exit 1
+  CMD curl -f http://localhost:3005/health || exit 1
 
-# Start the unified server with tsx
-CMD ["npx", "tsx", "server/index.ts"]
+# Create entrypoint script - single Express server handles everything
+RUN printf '%s\n' \
+  '#!/bin/sh' \
+  'echo "Starting Izara Patient Portal (Unified Server)..."' \
+  'echo "Server: http://localhost:3005"' \
+  'echo "Frontend + API served from same origin"' \
+  'exec npx tsx server/index.ts' \
+  > /app/start.sh && chmod +x /app/start.sh
+
+CMD ["/bin/sh", "/app/start.sh"]

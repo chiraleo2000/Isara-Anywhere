@@ -1,0 +1,66 @@
+{
+  "description": "Medical content (health articles) for patient education",
+  "table": "medical_content",
+  "data": [
+    {
+      "id": "MC-001",
+      "title_thai": "การดูแลสุขภาพหัวใจ",
+      "title_english": "Heart Health Care",
+      "content_thai": "หัวใจเป็นอวัยวะสำคัญที่สูบฉีดเลือดไปเลี้ยงร่างกาย การดูแลหัวใจให้แข็งแรงทำได้โดยการออกกำลังกายสม่ำเสมอ รับประทานอาหารที่ดีต่อสุขภาพ และหลีกเลี่ยงการสูบบุหรี่",
+      "content_english": "The heart is a vital organ that pumps blood throughout the body. Keeping your heart healthy involves regular exercise, eating a healthy diet, and avoiding smoking.",
+      "category": "cardiovascular",
+      "author_id": "DOC-SPECIALIST-001",
+      "status": "published",
+      "view_count": 150,
+      "tags": ["heart", "health", "exercise"]
+    },
+    {
+      "id": "MC-002",
+      "title_thai": "การจัดการโรคเบาหวาน",
+      "title_english": "Diabetes Management",
+      "content_thai": "โรคเบาหวานเป็นโรคเรื้อรังที่ต้องการการดูแลอย่างต่อเนื่อง การควบคุมระดับน้ำตาลในเลือด การรับประทานยาตามแพทย์สั่ง และการตรวจสุขภาพประจำเป็นสิ่งสำคัญ",
+      "content_english": "Diabetes is a chronic condition requiring ongoing management. Controlling blood sugar levels, taking medications as prescribed, and regular health checkups are essential.",
+      "category": "endocrinology",
+      "author_id": "DOC-TEST-001",
+      "status": "published",
+      "view_count": 200,
+      "tags": ["diabetes", "blood sugar", "lifestyle"]
+    },
+    {
+      "id": "MC-003",
+      "title_thai": "การนอนหลับที่ดี",
+      "title_english": "Good Sleep Habits",
+      "content_thai": "การนอนหลับที่มีคุณภาพ 7-9 ชั่วโมงต่อคืนช่วยให้ร่างกายฟื้นฟู เสริมสร้างภูมิคุ้มกัน และช่วยในการจดจำ",
+      "content_english": "Quality sleep of 7-9 hours per night helps the body recover, boosts immunity, and aids memory.",
+      "category": "general",
+      "author_id": "DOC-TEST-001",
+      "status": "published",
+      "view_count": 120,
+      "tags": ["sleep", "health", "wellness"]
+    },
+    {
+      "id": "MC-004",
+      "title_thai": "การออกกำลังกายสำหรับผู้สูงอายุ",
+      "title_english": "Exercise for Seniors",
+      "content_thai": "ผู้สูงอายุควรออกกำลังกายเบาๆ เช่น เดินเร็ว ว่ายน้ำ หรือโยคะ อย่างน้อย 150 นาทีต่อสัปดาห์",
+      "content_english": "Seniors should do light exercises like brisk walking, swimming, or yoga for at least 150 minutes per week.",
+      "category": "geriatrics",
+      "author_id": "DOC-TEST-001",
+      "status": "published",
+      "view_count": 80,
+      "tags": ["exercise", "seniors", "fitness"]
+    },
+    {
+      "id": "MC-005",
+      "title_thai": "สุขภาพจิตในยุคดิจิทัล",
+      "title_english": "Mental Health in Digital Age",
+      "content_thai": "การใช้เทคโนโลยีมากเกินไปอาจส่งผลต่อสุขภาพจิต ควรหยุดพักจากหน้าจอ ทำกิจกรรมกลางแจ้ง และรักษาความสัมพันธ์กับคนรอบข้าง",
+      "content_english": "Excessive technology use can affect mental health. Take screen breaks, do outdoor activities, and maintain relationships.",
+      "category": "psychiatry",
+      "author_id": "DOC-SPECIALIST-001",
+      "status": "published",
+      "view_count": 95,
+      "tags": ["mental health", "technology", "balance"]
+    }
+  ]
+}

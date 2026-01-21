@@ -1,0 +1,467 @@
+{
+  "id": "phr-PATIENT-ANAN",
+  "patientId": "PATIENT-ANAN",
+  "demographics": {
+    "name": "Anan Khayanrian",
+    "nameThai": "นายอนันต์ ขยันเรียน",
+    "dateOfBirth": "1958-11-22",
+    "age": 67,
+    "gender": "male",
+    "bloodType": "A+",
+    "height": 165,
+    "weight": 72,
+    "ethnicity": "Thai",
+    "occupation": "เกษียณอายุ (อดีตครูโรงเรียนมัธยม)",
+    "nationalId": "3-5678-90123-45-6",
+    "phone": "+66-82-345-6789",
+    "email": "Anan.Khayanrian@gmail.com",
+    "address": "456 ถนนรัชดาภิเษก แขวงดินแดง เขตดินแดง กรุงเทพฯ 10400",
+    "insuranceType": "สิทธิข้าราชการ",
+    "emergencyContact": {
+      "name": "นางสมศรี ขยันเรียน",
+      "relationship": "ภรรยา",
+      "phone": "+66-83-456-7890"
+    }
+  },
+  "vitalSignsHistory": [
+    {
+      "bloodPressure": {
+        "systolic": 142,
+        "diastolic": 88,
+        "unit": "mmHg"
+      },
+      "heartRate": {
+        "value": 76,
+        "unit": "bpm"
+      },
+      "temperature": {
+        "value": 36.4,
+        "unit": "celsius"
+      },
+      "oxygenSaturation": {
+        "value": 96,
+        "unit": "%"
+      },
+      "weight": {
+        "value": 72,
+        "unit": "kg"
+      },
+      "height": {
+        "value": 165,
+        "unit": "cm"
+      },
+      "bmi": 26.4,
+      "bloodGlucose": {
+        "value": 185,
+        "unit": "mg/dL",
+        "testType": "fasting"
+      },
+      "measuredAt": "2026-01-17T10:06:48.898Z",
+      "source": "clinic",
+      "notes": "FBS ยังสูง - ต้องปรับยา"
+    },
+    {
+      "bloodPressure": {
+        "systolic": 138,
+        "diastolic": 85,
+        "unit": "mmHg"
+      },
+      "heartRate": {
+        "value": 74,
+        "unit": "bpm"
+      },
+      "temperature": {
+        "value": 36.5,
+        "unit": "celsius"
+      },
+      "oxygenSaturation": {
+        "value": 97,
+        "unit": "%"
+      },
+      "weight": {
+        "value": 73,
+        "unit": "kg"
+      },
+      "bmi": 26.8,
+      "bloodGlucose": {
+        "value": 168,
+        "unit": "mg/dL",
+        "testType": "fasting"
+      },
+      "measuredAt": "2025-12-15T10:06:48.898Z",
+      "source": "clinic"
+    },
+    {
+      "bloodPressure": {
+        "systolic": 145,
+        "diastolic": 90,
+        "unit": "mmHg"
+      },
+      "heartRate": {
+        "value": 78,
+        "unit": "bpm"
+      },
+      "weight": {
+        "value": 74,
+        "unit": "kg"
+      },
+      "bmi": 27.2,
+      "bloodGlucose": {
+        "value": 195,
+        "unit": "mg/dL",
+        "testType": "fasting"
+      },
+      "measuredAt": "2025-11-15T10:06:48.898Z",
+      "source": "clinic",
+      "notes": "BP และ FBS สูงขึ้น - ปรับยา"
+    }
+  ],
+  "allergies": [
+    {
+      "id": "allergy-001",
+      "allergen": "Sulfonamides",
+      "type": "medication",
+      "severity": "severe",
+      "reaction": "Stevens-Johnson Syndrome (ประวัติรุนแรง)",
+      "diagnosedDate": "2010-03-15",
+      "status": "confirmed",
+      "notes": "⚠️ ห้ามใช้ยากลุ่ม Sulfa ทุกชนิดโดยเด็ดขาด"
+    },
+    {
+      "id": "allergy-002",
+      "allergen": "NSAIDs",
+      "type": "medication",
+      "severity": "moderate",
+      "reaction": "ไตทำงานแย่ลง, บวม",
+      "diagnosedDate": "2022-08-01",
+      "status": "confirmed",
+      "notes": "หลีกเลี่ยงยาแก้ปวดกลุ่ม NSAIDs เพราะมีผลต่อไต"
+    }
+  ],
+  "chronicConditions": [
+    {
+      "id": "condition-001",
+      "condition": "Type 2 Diabetes Mellitus",
+      "conditionThai": "โรคเบาหวานชนิดที่ 2",
+      "icdCode": "E11.65",
+      "diagnosedDate": "2014-05-10",
+      "status": "active",
+      "severity": "moderate",
+      "treatedBy": "DOC-001",
+      "notes": "DM 12 ปี ปัจจุบันควบคุมได้ไม่ดีนัก HbA1c 7.8%",
+      "complications": [
+        "Diabetic nephropathy - CKD Stage 3b"
+      ]
+    },
+    {
+      "id": "condition-002",
+      "condition": "Chronic Kidney Disease Stage 3b",
+      "conditionThai": "โรคไตเรื้อรังระยะ 3b",
+      "icdCode": "N18.4",
+      "diagnosedDate": "2021-11-20",
+      "status": "active",
+      "severity": "moderate",
+      "treatedBy": "DOC-001",
+      "notes": "eGFR 38, secondary to diabetic nephropathy, ต้องปรับยาตามการทำงานของไต",
+      "monitoring": "ตรวจ Cr, K+ ทุก 1-3 เดือน"
+    },
+    {
+      "id": "condition-003",
+      "condition": "Essential Hypertension",
+      "conditionThai": "โรคความดันโลหิตสูงปฐมภูมิ",
+      "icdCode": "I10",
+      "diagnosedDate": "2016-02-28",
+      "status": "active",
+      "severity": "controlled",
+      "treatedBy": "DOC-001",
+      "notes": "ควบคุมได้พอใช้ด้วย ACE-I + CCB"
+    },
+    {
+      "id": "condition-004",
+      "condition": "Dyslipidemia",
+      "conditionThai": "ไขมันในเลือดผิดปกติ",
+      "icdCode": "E78.5",
+      "diagnosedDate": "2015-08-15",
+      "status": "active",
+      "severity": "controlled",
+      "treatedBy": "DOC-001"
+    }
+  ],
+  "medications": [
+    {
+      "id": "med-001",
+      "name": "Metformin",
+      "dose": "500mg",
+      "frequency": "วันละ 1 ครั้ง",
+      "route": "รับประทาน",
+      "reason": "เบาหวาน",
+      "startDate": "2014-05-15",
+      "prescribedBy": "DOC-001",
+      "status": "active",
+      "notes": "⚠️ ลดจาก BID เป็น OD เนื่องจาก CKD Stage 3b (ปรับเมื่อ 18 ม.ค. 2026)"
+    },
+    {
+      "id": "med-002",
+      "name": "Glipizide",
+      "dose": "5mg",
+      "frequency": "ก่อนอาหารเช้า",
+      "route": "รับประทาน",
+      "reason": "เบาหวาน",
+      "startDate": "2018-03-01",
+      "prescribedBy": "DOC-001",
+      "status": "active"
+    },
+    {
+      "id": "med-003",
+      "name": "Enalapril",
+      "dose": "10mg",
+      "frequency": "วันละครั้ง เช้า",
+      "route": "รับประทาน",
+      "reason": "ความดันสูง + ป้องกันไตเสื่อม",
+      "startDate": "2016-03-01",
+      "prescribedBy": "DOC-001",
+      "status": "active",
+      "notes": "ACE-I สำหรับ renoprotection"
+    },
+    {
+      "id": "med-004",
+      "name": "Amlodipine",
+      "dose": "5mg",
+      "frequency": "วันละครั้ง เช้า",
+      "route": "รับประทาน",
+      "reason": "ความดันสูง",
+      "startDate": "2019-06-15",
+      "prescribedBy": "DOC-001",
+      "status": "active"
+    },
+    {
+      "id": "med-005",
+      "name": "Atorvastatin",
+      "dose": "20mg",
+      "frequency": "วันละครั้ง ก่อนนอน",
+      "route": "รับประทาน",
+      "reason": "ไขมันในเลือดสูง + ป้องกันโรคหัวใจ",
+      "startDate": "2015-09-01",
+      "prescribedBy": "DOC-001",
+      "status": "active"
+    }
+  ],
+  "latestLabResults": [
+    {
+      "id": "lab-anan-001",
+      "testDate": "2026-01-17T10:06:48.898Z",
+      "orderedBy": "DOC-001",
+      "labName": "โรงพยาบาลรามาธิบดี",
+      "results": [
+        {
+          "test": "HbA1c",
+          "value": 7.8,
+          "unit": "%",
+          "normalRange": "<7.0",
+          "status": "high"
+        },
+        {
+          "test": "FBS",
+          "value": 185,
+          "unit": "mg/dL",
+          "normalRange": "70-100",
+          "status": "high"
+        },
+        {
+          "test": "Creatinine",
+          "value": 1.8,
+          "unit": "mg/dL",
+          "normalRange": "0.7-1.2",
+          "status": "high"
+        },
+        {
+          "test": "BUN",
+          "value": 32,
+          "unit": "mg/dL",
+          "normalRange": "7-20",
+          "status": "high"
+        },
+        {
+          "test": "eGFR",
+          "value": 38,
+          "unit": "mL/min/1.73m²",
+          "normalRange": ">90",
+          "status": "low",
+          "notes": "CKD Stage 3b"
+        },
+        {
+          "test": "Potassium",
+          "value": 5.1,
+          "unit": "mEq/L",
+          "normalRange": "3.5-5.0",
+          "status": "borderline-high"
+        },
+        {
+          "test": "Sodium",
+          "value": 138,
+          "unit": "mEq/L",
+          "normalRange": "136-145",
+          "status": "normal"
+        },
+        {
+          "test": "UACR",
+          "value": 280,
+          "unit": "mg/g",
+          "normalRange": "<30",
+          "status": "high",
+          "notes": "A3 albuminuria"
+        },
+        {
+          "test": "Total Cholesterol",
+          "value": 185,
+          "unit": "mg/dL",
+          "normalRange": "<200",
+          "status": "normal"
+        },
+        {
+          "test": "LDL",
+          "value": 98,
+          "unit": "mg/dL",
+          "normalRange": "<100",
+          "status": "normal"
+        },
+        {
+          "test": "HDL",
+          "value": 42,
+          "unit": "mg/dL",
+          "normalRange": ">40",
+          "status": "normal"
+        },
+        {
+          "test": "Triglycerides",
+          "value": 168,
+          "unit": "mg/dL",
+          "normalRange": "<150",
+          "status": "high"
+        }
+      ]
+    }
+  ],
+  "healthJourney": [
+    {
+      "id": "journey-001",
+      "date": "2014-05-10",
+      "type": "diagnosis",
+      "title": "วินิจฉัยโรคเบาหวานชนิดที่ 2",
+      "titleEnglish": "Type 2 Diabetes Diagnosed",
+      "description": "ตรวจพบน้ำตาลในเลือดสูงจากการตรวจสุขภาพประจำปี FBS 180 mg/dL, HbA1c 8.5%",
+      "outcome": "เริ่มยา Metformin 500mg วันละ 2 ครั้ง",
+      "doctor": "DOC-001"
+    },
+    {
+      "id": "journey-002",
+      "date": "2016-02-28",
+      "type": "diagnosis",
+      "title": "วินิจฉัยความดันโลหิตสูง",
+      "titleEnglish": "Hypertension Diagnosed",
+      "description": "ความดันวัดได้ 155/95 หลายครั้ง",
+      "outcome": "เริ่มยา Enalapril 5mg",
+      "doctor": "DOC-001"
+    },
+    {
+      "id": "journey-003",
+      "date": "2021-11-20",
+      "type": "complication",
+      "title": "พบโรคไตเรื้อรังจากเบาหวาน",
+      "titleEnglish": "Diabetic Nephropathy - CKD Diagnosed",
+      "description": "eGFR ลดลงเหลือ 52 mL/min (CKD Stage 3a), UACR 150 mg/g",
+      "outcome": "เพิ่มการติดตามการทำงานของไตใกล้ชิด",
+      "doctor": "DOC-001"
+    },
+    {
+      "id": "journey-004",
+      "date": "2024-06-15",
+      "type": "worsening",
+      "title": "โรคไตแย่ลงเป็น Stage 3b",
+      "titleEnglish": "CKD progressed to Stage 3b",
+      "description": "eGFR ลดลงเหลือ 42 mL/min",
+      "outcome": "เริ่มระวังการปรับขนาดยาที่ขับออกทางไต",
+      "doctor": "DOC-001"
+    },
+    {
+      "id": "journey-005",
+      "date": "2026-01-18",
+      "type": "treatment_change",
+      "title": "ปรับลดขนาด Metformin",
+      "titleEnglish": "Metformin dose reduced",
+      "description": "eGFR ลดเหลือ 38 mL/min ปรับ Metformin จาก 500mg BID เป็น 500mg OD ตาม KDIGO 2024",
+      "outcome": "นัดติดตาม Cr, K+ ใน 2 สัปดาห์",
+      "doctor": "DOC-001",
+      "aiAssisted": true,
+      "aiNotes": "CDS แนะนำลดขนาดยา 50% ตาม KDIGO Guidelines"
+    }
+  ],
+  "clinicalDecisionSupport": {
+    "lastUpdated": "2026-01-18T10:06:48.898Z",
+    "activeAlerts": [
+      {
+        "id": "alert-001",
+        "type": "dose_adjustment",
+        "severity": "high",
+        "drug": "Metformin",
+        "message": "ปรับขนาดยาแล้วตาม eGFR 38",
+        "status": "resolved",
+        "resolvedAt": "2026-01-18T10:06:48.898Z"
+      },
+      {
+        "id": "alert-002",
+        "type": "monitoring",
+        "severity": "medium",
+        "message": "ติดตาม K+ ใกล้ชิด เนื่องจากใช้ ACE-I ใน CKD",
+        "status": "active"
+      }
+    ],
+    "recommendations": [
+      "พิจารณาเพิ่ม SGLT2i (Dapagliflozin) เพื่อ renoprotection",
+      "Nephrology referral ถ้า eGFR <30",
+      "ติดตาม Hb สำหรับ anemia of CKD"
+    ]
+  },
+  "familyHistory": [
+    {
+      "relation": "บิดา",
+      "condition": "เบาหวานชนิดที่ 2",
+      "notes": "เสียชีวิตจากภาวะแทรกซ้อนเบาหวาน อายุ 72 ปี"
+    },
+    {
+      "relation": "มารดา",
+      "condition": "ความดันโลหิตสูง, หลอดเลือดสมอง",
+      "notes": "มีชีวิต อายุ 88 ปี"
+    },
+    {
+      "relation": "พี่ชาย",
+      "condition": "เบาหวานชนิดที่ 2",
+      "notes": "วินิจฉัยเมื่อายุ 55 ปี"
+    }
+  ],
+  "socialHistory": {
+    "smoking": {
+      "status": "อดีตสูบบุหรี่",
+      "quitDate": "2014-05-15",
+      "packYears": 15
+    },
+    "alcohol": {
+      "status": "งด",
+      "notes": "งดเนื่องจากโรคไต"
+    },
+    "exercise": {
+      "frequency": "เดินเล่นวันละ 20-30 นาที",
+      "notes": "ตามความสามารถ"
+    },
+    "diet": {
+      "type": "Low sodium, Low potassium, Diabetic diet"
+    },
+    "occupation": {
+      "current": "เกษียณ",
+      "previous": "ครูมัธยม"
+    }
+  },
+  "createdAt": "2025-01-19T10:06:48.898Z",
+  "updatedAt": "2026-01-18T10:06:48.898Z",
+  "lastSyncedAt": "2026-01-18T10:06:48.898Z"
+}

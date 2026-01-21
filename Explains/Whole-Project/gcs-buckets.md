@@ -37,7 +37,7 @@ All data is stored in Google Cloud Storage (GCS) buckets as JSON files.
 
 ### Structure
 ```
-izara-users-auth/
+izara-users-credentials/
 ├── users/
 │   ├── index.json              # List of all patients
 │   ├── PAT-xxx-xxx.json        # Individual patient credentials
@@ -76,28 +76,27 @@ izara-users-auth/
 }
 ```
 
----
-
-## 2. izara-users-credentials
-
-**Purpose:** Doctor/Admin authentication data
-
-### Structure
+### Doctor Credentials Structure
 ```
 izara-users-credentials/
-├── users/
-│   ├── index.json              # List of all doctors
-│   ├── DOC-xxx-xxx.json        # Individual doctor credentials
+├── users/                      # Patient credentials  
+│   ├── PATIENT-xxx.json        # Individual patient
 │   └── ...
-├── sessions/
-│   ├── {token}.json            # Active sessions
+├── doctors/                    # Doctor credentials
+│   ├── DOC-xxx.json            # Individual doctor
 │   └── ...
-├── login-history/
+├── admins/                     # Admin credentials
+│   ├── ADMIN-xxx.json          # Individual admin
+│   └── ...
+├── sessions/                   # Active sessions
+│   ├── {token}.json            
+│   └── ...
+├── login-history/              # Audit trail
 │   └── ...
 └── pending-approvals.json      # Doctors awaiting approval
 ```
 
-### users/{userId}.json (Doctor)
+### doctors/{userId}.json (Doctor)
 ```json
 {
   "id": "DOC-1702500000000-abc123",
@@ -131,7 +130,7 @@ izara-users-credentials/
 
 ---
 
-## 3. izara-patients-data
+## 2. izara-patients-data
 
 **Purpose:** Patient profiles and health records
 
@@ -193,7 +192,7 @@ izara-patients-data/
 
 ---
 
-## 4. izara-doctors-data
+## 3. izara-doctors-data
 
 **Purpose:** Doctor public profiles and meeting recordings
 
@@ -231,7 +230,7 @@ izara-doctors-data/
 
 ---
 
-## 5. izara-appointments
+## 4. izara-appointments
 
 **Purpose:** Appointment and EMR records
 
@@ -281,7 +280,7 @@ izara-appointments/
 
 ---
 
-## 6. izara-meta-data
+## 5. izara-meta-data
 
 **Purpose:** Clinical resources and consultants
 

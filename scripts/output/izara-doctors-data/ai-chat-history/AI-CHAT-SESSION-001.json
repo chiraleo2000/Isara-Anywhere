@@ -1,0 +1,64 @@
+{
+  "sessionId": "AI-CHAT-SESSION-001",
+  "doctorId": "DOC-001",
+  "patientId": "PATIENT-ANAN",
+  "appointmentId": "APT-ANAN-001",
+  "sessionType": "pre_consultation",
+  "createdAt": "2026-01-18T08:06:48.891Z",
+  "messages": [
+    {
+      "id": "9de29a6c-64c9-476a-9657-c632e053efa1",
+      "role": "system",
+      "content": "คุณคือผู้ช่วยแพทย์ AI ของระบบ Izara Telemedicine สำหรับการให้คำปรึกษาทางการแพทย์\nกรุณาช่วยสรุปข้อมูลผู้ป่วยและให้คำแนะนำทางคลินิกตาม Guidelines ล่าสุด (2024-2025)\nข้อมูลควรเป็นภาษาไทยเป็นหลัก พร้อมคำศัพท์ทางการแพทย์ภาษาอังกฤษกำกับ",
+      "timestamp": "2026-01-18T08:06:48.891Z"
+    },
+    {
+      "id": "d99d699b-2065-44df-a413-abcba85ea4ad",
+      "role": "user",
+      "content": "สรุปข้อมูลผู้ป่วยก่อนพบ: นายอนันต์ ขยันเรียน (PATIENT-ANAN)\n- ผู้ป่วยอายุ 67 ปี มานัดติดตามโรคเบาหวานและโรคไตเรื้อรัง\n- กรุณาสรุปประวัติการรักษา ยาปัจจุบัน และข้อควรระวัง",
+      "timestamp": "2026-01-18T08:06:48.891Z",
+      "context": {
+        "patientId": "PATIENT-ANAN",
+        "appointmentId": "APT-ANAN-001",
+        "queryType": "pre_consultation_summary"
+      }
+    },
+    {
+      "id": "5f408d67-ba17-4cde-9665-78ffe2487682",
+      "role": "assistant",
+      "content": "## 📋 สรุปข้อมูลผู้ป่วยก่อนการนัดพบ\n\n### ข้อมูลทั่วไป\n- **ชื่อ**: นายอนันต์ ขยันเรียน (PATIENT-ANAN)\n- **อายุ**: 67 ปี\n- **น้ำหนัก/ส่วนสูง**: 72 kg / 165 cm (BMI: 26.4)\n\n### โรคประจำตัว (Chronic Conditions)\n1. **เบาหวานชนิดที่ 2** (Type 2 DM) - วินิจฉัย 12 ปี\n   - HbA1c ล่าสุด: 7.8% (เป้าหมาย <7.5% สำหรับผู้สูงอายุ)\n   - FBS ล่าสุด: 185 mg/dL (ยังสูงกว่าเป้าหมาย)\n   \n2. **โรคไตเรื้อรังระยะ 3b** (CKD Stage 3b)\n   - eGFR: 38 mL/min/1.73m² (ลดลงจาก 42)\n   - ต้องระวังการปรับยาตามการทำงานของไต\n\n3. **ความดันโลหิตสูง** - ควบคุมได้ดี\n   - BP ล่าสุด: 142/88 mmHg\n\n### ⚠️ ข้อควรระวังสำคัญ\n1. **แพ้ยา Sulfonamides รุนแรง** (ประวัติ Stevens-Johnson Syndrome)\n2. **ต้องปรับขนาดยา Metformin** ตาม eGFR\n3. **งดใช้ NSAIDs** เพราะอาจทำให้ไตเสื่อมเร็วขึ้น\n\n### 💊 ยาปัจจุบัน\n1. Metformin 500mg วันละ 2 ครั้ง (ควรพิจารณาลดขนาด)\n2. Glipizide 5mg ก่อนอาหารเช้า\n3. Enalapril 10mg วันละครั้ง\n4. Amlodipine 5mg วันละครั้ง\n5. Atorvastatin 20mg ก่อนนอน\n\n### 📊 ผลตรวจล่าสุด (17 ม.ค. 2026)\n- Creatinine: 1.8 mg/dL (↑)\n- BUN: 32 mg/dL (↑)\n- Potassium: 5.1 mEq/L (ขอบบน)\n- HbA1c: 7.8%\n\n### 📝 ข้อเสนอแนะ (Man-in-the-Loop: รอการยืนยันจากแพทย์)\n1. พิจารณาลด Metformin เหลือ 500mg วันละ 1 ครั้ง ตาม KDIGO 2024 Guidelines\n2. เพิ่มขนาด Enalapril เป็น 20mg หาก BP ยังสูง\n3. ติดตาม K+ ใกล้ชิดเนื่องจากใช้ ACE inhibitor\n\n⚕️ *ข้อมูลนี้สร้างโดย AI - กรุณาตรวจสอบและยืนยันก่อนใช้ในการรักษา*",
+      "timestamp": "2026-01-18T09:06:48.891Z",
+      "aiMetadata": {
+        "model": "gemini-1.5-flash",
+        "tokensUsed": 1250,
+        "guidlinesReferenced": [
+          "KDIGO 2024",
+          "ADA 2025",
+          "Thai Hypertension Guideline 2024"
+        ],
+        "confidence": 0.92
+      }
+    },
+    {
+      "id": "e2da3758-7407-401e-bcc3-047ceb756d2c",
+      "role": "user",
+      "content": "มี drug interaction ที่ต้องระวังไหม? โดยเฉพาะระหว่าง Metformin กับยาอื่น?",
+      "timestamp": "2026-01-18T09:06:48.891Z"
+    },
+    {
+      "id": "67561290-294b-4867-8ed7-30f745915ae1",
+      "role": "assistant",
+      "content": "## ⚠️ Drug Interactions ที่ต้องระวัง\n\n### 1. Metformin + CKD (eGFR 38)\n- **ความเสี่ยง**: Lactic acidosis (ภาวะกรดในเลือด)\n- **คำแนะนำ KDIGO 2024**: \n  - eGFR 30-45: ลดขนาดยา 50% (500mg OD แทน BID)\n  - eGFR <30: หยุดใช้ Metformin\n- **สถานะปัจจุบัน**: eGFR 38 → ควรลดขนาดยา\n\n### 2. Enalapril (ACE-I) + CKD + K+ 5.1\n- **ความเสี่ยง**: Hyperkalemia (K+ สูง)\n- **คำแนะนำ**: \n  - ติดตาม K+ ทุก 2-4 สัปดาห์หลังปรับยา\n  - หยุดยาถ้า K+ >5.5 mEq/L\n  - แนะนำอาหาร Low Potassium Diet\n\n### 3. Glipizide + ผู้สูงอายุ + CKD\n- **ความเสี่ยง**: Hypoglycemia รุนแรง\n- **คำแนะนำ**:\n  - ยา Glipizide ขับออกทางไต 80%\n  - ควรพิจารณาลดขนาดหรือเปลี่ยนเป็น Linagliptin (ขับออกทางน้ำดี)\n\n### 4. Atorvastatin + CKD\n- ✅ ใช้ได้อย่างปลอดภัย ไม่ต้องปรับขนาด\n- ช่วยลด CV risk ใน CKD patients\n\n### 📊 Clinical Decision Support Alert\n```\n⚠️ ALERT: Metformin dose adjustment required\n   Current: 500mg BID\n   Recommended: 500mg OD (50% reduction)\n   Reason: eGFR 38 (CKD Stage 3b)\n   Guideline: KDIGO 2024\n```\n\n⚕️ *แพทย์กรุณายืนยันการปรับยาก่อนบันทึกลงระบบ (Man-in-the-Loop)*",
+      "timestamp": "2026-01-18T09:06:48.891Z",
+      "aiMetadata": {
+        "model": "gemini-1.5-flash",
+        "tokensUsed": 980,
+        "cdsAlerts": [
+          "METFORMIN_DOSE_ADJUSTMENT",
+          "HYPERKALEMIA_RISK"
+        ],
+        "confidence": 0.95
+      }
+    }
+  ]
+}

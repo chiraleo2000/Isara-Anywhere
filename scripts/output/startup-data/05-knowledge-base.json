@@ -1,0 +1,56 @@
+{
+  "description": "Knowledge base entries for RAG/AI functionality",
+  "table": "knowledge_base",
+  "data": [
+    {
+      "id": "KB-001",
+      "content_type": "clinical_guideline",
+      "content": "Hypertension management in Thai adults: Target BP <140/90 mmHg for general population, <130/80 for high-risk patients. First-line: CCB or ACEI/ARB. Lifestyle modifications essential.",
+      "metadata": {
+        "specialty": "cardiology",
+        "source": "Thai Hypertension Society 2024",
+        "language": "en"
+      }
+    },
+    {
+      "id": "KB-002",
+      "content_type": "drug_interaction",
+      "content": "Metformin and contrast media: Hold metformin 48 hours before and after contrast procedures in patients with eGFR <60. Resume after confirming stable renal function.",
+      "metadata": {
+        "specialty": "nephrology",
+        "source": "KDIGO 2024",
+        "language": "en"
+      }
+    },
+    {
+      "id": "KB-003",
+      "content_type": "clinical_guideline",
+      "content": "Diabetic foot care: Daily inspection, proper footwear, avoid walking barefoot, regular podiatry visits. Screen for neuropathy annually with 10g monofilament.",
+      "metadata": {
+        "specialty": "endocrinology",
+        "source": "ADA Standards 2025",
+        "language": "en"
+      }
+    },
+    {
+      "id": "KB-004",
+      "content_type": "protocol",
+      "content": "Telemedicine consultation workflow: 1) Pre-visit questionnaire 2) Equipment check 3) Patient verification 4) Consultation 5) EMR documentation 6) E-prescription if needed 7) Follow-up scheduling",
+      "metadata": {
+        "specialty": "telemedicine",
+        "source": "Izara Protocol",
+        "language": "en"
+      }
+    },
+    {
+      "id": "KB-005",
+      "content_type": "drug_information",
+      "content": "SGLT2 inhibitors in heart failure: Empagliflozin and dapagliflozin reduce hospitalization and CV death in HFrEF regardless of diabetes status. Monitor for genital infections and euglycemic DKA.",
+      "metadata": {
+        "specialty": "cardiology",
+        "source": "ESC Guidelines 2024",
+        "language": "en"
+      }
+    }
+  ]
+}

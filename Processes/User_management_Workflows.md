@@ -2,7 +2,9 @@
 
 This document details the full user management workflow for both Patient Portal and Doctor Portal, including user creation, authentication, role management, admin privileges, and account lifecycle management.
 
-**Last Updated: December 13, 2025**
+**Version:** 3.0.0  
+**Last Updated:** January 21, 2026  
+**Status:** ✅ PostgreSQL Implementation
 
 ---
 
@@ -12,18 +14,18 @@ Izara Telemedicine has **two separate portals** with different user types:
 
 | Portal | URL | User Types | Auth Server |
 |--------|-----|------------|-------------|
-| **Patient Portal** | `localhost:5174` | Patients | `localhost:3000` (Backend) |
-| **Doctor Portal** | `localhost:3010` | Doctors, Admins | `localhost:3011` (Auth Server) |
+| **Patient Portal** | `localhost:3005` | Patients | Backend on Port 3005 |
+| **Doctor Portal** | `localhost:3010` | Doctors, Admins | Backend on Port 3010 |
 
 ### Key Differences
 
 | Feature | Patient Portal | Doctor Portal |
 |---------|---------------|---------------|
-| Password Hashing | Base64 (legacy) | bcrypt (secure) |
+| Password Hashing | bcrypt (secure) | bcrypt (secure) |
 | Registration | Immediate access | Admin approval required |
 | Role Types | `patient` only | `doctor`, `admin` |
-| Session Duration | 30 minutes | 24 hours |
-| Storage Bucket | `izara-users-auth` | `izara-users-credentials` |
+| Session Duration | 15 min inactivity | Session-based |
+| Storage | PostgreSQL `users` table | PostgreSQL `users` table |
 
 ---
 
@@ -31,7 +33,7 @@ Izara Telemedicine has **two separate portals** with different user types:
 
 ### 1.1 Patient User (Patient Portal)
 
-**Storage Location**: `izara-users-auth/users/{userId}.json`
+**Storage Location**: PostgreSQL `users` and `patient_profiles` tables
 
 ```typescript
 interface PatientUser {
@@ -645,13 +647,10 @@ izara-users-credentials/
 ├── pending-approvals.json           # Pending doctor registrations
 └── email-logs.json                  # Sent email log
 
-izara-users-auth/
-├── users/
-│   └── {userId}.json                # Patient credentials
-├── sessions/
-│   └── {sessionId}.json             # Patient sessions
-└── audit/
-    └── login-history.json           # Patient login audit
+# All users (patients, doctors, admins) stored in izara-users-credentials
+# Patients: users/PATIENT-xxx.json
+# Doctors: doctors/DOC-xxx.json  
+# Admins: admins/ADMIN-xxx.json
 
 izara-patients-data/
 ├── patients.json                    # Patients index

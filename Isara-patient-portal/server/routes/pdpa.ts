@@ -1,55 +1,49 @@
 import { Router, Request, Response } from 'express';
-import { storage, GCS_BUCKETS } from '../index';
 import { authMiddleware } from '../middleware/auth';
+import postgresDataService from '../services/postgresDataService';
 
+const { pool, LivingWillService } = postgresDataService;
 const router = Router();
 
-// Helper functions
-async function readJSON(bucket: string, filePath: string): Promise<any> {
-  try {
-    const file = storage.bucket(bucket).file(filePath);
-    const [contents] = await file.download();
-    return JSON.parse(contents.toString());
-  } catch (error: any) {
-    if (error.code === 404) {
-      throw new Error(`File not found: ${filePath}`);
-    }
-    throw error;
-  }
-}
+// ============================================================================
+// PDPA ROUTES - POSTGRESQL ONLY
+// ============================================================================
 
-async function writeJSON(bucket: string, filePath: string, data: any): Promise<void> {
-  const file = storage.bucket(bucket).file(filePath);
-  await file.save(JSON.stringify(data, null, 2), {
-    contentType: 'application/json',
-  });
-}
+// ============================================================================
+// CONSENT ROUTES
+// ============================================================================
 
-async function fileExists(bucket: string, filePath: string): Promise<boolean> {
-  try {
-    const file = storage.bucket(bucket).file(filePath);
-    const [exists] = await file.exists();
-    return exists;
-  } catch {
-    return false;
-  }
-}
-
-// Consent Routes
+// Get all consents for a patient
 router.get('/consents/:patientId', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { patientId } = req.params;
+    console.log(`[PDPA] Getting consents for patient: ${patientId}`);
 
-    // Read consents from GCS: patients/{patientId}/pdpa/consents.json
-    const consents = await readJSON(GCS_BUCKETS.PATIENT, `patients/${patientId}/pdpa/consents.json`);
+    const result = await pool.query(
+      `SELECT * FROM patient_consents WHERE patient_id = $1 ORDER BY created_at DESC`,
+      [patientId]
+    );
 
-    res.json(consents);
+    const consents = result.rows.map(row => ({
+      id: row.id,
+      patientId: row.patient_id,
+      type: row.consent_type,
+      granted: row.granted,
+      doctorId: row.doctor_id,
+      doctorName: row.doctor_name,
+      dataTypes: row.data_types,
+      grantedAt: row.granted_at,
+      expiresAt: row.expires_at,
+      revokedAt: row.revoked_at,
+      status: row.status,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
+    }));
+
+    res.json({ consents });
   } catch (error: any) {
-    if (error.message.includes('not found')) {
-      return res.json({ consents: [] }); // Return empty array if no consents yet
-    }
-    console.error('Get consents error:', error);
-    res.status(500).json({ error: error.message });
+    console.error('[PDPA] Get consents error:', error);
+    res.json({ consents: [] });
   }
 });
 
@@ -58,46 +52,45 @@ router.put('/consents/:patientId/:consentId', authMiddleware, async (req: Reques
   try {
     const { patientId, consentId } = req.params;
     const { granted } = req.body;
-
-    // Get existing consents
-    let consentsData: any = { consents: [] };
-    try {
-      consentsData = await readJSON(GCS_BUCKETS.PATIENT, `patients/${patientId}/pdpa/consents.json`);
-    } catch {
-      // File doesn't exist yet
-    }
-
     const now = new Date();
-    const consents = consentsData.consents || consentsData;
-    
-    // Find and update the consent
-    const consentIndex = consents.findIndex((c: any) => c.id === consentId);
-    
-    if (consentIndex === -1) {
-      // Create new consent if doesn't exist
-      consents.push({
-        id: consentId,
-        type: consentId,
-        granted,
-        grantedAt: granted ? now.toISOString() : undefined,
-        updatedAt: now.toISOString(),
-      });
+
+    console.log(`[PDPA] Updating consent ${consentId} for patient ${patientId}: granted=${granted}`);
+
+    // Check if consent exists
+    const existingResult = await pool.query(
+      'SELECT id FROM patient_consents WHERE id = $1 AND patient_id = $2',
+      [consentId, patientId]
+    );
+
+    if (existingResult.rows.length === 0) {
+      // Create new consent
+      await pool.query(
+        `INSERT INTO patient_consents (id, patient_id, consent_type, granted, granted_at, status, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $7)`,
+        [consentId, patientId, consentId, granted, granted ? now : null, granted ? 'granted' : 'revoked', now]
+      );
     } else {
-      consents[consentIndex] = {
-        ...consents[consentIndex],
-        granted,
-        grantedAt: granted ? now.toISOString() : consents[consentIndex].grantedAt,
-        updatedAt: now.toISOString(),
-      };
+      // Update existing consent
+      await pool.query(
+        `UPDATE patient_consents 
+         SET granted = $1, granted_at = $2, status = $3, updated_at = $4
+         WHERE id = $5 AND patient_id = $6`,
+        [granted, granted ? now : null, granted ? 'granted' : 'revoked', now, consentId, patientId]
+      );
     }
 
-    // Write back
-    await writeJSON(GCS_BUCKETS.PATIENT, `patients/${patientId}/pdpa/consents.json`, { consents });
+    // Log to audit
+    await pool.query(
+      `INSERT INTO audit_logs (id, patient_id, action, details, created_at)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [`audit_${Date.now()}`, patientId, granted ? 'CONSENT_GRANTED' : 'CONSENT_REVOKED', 
+       JSON.stringify({ consentId }), now]
+    );
 
-    res.json({ success: true, consent: consents.find((c: any) => c.id === consentId) });
+    res.json({ success: true, consent: { id: consentId, granted, updatedAt: now.toISOString() } });
   } catch (error: any) {
-    console.error('Update consent error:', error);
-    res.status(500).json({ error: error.message });
+    console.error('[PDPA] Update consent error:', error);
+    res.status(500).json({ error: 'Failed to update consent' });
   }
 });
 
@@ -105,64 +98,39 @@ router.put('/consents/:patientId/:consentId', authMiddleware, async (req: Reques
 router.post('/consents/:patientId', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { patientId } = req.params;
-    const consentData = req.body;
-
-    // Get existing consents
-    let consentsData: any = { consents: [], doctorConsents: [] };
-    try {
-      consentsData = await readJSON(GCS_BUCKETS.PATIENT, `patients/${patientId}/pdpa/consents.json`);
-    } catch {
-      // File doesn't exist yet
-    }
-
-    const consentId = `consent_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const { doctorId, doctorName, dataTypes, expiresAt } = req.body;
     const now = new Date();
+    const consentId = `consent_${Date.now()}`;
 
-    const newConsent = {
+    console.log(`[PDPA] Granting consent for patient ${patientId} to doctor ${doctorId}`);
+
+    await pool.query(
+      `INSERT INTO patient_consents 
+       (id, patient_id, consent_type, granted, doctor_id, doctor_name, data_types, granted_at, expires_at, status, created_at, updated_at)
+       VALUES ($1, $2, 'doctor_access', true, $3, $4, $5, $6, $7, 'granted', $6, $6)`,
+      [consentId, patientId, doctorId, doctorName, JSON.stringify(dataTypes || ['all']), now, expiresAt || null]
+    );
+
+    // Log to audit
+    await pool.query(
+      `INSERT INTO audit_logs (id, patient_id, action, details, created_at)
+       VALUES ($1, $2, 'CONSENT_GRANTED', $3, $4)`,
+      [`audit_${Date.now()}`, patientId, JSON.stringify({ consentId, doctorId, doctorName, dataTypes }), now]
+    );
+
+    res.json({
       id: consentId,
       patientId,
-      ...consentData,
+      doctorId,
+      doctorName,
+      dataTypes,
       status: 'granted',
       grantedAt: now.toISOString(),
-      createdAt: now.toISOString(),
-      updatedAt: now.toISOString(),
-    };
-
-    if (!consentsData.doctorConsents) {
-      consentsData.doctorConsents = [];
-    }
-    consentsData.doctorConsents.push(newConsent);
-
-    // Write consents back to GCS
-    await writeJSON(GCS_BUCKETS.PATIENT, `patients/${patientId}/pdpa/consents.json`, consentsData);
-
-    // Log the consent in audit logs
-    try {
-      let auditLog: any[] = [];
-      try {
-        auditLog = await readJSON(GCS_BUCKETS.PATIENT, `audit/access-logs/${patientId}.json`);
-      } catch {
-        // File doesn't exist yet
-      }
-
-      auditLog.push({
-        timestamp: now.toISOString(),
-        action: 'CONSENT_GRANTED',
-        consentId,
-        doctorId: consentData.doctorId,
-        doctorName: consentData.doctorName,
-        dataTypes: consentData.dataTypes,
-      });
-
-      await writeJSON(GCS_BUCKETS.PATIENT, `audit/access-logs/${patientId}.json`, auditLog);
-    } catch (error) {
-      console.error('Failed to log consent:', error);
-    }
-
-    res.json(newConsent);
+      createdAt: now.toISOString()
+    });
   } catch (error: any) {
-    console.error('Grant consent error:', error);
-    res.status(500).json({ error: error.message });
+    console.error('[PDPA] Grant consent error:', error);
+    res.status(500).json({ error: 'Failed to grant consent' });
   }
 });
 
@@ -171,57 +139,33 @@ router.put('/consents/:patientId/:consentId/revoke', authMiddleware, async (req:
   try {
     const { patientId, consentId } = req.params;
     const { revokeReason } = req.body;
+    const now = new Date();
 
-    // Read existing consents
-    const consentsData = await readJSON(GCS_BUCKETS.PATIENT, `patients/${patientId}/pdpa/consents.json`);
-    const doctorConsents = consentsData.doctorConsents || [];
+    console.log(`[PDPA] Revoking consent ${consentId} for patient ${patientId}`);
 
-    // Find and update the consent
-    const consentIndex = doctorConsents.findIndex((c: any) => c.id === consentId);
+    const result = await pool.query(
+      `UPDATE patient_consents 
+       SET granted = false, status = 'revoked', revoked_at = $1, revoke_reason = $2, updated_at = $1
+       WHERE id = $3 AND patient_id = $4
+       RETURNING *`,
+      [now, revokeReason || 'User request', consentId, patientId]
+    );
 
-    if (consentIndex === -1) {
+    if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Consent not found' });
     }
 
-    const now = new Date();
-    doctorConsents[consentIndex] = {
-      ...doctorConsents[consentIndex],
-      status: 'revoked',
-      revokedAt: now.toISOString(),
-      revokeReason: revokeReason || 'User request',
-      updatedAt: now.toISOString(),
-    };
+    // Log to audit
+    await pool.query(
+      `INSERT INTO audit_logs (id, patient_id, action, details, created_at)
+       VALUES ($1, $2, 'CONSENT_REVOKED', $3, $4)`,
+      [`audit_${Date.now()}`, patientId, JSON.stringify({ consentId, revokeReason }), now]
+    );
 
-    consentsData.doctorConsents = doctorConsents;
-
-    // Write consents back to GCS
-    await writeJSON(GCS_BUCKETS.PATIENT, `patients/${patientId}/pdpa/consents.json`, consentsData);
-
-    // Log the revocation in audit logs
-    try {
-      let auditLog: any[] = [];
-      try {
-        auditLog = await readJSON(GCS_BUCKETS.PATIENT, `audit/access-logs/${patientId}.json`);
-      } catch {
-        // File doesn't exist yet
-      }
-
-      auditLog.push({
-        timestamp: now.toISOString(),
-        action: 'CONSENT_REVOKED',
-        consentId,
-        revokeReason,
-      });
-
-      await writeJSON(GCS_BUCKETS.PATIENT, `audit/access-logs/${patientId}.json`, auditLog);
-    } catch (error) {
-      console.error('Failed to log consent revocation:', error);
-    }
-
-    res.json(doctorConsents[consentIndex]);
+    res.json({ success: true, consent: result.rows[0] });
   } catch (error: any) {
-    console.error('Revoke consent error:', error);
-    res.status(500).json({ error: error.message });
+    console.error('[PDPA] Revoke consent error:', error);
+    res.status(500).json({ error: 'Failed to revoke consent' });
   }
 });
 
@@ -230,76 +174,78 @@ router.post('/verify', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { patientId, doctorId, dataTypes } = req.body;
 
-    // Read patient consents
-    const consentsData = await readJSON(GCS_BUCKETS.PATIENT, `patients/${patientId}/pdpa/consents.json`);
-    const doctorConsents = consentsData.doctorConsents || [];
+    console.log(`[PDPA] Verifying consent for patient ${patientId}, doctor ${doctorId}`);
 
-    // Find active consent for this doctor
-    const activeConsent = doctorConsents.find((c: any) =>
-      c.doctorId === doctorId &&
-      c.status === 'granted' &&
-      (!c.expiresAt || new Date(c.expiresAt) > new Date())
+    const result = await pool.query(
+      `SELECT * FROM patient_consents 
+       WHERE patient_id = $1 AND doctor_id = $2 AND status = 'granted' 
+       AND (expires_at IS NULL OR expires_at > NOW())`,
+      [patientId, doctorId]
     );
 
-    if (!activeConsent) {
+    if (result.rows.length === 0) {
       return res.json({ hasConsent: false, reason: 'No active consent found' });
     }
 
-    // Check if all requested data types are covered by the consent
+    const consent = result.rows[0];
+    const consentDataTypes = consent.data_types || ['all'];
+
+    // Check if all requested data types are covered
     const hasAllDataTypes = dataTypes.every((type: string) =>
-      activeConsent.dataTypes.includes(type) || activeConsent.dataTypes.includes('all')
+      consentDataTypes.includes(type) || consentDataTypes.includes('all')
     );
 
     if (!hasAllDataTypes) {
       return res.json({
         hasConsent: false,
-        reason: 'Consent does not cover all requested data types',
+        reason: 'Consent does not cover all requested data types'
       });
     }
 
-    res.json({ hasConsent: true, consent: activeConsent });
+    res.json({ hasConsent: true, consent });
   } catch (error: any) {
-    if (error.message.includes('not found')) {
-      return res.json({ hasConsent: false, reason: 'No consents found' });
-    }
-    console.error('Verify consent error:', error);
-    res.status(500).json({ error: error.message });
+    console.error('[PDPA] Verify consent error:', error);
+    res.json({ hasConsent: false, reason: 'Verification failed' });
   }
 });
 
-// Get access logs for a patient
+// Get audit logs for a patient
 router.get('/audit/:patientId', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { patientId } = req.params;
 
-    // Read audit logs from GCS: audit/access-logs/{patientId}.json
-    const auditLog = await readJSON(GCS_BUCKETS.PATIENT, `audit/access-logs/${patientId}.json`);
+    const result = await pool.query(
+      `SELECT * FROM audit_logs WHERE patient_id = $1 ORDER BY created_at DESC LIMIT 100`,
+      [patientId]
+    );
 
-    res.json(auditLog);
+    res.json(result.rows);
   } catch (error: any) {
-    if (error.message.includes('not found')) {
-      return res.json([]); // Return empty array if no logs yet
-    }
-    console.error('Get audit logs error:', error);
-    res.status(500).json({ error: error.message });
+    console.error('[PDPA] Get audit logs error:', error);
+    res.json([]);
   }
 });
 
-// Living Will Routes
+// ============================================================================
+// LIVING WILL ROUTES
+// ============================================================================
+
+// Get living will
 router.get('/living-will/:patientId', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { patientId } = req.params;
+    console.log(`[PDPA] Getting living will for patient: ${patientId}`);
 
-    // Read living will from GCS: patients/{patientId}/pdpa/living-will.json
-    const livingWill = await readJSON(GCS_BUCKETS.PATIENT, `patients/${patientId}/pdpa/living-will.json`);
+    const livingWill = await LivingWillService.getLivingWill(patientId);
+
+    if (!livingWill) {
+      return res.json(null);
+    }
 
     res.json(livingWill);
   } catch (error: any) {
-    if (error.message.includes('not found')) {
-      return res.json(null); // Return null if no living will yet
-    }
-    console.error('Get living will error:', error);
-    res.status(500).json({ error: error.message });
+    console.error('[PDPA] Get living will error:', error);
+    res.json(null);
   }
 });
 
@@ -308,18 +254,15 @@ router.get('/living-will/:patientId/versions', authMiddleware, async (req: Reque
   try {
     const { patientId } = req.params;
 
-    // Read version history from GCS
-    let versions: any[] = [];
-    try {
-      versions = await readJSON(GCS_BUCKETS.PATIENT, `patients/${patientId}/pdpa/living-will-versions.json`);
-    } catch {
-      // No versions yet
-    }
+    const result = await pool.query(
+      `SELECT * FROM living_will_versions WHERE patient_id = $1 ORDER BY version DESC`,
+      [patientId]
+    );
 
-    res.json(versions);
+    res.json(result.rows);
   } catch (error: any) {
-    console.error('Get living will versions error:', error);
-    res.status(500).json({ error: error.message });
+    console.error('[PDPA] Get living will versions error:', error);
+    res.json([]);
   }
 });
 
@@ -328,21 +271,19 @@ router.get('/living-will/:patientId/versions/:versionId', authMiddleware, async 
   try {
     const { patientId, versionId } = req.params;
 
-    // Read version history
-    const versions = await readJSON(GCS_BUCKETS.PATIENT, `patients/${patientId}/pdpa/living-will-versions.json`);
-    const version = versions.find((v: any) => v.versionId === versionId);
+    const result = await pool.query(
+      `SELECT * FROM living_will_versions WHERE patient_id = $1 AND id = $2`,
+      [patientId, versionId]
+    );
 
-    if (!version) {
+    if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Version not found' });
     }
 
-    res.json(version);
+    res.json(result.rows[0]);
   } catch (error: any) {
-    if (error.message.includes('not found')) {
-      return res.status(404).json({ error: 'No versions found' });
-    }
-    console.error('Get living will version error:', error);
-    res.status(500).json({ error: error.message });
+    console.error('[PDPA] Get living will version error:', error);
+    res.status(500).json({ error: 'Failed to get version' });
   }
 });
 
@@ -352,193 +293,171 @@ router.post('/living-will/:patientId/rollback/:versionId', authMiddleware, async
     const { patientId, versionId } = req.params;
     const now = new Date();
 
-    // Read version history
-    const versions = await readJSON(GCS_BUCKETS.PATIENT, `patients/${patientId}/pdpa/living-will-versions.json`);
-    const targetVersion = versions.find((v: any) => v.versionId === versionId);
+    // Get target version
+    const versionResult = await pool.query(
+      `SELECT * FROM living_will_versions WHERE patient_id = $1 AND id = $2`,
+      [patientId, versionId]
+    );
 
-    if (!targetVersion) {
+    if (versionResult.rows.length === 0) {
       return res.status(404).json({ error: 'Version not found' });
     }
 
-    // Get current living will to save as a version before rollback
-    let currentLivingWill = null;
-    try {
-      currentLivingWill = await readJSON(GCS_BUCKETS.PATIENT, `patients/${patientId}/pdpa/living-will.json`);
-    } catch {
-      // No current living will
+    const targetVersion = versionResult.rows[0];
+
+    // Save current version before rollback
+    const currentResult = await pool.query(
+      `SELECT * FROM living_wills WHERE patient_id = $1`,
+      [patientId]
+    );
+
+    if (currentResult.rows.length > 0) {
+      const current = currentResult.rows[0];
+      await pool.query(
+        `INSERT INTO living_will_versions (id, patient_id, version, data, note, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [`version_${Date.now()}`, patientId, current.version, JSON.stringify(current), 'Auto-saved before rollback', now]
+      );
     }
 
-    // Save current as a version before rollback
-    if (currentLivingWill) {
-      const newVersionId = `v_${Date.now()}`;
-      versions.push({
-        versionId: newVersionId,
-        version: versions.length + 1,
-        data: currentLivingWill,
-        createdAt: now.toISOString(),
-        note: 'Auto-saved before rollback',
-      });
-      await writeJSON(GCS_BUCKETS.PATIENT, `patients/${patientId}/pdpa/living-will-versions.json`, versions);
-    }
-
-    // Restore the target version as current
-    const restoredLivingWill = {
-      ...targetVersion.data,
-      updatedAt: now.toISOString(),
-      restoredFrom: versionId,
-    };
-
-    await writeJSON(GCS_BUCKETS.PATIENT, `patients/${patientId}/pdpa/living-will.json`, restoredLivingWill);
+    // Restore the target version
+    const versionData = targetVersion.data;
+    await pool.query(
+      `UPDATE living_wills SET
+         decisions = $1,
+         witness_info = $2,
+         signature_data = $3,
+         version = version + 1,
+         updated_at = $4,
+         restored_from = $5
+       WHERE patient_id = $6`,
+      [versionData.decisions, versionData.witness_info, versionData.signature_data, now, versionId, patientId]
+    );
 
     // Log the action
-    try {
-      let auditLog: any[] = [];
-      try {
-        auditLog = await readJSON(GCS_BUCKETS.PATIENT, `audit/access-logs/${patientId}.json`);
-      } catch {
-        // File doesn't exist yet
-      }
+    await pool.query(
+      `INSERT INTO audit_logs (id, patient_id, action, details, created_at)
+       VALUES ($1, $2, 'LIVING_WILL_ROLLBACK', $3, $4)`,
+      [`audit_${Date.now()}`, patientId, JSON.stringify({ rolledBackFromVersion: versionId }), now]
+    );
 
-      auditLog.push({
-        timestamp: now.toISOString(),
-        action: 'LIVING_WILL_ROLLBACK',
-        livingWillId: restoredLivingWill.id,
-        rolledBackFromVersion: versionId,
-      });
-
-      await writeJSON(GCS_BUCKETS.PATIENT, `audit/access-logs/${patientId}.json`, auditLog);
-    } catch (error) {
-      console.error('Failed to log rollback action:', error);
-    }
-
-    res.json({ success: true, livingWill: restoredLivingWill });
+    res.json({ success: true, message: 'Living will restored successfully' });
   } catch (error: any) {
-    console.error('Rollback living will error:', error);
-    res.status(500).json({ error: error.message });
+    console.error('[PDPA] Rollback living will error:', error);
+    res.status(500).json({ error: 'Failed to rollback' });
   }
 });
 
-// Save/Update living will (with versioning)
+// Save/Update living will
 router.post('/living-will/:patientId', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { patientId } = req.params;
     const livingWillData = req.body;
-
     const now = new Date();
-    
+
+    console.log(`[PDPA] Saving living will for patient: ${patientId}`);
+
     // Check if living will already exists
-    let existingLivingWill = null;
-    try {
-      existingLivingWill = await readJSON(GCS_BUCKETS.PATIENT, `patients/${patientId}/pdpa/living-will.json`);
-    } catch {
-      // File doesn't exist yet
+    const existingResult = await pool.query(
+      'SELECT * FROM living_wills WHERE patient_id = $1',
+      [patientId]
+    );
+
+    if (existingResult.rows.length > 0) {
+      // Save current version to history
+      const current = existingResult.rows[0];
+      await pool.query(
+        `INSERT INTO living_will_versions (id, patient_id, version, data, note, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [`version_${Date.now()}`, patientId, current.version, JSON.stringify(current), 
+         livingWillData.versionNote || 'Previous version', now]
+      );
+
+      // Update existing
+      const result = await pool.query(
+        `UPDATE living_wills SET
+           decisions = $1,
+           witness_info = $2,
+           signature_data = $3,
+           version = version + 1,
+           status = $4,
+           updated_at = $5
+         WHERE patient_id = $6
+         RETURNING *`,
+        [
+          JSON.stringify(livingWillData.decisions || {}),
+          JSON.stringify(livingWillData.witnessInfo || {}),
+          livingWillData.signatureData || null,
+          livingWillData.status || 'draft',
+          now,
+          patientId
+        ]
+      );
+
+      // Log the action
+      await pool.query(
+        `INSERT INTO audit_logs (id, patient_id, action, details, created_at)
+         VALUES ($1, $2, 'LIVING_WILL_UPDATED', $3, $4)`,
+        [`audit_${Date.now()}`, patientId, JSON.stringify({ version: result.rows[0].version }), now]
+      );
+
+      return res.json(result.rows[0]);
+    } else {
+      // Create new living will
+      const livingWillId = `living_will_${Date.now()}`;
+      
+      const result = await pool.query(
+        `INSERT INTO living_wills (id, patient_id, decisions, witness_info, signature_data, version, status, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, 1, $6, $7, $7)
+         RETURNING *`,
+        [
+          livingWillId,
+          patientId,
+          JSON.stringify(livingWillData.decisions || {}),
+          JSON.stringify(livingWillData.witnessInfo || {}),
+          livingWillData.signatureData || null,
+          livingWillData.status || 'draft',
+          now
+        ]
+      );
+
+      // Log the action
+      await pool.query(
+        `INSERT INTO audit_logs (id, patient_id, action, details, created_at)
+         VALUES ($1, $2, 'LIVING_WILL_CREATED', $3, $4)`,
+        [`audit_${Date.now()}`, patientId, JSON.stringify({ livingWillId }), now]
+      );
+
+      return res.json(result.rows[0]);
     }
-
-    // If exists, save current version to history before updating
-    if (existingLivingWill) {
-      let versions: any[] = [];
-      try {
-        versions = await readJSON(GCS_BUCKETS.PATIENT, `patients/${patientId}/pdpa/living-will-versions.json`);
-      } catch {
-        // No versions yet
-      }
-
-      const versionId = `v_${Date.now()}`;
-      versions.push({
-        versionId,
-        version: versions.length + 1,
-        data: existingLivingWill,
-        createdAt: existingLivingWill.updatedAt || existingLivingWill.createdAt,
-        note: livingWillData.versionNote || 'Previous version',
-      });
-
-      await writeJSON(GCS_BUCKETS.PATIENT, `patients/${patientId}/pdpa/living-will-versions.json`, versions);
-    }
-
-    const livingWill = {
-      id: existingLivingWill?.id || `living_will_${Date.now()}`,
-      patientId,
-      ...livingWillData,
-      version: (existingLivingWill?.version || 0) + 1,
-      createdAt: existingLivingWill?.createdAt || now.toISOString(),
-      updatedAt: now.toISOString(),
-    };
-
-    // Remove versionNote from saved data
-    delete livingWill.versionNote;
-
-    // Write living will to GCS
-    await writeJSON(GCS_BUCKETS.PATIENT, `patients/${patientId}/pdpa/living-will.json`, livingWill);
-
-    // Log the action
-    try {
-      let auditLog: any[] = [];
-      try {
-        auditLog = await readJSON(GCS_BUCKETS.PATIENT, `audit/access-logs/${patientId}.json`);
-      } catch {
-        // File doesn't exist yet
-      }
-
-      auditLog.push({
-        timestamp: now.toISOString(),
-        action: existingLivingWill ? 'LIVING_WILL_UPDATED' : 'LIVING_WILL_CREATED',
-        livingWillId: livingWill.id,
-        version: livingWill.version,
-      });
-
-      await writeJSON(GCS_BUCKETS.PATIENT, `audit/access-logs/${patientId}.json`, auditLog);
-    } catch (error) {
-      console.error('Failed to log living will action:', error);
-    }
-
-    res.json(livingWill);
   } catch (error: any) {
-    console.error('Save living will error:', error);
-    res.status(500).json({ error: error.message });
+    console.error('[PDPA] Save living will error:', error);
+    res.status(500).json({ error: 'Failed to save living will' });
   }
 });
 
-// Upload signature image for living will
+// Upload signature for living will (store as base64 in database)
 router.post('/living-will/:patientId/signature', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { patientId } = req.params;
-    const { signatureData } = req.body; // Base64 image data
+    const { signatureData } = req.body;
 
     if (!signatureData) {
       return res.status(400).json({ error: 'Signature data is required' });
     }
 
-    const now = new Date();
-    const fileName = `signature_${now.getTime()}.png`;
-    const filePath = `patients/${patientId}/pdpa/signatures/${fileName}`;
+    console.log(`[PDPA] Saving signature for patient: ${patientId}`);
 
-    // Decode base64 and upload to GCS
-    const base64Data = signatureData.replace(/^data:image\/\w+;base64,/, '');
-    const imageBuffer = Buffer.from(base64Data, 'base64');
+    // Update living will with signature
+    await pool.query(
+      `UPDATE living_wills SET signature_data = $1, updated_at = NOW() WHERE patient_id = $2`,
+      [signatureData, patientId]
+    );
 
-    const file = storage.bucket(GCS_BUCKETS.PATIENT).file(filePath);
-    await file.save(imageBuffer, {
-      contentType: 'image/png',
-      metadata: {
-        patientId,
-        uploadedAt: now.toISOString(),
-      },
-    });
-
-    // Get signed URL for the uploaded file
-    const [signedUrl] = await file.getSignedUrl({
-      action: 'read',
-      expires: Date.now() + 365 * 24 * 60 * 60 * 1000, // 1 year
-    });
-
-    res.json({ 
-      success: true, 
-      signatureUrl: signedUrl,
-      filePath 
-    });
+    res.json({ success: true, message: 'Signature saved' });
   } catch (error: any) {
-    console.error('Upload signature error:', error);
-    res.status(500).json({ error: error.message });
+    console.error('[PDPA] Upload signature error:', error);
+    res.status(500).json({ error: 'Failed to save signature' });
   }
 });
 
@@ -547,23 +466,29 @@ router.get('/doctor-consents/:patientId', authMiddleware, async (req: Request, r
   try {
     const { patientId } = req.params;
 
-    // Read consents
-    const consentsData = await readJSON(GCS_BUCKETS.PATIENT, `patients/${patientId}/pdpa/consents.json`);
-    const doctorConsents = consentsData.doctorConsents || [];
-
-    // Filter to only active consents
-    const activeConsents = doctorConsents.filter((c: any) => 
-      c.status === 'granted' && 
-      (!c.expiresAt || new Date(c.expiresAt) > new Date())
+    const result = await pool.query(
+      `SELECT * FROM patient_consents 
+       WHERE patient_id = $1 AND doctor_id IS NOT NULL AND status = 'granted'
+       AND (expires_at IS NULL OR expires_at > NOW())
+       ORDER BY granted_at DESC`,
+      [patientId]
     );
 
-    res.json(activeConsents);
+    const consents = result.rows.map(row => ({
+      id: row.id,
+      patientId: row.patient_id,
+      doctorId: row.doctor_id,
+      doctorName: row.doctor_name,
+      dataTypes: row.data_types,
+      status: row.status,
+      grantedAt: row.granted_at,
+      expiresAt: row.expires_at
+    }));
+
+    res.json(consents);
   } catch (error: any) {
-    if (error.message.includes('not found')) {
-      return res.json([]);
-    }
-    console.error('Get doctor consents error:', error);
-    res.status(500).json({ error: error.message });
+    console.error('[PDPA] Get doctor consents error:', error);
+    res.json([]);
   }
 });
 

@@ -69,15 +69,16 @@ Isara-patient-portal/
 | Property | Value |
 |----------|-------|
 | Method | Session-based tokens |
-| Password | Base64 encoded |
-| Session | 30 minutes |
-| Storage | `izara-users-auth` bucket |
+| Password | bcrypt hashed |
+| Session | 15 minutes inactivity timeout |
+| Storage | `izara-users-credentials` bucket |
+| Flow | Newcomers/expired → Login → Home |
 
 ## 📊 Data Buckets
 
 | Bucket | Purpose |
 |--------|---------|
-| `izara-users-credentials` | Patient credentials & sessions |
+| `izara-users-credentials` | All user credentials & sessions |
 | `izara-patients-data` | Patient profiles, PHR, health logs |
 | `izara-appointments` | Appointment records |
 

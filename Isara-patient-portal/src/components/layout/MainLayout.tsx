@@ -119,7 +119,7 @@ function MiniMap() {
 
 export default function MainLayout() {
   const { user, logout } = useAuth();
-  const { theme, t, language } = useSettings();
+  const { theme, language } = useSettings();
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);

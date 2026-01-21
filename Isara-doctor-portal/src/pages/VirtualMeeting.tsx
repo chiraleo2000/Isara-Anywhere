@@ -4,6 +4,7 @@ import { doctorAIService } from '../services/enhancedMeetingService';
 import { recordingStorage } from '../services/storageServices';
 import meetingTimeService, { MeetingTimeCheck } from '../services/meetingTimeService';
 import { meetingService } from '../services/apiServices';
+import LiveTranscription, { TranscriptEntry } from '../components/LiveTranscription';
 
 interface VirtualMeetingProps {
   appointment: Appointment;
@@ -38,6 +39,9 @@ const VirtualMeeting: React.FC<VirtualMeetingProps> = ({
   const [isRecording, setIsRecording] = useState(false);
   const [interimTranscript, setInterimTranscript] = useState('');
   const [recordingStatus, setRecordingStatus] = useState<string>('');
+  // Live Transcription state (Phase 1 - Requirement 3.2)
+  const [isLiveTranscriptActive, setIsLiveTranscriptActive] = useState(false);
+  const [liveTranscripts, setLiveTranscripts] = useState<TranscriptEntry[]>([]);
   
   const startTimeRef = useRef<number>(Date.now());
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -1014,6 +1018,23 @@ const VirtualMeeting: React.FC<VirtualMeetingProps> = ({
           </div>
         </div>
       </div>
+      
+      {/* Live Transcription Component - Microsoft Teams Style (Phase 1 - Req 3.2) */}
+      {meetingState === 'meeting' && (
+        <LiveTranscription
+          isActive={isLiveTranscriptActive}
+          onToggle={() => setIsLiveTranscriptActive(!isLiveTranscriptActive)}
+          speakerName={appointment.doctor?.name || 'แพทย์'}
+          speakerRole="doctor"
+          language="th"
+          appointmentId={appointment.id}
+          autoSave={true}
+          onTranscriptUpdate={(entries) => setLiveTranscripts(entries)}
+          onNewEntry={(entry) => {
+            console.log('📝 New transcript entry:', entry.content.substring(0, 50));
+          }}
+        />
+      )}
     </div>
   );
 };

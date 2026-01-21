@@ -1,12 +1,18 @@
-# Video Meeting Implementation - Jitsi Meet + Google Speech-to-Text + Gemini AI
+# Video Meeting Implementation - Jitsi Meet + Device Speech-to-Text + Gemini AI
+
+**Version:** 3.0.0  
+**Last Updated:** January 21, 2026  
+**Status:** ✅ Phase 1 Implementation
+
+---
 
 ## Overview
 
 This document describes the video meeting implementation using:
 - **Jitsi Meet** (FREE) for video conferencing with lobby control
-- **Google Cloud Speech-to-Text** for accurate post-meeting transcription
-- **Gemini AI** for EMR summary and doctor recommendation generation
-- **GCS Storage** for video recording, transcript, and summary files
+- **Device/Browser Speech-to-Text** (FREE) for real-time transcription during meeting
+- **Gemini 2.5 Flash AI** for EMR summary, pre-consultation summary, and patient instructions
+- **PostgreSQL** for storing transcripts, summaries, and meeting metadata
 
 ## Key Features
 
@@ -33,19 +39,25 @@ This document describes the video meeting implementation using:
 - **Text Chat**: Always available for communication
 - Users can mute/unmute at any time
 
-### 5. Video Recording & Storage
-- Recording stored to `izara-doctors-data` bucket
-- Path: `doctors/{doctorId}/meetings/{appointmentId}/recording.webm`
-- Maximum file size: 200MB
-- Private storage (not public)
+### 5. Real-Time Transcription (Phase 1 Feature)
+- **Device/Browser Speech-to-Text API** (FREE - no Google Cloud cost)
+- Real-time transcription during the meeting
+- Transcript saved to PostgreSQL `meeting_transcripts` table
+- Supports Thai and English languages
 
-### 6. AI-Powered Summary with 30-Minute Sections
-- **Long videos (>30 min)** are summarized in 30-minute sections
-- Each section generates its own summary
-- Sections are combined into a final comprehensive summary
-- Summary sent to Doctor Portal for review and reports
+### 6. AI-Powered EMR Generation with Man-in-the-Loop
+- **Gemini 2.5 Flash** processes full meeting transcript
+- Generates SOAP format EMR draft
+- **Doctor must validate** before saving (Man-in-the-Loop)
+- Doctor can edit, approve, or regenerate
 
-## Storage Architecture
+### 7. Patient Instruction Sheet Generation
+- AI generates patient-friendly summary from EMR
+- Includes diagnosis explanation, medication instructions, warning signs
+- Doctor validates before sending to patient
+- Patient views in Patient Portal under Health Records
+
+## Storage Architecture (PostgreSQL)
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐

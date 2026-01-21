@@ -1,5 +1,11 @@
 # Notification Workflows / ขั้นตอนการแจ้งเตือน
 
+**Version:** 3.0.0  
+**Last Updated:** January 21, 2026  
+**Status:** ✅ PostgreSQL Implementation
+
+---
+
 ## 1. ภาพรวมระบบแจ้งเตือน (Notification System Overview)
 
 ### 1.1 ช่องทางการแจ้งเตือน (Notification Channels)

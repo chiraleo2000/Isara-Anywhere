@@ -3,9 +3,8 @@
  * Features: Dashboard Overview + 3-Column Layout (Health Data | Health Meeting | Health Studio)
  * With Working Health Studio Content Modals - Dynamic Data Display
  * 
- * Updated: Now fetches real appointments from GCS
- * Updated: Stats cards clickable - link to Appointments & Meetings page
- * Updated: Now fetches meeting AI summaries from GCS after meetings end
+ * UPDATED: Now uses PostgreSQL backend via apiDataService
+ * GCS is NOT used for interactive operations - PostgreSQL only!
  */
 
 import React, { useState, useEffect } from 'react';
@@ -16,15 +15,16 @@ import {
   ClockIcon,
   VideoCameraIcon,
 } from '../assets/NewSvgIcons';
+// POSTGRESQL-BACKED API SERVICE - NO GCS!
 import {
-  fetchDoctorQueue,
+  fetchDashboardData,
   fetchAllPatients,
   fetchAllAppointments,
   fetchPatientEMRs,
   fetchPatientLabOrders,
   fetchPatientPrescriptions,
   clearCache
-} from '../services/gcsDataService';
+} from '../services/apiDataService';
 import { meetingService } from '../services/apiServices';
 import { geminiClinicalService } from '../services/geminiClinicalService';
 
@@ -151,6 +151,14 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
   const [chatMessages, setChatMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([]);
   const [isChatLoading, setIsChatLoading] = useState(false);
 
+  // Man-in-the-Loop AI validation states (Phase 1 Requirements 4.3)
+  const [aiValidationTab, setAiValidationTab] = useState<'summary' | 'documents' | 'cds'>('summary');
+  const [aiPreSummary, setAiPreSummary] = useState<any>(null);
+  const [aiDocuments, setAiDocuments] = useState<any[]>([]);
+  const [cdsAlerts, setCdsAlerts] = useState<any[]>([]);
+  const [isLoadingAI, setIsLoadingAI] = useState(false);
+  const [aiValidationStatus, setAiValidationStatus] = useState<'pending' | 'approved' | 'rejected'>('pending');
+
   // Load dashboard data ONCE on mount - no auto-refresh interval
   // Auto-refresh was causing unnecessary API calls and potential data inconsistencies
   // Data will refresh when user navigates back to the page
@@ -168,22 +176,25 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
 
   const loadDashboardData = async () => {
     try {
-      // Clear appointment cache to ensure fresh data
+      // Clear cache (no-op for PostgreSQL but kept for compatibility)
       clearCache('appointments');
       
-      // Fetch from GCS data services - CRITICAL: bypass cache for appointments
-      const [loadedQueue, loadedPatients, allAppointments] = await Promise.all([
-        fetchDoctorQueue(doctor.id),
+      // Fetch from PostgreSQL via API - NO GCS!
+      const [dashboardData, loadedPatients, allAppointments] = await Promise.all([
+        fetchDashboardData(doctor.id),
         fetchAllPatients(),
-        fetchAllAppointments({ cache: false })  // No cache for fresh data
+        fetchAllAppointments(doctor.id)  // Filter by doctor on server side
       ]);
 
+      // Set queue from dashboard data or empty array
+      const loadedQueue = dashboardData?.queue || [];
       setQueue(loadedQueue);
       setPatients(loadedPatients);
 
-      // Filter appointments for this doctor
+      // Filter appointments for this doctor (additional client-side filter if needed)
       const doctorAppointments = allAppointments.filter((apt: any) => {
         return apt.doctorId === doctor.id || 
+               apt.doctor_id === doctor.id ||
                apt.assignedDoctorId === doctor.id ||
                apt.adminAssignedDoctorId === doctor.id ||
                apt.confirmedBy === doctor.id;  // Include appointments confirmed by this doctor
@@ -354,8 +365,97 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
         // Silent fail - meeting summary is optional
         console.log('ℹ️ No meeting summary found for patient:', patientId);
       }
+      
+      // Load AI pre-consultation summary (Phase 1 Requirement 2.2)
+      await loadAIPreSummary(patientId);
+      
     } catch (error) {
       console.error('Error loading patient clinical data:', error);
+    }
+  };
+
+  // Load AI Pre-Consultation Summary (DR-02)
+  const loadAIPreSummary = async (patientId: string) => {
+    if (!patientId) return;
+    
+    setIsLoadingAI(true);
+    try {
+      const response = await fetch(`/api/ai/pre-summary/${patientId}`, {
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const data = await response.json();
+      
+      if (data.success && data.data) {
+        setAiPreSummary(data.data);
+        
+        // Build AI history summary from pre-consultation data
+        const summary = data.data;
+        const summaryText = [
+          `👤 ผู้ป่วย: ${summary.patientSnapshot?.nameThai || summary.patientSnapshot?.name}`,
+          `📅 อายุ: ${summary.patientSnapshot?.age} ปี | เพศ: ${summary.patientSnapshot?.gender === 'male' ? 'ชาย' : 'หญิง'}`,
+          `🩸 กรุ๊ปเลือด: ${summary.patientSnapshot?.bloodType || 'ไม่ระบุ'}`,
+          '',
+          `⚕️ โรคประจำตัว: ${summary.patientSnapshot?.primaryConditions?.join(', ') || 'ไม่มี'}`,
+          `💊 แพ้ยา: ${summary.patientSnapshot?.drugAllergies?.map((a: any) => a.allergen || a).join(', ') || 'ไม่มี'}`,
+          '',
+          `🎯 เหตุผลนัด: ${summary.appointmentReason || 'ตรวจทั่วไป'}`,
+          `🔔 อาการ: ${summary.currentSymptoms?.join(', ') || 'ไม่ระบุ'}`,
+          '',
+          '⚠️ ข้อควรระวัง:',
+          ...(summary.aiTriage?.alertFlags || ['ไม่มีข้อควรระวังพิเศษ']),
+        ].join('\n');
+        
+        setAiHistorySummary(summaryText);
+        setAiValidationStatus('pending');
+      }
+    } catch (error) {
+      console.error('Failed to load AI pre-summary:', error);
+    } finally {
+      setIsLoadingAI(false);
+    }
+  };
+
+  // Handle AI validation decision (Man-in-the-Loop DR-05)
+  const handleAIValidation = async (decision: 'approved' | 'rejected', notes?: string) => {
+    try {
+      // Log the validation decision
+      await fetch('/api/ai/validation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: aiValidationTab,
+          patientId: selectedPatientId,
+          doctorId: doctor.id,
+          decision,
+          notes,
+          content: aiValidationTab === 'summary' ? aiHistorySummary : 
+                   aiValidationTab === 'documents' ? aiDocuments : cdsAlerts,
+          timestamp: new Date().toISOString()
+        })
+      });
+      
+      setAiValidationStatus(decision);
+      
+      if (decision === 'approved') {
+        alert('✅ AI สรุปได้รับการอนุมัติ - สามารถนำไปใช้ใน EMR ได้');
+      } else {
+        alert('❌ AI สรุปถูกปฏิเสธ - กรุณาแก้ไขหรือร้องขอใหม่');
+      }
+    } catch (error) {
+      console.error('Failed to log validation:', error);
+    }
+  };
+
+  // Copy AI summary to EMR (for use in reports)
+  const handleUseInEMR = () => {
+    if (aiValidationStatus !== 'approved') {
+      alert('⚠️ กรุณาอนุมัติ AI สรุปก่อนใช้งานใน EMR');
+      return;
+    }
+    
+    // Navigate to EMR editor with pre-filled data
+    if (selectedPatientId) {
+      navigate(`/doctor/${doctor.id}/patients/${selectedPatientId}/emr?ai_summary=${encodeURIComponent(aiHistorySummary)}`);
     }
   };
 
@@ -427,8 +527,26 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
   };
 
   const handleStudioAction = (action: StudioModal) => {
-    // For all studio actions, show modal with dynamic data
-    setStudioModal(action);
+    // Navigate to Patients page with category filter for health logs history
+    // This allows doctors to view patient health records by category
+    const categoryMap: Record<string, string> = {
+      'diagnosis': 'diagnosis',
+      'treatment-plan': 'treatment',
+      'system-report': 'medical-record',
+      'radiology': 'radiology',
+      'laboratory': 'laboratory',
+      'pathology': 'pathology',
+    };
+    
+    const category = categoryMap[action || ''] || 'all';
+    
+    // If a patient is selected, navigate to patient detail with filter
+    if (selectedPatientId) {
+      navigate(`/doctor/${doctor.id}/patients/${selectedPatientId}?tab=health-logs&category=${category}`);
+    } else {
+      // Otherwise, navigate to patients list with filter
+      navigate(`/doctor/${doctor.id}/patients?category=${category}`);
+    }
   };
 
   // AI Chatbot handler - Connected to Gemini API
@@ -1458,25 +1576,177 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
               </div>
             </div>
 
-            {/* AI Summary Areas */}
+            {/* AI Summary Areas - Enhanced with Man-in-the-Loop Validation (Phase 1 DR-05) */}
             <div className="bg-white rounded-lg shadow-sm p-3 mb-3">
-              <div className="flex items-center space-x-2 mb-2">
-                <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded flex items-center justify-center">
-                  <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M10 2a1 1 0 011 1v1.323l3.954 1.582 1.599-.8a1 1 0 01.894 1.79l-1.233.616 1.738 5.42a1 1 0 01-.285 1.05A3.989 3.989 0 0115 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.715-5.349L11 6.477V16h2a1 1 0 110 2H7a1 1 0 110-2h2V6.477L6.237 7.582l1.715 5.349a1 1 0 01-.285 1.05A3.989 3.989 0 015 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.738-5.42-1.233-.617a1 1 0 01.894-1.788l1.599.799L9 4.323V3a1 1 0 011-1z" />
-                  </svg>
-                </div>
-                <h3 className="text-sm font-bold text-purple-700">AI สรุปประวัติ จาก ข้อมูลนำเข้า</h3>
+              {/* Tab Navigation for AI Content */}
+              <div className="flex border-b border-gray-200 mb-3">
+                <button
+                  onClick={() => setAiValidationTab('summary')}
+                  className={`flex-1 px-2 py-1.5 text-xs font-medium transition-colors ${
+                    aiValidationTab === 'summary'
+                      ? 'text-purple-700 border-b-2 border-purple-500 bg-purple-50'
+                      : 'text-gray-500 hover:text-purple-600'
+                  }`}
+                >
+                  📋 สรุปประวัติ
+                </button>
+                <button
+                  onClick={() => setAiValidationTab('documents')}
+                  className={`flex-1 px-2 py-1.5 text-xs font-medium transition-colors ${
+                    aiValidationTab === 'documents'
+                      ? 'text-purple-700 border-b-2 border-purple-500 bg-purple-50'
+                      : 'text-gray-500 hover:text-purple-600'
+                  }`}
+                >
+                  📄 วิเคราะห์เอกสาร
+                </button>
+                <button
+                  onClick={() => setAiValidationTab('cds')}
+                  className={`flex-1 px-2 py-1.5 text-xs font-medium transition-colors relative ${
+                    aiValidationTab === 'cds'
+                      ? 'text-purple-700 border-b-2 border-purple-500 bg-purple-50'
+                      : 'text-gray-500 hover:text-purple-600'
+                  }`}
+                >
+                  ⚠️ CDS
+                  {aiPreSummary?.aiTriage?.alertFlags?.length > 0 && (
+                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">
+                      {aiPreSummary.aiTriage.alertFlags.length}
+                    </span>
+                  )}
+                </button>
               </div>
-              <textarea
-                value={aiHistorySummary}
-                onChange={(e) => setAiHistorySummary(e.target.value)}
-                placeholder="AI will generate summary from imported patient data..."
-                className="w-full p-2 border border-gray-300 rounded text-xs focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
-                rows={4}
-              />
+
+              {/* Status Badge */}
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center space-x-2">
+                  <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded flex items-center justify-center">
+                    <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M10 2a1 1 0 011 1v1.323l3.954 1.582 1.599-.8a1 1 0 01.894 1.79l-1.233.616 1.738 5.42a1 1 0 01-.285 1.05A3.989 3.989 0 0115 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.715-5.349L11 6.477V16h2a1 1 0 110 2H7a1 1 0 110-2h2V6.477L6.237 7.582l1.715 5.349a1 1 0 01-.285 1.05A3.989 3.989 0 015 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.738-5.42-1.233-.617a1 1 0 01.894-1.788l1.599.799L9 4.323V3a1 1 0 011-1z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-sm font-bold text-purple-700">
+                    {aiValidationTab === 'summary' && 'AI สรุปประวัติผู้ป่วย'}
+                    {aiValidationTab === 'documents' && 'AI วิเคราะห์เอกสาร'}
+                    {aiValidationTab === 'cds' && 'Clinical Decision Support'}
+                  </h3>
+                </div>
+                <span className={`px-2 py-0.5 text-xs rounded-full font-medium ${
+                  aiValidationStatus === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                  aiValidationStatus === 'approved' ? 'bg-green-100 text-green-700' :
+                  'bg-red-100 text-red-700'
+                }`}>
+                  {aiValidationStatus === 'pending' ? '🟡 รอตรวจสอบ' :
+                   aiValidationStatus === 'approved' ? '🟢 อนุมัติแล้ว' :
+                   '🔴 ปฏิเสธ'}
+                </span>
+              </div>
+
+              {/* AI Content Display */}
+              {isLoadingAI ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full"></div>
+                  <span className="ml-2 text-sm text-gray-500">กำลังโหลด AI สรุป...</span>
+                </div>
+              ) : (
+                <>
+                  {aiValidationTab === 'summary' && (
+                    <textarea
+                      value={aiHistorySummary}
+                      onChange={(e) => { setAiHistorySummary(e.target.value); setAiValidationStatus('pending'); }}
+                      placeholder="เลือกผู้ป่วยเพื่อดู AI สรุปประวัติอัตโนมัติ..."
+                      className="w-full p-2 border border-gray-300 rounded text-xs focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                      rows={6}
+                    />
+                  )}
+
+                  {aiValidationTab === 'documents' && (
+                    <div className="space-y-2">
+                      {aiDocuments.length > 0 ? (
+                        aiDocuments.map((doc, idx) => (
+                          <div key={idx} className="p-2 bg-gray-50 rounded border text-xs">
+                            <div className="font-medium text-gray-700">{doc.filename}</div>
+                            <div className="text-gray-600 mt-1">{doc.summary}</div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-center py-4 text-gray-500 text-xs">
+                          <p>📄 ยังไม่มีเอกสารที่วิเคราะห์</p>
+                          <button 
+                            onClick={() => alert('Upload document feature coming soon')}
+                            className="mt-2 px-3 py-1 bg-purple-100 text-purple-700 rounded text-xs hover:bg-purple-200"
+                          >
+                            อัปโหลดเอกสาร
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {aiValidationTab === 'cds' && (
+                    <div className="space-y-2">
+                      {aiPreSummary?.aiTriage?.alertFlags?.length > 0 ? (
+                        aiPreSummary.aiTriage.alertFlags.map((alert: string, idx: number) => (
+                          <div key={idx} className="p-2 bg-yellow-50 border border-yellow-200 rounded text-xs">
+                            <div className="text-yellow-800">{alert}</div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-center py-4 text-gray-500 text-xs">
+                          <p>✅ ไม่มีข้อควรระวังพิเศษ</p>
+                        </div>
+                      )}
+                      
+                      {/* Suggested Questions */}
+                      {aiPreSummary?.aiTriage?.suggestedQuestions?.length > 0 && (
+                        <div className="mt-3 pt-3 border-t border-gray-200">
+                          <p className="text-xs font-medium text-gray-700 mb-2">💡 คำถามที่แนะนำ:</p>
+                          <ul className="space-y-1">
+                            {aiPreSummary.aiTriage.suggestedQuestions.map((q: string, idx: number) => (
+                              <li key={idx} className="text-xs text-gray-600 flex items-start">
+                                <span className="mr-1">•</span> {q}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* Man-in-the-Loop Validation Buttons (DR-05) */}
+              <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-200">
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => handleAIValidation('approved')}
+                    disabled={!aiHistorySummary && aiValidationTab === 'summary'}
+                    className="px-3 py-1.5 bg-green-100 text-green-700 rounded text-xs font-medium hover:bg-green-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                  >
+                    ✅ อนุมัติ
+                  </button>
+                  <button
+                    onClick={() => {
+                      const reason = prompt('กรุณาระบุเหตุผลในการปฏิเสธ:');
+                      if (reason) handleAIValidation('rejected', reason);
+                    }}
+                    disabled={!aiHistorySummary && aiValidationTab === 'summary'}
+                    className="px-3 py-1.5 bg-red-100 text-red-700 rounded text-xs font-medium hover:bg-red-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                  >
+                    ❌ ปฏิเสธ
+                  </button>
+                </div>
+                <button
+                  onClick={handleUseInEMR}
+                  disabled={aiValidationStatus !== 'approved'}
+                  className="px-3 py-1.5 bg-blue-600 text-white rounded text-xs font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                >
+                  📝 ใช้ใน EMR
+                </button>
+              </div>
             </div>
 
+            {/* Meeting AI Summary - Real-time during video */}
             <div className="bg-white rounded-lg shadow-sm p-3">
               <div className="flex items-center space-x-2 mb-2">
                 <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded flex items-center justify-center">
@@ -1484,12 +1754,13 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
                     <path d="M10 2a1 1 0 011 1v1.323l3.954 1.582 1.599-.8a1 1 0 01.894 1.79l-1.233.616 1.738 5.42a1 1 0 01-.285 1.05A3.989 3.989 0 0115 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.715-5.349L11 6.477V16h2a1 1 0 110 2H7a1 1 0 110-2h2V6.477L6.237 7.582l1.715 5.349a1 1 0 01-.285 1.05A3.989 3.989 0 015 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.738-5.42-1.233-.617a1 1 0 01.894-1.788l1.599.799L9 4.323V3a1 1 0 011-1z" />
                   </svg>
                 </div>
-                <h3 className="text-sm font-bold text-purple-700">AI สรุปเพิ่มเติมจากการ Health meeting</h3>
+                <h3 className="text-sm font-bold text-purple-700">AI สรุปจาก Health Meeting</h3>
+                <span className="px-2 py-0.5 text-xs bg-blue-100 text-blue-700 rounded-full">Transcript</span>
               </div>
               <textarea
                 value={aiMeetingSummary}
                 onChange={(e) => setAiMeetingSummary(e.target.value)}
-                placeholder="Real-time AI transcription during video consultations..."
+                placeholder="AI จะสรุปจากการถอดเสียงระหว่าง Video Consultation..."
                 className="w-full p-2 border border-gray-300 rounded text-xs focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
                 rows={4}
               />

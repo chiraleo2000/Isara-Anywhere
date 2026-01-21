@@ -1,7 +1,8 @@
 # 📝 Living Will Process in Izara Telemedicine
 
-**Version:** 2.1 (Implemented)  
-**Last Updated:** December 12, 2025
+**Version:** 3.0.0  
+**Last Updated:** January 21, 2026  
+**Status:** ✅ PostgreSQL Implementation
 
 ---
 

@@ -9,7 +9,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../components/common/AuthProvider';
 import { useNavigate } from 'react-router-dom';
-import { fetchAllAppointments, fetchAllDoctors } from '../services/gcsDataService';
+// PostgreSQL-backed API service - NO GCS!
+import { fetchAllAppointments, fetchAllDoctors } from '../services/apiDataService';
 import appointmentService from '../services/appointmentService';
 
 interface Patient {

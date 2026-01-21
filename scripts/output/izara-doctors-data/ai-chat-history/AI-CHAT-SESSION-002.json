@@ -1,0 +1,49 @@
+{
+  "sessionId": "AI-CHAT-SESSION-002",
+  "doctorId": "DOC-001",
+  "patientId": "PATIENT-ANAN",
+  "appointmentId": "APT-ANAN-001",
+  "sessionType": "document_analysis",
+  "createdAt": "2026-01-18T09:06:48.891Z",
+  "messages": [
+    {
+      "id": "db7aaded-e892-46d2-80a7-aa29f8cdc8bc",
+      "role": "system",
+      "content": "คุณคือผู้ช่วยแพทย์ AI สำหรับวิเคราะห์ผลตรวจทางห้องปฏิบัติการ",
+      "timestamp": "2026-01-18T09:06:48.891Z"
+    },
+    {
+      "id": "38db330c-401d-4837-85dd-83bd208558df",
+      "role": "user",
+      "content": "วิเคราะห์ผล Lab ล่าสุดของผู้ป่วย PATIENT-ANAN:\n- HbA1c: 7.8%\n- FBS: 185 mg/dL\n- Creatinine: 1.8 mg/dL\n- BUN: 32 mg/dL\n- eGFR: 38\n- Potassium: 5.1 mEq/L\n- Sodium: 138 mEq/L\n- Uric Acid: 7.8 mg/dL\n- Albumin: 3.4 g/dL\n- UACR: 280 mg/g\n\nวิเคราะห์และให้คำแนะนำตาม Guidelines",
+      "timestamp": "2026-01-18T09:06:48.891Z",
+      "context": {
+        "documentType": "lab_results",
+        "patientId": "PATIENT-ANAN"
+      }
+    },
+    {
+      "id": "2f6c289b-329b-4749-b2ab-abea4d218cf0",
+      "role": "assistant",
+      "content": "## 🔬 ผลวิเคราะห์ Lab Results - นายอนันต์ ขยันเรียน\n\n### 📊 สรุปผลตรวจแบ่งตามระบบ\n\n#### 1. การควบคุมเบาหวาน (Glycemic Control)\n| ตัวชี้วัด | ผลตรวจ | ค่าปกติ | สถานะ |\n|----------|--------|--------|-------|\n| HbA1c | **7.8%** | <7.0% (ผู้สูงอายุ <7.5%) | ⚠️ สูงกว่าเป้า |\n| FBS | **185 mg/dL** | 70-100 mg/dL | ⚠️ สูง |\n\n**📝 การแปลผล**: \n- การควบคุมน้ำตาลยังไม่ดีพอ โดยเฉพาะ FBS\n- เป้าหมาย HbA1c ในผู้สูงอายุที่มี CKD: 7.0-8.0%\n- ควรพิจารณาปรับยาหรือเพิ่มยา\n\n#### 2. การทำงานของไต (Renal Function)\n| ตัวชี้วัด | ผลตรวจ | ค่าปกติ | สถานะ |\n|----------|--------|--------|-------|\n| Creatinine | **1.8 mg/dL** | 0.7-1.2 | ❌ สูง |\n| BUN | **32 mg/dL** | 7-20 | ⚠️ สูง |\n| eGFR | **38 mL/min** | >90 | ❌ CKD Stage 3b |\n| UACR | **280 mg/g** | <30 | ❌ Moderately increased albuminuria |\n\n**📝 การแปลผล**:\n- **CKD Stage 3b** (eGFR 30-44) with Albuminuria A3\n- **KDIGO Risk**: Very High Risk for ESKD progression\n- ต้องปรับขนาดยา Metformin และติดตามใกล้ชิด\n\n#### 3. Electrolytes\n| ตัวชี้วัด | ผลตรวจ | ค่าปกติ | สถานะ |\n|----------|--------|--------|-------|\n| Potassium | **5.1 mEq/L** | 3.5-5.0 | ⚠️ ขอบสูง |\n| Sodium | 138 mEq/L | 136-145 | ✅ ปกติ |\n\n**📝 K+ ขอบบน**: ระวัง ACE-I induced hyperkalemia\n\n#### 4. อื่นๆ\n| ตัวชี้วัด | ผลตรวจ | ค่าปกติ | สถานะ |\n|----------|--------|--------|-------|\n| Uric Acid | **7.8 mg/dL** | <7.0 | ⚠️ สูง |\n| Albumin | **3.4 g/dL** | 3.5-5.0 | ⚠️ ต่ำเล็กน้อย |\n\n---\n\n### ⚕️ Clinical Recommendations (ตาม Guidelines 2024-2025)\n\n#### 🔴 High Priority Actions\n1. **ปรับยา Metformin** → ลดเหลือ 500mg OD (KDIGO 2024)\n2. **ติดตาม K+** ใกล้ชิด (ทุก 2 สัปดาห์)\n3. **เพิ่ม SGLT2 inhibitor** พิจารณา Dapagliflozin 10mg OD\n   - มี Renoprotective effect ใน CKD-DM (CREDENCE Trial)\n\n#### 🟡 Medium Priority\n4. พิจารณาลด Glipizide หรือเปลี่ยนเป็น Linagliptin\n5. อาหาร Low Potassium + Low Sodium + Low Protein (0.8 g/kg/day)\n6. Referral to Nephrologist ถ้า eGFR <30\n\n### 📋 แผนติดตาม\n- **Lab F/U 4 สัปดาห์**: Cr, K+, FBS, HbA1c\n- **Urine albumin**: ติดตามทุก 6 เดือน\n- **eGFR decline**: ถ้าลดลง >5 mL/min/year → Nephrology referral\n\n⚕️ *ข้อมูลนี้ต้องได้รับการตรวจสอบและยืนยันโดยแพทย์ก่อนนำไปใช้*",
+      "timestamp": "2026-01-18T10:06:48.891Z",
+      "aiMetadata": {
+        "model": "gemini-1.5-flash",
+        "tokensUsed": 1580,
+        "labAbnormalities": [
+          "HbA1c_HIGH",
+          "CREATININE_HIGH",
+          "EGFR_LOW",
+          "K_BORDERLINE",
+          "UACR_HIGH"
+        ],
+        "cdsAlerts": [
+          "METFORMIN_DOSE_ADJUSTMENT",
+          "ADD_SGLT2I",
+          "NEPHROLOGY_REFERRAL"
+        ],
+        "confidence": 0.94
+      }
+    }
+  ]
+}

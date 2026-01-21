@@ -1,0 +1,45 @@
+{
+  "id": "PATIENT-SOMCHAI",
+  "patientId": "PATIENT-SOMCHAI",
+  "email": "Somchai.Mankong@gmail.com",
+  "passwordHash": "$2b$10$hckin3vq/lHw/5sb7gfyy.FMNgx/t.E1QBY6Kd9LxNyMIOt72IKTm",
+  "role": "patient",
+  "name": "Somchai Mankong",
+  "nameThai": "นายสมชาย มั่นคง",
+  "avatarUrl": "https://api.dicebear.com/7.x/avataaars/svg?seed=patient-somchai",
+  "isActive": true,
+  "isVerified": true,
+  "isApproved": true,
+  "approvalStatus": "approved",
+  "status": "active",
+  "createdAt": "2026-01-19T08:00:00.000Z",
+  "lastLogin": "2026-01-19T08:00:00.000Z",
+  "profile": {
+    "id": "PATIENT-SOMCHAI",
+    "patientId": "PATIENT-SOMCHAI",
+    "name": "Somchai Mankong",
+    "nameThai": "นายสมชาย มั่นคง",
+    "email": "Somchai.Mankong@gmail.com",
+    "phone": "+66-81-234-5678",
+    "avatarUrl": "https://api.dicebear.com/7.x/avataaars/svg?seed=patient-somchai",
+    "dateOfBirth": "1968-05-15",
+    "gender": "male",
+    "nationalId": "3-1234-56789-01-2",
+    "address": "123 ซอยสุขุมวิท 55 แขวงคลองตันเหนือ เขตวัฒนา กรุงเทพฯ 10110",
+    "emergencyContact": {
+      "name": "สมศรี มั่นคง",
+      "relationship": "ภรรยา",
+      "phone": "+66-81-234-5679"
+    }
+  },
+  "preferences": {
+    "language": "th",
+    "notifications": true,
+    "theme": "light"
+  },
+  "medicalInfo": {
+    "bloodType": "B+",
+    "primaryCondition": "Essential Hypertension (I10)",
+    "description": "New patient with hypertension - recently diagnosed, requires medication adjustment"
+  }
+}

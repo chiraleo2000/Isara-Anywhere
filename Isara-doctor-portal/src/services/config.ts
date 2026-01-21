@@ -60,7 +60,7 @@ export const config = {
   // Gemini AI
   gemini: {
     apiKey: import.meta.env.VITE_GEMINI_API_KEY || '',
-    model: import.meta.env.VITE_GEMINI_MODEL || 'gemini-2.0-flash-exp',
+    model: import.meta.env.VITE_GEMINI_MODEL || 'gemini-2.5-flash',
     temperature: parseFloat(import.meta.env.VITE_GEMINI_TEMPERATURE || '0.7'),
     maxTokens: parseInt(import.meta.env.VITE_GEMINI_MAX_TOKENS || '8192'),
   },

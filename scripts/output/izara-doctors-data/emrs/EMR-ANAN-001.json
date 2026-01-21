@@ -1,0 +1,196 @@
+{
+  "id": "EMR-ANAN-001",
+  "appointmentId": "APT-COMPLETED-001",
+  "patientId": "PATIENT-ANAN",
+  "doctorId": "DOC-001",
+  "doctorName": "นพ. ทดสอบ แพทย์",
+  "encounterDate": "2026-01-18T10:06:48.900Z",
+  "encounterType": "follow-up",
+  "subjective": {
+    "chiefComplaint": "มานัดติดตามเบาหวานและโรคไต",
+    "chiefComplaintEnglish": "Follow-up for DM and CKD",
+    "historyOfPresentIllness": "ผู้ป่วยมาตามนัด มีอาการเหนื่อยง่ายกว่าเดิม โดยเฉพาะเวลาเดินขึ้นบันได น้ำตาลที่วัดที่บ้านยังสูง 180-190 mg/dL ไม่มีอาการบวม ไม่มีปัสสาวะเป็นฟอง ไม่มีอาการหอบ นอนราบได้",
+    "currentMedications": "Metformin 500mg BID, Glipizide 5mg OD, Enalapril 10mg OD, Amlodipine 5mg OD, Atorvastatin 20mg HS",
+    "allergies": "Sulfonamides - SJS, NSAIDs - ไตแย่ลง",
+    "reviewOfSystems": {
+      "constitutional": "เหนื่อยง่าย",
+      "cardiovascular": "ไม่มีเจ็บหน้าอก",
+      "respiratory": "ไม่หอบ",
+      "genitourinary": "ปัสสาวะปกติ ไม่เป็นฟอง",
+      "musculoskeletal": "ไม่มีบวม"
+    }
+  },
+  "objective": {
+    "vitalSigns": {
+      "bloodPressure": "142/88",
+      "heartRate": 76,
+      "temperature": 36.4,
+      "respiratoryRate": 18,
+      "oxygenSaturation": 96,
+      "weight": 72,
+      "height": 165,
+      "bmi": 26.4
+    },
+    "physicalExamination": {
+      "general": "Alert, good consciousness, no acute distress, slightly overweight",
+      "heent": "No pallor, no jaundice, no thyroid enlargement",
+      "cardiovascular": "Normal S1S2, no murmur, JVP not elevated",
+      "respiratory": "Clear breath sounds bilaterally, no crackles",
+      "abdomen": "Soft, non-tender, no hepatomegaly",
+      "extremities": "No edema, dorsalis pedis pulse palpable bilaterally",
+      "neurological": "Alert, oriented, no focal deficit, sensation intact"
+    },
+    "labResults": {
+      "date": "2026-01-17T10:06:48.900Z",
+      "results": [
+        {
+          "test": "HbA1c",
+          "value": "7.8%",
+          "status": "high"
+        },
+        {
+          "test": "FBS",
+          "value": "185 mg/dL",
+          "status": "high"
+        },
+        {
+          "test": "Creatinine",
+          "value": "1.8 mg/dL",
+          "status": "high"
+        },
+        {
+          "test": "eGFR",
+          "value": "38 mL/min",
+          "status": "low",
+          "notes": "CKD Stage 3b"
+        },
+        {
+          "test": "K+",
+          "value": "5.1 mEq/L",
+          "status": "borderline"
+        },
+        {
+          "test": "UACR",
+          "value": "280 mg/g",
+          "status": "high"
+        }
+      ]
+    }
+  },
+  "assessment": {
+    "diagnoses": [
+      {
+        "code": "E11.65",
+        "description": "Type 2 diabetes mellitus with hyperglycemia",
+        "descriptionThai": "เบาหวานชนิดที่ 2 ที่มีน้ำตาลในเลือดสูง",
+        "type": "primary",
+        "status": "suboptimally controlled"
+      },
+      {
+        "code": "N18.4",
+        "description": "Chronic kidney disease, stage 4 (Stage 3b per GFR)",
+        "descriptionThai": "โรคไตเรื้อรังระยะ 3b",
+        "type": "secondary",
+        "status": "progressive"
+      },
+      {
+        "code": "I10",
+        "description": "Essential hypertension",
+        "descriptionThai": "โรคความดันโลหิตสูงปฐมภูมิ",
+        "type": "secondary",
+        "status": "controlled"
+      }
+    ],
+    "clinicalImpressions": "DM-CKD Stage 3b with suboptimal glycemic control. Kidney function declining (eGFR 38, prev 42). Need to adjust medications accordingly.",
+    "clinicalImpressionsThai": "เบาหวานร่วมโรคไตเรื้อรังระยะ 3b น้ำตาลควบคุมได้ไม่ดีนัก ไตทำงานลดลง (eGFR 38) ต้องปรับยาให้เหมาะสม"
+  },
+  "plan": {
+    "treatmentPlan": "1. ลด Metformin เหลือ 500mg OD (KDIGO 2024)\n2. Continue Glipizide, Enalapril, Amlodipine, Atorvastatin\n3. Low K+ diet, Low Na diet, Diabetic diet\n4. Moderate exercise as tolerated",
+    "treatmentPlanThai": "1. ลดยา Metformin จาก 500mg วันละ 2 ครั้ง เป็น วันละ 1 ครั้ง\n2. ยาอื่นใช้ต่อเหมือนเดิม\n3. อาหารจืด งดผลไม้ K+ สูง\n4. ออกกำลังกายเบาๆ",
+    "medications": [
+      {
+        "action": "modify",
+        "name": "Metformin",
+        "previousDose": "500mg BID",
+        "newDose": "500mg OD",
+        "reason": "CKD Stage 3b - KDIGO 2024 recommendation"
+      },
+      {
+        "action": "continue",
+        "name": "Glipizide",
+        "dose": "5mg OD"
+      },
+      {
+        "action": "continue",
+        "name": "Enalapril",
+        "dose": "10mg OD"
+      },
+      {
+        "action": "continue",
+        "name": "Amlodipine",
+        "dose": "5mg OD"
+      },
+      {
+        "action": "continue",
+        "name": "Atorvastatin",
+        "dose": "20mg HS"
+      }
+    ],
+    "labOrders": [
+      {
+        "test": "Creatinine + eGFR",
+        "timing": "2 สัปดาห์"
+      },
+      {
+        "test": "Potassium",
+        "timing": "2 สัปดาห์"
+      },
+      {
+        "test": "FBS",
+        "timing": "2 สัปดาห์"
+      }
+    ],
+    "followUp": {
+      "date": "2026-02-18T10:06:48.900Z",
+      "reason": "ติดตามหลังปรับยา และประเมินผล Lab",
+      "instructions": "มาพบแพทย์หลังเจาะ Lab 2 สัปดาห์"
+    },
+    "referrals": [
+      {
+        "specialty": "Nephrology",
+        "reason": "CKD Stage 3b - consider if eGFR <30 on follow-up",
+        "urgency": "routine"
+      }
+    ]
+  },
+  "aiSummary": {
+    "status": "approved",
+    "generatedAt": "2026-01-18T10:06:48.900Z",
+    "approvedBy": "DOC-001",
+    "approvedAt": "2026-01-18T10:06:48.900Z",
+    "summaryForPatient": "## สรุปการพบแพทย์ - วันที่ 18/1/2569\n\n### การวินิจฉัย\nคุณมีโรคเบาหวานร่วมกับโรคไตเรื้อรังระยะ 3b และความดันโลหิตสูง\n\n### สิ่งที่ตรวจพบ\n- น้ำตาลในเลือดยังสูงกว่าเป้าหมาย\n- ไตทำงานลดลงเล็กน้อย จึงต้องปรับขนาดยา\n\n### การปรับยา\n⚠️ **ยา Metformin**: ลดจากวันละ 2 เม็ด เหลือวันละ 1 เม็ด\nยาอื่นใช้เหมือนเดิม\n\n### สิ่งที่ต้องทำ\n1. กินยาตามที่ปรับใหม่\n2. มาเจาะเลือดใน 2 สัปดาห์\n3. พบแพทย์ใน 1 เดือน\n\n### คำแนะนำ\n- กินอาหารจืด ลดเค็ม\n- งดผลไม้ที่มี K+ สูง (กล้วย ส้ม มะม่วงสุก)\n- ออกกำลังกายเบาๆ เช่น เดินวันละ 20-30 นาที",
+    "summaryForDoctor": "DM-CKD Stage 3b F/U. Suboptimal glycemic control (HbA1c 7.8%, FBS 185). eGFR declined to 38 (prev 42). K+ borderline high at 5.1. Adjusted Metformin per KDIGO 2024. F/U labs in 2 weeks."
+  },
+  "cdsAlerts": [
+    {
+      "id": "cds-emr-001",
+      "type": "dose_adjustment",
+      "severity": "high",
+      "drug": "Metformin",
+      "message": "Reduce Metformin dose 50% per KDIGO 2024 (eGFR 30-44)",
+      "action": "accepted",
+      "actionBy": "DOC-001"
+    },
+    {
+      "id": "cds-emr-002",
+      "type": "monitoring",
+      "severity": "medium",
+      "message": "Monitor K+ closely with ACE-I + CKD",
+      "action": "acknowledged"
+    }
+  ],
+  "status": "finalized",
+  "signedAt": "2026-01-18T10:06:48.917Z",
+  "createdAt": "2026-01-18T10:06:48.917Z",
+  "updatedAt": "2026-01-18T10:06:48.917Z"
+}

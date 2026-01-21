@@ -148,19 +148,13 @@
       GOOGLE APIS CONFIGURATION
       ============================================
       Load order is important:
-      1. Google Maps API
+      1. Google Maps API (loaded dynamically via mapsLoader.ts with env vars)
       2. Google API Client Library (gapi)
       3. Google Identity Services (GIS)
     -->
     
-    <!-- 1. Google Maps API with Places Library -->
-    <script 
-      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAYbKd-Sk4G_vMwzt0Sac6Jgc-8y39vPxs&libraries=places" 
-      async 
-      defer
-      onload="window.googleMapsLoaded = true; console.log('✅ Google Maps loaded');"
-      onerror="console.error('❌ Failed to load Google Maps');"
-    ></script>
+    <!-- 1. Google Maps API - LOADED DYNAMICALLY VIA mapsLoader.ts -->
+    <!-- API key is injected from VITE_GOOGLE_MAPS_API_KEY environment variable at runtime -->
     
     <!-- 2. Google API Client Library (GAPI) - for Calendar API -->
     <script 
@@ -183,7 +177,7 @@
     <!-- Google OAuth Configuration Script -->
     <script>
       // Configuration object for Google OAuth
-      window.GOOGLE_CONFIG = {
+      globalThis.GOOGLE_CONFIG = {
         // These will be loaded from environment variables in your app
         // Don't hardcode credentials here - they should come from .env
         API_DISCOVERY_DOCS: [
@@ -220,7 +214,7 @@
       };
 
       // Wait for all Google APIs to load
-      window.addEventListener('load', function() {
+      globalThis.addEventListener('load', function() {
         console.log('📱 Page loaded, checking Google APIs...');
         
         // Check every 100ms for up to 10 seconds
@@ -231,18 +225,18 @@
           attempts++;
           
           // Update status
-          window.GOOGLE_CONFIG.status.mapsLoaded = !!window.googleMapsLoaded;
-          window.GOOGLE_CONFIG.status.gapiLoaded = !!window.gapiLoaded;
-          window.GOOGLE_CONFIG.status.gisLoaded = !!window.gisLoaded;
+          globalThis.GOOGLE_CONFIG.status.mapsLoaded = !!globalThis.googleMapsLoaded;
+          globalThis.GOOGLE_CONFIG.status.gapiLoaded = !!globalThis.gapiLoaded;
+          globalThis.GOOGLE_CONFIG.status.gisLoaded = !!globalThis.gisLoaded;
           
           // Check if all loaded
-          if (window.GOOGLE_CONFIG.status.mapsLoaded && 
-              window.GOOGLE_CONFIG.status.gapiLoaded && 
-              window.GOOGLE_CONFIG.status.gisLoaded) {
+          if (globalThis.GOOGLE_CONFIG.status.mapsLoaded && 
+              globalThis.GOOGLE_CONFIG.status.gapiLoaded && 
+              globalThis.GOOGLE_CONFIG.status.gisLoaded) {
             
             clearInterval(checkInterval);
             console.log('✅ All Google APIs loaded successfully!');
-            window.GOOGLE_CONFIG.logStatus();
+            globalThis.GOOGLE_CONFIG.logStatus();
             
             // Hide loading indicator if exists
             const loadingEl = document.getElementById('google-loading');
@@ -251,9 +245,9 @@
             }
             
             // Dispatch custom event for React app
-            window.dispatchEvent(new CustomEvent('googleApisReady', {
+            globalThis.dispatchEvent(new CustomEvent('googleApisReady', {
               detail: { 
-                status: window.GOOGLE_CONFIG.status,
+                status: globalThis.GOOGLE_CONFIG.status,
                 timestamp: new Date().toISOString()
               }
             }));
@@ -263,7 +257,7 @@
           if (attempts >= maxAttempts) {
             clearInterval(checkInterval);
             console.warn('⚠️ Timeout waiting for Google APIs');
-            window.GOOGLE_CONFIG.logStatus();
+            globalThis.GOOGLE_CONFIG.logStatus();
             
             // Hide loading indicator
             const loadingEl = document.getElementById('google-loading');
@@ -272,9 +266,9 @@
             }
             
             // Dispatch timeout event
-            window.dispatchEvent(new CustomEvent('googleApisTimeout', {
+            globalThis.dispatchEvent(new CustomEvent('googleApisTimeout', {
               detail: { 
-                status: window.GOOGLE_CONFIG.status,
+                status: globalThis.GOOGLE_CONFIG.status,
                 timestamp: new Date().toISOString()
               }
             }));
@@ -283,7 +277,7 @@
       });
 
       // Helper function to check OAuth configuration
-      window.checkGoogleOAuthConfig = function() {
+      globalThis.checkGoogleOAuthConfig = function() {
         const clientId = localStorage.getItem('google_client_id') || 
                         'NOT_CONFIGURED';
         const apiKey = localStorage.getItem('google_api_key') || 
@@ -292,12 +286,12 @@
         console.log('🔐 Google OAuth Configuration:');
         console.log('Client ID:', clientId.substring(0, 20) + '...');
         console.log('API Key:', apiKey.substring(0, 20) + '...');
-        console.log('APIs Status:', window.GOOGLE_CONFIG.status);
+        console.log('APIs Status:', globalThis.GOOGLE_CONFIG.status);
         
         return {
           hasClientId: !clientId.includes('NOT_CONFIGURED'),
           hasApiKey: !apiKey.includes('NOT_CONFIGURED'),
-          apisReady: window.GOOGLE_CONFIG.isReady()
+          apisReady: globalThis.GOOGLE_CONFIG.isReady()
         };
       };
 

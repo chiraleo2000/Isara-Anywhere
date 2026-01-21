@@ -1,0 +1,122 @@
+{
+  "id": "phr-PATIENT-SOMCHAI",
+  "patientId": "PATIENT-SOMCHAI",
+  "demographics": {
+    "name": "Somchai Mankong",
+    "nameThai": "นายสมชาย มั่นคง",
+    "dateOfBirth": "1970-06-15",
+    "age": 55,
+    "gender": "male",
+    "bloodType": "B+",
+    "height": 172,
+    "weight": 78,
+    "ethnicity": "Thai",
+    "occupation": "พนักงานบริษัท",
+    "phone": "+66-81-234-5678",
+    "email": "Somchai.Mankong@gmail.com",
+    "address": "789 ถนนสุขุมวิท เขตวัฒนา กรุงเทพฯ 10110",
+    "insuranceType": "ประกันสังคม"
+  },
+  "vitalSignsHistory": [
+    {
+      "bloodPressure": {
+        "systolic": 148,
+        "diastolic": 92,
+        "unit": "mmHg"
+      },
+      "heartRate": {
+        "value": 78,
+        "unit": "bpm"
+      },
+      "temperature": {
+        "value": 36.6,
+        "unit": "celsius"
+      },
+      "oxygenSaturation": {
+        "value": 98,
+        "unit": "%"
+      },
+      "weight": {
+        "value": 78,
+        "unit": "kg"
+      },
+      "bmi": 26.4,
+      "measuredAt": "2026-01-12T10:06:48.898Z",
+      "source": "clinic",
+      "notes": "ตรวจพบความดันสูงครั้งแรก"
+    }
+  ],
+  "allergies": [
+    {
+      "id": "allergy-somchai-001",
+      "allergen": "Penicillin",
+      "type": "medication",
+      "severity": "moderate",
+      "reaction": "ผื่นลมพิษ",
+      "status": "confirmed"
+    }
+  ],
+  "chronicConditions": [
+    {
+      "id": "condition-somchai-001",
+      "condition": "Essential Hypertension",
+      "conditionThai": "โรคความดันโลหิตสูงปฐมภูมิ",
+      "icdCode": "I10",
+      "diagnosedDate": "2026-01-12",
+      "status": "active",
+      "severity": "new",
+      "treatedBy": "DOC-001",
+      "notes": "วินิจฉัยใหม่ เริ่มรักษาด้วยยาและปรับพฤติกรรม"
+    }
+  ],
+  "medications": [
+    {
+      "id": "med-somchai-001",
+      "name": "Amlodipine",
+      "dose": "5mg",
+      "frequency": "วันละครั้ง เช้า",
+      "route": "รับประทาน",
+      "reason": "ความดันโลหิตสูง",
+      "startDate": "2026-01-12",
+      "prescribedBy": "DOC-001",
+      "status": "active"
+    }
+  ],
+  "healthJourney": [
+    {
+      "id": "journey-somchai-001",
+      "date": "2026-01-12",
+      "type": "diagnosis",
+      "title": "วินิจฉัยความดันโลหิตสูง",
+      "titleEnglish": "Hypertension Diagnosed",
+      "description": "ตรวจพบความดันโลหิตสูง 148/92 mmHg จากการตรวจสุขภาพประจำปี มีอาการปวดศีรษะเป็นพักๆ",
+      "outcome": "เริ่มยา Amlodipine 5mg และให้คำแนะนำเรื่องอาหารและออกกำลังกาย",
+      "doctor": "DOC-001"
+    }
+  ],
+  "familyHistory": [
+    {
+      "relation": "บิดา",
+      "condition": "ความดันโลหิตสูง",
+      "notes": "วินิจฉัยตอนอายุ 50 ปี"
+    }
+  ],
+  "socialHistory": {
+    "smoking": {
+      "status": "ไม่เคยสูบ"
+    },
+    "alcohol": {
+      "status": "ดื่มเป็นครั้งคราว",
+      "frequency": "1-2 ครั้ง/สัปดาห์"
+    },
+    "exercise": {
+      "frequency": "น้อย",
+      "notes": "ทำงานนั่งโต๊ะ ไม่ค่อยได้ออกกำลังกาย"
+    },
+    "diet": {
+      "type": "อาหารทั่วไป ชอบอาหารรสจัด"
+    }
+  },
+  "createdAt": "2026-01-12T10:06:48.898Z",
+  "updatedAt": "2026-01-12T10:06:48.898Z"
+}

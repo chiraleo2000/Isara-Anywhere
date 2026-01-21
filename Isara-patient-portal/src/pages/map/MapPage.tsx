@@ -2,6 +2,24 @@ import { useState, useEffect, useRef } from 'react';
 import { MapPin, Search, Building2, Navigation, Loader2, AlertCircle, Pill, Stethoscope, Heart, User, RefreshCw, Star, ExternalLink, Target, AlertTriangle } from 'lucide-react';
 
 const MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
+// Map ID for AdvancedMarkerElement - Get from Google Cloud Console > Google Maps Platform > Map Management
+// See: https://developers.google.com/maps/documentation/javascript/advanced-markers/start#create-a-map-id
+const MAPS_MAP_ID = import.meta.env.VITE_GOOGLE_MAPS_MAP_ID || '';
+
+// Helper to check if AdvancedMarkerElement is available (not a hook - renamed to avoid confusion)
+const canUseAdvancedMarkers = () => Boolean(MAPS_MAP_ID && globalThis.google?.maps?.marker?.AdvancedMarkerElement);
+
+// Helper to clear marker from map (works for both marker types)
+const clearMarker = (marker: google.maps.Marker | google.maps.marker.AdvancedMarkerElement): void => {
+  // AdvancedMarkerElement has 'content' property, Marker doesn't
+  if ('content' in marker) {
+    // This is AdvancedMarkerElement - set map property to null
+    (marker as google.maps.marker.AdvancedMarkerElement).map = null;
+  } else {
+    // This is classic Marker - use setMap method
+    (marker as google.maps.Marker).setMap(null);
+  }
+};
 
 interface Facility {
   id: string;
@@ -23,9 +41,10 @@ export default function MapPage() {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<google.maps.Map | null>(null);
   const placesService = useRef<google.maps.places.PlacesService | null>(null);
-  const markers = useRef<google.maps.Marker[]>([]);
+  // Support both classic Marker and AdvancedMarkerElement
+  const markers = useRef<(google.maps.Marker | google.maps.marker.AdvancedMarkerElement)[]>([]);
   const infoWindow = useRef<google.maps.InfoWindow | null>(null);
-  const userMarkerRef = useRef<google.maps.Marker | null>(null);
+  const userMarkerRef = useRef<google.maps.Marker | google.maps.marker.AdvancedMarkerElement | null>(null);
   
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'all' | 'hospital' | 'clinic' | 'pharmacy' | 'health_center'>('all');
@@ -127,47 +146,86 @@ export default function MapPage() {
     }
   };
 
-  // Add markers
+  // Add markers - uses AdvancedMarkerElement when Map ID is configured, otherwise falls back to classic Marker
   const addMarkers = (list: Facility[]) => {
-    markers.current.forEach(m => m.setMap(null));
+    markers.current.forEach(m => clearMarker(m));
     markers.current = [];
     if (!mapInstance.current) return;
-    if (!infoWindow.current) infoWindow.current = new google.maps.InfoWindow();
+    infoWindow.current ??= new google.maps.InfoWindow();
 
+    const advancedMarkersAvailable = canUseAdvancedMarkers();
+    
     list.forEach(f => {
-      const m = new google.maps.Marker({
-        position: f.location,
-        map: mapInstance.current,
-        title: f.name,
-        icon: {
-          path: google.maps.SymbolPath.CIRCLE,
-          scale: 10,
-          fillColor: markerColors[f.type] || '#666',
-          fillOpacity: 1,
-          strokeColor: '#fff',
-          strokeWeight: 2,
-        },
-        animation: google.maps.Animation.DROP,
-      });
+      let marker: google.maps.Marker | google.maps.marker.AdvancedMarkerElement;
+      
+      if (advancedMarkersAvailable) {
+        // Use AdvancedMarkerElement (new API - no deprecation warning)
+        const pinElement = new google.maps.marker.PinElement({
+          background: markerColors[f.type] || '#666',
+          borderColor: '#fff',
+          glyphColor: '#fff',
+          scale: 1.2,
+        });
+        
+        marker = new google.maps.marker.AdvancedMarkerElement({
+          position: f.location,
+          map: mapInstance.current,
+          title: f.name,
+          content: pinElement.element,
+        });
+        
+        marker.addListener('click', () => {
+          setSelectedId(f.id);
+          infoWindow.current?.setContent(`
+            <div style="padding:8px;max-width:200px;">
+              <b>${f.name}</b>
+              <p style="font-size:11px;color:#666;margin:4px 0;">${f.address}</p>
+              ${f.rating ? `<p style="font-size:11px;">⭐ ${f.rating}</p>` : ''}
+              <p style="color:#059669;font-weight:600;">${f.distanceText}</p>
+              <a href="https://www.google.com/maps/dir/?api=1&destination=${f.location.lat},${f.location.lng}" 
+                 target="_blank" style="display:inline-block;margin-top:6px;padding:5px 10px;background:#059669;color:#fff;border-radius:4px;text-decoration:none;font-size:11px;">
+                นำทาง
+              </a>
+            </div>
+          `);
+          infoWindow.current?.open({ anchor: marker, map: mapInstance.current });
+        });
+      } else {
+        // Fall back to classic Marker (deprecated but still works)
+        marker = new google.maps.Marker({
+          position: f.location,
+          map: mapInstance.current,
+          title: f.name,
+          icon: {
+            path: google.maps.SymbolPath.CIRCLE,
+            scale: 10,
+            fillColor: markerColors[f.type] || '#666',
+            fillOpacity: 1,
+            strokeColor: '#fff',
+            strokeWeight: 2,
+          },
+          animation: google.maps.Animation.DROP,
+        });
 
-      m.addListener('click', () => {
-        setSelectedId(f.id);
-        infoWindow.current?.setContent(`
-          <div style="padding:8px;max-width:200px;">
-            <b>${f.name}</b>
-            <p style="font-size:11px;color:#666;margin:4px 0;">${f.address}</p>
-            ${f.rating ? `<p style="font-size:11px;">⭐ ${f.rating}</p>` : ''}
-            <p style="color:#059669;font-weight:600;">${f.distanceText}</p>
-            <a href="https://www.google.com/maps/dir/?api=1&destination=${f.location.lat},${f.location.lng}" 
-               target="_blank" style="display:inline-block;margin-top:6px;padding:5px 10px;background:#059669;color:#fff;border-radius:4px;text-decoration:none;font-size:11px;">
-              นำทาง
-            </a>
-          </div>
-        `);
-        infoWindow.current?.open(mapInstance.current, m);
-      });
+        marker.addListener('click', () => {
+          setSelectedId(f.id);
+          infoWindow.current?.setContent(`
+            <div style="padding:8px;max-width:200px;">
+              <b>${f.name}</b>
+              <p style="font-size:11px;color:#666;margin:4px 0;">${f.address}</p>
+              ${f.rating ? `<p style="font-size:11px;">⭐ ${f.rating}</p>` : ''}
+              <p style="color:#059669;font-weight:600;">${f.distanceText}</p>
+              <a href="https://www.google.com/maps/dir/?api=1&destination=${f.location.lat},${f.location.lng}" 
+                 target="_blank" style="display:inline-block;margin-top:6px;padding:5px 10px;background:#059669;color:#fff;border-radius:4px;text-decoration:none;font-size:11px;">
+                นำทาง
+              </a>
+            </div>
+          `);
+          infoWindow.current?.open(mapInstance.current, marker as google.maps.Marker);
+        });
+      }
 
-      markers.current.push(m);
+      markers.current.push(marker);
     });
   };
 
@@ -176,45 +234,81 @@ export default function MapPage() {
     if (!mapRef.current || mapInstance.current) return;
     console.log('Init map at:', loc);
 
-    const map = new google.maps.Map(mapRef.current, {
+    const advancedMarkersAvailable = canUseAdvancedMarkers();
+    
+    const mapOptions: google.maps.MapOptions = {
       center: loc,
       zoom: 13,
       mapTypeControl: false,
       streetViewControl: false,
-    });
+    };
+    
+    // Add mapId if available for AdvancedMarkerElement support
+    if (MAPS_MAP_ID) {
+      mapOptions.mapId = MAPS_MAP_ID;
+    }
+
+    const map = new google.maps.Map(mapRef.current, mapOptions);
 
     mapInstance.current = map;
     placesService.current = new google.maps.places.PlacesService(map);
 
-    // User marker - save reference for updates
-    userMarkerRef.current = new google.maps.Marker({
-      position: loc,
-      map,
-      title: 'คุณอยู่ที่นี่',
-      icon: {
-        path: google.maps.SymbolPath.CIRCLE,
-        scale: 12,
-        fillColor: '#3B82F6',
-        fillOpacity: 1,
-        strokeColor: '#fff',
-        strokeWeight: 3,
-      },
-      zIndex: 1000,
-    });
+    // User marker - use AdvancedMarkerElement when Map ID is configured
+    if (advancedMarkersAvailable) {
+      // Create custom user location marker with AdvancedMarkerElement
+      const userPinElement = document.createElement('div');
+      userPinElement.innerHTML = `
+        <div style="position: relative;">
+          <div style="width: 24px; height: 24px; background: #3B82F6; border: 3px solid #fff; border-radius: 50%; box-shadow: 0 2px 6px rgba(0,0,0,0.3);"></div>
+          <div style="position: absolute; top: -6px; left: -6px; width: 36px; height: 36px; background: rgba(59, 130, 246, 0.25); border-radius: 50%; animation: pulse 2s infinite;"></div>
+        </div>
+        <style>
+          @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.5); opacity: 0.5; }
+            100% { transform: scale(1); opacity: 1; }
+          }
+        </style>
+      `;
+      
+      userMarkerRef.current = new google.maps.marker.AdvancedMarkerElement({
+        position: loc,
+        map,
+        title: 'คุณอยู่ที่นี่',
+        content: userPinElement,
+        zIndex: 1000,
+      });
+    } else {
+      // Fall back to classic Marker
+      userMarkerRef.current = new google.maps.Marker({
+        position: loc,
+        map,
+        title: 'คุณอยู่ที่นี่',
+        icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: 12,
+          fillColor: '#3B82F6',
+          fillOpacity: 1,
+          strokeColor: '#fff',
+          strokeWeight: 3,
+        },
+        zIndex: 1000,
+      });
 
-    // Pulse effect marker
-    new google.maps.Marker({
-      position: loc,
-      map,
-      icon: {
-        path: google.maps.SymbolPath.CIRCLE,
-        scale: 24,
-        fillColor: '#3B82F6',
-        fillOpacity: 0.25,
-        strokeWeight: 0,
-      },
-      zIndex: 999,
-    });
+      // Pulse effect marker (only for classic markers)
+      new google.maps.Marker({
+        position: loc,
+        map,
+        icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: 24,
+          fillColor: '#3B82F6',
+          fillOpacity: 0.25,
+          strokeWeight: 0,
+        },
+        zIndex: 999,
+      });
+    }
 
     setMapReady(true);
     loadFacilities(loc);
@@ -223,7 +317,11 @@ export default function MapPage() {
   // Update user marker position
   const updateUserMarker = (loc: { lat: number; lng: number }) => {
     if (userMarkerRef.current && mapInstance.current) {
-      userMarkerRef.current.setPosition(loc);
+      if ('setPosition' in userMarkerRef.current) {
+        (userMarkerRef.current as google.maps.Marker).setPosition(loc);
+      } else {
+        userMarkerRef.current.position = loc;
+      }
     }
   };
 
@@ -284,7 +382,17 @@ export default function MapPage() {
     let retryCount = 0;
     const maxRetries = 3;
 
-    const loadGoogleMapsScript = (loc: { lat: number; lng: number }): Promise<void> => {
+    // Google Maps error callback
+    const gMapsCallback = `gMapsCallback_${Date.now()}`;
+    const gMapsErrorCallback = `gMapsError_${Date.now()}`;
+    
+    (window as unknown as Record<string, (err: unknown) => void>)[gMapsErrorCallback] = (err: unknown) => {
+      console.error('Google Maps API error:', err);
+      setError('Google Maps API Key ไม่ถูกต้องหรือถูกจำกัดสิทธิ์');
+      setLoading(false);
+    };
+
+    const loadGoogleMapsScript = (_initLocation: { lat: number; lng: number }): Promise<void> => {
       return new Promise((resolve, reject) => {
         // Check if already loaded
         if (window.google?.maps) {
@@ -298,14 +406,20 @@ export default function MapPage() {
           existingScript.remove();
         }
 
+        // Set up callback
+        (window as any)[gMapsCallback] = () => {
+          console.log('Google Maps loaded via callback');
+          resolve();
+        };
+
         const s = document.createElement('script');
-        s.src = `https://maps.googleapis.com/maps/api/js?key=${MAPS_API_KEY}&libraries=places&language=th`;
+        // Include 'marker' library for AdvancedMarkerElement support
+        s.src = `https://maps.googleapis.com/maps/api/js?key=${MAPS_API_KEY}&libraries=places,marker&language=th&callback=${gMapsCallback}`;
         s.async = true;
         s.defer = true;
         
         s.onload = () => {
-          console.log('Google Maps loaded successfully');
-          resolve();
+          // Callback will handle resolution
         };
         
         s.onerror = () => {
@@ -411,7 +525,7 @@ export default function MapPage() {
     initWithLocation();
 
     return () => { 
-      markers.current.forEach(m => m.setMap(null)); 
+      markers.current.forEach(m => clearMarker(m)); 
       if (watchId !== null) {
         navigator.geolocation.clearWatch(watchId);
       }
@@ -481,7 +595,16 @@ export default function MapPage() {
       const f = facilities[i];
       if (f) {
         const show = (filter === 'all' || f.type === filter) && (!search || f.name.toLowerCase().includes(search.toLowerCase()));
-        m.setVisible(show);
+        // Handle visibility for both marker types
+        if ('setVisible' in m) {
+          (m as google.maps.Marker).setVisible(show);
+        } else {
+          // AdvancedMarkerElement uses CSS for visibility
+          const element = m.element;
+          if (element) {
+            element.style.display = show ? 'block' : 'none';
+          }
+        }
       }
     });
   }, [filter, search, facilities]);
@@ -494,7 +617,13 @@ export default function MapPage() {
     setSelectedId(f.id);
     mapInstance.current?.setCenter(f.location);
     mapInstance.current?.setZoom(16);
-    const m = markers.current.find(x => x.getTitle() === f.name);
+    // Find marker by title (works for both marker types)
+    const m = markers.current.find(x => {
+      if ('getTitle' in x) {
+        return (x as google.maps.Marker).getTitle() === f.name;
+      }
+      return x.title === f.name;
+    });
     if (m) google.maps.event.trigger(m, 'click');
   };
 
@@ -584,9 +713,19 @@ export default function MapPage() {
       <div className="flex-1 relative min-h-[45vh]">
         {error ? (
           <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
-            <div className="text-center p-6">
+            <div className="text-center p-6 max-w-md">
               <AlertCircle className="w-16 h-16 mx-auto mb-4 text-red-400" />
-              <p className="text-lg font-medium text-gray-700 mb-4">{error}</p>
+              <p className="text-lg font-medium text-gray-700 mb-2">{error}</p>
+              {error.includes('API Key') && (
+                <div className="text-sm text-gray-500 mb-4 bg-amber-50 border border-amber-200 rounded-lg p-3">
+                  <p className="font-medium text-amber-800 mb-1">แก้ไขปัญหา Google Maps:</p>
+                  <ol className="text-left text-xs space-y-1 text-amber-700">
+                    <li>1. ตรวจสอบว่า API Key ถูกต้องใน .env</li>
+                    <li>2. เปิดใช้งาน Maps JavaScript API ใน Google Cloud Console</li>
+                    <li>3. ตรวจสอบ HTTP Referrer ให้รองรับ localhost</li>
+                  </ol>
+                </div>
+              )}
               <button 
                 onClick={() => window.location.reload()} 
                 className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg flex items-center gap-2 mx-auto"

@@ -1,0 +1,58 @@
+{
+  "description": "Clinical resources for healthcare professionals",
+  "table": "clinical_resources",
+  "data": [
+    {
+      "id": "CR-001",
+      "title_thai": "แนวทางการปรับยาในผู้ป่วย CKD",
+      "title_english": "Drug Dosing Adjustments in CKD",
+      "content_thai": "การปรับขนาดยาในผู้ป่วยโรคไตเรื้อรัง: Metformin - eGFR>=45 ใช้ขนาดปกติ, 30-44 ลดขนาด 50%, <30 หยุดยา",
+      "content_english": "Drug dosing in CKD patients: Metformin - eGFR>=45 normal dose, 30-44 reduce 50%, <30 discontinue",
+      "category": "pharmacology",
+      "specialty": "Nephrology",
+      "guideline_year": 2025,
+      "source": "KDIGO Guidelines",
+      "tags": ["CKD", "drug dosing", "nephrology"],
+      "status": "approved"
+    },
+    {
+      "id": "CR-002",
+      "title_thai": "CDS: เบาหวานร่วมกับโรคไตเรื้อรัง",
+      "title_english": "CDS: Diabetes with CKD",
+      "content_thai": "เป้าหมาย HbA1c: <7% สำหรับผู้ป่วยทั่วไป, 7-8% สำหรับผู้สูงอายุ/มีภาวะแทรกซ้อน. ยาที่แนะนำ: SGLT2i, GLP-1 RA",
+      "content_english": "HbA1c targets: <7% for general patients, 7-8% for elderly/complications. Recommended: SGLT2i, GLP-1 RA",
+      "category": "treatment",
+      "specialty": "Endocrinology",
+      "guideline_year": 2025,
+      "source": "ADA/KDIGO Consensus",
+      "tags": ["diabetes", "CKD", "treatment"],
+      "status": "approved"
+    },
+    {
+      "id": "CR-003",
+      "title_thai": "โปรโตคอลฉุกเฉิน: Hyperkalemia",
+      "title_english": "Emergency Protocol: Hyperkalemia",
+      "content_thai": "K+ 5.5-6.0: ลดอาหารโพแทสเซียม, K+ 6.0-6.5: Kayexalate + ลดอาหาร, K+ >6.5: Ca gluconate, Insulin, Dialysis",
+      "content_english": "K+ 5.5-6.0: Dietary restriction, K+ 6.0-6.5: Kayexalate, K+ >6.5: Ca gluconate, Insulin, Dialysis",
+      "category": "emergency",
+      "specialty": "Nephrology",
+      "guideline_year": 2024,
+      "source": "KDIGO AKI Guidelines",
+      "tags": ["emergency", "hyperkalemia", "protocol"],
+      "status": "approved"
+    },
+    {
+      "id": "CR-004",
+      "title_thai": "แนวปฏิบัติ Telemedicine ประเทศไทย",
+      "title_english": "Thailand Telemedicine Best Practices",
+      "content_thai": "ขั้นตอน: 1) ตรวจสอบอุปกรณ์ 2) ทบทวนประวัติก่อนพบ 3) ยืนยันตัวตนผู้ป่วย 4) บันทึก EMR 5) ขอ PDPA consent",
+      "content_english": "Steps: 1) Check equipment 2) Review history 3) Verify patient identity 4) Record EMR 5) Obtain PDPA consent",
+      "category": "telemedicine",
+      "specialty": "General",
+      "guideline_year": 2024,
+      "source": "Thai Medical Council",
+      "tags": ["telemedicine", "PDPA", "guidelines"],
+      "status": "approved"
+    }
+  ]
+}

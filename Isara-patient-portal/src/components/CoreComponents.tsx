@@ -81,6 +81,8 @@ export const UpcomingAppointmentCard: React.FC<UpcomingAppointmentCardProps> = (
     [AppointmentStatus.InProgress]: 'bg-purple-50 text-purple-700 border-purple-200',
     [AppointmentStatus.NoShow]: 'bg-gray-50 text-gray-700 border-gray-200',
     [AppointmentStatus.Rescheduled]: 'bg-orange-50 text-orange-700 border-orange-200',
+    [AppointmentStatus.InPool]: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+    [AppointmentStatus.AwaitingDoctorResponse]: 'bg-cyan-50 text-cyan-700 border-cyan-200',
   };
 
   const statusLabels: Record<AppointmentStatus, string> = {
@@ -91,6 +93,8 @@ export const UpcomingAppointmentCard: React.FC<UpcomingAppointmentCardProps> = (
     [AppointmentStatus.InProgress]: 'กำลังดำเนินการ',
     [AppointmentStatus.NoShow]: 'ไม่มาตามนัด',
     [AppointmentStatus.Rescheduled]: 'เลื่อนนัดแล้ว',
+    [AppointmentStatus.InPool]: 'รอจัดสรรแพทย์',
+    [AppointmentStatus.AwaitingDoctorResponse]: 'รอแพทย์ตอบรับ',
   };
 
   return (

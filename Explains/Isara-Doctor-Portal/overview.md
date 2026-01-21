@@ -88,16 +88,17 @@ Isara-doctor-portal/
 |----------|-------|
 | Method | Session-based tokens |
 | Password | bcrypt (10 rounds) |
-| Session | 24 hours |
+| Session | Session persists until logout or token expiry |
 | Rate Limit | 10 attempts / 15 min |
 | Lockout | 30 min after 5 failures |
 | Storage | `izara-users-credentials` |
+| Flow | Newcomers/expired → Login → Dashboard |
 
 ## 📊 Data Buckets
 
 | Bucket | Purpose |
 |--------|---------|
-| `izara-users-credentials` | Doctor/Admin credentials & sessions |
+| `izara-users-credentials` | All user credentials & sessions |
 | `izara-doctors-data` | Doctor profiles, EMR, meeting recordings |
 | `izara-patients-data` | Patient data (read-only for assigned) |
 | `izara-appointments` | Appointment & EMR records |

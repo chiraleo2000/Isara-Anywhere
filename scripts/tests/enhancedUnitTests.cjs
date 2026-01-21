@@ -579,7 +579,7 @@ Started: ${new Date().toISOString()}
   await runner.test('Gemini AI Configuration Valid', async () => {
     // These are hardcoded config values from the app
     const geminiModel = 'gemini-2.5-flash-lite';
-    const validModels = ['gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-1.5-pro'];
+    const validModels = ['gemini-2.5-flash-lite', 'gemini-2.5-flash', 'gemini-1.5-pro'];
     runner.assert(validModels.includes(geminiModel), `Model ${geminiModel} should be valid`);
   });
 

@@ -14,9 +14,9 @@
  * A10:2025 - Mishandling of Exceptional Conditions
  */
 
-const crypto = require('crypto');
-const fs = require('fs');
-const path = require('path');
+const crypto = require('node:crypto');
+const fs = require('node:fs');
+const path = require('node:path');
 
 // ============================================================================
 // A01:2025 - BROKEN ACCESS CONTROL

@@ -43,22 +43,23 @@ ARG VITE_GCS_BUCKET_PATIENT=izara-patients-data
 ARG VITE_GCS_BUCKET_APPOINTMENTS=izara-appointments
 ARG VITE_GCS_BUCKET_METADATA=izara-meta-data
 
-# Google APIs
-ARG VITE_GOOGLE_CALENDAR_API_KEY=AIzaSyAl924pIkpbrJBfCQ1MlpA6yb8XZ3L8WZQ
-ARG VITE_GOOGLE_MEET_API_KEY=AIzaSyAl924pIkpbrJBfCQ1MlpA6yb8XZ3L8WZQ
-ARG VITE_GOOGLE_MAPS_API_KEY=AIzaSyAl924pIkpbrJBfCQ1MlpA6yb8XZ3L8WZQ
-ARG VITE_GOOGLE_GMAIL_API_KEY=AIzaSyAl924pIkpbrJBfCQ1MlpA6yb8XZ3L8WZQ
-ARG VITE_GOOGLE_SHEETS_API_KEY=AIzaSyAl924pIkpbrJBfCQ1MlpA6yb8XZ3L8WZQ
+# Google APIs - These must be passed as build args from CI/CD or .env file
+# Example: docker build --build-arg VITE_GOOGLE_MAPS_API_KEY=$GOOGLE_MAPS_API_KEY ...
+ARG VITE_GOOGLE_CALENDAR_API_KEY
+ARG VITE_GOOGLE_MEET_API_KEY
+ARG VITE_GOOGLE_MAPS_API_KEY
+ARG VITE_GOOGLE_GMAIL_API_KEY
+ARG VITE_GOOGLE_SHEETS_API_KEY
 
 # Google Cloud Speech-to-Text API (for post-meeting transcription)
-ARG VITE_GOOGLE_SPEECH_API_KEY=AIzaSyAl924pIkpbrJBfCQ1MlpA6yb8XZ3L8WZQ
-ARG GOOGLE_SPEECH_API_KEY=AIzaSyAl924pIkpbrJBfCQ1MlpA6yb8XZ3L8WZQ
+ARG VITE_GOOGLE_SPEECH_API_KEY
+ARG GOOGLE_SPEECH_API_KEY
 
 # Jitsi Meet Video Conferencing (FREE)
 ARG JITSI_DOMAIN=meet.jit.si
 
-# Gemini AI Configuration
-ARG VITE_GEMINI_API_KEY=AIzaSyDqERDgZ1l41zfGiQ4FZV62B58DXMbGWj4
+# Gemini AI Configuration - API key must be passed as build arg
+ARG VITE_GEMINI_API_KEY
 ARG VITE_GEMINI_MODEL=gemini-2.5-flash-lite
 ARG VITE_GEMINI_TEMPERATURE=0.3
 ARG VITE_GEMINI_MAX_TOKENS=8192
@@ -157,13 +158,14 @@ COPY package*.json ./
 RUN npm ci --only=production && npm cache clean --force
 
 COPY server/ ./server/
-COPY public/izara-telemedicine-dd0b6abe2bc8.json ./public/
+# Create public directory for credentials (mount at runtime if needed)
+RUN mkdir -p ./public
 COPY --from=frontend-builder /app/dist /usr/share/nginx/html
 
-# Nginx configuration for reverse proxy
+# Nginx configuration for reverse proxy (listen on 3010 for external access)
 RUN printf '%s\n' \
 'server {' \
-'    listen 8080;' \
+'    listen 3010;' \
 '    server_name localhost;' \
 '    root /usr/share/nginx/html;' \
 '    index index.html;' \
@@ -188,7 +190,7 @@ RUN printf '%s\n' \
 '        add_header Cache-Control "public, immutable";' \
 '    }' \
 '    location /api/auth/ {' \
-'        proxy_pass http://127.0.0.1:3011/;' \
+'        proxy_pass http://127.0.0.1:3011/auth/;' \
 '        proxy_http_version 1.1;' \
 '        proxy_set_header Upgrade $http_upgrade;' \
 '        proxy_set_header Connection '"'"'upgrade'"'"';' \
@@ -209,7 +211,7 @@ RUN printf '%s\n' \
 '        proxy_intercept_errors off;' \
 '    }' \
 '    location /api/consultants {' \
-'        proxy_pass http://127.0.0.1:3012/api/consultants;' \
+'        proxy_pass http://127.0.0.1:3009/api/consultants;' \
 '        proxy_http_version 1.1;' \
 '        proxy_set_header Host $host;' \
 '        proxy_set_header X-Real-IP $remote_addr;' \
@@ -218,7 +220,7 @@ RUN printf '%s\n' \
 '        proxy_intercept_errors off;' \
 '    }' \
 '    location /api/content/ {' \
-'        proxy_pass http://127.0.0.1:3012/api/content/;' \
+'        proxy_pass http://127.0.0.1:3009/api/content/;' \
 '        proxy_http_version 1.1;' \
 '        proxy_set_header Host $host;' \
 '        proxy_set_header X-Real-IP $remote_addr;' \
@@ -227,7 +229,7 @@ RUN printf '%s\n' \
 '        proxy_intercept_errors off;' \
 '    }' \
 '    location /api/doctors {' \
-'        proxy_pass http://127.0.0.1:3012/api/doctors;' \
+'        proxy_pass http://127.0.0.1:3009/api/doctors;' \
 '        proxy_http_version 1.1;' \
 '        proxy_set_header Host $host;' \
 '        proxy_set_header X-Real-IP $remote_addr;' \
@@ -340,7 +342,7 @@ RUN printf '%s\n' \
 'directory=/app' \
 'autostart=true' \
 'autorestart=true' \
-'environment=NODE_ENV="production",AUTH_PORT="3011",GCS_API_URL="http://127.0.0.1:3012"' \
+'environment=NODE_ENV="production",AUTH_PORT="3011",GCS_API_URL="http://127.0.0.1:3012",VITE_USE_POSTGRESQL="%(ENV_VITE_USE_POSTGRESQL)s",DATABASE_URL="%(ENV_DATABASE_URL)s"' \
 'stdout_logfile=/dev/stdout' \
 'stdout_logfile_maxbytes=0' \
 'stderr_logfile=/dev/stderr' \
@@ -351,17 +353,19 @@ RUN printf '%s\n' \
 'directory=/app' \
 'autostart=true' \
 'autorestart=true' \
-'environment=NODE_ENV="production",PORT="3009",GCS_API_URL="http://127.0.0.1:3012",GEMINI_API_KEY="%(ENV_GEMINI_API_KEY)s",GEMINI_MODEL="%(ENV_GEMINI_MODEL)s",JITSI_DOMAIN="%(ENV_JITSI_DOMAIN)s",GOOGLE_SPEECH_API_KEY="%(ENV_GOOGLE_SPEECH_API_KEY)s"' \
+'environment=NODE_ENV="production",PORT="3009",GCS_API_URL="http://127.0.0.1:3012",GEMINI_API_KEY="%(ENV_GEMINI_API_KEY)s",GEMINI_MODEL="%(ENV_GEMINI_MODEL)s",JITSI_DOMAIN="%(ENV_JITSI_DOMAIN)s",GOOGLE_SPEECH_API_KEY="%(ENV_GOOGLE_SPEECH_API_KEY)s",VITE_USE_POSTGRESQL="%(ENV_VITE_USE_POSTGRESQL)s",DATABASE_URL="%(ENV_DATABASE_URL)s"' \
 'stdout_logfile=/dev/stdout' \
 'stdout_logfile_maxbytes=0' \
 'stderr_logfile=/dev/stderr' \
 'stderr_logfile_maxbytes=0' > /etc/supervisord.conf
 
-# Set default environment variables for Gemini AI and Jitsi
-ENV GEMINI_API_KEY=AIzaSyDqERDgZ1l41zfGiQ4FZV62B58DXMbGWj4 \
+# Set environment variables for Gemini AI and Jitsi
+# These should be provided at runtime via docker run -e or docker-compose environment
+# DO NOT hardcode API keys here - use secrets management in production
+ENV GEMINI_API_KEY=${GEMINI_API_KEY:-} \
     GEMINI_MODEL=gemini-2.5-flash-lite \
     JITSI_DOMAIN=meet.jit.si \
-    GOOGLE_SPEECH_API_KEY=AIzaSyAl924pIkpbrJBfCQ1MlpA6yb8XZ3L8WZQ
+    GOOGLE_SPEECH_API_KEY=${GOOGLE_SPEECH_API_KEY:-}
 
 # Entrypoint script
 RUN printf '%s\n' \
@@ -381,11 +385,11 @@ RUN chmod +x /docker-entrypoint.sh && \
     mkdir -p /app/server/logs /var/secrets/google
 
 ENV NODE_ENV=production \
-    PORT=8080
+    PORT=3010
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-  CMD curl -f http://localhost:8080/health || exit 1
+  CMD curl -f http://localhost:3010/health || exit 1
 
-EXPOSE 8080
+EXPOSE 3009 3010 3011 3012
 
 ENTRYPOINT ["/docker-entrypoint.sh"]

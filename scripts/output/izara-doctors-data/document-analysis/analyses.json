@@ -1,0 +1,72 @@
+[
+  {
+    "id": "DOC-ANALYSIS-001",
+    "userId": "DOC-001",
+    "patientId": "PATIENT-ANAN",
+    "documentType": "lab_result",
+    "originalFilename": "Lab_Result_Ramathibodi_20260117.pdf",
+    "uploadedAt": "2026-01-17T10:06:48.921Z",
+    "fileUrl": "gs://izara-doctors-data/documents/DOC-ANALYSIS-001/original.pdf",
+    "aiAnalysis": {
+      "status": "completed",
+      "analyzedAt": "2026-01-17T10:06:48.921Z",
+      "model": "gemini-1.5-flash",
+      "summary": "## สรุปผลตรวจ Lab - นายอนันต์ ขยันเรียน\n**วันที่ตรวจ**: 17 มกราคม 2569\n**สถานที่**: โรงพยาบาลรามาธิบดี\n\n### 🔴 ค่าผิดปกติที่สำคัญ\n1. **eGFR: 38 mL/min** - CKD Stage 3b (ลดลงจาก 42)\n2. **HbA1c: 7.8%** - เหนือเป้าหมาย\n3. **UACR: 280 mg/g** - A3 Albuminuria\n4. **K+: 5.1 mEq/L** - ขอบบน ต้องเฝ้าระวัง\n\n### 🟡 ค่าที่ต้องติดตาม\n- Creatinine: 1.8 mg/dL (สูง)\n- FBS: 185 mg/dL (สูง)\n- Triglycerides: 168 mg/dL (สูงเล็กน้อย)\n\n### ✅ ค่าปกติ\n- Lipid profile อื่นๆ ปกติ\n- Sodium ปกติ\n\n### 📋 ข้อเสนอแนะทางคลินิก\n- ปรับยาตาม eGFR ที่ลดลง\n- ติดตาม K+ ใกล้ชิด\n- พิจารณา SGLT2i",
+      "keyFindings": [
+        {
+          "category": "renal",
+          "finding": "CKD Stage 3b progression",
+          "severity": "high"
+        },
+        {
+          "category": "glycemic",
+          "finding": "Suboptimal control",
+          "severity": "medium"
+        },
+        {
+          "category": "electrolyte",
+          "finding": "Borderline hyperkalemia",
+          "severity": "medium"
+        }
+      ],
+      "extractedValues": [
+        {
+          "test": "eGFR",
+          "value": 38,
+          "unit": "mL/min/1.73m²"
+        },
+        {
+          "test": "HbA1c",
+          "value": 7.8,
+          "unit": "%"
+        },
+        {
+          "test": "UACR",
+          "value": 280,
+          "unit": "mg/g"
+        },
+        {
+          "test": "K+",
+          "value": 5.1,
+          "unit": "mEq/L"
+        },
+        {
+          "test": "Creatinine",
+          "value": 1.8,
+          "unit": "mg/dL"
+        }
+      ],
+      "cdsTriggered": true,
+      "cdsAlerts": [
+        "METFORMIN_DOSE_ADJUSTMENT",
+        "K_MONITORING"
+      ]
+    },
+    "doctorReview": {
+      "reviewed": true,
+      "reviewedAt": "2026-01-17T10:06:48.921Z",
+      "reviewedBy": "DOC-001",
+      "notes": "AI analysis accurate. Will adjust Metformin and schedule close follow-up."
+    }
+  }
+]

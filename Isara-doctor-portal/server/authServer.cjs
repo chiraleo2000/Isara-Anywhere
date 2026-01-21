@@ -12,8 +12,13 @@
  * OWASP Top 10:2025 Compliant
  */
 
+// Load environment variables from .env file FIRST
+const dotenv = require('dotenv');
+dotenv.config();
+
 // Force unbuffered output for Cloud Run logging
 process.stdout.write('[AUTH-SERVER] Starting module load...\n');
+process.stdout.write(`[AUTH-SERVER] Loaded .env - USE_POSTGRESQL=${process.env.USE_POSTGRESQL}\n`);
 
 process.stdout.write('[AUTH-SERVER] Loading express...\n');
 const express = require('express');
@@ -21,13 +26,15 @@ process.stdout.write('[AUTH-SERVER] Loading cors...\n');
 const cors = require('cors');
 process.stdout.write('[AUTH-SERVER] Loading bcryptjs...\n');
 const bcrypt = require('bcryptjs');
+process.stdout.write('[AUTH-SERVER] Loading jsonwebtoken...\n');
+const jwt = require('jsonwebtoken');
 process.stdout.write('[AUTH-SERVER] Loading crypto...\n');
-const crypto = require('crypto');
+const crypto = require('node:crypto');
 process.stdout.write('[AUTH-SERVER] Loading http...\n');
-const http = require('http');
+const http = require('node:http');
 process.stdout.write('[AUTH-SERVER] Loading socket.io...\n');
 const { Server } = require('socket.io');
-const path = require('path');
+const path = require('node:path');
 
 process.stdout.write('[AUTH-SERVER] Loading email service...\n');
 const { emailService } = require('./emailService.cjs');
@@ -66,6 +73,92 @@ process.stdout.write(`[AUTH-SERVER] App created, port=${PORT}\n`);
 const GCS_API_URL = process.env.GCS_API_URL || 'http://localhost:3012';
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin.test@izara.com';
 
+// ============================================================================
+// JWT CONFIGURATION - MUST match mainApiServer.cjs
+// ============================================================================
+const JWT_SECRET = process.env.JWT_SECRET || process.env.VITE_JWT_SECRET || 'izara-telemedicine-secret-key-2025';
+const JWT_ISSUER = process.env.JWT_ISSUER || 'izara-telemedicine';
+const JWT_EXPIRES_IN = '24h';
+
+/**
+ * Generate JWT token for authenticated user
+ */
+function generateJWT(user) {
+  const payload = {
+    userId: user.id,
+    email: user.email,
+    role: user.role,
+    name: user.name,
+    doctorId: user.doctor_id || user.doctorId || null,
+    isAdmin: user.is_admin || user.isAdmin || false
+  };
+  
+  return jwt.sign(payload, JWT_SECRET, {
+    issuer: JWT_ISSUER,
+    expiresIn: JWT_EXPIRES_IN,
+    algorithm: 'HS256'
+  });
+}
+
+// ============================================================================
+// POSTGRESQL CONFIGURATION
+// ============================================================================
+const USE_POSTGRESQL = process.env.VITE_USE_POSTGRESQL === 'true' || process.env.USE_POSTGRESQL === 'true';
+let PostgresDataService = null;
+let pgPool = null;
+
+if (USE_POSTGRESQL) {
+  try {
+    PostgresDataService = require('./services/postgresDataService.cjs');
+    const { Pool } = require('pg');
+    
+    // Parse DATABASE_URL if available
+    let dbConfig = {};
+    if (process.env.DATABASE_URL) {
+      try {
+        const url = new URL(process.env.DATABASE_URL);
+        dbConfig = {
+          host: url.hostname,
+          port: Number.parseInt(url.port || '5432', 10),
+          database: url.pathname.substring(1),
+          user: url.username,
+          password: decodeURIComponent(url.password),
+        };
+      } catch (e) {
+        console.warn('⚠️ Failed to parse DATABASE_URL:', e.message);
+      }
+    }
+    
+    pgPool = new Pool({
+      host: dbConfig.host || process.env.DB_HOST || 'localhost',
+      port: dbConfig.port || Number.parseInt(process.env.DB_PORT || '5432', 10),
+      database: dbConfig.database || process.env.DB_NAME || 'izara_phase1',
+      user: dbConfig.user || process.env.DB_USER || 'postgres',
+      password: dbConfig.password || process.env.DB_PASSWORD || 'P@ssw0rd',
+      max: 20,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 2000,
+    });
+    
+    // Handle pool errors to prevent process exit
+    pgPool.on('error', (err) => {
+      console.error('PostgreSQL pool error:', err.message);
+    });
+    
+    // Test connection
+    pgPool.query('SELECT NOW()')
+      .then(() => console.log('✅ PostgreSQL connected (Auth Server)'))
+      .catch(err => console.error('❌ PostgreSQL connection error:', err.message));
+    
+    console.log('✅ PostgreSQL Auth Service loaded - USE_POSTGRESQL=true');
+  } catch (error) {
+    console.error('❌ Failed to load PostgreSQL service:', error.message);
+    console.log('⚠️ Falling back to GCS storage');
+  }
+} else {
+  console.log('📦 Using GCS storage for authentication (USE_POSTGRESQL=false)');
+}
+
 const BUCKETS = {
   credentials: 'izara-users-credentials',
   doctor: 'izara-doctors-data',
@@ -81,6 +174,11 @@ const ALLOWED_ORIGINS = process.env.NODE_ENV === 'production'
       'https://izara.com',
       'https://izara-doctor-portal-724889190329.asia-southeast1.run.app',
       'https://izara-patient-portal-724889190329.asia-southeast1.run.app',
+      // Allow localhost for testing Docker containers locally
+      'http://localhost:3010',
+      'http://localhost:3005',
+      'http://127.0.0.1:3010',
+      'http://127.0.0.1:3005',
       /\.run\.app$/
     ]
   : ['http://localhost:3010', 'http://localhost:3011', 'http://127.0.0.1:3010', 'http://0.0.0.0:3010'];
@@ -237,8 +335,122 @@ function verifyPassword(password, hash) {
 }
 
 function sanitizeUser(user) {
-  const { passwordHash, loginAttempts, lockedUntil, ...sanitized } = user;
+  const { passwordHash, password_hash, loginAttempts, login_attempts, lockedUntil, locked_until, ...sanitized } = user;
   return sanitized;
+}
+
+// ============================================================================
+// POSTGRESQL AUTH HELPERS
+// ============================================================================
+
+async function pgFindUserByEmail(email) {
+  if (!pgPool) return null;
+  try {
+    console.log('[PG-AUTH] Looking up user:', email);
+    const result = await pgPool.query(
+      `SELECT u.*, 
+              u.password_hash as "passwordHash",
+              u.is_admin as "isAdmin",
+              u.is_active as "isActive",
+              u.admin_privileges as "adminPrivileges",
+              u.name_thai as "nameThai",
+              u.doctor_id as "doctorId",
+              u.is_approved as "isApproved",
+              u.approval_status as "approvalStatus",
+              u.login_attempts as "loginAttempts",
+              u.locked_until as "lockedUntil",
+              u.last_login as "lastLogin",
+              u.created_at as "createdAt",
+              dp.specialty,
+              dp.hospital_name as "hospitalName",
+              dp.qualifications as "medicalLicenseNumber"
+       FROM users u
+       LEFT JOIN doctor_profiles dp ON dp.doctor_id = u.id
+       WHERE LOWER(u.email) = LOWER($1)`,
+      [email]
+    );
+    const user = result.rows[0] || null;
+    if (user) {
+      console.log('[PG-AUTH] Found user:', user.email, 'role:', user.role, 'hash prefix:', user.passwordHash?.substring(0, 20));
+    } else {
+      console.log('[PG-AUTH] User not found');
+    }
+    return user;
+  } catch (err) {
+    console.error('PostgreSQL user lookup error:', err.message);
+    return null;
+  }
+}
+
+async function pgCreateSession(userId, email, role, ip, userAgent, deviceId) {
+  if (!pgPool) return null;
+  try {
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    
+    const result = await pgPool.query(
+      `INSERT INTO sessions (id, user_id, token, expires_at, ip_address, user_agent)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING *`,
+      [crypto.randomUUID(), userId, token, expiresAt, ip, userAgent?.substring(0, 500)]
+    );
+    
+    // Update last_login
+    await pgPool.query('UPDATE users SET last_login = NOW() WHERE id = $1', [userId]);
+    
+    return {
+      token,
+      expiresAt: expiresAt.toISOString(),
+      session: result.rows[0]
+    };
+  } catch (err) {
+    console.error('PostgreSQL session creation error:', err.message);
+    return null;
+  }
+}
+
+async function pgValidateSession(token) {
+  if (!pgPool) return null;
+  try {
+    const result = await pgPool.query(
+      `SELECT s.*, u.id as user_id, u.email, u.role, u.name, u.name_thai, u.is_admin, u.doctor_id,
+              u.admin_privileges, u.specialty, dp.hospital_name
+       FROM sessions s
+       JOIN users u ON s.user_id = u.id
+       LEFT JOIN doctor_profiles dp ON dp.doctor_id = u.id
+       WHERE s.token = $1 AND s.expires_at > NOW()`,
+      [token]
+    );
+    return result.rows[0] || null;
+  } catch (err) {
+    console.error('PostgreSQL session validation error:', err.message);
+    return null;
+  }
+}
+
+async function pgInvalidateSession(token) {
+  if (!pgPool) return false;
+  try {
+    await pgPool.query('DELETE FROM sessions WHERE token = $1', [token]);
+    return true;
+  } catch (err) {
+    console.error('PostgreSQL session invalidation error:', err.message);
+    return false;
+  }
+}
+
+async function pgUpdateLoginAttempts(userId, attempts, lockedUntil = null) {
+  if (!pgPool) return false;
+  try {
+    await pgPool.query(
+      'UPDATE users SET login_attempts = $1, locked_until = $2 WHERE id = $3',
+      [attempts, lockedUntil, userId]
+    );
+    return true;
+  } catch (err) {
+    console.error('PostgreSQL update login attempts error:', err.message);
+    return false;
+  }
 }
 
 // ============================================================================
@@ -482,6 +694,124 @@ app.post('/auth/login',
       });
     }
 
+    // ========================================================================
+    // PostgreSQL-first login (when USE_POSTGRESQL=true)
+    // ========================================================================
+    if (USE_POSTGRESQL && pgPool) {
+      console.log('[AUTH] Using PostgreSQL for login');
+      
+      // Find user by email
+      const user = await pgFindUserByEmail(email);
+      
+      if (!user) {
+        trackLoginAttempt(email, false);
+        securityAuditLog({
+          event: 'LOGIN_FAILED_USER_NOT_FOUND',
+          severity: 'WARN',
+          email,
+          ip: getClientIP(req)
+        });
+        return res.status(401).json({ error: 'Invalid credentials', code: 'INVALID_CREDENTIALS' });
+      }
+      
+      // Check if account is active
+      if (user.isActive === false || user.is_active === false) {
+        return res.status(403).json({ 
+          error: 'Account is deactivated. Please contact administrator.',
+          code: 'ACCOUNT_DEACTIVATED'
+        });
+      }
+      
+      // Check if account is locked
+      if (user.lockedUntil || user.locked_until) {
+        const lockTime = new Date(user.lockedUntil || user.locked_until);
+        if (lockTime > new Date()) {
+          return res.status(423).json({
+            error: 'Account is locked',
+            code: 'ACCOUNT_LOCKED',
+            remainingTime: Math.ceil((lockTime - Date.now()) / 1000)
+          });
+        }
+      }
+      
+      // Verify password
+      const passwordHash = user.passwordHash || user.password_hash;
+      if (!passwordHash || !verifyPassword(password, passwordHash)) {
+        // Track failed attempt
+        const attempts = (user.loginAttempts || user.login_attempts || 0) + 1;
+        let lockedUntil = null;
+        
+        if (attempts >= 5) {
+          lockedUntil = new Date(Date.now() + 30 * 60 * 1000);
+        }
+        
+        await pgUpdateLoginAttempts(user.id, attempts, lockedUntil);
+        trackLoginAttempt(email, false);
+        
+        return res.status(401).json({ error: 'Invalid credentials', code: 'INVALID_CREDENTIALS' });
+      }
+      
+      // Reset login attempts on success
+      await pgUpdateLoginAttempts(user.id, 0, null);
+      
+      // Create session for session tracking (optional)
+      const clientIP = getClientIP(req);
+      const sessionResult = await pgCreateSession(
+        user.id, 
+        user.email, 
+        user.role, 
+        clientIP, 
+        clientUserAgent || req.headers['user-agent'],
+        deviceId
+      );
+      
+      if (!sessionResult) {
+        return res.status(500).json({ error: 'Failed to create session', code: 'SESSION_ERROR' });
+      }
+      
+      // Generate JWT token for API authentication
+      const jwtToken = generateJWT(user);
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+      
+      // Track successful login
+      trackLoginAttempt(email, true);
+      
+      securityAuditLog({
+        event: 'LOGIN_SUCCESS',
+        severity: 'INFO',
+        userId: user.id,
+        email,
+        role: user.role,
+        ip: clientIP,
+        source: 'PostgreSQL'
+      });
+      
+      return res.json({
+        success: true,
+        token: jwtToken, // JWT token for API authentication
+        sessionToken: sessionResult.token, // Session token for session management
+        user: sanitizeUser({
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          nameThai: user.name_thai || user.nameThai,
+          role: user.role,
+          doctorId: user.doctor_id || user.doctorId,
+          isAdmin: user.is_admin || user.isAdmin,
+          adminPrivileges: user.admin_privileges || user.adminPrivileges,
+          specialty: user.specialty,
+          hospitalName: user.hospital_name || user.hospitalName,
+          medicalLicenseNumber: user.medical_license || user.medicalLicenseNumber
+        }),
+        expiresAt: expiresAt
+      });
+    }
+
+    // ========================================================================
+    // Fallback to GCS-based login
+    // ========================================================================
+    console.log('[AUTH] Using GCS for login');
+    
     // Find user by email
     const usersIndex = await fetchFromGCS(BUCKETS.credentials, 'users/index.json') || [];
     const userRef = usersIndex.find(u => u.email.toLowerCase() === email.toLowerCase());
@@ -546,7 +876,7 @@ app.post('/auth/login',
     if (userCredential.lockedUntil) {
       const lockTime = new Date(userCredential.lockedUntil);
       if (lockTime > new Date()) {
-        const remainingTime = Math.ceil((lockTime - new Date()) / 1000);
+        const remainingTime = Math.ceil((lockTime - Date.now()) / 1000);
         return res.status(423).json({
           error: 'Account is locked',
           code: 'ACCOUNT_LOCKED',
@@ -574,7 +904,6 @@ app.post('/auth/login',
     // A04 - Verify password using bcrypt (timing-safe)
     if (!verifyPassword(password, userCredential.passwordHash)) {
       // A07 - Track failed login attempt
-      const attemptResult = trackLoginAttempt(email, false);
       userCredential.loginAttempts = (userCredential.loginAttempts || 0) + 1;
 
       // A07 - Lock account after 5 failed attempts (persist to GCS)
@@ -592,7 +921,12 @@ app.post('/auth/login',
         });
       }
 
-      await writeToGCS(BUCKETS.credentials, `users/${userRef.id}.json`, userCredential);
+      // Try to persist failed login attempt (non-blocking)
+      try {
+        await writeToGCS(BUCKETS.credentials, `users/${userRef.id}.json`, userCredential);
+      } catch (writeError) {
+        console.log('Warning: Could not persist failed login attempt:', writeError.message);
+      }
 
       return res.status(401).json({ error: 'Invalid credentials' });
     }
@@ -601,7 +935,13 @@ app.post('/auth/login',
     userCredential.loginAttempts = 0;
     userCredential.lockedUntil = null;
     userCredential.lastLogin = new Date().toISOString();
-    await writeToGCS(BUCKETS.credentials, `users/${userRef.id}.json`, userCredential);
+    
+    // Try to update user credential (non-critical - don't fail login if this fails)
+    try {
+      await writeToGCS(BUCKETS.credentials, `users/${userRef.id}.json`, userCredential);
+    } catch (writeError) {
+      console.log('Warning: Could not update user credential after login:', writeError.message);
+    }
 
     // Create session with device binding
     const sessionToken = generateToken();
@@ -621,7 +961,13 @@ app.post('/auth/login',
       isValid: true
     };
 
-    await writeToGCS(BUCKETS.credentials, `sessions/${sessionToken}.json`, session);
+    // Session write is critical but we should try to make it work
+    try {
+      await writeToGCS(BUCKETS.credentials, `sessions/${sessionToken}.json`, session);
+    } catch (sessionWriteError) {
+      console.log('Warning: Could not persist session to GCS:', sessionWriteError.message);
+      // Continue anyway - session will be in-memory only
+    }
 
     // Invalidate other sessions from different devices/IPs for this user (security measure)
     // This ensures one user can only be logged in from one device at a time
@@ -632,17 +978,13 @@ app.post('/auth/login',
       // Mark old sessions from different devices as invalid
       for (const oldSessionId of userSessions) {
         if (oldSessionId !== sessionToken) {
-          try {
-            const oldSession = await fetchFromGCS(BUCKETS.credentials, `sessions/${oldSessionId}.json`);
-            if (oldSession && oldSession.isValid && (oldSession.deviceId !== deviceId || oldSession.ip !== clientIP)) {
-              oldSession.isValid = false;
-              oldSession.invalidatedBy = 'new_device_login';
-              oldSession.invalidatedAt = new Date().toISOString();
-              await writeToGCS(BUCKETS.credentials, `sessions/${oldSessionId}.json`, oldSession);
-              console.log(`🔒 Invalidated old session ${oldSessionId} due to new device login`);
-            }
-          } catch (e) {
-            // Session might not exist, ignore
+          const oldSession = await fetchFromGCS(BUCKETS.credentials, `sessions/${oldSessionId}.json`);
+          if (oldSession && oldSession.isValid && (oldSession.deviceId !== deviceId || oldSession.ip !== clientIP)) {
+            oldSession.isValid = false;
+            oldSession.invalidatedBy = 'new_device_login';
+            oldSession.invalidatedAt = new Date().toISOString();
+            await writeToGCS(BUCKETS.credentials, `sessions/${oldSessionId}.json`, oldSession);
+            console.log(`🔒 Invalidated old session ${oldSessionId} due to new device login`);
           }
         }
       }
@@ -667,19 +1009,23 @@ app.post('/auth/login',
       ip: getClientIP(req)
     });
 
-    // Log login history
-    const loginHistory = await fetchFromGCS(BUCKETS.credentials, `login-history/${userRef.id}.json`) || [];
-    loginHistory.push({
-      timestamp: new Date().toISOString(),
-      success: true,
-      ip: getClientIP(req),
-      userAgent: req.headers['user-agent']?.substring(0, 100)
-    });
-    // Keep only last 100 entries
-    if (loginHistory.length > 100) {
-      loginHistory.splice(0, loginHistory.length - 100);
+    // Log login history (non-blocking - don't fail login if this fails)
+    try {
+      const loginHistory = await fetchFromGCS(BUCKETS.credentials, `login-history/${userRef.id}.json`) || [];
+      loginHistory.push({
+        timestamp: new Date().toISOString(),
+        success: true,
+        ip: getClientIP(req),
+        userAgent: req.headers['user-agent']?.substring(0, 100)
+      });
+      // Keep only last 100 entries
+      if (loginHistory.length > 100) {
+        loginHistory.splice(0, loginHistory.length - 100);
+      }
+      await writeToGCS(BUCKETS.credentials, `login-history/${userRef.id}.json`, loginHistory);
+    } catch (historyError) {
+      console.log('Warning: Could not update login history:', historyError.message);
     }
-    await writeToGCS(BUCKETS.credentials, `login-history/${userRef.id}.json`, loginHistory);
 
     res.json({
       success: true,
@@ -707,24 +1053,34 @@ app.post('/auth/logout', async (req, res) => {
     const token = authHeader && authHeader.split(' ')[1];
 
     if (token) {
+      // PostgreSQL-first session invalidation
+      if (USE_POSTGRESQL && pgPool) {
+        await pgInvalidateSession(token);
+        securityAuditLog({
+          event: 'LOGOUT_SUCCESS',
+          severity: 'INFO',
+          sessionId: token,
+          ip: getClientIP(req),
+          source: 'PostgreSQL'
+        });
+        return res.json({ success: true, message: 'Logged out successfully' });
+      }
+      
+      // Fallback to GCS
       // A07 - Invalidate session by marking it as logged out
-      try {
-        const session = await fetchFromGCS(BUCKETS.credentials, `sessions/${token}.json`);
-        if (session) {
-          session.loggedOutAt = new Date().toISOString();
-          session.isValid = false;
-          await writeToGCS(BUCKETS.credentials, `sessions/${token}.json`, session);
-          
-          securityAuditLog({
-            event: 'LOGOUT_SUCCESS',
-            severity: 'INFO',
-            userId: session.userId,
-            sessionId: token,
-            ip: getClientIP(req)
-          });
-        }
-      } catch (e) {
-        // Session might not exist, that's okay
+      const session = await fetchFromGCS(BUCKETS.credentials, `sessions/${token}.json`);
+      if (session) {
+        session.loggedOutAt = new Date().toISOString();
+        session.isValid = false;
+        await writeToGCS(BUCKETS.credentials, `sessions/${token}.json`, session);
+        
+        securityAuditLog({
+          event: 'LOGOUT_SUCCESS',
+          severity: 'INFO',
+          userId: session.userId,
+          sessionId: token,
+          ip: getClientIP(req)
+        });
       }
     }
 
@@ -1633,6 +1989,40 @@ app.get('/auth/verify', async (req, res) => {
       return res.status(401).json({ error: 'No token provided' });
     }
 
+    // ========================================================================
+    // PostgreSQL-first session verification
+    // ========================================================================
+    if (USE_POSTGRESQL && pgPool) {
+      const sessionData = await pgValidateSession(token);
+      
+      if (!sessionData) {
+        return res.status(401).json({ error: 'Invalid or expired session' });
+      }
+      
+      return res.json({
+        valid: true,
+        user: sanitizeUser({
+          id: sessionData.user_id,
+          email: sessionData.email,
+          name: sessionData.name,
+          nameThai: sessionData.name_thai,
+          role: sessionData.role,
+          doctorId: sessionData.doctor_id,
+          isAdmin: sessionData.is_admin,
+          adminPrivileges: sessionData.admin_privileges,
+          specialty: sessionData.specialty,
+          hospitalName: sessionData.hospital_name
+        }),
+        session: {
+          id: sessionData.id,
+          expiresAt: sessionData.expires_at
+        }
+      });
+    }
+
+    // ========================================================================
+    // Fallback to GCS-based verification
+    // ========================================================================
     const session = await fetchFromGCS(BUCKETS.credentials, `sessions/${token}.json`);
 
     if (!session) {
@@ -1784,13 +2174,17 @@ async function startServer() {
     console.log('\n═══════════════════════════════════════════════════════════════\n');
   });
 
-  // Verify GCS connection in the background (non-blocking)
-  verifyGCSConnection().then(gcsConnected => {
-    if (!gcsConnected) {
-      console.error('⚠️  WARNING: Could not connect to GCS API Server');
-      console.error('   Make sure it\'s running on: ' + GCS_API_URL + '\n');
-    }
-  });
+  // Verify GCS connection in the background (non-blocking) - skip if using PostgreSQL
+  if (!USE_POSTGRESQL) {
+    verifyGCSConnection().then(gcsConnected => {
+      if (!gcsConnected) {
+        console.error('⚠️  WARNING: Could not connect to GCS API Server');
+        console.error('   Make sure it\'s running on: ' + GCS_API_URL + '\n');
+      }
+    });
+  } else {
+    console.log('📦 Using PostgreSQL - skipping GCS verification');
+  }
 
   // Initialize email service in the background (non-blocking)
   emailService.initialize().then(() => {
@@ -1803,5 +2197,10 @@ async function startServer() {
 
 // Start the server
 startServer();
+
+// Keep the process alive
+setInterval(() => {
+  // Keep-alive heartbeat
+}, 30000);
 
 module.exports = { app, server };

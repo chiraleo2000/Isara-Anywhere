@@ -1,0 +1,65 @@
+[
+  {
+    "category": "PATIENT_UI",
+    "testName": "Login Page Loads",
+    "passed": false,
+    "details": "Waiting for element to be located By(css selector, input[type=\"email\"], input[name=\"email\"], #email, input[placeholder*=\"Email\"], input[placeholder*=\"อีเมล\"])\nWait timed out after 30016ms",
+    "timestamp": "2026-01-19T14:01:49.776Z"
+  },
+  {
+    "category": "PATIENT_UI",
+    "testName": "Patient Login",
+    "passed": false,
+    "details": "no such element: Unable to locate element: {\"method\":\"css selector\",\"selector\":\"input[type=\"email\"], input[name=\"email\"], #email, input[placeholder*=\"Email\"], input[placeholder*=\"อีเมล\"]\"}\n  (Session info: chrome=144.0.7559.60)",
+    "timestamp": "2026-01-19T14:01:49.907Z"
+  },
+  {
+    "category": "PATIENT_UI",
+    "testName": "Dashboard Navigation",
+    "passed": false,
+    "details": "0 nav items found",
+    "timestamp": "2026-01-19T14:01:52.130Z"
+  },
+  {
+    "category": "DOCTOR_UI",
+    "testName": "Login Page Loads",
+    "passed": true,
+    "details": "Login form visible",
+    "timestamp": "2026-01-19T14:01:59.949Z"
+  },
+  {
+    "category": "DOCTOR_UI",
+    "testName": "Doctor Login",
+    "passed": false,
+    "details": "Error: ",
+    "timestamp": "2026-01-19T14:02:06.958Z"
+  },
+  {
+    "category": "DOCTOR_UI",
+    "testName": "Patient List Navigation",
+    "passed": false,
+    "details": "no such element: Unable to locate element: {\"method\":\"xpath\",\"selector\":\"//a[contains(@href, \"patient\") or contains(text(), \"ผู้ป่วย\") or contains(text(), \"Patient\")]\"}\n  (Session info: chrome=144.0.7559.60)",
+    "timestamp": "2026-01-19T14:02:09.393Z"
+  },
+  {
+    "category": "DOCTOR_UI",
+    "testName": "Appointments Navigation",
+    "passed": false,
+    "details": "no such element: Unable to locate element: {\"method\":\"xpath\",\"selector\":\"//a[contains(@href, \"appointment\") or contains(text(), \"นัดหมาย\") or contains(text(), \"Appointment\")]\"}\n  (Session info: chrome=144.0.7559.60)",
+    "timestamp": "2026-01-19T14:02:09.406Z"
+  },
+  {
+    "category": "ADMIN_UI",
+    "testName": "Admin Login",
+    "passed": false,
+    "details": "Still on login page",
+    "timestamp": "2026-01-19T14:02:24.714Z"
+  },
+  {
+    "category": "ADMIN_UI",
+    "testName": "Admin Dashboard",
+    "passed": true,
+    "details": "0 admin links found",
+    "timestamp": "2026-01-19T14:02:27.266Z"
+  }
+]

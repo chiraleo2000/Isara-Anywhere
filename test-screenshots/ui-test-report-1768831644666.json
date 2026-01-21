@@ -1,0 +1,65 @@
+[
+  {
+    "category": "PATIENT_UI",
+    "testName": "Login Page Loads",
+    "passed": false,
+    "details": "Waiting for element to be located By(css selector, input[name=\"email\"])\nWait timed out after 30060ms",
+    "timestamp": "2026-01-19T14:06:42.932Z"
+  },
+  {
+    "category": "PATIENT_UI",
+    "testName": "Patient Login",
+    "passed": false,
+    "details": "no such element: Unable to locate element: {\"method\":\"css selector\",\"selector\":\"input[name=\"email\"]\"}\n  (Session info: chrome=144.0.7559.60)",
+    "timestamp": "2026-01-19T14:06:43.070Z"
+  },
+  {
+    "category": "PATIENT_UI",
+    "testName": "Dashboard Navigation",
+    "passed": false,
+    "details": "0 nav items found",
+    "timestamp": "2026-01-19T14:06:45.371Z"
+  },
+  {
+    "category": "DOCTOR_UI",
+    "testName": "Login Page Loads",
+    "passed": true,
+    "details": "Login form visible",
+    "timestamp": "2026-01-19T14:06:53.391Z"
+  },
+  {
+    "category": "DOCTOR_UI",
+    "testName": "Doctor Login",
+    "passed": false,
+    "details": "Error: ",
+    "timestamp": "2026-01-19T14:07:00.787Z"
+  },
+  {
+    "category": "DOCTOR_UI",
+    "testName": "Patient List Navigation",
+    "passed": false,
+    "details": "no such element: Unable to locate element: {\"method\":\"xpath\",\"selector\":\"//a[contains(@href, \"patient\") or contains(text(), \"ผู้ป่วย\") or contains(text(), \"Patient\")]\"}\n  (Session info: chrome=144.0.7559.60)",
+    "timestamp": "2026-01-19T14:07:03.327Z"
+  },
+  {
+    "category": "DOCTOR_UI",
+    "testName": "Appointments Navigation",
+    "passed": false,
+    "details": "no such element: Unable to locate element: {\"method\":\"xpath\",\"selector\":\"//a[contains(@href, \"appointment\") or contains(text(), \"นัดหมาย\") or contains(text(), \"Appointment\")]\"}\n  (Session info: chrome=144.0.7559.60)",
+    "timestamp": "2026-01-19T14:07:03.341Z"
+  },
+  {
+    "category": "ADMIN_UI",
+    "testName": "Admin Login",
+    "passed": false,
+    "details": "Still on login page",
+    "timestamp": "2026-01-19T14:07:18.970Z"
+  },
+  {
+    "category": "ADMIN_UI",
+    "testName": "Admin Dashboard",
+    "passed": true,
+    "details": "0 admin links found",
+    "timestamp": "2026-01-19T14:07:21.548Z"
+  }
+]

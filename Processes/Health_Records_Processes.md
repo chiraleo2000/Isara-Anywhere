@@ -2,8 +2,20 @@
 
 This document details the full health record workflow for Izara Telemedicine, including all user roles, notification logic, error handling, and business rules for PHR (Personal Health Record) and EMR (Electronic Medical Record). It covers data integration, access, and the relationship between appointment outcomes, EMR, and lab results.
 
-**Last Updated: December 12, 2025**
-**Version: 2.2.0**
+**Version:** 3.0.0  
+**Last Updated:** January 21, 2026  
+**Status:** ✅ PostgreSQL Implementation
+
+---
+
+## Phase 1 AI Integration Summary
+
+| Feature | Description | Status |
+|---------|-------------|--------|
+| **AI-Generated EMR** | Gemini generates SOAP format EMR from meeting transcripts | ✅ |
+| **Man-in-the-Loop** | Doctor validates/edits all AI-generated content | ✅ |
+| **Patient Instructions** | AI generates patient-friendly instruction sheets | ✅ |
+| **Document Analysis** | AI analyzes uploaded PDFs and lab results | ✅ |
 
 ---
 
@@ -12,12 +24,12 @@ This document details the full health record workflow for Izara Telemedicine, in
 - **Patient**
   - Logs in via Patient Portal (`LoginPage.tsx`) using their own patient account (patientId)
   - Accesses dashboard, health logs (PHR), appointment and lab results associated with their own account
-  - **Credentials stored**: `izara-users-credentials` bucket under `users/{userId}.json`
+  - **Credentials stored**: PostgreSQL `users` table with bcrypt hashed password
 
 - **Doctor/Admin**
   - Logs in via Doctor Portal (`DoctorDashboard.tsx`) using their own doctor account (doctorId)
   - Can view and edit full EMR, see patient PHR, and manage lab results for patients under their care
-  - **Credentials stored**: `izara-users-credentials` bucket under `users/{userId}.json`
+  - **Credentials stored**: PostgreSQL `users` table with bcrypt hashed password
 
 ---
 
@@ -27,8 +39,8 @@ This document details the full health record workflow for Izara Telemedicine, in
 
 - **Patient Portal PHR Page (`PHRPage.tsx`)**
   - Patient enters vital signs, medications, allergies, and chronic conditions
-  - Data is saved directly to GCS: `patients/{patientId}/phr.json` and `patients/{patientId}/vital-signs.json`
-  - All data includes `patientId` and `measuredAt` timestamp
+  - Data is saved to PostgreSQL: `phr` and `vital_signs` tables
+  - All data includes `patient_id` and `recorded_at` timestamp
   - Data is immediately available to authorized doctors
 
 - **Supported PHR Data Types:**

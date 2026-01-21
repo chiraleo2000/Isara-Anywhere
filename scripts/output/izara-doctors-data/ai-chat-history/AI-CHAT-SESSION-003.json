@@ -1,0 +1,36 @@
+{
+  "sessionId": "AI-CHAT-SESSION-003",
+  "doctorId": "DOC-001",
+  "patientId": "PATIENT-001",
+  "appointmentId": "APT-DEMO-001",
+  "sessionType": "general_query",
+  "createdAt": "2026-01-14T10:06:48.891Z",
+  "messages": [
+    {
+      "id": "df4d50d2-e932-4e4e-aed7-7d67d239c097",
+      "role": "system",
+      "content": "คุณคือผู้ช่วยแพทย์ AI ของระบบ Izara Telemedicine",
+      "timestamp": "2026-01-14T10:06:48.891Z"
+    },
+    {
+      "id": "5ea4762c-0bdc-4def-a45c-3f52d38dcd1f",
+      "role": "user",
+      "content": "สรุปประวัติการรักษาของ PATIENT-001 (Demo Test User) ทั้งหมด",
+      "timestamp": "2026-01-14T10:06:48.891Z",
+      "context": {
+        "patientId": "PATIENT-001"
+      }
+    },
+    {
+      "id": "09c60a9a-7763-450a-9119-a8e389c104ad",
+      "role": "assistant",
+      "content": "## 📋 สรุปประวัติการรักษา - Demo Test User (PATIENT-001)\n\n### ข้อมูลทั่วไป\n- **ชื่อ**: นาย ทดสอบ ระบบ (Demo Test User)\n- **อายุ**: 34 ปี\n- **เพศ**: ชาย\n- **กรุ๊ปเลือด**: O+\n\n### โรคประจำตัว\n1. **ความดันโลหิตสูงปฐมภูมิ (Essential Hypertension - I10)**\n   - วินิจฉัยครั้งแรก: กันยายน 2025\n   - สถานะ: ควบคุมได้ดี\n\n### ประวัติการรักษา (Encounter History)\n\n#### 📅 ครั้งที่ 1 - 6 ก.ย. 2025 (Initial Consultation)\n- **Chief Complaint**: ปวดศีรษะเป็นพักๆ, ตรวจพบความดันสูง\n- **Vital Signs**: BP 148/92, HR 78\n- **Diagnosis**: Essential hypertension - newly diagnosed\n- **Treatment**: เริ่ม Amlodipine 5mg OD\n- **Lifestyle counseling**: DASH diet, ลดเกลือ, ออกกำลังกาย\n\n#### 📅 ครั้งที่ 2 - 5 ธ.ค. 2025 (Follow-up)\n- **Chief Complaint**: มานัดติดตาม\n- **Vital Signs**: BP 135/82, HR 72 ✅ ดีขึ้น\n- **Status**: ควบคุมได้ดี, ไม่มีผลข้างเคียงจากยา\n- **Plan**: Continue Amlodipine, F/U 3 เดือน\n\n### ยาปัจจุบัน\n| ยา | ขนาด | วิธีใช้ |\n|----|------|-------|\n| Amlodipine | 5mg | วันละ 1 ครั้ง เช้า |\n\n### ข้อแนะนำ\n- ✅ การรักษาดำเนินไปได้ดี\n- ✅ ไม่มี CDS alerts\n- 📅 นัดติดตามครั้งถัดไป: มีนาคม 2026\n\n*สร้างโดย AI Assistant - ข้อมูล ณ วันที่สอบถาม*",
+      "timestamp": "2026-01-14T10:06:48.891Z",
+      "aiMetadata": {
+        "model": "gemini-1.5-flash",
+        "tokensUsed": 680,
+        "confidence": 0.96
+      }
+    }
+  ]
+}

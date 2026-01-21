@@ -1,0 +1,92 @@
+[
+  {
+    "id": "CDS-LOG-001",
+    "doctorId": "DOC-001",
+    "patientId": "PATIENT-ANAN",
+    "appointmentId": "APT-ANAN-001",
+    "cdsType": "dose_adjustment",
+    "alertLevel": "high",
+    "drugName": "Metformin",
+    "currentDose": "500mg BID",
+    "recommendedDose": "500mg OD",
+    "recommendation": "ลดขนาดยา Metformin 50% เนื่องจาก eGFR ลดลงเหลือ 38 mL/min (CKD Stage 3b)",
+    "recommendationThai": "แนะนำลดขนาดยา Metformin จาก 500mg วันละ 2 ครั้ง เหลือ 500mg วันละ 1 ครั้ง",
+    "clinicalRationale": "eGFR 38 indicates CKD Stage 3b. According to KDIGO 2024 Guidelines, Metformin should be reduced by 50% when eGFR is 30-45. Risk of lactic acidosis increases with declining kidney function.",
+    "guidelinesReferenced": [
+      {
+        "name": "KDIGO 2024 CKD-DM Guidelines",
+        "section": "4.2.1",
+        "recommendation": "Reduce Metformin dose by 50% when eGFR 30-45"
+      },
+      {
+        "name": "ADA Standards of Care 2025",
+        "section": "9",
+        "recommendation": "Review metformin dosing based on renal function"
+      }
+    ],
+    "doctorDecision": "accepted",
+    "doctorNotes": "เห็นด้วยกับคำแนะนำ จะปรับยา Metformin เหลือ 500mg OD และติดตาม Cr ใกล้ชิด",
+    "decidedAt": "2026-01-18T10:06:48.894Z",
+    "createdAt": "2026-01-18T08:06:48.894Z"
+  },
+  {
+    "id": "CDS-LOG-002",
+    "doctorId": "DOC-001",
+    "patientId": "PATIENT-ANAN",
+    "appointmentId": "APT-ANAN-001",
+    "cdsType": "drug_interaction",
+    "alertLevel": "medium",
+    "drugName": "Enalapril",
+    "interactsWith": [
+      "Potassium levels",
+      "CKD"
+    ],
+    "recommendation": "ติดตามระดับ Potassium ใกล้ชิด เนื่องจากใช้ ACE inhibitor ในผู้ป่วย CKD",
+    "recommendationThai": "แนะนำตรวจติดตามระดับโพแทสเซียมในเลือดทุก 2-4 สัปดาห์",
+    "clinicalRationale": "Current K+ is 5.1 mEq/L (upper normal limit). ACE inhibitors can cause hyperkalemia, especially in CKD patients. Risk is higher when eGFR <45.",
+    "guidelinesReferenced": [
+      {
+        "name": "Thai Hypertension Guideline 2024",
+        "section": "7.3",
+        "recommendation": "Monitor K+ closely when using RAAS blockers in CKD"
+      }
+    ],
+    "doctorDecision": "accepted",
+    "doctorNotes": "จะ F/U K+ ใน 2 สัปดาห์ และแนะนำให้ผู้ป่วยงดอาหารที่มี K+ สูง",
+    "decidedAt": "2026-01-18T10:06:48.894Z",
+    "createdAt": "2026-01-18T08:06:48.894Z"
+  },
+  {
+    "id": "CDS-LOG-003",
+    "doctorId": "DOC-001",
+    "patientId": "PATIENT-ANAN",
+    "appointmentId": "APT-ANAN-001",
+    "cdsType": "guideline_alert",
+    "alertLevel": "medium",
+    "recommendation": "พิจารณาเพิ่ม SGLT2 inhibitor (เช่น Dapagliflozin) สำหรับ CKD-DM patient",
+    "recommendationThai": "แนะนำเพิ่มยา SGLT2 inhibitor เพื่อชะลอการเสื่อมของไต",
+    "clinicalRationale": "SGLT2 inhibitors have proven renal protective effects in diabetic kidney disease (CREDENCE, DAPA-CKD trials). Indicated when UACR >30 and eGFR >20.",
+    "guidelinesReferenced": [
+      {
+        "name": "KDIGO 2024 DKD Guidelines",
+        "section": "3.1",
+        "recommendation": "Use SGLT2i for DKD with eGFR ≥20"
+      },
+      {
+        "name": "ADA 2025 Standards of Care",
+        "section": "11.5",
+        "recommendation": "SGLT2i preferred for T2DM with CKD"
+      }
+    ],
+    "suggestedMedication": {
+      "name": "Dapagliflozin",
+      "dose": "10mg",
+      "frequency": "Once daily",
+      "route": "Oral"
+    },
+    "doctorDecision": "deferred",
+    "doctorNotes": "จะพิจารณาเพิ่มหลังจากปรับยาปัจจุบันให้เสถียรก่อน และดูผล eGFR ใน 1 เดือน",
+    "decidedAt": "2026-01-18T10:06:48.894Z",
+    "createdAt": "2026-01-18T08:06:48.894Z"
+  }
+]

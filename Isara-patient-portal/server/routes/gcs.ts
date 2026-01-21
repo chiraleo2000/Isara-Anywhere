@@ -1,11 +1,22 @@
 import { Router, Request, Response } from 'express';
-import { storage, GCS_BUCKETS } from '../index';
+import { storage, GCS_BUCKETS, USE_POSTGRESQL } from '../index';
 
 const router = Router();
 
 // GCS Status endpoint - Check if connected to GCS
 router.get('/status', async (_req: Request, res: Response) => {
   try {
+    // If PostgreSQL mode is enabled, GCS is disabled
+    if (USE_POSTGRESQL || !storage) {
+      return res.json({
+        status: 'disabled',
+        connected: false,
+        timestamp: new Date().toISOString(),
+        message: 'GCS is disabled - using PostgreSQL as primary data store',
+        buckets: Object.keys(GCS_BUCKETS)
+      });
+    }
+    
     // Test connection by listing one bucket
     const bucket = storage.bucket(GCS_BUCKETS.METADATA);
     const [exists] = await bucket.exists();
@@ -38,6 +49,11 @@ router.get('/status', async (_req: Request, res: Response) => {
 
 router.get('/signed-url/download', async (req: Request, res: Response) => {
   try {
+    // GCS disabled in PostgreSQL mode
+    if (USE_POSTGRESQL || !storage) {
+      return res.status(503).json({ error: 'GCS is disabled - using PostgreSQL mode' });
+    }
+    
     const { bucket, filePath } = req.query;
     if (!bucket || !filePath) {
       return res.status(400).json({ error: 'Missing bucket or filePath parameter' });
@@ -62,6 +78,11 @@ router.get('/signed-url/download', async (req: Request, res: Response) => {
 
 router.get('/signed-url/upload', async (req: Request, res: Response) => {
   try {
+    // GCS disabled in PostgreSQL mode
+    if (USE_POSTGRESQL || !storage) {
+      return res.status(503).json({ error: 'GCS is disabled - using PostgreSQL mode' });
+    }
+    
     const { bucket, filePath, contentType } = req.query;
     if (!bucket || !filePath) {
       return res.status(400).json({ error: 'Missing bucket or filePath parameter' });
@@ -83,6 +104,11 @@ router.get('/signed-url/upload', async (req: Request, res: Response) => {
 
 router.get('/read', async (req: Request, res: Response) => {
   try {
+    // GCS disabled in PostgreSQL mode
+    if (USE_POSTGRESQL || !storage) {
+      return res.status(503).json({ error: 'GCS is disabled - using PostgreSQL mode' });
+    }
+    
     const { bucket, filePath } = req.query;
     if (!bucket || !filePath) {
       return res.status(400).json({ error: 'Missing bucket or filePath parameter' });
@@ -104,6 +130,11 @@ router.get('/read', async (req: Request, res: Response) => {
 
 router.post('/write', async (req: Request, res: Response) => {
   try {
+    // GCS disabled in PostgreSQL mode
+    if (USE_POSTGRESQL || !storage) {
+      return res.status(503).json({ error: 'GCS is disabled - using PostgreSQL mode' });
+    }
+    
     const { bucket, filePath } = req.query;
     const data = req.body;
     if (!bucket || !filePath) {
@@ -124,6 +155,11 @@ router.post('/write', async (req: Request, res: Response) => {
 
 router.delete('/delete', async (req: Request, res: Response) => {
   try {
+    // GCS disabled in PostgreSQL mode
+    if (USE_POSTGRESQL || !storage) {
+      return res.status(503).json({ error: 'GCS is disabled - using PostgreSQL mode' });
+    }
+    
     const { bucket, filePath } = req.query;
     if (!bucket || !filePath) {
       return res.status(400).json({ error: 'Missing bucket or filePath parameter' });
@@ -140,6 +176,11 @@ router.delete('/delete', async (req: Request, res: Response) => {
 
 router.get('/list', async (req: Request, res: Response) => {
   try {
+    // GCS disabled in PostgreSQL mode
+    if (USE_POSTGRESQL || !storage) {
+      return res.status(503).json({ error: 'GCS is disabled - using PostgreSQL mode' });
+    }
+    
     const { bucket, prefix } = req.query;
     if (!bucket) {
       return res.status(400).json({ error: 'Missing bucket parameter' });
@@ -163,6 +204,11 @@ router.get('/list', async (req: Request, res: Response) => {
 
 router.get('/exists', async (req: Request, res: Response) => {
   try {
+    // GCS disabled in PostgreSQL mode
+    if (USE_POSTGRESQL || !storage) {
+      return res.status(503).json({ error: 'GCS is disabled - using PostgreSQL mode' });
+    }
+    
     const { bucket, filePath } = req.query;
     if (!bucket || !filePath) {
       return res.status(400).json({ error: 'Missing bucket or filePath parameter' });

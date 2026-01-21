@@ -248,11 +248,10 @@ Draft → Pending → Published
 **📊 See:** `diagrams/09-database-structure.mmd`  
 **📊 See:** `database/izara-complete-schema.dbml`
 
-**6 GCS Buckets:**
+**5 GCS Buckets:**
 | Bucket | Purpose |
 |--------|---------|
-| `izara-users-auth` | Patient Authentication |
-| `izara-users-credentials` | Doctor/Admin Authentication |
+| `izara-users-credentials` | All User Authentication (Patients, Doctors, Admins) |
 | `izara-patients-data` | Patient PHR & Profiles |
 | `izara-doctors-data` | Doctor Profiles & Settings |
 | `izara-appointments` | Appointment Records |

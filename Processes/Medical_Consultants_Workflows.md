@@ -1,6 +1,13 @@
 # Medical Consultants Workflows
 
+**Version:** 3.0.0  
+**Last Updated:** January 21, 2026  
+**Status:** ✅ PostgreSQL Implementation
+
+---
+
 ## Overview
+
 The Medical Consultants page allows doctors to find and manage specialist contacts for patient referrals. Admin users have full CRUD access while regular doctors can view and rate consultants.
 
 ## User Roles & Permissions

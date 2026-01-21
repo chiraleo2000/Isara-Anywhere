@@ -3,12 +3,15 @@
  * Search, List, Detail View, Consent Management
  * 
  * Updated: Only shows patients assigned to this doctor via appointments
+ * Updated: Supports category filter from Health Studio buttons
  */
 
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { PatientRecord, User, ConsentRecord } from '../types';
 import { patientDataService } from '../services/patientDataService';
-import { fetchAllAppointments } from '../services/gcsDataService';
+// PostgreSQL-backed API service - NO GCS!
+import { fetchAllAppointments } from '../services/apiDataService';
 import config, { isFeatureEnabled } from '../services/config';
 import { useResponsive } from '../hooks/useResponsive';
 import { Card, ResponsiveGrid, ResponsiveContainer } from '../components/common/ResponsiveLayout';
@@ -269,6 +272,10 @@ export const PatientManagement: React.FC<PatientManagementProps> = ({
   onCreatePrescription,
 }) => {
   const { isMobile } = useResponsive();
+  const [searchParams] = useSearchParams();
+  
+  // Get category filter from URL (from Health Studio buttons)
+  const categoryFromUrl = searchParams.get('category');
 
   // State
   const [patients, setPatients] = useState<PatientRecord[]>([]);
@@ -277,12 +284,20 @@ export const PatientManagement: React.FC<PatientManagementProps> = ({
   const [showFilters, setShowFilters] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState<PatientRecord | null>(null);
   const [showConsentDialog, setShowConsentDialog] = useState(false);
+  const [activeCategory, setActiveCategory] = useState<string>(categoryFromUrl || 'all');
 
   const [filters, setFilters] = useState<SearchFilters>({
     query: '',
     gender: '',
     riskLevel: '',
   });
+
+  // Update category when URL changes
+  useEffect(() => {
+    if (categoryFromUrl) {
+      setActiveCategory(categoryFromUrl);
+    }
+  }, [categoryFromUrl]);
 
   // Load patients
   useEffect(() => {
@@ -495,6 +510,41 @@ export const PatientManagement: React.FC<PatientManagementProps> = ({
           )}
         </div>
       </Card>
+
+      {/* Health Records Category Tabs (from Health Studio) */}
+      {activeCategory && activeCategory !== 'all' && (
+        <Card padding="sm" className="mb-4 bg-gradient-to-r from-teal-50 to-emerald-50 border-teal-200">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm font-medium text-teal-700">📊 Health Logs Filter:</span>
+            {[
+              { id: 'all', label: 'All Records', icon: '📋' },
+              { id: 'diagnosis', label: 'Diagnosis', icon: '🔍' },
+              { id: 'treatment', label: 'Treatment Plan', icon: '💊' },
+              { id: 'medical-record', label: 'Medical Record', icon: '📊' },
+              { id: 'radiology', label: 'Radiology', icon: '🩻' },
+              { id: 'laboratory', label: 'Laboratory', icon: '🧪' },
+              { id: 'pathology', label: 'Pathology', icon: '🔬' },
+            ].map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => setActiveCategory(cat.id)}
+                className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all ${
+                  activeCategory === cat.id
+                    ? 'bg-teal-600 text-white shadow-md'
+                    : 'bg-white text-teal-700 border border-teal-300 hover:bg-teal-100'
+                }`}
+              >
+                {cat.icon} {cat.label}
+              </button>
+            ))}
+          </div>
+          {activeCategory !== 'all' && (
+            <p className="mt-2 text-xs text-teal-600">
+              Showing patients with {activeCategory} records. Click on a patient to view their health logs.
+            </p>
+          )}
+        </Card>
+      )}
 
       {/* Results Count */}
       <div className="mb-4 flex items-center justify-between">

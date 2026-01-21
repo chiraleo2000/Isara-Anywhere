@@ -1,330 +1,267 @@
 [
   {
-    "id": "EMR-DEMO-001",
-    "patientId": "PATIENT-001",
+    "id": "EMR-ANAN-001",
+    "appointmentId": "APT-COMPLETED-001",
+    "patientId": "PATIENT-ANAN",
     "doctorId": "DOC-001",
-    "doctorName": "Dr. Test Doctor",
-    "encounterDate": "2025-12-05T16:57:16.787Z",
+    "doctorName": "นพ. ทดสอบ แพทย์",
+    "encounterDate": "2026-01-18T10:06:48.900Z",
     "encounterType": "follow-up",
-    "chiefComplaint": "Routine follow-up for hypertension management",
-    "chiefComplaintThai": "ติดตามการรักษาโรคความดันโลหิตสูงตามนัด",
-    "historyOfPresentIllness": "Patient reports good medication compliance with Amlodipine 5mg OD. Blood pressure has been stable at home readings (130-140/80-85 mmHg). No side effects noted. Occasional headaches but mild and infrequent. Patient has been exercising 2-3 times per week and following low-sodium diet.",
-    "vitalSigns": {
-      "bloodPressure": "135/82",
-      "heartRate": 72,
-      "temperature": 36.8,
-      "respiratoryRate": 16,
-      "oxygenSaturation": 98,
-      "weight": 75,
-      "height": 175,
-      "bmi": 24.5
+    "subjective": {
+      "chiefComplaint": "มานัดติดตามเบาหวานและโรคไต",
+      "chiefComplaintEnglish": "Follow-up for DM and CKD",
+      "historyOfPresentIllness": "ผู้ป่วยมาตามนัด มีอาการเหนื่อยง่ายกว่าเดิม โดยเฉพาะเวลาเดินขึ้นบันได น้ำตาลที่วัดที่บ้านยังสูง 180-190 mg/dL ไม่มีอาการบวม ไม่มีปัสสาวะเป็นฟอง ไม่มีอาการหอบ นอนราบได้",
+      "currentMedications": "Metformin 500mg BID, Glipizide 5mg OD, Enalapril 10mg OD, Amlodipine 5mg OD, Atorvastatin 20mg HS",
+      "allergies": "Sulfonamides - SJS, NSAIDs - ไตแย่ลง",
+      "reviewOfSystems": {
+        "constitutional": "เหนื่อยง่าย",
+        "cardiovascular": "ไม่มีเจ็บหน้าอก",
+        "respiratory": "ไม่หอบ",
+        "genitourinary": "ปัสสาวะปกติ ไม่เป็นฟอง",
+        "musculoskeletal": "ไม่มีบวม"
+      }
     },
-    "physicalExamination": {
-      "general": "Alert, well-nourished, no acute distress",
-      "cardiovascular": "Regular rate and rhythm, no murmurs, S1S2 normal",
-      "respiratory": "Clear to auscultation bilaterally, no wheezes or rales",
-      "abdomen": "Soft, non-tender, no organomegaly, normoactive bowel sounds",
-      "neurological": "Cranial nerves intact, no focal deficits"
+    "objective": {
+      "vitalSigns": {
+        "bloodPressure": "142/88",
+        "heartRate": 76,
+        "temperature": 36.4,
+        "respiratoryRate": 18,
+        "oxygenSaturation": 96,
+        "weight": 72,
+        "height": 165,
+        "bmi": 26.4
+      },
+      "physicalExamination": {
+        "general": "Alert, good consciousness, no acute distress, slightly overweight",
+        "heent": "No pallor, no jaundice, no thyroid enlargement",
+        "cardiovascular": "Normal S1S2, no murmur, JVP not elevated",
+        "respiratory": "Clear breath sounds bilaterally, no crackles",
+        "abdomen": "Soft, non-tender, no hepatomegaly",
+        "extremities": "No edema, dorsalis pedis pulse palpable bilaterally",
+        "neurological": "Alert, oriented, no focal deficit, sensation intact"
+      },
+      "labResults": {
+        "date": "2026-01-17T10:06:48.900Z",
+        "results": [
+          {
+            "test": "HbA1c",
+            "value": "7.8%",
+            "status": "high"
+          },
+          {
+            "test": "FBS",
+            "value": "185 mg/dL",
+            "status": "high"
+          },
+          {
+            "test": "Creatinine",
+            "value": "1.8 mg/dL",
+            "status": "high"
+          },
+          {
+            "test": "eGFR",
+            "value": "38 mL/min",
+            "status": "low",
+            "notes": "CKD Stage 3b"
+          },
+          {
+            "test": "K+",
+            "value": "5.1 mEq/L",
+            "status": "borderline"
+          },
+          {
+            "test": "UACR",
+            "value": "280 mg/g",
+            "status": "high"
+          }
+        ]
+      }
     },
-    "diagnosis": [
+    "assessment": {
+      "diagnoses": [
+        {
+          "code": "E11.65",
+          "description": "Type 2 diabetes mellitus with hyperglycemia",
+          "descriptionThai": "เบาหวานชนิดที่ 2 ที่มีน้ำตาลในเลือดสูง",
+          "type": "primary",
+          "status": "suboptimally controlled"
+        },
+        {
+          "code": "N18.4",
+          "description": "Chronic kidney disease, stage 4 (Stage 3b per GFR)",
+          "descriptionThai": "โรคไตเรื้อรังระยะ 3b",
+          "type": "secondary",
+          "status": "progressive"
+        },
+        {
+          "code": "I10",
+          "description": "Essential hypertension",
+          "descriptionThai": "โรคความดันโลหิตสูงปฐมภูมิ",
+          "type": "secondary",
+          "status": "controlled"
+        }
+      ],
+      "clinicalImpressions": "DM-CKD Stage 3b with suboptimal glycemic control. Kidney function declining (eGFR 38, prev 42). Need to adjust medications accordingly.",
+      "clinicalImpressionsThai": "เบาหวานร่วมโรคไตเรื้อรังระยะ 3b น้ำตาลควบคุมได้ไม่ดีนัก ไตทำงานลดลง (eGFR 38) ต้องปรับยาให้เหมาะสม"
+    },
+    "plan": {
+      "treatmentPlan": "1. ลด Metformin เหลือ 500mg OD (KDIGO 2024)\n2. Continue Glipizide, Enalapril, Amlodipine, Atorvastatin\n3. Low K+ diet, Low Na diet, Diabetic diet\n4. Moderate exercise as tolerated",
+      "treatmentPlanThai": "1. ลดยา Metformin จาก 500mg วันละ 2 ครั้ง เป็น วันละ 1 ครั้ง\n2. ยาอื่นใช้ต่อเหมือนเดิม\n3. อาหารจืด งดผลไม้ K+ สูง\n4. ออกกำลังกายเบาๆ",
+      "medications": [
+        {
+          "action": "modify",
+          "name": "Metformin",
+          "previousDose": "500mg BID",
+          "newDose": "500mg OD",
+          "reason": "CKD Stage 3b - KDIGO 2024 recommendation"
+        },
+        {
+          "action": "continue",
+          "name": "Glipizide",
+          "dose": "5mg OD"
+        },
+        {
+          "action": "continue",
+          "name": "Enalapril",
+          "dose": "10mg OD"
+        },
+        {
+          "action": "continue",
+          "name": "Amlodipine",
+          "dose": "5mg OD"
+        },
+        {
+          "action": "continue",
+          "name": "Atorvastatin",
+          "dose": "20mg HS"
+        }
+      ],
+      "labOrders": [
+        {
+          "test": "Creatinine + eGFR",
+          "timing": "2 สัปดาห์"
+        },
+        {
+          "test": "Potassium",
+          "timing": "2 สัปดาห์"
+        },
+        {
+          "test": "FBS",
+          "timing": "2 สัปดาห์"
+        }
+      ],
+      "followUp": {
+        "date": "2026-02-18T10:06:48.900Z",
+        "reason": "ติดตามหลังปรับยา และประเมินผล Lab",
+        "instructions": "มาพบแพทย์หลังเจาะ Lab 2 สัปดาห์"
+      },
+      "referrals": [
+        {
+          "specialty": "Nephrology",
+          "reason": "CKD Stage 3b - consider if eGFR <30 on follow-up",
+          "urgency": "routine"
+        }
+      ]
+    },
+    "aiSummary": {
+      "status": "approved",
+      "generatedAt": "2026-01-18T10:06:48.900Z",
+      "approvedBy": "DOC-001",
+      "approvedAt": "2026-01-18T10:06:48.900Z",
+      "summaryForPatient": "## สรุปการพบแพทย์ - วันที่ 18/1/2569\n\n### การวินิจฉัย\nคุณมีโรคเบาหวานร่วมกับโรคไตเรื้อรังระยะ 3b และความดันโลหิตสูง\n\n### สิ่งที่ตรวจพบ\n- น้ำตาลในเลือดยังสูงกว่าเป้าหมาย\n- ไตทำงานลดลงเล็กน้อย จึงต้องปรับขนาดยา\n\n### การปรับยา\n⚠️ **ยา Metformin**: ลดจากวันละ 2 เม็ด เหลือวันละ 1 เม็ด\nยาอื่นใช้เหมือนเดิม\n\n### สิ่งที่ต้องทำ\n1. กินยาตามที่ปรับใหม่\n2. มาเจาะเลือดใน 2 สัปดาห์\n3. พบแพทย์ใน 1 เดือน\n\n### คำแนะนำ\n- กินอาหารจืด ลดเค็ม\n- งดผลไม้ที่มี K+ สูง (กล้วย ส้ม มะม่วงสุก)\n- ออกกำลังกายเบาๆ เช่น เดินวันละ 20-30 นาที",
+      "summaryForDoctor": "DM-CKD Stage 3b F/U. Suboptimal glycemic control (HbA1c 7.8%, FBS 185). eGFR declined to 38 (prev 42). K+ borderline high at 5.1. Adjusted Metformin per KDIGO 2024. F/U labs in 2 weeks."
+    },
+    "cdsAlerts": [
       {
-        "code": "I10",
-        "description": "Essential (primary) hypertension - controlled",
-        "descriptionThai": "โรคความดันโลหิตสูงปฐมภูมิ - ควบคุมได้",
-        "type": "primary"
+        "id": "cds-emr-001",
+        "type": "dose_adjustment",
+        "severity": "high",
+        "drug": "Metformin",
+        "message": "Reduce Metformin dose 50% per KDIGO 2024 (eGFR 30-44)",
+        "action": "accepted",
+        "actionBy": "DOC-001"
+      },
+      {
+        "id": "cds-emr-002",
+        "type": "monitoring",
+        "severity": "medium",
+        "message": "Monitor K+ closely with ACE-I + CKD",
+        "action": "acknowledged"
       }
     ],
-    "treatmentPlan": "Continue current medication (Amlodipine 5mg OD). Patient responding well to therapy. Advised to continue lifestyle modifications including low-salt diet and regular exercise. Monitor BP at home weekly. Follow-up in 3 months or sooner if symptoms worsen.",
-    "medications": [
-      {
-        "name": "Amlodipine",
-        "dose": "5mg",
-        "frequency": "Once daily",
-        "route": "Oral",
-        "duration": "Ongoing"
-      }
-    ],
-    "labOrders": [],
-    "imagingOrders": [],
-    "referrals": [],
-    "followUpDate": "2026-03-10T16:57:16.787Z",
-    "followUpReason": "Hypertension monitoring",
     "status": "finalized",
-    "createdBy": "DOC-001",
-    "createdAt": "2025-12-05T16:57:16.787Z",
-    "updatedAt": "2025-12-05T16:57:16.787Z"
+    "signedAt": "2026-01-18T10:06:48.917Z",
+    "createdAt": "2026-01-18T10:06:48.917Z",
+    "updatedAt": "2026-01-18T10:06:48.917Z"
   },
   {
-    "id": "EMR-DEMO-002",
-    "patientId": "PATIENT-001",
+    "id": "EMR-SOMCHAI-001",
+    "appointmentId": "APT-SOMCHAI-001",
+    "patientId": "PATIENT-SOMCHAI",
     "doctorId": "DOC-001",
-    "doctorName": "Dr. Test Doctor",
-    "encounterDate": "2025-09-06T16:57:16.787Z",
+    "doctorName": "นพ. ทดสอบ แพทย์",
+    "encounterDate": "2026-01-12T10:06:48.917Z",
     "encounterType": "consultation",
-    "chiefComplaint": "Elevated blood pressure detected during routine checkup",
-    "chiefComplaintThai": "ตรวจพบความดันโลหิตสูงระหว่างการตรวจสุขภาพประจำปี",
-    "historyOfPresentIllness": "Patient reports occasional headaches over past 2 months, described as mild pressure-type headaches, mostly in the evening. Denies chest pain, shortness of breath, or palpitations. Family history significant for hypertension (father diagnosed at age 50). Lifestyle assessment reveals sedentary work, high sodium intake, occasional alcohol use.",
-    "vitalSigns": {
-      "bloodPressure": "148/92",
-      "heartRate": 78,
-      "temperature": 36.7,
-      "respiratoryRate": 16,
-      "oxygenSaturation": 99,
-      "weight": 76,
-      "height": 175,
-      "bmi": 24.8
+    "subjective": {
+      "chiefComplaint": "ปวดศีรษะเป็นพักๆ มา 2 สัปดาห์",
+      "historyOfPresentIllness": "ผู้ป่วยมีอาการปวดศีรษะบริเวณท้ายทอยเป็นพักๆ มา 2 สัปดาห์ มักเป็นช่วงเย็นหลังเลิกงาน ไม่มีคลื่นไส้อาเจียน ไม่มีตามัว ไม่มีชาแขนขา ทำงานนั่งโต๊ะ เครียดบ้าง นอนดึก",
+      "allergies": "Penicillin - ผื่นลมพิษ"
     },
-    "physicalExamination": {
-      "general": "Alert, slightly overweight, no acute distress",
-      "cardiovascular": "Regular rate and rhythm, S1S2 normal, no murmurs",
-      "respiratory": "Clear bilaterally",
-      "abdomen": "Soft, non-tender, no organomegaly",
-      "neurological": "No focal deficits, fundoscopy normal"
+    "objective": {
+      "vitalSigns": {
+        "bloodPressure": "148/92",
+        "heartRate": 78,
+        "temperature": 36.6,
+        "oxygenSaturation": 98,
+        "weight": 78,
+        "height": 172,
+        "bmi": 26.4
+      },
+      "physicalExamination": {
+        "general": "Alert, well-nourished, no acute distress",
+        "cardiovascular": "Normal S1S2, no murmur",
+        "neurological": "No focal deficit, fundoscopy normal"
+      }
     },
-    "diagnosis": [
-      {
-        "code": "I10",
-        "description": "Essential (primary) hypertension - newly diagnosed",
-        "descriptionThai": "โรคความดันโลหิตสูงปฐมภูมิ - วินิจฉัยใหม่",
-        "type": "primary"
+    "assessment": {
+      "diagnoses": [
+        {
+          "code": "I10",
+          "description": "Essential hypertension - newly diagnosed",
+          "descriptionThai": "โรคความดันโลหิตสูงปฐมภูมิ - วินิจฉัยใหม่",
+          "type": "primary"
+        }
+      ],
+      "clinicalImpressionsThai": "ความดันโลหิตสูงวินิจฉัยใหม่ในผู้ป่วยวัยทำงาน มีปัจจัยเสี่ยงคือประวัติครอบครัว การทำงานนั่งโต๊ะ และอาหารรสจัด"
+    },
+    "plan": {
+      "treatmentPlanThai": "1. เริ่มยา Amlodipine 5mg วันละ 1 ครั้ง\n2. ปรับพฤติกรรม - ลดเค็ม ออกกำลังกาย ลดน้ำหนัก\n3. ติดตาม BP ที่บ้าน\n4. เจาะเลือดพื้นฐาน",
+      "medications": [
+        {
+          "action": "new",
+          "name": "Amlodipine",
+          "dose": "5mg OD"
+        }
+      ],
+      "labOrders": [
+        {
+          "test": "CBC, FBS, Lipid profile, Cr, eGFR, UA",
+          "timing": "ก่อนพบแพทย์ครั้งหน้า"
+        }
+      ],
+      "followUp": {
+        "date": "2026-02-11T10:06:48.917Z",
+        "reason": "ติดตามความดันหลังเริ่มยา"
       }
-    ],
-    "treatmentPlan": "Initiate antihypertensive therapy with Amlodipine 5mg once daily in the morning. Comprehensive lifestyle modifications counseling provided: reduce sodium intake to <2g/day, DASH diet recommended, increase physical activity to 30min moderate exercise 5x/week, limit alcohol. Blood pressure monitoring at home recommended. Ordered baseline labs including lipid panel and renal function. Follow-up in 4 weeks to assess response.",
-    "medications": [
-      {
-        "name": "Amlodipine",
-        "dose": "5mg",
-        "frequency": "Once daily",
-        "route": "Oral",
-        "duration": "Ongoing"
-      }
-    ],
-    "labOrders": [
-      "LAB-DEMO-001",
-      "LAB-DEMO-002"
-    ],
-    "imagingOrders": [
-      "IMG-DEMO-001"
-    ],
-    "referrals": [],
-    "followUpDate": "2025-10-06T16:57:16.787Z",
-    "followUpReason": "Blood pressure recheck and medication adjustment",
+    },
+    "aiSummary": {
+      "status": "approved",
+      "approvedBy": "DOC-001",
+      "summaryForPatient": "## สรุปการพบแพทย์\n\n### การวินิจฉัย\nคุณได้รับการวินิจฉัยว่าเป็นโรคความดันโลหิตสูง\n\n### ยาที่สั่ง\n💊 Amlodipine 5mg กินวันละ 1 เม็ด ตอนเช้า\n\n### สิ่งที่ต้องทำ\n1. กินยาทุกวันไม่ขาด\n2. วัดความดันที่บ้านสัปดาห์ละ 2-3 ครั้ง จดค่าไว้\n3. ไปเจาะเลือดก่อนพบแพทย์ครั้งหน้า\n\n### ปรับพฤติกรรม\n- ลดอาหารเค็ม งดน้ำปลา/ซีอิ๊ว\n- ออกกำลังกายอย่างน้อย 30 นาที 5 วัน/สัปดาห์\n- พยายามลดน้ำหนัก 2-3 กก.\n- พักผ่อนให้เพียงพอ"
+    },
     "status": "finalized",
-    "createdBy": "DOC-001",
-    "createdAt": "2025-09-06T16:57:16.787Z",
-    "updatedAt": "2025-09-06T16:57:16.787Z"
-  },
-  {
-    "id": "EMR-DEMO-003",
-    "patientId": "PATIENT-001",
-    "doctorId": "DOC-001",
-    "doctorName": "Dr. Test Doctor",
-    "encounterDate": "2025-06-13T16:57:16.787Z",
-    "encounterType": "consultation",
-    "chiefComplaint": "Fever and sore throat for 2 days",
-    "chiefComplaintThai": "มีไข้และเจ็บคอมา 2 วัน",
-    "historyOfPresentIllness": "Patient presents with fever (max 38.5C), sore throat, and mild cough. No difficulty breathing. No travel history.",
-    "vitalSigns": {
-      "bloodPressure": "120/80",
-      "heartRate": 90,
-      "temperature": 38.2,
-      "respiratoryRate": 18,
-      "oxygenSaturation": 98,
-      "weight": 75,
-      "height": 175,
-      "bmi": 24.5
-    },
-    "physicalExamination": {
-      "general": "Febrile, looks tired",
-      "headNeck": "Pharynx injected, tonsils enlarged but no exudate",
-      "respiratory": "Clear lungs",
-      "cardiovascular": "Tachycardic but regular"
-    },
-    "diagnosis": [
-      {
-        "code": "J06.9",
-        "description": "Acute upper respiratory infection",
-        "descriptionThai": "การติดเชื้อทางเดินหายใจส่วนบนเฉียบพลัน",
-        "type": "primary"
-      }
-    ],
-    "treatmentPlan": "Symptomatic treatment. Paracetamol for fever. Rest and hydration.",
-    "medications": [
-      {
-        "name": "Paracetamol",
-        "dose": "500mg",
-        "frequency": "Every 4-6 hours prn",
-        "route": "Oral",
-        "duration": "5 days"
-      }
-    ],
-    "labOrders": [],
-    "imagingOrders": [],
-    "referrals": [],
-    "status": "finalized",
-    "createdBy": "DOC-001",
-    "createdAt": "2025-06-13T16:57:16.787Z",
-    "updatedAt": "2025-06-13T16:57:16.787Z"
-  },
-  {
-    "id": "EMR-DEMO-004",
-    "patientId": "PATIENT-001",
-    "doctorId": "DOC-001",
-    "doctorName": "Dr. Test Doctor",
-    "encounterDate": "2025-05-24T16:57:16.787Z",
-    "encounterType": "consultation",
-    "chiefComplaint": "Annual health checkup",
-    "chiefComplaintThai": "ตรวจสุขภาพประจำปี",
-    "historyOfPresentIllness": "Patient presents for annual preventive health examination. No acute complaints. Reports generally good health. Exercises regularly (2-3 times/week). Works as software engineer with predominantly desk work. Non-smoker, occasional alcohol consumption.",
-    "vitalSigns": {
-      "bloodPressure": "128/78",
-      "heartRate": 70,
-      "temperature": 36.6,
-      "respiratoryRate": 14,
-      "oxygenSaturation": 99,
-      "weight": 74,
-      "height": 175,
-      "bmi": 24.2
-    },
-    "physicalExamination": {
-      "general": "Well-appearing, appropriate for stated age",
-      "cardiovascular": "S1S2 regular, no murmurs, rubs, or gallops",
-      "respiratory": "Clear to auscultation, normal respiratory effort",
-      "abdomen": "Soft, non-distended, non-tender, no masses",
-      "neurological": "Alert and oriented x3, normal gait",
-      "skin": "No suspicious lesions",
-      "musculoskeletal": "Full range of motion, no joint swelling"
-    },
-    "diagnosis": [
-      {
-        "code": "Z00.00",
-        "description": "General adult medical examination",
-        "descriptionThai": "ตรวจสุขภาพทั่วไปผู้ใหญ่",
-        "type": "primary"
-      }
-    ],
-    "treatmentPlan": "Patient in good general health. Continue current lifestyle habits. Ordered comprehensive metabolic panel, CBC, lipid panel, and urinalysis for baseline screening. Recommend annual flu vaccination. Continue regular exercise and maintain healthy diet. Return in 1 year for next annual physical or sooner if concerns arise.",
-    "medications": [],
-    "labOrders": [
-      "LAB-DEMO-003",
-      "LAB-DEMO-004"
-    ],
-    "imagingOrders": [],
-    "referrals": [],
-    "followUpDate": "2026-05-24T16:57:16.787Z",
-    "followUpReason": "Annual health checkup",
-    "status": "finalized",
-    "createdBy": "DOC-001",
-    "createdAt": "2025-05-24T16:57:16.787Z",
-    "updatedAt": "2025-05-24T16:57:16.787Z"
-  },
-  {
-    "id": "EMR-DEMO-005",
-    "patientId": "PATIENT-001",
-    "doctorId": "DOC-001",
-    "doctorName": "Dr. Test Doctor",
-    "encounterDate": "2025-04-04T16:57:16.787Z",
-    "encounterType": "consultation",
-    "chiefComplaint": "Lower back pain after lifting heavy object",
-    "chiefComplaintThai": "ปวดหลังส่วนล่างหลังยกของหนัก",
-    "historyOfPresentIllness": "Patient reports acute onset lower back pain after lifting heavy furniture 2 days ago. Pain is localized to lumbar region, worsens with movement and bending. Rates pain 6/10. No radiation to legs. No numbness or tingling. No bowel/bladder dysfunction. Taking over-the-counter ibuprofen with minimal relief.",
-    "vitalSigns": {
-      "bloodPressure": "122/76",
-      "heartRate": 72,
-      "temperature": 36.5,
-      "respiratoryRate": 16,
-      "oxygenSaturation": 98,
-      "weight": 74,
-      "height": 175,
-      "bmi": 24.2
-    },
-    "physicalExamination": {
-      "general": "Moves cautiously due to pain",
-      "musculoskeletal": "Tenderness over L4-L5 paraspinal muscles. No midline tenderness. Negative straight leg raise bilaterally. Normal lower extremity strength and sensation. Normal reflexes.",
-      "neurological": "No focal neurological deficits"
-    },
-    "diagnosis": [
-      {
-        "code": "M54.5",
-        "description": "Low back pain - acute mechanical",
-        "descriptionThai": "อาการปวดหลังส่วนล่าง - เฉียบพลันจากการเคลื่อนไหว",
-        "type": "primary"
-      }
-    ],
-    "treatmentPlan": "Conservative management for acute mechanical low back pain. Continue NSAIDs (Ibuprofen 400mg TID with food) for pain and inflammation. Apply heat/ice alternately. Gentle stretching exercises. Avoid heavy lifting for 2 weeks. Physical therapy referral if not improved in 1 week. Red flag symptoms reviewed (weakness, numbness, bowel/bladder changes).",
-    "medications": [
-      {
-        "name": "Ibuprofen",
-        "dose": "400mg",
-        "frequency": "Three times daily with food",
-        "route": "Oral",
-        "duration": "7 days"
-      }
-    ],
-    "labOrders": [],
-    "imagingOrders": [],
-    "referrals": [],
-    "followUpDate": "2025-04-11T16:57:16.787Z",
-    "followUpReason": "Back pain reassessment",
-    "status": "finalized",
-    "createdBy": "DOC-001",
-    "createdAt": "2025-04-04T16:57:16.787Z",
-    "updatedAt": "2025-04-04T16:57:16.787Z"
-  },
-  {
-    "id": "EMR-DEMO-006",
-    "patientId": "PATIENT-001",
-    "doctorId": "DOC-001",
-    "doctorName": "Dr. Test Doctor",
-    "encounterDate": "2025-02-03T16:57:16.787Z",
-    "encounterType": "consultation",
-    "chiefComplaint": "Persistent heartburn and indigestion",
-    "chiefComplaintThai": "อาการแสบร้อนกลางอกและอาหารไม่ย่อยเรื้อรัง",
-    "historyOfPresentIllness": "Patient complains of burning chest discomfort after meals, especially with spicy or fatty foods, for past 3 weeks. Symptoms worse when lying down. Occasionally wakes up at night with sour taste in mouth. Denies weight loss, difficulty swallowing, or blood in stool. No radiation of pain to arms or jaw. Takes antacids occasionally with temporary relief.",
-    "vitalSigns": {
-      "bloodPressure": "126/80",
-      "heartRate": 75,
-      "temperature": 36.7,
-      "respiratoryRate": 15,
-      "oxygenSaturation": 98,
-      "weight": 74,
-      "height": 175,
-      "bmi": 24.2
-    },
-    "physicalExamination": {
-      "general": "Well-appearing, no distress",
-      "cardiovascular": "Regular rate and rhythm, no murmurs",
-      "abdomen": "Soft, mild epigastric tenderness, no guarding or rebound",
-      "respiratory": "Clear bilaterally"
-    },
-    "diagnosis": [
-      {
-        "code": "K21.0",
-        "description": "Gastroesophageal reflux disease (GERD)",
-        "descriptionThai": "โรคกรดไหลย้อน",
-        "type": "primary"
-      }
-    ],
-    "treatmentPlan": "Initiated PPI therapy with Omeprazole 20mg once daily before breakfast for 8 weeks. Lifestyle modifications counseled: elevate head of bed, avoid late meals, reduce caffeine, spicy foods, and alcohol. Weight loss if overweight. H. pylori testing ordered. If symptoms persist after PPI trial, consider endoscopy. Follow-up in 4 weeks to assess response.",
-    "medications": [
-      {
-        "name": "Omeprazole",
-        "dose": "20mg",
-        "frequency": "Once daily before breakfast",
-        "route": "Oral",
-        "duration": "8 weeks"
-      }
-    ],
-    "labOrders": [
-      "LAB-DEMO-005"
-    ],
-    "imagingOrders": [],
-    "referrals": [],
-    "followUpDate": "2025-03-03T16:57:16.787Z",
-    "followUpReason": "GERD symptom reassessment",
-    "status": "finalized",
-    "createdBy": "DOC-001",
-    "createdAt": "2025-02-03T16:57:16.787Z",
-    "updatedAt": "2025-02-03T16:57:16.787Z"
+    "signedAt": "2026-01-12T10:06:48.917Z",
+    "createdAt": "2026-01-12T10:06:48.917Z"
   }
 ]

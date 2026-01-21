@@ -25,10 +25,16 @@
   "dependencies": {
     "@google-cloud/storage": "^7.7.0",
     "@google/generative-ai": "^0.2.1",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/pg": "^8.16.0",
+    "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.3",
     "lucide-react": "^0.294.0",
+    "pg": "^8.17.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.30.2"

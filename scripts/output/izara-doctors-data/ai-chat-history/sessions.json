@@ -1,0 +1,151 @@
+[
+  {
+    "sessionId": "AI-CHAT-SESSION-001",
+    "doctorId": "DOC-001",
+    "patientId": "PATIENT-ANAN",
+    "appointmentId": "APT-ANAN-001",
+    "sessionType": "pre_consultation",
+    "createdAt": "2026-01-18T08:06:48.891Z",
+    "messages": [
+      {
+        "id": "9de29a6c-64c9-476a-9657-c632e053efa1",
+        "role": "system",
+        "content": "คุณคือผู้ช่วยแพทย์ AI ของระบบ Izara Telemedicine สำหรับการให้คำปรึกษาทางการแพทย์\nกรุณาช่วยสรุปข้อมูลผู้ป่วยและให้คำแนะนำทางคลินิกตาม Guidelines ล่าสุด (2024-2025)\nข้อมูลควรเป็นภาษาไทยเป็นหลัก พร้อมคำศัพท์ทางการแพทย์ภาษาอังกฤษกำกับ",
+        "timestamp": "2026-01-18T08:06:48.891Z"
+      },
+      {
+        "id": "d99d699b-2065-44df-a413-abcba85ea4ad",
+        "role": "user",
+        "content": "สรุปข้อมูลผู้ป่วยก่อนพบ: นายอนันต์ ขยันเรียน (PATIENT-ANAN)\n- ผู้ป่วยอายุ 67 ปี มานัดติดตามโรคเบาหวานและโรคไตเรื้อรัง\n- กรุณาสรุปประวัติการรักษา ยาปัจจุบัน และข้อควรระวัง",
+        "timestamp": "2026-01-18T08:06:48.891Z",
+        "context": {
+          "patientId": "PATIENT-ANAN",
+          "appointmentId": "APT-ANAN-001",
+          "queryType": "pre_consultation_summary"
+        }
+      },
+      {
+        "id": "5f408d67-ba17-4cde-9665-78ffe2487682",
+        "role": "assistant",
+        "content": "## 📋 สรุปข้อมูลผู้ป่วยก่อนการนัดพบ\n\n### ข้อมูลทั่วไป\n- **ชื่อ**: นายอนันต์ ขยันเรียน (PATIENT-ANAN)\n- **อายุ**: 67 ปี\n- **น้ำหนัก/ส่วนสูง**: 72 kg / 165 cm (BMI: 26.4)\n\n### โรคประจำตัว (Chronic Conditions)\n1. **เบาหวานชนิดที่ 2** (Type 2 DM) - วินิจฉัย 12 ปี\n   - HbA1c ล่าสุด: 7.8% (เป้าหมาย <7.5% สำหรับผู้สูงอายุ)\n   - FBS ล่าสุด: 185 mg/dL (ยังสูงกว่าเป้าหมาย)\n   \n2. **โรคไตเรื้อรังระยะ 3b** (CKD Stage 3b)\n   - eGFR: 38 mL/min/1.73m² (ลดลงจาก 42)\n   - ต้องระวังการปรับยาตามการทำงานของไต\n\n3. **ความดันโลหิตสูง** - ควบคุมได้ดี\n   - BP ล่าสุด: 142/88 mmHg\n\n### ⚠️ ข้อควรระวังสำคัญ\n1. **แพ้ยา Sulfonamides รุนแรง** (ประวัติ Stevens-Johnson Syndrome)\n2. **ต้องปรับขนาดยา Metformin** ตาม eGFR\n3. **งดใช้ NSAIDs** เพราะอาจทำให้ไตเสื่อมเร็วขึ้น\n\n### 💊 ยาปัจจุบัน\n1. Metformin 500mg วันละ 2 ครั้ง (ควรพิจารณาลดขนาด)\n2. Glipizide 5mg ก่อนอาหารเช้า\n3. Enalapril 10mg วันละครั้ง\n4. Amlodipine 5mg วันละครั้ง\n5. Atorvastatin 20mg ก่อนนอน\n\n### 📊 ผลตรวจล่าสุด (17 ม.ค. 2026)\n- Creatinine: 1.8 mg/dL (↑)\n- BUN: 32 mg/dL (↑)\n- Potassium: 5.1 mEq/L (ขอบบน)\n- HbA1c: 7.8%\n\n### 📝 ข้อเสนอแนะ (Man-in-the-Loop: รอการยืนยันจากแพทย์)\n1. พิจารณาลด Metformin เหลือ 500mg วันละ 1 ครั้ง ตาม KDIGO 2024 Guidelines\n2. เพิ่มขนาด Enalapril เป็น 20mg หาก BP ยังสูง\n3. ติดตาม K+ ใกล้ชิดเนื่องจากใช้ ACE inhibitor\n\n⚕️ *ข้อมูลนี้สร้างโดย AI - กรุณาตรวจสอบและยืนยันก่อนใช้ในการรักษา*",
+        "timestamp": "2026-01-18T09:06:48.891Z",
+        "aiMetadata": {
+          "model": "gemini-1.5-flash",
+          "tokensUsed": 1250,
+          "guidlinesReferenced": [
+            "KDIGO 2024",
+            "ADA 2025",
+            "Thai Hypertension Guideline 2024"
+          ],
+          "confidence": 0.92
+        }
+      },
+      {
+        "id": "e2da3758-7407-401e-bcc3-047ceb756d2c",
+        "role": "user",
+        "content": "มี drug interaction ที่ต้องระวังไหม? โดยเฉพาะระหว่าง Metformin กับยาอื่น?",
+        "timestamp": "2026-01-18T09:06:48.891Z"
+      },
+      {
+        "id": "67561290-294b-4867-8ed7-30f745915ae1",
+        "role": "assistant",
+        "content": "## ⚠️ Drug Interactions ที่ต้องระวัง\n\n### 1. Metformin + CKD (eGFR 38)\n- **ความเสี่ยง**: Lactic acidosis (ภาวะกรดในเลือด)\n- **คำแนะนำ KDIGO 2024**: \n  - eGFR 30-45: ลดขนาดยา 50% (500mg OD แทน BID)\n  - eGFR <30: หยุดใช้ Metformin\n- **สถานะปัจจุบัน**: eGFR 38 → ควรลดขนาดยา\n\n### 2. Enalapril (ACE-I) + CKD + K+ 5.1\n- **ความเสี่ยง**: Hyperkalemia (K+ สูง)\n- **คำแนะนำ**: \n  - ติดตาม K+ ทุก 2-4 สัปดาห์หลังปรับยา\n  - หยุดยาถ้า K+ >5.5 mEq/L\n  - แนะนำอาหาร Low Potassium Diet\n\n### 3. Glipizide + ผู้สูงอายุ + CKD\n- **ความเสี่ยง**: Hypoglycemia รุนแรง\n- **คำแนะนำ**:\n  - ยา Glipizide ขับออกทางไต 80%\n  - ควรพิจารณาลดขนาดหรือเปลี่ยนเป็น Linagliptin (ขับออกทางน้ำดี)\n\n### 4. Atorvastatin + CKD\n- ✅ ใช้ได้อย่างปลอดภัย ไม่ต้องปรับขนาด\n- ช่วยลด CV risk ใน CKD patients\n\n### 📊 Clinical Decision Support Alert\n```\n⚠️ ALERT: Metformin dose adjustment required\n   Current: 500mg BID\n   Recommended: 500mg OD (50% reduction)\n   Reason: eGFR 38 (CKD Stage 3b)\n   Guideline: KDIGO 2024\n```\n\n⚕️ *แพทย์กรุณายืนยันการปรับยาก่อนบันทึกลงระบบ (Man-in-the-Loop)*",
+        "timestamp": "2026-01-18T09:06:48.891Z",
+        "aiMetadata": {
+          "model": "gemini-1.5-flash",
+          "tokensUsed": 980,
+          "cdsAlerts": [
+            "METFORMIN_DOSE_ADJUSTMENT",
+            "HYPERKALEMIA_RISK"
+          ],
+          "confidence": 0.95
+        }
+      }
+    ]
+  },
+  {
+    "sessionId": "AI-CHAT-SESSION-002",
+    "doctorId": "DOC-001",
+    "patientId": "PATIENT-ANAN",
+    "appointmentId": "APT-ANAN-001",
+    "sessionType": "document_analysis",
+    "createdAt": "2026-01-18T09:06:48.891Z",
+    "messages": [
+      {
+        "id": "db7aaded-e892-46d2-80a7-aa29f8cdc8bc",
+        "role": "system",
+        "content": "คุณคือผู้ช่วยแพทย์ AI สำหรับวิเคราะห์ผลตรวจทางห้องปฏิบัติการ",
+        "timestamp": "2026-01-18T09:06:48.891Z"
+      },
+      {
+        "id": "38db330c-401d-4837-85dd-83bd208558df",
+        "role": "user",
+        "content": "วิเคราะห์ผล Lab ล่าสุดของผู้ป่วย PATIENT-ANAN:\n- HbA1c: 7.8%\n- FBS: 185 mg/dL\n- Creatinine: 1.8 mg/dL\n- BUN: 32 mg/dL\n- eGFR: 38\n- Potassium: 5.1 mEq/L\n- Sodium: 138 mEq/L\n- Uric Acid: 7.8 mg/dL\n- Albumin: 3.4 g/dL\n- UACR: 280 mg/g\n\nวิเคราะห์และให้คำแนะนำตาม Guidelines",
+        "timestamp": "2026-01-18T09:06:48.891Z",
+        "context": {
+          "documentType": "lab_results",
+          "patientId": "PATIENT-ANAN"
+        }
+      },
+      {
+        "id": "2f6c289b-329b-4749-b2ab-abea4d218cf0",
+        "role": "assistant",
+        "content": "## 🔬 ผลวิเคราะห์ Lab Results - นายอนันต์ ขยันเรียน\n\n### 📊 สรุปผลตรวจแบ่งตามระบบ\n\n#### 1. การควบคุมเบาหวาน (Glycemic Control)\n| ตัวชี้วัด | ผลตรวจ | ค่าปกติ | สถานะ |\n|----------|--------|--------|-------|\n| HbA1c | **7.8%** | <7.0% (ผู้สูงอายุ <7.5%) | ⚠️ สูงกว่าเป้า |\n| FBS | **185 mg/dL** | 70-100 mg/dL | ⚠️ สูง |\n\n**📝 การแปลผล**: \n- การควบคุมน้ำตาลยังไม่ดีพอ โดยเฉพาะ FBS\n- เป้าหมาย HbA1c ในผู้สูงอายุที่มี CKD: 7.0-8.0%\n- ควรพิจารณาปรับยาหรือเพิ่มยา\n\n#### 2. การทำงานของไต (Renal Function)\n| ตัวชี้วัด | ผลตรวจ | ค่าปกติ | สถานะ |\n|----------|--------|--------|-------|\n| Creatinine | **1.8 mg/dL** | 0.7-1.2 | ❌ สูง |\n| BUN | **32 mg/dL** | 7-20 | ⚠️ สูง |\n| eGFR | **38 mL/min** | >90 | ❌ CKD Stage 3b |\n| UACR | **280 mg/g** | <30 | ❌ Moderately increased albuminuria |\n\n**📝 การแปลผล**:\n- **CKD Stage 3b** (eGFR 30-44) with Albuminuria A3\n- **KDIGO Risk**: Very High Risk for ESKD progression\n- ต้องปรับขนาดยา Metformin และติดตามใกล้ชิด\n\n#### 3. Electrolytes\n| ตัวชี้วัด | ผลตรวจ | ค่าปกติ | สถานะ |\n|----------|--------|--------|-------|\n| Potassium | **5.1 mEq/L** | 3.5-5.0 | ⚠️ ขอบสูง |\n| Sodium | 138 mEq/L | 136-145 | ✅ ปกติ |\n\n**📝 K+ ขอบบน**: ระวัง ACE-I induced hyperkalemia\n\n#### 4. อื่นๆ\n| ตัวชี้วัด | ผลตรวจ | ค่าปกติ | สถานะ |\n|----------|--------|--------|-------|\n| Uric Acid | **7.8 mg/dL** | <7.0 | ⚠️ สูง |\n| Albumin | **3.4 g/dL** | 3.5-5.0 | ⚠️ ต่ำเล็กน้อย |\n\n---\n\n### ⚕️ Clinical Recommendations (ตาม Guidelines 2024-2025)\n\n#### 🔴 High Priority Actions\n1. **ปรับยา Metformin** → ลดเหลือ 500mg OD (KDIGO 2024)\n2. **ติดตาม K+** ใกล้ชิด (ทุก 2 สัปดาห์)\n3. **เพิ่ม SGLT2 inhibitor** พิจารณา Dapagliflozin 10mg OD\n   - มี Renoprotective effect ใน CKD-DM (CREDENCE Trial)\n\n#### 🟡 Medium Priority\n4. พิจารณาลด Glipizide หรือเปลี่ยนเป็น Linagliptin\n5. อาหาร Low Potassium + Low Sodium + Low Protein (0.8 g/kg/day)\n6. Referral to Nephrologist ถ้า eGFR <30\n\n### 📋 แผนติดตาม\n- **Lab F/U 4 สัปดาห์**: Cr, K+, FBS, HbA1c\n- **Urine albumin**: ติดตามทุก 6 เดือน\n- **eGFR decline**: ถ้าลดลง >5 mL/min/year → Nephrology referral\n\n⚕️ *ข้อมูลนี้ต้องได้รับการตรวจสอบและยืนยันโดยแพทย์ก่อนนำไปใช้*",
+        "timestamp": "2026-01-18T10:06:48.891Z",
+        "aiMetadata": {
+          "model": "gemini-1.5-flash",
+          "tokensUsed": 1580,
+          "labAbnormalities": [
+            "HbA1c_HIGH",
+            "CREATININE_HIGH",
+            "EGFR_LOW",
+            "K_BORDERLINE",
+            "UACR_HIGH"
+          ],
+          "cdsAlerts": [
+            "METFORMIN_DOSE_ADJUSTMENT",
+            "ADD_SGLT2I",
+            "NEPHROLOGY_REFERRAL"
+          ],
+          "confidence": 0.94
+        }
+      }
+    ]
+  },
+  {
+    "sessionId": "AI-CHAT-SESSION-003",
+    "doctorId": "DOC-001",
+    "patientId": "PATIENT-001",
+    "appointmentId": "APT-DEMO-001",
+    "sessionType": "general_query",
+    "createdAt": "2026-01-14T10:06:48.891Z",
+    "messages": [
+      {
+        "id": "df4d50d2-e932-4e4e-aed7-7d67d239c097",
+        "role": "system",
+        "content": "คุณคือผู้ช่วยแพทย์ AI ของระบบ Izara Telemedicine",
+        "timestamp": "2026-01-14T10:06:48.891Z"
+      },
+      {
+        "id": "5ea4762c-0bdc-4def-a45c-3f52d38dcd1f",
+        "role": "user",
+        "content": "สรุปประวัติการรักษาของ PATIENT-001 (Demo Test User) ทั้งหมด",
+        "timestamp": "2026-01-14T10:06:48.891Z",
+        "context": {
+          "patientId": "PATIENT-001"
+        }
+      },
+      {
+        "id": "09c60a9a-7763-450a-9119-a8e389c104ad",
+        "role": "assistant",
+        "content": "## 📋 สรุปประวัติการรักษา - Demo Test User (PATIENT-001)\n\n### ข้อมูลทั่วไป\n- **ชื่อ**: นาย ทดสอบ ระบบ (Demo Test User)\n- **อายุ**: 34 ปี\n- **เพศ**: ชาย\n- **กรุ๊ปเลือด**: O+\n\n### โรคประจำตัว\n1. **ความดันโลหิตสูงปฐมภูมิ (Essential Hypertension - I10)**\n   - วินิจฉัยครั้งแรก: กันยายน 2025\n   - สถานะ: ควบคุมได้ดี\n\n### ประวัติการรักษา (Encounter History)\n\n#### 📅 ครั้งที่ 1 - 6 ก.ย. 2025 (Initial Consultation)\n- **Chief Complaint**: ปวดศีรษะเป็นพักๆ, ตรวจพบความดันสูง\n- **Vital Signs**: BP 148/92, HR 78\n- **Diagnosis**: Essential hypertension - newly diagnosed\n- **Treatment**: เริ่ม Amlodipine 5mg OD\n- **Lifestyle counseling**: DASH diet, ลดเกลือ, ออกกำลังกาย\n\n#### 📅 ครั้งที่ 2 - 5 ธ.ค. 2025 (Follow-up)\n- **Chief Complaint**: มานัดติดตาม\n- **Vital Signs**: BP 135/82, HR 72 ✅ ดีขึ้น\n- **Status**: ควบคุมได้ดี, ไม่มีผลข้างเคียงจากยา\n- **Plan**: Continue Amlodipine, F/U 3 เดือน\n\n### ยาปัจจุบัน\n| ยา | ขนาด | วิธีใช้ |\n|----|------|-------|\n| Amlodipine | 5mg | วันละ 1 ครั้ง เช้า |\n\n### ข้อแนะนำ\n- ✅ การรักษาดำเนินไปได้ดี\n- ✅ ไม่มี CDS alerts\n- 📅 นัดติดตามครั้งถัดไป: มีนาคม 2026\n\n*สร้างโดย AI Assistant - ข้อมูล ณ วันที่สอบถาม*",
+        "timestamp": "2026-01-14T10:06:48.891Z",
+        "aiMetadata": {
+          "model": "gemini-1.5-flash",
+          "tokensUsed": 680,
+          "confidence": 0.96
+        }
+      }
+    ]
+  }
+]

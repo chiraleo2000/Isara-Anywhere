@@ -10,8 +10,8 @@
  * @module generateTestAudio
  */
 
-const fs = require('fs');
-const path = require('path');
+const fs = require('node:fs');
+const path = require('node:path');
 
 // ============================================================================
 // CONFIGURATION
@@ -20,7 +20,7 @@ const path = require('path');
 const OUTPUT_DIR = path.join(__dirname, '..', '..', 'test-audio');
 const GOOGLE_TTS_API_KEY = process.env.GOOGLE_TTS_API_KEY || 
                            process.env.VITE_GOOGLE_SPEECH_API_KEY ||
-                           'AIzaSyAl924pIkpbrJBfCQ1MlpA6yb8XZ3L8WZQ';
+                           '';
 
 // ============================================================================
 // TEST MEDICAL CONSULTATION SCRIPTS

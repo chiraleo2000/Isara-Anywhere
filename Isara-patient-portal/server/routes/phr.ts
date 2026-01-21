@@ -1,46 +1,47 @@
+/**
+ * PHR Routes - PostgreSQL ONLY
+ * Personal Health Records, Vital Signs, Living Will, Timeline
+ * NO GCS - All data stored in PostgreSQL
+ */
+
 import { Router, Request, Response } from 'express';
-import { storage, GCS_BUCKETS } from '../index';
 import { authMiddleware } from '../middleware/auth';
+import postgresDataService from '../services/postgresDataService';
+
+const { PHRService, LivingWillService } = postgresDataService;
+const { pool } = postgresDataService;
 
 const router = Router();
 
-// Helper function to read JSON from GCS
-async function readJSON(bucket: string, filePath: string): Promise<any> {
-  try {
-    const file = storage.bucket(bucket).file(filePath);
-    const [contents] = await file.download();
-    return JSON.parse(contents.toString());
-  } catch (error: any) {
-    if (error.code === 404) {
-      throw new Error(`File not found: ${filePath}`);
-    }
-    throw error;
-  }
-}
-
-// Helper function to write JSON to GCS
-async function writeJSON(bucket: string, filePath: string, data: any): Promise<void> {
-  const file = storage.bucket(bucket).file(filePath);
-  await file.save(JSON.stringify(data, null, 2), {
-    contentType: 'application/json',
-  });
-}
+// ============================================================================
+// PHR (Personal Health Records) ROUTES
+// ============================================================================
 
 // Get patient PHR
 router.get('/:patientId', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { patientId } = req.params;
+    console.log(`[PHR] Getting PHR for patient: ${patientId}`);
 
-    // Read PHR from GCS: patients/{patientId}/phr.json
-    const phr = await readJSON(GCS_BUCKETS.PATIENT, `patients/${patientId}/phr.json`);
-
-    res.json(phr);
-  } catch (error: any) {
-    if (error.message.includes('not found')) {
-      return res.status(404).json({ error: 'PHR not found' });
+    const phr = await PHRService.getPHR(patientId);
+    if (!phr) {
+      // Return empty PHR structure if not found
+      return res.json({
+        patientId,
+        allergies: [],
+        chronic_conditions: [],
+        medications: [],
+        emergency_contacts: [],
+        demographics: {},
+        lifestyle: {},
+        created_at: null,
+        updated_at: null
+      });
     }
-    console.error('Get PHR error:', error);
-    res.status(500).json({ error: error.message });
+    return res.json(phr);
+  } catch (error: any) {
+    console.error('[PHR] Get PHR error:', error);
+    res.status(500).json({ error: 'Failed to fetch PHR data' });
   }
 });
 
@@ -49,36 +50,31 @@ router.put('/:patientId', authMiddleware, async (req: Request, res: Response) =>
   try {
     const { patientId } = req.params;
     const phrData = req.body;
+    console.log(`[PHR] Updating PHR for patient: ${patientId}`);
 
-    // Add metadata
-    phrData.patientId = patientId;
-    phrData.updatedAt = new Date().toISOString();
-
-    // Write PHR to GCS: patients/{patientId}/phr.json
-    await writeJSON(GCS_BUCKETS.PATIENT, `patients/${patientId}/phr.json`, phrData);
-
-    res.json(phrData);
+    const updatedPHR = await PHRService.upsertPHR(patientId, phrData);
+    res.json(updatedPHR);
   } catch (error: any) {
-    console.error('Update PHR error:', error);
-    res.status(500).json({ error: error.message });
+    console.error('[PHR] Update PHR error:', error);
+    res.status(500).json({ error: 'Failed to update PHR data' });
   }
 });
+
+// ============================================================================
+// VITAL SIGNS ROUTES
+// ============================================================================
 
 // Get vital signs history
 router.get('/:patientId/vitals', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { patientId } = req.params;
+    console.log(`[PHR] Getting vitals for patient: ${patientId}`);
 
-    // Read vital signs from GCS: patients/{patientId}/vital-signs.json
-    const vitals = await readJSON(GCS_BUCKETS.PATIENT, `patients/${patientId}/vital-signs.json`);
-
-    res.json(vitals);
+    const vitals = await PHRService.getVitalSigns(patientId);
+    return res.json(vitals || []);
   } catch (error: any) {
-    if (error.message.includes('not found')) {
-      return res.json([]); // Return empty array if no vitals yet
-    }
-    console.error('Get vitals error:', error);
-    res.status(500).json({ error: error.message });
+    console.error('[PHR] Get vitals error:', error);
+    res.status(500).json({ error: 'Failed to fetch vital signs' });
   }
 });
 
@@ -87,142 +83,172 @@ router.post('/:patientId/vitals', authMiddleware, async (req: Request, res: Resp
   try {
     const { patientId } = req.params;
     const vitalData = req.body;
+    console.log(`[PHR] Adding vital signs for patient: ${patientId}`, vitalData);
 
-    // Get existing vitals
-    let vitals: any[] = [];
-    try {
-      vitals = await readJSON(GCS_BUCKETS.PATIENT, `patients/${patientId}/vital-signs.json`);
-      if (!Array.isArray(vitals)) {
-        vitals = [vitals]; // Convert single object to array
-      }
-    } catch {
-      // File doesn't exist yet
-    }
-
-    // Get patient PHR for height to calculate BMI
-    let phrData: any = null;
-    try {
-      phrData = await readJSON(GCS_BUCKETS.PATIENT, `patients/${patientId}/phr.json`);
-    } catch {
-      // PHR doesn't exist yet
-    }
-
-    // Calculate BMI if weight is provided and height is available
-    let bmiData = null;
-    const weight = vitalData.weight?.value;
-    const height = phrData?.demographics?.height;
-    
-    if (weight && height) {
-      const heightM = height / 100; // Convert cm to meters
-      const bmiValue = weight / (heightM * heightM);
-      
-      // Determine BMI category
-      let category = 'ปกติ';
-      if (bmiValue < 18.5) category = 'น้ำหนักน้อย';
-      else if (bmiValue < 23) category = 'ปกติ';
-      else if (bmiValue < 25) category = 'น้ำหนักเกิน';
-      else if (bmiValue < 30) category = 'อ้วนระดับ 1';
-      else category = 'อ้วนระดับ 2';
-      
-      bmiData = {
-        value: parseFloat(bmiValue.toFixed(1)),
-        category: category,
-        unit: 'kg/m²'
-      };
-    }
-
-    // Add new vital signs record with standardized format
-    const newVital = {
-      id: `vital_${Date.now()}`,
-      ...vitalData,
-      ...(bmiData && { bmi: bmiData }), // Include BMI if calculated
-      measuredAt: vitalData.measuredAt || new Date().toISOString(),
-      date: new Date().toISOString(), // Keep for backwards compatibility
-      source: vitalData.source || 'patient_input',
-      patientId: patientId, // Ensure correct patient association
+    // Convert frontend format to database format
+    const dbVitalData = {
+      blood_pressure_systolic: vitalData.bloodPressure?.systolic || vitalData.blood_pressure_systolic,
+      blood_pressure_diastolic: vitalData.bloodPressure?.diastolic || vitalData.blood_pressure_diastolic,
+      heart_rate: vitalData.heartRate?.value || vitalData.heart_rate,
+      temperature: vitalData.temperature?.value || vitalData.temperature,
+      weight: vitalData.weight?.value || vitalData.weight,
+      height: vitalData.height?.value || vitalData.height,
+      oxygen_saturation: vitalData.oxygenSaturation?.value || vitalData.oxygen_saturation,
+      blood_glucose: vitalData.bloodGlucose?.value || vitalData.blood_glucose,
+      blood_glucose_timing: vitalData.bloodGlucose?.timing || vitalData.blood_glucose_timing,
+      notes: vitalData.notes,
+      recorded_at: vitalData.measuredAt || vitalData.recorded_at || new Date().toISOString()
     };
 
-    vitals.push(newVital);
-
-    // Sort by date (newest first)
-    vitals.sort((a, b) => 
-      new Date(b.measuredAt || b.date || 0).getTime() - 
-      new Date(a.measuredAt || a.date || 0).getTime()
-    );
-
-    // Write back to GCS
-    await writeJSON(GCS_BUCKETS.PATIENT, `patients/${patientId}/vital-signs.json`, vitals);
-
-    // Also update PHR demographics with latest weight if provided
-    if (weight && phrData) {
-      try {
-        phrData.demographics = phrData.demographics || {};
-        phrData.demographics.weight = weight;
-        phrData.demographics.lastWeightUpdate = new Date().toISOString();
-        // Also store BMI in demographics for easy access
-        if (bmiData) {
-          phrData.demographics.bmi = bmiData.value;
-          phrData.demographics.bmiCategory = bmiData.category;
-        }
-        phrData.updatedAt = new Date().toISOString();
-        await writeJSON(GCS_BUCKETS.PATIENT, `patients/${patientId}/phr.json`, phrData);
-      } catch (updateError) {
-        console.warn('Could not sync weight to PHR:', updateError);
-        // Don't fail the whole request if PHR update fails
-      }
-    }
-
+    const newVital = await PHRService.addVitalSigns(patientId, dbVitalData);
     res.json(newVital);
   } catch (error: any) {
-    console.error('Add vitals error:', error);
-    res.status(500).json({ error: error.message });
+    console.error('[PHR] Add vitals error:', error);
+    res.status(500).json({ error: 'Failed to add vital signs' });
   }
 });
 
 // ============================================================================
-// HEALTH LOGS (EMR records from doctors)
+// MEDICATIONS ROUTES
 // ============================================================================
 
-// Get patient health logs
+// Get patient medications
+router.get('/:patientId/medications', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const { patientId } = req.params;
+    console.log(`[PHR] Getting medications for patient: ${patientId}`);
+
+    const phr = await PHRService.getPHR(patientId);
+    res.json(phr?.medications || []);
+  } catch (error: any) {
+    console.error('[PHR] Get medications error:', error);
+    res.status(500).json({ error: 'Failed to fetch medications' });
+  }
+});
+
+// Add medication
+router.post('/:patientId/medications', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const { patientId } = req.params;
+    const medicationData = req.body;
+    console.log(`[PHR] Adding medication for patient: ${patientId}`);
+
+    const phr = await PHRService.getPHR(patientId);
+    const medications = phr?.medications || [];
+    
+    const newMedication = {
+      id: `med_${Date.now()}`,
+      ...medicationData,
+      addedAt: new Date().toISOString()
+    };
+    
+    medications.push(newMedication);
+    
+    await PHRService.upsertPHR(patientId, { medications });
+    res.json(newMedication);
+  } catch (error: any) {
+    console.error('[PHR] Add medication error:', error);
+    res.status(500).json({ error: 'Failed to add medication' });
+  }
+});
+
+// ============================================================================
+// ALLERGIES ROUTES
+// ============================================================================
+
+// Get patient allergies
+router.get('/:patientId/allergies', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const { patientId } = req.params;
+    console.log(`[PHR] Getting allergies for patient: ${patientId}`);
+
+    const phr = await PHRService.getPHR(patientId);
+    res.json(phr?.allergies || []);
+  } catch (error: any) {
+    console.error('[PHR] Get allergies error:', error);
+    res.status(500).json({ error: 'Failed to fetch allergies' });
+  }
+});
+
+// Add allergy
+router.post('/:patientId/allergies', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const { patientId } = req.params;
+    const allergyData = req.body;
+    console.log(`[PHR] Adding allergy for patient: ${patientId}`);
+
+    const phr = await PHRService.getPHR(patientId);
+    const allergies = phr?.allergies || [];
+    
+    const newAllergy = {
+      id: `allergy_${Date.now()}`,
+      ...allergyData,
+      addedAt: new Date().toISOString()
+    };
+    
+    allergies.push(newAllergy);
+    
+    await PHRService.upsertPHR(patientId, { allergies });
+    res.json(newAllergy);
+  } catch (error: any) {
+    console.error('[PHR] Add allergy error:', error);
+    res.status(500).json({ error: 'Failed to add allergy' });
+  }
+});
+
+// ============================================================================
+// HEALTH LOGS (EMR records from doctors) - PostgreSQL
+// ============================================================================
+
+// Get patient health logs (from EMR table)
 router.get('/:patientId/health-logs', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { patientId } = req.params;
     const { type, limit, offset } = req.query;
+    console.log(`[PHR] Getting health logs for patient: ${patientId}`);
 
-    // Read health logs from GCS: patients/{patientId}/health-logs.json
-    let healthLogs;
-    try {
-      healthLogs = await readJSON(GCS_BUCKETS.PATIENT, `patients/${patientId}/health-logs.json`);
-    } catch {
-      healthLogs = { entries: [], lastUpdated: null };
-    }
+    const limitNum = Number.parseInt(limit as string, 10) || 50;
+    const offsetNum = Number.parseInt(offset as string, 10) || 0;
 
-    let entries = healthLogs.entries || [];
-    
-    // Filter by type if specified
+    // Query EMR records from PostgreSQL
+    let query = `
+      SELECT e.*, 
+             u.name as doctor_name, u.name_thai as doctor_name_thai,
+             a.appointment_type, a.confirmed_date, a.confirmed_time
+      FROM emr e
+      LEFT JOIN users u ON e.doctor_id = u.id
+      LEFT JOIN appointments a ON e.appointment_id = a.id
+      WHERE e.patient_id = $1
+    `;
+    const params: any[] = [patientId];
+
     if (type) {
-      entries = entries.filter((e: any) => e.type === type);
+      query += ` AND e.status = $${params.length + 1}`;
+      params.push(type);
     }
+
+    query += ` ORDER BY e.created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+    params.push(limitNum, offsetNum);
+
+    const result = await pool.query(query, params);
     
-    // Sort by date (newest first)
-    entries.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    
-    // Apply pagination
-    const offsetNum = parseInt(offset as string) || 0;
-    const limitNum = parseInt(limit as string) || 50;
-    const total = entries.length;
-    entries = entries.slice(offsetNum, offsetNum + limitNum);
+    // Get total count
+    const countResult = await pool.query(
+      'SELECT COUNT(*) FROM emr WHERE patient_id = $1',
+      [patientId]
+    );
+    const total = parseInt(countResult.rows[0].count, 10);
 
     res.json({
-      entries,
+      entries: result.rows,
       total,
       offset: offsetNum,
       limit: limitNum,
-      lastUpdated: healthLogs.lastUpdated
+      lastUpdated: new Date().toISOString()
     });
   } catch (error: any) {
-    console.error('Get health logs error:', error);
-    res.status(500).json({ error: error.message });
+    console.error('[PHR] Get health logs error:', error);
+    res.status(500).json({ error: 'Failed to fetch health logs' });
   }
 });
 
@@ -230,46 +256,160 @@ router.get('/:patientId/health-logs', authMiddleware, async (req: Request, res: 
 router.get('/:patientId/health-logs/:entryId', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { patientId, entryId } = req.params;
+    console.log(`[PHR] Getting health log entry: ${entryId} for patient: ${patientId}`);
 
-    // Read health logs from GCS
-    const healthLogs = await readJSON(GCS_BUCKETS.PATIENT, `patients/${patientId}/health-logs.json`);
-    
-    const entry = (healthLogs.entries || []).find((e: any) => e.id === entryId);
-    
-    if (!entry) {
+    const result = await pool.query(
+      `SELECT e.*, 
+              u.name as doctor_name, u.name_thai as doctor_name_thai,
+              a.appointment_type, a.confirmed_date, a.confirmed_time
+       FROM emr e
+       LEFT JOIN users u ON e.doctor_id = u.id
+       LEFT JOIN appointments a ON e.appointment_id = a.id
+       WHERE e.id = $1 AND e.patient_id = $2`,
+      [entryId, patientId]
+    );
+
+    if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Health log entry not found' });
     }
 
-    res.json(entry);
+    res.json(result.rows[0]);
   } catch (error: any) {
-    if (error.message.includes('not found')) {
-      return res.status(404).json({ error: 'Health logs not found' });
-    }
-    console.error('Get health log entry error:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Get patient timeline
-router.get('/:patientId/timeline', authMiddleware, async (req: Request, res: Response) => {
-  try {
-    const { patientId } = req.params;
-
-    // Read timeline from GCS: patients/{patientId}/timeline.json
-    const timeline = await readJSON(GCS_BUCKETS.PATIENT, `patients/${patientId}/timeline.json`);
-
-    res.json(timeline);
-  } catch (error: any) {
-    if (error.message.includes('not found')) {
-      return res.json([]); // Return empty array if no timeline yet
-    }
-    console.error('Get timeline error:', error);
-    res.status(500).json({ error: error.message });
+    console.error('[PHR] Get health log entry error:', error);
+    res.status(500).json({ error: 'Failed to fetch health log entry' });
   }
 });
 
 // ============================================================================
-// LIVING WILL (E-Living) - PDPA Compliant Routes
+// MEDICAL TIMELINE - PostgreSQL
+// ============================================================================
+
+// Get patient timeline (aggregated from appointments, EMR, prescriptions, lab orders)
+router.get('/:patientId/timeline', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const { patientId } = req.params;
+    const { type } = req.query;
+    console.log(`[PHR] Getting timeline for patient: ${patientId}, type: ${type || 'all'}`);
+
+    const timeline: any[] = [];
+
+    // Get appointments
+    if (!type || type === 'appointment' || type === 'all') {
+      const appointments = await pool.query(
+        `SELECT a.*, u.name as doctor_name, u.name_thai as doctor_name_thai
+         FROM appointments a
+         LEFT JOIN users u ON a.doctor_id = u.id
+         WHERE a.patient_id = $1 AND a.status IN ('completed', 'confirmed')
+         ORDER BY COALESCE(a.confirmed_date, a.requested_date) DESC
+         LIMIT 50`,
+        [patientId]
+      );
+      appointments.rows.forEach((apt: any) => {
+        timeline.push({
+          id: apt.id,
+          type: 'appointment',
+          date: apt.confirmed_date || apt.requested_date,
+          title: `นัดพบแพทย์ - ${apt.appointment_type || 'Telehealth'}`,
+          titleThai: `นัดพบแพทย์ - ${apt.appointment_type || 'Telehealth'}`,
+          description: apt.symptoms?.join(', ') || apt.symptom_description || '',
+          doctorName: apt.doctor_name_thai || apt.doctor_name,
+          status: apt.status,
+          data: apt
+        });
+      });
+    }
+
+    // Get EMR/Diagnoses
+    if (!type || type === 'diagnosis' || type === 'all') {
+      const emrs = await pool.query(
+        `SELECT e.*, u.name as doctor_name, u.name_thai as doctor_name_thai
+         FROM emr e
+         LEFT JOIN users u ON e.doctor_id = u.id
+         WHERE e.patient_id = $1 AND e.status = 'signed'
+         ORDER BY e.created_at DESC
+         LIMIT 50`,
+        [patientId]
+      );
+      emrs.rows.forEach((emr: any) => {
+        const diagnoses = emr.assessment?.diagnoses || [];
+        timeline.push({
+          id: emr.id,
+          type: 'diagnosis',
+          date: emr.signed_at || emr.created_at,
+          title: 'ผลการวินิจฉัย',
+          titleThai: 'ผลการวินิจฉัย',
+          description: diagnoses.map((d: any) => d.name || d.description).join(', ') || 'ผลตรวจ',
+          doctorName: emr.doctor_name_thai || emr.doctor_name,
+          data: emr
+        });
+      });
+    }
+
+    // Get prescriptions
+    if (!type || type === 'medication' || type === 'all') {
+      const prescriptions = await pool.query(
+        `SELECT p.*, u.name as doctor_name, u.name_thai as doctor_name_thai
+         FROM prescriptions p
+         LEFT JOIN users u ON p.doctor_id = u.id
+         WHERE p.patient_id = $1
+         ORDER BY p.created_at DESC
+         LIMIT 50`,
+        [patientId]
+      );
+      prescriptions.rows.forEach((rx: any) => {
+        const meds = rx.medications || [];
+        timeline.push({
+          id: rx.id,
+          type: 'medication',
+          date: rx.created_at,
+          title: 'ใบสั่งยา',
+          titleThai: 'ใบสั่งยา',
+          description: meds.map((m: any) => m.name || m.drug_name).join(', ') || 'ยาที่สั่ง',
+          doctorName: rx.doctor_name_thai || rx.doctor_name,
+          data: rx
+        });
+      });
+    }
+
+    // Get lab orders
+    if (!type || type === 'lab' || type === 'all') {
+      const labOrders = await pool.query(
+        `SELECT l.*, u.name as doctor_name, u.name_thai as doctor_name_thai
+         FROM lab_orders l
+         LEFT JOIN users u ON l.doctor_id = u.id
+         WHERE l.patient_id = $1
+         ORDER BY l.ordered_at DESC
+         LIMIT 50`,
+        [patientId]
+      );
+      labOrders.rows.forEach((lab: any) => {
+        const tests = lab.tests || [];
+        timeline.push({
+          id: lab.id,
+          type: 'lab',
+          date: lab.completed_at || lab.ordered_at,
+          title: lab.status === 'completed' ? 'ผลแลบ' : 'รอผลแลบ',
+          titleThai: lab.status === 'completed' ? 'ผลแลบ' : 'รอผลแลบ',
+          description: tests.map((t: any) => t.name || t.test_name).join(', ') || 'การตรวจทางห้องปฏิบัติการ',
+          doctorName: lab.doctor_name_thai || lab.doctor_name,
+          status: lab.status,
+          data: lab
+        });
+      });
+    }
+
+    // Sort by date (newest first)
+    timeline.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    res.json(timeline);
+  } catch (error: any) {
+    console.error('[PHR] Get timeline error:', error);
+    res.status(500).json({ error: 'Failed to fetch timeline' });
+  }
+});
+
+// ============================================================================
+// LIVING WILL (E-Living) - PostgreSQL with PDPA Compliance
 // ============================================================================
 
 // Get patient's Living Will
@@ -278,13 +418,12 @@ router.get('/:patientId/living-will', authMiddleware, async (req: Request, res: 
     const { patientId } = req.params;
     const requesterId = (req as any).user?.patientId || (req as any).user?.id;
     const requesterRole = (req as any).user?.role;
+    console.log(`[PHR] Getting Living Will for patient: ${patientId}`);
 
-    // Read Living Will from GCS: patients/{patientId}/living-will.json
-    let livingWill;
-    try {
-      livingWill = await readJSON(GCS_BUCKETS.PATIENT, `patients/${patientId}/living-will.json`);
-    } catch {
-      return res.json(null); // No Living Will exists yet
+    const livingWill = await LivingWillService.getLivingWill(patientId);
+    
+    if (!livingWill) {
+      return res.json(null);
     }
 
     // If patient is requesting their own data, return full document
@@ -292,41 +431,27 @@ router.get('/:patientId/living-will', authMiddleware, async (req: Request, res: 
       return res.json(livingWill);
     }
 
-    // For doctors/admin: Check PDPA consent before returning
+    // For doctors/admin: Check PDPA consent
     if (requesterRole === 'doctor' || requesterRole === 'admin') {
-      if (!livingWill.pdpaConsent?.isSharedWithDoctors) {
+      const lw = livingWill as any;
+      if (!lw.is_shared_with_doctors) {
         return res.json({ 
           exists: true, 
           isShared: false,
           message: 'Patient has not shared their Living Will with medical staff' 
         });
       }
-      
-      // Add audit log entry for doctor view
-      if (!livingWill.auditLog) livingWill.auditLog = [];
-      livingWill.auditLog.push({
-        id: `audit-${Date.now()}`,
-        action: 'viewed',
-        performedBy: requesterRole,
-        performedById: requesterId,
-        timestamp: new Date().toISOString(),
-      });
-      
-      // Save audit log
-      await writeJSON(GCS_BUCKETS.PATIENT, `patients/${patientId}/living-will.json`, livingWill);
-      
       return res.json(livingWill);
     }
 
-    // Default: deny access
     return res.status(403).json({ error: 'Access denied' });
   } catch (error: any) {
-    console.error('Get Living Will error:', error);
-    res.status(500).json({ error: error.message });
+    console.error('[PHR] Get Living Will error:', error);
+    res.status(500).json({ error: 'Failed to fetch Living Will' });
   }
 });
 
-// Create new Living Will
+// Create or update Living Will
 router.post('/:patientId/living-will', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { patientId } = req.params;
@@ -337,73 +462,21 @@ router.post('/:patientId/living-will', authMiddleware, async (req: Request, res:
       return res.status(403).json({ error: 'Only patient can create their Living Will' });
     }
 
-    // Check if Living Will already exists
-    try {
-      await readJSON(GCS_BUCKETS.PATIENT, `patients/${patientId}/living-will.json`);
-      return res.status(409).json({ error: 'Living Will already exists. Use PUT to update.' });
-    } catch {
-      // Good - doesn't exist yet
-    }
-
-    const now = new Date().toISOString();
+    console.log(`[PHR] Creating/Updating Living Will for patient: ${patientId}`);
     const livingWillData = req.body;
 
-    // Create new Living Will with proper structure
-    const newLivingWill = {
-      id: `lw-${patientId}-${Date.now()}`,
-      patientId,
-      version: '1.0',
-      status: livingWillData.status || 'draft',
-      effectiveDate: livingWillData.effectiveDate || now,
-      treatments: livingWillData.treatments || {
-        cpr: { treatmentType: 'CPR', preference: 'conditional' },
-        mechanicalVentilation: { treatmentType: 'Mechanical Ventilation', preference: 'conditional' },
-        artificialNutrition: { treatmentType: 'Artificial Nutrition', preference: 'conditional' },
-        dialysis: { treatmentType: 'Dialysis', preference: 'conditional' },
-        antibiotics: { treatmentType: 'Antibiotics', preference: 'accept' },
-        painManagement: { treatmentType: 'Pain Management', preference: 'accept' },
-        organDonation: { treatmentType: 'Organ Donation', preference: 'conditional' },
-      },
-      personalStatement: livingWillData.personalStatement || '',
-      religiousBeliefs: livingWillData.religiousBeliefs || '',
-      culturalConsiderations: livingWillData.culturalConsiderations || '',
-      additionalInstructions: livingWillData.additionalInstructions || '',
-      representatives: livingWillData.representatives || [],
-      pdpaConsent: {
-        consentVersion: '1.0',
-        consentedAt: now,
-        isSharedWithDoctors: livingWillData.pdpaConsent?.isSharedWithDoctors || false,
-        shareScope: livingWillData.pdpaConsent?.shareScope || 'none',
-        shareWithAdmin: livingWillData.pdpaConsent?.shareWithAdmin || false,
-        consentPurpose: 'Medical decision support when patient cannot communicate',
-        dataRetentionPeriod: 'Until revoked by patient or 10 years after death',
-        canWithdraw: true,
-        lastUpdated: now,
-      },
-      witnesses: livingWillData.witnesses || [],
-      signature: {
-        signedAt: livingWillData.signature?.signedAt || '',
-        signatureMethod: livingWillData.signature?.signatureMethod || 'digital',
-        signatureData: livingWillData.signature?.signatureData,
-      },
-      auditLog: [{
-        id: `audit-${Date.now()}`,
-        action: 'created',
-        performedBy: 'patient',
-        performedById: patientId,
-        timestamp: now,
-      }],
-      createdAt: now,
-      updatedAt: now,
-    };
+    const result = await LivingWillService.upsertLivingWill(patientId, {
+      statement: livingWillData.personalStatement || livingWillData.statement,
+      treatment_preferences: livingWillData.treatments || livingWillData.treatment_preferences,
+      representatives: livingWillData.representatives,
+      is_shared_with_doctors: livingWillData.pdpaConsent?.isSharedWithDoctors || livingWillData.is_shared_with_doctors || false,
+      signatures: livingWillData.signature || livingWillData.signatures
+    });
 
-    // Write to GCS
-    await writeJSON(GCS_BUCKETS.PATIENT, `patients/${patientId}/living-will.json`, newLivingWill);
-
-    res.status(201).json(newLivingWill);
+    res.status(201).json(result);
   } catch (error: any) {
-    console.error('Create Living Will error:', error);
-    res.status(500).json({ error: error.message });
+    console.error('[PHR] Create Living Will error:', error);
+    res.status(500).json({ error: 'Failed to create Living Will' });
   }
 });
 
@@ -413,61 +486,25 @@ router.put('/:patientId/living-will', authMiddleware, async (req: Request, res: 
     const { patientId } = req.params;
     const requesterId = (req as any).user?.patientId || (req as any).user?.id;
 
-    // Only patient can update their own Living Will
     if (requesterId !== patientId) {
       return res.status(403).json({ error: 'Only patient can update their Living Will' });
     }
 
-    // Read existing Living Will
-    let existingLivingWill;
-    try {
-      existingLivingWill = await readJSON(GCS_BUCKETS.PATIENT, `patients/${patientId}/living-will.json`);
-    } catch {
-      return res.status(404).json({ error: 'Living Will not found. Use POST to create.' });
-    }
-
-    const now = new Date().toISOString();
+    console.log(`[PHR] Updating Living Will for patient: ${patientId}`);
     const updateData = req.body;
 
-    // Build changes for audit log
-    const changes: { field: string; oldValue?: string; newValue?: string }[] = [];
-    
-    if (updateData.status && updateData.status !== existingLivingWill.status) {
-      changes.push({ field: 'status', oldValue: existingLivingWill.status, newValue: updateData.status });
-    }
-    if (updateData.treatments) {
-      changes.push({ field: 'treatments', oldValue: 'previous', newValue: 'updated' });
-    }
+    const result = await LivingWillService.upsertLivingWill(patientId, {
+      statement: updateData.personalStatement || updateData.statement,
+      treatment_preferences: updateData.treatments || updateData.treatment_preferences,
+      representatives: updateData.representatives,
+      is_shared_with_doctors: updateData.pdpaConsent?.isSharedWithDoctors || updateData.is_shared_with_doctors,
+      signatures: updateData.signature || updateData.signatures
+    });
 
-    // Merge updates
-    const updatedLivingWill = {
-      ...existingLivingWill,
-      ...updateData,
-      id: existingLivingWill.id, // Preserve original ID
-      patientId: existingLivingWill.patientId, // Preserve patient ID
-      createdAt: existingLivingWill.createdAt, // Preserve creation date
-      version: (parseFloat(existingLivingWill.version) + 0.1).toFixed(1),
-      updatedAt: now,
-      auditLog: [
-        ...(existingLivingWill.auditLog || []),
-        {
-          id: `audit-${Date.now()}`,
-          action: 'updated',
-          performedBy: 'patient',
-          performedById: patientId,
-          timestamp: now,
-          changes,
-        }
-      ],
-    };
-
-    // Write to GCS
-    await writeJSON(GCS_BUCKETS.PATIENT, `patients/${patientId}/living-will.json`, updatedLivingWill);
-
-    res.json(updatedLivingWill);
+    res.json(result);
   } catch (error: any) {
-    console.error('Update Living Will error:', error);
-    res.status(500).json({ error: error.message });
+    console.error('[PHR] Update Living Will error:', error);
+    res.status(500).json({ error: 'Failed to update Living Will' });
   }
 });
 
@@ -477,68 +514,30 @@ router.put('/:patientId/living-will/share', authMiddleware, async (req: Request,
     const { patientId } = req.params;
     const requesterId = (req as any).user?.patientId || (req as any).user?.id;
 
-    // Only patient can change sharing settings
     if (requesterId !== patientId) {
       return res.status(403).json({ error: 'Only patient can change sharing settings' });
     }
 
-    // Read existing Living Will
-    let livingWill;
-    try {
-      livingWill = await readJSON(GCS_BUCKETS.PATIENT, `patients/${patientId}/living-will.json`);
-    } catch {
-      return res.status(404).json({ error: 'Living Will not found' });
-    }
+    console.log(`[PHR] Updating Living Will sharing for patient: ${patientId}`);
+    const { isSharedWithDoctors } = req.body;
 
-    const now = new Date().toISOString();
-    const { isSharedWithDoctors, shareScope, shareWithAdmin, specificDoctorIds } = req.body;
-
-    const oldSharing = livingWill.pdpaConsent?.isSharedWithDoctors;
-
-    // Update PDPA consent
-    livingWill.pdpaConsent = {
-      ...livingWill.pdpaConsent,
-      isSharedWithDoctors: isSharedWithDoctors ?? livingWill.pdpaConsent?.isSharedWithDoctors ?? false,
-      shareScope: shareScope ?? livingWill.pdpaConsent?.shareScope ?? 'none',
-      shareWithAdmin: shareWithAdmin ?? livingWill.pdpaConsent?.shareWithAdmin ?? false,
-      specificDoctorIds: specificDoctorIds ?? livingWill.pdpaConsent?.specificDoctorIds,
-      lastUpdated: now,
-      consentedAt: isSharedWithDoctors ? now : livingWill.pdpaConsent?.consentedAt,
-    };
-
-    // Add audit log
-    livingWill.auditLog = [
-      ...(livingWill.auditLog || []),
-      {
-        id: `audit-${Date.now()}`,
-        action: isSharedWithDoctors ? 'shared' : 'unshared',
-        performedBy: 'patient',
-        performedById: patientId,
-        timestamp: now,
-        changes: [{
-          field: 'isSharedWithDoctors',
-          oldValue: String(oldSharing),
-          newValue: String(isSharedWithDoctors),
-        }],
-      }
-    ];
-
-    livingWill.updatedAt = now;
-
-    // Write to GCS
-    await writeJSON(GCS_BUCKETS.PATIENT, `patients/${patientId}/living-will.json`, livingWill);
+    await pool.query(
+      `UPDATE living_wills 
+       SET is_shared_with_doctors = $1, updated_at = NOW()
+       WHERE patient_id = $2`,
+      [isSharedWithDoctors, patientId]
+    );
 
     res.json({
       success: true,
-      isSharedWithDoctors: livingWill.pdpaConsent.isSharedWithDoctors,
-      shareScope: livingWill.pdpaConsent.shareScope,
+      isSharedWithDoctors,
       message: isSharedWithDoctors 
         ? 'Living Will is now shared with medical staff' 
         : 'Living Will is now private',
     });
   } catch (error: any) {
-    console.error('Update Living Will sharing error:', error);
-    res.status(500).json({ error: error.message });
+    console.error('[PHR] Update Living Will sharing error:', error);
+    res.status(500).json({ error: 'Failed to update sharing settings' });
   }
 });
 
@@ -548,51 +547,27 @@ router.delete('/:patientId/living-will', authMiddleware, async (req: Request, re
     const { patientId } = req.params;
     const requesterId = (req as any).user?.patientId || (req as any).user?.id;
 
-    // Only patient can revoke their Living Will
     if (requesterId !== patientId) {
       return res.status(403).json({ error: 'Only patient can revoke their Living Will' });
     }
 
-    // Read existing Living Will
-    let livingWill;
-    try {
-      livingWill = await readJSON(GCS_BUCKETS.PATIENT, `patients/${patientId}/living-will.json`);
-    } catch {
-      return res.status(404).json({ error: 'Living Will not found' });
-    }
+    console.log(`[PHR] Revoking Living Will for patient: ${patientId}`);
 
-    const now = new Date().toISOString();
-
-    // Don't delete - mark as revoked for legal records
-    livingWill.status = 'revoked';
-    livingWill.pdpaConsent = {
-      ...livingWill.pdpaConsent,
-      isSharedWithDoctors: false,
-      shareScope: 'none',
-      lastUpdated: now,
-    };
-    livingWill.updatedAt = now;
-    livingWill.auditLog = [
-      ...(livingWill.auditLog || []),
-      {
-        id: `audit-${Date.now()}`,
-        action: 'revoked',
-        performedBy: 'patient',
-        performedById: patientId,
-        timestamp: now,
-      }
-    ];
-
-    // Write to GCS
-    await writeJSON(GCS_BUCKETS.PATIENT, `patients/${patientId}/living-will.json`, livingWill);
+    // Mark as revoked instead of deleting
+    await pool.query(
+      `UPDATE living_wills 
+       SET status = 'revoked', is_shared_with_doctors = false, updated_at = NOW()
+       WHERE patient_id = $1`,
+      [patientId]
+    );
 
     res.json({
       success: true,
       message: 'Living Will has been revoked. A new one can be created.',
     });
   } catch (error: any) {
-    console.error('Revoke Living Will error:', error);
-    res.status(500).json({ error: error.message });
+    console.error('[PHR] Revoke Living Will error:', error);
+    res.status(500).json({ error: 'Failed to revoke Living Will' });
   }
 });
 

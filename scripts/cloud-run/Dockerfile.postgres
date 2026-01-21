@@ -1,0 +1,28 @@
+# PostgreSQL with pgvector for Cloud Run
+# Data initialized from seed file on startup
+
+FROM pgvector/pgvector:pg16
+
+# Set environment variables
+ENV POSTGRES_USER=postgres
+ENV POSTGRES_PASSWORD=P@ssw0rd
+ENV POSTGRES_DB=izara_phase1
+ENV PGDATA=/var/lib/postgresql/data
+
+# Install additional packages
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy initialization SQL (will run on first startup)
+COPY init-scripts/ /docker-entrypoint-initdb.d/
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD pg_isready -U postgres -d izara_phase1 || exit 1
+
+EXPOSE 5432
+
+# Use default postgres entrypoint
+CMD ["postgres"]

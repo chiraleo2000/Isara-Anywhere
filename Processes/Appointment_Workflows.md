@@ -1,27 +1,36 @@
 # Izara Telemedicine Appointment Workflows
 
-This document details the full appointment workflow for Izara Telemedicine, including all user roles, notification logic, error handling, and business rules. Use this as a reference for implementation, agent training, and troubleshooting.
+This document details the full appointment workflow for Izara Telemedicine, covering video consultations, EMR documentation, and AI-assisted post-consultation features.
 
-**Last Updated: January 9, 2026 (v1.2.1 - Meeting AI Summary Storage & Display)**
+**Last Updated:** January 21, 2026 (v3.0.0 - Phase 1 Complete)
 
 ---
 
-## Testing Status ✅
+## 📋 Overview
 
-| Test Type | Tests | Status | Last Run |
-|-----------|-------|--------|----------|
-| Unit Tests | 78 | ✅ Pass | Jan 7, 2026 |
-| Local Dev Tests | 18 | ✅ Pass | Jan 7, 2026 |
-| Cloud Deployment Tests | 24 | ✅ Pass | Jan 7, 2026 |
-| UI Tests (Local) | 20 | ✅ Pass | Jan 7, 2026 |
-| UI Tests (Cloud) | 20 | ✅ Pass | Jan 7, 2026 |
-| Meeting API Tests (Local) | 51 | ✅ Pass | Jan 8, 2026 |
-| Meeting API Tests (Cloud) | 51 | ✅ Pass | Jan 8, 2026 |
-| 4-User Meeting UI Tests (Local) | 33 | ✅ Pass | Jan 8, 2026 |
-| 4-User Meeting UI Tests (Cloud) | 33 | ✅ Pass | Jan 8, 2026 |
-| External Guest Access Tests (Local) | 105 | ✅ Pass | Jan 8, 2026 |
-| External Guest Access Tests (Cloud) | 105 | ✅ Pass | Jan 8, 2026 |
-| **Total** | **538** | ✅ **100%** | |
+### Phase 1 Feature Summary
+
+| Feature | Status | Description |
+|---------|--------|-------------|
+| **Video Meeting (Jitsi)** | ✅ | Doctor as HOST, patient lobby, guest invites |
+| **EMR Documentation** | ✅ | SOAP format during/after meeting |
+| **PostgreSQL Database** | ✅ | Migrated from GCS to PostgreSQL + pgvector |
+| **AI Pre-Consultation Summary** | 🚧 | AI summarizes patient history before meeting |
+| **AI Chat Assistant** | 🚧 | Helps doctor during consultation |
+| **Patient Instruction Sheet** | 📋 | Auto-generated post-consultation instructions |
+| **Clinical Decision Support** | 📋 | Drug interaction & dose adjustment alerts |
+| **Man-in-the-Loop Validation** | 🚧 | Doctor approval before AI content goes to patient |
+| **Device Speech-to-Text** | 📋 | Free browser-based dictation |
+
+### Test Credentials
+
+| Role | Email | Password | Portal |
+|------|-------|----------|--------|
+| Patient | demo.test@gmail.com | P@ssw0rd | localhost:3005 |
+| Patient | Somchai.Mankong@gmail.com | P@ssw0rd | localhost:3005 |
+| Patient | Anan.Khayanrian@gmail.com | P@ssw0rd | localhost:3005 |
+| Doctor | doctor.test@izara.com | IzaraDoctor@2024 | localhost:3010 |
+| Admin | admin.test@izara.com | IzaraAdmin@2024 | localhost:3010 |
 
 ---
 

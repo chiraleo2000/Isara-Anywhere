@@ -1,6 +1,27 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { MapLocation } from '../types';
 
+// Map ID for AdvancedMarkerElement - Get from Google Cloud Console > Google Maps Platform > Map Management
+// See: https://developers.google.com/maps/documentation/javascript/advanced-markers/start#create-a-map-id
+const MAPS_MAP_ID = import.meta.env.VITE_GOOGLE_MAPS_MAP_ID || '';
+
+// Helper to check if AdvancedMarkerElement is available (not a hook - renamed to avoid confusion)
+const canUseAdvancedMarkers = () => Boolean(MAPS_MAP_ID && globalThis.google?.maps?.marker?.AdvancedMarkerElement);
+
+// Helper to clear marker from map (works for both marker types)
+const clearMarker = (marker: google.maps.Marker | google.maps.marker.AdvancedMarkerElement): void => {
+  // AdvancedMarkerElement has a writable 'map' property and no setMap method
+  // Classic Marker has setMap() method
+  // Use a safer check: AdvancedMarkerElement has 'content' property, Marker doesn't
+  if ('content' in marker) {
+    // This is AdvancedMarkerElement - set map property to null
+    (marker as google.maps.marker.AdvancedMarkerElement).map = null;
+  } else {
+    // This is classic Marker - use setMap method
+    (marker as google.maps.Marker).setMap(null);
+  }
+};
+
 // Icon Components for different location types
 const HospitalIcon: React.FC<{ className?: string }> = ({ className }) => (
   <svg className={className} viewBox="0 0 24 24" fill="currentColor">
@@ -41,8 +62,9 @@ export const InteractiveMap: React.FC<{
 }> = ({ locations, selectedLocation, onSelectLocation, zoom = 12, center, activeFilter, height = '100%', onLocationsUpdate }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const googleMapRef = useRef<google.maps.Map | null>(null);
-  const markersRef = useRef<google.maps.Marker[]>([]);
-  const userMarkerRef = useRef<google.maps.Marker | null>(null);
+  // Support both classic Marker and AdvancedMarkerElement
+  const markersRef = useRef<(google.maps.Marker | google.maps.marker.AdvancedMarkerElement)[]>([]);
+  const userMarkerRef = useRef<google.maps.Marker | google.maps.marker.AdvancedMarkerElement | null>(null);
   const placesServiceRef = useRef<google.maps.places.PlacesService | null>(null);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [mapError, setMapError] = useState<string | null>(null);
@@ -63,7 +85,7 @@ export const InteractiveMap: React.FC<{
   // };
 
   const getMarkerIcon = (type: MapLocation['type'], isSelected: boolean) => {
-    if (!window.google) return undefined;
+    if (!globalThis.google) return undefined;
 
     // BRIGHT, VISIBLE colors for each facility type
     const colorMap: { [key: string]: string } = {
@@ -81,6 +103,67 @@ export const InteractiveMap: React.FC<{
       scaledSize: isSelected ? new google.maps.Size(50, 50) : new google.maps.Size(40, 40), // BIGGER markers
       anchor: new google.maps.Point(20, 40), // Center the marker properly
     };
+  };
+
+  // Pin color mapping for AdvancedMarkerElement
+  const getPinColor = (type: MapLocation['type']): string => {
+    const colorMap: { [key: string]: string } = {
+      'hospital': '#DC2626',     // RED
+      'clinic': '#2563EB',       // BLUE
+      'pharmacy': '#16A34A',     // GREEN
+      'health_center': '#F97316' // ORANGE
+    };
+    return colorMap[type] || '#6B7280';
+  };
+
+  // Create marker - uses AdvancedMarkerElement when Map ID is configured
+  const createMarker = (
+    loc: MapLocation,
+    map: google.maps.Map,
+    onClick?: () => void
+  ): google.maps.Marker | google.maps.marker.AdvancedMarkerElement => {
+    const advancedMarkersAvailable = canUseAdvancedMarkers();
+    
+    if (advancedMarkersAvailable) {
+      const pinElement = new google.maps.marker.PinElement({
+        background: getPinColor(loc.type),
+        borderColor: '#fff',
+        glyphColor: '#fff',
+        scale: 1.2,
+      });
+      
+      const marker = new google.maps.marker.AdvancedMarkerElement({
+        position: loc.coords,
+        map,
+        title: loc.name,
+        content: pinElement.element,
+        zIndex: 100,
+      });
+      
+      if (onClick) {
+        marker.addListener('click', onClick);
+      }
+      
+      return marker;
+    } else {
+      // Fall back to classic Marker
+      const marker = new google.maps.Marker({
+        position: loc.coords,
+        map,
+        title: loc.name,
+        icon: getMarkerIcon(loc.type, false),
+        optimized: false,
+        visible: true,
+        zIndex: 100,
+        animation: google.maps.Animation.DROP,
+      });
+      
+      if (onClick) {
+        marker.addListener('click', onClick);
+      }
+      
+      return marker;
+    }
   };
 
   const getLocationType = (placeTypes: string[]): MapLocation['type'] => {
@@ -131,19 +214,7 @@ export const InteractiveMap: React.FC<{
       if (!googleMapRef.current) return;
 
       try {
-        const markerIcon = getMarkerIcon(loc.type, false);
         console.log(`🚨 [${idx + 1}/${fallbackLocations.length}] Creating FALLBACK marker: ${loc.name} (${loc.type})`);
-
-        const marker = new google.maps.Marker({
-          position: loc.coords,
-          map: googleMapRef.current,
-          title: `${loc.name} (Fallback)`,
-          icon: markerIcon,
-          optimized: false,
-          visible: true,
-          zIndex: 100,
-          animation: google.maps.Animation.DROP,
-        });
 
         const infoWindow = new google.maps.InfoWindow({
           content: `
@@ -155,11 +226,16 @@ export const InteractiveMap: React.FC<{
           `,
         });
 
-        marker.addListener('click', () => {
+        // Use createMarker helper (supports AdvancedMarkerElement when Map ID is configured)
+        const marker = createMarker(loc, googleMapRef.current, () => {
           if (onSelectLocation) {
             onSelectLocation(loc);
           }
-          infoWindow.open(googleMapRef.current!, marker);
+          if (canUseAdvancedMarkers()) {
+            infoWindow.open({ anchor: marker as google.maps.marker.AdvancedMarkerElement, map: googleMapRef.current });
+          } else {
+            infoWindow.open(googleMapRef.current!, marker as google.maps.Marker);
+          }
         });
 
         markersRef.current.push(marker);
@@ -255,19 +331,7 @@ export const InteractiveMap: React.FC<{
             if (!googleMapRef.current) return;
 
             try {
-              const markerIcon = getMarkerIcon(loc.type, false);
               console.log(`  ⚡ Creating INSTANT marker ${idx + 1}: ${loc.name}`);
-
-              const marker = new google.maps.Marker({
-                position: loc.coords,
-                map: googleMapRef.current,
-                title: loc.name,
-                icon: markerIcon,
-                optimized: false,
-                visible: true,
-                zIndex: 100, // High z-index to ensure visibility
-                animation: google.maps.Animation.DROP, // Animated drop for visibility
-              });
 
               const infoWindow = new google.maps.InfoWindow({
                 content: `
@@ -279,11 +343,16 @@ export const InteractiveMap: React.FC<{
                 `,
               });
 
-              marker.addListener('click', () => {
+              // Use createMarker helper (supports AdvancedMarkerElement when Map ID is configured)
+              const marker = createMarker(loc, googleMapRef.current, () => {
                 if (onSelectLocation) {
                   onSelectLocation(loc);
                 }
-                infoWindow.open(googleMapRef.current!, marker);
+                if (canUseAdvancedMarkers()) {
+                  infoWindow.open({ anchor: marker as google.maps.marker.AdvancedMarkerElement, map: googleMapRef.current });
+                } else {
+                  infoWindow.open(googleMapRef.current!, marker as google.maps.Marker);
+                }
               });
 
               markersRef.current.push(marker);
@@ -394,7 +463,7 @@ export const InteractiveMap: React.FC<{
       console.log('🗺️ Initializing map at:', userLocation);
       const mapCenter = center || userLocation;
 
-      googleMapRef.current = new google.maps.Map(mapRef.current, {
+      const mapOptions: google.maps.MapOptions = {
         center: mapCenter,
         zoom: zoom,
         minZoom: 10, // Prevent zooming out too far
@@ -416,27 +485,21 @@ export const InteractiveMap: React.FC<{
         fullscreenControl: true,
         zoomControl: true,
         gestureHandling: 'greedy', // Better mobile experience
-      });
+      };
+      
+      // Add mapId if available for AdvancedMarkerElement support
+      if (MAPS_MAP_ID) {
+        mapOptions.mapId = MAPS_MAP_ID;
+      }
+
+      googleMapRef.current = new google.maps.Map(mapRef.current, mapOptions);
 
       placesServiceRef.current = new google.maps.places.PlacesService(googleMapRef.current);
 
-      // Add user location marker
+      // Clear existing user marker if present
       if (userMarkerRef.current) {
-        userMarkerRef.current.setMap(null);
+        clearMarker(userMarkerRef.current);
       }
-
-      userMarkerRef.current = new google.maps.Marker({
-        position: userLocation,
-        map: googleMapRef.current,
-        title: 'ตำแหน่งของคุณ 📍',
-        icon: {
-          url: 'http://maps.google.com/mapfiles/ms/icons/purple-dot.png', // Purple for user location
-          scaledSize: new google.maps.Size(50, 50) // Larger user marker
-        },
-        zIndex: 10000, // Highest z-index to always be on top
-        animation: google.maps.Animation.BOUNCE, // Bouncing animation to stand out
-        optimized: false,
-      });
 
       // Add info window for user marker
       const userInfoWindow = new google.maps.InfoWindow({
@@ -450,9 +513,54 @@ export const InteractiveMap: React.FC<{
         `,
       });
 
-      userMarkerRef.current.addListener('click', () => {
-        userInfoWindow.open(googleMapRef.current!, userMarkerRef.current!);
-      });
+      // User marker - use AdvancedMarkerElement when Map ID is configured
+      if (canUseAdvancedMarkers()) {
+        // Create custom user location marker with AdvancedMarkerElement
+        const userPinElement = document.createElement('div');
+        userPinElement.innerHTML = `
+          <div style="position: relative;">
+            <div style="width: 28px; height: 28px; background: #9333EA; border: 4px solid #fff; border-radius: 50%; box-shadow: 0 2px 8px rgba(0,0,0,0.4);"></div>
+            <div style="position: absolute; top: -8px; left: -8px; width: 44px; height: 44px; background: rgba(147, 51, 234, 0.3); border-radius: 50%; animation: userPulse 2s infinite;"></div>
+          </div>
+          <style>
+            @keyframes userPulse {
+              0% { transform: scale(1); opacity: 1; }
+              50% { transform: scale(1.3); opacity: 0.5; }
+              100% { transform: scale(1); opacity: 1; }
+            }
+          </style>
+        `;
+        
+        userMarkerRef.current = new google.maps.marker.AdvancedMarkerElement({
+          position: userLocation,
+          map: googleMapRef.current,
+          title: 'ตำแหน่งของคุณ 📍',
+          content: userPinElement,
+          zIndex: 10000,
+        });
+        
+        userMarkerRef.current.addListener('click', () => {
+          userInfoWindow.open({ anchor: userMarkerRef.current as google.maps.marker.AdvancedMarkerElement, map: googleMapRef.current });
+        });
+      } else {
+        // Fall back to classic Marker
+        userMarkerRef.current = new google.maps.Marker({
+          position: userLocation,
+          map: googleMapRef.current,
+          title: 'ตำแหน่งของคุณ 📍',
+          icon: {
+            url: 'http://maps.google.com/mapfiles/ms/icons/purple-dot.png', // Purple for user location
+            scaledSize: new google.maps.Size(50, 50) // Larger user marker
+          },
+          zIndex: 10000, // Highest z-index to always be on top
+          animation: google.maps.Animation.BOUNCE, // Bouncing animation to stand out
+          optimized: false,
+        });
+
+        userMarkerRef.current.addListener('click', () => {
+          userInfoWindow.open(googleMapRef.current!, userMarkerRef.current as google.maps.Marker);
+        });
+      }
 
       console.log('✅ Map initialized successfully');
       setIsMapReady(true);
@@ -540,8 +648,8 @@ export const InteractiveMap: React.FC<{
             onClick={() => {
               if (userLocation) {
                 console.log('🔄 Manual refresh triggered');
-                // Clear existing markers and locations
-                markersRef.current.forEach(m => m.setMap(null));
+                // Clear existing markers and locations using helper
+                markersRef.current.forEach(m => clearMarker(m));
                 markersRef.current = [];
                 setInternalLocations([]);
                 // Search again

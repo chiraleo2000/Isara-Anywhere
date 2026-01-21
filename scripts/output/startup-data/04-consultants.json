@@ -1,0 +1,42 @@
+{
+  "description": "Medical consultants/specialists directory",
+  "table": "consultants",
+  "data": [
+    {
+      "id": "CONSULT-001",
+      "name": "Dr. Wichai Chuchart",
+      "specialty": "Cardiology",
+      "hospital": "Bumrungrad Hospital",
+      "phone": "02-011-1111",
+      "email": "wichai@bumrungrad.com",
+      "is_available": true
+    },
+    {
+      "id": "CONSULT-002",
+      "name": "Dr. Somying Thongsuk",
+      "specialty": "Nephrology",
+      "hospital": "Siriraj Hospital",
+      "phone": "02-022-2222",
+      "email": "somying@siriraj.ac.th",
+      "is_available": true
+    },
+    {
+      "id": "CONSULT-003",
+      "name": "Dr. Prasert Wongsawat",
+      "specialty": "Endocrinology",
+      "hospital": "Ramathibodi Hospital",
+      "phone": "02-033-3333",
+      "email": "prasert@rama.ac.th",
+      "is_available": true
+    },
+    {
+      "id": "CONSULT-004",
+      "name": "Dr. Nattaporn Srisawat",
+      "specialty": "Oncology",
+      "hospital": "Chulalongkorn Hospital",
+      "phone": "02-044-4444",
+      "email": "nattaporn@chula.ac.th",
+      "is_available": false
+    }
+  ]
+}
