@@ -28,6 +28,7 @@ import MedicalContent from './MedicalContent';
 import HealthMeeting from './HealthMeeting';
 import AdminDoctorManagement from './AdminDoctorManagement';
 import AdminAppointmentManagement from './AdminAppointmentManagement';
+import DoctorProfilePage from './DoctorProfilePage';
 // DoctorAvailabilitySettings removed as per requirements
 
 const DEFAULT_PREFERENCES: UserPreferences = {
@@ -88,6 +89,7 @@ const DoctorPortal: React.FC = () => {
     if (path.includes('/clinical-resources')) return 'clinical-resources';
     if (path.includes('/doctor-management')) return 'doctor-management';
     if (path.includes('/appointment-management')) return 'appointment-management';
+    if (path.includes('/profile')) return 'profile';
     return 'dashboard';
   };
 
@@ -184,6 +186,7 @@ const DoctorPortal: React.FC = () => {
         {/* Doctor Availability Settings - REMOVED as per requirements */}
 
         <Route path="clinical-resources" element={<ClinicalResources />} />
+        <Route path="profile" element={<DoctorProfilePage onBack={() => navigate(`/doctor/${userId}/dashboard`)} />} />
         <Route path="test-ui" element={<TestHarness doctor={user} patients={patients} />} />
 
         <Route path="*" element={<Navigate to="dashboard" replace />} />

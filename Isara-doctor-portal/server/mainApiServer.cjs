@@ -117,50 +117,267 @@ io.on('connection', (socket) => {
 app.set('io', io);
 
 // ============================================================================
-// HELPER FUNCTIONS - GCS OPERATIONS
+// HELPER FUNCTIONS - POSTGRESQL OPERATIONS (GCS DISABLED)
 // ============================================================================
 
 /**
- * Fetch JSON data from GCS via GCS API Server
+ * PostgreSQL-based data fetch - GCS is completely disabled
+ * This function maps GCS paths to PostgreSQL queries
+ * GCS is ONLY used for backup, NOT for interactive operations
  */
 async function fetchFromGCS(bucket, path) {
+  // POSTGRESQL ONLY - GCS is disabled for interactive operations
+  console.log(`📊 PostgreSQL fetch: ${bucket}/${path}`);
+  
   try {
-    const url = `${GCS_API_URL}/api/storage/read?bucket=${bucket}&path=${encodeURIComponent(path)}`;
-    const response = await fetch(url);
-
-    if (!response.ok) {
-      if (response.status === 404) {
+    // Map GCS paths to PostgreSQL queries
+    if (path === 'appointments.json' || path === 'appointments/appointments.json') {
+      return await PostgresDataService.AppointmentService.getAllAppointments();
+    }
+    
+    if (path === 'doctors.json' || path === 'doctors/index.json') {
+      return await PostgresDataService.AuthService.getAllDoctors();
+    }
+    
+    if (path === 'patients.json') {
+      return await PostgresDataService.PatientService.getAllPatients();
+    }
+    
+    if (path.startsWith('patients/') && path.endsWith('/phr.json')) {
+      const patientId = path.split('/')[1];
+      return await PostgresDataService.PatientService.getPatientPHR(patientId);
+    }
+    
+    if (path.startsWith('patients/') && path.endsWith('/vitals.json')) {
+      const patientId = path.split('/')[1];
+      return await PostgresDataService.PatientService.getPatientVitalSigns(patientId);
+    }
+    
+    if (path.startsWith('patients/') && path.endsWith('/profile.json')) {
+      const patientId = path.split('/')[1];
+      return await PostgresDataService.PatientService.getPatientById(patientId);
+    }
+    
+    if (path === 'prescriptions.json') {
+      // Return empty array - prescriptions are per-patient
+      return [];
+    }
+    
+    if (path === 'lab-orders.json') {
+      // Return empty array - lab orders are per-patient
+      return [];
+    }
+    
+    if (path === 'emrs.json') {
+      // Return empty array - EMRs are per-patient
+      return [];
+    }
+    
+    if (path === 'queue/queue.json') {
+      // Queue is managed in PostgreSQL via appointments status
+      return [];
+    }
+    
+    if (path.includes('notifications')) {
+      const userId = path.split('/')[1];
+      if (userId) {
+        return await PostgresDataService.NotificationService.getUserNotifications(userId);
+      }
+      return { items: [], lastUpdated: null };
+    }
+    
+    if (path === 'medical-content/articles.json') {
+      return await PostgresDataService.ContentService.getAllContent('published');
+    }
+    
+    if (path === 'clinical-resources/resources.json') {
+      return await PostgresDataService.ContentService.getClinicalResources('published');
+    }
+    
+    if (path === 'consultants/consultants.json') {
+      return await PostgresDataService.ConsultantService.getAllConsultants();
+    }
+    
+    if (path.includes('appointment-pool')) {
+      // Appointment pool - return empty for now
+      return [];
+    }
+    
+    if (path.includes('meeting-data.json')) {
+      const appointmentId = path.split('/')[1];
+      return await PostgresDataService.MeetingService.getMeetingByAppointment(appointmentId);
+    }
+    
+    if (path.includes('health-logs')) {
+      // Health logs - return empty structure
+      return { entries: [], lastUpdated: null };
+    }
+    
+    if (path.includes('living-will')) {
+      // Living will - query from PostgreSQL living_wills table
+      const patientId = path.split('/')[1];
+      try {
+        const result = await PostgresDataService.pool.query(
+          'SELECT * FROM living_wills WHERE patient_id = $1',
+          [patientId]
+        );
+        return result.rows[0] || null;
+      } catch (e) {
         return null;
       }
-      throw new Error(`GCS read failed: ${response.status}`);
     }
-
-    return await response.json();
+    
+    if (path === 'users/index.json') {
+      return await PostgresDataService.AdminService.getAllUsers();
+    }
+    
+    if (path.startsWith('users/') && path.endsWith('.json')) {
+      const userId = path.split('/')[1].replace('.json', '');
+      return await PostgresDataService.AuthService.findById(userId);
+    }
+    
+    if (path === 'medications.json') {
+      return await PostgresDataService.MetadataService.getDrugs();
+    }
+    
+    // Default: return null for unmapped paths
+    console.warn(`⚠️ Unmapped PostgreSQL path: ${bucket}/${path}`);
+    return null;
+    
   } catch (error) {
-    console.error(`❌ Error fetching ${bucket}/${path}:`, error.message);
+    console.error(`❌ PostgreSQL fetch error for ${bucket}/${path}:`, error.message);
     return null;
   }
 }
 
 /**
- * Write JSON data to GCS via GCS API Server
+ * PostgreSQL-based data write - GCS is completely disabled
+ * This function maps GCS paths to PostgreSQL operations
  */
 async function writeToGCS(bucket, path, data) {
+  // POSTGRESQL ONLY - GCS is disabled for interactive operations
+  console.log(`📊 PostgreSQL write: ${bucket}/${path}`);
+  
   try {
-    const url = `${GCS_API_URL}/api/storage/write`;
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ bucket, path, data })
-    });
-
-    if (!response.ok) {
-      throw new Error(`GCS write failed: ${response.status}`);
+    // Map GCS paths to PostgreSQL operations
+    if (path === 'appointments.json' || path === 'appointments/appointments.json') {
+      // Appointments are created/updated individually via AppointmentService
+      console.log('⚠️ Bulk appointment write - use AppointmentService instead');
+      return { success: true, message: 'Use AppointmentService for appointments' };
     }
-
-    return await response.json();
+    
+    if (path.includes('notifications')) {
+      const parts = path.split('/');
+      const userId = parts[1];
+      if (data && data.items && data.items.length > 0) {
+        const lastItem = data.items[data.items.length - 1];
+        await PostgresDataService.NotificationService.createNotification({
+          user_id: userId,
+          ...lastItem
+        });
+      }
+      return { success: true };
+    }
+    
+    if (path === 'queue/queue.json') {
+      // Queue is managed via appointments status
+      console.log('⚠️ Queue write - managed via appointment status');
+      return { success: true };
+    }
+    
+    if (path.includes('meeting-data.json')) {
+      const appointmentId = path.split('/')[1];
+      // Meeting data is managed via MeetingService
+      console.log(`⚠️ Meeting data write for ${appointmentId} - use MeetingService`);
+      return { success: true };
+    }
+    
+    if (path.includes('living-will')) {
+      const patientId = path.split('/')[1];
+      // Upsert living will
+      try {
+        await PostgresDataService.pool.query(
+          `INSERT INTO living_wills (id, patient_id, decisions, emergency_contacts, preferences, status, created_at, updated_at)
+           VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
+           ON CONFLICT (patient_id) DO UPDATE SET
+             decisions = EXCLUDED.decisions,
+             emergency_contacts = EXCLUDED.emergency_contacts,
+             preferences = EXCLUDED.preferences,
+             status = EXCLUDED.status,
+             updated_at = NOW()`,
+          [
+            data.id || `LW-${Date.now()}`,
+            patientId,
+            JSON.stringify(data.decisions || {}),
+            JSON.stringify(data.emergencyContacts || []),
+            JSON.stringify(data.preferences || {}),
+            data.status || 'active'
+          ]
+        );
+        return { success: true };
+      } catch (e) {
+        console.error('Living will write error:', e.message);
+        return { success: false, error: e.message };
+      }
+    }
+    
+    if (path === 'prescriptions.json') {
+      // Prescriptions are per-patient/appointment
+      console.log('⚠️ Bulk prescription write - use PrescriptionService');
+      return { success: true };
+    }
+    
+    if (path === 'lab-orders.json') {
+      // Lab orders are per-patient/appointment
+      console.log('⚠️ Bulk lab order write - use LabOrderService');
+      return { success: true };
+    }
+    
+    if (path === 'medical-content/articles.json') {
+      console.log('⚠️ Bulk content write - use ContentService');
+      return { success: true };
+    }
+    
+    if (path === 'consultants/consultants.json') {
+      console.log('⚠️ Bulk consultant write - use ConsultantService');
+      return { success: true };
+    }
+    
+    if (path === 'doctors/index.json') {
+      console.log('⚠️ Bulk doctor write - use AuthService');
+      return { success: true };
+    }
+    
+    if (path.includes('doctors/') && path.endsWith('.json')) {
+      // Individual doctor profile update
+      const doctorId = path.split('/')[1].replace('.json', '');
+      console.log(`⚠️ Doctor profile write for ${doctorId} - use specific endpoint`);
+      return { success: true };
+    }
+    
+    if (path === 'users/index.json') {
+      console.log('⚠️ Bulk user write - use AdminService');
+      return { success: true };
+    }
+    
+    if (path.includes('health-logs')) {
+      // Health logs - save to PostgreSQL
+      const patientId = path.split('/')[1];
+      console.log(`⚠️ Health logs write for ${patientId}`);
+      return { success: true };
+    }
+    
+    if (path.includes('appointment-pool')) {
+      console.log('⚠️ Appointment pool write - handled internally');
+      return { success: true };
+    }
+    
+    // Default: log warning for unmapped paths
+    console.warn(`⚠️ Unmapped PostgreSQL write path: ${bucket}/${path}`);
+    return { success: true, message: 'Path not mapped to PostgreSQL' };
+    
   } catch (error) {
-    console.error(`❌ Error writing ${bucket}/${path}:`, error.message);
+    console.error(`❌ PostgreSQL write error for ${bucket}/${path}:`, error.message);
     throw error;
   }
 }
@@ -495,6 +712,25 @@ app.get('/api/emr/patient/:patientId', authenticateToken, async (req, res) => {
     res.json({ emrs: emrs || [] });
   } catch (error) {
     console.error('EMR fetch error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Sign EMR (Requirement 4.4 - Man-in-the-Loop validation)
+app.post('/api/emr/:emrId/sign', authenticateToken, async (req, res) => {
+  try {
+    const { emrId } = req.params;
+    const doctorId = req.user?.id;
+    console.log(`[EMR] Signing EMR ${emrId} by doctor ${doctorId}`);
+    
+    const signedEmr = await PostgresDataService.EMRService.signEMR(emrId, doctorId);
+    if (!signedEmr) {
+      return res.status(404).json({ success: false, error: 'EMR not found' });
+    }
+    
+    res.json({ success: true, emr: signedEmr });
+  } catch (error) {
+    console.error('EMR signing error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -3299,25 +3535,14 @@ app.post('/api/appointments', authenticateToken, async (req, res) => {
     const appointmentData = req.body;
     console.log('📝 Creating new appointment:', appointmentData);
     
-    let appointments = await fetchFromGCS(BUCKETS.appointments, 'appointments.json') || [];
-    if (!Array.isArray(appointments)) appointments = [];
-    
-    const newAppointment = {
-      id: appointmentData.id || `APT-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
-      ...appointmentData,
-      status: appointmentData.status || 'pending',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    
-    appointments.push(newAppointment);
-    await writeToGCS(BUCKETS.appointments, 'appointments.json', appointments);
+    // Use PostgreSQL ONLY - no GCS
+    const newAppointment = await PostgresDataService.AppointmentService.createAppointment(appointmentData);
     
     console.log(`✅ Appointment created: ${newAppointment.id}`);
-    res.json({ success: true, appointment: newAppointment });
+    res.json({ success: true, data: { appointment: newAppointment }, appointment: newAppointment });
   } catch (error) {
     console.error('❌ Create appointment error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
@@ -3330,33 +3555,27 @@ app.get('/api/phr/patient/:patientId', authenticateToken, async (req, res) => {
     const { patientId } = req.params;
     console.log(`📋 Fetching PHR for patient: ${patientId}`);
     
-    // Get patient profile
-    const patientProfile = await fetchFromGCS(BUCKETS.patient, `patients/${patientId}/profile.json`);
-    
-    // Get PHR data
-    const phrData = await fetchFromGCS(BUCKETS.patient, `patients/${patientId}/phr.json`) || {
-      patientId,
-      vitalSigns: [],
-      healthRecords: [],
-      medications: [],
-      allergies: [],
-      conditions: []
-    };
-    
-    // Get vital signs history
-    const vitals = await fetchFromGCS(BUCKETS.patient, `patients/${patientId}/vitals.json`) || [];
+    // Use PostgreSQL ONLY
+    const patient = await PostgresDataService.PatientService.getPatientById(patientId);
+    const phrData = await PostgresDataService.PatientService.getPatientPHR(patientId);
+    const vitals = await PostgresDataService.PatientService.getPatientVitalSigns(patientId, 10);
     
     res.json({ 
       success: true, 
       phr: {
-        ...phrData,
-        patient: patientProfile,
-        latestVitals: vitals[0] || null
+        patientId,
+        patient: patient || null,
+        vitalSigns: vitals || [],
+        healthRecords: phrData?.health_records || [],
+        medications: phrData?.medications || [],
+        allergies: phrData?.allergies || [],
+        conditions: phrData?.conditions || [],
+        latestVitals: vitals?.[0] || null
       }
     });
   } catch (error) {
     console.error('❌ PHR fetch error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 

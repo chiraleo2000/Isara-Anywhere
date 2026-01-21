@@ -1,0 +1,95 @@
+{
+  "patient": [],
+  "doctor": [
+    {
+      "name": "Portal Health Check",
+      "passed": true,
+      "duration": 144,
+      "message": "Status: 200"
+    },
+    {
+      "name": "Root Page Serves HTML",
+      "passed": true,
+      "duration": 59,
+      "message": "HTML served correctly"
+    },
+    {
+      "name": "API Health Endpoint",
+      "passed": true,
+      "duration": 94,
+      "message": "API responding"
+    },
+    {
+      "name": "GCS Connection",
+      "passed": true,
+      "duration": 55,
+      "message": "GCS endpoint exists"
+    },
+    {
+      "name": "Authentication Endpoint",
+      "passed": true,
+      "duration": 56,
+      "message": "Auth endpoint responding (401)"
+    },
+    {
+      "name": "Patients API",
+      "passed": true,
+      "duration": 97,
+      "message": "Patients API protected (401)"
+    },
+    {
+      "name": "Queue API",
+      "passed": true,
+      "duration": 42,
+      "message": "Queue endpoint: 404"
+    },
+    {
+      "name": "Appointments API",
+      "passed": true,
+      "duration": 42,
+      "message": "Appointments API protected (401)"
+    },
+    {
+      "name": "Clinical Resources",
+      "passed": true,
+      "duration": 47,
+      "message": "Clinical resources: 401"
+    },
+    {
+      "name": "Prescription API",
+      "passed": true,
+      "duration": 46,
+      "message": "Prescription API: 404"
+    },
+    {
+      "name": "EMR API",
+      "passed": true,
+      "duration": 52,
+      "message": "EMR API: 404"
+    },
+    {
+      "name": "Static Assets",
+      "passed": true,
+      "duration": 48,
+      "message": "Static assets configured"
+    }
+  ],
+  "timestamp": "2026-01-21T08:34:48.070Z",
+  "version": "1.1.5",
+  "summary": {
+    "version": "1.1.5",
+    "patientPortal": {
+      "url": "https://izara-patient-portal-724889190329.asia-southeast1.run.app",
+      "passed": 0,
+      "failed": 0
+    },
+    "doctorPortal": {
+      "url": "https://izara-doctor-portal-724889190329.asia-southeast1.run.app",
+      "passed": 12,
+      "failed": 0
+    },
+    "totalPassed": 12,
+    "totalFailed": 0,
+    "passRate": 100
+  }
+}

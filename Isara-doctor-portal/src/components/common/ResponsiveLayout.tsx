@@ -433,17 +433,21 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
 
       {/* User Profile */}
       <div className={`border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-200'} p-4`}>
-        <div className="flex items-center space-x-3 mb-3">
+        <button
+          onClick={() => onNavigate('profile')}
+          className={`w-full flex items-center space-x-3 mb-3 p-2 rounded-lg transition-colors ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`}
+          title={language === 'th' ? 'แก้ไขโปรไฟล์' : 'Edit Profile'}
+        >
           <img
             src={user.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(user.email || user.id)}`}
             alt={user.name}
             className="w-10 h-10 rounded-full"
           />
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 text-left">
             <p className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'} truncate`}>{user.name}</p>
             <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'} truncate`}>{user.email}</p>
           </div>
-        </div>
+        </button>
         <button
           onClick={onLogout}
           className={`w-full py-2 px-4 ${isDarkMode ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'} rounded-lg font-medium transition-colors`}

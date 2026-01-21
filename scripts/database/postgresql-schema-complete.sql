@@ -332,6 +332,7 @@ CREATE TABLE IF NOT EXISTS appointments (
     
     -- Meeting
     meet_link TEXT,
+    meeting_link TEXT,
     jitsi_room_name VARCHAR(255),
     
     -- Invitees (relatives, consultants)
@@ -352,12 +353,23 @@ CREATE TABLE IF NOT EXISTS meeting_records (
     appointment_id VARCHAR(50) REFERENCES appointments(id),
     doctor_id VARCHAR(50) REFERENCES users(id),
     patient_id VARCHAR(50) REFERENCES users(id),
+    room_id VARCHAR(100),
+    room_name VARCHAR(255),
+    jitsi_domain VARCHAR(255),
+    meeting_url TEXT,
+    doctor_url TEXT,
+    patient_url TEXT,
+    guest_url TEXT,
+    status VARCHAR(20) DEFAULT 'scheduled' CHECK (status IN ('scheduled', 'waiting', 'active', 'in_progress', 'completed', 'cancelled')),
+    meeting_config JSONB,
     recording_url TEXT,
     transcript TEXT,
     ai_summary TEXT,
     ai_recommendations TEXT,
     section_summaries JSONB,
     duration_minutes INTEGER,
+    started_at TIMESTAMP WITH TIME ZONE,
+    ended_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 

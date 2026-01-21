@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { phrService } from '../../lib/services';
-import { User, Phone, Mail, MapPin, Calendar, Save, Edit2, Shield, Heart } from 'lucide-react';
+import { User, Phone, Mail, MapPin, Calendar, Save, Edit2, Shield, Heart, Camera } from 'lucide-react';
 import type { PersonalHealthRecord, User as UserType } from '../../types';
 
 export default function ProfilePage() {
@@ -10,6 +10,9 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [phr, setPhr] = useState<PersonalHealthRecord | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState(user?.avatarUrl || '');
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({
     name: user?.name || '',
     phone: user?.phone || '',
@@ -24,6 +27,54 @@ export default function ProfilePage() {
   useEffect(() => {
     loadProfile();
   }, []);
+
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+
+    // Validate file type and size
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      alert('กรุณาเลือกไฟล์รูปภาพ (JPG, PNG, หรือ WebP)');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      alert('ขนาดไฟล์ต้องไม่เกิน 5MB');
+      return;
+    }
+
+    setUploadingAvatar(true);
+    try {
+      // Convert to base64 for storage
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const base64 = e.target?.result as string;
+        setAvatarUrl(base64);
+        
+        // Update user profile with new avatar
+        const token = localStorage.getItem('token');
+        if (token) {
+          const response = await fetch('/api/auth/profile', {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({ avatarUrl: base64 }),
+          });
+          
+          if (response.ok) {
+            updateUser({ ...user, avatarUrl: base64 });
+          }
+        }
+        setUploadingAvatar(false);
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error('Failed to upload avatar:', error);
+      setUploadingAvatar(false);
+    }
+  };
 
   const loadProfile = async () => {
     if (!user?.id) {
@@ -124,8 +175,39 @@ export default function ProfilePage() {
       <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
         <div className="bg-gradient-to-r from-emerald-500 to-teal-500 p-6">
           <div className="flex items-center gap-4">
-            <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
-              <User className="w-10 h-10 text-white" />
+            <div className="relative">
+              <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center overflow-hidden">
+                {avatarUrl || user?.avatarUrl ? (
+                  <img 
+                    src={avatarUrl || user?.avatarUrl} 
+                    alt="Profile" 
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <User className="w-10 h-10 text-white" />
+                )}
+              </div>
+              {editing && (
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingAvatar}
+                  className="absolute bottom-0 right-0 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-gray-100 transition-colors"
+                  title="เปลี่ยนรูปโปรไฟล์"
+                >
+                  {uploadingAvatar ? (
+                    <div className="w-4 h-4 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Camera className="w-4 h-4 text-emerald-600" />
+                  )}
+                </button>
+              )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={handleAvatarUpload}
+                className="hidden"
+              />
             </div>
             <div className="text-white">
               <h2 className="text-xl font-bold">{form.name}</h2>

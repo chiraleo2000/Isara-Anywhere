@@ -342,7 +342,7 @@ RUN printf '%s\n' \
 'directory=/app' \
 'autostart=true' \
 'autorestart=true' \
-'environment=NODE_ENV="production",AUTH_PORT="3011",GCS_API_URL="http://127.0.0.1:3012",VITE_USE_POSTGRESQL="%(ENV_VITE_USE_POSTGRESQL)s",DATABASE_URL="%(ENV_DATABASE_URL)s"' \
+'environment=NODE_ENV="production",AUTH_PORT="3011",GCS_API_URL="http://127.0.0.1:3012",VITE_USE_POSTGRESQL="%(ENV_VITE_USE_POSTGRESQL)s",DB_HOST="%(ENV_DB_HOST)s",DB_NAME="%(ENV_DB_NAME)s",DB_USER="%(ENV_DB_USER)s",DB_PASSWORD="%(ENV_DB_PASSWORD)s",DB_PORT="%(ENV_DB_PORT)s"' \
 'stdout_logfile=/dev/stdout' \
 'stdout_logfile_maxbytes=0' \
 'stderr_logfile=/dev/stderr' \
@@ -353,7 +353,7 @@ RUN printf '%s\n' \
 'directory=/app' \
 'autostart=true' \
 'autorestart=true' \
-'environment=NODE_ENV="production",PORT="3009",GCS_API_URL="http://127.0.0.1:3012",GEMINI_API_KEY="%(ENV_GEMINI_API_KEY)s",GEMINI_MODEL="%(ENV_GEMINI_MODEL)s",JITSI_DOMAIN="%(ENV_JITSI_DOMAIN)s",GOOGLE_SPEECH_API_KEY="%(ENV_GOOGLE_SPEECH_API_KEY)s",VITE_USE_POSTGRESQL="%(ENV_VITE_USE_POSTGRESQL)s",DATABASE_URL="%(ENV_DATABASE_URL)s"' \
+'environment=NODE_ENV="production",PORT="3009",GCS_API_URL="http://127.0.0.1:3012",GEMINI_API_KEY="%(ENV_GEMINI_API_KEY)s",GEMINI_MODEL="%(ENV_GEMINI_MODEL)s",JITSI_DOMAIN="%(ENV_JITSI_DOMAIN)s",GOOGLE_SPEECH_API_KEY="%(ENV_GOOGLE_SPEECH_API_KEY)s",VITE_USE_POSTGRESQL="%(ENV_VITE_USE_POSTGRESQL)s",DB_HOST="%(ENV_DB_HOST)s",DB_NAME="%(ENV_DB_NAME)s",DB_USER="%(ENV_DB_USER)s",DB_PASSWORD="%(ENV_DB_PASSWORD)s",DB_PORT="%(ENV_DB_PORT)s"' \
 'stdout_logfile=/dev/stdout' \
 'stdout_logfile_maxbytes=0' \
 'stderr_logfile=/dev/stderr' \

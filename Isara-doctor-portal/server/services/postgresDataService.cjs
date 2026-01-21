@@ -430,6 +430,71 @@ const AppointmentService = {
     );
     return Number.parseInt(result.rows[0].count, 10);
   },
+
+  /**
+   * Create a new appointment
+   */
+  async createAppointment(data) {
+    const appointmentId = data.id || `APT-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
+    const result = await pool.query(
+      `INSERT INTO appointments (
+        id, patient_id, doctor_id, 
+        requested_date, requested_time, confirmed_date, confirmed_time,
+        appointment_date, appointment_time,
+        appointment_type, reason, symptoms, notes, status,
+        meeting_link, created_at, updated_at
+      )
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, NOW(), NOW())
+       RETURNING *`,
+      [
+        appointmentId,
+        data.patientId || data.patient_id,
+        data.doctorId || data.doctor_id,
+        data.requestedDate || data.requested_date || data.dateTime?.split('T')[0] || null,
+        data.requestedTime || data.requested_time || data.dateTime?.split('T')[1]?.substring(0,5) || null,
+        data.confirmedDate || data.confirmed_date || null,
+        data.confirmedTime || data.confirmed_time || null,
+        data.appointmentDate || data.appointment_date || data.dateTime?.split('T')[0] || null,
+        data.appointmentTime || data.appointment_time || data.dateTime?.split('T')[1]?.substring(0,5) || null,
+        data.type || data.appointment_type || 'general',
+        data.reason || null,
+        data.symptoms || null,
+        data.notes || null,
+        data.status || 'pending',
+        data.meetingLink || data.meeting_link || null
+      ]
+    );
+    return result.rows[0];
+  },
+
+  /**
+   * Delete appointment
+   */
+  async deleteAppointment(appointmentId) {
+    const result = await pool.query(
+      'DELETE FROM appointments WHERE id = $1 RETURNING *',
+      [appointmentId]
+    );
+    return result.rows[0] || null;
+  },
+
+  /**
+   * Get patient appointments
+   */
+  async getPatientAppointments(patientId) {
+    const result = await pool.query(
+      `SELECT a.*, 
+              d.name as doctor_name, d.name_thai as doctor_name_thai,
+              dp.specialty as doctor_specialty
+       FROM appointments a
+       JOIN users d ON a.doctor_id = d.id
+       LEFT JOIN doctor_profiles dp ON dp.doctor_id = d.id
+       WHERE a.patient_id = $1
+       ORDER BY COALESCE(a.confirmed_date, a.requested_date, a.appointment_date) DESC`,
+      [patientId]
+    );
+    return result.rows;
+  },
 };
 
 // ============================================================================
@@ -526,7 +591,7 @@ const EMRService = {
     const result = await pool.query(
       `UPDATE emr SET
         status = 'signed',
-        signed_by = $2,
+        doctor_signature = $2,
         signed_at = NOW(),
         updated_at = NOW()
        WHERE id = $1
@@ -881,21 +946,20 @@ const MeetingService = {
    * Create meeting record with full details
    */
   async createMeeting(data) {
-    const meetingId = `MTG-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
     const result = await pool.query(
       `INSERT INTO meeting_records (
-        id, appointment_id, doctor_id, patient_id, room_id,
+        appointment_id, doctor_id, patient_id, room_id, room_name,
         meeting_url, doctor_url, patient_url, guest_url,
         status, meeting_config, created_at
       )
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())
        RETURNING *`,
       [
-        meetingId,
         data.appointment_id,
         data.doctor_id,
         data.patient_id,
         data.room_id,
+        data.room_name || data.room_id,
         data.meeting_url,
         data.doctor_url,
         data.patient_url,
