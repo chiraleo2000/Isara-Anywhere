@@ -260,10 +260,10 @@ const PatientService = {
     // Get appointments, EMR records, and vital signs as timeline events
     const [appointments, emr, vitals] = await Promise.all([
       pool.query(
-        `SELECT id, 'appointment' as type, scheduled_date as event_date, 
-                chief_complaint as description, status
+        `SELECT id, 'appointment' as type, COALESCE(confirmed_date, requested_date, appointment_date) as event_date, 
+                reason as description, status
          FROM appointments WHERE patient_id = $1
-         ORDER BY scheduled_date DESC LIMIT 20`,
+         ORDER BY COALESCE(confirmed_date, requested_date, appointment_date) DESC NULLS LAST LIMIT 20`,
         [patientId]
       ),
       pool.query(
@@ -313,11 +313,11 @@ const AppointmentService = {
     const params = [doctorId];
 
     if (date) {
-      query += ' AND DATE(a.scheduled_date) = $2';
+      query += ' AND DATE(COALESCE(a.confirmed_date, a.requested_date, a.appointment_date)) = $2';
       params.push(date);
     }
 
-    query += ' ORDER BY a.scheduled_date ASC, a.scheduled_time ASC';
+    query += ' ORDER BY COALESCE(a.confirmed_date, a.requested_date, a.appointment_date) ASC, COALESCE(a.confirmed_time, a.requested_time, a.appointment_time) ASC';
 
     const result = await pool.query(query, params);
     return result.rows;
@@ -345,16 +345,16 @@ const AppointmentService = {
     }
 
     if (startDate) {
-      query += ` AND a.scheduled_date >= $${paramIndex++}`;
+      query += ` AND COALESCE(a.confirmed_date, a.requested_date, a.appointment_date) >= $${paramIndex++}`;
       params.push(startDate);
     }
 
     if (endDate) {
-      query += ` AND a.scheduled_date <= $${paramIndex++}`;
+      query += ` AND COALESCE(a.confirmed_date, a.requested_date, a.appointment_date) <= $${paramIndex++}`;
       params.push(endDate);
     }
 
-    query += ' ORDER BY a.scheduled_date DESC, a.scheduled_time DESC';
+    query += ' ORDER BY COALESCE(a.confirmed_date, a.requested_date, a.appointment_date) DESC, COALESCE(a.confirmed_time, a.requested_time, a.appointment_time) DESC';
 
     const result = await pool.query(query, params);
     return result.rows;
@@ -400,13 +400,13 @@ const AppointmentService = {
       fields.push(`notes = $${paramIndex++}`);
       values.push(data.notes);
     }
-    if (data.scheduled_date !== undefined) {
-      fields.push(`scheduled_date = $${paramIndex++}`);
-      values.push(data.scheduled_date);
+    if (data.scheduled_date !== undefined || data.confirmed_date !== undefined) {
+      fields.push(`confirmed_date = $${paramIndex++}`);
+      values.push(data.scheduled_date || data.confirmed_date);
     }
-    if (data.scheduled_time !== undefined) {
-      fields.push(`scheduled_time = $${paramIndex++}`);
-      values.push(data.scheduled_time);
+    if (data.scheduled_time !== undefined || data.confirmed_time !== undefined) {
+      fields.push(`confirmed_time = $${paramIndex++}`);
+      values.push(data.scheduled_time || data.confirmed_time);
     }
 
     fields.push('updated_at = NOW()');
@@ -447,7 +447,7 @@ const EMRService = {
        FROM emr e
        JOIN users d ON e.doctor_id = d.id
        WHERE e.patient_id = $1
-       ORDER BY e.visit_date DESC`,
+       ORDER BY e.created_at DESC`,
       [patientId]
     );
     return result.rows;
@@ -473,30 +473,22 @@ const EMRService = {
     if (existing) {
       const result = await pool.query(
         `UPDATE emr SET
-          chief_complaint = COALESCE($2, chief_complaint),
-          history_present_illness = COALESCE($3, history_present_illness),
-          physical_examination = COALESCE($4, physical_examination),
-          vital_signs = COALESCE($5, vital_signs),
-          diagnosis = COALESCE($6, diagnosis),
-          treatment_plan = COALESCE($7, treatment_plan),
-          clinical_notes = COALESCE($8, clinical_notes),
-          ai_summary = COALESCE($9, ai_summary),
-          ai_recommendations = COALESCE($10, ai_recommendations),
-          status = COALESCE($11, status),
+          subjective = COALESCE($2, subjective),
+          objective = COALESCE($3, objective),
+          assessment = COALESCE($4, assessment),
+          plan = COALESCE($5, plan),
+          ai_summary = COALESCE($6, ai_summary),
+          status = COALESCE($7, status),
           updated_at = NOW()
          WHERE appointment_id = $1
          RETURNING *`,
         [
           data.appointment_id,
-          data.chief_complaint,
-          JSON.stringify(data.history_present_illness),
-          JSON.stringify(data.physical_examination),
-          JSON.stringify(data.vital_signs),
-          JSON.stringify(data.diagnosis),
-          JSON.stringify(data.treatment_plan),
-          data.clinical_notes,
+          JSON.stringify(data.subjective || { chiefComplaint: data.chief_complaint }),
+          JSON.stringify(data.objective || { vitalSigns: data.vital_signs }),
+          JSON.stringify(data.assessment || { diagnoses: data.diagnosis }),
+          JSON.stringify(data.plan || { treatment: data.treatment_plan }),
           data.ai_summary,
-          JSON.stringify(data.ai_recommendations),
           data.status
         ]
       );
@@ -504,28 +496,22 @@ const EMRService = {
     } else {
       const result = await pool.query(
         `INSERT INTO emr (
-          id, appointment_id, patient_id, doctor_id, visit_date,
-          chief_complaint, history_present_illness, physical_examination,
-          vital_signs, diagnosis, treatment_plan, clinical_notes,
-          ai_summary, ai_recommendations, status
+          id, appointment_id, patient_id, doctor_id,
+          subjective, objective, assessment, plan,
+          ai_summary, status
         )
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
          RETURNING *`,
         [
           `EMR-${Date.now()}`,
           data.appointment_id,
           data.patient_id,
           data.doctor_id,
-          data.visit_date || new Date(),
-          data.chief_complaint,
-          JSON.stringify(data.history_present_illness || {}),
-          JSON.stringify(data.physical_examination || {}),
-          JSON.stringify(data.vital_signs || {}),
-          JSON.stringify(data.diagnosis || []),
-          JSON.stringify(data.treatment_plan || {}),
-          data.clinical_notes,
+          JSON.stringify(data.subjective || { chiefComplaint: data.chief_complaint }),
+          JSON.stringify(data.objective || { vitalSigns: data.vital_signs }),
+          JSON.stringify(data.assessment || { diagnoses: data.diagnosis }),
+          JSON.stringify(data.plan || { treatment: data.treatment_plan }),
           data.ai_summary,
-          JSON.stringify(data.ai_recommendations || []),
           data.status || 'draft'
         ]
       );
@@ -1007,10 +993,12 @@ const MeetingService = {
   async getMeetingsByDoctor(doctorId, limit = 50) {
     const result = await pool.query(
       `SELECT mr.*, 
-              a.scheduled_date, a.scheduled_time, 
-              a.patient_name, a.patient_name_thai
+              COALESCE(a.confirmed_date, a.requested_date, a.appointment_date) as scheduled_date, 
+              COALESCE(a.confirmed_time, a.requested_time, a.appointment_time) as scheduled_time, 
+              p.name as patient_name, p.name_thai as patient_name_thai
        FROM meeting_records mr
        LEFT JOIN appointments a ON mr.appointment_id = a.id
+       LEFT JOIN users p ON a.patient_id = p.id
        WHERE mr.doctor_id = $1
        ORDER BY mr.created_at DESC
        LIMIT $2`,
@@ -1025,11 +1013,13 @@ const MeetingService = {
   async getCompletedMeetings(doctorId, limit = 20) {
     const result = await pool.query(
       `SELECT mr.*, 
-              a.scheduled_date, a.scheduled_time,
-              a.patient_name, a.patient_name_thai,
+              COALESCE(a.confirmed_date, a.requested_date, a.appointment_date) as scheduled_date, 
+              COALESCE(a.confirmed_time, a.requested_time, a.appointment_time) as scheduled_time,
+              p.name as patient_name, p.name_thai as patient_name_thai,
               a.symptoms, a.reason
        FROM meeting_records mr
        LEFT JOIN appointments a ON mr.appointment_id = a.id
+       LEFT JOIN users p ON a.patient_id = p.id
        WHERE mr.doctor_id = $1 AND mr.status = 'completed'
        ORDER BY mr.ended_at DESC
        LIMIT $2`,

@@ -466,21 +466,16 @@ app.post('/api/emr', authenticateToken, async (req, res) => {
     const emrData = req.body;
     console.log('[EMR] Creating EMR in PostgreSQL');
     
-    // Create EMR in PostgreSQL
+    // Create EMR in PostgreSQL - using SOAP format (subjective, objective, assessment, plan)
     const emr = await PostgresDataService.EMRService.upsertEMR({
       appointment_id: emrData.appointmentId,
       patient_id: emrData.patientId,
       doctor_id: emrData.doctorId || req.user?.id,
-      visit_date: emrData.encounterDate || new Date(),
-      chief_complaint: emrData.chiefComplaint,
-      history_present_illness: emrData.historyOfPresentIllness,
-      physical_examination: emrData.physicalExamination,
-      vital_signs: emrData.vitalSigns,
-      diagnosis: emrData.diagnosis,
-      treatment_plan: emrData.treatmentPlan,
-      clinical_notes: emrData.clinicalNotes,
+      subjective: emrData.subjective || { chiefComplaint: emrData.chiefComplaint },
+      objective: emrData.objective || { vitalSigns: emrData.vitalSigns, physicalExamination: emrData.physicalExamination },
+      assessment: emrData.assessment || { diagnoses: emrData.diagnosis },
+      plan: emrData.plan || { treatment: emrData.treatmentPlan },
       ai_summary: emrData.aiSummary,
-      ai_recommendations: emrData.aiRecommendations,
       status: emrData.status || 'draft'
     });
 
