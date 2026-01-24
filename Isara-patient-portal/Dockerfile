@@ -1,43 +1,231 @@
-# Stage 1: Build
-FROM node:18-alpine AS builder
+# Isara Patient Portal - Unified Docker Image
+# Combines React frontend + Express backend in a single container
+# Suitable for Google Cloud Run, Cloud Run for Anthos, and GKE deployment
+
+# Stage 1: Build frontend only
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci
+# Install all dependencies (including dev) - merged RUN instructions
+# Remove package-lock to avoid platform-specific rollup issues
+RUN rm -f package-lock.json && \
+    npm install && \
+    npm install bcryptjs @types/bcryptjs tsx --save
 
 # Copy source code
 COPY . .
 
-# Build application
+# ============================================================================
+# Build-time environment variables for Vite (from .env)
+# ============================================================================
+# Application Info
+ARG VITE_APP_NAME="Izara Patient Portal"
+ARG VITE_APP_VERSION="1.0.0"
+
+# GCP Configuration
+ARG VITE_GCP_PROJECT_ID=izara-telemedicine
+ARG VITE_GCP_REGION=asia-southeast1
+
+# OAuth
+ARG VITE_GOOGLE_CLIENT_ID=724889190329-svf2733fjqklfic9tet9d2qkmhkgmu0l.apps.googleusercontent.com
+
+# API URL (will be set at runtime for Cloud Run)
+ARG VITE_API_URL
+
+# Google Cloud Storage Buckets
+ARG VITE_GCS_BUCKET_AUTH=izara-users-credentials
+ARG VITE_GCS_BUCKET_PATIENT=izara-patients-data
+ARG VITE_GCS_BUCKET_DOCTOR=izara-doctors-data
+ARG VITE_GCS_BUCKET_APPOINTMENTS=izara-appointments
+ARG VITE_GCS_BUCKET_METADATA=izara-meta-data
+
+# Google APIs - These must be passed as build args from CI/CD or .env file
+# Example: docker build --build-arg VITE_GOOGLE_MAPS_API_KEY=$GOOGLE_MAPS_API_KEY ...
+ARG VITE_GOOGLE_CALENDAR_API_KEY
+ARG VITE_GOOGLE_MEET_API_KEY
+ARG VITE_GOOGLE_MAPS_API_KEY
+ARG VITE_GOOGLE_GMAIL_API_KEY
+ARG VITE_GOOGLE_SHEETS_API_KEY
+
+# Google Cloud Speech-to-Text API (for post-meeting transcription)
+ARG VITE_GOOGLE_SPEECH_API_KEY
+ARG GOOGLE_SPEECH_API_KEY
+
+# Gemini AI Configuration - API key must be passed as build arg
+ARG VITE_GEMINI_API_KEY
+ARG VITE_GEMINI_MODEL=gemini-2.5-flash
+ARG VITE_GEMINI_TEMPERATURE=0.3
+ARG VITE_GEMINI_MAX_TOKENS=8192
+
+# Feature Flags - PDPA
+ARG VITE_PDPA_ENABLED=true
+ARG VITE_CONSENT_REQUIRED=true
+ARG VITE_AUDIT_LOGGING_ENABLED=true
+
+# Feature Flags - EMR/EHR
+ARG VITE_EMR_PATIENT_ACCESS_CONTROL=true
+ARG VITE_EMR_AUTO_SAVE_INTERVAL=30000
+ARG VITE_EMR_VERSION_CONTROL=true
+
+# Feature Flags - Clinical
+ARG VITE_E_PRESCRIBING_ENABLED=true
+ARG VITE_DRUG_INTERACTION_CHECK=true
+ARG VITE_LAB_ORDERING_ENABLED=true
+ARG VITE_IMAGING_ORDERING_ENABLED=true
+
+# Feature Flags - AI
+ARG VITE_AI_CLINICAL_ASSIST=true
+ARG VITE_AI_VOICE_TRANSCRIPTION=true
+ARG VITE_AI_NOTE_SUMMARIZATION=true
+ARG VITE_AI_ICD_CODING_ASSIST=true
+ARG VITE_AI_DRUG_INFO=true
+
+# Feature Flags - Other
+ARG VITE_LIVING_WILL_ENABLED=true
+ARG VITE_PHR_WEARABLES_ENABLED=true
+ARG VITE_VIDEO_CONSULTATION_ENABLED=true
+ARG VITE_QUEUE_MANAGEMENT_ENABLED=true
+ARG VITE_REAL_TIME_UPDATES=true
+
+# Jitsi Meet Video Conferencing (FREE)
+ARG JITSI_DOMAIN=meet.jit.si
+ARG VITE_JITSI_DOMAIN=meet.jit.si
+ARG VITE_JITSI_APP_ID=izara-telemedicine
+
+# Security Settings
+ARG VITE_SESSION_TIMEOUT=1800000
+ARG VITE_MFA_ENABLED=false
+ARG VITE_ENCRYPTION_ENABLED=true
+
+# PWA Settings
+ARG VITE_PWA_ENABLED=true
+ARG VITE_OFFLINE_MODE_ENABLED=true
+ARG VITE_PUSH_NOTIFICATIONS_ENABLED=true
+
+# ============================================================================
+# Set environment variables for Vite build
+# ============================================================================
+ENV VITE_APP_NAME=${VITE_APP_NAME} \
+    VITE_APP_VERSION=${VITE_APP_VERSION} \
+    VITE_API_URL=${VITE_API_URL} \
+    VITE_GCP_PROJECT_ID=${VITE_GCP_PROJECT_ID} \
+    VITE_GCP_REGION=${VITE_GCP_REGION} \
+    VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID} \
+    VITE_GCS_BUCKET_AUTH=${VITE_GCS_BUCKET_AUTH} \
+    VITE_GCS_BUCKET_PATIENT=${VITE_GCS_BUCKET_PATIENT} \
+    VITE_GCS_BUCKET_DOCTOR=${VITE_GCS_BUCKET_DOCTOR} \
+    VITE_GCS_BUCKET_APPOINTMENTS=${VITE_GCS_BUCKET_APPOINTMENTS} \
+    VITE_GCS_BUCKET_METADATA=${VITE_GCS_BUCKET_METADATA} \
+    VITE_GOOGLE_CALENDAR_API_KEY=${VITE_GOOGLE_CALENDAR_API_KEY} \
+    VITE_GOOGLE_MEET_API_KEY=${VITE_GOOGLE_MEET_API_KEY} \
+    VITE_GOOGLE_MAPS_API_KEY=${VITE_GOOGLE_MAPS_API_KEY} \
+    VITE_GOOGLE_GMAIL_API_KEY=${VITE_GOOGLE_GMAIL_API_KEY} \
+    VITE_GOOGLE_SHEETS_API_KEY=${VITE_GOOGLE_SHEETS_API_KEY} \
+    VITE_GOOGLE_SPEECH_API_KEY=${VITE_GOOGLE_SPEECH_API_KEY} \
+    GOOGLE_SPEECH_API_KEY=${GOOGLE_SPEECH_API_KEY} \
+    VITE_GEMINI_API_KEY=${VITE_GEMINI_API_KEY} \
+    VITE_GEMINI_MODEL=${VITE_GEMINI_MODEL} \
+    VITE_GEMINI_TEMPERATURE=${VITE_GEMINI_TEMPERATURE} \
+    VITE_GEMINI_MAX_TOKENS=${VITE_GEMINI_MAX_TOKENS} \
+    VITE_PDPA_ENABLED=${VITE_PDPA_ENABLED} \
+    VITE_CONSENT_REQUIRED=${VITE_CONSENT_REQUIRED} \
+    VITE_AUDIT_LOGGING_ENABLED=${VITE_AUDIT_LOGGING_ENABLED} \
+    VITE_EMR_PATIENT_ACCESS_CONTROL=${VITE_EMR_PATIENT_ACCESS_CONTROL} \
+    VITE_EMR_AUTO_SAVE_INTERVAL=${VITE_EMR_AUTO_SAVE_INTERVAL} \
+    VITE_EMR_VERSION_CONTROL=${VITE_EMR_VERSION_CONTROL} \
+    VITE_E_PRESCRIBING_ENABLED=${VITE_E_PRESCRIBING_ENABLED} \
+    VITE_DRUG_INTERACTION_CHECK=${VITE_DRUG_INTERACTION_CHECK} \
+    VITE_LAB_ORDERING_ENABLED=${VITE_LAB_ORDERING_ENABLED} \
+    VITE_IMAGING_ORDERING_ENABLED=${VITE_IMAGING_ORDERING_ENABLED} \
+    VITE_AI_CLINICAL_ASSIST=${VITE_AI_CLINICAL_ASSIST} \
+    VITE_AI_VOICE_TRANSCRIPTION=${VITE_AI_VOICE_TRANSCRIPTION} \
+    VITE_AI_NOTE_SUMMARIZATION=${VITE_AI_NOTE_SUMMARIZATION} \
+    VITE_AI_ICD_CODING_ASSIST=${VITE_AI_ICD_CODING_ASSIST} \
+    VITE_AI_DRUG_INFO=${VITE_AI_DRUG_INFO} \
+    VITE_LIVING_WILL_ENABLED=${VITE_LIVING_WILL_ENABLED} \
+    VITE_PHR_WEARABLES_ENABLED=${VITE_PHR_WEARABLES_ENABLED} \
+    VITE_VIDEO_CONSULTATION_ENABLED=${VITE_VIDEO_CONSULTATION_ENABLED} \
+    VITE_QUEUE_MANAGEMENT_ENABLED=${VITE_QUEUE_MANAGEMENT_ENABLED} \
+    VITE_REAL_TIME_UPDATES=${VITE_REAL_TIME_UPDATES} \
+    JITSI_DOMAIN=${JITSI_DOMAIN} \
+    VITE_JITSI_DOMAIN=${VITE_JITSI_DOMAIN} \
+    VITE_JITSI_APP_ID=${VITE_JITSI_APP_ID} \
+    VITE_SESSION_TIMEOUT=${VITE_SESSION_TIMEOUT} \
+    VITE_MFA_ENABLED=${VITE_MFA_ENABLED} \
+    VITE_ENCRYPTION_ENABLED=${VITE_ENCRYPTION_ENABLED} \
+    VITE_PWA_ENABLED=${VITE_PWA_ENABLED} \
+    VITE_OFFLINE_MODE_ENABLED=${VITE_OFFLINE_MODE_ENABLED} \
+    VITE_PUSH_NOTIFICATIONS_ENABLED=${VITE_PUSH_NOTIFICATIONS_ENABLED}
+
+# Build frontend (Vite) only
 RUN npm run build
 
-# Stage 2: Production
-FROM nginx:alpine
+# Stage 2: Production image
+FROM node:22-alpine AS production
+
+WORKDIR /app
 
 # Install curl for healthcheck
 RUN apk add --no-cache curl
 
-# Copy built files
-COPY --from=builder /app/dist /usr/share/nginx/html
+# Copy package files and install ALL dependencies (need tsx for server)
+COPY package*.json ./
+RUN npm install
+RUN npm install bcryptjs tsx dotenv --save
 
-# Copy nginx configuration
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Copy built frontend (static files)
+COPY --from=builder /app/dist ./dist
 
-# Copy environment variable injection script
-COPY docker-entrypoint.sh /docker-entrypoint.sh
-RUN chmod +x /docker-entrypoint.sh
+# Copy server source (run with tsx directly)
+COPY --from=builder /app/server ./server
 
-# Expose port
-EXPOSE 8080
+# Create credentials directory (will be mounted at runtime if needed)
+RUN mkdir -p ./credentials
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:8080/health || exit 1
+# Set environment variables for production runtime
+# These are used by the Node.js backend (non-VITE prefix for server-side)
+ENV NODE_ENV=production
+# Use port 3005 as main entry point - Express serves BOTH frontend and API
+ENV PORT=3005
+ENV GCP_PROJECT_ID=${GCP_PROJECT_ID:-izara-telemedicine}
+ENV GOOGLE_APPLICATION_CREDENTIALS=/app/credentials/service-account.json
+# DEMO MODE - Enable when PostgreSQL is unavailable (Cloud Run without Cloud SQL)
+ENV DEMO_MODE=${DEMO_MODE:-true}
+# Database Configuration
+ENV USE_POSTGRESQL=${USE_POSTGRESQL:-true}
+ENV DATABASE_URL=${DATABASE_URL:-}
+ENV DB_HOST=${DB_HOST:-}
+ENV DB_NAME=${DB_NAME:-}
+ENV DB_USER=${DB_USER:-}
+ENV DB_PASSWORD=${DB_PASSWORD:-}
+ENV DB_PORT=${DB_PORT:-5432}
+# Gemini AI - Server-side environment variables (must be set at runtime)
+# DO NOT hardcode API keys - use docker run -e or docker-compose environment
+ENV GEMINI_API_KEY=${GEMINI_API_KEY:-}
+ENV GEMINI_MODEL=${GEMINI_MODEL:-gemini-2.5-flash}
+# Jitsi Meet - Server-side
+ENV JITSI_DOMAIN=${JITSI_DOMAIN:-meet.jit.si}
+# Google Speech API - Server-side (must be set at runtime)
+ENV GOOGLE_SPEECH_API_KEY=${GOOGLE_SPEECH_API_KEY:-}
 
-# Start nginx
-ENTRYPOINT ["/docker-entrypoint.sh"]
-CMD ["nginx", "-g", "daemon off;"]
+# Expose single port - Express serves frontend + API
+EXPOSE 3005
+
+# Healthcheck
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+  CMD curl -f http://localhost:3005/health || exit 1
+
+# Create entrypoint script - single Express server handles everything
+RUN printf '%s\n' \
+  '#!/bin/sh' \
+  'echo "Starting Izara Patient Portal (Unified Server)..."' \
+  'echo "Server: http://localhost:3005"' \
+  'echo "Frontend + API served from same origin"' \
+  'exec npx tsx server/index.ts' \
+  > /app/start.sh && chmod +x /app/start.sh
+
+CMD ["/bin/sh", "/app/start.sh"]

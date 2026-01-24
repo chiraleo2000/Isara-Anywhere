@@ -1,40 +1,407 @@
-# Multi-stage build for Izara Doctor Portal Frontend
-FROM node:22-alpine AS builder
+# Izara Doctor Portal - Unified Docker Image
+# Runs frontend (Nginx) + all backend services (Node.js) in a single container
+# Optimized for Google Cloud Run deployment
 
+# =============================================================================
+# STAGE 1: Build React Frontend
+# =============================================================================
+FROM node:22-alpine AS frontend-builder
 WORKDIR /app
 
 COPY package*.json ./
 RUN npm ci && npm cache clean --force
-
 COPY . .
 
-ARG BUILD_ENV=production
-ENV NODE_ENV=${BUILD_ENV}
+# ============================================================================
+# Build-time environment variables for Vite (from .env)
+# ============================================================================
+# Application Info
+ARG VITE_APP_NAME="Izara Doctor Portal"
+ARG VITE_APP_VERSION="1.0.0"
+ARG VITE_APP_ENV="production"
+
+# API URLs (internal for Cloud Run)
+ARG VITE_API_URL
+ARG VITE_AUTH_URL
+ARG VITE_GCS_API_URL
+ARG VITE_DOCTOR_URL
+ARG VITE_WEBSOCKET_URL
+ARG GCS_API_URL
+
+# GCP Configuration
+ARG VITE_GCP_PROJECT_ID=izara-telemedicine
+ARG VITE_GCP_REGION=asia-southeast1
+
+# OAuth
+ARG VITE_GOOGLE_CLIENT_ID=724889190329-svf2733fjqklfic9tet9d2qkmhkgmu0l.apps.googleusercontent.com
+
+# Google Cloud Storage Buckets
+ARG VITE_GCS_BUCKET_AUTH=izara-users-credentials
+ARG VITE_GCS_BUCKET_CREDENTIALS=izara-users-credentials
+ARG VITE_GCS_BUCKET_DOCTOR=izara-doctors-data
+ARG VITE_GCS_BUCKET_PATIENT=izara-patients-data
+ARG VITE_GCS_BUCKET_APPOINTMENTS=izara-appointments
+ARG VITE_GCS_BUCKET_METADATA=izara-meta-data
+
+# Google APIs - These must be passed as build args from CI/CD or .env file
+# Example: docker build --build-arg VITE_GOOGLE_MAPS_API_KEY=$GOOGLE_MAPS_API_KEY ...
+ARG VITE_GOOGLE_CALENDAR_API_KEY
+ARG VITE_GOOGLE_MEET_API_KEY
+ARG VITE_GOOGLE_MAPS_API_KEY
+ARG VITE_GOOGLE_GMAIL_API_KEY
+ARG VITE_GOOGLE_SHEETS_API_KEY
+
+# Google Cloud Speech-to-Text API (for post-meeting transcription)
+ARG VITE_GOOGLE_SPEECH_API_KEY
+ARG GOOGLE_SPEECH_API_KEY
+
+# Jitsi Meet Video Conferencing (FREE)
+ARG JITSI_DOMAIN=meet.jit.si
+
+# Gemini AI Configuration - API key must be passed as build arg
+ARG VITE_GEMINI_API_KEY
+ARG VITE_GEMINI_MODEL=gemini-2.5-flash
+ARG VITE_GEMINI_TEMPERATURE=0.3
+ARG VITE_GEMINI_MAX_TOKENS=8192
+
+# Feature Flags - PDPA
+ARG VITE_PDPA_ENABLED=true
+ARG VITE_CONSENT_REQUIRED=true
+ARG VITE_AUDIT_LOGGING_ENABLED=true
+
+# Feature Flags - EMR/EHR
+ARG VITE_EMR_PATIENT_ACCESS_CONTROL=true
+ARG VITE_EMR_AUTO_SAVE_INTERVAL=30000
+ARG VITE_EMR_VERSION_CONTROL=true
+
+# Feature Flags - Clinical
+ARG VITE_E_PRESCRIBING_ENABLED=true
+ARG VITE_DRUG_INTERACTION_CHECK=true
+ARG VITE_LAB_ORDERING_ENABLED=true
+ARG VITE_IMAGING_ORDERING_ENABLED=true
+
+# Feature Flags - AI
+ARG VITE_AI_CLINICAL_ASSIST=true
+ARG VITE_AI_VOICE_TRANSCRIPTION=true
+ARG VITE_AI_NOTE_SUMMARIZATION=true
+ARG VITE_AI_ICD_CODING_ASSIST=true
+ARG VITE_AI_DRUG_INFO=true
+
+# Jitsi Meet Video Conferencing (FREE)
+ARG JITSI_DOMAIN=meet.jit.si
+ARG VITE_JITSI_DOMAIN=meet.jit.si
+ARG VITE_JITSI_APP_ID=izara-telemedicine
+
+# ============================================================================
+# Set environment variables for Vite build
+# ============================================================================
+ENV VITE_APP_NAME=${VITE_APP_NAME} \
+    VITE_APP_VERSION=${VITE_APP_VERSION} \
+    VITE_APP_ENV=${VITE_APP_ENV} \
+    VITE_API_URL=${VITE_API_URL} \
+    VITE_AUTH_URL=${VITE_AUTH_URL} \
+    VITE_GCS_API_URL=${VITE_GCS_API_URL} \
+    VITE_DOCTOR_URL=${VITE_DOCTOR_URL} \
+    VITE_WEBSOCKET_URL=${VITE_WEBSOCKET_URL} \
+    GCS_API_URL=${GCS_API_URL} \
+    VITE_GCP_PROJECT_ID=${VITE_GCP_PROJECT_ID} \
+    VITE_GCP_REGION=${VITE_GCP_REGION} \
+    VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID} \
+    VITE_GCS_BUCKET_AUTH=${VITE_GCS_BUCKET_AUTH} \
+    VITE_GCS_BUCKET_CREDENTIALS=${VITE_GCS_BUCKET_CREDENTIALS} \
+    VITE_GCS_BUCKET_DOCTOR=${VITE_GCS_BUCKET_DOCTOR} \
+    VITE_GCS_BUCKET_PATIENT=${VITE_GCS_BUCKET_PATIENT} \
+    VITE_GCS_BUCKET_APPOINTMENTS=${VITE_GCS_BUCKET_APPOINTMENTS} \
+    VITE_GCS_BUCKET_METADATA=${VITE_GCS_BUCKET_METADATA} \
+    VITE_GOOGLE_CALENDAR_API_KEY=${VITE_GOOGLE_CALENDAR_API_KEY} \
+    VITE_GOOGLE_MEET_API_KEY=${VITE_GOOGLE_MEET_API_KEY} \
+    VITE_GOOGLE_MAPS_API_KEY=${VITE_GOOGLE_MAPS_API_KEY} \
+    VITE_GOOGLE_GMAIL_API_KEY=${VITE_GOOGLE_GMAIL_API_KEY} \
+    VITE_GOOGLE_SHEETS_API_KEY=${VITE_GOOGLE_SHEETS_API_KEY} \
+    VITE_GOOGLE_SPEECH_API_KEY=${VITE_GOOGLE_SPEECH_API_KEY} \
+    GOOGLE_SPEECH_API_KEY=${GOOGLE_SPEECH_API_KEY} \
+    JITSI_DOMAIN=${JITSI_DOMAIN} \
+    VITE_GEMINI_API_KEY=${VITE_GEMINI_API_KEY} \
+    VITE_GEMINI_MODEL=${VITE_GEMINI_MODEL} \
+    VITE_GEMINI_TEMPERATURE=${VITE_GEMINI_TEMPERATURE} \
+    VITE_GEMINI_MAX_TOKENS=${VITE_GEMINI_MAX_TOKENS} \
+    VITE_PDPA_ENABLED=${VITE_PDPA_ENABLED} \
+    VITE_CONSENT_REQUIRED=${VITE_CONSENT_REQUIRED} \
+    VITE_AUDIT_LOGGING_ENABLED=${VITE_AUDIT_LOGGING_ENABLED} \
+    VITE_EMR_PATIENT_ACCESS_CONTROL=${VITE_EMR_PATIENT_ACCESS_CONTROL} \
+    VITE_EMR_AUTO_SAVE_INTERVAL=${VITE_EMR_AUTO_SAVE_INTERVAL} \
+    VITE_EMR_VERSION_CONTROL=${VITE_EMR_VERSION_CONTROL} \
+    VITE_E_PRESCRIBING_ENABLED=${VITE_E_PRESCRIBING_ENABLED} \
+    VITE_DRUG_INTERACTION_CHECK=${VITE_DRUG_INTERACTION_CHECK} \
+    VITE_LAB_ORDERING_ENABLED=${VITE_LAB_ORDERING_ENABLED} \
+    VITE_IMAGING_ORDERING_ENABLED=${VITE_IMAGING_ORDERING_ENABLED} \
+    VITE_AI_CLINICAL_ASSIST=${VITE_AI_CLINICAL_ASSIST} \
+    VITE_AI_VOICE_TRANSCRIPTION=${VITE_AI_VOICE_TRANSCRIPTION} \
+    VITE_AI_NOTE_SUMMARIZATION=${VITE_AI_NOTE_SUMMARIZATION} \
+    VITE_AI_ICD_CODING_ASSIST=${VITE_AI_ICD_CODING_ASSIST} \
+    VITE_AI_DRUG_INFO=${VITE_AI_DRUG_INFO} \
+    JITSI_DOMAIN=${JITSI_DOMAIN} \
+    VITE_JITSI_DOMAIN=${VITE_JITSI_DOMAIN} \
+    VITE_JITSI_APP_ID=${VITE_JITSI_APP_ID}
 
 RUN npm run build
 
-RUN ls -la /app/dist && echo "✅ Build completed successfully"
+# =============================================================================
+# STAGE 2: Production Runtime
+# =============================================================================
+FROM node:22-alpine AS production
+WORKDIR /app
 
-FROM nginx:alpine
+# Cache bust - force rebuild v1.4.2
+ARG CACHE_BUST=5
 
-RUN apk add --no-cache bash curl
+RUN apk add --no-cache nginx bash curl gettext supervisor && rm -rf /var/cache/apk/*
 
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY package*.json ./
+RUN npm ci --only=production && npm cache clean --force
 
-COPY --from=builder /app/dist /usr/share/nginx/html
+COPY server/ ./server/
+# Create public directory for credentials (mount at runtime if needed)
+RUN mkdir -p ./public
+COPY --from=frontend-builder /app/dist /usr/share/nginx/html
 
-RUN echo '#!/bin/bash\nset -e\nenvsubst < /usr/share/nginx/html/env-config.template.js > /usr/share/nginx/html/env-config.js\nexec "$@"' > /docker-entrypoint.sh && \
-    chmod +x /docker-entrypoint.sh
+# Nginx configuration for reverse proxy (listen on 8080 for Cloud Run)
+RUN printf '%s\n' \
+'server {' \
+'    listen 8080;' \
+'    server_name localhost;' \
+'    root /usr/share/nginx/html;' \
+'    index index.html;' \
+'    gzip on;' \
+'    gzip_vary on;' \
+'    gzip_min_length 1024;' \
+'    gzip_types text/plain text/css text/xml text/javascript application/x-javascript application/xml+rss application/javascript application/json;' \
+'    add_header X-Frame-Options "SAMEORIGIN" always;' \
+'    add_header X-Content-Type-Options "nosniff" always;' \
+'    add_header X-XSS-Protection "1; mode=block" always;' \
+'    location /health {' \
+'        access_log off;' \
+'        return 200 '"'"'{"status":"healthy","service":"izara-unified"}'"'"';' \
+'        add_header Content-Type application/json;' \
+'    }' \
+'    location /env-config.js {' \
+'        expires -1;' \
+'        add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0";' \
+'    }' \
+'    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {' \
+'        expires 1y;' \
+'        add_header Cache-Control "public, immutable";' \
+'    }' \
+'    location /api/auth/ {' \
+'        proxy_pass http://127.0.0.1:3011/auth/;' \
+'        proxy_http_version 1.1;' \
+'        proxy_set_header Upgrade $http_upgrade;' \
+'        proxy_set_header Connection '"'"'upgrade'"'"';' \
+'        proxy_set_header Host $host;' \
+'        proxy_set_header X-Real-IP $remote_addr;' \
+'        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;' \
+'        proxy_set_header X-Forwarded-Proto $scheme;' \
+'        proxy_cache_bypass $http_upgrade;' \
+'        proxy_intercept_errors off;' \
+'    }' \
+'    location /api/storage/ {' \
+'        proxy_pass http://127.0.0.1:3012/api/storage/;' \
+'        proxy_http_version 1.1;' \
+'        proxy_set_header Host $host;' \
+'        proxy_set_header X-Real-IP $remote_addr;' \
+'        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;' \
+'        proxy_set_header X-Forwarded-Proto $scheme;' \
+'        proxy_intercept_errors off;' \
+'    }' \
+'    location /api/consultants {' \
+'        proxy_pass http://127.0.0.1:3009/api/consultants;' \
+'        proxy_http_version 1.1;' \
+'        proxy_set_header Host $host;' \
+'        proxy_set_header X-Real-IP $remote_addr;' \
+'        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;' \
+'        proxy_set_header X-Forwarded-Proto $scheme;' \
+'        proxy_intercept_errors off;' \
+'    }' \
+'    location /api/content/ {' \
+'        proxy_pass http://127.0.0.1:3009/api/content/;' \
+'        proxy_http_version 1.1;' \
+'        proxy_set_header Host $host;' \
+'        proxy_set_header X-Real-IP $remote_addr;' \
+'        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;' \
+'        proxy_set_header X-Forwarded-Proto $scheme;' \
+'        proxy_intercept_errors off;' \
+'    }' \
+'    location /api/doctors {' \
+'        proxy_pass http://127.0.0.1:3009/api/doctors;' \
+'        proxy_http_version 1.1;' \
+'        proxy_set_header Host $host;' \
+'        proxy_set_header X-Real-IP $remote_addr;' \
+'        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;' \
+'        proxy_set_header X-Forwarded-Proto $scheme;' \
+'        proxy_intercept_errors off;' \
+'    }' \
+'    location /api/ {' \
+'        proxy_pass http://127.0.0.1:3009/api/;' \
+'        proxy_http_version 1.1;' \
+'        proxy_set_header Upgrade $http_upgrade;' \
+'        proxy_set_header Connection '"'"'upgrade'"'"';' \
+'        proxy_set_header Host $host;' \
+'        proxy_set_header X-Real-IP $remote_addr;' \
+'        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;' \
+'        proxy_set_header X-Forwarded-Proto $scheme;' \
+'        proxy_cache_bypass $http_upgrade;' \
+'        proxy_intercept_errors off;' \
+'    }' \
+'    location /auth/ {' \
+'        proxy_pass http://127.0.0.1:3011/auth/;' \
+'        proxy_http_version 1.1;' \
+'        proxy_set_header Upgrade $http_upgrade;' \
+'        proxy_set_header Connection '"'"'upgrade'"'"';' \
+'        proxy_set_header Host $host;' \
+'        proxy_set_header X-Real-IP $remote_addr;' \
+'        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;' \
+'        proxy_set_header X-Forwarded-Proto $scheme;' \
+'        proxy_cache_bypass $http_upgrade;' \
+'        proxy_connect_timeout 10s;' \
+'        proxy_read_timeout 30s;' \
+'        proxy_intercept_errors off;' \
+'    }' \
+'    location /admin/ {' \
+'        proxy_pass http://127.0.0.1:3011/admin/;' \
+'        proxy_http_version 1.1;' \
+'        proxy_set_header Host $host;' \
+'        proxy_set_header X-Real-IP $remote_addr;' \
+'        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;' \
+'        proxy_set_header X-Forwarded-Proto $scheme;' \
+'        proxy_intercept_errors off;' \
+'    }' \
+'    location /ws {' \
+'        proxy_pass http://127.0.0.1:3011/ws;' \
+'        proxy_http_version 1.1;' \
+'        proxy_set_header Upgrade $http_upgrade;' \
+'        proxy_set_header Connection "upgrade";' \
+'        proxy_set_header Host $host;' \
+'        proxy_read_timeout 86400;' \
+'    }' \
+'    location / {' \
+'        try_files $uri $uri/ /index.html;' \
+'        add_header Cache-Control "no-cache";' \
+'    }' \
+'    error_page 404 /index.html;' \
+'}' > /etc/nginx/http.d/default.conf
 
-RUN echo 'window.ENV = {\n  API_URL: "${VITE_API_URL}",\n  AUTH_URL: "${VITE_AUTH_URL}",\n  GCS_API_URL: "${GCS_API_URL}"\n};' > /usr/share/nginx/html/env-config.template.js
+# Environment config template
+RUN printf '%s\n' \
+'window.ENV = {' \
+'  API_URL: "${VITE_API_URL}",' \
+'  AUTH_URL: "${VITE_AUTH_URL}",' \
+'  DOCTOR_URL: "${VITE_DOCTOR_URL}",' \
+'  WEBSOCKET_URL: "${VITE_WEBSOCKET_URL}",' \
+'  GCS_API_URL: "${GCS_API_URL}",' \
+'  GCP_PROJECT_ID: "${VITE_GCP_PROJECT_ID}",' \
+'  GCP_REGION: "${VITE_GCP_REGION}",' \
+'  GOOGLE_CLIENT_ID: "${VITE_GOOGLE_CLIENT_ID}",' \
+'  GCS_BUCKET_AUTH: "${VITE_GCS_BUCKET_AUTH}",' \
+'  GCS_BUCKET_DOCTOR: "${VITE_GCS_BUCKET_DOCTOR}",' \
+'  GCS_BUCKET_PATIENT: "${VITE_GCS_BUCKET_PATIENT}",' \
+'  GCS_BUCKET_APPOINTMENTS: "${VITE_GCS_BUCKET_APPOINTMENTS}",' \
+'  GCS_BUCKET_METADATA: "${VITE_GCS_BUCKET_METADATA}",' \
+'  GEMINI_API_KEY: "${VITE_GEMINI_API_KEY}",' \
+'  GEMINI_MODEL: "${VITE_GEMINI_MODEL}",' \
+'  PDPA_ENABLED: "${VITE_PDPA_ENABLED}",' \
+'  CONSENT_REQUIRED: "${VITE_CONSENT_REQUIRED}"' \
+'};' > /usr/share/nginx/html/env-config.template.js
 
-RUN chown -R nginx:nginx /usr/share/nginx/html && \
-    chmod -R 755 /usr/share/nginx/html
+# Supervisor configuration for process management
+RUN printf '%s\n' \
+'[supervisord]' \
+'nodaemon=true' \
+'logfile=/var/log/supervisord.log' \
+'pidfile=/var/run/supervisord.pid' \
+'loglevel=info' \
+'' \
+'[program:nginx]' \
+'command=/usr/sbin/nginx -g "daemon off;"' \
+'autostart=true' \
+'autorestart=true' \
+'stdout_logfile=/dev/stdout' \
+'stdout_logfile_maxbytes=0' \
+'stderr_logfile=/dev/stderr' \
+'stderr_logfile_maxbytes=0' \
+'' \
+'[program:gcs-api]' \
+'command=node /app/server/gcsApiServer.cjs' \
+'directory=/app' \
+'autostart=true' \
+'autorestart=true' \
+'environment=NODE_ENV="production",GCS_API_PORT="3012",PORT="3012"' \
+'stdout_logfile=/dev/stdout' \
+'stdout_logfile_maxbytes=0' \
+'stderr_logfile=/dev/stderr' \
+'stderr_logfile_maxbytes=0' \
+'' \
+'[program:auth-server]' \
+'command=node /app/server/authServer.cjs' \
+'directory=/app' \
+'autostart=true' \
+'autorestart=true' \
+'environment=NODE_ENV="production",AUTH_PORT="3011",GCS_API_URL="http://127.0.0.1:3012",USE_POSTGRESQL="%(ENV_USE_POSTGRESQL)s",DB_HOST="%(ENV_DB_HOST)s",DB_NAME="%(ENV_DB_NAME)s",DB_USER="%(ENV_DB_USER)s",DB_PASSWORD="%(ENV_DB_PASSWORD)s",DB_PORT="%(ENV_DB_PORT)s"' \
+'stdout_logfile=/dev/stdout' \
+'stdout_logfile_maxbytes=0' \
+'stderr_logfile=/dev/stderr' \
+'stderr_logfile_maxbytes=0' \
+'' \
+'[program:main-api]' \
+'command=node /app/server/mainApiServer.cjs' \
+'directory=/app' \
+'autostart=true' \
+'autorestart=true' \
+'environment=NODE_ENV="production",PORT="3009",GCS_API_URL="http://127.0.0.1:3012",GEMINI_API_KEY="%(ENV_GEMINI_API_KEY)s",GEMINI_MODEL="%(ENV_GEMINI_MODEL)s",JITSI_DOMAIN="%(ENV_JITSI_DOMAIN)s",GOOGLE_SPEECH_API_KEY="%(ENV_GOOGLE_SPEECH_API_KEY)s",USE_POSTGRESQL="%(ENV_USE_POSTGRESQL)s",DB_HOST="%(ENV_DB_HOST)s",DB_NAME="%(ENV_DB_NAME)s",DB_USER="%(ENV_DB_USER)s",DB_PASSWORD="%(ENV_DB_PASSWORD)s",DB_PORT="%(ENV_DB_PORT)s"' \
+'stdout_logfile=/dev/stdout' \
+'stdout_logfile_maxbytes=0' \
+'stderr_logfile=/dev/stderr' \
+'stderr_logfile_maxbytes=0' > /etc/supervisord.conf
 
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost/health || exit 1
+# Set environment variables for Gemini AI, Jitsi, and Database
+# These should be provided at runtime via docker run -e or docker-compose environment
+# DO NOT hardcode API keys here - use secrets management in production
+ENV GEMINI_API_KEY=${GEMINI_API_KEY:-} \
+    GEMINI_MODEL=${GEMINI_MODEL:-gemini-2.5-flash} \
+    JITSI_DOMAIN=${JITSI_DOMAIN:-meet.jit.si} \
+    GOOGLE_SPEECH_API_KEY=${GOOGLE_SPEECH_API_KEY:-} \
+    USE_POSTGRESQL=${USE_POSTGRESQL:-true} \
+    DATABASE_URL=${DATABASE_URL:-} \
+    DB_HOST=${DB_HOST:-} \
+    DB_NAME=${DB_NAME:-} \
+    DB_USER=${DB_USER:-} \
+    DB_PASSWORD=${DB_PASSWORD:-} \
+    DB_PORT=${DB_PORT:-5432}
 
-EXPOSE 80
+# Entrypoint script
+RUN printf '%s\n' \
+'#!/bin/bash' \
+'set -e' \
+'echo "Starting Izara Doctor Portal (Unified)"' \
+'echo "======================================="' \
+'envsubst < /usr/share/nginx/html/env-config.template.js > /usr/share/nginx/html/env-config.js' \
+'mkdir -p /app/server/logs /var/log /var/run' \
+'echo "Environment configured"' \
+'echo "Starting services via supervisor..."' \
+'exec /usr/bin/supervisord -c /etc/supervisord.conf' > /docker-entrypoint.sh
+
+RUN chmod +x /docker-entrypoint.sh && \
+    chown -R nginx:nginx /usr/share/nginx/html && \
+    chmod -R 755 /usr/share/nginx/html && \
+    mkdir -p /app/server/logs /var/secrets/google
+
+ENV NODE_ENV=production \
+    PORT=8080 \
+    DEMO_MODE=true \
+    USE_POSTGRESQL=true
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+  CMD curl -f http://localhost:8080/health || exit 1
+
+EXPOSE 8080 3009 3011 3012
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
-CMD ["nginx", "-g", "daemon off;"]
