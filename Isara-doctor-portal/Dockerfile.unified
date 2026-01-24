@@ -60,7 +60,7 @@ ARG JITSI_DOMAIN=meet.jit.si
 
 # Gemini AI Configuration - API key must be passed as build arg
 ARG VITE_GEMINI_API_KEY
-ARG VITE_GEMINI_MODEL=gemini-2.5-flash-lite
+ARG VITE_GEMINI_MODEL=gemini-2.5-flash
 ARG VITE_GEMINI_TEMPERATURE=0.3
 ARG VITE_GEMINI_MAX_TOKENS=8192
 
@@ -151,6 +151,9 @@ RUN npm run build
 # =============================================================================
 FROM node:22-alpine AS production
 WORKDIR /app
+
+# Cache bust - force rebuild v1.4.2
+ARG CACHE_BUST=5
 
 RUN apk add --no-cache nginx bash curl gettext supervisor && rm -rf /var/cache/apk/*
 
@@ -342,7 +345,7 @@ RUN printf '%s\n' \
 'directory=/app' \
 'autostart=true' \
 'autorestart=true' \
-'environment=NODE_ENV="production",AUTH_PORT="3011",GCS_API_URL="http://127.0.0.1:3012",VITE_USE_POSTGRESQL="%(ENV_VITE_USE_POSTGRESQL)s",DB_HOST="%(ENV_DB_HOST)s",DB_NAME="%(ENV_DB_NAME)s",DB_USER="%(ENV_DB_USER)s",DB_PASSWORD="%(ENV_DB_PASSWORD)s",DB_PORT="%(ENV_DB_PORT)s"' \
+'environment=NODE_ENV="production",AUTH_PORT="3011",GCS_API_URL="http://127.0.0.1:3012",USE_POSTGRESQL="%(ENV_USE_POSTGRESQL)s",DB_HOST="%(ENV_DB_HOST)s",DB_NAME="%(ENV_DB_NAME)s",DB_USER="%(ENV_DB_USER)s",DB_PASSWORD="%(ENV_DB_PASSWORD)s",DB_PORT="%(ENV_DB_PORT)s"' \
 'stdout_logfile=/dev/stdout' \
 'stdout_logfile_maxbytes=0' \
 'stderr_logfile=/dev/stderr' \
@@ -353,7 +356,7 @@ RUN printf '%s\n' \
 'directory=/app' \
 'autostart=true' \
 'autorestart=true' \
-'environment=NODE_ENV="production",PORT="3009",GCS_API_URL="http://127.0.0.1:3012",GEMINI_API_KEY="%(ENV_GEMINI_API_KEY)s",GEMINI_MODEL="%(ENV_GEMINI_MODEL)s",JITSI_DOMAIN="%(ENV_JITSI_DOMAIN)s",GOOGLE_SPEECH_API_KEY="%(ENV_GOOGLE_SPEECH_API_KEY)s",VITE_USE_POSTGRESQL="%(ENV_VITE_USE_POSTGRESQL)s",DB_HOST="%(ENV_DB_HOST)s",DB_NAME="%(ENV_DB_NAME)s",DB_USER="%(ENV_DB_USER)s",DB_PASSWORD="%(ENV_DB_PASSWORD)s",DB_PORT="%(ENV_DB_PORT)s"' \
+'environment=NODE_ENV="production",PORT="3009",GCS_API_URL="http://127.0.0.1:3012",GEMINI_API_KEY="%(ENV_GEMINI_API_KEY)s",GEMINI_MODEL="%(ENV_GEMINI_MODEL)s",JITSI_DOMAIN="%(ENV_JITSI_DOMAIN)s",GOOGLE_SPEECH_API_KEY="%(ENV_GOOGLE_SPEECH_API_KEY)s",USE_POSTGRESQL="%(ENV_USE_POSTGRESQL)s",DB_HOST="%(ENV_DB_HOST)s",DB_NAME="%(ENV_DB_NAME)s",DB_USER="%(ENV_DB_USER)s",DB_PASSWORD="%(ENV_DB_PASSWORD)s",DB_PORT="%(ENV_DB_PORT)s"' \
 'stdout_logfile=/dev/stdout' \
 'stdout_logfile_maxbytes=0' \
 'stderr_logfile=/dev/stderr' \
@@ -363,10 +366,11 @@ RUN printf '%s\n' \
 # These should be provided at runtime via docker run -e or docker-compose environment
 # DO NOT hardcode API keys here - use secrets management in production
 ENV GEMINI_API_KEY=${GEMINI_API_KEY:-} \
-    GEMINI_MODEL=gemini-2.5-flash-lite \
-    JITSI_DOMAIN=meet.jit.si \
+    GEMINI_MODEL=${GEMINI_MODEL:-gemini-2.5-flash} \
+    JITSI_DOMAIN=${JITSI_DOMAIN:-meet.jit.si} \
     GOOGLE_SPEECH_API_KEY=${GOOGLE_SPEECH_API_KEY:-} \
-    VITE_USE_POSTGRESQL=true \
+    USE_POSTGRESQL=${USE_POSTGRESQL:-true} \
+    DATABASE_URL=${DATABASE_URL:-} \
     DB_HOST=${DB_HOST:-} \
     DB_NAME=${DB_NAME:-} \
     DB_USER=${DB_USER:-} \
@@ -391,7 +395,9 @@ RUN chmod +x /docker-entrypoint.sh && \
     mkdir -p /app/server/logs /var/secrets/google
 
 ENV NODE_ENV=production \
-    PORT=8080
+    PORT=8080 \
+    DEMO_MODE=true \
+    USE_POSTGRESQL=true
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
   CMD curl -f http://localhost:8080/health || exit 1

@@ -1051,12 +1051,16 @@ export function BookAppointmentPage() {
               value={form.additionalNotes}
               onChange={(e) => setForm({ ...form, additionalNotes: e.target.value })}
               placeholder="ข้อมูลเพิ่มเติมที่ต้องการแจ้งแพทย์..."
-              className="w-full p-3 border border-gray-200 rounded-xl h-24 resize-none"
+              className="w-full p-3 border border-gray-200 rounded-xl h-24 resize-none dark:bg-slate-800 dark:border-slate-600 dark:text-white"
             />
           </div>
 
           <button 
-            onClick={() => setStep(3)} 
+            onClick={() => {
+              // Scroll to top of page when moving to next step
+              globalThis.scrollTo({ top: 0, behavior: 'smooth' });
+              setStep(3);
+            }} 
             disabled={!canProceedStep3}
             className="w-full bg-emerald-600 text-white py-3 rounded-xl hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
           >

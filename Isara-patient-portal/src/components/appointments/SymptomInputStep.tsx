@@ -703,7 +703,11 @@ export default function SymptomInputStep({
 
       {/* Next Button */}
       <button 
-        onClick={() => setStep(2)} 
+        onClick={() => {
+          // Scroll to top of page when moving to next step
+          globalThis.scrollTo({ top: 0, behavior: 'smooth' });
+          setStep(2);
+        }} 
         disabled={!canProceedStep2}
         className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-4 rounded-xl hover:from-emerald-700 hover:to-teal-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium shadow-lg flex items-center justify-center gap-2"
       >

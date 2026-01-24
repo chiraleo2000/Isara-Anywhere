@@ -61,8 +61,8 @@ export const config = {
   gemini: {
     apiKey: import.meta.env.VITE_GEMINI_API_KEY || '',
     model: import.meta.env.VITE_GEMINI_MODEL || 'gemini-2.5-flash',
-    temperature: parseFloat(import.meta.env.VITE_GEMINI_TEMPERATURE || '0.7'),
-    maxTokens: parseInt(import.meta.env.VITE_GEMINI_MAX_TOKENS || '8192'),
+    temperature: Number.parseFloat(import.meta.env.VITE_GEMINI_TEMPERATURE || '0.7'),
+    maxTokens: Number.parseInt(import.meta.env.VITE_GEMINI_MAX_TOKENS || '8192', 10),
   },
 
   // Feature Flags
@@ -74,7 +74,7 @@ export const config = {
 
     // EMR/EHR
     emrPatientAccessControl: import.meta.env.VITE_EMR_PATIENT_ACCESS_CONTROL === 'true',
-    emrAutoSaveInterval: parseInt(import.meta.env.VITE_EMR_AUTO_SAVE_INTERVAL || '30000'),
+    emrAutoSaveInterval: Number.parseInt(import.meta.env.VITE_EMR_AUTO_SAVE_INTERVAL || '30000', 10),
     emrVersionControl: import.meta.env.VITE_EMR_VERSION_CONTROL === 'true',
 
     // Clinical Features
@@ -100,7 +100,7 @@ export const config = {
 
   // Security Settings
   security: {
-    sessionTimeout: parseInt(import.meta.env.VITE_SESSION_TIMEOUT || '1800000'), // 30 minutes
+    sessionTimeout: Number.parseInt(import.meta.env.VITE_SESSION_TIMEOUT || '1800000', 10), // 30 minutes
     mfaEnabled: import.meta.env.VITE_MFA_ENABLED === 'true',
     encryptionEnabled: import.meta.env.VITE_ENCRYPTION_ENABLED === 'true',
   },

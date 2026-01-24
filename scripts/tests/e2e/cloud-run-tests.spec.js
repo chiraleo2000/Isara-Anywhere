@@ -127,6 +127,7 @@ test.describe('Cloud Run API Tests', () => {
       timeout: 30000
     });
     console.log('Patient login status:', response.status());
+    // Cloud may return 500 if database not configured - accept any response
     expect(response.status()).toBeLessThan(500);
   });
 
@@ -136,6 +137,7 @@ test.describe('Cloud Run API Tests', () => {
       timeout: 30000
     });
     console.log('Doctor login status:', response.status());
+    // Cloud may return 500 if database not configured
     expect(response.status()).toBeLessThan(500);
   });
 });
@@ -649,4 +651,11 @@ test.describe('Admin Functionality', () => {
 console.log('🌩️ Cloud Run E2E Test Suite Loaded');
 console.log('📋 Test Sections: 20');
 console.log('📊 Total Test Cases: 68');
+
+
+
+
+
+
+
 

@@ -15,7 +15,7 @@ const { Pool } = pg;
 
 // Database Configuration - parse DATABASE_URL if available
 const isDevelopment = process.env.NODE_ENV !== 'production';
-const usePostgres = process.env.VITE_USE_POSTGRESQL === 'true' || isDevelopment;
+const usePostgres = process.env.USE_POSTGRESQL === 'true' || process.env.VITE_USE_POSTGRESQL === 'true' || isDevelopment;
 
 // Parse DATABASE_URL if available
 interface DbConfig {
@@ -43,16 +43,42 @@ if (process.env.DATABASE_URL) {
   }
 }
 
-const pool = new Pool({
-  host: dbConfig.host || process.env.DB_HOST || 'localhost',
-  port: dbConfig.port || Number.parseInt(process.env.DB_PORT || '5432', 10),
+// Cloud SQL Unix socket configuration
+const dbHost = dbConfig.host || process.env.DB_HOST || 'localhost';
+const isCloudSQL = dbHost.startsWith('/cloudsql/');
+
+// Build pool configuration
+interface PoolConfig {
+  database: string;
+  user: string;
+  password: string;
+  max: number;
+  idleTimeoutMillis: number;
+  connectionTimeoutMillis: number;
+  host: string;
+  port?: number;
+}
+
+const poolConfig: PoolConfig = {
   database: dbConfig.database || process.env.DB_NAME || 'izara_phase1',
   user: dbConfig.user || process.env.DB_USER || 'postgres',
   password: dbConfig.password || process.env.DB_PASSWORD || '',
   max: 20,
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
-});
+  connectionTimeoutMillis: 5000,
+  host: dbHost,
+};
+
+if (isCloudSQL) {
+  // Cloud SQL Unix socket connection
+  console.log(`☁️ Using Cloud SQL Unix socket: ${dbHost}`);
+} else {
+  // Standard TCP connection
+  poolConfig.port = dbConfig.port || Number.parseInt(process.env.DB_PORT || '5432', 10);
+  console.log(`🔌 Using TCP connection: ${dbHost}:${poolConfig.port}`);
+}
+
+const pool = new Pool(poolConfig);
 
 // Test connection on init
 try {

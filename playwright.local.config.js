@@ -35,7 +35,7 @@ module.exports = defineConfig({
   
   /* Expect timeout */
   expect: {
-    timeout: 15000
+    timeout: 10000
   },
   
   /* Shared settings for all the projects below */
@@ -43,8 +43,8 @@ module.exports = defineConfig({
     /* Base URL */
     baseURL: 'http://localhost:3010',
     
-    /* Headless false for UI visibility */
-    headless: !!process.env.CI,
+    /* Headless true for speed */
+    headless: true,
     
     /* Collect trace when retrying the failed test */
     trace: 'on-first-retry',
@@ -52,9 +52,9 @@ module.exports = defineConfig({
     /* Screenshot settings */
     screenshot: 'only-on-failure',
     
-    /* Slow motion for better visibility during headed testing */
+    /* No slow motion for faster tests */
     launchOptions: {
-      slowMo: process.env.CI ? 0 : 100,
+      slowMo: 0,
     },
     
     /* Action timeout */

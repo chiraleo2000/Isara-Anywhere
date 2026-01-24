@@ -90,7 +90,7 @@ function updateLastActivity(): void {
 function isInactive(): boolean {
   const lastActivity = localStorage.getItem(STORAGE_KEYS.LAST_ACTIVITY);
   if (!lastActivity) return true;
-  return (Date.now() - parseInt(lastActivity)) > INACTIVITY_TIMEOUT;
+  return (Date.now() - Number.parseInt(lastActivity, 10)) > INACTIVITY_TIMEOUT;
 }
 
 // ============================================================================
@@ -648,7 +648,7 @@ export class AuthService {
     if (!expiry) return false;
     
     // Check absolute session expiry
-    if (Date.now() >= parseInt(expiry)) return false;
+    if (Date.now() >= Number.parseInt(expiry, 10)) return false;
     
     // Check inactivity timeout (15 minutes)
     if (isInactive()) {

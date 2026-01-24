@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useSettings } from '../../contexts/SettingsContext';
 import { appointmentService } from '../../lib/services';
 import { Appointment } from '../../types';
 import { HealthStudio, AIHealthChat } from '../../components/health';
@@ -16,17 +17,21 @@ import {
   Plus,
 } from 'lucide-react';
 
-const quickActions = [
-  { icon: Calendar, label: 'นัดหมายแพทย์', path: '/appointments/book', color: 'from-blue-500 to-blue-600' },
-  { icon: MessageCircle, label: 'ปรึกษา AI', path: '/ai-doctor', color: 'from-purple-500 to-purple-600' },
-  { icon: FileText, label: 'ประวัติสุขภาพ', path: '/phr', color: 'from-emerald-500 to-emerald-600' },
-  { icon: MapPin, label: 'ค้นหาสถานพยาบาล', path: '/map', color: 'from-orange-500 to-orange-600' },
-];
-
 export default function DashboardPage() {
   const { user } = useAuth();
+  const { t, theme } = useSettings();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  const isDarkMode = theme === 'dark';
+
+  const quickActions = [
+    { icon: Calendar, label: t('dashboard.bookAppointment'), path: '/appointments/book', color: 'from-blue-500 to-blue-600' },
+    { icon: MessageCircle, label: t('dashboard.consultAI'), path: '/ai-doctor', color: 'from-purple-500 to-purple-600' },
+    { icon: FileText, label: t('dashboard.healthRecords'), path: '/phr', color: 'from-emerald-500 to-emerald-600' },
+    { icon: MapPin, label: t('dashboard.findHospital'), path: '/map', color: 'from-orange-500 to-orange-600' },
+  ];
+
 
   useEffect(() => {
     if (user) loadData();
@@ -55,7 +60,8 @@ export default function DashboardPage() {
   };
 
   const formatDate = (date: string | Date) => {
-    return new Date(date).toLocaleDateString('th-TH', {
+    const locale = t('common.loading') === 'Loading...' ? 'en-US' : 'th-TH';
+    return new Date(date).toLocaleDateString(locale, {
       day: 'numeric',
       month: 'short',
       year: 'numeric',
@@ -64,18 +70,13 @@ export default function DashboardPage() {
 
   const getStatusBadge = (status: string) => {
     const styles: Record<string, string> = {
-      pending: 'bg-yellow-100 text-yellow-700',
-      confirmed: 'bg-green-100 text-green-700',
-      completed: 'bg-blue-100 text-blue-700',
-    };
-    const labels: Record<string, string> = {
-      pending: 'รอยืนยัน',
-      confirmed: 'ยืนยันแล้ว',
-      completed: 'เสร็จสิ้น',
+      pending: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300',
+      confirmed: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300',
+      completed: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300',
     };
     return (
       <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${styles[status] || styles.pending}`}>
-        {labels[status] || status}
+        {t(`status.${status}`)}
       </span>
     );
   };
@@ -92,8 +93,8 @@ export default function DashboardPage() {
             className="w-16 h-16 rounded-full border-3 border-white/30 shadow-lg"
           />
           <div className="flex-1">
-            <h1 className="text-2xl font-bold">สวัสดี, {user?.name?.split(' ')[0]} 👋</h1>
-            <p className="text-emerald-100 mt-1">ยินดีต้อนรับสู่ Izara Patient Portal</p>
+            <h1 className="text-2xl font-bold">{t('dashboard.hello')}, {user?.name?.split(' ')[0]} 👋</h1>
+            <p className="text-emerald-100 mt-1">{t('dashboard.welcome')}</p>
           </div>
           <Link
             to="/appointments/book"
@@ -115,26 +116,26 @@ export default function DashboardPage() {
               <Link
                 key={action.path}
                 to={action.path}
-                className="group relative bg-white rounded-xl p-4 border border-gray-100 hover:shadow-lg transition-all overflow-hidden"
+                className={`group relative rounded-xl p-4 border hover:shadow-lg transition-all overflow-hidden ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100'}`}
               >
                 <div className={`absolute inset-0 bg-gradient-to-br ${action.color} opacity-0 group-hover:opacity-5 transition-opacity`} />
                 <div className={`w-12 h-12 bg-gradient-to-br ${action.color} rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform shadow-sm`}>
                   <action.icon className="w-6 h-6 text-white" />
                 </div>
-                <p className="font-medium text-gray-800 group-hover:text-emerald-700 transition-colors">{action.label}</p>
+                <p className={`font-medium group-hover:text-emerald-500 transition-colors ${isDarkMode ? 'text-slate-200' : 'text-gray-800'}`}>{action.label}</p>
               </Link>
             ))}
           </div>
 
           {/* Upcoming Appointments */}
-          <div className="bg-white rounded-xl border border-gray-100">
-            <div className="flex items-center justify-between p-4 border-b border-gray-100">
-              <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+          <div className={`rounded-xl border ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100'}`}>
+            <div className={`flex items-center justify-between p-4 border-b ${isDarkMode ? 'border-slate-700' : 'border-gray-100'}`}>
+              <h2 className={`text-lg font-semibold flex items-center gap-2 ${isDarkMode ? 'text-slate-200' : 'text-gray-800'}`}>
                 <Calendar className="w-5 h-5 text-emerald-600" />
-                นัดหมายที่จะถึง
+                {t('dashboard.upcomingAppointments')}
               </h2>
-              <Link to="/appointments" className="text-emerald-600 text-sm hover:underline flex items-center">
-                ดูทั้งหมด <ChevronRight className="w-4 h-4" />
+              <Link to="/appointments" className="text-emerald-500 text-sm hover:underline flex items-center">
+                {t('dashboard.viewAll')} <ChevronRight className="w-4 h-4" />
               </Link>
             </div>
 
@@ -142,18 +143,18 @@ export default function DashboardPage() {
               {loading ? (
                 <div className="space-y-3">
                   {[1, 2].map((i) => (
-                    <div key={i} className="animate-pulse bg-gray-100 h-20 rounded-xl" />
+                    <div key={i} className={`animate-pulse h-20 rounded-xl ${isDarkMode ? 'bg-slate-700' : 'bg-gray-100'}`} />
                   ))}
                 </div>
               ) : appointments.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
+                <div className={`text-center py-8 ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
                   <Calendar className="w-12 h-12 mx-auto mb-2 opacity-30" />
-                  <p className="mb-2">ไม่มีนัดหมายที่จะถึง</p>
+                  <p className="mb-2">{t('dashboard.noAppointments')}</p>
                   <Link 
                     to="/appointments/book" 
-                    className="inline-flex items-center gap-1 text-emerald-600 text-sm hover:underline font-medium"
+                    className="inline-flex items-center gap-1 text-emerald-500 text-sm hover:underline font-medium"
                   >
-                    <Plus className="w-4 h-4" /> นัดหมายแพทย์
+                    <Plus className="w-4 h-4" /> {t('dashboard.makeAppointment')}
                   </Link>
                 </div>
               ) : (

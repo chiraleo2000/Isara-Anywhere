@@ -80,3 +80,443 @@ code {
     @apply border-gray-600 bg-gray-800 text-white;
   }
 }
+
+/* ============================================================================
+   COMPREHENSIVE DARK MODE STYLES - Patient Portal
+   ============================================================================ */
+
+/* Base dark mode overrides for all white backgrounds */
+html.dark .bg-white {
+  background-color: #1e293b !important; /* slate-800 */
+}
+
+html.dark .bg-gray-50 {
+  background-color: #0f172a !important; /* slate-900 */
+}
+
+html.dark .bg-gray-100 {
+  background-color: #1e293b !important; /* slate-800 */
+}
+
+/* Text color fixes for dark mode */
+html.dark .text-gray-800 {
+  color: #f1f5f9 !important; /* slate-100 */
+}
+
+html.dark .text-gray-700 {
+  color: #e2e8f0 !important; /* slate-200 */
+}
+
+html.dark .text-gray-600 {
+  color: #cbd5e1 !important; /* slate-300 */
+}
+
+html.dark .text-gray-500 {
+  color: #94a3b8 !important; /* slate-400 */
+}
+
+html.dark .text-gray-400 {
+  color: #64748b !important; /* slate-500 */
+}
+
+html.dark .text-gray-900 {
+  color: #ffffff !important;
+}
+
+/* Border color fixes for dark mode */
+html.dark .border-gray-100 {
+  border-color: #334155 !important; /* slate-700 */
+}
+
+html.dark .border-gray-200 {
+  border-color: #475569 !important; /* slate-600 */
+}
+
+html.dark .border-gray-300 {
+  border-color: #64748b !important; /* slate-500 */
+}
+
+/* Card and container backgrounds */
+html.dark div[class*="rounded-xl"],
+html.dark div[class*="rounded-2xl"],
+html.dark div[class*="rounded-lg"] {
+  border-color: #334155;
+}
+
+/* Form elements in dark mode */
+html.dark input,
+html.dark textarea,
+html.dark select {
+  background-color: #1e293b !important;
+  border-color: #475569 !important;
+  color: #f1f5f9 !important;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: #64748b !important;
+}
+
+html.dark input:focus,
+html.dark textarea:focus,
+html.dark select:focus {
+  border-color: #10b981 !important;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+}
+
+/* Button variants in dark mode */
+html.dark button.bg-gray-100 {
+  background-color: #334155 !important;
+  color: #e2e8f0 !important;
+}
+
+html.dark button.bg-gray-100:hover {
+  background-color: #475569 !important;
+}
+
+html.dark button.bg-gray-200 {
+  background-color: #334155 !important;
+  color: #e2e8f0 !important;
+}
+
+/* Hover states in dark mode */
+html.dark .hover\:bg-gray-50:hover {
+  background-color: #334155 !important;
+}
+
+html.dark .hover\:bg-gray-100:hover {
+  background-color: #475569 !important;
+}
+
+html.dark .hover\:bg-gray-200:hover {
+  background-color: #475569 !important;
+}
+
+/* Modal and overlay backgrounds */
+html.dark [class*="modal"] .bg-white,
+html.dark [role="dialog"] .bg-white {
+  background-color: #1e293b !important;
+}
+
+/* Table styling in dark mode */
+html.dark table {
+  background-color: #1e293b;
+}
+
+html.dark th {
+  background-color: #0f172a !important;
+  color: #f1f5f9 !important;
+}
+
+html.dark td {
+  color: #e2e8f0 !important;
+  border-color: #334155 !important;
+}
+
+html.dark tr:hover td {
+  background-color: #334155 !important;
+}
+
+/* Scrollbar styling for dark mode */
+html.dark ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+html.dark ::-webkit-scrollbar-track {
+  background: #1e293b;
+}
+
+html.dark ::-webkit-scrollbar-thumb {
+  background: #475569;
+  border-radius: 4px;
+}
+
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+/* Shadow adjustments for dark mode */
+html.dark .shadow-sm,
+html.dark .shadow,
+html.dark .shadow-md,
+html.dark .shadow-lg,
+html.dark .shadow-xl {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Calendar widget dark mode */
+html.dark .react-calendar {
+  background-color: #1e293b !important;
+  border-color: #334155 !important;
+  color: #f1f5f9 !important;
+}
+
+html.dark .react-calendar__tile {
+  color: #e2e8f0 !important;
+}
+
+html.dark .react-calendar__tile:hover {
+  background-color: #334155 !important;
+}
+
+html.dark .react-calendar__navigation button {
+  color: #f1f5f9 !important;
+}
+
+/* Dropdown/Select menus in dark mode */
+html.dark [class*="dropdown"],
+html.dark [class*="menu"] {
+  background-color: #1e293b !important;
+  border-color: #334155 !important;
+}
+
+/* Toast/notification backgrounds */
+html.dark .toast,
+html.dark [class*="notification"] {
+  background-color: #1e293b !important;
+  border-color: #334155 !important;
+  color: #f1f5f9 !important;
+}
+
+/* Badge/tag styling */
+html.dark .badge,
+html.dark span[class*="badge"],
+html.dark span[class*="tag"] {
+  background-color: #334155 !important;
+  color: #e2e8f0 !important;
+}
+
+/* Progress bars in dark mode */
+html.dark .progress-bar,
+html.dark [class*="progress"] {
+  background-color: #334155 !important;
+}
+
+/* Divider/separator lines */
+html.dark hr,
+html.dark .divider {
+  border-color: #334155 !important;
+}
+/* ============================================================================
+   COMPREHENSIVE DARK MODE CARD FIXES
+   ============================================================================ */
+
+/* Force ALL card-like containers to dark background */
+html.dark .bg-white,
+html.dark [class*="bg-white"],
+html.dark div.bg-white {
+  background-color: #1e293b !important;
+  color: #f1f5f9 !important;
+}
+
+/* Gradient backgrounds in dark mode */
+html.dark .bg-gradient-to-br.from-emerald-50,
+html.dark .bg-gradient-to-br.from-teal-50,
+html.dark .bg-gradient-to-br.from-blue-50,
+html.dark .from-emerald-50,
+html.dark .from-teal-50,
+html.dark .from-blue-50,
+html.dark .from-indigo-50 {
+  background: linear-gradient(to bottom right, #1e3a3a, #1e293b) !important;
+}
+
+/* Fix Quick Action cards in dashboard */
+html.dark .group.relative.bg-white {
+  background-color: #1e293b !important;
+  border-color: #334155 !important;
+}
+
+html.dark .group.relative.bg-white:hover {
+  background-color: #334155 !important;
+}
+
+/* Fix appointment cards and list items */
+html.dark div[class*="rounded-xl"].bg-white,
+html.dark div[class*="rounded-2xl"].bg-white,
+html.dark div[class*="rounded-lg"].bg-white {
+  background-color: #1e293b !important;
+  border-color: #334155 !important;
+}
+
+/* All card text should be light */
+html.dark div[class*="rounded"] p,
+html.dark div[class*="rounded"] span,
+html.dark div[class*="rounded"] h1,
+html.dark div[class*="rounded"] h2,
+html.dark div[class*="rounded"] h3,
+html.dark div[class*="rounded"] h4,
+html.dark div[class*="rounded"] h5,
+html.dark div[class*="rounded"] h6 {
+  color: inherit;
+}
+
+/* Status badges keep their colored backgrounds but with darker tones */
+html.dark .bg-yellow-100 {
+  background-color: #854d0e !important;
+  color: #fef08a !important;
+}
+
+html.dark .bg-green-100 {
+  background-color: #166534 !important;
+  color: #bbf7d0 !important;
+}
+
+html.dark .bg-blue-100 {
+  background-color: #1e40af !important;
+  color: #bfdbfe !important;
+}
+
+html.dark .bg-red-100 {
+  background-color: #991b1b !important;
+  color: #fecaca !important;
+}
+
+html.dark .bg-purple-100 {
+  background-color: #6b21a8 !important;
+  color: #e9d5ff !important;
+}
+
+html.dark .bg-orange-100 {
+  background-color: #9a3412 !important;
+  color: #fed7aa !important;
+}
+
+/* Mini Calendar dark mode */
+html.dark .bg-gradient-to-br.from-emerald-50.to-teal-50 {
+  background: linear-gradient(to bottom right, #064e3b, #134e4a) !important;
+}
+
+html.dark .bg-gradient-to-br.from-blue-50.to-indigo-50 {
+  background: linear-gradient(to bottom right, #1e3a5f, #312e81) !important;
+}
+
+/* Fix mini calendar text */
+html.dark .bg-gradient-to-br span,
+html.dark .bg-gradient-to-br div {
+  color: #e2e8f0 !important;
+}
+
+/* Labels and form elements */
+html.dark label {
+  color: #e2e8f0 !important;
+}
+
+/* Icons in dark mode should be visible */
+html.dark svg.text-gray-400,
+html.dark svg.text-gray-500,
+html.dark svg.text-gray-600 {
+  color: #94a3b8 !important;
+}
+
+/* Loading skeleton animations */
+html.dark .animate-pulse.bg-gray-100,
+html.dark .animate-pulse.bg-gray-200 {
+  background-color: #334155 !important;
+}
+
+/* Empty state text */
+html.dark .text-center.text-gray-500,
+html.dark .text-center.py-8 {
+  color: #94a3b8 !important;
+}
+
+/* Modal and dialog overlays */
+html.dark .fixed.inset-0.bg-black {
+  background-color: rgba(0, 0, 0, 0.7) !important;
+}
+
+/* Dropdown and popover menus */
+html.dark [role="listbox"],
+html.dark [role="menu"],
+html.dark .dropdown-content {
+  background-color: #1e293b !important;
+  border-color: #334155 !important;
+}
+
+html.dark [role="option"],
+html.dark [role="menuitem"] {
+  color: #e2e8f0 !important;
+}
+
+html.dark [role="option"]:hover,
+html.dark [role="menuitem"]:hover {
+  background-color: #334155 !important;
+}
+
+/* Health Studio specific fixes */
+html.dark .space-y-4 > div,
+html.dark .space-y-6 > div {
+  color: inherit;
+}
+
+/* Grid items in dark mode */
+html.dark .grid > div {
+  color: inherit;
+}
+
+/* Links in dark mode */
+html.dark a.text-emerald-600 {
+  color: #34d399 !important;
+}
+
+html.dark a.text-emerald-600:hover {
+  color: #6ee7b7 !important;
+}
+
+/* Health records specific */
+html.dark .border.border-gray-100,
+html.dark .border.border-gray-200 {
+  border-color: #334155 !important;
+}
+
+/* Fix appointment booking wizard */
+html.dark .step-content,
+html.dark .wizard-step {
+  background-color: #1e293b !important;
+  color: #f1f5f9 !important;
+}
+
+/* AI Chat interface */
+html.dark .chat-message,
+html.dark .message-bubble {
+  background-color: #334155 !important;
+  color: #f1f5f9 !important;
+}
+
+html.dark .chat-input {
+  background-color: #1e293b !important;
+  border-color: #475569 !important;
+  color: #f1f5f9 !important;
+}
+
+/* Timeline components */
+html.dark .timeline-item {
+  border-color: #334155 !important;
+}
+
+html.dark .timeline-content {
+  background-color: #1e293b !important;
+  color: #f1f5f9 !important;
+}
+
+/* PDPA & Living Will pages */
+html.dark .consent-card,
+html.dark .will-section {
+  background-color: #1e293b !important;
+  color: #f1f5f9 !important;
+}
+
+/* Signature canvas */
+html.dark canvas {
+  background-color: #f8fafc !important;
+  border-color: #475569 !important;
+}
+
+/* Map page */
+html.dark .map-controls,
+html.dark .map-sidebar {
+  background-color: #1e293b !important;
+  color: #f1f5f9 !important;
+}

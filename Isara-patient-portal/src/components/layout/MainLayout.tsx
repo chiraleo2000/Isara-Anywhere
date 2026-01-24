@@ -21,16 +21,22 @@ import {
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
-// Mini Calendar Component - Static (not using settings)
+// Mini Calendar Component - With dark mode and i18n support
 function MiniCalendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
+  const { theme, language } = useSettings();
   const today = new Date();
+  const isDark = theme === 'dark';
   
   const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
   const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay();
   
-  const monthNames = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
-  const dayNames = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'];
+  const monthNames = language === 'th' 
+    ? ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.']
+    : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const dayNames = language === 'th'
+    ? ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส']
+    : ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
   
   const prevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
   const nextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
@@ -40,22 +46,24 @@ function MiniCalendar() {
     today.getMonth() === currentDate.getMonth() && 
     today.getFullYear() === currentDate.getFullYear();
 
+  const year = language === 'th' ? currentDate.getFullYear() + 543 : currentDate.getFullYear();
+
   return (
-    <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl p-3">
+    <div className={`rounded-xl p-3 ${isDark ? 'bg-gradient-to-br from-emerald-900/50 to-teal-900/50' : 'bg-gradient-to-br from-emerald-50 to-teal-50'}`}>
       <div className="flex items-center justify-between mb-2">
-        <button onClick={prevMonth} className="p-1 hover:bg-white/50 rounded">
-          <ChevronLeft className="w-4 h-4 text-gray-600" />
+        <button onClick={prevMonth} className={`p-1 rounded ${isDark ? 'hover:bg-white/10' : 'hover:bg-white/50'}`}>
+          <ChevronLeft className={`w-4 h-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`} />
         </button>
-        <span className="text-xs font-medium text-gray-700">
-          {monthNames[currentDate.getMonth()]} {currentDate.getFullYear() + 543}
+        <span className={`text-xs font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
+          {monthNames[currentDate.getMonth()]} {year}
         </span>
-        <button onClick={nextMonth} className="p-1 hover:bg-white/50 rounded">
-          <ChevronRight className="w-4 h-4 text-gray-600" />
+        <button onClick={nextMonth} className={`p-1 rounded ${isDark ? 'hover:bg-white/10' : 'hover:bg-white/50'}`}>
+          <ChevronRight className={`w-4 h-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`} />
         </button>
       </div>
       <div className="grid grid-cols-7 gap-0.5 text-center">
         {dayNames.map(day => (
-          <div key={day} className="text-[10px] font-medium text-gray-500 py-1">{day}</div>
+          <div key={day} className={`text-[10px] font-medium py-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{day}</div>
         ))}
         {Array.from({ length: firstDayOfMonth }).map((_, i) => (
           <div key={`empty-${i}`} />
@@ -66,7 +74,9 @@ function MiniCalendar() {
             className={`text-[10px] py-1 rounded ${
               isToday(i + 1)
                 ? 'bg-emerald-500 text-white font-bold'
-                : 'text-gray-600 hover:bg-white/50'
+                : isDark 
+                  ? 'text-gray-300 hover:bg-white/10' 
+                  : 'text-gray-600 hover:bg-white/50'
             }`}
           >
             {i + 1}
@@ -77,9 +87,11 @@ function MiniCalendar() {
   );
 }
 
-// Mini Map Component
+// Mini Map Component - With dark mode and i18n support
 function MiniMap() {
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const { theme, language } = useSettings();
+  const isDark = theme === 'dark';
   
   useEffect(() => {
     if (navigator.geolocation) {
@@ -94,7 +106,7 @@ function MiniMap() {
 
   return (
     <Link to="/map" className="block">
-      <div className="relative bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl overflow-hidden h-50 group cursor-pointer">
+      <div className={`relative rounded-xl overflow-hidden h-50 group cursor-pointer ${isDark ? 'bg-gradient-to-br from-blue-900/50 to-indigo-900/50' : 'bg-gradient-to-br from-blue-50 to-indigo-50'}`}>
         {location && (
           <iframe
             src={`https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d3000!2d${location.lng}!3d${location.lat}!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!5e0!3m2!1sth!2sth!4v1`}
@@ -105,12 +117,14 @@ function MiniMap() {
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center pb-2">
           <span className="text-white text-xs font-medium flex items-center gap-1">
-            <MapPin className="w-3 h-3" /> ดูแผนที่
+            <MapPin className="w-3 h-3" /> {language === 'th' ? 'ดูแผนที่' : 'View Map'}
           </span>
         </div>
-        <div className="absolute top-2 left-2 bg-white/90 backdrop-blur-sm rounded-full px-2 py-0.5 flex items-center gap-1">
+        <div className={`absolute top-2 left-2 backdrop-blur-sm rounded-full px-2 py-0.5 flex items-center gap-1 ${isDark ? 'bg-black/50' : 'bg-white/90'}`}>
           <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-          <span className="text-[10px] font-medium text-gray-700">ตำแหน่งของคุณ</span>
+          <span className={`text-[10px] font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
+            {language === 'th' ? 'ตำแหน่งของคุณ' : 'Your Location'}
+          </span>
         </div>
       </div>
     </Link>

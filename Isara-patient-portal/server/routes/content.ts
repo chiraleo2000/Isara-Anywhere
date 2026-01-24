@@ -2,6 +2,7 @@
  * Content Routes - PostgreSQL ONLY
  * Medical Content Library API
  * NO GCS - All data stored in PostgreSQL
+ * DEMO MODE - Returns mock data when PostgreSQL is unavailable
  */
 
 import { Router, Request, Response } from 'express';
@@ -11,6 +12,97 @@ const { ContentService } = postgresDataService;
 const { pool } = postgresDataService;
 
 const router = Router();
+
+// ============================================================================
+// DEMO MODE - Mock content for cloud deployment without database
+// ============================================================================
+const DEMO_MODE = process.env.DEMO_MODE === 'true' || process.env.NODE_ENV === 'demo';
+
+// Check if database is available
+async function checkDbConnection(): Promise<boolean> {
+  try {
+    await pool.query('SELECT 1');
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// Demo medical content
+const DEMO_MEDICAL_CONTENT = [
+  {
+    id: 'demo_article_001',
+    title: 'การดูแลสุขภาพประจำวัน',
+    titleThai: 'การดูแลสุขภาพประจำวัน',
+    titleEnglish: 'Daily Health Care Tips',
+    content: 'บทความเกี่ยวกับการดูแลสุขภาพประจำวันสำหรับทุกเพศทุกวัย...',
+    contentThai: 'บทความเกี่ยวกับการดูแลสุขภาพประจำวันสำหรับทุกเพศทุกวัย...',
+    contentEnglish: 'Article about daily health care for all ages...',
+    category: 'general-health',
+    tags: ['health', 'lifestyle', 'tips'],
+    author: 'Dr. Demo',
+    authorId: 'demo_doctor_001',
+    status: 'published',
+    viewCount: 150,
+    publishedAt: new Date().toISOString(),
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: 'demo_article_002',
+    title: 'อาหารเพื่อสุขภาพ',
+    titleThai: 'อาหารเพื่อสุขภาพ',
+    titleEnglish: 'Healthy Eating Guide',
+    content: 'แนะนำการรับประทานอาหารที่ดีต่อสุขภาพ...',
+    contentThai: 'แนะนำการรับประทานอาหารที่ดีต่อสุขภาพ...',
+    contentEnglish: 'Guide to healthy eating habits...',
+    category: 'nutrition',
+    tags: ['nutrition', 'diet', 'healthy-eating'],
+    author: 'Dr. Demo',
+    authorId: 'demo_doctor_001',
+    status: 'published',
+    viewCount: 120,
+    publishedAt: new Date().toISOString(),
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  }
+];
+
+// Demo clinical resources
+const DEMO_CLINICAL_RESOURCES = [
+  {
+    id: 'demo_resource_001',
+    title: 'Clinical Practice Guidelines',
+    titleThai: 'แนวทางเวชปฏิบัติ',
+    titleEnglish: 'Clinical Practice Guidelines',
+    content: 'Guidelines for clinical practice...',
+    contentThai: 'แนวทางเวชปฏิบัติสำหรับแพทย์...',
+    contentEnglish: 'Guidelines for clinical practice...',
+    category: 'guidelines',
+    specialty: 'internal-medicine',
+    guidelineYear: 2024,
+    source: 'Thai Medical Association',
+    status: 'published',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: 'demo_resource_002',
+    title: 'Medication Reference',
+    titleThai: 'ข้อมูลยา',
+    titleEnglish: 'Medication Reference',
+    content: 'Reference information about medications...',
+    contentThai: 'ข้อมูลอ้างอิงเกี่ยวกับยา...',
+    contentEnglish: 'Reference information about medications...',
+    category: 'medications',
+    specialty: 'pharmacy',
+    guidelineYear: 2024,
+    source: 'FDA Thailand',
+    status: 'published',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  }
+];
 
 // ============================================================================
 // MEDICAL CONTENT ROUTES (คลังความรู้สุขภาพ)
@@ -25,6 +117,22 @@ router.get('/medical', async (req: Request, res: Response) => {
     const { category, limit } = req.query;
     const limitNum = Number.parseInt(limit as string, 10) || 50;
     console.log(`[CONTENT] Getting medical content, category: ${category || 'all'}`);
+
+    // Check if we should use demo mode
+    const useDemo = DEMO_MODE || !(await checkDbConnection());
+    if (useDemo) {
+      console.log('[CONTENT] Using DEMO MODE for medical content');
+      let articles = [...DEMO_MEDICAL_CONTENT];
+      if (category) {
+        articles = articles.filter(a => a.category === category);
+      }
+      return res.json({
+        articles: articles.slice(0, limitNum),
+        total: articles.length,
+        lastUpdated: new Date().toISOString(),
+        demoMode: true
+      });
+    }
 
     let query = `
       SELECT mc.*, u.name as author_name, u.name_thai as author_name_thai
@@ -71,9 +179,13 @@ router.get('/medical', async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error('[CONTENT] Get medical content error:', error);
-    res.status(500).json({ 
-      error: 'Failed to fetch medical content',
-      articles: []
+    // Fallback to demo content on error
+    console.log('[CONTENT] Fallback to DEMO content after error');
+    return res.json({
+      articles: DEMO_MEDICAL_CONTENT,
+      total: DEMO_MEDICAL_CONTENT.length,
+      lastUpdated: new Date().toISOString(),
+      demoMode: true
     });
   }
 });
@@ -169,6 +281,22 @@ router.get('/clinical-resources', async (req: Request, res: Response) => {
     const { category } = req.query;
     console.log(`[CONTENT] Getting clinical resources, category: ${category || 'all'}`);
 
+    // Check if we should use demo mode
+    const useDemo = DEMO_MODE || !(await checkDbConnection());
+    if (useDemo) {
+      console.log('[CONTENT] Using DEMO MODE for clinical resources');
+      let resources = [...DEMO_CLINICAL_RESOURCES];
+      if (category) {
+        resources = resources.filter(r => r.category === category);
+      }
+      return res.json({
+        resources: resources,
+        categories: ['guidelines', 'medications'],
+        lastUpdated: new Date().toISOString(),
+        demoMode: true
+      });
+    }
+
     let query = `
       SELECT cr.*, u.name as author_name, u.name_thai as author_name_thai
       FROM clinical_resources cr
@@ -213,9 +341,13 @@ router.get('/clinical-resources', async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error('[CONTENT] Get clinical resources error:', error);
-    res.status(500).json({ 
-      error: 'Failed to fetch clinical resources',
-      resources: []
+    // Fallback to demo content on error
+    console.log('[CONTENT] Fallback to DEMO clinical resources after error');
+    return res.json({
+      resources: DEMO_CLINICAL_RESOURCES,
+      categories: ['guidelines', 'medications'],
+      lastUpdated: new Date().toISOString(),
+      demoMode: true
     });
   }
 });

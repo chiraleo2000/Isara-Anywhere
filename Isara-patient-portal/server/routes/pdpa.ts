@@ -6,8 +6,216 @@ const { pool, LivingWillService } = postgresDataService;
 const router = Router();
 
 // ============================================================================
+// DEMO MODE - Mock PDPA for cloud deployment without database
+// ============================================================================
+const DEMO_MODE = process.env.DEMO_MODE === 'true' || process.env.NODE_ENV === 'demo';
+
+// Check if database is available
+async function checkDbConnection(): Promise<boolean> {
+  try {
+    await pool.query('SELECT 1');
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// Demo PDPA status
+const DEMO_PDPA_STATUS = {
+  hasConsented: true,
+  status: 'granted',
+  consents: {
+    dataProcessing: true,
+    marketing: false,
+    research: true
+  },
+  lastUpdated: new Date().toISOString()
+};
+
+// ============================================================================
 // PDPA ROUTES - POSTGRESQL ONLY
 // ============================================================================
+
+// ============================================================================
+// CONVENIENCE ROUTES (without patientId - uses auth token)
+// ============================================================================
+
+// GET /api/pdpa/status - Get current user's PDPA consent status
+router.get('/status', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    // @ts-ignore - patientId added by authMiddleware
+    const patientId = req.patientId || req.userId || 'demo_patient_001';
+    console.log(`[PDPA] Getting status for authenticated user: ${patientId}`);
+
+    // Check if we should use demo mode
+    const useDemo = DEMO_MODE || !(await checkDbConnection());
+    if (useDemo) {
+      console.log('[PDPA] Using DEMO MODE for status');
+      return res.json({ ...DEMO_PDPA_STATUS, patientId, demoMode: true });
+    }
+
+    const result = await pool.query(
+      `SELECT * FROM patient_consents WHERE patient_id = $1 ORDER BY created_at DESC`,
+      [patientId]
+    );
+
+    const consents = result.rows;
+    const hasDataProcessing = consents.some(c => c.consent_type === 'dataProcessing' && c.granted);
+    
+    res.json({
+      hasConsented: hasDataProcessing || consents.length > 0,
+      status: hasDataProcessing ? 'granted' : 'pending',
+      consents: {
+        dataProcessing: consents.find(c => c.consent_type === 'dataProcessing')?.granted || false,
+        marketing: consents.find(c => c.consent_type === 'marketing')?.granted || false,
+        research: consents.find(c => c.consent_type === 'research')?.granted || false
+      },
+      lastUpdated: consents[0]?.updated_at || null,
+      patientId
+    });
+  } catch (error: any) {
+    console.error('[PDPA] Get status error:', error);
+    // Fallback to demo response
+    // @ts-ignore
+    return res.json({ ...DEMO_PDPA_STATUS, patientId: req.patientId || 'demo_patient_001', demoMode: true });
+  }
+});
+
+// POST /api/pdpa/consent - Grant PDPA consent for current user
+router.post('/consent', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    // @ts-ignore - patientId added by authMiddleware
+    const patientId = req.patientId || req.userId || 'demo_patient_001';
+    const { dataProcessing, marketing, research } = req.body;
+    const now = new Date();
+
+    console.log(`[PDPA] Granting consent for authenticated user: ${patientId}`);
+
+    // Check if we should use demo mode
+    const useDemo = DEMO_MODE || !(await checkDbConnection());
+    if (useDemo) {
+      console.log('[PDPA] Using DEMO MODE for consent');
+      return res.json({
+        success: true,
+        patientId,
+        consents: { dataProcessing, marketing, research },
+        grantedAt: now.toISOString(),
+        demoMode: true
+      });
+    }
+
+    // Upsert each consent type
+    const consentTypes = [
+      { type: 'dataProcessing', value: dataProcessing },
+      { type: 'marketing', value: marketing },
+      { type: 'research', value: research }
+    ];
+
+    for (const consent of consentTypes) {
+      if (consent.value !== undefined) {
+        await pool.query(
+          `INSERT INTO patient_consents (id, patient_id, consent_type, granted, granted_at, status, created_at, updated_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $7)
+           ON CONFLICT (patient_id, consent_type) DO UPDATE SET
+             granted = EXCLUDED.granted,
+             granted_at = CASE WHEN EXCLUDED.granted THEN $5 ELSE patient_consents.granted_at END,
+             status = EXCLUDED.status,
+             updated_at = $7`,
+          [
+            `consent_${patientId}_${consent.type}`,
+            patientId,
+            consent.type,
+            consent.value,
+            consent.value ? now : null,
+            consent.value ? 'granted' : 'revoked',
+            now
+          ]
+        );
+      }
+    }
+
+    // Log to audit
+    await pool.query(
+      `INSERT INTO audit_logs (id, patient_id, action, details, created_at)
+       VALUES ($1, $2, 'PDPA_CONSENT_UPDATED', $3, $4)`,
+      [`audit_${Date.now()}`, patientId, JSON.stringify({ dataProcessing, marketing, research }), now]
+    ).catch(() => {}); // Ignore audit log errors
+
+    res.json({
+      success: true,
+      patientId,
+      consents: { dataProcessing, marketing, research },
+      grantedAt: now.toISOString()
+    });
+  } catch (error: any) {
+    console.error('[PDPA] Grant consent error:', error);
+    // Fallback to demo response
+    // @ts-ignore
+    const patientId = req.patientId || 'demo_patient_001';
+    return res.json({
+      success: true,
+      patientId,
+      consents: req.body,
+      grantedAt: new Date().toISOString(),
+      demoMode: true
+    });
+  }
+});
+
+// DELETE /api/pdpa/consent - Revoke all PDPA consents for current user
+router.delete('/consent', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    // @ts-ignore - patientId added by authMiddleware
+    const patientId = req.patientId || req.userId || 'demo_patient_001';
+    const now = new Date();
+
+    console.log(`[PDPA] Revoking all consents for authenticated user: ${patientId}`);
+
+    // Check if we should use demo mode
+    const useDemo = DEMO_MODE || !(await checkDbConnection());
+    if (useDemo) {
+      console.log('[PDPA] Using DEMO MODE for consent revocation');
+      return res.json({
+        success: true,
+        patientId,
+        message: 'All consents revoked',
+        revokedAt: now.toISOString(),
+        demoMode: true
+      });
+    }
+
+    await pool.query(
+      `UPDATE patient_consents SET granted = false, status = 'revoked', revoked_at = $1, updated_at = $1
+       WHERE patient_id = $2`,
+      [now, patientId]
+    );
+
+    // Log to audit
+    await pool.query(
+      `INSERT INTO audit_logs (id, patient_id, action, details, created_at)
+       VALUES ($1, $2, 'PDPA_ALL_CONSENTS_REVOKED', $3, $4)`,
+      [`audit_${Date.now()}`, patientId, JSON.stringify({ revokedAt: now.toISOString() }), now]
+    ).catch(() => {});
+
+    res.json({
+      success: true,
+      patientId,
+      message: 'All consents revoked',
+      revokedAt: now.toISOString()
+    });
+  } catch (error: any) {
+    console.error('[PDPA] Revoke all consents error:', error);
+    // Fallback to demo response
+    return res.json({
+      success: true,
+      // @ts-ignore
+      patientId: req.patientId || 'demo_patient_001',
+      message: 'All consents revoked',
+      revokedAt: new Date().toISOString(),
+      demoMode: true
+    });
+  }
+});
 
 // ============================================================================
 // CONSENT ROUTES

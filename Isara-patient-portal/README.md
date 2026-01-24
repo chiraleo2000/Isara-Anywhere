@@ -121,6 +121,17 @@ See the full project documentation in `/Documents/`:
 - Granular data access controls
 - Audit logging for all data access
 
+### 🎨 Theme & Internationalization
+- **Dark Mode**: Full support across all pages and components
+  - Toggleable via settings or header icon
+  - Persisted in `localStorage` as `patient-portal-theme`
+  - Applied via `html.dark` class with Tailwind CSS
+- **Multi-language (i18n)**: Thai and English support
+  - Language toggle in settings and header
+  - Persisted in `localStorage` as `patient-portal-language`
+  - All UI text uses translation function `t(key)`
+  - Includes: dashboard, booking, PHR, library, timeline, map, PDPA, living will
+
 ---
 
 ## 📁 Project Structure
@@ -159,6 +170,7 @@ Isara-patient-portal/
 │   │   └── gemini.ts            # Gemini AI integration helpers
 │   ├── contexts/                # React Contexts
 │   │   ├── AuthContext.tsx      # Authentication state
+│   │   ├── SettingsContext.tsx  # Theme, language & translations
 │   │   └── NotificationContext.tsx # Notification state
 │   ├── hooks/                   # Custom React Hooks
 │   │   ├── useAudioRecorder.ts  # Audio recording hook

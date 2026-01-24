@@ -1000,8 +1000,155 @@ Account and notification preferences.
 | Password | Change password |
 | Notifications | Email, push, SMS preferences |
 | Language | Thai/English |
+| Theme | Light/Dark mode |
 | Privacy | Data sharing settings |
 | Delete Account | Account deletion request |
+
+---
+
+# 🎨 Theme & Internationalization (i18n)
+
+## Overview
+
+The Patient Portal supports both **Dark Mode** and **Multi-language** (Thai/English) throughout all pages and components. These settings are persisted in `localStorage` and applied globally via the `SettingsContext`.
+
+## Dark Mode Implementation
+
+### How It Works
+
+1. **Settings Storage:** Theme preference is stored in `localStorage` as `patient-portal-theme` with values `'light'` or `'dark'`
+2. **CSS Class Toggle:** When dark mode is enabled, the `html` element receives the class `dark`
+3. **Tailwind Dark Mode:** Uses Tailwind's `class` strategy for dark mode with CSS overrides in `index.css`
+
+### Dark Mode Requirements
+
+All UI components MUST support dark mode. This includes:
+
+| Component Type | Light Mode | Dark Mode |
+|----------------|------------|-----------|
+| **Cards/Boxes** | `bg-white border-gray-100` | `bg-slate-800 border-slate-700` |
+| **Text - Primary** | `text-slate-900` | `text-slate-100` |
+| **Text - Secondary** | `text-gray-600` | `text-slate-400` |
+| **Input Fields** | `bg-white border-gray-300` | `bg-slate-700 border-slate-600` |
+| **Buttons (Primary)** | Standard teal/blue | Same with adjusted hover |
+| **Modals/Popups** | White background | `bg-slate-800` |
+| **Navigation** | Light sidebar | Dark sidebar |
+
+### Implementation Pattern
+
+```tsx
+// Use the useSettings hook to get dark mode state
+const { isDarkMode } = useSettings();
+
+// Apply conditional classes
+<div className={`rounded-xl border ${
+  isDarkMode 
+    ? 'bg-slate-800 border-slate-700 text-slate-100' 
+    : 'bg-white border-gray-100 text-slate-900'
+}`}>
+  Content here
+</div>
+```
+
+### CSS Override Rules (index.css)
+
+The `index.css` file contains comprehensive dark mode overrides using the `html.dark` selector:
+
+```css
+/* Force dark backgrounds on dynamically styled elements */
+html.dark .bg-white {
+  background-color: rgb(30 41 59) !important; /* slate-800 */
+}
+
+html.dark [class*="bg-gradient-to-"] {
+  background: linear-gradient(to br, rgb(30 41 59), rgb(51 65 85)) !important;
+}
+```
+
+## Language/Internationalization (i18n)
+
+### Supported Languages
+
+| Language | Code | Storage Key |
+|----------|------|-------------|
+| Thai | `th` | Default |
+| English | `en` | Option |
+
+### How It Works
+
+1. **Settings Storage:** Language preference is stored in `localStorage` as `patient-portal-language`
+2. **Translation Function:** The `t(key)` function from `SettingsContext` returns the translated string
+3. **Fallback:** If a translation key is missing, the key name is returned
+
+### Translation Keys Structure
+
+```tsx
+const translations = {
+  th: {
+    'dashboard.hello': 'สวัสดี',
+    'dashboard.upcomingAppointments': 'นัดหมายที่จะถึง',
+    'booking.title': 'นัดหมายปรึกษาแพทย์',
+    'phr.vitalSigns': 'สัญญาณชีพ',
+    // ... more keys
+  },
+  en: {
+    'dashboard.hello': 'Hello',
+    'dashboard.upcomingAppointments': 'Upcoming Appointments',
+    'booking.title': 'Book Medical Consultation',
+    'phr.vitalSigns': 'Vital Signs',
+    // ... more keys
+  }
+};
+```
+
+### Implementation Pattern
+
+```tsx
+// Use the useSettings hook to get translation function
+const { t, language } = useSettings();
+
+// Use t() function for all user-facing text
+<h2 className="text-xl font-bold">
+  {t('dashboard.hello')}, {userName}
+</h2>
+
+<button>
+  {t('booking.next')}
+</button>
+```
+
+### Required Translation Keys by Page
+
+| Page | Required Keys |
+|------|---------------|
+| **Dashboard** | `dashboard.hello`, `dashboard.upcomingAppointments`, `dashboard.quickActions` |
+| **Booking** | `booking.title`, `booking.symptoms`, `booking.next`, `booking.confirm` |
+| **PHR** | `phr.vitalSigns`, `phr.medications`, `phr.allergies`, `phr.conditions` |
+| **Library** | `library.title`, `library.search`, `library.categories` |
+| **Timeline** | `timeline.title`, `timeline.year`, `timeline.appointment` |
+| **PDPA/Living Will** | `pdpa.consent`, `livingWill.title`, `livingWill.signature` |
+| **Map** | `map.title`, `map.search`, `map.nearbyHospitals` |
+| **Settings** | `settings.title`, `settings.theme`, `settings.language` |
+
+## UX Guidelines
+
+### Theme Toggle
+
+- Toggle location: Settings page AND navigation header
+- Icon: ☀️ for light mode, 🌙 for dark mode
+- Transition: Use `transition-colors duration-200` for smooth switching
+
+### Language Toggle
+
+- Toggle location: Settings page AND navigation header
+- Display: Flag icons or "TH/EN" text toggle
+- Instant: Changes should apply immediately without page reload
+
+### Scroll Behavior
+
+When navigating between steps (e.g., in appointment booking):
+- Always scroll to top when changing steps
+- Use smooth scrolling: `globalThis.scrollTo({ top: 0, behavior: 'smooth' })`
 
 ---
 

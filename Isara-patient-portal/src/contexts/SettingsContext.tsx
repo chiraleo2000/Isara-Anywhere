@@ -133,6 +133,8 @@ const translations: Translations = {
   'aiDoctor.title': { en: 'AI Health Assistant', th: 'ผู้ช่วยสุขภาพ AI' },
   'aiDoctor.disclaimer': { en: 'This is not a substitute for professional medical advice', th: 'นี่ไม่ใช่คำแนะนำทางการแพทย์จากผู้เชี่ยวชาญ' },
   'aiDoctor.askQuestion': { en: 'Ask a health question...', th: 'ถามคำถามเกี่ยวกับสุขภาพ...' },
+  'aiDoctor.analyzing': { en: 'Analyzing...', th: 'กำลังวิเคราะห์...' },
+  'aiDoctor.error': { en: 'An error occurred. Please try again.', th: 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง' },
 
   // Time
   'time.today': { en: 'Today', th: 'วันนี้' },
@@ -140,6 +142,94 @@ const translations: Translations = {
   'time.tomorrow': { en: 'Tomorrow', th: 'พรุ่งนี้' },
   'time.thisWeek': { en: 'This Week', th: 'สัปดาห์นี้' },
   'time.thisMonth': { en: 'This Month', th: 'เดือนนี้' },
+
+  // Dashboard
+  'dashboard.hello': { en: 'Hello', th: 'สวัสดี' },
+  'dashboard.welcome': { en: 'Welcome to Izara Patient Portal', th: 'ยินดีต้อนรับสู่ Izara Patient Portal' },
+  'dashboard.bookAppointment': { en: 'Book Appointment', th: 'นัดหมายแพทย์' },
+  'dashboard.consultAI': { en: 'Consult AI', th: 'ปรึกษา AI' },
+  'dashboard.healthRecords': { en: 'Health Records', th: 'ประวัติสุขภาพ' },
+  'dashboard.findHospital': { en: 'Find Hospital', th: 'ค้นหาสถานพยาบาล' },
+  'dashboard.upcomingAppointments': { en: 'Upcoming Appointments', th: 'นัดหมายที่จะถึง' },
+  'dashboard.viewAll': { en: 'View All', th: 'ดูทั้งหมด' },
+  'dashboard.noAppointments': { en: 'No upcoming appointments', th: 'ไม่มีนัดหมายที่จะถึง' },
+  'dashboard.makeAppointment': { en: 'Make your first appointment', th: 'นัดหมายแพทย์ครั้งแรก' },
+
+  // Appointment Booking
+  'booking.title': { en: 'Book Doctor Appointment', th: 'ขอนัดหมายแพทย์' },
+  'booking.step1': { en: 'Step 1: Describe Symptoms', th: 'ขั้นตอนที่ 1: อธิบายอาการ' },
+  'booking.step2': { en: 'Step 2: Select Doctor', th: 'ขั้นตอนที่ 2: เลือกแพทย์' },
+  'booking.step3': { en: 'Step 3: Choose Date & Time', th: 'ขั้นตอนที่ 3: เลือกวันและเวลา' },
+  'booking.step4': { en: 'Step 4: Confirm', th: 'ขั้นตอนที่ 4: ยืนยัน' },
+  'booking.symptoms': { en: 'Describe your symptoms', th: 'อธิบายอาการของคุณ' },
+  'booking.symptomsDetail': { en: 'Detailed symptoms', th: 'อาการโดยละเอียด' },
+  'booking.analyzeSymptoms': { en: 'Analyze Symptoms', th: 'วิเคราะห์อาการ' },
+  'booking.selectDoctor': { en: 'Select a Doctor', th: 'เลือกแพทย์' },
+  'booking.selectDate': { en: 'Select Date', th: 'เลือกวันที่' },
+  'booking.selectTime': { en: 'Select Time', th: 'เลือกเวลา' },
+  'booking.confirm': { en: 'Confirm Booking', th: 'ยืนยันการนัดหมาย' },
+  'booking.submit': { en: 'Submit Appointment Request', th: 'ส่งคำขอนัดหมาย' },
+  'booking.success': { en: 'Appointment request submitted successfully', th: 'ส่งคำขอนัดหมายสำเร็จ' },
+  'booking.error': { en: 'Failed to submit appointment request', th: 'ไม่สามารถส่งคำขอนัดหมายได้' },
+
+  // Health Records
+  'phr.title': { en: 'Personal Health Records', th: 'ประวัติสุขภาพส่วนตัว' },
+  'phr.vitalSigns': { en: 'Vital Signs', th: 'สัญญาณชีพ' },
+  'phr.medications': { en: 'Medications', th: 'ยาที่ใช้ประจำ' },
+  'phr.allergies': { en: 'Allergies', th: 'การแพ้' },
+  'phr.conditions': { en: 'Chronic Conditions', th: 'โรคประจำตัว' },
+  'phr.personalInfo': { en: 'Personal Information', th: 'ข้อมูลส่วนตัว' },
+  'phr.healthInfo': { en: 'Health Information', th: 'ข้อมูลสุขภาพส่วนตัว' },
+  'phr.save': { en: 'Save', th: 'บันทึก' },
+  'phr.add': { en: 'Add', th: 'เพิ่ม' },
+  'phr.saveSuccess': { en: 'Saved successfully', th: 'บันทึกสำเร็จ' },
+  'phr.saveError': { en: 'Failed to save', th: 'ไม่สามารถบันทึกได้' },
+
+  // Health Library
+  'library.title': { en: 'Health Knowledge Library', th: 'คลังความรู้สุขภาพ' },
+  'library.articles': { en: 'Health Articles', th: 'บทความสุขภาพ' },
+  'library.search': { en: 'Search articles...', th: 'ค้นหาบทความ...' },
+  'library.noResults': { en: 'No articles found', th: 'ไม่พบบทความ' },
+  'library.readMore': { en: 'Read More', th: 'อ่านเพิ่มเติม' },
+  'library.error': { en: 'Failed to load content', th: 'ไม่สามารถโหลดเนื้อหาได้' },
+
+  // Timeline
+  'timeline.title': { en: 'Health Timeline', th: 'เส้นทางสุขภาพ' },
+  'timeline.noEvents': { en: 'No health events yet', th: 'ยังไม่มีเหตุการณ์สุขภาพ' },
+
+  // PDPA & Living Will
+  'pdpa.title': { en: 'PDPA Consent', th: 'ความยินยอม PDPA' },
+  'pdpa.consent': { en: 'I consent to share my data', th: 'ยินยอมแชร์ข้อมูล' },
+  'pdpa.shareWithDoctors': { en: 'Share with doctors and administrators', th: 'ยินยอมแชร์ข้อมูลกับแพทย์และผู้ดูแลระบบทุกท่านในโครงการ' },
+  'livingWill.title': { en: 'Living Will', th: 'พินัยกรรมชีวิต' },
+  'livingWill.save': { en: 'Save Living Will', th: 'บันทึกพินัยกรรมชีวิต' },
+  'livingWill.signature': { en: 'Signature', th: 'ลายมือชื่อ' },
+  'livingWill.shareWithDoctors': { en: 'Share with Doctors', th: 'แชร์กับแพทย์' },
+  'livingWill.selectDoctor': { en: 'Select Doctor', th: 'เลือกแพทย์' },
+  'livingWill.close': { en: 'Close', th: 'ปิด' },
+  'livingWill.back': { en: 'Back', th: 'กลับ' },
+  'livingWill.saveError': { en: 'Failed to save living will', th: 'ไม่สามารถบันทึกพินัยกรรมชีวิตได้' },
+  'livingWill.consentError': { en: 'Failed to save consent', th: 'ไม่สามารถบันทึกความยินยอมได้' },
+
+  // Map
+  'map.title': { en: 'Nearby Hospitals & Clinics', th: 'โรงพยาบาลและคลินิกใกล้เคียง' },
+  'map.search': { en: 'Search location...', th: 'ค้นหาสถานที่...' },
+  'map.useLocation': { en: 'Use My Location', th: 'ใช้ตำแหน่งจริง' },
+  'map.noApiKey': { en: 'Map API key not found', th: 'ไม่พบ API Key สำหรับแผนที่' },
+  'map.refresh': { en: 'Refresh', th: 'รีเฟรช' },
+  'map.directions': { en: 'Get Directions', th: 'ขอเส้นทาง' },
+
+  // Status labels
+  'status.pending': { en: 'Pending', th: 'รอยืนยัน' },
+  'status.confirmed': { en: 'Confirmed', th: 'ยืนยันแล้ว' },
+  'status.completed': { en: 'Completed', th: 'เสร็จสิ้น' },
+  'status.cancelled': { en: 'Cancelled', th: 'ยกเลิกแล้ว' },
+
+  // Errors
+  'error.general': { en: 'An error occurred', th: 'เกิดข้อผิดพลาด' },
+  'error.network': { en: 'Network error. Please check your connection.', th: 'ข้อผิดพลาดเครือข่าย กรุณาตรวจสอบการเชื่อมต่อ' },
+  'error.unauthorized': { en: 'Please login again', th: 'กรุณาเข้าสู่ระบบใหม่' },
+  'error.notFound': { en: 'Not found', th: 'ไม่พบข้อมูล' },
 };
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);

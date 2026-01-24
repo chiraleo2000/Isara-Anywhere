@@ -203,11 +203,21 @@ const MedicalConsultants: React.FC = () => {
   // ============================================================================
   // DATA FETCHING
   // ============================================================================
+  const getAuthHeaders = useCallback(() => {
+    const token = localStorage.getItem('token') || '';
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    };
+  }, []);
+
   const fetchConsultants = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch(`${API_BASE}/api/consultants`);
+      const response = await fetch(`${API_BASE}/api/consultants`, {
+        headers: getAuthHeaders()
+      });
       if (!response.ok) throw new Error('Failed to fetch consultants');
       const data = await response.json();
       setConsultants(data.consultants || []);
@@ -217,11 +227,13 @@ const MedicalConsultants: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [getAuthHeaders]);
 
   const fetchSpecialties = useCallback(async () => {
     try {
-      const response = await fetch(`${API_BASE}/api/consultants/specialties/list`);
+      const response = await fetch(`${API_BASE}/api/consultants/specialties/list`, {
+        headers: getAuthHeaders()
+      });
       if (response.ok) {
         const data = await response.json();
         setSpecialties(['All Specialties', ...(data.specialties || [])]);
@@ -229,7 +241,7 @@ const MedicalConsultants: React.FC = () => {
     } catch (err) {
       console.error('Error fetching specialties:', err);
     }
-  }, []);
+  }, [getAuthHeaders]);
 
   useEffect(() => {
     fetchConsultants();
@@ -264,7 +276,7 @@ const MedicalConsultants: React.FC = () => {
       setActionLoading(true);
       const response = await fetch(`${API_BASE}/api/consultants`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           ...formData,
           languages: formData.languages.split(',').map(l => l.trim()).filter(Boolean),
@@ -299,7 +311,7 @@ const MedicalConsultants: React.FC = () => {
       setActionLoading(true);
       const response = await fetch(`${API_BASE}/api/consultants/${selectedConsultant.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           ...formData,
           languages: formData.languages.split(',').map(l => l.trim()).filter(Boolean),
@@ -334,7 +346,7 @@ const MedicalConsultants: React.FC = () => {
       setActionLoading(true);
       const response = await fetch(
         `${API_BASE}/api/consultants/${selectedConsultant.id}?isAdmin=true`,
-        { method: 'DELETE' }
+        { method: 'DELETE', headers: getAuthHeaders() }
       );
 
       if (!response.ok) throw new Error('Failed to delete consultant');
@@ -356,7 +368,7 @@ const MedicalConsultants: React.FC = () => {
     try {
       const response = await fetch(`${API_BASE}/api/consultants/${consultant.id}/availability`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           available: !consultant.available,
           userId: user?.id,
@@ -387,7 +399,7 @@ const MedicalConsultants: React.FC = () => {
       setActionLoading(true);
       const response = await fetch(`${API_BASE}/api/consultants/${selectedConsultant.id}/review`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           rating: ratingData.rating,
           comment: ratingData.comment,

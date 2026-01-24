@@ -174,7 +174,8 @@ async function loginPatientPortal(page, user, retries = 2) {
       await page.click('button[type="submit"]');
       
       // Wait for navigation away from login page (to dashboard or main page)
-      await page.waitForFunction(() => !window.location.pathname.includes('/login'), { timeout: 20000 });
+      // Use globalThis for compatibility
+      await page.waitForFunction(() => !globalThis.location.pathname.includes('/login'), { timeout: 20000 });
       await page.waitForLoadState('networkidle', { timeout: 10000 });
       
       return page;

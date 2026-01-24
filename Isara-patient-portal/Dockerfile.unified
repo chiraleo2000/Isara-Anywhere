@@ -57,7 +57,7 @@ ARG GOOGLE_SPEECH_API_KEY
 
 # Gemini AI Configuration - API key must be passed as build arg
 ARG VITE_GEMINI_API_KEY
-ARG VITE_GEMINI_MODEL=gemini-2.5-flash-lite
+ARG VITE_GEMINI_MODEL=gemini-2.5-flash
 ARG VITE_GEMINI_TEMPERATURE=0.3
 ARG VITE_GEMINI_MAX_TOKENS=8192
 
@@ -191,14 +191,24 @@ RUN mkdir -p ./credentials
 ENV NODE_ENV=production
 # Use port 3005 as main entry point - Express serves BOTH frontend and API
 ENV PORT=3005
-ENV GCP_PROJECT_ID=izara-telemedicine
+ENV GCP_PROJECT_ID=${GCP_PROJECT_ID:-izara-telemedicine}
 ENV GOOGLE_APPLICATION_CREDENTIALS=/app/credentials/service-account.json
+# DEMO MODE - Enable when PostgreSQL is unavailable (Cloud Run without Cloud SQL)
+ENV DEMO_MODE=${DEMO_MODE:-true}
+# Database Configuration
+ENV USE_POSTGRESQL=${USE_POSTGRESQL:-true}
+ENV DATABASE_URL=${DATABASE_URL:-}
+ENV DB_HOST=${DB_HOST:-}
+ENV DB_NAME=${DB_NAME:-}
+ENV DB_USER=${DB_USER:-}
+ENV DB_PASSWORD=${DB_PASSWORD:-}
+ENV DB_PORT=${DB_PORT:-5432}
 # Gemini AI - Server-side environment variables (must be set at runtime)
 # DO NOT hardcode API keys - use docker run -e or docker-compose environment
 ENV GEMINI_API_KEY=${GEMINI_API_KEY:-}
-ENV GEMINI_MODEL=gemini-2.5-flash-lite
+ENV GEMINI_MODEL=${GEMINI_MODEL:-gemini-2.5-flash}
 # Jitsi Meet - Server-side
-ENV JITSI_DOMAIN=meet.jit.si
+ENV JITSI_DOMAIN=${JITSI_DOMAIN:-meet.jit.si}
 # Google Speech API - Server-side (must be set at runtime)
 ENV GOOGLE_SPEECH_API_KEY=${GOOGLE_SPEECH_API_KEY:-}
 

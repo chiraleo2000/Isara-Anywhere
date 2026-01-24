@@ -1,7 +1,7 @@
 # ============================================================================
 # IZARA TELEMEDICINE - COMPLETE DOCKER COMPOSE
-# Version: 3.0.0
-# Updated: 2026-01-20
+# Version: 3.1.0
+# Updated: 2026-01-23
 # ============================================================================
 # 
 # This docker-compose provides:
@@ -10,6 +10,10 @@
 # - Patient Portal (unified frontend + backend on port 3005)
 # - Doctor Portal (unified frontend + backend on port 3010)
 # 
+# Environment Variables:
+#   API keys are loaded from portal-specific .env files
+#   DO NOT hardcode API keys in this file - use env_file directive
+#
 # Run: docker-compose up --build
 # Access:
 #   - Patient Portal: http://localhost:3005
@@ -26,9 +30,9 @@ services:
     container_name: izara-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: P@ssw0rd
-      POSTGRES_DB: izara_phase1
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-P@ssw0rd}
+      POSTGRES_DB: ${POSTGRES_DB:-izara_phase1}
       POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
     ports:
       - "5433:5432"
@@ -52,8 +56,8 @@ services:
     container_name: izara-pgadmin
     restart: unless-stopped
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@izara.com
-      PGADMIN_DEFAULT_PASSWORD: IzaraAdmin@2024
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@izara.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-IzaraAdmin@2024}
       PGADMIN_LISTEN_PORT: 80
     ports:
       - "5050:80"
@@ -73,27 +77,24 @@ services:
       context: ./Isara-patient-portal
       dockerfile: Dockerfile.unified
       args:
-        # Vite build-time variables
         VITE_API_URL: http://localhost:3005
         VITE_APP_NAME: Izara Patient Portal
         VITE_APP_VERSION: 2.0.0
         VITE_APP_ENV: production
-        VITE_GCP_PROJECT_ID: izara-telemedicine
-        VITE_GOOGLE_CLIENT_ID: 724889190329-svf2733fjqklfic9tet9d2qkmhkgmu0l.apps.googleusercontent.com
-        VITE_GEMINI_API_KEY: AIzaSyCaH9_CLZ6jZvRWYH-JSEnpj4TUn2UV5Vs
-        VITE_GEMINI_MODEL: gemini-2.5-flash
-        VITE_GOOGLE_MAPS_API_KEY: AIzaSyCjs3ang2xXSlE7o34QBEsG-GNhGrvxcHI
-        VITE_GOOGLE_MAPS_MAP_ID: 60687d30be2fe4b7e600b274
-        VITE_GOOGLE_SPEECH_API_KEY: AIzaSyCjs3ang2xXSlE7o34QBEsG-GNhGrvxcHI
         VITE_USE_POSTGRESQL: "true"
     container_name: izara-patient-portal
     restart: unless-stopped
+    env_file:
+      - ./Isara-patient-portal/.env
     environment:
       # Server Configuration
       NODE_ENV: production
       PORT: 3005
       
-      # Database Configuration
+      # DEMO MODE - Disabled for local Docker (use real PostgreSQL)
+      DEMO_MODE: "false"
+      
+      # Database Configuration - Docker internal network
       DATABASE_URL: postgresql://postgres:P@ssw0rd@postgres:5432/izara_phase1
       DB_HOST: postgres
       DB_PORT: 5432
@@ -103,30 +104,10 @@ services:
       USE_POSTGRESQL: "true"
       VITE_USE_POSTGRESQL: "true"
       
-      # GCS Configuration (backup/files)
-      USE_GCS: "true"
-      VITE_USE_GCS: "true"
-      GCP_PROJECT_ID: izara-telemedicine
-      VITE_GCP_PROJECT_ID: izara-telemedicine
+      # GCS DISABLED - PostgreSQL only
+      USE_GCS: "false"
+      VITE_USE_GCS: "false"
       GOOGLE_APPLICATION_CREDENTIALS: /app/credentials/service-account.json
-      GCS_BUCKET_AUTH: izara-users-credentials
-      GCS_BUCKET_PATIENT: izara-patients-data
-      GCS_BUCKET_DOCTOR: izara-doctors-data
-      GCS_BUCKET_APPOINTMENTS: izara-appointments
-      GCS_BUCKET_METADATA: izara-meta-data
-      
-      # Gemini AI
-      GEMINI_API_KEY: AIzaSyCaH9_CLZ6jZvRWYH-JSEnpj4TUn2UV5Vs
-      VITE_GEMINI_API_KEY: AIzaSyCaH9_CLZ6jZvRWYH-JSEnpj4TUn2UV5Vs
-      GEMINI_MODEL: gemini-2.5-flash
-      VITE_GEMINI_MODEL: gemini-2.5-flash
-      
-      # Google APIs
-      GOOGLE_MAPS_API_KEY: AIzaSyCjs3ang2xXSlE7o34QBEsG-GNhGrvxcHI
-      VITE_GOOGLE_MAPS_API_KEY: AIzaSyCjs3ang2xXSlE7o34QBEsG-GNhGrvxcHI
-      GOOGLE_SPEECH_API_KEY: AIzaSyCjs3ang2xXSlE7o34QBEsG-GNhGrvxcHI
-      VITE_GOOGLE_SPEECH_API_KEY: AIzaSyCjs3ang2xXSlE7o34QBEsG-GNhGrvxcHI
-      VITE_GOOGLE_CLIENT_ID: 724889190329-svf2733fjqklfic9tet9d2qkmhkgmu0l.apps.googleusercontent.com
     volumes:
       - ./credentials/service-account.json:/app/credentials/service-account.json:ro
     ports:
@@ -137,7 +118,7 @@ services:
     networks:
       - izara-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3005/api/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:3005/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -151,21 +132,16 @@ services:
       context: ./Isara-doctor-portal
       dockerfile: Dockerfile.unified
       args:
-        # Vite build-time variables
         VITE_API_URL: http://localhost:3010
         VITE_AUTH_URL: http://localhost:3010/auth
         VITE_APP_NAME: Izara Doctor Portal
         VITE_APP_VERSION: 2.0.0
         VITE_APP_ENV: production
-        VITE_GCP_PROJECT_ID: izara-telemedicine
-        VITE_GEMINI_API_KEY: AIzaSyCaH9_CLZ6jZvRWYH-JSEnpj4TUn2UV5Vs
-        VITE_GEMINI_MODEL: gemini-2.5-flash
-        VITE_GOOGLE_MAPS_API_KEY: AIzaSyCjs3ang2xXSlE7o34QBEsG-GNhGrvxcHI
-        VITE_GOOGLE_MAPS_MAP_ID: 60687d30be2fe4b7e600b274
-        VITE_GOOGLE_SPEECH_API_KEY: AIzaSyCjs3ang2xXSlE7o34QBEsG-GNhGrvxcHI
         VITE_USE_POSTGRESQL: "true"
     container_name: izara-doctor-portal
     restart: unless-stopped
+    env_file:
+      - ./Isara-doctor-portal/.env
     environment:
       # Server Configuration
       NODE_ENV: production
@@ -173,7 +149,10 @@ services:
       AUTH_PORT: 3010
       GCS_API_PORT: 3010
       
-      # Database Configuration
+      # DEMO MODE - Disabled for local Docker (use real PostgreSQL)
+      DEMO_MODE: "false"
+      
+      # Database Configuration - Docker internal network
       DATABASE_URL: postgresql://postgres:P@ssw0rd@postgres:5432/izara_phase1
       DB_HOST: postgres
       DB_PORT: 5432
@@ -183,48 +162,24 @@ services:
       USE_POSTGRESQL: "true"
       VITE_USE_POSTGRESQL: "true"
       
-      # GCS Configuration (backup/files)
-      USE_GCS: "true"
-      VITE_USE_GCS: "true"
-      GCP_PROJECT_ID: izara-telemedicine
-      VITE_GCP_PROJECT_ID: izara-telemedicine
+      # GCS DISABLED - PostgreSQL only
+      USE_GCS: "false"
+      VITE_USE_GCS: "false"
       GOOGLE_APPLICATION_CREDENTIALS: /app/credentials/service-account.json
-      GCS_BUCKET_AUTH: izara-users-credentials
-      GCS_BUCKET_PATIENT: izara-patients-data
-      GCS_BUCKET_DOCTOR: izara-doctors-data
-      GCS_BUCKET_APPOINTMENTS: izara-appointments
-      GCS_BUCKET_METADATA: izara-meta-data
       
       # GCS API URL (internal)
       GCS_API_URL: http://localhost:3010
-      
-      # Gemini AI
-      GEMINI_API_KEY: AIzaSyCaH9_CLZ6jZvRWYH-JSEnpj4TUn2UV5Vs
-      VITE_GEMINI_API_KEY: AIzaSyCaH9_CLZ6jZvRWYH-JSEnpj4TUn2UV5Vs
-      GEMINI_MODEL: gemini-2.5-flash
-      VITE_GEMINI_MODEL: gemini-2.5-flash
-      
-      # Google APIs
-      GOOGLE_MAPS_API_KEY: AIzaSyCjs3ang2xXSlE7o34QBEsG-GNhGrvxcHI
-      VITE_GOOGLE_MAPS_API_KEY: AIzaSyCjs3ang2xXSlE7o34QBEsG-GNhGrvxcHI
-      GOOGLE_SPEECH_API_KEY: AIzaSyCjs3ang2xXSlE7o34QBEsG-GNhGrvxcHI
-      VITE_GOOGLE_SPEECH_API_KEY: AIzaSyCjs3ang2xXSlE7o34QBEsG-GNhGrvxcHI
-      VITE_GOOGLE_CLIENT_ID: 724889190329-svf2733fjqklfic9tet9d2qkmhkgmu0l.apps.googleusercontent.com
-      
-      # Jitsi
-      JITSI_DOMAIN: meet.jit.si
-      VITE_JITSI_DOMAIN: meet.jit.si
     volumes:
       - ./credentials/service-account.json:/app/credentials/service-account.json:ro
     ports:
-      - "3010:3010"
+      - "3010:8080"
     depends_on:
       postgres:
         condition: service_healthy
     networks:
       - izara-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3010/api/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 30s
       timeout: 10s
       retries: 3

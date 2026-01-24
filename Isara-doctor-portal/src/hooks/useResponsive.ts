@@ -154,10 +154,10 @@ export const useSafeArea = () => {
     const updateSafeArea = () => {
       const computedStyle = getComputedStyle(document.documentElement);
       setSafeArea({
-        top: parseInt(computedStyle.getPropertyValue('env(safe-area-inset-top)') || '0'),
-        right: parseInt(computedStyle.getPropertyValue('env(safe-area-inset-right)') || '0'),
-        bottom: parseInt(computedStyle.getPropertyValue('env(safe-area-inset-bottom)') || '0'),
-        left: parseInt(computedStyle.getPropertyValue('env(safe-area-inset-left)') || '0'),
+        top: Number.parseInt(computedStyle.getPropertyValue('env(safe-area-inset-top)') || '0', 10),
+        right: Number.parseInt(computedStyle.getPropertyValue('env(safe-area-inset-right)') || '0', 10),
+        bottom: Number.parseInt(computedStyle.getPropertyValue('env(safe-area-inset-bottom)') || '0', 10),
+        left: Number.parseInt(computedStyle.getPropertyValue('env(safe-area-inset-left)') || '0', 10),
       });
     };
 

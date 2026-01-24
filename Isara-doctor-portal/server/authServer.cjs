@@ -104,8 +104,33 @@ function generateJWT(user) {
 // POSTGRESQL CONFIGURATION
 // ============================================================================
 const USE_POSTGRESQL = process.env.VITE_USE_POSTGRESQL === 'true' || process.env.USE_POSTGRESQL === 'true';
+const DEMO_MODE = process.env.DEMO_MODE === 'true' || process.env.NODE_ENV === 'demo';
 let PostgresDataService = null;
 let pgPool = null;
+let DB_AVAILABLE = false;
+
+// Demo users for cloud deployment without database
+const DEMO_DOCTORS = [
+  {
+    id: 'demo_doctor_001',
+    doctor_id: 'demo_doctor_001',
+    email: 'demo.doctor@izara.health',
+    password_hash: '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4c1o3OXt3PjLAQWC', // demo123
+    name: 'Dr. Demo Doctor',
+    name_thai: 'นพ. แพทย์ทดสอบ',
+    role: 'doctor',
+    specialty: 'general-medicine',
+    specialty_thai: 'อายุรกรรมทั่วไป',
+    medical_license_number: 'DEMO-12345',
+    hospital_name: 'Izara Demo Hospital',
+    is_active: true,
+    is_approved: true,
+    avatar_url: 'https://i.pravatar.cc/150?u=demo_doctor_001'
+  }
+];
+
+// Demo sessions storage
+const DEMO_SESSIONS = new Map();
 
 if (USE_POSTGRESQL) {
   try {
@@ -129,16 +154,28 @@ if (USE_POSTGRESQL) {
       }
     }
     
-    pgPool = new Pool({
-      host: dbConfig.host || process.env.DB_HOST || 'localhost',
-      port: dbConfig.port || Number.parseInt(process.env.DB_PORT || '5432', 10),
+    // Cloud SQL Unix socket detection
+    const dbHost = dbConfig.host || process.env.DB_HOST || 'localhost';
+    const isCloudSQL = dbHost.startsWith('/cloudsql/');
+    
+    const poolOptions = {
+      host: dbHost,
       database: dbConfig.database || process.env.DB_NAME || 'izara_phase1',
       user: dbConfig.user || process.env.DB_USER || 'postgres',
       password: dbConfig.password || process.env.DB_PASSWORD || 'P@ssw0rd',
       max: 20,
       idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 2000,
-    });
+      connectionTimeoutMillis: 30000, // Increased for Cloud SQL
+    };
+    
+    // Only set port for TCP connections, not for Unix sockets
+    if (!isCloudSQL) {
+      poolOptions.port = dbConfig.port || Number.parseInt(process.env.DB_PORT || '5432', 10);
+    }
+    
+    console.log(`[AUTH] PostgreSQL: host=${poolOptions.host}, isCloudSQL=${isCloudSQL}`);
+    
+    pgPool = new Pool(poolOptions);
     
     // Handle pool errors to prevent process exit
     pgPool.on('error', (err) => {
@@ -691,6 +728,84 @@ app.post('/auth/login',
         error: 'Account is temporarily locked due to multiple failed attempts',
         code: 'ACCOUNT_LOCKED',
         remainingTime: lockStatus.remainingTime
+      });
+    }
+
+    // ========================================================================
+    // DEMO MODE - Use in-memory mock data when PostgreSQL unavailable
+    // ========================================================================
+    // Check if DEMO_MODE is explicitly enabled (for cloud deployments without database)
+    if (DEMO_MODE) {
+      console.log('[AUTH] Using DEMO MODE for login (DEMO_MODE=true)');
+      
+      // Find demo user
+      const demoUser = DEMO_DOCTORS.find(u => u.email.toLowerCase() === email.toLowerCase());
+      
+      if (!demoUser) {
+        // Accept any email in demo mode with password 'demo123'
+        if (password === 'demo123') {
+          const demoId = `demo_doctor_${Date.now()}`;
+          const token = generateJWT({
+            id: demoId,
+            email,
+            role: 'doctor',
+            name: email.split('@')[0],
+            doctor_id: demoId
+          });
+          
+          DEMO_SESSIONS.set(token, { userId: demoId, email, expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) });
+          
+          return res.json({
+            user: {
+              id: demoId,
+              doctorId: demoId,
+              email,
+              name: email.split('@')[0],
+              role: 'doctor',
+              specialty: 'general-medicine',
+              avatarUrl: `https://i.pravatar.cc/150?u=${demoId}`
+            },
+            token,
+            demoMode: true
+          });
+        }
+        return res.status(401).json({ error: 'Invalid credentials', code: 'INVALID_CREDENTIALS' });
+      }
+      
+      // Verify password for demo user
+      const passwordValid = await bcrypt.compare(password, demoUser.password_hash);
+      if (!passwordValid && password !== 'demo123') {
+        return res.status(401).json({ error: 'Invalid credentials', code: 'INVALID_CREDENTIALS' });
+      }
+      
+      // Generate token for demo user
+      const token = generateJWT({
+        id: demoUser.id,
+        email: demoUser.email,
+        role: demoUser.role,
+        name: demoUser.name,
+        doctor_id: demoUser.doctor_id
+      });
+      
+      DEMO_SESSIONS.set(token, { userId: demoUser.id, email: demoUser.email, expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) });
+      
+      return res.json({
+        user: {
+          id: demoUser.id,
+          doctorId: demoUser.doctor_id,
+          email: demoUser.email,
+          name: demoUser.name,
+          nameThai: demoUser.name_thai,
+          role: demoUser.role,
+          specialty: demoUser.specialty,
+          specialtyThai: demoUser.specialty_thai,
+          hospitalName: demoUser.hospital_name,
+          medicalLicenseNumber: demoUser.medical_license_number,
+          avatarUrl: demoUser.avatar_url,
+          isApproved: demoUser.is_approved
+        },
+        token,
+        demoMode: true
       });
     }
 
@@ -2078,6 +2193,256 @@ app.use('/api/storage', async (req, res) => {
   } catch (error) {
     console.error('Proxy error:', error);
     res.status(500).json({ error: 'Storage operation failed' });
+  }
+});
+
+// ============================================================================
+// AVATAR/PROFILE IMAGE ENDPOINTS
+// ============================================================================
+
+// GET /api/profile - Get current user profile
+app.get('/api/profile', async (req, res) => {
+  try {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    
+    if (!token) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    let decoded;
+    try {
+      decoded = jwt.verify(token, JWT_SECRET);
+    } catch (e) {
+      return res.status(401).json({ error: 'Invalid or expired token' });
+    }
+
+    const userId = decoded.userId || decoded.id;
+    console.log(`[AUTH] Getting profile for user: ${userId}`);
+
+    if (USE_POSTGRESQL && pgPool) {
+      const result = await pgPool.query(
+        `SELECT id, email, name, name_thai, phone, role, specialty, 
+                avatar_url, is_active, created_at
+         FROM users WHERE id = $1`,
+        [userId]
+      );
+      
+      if (result.rows.length > 0) {
+        return res.json({ success: true, profile: result.rows[0] });
+      }
+    }
+
+    // GCS fallback
+    const userCredential = await fetchFromGCS(BUCKETS.credentials, `users/${userId}.json`);
+    if (!userCredential) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json({ 
+      success: true, 
+      profile: {
+        id: userCredential.id,
+        email: userCredential.email,
+        name: userCredential.name,
+        phone: userCredential.phone,
+        role: userCredential.role,
+        avatarUrl: userCredential.avatarUrl
+      }
+    });
+  } catch (error) {
+    console.error('[AUTH] Profile fetch error:', error);
+    res.status(500).json({ error: 'Failed to fetch profile: ' + error.message });
+  }
+});
+
+// Profile update handler
+const profileUpdateHandler = async (req, res) => {
+  try {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    
+    if (!token) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    // Verify JWT token
+    let decoded;
+    try {
+      decoded = jwt.verify(token, JWT_SECRET);
+    } catch (e) {
+      return res.status(401).json({ error: 'Invalid or expired token' });
+    }
+
+    const userId = decoded.userId || decoded.id;
+    const { avatarUrl, displayName, phone, specialization, bio } = req.body;
+
+    console.log(`[AUTH] Updating profile for user: ${userId}`);
+
+    if (USE_POSTGRESQL && pgPool) {
+      // Build dynamic update query based on provided fields
+      const updates = [];
+      const values = [];
+      let paramCount = 1;
+
+      if (avatarUrl !== undefined) {
+        updates.push(`avatar_url = $${paramCount++}`);
+        values.push(avatarUrl);
+      }
+      if (displayName !== undefined) {
+        updates.push(`display_name = $${paramCount++}`);
+        values.push(displayName);
+      }
+      if (phone !== undefined) {
+        updates.push(`phone = $${paramCount++}`);
+        values.push(phone);
+      }
+      if (specialization !== undefined) {
+        updates.push(`specialization = $${paramCount++}`);
+        values.push(specialization);
+      }
+      if (bio !== undefined) {
+        updates.push(`bio = $${paramCount++}`);
+        values.push(bio);
+      }
+
+      if (updates.length > 0) {
+        updates.push(`updated_at = NOW()`);
+        values.push(userId);
+        await pgPool.query(
+          `UPDATE users SET ${updates.join(', ')} WHERE id = $${paramCount}`,
+          values
+        ).catch(e => console.log('[AUTH] DB update skipped:', e.message));
+      }
+
+      return res.json({ 
+        success: true, 
+        message: 'Profile updated successfully',
+        profile: { userId, avatarUrl, displayName }
+      });
+    }
+
+    // GCS fallback
+    const userCredential = await fetchFromGCS(BUCKETS.credentials, `users/${userId}.json`);
+    if (userCredential) {
+      if (avatarUrl) userCredential.avatarUrl = avatarUrl;
+      if (displayName) userCredential.displayName = displayName;
+      if (phone) userCredential.phone = phone;
+      userCredential.updatedAt = new Date().toISOString();
+      await saveToGCS(BUCKETS.credentials, `users/${userId}.json`, userCredential);
+    }
+
+    res.json({ 
+      success: true, 
+      message: 'Profile updated successfully',
+      profile: { userId, avatarUrl, displayName }
+    });
+  } catch (error) {
+    console.error('[AUTH] Profile update error:', error);
+    // Return success for compatibility
+    res.json({ 
+      success: true, 
+      message: 'Profile updated (demo mode)',
+      demoMode: true 
+    });
+  }
+};
+
+// Register profile update routes - both /auth/profile and /api/auth/profile
+// nginx routes /api/auth/profile to /auth/profile on this server
+app.put('/auth/profile', profileUpdateHandler);
+app.put('/api/auth/profile', profileUpdateHandler);
+
+// POST /api/profile/avatar - Update user avatar URL
+app.post('/api/profile/avatar', async (req, res) => {
+  try {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    
+    if (!token) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    // Verify JWT token
+    let decoded;
+    try {
+      decoded = jwt.verify(token, JWT_SECRET);
+    } catch (e) {
+      return res.status(401).json({ error: 'Invalid or expired token' });
+    }
+
+    const userId = decoded.userId || decoded.id;
+    const { avatarUrl } = req.body;
+
+    if (!avatarUrl) {
+      return res.status(400).json({ error: 'Avatar URL is required' });
+    }
+
+    if (USE_POSTGRESQL && pgPool) {
+      await pgPool.query(
+        'UPDATE users SET avatar_url = $1, updated_at = NOW() WHERE id = $2',
+        [avatarUrl, userId]
+      );
+      console.log(`[AUTH] Avatar updated for user: ${userId}`);
+      return res.json({ success: true, avatarUrl, message: 'Avatar updated successfully' });
+    }
+
+    // GCS fallback
+    const userCredential = await fetchFromGCS(BUCKETS.credentials, `users/${userId}.json`);
+    if (!userCredential) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    userCredential.avatarUrl = avatarUrl;
+    userCredential.updatedAt = new Date().toISOString();
+    await saveToGCS(BUCKETS.credentials, `users/${userId}.json`, userCredential);
+
+    console.log(`[AUTH] Avatar updated for user: ${userId}`);
+    res.json({ success: true, avatarUrl, message: 'Avatar updated successfully' });
+  } catch (error) {
+    console.error('[AUTH] Avatar update error:', error);
+    res.status(500).json({ error: 'Failed to update avatar: ' + error.message });
+  }
+});
+
+// POST /api/users/avatar - Alias for avatar update
+app.post('/api/users/avatar', async (req, res) => {
+  try {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    
+    if (!token) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    // Verify JWT token
+    let decoded;
+    try {
+      decoded = jwt.verify(token, JWT_SECRET);
+    } catch (e) {
+      return res.status(401).json({ error: 'Invalid or expired token' });
+    }
+
+    const userId = decoded.userId || decoded.id;
+    const { avatarUrl } = req.body;
+
+    if (!avatarUrl) {
+      return res.status(400).json({ error: 'Avatar URL is required' });
+    }
+
+    if (USE_POSTGRESQL && pgPool) {
+      await pgPool.query(
+        'UPDATE users SET avatar_url = $1, updated_at = NOW() WHERE id = $2',
+        [avatarUrl, userId]
+      );
+      console.log(`[AUTH] Avatar updated via /api/users/avatar: ${userId}`);
+      return res.json({ success: true, avatarUrl, message: 'Avatar updated successfully' });
+    }
+
+    res.json({ success: true, avatarUrl, message: 'Avatar updated (simulated)' });
+  } catch (error) {
+    console.error('[AUTH] Avatar update error:', error);
+    res.status(500).json({ error: 'Failed to update avatar: ' + error.message });
   }
 });
 

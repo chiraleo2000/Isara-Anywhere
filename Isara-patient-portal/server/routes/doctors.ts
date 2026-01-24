@@ -114,8 +114,8 @@ router.get('/:doctorId/slots', authMiddleware, async (req: Request, res: Respons
     const slots: { time: string; available: boolean }[] = [];
     
     for (const schedule of scheduleResult.rows) {
-      const startHour = parseInt(schedule.start_time.split(':')[0]);
-      const endHour = parseInt(schedule.end_time.split(':')[0]);
+      const startHour = Number.parseInt(schedule.start_time.split(':')[0], 10);
+      const endHour = Number.parseInt(schedule.end_time.split(':')[0], 10);
       const slotDuration = schedule.slot_duration_minutes || 30;
       
       for (let hour = startHour; hour < endHour; hour++) {

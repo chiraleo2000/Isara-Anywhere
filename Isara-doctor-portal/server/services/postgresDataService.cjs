@@ -729,7 +729,10 @@ const ContentService = {
    */
   async getAllContent(status) {
     let query = `
-      SELECT mc.*, u.name as author_name
+      SELECT mc.*, u.name as author_name,
+             mc.title_thai as title, mc.title_english,
+             mc.content_thai as content, mc.content_english,
+             mc.image_url
       FROM medical_content mc
       LEFT JOIN users u ON mc.author_id = u.id
     `;
@@ -752,17 +755,17 @@ const ContentService = {
   async createContent(data) {
     const result = await pool.query(
       `INSERT INTO medical_content (
-        id, title, title_thai, content, content_thai,
+        id, title_thai, title_english, content_thai, content_english,
         category, tags, author_id, status
       )
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        RETURNING *`,
       [
         `MC-${Date.now()}`,
-        data.title,
-        data.title_thai,
-        data.content,
-        data.content_thai,
+        data.title_thai || data.titleThai || data.title || '',
+        data.title_english || data.titleEnglish || '',
+        data.content_thai || data.contentThai || data.content || '',
+        data.content_english || data.contentEnglish || '',
         data.category,
         JSON.stringify(data.tags || []),
         data.author_id,
@@ -794,7 +797,7 @@ const ContentService = {
    * Get clinical resources
    */
   async getClinicalResources(status) {
-    let query = 'SELECT * FROM clinical_resources';
+    let query = 'SELECT *, image_url FROM clinical_resources';
     const params = [];
 
     if (status) {

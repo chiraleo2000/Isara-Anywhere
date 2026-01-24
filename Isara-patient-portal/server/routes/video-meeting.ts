@@ -516,6 +516,25 @@ IMPORTANT: These are suggestions for the doctor to consider, not final diagnoses
 // ============================================================================
 
 /**
+ * GET /api/video-meeting/config
+ * Get video meeting configuration (Jitsi domain, etc.)
+ */
+router.get('/config', (req: Request, res: Response) => {
+  res.json({
+    success: true,
+    jitsiDomain: JITSI_DOMAIN,
+    features: {
+      recording: true,
+      transcription: !!GOOGLE_SPEECH_API_KEY,
+      aiSummary: !!GEMINI_API_KEY,
+      lobby: true,
+      guestInvites: true
+    },
+    defaultLanguage: 'th'
+  });
+});
+
+/**
  * Create a new video meeting
  * POST /api/video-meeting/create
  * USES POSTGRESQL - NOT IN-MEMORY

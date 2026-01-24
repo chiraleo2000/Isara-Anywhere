@@ -398,7 +398,7 @@ class PatientRecordService {
         },
         vitalSigns: vitalSignsHistory,
         lifestyle: {
-          smoking: lifestyle.smokingStatus === 'current' || lifestyle.smokingStatus === 'occasional' ? lifestyle.smokingStatus : (lifestyle.smokingStatus === 'never' ? false : lifestyle.smokingStatus),
+          smoking: this.getSmokingStatus(lifestyle),
           alcohol: lifestyle.alcoholConsumption !== 'never' && lifestyle.alcoholConsumption !== 'unknown' ? lifestyle.alcoholConsumption : false,
           exercise: lifestyle.exerciseFrequency || lifestyle.exercise || 'Unknown',
           diet: lifestyle.dietType || lifestyle.diet || 'Unknown',
@@ -445,6 +445,24 @@ class PatientRecordService {
     if (!weightKg || !heightCm || heightCm === 0) return 0;
     const heightM = heightCm / 100;
     return Math.round((weightKg / (heightM * heightM)) * 10) / 10;
+  }
+
+  // Helper to get smoking status (extracted to avoid nested ternary)
+  private getSmokingStatus(lifestyle: any): string | boolean {
+    if (lifestyle.smokingStatus === 'current' || lifestyle.smokingStatus === 'occasional') {
+      return lifestyle.smokingStatus;
+    }
+    if (lifestyle.smokingStatus === 'never') {
+      return false;
+    }
+    return lifestyle.smokingStatus || false;
+  }
+
+  // Helper to get lab result flag (extracted to avoid nested ternary)
+  private getLabResultFlag(status: string): 'high' | 'critical' | undefined {
+    if (status === 'abnormal') return 'high';
+    if (status === 'critical') return 'critical';
+    return undefined;
   }
 
   // ===========================================================================
@@ -683,7 +701,7 @@ class PatientRecordService {
           value: r.value,
           unit: r.unit,
           normalRange: r.referenceRange,
-          flag: r.status === 'abnormal' ? 'high' : r.status === 'critical' ? 'critical' : undefined,
+          flag: this.getLabResultFlag(r.status),
         })),
         summary: lab.testName,
         interpretation: lab.notes,

@@ -707,7 +707,7 @@ router.post('/missed-meeting/:appointmentId', authMiddleware, async (req: Reques
 
 // Helper function to determine time slot
 function getTimeSlot(time: string): 'morning' | 'afternoon' | 'evening' {
-  const hour = parseInt(time.split(':')[0]);
+  const hour = Number.parseInt(time.split(':')[0], 10);
   if (hour < 12) return 'morning';
   if (hour < 17) return 'afternoon';
   return 'evening';
