@@ -31,6 +31,19 @@ interface Summary {
   followUp: string;
 }
 
+const getStatusDotColor = (status: TranscriptionStatus): string => {
+  switch (status) {
+    case 'listening':
+      return '#22c55e';
+    case 'paused':
+      return '#eab308';
+    case 'error':
+      return '#ef4444';
+    default:
+      return '#6b7280';
+  }
+};
+
 export const MeetingTranscription: React.FC<MeetingTranscriptionProps> = ({
   meetingId,
   userId,
@@ -48,6 +61,7 @@ export const MeetingTranscription: React.FC<MeetingTranscriptionProps> = ({
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const transcriptEndRef = useRef<HTMLDivElement>(null);
+  const statusDotColor = getStatusDotColor(status);
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -181,7 +195,7 @@ export const MeetingTranscription: React.FC<MeetingTranscriptionProps> = ({
       {/* Header with controls */}
       <div style={styles.header}>
         <h3 style={styles.title}>
-          🎙️ ถอดเสียงการสนทนา
+          <span>🎙️ ถอดเสียงการสนทนา</span>
           <span style={styles.languageBadge}>
             {language === 'th-TH' ? '🇹🇭 ไทย' : '🇺🇸 English'}
           </span>
@@ -191,9 +205,7 @@ export const MeetingTranscription: React.FC<MeetingTranscriptionProps> = ({
         <div style={styles.statusContainer}>
           <span style={{
             ...styles.statusDot,
-            backgroundColor: status === 'listening' ? '#22c55e' : 
-                           status === 'paused' ? '#eab308' : 
-                           status === 'error' ? '#ef4444' : '#6b7280'
+            backgroundColor: statusDotColor
           }} />
           <span style={styles.statusText}>
             {status === 'idle' && 'พร้อมใช้งาน'}
@@ -315,8 +327,8 @@ export const MeetingTranscription: React.FC<MeetingTranscriptionProps> = ({
           <div style={styles.summarySection}>
             <strong>💊 ยาที่สั่ง:</strong>
             <ul>
-              {summary.medications.map((med, i) => (
-                <li key={i}>{med}</li>
+              {summary.medications.map((med) => (
+                <li key={med}>{med}</li>
               ))}
             </ul>
           </div>

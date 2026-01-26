@@ -1,56 +1,27 @@
 import { Router, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
-import crypto from 'crypto';
-import { AuthService, PHRService, NotificationService } from '../services/postgresDataService';
+import node_crypto from 'node:crypto';
 import postgresDataService from '../services/postgresDataService';
 
 const { pool } = postgresDataService;
 const router = Router();
 
 // ============================================================================
-// DEMO MODE - In-memory fallback when PostgreSQL is unavailable
+// PRODUCTION MODE - PostgreSQL ONLY (No Demo Mode)
 // ============================================================================
-const DEMO_MODE = process.env.DEMO_MODE === 'true' || process.env.NODE_ENV === 'demo';
+console.log('[AUTH] Production mode - PostgreSQL only');
 
-// Demo users for cloud deployment without database
-const DEMO_USERS = [
-  {
-    id: 'demo_user_001',
-    patient_id: 'demo_patient_001',
-    email: 'demo@izara.health',
-    password_hash: '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4c1o3OXt3PjLAQWC', // demo123
-    name: 'Demo User',
-    name_thai: 'ผู้ใช้ทดสอบ',
-    phone: '+66891234567',
-    avatar_url: 'https://i.pravatar.cc/150?u=demo_user_001',
-    gender: 'male',
-    role: 'patient',
-    is_active: true,
-  },
-  {
-    id: 'demo_user_002',
-    patient_id: 'demo_patient_002',
-    email: 'patient@izara.health',
-    password_hash: '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4c1o3OXt3PjLAQWC', // demo123
-    name: 'Test Patient',
-    name_thai: 'คนไข้ทดสอบ',
-    phone: '+66891234568',
-    avatar_url: 'https://i.pravatar.cc/150?u=demo_user_002',
-    gender: 'female',
-    role: 'patient',
-    is_active: true,
-  }
-];
-
-const DEMO_SESSIONS: Map<string, { userId: string; patientId: string; expiresAt: Date }> = new Map();
-
-// Check if database is available
+// Database connection status
 let dbAvailable = false;
+
 async function checkDbConnection(): Promise<boolean> {
   try {
     await pool.query('SELECT 1');
+    dbAvailable = true;
     return true;
-  } catch {
+  } catch (err) {
+    console.error('[AUTH] DB connection check failed:', (err as Error).message);
+    dbAvailable = false;
     return false;
   }
 }
@@ -58,10 +29,17 @@ async function checkDbConnection(): Promise<boolean> {
 // Initialize db check
 checkDbConnection().then(available => {
   dbAvailable = available;
-  if (!available) {
-    console.log('⚠️ PostgreSQL unavailable - DEMO MODE activated');
+  if (available) {
+    console.log('✅ PostgreSQL connected - Production mode active');
+  } else {
+    console.error('❌ PostgreSQL unavailable - Authentication will fail until DB is available');
   }
 });
+
+// Keep-alive: periodically check database connection
+setInterval(() => {
+  checkDbConnection().catch(() => {});
+}, 30000);
 
 // ============================================================================
 // POSTGRESQL-ONLY AUTHENTICATION - NO GCS
@@ -69,7 +47,7 @@ checkDbConnection().then(available => {
 
 // Helper: Generate secure random token
 function generateSecureToken(length: number = 64): string {
-  return crypto.randomBytes(length).toString('hex');
+  return node_crypto.randomBytes(length).toString('hex');
 }
 
 // Helper: Generate session token
@@ -177,15 +155,15 @@ router.post('/register', async (req: Request, res: Response) => {
     }
 
     // Generate IDs and hash password
-    const userId = `user_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
-    const patientId = `patient_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+    const userId = `user_${Date.now()}_${node_crypto.randomBytes(4).toString('hex')}`;
+    const patientId = `patient_${Date.now()}_${node_crypto.randomBytes(4).toString('hex')}`;
     const passwordHash = await hashPassword(password);
     const now = new Date();
 
     // Parse list inputs
     const parseList = (str: string | undefined): string[] => {
       if (!str) return [];
-      return str.split(/[,;]/).map(s => s.trim()).filter(s => s);
+      return str.split(/[,;]/).map(s => s.trim()).filter(Boolean);
     };
 
     // Insert user into PostgreSQL
@@ -196,7 +174,7 @@ router.post('/register', async (req: Request, res: Response) => {
     );
 
     // Create initial PHR record
-    const bmi = height && weight ? (parseFloat(weight) / Math.pow(parseFloat(height) / 100, 2)).toFixed(1) : null;
+    const bmi = height && weight ? (Number.parseFloat(weight) / Math.pow(Number.parseFloat(height) / 100, 2)).toFixed(1) : null;
     
     await pool.query(
       `INSERT INTO phr (id, patient_id, blood_type, allergies, chronic_conditions, medications, emergency_contact_name, emergency_contact_phone, emergency_contact_relation, height_cm, weight_kg, bmi, created_at, updated_at)
@@ -217,9 +195,9 @@ router.post('/register', async (req: Request, res: Response) => {
         emergencyContactName || null,
         emergencyContactPhone || null,
         emergencyContactRelation || null,
-        height ? parseFloat(height) : null,
-        weight ? parseFloat(weight) : null,
-        bmi ? parseFloat(bmi) : null,
+        height ? Number.parseFloat(height) : null,
+        weight ? Number.parseFloat(weight) : null,
+        bmi ? Number.parseFloat(bmi) : null,
         now
       ]
     );
@@ -271,23 +249,17 @@ router.post('/register', async (req: Request, res: Response) => {
       });
     }
     
-    // Return success for testing - demo mode fallback
-    res.json({ 
-      success: true,
-      message: 'Registration processed',
-      user: {
-        id: `demo_${Date.now()}`,
-        email: req.body.email,
-        name: req.body.name || 'User'
-      },
-      token: `demo_token_${Date.now()}`,
-      demoMode: true
+    // Return error on registration failure - NO demo fallback in production
+    res.status(500).json({ 
+      success: false,
+      error: 'Registration failed',
+      message: error.message
     });
   }
 });
 
 // ============================================================================
-// LOGIN
+// LOGIN - PRODUCTION MODE (PostgreSQL Only)
 // ============================================================================
 router.post('/login', async (req: Request, res: Response) => {
   try {
@@ -300,77 +272,13 @@ router.post('/login', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
-    // Check if we should use demo mode (DB unavailable or DEMO_MODE enabled)
-    const useDemo = DEMO_MODE || !(await checkDbConnection());
-    
-    if (useDemo) {
-      console.log('[AUTH] Using DEMO MODE for login');
-      
-      // Find demo user
-      const demoUser = DEMO_USERS.find(u => u.email.toLowerCase() === emailLower);
-      if (!demoUser) {
-        // Accept any email in demo mode with password 'demo123'
-        if (password === 'demo123') {
-          const sessionToken = generateSessionToken();
-          const now = new Date();
-          const expiresAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-          
-          const demoId = `demo_${Date.now()}`;
-          DEMO_SESSIONS.set(sessionToken, { 
-            userId: demoId, 
-            patientId: demoId, 
-            expiresAt 
-          });
-          
-          return res.json({
-            user: {
-              id: demoId,
-              patientId: demoId,
-              name: emailLower.split('@')[0],
-              email: emailLower,
-              role: 'patient',
-              avatarUrl: `https://i.pravatar.cc/150?u=${demoId}`,
-              updatedAt: now.toISOString(),
-            },
-            token: sessionToken,
-            demoMode: true,
-          });
-        }
-        return res.status(401).json({ error: 'Invalid email or password' });
+    // Check database connection - if not available, try to reconnect
+    if (!dbAvailable) {
+      const connectionOk = await checkDbConnection();
+      if (!connectionOk) {
+        console.error('[AUTH] Database unavailable for login');
+        return res.status(503).json({ error: 'Database temporarily unavailable. Please try again.' });
       }
-      
-      // Verify password for demo user
-      const passwordValid = await bcrypt.compare(password, demoUser.password_hash);
-      if (!passwordValid && password !== 'demo123') {
-        return res.status(401).json({ error: 'Invalid email or password' });
-      }
-      
-      const sessionToken = generateSessionToken();
-      const now = new Date();
-      const expiresAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-      
-      DEMO_SESSIONS.set(sessionToken, { 
-        userId: demoUser.id, 
-        patientId: demoUser.patient_id, 
-        expiresAt 
-      });
-      
-      return res.json({
-        user: {
-          id: demoUser.id,
-          patientId: demoUser.patient_id,
-          name: demoUser.name,
-          nameThai: demoUser.name_thai,
-          email: demoUser.email,
-          phone: demoUser.phone,
-          avatarUrl: demoUser.avatar_url,
-          gender: demoUser.gender,
-          role: demoUser.role,
-          updatedAt: now.toISOString(),
-        },
-        token: sessionToken,
-        demoMode: true,
-      });
     }
 
     // Find user in PostgreSQL
@@ -446,44 +354,12 @@ router.post('/login', async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error('[AUTH] Login error:', error);
-    
-    // Fallback to demo mode on any error
-    const { email, password } = req.body;
-    const emailLower = email?.toLowerCase().trim();
-    
-    if (password === 'demo123') {
-      const sessionToken = generateSessionToken();
-      const now = new Date();
-      const demoId = `demo_fallback_${Date.now()}`;
-      
-      DEMO_SESSIONS.set(sessionToken, { 
-        userId: demoId, 
-        patientId: demoId, 
-        expiresAt: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
-      });
-      
-      console.log('[AUTH] Fallback to DEMO MODE after error');
-      return res.json({
-        user: {
-          id: demoId,
-          patientId: demoId,
-          name: emailLower?.split('@')[0] || 'Demo User',
-          email: emailLower || 'demo@izara.health',
-          role: 'patient',
-          avatarUrl: `https://i.pravatar.cc/150?u=${demoId}`,
-          updatedAt: now.toISOString(),
-        },
-        token: sessionToken,
-        demoMode: true,
-      });
-    }
-    
     res.status(500).json({ error: 'Login failed: ' + error.message });
   }
 });
 
 // ============================================================================
-// VALIDATE SESSION
+// VALIDATE SESSION - PRODUCTION MODE (PostgreSQL Only)
 // ============================================================================
 router.post('/validate', async (req: Request, res: Response) => {
   try {
@@ -493,37 +369,7 @@ router.post('/validate', async (req: Request, res: Response) => {
       return res.status(400).json({ valid: false, error: 'Token is required' });
     }
 
-    // Check demo sessions first
-    const demoSession = DEMO_SESSIONS.get(token);
-    if (demoSession) {
-      if (demoSession.expiresAt > new Date()) {
-        return res.json({ 
-          valid: true, 
-          userId: demoSession.userId,
-          patientId: demoSession.patientId,
-          demoMode: true
-        });
-      } else {
-        DEMO_SESSIONS.delete(token);
-        return res.json({ valid: false, error: 'Demo session expired' });
-      }
-    }
-
-    // Check if we should use demo mode
-    const useDemo = DEMO_MODE || !(await checkDbConnection());
-    if (useDemo) {
-      // In demo mode, accept any token that looks valid
-      if (token.startsWith('token_')) {
-        return res.json({ 
-          valid: true, 
-          userId: 'demo_user',
-          patientId: 'demo_patient',
-          demoMode: true
-        });
-      }
-      return res.json({ valid: false, error: 'Invalid token' });
-    }
-
+    // Validate session in PostgreSQL
     const sessionResult = await pool.query(
       `SELECT s.*, u.id as user_id, u.patient_id, u.name, u.email
        FROM sessions s
@@ -544,19 +390,6 @@ router.post('/validate', async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error('[AUTH] Validation error:', error);
-    
-    // Fallback: check demo sessions
-    const { token } = req.body;
-    const demoSession = DEMO_SESSIONS.get(token);
-    if (demoSession && demoSession.expiresAt > new Date()) {
-      return res.json({ 
-        valid: true, 
-        userId: demoSession.userId,
-        patientId: demoSession.patientId,
-        demoMode: true
-      });
-    }
-    
     res.status(500).json({ valid: false, error: 'Validation failed' });
   }
 });
@@ -822,10 +655,11 @@ router.post('/request-password-reset', async (req: Request, res: Response) => {
 
     // In production, send email here
     // For development, return token
+    const isDevelopment = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test';
     res.json({ 
       success: true, 
       message: 'Password reset link sent to your email. Please check your inbox.',
-      devToken: process.env.NODE_ENV !== 'production' ? resetToken : undefined
+      devToken: isDevelopment ? resetToken : undefined
     });
   } catch (error: any) {
     console.error('[PASSWORD_RESET] Error:', error);
@@ -1103,27 +937,7 @@ router.get('/', async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    // Check demo sessions first
-    const demoSession = DEMO_SESSIONS.get(token);
-    if (demoSession) {
-      if (demoSession.expiresAt > new Date()) {
-        const demoUser = DEMO_USERS.find(u => u.id === demoSession.userId) || DEMO_USERS[0];
-        return res.json({
-          id: demoUser.id,
-          patientId: demoUser.patient_id,
-          name: demoUser.name,
-          nameThai: demoUser.name_thai,
-          email: demoUser.email,
-          phone: demoUser.phone,
-          avatarUrl: demoUser.avatar_url,
-          gender: demoUser.gender,
-          role: demoUser.role,
-          demoMode: true
-        });
-      }
-    }
-
-    // Validate session and get user
+    // Validate session and get user from PostgreSQL
     const sessionResult = await pool.query(
       `SELECT s.*, u.*
        FROM sessions s
@@ -1152,18 +966,7 @@ router.get('/', async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error('[AUTH] Get profile error:', error);
-    
-    // Fallback to demo mode
-    const demoUser = DEMO_USERS[0];
-    res.json({
-      id: demoUser.id,
-      patientId: demoUser.patient_id,
-      name: demoUser.name,
-      email: demoUser.email,
-      avatarUrl: demoUser.avatar_url,
-      role: demoUser.role,
-      demoMode: true
-    });
+    res.status(500).json({ error: 'Failed to get profile' });
   }
 });
 

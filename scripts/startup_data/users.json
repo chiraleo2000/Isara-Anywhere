@@ -1,0 +1,88 @@
+{
+  "description": "Startup test users for Izara Telemedicine",
+  "encoding": "UTF-8",
+  "version": "1.4.0",
+  "users": [
+    {
+      "id": "ADMIN-TEST-001",
+      "email": "admin.test@izara.com",
+      "password": "IzaraAdmin@2024",
+      "role": "admin",
+      "name": "Admin Test",
+      "name_thai": "ผู้ดูแลระบบ ทดสอบ",
+      "is_active": true,
+      "is_verified": true,
+      "is_approved": true,
+      "is_admin": true,
+      "admin_privileges": {
+        "canManageDoctors": true,
+        "canManagePatients": true,
+        "canManageAppointments": true,
+        "canViewAnalytics": true,
+        "canManageSettings": true,
+        "level": "super_admin"
+      }
+    },
+    {
+      "id": "DOC-TEST-001",
+      "email": "doctor.test@izara.com",
+      "password": "IzaraDoctor@2024",
+      "role": "doctor",
+      "name": "Doctor Test",
+      "name_thai": "นายแพทย์ ทดสอบ ระบบ",
+      "doctor_id": "DOC-TEST-001",
+      "medical_license_number": "TH-MD-2020-001",
+      "specialty": "Internal Medicine",
+      "is_active": true,
+      "is_verified": true,
+      "is_approved": true
+    },
+    {
+      "id": "PATIENT-DEMO",
+      "email": "demo.test@gmail.com",
+      "password": "P@ssw0rd",
+      "role": "patient",
+      "name": "Demo Test Patient",
+      "name_thai": "นาย ทดสอบ ระบบ",
+      "patient_id": "PATIENT-DEMO",
+      "gender": "male",
+      "date_of_birth": "1990-05-15",
+      "phone": "+66891234567",
+      "is_active": true,
+      "is_verified": true
+    },
+    {
+      "id": "PATIENT-SOMCHAI",
+      "email": "Somchai.Mankong@gmail.com",
+      "password": "P@ssw0rd",
+      "role": "patient",
+      "name": "Somchai Mankong",
+      "name_thai": "นายสมชาย มั่นคง",
+      "patient_id": "PATIENT-SOMCHAI",
+      "gender": "male",
+      "date_of_birth": "1965-03-10",
+      "phone": "+66812345678",
+      "is_active": true,
+      "is_verified": true
+    },
+    {
+      "id": "PATIENT-ANAN",
+      "email": "Anan.Khayanrian@gmail.com",
+      "password": "P@ssw0rd",
+      "role": "patient",
+      "name": "Anan Khayanrian",
+      "name_thai": "นายอนันต์ ขยันเรียน",
+      "patient_id": "PATIENT-ANAN",
+      "gender": "male",
+      "date_of_birth": "1970-08-20",
+      "phone": "+66823456789",
+      "is_active": true,
+      "is_verified": true
+    }
+  ],
+  "password_hashes": {
+    "P@ssw0rd": "$2b$10$64bK0EpjyC7quRGJNvRqmuH/jX3mA4dzyzYa2vgA2q.H3ZxkQwAmy",
+    "IzaraDoctor@2024": "$2b$10$aPN6uhBrLoms36C8/017be2GWqUqaPJa6WaTaZ8LrnwAeaf3GajrO",
+    "IzaraAdmin@2024": "$2b$10$fx5arkpb8YI7lEK5lcHdXeksczdG.qloim/uWghlBZXyxv.dNo/wq"
+  }
+}

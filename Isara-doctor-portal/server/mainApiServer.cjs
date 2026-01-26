@@ -81,14 +81,12 @@ const BUCKETS = {
 // ============================================================================
 // POSTGRESQL CONFIGURATION - PostgreSQL is the PRIMARY and ONLY data source
 // GCS is NOT used for interactive data - only for backup purposes
-// DEMO MODE - When PostgreSQL unavailable, use in-memory mock data
 // ============================================================================
 
 const USE_POSTGRESQL = true; // ALWAYS use PostgreSQL
 const USE_GCS = false; // GCS is ONLY for backup, not interactive operations
-const DEMO_MODE = process.env.DEMO_MODE === 'true' || process.env.NODE_ENV === 'demo';
 
-console.log('[MAIN-API] 📊 Data Configuration: PostgreSQL=ONLY, DEMO_MODE=' + DEMO_MODE);
+console.log('[MAIN-API] 📊 Data Configuration: PostgreSQL=ONLY, DEMO_MODE=false');
 
 let PostgresDataService = null;
 let DB_AVAILABLE = false;
@@ -101,98 +99,7 @@ try {
 } catch (error) {
   console.error('[MAIN-API] ⚠️ PostgreSQL data service not available:', error.message);
   console.error('[MAIN-API] Stack:', error.stack);
-  if (DEMO_MODE) {
-    console.log('[MAIN-API] 🎭 DEMO MODE enabled - Using in-memory mock data');
-    // Create mock PostgresDataService for demo mode
-    PostgresDataService = createDemoDataService();
-  } else {
-    console.error('[MAIN-API] ❌ CRITICAL: PostgreSQL required but not available. Set DEMO_MODE=true for demo.');
-  }
-}
-
-// ============================================================================
-// DEMO DATA SERVICE - In-memory mock data for cloud without database
-// ============================================================================
-function createDemoDataService() {
-  const demoDoctor = {
-    id: 'demo_doctor_001',
-    doctor_id: 'demo_doctor_001',
-    name: 'Dr. Demo Doctor',
-    name_thai: 'นพ. แพทย์ทดสอบ',
-    email: 'demo.doctor@izara.health',
-    specialty: 'general-medicine',
-    specialty_thai: 'อายุรกรรมทั่วไป',
-    hospital_name: 'Izara Demo Hospital',
-    medical_license_number: 'DEMO-12345',
-    is_active: true,
-    avatar_url: 'https://i.pravatar.cc/150?u=demo_doctor_001',
-    role: 'doctor'
-  };
-
-  const demoPatient = {
-    id: 'demo_patient_001',
-    patient_id: 'demo_patient_001',
-    name: 'Demo Patient',
-    name_thai: 'คนไข้ทดสอบ',
-    email: 'demo.patient@izara.health',
-    phone: '+66891234567',
-    date_of_birth: '1990-01-01',
-    gender: 'male',
-    blood_type: 'O+',
-    allergies: ['Penicillin'],
-    chronic_conditions: ['Hypertension']
-  };
-
-  const demoAppointment = {
-    id: 'demo_appointment_001',
-    patient_id: 'demo_patient_001',
-    doctor_id: 'demo_doctor_001',
-    date: new Date().toISOString().split('T')[0],
-    time: '10:00',
-    status: 'confirmed',
-    type: 'general-consultation',
-    patient_name: 'Demo Patient',
-    doctor_name: 'Dr. Demo Doctor',
-    chief_complaint: 'General checkup',
-    created_at: new Date().toISOString()
-  };
-
-  return {
-    AuthService: {
-      getAllDoctors: async () => [demoDoctor],
-      getDoctorById: async (id) => demoDoctor,
-      getDoctorByEmail: async (email) => demoDoctor,
-      verifyPassword: async () => true
-    },
-    PatientService: {
-      getAllPatients: async () => [demoPatient],
-      getPatientById: async (id) => demoPatient,
-      getPatientPHR: async (id) => ({ patientId: id, allergies: [], chronic_conditions: [] }),
-      updatePatient: async (id, data) => ({ ...demoPatient, ...data })
-    },
-    AppointmentService: {
-      getAllAppointments: async () => [demoAppointment],
-      getAppointmentById: async (id) => demoAppointment,
-      getAppointmentsByDoctor: async (doctorId) => [demoAppointment],
-      createAppointment: async (data) => ({ ...demoAppointment, ...data, id: `demo_apt_${Date.now()}` }),
-      updateAppointment: async (id, data) => ({ ...demoAppointment, ...data })
-    },
-    QueueService: {
-      getQueueByDoctor: async (doctorId) => [],
-      addToQueue: async (data) => ({ ...data, id: `demo_queue_${Date.now()}` })
-    },
-    EMRService: {
-      getEMRByPatient: async (patientId) => [],
-      createEMREntry: async (data) => ({ ...data, id: `demo_emr_${Date.now()}` })
-    },
-    pool: {
-      query: async (sql, params) => {
-        console.log('[DEMO] Mock query:', sql.substring(0, 50));
-        return { rows: [], rowCount: 0 };
-      }
-    },
-    DEMO_MODE: true
-  };
+  console.error('[MAIN-API] ❌ CRITICAL: PostgreSQL required but not available.');
 }
 
 // ============================================================================
@@ -696,18 +603,18 @@ app.get('/health/db', async (req, res) => {
       await PostgresDataService.pool.query('SELECT 1');
     }
     res.json({
-      status: 'healthy',
+      status: DB_AVAILABLE ? 'healthy' : 'degraded',
       timestamp: new Date().toISOString(),
       database: 'PostgreSQL',
       connected: DB_AVAILABLE
     });
   } catch (error) {
-    res.json({
-      status: 'healthy',
+    res.status(503).json({
+      status: 'unhealthy',
       timestamp: new Date().toISOString(),
       database: 'PostgreSQL',
-      connected: true,
-      demoMode: DEMO_MODE
+      connected: false,
+      error: 'Database unavailable'
     });
   }
 });
@@ -797,21 +704,10 @@ app.get('/api/doctors/:doctorId', async (req, res) => {
     const { doctorId } = req.params;
     console.log(`[DOCTORS] Fetching doctor ${doctorId} from PostgreSQL`);
     
-    // If DEMO_MODE, return demo doctor
-    if (DEMO_MODE || !DB_AVAILABLE) {
-      return res.json({
-        doctor: {
-          id: doctorId,
-          name: 'Dr. Demo Doctor',
-          name_thai: 'นพ. แพทย์ทดสอบ',
-          email: 'demo.doctor@izara.health',
-          specialty: 'general-medicine',
-          license_number: 'DEMO-12345',
-          hospital: 'Izara Demo Hospital',
-          avatar_url: `https://i.pravatar.cc/150?u=${doctorId}`,
-          is_active: true
-        },
-        demoMode: true
+    if (!DB_AVAILABLE) {
+      return res.status(503).json({ 
+        error: 'Database unavailable', 
+        code: 'DATABASE_UNAVAILABLE' 
       });
     }
     
@@ -827,45 +723,25 @@ app.get('/api/doctors/:doctorId', async (req, res) => {
       `, [doctorId]);
       
       if (result.rows.length === 0) {
-        // Return demo doctor if not found
-        return res.json({
-          doctor: {
-            id: doctorId,
-            name: 'Dr. Demo Doctor',
-            name_thai: 'นพ. แพทย์ทดสอบ',
-            email: 'demo.doctor@izara.health',
-            specialty: 'general-medicine',
-            is_active: true
-          },
-          demoMode: true
+        return res.status(404).json({ 
+          error: 'Doctor not found', 
+          code: 'DOCTOR_NOT_FOUND' 
         });
       }
       
       res.json({ doctor: result.rows[0] });
     } catch (dbError) {
       console.error('Doctor fetch DB error:', dbError);
-      // Fallback to demo
-      res.json({
-        doctor: {
-          id: doctorId,
-          name: 'Dr. Demo Doctor',
-          email: 'demo.doctor@izara.health',
-          specialty: 'general-medicine',
-          is_active: true
-        },
-        demoMode: true
+      res.status(503).json({ 
+        error: 'Database error', 
+        code: 'DATABASE_ERROR' 
       });
     }
   } catch (error) {
     console.error('Doctor fetch error:', error);
-    res.json({
-      doctor: {
-        id: req.params.doctorId,
-        name: 'Dr. Demo Doctor',
-        email: 'demo.doctor@izara.health',
-        is_active: true
-      },
-      demoMode: true
+    res.status(500).json({ 
+      error: error.message, 
+      code: 'INTERNAL_ERROR' 
     });
   }
 });
@@ -876,21 +752,10 @@ app.get('/api/doctors/:doctorId/profile', async (req, res) => {
     const { doctorId } = req.params;
     console.log(`[DOCTORS] Fetching profile for doctor ${doctorId}`);
     
-    // If DEMO_MODE, return demo profile
-    if (DEMO_MODE || !DB_AVAILABLE) {
-      return res.json({
-        profile: {
-          id: doctorId,
-          name: 'Dr. Demo Doctor',
-          name_thai: 'นพ. แพทย์ทดสอบ',
-          email: 'demo.doctor@izara.health',
-          specialty: 'general-medicine',
-          license_number: 'DEMO-12345',
-          hospital: 'Izara Demo Hospital',
-          avatar_url: `https://i.pravatar.cc/150?u=${doctorId}`,
-          is_active: true
-        },
-        demoMode: true
+    if (!DB_AVAILABLE) {
+      return res.status(503).json({ 
+        error: 'Database unavailable', 
+        code: 'DATABASE_UNAVAILABLE' 
       });
     }
     
@@ -906,42 +771,25 @@ app.get('/api/doctors/:doctorId/profile', async (req, res) => {
       `, [doctorId]);
       
       if (result.rows.length === 0) {
-        return res.json({
-          profile: {
-            id: doctorId,
-            name: 'Dr. Demo Doctor',
-            email: 'demo.doctor@izara.health',
-            specialty: 'general-medicine',
-            is_active: true
-          },
-          demoMode: true
+        return res.status(404).json({ 
+          error: 'Profile not found', 
+          code: 'PROFILE_NOT_FOUND' 
         });
       }
       
       res.json({ profile: result.rows[0] });
     } catch (dbError) {
       console.error('Doctor profile fetch DB error:', dbError);
-      res.json({
-        profile: {
-          id: doctorId,
-          name: 'Dr. Demo Doctor',
-          email: 'demo.doctor@izara.health',
-          specialty: 'general-medicine',
-          is_active: true
-        },
-        demoMode: true
+      res.status(503).json({ 
+        error: 'Database error', 
+        code: 'DATABASE_ERROR' 
       });
     }
   } catch (error) {
     console.error('Doctor profile fetch error:', error);
-    res.json({
-      profile: {
-        id: req.params.doctorId,
-        name: 'Dr. Demo Doctor',
-        email: 'demo.doctor@izara.health',
-        is_active: true
-      },
-      demoMode: true
+    res.status(500).json({ 
+      error: error.message, 
+      code: 'INTERNAL_ERROR' 
     });
   }
 });
@@ -952,21 +800,10 @@ app.get('/api/doctors/profile', authenticateToken, async (req, res) => {
     const userId = req.user?.userId || req.user?.id;
     console.log(`[DOCTORS] Fetching profile for doctor ${userId}`);
     
-    // If DEMO_MODE, return demo profile
-    if (DEMO_MODE || !DB_AVAILABLE) {
-      return res.json({
-        profile: {
-          id: userId || 'demo_doctor_001',
-          name: 'Dr. Demo Doctor',
-          name_thai: 'นพ. แพทย์ทดสอบ',
-          email: 'demo.doctor@izara.health',
-          specialty: 'general-medicine',
-          license_number: 'DEMO-12345',
-          hospital: 'Izara Demo Hospital',
-          avatar_url: `https://i.pravatar.cc/150?u=${userId || 'demo_doctor_001'}`,
-          is_active: true
-        },
-        demoMode: true
+    if (!DB_AVAILABLE) {
+      return res.status(503).json({ 
+        error: 'Database unavailable', 
+        code: 'DATABASE_UNAVAILABLE' 
       });
     }
     
@@ -987,16 +824,9 @@ app.get('/api/doctors/profile', authenticateToken, async (req, res) => {
     res.json({ profile: result.rows[0] });
   } catch (error) {
     console.error('Doctor profile fetch error:', error);
-    // Fallback to demo
-    res.json({
-      profile: {
-        id: req.user?.id || 'demo_doctor_001',
-        name: 'Dr. Demo Doctor',
-        email: 'demo.doctor@izara.health',
-        specialty: 'general-medicine',
-        is_active: true
-      },
-      demoMode: true
+    res.status(500).json({ 
+      error: error.message, 
+      code: 'INTERNAL_ERROR' 
     });
   }
 });
@@ -1009,25 +839,10 @@ app.put('/api/doctors/profile', authenticateToken, async (req, res) => {
     
     console.log(`[DOCTORS] Updating profile for doctor ${userId}`);
     
-    // If DEMO_MODE, return success with demo data
-    if (DEMO_MODE || !DB_AVAILABLE) {
-      return res.json({
-        success: true,
-        profile: {
-          id: userId || 'demo_doctor_001',
-          name: name || 'Dr. Demo Doctor',
-          name_thai: nameThai || 'นพ. แพทย์ทดสอบ',
-          email: 'demo.doctor@izara.health',
-          phone: phone || '+66891234567',
-          specialty: specialty || 'general-medicine',
-          hospital: hospital || 'Izara Demo Hospital',
-          bio: bio || 'Demo doctor bio',
-          qualifications: qualifications || [],
-          avatar_url: avatarUrl || `https://i.pravatar.cc/150?u=${userId}`,
-          is_active: true,
-          updatedAt: new Date().toISOString()
-        },
-        demoMode: true
+    if (!DB_AVAILABLE) {
+      return res.status(503).json({ 
+        error: 'Database unavailable', 
+        code: 'DATABASE_UNAVAILABLE' 
       });
     }
     
@@ -1055,15 +870,9 @@ app.put('/api/doctors/profile', authenticateToken, async (req, res) => {
     res.json({ success: true, profile: result.rows[0] });
   } catch (error) {
     console.error('Doctor profile update error:', error);
-    // Fallback to demo success
-    res.json({
-      success: true,
-      profile: {
-        id: req.user?.id || 'demo_doctor_001',
-        ...req.body,
-        updatedAt: new Date().toISOString()
-      },
-      demoMode: true
+    res.status(500).json({ 
+      error: error.message, 
+      code: 'INTERNAL_ERROR' 
     });
   }
 });
@@ -1091,10 +900,9 @@ const authProfileHandler = async (req, res) => {
     });
   } catch (error) {
     console.error('[AUTH] Profile update error:', error);
-    res.json({
-      success: true,
-      message: 'Profile updated (demo mode)',
-      demoMode: true
+    res.status(500).json({ 
+      error: error.message, 
+      code: 'INTERNAL_ERROR' 
     });
   }
 };
@@ -1168,13 +976,9 @@ app.get('/api/patients/:patientId/emr', authenticateToken, async (req, res) => {
     });
   } catch (error) {
     console.error('[EMR] Patient EMR fetch error:', error);
-    // Return success with empty data on error
-    res.json({ 
-      success: true, 
-      emrs: [],
-      patientId: req.params.patientId,
-      count: 0,
-      demoMode: true 
+    res.status(500).json({ 
+      error: error.message, 
+      code: 'INTERNAL_ERROR' 
     });
   }
 });
@@ -1188,17 +992,10 @@ app.post('/api/emr', authenticateToken, async (req, res) => {
     const emrData = req.body;
     console.log('[EMR] Creating EMR in PostgreSQL');
     
-    // If DEMO_MODE, return success immediately
-    if (DEMO_MODE || !DB_AVAILABLE) {
-      return res.json({ 
-        success: true, 
-        emr: {
-          id: 'demo_emr_' + Date.now(),
-          ...emrData,
-          status: emrData.status || 'draft',
-          createdAt: new Date().toISOString()
-        },
-        demoMode: true
+    if (!DB_AVAILABLE) {
+      return res.status(503).json({ 
+        error: 'Database unavailable', 
+        code: 'DATABASE_UNAVAILABLE' 
       });
     }
     
@@ -1219,30 +1016,16 @@ app.post('/api/emr', authenticateToken, async (req, res) => {
       res.json({ success: true, emr });
     } catch (dbError) {
       console.error('EMR DB error:', dbError);
-      // Fallback to success for testing
-      res.json({ 
-        success: true, 
-        emr: {
-          id: 'fallback_emr_' + Date.now(),
-          ...emrData,
-          status: emrData.status || 'draft',
-          createdAt: new Date().toISOString()
-        },
-        demoMode: true
+      res.status(503).json({ 
+        error: 'Database error', 
+        code: 'DATABASE_ERROR' 
       });
     }
   } catch (error) {
     console.error('EMR creation error:', error);
-    // Fallback to success for testing
-    res.json({ 
-      success: true, 
-      emr: {
-        id: 'error_fallback_emr_' + Date.now(),
-        ...req.body,
-        status: req.body.status || 'draft',
-        createdAt: new Date().toISOString()
-      },
-      demoMode: true
+    res.status(500).json({ 
+      error: error.message, 
+      code: 'INTERNAL_ERROR' 
     });
   }
 });
@@ -1265,21 +1048,10 @@ app.get('/api/emr', authenticateToken, async (req, res) => {
   try {
     console.log('[EMR] Fetching all EMRs');
     
-    // If DEMO_MODE or database unavailable, return demo data
-    if (DEMO_MODE || !DB_AVAILABLE) {
-      return res.json({
-        emrs: [{
-          id: 'demo_emr_001',
-          patientId: 'demo_patient_001',
-          doctorId: 'demo_doctor_001',
-          subjective: { chiefComplaint: 'Demo consultation' },
-          objective: { vitalSigns: {} },
-          assessment: { diagnoses: [] },
-          plan: { treatment: 'Demo treatment' },
-          status: 'signed',
-          createdAt: new Date().toISOString()
-        }],
-        demoMode: true
+    if (!DB_AVAILABLE) {
+      return res.status(503).json({ 
+        error: 'Database unavailable', 
+        code: 'DATABASE_UNAVAILABLE' 
       });
     }
     
@@ -1290,17 +1062,9 @@ app.get('/api/emr', authenticateToken, async (req, res) => {
     res.json({ emrs: result.rows || [] });
   } catch (error) {
     console.error('EMR list error:', error);
-    // Fallback to demo
-    res.json({
-      emrs: [{
-        id: 'demo_emr_001',
-        patientId: 'demo_patient_001',
-        doctorId: 'demo_doctor_001',
-        subjective: { chiefComplaint: 'Demo consultation' },
-        status: 'draft',
-        createdAt: new Date().toISOString()
-      }],
-      demoMode: true
+    res.status(500).json({ 
+      error: error.message, 
+      code: 'INTERNAL_ERROR' 
     });
   }
 });
@@ -1331,17 +1095,10 @@ app.post('/api/emr/sign', authenticateToken, async (req, res) => {
     const doctorId = req.user?.id || 'demo_doctor_001';
     console.log(`[EMR] Signing EMR ${emrId} by doctor ${doctorId} (via /api/emr/sign)`);
     
-    // If DEMO_MODE, return success
-    if (DEMO_MODE || !DB_AVAILABLE) {
-      return res.json({
-        success: true,
-        emr: {
-          id: emrId || 'demo_emr_001',
-          status: 'signed',
-          signedBy: doctorId,
-          signedAt: new Date().toISOString()
-        },
-        demoMode: true
+    if (!DB_AVAILABLE) {
+      return res.status(503).json({ 
+        error: 'Database unavailable', 
+        code: 'DATABASE_UNAVAILABLE' 
       });
     }
     
@@ -1362,46 +1119,25 @@ app.post('/api/emr/sign', authenticateToken, async (req, res) => {
     try {
       const signedEmr = await PostgresDataService.EMRService.signEMR(emrId, doctorId);
       if (!signedEmr) {
-        // Return success even if EMR not found (for testing)
-        return res.json({
-          success: true,
-          emr: {
-            id: emrId,
-            status: 'signed',
-            signedBy: doctorId,
-            signedAt: new Date().toISOString()
-          },
-          demoMode: true
+        return res.status(404).json({ 
+          error: 'EMR not found', 
+          code: 'EMR_NOT_FOUND' 
         });
       }
       
       res.json({ success: true, emr: signedEmr });
     } catch (dbError) {
       console.error('EMR signing DB error:', dbError);
-      // Fallback to success for testing
-      res.json({
-        success: true,
-        emr: {
-          id: emrId,
-          status: 'signed',
-          signedBy: doctorId,
-          signedAt: new Date().toISOString()
-        },
-        demoMode: true
+      res.status(503).json({ 
+        error: 'Database error', 
+        code: 'DATABASE_ERROR' 
       });
     }
   } catch (error) {
     console.error('EMR signing error:', error);
-    // Fallback to demo
-    res.json({
-      success: true,
-      emr: {
-        id: req.body.emrId || 'demo_emr_001',
-        status: 'signed',
-        signedBy: req.user?.id || 'demo_doctor_001',
-        signedAt: new Date().toISOString()
-      },
-      demoMode: true
+    res.status(500).json({ 
+      error: error.message, 
+      code: 'INTERNAL_ERROR' 
     });
   }
 });
@@ -4058,12 +3794,9 @@ app.post('/api/appointments/:appointmentId/confirm', authenticateToken, async (r
     const appointment = await PostgresDataService.AppointmentService.getAppointmentById(appointmentId);
     
     if (!appointment) {
-      // For testing: Return success even if appointment not found
-      return res.json({ 
-        success: true, 
-        message: 'Appointment confirmation processed',
-        meetingLink: `https://meet.jit.si/Izara-${appointmentId}-${Date.now().toString(36)}`,
-        demoMode: true
+      return res.status(404).json({ 
+        error: 'Appointment not found', 
+        code: 'APPOINTMENT_NOT_FOUND' 
       });
     }
     
@@ -5602,16 +5335,9 @@ app.get('/api/consultants', authenticateToken, async (req, res) => {
     res.json({ success: true, consultants, count: consultants.length });
   } catch (error) {
     console.error('❌ Consultants fetch error:', error);
-    // Return demo data even on error
-    res.json({ 
-      success: true, 
-      consultants: [
-        { id: 'CONS-001', name: 'Dr. Prasong Charoenpong', specialty: 'Nephrology', hospital: 'Siriraj Hospital', is_available: true, rating: 4.9 },
-        { id: 'CONS-002', name: 'Dr. Wanida Thongprasert', specialty: 'Oncology', hospital: 'Chulalongkorn Hospital', is_available: true, rating: 4.8 },
-        { id: 'CONS-003', name: 'Dr. Piyarat Srisawat', specialty: 'Cardiology', hospital: 'Bumrungrad Hospital', is_available: true, rating: 4.7 }
-      ], 
-      count: 3,
-      demoMode: true 
+    res.status(500).json({ 
+      error: error.message, 
+      code: 'INTERNAL_ERROR' 
     });
   }
 });
@@ -5621,21 +5347,24 @@ app.post('/api/consultants', authenticateToken, async (req, res) => {
     const consultantData = req.body;
     console.log('📝 Creating consultant:', consultantData.name);
     
-    let newConsultant;
-    if (DB_AVAILABLE && PostgresDataService && PostgresDataService.ConsultantService) {
-      newConsultant = await PostgresDataService.ConsultantService.createConsultant({
-        ...consultantData,
-        created_by: req.user?.id || 'admin'
+    if (!DB_AVAILABLE) {
+      return res.status(503).json({ 
+        error: 'Database unavailable', 
+        code: 'DATABASE_UNAVAILABLE' 
       });
-    } else {
-      // Demo mode - return mock consultant
-      newConsultant = {
-        id: `CONS-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
-        ...consultantData,
-        is_available: true,
-        createdAt: new Date().toISOString()
-      };
     }
+    
+    if (!PostgresDataService || !PostgresDataService.ConsultantService) {
+      return res.status(503).json({ 
+        error: 'Consultant service unavailable', 
+        code: 'SERVICE_UNAVAILABLE' 
+      });
+    }
+    
+    const newConsultant = await PostgresDataService.ConsultantService.createConsultant({
+      ...consultantData,
+      created_by: req.user?.id || 'admin'
+    });
     
     console.log(`✅ Consultant created: ${newConsultant.id}`);
     res.json({ success: true, consultant: newConsultant });
@@ -6108,32 +5837,37 @@ app.get('/api/admin/dashboard-stats', authenticateToken, async (req, res) => {
       }
     }
     
-    // Return demo stats for testing
+    // Fetch stats from PostgreSQL
+    if (!DB_AVAILABLE) {
+      return res.status(503).json({ 
+        error: 'Database unavailable', 
+        code: 'DATABASE_UNAVAILABLE' 
+      });
+    }
+    
+    // Fetch stats from database
+    const { pool } = PostgresDataService;
+    const appointmentsResult = await pool.query('SELECT COUNT(*) as count FROM appointments');
+    const patientsResult = await pool.query("SELECT COUNT(*) as count FROM users WHERE role = 'patient'");
+    const doctorsResult = await pool.query("SELECT COUNT(*) as count FROM users WHERE role = 'doctor'");
+    
     res.json({
       success: true,
       stats: {
         pendingDoctors: 0,
         pendingContent: 0,
         pendingResources: 0,
-        totalAppointments: 10,
-        totalPatients: 5,
-        totalDoctors: 2,
-        usersByRole: { patient: 5, doctor: 2, admin: 1 }
-      },
-      demoMode: true
+        totalAppointments: Number.parseInt(appointmentsResult.rows[0]?.count || 0, 10),
+        totalPatients: Number.parseInt(patientsResult.rows[0]?.count || 0, 10),
+        totalDoctors: Number.parseInt(doctorsResult.rows[0]?.count || 0, 10),
+        usersByRole: {}
+      }
     });
   } catch (error) {
     console.error('❌ Dashboard stats error:', error);
-    // Return demo data instead of 500
-    res.json({
-      success: true,
-      stats: {
-        pendingDoctors: 0,
-        pendingContent: 0,
-        pendingResources: 0,
-        usersByRole: {}
-      },
-      demoMode: true
+    res.status(500).json({ 
+      error: error.message, 
+      code: 'INTERNAL_ERROR' 
     });
   }
 });
@@ -6170,10 +5904,9 @@ app.get('/api/admin/analytics', authenticateToken, async (req, res) => {
     });
   } catch (error) {
     console.error('❌ Analytics error:', error);
-    res.json({
-      success: true,
-      analytics: {},
-      demoMode: true
+    res.status(500).json({ 
+      error: error.message, 
+      code: 'INTERNAL_ERROR' 
     });
   }
 });
@@ -6224,13 +5957,10 @@ app.post('/api/profile/avatar', authenticateToken, async (req, res) => {
     
     console.log(`[PROFILE] Updating avatar for user ${userId}`);
     
-    // If DEMO_MODE, return success
-    if (DEMO_MODE || !DB_AVAILABLE) {
-      return res.json({
-        success: true,
-        avatarUrl: finalUrl || `https://i.pravatar.cc/150?u=${userId}`,
-        message: 'Avatar updated (demo mode)',
-        demoMode: true
+    if (!DB_AVAILABLE) {
+      return res.status(503).json({ 
+        error: 'Database unavailable', 
+        code: 'DATABASE_UNAVAILABLE' 
       });
     }
     
@@ -6270,12 +6000,9 @@ app.post('/api/profile/avatar', authenticateToken, async (req, res) => {
     });
   } catch (error) {
     console.error('Avatar update error:', error);
-    // Fallback to demo
-    res.json({
-      success: true,
-      avatarUrl: `https://i.pravatar.cc/150?u=${req.user?.id || 'demo'}`,
-      message: 'Avatar updated (fallback)',
-      demoMode: true
+    res.status(500).json({ 
+      error: error.message, 
+      code: 'INTERNAL_ERROR' 
     });
   }
 });
@@ -6312,13 +6039,10 @@ app.post('/api/storage/upload', authenticateToken, async (req, res) => {
     
     console.log(`[STORAGE] Upload request from user ${userId} to ${bucket}/${path}`);
     
-    // If DEMO_MODE, return success with mock URL
-    if (DEMO_MODE || !DB_AVAILABLE) {
-      return res.json({
-        success: true,
-        url: url || `https://storage.googleapis.com/${bucket || 'demo-bucket'}/${path || 'demo-file'}`,
-        message: 'File uploaded (demo mode)',
-        demoMode: true
+    if (!DB_AVAILABLE) {
+      return res.status(503).json({ 
+        error: 'Database unavailable', 
+        code: 'DATABASE_UNAVAILABLE' 
       });
     }
     
@@ -6350,12 +6074,9 @@ app.post('/api/storage/upload', authenticateToken, async (req, res) => {
     });
   } catch (error) {
     console.error('Storage upload error:', error);
-    // Fallback to demo
-    res.json({
-      success: true,
-      url: `https://storage.googleapis.com/demo-bucket/demo-file-${Date.now()}`,
-      message: 'File uploaded (fallback)',
-      demoMode: true
+    res.status(500).json({ 
+      error: error.message, 
+      code: 'INTERNAL_ERROR' 
     });
   }
 });

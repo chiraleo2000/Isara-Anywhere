@@ -56,7 +56,7 @@ interface SpeechRecognitionErrorEvent extends Event {
   message?: string;
 }
 
-declare var SpeechRecognition: {
+declare const SpeechRecognition: {
   prototype: SpeechRecognition;
   new(): SpeechRecognition;
 };
@@ -94,11 +94,20 @@ class LiveTranscriptionService {
   private transcripts: TranscriptSegment[] = [];
   private segmentCounter = 0;
 
+  private getSpeechRecognitionConstructor(): (new () => SpeechRecognition) | null {
+    const globalWindow = globalThis as typeof globalThis & Window;
+    return globalWindow.SpeechRecognition || (globalWindow as any).webkitSpeechRecognition || null;
+  }
+
+  private logRecognitionActionError(action: string, error: unknown): void {
+    console.debug(`[Transcription] ${action} action ignored:`, error);
+  }
+
   /**
    * Check if Web Speech API is available
    */
   isSupported(): boolean {
-    return 'SpeechRecognition' in window || 'webkitSpeechRecognition' in window;
+    return this.getSpeechRecognitionConstructor() !== null;
   }
 
   /**
@@ -114,8 +123,13 @@ class LiveTranscriptionService {
       this.config = config;
       this.setStatus('starting');
 
-      const SpeechRecognition = window.SpeechRecognition || (window as any).webkitSpeechRecognition;
-      this.recognition = new SpeechRecognition();
+      const SpeechRecognitionConstructor = this.getSpeechRecognitionConstructor();
+      if (!SpeechRecognitionConstructor) {
+        throw new Error('SpeechRecognition constructor unavailable');
+      }
+
+      const activeConfig = config;
+      this.recognition = new SpeechRecognitionConstructor();
 
       // Configure recognition
       this.recognition.lang = config.language || 'th-TH';
@@ -138,12 +152,12 @@ class LiveTranscriptionService {
           if (!transcript) continue;
 
           const segment: TranscriptSegment = {
-            id: `seg_${this.config!.meetingId}_${++this.segmentCounter}`,
-            speakerId: this.config!.speakerId,
-            speakerRole: this.config!.speakerRole,
-            speakerName: this.config!.speakerName,
+            id: `seg_${activeConfig.meetingId}_${++this.segmentCounter}`,
+            speakerId: activeConfig.speakerId,
+            speakerRole: activeConfig.speakerRole,
+            speakerName: activeConfig.speakerName,
             content: transcript,
-            language: this.config!.language || 'th-TH',
+            language: activeConfig.language || 'th-TH',
             confidence: result[0].confidence || 0.9,
             timestamp: new Date(),
             isFinal: result.isFinal
@@ -153,7 +167,7 @@ class LiveTranscriptionService {
             this.transcripts.push(segment);
           }
 
-          this.config!.onTranscript?.(segment);
+          activeConfig.onTranscript?.(segment);
         }
       };
 
@@ -166,7 +180,7 @@ class LiveTranscriptionService {
         }
 
         this.setStatus('error');
-        this.config!.onError?.(new Error(`Speech recognition error: ${event.error}`));
+        activeConfig.onError?.(new Error(`Speech recognition error: ${event.error}`));
 
         // Auto-restart for recoverable errors
         if (['network', 'aborted'].includes(event.error) && this.isListening) {
@@ -174,8 +188,8 @@ class LiveTranscriptionService {
             if (this.isListening && this.recognition) {
               try {
                 this.recognition.start();
-              } catch (e) {
-                // Already started
+              } catch (error) {
+                this.logRecognitionActionError('auto-restart', error);
               }
             }
           }, 1000);
@@ -187,8 +201,8 @@ class LiveTranscriptionService {
         if (this.isListening && this.recognition) {
           try {
             this.recognition.start();
-          } catch (e) {
-            // Already started or stopped
+          } catch (error) {
+            this.logRecognitionActionError('restart', error);
           }
         } else {
           this.setStatus('stopped');
@@ -202,7 +216,8 @@ class LiveTranscriptionService {
     } catch (error) {
       console.error('[Transcription] Start error:', error);
       this.setStatus('error');
-      config.onError?.(error as Error);
+      const normalizedError = error instanceof Error ? error : new Error(String(error));
+      config.onError?.(normalizedError);
       return false;
     }
   }
@@ -216,8 +231,8 @@ class LiveTranscriptionService {
     if (this.recognition) {
       try {
         this.recognition.stop();
-      } catch (e) {
-        // Already stopped
+      } catch (error) {
+        this.logRecognitionActionError('stop', error);
       }
       this.recognition = null;
     }
@@ -237,8 +252,8 @@ class LiveTranscriptionService {
         this.recognition.stop();
         this.isListening = false;
         this.setStatus('paused');
-      } catch (e) {
-        // Already stopped
+      } catch (error) {
+        this.logRecognitionActionError('pause', error);
       }
     }
   }
@@ -252,8 +267,8 @@ class LiveTranscriptionService {
         this.recognition.start();
         this.isListening = true;
         this.setStatus('listening');
-      } catch (e) {
-        // Already started
+      } catch (error) {
+        this.logRecognitionActionError('resume', error);
       }
     }
   }

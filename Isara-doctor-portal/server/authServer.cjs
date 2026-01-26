@@ -103,36 +103,14 @@ function generateJWT(user) {
 // ============================================================================
 // POSTGRESQL CONFIGURATION
 // ============================================================================
-const USE_POSTGRESQL = process.env.VITE_USE_POSTGRESQL === 'true' || process.env.USE_POSTGRESQL === 'true';
-const DEMO_MODE = process.env.DEMO_MODE === 'true' || process.env.NODE_ENV === 'demo';
+// PRODUCTION MODE - Always use PostgreSQL
+const USE_POSTGRESQL = true; // Always production mode
 let PostgresDataService = null;
 let pgPool = null;
 let DB_AVAILABLE = false;
 
-// Demo users for cloud deployment without database
-const DEMO_DOCTORS = [
-  {
-    id: 'demo_doctor_001',
-    doctor_id: 'demo_doctor_001',
-    email: 'demo.doctor@izara.health',
-    password_hash: '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4c1o3OXt3PjLAQWC', // demo123
-    name: 'Dr. Demo Doctor',
-    name_thai: 'นพ. แพทย์ทดสอบ',
-    role: 'doctor',
-    specialty: 'general-medicine',
-    specialty_thai: 'อายุรกรรมทั่วไป',
-    medical_license_number: 'DEMO-12345',
-    hospital_name: 'Izara Demo Hospital',
-    is_active: true,
-    is_approved: true,
-    avatar_url: 'https://i.pravatar.cc/150?u=demo_doctor_001'
-  }
-];
-
-// Demo sessions storage
-const DEMO_SESSIONS = new Map();
-
-if (USE_POSTGRESQL) {
+// Initialize PostgreSQL connection
+{
   try {
     PostgresDataService = require('./services/postgresDataService.cjs');
     const { Pool } = require('pg');
@@ -192,8 +170,6 @@ if (USE_POSTGRESQL) {
     console.error('❌ Failed to load PostgreSQL service:', error.message);
     console.log('⚠️ Falling back to GCS storage');
   }
-} else {
-  console.log('📦 Using GCS storage for authentication (USE_POSTGRESQL=false)');
 }
 
 const BUCKETS = {
@@ -297,11 +273,15 @@ io.on('connection', (socket) => {
   console.log(`🔌 WebSocket client connected: ${socket.id}`);
 
   socket.on('authenticate', async (token) => {
-    // Verify token and join user room
-    const session = await fetchFromGCS(BUCKETS.credentials, `sessions/${token}.json`);
-    if (session && session.userId) {
-      socket.join(`user-${session.userId}`);
-      console.log(`User ${session.userId} authenticated on socket ${socket.id}`);
+    // Verify token using PostgreSQL and join user room
+    if (!pgPool) {
+      console.log(`[WS] PostgreSQL not available for socket authentication`);
+      return;
+    }
+    const session = await pgValidateSession(token);
+    if (session && session.user_id) {
+      socket.join(`user-${session.user_id}`);
+      console.log(`User ${session.user_id} authenticated on socket ${socket.id}`);
     }
   });
 
@@ -491,6 +471,98 @@ async function pgUpdateLoginAttempts(userId, attempts, lockedUntil = null) {
 }
 
 // ============================================================================
+// PASSWORD RESET TOKEN HELPERS (PostgreSQL)
+// ============================================================================
+
+async function pgCreatePasswordResetToken(userId, email) {
+  if (!pgPool) return null;
+  try {
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+    
+    // Delete any existing tokens for this user
+    await pgPool.query('DELETE FROM password_reset_tokens WHERE user_id = $1', [userId]);
+    
+    // Create new token
+    await pgPool.query(
+      `INSERT INTO password_reset_tokens (id, user_id, token, expires_at, created_at)
+       VALUES ($1, $2, $3, $4, NOW())`,
+      [crypto.randomUUID(), userId, token, expiresAt]
+    );
+    
+    return { token, expiresAt: expiresAt.toISOString() };
+  } catch (err) {
+    console.error('PostgreSQL create password reset token error:', err.message);
+    return null;
+  }
+}
+
+async function pgVerifyPasswordResetToken(token) {
+  if (!pgPool) return null;
+  try {
+    const result = await pgPool.query(
+      `SELECT prt.*, u.email, u.name 
+       FROM password_reset_tokens prt
+       JOIN users u ON prt.user_id = u.id
+       WHERE prt.token = $1 AND prt.expires_at > NOW() AND prt.used_at IS NULL`,
+      [token]
+    );
+    return result.rows[0] || null;
+  } catch (err) {
+    console.error('PostgreSQL verify password reset token error:', err.message);
+    return null;
+  }
+}
+
+async function pgUsePasswordResetToken(token, newPasswordHash) {
+  if (!pgPool) return false;
+  try {
+    // Start transaction
+    const client = await pgPool.connect();
+    try {
+      await client.query('BEGIN');
+      
+      // Get token data
+      const tokenResult = await client.query(
+        `SELECT user_id FROM password_reset_tokens 
+         WHERE token = $1 AND expires_at > NOW() AND used_at IS NULL`,
+        [token]
+      );
+      
+      if (tokenResult.rows.length === 0) {
+        await client.query('ROLLBACK');
+        return false;
+      }
+      
+      const userId = tokenResult.rows[0].user_id;
+      
+      // Update password
+      await client.query(
+        'UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2',
+        [newPasswordHash, userId]
+      );
+      
+      // Mark token as used
+      await client.query(
+        'UPDATE password_reset_tokens SET used_at = NOW() WHERE token = $1',
+        [token]
+      );
+      
+      await client.query('COMMIT');
+      return true;
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  } catch (err) {
+    console.error('PostgreSQL use password reset token error:', err.message);
+    return false;
+  }
+}
+
+// ============================================================================
 // VERIFY GCS CONNECTION
 // ============================================================================
 
@@ -543,7 +615,7 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Register
+// Register - PostgreSQL implementation
 app.post('/auth/register', async (req, res) => {
   try {
     const { email, password, name, medicalLicenseNumber, specialty, dateOfBirth, phone, status } = req.body;
@@ -553,11 +625,22 @@ app.post('/auth/register', async (req, res) => {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    // Check if user already exists
-    const usersIndex = await fetchFromGCS(BUCKETS.credentials, 'users/index.json') || [];
-    const existingUser = usersIndex.find(u => u.email.toLowerCase() === email.toLowerCase());
+    // Check PostgreSQL availability
+    if (!pgPool) {
+      console.error('[AUTH] PostgreSQL connection not available for registration');
+      return res.status(503).json({ 
+        error: 'Database connection unavailable. Please try again later.',
+        code: 'DATABASE_UNAVAILABLE'
+      });
+    }
 
-    if (existingUser) {
+    // Check if user already exists
+    const existingUserResult = await pgPool.query(
+      'SELECT id FROM users WHERE LOWER(email) = LOWER($1)',
+      [email.trim()]
+    );
+
+    if (existingUserResult.rows.length > 0) {
       return res.status(409).json({ error: 'User already exists' });
     }
 
@@ -566,83 +649,39 @@ app.post('/auth/register', async (req, res) => {
 
     // Determine if pending approval
     const isPending = status === 'pending_approval';
+    const passwordHash = hashPassword(password);
 
-    // Create user credential
-    const userCredential = {
-      id: userId,
-      email: email.toLowerCase().trim(),
-      passwordHash: hashPassword(password),
-      role: 'doctor',
-      doctorId: userId,
-      medicalLicenseNumber,
-      isActive: !isPending, // Not active if pending
-      isApproved: !isPending, // Needs approval
-      approvalStatus: isPending ? 'pending' : 'approved',
-      emailVerified: false,
-      createdAt: new Date().toISOString(),
-      lastLogin: null,
-      loginAttempts: 0,
-      lockedUntil: null,
-      preferences: {
-        theme: 'light',
-        language: 'en',
-        notifications: {
-          email: true,
-          push: true,
-          sms: false
-        }
-      },
-      name,
-      phone,
-      dateOfBirth,
-      specialty
-    };
-
-    // Save user credential
-    await writeToGCS(BUCKETS.credentials, `users/${userId}.json`, userCredential);
-
-    // Update users index
-    usersIndex.push({
-      id: userId,
-      email: email.toLowerCase().trim(),
-      role: 'doctor',
-      isActive: !isPending,
-      approvalStatus: isPending ? 'pending' : 'approved'
-    });
-    await writeToGCS(BUCKETS.credentials, 'users/index.json', usersIndex);
-
-    // Create doctor profile
-    const doctors = await fetchFromGCS(BUCKETS.doctor, 'doctors.json') || [];
-    doctors.push({
-      id: userId,
-      name,
-      specialty: specialty || 'General Practice',
-      email,
-      medicalLicenseNumber,
-      avatarUrl: '',
-      rating: 0,
-      experience: '0 years',
-      qualifications: [],
-      availableSlots: [],
-      isApproved: !isPending
-    });
-    await writeToGCS(BUCKETS.doctor, 'doctors.json', doctors);
-
-    // Add to pending approvals if needed
-    if (isPending) {
-      const pendingApprovals = await fetchFromGCS(BUCKETS.credentials, 'pending-approvals.json') || [];
-      pendingApprovals.push({
+    // Insert user into PostgreSQL
+    const userResult = await pgPool.query(
+      `INSERT INTO users (id, email, password_hash, name, role, doctor_id, is_active, is_approved, approval_status, phone, date_of_birth, specialty, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW())
+       RETURNING *`,
+      [
         userId,
-        email: email.toLowerCase().trim(),
+        email.toLowerCase().trim(),
+        passwordHash,
         name,
-        medicalLicenseNumber,
-        specialty: specialty || 'General Practice',
-        requestedAt: new Date().toISOString(),
-        status: 'pending'
-      });
-      await writeToGCS(BUCKETS.credentials, 'pending-approvals.json', pendingApprovals);
+        'doctor',
+        userId, // doctor_id = user_id for doctors
+        !isPending, // is_active
+        !isPending, // is_approved
+        isPending ? 'pending' : 'approved',
+        phone || null,
+        dateOfBirth || null,
+        specialty || 'General Practice'
+      ]
+    );
 
-      // Send email notification to admin
+    // Insert doctor profile
+    await pgPool.query(
+      `INSERT INTO doctor_profiles (doctor_id, specialty, qualifications, hospital_name, created_at)
+       VALUES ($1, $2, $3, $4, NOW())
+       ON CONFLICT (doctor_id) DO UPDATE SET specialty = $2, qualifications = $3, hospital_name = $4`,
+      [userId, specialty || 'General Practice', medicalLicenseNumber, '']
+    );
+
+    // Send email notification to admin if pending
+    if (isPending) {
       try {
         await emailService.sendAdminNotification(ADMIN_EMAIL, {
           name,
@@ -664,8 +703,22 @@ app.post('/auth/register', async (req, res) => {
       email: email.toLowerCase().trim(),
       role: 'doctor',
       isPending,
-      ip: getClientIP(req)
+      ip: getClientIP(req),
+      source: 'PostgreSQL'
     });
+
+    const userCredential = {
+      id: userId,
+      email: email.toLowerCase().trim(),
+      name,
+      role: 'doctor',
+      doctorId: userId,
+      medicalLicenseNumber,
+      isActive: !isPending,
+      isApproved: !isPending,
+      approvalStatus: isPending ? 'pending' : 'approved',
+      specialty: specialty || 'General Practice'
+    };
 
     res.json({
       success: true,
@@ -732,91 +785,20 @@ app.post('/auth/login',
     }
 
     // ========================================================================
-    // DEMO MODE - Use in-memory mock data when PostgreSQL unavailable
+    // PostgreSQL PRODUCTION login (always use PostgreSQL)
     // ========================================================================
-    // Check if DEMO_MODE is explicitly enabled (for cloud deployments without database)
-    if (DEMO_MODE) {
-      console.log('[AUTH] Using DEMO MODE for login (DEMO_MODE=true)');
-      
-      // Find demo user
-      const demoUser = DEMO_DOCTORS.find(u => u.email.toLowerCase() === email.toLowerCase());
-      
-      if (!demoUser) {
-        // Accept any email in demo mode with password 'demo123'
-        if (password === 'demo123') {
-          const demoId = `demo_doctor_${Date.now()}`;
-          const token = generateJWT({
-            id: demoId,
-            email,
-            role: 'doctor',
-            name: email.split('@')[0],
-            doctor_id: demoId
-          });
-          
-          DEMO_SESSIONS.set(token, { userId: demoId, email, expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) });
-          
-          return res.json({
-            user: {
-              id: demoId,
-              doctorId: demoId,
-              email,
-              name: email.split('@')[0],
-              role: 'doctor',
-              specialty: 'general-medicine',
-              avatarUrl: `https://i.pravatar.cc/150?u=${demoId}`
-            },
-            token,
-            demoMode: true
-          });
-        }
-        return res.status(401).json({ error: 'Invalid credentials', code: 'INVALID_CREDENTIALS' });
-      }
-      
-      // Verify password for demo user
-      const passwordValid = await bcrypt.compare(password, demoUser.password_hash);
-      if (!passwordValid && password !== 'demo123') {
-        return res.status(401).json({ error: 'Invalid credentials', code: 'INVALID_CREDENTIALS' });
-      }
-      
-      // Generate token for demo user
-      const token = generateJWT({
-        id: demoUser.id,
-        email: demoUser.email,
-        role: demoUser.role,
-        name: demoUser.name,
-        doctor_id: demoUser.doctor_id
-      });
-      
-      DEMO_SESSIONS.set(token, { userId: demoUser.id, email: demoUser.email, expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) });
-      
-      return res.json({
-        user: {
-          id: demoUser.id,
-          doctorId: demoUser.doctor_id,
-          email: demoUser.email,
-          name: demoUser.name,
-          nameThai: demoUser.name_thai,
-          role: demoUser.role,
-          specialty: demoUser.specialty,
-          specialtyThai: demoUser.specialty_thai,
-          hospitalName: demoUser.hospital_name,
-          medicalLicenseNumber: demoUser.medical_license_number,
-          avatarUrl: demoUser.avatar_url,
-          isApproved: demoUser.is_approved
-        },
-        token,
-        demoMode: true
+    if (!pgPool) {
+      console.error('[AUTH] PostgreSQL connection not available');
+      return res.status(503).json({ 
+        error: 'Database connection unavailable. Please try again later.',
+        code: 'DATABASE_UNAVAILABLE'
       });
     }
-
-    // ========================================================================
-    // PostgreSQL-first login (when USE_POSTGRESQL=true)
-    // ========================================================================
-    if (USE_POSTGRESQL && pgPool) {
-      console.log('[AUTH] Using PostgreSQL for login');
-      
-      // Find user by email
-      const user = await pgFindUserByEmail(email);
+    
+    console.log('[AUTH] Using PostgreSQL for login');
+    
+    // Find user by email
+    const user = await pgFindUserByEmail(email);
       
       if (!user) {
         trackLoginAttempt(email, false);
@@ -920,234 +902,7 @@ app.post('/auth/login',
         }),
         expiresAt: expiresAt
       });
-    }
 
-    // ========================================================================
-    // Fallback to GCS-based login
-    // ========================================================================
-    console.log('[AUTH] Using GCS for login');
-    
-    // Find user by email
-    const usersIndex = await fetchFromGCS(BUCKETS.credentials, 'users/index.json') || [];
-    const userRef = usersIndex.find(u => u.email.toLowerCase() === email.toLowerCase());
-
-    if (!userRef) {
-      // A07 - Track failed attempt even for non-existent users (prevent enumeration)
-      trackLoginAttempt(email, false);
-      securityAuditLog({
-        event: 'LOGIN_FAILED_USER_NOT_FOUND',
-        severity: 'WARN',
-        email,
-        ip: getClientIP(req)
-      });
-      // A07 - Generic error message to prevent user enumeration
-      return res.status(401).json({ error: 'Invalid credentials', code: 'INVALID_CREDENTIALS' });
-    }
-
-    // Fetch full user credential
-    const userCredential = await fetchFromGCS(BUCKETS.credentials, `users/${userRef.id}.json`);
-
-    if (!userCredential) {
-      trackLoginAttempt(email, false);
-      return res.status(401).json({ error: 'Invalid credentials', code: 'INVALID_CREDENTIALS' });
-    }
-
-    // Check if account is rejected
-    if (userCredential.approvalStatus === 'rejected') {
-      securityAuditLog({
-        event: 'LOGIN_ATTEMPT_REJECTED_ACCOUNT',
-        severity: 'WARN',
-        userId: userRef.id,
-        email,
-        ip: getClientIP(req)
-      });
-      return res.status(403).json({ 
-        error: 'Account application was rejected',
-        code: 'ACCOUNT_REJECTED',
-        message: userCredential.rejectionReason || 'Your account application was not approved. Please contact administrator for more information.'
-      });
-    }
-
-    // Check if account is pending approval
-    // Only block if explicitly pending - allow if approvalStatus is 'approved' or missing (legacy accounts)
-    const isPendingApproval = userCredential.approvalStatus === 'pending' || 
-                              (userCredential.isApproved === false && userCredential.approvalStatus !== 'approved');
-    if (isPendingApproval) {
-      securityAuditLog({
-        event: 'LOGIN_ATTEMPT_PENDING_ACCOUNT',
-        severity: 'INFO',
-        userId: userRef.id,
-        email,
-        ip: getClientIP(req)
-      });
-      return res.status(403).json({ 
-        error: 'Account pending approval',
-        code: 'PENDING_APPROVAL',
-        message: 'Your account is awaiting administrator approval. You will receive an email once approved.'
-      });
-    }
-
-    // Check if account is locked (persisted lock from GCS)
-    if (userCredential.lockedUntil) {
-      const lockTime = new Date(userCredential.lockedUntil);
-      if (lockTime > new Date()) {
-        const remainingTime = Math.ceil((lockTime - Date.now()) / 1000);
-        return res.status(423).json({
-          error: 'Account is locked',
-          code: 'ACCOUNT_LOCKED',
-          lockedUntil: userCredential.lockedUntil,
-          remainingTime
-        });
-      }
-    }
-
-    // Check if account is active (only block if explicitly set to false)
-    if (userCredential.isActive === false) {
-      securityAuditLog({
-        event: 'LOGIN_ATTEMPT_INACTIVE_ACCOUNT',
-        severity: 'WARN',
-        userId: userRef.id,
-        email,
-        ip: getClientIP(req)
-      });
-      return res.status(403).json({ 
-        error: 'Account is deactivated. Please contact administrator.',
-        code: 'ACCOUNT_DEACTIVATED'
-      });
-    }
-
-    // A04 - Verify password using bcrypt (timing-safe)
-    if (!verifyPassword(password, userCredential.passwordHash)) {
-      // A07 - Track failed login attempt
-      userCredential.loginAttempts = (userCredential.loginAttempts || 0) + 1;
-
-      // A07 - Lock account after 5 failed attempts (persist to GCS)
-      if (userCredential.loginAttempts >= 5) {
-        const lockUntil = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes
-        userCredential.lockedUntil = lockUntil.toISOString();
-        
-        securityAuditLog({
-          event: 'ACCOUNT_LOCKED_FAILED_ATTEMPTS',
-          severity: 'HIGH',
-          userId: userRef.id,
-          email,
-          ip: getClientIP(req),
-          attempts: userCredential.loginAttempts
-        });
-      }
-
-      // Try to persist failed login attempt (non-blocking)
-      try {
-        await writeToGCS(BUCKETS.credentials, `users/${userRef.id}.json`, userCredential);
-      } catch (writeError) {
-        console.log('Warning: Could not persist failed login attempt:', writeError.message);
-      }
-
-      return res.status(401).json({ error: 'Invalid credentials' });
-    }
-
-    // Reset login attempts
-    userCredential.loginAttempts = 0;
-    userCredential.lockedUntil = null;
-    userCredential.lastLogin = new Date().toISOString();
-    
-    // Try to update user credential (non-critical - don't fail login if this fails)
-    try {
-      await writeToGCS(BUCKETS.credentials, `users/${userRef.id}.json`, userCredential);
-    } catch (writeError) {
-      console.log('Warning: Could not update user credential after login:', writeError.message);
-    }
-
-    // Create session with device binding
-    const sessionToken = generateToken();
-    const clientIP = getClientIP(req);
-    const session = {
-      id: sessionToken,
-      userId: userRef.id,
-      email: userCredential.email,
-      role: userCredential.role,
-      createdAt: new Date().toISOString(),
-      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours absolute
-      lastActivity: new Date().toISOString(),
-      // A07 - Session binding for security - bind to device/IP
-      ip: clientIP,
-      userAgent: (clientUserAgent || req.headers['user-agent'])?.substring(0, 200),
-      deviceId: deviceId || 'unknown',
-      isValid: true
-    };
-
-    // Session write is critical but we should try to make it work
-    try {
-      await writeToGCS(BUCKETS.credentials, `sessions/${sessionToken}.json`, session);
-    } catch (sessionWriteError) {
-      console.log('Warning: Could not persist session to GCS:', sessionWriteError.message);
-      // Continue anyway - session will be in-memory only
-    }
-
-    // Invalidate other sessions from different devices/IPs for this user (security measure)
-    // This ensures one user can only be logged in from one device at a time
-    try {
-      const userSessionsPath = `user-sessions/${userRef.id}.json`;
-      let userSessions = await fetchFromGCS(BUCKETS.credentials, userSessionsPath) || [];
-      
-      // Mark old sessions from different devices as invalid
-      for (const oldSessionId of userSessions) {
-        if (oldSessionId !== sessionToken) {
-          const oldSession = await fetchFromGCS(BUCKETS.credentials, `sessions/${oldSessionId}.json`);
-          if (oldSession && oldSession.isValid && (oldSession.deviceId !== deviceId || oldSession.ip !== clientIP)) {
-            oldSession.isValid = false;
-            oldSession.invalidatedBy = 'new_device_login';
-            oldSession.invalidatedAt = new Date().toISOString();
-            await writeToGCS(BUCKETS.credentials, `sessions/${oldSessionId}.json`, oldSession);
-            console.log(`🔒 Invalidated old session ${oldSessionId} due to new device login`);
-          }
-        }
-      }
-      
-      // Update user sessions list
-      userSessions = [sessionToken];
-      await writeToGCS(BUCKETS.credentials, userSessionsPath, userSessions);
-    } catch (e) {
-      console.log('Could not manage user sessions:', e.message);
-    }
-
-    // A07 - Track successful login
-    trackLoginAttempt(email, true);
-
-    // A09 - Log successful login
-    securityAuditLog({
-      event: 'LOGIN_SUCCESS',
-      severity: 'INFO',
-      userId: userRef.id,
-      email,
-      role: userCredential.role,
-      ip: getClientIP(req)
-    });
-
-    // Log login history (non-blocking - don't fail login if this fails)
-    try {
-      const loginHistory = await fetchFromGCS(BUCKETS.credentials, `login-history/${userRef.id}.json`) || [];
-      loginHistory.push({
-        timestamp: new Date().toISOString(),
-        success: true,
-        ip: getClientIP(req),
-        userAgent: req.headers['user-agent']?.substring(0, 100)
-      });
-      // Keep only last 100 entries
-      if (loginHistory.length > 100) {
-        loginHistory.splice(0, loginHistory.length - 100);
-      }
-      await writeToGCS(BUCKETS.credentials, `login-history/${userRef.id}.json`, loginHistory);
-    } catch (historyError) {
-      console.log('Warning: Could not update login history:', historyError.message);
-    }
-
-    res.json({
-      success: true,
-      token: sessionToken,
-      user: sanitizeUser(userCredential),
-      expiresAt: session.expiresAt
-    });
   } catch (error) {
     console.error('Login error:', error);
     // A10 - Safe error response
@@ -1161,42 +916,29 @@ app.post('/auth/login',
   }
 });
 
-// Logout - A07 Proper session termination
+// Logout - A07 Proper session termination (PostgreSQL-only)
 app.post('/auth/logout', async (req, res) => {
   try {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
 
+    if (!pgPool) {
+      console.error('[AUTH] PostgreSQL connection not available for logout');
+      return res.status(503).json({ 
+        error: 'Database connection unavailable. Please try again later.',
+        code: 'DATABASE_UNAVAILABLE'
+      });
+    }
+
     if (token) {
-      // PostgreSQL-first session invalidation
-      if (USE_POSTGRESQL && pgPool) {
-        await pgInvalidateSession(token);
-        securityAuditLog({
-          event: 'LOGOUT_SUCCESS',
-          severity: 'INFO',
-          sessionId: token,
-          ip: getClientIP(req),
-          source: 'PostgreSQL'
-        });
-        return res.json({ success: true, message: 'Logged out successfully' });
-      }
-      
-      // Fallback to GCS
-      // A07 - Invalidate session by marking it as logged out
-      const session = await fetchFromGCS(BUCKETS.credentials, `sessions/${token}.json`);
-      if (session) {
-        session.loggedOutAt = new Date().toISOString();
-        session.isValid = false;
-        await writeToGCS(BUCKETS.credentials, `sessions/${token}.json`, session);
-        
-        securityAuditLog({
-          event: 'LOGOUT_SUCCESS',
-          severity: 'INFO',
-          userId: session.userId,
-          sessionId: token,
-          ip: getClientIP(req)
-        });
-      }
+      await pgInvalidateSession(token);
+      securityAuditLog({
+        event: 'LOGOUT_SUCCESS',
+        severity: 'INFO',
+        sessionId: token,
+        ip: getClientIP(req),
+        source: 'PostgreSQL'
+      });
     }
 
     res.json({ success: true, message: 'Logged out successfully' });
@@ -1210,7 +952,7 @@ app.post('/auth/logout', async (req, res) => {
 // PASSWORD RESET ROUTES - A07 Secure password reset
 // ============================================================================
 
-// Request password reset - with rate limiting
+// Request password reset - with rate limiting (PostgreSQL-only)
 app.post('/auth/request-password-reset',
   rateLimit({
     windowMs: 60 * 60 * 1000, // 1 hour
@@ -1230,12 +972,19 @@ app.post('/auth/request-password-reset',
       return res.status(400).json({ error: 'Invalid email format', code: 'INVALID_EMAIL' });
     }
 
-    // Find user by email
-    const usersIndex = await fetchFromGCS(BUCKETS.credentials, 'users/index.json') || [];
-    const userRef = usersIndex.find(u => u.email.toLowerCase() === email.toLowerCase());
+    if (!pgPool) {
+      console.error('[AUTH] PostgreSQL connection not available for password reset');
+      return res.status(503).json({ 
+        error: 'Database connection unavailable. Please try again later.',
+        code: 'DATABASE_UNAVAILABLE'
+      });
+    }
+
+    // Find user by email using PostgreSQL
+    const user = await pgFindUserByEmail(email);
 
     // A07 - Always return same response to prevent user enumeration
-    if (!userRef) {
+    if (!user) {
       securityAuditLog({
         event: 'PASSWORD_RESET_REQUEST_UNKNOWN_EMAIL',
         severity: 'INFO',
@@ -1245,28 +994,19 @@ app.post('/auth/request-password-reset',
       return res.json({ success: true, message: 'If the email exists, a reset link will be sent.' });
     }
 
-    // Generate reset token with cryptographically secure random
-    const resetToken = generateToken();
-    const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // 1 hour
+    // Create password reset token in PostgreSQL
+    const tokenResult = await pgCreatePasswordResetToken(user.id, email);
+    
+    if (!tokenResult) {
+      console.error('[AUTH] Failed to create password reset token');
+      return res.status(500).json({ error: 'Failed to create reset token', code: 'TOKEN_ERROR' });
+    }
 
-    // Store reset token
-    const resetData = {
-      userId: userRef.id,
-      email: email.toLowerCase().trim(),
-      token: resetToken,
-      createdAt: new Date().toISOString(),
-      expiresAt,
-      used: false
-    };
-
-    await writeToGCS(BUCKETS.credentials, `password-resets/${resetToken}.json`, resetData);
+    const { token: resetToken, expiresAt } = tokenResult;
 
     // Send password reset email
     try {
-      // Fetch user to get name
-      const userCredential = await fetchFromGCS(BUCKETS.credentials, `users/${userRef.id}.json`);
-      const userName = userCredential?.name || 'Doctor';
-      
+      const userName = user.name || 'Doctor';
       await emailService.sendPasswordResetEmail(email, resetToken, userName);
       console.log(`📧 Password reset email sent to: ${email}`);
     } catch (emailError) {
@@ -1280,19 +1020,28 @@ app.post('/auth/request-password-reset',
     console.log(`   Reset Link: http://localhost:3010/reset-password?token=${resetToken}`);
     console.log(`   Expires: ${expiresAt}\n`);
 
+    securityAuditLog({
+      event: 'PASSWORD_RESET_REQUESTED',
+      severity: 'INFO',
+      userId: user.id,
+      email,
+      ip: getClientIP(req),
+      source: 'PostgreSQL'
+    });
+
     res.json({ 
       success: true, 
       message: 'Password reset link sent to your email.',
       // For development only - remove in production
-      devToken: resetToken
+      devToken: process.env.NODE_ENV !== 'production' ? resetToken : undefined
     });
   } catch (error) {
     console.error('Password reset request error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Password reset request failed. Please try again.' });
   }
 });
 
-// Verify reset token (check if valid before showing reset form)
+// Verify reset token (check if valid before showing reset form) - PostgreSQL-only
 app.get('/auth/verify-reset-token/:token', async (req, res) => {
   try {
     const { token } = req.params;
@@ -1301,29 +1050,30 @@ app.get('/auth/verify-reset-token/:token', async (req, res) => {
       return res.status(400).json({ valid: false, error: 'Token is required' });
     }
 
-    // Fetch reset token data
-    const resetData = await fetchFromGCS(BUCKETS.credentials, `password-resets/${token}.json`);
+    if (!pgPool) {
+      console.error('[AUTH] PostgreSQL connection not available for token verification');
+      return res.status(503).json({ 
+        valid: false, 
+        error: 'Database connection unavailable. Please try again later.',
+        code: 'DATABASE_UNAVAILABLE'
+      });
+    }
 
-    if (!resetData) {
+    // Verify token in PostgreSQL
+    const tokenData = await pgVerifyPasswordResetToken(token);
+
+    if (!tokenData) {
       return res.status(400).json({ valid: false, error: 'Invalid or expired reset token' });
     }
 
-    if (resetData.used) {
-      return res.status(400).json({ valid: false, error: 'Reset token has already been used' });
-    }
-
-    if (new Date(resetData.expiresAt) < new Date()) {
-      return res.status(400).json({ valid: false, error: 'Reset token has expired' });
-    }
-
-    res.json({ valid: true, email: resetData.email });
+    res.json({ valid: true, email: tokenData.email });
   } catch (error) {
     console.error('Token verification error:', error);
     res.status(500).json({ valid: false, error: 'Failed to verify token' });
   }
 });
 
-// Reset password with token
+// Reset password with token - PostgreSQL-only
 app.post('/auth/reset-password', async (req, res) => {
   try {
     const { token, newPassword } = req.body;
@@ -1336,41 +1086,42 @@ app.post('/auth/reset-password', async (req, res) => {
       return res.status(400).json({ error: 'Password must be at least 8 characters' });
     }
 
-    // Fetch reset token data
-    const resetData = await fetchFromGCS(BUCKETS.credentials, `password-resets/${token}.json`);
+    if (!pgPool) {
+      console.error('[AUTH] PostgreSQL connection not available for password reset');
+      return res.status(503).json({ 
+        error: 'Database connection unavailable. Please try again later.',
+        code: 'DATABASE_UNAVAILABLE'
+      });
+    }
 
-    if (!resetData) {
+    // Verify token first
+    const tokenData = await pgVerifyPasswordResetToken(token);
+
+    if (!tokenData) {
       return res.status(400).json({ error: 'Invalid or expired reset token' });
     }
 
-    if (resetData.used) {
-      return res.status(400).json({ error: 'Reset token has already been used' });
+    // Hash new password and update in transaction
+    const newPasswordHash = hashPassword(newPassword);
+    const success = await pgUsePasswordResetToken(token, newPasswordHash);
+
+    if (!success) {
+      return res.status(400).json({ error: 'Failed to reset password. Token may be invalid or expired.' });
     }
 
-    if (new Date(resetData.expiresAt) < new Date()) {
-      return res.status(400).json({ error: 'Reset token has expired' });
-    }
-
-    // Fetch user
-    const userCredential = await fetchFromGCS(BUCKETS.credentials, `users/${resetData.userId}.json`);
-
-    if (!userCredential) {
-      return res.status(400).json({ error: 'User not found' });
-    }
-
-    // Update password
-    userCredential.passwordHash = hashPassword(newPassword);
-    await writeToGCS(BUCKETS.credentials, `users/${resetData.userId}.json`, userCredential);
-
-    // Mark token as used
-    resetData.used = true;
-    resetData.usedAt = new Date().toISOString();
-    await writeToGCS(BUCKETS.credentials, `password-resets/${token}.json`, resetData);
+    securityAuditLog({
+      event: 'PASSWORD_RESET_SUCCESS',
+      severity: 'INFO',
+      userId: tokenData.user_id,
+      email: tokenData.email,
+      ip: getClientIP(req),
+      source: 'PostgreSQL'
+    });
 
     res.json({ success: true, message: 'Password has been reset successfully' });
   } catch (error) {
     console.error('Password reset error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Password reset failed. Please try again.' });
   }
 });
 
@@ -1393,17 +1144,19 @@ app.post('/auth/send-email', async (req, res) => {
     console.log(`   Body: ${body.substring(0, 100)}...`);
     console.log(`   Sent at: ${new Date().toISOString()}\n`);
 
-    // Store email in GCS for tracking
-    const emailLog = await fetchFromGCS(BUCKETS.credentials, 'email-logs.json') || [];
-    emailLog.push({
-      id: `EMAIL-${Date.now()}`,
-      to,
-      subject,
-      body,
-      sentAt: new Date().toISOString(),
-      status: 'sent'
-    });
-    await writeToGCS(BUCKETS.credentials, 'email-logs.json', emailLog);
+    // Store email log in PostgreSQL if available
+    if (pgPool) {
+      try {
+        await pgPool.query(
+          `INSERT INTO email_logs (id, recipient, subject, body, sent_at, status)
+           VALUES ($1, $2, $3, $4, NOW(), $5)`,
+          [`EMAIL-${Date.now()}`, to, subject, body.substring(0, 5000), 'sent']
+        );
+      } catch (dbError) {
+        // Don't fail the request if email logging fails
+        console.warn('[AUTH] Failed to log email to PostgreSQL:', dbError.message);
+      }
+    }
 
     // In production, integrate with Gmail API using VITE_GOOGLE_GMAIL_API_KEY
     // For now, just log and return success
@@ -1419,61 +1172,67 @@ app.post('/auth/send-email', async (req, res) => {
 // ADMIN APPROVAL ROUTES
 // ============================================================================
 
-// Get all doctor users for admin management
+// Get all doctor users for admin management - PostgreSQL implementation
 app.get('/admin/pending-doctors', async (req, res) => {
   try {
-    // Fetch users index to get all users
-    const usersIndex = await fetchFromGCS(BUCKETS.credentials, 'users/index.json') || [];
-    
-    // Filter to get only doctor users (not admin)
+    // Check PostgreSQL availability
+    if (!pgPool) {
+      console.error('[AUTH] PostgreSQL connection not available for pending doctors');
+      return res.status(503).json({ 
+        error: 'Database connection unavailable. Please try again later.',
+        code: 'DATABASE_UNAVAILABLE'
+      });
+    }
+
+    // Fetch all doctor users from PostgreSQL
+    const result = await pgPool.query(
+      `SELECT u.id, u.email, u.name, u.phone, u.role, u.is_active, u.is_approved, 
+              u.approval_status, u.created_at, u.last_login, u.specialty,
+              u.approved_at, u.approved_by, u.rejected_at, u.rejected_by,
+              dp.specialty as doctor_specialty, dp.qualifications, dp.hospital_name
+       FROM users u
+       LEFT JOIN doctor_profiles dp ON dp.doctor_id = u.id
+       WHERE u.role = 'doctor'
+       ORDER BY u.created_at DESC`
+    );
+
     const doctorUsers = [];
     const approvalHistory = [];
-    
-    for (const userEntry of usersIndex) {
-      if (userEntry.role === 'doctor') {
-        try {
-          // Fetch full user details
-          const userDetails = await fetchFromGCS(BUCKETS.credentials, `users/${userEntry.id}.json`);
-          if (userDetails) {
-            const doctorInfo = {
-              id: userDetails.id,
-              email: userDetails.email,
-              name: userDetails.name || 'Unknown',
-              specialty: userDetails.specialty || 'General Practice',
-              medicalLicenseNumber: userDetails.medicalLicenseNumber || 'N/A',
-              phone: userDetails.phone || '',
-              createdAt: userDetails.createdAt || new Date().toISOString(),
-              approvalStatus: userDetails.approvalStatus || (userDetails.isActive ? 'approved' : 'pending'),
-              isActive: userDetails.isActive !== false,
-              qualifications: userDetails.qualifications || [],
-              experience: userDetails.experience || '',
-              hospital: userDetails.hospital || '',
-              lastLogin: userDetails.lastLogin || null,
-            };
-            
-            // Categorize by approval status
-            if (doctorInfo.approvalStatus === 'approved' || doctorInfo.approvalStatus === 'rejected') {
-              approvalHistory.push({
-                ...doctorInfo,
-                processedAt: userDetails.approvedAt || userDetails.rejectedAt || userDetails.createdAt,
-                processedBy: userDetails.approvedBy || userDetails.rejectedBy || 'system'
-              });
-            }
-            
-            doctorUsers.push(doctorInfo);
-          }
-        } catch (err) {
-          console.error(`Error fetching user ${userEntry.id}:`, err.message);
-        }
+
+    for (const row of result.rows) {
+      const doctorInfo = {
+        id: row.id,
+        email: row.email,
+        name: row.name || 'Unknown',
+        specialty: row.doctor_specialty || row.specialty || 'General Practice',
+        medicalLicenseNumber: row.qualifications || 'N/A',
+        phone: row.phone || '',
+        createdAt: row.created_at?.toISOString() || new Date().toISOString(),
+        approvalStatus: row.approval_status || (row.is_active ? 'approved' : 'pending'),
+        isActive: row.is_active !== false,
+        qualifications: row.qualifications ? [row.qualifications] : [],
+        experience: '',
+        hospital: row.hospital_name || '',
+        lastLogin: row.last_login?.toISOString() || null,
+      };
+
+      // Categorize by approval status
+      if (doctorInfo.approvalStatus === 'approved' || doctorInfo.approvalStatus === 'rejected') {
+        approvalHistory.push({
+          ...doctorInfo,
+          processedAt: row.approved_at?.toISOString() || row.rejected_at?.toISOString() || row.created_at?.toISOString(),
+          processedBy: row.approved_by || row.rejected_by || 'system'
+        });
       }
+
+      doctorUsers.push(doctorInfo);
     }
-    
-    // Sort by creation date (newest first)
-    doctorUsers.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    // Sort approval history
     approvalHistory.sort((a, b) => new Date(b.processedAt) - new Date(a.processedAt));
-    
-    console.log(`[Admin] Fetched ${doctorUsers.length} doctor users`);
-    
+
+    console.log(`[Admin] Fetched ${doctorUsers.length} doctor users from PostgreSQL`);
+
     res.json({ 
       success: true, 
       doctors: doctorUsers,
@@ -1486,64 +1245,69 @@ app.get('/admin/pending-doctors', async (req, res) => {
   }
 });
 
-// Auth-prefixed admin endpoint for frontend compatibility (VITE_AUTH_URL includes /auth)
+// Auth-prefixed admin endpoint for frontend compatibility - PostgreSQL implementation
 app.get('/auth/admin/pending-doctors', async (req, res) => {
   try {
-    // Fetch users index to get all users
-    const usersIndex = await fetchFromGCS(BUCKETS.credentials, 'users/index.json') || [];
-    
-    // Include all doctor users (including admins who are also doctors)
+    // Check PostgreSQL availability
+    if (!pgPool) {
+      console.error('[AUTH] PostgreSQL connection not available for pending doctors');
+      return res.status(503).json({ 
+        error: 'Database connection unavailable. Please try again later.',
+        code: 'DATABASE_UNAVAILABLE'
+      });
+    }
+
+    // Fetch all doctor and admin users from PostgreSQL
+    const result = await pgPool.query(
+      `SELECT u.id, u.email, u.name, u.phone, u.role, u.is_active, u.is_approved, u.is_admin,
+              u.approval_status, u.created_at, u.last_login, u.specialty,
+              u.approved_at, u.approved_by, u.rejected_at, u.rejected_by,
+              dp.specialty as doctor_specialty, dp.qualifications, dp.hospital_name
+       FROM users u
+       LEFT JOIN doctor_profiles dp ON dp.doctor_id = u.id
+       WHERE u.role IN ('doctor', 'admin')
+       ORDER BY u.created_at DESC`
+    );
+
     const doctorUsers = [];
     const approvalHistory = [];
-    
-    for (const userEntry of usersIndex) {
-      // Include both 'doctor' role and 'admin' role users (admins can also be doctors)
-      if (userEntry.role === 'doctor' || userEntry.role === 'admin') {
-        try {
-          // Fetch full user details
-          const userDetails = await fetchFromGCS(BUCKETS.credentials, `users/${userEntry.id}.json`);
-          if (userDetails) {
-            const doctorInfo = {
-              id: userDetails.id,
-              email: userDetails.email,
-              name: userDetails.name || 'Unknown',
-              specialty: userDetails.specialty || 'General Practice',
-              medicalLicenseNumber: userDetails.medicalLicenseNumber || 'N/A',
-              phone: userDetails.phone || '',
-              createdAt: userDetails.createdAt || new Date().toISOString(),
-              approvalStatus: userDetails.approvalStatus || (userDetails.isActive ? 'approved' : 'pending'),
-              isActive: userDetails.isActive !== false,
-              isAdmin: userDetails.isAdmin || userDetails.role === 'admin',
-              role: userDetails.role || 'doctor',
-              qualifications: userDetails.qualifications || [],
-              experience: userDetails.experience || '',
-              hospital: userDetails.hospital || '',
-              lastLogin: userDetails.lastLogin || null,
-            };
-            
-            // Categorize by approval status
-            if (doctorInfo.approvalStatus === 'approved' || doctorInfo.approvalStatus === 'rejected') {
-              approvalHistory.push({
-                ...doctorInfo,
-                processedAt: userDetails.approvedAt || userDetails.rejectedAt || userDetails.createdAt,
-                processedBy: userDetails.approvedBy || userDetails.rejectedBy || 'system'
-              });
-            }
-            
-            doctorUsers.push(doctorInfo);
-          }
-        } catch (err) {
-          console.error(`Error fetching user ${userEntry.id}:`, err.message);
-        }
+
+    for (const row of result.rows) {
+      const doctorInfo = {
+        id: row.id,
+        email: row.email,
+        name: row.name || 'Unknown',
+        specialty: row.doctor_specialty || row.specialty || 'General Practice',
+        medicalLicenseNumber: row.qualifications || 'N/A',
+        phone: row.phone || '',
+        createdAt: row.created_at?.toISOString() || new Date().toISOString(),
+        approvalStatus: row.approval_status || (row.is_active ? 'approved' : 'pending'),
+        isActive: row.is_active !== false,
+        isAdmin: row.is_admin || row.role === 'admin',
+        role: row.role || 'doctor',
+        qualifications: row.qualifications ? [row.qualifications] : [],
+        experience: '',
+        hospital: row.hospital_name || '',
+        lastLogin: row.last_login?.toISOString() || null,
+      };
+
+      // Categorize by approval status
+      if (doctorInfo.approvalStatus === 'approved' || doctorInfo.approvalStatus === 'rejected') {
+        approvalHistory.push({
+          ...doctorInfo,
+          processedAt: row.approved_at?.toISOString() || row.rejected_at?.toISOString() || row.created_at?.toISOString(),
+          processedBy: row.approved_by || row.rejected_by || 'system'
+        });
       }
+
+      doctorUsers.push(doctorInfo);
     }
-    
-    // Sort by creation date (newest first)
-    doctorUsers.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    // Sort approval history
     approvalHistory.sort((a, b) => new Date(b.processedAt) - new Date(a.processedAt));
-    
-    console.log(`[Admin] Fetched ${doctorUsers.length} doctor users (via /auth/admin/pending-doctors)`);
-    
+
+    console.log(`[Admin] Fetched ${doctorUsers.length} doctor users (via /auth/admin/pending-doctors) from PostgreSQL`);
+
     res.json({ 
       success: true, 
       doctors: doctorUsers,
@@ -1556,7 +1320,7 @@ app.get('/auth/admin/pending-doctors', async (req, res) => {
   }
 });
 
-// Auth-prefixed admin approve endpoint
+// Auth-prefixed admin approve endpoint - PostgreSQL implementation
 app.post('/auth/admin/approve-doctor', async (req, res) => {
   try {
     const { userId, adminId } = req.body;
@@ -1565,41 +1329,52 @@ app.post('/auth/admin/approve-doctor', async (req, res) => {
       return res.status(400).json({ error: 'User ID is required' });
     }
 
-    const userCredential = await fetchFromGCS(BUCKETS.credentials, `users/${userId}.json`);
-    if (!userCredential) {
+    // Check PostgreSQL availability
+    if (!pgPool) {
+      console.error('[AUTH] PostgreSQL connection not available for doctor approval');
+      return res.status(503).json({ 
+        error: 'Database connection unavailable. Please try again later.',
+        code: 'DATABASE_UNAVAILABLE'
+      });
+    }
+
+    // Fetch user from PostgreSQL
+    const userResult = await pgPool.query('SELECT * FROM users WHERE id = $1', [userId]);
+    if (userResult.rows.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    userCredential.isActive = true;
-    userCredential.isApproved = true;
-    userCredential.approvalStatus = 'approved';
-    userCredential.approvedAt = new Date().toISOString();
-    userCredential.approvedBy = adminId || 'admin';
+    const user = userResult.rows[0];
 
-    await writeToGCS(BUCKETS.credentials, `users/${userId}.json`, userCredential);
-
-    // Update users index
-    const usersIndex = await fetchFromGCS(BUCKETS.credentials, 'users/index.json') || [];
-    const userIndex = usersIndex.findIndex(u => u.id === userId);
-    if (userIndex >= 0) {
-      usersIndex[userIndex].isActive = true;
-      usersIndex[userIndex].approvalStatus = 'approved';
-      await writeToGCS(BUCKETS.credentials, 'users/index.json', usersIndex);
-    }
+    // Update user approval status
+    await pgPool.query(
+      `UPDATE users SET is_active = true, is_approved = true, approval_status = 'approved',
+       approved_at = NOW(), approved_by = $1, updated_at = NOW()
+       WHERE id = $2`,
+      [adminId || 'admin', userId]
+    );
 
     // Send approval email notification
     try {
-      await emailService.sendApprovalNotification(userCredential.email, userCredential.name || 'Doctor');
+      await emailService.sendApprovalNotification(user.email, user.name || 'Doctor');
     } catch (emailError) {
       console.error('Failed to send approval email:', emailError);
     }
 
-    console.log(`✅ [Admin] Doctor approved: ${userCredential.email} (via /auth/admin/approve-doctor)`);
+    console.log(`✅ [Admin] Doctor approved: ${user.email} (via /auth/admin/approve-doctor) - PostgreSQL`);
 
     res.json({ 
       success: true, 
       message: 'Doctor has been approved successfully',
-      user: sanitizeUser(userCredential)
+      user: sanitizeUser({
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        isActive: true,
+        isApproved: true,
+        approvalStatus: 'approved'
+      })
     });
   } catch (error) {
     console.error('Admin approve doctor error:', error);
@@ -1607,7 +1382,7 @@ app.post('/auth/admin/approve-doctor', async (req, res) => {
   }
 });
 
-// Auth-prefixed admin reject endpoint
+// Auth-prefixed admin reject endpoint - PostgreSQL implementation
 app.post('/auth/admin/reject-doctor', async (req, res) => {
   try {
     const { userId, reason, adminId } = req.body;
@@ -1616,41 +1391,43 @@ app.post('/auth/admin/reject-doctor', async (req, res) => {
       return res.status(400).json({ error: 'User ID is required' });
     }
 
-    const userCredential = await fetchFromGCS(BUCKETS.credentials, `users/${userId}.json`);
-    if (!userCredential) {
+    // Check PostgreSQL availability
+    if (!pgPool) {
+      console.error('[AUTH] PostgreSQL connection not available for doctor rejection');
+      return res.status(503).json({ 
+        error: 'Database connection unavailable. Please try again later.',
+        code: 'DATABASE_UNAVAILABLE'
+      });
+    }
+
+    // Fetch user from PostgreSQL
+    const userResult = await pgPool.query('SELECT * FROM users WHERE id = $1', [userId]);
+    if (userResult.rows.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    userCredential.isActive = false;
-    userCredential.isApproved = false;
-    userCredential.approvalStatus = 'rejected';
-    userCredential.rejectedAt = new Date().toISOString();
-    userCredential.rejectedBy = adminId || 'admin';
-    userCredential.rejectionReason = reason || 'Not specified';
+    const user = userResult.rows[0];
 
-    await writeToGCS(BUCKETS.credentials, `users/${userId}.json`, userCredential);
-
-    // Update users index
-    const usersIndex = await fetchFromGCS(BUCKETS.credentials, 'users/index.json') || [];
-    const userIndex = usersIndex.findIndex(u => u.id === userId);
-    if (userIndex >= 0) {
-      usersIndex[userIndex].isActive = false;
-      usersIndex[userIndex].approvalStatus = 'rejected';
-      await writeToGCS(BUCKETS.credentials, 'users/index.json', usersIndex);
-    }
+    // Update user rejection status
+    await pgPool.query(
+      `UPDATE users SET is_active = false, is_approved = false, approval_status = 'rejected',
+       rejected_at = NOW(), rejected_by = $1, rejection_reason = $2, updated_at = NOW()
+       WHERE id = $3`,
+      [adminId || 'admin', reason || 'Not specified', userId]
+    );
 
     // Send rejection email notification
     try {
       await emailService.sendRejectionNotification(
-        userCredential.email, 
-        userCredential.name || 'Doctor',
+        user.email, 
+        user.name || 'Doctor',
         reason || 'Your application did not meet our current requirements.'
       );
     } catch (emailError) {
       console.error('Failed to send rejection email:', emailError);
     }
 
-    console.log(`❌ [Admin] Doctor rejected: ${userCredential.email} (via /auth/admin/reject-doctor)`);
+    console.log(`❌ [Admin] Doctor rejected: ${user.email} (via /auth/admin/reject-doctor) - PostgreSQL`);
 
     res.json({ 
       success: true, 
@@ -1662,7 +1439,7 @@ app.post('/auth/admin/reject-doctor', async (req, res) => {
   }
 });
 
-// Auth-prefixed admin update role endpoint
+// Auth-prefixed admin update role endpoint - PostgreSQL implementation
 app.post('/auth/admin/update-role', async (req, res) => {
   try {
     const { userId, adminId, role, isAdmin } = req.body;
@@ -1671,33 +1448,42 @@ app.post('/auth/admin/update-role', async (req, res) => {
       return res.status(400).json({ error: 'User ID is required' });
     }
 
-    const userCredential = await fetchFromGCS(BUCKETS.credentials, `users/${userId}.json`);
-    if (!userCredential) {
+    // Check PostgreSQL availability
+    if (!pgPool) {
+      console.error('[AUTH] PostgreSQL connection not available for role update');
+      return res.status(503).json({ 
+        error: 'Database connection unavailable. Please try again later.',
+        code: 'DATABASE_UNAVAILABLE'
+      });
+    }
+
+    // Fetch user from PostgreSQL
+    const userResult = await pgPool.query('SELECT * FROM users WHERE id = $1', [userId]);
+    if (userResult.rows.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    userCredential.role = role;
-    userCredential.isAdmin = isAdmin;
-    userCredential.roleUpdatedAt = new Date().toISOString();
-    userCredential.roleUpdatedBy = adminId || 'admin';
+    const user = userResult.rows[0];
 
-    await writeToGCS(BUCKETS.credentials, `users/${userId}.json`, userCredential);
+    // Update user role
+    await pgPool.query(
+      `UPDATE users SET role = $1, is_admin = $2, role_updated_at = NOW(), role_updated_by = $3, updated_at = NOW()
+       WHERE id = $4`,
+      [role, isAdmin, adminId || 'admin', userId]
+    );
 
-    // Update users index
-    const usersIndex = await fetchFromGCS(BUCKETS.credentials, 'users/index.json') || [];
-    const userIndex = usersIndex.findIndex(u => u.id === userId);
-    if (userIndex >= 0) {
-      usersIndex[userIndex].role = role;
-      usersIndex[userIndex].isAdmin = isAdmin;
-      await writeToGCS(BUCKETS.credentials, 'users/index.json', usersIndex);
-    }
-
-    console.log(`🔄 [Admin] Role updated for ${userCredential.email}: ${role} (via /auth/admin/update-role)`);
+    console.log(`🔄 [Admin] Role updated for ${user.email}: ${role} (via /auth/admin/update-role) - PostgreSQL`);
 
     res.json({ 
       success: true, 
       message: `Role has been updated to ${role}`,
-      user: sanitizeUser(userCredential)
+      user: sanitizeUser({
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: role,
+        isAdmin: isAdmin
+      })
     });
   } catch (error) {
     console.error('Admin update role error:', error);
@@ -1705,7 +1491,7 @@ app.post('/auth/admin/update-role', async (req, res) => {
   }
 });
 
-// Update doctor status (Admin only) - For active/inactive toggle while preserving verified status
+// Update doctor status (Admin only) - PostgreSQL implementation
 app.post('/admin/update-doctor-status', async (req, res) => {
   try {
     const { doctorId, updates, adminId } = req.body;
@@ -1716,69 +1502,84 @@ app.post('/admin/update-doctor-status', async (req, res) => {
 
     console.log(`📝 [Admin] Update doctor status: ${doctorId}`, updates);
 
-    // Fetch user credential
-    const userCredential = await fetchFromGCS(BUCKETS.credentials, `users/${doctorId}.json`);
+    // Check PostgreSQL availability
+    if (!pgPool) {
+      console.error('[AUTH] PostgreSQL connection not available for doctor status update');
+      return res.status(503).json({ 
+        error: 'Database connection unavailable. Please try again later.',
+        code: 'DATABASE_UNAVAILABLE'
+      });
+    }
 
-    if (!userCredential) {
+    // Fetch user from PostgreSQL
+    const userResult = await pgPool.query('SELECT * FROM users WHERE id = $1', [doctorId]);
+    if (userResult.rows.length === 0) {
       return res.status(404).json({ error: 'Doctor not found' });
     }
 
-    // Update user with provided updates while preserving important fields
+    const user = userResult.rows[0];
+
+    // Build dynamic update query
+    const updateFields = [];
+    const updateValues = [];
+    let paramCount = 1;
+
     if (updates.isActive !== undefined) {
-      userCredential.isActive = updates.isActive;
+      updateFields.push(`is_active = $${paramCount++}`);
+      updateValues.push(updates.isActive);
     }
     if (updates.status !== undefined) {
-      userCredential.status = updates.status;
+      updateFields.push(`status = $${paramCount++}`);
+      updateValues.push(updates.status);
     }
-    // IMPORTANT: Only update isVerified if explicitly provided, never reset it
     if (updates.isVerified !== undefined) {
-      userCredential.isVerified = updates.isVerified;
+      updateFields.push(`is_verified = $${paramCount++}`);
+      updateValues.push(updates.isVerified);
     }
-    
-    userCredential.updatedAt = new Date().toISOString();
-    userCredential.updatedBy = adminId || 'admin';
 
-    await writeToGCS(BUCKETS.credentials, `users/${doctorId}.json`, userCredential);
+    updateFields.push(`updated_at = NOW()`);
+    updateFields.push(`updated_by = $${paramCount++}`);
+    updateValues.push(adminId || 'admin');
+    updateValues.push(doctorId);
 
-    // Update users index
-    const usersIndex = await fetchFromGCS(BUCKETS.credentials, 'users/index.json') || [];
-    const userIndex = usersIndex.findIndex(u => u.id === doctorId);
-    if (userIndex >= 0) {
+    await pgPool.query(
+      `UPDATE users SET ${updateFields.join(', ')} WHERE id = $${paramCount}`,
+      updateValues
+    );
+
+    // Also update doctor_profiles if needed
+    if (updates.isActive !== undefined || updates.isVerified !== undefined) {
+      const dpUpdateFields = [];
+      const dpUpdateValues = [];
+      let dpParamCount = 1;
+
       if (updates.isActive !== undefined) {
-        usersIndex[userIndex].isActive = updates.isActive;
+        dpUpdateFields.push(`is_active = $${dpParamCount++}`);
+        dpUpdateValues.push(updates.isActive);
       }
-      if (updates.status !== undefined) {
-        usersIndex[userIndex].status = updates.status;
+      dpUpdateFields.push(`updated_at = NOW()`);
+      dpUpdateValues.push(doctorId);
+
+      if (dpUpdateFields.length > 1) {
+        await pgPool.query(
+          `UPDATE doctor_profiles SET ${dpUpdateFields.join(', ')} WHERE doctor_id = $${dpParamCount}`,
+          dpUpdateValues
+        ).catch(() => {}); // Ignore if doctor_profiles doesn't exist
       }
-      if (updates.isVerified !== undefined) {
-        usersIndex[userIndex].isVerified = updates.isVerified;
-      }
-      await writeToGCS(BUCKETS.credentials, 'users/index.json', usersIndex);
     }
 
-    // Update doctors list in doctor bucket
-    const doctors = await fetchFromGCS(BUCKETS.doctor, 'doctors.json') || [];
-    const doctorIndex = doctors.findIndex(d => d.id === doctorId);
-    if (doctorIndex >= 0) {
-      if (updates.isActive !== undefined) {
-        doctors[doctorIndex].isActive = updates.isActive;
-      }
-      if (updates.status !== undefined) {
-        doctors[doctorIndex].status = updates.status;
-      }
-      if (updates.isVerified !== undefined) {
-        doctors[doctorIndex].isVerified = updates.isVerified;
-      }
-      doctors[doctorIndex].updatedAt = new Date().toISOString();
-      await writeToGCS(BUCKETS.doctor, 'doctors.json', doctors);
-    }
-
-    console.log(`✅ [Admin] Doctor status updated: ${userCredential.email} - isActive: ${userCredential.isActive}, isVerified: ${userCredential.isVerified}`);
+    console.log(`✅ [Admin] Doctor status updated: ${user.email} - isActive: ${updates.isActive}, isVerified: ${updates.isVerified} - PostgreSQL`);
 
     res.json({ 
       success: true, 
       message: 'Doctor status updated successfully',
-      doctor: sanitizeUser(userCredential)
+      doctor: sanitizeUser({
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isActive: updates.isActive !== undefined ? updates.isActive : user.is_active,
+        isVerified: updates.isVerified !== undefined ? updates.isVerified : user.is_verified
+      })
     });
   } catch (error) {
     console.error('Admin update doctor status error:', error);
@@ -1786,7 +1587,7 @@ app.post('/admin/update-doctor-status', async (req, res) => {
   }
 });
 
-// Remove/Demote admin (Admin only) - For removing admin privileges
+// Remove/Demote admin (Admin only) - PostgreSQL implementation
 app.post('/admin/remove-admin', async (req, res) => {
   try {
     const { targetUserId, adminId, action } = req.body;
@@ -1797,63 +1598,55 @@ app.post('/admin/remove-admin', async (req, res) => {
 
     console.log(`🔄 [Admin] Remove admin request for: ${targetUserId}, action: ${action}`);
 
-    // Fetch target user
-    const userCredential = await fetchFromGCS(BUCKETS.credentials, `users/${targetUserId}.json`);
+    // Check PostgreSQL availability
+    if (!pgPool) {
+      console.error('[AUTH] PostgreSQL connection not available for admin removal');
+      return res.status(503).json({ 
+        error: 'Database connection unavailable. Please try again later.',
+        code: 'DATABASE_UNAVAILABLE'
+      });
+    }
 
-    if (!userCredential) {
+    // Fetch user from PostgreSQL
+    const userResult = await pgPool.query('SELECT * FROM users WHERE id = $1', [targetUserId]);
+    if (userResult.rows.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
 
+    const user = userResult.rows[0];
+
     // Demote from admin to doctor
     if (action === 'demote') {
-      userCredential.role = 'doctor';
-      userCredential.adminPrivileges = null;
-      userCredential.demotedAt = new Date().toISOString();
-      userCredential.demotedBy = adminId || 'admin';
+      await pgPool.query(
+        `UPDATE users SET role = 'doctor', admin_privileges = NULL, is_admin = false,
+         demoted_at = NOW(), demoted_by = $1, updated_at = NOW()
+         WHERE id = $2`,
+        [adminId || 'admin', targetUserId]
+      );
     }
     // Remove completely (deactivate account)
     else if (action === 'remove') {
-      userCredential.role = 'doctor';
-      userCredential.adminPrivileges = null;
-      userCredential.isActive = false;
-      userCredential.status = 'inactive';
-      userCredential.removedAt = new Date().toISOString();
-      userCredential.removedBy = adminId || 'admin';
+      await pgPool.query(
+        `UPDATE users SET role = 'doctor', admin_privileges = NULL, is_admin = false,
+         is_active = false, status = 'inactive',
+         removed_at = NOW(), removed_by = $1, updated_at = NOW()
+         WHERE id = $2`,
+        [adminId || 'admin', targetUserId]
+      );
     }
 
-    await writeToGCS(BUCKETS.credentials, `users/${targetUserId}.json`, userCredential);
-
-    // Update users index
-    const usersIndex = await fetchFromGCS(BUCKETS.credentials, 'users/index.json') || [];
-    const userIndex = usersIndex.findIndex(u => u.id === targetUserId);
-    if (userIndex >= 0) {
-      usersIndex[userIndex].role = userCredential.role;
-      if (action === 'remove') {
-        usersIndex[userIndex].isActive = false;
-        usersIndex[userIndex].status = 'inactive';
-      }
-      await writeToGCS(BUCKETS.credentials, 'users/index.json', usersIndex);
-    }
-
-    // Update doctors list
-    const doctors = await fetchFromGCS(BUCKETS.doctor, 'doctors.json') || [];
-    const doctorIndex = doctors.findIndex(d => d.id === targetUserId);
-    if (doctorIndex >= 0) {
-      doctors[doctorIndex].role = userCredential.role;
-      if (action === 'remove') {
-        doctors[doctorIndex].isActive = false;
-        doctors[doctorIndex].status = 'inactive';
-      }
-      doctors[doctorIndex].updatedAt = new Date().toISOString();
-      await writeToGCS(BUCKETS.doctor, 'doctors.json', doctors);
-    }
-
-    console.log(`✅ [Admin] Admin ${action}d: ${userCredential.email}`);
+    console.log(`✅ [Admin] Admin ${action}d: ${user.email} - PostgreSQL`);
 
     res.json({ 
       success: true, 
       message: `Admin ${action === 'demote' ? 'demoted to doctor' : 'removed from platform'}`,
-      user: sanitizeUser(userCredential)
+      user: sanitizeUser({
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: 'doctor',
+        isActive: action !== 'remove'
+      })
     });
   } catch (error) {
     console.error('Admin remove error:', error);
@@ -1861,10 +1654,34 @@ app.post('/admin/remove-admin', async (req, res) => {
   }
 });
 
-// Get pending approvals (Admin only) - Legacy endpoint
+// Get pending approvals (Admin only) - PostgreSQL implementation
 app.get('/auth/pending-approvals', async (req, res) => {
   try {
-    const pendingApprovals = await fetchFromGCS(BUCKETS.credentials, 'pending-approvals.json') || [];
+    // Check PostgreSQL availability
+    if (!pgPool) {
+      console.error('[AUTH] PostgreSQL connection not available for pending approvals');
+      return res.status(503).json({ 
+        error: 'Database connection unavailable. Please try again later.',
+        code: 'DATABASE_UNAVAILABLE'
+      });
+    }
+
+    const result = await pgPool.query(
+      `SELECT id as "userId", email, name, specialty, created_at as "requestedAt", approval_status as status
+       FROM users
+       WHERE approval_status = 'pending' AND role = 'doctor'
+       ORDER BY created_at DESC`
+    );
+
+    const pendingApprovals = result.rows.map(row => ({
+      userId: row.userId,
+      email: row.email,
+      name: row.name,
+      specialty: row.specialty || 'General Practice',
+      requestedAt: row.requestedAt?.toISOString(),
+      status: row.status
+    }));
+
     res.json({ success: true, pendingApprovals });
   } catch (error) {
     console.error('Get pending approvals error:', error);
@@ -1872,7 +1689,7 @@ app.get('/auth/pending-approvals', async (req, res) => {
   }
 });
 
-// Approve doctor registration (Admin only)
+// Approve doctor registration (Admin only) - PostgreSQL implementation
 app.post('/auth/approve-doctor', async (req, res) => {
   try {
     const { userId, adminId } = req.body;
@@ -1881,54 +1698,41 @@ app.post('/auth/approve-doctor', async (req, res) => {
       return res.status(400).json({ error: 'User ID is required' });
     }
 
-    // Fetch user credential
-    const userCredential = await fetchFromGCS(BUCKETS.credentials, `users/${userId}.json`);
+    // Check PostgreSQL availability
+    if (!pgPool) {
+      console.error('[AUTH] PostgreSQL connection not available for doctor approval');
+      return res.status(503).json({ 
+        error: 'Database connection unavailable. Please try again later.',
+        code: 'DATABASE_UNAVAILABLE'
+      });
+    }
 
-    if (!userCredential) {
+    // Fetch user from PostgreSQL
+    const userResult = await pgPool.query('SELECT * FROM users WHERE id = $1', [userId]);
+    if (userResult.rows.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Update user status
-    userCredential.isActive = true;
-    userCredential.isApproved = true;
-    userCredential.approvalStatus = 'approved';
-    userCredential.approvedAt = new Date().toISOString();
-    userCredential.approvedBy = adminId || 'admin';
+    const user = userResult.rows[0];
 
-    await writeToGCS(BUCKETS.credentials, `users/${userId}.json`, userCredential);
-
-    // Update users index
-    const usersIndex = await fetchFromGCS(BUCKETS.credentials, 'users/index.json') || [];
-    const userIndex = usersIndex.findIndex(u => u.id === userId);
-    if (userIndex >= 0) {
-      usersIndex[userIndex].isActive = true;
-      usersIndex[userIndex].approvalStatus = 'approved';
-      await writeToGCS(BUCKETS.credentials, 'users/index.json', usersIndex);
-    }
-
-    // Update doctors list
-    const doctors = await fetchFromGCS(BUCKETS.doctor, 'doctors.json') || [];
-    const doctorIndex = doctors.findIndex(d => d.id === userId);
-    if (doctorIndex >= 0) {
-      doctors[doctorIndex].isApproved = true;
-      await writeToGCS(BUCKETS.doctor, 'doctors.json', doctors);
-    }
-
-    // Remove from pending approvals
-    let pendingApprovals = await fetchFromGCS(BUCKETS.credentials, 'pending-approvals.json') || [];
-    pendingApprovals = pendingApprovals.filter(p => p.userId !== userId);
-    await writeToGCS(BUCKETS.credentials, 'pending-approvals.json', pendingApprovals);
+    // Update user approval status
+    await pgPool.query(
+      `UPDATE users SET is_active = true, is_approved = true, approval_status = 'approved',
+       approved_at = NOW(), approved_by = $1, updated_at = NOW()
+       WHERE id = $2`,
+      [adminId || 'admin', userId]
+    );
 
     // Log approval notification
     console.log(`\n✅ DOCTOR APPROVED`);
     console.log(`   User ID: ${userId}`);
-    console.log(`   Email: ${userCredential.email}`);
+    console.log(`   Email: ${user.email}`);
     console.log(`   Approved by: ${adminId || 'admin'}`);
     console.log(`   Approved at: ${new Date().toISOString()}\n`);
 
     // Send approval email notification
     try {
-      await emailService.sendApprovalNotification(userCredential.email, userCredential.name || 'Doctor');
+      await emailService.sendApprovalNotification(user.email, user.name || 'Doctor');
     } catch (emailError) {
       console.error('Failed to send approval email:', emailError);
     }
@@ -1936,7 +1740,15 @@ app.post('/auth/approve-doctor', async (req, res) => {
     res.json({ 
       success: true, 
       message: 'Doctor has been approved successfully',
-      user: sanitizeUser(userCredential)
+      user: sanitizeUser({
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        isActive: true,
+        isApproved: true,
+        approvalStatus: 'approved'
+      })
     });
   } catch (error) {
     console.error('Approve doctor error:', error);
@@ -1944,7 +1756,7 @@ app.post('/auth/approve-doctor', async (req, res) => {
   }
 });
 
-// Reject doctor registration (Admin only)
+// Reject doctor registration (Admin only) - PostgreSQL implementation
 app.post('/auth/reject-doctor', async (req, res) => {
   try {
     const { userId, reason, adminId } = req.body;
@@ -1953,44 +1765,42 @@ app.post('/auth/reject-doctor', async (req, res) => {
       return res.status(400).json({ error: 'User ID is required' });
     }
 
-    // Fetch user credential
-    const userCredential = await fetchFromGCS(BUCKETS.credentials, `users/${userId}.json`);
+    // Check PostgreSQL availability
+    if (!pgPool) {
+      console.error('[AUTH] PostgreSQL connection not available for doctor rejection');
+      return res.status(503).json({ 
+        error: 'Database connection unavailable. Please try again later.',
+        code: 'DATABASE_UNAVAILABLE'
+      });
+    }
 
-    if (!userCredential) {
+    // Fetch user from PostgreSQL
+    const userResult = await pgPool.query('SELECT * FROM users WHERE id = $1', [userId]);
+    if (userResult.rows.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Update user status
-    userCredential.isActive = false;
-    userCredential.isApproved = false;
-    userCredential.approvalStatus = 'rejected';
-    userCredential.rejectedAt = new Date().toISOString();
-    userCredential.rejectedBy = adminId || 'admin';
-    userCredential.rejectionReason = reason || 'Not specified';
+    const user = userResult.rows[0];
 
-    await writeToGCS(BUCKETS.credentials, `users/${userId}.json`, userCredential);
-
-    // Update pending approvals
-    let pendingApprovals = await fetchFromGCS(BUCKETS.credentials, 'pending-approvals.json') || [];
-    pendingApprovals = pendingApprovals.map(p => {
-      if (p.userId === userId) {
-        return { ...p, status: 'rejected', reason };
-      }
-      return p;
-    });
-    await writeToGCS(BUCKETS.credentials, 'pending-approvals.json', pendingApprovals);
+    // Update user rejection status
+    await pgPool.query(
+      `UPDATE users SET is_active = false, is_approved = false, approval_status = 'rejected',
+       rejected_at = NOW(), rejected_by = $1, rejection_reason = $2, updated_at = NOW()
+       WHERE id = $3`,
+      [adminId || 'admin', reason || 'Not specified', userId]
+    );
 
     console.log(`\n❌ DOCTOR REJECTED`);
     console.log(`   User ID: ${userId}`);
-    console.log(`   Email: ${userCredential.email}`);
+    console.log(`   Email: ${user.email}`);
     console.log(`   Reason: ${reason || 'Not specified'}`);
     console.log(`   Rejected by: ${adminId || 'admin'}\n`);
 
     // Send rejection email notification
     try {
       await emailService.sendRejectionNotification(
-        userCredential.email, 
-        userCredential.name || 'Doctor',
+        user.email, 
+        user.name || 'Doctor',
         reason || 'Your application did not meet our current requirements.'
       );
     } catch (emailError) {
@@ -2007,7 +1817,7 @@ app.post('/auth/reject-doctor', async (req, res) => {
   }
 });
 
-// Admin routes aliases (same as /auth/* routes)
+// Admin routes aliases - PostgreSQL implementation
 app.post('/admin/approve-doctor', async (req, res) => {
   try {
     const { userId, adminId } = req.body;
@@ -2016,34 +1826,45 @@ app.post('/admin/approve-doctor', async (req, res) => {
       return res.status(400).json({ error: 'User ID is required' });
     }
 
-    const userCredential = await fetchFromGCS(BUCKETS.credentials, `users/${userId}.json`);
-    if (!userCredential) {
+    // Check PostgreSQL availability
+    if (!pgPool) {
+      console.error('[AUTH] PostgreSQL connection not available for doctor approval');
+      return res.status(503).json({ 
+        error: 'Database connection unavailable. Please try again later.',
+        code: 'DATABASE_UNAVAILABLE'
+      });
+    }
+
+    // Fetch user from PostgreSQL
+    const userResult = await pgPool.query('SELECT * FROM users WHERE id = $1', [userId]);
+    if (userResult.rows.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    userCredential.isActive = true;
-    userCredential.isApproved = true;
-    userCredential.approvalStatus = 'approved';
-    userCredential.approvedAt = new Date().toISOString();
-    userCredential.approvedBy = adminId || 'admin';
+    const user = userResult.rows[0];
 
-    await writeToGCS(BUCKETS.credentials, `users/${userId}.json`, userCredential);
+    // Update user approval status
+    await pgPool.query(
+      `UPDATE users SET is_active = true, is_approved = true, approval_status = 'approved',
+       approved_at = NOW(), approved_by = $1, updated_at = NOW()
+       WHERE id = $2`,
+      [adminId || 'admin', userId]
+    );
 
-    // Update users index
-    const usersIndex = await fetchFromGCS(BUCKETS.credentials, 'users/index.json') || [];
-    const userIndex = usersIndex.findIndex(u => u.id === userId);
-    if (userIndex >= 0) {
-      usersIndex[userIndex].isActive = true;
-      usersIndex[userIndex].approvalStatus = 'approved';
-      await writeToGCS(BUCKETS.credentials, 'users/index.json', usersIndex);
-    }
-
-    console.log(`✅ [Admin] Doctor approved: ${userCredential.email}`);
+    console.log(`✅ [Admin] Doctor approved: ${user.email} - PostgreSQL`);
 
     res.json({ 
       success: true, 
       message: 'Doctor has been approved successfully',
-      user: sanitizeUser(userCredential)
+      user: sanitizeUser({
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        isActive: true,
+        isApproved: true,
+        approvalStatus: 'approved'
+      })
     });
   } catch (error) {
     console.error('Admin approve doctor error:', error);
@@ -2059,30 +1880,32 @@ app.post('/admin/reject-doctor', async (req, res) => {
       return res.status(400).json({ error: 'User ID is required' });
     }
 
-    const userCredential = await fetchFromGCS(BUCKETS.credentials, `users/${userId}.json`);
-    if (!userCredential) {
+    // Check PostgreSQL availability
+    if (!pgPool) {
+      console.error('[AUTH] PostgreSQL connection not available for doctor rejection');
+      return res.status(503).json({ 
+        error: 'Database connection unavailable. Please try again later.',
+        code: 'DATABASE_UNAVAILABLE'
+      });
+    }
+
+    // Fetch user from PostgreSQL
+    const userResult = await pgPool.query('SELECT * FROM users WHERE id = $1', [userId]);
+    if (userResult.rows.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    userCredential.isActive = false;
-    userCredential.isApproved = false;
-    userCredential.approvalStatus = 'rejected';
-    userCredential.rejectedAt = new Date().toISOString();
-    userCredential.rejectedBy = adminId || 'admin';
-    userCredential.rejectionReason = reason || 'Not specified';
+    const user = userResult.rows[0];
 
-    await writeToGCS(BUCKETS.credentials, `users/${userId}.json`, userCredential);
+    // Update user rejection status
+    await pgPool.query(
+      `UPDATE users SET is_active = false, is_approved = false, approval_status = 'rejected',
+       rejected_at = NOW(), rejected_by = $1, rejection_reason = $2, updated_at = NOW()
+       WHERE id = $3`,
+      [adminId || 'admin', reason || 'Not specified', userId]
+    );
 
-    // Update users index
-    const usersIndex = await fetchFromGCS(BUCKETS.credentials, 'users/index.json') || [];
-    const userIndex = usersIndex.findIndex(u => u.id === userId);
-    if (userIndex >= 0) {
-      usersIndex[userIndex].isActive = false;
-      usersIndex[userIndex].approvalStatus = 'rejected';
-      await writeToGCS(BUCKETS.credentials, 'users/index.json', usersIndex);
-    }
-
-    console.log(`❌ [Admin] Doctor rejected: ${userCredential.email}`);
+    console.log(`❌ [Admin] Doctor rejected: ${user.email} - PostgreSQL`);
 
     res.json({ 
       success: true, 
@@ -2094,7 +1917,7 @@ app.post('/admin/reject-doctor', async (req, res) => {
   }
 });
 
-// Verify session
+// Verify session - PostgreSQL-only
 app.get('/auth/verify', async (req, res) => {
   try {
     const authHeader = req.headers['authorization'];
@@ -2104,66 +1927,43 @@ app.get('/auth/verify', async (req, res) => {
       return res.status(401).json({ error: 'No token provided' });
     }
 
-    // ========================================================================
-    // PostgreSQL-first session verification
-    // ========================================================================
-    if (USE_POSTGRESQL && pgPool) {
-      const sessionData = await pgValidateSession(token);
-      
-      if (!sessionData) {
-        return res.status(401).json({ error: 'Invalid or expired session' });
-      }
-      
-      return res.json({
-        valid: true,
-        user: sanitizeUser({
-          id: sessionData.user_id,
-          email: sessionData.email,
-          name: sessionData.name,
-          nameThai: sessionData.name_thai,
-          role: sessionData.role,
-          doctorId: sessionData.doctor_id,
-          isAdmin: sessionData.is_admin,
-          adminPrivileges: sessionData.admin_privileges,
-          specialty: sessionData.specialty,
-          hospitalName: sessionData.hospital_name
-        }),
-        session: {
-          id: sessionData.id,
-          expiresAt: sessionData.expires_at
-        }
+    if (!pgPool) {
+      console.error('[AUTH] PostgreSQL connection not available for session verification');
+      return res.status(503).json({ 
+        error: 'Database connection unavailable. Please try again later.',
+        code: 'DATABASE_UNAVAILABLE'
       });
     }
 
-    // ========================================================================
-    // Fallback to GCS-based verification
-    // ========================================================================
-    const session = await fetchFromGCS(BUCKETS.credentials, `sessions/${token}.json`);
-
-    if (!session) {
-      return res.status(401).json({ error: 'Invalid session' });
+    // PostgreSQL session verification
+    const sessionData = await pgValidateSession(token);
+    
+    if (!sessionData) {
+      return res.status(401).json({ error: 'Invalid or expired session' });
     }
-
-    // Check if session expired
-    if (new Date(session.expiresAt) < new Date()) {
-      return res.status(401).json({ error: 'Session expired' });
-    }
-
-    // Fetch user
-    const userCredential = await fetchFromGCS(BUCKETS.credentials, `users/${session.userId}.json`);
-
-    if (!userCredential) {
-      return res.status(401).json({ error: 'User not found' });
-    }
-
-    res.json({
+    
+    return res.json({
       valid: true,
-      user: sanitizeUser(userCredential),
-      session
+      user: sanitizeUser({
+        id: sessionData.user_id,
+        email: sessionData.email,
+        name: sessionData.name,
+        nameThai: sessionData.name_thai,
+        role: sessionData.role,
+        doctorId: sessionData.doctor_id,
+        isAdmin: sessionData.is_admin,
+        adminPrivileges: sessionData.admin_privileges,
+        specialty: sessionData.specialty,
+        hospitalName: sessionData.hospital_name
+      }),
+      session: {
+        id: sessionData.id,
+        expiresAt: sessionData.expires_at
+      }
     });
   } catch (error) {
     console.error('Verify error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Session verification failed. Please try again.' });
   }
 });
 
@@ -2220,36 +2020,26 @@ app.get('/api/profile', async (req, res) => {
     const userId = decoded.userId || decoded.id;
     console.log(`[AUTH] Getting profile for user: ${userId}`);
 
-    if (USE_POSTGRESQL && pgPool) {
-      const result = await pgPool.query(
-        `SELECT id, email, name, name_thai, phone, role, specialty, 
-                avatar_url, is_active, created_at
-         FROM users WHERE id = $1`,
-        [userId]
-      );
-      
-      if (result.rows.length > 0) {
-        return res.json({ success: true, profile: result.rows[0] });
-      }
+    if (!pgPool) {
+      console.error('[AUTH] PostgreSQL connection not available for profile fetch');
+      return res.status(503).json({ 
+        error: 'Database connection unavailable. Please try again later.',
+        code: 'DATABASE_UNAVAILABLE'
+      });
     }
 
-    // GCS fallback
-    const userCredential = await fetchFromGCS(BUCKETS.credentials, `users/${userId}.json`);
-    if (!userCredential) {
+    const result = await pgPool.query(
+      `SELECT id, email, name, name_thai, phone, role, specialty, 
+              avatar_url, is_active, created_at
+       FROM users WHERE id = $1`,
+      [userId]
+    );
+    
+    if (result.rows.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    res.json({ 
-      success: true, 
-      profile: {
-        id: userCredential.id,
-        email: userCredential.email,
-        name: userCredential.name,
-        phone: userCredential.phone,
-        role: userCredential.role,
-        avatarUrl: userCredential.avatarUrl
-      }
-    });
+    res.json({ success: true, profile: result.rows[0] });
   } catch (error) {
     console.error('[AUTH] Profile fetch error:', error);
     res.status(500).json({ error: 'Failed to fetch profile: ' + error.message });
@@ -2279,57 +2069,47 @@ const profileUpdateHandler = async (req, res) => {
 
     console.log(`[AUTH] Updating profile for user: ${userId}`);
 
-    if (USE_POSTGRESQL && pgPool) {
-      // Build dynamic update query based on provided fields
-      const updates = [];
-      const values = [];
-      let paramCount = 1;
-
-      if (avatarUrl !== undefined) {
-        updates.push(`avatar_url = $${paramCount++}`);
-        values.push(avatarUrl);
-      }
-      if (displayName !== undefined) {
-        updates.push(`display_name = $${paramCount++}`);
-        values.push(displayName);
-      }
-      if (phone !== undefined) {
-        updates.push(`phone = $${paramCount++}`);
-        values.push(phone);
-      }
-      if (specialization !== undefined) {
-        updates.push(`specialization = $${paramCount++}`);
-        values.push(specialization);
-      }
-      if (bio !== undefined) {
-        updates.push(`bio = $${paramCount++}`);
-        values.push(bio);
-      }
-
-      if (updates.length > 0) {
-        updates.push(`updated_at = NOW()`);
-        values.push(userId);
-        await pgPool.query(
-          `UPDATE users SET ${updates.join(', ')} WHERE id = $${paramCount}`,
-          values
-        ).catch(e => console.log('[AUTH] DB update skipped:', e.message));
-      }
-
-      return res.json({ 
-        success: true, 
-        message: 'Profile updated successfully',
-        profile: { userId, avatarUrl, displayName }
+    if (!pgPool) {
+      console.error('[AUTH] PostgreSQL connection not available for profile update');
+      return res.status(503).json({ 
+        error: 'Database connection unavailable. Please try again later.',
+        code: 'DATABASE_UNAVAILABLE'
       });
     }
 
-    // GCS fallback
-    const userCredential = await fetchFromGCS(BUCKETS.credentials, `users/${userId}.json`);
-    if (userCredential) {
-      if (avatarUrl) userCredential.avatarUrl = avatarUrl;
-      if (displayName) userCredential.displayName = displayName;
-      if (phone) userCredential.phone = phone;
-      userCredential.updatedAt = new Date().toISOString();
-      await saveToGCS(BUCKETS.credentials, `users/${userId}.json`, userCredential);
+    // Build dynamic update query based on provided fields
+    const updates = [];
+    const values = [];
+    let paramCount = 1;
+
+    if (avatarUrl !== undefined) {
+      updates.push(`avatar_url = $${paramCount++}`);
+      values.push(avatarUrl);
+    }
+    if (displayName !== undefined) {
+      updates.push(`display_name = $${paramCount++}`);
+      values.push(displayName);
+    }
+    if (phone !== undefined) {
+      updates.push(`phone = $${paramCount++}`);
+      values.push(phone);
+    }
+    if (specialization !== undefined) {
+      updates.push(`specialization = $${paramCount++}`);
+      values.push(specialization);
+    }
+    if (bio !== undefined) {
+      updates.push(`bio = $${paramCount++}`);
+      values.push(bio);
+    }
+
+    if (updates.length > 0) {
+      updates.push(`updated_at = NOW()`);
+      values.push(userId);
+      await pgPool.query(
+        `UPDATE users SET ${updates.join(', ')} WHERE id = $${paramCount}`,
+        values
+      ).catch(e => console.log('[AUTH] DB update error:', e.message));
     }
 
     res.json({ 
@@ -2339,11 +2119,9 @@ const profileUpdateHandler = async (req, res) => {
     });
   } catch (error) {
     console.error('[AUTH] Profile update error:', error);
-    // Return success for compatibility
-    res.json({ 
-      success: true, 
-      message: 'Profile updated (demo mode)',
-      demoMode: true 
+    res.status(500).json({ 
+      error: 'Profile update failed. Please try again.',
+      code: 'PROFILE_UPDATE_ERROR'
     });
   }
 };
@@ -2378,25 +2156,18 @@ app.post('/api/profile/avatar', async (req, res) => {
       return res.status(400).json({ error: 'Avatar URL is required' });
     }
 
-    if (USE_POSTGRESQL && pgPool) {
-      await pgPool.query(
-        'UPDATE users SET avatar_url = $1, updated_at = NOW() WHERE id = $2',
-        [avatarUrl, userId]
-      );
-      console.log(`[AUTH] Avatar updated for user: ${userId}`);
-      return res.json({ success: true, avatarUrl, message: 'Avatar updated successfully' });
+    if (!pgPool) {
+      console.error('[AUTH] PostgreSQL connection not available for avatar update');
+      return res.status(503).json({ 
+        error: 'Database connection unavailable. Please try again later.',
+        code: 'DATABASE_UNAVAILABLE'
+      });
     }
 
-    // GCS fallback
-    const userCredential = await fetchFromGCS(BUCKETS.credentials, `users/${userId}.json`);
-    if (!userCredential) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    userCredential.avatarUrl = avatarUrl;
-    userCredential.updatedAt = new Date().toISOString();
-    await saveToGCS(BUCKETS.credentials, `users/${userId}.json`, userCredential);
-
+    await pgPool.query(
+      'UPDATE users SET avatar_url = $1, updated_at = NOW() WHERE id = $2',
+      [avatarUrl, userId]
+    );
     console.log(`[AUTH] Avatar updated for user: ${userId}`);
     res.json({ success: true, avatarUrl, message: 'Avatar updated successfully' });
   } catch (error) {
@@ -2430,16 +2201,20 @@ app.post('/api/users/avatar', async (req, res) => {
       return res.status(400).json({ error: 'Avatar URL is required' });
     }
 
-    if (USE_POSTGRESQL && pgPool) {
-      await pgPool.query(
-        'UPDATE users SET avatar_url = $1, updated_at = NOW() WHERE id = $2',
-        [avatarUrl, userId]
-      );
-      console.log(`[AUTH] Avatar updated via /api/users/avatar: ${userId}`);
-      return res.json({ success: true, avatarUrl, message: 'Avatar updated successfully' });
+    if (!pgPool) {
+      console.error('[AUTH] PostgreSQL connection not available for avatar update');
+      return res.status(503).json({ 
+        error: 'Database connection unavailable. Please try again later.',
+        code: 'DATABASE_UNAVAILABLE'
+      });
     }
 
-    res.json({ success: true, avatarUrl, message: 'Avatar updated (simulated)' });
+    await pgPool.query(
+      'UPDATE users SET avatar_url = $1, updated_at = NOW() WHERE id = $2',
+      [avatarUrl, userId]
+    );
+    console.log(`[AUTH] Avatar updated via /api/users/avatar: ${userId}`);
+    res.json({ success: true, avatarUrl, message: 'Avatar updated successfully' });
   } catch (error) {
     console.error('[AUTH] Avatar update error:', error);
     res.status(500).json({ error: 'Failed to update avatar: ' + error.message });
@@ -2458,32 +2233,42 @@ if (process.env.NODE_ENV !== 'production') {
     res.json({ success: true, ...result, message: 'Rate limits cleared for testing' });
   });
 
-  // Debug user lookup (test only)
+  // Debug user lookup (test only) - PostgreSQL implementation
   app.get('/test/check-user/:email', async (req, res) => {
     try {
       const email = decodeURIComponent(req.params.email).toLowerCase();
-      const usersIndex = await fetchFromGCS(BUCKETS.credentials, 'users/index.json') || [];
-      const userRef = usersIndex.find(u => u.email.toLowerCase() === email);
-      
-      if (!userRef) {
-        return res.json({ found: false, email, message: 'User not in index' });
+
+      if (!pgPool) {
+        return res.status(503).json({ 
+          found: false, 
+          error: 'Database connection unavailable',
+          code: 'DATABASE_UNAVAILABLE'
+        });
       }
 
-      const userCredential = await fetchFromGCS(BUCKETS.credentials, `users/${userRef.id}.json`);
-      if (!userCredential) {
-        return res.json({ found: true, email, message: 'User in index but credential file missing', userRef });
+      const result = await pgPool.query(
+        `SELECT u.id, u.email, u.role, u.is_active, u.is_approved, u.approval_status, u.password_hash
+         FROM users u
+         WHERE LOWER(u.email) = LOWER($1)`,
+        [email]
+      );
+
+      if (result.rows.length === 0) {
+        return res.json({ found: false, email, message: 'User not found in PostgreSQL' });
       }
+
+      const user = result.rows[0];
 
       res.json({
         found: true,
-        email,
-        id: userCredential.id,
-        role: userCredential.role,
-        isActive: userCredential.isActive,
-        isApproved: userCredential.isApproved,
-        approvalStatus: userCredential.approvalStatus,
-        hasPassword: !!userCredential.passwordHash,
-        passwordHashPrefix: userCredential.passwordHash?.substring(0, 10) + '...'
+        email: user.email,
+        id: user.id,
+        role: user.role,
+        isActive: user.is_active,
+        isApproved: user.is_approved,
+        approvalStatus: user.approval_status,
+        hasPassword: !!user.password_hash,
+        passwordHashPrefix: user.password_hash?.substring(0, 10) + '...'
       });
     } catch (error) {
       res.status(500).json({ error: error.message });

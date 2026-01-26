@@ -1,0 +1,46 @@
+{
+  "description": "Patient Health Records for startup users",
+  "encoding": "UTF-8",
+  "version": "1.4.0",
+  "phr_records": [
+    {
+      "patient_id": "PATIENT-SOMCHAI",
+      "blood_type": "A+",
+      "height_cm": 175,
+      "weight_kg": 78,
+      "bmi": 25.5,
+      "allergies": ["เพนิซิลลิน (Penicillin)", "ถั่วลิสง (Peanuts)"],
+      "chronic_conditions": ["ความดันโลหิตสูง (Hypertension)", "เบาหวานชนิดที่ 2 (Type 2 Diabetes)"],
+      "medications": ["Amlodipine 5mg วันละ 1 ครั้ง", "Metformin 500mg วันละ 2 ครั้ง"],
+      "emergency_contact_name": "นางสมศรี มั่นคง",
+      "emergency_contact_phone": "+66812345679",
+      "emergency_contact_relation": "ภรรยา"
+    },
+    {
+      "patient_id": "PATIENT-ANAN",
+      "blood_type": "B+",
+      "height_cm": 168,
+      "weight_kg": 75,
+      "bmi": 26.6,
+      "allergies": ["ซัลฟา (Sulfa drugs)"],
+      "chronic_conditions": ["โรคไตเรื้อรังระยะ 3 (CKD Stage 3)", "เบาหวานชนิดที่ 2 (Type 2 Diabetes)"],
+      "medications": ["Losartan 50mg วันละ 1 ครั้ง", "Empagliflozin 10mg วันละ 1 ครั้ง"],
+      "emergency_contact_name": "นายอนุชา ขยันเรียน",
+      "emergency_contact_phone": "+66823456790",
+      "emergency_contact_relation": "บุตรชาย"
+    },
+    {
+      "patient_id": "PATIENT-DEMO",
+      "blood_type": "O+",
+      "height_cm": 170,
+      "weight_kg": 70,
+      "bmi": 24.2,
+      "allergies": [],
+      "chronic_conditions": [],
+      "medications": [],
+      "emergency_contact_name": "ผู้ติดต่อฉุกเฉิน",
+      "emergency_contact_phone": "+66891234568",
+      "emergency_contact_relation": "ครอบครัว"
+    }
+  ]
+}

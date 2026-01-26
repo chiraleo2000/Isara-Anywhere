@@ -39,7 +39,9 @@ function ScrollToTop() {
   return null;
 }
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
+type RouteGuardProps = Readonly<{ children: React.ReactNode }>;
+
+function ProtectedRoute({ children }: RouteGuardProps) {
   const { isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
@@ -56,7 +58,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
 }
 
-function PublicRoute({ children }: { children: React.ReactNode }) {
+function PublicRoute({ children }: RouteGuardProps) {
   const { isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {

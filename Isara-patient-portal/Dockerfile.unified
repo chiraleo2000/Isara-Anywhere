@@ -195,10 +195,10 @@ ENV NODE_ENV=production
 ENV PORT=3005
 ENV GCP_PROJECT_ID=${GCP_PROJECT_ID:-izara-telemedicine}
 ENV GOOGLE_APPLICATION_CREDENTIALS=/app/credentials/service-account.json
-# DEMO MODE - Enable when PostgreSQL is unavailable (Cloud Run without Cloud SQL)
-ENV DEMO_MODE=${DEMO_MODE:-true}
+# PRODUCTION MODE - Always use PostgreSQL (no demo mode fallback)
+ENV DEMO_MODE=false
 # Database Configuration
-ENV USE_POSTGRESQL=${USE_POSTGRESQL:-true}
+ENV USE_POSTGRESQL=true
 ENV DATABASE_URL=${DATABASE_URL:-}
 ENV DB_HOST=${DB_HOST:-}
 ENV DB_NAME=${DB_NAME:-}

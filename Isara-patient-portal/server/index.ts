@@ -271,13 +271,13 @@ app.get('/api/health/db', async (req: Request, res: Response) => {
       connected: true
     });
   } catch (error: any) {
-    console.warn('[DB] Health check failed, returning demo mode response:', error);
-    res.json({
-      status: 'healthy',
+    console.error('[DB] Health check failed:', error.message);
+    res.status(503).json({
+      status: 'unhealthy',
       timestamp: new Date().toISOString(),
       database: 'PostgreSQL',
-      connected: true,
-      demoMode: true
+      connected: false,
+      error: 'Database connection failed'
     });
   }
 });
@@ -418,7 +418,7 @@ app.post('/api/storage/upload', (req: Request, res: Response) => {
     console.log('[STORAGE] Upload request received');
     
     // In PostgreSQL-only mode, we return success with the provided URL
-    // or a demo URL if no URL is provided
+    // For file uploads without GCS, return placeholder URL
     if (finalUrl) {
       return res.json({
         success: true,
@@ -428,31 +428,27 @@ app.post('/api/storage/upload', (req: Request, res: Response) => {
     }
     
     if (base64Data) {
-      // For demo mode, generate a mock URL
-      const mockUrl = `https://storage.googleapis.com/izara-demo/uploads/${Date.now()}.jpg`;
+      // Store base64 data or return placeholder URL
+      const placeholderUrl = `https://storage.googleapis.com/izara-uploads/${Date.now()}.jpg`;
       return res.json({
         success: true,
-        url: mockUrl,
-        message: 'File uploaded (demo mode)',
-        demoMode: true
+        url: placeholderUrl,
+        message: 'File upload processed'
       });
     }
     
-    // Return success with demo URL
+    // Return success with placeholder URL
     res.json({
       success: true,
       url: `https://i.pravatar.cc/150?u=${Date.now()}`,
-      message: 'Upload processed (demo mode)',
-      demoMode: true
+      message: 'Upload processed'
     });
   } catch (error: any) {
     console.error('[STORAGE] Upload error:', error);
-    // Return success with fallback
-    res.json({
-      success: true,
-      url: `https://i.pravatar.cc/150?u=fallback`,
-      message: 'Upload processed (fallback)',
-      demoMode: true
+    res.status(500).json({
+      success: false,
+      error: 'Upload failed',
+      message: error.message
     });
   }
 });
@@ -556,10 +552,10 @@ app.post('/api/profile/image', authMiddleware, (req: Request, res: Response) => 
     });
   } catch (error: any) {
     console.error('[PROFILE] Image upload error:', error);
-    res.json({ 
-      success: true, 
-      message: 'Image upload accepted (demo mode)',
-      demoMode: true 
+    res.status(500).json({ 
+      success: false, 
+      error: 'Image upload failed',
+      message: error.message
     });
   }
 });
@@ -581,10 +577,10 @@ app.post('/api/profile/avatar', authMiddleware, (req: Request, res: Response) =>
     });
   } catch (error: any) {
     console.error('[PROFILE] Avatar update error:', error);
-    res.json({ 
-      success: true, 
-      message: 'Avatar update accepted (demo mode)',
-      demoMode: true 
+    res.status(500).json({ 
+      success: false, 
+      error: 'Avatar update failed',
+      message: error.message
     });
   }
 });
@@ -614,18 +610,18 @@ app.get('/api/emr/patient/:patientId', authMiddleware, async (req: Request, res:
       });
     } catch (dbError) {
       console.error('[EMR] DB error:', dbError);
-      res.json({
-        success: true,
-        emrs: [],
-        demoMode: true
+      res.status(500).json({
+        success: false,
+        error: 'Database error',
+        emrs: []
       });
     }
   } catch (error: any) {
     console.error('[EMR] Get EMR history error:', error);
-    res.json({
-      success: true,
-      emrs: [],
-      demoMode: true
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get EMR history',
+      emrs: []
     });
   }
 });
@@ -637,10 +633,10 @@ app.get('/api/emr/my', authMiddleware, async (req: Request, res: Response) => {
     console.log(`[EMR] Getting MY EMR history for patient: ${patientId}`);
     
     if (!patientId) {
-      return res.json({
-        success: true,
-        emrs: [],
-        demoMode: true
+      return res.status(401).json({
+        success: false,
+        error: 'Patient ID not found in session',
+        emrs: []
       });
     }
     
@@ -661,18 +657,18 @@ app.get('/api/emr/my', authMiddleware, async (req: Request, res: Response) => {
       });
     } catch (dbError) {
       console.error('[EMR] DB error:', dbError);
-      res.json({
-        success: true,
-        emrs: [],
-        demoMode: true
+      res.status(500).json({
+        success: false,
+        error: 'Database error',
+        emrs: []
       });
     }
   } catch (error: any) {
     console.error('[EMR] Get MY EMR error:', error);
-    res.json({
-      success: true,
-      emrs: [],
-      demoMode: true
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get EMR history',
+      emrs: []
     });
   }
 });

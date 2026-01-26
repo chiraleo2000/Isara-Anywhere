@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Send, Bot, User, Sparkles, Minimize2, Maximize2, Trash2, History } from 'lucide-react';
+import { Send, Bot, User, Sparkles, Minimize2, Maximize2, Trash2 } from 'lucide-react';
 import { aiService } from '../../lib/services';
 
 interface Message {
@@ -22,6 +22,7 @@ export const AIHealthChat: React.FC<AIHealthChatProps> = ({ className = '', comp
   const [isExpanded, setIsExpanded] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [loadingHistory, setLoadingHistory] = useState(true);
+  const [historyError, setHistoryError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
@@ -33,6 +34,7 @@ export const AIHealthChat: React.FC<AIHealthChatProps> = ({ className = '', comp
     }
     
     try {
+      setHistoryError(null);
       setLoadingHistory(true);
       // Try to get the latest session first
       const sessionsResponse = await aiService.getChatSessions();
@@ -56,6 +58,7 @@ export const AIHealthChat: React.FC<AIHealthChatProps> = ({ className = '', comp
       }
     } catch (error) {
       console.error('[AI Chat] Failed to load history:', error);
+      setHistoryError('ไม่สามารถโหลดประวัติการสนทนาได้');
     } finally {
       setLoadingHistory(false);
     }
@@ -106,6 +109,7 @@ export const AIHealthChat: React.FC<AIHealthChatProps> = ({ className = '', comp
 
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (e: any) {
+      console.error('[AI Chat] Send failed:', e);
       const errorMessage: Message = {
         id: `msg_${Date.now()}_err`,
         role: 'assistant',
@@ -137,6 +141,13 @@ export const AIHealthChat: React.FC<AIHealthChatProps> = ({ className = '', comp
     'วิธีลดความเครียด',
   ];
 
+  let headerStatus = 'ถามคำถามสุขภาพได้เลย';
+  if (loadingHistory) {
+    headerStatus = 'กำลังโหลด...';
+  } else if (messages.length > 0) {
+    headerStatus = `${messages.length} ข้อความ`;
+  }
+
   return (
     <div className={`bg-white rounded-2xl border border-gray-100 overflow-hidden flex flex-col ${className}`}>
       {/* Header */}
@@ -147,9 +158,7 @@ export const AIHealthChat: React.FC<AIHealthChatProps> = ({ className = '', comp
           </div>
           <div>
             <h3 className="font-bold text-sm">AI Health Assistant</h3>
-            <p className="text-purple-200 text-xs">
-              {loadingHistory ? 'กำลังโหลด...' : messages.length > 0 ? `${messages.length} ข้อความ` : 'ถามคำถามสุขภาพได้เลย'}
-            </p>
+            <p className="text-purple-200 text-xs">{headerStatus}</p>
           </div>
         </div>
         <div className="flex items-center gap-1">
@@ -178,6 +187,11 @@ export const AIHealthChat: React.FC<AIHealthChatProps> = ({ className = '', comp
         ref={chatContainerRef}
         className={`flex-1 overflow-y-auto p-3 space-y-3 ${compact && !isExpanded ? 'max-h-48' : 'max-h-80'}`}
       >
+        {historyError && (
+          <div className="text-xs text-red-500 bg-red-50 border border-red-100 rounded-lg px-2 py-1">
+            {historyError}
+          </div>
+        )}
         {messages.length === 0 ? (
           <div className="text-center py-4">
             <Bot className="w-10 h-10 text-gray-300 mx-auto mb-2" />

@@ -1,0 +1,40 @@
+{
+  "description": "Doctor profiles and consultant information",
+  "encoding": "UTF-8",
+  "version": "1.4.0",
+  "doctors": [
+    {
+      "id": "DOC-TEST-001",
+      "user_id": "DOC-TEST-001",
+      "medical_license_number": "TH-MD-2020-001",
+      "specialty": "Internal Medicine",
+      "specialty_thai": "อายุรศาสตร์",
+      "sub_specialties": ["Diabetes", "Hypertension", "Kidney Disease"],
+      "qualifications": [
+        "แพทยศาสตรบัณฑิต จุฬาลงกรณ์มหาวิทยาลัย",
+        "วุฒิบัตรอายุรศาสตร์ แพทยสภา"
+      ],
+      "hospital_name": "Izara Telemedicine Hospital",
+      "hospital_name_thai": "โรงพยาบาลอิซาระ เทเลเมดิซีน",
+      "consultation_fee": 500,
+      "rating": 4.8,
+      "total_reviews": 127,
+      "years_experience": 15,
+      "available_for_telemedicine": true
+    }
+  ],
+  "consultants": [
+    {
+      "id": "CONS-TEST-001",
+      "doctor_id": "DOC-TEST-001",
+      "name": "Doctor Test",
+      "name_thai": "นายแพทย์ ทดสอบ ระบบ",
+      "specialty": "Internal Medicine",
+      "specialty_thai": "อายุรศาสตร์",
+      "avatar_url": "https://i.pravatar.cc/150?u=DOC-TEST-001",
+      "is_available": true,
+      "consultation_fee": 500,
+      "rating": 4.8
+    }
+  ]
+}

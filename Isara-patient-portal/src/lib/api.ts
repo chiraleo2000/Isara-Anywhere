@@ -21,7 +21,7 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   if (res.status === 401) {
     localStorage.removeItem('auth_token');
     localStorage.removeItem('izara_user');
-    window.location.href = '/login';
+    globalThis.location.href = '/login';
     throw new Error('Session expired');
   }
   

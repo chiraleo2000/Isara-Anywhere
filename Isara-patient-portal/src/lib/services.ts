@@ -40,7 +40,7 @@ export const appointmentPoolService = {
     if (filters?.specialty) params.append('specialty', filters.specialty);
     if (filters?.urgency) params.append('urgency', filters.urgency);
     const query = params.toString();
-    return api.get<AppointmentPoolItem[]>(`/api/appointment-pool${query ? `?${query}` : ''}`);
+    return api.get<AppointmentPoolItem[]>('/api/appointment-pool' + (query ? `?${query}` : ''));
   },
 
   // Add appointment to pool
@@ -144,7 +144,9 @@ export const aiService = {
   riskAssessment: (patientData: any) => api.post<any>('/api/ai/risk-assessment', { patientData }),
   // Chat history management - PostgreSQL persistent
   getChatHistory: (sessionId?: string) => 
-    api.get<{ sessions?: any[]; history?: any[]; sessionId?: string }>(`/api/ai/chat/history${sessionId ? `?sessionId=${sessionId}` : ''}`),
+    api.get<{ sessions?: any[]; history?: any[]; sessionId?: string }>(
+      '/api/ai/chat/history' + (sessionId ? `?sessionId=${sessionId}` : '')
+    ),
   clearChatHistory: (sessionId?: string) => 
     api.post<{ success: boolean; message: string }>('/api/ai/chat/clear', { sessionId }),
   getChatSessions: () => 
@@ -189,10 +191,12 @@ export interface HealthLogEntry {
 
 export const healthLogsService = {
   // Get all health logs for a patient
-  getHealthLogs: (patientId: string, type?: string) => 
-    api.get<{ entries: HealthLogEntry[]; total: number; lastUpdated: string }>(
-      `/api/phr/${patientId}/health-logs${type ? `?type=${type}` : ''}`
-    ),
+  getHealthLogs: (patientId: string, type?: string) => {
+    const typeQuery = type ? `?type=${type}` : '';
+    return api.get<{ entries: HealthLogEntry[]; total: number; lastUpdated: string }>(
+      '/api/phr/' + patientId + '/health-logs' + typeQuery
+    );
+  },
   
   // Get EMR records specifically
   getEMRRecords: (patientId: string) => 
@@ -229,7 +233,9 @@ export const googleService = {
   }>('/api/google/calendar/event', eventData),
   
   getAvailability: (date: string, doctorId?: string) => 
-    api.get<{ slots: any[]; date: string }>(`/api/google/calendar/availability?date=${date}${doctorId ? `&doctorId=${doctorId}` : ''}`),
+    api.get<{ slots: any[]; date: string }>(
+      '/api/google/calendar/availability?date=' + date + (doctorId ? `&doctorId=${doctorId}` : '')
+    ),
 
   // Google Meet
   createMeetLink: (appointmentData: {
@@ -268,14 +274,21 @@ export const googleService = {
   getPlaceDetails: (placeId: string) => 
     api.get<{ success: boolean; place: any }>(`/api/google/maps/place/${placeId}`),
   
-  getPhotoUrl: (photoReference: string, maxWidth?: number) => 
-    api.get<{ success: boolean; photoUrl: string }>(`/api/google/maps/photo?photoReference=${photoReference}${maxWidth ? `&maxWidth=${maxWidth}` : ''}`),
+  getPhotoUrl: (photoReference: string, maxWidth?: number) => {
+    const params = new URLSearchParams({ photoReference });
+    if (typeof maxWidth === 'number') {
+      params.set('maxWidth', String(maxWidth));
+    }
+    return api.get<{ success: boolean; photoUrl: string }>(`/api/google/maps/photo?${params.toString()}`);
+  },
   
   geocode: (address: string) => 
     api.get<{ success: boolean; results: any[] }>(`/api/google/maps/geocode?address=${encodeURIComponent(address)}`),
   
   getDirections: (origin: string, destination: string, mode?: 'driving' | 'walking' | 'bicycling' | 'transit') => 
-    api.get<{ success: boolean; routes: any[] }>(`/api/google/maps/directions?origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}${mode ? `&mode=${mode}` : ''}`),
+    api.get<{ success: boolean; routes: any[] }>(
+      '/api/google/maps/directions?origin=' + encodeURIComponent(origin) + '&destination=' + encodeURIComponent(destination) + (mode ? `&mode=${mode}` : '')
+    ),
 
   // Status
   getStatus: () => api.get<{

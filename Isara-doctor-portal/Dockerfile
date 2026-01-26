@@ -396,7 +396,7 @@ RUN chmod +x /docker-entrypoint.sh && \
 
 ENV NODE_ENV=production \
     PORT=8080 \
-    DEMO_MODE=true \
+    DEMO_MODE=false \
     USE_POSTGRESQL=true
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \

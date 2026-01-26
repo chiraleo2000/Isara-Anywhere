@@ -1,0 +1,84 @@
+{
+  "description": "Medical content and clinical resources for patient education",
+  "encoding": "UTF-8",
+  "version": "1.4.0",
+  "medical_content": [
+    {
+      "id": "MC-THAI-001",
+      "title_thai": "การดูแลสุขภาพสำหรับผู้ป่วยเบาหวาน",
+      "title_english": "Health Care for Diabetic Patients",
+      "category": "chronic_disease",
+      "author_id": "DOC-TEST-001",
+      "status": "published",
+      "tags": ["เบาหวาน", "โรคเรื้อรัง", "diabetes"]
+    },
+    {
+      "id": "MC-THAI-002",
+      "title_thai": "ความดันโลหิตสูง: ฆาตกรเงียบที่ต้องระวัง",
+      "title_english": "Hypertension: The Silent Killer",
+      "category": "chronic_disease",
+      "author_id": "DOC-TEST-001",
+      "status": "published",
+      "tags": ["ความดันโลหิตสูง", "hypertension"]
+    },
+    {
+      "id": "MC-THAI-003",
+      "title_thai": "การป้องกันโรคติดเชื้อทางเดินหายใจ",
+      "title_english": "Respiratory Infection Prevention",
+      "category": "prevention",
+      "author_id": "DOC-TEST-001",
+      "status": "published",
+      "tags": ["ป้องกัน", "respiratory"]
+    },
+    {
+      "id": "MC-THAI-004",
+      "title_thai": "โภชนาการเพื่อสุขภาพที่ดี",
+      "title_english": "Nutrition for Good Health",
+      "category": "lifestyle",
+      "author_id": "DOC-TEST-001",
+      "status": "published",
+      "tags": ["โภชนาการ", "nutrition"]
+    },
+    {
+      "id": "MC-THAI-005",
+      "title_thai": "การออกกำลังกายเพื่อสุขภาพ",
+      "title_english": "Exercise for Health",
+      "category": "lifestyle",
+      "author_id": "DOC-TEST-001",
+      "status": "published",
+      "tags": ["ออกกำลังกาย", "exercise"]
+    }
+  ],
+  "clinical_resources": [
+    {
+      "id": "CR-THAI-001",
+      "title_thai": "แนวทางการรักษาโรคเบาหวานชนิดที่ 2 ปี 2025",
+      "title_english": "Type 2 Diabetes Treatment Guidelines 2025",
+      "category": "treatment",
+      "specialty": "endocrinology",
+      "guideline_year": 2025,
+      "source": "American Diabetes Association (ADA)",
+      "status": "published"
+    },
+    {
+      "id": "CR-THAI-002",
+      "title_thai": "การดูแลผู้ป่วยเบาหวานที่มีโรคไตเรื้อรัง",
+      "title_english": "Diabetic Kidney Disease Management",
+      "category": "treatment",
+      "specialty": "nephrology",
+      "guideline_year": 2024,
+      "source": "KDIGO",
+      "status": "published"
+    },
+    {
+      "id": "CR-THAI-003",
+      "title_thai": "ตารางปฏิกิริยาระหว่างยาที่พบบ่อย",
+      "title_english": "Common Drug Interactions Reference",
+      "category": "reference",
+      "specialty": "general",
+      "guideline_year": 2024,
+      "source": "Lexicomp / UpToDate",
+      "status": "published"
+    }
+  ]
+}

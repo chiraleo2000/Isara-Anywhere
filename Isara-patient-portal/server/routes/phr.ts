@@ -1,8 +1,8 @@
 /**
- * PHR Routes - PostgreSQL ONLY
+ * PHR Routes - PostgreSQL ONLY (PRODUCTION)
  * Personal Health Records, Vital Signs, Living Will, Timeline
  * NO GCS - All data stored in PostgreSQL
- * DEMO MODE - Returns mock data when PostgreSQL is unavailable
+ * NO DEMO MODE - Requires PostgreSQL connection
  */
 
 import { Router, Request, Response } from 'express';
@@ -15,40 +15,9 @@ const { pool } = postgresDataService;
 const router = Router();
 
 // ============================================================================
-// DEMO MODE - Mock PHR for cloud deployment without database
+// PRODUCTION MODE - PostgreSQL ONLY (No Demo Mode)
 // ============================================================================
-const DEMO_MODE = process.env.DEMO_MODE === 'true' || process.env.NODE_ENV === 'demo';
-
-// Check if database is available
-async function checkDbConnection(): Promise<boolean> {
-  try {
-    await pool.query('SELECT 1');
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-// Demo PHR data
-const DEMO_PHR = {
-  patientId: 'demo_patient_001',
-  allergies: [
-    { allergen: 'Penicillin', allergen_thai: 'เพนิซิลลิน', type: 'drug', reaction: 'rash', severity: 'moderate' }
-  ],
-  chronic_conditions: [
-    { condition: 'Hypertension', condition_thai: 'ความดันโลหิตสูง', icd_code: 'I10', status: 'active' }
-  ],
-  medications: [
-    { name: 'Amlodipine', name_thai: 'แอมโลดิปีน', dosage: '5mg', frequency: 'once daily' }
-  ],
-  emergency_contacts: [
-    { name: 'Demo Contact', phone: '+66891234567', relation: 'spouse' }
-  ],
-  demographics: { bloodType: 'O+', height: 170, weight: 65 },
-  lifestyle: { smoking: 'never', alcohol: 'social', exercise: 'regular' },
-  created_at: new Date().toISOString(),
-  updated_at: new Date().toISOString()
-};
+console.log('[PHR] Production mode - PostgreSQL only');
 
 // ============================================================================
 // PHR (Personal Health Records) ROUTES
@@ -60,13 +29,6 @@ router.get('/patient/:patientId', authMiddleware, async (req: Request, res: Resp
     const { patientId } = req.params;
     console.log(`[PHR] Getting PHR for patient (via /patient/): ${patientId}`);
 
-    // Check if we should use demo mode
-    const useDemo = DEMO_MODE || !(await checkDbConnection());
-    if (useDemo) {
-      console.log('[PHR] Using DEMO MODE for PHR');
-      return res.json({ ...DEMO_PHR, patientId, demoMode: true });
-    }
-
     const phr = await PHRService.getPHR(patientId);
     if (!phr) {
       // Return empty PHR structure if not found
@@ -85,8 +47,7 @@ router.get('/patient/:patientId', authMiddleware, async (req: Request, res: Resp
     return res.json(phr);
   } catch (error: any) {
     console.error('[PHR] Get PHR error:', error);
-    // Fallback to demo on error
-    return res.json({ ...DEMO_PHR, patientId: req.params.patientId, demoMode: true });
+    return res.status(500).json({ error: 'Failed to get PHR', message: error.message });
   }
 });
 
@@ -96,13 +57,6 @@ router.get('/:patientId', authMiddleware, async (req: Request, res: Response) =>
     const { patientId } = req.params;
     console.log(`[PHR] Getting PHR for patient: ${patientId}`);
 
-    // Check if we should use demo mode
-    const useDemo = DEMO_MODE || !(await checkDbConnection());
-    if (useDemo) {
-      console.log('[PHR] Using DEMO MODE for PHR');
-      return res.json({ ...DEMO_PHR, patientId, demoMode: true });
-    }
-
     const phr = await PHRService.getPHR(patientId);
     if (!phr) {
       // Return empty PHR structure if not found
@@ -121,8 +75,7 @@ router.get('/:patientId', authMiddleware, async (req: Request, res: Response) =>
     return res.json(phr);
   } catch (error: any) {
     console.error('[PHR] Get PHR error:', error);
-    // Fallback to demo on error
-    return res.json({ ...DEMO_PHR, patientId: req.params.patientId, demoMode: true });
+    return res.status(500).json({ error: 'Failed to get PHR', message: error.message });
   }
 });
 
@@ -137,8 +90,7 @@ router.put('/:patientId', authMiddleware, async (req: Request, res: Response) =>
     res.json(updatedPHR);
   } catch (error: any) {
     console.error('[PHR] Update PHR error:', error);
-    // Return success on error
-    res.json({ success: true, message: 'PHR updated (demo mode)', demoMode: true });
+    res.status(500).json({ error: 'Failed to update PHR', message: error.message });
   }
 });
 
@@ -188,7 +140,7 @@ router.put('/profile/:id', authMiddleware, async (req: Request, res: Response) =
     });
   } catch (error: any) {
     console.error('[PHR] Profile update error:', error);
-    res.json({ success: true, message: 'Profile updated (demo mode)', demoMode: true });
+    res.status(500).json({ error: 'Failed to update profile', message: error.message });
   }
 });
 
@@ -369,7 +321,7 @@ router.get('/:patientId/health-logs', authMiddleware, async (req: Request, res: 
       'SELECT COUNT(*) FROM emr WHERE patient_id = $1',
       [patientId]
     );
-    const total = parseInt(countResult.rows[0].count, 10);
+    const total = Number.parseInt(countResult.rows[0].count, 10);
 
     res.json({
       entries: result.rows,
@@ -798,15 +750,13 @@ router.get('/profile/:userId/avatar', authMiddleware, async (req: Request, res: 
 router.get('/', authMiddleware, async (req: Request, res: Response) => {
   try {
     // @ts-ignore - patientId added by authMiddleware
-    const patientId = req.patientId || req.userId || 'demo_patient_001';
-    console.log(`[PHR] Getting PHR for authenticated user: ${patientId}`);
-
-    // Check if we should use demo mode
-    const useDemo = DEMO_MODE || !(await checkDbConnection());
-    if (useDemo) {
-      console.log('[PHR] Using DEMO MODE for PHR');
-      return res.json({ ...DEMO_PHR, patientId, demoMode: true });
+    const patientId = req.patientId || req.userId;
+    
+    if (!patientId) {
+      return res.status(401).json({ error: 'User not authenticated' });
     }
+    
+    console.log(`[PHR] Getting PHR for authenticated user: ${patientId}`);
 
     const phr = await PHRService.getPHR(patientId);
     if (!phr) {
@@ -826,9 +776,7 @@ router.get('/', authMiddleware, async (req: Request, res: Response) => {
     return res.json(phr);
   } catch (error: any) {
     console.error('[PHR] Get PHR error:', error);
-    // Fallback to demo on error
-    // @ts-ignore
-    return res.json({ ...DEMO_PHR, patientId: req.patientId || 'demo_patient_001', demoMode: true });
+    return res.status(500).json({ error: 'Failed to get PHR', message: error.message });
   }
 });
 
@@ -836,23 +784,14 @@ router.get('/', authMiddleware, async (req: Request, res: Response) => {
 router.post('/vitals', authMiddleware, async (req: Request, res: Response) => {
   try {
     // @ts-ignore - patientId added by authMiddleware
-    const patientId = req.patientId || req.userId || 'demo_patient_001';
+    const patientId = req.patientId || req.userId;
+    
+    if (!patientId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+    
     const vitalData = req.body;
     console.log(`[PHR] Adding vital signs for authenticated user: ${patientId}`, vitalData);
-
-    // Check if we should use demo mode
-    const useDemo = DEMO_MODE || !(await checkDbConnection());
-    if (useDemo) {
-      console.log('[PHR] Using DEMO MODE for vitals');
-      return res.json({
-        success: true,
-        id: `vital_demo_${Date.now()}`,
-        patientId,
-        ...vitalData,
-        recorded_at: new Date().toISOString(),
-        demoMode: true
-      });
-    }
 
     // Convert frontend format to database format
     const dbVitalData = {
@@ -873,17 +812,7 @@ router.post('/vitals', authMiddleware, async (req: Request, res: Response) => {
     res.json({ success: true, ...newVital });
   } catch (error: any) {
     console.error('[PHR] Add vitals error:', error);
-    // Fallback to demo response
-    // @ts-ignore
-    const patientId = req.patientId || 'demo_patient_001';
-    return res.json({
-      success: true,
-      id: `vital_demo_${Date.now()}`,
-      patientId,
-      ...req.body,
-      recorded_at: new Date().toISOString(),
-      demoMode: true
-    });
+    return res.status(500).json({ error: 'Failed to add vital signs', message: error.message });
   }
 });
 
