@@ -161,23 +161,16 @@ export default function SymptomInputStep({
                       <MessageSquare className="w-5 h-5 text-blue-500" />
                       อธิบายอาการโดยละเอียด
                     </h3>
-                    {/* AI Suggest Button - helps improve description */}
+                    {/* Help Button - shows guidance for describing symptoms */}
                     <button
-                      onClick={suggestSymptoms}
-                      disabled={aiSuggesting}
-                      className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-lg hover:from-amber-600 hover:to-orange-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium shadow-md transition-all"
+                      onClick={() => {
+                        // Show help tips for describing symptoms
+                        alert(`💡 เคล็ดลับการอธิบายอาการ:\n\n1. บอกอาการหลักก่อน เช่น ปวดหัว ไข้ ไอ\n2. ระบุว่าเป็นมานานแค่ไหน\n3. บอกความรุนแรง (เบา ปานกลาง รุนแรง)\n4. บอกตำแหน่งที่เป็น เช่น ปวดหัวด้านขวา\n5. มีอะไรทำให้ดีขึ้นหรือแย่ลงไหม\n6. มียาที่ใช้อยู่หรือไม่\n\nหากต้องการความช่วยเหลือเพิ่มเติม กรุณาโทร 1323`);
+                      }}
+                      className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg hover:from-blue-600 hover:to-cyan-600 text-sm font-medium shadow-md transition-all"
                     >
-                      {aiSuggesting ? (
-                        <>
-                          <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
-                          กำลังคิด...
-                        </>
-                      ) : (
-                        <>
-                          <Lightbulb className="w-4 h-4" />
-                          AI ช่วยแนะนำ
-                        </>
-                      )}
+                      <Info className="w-4 h-4" />
+                      ความช่วยเหลือ
                     </button>
                   </div>
                   <textarea

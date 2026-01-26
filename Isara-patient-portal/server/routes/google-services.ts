@@ -82,8 +82,8 @@ router.post('/calendar/event', authMiddleware, async (req: Request, res: Respons
     };
 
     // Generate Google Calendar add event URL
-    const startDate = new Date(startDateTime).toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
-    const endDate = new Date(endDateTime).toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+    const startDate = new Date(startDateTime).toISOString().replaceAll(/[-:]/g, '').split('.')[0] + 'Z';
+    const endDate = new Date(endDateTime).toISOString().replaceAll(/[-:]/g, '').split('.')[0] + 'Z';
     
     const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(summary)}&dates=${startDate}/${endDate}&details=${encodeURIComponent(description || '')}&location=${encodeURIComponent(location || '')}`;
 
@@ -203,7 +203,11 @@ router.post('/meet/create', authMiddleware, async (req: Request, res: Response) 
     };
 
     // Generate Google Calendar URL with Meet
-    const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(`Telehealth: ${patientName} - ${doctorName}`)}&dates=${eventStart.toISOString().replace(/[-:]/g, '').split('.')[0]}Z/${eventEnd.toISOString().replace(/[-:]/g, '').split('.')[0]}Z&details=${encodeURIComponent('การนัดหมายทางไกล Izara Telehealth\n\nJoin: ' + meetUrl)}`;
+    const calendarTitle = `Telehealth: ${patientName} - ${doctorName}`;
+    const calendarStart = `${eventStart.toISOString().replaceAll(/[-:]/g, '').split('.')[0]}Z`;
+    const calendarEnd = `${eventEnd.toISOString().replaceAll(/[-:]/g, '').split('.')[0]}Z`;
+    const calendarDetails = `การนัดหมายทางไกล Izara Telehealth\n\nJoin: ${meetUrl}`;
+    const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(calendarTitle)}&dates=${calendarStart}/${calendarEnd}&details=${encodeURIComponent(calendarDetails)}`;
 
     res.json({
       success: true,
@@ -255,7 +259,7 @@ router.get('/places/nearby', async (req: Request, res: Response) => {
             id: 'demo_hospital_001',
             name: 'Demo Hospital',
             address: 'Bangkok, Thailand',
-            location: { lat: parseFloat(lat as string), lng: parseFloat(lng as string) },
+            location: { lat: Number.parseFloat(lat as string), lng: Number.parseFloat(lng as string) },
             rating: 4.5,
             totalRatings: 100,
             isOpen: true,
@@ -284,7 +288,7 @@ router.get('/places/nearby', async (req: Request, res: Response) => {
             id: 'demo_hospital_001',
             name: 'Demo Hospital',
             address: 'Bangkok, Thailand',
-            location: { lat: parseFloat(lat as string), lng: parseFloat(lng as string) },
+            location: { lat: Number.parseFloat(lat as string), lng: Number.parseFloat(lng as string) },
             rating: 4.5,
             totalRatings: 100,
             isOpen: true,
@@ -385,8 +389,8 @@ router.get('/maps/nearby', async (req: Request, res: Response) => {
     res.json({
       success: true,
       results: places,
-      center: { lat: parseFloat(lat as string), lng: parseFloat(lng as string) },
-      radius: parseInt(radius as string),
+      center: { lat: Number.parseFloat(lat as string), lng: Number.parseFloat(lng as string) },
+      radius: Number.parseInt(radius as string, 10),
     });
   } catch (error: any) {
     console.error('[MAPS] Nearby search error:', error);
@@ -534,7 +538,7 @@ router.get('/maps/directions', async (req: Request, res: Response) => {
         startAddress: leg.start_address,
         endAddress: leg.end_address,
         steps: leg.steps.map((step: any) => ({
-          instruction: step.html_instructions.replace(/<[^>]*>/g, ''),
+          instruction: step.html_instructions.replaceAll(/<[^>]*>/g, ''),
           distance: step.distance,
           duration: step.duration,
         })),

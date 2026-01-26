@@ -41,9 +41,6 @@ const GCS_BUCKETS = {
   METADATA: process.env.GCS_BUCKET_METADATA || process.env.VITE_GCS_BUCKET_METADATA || 'izara-meta-data',
 };
 
-// Storage will be initialized later after determining PostgreSQL/GCS mode
-let storage: Storage | null = null;
-
 function initializeStorage(): Storage {
   const projectId = process.env.GCP_PROJECT_ID || process.env.VITE_GCP_PROJECT_ID || 'izara-telemedicine';
   
@@ -76,8 +73,8 @@ function initializeStorage(): Storage {
 
 // PostgreSQL is the PRIMARY and ONLY data store - NO GCS for data interaction
 // GCS is ONLY used for backup, not for live data
-const USE_POSTGRESQL = true; // ALWAYS use PostgreSQL
-const USE_GCS = false; // GCS is disabled for data interaction
+const USE_POSTGRESQL = process.env.USE_POSTGRESQL?.toLowerCase() !== 'false'; // Default to PostgreSQL
+const USE_GCS = process.env.USE_GCS?.toLowerCase() === 'true' && !USE_POSTGRESQL; // Disabled unless explicitly enabled
 
 console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 console.log('📊 Data Configuration:');
@@ -86,7 +83,8 @@ console.log('   ❌ GCS: DISABLED (No GCS for data interaction)');
 console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
 // Storage is null - we don't use GCS for data
-storage = null;
+// (kept as constant export for routes that check for availability)
+const storage: Storage | null = USE_GCS ? initializeStorage() : null;
 
 // Export storage instance for use in routes (may be null if PostgreSQL mode)
 export { storage, GCS_BUCKETS, USE_POSTGRESQL, USE_GCS };
@@ -205,7 +203,8 @@ app.get('/api/health', (_req: Request, res: Response) => {
 app.get('/api/health/gcs', async (_req: Request, res: Response) => {
   try {
     // If PostgreSQL mode is enabled, GCS is not primary storage
-    if (USE_POSTGRESQL || !storage) {
+    const activeStorage = storage;
+    if (USE_POSTGRESQL || !USE_GCS || !activeStorage) {
       return res.json({
         status: 'disabled',
         message: 'GCS disabled - using PostgreSQL as primary storage',
@@ -223,7 +222,7 @@ app.get('/api/health/gcs', async (_req: Request, res: Response) => {
     const bucketStatus = await Promise.all(
       Object.entries(GCS_BUCKETS).map(async ([name, bucketName]) => {
         try {
-          const bucket = storage.bucket(bucketName);
+          const bucket = activeStorage.bucket(bucketName);
           const [exists] = await bucket.exists();
           return {
             name,
@@ -231,6 +230,7 @@ app.get('/api/health/gcs', async (_req: Request, res: Response) => {
             connected: exists,
           };
         } catch (error: any) {
+          console.warn(`[GCS] Bucket check failed for ${name}:`, error);
           return {
             name,
             bucket: bucketName,
@@ -249,6 +249,7 @@ app.get('/api/health/gcs', async (_req: Request, res: Response) => {
       buckets: bucketStatus,
     });
   } catch (error: any) {
+    console.error('[GCS] Health check failed:', error);
     res.status(500).json({
       status: 'unhealthy',
       timestamp: new Date().toISOString(),
@@ -262,7 +263,7 @@ app.get('/api/health/gcs', async (_req: Request, res: Response) => {
 // ============================================================================
 app.get('/api/health/db', async (req: Request, res: Response) => {
   try {
-    const result = await postgresDataService.pool.query('SELECT 1 as health');
+    await postgresDataService.pool.query('SELECT 1 as health');
     res.json({
       status: 'healthy',
       timestamp: new Date().toISOString(),
@@ -270,6 +271,7 @@ app.get('/api/health/db', async (req: Request, res: Response) => {
       connected: true
     });
   } catch (error: any) {
+    console.warn('[DB] Health check failed, returning demo mode response:', error);
     res.json({
       status: 'healthy',
       timestamp: new Date().toISOString(),
@@ -343,6 +345,7 @@ app.get('/api/health-records/instructions/:appointmentId', async (req: Request, 
       }
     });
   } catch (error: any) {
+    console.error('[HEALTH-RECORDS] Instructions error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -360,6 +363,7 @@ app.get('/api/health-records/treatment-results', async (req: Request, res: Respo
       message: 'No treatment results found'
     });
   } catch (error: any) {
+    console.error('[HEALTH-RECORDS] Treatment results error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -463,23 +467,18 @@ app.use('/auth', authRoutes);         // /auth/login for tests
 app.put('/api/profile', authMiddleware, async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user?.id || (req as any).user?.patientId;
-    const { name, avatarUrl, phone, email } = req.body;
+    const { name, avatarUrl } = req.body;
     
     console.log(`[PROFILE] Update request for user: ${userId}`);
     
-    // Update in PostgreSQL
-    try {
-      const pool = postgresService.getPool();
-      await pool.query(`
-        UPDATE users 
-        SET name = COALESCE($1, name),
-            avatar_url = COALESCE($2, avatar_url),
-            updated_at = NOW()
-        WHERE id = $3
-      `, [name, avatarUrl, userId]);
-    } catch (dbError) {
-      console.log('[PROFILE] DB update skipped:', dbError);
-    }
+    // Update in PostgreSQL (fallback to demo response on failure)
+    await postgresDataService.pool.query(`
+      UPDATE users
+      SET name = COALESCE($1, name),
+          avatar_url = COALESCE($2, avatar_url),
+          updated_at = NOW()
+      WHERE id = $3
+    `, [name, avatarUrl, userId]);
     
     res.json({
       success: true,
@@ -502,21 +501,16 @@ app.get('/api/profile', authMiddleware, async (req: Request, res: Response) => {
     console.log(`[PROFILE] Get profile for user: ${userId}`);
     
     // Get profile from PostgreSQL
-    try {
-      const pool = postgresService.getPool();
-      const result = await pool.query(`
-        SELECT id, patient_id, name, name_thai, email, phone, avatar_url, date_of_birth, gender, role
-        FROM users WHERE id = $1
-      `, [userId]);
-      
-      if (result.rows.length > 0) {
-        return res.json({
-          success: true,
-          profile: result.rows[0]
-        });
-      }
-    } catch (dbError) {
-      console.log('[PROFILE] DB query skipped:', dbError);
+    const result = await postgresDataService.pool.query(`
+      SELECT id, patient_id, name, name_thai, email, phone, avatar_url, date_of_birth, gender, role
+      FROM users WHERE id = $1
+    `, [userId]);
+    
+    if (result.rows.length > 0) {
+      return res.json({
+        success: true,
+        profile: result.rows[0]
+      });
     }
     
     res.json({
@@ -745,29 +739,24 @@ async function verifyGCSConnection(): Promise<boolean> {
   return true; // Always return true since GCS is disabled
 }
 
-// Start server
-async function startServer() {
-  try {
-    // Verify GCS connection
-    const gcsConnected = await verifyGCSConnection();
+try {
+  // Verify GCS connection
+  const gcsConnected = await verifyGCSConnection();
 
-    if (!gcsConnected) {
-      console.error('⚠️  Warning: Some GCS buckets are not accessible. Server will start but some features may not work.');
-    }
-
-    app.listen(PORT, () => {
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.log(`🚀 Izara Patient Portal API Server`);
-      console.log(`🛡️  OWASP Top 10:2025 Security Enabled`);
-      console.log(`📡 Server running on http://localhost:${PORT}`);
-      console.log(`🏥 Health check: http://localhost:${PORT}/health`);
-      console.log(`☁️  GCS status: http://localhost:${PORT}/api/health/gcs`);
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
-    });
-  } catch (error) {
-    console.error('❌ Failed to start server:', error);
-    process.exit(1);
+  if (!gcsConnected) {
+    console.error('⚠️  Warning: Some GCS buckets are not accessible. Server will start but some features may not work.');
   }
-}
 
-startServer();
+  app.listen(PORT, () => {
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log(`🚀 Izara Patient Portal API Server`);
+    console.log(`🛡️  OWASP Top 10:2025 Security Enabled`);
+    console.log(`📡 Server running on http://localhost:${PORT}`);
+    console.log(`🏥 Health check: http://localhost:${PORT}/health`);
+    console.log(`☁️  GCS status: http://localhost:${PORT}/api/health/gcs`);
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+  });
+} catch (error) {
+  console.error('❌ Failed to start server:', error);
+  process.exit(1);
+}

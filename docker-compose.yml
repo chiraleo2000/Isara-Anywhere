@@ -82,6 +82,12 @@ services:
         VITE_APP_VERSION: 2.0.0
         VITE_APP_ENV: production
         VITE_USE_POSTGRESQL: "true"
+        # Google Maps API - pass from host environment or use default from .env
+        VITE_GOOGLE_MAPS_API_KEY: ${VITE_GOOGLE_MAPS_API_KEY:-AIzaSyCjs3ang2xXSlE7o34QBEsG-GNhGrvxcHI}
+        VITE_GOOGLE_MAPS_MAP_ID: ${VITE_GOOGLE_MAPS_MAP_ID:-60687d30be2fe4b7e600b274}
+        # Gemini AI
+        VITE_GEMINI_API_KEY: ${VITE_GEMINI_API_KEY:-}
+        VITE_GEMINI_MODEL: ${VITE_GEMINI_MODEL:-gemini-2.5-flash-lite}
     container_name: izara-patient-portal
     restart: unless-stopped
     env_file:
@@ -184,6 +190,60 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+
+  # ==========================================================================
+  # Jitsi Meeting Server - Transcription & AI Summary (port 3020)
+  # ==========================================================================
+  meeting-server:
+    build:
+      context: ./Izara-jitsi-server
+      dockerfile: Dockerfile
+    container_name: izara-meeting-server
+    restart: unless-stopped
+    environment:
+      # Server Configuration
+      NODE_ENV: production
+      PORT: 3020
+      
+      # Database Configuration - Docker internal network
+      DATABASE_URL: postgresql://postgres:P@ssw0rd@postgres:5432/izara_phase1
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: izara_phase1
+      DB_USER: postgres
+      DB_PASSWORD: P@ssw0rd
+      
+      # Jitsi Configuration
+      JITSI_DOMAIN: meet.jit.si
+      
+      # Google Cloud Speech-to-Text (optional - uses Web Speech API as fallback)
+      GOOGLE_CLOUD_SPEECH_ENABLED: "false"
+      GOOGLE_APPLICATION_CREDENTIALS: /app/credentials/service-account.json
+      
+      # Gemini AI for Summary
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: gemini-2.5-flash
+      
+      # JWT for authentication
+      JWT_SECRET: ${JWT_SECRET:-izara-meeting-secret-2024}
+      
+      # CORS
+      CORS_ORIGINS: http://localhost:3005,http://localhost:3010
+    volumes:
+      - ./credentials/service-account.json:/app/credentials/service-account.json:ro
+    ports:
+      - "3020:3020"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - izara-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3020/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
 volumes:
   postgres_data:

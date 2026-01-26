@@ -138,9 +138,17 @@ export const pdpaService = {
 };
 
 export const aiService = {
-  chat: (message: string, history?: any[]) => api.post<{ reply: string }>('/api/ai/chat', { message, conversationHistory: history }),
+  chat: (message: string, history?: any[], sessionId?: string) => 
+    api.post<{ reply: string; sessionId: string }>('/api/ai/chat', { message, conversationHistory: history, sessionId }),
   symptomCheck: (symptoms: string, context?: any) => api.post<any>('/api/ai/symptom-checker', { symptoms, patientContext: context }),
   riskAssessment: (patientData: any) => api.post<any>('/api/ai/risk-assessment', { patientData }),
+  // Chat history management - PostgreSQL persistent
+  getChatHistory: (sessionId?: string) => 
+    api.get<{ sessions?: any[]; history?: any[]; sessionId?: string }>(`/api/ai/chat/history${sessionId ? `?sessionId=${sessionId}` : ''}`),
+  clearChatHistory: (sessionId?: string) => 
+    api.post<{ success: boolean; message: string }>('/api/ai/chat/clear', { sessionId }),
+  getChatSessions: () => 
+    api.get<{ sessions: Array<{ session_id: string; started_at: string; last_message_at: string; message_count: number }> }>('/api/ai/chat/history'),
 };
 
 // Health Logs Service - EMR records sent from doctors

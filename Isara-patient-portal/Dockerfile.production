@@ -42,43 +42,40 @@ ARG VITE_PDPA_ENABLED
 ARG VITE_CONSENT_REQUIRED
 
 # Set environment variables for build
-ENV VITE_APP_NAME=${VITE_APP_NAME}
-ENV VITE_APP_VERSION=${VITE_APP_VERSION}
-ENV VITE_GCP_PROJECT_ID=${VITE_GCP_PROJECT_ID}
-ENV VITE_GCP_REGION=${VITE_GCP_REGION}
-ENV VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID}
-ENV VITE_API_URL=${VITE_API_URL}
-ENV VITE_AUTH_PORTAL_URL=${VITE_AUTH_PORTAL_URL}
-ENV VITE_PATIENT_URL=${VITE_PATIENT_URL}
-ENV VITE_WEBSOCKET_URL=${VITE_WEBSOCKET_URL}
-ENV VITE_GCS_BUCKET_AUTH=${VITE_GCS_BUCKET_AUTH}
-ENV VITE_GCS_BUCKET_DOCTOR=${VITE_GCS_BUCKET_DOCTOR}
-ENV VITE_GCS_BUCKET_PATIENT=${VITE_GCS_BUCKET_PATIENT}
-ENV VITE_GCS_BUCKET_APPOINTMENTS=${VITE_GCS_BUCKET_APPOINTMENTS}
-ENV VITE_GCS_BUCKET_METADATA=${VITE_GCS_BUCKET_METADATA}
-ENV VITE_GOOGLE_CALENDAR_API_KEY=${VITE_GOOGLE_CALENDAR_API_KEY}
-ENV VITE_GOOGLE_MEET_API_KEY=${VITE_GOOGLE_MEET_API_KEY}
-ENV VITE_GOOGLE_MAPS_API_KEY=${VITE_GOOGLE_MAPS_API_KEY}
-ENV VITE_GEMINI_API_KEY=${VITE_GEMINI_API_KEY}
-ENV VITE_GEMINI_MODEL=${VITE_GEMINI_MODEL}
-ENV VITE_PDPA_ENABLED=${VITE_PDPA_ENABLED}
-ENV VITE_CONSENT_REQUIRED=${VITE_CONSENT_REQUIRED}
+ENV VITE_APP_NAME=${VITE_APP_NAME} \
+    VITE_APP_VERSION=${VITE_APP_VERSION} \
+    VITE_GCP_PROJECT_ID=${VITE_GCP_PROJECT_ID} \
+    VITE_GCP_REGION=${VITE_GCP_REGION} \
+    VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID} \
+    VITE_API_URL=${VITE_API_URL} \
+    VITE_AUTH_PORTAL_URL=${VITE_AUTH_PORTAL_URL} \
+    VITE_PATIENT_URL=${VITE_PATIENT_URL} \
+    VITE_WEBSOCKET_URL=${VITE_WEBSOCKET_URL} \
+    VITE_GCS_BUCKET_AUTH=${VITE_GCS_BUCKET_AUTH} \
+    VITE_GCS_BUCKET_DOCTOR=${VITE_GCS_BUCKET_DOCTOR} \
+    VITE_GCS_BUCKET_PATIENT=${VITE_GCS_BUCKET_PATIENT} \
+    VITE_GCS_BUCKET_APPOINTMENTS=${VITE_GCS_BUCKET_APPOINTMENTS} \
+    VITE_GCS_BUCKET_METADATA=${VITE_GCS_BUCKET_METADATA} \
+    VITE_GOOGLE_CALENDAR_API_KEY=${VITE_GOOGLE_CALENDAR_API_KEY} \
+    VITE_GOOGLE_MEET_API_KEY=${VITE_GOOGLE_MEET_API_KEY} \
+    VITE_GOOGLE_MAPS_API_KEY=${VITE_GOOGLE_MAPS_API_KEY} \
+    VITE_GEMINI_API_KEY=${VITE_GEMINI_API_KEY} \
+    VITE_GEMINI_MODEL=${VITE_GEMINI_MODEL} \
+    VITE_PDPA_ENABLED=${VITE_PDPA_ENABLED} \
+    VITE_CONSENT_REQUIRED=${VITE_CONSENT_REQUIRED}
 
 # Build the application
 RUN npm run build
 
 # Verify build output
-RUN ls -la /app/dist && echo "✅ Frontend build completed"
+RUN ls -la /app/dist && echo "Frontend build completed"
 
 # Stage 2: Production runtime with Nginx
 FROM nginx:1.25-alpine
 
 # Install required packages
-RUN apk add --no-cache \
-    bash \
-    curl \
-    gettext \
-    && rm -rf /var/cache/apk/*
+RUN apk add --no-cache bash curl gettext && \
+    rm -rf /var/cache/apk/*
 
 # Copy Nginx configuration
 COPY nginx.conf /etc/nginx/conf.d/default.conf
@@ -86,51 +83,13 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 # Copy built files from builder stage
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Create runtime environment injection script
-RUN cat > /usr/share/nginx/html/env-config.template.js << 'EOF'
-window.ENV = {
-  API_URL: "${VITE_API_URL}",
-  AUTH_PORTAL_URL: "${VITE_AUTH_PORTAL_URL}",
-  PATIENT_URL: "${VITE_PATIENT_URL}",
-  WEBSOCKET_URL: "${VITE_WEBSOCKET_URL}",
-  GCP_PROJECT_ID: "${VITE_GCP_PROJECT_ID}",
-  GCP_REGION: "${VITE_GCP_REGION}",
-  GOOGLE_CLIENT_ID: "${VITE_GOOGLE_CLIENT_ID}",
-  GCS_BUCKET_AUTH: "${VITE_GCS_BUCKET_AUTH}",
-  GCS_BUCKET_DOCTOR: "${VITE_GCS_BUCKET_DOCTOR}",
-  GCS_BUCKET_PATIENT: "${VITE_GCS_BUCKET_PATIENT}",
-  GCS_BUCKET_APPOINTMENTS: "${VITE_GCS_BUCKET_APPOINTMENTS}",
-  GCS_BUCKET_METADATA: "${VITE_GCS_BUCKET_METADATA}",
-  GOOGLE_CALENDAR_API_KEY: "${VITE_GOOGLE_CALENDAR_API_KEY}",
-  GOOGLE_MEET_API_KEY: "${VITE_GOOGLE_MEET_API_KEY}",
-  GOOGLE_MAPS_API_KEY: "${VITE_GOOGLE_MAPS_API_KEY}",
-  GEMINI_API_KEY: "${VITE_GEMINI_API_KEY}",
-  GEMINI_MODEL: "${VITE_GEMINI_MODEL}",
-  PDPA_ENABLED: "${VITE_PDPA_ENABLED}",
-  CONSENT_REQUIRED: "${VITE_CONSENT_REQUIRED}"
-};
-EOF
+# Copy docker config files
+COPY docker/env-config.template.js /usr/share/nginx/html/env-config.template.js
+COPY docker/docker-entrypoint.sh /docker-entrypoint.sh
 
-# Docker entrypoint script to inject runtime environment variables
-RUN cat > /docker-entrypoint.sh << 'EOF'
-#!/bin/bash
-set -e
-
-echo "🚀 Starting Izara Patient Portal..."
-
-# Inject environment variables into config file
-envsubst < /usr/share/nginx/html/env-config.template.js > /usr/share/nginx/html/env-config.js
-
-echo "✅ Environment configuration injected"
-
-# Start nginx
-exec "$@"
-EOF
-
-RUN chmod +x /docker-entrypoint.sh
-
-# Set ownership
-RUN chown -R nginx:nginx /usr/share/nginx/html && \
+# Set permissions
+RUN chmod +x /docker-entrypoint.sh && \
+    chown -R nginx:nginx /usr/share/nginx/html && \
     chmod -R 755 /usr/share/nginx/html
 
 # Health check endpoint

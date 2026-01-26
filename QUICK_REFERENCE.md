@@ -1,5 +1,6 @@
 # 🏥 Izara Telemedicine - Quick Reference
 
+
 **Version:** 4.0.0  
 **Storage:** PostgreSQL Only (**NO GCS**)  
 **Last Updated:** January 23, 2026
@@ -8,15 +9,17 @@
 
 ## Portal URLs (ลิงก์เข้าใช้งาน)
 
+
 | Environment | Patient Portal | Doctor Portal |
-|-------------|----------------|---------------|
-| **Local** | http://localhost:3005 | http://localhost:3010 |
-| **Cloud** | https://izara-patient-portal-724889190329.asia-southeast1.run.app | https://izara-doctor-portal-724889190329.asia-southeast1.run.app |
+| ------------- | ---------------- | --------------- |
+| **Local** | <http://localhost:3005> | <http://localhost:3010> |
+| **Cloud** | <https://izara-patient-portal-724889190329.asia-southeast1.run.app> | <https://izara-doctor-portal-724889190329.asia-southeast1.run.app> |
 
 ## Test Credentials (บัญชีทดสอบ)
 
+
 | Role | Email | Password | Thai Name |
-|------|-------|----------|-----------|
+| ------ | ------- | ---------- | ----------- |
 | **Patient 0** | demo.test@gmail.com | P@ssw0rd | นาย ทดสอบ ระบบ |
 | **Patient 1** | Somchai.Mankong@gmail.com | P@ssw0rd | นายสมชาย มั่นคง |
 | **Patient 2** | Anan.Khayanrian@gmail.com | P@ssw0rd | นายอนันต์ ขยันเรียน |
@@ -25,7 +28,9 @@
 
 ## Patient Data Summary (ข้อมูลผู้ป่วย)
 
+
 ### Patient 1: นายสมชาย มั่นคง (Somchai Mankong)
+
 - **HN**: HN-2024-001234
 - **Age**: 45 years old
 - **Blood Type**: O+
@@ -33,7 +38,9 @@
 - **Medications**: Amlodipine 5mg QD
 - **Allergies**: None
 
+
 ### Patient 2: นายอนันต์ ขยันเรียน (Anan Khayanrian)
+
 - **HN**: HN-2018-005678
 - **Age**: 58 years old
 - **Blood Type**: A+
@@ -49,7 +56,9 @@
   - ⚠️ Penicillin (Severe - Anaphylaxis)
   - ⚠️ Sulfa drugs (Moderate - Rash)
 
+
 ## Quick Commands
+
 
 ```powershell
 # Local Deployment
@@ -63,3 +72,4 @@ npx playwright test scripts/tests/e2e/comprehensive-tests.spec.js
 # Run Tests with UI (headed mode)
 npx playwright test --headed
 ```
+

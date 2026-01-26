@@ -42,7 +42,8 @@ export const api = {
   put: <T>(endpoint: string, data?: unknown) => 
     request<T>(endpoint, { method: 'PUT', body: data ? JSON.stringify(data) : undefined }),
   
-  delete: <T>(endpoint: string) => request<T>(endpoint, { method: 'DELETE' }),
+  delete: <T>(endpoint: string, options?: { data?: unknown }) => 
+    request<T>(endpoint, { method: 'DELETE', body: options?.data ? JSON.stringify(options.data) : undefined }),
 };
 
 export default api;

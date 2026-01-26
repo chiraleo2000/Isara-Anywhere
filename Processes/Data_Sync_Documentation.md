@@ -1,12 +1,14 @@
 # Izara Telemedicine - Data Architecture & Sync Documentation
 
-**Version:** 3.0.0  
-**Last Updated:** January 21, 2026  
-**Status:** ✅ PostgreSQL Implementation Complete
+
+**Version:** 3.1.0  
+**Last Updated:** January 26, 2026  
+**Status:** ✅ PostgreSQL Implementation Complete + Meeting Server
 
 ---
 
 ## 📋 Overview
+
 
 Izara Telemedicine uses PostgreSQL as the primary database, deployed alongside the application portals in Docker containers. This document describes the data architecture, table structure, and data flow patterns.
 
@@ -14,34 +16,42 @@ Izara Telemedicine uses PostgreSQL as the primary database, deployed alongside t
 
 ## 🗄️ Database Configuration
 
+
 ### Docker Services
 
+
 | Service | Container Name | Port | Purpose |
-|---------|----------------|------|---------|
-| PostgreSQL | izara-postgres | 5432 | Primary database |
+| --------- | ---------------- | ------ | --------- |
+| PostgreSQL | izara-postgres | 5433 (external) / 5432 (internal) | Primary database |
 | Patient Portal | izara-patient-portal | 3005 | Patient frontend + backend |
 | Doctor Portal | izara-doctor-portal | 3010 | Doctor frontend + backend |
+| Meeting Server | izara-meeting-server | 3020 | Jitsi transcription + AI summary |
 | pgAdmin | izara-pgadmin | 5050 | Database administration |
 
 ### Connection Details
 
-```
-Host: localhost (local Docker)
-Port: 5432
+
+```text
+Host: localhost (local Docker) / postgres (Docker network)
+Port: 5433 (external) / 5432 (internal)
 User: postgres
 Password: P@ssw0rd
 Database: izara_phase1
 ```
 
+
 ### Database Extension
 
+
 - **pgvector** - For AI embedding storage and similarity search
+
 
 ---
 
 ## 📊 Data Architecture
 
-```
+
+```text
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                    POSTGRESQL DATABASE: izara_phase1                        │
 ├─────────────────────────────────────────────────────────────────────────────┤
@@ -103,13 +113,16 @@ Database: izara_phase1
 └───────────────────────┘ └───────────────────────┘ └───────────────────────┘
 ```
 
+
 ---
 
 ## 🔄 Data Flow Patterns
 
+
 ### 1. User Authentication Flow
 
-```
+
+```text
 Patient Login                          Doctor/Admin Login
      │                                       │
      ▼                                       ▼
@@ -135,9 +148,11 @@ Patient Login                          Doctor/Admin Login
 └──────────────────────────────────────────────────┘
 ```
 
+
 ### 2. Appointment Data Flow
 
-```
+
+```text
 Patient Books Appointment
          │
          ▼
@@ -188,9 +203,11 @@ Patient Books Appointment
 └─────────────────┘
 ```
 
+
 ### 3. AI-Assisted EMR Flow (Phase 1 Feature)
 
-```
+
+```text
 Video Meeting Completes
          │
          ▼
@@ -235,9 +252,11 @@ Video Meeting Completes
 └───────────────┘
 ```
 
+
 ### 4. Patient Instruction Sheet Generation
 
-```
+
+```text
 Doctor Completes EMR
          │
          ▼
@@ -270,12 +289,14 @@ Doctor Completes EMR
 └─────────────────┘    └─────────────────────────┘
 ```
 
+
 ---
 
 ## 🔐 Access Control Matrix
 
+
 | Resource | Patient | Doctor | Admin |
-|----------|---------|--------|-------|
+| ---------- | --------- | -------- | ------- |
 | Own PHR | Read/Write | Read | Read |
 | Other Patient PHR | ❌ | Read (assigned) | Read (all) |
 | Appointments (own) | Read/Write | Read/Write | Read/Write |
@@ -290,10 +311,12 @@ Doctor Completes EMR
 
 ## 📡 API Endpoints
 
+
 ### Patient Portal (Port 3005)
 
+
 | Endpoint | Method | Data Source | Description |
-|----------|--------|-------------|-------------|
+| ---------- | -------- | ------------- | ------------- |
 | `/api/auth/login` | POST | PostgreSQL users | Patient authentication |
 | `/api/phr` | GET/POST | PostgreSQL phr | Personal health records |
 | `/api/appointments` | GET/POST | PostgreSQL appointments | Appointment management |
@@ -304,8 +327,9 @@ Doctor Completes EMR
 
 ### Doctor Portal (Port 3010)
 
+
 | Endpoint | Method | Data Source | Description |
-|----------|--------|-------------|-------------|
+| ---------- | -------- | ------------- | ------------- |
 | `/api/auth/login` | POST | PostgreSQL users | Doctor authentication |
 | `/api/patients` | GET | PostgreSQL patient_profiles | Patient list |
 | `/api/appointments` | GET/PUT | PostgreSQL appointments | Appointment management |
@@ -322,7 +346,9 @@ Doctor Completes EMR
 
 ## 🔍 Data Validation Rules
 
+
 ### Appointment Data
+
 ```javascript
 {
   id: "APT-{uuid}",                    // Required, unique
@@ -345,7 +371,9 @@ Doctor Completes EMR
 }
 ```
 
+
 ### EMR Data (SOAP Format)
+
 ```javascript
 {
   id: "EMR-{uuid}",
@@ -365,7 +393,9 @@ Doctor Completes EMR
 }
 ```
 
+
 ### AI Validation Record (Man-in-the-Loop)
+
 ```javascript
 {
   id: "VAL-{uuid}",
@@ -382,16 +412,21 @@ Doctor Completes EMR
 }
 ```
 
+
 ---
 
 ## ✅ Testing Coverage
 
+
 ### Playwright Tests (26 tests)
+
 - Patient Portal: 10 tests
 - Doctor Portal: 10 tests
 - Admin workflows: 6 tests
 
+
 ### Run Tests
+
 ```powershell
 # Complete test suite (Playwright)
 cd Isara-doctor-portal
@@ -407,10 +442,12 @@ npx playwright test --ui
 npx playwright test --debug
 ```
 
+
 ### Test Users
 
+
 | Role | Email | Password |
-|------|-------|----------|
+| ------ | ------- | ---------- |
 | Patient | demo.test@gmail.com | P@ssw0rd |
 | Patient | Somchai.Mankong@gmail.com | P@ssw0rd |
 | Patient | Anan.Khayanrian@gmail.com | P@ssw0rd |
@@ -421,15 +458,19 @@ npx playwright test --debug
 
 ## 🚀 Deployment Checklist
 
+
 ### Local Development
+
 
 - [ ] Docker containers running (postgres, patient-portal, doctor-portal, pgadmin)
 - [ ] Database seeded with `seed-local.sql`
-- [ ] Patient Portal accessible at http://localhost:3005
-- [ ] Doctor Portal accessible at http://localhost:3010
-- [ ] pgAdmin accessible at http://localhost:5050
+- [ ] Patient Portal accessible at <http://localhost:3005>
+- [ ] Doctor Portal accessible at <http://localhost:3010>
+- [ ] pgAdmin accessible at <http://localhost:5050>
+
 
 ### Production Deployment
+
 
 - [ ] Cloud Run services deployed
 - [ ] Cloud SQL PostgreSQL configured
@@ -438,7 +479,9 @@ npx playwright test --debug
 - [ ] CORS and security headers configured
 - [ ] All Playwright tests pass
 
+
 ---
 
 *Documentation generated for Izara Telemedicine Platform v3.0.0*
 *Phase 1: AI-Assisted Consultation with Man-in-the-Loop Validation*
+

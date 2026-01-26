@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Sparkles, Minimize2, Maximize2 } from 'lucide-react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { Send, Bot, User, Sparkles, Minimize2, Maximize2, Trash2, History } from 'lucide-react';
 import { aiService } from '../../lib/services';
 
 interface Message {
@@ -12,15 +12,58 @@ interface Message {
 interface AIHealthChatProps {
   className?: string;
   compact?: boolean;
+  userId?: string;
 }
 
-export const AIHealthChat: React.FC<AIHealthChatProps> = ({ className = '', compact = true }) => {
+export const AIHealthChat: React.FC<AIHealthChatProps> = ({ className = '', compact = true, userId }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [loadingHistory, setLoadingHistory] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
+
+  // Load chat history from PostgreSQL on mount
+  const loadChatHistory = useCallback(async () => {
+    if (!userId) {
+      setLoadingHistory(false);
+      return;
+    }
+    
+    try {
+      setLoadingHistory(true);
+      // Try to get the latest session first
+      const sessionsResponse = await aiService.getChatSessions();
+      
+      if (sessionsResponse.sessions && sessionsResponse.sessions.length > 0) {
+        // Load the most recent session
+        const latestSession = sessionsResponse.sessions[0];
+        const historyResponse = await aiService.getChatHistory(latestSession.session_id);
+        
+        if (historyResponse.history && historyResponse.history.length > 0) {
+          const loadedMessages: Message[] = historyResponse.history.map((msg: any, idx: number) => ({
+            id: `loaded_${idx}_${Date.now()}`,
+            role: msg.role as 'user' | 'assistant',
+            content: msg.content,
+            timestamp: new Date(msg.created_at || Date.now()),
+          }));
+          setMessages(loadedMessages);
+          setSessionId(latestSession.session_id);
+          console.log(`[AI Chat] Loaded ${loadedMessages.length} messages from session ${latestSession.session_id}`);
+        }
+      }
+    } catch (error) {
+      console.error('[AI Chat] Failed to load history:', error);
+    } finally {
+      setLoadingHistory(false);
+    }
+  }, [userId]);
+
+  useEffect(() => {
+    loadChatHistory();
+  }, [loadChatHistory]);
 
   useEffect(() => {
     // Only scroll within the chat container when messages are added, not on initial render
@@ -46,7 +89,13 @@ export const AIHealthChat: React.FC<AIHealthChatProps> = ({ className = '', comp
 
     try {
       const history = messages.map((m) => ({ role: m.role, content: m.content }));
-      const response = await aiService.chat(userMessage.content, history);
+      const response = await aiService.chat(userMessage.content, history, sessionId || undefined);
+
+      // Store session ID from response for persistence
+      if (response.sessionId && !sessionId) {
+        setSessionId(response.sessionId);
+        console.log('[AI Chat] Session started:', response.sessionId);
+      }
 
       const assistantMessage: Message = {
         id: `msg_${Date.now()}_ai`,
@@ -69,6 +118,19 @@ export const AIHealthChat: React.FC<AIHealthChatProps> = ({ className = '', comp
     }
   };
 
+  const handleClearHistory = async () => {
+    if (!confirm('ต้องการล้างประวัติการสนทนาทั้งหมดหรือไม่?')) return;
+    
+    try {
+      await aiService.clearChatHistory(sessionId || undefined);
+      setMessages([]);
+      setSessionId(null);
+      console.log('[AI Chat] History cleared');
+    } catch (error) {
+      console.error('[AI Chat] Failed to clear history:', error);
+    }
+  };
+
   const quickQuestions = [
     'ปวดหัว ควรทำอย่างไร',
     'อาหารดีต่อหัวใจ',
@@ -85,17 +147,30 @@ export const AIHealthChat: React.FC<AIHealthChatProps> = ({ className = '', comp
           </div>
           <div>
             <h3 className="font-bold text-sm">AI Health Assistant</h3>
-            <p className="text-purple-200 text-xs">ถามคำถามสุขภาพได้เลย</p>
+            <p className="text-purple-200 text-xs">
+              {loadingHistory ? 'กำลังโหลด...' : messages.length > 0 ? `${messages.length} ข้อความ` : 'ถามคำถามสุขภาพได้เลย'}
+            </p>
           </div>
         </div>
-        {compact && (
-          <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="p-1.5 hover:bg-white/20 rounded-lg transition-colors"
-          >
-            {isExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-          </button>
-        )}
+        <div className="flex items-center gap-1">
+          {messages.length > 0 && (
+            <button
+              onClick={handleClearHistory}
+              className="p-1.5 hover:bg-white/20 rounded-lg transition-colors"
+              title="ล้างประวัติ"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          )}
+          {compact && (
+            <button
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="p-1.5 hover:bg-white/20 rounded-lg transition-colors"
+            >
+              {isExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Chat Area */}

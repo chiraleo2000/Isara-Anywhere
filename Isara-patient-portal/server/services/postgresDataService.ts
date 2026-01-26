@@ -167,7 +167,8 @@ export interface PHR {
 export interface VitalSigns {
   id: string;
   patient_id: string;
-  recorded_at: Date;
+  measured_at: Date;
+  recorded_at?: Date; // alias for measured_at
   blood_pressure_systolic?: number;
   blood_pressure_diastolic?: number;
   heart_rate?: number;
@@ -176,8 +177,11 @@ export interface VitalSigns {
   height?: number;
   oxygen_saturation?: number;
   blood_glucose?: number;
-  blood_glucose_timing?: string;
+  blood_glucose_type?: string;
+  blood_glucose_timing?: string; // alias for blood_glucose_type
   notes?: string;
+  bmi?: number;
+  source?: string;
 }
 
 export interface Appointment {
@@ -414,9 +418,9 @@ export const PHRService = {
    */
   async getVitalSigns(patientId: string, limit: number = 50): Promise<VitalSigns[]> {
     const result = await pool.query(
-      `SELECT * FROM vital_signs 
+      `SELECT *, measured_at as recorded_at FROM vital_signs 
        WHERE patient_id = $1 
-       ORDER BY recorded_at DESC 
+       ORDER BY measured_at DESC 
        LIMIT $2`,
       [patientId, limit]
     );
@@ -427,28 +431,35 @@ export const PHRService = {
    * Add vital signs record
    */
   async addVitalSigns(patientId: string, data: Partial<VitalSigns>): Promise<VitalSigns> {
+    // Calculate BMI if height and weight are provided
+    let bmi: number | null = null;
+    if (data.weight && data.height && data.height > 0) {
+      const heightInMeters = Number(data.height) / 100;
+      bmi = Number((Number(data.weight) / (heightInMeters * heightInMeters)).toFixed(1));
+    }
+
     const result = await pool.query(
       `INSERT INTO vital_signs (
-        id, patient_id, blood_pressure_systolic, blood_pressure_diastolic,
+        patient_id, blood_pressure_systolic, blood_pressure_diastolic,
         heart_rate, temperature, weight, height, oxygen_saturation,
-        blood_glucose, blood_glucose_timing, notes, recorded_at
+        blood_glucose, blood_glucose_type, notes, measured_at, bmi, source
       )
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, COALESCE($13, NOW()))
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, COALESCE($12::timestamp, NOW()), $13, 'patient_input')
        RETURNING *`,
       [
-        crypto.randomUUID(),
         patientId,
-        data.blood_pressure_systolic,
-        data.blood_pressure_diastolic,
-        data.heart_rate,
-        data.temperature,
-        data.weight,
-        data.height,
-        data.oxygen_saturation,
-        data.blood_glucose,
-        data.blood_glucose_timing,
-        data.notes,
-        data.recorded_at
+        data.blood_pressure_systolic || null,
+        data.blood_pressure_diastolic || null,
+        data.heart_rate || null,
+        data.temperature || null,
+        data.weight || null,
+        data.height || null,
+        data.oxygen_saturation || null,
+        data.blood_glucose || null,
+        data.blood_glucose_type || data.blood_glucose_timing || null,
+        data.notes || null,
+        data.measured_at || data.recorded_at || null,
+        bmi
       ]
     );
     return result.rows[0];

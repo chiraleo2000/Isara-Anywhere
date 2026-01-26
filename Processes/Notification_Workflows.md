@@ -1,5 +1,6 @@
 # Notification Workflows / ขั้นตอนการแจ้งเตือน
 
+
 **Version:** 3.0.0  
 **Last Updated:** January 21, 2026  
 **Status:** ✅ PostgreSQL Implementation
@@ -8,16 +9,19 @@
 
 ## 1. ภาพรวมระบบแจ้งเตือน (Notification System Overview)
 
+
 ### 1.1 ช่องทางการแจ้งเตือน (Notification Channels)
+
 | Channel | Thai | Description |
-|---------|------|-------------|
+| --------- | ------ | ------------- |
 | In-App | แจ้งเตือนในแอป | Real-time notifications within the portal |
 | Email | อีเมล | Email notifications via Gmail API |
 | Push | Push Notification | Browser/Mobile push notifications |
 | SMS | SMS | SMS notifications (future enhancement) |
 
 ### 1.2 ประเภทการแจ้งเตือน (Notification Types)
-```
+
+```text
 📅 Appointments (นัดหมาย)
 ├── appointment_requested    - ผู้ป่วยขอนัดหมายใหม่
 ├── appointment_confirmed    - แพทย์ยืนยันนัดหมาย + ลิงก์ประชุม
@@ -45,11 +49,14 @@
 └── system_maintenance       - แจ้งการบำรุงรักษาระบบ
 ```
 
+
 ---
 
 ## 2. Notification Flow Diagrams
 
+
 ### 2.1 Appointment Request Flow
+
 ```mermaid
 flowchart TD
     P[ผู้ป่วยขอนัดหมาย] --> S{เลือกแพทย์?}
@@ -69,7 +76,9 @@ flowchart TD
     A1 --> D2
 ```
 
+
 ### 2.2 Meeting Link Workflow
+
 ```mermaid
 flowchart TD
     A[แพทย์ยืนยันนัดหมาย] --> B[สร้าง Jitsi Meet Link]
@@ -88,11 +97,14 @@ flowchart TD
     E --> K[เพิ่มใน Calendar]
 ```
 
+
 ---
 
 ## 3. Implementation Details
 
+
 ### 3.1 In-App Notification Structure
+
 ```typescript
 interface Notification {
   id: string;
@@ -122,8 +134,10 @@ interface Notification {
 }
 ```
 
+
 ### 3.2 GCS Storage Paths
-```
+
+```text
 izara-meta-data/
 ├── notifications.json           # Global notifications log
 └── users/
@@ -131,7 +145,9 @@ izara-meta-data/
         └── notifications.json   # User-specific notifications (max 100)
 ```
 
+
 ### 3.3 Notification Service Methods
+
 ```typescript
 // สร้างและส่งการแจ้งเตือน
 notificationService.notifyAppointmentRequested(data)    // ผู้ป่วยขอนัดหมาย
@@ -147,21 +163,25 @@ notificationService.markAsRead(userId, notificationId)  // อ่านแล้
 notificationService.markAllAsRead(userId)               // อ่านทั้งหมด
 ```
 
+
 ---
 
 ## 4. Notification UI Components
 
+
 ### 4.1 Patient Portal (พอร์ทัลผู้ป่วย)
+
 | Component | Location | Thai Label |
-|-----------|----------|------------|
+| ----------- | ---------- | ------------ |
 | NotificationBell | MainLayout Header | 🔔 การแจ้งเตือน |
 | NotificationDropdown | Header Dropdown | รายการแจ้งเตือน |
 | NotificationPage | /notifications | ประวัติการแจ้งเตือน |
 | ToastNotification | Global | แจ้งเตือนแบบ popup |
 
 ### 4.2 Doctor Portal (พอร์ทัลแพทย์)
+
 | Component | Location | Thai Label |
-|-----------|----------|------------|
+| ----------- | ---------- | ------------ |
 | NotificationBell | ResponsiveLayout | 🔔 การแจ้งเตือน |
 | AppointmentAlert | Dashboard | นัดหมายรอดำเนินการ |
 | PatientRequestBadge | Queue | คำขอนัดหมายใหม่ |
@@ -170,8 +190,10 @@ notificationService.markAllAsRead(userId)               // อ่านทั้
 
 ## 5. Email Templates (Thai)
 
+
 ### 5.1 การยืนยันนัดหมาย (Appointment Confirmed)
-```
+
+```text
 Subject: ✅ นัดหมายได้รับการยืนยัน - [วันที่]
 
 สวัสดีคุณ [ชื่อผู้ป่วย],
@@ -193,8 +215,10 @@ Subject: ✅ นัดหมายได้รับการยืนยัน 
 [➕ เพิ่มในปฏิทิน] [📋 ดูนัดหมาย]
 ```
 
+
 ### 5.2 การแจ้งเตือนลิงก์ประชุม (Meeting Link Ready)
-```
+
+```text
 Subject: 🔗 ลิงก์ประชุมพร้อมแล้ว - นัดหมาย [วันที่]
 
 สวัสดีคุณ [ชื่อผู้ป่วย],
@@ -216,26 +240,33 @@ Subject: 🔗 ลิงก์ประชุมพร้อมแล้ว - น
 หากมีข้อสงสัย กรุณาติดต่อ support@izara-telemedicine.com
 ```
 
+
 ---
 
 ## 6. Meeting Link Integration (Jitsi Meet)
 
+
 ### 6.1 ทำไมใช้ Jitsi Meet
+
 - ✅ ฟรี ไม่มีค่าใช้จ่าย
 - ✅ ไม่ต้องสมัครสมาชิก ไม่ต้องมี Google Account
 - ✅ เข้าได้ทันทีผ่าน Browser
 - ✅ รองรับการบันทึกวิดีโอ
 - ✅ มีความปลอดภัยสูง (E2E Encryption)
 
+
 ### 6.2 Meeting Link Format
-```
+
+```text
 https://meet.jit.si/Izara-{appointmentId}-{timestamp}-{random}
 
 ตัวอย่าง:
 https://meet.jit.si/Izara-apt12345-lxyz-abc123
 ```
 
+
 ### 6.3 Meeting Configuration
+
 ```typescript
 const config = {
   prejoinPageEnabled: true,       // หน้ารอก่อนเข้า
@@ -246,27 +277,34 @@ const config = {
 };
 ```
 
+
 ---
 
 ## 7. Notification Schedule
 
+
 ### 7.1 ตารางการแจ้งเตือนอัตโนมัติ
+
 | Event | Timing | Channel | Thai Message |
-|-------|--------|---------|--------------|
+| ------- | -------- | --------- | -------------- |
 | Appointment Reminder | 24 ชม. ก่อน | Email + In-App | พรุ่งนี้คุณมีนัดพบแพทย์ |
 | Appointment Reminder | 1 ชม. ก่อน | Push + In-App | อีก 1 ชั่วโมง ถึงเวลานัดหมาย |
 | Meeting Ready | 15 นาที ก่อน | Push + In-App | เตรียมพร้อม! ลิงก์ประชุมพร้อมแล้ว |
 | Doctor Started | Real-time | Push | แพทย์เริ่มห้องประชุมแล้ว คลิกเข้าร่วม |
 
 ### 7.2 Polling Interval
+
 - In-App Notifications: Poll ทุก 30 วินาที
 - Real-time Events: WebSocket (future enhancement)
+
 
 ---
 
 ## 8. Error Handling
 
+
 ### 8.1 Notification Failures
+
 ```typescript
 try {
   await notificationService.sendNotification(data);
@@ -283,19 +321,24 @@ try {
 }
 ```
 
+
 ### 8.2 Meeting Link Fallback
-```
+
+```text
 ถ้าสร้างลิงก์ไม่สำเร็จ:
 1. แจ้งเตือน Admin
 2. สร้างลิงก์ใหม่อัตโนมัติ
 3. แจ้งผู้ป่วยเมื่อพร้อม
 ```
 
+
 ---
 
 ## 9. User Preferences (การตั้งค่าการแจ้งเตือน)
 
+
 ### 9.1 Settings in Patient Portal
+
 ```typescript
 interface NotificationPreferences {
   appointmentReminders: boolean;    // แจ้งเตือนนัดหมาย
@@ -306,7 +349,9 @@ interface NotificationPreferences {
 }
 ```
 
+
 ### 9.2 Settings in Doctor Portal
+
 ```typescript
 interface DoctorNotificationPreferences {
   newAppointmentRequests: boolean;  // คำขอนัดหมายใหม่
@@ -316,11 +361,14 @@ interface DoctorNotificationPreferences {
 }
 ```
 
+
 ---
 
 ## 10. Testing Checklist
 
+
 ### 10.1 Notification Flow Tests (✅ Verified January 2025)
+
 - [x] ผู้ป่วยขอนัดหมาย → แพทย์ได้รับแจ้งเตือน
 - [x] แพทย์ยืนยัน → ผู้ป่วยได้รับลิงก์ประชุม
 - [x] แพทย์ปฏิเสธ → ผู้ป่วยได้รับแจ้ง + เข้า Pool
@@ -330,26 +378,32 @@ interface DoctorNotificationPreferences {
 - [x] DoctorNotificationBell ใช้ API จริง (ไม่ใช้ mock data)
 - [x] E2E Tests ผ่าน 100% (jitsiMeetingTests, appointmentWorkflowTests, dualPortalMeetingTests)
 
+
 ### 10.2 Test Results Summary (January 2025)
+
 | Test Suite | Tests | Passed | Failed | Duration |
-|------------|-------|--------|--------|----------|
+| ------------ | ------- | -------- | -------- | ---------- |
 | jitsiMeetingTests | 7 | 6 | 0 | 40s |
 | appointmentWorkflowTests | 27 | 27 | 0 | ~2min |
 | dualPortalMeetingTests | 24 | 24 | 0 | ~3min |
 | emailNotificationTests | 4 | 1 | 0 | 10s |
 
 ### 10.3 Demo User Test Accounts
-```
+
+```text
 Patient:  demo.test@gmail.com     / P@ssw0rd
 Doctor:   doctor.test@izara.com   / IzaraDoctor@2024
 Admin:    admin.test@izara.com    / IzaraAdmin@2024
 ```
 
+
 ## 11. Implementation Status (January 2025)
 
+
 ### 11.1 Completed Features
+
 | Feature | Status | Notes |
-|---------|--------|-------|
+| --------- | -------- | ------- |
 | NotificationBell (Patient) | ✅ Done | Real-time in-app notifications |
 | DoctorNotificationBell | ✅ Done | Fixed: uses real API, no mock data |
 | Jitsi Meeting Links | ✅ Done | Format: meet.jit.si/izara-{id}-{ts} |
@@ -361,8 +415,9 @@ Admin:    admin.test@izara.com    / IzaraAdmin@2024
 | E2E Test Coverage | ✅ Done | 100% pass rate |
 
 ### 11.2 Pending Enhancements
+
 | Feature | Status | Priority |
-|---------|--------|----------|
+| --------- | -------- | ---------- |
 | Gmail API Integration | 🔄 Planned | High |
 | SMS Notifications | 📋 Future | Medium |
 | WebSocket Real-time | 📋 Future | Medium |
@@ -370,14 +425,17 @@ Admin:    admin.test@izara.com    / IzaraAdmin@2024
 | Push Notifications | 📋 Future | Low |
 
 ### 11.3 Recent Changes (January 2025)
+
 1. **DoctorNotificationBell.tsx** - Removed mock data fallback, now uses real API only
 2. **Notification API** - Verified working on ports 3004 (patient) and 3012 (doctor)
 3. **Jitsi Integration** - Meeting links successfully generated and accessible
 4. **E2E Tests** - All test suites passing with 100% rate
 
+
 ---
 
 ## 12. Future Enhancements
+
 
 1. **WebSocket Real-time** - แจ้งเตือนแบบ Real-time ไม่ต้อง Poll
 2. **SMS Integration** - แจ้งเตือนทาง SMS สำหรับนัดหมายสำคัญ
@@ -385,12 +443,15 @@ Admin:    admin.test@izara.com    / IzaraAdmin@2024
 4. **Notification Analytics** - วิเคราะห์การเปิดอ่าน/คลิก
 5. **Smart Scheduling** - แจ้งเตือนตามพฤติกรรมผู้ใช้
 
+
 ---
 
 ## 13. Technical Architecture
 
+
 ### 13.1 Notification Service (Patient Portal)
-```
+
+```text
 File: Isara-patient-portal/server/services/notificationService.ts
 Port: 3004 (API Server)
 
@@ -406,8 +467,10 @@ Key Methods:
 └── generateMeetingLink(appointmentId) - สร้างลิงก์ Jitsi
 ```
 
+
 ### 13.2 Doctor Notification Endpoints (GCS Server)
-```
+
+```text
 File: Isara-doctor-portal/server/gcsApiServer.cjs
 Port: 3012 (GCS API Server)
 
@@ -422,8 +485,10 @@ Endpoints:
          → Create new notification
 ```
 
+
 ### 13.3 UI Components
-```
+
+```text
 Patient Portal:
 ├── src/components/notifications/NotificationBell.tsx
 │   - Shows unread count badge
@@ -437,8 +502,10 @@ Doctor Portal:
 │   - NO mock data fallback (fixed Jan 2025)
 ```
 
+
 ### 13.4 Jitsi Meeting Integration
-```
+
+```text
 File: Isara-patient-portal/server/routes/video-meeting.ts
 Provider: Jitsi Meet (FREE)
 
@@ -454,7 +521,9 @@ Meeting Link Format:
 https://meet.jit.si/izara-{appointmentId}-{timestamp}-{random}
 ```
 
+
 ---
 
 *อัปเดตล่าสุด: January 2025*
 *เวอร์ชัน: 1.1.0 - Updated with verified test results*
+

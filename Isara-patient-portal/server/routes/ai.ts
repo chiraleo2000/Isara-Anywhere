@@ -1,9 +1,63 @@
 import { Router, Request, Response } from 'express';
 import { GoogleGenerativeAI, GenerativeModel, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 import { authMiddleware } from '../middleware/auth';
-import path from 'path';
-import fs from 'fs';
+import path from 'node:path';
+import fs from 'node:fs';
 import dotenv from 'dotenv';
+import postgresDataService from '../services/postgresDataService';
+
+const { pool } = postgresDataService;
+
+// =============================================================================
+// CHAT HISTORY SERVICE - Persist to PostgreSQL
+// =============================================================================
+
+interface ChatMessage {
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  context?: Record<string, unknown>;
+}
+
+const ChatHistoryService = {
+  async getHistory(userId: string, sessionId: string, limit: number = 50): Promise<ChatMessage[]> {
+    try {
+      const result = await pool.query(
+        `SELECT role, content, context FROM ai_chat_history 
+         WHERE user_id = $1 AND session_id = $2 
+         ORDER BY created_at ASC 
+         LIMIT $3`,
+        [userId, sessionId, limit]
+      );
+      return result.rows;
+    } catch (error) {
+      console.error('[AI Chat History] Failed to get history:', error);
+      return [];
+    }
+  },
+
+  async addMessage(userId: string, sessionId: string, role: string, content: string, context?: Record<string, unknown>): Promise<void> {
+    try {
+      await pool.query(
+        `INSERT INTO ai_chat_history (user_id, session_id, role, content, context) 
+         VALUES ($1, $2, $3, $4, $5)`,
+        [userId, sessionId, role, content, context ? JSON.stringify(context) : null]
+      );
+    } catch (error) {
+      console.error('[AI Chat History] Failed to save message:', error);
+    }
+  },
+
+  async clearHistory(userId: string, sessionId: string): Promise<void> {
+    try {
+      await pool.query(
+        `DELETE FROM ai_chat_history WHERE user_id = $1 AND session_id = $2`,
+        [userId, sessionId]
+      );
+    } catch (error) {
+      console.error('[AI Chat History] Failed to clear history:', error);
+    }
+  }
+};
 
 // =============================================================================
 // GEMINI AI CONFIGURATION - Works in both local dev and Cloud Run production
@@ -183,18 +237,20 @@ function getModel(config: AIConfig): GenerativeModel | null {
   }
 }
 
-// Health Q&A Chatbot - Main endpoint
+// Health Q&A Chatbot - Main endpoint with persistent history
 router.post('/chat', authMiddleware, async (req: Request, res: Response) => {
   const startTime = Date.now();
   
   try {
-    const { message, conversationHistory } = req.body;
+    const { message, conversationHistory, sessionId } = req.body;
+    const userId = (req as any).user?.id || 'anonymous';
+    const chatSessionId = sessionId || `session_${userId}_${Date.now()}`;
 
     if (!message || typeof message !== 'string') {
       return res.status(400).json({ error: 'Message is required' });
     }
 
-    console.log(`[AI Chat] 📝 Message: "${message.substring(0, 50)}..."`);
+    console.log(`[AI Chat] 📝 Message: "${message.substring(0, 50)}..." (User: ${userId})`);
     
     const model = getModel(AI_CONFIGS.chat);
     if (!model) {
@@ -205,12 +261,22 @@ router.post('/chat', authMiddleware, async (req: Request, res: Response) => {
       });
     }
 
+    // Get persistent chat history from PostgreSQL if no conversationHistory provided
+    let historyToUse = conversationHistory || [];
+    if (!conversationHistory || conversationHistory.length === 0) {
+      const dbHistory = await ChatHistoryService.getHistory(userId, chatSessionId, 10);
+      if (dbHistory.length > 0) {
+        historyToUse = dbHistory;
+        console.log(`[AI Chat] 📚 Loaded ${dbHistory.length} messages from database`);
+      }
+    }
+
     // Build prompt with system instruction and conversation history
     let fullPrompt = AI_CONFIGS.chat.systemInstruction + '\n\n';
     
-    if (conversationHistory && Array.isArray(conversationHistory) && conversationHistory.length > 0) {
+    if (historyToUse && Array.isArray(historyToUse) && historyToUse.length > 0) {
       fullPrompt += '=== บทสนทนาก่อนหน้า ===\n';
-      for (const msg of conversationHistory.slice(-6)) { // Keep last 6 messages for context
+      for (const msg of historyToUse.slice(-6)) { // Keep last 6 messages for context
         fullPrompt += `${msg.role === 'user' ? 'ผู้ใช้' : 'AI'}: ${msg.content}\n`;
       }
       fullPrompt += '\n';
@@ -224,10 +290,15 @@ router.post('/chat', authMiddleware, async (req: Request, res: Response) => {
     const response = result.response;
     const text = response.text();
     
+    // Save both user message and AI response to PostgreSQL
+    await ChatHistoryService.addMessage(userId, chatSessionId, 'user', message);
+    await ChatHistoryService.addMessage(userId, chatSessionId, 'assistant', text);
+    console.log('[AI Chat] 💾 Saved conversation to database');
+    
     const duration = Date.now() - startTime;
     console.log(`[AI Chat] ✅ Response received (${text.length} chars, ${duration}ms)`);
 
-    res.json({ reply: text });
+    res.json({ reply: text, sessionId: chatSessionId });
     
   } catch (error: any) {
     const duration = Date.now() - startTime;
@@ -238,6 +309,86 @@ router.post('/chat', authMiddleware, async (req: Request, res: Response) => {
       error: error.message,
       reply: 'ขออภัย เกิดข้อผิดพลาดในการประมวลผล กรุณาลองใหม่อีกครั้ง หากปัญหายังคงอยู่ กรุณาติดต่อเจ้าหน้าที่'
     });
+  }
+});
+
+// Get chat history from PostgreSQL
+router.get('/chat/history', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id;
+    const sessionId = req.query.sessionId as string;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    if (!sessionId) {
+      // Return all sessions for this user
+      const result = await pool.query(
+        `SELECT DISTINCT session_id, MIN(created_at) as started_at, MAX(created_at) as last_message_at, COUNT(*) as message_count
+         FROM ai_chat_history 
+         WHERE user_id = $1 
+         GROUP BY session_id 
+         ORDER BY last_message_at DESC 
+         LIMIT 20`,
+        [userId]
+      );
+      return res.json({ sessions: result.rows });
+    }
+
+    const history = await ChatHistoryService.getHistory(userId, sessionId, 100);
+    res.json({ history, sessionId });
+  } catch (error: any) {
+    console.error('[AI Chat History] Error:', error.message);
+    res.status(500).json({ error: 'Failed to fetch chat history' });
+  }
+});
+
+// Clear chat history (POST method for easier client calls)
+router.post('/chat/clear', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id;
+    const { sessionId } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    if (sessionId) {
+      await ChatHistoryService.clearHistory(userId, sessionId);
+    } else {
+      // Clear all history for user
+      await pool.query('DELETE FROM ai_chat_history WHERE user_id = $1', [userId]);
+    }
+
+    res.json({ success: true, message: 'Chat history cleared' });
+  } catch (error: any) {
+    console.error('[AI Chat Clear] Error:', error.message);
+    res.status(500).json({ error: 'Failed to clear chat history' });
+  }
+});
+
+// Clear chat history (DELETE method)
+router.delete('/chat/history', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id;
+    const { sessionId } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    if (sessionId) {
+      await ChatHistoryService.clearHistory(userId, sessionId);
+    } else {
+      // Clear all history for user
+      await pool.query('DELETE FROM ai_chat_history WHERE user_id = $1', [userId]);
+    }
+
+    res.json({ success: true, message: 'Chat history cleared' });
+  } catch (error: any) {
+    console.error('[AI Chat History] Error:', error.message);
+    res.status(500).json({ error: 'Failed to clear chat history' });
   }
 });
 
@@ -291,10 +442,10 @@ ${symptoms}
     let analysis;
     try {
       // Remove markdown code blocks if present
-      text = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      text = text.replaceAll(/```json\n?/g, '').replaceAll(/```\n?/g, '').trim();
       analysis = JSON.parse(text);
-    } catch {
-      console.warn('[AI Symptom] ⚠️ Failed to parse JSON, using fallback');
+    } catch (parseError) {
+      console.warn('[AI Symptom] ⚠️ Failed to parse JSON, using fallback:', parseError);
       analysis = {
         triageLevel: 'Routine',
         triageLevelThai: 'ปกติ',
@@ -374,10 +525,10 @@ ${JSON.stringify(patientData, null, 2)}
     // Parse JSON response
     let assessment;
     try {
-      text = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      text = text.replaceAll(/```json\n?/g, '').replaceAll(/```\n?/g, '').trim();
       assessment = JSON.parse(text);
-    } catch {
-      console.warn('[AI Risk] ⚠️ Failed to parse JSON');
+    } catch (parseError) {
+      console.warn('[AI Risk] ⚠️ Failed to parse JSON:', parseError);
       assessment = {
         error: 'Failed to parse assessment',
         rawResponse: text
@@ -449,7 +600,8 @@ router.post('/symptom-analysis', authMiddleware, async (req: Request, res: Respo
     if (typeof patientContext === 'string') {
       try {
         context = JSON.parse(patientContext);
-      } catch (e) {
+      } catch (parseError) {
+        console.warn('[AI Analysis] ⚠️ Failed to parse patientContext JSON:', parseError);
         context = { raw: patientContext };
       }
     }
@@ -513,7 +665,7 @@ ${context?.medicalHistory ? `ประวัติการแพทย์: ${co
     let text = response.text();
     
     // Clean up response - remove markdown code blocks if present
-    text = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    text = text.replaceAll(/```json\n?/g, '').replaceAll(/```\n?/g, '').trim();
     
     const duration = Date.now() - startTime;
     console.log(`[AI Analysis] ✅ Response received (${text.length} chars, ${duration}ms)`);
@@ -523,7 +675,7 @@ ${context?.medicalHistory ? `ประวัติการแพทย์: ${co
       const assessment = JSON.parse(text);
       res.json(assessment);
     } catch (parseError) {
-      console.error('[AI Analysis] ⚠️ Failed to parse JSON, returning raw text');
+      console.error('[AI Analysis] ⚠️ Failed to parse JSON, returning raw text:', parseError);
       res.json({
         triageLevel: 'Routine',
         reasoning: text,
@@ -598,7 +750,7 @@ router.post('/symptom-suggest', authMiddleware, async (req: Request, res: Respon
     let text = response.text();
     
     // Clean up response
-    text = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    text = text.replaceAll(/```json\n?/g, '').replaceAll(/```\n?/g, '').trim();
     
     const duration = Date.now() - startTime;
     console.log(`[AI Suggest] ✅ Response received (${text.length} chars, ${duration}ms)`);
@@ -607,7 +759,7 @@ router.post('/symptom-suggest', authMiddleware, async (req: Request, res: Respon
       const suggestions = JSON.parse(text);
       res.json(suggestions);
     } catch (parseError) {
-      console.error('[AI Suggest] ⚠️ Failed to parse JSON');
+      console.error('[AI Suggest] ⚠️ Failed to parse JSON:', parseError);
       res.json({
         suggestions: [
           'ลองอธิบายว่าอาการเริ่มเมื่อไหร่',

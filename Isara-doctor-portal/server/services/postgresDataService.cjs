@@ -33,8 +33,23 @@ if (process.env.DATABASE_URL) {
   }
 }
 
-const pool = new Pool({
-  host: dbConfig.host || process.env.DB_HOST || 'localhost',
+// Cloud SQL Unix socket detection
+const dbHost = dbConfig.host || process.env.DB_HOST || 'localhost';
+const isCloudSQL = dbHost.startsWith('/cloudsql/');
+
+// Configure connection based on environment
+const poolConfig = isCloudSQL ? {
+  // Cloud SQL Unix socket configuration
+  host: dbHost,
+  database: dbConfig.database || process.env.DB_NAME || 'izara_phase1',
+  user: dbConfig.user || process.env.DB_USER || 'postgres',
+  password: dbConfig.password || process.env.DB_PASSWORD || 'P@ssw0rd',
+  max: 20,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 10000, // Longer timeout for Cloud SQL cold start
+} : {
+  // Standard TCP connection (local/Docker)
+  host: dbHost,
   port: dbConfig.port || Number.parseInt(process.env.DB_PORT || '5432', 10),
   database: dbConfig.database || process.env.DB_NAME || 'izara_phase1',
   user: dbConfig.user || process.env.DB_USER || 'postgres',
@@ -42,17 +57,25 @@ const pool = new Pool({
   max: 20,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 2000,
-});
+};
+
+console.log(`📦 Database: ${isCloudSQL ? 'Cloud SQL Unix Socket' : 'TCP'} - ${dbHost}`);
+
+const pool = new Pool(poolConfig);
 
 // Handle pool errors to prevent process exit
 pool.on('error', (err) => {
   console.error('❌ PostgreSQL pool error:', err.message);
 });
 
-// Test connection on init
-pool.query('SELECT NOW()')
-  .then(() => console.log('✅ PostgreSQL connected successfully (Doctor Portal)'))
-  .catch(err => console.error('❌ PostgreSQL connection error:', err.message));
+// Test connection async - don't block module load
+setTimeout(() => {
+  pool.query('SELECT NOW()')
+    .then(() => console.log('✅ PostgreSQL connected successfully (Doctor Portal)'))
+    .catch(err => console.error('❌ PostgreSQL connection error:', err.message));
+}, 1000);
+
+console.log('📦 PostgreSQL pool initialized (connection test pending)');
 
 // ============================================================================
 // AUTHENTICATION SERVICE
@@ -1028,6 +1051,27 @@ const MeetingService = {
    * End meeting with summary and recommendations
    */
   async endMeeting(meetingId, data) {
+    let transcriptValue = null;
+    if (data.transcript) {
+      transcriptValue = typeof data.transcript === 'string'
+        ? data.transcript
+        : JSON.stringify(data.transcript);
+    }
+
+    let summaryValue = null;
+    if (data.ai_summary) {
+      summaryValue = typeof data.ai_summary === 'string'
+        ? data.ai_summary
+        : JSON.stringify(data.ai_summary);
+    }
+
+    let recommendationsValue = null;
+    if (data.ai_recommendations) {
+      recommendationsValue = typeof data.ai_recommendations === 'string'
+        ? data.ai_recommendations
+        : JSON.stringify(data.ai_recommendations);
+    }
+
     const result = await pool.query(
       `UPDATE meeting_records SET
         status = 'completed',
@@ -1045,9 +1089,9 @@ const MeetingService = {
       [
         meetingId,
         data.duration_minutes || 0,
-        data.transcript ? (typeof data.transcript === 'string' ? data.transcript : JSON.stringify(data.transcript)) : null,
-        data.ai_summary ? (typeof data.ai_summary === 'string' ? data.ai_summary : JSON.stringify(data.ai_summary)) : null,
-        data.ai_recommendations ? (typeof data.ai_recommendations === 'string' ? data.ai_recommendations : JSON.stringify(data.ai_recommendations)) : null,
+        transcriptValue,
+        summaryValue,
+        recommendationsValue,
         data.recording_url
       ]
     );

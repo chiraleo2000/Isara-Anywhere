@@ -6,19 +6,30 @@ const MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
 // See: https://developers.google.com/maps/documentation/javascript/advanced-markers/start#create-a-map-id
 const MAPS_MAP_ID = import.meta.env.VITE_GOOGLE_MAPS_MAP_ID || '';
 
+const globalScope = globalThis as typeof globalThis & {
+  google?: typeof google;
+  [key: string]: unknown;
+};
+
 // Helper to check if AdvancedMarkerElement is available (not a hook - renamed to avoid confusion)
-const canUseAdvancedMarkers = () => Boolean(MAPS_MAP_ID && globalThis.google?.maps?.marker?.AdvancedMarkerElement);
+const canUseAdvancedMarkers = () => Boolean(MAPS_MAP_ID && globalScope.google?.maps?.marker?.AdvancedMarkerElement);
+
+const isAdvancedMarker = (
+  marker: google.maps.Marker | google.maps.marker.AdvancedMarkerElement
+): marker is google.maps.marker.AdvancedMarkerElement => 'content' in marker;
+
+const isClassicMarker = (
+  marker: google.maps.Marker | google.maps.marker.AdvancedMarkerElement
+): marker is google.maps.Marker => 'setMap' in marker;
 
 // Helper to clear marker from map (works for both marker types)
 const clearMarker = (marker: google.maps.Marker | google.maps.marker.AdvancedMarkerElement): void => {
   // AdvancedMarkerElement has 'content' property, Marker doesn't
-  if ('content' in marker) {
-    // This is AdvancedMarkerElement - set map property to null
-    (marker as google.maps.marker.AdvancedMarkerElement).map = null;
-  } else {
-    // This is classic Marker - use setMap method
-    (marker as google.maps.Marker).setMap(null);
+  if (isAdvancedMarker(marker)) {
+    marker.map = null;
+    return;
   }
+  marker.setMap(null);
 };
 
 interface Facility {
@@ -37,6 +48,29 @@ interface Facility {
 // Default location fallback - Bangkok
 const DEFAULT_LOCATION = { lat: 13.7563, lng: 100.5018 };
 
+const directionsUrl = (location: { lat: number; lng: number }) =>
+  `https://www.google.com/maps/dir/?api=1&destination=${location.lat},${location.lng}`;
+
+const buildInfoWindowContent = (facility: Facility) => `
+  <div style="padding:8px;max-width:200px;">
+    <b>${facility.name}</b>
+    <p style="font-size:11px;color:#666;margin:4px 0;">${facility.address}</p>
+    ${facility.rating ? `<p style="font-size:11px;">⭐ ${facility.rating}</p>` : ''}
+    <p style="color:#059669;font-weight:600;">${facility.distanceText}</p>
+    <a href="${directionsUrl(facility.location)}"
+       target="_blank"
+       style="display:inline-block;margin-top:6px;padding:5px 10px;background:#059669;color:#fff;border-radius:4px;text-decoration:none;font-size:11px;">
+      นำทาง
+    </a>
+  </div>
+`;
+
+const delay = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms));
+
+const getCurrentPosition = (options: PositionOptions) => new Promise<GeolocationPosition>((resolve, reject) => {
+  navigator.geolocation.getCurrentPosition(resolve, reject, options);
+});
+
 export default function MapPage() {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<google.maps.Map | null>(null);
@@ -45,6 +79,9 @@ export default function MapPage() {
   const markers = useRef<(google.maps.Marker | google.maps.marker.AdvancedMarkerElement)[]>([]);
   const infoWindow = useRef<google.maps.InfoWindow | null>(null);
   const userMarkerRef = useRef<google.maps.Marker | google.maps.marker.AdvancedMarkerElement | null>(null);
+  const pulseMarkerRef = useRef<google.maps.Marker | null>(null);
+  const mapsCallbackRef = useRef(`gMapsCallback_${Date.now()}`);
+  const mapsErrorCallbackRef = useRef(`gMapsError_${Date.now()}`);
   
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'all' | 'hospital' | 'clinic' | 'pharmacy' | 'health_center'>('all');
@@ -56,7 +93,9 @@ export default function MapPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [locationStatus, setLocationStatus] = useState<'loading' | 'success' | 'denied' | 'error' | 'unavailable'>('loading');
   const [locationAccuracy, setLocationAccuracy] = useState<number | null>(null);
-  const [watchId, setWatchId] = useState<number | null>(null);
+  const watchIdRef = useRef<number | null>(null);
+  const locationAccuracyRef = useRef<number | null>(null);
+  const userLocationRef = useRef(DEFAULT_LOCATION);
 
   // Distance calculation
   const calcDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
@@ -69,6 +108,16 @@ export default function MapPage() {
 
   const formatDist = (km: number) => km < 1 ? `${Math.round(km * 1000)} ม.` : `${km.toFixed(1)} กม.`;
 
+  const setUserLocationState = (loc: { lat: number; lng: number }) => {
+    userLocationRef.current = loc;
+    setUserLocation(loc);
+  };
+
+  const setAccuracyState = (accuracy: number | null) => {
+    locationAccuracyRef.current = accuracy;
+    setLocationAccuracy(accuracy);
+  };
+
   // Marker colors
   const markerColors: Record<string, string> = {
     hospital: '#DC2626',
@@ -77,8 +126,32 @@ export default function MapPage() {
     health_center: '#9333EA',
   };
 
+  const mapPlacesToFacilities = (
+    results: google.maps.places.PlaceResult[],
+    loc: { lat: number; lng: number },
+    type: Facility['type']
+  ): Facility[] => results
+    .map(p => {
+      const lat = p.geometry?.location?.lat() || 0;
+      const lng = p.geometry?.location?.lng() || 0;
+      const dist = calcDistance(loc.lat, loc.lng, lat, lng);
+      return {
+        id: p.place_id || String(Math.random()),
+        name: p.name || 'Unknown',
+        type,
+        address: p.vicinity || '',
+        rating: p.rating,
+        ratingCount: p.user_ratings_total,
+        isOpen: p.opening_hours?.open_now,
+        distance: dist,
+        distanceText: formatDist(dist),
+        location: { lat, lng },
+      };
+    })
+    .filter(f => f.distance <= 15);
+
   // Search places
-  const searchPlaces = (loc: { lat: number; lng: number }, keyword: string, type: string): Promise<Facility[]> => {
+  const searchPlaces = (loc: { lat: number; lng: number }, keyword: string, type: Facility['type']): Promise<Facility[]> => {
     return new Promise((resolve) => {
       if (!placesService.current) { resolve([]); return; }
 
@@ -89,24 +162,7 @@ export default function MapPage() {
       }, (results, status) => {
         console.log(`[${keyword}] ${status}: ${results?.length || 0} results`);
         if (status === google.maps.places.PlacesServiceStatus.OK && results) {
-          const items = results.map(p => {
-            const lat = p.geometry?.location?.lat() || 0;
-            const lng = p.geometry?.location?.lng() || 0;
-            const dist = calcDistance(loc.lat, loc.lng, lat, lng);
-            return {
-              id: p.place_id || String(Math.random()),
-              name: p.name || 'Unknown',
-              type: type as Facility['type'],
-              address: p.vicinity || '',
-              rating: p.rating,
-              ratingCount: p.user_ratings_total,
-              isOpen: p.opening_hours?.open_now,
-              distance: dist,
-              distanceText: formatDist(dist),
-              location: { lat, lng },
-            };
-          }).filter(f => f.distance <= 15);
-          resolve(items);
+          resolve(mapPlacesToFacilities(results, loc, type));
         } else {
           resolve([]);
         }
@@ -130,7 +186,7 @@ export default function MapPage() {
 
       const all = results.flat();
       const unique = all.reduce<Facility[]>((acc, f) => {
-        if (!acc.find(x => x.id === f.id)) acc.push(f);
+        if (!acc.some(x => x.id === f.id)) acc.push(f);
         return acc;
       }, []);
       unique.sort((a, b) => a.distance - b.distance);
@@ -176,18 +232,7 @@ export default function MapPage() {
         
         marker.addListener('click', () => {
           setSelectedId(f.id);
-          infoWindow.current?.setContent(`
-            <div style="padding:8px;max-width:200px;">
-              <b>${f.name}</b>
-              <p style="font-size:11px;color:#666;margin:4px 0;">${f.address}</p>
-              ${f.rating ? `<p style="font-size:11px;">⭐ ${f.rating}</p>` : ''}
-              <p style="color:#059669;font-weight:600;">${f.distanceText}</p>
-              <a href="https://www.google.com/maps/dir/?api=1&destination=${f.location.lat},${f.location.lng}" 
-                 target="_blank" style="display:inline-block;margin-top:6px;padding:5px 10px;background:#059669;color:#fff;border-radius:4px;text-decoration:none;font-size:11px;">
-                นำทาง
-              </a>
-            </div>
-          `);
+          infoWindow.current?.setContent(buildInfoWindowContent(f));
           infoWindow.current?.open({ anchor: marker, map: mapInstance.current });
         });
       } else {
@@ -209,19 +254,8 @@ export default function MapPage() {
 
         marker.addListener('click', () => {
           setSelectedId(f.id);
-          infoWindow.current?.setContent(`
-            <div style="padding:8px;max-width:200px;">
-              <b>${f.name}</b>
-              <p style="font-size:11px;color:#666;margin:4px 0;">${f.address}</p>
-              ${f.rating ? `<p style="font-size:11px;">⭐ ${f.rating}</p>` : ''}
-              <p style="color:#059669;font-weight:600;">${f.distanceText}</p>
-              <a href="https://www.google.com/maps/dir/?api=1&destination=${f.location.lat},${f.location.lng}" 
-                 target="_blank" style="display:inline-block;margin-top:6px;padding:5px 10px;background:#059669;color:#fff;border-radius:4px;text-decoration:none;font-size:11px;">
-                นำทาง
-              </a>
-            </div>
-          `);
-          infoWindow.current?.open(mapInstance.current, marker as google.maps.Marker);
+          infoWindow.current?.setContent(buildInfoWindowContent(f));
+          infoWindow.current?.open(mapInstance.current, marker);
         });
       }
 
@@ -296,7 +330,10 @@ export default function MapPage() {
       });
 
       // Pulse effect marker (only for classic markers)
-      new google.maps.Marker({
+      if (pulseMarkerRef.current) {
+        pulseMarkerRef.current.setMap(null);
+      }
+      pulseMarkerRef.current = new google.maps.Marker({
         position: loc,
         map,
         icon: {
@@ -316,218 +353,216 @@ export default function MapPage() {
 
   // Update user marker position
   const updateUserMarker = (loc: { lat: number; lng: number }) => {
-    if (userMarkerRef.current && mapInstance.current) {
-      if ('setPosition' in userMarkerRef.current) {
-        (userMarkerRef.current as google.maps.Marker).setPosition(loc);
-      } else {
-        userMarkerRef.current.position = loc;
+    const marker = userMarkerRef.current;
+    if (!marker || !mapInstance.current) return;
+    if (isClassicMarker(marker)) {
+      marker.setPosition(loc);
+      return;
+    }
+    marker.position = loc;
+  };
+
+  // Get high accuracy location
+  const getHighAccuracyLocation = async (): Promise<{ lat: number; lng: number; accuracy: number }> => {
+    if (!navigator.geolocation) {
+      throw new Error('Geolocation not supported');
+    }
+
+    try {
+      const position = await getCurrentPosition({
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 0
+      });
+      return {
+        lat: position.coords.latitude,
+        lng: position.coords.longitude,
+        accuracy: position.coords.accuracy,
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.warn('High accuracy failed, trying low accuracy:', message);
+      const position = await getCurrentPosition({
+        enableHighAccuracy: false,
+        timeout: 10000,
+        maximumAge: 60000
+      });
+      return {
+        lat: position.coords.latitude,
+        lng: position.coords.longitude,
+        accuracy: position.coords.accuracy,
+      };
+    }
+  };
+
+  const handleMapsApiError = (err: unknown) => {
+    console.error('Google Maps API error:', err);
+    setError('Google Maps API Key ไม่ถูกต้องหรือถูกจำกัดสิทธิ์');
+    setLoading(false);
+  };
+
+  const loadGoogleMapsScript = (): Promise<void> => new Promise((resolve, reject) => {
+    if (globalScope.google?.maps) {
+      resolve();
+      return;
+    }
+
+    const existingScript = document.querySelector('script[src*="maps.googleapis.com"]');
+    if (existingScript) {
+      existingScript.remove();
+    }
+
+    const callbackName = mapsCallbackRef.current;
+    globalScope[callbackName] = () => {
+      console.log('Google Maps loaded via callback');
+      resolve();
+    };
+
+    const s = document.createElement('script');
+    s.src = `https://maps.googleapis.com/maps/api/js?key=${MAPS_API_KEY}&libraries=places,marker&language=th&callback=${callbackName}`;
+    s.async = true;
+    s.defer = true;
+    s.onerror = () => {
+      reject(new Error('Script load failed'));
+    };
+
+    document.head.appendChild(s);
+  });
+
+  const setupMapWithRetry = async (loc: { lat: number; lng: number }, maxRetries: number) => {
+    if (globalScope.google?.maps) {
+      initMap(loc);
+      return true;
+    }
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        await loadGoogleMapsScript();
+        initMap(loc);
+        return true;
+      } catch (err) {
+        console.warn('Google Maps load failed:', err);
+        if (attempt < maxRetries) {
+          console.log(`Retrying Google Maps load (${attempt}/${maxRetries})...`);
+          await delay(1000 * attempt);
+        }
+      }
+    }
+
+    setError('โหลด Google Maps ไม่สำเร็จ กรุณารีเฟรชหน้า');
+    setLoading(false);
+    return false;
+  };
+
+  const handleWatchPosition = (position: GeolocationPosition) => {
+    const newLoc = { 
+      lat: position.coords.latitude, 
+      lng: position.coords.longitude 
+    };
+    const newAccuracy = position.coords.accuracy;
+    const currentAccuracy = locationAccuracyRef.current;
+
+    if (!currentAccuracy || newAccuracy < currentAccuracy * 0.8) {
+      console.log('Location updated, new accuracy:', newAccuracy, 'meters');
+      const previousLoc = userLocationRef.current;
+      setUserLocationState(newLoc);
+      setAccuracyState(newAccuracy);
+      updateUserMarker(newLoc);
+
+      const distance = calcDistance(previousLoc.lat, previousLoc.lng, newLoc.lat, newLoc.lng);
+      if (distance > 0.5) {
+        loadFacilities(newLoc);
       }
     }
   };
 
-  // Get high accuracy location
-  const getHighAccuracyLocation = (): Promise<{ lat: number; lng: number; accuracy: number }> => {
-    return new Promise((resolve, reject) => {
-      if (!navigator.geolocation) {
-        reject(new Error('Geolocation not supported'));
-        return;
-      }
+  const handleWatchError = (error: GeolocationPositionError) => {
+    console.warn('Watch position error:', error.message);
+  };
 
-      // Try high accuracy first
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          resolve({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-            accuracy: position.coords.accuracy,
-          });
-        },
-        (error) => {
-          // If high accuracy fails, try with lower accuracy
-          console.warn('High accuracy failed, trying low accuracy:', error.message);
-          navigator.geolocation.getCurrentPosition(
-            (position) => {
-              resolve({
-                lat: position.coords.latitude,
-                lng: position.coords.longitude,
-                accuracy: position.coords.accuracy,
-              });
-            },
-            reject,
-            { 
-              enableHighAccuracy: false, 
-              timeout: 10000, 
-              maximumAge: 60000 
-            }
-          );
-        },
-        { 
-          enableHighAccuracy: true, 
-          timeout: 15000, 
-          maximumAge: 0 
-        }
-      );
-    });
+  const startLocationWatch = () => {
+    const id = navigator.geolocation.watchPosition(
+      handleWatchPosition,
+      handleWatchError,
+      { 
+        enableHighAccuracy: true, 
+        maximumAge: 30000, 
+        timeout: 20000 
+      }
+    );
+    watchIdRef.current = id;
+  };
+
+  const initWithLocation = async (maxRetries: number) => {
+    if (!navigator.geolocation) {
+      console.log('Geolocation not supported, using default location');
+      setLocationStatus('unavailable');
+      await setupMapWithRetry(DEFAULT_LOCATION, maxRetries);
+      return;
+    }
+
+    setLocationStatus('loading');
+
+    try {
+      const locationData = await getHighAccuracyLocation();
+      const loc = { lat: locationData.lat, lng: locationData.lng };
+      console.log('Got location with accuracy:', locationData.accuracy, 'meters');
+      setUserLocationState(loc);
+      setAccuracyState(locationData.accuracy);
+      setLocationStatus('success');
+      await setupMapWithRetry(loc, maxRetries);
+      startLocationWatch();
+    } catch (err: any) {
+      console.error('Location error:', err.message);
+      if (err.code === 1) {
+        setLocationStatus('denied');
+      } else {
+        setLocationStatus('error');
+      }
+      await setupMapWithRetry(DEFAULT_LOCATION, maxRetries);
+    }
   };
 
   // Load script with retry
   useEffect(() => {
+    // Debug: Log API key status for troubleshooting
+    console.log('[MapPage] API Key check:', {
+      hasKey: !!MAPS_API_KEY,
+      keyPrefix: MAPS_API_KEY ? MAPS_API_KEY.substring(0, 10) + '...' : 'NOT SET',
+      mapId: MAPS_MAP_ID || 'NOT SET',
+      envMode: import.meta.env.MODE
+    });
+
     if (!MAPS_API_KEY) {
-      setError('ไม่พบ API Key');
+      console.error('VITE_GOOGLE_MAPS_API_KEY not found. Check .env file or build args.');
+      setError(`ไม่พบ Google Maps API Key
+
+แก้ไขปัญหา Google Maps:
+1. ✅ ตรวจสอบว่า VITE_GOOGLE_MAPS_API_KEY ถูกต้องใน .env
+2. ✅ เปิดใช้งาน Maps JavaScript API และ Places API ใน Google Cloud Console
+3. ✅ ตรวจสอบ API Key Restrictions:
+   - Application restrictions → HTTP referrers
+   - เพิ่ม: localhost:*, *.localhost:*, *.run.app
+4. ✅ ตรวจสอบว่า Billing เปิดใช้งานใน Google Cloud
+
+Current env: ${import.meta.env.MODE}`);
       setLoading(false);
       setLocationStatus('error');
       return;
     }
 
-    let retryCount = 0;
     const maxRetries = 3;
-
-    // Google Maps error callback
-    const gMapsCallback = `gMapsCallback_${Date.now()}`;
-    const gMapsErrorCallback = `gMapsError_${Date.now()}`;
-    
-    (window as unknown as Record<string, (err: unknown) => void>)[gMapsErrorCallback] = (err: unknown) => {
-      console.error('Google Maps API error:', err);
-      setError('Google Maps API Key ไม่ถูกต้องหรือถูกจำกัดสิทธิ์');
-      setLoading(false);
-    };
-
-    const loadGoogleMapsScript = (_initLocation: { lat: number; lng: number }): Promise<void> => {
-      return new Promise((resolve, reject) => {
-        // Check if already loaded
-        if (window.google?.maps) {
-          resolve();
-          return;
-        }
-
-        // Remove any existing failed script
-        const existingScript = document.querySelector('script[src*="maps.googleapis.com"]');
-        if (existingScript) {
-          existingScript.remove();
-        }
-
-        // Set up callback
-        (window as any)[gMapsCallback] = () => {
-          console.log('Google Maps loaded via callback');
-          resolve();
-        };
-
-        const s = document.createElement('script');
-        // Include 'marker' library for AdvancedMarkerElement support
-        s.src = `https://maps.googleapis.com/maps/api/js?key=${MAPS_API_KEY}&libraries=places,marker&language=th&callback=${gMapsCallback}`;
-        s.async = true;
-        s.defer = true;
-        
-        s.onload = () => {
-          // Callback will handle resolution
-        };
-        
-        s.onerror = () => {
-          console.error('Failed to load Google Maps script, attempt:', retryCount + 1);
-          reject(new Error('Script load failed'));
-        };
-        
-        document.head.appendChild(s);
-      });
-    };
-
-    const setupMap = async (loc: { lat: number; lng: number }) => {
-      if (window.google?.maps) {
-        initMap(loc);
-        return;
-      }
-
-      while (retryCount < maxRetries) {
-        try {
-          await loadGoogleMapsScript(loc);
-          initMap(loc);
-          return;
-        } catch (err) {
-          retryCount++;
-          if (retryCount < maxRetries) {
-            console.log(`Retrying Google Maps load (${retryCount}/${maxRetries})...`);
-            await new Promise(r => setTimeout(r, 1000 * retryCount)); // Exponential backoff
-          }
-        }
-      }
-      
-      setError('โหลด Google Maps ไม่สำเร็จ กรุณารีเฟรชหน้า');
-      setLoading(false);
-    };
-
-    const initWithLocation = async () => {
-      if (!navigator.geolocation) {
-        console.log('Geolocation not supported, using default location');
-        setLocationStatus('unavailable');
-        setupMap(DEFAULT_LOCATION);
-        return;
-      }
-
-      setLocationStatus('loading');
-      
-      try {
-        const locationData = await getHighAccuracyLocation();
-        const loc = { lat: locationData.lat, lng: locationData.lng };
-        console.log('Got location with accuracy:', locationData.accuracy, 'meters');
-        setUserLocation(loc);
-        setLocationAccuracy(locationData.accuracy);
-        setLocationStatus('success');
-        setupMap(loc);
-
-        // Set up continuous location watching for better accuracy
-        const id = navigator.geolocation.watchPosition(
-          (position) => {
-            const newLoc = { 
-              lat: position.coords.latitude, 
-              lng: position.coords.longitude 
-            };
-            const newAccuracy = position.coords.accuracy;
-            
-            // Only update if accuracy improved significantly
-            if (!locationAccuracy || newAccuracy < locationAccuracy * 0.8) {
-              console.log('Location updated, new accuracy:', newAccuracy, 'meters');
-              setUserLocation(newLoc);
-              setLocationAccuracy(newAccuracy);
-              updateUserMarker(newLoc);
-              
-              // Reload facilities if location changed significantly (more than 500m)
-              const distance = calcDistance(userLocation.lat, userLocation.lng, newLoc.lat, newLoc.lng);
-              if (distance > 0.5) {
-                loadFacilities(newLoc);
-              }
-            }
-          },
-          (error) => {
-            console.warn('Watch position error:', error.message);
-          },
-          { 
-            enableHighAccuracy: true, 
-            maximumAge: 30000, 
-            timeout: 20000 
-          }
-        );
-        setWatchId(id);
-      } catch (err: any) {
-        console.error('Location error:', err.message);
-        
-        // Handle specific error codes
-        if (err.code === 1) {
-          setLocationStatus('denied');
-        } else {
-          setLocationStatus('error');
-        }
-        
-        // Use default location
-        setupMap(DEFAULT_LOCATION);
-      }
-    };
-
-    initWithLocation();
+    globalScope[mapsErrorCallbackRef.current] = handleMapsApiError;
+    void initWithLocation(maxRetries);
 
     return () => { 
       markers.current.forEach(m => clearMarker(m)); 
-      if (watchId !== null) {
-        navigator.geolocation.clearWatch(watchId);
+      if (pulseMarkerRef.current) {
+        pulseMarkerRef.current.setMap(null);
+        pulseMarkerRef.current = null;
+      }
+      if (watchIdRef.current !== null) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
       }
     };
   }, []);
@@ -541,8 +576,8 @@ export default function MapPage() {
       const locationData = await getHighAccuracyLocation();
       const loc = { lat: locationData.lat, lng: locationData.lng };
       console.log('Refreshed location with accuracy:', locationData.accuracy, 'meters');
-      setUserLocation(loc);
-      setLocationAccuracy(locationData.accuracy);
+      setUserLocationState(loc);
+      setAccuracyState(locationData.accuracy);
       setLocationStatus('success');
       mapInstance.current?.setCenter(loc);
       updateUserMarker(loc);
@@ -564,8 +599,8 @@ export default function MapPage() {
     try {
       const locationData = await getHighAccuracyLocation();
       const loc = { lat: locationData.lat, lng: locationData.lng };
-      setUserLocation(loc);
-      setLocationAccuracy(locationData.accuracy);
+      setUserLocationState(loc);
+      setAccuracyState(locationData.accuracy);
       setLocationStatus('success');
       
       if (mapInstance.current) {
@@ -596,8 +631,8 @@ export default function MapPage() {
       if (f) {
         const show = (filter === 'all' || f.type === filter) && (!search || f.name.toLowerCase().includes(search.toLowerCase()));
         // Handle visibility for both marker types
-        if ('setVisible' in m) {
-          (m as google.maps.Marker).setVisible(show);
+        if (isClassicMarker(m)) {
+          m.setVisible(show);
         } else {
           // AdvancedMarkerElement uses CSS for visibility
           const element = m.element;
@@ -609,6 +644,7 @@ export default function MapPage() {
     });
   }, [filter, search, facilities]);
 
+  const filterOptions: Array<'all' | 'hospital' | 'clinic' | 'pharmacy' | 'health_center'> = ['all', 'hospital', 'clinic', 'pharmacy', 'health_center'];
   const labels: Record<string, string> = { hospital: 'โรงพยาบาล', clinic: 'คลินิก', pharmacy: 'ร้านยา', health_center: 'ศูนย์สุขภาพ' };
   const colors: Record<string, string> = { hospital: 'bg-red-100 text-red-600', clinic: 'bg-blue-100 text-blue-600', pharmacy: 'bg-green-100 text-green-600', health_center: 'bg-purple-100 text-purple-600' };
   const icons: Record<string, typeof Building2> = { hospital: Building2, clinic: Stethoscope, pharmacy: Pill, health_center: Heart };
@@ -619,8 +655,8 @@ export default function MapPage() {
     mapInstance.current?.setZoom(16);
     // Find marker by title (works for both marker types)
     const m = markers.current.find(x => {
-      if ('getTitle' in x) {
-        return (x as google.maps.Marker).getTitle() === f.name;
+      if (isClassicMarker(x)) {
+        return x.getTitle() === f.name;
       }
       return x.title === f.name;
     });
@@ -628,8 +664,87 @@ export default function MapPage() {
   };
 
   const navigate = (f: Facility) => {
-    window.open(`https://www.google.com/maps/dir/?api=1&destination=${f.location.lat},${f.location.lng}`, '_blank');
+    globalThis.open?.(directionsUrl(f.location), '_blank');
   };
+
+  let listContent: JSX.Element;
+  if (loading && facilities.length === 0) {
+    listContent = (
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="w-6 h-6 animate-spin text-emerald-600" />
+      </div>
+    );
+  } else if (filtered.length === 0) {
+    listContent = (
+      <div className="text-center py-8 text-gray-500">
+        <MapPin className="w-10 h-10 mx-auto mb-2 opacity-50" />
+        <p className="text-sm">ไม่พบสถานพยาบาล</p>
+      </div>
+    );
+  } else {
+    listContent = (
+      <>
+        {filtered.slice(0, 30).map(f => {
+          const Icon = icons[f.type] || Building2;
+          const sel = selectedId === f.id;
+          const openStatus = f.isOpen === undefined ? null : {
+            label: f.isOpen ? 'เปิด' : 'ปิด',
+            className: f.isOpen ? 'text-green-600' : 'text-red-500'
+          };
+          return (
+            <div
+              key={f.id}
+              className={`p-3 bg-white transition ${sel ? 'bg-emerald-50 border-l-4 border-emerald-500' : ''}`}
+            >
+              <div className="flex items-start gap-3">
+                <button
+                  type="button"
+                  onClick={() => focusFacility(f)}
+                  className="flex-1 min-w-0 text-left hover:bg-emerald-50 rounded-lg -m-2 p-2"
+                  aria-pressed={sel}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${colors[f.type]}`}>
+                      <Icon className="w-4 h-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between gap-2">
+                        <div>
+                          <h3 className="font-medium text-gray-800 text-sm">{f.name}</h3>
+                          <span className={`inline-block px-1.5 py-0.5 text-xs rounded mt-0.5 ${colors[f.type]}`}>{labels[f.type]}</span>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="text-sm font-semibold text-emerald-600">{f.distanceText}</p>
+                          {openStatus && (
+                            <p className={`text-xs ${openStatus.className}`}>{openStatus.label}</p>
+                          )}
+                        </div>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1 truncate">{f.address}</p>
+                      {f.rating && (
+                        <div className="flex items-center gap-1 mt-1">
+                          <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
+                          <span className="text-xs text-gray-600">{f.rating}</span>
+                          <span className="text-xs text-gray-400">({f.ratingCount})</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigate(f)}
+                  className="p-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 shrink-0"
+                >
+                  <Navigation className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </>
+    );
+  }
 
   return (
     <div className="flex flex-col h-[calc(100vh-100px)] -mx-4 sm:-mx-6 -mt-4 sm:-mt-6">
@@ -695,7 +810,7 @@ export default function MapPage() {
 
       {/* Filter */}
       <div className="bg-white border-b px-4 py-2 flex gap-2 overflow-x-auto shrink-0">
-        {(['all', 'hospital', 'clinic', 'pharmacy', 'health_center'] as const).map(t => {
+        {filterOptions.map(t => {
           const Icon = t === 'all' ? MapPin : icons[t];
           const cnt = t === 'all' ? facilities.length : facilities.filter(f => f.type === t).length;
           return (
@@ -727,7 +842,7 @@ export default function MapPage() {
                 </div>
               )}
               <button 
-                onClick={() => window.location.reload()} 
+                onClick={() => globalThis.location.reload()} 
                 className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg flex items-center gap-2 mx-auto"
               >
                 <RefreshCw className="w-4 h-4" />
@@ -796,50 +911,7 @@ export default function MapPage() {
           {loading && <Loader2 className="w-4 h-4 animate-spin text-emerald-600" />}
         </div>
         <div className="divide-y">
-          {loading && facilities.length === 0 ? (
-            <div className="flex items-center justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-emerald-600" /></div>
-          ) : filtered.length === 0 ? (
-            <div className="text-center py-8 text-gray-500"><MapPin className="w-10 h-10 mx-auto mb-2 opacity-50" /><p className="text-sm">ไม่พบสถานพยาบาล</p></div>
-          ) : (
-            filtered.slice(0, 30).map(f => {
-              const Icon = icons[f.type] || Building2;
-              const sel = selectedId === f.id;
-              return (
-                <div key={f.id} onClick={() => focusFacility(f)}
-                  className={`p-3 bg-white hover:bg-emerald-50 cursor-pointer transition ${sel ? 'bg-emerald-50 border-l-4 border-emerald-500' : ''}`}>
-                  <div className="flex items-start gap-3">
-                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${colors[f.type]}`}>
-                      <Icon className="w-4 h-4" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex justify-between gap-2">
-                        <div>
-                          <h3 className="font-medium text-gray-800 text-sm">{f.name}</h3>
-                          <span className={`inline-block px-1.5 py-0.5 text-xs rounded mt-0.5 ${colors[f.type]}`}>{labels[f.type]}</span>
-                        </div>
-                        <div className="text-right shrink-0">
-                          <p className="text-sm font-semibold text-emerald-600">{f.distanceText}</p>
-                          {f.isOpen !== undefined && <p className={`text-xs ${f.isOpen ? 'text-green-600' : 'text-red-500'}`}>{f.isOpen ? 'เปิด' : 'ปิด'}</p>}
-                        </div>
-                      </div>
-                      <p className="text-xs text-gray-500 mt-1 truncate">{f.address}</p>
-                      {f.rating && (
-                        <div className="flex items-center gap-1 mt-1">
-                          <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
-                          <span className="text-xs text-gray-600">{f.rating}</span>
-                          <span className="text-xs text-gray-400">({f.ratingCount})</span>
-                        </div>
-                      )}
-                    </div>
-                    <button onClick={e => { e.stopPropagation(); navigate(f); }}
-                      className="p-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 shrink-0">
-                      <Navigation className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              );
-            })
-          )}
+          {listContent}
         </div>
       </div>
     </div>

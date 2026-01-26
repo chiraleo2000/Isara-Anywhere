@@ -518,18 +518,28 @@ export default function PHRPage() {
                 <div>
                   <label className="block text-sm text-gray-600 mb-1">อุณหภูมิ (°C)</label>
                   <input 
-                    type="number" 
-                    step="0.1" 
-                    min="35.0"
-                    max="42.0"
+                    type="text"
+                    inputMode="decimal"
+                    pattern="[0-9]*\.?[0-9]*"
                     value={newVitals.temperature} 
                     onChange={(e) => {
                       const value = e.target.value;
-                      // Allow empty or valid temperature range
-                      if (value === '' || (parseFloat(value) >= 35.0 && parseFloat(value) <= 42.0)) {
+                      // Allow empty, numbers, and decimal point for typing
+                      if (value === '' || /^\d*\.?\d*$/.test(value)) {
                         setNewVitals({...newVitals, temperature: value});
                       }
-                    }} 
+                    }}
+                    onBlur={(e) => {
+                      // Validate on blur - must be between 35-42
+                      const value = e.target.value;
+                      if (value !== '') {
+                        const num = parseFloat(value);
+                        if (isNaN(num) || num < 35.0 || num > 42.0) {
+                          alert('อุณหภูมิต้องอยู่ระหว่าง 35.0-42.0°C');
+                          setNewVitals({...newVitals, temperature: ''});
+                        }
+                      }
+                    }}
                     className="w-full p-2 border rounded-lg" 
                     placeholder="36.5" 
                   />

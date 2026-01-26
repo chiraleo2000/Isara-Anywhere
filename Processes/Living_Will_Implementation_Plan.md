@@ -1,5 +1,6 @@
 # 📋 Living Will Implementation Plan
 
+
 **Version:** 1.1  
 **Created:** December 12, 2025  
 **Status:** ✅ IMPLEMENTED
@@ -8,12 +9,14 @@
 
 ## Executive Summary
 
+
 This document outlines the implementation plan for adding Living Will functionality to both the Patient Portal and Doctor Portal with full PDPA compliance and consent-based sharing controls.
 
 ### Implementation Completed:
 
+
 | Task | File | Status |
-|------|------|--------|
+| ------ | ------ | -------- |
 | TypeScript Types | `Isara-patient-portal/src/types/sharedPHRTypes.ts` | ✅ Done |
 | Patient API Routes | `Isara-patient-portal/server/routes/phr.ts` | ✅ Done |
 | Doctor Portal Types | `Isara-doctor-portal/src/services/patientRecordService.ts` | ✅ Done |
@@ -25,7 +28,9 @@ This document outlines the implementation plan for adding Living Will functional
 
 ## 1. Patient Portal Implementation
 
+
 ### 1.1. Add Living Will Types to Shared Types
+
 
 **File:** `Isara-patient-portal/src/types/sharedPHRTypes.ts`
 
@@ -123,11 +128,14 @@ export interface LivingWillForDoctor {
 }
 ```
 
+
 ### 1.2. Create Living Will Form Component
+
 
 **File:** `Isara-patient-portal/src/components/health/LivingWillForm.tsx`
 
 Key sections:
+
 1. Statement of wishes (textarea)
 2. Treatment preferences (checkboxes with notes)
 3. Representative information (form fields)
@@ -135,11 +143,14 @@ Key sections:
 5. Digital signature canvas
 6. Save/Cancel buttons
 
+
 ### 1.3. Create Living Will View Component
+
 
 **File:** `Isara-patient-portal/src/components/health/LivingWillView.tsx`
 
 Display existing Living Will with:
+
 - Status badge (Active/Revoked)
 - Statement display
 - Treatment preferences list
@@ -147,22 +158,28 @@ Display existing Living Will with:
 - Share settings status
 - Edit/Revoke buttons
 
+
 ### 1.4. Add Living Will Tab to PHR Page
+
 
 **File:** `Isara-patient-portal/src/pages/health/PHRPage.tsx`
 
 Add new tab:
+
 ```tsx
 <Tab id="living-will" label="พินัยกรรมชีวิต">
   <LivingWillTab patientId={patientId} />
 </Tab>
 ```
 
+
 ### 1.5. Create API Routes
+
 
 **File:** `Isara-patient-portal/server/routes/phr.ts`
 
 Add endpoints:
+
 ```typescript
 // GET /api/phr/:patientId/living-will
 // POST /api/phr/:patientId/living-will
@@ -171,11 +188,14 @@ Add endpoints:
 // DELETE /api/phr/:patientId/living-will
 ```
 
+
 ---
 
 ## 2. Doctor Portal Implementation
 
+
 ### 2.1. Add Living Will Types
+
 
 **File:** `Isara-doctor-portal/src/types/index.ts`
 
@@ -183,30 +203,38 @@ Copy or import the Living Will types from shared types.
 
 ### 2.2. Update Patient Record Service
 
+
 **File:** `Isara-doctor-portal/src/services/patientRecordService.ts`
 
 Add methods:
+
 ```typescript
 async getLivingWill(patientId: string): Promise<LivingWillForDoctor>
 async checkLivingWillAccess(patientId: string, doctorId: string): Promise<boolean>
 ```
 
+
 ### 2.3. Create Living Will Card Component
+
 
 **File:** `Isara-doctor-portal/src/components/LivingWillCard.tsx`
 
 Display Living Will in patient record with:
+
 - Prominent alert if exists and shared
 - Treatment preferences (clear refused/allowed list)
 - Representative contact
 - Private indicator if not shared
 - No document indicator if none exists
 
+
 ### 2.4. Update Patient Record Viewer
+
 
 **File:** `Isara-doctor-portal/src/components/PatientRecordViewer.tsx`
 
 Add Living Will section at the TOP of PHR tab:
+
 ```tsx
 const PHRView = ({ phrData, patient }) => {
   const [livingWill, setLivingWill] = useState<LivingWillForDoctor | null>(null);
@@ -229,11 +257,14 @@ const PHRView = ({ phrData, patient }) => {
 };
 ```
 
+
 ### 2.5. Add API Endpoint
+
 
 **File:** `Isara-doctor-portal/server/mainApiServer.cjs`
 
 Add endpoint:
+
 ```javascript
 // GET /api/patients/:patientId/living-will
 app.get('/api/patients/:patientId/living-will', authMiddleware, async (req, res) => {
@@ -275,14 +306,17 @@ app.get('/api/patients/:patientId/living-will', authMiddleware, async (req, res)
 });
 ```
 
+
 ---
 
 ## 3. Testing Plan
 
+
 ### 3.1. Unit Tests
 
+
 | Test Case | Expected Result |
-|-----------|-----------------|
+| ----------- | ----------------- |
 | Create Living Will | Success, saved to GCS |
 | Update Living Will | Success, version incremented |
 | Revoke Living Will | Status changed to revoked |
@@ -295,9 +329,11 @@ app.get('/api/patients/:patientId/living-will', authMiddleware, async (req, res)
 
 ### 3.2. E2E Tests
 
+
 **File:** `scripts/tests/e2e/livingWillTests.cjs`
 
 Scenarios:
+
 1. Patient creates Living Will with sharing enabled
 2. Patient updates Living Will
 3. Patient revokes sharing
@@ -305,11 +341,14 @@ Scenarios:
 5. Doctor cannot view unshared Living Will
 6. Admin views shared Living Will
 
+
 ---
 
 ## 4. Task Checklist
 
+
 ### Patient Portal
+
 
 - [ ] Add Living Will types to `sharedPHRTypes.ts`
 - [ ] Create `LivingWillForm.tsx` component
@@ -323,7 +362,9 @@ Scenarios:
 - [ ] Write unit tests for Living Will APIs
 - [ ] Write E2E tests for patient workflows
 
+
 ### Doctor Portal
+
 
 - [ ] Add Living Will types to types file
 - [ ] Create `LivingWillCard.tsx` component
@@ -335,19 +376,23 @@ Scenarios:
 - [ ] Write unit tests for access control
 - [ ] Write E2E tests for doctor workflows
 
+
 ### Shared
+
 
 - [ ] Copy Living Will types to doctor portal
 - [ ] Update documentation
 - [ ] Create user guides
 - [ ] Test cross-portal workflow
 
+
 ---
 
 ## 5. Timeline
 
+
 | Phase | Duration | Tasks |
-|-------|----------|-------|
+| ------- | ---------- | ------- |
 | Phase 1 | Week 1-2 | Patient Portal implementation |
 | Phase 2 | Week 2-3 | Doctor Portal implementation |
 | Phase 3 | Week 3-4 | Testing & documentation |
@@ -357,11 +402,14 @@ Scenarios:
 
 ## 6. Dependencies
 
+
 - Both portals running
 - GCS access configured
 - Authentication working
 - PDPA consent system in place
 
+
 ---
 
-**End of Implementation Plan**
+#### End of Implementation Plan
+

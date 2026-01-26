@@ -152,10 +152,16 @@ RUN npm run build
 FROM node:22-alpine AS production
 WORKDIR /app
 
-# Cache bust - force rebuild v1.4.2
-ARG CACHE_BUST=5
+# Cache bust - force rebuild v1.4.3
+ARG CACHE_BUST=6
 
-RUN apk add --no-cache nginx bash curl gettext supervisor && rm -rf /var/cache/apk/*
+RUN apk add --no-cache \
+    nginx \
+    bash \
+    curl \
+    gettext \
+    supervisor \
+  && rm -rf /var/cache/apk/*
 
 COPY package*.json ./
 RUN npm ci --only=production && npm cache clean --force
@@ -175,7 +181,8 @@ RUN printf '%s\n' \
 '    gzip on;' \
 '    gzip_vary on;' \
 '    gzip_min_length 1024;' \
-'    gzip_types text/plain text/css text/xml text/javascript application/x-javascript application/xml+rss application/javascript application/json;' \
+'    gzip_types text/plain text/css text/xml text/javascript application/x-javascript' \
+'        application/xml+rss application/javascript application/json;' \
 '    add_header X-Frame-Options "SAMEORIGIN" always;' \
 '    add_header X-Content-Type-Options "nosniff" always;' \
 '    add_header X-XSS-Protection "1; mode=block" always;' \
@@ -288,10 +295,9 @@ RUN printf '%s\n' \
 '        add_header Cache-Control "no-cache";' \
 '    }' \
 '    error_page 404 /index.html;' \
-'}' > /etc/nginx/http.d/default.conf
-
-# Environment config template
-RUN printf '%s\n' \
+'}' > /etc/nginx/http.d/default.conf && \
+\
+printf '%s\n' \
 'window.ENV = {' \
 '  API_URL: "${VITE_API_URL}",' \
 '  AUTH_URL: "${VITE_AUTH_URL}",' \
@@ -310,10 +316,8 @@ RUN printf '%s\n' \
 '  GEMINI_MODEL: "${VITE_GEMINI_MODEL}",' \
 '  PDPA_ENABLED: "${VITE_PDPA_ENABLED}",' \
 '  CONSENT_REQUIRED: "${VITE_CONSENT_REQUIRED}"' \
-'};' > /usr/share/nginx/html/env-config.template.js
-
-# Supervisor configuration for process management
-RUN printf '%s\n' \
+'};' > /usr/share/nginx/html/env-config.template.js && \
+printf '%s\n' \
 '[supervisord]' \
 'nodaemon=true' \
 'logfile=/var/log/supervisord.log' \
@@ -322,8 +326,10 @@ RUN printf '%s\n' \
 '' \
 '[program:nginx]' \
 'command=/usr/sbin/nginx -g "daemon off;"' \
+'priority=10' \
 'autostart=true' \
 'autorestart=true' \
+'startsecs=1' \
 'stdout_logfile=/dev/stdout' \
 'stdout_logfile_maxbytes=0' \
 'stderr_logfile=/dev/stderr' \
@@ -332,8 +338,11 @@ RUN printf '%s\n' \
 '[program:gcs-api]' \
 'command=node /app/server/gcsApiServer.cjs' \
 'directory=/app' \
+'priority=20' \
 'autostart=true' \
 'autorestart=true' \
+'startsecs=5' \
+'startretries=3' \
 'environment=NODE_ENV="production",GCS_API_PORT="3012",PORT="3012"' \
 'stdout_logfile=/dev/stdout' \
 'stdout_logfile_maxbytes=0' \
@@ -343,9 +352,14 @@ RUN printf '%s\n' \
 '[program:auth-server]' \
 'command=node /app/server/authServer.cjs' \
 'directory=/app' \
+'priority=30' \
 'autostart=true' \
 'autorestart=true' \
-'environment=NODE_ENV="production",AUTH_PORT="3011",GCS_API_URL="http://127.0.0.1:3012",USE_POSTGRESQL="%(ENV_USE_POSTGRESQL)s",DB_HOST="%(ENV_DB_HOST)s",DB_NAME="%(ENV_DB_NAME)s",DB_USER="%(ENV_DB_USER)s",DB_PASSWORD="%(ENV_DB_PASSWORD)s",DB_PORT="%(ENV_DB_PORT)s"' \
+'startsecs=5' \
+'startretries=3' \
+'environment=NODE_ENV="production",AUTH_PORT="3011",GCS_API_URL="http://127.0.0.1:3012",' \
+'    USE_POSTGRESQL="%(ENV_USE_POSTGRESQL)s",DB_HOST="%(ENV_DB_HOST)s",DB_NAME="%(ENV_DB_NAME)s",' \
+'    DB_USER="%(ENV_DB_USER)s",DB_PASSWORD="%(ENV_DB_PASSWORD)s",DB_PORT="%(ENV_DB_PORT)s"' \
 'stdout_logfile=/dev/stdout' \
 'stdout_logfile_maxbytes=0' \
 'stderr_logfile=/dev/stderr' \
@@ -354,9 +368,15 @@ RUN printf '%s\n' \
 '[program:main-api]' \
 'command=node /app/server/mainApiServer.cjs' \
 'directory=/app' \
+'priority=40' \
 'autostart=true' \
 'autorestart=true' \
-'environment=NODE_ENV="production",PORT="3009",GCS_API_URL="http://127.0.0.1:3012",GEMINI_API_KEY="%(ENV_GEMINI_API_KEY)s",GEMINI_MODEL="%(ENV_GEMINI_MODEL)s",JITSI_DOMAIN="%(ENV_JITSI_DOMAIN)s",GOOGLE_SPEECH_API_KEY="%(ENV_GOOGLE_SPEECH_API_KEY)s",USE_POSTGRESQL="%(ENV_USE_POSTGRESQL)s",DB_HOST="%(ENV_DB_HOST)s",DB_NAME="%(ENV_DB_NAME)s",DB_USER="%(ENV_DB_USER)s",DB_PASSWORD="%(ENV_DB_PASSWORD)s",DB_PORT="%(ENV_DB_PORT)s"' \
+'startsecs=5' \
+'startretries=3' \
+'environment=NODE_ENV="production",PORT="3009",GCS_API_URL="http://127.0.0.1:3012",GEMINI_API_KEY="%(ENV_GEMINI_API_KEY)s",' \
+'    GEMINI_MODEL="%(ENV_GEMINI_MODEL)s",JITSI_DOMAIN="%(ENV_JITSI_DOMAIN)s",GOOGLE_SPEECH_API_KEY="%(ENV_GOOGLE_SPEECH_API_KEY)s",' \
+'    USE_POSTGRESQL="%(ENV_USE_POSTGRESQL)s",DB_HOST="%(ENV_DB_HOST)s",DB_NAME="%(ENV_DB_NAME)s",DB_USER="%(ENV_DB_USER)s",' \
+'    DB_PASSWORD="%(ENV_DB_PASSWORD)s",DB_PORT="%(ENV_DB_PORT)s"' \
 'stdout_logfile=/dev/stdout' \
 'stdout_logfile_maxbytes=0' \
 'stderr_logfile=/dev/stderr' \
@@ -377,7 +397,7 @@ ENV GEMINI_API_KEY=${GEMINI_API_KEY:-} \
     DB_PASSWORD=${DB_PASSWORD:-} \
     DB_PORT=${DB_PORT:-5432}
 
-# Entrypoint script
+# Entrypoint script with sequential process startup
 RUN printf '%s\n' \
 '#!/bin/bash' \
 'set -e' \
@@ -386,10 +406,26 @@ RUN printf '%s\n' \
 'envsubst < /usr/share/nginx/html/env-config.template.js > /usr/share/nginx/html/env-config.js' \
 'mkdir -p /app/server/logs /var/log /var/run' \
 'echo "Environment configured"' \
-'echo "Starting services via supervisor..."' \
-'exec /usr/bin/supervisord -c /etc/supervisord.conf' > /docker-entrypoint.sh
-
-RUN chmod +x /docker-entrypoint.sh && \
+'' \
+'# Start nginx in background' \
+'echo "Starting nginx..."' \
+'/usr/sbin/nginx &' \
+'sleep 1' \
+'' \
+'# Start GCS API server' \
+'echo "Starting GCS API server..."' \
+'cd /app && NODE_ENV=production GCS_API_PORT=3012 PORT=3012 node /app/server/gcsApiServer.cjs &' \
+'sleep 3' \
+'' \
+'# Start Auth server' \
+'echo "Starting Auth server..."' \
+'cd /app && NODE_ENV=production AUTH_PORT=3011 GCS_API_URL=http://127.0.0.1:3012 node /app/server/authServer.cjs &' \
+'sleep 3' \
+'' \
+'# Start Main API server (foreground to keep container running)' \
+'echo "Starting Main API server..."' \
+'cd /app && exec node /app/server/mainApiServer.cjs' > /docker-entrypoint.sh && \
+    chmod +x /docker-entrypoint.sh && \
     chown -R nginx:nginx /usr/share/nginx/html && \
     chmod -R 755 /usr/share/nginx/html && \
     mkdir -p /app/server/logs /var/secrets/google

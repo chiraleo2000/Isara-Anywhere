@@ -2,22 +2,21 @@
 # Builds unified Docker image and deploys to Cloud Run
 
 steps:
-  # Build the unified Docker image with secrets as build args
+  # Build the unified Docker image
   - name: 'gcr.io/cloud-builders/docker'
-    entrypoint: 'bash'
     args:
-      - '-c'
-      - |
-        docker build \
-          -f Dockerfile.unified \
-          -t gcr.io/$PROJECT_ID/izara-patient-portal:$COMMIT_SHA \
-          -t gcr.io/$PROJECT_ID/izara-patient-portal:latest \
-          --build-arg VITE_APP_ENV=production \
-          --build-arg VITE_GCP_PROJECT_ID=$PROJECT_ID \
-          --build-arg VITE_GOOGLE_MAPS_API_KEY=$$GOOGLE_MAPS_API_KEY \
-          --build-arg VITE_GEMINI_API_KEY=$$GEMINI_API_KEY \
-          .
-    secretEnv: ['GOOGLE_MAPS_API_KEY', 'GEMINI_API_KEY']
+      - 'build'
+      - '-f'
+      - 'Dockerfile.unified'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/izara-patient-portal:$COMMIT_SHA'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/izara-patient-portal:latest'
+      - '--build-arg'
+      - 'VITE_APP_ENV=production'
+      - '--build-arg'
+      - 'VITE_GCP_PROJECT_ID=$PROJECT_ID'
+      - '.'
 
   # Push image to Container Registry
   - name: 'gcr.io/cloud-builders/docker'
@@ -48,7 +47,7 @@ steps:
       - '--timeout=300'
       - '--add-cloudsql-instances=izara-telemedicine:asia-southeast1:izara-db-instance'
       - '--set-env-vars=NODE_ENV=production,USE_POSTGRESQL=true,VITE_USE_POSTGRESQL=true,VITE_GCP_PROJECT_ID=$PROJECT_ID,VITE_GCP_REGION=asia-southeast1,DB_HOST=/cloudsql/izara-telemedicine:asia-southeast1:izara-db-instance,DB_NAME=izara_phase1,DB_USER=izara_localdb_admin'
-      - '--set-secrets=DB_PASSWORD=db-password:latest'
+      - '--set-secrets=DB_PASSWORD=db-password:latest,VITE_GOOGLE_MAPS_API_KEY=google-maps-api-key:latest,VITE_GEMINI_API_KEY=gemini-api-key:latest'
 
 # Store images in Container Registry
 images:
@@ -62,11 +61,3 @@ timeout: '1200s'
 options:
   logging: CLOUD_LOGGING_ONLY
   machineType: 'E2_HIGHCPU_8'
-
-# Secrets for build
-availableSecrets:
-  secretManager:
-    - versionName: projects/$PROJECT_ID/secrets/google-maps-api-key/versions/latest
-      env: 'GOOGLE_MAPS_API_KEY'
-    - versionName: projects/$PROJECT_ID/secrets/gemini-api-key/versions/latest
-      env: 'GEMINI_API_KEY'

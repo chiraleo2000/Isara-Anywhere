@@ -1,5 +1,6 @@
 # 🩺 Medicine Content Processes
 
+
 **Version:** 3.0.0  
 **Last Updated:** January 21, 2026  
 **Status:** ✅ PostgreSQL Implementation  
@@ -8,6 +9,7 @@
 ---
 
 ## 📋 Table of Contents
+
 
 1. [Overview](#1️⃣-overview)
 2. [System Architecture](#2️⃣-system-architecture)
@@ -23,26 +25,35 @@
 12. [Developer Notes](#1️⃣2️⃣-developer-notes)
 13. [Future Enhancements](#1️⃣3️⃣-future-enhancements)
 
+
 ---
 
 ## 🆕 Version 3.0 Changes (January 2025)
 
+
 ### Thai-First Content Policy
+
 - **Primary Language**: Thai (ภาษาไทย) is now the default and required language
 - **Secondary Language**: English is optional for international accessibility
 - **Form UI**: Thai fields are displayed first and marked as required (*)
 - **Display Priority**: Thai content is shown as primary in all views
 
+
 ### Image Support in Content
+
 Content now supports inline images using a simple markdown-like syntax:
-```
+
+```text
 [image:URL:description]
 ```
 
+
 **Example**:
-```
+
+```text
 [image:https://storage.googleapis.com/izara-meta-data/images/heart-diagram.jpg:ภาพแสดงโครงสร้างของหัวใจ]
 ```
+
 
 Images are rendered inline with proper styling and captions.
 
@@ -50,25 +61,31 @@ Images are rendered inline with proper styling and captions.
 
 ## 1️⃣ Overview
 
+
 The medical content system consists of two main modules that serve different audiences:
 
 ### Medical Content (คลังความรู้สุขภาพ)
+
 - **Purpose**: Health education articles for patients
 - **Audience**: Patients (read-only), Doctors (CRUD), Admins (CRUD + Approve)
 - **Location**: 
   - Doctor Portal: `MedicalContent.tsx` page
   - Patient Portal: `MedicalContentLibrary.tsx` → "คลังความรู้สุขภาพ" tab in Health Studio
 
+
 ### Clinical Resources (แหล่งข้อมูลทางการแพทย์)
+
 - **Purpose**: Medical guidelines, protocols, and research for healthcare professionals
 - **Audience**: Doctors only (with admin approval workflow)
 - **Location**: Doctor Portal: `ClinicalResources.tsx` page
+
 
 ---
 
 ## 2️⃣ System Architecture
 
-```
+
+```text
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                        CONTENT MANAGEMENT SYSTEM                        │
 ├─────────────────────────────────────────────────────────────────────────┤
@@ -101,23 +118,27 @@ The medical content system consists of two main modules that serve different aud
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
+
 ---
 
 ## 3️⃣ User Roles & Permissions
 
+
 ### Permission Matrix
 
-| Role    | Medical Content                          | Clinical Resources                |
-|---------|------------------------------------------|-----------------------------------|
-| Patient | ✅ Read published only                   | ❌ No access                      |
-| Doctor  | ✅ Create, Edit, Delete own              | ✅ Create, Edit, Submit for approval |
-|         | ✅ Publish (direct or via approval)      | ⏳ Pending approval required       |
-|         | ✅ Read all published                    | ✅ Read approved only              |
-| Admin   | ✅ Full CRUD                             | ✅ Approve/Reject                 |
-|         | ✅ Approve/Reject submissions            | ✅ View all (including pending)    |
-|         | ✅ Audit log access                      | ✅ Audit log access               |
+
+| Role | Medical Content | Clinical Resources |
+| --------- | ------------------------------------------ | ----------------------------------- |
+| Patient | ✅ Read published only | ❌ No access |
+| Doctor | ✅ Create, Edit, Delete own | ✅ Create, Edit, Submit for approval |
+|  | ✅ Publish (direct or via approval) | ⏳ Pending approval required |
+|  | ✅ Read all published | ✅ Read approved only |
+| Admin | ✅ Full CRUD | ✅ Approve/Reject |
+|  | ✅ Approve/Reject submissions | ✅ View all (including pending) |
+|  | ✅ Audit log access | ✅ Audit log access |
 
 ### Role Capabilities
+
 
 ```typescript
 interface ContentRoleCapabilities {
@@ -188,13 +209,16 @@ const adminCapabilities: ContentRoleCapabilities = {
 };
 ```
 
+
 ---
 
 ## 4️⃣ Workflow Steps
 
+
 ### Medical Content Workflow (Patient-Facing)
 
-```
+
+```text
 ┌──────────────────────────────────────────────────────────────────────────┐
 │                    MEDICAL CONTENT WORKFLOW                              │
 ├──────────────────────────────────────────────────────────────────────────┤
@@ -218,9 +242,12 @@ const adminCapabilities: ContentRoleCapabilities = {
 └──────────────────────────────────────────────────────────────────────────┘
 ```
 
+
 #### Step-by-Step Process:
 
+
 1. **Create Draft**
+
    ```typescript
    // Doctor/Admin creates content
    const draft: MedicalContentArticle = {
@@ -232,14 +259,18 @@ const adminCapabilities: ContentRoleCapabilities = {
    };
    ```
 
+
 2. **Submit for Approval** (Optional - depends on configuration)
+
    ```typescript
    // Doctor submits for review
    content.status = 'pending';
    content.submittedAt = new Date().toISOString();
    ```
 
+
 3. **Admin Review**
+
    ```typescript
    // Admin approves or rejects
    if (approved) {
@@ -255,15 +286,18 @@ const adminCapabilities: ContentRoleCapabilities = {
    }
    ```
 
+
 4. **Publish** → Content visible in Patient Portal คลังความรู้สุขภาพ
 
 5. **Archive** → Hidden but preserved for compliance
+
 
 ---
 
 ### Clinical Resources Workflow (Doctor-Facing)
 
-```
+
+```text
 ┌──────────────────────────────────────────────────────────────────────────┐
 │                  CLINICAL RESOURCES WORKFLOW                             │
 ├──────────────────────────────────────────────────────────────────────────┤
@@ -286,9 +320,12 @@ const adminCapabilities: ContentRoleCapabilities = {
 └──────────────────────────────────────────────────────────────────────────┘
 ```
 
+
 #### Step-by-Step Process:
 
+
 1. **Create Draft**
+
    ```typescript
    const resource: ClinicalResourceItem = {
      id: generateUUID(),
@@ -300,7 +337,9 @@ const adminCapabilities: ContentRoleCapabilities = {
    };
    ```
 
+
 2. **Submit for Approval** (REQUIRED)
+
    ```typescript
    resource.status = 'pending';
    resource.submittedAt = new Date().toISOString();
@@ -308,7 +347,9 @@ const adminCapabilities: ContentRoleCapabilities = {
    pendingApprovalIds.push(resource.id);
    ```
 
+
 3. **Admin Review** (MANDATORY)
+
    ```typescript
    if (approved) {
      resource.status = 'published';
@@ -325,13 +366,17 @@ const adminCapabilities: ContentRoleCapabilities = {
    }
    ```
 
+
 4. **Publish** → Resource visible to all doctors in Clinical Resources page
+
 
 ---
 
 ## 5️⃣ Data Structures
 
+
 ### Medical Content Article
+
 
 ```typescript
 interface MedicalContentArticle {
@@ -394,7 +439,9 @@ interface MedicalContentArticle {
 }
 ```
 
+
 ### Clinical Resource Item
+
 
 ```typescript
 interface ClinicalResourceItem {
@@ -450,7 +497,9 @@ interface ClinicalResourceItem {
 }
 ```
 
+
 ### Supporting Types
+
 
 ```typescript
 // Content Status
@@ -515,11 +564,13 @@ interface ContentAuditLog {
 }
 ```
 
+
 ---
 
 ## 6️⃣ GCS Storage Structure
 
-```
+
+```text
 izara-meta-data/                          # GCS Bucket
 │
 ├── medical-content/                       # Patient-facing content
@@ -543,7 +594,9 @@ izara-meta-data/                          # GCS Bucket
     └── videos/
 ```
 
+
 ### Storage Schema Examples
+
 
 ```json
 // medical-content/articles.json
@@ -567,13 +620,16 @@ izara-meta-data/                          # GCS Bucket
 }
 ```
 
+
 ---
 
 ## 7️⃣ Cross-Portal Data Synchronization
 
+
 ### Sync Architecture
 
-```
+
+```text
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                     CROSS-PORTAL SYNC FLOW                              │
 ├─────────────────────────────────────────────────────────────────────────┤
@@ -599,7 +655,9 @@ izara-meta-data/                          # GCS Bucket
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
+
 ### Sync Implementation
+
 
 ```typescript
 // services/contentSyncService.ts
@@ -662,10 +720,12 @@ async function setupRealtimeSync(): Promise<void> {
 }
 ```
 
+
 ### Sync Data Flow Matrix
 
+
 | Action | Doctor Portal | GCS | Patient Portal |
-|--------|---------------|-----|----------------|
+| -------- | --------------- | ----- | ---------------- |
 | Create Draft | ✅ Write | ✅ Store | ❌ Not visible |
 | Submit for Review | ✅ Update status | ✅ Store | ❌ Not visible |
 | Approve | ✅ Admin action | ✅ Store | ❌ Not visible |
@@ -678,7 +738,9 @@ async function setupRealtimeSync(): Promise<void> {
 
 ## 8️⃣ API Endpoints
 
+
 ### Medical Content APIs
+
 
 ```typescript
 // Base URL: /api/content/medical
@@ -710,7 +772,9 @@ POST   /api/content/medical/:id/share          // Increment share count
 GET    /api/content/medical/:id/audit-log      // Get audit history
 ```
 
+
 ### Clinical Resources APIs
+
 
 ```typescript
 // Base URL: /api/content/clinical
@@ -733,7 +797,9 @@ POST   /api/content/clinical/:id/review        // Approve/reject (admin)
 GET    /api/content/clinical/:id/audit-log     // Get audit history
 ```
 
+
 ### Request/Response Examples
+
 
 ```typescript
 // Create Medical Content
@@ -782,11 +848,14 @@ POST /api/content/medical/:id/review
 }
 ```
 
+
 ---
 
 ## 9️⃣ Content Categories
 
+
 ### Medical Content Categories (Fixed)
+
 
 ```typescript
 const MEDICAL_CONTENT_CATEGORIES = [
@@ -805,7 +874,9 @@ const MEDICAL_CONTENT_CATEGORIES = [
 ];
 ```
 
+
 ### Clinical Resources Categories (Fixed)
+
 
 ```typescript
 const CLINICAL_RESOURCES_CATEGORIES = [
@@ -822,13 +893,17 @@ const CLINICAL_RESOURCES_CATEGORIES = [
 ];
 ```
 
+
 ---
 
 ## 🔟 Implementation Guidelines
 
+
 ### For AI Agents / Developers
 
+
 #### When Adding New Content:
+
 
 ```typescript
 // 1. Generate unique ID with prefix
@@ -869,7 +944,9 @@ const calculateReadTime = (content: string): number => {
 };
 ```
 
+
 #### When Updating Content:
+
 
 ```typescript
 // 1. Save version to history
@@ -901,7 +978,9 @@ const updateContent = (
 };
 ```
 
+
 #### When Implementing Approval:
+
 
 ```typescript
 // Admin approval handler
@@ -954,13 +1033,16 @@ const handleApproval = async (
 };
 ```
 
+
 ---
 
 ## 1️⃣1️⃣ Patient Portal Access
 
+
 ### คลังความรู้สุขภาพ (Health Knowledge Library)
 
-```
+
+```text
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                     PATIENT PORTAL - HEALTH STUDIO                      │
 ├─────────────────────────────────────────────────────────────────────────┤
@@ -989,7 +1071,9 @@ const handleApproval = async (
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
+
 ### Patient Content Filtering
+
 
 ```typescript
 // Patient Portal content service
@@ -1007,11 +1091,14 @@ const getPatientVisibleContent = async (): Promise<MedicalContentArticle[]> => {
 };
 ```
 
+
 ---
 
 ## 1️⃣2️⃣ Developer Notes
 
+
 ### Critical Implementation Notes
+
 
 1. **Authentication Required**: All write operations must verify user authentication and role
 2. **GCS Path Convention**: Use consistent paths `izara-meta-data/{content-type}/{file}.json`
@@ -1019,9 +1106,11 @@ const getPatientVisibleContent = async (): Promise<MedicalContentArticle[]> => {
 4. **Version Control**: Always save previous version to history before updates
 5. **Thai Language**: All content should support bilingual fields (`title`, `titleTh`)
 
+
 ### File Locations
 
-```
+
+```text
 Doctor Portal:
 ├── src/pages/MedicalContent.tsx          # Medical content management
 ├── src/pages/ClinicalResources.tsx       # Clinical resources with approval
@@ -1037,11 +1126,14 @@ Backend:
 └── server/gcsApiServer.cjs               # GCS API handling
 ```
 
+
 ### UI Components (MedicalContent.tsx)
+
 
 The following UI components have been implemented to support the approval workflow:
 
 1. **Status Options** (line ~78)
+
    ```tsx
    const statusOptions = [
      { value: 'draft', label: 'Draft', color: 'bg-gray-100 text-gray-700' },
@@ -1052,10 +1144,13 @@ The following UI components have been implemented to support the approval workfl
    ];
    ```
 
+
 2. **Admin Detection** (line ~93)
+
    ```tsx
    const isAdmin = user?.email?.includes('admin') || user?.role === 'admin';
    ```
+
 
 3. **Pending Approvals Button** (Header - visible to Admin only when pendingCount > 0)
    - Shows notification badge with count
@@ -1079,7 +1174,9 @@ The following UI components have been implemented to support the approval workfl
    - Lists all pending articles
    - Quick access to review each article
 
+
 ### Key Functions
+
 
 ```tsx
 // Submit content for approval (Doctor)
@@ -1095,7 +1192,9 @@ fetchPendingApprovals(): Promise<void>
 openApprovalModal(article: MedicalContentArticle): void
 ```
 
+
 ### Testing Checklist
+
 
 - [ ] Doctor can create draft content
 - [ ] Doctor can submit content for approval
@@ -1106,11 +1205,14 @@ openApprovalModal(article: MedicalContentArticle): void
 - [ ] Audit log captures all actions
 - [ ] Version history preserved on updates
 
+
 ---
 
 ## 1️⃣3️⃣ Future Enhancements
 
+
 ### Planned Features
+
 
 1. **Rich Text Editor** (WYSIWYG)
    - Replace Markdown with visual editor
@@ -1140,14 +1242,17 @@ openApprovalModal(article: MedicalContentArticle): void
    - Pre-defined article structures
    - Category-specific templates
 
+
 ---
 
 ## 📊 Quick Reference
 
+
 ### Content Status Flow
 
+
 | Status | Description | Who Can See | Next Actions |
-|--------|-------------|-------------|--------------|
+| -------- | ------------- | ------------- | -------------- |
 | `draft` | Work in progress | Author only | Edit, Submit |
 | `pending` | Awaiting approval | Author, Admin | Approve, Reject |
 | `published` | Live content | All (per visibility) | Edit, Archive |
@@ -1156,11 +1261,14 @@ openApprovalModal(article: MedicalContentArticle): void
 
 ### Key Contacts
 
+
 - **Platform Lead**: Platform team
 - **Technical Support**: Development team
 - **Content Policy**: Medical content review board
+
 
 ---
 
 *Document maintained by: Development Team*  
 *For updates, submit a pull request or contact the platform lead.*
+

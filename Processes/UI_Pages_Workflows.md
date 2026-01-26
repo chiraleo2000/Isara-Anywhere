@@ -1,5 +1,6 @@
 # Izara Telemedicine - UI Pages & Workflows
 
+
 **Version:** 1.0.0  
 **Last Updated:** January 21, 2026  
 **Status:** Phase 1 Implementation
@@ -8,19 +9,22 @@
 
 ## 📋 Overview
 
+
 This document provides comprehensive UI/UX specifications for all pages across the Izara Telemedicine platform, covering three user types across two portals.
 
 ### Portal Structure
 
+
 | Portal | URL | User Types |
-|--------|-----|------------|
+| -------- | ----- | ------------ |
 | **Patient Portal** | localhost:3005 | Patient |
 | **Doctor Portal** | localhost:3010 | Doctor, Admin |
 
 ### User Role Matrix
 
+
 | Feature | Patient | Doctor | Admin |
-|---------|---------|--------|-------|
+| --------- | --------- | -------- | ------- |
 | View Dashboard | ✅ | ✅ | ✅ |
 | Book Appointments | ✅ | ❌ | ❌ |
 | Conduct Meetings | Join Only | Host | Host |
@@ -33,9 +37,11 @@ This document provides comprehensive UI/UX specifications for all pages across t
 
 # 🏥 DOCTOR PORTAL
 
+
 ## Doctor Portal Navigation Structure
 
-```
+
+```text
 Doctor Portal (localhost:3010)
 ├── 📊 แดชบอร์ด (Dashboard)
 ├── 📅 ตารางนัดหมาย (Appointment Schedule)
@@ -48,20 +54,24 @@ Doctor Portal (localhost:3010)
 └── [Admin Only] ✅ อนุมัติแพทย์ใหม่ (Approve New Doctors)
 ```
 
+
 ---
 
 ## 1. แดชบอร์ด (Dashboard)
+
 
 **Route:** `/dashboard`  
 **Access:** Doctor, Admin  
 **Component:** `DoctorDashboard.tsx`
 
 ### Purpose
+
 Central hub displaying today's appointments, pending tasks, notifications, and quick access to AI assistance.
 
 ### UI Layout
 
-```
+
+```text
 ┌─────────────────────────────────────────────────────────────────────────┐
 │  🏥 Izara Doctor Portal                    🔔(3)  👤 Dr. Test  ⚙️      │
 ├─────────────────────────────────────────────────────────────────────────┤
@@ -97,10 +107,12 @@ Central hub displaying today's appointments, pending tasks, notifications, and q
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
+
 ### Actions & Buttons
 
+
 | Button | Action | Backend API |
-|--------|--------|-------------|
+| -------- | -------- | ------------- |
 | **ดูประวัติ** (View History) | Opens patient record viewer modal | `GET /api/patients/:id` |
 | **AI สรุปก่อนพบ** (AI Pre-Summary) | Generates AI pre-consultation summary | `POST /api/ai/pre-consultation-summary` |
 | **เริ่มประชุม** (Start Meeting) | Opens Jitsi meeting as HOST | `POST /api/meetings/start` |
@@ -110,8 +122,10 @@ Central hub displaying today's appointments, pending tasks, notifications, and q
 
 ### Workflows
 
+
 #### WF-DASH-001: View AI Pre-Consultation Summary
-```
+
+```text
 1. Doctor clicks [AI สรุปก่อนพบ] on appointment card
 2. System fetches patient EMR history, PHR, past Q&A
 3. AI generates summary with key points
@@ -124,8 +138,10 @@ Central hub displaying today's appointments, pending tasks, notifications, and q
 5. Doctor reviews and closes modal or proceeds to meeting
 ```
 
+
 #### WF-DASH-002: CDS Alert Interaction
-```
+
+```text
 1. Appointment card shows ⚠️ CDS Alert badge
 2. Doctor clicks alert to expand
 3. System shows:
@@ -137,20 +153,24 @@ Central hub displaying today's appointments, pending tasks, notifications, and q
 5. Decision logged to cds_logs table
 ```
 
+
 ---
 
 ## 2. ตารางนัดหมาย (Appointment Schedule)
+
 
 **Route:** `/schedule`  
 **Access:** Doctor, Admin  
 **Component:** `AppointmentSchedule.tsx`
 
 ### Purpose
+
 Calendar view of all appointments with filtering, status management, and quick actions.
 
 ### UI Layout
 
-```
+
+```text
 ┌─────────────────────────────────────────────────────────────────────────┐
 │  📅 ตารางนัดหมาย                                     [+ สร้างนัดหมาย]   │
 ├─────────────────────────────────────────────────────────────────────────┤
@@ -182,10 +202,12 @@ Calendar view of all appointments with filtering, status management, and quick a
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
+
 ### Status Legend
 
+
 | Status | Icon | Thai | Description |
-|--------|------|------|-------------|
+| -------- | ------ | ------ | ------------- |
 | Pending | 🟠 | รอยืนยัน | Awaiting doctor confirmation |
 | Confirmed | 🟢 | ยืนยันแล้ว | Confirmed, meeting link ready |
 | In Progress | 🔵 | กำลังดำเนินการ | Meeting in progress |
@@ -194,8 +216,9 @@ Calendar view of all appointments with filtering, status management, and quick a
 
 ### Actions & Buttons
 
+
 | Button | Action | Backend API |
-|--------|--------|-------------|
+| -------- | -------- | ------------- |
 | **+ สร้างนัดหมาย** | Opens create appointment modal | `POST /api/appointments` |
 | **ดูประวัติผู้ป่วย** | Opens patient record viewer | `GET /api/patients/:id` |
 | **AI สรุปก่อนพบ** | Generate pre-consultation summary | `POST /api/ai/pre-consultation-summary` |
@@ -207,16 +230,19 @@ Calendar view of all appointments with filtering, status management, and quick a
 
 ## 3. ผู้ป่วย (Patients)
 
+
 **Route:** `/patients`  
 **Access:** Doctor, Admin  
 **Component:** `PatientList.tsx`, `PatientRecordViewer.tsx`
 
 ### Purpose
+
 Patient directory with search, filtering, and comprehensive health record viewing.
 
 ### UI Layout - Patient List
 
-```
+
+```text
 ┌─────────────────────────────────────────────────────────────────────────┐
 │  👥 ผู้ป่วย                                                              │
 ├─────────────────────────────────────────────────────────────────────────┤
@@ -236,17 +262,20 @@ Patient directory with search, filtering, and comprehensive health record viewin
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
+
 ### Risk Indicators
 
+
 | Icon | Meaning | Condition |
-|------|---------|-----------|
+| ------ | --------- | ----------- |
 | 🔵 | Low Risk | Normal vitals, no chronic conditions |
 | ⚠️ | Moderate Risk | Controlled chronic conditions |
 | 🔴 | High Risk | Multiple comorbidities, CDS alerts active |
 
 ### Patient Record Viewer (Modal/Page)
 
-```
+
+```text
 ┌─────────────────────────────────────────────────────────────────────────┐
 │  👤 ประวัติผู้ป่วย: นายอนันต์ ขยันเรียน                      [❌ ปิด]   │
 ├─────────────────────────────────────────────────────────────────────────┤
@@ -284,10 +313,12 @@ Patient directory with search, filtering, and comprehensive health record viewin
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
+
 ### Actions & Buttons
 
+
 | Button | Action | Backend API |
-|--------|--------|-------------|
+| -------- | -------- | ------------- |
 | **AI สรุปประวัติ** | Generate AI patient summary | `POST /api/ai/patient-summary` |
 | **เปิด EMR ใหม่** | Create new EMR for walk-in | `POST /api/emr` |
 | **อัปโหลดเอกสาร** | Upload PDF/lab for AI analysis | `POST /api/ai/analyze-document` |
@@ -297,16 +328,19 @@ Patient directory with search, filtering, and comprehensive health record viewin
 
 ## 4. นัดหมาย & ประชุม (Appointments & Meetings)
 
+
 **Route:** `/appointments`  
 **Access:** Doctor, Admin  
 **Component:** `AppointmentManagement.tsx`, `MeetingRoom.tsx`
 
 ### Purpose
+
 Manage appointment queue, conduct video meetings, document EMR, and generate patient instructions.
 
 ### UI Layout - Meeting Room
 
-```
+
+```text
 ┌─────────────────────────────────────────────────────────────────────────┐
 │  🎥 ห้องประชุม - นายสมชาย มั่นคง                    🔴 REC  [ออกจากห้อง]  │
 ├─────────────────────────────────────────────────────────────────────────┤
@@ -337,10 +371,12 @@ Manage appointment queue, conduct video meetings, document EMR, and generate pat
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
+
 ### Meeting Features (Phase 1)
 
+
 | Feature | Status | Description |
-|---------|--------|-------------|
+| --------- | -------- | ------------- |
 | Video Call (Jitsi) | ✅ | Doctor as HOST, patient in lobby |
 | Audio/Video Controls | ✅ | Mute, camera toggle |
 | Text Chat | ✅ | In-meeting chat |
@@ -353,7 +389,8 @@ Manage appointment queue, conduct video meetings, document EMR, and generate pat
 
 ### Post-Meeting Workflow
 
-```
+
+```text
 ┌─────────────────────────────────────────────────────────────────────────┐
 │  ✅ สิ้นสุดการประชุม                                                     │
 ├─────────────────────────────────────────────────────────────────────────┤
@@ -394,9 +431,11 @@ Manage appointment queue, conduct video meetings, document EMR, and generate pat
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
+
 ### Man-in-the-Loop Validation Flow
 
-```
+
+```text
 1. AI generates content (EMR summary, patient instructions)
 2. Content shows 🟡 "รอตรวจสอบ" (Pending Review) badge
 3. Doctor reviews content
@@ -408,20 +447,24 @@ Manage appointment queue, conduct video meetings, document EMR, and generate pat
 6. Audit log records all decisions
 ```
 
+
 ---
 
 ## 5. ที่ปรึกษาแพทย์ (Medical Consultants)
+
 
 **Route:** `/consultants`  
 **Access:** Doctor, Admin (Admin has full CRUD)  
 **Component:** `MedicalConsultants.tsx`
 
 ### Purpose
+
 Directory of specialist consultants for referrals and second opinions.
 
 ### UI Layout
 
-```
+
+```text
 ┌─────────────────────────────────────────────────────────────────────────┐
 │  👨‍⚕️ ที่ปรึกษาแพทย์                                   [+ เพิ่มที่ปรึกษา]  │
 ├─────────────────────────────────────────────────────────────────────────┤
@@ -444,10 +487,12 @@ Directory of specialist consultants for referrals and second opinions.
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
+
 ### Actions (By Role)
 
+
 | Action | Doctor | Admin |
-|--------|--------|-------|
+| -------- | -------- | ------- |
 | View consultant details | ✅ | ✅ |
 | Email consultant | ✅ | ✅ |
 | Call consultant | ✅ | ✅ |
@@ -461,16 +506,19 @@ Directory of specialist consultants for referrals and second opinions.
 
 ## 6. เนื้อหาทางการแพทย์ (Medical Content)
 
+
 **Route:** `/medical-content`  
 **Access:** Doctor, Admin  
 **Component:** `MedicalContent.tsx`
 
 ### Purpose
+
 Health education articles for patients. Doctors create, admin approves before publishing.
 
 ### UI Layout
 
-```
+
+```text
 ┌─────────────────────────────────────────────────────────────────────────┐
 │  📚 เนื้อหาทางการแพทย์                               [+ สร้างบทความใหม่]  │
 ├─────────────────────────────────────────────────────────────────────────┤
@@ -494,9 +542,11 @@ Health education articles for patients. Doctors create, admin approves before pu
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
+
 ### Content Workflow
 
-```
+
+```text
 1. Doctor creates article (Draft)
 2. Doctor submits for review → Status: Pending
 3. Admin reviews content
@@ -505,21 +555,25 @@ Health education articles for patients. Doctors create, admin approves before pu
 5. Published content syncs to Patient Portal health library
 ```
 
+
 ---
 
 ## 7. ทรัพยากรทางคลินิก (Clinical Resources)
+
 
 **Route:** `/clinical-resources`  
 **Access:** Doctor, Admin  
 **Component:** `ClinicalResources.tsx`
 
 ### Purpose
+
 Medical guidelines, protocols, and research papers for healthcare professionals only.
 
 ### Categories
 
+
 | Category | Thai | Description |
-|----------|------|-------------|
+| ---------- | ------ | ------------- |
 | diagnosis | แนวทางการวินิจฉัย | Diagnosis guidelines |
 | treatment | แนวทางการรักษา | Treatment protocols |
 | pharmacology | เภสัชวิทยา | Drug information |
@@ -527,25 +581,31 @@ Medical guidelines, protocols, and research papers for healthcare professionals 
 
 ### UI Similar to Medical Content
 
+
 Same layout as Medical Content but:
+
 - Only visible to doctors
 - Includes guideline year and source
 - References medical guidelines (KDIGO, ADA, etc.)
 
+
 ---
 
 ## 8. จัดการแพทย์ (Manage Doctors) - Admin Only
+
 
 **Route:** `/admin/doctors`  
 **Access:** Admin only  
 **Component:** `ManageDoctors.tsx`
 
 ### Purpose
+
 View all doctors, manage accounts, and handle administrative tasks.
 
 ### UI Layout
 
-```
+
+```text
 ┌─────────────────────────────────────────────────────────────────────────┐
 │  👥 จัดการแพทย์                                                          │
 ├─────────────────────────────────────────────────────────────────────────┤
@@ -564,20 +624,24 @@ View all doctors, manage accounts, and handle administrative tasks.
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
+
 ---
 
 ## 9. อนุมัติแพทย์ใหม่ (Approve New Doctors) - Admin Only
+
 
 **Route:** `/admin/pending-doctors`  
 **Access:** Admin only  
 **Component:** `PendingDoctorApproval.tsx`
 
 ### Purpose
+
 Review and approve/reject new doctor registration requests.
 
 ### UI Layout
 
-```
+
+```text
 ┌─────────────────────────────────────────────────────────────────────────┐
 │  ✅ อนุมัติแพทย์ใหม่                                      🔴 รอดำเนินการ: 2│
 ├─────────────────────────────────────────────────────────────────────────┤
@@ -597,9 +661,11 @@ Review and approve/reject new doctor registration requests.
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
+
 ### Approval Workflow
 
-```
+
+```text
 1. New doctor registers via Doctor Portal
 2. Status: Pending → appears in admin queue
 3. Admin reviews:
@@ -612,13 +678,16 @@ Review and approve/reject new doctor registration requests.
 5. Doctor receives email notification
 ```
 
+
 ---
 
 # 👤 PATIENT PORTAL
 
+
 ## Patient Portal Navigation Structure
 
-```
+
+```text
 Patient Portal (localhost:3005)
 ├── 🏠 หน้าหลัก (Home/Dashboard)
 ├── 📅 นัดหมาย (Appointments)
@@ -631,20 +700,24 @@ Patient Portal (localhost:3005)
 └── ⚙️ ตั้งค่า (Settings)
 ```
 
+
 ---
 
 ## 1. หน้าหลัก (Home/Dashboard)
+
 
 **Route:** `/` or `/home`  
 **Access:** Patient  
 **Component:** `PatientDashboard.tsx`
 
 ### Purpose
+
 Overview of health status, upcoming appointments, and quick actions.
 
 ### UI Layout
 
-```
+
+```text
 ┌─────────────────────────────────────────────────────────────────────────┐
 │  🏥 Izara Patient Portal                        🔔(2)  👤 Demo Test  ⚙️  │
 ├─────────────────────────────────────────────────────────────────────────┤
@@ -678,10 +751,12 @@ Overview of health status, upcoming appointments, and quick actions.
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
+
 ### Actions & Buttons
 
+
 | Button | Action | Backend API |
-|--------|--------|-------------|
+| -------- | -------- | ------------- |
 | **ดูรายละเอียด** | View appointment details | `GET /api/appointments/:id` |
 | **เข้าห้องประชุม** | Join Jitsi meeting (lobby) | Opens Jitsi URL |
 | **ดูทั้งหมด** (medications) | Navigate to PHR page | `/phr` |
@@ -694,16 +769,19 @@ Overview of health status, upcoming appointments, and quick actions.
 
 ## 2. นัดหมาย (Appointments)
 
+
 **Route:** `/appointments`  
 **Access:** Patient  
 **Component:** `PatientAppointments.tsx`
 
 ### Purpose
+
 View, book, and manage appointments.
 
 ### UI Layout
 
-```
+
+```text
 ┌─────────────────────────────────────────────────────────────────────────┐
 │  📅 นัดหมาย                                           [+ นัดหมายใหม่]   │
 ├─────────────────────────────────────────────────────────────────────────┤
@@ -733,9 +811,11 @@ View, book, and manage appointments.
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
+
 ### Book New Appointment Flow
 
-```
+
+```text
 1. Patient clicks [+ นัดหมายใหม่]
 2. Step 1: Select specialty/doctor
 3. Step 2: Select date/time from available slots
@@ -746,20 +826,24 @@ View, book, and manage appointments.
 8. When confirmed: Patient receives notification + meeting link
 ```
 
+
 ---
 
 ## 3. ปรึกษา AI (AI Consultation)
+
 
 **Route:** `/ai-chat`  
 **Access:** Patient  
 **Component:** `AIChatPage.tsx`
 
 ### Purpose
+
 AI health assistant for basic health questions and symptom checking.
 
 ### UI Layout
 
-```
+
+```text
 ┌─────────────────────────────────────────────────────────────────────────┐
 │  🤖 ปรึกษา AI                                                           │
 ├─────────────────────────────────────────────────────────────────────────┤
@@ -793,10 +877,12 @@ AI health assistant for basic health questions and symptom checking.
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
+
 ### Patient AI Features
 
+
 | Feature | Description |
-|---------|-------------|
+| --------- | ------------- |
 | Symptom Checker | Basic symptom assessment |
 | Health Tips | General health advice |
 | Medication Info | Drug information (non-prescriptive) |
@@ -808,16 +894,19 @@ AI health assistant for basic health questions and symptom checking.
 
 ## 4. คลังความรู้สุขภาพ (Health Knowledge Library)
 
+
 **Route:** `/health-library`  
 **Access:** Patient  
 **Component:** `MedicalContentLibrary.tsx`
 
 ### Purpose
+
 Read health education articles created by doctors.
 
 ### UI Layout
 
-```
+
+```text
 ┌─────────────────────────────────────────────────────────────────────────┐
 │  📚 คลังความรู้สุขภาพ                                                    │
 ├─────────────────────────────────────────────────────────────────────────┤
@@ -840,21 +929,25 @@ Read health education articles created by doctors.
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
+
 ---
 
 ## 5. ประวัติสุขภาพ (Health Records/PHR)
+
 
 **Route:** `/phr`  
 **Access:** Patient  
 **Component:** `PHRPage.tsx`
 
 ### Purpose
+
 Personal Health Record management - vitals, medications, allergies.
 
 ### Tabs
 
+
 | Tab | Thai | Content |
-|-----|------|---------|
+| ----- | ------ | --------- |
 | Overview | ภาพรวม | Summary of health data |
 | Vitals | สัญญาณชีพ | Blood pressure, heart rate, etc. |
 | Medications | ยา | Current medications |
@@ -863,7 +956,8 @@ Personal Health Record management - vitals, medications, allergies.
 
 ### UI Layout - Vitals Tab
 
-```
+
+```text
 ┌─────────────────────────────────────────────────────────────────────────┐
 │  📋 ประวัติสุขภาพ                                      [+ บันทึกใหม่]    │
 ├─────────────────────────────────────────────────────────────────────────┤
@@ -892,20 +986,24 @@ Personal Health Record management - vitals, medications, allergies.
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
+
 ---
 
 ## 6. เส้นทางสุขภาพ (Health Timeline)
+
 
 **Route:** `/health-timeline`  
 **Access:** Patient  
 **Component:** `HealthTimeline.tsx`
 
 ### Purpose
+
 Chronological view of all health events, consultations, and records.
 
 ### UI Layout
 
-```
+
+```text
 ┌─────────────────────────────────────────────────────────────────────────┐
 │  🛤️ เส้นทางสุขภาพ                                                       │
 ├─────────────────────────────────────────────────────────────────────────┤
@@ -933,25 +1031,30 @@ Chronological view of all health events, consultations, and records.
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
+
 ---
 
 ## 7. PDPA & Living Will
+
 
 **Route:** `/pdpa-consent`  
 **Access:** Patient  
 **Component:** `PDPAConsentPage.tsx`, `LivingWillForm.tsx`
 
 ### Purpose
+
 Manage data privacy consent and living will documentation.
 
 ### Tabs
 
+
 | Tab | Content |
-|-----|---------|
+| ----- | --------- |
 | PDPA Consent | Data sharing preferences |
 | Living Will | End-of-life care wishes |
 
 ### Living Will Features
+
 
 - Create/edit living will document
 - Treatment preferences (resuscitation, ventilation, etc.)
@@ -960,21 +1063,25 @@ Manage data privacy consent and living will documentation.
 - Digital signature
 - Audit trail
 
+
 ---
 
 ## 8. แผนที่ (Map)
+
 
 **Route:** `/map`  
 **Access:** Patient  
 **Component:** `MapPage.tsx`
 
 ### Purpose
+
 Find nearby hospitals, clinics, and pharmacies.
 
 ### Features
 
+
 | Feature | Description |
-|---------|-------------|
+| --------- | ------------- |
 | Location Search | Find by name or address |
 | Category Filter | Hospitals, clinics, pharmacies |
 | Distance Filter | Within X km |
@@ -985,17 +1092,20 @@ Find nearby hospitals, clinics, and pharmacies.
 
 ## 9. ตั้งค่า (Settings)
 
+
 **Route:** `/settings`  
 **Access:** Patient  
 **Component:** `SettingsPage.tsx`
 
 ### Purpose
+
 Account and notification preferences.
 
 ### Sections
 
+
 | Section | Options |
-|---------|---------|
+| --------- | --------- |
 | Profile | Name, contact, photo |
 | Password | Change password |
 | Notifications | Email, push, SMS preferences |
@@ -1008,24 +1118,30 @@ Account and notification preferences.
 
 # 🎨 Theme & Internationalization (i18n)
 
+
 ## Overview
+
 
 The Patient Portal supports both **Dark Mode** and **Multi-language** (Thai/English) throughout all pages and components. These settings are persisted in `localStorage` and applied globally via the `SettingsContext`.
 
 ## Dark Mode Implementation
 
+
 ### How It Works
+
 
 1. **Settings Storage:** Theme preference is stored in `localStorage` as `patient-portal-theme` with values `'light'` or `'dark'`
 2. **CSS Class Toggle:** When dark mode is enabled, the `html` element receives the class `dark`
 3. **Tailwind Dark Mode:** Uses Tailwind's `class` strategy for dark mode with CSS overrides in `index.css`
 
+
 ### Dark Mode Requirements
+
 
 All UI components MUST support dark mode. This includes:
 
 | Component Type | Light Mode | Dark Mode |
-|----------------|------------|-----------|
+| ---------------- | ------------ | ----------- |
 | **Cards/Boxes** | `bg-white border-gray-100` | `bg-slate-800 border-slate-700` |
 | **Text - Primary** | `text-slate-900` | `text-slate-100` |
 | **Text - Secondary** | `text-gray-600` | `text-slate-400` |
@@ -1035,6 +1151,7 @@ All UI components MUST support dark mode. This includes:
 | **Navigation** | Light sidebar | Dark sidebar |
 
 ### Implementation Pattern
+
 
 ```tsx
 // Use the useSettings hook to get dark mode state
@@ -1050,7 +1167,9 @@ const { isDarkMode } = useSettings();
 </div>
 ```
 
+
 ### CSS Override Rules (index.css)
+
 
 The `index.css` file contains comprehensive dark mode overrides using the `html.dark` selector:
 
@@ -1065,22 +1184,28 @@ html.dark [class*="bg-gradient-to-"] {
 }
 ```
 
+
 ## Language/Internationalization (i18n)
+
 
 ### Supported Languages
 
+
 | Language | Code | Storage Key |
-|----------|------|-------------|
+| ---------- | ------ | ------------- |
 | Thai | `th` | Default |
 | English | `en` | Option |
 
 ### How It Works
 
+
 1. **Settings Storage:** Language preference is stored in `localStorage` as `patient-portal-language`
 2. **Translation Function:** The `t(key)` function from `SettingsContext` returns the translated string
 3. **Fallback:** If a translation key is missing, the key name is returned
 
+
 ### Translation Keys Structure
+
 
 ```tsx
 const translations = {
@@ -1101,7 +1226,9 @@ const translations = {
 };
 ```
 
+
 ### Implementation Pattern
+
 
 ```tsx
 // Use the useSettings hook to get translation function
@@ -1117,10 +1244,12 @@ const { t, language } = useSettings();
 </button>
 ```
 
+
 ### Required Translation Keys by Page
 
+
 | Page | Required Keys |
-|------|---------------|
+| ------ | --------------- |
 | **Dashboard** | `dashboard.hello`, `dashboard.upcomingAppointments`, `dashboard.quickActions` |
 | **Booking** | `booking.title`, `booking.symptoms`, `booking.next`, `booking.confirm` |
 | **PHR** | `phr.vitalSigns`, `phr.medications`, `phr.allergies`, `phr.conditions` |
@@ -1132,32 +1261,42 @@ const { t, language } = useSettings();
 
 ## UX Guidelines
 
+
 ### Theme Toggle
+
 
 - Toggle location: Settings page AND navigation header
 - Icon: ☀️ for light mode, 🌙 for dark mode
 - Transition: Use `transition-colors duration-200` for smooth switching
 
+
 ### Language Toggle
+
 
 - Toggle location: Settings page AND navigation header
 - Display: Flag icons or "TH/EN" text toggle
 - Instant: Changes should apply immediately without page reload
 
+
 ### Scroll Behavior
 
+
 When navigating between steps (e.g., in appointment booking):
+
 - Always scroll to top when changing steps
 - Use smooth scrolling: `globalThis.scrollTo({ top: 0, behavior: 'smooth' })`
+
 
 ---
 
 # 🔌 Backend API Reference
 
+
 ## Core Endpoints
 
+
 | Category | Endpoint | Method | Description |
-|----------|----------|--------|-------------|
+| ---------- | ---------- | -------- | ------------- |
 | **Auth** | `/api/auth/login` | POST | User login |
 | **Auth** | `/api/auth/logout` | POST | User logout |
 | **Appointments** | `/api/appointments` | GET/POST | List/create appointments |
@@ -1172,8 +1311,9 @@ When navigating between steps (e.g., in appointment booking):
 
 ## AI Endpoints (Phase 1)
 
+
 | Endpoint | Method | Description |
-|----------|--------|-------------|
+| ---------- | -------- | ------------- |
 | `/api/ai/chat` | POST | AI chat (doctor) |
 | `/api/ai/pre-consultation-summary` | POST | Generate pre-consultation summary |
 | `/api/ai/patient-summary` | POST | Generate patient history summary |
@@ -1183,16 +1323,18 @@ When navigating between steps (e.g., in appointment booking):
 
 ## CDS Endpoints
 
+
 | Endpoint | Method | Description |
-|----------|--------|-------------|
+| ---------- | -------- | ------------- |
 | `/api/cds/check` | POST | Check for CDS alerts |
 | `/api/cds/alerts/:patientId` | GET | Get patient CDS alerts |
 | `/api/cds/logs` | GET/POST | CDS decision logs |
 
 ## Validation Endpoints (Man-in-the-Loop)
 
+
 | Endpoint | Method | Description |
-|----------|--------|-------------|
+| ---------- | -------- | ------------- |
 | `/api/validations/pending` | GET | List pending validations |
 | `/api/validations/:id/approve` | POST | Approve AI content |
 | `/api/validations/:id/reject` | POST | Reject with reason |
@@ -1202,10 +1344,12 @@ When navigating between steps (e.g., in appointment booking):
 
 # 📊 Database Tables Reference
 
+
 ## Core Tables
 
+
 | Table | Description |
-|-------|-------------|
+| ------- | ------------- |
 | `users` | All user accounts |
 | `doctor_profiles` | Doctor-specific data |
 | `patient_profiles` | Patient-specific data |
@@ -1217,8 +1361,9 @@ When navigating between steps (e.g., in appointment booking):
 
 ## AI/CDS Tables
 
+
 | Table | Description |
-|-------|-------------|
+| ------- | ------------- |
 | `knowledge_base` | RAG knowledge entries |
 | `ai_chat_history` | Doctor AI chat history |
 | `cds_logs` | CDS decision logs |
@@ -1227,4 +1372,5 @@ When navigating between steps (e.g., in appointment booking):
 
 ---
 
-**End of UI Pages Workflows Documentation v1.0**
+#### End of UI Pages Workflows Documentation v1.0
+
