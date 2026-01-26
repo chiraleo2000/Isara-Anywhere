@@ -58,8 +58,48 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const token = authService.getToken();
 
       if (currentUser && token) {
-        setUser(currentUser);
-        console.log('✅ Session restored:', currentUser.email);
+        // Verify session with server and sync admin privileges
+        try {
+          const response = await fetch('/auth/verify', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            if (data.valid && data.user) {
+              // Sync admin privileges from server (in case they changed)
+              const syncedUser = {
+                ...currentUser,
+                isAdmin: data.user.isAdmin || false,
+                adminPrivileges: data.user.adminPrivileges || undefined,
+              };
+              
+              // Update localStorage with synced data
+              localStorage.setItem('izara_current_user', JSON.stringify(syncedUser));
+              setUser(syncedUser);
+              
+              console.log('✅ Session restored and synced:', syncedUser.email);
+              if (syncedUser.isAdmin) {
+                console.log('👑 Admin privileges active:', JSON.stringify(syncedUser.adminPrivileges));
+              }
+            } else {
+              // Session invalid on server
+              console.log('⚠️ Session invalid on server, logging out');
+              authService.logout();
+              setUser(null);
+              navigate('/login', { replace: true });
+              return;
+            }
+          } else {
+            // Server verification failed, use cached user
+            console.log('⚠️ Could not verify session, using cached user');
+            setUser(currentUser);
+          }
+        } catch (verifyError) {
+          // Network error, use cached user
+          console.warn('⚠️ Session verification failed, using cached user:', verifyError);
+          setUser(currentUser);
+        }
         
         // Redirect to appropriate dashboard if on login page
         if (location.pathname === '/login' || location.pathname === '/') {

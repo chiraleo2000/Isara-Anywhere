@@ -26,15 +26,15 @@ async function checkDbConnection(): Promise<boolean> {
   }
 }
 
-// Initialize db check
-checkDbConnection().then(available => {
-  dbAvailable = available;
-  if (available) {
-    console.log('✅ PostgreSQL connected - Production mode active');
-  } else {
-    console.error('❌ PostgreSQL unavailable - Authentication will fail until DB is available');
-  }
-});
+// Initialize db check - run immediately (fire and forget with logging)
+(async () => {
+  try {
+    const available = await checkDbConnection();
+    console.log(available 
+      ? '✅ PostgreSQL connected - Production mode active' 
+      : '❌ PostgreSQL unavailable - Authentication will fail until DB is available');
+  } catch {}
+})().catch(() => {});
 
 // Keep-alive: periodically check database connection
 setInterval(() => {
@@ -79,56 +79,50 @@ async function verifyPassword(password: string, hash: string): Promise<boolean> 
 }
 
 // ============================================================================
+// VALIDATION HELPERS - Extracted to reduce cognitive complexity
+// ============================================================================
+interface ValidationError {
+  success: false;
+  error: string;
+  message: string;
+}
+
+function validateRegistrationInput(body: Record<string, unknown>): ValidationError | null {
+  const { email, password, confirmPassword } = body;
+  
+  if (!email) {
+    return { success: false, error: 'Email is required', message: 'Please provide an email address' };
+  }
+  if (!password) {
+    return { success: false, error: 'Password is required', message: 'Please provide a password' };
+  }
+  if (!isValidEmail(email as string)) {
+    return { success: false, error: 'Invalid email format', message: 'Please provide a valid email address' };
+  }
+  if (confirmPassword && password !== confirmPassword) {
+    return { success: false, error: 'Passwords do not match', message: 'Password and confirmation must match' };
+  }
+  if ((password as string).length < 6) {
+    return { success: false, error: 'Password too short', message: 'Password must be at least 6 characters' };
+  }
+  return null;
+}
+
+// ============================================================================
 // REGISTER NEW USER
 // ============================================================================
 router.post('/register', async (req: Request, res: Response) => {
   try {
     const { 
-      name, email, password, confirmPassword, phone, dateOfBirth, gender,
+      name, email, password, phone, dateOfBirth, gender,
       height, weight, bloodType, allergies, chronicConditions, currentMedications,
       emergencyContactName, emergencyContactPhone, emergencyContactRelation
     } = req.body;
 
-    // Basic validation - more lenient for testing
-    if (!email) {
-      return res.status(400).json({ 
-        success: false,
-        error: 'Email is required',
-        message: 'Please provide an email address'
-      });
-    }
-
-    if (!password) {
-      return res.status(400).json({ 
-        success: false,
-        error: 'Password is required',
-        message: 'Please provide a password'
-      });
-    }
-
-    if (!isValidEmail(email)) {
-      return res.status(400).json({ 
-        success: false,
-        error: 'Invalid email format',
-        message: 'Please provide a valid email address'
-      });
-    }
-
-    // Password validation - only check if confirmPassword is provided
-    if (confirmPassword && password !== confirmPassword) {
-      return res.status(400).json({ 
-        success: false,
-        error: 'Passwords do not match',
-        message: 'Password and confirmation must match'
-      });
-    }
-
-    if (password.length < 6) {
-      return res.status(400).json({ 
-        success: false,
-        error: 'Password too short',
-        message: 'Password must be at least 6 characters'
-      });
+    // Validate input using extracted helper
+    const validationError = validateRegistrationInput(req.body);
+    if (validationError) {
+      return res.status(400).json(validationError);
     }
 
     const emailLower = email.toLowerCase().trim();

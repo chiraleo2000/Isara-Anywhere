@@ -14,6 +14,48 @@ const { pool } = postgresDataService;
 const router = Router();
 
 // ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+/**
+ * Transform snake_case database row to camelCase for frontend
+ */
+function transformAppointment(row: any): any {
+  if (!row) return row;
+  return {
+    id: row.id,
+    patientId: row.patient_id,
+    doctorId: row.doctor_id,
+    doctorName: row.doctor_name || row.doctor_name_thai,
+    doctorNameThai: row.doctor_name_thai,
+    doctorAvatar: row.doctor_avatar,
+    doctorSpecialty: row.doctor_specialty,
+    appointmentDate: row.confirmed_date || row.requested_date,
+    appointmentTime: row.confirmed_time || row.requested_time,
+    requestedDate: row.requested_date,
+    requestedTime: row.requested_time,
+    confirmedDate: row.confirmed_date,
+    confirmedTime: row.confirmed_time,
+    type: row.appointment_type || 'Telehealth',
+    status: row.status,
+    urgency: row.urgency_level,
+    symptoms: row.symptoms,
+    symptomDescription: row.symptom_description,
+    reason: row.symptom_description || row.reason,
+    notes: row.notes,
+    meetingLink: row.meet_link || row.meeting_link,
+    jitsiRoomName: row.jitsi_room_name,
+    patientMeetingUrl: row.meet_link || row.meeting_link,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    confirmedAt: row.confirmed_at,
+    cancelledAt: row.cancelled_at,
+    // Keep original row for any missed fields
+    ...row
+  };
+}
+
+// ============================================================================
 // JITSI MEETING LINK GENERATION
 // ============================================================================
 
@@ -89,7 +131,7 @@ router.get('/history', authMiddleware, async (req: Request, res: Response) => {
     console.log(`[APPOINTMENT] Found ${result.rows.length} history items for patient ${patientId}`);
     res.json({
       success: true,
-      history: result.rows
+      history: result.rows.map(transformAppointment)
     });
   } catch (error: any) {
     console.error('[APPOINTMENT] Get history error:', error);
@@ -141,7 +183,7 @@ router.get('/my', authMiddleware, async (req: Request, res: Response) => {
       console.log(`[APPOINTMENT] Found ${result.rows.length} appointments for patient ${patientId}`);
       res.json({
         success: true,
-        appointments: result.rows
+        appointments: result.rows.map(transformAppointment)
       });
     } catch (dbError) {
       console.error('[APPOINTMENT] DB error:', dbError);
@@ -187,7 +229,7 @@ router.get('/', authMiddleware, async (req: Request, res: Response) => {
     );
 
     console.log(`[APPOINTMENT] Found ${result.rows.length} appointments for patient ${patientId}`);
-    res.json(result.rows);
+    res.json(result.rows.map(transformAppointment));
   } catch (error: any) {
     console.error('[APPOINTMENT] Get appointments error:', error);
     res.status(500).json({ error: 'Failed to fetch appointments' });
@@ -213,7 +255,7 @@ router.get('/patient/:patientId', authMiddleware, async (req: Request, res: Resp
       [patientId]
     );
 
-    res.json(result.rows);
+    res.json(result.rows.map(transformAppointment));
   } catch (error: any) {
     console.error('[APPOINTMENT] Get appointments error:', error);
     res.status(500).json({ error: 'Failed to fetch appointments' });
@@ -244,7 +286,7 @@ router.get('/:appointmentId', authMiddleware, async (req: Request, res: Response
       return res.status(404).json({ error: 'Appointment not found' });
     }
 
-    res.json(result.rows[0]);
+    res.json(transformAppointment(result.rows[0]));
   } catch (error: any) {
     console.error('[APPOINTMENT] Get appointment error:', error);
     res.status(500).json({ error: 'Failed to fetch appointment' });
@@ -327,7 +369,7 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
     }
 
     console.log(`[APPOINTMENT] Created: ${appointmentId} with meeting link: ${meetingLink}`);
-    res.json(appointment);
+    res.json(transformAppointment(appointment));
   } catch (error: any) {
     console.error('[APPOINTMENT] Create error:', error);
     res.status(500).json({ error: 'Failed to create appointment' });
@@ -390,6 +432,18 @@ router.put('/:appointmentId/status', authMiddleware, async (req: Request, res: R
             meetingLink: finalMeetingLink 
           }
         });
+        console.log(`[NOTIFICATION] Sent confirmation to patient: ${updatedAppointment.patient_id}`);
+      } else if (status === 'declined' || status === 'rejected') {
+        await NotificationService.createNotification({
+          userId: updatedAppointment.patient_id,
+          type: 'appointment_declined',
+          title: 'Appointment Declined',
+          titleThai: 'นัดหมายถูกปฏิเสธ',
+          message: `Your appointment request has been declined. Please try booking with another doctor.`,
+          messageThai: `คำขอนัดหมายของคุณถูกปฏิเสธ กรุณาลองนัดหมายกับแพทย์ท่านอื่น`,
+          data: { appointmentId: updatedAppointment.id }
+        });
+        console.log(`[NOTIFICATION] Sent decline to patient: ${updatedAppointment.patient_id}`);
       } else if (status === 'cancelled') {
         await NotificationService.createNotification({
           userId: updatedAppointment.patient_id,
@@ -400,13 +454,14 @@ router.put('/:appointmentId/status', authMiddleware, async (req: Request, res: R
           messageThai: `นัดหมายของคุณถูกยกเลิก`,
           data: { appointmentId: updatedAppointment.id }
         });
+        console.log(`[NOTIFICATION] Sent cancellation to patient: ${updatedAppointment.patient_id}`);
       }
     } catch (notifError) {
       console.error('[APPOINTMENT] Notification error:', notifError);
     }
 
     console.log(`[APPOINTMENT] Updated: ${appointmentId} to ${status}`);
-    res.json(updatedAppointment);
+    res.json(transformAppointment(updatedAppointment));
   } catch (error: any) {
     console.error('[APPOINTMENT] Update status error:', error);
     res.status(500).json({ error: 'Failed to update appointment status' });

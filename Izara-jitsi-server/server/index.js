@@ -30,7 +30,7 @@ const PORT = process.env.PORT || 3020;
 const JITSI_DOMAIN = process.env.JITSI_DOMAIN || 'meet.jit.si';
 const JWT_SECRET = process.env.JWT_SECRET || 'izara-jitsi-jwt-secret';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash-lite';
 
 // Database Configuration
 const pool = new Pool({

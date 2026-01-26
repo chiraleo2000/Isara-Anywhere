@@ -43,7 +43,7 @@ ARG VITE_GCS_BUCKET_PATIENT=izara-patients-data
 ARG VITE_GCS_BUCKET_APPOINTMENTS=izara-appointments
 ARG VITE_GCS_BUCKET_METADATA=izara-meta-data
 ARG VITE_GEMINI_API_KEY
-ARG VITE_GEMINI_MODEL=gemini-2.5-flash
+ARG VITE_GEMINI_MODEL=gemini-2.5-flash-lite
 ARG VITE_PDPA_ENABLED=true
 ARG VITE_CONSENT_REQUIRED=true
 ARG VITE_JITSI_DOMAIN=meet.jit.si
@@ -108,7 +108,7 @@ RUN chmod +x /docker-entrypoint.sh && \
 # Environment defaults
 ENV NODE_ENV=production \
     PORT=8080 \
-    GEMINI_MODEL=gemini-2.5-flash \
+    GEMINI_MODEL=gemini-2.5-flash-lite \
     JITSI_DOMAIN=meet.jit.si
 
 # Expose port (Cloud Run will set PORT=8080)

@@ -18,7 +18,7 @@ import {
 // ============================================================================
 // API BASE URL - Empty string for relative paths in production (Cloud Run)
 // ============================================================================
-const API_BASE = import.meta.env.VITE_GCS_API_URL || '';
+const API_BASE = import.meta.env.VITE_API_URL || '';
 
 // ============================================================================
 // STATUS CONFIG

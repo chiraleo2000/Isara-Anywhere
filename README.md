@@ -1,61 +1,100 @@
 # 🏥 Izara Telemedicine Platform
 
+<div align="center">
 
-![Version](https://img.shields.io/badge/version-1.3.2-blue.svg)
+![Version](https://img.shields.io/badge/version-1.5.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Platform](https://img.shields.io/badge/platform-web-lightgrey.svg)
 ![Node](https://img.shields.io/badge/node-%3E%3D22.0.0-brightgreen.svg)
 ![Database](https://img.shields.io/badge/database-PostgreSQL%2016-blue.svg)
 ![Docker](https://img.shields.io/badge/docker-ready-blue.svg)
 
-A comprehensive telemedicine platform built for Thailand's healthcare system
+**A comprehensive telemedicine platform built for Thailand's healthcare system**
 
 [Demo](#-demo-accounts) • [Features](#-key-features) • [Installation](#-installation) • [Cloud Deployment](#-cloud-deployment)
+
+</div>
 
 ---
 
 ## 📖 Overview
 
-
 **Izara Telemedicine** (อิสระ เทเลเมดิซิน) is a full-stack telemedicine platform designed specifically for Thailand's healthcare ecosystem. It provides seamless video consultations, electronic medical records (EMR), e-prescribing, and AI-powered health assistance.
 
-The platform consists of two main portals:
+The platform consists of three main services:
 
-| Portal | Description | Target Users |
-| -------- | ------------- | -------------- |
-| **Patient Portal** | Book appointments, manage health records, video consultations | Patients, Caregivers |
-| **Doctor Portal** | Clinical workflows, EMR/EHR management, prescriptions, admin tools | Doctors, Nurses, Admins |
+| Service | Description | Port | Target Users |
+| -------- | ------------- | ---- | -------------- |
+| **Patient Portal** | Book appointments, manage health records, video consultations | 3005 | Patients, Caregivers |
+| **Doctor Portal** | Clinical workflows, EMR/EHR management, prescriptions, admin tools | 3010 | Doctors, Nurses, Admins |
+| **Meeting Server** | Jitsi integration with live transcription & AI summaries | 3020 | Video Consultations |
+
+---
+
+## 🔧 v1.5.0 Bug Fixes & Improvements (Latest)
+
+### API & Routing Fixes
+- ✅ Fixed Consultants API routing - now uses PostgreSQL with demo fallback
+- ✅ Fixed Medical Content API routing - proper nginx proxy to mainApiServer
+- ✅ Fixed Clinical Resources API - content syncs between portals
+- ✅ Fixed Notification routes - migrated from GCS to PostgreSQL
+
+### Meeting Server Enhancements
+- ✅ Gemini AI properly configured for meeting summaries
+- ✅ Google Speech-to-Text integration for transcription
+- ✅ PostgreSQL storage for meeting records and transcripts
+- ✅ Health check endpoint returning correct status
+
+### PHR Improvements
+- ✅ Temperature input changed to number type with step=0.1
+- ✅ Proper validation range (35-42°C)
+- ✅ Improved vitals data entry UX
+
+### Profile & Settings
+- ✅ Password change modal for both portals
+- ✅ Avatar/image upload functionality
+- ✅ Profile editing with PostgreSQL persistence
+
+### AI Features
+- ✅ AI Chat history with 60-day retention policy
+- ✅ Session management and persistence
+- ✅ Gemini AI for health assistant and meeting summaries
+
+### Previous v1.4.0 Fixes
+- ✅ Fixed `api.delete` function signature to accept optional data parameter
+- ✅ Fixed `clearChatHistory` using POST method instead of DELETE with body
+- ✅ Added SpeechRecognition type declarations for Web Speech API
+- ✅ Added `/api/ai/chat/clear` POST endpoint for chat history management
 
 ---
 
 ## ✨ Key Features
 
-
 ### For Patients 👤
 
 - 📅 **Appointment Booking** - Multi-step booking with AI symptom analysis
 - 📹 **Video Consultations** - Jitsi Meet integration (FREE, no account required)
+- 🎙️ **Live Transcription** - Real-time speech-to-text during consultations
 - 👥 **Invite Family Members** - External guests can join meetings via invite links
 - 📋 **Personal Health Records (PHR)** - Vitals, allergies, medications, lifestyle data
 - 🔔 **Real-time Notifications** - Appointment updates, meeting reminders
-- 🤖 **AI Health Assistant** - Powered by Google Gemini
+- 🤖 **AI Health Assistant** - Powered by Google Gemini with chat history
 - 🗺️ **Healthcare Map** - Find nearby clinics and hospitals
+- 📚 **Medical Content Library** - Health education articles with images
 - 🌐 **Multi-language** - Thai (primary) and English
-
 
 ### For Healthcare Providers 👨‍⚕️
 
 - 📝 **Electronic Medical Records (EMR)** - Thai OPD card format with SOAP notes
 - 📹 **Video Meeting HOST Controls** - Doctor as moderator with lobby management
 - 🎥 **Meeting Recording** - Save consultations to cloud storage
-- 🤖 **AI Meeting Summaries** - Gemini-powered clinical summaries
+- 🎙️ **AI Transcription & Summary** - Automatic SOAP notes from meeting transcripts
 - 👥 **Invite Specialists** - External consultants can join via invite links
 - 💊 **E-Prescribing** - Drug interaction checks, medication management
 - 🧪 **Lab & Imaging Orders** - Complete diagnostic workflow
 - 📊 **Patient Queue Management** - Priority-based scheduling
 - 📚 **Clinical Resources** - Medical library and references
 - 🔒 **PDPA Compliance** - Thailand's data protection standards
-
 
 ### For Administrators 🔧
 
@@ -64,41 +103,40 @@ The platform consists of two main portals:
 - ⚙️ **System Configuration** - Specialties, appointment pools
 - 📋 **Medical Consultant Management** - Specialist directory
 
-
 ---
 
 ## 🏗️ System Architecture
 
-
-```text
-┌─────────────────────────────────────────────────────────────────────┐
-│                   IZARA TELEMEDICINE v1.3.2                         │
-├─────────────────────────────────────────────────────────────────────┤
-│   ┌─────────────────┐         ┌─────────────────┐                   │
-│   │  Patient Portal │         │  Doctor Portal  │                   │
-│   │  (React + Vite) │         │  (React + Vite) │                   │
-│   │  localhost:3005 │         │  localhost:3010 │                   │
-│   └────────┬────────┘         └────────┬────────┘                   │
-│            │                           │                            │
-│            └───────────┬───────────────┘                            │
-│                        ▼                                            │
-│   ┌─────────────────────────────────────────────────────────────┐  │
-│   │                  Unified Backend Services                    │  │
-│   │  (nginx + Auth Server + Main API + GCS API in container)    │  │
-│   └───────────────────────────┬─────────────────────────────────┘  │
-│                               ▼                                     │
-│   ┌─────────────────────────────────────────────────────────────┐  │
-│   │         PostgreSQL 16 + pgvector (Primary Database)         │  │
-│   │           Port: 5433 (local) / Cloud SQL (cloud)            │  │
-│   └─────────────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────────────┘
 ```
-
+┌──────────────────────────────────────────────────────────────────────────┐
+│                   IZARA TELEMEDICINE v1.3.3                              │
+├──────────────────────────────────────────────────────────────────────────┤
+│   ┌─────────────────┐  ┌─────────────────┐  ┌────────────────────────┐   │
+│   │  Patient Portal │  │  Doctor Portal  │  │  Meeting Server        │   │
+│   │  (React + Vite) │  │  (React + Vite) │  │  (Express + Socket.IO) │   │
+│   │  localhost:3005 │  │  localhost:3010 │  │  localhost:3020        │   │
+│   └────────┬────────┘  └────────┬────────┘  └─────────┬──────────────┘   │
+│            │                    │                     │                   │
+│            └────────────────────┼─────────────────────┘                   │
+│                                 ▼                                         │
+│   ┌───────────────────────────────────────────────────────────────────┐  │
+│   │         PostgreSQL 16 + pgvector (Primary Database)               │  │
+│   │           Port: 5433 (local) / Cloud SQL (cloud)                  │  │
+│   └───────────────────────────────────────────────────────────────────┘  │
+│                                                                           │
+│   ┌─────────────────────────────────────────────────────────────────┐    │
+│   │                     EXTERNAL SERVICES                            │    │
+│   │  • Jitsi Meet (meet.jit.si) - Video Conferencing                │    │
+│   │  • Google Gemini AI - Chat, CDS, Summaries                      │    │
+│   │  • Web Speech API - FREE Live Transcription                     │    │
+│   │  • Google Maps - Healthcare Facilities Map                       │    │
+│   └─────────────────────────────────────────────────────────────────┘    │
+└──────────────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
 ## 🛠️ Tech Stack
-
 
 ### Frontend
 
@@ -135,27 +173,21 @@ The platform consists of two main portals:
 
 ## 📦 Installation
 
-
 ### Prerequisites
-
 
 - **Node.js** >= 18.0.0
 - **npm** >= 9.0.0
 - **Google Cloud** account with service account credentials
 - **Git**
 
-
 ### Clone the Repository
-
 
 ```bash
 git clone https://github.com/your-org/izara-telemedicine.git
 cd izara-telemedicine
 ```
 
-
 ### Setup Patient Portal
-
 
 ```bash
 cd Isara-patient-portal
@@ -165,9 +197,7 @@ cp .env.example .env
 npm run dev:all
 ```
 
-
 ### Setup Doctor Portal
-
 
 ```bash
 cd Isara-doctor-portal
@@ -177,14 +207,11 @@ cp .env.example .env
 npm run dev
 ```
 
-
 ---
 
 ## ⚙️ Configuration
 
-
 ### Environment Variables
-
 
 Create `.env` files in both portal directories. Key configurations:
 
@@ -199,7 +226,6 @@ See `.env.example` in each portal for complete configuration.
 
 ### Google Cloud Storage Buckets
 
-
 | Bucket | Purpose |
 | -------- | --------- |
 | `izara-users-credentials` | Patient/Doctor/Admin authentication |
@@ -212,11 +238,9 @@ See `.env.example` in each portal for complete configuration.
 
 ## 🚀 Running the Application
 
-
 ### Development Mode
 
-
-#### Patient Portal:
+**Patient Portal:**
 
 ```bash
 cd Isara-patient-portal
@@ -225,7 +249,7 @@ npm run dev:all        # Frontend + Backend
 
 Access at: <http://localhost:3005>
 
-#### Doctor Portal:
+**Doctor Portal:**
 
 ```bash
 cd Isara-doctor-portal
@@ -235,7 +259,6 @@ npm run dev            # Frontend + Backend (concurrent)
 Access at: <http://localhost:3010>
 
 ### Production Build
-
 
 ```bash
 # Patient Portal
@@ -247,9 +270,7 @@ cd Isara-doctor-portal
 npm run build:prod
 ```
 
-
 ### Docker
-
 
 ```bash
 # Build unified container
@@ -258,11 +279,9 @@ npm run docker:build
 npm run docker:run
 ```
 
-
 ---
 
 ## 🌐 Services & Ports
-
 
 | Service | Port | Description |
 | --------- | ------ | ------------- |
@@ -275,27 +294,39 @@ npm run docker:run
 
 ## 🧪 Demo Accounts
 
-
 ### Patient Accounts
 
-| Email | Password | Portal |
-| ------- | ---------- | -------- |
-| `Somchai.Mankong@gmail.com` | `P@ssw0rd` | <http://localhost:3005> |
-| `Anan.Khayanrian@gmail.com` | `P@ssw0rd` | <http://localhost:3005> |
+| Email | Password | Portal | Notes |
+| ------- | ---------- | -------- | ----- |
+| `demo.test@gmail.com` | `P@ssw0rd` | <http://localhost:3005> | Primary test patient |
+| `Somchai.Mankong@gmail.com` | `P@ssw0rd` | <http://localhost:3005> | Sample patient |
+| `Anan.Khayanrian@gmail.com` | `P@ssw0rd` | <http://localhost:3005> | Sample patient |
 
 ### Doctor Account
 
-| Email | Password | Portal |
+| Email | Password | Portal | Notes |
+| ------- | ---------- | -------- | ----- |
+| `doctor.test@izara.com` | `IzaraDoctor@2024` | <http://localhost:3010> | Primary test doctor |
+| `somchai.prasert@izara.com` | `P@ssw0rd` | <http://localhost:3010> | Sample doctor |
+| `siriporn.thongchai@izara.com` | `P@ssw0rd` | <http://localhost:3010> | Sample doctor |
+
+### Admin Account
+
+| Email | Password | Portal | Notes |
+| ------- | ---------- | -------- | ----- |
+| `admin.test@izara.com` | `IzaraAdmin@2024` | <http://localhost:3010> | Full admin access |
+
+### pgAdmin Access
+
+| Email | Password | URL |
 | ------- | ---------- | -------- |
-| `somchai.prasert@izara.com` | `P@ssw0rd` | <http://localhost:3010> |
-| `siriporn.thongchai@izara.com` | `P@ssw0rd` | <http://localhost:3010> |
+| `admin@izara.com` | `IzaraAdmin@2024` | <http://localhost:5050> |
 
 ---
 
 ## 📁 Project Structure
 
-
-```text
+```
 Isara-anywhere-V0.0.3/
 ├── Isara-patient-portal/          # Patient-facing application
 │   ├── src/                       # React components & pages
@@ -325,11 +356,9 @@ Isara-anywhere-V0.0.3/
 └── README.md                      # This file
 ```
 
-
 ---
 
 ## 📚 Documentation
-
 
 Detailed documentation is available in the `Explains/` directory:
 
@@ -346,7 +375,6 @@ Detailed documentation is available in the `Explains/` directory:
 
 ## 🔒 Security
 
-
 The platform implements security best practices:
 
 - **Authentication**: bcrypt password hashing (10 rounds)
@@ -357,14 +385,11 @@ The platform implements security best practices:
 - **CORS**: Strict origin validation
 - **PDPA Compliance**: Thailand's data protection standards
 
-
 ---
 
 ## 🧪 Testing
 
-
 ### Seed Demo Data
-
 
 ```bash
 # Doctor Portal - Generate demo data
@@ -376,9 +401,7 @@ npm run upload:gcs
 npm run setup:complete
 ```
 
-
 ### Run Tests
-
 
 ```bash
 # Type checking
@@ -389,14 +412,11 @@ npm run lint
 npm run lint:fix
 ```
 
-
 ---
 
 ## 🚢 Deployment
 
-
 ### Local Deployment (Docker Compose)
-
 
 ```bash
 # Start all services
@@ -409,8 +429,7 @@ docker ps
 docker-compose down
 ```
 
-
-#### Local URLs:
+**Local URLs:**
 
 | Service | URL |
 | --------- | ----- |
@@ -419,7 +438,6 @@ docker-compose down
 | pgAdmin | <http://localhost:5050> |
 
 ### Google Cloud Run Deployment
-
 
 ```bash
 # Deploy Patient Portal to Cloud Run
@@ -431,16 +449,16 @@ cd Isara-doctor-portal
 gcloud builds submit --config=cloudbuild.yaml
 ```
 
+**🌐 Production URLs (LIVE - Ready for Testing):**
 
-#### Production URLs:
+| Portal | URL | Status |
+| -------- | ----- | ------ |
+| Patient Portal | <https://izara-patient-portal-724889190329.asia-southeast1.run.app> | ✅ Online |
+| Doctor Portal | <https://izara-doctor-portal-724889190329.asia-southeast1.run.app> | ✅ Online |
 
-| Portal | URL |
-| -------- | ----- |
-| Patient Portal | <https://izara-patient-portal-724889190329.asia-southeast1.run.app> |
-| Doctor Portal | <https://izara-doctor-portal-724889190329.asia-southeast1.run.app> |
+> **📝 Cloud Test Accounts:** Use the same demo credentials listed in the [Demo Accounts](#-demo-accounts) section above.
 
 ### Cloud SQL Database Setup
-
 
 ```bash
 # Connect to Cloud SQL and run schema
@@ -450,11 +468,9 @@ gcloud sql connect izara-db-instance --user=izara_localdb_admin
 \i scripts/database/postgresql-schema-complete.sql
 ```
 
-
 ---
 
 ## 🤝 Contributing
-
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
@@ -462,11 +478,9 @@ gcloud sql connect izara-db-instance --user=izara_localdb_admin
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-
 ---
 
 ## 📄 License
-
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
@@ -474,28 +488,28 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 👥 Team
 
-
-#### Izara Telemedicine Development Team
+**Izara Telemedicine Development Team**
 
 - Healthcare technology innovation for Thailand
 - Focused on accessibility and user experience
 - PDPA-compliant data handling
 
-
 ---
 
 ## 📞 Support
 
-
 For support and inquiries:
 
-- 📧 Email: chirapathleo.saeliM@gmail.com / chirapath.s@betimes.biz
+- 📧 Email: <chirapathleo.saeliM@gmail.com> / <chirapath.s@betimes.biz>
 - 📖 Documentation: [Explains/README.md](Explains/README.md)
 - 🐛 Issues: GitHub Issues
 
-
 ---
 
-Made with ❤️ for Thailand's Healthcare
+<div align="center">
+
+**Made with ❤️ for Thailand's Healthcare**
 
 © 2024-2026 Izara Telemedicine. All rights reserved.
+
+</div>

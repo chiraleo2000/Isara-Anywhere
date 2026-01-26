@@ -62,7 +62,8 @@ console.log('[MAIN-API] dotenv loaded, DB_HOST=' + process.env.DB_HOST);
 
 const app = express();
 const server = http.createServer(app);
-const PORT = process.env.PORT || 3009;
+// Use MAIN_API_PORT to avoid conflict with nginx/docker-compose PORT
+const PORT = process.env.MAIN_API_PORT || process.env.MAIN_PORT || 3009;
 
 // ============================================================================
 // GCS CLIENT CONFIGURATION
@@ -910,6 +911,70 @@ const authProfileHandler = async (req, res) => {
 // Register both with and without /api prefix
 app.put('/api/auth/profile', authenticateToken, authProfileHandler);
 app.put('/auth/profile', authenticateToken, authProfileHandler);
+
+// ============================================================================
+// PASSWORD CHANGE - For logged in users
+// ============================================================================
+app.post('/api/auth/change-password', authenticateToken, async (req, res) => {
+  try {
+    const { currentPassword, newPassword, confirmPassword } = req.body;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    // Validation
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      return res.status(400).json({ error: 'All password fields are required' });
+    }
+
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({ error: 'New passwords do not match' });
+    }
+
+    if (newPassword.length < 8) {
+      return res.status(400).json({ error: 'Password must be at least 8 characters' });
+    }
+
+    // Get user's current password hash
+    const userResult = await PostgresDataService.pool.query(
+      'SELECT password_hash, email FROM users WHERE id = $1',
+      [userId]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const { password_hash, email } = userResult.rows[0];
+
+    // Verify current password
+    const bcrypt = require('bcryptjs');
+    const currentPasswordValid = await bcrypt.compare(currentPassword, password_hash);
+    if (!currentPasswordValid) {
+      return res.status(400).json({ error: 'Current password is incorrect' });
+    }
+
+    // Hash new password and update
+    const saltRounds = 12;
+    const newPasswordHash = await bcrypt.hash(newPassword, saltRounds);
+    await PostgresDataService.pool.query(
+      'UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2',
+      [newPasswordHash, userId]
+    );
+
+    console.log(`[AUTH] Password changed for user: ${email}`);
+
+    res.json({ 
+      success: true, 
+      message: 'Password changed successfully' 
+    });
+  } catch (error) {
+    console.error('[AUTH] Password change error:', error);
+    res.status(500).json({ error: 'Failed to change password' });
+  }
+});
 
 // ============================================================================
 // PATIENT MANAGEMENT - PostgreSQL Only
@@ -2523,7 +2588,7 @@ app.post('/api/meeting/transcript/summary', authenticateToken, async (req, res) 
     // Generate summary using Gemini AI
     const { GoogleGenerativeAI } = require('@google/generative-ai');
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' });
 
     const prompt = `คุณเป็นผู้ช่วยแพทย์ กรุณาสรุปการสนทนาในการประชุมแพทย์-ผู้ป่วยต่อไปนี้เป็นภาษาไทย โดยจัดรูปแบบเป็น SOAP format:
 
@@ -4489,31 +4554,26 @@ app.get('/api/phr/patient/:patientId/vitals/history', authenticateToken, async (
 });
 
 // ============================================================================
-// NOTIFICATIONS Routes
+// NOTIFICATIONS Routes - PostgreSQL Only
 // ============================================================================
 
 app.get('/api/notifications', authenticateToken, async (req, res) => {
   try {
     const userId = req.user?.userId || req.user?.id;
-    const { patientId } = req.query;
+    const { patientId, unread } = req.query;
     const targetId = patientId || userId;
     
-    console.log(`🔔 Fetching notifications for: ${targetId}`);
+    console.log(`🔔 Fetching notifications for: ${targetId} (PostgreSQL)`);
     
-    // Try patient notifications first
-    let notifications = await fetchFromGCS(BUCKETS.patient, `patients/${targetId}/notifications.json`);
-    
-    // If not found, try doctor notifications
-    if (!notifications) {
-      notifications = await fetchFromGCS(BUCKETS.doctor, `doctors/${targetId}/notifications.json`);
-    }
-    
-    notifications = notifications || { notifications: [] };
+    // Use PostgreSQL for notifications
+    const unreadOnly = unread === 'true';
+    const notifications = await PostgresDataService.NotificationService.getUserNotifications(targetId, unreadOnly);
+    const unreadCount = await PostgresDataService.NotificationService.getUnreadCount(targetId);
     
     res.json({ 
       success: true, 
-      notifications: notifications.notifications || [],
-      unreadCount: (notifications.notifications || []).filter(n => !n.isRead).length
+      notifications: notifications || [],
+      unreadCount: unreadCount
     });
   } catch (error) {
     console.error('❌ Notifications fetch error:', error);
@@ -4521,35 +4581,63 @@ app.get('/api/notifications', authenticateToken, async (req, res) => {
   }
 });
 
+app.get('/api/notifications/count', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user?.userId || req.user?.id;
+    console.log(`🔔 Getting unread notification count for: ${userId}`);
+    
+    const count = await PostgresDataService.NotificationService.getUnreadCount(userId);
+    res.json({ success: true, count, unreadCount: count });
+  } catch (error) {
+    console.error('❌ Notification count error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.post('/api/notifications', authenticateToken, async (req, res) => {
   try {
-    const { recipientId, type, title, message, data } = req.body;
-    console.log(`🔔 Creating notification for: ${recipientId}`);
+    const { recipientId, type, title, titleThai, message, messageThai, data } = req.body;
+    console.log(`🔔 Creating notification for: ${recipientId} (PostgreSQL)`);
     
-    const notificationPath = `patients/${recipientId}/notifications.json`;
-    let notifications = await fetchFromGCS(BUCKETS.patient, notificationPath) || {
-      patientId: recipientId,
-      notifications: []
-    };
-    
-    const newNotification = {
-      id: `NOTIF-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
+    const notification = await PostgresDataService.NotificationService.createNotification({
+      user_id: recipientId,
       type,
       title,
+      title_thai: titleThai,
       message,
-      data,
-      isRead: false,
-      createdAt: new Date().toISOString()
-    };
+      message_thai: messageThai,
+      data
+    });
     
-    notifications.notifications = notifications.notifications || [];
-    notifications.notifications.unshift(newNotification);
-    
-    await writeToGCS(BUCKETS.patient, notificationPath, notifications);
-    
-    res.json({ success: true, notification: newNotification });
+    res.json({ success: true, notification });
   } catch (error) {
     console.error('❌ Create notification error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.put('/api/notifications/:id/read', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    console.log(`🔔 Marking notification as read: ${id}`);
+    
+    await PostgresDataService.NotificationService.markAsRead(id);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('❌ Mark notification read error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.put('/api/notifications/mark-all-read', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user?.userId || req.user?.id;
+    console.log(`🔔 Marking all notifications as read for: ${userId}`);
+    
+    await PostgresDataService.NotificationService.markAllAsRead(userId);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('❌ Mark all notifications read error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -4728,11 +4816,12 @@ app.get('/api/content/medical', async (req, res) => {
       };
     });
     
-    res.json(formattedArticles);
+    // Return in format expected by frontend: { articles: [...] }
+    res.json({ articles: formattedArticles });
   } catch (error) {
     console.error('❌ [Content API] Error:', error);
     // Return empty array instead of 500 error for graceful fallback
-    res.json([]);
+    res.json({ articles: [] });
   }
 });
 
@@ -4883,10 +4972,11 @@ app.get('/api/content/tags/medical', async (req, res) => {
     `);
     
     const tags = result.rows.map(r => ({ id: r.tag, name: r.tag }));
-    res.json(tags);
+    // Return in format expected by frontend: { tags: [...] }
+    res.json({ tags });
   } catch (error) {
     console.error('❌ [Content API] Error:', error);
-    res.json([]); // Return empty array if no tags
+    res.json({ tags: [] }); // Return empty array if no tags
   }
 });
 
@@ -4957,11 +5047,16 @@ app.get('/api/content/clinical', async (req, res) => {
       };
     });
     
-    res.json(formattedResources);
+    // Get pending count for admin badge
+    const pendingResources = await PostgresDataService.ContentService.getClinicalResources('pending');
+    const pendingCount = (pendingResources || []).length;
+    
+    // Return in format expected by frontend: { resources: [...], pendingCount: number }
+    res.json({ resources: formattedResources, pendingCount });
   } catch (error) {
     console.error('❌ [Content API] Error:', error);
     // Return empty array instead of 500 error for graceful fallback
-    res.json([]);
+    res.json({ resources: [], pendingCount: 0 });
   }
 });
 
@@ -5136,10 +5231,11 @@ app.get('/api/content/tags/clinical', async (req, res) => {
     `);
     
     const tags = result.rows.map(r => ({ id: r.tag, name: r.tag }));
-    res.json(tags);
+    // Return in format expected by frontend: { tags: [...] }
+    res.json({ tags });
   } catch (error) {
     console.error('❌ [Content API] Error:', error);
-    res.json([]); // Return empty array if no tags
+    res.json({ tags: [] }); // Return empty array if no tags
   }
 });
 
@@ -5339,6 +5435,57 @@ app.get('/api/consultants', authenticateToken, async (req, res) => {
       error: error.message, 
       code: 'INTERNAL_ERROR' 
     });
+  }
+});
+
+// Get list of specialties for consultants dropdown
+app.get('/api/consultants/specialties/list', authenticateToken, async (req, res) => {
+  try {
+    console.log('👨‍⚕️ Fetching consultant specialties...');
+    
+    const defaultSpecialties = [
+      'Cardiology',
+      'Neurology',
+      'Oncology',
+      'Nephrology',
+      'Dermatology',
+      'Gastroenterology',
+      'Pulmonology',
+      'Endocrinology',
+      'Rheumatology',
+      'Urology',
+      'Ophthalmology',
+      'ENT',
+      'Psychiatry',
+      'Pediatrics',
+      'Gynecology',
+      'General Surgery',
+      'Plastic Surgery',
+      'Internal Medicine'
+    ];
+    
+    // Try to get unique specialties from DB
+    let specialties = defaultSpecialties;
+    try {
+      if (DB_AVAILABLE) {
+        const { pool } = PostgresDataService;
+        const result = await pool.query(`
+          SELECT DISTINCT specialty FROM medical_consultants 
+          WHERE specialty IS NOT NULL
+          ORDER BY specialty
+        `);
+        if (result.rows.length > 0) {
+          specialties = result.rows.map(r => r.specialty);
+        }
+      }
+    } catch (dbError) {
+      console.log('⚠️ DB error, using default specialties');
+    }
+    
+    res.json({ success: true, specialties });
+  } catch (error) {
+    console.error('❌ Specialties fetch error:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 

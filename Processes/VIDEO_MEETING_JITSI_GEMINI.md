@@ -1,6 +1,5 @@
 # Video Meeting Implementation - Jitsi Meet + Device Speech-to-Text + Gemini AI
 
-
 **Version:** 3.0.0  
 **Last Updated:** January 21, 2026  
 **Status:** ✅ Phase 1 Implementation
@@ -9,7 +8,6 @@
 
 ## Overview
 
-
 This document describes the video meeting implementation using:
 
 - **Jitsi Meet** (FREE) for video conferencing with lobby control
@@ -17,16 +15,13 @@ This document describes the video meeting implementation using:
 - **Gemini 2.5 Flash AI** for EMR summary, pre-consultation summary, and patient instructions
 - **PostgreSQL** for storing transcripts, summaries, and meeting metadata
 
-
 ## Key Features
-
 
 ### 1. Doctor as Meeting HOST
 
 - **Only the Doctor can START the meeting** - Doctor acts as moderator/host
 - Doctor controls lobby admission, recording, and meeting settings
 - Doctor receives meeting link in appointment timetable/calendar
-
 
 ### 2. Lobby System for Guest Approval
 
@@ -35,14 +30,12 @@ This document describes the video meeting implementation using:
 - **Doctor Consultants/Specialists** can be invited and must be approved by Doctor
 - Lobby prevents unauthorized access to the consultation
 
-
 ### 3. Guest Invite System
 
 - **Token-based invites** generated for each guest
 - Invites sent via email with unique join links
 - Invite types: `patient_relative`, `doctor_consultant`, `family_member`
 - Doctor can revoke invites at any time
-
 
 ### 4. Media Controls (Default: ON)
 
@@ -51,14 +44,12 @@ This document describes the video meeting implementation using:
 - **Text Chat**: Always available for communication
 - Users can mute/unmute at any time
 
-
 ### 5. Real-Time Transcription (Phase 1 Feature)
 
 - **Device/Browser Speech-to-Text API** (FREE - no Google Cloud cost)
 - Real-time transcription during the meeting
 - Transcript saved to PostgreSQL `meeting_transcripts` table
 - Supports Thai and English languages
-
 
 ### 6. AI-Powered EMR Generation with Man-in-the-Loop
 
@@ -67,7 +58,6 @@ This document describes the video meeting implementation using:
 - **Doctor must validate** before saving (Man-in-the-Loop)
 - Doctor can edit, approve, or regenerate
 
-
 ### 7. Patient Instruction Sheet Generation
 
 - AI generates patient-friendly summary from EMR
@@ -75,9 +65,7 @@ This document describes the video meeting implementation using:
 - Doctor validates before sending to patient
 - Patient views in Patient Portal under Health Records
 
-
 ## Storage Architecture (PostgreSQL)
-
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -104,9 +92,7 @@ This document describes the video meeting implementation using:
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-
 ## Workflow
-
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -194,9 +180,7 @@ This document describes the video meeting implementation using:
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-
 ## Cost Analysis
-
 
 | Component | Provider | Cost |
 | ----------- | ---------- | ------ |
@@ -210,9 +194,7 @@ This document describes the video meeting implementation using:
 
 ## API Endpoints
 
-
 ### Patient Portal (`/api/video-meeting`)
-
 
 | Endpoint | Method | Description |
 | ---------- | -------- | ------------- |
@@ -228,7 +210,6 @@ This document describes the video meeting implementation using:
 | `/health` | GET | Health check |
 
 ### Doctor Portal (`/api/video-meeting`)
-
 
 | Endpoint | Method | Description |
 | ---------- | -------- | ------------- |
@@ -247,7 +228,6 @@ This document describes the video meeting implementation using:
 
 ### Guest Invite Endpoints (New)
 
-
 | Endpoint | Method | Description |
 | ---------- | -------- | ------------- |
 | `/:appointmentId/invite` | POST | Create guest invite |
@@ -257,13 +237,11 @@ This document describes the video meeting implementation using:
 
 ## Guest Invite System
 
-
 ### Invite Types
 
 - **patient_relative**: Family members who can observe/support patient
 - **doctor_consultant**: Specialist doctors for second opinions
 - **family_member**: General family members
-
 
 ### Create Guest Invite
 
@@ -289,7 +267,6 @@ Response:
 }
 ```
 
-
 ### Join with Invite Token
 
 ```http
@@ -310,7 +287,6 @@ Response:
 }
 ```
 
-
 ### Lobby Behavior
 
 - All guests join via lobby first
@@ -319,9 +295,7 @@ Response:
 - Approved guests join the meeting
 - Rejected guests receive error message
 
-
 ## 30-Minute Sectioned Summaries
-
 
 For long consultations (>30 minutes), the system automatically creates sectioned summaries:
 
@@ -352,7 +326,6 @@ function splitIntoSections(transcript, totalDuration) {
   return sections;
 }
 ```
-
 
 ### Section Summary Output
 
@@ -387,7 +360,6 @@ function splitIntoSections(transcript, totalDuration) {
 }
 ```
 
-
 ### Storage for Sectioned Summaries
 
 ```text
@@ -399,9 +371,7 @@ izara-doctors-data/doctors/{doctorId}/meetings/{appointmentId}/
 └── summary.txt              # Same as final-combined.txt
 ```
 
-
 ## New Endpoints for Video Recording
-
 
 ### Upload Video Recording
 
@@ -427,7 +397,6 @@ Response:
 }
 ```
 
-
 ### Get Meeting Files
 
 ```http
@@ -452,9 +421,7 @@ Response:
 }
 ```
 
-
 ## Google Cloud Speech-to-Text Integration
-
 
 ### API Configuration
 
@@ -484,7 +451,6 @@ POST https://speech.googleapis.com/v1/speech:recognize?key={API_KEY}
 }
 ```
 
-
 ### Medical Speech Recognition Features
 
 - **Enhanced Model**: Uses `latest_long` model optimized for conversations
@@ -492,9 +458,7 @@ POST https://speech.googleapis.com/v1/speech:recognize?key={API_KEY}
 - **Medical Context**: Boosted recognition for medical terms
 - **Word Timestamps**: For timeline-aligned transcripts
 
-
 ## Jitsi Meet Configuration
-
 
 ### URL Format for Doctor (HOST)
 
@@ -502,20 +466,17 @@ POST https://speech.googleapis.com/v1/speech:recognize?key={API_KEY}
 https://meet.jit.si/Izara-{appointmentId}-{hash}#config.prejoinConfig.enabled=true&config.startWithVideoMuted=false&config.startWithAudioMuted=false&config.lobby.enabled=true&config.moderator=true&userInfo.displayName={doctorName}
 ```
 
-
 ### URL Format for Patient (LOBBY)
 
 ```text
 https://meet.jit.si/Izara-{appointmentId}-{hash}#config.prejoinConfig.enabled=true&config.startWithVideoMuted=false&config.startWithAudioMuted=false&userInfo.displayName={patientName}
 ```
 
-
 ### URL Format for Guest (INVITE + LOBBY)
 
 ```text
 https://meet.jit.si/Izara-{appointmentId}-{hash}?inviteToken={token}#config.prejoinConfig.enabled=true&config.startWithVideoMuted=false&config.startWithAudioMuted=false&userInfo.displayName={guestName}
 ```
-
 
 ### Features Enabled
 
@@ -529,7 +490,6 @@ https://meet.jit.si/Izara-{appointmentId}-{hash}?inviteToken={token}#config.prej
 - **Text Chat**: Always enabled for communication
 - **Default Media**: Camera ON, Microphone ON (can be muted by user)
 
-
 ### Room Naming Convention
 
 ```javascript
@@ -537,9 +497,7 @@ https://meet.jit.si/Izara-{appointmentId}-{hash}?inviteToken={token}#config.prej
 // Example: Izara-APT12345-a7b3c9d1
 ```
 
-
 ## Gemini AI Integration
-
 
 ### Model Configuration
 
@@ -552,7 +510,6 @@ const GEMINI_CONFIG = {
 };
 ```
 
-
 ### Transcription
 
 ```typescript
@@ -564,7 +521,6 @@ POST /api/video-meeting/:appointmentId/transcribe-audio
   "mimeType": "audio/webm"
 }
 ```
-
 
 ### EMR Summary Generation
 
@@ -580,7 +536,6 @@ POST /api/video-meeting/:appointmentId/summarize
   }
 }
 ```
-
 
 ### Summary Output Format (Thai)
 
@@ -602,9 +557,7 @@ POST /api/video-meeting/:appointmentId/summarize
 }
 ```
 
-
 ## Environment Variables
-
 
 ### Required Variables
 
@@ -625,7 +578,6 @@ VITE_GEMINI_TEMPERATURE=0.3
 VITE_GEMINI_MAX_TOKENS=8192
 
 ```
-
 
 ## Doctor Recommendations Output
 

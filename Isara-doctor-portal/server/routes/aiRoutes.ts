@@ -61,10 +61,75 @@ console.log(`[AI Routes] PostgreSQL: host=${poolConfig.host || 'connectionString
 
 const pool = new Pool(poolConfig);
 
+// =============================================================================
+// CHAT HISTORY SERVICE - 2-month retention
+// =============================================================================
+
+const CHAT_RETENTION_DAYS = 60; // 2 months
+
+const ChatHistoryService = {
+  async getHistory(userId: string, sessionId: string, limit: number = 50): Promise<Array<{ role: string; content: string }>> {
+    try {
+      const result = await pool.query(
+        `SELECT role, content FROM ai_chat_history 
+         WHERE user_id = $1 AND session_id = $2 
+         AND created_at > NOW() - INTERVAL '${CHAT_RETENTION_DAYS} days'
+         ORDER BY created_at ASC 
+         LIMIT $3`,
+        [userId, sessionId, limit]
+      );
+      return result.rows;
+    } catch (error) {
+      console.error('[AI Chat History] Failed to get history:', error);
+      return [];
+    }
+  },
+
+  async getSessions(userId: string): Promise<Array<{ session_id: string; message_count: number; created_at: Date; updated_at: Date }>> {
+    try {
+      const result = await pool.query(
+        `SELECT 
+           session_id,
+           COUNT(*) as message_count,
+           MIN(created_at) as created_at,
+           MAX(created_at) as updated_at
+         FROM ai_chat_history 
+         WHERE user_id = $1 
+         AND created_at > NOW() - INTERVAL '${CHAT_RETENTION_DAYS} days'
+         GROUP BY session_id
+         ORDER BY MAX(created_at) DESC`,
+        [userId]
+      );
+      return result.rows;
+    } catch (error) {
+      console.error('[AI Chat History] Failed to get sessions:', error);
+      return [];
+    }
+  },
+
+  async cleanupOldMessages(): Promise<number> {
+    try {
+      const result = await pool.query(
+        `DELETE FROM ai_chat_history 
+         WHERE created_at < NOW() - INTERVAL '${CHAT_RETENTION_DAYS} days'
+         RETURNING id`
+      );
+      const deletedCount = result.rowCount || 0;
+      if (deletedCount > 0) {
+        console.log(`[AI Chat History] Cleaned up ${deletedCount} old messages`);
+      }
+      return deletedCount;
+    } catch (error) {
+      console.error('[AI Chat History] Failed to cleanup old messages:', error);
+      return 0;
+    }
+  }
+};
+
 // Initialize Gemini AI
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 const model: GenerativeModel = genAI.getGenerativeModel({ 
-  model: process.env.GEMINI_MODEL || 'gemini-2.5-flash'
+  model: process.env.GEMINI_MODEL || 'gemini-2.5-flash-lite'
 });
 
 // Embedding model for RAG
@@ -175,6 +240,48 @@ ${historyText ? `\nประวัติการสนทนา:\n${historyText
 
   } catch (error: any) {
     console.error('AI Chat Error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * GET /api/ai/chat/history
+ * Get chat history with 2-month retention
+ */
+router.get('/chat/history', async (req: Request, res: Response) => {
+  try {
+    const userId = req.headers['x-user-id'] as string || req.query.userId as string;
+    const sessionId = req.query.sessionId as string;
+
+    if (!userId) {
+      return res.status(401).json({ success: false, error: 'User ID required' });
+    }
+
+    // Trigger cleanup of old messages (async, don't wait)
+    ChatHistoryService.cleanupOldMessages().catch(err => 
+      console.error('[AI Chat] Cleanup error:', err)
+    );
+
+    if (!sessionId) {
+      // Return all sessions for this user
+      const sessions = await ChatHistoryService.getSessions(userId);
+      return res.json({ 
+        success: true,
+        sessions,
+        retention_days: CHAT_RETENTION_DAYS,
+        message: `Chat history is retained for ${CHAT_RETENTION_DAYS} days (2 months)`
+      });
+    }
+
+    const history = await ChatHistoryService.getHistory(userId, sessionId, 100);
+    res.json({ 
+      success: true, 
+      history, 
+      sessionId, 
+      retention_days: CHAT_RETENTION_DAYS 
+    });
+  } catch (error: any) {
+    console.error('Chat History Error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });

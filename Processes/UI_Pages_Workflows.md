@@ -1,6 +1,5 @@
 # Izara Telemedicine - UI Pages & Workflows
 
-
 **Version:** 1.0.0  
 **Last Updated:** January 21, 2026  
 **Status:** Phase 1 Implementation
@@ -9,11 +8,9 @@
 
 ## 📋 Overview
 
-
 This document provides comprehensive UI/UX specifications for all pages across the Izara Telemedicine platform, covering three user types across two portals.
 
 ### Portal Structure
-
 
 | Portal | URL | User Types |
 | -------- | ----- | ------------ |
@@ -21,7 +18,6 @@ This document provides comprehensive UI/UX specifications for all pages across t
 | **Doctor Portal** | localhost:3010 | Doctor, Admin |
 
 ### User Role Matrix
-
 
 | Feature | Patient | Doctor | Admin |
 | --------- | --------- | -------- | ------- |
@@ -37,9 +33,7 @@ This document provides comprehensive UI/UX specifications for all pages across t
 
 # 🏥 DOCTOR PORTAL
 
-
 ## Doctor Portal Navigation Structure
-
 
 ```text
 Doctor Portal (localhost:3010)
@@ -54,11 +48,9 @@ Doctor Portal (localhost:3010)
 └── [Admin Only] ✅ อนุมัติแพทย์ใหม่ (Approve New Doctors)
 ```
 
-
 ---
 
 ## 1. แดชบอร์ด (Dashboard)
-
 
 **Route:** `/dashboard`  
 **Access:** Doctor, Admin  
@@ -69,7 +61,6 @@ Doctor Portal (localhost:3010)
 Central hub displaying today's appointments, pending tasks, notifications, and quick access to AI assistance.
 
 ### UI Layout
-
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -107,9 +98,7 @@ Central hub displaying today's appointments, pending tasks, notifications, and q
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-
 ### Actions & Buttons
-
 
 | Button | Action | Backend API |
 | -------- | -------- | ------------- |
@@ -121,7 +110,6 @@ Central hub displaying today's appointments, pending tasks, notifications, and q
 | **ดูทั้งหมด** (View All) | Navigate to pending validations | `/validations` |
 
 ### Workflows
-
 
 #### WF-DASH-001: View AI Pre-Consultation Summary
 
@@ -138,7 +126,6 @@ Central hub displaying today's appointments, pending tasks, notifications, and q
 5. Doctor reviews and closes modal or proceeds to meeting
 ```
 
-
 #### WF-DASH-002: CDS Alert Interaction
 
 ```text
@@ -153,11 +140,9 @@ Central hub displaying today's appointments, pending tasks, notifications, and q
 5. Decision logged to cds_logs table
 ```
 
-
 ---
 
 ## 2. ตารางนัดหมาย (Appointment Schedule)
-
 
 **Route:** `/schedule`  
 **Access:** Doctor, Admin  
@@ -168,7 +153,6 @@ Central hub displaying today's appointments, pending tasks, notifications, and q
 Calendar view of all appointments with filtering, status management, and quick actions.
 
 ### UI Layout
-
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -202,9 +186,7 @@ Calendar view of all appointments with filtering, status management, and quick a
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-
 ### Status Legend
-
 
 | Status | Icon | Thai | Description |
 | -------- | ------ | ------ | ------------- |
@@ -215,7 +197,6 @@ Calendar view of all appointments with filtering, status management, and quick a
 | Cancelled | ❌ | ยกเลิก | Cancelled by patient/doctor |
 
 ### Actions & Buttons
-
 
 | Button | Action | Backend API |
 | -------- | -------- | ------------- |
@@ -230,7 +211,6 @@ Calendar view of all appointments with filtering, status management, and quick a
 
 ## 3. ผู้ป่วย (Patients)
 
-
 **Route:** `/patients`  
 **Access:** Doctor, Admin  
 **Component:** `PatientList.tsx`, `PatientRecordViewer.tsx`
@@ -240,7 +220,6 @@ Calendar view of all appointments with filtering, status management, and quick a
 Patient directory with search, filtering, and comprehensive health record viewing.
 
 ### UI Layout - Patient List
-
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -262,9 +241,7 @@ Patient directory with search, filtering, and comprehensive health record viewin
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-
 ### Risk Indicators
-
 
 | Icon | Meaning | Condition |
 | ------ | --------- | ----------- |
@@ -273,7 +250,6 @@ Patient directory with search, filtering, and comprehensive health record viewin
 | 🔴 | High Risk | Multiple comorbidities, CDS alerts active |
 
 ### Patient Record Viewer (Modal/Page)
-
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -313,9 +289,7 @@ Patient directory with search, filtering, and comprehensive health record viewin
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-
 ### Actions & Buttons
-
 
 | Button | Action | Backend API |
 | -------- | -------- | ------------- |
@@ -328,7 +302,6 @@ Patient directory with search, filtering, and comprehensive health record viewin
 
 ## 4. นัดหมาย & ประชุม (Appointments & Meetings)
 
-
 **Route:** `/appointments`  
 **Access:** Doctor, Admin  
 **Component:** `AppointmentManagement.tsx`, `MeetingRoom.tsx`
@@ -338,7 +311,6 @@ Patient directory with search, filtering, and comprehensive health record viewin
 Manage appointment queue, conduct video meetings, document EMR, and generate patient instructions.
 
 ### UI Layout - Meeting Room
-
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -371,9 +343,7 @@ Manage appointment queue, conduct video meetings, document EMR, and generate pat
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-
 ### Meeting Features (Phase 1)
-
 
 | Feature | Status | Description |
 | --------- | -------- | ------------- |
@@ -388,7 +358,6 @@ Manage appointment queue, conduct video meetings, document EMR, and generate pat
 | Document Upload | ✅ | Lab/PDF for AI analysis |
 
 ### Post-Meeting Workflow
-
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -431,9 +400,7 @@ Manage appointment queue, conduct video meetings, document EMR, and generate pat
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-
 ### Man-in-the-Loop Validation Flow
-
 
 ```text
 1. AI generates content (EMR summary, patient instructions)
@@ -447,11 +414,9 @@ Manage appointment queue, conduct video meetings, document EMR, and generate pat
 6. Audit log records all decisions
 ```
 
-
 ---
 
 ## 5. ที่ปรึกษาแพทย์ (Medical Consultants)
-
 
 **Route:** `/consultants`  
 **Access:** Doctor, Admin (Admin has full CRUD)  
@@ -462,7 +427,6 @@ Manage appointment queue, conduct video meetings, document EMR, and generate pat
 Directory of specialist consultants for referrals and second opinions.
 
 ### UI Layout
-
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -487,9 +451,7 @@ Directory of specialist consultants for referrals and second opinions.
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-
 ### Actions (By Role)
-
 
 | Action | Doctor | Admin |
 | -------- | -------- | ------- |
@@ -506,7 +468,6 @@ Directory of specialist consultants for referrals and second opinions.
 
 ## 6. เนื้อหาทางการแพทย์ (Medical Content)
 
-
 **Route:** `/medical-content`  
 **Access:** Doctor, Admin  
 **Component:** `MedicalContent.tsx`
@@ -516,7 +477,6 @@ Directory of specialist consultants for referrals and second opinions.
 Health education articles for patients. Doctors create, admin approves before publishing.
 
 ### UI Layout
-
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -542,9 +502,7 @@ Health education articles for patients. Doctors create, admin approves before pu
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-
 ### Content Workflow
-
 
 ```text
 1. Doctor creates article (Draft)
@@ -555,11 +513,9 @@ Health education articles for patients. Doctors create, admin approves before pu
 5. Published content syncs to Patient Portal health library
 ```
 
-
 ---
 
 ## 7. ทรัพยากรทางคลินิก (Clinical Resources)
-
 
 **Route:** `/clinical-resources`  
 **Access:** Doctor, Admin  
@@ -571,7 +527,6 @@ Medical guidelines, protocols, and research papers for healthcare professionals 
 
 ### Categories
 
-
 | Category | Thai | Description |
 | ---------- | ------ | ------------- |
 | diagnosis | แนวทางการวินิจฉัย | Diagnosis guidelines |
@@ -581,18 +536,15 @@ Medical guidelines, protocols, and research papers for healthcare professionals 
 
 ### UI Similar to Medical Content
 
-
 Same layout as Medical Content but:
 
 - Only visible to doctors
 - Includes guideline year and source
 - References medical guidelines (KDIGO, ADA, etc.)
 
-
 ---
 
 ## 8. จัดการแพทย์ (Manage Doctors) - Admin Only
-
 
 **Route:** `/admin/doctors`  
 **Access:** Admin only  
@@ -603,7 +555,6 @@ Same layout as Medical Content but:
 View all doctors, manage accounts, and handle administrative tasks.
 
 ### UI Layout
-
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -624,11 +575,9 @@ View all doctors, manage accounts, and handle administrative tasks.
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-
 ---
 
 ## 9. อนุมัติแพทย์ใหม่ (Approve New Doctors) - Admin Only
-
 
 **Route:** `/admin/pending-doctors`  
 **Access:** Admin only  
@@ -639,7 +588,6 @@ View all doctors, manage accounts, and handle administrative tasks.
 Review and approve/reject new doctor registration requests.
 
 ### UI Layout
-
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -661,9 +609,7 @@ Review and approve/reject new doctor registration requests.
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-
 ### Approval Workflow
-
 
 ```text
 1. New doctor registers via Doctor Portal
@@ -678,14 +624,11 @@ Review and approve/reject new doctor registration requests.
 5. Doctor receives email notification
 ```
 
-
 ---
 
 # 👤 PATIENT PORTAL
 
-
 ## Patient Portal Navigation Structure
-
 
 ```text
 Patient Portal (localhost:3005)
@@ -700,11 +643,9 @@ Patient Portal (localhost:3005)
 └── ⚙️ ตั้งค่า (Settings)
 ```
 
-
 ---
 
 ## 1. หน้าหลัก (Home/Dashboard)
-
 
 **Route:** `/` or `/home`  
 **Access:** Patient  
@@ -715,7 +656,6 @@ Patient Portal (localhost:3005)
 Overview of health status, upcoming appointments, and quick actions.
 
 ### UI Layout
-
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -751,9 +691,7 @@ Overview of health status, upcoming appointments, and quick actions.
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-
 ### Actions & Buttons
-
 
 | Button | Action | Backend API |
 | -------- | -------- | ------------- |
@@ -769,7 +707,6 @@ Overview of health status, upcoming appointments, and quick actions.
 
 ## 2. นัดหมาย (Appointments)
 
-
 **Route:** `/appointments`  
 **Access:** Patient  
 **Component:** `PatientAppointments.tsx`
@@ -779,7 +716,6 @@ Overview of health status, upcoming appointments, and quick actions.
 View, book, and manage appointments.
 
 ### UI Layout
-
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -811,9 +747,7 @@ View, book, and manage appointments.
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-
 ### Book New Appointment Flow
-
 
 ```text
 1. Patient clicks [+ นัดหมายใหม่]
@@ -826,11 +760,9 @@ View, book, and manage appointments.
 8. When confirmed: Patient receives notification + meeting link
 ```
 
-
 ---
 
 ## 3. ปรึกษา AI (AI Consultation)
-
 
 **Route:** `/ai-chat`  
 **Access:** Patient  
@@ -841,7 +773,6 @@ View, book, and manage appointments.
 AI health assistant for basic health questions and symptom checking.
 
 ### UI Layout
-
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -877,9 +808,7 @@ AI health assistant for basic health questions and symptom checking.
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-
 ### Patient AI Features
-
 
 | Feature | Description |
 | --------- | ------------- |
@@ -894,7 +823,6 @@ AI health assistant for basic health questions and symptom checking.
 
 ## 4. คลังความรู้สุขภาพ (Health Knowledge Library)
 
-
 **Route:** `/health-library`  
 **Access:** Patient  
 **Component:** `MedicalContentLibrary.tsx`
@@ -904,7 +832,6 @@ AI health assistant for basic health questions and symptom checking.
 Read health education articles created by doctors.
 
 ### UI Layout
-
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -929,11 +856,9 @@ Read health education articles created by doctors.
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-
 ---
 
 ## 5. ประวัติสุขภาพ (Health Records/PHR)
-
 
 **Route:** `/phr`  
 **Access:** Patient  
@@ -945,7 +870,6 @@ Personal Health Record management - vitals, medications, allergies.
 
 ### Tabs
 
-
 | Tab | Thai | Content |
 | ----- | ------ | --------- |
 | Overview | ภาพรวม | Summary of health data |
@@ -955,7 +879,6 @@ Personal Health Record management - vitals, medications, allergies.
 | Profile | โปรไฟล์ | Personal health profile |
 
 ### UI Layout - Vitals Tab
-
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -986,11 +909,9 @@ Personal Health Record management - vitals, medications, allergies.
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-
 ---
 
 ## 6. เส้นทางสุขภาพ (Health Timeline)
-
 
 **Route:** `/health-timeline`  
 **Access:** Patient  
@@ -1001,7 +922,6 @@ Personal Health Record management - vitals, medications, allergies.
 Chronological view of all health events, consultations, and records.
 
 ### UI Layout
-
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -1031,11 +951,9 @@ Chronological view of all health events, consultations, and records.
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-
 ---
 
 ## 7. PDPA & Living Will
-
 
 **Route:** `/pdpa-consent`  
 **Access:** Patient  
@@ -1047,14 +965,12 @@ Manage data privacy consent and living will documentation.
 
 ### Tabs
 
-
 | Tab | Content |
 | ----- | --------- |
 | PDPA Consent | Data sharing preferences |
 | Living Will | End-of-life care wishes |
 
 ### Living Will Features
-
 
 - Create/edit living will document
 - Treatment preferences (resuscitation, ventilation, etc.)
@@ -1063,11 +979,9 @@ Manage data privacy consent and living will documentation.
 - Digital signature
 - Audit trail
 
-
 ---
 
 ## 8. แผนที่ (Map)
-
 
 **Route:** `/map`  
 **Access:** Patient  
@@ -1078,7 +992,6 @@ Manage data privacy consent and living will documentation.
 Find nearby hospitals, clinics, and pharmacies.
 
 ### Features
-
 
 | Feature | Description |
 | --------- | ------------- |
@@ -1092,7 +1005,6 @@ Find nearby hospitals, clinics, and pharmacies.
 
 ## 9. ตั้งค่า (Settings)
 
-
 **Route:** `/settings`  
 **Access:** Patient  
 **Component:** `SettingsPage.tsx`
@@ -1102,7 +1014,6 @@ Find nearby hospitals, clinics, and pharmacies.
 Account and notification preferences.
 
 ### Sections
-
 
 | Section | Options |
 | --------- | --------- |
@@ -1118,25 +1029,19 @@ Account and notification preferences.
 
 # 🎨 Theme & Internationalization (i18n)
 
-
 ## Overview
-
 
 The Patient Portal supports both **Dark Mode** and **Multi-language** (Thai/English) throughout all pages and components. These settings are persisted in `localStorage` and applied globally via the `SettingsContext`.
 
 ## Dark Mode Implementation
 
-
 ### How It Works
-
 
 1. **Settings Storage:** Theme preference is stored in `localStorage` as `patient-portal-theme` with values `'light'` or `'dark'`
 2. **CSS Class Toggle:** When dark mode is enabled, the `html` element receives the class `dark`
 3. **Tailwind Dark Mode:** Uses Tailwind's `class` strategy for dark mode with CSS overrides in `index.css`
 
-
 ### Dark Mode Requirements
-
 
 All UI components MUST support dark mode. This includes:
 
@@ -1152,7 +1057,6 @@ All UI components MUST support dark mode. This includes:
 
 ### Implementation Pattern
 
-
 ```tsx
 // Use the useSettings hook to get dark mode state
 const { isDarkMode } = useSettings();
@@ -1167,9 +1071,7 @@ const { isDarkMode } = useSettings();
 </div>
 ```
 
-
 ### CSS Override Rules (index.css)
-
 
 The `index.css` file contains comprehensive dark mode overrides using the `html.dark` selector:
 
@@ -1184,12 +1086,9 @@ html.dark [class*="bg-gradient-to-"] {
 }
 ```
 
-
 ## Language/Internationalization (i18n)
 
-
 ### Supported Languages
-
 
 | Language | Code | Storage Key |
 | ---------- | ------ | ------------- |
@@ -1198,14 +1097,11 @@ html.dark [class*="bg-gradient-to-"] {
 
 ### How It Works
 
-
 1. **Settings Storage:** Language preference is stored in `localStorage` as `patient-portal-language`
 2. **Translation Function:** The `t(key)` function from `SettingsContext` returns the translated string
 3. **Fallback:** If a translation key is missing, the key name is returned
 
-
 ### Translation Keys Structure
-
 
 ```tsx
 const translations = {
@@ -1226,9 +1122,7 @@ const translations = {
 };
 ```
 
-
 ### Implementation Pattern
-
 
 ```tsx
 // Use the useSettings hook to get translation function
@@ -1244,9 +1138,7 @@ const { t, language } = useSettings();
 </button>
 ```
 
-
 ### Required Translation Keys by Page
-
 
 | Page | Required Keys |
 | ------ | --------------- |
@@ -1261,39 +1153,30 @@ const { t, language } = useSettings();
 
 ## UX Guidelines
 
-
 ### Theme Toggle
-
 
 - Toggle location: Settings page AND navigation header
 - Icon: ☀️ for light mode, 🌙 for dark mode
 - Transition: Use `transition-colors duration-200` for smooth switching
 
-
 ### Language Toggle
-
 
 - Toggle location: Settings page AND navigation header
 - Display: Flag icons or "TH/EN" text toggle
 - Instant: Changes should apply immediately without page reload
 
-
 ### Scroll Behavior
-
 
 When navigating between steps (e.g., in appointment booking):
 
 - Always scroll to top when changing steps
 - Use smooth scrolling: `globalThis.scrollTo({ top: 0, behavior: 'smooth' })`
 
-
 ---
 
 # 🔌 Backend API Reference
 
-
 ## Core Endpoints
-
 
 | Category | Endpoint | Method | Description |
 | ---------- | ---------- | -------- | ------------- |
@@ -1311,7 +1194,6 @@ When navigating between steps (e.g., in appointment booking):
 
 ## AI Endpoints (Phase 1)
 
-
 | Endpoint | Method | Description |
 | ---------- | -------- | ------------- |
 | `/api/ai/chat` | POST | AI chat (doctor) |
@@ -1323,7 +1205,6 @@ When navigating between steps (e.g., in appointment booking):
 
 ## CDS Endpoints
 
-
 | Endpoint | Method | Description |
 | ---------- | -------- | ------------- |
 | `/api/cds/check` | POST | Check for CDS alerts |
@@ -1331,7 +1212,6 @@ When navigating between steps (e.g., in appointment booking):
 | `/api/cds/logs` | GET/POST | CDS decision logs |
 
 ## Validation Endpoints (Man-in-the-Loop)
-
 
 | Endpoint | Method | Description |
 | ---------- | -------- | ------------- |
@@ -1344,9 +1224,7 @@ When navigating between steps (e.g., in appointment booking):
 
 # 📊 Database Tables Reference
 
-
 ## Core Tables
-
 
 | Table | Description |
 | ------- | ------------- |
@@ -1361,7 +1239,6 @@ When navigating between steps (e.g., in appointment booking):
 
 ## AI/CDS Tables
 
-
 | Table | Description |
 | ------- | ------------- |
 | `knowledge_base` | RAG knowledge entries |
@@ -1373,4 +1250,3 @@ When navigating between steps (e.g., in appointment booking):
 ---
 
 #### End of UI Pages Workflows Documentation v1.0
-

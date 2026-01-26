@@ -1,6 +1,5 @@
 # Izara Telemedicine - Phase 1 Requirements
 
-
 **Version:** 3.3.0  
 **Last Updated:** January 22, 2026  
 **Status:** ✅ Phase 1 Complete - Full Test Verification
@@ -8,7 +7,6 @@
 ---
 
 ## 📋 Executive Summary
-
 
 Phase 1 focuses on core telemedicine functionality with AI-assisted clinical workflows, emphasizing the "Man-in-the-Loop" approach where AI serves as a clinical assistant while doctors retain final decision authority.
 
@@ -18,14 +16,11 @@ Phase 1 focuses on core telemedicine functionality with AI-assisted clinical wor
 - **Full Workflow:** Appointment → Meeting → AI Summary → EMR → Patient Access ✅
 - **PostgreSQL:** All data stored in PostgreSQL (NO GCS)
 
-
 ---
 
 ## 🗓️ Meeting Requirements Summary (January 2026)
 
-
 ### 2. สิ่งที่หมออิสระต้องการ (Dr. Isara's Requirements)
-
 
 | ID | Requirement | Description | Status |
 | ---- | ------------- | ------------- | -------- |
@@ -37,7 +32,6 @@ Phase 1 focuses on core telemedicine functionality with AI-assisted clinical wor
 
 ### 3. สิ่งที่พี่เบียร์แนะนำ (P. Beer's Recommendations)
 
-
 | ID | Recommendation | Description | Status |
 | ---- | ---------------- | ------------- | -------- |
 | **3.1** | PostgreSQL Database | ใช้ฐานข้อมูล PostgreSQL แทน Cloud โดย deploy ร่วมกับ portals และใช้ pgAdmin สำหรับ admin | ✅ Done |
@@ -47,7 +41,6 @@ Phase 1 focuses on core telemedicine functionality with AI-assisted clinical wor
 | **3.5** | Device Speech-to-Text | ใช้ฟีเจอร์ Speech-to-Text ที่มีอยู่บนอุปกรณ์ Mobile (ฟรี, มีประสิทธิภาพ) มาช่วยแปลงเสียงเป็นข้อความ | ✅ Web Speech API Ready |
 
 ### 4. กรอบขอบเขตของ Project ใน Phase 1
-
 
 | ID | Scope | Description | Status |
 | ---- | ------- | ------------- | -------- |
@@ -61,9 +54,7 @@ Phase 1 focuses on core telemedicine functionality with AI-assisted clinical wor
 
 ## 1️⃣ Stakeholder Requirements (Detailed)
 
-
 ### 1.1 Dr. Isara's Requirements (หมออิสระ)
-
 
 | ID | Requirement | Description |
 | ---- | ------------- | ------------- |
@@ -74,7 +65,6 @@ Phase 1 focuses on core telemedicine functionality with AI-assisted clinical wor
 | **DR-05** | Man-in-the-Loop | AI เป็นผู้ช่วย แต่แพทย์ตัดสินใจและตรวจสอบก่อนส่งข้อมูลถึงคนไข้ |
 
 ### 1.2 P. Beer's Technical Recommendations (พี่เบียร์)
-
 
 | ID | Recommendation | Description |
 | ---- | ---------------- | ------------- |
@@ -88,9 +78,7 @@ Phase 1 focuses on core telemedicine functionality with AI-assisted clinical wor
 
 ## 2️⃣ Phase 1 Scope
 
-
 ### Core Features (Must Have)
-
 
 | Feature | Status | Priority | Owner Requirement |
 | --------- | -------- | ---------- | ------------------- |
@@ -107,7 +95,6 @@ Phase 1 focuses on core telemedicine functionality with AI-assisted clinical wor
 
 ### Phase 2 Scope (Future)
 
-
 | Feature | Status | Priority | Owner Requirement |
 | --------- | -------- | ---------- | ------------------- |
 | Gemini Fine-Tuning Service | 📋 Planned | P2 | PB-04, 3.4 |
@@ -117,7 +104,6 @@ Phase 1 focuses on core telemedicine functionality with AI-assisted clinical wor
 ---
 
 ## 🎯 Implementation Checklist
-
 
 ### ✅ Completed (API Verified - January 21, 2026)
 
@@ -135,7 +121,6 @@ Phase 1 focuses on core telemedicine functionality with AI-assisted clinical wor
 - [x] Patient Access to Health Logs (EMR records)
 - [x] **Man-in-the-Loop** - All AI outputs include `requiresValidation: true`
 
-
 ### 🚧 Remaining UI Work
 
 - [ ] **Man-in-the-Loop UI in Dashboard** - Show AI results in Health Meeting panel
@@ -144,33 +129,28 @@ Phase 1 focuses on core telemedicine functionality with AI-assisted clinical wor
 - [ ] **Patient Instruction Sheet UI** - Generate and preview before sending
 - [ ] **Meeting Transcription UI** - Start/Stop transcript during meeting
 
-
 ### 📋 Phase 2 Planned
 
 - [ ] Gemini Fine-Tuning infrastructure
 - [ ] Comprehensive AI Summarization (EMR+PHR+Labs+Uploads)
 - [ ] Investigation Reports Generation (AI-assisted)
 
-
 ---
 
 ## 3️⃣ Feature Specifications
 
-
 ### 3.1 Video Meeting + EMR Documentation (DR-01)
-
 
 **Current Status:** ✅ Implemented
 
-#### Components:
+#### Components
 
 - Jitsi Meet integration (doctor as HOST)
 - EMR Editor with SOAP format (Thai/English)
 - Patient lobby system
 - Guest invite system (relatives, specialists)
 
-
-#### Workflow:
+#### Workflow
 
 ```text
 1. Doctor confirms appointment → Meeting link generated
@@ -186,15 +166,13 @@ Phase 1 focuses on core telemedicine functionality with AI-assisted clinical wor
    - Doctor approves/edits before sending to patient
 ```
 
-
 ### 3.2 AI Chat Assistant (DR-02, PB-03)
-
 
 **Current Status:** 🚧 In Progress
 
 **Purpose:** AI assistant to help doctors with clinical tasks.
 
-#### Features:
+#### Features
 
 | Feature | Description |
 | --------- | ------------- |
@@ -204,7 +182,7 @@ Phase 1 focuses on core telemedicine functionality with AI-assisted clinical wor
 | Document Q&A | Answer questions about uploaded documents |
 | Knowledge Base | RAG-based medical knowledge |
 
-#### Technical Implementation:
+#### Technical Implementation
 
 ```text
 ┌─────────────────────────────────────────────────────────┐
@@ -233,22 +211,19 @@ Phase 1 focuses on core telemedicine functionality with AI-assisted clinical wor
 └─────────────────────────────────────────────────────────┘
 ```
 
-
-#### Database Tables:
+#### Database Tables
 
 - `knowledge_base` - RAG entries (guidelines, protocols)
 - `ai_chat_history` - Conversation history per doctor
 - `cds_logs` - Clinical decision support logs
 
-
 ### 3.3 Man-in-the-Loop Validation (DR-05)
-
 
 **Current Status:** 🚧 In Progress
 
 **Purpose:** All AI-generated content requires doctor approval before reaching patients.
 
-#### Content Types Requiring Validation:
+#### Content Types Requiring Validation
 
 | Content Type | Source | Destination |
 | -------------- | -------- | ------------- |
@@ -257,7 +232,7 @@ Phase 1 focuses on core telemedicine functionality with AI-assisted clinical wor
 | Lab Analysis | AI + Document | Patient record |
 | Medication Recommendations | CDS | Prescription |
 
-#### UI Pattern:
+#### UI Pattern
 
 ```text
 ┌──────────────────────────────────────────────────────────┐
@@ -278,8 +253,7 @@ Status Flow:
 🔴 ปฏิเสธ (Rejected) → Not sent, reason logged
 ```
 
-
-#### Audit Trail:
+#### Audit Trail
 
 All validation decisions are logged with:
 
@@ -290,15 +264,13 @@ All validation decisions are logged with:
 - Decision (approve/reject)
 - Rejection reason (if applicable)
 
-
 ### 3.4 Patient Instruction Sheet (DR-01)
-
 
 **Current Status:** 📋 Planned
 
 **Purpose:** Auto-generate patient instruction document after consultation.
 
-#### Content Sections:
+#### Content Sections
 
 1. **วินิจฉัย (Diagnosis)** - Condition explained in simple Thai
 2. **ยาที่ได้รับ (Medications)** - Each drug with:
@@ -310,17 +282,15 @@ All validation decisions are logged with:
 4. **อาการที่ควรพบแพทย์ทันที (Warning Signs)** - When to return
 5. **นัดหมายครั้งต่อไป (Follow-up)** - Next appointment
 
-
 **Output:** PDF document in Thai, downloadable by patient.
 
 ### 3.5 AI Document Analysis (DR-03)
-
 
 **Current Status:** 📋 Planned
 
 **Purpose:** AI analyzes uploaded PDF/lab results to summarize key findings.
 
-#### Supported Document Types:
+#### Supported Document Types
 
 | Type | Analysis Focus |
 | ------ | ---------------- |
@@ -329,7 +299,7 @@ All validation decisions are logged with:
 | Medical Records | Summary, relevant history |
 | Referral Letters | Chief complaint, reason for referral |
 
-#### Workflow:
+#### Workflow
 
 ```text
 1. Doctor uploads PDF/image
@@ -342,15 +312,13 @@ All validation decisions are logged with:
 5. Doctor reviews and incorporates into EMR
 ```
 
-
 ### 3.6 Clinical Decision Support (DR-04)
-
 
 **Current Status:** 📋 Planned
 
 **Purpose:** Alert doctors to potential issues and recommend guideline-based actions.
 
-#### CDS Alert Types:
+#### CDS Alert Types
 
 | Alert Type | Example |
 | ------------ | --------- |
@@ -360,15 +328,14 @@ All validation decisions are logged with:
 | Vaccination Due | "Flu vaccine due this season" |
 | Screening Reminder | "Diabetic foot exam overdue" |
 
-#### Guidelines Integrated:
+#### Guidelines Integrated
 
 - KDIGO 2024 (CKD Management)
 - ADA Standards of Care 2025 (Diabetes)
 - Thai Hypertension Society 2024
 - Thai DM Guidelines 2024
 
-
-#### Example CDS Alert:
+#### Example CDS Alert
 
 ```text
 ┌──────────────────────────────────────────────────────────┐
@@ -390,18 +357,15 @@ All validation decisions are logged with:
 └──────────────────────────────────────────────────────────┘
 ```
 
-
 ---
 
 ## 4️⃣ Technical Architecture
 
-
 ### 4.1 Database (PB-01)
-
 
 **Stack:** PostgreSQL + pgvector
 
-#### Docker Services:
+#### Docker Services
 
 | Service | Port | Purpose |
 | --------- | ------ | --------- |
@@ -410,7 +374,7 @@ All validation decisions are logged with:
 | izara-doctor-portal | 3010 | Doctor frontend + backend |
 | izara-pgadmin | 5050 | Database administration |
 
-#### Key Tables:
+#### Key Tables
 
 ```sql
 -- Core
@@ -426,31 +390,26 @@ patient_instructions   -- Generated instruction sheets
 ai_validations         -- Man-in-the-loop audit log
 ```
 
-
 ### 4.2 AI Integration (PB-03, PB-04, PB-05)
-
 
 **Current AI Model:** Gemini 2.5 Flash
 
-#### Speech-to-Text Strategy (PB-05):
+#### Speech-to-Text Strategy (PB-05)
 
 - Use Web Speech API (browser native)
 - Works on Chrome, Edge, Safari
 - Free, no API costs
 - Doctor/patient can dictate notes
 
-
-#### Future Fine-tuning (PB-04):
+#### Future Fine-tuning (PB-04)
 
 - Collect interaction data
 - Prepare training dataset
 - Fine-tune Gemini for medical Thai
 
-
 ---
 
 ## 5️⃣ Test Credentials
-
 
 | Role | Email | Password |
 | ------ | ------- | ---------- |
@@ -465,7 +424,6 @@ ai_validations         -- Man-in-the-loop audit log
 
 ## 6️⃣ Implementation Timeline
 
-
 ### Sprint 1 (Current): Core AI Features
 
 - [x] PostgreSQL setup with pgAdmin
@@ -474,13 +432,11 @@ ai_validations         -- Man-in-the-loop audit log
 - [ ] AI Chat Assistant panel
 - [ ] Man-in-the-Loop validation UI
 
-
 ### Sprint 2: Document & Instructions
 
 - [ ] Patient Instruction Sheet generator
 - [ ] AI Document/PDF analyzer
 - [ ] PDF generation for instructions
-
 
 ### Sprint 3: CDS & Polish
 
@@ -488,11 +444,9 @@ ai_validations         -- Man-in-the-loop audit log
 - [ ] Guideline knowledge base
 - [ ] UI polish and testing
 
-
 ---
 
 ## 7️⃣ Success Criteria
-
 
 | Requirement | Success Metric |
 | ------------- | ---------------- |
@@ -507,12 +461,10 @@ ai_validations         -- Man-in-the-loop audit log
 
 ## 📚 Related Documents
 
-
 - [UI_Pages_Workflows.md](UI_Pages_Workflows.md) - Detailed UI specifications
 - [Appointment_Workflows.md](Appointment_Workflows.md) - Appointment flow
 - [Health_Records_Processes.md](Health_Records_Processes.md) - EMR/PHR workflows
 - [VIDEO_MEETING_JITSI_GEMINI.md](VIDEO_MEETING_JITSI_GEMINI.md) - Meeting implementation
-
 
 ---
 

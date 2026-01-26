@@ -362,16 +362,13 @@ function VitalsTab({
               <label htmlFor="vitals-temperature" className="block text-sm text-gray-600 mb-1">อุณหภูมิ (°C)</label>
               <input
                 id="vitals-temperature"
-                type="text"
-                inputMode="decimal"
-                pattern="[0-9]*\.?[0-9]*"
+                type="number"
+                step="0.1"
+                min="35"
+                max="42"
                 value={newVitals.temperature}
                 onChange={(e) => {
-                  const value = e.target.value;
-                  // Allow empty, numbers, and decimal point for typing
-                  if (value === '' || /^\d*\.?\d*$/.test(value)) {
-                    setNewVitals({ ...newVitals, temperature: value });
-                  }
+                  setNewVitals({ ...newVitals, temperature: e.target.value });
                 }}
                 onBlur={(e) => {
                   // Validate on blur - must be between 35-42
@@ -676,6 +673,178 @@ function AllergiesTab({
   );
 }
 
+type PersonalInfoSectionProps = Readonly<{
+  editingProfile: boolean;
+  phr: PersonalHealthRecord | null;
+  user: User | null;
+  profileData: ProfileDataState;
+  setProfileData: SetState<ProfileDataState>;
+  removeChronicCondition: (condition: string) => void;
+  addChronicCondition: () => void;
+}>;
+
+function PersonalInfoSection({
+  editingProfile,
+  phr,
+  user,
+  profileData,
+  setProfileData,
+  removeChronicCondition,
+  addChronicCondition
+}: PersonalInfoSectionProps) {
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label htmlFor="profile-height" className="block text-sm font-medium text-gray-700 mb-1">ส่วนสูง (ซม.)</label>
+          {editingProfile ? (
+            <input
+              id="profile-height"
+              type="number"
+              value={profileData.height}
+              onChange={(e) => setProfileData({ ...profileData, height: e.target.value })}
+              className="w-full p-2 border rounded-lg"
+              placeholder="เช่น 170"
+            />
+          ) : (
+            <p className="p-2 bg-gray-50 rounded-lg">{phr?.demographics?.height || '-'} ซม.</p>
+          )}
+        </div>
+        <div>
+          <label htmlFor="profile-blood-type" className="block text-sm font-medium text-gray-700 mb-1">หมู่เลือด</label>
+          {editingProfile ? (
+            <select
+              id="profile-blood-type"
+              value={profileData.bloodType}
+              onChange={(e) => setProfileData({ ...profileData, bloodType: e.target.value })}
+              className="w-full p-2 border rounded-lg"
+            >
+              <option value="">เลือกหมู่เลือด</option>
+              <option value="A+">A+</option>
+              <option value="A-">A-</option>
+              <option value="B+">B+</option>
+              <option value="B-">B-</option>
+              <option value="O+">O+</option>
+              <option value="O-">O-</option>
+              <option value="AB+">AB+</option>
+              <option value="AB-">AB-</option>
+            </select>
+          ) : (
+            <p className="p-2 bg-gray-50 rounded-lg">{user?.bloodType || '-'}</p>
+          )}
+        </div>
+      </div>
+
+      <div>
+        <label htmlFor="profile-new-condition" className="block text-sm font-medium text-gray-700 mb-2">โรคประจำตัว</label>
+        {editingProfile ? (
+          <div className="space-y-3">
+            <div className="flex flex-wrap gap-2">
+              {profileData.chronicConditions.map((condition) => (
+                <span key={condition} className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm flex items-center gap-1">
+                  {condition}
+                  <button onClick={() => removeChronicCondition(condition)} className="hover:text-red-600">
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <input
+                id="profile-new-condition"
+                type="text"
+                value={profileData.newCondition}
+                onChange={(e) => setProfileData({ ...profileData, newCondition: e.target.value })}
+                onKeyDown={(e) => e.key === 'Enter' && addChronicCondition()}
+                className="flex-1 p-2 border rounded-lg"
+                placeholder="เพิ่มโรคประจำตัว"
+              />
+              <button onClick={addChronicCondition} className="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600">
+                <Plus className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="p-2 bg-gray-50 rounded-lg">
+            {user?.chronicConditions?.length ? (
+              <div className="flex flex-wrap gap-2">
+                {user.chronicConditions.map((condition) => (
+                  <span key={condition} className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">{condition}</span>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-500">ไม่มี</p>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+type LifestyleFieldProps = Readonly<{
+  label: string;
+  htmlFor: string;
+  editing: boolean;
+  type: 'select' | 'textarea';
+  value: string;
+  onChange: (value: string) => void;
+  options?: Array<{ value: string; label: string }>;
+  placeholder?: string;
+  labelMap?: Record<string, string>;
+}>;
+
+function LifestyleField({
+  label,
+  htmlFor,
+  editing,
+  type,
+  value,
+  onChange,
+  options,
+  placeholder,
+  labelMap
+}: LifestyleFieldProps) {
+  // Extracted to avoid nested ternary
+  const renderEditingInput = () => {
+    if (type === 'select') {
+      return (
+        <select
+          id={htmlFor}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-full p-2 border border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-500"
+        >
+          {options?.map((opt) => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
+      );
+    }
+    return (
+      <textarea
+        id={htmlFor}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full p-2 border border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-500"
+        placeholder={placeholder}
+        rows={2}
+      />
+    );
+  };
+
+  const displayValue = type === 'select' && labelMap ? getLabel(value, labelMap) : value || 'ไม่มี';
+
+  return (
+    <div>
+      <label htmlFor={htmlFor} className="block text-sm font-medium text-emerald-700 mb-1">{label}</label>
+      {editing ? renderEditingInput() : (
+        <p className="p-2 bg-emerald-50 rounded-lg text-gray-700">{displayValue}</p>
+      )}
+    </div>
+  );
+}
+
 type ProfileTabProps = Readonly<{
   phr: PersonalHealthRecord | null;
   user: User | null;
@@ -693,6 +862,7 @@ type ProfileTabProps = Readonly<{
   setEditingLifestyle: SetState<boolean>;
   onSaveLifestyle: () => void;
 }>;
+
 function ProfileTab({
   phr,
   user,
@@ -715,329 +885,146 @@ function ProfileTab({
       <div className="bg-white rounded-xl p-5 border border-gray-100">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold flex items-center gap-2"><UserIcon className="w-5 h-5 text-purple-500" /> ข้อมูลส่วนตัว</h2>
-          {editingProfile ? (
-            <div className="flex gap-2">
-              <button onClick={onSaveProfile} disabled={saving} className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 disabled:opacity-50 flex items-center gap-2">
-                {saving ? <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" /> : <Save className="w-4 h-4" />}
-                บันทึก
-              </button>
-              <button onClick={() => setEditingProfile(false)} className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 flex items-center gap-2">
-                <X className="w-4 h-4" /> ยกเลิก
-              </button>
-            </div>
-          ) : (
-            <button onClick={() => setEditingProfile(true)} className="flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">
-              <Edit3 className="w-4 h-4" /> แก้ไข
-            </button>
-          )}
-        </div>
-
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              {editingProfile ? (
-                <>
-                  <label htmlFor="profile-height" className="block text-sm font-medium text-gray-700 mb-1">ส่วนสูง (ซม.)</label>
-                  <input
-                    id="profile-height"
-                    type="number"
-                    value={profileData.height}
-                    onChange={(e) => setProfileData({ ...profileData, height: e.target.value })}
-                    className="w-full p-2 border rounded-lg"
-                    placeholder="เช่น 170"
-                  />
-                </>
-              ) : (
-                <>
-                  <span className="block text-sm font-medium text-gray-700 mb-1">ส่วนสูง (ซม.)</span>
-                  <p className="p-2 bg-gray-50 rounded-lg">{phr?.demographics?.height || '-'} ซม.</p>
-                </>
-              )}
-            </div>
-            <div>
-              {editingProfile ? (
-                <>
-                  <label htmlFor="profile-blood-type" className="block text-sm font-medium text-gray-700 mb-1">หมู่เลือด</label>
-                  <select
-                    id="profile-blood-type"
-                    value={profileData.bloodType}
-                    onChange={(e) => setProfileData({ ...profileData, bloodType: e.target.value })}
-                    className="w-full p-2 border rounded-lg"
-                  >
-                    <option value="">เลือกหมู่เลือด</option>
-                    <option value="A+">A+</option>
-                    <option value="A-">A-</option>
-                    <option value="B+">B+</option>
-                    <option value="B-">B-</option>
-                    <option value="O+">O+</option>
-                    <option value="O-">O-</option>
-                    <option value="AB+">AB+</option>
-                    <option value="AB-">AB-</option>
-                  </select>
-                </>
-              ) : (
-                <>
-                  <span className="block text-sm font-medium text-gray-700 mb-1">หมู่เลือด</span>
-                  <p className="p-2 bg-gray-50 rounded-lg">{user?.bloodType || '-'}</p>
-                </>
-              )}
-            </div>
-          </div>
-
-          <div>
+          <div className="flex gap-2">
             {editingProfile ? (
               <>
-                <label htmlFor="profile-new-condition" className="block text-sm font-medium text-gray-700 mb-2">โรคประจำตัว</label>
-                <div className="space-y-3">
-                  <div className="flex flex-wrap gap-2">
-                    {profileData.chronicConditions.map((condition) => (
-                      <span key={condition} className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm flex items-center gap-1">
-                        {condition}
-                        <button onClick={() => removeChronicCondition(condition)} className="hover:text-red-600">
-                          <X className="w-3 h-3" />
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                  <div className="flex gap-2">
-                    <input
-                      id="profile-new-condition"
-                      type="text"
-                      value={profileData.newCondition}
-                      onChange={(e) => setProfileData({ ...profileData, newCondition: e.target.value })}
-                      onKeyDown={(e) => e.key === 'Enter' && addChronicCondition()}
-                      className="flex-1 p-2 border rounded-lg"
-                      placeholder="เพิ่มโรคประจำตัว"
-                    />
-                    <button onClick={addChronicCondition} className="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600">
-                      <Plus className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
+                <button onClick={onSaveProfile} disabled={saving} className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 disabled:opacity-50 flex items-center gap-2">
+                  {saving ? <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" /> : <Save className="w-4 h-4" />}
+                  บันทึก
+                </button>
+                <button onClick={() => setEditingProfile(false)} className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 flex items-center gap-2">
+                  <X className="w-4 h-4" /> ยกเลิก
+                </button>
               </>
             ) : (
-              <>
-                <span className="block text-sm font-medium text-gray-700 mb-2">โรคประจำตัว</span>
-                <div className="p-2 bg-gray-50 rounded-lg">
-                  {user?.chronicConditions?.length ? (
-                    <div className="flex flex-wrap gap-2">
-                      {user.chronicConditions.map((condition) => (
-                        <span key={condition} className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">{condition}</span>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-gray-500">ไม่มี</p>
-                  )}
-                </div>
-              </>
+              <button onClick={() => setEditingProfile(true)} className="flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">
+                <Edit3 className="w-4 h-4" /> แก้ไข
+              </button>
             )}
           </div>
         </div>
+
+        <PersonalInfoSection
+          editingProfile={editingProfile}
+          phr={phr}
+          user={user}
+          profileData={profileData}
+          setProfileData={setProfileData}
+          removeChronicCondition={removeChronicCondition}
+          addChronicCondition={addChronicCondition}
+        />
       </div>
+
       <div className="bg-white rounded-xl p-5 border border-gray-100 mt-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <Heart className="w-5 h-5 text-emerald-500" /> ข้อมูลสุขภาพส่วนตัว (Self-entered Data)
           </h2>
-          {editingLifestyle ? (
-            <div className="flex gap-2">
-              <button onClick={onSaveLifestyle} disabled={saving} className="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 disabled:opacity-50 flex items-center gap-2">
-                {saving ? <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" /> : <Save className="w-4 h-4" />}
-                บันทึก
+          <div className="flex gap-2">
+            {editingLifestyle ? (
+              <>
+                <button onClick={onSaveLifestyle} disabled={saving} className="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 disabled:opacity-50 flex items-center gap-2">
+                  {saving ? <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" /> : <Save className="w-4 h-4" />}
+                  บันทึก
+                </button>
+                <button onClick={() => setEditingLifestyle(false)} className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 flex items-center gap-2">
+                  <X className="w-4 h-4" /> ยกเลิก
+                </button>
+              </>
+            ) : (
+              <button onClick={() => setEditingLifestyle(true)} className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700">
+                <Edit3 className="w-4 h-4" /> แก้ไข
               </button>
-              <button onClick={() => setEditingLifestyle(false)} className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 flex items-center gap-2">
-                <X className="w-4 h-4" /> ยกเลิก
-              </button>
-            </div>
-          ) : (
-            <button onClick={() => setEditingLifestyle(true)} className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700">
-              <Edit3 className="w-4 h-4" /> แก้ไข
-            </button>
-          )}
+            )}
+          </div>
         </div>
 
         <p className="text-sm text-gray-500 mb-4">ข้อมูลเหล่านี้จะถูกส่งไปยังแพทย์เพื่อช่วยในการวินิจฉัยและวางแผนการรักษา</p>
 
         <div className="space-y-4">
-          {/* Diet */}
-          <div>
-            {editingLifestyle ? (
-              <>
-                <label htmlFor="lifestyle-diet" className="block text-sm font-medium text-emerald-700 mb-1">การกินอาหาร</label>
-                <select
-                  id="lifestyle-diet"
-                  value={lifestyleData.diet}
-                  onChange={(e) => setLifestyleData({ ...lifestyleData, diet: e.target.value })}
-                  className="w-full p-2 border border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-500"
-                >
-                  <option value="Unknown">ไม่ระบุ</option>
-                  <option value="regular">ปกติ / ทั่วไป</option>
-                  <option value="vegetarian">มังสวิรัติ</option>
-                  <option value="vegan">วีแกน</option>
-                  <option value="low-carb">ลดคาร์โบไฮเดรต</option>
-                  <option value="low-fat">ลดไขมัน</option>
-                  <option value="low-sodium">ลดเกลือ</option>
-                  <option value="diabetic">สำหรับผู้เป็นเบาหวาน</option>
-                  <option value="halal">ฮาลาล</option>
-                  <option value="other">อื่นๆ</option>
-                </select>
-              </>
-            ) : (
-              <>
-                <span className="block text-sm font-medium text-emerald-700 mb-1">การกินอาหาร</span>
-                <p className="p-2 bg-emerald-50 rounded-lg text-gray-700">{getLabel(lifestyleData.diet, DIET_LABELS)}</p>
-              </>
-            )}
-          </div>
+          <LifestyleField
+            label="การกินอาหาร"
+            htmlFor="lifestyle-diet"
+            editing={editingLifestyle}
+            type="select"
+            value={lifestyleData.diet}
+            onChange={(val) => setLifestyleData({ ...lifestyleData, diet: val })}
+            options={Object.entries(DIET_LABELS).map(([k, v]) => ({ value: k, label: v }))}
+            labelMap={DIET_LABELS}
+          />
 
-          {/* Exercise */}
-          <div>
-            {editingLifestyle ? (
-              <>
-                <label htmlFor="lifestyle-exercise" className="block text-sm font-medium text-emerald-700 mb-1">การออกกำลังกาย</label>
-                <select
-                  id="lifestyle-exercise"
-                  value={lifestyleData.exercise}
-                  onChange={(e) => setLifestyleData({ ...lifestyleData, exercise: e.target.value })}
-                  className="w-full p-2 border border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-500"
-                >
-                  <option value="none">ไม่ออกกำลังกาย</option>
-                  <option value="light">เบา (1-2 วัน/สัปดาห์)</option>
-                  <option value="moderate">ปานกลาง (3-4 วัน/สัปดาห์)</option>
-                  <option value="active">บ่อย (5-6 วัน/สัปดาห์)</option>
-                  <option value="very-active">มาก (ทุกวัน)</option>
-                </select>
-              </>
-            ) : (
-              <>
-                <span className="block text-sm font-medium text-emerald-700 mb-1">การออกกำลังกาย</span>
-                <p className="p-2 bg-emerald-50 rounded-lg text-gray-700">{getLabel(lifestyleData.exercise, EXERCISE_LABELS)}</p>
-              </>
-            )}
-          </div>
+          <LifestyleField
+            label="การออกกำลังกาย"
+            htmlFor="lifestyle-exercise"
+            editing={editingLifestyle}
+            type="select"
+            value={lifestyleData.exercise}
+            onChange={(val) => setLifestyleData({ ...lifestyleData, exercise: val })}
+            options={Object.entries(EXERCISE_LABELS).map(([k, v]) => ({ value: k, label: v }))}
+            labelMap={EXERCISE_LABELS}
+          />
 
-          {/* Sleep */}
-          <div>
-            {editingLifestyle ? (
-              <>
-                <label htmlFor="lifestyle-sleep" className="block text-sm font-medium text-emerald-700 mb-1">การนอน (ชั่วโมงต่อวัน)</label>
-                <select
-                  id="lifestyle-sleep"
-                  value={lifestyleData.sleep}
-                  onChange={(e) => setLifestyleData({ ...lifestyleData, sleep: e.target.value })}
-                  className="w-full p-2 border border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-500"
-                >
-                  <option value="Unknown">ไม่ระบุ</option>
-                  <option value="4">น้อยกว่า 4 ชั่วโมง</option>
-                  <option value="5">4-5 ชั่วโมง</option>
-                  <option value="6">5-6 ชั่วโมง</option>
-                  <option value="7">6-7 ชั่วโมง</option>
-                  <option value="8">7-8 ชั่วโมง</option>
-                  <option value="9">มากกว่า 8 ชั่วโมง</option>
-                </select>
-              </>
-            ) : (
-              <>
-                <span className="block text-sm font-medium text-emerald-700 mb-1">การนอน (ชั่วโมงต่อวัน)</span>
-                <p className="p-2 bg-emerald-50 rounded-lg text-gray-700">{lifestyleData.sleep === 'Unknown' ? 'ไม่ระบุ' : `${lifestyleData.sleep} ชั่วโมง`}</p>
-              </>
-            )}
-          </div>
+          <LifestyleField
+            label="การนอน (ชั่วโมงต่อวัน)"
+            htmlFor="lifestyle-sleep"
+            editing={editingLifestyle}
+            type="select"
+            value={lifestyleData.sleep}
+            onChange={(val) => setLifestyleData({ ...lifestyleData, sleep: val })}
+            options={[
+              { value: 'Unknown', label: 'ไม่ระบุ' },
+              { value: '4', label: 'น้อยกว่า 4 ชั่วโมง' },
+              { value: '5', label: '4-5 ชั่วโมง' },
+              { value: '6', label: '5-6 ชั่วโมง' },
+              { value: '7', label: '6-7 ชั่วโมง' },
+              { value: '8', label: '7-8 ชั่วโมง' },
+              { value: '9', label: 'มากกว่า 8 ชั่วโมง' }
+            ]}
+          />
 
-          {/* Smoking & Alcohol */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              {editingLifestyle ? (
-                <>
-                  <label htmlFor="lifestyle-smoking" className="block text-sm font-medium text-emerald-700 mb-1">การสูบบุหรี่</label>
-                  <select
-                    id="lifestyle-smoking"
-                    value={lifestyleData.smokingStatus}
-                    onChange={(e) => setLifestyleData({ ...lifestyleData, smokingStatus: e.target.value })}
-                    className="w-full p-2 border border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-500"
-                  >
-                    <option value="never">ไม่เคยสูบ</option>
-                    <option value="former">เคยสูบ (เลิกแล้ว)</option>
-                    <option value="current">สูบอยู่</option>
-                    <option value="occasional">สูบเป็นครั้งคราว</option>
-                  </select>
-                </>
-              ) : (
-                <>
-                  <span className="block text-sm font-medium text-emerald-700 mb-1">การสูบบุหรี่</span>
-                  <p className="p-2 bg-emerald-50 rounded-lg text-gray-700">{getLabel(lifestyleData.smokingStatus, SMOKING_LABELS)}</p>
-                </>
-              )}
-            </div>
-            <div>
-              {editingLifestyle ? (
-                <>
-                  <label htmlFor="lifestyle-alcohol" className="block text-sm font-medium text-emerald-700 mb-1">การดื่มแอลกอฮอล์</label>
-                  <select
-                    id="lifestyle-alcohol"
-                    value={lifestyleData.alcoholConsumption}
-                    onChange={(e) => setLifestyleData({ ...lifestyleData, alcoholConsumption: e.target.value })}
-                    className="w-full p-2 border border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-500"
-                  >
-                    <option value="never">ไม่ดื่ม</option>
-                    <option value="occasional">ดื่มเป็นครั้งคราว</option>
-                    <option value="moderate">ดื่มปานกลาง</option>
-                    <option value="frequent">ดื่มบ่อย</option>
-                    <option value="former">เคยดื่ม (เลิกแล้ว)</option>
-                  </select>
-                </>
-              ) : (
-                <>
-                  <span className="block text-sm font-medium text-emerald-700 mb-1">การดื่มแอลกอฮอล์</span>
-                  <p className="p-2 bg-emerald-50 rounded-lg text-gray-700">{getLabel(lifestyleData.alcoholConsumption, ALCOHOL_LABELS)}</p>
-                </>
-              )}
-            </div>
+            <LifestyleField
+              label="การสูบบุหรี่"
+              htmlFor="lifestyle-smoking"
+              editing={editingLifestyle}
+              type="select"
+              value={lifestyleData.smokingStatus}
+              onChange={(val) => setLifestyleData({ ...lifestyleData, smokingStatus: val })}
+              options={Object.entries(SMOKING_LABELS).map(([k, v]) => ({ value: k, label: v }))}
+              labelMap={SMOKING_LABELS}
+            />
+
+            <LifestyleField
+              label="การดื่มแอลกอฮอล์"
+              htmlFor="lifestyle-alcohol"
+              editing={editingLifestyle}
+              type="select"
+              value={lifestyleData.alcoholConsumption}
+              onChange={(val) => setLifestyleData({ ...lifestyleData, alcoholConsumption: val })}
+              options={Object.entries(ALCOHOL_LABELS).map(([k, v]) => ({ value: k, label: v }))}
+              labelMap={ALCOHOL_LABELS}
+            />
           </div>
 
-          {/* Supplements */}
-          <div>
-            {editingLifestyle ? (
-              <>
-                <label htmlFor="lifestyle-supplements" className="block text-sm font-medium text-emerald-700 mb-1">การใช้อาหารเสริม / วิตามิน</label>
-                <textarea
-                  id="lifestyle-supplements"
-                  value={lifestyleData.supplements}
-                  onChange={(e) => setLifestyleData({ ...lifestyleData, supplements: e.target.value })}
-                  className="w-full p-2 border border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-500"
-                  placeholder="เช่น วิตามินซี 500mg วันละ 1 เม็ด, น้ำมันปลา 1000mg วันละ 1 เม็ด"
-                  rows={2}
-                />
-              </>
-            ) : (
-              <>
-                <span className="block text-sm font-medium text-emerald-700 mb-1">การใช้อาหารเสริม / วิตามิน</span>
-                <p className="p-2 bg-emerald-50 rounded-lg text-gray-700">{lifestyleData.supplements || 'ไม่มี'}</p>
-              </>
-            )}
-          </div>
+          <LifestyleField
+            label="การใช้อาหารเสริม / วิตามิน"
+            htmlFor="lifestyle-supplements"
+            editing={editingLifestyle}
+            type="textarea"
+            value={lifestyleData.supplements}
+            onChange={(val) => setLifestyleData({ ...lifestyleData, supplements: val })}
+            placeholder="เช่น วิตามินซี 500mg วันละ 1 เม็ด, น้ำมันปลา 1000mg วันละ 1 เม็ด"
+          />
 
-          {/* Other Treatments */}
-          <div>
-            {editingLifestyle ? (
-              <>
-                <label htmlFor="lifestyle-other-treatments" className="block text-sm font-medium text-emerald-700 mb-1">การรักษาอื่น (แพทย์ทางเลือก / แพทย์แผนไทย)</label>
-                <textarea
-                  id="lifestyle-other-treatments"
-                  value={lifestyleData.otherTreatments}
-                  onChange={(e) => setLifestyleData({ ...lifestyleData, otherTreatments: e.target.value })}
-                  className="w-full p-2 border border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-500"
-                  placeholder="เช่น นวดแผนไทย, ฝังเข็ม, สมุนไพร"
-                  rows={2}
-                />
-              </>
-            ) : (
-              <>
-                <span className="block text-sm font-medium text-emerald-700 mb-1">การรักษาอื่น (แพทย์ทางเลือก / แพทย์แผนไทย)</span>
-                <p className="p-2 bg-emerald-50 rounded-lg text-gray-700">{lifestyleData.otherTreatments || 'ไม่มี'}</p>
-              </>
-            )}
-          </div>
+          <LifestyleField
+            label="การรักษาอื่น (แพทย์ทางเลือก / แพทย์แผนไทย)"
+            htmlFor="lifestyle-other-treatments"
+            editing={editingLifestyle}
+            type="textarea"
+            value={lifestyleData.otherTreatments}
+            onChange={(val) => setLifestyleData({ ...lifestyleData, otherTreatments: val })}
+            placeholder="เช่น นวดแผนไทย, ฝังเข็ม, สมุนไพร"
+          />
         </div>
       </div>
     </>

@@ -1,3 +1,4 @@
+-- sqlfluff: dialect=postgres
 -- =============================================================================
 -- IZARA TELEMEDICINE - UNIFIED DATABASE INITIALIZATION
 -- =============================================================================
@@ -1036,3 +1037,78 @@ SELECT 'Consultants: ' || count(*) FROM consultants;
 -- =============================================================================
 -- END OF UNIFIED DATABASE INITIALIZATION
 -- =============================================================================
+
+
+-- =============================================================================
+-- PART 24: ADDITIONAL THAI MEDICAL CONTENT (MERGED FROM seed-thai-content.sql)
+-- =============================================================================
+
+-- IZARA TELEMEDICINE - THAI MEDICAL CONTENT SEED DATA
+-- Version: 3.0.0 | Created: January 23, 2026 | Encoding: UTF-8
+
+-- MEDICAL CONTENT (คลังความรู้สุขภาพ)
+INSERT INTO medical_content (id, title_thai, title_english, category, content_thai, content_english, author_id, status, image_url, tags, created_at, updated_at) VALUES
+('MC-THAI-001', 'การดูแลสุขภาพสำหรับผู้ป่วยเบาหวาน', 'Health Care for Diabetic Patients', 'chronic_disease',
+E'## การดูแลสุขภาพสำหรับผู้ป่วยเบาหวาน 🩺\n\n### ความรู้พื้นฐานเกี่ยวกับโรคเบาหวาน\n\nโรคเบาหวานเป็นโรคเรื้อรังที่เกิดจากร่างกายไม่สามารถผลิตหรือใช้อินซูลินได้อย่างเหมาะสม\n\n[image:https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/Diabetes_mellitus_world_map_-_2000.svg/440px-Diabetes_mellitus_world_map_-_2000.svg.png:แผนที่โลกแสดงความชุกของโรคเบาหวาน]\n\n### ประเภทของโรคเบาหวาน\n\n1. **เบาหวานชนิดที่ 1** - ร่างกายไม่สามารถผลิตอินซูลินได้\n2. **เบาหวานชนิดที่ 2** - ร่างกายดื้อต่ออินซูลิน (พบมากที่สุด)\n\n### การควบคุมระดับน้ำตาลในเลือด\n\n| ค่าน้ำตาล | ก่อนอาหาร | หลังอาหาร 2 ชม. |\n|-----------|-----------|------------------|\n| ปกติ | 70-100 mg/dL | < 140 mg/dL |\n| เป้าหมาย | 80-130 mg/dL | < 180 mg/dL |\n\n### การดูแลตนเอง\n\n✅ **อาหาร**: รับประทานอาหารที่มีใยอาหารสูง ลดแป้งและน้ำตาล\n✅ **ออกกำลังกาย**: อย่างน้อย 150 นาที/สัปดาห์\n✅ **ยา**: รับประทานยาตามแพทย์สั่งอย่างสม่ำเสมอ',
+'Diabetes health care guide', 'DOC-WICHAI', 'published', 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/Diabetes_mellitus_world_map_-_2000.svg/440px-Diabetes_mellitus_world_map_-_2000.svg.png', '["เบาหวาน", "โรคเรื้อรัง", "diabetes"]'::jsonb, NOW() - INTERVAL '7 days', NOW())
+ON CONFLICT (id) DO UPDATE SET title_thai = EXCLUDED.title_thai, content_thai = EXCLUDED.content_thai, image_url = EXCLUDED.image_url, updated_at = NOW();
+
+INSERT INTO medical_content (id, title_thai, title_english, category, content_thai, content_english, author_id, status, image_url, tags, created_at, updated_at) VALUES
+('MC-THAI-002', 'ความดันโลหิตสูง: ฆาตกรเงียบที่ต้องระวัง', 'Hypertension: The Silent Killer', 'chronic_disease',
+E'## ความดันโลหิตสูง: ฆาตกรเงียบที่ต้องระวัง 🫀\n\n### ทำความเข้าใจความดันโลหิต\n\nความดันโลหิตคือแรงดันที่เลือดกระทบต่อผนังหลอดเลือดแดง\n\n[image:https://upload.wikimedia.org/wikipedia/commons/thumb/8/8a/Bluthochdruck.svg/400px-Bluthochdruck.svg.png:แผนภาพแสดงการวัดความดันโลหิต]\n\n### ระดับความดันโลหิต\n\n| ระดับ | ค่าบน (mmHg) | ค่าล่าง (mmHg) |\n|-------|--------------|----------------|\n| ปกติ | < 120 | < 80 |\n| สูงเล็กน้อย | 120-129 | < 80 |\n| สูงระยะ 1 | 130-139 | 80-89 |\n| สูงระยะ 2 | ≥ 140 | ≥ 90 |\n\n### ปัจจัยเสี่ยง\n\n⚠️ อายุมากขึ้น\n⚠️ น้ำหนักเกิน/อ้วน\n⚠️ กินเค็ม\n⚠️ สูบบุหรี่\n\n### การป้องกันและควบคุม\n\n✅ ลดเค็ม (< 6 กรัม/วัน)\n✅ ออกกำลังกายสม่ำเสมอ\n✅ ทานยาตามแพทย์สั่ง',
+'Hypertension guide', 'DOC-WICHAI', 'published', 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8a/Bluthochdruck.svg/400px-Bluthochdruck.svg.png', '["ความดันโลหิตสูง", "hypertension"]'::jsonb, NOW() - INTERVAL '5 days', NOW())
+ON CONFLICT (id) DO UPDATE SET title_thai = EXCLUDED.title_thai, content_thai = EXCLUDED.content_thai, image_url = EXCLUDED.image_url, updated_at = NOW();
+
+INSERT INTO medical_content (id, title_thai, title_english, category, content_thai, content_english, author_id, status, image_url, tags, created_at, updated_at) VALUES
+('MC-THAI-003', 'การป้องกันโรคติดเชื้อทางเดินหายใจ', 'Respiratory Infection Prevention', 'prevention',
+E'## การป้องกันโรคติดเชื้อทางเดินหายใจ 😷\n\n[image:https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/A_woman_gets_tested_for_COVID-19_at_a_mobile_testing_site_%28cropped%29.jpg/400px-A_woman_gets_tested_for_COVID-19_at_a_mobile_testing_site_%28cropped%29.jpg:การตรวจคัดกรองโรค]\n\n### มาตรการป้องกันหลัก\n\n#### 1. การล้างมือ 🧼\n- ล้างมือด้วยสบู่อย่างน้อย 20 วินาที\n- ใช้เจลแอลกอฮอล์ 70%\n\n#### 2. การสวมหน้ากาก 😷\n- สวมหน้ากากอนามัยในที่สาธารณะ\n- เปลี่ยนหน้ากากทุก 4-6 ชั่วโมง\n\n#### 3. การรักษาระยะห่าง 📏\n- รักษาระยะห่างอย่างน้อย 1-2 เมตร\n- หลีกเลี่ยงที่แออัด\n\n### เมื่อมีอาการ\n\n⚠️ ไข้สูงกว่า 37.5°C\n⚠️ ไอ จาม\n⚠️ หายใจลำบาก\n\n**ควรปฏิบัติ:** แยกตัว สวมหน้ากาก ติดต่อแพทย์',
+'Respiratory infection prevention', 'DOC-WICHAI', 'published', 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/A_woman_gets_tested_for_COVID-19_at_a_mobile_testing_site_%28cropped%29.jpg/400px-A_woman_gets_tested_for_COVID-19_at_a_mobile_testing_site_%28cropped%29.jpg', '["ป้องกัน", "respiratory"]'::jsonb, NOW() - INTERVAL '3 days', NOW())
+ON CONFLICT (id) DO UPDATE SET title_thai = EXCLUDED.title_thai, content_thai = EXCLUDED.content_thai, image_url = EXCLUDED.image_url, updated_at = NOW();
+
+INSERT INTO medical_content (id, title_thai, title_english, category, content_thai, content_english, author_id, status, image_url, tags, created_at, updated_at) VALUES
+('MC-THAI-004', 'โภชนาการเพื่อสุขภาพที่ดี', 'Nutrition for Good Health', 'lifestyle',
+E'## โภชนาการเพื่อสุขภาพที่ดี 🥗\n\n[image:https://upload.wikimedia.org/wikipedia/commons/thumb/6/68/Veggies.jpg/440px-Veggies.jpg:ผักผลไม้หลากสี]\n\n### สารอาหารหลัก 5 หมู่\n\n| หมู่ | สารอาหาร | แหล่งอาหาร |\n|-----|----------|------------|\n| 1 | โปรตีน | เนื้อสัตว์ ไข่ ถั่ว |\n| 2 | คาร์โบไฮเดรต | ข้าว ขนมปัง |\n| 3 | ไขมัน | น้ำมัน ถั่ว |\n| 4 | วิตามิน-เกลือแร่ | ผัก ผลไม้ |\n| 5 | น้ำ | น้ำเปล่า |\n\n### คำแนะนำ\n\n✅ ทานผักผลไม้อย่างน้อย 5 ส่วน/วัน\n✅ เลือกธัญพืชไม่ขัดสี\n✅ ดื่มน้ำ 8-10 แก้ว/วัน\n\n### สิ่งที่ควรหลีกเลี่ยง\n\n❌ อาหารหวานจัด\n❌ อาหารเค็มจัด\n❌ อาหารไขมันสูง',
+'Nutrition guide', 'DOC-WICHAI', 'published', 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/68/Veggies.jpg/440px-Veggies.jpg', '["โภชนาการ", "nutrition"]'::jsonb, NOW() - INTERVAL '2 days', NOW())
+ON CONFLICT (id) DO UPDATE SET title_thai = EXCLUDED.title_thai, content_thai = EXCLUDED.content_thai, image_url = EXCLUDED.image_url, updated_at = NOW();
+
+INSERT INTO medical_content (id, title_thai, title_english, category, content_thai, content_english, author_id, status, image_url, tags, created_at, updated_at) VALUES
+('MC-THAI-005', 'การออกกำลังกายเพื่อสุขภาพ', 'Exercise for Health', 'lifestyle',
+E'## การออกกำลังกายเพื่อสุขภาพ 🏃‍♂️\n\n[image:https://upload.wikimedia.org/wikipedia/commons/thumb/4/4f/Jogging_woman.jpg/320px-Jogging_woman.jpg:การวิ่งจ๊อกกิ้ง]\n\n### ประโยชน์ของการออกกำลังกาย\n\n#### 💪 ประโยชน์ทางกาย\n- เพิ่มความแข็งแรงของกล้ามเนื้อ\n- ลดน้ำหนักส่วนเกิน\n- ลดความดันโลหิต\n- ควบคุมน้ำตาลในเลือด\n\n#### 🧠 ประโยชน์ทางจิตใจ\n- ลดความเครียด\n- นอนหลับดีขึ้น\n\n### ประเภทการออกกำลังกาย\n\n| ประเภท | ตัวอย่าง | ระยะเวลาแนะนำ |\n|--------|----------|---------------|\n| แอโรบิก | วิ่ง ว่ายน้ำ | 150 นาที/สัปดาห์ |\n| เสริมสร้างกล้ามเนื้อ | ยกน้ำหนัก | 2 วัน/สัปดาห์ |\n| ยืดหยุ่น | โยคะ | ทุกวัน |\n\n### ข้อควรระวัง\n\n⚠️ ปรึกษาแพทย์ก่อนเริ่มออกกำลังกายหนัก',
+'Exercise guide', 'DOC-WICHAI', 'published', 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4f/Jogging_woman.jpg/320px-Jogging_woman.jpg', '["ออกกำลังกาย", "exercise"]'::jsonb, NOW() - INTERVAL '1 day', NOW())
+ON CONFLICT (id) DO UPDATE SET title_thai = EXCLUDED.title_thai, content_thai = EXCLUDED.content_thai, image_url = EXCLUDED.image_url, updated_at = NOW();
+
+-- CLINICAL RESOURCES (แหล่งข้อมูลทางคลินิก)
+INSERT INTO clinical_resources (id, title_thai, title_english, category, content_thai, content_english, specialty, guideline_year, source, status, image_url, tags, created_at, updated_at) VALUES
+('CR-THAI-001', 'แนวทางการรักษาโรคเบาหวานชนิดที่ 2 ปี 2025', 'Type 2 Diabetes Treatment Guidelines 2025', 'treatment',
+E'## แนวทางการรักษาโรคเบาหวานชนิดที่ 2 ปี 2025 💊\n\n[image:https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/Diabetes_patient_blood_test.jpg/440px-Diabetes_patient_blood_test.jpg:การตรวจน้ำตาลในเลือด]\n\n### เป้าหมายการรักษา\n\n| ตัวชี้วัด | เป้าหมายทั่วไป | ผู้สูงอายุ |\n|-----------|---------------|----------|\n| HbA1c | < 7% | < 8% |\n| FPG | 80-130 mg/dL | 100-150 mg/dL |\n| BP | < 130/80 mmHg | < 140/90 mmHg |\n\n### ขั้นตอนการรักษา\n\n#### Step 1: Lifestyle + Metformin\n#### Step 2: เพิ่มยาตัวที่ 2 ตามโรคร่วม\n\n| โรคร่วม | ยาแนะนำ |\n|---------|--------|\n| ASCVD | GLP-1 RA หรือ SGLT2i |\n| Heart Failure | SGLT2i |\n| CKD | SGLT2i หรือ GLP-1 RA |\n\n### ข้อควรระวังในผู้ป่วยโรคไต\n\n| eGFR | Metformin | SGLT2i |\n|------|-----------|--------|\n| ≥ 60 | Full dose | ✅ |\n| 45-59 | Reduce | ✅ |\n| < 30 | ❌ | ❌ |',
+'DM2 treatment guidelines', 'endocrinology', 2025, 'American Diabetes Association (ADA)', 'published', 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/Diabetes_patient_blood_test.jpg/440px-Diabetes_patient_blood_test.jpg', '["เบาหวาน", "diabetes", "ADA"]'::jsonb, NOW() - INTERVAL '10 days', NOW())
+ON CONFLICT (id) DO UPDATE SET title_thai = EXCLUDED.title_thai, content_thai = EXCLUDED.content_thai, image_url = EXCLUDED.image_url, updated_at = NOW();
+
+INSERT INTO clinical_resources (id, title_thai, title_english, category, content_thai, content_english, specialty, guideline_year, source, status, image_url, tags, created_at, updated_at) VALUES
+('CR-THAI-002', 'การดูแลผู้ป่วยเบาหวานที่มีโรคไตเรื้อรัง', 'Diabetic Kidney Disease Management', 'treatment',
+E'## การดูแลผู้ป่วยเบาหวานที่มีโรคไตเรื้อรัง 🏥\n\n[image:https://upload.wikimedia.org/wikipedia/commons/thumb/2/25/Kidneys_human.jpg/400px-Kidneys_human.jpg:กายวิภาคของไต]\n\n### การจำแนกระยะ CKD\n\n| ระยะ | eGFR (mL/min/1.73m²) | คำอธิบาย |\n|------|---------------------|----------|\n| G1 | ≥ 90 | ปกติ |\n| G2 | 60-89 | ลดลงเล็กน้อย |\n| G3a | 45-59 | ลดลงปานกลาง |\n| G3b | 30-44 | ลดลงปานกลาง-รุนแรง |\n| G4 | 15-29 | ลดลงรุนแรง |\n| G5 | < 15 | ไตวาย |\n\n### หลักการรักษา KDIGO 2024\n\n1. **ควบคุมน้ำตาล**: SGLT2i, GLP-1 RA\n2. **ควบคุมความดัน**: ACEi หรือ ARB เป้าหมาย < 130/80\n3. **ยาปกป้องไต**: SGLT2i, Finerenone\n\n### ข้อควรระวัง\n\n⚠️ **Metformin**: หยุดเมื่อ eGFR < 30\n⚠️ **NSAIDs**: หลีกเลี่ยง',
+'DKD management', 'nephrology', 2024, 'KDIGO', 'published', 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/25/Kidneys_human.jpg/400px-Kidneys_human.jpg', '["โรคไต", "CKD", "KDIGO"]'::jsonb, NOW() - INTERVAL '8 days', NOW())
+ON CONFLICT (id) DO UPDATE SET title_thai = EXCLUDED.title_thai, content_thai = EXCLUDED.content_thai, image_url = EXCLUDED.image_url, updated_at = NOW();
+
+INSERT INTO clinical_resources (id, title_thai, title_english, category, content_thai, content_english, specialty, guideline_year, source, status, image_url, tags, created_at, updated_at) VALUES
+('CR-THAI-003', 'ตารางปฏิกิริยาระหว่างยาที่พบบ่อย', 'Common Drug Interactions Reference', 'reference',
+E'## ตารางปฏิกิริยาระหว่างยาที่พบบ่อย 💊⚠️\n\n[image:https://upload.wikimedia.org/wikipedia/commons/thumb/6/65/Assorted_pills.jpg/400px-Assorted_pills.jpg:ยาหลายชนิด]\n\n### Warfarin Interactions\n\n| ยา | ผล | ความรุนแรง |\n|----|-----|------------|\n| Aspirin | เพิ่ม bleeding risk | 🔴 สูง |\n| NSAIDs | เพิ่ม bleeding risk | 🔴 สูง |\n| Amiodarone | เพิ่ม Warfarin level | 🔴 สูง |\n\n### ACEi/ARB Interactions\n\n| ยา | ผล | ความรุนแรง |\n|----|-----|------------|\n| NSAIDs | ลดฤทธิ์ | 🟠 ปานกลาง |\n| K-sparing diuretics | Hyperkalemia | 🔴 สูง |\n\n### Statins Interactions\n\n| ยา | ผล | ความรุนแรง |\n|----|-----|------------|\n| Gemfibrozil | Rhabdomyolysis | 🔴 สูง |\n| Cyclosporine | เพิ่ม Statin level | 🔴 สูง |\n\n### การจัดการ\n\n🔴 **สูง**: หลีกเลี่ยงการใช้ร่วมกัน\n🟠 **ปานกลาง**: ใช้ด้วยความระวัง',
+'Drug interactions reference', 'general', 2024, 'Lexicomp / UpToDate', 'published', 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/65/Assorted_pills.jpg/400px-Assorted_pills.jpg', '["ปฏิกิริยายา", "drug interaction"]'::jsonb, NOW() - INTERVAL '6 days', NOW())
+ON CONFLICT (id) DO UPDATE SET title_thai = EXCLUDED.title_thai, content_thai = EXCLUDED.content_thai, image_url = EXCLUDED.image_url, updated_at = NOW();
+
+INSERT INTO clinical_resources (id, title_thai, title_english, category, content_thai, content_english, specialty, guideline_year, source, status, image_url, tags, created_at, updated_at) VALUES
+('CR-THAI-004', 'แนวทางการรักษาความดันโลหิตสูง ESC 2024', 'ESC Hypertension Guidelines 2024', 'treatment',
+E'## แนวทางการรักษาความดันโลหิตสูง ESC 2024 🩺\n\n[image:https://upload.wikimedia.org/wikipedia/commons/thumb/e/ed/Korotkoffs.svg/400px-Korotkoffs.svg.png:การวัดความดันโลหิต]\n\n### นิยามและการจำแนก\n\n| ระดับ | Systolic | Diastolic |\n|-------|----------|------------|\n| Optimal | < 120 | < 80 |\n| Normal | 120-129 | 80-84 |\n| High Normal | 130-139 | 85-89 |\n| Grade 1 HT | 140-159 | 90-99 |\n| Grade 2 HT | 160-179 | 100-109 |\n| Grade 3 HT | ≥ 180 | ≥ 110 |\n\n### เป้าหมายการรักษา\n\n| กลุ่มผู้ป่วย | เป้าหมาย SBP |\n|--------------|---------------|\n| ทั่วไป (< 65 ปี) | 120-129 mmHg |\n| ผู้สูงอายุ (≥ 65 ปี) | 130-139 mmHg |\n| CKD/DM | < 130 mmHg |\n\n### การเลือกยา\n\n| กลุ่มยา | ข้อบ่งใช้ | ข้อห้าม |\n|---------|------------|--------|\n| ACEi | DM, CKD, HF | Pregnancy |\n| CCB | Elderly, ISH | - |\n| Thiazide | Elderly, HF | Gout |',
+'ESC HT guidelines', 'cardiology', 2024, 'European Society of Cardiology', 'published', 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ed/Korotkoffs.svg/400px-Korotkoffs.svg.png', '["ความดันโลหิตสูง", "ESC", "hypertension"]'::jsonb, NOW() - INTERVAL '4 days', NOW())
+ON CONFLICT (id) DO UPDATE SET title_thai = EXCLUDED.title_thai, content_thai = EXCLUDED.content_thai, image_url = EXCLUDED.image_url, updated_at = NOW();
+
+INSERT INTO clinical_resources (id, title_thai, title_english, category, content_thai, content_english, specialty, guideline_year, source, status, image_url, tags, created_at, updated_at) VALUES
+('CR-THAI-005', 'โปรโตคอลฉุกเฉิน: Anaphylaxis และ Hypoglycemia', 'Emergency Protocols', 'emergency',
+E'## โปรโตคอลฉุกเฉิน 🚨\n\n[image:https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/Epinephrine_autoinjector.jpg/320px-Epinephrine_autoinjector.jpg:ปากกาฉีดอะดรีนาลิน]\n\n### 1. Anaphylaxis\n\n**สาเหตุ:** ยา อาหาร แมลงกัด\n\n**อาการ:** ผื่น บวม หายใจลำบาก ความดันตก\n\n**การรักษา:**\n1. เรียก 1669\n2. จัดท่านอนราบ ยกขาสูง\n3. ฉีด **Adrenaline 1:1000 IM** ทันที\n   - ผู้ใหญ่: 0.3-0.5 mL\n   - เด็ก: 0.01 mL/kg\n4. เปิด IV + O2\n5. ซ้ำ Adrenaline ทุก 5-15 นาที\n\n---\n\n### 2. Severe Hypoglycemia\n\n**นิยาม:** น้ำตาล < 70 mg/dL + อาการ\n\n**อาการ:** สั่น เหงื่อออก สับสน หมดสติ\n\n**การรักษา - รู้สึกตัว:**\n- ให้น้ำตาล 15-20 g\n- วัดซ้ำใน 15 นาที\n\n**การรักษา - หมดสติ:**\n- ห้ามให้กินทางปาก\n- 50% Dextrose 50 mL IV\n- หรือ Glucagon 1 mg IM',
+'Emergency protocols', 'emergency', 2024, 'WHO / ADA', 'published', 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/Epinephrine_autoinjector.jpg/320px-Epinephrine_autoinjector.jpg', '["ฉุกเฉิน", "emergency", "anaphylaxis"]'::jsonb, NOW() - INTERVAL '2 days', NOW())
+ON CONFLICT (id) DO UPDATE SET title_thai = EXCLUDED.title_thai, content_thai = EXCLUDED.content_thai, image_url = EXCLUDED.image_url, updated_at = NOW();
+
+-- Verify
+SELECT 'Medical Content:' as type, COUNT(*) as count FROM medical_content
+UNION ALL
+SELECT 'Clinical Resources:', COUNT(*) FROM clinical_resources;

@@ -9,7 +9,7 @@ import postgresDataService from '../services/postgresDataService';
 const { pool } = postgresDataService;
 
 // =============================================================================
-// CHAT HISTORY SERVICE - Persist to PostgreSQL
+// CHAT HISTORY SERVICE - Persist to PostgreSQL with 2-month retention
 // =============================================================================
 
 interface ChatMessage {
@@ -18,12 +18,25 @@ interface ChatMessage {
   context?: Record<string, unknown>;
 }
 
+interface ChatSession {
+  session_id: string;
+  first_message: string;
+  message_count: number;
+  created_at: Date;
+  updated_at: Date;
+}
+
+// Retention period in days (2 months)
+const CHAT_RETENTION_DAYS = 60;
+
 const ChatHistoryService = {
+  // Get chat history for a specific session
   async getHistory(userId: string, sessionId: string, limit: number = 50): Promise<ChatMessage[]> {
     try {
       const result = await pool.query(
         `SELECT role, content, context FROM ai_chat_history 
          WHERE user_id = $1 AND session_id = $2 
+         AND created_at > NOW() - INTERVAL '${CHAT_RETENTION_DAYS} days'
          ORDER BY created_at ASC 
          LIMIT $3`,
         [userId, sessionId, limit]
@@ -35,6 +48,32 @@ const ChatHistoryService = {
     }
   },
 
+  // Get all chat sessions for a user (within retention period)
+  async getSessions(userId: string): Promise<ChatSession[]> {
+    try {
+      const result = await pool.query(
+        `SELECT 
+           session_id,
+           MIN(content) as first_message,
+           COUNT(*) as message_count,
+           MIN(created_at) as created_at,
+           MAX(created_at) as updated_at
+         FROM ai_chat_history 
+         WHERE user_id = $1 
+         AND created_at > NOW() - INTERVAL '${CHAT_RETENTION_DAYS} days'
+         AND role = 'user'
+         GROUP BY session_id
+         ORDER BY MAX(created_at) DESC`,
+        [userId]
+      );
+      return result.rows;
+    } catch (error) {
+      console.error('[AI Chat History] Failed to get sessions:', error);
+      return [];
+    }
+  },
+
+  // Add a message to chat history
   async addMessage(userId: string, sessionId: string, role: string, content: string, context?: Record<string, unknown>): Promise<void> {
     try {
       await pool.query(
@@ -47,6 +86,7 @@ const ChatHistoryService = {
     }
   },
 
+  // Clear history for a specific session
   async clearHistory(userId: string, sessionId: string): Promise<void> {
     try {
       await pool.query(
@@ -55,6 +95,25 @@ const ChatHistoryService = {
       );
     } catch (error) {
       console.error('[AI Chat History] Failed to clear history:', error);
+    }
+  },
+
+  // Cleanup old messages (run periodically)
+  async cleanupOldMessages(): Promise<number> {
+    try {
+      const result = await pool.query(
+        `DELETE FROM ai_chat_history 
+         WHERE created_at < NOW() - INTERVAL '${CHAT_RETENTION_DAYS} days'
+         RETURNING id`
+      );
+      const deletedCount = result.rowCount || 0;
+      if (deletedCount > 0) {
+        console.log(`[AI Chat History] Cleaned up ${deletedCount} old messages`);
+      }
+      return deletedCount;
+    } catch (error) {
+      console.error('[AI Chat History] Failed to cleanup old messages:', error);
+      return 0;
     }
   }
 };
@@ -312,7 +371,7 @@ router.post('/chat', authMiddleware, async (req: Request, res: Response) => {
   }
 });
 
-// Get chat history from PostgreSQL
+// Get chat history from PostgreSQL (with 2-month retention)
 router.get('/chat/history', authMiddleware, async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user?.id;
@@ -322,22 +381,23 @@ router.get('/chat/history', authMiddleware, async (req: Request, res: Response) 
       return res.status(401).json({ error: 'User not authenticated' });
     }
 
+    // Trigger cleanup of old messages (async, don't wait)
+    ChatHistoryService.cleanupOldMessages().catch(err => 
+      console.error('[AI Chat] Cleanup error:', err)
+    );
+
     if (!sessionId) {
-      // Return all sessions for this user
-      const result = await pool.query(
-        `SELECT DISTINCT session_id, MIN(created_at) as started_at, MAX(created_at) as last_message_at, COUNT(*) as message_count
-         FROM ai_chat_history 
-         WHERE user_id = $1 
-         GROUP BY session_id 
-         ORDER BY last_message_at DESC 
-         LIMIT 20`,
-        [userId]
-      );
-      return res.json({ sessions: result.rows });
+      // Return all sessions for this user (within retention period)
+      const sessions = await ChatHistoryService.getSessions(userId);
+      return res.json({ 
+        sessions, 
+        retention_days: CHAT_RETENTION_DAYS,
+        message: `Chat history is retained for ${CHAT_RETENTION_DAYS} days (2 months)`
+      });
     }
 
     const history = await ChatHistoryService.getHistory(userId, sessionId, 100);
-    res.json({ history, sessionId });
+    res.json({ history, sessionId, retention_days: CHAT_RETENTION_DAYS });
   } catch (error: any) {
     console.error('[AI Chat History] Error:', error.message);
     res.status(500).json({ error: 'Failed to fetch chat history' });

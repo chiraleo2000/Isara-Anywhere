@@ -9,8 +9,6 @@ steps:
       - '-f'
       - 'Dockerfile.unified'
       - '-t'
-      - 'gcr.io/$PROJECT_ID/izara-doctor-portal:$COMMIT_SHA'
-      - '-t'
       - 'gcr.io/$PROJECT_ID/izara-doctor-portal:latest'
       - '--build-arg'
       - 'VITE_APP_ENV=production'
@@ -22,11 +20,6 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
-      - 'gcr.io/$PROJECT_ID/izara-doctor-portal:$COMMIT_SHA'
-
-  - name: 'gcr.io/cloud-builders/docker'
-    args:
-      - 'push'
       - 'gcr.io/$PROJECT_ID/izara-doctor-portal:latest'
 
   # Deploy to Cloud Run with Cloud SQL connection via Unix socket
@@ -35,7 +28,7 @@ steps:
       - 'run'
       - 'deploy'
       - 'izara-doctor-portal'
-      - '--image=gcr.io/$PROJECT_ID/izara-doctor-portal:$COMMIT_SHA'
+      - '--image=gcr.io/$PROJECT_ID/izara-doctor-portal:latest'
       - '--region=asia-southeast1'
       - '--platform=managed'
       - '--allow-unauthenticated'
@@ -51,7 +44,6 @@ steps:
 
 # Store images in Container Registry
 images:
-  - 'gcr.io/$PROJECT_ID/izara-doctor-portal:$COMMIT_SHA'
   - 'gcr.io/$PROJECT_ID/izara-doctor-portal:latest'
 
 # Build timeout (20 minutes)

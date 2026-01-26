@@ -1,6 +1,5 @@
 # Izara Telemedicine Appointment Workflows
 
-
 This document details the full appointment workflow for Izara Telemedicine, covering video consultations, EMR documentation, and AI-assisted post-consultation features.
 
 **Last Updated:** January 21, 2026 (v3.0.0 - Phase 1 Complete)
@@ -9,9 +8,7 @@ This document details the full appointment workflow for Izara Telemedicine, cove
 
 ## 📋 Overview
 
-
 ### Phase 1 Feature Summary
-
 
 | Feature | Status | Description |
 | --------- | -------- | ------------- |
@@ -27,19 +24,17 @@ This document details the full appointment workflow for Izara Telemedicine, cove
 
 ### Test Credentials
 
-
 | Role | Email | Password | Portal |
 | ------ | ------- | ---------- | -------- |
-| Patient | demo.test@gmail.com | P@ssw0rd | localhost:3005 |
-| Patient | Somchai.Mankong@gmail.com | P@ssw0rd | localhost:3005 |
-| Patient | Anan.Khayanrian@gmail.com | P@ssw0rd | localhost:3005 |
-| Doctor | doctor.test@izara.com | IzaraDoctor@2024 | localhost:3010 |
-| Admin | admin.test@izara.com | IzaraAdmin@2024 | localhost:3010 |
+| Patient | <demo.test@gmail.com> | P@ssw0rd | localhost:3005 |
+| Patient | <Somchai.Mankong@gmail.com> | P@ssw0rd | localhost:3005 |
+| Patient | <Anan.Khayanrian@gmail.com> | P@ssw0rd | localhost:3005 |
+| Doctor | <doctor.test@izara.com> | IzaraDoctor@2024 | localhost:3010 |
+| Admin | <admin.test@izara.com> | IzaraAdmin@2024 | localhost:3010 |
 
 ---
 
 ## Meeting Feature Summary ✅
-
 
 | Feature | Status | Description |
 | --------- | -------- | ------------- |
@@ -58,28 +53,26 @@ This document details the full appointment workflow for Izara Telemedicine, cove
 
 ### Test Users
 
-
 | Role | Email | Password | Portal |
 | ------ | ------- | ---------- | -------- |
-| Doctor | doctor.test@izara.com | IzaraDoctor@2024 | localhost:3010 |
-| Patient | demo.test@gmail.com | P@ssw0rd | localhost:3005 |
-| Patient Relative (demo2) | demo2.test@gmail.com | P@ssw0rd | localhost:3005 |
-| Admin/Unit Test Doctor | doctorunit.test@izara.com | P@ssw0rd | localhost:3010 |
+| Doctor | <doctor.test@izara.com> | IzaraDoctor@2024 | localhost:3010 |
+| Patient | <demo.test@gmail.com> | P@ssw0rd | localhost:3005 |
+| Patient Relative (demo2) | <demo2.test@gmail.com> | P@ssw0rd | localhost:3005 |
+| Admin/Unit Test Doctor | <doctorunit.test@izara.com> | P@ssw0rd | localhost:3010 |
 
 ### External Guest Access (Non-Registered Users) ✅
-
 
 External guests who are **NOT registered** in the Izara system can join meetings:
 
 | Guest Type | Who Can Invite | Example Emails |
 | ------------ | ---------------- | ---------------- |
-| Patient Relative | Patient | mother@gmail.com, father@hotmail.com |
-| Patient Partner | Patient | spouse@outlook.com |
-| Doctor Specialist | Doctor | dr.cardio@privatehospital.co.th |
-| Doctor Advisor | Doctor | professor@university.ac.th |
-| Other | Both | any.guest@anydomain.xyz |
+| Patient Relative | Patient | <mother@gmail.com>, <father@hotmail.com> |
+| Patient Partner | Patient | <spouse@outlook.com> |
+| Doctor Specialist | Doctor | <dr.cardio@privatehospital.co.th> |
+| Doctor Advisor | Doctor | <professor@university.ac.th> |
+| Other | Both | <any.guest@anydomain.xyz> |
 
-#### How External Guests Join:
+**How External Guests Join:**
 
 1. Doctor/Patient creates invite → System generates secure token
 2. Guest receives invite URL (via email or shared link)
@@ -87,11 +80,9 @@ External guests who are **NOT registered** in the Izara system can join meetings
 4. Guest enters lobby → Doctor approves
 5. Guest joins meeting with video/audio ON
 
-
 ---
 
 ## Production Deployment URLs
-
 
 | Portal | URL | Version |
 | -------- | ----- | --------- |
@@ -111,11 +102,9 @@ External guests who are **NOT registered** in the Izara system can join meetings
 - Doctor acts as HOST with lobby/moderator controls
 - Patient joins via personalized URL
 
-
 ---
 
 ## 0. Login & Authentication
-
 
 - **Patient**
   - Logs in via Patient Portal (`LoginPage.tsx`)
@@ -126,11 +115,9 @@ External guests who are **NOT registered** in the Izara system can join meetings
   - Admin is also a doctor with elevated privileges
   - Admin can book/accept/assign appointments + manage doctor roles
 
-
 ---
 
 ## 1. Appointment Booking (Patient Side)
-
 
 - **Options**
   - System-assigned (Patient chooses "Let system assign doctor") or specific doctor selection
@@ -147,13 +134,11 @@ External guests who are **NOT registered** in the Izara system can join meetings
     - Status: `pending` (if doctor selected) or `in_pool` (if system-assigned)
     - Type: `online` or `onsite`
 
-
 ---
 
 ## 2. Patient Queue - Appointments Awaiting Confirmation
 
-
-#### IMPORTANT: Patient Queue shows ALL pending appointments from ALL dates (not just today)
+**IMPORTANT: Patient Queue shows ALL pending appointments from ALL dates (not just today)**
 
 - **Location**: "Appointments & Meetings" page (`HealthMeeting.tsx`) → Patient Queue tab
 
@@ -177,11 +162,9 @@ External guests who are **NOT registered** in the Izara system can join meetings
   4. Doctor/Admin adds optional notes
   5. On confirm: Meeting link generated, status → `confirmed`, appointment moves to Scheduled Meetings
 
-
 ---
 
 ## 3. Doctor/Admin Appointment Confirmation
-
 
 - **From Patient Queue Tab**:
   - View all pending appointment requests
@@ -204,7 +187,7 @@ External guests who are **NOT registered** in the Izara system can join meetings
 
 - **Meeting Link Generation**:
   - Provider: Jitsi Meet (meet.jit.si)
-  - Format: `https://meet.jit.si/Izara-{appointmentId}-{timestamp}-{random}`
+- Format: `https://meet.jit.si/Izara-{appointmentId}-{timestamp}-{random}`
   - No account required for patient or doctor
   - Link is clickable from both portals
 
@@ -214,13 +197,11 @@ External guests who are **NOT registered** in the Izara system can join meetings
   - Patient notified via email
   - Appointment removed from queue
 
-
 ---
 
 ## 4. Scheduled Meetings Tab
 
-
-#### Only CONFIRMED appointments appear here
+**Only CONFIRMED appointments appear here**
 
 - **Contents**:
   - Appointments with status: `confirmed`, `scheduled`
@@ -232,11 +213,9 @@ External guests who are **NOT registered** in the Izara system can join meetings
   - Send Invite (email to participants)
   - Copy Link
 
-
 ---
 
 ## 5. Admin-Only: All Appointments Tab
-
 
 - **Purpose**: Overview of all appointments in the system
 - **Features**:
@@ -245,11 +224,9 @@ External guests who are **NOT registered** in the Izara system can join meetings
   - Assign unassigned appointments
   - View complete appointment history
 
-
 ---
 
 ## 6. Notification & Calendar Update
-
 
 - **Patient**
   - Sees appointment in dashboard calendar (`DashboardPage.tsx`)
@@ -267,11 +244,9 @@ External guests who are **NOT registered** in the Izara system can join meetings
 - **Admin**
   - Receives notifications for declined appointments and cancellations
 
-
 ---
 
 ## 7. Meeting Link Generation (Jitsi Meet)
-
 
 - **Online Telehealth Appointments**
   - **Provider**: Jitsi Meet (meet.jit.si) - FREE, no account required
@@ -292,7 +267,6 @@ External guests who are **NOT registered** in the Izara system can join meetings
     - Text chat always available
   - If meeting link fails to generate, fallback notification is sent to all parties
 
-
 ### Guest Invite System (NEW)
 
 - **Patient Relatives**: Can be invited by doctor via email
@@ -310,14 +284,11 @@ External guests who are **NOT registered** in the Izara system can join meetings
   - No meeting link generated
   - Notification and calendar event sent to doctor with patient symptoms and details
 
-
 ---
 
 ## 7a. Video Meeting Execution
 
-
 ### Meeting Flow (Jitsi Meet with Host Controls)
-
 
 1. **Doctor starts meeting** (acts as HOST/MODERATOR - ONLY DOCTOR CAN START)
    - Doctor opens Scheduled Meetings tab
@@ -375,7 +346,6 @@ External guests who are **NOT registered** in the Izara system can join meetings
      - Recommendations generated for doctor
      - Summary delivered to Doctor Portal
 
-
 ### Meeting Link Data Structure
 
 ```json
@@ -392,10 +362,9 @@ External guests who are **NOT registered** in the Izara system can join meetings
 }
 ```
 
-
 ### Recording Upload (Post-Meeting)
 
-```text
+```
 Doctor's device → POST /api/video-meeting/:appointmentId/end
                   └─→ Video uploaded to GCS (izara-doctors-data)
                   └─→ Audio transcribed via Speech-to-Text
@@ -405,10 +374,9 @@ Doctor's device → POST /api/video-meeting/:appointmentId/end
                   └─→ Summary delivered to Doctor Portal
 ```
 
-
 ### GCS Storage Structure
 
-```text
+```
 izara-doctors-data/
 └── doctors/{doctorId}/
     └── meetings/{appointmentId}/
@@ -421,7 +389,6 @@ izara-doctors-data/
         └── final-combined.txt     # Combined summary from all sections
 ```
 
-
 ### 30-Minute Sectioned Summaries
 
 For meetings longer than 30 minutes:
@@ -432,11 +399,9 @@ For meetings longer than 30 minutes:
 4. Both individual and combined summaries stored
 5. Doctor sees combined summary in portal
 
-
 ---
 
 ## 8. Patient Cancellation
-
 
 - **If patient cancels before meeting time**
   - Appointment is removed immediately
@@ -444,11 +409,9 @@ For meetings longer than 30 minutes:
   - Notification sent to doctor and admin
   - Dashboard/calendar updated for both patient and doctor
 
-
 ---
 
 ## 9. Meeting Execution & Recording
-
 
 ### Online Telehealth (Jitsi Meet)
 
@@ -462,10 +425,9 @@ For meetings longer than 30 minutes:
    - Doctor ends meeting
    - Recording uploaded to GCS via API
 
-
 ### Recording & Transcription Flow
 
-```text
+```
 ┌──────────────────────────────────────────────────────────────────────────┐
 │  POST-MEETING AI PROCESSING                                               │
 ├──────────────────────────────────────────────────────────────────────────┤
@@ -492,21 +454,17 @@ For meetings longer than 30 minutes:
 └──────────────────────────────────────────────────────────────────────────┘
 ```
 
-
 ### Onsite Appointments
 
 - Patient arrives at clinic
 - Doctor refers to calendar and email for symptoms/details
 - No recording or transcription needed
 
-
 ---
 
 ## 10. Post-Meeting Actions (Doctor Side)
 
-
 ### 10.1 EMR Documentation Flow
-
 
 1. **Doctor opens EMR Editor** (`CompleteEMREditor.tsx`)
    - Uses Thai OPD Card format (มาตรฐานกระทรวงสาธารณสุข)
@@ -530,9 +488,7 @@ For meetings longer than 30 minutes:
    - Digital signature applied
    - Status changes to `finalized`
 
-
 ### 10.2 Prescription Documentation
-
 
 1. **Doctor opens E-Prescribing** (`CompletePrescribing.tsx`)
    - Searches for medications
@@ -544,11 +500,9 @@ For meetings longer than 30 minutes:
    - **Prescription sent to patient health logs** (`health-logs.json`)
    - Patient can view prescribed medications in Health Studio
 
-
 ### 10.3 EMR Delivery to Patient
 
-
-#### What gets sent to patient's health logs:
+**What gets sent to patient's health logs:**
 
 - Chief complaint
 - Diagnosis (descriptions only, not internal notes)
@@ -558,16 +512,14 @@ For meetings longer than 30 minutes:
 - AI Summary (patient-friendly version)
 - Doctor's signature timestamp
 
-
-#### What does NOT get sent to patient:
+**What does NOT get sent to patient:**
 
 - Internal doctor comments/notes
 - Raw clinical assessments
 - Drug interaction warnings marked as internal
 - Doctor-to-doctor communications
 
-
-#### Delivery Flow:
+**Delivery Flow:**
 
 1. EMR signed → POST to `/api/patients/{patientId}/health-logs`
 2. Data saved to GCS: `patients/{patientId}/health-logs.json`
@@ -575,18 +527,15 @@ For meetings longer than 30 minutes:
 4. Patient views in Health Studio → ผลการรักษา (Treatment Results)
 5. Patient views in Latest Appointment Result on dashboard
 
-
 ### 10.4 If EMR Not Signed
 
 - Patient cannot access EMR in health logs
 - Status: `awaiting signature`
 - Notification sent to doctor to complete signature
 
-
 ---
 
 ## 11. Error Handling & Edge Cases
-
 
 - Status: `declined`
   - Patient notified with reason
@@ -605,76 +554,67 @@ For meetings longer than 30 minutes:
   - Patient cannot access EMR
   - Doctor notified to sign
 
-
-
 ---
 
 ## 11a. Recent UI/UX Edge Case Fixes (2025-12-11)
-
 
 ### 1. "Assign to Doctor" Button in Patient Queue (HealthMeeting.tsx)
 
 **Problem:** Admin could not see the assign button for appointments already assigned to a doctor.
 **Fix:** Button now shows for ALL appointments when admin is logged in.
 
-  - Button text dynamically changes:
-    - `📋 Assign to Doctor` — for unassigned appointments
-    - `🔄 Reassign to Different Doctor` — for already assigned appointments
-
+- Button text dynamically changes:
+  - `📋 Assign to Doctor` — for unassigned appointments
+  - `🔄 Reassign to Different Doctor` — for already assigned appointments
 
 ### 2. Dashboard Correlation with Appointments & Meetings (DoctorDashboard.tsx)
 
 **Problem:** Dashboard stats cards did not link to the Appointments & Meetings page.
 **Fix:** Made 3 relevant stats cards clickable with navigation to `/doctor/{userId}/health-meeting`:
 
-  - "Today's Appointments" (blue card) → Clickable
-  - "In Queue" (orange card) → Clickable
-  - "Need Confirmation" (amber card) → Clickable
-  - Added visual feedback: `cursor-pointer`, `hover:shadow-lg`, `hover:border-{color}-400`, and `transition-all` for better UX.
-
+- "Today's Appointments" (blue card) → Clickable
+- "In Queue" (orange card) → Clickable
+- "Need Confirmation" (amber card) → Clickable
+- Added visual feedback: `cursor-pointer`, `hover:shadow-lg`, `hover:border-{color}-400`, and `transition-all` for better UX.
 
 ### 3. Scheduled Meetings Tab - Full Meeting Details (HealthMeeting.tsx)
 
 **Problem:** Scheduled Meetings tab only showed basic info, lacking prominent meeting link and calendar details.
 **Fix:** Complete redesign of Scheduled Meetings display:
 
-  - **Date/Time Section**: Prominent card with icons showing scheduled date, time, and duration
-  - **Meeting Link Section**: Blue highlighted box with:
-    - Full meeting link visible (clickable)
-    - Copy button with confirmation alert
-  - **Participants Section**: Enhanced with email addresses visible
-  - **Action Buttons**: More prominent with icons:
-    - "🎥 Join Now" - Large emerald button
-    - "📅 Add to Calendar" - Blue button
-    - "✉️ Send Invite" - Purple button
-    - "🔗 Copy Link" - Gray button
-
+- **Date/Time Section**: Prominent card with icons showing scheduled date, time, and duration
+- **Meeting Link Section**: Blue highlighted box with:
+  - Full meeting link visible (clickable)
+  - Copy button with confirmation alert
+- **Participants Section**: Enhanced with email addresses visible
+- **Action Buttons**: More prominent with icons:
+  - "🎥 Join Now" - Large emerald button
+  - "📅 Add to Calendar" - Blue button
+  - "✉️ Send Invite" - Purple button
+  - "🔗 Copy Link" - Gray button
 
 ### 4. Patient Portal - นัดหมายของฉัน (AppointmentPages.tsx)
 
 **Problem:** Confirmed appointments didn't prominently show meeting details and join options.
 **Fix:** Added special display for confirmed appointments:
 
-  - **Green highlighted card** for confirmed appointments
-  - **Date/Time Grid**: Clear display of scheduled date and time
-  - **Meeting Link Section** (for telehealth):
-    - Full meeting link visible
-    - Copy button with Thai confirmation ("คัดลอกลิงก์แล้ว!")
-  - **Quick Join Button**: "🎥 เข้าห้องประชุมเลย" - One-click to open meeting
-  - Separate handling for pending vs confirmed status display
-
+- **Green highlighted card** for confirmed appointments
+- **Date/Time Grid**: Clear display of scheduled date and time
+- **Meeting Link Section** (for telehealth):
+  - Full meeting link visible
+  - Copy button with Thai confirmation ("คัดลอกลิงก์แล้ว!")
+- **Quick Join Button**: "🎥 เข้าห้องประชุมเลย" - One-click to open meeting
+- Separate handling for pending vs confirmed status display
 
 ### 5. Data Sync Fix - Appointment Details (appointments.ts backend)
 
 **Problem:** Patient portal's `getById` only read from individual `details.json` files, missing updates from doctor confirmation.
+**Fix:**
 
-#### Fix:
-
-  - Patient portal now checks `appointments.json` first (most up-to-date after confirmation)
-  - Falls back to individual `details.json` if not found
-  - Merges meeting link data from `meeting-link.json` if available
-  - Doctor portal now saves full appointment details to BOTH `appointments.json` AND `appointments/{id}/details.json`
-
+- Patient portal now checks `appointments.json` first (most up-to-date after confirmation)
+- Falls back to individual `details.json` if not found
+- Merges meeting link data from `meeting-link.json` if available
+- Doctor portal now saves full appointment details to BOTH `appointments.json` AND `appointments/{id}/details.json`
 
 ### 6. Doctor's Scheduled Meetings Not Showing (HealthMeeting.tsx) - 2025-12-11
 
@@ -687,7 +627,6 @@ For meetings longer than 30 minutes:
 doctorId: apt.doctorId || doctor.id,
 assignedDoctorId: apt.assignedDoctorId || doctor.id,
 ```
-
 
 This meant if the patient booked with `doctorId: 'unassigned'` or selected a different doctor initially, the confirming doctor's ID was NOT set, causing the Scheduled Meetings filter to miss these appointments.
 
@@ -702,7 +641,6 @@ doctorName: doctor.name,
 doctorEmail: doctor.email,
 ```
 
-
 **Additional Fix in DoctorDashboard.tsx:** Added `confirmedBy` field check to appointment filtering:
 
 ```javascript
@@ -714,8 +652,7 @@ const doctorAppointments = allAppointments.filter((apt: any) => {
 });
 ```
 
-
-#### Additional Fixes for Cache Issues (2025-12-11 Evening):
+**Additional Fixes for Cache Issues (2025-12-11 Evening):**
 
 1. **`gcsDataService.ts`**: Modified `fetchAllAppointments()` to accept options parameter for cache bypass
 2. **`HealthMeeting.tsx`**: All `fetchAllAppointments()` calls now use `{ cache: false }` option
@@ -723,20 +660,17 @@ const doctorAppointments = allAppointments.filter((apt: any) => {
 4. **Added verification step**: After saving, system verifies the appointment was actually updated
 5. **Added delays**: Small delays (300-500ms → 1000ms) after GCS writes to allow propagation
 
-
-#### CRITICAL ROOT CAUSE FIX (2025-12-11 Late Evening):
-
+**CRITICAL ROOT CAUSE FIX (2025-12-11 Late Evening):**
 **THE REAL BUG #1:** The confirmation handler was using `saveAllAppointments()` which ONLY writes to `appointments.json` master list. It was NOT writing the individual appointment file at `appointments/{id}.json`. When the patient portal or other components tried to read the updated appointment details, they got stale data from the individual file!
 
 **Solution #1:** Changed from `saveAllAppointments()` to `saveAppointment()` which:
 
-- Writes to `appointments/{id}.json` (individual file) 
+- Writes to `appointments/{id}.json` (individual file)
 - ALSO updates `appointments.json` (master list)
 - Invalidates both caches
 - Ensures both portals read the same data
 
-
-#### Code Change in HealthMeeting.tsx:
+**Code Change in HealthMeeting.tsx:**
 
 ```javascript
 // OLD (broken): Only updated master list
@@ -748,8 +682,7 @@ const updatedAppointment = { ...appointmentToUpdate, ...updates };
 await saveAppointment(updatedAppointment);  // Writes to appointments/{id}.json + appointments.json
 ```
 
-
-**THE REAL BUG #2 (EVEN MORE CRITICAL):** Some doctors (like doctor.test@izara.com) have NO `userId` in the system! When confirming appointments, the code was setting `doctorId: doctor.id` which resulted in `doctorId: undefined` in the saved appointment. The filter then couldn't match these appointments.
+**THE REAL BUG #2 (EVEN MORE CRITICAL):** Some doctors (like <doctor.test@izara.com>) have NO `userId` in the system! When confirming appointments, the code was setting `doctorId: doctor.id` which resulted in `doctorId: undefined` in the saved appointment. The filter then couldn't match these appointments.
 
 **Solution #2:** Use email as fallback identifier:
 
@@ -778,8 +711,7 @@ const matchesDoctorEmail = doctor.email && (
 return isRelevantStatus && (matchesDoctorId || matchesDoctorEmail || isAdminSeeingAll);
 ```
 
-
-#### Impact:
+**Impact:**
 
 - Doctors now see ALL appointments they confirm in their Scheduled Meetings tab **EVEN WITHOUT A userId**
 - Dashboard stats correctly count today's appointments
@@ -788,13 +720,11 @@ return isRelevantStatus && (matchesDoctorId || matchesDoctorEmail || isAdminSeei
 - Individual appointment files now stay in sync with master list
 - **Works for doctors with OR without userId in the system**
 
-
 ---
 
 ## 12. Status Flow
 
-
-```text
+```
 [Patient creates request]
          ↓
 ┌─────────────────────────────────┐
@@ -818,14 +748,11 @@ Alternative paths:
 - cancelled (Patient cancels) → All notified
 ```
 
-
 ---
 
 ## 13. UI Architecture
 
-
 ### Appointments & Meetings Page (`HealthMeeting.tsx`)
-
 
 | Tab | Visible To | Content |
 | ----- | ----------- | --------- |
@@ -833,18 +760,16 @@ Alternative paths:
 | Scheduled Meetings | All (Doctor/Admin) | CONFIRMED appointments with meeting links |
 | All Appointments | Admin only | Complete list with search/filter |
 
-### Key Points:
+### Key Points
 
 - **Patient Queue**: Shows appointments from ALL dates (not just today)
 - **No separate "Patient Pool" tab** - merged into Patient Queue
 - Admin sees all appointments; Doctor sees only assigned appointments
 - Confirmation modal allows setting/changing date and time
 
-
 ---
 
 ## 14. Metadata Structure
-
 
 ```json
 {
@@ -876,11 +801,9 @@ Alternative paths:
 }
 ```
 
-
 ---
 
 ## 15. Summary Table
-
 
 | Step | User | Page/Component | Action/Option | Metadata/Status Update |
 | --------------------- | --------- | --------------------------------------- | ---------------------------------------------------- | ------------------------------- |
@@ -904,7 +827,6 @@ Alternative paths:
 
 ## 16. E2E Testing
 
-
 ### Dual Portal Testing
 
 The appointment workflow can be tested end-to-end using the Selenium test suite that runs both Patient and Doctor portals simultaneously:
@@ -919,7 +841,6 @@ node scripts/tests/e2e/dualPortalMeetingTests.cjs --headless
 # Run standard appointment workflow tests
 node scripts/tests/e2e/appointmentWorkflowTests.cjs
 ```
-
 
 ### Test Coverage
 
@@ -942,18 +863,15 @@ node scripts/tests/e2e/appointmentWorkflowTests.cjs
 node scripts/generators/generateTestAudio.cjs
 ```
 
-
 This generates:
 
 - Thai medical consultation transcripts
 - SSML files for TTS API
 - Reference metadata for validation
 
-
 ---
 
 ## 17. API Endpoints Reference
-
 
 ### Video Meeting Endpoints (Doctor Portal - Port 3009)
 
@@ -971,6 +889,6 @@ This generates:
 
 ---
 
-#### This workflow covers all scenarios, notifications, error handling, video meeting, and AI processing for appointments, so agents can follow every step without missing any point.
+**This workflow covers all scenarios, notifications, error handling, video meeting, and AI processing for appointments, so agents can follow every step without missing any point.**
 
 **Last Updated:** December 2025

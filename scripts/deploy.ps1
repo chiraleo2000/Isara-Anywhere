@@ -68,7 +68,7 @@ function Deploy-Local {
     do {
         Start-Sleep -Seconds 2
         $retries++
-        $pgReady = docker exec izara-postgres pg_isready -U postgres 2>$null
+        $null = docker exec izara-postgres pg_isready -U postgres 2>$null
     } while ($LASTEXITCODE -ne 0 -and $retries -lt $maxRetries)
     
     if ($retries -ge $maxRetries) {
@@ -79,14 +79,13 @@ function Deploy-Local {
     
     # Initialize database
     Write-Info "Initializing database..."
-    $initScript = Get-Content -Path ".\scripts\db\init-database.sql" -Raw
     docker exec -i izara-postgres psql -U postgres -d izara_phase1 -c "SELECT 1" 2>$null
     if ($LASTEXITCODE -ne 0) {
         docker exec -i izara-postgres psql -U postgres -c "CREATE DATABASE izara_phase1"
     }
     
-    # Run init script
-    docker exec -i izara-postgres psql -U postgres -d izara_phase1 < ".\scripts\db\init-database.sql"
+    # Run init script - using consolidated scripts/database path
+    Get-Content ".\scripts\database\init-database.sql" | docker exec -i izara-postgres psql -U postgres -d izara_phase1
     
     Write-Success "Database initialized!"
     
@@ -180,7 +179,7 @@ function Deploy-Cloud {
 # RUN TESTS
 # =============================================================================
 
-function Run-Tests {
+function Invoke-Tests {
     param(
         [string]$Environment = "local"
     )

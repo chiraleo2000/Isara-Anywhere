@@ -9,6 +9,7 @@ This document summarizes all fixes and improvements made to resolve issues in v1
 ## ✅ Issues Resolved
 
 ### 1. Google Maps API Error Message (Patient Portal)
+
 **Issue:** Map showing "ไม่พบ API Key" with no helpful guidance.
 **Fixed In:** [Isara-patient-portal/src/pages/map/MapPage.tsx](Isara-patient-portal/src/pages/map/MapPage.tsx)
 **Solution:** Enhanced error message with detailed troubleshooting steps:
@@ -19,6 +20,7 @@ This document summarizes all fixes and improvements made to resolve issues in v1
 ---
 
 ### 2. AI Chat History with PostgreSQL (Patient Portal)
+
 **Issue:** AI chat not saving conversation history between sessions.
 **Fixed In:** 
 - [Isara-patient-portal/src/lib/services.ts](Isara-patient-portal/src/lib/services.ts) - Added `getChatHistory`, `clearChatHistory`, `getChatSessions` methods
@@ -28,6 +30,7 @@ This document summarizes all fixes and improvements made to resolve issues in v1
 ---
 
 ### 3. Jitsi Meeting Server with Transcription (NEW)
+
 **Issue:** No dedicated meeting server with transcription and AI summaries.
 **Fixed In:** Created new folder [Izara-jitsi-server/](Izara-jitsi-server/)
 **Solution:** Built complete new service with:
@@ -51,6 +54,7 @@ This document summarizes all fixes and improvements made to resolve issues in v1
 ---
 
 ### 4. Appointment Workflow - Help Button
+
 **Issue:** "AI ช่วยแนะนำ" button should be replaced with "Help/ความช่วยเหลือ".
 **Fixed In:** [Isara-patient-portal/src/components/appointments/SymptomInputStep.tsx](Isara-patient-portal/src/components/appointments/SymptomInputStep.tsx)
 **Solution:** Replaced AI suggestion button with a simpler Help button that shows symptom description tips.
@@ -58,6 +62,7 @@ This document summarizes all fixes and improvements made to resolve issues in v1
 ---
 
 ### 5. PHR Temperature Input Validation
+
 **Issue:** Temperature input too restrictive - couldn't type values like "36.5".
 **Fixed In:** [Isara-patient-portal/src/pages/health/PHRPage.tsx](Isara-patient-portal/src/pages/health/PHRPage.tsx)
 **Solution:** Changed from `type="number"` with strict onChange validation to:
@@ -68,6 +73,7 @@ This document summarizes all fixes and improvements made to resolve issues in v1
 ---
 
 ### 6. Medical Content with Images
+
 **Issue:** Medical content not showing images properly.
 **Fixed In:** [Isara-patient-portal/server/routes/content.ts](Isara-patient-portal/server/routes/content.ts)
 **Solution:**
@@ -78,6 +84,7 @@ This document summarizes all fixes and improvements made to resolve issues in v1
 ---
 
 ### 7. Doctor Portal Consultants API
+
 **Issue:** "Failed to fetch consultants" error.
 **Fixed In:** [Isara-doctor-portal/server/mainApiServer.cjs](Isara-doctor-portal/server/mainApiServer.cjs)
 **Solution:**
@@ -89,6 +96,7 @@ This document summarizes all fixes and improvements made to resolve issues in v1
 ---
 
 ### 8. Docker Deployment with Meeting Server
+
 **Issue:** docker-compose.yml didn't include the new meeting server.
 **Fixed In:** [docker-compose.yml](docker-compose.yml)
 **Solution:** Added `meeting-server` service configuration:
@@ -101,6 +109,7 @@ This document summarizes all fixes and improvements made to resolve issues in v1
 ---
 
 ### 9. Root Environment Configuration
+
 **Issue:** No centralized environment file for all services.
 **Fixed In:** [.env.example](.env.example)
 **Solution:** Created comprehensive .env.example with all configuration options:
@@ -150,10 +159,12 @@ docker-compose up --build
 ## 🔑 Demo Accounts
 
 ### Patient Portal (localhost:3005)
+
 - Email: `demo@patient.com` / Password: `demo123`
 - Email: `somchai@example.com` / Password: `password123`
 
 ### Doctor Portal (localhost:3010)
+
 - Email: `doctor@demo.com` / Password: `demo123`
 - Email: `admin@demo.com` / Password: `admin123` (Admin)
 

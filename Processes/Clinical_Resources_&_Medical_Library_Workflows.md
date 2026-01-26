@@ -1,6 +1,5 @@
 # Clinical Resources & Medical Library Workflows
 
-
 **Version:** 3.0.0  
 **Last Updated:** January 21, 2026  
 **Status:** ✅ PostgreSQL Implementation
@@ -9,11 +8,9 @@
 
 ## Overview
 
-
 The Clinical Resources page provides access to medical guidelines, research papers, and evidence-based study materials. Doctors can create content that requires admin approval before publishing.
 
 ## Phase 1 AI Integration
-
 
 | Feature | Description | Status |
 | --------- | ------------- | -------- |
@@ -30,7 +27,6 @@ The Clinical Resources page provides access to medical guidelines, research pape
 - **Form Fields**: Thai fields appear first and are marked required (*)
 - **Display**: Thai content is shown as primary in all views
 
-
 ### Image Support
 
 Content now supports inline images:
@@ -45,14 +41,12 @@ Example: `[image:https://example.com/diagram.jpg:แผนภาพการร�
 
 ## User Roles & Permissions
 
-
 ### Admin Users
 
 - **APPROVE/REJECT**: Review pending content submissions
 - **READ**: View all resources regardless of status
 - **COMMENT**: Provide feedback on submissions
 - **VIEW PENDING**: See pending approval queue with count badge
-
 
 ### Doctor Users
 
@@ -62,9 +56,7 @@ Example: `[image:https://example.com/diagram.jpg:แผนภาพการร�
 - **DELETE**: Delete own resources
 - **SUBMIT**: Submit drafts for admin approval
 
-
 ## Data Model
-
 
 ### Clinical Resource Entity
 
@@ -109,7 +101,6 @@ interface ClinicalResourceItem {
 }
 ```
 
-
 ## Categories (Fixed)
 
 | ID | Name | Thai Name |
@@ -127,7 +118,6 @@ interface ClinicalResourceItem {
 
 ## API Endpoints
 
-
 | Method | Endpoint | Description | Access |
 | -------- | ---------- | ------------- | -------- |
 | GET | `/api/content/clinical` | List resources | All |
@@ -142,7 +132,6 @@ interface ClinicalResourceItem {
 
 ## Workflows
 
-
 ### 1. Doctor: Create Clinical Resource
 
 ```text
@@ -156,7 +145,6 @@ interface ClinicalResourceItem {
 8. If pending: Added to admin approval queue
 ```
 
-
 ### 2. Doctor: Edit Resource
 
 ```text
@@ -169,7 +157,6 @@ interface ClinicalResourceItem {
 7. Admin must re-approve changes
 ```
 
-
 ### 3. Doctor: Submit Draft for Approval
 
 ```text
@@ -179,7 +166,6 @@ interface ClinicalResourceItem {
 4. Resource enters admin review queue
 5. Admin receives notification (badge count)
 ```
-
 
 ### 4. Admin: Review Pending Content
 
@@ -195,7 +181,6 @@ interface ClinicalResourceItem {
 7. Creator can view feedback
 ```
 
-
 ### 5. Doctor: View Rejection Feedback
 
 ```text
@@ -204,7 +189,6 @@ interface ClinicalResourceItem {
 3. Admin comments shown as feedback
 4. Doctor can edit and resubmit
 ```
-
 
 ### 6. View Version History
 
@@ -215,7 +199,6 @@ interface ClinicalResourceItem {
 4. Current version highlighted
 ```
 
-
 ### 7. Filter and Search
 
 ```text
@@ -225,9 +208,7 @@ interface ClinicalResourceItem {
 4. Toggle "My Content" to see own resources only
 ```
 
-
 ## Content Lifecycle
-
 
 ```text
 [DRAFT] → [PENDING] → [PUBLISHED]
@@ -237,18 +218,14 @@ interface ClinicalResourceItem {
        (edit) → [PENDING] ←
 ```
 
-
 ## Data Storage
-
 
 Data is persisted in GCS bucket: `izara-meta-data`
 
 - Resources: `clinical-resources/resources.json`
 - Tags: `clinical-resources/tags.json`
 
-
 ## Error Handling
-
 
 | Error | User Message | Resolution |
 | ------- | -------------- | ------------ |
@@ -259,16 +236,13 @@ Data is persisted in GCS bucket: `izara-meta-data`
 
 ## Correlation with Admin Users
 
-
 1. **Approval Workflow**: Admins see pending badge, review content
 2. **Feedback System**: Admin comments visible to content creator
 3. **Audit Trail**: All changes tracked with user info
 4. **Status Control**: Only admin approval changes pending → published
 5. **Re-approval**: Published content changes require re-approval
 
-
 ## Best Practices
-
 
 1. **Bilingual Support**: Always provide both English and Thai content when possible
 2. **References**: Include credible sources for clinical guidelines

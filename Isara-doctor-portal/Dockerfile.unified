@@ -60,7 +60,7 @@ ARG JITSI_DOMAIN=meet.jit.si
 
 # Gemini AI Configuration - API key must be passed as build arg
 ARG VITE_GEMINI_API_KEY
-ARG VITE_GEMINI_MODEL=gemini-2.5-flash
+ARG VITE_GEMINI_MODEL=gemini-2.5-flash-lite
 ARG VITE_GEMINI_TEMPERATURE=0.3
 ARG VITE_GEMINI_MAX_TOKENS=8192
 
@@ -386,7 +386,7 @@ printf '%s\n' \
 # These should be provided at runtime via docker run -e or docker-compose environment
 # DO NOT hardcode API keys here - use secrets management in production
 ENV GEMINI_API_KEY=${GEMINI_API_KEY:-} \
-    GEMINI_MODEL=${GEMINI_MODEL:-gemini-2.5-flash} \
+    GEMINI_MODEL=${GEMINI_MODEL:-gemini-2.5-flash-lite} \
     JITSI_DOMAIN=${JITSI_DOMAIN:-meet.jit.si} \
     GOOGLE_SPEECH_API_KEY=${GOOGLE_SPEECH_API_KEY:-} \
     USE_POSTGRESQL=${USE_POSTGRESQL:-true} \
@@ -424,7 +424,7 @@ RUN printf '%s\n' \
 '' \
 '# Start Main API server (foreground to keep container running)' \
 'echo "Starting Main API server..."' \
-'cd /app && exec node /app/server/mainApiServer.cjs' > /docker-entrypoint.sh && \
+'cd /app && MAIN_API_PORT=3009 PORT=3009 exec node /app/server/mainApiServer.cjs' > /docker-entrypoint.sh && \
     chmod +x /docker-entrypoint.sh && \
     chown -R nginx:nginx /usr/share/nginx/html && \
     chmod -R 755 /usr/share/nginx/html && \

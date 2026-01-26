@@ -134,7 +134,7 @@ flowchart TB
 ### Google Gemini
 ```typescript
 // Configuration
-const GEMINI_MODEL = 'gemini-2.5-flash';
+const GEMINI_MODEL = 'gemini-2.5-flash-lite';
 
 // Features
 - Clinical summary generation

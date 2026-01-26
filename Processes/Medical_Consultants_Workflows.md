@@ -1,6 +1,5 @@
 # Medical Consultants Workflows
 
-
 **Version:** 3.0.0  
 **Last Updated:** January 21, 2026  
 **Status:** ✅ PostgreSQL Implementation
@@ -9,11 +8,9 @@
 
 ## Overview
 
-
 The Medical Consultants page allows doctors to find and manage specialist contacts for patient referrals. Admin users have full CRUD access while regular doctors can view and rate consultants.
 
 ## User Roles & Permissions
-
 
 ### Admin Users
 
@@ -23,16 +20,13 @@ The Medical Consultants page allows doctors to find and manage specialist contac
 - **DELETE**: Remove consultants from the system
 - **VIEW NOTES**: See internal admin notes
 
-
 ### Doctor Users
 
 - **READ**: View published consultant profiles
 - **RATE**: Submit ratings and reviews for consultants
 - **CONTACT**: Email or call consultants directly
 
-
 ## Data Model
-
 
 ### Consultant Entity
 
@@ -60,9 +54,7 @@ interface Consultant {
 }
 ```
 
-
 ## API Endpoints
-
 
 | Method | Endpoint | Description | Access |
 | -------- | ---------- | ------------- | -------- |
@@ -77,7 +69,6 @@ interface Consultant {
 
 ## Workflows
 
-
 ### 1. Admin: Add New Consultant
 
 ```text
@@ -89,7 +80,6 @@ interface Consultant {
 6. Consultant appears in list with "Available" status
 ```
 
-
 ### 2. Admin: Edit Consultant
 
 ```text
@@ -100,7 +90,6 @@ interface Consultant {
 5. System updates record with audit trail
 ```
 
-
 ### 3. Admin: Toggle Availability
 
 ```text
@@ -108,7 +97,6 @@ interface Consultant {
 2. System toggles available status
 3. Badge updates immediately (green/gray)
 ```
-
 
 ### 4. Admin: Delete Consultant
 
@@ -118,7 +106,6 @@ interface Consultant {
 3. Admin confirms deletion
 4. Record is permanently removed
 ```
-
 
 ### 5. Doctor: Rate Consultant
 
@@ -131,14 +118,12 @@ interface Consultant {
 6. Rating added, average recalculated
 ```
 
-
 ### 6. Doctor: Contact Consultant
 
 ```text
 1. Click "Email" → Opens email client
 2. Click "Call" → Opens phone dialer
 ```
-
 
 ### 7. View Consultant Details
 
@@ -149,18 +134,14 @@ interface Consultant {
 4. Admin sees internal notes
 ```
 
-
 ## Data Storage
-
 
 Data is persisted in GCS bucket: `izara-meta-data`
 
 - Path: `consultants/consultants.json`
 - Specialties: `consultants/specialties.json`
 
-
 ## Error Handling
-
 
 | Error | User Message | Resolution |
 | ------- | -------------- | ------------ |
@@ -170,7 +151,6 @@ Data is persisted in GCS bucket: `izara-meta-data`
 | Unauthorized action | "Only admins can..." | Check user role |
 
 ## Correlation with Admin Users
-
 
 1. **Audit Trail**: All changes tracked with `createdBy`, `updatedBy` fields
 2. **Admin Notes**: Private notes visible only to admin users

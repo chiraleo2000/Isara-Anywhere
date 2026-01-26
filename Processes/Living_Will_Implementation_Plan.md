@@ -1,6 +1,5 @@
 # 📋 Living Will Implementation Plan
 
-
 **Version:** 1.1  
 **Created:** December 12, 2025  
 **Status:** ✅ IMPLEMENTED
@@ -9,11 +8,9 @@
 
 ## Executive Summary
 
-
 This document outlines the implementation plan for adding Living Will functionality to both the Patient Portal and Doctor Portal with full PDPA compliance and consent-based sharing controls.
 
 ### Implementation Completed:
-
 
 | Task | File | Status |
 | ------ | ------ | -------- |
@@ -28,9 +25,7 @@ This document outlines the implementation plan for adding Living Will functional
 
 ## 1. Patient Portal Implementation
 
-
 ### 1.1. Add Living Will Types to Shared Types
-
 
 **File:** `Isara-patient-portal/src/types/sharedPHRTypes.ts`
 
@@ -128,9 +123,7 @@ export interface LivingWillForDoctor {
 }
 ```
 
-
 ### 1.2. Create Living Will Form Component
-
 
 **File:** `Isara-patient-portal/src/components/health/LivingWillForm.tsx`
 
@@ -143,9 +136,7 @@ Key sections:
 5. Digital signature canvas
 6. Save/Cancel buttons
 
-
 ### 1.3. Create Living Will View Component
-
 
 **File:** `Isara-patient-portal/src/components/health/LivingWillView.tsx`
 
@@ -158,9 +149,7 @@ Display existing Living Will with:
 - Share settings status
 - Edit/Revoke buttons
 
-
 ### 1.4. Add Living Will Tab to PHR Page
-
 
 **File:** `Isara-patient-portal/src/pages/health/PHRPage.tsx`
 
@@ -172,9 +161,7 @@ Add new tab:
 </Tab>
 ```
 
-
 ### 1.5. Create API Routes
-
 
 **File:** `Isara-patient-portal/server/routes/phr.ts`
 
@@ -188,21 +175,17 @@ Add endpoints:
 // DELETE /api/phr/:patientId/living-will
 ```
 
-
 ---
 
 ## 2. Doctor Portal Implementation
 
-
 ### 2.1. Add Living Will Types
-
 
 **File:** `Isara-doctor-portal/src/types/index.ts`
 
 Copy or import the Living Will types from shared types.
 
 ### 2.2. Update Patient Record Service
-
 
 **File:** `Isara-doctor-portal/src/services/patientRecordService.ts`
 
@@ -213,9 +196,7 @@ async getLivingWill(patientId: string): Promise<LivingWillForDoctor>
 async checkLivingWillAccess(patientId: string, doctorId: string): Promise<boolean>
 ```
 
-
 ### 2.3. Create Living Will Card Component
-
 
 **File:** `Isara-doctor-portal/src/components/LivingWillCard.tsx`
 
@@ -227,9 +208,7 @@ Display Living Will in patient record with:
 - Private indicator if not shared
 - No document indicator if none exists
 
-
 ### 2.4. Update Patient Record Viewer
-
 
 **File:** `Isara-doctor-portal/src/components/PatientRecordViewer.tsx`
 
@@ -257,9 +236,7 @@ const PHRView = ({ phrData, patient }) => {
 };
 ```
 
-
 ### 2.5. Add API Endpoint
-
 
 **File:** `Isara-doctor-portal/server/mainApiServer.cjs`
 
@@ -306,14 +283,11 @@ app.get('/api/patients/:patientId/living-will', authMiddleware, async (req, res)
 });
 ```
 
-
 ---
 
 ## 3. Testing Plan
 
-
 ### 3.1. Unit Tests
-
 
 | Test Case | Expected Result |
 | ----------- | ----------------- |
@@ -329,7 +303,6 @@ app.get('/api/patients/:patientId/living-will', authMiddleware, async (req, res)
 
 ### 3.2. E2E Tests
 
-
 **File:** `scripts/tests/e2e/livingWillTests.cjs`
 
 Scenarios:
@@ -341,14 +314,11 @@ Scenarios:
 5. Doctor cannot view unshared Living Will
 6. Admin views shared Living Will
 
-
 ---
 
 ## 4. Task Checklist
 
-
 ### Patient Portal
-
 
 - [ ] Add Living Will types to `sharedPHRTypes.ts`
 - [ ] Create `LivingWillForm.tsx` component
@@ -362,9 +332,7 @@ Scenarios:
 - [ ] Write unit tests for Living Will APIs
 - [ ] Write E2E tests for patient workflows
 
-
 ### Doctor Portal
-
 
 - [ ] Add Living Will types to types file
 - [ ] Create `LivingWillCard.tsx` component
@@ -376,20 +344,16 @@ Scenarios:
 - [ ] Write unit tests for access control
 - [ ] Write E2E tests for doctor workflows
 
-
 ### Shared
-
 
 - [ ] Copy Living Will types to doctor portal
 - [ ] Update documentation
 - [ ] Create user guides
 - [ ] Test cross-portal workflow
 
-
 ---
 
 ## 5. Timeline
-
 
 | Phase | Duration | Tasks |
 | ------- | ---------- | ------- |
@@ -402,14 +366,11 @@ Scenarios:
 
 ## 6. Dependencies
 
-
 - Both portals running
 - GCS access configured
 - Authentication working
 - PDPA consent system in place
 
-
 ---
 
 #### End of Implementation Plan
-

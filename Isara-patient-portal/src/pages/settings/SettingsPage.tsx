@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSettings } from '../../contexts/SettingsContext';
-import { Bell, Lock, Globe, Moon, LogOut, ChevronRight, Shield } from 'lucide-react';
+import { Bell, Lock, Globe, Moon, LogOut, ChevronRight, Shield, X, Eye, EyeOff } from 'lucide-react';
 
 // Helper to get/set localStorage values for notifications only
 const getStoredValue = <T,>(key: string, defaultValue: T): T => {
@@ -21,10 +21,220 @@ const setStoredValue = <T,>(key: string, value: T): void => {
   }
 };
 
+// Password Change Modal Component
+function PasswordChangeModal({ 
+  isOpen, 
+  onClose, 
+  darkMode, 
+  language 
+}: { 
+  isOpen: boolean; 
+  onClose: () => void; 
+  darkMode: boolean;
+  language: 'th' | 'en';
+}) {
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
+
+  const labels = {
+    title: language === 'th' ? 'เปลี่ยนรหัสผ่าน' : 'Change Password',
+    currentPassword: language === 'th' ? 'รหัสผ่านปัจจุบัน' : 'Current Password',
+    newPassword: language === 'th' ? 'รหัสผ่านใหม่' : 'New Password',
+    confirmPassword: language === 'th' ? 'ยืนยันรหัสผ่านใหม่' : 'Confirm New Password',
+    save: language === 'th' ? 'บันทึก' : 'Save',
+    cancel: language === 'th' ? 'ยกเลิก' : 'Cancel',
+    passwordMismatch: language === 'th' ? 'รหัสผ่านไม่ตรงกัน' : 'Passwords do not match',
+    passwordTooShort: language === 'th' ? 'รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร' : 'Password must be at least 8 characters',
+    successMessage: language === 'th' ? 'เปลี่ยนรหัสผ่านสำเร็จ!' : 'Password changed successfully!',
+    errorMessage: language === 'th' ? 'เกิดข้อผิดพลาด กรุณาลองใหม่' : 'An error occurred. Please try again',
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    
+    if (newPassword !== confirmPassword) {
+      setError(labels.passwordMismatch);
+      return;
+    }
+    
+    if (newPassword.length < 8) {
+      setError(labels.passwordTooShort);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/auth/change-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ currentPassword, newPassword, confirmPassword }),
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || labels.errorMessage);
+      }
+
+      setSuccess(true);
+      setTimeout(() => {
+        onClose();
+        setSuccess(false);
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+      }, 2000);
+    } catch (err: any) {
+      setError(err.message || labels.errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  const inputClass = darkMode 
+    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+    : 'bg-white border-gray-300 text-gray-800 placeholder-gray-400';
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+      <div className={`w-full max-w-md rounded-2xl shadow-xl ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+        <div className={`flex items-center justify-between p-4 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+          <h2 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+            {labels.title}
+          </h2>
+          <button onClick={onClose} className={`p-1 rounded-full hover:bg-gray-100 ${darkMode ? 'hover:bg-gray-700' : ''}`}>
+            <X className={`w-5 h-5 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-4 space-y-4">
+          {success ? (
+            <div className="p-4 bg-green-100 text-green-800 rounded-lg text-center">
+              ✅ {labels.successMessage}
+            </div>
+          ) : (
+            <>
+              {error && (
+                <div className="p-3 bg-red-100 text-red-800 rounded-lg text-sm">
+                  {error}
+                </div>
+              )}
+              
+              <div>
+                <label className={`block text-sm font-medium mb-1 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  {labels.currentPassword}
+                </label>
+                <div className="relative">
+                  <input
+                    type={showCurrentPassword ? 'text' : 'password'}
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    className={`w-full px-4 py-2 pr-10 border rounded-lg focus:ring-2 focus:ring-emerald-500 ${inputClass}`}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2"
+                  >
+                    {showCurrentPassword ? <EyeOff className="w-4 h-4 text-gray-400" /> : <Eye className="w-4 h-4 text-gray-400" />}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className={`block text-sm font-medium mb-1 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  {labels.newPassword}
+                </label>
+                <div className="relative">
+                  <input
+                    type={showNewPassword ? 'text' : 'password'}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className={`w-full px-4 py-2 pr-10 border rounded-lg focus:ring-2 focus:ring-emerald-500 ${inputClass}`}
+                    required
+                    minLength={8}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2"
+                  >
+                    {showNewPassword ? <EyeOff className="w-4 h-4 text-gray-400" /> : <Eye className="w-4 h-4 text-gray-400" />}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className={`block text-sm font-medium mb-1 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  {labels.confirmPassword}
+                </label>
+                <div className="relative">
+                  <input
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className={`w-full px-4 py-2 pr-10 border rounded-lg focus:ring-2 focus:ring-emerald-500 ${inputClass}`}
+                    required
+                    minLength={8}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2"
+                  >
+                    {showConfirmPassword ? <EyeOff className="w-4 h-4 text-gray-400" /> : <Eye className="w-4 h-4 text-gray-400" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className={`flex-1 px-4 py-2 rounded-lg border ${
+                    darkMode 
+                      ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
+                      : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  {labels.cancel}
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50"
+                >
+                  {loading ? '...' : labels.save}
+                </button>
+              </div>
+            </>
+          )}
+        </form>
+      </div>
+    </div>
+  );
+}
+
 export default function SettingsPage() {
   const { logout } = useAuth();
   // Use the global settings context for theme and language
   const { theme, language, setTheme, setLanguage } = useSettings();
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
   
   const [notifications, setNotifications] = useState(() => 
     getStoredValue('izara_notifications', {
@@ -158,11 +368,19 @@ export default function SettingsPage() {
           <LinkItem
             icon={<Lock className={`w-5 h-5 ${darkMode ? 'text-gray-400' : 'text-gray-400'}`} />}
             label={labels.changePassword}
-            onClick={() => alert(labels.comingSoon)}
+            onClick={() => setShowPasswordModal(true)}
             darkMode={darkMode}
           />
         </div>
       </div>
+
+      {/* Password Change Modal */}
+      <PasswordChangeModal
+        isOpen={showPasswordModal}
+        onClose={() => setShowPasswordModal(false)}
+        darkMode={darkMode}
+        language={language as 'th' | 'en'}
+      />
 
       {/* Logout Section */}
       <div className={`rounded-2xl border overflow-hidden ${cardClass}`}>

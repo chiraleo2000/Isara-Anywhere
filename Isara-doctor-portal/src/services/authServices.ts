@@ -419,7 +419,7 @@ export class AuthService {
 
       // Map auth server response to our User type
       // Auth server returns: id, email, role, doctorId, medicalLicenseNumber, isActive, 
-      // emailVerified, name, phone, dateOfBirth, avatarUrl, specialty, preferences
+      // emailVerified, name, phone, dateOfBirth, avatarUrl, specialty, preferences, isAdmin, adminPrivileges
       const user: User = {
         id: authUser.id,
         email: authUser.email,
@@ -438,7 +438,16 @@ export class AuthService {
           language: 'th',
           notifications: { email: true, sms: true, push: true },
         },
+        // Admin privileges - CRITICAL for admin functionality
+        isAdmin: authUser.isAdmin || false,
+        adminPrivileges: authUser.adminPrivileges || undefined,
       };
+
+      // Log admin status for debugging
+      if (authUser.isAdmin) {
+        console.log('👑 Admin user logged in:', authUser.email);
+        console.log('🔑 Admin privileges:', JSON.stringify(authUser.adminPrivileges));
+      }
 
       // Save session locally
       this.saveLocalSession(user, authToken);

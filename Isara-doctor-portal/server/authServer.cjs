@@ -110,9 +110,8 @@ let pgPool = null;
 let DB_AVAILABLE = false;
 
 // Initialize PostgreSQL connection
-{
-  try {
-    PostgresDataService = require('./services/postgresDataService.cjs');
+try {
+  PostgresDataService = require('./services/postgresDataService.cjs');
     const { Pool } = require('pg');
     
     // Parse DATABASE_URL if available
@@ -166,10 +165,9 @@ let DB_AVAILABLE = false;
       .catch(err => console.error('❌ PostgreSQL connection error:', err.message));
     
     console.log('✅ PostgreSQL Auth Service loaded - USE_POSTGRESQL=true');
-  } catch (error) {
-    console.error('❌ Failed to load PostgreSQL service:', error.message);
-    console.log('⚠️ Falling back to GCS storage');
-  }
+} catch (error) {
+  console.error('❌ Failed to load PostgreSQL service:', error.message);
+  console.error('❌ CRITICAL: PostgreSQL is required. Application may not function correctly.');
 }
 
 const BUCKETS = {
@@ -1033,7 +1031,7 @@ app.post('/auth/request-password-reset',
       success: true, 
       message: 'Password reset link sent to your email.',
       // For development only - remove in production
-      devToken: process.env.NODE_ENV !== 'production' ? resetToken : undefined
+      devToken: process.env.NODE_ENV === 'development' ? resetToken : undefined
     });
   } catch (error) {
     console.error('Password reset request error:', error);
@@ -1537,10 +1535,8 @@ app.post('/admin/update-doctor-status', async (req, res) => {
       updateValues.push(updates.isVerified);
     }
 
-    updateFields.push(`updated_at = NOW()`);
-    updateFields.push(`updated_by = $${paramCount++}`);
-    updateValues.push(adminId || 'admin');
-    updateValues.push(doctorId);
+    updateFields.push(`updated_at = NOW()`, `updated_by = $${paramCount++}`);
+    updateValues.push(adminId || 'admin', doctorId);
 
     await pgPool.query(
       `UPDATE users SET ${updateFields.join(', ')} WHERE id = $${paramCount}`,
@@ -1577,8 +1573,8 @@ app.post('/admin/update-doctor-status', async (req, res) => {
         id: user.id,
         email: user.email,
         name: user.name,
-        isActive: updates.isActive !== undefined ? updates.isActive : user.is_active,
-        isVerified: updates.isVerified !== undefined ? updates.isVerified : user.is_verified
+        isActive: updates.isActive === undefined ? user.is_active : updates.isActive,
+        isVerified: updates.isVerified === undefined ? user.is_verified : updates.isVerified
       })
     });
   } catch (error) {
@@ -2324,17 +2320,8 @@ async function startServer() {
     console.log('\n═══════════════════════════════════════════════════════════════\n');
   });
 
-  // Verify GCS connection in the background (non-blocking) - skip if using PostgreSQL
-  if (!USE_POSTGRESQL) {
-    verifyGCSConnection().then(gcsConnected => {
-      if (!gcsConnected) {
-        console.error('⚠️  WARNING: Could not connect to GCS API Server');
-        console.error('   Make sure it\'s running on: ' + GCS_API_URL + '\n');
-      }
-    });
-  } else {
-    console.log('📦 Using PostgreSQL - skipping GCS verification');
-  }
+  // PostgreSQL-only mode - GCS is not used for authentication
+  console.log('📦 Using PostgreSQL only - GCS verification skipped');
 
   // Initialize email service in the background (non-blocking)
   emailService.initialize().then(() => {

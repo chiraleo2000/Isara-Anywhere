@@ -1,6 +1,5 @@
 # Izara Telemedicine User Management Workflows
 
-
 This document details the full user management workflow for both Patient Portal and Doctor Portal, including user creation, authentication, role management, admin privileges, and account lifecycle management.
 
 **Version:** 3.0.0  
@@ -11,7 +10,6 @@ This document details the full user management workflow for both Patient Portal 
 
 ## 0. System Overview
 
-
 Izara Telemedicine has **two separate portals** with different user types:
 
 | Portal | URL | User Types | Auth Server |
@@ -20,7 +18,6 @@ Izara Telemedicine has **two separate portals** with different user types:
 | **Doctor Portal** | `localhost:3010` | Doctors, Admins | Backend on Port 3010 |
 
 ### Key Differences
-
 
 | Feature | Patient Portal | Doctor Portal |
 | --------- | --------------- | --------------- |
@@ -34,9 +31,7 @@ Izara Telemedicine has **two separate portals** with different user types:
 
 ## 1. Data Model
 
-
 ### 1.1 Patient User (Patient Portal)
-
 
 **Storage Location**: PostgreSQL `users` and `patient_profiles` tables
 
@@ -63,9 +58,7 @@ interface PatientUser {
 }
 ```
 
-
 ### 1.2 Patient Profile Data
-
 
 **Storage Location**: `izara-patients-data/patients/{patientId}/profile.json`
 
@@ -109,9 +102,7 @@ interface PatientProfile {
 }
 ```
 
-
 ### 1.3 Doctor/Admin User (Doctor Portal)
-
 
 **Storage Location**: `izara-users-credentials/users/{userId}.json`
 
@@ -173,9 +164,7 @@ interface DoctorUser {
 }
 ```
 
-
 ### 1.4 Admin Privileges
-
 
 ```typescript
 interface AdminPrivileges {
@@ -189,9 +178,7 @@ interface AdminPrivileges {
 }
 ```
 
-
 ### 1.5 User Index (Doctor Portal)
-
 
 **Storage Location**: `izara-users-credentials/users/index.json`
 
@@ -208,9 +195,7 @@ interface UserIndexEntry {
 type UsersIndex = UserIndexEntry[];
 ```
 
-
 ### 1.6 Session Data
-
 
 **Storage Location**: `izara-users-credentials/sessions/{sessionToken}.json`
 
@@ -230,14 +215,11 @@ interface Session {
 }
 ```
 
-
 ---
 
 ## 2. API Endpoints
 
-
 ### 2.1 Patient Portal Authentication (`/api/auth/*`)
-
 
 | Method | Endpoint | Description | Access |
 | -------- | ---------- | ------------- | -------- |
@@ -248,7 +230,6 @@ interface Session {
 | GET | `/api/auth/me` | Get current user profile | Authenticated |
 
 ### 2.2 Doctor Portal Authentication (`/auth/*`)
-
 
 | Method | Endpoint | Description | Access |
 | -------- | ---------- | ------------- | -------- |
@@ -261,7 +242,6 @@ interface Session {
 
 ### 2.3 Admin Management (`/admin/*`)
 
-
 | Method | Endpoint | Description | Access |
 | -------- | ---------- | ------------- | -------- |
 | GET | `/admin/pending-doctors` | List all doctors (all statuses) | Admin |
@@ -273,9 +253,7 @@ interface Session {
 
 ## 3. Workflows
 
-
 ### 3.1 Patient Registration Flow
-
 
 ```text
 [Patient visits Registration Page]
@@ -314,11 +292,9 @@ interface Session {
 [Redirect to Dashboard]
 ```
 
-
 **Code Reference**: `Isara-patient-portal/server/routes/auth.ts` - `/register` endpoint
 
 ### 3.2 Doctor Registration Flow
-
 
 ```text
 [Doctor visits Registration Page]
@@ -355,11 +331,9 @@ interface Session {
 [Show "Pending Approval" message]
 ```
 
-
 **Code Reference**: `Isara-doctor-portal/server/authServer.cjs` - `/auth/register` endpoint
 
 ### 3.3 Patient Login Flow
-
 
 ```text
 [Patient visits Login Page]
@@ -381,9 +355,7 @@ interface Session {
 [Redirect to Dashboard]
 ```
 
-
 ### 3.4 Doctor/Admin Login Flow
-
 
 ```text
 [Doctor visits Login Page]
@@ -412,9 +384,7 @@ interface Session {
    └─→ Doctor: /doctor/{id}/dashboard
 ```
 
-
 ### 3.5 Login Error Handling
-
 
 | Error Code | Message | Action |
 | ------------ | --------- | -------- |
@@ -426,7 +396,6 @@ interface Session {
 | `INVALID_CREDENTIALS` | Wrong email/password | Check credentials |
 
 ### 3.6 Admin: Approve Doctor Registration
-
 
 ```text
 [Admin logs into Doctor Portal]
@@ -462,11 +431,9 @@ interface Session {
 [Doctor can now log in]
 ```
 
-
 **Code Reference**: `Isara-doctor-portal/server/authServer.cjs` - `/admin/approve-doctor` endpoint
 
 ### 3.7 Admin: Reject Doctor Registration
-
 
 ```text
 [Admin selects doctor to reject]
@@ -492,9 +459,7 @@ interface Session {
 [Doctor receives rejection email]
 ```
 
-
 ### 3.8 Admin: Grant Admin Privileges
-
 
 ```text
 [Admin navigates to Doctor Management]
@@ -525,11 +490,9 @@ interface Session {
 [Doctor now has admin access]
 ```
 
-
 **IMPORTANT**: The `/admin/update-role` endpoint needs to be implemented in the backend.
 
 ### 3.9 Password Reset Flow
-
 
 ```text
 [User clicks "Forgot Password"]
@@ -567,14 +530,11 @@ interface Session {
 [Show "Password Reset Success"]
 ```
 
-
 ---
 
 ## 4. Security Features (OWASP Top 10:2025)
 
-
 ### 4.1 Rate Limiting (A07)
-
 
 | Endpoint | Limit | Window | Action on Exceed |
 | ---------- | ------- | -------- | ------------------ |
@@ -583,7 +543,6 @@ interface Session {
 | General API | 500 requests | 15 minutes | Return 429 error |
 
 ### 4.2 Account Lockout (A07)
-
 
 ```text
 Failed Login Attempt
@@ -599,9 +558,7 @@ Failed Login Attempt
     └─→ No: Continue normal flow
 ```
 
-
 ### 4.3 Password Security (A04)
-
 
 | Portal | Hash Algorithm | Salt Rounds | Min Length |
 | -------- | --------------- | ------------- | ------------ |
@@ -612,14 +569,11 @@ Failed Login Attempt
 
 ### 4.4 Session Security (A07)
 
-
 - **Doctor Portal**: Sessions bound to IP and User-Agent
 - **Session invalidation**: Marked as `isValid: false` on logout
 - **Token format**: 64-character cryptographic random hex string
 
-
 ### 4.5 Audit Logging (A09)
-
 
 All security events are logged:
 
@@ -630,16 +584,13 @@ All security events are logged:
 - Role changes
 - Admin actions
 
-
 **Storage**: `izara-users-credentials/login-history/{userId}.json`
 
 ---
 
 ## 5. Role-Based Access Control (RBAC)
 
-
 ### 5.1 Patient Portal Access
-
 
 | Feature | Patient |
 | --------- | --------- |
@@ -650,7 +601,6 @@ All security events are logged:
 | Cancel Appointments | ✅ (own only) |
 
 ### 5.2 Doctor Portal Access
-
 
 | Feature | Doctor | Admin |
 | --------- | -------- | ------- |
@@ -668,7 +618,6 @@ All security events are logged:
 
 ### 5.3 Checking Admin Status in Code
 
-
 ```typescript
 // Check if user is admin
 const isAdmin = user.isAdmin || user.role === 'admin';
@@ -677,14 +626,11 @@ const isAdmin = user.isAdmin || user.role === 'admin';
 const canManageDoctors = user.adminPrivileges?.canManageDoctors || user.isAdmin;
 ```
 
-
 ---
 
 ## 6. Data Storage Structure
 
-
 ### 6.1 GCS Bucket Layout
-
 
 ```text
 izara-users-credentials/
@@ -721,14 +667,11 @@ izara-doctors-data/
         └── profile.json             # Doctor profile
 ```
 
-
 ---
 
 ## 7. Email Notifications
 
-
 ### 7.1 Notification Triggers
-
 
 | Event | Recipient | Template |
 | ------- | ----------- | ---------- |
@@ -740,7 +683,6 @@ izara-doctors-data/
 
 ### 7.2 Email Service
 
-
 **Code Reference**: `Isara-doctor-portal/server/emailService.cjs`
 
 ```javascript
@@ -751,14 +693,11 @@ emailService.sendRejectionNotification(doctorEmail, doctorName, reason)
 emailService.sendPasswordResetEmail(email, resetToken, userName)
 ```
 
-
 ---
 
 ## 8. Frontend Components
 
-
 ### 8.1 Patient Portal
-
 
 | Component | Path | Purpose |
 | ----------- | ------ | --------- |
@@ -767,7 +706,6 @@ emailService.sendPasswordResetEmail(email, resetToken, userName)
 | `AuthContext` | `/contexts/AuthContext.tsx` | Auth state management |
 
 ### 8.2 Doctor Portal
-
 
 | Component | Path | Purpose |
 | ----------- | ------ | --------- |
@@ -780,9 +718,7 @@ emailService.sendPasswordResetEmail(email, resetToken, userName)
 
 ## 9. Default Test Accounts
 
-
 ### 9.1 Pre-seeded Accounts
-
 
 | Portal | Email | Password | Role |
 | -------- | ------- | ---------- | ------ |
@@ -793,7 +729,6 @@ emailService.sendPasswordResetEmail(email, resetToken, userName)
 
 ### 9.2 Seeding Data
 
-
 ```bash
 # Seed minimal test data
 cd scripts/seeders
@@ -803,11 +738,9 @@ node seedMinimalDataToGCS.cjs
 node seedAllData.cjs
 ```
 
-
 ---
 
 ## 10. Error Codes Reference
-
 
 | Code | HTTP Status | Description |
 | ------ | ------------- | ------------- |
@@ -825,9 +758,7 @@ node seedAllData.cjs
 
 ## 11. Implementation TODOs
 
-
 ### 11.1 Missing Backend Endpoint
-
 
 **Issue**: The frontend calls `/admin/update-role` but the endpoint doesn't exist.
 
@@ -848,9 +779,7 @@ app.post('/admin/update-role', async (req, res) => {
 });
 ```
 
-
 ### 11.2 Security Improvements
-
 
 - [ ] Upgrade Patient Portal to bcrypt password hashing
 - [ ] Add two-factor authentication (2FA)
@@ -858,20 +787,16 @@ app.post('/admin/update-role', async (req, res) => {
 - [ ] Add CAPTCHA to registration forms
 - [ ] Implement session revocation for all devices
 
-
 ### 11.3 Feature Enhancements
-
 
 - [ ] Email verification for new registrations
 - [ ] Profile photo upload
 - [ ] Account deletion/PDPA compliance
 - [ ] Admin activity audit dashboard
 
-
 ---
 
 ## 12. Summary Table
-
 
 | Step | User | Portal | Page/Component | Action | Status Update |
 | ------ | ------ | -------- | ---------------- | -------- | --------------- |

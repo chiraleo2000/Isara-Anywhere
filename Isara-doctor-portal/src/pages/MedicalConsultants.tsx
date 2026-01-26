@@ -22,9 +22,10 @@ import {
 import { useAuth } from '../components/common/AuthProvider';
 
 // ============================================================================
-// API BASE URL - Empty string for relative paths in production (Cloud Run)
+// API BASE URL - Use VITE_API_URL for main API endpoints (consultants, etc.)
+// Empty string for relative paths in production (Cloud Run)
 // ============================================================================
-const API_BASE = import.meta.env.VITE_GCS_API_URL || '';
+const API_BASE = import.meta.env.VITE_API_URL || '';
 
 // ============================================================================
 // CUSTOM ICONS

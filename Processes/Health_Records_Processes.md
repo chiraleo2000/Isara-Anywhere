@@ -1,6 +1,5 @@
 # Izara Telemedicine Health Records (PHR & EMR) Workflows
 
-
 This document details the full health record workflow for Izara Telemedicine, including all user roles, notification logic, error handling, and business rules for PHR (Personal Health Record) and EMR (Electronic Medical Record). It covers data integration, access, and the relationship between appointment outcomes, EMR, and lab results.
 
 **Version:** 3.0.0  
@@ -10,7 +9,6 @@ This document details the full health record workflow for Izara Telemedicine, in
 ---
 
 ## Phase 1 AI Integration Summary
-
 
 | Feature | Description | Status |
 | --------- | ------------- | -------- |
@@ -23,7 +21,6 @@ This document details the full health record workflow for Izara Telemedicine, in
 
 ## 0. Login & Authentication
 
-
 - **Patient**
   - Logs in via Patient Portal (`LoginPage.tsx`) using their own patient account (patientId)
   - Accesses dashboard, health logs (PHR), appointment and lab results associated with their own account
@@ -34,14 +31,11 @@ This document details the full health record workflow for Izara Telemedicine, in
   - Can view and edit full EMR, see patient PHR, and manage lab results for patients under their care
   - **Credentials stored**: PostgreSQL `users` table with bcrypt hashed password
 
-
 ---
 
 ## 1. Health Record Creation & Data Sources
 
-
 ### 1.1 Patient Self-Entered PHR Data
-
 
 - **Patient Portal PHR Page (`PHRPage.tsx`)**
   - Patient enters vital signs, medications, allergies, and chronic conditions
@@ -65,9 +59,7 @@ This document details the full health record workflow for Izara Telemedicine, in
   - Vaccinations
   - Medical Documents (uploaded files)
 
-
 ### 1.2 During Appointment (EMR Data)
-
 
 - Doctor (logged in as doctorId) completes and signs EMR in `CompleteEMREditor.tsx` for the specific patient (patientId)
 - **EMR Format:** Single Thai Health Ministry Standard - OPD Card (มาตรฐานกระทรวงสาธารณสุข)
@@ -86,22 +78,17 @@ This document details the full health record workflow for Izara Telemedicine, in
 - **Encounter Types:** ตรวจทั่วไป (General), นัดติดตาม (Follow-up), ฉุกเฉิน (Emergency), หัตถการ (Procedure)
 - Doctor reviews and approves the summary section for patient sharing; only the summary for the correct patientId is shared
 
-
 ### 1.3 Lab Results Integration
-
 
 - If lab tests are ordered, results are uploaded/entered in `CompleteLabOrders.tsx` by the doctor (doctorId) for the correct appointment and patient (patientId)
 - Lab results are linked to the relevant appointment and EMR (appointmentId, patientId)
 - EMR summary for patient includes relevant lab findings, only for that patient
 
-
 ---
 
 ## 2. Data Storage & Structure
 
-
 ### 2.1 GCS Bucket Structure
-
 
 | Bucket | Purpose | Files |
 | -------- | --------- | ------- |
@@ -112,7 +99,6 @@ This document details the full health record workflow for Izara Telemedicine, in
 | `izara-meta-data` | Reference data | Specialties, medications, ICD codes |
 
 ### 2.2 Patient PHR File (`patients/{patientId}/phr.json`)
-
 
 ```json
 {
@@ -174,9 +160,7 @@ This document details the full health record workflow for Izara Telemedicine, in
 }
 ```
 
-
 ### 2.3 Vital Signs File (`patients/{patientId}/vital-signs.json`)
-
 
 ```json
 [
@@ -215,9 +199,7 @@ This document details the full health record workflow for Izara Telemedicine, in
 ]
 ```
 
-
 ### 2.4 Health Logs File (`patients/{patientId}/health-logs.json`)
-
 
 ```json
 {
@@ -286,16 +268,13 @@ This document details the full health record workflow for Izara Telemedicine, in
 }
 ```
 
-
 ---
 
 ## 3. Patient Portal: Accessing Health Records
 
-
 ### 3.1 PHR Page ("ประวัติสุขภาพส่วนบุคคล" / `PHRPage.tsx`)
 
-
-#### Tabs:
+#### Tabs
 
 - **Overview**: Patient demographics, recent vitals summary
 - **Vitals**: Full vital signs history with charts, add new vitals
@@ -303,8 +282,7 @@ This document details the full health record workflow for Izara Telemedicine, in
 - **Allergies**: Allergy list with severity, add allergies
 - **Profile**: Personal health profile, chronic conditions
 
-
-#### API Endpoints:
+#### API Endpoints
 
 - `GET /api/phr/{patientId}` - Get PHR data
 - `PUT /api/phr/{patientId}` - Update PHR data
@@ -312,19 +290,15 @@ This document details the full health record workflow for Izara Telemedicine, in
 - `POST /api/phr/{patientId}/vitals` - Add new vital signs
 - `GET /api/phr/{patientId}/health-logs` - Get EMR summaries from doctors
 
-
 ### 3.2 Health Studio (`HealthStudio.tsx`)
 
-
-#### Tabs:
+#### Tabs
 
 - **Health Overview**: Quick stats, recent appointments
 - **Treatment Results**: EMR summaries from doctors
 - **Health Content**: Educational content based on conditions
 
-
 ### 3.3 Data Flow (Patient)
-
 
 ```text
 Patient enters vital signs → POST /api/phr/{patientId}/vitals
@@ -334,16 +308,13 @@ Patient enters vital signs → POST /api/phr/{patientId}/vitals
                     Doctor can view in PatientRecordViewer.tsx
 ```
 
-
 ---
 
 ## 4. Doctor Portal: Accessing Patient Records
 
-
 ### 4.1 Patient Record Viewer (`PatientRecordViewer.tsx`)
 
-
-#### Tabs:
+#### Tabs
 
 - **PHR (Personal Health Record)**: Patient's self-entered data
   - Demographics (name, age, gender, weight, height, BMI)
@@ -356,16 +327,13 @@ Patient enters vital signs → POST /api/phr/{patientId}/vitals
 - **EMR (Electronic Medical Record)**: Doctor's clinical notes
 - **EHR (Electronic Health Record)**: Timeline of all health events
 
-
-#### API Endpoints (Doctor Portal):
+#### API Endpoints (Doctor Portal)
 
 - `GET /api/storage/read?bucket=patient&path=patients/{patientId}/phr.json`
 - `GET /api/storage/read?bucket=patient&path=patients/{patientId}/vital-signs.json`
 - `patientRecordService.getPHR(patientId)` - Aggregated PHR data
 
-
 ### 4.2 Data Mapping (Patient → Doctor)
-
 
 | Patient Portal Field | Doctor Portal Field | Data Type |
 | --------------------- | --------------------- | ----------- |
@@ -390,9 +358,7 @@ Patient enters vital signs → POST /api/phr/{patientId}/vitals
 
 ## 5. Cross-Portal Data Sync
 
-
 ### 5.1 Sync Flow Diagram
-
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────────────┐
@@ -431,23 +397,18 @@ Patient enters vital signs → POST /api/phr/{patientId}/vitals
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
-
 ### 5.2 Data Consistency Guarantees
-
 
 1. **Patient ID Association**: All records include `patientId` field
 2. **Timestamp Tracking**: `measuredAt`, `createdAt`, `updatedAt` fields
 3. **Source Tracking**: `source` field indicates data origin (patient_input, device, clinic)
 4. **Version Control**: PHR records include `version` field for schema compatibility
 
-
 ---
 
 ## 6. Workflow Steps
 
-
 ### 6.1 Patient Creates PHR Data
-
 
 1. Patient logs in to Patient Portal with their credentials
 2. Navigates to PHR page (`/phr`)
@@ -455,9 +416,7 @@ Patient enters vital signs → POST /api/phr/{patientId}/vitals
 4. Data is validated and saved to GCS under their `patientId`
 5. Confirmation shown to patient
 
-
 ### 6.2 Patient Edits Lifestyle Data
-
 
 1. Patient logs in to Patient Portal
 2. Navigates to PHR page → "ข้อมูลส่วนตัว" (Profile) tab
@@ -474,9 +433,7 @@ Patient enters vital signs → POST /api/phr/{patientId}/vitals
 6. Data saved to GCS: `patients/{patientId}/phr.json` in lifestyle section
 7. Doctor can immediately view updated data in PatientRecordViewer
 
-
 ### 6.3 Doctor Views Patient PHR
-
 
 1. Doctor logs in to Doctor Portal with their credentials
 2. Searches for patient or selects from appointment list
@@ -485,9 +442,7 @@ Patient enters vital signs → POST /api/phr/{patientId}/vitals
 5. PHR data is fetched from GCS and transformed for display
 6. Doctor sees formatted vital signs, allergies, medications, lifestyle (including supplements and other treatments)
 
-
 ### 6.4 Doctor Creates and Signs EMR (Thai OPD Card Format)
-
 
 1. Doctor opens patient record during/after appointment
 2. Clicks "สร้าง EMR" (Create EMR) button
@@ -506,9 +461,7 @@ Patient enters vital signs → POST /api/phr/{patientId}/vitals
    - POSTs EMR summary to patient's health-logs.json
 6. Patient receives notification and can view AI summary in Treatment Results
 
-
 ### 6.5 Doctor Creates Prescription (E-Prescribing)
-
 
 1. Doctor opens E-Prescribing (`CompletePrescribing.tsx`)
 2. Searches for medications in drug database
@@ -528,13 +481,11 @@ Patient enters vital signs → POST /api/phr/{patientId}/vitals
    - Type: `prescription`
 7. Patient can view medications in Health Studio → ผลการรักษา (Treatment Results)
 
-
 ### 6.6 What Patient Sees (Health Log Entry)
-
 
 When doctor signs EMR or creates prescription, patient receives:
 
-#### Visible to Patient:
+#### Visible to Patient
 
 | Field | Description |
 | ------- | ------------- |
@@ -548,7 +499,7 @@ When doctor signs EMR or creates prescription, patient receives:
 | `signedBy` | Doctor who signed |
 | `signedAt` | Signature timestamp |
 
-#### NOT Visible to Patient:
+#### NOT Visible to Patient
 
 | Field | Reason |
 | ------- | -------- |
@@ -560,18 +511,15 @@ When doctor signs EMR or creates prescription, patient receives:
 
 ### 6.7 EMR & PHR Integration (Legacy)
 
-
 1. Doctor completes appointment
 2. Doctor fills out EMR in `CompleteEMREditor.tsx`
 3. EMR is signed and status set to `signed`
 4. Summary section is pushed to patient's health-logs.json
 5. Patient sees EMR summary in Health Studio / Treatment Results
 
-
 ---
 
 ## 7. Notification & Access Control
-
 
 - **Patient**
   - Receives notification when a new EMR summary is available for their account
@@ -586,11 +534,9 @@ When doctor signs EMR or creates prescription, patient receives:
 - **Admin**
   - May access all records for audit and troubleshooting
 
-
 ---
 
 ## 8. Error Handling & Edge Cases
-
 
 - **Unsigned EMR:**  
 
@@ -615,7 +561,6 @@ When doctor signs EMR or creates prescription, patient receives:
 ---
 
 ## 9. Status Flow
-
 
 ```text
 [Patient enters PHR data]
@@ -646,14 +591,11 @@ When doctor signs EMR or creates prescription, patient receives:
 └─────────────────────────────────┘
 ```
 
-
 ---
 
 ## 10. UI Architecture
 
-
 ### Health Records Pages
-
 
 | Page/Component | Portal | User | Content/Action |
 | ---------------- | -------- | ------ | ---------------- |
@@ -668,16 +610,14 @@ When doctor signs EMR or creates prescription, patient receives:
 
 ## 11. Shared PHR Types (Patient ↔ Doctor)
 
-
 Both portals now use a shared type definition for PHR data to ensure consistency:
 
-#### File Locations:
+#### File Locations
 
 - Patient Portal: `src/types/sharedPHRTypes.ts`
 - Doctor Portal: `src/types/sharedPHRTypes.ts`
 
-
-#### Key Types:
+#### Key Types
 
 ```typescript
 // Vital Signs
@@ -730,16 +670,13 @@ interface SharedPHRRecord {
 }
 ```
 
-
 ---
 
 ## 12. Testing PHR Data Sync
 
-
 ### Selenium Test: `phrDataSyncSeleniumTests.cjs`
 
-
-#### Test Flow:
+#### Test Flow
 
 1. Login as patient to Patient Portal
 2. Navigate to PHR page
@@ -753,8 +690,7 @@ interface SharedPHRRecord {
 10. Verify medication appears in list
 11. Verify allergy is displayed
 
-
-#### Run Test:
+#### Run Test
 
 ```bash
 node scripts/phrDataSyncSeleniumTests.cjs
@@ -762,11 +698,9 @@ node scripts/phrDataSyncSeleniumTests.cjs
 node scripts/phrDataSyncSeleniumTests.cjs --headless
 ```
 
-
 ### Selenium Test: `lifestyleAndEMRSeleniumTests.cjs`
 
-
-#### Test Flow for Lifestyle Data:
+#### Test Flow for Lifestyle Data
 
 1. Login as patient to Patient Portal
 2. Navigate to PHR page → ข้อมูลส่วนตัว tab
@@ -777,8 +711,7 @@ node scripts/phrDataSyncSeleniumTests.cjs --headless
 7. Find patient and view PHR
 8. Verify lifestyle data appears with all fields
 
-
-#### Test Flow for EMR:
+#### Test Flow for EMR
 
 1. Doctor opens patient record
 2. Creates EMR using Thai OPD Card format
@@ -788,8 +721,7 @@ node scripts/phrDataSyncSeleniumTests.cjs --headless
 6. Verify AI summary is visible
 7. **Verify medications are visible** (new)
 
-
-#### Run Test:
+#### Run Test
 
 ```bash
 node scripts/lifestyleAndEMRSeleniumTests.cjs
@@ -797,17 +729,14 @@ node scripts/lifestyleAndEMRSeleniumTests.cjs
 node scripts/lifestyleAndEMRSeleniumTests.cjs --headless
 ```
 
-
-#### Test Results Location:
+#### Test Results Location
 
 - Screenshots: `scripts/test-screenshots/phr-sync/` and `scripts/test-screenshots/lifestyle-emr/`
 - Results JSON: `scripts/test-results/`
 
-
 ---
 
 ## 13. Summary Table
-
 
 | Step | User | Page/Component | Action/Option | Data/Status Update |
 | ------ | ------ | ---------------- | --------------- | -------------------- |
@@ -826,9 +755,7 @@ node scripts/lifestyleAndEMRSeleniumTests.cjs --headless
 
 ## 14. End-to-End Flow: Doctor to Patient Delivery
 
-
 ### Complete Flow Diagram
-
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -886,9 +813,7 @@ node scripts/lifestyleAndEMRSeleniumTests.cjs --headless
 └───────────────────────────────────────────────────────────────────────────────┘
 ```
 
-
 ### Data Privacy Filtering
-
 
 | Doctor Creates | What Patient Sees | What's Filtered Out |
 | ---------------- | ------------------- | --------------------- |
@@ -900,5 +825,4 @@ node scripts/lifestyleAndEMRSeleniumTests.cjs --headless
 
 ---
 
-#### All data exchanges and record updates are always performed under the correct user account (patientId for patients, doctorId for doctors), ensuring privacy, data integrity, and correct access control.
-
+#### All data exchanges and record updates are always performed under the correct user account (patientId for patients, doctorId for doctors), ensuring privacy, data integrity, and correct access control

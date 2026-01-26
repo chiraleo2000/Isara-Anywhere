@@ -1,6 +1,5 @@
 # 📝 Living Will Process in Izara Telemedicine
 
-
 **Version:** 3.0.0  
 **Last Updated:** January 21, 2026  
 **Status:** ✅ PostgreSQL Implementation
@@ -8,7 +7,6 @@
 ---
 
 ## 1. Overview
-
 
 A **Living Will** (พินัยกรรมชีวิต) is a legal document that allows a patient to specify their wishes regarding medical treatment in situations where they may be unable to communicate. In Izara Telemedicine, the Living Will is part of the patient's Personal Health Record (PHR) and includes **PDPA consent controls** for sharing with healthcare providers.
 
@@ -20,7 +18,6 @@ A **Living Will** (พินัยกรรมชีวิต) is a legal docume
 - ✅ Displayed prominently in PHR tab of Patient Record Viewer (Doctor Portal)
 - ✅ Full audit trail of access and modifications
 
-
 ### Implementation Status:
 
 - ✅ **Patient Portal:** API routes implemented in `server/routes/phr.ts`
@@ -29,11 +26,9 @@ A **Living Will** (พินัยกรรมชีวิต) is a legal docume
 - ✅ **Service:** `getLivingWill()` method in `patientRecordService.ts`
 - ✅ **UI:** `LivingWillCard` component in `PatientRecordViewer.tsx`
 
-
 ---
 
 ## 2. User Roles & Access Matrix
-
 
 | Role | Create | View | Update | Delete | Share Settings |
 | ---------------- | -------- | ------ | -------- | -------- | ---------------- |
@@ -49,14 +44,11 @@ A **Living Will** (พินัยกรรมชีวิต) is a legal docume
 2. **If `isSharedWithDoctors: false`** → Living Will is hidden (private)
 3. Access is logged for audit compliance
 
-
 ---
 
 ## 3. Data Structure
 
-
 ### 3.1. Living Will Metadata
-
 
 **Storage Path:** `patients/{patientId}/living-will.json`
 
@@ -157,22 +149,17 @@ A **Living Will** (พินัยกรรมชีวิต) is a legal docume
 }
 ```
 
-
 ---
 
 ## 4. Patient Portal Workflow
 
-
 ### 4.1. Page & Navigation
-
 
 - **Page:** `src/pages/health/PHRPage.tsx`
 - **Tab:** "Living Will" / "พินัยกรรมชีวิต"
 - **Component:** `src/components/health/LivingWillForm.tsx`
 
-
 ### 4.2. Step-by-Step Process
-
 
 #### Step 1: Access Living Will Tab
 
@@ -180,7 +167,6 @@ A **Living Will** (พินัยกรรมชีวิต) is a legal docume
 2. Navigates to **Health Studio** → **PHR** → **Living Will** tab
 3. If no Living Will exists, shows "Create Living Will" button
 4. If Living Will exists, shows current document with Edit/Revoke options
-
 
 #### Step 2: Create/Edit Living Will
 
@@ -191,7 +177,6 @@ A **Living Will** (พินัยกรรมชีวิต) is a legal docume
    - **Legal Representative** (contact details)
    - **Alternative Representative** (optional)
 
-   
 #### Step 3: PDPA Consent & Sharing Settings
 
 1. Patient must accept PDPA consent checkbox
@@ -200,13 +185,11 @@ A **Living Will** (พินัยกรรมชีวิต) is a legal docume
    - **🌐 Share with Doctors** - All authorized doctors & admins can view
 3. System explains: "If you share, ALL doctors who have treated you and hospital administrators will be able to see your Living Will"
 
-
 #### Step 4: Digital Signature
 
 1. Patient signs digitally (canvas signature)
 2. Optional: Witness signature
 3. System records timestamp and IP
-
 
 #### Step 5: Save & Confirm
 
@@ -215,9 +198,7 @@ A **Living Will** (พินัยกรรมชีวิต) is a legal docume
 3. System stores to GCS: `patients/{patientId}/living-will.json`
 4. Confirmation message with share status displayed
 
-
 ### 4.3. UI Mockup (Patient Portal)
-
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────┐
@@ -259,22 +240,17 @@ A **Living Will** (พินัยกรรมชีวิต) is a legal docume
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
-
 ---
 
 ## 5. Doctor Portal Workflow
 
-
 ### 5.1. Page & Navigation
-
 
 - **Page:** `src/components/PatientRecordViewer.tsx`
 - **Tab:** "Personal Health Record (PHR)"
 - **Section:** Living Will Card (prominent display)
 
-
 ### 5.2. Access Control Logic
-
 
 ```typescript
 // Doctor Portal - Check Living Will Access
@@ -315,9 +291,7 @@ async function checkDoctorPatientHistory(doctorId: string, patientId: string): P
 }
 ```
 
-
 ### 5.3. Display in PHR Tab
-
 
 When a doctor views a patient's PHR, the Living Will section should appear at the TOP of the page:
 
@@ -362,9 +336,7 @@ When a doctor views a patient's PHR, the Living Will section should appear at th
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
-
 ### 5.4. When Living Will is NOT Shared
-
 
 If the patient has not shared their Living Will:
 
@@ -383,9 +355,7 @@ If the patient has not shared their Living Will:
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
-
 ### 5.5. When No Living Will Exists
-
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────┐
@@ -400,14 +370,11 @@ If the patient has not shared their Living Will:
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
-
 ---
 
 ## 6. API Endpoints
 
-
 ### 6.1. Patient Portal APIs
-
 
 | Method | Endpoint | Description |
 | -------- | ---------- | ------------- |
@@ -419,7 +386,6 @@ If the patient has not shared their Living Will:
 
 ### 6.2. Doctor Portal APIs
 
-
 | Method | Endpoint | Description |
 | -------- | ---------- | ------------- |
 | GET | `/api/patients/{patientId}/living-will` | Get Living Will (if shared) |
@@ -429,9 +395,7 @@ If the patient has not shared their Living Will:
 
 ## 7. Audit & Compliance
 
-
 ### 7.1. Audit Log Events
-
 
 | Event | Logged Data |
 | ------- | ------------- |
@@ -444,19 +408,15 @@ If the patient has not shared their Living Will:
 
 ### 7.2. Data Retention
 
-
 - Active Living Wills: Retained indefinitely
 - Revoked Living Wills: Retained for 10 years (legal requirement)
 - Audit logs: Retained for 10 years
-
 
 ---
 
 ## 8. Implementation Plan
 
-
 ### Phase 1: Patient Portal (Week 1-2)
-
 
 | Task | File | Priority |
 | ------ | ------ | ---------- |
@@ -470,7 +430,6 @@ If the patient has not shared their Living Will:
 
 ### Phase 2: Doctor Portal (Week 2-3)
 
-
 | Task | File | Priority |
 | ------ | ------ | ---------- |
 | Add Living Will types | `src/types/index.ts` | P0 |
@@ -483,7 +442,6 @@ If the patient has not shared their Living Will:
 
 ### Phase 3: Testing & Documentation (Week 3-4)
 
-
 | Task | Description | Priority |
 | ------ | ------------- | ---------- |
 | E2E Tests | Test full workflow patient → doctor | P0 |
@@ -495,13 +453,11 @@ If the patient has not shared their Living Will:
 
 ## 9. Security & Privacy Considerations
 
-
 ### 9.1. PDPA Compliance
 
 - Explicit consent required before sharing
 - Patient can revoke sharing at any time
 - All access logged for audit
-
 
 ### 9.2. Data Encryption
 
@@ -509,23 +465,19 @@ If the patient has not shared their Living Will:
 - Signature data encrypted separately
 - Access tokens required for all API calls
 
-
 ### 9.3. Access Control
 
 - Doctors must have history with patient OR be admin
 - Rate limiting on API endpoints
 - Session validation on every request
 
-
 ---
 
 ## 10. References
 
-
 - Thai Ministry of Public Health: Living Will Guidelines (พ.ร.บ.สุขภาพแห่งชาติ พ.ศ. 2550)
 - PDPA Thailand: Personal Data Protection Act B.E. 2562 (2019)
 - Medical Council of Thailand: End-of-Life Care Guidelines
-
 
 ---
 

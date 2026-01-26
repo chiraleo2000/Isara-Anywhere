@@ -171,7 +171,7 @@
 │    Output: transcript.txt           │
 │                                     │
 │ 3. AI Summary Generation            │
-│    API: Gemini (gemini-2.5-flash)   │
+│    API: Gemini (gemini-2.5-flash-lite)   │
 │    Format: Thai SOAP format         │
 │    Output: summary.txt              │
 │                                     │
@@ -637,7 +637,7 @@ POST /api/notifications/doctor
 │    Languages: th-TH, en-US          │
 │                                     │
 │ 3. AI Summary Generation            │
-│    API: Gemini gemini-2.5-flash     │
+│    API: Gemini gemini-2.5-flash-lite     │
 │    Format: Thai SOAP format         │
 │                                     │
 │ 4. Doctor writes/reviews EMR        │

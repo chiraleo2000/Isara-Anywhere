@@ -60,7 +60,7 @@ ARG JITSI_DOMAIN=meet.jit.si
 
 # Gemini AI Configuration - API key must be passed as build arg
 ARG VITE_GEMINI_API_KEY
-ARG VITE_GEMINI_MODEL=gemini-2.5-flash
+ARG VITE_GEMINI_MODEL=gemini-2.5-flash-lite
 ARG VITE_GEMINI_TEMPERATURE=0.3
 ARG VITE_GEMINI_MAX_TOKENS=8192
 
@@ -161,12 +161,9 @@ COPY package*.json ./
 RUN npm ci --only=production && npm cache clean --force
 
 COPY server/ ./server/
-# Create public directory for credentials (mount at runtime if needed)
-RUN mkdir -p ./public
+# Copy frontend build and create nginx configuration for reverse proxy
 COPY --from=frontend-builder /app/dist /usr/share/nginx/html
-
-# Nginx configuration for reverse proxy (listen on 8080 for Cloud Run)
-RUN printf '%s\n' \
+RUN mkdir -p ./public && printf '%s\n' \
 'server {' \
 '    listen 8080;' \
 '    server_name localhost;' \
@@ -175,7 +172,10 @@ RUN printf '%s\n' \
 '    gzip on;' \
 '    gzip_vary on;' \
 '    gzip_min_length 1024;' \
-'    gzip_types text/plain text/css text/xml text/javascript application/x-javascript application/xml+rss application/javascript application/json;' \
+'    gzip_types text/plain text/css text/xml' \
+'               text/javascript application/x-javascript' \
+'               application/xml+rss application/javascript' \
+'               application/json;' \
 '    add_header X-Frame-Options "SAMEORIGIN" always;' \
 '    add_header X-Content-Type-Options "nosniff" always;' \
 '    add_header X-XSS-Protection "1; mode=block" always;' \
@@ -310,10 +310,8 @@ RUN printf '%s\n' \
 '  GEMINI_MODEL: "${VITE_GEMINI_MODEL}",' \
 '  PDPA_ENABLED: "${VITE_PDPA_ENABLED}",' \
 '  CONSENT_REQUIRED: "${VITE_CONSENT_REQUIRED}"' \
-'};' > /usr/share/nginx/html/env-config.template.js
-
-# Supervisor configuration for process management
-RUN printf '%s\n' \
+'};' > /usr/share/nginx/html/env-config.template.js && \
+    printf '%s\n' \
 '[supervisord]' \
 'nodaemon=true' \
 'logfile=/var/log/supervisord.log' \
@@ -366,7 +364,7 @@ RUN printf '%s\n' \
 # These should be provided at runtime via docker run -e or docker-compose environment
 # DO NOT hardcode API keys here - use secrets management in production
 ENV GEMINI_API_KEY=${GEMINI_API_KEY:-} \
-    GEMINI_MODEL=${GEMINI_MODEL:-gemini-2.5-flash} \
+    GEMINI_MODEL=${GEMINI_MODEL:-gemini-2.5-flash-lite} \
     JITSI_DOMAIN=${JITSI_DOMAIN:-meet.jit.si} \
     GOOGLE_SPEECH_API_KEY=${GOOGLE_SPEECH_API_KEY:-} \
     USE_POSTGRESQL=${USE_POSTGRESQL:-true} \
@@ -387,9 +385,8 @@ RUN printf '%s\n' \
 'mkdir -p /app/server/logs /var/log /var/run' \
 'echo "Environment configured"' \
 'echo "Starting services via supervisor..."' \
-'exec /usr/bin/supervisord -c /etc/supervisord.conf' > /docker-entrypoint.sh
-
-RUN chmod +x /docker-entrypoint.sh && \
+'exec /usr/bin/supervisord -c /etc/supervisord.conf' > /docker-entrypoint.sh && \
+    chmod +x /docker-entrypoint.sh && \
     chown -R nginx:nginx /usr/share/nginx/html && \
     chmod -R 755 /usr/share/nginx/html && \
     mkdir -p /app/server/logs /var/secrets/google
