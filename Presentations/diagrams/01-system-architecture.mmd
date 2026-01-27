@@ -19,63 +19,41 @@ flowchart TB
         D["👨‍⚕️ Doctors<br/>แพทย์"]
     end
 
-    subgraph FRONTENDS["🌐 WEB PORTALS"]
+    subgraph CONTAINERS["🐳 DOCKER CONTAINERS"]
         direction LR
-        PP["📱 Patient Portal<br/>React + Vite :5174"]
-        DP["💻 Doctor Portal<br/>React + Vite :5173"]
+        subgraph PP_CONT["🏥 Patient Portal"]
+            PP["📱 Frontend + Backend<br/>React + Node.js<br/>Port: 3005"]
+        end
+        subgraph DP_CONT["👨‍⚕️ Doctor Portal"]
+            DP["💻 Frontend + Backend<br/>React + Node.js<br/>Port: 3010"]
+        end
     end
 
-    subgraph CLOUD["☁️ GOOGLE CLOUD RUN"]
-        direction LR
-        PP_SVC["🚀 Patient Service<br/>asia-southeast1"]
-        DP_SVC["🚀 Doctor Service<br/>asia-southeast1"]
+    subgraph DATA_LAYER["💾 DATA LAYER"]
+        POSTGRES[("🐘 PostgreSQL<br/>Primary Database<br/>Port: 5432/5433")]
+        GCS["📦 GCS - 5 BUCKETS<br/>File Storage (Docs, Images)"]
     end
 
-    subgraph BACKENDS["⚙️ BACKEND SERVERS"]
+    subgraph SERVICES["🔗 EXTERNAL SERVICES"]
         direction LR
-        AUTH["🔐 Auth Server<br/>Express :3011"]
-        GCS_API["📦 GCS API<br/>Express :3012"]
-    end
-
-    subgraph GCS["📦 GCS - 5 BUCKETS"]
-        direction TB
-        B1["🔑 izara-users-credentials<br/>Authentication Data"]
-        B2["💚 izara-patients-data<br/>PHR & Patient Profiles"]
-        B3["💙 izara-doctors-data<br/>EMR & Doctor Profiles"]
-        B4["📅 izara-appointments<br/>Scheduling & Meetings"]
-        B5["📚 izara-meta-data<br/>Content & System Config"]
-    end
-
-    subgraph GOOGLE["🔗 GOOGLE SERVICES"]
-        direction LR
-        JITSI["📹 Jitsi Meet<br/>Video Calls"]
+        JITSI["📹 Jitsi Meeting Server<br/>Port: 3020"]
         GEMINI["🤖 Gemini AI<br/>Health Assistant"]
-        MAPS["🗺️ Maps API<br/>Healthcare Locations"]
+        MAPS["🗺️ Google Maps API<br/>Healthcare Locations"]
     end
 
     %% User to Portal connections
     P --> PP
     D --> DP
 
-    %% Portal to Cloud Run
-    PP --> PP_SVC
-    DP --> DP_SVC
+    %% Portal to Database
+    PP --> POSTGRES
+    DP --> POSTGRES
 
-    %% Cloud Run to Backends
-    PP_SVC --> AUTH
-    PP_SVC --> GCS_API
-    DP_SVC --> AUTH
-    DP_SVC --> GCS_API
+    %% Portal to Storage
+    PP --> GCS
+    DP --> GCS
 
-    %% Backends to Storage
-    AUTH --> B1
-    GCS_API --> B1
-    GCS_API --> B2
-    GCS_API --> B3
-    GCS_API --> B4
-    GCS_API --> B5
-
-    %% Portal to Google Services (dotted lines)
+    %% Portal to Services
     PP -.-> JITSI
     PP -.-> GEMINI
     PP -.-> MAPS
@@ -84,16 +62,13 @@ flowchart TB
 
     %% Styling
     classDef userStyle fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px,color:#1B5E20
-    classDef frontendStyle fill:#E3F2FD,stroke:#2196F3,stroke-width:2px,color:#0D47A1
-    classDef cloudStyle fill:#FFF3E0,stroke:#FF9800,stroke-width:2px,color:#E65100
-    classDef backendStyle fill:#F3E5F5,stroke:#9C27B0,stroke-width:2px,color:#4A148C
+    classDef containerStyle fill:#E3F2FD,stroke:#2196F3,stroke-width:2px,color:#0D47A1
+    classDef dbStyle fill:#F3E5F5,stroke:#9C27B0,stroke-width:2px,color:#4A148C
     classDef storageStyle fill:#ECEFF1,stroke:#607D8B,stroke-width:2px,color:#37474F
-    classDef googleStyle fill:#E0F7FA,stroke:#00BCD4,stroke-width:2px,color:#006064
+    classDef serviceStyle fill:#E0F7FA,stroke:#00BCD4,stroke-width:2px,color:#006064
 
     class P,D userStyle
-    class PP,DP frontendStyle
-    class PP_SVC,DP_SVC cloudStyle
-    class AUTH,GCS_API backendStyle
-    class B1,B2,B3,B4,B5 storageStyle
-    class JITSI,GEMINI,MAPS googleStyle
-
+    class PP,DP containerStyle
+    class POSTGRES dbStyle
+    class GCS storageStyle
+    class JITSI,GEMINI,MAPS serviceStyle

@@ -1,13 +1,13 @@
 {
   "description": "Medical content and clinical resources for patient education",
   "encoding": "UTF-8",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "medical_content": [
     {
       "id": "MC-THAI-001",
       "title_thai": "การดูแลสุขภาพสำหรับผู้ป่วยเบาหวาน",
       "title_english": "Health Care for Diabetic Patients",
-      "category": "chronic_disease",
+      "category": "chronic-disease",
       "author_id": "DOC-TEST-001",
       "status": "published",
       "tags": ["เบาหวาน", "โรคเรื้อรัง", "diabetes"]
@@ -16,7 +16,7 @@
       "id": "MC-THAI-002",
       "title_thai": "ความดันโลหิตสูง: ฆาตกรเงียบที่ต้องระวัง",
       "title_english": "Hypertension: The Silent Killer",
-      "category": "chronic_disease",
+      "category": "chronic-disease",
       "author_id": "DOC-TEST-001",
       "status": "published",
       "tags": ["ความดันโลหิตสูง", "hypertension"]
@@ -25,7 +25,7 @@
       "id": "MC-THAI-003",
       "title_thai": "การป้องกันโรคติดเชื้อทางเดินหายใจ",
       "title_english": "Respiratory Infection Prevention",
-      "category": "prevention",
+      "category": "preventive-care",
       "author_id": "DOC-TEST-001",
       "status": "published",
       "tags": ["ป้องกัน", "respiratory"]
@@ -34,7 +34,7 @@
       "id": "MC-THAI-004",
       "title_thai": "โภชนาการเพื่อสุขภาพที่ดี",
       "title_english": "Nutrition for Good Health",
-      "category": "lifestyle",
+      "category": "nutrition",
       "author_id": "DOC-TEST-001",
       "status": "published",
       "tags": ["โภชนาการ", "nutrition"]
@@ -43,10 +43,46 @@
       "id": "MC-THAI-005",
       "title_thai": "การออกกำลังกายเพื่อสุขภาพ",
       "title_english": "Exercise for Health",
-      "category": "lifestyle",
+      "category": "exercise",
       "author_id": "DOC-TEST-001",
       "status": "published",
       "tags": ["ออกกำลังกาย", "exercise"]
+    },
+    {
+      "id": "MC-THAI-006",
+      "title_thai": "สุขภาพจิตที่ดีเริ่มต้นจากตัวเรา",
+      "title_english": "Good Mental Health Starts With You",
+      "category": "mental-health",
+      "author_id": "DOC-TEST-001",
+      "status": "published",
+      "tags": ["สุขภาพจิต", "mental-health", "ความเครียด"]
+    },
+    {
+      "id": "MC-THAI-007",
+      "title_thai": "การใช้ยาอย่างปลอดภัย",
+      "title_english": "Safe Medication Use",
+      "category": "medications",
+      "author_id": "DOC-TEST-001",
+      "status": "published",
+      "tags": ["ยา", "medications", "การใช้ยา"]
+    },
+    {
+      "id": "MC-THAI-008",
+      "title_thai": "ปฐมพยาบาลเบื้องต้นที่ทุกคนควรรู้",
+      "title_english": "First Aid Basics Everyone Should Know",
+      "category": "first-aid",
+      "author_id": "DOC-TEST-001",
+      "status": "published",
+      "tags": ["ปฐมพยาบาล", "first-aid", "ฉุกเฉิน"]
+    },
+    {
+      "id": "MC-THAI-009",
+      "title_thai": "สุขภาพทั่วไป: เริ่มต้นวันใหม่อย่างมีสุขภาพดี",
+      "title_english": "General Health: Start Your Day Right",
+      "category": "general-health",
+      "author_id": "DOC-TEST-001",
+      "status": "published",
+      "tags": ["สุขภาพ", "general-health", "สุขภาพทั่วไป"]
     }
   ],
   "clinical_resources": [

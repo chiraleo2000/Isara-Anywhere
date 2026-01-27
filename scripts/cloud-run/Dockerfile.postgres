@@ -1,5 +1,6 @@
 # PostgreSQL with pgvector for Cloud Run
 # Data initialized from seed file on startup
+# Same architecture as local Docker container
 
 FROM pgvector/pgvector:pg16
 
@@ -15,7 +16,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy initialization SQL (will run on first startup)
+# Copy initialization SQL from init-scripts folder
 COPY init-scripts/ /docker-entrypoint-initdb.d/
 
 # Health check

@@ -23,6 +23,40 @@ console.log('[PHR] Production mode - PostgreSQL only');
 // PHR (Personal Health Records) ROUTES
 // ============================================================================
 
+// Helper function to transform PHR from database format to frontend format
+function transformPHR(phr: any): any {
+  if (!phr) return null;
+  
+  return {
+    id: phr.id,
+    patientId: phr.patient_id,
+    demographics: {
+      height: phr.height_cm || phr.demographics?.height,
+      weight: phr.weight_kg || phr.demographics?.weight,
+      bloodType: phr.blood_type || phr.demographics?.bloodType,
+      dateOfBirth: phr.demographics?.dateOfBirth,
+      gender: phr.demographics?.gender,
+      ...phr.demographics
+    },
+    allergies: phr.allergies || [],
+    chronicConditions: phr.chronic_conditions || [],
+    medications: phr.medications || [],
+    emergencyContacts: phr.emergency_contacts || [],
+    familyHistory: phr.family_history || [],
+    surgicalHistory: phr.surgical_history || [],
+    vaccinations: phr.vaccinations || [],
+    lifestyle: phr.lifestyle || {},
+    latestLabResults: phr.latest_lab_results || [],
+    clinicalDecisionSupport: phr.clinical_decision_support,
+    bmi: phr.bmi,
+    emergencyContactName: phr.emergency_contact_name,
+    emergencyContactPhone: phr.emergency_contact_phone,
+    emergencyContactRelation: phr.emergency_contact_relation,
+    createdAt: phr.created_at,
+    updatedAt: phr.updated_at
+  };
+}
+
 // Get patient PHR (with /patient/ prefix for compatibility)
 router.get('/patient/:patientId', authMiddleware, async (req: Request, res: Response) => {
   try {
@@ -35,16 +69,16 @@ router.get('/patient/:patientId', authMiddleware, async (req: Request, res: Resp
       return res.json({
         patientId,
         allergies: [],
-        chronic_conditions: [],
+        chronicConditions: [],
         medications: [],
-        emergency_contacts: [],
+        emergencyContacts: [],
         demographics: {},
         lifestyle: {},
-        created_at: null,
-        updated_at: null
+        createdAt: null,
+        updatedAt: null
       });
     }
-    return res.json(phr);
+    return res.json(transformPHR(phr));
   } catch (error: any) {
     console.error('[PHR] Get PHR error:', error);
     return res.status(500).json({ error: 'Failed to get PHR', message: error.message });
@@ -63,16 +97,16 @@ router.get('/:patientId', authMiddleware, async (req: Request, res: Response) =>
       return res.json({
         patientId,
         allergies: [],
-        chronic_conditions: [],
+        chronicConditions: [],
         medications: [],
-        emergency_contacts: [],
+        emergencyContacts: [],
         demographics: {},
         lifestyle: {},
-        created_at: null,
-        updated_at: null
+        createdAt: null,
+        updatedAt: null
       });
     }
-    return res.json(phr);
+    return res.json(transformPHR(phr));
   } catch (error: any) {
     console.error('[PHR] Get PHR error:', error);
     return res.status(500).json({ error: 'Failed to get PHR', message: error.message });
@@ -155,7 +189,48 @@ router.get('/:patientId/vitals', authMiddleware, async (req: Request, res: Respo
     console.log(`[PHR] Getting vitals for patient: ${patientId}`);
 
     const vitals = await PHRService.getVitalSigns(patientId);
-    return res.json(vitals || []);
+    
+    // Transform database format to frontend format
+    const transformedVitals = (vitals || []).map((vital: any) => ({
+      id: vital.id,
+      patientId: vital.patient_id,
+      bloodPressure: vital.blood_pressure_systolic ? {
+        systolic: vital.blood_pressure_systolic,
+        diastolic: vital.blood_pressure_diastolic,
+        unit: 'mmHg'
+      } : undefined,
+      heartRate: vital.heart_rate ? {
+        value: vital.heart_rate,
+        unit: 'bpm'
+      } : undefined,
+      temperature: vital.temperature ? {
+        value: Number(vital.temperature),
+        unit: '°C'
+      } : undefined,
+      weight: vital.weight ? {
+        value: Number(vital.weight),
+        unit: 'kg'
+      } : undefined,
+      height: vital.height ? {
+        value: Number(vital.height),
+        unit: 'cm'
+      } : undefined,
+      oxygenSaturation: vital.oxygen_saturation ? {
+        value: vital.oxygen_saturation,
+        unit: '%'
+      } : undefined,
+      bloodGlucose: vital.blood_glucose ? {
+        value: vital.blood_glucose,
+        unit: 'mg/dL',
+        timing: vital.blood_glucose_type || 'random'
+      } : undefined,
+      bmi: vital.bmi ? Number(vital.bmi) : undefined,
+      measuredAt: vital.measured_at || vital.recorded_at,
+      source: vital.source,
+      notes: vital.notes
+    }));
+    
+    return res.json(transformedVitals);
   } catch (error: any) {
     console.error('[PHR] Get vitals error:', error);
     res.status(500).json({ error: 'Failed to fetch vital signs' });

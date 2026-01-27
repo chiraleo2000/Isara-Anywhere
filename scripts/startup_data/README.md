@@ -34,11 +34,8 @@ This folder contains JSON startup data files for initializing the Izara Telemedi
 
 ### Using Seeder Script
 ```bash
-# Seed local Docker database
+# Seed PostgreSQL Docker database
 node scripts/seeder.cjs
-
-# Seed Cloud SQL database
-node scripts/seeder.cjs --cloud
 
 # Verify data only
 node scripts/seeder.cjs --verify
@@ -46,12 +43,14 @@ node scripts/seeder.cjs --verify
 
 ### Using SQL Directly
 ```bash
-# Local Docker
-docker exec -i izara-postgres psql -U postgres -d izara_phase1 < scripts/db/init-database.sql
+# PostgreSQL Docker container
+docker exec -i izara-postgres psql -U postgres -d izara_phase1 < scripts/database/izara-database.sql
 
-# Cloud SQL
-gcloud sql connect izara-db-instance --user=postgres --database=izara_phase1 < scripts/db/init-database.sql
+# PowerShell
+Get-Content scripts\database\izara-database.sql | docker exec -i izara-postgres psql -U postgres -d izara_phase1
 ```
+
+> **Note:** NO Cloud SQL is used. PostgreSQL runs as a Docker service alongside the portals.
 
 ## Encoding
 

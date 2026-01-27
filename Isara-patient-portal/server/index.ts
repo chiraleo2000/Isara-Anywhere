@@ -351,6 +351,70 @@ app.get('/api/health-records/instructions/:appointmentId', async (req: Request, 
 });
 
 // ============================================================================
+// DASHBOARD STATS - Patient Portal
+// ============================================================================
+app.get('/api/dashboard/stats', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id || (req as any).user?.patientId;
+    console.log(`[DASHBOARD] Getting stats for patient: ${userId}`);
+    
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    
+    // Get stats from PostgreSQL
+    const pool = getPool();
+    
+    // Count upcoming appointments
+    const upcomingAppts = await pool.query(
+      `SELECT COUNT(*) as count FROM appointments 
+       WHERE patient_id = $1 
+       AND status IN ('pending', 'confirmed', 'scheduled')
+       AND appointment_date >= CURRENT_DATE`,
+      [userId]
+    );
+    
+    // Count active medications
+    const activeMeds = await pool.query(
+      `SELECT COUNT(*) as count FROM prescriptions 
+       WHERE patient_id = $1 
+       AND status = 'active'`,
+      [userId]
+    );
+    
+    // Get latest vital signs
+    const latestVitals = await pool.query(
+      `SELECT * FROM vitals 
+       WHERE patient_id = $1 
+       ORDER BY recorded_at DESC 
+       LIMIT 1`,
+      [userId]
+    );
+    
+    // Count unread notifications
+    const unreadNotifs = await pool.query(
+      `SELECT COUNT(*) as count FROM notifications 
+       WHERE user_id = $1 
+       AND read_at IS NULL`,
+      [userId]
+    );
+    
+    res.json({
+      success: true,
+      stats: {
+        upcomingAppointments: parseInt(upcomingAppts.rows[0]?.count || 0),
+        activeMedications: parseInt(activeMeds.rows[0]?.count || 0),
+        unreadNotifications: parseInt(unreadNotifs.rows[0]?.count || 0),
+        latestVitals: latestVitals.rows[0] || null
+      }
+    });
+  } catch (error: any) {
+    console.error('[DASHBOARD] Stats error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============================================================================
 // HEALTH RECORDS - TREATMENT RESULTS
 // ============================================================================
 app.get('/api/health-records/treatment-results', async (req: Request, res: Response) => {

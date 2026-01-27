@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Izara Diagram: 16-data-sync-workflow</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5; }
+        .container { max-width: 100%; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; text-align: center; border-bottom: 2px solid #eee; padding-bottom: 15px; }
+        .mermaid { display: flex; justify-content: center; margin-top: 20px; }
+        .nav { margin-bottom: 20px; text-align: center; }
+        .nav a { margin: 0 10px; color: #3498db; text-decoration: none; font-weight: bold; }
+        .nav a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="nav">
+        <a href="index.html">🔙 Back to Index</a>
+        <span>|</span>
+        <a href="javascript:location.reload()">🔄 Refresh</a>
+    </div>
+    <div class="container">
+        <h1>16-data-sync-workflow</h1>
+        <div class="mermaid">
+            %%{init: {
+  'theme': 'base',
+  'themeVariables': {
+    'primaryColor': '#E3F2FD',
+    'primaryTextColor': '#0D47A1',
+    'primaryBorderColor': '#2196F3',
+    'lineColor': '#1976D2',
+    'secondaryColor': '#E8F5E9',
+    'tertiaryColor': '#FFF3E0',
+    'fontSize': '28px',
+    'fontFamily': 'Segoe UI, Arial'
+  }
+}}%%
+
+flowchart LR
+    subgraph TITLE["🔄 DATA FLOW ARCHITECTURE<br/>สถาปัตยกรรมการไหลของข้อมูล"]
+        direction TB
+    end
+
+    subgraph CLIENTS["💻 CLIENTS"]
+        P_APP["📱 Patient Portal"]
+        D_APP["💻 Doctor Portal"]
+    end
+
+    subgraph API["⚙️ API GATEWAY"]
+        LB["⚖️ Load Balancer"]
+        BE_SVC["🚀 Backend Service"]
+    end
+
+    subgraph DATA["💾 DATA LAYER"]
+        PG["🐘 PostgreSQL<br/>(Transactional Data)"]
+        GCS["📦 GCS Buckets<br/>(File Storage)"]
+    end
+
+    %% Flow
+    P_APP -->|REST API| LB
+    D_APP -->|REST API| LB
+    LB --> BE_SVC
+    
+    BE_SVC -->|Query/Update| PG
+    BE_SVC -->|Upload/Download| GCS
+
+    %% Styling
+    classDef clientStyle fill:#E3F2FD,stroke:#2196F3,stroke-width:2px,color:#0D47A1
+    classDef apiStyle fill:#FFF3E0,stroke:#FF9800,stroke-width:2px,color:#E65100
+    classDef dataStyle fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px,color:#1B5E20
+    
+    class P_APP,D_APP clientStyle
+    class LB,BE_SVC apiStyle
+    class PG,GCS dataStyle
+
+        </div>
+    </div>
+    <script>
+        mermaid.initialize({ 
+            startOnLoad: true, 
+            theme: 'base',
+            securityLevel: 'loose',
+            themeVariables: {
+                primaryColor: '#E3F2FD',
+                secondaryColor: '#E8F5E9',
+                tertiaryColor: '#FFF3E0',
+                fontSize: '16px'
+            }
+        });
+    </script>
+</body>
+</html>

@@ -4554,6 +4554,65 @@ app.get('/api/phr/patient/:patientId/vitals/history', authenticateToken, async (
 });
 
 // ============================================================================
+// PRESCRIPTIONS Routes - PostgreSQL Only
+// ============================================================================
+
+// Get pending prescriptions count for a doctor
+app.get('/api/prescriptions/pending/count/:doctorId', authenticateToken, async (req, res) => {
+  try {
+    const { doctorId } = req.params;
+    console.log(`💊 Getting pending prescriptions count for doctor: ${doctorId}`);
+    
+    if (!DB_AVAILABLE || !PostgresDataService) {
+      return res.json({ success: true, count: 0 });
+    }
+    
+    // Query PostgreSQL for prescriptions with status='pending' for this doctor
+    const result = await PostgresDataService.query(
+      `SELECT COUNT(*) as count 
+       FROM prescriptions 
+       WHERE doctor_id = $1 
+       AND status = 'pending'`,
+      [doctorId]
+    );
+    
+    const count = parseInt(result.rows[0]?.count || 0);
+    console.log(`💊 Found ${count} pending prescriptions for doctor ${doctorId}`);
+    
+    res.json({ success: true, count });
+  } catch (error) {
+    console.error('❌ Pending prescriptions count error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get all pending prescriptions for a doctor
+app.get('/api/prescriptions/pending/:doctorId', authenticateToken, async (req, res) => {
+  try {
+    const { doctorId } = req.params;
+    console.log(`💊 Getting pending prescriptions for doctor: ${doctorId}`);
+    
+    if (!DB_AVAILABLE || !PostgresDataService) {
+      return res.json({ success: true, prescriptions: [] });
+    }
+    
+    // Query PostgreSQL for pending prescriptions
+    const result = await PostgresDataService.query(
+      `SELECT * FROM prescriptions 
+       WHERE doctor_id = $1 
+       AND status = 'pending'
+       ORDER BY created_at DESC`,
+      [doctorId]
+    );
+    
+    res.json({ success: true, prescriptions: result.rows });
+  } catch (error) {
+    console.error('❌ Pending prescriptions fetch error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============================================================================
 // NOTIFICATIONS Routes - PostgreSQL Only
 // ============================================================================
 
@@ -4810,6 +4869,7 @@ app.get('/api/content/medical', async (req, res) => {
         viewCount: a.view_count || 0,
         likeCount: a.like_count || 0,
         imageUrl: a.image_url || null,
+        thumbnail: a.image_url || null,  // Alias for frontend compatibility
         createdAt: a.created_at,
         updatedAt: a.updated_at,
         publishedAt: a.published_at
@@ -4868,7 +4928,8 @@ app.post('/api/content/medical', authenticateToken, async (req, res) => {
       category: data.category,
       tags: data.tags,
       author_id: req.user?.id || data.authorId,
-      status: data.status || 'draft'
+      status: data.status || 'draft',
+      image_url: data.thumbnail || data.imageUrl || null
     });
     
     res.status(201).json({ success: true, article });
@@ -4895,12 +4956,13 @@ app.put('/api/content/medical/:id', authenticateToken, async (req, res) => {
         category = COALESCE($6, category),
         tags = COALESCE($7, tags),
         status = COALESCE($8, status),
+        image_url = COALESCE($9, image_url),
         updated_at = NOW()
        WHERE id = $1
        RETURNING *`,
       [id, data.titleThai || data.title, data.titleEnglish || data.title, 
        data.contentThai || data.content, data.contentEnglish || data.content, 
-       data.category, JSON.stringify(data.tags || []), data.status]
+       data.category, JSON.stringify(data.tags || []), data.status, data.thumbnail || data.imageUrl]
     );
     
     if (result.rowCount === 0) {
@@ -5030,9 +5092,11 @@ app.get('/api/content/clinical', async (req, res) => {
         guidelineYear: r.guideline_year,
         source: r.source,
         tags: typeof r.tags === 'string' ? JSON.parse(r.tags || '[]') : (r.tags || []),
+        createdBy: r.author_id,
+        createdByName: r.author_name || r.source || 'Clinical Team',
         author: {
-          id: r.approved_by,
-          name: 'Clinical Team'
+          id: r.author_id || r.approved_by,
+          name: r.author_name || r.source || 'Clinical Team'
         },
         status: r.status,
         viewCount: 0,
@@ -5315,13 +5379,13 @@ app.put('/api/clinical-resources/:resourceId/approve', authenticateToken, async 
 });
 
 // ============================================================================
-// CONSULTANTS (External Specialists) - PostgreSQL ONLY
+// CONSULTANTS (External Specialists) - PostgreSQL ONLY - PUBLIC ACCESS
 // ============================================================================
 
-app.get('/api/consultants', authenticateToken, async (req, res) => {
+app.get('/api/consultants', async (req, res) => {
   try {
     const { specialty, status } = req.query;
-    console.log('👨‍⚕️ Fetching consultants from PostgreSQL...');
+    console.log('👨‍⚕️ Fetching consultants from PostgreSQL (PUBLIC)...');
     
     // Demo consultants for fallback
     const demoConsultants = [
@@ -5428,7 +5492,29 @@ app.get('/api/consultants', authenticateToken, async (req, res) => {
       );
     }
     
-    res.json({ success: true, consultants, count: consultants.length });
+    // Transform data to match frontend expectations (camelCase, mapped fields)
+    const transformedConsultants = consultants.map(c => ({
+      id: c.id,
+      name: c.name,
+      nameThai: c.name_thai,
+      specialty: c.specialty,
+      specialtyThai: c.specialty_thai,
+      hospital: c.hospital,
+      hospitalThai: c.hospital_thai,
+      phone: c.phone,
+      email: c.email,
+      photo: c.avatar_url || c.photo || `https://api.dicebear.com/7.x/avataaars/svg?seed=${c.id}`,
+      available: c.is_available !== undefined ? c.is_available : true,
+      languages: c.languages || ['Thai'],
+      experience: c.experience_years || c.experience || 0,
+      rating: c.rating || 4.5,
+      bio: c.bio,
+      createdBy: c.created_by,
+      createdAt: c.created_at,
+      updatedAt: c.updated_at
+    }));
+    
+    res.json({ success: true, consultants: transformedConsultants, count: transformedConsultants.length });
   } catch (error) {
     console.error('❌ Consultants fetch error:', error);
     res.status(500).json({ 
@@ -5438,10 +5524,10 @@ app.get('/api/consultants', authenticateToken, async (req, res) => {
   }
 });
 
-// Get list of specialties for consultants dropdown
-app.get('/api/consultants/specialties/list', authenticateToken, async (req, res) => {
+// Get list of specialties for consultants dropdown - PUBLIC ACCESS
+app.get('/api/consultants/specialties/list', async (req, res) => {
   try {
-    console.log('👨‍⚕️ Fetching consultant specialties...');
+    console.log('👨‍⚕️ Fetching consultant specialties (PUBLIC)...');
     
     const defaultSpecialties = [
       'Cardiology',

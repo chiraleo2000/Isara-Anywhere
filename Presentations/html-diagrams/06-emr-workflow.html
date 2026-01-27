@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Izara Diagram: 06-emr-workflow</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5; }
+        .container { max-width: 100%; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; text-align: center; border-bottom: 2px solid #eee; padding-bottom: 15px; }
+        .mermaid { display: flex; justify-content: center; margin-top: 20px; }
+        .nav { margin-bottom: 20px; text-align: center; }
+        .nav a { margin: 0 10px; color: #3498db; text-decoration: none; font-weight: bold; }
+        .nav a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="nav">
+        <a href="index.html">🔙 Back to Index</a>
+        <span>|</span>
+        <a href="javascript:location.reload()">🔄 Refresh</a>
+    </div>
+    <div class="container">
+        <h1>06-emr-workflow</h1>
+        <div class="mermaid">
+            %%{init: {
+  'theme': 'base',
+  'themeVariables': {
+    'primaryColor': '#E3F2FD',
+    'primaryTextColor': '#0D47A1',
+    'primaryBorderColor': '#2196F3',
+    'lineColor': '#1976D2',
+    'secondaryColor': '#E8F5E9',
+    'tertiaryColor': '#FFF3E0',
+    'fontSize': '28px',
+    'fontFamily': 'Segoe UI, Arial'
+  }
+}}%%
+
+flowchart LR
+    subgraph INIT["🔧 INIT"]
+        A1["👤 Select Patient"]
+        A2["📂 Load History"]
+        A3["📝 New EMR Record"]
+    end
+
+    subgraph S["📌 S - SUBJECTIVE"]
+        B1["🗣️ Chief Complaint"]
+        B2["📋 Present Illness"]
+        B3["📊 Review Systems"]
+    end
+
+    subgraph O["📊 O - OBJECTIVE"]
+        C1["💓 Vitals<br/>BP, HR, Temp"]
+        C2["🩺 Physical Exam"]
+        C3["🧪 Lab Results"]
+    end
+
+    subgraph A["🔬 A - ASSESSMENT"]
+        D1["🤔 Differential Dx"]
+        D2["✅ Primary Dx"]
+        D3["🏷️ ICD-10 Codes"]
+        D4["🤖 AI Suggestions"]
+    end
+
+    subgraph P["📝 P - PLAN"]
+        E1["💊 Medications"]
+        E2["🧪 Orders"]
+        E3["📚 Education"]
+        E4["📅 Follow-up"]
+    end
+
+    subgraph SAVE["✅ FINALIZE"]
+        F1["👀 Review All"]
+        F2["✍️ Digital Sign"]
+        F3["💾 Save to DB"]
+        F4["🔔 Notify Patient"]
+    end
+
+    %% Linear flow
+    A1 --> A2 --> A3
+    A3 --> B1 --> B2 --> B3
+    B3 --> C1 --> C2 --> C3
+    C3 --> D1 --> D2 --> D3 --> D4
+    D4 --> E1 --> E2 --> E3 --> E4
+    E4 --> F1 --> F2 --> F3 --> F4
+
+    %% Styling
+    classDef initStyle fill:#ECEFF1,stroke:#607D8B,stroke-width:2px,color:#37474F
+    classDef subStyle fill:#E3F2FD,stroke:#2196F3,stroke-width:2px,color:#0D47A1
+    classDef objStyle fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px,color:#1B5E20
+    classDef assessStyle fill:#FFF3E0,stroke:#FF9800,stroke-width:2px,color:#E65100
+    classDef planStyle fill:#F3E5F5,stroke:#9C27B0,stroke-width:2px,color:#4A148C
+    classDef saveStyle fill:#E0F7FA,stroke:#00BCD4,stroke-width:2px,color:#006064
+
+    class A1,A2,A3 initStyle
+    class B1,B2,B3 subStyle
+    class C1,C2,C3 objStyle
+    class D1,D2,D3,D4 assessStyle
+    class E1,E2,E3,E4 planStyle
+    class F1,F2,F3,F4 saveStyle
+
+        </div>
+    </div>
+    <script>
+        mermaid.initialize({ 
+            startOnLoad: true, 
+            theme: 'base',
+            securityLevel: 'loose',
+            themeVariables: {
+                primaryColor: '#E3F2FD',
+                secondaryColor: '#E8F5E9',
+                tertiaryColor: '#FFF3E0',
+                fontSize: '16px'
+            }
+        });
+    </script>
+</body>
+</html>

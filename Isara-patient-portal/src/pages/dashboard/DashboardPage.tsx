@@ -9,12 +9,13 @@ import {
   Calendar,
   MessageCircle,
   FileText,
-  MapPin,
   Clock,
   ChevronRight,
   Video,
   Bell,
   Plus,
+  BookOpen,
+  MapPin,
 } from 'lucide-react';
 
 export default function DashboardPage() {
@@ -29,7 +30,7 @@ export default function DashboardPage() {
     { icon: Calendar, label: t('dashboard.bookAppointment'), path: '/appointments/book', color: 'from-blue-500 to-blue-600' },
     { icon: MessageCircle, label: t('dashboard.consultAI'), path: '/ai-doctor', color: 'from-purple-500 to-purple-600' },
     { icon: FileText, label: t('dashboard.healthRecords'), path: '/phr', color: 'from-emerald-500 to-emerald-600' },
-    { icon: MapPin, label: t('dashboard.findHospital'), path: '/map', color: 'from-orange-500 to-orange-600' },
+    { icon: BookOpen, label: t('dashboard.healthLibrary') || 'คลังความรู้สุขภาพ', path: '/health-library', color: 'from-orange-500 to-orange-600' },
   ];
 
 

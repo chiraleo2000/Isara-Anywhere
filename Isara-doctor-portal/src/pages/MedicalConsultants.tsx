@@ -204,21 +204,20 @@ const MedicalConsultants: React.FC = () => {
   // ============================================================================
   // DATA FETCHING
   // ============================================================================
-  const getAuthHeaders = useCallback(() => {
+  const getAuthHeaders = useCallback((): Record<string, string> => {
     const token = localStorage.getItem('token') || '';
     return {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`
     };
-  }, []);
+  }, []); // Empty deps - token is read from localStorage each call
 
   const fetchConsultants = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch(`${API_BASE}/api/consultants`, {
-        headers: getAuthHeaders()
-      });
+      const headers = getAuthHeaders();
+      const response = await fetch(`${API_BASE}/api/consultants`, { headers });
       if (!response.ok) throw new Error('Failed to fetch consultants');
       const data = await response.json();
       setConsultants(data.consultants || []);
@@ -232,9 +231,8 @@ const MedicalConsultants: React.FC = () => {
 
   const fetchSpecialties = useCallback(async () => {
     try {
-      const response = await fetch(`${API_BASE}/api/consultants/specialties/list`, {
-        headers: getAuthHeaders()
-      });
+      const headers = getAuthHeaders();
+      const response = await fetch(`${API_BASE}/api/consultants/specialties/list`, { headers });
       if (response.ok) {
         const data = await response.json();
         setSpecialties(['All Specialties', ...(data.specialties || [])]);
@@ -244,10 +242,16 @@ const MedicalConsultants: React.FC = () => {
     }
   }, [getAuthHeaders]);
 
+  // Load data on mount only
   useEffect(() => {
-    fetchConsultants();
-    fetchSpecialties();
-  }, [fetchConsultants, fetchSpecialties]);
+    let mounted = true;
+    const loadData = async () => {
+      if (mounted) await fetchConsultants();
+      if (mounted) await fetchSpecialties();
+    };
+    loadData();
+    return () => { mounted = false; };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ============================================================================
   // FILTERING

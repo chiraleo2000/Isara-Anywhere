@@ -1,0 +1,212 @@
+{
+  "meeting": {
+    "id": "MEETING-DEMO-001",
+    "appointmentId": "APT-DEMO-001",
+    "patientId": "PATIENT-DEMO",
+    "doctorId": "DOC-001",
+    "roomName": "izara-demo-consultation",
+    "jitsiUrl": "https://meet.jit.si/izara-demo-consultation",
+    "status": "completed",
+    "startTime": "2026-01-27T09:00:00+07:00",
+    "endTime": "2026-01-27T09:15:00+07:00",
+    "duration": 15,
+    "recordingEnabled": true,
+    "transcriptEnabled": true
+  },
+  "hostControls": {
+    "lobbyEnabled": true,
+    "transcriptStartTime": "2026-01-27T09:00:30+07:00",
+    "transcriptStopTime": "2026-01-27T09:14:00+07:00",
+    "recordingStartTime": "2026-01-27T09:00:00+07:00",
+    "recordingStopTime": "2026-01-27T09:15:00+07:00",
+    "guestsApproved": ["PATIENT-DEMO", "GUEST-001"]
+  },
+  "participants": [
+    {
+      "id": "DOC-001",
+      "name": "นพ. ทดสอบ แพทย์ดี",
+      "role": "host",
+      "email": "doctor.test@izara.com",
+      "joinTime": "2026-01-27T08:58:00+07:00",
+      "leaveTime": "2026-01-27T09:15:00+07:00",
+      "cameraOn": true,
+      "micOn": true
+    },
+    {
+      "id": "PATIENT-DEMO",
+      "name": "นาย ทดสอบ ระบบ",
+      "role": "patient",
+      "email": "demo.test@gmail.com",
+      "joinTime": "2026-01-27T09:00:00+07:00",
+      "leaveTime": "2026-01-27T09:15:00+07:00",
+      "lobbyWaitTime": 30,
+      "approvedByHost": true,
+      "cameraOn": true,
+      "micOn": true
+    },
+    {
+      "id": "GUEST-001",
+      "name": "นางสมศรี ทดสอบ",
+      "role": "patient_relative",
+      "email": "relative@example.com",
+      "inviteType": "patient_relative",
+      "invitedBy": "PATIENT-DEMO",
+      "joinTime": "2026-01-27T09:02:00+07:00",
+      "leaveTime": "2026-01-27T09:15:00+07:00",
+      "lobbyWaitTime": 45,
+      "approvedByHost": true,
+      "cameraOn": true,
+      "micOn": false
+    }
+  ],
+  "guestInvites": [
+    {
+      "id": "INVITE-001",
+      "appointmentId": "APT-DEMO-001",
+      "guestEmail": "relative@example.com",
+      "guestName": "นางสมศรี ทดสอบ",
+      "guestType": "patient_relative",
+      "invitedBy": "PATIENT-DEMO",
+      "invitedByRole": "patient",
+      "token": "secure-token-abc123",
+      "status": "accepted",
+      "createdAt": "2026-01-27T08:00:00+07:00",
+      "acceptedAt": "2026-01-27T09:02:00+07:00"
+    },
+    {
+      "id": "INVITE-002",
+      "appointmentId": "APT-DEMO-001",
+      "guestEmail": "dr.cardio@hospital.co.th",
+      "guestName": "นพ. หัวใจ ดี",
+      "guestType": "doctor_consultant",
+      "invitedBy": "DOC-001",
+      "invitedByRole": "doctor",
+      "token": "secure-token-def456",
+      "status": "pending",
+      "createdAt": "2026-01-27T08:30:00+07:00"
+    }
+  ],
+  "transcript": {
+    "language": "th",
+    "startTime": "2026-01-27T09:00:30+07:00",
+    "endTime": "2026-01-27T09:14:00+07:00",
+    "segments": [
+      {
+        "timestamp": "00:00:05",
+        "speaker": "Doctor",
+        "speakerId": "DOC-001",
+        "text": "สวัสดีครับ คุณผู้ป่วย วันนี้มีอาการอย่างไรบ้างครับ",
+        "confidence": 0.95
+      },
+      {
+        "timestamp": "00:00:15",
+        "speaker": "Patient",
+        "speakerId": "PATIENT-DEMO",
+        "text": "หมอครับ ผมปวดหัวมา 3 วันแล้ว และมีไข้ต่ำๆ ครับ",
+        "confidence": 0.92
+      },
+      {
+        "timestamp": "00:00:30",
+        "speaker": "Doctor",
+        "speakerId": "DOC-001",
+        "text": "เริ่มปวดหัวตอนไหนครับ เช้าหรือบ่าย",
+        "confidence": 0.97
+      },
+      {
+        "timestamp": "00:00:40",
+        "speaker": "Patient",
+        "speakerId": "PATIENT-DEMO",
+        "text": "ปวดตลอดทั้งวันครับ โดยเฉพาะตอนเช้า",
+        "confidence": 0.94
+      },
+      {
+        "timestamp": "00:00:55",
+        "speaker": "Doctor",
+        "speakerId": "DOC-001",
+        "text": "มีอาการคลื่นไส้หรืออาเจียนไหมครับ",
+        "confidence": 0.96
+      },
+      {
+        "timestamp": "00:01:05",
+        "speaker": "Patient",
+        "speakerId": "PATIENT-DEMO",
+        "text": "ไม่มีครับ แต่รู้สึกเพลียๆ",
+        "confidence": 0.91
+      },
+      {
+        "timestamp": "00:01:20",
+        "speaker": "Doctor",
+        "speakerId": "DOC-001",
+        "text": "ตรวจดูแล้ว น่าจะเป็นไข้หวัดธรรมดาครับ ให้ยาลดไข้และยาแก้ปวดไปครับ",
+        "confidence": 0.93
+      }
+    ],
+    "fullText": "Doctor: สวัสดีครับ คุณผู้ป่วย วันนี้มีอาการอย่างไรบ้างครับ\nPatient: หมอครับ ผมปวดหัวมา 3 วันแล้ว และมีไข้ต่ำๆ ครับ\nDoctor: เริ่มปวดหัวตอนไหนครับ เช้าหรือบ่าย\nPatient: ปวดตลอดทั้งวันครับ โดยเฉพาะตอนเช้า\nDoctor: มีอาการคลื่นไส้หรืออาเจียนไหมครับ\nPatient: ไม่มีครับ แต่รู้สึกเพลียๆ\nDoctor: ตรวจดูแล้ว น่าจะเป็นไข้หวัดธรรมดาครับ ให้ยาลดไข้และยาแก้ปวดไปครับ"
+  },
+  "chatMessages": [
+    {
+      "id": "CHAT-001",
+      "timestamp": "2026-01-27T09:03:00+07:00",
+      "sender": "นางสมศรี ทดสอบ",
+      "senderId": "GUEST-001",
+      "senderRole": "patient_relative",
+      "message": "หมอคะ ลูกทานข้าวน้อยลงด้วยค่ะ"
+    },
+    {
+      "id": "CHAT-002",
+      "timestamp": "2026-01-27T09:04:00+07:00",
+      "sender": "นพ. ทดสอบ แพทย์ดี",
+      "senderId": "DOC-001",
+      "senderRole": "host",
+      "message": "เดี๋ยวจะให้ยาบำรุงด้วยนะครับ"
+    },
+    {
+      "id": "CHAT-003",
+      "timestamp": "2026-01-27T09:10:00+07:00",
+      "sender": "นาย ทดสอบ ระบบ",
+      "senderId": "PATIENT-DEMO",
+      "senderRole": "patient",
+      "message": "ขอบคุณครับหมอ"
+    }
+  ],
+  "aiSummary": {
+    "generatedAt": "2026-01-27T09:16:00+07:00",
+    "model": "gemini-2.5-flash",
+    "chiefComplaint": "ปวดหัว 3 วัน มีไข้ต่ำ",
+    "historyOfPresentIllness": "ผู้ป่วยมีอาการปวดหัวมา 3 วัน ปวดตลอดทั้งวันโดยเฉพาะตอนเช้า ร่วมกับมีไข้ต่ำๆ รู้สึกเพลีย ทานข้าวน้อยลง ไม่มีอาการคลื่นไส้อาเจียน",
+    "physicalExam": "Temp: 37.5°C, BP: 120/80 mmHg, HR: 80 bpm, General appearance: Mild fatigue",
+    "assessment": "ไข้หวัดธรรมดา (Common Cold) - ICD-10: J00",
+    "plan": [
+      "ให้ยาลดไข้ Paracetamol 500mg PRN q4-6h",
+      "ให้ยาแก้ปวด Ibuprofen 400mg PRN q6-8h",
+      "ให้ยาบำรุงร่างกาย Multivitamin 1 tab OD",
+      "พักผ่อนให้เพียงพอ ดื่มน้ำมากๆ"
+    ],
+    "followUp": "นัดตรวจติดตามใน 1 สัปดาห์ หากอาการไม่ดีขึ้น หรือมีไข้สูงกว่า 39°C ให้กลับมาพบแพทย์ทันที",
+    "patientInstructions": [
+      "พักผ่อนให้เพียงพอ อย่างน้อยวันละ 8 ชั่วโมง",
+      "ดื่มน้ำอุ่นมากๆ อย่างน้อยวันละ 8-10 แก้ว",
+      "ทานยาลดไข้เมื่อมีไข้สูงกว่า 38°C",
+      "หากอาการไม่ดีขึ้นใน 3-5 วัน ให้กลับมาพบแพทย์"
+    ],
+    "requiresValidation": true,
+    "validatedByDoctor": false
+  },
+  "emrDraft": {
+    "id": "EMR-DRAFT-001",
+    "appointmentId": "APT-DEMO-001",
+    "patientId": "PATIENT-DEMO",
+    "doctorId": "DOC-001",
+    "format": "OPD-CARD-THAI",
+    "status": "pending_validation",
+    "sections": {
+      "subjective": "ผู้ป่วยมีอาการปวดหัวมา 3 วัน ปวดตลอดทั้งวันโดยเฉพาะตอนเช้า ร่วมกับมีไข้ต่ำๆ รู้สึกเพลีย",
+      "objective": "Temp: 37.5°C, BP: 120/80 mmHg, HR: 80 bpm, RR: 16/min, SpO2: 99%",
+      "assessment": "ไข้หวัดธรรมดา (Common Cold) - J00",
+      "plan": "1. Paracetamol 500mg PRN q4-6h\n2. Ibuprofen 400mg PRN q6-8h\n3. Multivitamin 1 tab OD\n4. F/U 1 week"
+    },
+    "aiGenerated": true,
+    "requiresDoctorValidation": true,
+    "createdAt": "2026-01-27T09:16:00+07:00"
+  }
+}

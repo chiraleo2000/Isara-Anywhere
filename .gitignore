@@ -16,6 +16,11 @@ out/
 .env.test.local
 .env.production.local
 .env.*.local
+.env.docker
+
+# Keep example environment files
+!.env.example
+!.env.docker.example
 
 # Logs
 logs/

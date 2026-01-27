@@ -57,10 +57,6 @@ const AdminDoctorManagement: React.FC = () => {
   // Admin removal state
   const [showRemoveAdminModal, setShowRemoveAdminModal] = useState<{ doctor: DoctorUser; action: 'demote' | 'remove' } | null>(null);
 
-  // Use environment variable for production deployments
-  // Empty string for relative paths in Cloud Run (Nginx proxies /auth/ to auth server)
-  const AUTH_API_URL = import.meta.env.VITE_AUTH_URL || '';
-
   // Check if user is admin - wait for auth loading to complete first
   useEffect(() => {
     // Don't redirect while auth is still loading
@@ -82,27 +78,61 @@ const AdminDoctorManagement: React.FC = () => {
     }
   }, [authLoading, isAuthenticated, user, navigate]);
 
-  // Fetch all doctors
+  // Use main API URL for API calls (not AUTH_URL)
+  const API_URL = import.meta.env.VITE_API_URL || '';
+
+  // Fetch all doctors - use /api/admin/users endpoint
   const fetchAllDoctors = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const response = await fetch(`${AUTH_API_URL}/admin/pending-doctors`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-        }
-      });
+      // Fetch all users with role=doctor from admin API
+      const [usersResponse, pendingResponse] = await Promise.all([
+        fetch(`${API_URL}/api/admin/users?role=doctor`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+          }
+        }),
+        fetch(`${API_URL}/api/admin/pending-doctors`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+          }
+        })
+      ]);
 
-      if (!response.ok) {
+      if (!usersResponse.ok) {
         throw new Error('Failed to fetch doctors');
       }
 
-      const data = await response.json();
-      setAllDoctors(data.doctors || []);
-      setApprovalHistory(data.history || []);
+      const usersData = await usersResponse.json();
+      const pendingData = pendingResponse.ok ? await pendingResponse.json() : { pendingDoctors: [] };
+      
+      // Map users to DoctorUser interface
+      const doctors: DoctorUser[] = (usersData.users || []).map((u: any) => ({
+        id: u.id,
+        email: u.email,
+        name: u.name,
+        specialty: u.specialty || 'General Practice',
+        medicalLicenseNumber: u.medical_license_number,
+        phone: u.phone_number,
+        createdAt: u.created_at,
+        approvalStatus: u.approval_status || (u.is_approved ? 'approved' : 'pending'),
+        isActive: u.is_active,
+        isAdmin: u.is_admin,
+        role: u.role,
+        qualifications: u.qualifications,
+        experience: u.experience,
+        hospital: u.hospital,
+        lastLogin: u.last_login_at
+      }));
+      
+      setAllDoctors(doctors);
+      setApprovalHistory([]);
     } catch (err) {
       console.error('Error fetching doctors:', err);
       setError('Failed to load doctor accounts');
@@ -110,7 +140,7 @@ const AdminDoctorManagement: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [API_URL]);
 
   useEffect(() => {
     fetchAllDoctors();
@@ -122,7 +152,7 @@ const AdminDoctorManagement: React.FC = () => {
       setProcessing(doctor.id);
       setError(null);
 
-      const response = await fetch(`${AUTH_API_URL}/admin/approve-doctor`, {
+      const response = await fetch(`${API_URL}/api/admin/approve-doctor`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -162,7 +192,7 @@ const AdminDoctorManagement: React.FC = () => {
       setProcessing(doctor.id);
       setError(null);
 
-      const response = await fetch(`${AUTH_API_URL}/admin/reject-doctor`, {
+      const response = await fetch(`${API_URL}/api/admin/reject-doctor`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -202,7 +232,7 @@ const AdminDoctorManagement: React.FC = () => {
       setProcessing(doctor.id);
       setError(null);
 
-      const response = await fetch(`${AUTH_API_URL}/admin/update-role`, {
+      const response = await fetch(`${API_URL}/api/admin/update-role`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -264,7 +294,7 @@ const AdminDoctorManagement: React.FC = () => {
       setProcessing(doctor.id);
       setError(null);
 
-      const response = await fetch(`${AUTH_API_URL}/admin/remove-admin`, {
+      const response = await fetch(`${API_URL}/api/admin/remove-admin`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -131,26 +131,21 @@ try {
       }
     }
     
-    // Cloud SQL Unix socket detection
+    // PostgreSQL Docker service configuration (NO Cloud SQL)
     const dbHost = dbConfig.host || process.env.DB_HOST || 'localhost';
-    const isCloudSQL = dbHost.startsWith('/cloudsql/');
     
     const poolOptions = {
       host: dbHost,
+      port: dbConfig.port || Number.parseInt(process.env.DB_PORT || '5433', 10),
       database: dbConfig.database || process.env.DB_NAME || 'izara_phase1',
       user: dbConfig.user || process.env.DB_USER || 'postgres',
       password: dbConfig.password || process.env.DB_PASSWORD || 'P@ssw0rd',
       max: 20,
       idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 30000, // Increased for Cloud SQL
+      connectionTimeoutMillis: 10000,
     };
     
-    // Only set port for TCP connections, not for Unix sockets
-    if (!isCloudSQL) {
-      poolOptions.port = dbConfig.port || Number.parseInt(process.env.DB_PORT || '5432', 10);
-    }
-    
-    console.log(`[AUTH] PostgreSQL: host=${poolOptions.host}, isCloudSQL=${isCloudSQL}`);
+    console.log(`[AUTH] PostgreSQL: host=${poolOptions.host}, port=${poolOptions.port}`);
     
     pgPool = new Pool(poolOptions);
     
@@ -1440,7 +1435,9 @@ app.post('/auth/admin/reject-doctor', async (req, res) => {
 // Auth-prefixed admin update role endpoint - PostgreSQL implementation
 app.post('/auth/admin/update-role', async (req, res) => {
   try {
-    const { userId, adminId, role, isAdmin } = req.body;
+    const { userId, adminId, role } = req.body;
+    // Explicitly derive isAdmin from role to ensure consistency
+    const isAdmin = role === 'admin';
 
     if (!userId) {
       return res.status(400).json({ error: 'User ID is required' });

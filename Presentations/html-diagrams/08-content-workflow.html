@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Izara Diagram: 08-content-workflow</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5; }
+        .container { max-width: 100%; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; text-align: center; border-bottom: 2px solid #eee; padding-bottom: 15px; }
+        .mermaid { display: flex; justify-content: center; margin-top: 20px; }
+        .nav { margin-bottom: 20px; text-align: center; }
+        .nav a { margin: 0 10px; color: #3498db; text-decoration: none; font-weight: bold; }
+        .nav a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="nav">
+        <a href="index.html">🔙 Back to Index</a>
+        <span>|</span>
+        <a href="javascript:location.reload()">🔄 Refresh</a>
+    </div>
+    <div class="container">
+        <h1>08-content-workflow</h1>
+        <div class="mermaid">
+            %%{init: {
+  'theme': 'base',
+  'themeVariables': {
+    'primaryColor': '#E3F2FD',
+    'primaryTextColor': '#0D47A1',
+    'primaryBorderColor': '#2196F3',
+    'lineColor': '#1976D2',
+    'secondaryColor': '#E8F5E9',
+    'tertiaryColor': '#FFF3E0',
+    'fontSize': '28px',
+    'fontFamily': 'Segoe UI, Arial'
+  }
+}}%%
+
+flowchart LR
+    subgraph CREATE["✏️ CREATE"]
+        A1["📝 Write Article"]
+        A2["🖼️ Add Images"]
+        A3["🏷️ Metadata"]
+    end
+
+    subgraph UPLOAD["📤 SAVE"]
+        B1["💾 Save Content<br/>PostgreSQL"]
+        B2["☁️ Upload Images<br/>GCS Bucket"]
+    end
+
+    subgraph REVIEW["👀 REVIEW"]
+        C1["🔍 AI Check"]
+        C2["👨‍💼 Admin Approval"]
+    end
+
+    subgraph PUBLISH["📢 PUBLISH"]
+        D1["✅ Live on Portal"]
+        D2["🔔 Notify Users"]
+    end
+
+    subgraph MANAGE["⚙️ MANAGE"]
+        E1["🔄 Update"]
+        E2["🗑️ Delete"]
+        E3["📦 Archive"]
+    end
+
+    %% Linear flow
+    A1 --> A2 --> A3
+    A3 --> B1 --> B2
+    B2 --> C1 --> C2
+    C2 --> D1 --> D2
+    D1 --> E1 --> E2 --> E3
+
+    %% Styling
+    classDef createStyle fill:#E3F2FD,stroke:#2196F3,stroke-width:2px,color:#0D47A1
+    classDef uploadStyle fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px,color:#1B5E20
+    classDef reviewStyle fill:#FFF3E0,stroke:#FF9800,stroke-width:2px,color:#E65100
+    classDef publishStyle fill:#E0F7FA,stroke:#00BCD4,stroke-width:2px,color:#006064
+    classDef manageStyle fill:#F3E5F5,stroke:#9C27B0,stroke-width:2px,color:#4A148C
+
+    class A1,A2,A3 createStyle
+    class B1,B2 uploadStyle
+    class C1,C2 reviewStyle
+    class D1,D2 publishStyle
+    class E1,E2,E3 manageStyle
+
+        </div>
+    </div>
+    <script>
+        mermaid.initialize({ 
+            startOnLoad: true, 
+            theme: 'base',
+            securityLevel: 'loose',
+            themeVariables: {
+                primaryColor: '#E3F2FD',
+                secondaryColor: '#E8F5E9',
+                tertiaryColor: '#FFF3E0',
+                fontSize: '16px'
+            }
+        });
+    </script>
+</body>
+</html>

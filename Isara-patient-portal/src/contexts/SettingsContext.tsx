@@ -84,6 +84,8 @@ const translations: Translations = {
   'appointment.bookAppointment': { en: 'Book Appointment', th: 'จองนัดหมาย' },
   'appointment.myAppointments': { en: 'My Appointments', th: 'นัดหมายของฉัน' },
   'appointment.upcoming': { en: 'Upcoming', th: 'กำลังมาถึง' },
+  'appointment.pending': { en: 'Pending Confirmation', th: 'รอการยืนยัน' },
+  'appointment.confirmed': { en: 'Confirmed', th: 'ยืนยันแล้ว' },
   'appointment.past': { en: 'Past', th: 'ที่ผ่านมา' },
   'appointment.cancelled': { en: 'Cancelled', th: 'ยกเลิกแล้ว' },
   'appointment.date': { en: 'Date', th: 'วันที่' },
@@ -107,9 +109,7 @@ const translations: Translations = {
   'health.vaccinations': { en: 'Vaccinations', th: 'การฉีดวัคซีน' },
   'health.documents': { en: 'Medical Documents', th: 'เอกสารทางการแพทย์' },
 
-  // Dashboard
-  'dashboard.welcome': { en: 'Welcome', th: 'ยินดีต้อนรับ' },
-  'dashboard.upcomingAppointments': { en: 'Upcoming Appointments', th: 'นัดหมายที่กำลังมาถึง' },
+  // Dashboard - moved to main Dashboard section below
   'dashboard.recentActivity': { en: 'Recent Activity', th: 'กิจกรรมล่าสุด' },
   'dashboard.quickActions': { en: 'Quick Actions', th: 'การดำเนินการด่วน' },
   'dashboard.healthSummary': { en: 'Health Summary', th: 'สรุปสุขภาพ' },

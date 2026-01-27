@@ -16,7 +16,6 @@ import ProfilePage from './pages/profile/ProfilePage';
 import SettingsPage from './pages/settings/SettingsPage';
 import PDPAPage from './pages/pdpa/PDPAPage';
 import LivingWillPage from './pages/pdpa/LivingWillPage';
-import MapPage from './pages/map/MapPage';
 import TimelinePage from './pages/timeline/TimelinePage';
 import GCSStatusPage from './pages/admin/GCSStatusPage';
 
@@ -97,7 +96,6 @@ function AppRoutes() {
         <Route path="settings" element={<SettingsPage />} />
         <Route path="pdpa" element={<PDPAPage />} />
         <Route path="living-will" element={<LivingWillPage />} />
-        <Route path="map" element={<MapPage />} />
         <Route path="timeline" element={<TimelinePage />} />
         <Route path="admin/gcs" element={<GCSStatusPage />} />
       </Route>

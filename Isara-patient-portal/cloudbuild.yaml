@@ -1,5 +1,6 @@
-# Cloud Build configuration for Izara Patient Portal
+# Cloud Build configuration for Izara Patient Portal v1.4.5
 # Builds unified Docker image and deploys to Cloud Run
+# Uses Cloud SQL PostgreSQL (same architecture as local Docker PostgreSQL)
 
 steps:
   # Build the unified Docker image
@@ -9,26 +10,29 @@ steps:
       - '-f'
       - 'Dockerfile.unified'
       - '-t'
-      - 'gcr.io/$PROJECT_ID/izara-patient-portal:latest'
+      - 'asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-patient-portal:v1.4.5'
+      - '-t'
+      - 'asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-patient-portal:latest'
       - '--build-arg'
       - 'VITE_APP_ENV=production'
       - '--build-arg'
       - 'VITE_GCP_PROJECT_ID=$PROJECT_ID'
       - '.'
 
-  # Push image to Container Registry
+  # Push image to Artifact Registry
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
-      - 'gcr.io/$PROJECT_ID/izara-patient-portal:latest'
+      - '--all-tags'
+      - 'asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-patient-portal'
 
-  # Deploy to Cloud Run with Cloud SQL Unix socket connection
+  # Deploy to Cloud Run with Cloud SQL PostgreSQL
   - name: 'gcr.io/cloud-builders/gcloud'
     args:
       - 'run'
       - 'deploy'
       - 'izara-patient-portal'
-      - '--image=gcr.io/$PROJECT_ID/izara-patient-portal:latest'
+      - '--image=asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-patient-portal:v1.4.5'
       - '--region=asia-southeast1'
       - '--platform=managed'
       - '--allow-unauthenticated'
@@ -38,13 +42,13 @@ steps:
       - '--min-instances=0'
       - '--max-instances=10'
       - '--timeout=300'
-      - '--add-cloudsql-instances=izara-telemedicine:asia-southeast1:izara-db-instance'
-      - '--set-env-vars=NODE_ENV=production,USE_POSTGRESQL=true,VITE_USE_POSTGRESQL=true,VITE_GCP_PROJECT_ID=$PROJECT_ID,VITE_GCP_REGION=asia-southeast1,DB_HOST=/cloudsql/izara-telemedicine:asia-southeast1:izara-db-instance,DB_NAME=izara_phase1,DB_USER=izara_localdb_admin'
-      - '--set-secrets=DB_PASSWORD=db-password:latest,VITE_GOOGLE_MAPS_API_KEY=google-maps-api-key:latest,VITE_GEMINI_API_KEY=gemini-api-key:latest'
+      - '--set-env-vars=NODE_ENV=production,USE_POSTGRESQL=true,VITE_USE_POSTGRESQL=true,VITE_GCP_PROJECT_ID=$PROJECT_ID,VITE_GCP_REGION=asia-southeast1,POSTGRES_HOST=34.143.228.135,POSTGRES_PORT=5432,DB_HOST=34.143.228.135,DB_PORT=5432,DB_NAME=izara_phase1,DB_USER=postgres,DB_PASSWORD=P@ssw0rd,GEMINI_MODEL=gemini-2.5-flash-lite,DATABASE_URL=postgresql://postgres:P%40ssw0rd@34.143.228.135:5432/izara_phase1'
+      - '--set-secrets=VITE_GOOGLE_MAPS_API_KEY=google-maps-api-key:latest,VITE_GEMINI_API_KEY=gemini-api-key:latest,GEMINI_API_KEY=gemini-api-key:latest'
 
-# Store images in Container Registry
+# Store images in Artifact Registry
 images:
-  - 'gcr.io/$PROJECT_ID/izara-patient-portal:latest'
+  - 'asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-patient-portal:v1.4.5'
+  - 'asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-patient-portal:latest'
 
 # Build timeout (20 minutes)
 timeout: '1200s'

@@ -1,0 +1,222 @@
+{
+  "meetingId": "TEST-MEETING-001",
+  "appointmentId": "APT-001-2026-01-27",
+  "meetingUrl": "https://meet.jit.si/izara-APT-001-2026-01-27",
+  "title": "General Health Consultation - Demo Patient",
+  "description": "Video consultation for general health checkup and medication review",
+  "startTime": "2026-01-27T14:00:00+07:00",
+  "endTime": "2026-01-27T14:30:00+07:00",
+  "duration": 30,
+  "status": "completed",
+  "hostDoctor": {
+    "id": "DOC-001",
+    "email": "doctor.test@izara.com",
+    "name": "นพ. ทดสอบ แพทย์ดี",
+    "specialty": "Internal Medicine",
+    "role": "host"
+  },
+  "participants": [
+    {
+      "id": "PATIENT-001",
+      "email": "demo.test@gmail.com",
+      "name": "นาย ทดสอบ ระบบ",
+      "role": "patient",
+      "joinTime": "2026-01-27T14:00:30+07:00",
+      "leaveTime": "2026-01-27T14:29:45+07:00"
+    },
+    {
+      "id": "DOC-001",
+      "email": "doctor.test@izara.com",
+      "name": "นพ. ทดสอบ แพทย์ดี",
+      "role": "doctor",
+      "joinTime": "2026-01-27T14:00:00+07:00",
+      "leaveTime": "2026-01-27T14:30:00+07:00"
+    },
+    {
+      "id": "RELATIVE-001",
+      "name": "นาง สมหญิง ระบบดี",
+      "role": "relative",
+      "joinTime": "2026-01-27T14:05:00+07:00",
+      "leaveTime": "2026-01-27T14:29:45+07:00",
+      "relation": "spouse",
+      "invitedBy": "PATIENT-001"
+    }
+  ],
+  "transcript": {
+    "enabled": true,
+    "language": "th-TH",
+    "startTime": "2026-01-27T14:01:00+07:00",
+    "endTime": "2026-01-27T14:28:00+07:00",
+    "segments": [
+      {
+        "timestamp": "00:01:00",
+        "speaker": "doctor",
+        "speakerId": "DOC-001",
+        "text": "สวัสดีครับคุณทดสอบ วันนี้มีอาการอะไรบ้างครับ",
+        "confidence": 0.95
+      },
+      {
+        "timestamp": "00:01:15",
+        "speaker": "patient",
+        "speakerId": "PATIENT-001",
+        "text": "สวัสดีครับหมอ ผมมีอาการปวดหัวบ่อยๆ และเมื่อยตัวครับ",
+        "confidence": 0.92
+      },
+      {
+        "timestamp": "00:02:00",
+        "speaker": "doctor",
+        "speakerId": "DOC-001",
+        "text": "ปวดหัวมานานแค่ไหนแล้วครับ มีอาการคลื่นไส้หรือวิงเวียนด้วยหรือเปล่า",
+        "confidence": 0.94
+      },
+      {
+        "timestamp": "00:02:20",
+        "speaker": "patient",
+        "speakerId": "PATIENT-001",
+        "text": "ประมาณสัปดาห์หนึ่งแล้วครับ มีอาการวิงเวียนเล็กน้อยตอนเช้า",
+        "confidence": 0.91
+      },
+      {
+        "timestamp": "00:03:00",
+        "speaker": "relative",
+        "speakerId": "RELATIVE-001",
+        "text": "หมอคะ เมื่อคืนเขาปวดหัวมากจนนอนไม่หลับเลยค่ะ",
+        "confidence": 0.93
+      },
+      {
+        "timestamp": "00:03:30",
+        "speaker": "doctor",
+        "speakerId": "DOC-001",
+        "text": "เข้าใจครับ ผมจะตรวจวัดความดันและขอดูประวัติการใช้ยาก่อนนะครับ",
+        "confidence": 0.96
+      },
+      {
+        "timestamp": "00:15:00",
+        "speaker": "doctor",
+        "speakerId": "DOC-001",
+        "text": "จากการตรวจ ความดันโลหิตอยู่ในเกณฑ์ปกติ แต่ผมสังเกตว่าคุณนอนน้อย ผมจะสั่งยาคลายกล้ามเนื้อและยาบรรเทาอาการปวดหัว พร้อมแนะนำให้พักผ่อนให้เพียงพอ",
+        "confidence": 0.97
+      },
+      {
+        "timestamp": "00:16:00",
+        "speaker": "patient",
+        "speakerId": "PATIENT-001",
+        "text": "ครับ ขอบคุณครับหมอ กินยาอย่างไรดีครับ",
+        "confidence": 0.94
+      },
+      {
+        "timestamp": "00:16:30",
+        "speaker": "doctor",
+        "speakerId": "DOC-001",
+        "text": "กินวันละ 2 ครั้ง เช้า-เย็น หลังอาหาร ถ้าอาการไม่ดีขึ้นภายใน 3 วัน ให้กลับมาพบอีกครั้งนะครับ",
+        "confidence": 0.98
+      },
+      {
+        "timestamp": "00:27:00",
+        "speaker": "doctor",
+        "speakerId": "DOC-001",
+        "text": "มีอะไรอยากถามเพิ่มเติมไหมครับ",
+        "confidence": 0.95
+      },
+      {
+        "timestamp": "00:27:15",
+        "speaker": "patient",
+        "speakerId": "PATIENT-001",
+        "text": "ไม่มีแล้วครับ ขอบคุณมากครับหมอ",
+        "confidence": 0.96
+      }
+    ],
+    "summary": "ผู้ป่วยมาพบแพทย์ด้วยอาการปวดหัวและเมื่อยตัวมาประมาณ 1 สัปดาห์ มีอาการวิงเวียนเล็กน้อยตอนเช้า จากการตรวจพบว่าความดันโลหิตปกติ แพทย์ประเมินว่าเกิดจากการนอนหลับไม่เพียงพอ สั่งยาคลายกล้ามเนื้อและยาบรรเทาอาการปวดหัว กิน 2 ครั้ง/วัน หลังอาหาร นัดติดตามผลใน 3 วัน",
+    "totalWords": 245,
+    "avgConfidence": 0.94
+  },
+  "chat": [
+    {
+      "timestamp": "2026-01-27T14:05:30+07:00",
+      "sender": "RELATIVE-001",
+      "senderName": "นาง สมหญิง ระบบดี",
+      "message": "สวัสดีค่ะหมอ ขออนุญาตเข้าร่วมฟังด้วยนะคะ เป็นภริยาคะ",
+      "type": "text"
+    },
+    {
+      "timestamp": "2026-01-27T14:05:45+07:00",
+      "sender": "DOC-001",
+      "senderName": "นพ. ทดสอบ แพทย์ดี",
+      "message": "ยินดีครับ ขอเชิญเข้าร่วมได้เลยครับ",
+      "type": "text"
+    },
+    {
+      "timestamp": "2026-01-27T14:10:00+07:00",
+      "sender": "PATIENT-001",
+      "senderName": "นาย ทดสอบ ระบบ",
+      "message": "หมอครับ ผมส่งรูปผลเลือดที่เพิ่งตรวจเมื่อสัปดาห์ที่แล้วครับ",
+      "type": "text"
+    },
+    {
+      "timestamp": "2026-01-27T14:10:15+07:00",
+      "sender": "PATIENT-001",
+      "senderName": "นาย ทดสอบ ระบบ",
+      "message": "[FILE] lab-results-2026-01-20.pdf",
+      "type": "file",
+      "fileUrl": "https://storage.example.com/lab-results.pdf"
+    },
+    {
+      "timestamp": "2026-01-27T14:11:00+07:00",
+      "sender": "DOC-001",
+      "senderName": "นพ. ทดสอบ แพทย์ดี",
+      "message": "ขอบคุณครับ ผมจะดูให้นะครับ",
+      "type": "text"
+    }
+  ],
+  "aiSummary": {
+    "generatedAt": "2026-01-27T14:31:00+07:00",
+    "model": "gemini-2.0-flash-exp",
+    "chiefComplaint": "ปวดหัวและเมื่อยตัวมา 1 สัปดาห์ มีอาการวิงเวียนเล็กน้อยตอนเช้า",
+    "presentIllness": "ผู้ป่วยมีอาการปวดหัวบ่อยๆ และเมื่อยตัวมาประมาณ 1 สัปดาห์ มีอาการวิงเวียนเล็กน้อยในตอนเช้า เมื่อคืนปวดหัวมากจนนอนไม่หลับ ไม่มีอาการคลื่นไส้ อาเจียน",
+    "physicalExam": {
+      "vitalSigns": {
+        "bloodPressure": "120/80 mmHg",
+        "heartRate": "72 bpm",
+        "temperature": "36.8°C"
+      },
+      "generalAppearance": "ผู้ป่วยมีสติสัมปชัญญะดี ตอบคำถามได้ชัดเจน"
+    },
+    "assessment": "Tension headache จากการนอนหลับไม่เพียงพอ",
+    "plan": {
+      "medications": [
+        {
+          "name": "Paracetamol 500mg",
+          "dosage": "1 เม็ด วันละ 2 ครั้ง หลังอาหารเช้า-เย็น",
+          "duration": "7 วัน"
+        },
+        {
+          "name": "Muscle relaxant",
+          "dosage": "ตามที่แพทย์สั่ง",
+          "duration": "7 วัน"
+        }
+      ],
+      "advice": [
+        "พักผ่อนให้เพียงพอ นอนหลับ 7-8 ชั่วโมง/วัน",
+        "หลีกเลี่ยงการนั่งหน้าจอคอมพิวเตอร์นานๆ",
+        "ออกกำลังกายเบาๆ",
+        "ดื่มน้ำให้เพียงพอ"
+      ],
+      "followUp": "นัดติดตามผลใน 3 วัน หากอาการไม่ดีขึ้น"
+    },
+    "patientInstructionSent": true,
+    "emrCreated": true
+  },
+  "recording": {
+    "enabled": false,
+    "videoUrl": null,
+    "audioUrl": "https://storage.example.com/meetings/TEST-MEETING-001/audio.mp3",
+    "duration": 1800
+  },
+  "metadata": {
+    "platform": "Jitsi Meet",
+    "version": "1.4.5",
+    "transcriptionEngine": "Google Speech-to-Text",
+    "aiEngine": "Google Gemini 2.0 Flash",
+    "recordedBy": "Izara Meeting Server"
+  }
+}

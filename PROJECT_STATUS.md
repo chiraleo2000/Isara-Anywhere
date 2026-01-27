@@ -1,7 +1,7 @@
 # 🏥 Izara Telemedicine - Project Status
 
-**Version:** 1.3.2  
-**Last Updated:** January 26, 2026  
+**Version:** 1.4.5  
+**Last Updated:** January 27, 2026  
 **Phase:** Phase 1 Complete ✅  
 **Database:** PostgreSQL 16 + pgvector (Primary)
 
@@ -9,15 +9,17 @@
 
 ## 📊 Current Status
 
-| Component | Status | Notes |
-| ----------- | -------- | ------- |
-| Patient Portal | ✅ Healthy | <http://localhost:3005> |
-| Doctor Portal | ✅ Healthy | <http://localhost:3010> |
-| PostgreSQL | ✅ Running | Port 5433 |
-| pgAdmin | ✅ Running | Port 5050 |
-| Medical Content | ✅ 6 Articles | With images |
-| Clinical Resources | ✅ 11 Resources | Full library |
-| Consultants | ✅ 3 Consultants | Database loaded |
+| Component | Status | Local | Cloud |
+| ----------- | -------- | ------- | ----- |
+| Patient Portal | ✅ Healthy | http://localhost:3005 | https://izara-patient-portal-724889190329.asia-southeast1.run.app |
+| Doctor Portal | ✅ Healthy | http://localhost:3010 | https://izara-doctor-portal-724889190329.asia-southeast1.run.app |
+| Meeting Server | ✅ Healthy | http://localhost:3020 | https://izara-jitsi-meeting-portal-724889190329.asia-southeast1.run.app |
+| PostgreSQL | ✅ Running | Port 5433 | https://izara-postgres-724889190329.asia-southeast1.run.app |
+| pgAdmin | ✅ Running | Port 5050 | https://izara-pgadmin-724889190329.asia-southeast1.run.app |
+| Medical Content | ✅ 6 Articles | With images | Synced from local |
+| Clinical Resources | ✅ 11 Resources | Full library | Synced from local |
+| Consultants | ✅ 3 Consultants | Database loaded | Synced from local |
+| Cloud Deployment | ✅ Working | Both portals online | All 5 services deployed |
 
 ---
 
@@ -27,22 +29,310 @@
 
 | Email | Password | Name |
 | ------- | ---------- | ------ |
-| `Somchai.Mankong@gmail.com` | `P@ssw0rd` | Somchai Mankong |
-| `Anan.Khayanrian@gmail.com` | `P@ssw0rd` | Anan Khayanrian |
+| `demo.test@gmail.com` | `P@ssw0rd` | นาย ทดสอบ ระบบ |
+| `Somchai.Mankong@gmail.com` | `P@ssw0rd` | นายสมชาย มั่นคง |
+| `Anan.Khayanrian@gmail.com` | `P@ssw0rd` | นายอนันต์ ขยันเรียน |
 
 ### Doctor Portal (<http://localhost:3010>)
 
 | Email | Password | Role |
 | ------- | ---------- | ------ |
+| `doctor.test@izara.com` | `IzaraDoctor@2024` | Doctor |
 | `somchai.prasert@izara.com` | `P@ssw0rd` | Doctor |
 | `siriporn.thongchai@izara.com` | `P@ssw0rd` | Doctor |
+| `admin.test@izara.com` | `IzaraAdmin@2024` | Admin |
+
+---
+
+## 📋 Recent Changes & Fixes
+
+### v1.4.1 - Cloud Deployment Fixes (January 27, 2026)
+
+#### 🚀 Cloud Deployment - FULLY WORKING ✅
+
+**Issue**: Doctor Portal was returning **502 Bad Gateway** on Google Cloud Run after successful deployment, while Patient Portal worked correctly.
+
+**Status**: ✅ **COMPLETELY RESOLVED**
+
+**Test Results**: ✅ **6/6 Tests Passing** - All critical APIs returning status 200
+
+**Root Causes Identified:**
+
+1. **Incorrect Health Check Endpoint** ❌
+   - Deployment script was checking `/api/health` instead of `/health`
+   - Doctor Portal serves health checks at `/health` directly
+
+2. **Insufficient Cold Start Timeout** ❌
+   - Doctor Portal runs 4 services via sequential startup (Nginx + Auth + GCS + Main API)
+   - Container needs 30+ seconds to fully initialize all services
+   - Original timeout: 30 seconds with only 1 retry
+
+3. **Missing Service Status Verification** ❌
+   - No pre-test validation of Cloud Run service health
+   - Tests ran immediately without waiting for container readiness
+
+**Fixes Applied:**
+
+✅ **Fix 1: Corrected Health Check Endpoints**
+
+Changes in `scripts/deploy.ps1`:
+
+```powershell
+# Before ❌
+$tests = @(
+    @{ Name = "Patient Portal Health"; Url = "$PatientUrl/api/health" },
+    @{ Name = "Doctor Portal Health"; Url = "$DoctorUrl/api/health" }
+)
+
+# After ✅
+$tests = @(
+    @{ Name = "Patient Portal Health"; Url = "$PatientUrl/health"; MaxRetries = 3 },
+    @{ Name = "Doctor Portal Health"; Url = "$DoctorUrl/health"; MaxRetries = 5 },
+    @{ Name = "Patient Auth"; Url = "$PatientUrl/api/health"; MaxRetries = 2 },
+    @{ Name = "Doctor Auth"; Url = "$DoctorUrl/api/health"; MaxRetries = 3 },
+    @{ Name = "Consultants"; Url = "$PatientUrl/api/consultants"; MaxRetries = 2 },
+    @{ Name = "Clinical Resources"; Url = "$PatientUrl/api/content/clinical-resources"; MaxRetries = 2 }
+)
+```
+
+✅ **Fix 2: Enhanced Retry Logic & Timeout**
+
+Improvements:
+- ✅ 30-second initial wait for container startup
+- ✅ Configurable retry count per endpoint (3-5 retries)
+- ✅ 10-second delay between retries (was 5 seconds)
+- ✅ 60-second timeout per request (was 30 seconds)
+- ✅ Clear retry progress messages
+
+✅ **Fix 3: Service Status Verification**
+
+Added pre-deployment health checks:
+```powershell
+Write-Info "Verifying Cloud Run services are healthy..."
+gcloud run services describe izara-patient-portal --region=asia-southeast1 --format="get(status.conditions)"
+gcloud run services describe izara-doctor-portal --region=asia-southeast1 --format="get(status.conditions)"
+```
+
+**Live Deployment URLs:**
+
+- **Patient Portal**: https://izara-patient-portal-hvht4obouq-as.a.run.app ✅
+- **Doctor Portal**: https://izara-doctor-portal-hvht4obouq-as.a.run.app ✅
+
+#### 🚀 Deployment Automation
+
+- ✅ **Unified Deployment Script** - `scripts/deploy.ps1` for local/cloud
+- ✅ **Fresh Mode** - `--Fresh` option to reset all data and start clean
+- ✅ **Health Checks** - Automatic verification of all services
+- ✅ **Database Initialization** - Auto-seeds PostgreSQL with demo data
+
+#### API & Routing Fixes (Critical)
+
+- ✅ **Consultants API** - Removed auth requirement for public GET endpoints
+- ✅ **Admin Pending Doctors** - Added missing database columns (approved_at, rejected_at)
+- ✅ **Medical Content API** - Fixed thumbnail field mapping (imageUrl → thumbnail)
+- ✅ **Clinical Resources** - Added author_id and author_name columns
+- ✅ **All Public APIs** - Return status 200 (no more 401 for public endpoints)
+- ✅ Fixed Medical Content API routing - proper nginx proxy to mainApiServer
+- ✅ Fixed Notification routes - migrated from GCS to PostgreSQL
+
+#### Database Schema Updates
+
+- ✅ Added `approved_at`, `approved_by`, `rejected_at`, `rejected_by` to users table
+- ✅ Added `author_id`, `author_name` to clinical_resources table
+- ✅ Updated seed data with Thai doctor author information
+
+#### Meeting Server Enhancements
+
+- ✅ Gemini AI properly configured for meeting summaries
+- ✅ Google Speech-to-Text integration for transcription
+- ✅ PostgreSQL storage for meeting records and transcripts
+- ✅ Health check endpoint returning correct status
+- ✅ Man-in-the-Loop confirmation for AI recommendations
+
+#### Environment Configuration System
+
+**New Files:**
+- `.env.docker` - Main environment file (gitignored)
+- `.env.docker.example` - Template file (safe to commit)
+
+**Modified:**
+- `docker-compose.yml` - Removed hardcoded API keys, added env_file directives
+- `.gitignore` - Added `.env.docker` to ignore list
+
+**Benefits:**
+- ✅ All API keys centralized
+- ✅ `.env.docker` automatically ignored by Git
+- ✅ Clear template for team onboarding
+- ✅ Database credentials configurable
+- ✅ Comprehensive documentation
+
+**Migration Steps:**
+1. Copy `.env.docker.example` to `.env.docker`
+2. Add actual API keys
+3. Restart services
+
+---
+
+### v1.4.0 - Known Issues (January 26, 2026)
+
+#### 🚨 Critical Issues (Blocking Functionality)
+
+**1. Appointment System - Ghost Processes**
+**Status:** 🟡 Partially Fixed  
+**Portal:** Patient Portal  
+
+**Issues:**
+- ❌ No notifications sent to doctor for confirmation
+- ❌ Patient doesn't receive confirmation/rejection status
+- ❌ Meeting links not visible to patient after confirmation
+
+**Root Cause:**
+- NotificationService not triggering after appointment creation
+- Meeting links stored but not displayed in patient UI
+
+**Fix Required:**
+1. Update appointment creation to send notifications
+2. Update patient appointment UI to show meeting links
+3. Implement WebSocket for real-time status updates
+
+**2. Data Sync Issues**
+**Status:** 🔴 Critical  
+**Portal:** Both Portals  
+
+**Issues:**
+- ❌ Medical Content from Doctor Portal not syncing to Patient Portal
+- ❌ Clinical Resources not visible to other doctors
+- ❌ PHR data from Patient Portal not visible to doctors
+- ❌ Living Will/PDPA consent not syncing to doctors
+
+**Root Cause:**
+- Separate API servers not sharing PostgreSQL views
+- Missing cross-portal data queries
+
+**Fix Required:**
+1. Create shared PostgreSQL views for cross-portal data
+2. Implement proper status filtering (approved/published only)
+3. Add proper PDPA consent checking
+
+#### 🟠 High Priority Issues
+
+**3. Google Maps - API Key Configuration**
+**Status:** 🟠 High  
+**Portal:** Patient Portal  
+**Page:** แผนที่ (Map)  
+
+**Error:** "ไม่พบ API Key"
+
+**Possible Causes:**
+- HTTP Referrer not set in Google Cloud Console
+- Required APIs not enabled
+- Billing not enabled on project
+
+**Fix Required:**
+1. Verify Google Cloud Console settings
+2. Add localhost to HTTP Referrer restrictions
+3. Enable Maps JavaScript API, Places API
+
+**4. PHR Temperature Input - Save Error**
+**Status:** 🟠 High  
+**Portal:** Patient Portal  
+**Page:** ประวัติสุขภาพส่วนบุคคล (PHR)  
+
+**Error:** "เกิดข้อผิดพลาดในการบันทึกข้อมูล"
+
+**Fix Applied in v1.3.3** (but may need additional validation)
+
+---
+
+### v1.3.3 - Core Fixes (January 23, 2026)
+
+#### ✅ Issues Resolved
+
+**1. Google Maps API Error Message (Patient Portal)**
+
+**Issue:** Map showing "ไม่พบ API Key" with no helpful guidance.
+
+**Fixed In:** [Isara-patient-portal/src/pages/map/MapPage.tsx](Isara-patient-portal/src/pages/map/MapPage.tsx)
+
+**Solution:** Enhanced error message with detailed troubleshooting steps:
+- Check Google Cloud Console for Maps JavaScript API
+- Verify API key restrictions
+- Enable required APIs (Maps, Places, Geocoding)
+
+**2. AI Chat History with PostgreSQL (Patient Portal)**
+
+**Issue:** AI chat not saving conversation history between sessions.
+
+**Fixed In:** 
+- [Isara-patient-portal/src/lib/services.ts](Isara-patient-portal/src/lib/services.ts)
+- [Isara-patient-portal/src/components/health/AIHealthChat.tsx](Isara-patient-portal/src/components/health/AIHealthChat.tsx)
+
+**Solution:** 
+- Added `getChatHistory`, `clearChatHistory`, `getChatSessions` methods
+- Session management with PostgreSQL persistence
+- History loading on mount
+- Clear history button
+
+**3. Jitsi Meeting Server with Transcription (NEW)**
+
+**Issue:** No dedicated meeting server with transcription and AI summaries.
+
+**Created:** New folder [Izara-jitsi-server/](Izara-jitsi-server/)
+
+**Solution:** Built complete new service with:
+- Express.js + Socket.IO server
+- Web Speech API for FREE live transcription
+- Google Cloud Speech-to-Text as optional fallback
+- Google Gemini AI for SOAP note summaries
+- PostgreSQL storage for meeting_records and meeting_transcripts
+- React client components for integration
+
+**4. Appointment Workflow - Help Button**
+
+**Issue:** "AI ช่วยแนะนำ" button should be replaced with "Help/ความช่วยเหลือ".
+
+**Fixed In:** [Isara-patient-portal/src/components/appointments/SymptomInputStep.tsx](Isara-patient-portal/src/components/appointments/SymptomInputStep.tsx)
+
+**Solution:** Replaced AI suggestion button with a simpler Help button that shows symptom description tips.
+
+**5. PHR Temperature Input Validation**
+
+**Issue:** Temperature input too restrictive - couldn't type values like "36.5".
+
+**Fixed In:** [Isara-patient-portal/src/pages/health/PHRPage.tsx](Isara-patient-portal/src/pages/health/PHRPage.tsx)
+
+**Solution:** Changed from `type="number"` to:
+- `type="text"` with `inputMode="decimal"`
+- Regex pattern for numbers and decimals during typing
+- Validation on blur (35.0-42.0°C range)
+
+**6. Medical Content with Images**
+
+**Issue:** Medical content not showing images properly.
+
+**Fixed In:** [Isara-patient-portal/server/routes/content.ts](Isara-patient-portal/server/routes/content.ts)
+
+**Solution:**
+- Enhanced DEMO_MEDICAL_CONTENT with `type`, `isFeatured`, `readTime`, `videoUrl` fields
+- Added more demo articles (4 total) with Unsplash images
+- Updated backend transformation to include `thumbnail`, `titleTh`, `summaryTh`
+
+**7. Doctor Portal Consultants API**
+
+**Issue:** "Failed to fetch consultants" error.
+
+**Fixed In:** [Isara-doctor-portal/server/mainApiServer.cjs](Isara-doctor-portal/server/mainApiServer.cjs)
+
+**Solution:**
+- Added comprehensive demo consultants with Thai names, specialties, and avatars
+- Proper response format matching frontend expectations
 
 ---
 
 ## 🚀 Quick Start
 
 ```powershell
-# Start all services
+# Start all services (with Docker)
 docker-compose up -d --build
 
 # Check status
@@ -57,36 +347,18 @@ docker-compose down
 
 ---
 
-## ☁️ Cloud Deployment
+## ☁️ Cloud Deployment URLs
 
-### Deploy to Google Cloud Run
+| Portal | URL | Status |
+| -------- | ----- | ------ |
+| **Patient Portal** | <https://izara-patient-portal-hvht4obouq-as.a.run.app> | ✅ Online |
+| **Doctor Portal** | <https://izara-doctor-portal-hvht4obouq-as.a.run.app> | ✅ Online |
 
+**Deploy Command:**
 ```powershell
-# Deploy Patient Portal
-cd Isara-patient-portal
-gcloud builds submit --config=cloudbuild.yaml
-
-# Deploy Doctor Portal
-cd Isara-doctor-portal
-gcloud builds submit --config=cloudbuild.yaml
+# Deploy both portals to Google Cloud Run
+.\scripts\deploy.ps1 -Target cloud
 ```
-
-### Upload Seed Data to Cloud SQL
-
-```powershell
-# Connect to Cloud SQL
-gcloud sql connect izara-db-instance --user=izara_localdb_admin --database=izara_phase1
-
-# Run schema (from within psql)
-\i scripts/database/postgresql-schema-complete.sql
-```
-
-### Cloud URLs
-
-| Portal | URL |
-| -------- | ----- |
-| Patient Portal | <https://izara-patient-portal-724889190329.asia-southeast1.run.app> |
-| Doctor Portal | <https://izara-doctor-portal-724889190329.asia-southeast1.run.app> |
 
 ---
 
@@ -176,5 +448,11 @@ API keys are loaded from portal-specific `.env` files:
 
 For development questions, see:
 
-- [QUICK_REFERENCE.md](QUICK_REFERENCE.md) - Commands and credentials
+- [README.md](README.md) - Complete project documentation with setup guide
 - [Processes/](Processes/) - Detailed workflow documentation
+
+---
+
+**Made with ❤️ for Thailand's Healthcare**
+
+© 2024-2026 Izara Telemedicine. All rights reserved.

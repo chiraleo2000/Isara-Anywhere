@@ -1,0 +1,613 @@
+
+// =============================================================================
+// IZARA TELEMEDICINE - UNIFIED DATABASE SCHEMA (v3.0)
+// =============================================================================
+// Based on init-database.sql
+// Updated: 2026-01-23
+
+Project Izara_Telemedicine {
+  database_type: 'PostgreSQL'
+  Note: 'Complete schema for Izara Telemedicine Platform'
+}
+
+// =============================================================================
+// ENUMS
+// =============================================================================
+
+Enum role_type {
+  doctor
+  admin
+  patient
+}
+
+Enum approval_status {
+  pending
+  approved
+  rejected
+}
+
+Enum appointment_status {
+  pending
+  confirmed
+  completed
+  cancelled
+}
+
+Enum meeting_status {
+  scheduled
+  waiting
+  active
+  in_progress
+  completed
+  cancelled
+}
+
+Enum speaker_role {
+  doctor
+  patient
+  guest
+}
+
+Enum urgency_level {
+  normal
+  urgent
+  emergency
+}
+
+Enum severity_level {
+  info
+  warning
+  critical
+}
+
+Enum decision_type {
+  accepted
+  rejected
+  modified
+}
+
+// =============================================================================
+// TABLES - CORE USERS
+// =============================================================================
+
+Table users {
+  id varchar(50) [pk]
+  email varchar(255) [not null, unique]
+  password_hash varchar(255) [not null]
+  role role_type [not null]
+  name varchar(255) [not null]
+  name_thai varchar(255)
+  avatar_url text
+  phone varchar(50)
+  date_of_birth date
+  gender varchar(20)
+  national_id varchar(20)
+  doctor_id varchar(50)
+  medical_license_number varchar(50)
+  specialty varchar(100)
+  hospital_name varchar(255)
+  patient_id varchar(50)
+  is_active boolean [default: true]
+  is_verified boolean [default: false]
+  is_approved boolean [default: false]
+  approval_status approval_status [default: 'pending']
+  approved_at timestamp
+  approved_by varchar(50)
+  rejected_at timestamp
+  rejected_by varchar(50)
+  admin_privileges jsonb
+  is_admin boolean [default: false]
+  preferences jsonb
+  notification_settings jsonb
+  created_at timestamp [default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [default: `CURRENT_TIMESTAMP`]
+  last_login timestamp
+  login_attempts integer [default: 0]
+  locked_until timestamp
+}
+
+Table sessions {
+  id varchar(128) [pk]
+  user_id varchar(50) [ref: > users.id]
+  token text [not null]
+  ip_address varchar(45)
+  user_agent text
+  created_at timestamp [default: `CURRENT_TIMESTAMP`]
+  expires_at timestamp [not null]
+  logged_out_at timestamp
+}
+
+Table password_resets {
+  id varchar(50) [pk]
+  user_id varchar(50) [ref: > users.id]
+  token varchar(128) [unique, not null]
+  expires_at timestamp [not null]
+  used boolean [default: false]
+  used_at timestamp
+  created_at timestamp [default: `CURRENT_TIMESTAMP`]
+}
+
+// =============================================================================
+// TABLES - PATIENT DATA
+// =============================================================================
+
+Table patient_profiles {
+  patient_id varchar(50) [pk, ref: - users.id]
+  demographics jsonb [not null]
+  emergency_contact jsonb
+  insurance_info jsonb
+  created_at timestamp [default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [default: `CURRENT_TIMESTAMP`]
+}
+
+Table phr {
+  id varchar(50) [pk]
+  patient_id varchar(50) [ref: > users.id]
+  demographics jsonb
+  vital_signs_history jsonb [default: `[]`]
+  allergies jsonb [default: `[]`]
+  chronic_conditions jsonb [default: `[]`]
+  medications jsonb [default: `[]`]
+  vaccinations jsonb [default: `[]`]
+  lifestyle jsonb
+  family_history jsonb [default: `[]`]
+  surgical_history jsonb [default: `[]`]
+  social_history jsonb
+  latest_lab_results jsonb [default: `[]`]
+  clinical_decision_support jsonb
+  blood_type varchar(10)
+  height_cm decimal(5,1)
+  weight_kg decimal(5,1)
+  bmi decimal(4,1)
+  emergency_contact_name varchar(255)
+  emergency_contact_phone varchar(50)
+  emergency_contact_relation varchar(100)
+  created_at timestamp [default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [default: `CURRENT_TIMESTAMP`]
+  last_synced_at timestamp
+}
+
+Table vital_signs {
+  id uuid [pk, default: `uuid_generate_v4()`]
+  patient_id varchar(50) [ref: > users.id]
+  blood_pressure_systolic integer
+  blood_pressure_diastolic integer
+  heart_rate integer
+  temperature decimal(4,1)
+  respiratory_rate integer
+  oxygen_saturation integer
+  blood_glucose integer
+  blood_glucose_type varchar(20)
+  weight decimal(5,1)
+  height decimal(5,1)
+  bmi decimal(4,1)
+  measured_at timestamp [default: `CURRENT_TIMESTAMP`]
+  source varchar(20) [default: 'patient_input']
+  notes text
+}
+
+Table living_wills {
+  id varchar(50) [pk]
+  patient_id varchar(50) [ref: > users.id]
+  statement text
+  treatments jsonb
+  representatives jsonb
+  signature jsonb
+  pdpa_consent jsonb
+  status varchar(20) [default: 'active']
+  signed_at timestamp
+  decisions jsonb [default: `{}`]
+  witness_info jsonb [default: `{}`]
+  signature_data text
+  version integer [default: 1]
+  restored_from varchar(50)
+  created_at timestamp [default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [default: `CURRENT_TIMESTAMP`]
+  audit_log jsonb [default: `[]`]
+}
+
+Table living_will_versions {
+  id varchar(50) [pk]
+  patient_id varchar(50) [ref: > users.id]
+  version integer [not null]
+  data jsonb [not null]
+  note text
+  created_at timestamp [default: `CURRENT_TIMESTAMP`]
+}
+
+Table patient_consents {
+  id varchar(50) [pk]
+  patient_id varchar(50) [ref: > users.id]
+  consent_type varchar(100) [not null]
+  granted boolean [default: false]
+  doctor_id varchar(50)
+  doctor_name varchar(255)
+  data_types jsonb [default: `["all"]`]
+  granted_at timestamp
+  expires_at timestamp
+  revoked_at timestamp
+  revoke_reason text
+  status varchar(20) [default: 'pending']
+  created_at timestamp [default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [default: `CURRENT_TIMESTAMP`]
+}
+
+// =============================================================================
+// TABLES - DOCTOR DATA
+// =============================================================================
+
+Table doctor_profiles {
+  doctor_id varchar(50) [pk, ref: - users.id]
+  specialty varchar(100)
+  sub_specialties jsonb
+  qualifications text
+  experience_years integer
+  hospital_name varchar(255)
+  department varchar(100)
+  languages jsonb [default: `["Thai", "English"]`]
+  rating decimal(2,1)
+  total_reviews integer [default: 0]
+  consultation_fee decimal(10,2)
+  is_available boolean [default: true]
+  schedule jsonb
+  created_at timestamp [default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [default: `CURRENT_TIMESTAMP`]
+}
+
+Table doctors {
+  id varchar(50) [pk]
+  name varchar(255) [not null]
+  name_thai varchar(255)
+  specialty varchar(100)
+  specialty_thai varchar(100)
+  hospital varchar(255)
+  hospital_thai varchar(255)
+  avatar_url text
+  rating decimal(2,1) [default: 0]
+  review_count integer [default: 0]
+  experience_years integer
+  consultation_fee decimal(10,2)
+  is_available boolean [default: true]
+  created_at timestamp [default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [default: `CURRENT_TIMESTAMP`]
+}
+
+Table doctor_schedules {
+  id varchar(50) [pk]
+  doctor_id varchar(50) [ref: > users.id]
+  day_of_week integer [not null]
+  start_time time [not null]
+  end_time time [not null]
+  slot_duration_minutes integer [default: 30]
+  is_available boolean [default: true]
+  created_at timestamp [default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [default: `CURRENT_TIMESTAMP`]
+}
+
+Table doctor_reviews {
+  id varchar(50) [pk]
+  doctor_id varchar(50) [ref: > users.id]
+  patient_id varchar(50) [ref: > users.id]
+  appointment_id varchar(50)
+  rating integer [not null]
+  comment text
+  created_at timestamp [default: `CURRENT_TIMESTAMP`]
+}
+
+Table consultants {
+  id varchar(50) [pk]
+  name varchar(255) [not null]
+  specialty varchar(100) [not null]
+  email varchar(255)
+  phone varchar(50)
+  hospital varchar(255)
+  languages jsonb
+  experience_years integer
+  bio text
+  is_available boolean [default: true]
+  rating decimal(2,1)
+  reviews jsonb [default: `[]`]
+  admin_notes text
+  created_by varchar(50)
+  created_at timestamp [default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [default: `CURRENT_TIMESTAMP`]
+}
+
+// =============================================================================
+// TABLES - APPOINTMENTS & CLINICAL
+// =============================================================================
+
+Table appointments {
+  id varchar(50) [pk]
+  patient_id varchar(50) [ref: > users.id]
+  doctor_id varchar(50) [ref: > users.id]
+  requested_date date
+  requested_time time
+  confirmed_date date
+  confirmed_time time
+  appointment_type varchar(50) [default: 'Telehealth']
+  appointment_date date
+  appointment_time time
+  reason text
+  status appointment_status [default: 'pending']
+  urgency_level urgency_level [default: 'normal']
+  symptoms jsonb [default: `[]`]
+  symptom_description text
+  ai_triage jsonb
+  notes text
+  meet_link text
+  meeting_link text
+  jitsi_room_name varchar(255)
+  invitees jsonb [default: `[]`]
+  created_at timestamp [default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [default: `CURRENT_TIMESTAMP`]
+  confirmed_at timestamp
+  completed_at timestamp
+  cancelled_at timestamp
+  cancellation_reason text
+}
+
+Table meeting_records {
+  id uuid [pk, default: `uuid_generate_v4()`]
+  appointment_id varchar(50) [ref: > appointments.id]
+  doctor_id varchar(50) [ref: > users.id]
+  patient_id varchar(50) [ref: > users.id]
+  room_id varchar(100)
+  room_name varchar(255)
+  jitsi_domain varchar(255)
+  meeting_url text
+  doctor_url text
+  patient_url text
+  guest_url text
+  status meeting_status [default: 'scheduled']
+  meeting_config jsonb
+  recording_url text
+  transcript text
+  ai_summary text
+  ai_recommendations text
+  section_summaries jsonb
+  duration_minutes integer
+  started_at timestamp
+  ended_at timestamp
+  created_at timestamp [default: `CURRENT_TIMESTAMP`]
+}
+
+Table meeting_transcripts {
+  id uuid [pk, default: `uuid_generate_v4()`]
+  meeting_record_id uuid [ref: > meeting_records.id]
+  appointment_id varchar(50) [ref: > appointments.id]
+  speaker_id varchar(50) [ref: > users.id]
+  speaker_role speaker_role [not null]
+  speaker_name varchar(255)
+  content text [not null]
+  language varchar(10) [default: 'th']
+  confidence decimal(3,2)
+  start_time_seconds integer
+  end_time_seconds integer
+  is_final boolean [default: true]
+  created_at timestamp [default: `CURRENT_TIMESTAMP`]
+}
+
+Table emr {
+  id varchar(50) [pk]
+  appointment_id varchar(50) [ref: > appointments.id]
+  patient_id varchar(50) [ref: > users.id]
+  doctor_id varchar(50) [ref: > users.id]
+  subjective jsonb
+  objective jsonb
+  assessment jsonb
+  plan jsonb
+  ai_summary text
+  ai_summary_approved boolean [default: false]
+  ai_summary_approved_at timestamp
+  ai_transcript text
+  patient_instructions text
+  patient_instructions_thai text
+  doctor_signature text
+  signed_at timestamp
+  status varchar(20) [default: 'draft']
+  created_at timestamp [default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [default: `CURRENT_TIMESTAMP`]
+}
+
+Table prescriptions {
+  id varchar(50) [pk]
+  emr_id varchar(50) [ref: > emr.id]
+  appointment_id varchar(50) [ref: > appointments.id]
+  patient_id varchar(50) [ref: > users.id]
+  doctor_id varchar(50) [ref: > users.id]
+  medications jsonb [not null]
+  pharmacy_instructions text
+  cds_warnings jsonb
+  cds_approved boolean [default: false]
+  status varchar(20) [default: 'pending']
+  dispensed_at timestamp
+  created_at timestamp [default: `CURRENT_TIMESTAMP`]
+}
+
+Table lab_orders {
+  id varchar(50) [pk]
+  emr_id varchar(50) [ref: > emr.id]
+  appointment_id varchar(50) [ref: > appointments.id]
+  patient_id varchar(50) [ref: > users.id]
+  doctor_id varchar(50) [ref: > users.id]
+  tests jsonb [not null]
+  priority varchar(20) [default: 'routine']
+  lab_name varchar(255)
+  results jsonb
+  ai_analysis text
+  status varchar(20) [default: 'ordered']
+  ordered_at timestamp [default: `CURRENT_TIMESTAMP`]
+  completed_at timestamp
+}
+
+// =============================================================================
+// TABLES - CONTENT & RESOURCES
+// =============================================================================
+
+Table medical_content {
+  id varchar(50) [pk]
+  title_thai varchar(500) [not null]
+  title_english varchar(500)
+  content_thai text [not null]
+  content_english text
+  category varchar(100)
+  tags jsonb
+  author_id varchar(50) [ref: > users.id]
+  status varchar(20) [default: 'draft']
+  published_at timestamp
+  view_count integer [default: 0]
+  image_url text
+  created_at timestamp [default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [default: `CURRENT_TIMESTAMP`]
+}
+
+Table clinical_resources {
+  id varchar(50) [pk]
+  title_thai varchar(500) [not null]
+  title_english varchar(500)
+  content_thai text [not null]
+  content_english text
+  category varchar(100)
+  specialty varchar(100)
+  guideline_year integer
+  source varchar(255)
+  tags jsonb
+  status varchar(20) [default: 'pending']
+  image_url text
+  author_id varchar(50) [ref: > users.id]
+  author_name varchar(255)
+  approved_by varchar(50) [ref: > users.id]
+  approved_at timestamp
+  created_at timestamp [default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [default: `CURRENT_TIMESTAMP`]
+}
+
+Table icd10_codes {
+  code varchar(10) [pk]
+  description_english varchar(500)
+  description_thai varchar(500)
+  category varchar(100)
+  chapter varchar(10)
+}
+
+Table drugs {
+  id varchar(50) [pk]
+  generic_name varchar(255) [not null]
+  brand_names jsonb
+  drug_class varchar(100)
+  dosage_forms jsonb
+  indications jsonb
+  contraindications jsonb
+  interactions jsonb
+  side_effects jsonb
+  pregnancy_category varchar(5)
+  renal_adjustment jsonb
+  hepatic_adjustment jsonb
+}
+
+// =============================================================================
+// TABLES - AI & KNOWLEDGE
+// =============================================================================
+
+Table notifications {
+  id uuid [pk, default: `uuid_generate_v4()`]
+  user_id varchar(50) [ref: > users.id]
+  type varchar(50) [not null]
+  title varchar(255) [not null]
+  title_thai varchar(255)
+  message text
+  message_thai text
+  data jsonb
+  read_at timestamp
+  created_at timestamp [default: `CURRENT_TIMESTAMP`]
+}
+
+Table knowledge_base {
+  id serial [pk]
+  title varchar(500) [not null]
+  content text [not null]
+  source varchar(255)
+  category varchar(100)
+  guideline_year varchar(10)
+  language varchar(10) [default: 'th']
+  embedding vector
+  is_active boolean [default: true]
+  created_at timestamp [default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [default: `CURRENT_TIMESTAMP`]
+}
+
+Table ai_chat_history {
+  id serial [pk]
+  user_id varchar(50) [ref: > users.id]
+  session_id varchar(100) [not null]
+  role varchar(20) [not null]
+  content text [not null]
+  context jsonb
+  created_at timestamp [default: `CURRENT_TIMESTAMP`]
+}
+
+Table ai_document_analysis {
+  id serial [pk]
+  patient_id varchar(50) [ref: > users.id]
+  doctor_id varchar(50) [ref: > users.id]
+  document_type varchar(50) [not null]
+  filename varchar(255)
+  file_path text
+  mime_type varchar(100)
+  summary text
+  key_findings jsonb [default: `[]`]
+  abnormal_values jsonb [default: `[]`]
+  raw_analysis jsonb
+  validation_status varchar(20) [default: 'pending']
+  validated_by varchar(50) [ref: > users.id]
+  validated_at timestamp
+  created_at timestamp [default: `CURRENT_TIMESTAMP`]
+}
+
+Table cds_logs {
+  id varchar(50) [pk]
+  patient_id varchar(50) [ref: > users.id]
+  doctor_id varchar(50) [not null, ref: > users.id]
+  appointment_id varchar(50) [ref: > appointments.id]
+  recommendation_type varchar(50) [not null]
+  severity severity_level [not null]
+  title text [not null]
+  title_thai text
+  description text
+  description_thai text
+  suggested_action text
+  guideline_source varchar(255)
+  guideline_year varchar(10)
+  doctor_decision decision_type
+  doctor_notes text
+  decided_at timestamp
+  created_at timestamp [default: `CURRENT_TIMESTAMP`]
+}
+
+Table ai_validations {
+  id varchar(50) [pk]
+  type varchar(50) [not null]
+  patient_id varchar(50) [ref: > users.id]
+  doctor_id varchar(50) [not null, ref: > users.id]
+  decision varchar(20) [not null]
+  notes text
+  content_snapshot text
+  validated_at timestamp [default: `CURRENT_TIMESTAMP`]
+}
+
+Table audit_logs {
+  id varchar(50) [pk]
+  user_id varchar(50)
+  patient_id varchar(50)
+  action varchar(100) [not null]
+  entity_type varchar(50)
+  entity_id varchar(50)
+  details jsonb
+  old_value jsonb
+  new_value jsonb
+  ip_address varchar(45)
+  user_agent text
+  performed_by varchar(50)
+  created_at timestamp [default: `CURRENT_TIMESTAMP`]
+}

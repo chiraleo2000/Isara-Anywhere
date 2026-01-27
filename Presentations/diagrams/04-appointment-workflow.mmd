@@ -26,7 +26,7 @@ flowchart LR
     subgraph SYSTEM["⚙️ SYSTEM"]
         direction TB
         S1["🤖 AI Analysis<br/>Gemini"]
-        S2["💾 Save to GCS<br/>izara-appointments"]
+        S2["💾 Save to DB<br/>PostgreSQL"]
         S3["📧 Notify Doctor"]
     end
 
@@ -65,4 +65,3 @@ flowchart LR
     class D1,D3,D4 doctorStyle
     class D2 decisionStyle
     class R1,R2,R3 resultStyle
-

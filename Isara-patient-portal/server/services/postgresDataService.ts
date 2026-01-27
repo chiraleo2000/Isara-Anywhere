@@ -43,9 +43,8 @@ if (process.env.DATABASE_URL) {
   }
 }
 
-// Cloud SQL Unix socket configuration
+// PostgreSQL Docker service configuration (NO Cloud SQL)
 const dbHost = dbConfig.host || process.env.DB_HOST || 'localhost';
-const isCloudSQL = dbHost.startsWith('/cloudsql/');
 
 // Build pool configuration
 interface PoolConfig {
@@ -56,7 +55,7 @@ interface PoolConfig {
   idleTimeoutMillis: number;
   connectionTimeoutMillis: number;
   host: string;
-  port?: number;
+  port: number;
 }
 
 const poolConfig: PoolConfig = {
@@ -67,16 +66,10 @@ const poolConfig: PoolConfig = {
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 5000,
   host: dbHost,
+  port: dbConfig.port || Number.parseInt(process.env.DB_PORT || '5433', 10),
 };
 
-if (isCloudSQL) {
-  // Cloud SQL Unix socket connection
-  console.log(`☁️ Using Cloud SQL Unix socket: ${dbHost}`);
-} else {
-  // Standard TCP connection
-  poolConfig.port = dbConfig.port || Number.parseInt(process.env.DB_PORT || '5432', 10);
-  console.log(`🔌 Using TCP connection: ${dbHost}:${poolConfig.port}`);
-}
+console.log(`🔌 Using PostgreSQL TCP connection: ${dbHost}:${poolConfig.port}`);
 
 const pool = new Pool(poolConfig);
 
@@ -379,26 +372,30 @@ export const PHRService = {
     if (existing) {
       const result = await pool.query(
         `UPDATE phr SET
-          allergies = COALESCE($2, allergies),
-          chronic_conditions = COALESCE($3, chronic_conditions),
-          medications = COALESCE($4, medications),
-          emergency_contacts = COALESCE($5, emergency_contacts),
+          allergies = COALESCE($2::jsonb, allergies),
+          chronic_conditions = COALESCE($3::jsonb, chronic_conditions),
+          medications = COALESCE($4::jsonb, medications),
+          emergency_contacts = COALESCE($5::jsonb, emergency_contacts),
+          lifestyle = COALESCE($6::jsonb, lifestyle),
+          demographics = COALESCE($7::jsonb, demographics),
           updated_at = NOW()
          WHERE patient_id = $1
          RETURNING *`,
         [
           patientId,
-          JSON.stringify(data.allergies),
-          JSON.stringify(data.chronic_conditions),
-          JSON.stringify(data.medications),
-          JSON.stringify(data.emergency_contacts)
+          data.allergies !== undefined ? JSON.stringify(data.allergies) : null,
+          data.chronic_conditions !== undefined ? JSON.stringify(data.chronic_conditions) : null,
+          data.medications !== undefined ? JSON.stringify(data.medications) : null,
+          data.emergency_contacts !== undefined ? JSON.stringify(data.emergency_contacts) : null,
+          data.lifestyle !== undefined ? JSON.stringify(data.lifestyle) : null,
+          data.demographics !== undefined ? JSON.stringify(data.demographics) : null
         ]
       );
       return result.rows[0];
     } else {
       const result = await pool.query(
-        `INSERT INTO phr (id, patient_id, allergies, chronic_conditions, medications, emergency_contacts)
-         VALUES ($1, $2, $3, $4, $5, $6)
+        `INSERT INTO phr (id, patient_id, allergies, chronic_conditions, medications, emergency_contacts, lifestyle, demographics)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
          RETURNING *`,
         [
           `phr_${patientId}`,
@@ -406,7 +403,9 @@ export const PHRService = {
           JSON.stringify(data.allergies || []),
           JSON.stringify(data.chronic_conditions || []),
           JSON.stringify(data.medications || []),
-          JSON.stringify(data.emergency_contacts || [])
+          JSON.stringify(data.emergency_contacts || []),
+          JSON.stringify(data.lifestyle || {}),
+          JSON.stringify(data.demographics || {})
         ]
       );
       return result.rows[0];

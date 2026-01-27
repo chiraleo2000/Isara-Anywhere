@@ -642,7 +642,7 @@ export const ClinicalResources: React.FC = () => {
 
                 {/* Meta Info */}
                 <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-gray-500">
-                  <span>By {selectedResource.createdByName || 'Unknown'}</span>
+                  <span>By {selectedResource.createdByName || selectedResource.source || 'ทีมแพทย์ Isara'}</span>
                   <span>Updated: {new Date(selectedResource.updatedAt || selectedResource.createdAt).toLocaleDateString()}</span>
                   {selectedResource.source && <span>Source: {selectedResource.source}</span>}
                 </div>

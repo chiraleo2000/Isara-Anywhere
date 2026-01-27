@@ -1,7 +1,7 @@
 # ============================================================================
 # IZARA TELEMEDICINE - COMPLETE DOCKER COMPOSE
 # Version: 3.1.0
-# Updated: 2026-01-23
+# Updated: 2026-01-27
 # ============================================================================
 # 
 # This docker-compose provides:
@@ -11,8 +11,9 @@
 # - Doctor Portal (unified frontend + backend on port 3010)
 # 
 # Environment Variables:
-#   API keys are loaded from portal-specific .env files
-#   DO NOT hardcode API keys in this file - use env_file directive
+#   Shared variables loaded from .env.docker in root directory
+#   Portal-specific variables loaded from their respective .env files
+#   DO NOT hardcode API keys in this file!
 #
 # Run: docker-compose up --build
 # Access:
@@ -29,6 +30,8 @@ services:
     image: pgvector/pgvector:pg16
     container_name: izara-postgres
     restart: unless-stopped
+    env_file:
+      - .env.docker
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-P@ssw0rd}
@@ -38,7 +41,7 @@ services:
       - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./scripts/database/init-database.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+      - ./scripts/database/izara-database.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d izara_phase1"]
       interval: 10s
@@ -82,15 +85,16 @@ services:
         VITE_APP_VERSION: 2.0.0
         VITE_APP_ENV: production
         VITE_USE_POSTGRESQL: "true"
-        # Google Maps API - pass from host environment or use default from .env
-        VITE_GOOGLE_MAPS_API_KEY: ${VITE_GOOGLE_MAPS_API_KEY:-AIzaSyCjs3ang2xXSlE7o34QBEsG-GNhGrvxcHI}
-        VITE_GOOGLE_MAPS_MAP_ID: ${VITE_GOOGLE_MAPS_MAP_ID:-60687d30be2fe4b7e600b274}
-        # Gemini AI
-        VITE_GEMINI_API_KEY: ${VITE_GEMINI_API_KEY:-}
-        VITE_GEMINI_MODEL: ${VITE_GEMINI_MODEL:-gemini-2.5-flash-lite}
+        # Google Maps API - loaded from .env.docker
+        VITE_GOOGLE_MAPS_API_KEY: ${VITE_GOOGLE_MAPS_API_KEY}
+        VITE_GOOGLE_MAPS_MAP_ID: ${VITE_GOOGLE_MAPS_MAP_ID}
+        # Gemini AI - loaded from .env.docker
+        VITE_GEMINI_API_KEY: ${VITE_GEMINI_API_KEY}
+        VITE_GEMINI_MODEL: ${VITE_GEMINI_MODEL}
     container_name: izara-patient-portal
     restart: unless-stopped
     env_file:
+      - .env.docker
       - ./Isara-patient-portal/.env
     environment:
       # Server Configuration
@@ -101,12 +105,13 @@ services:
       DEMO_MODE: "false"
       
       # Database Configuration - Docker internal network
-      DATABASE_URL: postgresql://postgres:P@ssw0rd@postgres:5432/izara_phase1
+      # NOTE: Password P@ssw0rd uses URL encoding %40 for @ symbol
+      DATABASE_URL: postgresql://postgres:P%40ssw0rd@postgres:5432/izara_phase1
       DB_HOST: postgres
       DB_PORT: 5432
       DB_NAME: izara_phase1
       DB_USER: postgres
-      DB_PASSWORD: P@ssw0rd
+      DB_PASSWORD: "P@ssw0rd"
       USE_POSTGRESQL: "true"
       VITE_USE_POSTGRESQL: "true"
       
@@ -147,6 +152,7 @@ services:
     container_name: izara-doctor-portal
     restart: unless-stopped
     env_file:
+      - .env.docker
       - ./Isara-doctor-portal/.env
     environment:
       # Server Configuration
@@ -159,12 +165,13 @@ services:
       DEMO_MODE: "false"
       
       # Database Configuration - Docker internal network
-      DATABASE_URL: postgresql://postgres:P@ssw0rd@postgres:5432/izara_phase1
+      # NOTE: Password P@ssw0rd uses URL encoding %40 for @ symbol
+      DATABASE_URL: postgresql://postgres:P%40ssw0rd@postgres:5432/izara_phase1
       DB_HOST: postgres
       DB_PORT: 5432
       DB_NAME: izara_phase1
       DB_USER: postgres
-      DB_PASSWORD: P@ssw0rd
+      DB_PASSWORD: "P@ssw0rd"
       USE_POSTGRESQL: "true"
       VITE_USE_POSTGRESQL: "true"
       
@@ -201,6 +208,7 @@ services:
     container_name: izara-meeting-server
     restart: unless-stopped
     env_file:
+      - .env.docker
       - ./Izara-jitsi-server/.env
     environment:
       # Server Configuration
@@ -208,22 +216,22 @@ services:
       PORT: 3020
       
       # Database Configuration - Docker internal network
-      DATABASE_URL: postgresql://postgres:P@ssw0rd@postgres:5432/izara_phase1
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-P@ssw0rd}@postgres:5432/${POSTGRES_DB:-izara_phase1}
       DB_HOST: postgres
       DB_PORT: 5432
-      DB_NAME: izara_phase1
-      DB_USER: postgres
-      DB_PASSWORD: P@ssw0rd
+      DB_NAME: ${POSTGRES_DB:-izara_phase1}
+      DB_USER: ${POSTGRES_USER:-postgres}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-P@ssw0rd}
       
-      # Jitsi Configuration
-      JITSI_DOMAIN: meet.jit.si
+      # Jitsi Configuration - loaded from .env.docker
+      JITSI_DOMAIN: ${JITSI_DOMAIN}
       
-      # Gemini AI Configuration
-      GEMINI_API_KEY: ${GEMINI_API_KEY:-AIzaSyCaH9_CLZ6jZvRWYH-JSEnpj4TUn2UV5Vs}
-      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash-lite}
+      # Gemini AI Configuration - loaded from .env.docker
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      GEMINI_MODEL: ${GEMINI_MODEL}
       
-      # Google Speech-to-Text
-      GOOGLE_SPEECH_API_KEY: ${GOOGLE_SPEECH_API_KEY:-AIzaSyCjs3ang2xXSlE7o34QBEsG-GNhGrvxcHI}
+      # Google Speech-to-Text - loaded from .env.docker
+      GOOGLE_SPEECH_API_KEY: ${GOOGLE_SPEECH_API_KEY}
       
       # CORS
       CORS_ORIGINS: http://localhost:3005,http://localhost:3010
@@ -237,7 +245,7 @@ services:
     networks:
       - izara-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3020/health"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3020/health"]
       interval: 30s
       timeout: 10s
       retries: 3

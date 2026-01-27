@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Izara Diagram: 01-system-architecture</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5; }
+        .container { max-width: 100%; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; text-align: center; border-bottom: 2px solid #eee; padding-bottom: 15px; }
+        .mermaid { display: flex; justify-content: center; margin-top: 20px; }
+        .nav { margin-bottom: 20px; text-align: center; }
+        .nav a { margin: 0 10px; color: #3498db; text-decoration: none; font-weight: bold; }
+        .nav a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="nav">
+        <a href="index.html">🔙 Back to Index</a>
+        <span>|</span>
+        <a href="javascript:location.reload()">🔄 Refresh</a>
+    </div>
+    <div class="container">
+        <h1>01-system-architecture</h1>
+        <div class="mermaid">
+            %%{init: {
+  'theme': 'base',
+  'themeVariables': {
+    'primaryColor': '#E8F5E9',
+    'primaryTextColor': '#1B5E20',
+    'primaryBorderColor': '#4CAF50',
+    'lineColor': '#2E7D32',
+    'secondaryColor': '#E3F2FD',
+    'tertiaryColor': '#FFF3E0',
+    'fontSize': '28px',
+    'fontFamily': 'Segoe UI, Arial'
+  }
+}}%%
+
+flowchart TB
+    subgraph USERS["👥 USERS"]
+        direction LR
+        P["🧑‍🤝‍🧑 Patients<br/>ผู้ป่วย"]
+        D["👨‍⚕️ Doctors<br/>แพทย์"]
+    end
+
+    subgraph CONTAINERS["🐳 DOCKER CONTAINERS"]
+        direction LR
+        subgraph PP_CONT["🏥 Patient Portal"]
+            PP["📱 Frontend + Backend<br/>React + Node.js<br/>Port: 3005"]
+        end
+        subgraph DP_CONT["👨‍⚕️ Doctor Portal"]
+            DP["💻 Frontend + Backend<br/>React + Node.js<br/>Port: 3010"]
+        end
+    end
+
+    subgraph DATA_LAYER["💾 DATA LAYER"]
+        POSTGRES[("🐘 PostgreSQL<br/>Primary Database<br/>Port: 5432/5433")]
+        GCS["📦 GCS - 5 BUCKETS<br/>File Storage (Docs, Images)"]
+    end
+
+    subgraph SERVICES["🔗 EXTERNAL SERVICES"]
+        direction LR
+        JITSI["📹 Jitsi Meeting Server<br/>Port: 3020"]
+        GEMINI["🤖 Gemini AI<br/>Health Assistant"]
+        MAPS["🗺️ Google Maps API<br/>Healthcare Locations"]
+    end
+
+    %% User to Portal connections
+    P --> PP
+    D --> DP
+
+    %% Portal to Database
+    PP --> POSTGRES
+    DP --> POSTGRES
+
+    %% Portal to Storage
+    PP --> GCS
+    DP --> GCS
+
+    %% Portal to Services
+    PP -.-> JITSI
+    PP -.-> GEMINI
+    PP -.-> MAPS
+    DP -.-> JITSI
+    DP -.-> GEMINI
+
+    %% Styling
+    classDef userStyle fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px,color:#1B5E20
+    classDef containerStyle fill:#E3F2FD,stroke:#2196F3,stroke-width:2px,color:#0D47A1
+    classDef dbStyle fill:#F3E5F5,stroke:#9C27B0,stroke-width:2px,color:#4A148C
+    classDef storageStyle fill:#ECEFF1,stroke:#607D8B,stroke-width:2px,color:#37474F
+    classDef serviceStyle fill:#E0F7FA,stroke:#00BCD4,stroke-width:2px,color:#006064
+
+    class P,D userStyle
+    class PP,DP containerStyle
+    class POSTGRES dbStyle
+    class GCS storageStyle
+    class JITSI,GEMINI,MAPS serviceStyle
+
+        </div>
+    </div>
+    <script>
+        mermaid.initialize({ 
+            startOnLoad: true, 
+            theme: 'base',
+            securityLevel: 'loose',
+            themeVariables: {
+                primaryColor: '#E3F2FD',
+                secondaryColor: '#E8F5E9',
+                tertiaryColor: '#FFF3E0',
+                fontSize: '16px'
+            }
+        });
+    </script>
+</body>
+</html>

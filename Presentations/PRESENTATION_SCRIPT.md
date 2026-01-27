@@ -93,10 +93,10 @@
 |-------|------------|
 | **Frontend** | React 18, TypeScript, Tailwind CSS, Vite |
 | **Backend** | Node.js 22, Express.js |
-| **Database** | Google Cloud Storage (JSON) |
+| **Database** | PostgreSQL 16 |
 | **Hosting** | Google Cloud Run |
 | **AI** | Google Gemini 2.5 Flash |
-| **Video** | Google Meet API |
+| **Video** | Jitsi Meet (Self-Hosted) |
 | **Maps** | Google Maps Platform |
 
 ---
@@ -243,19 +243,18 @@ Draft → Pending → Published
 ## 💾 Slide 14: Data Storage Overview
 
 **Script:**
-> "เราใช้ Google Cloud Storage เป็น Database หลัก โดยเก็บข้อมูลเป็น JSON Files จัดเป็น 6 Buckets"
+> "เราใช้ PostgreSQL เป็น Database หลักในการเก็บข้อมูลทั้งหมด เพื่อความมั่นคงและความรวดเร็วในการเรียกใช้ข้อมูล ขณะที่ไฟล์เอกสารและรูปภาพจะถูกเก็บใน Google Cloud Storage"
 
-**📊 See:** `diagrams/09-database-structure.mmd`  
-**📊 See:** `database/izara-complete-schema.dbml`
+**📊 See:** `diagrams/01-system-architecture.mmd`  
+**📊 See:** `database/izara-complete-schema-v3.dbml`
 
-**5 GCS Buckets:**
-| Bucket | Purpose |
-|--------|---------|
-| `izara-users-credentials` | All User Authentication (Patients, Doctors, Admins) |
-| `izara-patients-data` | Patient PHR & Profiles |
-| `izara-doctors-data` | Doctor Profiles & Settings |
-| `izara-appointments` | Appointment Records |
-| `izara-meta-data` | Content & Clinical Resources |
+**Core Database Tables:**
+| Category | Tables |
+|----------|--------|
+| **Users** | `users`, `sessions`, `roles` |
+| **Clinical** | `emr`, `prescriptions`, `lab_orders` |
+| **Records** | `patient_profiles`, `phr` |
+| **Operations** | `appointments`, `meeting_records` |
 
 ---
 
@@ -425,8 +424,7 @@ Draft → Pending → Published
 |---------|-----|
 | Patient Portal | http://localhost:3005 |
 | Doctor Portal | http://localhost:3010 |
-| Auth Server | http://localhost:3011 |
-| GCS API | http://localhost:3012 |
+| Jitsi Server | http://localhost:3020 |
 
 ## Production URLs
 

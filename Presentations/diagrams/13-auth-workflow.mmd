@@ -27,24 +27,22 @@ flowchart TB
     end
 
     subgraph BACKEND_AUTH["🔐 PASSWORD CHECKING<br/>ตรวจสอบรหัสผ่าน"]
-        HASH_CHECK["🔒 Check Password Match<br/>เช็ครหัสผ่านตรงกันไหม"]
-        VALIDATE_CREDS["✅ Match Password<br/>จับคู่รหัสผ่าน"]
+        HASH_CHECK["🔒 Check Password Hash<br/>เช็ครหัสผ่าน"]
+        VALIDATE_CREDS["✅ Match bcrypt<br/>จับคู่รหัสผ่าน"]
         CREDS_VALID{{"✅ Correct?<br/>ถูกต้อง?"}}
-        GENERATE_SESSION["🎫 Create Login Key<br/>สร้างกุญแจเข้าระบบ"]
+        GENERATE_SESSION["🎫 Create Session<br/>สร้างเซสชั่น"]
     end
 
-    subgraph GCS_AUTH["☁️ USER DATABASE<br/>ฐานข้อมูลผู้ใช้"]
-        CHECK_USER["🔍 Find User Account<br/>ค้นหาบัญชีผู้ใช้"]
+    subgraph DB_AUTH["🐘 POSTGRESQL DB<br/>ฐานข้อมูลผู้ใช้"]
+        CHECK_USER["🔍 SELECT * FROM users<br/>ค้นหาบัญชีผู้ใช้"]
         USER_EXISTS{{"👤 Account Found?<br/>เจอบัญชีไหม?"}}
-        CREATE_USER["➕ Create New Account<br/>สร้างบัญชีใหม่"]
-        LOAD_PROFILE["📂 Get User Info<br/>ดึงข้อมูลผู้ใช้"]
-        SAVE_GCS["💾 Save User Data<br/>บันทึกข้อมูล"]
+        LOAD_PROFILE["📂 Get User + Role<br/>ดึงข้อมูลผู้ใช้"]
+        SAVE_SESSION["💾 INSERT INTO sessions<br/>บันทึกเซสชั่น"]
     end
 
     subgraph SESSION["🎫 REMEMBER LOGIN<br/>จดจำการเข้าสู่ระบบ"]
-        CREATE_SESSION["🎫 Start Login Session<br/>เริ่มเซสชั่นเข้าระบบ"]
-        SET_COOKIE["🍪 Remember Me<br/>จดจำฉัน"]
-        STORE_LOCAL["💾 Save Login Info<br/>บันทึกข้อมูลล็อกอิน"]
+        CREATE_SESSION["🎫 Return Token<br/>ส่งคืน Token"]
+        SET_COOKIE["🍪 Set Cookie/Storage<br/>จดจำฉัน"]
     end
 
     subgraph COMPLETE["✅ COMPLETION<br/>เสร็จสิ้น"]
@@ -66,9 +64,10 @@ flowchart TB
     
     HASH_CHECK --> VALIDATE_CREDS --> CREDS_VALID
     CREDS_VALID -->|No| ERROR_BOX
-    CREDS_VALID -->|Yes| GENERATE_SESSION --> CREATE_SESSION
+    CREDS_VALID -->|Yes| GENERATE_SESSION --> SAVE_SESSION
     
-    CREATE_SESSION --> SET_COOKIE --> STORE_LOCAL --> REDIRECT --> DASHBOARD --> END_NODE
+    SAVE_SESSION --> CREATE_SESSION
+    CREATE_SESSION --> SET_COOKIE --> REDIRECT --> DASHBOARD --> END_NODE
 
     %% Styling
     classDef titleStyle fill:#1B5E20,stroke:#004D40,stroke-width:3px,color:#FFFFFF,font-size:20px,font-weight:bold
@@ -86,8 +85,7 @@ flowchart TB
     class START,END_NODE startStyle
     class ENTER_EMAIL,ENTER_PASS,VALIDATE_CRED,EMAIL_ERROR emailStyle
     class HASH_CHECK,VALIDATE_CREDS,CREDS_VALID,GENERATE_SESSION passwordStyle
-    class CHECK_USER,USER_EXISTS,CREATE_USER,LOAD_PROFILE,SAVE_GCS databaseStyle
-    class CREATE_SESSION,SET_COOKIE,STORE_LOCAL rememberStyle
+    class CHECK_USER,USER_EXISTS,LOAD_PROFILE,SAVE_SESSION databaseStyle
+    class CREATE_SESSION,SET_COOKIE rememberStyle
     class REDIRECT,DASHBOARD completeStyle
     class ERROR_BOX errorStyle
-

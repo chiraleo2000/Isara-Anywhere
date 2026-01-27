@@ -23,7 +23,9 @@ import {
   fetchPatientEMRs,
   fetchPatientLabOrders,
   fetchPatientPrescriptions,
-  clearCache
+  clearCache,
+  fetchPendingPrescriptionsCount,
+  fetchUnreadNotificationsCount
 } from '../services/apiDataService';
 import { meetingService } from '../services/apiServices';
 import { geminiClinicalService } from '../services/geminiClinicalService';
@@ -299,12 +301,23 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
         setSelectedPatient(firstPatient);
       }
 
+      // Fetch real-time counts for pending prescriptions and unread notifications
+      const [pendingPrescriptionsCount, unreadMessagesCount] = await Promise.all([
+        fetchPendingPrescriptionsCount(doctor.id),
+        fetchUnreadNotificationsCount(doctor.id)
+      ]);
+
+      console.log('[Dashboard] Real-time counts:', {
+        pendingPrescriptions: pendingPrescriptionsCount,
+        unreadMessages: unreadMessagesCount
+      });
+
       // Derive stats from fetched data (real data, no hardcoding)
       setDashboardStats({
         todayAppointments: todaysMeetings.length,
         patientsSeen: doctorAppointments.filter((apt: any) => apt.status === 'completed').length,
-        pendingPrescriptions: 0,
-        unreadMessages: 0,
+        pendingPrescriptions: pendingPrescriptionsCount,
+        unreadMessages: unreadMessagesCount,
         averageWaitTime: loadedQueue.length > 0 ? Math.round(loadedQueue.reduce((s, q) => s + (q.estimatedWaitTime || 0), 0) / loadedQueue.length) : 0,
         patientsInQueue: loadedQueue.length,
         pendingConfirmations,

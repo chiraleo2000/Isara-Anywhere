@@ -33,33 +33,22 @@ if (process.env.DATABASE_URL) {
   }
 }
 
-// Cloud SQL Unix socket detection
+// PostgreSQL Docker service configuration (NO Cloud SQL)
 const dbHost = dbConfig.host || process.env.DB_HOST || 'localhost';
-const isCloudSQL = dbHost.startsWith('/cloudsql/');
 
-// Configure connection based on environment
-const poolConfig = isCloudSQL ? {
-  // Cloud SQL Unix socket configuration
+// Configure connection - Standard TCP only (no Cloud SQL Unix socket)
+const poolConfig = {
   host: dbHost,
+  port: dbConfig.port || Number.parseInt(process.env.DB_PORT || '5433', 10),
   database: dbConfig.database || process.env.DB_NAME || 'izara_phase1',
   user: dbConfig.user || process.env.DB_USER || 'postgres',
   password: dbConfig.password || process.env.DB_PASSWORD || 'P@ssw0rd',
   max: 20,
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 10000, // Longer timeout for Cloud SQL cold start
-} : {
-  // Standard TCP connection (local/Docker)
-  host: dbHost,
-  port: dbConfig.port || Number.parseInt(process.env.DB_PORT || '5432', 10),
-  database: dbConfig.database || process.env.DB_NAME || 'izara_phase1',
-  user: dbConfig.user || process.env.DB_USER || 'postgres',
-  password: dbConfig.password || process.env.DB_PASSWORD || 'P@ssw0rd',
-  max: 20,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
+  connectionTimeoutMillis: 5000,
 };
 
-console.log(`📦 Database: ${isCloudSQL ? 'Cloud SQL Unix Socket' : 'TCP'} - ${dbHost}`);
+console.log(`📦 Database: PostgreSQL TCP - ${dbHost}:${poolConfig.port}`);
 
 const pool = new Pool(poolConfig);
 
@@ -779,9 +768,9 @@ const ContentService = {
     const result = await pool.query(
       `INSERT INTO medical_content (
         id, title_thai, title_english, content_thai, content_english,
-        category, tags, author_id, status
+        category, tags, author_id, status, image_url
       )
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        RETURNING *`,
       [
         `MC-${Date.now()}`,
@@ -792,7 +781,8 @@ const ContentService = {
         data.category,
         JSON.stringify(data.tags || []),
         data.author_id,
-        data.status || 'draft'
+        data.status || 'draft',
+        data.image_url || data.thumbnail || null
       ]
     );
     return result.rows[0];
@@ -820,18 +810,26 @@ const ContentService = {
    * Get clinical resources
    */
   async getClinicalResources(status) {
-    let query = 'SELECT *, image_url FROM clinical_resources';
+    let query = `
+      SELECT cr.*, u.name as author_name_joined
+      FROM clinical_resources cr
+      LEFT JOIN users u ON cr.author_id = u.id
+    `;
     const params = [];
 
     if (status) {
-      query += ' WHERE status = $1';
+      query += ' WHERE cr.status = $1';
       params.push(status);
     }
 
-    query += ' ORDER BY updated_at DESC';
+    query += ' ORDER BY cr.updated_at DESC';
 
     const result = await pool.query(query, params);
-    return result.rows;
+    // Merge author_name from join if column doesn't exist
+    return result.rows.map(r => ({
+      ...r,
+      author_name: r.author_name || r.author_name_joined
+    }));
   },
 
   /**

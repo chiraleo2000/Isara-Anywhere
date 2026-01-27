@@ -283,14 +283,51 @@ export async function checkVideoMeetingHealth(): Promise<any> {
 }
 
 // ============================================================================
+// PRESCRIPTIONS
+// ============================================================================
+
+export async function fetchPendingPrescriptionsCount(doctorId: string): Promise<number> {
+  console.log(`[API] Fetching pending prescriptions count for doctor ${doctorId}...`);
+  try {
+    const result = await fetchAPI<{ success: boolean; count: number }>(`/api/prescriptions/pending/count/${doctorId}`);
+    return result.count || 0;
+  } catch (error) {
+    console.error('[API] Error fetching pending prescriptions count:', error);
+    return 0;
+  }
+}
+
+export async function fetchPendingPrescriptions(doctorId: string): Promise<any[]> {
+  console.log(`[API] Fetching pending prescriptions for doctor ${doctorId}...`);
+  try {
+    const result = await fetchAPI<{ success: boolean; prescriptions: any[] }>(`/api/prescriptions/pending/${doctorId}`);
+    return result.prescriptions || [];
+  } catch (error) {
+    console.error('[API] Error fetching pending prescriptions:', error);
+    return [];
+  }
+}
+
+// ============================================================================
 // NOTIFICATIONS
 // ============================================================================
 
 export async function fetchNotifications(userId: string, unreadOnly = false): Promise<any[]> {
   console.log(`[API] Fetching notifications for user ${userId}...`);
-  const params = unreadOnly ? '?unreadOnly=true' : '';
-  const result = await fetchAPI<{ notifications: any[] }>(`/api/notifications/${userId}${params}`);
+  const params = unreadOnly ? '?unread=true' : '';
+  const result = await fetchAPI<{ notifications: any[] }>(`/api/notifications${params}`);
   return result.notifications || [];
+}
+
+export async function fetchUnreadNotificationsCount(userId: string): Promise<number> {
+  console.log(`[API] Fetching unread notifications count for user ${userId}...`);
+  try {
+    const result = await fetchAPI<{ success: boolean; count: number; unreadCount: number }>('/api/notifications/count');
+    return result.unreadCount || result.count || 0;
+  } catch (error) {
+    console.error('[API] Error fetching unread notifications count:', error);
+    return 0;
+  }
 }
 
 // ============================================================================

@@ -35,9 +35,8 @@ interface MulterRequest extends Request {
 const router = Router();
 const upload = multer({ dest: 'uploads/' });
 
-// Initialize PostgreSQL connection with Cloud Run support
+// Initialize PostgreSQL connection (NO Cloud SQL - Docker service only)
 const dbHost = process.env.DB_HOST || 'localhost';
-const isCloudSQL = dbHost.startsWith('/cloudsql/');
 
 const poolConfig: any = {
   database: process.env.DB_NAME || 'izara_phase1',
@@ -45,16 +44,14 @@ const poolConfig: any = {
   password: process.env.DB_PASSWORD || 'P@ssw0rd',
   max: 5,
   idleTimeoutMillis: 10000,
-  connectionTimeoutMillis: 30000,
+  connectionTimeoutMillis: 10000,
 };
 
 if (process.env.DATABASE_URL) {
   poolConfig.connectionString = process.env.DATABASE_URL;
-} else if (isCloudSQL) {
-  poolConfig.host = dbHost;
 } else {
   poolConfig.host = dbHost;
-  poolConfig.port = Number.parseInt(process.env.DB_PORT || '5432', 10);
+  poolConfig.port = Number.parseInt(process.env.DB_PORT || '5433', 10);
 }
 
 console.log(`[AI Routes] PostgreSQL: host=${poolConfig.host || 'connectionString'}, db=${poolConfig.database}`);

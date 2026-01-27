@@ -2,15 +2,14 @@
  * =============================================================================
  * IZARA TELEMEDICINE - UNIFIED DATA SEEDER
  * =============================================================================
- * Version: 4.0.0
- * Updated: 2026-01-23
+ * Version: 4.1.0
+ * Updated: 2026-01-27
  * 
- * Comprehensive data seeder for both local Docker and Cloud SQL deployments.
- * Uses PostgreSQL directly - NO GCS dependencies.
+ * Comprehensive data seeder for PostgreSQL deployed as Docker service.
+ * Uses PostgreSQL directly - NO GCS, NO Cloud SQL.
  * 
  * Usage:
  *   node scripts/seeder.cjs                  # Seed local database
- *   node scripts/seeder.cjs --cloud          # Seed cloud database
  *   node scripts/seeder.cjs --verify         # Verify data only
  * =============================================================================
  */
@@ -21,24 +20,18 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 // =============================================================================
-// CONFIGURATION
+// CONFIGURATION - PostgreSQL Docker Service Only
 // =============================================================================
 
-const isCloud = process.argv.includes('--cloud');
 const verifyOnly = process.argv.includes('--verify');
 
-const config = isCloud ? {
-  host: process.env.CLOUD_SQL_HOST || '/cloudsql/izara-telemedicine:asia-southeast1:izara-postgres',
-  user: process.env.CLOUD_SQL_USER || 'postgres',
-  password: process.env.CLOUD_SQL_PASSWORD,
-  database: process.env.CLOUD_SQL_DATABASE || 'izara_phase1',
-  port: 5432
-} : {
+// PostgreSQL Docker service configuration (same for local and cloud)
+const config = {
   host: process.env.DB_HOST || 'localhost',
   user: process.env.DB_USER || 'postgres',
   password: process.env.DB_PASSWORD || 'P@ssw0rd',
   database: process.env.DB_NAME || 'izara_phase1',
-  port: Number.parseInt(process.env.DB_PORT || '5432')
+  port: Number.parseInt(process.env.DB_PORT || '5433')  // Docker exposes on 5433
 };
 
 const pool = new Pool(config);
@@ -305,7 +298,7 @@ async function main() {
   console.log('║        IZARA TELEMEDICINE - DATA SEEDER                   ║');
   console.log('╚═══════════════════════════════════════════════════════════╝\n');
   
-  console.log(`Environment: ${isCloud ? 'Cloud SQL' : 'Local Docker'}\n`);
+  console.log(`Environment: PostgreSQL Docker Service (Port ${config.port})\n`);
   
   try {
     // Test connection

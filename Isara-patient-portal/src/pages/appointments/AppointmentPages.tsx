@@ -10,7 +10,8 @@ export function AppointmentListPage() {
   const { user } = useAuth();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'upcoming' | 'past' | 'all'>('upcoming');
+  const [filter, setFilter] = useState<'pending' | 'all' | 'confirmed' | 'completed'>('pending');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   useEffect(() => {
     if (user) loadAppointments();
@@ -28,13 +29,18 @@ export function AppointmentListPage() {
     }
   };
 
-  const filteredAppointments = appointments.filter((apt) => {
-    const aptDate = new Date(apt.appointmentDate);
-    const now = new Date();
-    if (filter === 'upcoming') return aptDate >= now && apt.status !== 'cancelled';
-    if (filter === 'past') return aptDate < now || apt.status === 'completed';
-    return true;
-  });
+  const filteredAppointments = appointments
+    .filter((apt) => {
+      if (filter === 'pending') return ['pending', 'awaiting_doctor_response', 'in_pool'].includes(apt.status);
+      if (filter === 'confirmed') return apt.status === 'confirmed';
+      if (filter === 'completed') return ['completed', 'cancelled'].includes(apt.status);
+      return true; // 'all' shows everything
+    })
+    .sort((a, b) => {
+      const dateA = new Date(a.appointmentDate).getTime();
+      const dateB = new Date(b.appointmentDate).getTime();
+      return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
+    });
 
   const formatDate = (date: string | Date) =>
     new Date(date).toLocaleDateString('th-TH', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -88,16 +94,34 @@ export function AppointmentListPage() {
         </div>
       </div>
 
-      <div className="flex gap-2 mb-6">
-        {(['upcoming', 'past', 'all'] as const).map((f) => (
+      <div className="flex flex-wrap gap-2 mb-6 items-center">
+        {/* Filter tabs - รอการยืนยัน first, then ทั้งหมด */}
+        {(['pending', 'all', 'confirmed', 'completed'] as const).map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f)}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${filter === f ? 'bg-emerald-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'}`}
           >
-            {f === 'upcoming' ? 'ที่จะถึง' : f === 'past' ? 'ที่ผ่านมา' : 'ทั้งหมด'}
+            {f === 'pending' ? '⏳ รอการยืนยัน' : f === 'all' ? '📋 ทั้งหมด' : f === 'confirmed' ? '✅ ยืนยันแล้ว' : '📂 ที่ผ่านมา'}
           </button>
         ))}
+        
+        {/* Sort buttons */}
+        <div className="ml-auto flex items-center gap-2">
+          <span className="text-sm text-gray-500">เรียงตามวันที่:</span>
+          <button
+            onClick={() => setSortOrder('desc')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${sortOrder === 'desc' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'}`}
+          >
+            ใหม่ → เก่า
+          </button>
+          <button
+            onClick={() => setSortOrder('asc')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${sortOrder === 'asc' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'}`}
+          >
+            เก่า → ใหม่
+          </button>
+        </div>
       </div>
 
       {loading ? (
@@ -661,7 +685,14 @@ export function BookAppointmentPage() {
         ? 'awaiting_doctor_response' as AppointmentStatus  // Selected doctor needs to respond
         : 'in_pool' as AppointmentStatus;  // Goes to pool for assignment
 
-      // Create appointment request
+      // Create appointment request - Use field names that match the backend route
+      const preferredDate = form.preferredDates[0] 
+        ? new Date(form.preferredDates[0]).toISOString().split('T')[0]
+        : new Date().toISOString().split('T')[0];
+      const preferredTime = form.preferredTimeSlot === 'morning' ? '09:00' 
+        : form.preferredTimeSlot === 'afternoon' ? '13:00' 
+        : '17:00';
+
       const appointment = await appointmentService.create({
         patientId,
         patientName: user.name,
@@ -671,12 +702,15 @@ export function BookAppointmentPage() {
         doctorName: selectedDoctor?.name || 'รอการจัดสรรแพทย์',
         doctorSpecialty: selectedDoctor?.specialty || form.suggestedSpecialty || 'ทั่วไป',
         doctorAvatar: selectedDoctor?.avatarUrl,
-        // Patient's preferred schedule (doctor will set actual time)
-        appointmentDate: form.preferredDates[0] ? new Date(form.preferredDates[0]) : new Date(),
-        appointmentTime: form.preferredTimeSlot === 'morning' ? '09:00' : form.preferredTimeSlot === 'afternoon' ? '13:00' : '17:00',
-        type: form.type as any,
+        // Patient's preferred schedule - use field names that backend expects
+        preferredDate: preferredDate,
+        preferredTime: preferredTime,
+        requestedDate: preferredDate,  // Also send as requestedDate for compatibility
+        requestedTime: preferredTime,
+        appointmentType: form.type,  // Backend expects appointmentType not type
         status: initialStatus,
         reason: form.mainSymptom,
+        symptomDescription: form.symptomDescription || form.mainSymptom,
         // Extended data
         symptoms: symptomSummary as any,
         preferredDates: form.preferredDates,

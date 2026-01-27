@@ -210,24 +210,6 @@ function TextInputTab({
                 <Info className="w-4 h-4" />
                 ความช่วยเหลือ
               </button>
-              <button
-                type="button"
-                onClick={suggestSymptoms}
-                disabled={aiSuggesting}
-                className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-lg hover:from-amber-600 hover:to-orange-600 text-sm font-medium shadow-md transition-all disabled:opacity-60"
-              >
-                {aiSuggesting ? (
-                  <>
-                    <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
-                    AI กำลังแนะนำ...
-                  </>
-                ) : (
-                  <>
-                    <Lightbulb className="w-4 h-4" />
-                    AI ช่วยแนะนำ
-                  </>
-                )}
-              </button>
             </div>
           </div>
           <textarea

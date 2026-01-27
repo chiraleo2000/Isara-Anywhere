@@ -13,84 +13,57 @@
 }}%%
 
 flowchart LR
-    subgraph PORTALS["🌐 WEB PORTALS"]
-        direction TB
-        PATIENT["📱 Patient Portal"]
-        DOCTOR["💻 Doctor Portal"]
+    subgraph APP["📱 APPLICATION"]
+        API["⚙️ Backend API<br/>(Doctor/Patient)"]
     end
 
-    subgraph API["⚙️ GCS API SERVER"]
-        GCS_API["📦 Express.js<br/>:3012"]
-    end
-
-    subgraph BUCKETS["<br/><br/>☁️ 5 GCS BUCKETS<br/><br/>"]
+    subgraph BUCKETS["<br/><br/>☁️ 5 GCS BUCKETS - FILE STORAGE<br/><br/>"]
         direction LR
         
-        subgraph CRED["🔑<br/>izara-users-<br/>credentials"]
+        subgraph B1["🔑<br/>izara-users-<br/>credentials"]
             direction TB
-            C1["📁 users/uid/"]
-            C2["📄 profile.json"]
-            C3["📄 auth-token.json"]
+            F1["🔐 key-files/"]
         end
 
-        subgraph PAT["💚<br/>izara-patients-<br/>data"]
+        subgraph B2["💚<br/>izara-patients-<br/>data"]
             direction TB
-            P1["📁 patients/uid/"]
-            P2["📄 profile.json"]
-            P3["📄 phr.json"]
-            P4["📁 documents/"]
+            F2["📷 avatars/"]
+            F3["📄 documents/"]
+            F4["📹 uploads/"]
         end
 
-        subgraph DOC["💙<br/>izara-doctors-<br/>data"]
+        subgraph B3["💙<br/>izara-doctors-<br/>data"]
             direction TB
-            D1["📁 doctors/uid/"]
-            D2["📄 profile.json"]
-            D3["📁 emr/"]
-            D4["📁 prescriptions/"]
+            F5["📷 avatars/"]
+            F6["📜 licenses/"]
+            F7["📁 documents/"]
         end
 
-        subgraph APPT["📅<br/>izara-<br/>appointments"]
+        subgraph B4["📅<br/>izara-<br/>appointments"]
             direction TB
-            A1["📁 appointments/ID/"]
-            A2["📄 details.json"]
-            A3["📁 availability/"]
-            A4["📁 pools/"]
+            F8["📹 recordings/"]
+            F9["📄 slips/"]
         end
 
-        subgraph META["📚<br/>izara-meta-<br/>data"]
+        subgraph B5["📚<br/>izara-meta-<br/>data"]
             direction TB
-            M1["📁 medical-content/"]
-            M2["📁 clinical-resources/"]
-            M3["📁 drug-database/"]
-            M4["📁 system-config/"]
+            F10["🖼️ content-images/"]
+            F11["⚙️ public-assets/"]
         end
     end
 
     %% Connections
-    PATIENT --> GCS_API
-    DOCTOR --> GCS_API
-    
-    GCS_API --> CRED
-    GCS_API --> PAT
-    GCS_API --> DOC
-    GCS_API --> APPT
-    GCS_API --> META
+    API --> B1
+    API --> B2
+    API --> B3
+    API --> B4
+    API --> B5
 
     %% Styling
-    classDef portalStyle fill:#E3F2FD,stroke:#2196F3,stroke-width:2px,color:#0D47A1
-    classDef apiStyle fill:#FFF3E0,stroke:#FF9800,stroke-width:2px,color:#E65100
-    classDef credStyle fill:#FFF8E1,stroke:#FFC107,stroke-width:2px,color:#FF6F00
-    classDef patStyle fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px,color:#1B5E20
-    classDef docStyle fill:#E3F2FD,stroke:#2196F3,stroke-width:2px,color:#0D47A1
-    classDef apptStyle fill:#F3E5F5,stroke:#9C27B0,stroke-width:2px,color:#4A148C
-    classDef metaStyle fill:#E0F7FA,stroke:#00BCD4,stroke-width:2px,color:#006064
+    classDef appStyle fill:#E3F2FD,stroke:#2196F3,stroke-width:2px,color:#0D47A1
+    classDef bucketStyle fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px,color:#1B5E20
     classDef fileStyle fill:#FAFAFA,stroke:#9E9E9E,stroke-width:1px,color:#424242
 
-    class PATIENT,DOCTOR portalStyle
-    class GCS_API apiStyle
-    class CRED,C1,C2,C3 credStyle
-    class PAT,P1,P2,P3,P4 patStyle
-    class DOC,D1,D2,D3,D4 docStyle
-    class APPT,A1,A2,A3,A4 apptStyle
-    class META,M1,M2,M3,M4 metaStyle
-
+    class API appStyle
+    class B1,B2,B3,B4,B5 bucketStyle
+    class F1,F2,F3,F4,F5,F6,F7,F8,F9,F10,F11 fileStyle

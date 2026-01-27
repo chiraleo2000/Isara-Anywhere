@@ -143,7 +143,9 @@ function OverviewTab({
   onOpenAllergy,
   onOpenProfile
 }: OverviewTabProps) {
-  const bmi = calculateBMI(phr?.demographics?.height, latestVital?.weight?.value);
+  // Use weight from PHR demographics or latest vital
+  const currentWeight = phr?.demographics?.weight || latestVital?.weight?.value;
+  const bmi = calculateBMI(phr?.demographics?.height, currentWeight);
   const bpStatus = getBPStatus(latestVital?.bloodPressure?.systolic, latestVital?.bloodPressure?.diastolic);
 
   return (
@@ -211,7 +213,7 @@ function OverviewTab({
           <div className="space-y-3">
             <div className="flex justify-between">
               <span className="text-gray-600">หมู่เลือด</span>
-              <span className="font-medium">{user?.bloodType || '-'}</span>
+              <span className="font-medium">{phr?.demographics?.bloodType || user?.bloodType || '-'}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">ส่วนสูง</span>
@@ -219,7 +221,7 @@ function OverviewTab({
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">น้ำหนักล่าสุด</span>
-              <span className="font-medium">{latestVital?.weight?.value ? `${latestVital.weight.value} กก.` : '-'}</span>
+              <span className="font-medium">{phr?.demographics?.weight || latestVital?.weight?.value ? `${phr?.demographics?.weight || latestVital?.weight?.value} กก.` : '-'}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">BMI</span>
@@ -1365,7 +1367,7 @@ function PHRPage() {
     ),
     medications: (
       <MedicationsTab
-        medications={phr?.currentMedications}
+        medications={phr?.medications || phr?.currentMedications}
         showAddMedication={showAddMedication}
         setShowAddMedication={setShowAddMedication}
         newMedication={newMedication}
@@ -1376,7 +1378,7 @@ function PHRPage() {
     ),
     allergies: (
       <AllergiesTab
-        allergies={user?.allergies}
+        allergies={phr?.allergies || user?.allergies}
         showAddAllergy={showAddAllergy}
         setShowAddAllergy={setShowAddAllergy}
         newAllergy={newAllergy}

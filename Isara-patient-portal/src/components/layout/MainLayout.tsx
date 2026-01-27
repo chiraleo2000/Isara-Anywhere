@@ -8,7 +8,6 @@ import {
   Calendar,
   MessageCircle,
   FileText,
-  MapPin,
   Settings,
   LogOut,
   Menu,
@@ -87,50 +86,6 @@ function MiniCalendar() {
   );
 }
 
-// Mini Map Component - With dark mode and i18n support
-function MiniMap() {
-  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
-  const { theme, language } = useSettings();
-  const isDark = theme === 'dark';
-  
-  useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-        () => setLocation({ lat: 13.7563, lng: 100.5018 }) // Default: Bangkok
-      );
-    } else {
-      setLocation({ lat: 13.7563, lng: 100.5018 });
-    }
-  }, []);
-
-  return (
-    <Link to="/map" className="block">
-      <div className={`relative rounded-xl overflow-hidden h-50 group cursor-pointer ${isDark ? 'bg-gradient-to-br from-blue-900/50 to-indigo-900/50' : 'bg-gradient-to-br from-blue-50 to-indigo-50'}`}>
-        {location && (
-          <iframe
-            src={`https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d3000!2d${location.lng}!3d${location.lat}!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!5e0!3m2!1sth!2sth!4v1`}
-            className="w-full h-full border-0 pointer-events-none"
-            loading="lazy"
-            title="Mini Map"
-          />
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center pb-2">
-          <span className="text-white text-xs font-medium flex items-center gap-1">
-            <MapPin className="w-3 h-3" /> {language === 'th' ? 'ดูแผนที่' : 'View Map'}
-          </span>
-        </div>
-        <div className={`absolute top-2 left-2 backdrop-blur-sm rounded-full px-2 py-0.5 flex items-center gap-1 ${isDark ? 'bg-black/50' : 'bg-white/90'}`}>
-          <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-          <span className={`text-[10px] font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
-            {language === 'th' ? 'ตำแหน่งของคุณ' : 'Your Location'}
-          </span>
-        </div>
-      </div>
-    </Link>
-  );
-}
-
 export default function MainLayout() {
   const { user, logout } = useAuth();
   const { theme, language } = useSettings();
@@ -154,7 +109,6 @@ export default function MainLayout() {
     { icon: FileText, label: language === 'th' ? 'ประวัติสุขภาพ' : 'Health Records', path: '/phr' },
     { icon: Activity, label: language === 'th' ? 'เส้นทางสุขภาพ' : 'Health Timeline', path: '/timeline' },
     { icon: Shield, label: language === 'th' ? 'PDPA & Living Will' : 'PDPA & Living Will', path: '/pdpa' },
-    { icon: MapPin, label: language === 'th' ? 'แผนที่' : 'Map', path: '/map' },
     { icon: Settings, label: language === 'th' ? 'ตั้งค่า' : 'Settings', path: '/settings' },
   ];
 
@@ -196,10 +150,9 @@ export default function MainLayout() {
             })}
           </nav>
 
-          {/* Mini Calendar & Map Widgets */}
+          {/* Mini Calendar Widget */}
           <div className="px-4 pb-2 space-y-3">
             <MiniCalendar />
-            <MiniMap />
           </div>
 
           <div className={`p-4 border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-100'}`}>

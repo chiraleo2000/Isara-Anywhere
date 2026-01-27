@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSettings } from '../../contexts/SettingsContext';
-import { Bell, Lock, Globe, Moon, LogOut, ChevronRight, Shield, X, Eye, EyeOff } from 'lucide-react';
+import { Bell, Lock, Globe, Moon, LogOut, ChevronRight, Shield, X, Eye, EyeOff, Camera, User } from 'lucide-react';
 
 // Helper to get/set localStorage values for notifications only
 const getStoredValue = <T,>(key: string, defaultValue: T): T => {
@@ -230,11 +230,225 @@ function PasswordChangeModal({
   );
 }
 
+// Profile Image Modal Component
+function ProfileImageModal({
+  isOpen,
+  onClose,
+  darkMode,
+  language,
+  currentImage,
+  onImageUpdate,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  darkMode: boolean;
+  language: 'th' | 'en';
+  currentImage?: string;
+  onImageUpdate: (url: string) => void;
+}) {
+  const [previewUrl, setPreviewUrl] = useState<string | null>(currentImage || null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const labels = {
+    title: language === 'th' ? 'เปลี่ยนรูปโปรไฟล์' : 'Change Profile Picture',
+    selectImage: language === 'th' ? 'เลือกรูปภาพ' : 'Select Image',
+    removeImage: language === 'th' ? 'ลบรูปภาพ' : 'Remove Image',
+    save: language === 'th' ? 'บันทึก' : 'Save',
+    cancel: language === 'th' ? 'ยกเลิก' : 'Cancel',
+    successMessage: language === 'th' ? 'อัปเดตรูปโปรไฟล์สำเร็จ!' : 'Profile picture updated!',
+    errorMessage: language === 'th' ? 'เกิดข้อผิดพลาด กรุณาลองใหม่' : 'An error occurred. Please try again',
+    fileTooLarge: language === 'th' ? 'ไฟล์ใหญ่เกินไป (สูงสุด 5MB)' : 'File too large (max 5MB)',
+    invalidFileType: language === 'th' ? 'รองรับเฉพาะไฟล์รูปภาพ' : 'Only image files are supported',
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setError(labels.invalidFileType);
+      return;
+    }
+
+    // Validate file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      setError(labels.fileTooLarge);
+      return;
+    }
+
+    setError('');
+    
+    // Create preview
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setPreviewUrl(event.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSubmit = async () => {
+    if (!previewUrl) return;
+    
+    setLoading(true);
+    setError('');
+
+    try {
+      const token = localStorage.getItem('token');
+      const userId = JSON.parse(localStorage.getItem('user') || '{}').id || 'unknown';
+      
+      const response = await fetch(`/api/phr/profile/${userId}/avatar`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ 
+          imageData: previewUrl,
+          contentType: 'image/png'
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || labels.errorMessage);
+      }
+
+      setSuccess(true);
+      onImageUpdate(previewUrl);
+      
+      setTimeout(() => {
+        onClose();
+        setSuccess(false);
+      }, 1500);
+    } catch (err: any) {
+      setError(err.message || labels.errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setPreviewUrl(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+      <div className={`w-full max-w-md rounded-2xl shadow-xl ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+        <div className={`flex items-center justify-between p-4 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+          <h2 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+            {labels.title}
+          </h2>
+          <button onClick={onClose} className={`p-1 rounded-full hover:bg-gray-100 ${darkMode ? 'hover:bg-gray-700' : ''}`}>
+            <X className={`w-5 h-5 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-4">
+          {success ? (
+            <div className="p-4 bg-green-100 text-green-800 rounded-lg text-center">
+              ✅ {labels.successMessage}
+            </div>
+          ) : (
+            <>
+              {error && (
+                <div className="p-3 bg-red-100 text-red-800 rounded-lg text-sm">
+                  {error}
+                </div>
+              )}
+
+              {/* Preview */}
+              <div className="flex flex-col items-center">
+                <div className={`w-32 h-32 rounded-full overflow-hidden border-4 ${darkMode ? 'border-gray-600 bg-gray-700' : 'border-gray-200 bg-gray-100'}`}>
+                  {previewUrl ? (
+                    <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <User className={`w-16 h-16 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`} />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* File input */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+
+              <div className="flex flex-col gap-2">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`w-full px-4 py-2 border rounded-lg flex items-center justify-center gap-2 ${
+                    darkMode
+                      ? 'border-gray-600 text-gray-300 hover:bg-gray-700'
+                      : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <Camera className="w-4 h-4" />
+                  {labels.selectImage}
+                </button>
+
+                {previewUrl && (
+                  <button
+                    type="button"
+                    onClick={handleRemoveImage}
+                    className="w-full px-4 py-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"
+                  >
+                    {labels.removeImage}
+                  </button>
+                )}
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className={`flex-1 px-4 py-2 rounded-lg border ${
+                    darkMode
+                      ? 'border-gray-600 text-gray-300 hover:bg-gray-700'
+                      : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  {labels.cancel}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSubmit}
+                  disabled={loading || !previewUrl}
+                  className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50"
+                >
+                  {loading ? '...' : labels.save}
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function SettingsPage() {
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   // Use the global settings context for theme and language
   const { theme, language, setTheme, setLanguage } = useSettings();
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showProfileImageModal, setShowProfileImageModal] = useState(false);
+  const [profileImage, setProfileImage] = useState<string | undefined>(user?.avatarUrl);
   
   const [notifications, setNotifications] = useState(() => 
     getStoredValue('izara_notifications', {
@@ -263,6 +477,9 @@ export default function SettingsPage() {
   // Labels based on language
   const labels = {
     title: language === 'th' ? 'ตั้งค่า' : 'Settings',
+    profile: language === 'th' ? 'โปรไฟล์' : 'Profile',
+    changeProfilePicture: language === 'th' ? 'เปลี่ยนรูปโปรไฟล์' : 'Change Profile Picture',
+    profilePictureDesc: language === 'th' ? 'อัปเดตรูปโปรไฟล์ของคุณ' : 'Update your profile picture',
     notifications: language === 'th' ? 'การแจ้งเตือน' : 'Notifications',
     appointmentReminder: language === 'th' ? 'แจ้งเตือนนัดหมาย' : 'Appointment Reminder',
     appointmentDesc: language === 'th' ? 'รับการแจ้งเตือนก่อนถึงเวลานัดหมาย' : 'Receive reminders before appointments',
@@ -291,6 +508,42 @@ export default function SettingsPage() {
   return (
     <div className={`max-w-2xl mx-auto space-y-6 ${darkMode ? 'text-white' : ''}`}>
       <h1 className={`text-2xl font-bold ${textClass}`}>{labels.title}</h1>
+
+      {/* Profile Section */}
+      <div className={`rounded-2xl border overflow-hidden ${cardClass}`}>
+        <div className={`px-6 py-4 border-b ${dividerClass}`}>
+          <div className="flex items-center gap-3">
+            <User className="w-5 h-5 text-emerald-600" />
+            <h2 className={`font-semibold ${textClass}`}>{labels.profile}</h2>
+          </div>
+        </div>
+        <div className={`px-6 py-4`}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className={`w-16 h-16 rounded-full overflow-hidden border-2 ${darkMode ? 'border-gray-600 bg-gray-700' : 'border-gray-200 bg-gray-100'}`}>
+                {profileImage ? (
+                  <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <User className={`w-8 h-8 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`} />
+                  </div>
+                )}
+              </div>
+              <div>
+                <p className={`font-medium ${textClass}`}>{user?.name || (language === 'th' ? 'ผู้ใช้' : 'User')}</p>
+                <p className={`text-sm ${subTextClass}`}>{user?.email || ''}</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowProfileImageModal(true)}
+              className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'} transition-colors`}
+              title={labels.changeProfilePicture}
+            >
+              <Camera className={`w-5 h-5 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+            </button>
+          </div>
+        </div>
+      </div>
 
       {/* Notifications Section */}
       <div className={`rounded-2xl border overflow-hidden ${cardClass}`}>
@@ -380,6 +633,16 @@ export default function SettingsPage() {
         onClose={() => setShowPasswordModal(false)}
         darkMode={darkMode}
         language={language as 'th' | 'en'}
+      />
+
+      {/* Profile Image Modal */}
+      <ProfileImageModal
+        isOpen={showProfileImageModal}
+        onClose={() => setShowProfileImageModal(false)}
+        darkMode={darkMode}
+        language={language as 'th' | 'en'}
+        currentImage={profileImage}
+        onImageUpdate={(url) => setProfileImage(url)}
       />
 
       {/* Logout Section */}
