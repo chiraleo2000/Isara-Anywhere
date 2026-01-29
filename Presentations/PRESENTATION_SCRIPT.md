@@ -1,7 +1,8 @@
 # 🏥 IZARA Telemedicine Platform
 ## Presentation Script & Guide
 
-> **Version:** 1.0 | **Date:** January 2025  
+> **Version:** 1.4.4 | **Date:** January 2025  
+> **Tests:** 528 Local + 65 Cloud Tests (100% Passing)  
 > **Duration:** 30-45 minutes  
 > **Audience:** Stakeholders, Technical Team, Medical Staff
 
@@ -61,8 +62,8 @@
 | **Doctor Portal** | แพทย์, Admin | ตรวจรักษา, EMR, จัดการนัดหมาย |
 
 **Live URLs:**
-- Patient: https://izara-patient-portal-724889190329.asia-southeast1.run.app
-- Doctor: https://izara-doctor-portal-724889190329.asia-southeast1.run.app
+- Patient: https://izara-patient-portal-hvht4obouq-as.a.run.app
+- Doctor: https://izara-doctor-portal-hvht4obouq-as.a.run.app
 
 ---
 

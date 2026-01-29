@@ -1,7 +1,8 @@
 # Izara Telemedicine Platform - Technical Documentation
 
-> **Version:** 3.1.0 (Updated Jan 2026)
+> **Version:** 1.4.4 (Updated Jan 2025)
 > **Status:** Phase 1 Complete (Cloud Deployment Ready)
+> **Tests:** 528 Local + 65 Cloud = 593 Total (100% Passing)
 > **Stack:** PostgreSQL / Express / React / Jitsi / Gemini AI / Google Cloud
 
 ---

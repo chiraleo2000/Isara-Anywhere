@@ -1,6 +1,8 @@
 # 📊 IZARA Telemedicine Platform - Presentation Materials
 # เอกสารนำเสนอระบบ Telemedicine อิสระ
 
+> **Version:** 1.4.4 | **Tests:** 528 Local + 65 Cloud = 593 Total (100% Passing)
+
 ---
 
 ## 📘 Documentation
