@@ -58,8 +58,8 @@ const SERVICE_ACCOUNT_PATH = path.join(__dirname, '..', 'public', 'izara-telemed
 const ALLOWED_ORIGINS = process.env.NODE_ENV === 'production'
   ? [
     'https://doctor.izara.com',
-    'https://izara-doctor-portal-724889190329.asia-southeast1.run.app',
-    'https://izara-patient-portal-724889190329.asia-southeast1.run.app',
+    'https://izara-doctor-portal-hvht4obouq-as.a.run.app',
+    'https://izara-patient-portal-hvht4obouq-as.a.run.app',
     /\.run\.app$/
   ]
   : ['http://localhost:3010', 'http://localhost:3011', 'http://127.0.0.1:3010', 'http://0.0.0.0:3010'];

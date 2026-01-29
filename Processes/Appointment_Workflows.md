@@ -86,15 +86,15 @@ External guests who are **NOT registered** in the Izara system can join meetings
 
 | Portal | URL | Version |
 | -------- | ----- | --------- |
-| Patient Portal | <https://izara-patient-portal-724889190329.asia-southeast1.run.app> | v1.2.1 |
-| Doctor Portal | <https://izara-doctor-portal-724889190329.asia-southeast1.run.app> | v1.2.1 |
+| Patient Portal | <https://izara-patient-portal-hvht4obouq-as.a.run.app> | v1.4.4 |
+| Doctor Portal | <https://izara-doctor-portal-hvht4obouq-as.a.run.app> | v1.4.4 |
 
-### Docker Images (v1.2.1)
+### Docker Images (v1.4.4)
 
 | Portal | Image |
 | -------- | ------- |
-| Patient Portal | `asia-southeast1-docker.pkg.dev/izara-telemedicine/isara-anywhere-portals/isara-patient-portal:1.2.1` |
-| Doctor Portal | `asia-southeast1-docker.pkg.dev/izara-telemedicine/isara-anywhere-portals/isara-doctor-portal:1.2.1` |
+| Patient Portal | `asia-southeast1-docker.pkg.dev/izara-telemedicine/isara-anywhere-portals/isara-patient-portal:1.4.4` |
+| Doctor Portal | `asia-southeast1-docker.pkg.dev/izara-telemedicine/isara-anywhere-portals/isara-doctor-portal:1.4.4` |
 
 ### Video Meeting Provider
 

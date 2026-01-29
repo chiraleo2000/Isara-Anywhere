@@ -96,8 +96,8 @@ Explains/
 
 | Portal | URL |
 |--------|-----|
-| **Patient Portal** | https://izara-patient-portal-724889190329.asia-southeast1.run.app |
-| **Doctor Portal** | https://izara-doctor-portal-724889190329.asia-southeast1.run.app |
+| **Patient Portal** | https://izara-patient-portal-hvht4obouq-as.a.run.app |
+| **Doctor Portal** | https://izara-doctor-portal-hvht4obouq-as.a.run.app |
 
 ---
 

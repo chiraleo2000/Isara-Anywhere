@@ -492,6 +492,3 @@ For development questions, see:
 ### Made with ❤️ for Thailand's Healthcare
 
 © 2024-2026 Izara Telemedicine. All rights reserved.
-
-
-

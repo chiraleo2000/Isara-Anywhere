@@ -76,8 +76,8 @@ const allowedOrigins = [
   'http://localhost:3009',  // Doctor Main API
   'http://localhost:3011',  // Auth Server
   'http://localhost:3012',  // GCS API
-  'https://izara-patient-portal-724889190329.asia-southeast1.run.app',
-  'https://izara-doctor-portal-724889190329.asia-southeast1.run.app'
+  'https://izara-patient-portal-hvht4obouq-as.a.run.app',
+  'https://izara-doctor-portal-hvht4obouq-as.a.run.app'
 ];
 
 // Allowed methods

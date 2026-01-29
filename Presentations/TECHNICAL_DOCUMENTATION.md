@@ -10,6 +10,7 @@
 ## 🏗️ 1. Project Overview & Structure
 
 ### Project Structure (File Tree)
+
 ```
 Isara-Anywhere/
 ├── credentials/                # Google Cloud Service Account Keys (Private)
@@ -32,6 +33,7 @@ Isara-Anywhere/
 ```
 
 ### Core Services
+
 | Service | Port | Description |
 |---------|------|-------------|
 | **Patient Portal** | 3005 | Telehealth booking, PHR management, Symptom checker |
@@ -45,12 +47,14 @@ Isara-Anywhere/
 ## 🏛️ 2. System Architecture
 
 The platform uses a **Hybrid Cloud-Native Architecture**:
+
 - **Application Logic**: Containerized Node.js/React apps on Cloud Run.
 - **Data Persistence**: Managed PostgreSQL (Cloud SQL or Local) for structured data.
 - **File Storage**: Google Cloud Storage (GCS) for unstructured data (Documents, Images, Recordings).
 - **Communication**: Jitsi Meet for real-time video, Socket.IO for signaling.
 
 ### Visualization
+
 See `Presentations/diagrams/01-system-architecture.mmd` for the high-level diagram.
 > **Interactive View:** [Open System Architecture Diagram](html-diagrams/01-system-architecture.html) or [View All Diagrams](html-diagrams/index.html)
 
@@ -59,18 +63,22 @@ See `Presentations/diagrams/01-system-architecture.mmd` for the high-level diagr
 ## 💾 3. Database Design
 
 ### Schema Overview
+
 The system has migrated from a JSON-based GCS storage to a robust **PostgreSQL Relational Database**.
 
 **Key Features:**
+
 - **Ref integrity**: Foreign keys ensure data consistency.
 - **JSONB**: Used for flexible clinical data items (e.g., `symptoms`, `medications` list).
 - **pgvector**: Enabled for AI Knowledge Base (RAG) embeddings.
 
 **Schema Reference:**
+
 - **Source of Truth**: `Presentations/database/izara-complete-schema-v3.dbml`
 - **SQL Source**: `scripts/database/izara-database.sql`
 
 **Core Tables:**
+
 1. **Users & Auth**: `users`, `sessions`, `roles`
 2. **Clinical**: `emr`, `prescriptions`, `lab_orders`
 3. **Patient Health Service**: `patient_profiles`, `phr`, `vital_signs`
@@ -82,6 +90,7 @@ The system has migrated from a JSON-based GCS storage to a robust **PostgreSQL R
 ## 🔐 4. User Management & Access Control
 
 ### User Roles (RBAC)
+
 | Role | Access Level | Description |
 |------|--------------|-------------|
 | **Patient** | Basic | Can access own profile, book appointments, view own health records. |
@@ -89,6 +98,7 @@ The system has migrated from a JSON-based GCS storage to a robust **PostgreSQL R
 | **Admin** | System | Can manage user accounts, approve doctors, manage system content. |
 
 ### Authentication Security
+
 1. **Password Hashing**: Uses `bcrypt` for secure storage.
 2. **Session Management**: Server-side sessions stored in DB (`sessions` table) with secure HTTP-only cookies.
 3. **API Security**: Middleware validates session tokens for all protected routes.
@@ -101,18 +111,21 @@ The system workflows are documented in **Mermaid.js** format in `Presentations/d
 > **[📂 Browse All Interactive Workflow Diagrams](html-diagrams/index.html)**
 
 ### 1. Appointment & Consultation
+
 - **Patient** books slot -> **System** notifies Doctor -> **Doctor** confirms.
 - **Jitsi Meet** link generated automatically upon confirmation.
 - **Consultation**: Video call -> AI Transcription -> Auto-Summary generated.
 - [View Diagram](html-diagrams/04-appointment-workflow.html)
 
 ### 2. Clinical Documentation (EMR)
+
 - **SOAP Format**: Subjective, Objective, Assessment, Plan.
 - **AI Assist**: Gemini analyzes transcript to suggest Assessment/Plan.
 - **Prescribing**: Meds selected from database -> Drug Interaction Check -> Saved to DB.
 - [View Diagram](html-diagrams/06-emr-workflow.html)
 
 ### 3. Patient Health Record (PHR)
+
 - **Centralized**: Patients own their data.
 - **Sync**: Vitals and history updated via Portal -> Saved to PostgreSQL.
 - **Sharing**: Granular permission model for sharing records with doctors (Future Scope).
@@ -123,12 +136,14 @@ The system workflows are documented in **Mermaid.js** format in `Presentations/d
 ## 🚀 6. Future Development Roadmap
 
 ### Phase 2: Intelligence & Optimization
+
 - [ ] **Advanced AI**: RAG implementation using `knowledge_base` vector store for clinical decision support.
 - [ ] **Mobile App**: React Native wrapper for Patient Portal.
 - [ ] **IoMT Integration**: Direct integration with wearable devices for vital signs.
 - [ ] **Payment Gateway**: Integration with Stripe/Omise for consultation fees.
 
 ### Phase 3: Scaling
+
 - [ ] **Microservices Split**: Decouple Auth and Notification services.
 - [ ] **Multi-Region**: Replicate GCS buckets and DB read replicas.
 

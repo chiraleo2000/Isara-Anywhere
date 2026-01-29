@@ -25,8 +25,8 @@ export default defineConfig({
     // Base URL - can be overridden by environment
     baseURL: process.env.TEST_URL || 'http://localhost:3005',
 
-    // Capture screenshot on failure
-    screenshot: 'only-on-failure',
+    // Capture screenshot on all tests (for documentation)
+    screenshot: 'on',
 
     // Capture video for debugging
     video: 'on-first-retry',
@@ -36,9 +36,12 @@ export default defineConfig({
 
     // Slow down for visibility
     launchOptions: {
-      slowMo: 500,
+      slowMo: 300,
     },
   },
+
+  // Output directory for screenshots
+  outputDir: './test-results',
 
   projects: [
     {
@@ -57,8 +60,16 @@ export default defineConfig({
       },
       testMatch: ['**/cloud-*.spec.ts', '**/cloud*.spec.ts'],
     },
+    {
+      name: 'Cloud Full Tests',
+      use: {
+        ...devices['Desktop Chrome'],
+        baseURL: 'https://izara-patient-portal-hvht4obouq-as.a.run.app',
+      },
+      testIgnore: ['**/cloud-*.spec.ts', '**/cloud*.spec.ts'],
+    },
   ],
 
-  // Global setup for auth
-  globalSetup: require.resolve('./global-setup.ts'),
+  // Global setup for auth (disabled - tests handle their own auth)
+  // globalSetup: require.resolve('./global-setup.ts'),
 });

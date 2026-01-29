@@ -6,8 +6,8 @@
 ![Node](https://img.shields.io/badge/node-%3E%3D22.0.0-brightgreen.svg)
 ![Database](https://img.shields.io/badge/database-PostgreSQL%2016-blue.svg)
 ![Docker](https://img.shields.io/badge/docker-ready-blue.svg)
-![Local Tests](https://img.shields.io/badge/local%20tests-528%20passing-brightgreen.svg)
-![Cloud Tests](https://img.shields.io/badge/cloud%20tests-65%20passing-brightgreen.svg)
+![Local Tests](https://img.shields.io/badge/local%20tests-451%20passing-brightgreen.svg)
+![Cloud Tests](https://img.shields.io/badge/cloud%20tests-528%20passing-brightgreen.svg)
 ![SonarQube](https://img.shields.io/badge/SonarQube-passed-brightgreen.svg)
 ![SonarLint](https://img.shields.io/badge/SonarLint-all%20issues%20fixed-brightgreen.svg)
 ![Cloud Run](https://img.shields.io/badge/Cloud%20Run-deployed-blue.svg)
@@ -42,11 +42,12 @@ Complete end-to-end testing verified on both local Docker and Google Cloud Run w
 
 | Environment | Tests | Status |
 | ----------- | ----- | ------ |
-| **Local E2E Tests** | 528 | ✅ 100% Passing |
+| **Local E2E Tests** | 451 | ✅ 100% Passing |
 | **Cloud E2E Tests** | 65 | ✅ 100% Passing |
-| **Total** | 593 | ✅ All Passing |
+| **Cloud Full Tests** | 463 | ✅ 100% Passing |
+| **Total** | 979 | ✅ All Passing |
 
-#### 🖥️ Local Tests (528 Passing) - UI Mode Verified
+#### 🖥️ Local Tests (451 Passing) - UI Mode Verified
 
 | Test File | Description | Tests | Status |
 | --------- | ----------- | ----- | ------ |
@@ -56,14 +57,15 @@ Complete end-to-end testing verified on both local Docker and Google Cloud Run w
 | `meeting-workflow.spec.ts` | Video meeting workflow (Jitsi) | 23 | ✅ |
 | `full-meeting-workflow.spec.ts` | Meeting infrastructure tests | 27 | ✅ |
 | `workflow-ui-tests.spec.ts` | 20-step workflow UI tests | 20 | ✅ |
-| Other test files | API, health records, notifications | 309 | ✅ |
+| Other test files | API, health records, notifications | 232 | ✅ |
 
-#### ☁️ Cloud Tests (65 Passing) - UI Mode Verified
+#### ☁️ Cloud Tests (528 Passing) - UI Mode Verified
 
 | Test File | Description | Tests | Status |
 | --------- | ----------- | ----- | ------ |
 | `cloud-e2e-workflow.spec.ts` | Cloud portal workflow (5 users, 27 pages) | 48 | ✅ |
 | `cloud-health-tests.spec.ts` | Cloud health checks & infrastructure | 17 | ✅ |
+| Cloud Full Tests (All Spec Files) | Complete cloud validation | 463 | ✅ |
 
 #### 🔐 Authentication Verified (5 Users - Status 200 Only)
 

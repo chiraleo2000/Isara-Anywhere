@@ -36,25 +36,27 @@ const PATIENT_PORTAL = process.env.LOCAL_PATIENT_URL || 'http://localhost:3005';
 const DOCTOR_PORTAL = process.env.LOCAL_DOCTOR_URL || 'http://localhost:3010';
 
 async function globalSetup(config: FullConfig) {
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({ headless: true, timeout: 60000 });
 
   console.log('🔐 Setting up authentication states...');
 
   // Create auth states for patient portal
   try {
-    const patientPage = await browser.newPage();
+    const context = await browser.newContext();
+    const patientPage = await context.newPage();
     try {
-      await patientPage.goto(`${PATIENT_PORTAL}/login`);
+      await patientPage.goto(`${PATIENT_PORTAL}/login`, { timeout: 30000 });
       await patientPage.fill('input[type="email"]', TEST_USERS.patient1.email);
       await patientPage.fill('input[type="password"]', TEST_USERS.patient1.password);
       await patientPage.click('button[type="submit"]');
-      await patientPage.waitForURL('**/dashboard**', { timeout: 10000 });
-      await patientPage.context().storageState({ path: 'tests/e2e/.auth/patient.json' });
+      await patientPage.waitForURL('**/dashboard**', { timeout: 15000 });
+      await context.storageState({ path: 'tests/e2e/.auth/patient.json' });
       console.log('✅ Patient auth state saved');
     } catch (e) {
       console.log('⚠️ Patient auth setup skipped:', (e as Error).message);
     } finally {
       await patientPage.close();
+      await context.close();
     }
   } catch (error) {
     console.log('⚠️ Patient page creation failed:', (error as Error).message);
@@ -62,19 +64,21 @@ async function globalSetup(config: FullConfig) {
 
   // Create auth states for doctor portal
   try {
-    const doctorPage = await browser.newPage();
+    const context = await browser.newContext();
+    const doctorPage = await context.newPage();
     try {
-      await doctorPage.goto(`${DOCTOR_PORTAL}/login`);
+      await doctorPage.goto(`${DOCTOR_PORTAL}/login`, { timeout: 30000 });
       await doctorPage.fill('input[type="email"]', TEST_USERS.doctor.email);
       await doctorPage.fill('input[type="password"]', TEST_USERS.doctor.password);
       await doctorPage.click('button[type="submit"]');
-      await doctorPage.waitForURL('**/dashboard**', { timeout: 10000 });
-      await doctorPage.context().storageState({ path: 'tests/e2e/.auth/doctor.json' });
+      await doctorPage.waitForURL('**/dashboard**', { timeout: 15000 });
+      await context.storageState({ path: 'tests/e2e/.auth/doctor.json' });
       console.log('✅ Doctor auth state saved');
     } catch (e) {
       console.log('⚠️ Doctor auth setup skipped:', (e as Error).message);
     } finally {
       await doctorPage.close();
+      await context.close();
     }
   } catch (error) {
     console.log('⚠️ Doctor page creation failed:', (error as Error).message);
@@ -82,19 +86,21 @@ async function globalSetup(config: FullConfig) {
 
   // Admin auth
   try {
-    const adminPage = await browser.newPage();
+    const context = await browser.newContext();
+    const adminPage = await context.newPage();
     try {
-      await adminPage.goto(`${DOCTOR_PORTAL}/login`);
+      await adminPage.goto(`${DOCTOR_PORTAL}/login`, { timeout: 30000 });
       await adminPage.fill('input[type="email"]', TEST_USERS.admin.email);
       await adminPage.fill('input[type="password"]', TEST_USERS.admin.password);
       await adminPage.click('button[type="submit"]');
-      await adminPage.waitForURL('**/dashboard**', { timeout: 10000 });
-      await adminPage.context().storageState({ path: 'tests/e2e/.auth/admin.json' });
+      await adminPage.waitForURL('**/dashboard**', { timeout: 15000 });
+      await context.storageState({ path: 'tests/e2e/.auth/admin.json' });
       console.log('✅ Admin auth state saved');
     } catch (e) {
       console.log('⚠️ Admin auth setup skipped:', (e as Error).message);
     } finally {
       await adminPage.close();
+      await context.close();
     }
   } catch (error) {
     console.log('⚠️ Admin page creation failed:', (error as Error).message);

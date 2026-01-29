@@ -1,4 +1,5 @@
 # 🏥 IZARA Telemedicine Platform
+
 ## Presentation Script & Guide
 
 > **Version:** 1.4.4 | **Date:** January 2025  
@@ -29,6 +30,7 @@
 > "สวัสดีครับ/ค่ะ วันนี้ผมจะนำเสนอแพลตฟอร์ม IZARA Telemedicine ซึ่งเป็นระบบ Telehealth ครบวงจรที่พัฒนาขึ้นมาเพื่อรองรับการให้บริการทางการแพทย์ทางไกลของประเทศไทย"
 
 **Key Points:**
+
 - ✅ **IZARA Anywhere** - ระบบ Telemedicine ครบวงจร
 - ✅ **Thai-First Design** - ออกแบบเพื่อคนไทยเป็นหลัก
 - ✅ **Cloud Native** - ทำงานบน Google Cloud Platform
@@ -42,6 +44,7 @@
 > "ปัญหาที่เราต้องการแก้ไขคือ ความยากลำบากในการเข้าถึงบริการทางการแพทย์ โดยเฉพาะในพื้นที่ห่างไกล และความต้องการลดความแออัดในโรงพยาบาล"
 
 **Problems Addressed:**
+
 - 🔴 ระยะทางไกลจากสถานพยาบาล
 - 🔴 เวลารอพบแพทย์นาน
 - 🔴 ข้อจำกัดการเดินทางของผู้ป่วย
@@ -62,8 +65,9 @@
 | **Doctor Portal** | แพทย์, Admin | ตรวจรักษา, EMR, จัดการนัดหมาย |
 
 **Live URLs:**
-- Patient: https://izara-patient-portal-hvht4obouq-as.a.run.app
-- Doctor: https://izara-doctor-portal-hvht4obouq-as.a.run.app
+
+- Patient: <https://izara-patient-portal-hvht4obouq-as.a.run.app>
+- Doctor: <https://izara-doctor-portal-hvht4obouq-as.a.run.app>
 
 ---
 
@@ -77,6 +81,7 @@
 **📊 See:** `diagrams/01-system-architecture.mmd`
 
 **Architecture Components:**
+
 1. **Frontend** - React + TypeScript + Vite
 2. **Backend** - Node.js Express API
 3. **Storage** - Google Cloud Storage (6 Buckets)
@@ -112,6 +117,7 @@
 **📊 See:** `diagrams/02-patient-features.mmd`
 
 **Core Features:**
+
 - 📅 **Smart Appointment Booking** - นัดหมายอัจฉริยะ
 - 📋 **Personal Health Records (PHR)** - ประวัติสุขภาพส่วนตัว
 - 💊 **Medication Tracking** - ติดตามการใช้ยา
@@ -129,6 +135,7 @@
 **📊 See:** `diagrams/03-doctor-features.mmd`
 
 **Core Features:**
+
 - 🩺 **Complete EMR System** - ระบบบันทึกเวชระเบียนอิเล็กทรอนิกส์
 - 💊 **E-Prescribing** - สั่งยาอิเล็กทรอนิกส์
 - 🧪 **Lab & Imaging Orders** - สั่งตรวจแล็บและภาพถ่ายรังสี
@@ -144,6 +151,7 @@
 > "ระบบ Admin ช่วยให้การจัดการระบบเป็นไปอย่างราบรื่น รวมถึงการอนุมัติแพทย์ใหม่และการจัดการเนื้อหา"
 
 **Admin Capabilities:**
+
 - 👨‍⚕️ **Doctor Approval** - อนุมัติแพทย์ใหม่
 - 📊 **Content Management** - จัดการเนื้อหาสุขภาพ
 - 📅 **Appointment Pool** - จัดการ Pool นัดหมาย
@@ -162,6 +170,7 @@
 **📊 See:** `diagrams/04-appointment-workflow.mmd`
 
 **Steps:**
+
 1. ผู้ป่วย Login เข้าระบบ
 2. เลือก "นัดหมายแพทย์"
 3. ระบุอาการ (Symptom Input)
@@ -181,6 +190,7 @@
 **📊 See:** `diagrams/05-consultation-workflow.mmd`
 
 **Steps:**
+
 1. แพทย์ดูรายการนัดหมาย
 2. เริ่ม Video Consultation
 3. บันทึก EMR (SOAP Notes)
@@ -200,6 +210,7 @@
 **📊 See:** `diagrams/06-emr-workflow.mmd`
 
 **SOAP Note Structure:**
+
 - **S** - Subjective: อาการที่ผู้ป่วยบอก
 - **O** - Objective: ผลตรวจร่างกาย/Lab
 - **A** - Assessment: การวินิจฉัย
@@ -215,6 +226,7 @@
 **📊 See:** `diagrams/07-prescribing-workflow.mmd`
 
 **Safety Features:**
+
 - ✅ Drug-Drug Interaction Check
 - ✅ Drug-Allergy Alert
 - ✅ Dosage Validation
@@ -231,6 +243,7 @@
 **📊 See:** `diagrams/08-content-workflow.mmd`
 
 **Status Flow:**
+
 ```
 Draft → Pending → Published
          ↓
@@ -250,6 +263,7 @@ Draft → Pending → Published
 **📊 See:** `database/izara-complete-schema-v3.dbml`
 
 **Core Database Tables:**
+
 | Category | Tables |
 |----------|--------|
 | **Users** | `users`, `sessions`, `roles` |
@@ -265,6 +279,7 @@ Draft → Pending → Published
 > "ข้อมูลหลักที่ระบบจัดเก็บ ได้แก่ ข้อมูลผู้ใช้ การนัดหมาย EMR และเนื้อหาสุขภาพ"
 
 **Core Entities:**
+
 - 👤 **User** - ข้อมูลผู้ใช้ (Patient/Doctor/Admin)
 - 📅 **Appointment** - การนัดหมาย
 - 📋 **EMR Record** - บันทึกเวชระเบียน
@@ -283,6 +298,7 @@ Draft → Pending → Published
 **📊 See:** `diagrams/10-gcp-services.mmd`
 
 **GCP Services Used:**
+
 - 🏃 **Cloud Run** - Serverless Container Hosting
 - 📦 **Cloud Storage** - Object Storage
 - 🔐 **IAM** - Identity & Access Management
@@ -298,6 +314,7 @@ Draft → Pending → Published
 **📊 See:** `diagrams/11-google-services.mmd`
 
 **Integrated Services:**
+
 | Service | Purpose |
 |---------|---------|
 | **Google Meet** | Video Consultation |
@@ -316,6 +333,7 @@ Draft → Pending → Published
 > "ความปลอดภัยเป็นสิ่งสำคัญที่สุด เราใช้มาตรฐาน OWASP และรองรับ PDPA"
 
 **Security Features:**
+
 - 🔒 **JWT Authentication** - Token-based auth
 - 🛡️ **OWASP Middleware** - Security headers (CSP, HSTS)
 - 🔐 **bcrypt Password Hashing** - Secure password storage
@@ -330,6 +348,7 @@ Draft → Pending → Published
 > "ระบบรองรับ พ.ร.บ. คุ้มครองข้อมูลส่วนบุคคล (PDPA) อย่างเต็มรูปแบบ"
 
 **PDPA Features:**
+
 - ✅ **Consent Management** - ขอความยินยอมก่อนใช้ข้อมูล
 - ✅ **Data Portability** - ส่งออกข้อมูลได้
 - ✅ **Right to Delete** - ลบข้อมูลได้
@@ -346,7 +365,8 @@ Draft → Pending → Published
 > "มาดู Demo การใช้งานจริง เริ่มจากฝั่งผู้ป่วย"
 
 **Demo Steps:**
-1. Login ด้วย patient.test@izara.com
+
+1. Login ด้วย <patient.test@izara.com>
 2. ดู Dashboard
 3. นัดหมายแพทย์ใหม่
 4. ดูประวัติการรักษา
@@ -360,7 +380,8 @@ Draft → Pending → Published
 > "ต่อมาเป็นฝั่งแพทย์"
 
 **Demo Steps:**
-1. Login ด้วย doctor.test@izara.com
+
+1. Login ด้วย <doctor.test@izara.com>
 2. ดูรายการนัดหมาย
 3. เริ่ม Consultation
 4. บันทึก EMR
@@ -374,7 +395,8 @@ Draft → Pending → Published
 > "สุดท้ายเป็นฝั่ง Admin"
 
 **Demo Steps:**
-1. Login ด้วย admin.test@izara.com
+
+1. Login ด้วย <admin.test@izara.com>
 2. อนุมัติแพทย์ใหม่
 3. จัดการเนื้อหาสุขภาพ
 4. ดู Analytics
@@ -389,6 +411,7 @@ Draft → Pending → Published
 > "สรุป IZARA Anywhere เป็นแพลตฟอร์ม Telemedicine ที่ครบวงจร ใช้งานง่าย และปลอดภัย พร้อมให้บริการแล้ววันนี้"
 
 **Key Takeaways:**
+
 - ✅ ครบวงจร Patient + Doctor Portal
 - ✅ AI-Powered Clinical Support
 - ✅ Thai-First Design
@@ -403,8 +426,9 @@ Draft → Pending → Published
 > "ขอบคุณครับ/ค่ะ มีคำถามอะไรไหมครับ/คะ?"
 
 **Contact:**
-- 📧 Email: support@izara.health
-- 🌐 Website: https://izara.health
+
+- 📧 Email: <support@izara.health>
+- 🌐 Website: <https://izara.health>
 - 📱 Demo: See live URLs
 
 ---
@@ -415,38 +439,35 @@ Draft → Pending → Published
 
 | Role | Email | Password |
 |------|-------|----------|
-| Patient | demo.test@gmail.com | YOUR_TEST_PASSWORD |
-| Doctor | doctor.test@izara.com | YOUR_TEST_DOCTOR_PASSWORD |
-| Admin | admin.test@izara.com | YOUR_TEST_ADMIN_PASSWORD |
+| Patient | <demo.test@gmail.com> | YOUR_TEST_PASSWORD |
+| Doctor | <doctor.test@izara.com> | YOUR_TEST_DOCTOR_PASSWORD |
+| Admin | <admin.test@izara.com> | YOUR_TEST_ADMIN_PASSWORD |
 
 ## Development URLs
 
 | Service | URL |
 |---------|-----|
-| Patient Portal | http://localhost:3005 |
-| Doctor Portal | http://localhost:3010 |
-| Jitsi Server | http://localhost:3020 |
+| Patient Portal | <http://localhost:3005> |
+| Doctor Portal | <http://localhost:3010> |
+| Jitsi Server | <http://localhost:3020> |
 
 ## Production URLs
 
 | Service | URL |
 |---------|-----|
-| Patient Portal | https://izara-patient-portal-724889190329.asia-southeast1.run.app |
-| Doctor Portal | https://izara-doctor-portal-724889190329.asia-southeast1.run.app |
+| Patient Portal | <https://izara-patient-portal-hvht4obouq-as.a.run.app> |
+| Doctor Portal | <https://izara-doctor-portal-hvht4obouq-as.a.run.app> |
 
-## ✅ E2E Test Results (December 15, 2025)
+## ✅ E2E Test Results (January 29, 2026)
 
 | Test Suite | Pass Rate | Duration |
 |------------|-----------|----------|
-| Appointment Workflow | 100% | 527.73s |
-| Medical Content | 100% | 430.91s |
-| Health Records | 100% | 509.62s |
-| Dual Portal Video Meeting | 100% | 304.70s |
+| Local E2E Tests | 100% (528 tests) | 11.6m |
+| Cloud E2E Tests | 100% (65 tests) | 1.0m |
+| Total | 593 tests | 12.6m |
 
 **All test suites passing at 100%**
 
 ---
 
 *End of Presentation Script - Last Updated: December 15, 2025*
-
-
