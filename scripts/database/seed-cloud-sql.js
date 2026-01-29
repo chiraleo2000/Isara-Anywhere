@@ -1,14 +1,32 @@
-// Cloud SQL Database Seeder
-// Creates all tables and seeds with demo data
+/**
+ * @deprecated This script has been consolidated into scripts/cloud-db-tool.cjs
+ * Use: node scripts/cloud-db-tool.cjs --all
+ * 
+ * Cloud SQL Database Seeder
+ * Creates all tables and seeds with demo data
+ * Version: 1.2.0 - Fixed security issues and top-level await
+ */
+
+console.log('⚠️  DEPRECATED: This script is deprecated.');
+console.log('   Use: node scripts/cloud-db-tool.cjs --all');
+console.log('   Set DB_PASSWORD environment variable first.\n');
+
 const pg = require('pg');
-const bcrypt = require('bcryptjs');
+
+// Get password from environment variable for security
+const dbPassword = process.env.DB_PASSWORD || process.env.CLOUD_DB_PASSWORD;
+if (!dbPassword) {
+  console.error('❌ ERROR: DB_PASSWORD environment variable is required.');
+  console.error('   Set it using: $env:DB_PASSWORD="your_password"');
+  process.exit(1);
+}
 
 const pool = new pg.Pool({
-  host: '34.143.228.135',
-  port: 5432,
-  database: 'izara_phase1',
-  user: 'postgres',
-  password: 'P@ssw0rd',
+  host: process.env.CLOUD_DB_HOST || '34.143.228.135',
+  port: Number.parseInt(process.env.CLOUD_DB_PORT || '5432'),
+  database: process.env.DB_NAME || 'izara_phase1',
+  user: process.env.DB_USER || 'postgres',
+  password: dbPassword,
   max: 5
 });
 
@@ -19,14 +37,14 @@ const ADMIN_PASSWORD_HASH = '$2a$10$YqAzBzF5xQ.T.V3WwV8ZDO5Kx.k9W6Y6V5Z8X6r6uQe.
 
 async function seedDatabase() {
   const client = await pool.connect();
-  
+
   try {
     console.log('🔄 Creating tables and seeding Cloud SQL database...');
-    
+
     // Create extensions
-    await client.query('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"').catch(() => {});
-    await client.query('CREATE EXTENSION IF NOT EXISTS vector').catch(() => {});
-    
+    await client.query('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"').catch(() => { });
+    await client.query('CREATE EXTENSION IF NOT EXISTS vector').catch(() => { });
+
     // Create users table
     await client.query(`
       CREATE TABLE IF NOT EXISTS users (
@@ -46,7 +64,7 @@ async function seedDatabase() {
       )
     `);
     console.log('✅ Created users table');
-    
+
     // Create appointments table
     await client.query(`
       CREATE TABLE IF NOT EXISTS appointments (
@@ -64,7 +82,7 @@ async function seedDatabase() {
       )
     `);
     console.log('✅ Created appointments table');
-    
+
     // Create medical_content table
     await client.query(`
       CREATE TABLE IF NOT EXISTS medical_content (
@@ -85,7 +103,7 @@ async function seedDatabase() {
       )
     `);
     console.log('✅ Created medical_content table');
-    
+
     // Create clinical_resources table
     await client.query(`
       CREATE TABLE IF NOT EXISTS clinical_resources (
@@ -104,7 +122,7 @@ async function seedDatabase() {
       )
     `);
     console.log('✅ Created clinical_resources table');
-    
+
     // Create consultants table
     await client.query(`
       CREATE TABLE IF NOT EXISTS consultants (
@@ -120,7 +138,7 @@ async function seedDatabase() {
       )
     `);
     console.log('✅ Created consultants table');
-    
+
     // Create notifications table
     await client.query(`
       CREATE TABLE IF NOT EXISTS notifications (
@@ -134,7 +152,7 @@ async function seedDatabase() {
       )
     `);
     console.log('✅ Created notifications table');
-    
+
     // Create meeting_transcripts table
     await client.query(`
       CREATE TABLE IF NOT EXISTS meeting_transcripts (
@@ -147,7 +165,7 @@ async function seedDatabase() {
       )
     `);
     console.log('✅ Created meeting_transcripts table');
-    
+
     // Seed users
     const users = [
       { id: 'PATIENT-001', email: 'demo.test@gmail.com', password_hash: PATIENT_PASSWORD_HASH, role: 'patient', first_name: 'Demo', last_name: 'Patient', first_name_thai: 'ทดสอบ', last_name_thai: 'ระบบ' },
@@ -156,7 +174,7 @@ async function seedDatabase() {
       { id: 'DOC-001', email: 'doctor.test@izara.com', password_hash: DOCTOR_PASSWORD_HASH, role: 'doctor', first_name: 'Test', last_name: 'Doctor', first_name_thai: 'ทดสอบ', last_name_thai: 'แพทย์ดี' },
       { id: 'ADMIN-001', email: 'admin.test@izara.com', password_hash: ADMIN_PASSWORD_HASH, role: 'admin', first_name: 'Admin', last_name: 'User', first_name_thai: 'ผู้ดูแล', last_name_thai: 'ระบบ' }
     ];
-    
+
     for (const user of users) {
       await client.query(`
         INSERT INTO users (id, email, password_hash, role, first_name, last_name, first_name_thai, last_name_thai, status)
@@ -168,7 +186,7 @@ async function seedDatabase() {
       `, [user.id, user.email, user.password_hash, user.role, user.first_name, user.last_name, user.first_name_thai, user.last_name_thai]);
     }
     console.log('✅ Seeded 5 users');
-    
+
     // Seed sample appointments
     await client.query(`
       INSERT INTO appointments (id, patient_id, doctor_id, preferred_date, preferred_time, status, symptoms)
@@ -179,7 +197,7 @@ async function seedDatabase() {
       ON CONFLICT (id) DO NOTHING
     `);
     console.log('✅ Seeded sample appointments');
-    
+
     // Seed medical content
     await client.query(`
       INSERT INTO medical_content (id, title_thai, title_english, category, status)
@@ -190,7 +208,7 @@ async function seedDatabase() {
       ON CONFLICT (id) DO NOTHING
     `);
     console.log('✅ Seeded medical content');
-    
+
     // Seed consultants
     await client.query(`
       INSERT INTO consultants (id, name, specialty, hospital, email, is_available)
@@ -201,14 +219,14 @@ async function seedDatabase() {
       ON CONFLICT (id) DO NOTHING
     `);
     console.log('✅ Seeded consultants');
-    
+
     // Verify data
     const userCount = await client.query('SELECT COUNT(*) as cnt FROM users');
     const aptCount = await client.query('SELECT COUNT(*) as cnt FROM appointments');
     console.log(`\n📊 Final counts: ${userCount.rows[0].cnt} users, ${aptCount.rows[0].cnt} appointments`);
-    
+
     console.log('\n✅ Cloud SQL database initialized successfully!');
-    
+
   } catch (err) {
     console.error('❌ Error:', err.message);
     throw err;
@@ -218,4 +236,13 @@ async function seedDatabase() {
   }
 }
 
-seedDatabase().catch(console.error);
+// Use top-level await (requires package.json type: "module" or .mjs extension)
+// For CommonJS compatibility, we use an IIFE with proper error handling
+(async () => {
+  try {
+    await seedDatabase();
+  } catch (err) {
+    console.error('Fatal error:', err);
+    process.exit(1);
+  }
+})();

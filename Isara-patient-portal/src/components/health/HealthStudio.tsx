@@ -62,7 +62,7 @@ export const HealthStudio: React.FC<HealthStudioProps> = ({ className = '' }) =>
       const heightM = height / 100;
       const bmiValue = weight / (heightM * heightM);
       return {
-        value: parseFloat(bmiValue.toFixed(1)),
+        value: Number.parseFloat(bmiValue.toFixed(1)),
         category: getBMICategory(bmiValue)
       };
     }
@@ -83,7 +83,7 @@ export const HealthStudio: React.FC<HealthStudioProps> = ({ className = '' }) =>
 
   // Get stats for overview
   const completedCount = appointments.filter((a) => a.status === 'completed').length;
-  const upcomingCount = appointments.filter((a) => 
+  const upcomingCount = appointments.filter((a) =>
     a.status !== 'completed' && a.status !== 'cancelled' && new Date(a.appointmentDate) >= new Date()
   ).length;
 
@@ -119,11 +119,10 @@ export const HealthStudio: React.FC<HealthStudioProps> = ({ className = '' }) =>
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 text-sm font-medium transition-all ${
-                activeTab === tab.id
+              className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 text-sm font-medium transition-all ${activeTab === tab.id
                   ? 'text-emerald-600 border-b-2 border-emerald-600 bg-emerald-50/50'
                   : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
-              }`}
+                }`}
             >
               <Icon className="w-4 h-4" />
               <span className="hidden sm:inline">{tab.label}</span>

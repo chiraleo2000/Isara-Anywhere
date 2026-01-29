@@ -22,14 +22,14 @@ const setStoredValue = <T,>(key: string, value: T): void => {
 };
 
 // Password Change Modal Component
-function PasswordChangeModal({ 
-  isOpen, 
-  onClose, 
-  darkMode, 
-  language 
-}: { 
-  isOpen: boolean; 
-  onClose: () => void; 
+function PasswordChangeModal({
+  isOpen,
+  onClose,
+  darkMode,
+  language
+}: {
+  isOpen: boolean;
+  onClose: () => void;
   darkMode: boolean;
   language: 'th' | 'en';
 }) {
@@ -59,12 +59,12 @@ function PasswordChangeModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    
+
     if (newPassword !== confirmPassword) {
       setError(labels.passwordMismatch);
       return;
     }
-    
+
     if (newPassword.length < 8) {
       setError(labels.passwordTooShort);
       return;
@@ -83,7 +83,7 @@ function PasswordChangeModal({
       });
 
       const data = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(data.error || labels.errorMessage);
       }
@@ -105,8 +105,8 @@ function PasswordChangeModal({
 
   if (!isOpen) return null;
 
-  const inputClass = darkMode 
-    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+  const inputClass = darkMode
+    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
     : 'bg-white border-gray-300 text-gray-800 placeholder-gray-400';
 
   return (
@@ -133,13 +133,14 @@ function PasswordChangeModal({
                   {error}
                 </div>
               )}
-              
+
               <div>
-                <label className={`block text-sm font-medium mb-1 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                <label htmlFor="settings-current-password" className={`block text-sm font-medium mb-1 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                   {labels.currentPassword}
                 </label>
                 <div className="relative">
                   <input
+                    id="settings-current-password"
                     type={showCurrentPassword ? 'text' : 'password'}
                     value={currentPassword}
                     onChange={(e) => setCurrentPassword(e.target.value)}
@@ -157,11 +158,12 @@ function PasswordChangeModal({
               </div>
 
               <div>
-                <label className={`block text-sm font-medium mb-1 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                <label htmlFor="settings-new-password" className={`block text-sm font-medium mb-1 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                   {labels.newPassword}
                 </label>
                 <div className="relative">
                   <input
+                    id="settings-new-password"
                     type={showNewPassword ? 'text' : 'password'}
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
@@ -180,11 +182,12 @@ function PasswordChangeModal({
               </div>
 
               <div>
-                <label className={`block text-sm font-medium mb-1 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                <label htmlFor="settings-confirm-password" className={`block text-sm font-medium mb-1 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                   {labels.confirmPassword}
                 </label>
                 <div className="relative">
                   <input
+                    id="settings-confirm-password"
                     type={showConfirmPassword ? 'text' : 'password'}
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
@@ -206,11 +209,10 @@ function PasswordChangeModal({
                 <button
                   type="button"
                   onClick={onClose}
-                  className={`flex-1 px-4 py-2 rounded-lg border ${
-                    darkMode 
-                      ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
+                  className={`flex-1 px-4 py-2 rounded-lg border ${darkMode
+                      ? 'border-gray-600 text-gray-300 hover:bg-gray-700'
                       : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                  }`}
+                    }`}
                 >
                   {labels.cancel}
                 </button>
@@ -281,7 +283,7 @@ function ProfileImageModal({
     }
 
     setError('');
-    
+
     // Create preview
     const reader = new FileReader();
     reader.onload = (event) => {
@@ -292,21 +294,21 @@ function ProfileImageModal({
 
   const handleSubmit = async () => {
     if (!previewUrl) return;
-    
+
     setLoading(true);
     setError('');
 
     try {
       const token = localStorage.getItem('token');
       const userId = JSON.parse(localStorage.getItem('user') || '{}').id || 'unknown';
-      
+
       const response = await fetch(`/api/phr/profile/${userId}/avatar`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           imageData: previewUrl,
           contentType: 'image/png'
         }),
@@ -320,7 +322,7 @@ function ProfileImageModal({
 
       setSuccess(true);
       onImageUpdate(previewUrl);
-      
+
       setTimeout(() => {
         onClose();
         setSuccess(false);
@@ -392,11 +394,10 @@ function ProfileImageModal({
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className={`w-full px-4 py-2 border rounded-lg flex items-center justify-center gap-2 ${
-                    darkMode
+                  className={`w-full px-4 py-2 border rounded-lg flex items-center justify-center gap-2 ${darkMode
                       ? 'border-gray-600 text-gray-300 hover:bg-gray-700'
                       : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                  }`}
+                    }`}
                 >
                   <Camera className="w-4 h-4" />
                   {labels.selectImage}
@@ -417,11 +418,10 @@ function ProfileImageModal({
                 <button
                   type="button"
                   onClick={onClose}
-                  className={`flex-1 px-4 py-2 rounded-lg border ${
-                    darkMode
+                  className={`flex-1 px-4 py-2 rounded-lg border ${darkMode
                       ? 'border-gray-600 text-gray-300 hover:bg-gray-700'
                       : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                  }`}
+                    }`}
                 >
                   {labels.cancel}
                 </button>
@@ -449,8 +449,8 @@ export default function SettingsPage() {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showProfileImageModal, setShowProfileImageModal] = useState(false);
   const [profileImage, setProfileImage] = useState<string | undefined>(user?.avatarUrl);
-  
-  const [notifications, setNotifications] = useState(() => 
+
+  const [notifications, setNotifications] = useState(() =>
     getStoredValue('izara_notifications', {
       appointments: true,
       medications: true,
@@ -497,10 +497,10 @@ export default function SettingsPage() {
     comingSoon: language === 'th' ? 'เร็วๆ นี้' : 'Coming soon',
   };
 
-  const cardClass = darkMode 
-    ? 'bg-gray-800 border-gray-700' 
+  const cardClass = darkMode
+    ? 'bg-gray-800 border-gray-700'
     : 'bg-white border-gray-100';
-  
+
   const textClass = darkMode ? 'text-gray-100' : 'text-gray-800';
   const subTextClass = darkMode ? 'text-gray-400' : 'text-gray-500';
   const dividerClass = darkMode ? 'divide-gray-700 border-gray-700' : 'divide-gray-100 border-gray-100';
@@ -588,11 +588,10 @@ export default function SettingsPage() {
             <select
               value={language}
               onChange={(e) => setLanguage(e.target.value as 'en' | 'th')}
-              className={`px-4 py-2 border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent ${
-                darkMode 
-                  ? 'bg-gray-700 border-gray-600 text-white' 
+              className={`px-4 py-2 border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent ${darkMode
+                  ? 'bg-gray-700 border-gray-600 text-white'
                   : 'bg-white border-gray-200 text-gray-800'
-              }`}
+                }`}
             >
               <option value="th">ไทย</option>
               <option value="en">English</option>
@@ -619,7 +618,7 @@ export default function SettingsPage() {
         </div>
         <div className={`divide-y ${dividerClass}`}>
           <LinkItem
-            icon={<Lock className={`w-5 h-5 ${darkMode ? 'text-gray-400' : 'text-gray-400'}`} />}
+            icon={<Lock className="w-5 h-5 text-gray-400" />}
             label={labels.changePassword}
             onClick={() => setShowPasswordModal(true)}
             darkMode={darkMode}

@@ -56,7 +56,7 @@ Content-Type: application/json
 
 {
   "email": "user@example.com",
-  "password": "SecureP@ss123",
+  "password": "EXAMPLE_PASSWORD",
   "name": "John Doe",
   "phone": "0812345678",
   "dateOfBirth": "1990-01-15"
@@ -80,7 +80,7 @@ Content-Type: application/json
 
 {
   "email": "user@example.com",
-  "password": "SecureP@ss123"
+  "password": "EXAMPLE_PASSWORD"
 }
 ```
 
@@ -379,3 +379,5 @@ Authorization: Bearer {token}
 ---
 **Last Updated:** January 9, 2026
 **Version:** 1.2.1
+
+

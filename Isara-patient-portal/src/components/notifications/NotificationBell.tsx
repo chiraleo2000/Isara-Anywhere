@@ -10,10 +10,10 @@ import { notificationService, Notification } from '../../lib/services';
 import { useAuth } from '../../contexts/AuthContext';
 
 interface NotificationBellProps {
-  className?: string;
+  readonly className?: string;
 }
 
-export function NotificationBell({ className = '' }: NotificationBellProps) {
+export function NotificationBell({ className = '' }: Readonly<NotificationBellProps>) {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -24,7 +24,7 @@ export function NotificationBell({ className = '' }: NotificationBellProps) {
   // Load notifications
   const loadNotifications = useCallback(async () => {
     if (!user?.id) return;
-    
+
     try {
       setLoading(true);
       const data = await notificationService.getNotifications(user.id);
@@ -40,7 +40,7 @@ export function NotificationBell({ className = '' }: NotificationBellProps) {
   // Initial load and polling
   useEffect(() => {
     loadNotifications();
-    
+
     // Poll for new notifications every 30 seconds
     const interval = setInterval(loadNotifications, 30000);
     return () => clearInterval(interval);
@@ -60,10 +60,10 @@ export function NotificationBell({ className = '' }: NotificationBellProps) {
   // Mark notification as read
   const handleMarkAsRead = async (notificationId: string) => {
     if (!user?.id) return;
-    
+
     try {
       await notificationService.markAsRead(user.id, notificationId);
-      setNotifications(prev => 
+      setNotifications(prev =>
         prev.map(n => n.id === notificationId ? { ...n, isRead: true } : n)
       );
       setUnreadCount(prev => Math.max(0, prev - 1));
@@ -75,7 +75,7 @@ export function NotificationBell({ className = '' }: NotificationBellProps) {
   // Mark all as read
   const handleMarkAllAsRead = async () => {
     if (!user?.id) return;
-    
+
     try {
       await notificationService.markAllAsRead(user.id);
       setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
@@ -170,10 +170,12 @@ export function NotificationBell({ className = '' }: NotificationBellProps) {
                 {notifications.slice(0, 10).map((notification) => (
                   <div
                     key={notification.id}
+                    role="button"
+                    tabIndex={0}
                     onClick={() => handleMarkAsRead(notification.id)}
-                    className={`p-4 hover:bg-gray-50 transition-colors cursor-pointer ${
-                      !notification.isRead ? 'bg-emerald-50/50' : ''
-                    }`}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleMarkAsRead(notification.id); } }}
+                    className={`p-4 hover:bg-gray-50 transition-colors cursor-pointer ${notification.isRead ? '' : 'bg-emerald-50/50'
+                      }`}
                   >
                     <div className="flex gap-3">
                       {/* Icon */}
@@ -186,10 +188,10 @@ export function NotificationBell({ className = '' }: NotificationBellProps) {
                       {/* Content */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2">
-                          <h4 className={`text-sm ${!notification.isRead ? 'font-semibold' : 'font-medium'} text-gray-800 line-clamp-1`}>
+                          <h4 className={`text-sm ${notification.isRead ? 'font-medium' : 'font-semibold'} text-gray-800 line-clamp-1`}>
                             {notification.title}
                           </h4>
-                          {!notification.isRead && (
+                          {notification.isRead ? null : (
                             <span className="flex-shrink-0 w-2 h-2 bg-emerald-500 rounded-full mt-1.5"></span>
                           )}
                         </div>
@@ -200,7 +202,7 @@ export function NotificationBell({ className = '' }: NotificationBellProps) {
                           <span className="text-xs text-gray-400">
                             {formatTimeAgo(notification.createdAt)}
                           </span>
-                          
+
                           {/* Action buttons */}
                           {notification.appointmentId && (
                             <Link
@@ -211,7 +213,7 @@ export function NotificationBell({ className = '' }: NotificationBellProps) {
                               ดูรายละเอียด <ChevronRight className="w-3 h-3" />
                             </Link>
                           )}
-                          
+
                           {notification.meetingLink && (
                             <a
                               href={notification.meetingLink}
@@ -223,7 +225,7 @@ export function NotificationBell({ className = '' }: NotificationBellProps) {
                               <Video className="w-3 h-3" /> เข้าประชุม
                             </a>
                           )}
-                          
+
                           {notification.calendarUrl && (
                             <a
                               href={notification.calendarUrl}

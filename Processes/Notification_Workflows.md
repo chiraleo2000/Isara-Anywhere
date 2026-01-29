@@ -363,9 +363,9 @@ interface DoctorNotificationPreferences {
 ### 10.3 Demo User Test Accounts
 
 ```text
-Patient:  demo.test@gmail.com     / P@ssw0rd
-Doctor:   doctor.test@izara.com   / IzaraDoctor@2024
-Admin:    admin.test@izara.com    / IzaraAdmin@2024
+Patient:  demo.test@gmail.com     / YOUR_TEST_PASSWORD
+Doctor:   doctor.test@izara.com   / YOUR_TEST_DOCTOR_PASSWORD
+Admin:    admin.test@izara.com    / YOUR_TEST_ADMIN_PASSWORD
 ```
 
 ## 11. Implementation Status (January 2025)
@@ -488,3 +488,5 @@ https://meet.jit.si/izara-{appointmentId}-{timestamp}-{random}
 
 *อัปเดตล่าสุด: January 2025*
 *เวอร์ชัน: 1.1.0 - Updated with verified test results*
+
+

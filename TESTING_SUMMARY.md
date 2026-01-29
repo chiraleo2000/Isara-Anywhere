@@ -21,12 +21,14 @@ All comprehensive E2E tests based on Process documentation:
 ## Dashboard Fixes Applied
 
 ### Doctor Portal
+
 - ✅ Added `/api/prescriptions/pending/count/:doctorId` endpoint
-- ✅ Added `/api/prescriptions/pending/:doctorId` endpoint  
+- ✅ Added `/api/prescriptions/pending/:doctorId` endpoint
 - ✅ Queries PostgreSQL for real-time prescription count (status='pending')
 - ✅ Frontend updated to fetch real counts instead of hardcoded zeros
 
 ### Patient Portal
+
 - ✅ Added `/api/dashboard/stats` endpoint
 - ✅ Returns: upcoming appointments, active medications, unread notifications, latest vitals
 - ✅ All data from PostgreSQL, real-time
@@ -34,25 +36,28 @@ All comprehensive E2E tests based on Process documentation:
 ## Local Testing Results
 
 ### Infrastructure
-```
+
+```text
 ✅ PostgreSQL 16 + pgvector (port 5433) - HEALTHY
 ✅ pgAdmin (port 5050) - RUNNING
 ✅ Patient Portal (port 3005) - HEALTHY
-✅ Doctor Portal (port 3010) - HEALTHY  
+✅ Doctor Portal (port 3010) - HEALTHY
 ✅ Meeting Server (port 3020) - RUNNING (unhealthy status expected without Jitsi config)
 ```
 
 ### Playwright Tests
-```
+
+```text
 ✅ 8/8 smoke tests PASSED (30.1s)
   - Patient portal accessible
-  - Doctor portal accessible  
+  - Doctor portal accessible
   - Patient login page works
   - Doctor login page works
 ```
 
 ### API Endpoints
-```
+
+```text
 ✅ /api/prescriptions/pending/count/:doctorId - Returns count (auth required)
 ✅ /api/dashboard/stats - Returns dashboard stats (auth required)
 ```
@@ -61,32 +66,39 @@ All comprehensive E2E tests based on Process documentation:
 
 ### Services to Deploy (5 total)
 
-1. **PostgreSQL Database** - Cloud SQL (already running: 34.143.228.135:5432)
+1. **PostgreSQL Database** - Cloud SQL (already running: CLOUD_SQL_HOST:5432)
 2. **pgAdmin** - Cloud Run service for database management
 3. **Patient Portal** - Cloud Run (unified Nginx + Node.js)
 4. **Doctor Portal** - Cloud Run (unified Nginx + Node.js)
 5. **Meeting Server** - Cloud Run (Jitsi integration)
 
 ### Deployment Method
+
 - **Cloud Build** with individual `cloudbuild.yaml` for each service
 - **Cannot use docker-compose.yml** on Cloud Run
 - Each service deployed separately: `gcloud builds submit --config=cloudbuild-<service>.yaml`
 
 ### Environment Variables
+
 All services need these PostgreSQL connection vars:
-```
-DATABASE_URL=postgresql://postgres:<password>@34.143.228.135:5432/izara_phase1
-DB_HOST=34.143.228.135
+
+```text
+DATABASE_URL=postgresql://postgres:YOUR_POSTGRES_PASSWORD@CLOUD_SQL_HOST:5432/izara_phase1
+DB_HOST=CLOUD_SQL_HOST
 DB_PORT=5432
 DB_NAME=izara_phase1
 DB_USER=postgres
 USE_POSTGRESQL=true
 ```
 
+**Security note:** Store real credentials in a secrets manager or local `.env` files that are gitignored. Do not commit them to Markdown.
+
 ### Deployment Script
+
 Ready to use: `scripts/deploy-cloud-run.ps1`
 
 Functions:
+
 - `Deploy-PostgreSQL` - Skip (already on Cloud SQL)
 - `Deploy-PgAdmin`
 - `Deploy-PatientPortal`
@@ -96,6 +108,7 @@ Functions:
 ## Next Steps
 
 ### 1. Deploy to Cloud Run
+
 ```powershell
 cd scripts
 ./deploy-cloud-run.ps1
@@ -107,6 +120,7 @@ gcloud builds submit --config=cloudbuild-meeting-server.yaml
 ```
 
 ### 2. Test on Cloud
+
 ```powershell
 cd tests/e2e
 
@@ -122,6 +136,7 @@ npx playwright test
 ```
 
 ### 3. Verify Dashboard
+
 - Doctor portal: Check pending prescriptions count updates dynamically
 - Patient portal: Verify dashboard stats load from PostgreSQL
 
@@ -138,9 +153,9 @@ npx playwright test
    - **Action:** Verify implementation before running ui-pages-workflow tests
 
 4. **Test Credentials**
-   - Patient: demo.test@gmail.com / P@ssw0rd
-   - Doctor: doctor.test@izara.com / IzaraDoctor@2024
-   - Admin: admin.test@izara.com / IzaraAdmin@2024
+   - Patient: `demo.test@gmail.com` / `YOUR_TEST_PASSWORD`
+   - Doctor: `doctor.test@izara.com` / `YOUR_TEST_DOCTOR_PASSWORD`
+   - Admin: `admin.test@izara.com` / `YOUR_TEST_ADMIN_PASSWORD`
 
 ## Files Modified
 
@@ -170,3 +185,6 @@ npx playwright test
 ✅ **Ready for Google Cloud Run deployment**
 
 **Next Action:** Execute `scripts/deploy-cloud-run.ps1` to deploy all services to Google Cloud Run.
+
+
+

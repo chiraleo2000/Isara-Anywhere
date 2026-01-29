@@ -7,16 +7,17 @@
  */
 
 import { test, expect } from '@playwright/test';
+import { URLS, TIMEOUTS } from '../lib/test-config';
 
-// Cloud URLs
-const CLOUD_PATIENT = 'https://izara-patient-portal-724889190329.asia-southeast1.run.app';
-const CLOUD_DOCTOR = 'https://izara-doctor-portal-724889190329.asia-southeast1.run.app';
+// Cloud URLs from shared config
+const CLOUD_PATIENT = URLS.cloud.patient;
+const CLOUD_DOCTOR = URLS.cloud.doctor;
 
 test.describe('Cloud Patient Portal Health - 200 Status Only', () => {
-  
+
   test('CLOUD-PAT-01: Patient Portal API health - 200', async ({ request }) => {
     const response = await request.get(`${CLOUD_PATIENT}/api/health`, {
-      timeout: 30000
+      timeout: TIMEOUTS.cloud
     });
     expect(response.status()).toBe(200);
     const data = await response.json();
@@ -67,7 +68,7 @@ test.describe('Cloud Patient Portal Health - 200 Status Only', () => {
 });
 
 test.describe('Cloud Doctor Portal Health - 200 Status Only', () => {
-  
+
   test('CLOUD-DOC-01: Doctor Portal API health - 200', async ({ request }) => {
     const response = await request.get(`${CLOUD_DOCTOR}/api/health`, {
       timeout: 30000
@@ -106,7 +107,7 @@ test.describe('Cloud Doctor Portal Health - 200 Status Only', () => {
 });
 
 test.describe('Cloud Infrastructure Tests', () => {
-  
+
   test('CLOUD-INFRA-01: Patient Portal responds under 3 seconds', async ({ request }) => {
     const start = Date.now();
     const response = await request.get(`${CLOUD_PATIENT}/api/health`, {
@@ -154,7 +155,7 @@ test.describe('Cloud Infrastructure Tests', () => {
 });
 
 test.describe('Cloud Service Connectivity', () => {
-  
+
   test('CLOUD-CONN-01: Both portals are accessible', async ({ request }) => {
     const [patientRes, doctorRes] = await Promise.all([
       request.get(`${CLOUD_PATIENT}/api/health`, { timeout: 30000 }),

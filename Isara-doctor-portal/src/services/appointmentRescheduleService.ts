@@ -9,7 +9,7 @@
  */
 
 import gcsDataService, { writeToGCS } from './gcsDataService';
-import meetingTimeService, { DEFAULT_MEETING_RULES } from './meetingTimeService';
+import meetingTimeService from './meetingTimeService';
 
 export interface RescheduleRecord {
   appointmentId: string;
@@ -50,7 +50,7 @@ export interface AppointmentForReschedule {
 class AppointmentRescheduleService {
   private static instance: AppointmentRescheduleService;
 
-  private constructor() {}
+  private constructor() { }
 
   static getInstance(): AppointmentRescheduleService {
     if (!AppointmentRescheduleService.instance) {
@@ -65,7 +65,7 @@ class AppointmentRescheduleService {
   calculateNextWeekSlot(currentDate: string, currentTime: string): { date: string; time: string } {
     const date = new Date(currentDate);
     date.setDate(date.getDate() + 7); // Add 7 days
-    
+
     return {
       date: date.toISOString().split('T')[0],
       time: currentTime // Keep same time
@@ -102,11 +102,11 @@ class AppointmentRescheduleService {
    * Reschedule appointment to next week same time
    */
   async rescheduleToNextWeek(
-    appointment: AppointmentForReschedule, 
+    appointment: AppointmentForReschedule,
     missedAttempts: number
   ): Promise<MissedMeetingResult> {
     const nextSlot = this.calculateNextWeekSlot(appointment.date, appointment.time);
-    
+
     try {
       // Update appointment in GCS
       const updatedAppointment = {
@@ -177,7 +177,7 @@ class AppointmentRescheduleService {
    * Send appointment to pool for reassignment
    */
   async sendToPool(
-    appointment: AppointmentForReschedule, 
+    appointment: AppointmentForReschedule,
     missedAttempts: number
   ): Promise<MissedMeetingResult> {
     try {
@@ -200,7 +200,7 @@ class AppointmentRescheduleService {
       // Get existing pool
       let pool = await gcsDataService.fetchFromGCS<any[]>('appointments', 'appointment-pool.json') || [];
       pool.push(poolEntry);
-      
+
       // Save updated pool
       await writeToGCS('appointments', 'appointment-pool.json', pool);
 
@@ -310,9 +310,9 @@ class AppointmentRescheduleService {
         'appointments',
         'reschedule-records.json'
       ) || [];
-      
+
       records.push(record);
-      
+
       await writeToGCS('appointments', 'reschedule-records.json', records);
     } catch (error) {
       console.error('Error saving reschedule record:', error);
@@ -328,7 +328,7 @@ class AppointmentRescheduleService {
         'appointments',
         'reschedule-records.json'
       ) || [];
-      
+
       return records.filter(r => r.appointmentId === appointmentId);
     } catch (error) {
       console.error('Error getting reschedule history:', error);

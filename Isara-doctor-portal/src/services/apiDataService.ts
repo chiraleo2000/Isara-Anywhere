@@ -210,7 +210,7 @@ export async function fetchMeetingHistory(doctorId: string): Promise<any[]> {
     const result = await fetchAPI<{ meetings: any[] }>(`/api/video-meeting/history/${doctorId}`);
     return result.meetings || [];
   } catch (error) {
-    console.warn('[API] Meeting history endpoint not available, falling back to appointments...');
+    console.warn('[API] Meeting history endpoint not available, falling back to appointments...', error);
     // Fallback: Meetings are linked to completed appointments
     const appointments = await fetchAllAppointments(doctorId);
     return appointments.filter(apt => 

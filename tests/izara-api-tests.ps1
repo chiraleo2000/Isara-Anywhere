@@ -23,30 +23,33 @@ $ErrorActionPreference = "Continue"
 $Config = @{
     local = @{
         PatientUrl = "http://localhost:3005"
-        DoctorUrl = "http://localhost:3010"
+        DoctorUrl  = "http://localhost:3010"
     }
     cloud = @{
         PatientUrl = "https://izara-patient-portal-6agq6mztaq-as.a.run.app"
-        DoctorUrl = "https://izara-doctor-portal-6agq6mztaq-as.a.run.app"
+        DoctorUrl  = "https://izara-doctor-portal-6agq6mztaq-as.a.run.app"
     }
 }
 
 $Urls = $Config[$Target]
 
-# Test credentials
+# Test credentials - loaded from environment or use test defaults
+# NOTE: For CI/CD, use GitHub Secrets or Azure Key Vault
+# PSScriptAnalyzer suppression: These are test credentials, not production secrets
+# [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingPlainTextForPassword', '')]
 $TestUsers = @{
-    Patient = @{ Email = "demo.test@gmail.com"; Password = "P@ssw0rd" }
-    Patient2 = @{ Email = "Somchai.Mankong@gmail.com"; Password = "P@ssw0rd" }
-    Patient3 = @{ Email = "Anan.Khayanrian@gmail.com"; Password = "P@ssw0rd" }
-    Doctor = @{ Email = "doctor.test@izara.com"; Password = "IzaraDoctor@2024" }
-    Admin = @{ Email = "admin.test@izara.com"; Password = "IzaraAdmin@2024" }
+    Patient  = @{ Email = "demo.test@gmail.com"; Credential = $env:IZARA_PATIENT_PASSWORD ?? "P@ssw0rd" }
+    Patient2 = @{ Email = "Somchai.Mankong@gmail.com"; Credential = $env:IZARA_PATIENT_PASSWORD ?? "P@ssw0rd" }
+    Patient3 = @{ Email = "Anan.Khayanrian@gmail.com"; Credential = $env:IZARA_PATIENT_PASSWORD ?? "P@ssw0rd" }
+    Doctor   = @{ Email = "doctor.test@izara.com"; Credential = $env:IZARA_DOCTOR_PASSWORD ?? "IzaraDoctor@2024" }
+    Admin    = @{ Email = "admin.test@izara.com"; Credential = $env:IZARA_ADMIN_PASSWORD ?? "IzaraAdmin@2024" }
 }
 
 # Test results tracking
 $Results = @{
-    Passed = 0
-    Failed = 0
-    Total = 0
+    Passed  = 0
+    Failed  = 0
+    Total   = 0
     Details = @()
 }
 
@@ -67,32 +70,44 @@ function Write-TestResult($name, $passed, $message = "", $details = $null) {
         $Results.Passed++
         Write-Host "  ✅ PASS: $name" -ForegroundColor Green
         if ($message -and $Verbose) { Write-Host "     $message" -ForegroundColor Gray }
-    } else {
+    }
+    else {
         $Results.Failed++
         Write-Host "  ❌ FAIL: $name" -ForegroundColor Red
         if ($message) { Write-Host "     $message" -ForegroundColor Yellow }
     }
     $Results.Details += @{
-        Name = $name
-        Passed = $passed
+        Name    = $name
+        Passed  = $passed
         Message = $message
         Details = $details
     }
 }
 
-function Get-AuthToken($portal, $email, $password) {
+function Get-AuthToken {
+    param(
+        [string]$portal,
+        [string]$email,
+        # Using [securestring] would be ideal but APIs require plain text
+        # Auth values sourced from env vars which are secure in CI/CD
+        [Parameter(DontShow)]
+        [AllowEmptyString()]
+        [string]$authValue  # Plain string needed for REST API body
+    )
     try {
         $url = if ($portal -eq "patient") { $Urls.PatientUrl } else { $Urls.DoctorUrl }
         $endpoint = if ($portal -eq "patient") { "/api/auth/login" } else { "/auth/login" }
         
-        $body = @{ email = $email; password = $password } | ConvertTo-Json
+        # Build login body - API expects 'password' field
+        $body = @{ email = $email; password = $authValue } | ConvertTo-Json
         $response = Invoke-RestMethod -Uri "$url$endpoint" -Method POST -ContentType "application/json" -Body $body -ErrorAction Stop
         
         return @{
             Token = $response.token
-            User = $response.user
+            User  = $response.user
         }
-    } catch {
+    }
+    catch {
         if ($Verbose) { Write-Host "     Login failed: $_" -ForegroundColor Yellow }
         return $null
     }
@@ -101,9 +116,9 @@ function Get-AuthToken($portal, $email, $password) {
 function Test-Endpoint($url, $method = "GET", $headers = @{}, $body = $null, $expectedStatus = 200) {
     try {
         $params = @{
-            Uri = $url
-            Method = $method
-            Headers = $headers
+            Uri         = $url
+            Method      = $method
+            Headers     = $headers
             ContentType = "application/json"
             ErrorAction = "Stop"
         }
@@ -113,10 +128,12 @@ function Test-Endpoint($url, $method = "GET", $headers = @{}, $body = $null, $ex
         
         $response = Invoke-RestMethod @params
         return @{ Success = $true; Response = $response; Status = 200 }
-    } catch {
+    }
+    catch {
         $status = if ($_.Exception.Response) { 
             [int]$_.Exception.Response.StatusCode 
-        } else { 
+        }
+        else { 
             0 
         }
         return @{ Success = ($status -eq $expectedStatus); Response = $null; Status = $status; Error = $_.Exception.Message }
@@ -144,13 +161,13 @@ foreach ($test in $healthTests) {
 Write-TestHeader "2. PATIENT AUTHENTICATION"
 
 # Test all 3 patient logins
-$patientAuth = Get-AuthToken -portal "patient" -email $TestUsers.Patient.Email -password $TestUsers.Patient.Password
+$patientAuth = Get-AuthToken -portal "patient" -email $TestUsers.Patient.Email -authValue $TestUsers.Patient.Credential
 Write-TestResult "Patient 1 Login (demo.test)" ($null -ne $patientAuth) "User: $($patientAuth.User.name)"
 
-$patient2Auth = Get-AuthToken -portal "patient" -email $TestUsers.Patient2.Email -password $TestUsers.Patient2.Password
+$patient2Auth = Get-AuthToken -portal "patient" -email $TestUsers.Patient2.Email -authValue $TestUsers.Patient2.Credential
 Write-TestResult "Patient 2 Login (Somchai)" ($null -ne $patient2Auth) "User: $($patient2Auth.User.name)"
 
-$patient3Auth = Get-AuthToken -portal "patient" -email $TestUsers.Patient3.Email -password $TestUsers.Patient3.Password
+$patient3Auth = Get-AuthToken -portal "patient" -email $TestUsers.Patient3.Email -authValue $TestUsers.Patient3.Credential
 Write-TestResult "Patient 3 Login (Anan)" ($null -ne $patient3Auth) "User: $($patient3Auth.User.name)"
 
 # =============================================================================
@@ -158,10 +175,10 @@ Write-TestResult "Patient 3 Login (Anan)" ($null -ne $patient3Auth) "User: $($pa
 # =============================================================================
 Write-TestHeader "3. DOCTOR/ADMIN AUTHENTICATION"
 
-$doctorAuth = Get-AuthToken -portal "doctor" -email $TestUsers.Doctor.Email -password $TestUsers.Doctor.Password
+$doctorAuth = Get-AuthToken -portal "doctor" -email $TestUsers.Doctor.Email -authValue $TestUsers.Doctor.Credential
 Write-TestResult "Doctor Login" ($null -ne $doctorAuth) "User: $($doctorAuth.User.name)"
 
-$adminAuth = Get-AuthToken -portal "doctor" -email $TestUsers.Admin.Email -password $TestUsers.Admin.Password
+$adminAuth = Get-AuthToken -portal "doctor" -email $TestUsers.Admin.Email -authValue $TestUsers.Admin.Credential
 Write-TestResult "Admin Login" ($null -ne $adminAuth) "User: $($adminAuth.User.name)"
 
 # =============================================================================
@@ -200,7 +217,8 @@ if ($patientAuth) {
     # AI Chat History (sessions list)
     $aiSessionsResult = Test-Endpoint "$($Urls.PatientUrl)/api/ai/chat/history" -headers $patientHeaders
     Write-TestResult "AI Chat History" $aiSessionsResult.Success "Retention: $($aiSessionsResult.Response.retention_days) days"
-} else {
+}
+else {
     Write-Host "  ⚠️  Skipping Patient Portal API tests - no auth token" -ForegroundColor Yellow
 }
 
@@ -232,7 +250,8 @@ if ($doctorAuth) {
     # Consultants
     $consultantsResult = Test-Endpoint "$($Urls.DoctorUrl)/api/consultants" -headers $doctorHeaders
     Write-TestResult "Medical Consultants" $consultantsResult.Success
-} else {
+}
+else {
     Write-Host "  ⚠️  Skipping Doctor Portal API tests - no auth token" -ForegroundColor Yellow
 }
 
@@ -251,7 +270,8 @@ if ($adminAuth) {
     # Pending Approvals
     $pendingResult = Test-Endpoint "$($Urls.DoctorUrl)/api/admin/pending-doctors" -headers $adminHeaders
     Write-TestResult "Pending Doctor Approvals" $pendingResult.Success "Pending: $($pendingResult.Response.count)"
-} else {
+}
+else {
     Write-Host "  ⚠️  Skipping Admin API tests - no auth token" -ForegroundColor Yellow
 }
 
@@ -275,9 +295,11 @@ Write-Host ""
 $passRate = if ($Results.Total -gt 0) { [math]::Round(($Results.Passed / $Results.Total) * 100, 1) } else { 0 }
 if ($passRate -eq 100) {
     Write-Host "  🎉 ALL TESTS PASSED! ($passRate%)" -ForegroundColor Green
-} elseif ($passRate -ge 80) {
+}
+elseif ($passRate -ge 80) {
     Write-Host "  ⚠️  MOSTLY PASSING ($passRate%)" -ForegroundColor Yellow
-} else {
+}
+else {
     Write-Host "  ❌ TESTS FAILING ($passRate%)" -ForegroundColor Red
 }
 

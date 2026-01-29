@@ -18,7 +18,7 @@ import {
   ChevronRight,
   BookOpen,
 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 // Mini Calendar Component - With dark mode and i18n support
 function MiniCalendar() {
@@ -26,23 +26,23 @@ function MiniCalendar() {
   const { theme, language } = useSettings();
   const today = new Date();
   const isDark = theme === 'dark';
-  
+
   const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
   const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay();
-  
-  const monthNames = language === 'th' 
+
+  const monthNames = language === 'th'
     ? ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.']
     : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const dayNames = language === 'th'
     ? ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส']
     : ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
-  
+
   const prevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
   const nextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
-  
-  const isToday = (day: number) => 
-    today.getDate() === day && 
-    today.getMonth() === currentDate.getMonth() && 
+
+  const isToday = (day: number) =>
+    today.getDate() === day &&
+    today.getMonth() === currentDate.getMonth() &&
     today.getFullYear() === currentDate.getFullYear();
 
   const year = language === 'th' ? currentDate.getFullYear() + 543 : currentDate.getFullYear();
@@ -70,13 +70,12 @@ function MiniCalendar() {
         {Array.from({ length: daysInMonth }).map((_, i) => (
           <div
             key={i + 1}
-            className={`text-[10px] py-1 rounded ${
-              isToday(i + 1)
+            className={`text-[10px] py-1 rounded ${isToday(i + 1)
                 ? 'bg-emerald-500 text-white font-bold'
-                : isDark 
-                  ? 'text-gray-300 hover:bg-white/10' 
+                : isDark
+                  ? 'text-gray-300 hover:bg-white/10'
                   : 'text-gray-600 hover:bg-white/50'
-            }`}
+              }`}
           >
             {i + 1}
           </div>
@@ -92,7 +91,7 @@ export default function MainLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  
+
   const isDarkMode = theme === 'dark';
 
   const handleLogout = async () => {
@@ -128,20 +127,19 @@ export default function MainLayout() {
 
           <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
             {navItems.map((item) => {
-              const isActive = location.pathname === item.path || 
+              const isActive = location.pathname === item.path ||
                 (item.path !== '/' && location.pathname.startsWith(item.path));
               return (
                 <Link
                   key={item.path}
                   to={item.path}
                   onClick={() => setSidebarOpen(false)}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${
-                    isActive
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${isActive
                       ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300'
-                      : isDarkMode 
-                        ? 'text-gray-300 hover:bg-gray-700' 
+                      : isDarkMode
+                        ? 'text-gray-300 hover:bg-gray-700'
                         : 'text-gray-600 hover:bg-gray-50'
-                  }`}
+                    }`}
                 >
                   <item.icon className={`w-5 h-5 ${isActive ? 'text-emerald-600 dark:text-emerald-400' : ''}`} />
                   <span className="font-medium">{item.label}</span>
@@ -170,11 +168,10 @@ export default function MainLayout() {
             <div className="flex gap-2">
               <Link
                 to="/profile"
-                className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm rounded-lg ${
-                  isDarkMode 
-                    ? 'text-gray-300 bg-gray-700 hover:bg-gray-600' 
+                className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm rounded-lg ${isDarkMode
+                    ? 'text-gray-300 bg-gray-700 hover:bg-gray-600'
                     : 'text-gray-600 bg-gray-100 hover:bg-gray-200'
-                }`}
+                  }`}
               >
                 <User className="w-4 h-4" />
                 {language === 'th' ? 'โปรไฟล์' : 'Profile'}
@@ -192,8 +189,12 @@ export default function MainLayout() {
 
       {sidebarOpen && (
         <div
+          role="button"
+          tabIndex={0}
+          aria-label="Close sidebar"
           className="fixed inset-0 bg-black/50 z-40 lg:hidden"
           onClick={() => setSidebarOpen(false)}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSidebarOpen(false); } }}
         />
       )}
 

@@ -30,7 +30,7 @@ Izara Telemedicine uses PostgreSQL as the primary database, deployed alongside t
 Host: localhost (local Docker) / postgres (Docker network)
 Port: 5433 (external) / 5432 (internal)
 User: postgres
-Password: P@ssw0rd
+Password: YOUR_TEST_PASSWORD
 Database: izara_phase1
 ```
 
@@ -417,11 +417,11 @@ npx playwright test --debug
 
 | Role | Email | Password |
 | ------ | ------- | ---------- |
-| Patient | demo.test@gmail.com | P@ssw0rd |
-| Patient | Somchai.Mankong@gmail.com | P@ssw0rd |
-| Patient | Anan.Khayanrian@gmail.com | P@ssw0rd |
-| Doctor | doctor.test@izara.com | IzaraDoctor@2024 |
-| Admin | admin.test@izara.com | IzaraAdmin@2024 |
+| Patient | `demo.test@gmail.com` | `YOUR_TEST_PASSWORD` |
+| Patient | `Somchai.Mankong@gmail.com` | `YOUR_TEST_PASSWORD` |
+| Patient | `Anan.Khayanrian@gmail.com` | `YOUR_TEST_PASSWORD` |
+| Doctor | `doctor.test@izara.com` | `YOUR_TEST_DOCTOR_PASSWORD` |
+| Admin | `admin.test@izara.com` | `YOUR_TEST_ADMIN_PASSWORD` |
 
 ---
 
@@ -448,3 +448,5 @@ npx playwright test --debug
 
 *Documentation generated for Izara Telemedicine Platform v3.0.0*
 *Phase 1: AI-Assisted Consultation with Man-in-the-Loop Validation*
+
+

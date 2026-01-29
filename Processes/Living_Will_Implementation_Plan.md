@@ -10,7 +10,7 @@
 
 This document outlines the implementation plan for adding Living Will functionality to both the Patient Portal and Doctor Portal with full PDPA compliance and consent-based sharing controls.
 
-### Implementation Completed:
+### Implementation Completed
 
 | Task | File | Status |
 | ------ | ------ | -------- |
@@ -91,21 +91,21 @@ export interface LivingWill {
   id: string;
   patientId: string;
   version: string;
-  
+
   status: 'active' | 'revoked' | 'draft';
   createdAt: string;
   updatedAt: string;
   effectiveDate: string;
   revokedAt?: string;
-  
+
   statement: string;
   treatments: LivingWillTreatments;
-  
+
   representative: LivingWillRepresentative;
   alternativeRepresentative?: LivingWillRepresentative;
-  
+
   signature?: LivingWillSignature;
-  
+
   pdpaConsent: LivingWillPDPAConsent;
   auditLog: LivingWillAuditEntry[];
 }
@@ -217,21 +217,19 @@ Add Living Will section at the TOP of PHR tab:
 ```tsx
 const PHRView = ({ phrData, patient }) => {
   const [livingWill, setLivingWill] = useState<LivingWillForDoctor | null>(null);
-  
+
   useEffect(() => {
     loadLivingWill(patient.id);
   }, [patient.id]);
-  
+
   return (
-    <div className="space-y-6">
       {/* Living Will - FIRST SECTION */}
       <LivingWillCard livingWill={livingWill} />
-      
+
       {/* Existing PHR sections... */}
       <PatientDemographicsCard />
       <MedicalHistoryCard />
       {/* etc. */}
-    </div>
   );
 };
 ```
@@ -247,28 +245,28 @@ Add endpoint:
 app.get('/api/patients/:patientId/living-will', authMiddleware, async (req, res) => {
   const { patientId } = req.params;
   const doctorId = req.user.id;
-  
+
   // Check access rights
   const hasAccess = await checkDoctorAccess(doctorId, patientId);
   if (!hasAccess) {
     return res.status(403).json({ error: 'No access to this patient' });
   }
-  
+
   // Load Living Will
   const livingWill = await loadLivingWill(patientId);
-  
+
   // Check sharing consent
   if (!livingWill) {
     return res.json({ exists: false, isShared: false });
   }
-  
+
   if (!livingWill.pdpaConsent.isSharedWithDoctors) {
     return res.json({ exists: true, isShared: false });
   }
-  
+
   // Log access
   await logLivingWillAccess(patientId, doctorId);
-  
+
   // Return Living Will data
   return res.json({
     exists: true,
@@ -373,4 +371,4 @@ Scenarios:
 
 ---
 
-#### End of Implementation Plan
+### End of Implementation Plan

@@ -8,15 +8,15 @@ type ViewMode = 'login' | 'forgot-password' | 'reset-sent';
 export default function LoginPage() {
   const navigate = useNavigate();
   const { login } = useAuth();
-  
+
   // View mode state
   const [viewMode, setViewMode] = useState<ViewMode>('login');
-  
+
   // Form state
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  
+
   // UI state
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -32,7 +32,7 @@ export default function LoginPage() {
     e.preventDefault();
     setError('');
     setLoading(true);
-    
+
     try {
       await login(email, password);
       navigate('/');
@@ -98,9 +98,9 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         {/* Logo and Header */}
         <div className="text-center mb-8">
-          <img 
-            src="/IzaraLogo.png" 
-            alt="Izara" 
+          <img
+            src="/IzaraLogo.png"
+            alt="Izara"
             className="w-20 h-20 mx-auto mb-4 object-contain"
             onError={(e) => {
               (e.target as HTMLImageElement).style.display = 'none';
@@ -135,10 +135,11 @@ export default function LoginPage() {
           {viewMode === 'login' && (
             <form onSubmit={handleLogin} className="space-y-5">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">อีเมล</label>
+                <label htmlFor="login-email" className="block text-sm font-medium text-gray-700 mb-1">อีเมล</label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
+                    id="login-email"
                     type="email"
                     name="email"
                     value={email}
@@ -153,7 +154,7 @@ export default function LoginPage() {
 
               <div>
                 <div className="flex justify-between items-center mb-1">
-                  <label className="block text-sm font-medium text-gray-700">รหัสผ่าน</label>
+                  <label htmlFor="login-password" className="block text-sm font-medium text-gray-700">รหัสผ่าน</label>
                   <button
                     type="button"
                     onClick={switchToForgotPassword}
@@ -165,6 +166,7 @@ export default function LoginPage() {
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
+                    id="login-password"
                     type={showPassword ? 'text' : 'password'}
                     name="password"
                     value={password}
@@ -224,10 +226,11 @@ export default function LoginPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">อีเมล</label>
+                <label htmlFor="forgot-email" className="block text-sm font-medium text-gray-700 mb-1">อีเมล</label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
+                    id="forgot-email"
                     type="email"
                     name="email"
                     value={email}
@@ -270,7 +273,7 @@ export default function LoginPage() {
                 <br />
                 <span className="font-medium text-gray-800">{email}</span>
               </p>
-              
+
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
                 <p className="text-sm text-amber-800">
                   <strong>หมายเหตุ:</strong> ลิงก์จะหมดอายุภายใน 1 ชั่วโมง

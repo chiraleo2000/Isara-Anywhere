@@ -57,8 +57,8 @@ export const GeminiAIStudio: React.FC = () => {
   };
 
   const calculateBMI = () => {
-    const weight = parseFloat(bmiInputs.weight);
-    const height = parseFloat(bmiInputs.height);
+    const weight = Number.parseFloat(bmiInputs.weight);
+    const height = Number.parseFloat(bmiInputs.height);
 
     if (!weight || !height) {
       alert('กรุณากรอกน้ำหนักและส่วนสูง');
@@ -71,8 +71,8 @@ export const GeminiAIStudio: React.FC = () => {
   };
 
   const calculateGFR = () => {
-    const creatinine = parseFloat(gfrInputs.creatinine);
-    const age = parseInt(gfrInputs.age);
+    const creatinine = Number.parseFloat(gfrInputs.creatinine);
+    const age = Number.parseInt(gfrInputs.age, 10);
 
     if (!creatinine || !age) {
       alert('กรุณากรอกข้อมูลให้ครบถ้วน');

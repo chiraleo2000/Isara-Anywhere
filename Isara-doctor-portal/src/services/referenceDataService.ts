@@ -16,7 +16,7 @@
  * - Clinical guidelines
  */
 
-import { DrugInfo, LabTest } from '../types';
+// DrugInfo and LabTest types are defined locally for better type safety
 import {
   fetchMedications,
   fetchLabTests,
@@ -106,7 +106,7 @@ class ReferenceDataService {
   private drugInteractionsCache: DrugInteraction[] | null = null;
   private referenceRangesCache: ReferenceRange[] | null = null;
 
-  private constructor() {}
+  private constructor() { }
 
   static getInstance(): ReferenceDataService {
     if (!ReferenceDataService.instance) {
@@ -229,9 +229,9 @@ class ReferenceDataService {
             (int.drug1Id === drug1.id && int.drug2Id === drug2.id) ||
             (int.drug1Id === drug2.id && int.drug2Id === drug1.id) ||
             (int.drug1Name?.toLowerCase() === drug1.genericName.toLowerCase() &&
-             int.drug2Name?.toLowerCase() === drug2.genericName.toLowerCase()) ||
+              int.drug2Name?.toLowerCase() === drug2.genericName.toLowerCase()) ||
             (int.drug1Name?.toLowerCase() === drug2.genericName.toLowerCase() &&
-             int.drug2Name?.toLowerCase() === drug1.genericName.toLowerCase())
+              int.drug2Name?.toLowerCase() === drug1.genericName.toLowerCase())
         );
 
         if (interaction) {
@@ -417,7 +417,7 @@ class ReferenceDataService {
       code.code.toLowerCase().includes(lowerQuery) ||
       code.description.toLowerCase().includes(lowerQuery) ||
       code.category.toLowerCase().includes(lowerQuery) ||
-      (code.keywords && code.keywords.some(k => k.toLowerCase().includes(lowerQuery)))
+      code.keywords?.some(k => k.toLowerCase().includes(lowerQuery))
     ).slice(0, 50); // Limit results
   }
 

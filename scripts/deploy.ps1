@@ -57,20 +57,20 @@
 #>
 
 param(
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [ValidateSet("local", "cloud", "all", "test")]
     [string]$Target = "local",
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$Fresh,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$SkipTests,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$VerboseOutput,
     
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$Help
 )
 
@@ -87,12 +87,10 @@ Write-Verbose "Project Root: $ProjectRoot"
 # GCP Configuration
 $GCP_PROJECT = "izara-telemedicine"
 $GCP_REGION = "asia-southeast1"
-$ARTIFACT_REGISTRY = "$GCP_REGION-docker.pkg.dev/$GCP_PROJECT/isara-anywhere-portals"
 # NOTE: No Cloud SQL - PostgreSQL runs as Docker service alongside portals
-$VERSION = "1.4.5"
+$VERSION = "1.4.8"
 
 # Local Docker Configuration
-$LOCAL_POSTGRES_PORT = 5433
 $PATIENT_PORTAL_PORT = 3005
 $DOCTOR_PORTAL_PORT = 3010
 $PGADMIN_PORT = 5050
@@ -130,7 +128,8 @@ function Wait-ForService {
                 Write-Success "$ServiceName is ready!"
                 return $true
             }
-        } catch {
+        }
+        catch {
             # Continue waiting
         }
         
@@ -147,13 +146,15 @@ function Wait-ForService {
 function Test-LocalPostgres {
     Write-Info "Checking local PostgreSQL connection..."
     try {
-        $env:PGPASSWORD = "P@ssw0rd"
-        $result = docker exec izara-postgres psql -U postgres -d izara_phase1 -c "SELECT 1" 2>$null
+        # Use environment variable or default for local development
+        $env:PGPASSWORD = $env:DB_PASSWORD ?? $env:POSTGRES_PASSWORD ?? "P@ssw0rd"
+        $null = docker exec izara-postgres psql -U postgres -d izara_phase1 -c "SELECT 1" 2>$null
         if ($LASTEXITCODE -eq 0) {
             Write-Success "PostgreSQL is running and accessible"
             return $true
         }
-    } catch {
+    }
+    catch {
         # Continue
     }
     return $false
@@ -178,8 +179,7 @@ function Initialize-LocalDatabase {
     }
     
     Write-Info "Running database initialization script..."
-    $sqlContent = Get-Content $initSqlPath -Raw
-    docker exec -i izara-postgres psql -U postgres -d izara_phase1 -f - 2>&1 | Out-Null
+    Get-Content $initSqlPath -Raw | docker exec -i izara-postgres psql -U postgres -d izara_phase1 -f - 2>&1 | Out-Null
     
     # Verify tables exist
     $tableCount = docker exec izara-postgres psql -U postgres -d izara_phase1 -t -c "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public'" 2>$null
@@ -187,7 +187,8 @@ function Initialize-LocalDatabase {
     if ($tableCount -gt 0) {
         Write-Success "Database initialized with $($tableCount.Trim()) tables"
         return $true
-    } else {
+    }
+    else {
         Write-Warning "Database may not have been fully initialized"
         return $false
     }
@@ -210,7 +211,7 @@ function Deploy-Local {
         return $false
     }
     
-    $dockerInfo = docker info 2>&1
+    $null = docker info 2>&1
     if ($LASTEXITCODE -ne 0) {
         Write-Error "Docker daemon is not running. Please start Docker Desktop."
         return $false
@@ -227,7 +228,8 @@ function Deploy-Local {
         docker-compose down -v --remove-orphans 2>$null
         docker system prune -f 2>$null
         Write-Success "Cleanup complete"
-    } else {
+    }
+    else {
         Write-Step "1" "Stopping existing containers..."
         docker-compose down 2>$null
     }
@@ -242,7 +244,8 @@ function Deploy-Local {
             Write-Warning "Please edit .env.docker with your actual API keys!"
             Write-Host "Press any key to continue after updating .env.docker..." -ForegroundColor Yellow
             $null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')
-        } else {
+        }
+        else {
             Write-Error ".env.docker.example not found. Cannot proceed."
             return $false
         }
@@ -292,7 +295,8 @@ function Deploy-Local {
     # Initialize database if fresh or if tables don't exist
     if ($Fresh) {
         Initialize-LocalDatabase -Fresh $true
-    } else {
+    }
+    else {
         # Check if database needs initialization
         $tableCount = docker exec izara-postgres psql -U postgres -d izara_phase1 -t -c "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public'" 2>$null
         if ([int]$tableCount.Trim() -lt 5) {
@@ -352,11 +356,13 @@ function Test-LocalDeployment {
             if ($response.StatusCode -eq 200) {
                 Write-Success "$($test.Name): PASS"
                 $passed++
-            } else {
+            }
+            else {
                 Write-Warning "$($test.Name): Status $($response.StatusCode)"
                 $failed++
             }
-        } catch {
+        }
+        catch {
             Write-Error "$($test.Name): FAIL - $($_.Exception.Message)"
             $failed++
         }
@@ -402,10 +408,12 @@ function Deploy-Cloud {
         $confirm = Read-Host
         if ($confirm -ne "y" -and $confirm -ne "Y") {
             Write-Info "Skipping database reset"
-        } else {
+        }
+        else {
             Initialize-PostgresDatabase
         }
-    } else {
+    }
+    else {
         Write-Step "2" "Updating cloud deployment with latest code..."
         Write-Info "Building new container images with version $VERSION"
     }
@@ -516,7 +524,8 @@ function Deploy-Cloud {
     if ($LASTEXITCODE -ne 0) {
         Write-Warning "PostgreSQL deployment failed - continuing..."
         Write-Host $buildResult -ForegroundColor Yellow
-    } else {
+    }
+    else {
         Write-Success "PostgreSQL deployed successfully"
     }
     
@@ -528,7 +537,8 @@ function Deploy-Cloud {
     if ($LASTEXITCODE -ne 0) {
         Write-Warning "pgAdmin deployment failed - continuing..."
         Write-Host $buildResult -ForegroundColor Yellow
-    } else {
+    }
+    else {
         Write-Success "pgAdmin deployed successfully"
     }
     
@@ -547,13 +557,15 @@ function Deploy-Cloud {
     
     if (-not (Test-Path "cloudbuild.yaml")) {
         Write-Warning "cloudbuild.yaml not found - skipping Jitsi deployment"
-    } else {
+    }
+    else {
         $buildResult = gcloud builds submit --config=cloudbuild.yaml 2>&1
         
         if ($LASTEXITCODE -ne 0) {
             Write-Warning "Jitsi Meeting Server deployment failed - continuing..."
             Write-Host $buildResult -ForegroundColor Yellow
-        } else {
+        }
+        else {
             Write-Success "Jitsi Meeting Server deployed successfully"
         }
     }
@@ -605,7 +617,8 @@ function Deploy-Cloud {
     Write-Host "  📋 Next Steps:" -ForegroundColor Magenta
     if ($Fresh) {
         Write-Host "  1. Database has been initialized with seed data" -ForegroundColor White
-    } else {
+    }
+    else {
         Write-Host "  1. Seed database: node scripts/seed-cloud-db.cjs" -ForegroundColor White
     }
     Write-Host "  2. Test health: .\scripts\deploy.ps1 -Target test" -ForegroundColor White
@@ -630,16 +643,18 @@ function Initialize-PostgresDatabase {
     
     try {
         # Connect to PostgreSQL Docker container
-        $result = docker exec -i izara-postgres psql -U postgres -d izara_phase1 -f /docker-entrypoint-initdb.d/izara-database.sql 2>&1
+        $null = docker exec -i izara-postgres psql -U postgres -d izara_phase1 -f /docker-entrypoint-initdb.d/izara-database.sql 2>&1
         
         if ($LASTEXITCODE -eq 0) {
             Write-Success "PostgreSQL database initialized successfully"
             return $true
-        } else {
+        }
+        else {
             Write-Warning "Database may already be initialized. Continuing..."
             return $true
         }
-    } catch {
+    }
+    catch {
         Write-Error "Failed to initialize PostgreSQL: $_"
         return $false
     }
@@ -682,22 +697,26 @@ function Test-CloudDeployment {
                 if ($response.StatusCode -eq 200) {
                     if ($retry -eq 1) {
                         Write-Success "$($test.Name): PASS"
-                    } else {
+                    }
+                    else {
                         Write-Success "$($test.Name): PASS (after $retry retries)"
                     }
                     $passed++
                     $success = $true
                     break
-                } else {
+                }
+                else {
                     Write-Warning "$($test.Name): Status $($response.StatusCode)"
                 }
-            } catch {
+            }
+            catch {
                 if ($retry -eq $maxRetries) {
                     Write-Error "$($test.Name): FAIL - $($_.Exception.Message)"
                     # Provide helper command based on the failed service
                     if ($test.Url -match "doctor") {
                         Write-Warning "Check logs with: gcloud run services logs read izara-doctor-portal --region=asia-southeast1 --limit=50"
-                    } elseif ($test.Url -match "patient") {
+                    }
+                    elseif ($test.Url -match "patient") {
                         Write-Warning "Check logs with: gcloud run services logs read izara-patient-portal --region=asia-southeast1 --limit=50"
                     }
                 }
@@ -748,7 +767,8 @@ switch ($Target) {
             Write-Warning "Local deployment failed. Skipping cloud deployment."
             Write-Host "`nTo deploy only to cloud, run: .\scripts\deploy.ps1 -Target cloud" -ForegroundColor Yellow
             $success = $false
-        } else {
+        }
+        else {
             $cloudSuccess = Deploy-Cloud -Fresh $Fresh.IsPresent
             $success = $localSuccess -and $cloudSuccess
         }
@@ -756,15 +776,17 @@ switch ($Target) {
     "test" {
         Write-Info "Running tests only (no deployment)..."
         if (Test-Command "docker") {
-            $dockerRunning = docker ps 2>&1
+            $null = docker ps 2>&1
             if ($LASTEXITCODE -eq 0) {
                 Test-LocalDeployment
                 $success = $true
-            } else {
+            }
+            else {
                 Write-Error "Docker is not running. Cannot run tests."
                 $success = $false
             }
-        } else {
+        }
+        else {
             Write-Error "Docker is not installed. Cannot run tests."
             $success = $false
         }
@@ -782,7 +804,8 @@ if ($success) {
     Write-Host "  Get help:         .\scripts\deploy.ps1 -Help" -ForegroundColor Gray
     Write-Host ""
     exit 0
-} else {
+}
+else {
     Write-Host "`n❌ Deployment completed with errors" -ForegroundColor Red
     Write-Host ""
     Write-Host "Troubleshooting:" -ForegroundColor Yellow

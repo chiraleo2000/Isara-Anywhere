@@ -8,18 +8,17 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { PatientRecord, User, ConsentRecord } from '../types';
+import { PatientRecord, User } from '../types';
 import { patientDataService } from '../services/patientDataService';
 // PostgreSQL-backed API service - NO GCS!
 import { fetchAllAppointments } from '../services/apiDataService';
-import config, { isFeatureEnabled } from '../services/config';
+import { isFeatureEnabled } from '../services/config';
 import { useResponsive } from '../hooks/useResponsive';
 import { Card, ResponsiveGrid, ResponsiveContainer } from '../components/common/ResponsiveLayout';
 import {
   ClipboardDocumentListIcon,
   ClockIcon,
   CheckCircleIcon,
-  PlusIcon,
 } from '../assets/NewSvgIcons';
 
 // ============================================================================
@@ -57,11 +56,10 @@ const ConsentBadge: React.FC<ConsentBadgeProps> = ({ hasConsent, onClick }) => {
   return (
     <button
       onClick={onClick}
-      className={`px-2 py-1 rounded-full text-xs font-medium ${
-        hasConsent
-          ? 'bg-green-100 text-green-700'
-          : 'bg-red-100 text-red-700'
-      }`}
+      className={`px-2 py-1 rounded-full text-xs font-medium ${hasConsent
+        ? 'bg-green-100 text-green-700'
+        : 'bg-red-100 text-red-700'
+        }`}
     >
       {hasConsent ? '✓ Consent' : '✗ No Consent'}
     </button>
@@ -249,7 +247,12 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, doctor, onClick, onS
           </div>
 
           {/* Consent Badge */}
-          <div className="mt-2" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="mt-2"
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.key === 'Enter' && e.stopPropagation()}
+            role="presentation"
+          >
             <ConsentBadge
               hasConsent={patient.consentStatus.hasConsent}
               onClick={onShowConsent}
@@ -271,9 +274,9 @@ export const PatientManagement: React.FC<PatientManagementProps> = ({
   onCreateEMR,
   onCreatePrescription,
 }) => {
-  const { isMobile } = useResponsive();
+  useResponsive(); // Hook for responsive behavior
   const [searchParams] = useSearchParams();
-  
+
   // Get category filter from URL (from Health Studio buttons)
   const categoryFromUrl = searchParams.get('category');
 
@@ -312,7 +315,7 @@ export const PatientManagement: React.FC<PatientManagementProps> = ({
   const loadPatients = async () => {
     try {
       setLoading(true);
-      
+
       // Load both patients and appointments
       const [allPatients, allAppointments] = await Promise.all([
         patientDataService.getAllPatients(),
@@ -321,9 +324,9 @@ export const PatientManagement: React.FC<PatientManagementProps> = ({
 
       // Filter appointments for this doctor
       const doctorAppointments = allAppointments.filter((apt: any) => {
-        return apt.doctorId === doctor.id || 
-               apt.assignedDoctorId === doctor.id ||
-               apt.adminAssignedDoctorId === doctor.id;
+        return apt.doctorId === doctor.id ||
+          apt.assignedDoctorId === doctor.id ||
+          apt.adminAssignedDoctorId === doctor.id;
       });
 
       console.log('[PatientManagement] Doctor appointments:', doctorAppointments.length);
@@ -490,7 +493,7 @@ export const PatientManagement: React.FC<PatientManagementProps> = ({
                 <input
                   type="number"
                   value={filters.ageMin || ''}
-                  onChange={(e) => setFilters({ ...filters, ageMin: parseInt(e.target.value) || undefined })}
+                  onChange={(e) => setFilters({ ...filters, ageMin: Number.parseInt(e.target.value, 10) || undefined })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
                   placeholder="Min age"
                 />
@@ -501,7 +504,7 @@ export const PatientManagement: React.FC<PatientManagementProps> = ({
                 <input
                   type="number"
                   value={filters.ageMax || ''}
-                  onChange={(e) => setFilters({ ...filters, ageMax: parseInt(e.target.value) || undefined })}
+                  onChange={(e) => setFilters({ ...filters, ageMax: Number.parseInt(e.target.value, 10) || undefined })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
                   placeholder="Max age"
                 />
@@ -528,11 +531,10 @@ export const PatientManagement: React.FC<PatientManagementProps> = ({
               <button
                 key={cat.id}
                 onClick={() => setActiveCategory(cat.id)}
-                className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all ${
-                  activeCategory === cat.id
-                    ? 'bg-teal-600 text-white shadow-md'
-                    : 'bg-white text-teal-700 border border-teal-300 hover:bg-teal-100'
-                }`}
+                className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all ${activeCategory === cat.id
+                  ? 'bg-teal-600 text-white shadow-md'
+                  : 'bg-white text-teal-700 border border-teal-300 hover:bg-teal-100'
+                  }`}
               >
                 {cat.icon} {cat.label}
               </button>

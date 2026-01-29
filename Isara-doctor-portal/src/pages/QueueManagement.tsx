@@ -84,7 +84,7 @@ export const QueueManagement: React.FC<QueueManagementProps> = ({
       queuePatients.sort((a, b) => {
         const timeA = String(a.appointmentTime).replace(':', '');
         const timeB = String(b.appointmentTime).replace(':', '');
-        return parseInt(timeA) - parseInt(timeB);
+        return Number.parseInt(timeA, 10) - Number.parseInt(timeB, 10);
       });
       
       setQueue(queuePatients);

@@ -24,7 +24,6 @@ import {
   fetchAllAppointments,
   fetchAppointmentById,
   saveAppointment,
-  deleteAppointment,
   fetchMeetingLink,
   saveMeetingLink,
   deleteMeetingLink,
@@ -42,7 +41,7 @@ import {
 class AppointmentService {
   private static instance: AppointmentService;
 
-  private constructor() {}
+  private constructor() { }
 
   static getInstance(): AppointmentService {
     if (!AppointmentService.instance) {
@@ -156,12 +155,16 @@ class AppointmentService {
   async createAppointment(
     appointmentData: Partial<Appointment>
   ): Promise<GCSWriteResult> {
+    if (!appointmentData.user) {
+      return { success: false, error: 'User is required to create an appointment' };
+    }
+
     const appointmentId = `apt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
     const appointment: Appointment = {
       id: appointmentId,
-      user: appointmentData.user!,
-      patientId: appointmentData.patientId || appointmentData.user?.id,
+      user: appointmentData.user,
+      patientId: appointmentData.patientId || appointmentData.user.id,
       doctorId: appointmentData.doctorId,
       doctor: appointmentData.doctor,
       date: appointmentData.date || new Date(),

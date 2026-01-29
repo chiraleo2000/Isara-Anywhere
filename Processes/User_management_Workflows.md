@@ -114,14 +114,14 @@ interface DoctorUser {
   role: 'doctor' | 'admin';
   doctorId: string;                // Same as id
   medicalLicenseNumber: string;    // Format: MD-123456
-  
+
   // Status Fields
   isAdmin: boolean;                // Admin privileges flag
   isActive: boolean;               // Account active/deactivated
   isApproved: boolean;             // Approval status
   approvalStatus: 'pending' | 'approved' | 'rejected';
   emailVerified: boolean;
-  
+
   // Profile Data
   name: string;
   nameThai?: string;
@@ -133,15 +133,15 @@ interface DoctorUser {
   hospital?: string;
   qualifications?: string[];
   experience?: string;
-  
+
   // Security
   loginAttempts: number;           // Failed login count
   lockedUntil: string | null;      // ISO timestamp when locked
   lastLogin: string | null;
-  
+
   // Admin Specific
   adminPrivileges?: AdminPrivileges;
-  
+
   // Timestamps
   createdAt: string;
   updatedAt: string;
@@ -150,7 +150,7 @@ interface DoctorUser {
   rejectedAt?: string;
   rejectedBy?: string;
   rejectionReason?: string;
-  
+
   // Preferences
   preferences: {
     theme: 'light' | 'dark' | 'system';
@@ -722,10 +722,10 @@ emailService.sendPasswordResetEmail(email, resetToken, userName)
 
 | Portal | Email | Password | Role |
 | -------- | ------- | ---------- | ------ |
-| Doctor | `admin.test@izara.com` | `P@ssw0rd` | Admin |
-| Doctor | `doctor.test@izara.com` | `P@ssw0rd` | Doctor |
-| Patient | `patient.test@izara.com` | `P@ssw0rd` | Patient |
-| Patient | `demo.test@gmail.com` | `P@ssw0rd` | Patient (auto-created) |
+| Doctor | `admin.test@izara.com` | `YOUR_TEST_PASSWORD` | Admin |
+| Doctor | `doctor.test@izara.com` | `YOUR_TEST_PASSWORD` | Doctor |
+| Patient | `patient.test@izara.com` | `YOUR_TEST_PASSWORD` | Patient |
+| Patient | `demo.test@gmail.com` | `YOUR_TEST_PASSWORD` | Patient (auto-created) |
 
 ### 9.2 Seeding Data
 
@@ -768,7 +768,7 @@ node seedAllData.cjs
 // Add to authServer.cjs
 app.post('/admin/update-role', async (req, res) => {
   const { userId, adminId, role, isAdmin } = req.body;
-  
+
   // 1. Verify admin permissions
   // 2. Fetch user credential
   // 3. Update role and isAdmin flag
@@ -813,4 +813,4 @@ app.post('/admin/update-role', async (req, res) => {
 
 ---
 
-#### This workflow document covers all user management scenarios for the Izara Telemedicine platform. Developers and AI agents should reference this for implementing and maintaining user-related features.
+### This workflow document covers all user management scenarios for the Izara Telemedicine platform. Developers and AI agents should reference this for implementing and maintaining user-related features

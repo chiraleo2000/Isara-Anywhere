@@ -531,8 +531,8 @@ interface DoctorAvailability {
 | `VITE_GOOGLE_CLIENT_ID` | OAuth client ID | xxx.apps.googleusercontent.com |
 | `VITE_GCS_BUCKET_PATIENT` | Patient data bucket | izara-patients-data |
 | `VITE_GCS_BUCKET_APPOINTMENTS` | Appointments bucket | izara-appointments |
-| `VITE_GOOGLE_CALENDAR_API_KEY` | Calendar API key | AIzaSy... |
-| `VITE_GOOGLE_MAPS_API_KEY` | Maps API key | AIzaSy... |
+| `VITE_GOOGLE_CALENDAR_API_KEY` | Calendar API key | `YOUR_GOOGLE_CALENDAR_API_KEY` |
+| `VITE_GOOGLE_MAPS_API_KEY` | Maps API key | `YOUR_GOOGLE_MAPS_API_KEY` |
 
 ### Backend Variables (server-side only)
 
@@ -619,3 +619,4 @@ MIT License - See LICENSE file
 ---
 
 **Izara Telemedicine Platform** - Empowering patients with AI-driven healthcare access 🏥
+

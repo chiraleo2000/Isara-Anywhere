@@ -6,7 +6,7 @@ import { aiClinicalService, type CopilotMessage, type CopilotContext } from './a
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 const GEMINI_MODEL = import.meta.env.VITE_GEMINI_MODEL || 'gemini-2.5-flash-lite';
-const genAI = (GEMINI_API_KEY && GEMINI_API_KEY.startsWith('AIza')) ? new GoogleGenerativeAI(GEMINI_API_KEY) : null;
+const genAI = GEMINI_API_KEY?.startsWith('AIza') ? new GoogleGenerativeAI(GEMINI_API_KEY) : null;
 
 // Log initialization status
 if (genAI) {
@@ -156,14 +156,14 @@ export class DoctorSpecificAIService {
 
     const loadVoices = () => {
       const voices = window.speechSynthesis.getVoices();
-      
+
       if (voices.length === 0) {
         console.warn('⚠️ No voices available yet');
         return;
       }
 
       console.log(`🔢 Available voices: ${voices.length}`);
-      
+
       const thaiVoice = this.findBestThaiVoice(voices);
       if (thaiVoice) {
         this.selectedVoice = thaiVoice;
@@ -218,7 +218,7 @@ export class DoctorSpecificAIService {
     appointmentId: string
   ): Promise<string> {
     this.doctor = DOCTOR_PERSONALITIES[doctorId] || DOCTOR_PERSONALITIES['doc1'];
-    
+
     this.context = {
       doctorId,
       patientInfo,
@@ -235,7 +235,7 @@ export class DoctorSpecificAIService {
 
     const systemPrompt = this.buildDoctorPrompt();
     const greeting = await this.generateGreeting(systemPrompt);
-    
+
     this.conversationHistory.push({
       role: 'assistant',
       content: greeting,
@@ -291,7 +291,7 @@ ${this.context.patientInfo.medicalHistory ? `- ประวัติ: ${this.con
     }
 
     try {
-      const model = genAI.getGenerativeModel({ 
+      const model = genAI.getGenerativeModel({
         model: "gemini-2.5-flash-lite",
         generationConfig: {
           temperature: 0.8,
@@ -299,18 +299,18 @@ ${this.context.patientInfo.medicalHistory ? `- ประวัติ: ${this.con
           topP: 0.9,
         }
       });
-      
+
       const prompt = `${systemPrompt}\n\nโปรดทักทายผู้ป่วยและเริ่มการปรึกษา (ตอบสั้น ๆ ไม่เกิน 2 ประโยค)`;
-      
+
       const result = await model.generateContent(prompt);
-      const response = await result.response;
+      const response = result.response;
       return response.text();
     } catch (error) {
       console.error('Error generating greeting:', error);
       return `สวัสดีครับคุณ${this.context?.patientInfo.name} ยินดีต้อนรับสู่การปรึกษาทางไกล`;
     }
   }
-  
+
   async sendMessage(userMessage: string): Promise<string> {
     if (!genAI) {
       console.error('❌ Gemini AI not initialized');
@@ -333,7 +333,7 @@ ${this.context.patientInfo.medicalHistory ? `- ประวัติ: ${this.con
     console.log(`📨 User message received (${this.conversationHistory.length} total messages)`);
 
     try {
-      const model = genAI.getGenerativeModel({ 
+      const model = genAI.getGenerativeModel({
         model: "gemini-2.5-flash-lite",
         generationConfig: {
           temperature: 0.7,
@@ -342,7 +342,7 @@ ${this.context.patientInfo.medicalHistory ? `- ประวัติ: ${this.con
           topK: 40
         }
       });
-      
+
       const systemPrompt = this.buildDoctorPrompt();
       const recentMessages = this.conversationHistory.slice(-6); // Last 3 exchanges
       const conversationText = recentMessages
@@ -359,12 +359,12 @@ ${conversationText}
 ตอบคำถามล่าสุดของผู้ป่วย:`;
 
       const result = await model.generateContent(prompt);
-      
-      if (!result || !result.response) {
+
+      if (!result?.response) {
         throw new Error('No response from Gemini AI');
       }
-      
-      const response = await result.response;
+
+      const response = result.response;
       const aiMessage = response.text();
 
       if (!aiMessage || aiMessage.trim() === '') {
@@ -381,7 +381,7 @@ ${conversationText}
 
       console.log(`✅ AI response generated (${this.conversationHistory.length} total messages)`);
       return aiMessage;
-      
+
     } catch (error: any) {
       console.error('❌ AI Doctor error:', error);
       throw new Error(`❌ AI Error: ${error.message || 'Unknown error'}`);
@@ -397,7 +397,7 @@ ${conversationText}
     this.stopSpeaking();
 
     const utterance = new SpeechSynthesisUtterance(text);
-    
+
     if (this.selectedVoice) {
       utterance.voice = this.selectedVoice;
       utterance.lang = this.selectedVoice.lang;
@@ -406,8 +406,8 @@ ${conversationText}
     }
 
     utterance.rate = 0.95;
-    utterance.pitch = 1.0;
-    utterance.volume = 1.0;
+    utterance.pitch = 1;
+    utterance.volume = 1;
 
     this.currentUtterance = utterance;
 
@@ -454,7 +454,7 @@ ${conversationText}
   startSpeechRecognition(onTranscript: (transcript: string, isFinal: boolean) => void): boolean {
     try {
       const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-      
+
       if (!SpeechRecognition) {
         console.error('Speech Recognition not supported');
         return false;
@@ -549,14 +549,14 @@ ${conversationText}
     }
 
     try {
-      const model = genAI.getGenerativeModel({ 
+      const model = genAI.getGenerativeModel({
         model: "gemini-2.5-flash-lite",
         generationConfig: {
           temperature: 0.3, // Lower temperature for more consistent medical reports
           maxOutputTokens: 2000,
         }
       });
-      
+
       // Build complete conversation transcript
       const conversationText = this.conversationHistory
         .map(msg => `${msg.speakerName || msg.role}: ${msg.content}`)
@@ -611,12 +611,12 @@ ${conversationText}
       console.log('🤖 Sending to Gemini for analysis...');
 
       const result = await model.generateContent(prompt);
-      const response = await result.response;
+      const response = result.response;
       const text = response.text()
-        .replace(/```json\n?/g, "")
-        .replace(/```\n?/g, "")
+        .replaceAll(/```json\n?/g, "")
+        .replaceAll(/```\n?/g, "")
         .trim();
-      
+
       console.log('📥 Received AI analysis response');
 
       const report = JSON.parse(text);
@@ -651,7 +651,7 @@ ${conversationText}
    */
   private calculateFollowUpDays(report: any): number {
     const text = JSON.stringify(report).toLowerCase();
-    
+
     // Check for severity keywords
     if (text.includes('รุนแรง') || text.includes('เร่งด่วน') || text.includes('ฉุกเฉิน')) {
       return 2; // 2 days for urgent cases
@@ -662,12 +662,12 @@ ${conversationText}
     if (text.includes('ติดตามใกล้ชิด') || text.includes('สังเกตอาการ')) {
       return 5; // 5 days for moderate
     }
-    
+
     // Check prescriptions
     if (report.prescriptions && report.prescriptions.length > 0) {
       return 7; // 7 days if prescribed medication
     }
-    
+
     // Default follow-up
     return 14; // 2 weeks for routine follow-up
   }
@@ -747,11 +747,16 @@ export class EnhancedMeetingService {
   private currentSession: LiveMeetingSession | null = null;
   private patientConnection: PatientConnectionState | null = null;
   private copilotContext: CopilotContext | null = null;
+  private initialized = false;
 
-  constructor() {
-    import('./externalServices').then(module => {
-      this.googleMeetService = module.googleMeetService;
-    });
+  /**
+   * Lazy initialization of external services
+   */
+  private async ensureInitialized(): Promise<void> {
+    if (this.initialized) return;
+    const module = await import('./externalServices');
+    this.googleMeetService = module.googleMeetService;
+    this.initialized = true;
   }
 
   // ----------------------------------------------------------------------------
@@ -835,7 +840,7 @@ export class EnhancedMeetingService {
    * Handle patient disconnection
    */
   async onPatientDisconnected(patientId: string): Promise<void> {
-    if (this.patientConnection && this.patientConnection.patientId === patientId) {
+    if (this.patientConnection?.patientId === patientId) {
       this.patientConnection.connectionStatus = 'disconnected';
       this.patientConnection.webRTCReady = false;
 
@@ -1015,11 +1020,13 @@ export class EnhancedMeetingService {
   // GOOGLE MEET INTEGRATION
   // ----------------------------------------------------------------------------
 
-  isConfigured(): boolean {
+  async isConfigured(): Promise<boolean> {
+    await this.ensureInitialized();
     return this.googleMeetService?.isConfigured() || false;
   }
 
-  getStatus() {
+  async getStatus() {
+    await this.ensureInitialized();
     return this.googleMeetService?.getStatus() || {
       configured: false,
       initialized: false,
@@ -1029,6 +1036,7 @@ export class EnhancedMeetingService {
   }
 
   async autoAuthorize(): Promise<boolean> {
+    await this.ensureInitialized();
     if (!this.googleMeetService) return false;
     try {
       await this.googleMeetService.authorize();
@@ -1039,6 +1047,7 @@ export class EnhancedMeetingService {
   }
 
   async createMeetingWithAutoAuth(data: any) {
+    await this.ensureInitialized();
     if (!this.googleMeetService) {
       throw new Error('Google Meet service not initialized');
     }
@@ -1049,7 +1058,7 @@ export class EnhancedMeetingService {
 export const enhancedMeetingService = new EnhancedMeetingService();
 
 export const areGoogleApisReady = (): boolean => {
-  return !!(window as any).google && 
-         !!(window as any).gapi && 
-         !!(window as any).gapi.client;
+  return !!(window as any).google &&
+    !!(window as any).gapi &&
+    !!(window as any).gapi.client;
 };

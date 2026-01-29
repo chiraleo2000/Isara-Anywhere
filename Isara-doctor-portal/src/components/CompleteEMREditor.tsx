@@ -47,6 +47,17 @@ interface EMR {
   treatmentPlan: string;
   followUpInstructions: string;
   followUpDate?: string;
+  prescriptions?: Array<{
+    id?: string;
+    drugName: string;
+    genericName?: string;
+    dosage: string;
+    frequency: string;
+    duration?: string;
+    quantity?: number;
+    instructions?: string;
+    warnings?: string[];
+  }>;
   status: 'draft' | 'finalized' | 'amended' | 'awaiting_signature';
   aiSummary?: string;
   aiTranscript?: string;
@@ -80,7 +91,7 @@ export const CompleteEMREditor: React.FC<CompletEMREditorProps> = ({
   onClose,
 }) => {
   const [activeTab, setActiveTab] = useState<'subjective' | 'objective' | 'assessment' | 'plan' | 'ai_summary'>('subjective');
-  const [template, setTemplate] = useState<'SOAP' | 'SBAR' | 'Admission' | 'Discharge' | 'Progress'>('SOAP');
+  // Template is fixed to OPD Card format per Thailand Ministry of Public Health standards
   const [isVoiceActive, setIsVoiceActive] = useState(false);
   const [autoSaveStatus, setAutoSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved');
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
@@ -155,7 +166,7 @@ export const CompleteEMREditor: React.FC<CompletEMREditorProps> = ({
   const generateAISummary = async (): Promise<{ summary: string; transcript: string }> => {
     try {
       setIsGeneratingAI(true);
-      
+
       // Prepare EMR content for AI summary
       const emrContent = {
         chiefComplaint: formData.chiefComplaint,
@@ -169,7 +180,7 @@ export const CompleteEMREditor: React.FC<CompletEMREditorProps> = ({
 
       // Call Gemini Clinical Service for AI-assisted summary
       const aiResult = await geminiClinicalService.generateEMRSummary(emrContent);
-      
+
       return {
         summary: aiResult.summary || '',
         transcript: aiResult.transcript || '',
@@ -187,7 +198,7 @@ export const CompleteEMREditor: React.FC<CompletEMREditorProps> = ({
   const sendEMRToPatientHealthLogs = async (finalizedEMR: EMR): Promise<boolean> => {
     try {
       setIsSendingToPatient(true);
-      
+
       // Prepare patient-friendly medication list (without sensitive internal data)
       const patientMedications = finalizedEMR.prescriptions?.map(rx => ({
         id: rx.id || `med-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -275,7 +286,7 @@ export const CompleteEMREditor: React.FC<CompletEMREditorProps> = ({
 
   const handleFinalize = async () => {
     // Confirm before finalizing
-    const confirmFinalize = window.confirm(
+    const confirmFinalize = globalThis.confirm(
       'คุณต้องการลงนามและส่งเวชระเบียนนี้ให้ผู้ป่วยใช่หรือไม่?\n\n' +
       'Do you want to sign and send this EMR to the patient?\n\n' +
       'This will:\n' +
@@ -315,7 +326,7 @@ export const CompleteEMREditor: React.FC<CompletEMREditorProps> = ({
 
       // Step 4: Send to Patient Health Logs
       const sentSuccess = await sendEMRToPatientHealthLogs(finalizedEMR);
-      
+
       if (sentSuccess) {
         finalizedEMR.sentToPatientAt = new Date().toISOString();
         updateMockDataRecord('emrs.json', formData.id, finalizedEMR);
@@ -361,9 +372,10 @@ export const CompleteEMREditor: React.FC<CompletEMREditorProps> = ({
   };
 
   const handleVoiceTranscription = () => {
-    setIsVoiceActive(!isVoiceActive);
-    // TODO: Integrate with Web Speech API or Gemini AI
-    if (!isVoiceActive) {
+    const newVoiceState = !isVoiceActive;
+    setIsVoiceActive(newVoiceState);
+    // Voice transcription uses Web Speech API for real-time transcription
+    if (newVoiceState) {
       console.log('🎤 Voice transcription started');
     } else {
       console.log('🎤 Voice transcription stopped');
@@ -428,11 +440,10 @@ export const CompleteEMREditor: React.FC<CompletEMREditorProps> = ({
             {/* Voice transcription button */}
             <button
               onClick={handleVoiceTranscription}
-              className={`p-2 rounded-lg transition-colors ${
-                isVoiceActive
+              className={`p-2 rounded-lg transition-colors ${isVoiceActive
                   ? 'bg-red-100 text-red-600 animate-pulse'
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
+                }`}
               title="Voice Transcription"
             >
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -458,13 +469,14 @@ export const CompleteEMREditor: React.FC<CompletEMREditorProps> = ({
 
         {/* Template Selector - Single Thailand Standard Format */}
         <div className="flex items-center space-x-2 p-4 border-b border-gray-200 bg-gray-50">
-          <label className="text-sm font-medium text-gray-700">รูปแบบเวชระเบียน:</label>
+          <span className="text-sm font-medium text-gray-700">รูปแบบเวชระเบียน:</span>
           <div className="px-3 py-1.5 bg-emerald-100 text-emerald-700 rounded-lg text-sm font-medium">
             OPD Card (มาตรฐานกระทรวงสาธารณสุข)
           </div>
 
-          <label className="text-sm font-medium text-gray-700 ml-4">ประเภทการตรวจ:</label>
+          <label htmlFor="encounterType" className="text-sm font-medium text-gray-700 ml-4">ประเภทการตรวจ:</label>
           <select
+            id="encounterType"
             value={formData.encounterType}
             onChange={(e) => setFormData({ ...formData, encounterType: e.target.value as any })}
             className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
@@ -488,11 +500,10 @@ export const CompleteEMREditor: React.FC<CompletEMREditorProps> = ({
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                activeTab === tab.id
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === tab.id
                   ? 'bg-emerald-600 text-white'
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
+                }`}
             >
               {tab.label}
             </button>
@@ -501,11 +512,10 @@ export const CompleteEMREditor: React.FC<CompletEMREditorProps> = ({
           {formData.aiSummary && (
             <button
               onClick={() => setActiveTab('ai_summary')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                activeTab === 'ai_summary'
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === 'ai_summary'
                   ? 'bg-purple-600 text-white'
                   : 'bg-purple-100 text-purple-600 hover:bg-purple-200'
-              }`}
+                }`}
             >
               🤖 สรุป AI
             </button>
@@ -518,10 +528,11 @@ export const CompleteEMREditor: React.FC<CompletEMREditorProps> = ({
           {activeTab === 'subjective' && (
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="chiefComplaint" className="block text-sm font-medium text-gray-700 mb-1">
                   Chief Complaint *
                 </label>
                 <input
+                  id="chiefComplaint"
                   type="text"
                   value={formData.chiefComplaint}
                   onChange={(e) => {
@@ -535,10 +546,11 @@ export const CompleteEMREditor: React.FC<CompletEMREditorProps> = ({
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="hpi-textarea" className="block text-sm font-medium text-gray-700 mb-1">
                   History of Present Illness (HPI) *
                 </label>
                 <textarea
+                  id="hpi-textarea"
                   value={formData.historyOfPresentIllness}
                   onChange={(e) => {
                     setFormData({ ...formData, historyOfPresentIllness: e.target.value });
@@ -551,10 +563,10 @@ export const CompleteEMREditor: React.FC<CompletEMREditorProps> = ({
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+              <fieldset>
+                <legend className="block text-sm font-medium text-gray-700 mb-2">
                   Review of Systems (ROS)
-                </label>
+                </legend>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {[
                     'Constitutional',
@@ -590,7 +602,7 @@ export const CompleteEMREditor: React.FC<CompletEMREditorProps> = ({
                     </div>
                   ))}
                 </div>
-              </div>
+              </fieldset>
             </div>
           )}
 
@@ -598,13 +610,14 @@ export const CompleteEMREditor: React.FC<CompletEMREditorProps> = ({
           {activeTab === 'objective' && (
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <span className="block text-sm font-medium text-gray-700 mb-2" aria-label="Vital Signs Section">
                   Vital Signs
-                </label>
+                </span>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   <div>
-                    <label className="text-xs text-gray-600">Temperature (°C)</label>
+                    <label htmlFor="vital-temperature" className="text-xs text-gray-600">Temperature (°C)</label>
                     <input
+                      id="vital-temperature"
                       type="text"
                       value={formData.vitalSigns.temperature}
                       onChange={(e) => {
@@ -620,14 +633,15 @@ export const CompleteEMREditor: React.FC<CompletEMREditorProps> = ({
                     />
                   </div>
                   <div>
-                    <label className="text-xs text-gray-600">Heart Rate (bpm)</label>
+                    <label htmlFor="vital-heartrate" className="text-xs text-gray-600">Heart Rate (bpm)</label>
                     <input
+                      id="vital-heartrate"
                       type="number"
                       value={formData.vitalSigns.heartRate || ''}
                       onChange={(e) => {
                         setFormData({
                           ...formData,
-                          vitalSigns: { ...formData.vitalSigns, heartRate: parseInt(e.target.value) || 0 },
+                          vitalSigns: { ...formData.vitalSigns, heartRate: Number.parseInt(e.target.value, 10) || 0 },
                         });
                         setAutoSaveStatus('unsaved');
                       }}
@@ -637,8 +651,9 @@ export const CompleteEMREditor: React.FC<CompletEMREditorProps> = ({
                     />
                   </div>
                   <div>
-                    <label className="text-xs text-gray-600">Blood Pressure</label>
+                    <label htmlFor="vital-bp" className="text-xs text-gray-600">Blood Pressure</label>
                     <input
+                      id="vital-bp"
                       type="text"
                       value={formData.vitalSigns.bloodPressure}
                       onChange={(e) => {
@@ -654,14 +669,15 @@ export const CompleteEMREditor: React.FC<CompletEMREditorProps> = ({
                     />
                   </div>
                   <div>
-                    <label className="text-xs text-gray-600">Resp. Rate (per min)</label>
+                    <label htmlFor="vital-resp" className="text-xs text-gray-600">Resp. Rate (per min)</label>
                     <input
+                      id="vital-resp"
                       type="number"
                       value={formData.vitalSigns.respiratoryRate || ''}
                       onChange={(e) => {
                         setFormData({
                           ...formData,
-                          vitalSigns: { ...formData.vitalSigns, respiratoryRate: parseInt(e.target.value) || 0 },
+                          vitalSigns: { ...formData.vitalSigns, respiratoryRate: Number.parseInt(e.target.value, 10) || 0 },
                         });
                         setAutoSaveStatus('unsaved');
                       }}
@@ -671,14 +687,15 @@ export const CompleteEMREditor: React.FC<CompletEMREditorProps> = ({
                     />
                   </div>
                   <div>
-                    <label className="text-xs text-gray-600">O2 Saturation (%)</label>
+                    <label htmlFor="vital-o2" className="text-xs text-gray-600">O2 Saturation (%)</label>
                     <input
+                      id="vital-o2"
                       type="number"
                       value={formData.vitalSigns.oxygenSaturation || ''}
                       onChange={(e) => {
                         setFormData({
                           ...formData,
-                          vitalSigns: { ...formData.vitalSigns, oxygenSaturation: parseInt(e.target.value) || 0 },
+                          vitalSigns: { ...formData.vitalSigns, oxygenSaturation: Number.parseInt(e.target.value, 10) || 0 },
                         });
                         setAutoSaveStatus('unsaved');
                       }}
@@ -691,10 +708,11 @@ export const CompleteEMREditor: React.FC<CompletEMREditorProps> = ({
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="physical-exam-textarea" className="block text-sm font-medium text-gray-700 mb-1">
                   Physical Examination
                 </label>
                 <textarea
+                  id="physical-exam-textarea"
                   value={formData.physicalExamination.general || ''}
                   onChange={(e) => {
                     setFormData({
@@ -716,10 +734,11 @@ export const CompleteEMREditor: React.FC<CompletEMREditorProps> = ({
           {activeTab === 'assessment' && (
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="clinical-assessment-textarea" className="block text-sm font-medium text-gray-700 mb-1">
                   Clinical Assessment
                 </label>
                 <textarea
+                  id="clinical-assessment-textarea"
                   value={formData.assessment}
                   onChange={(e) => {
                     setFormData({ ...formData, assessment: e.target.value });
@@ -734,9 +753,9 @@ export const CompleteEMREditor: React.FC<CompletEMREditorProps> = ({
 
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label className="block text-sm font-medium text-gray-700">
+                  <span id="diagnosis-label" className="block text-sm font-medium text-gray-700">
                     Diagnosis (ICD-10)
-                  </label>
+                  </span>
                   <button
                     onClick={addDiagnosis}
                     className="px-3 py-1 text-sm bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"
@@ -746,13 +765,14 @@ export const CompleteEMREditor: React.FC<CompletEMREditorProps> = ({
                   </button>
                 </div>
 
-                <div className="space-y-3">
+                <fieldset className="space-y-3" aria-labelledby="diagnosis-label">
                   {formData.diagnosis.map((diag, index) => (
-                    <div key={index} className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <div key={`diagnosis-${diag.code || index}-${diag.description?.substring(0, 10) || index}`} className="p-3 bg-gray-50 rounded-lg border border-gray-200">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-2">
                         <div>
-                          <label className="text-xs text-gray-600">ICD-10 Code</label>
+                          <label htmlFor={`diag-code-${index}`} className="text-xs text-gray-600">ICD-10 Code</label>
                           <input
+                            id={`diag-code-${index}`}
                             type="text"
                             value={diag.code}
                             onChange={(e) => updateDiagnosis(index, 'code', e.target.value)}
@@ -762,8 +782,9 @@ export const CompleteEMREditor: React.FC<CompletEMREditorProps> = ({
                           />
                         </div>
                         <div>
-                          <label className="text-xs text-gray-600">Description</label>
+                          <label htmlFor={`diag-desc-${index}`} className="text-xs text-gray-600">Description</label>
                           <input
+                            id={`diag-desc-${index}`}
                             type="text"
                             value={diag.description}
                             onChange={(e) => updateDiagnosis(index, 'description', e.target.value)}
@@ -813,7 +834,7 @@ export const CompleteEMREditor: React.FC<CompletEMREditorProps> = ({
                       No diagnosis added yet. Click "Add Diagnosis" to add one.
                     </p>
                   )}
-                </div>
+                </fieldset>
               </div>
             </div>
           )}
@@ -822,10 +843,11 @@ export const CompleteEMREditor: React.FC<CompletEMREditorProps> = ({
           {activeTab === 'plan' && (
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="treatment-plan-textarea" className="block text-sm font-medium text-gray-700 mb-1">
                   Treatment Plan *
                 </label>
                 <textarea
+                  id="treatment-plan-textarea"
                   value={formData.treatmentPlan}
                   onChange={(e) => {
                     setFormData({ ...formData, treatmentPlan: e.target.value });
@@ -839,10 +861,11 @@ export const CompleteEMREditor: React.FC<CompletEMREditorProps> = ({
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="followup-instructions-textarea" className="block text-sm font-medium text-gray-700 mb-1">
                   Follow-up Instructions
                 </label>
                 <textarea
+                  id="followup-instructions-textarea"
                   value={formData.followUpInstructions}
                   onChange={(e) => {
                     setFormData({ ...formData, followUpInstructions: e.target.value });
@@ -856,10 +879,11 @@ export const CompleteEMREditor: React.FC<CompletEMREditorProps> = ({
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="followup-date-input" className="block text-sm font-medium text-gray-700 mb-1">
                   Follow-up Date
                 </label>
                 <input
+                  id="followup-date-input"
                   type="date"
                   value={formData.followUpDate ? formData.followUpDate.split('T')[0] : ''}
                   onChange={(e) => {

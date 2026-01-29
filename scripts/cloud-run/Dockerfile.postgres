@@ -1,12 +1,15 @@
 # PostgreSQL with pgvector for Cloud Run
 # Data initialized from seed file on startup
 # Same architecture as local Docker container
+# Version: 1.1.0 - Security hardened
 
-FROM pgvector/pgvector:pg16
+FROM pgvector/pgvector:pg16-v0.8.0
 
 # Set environment variables
-ENV POSTGRES_USER=postgres
-ENV POSTGRES_PASSWORD=P@ssw0rd
+# NOTE: Password should be overridden at runtime via -e POSTGRES_PASSWORD
+ENV POSTGRES_USER=${POSTGRES_USER:-postgres}
+ARG POSTGRES_PASSWORD
+ENV POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-changeme}
 ENV POSTGRES_DB=izara_phase1
 ENV PGDATA=/var/lib/postgresql/data
 

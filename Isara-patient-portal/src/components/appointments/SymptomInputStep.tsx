@@ -136,8 +136,8 @@ function TextInputTab({
   setForm,
   commonSymptoms,
   aiSuggestions,
-  aiSuggesting,
-  suggestSymptoms,
+  aiSuggesting: _aiSuggesting,
+  suggestSymptoms: _suggestSymptoms,
   hasTextInput,
   aiAnalysis,
   showAiAnalysis
@@ -180,11 +180,10 @@ function TextInputTab({
                 key={symptom}
                 type="button"
                 onClick={() => handleSelectSymptom(symptom)}
-                className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                  form.symptomDescription.includes(symptom) || form.mainSymptom === symptom
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${form.symptomDescription.includes(symptom) || form.mainSymptom === symptom
                     ? 'bg-blue-600 text-white shadow-md'
                     : 'bg-white text-gray-600 hover:bg-blue-100 hover:text-blue-700 border border-gray-200'
-                }`}
+                  }`}
               >
                 {symptom}
               </button>
@@ -363,11 +362,10 @@ function VoiceInputTab({
           <div className="flex flex-col items-center gap-4">
             <button
               onClick={isRecording ? stopRecording : startRecording}
-              className={`w-24 h-24 rounded-full flex items-center justify-center transition-all shadow-lg ${
-                isRecording
+              className={`w-24 h-24 rounded-full flex items-center justify-center transition-all shadow-lg ${isRecording
                   ? 'bg-red-500 hover:bg-red-600 animate-pulse'
                   : 'bg-indigo-600 hover:bg-indigo-700'
-              }`}
+                }`}
             >
               {isRecording ? (
                 <MicOff className="w-12 h-12 text-white" />
@@ -520,9 +518,8 @@ function InputSummary({ hasTextInput, hasVoiceInput, hasImageInput, imageCount }
         {summaryItems.map((item) => (
           <span
             key={item.key}
-            className={`px-3 py-1.5 rounded-full text-sm flex items-center gap-1.5 ${
-              item.hasInput ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400'
-            }`}
+            className={`px-3 py-1.5 rounded-full text-sm flex items-center gap-1.5 ${item.hasInput ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400'
+              }`}
           >
             <item.icon className="w-4 h-4" />
             {item.label} {item.hasInput && '✓'}

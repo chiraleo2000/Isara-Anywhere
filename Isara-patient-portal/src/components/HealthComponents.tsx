@@ -106,18 +106,19 @@ export const VitalSignsForm: React.FC<VitalSignsFormProps> = ({ onSubmit, loadin
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label htmlFor="bp-systolic" className="block text-sm font-medium text-gray-700 mb-2">
             ความดันโลหิต (Systolic/Diastolic)
           </label>
           <div className="flex gap-2">
             <input
+              id="bp-systolic"
               type="number"
               placeholder="120"
               onChange={(e) =>
                 setFormData({
                   ...formData,
                   bloodPressure: {
-                    systolic: parseInt(e.target.value) || 0,
+                    systolic: Number.parseInt(e.target.value, 10) || 0,
                     diastolic: formData.bloodPressure?.diastolic || 0,
                     unit: 'mmHg',
                   },
@@ -127,6 +128,8 @@ export const VitalSignsForm: React.FC<VitalSignsFormProps> = ({ onSubmit, loadin
             />
             <span className="self-center">/</span>
             <input
+              id="bp-diastolic"
+              aria-label="Diastolic blood pressure"
               type="number"
               placeholder="80"
               onChange={(e) =>
@@ -134,7 +137,7 @@ export const VitalSignsForm: React.FC<VitalSignsFormProps> = ({ onSubmit, loadin
                   ...formData,
                   bloodPressure: {
                     systolic: formData.bloodPressure?.systolic || 0,
-                    diastolic: parseInt(e.target.value) || 0,
+                    diastolic: Number.parseInt(e.target.value, 10) || 0,
                     unit: 'mmHg',
                   },
                 })
@@ -145,16 +148,17 @@ export const VitalSignsForm: React.FC<VitalSignsFormProps> = ({ onSubmit, loadin
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label htmlFor="heart-rate" className="block text-sm font-medium text-gray-700 mb-2">
             อัตราการเต้นหัวใจ (bpm)
           </label>
           <input
+            id="heart-rate"
             type="number"
             placeholder="72"
             onChange={(e) =>
               setFormData({
                 ...formData,
-                heartRate: { value: parseInt(e.target.value) || 0, unit: 'bpm' },
+                heartRate: { value: Number.parseInt(e.target.value, 10) || 0, unit: 'bpm' },
               })
             }
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
@@ -162,17 +166,18 @@ export const VitalSignsForm: React.FC<VitalSignsFormProps> = ({ onSubmit, loadin
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label htmlFor="temperature" className="block text-sm font-medium text-gray-700 mb-2">
             อุณหภูมิร่างกาย (°C)
           </label>
           <input
+            id="temperature"
             type="number"
             step="0.1"
             placeholder="36.5"
             onChange={(e) =>
               setFormData({
                 ...formData,
-                temperature: { value: parseFloat(e.target.value) || 0, unit: 'celsius' },
+                temperature: { value: Number.parseFloat(e.target.value) || 0, unit: 'celsius' },
               })
             }
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
@@ -180,16 +185,17 @@ export const VitalSignsForm: React.FC<VitalSignsFormProps> = ({ onSubmit, loadin
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label htmlFor="oxygen-sat" className="block text-sm font-medium text-gray-700 mb-2">
             ออกซิเจนในเลือด (%)
           </label>
           <input
+            id="oxygen-sat"
             type="number"
             placeholder="98"
             onChange={(e) =>
               setFormData({
                 ...formData,
-                oxygenSaturation: { value: parseInt(e.target.value) || 0, unit: '%' },
+                oxygenSaturation: { value: Number.parseInt(e.target.value, 10) || 0, unit: '%' },
               })
             }
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
@@ -197,15 +203,16 @@ export const VitalSignsForm: React.FC<VitalSignsFormProps> = ({ onSubmit, loadin
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">น้ำหนัก (kg)</label>
+          <label htmlFor="weight" className="block text-sm font-medium text-gray-700 mb-2">น้ำหนัก (kg)</label>
           <input
+            id="weight"
             type="number"
             step="0.1"
             placeholder="70"
             onChange={(e) =>
               setFormData({
                 ...formData,
-                weight: { value: parseFloat(e.target.value) || 0, unit: 'kg' },
+                weight: { value: Number.parseFloat(e.target.value) || 0, unit: 'kg' },
               })
             }
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
@@ -213,14 +220,15 @@ export const VitalSignsForm: React.FC<VitalSignsFormProps> = ({ onSubmit, loadin
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">ส่วนสูง (cm)</label>
+          <label htmlFor="height" className="block text-sm font-medium text-gray-700 mb-2">ส่วนสูง (cm)</label>
           <input
+            id="height"
             type="number"
             placeholder="170"
             onChange={(e) =>
               setFormData({
                 ...formData,
-                height: { value: parseFloat(e.target.value) || 0, unit: 'cm' },
+                height: { value: Number.parseFloat(e.target.value) || 0, unit: 'cm' },
               })
             }
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
@@ -469,13 +477,13 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     e.stopPropagation();
     setDragActive(false);
 
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+    if (e.dataTransfer.files?.[0]) {
       handleFile(e.dataTransfer.files[0]);
     }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
+    if (e.target.files?.[0]) {
       handleFile(e.target.files[0]);
     }
   };
@@ -490,13 +498,14 @@ export const FileUpload: React.FC<FileUploadProps> = ({
 
   return (
     <div
+      role="region"
+      aria-label="File upload area"
       onDragEnter={handleDrag}
       onDragLeave={handleDrag}
       onDragOver={handleDrag}
       onDrop={handleDrop}
-      className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors ${
-        dragActive ? 'border-emerald-500 bg-emerald-50' : 'border-gray-300 bg-gray-50'
-      }`}
+      className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors ${dragActive ? 'border-emerald-500 bg-emerald-50' : 'border-gray-300 bg-gray-50'
+        }`}
     >
       <input
         ref={inputRef}
@@ -543,12 +552,12 @@ export const BMICalculator: React.FC<BMICalculatorProps> = ({ weight, height, on
   const [category, setCategory] = useState<string>('');
 
   const calculateBMI = () => {
-    const w = parseFloat(weightInput);
-    const h = parseFloat(heightInput) / 100;
+    const w = Number.parseFloat(weightInput);
+    const h = Number.parseFloat(heightInput) / 100;
 
     if (w > 0 && h > 0) {
       const calculated = w / (h * h);
-      setBMI(parseFloat(calculated.toFixed(1)));
+      setBMI(Number.parseFloat(calculated.toFixed(1)));
 
       let cat = '';
       if (calculated < 18.5) cat = 'น้ำหนักน้อย';
@@ -573,8 +582,9 @@ export const BMICalculator: React.FC<BMICalculatorProps> = ({ weight, height, on
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">น้ำหนัก (kg)</label>
+            <label htmlFor="bmi-weight" className="block text-sm font-medium text-gray-700 mb-2">น้ำหนัก (kg)</label>
             <input
+              id="bmi-weight"
               type="number"
               value={weightInput}
               onChange={(e) => setWeightInput(e.target.value)}
@@ -584,8 +594,9 @@ export const BMICalculator: React.FC<BMICalculatorProps> = ({ weight, height, on
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">ส่วนสูง (cm)</label>
+            <label htmlFor="bmi-height" className="block text-sm font-medium text-gray-700 mb-2">ส่วนสูง (cm)</label>
             <input
+              id="bmi-height"
               type="number"
               value={heightInput}
               onChange={(e) => setHeightInput(e.target.value)}

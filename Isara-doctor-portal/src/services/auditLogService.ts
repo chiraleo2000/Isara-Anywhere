@@ -52,8 +52,8 @@ export type AuditResource =
   | 'system';
 
 class AuditLogService {
-  private logs: AuditLog[] = [];
-  private pendingLogs: AuditLog[] = [];
+  private readonly logs: AuditLog[] = [];
+  private readonly pendingLogs: AuditLog[] = [];
   private flushInterval: NodeJS.Timeout | null = null;
 
   /**
@@ -217,14 +217,15 @@ class AuditLogService {
         const logId = `${patientId}_${dateStr}`;
         try {
           const gcsLog = await fetchAuditLogs(logId);
-          if (gcsLog && gcsLog.entries) {
+          if (gcsLog?.entries) {
             allLogs.push(...gcsLog.entries.map((e: any) => ({
               ...e,
               timestamp: new Date(e.timestamp),
             })));
           }
-        } catch (error) {
-          // Log not found for this date, continue
+        } catch {
+          // Expected: Log not found for this date, continue to next date
+          // This is normal behavior when no audit logs exist for a specific date
         }
         currentDate.setDate(currentDate.getDate() + 1);
       }
@@ -257,7 +258,7 @@ class AuditLogService {
   async getUserAuditLogs(userId: string, limit: number = 100): Promise<AuditLog[]> {
     const filtered = this.logs.filter((log) => log.userId === userId);
     return filtered
-      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+      .toSorted((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
       .slice(0, limit);
   }
 

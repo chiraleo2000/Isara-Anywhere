@@ -10,9 +10,8 @@
  */
 
 import { GoogleGenerativeAI, GenerativeModel } from "@google/generative-ai";
-import type { 
-  MeetingAISummary, 
-  SuggestedPrescription, 
+import type {
+  MeetingAISummary,
   PatientRecord,
   EMR,
   Prescription
@@ -104,7 +103,7 @@ class AIClinicalCopilot {
   private conversationHistory: CopilotMessage[] = [];
   private context: CopilotContext = {};
   private isInitialized = false;
-  private models: Map<string, GenerativeModel> = new Map();
+  private readonly models: Map<string, GenerativeModel> = new Map();
 
   /**
    * Get a model configured for a specific task
@@ -112,8 +111,9 @@ class AIClinicalCopilot {
   private getModel(taskType: keyof typeof COPILOT_CONFIGS): GenerativeModel | null {
     if (!genAI || !isConfigured) return null;
 
-    if (this.models.has(taskType)) {
-      return this.models.get(taskType)!;
+    const cachedModel = this.models.get(taskType);
+    if (cachedModel) {
+      return cachedModel;
     }
 
     const config = COPILOT_CONFIGS[taskType];
@@ -150,7 +150,7 @@ class AIClinicalCopilot {
     this.context = context;
     this.conversationHistory = [];
     this.isInitialized = true;
-    
+
     console.log('🤖 AI Clinical Copilot initialized with patient context');
   }
 
@@ -159,7 +159,7 @@ class AIClinicalCopilot {
    */
   async chat(userMessage: string): Promise<CopilotMessage> {
     const messageId = `msg_${Date.now()}`;
-    
+
     // Add user message to history
     this.conversationHistory.push({
       id: messageId,
@@ -170,7 +170,7 @@ class AIClinicalCopilot {
     });
 
     const model = this.getModel('chat');
-    
+
     if (!model) {
       // Return fallback response
       const fallbackMessage: CopilotMessage = {
@@ -241,7 +241,7 @@ Respond to the doctor's query. Be concise, clinical, and actionable.`;
     if (symptoms.length === 0) return [];
 
     const model = this.getModel('suggestions');
-    
+
     if (!model) {
       // Return generic suggestions
       return [
@@ -260,8 +260,8 @@ Format as a JSON array of strings. Example: ["suggestion 1", "suggestion 2"]`;
 
       const result = await model.generateContent(prompt);
       const text = result.response.text()
-        .replace(/```json\n?/g, "")
-        .replace(/```\n?/g, "")
+        .replaceAll(/```json\n?/g, "")
+        .replaceAll(/```\n?/g, "")
         .trim();
 
       return JSON.parse(text);
@@ -283,11 +283,11 @@ Format as a JSON array of strings. Example: ["suggestion 1", "suggestion 2"]`;
     }
 
     const model = this.getModel('drugCheck');
-    
+
     if (!model) {
-      return { 
-        interactions: [], 
-        warnings: ['AI drug interaction check unavailable - please verify manually'] 
+      return {
+        interactions: [],
+        warnings: ['AI drug interaction check unavailable - please verify manually']
       };
     }
 
@@ -306,8 +306,8 @@ If no significant interactions, return empty arrays.`;
 
       const result = await model.generateContent(prompt);
       const text = result.response.text()
-        .replace(/```json\n?/g, "")
-        .replace(/```\n?/g, "")
+        .replaceAll(/```json\n?/g, "")
+        .replaceAll(/```\n?/g, "")
         .trim();
 
       return JSON.parse(text);
@@ -346,7 +346,7 @@ If no significant interactions, return empty arrays.`;
    */
   private getFallbackResponse(query: string): string {
     const lowerQuery = query.toLowerCase();
-    
+
     if (lowerQuery.includes('drug') || lowerQuery.includes('interaction')) {
       return `⚠️ AI drug interaction checking is currently unavailable.
 
@@ -357,7 +357,7 @@ If no significant interactions, return empty arrays.`;
 
 *Configure VITE_GEMINI_API_KEY to enable AI-powered checks.*`;
     }
-    
+
     if (lowerQuery.includes('diagnosis') || lowerQuery.includes('symptom')) {
       return `⚠️ AI diagnostic assistance is currently unavailable.
 
@@ -369,7 +369,7 @@ If no significant interactions, return empty arrays.`;
 
 *Configure VITE_GEMINI_API_KEY to enable AI assistance.*`;
     }
-    
+
     return `AI Clinical Copilot is not fully configured.
 
 To enable AI-powered assistance:
@@ -432,7 +432,7 @@ class MeetingSummarizer {
     symptoms?: string[]
   ): Promise<MeetingAISummary> {
     const model = this.getModel();
-    
+
     if (!model) {
       return this.getDefaultSummary();
     }
@@ -475,8 +475,8 @@ Generate a JSON response with this structure:
 
       const result = await model.generateContent(prompt);
       const text = result.response.text()
-        .replace(/```json\n?/g, "")
-        .replace(/```\n?/g, "")
+        .replaceAll(/```json\n?/g, "")
+        .replaceAll(/```\n?/g, "")
         .trim();
 
       const parsed = JSON.parse(text);
@@ -581,7 +581,7 @@ class DocumentGenerator {
     patientInfo?: PatientRecord
   ): Promise<Partial<EMR>> {
     const model = this.getModel();
-    
+
     if (!model) {
       return this.getDefaultEMR(meetingSummary, patientInfo);
     }
@@ -615,8 +615,8 @@ Generate JSON with these fields:
 
       const result = await model.generateContent(prompt);
       const text = result.response.text()
-        .replace(/```json\n?/g, "")
-        .replace(/```\n?/g, "")
+        .replaceAll(/```json\n?/g, "")
+        .replaceAll(/```\n?/g, "")
         .trim();
 
       const parsed = JSON.parse(text);
@@ -666,7 +666,7 @@ Generate JSON with these fields:
     patientInfo?: PatientRecord
   ): Promise<string> {
     const model = this.getModel();
-    
+
     if (!model) {
       return this.getDefaultDischargeSummary(meetingSummary);
     }
@@ -704,7 +704,7 @@ Write a clear, friendly summary that the patient can understand. Include:
       historyOfPresentIllness: `Patient presents with ${summary.symptoms.join(', ')}.`,
       assessment: summary.diagnosis || 'Under evaluation',
       treatmentPlan: summary.treatmentPlan.join('; '),
-      followUpInstructions: summary.followUpRecommended 
+      followUpInstructions: summary.followUpRecommended
         ? 'Follow up recommended. Contact clinic if symptoms worsen.'
         : 'Follow up as needed.'
     };
@@ -729,10 +729,19 @@ ${summary.prescriptions.map(p => `• ${p.medication} ${p.dosage} - ${p.frequenc
 ⚠️ สัญญาณอันตราย (ต้องมาพบแพทย์ทันที):
 ${summary.redFlags.map(r => `• ${r}`).join('\n')}
 
-${summary.followUpRecommended ? `📅 แนะนำให้พบแพทย์ติดตามผล${summary.followUpDate ? ` วันที่ ${summary.followUpDate}` : ''}` : ''}
+${this.formatFollowUpMessage(summary)}
 
 ขอบคุณที่ใช้บริการ Izara Anywhere
     `.trim();
+  }
+
+  /**
+   * Format follow-up message to avoid nested ternaries
+   */
+  private formatFollowUpMessage(summary: { followUpRecommended: boolean; followUpDate?: string }): string {
+    if (!summary.followUpRecommended) return '';
+    const dateStr = summary.followUpDate ? ` วันที่ ${summary.followUpDate}` : '';
+    return `📅 แนะนำให้พบแพทย์ติดตามผล${dateStr}`;
   }
 }
 
@@ -749,20 +758,20 @@ export const aiClinicalService = {
   copilot: aiCopilot,
   summarizer: meetingSummarizer,
   documentGenerator: documentGenerator,
-  
+
   // Quick access methods
   async chat(message: string) {
     return aiCopilot.chat(message);
   },
-  
+
   async summarize(transcription: string, patient?: PatientRecord, symptoms?: string[]) {
     return meetingSummarizer.summarizeMeeting(transcription, patient, symptoms);
   },
-  
+
   async generateEMR(summary: MeetingAISummary, patient?: PatientRecord) {
     return documentGenerator.generateEMRContent(summary, patient);
   },
-  
+
   async checkDrugInteractions(medications: string[]) {
     return aiCopilot.checkDrugInteractions(medications);
   }

@@ -9,19 +9,19 @@
 
 ## 📋 Table of Contents
 
-1. [Overview](#1️⃣-overview)
-2. [System Architecture](#2️⃣-system-architecture)
-3. [User Roles & Permissions](#3️⃣-user-roles--permissions)
-4. [Workflow Steps](#4️⃣-workflow-steps)
-5. [Data Structures](#5️⃣-data-structures)
-6. [GCS Storage Structure](#6️⃣-gcs-storage-structure)
-7. [Cross-Portal Data Synchronization](#7️⃣-cross-portal-data-synchronization)
-8. [API Endpoints](#8️⃣-api-endpoints)
-9. [Content Categories](#9️⃣-content-categories)
-10. [Implementation Guidelines](#🔟-implementation-guidelines)
-11. [Patient Portal Access](#1️⃣1️⃣-patient-portal-access)
-12. [Developer Notes](#1️⃣2️⃣-developer-notes)
-13. [Future Enhancements](#1️⃣3️⃣-future-enhancements)
+1. [Overview](#1-overview)
+2. [System Architecture](#2-system-architecture)
+3. [User Roles & Permissions](#3-user-roles--permissions)
+4. [Workflow Steps](#4-workflow-steps)
+5. [Data Structures](#5-data-structures)
+6. [GCS Storage Structure](#6-gcs-storage-structure)
+7. [Cross-Portal Data Synchronization](#7-cross-portal-data-synchronization)
+8. [API Endpoints](#8-api-endpoints)
+9. [Content Categories](#9-content-categories)
+10. [Implementation Guidelines](#10-implementation-guidelines)
+11. [Patient Portal Access](#11-patient-portal-access)
+12. [Developer Notes](#12-developer-notes)
+13. [Future Enhancements](#13-future-enhancements)
 
 ---
 
@@ -52,7 +52,7 @@ Images are rendered inline with proper styling and captions.
 
 ---
 
-## 1️⃣ Overview
+## 1. Overview
 
 The medical content system consists of two main modules that serve different audiences:
 
@@ -72,7 +72,7 @@ The medical content system consists of two main modules that serve different aud
 
 ---
 
-## 2️⃣ System Architecture
+## 2. System Architecture
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -109,7 +109,7 @@ The medical content system consists of two main modules that serve different aud
 
 ---
 
-## 3️⃣ User Roles & Permissions
+## 3. User Roles & Permissions
 
 ### Permission Matrix
 
@@ -117,11 +117,11 @@ The medical content system consists of two main modules that serve different aud
 | --------- | ------------------------------------------ | ----------------------------------- |
 | Patient | ✅ Read published only | ❌ No access |
 | Doctor | ✅ Create, Edit, Delete own | ✅ Create, Edit, Submit for approval |
-|  | ✅ Publish (direct or via approval) | ⏳ Pending approval required |
-|  | ✅ Read all published | ✅ Read approved only |
+| | ✅ Publish (direct or via approval) | ⏳ Pending approval required |
+| | ✅ Read all published | ✅ Read approved only |
 | Admin | ✅ Full CRUD | ✅ Approve/Reject |
-|  | ✅ Approve/Reject submissions | ✅ View all (including pending) |
-|  | ✅ Audit log access | ✅ Audit log access |
+| | ✅ Approve/Reject submissions | ✅ View all (including pending) |
+| | ✅ Audit log access | ✅ Audit log access |
 
 ### Role Capabilities
 
@@ -196,7 +196,7 @@ const adminCapabilities: ContentRoleCapabilities = {
 
 ---
 
-## 4️⃣ Workflow Steps
+## 4. Workflow Steps
 
 ### Medical Content Workflow (Patient-Facing)
 
@@ -228,45 +228,45 @@ const adminCapabilities: ContentRoleCapabilities = {
 
 1. **Create Draft**
 
-   ```typescript
-   // Doctor/Admin creates content
-   const draft: MedicalContentArticle = {
-     id: generateUUID(),
-     status: 'draft',
-     createdBy: 'doctor.test@izara.com',
-     createdByName: 'Dr. Test',
-     // ... content fields
-   };
-   ```
+    ```typescript
+    // Doctor/Admin creates content
+    const draft: MedicalContentArticle = {
+      id: generateUUID(),
+      status: 'draft',
+      createdBy: 'doctor.test@izara.com',
+      createdByName: 'Dr. Test',
+      // ... content fields
+    };
+    ```
 
-2. **Submit for Approval** (Optional - depends on configuration)
+1. **Submit for Approval** (Optional - depends on configuration)
 
-   ```typescript
-   // Doctor submits for review
-   content.status = 'pending';
-   content.submittedAt = new Date().toISOString();
-   ```
+    ```typescript
+    // Doctor submits for review
+    content.status = 'pending';
+    content.submittedAt = new Date().toISOString();
+    ```
 
-3. **Admin Review**
+1. **Admin Review**
 
-   ```typescript
-   // Admin approves or rejects
-   if (approved) {
-     content.status = 'published';
-     content.approvedBy = 'admin.test@izara.com';
-     content.approvedAt = new Date().toISOString();
-     content.publishedAt = new Date().toISOString();
-   } else {
-     content.status = 'rejected';
-     content.rejectedBy = 'admin.test@izara.com';
-     content.rejectedAt = new Date().toISOString();
-     content.rejectionReason = 'Needs more medical references';
-   }
-   ```
+    ```typescript
+    // Admin approves or rejects
+    if (approved) {
+      content.status = 'published';
+      content.approvedBy = 'admin.test@izara.com';
+      content.approvedAt = new Date().toISOString();
+      content.publishedAt = new Date().toISOString();
+    } else {
+      content.status = 'rejected';
+      content.rejectedBy = 'admin.test@izara.com';
+      content.rejectedAt = new Date().toISOString();
+      content.rejectionReason = 'Needs more medical references';
+    }
+    ```
 
-4. **Publish** → Content visible in Patient Portal คลังความรู้สุขภาพ
+1. **Publish** → Content visible in Patient Portal คลังความรู้สุขภาพ
 
-5. **Archive** → Hidden but preserved for compliance
+1. **Archive** → Hidden but preserved for compliance
 
 ---
 
@@ -295,53 +295,53 @@ const adminCapabilities: ContentRoleCapabilities = {
 └──────────────────────────────────────────────────────────────────────────┘
 ```
 
-#### Step-by-Step Process
+#### Step-by-Step Process (2)
 
 1. **Create Draft**
 
-   ```typescript
-   const resource: ClinicalResourceItem = {
-     id: generateUUID(),
-     status: 'draft',
-     requiresAdminApproval: true,
-     createdBy: 'doctor.test@izara.com',
-     createdByName: 'Dr. Test',
-     // ... content fields
-   };
-   ```
+    ```typescript
+    const resource: ClinicalResourceItem = {
+      id: generateUUID(),
+      status: 'draft',
+      requiresAdminApproval: true,
+      createdBy: 'doctor.test@izara.com',
+      createdByName: 'Dr. Test',
+      // ... content fields
+    };
+    ```
 
-2. **Submit for Approval** (REQUIRED)
+1. **Submit for Approval** (REQUIRED)
 
-   ```typescript
-   resource.status = 'pending';
-   resource.submittedAt = new Date().toISOString();
-   // Add to pending queue
-   pendingApprovalIds.push(resource.id);
-   ```
+    ```typescript
+    resource.status = 'pending';
+    resource.submittedAt = new Date().toISOString();
+    // Add to pending queue
+    pendingApprovalIds.push(resource.id);
+    ```
 
-3. **Admin Review** (MANDATORY)
+1. **Admin Review** (MANDATORY)
 
-   ```typescript
-   if (approved) {
-     resource.status = 'published';
-     resource.reviewedBy = 'admin.test@izara.com';
-     resource.reviewedByName = 'Admin';
-     resource.reviewedAt = new Date().toISOString();
-     resource.publishedAt = new Date().toISOString();
-   } else {
-     resource.status = 'rejected';
-     resource.reviewedBy = 'admin.test@izara.com';
-     resource.reviewedByName = 'Admin';
-     resource.reviewedAt = new Date().toISOString();
-     resource.rejectionReason = 'Evidence level needs verification';
-   }
-   ```
+    ```typescript
+    if (approved) {
+      resource.status = 'published';
+      resource.reviewedBy = 'admin.test@izara.com';
+      resource.reviewedByName = 'Admin';
+      resource.reviewedAt = new Date().toISOString();
+      resource.publishedAt = new Date().toISOString();
+    } else {
+      resource.status = 'rejected';
+      resource.reviewedBy = 'admin.test@izara.com';
+      resource.reviewedByName = 'Admin';
+      resource.reviewedAt = new Date().toISOString();
+      resource.rejectionReason = 'Evidence level needs verification';
+    }
+    ```
 
-4. **Publish** → Resource visible to all doctors in Clinical Resources page
+1. **Publish** → Resource visible to all doctors in Clinical Resources page
 
 ---
 
-## 5️⃣ Data Structures
+## 5. Data Structures
 
 ### Medical Content Article
 
@@ -349,7 +349,7 @@ const adminCapabilities: ContentRoleCapabilities = {
 interface MedicalContentArticle {
   // Identification
   id: string;                              // UUID: 'mc-uuid-xxxx'
-  
+
   // Core Content (Bilingual - Thai Primary)
   titleTh: string;                         // Thai title (ชื่อบทความ) - REQUIRED
   title?: string;                          // English title (optional)
@@ -357,36 +357,36 @@ interface MedicalContentArticle {
   summary?: string;                        // English summary (optional)
   contentTh: string;                       // Thai content - REQUIRED (supports [image:URL:desc])
   content?: string;                        // English content (optional, supports images)
-  
+
   // Classification
   category: MedicalContentCategoryId;      // Fixed category ID
   tags: string[];                          // Dynamic tag IDs
   type: 'article' | 'video' | 'guide' | 'infographic';
-  
+
   // Media Assets
   thumbnail?: string;                      // Cover image URL
   videoUrl?: string;                       // Embedded video URL
   attachments?: string[];                  // Additional files
-  
+
   // Status & Workflow
   status: ContentStatus;                   // draft|pending|published|rejected|archived
   isFeatured: boolean;                     // Show in featured section
-  
+
   // Reading Metrics
   readTimeMinutes: number;                 // Estimated read time
-  
+
   // Analytics
   views: number;                           // View count
   likes: number;                           // Like count
   shares: number;                          // Share count
-  
+
   // Version Control
   version: number;                         // Current version number
   history: ContentVersion[];               // Previous versions
-  
+
   // Discussion
   comments: ContentComment[];              // Internal comments
-  
+
   // Authorship
   createdBy: string;                       // Author email
   createdByName: string;                   // Author display name
@@ -394,7 +394,7 @@ interface MedicalContentArticle {
   updatedBy: string;                       // Last editor email
   updatedByName: string;                   // Last editor name
   updatedAt: string;                       // Last update timestamp
-  
+
   // Approval Workflow
   submittedAt?: string;                    // When submitted for review
   approvedBy?: string;                     // Approver email
@@ -412,7 +412,7 @@ interface MedicalContentArticle {
 interface ClinicalResourceItem {
   // Identification
   id: string;                              // UUID: 'cr-uuid-xxxx'
-  
+
   // Core Content (Bilingual)
   title: string;                           // Resource title
   titleTh?: string;                        // Thai title
@@ -420,23 +420,23 @@ interface ClinicalResourceItem {
   descriptionTh?: string;                  // Thai description
   content: string;                         // Full content (Markdown)
   contentTh?: string;                      // Thai content
-  
+
   // Classification
   category: ClinicalResourcesCategoryId;   // Fixed category
   tags: string[];                          // Dynamic tags
   specialty?: string;                      // Medical specialty
   resourceType: 'guideline' | 'protocol' | 'reference' | 'template' | 'research';
-  
+
   // References & Evidence
   source?: string;                         // Original source
   references?: string[];                   // Citation list
   attachments?: string[];                  // PDF, images, etc.
   evidenceLevel?: 'A' | 'B' | 'C' | 'D' | 'E'; // Evidence grading
-  
+
   // Status & Approval
   status: ContentStatus;
   requiresAdminApproval: boolean;          // Always true for clinical
-  
+
   // Approval Workflow
   submittedAt?: string;
   reviewedBy?: string;
@@ -444,14 +444,14 @@ interface ClinicalResourceItem {
   reviewedAt?: string;
   rejectionReason?: string;
   publishedAt?: string;
-  
+
   // Version Control
   version: number;
   history: ContentVersion[];
-  
+
   // Discussion
   comments: ContentComment[];
-  
+
   // Authorship
   createdBy: string;
   createdByName: string;
@@ -529,7 +529,7 @@ interface ContentAuditLog {
 
 ---
 
-## 6️⃣ GCS Storage Structure
+## 6. GCS Storage Structure
 
 ```text
 izara-meta-data/                          # GCS Bucket
@@ -581,7 +581,7 @@ izara-meta-data/                          # GCS Bucket
 
 ---
 
-## 7️⃣ Cross-Portal Data Synchronization
+## 7. Cross-Portal Data Synchronization
 
 ### Sync Architecture
 
@@ -633,10 +633,10 @@ async function publishContent(content: MedicalContentArticle): Promise<void> {
   // 1. Update content status
   content.status = 'published';
   content.publishedAt = new Date().toISOString();
-  
+
   // 2. Save to GCS
   await saveToGCS('medical-content/articles.json', articles);
-  
+
   // 3. Log audit entry
   await logAuditEntry({
     contentId: content.id,
@@ -644,7 +644,7 @@ async function publishContent(content: MedicalContentArticle): Promise<void> {
     performedBy: currentUser,
     newStatus: 'published'
   });
-  
+
   // 4. Sync is automatic - Patient Portal reads from same GCS location
 }
 
@@ -652,7 +652,7 @@ async function publishContent(content: MedicalContentArticle): Promise<void> {
 async function fetchPublishedContent(): Promise<MedicalContentArticle[]> {
   // Fetch from GCS
   const data = await fetchFromGCS('medical-content/articles.json');
-  
+
   // Filter: Only published content visible to patients
   return data.articles.filter(
     article => article.status === 'published'
@@ -663,7 +663,7 @@ async function fetchPublishedContent(): Promise<MedicalContentArticle[]> {
 async function setupRealtimeSync(): Promise<void> {
   // Using GCS Pub/Sub notifications
   const subscription = pubsub.subscription('content-updates');
-  
+
   subscription.on('message', async (message) => {
     const update = JSON.parse(message.data);
     if (update.type === 'medical-content') {
@@ -688,7 +688,7 @@ async function setupRealtimeSync(): Promise<void> {
 
 ---
 
-## 8️⃣ API Endpoints
+## 8. API Endpoints
 
 ### Medical Content APIs
 
@@ -796,7 +796,7 @@ POST /api/content/medical/:id/review
 
 ---
 
-## 9️⃣ Content Categories
+## 9. Content Categories
 
 ### Medical Content Categories (Fixed)
 
@@ -836,7 +836,7 @@ const CLINICAL_RESOURCES_CATEGORIES = [
 
 ---
 
-## 🔟 Implementation Guidelines
+## 10. Implementation Guidelines
 
 ### For AI Agents / Developers
 
@@ -900,7 +900,7 @@ const updateContent = (
     modifiedAt: existing.updatedAt,
     changeNote: updates.changeNote
   };
-  
+
   return {
     ...existing,
     ...updates,
@@ -925,7 +925,7 @@ const handleApproval = async (
 ): Promise<void> => {
   const content = await getContent(contentId);
   const now = new Date().toISOString();
-  
+
   if (action === 'approve') {
     content.status = 'published';
     content.approvedBy = currentUser.email;
@@ -937,7 +937,7 @@ const handleApproval = async (
     content.rejectedAt = now;
     content.rejectionReason = rejectionReason;
   }
-  
+
   // Add comment
   if (comment) {
     content.comments.push({
@@ -950,7 +950,7 @@ const handleApproval = async (
       isAdminFeedback: true
     });
   }
-  
+
   // Log audit entry
   await logAuditEntry({
     contentId,
@@ -961,14 +961,14 @@ const handleApproval = async (
     comment,
     rejectionReason
   });
-  
+
   await saveContent(content);
 };
 ```
 
 ---
 
-## 1️⃣1️⃣ Patient Portal Access
+## 11. Patient Portal Access
 
 ### คลังความรู้สุขภาพ (Health Knowledge Library)
 
@@ -1007,7 +1007,7 @@ const handleApproval = async (
 // Patient Portal content service
 const getPatientVisibleContent = async (): Promise<MedicalContentArticle[]> => {
   const allContent = await fetchFromGCS('medical-content/articles.json');
-  
+
   // Filter for patient visibility
   return allContent.articles.filter(article => 
     article.status === 'published'
@@ -1021,7 +1021,7 @@ const getPatientVisibleContent = async (): Promise<MedicalContentArticle[]> => {
 
 ---
 
-## 1️⃣2️⃣ Developer Notes
+## 12. Developer Notes
 
 ### Critical Implementation Notes
 
@@ -1055,41 +1055,41 @@ The following UI components have been implemented to support the approval workfl
 
 1. **Status Options** (line ~78)
 
-   ```tsx
-   const statusOptions = [
-     { value: 'draft', label: 'Draft', color: 'bg-gray-100 text-gray-700' },
-     { value: 'pending', label: 'Pending Approval', color: 'bg-yellow-100 text-yellow-700' },
-     { value: 'published', label: 'Published', color: 'bg-green-100 text-green-700' },
-     { value: 'rejected', label: 'Rejected', color: 'bg-red-100 text-red-700' },
-     { value: 'archived', label: 'Archived', color: 'bg-gray-200 text-gray-600' },
-   ];
-   ```
+    ```tsx
+    const statusOptions = [
+      { value: 'draft', label: 'Draft', color: 'bg-gray-100 text-gray-700' },
+      { value: 'pending', label: 'Pending Approval', color: 'bg-yellow-100 text-yellow-700' },
+      { value: 'published', label: 'Published', color: 'bg-green-100 text-green-700' },
+      { value: 'rejected', label: 'Rejected', color: 'bg-red-100 text-red-700' },
+      { value: 'archived', label: 'Archived', color: 'bg-gray-200 text-gray-600' },
+    ];
+    ```
 
-2. **Admin Detection** (line ~93)
+1. **Admin Detection** (line ~93)
 
-   ```tsx
-   const isAdmin = user?.email?.includes('admin') || user?.role === 'admin';
-   ```
+    ```tsx
+    const isAdmin = user?.email?.includes('admin') || user?.role === 'admin';
+    ```
 
-3. **Pending Approvals Button** (Header - visible to Admin only when pendingCount > 0)
+1. **Pending Approvals Button** (Header - visible to Admin only when pendingCount > 0)
    - Shows notification badge with count
    - Opens pending list modal on click
 
-4. **Submit for Approval Button** (View Modal)
+1. **Submit for Approval Button** (View Modal)
    - Visible for draft/rejected articles
    - Calls `handleSubmitForApproval()` to change status to 'pending'
 
-5. **Review Button** (View Modal)
+1. **Review Button** (View Modal)
    - Visible to Admin only for pending articles
    - Opens approval modal
 
-6. **Approval Modal** (Admin only)
+1. **Approval Modal** (Admin only)
    - Preview of article content
    - Approval comment field
    - Reject with reason field
    - Approve/Reject action buttons
 
-7. **Pending List Modal** (Admin only)
+1. **Pending List Modal** (Admin only)
    - Lists all pending articles
    - Quick access to review each article
 
@@ -1122,7 +1122,7 @@ openApprovalModal(article: MedicalContentArticle): void
 
 ---
 
-## 1️⃣3️⃣ Future Enhancements
+## 13. Future Enhancements
 
 ### Planned Features
 

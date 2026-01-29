@@ -136,11 +136,8 @@ export const HealthCenterIcon: React.FC<{ className?: string }> = ({ className }
   </svg>
 );
 
-export const LeafIcon: React.FC<{ className?: string }> = ({ className }) => (
-  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-  </svg>
-);
+// LeafIcon is an alias for SparklesIcon (same SVG path)
+export const LeafIcon = SparklesIcon;
 
 export const PhoneIcon: React.FC<{ className?: string }> = ({ className }) => (
   <svg
@@ -172,17 +169,11 @@ export const BellIcon: React.FC<{ className?: string }> = ({ className }) => (
   </svg>
 );
 
-export const DocumentIcon: React.FC<{ className?: string }> = ({ className }) => (
-  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-  </svg>
-);
+// DocumentIcon is an alias for ClinicIcon (same SVG path)
+export const DocumentIcon = ClinicIcon;
 
-export const HeartIcon: React.FC<{ className?: string }> = ({ className }) => (
-  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-  </svg>
-);
+// HeartIcon is an alias for HealthCenterIcon (same SVG path)
+export const HeartIcon = HealthCenterIcon;
 
 export const XMarkIcon: React.FC<{ className?: string }> = ({ className }) => (
   <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -245,11 +236,8 @@ export const UserGroupIcon: React.FC<{ className?: string }> = ({ className }) =
   </svg>
 );
 
-export const DocumentTextIcon: React.FC<{ className?: string }> = ({ className }) => (
-  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-  </svg>
-);
+// DocumentTextIcon is an alias for ClinicIcon (same SVG path)
+export const DocumentTextIcon = ClinicIcon;
 
 export const ChartBarIcon: React.FC<{ className?: string }> = ({ className }) => (
   <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -267,11 +255,8 @@ export const BellAlertIcon: React.FC<{ className?: string }> = ({ className }) =
   </svg>
 );
 
-export const SearchIcon: React.FC<{ className?: string }> = ({ className }) => (
-  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-  </svg>
-);
+// SearchIcon is an alias for MagnifyingGlassIcon (same SVG path)
+export const SearchIcon = MagnifyingGlassIcon;
 
 export const StarIcon: React.FC<{ className?: string }> = ({ className }) => (
   <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">

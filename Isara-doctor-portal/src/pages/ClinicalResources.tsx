@@ -82,7 +82,7 @@ const BellIcon: React.FC<{ className?: string }> = ({ className }) => (
 export const ClinicalResources: React.FC = () => {
   const { user } = useAuth();
   const isAdmin = user?.email?.includes('admin') || user?.role === 'admin';
-  
+
   // Data states
   const [resources, setResources] = useState<ClinicalResourceItem[]>([]);
   const [tags, setTags] = useState<ContentTag[]>([]);
@@ -412,16 +412,16 @@ export const ClinicalResources: React.FC = () => {
   // Format: [image:URL:description] will be rendered as <img>
   const renderContentWithImages = (content: string) => {
     if (!content) return '';
-    
+
     // Replace [image:URL:description] with actual img tags
     const imagePattern = /\[image:([^\]:]+):([^\]]*)\]/g;
-    let processedContent = content.replace(imagePattern, (match, url, description) => {
+    let processedContent = content.replaceAll(imagePattern, (match, url, description) => {
       return `<figure class="my-6"><img src="${url}" alt="${description}" class="w-full max-w-2xl mx-auto rounded-lg shadow-md" loading="lazy" /><figcaption class="text-center text-sm text-gray-500 mt-2">${description || ''}</figcaption></figure>`;
     });
-    
-    // Also replace \n with <br/>
-    processedContent = processedContent.replace(/\n/g, '<br/>');
-    
+
+    // Also replace newlines with <br/>
+    processedContent = processedContent.replaceAll('\n', '<br/>');
+
     return processedContent;
   };
 
@@ -528,11 +528,10 @@ export const ClinicalResources: React.FC = () => {
         <div className="flex space-x-2">
           <button
             onClick={() => setSelectedCategory('all')}
-            className={`px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-colors ${
-              selectedCategory === 'all'
-                ? 'bg-emerald-100 text-emerald-700 border-2 border-emerald-500'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
+            className={`px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-colors ${selectedCategory === 'all'
+              ? 'bg-emerald-100 text-emerald-700 border-2 border-emerald-500'
+              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
           >
             📚 All Resources
           </button>
@@ -540,11 +539,10 @@ export const ClinicalResources: React.FC = () => {
             <button
               key={category.id}
               onClick={() => setSelectedCategory(category.id)}
-              className={`px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-colors ${
-                selectedCategory === category.id
-                  ? 'bg-emerald-100 text-emerald-700 border-2 border-emerald-500'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
+              className={`px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-colors ${selectedCategory === category.id
+                ? 'bg-emerald-100 text-emerald-700 border-2 border-emerald-500'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
             >
               {getCategoryIcon(category.id)} {category.name}
             </button>
@@ -566,7 +564,7 @@ export const ClinicalResources: React.FC = () => {
         <div className="w-96 bg-white border-r border-gray-200 flex flex-col">
           <div className="p-4 border-b border-gray-200">
             <p className="text-sm text-gray-600">
-              {filteredResources.length} resource{filteredResources.length !== 1 ? 's' : ''} found
+              {filteredResources.length} resource{filteredResources.length === 1 ? '' : 's'} found
             </p>
           </div>
           <div className="flex-1 overflow-y-auto">
@@ -574,9 +572,8 @@ export const ClinicalResources: React.FC = () => {
               <button
                 key={resource.id}
                 onClick={() => setSelectedResource(resource)}
-                className={`w-full text-left p-4 border-b border-gray-200 hover:bg-gray-50 transition-colors ${
-                  selectedResource?.id === resource.id ? 'bg-emerald-50 border-l-4 border-emerald-600' : ''
-                }`}
+                className={`w-full text-left p-4 border-b border-gray-200 hover:bg-gray-50 transition-colors ${selectedResource?.id === resource.id ? 'bg-emerald-50 border-l-4 border-emerald-600' : ''
+                  }`}
               >
                 <div className="flex items-start justify-between mb-2">
                   <h3 className="font-semibold text-gray-900 pr-2 line-clamp-1">
@@ -716,7 +713,7 @@ export const ClinicalResources: React.FC = () => {
               {selectedResource.content && selectedResource.contentTh && (
                 <div className="mt-8 pt-6 border-t">
                   <h3 className="text-lg font-semibold text-gray-700 mb-4">🇬🇧 English Version</h3>
-                  <div 
+                  <div
                     className="text-gray-800 leading-relaxed"
                     dangerouslySetInnerHTML={{ __html: renderContentWithImages(selectedResource.content) }}
                   />
@@ -792,8 +789,9 @@ export const ClinicalResources: React.FC = () => {
               {/* Title - Thai as Primary */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">ชื่อเรื่อง (ภาษาไทย) *</label>
+                  <label htmlFor="resource-title-th" className="block text-sm font-medium text-gray-700 mb-1">ชื่อเรื่อง (ภาษาไทย) *</label>
                   <input
+                    id="resource-title-th"
                     type="text"
                     value={formData.titleTh}
                     onChange={(e) => setFormData((prev) => ({ ...prev, titleTh: e.target.value }))}
@@ -803,8 +801,9 @@ export const ClinicalResources: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Title (English)</label>
+                  <label htmlFor="resource-title-en" className="block text-sm font-medium text-gray-700 mb-1">Title (English)</label>
                   <input
+                    id="resource-title-en"
                     type="text"
                     value={formData.title}
                     onChange={(e) => setFormData((prev) => ({ ...prev, title: e.target.value }))}
@@ -817,8 +816,9 @@ export const ClinicalResources: React.FC = () => {
               {/* Description - Thai as Primary */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">คำอธิบาย (ภาษาไทย) *</label>
+                  <label htmlFor="resource-desc-th" className="block text-sm font-medium text-gray-700 mb-1">คำอธิบาย (ภาษาไทย) *</label>
                   <textarea
+                    id="resource-desc-th"
                     value={formData.descriptionTh}
                     onChange={(e) => setFormData((prev) => ({ ...prev, descriptionTh: e.target.value }))}
                     rows={2}
@@ -828,8 +828,9 @@ export const ClinicalResources: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Description (English)</label>
+                  <label htmlFor="resource-desc-en" className="block text-sm font-medium text-gray-700 mb-1">Description (English)</label>
                   <textarea
+                    id="resource-desc-en"
                     value={formData.description}
                     onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
                     rows={2}
@@ -841,13 +842,14 @@ export const ClinicalResources: React.FC = () => {
 
               {/* Content - Thai as Primary with Image Support */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">เนื้อหา (ภาษาไทย) *</label>
+                <label htmlFor="resource-content-th" className="block text-sm font-medium text-gray-700 mb-1">เนื้อหา (ภาษาไทย) *</label>
                 <div className="mb-2 p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-700">
                   <p className="font-medium mb-1">💡 รองรับการแทรกรูปภาพ:</p>
                   <p>ใช้รูปแบบ: <code className="bg-blue-100 px-1 rounded">[image:URL:description]</code></p>
                   <p>ตัวอย่าง: <code className="bg-blue-100 px-1 rounded">[image:https://example.com/diagram.jpg:แผนภาพการรักษา]</code></p>
                 </div>
                 <textarea
+                  id="resource-content-th"
                   value={formData.contentTh}
                   onChange={(e) => setFormData((prev) => ({ ...prev, contentTh: e.target.value }))}
                   rows={10}
@@ -857,12 +859,13 @@ export const ClinicalResources: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Content (English)</label>
+                <label htmlFor="resource-content-en" className="block text-sm font-medium text-gray-700 mb-1">Content (English)</label>
                 <div className="mb-2 p-3 bg-gray-50 border border-gray-200 rounded-lg text-xs text-gray-600">
                   <p className="font-medium mb-1">💡 Image Support:</p>
                   <p>Use format: <code className="bg-gray-100 px-1 rounded">[image:URL:description]</code></p>
                 </div>
                 <textarea
+                  id="resource-content-en"
                   value={formData.content}
                   onChange={(e) => setFormData((prev) => ({ ...prev, content: e.target.value }))}
                   rows={8}
@@ -874,8 +877,9 @@ export const ClinicalResources: React.FC = () => {
               {/* Category, Type, Status */}
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Category *</label>
+                  <label htmlFor="resource-category" className="block text-sm font-medium text-gray-700 mb-1">Category *</label>
                   <select
+                    id="resource-category"
                     value={formData.category}
                     onChange={(e) => setFormData((prev) => ({ ...prev, category: e.target.value as typeof prev.category }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
@@ -886,8 +890,9 @@ export const ClinicalResources: React.FC = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Resource Type</label>
+                  <label htmlFor="resource-type" className="block text-sm font-medium text-gray-700 mb-1">Resource Type</label>
                   <select
+                    id="resource-type"
                     value={formData.resourceType}
                     onChange={(e) => setFormData((prev) => ({ ...prev, resourceType: e.target.value as any }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
@@ -900,8 +905,9 @@ export const ClinicalResources: React.FC = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Initial Status</label>
+                  <label htmlFor="resource-status" className="block text-sm font-medium text-gray-700 mb-1">Initial Status</label>
                   <select
+                    id="resource-status"
                     value={formData.status}
                     onChange={(e) => setFormData((prev) => ({ ...prev, status: e.target.value as ContentStatus }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
@@ -917,8 +923,9 @@ export const ClinicalResources: React.FC = () => {
 
               {/* Source */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Source</label>
+                <label htmlFor="resource-source" className="block text-sm font-medium text-gray-700 mb-1">Source</label>
                 <input
+                  id="resource-source"
                   type="text"
                   value={formData.source}
                   onChange={(e) => setFormData((prev) => ({ ...prev, source: e.target.value }))}

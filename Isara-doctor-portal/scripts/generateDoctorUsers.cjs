@@ -12,8 +12,8 @@
  * Run: node scripts/generateDoctorUsers.cjs
  */
 
-const crypto = require('crypto');
-const http = require('http');
+const crypto = require('node:crypto');
+const http = require('node:http');
 
 // ============================================================================
 // CONFIGURATION
@@ -251,11 +251,11 @@ async function main() {
   // Get existing user index (or create empty)
   console.log('📥 Fetching existing user index...');
   let userIndex = await readFromGCS('users/index.json');
-  if (!userIndex) {
+  if (userIndex) {
+    console.log(`   Found ${userIndex.length} existing users`);
+  } else {
     console.log('   Creating new index...');
     userIndex = [];
-  } else {
-    console.log(`   Found ${userIndex.length} existing users`);
   }
 
   // Process each doctor

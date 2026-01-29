@@ -19,8 +19,8 @@ const express = require('express');
 const cors = require('cors');
 const { Storage } = require('@google-cloud/storage');
 const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
+const path = require('node:path');
+const fs = require('node:fs');
 
 // OWASP Security Middleware
 const {
@@ -57,11 +57,11 @@ const SERVICE_ACCOUNT_PATH = path.join(__dirname, '..', 'public', 'izara-telemed
 // A02 - Allowed origins for CORS
 const ALLOWED_ORIGINS = process.env.NODE_ENV === 'production'
   ? [
-      'https://doctor.izara.com',
-      'https://izara-doctor-portal-724889190329.asia-southeast1.run.app',
-      'https://izara-patient-portal-724889190329.asia-southeast1.run.app',
-      /\.run\.app$/
-    ]
+    'https://doctor.izara.com',
+    'https://izara-doctor-portal-724889190329.asia-southeast1.run.app',
+    'https://izara-patient-portal-724889190329.asia-southeast1.run.app',
+    /\.run\.app$/
+  ]
   : ['http://localhost:3010', 'http://localhost:3011', 'http://127.0.0.1:3010', 'http://0.0.0.0:3010'];
 
 // ============================================================================
@@ -119,7 +119,7 @@ app.use(requestLogger());
 
 // A02 - Strict CORS
 app.use(cors({
-  origin: function(origin, callback) {
+  origin: function (origin, callback) {
     if (!origin && process.env.NODE_ENV !== 'production') {
       return callback(null, true);
     }
@@ -160,17 +160,17 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // A05 - File upload validation
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { 
+  limits: {
     fileSize: 200 * 1024 * 1024, // 200MB limit for video recordings
     files: 5 // Max 5 files per request
   },
   fileFilter: (req, file, cb) => {
     // A05 - Validate file types (including video for meeting recordings)
     const allowedMimes = [
-      'application/json', 
-      'image/jpeg', 
-      'image/png', 
-      'image/gif', 
+      'application/json',
+      'image/jpeg',
+      'image/png',
+      'image/gif',
       'application/pdf',
       // Video formats for meeting recordings
       'video/webm',
@@ -204,13 +204,13 @@ const upload = multer({
 // A05 - Bucket validation middleware
 function validateBucket(req, res, next) {
   const bucketType = req.query.bucket || req.body?.bucket;
-  
+
   if (!bucketType) {
     return next();
   }
-  
+
   const bucketName = getBucketName(bucketType);
-  
+
   if (!ALLOWED_BUCKETS.includes(bucketName)) {
     securityAuditLog({
       event: 'INVALID_BUCKET_ACCESS',
@@ -218,19 +218,19 @@ function validateBucket(req, res, next) {
       bucket: bucketType,
       ip: getClientIP(req)
     });
-    return res.status(403).json({ 
+    return res.status(403).json({
       error: 'Access denied to bucket',
       code: 'BUCKET_ACCESS_DENIED'
     });
   }
-  
+
   next();
 }
 
 // A05 - Path traversal prevention
 function validatePath(req, res, next) {
   const filePath = req.query.path || req.body?.path;
-  
+
   if (filePath) {
     // Check for path traversal attempts
     if (filePath.includes('..') || filePath.includes('//') || filePath.startsWith('/')) {
@@ -246,7 +246,7 @@ function validatePath(req, res, next) {
       });
     }
   }
-  
+
   next();
 }
 
@@ -393,7 +393,7 @@ app.post('/api/storage/upload', upload.single('file'), async (req, res) => {
       const { fileName, data, contentType, folder } = req.body;
       const fileId = `${folder || 'uploads'}/${Date.now()}_${fileName || 'file.bin'}`;
       const fileUrl = `https://storage.izara.health/${fileId}`;
-      
+
       console.log(`✅ Uploaded (JSON/base64): ${fileId}`);
       return res.json({
         success: true,
@@ -476,7 +476,7 @@ app.post('/api/storage/upload-base64', async (req, res) => {
       'text/plain', 'text/markdown',
       'application/json', 'image/jpeg', 'image/png'
     ];
-    
+
     if (contentType && !allowedMimes.includes(contentType)) {
       securityAuditLog({
         event: 'INVALID_BINARY_TYPE',
@@ -494,7 +494,7 @@ app.post('/api/storage/upload-base64', async (req, res) => {
 
     // Decode base64 to buffer
     const buffer = Buffer.from(base64Data, 'base64');
-    
+
     // Check file size (200MB limit for video)
     if (buffer.length > 200 * 1024 * 1024) {
       return res.status(400).json({ error: 'File too large (max 200MB)' });
@@ -516,12 +516,12 @@ app.post('/api/storage/upload-base64', async (req, res) => {
       }
     }
 
-    const url = makePublic 
+    const url = makePublic
       ? `https://storage.googleapis.com/${bucketName}/${filePath}`
       : `gs://${bucketName}/${filePath}`;
 
     console.log(`\u2705 Uploaded base64: ${bucketName}/${filePath} (${(buffer.length / 1024 / 1024).toFixed(2)}MB)`);
-    
+
     res.json({
       success: true,
       url,
@@ -587,7 +587,7 @@ app.get('/api/storage/list', async (req, res) => {
     const fileList = files.map(file => ({
       name: file.name,
       url: `https://storage.googleapis.com/${bucketName}/${file.name}`,
-      size: parseInt(file.metadata.size || 0),
+      size: Number.parseInt(file.metadata.size || 0, 10),
       contentType: file.metadata.contentType,
       uploadedAt: file.metadata.timeCreated,
       metadata: file.metadata.metadata || {}
@@ -737,20 +737,20 @@ app.get('/api/content/medical', async (req, res) => {
   try {
     const { role, status } = req.query;
     const data = await readGcsJson(BUCKETS.metadata, 'medical-content/articles.json');
-    
+
     if (!data || !data.articles) {
       return res.json({ articles: [], lastUpdated: new Date().toISOString() });
     }
-    
+
     let articles = data.articles;
-    
+
     // Patients only see published content
     if (role === 'patient') {
       articles = articles.filter(a => a.status === 'published');
     } else if (status) {
       articles = articles.filter(a => a.status === status);
     }
-    
+
     res.json({ articles, lastUpdated: data.lastUpdated });
   } catch (error) {
     console.error('Error fetching medical content:', error.message);
@@ -763,20 +763,20 @@ app.get('/api/content/medical/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const data = await readGcsJson(BUCKETS.metadata, 'medical-content/articles.json');
-    
+
     if (!data || !data.articles) {
       return res.status(404).json({ error: 'Article not found' });
     }
-    
+
     const article = data.articles.find(a => a.id === id);
     if (!article) {
       return res.status(404).json({ error: 'Article not found' });
     }
-    
+
     // Increment view count
     article.views = (article.views || 0) + 1;
     await writeGcsJson(BUCKETS.metadata, 'medical-content/articles.json', data);
-    
+
     res.json(article);
   } catch (error) {
     console.error('Error fetching article:', error.message);
@@ -788,16 +788,16 @@ app.get('/api/content/medical/:id', async (req, res) => {
 app.post('/api/content/medical', async (req, res) => {
   try {
     const { userId, userName, ...articleData } = req.body;
-    
+
     if (!userId || !articleData.title || !articleData.content) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
-    
+
     let data = await readGcsJson(BUCKETS.metadata, 'medical-content/articles.json');
     if (!data) {
       data = { articles: [], lastUpdated: new Date().toISOString() };
     }
-    
+
     const newArticle = {
       id: generateContentId('MC'),
       ...articleData,
@@ -818,12 +818,12 @@ app.post('/api/content/medical', async (req, res) => {
       publishedAt: articleData.status === 'published' ? new Date().toISOString() : null,
       readTimeMinutes: Math.ceil((articleData.content?.length || 0) / 1000) || 5,
     };
-    
+
     data.articles.push(newArticle);
     data.lastUpdated = new Date().toISOString();
-    
+
     await writeGcsJson(BUCKETS.metadata, 'medical-content/articles.json', data);
-    
+
     res.status(201).json(newArticle);
   } catch (error) {
     console.error('Error creating medical content:', error.message);
@@ -836,19 +836,19 @@ app.put('/api/content/medical/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const { userId, userName, changeNote, ...updates } = req.body;
-    
+
     const data = await readGcsJson(BUCKETS.metadata, 'medical-content/articles.json');
     if (!data || !data.articles) {
       return res.status(404).json({ error: 'Article not found' });
     }
-    
+
     const index = data.articles.findIndex(a => a.id === id);
     if (index === -1) {
       return res.status(404).json({ error: 'Article not found' });
     }
-    
+
     const article = data.articles[index];
-    
+
     // Store version history
     article.history = article.history || [];
     article.history.push({
@@ -861,27 +861,27 @@ app.put('/api/content/medical/:id', async (req, res) => {
       modifiedAt: article.updatedAt,
       changeNote: changeNote || 'Updated'
     });
-    
+
     // Update article
     Object.assign(article, updates);
     article.version = (article.version || 1) + 1;
     article.updatedBy = userId;
     article.updatedByName = userName || 'Unknown';
     article.updatedAt = new Date().toISOString();
-    
+
     if (updates.status === 'published' && !article.publishedAt) {
       article.publishedAt = new Date().toISOString();
     }
-    
+
     if (updates.content) {
       article.readTimeMinutes = Math.ceil(updates.content.length / 1000) || 5;
     }
-    
+
     data.articles[index] = article;
     data.lastUpdated = new Date().toISOString();
-    
+
     await writeGcsJson(BUCKETS.metadata, 'medical-content/articles.json', data);
-    
+
     res.json(article);
   } catch (error) {
     console.error('Error updating medical content:', error.message);
@@ -893,22 +893,22 @@ app.put('/api/content/medical/:id', async (req, res) => {
 app.delete('/api/content/medical/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     const data = await readGcsJson(BUCKETS.metadata, 'medical-content/articles.json');
     if (!data || !data.articles) {
       return res.status(404).json({ error: 'Article not found' });
     }
-    
+
     const index = data.articles.findIndex(a => a.id === id);
     if (index === -1) {
       return res.status(404).json({ error: 'Article not found' });
     }
-    
+
     data.articles.splice(index, 1);
     data.lastUpdated = new Date().toISOString();
-    
+
     await writeGcsJson(BUCKETS.metadata, 'medical-content/articles.json', data);
-    
+
     res.json({ success: true, message: 'Article deleted' });
   } catch (error) {
     console.error('Error deleting medical content:', error.message);
@@ -920,17 +920,17 @@ app.delete('/api/content/medical/:id', async (req, res) => {
 app.get('/api/content/medical/pending', async (req, res) => {
   try {
     const data = await readGcsJson(BUCKETS.metadata, 'medical-content/articles.json');
-    
+
     if (!data || !data.articles) {
       return res.json({ articles: [], count: 0 });
     }
-    
+
     const pendingArticles = data.articles.filter(a => a.status === 'pending');
-    
-    res.json({ 
-      articles: pendingArticles, 
+
+    res.json({
+      articles: pendingArticles,
       count: pendingArticles.length,
-      lastUpdated: data.lastUpdated 
+      lastUpdated: data.lastUpdated
     });
   } catch (error) {
     console.error('Error fetching pending medical content:', error.message);
@@ -943,33 +943,33 @@ app.post('/api/content/medical/:id/review', async (req, res) => {
   try {
     const { id } = req.params;
     const { action, userId, userName, comment, rejectionReason } = req.body;
-    
+
     if (!['approve', 'reject'].includes(action)) {
       return res.status(400).json({ error: 'Invalid action. Must be approve or reject' });
     }
-    
+
     const data = await readGcsJson(BUCKETS.metadata, 'medical-content/articles.json');
     if (!data || !data.articles) {
       return res.status(404).json({ error: 'Article not found' });
     }
-    
+
     const index = data.articles.findIndex(a => a.id === id);
     if (index === -1) {
       return res.status(404).json({ error: 'Article not found' });
     }
-    
+
     const article = data.articles[index];
-    
+
     if (article.status !== 'pending') {
       return res.status(400).json({ error: 'Article is not pending approval' });
     }
-    
+
     // Update status based on action
     article.status = action === 'approve' ? 'published' : 'rejected';
     article.reviewedBy = userId;
     article.reviewedByName = userName || 'Admin';
     article.reviewedAt = new Date().toISOString();
-    
+
     if (action === 'approve') {
       article.approvedBy = userId;
       article.approvedAt = new Date().toISOString();
@@ -979,7 +979,7 @@ app.post('/api/content/medical/:id/review', async (req, res) => {
       article.rejectedAt = new Date().toISOString();
       article.rejectionReason = rejectionReason || 'No reason provided';
     }
-    
+
     // Add admin comment if provided
     if (comment) {
       article.comments = article.comments || [];
@@ -993,16 +993,16 @@ app.post('/api/content/medical/:id/review', async (req, res) => {
         isAdminFeedback: true
       });
     }
-    
+
     data.articles[index] = article;
     data.lastUpdated = new Date().toISOString();
-    
+
     await writeGcsJson(BUCKETS.metadata, 'medical-content/articles.json', data);
-    
-    res.json({ 
-      success: true, 
+
+    res.json({
+      success: true,
       message: `Article ${action === 'approve' ? 'approved and published' : 'rejected'}`,
-      article 
+      article
     });
   } catch (error) {
     console.error('Error reviewing medical content:', error.message);
@@ -1019,30 +1019,30 @@ app.get('/api/content/clinical', async (req, res) => {
   try {
     const { isAdmin, status, myContent, userId } = req.query;
     const data = await readGcsJson(BUCKETS.metadata, 'clinical-resources/resources.json');
-    
+
     if (!data || !data.resources) {
       return res.json({ resources: [], pendingCount: 0, lastUpdated: new Date().toISOString() });
     }
-    
+
     let resources = data.resources;
-    
+
     // Filter based on role and request
     if (myContent === 'true' && userId) {
       // Show user's own content regardless of status
       resources = resources.filter(r => r.createdBy === userId);
     } else if (isAdmin !== 'true') {
       // Non-admin doctors see only published OR their own content
-      resources = resources.filter(r => 
+      resources = resources.filter(r =>
         r.status === 'published' || r.createdBy === userId
       );
     }
-    
+
     if (status) {
       resources = resources.filter(r => r.status === status);
     }
-    
+
     const pendingCount = data.pendingApprovalIds?.length || 0;
-    
+
     res.json({ resources, pendingCount, lastUpdated: data.lastUpdated });
   } catch (error) {
     console.error('Error fetching clinical resources:', error.message);
@@ -1054,13 +1054,13 @@ app.get('/api/content/clinical', async (req, res) => {
 app.get('/api/content/clinical/pending', async (req, res) => {
   try {
     const data = await readGcsJson(BUCKETS.metadata, 'clinical-resources/resources.json');
-    
+
     if (!data || !data.resources) {
       return res.json({ resources: [], count: 0 });
     }
-    
+
     const pendingResources = data.resources.filter(r => r.status === 'pending');
-    
+
     res.json({ resources: pendingResources, count: pendingResources.length });
   } catch (error) {
     console.error('Error fetching pending approvals:', error.message);
@@ -1073,16 +1073,16 @@ app.get('/api/content/clinical/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const data = await readGcsJson(BUCKETS.metadata, 'clinical-resources/resources.json');
-    
+
     if (!data || !data.resources) {
       return res.status(404).json({ error: 'Resource not found' });
     }
-    
+
     const resource = data.resources.find(r => r.id === id);
     if (!resource) {
       return res.status(404).json({ error: 'Resource not found' });
     }
-    
+
     res.json(resource);
   } catch (error) {
     console.error('Error fetching resource:', error.message);
@@ -1094,18 +1094,18 @@ app.get('/api/content/clinical/:id', async (req, res) => {
 app.post('/api/content/clinical', async (req, res) => {
   try {
     const { userId, userName, ...resourceData } = req.body;
-    
+
     if (!userId || !resourceData.title || !resourceData.content) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
-    
+
     let data = await readGcsJson(BUCKETS.metadata, 'clinical-resources/resources.json');
     if (!data) {
       data = { resources: [], pendingApprovalIds: [], lastUpdated: new Date().toISOString() };
     }
-    
+
     const status = resourceData.status === 'pending' ? 'pending' : 'draft';
-    
+
     const newResource = {
       id: generateContentId('CR'),
       ...resourceData,
@@ -1122,18 +1122,18 @@ app.post('/api/content/clinical', async (req, res) => {
       updatedAt: new Date().toISOString(),
       submittedAt: status === 'pending' ? new Date().toISOString() : null,
     };
-    
+
     data.resources.push(newResource);
-    
+
     if (status === 'pending') {
       data.pendingApprovalIds = data.pendingApprovalIds || [];
       data.pendingApprovalIds.push(newResource.id);
     }
-    
+
     data.lastUpdated = new Date().toISOString();
-    
+
     await writeGcsJson(BUCKETS.metadata, 'clinical-resources/resources.json', data);
-    
+
     res.status(201).json(newResource);
   } catch (error) {
     console.error('Error creating clinical resource:', error.message);
@@ -1146,19 +1146,19 @@ app.put('/api/content/clinical/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const { userId, userName, changeNote, ...updates } = req.body;
-    
+
     const data = await readGcsJson(BUCKETS.metadata, 'clinical-resources/resources.json');
     if (!data || !data.resources) {
       return res.status(404).json({ error: 'Resource not found' });
     }
-    
+
     const index = data.resources.findIndex(r => r.id === id);
     if (index === -1) {
       return res.status(404).json({ error: 'Resource not found' });
     }
-    
+
     const resource = data.resources[index];
-    
+
     // Store version history
     resource.history = resource.history || [];
     resource.history.push({
@@ -1171,37 +1171,37 @@ app.put('/api/content/clinical/:id', async (req, res) => {
       modifiedAt: resource.updatedAt,
       changeNote: changeNote || 'Updated'
     });
-    
+
     // If submitting for approval or content changed, reset approval
-    const needsReapproval = updates.status === 'pending' || 
+    const needsReapproval = updates.status === 'pending' ||
       (resource.status === 'published' && (updates.content || updates.title));
-    
+
     if (needsReapproval) {
       updates.status = 'pending';
       updates.submittedAt = new Date().toISOString();
       updates.reviewedBy = null;
       updates.reviewedByName = null;
       updates.reviewedAt = null;
-      
+
       // Add to pending list
       data.pendingApprovalIds = data.pendingApprovalIds || [];
       if (!data.pendingApprovalIds.includes(id)) {
         data.pendingApprovalIds.push(id);
       }
     }
-    
+
     // Update resource
     Object.assign(resource, updates);
     resource.version = (resource.version || 1) + 1;
     resource.updatedBy = userId;
     resource.updatedByName = userName || 'Unknown';
     resource.updatedAt = new Date().toISOString();
-    
+
     data.resources[index] = resource;
     data.lastUpdated = new Date().toISOString();
-    
+
     await writeGcsJson(BUCKETS.metadata, 'clinical-resources/resources.json', data);
-    
+
     res.json(resource);
   } catch (error) {
     console.error('Error updating clinical resource:', error.message);
@@ -1214,35 +1214,35 @@ app.delete('/api/content/clinical/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const { userId } = req.query;
-    
+
     const data = await readGcsJson(BUCKETS.metadata, 'clinical-resources/resources.json');
     if (!data || !data.resources) {
       return res.status(404).json({ error: 'Resource not found' });
     }
-    
+
     const index = data.resources.findIndex(r => r.id === id);
     if (index === -1) {
       return res.status(404).json({ error: 'Resource not found' });
     }
-    
+
     const resource = data.resources[index];
-    
+
     // Only creator can delete (not admin)
     if (resource.createdBy !== userId) {
       return res.status(403).json({ error: 'Only the creator can delete this resource' });
     }
-    
+
     data.resources.splice(index, 1);
-    
+
     // Remove from pending list if present
     if (data.pendingApprovalIds) {
       data.pendingApprovalIds = data.pendingApprovalIds.filter(pid => pid !== id);
     }
-    
+
     data.lastUpdated = new Date().toISOString();
-    
+
     await writeGcsJson(BUCKETS.metadata, 'clinical-resources/resources.json', data);
-    
+
     res.json({ success: true, message: 'Resource deleted' });
   } catch (error) {
     console.error('Error deleting clinical resource:', error.message);
@@ -1255,39 +1255,39 @@ app.post('/api/content/clinical/:id/review', async (req, res) => {
   try {
     const { id } = req.params;
     const { action, userId, userName, comment, rejectionReason } = req.body;
-    
+
     if (!['approve', 'reject'].includes(action)) {
       return res.status(400).json({ error: 'Invalid action. Must be approve or reject' });
     }
-    
+
     const data = await readGcsJson(BUCKETS.metadata, 'clinical-resources/resources.json');
     if (!data || !data.resources) {
       return res.status(404).json({ error: 'Resource not found' });
     }
-    
+
     const index = data.resources.findIndex(r => r.id === id);
     if (index === -1) {
       return res.status(404).json({ error: 'Resource not found' });
     }
-    
+
     const resource = data.resources[index];
-    
+
     if (resource.status !== 'pending') {
       return res.status(400).json({ error: 'Resource is not pending approval' });
     }
-    
+
     // Update status
     resource.status = action === 'approve' ? 'published' : 'rejected';
     resource.reviewedBy = userId;
     resource.reviewedByName = userName || 'Admin';
     resource.reviewedAt = new Date().toISOString();
-    
+
     if (action === 'approve') {
       resource.publishedAt = new Date().toISOString();
     } else {
       resource.rejectionReason = rejectionReason || 'No reason provided';
     }
-    
+
     // Add admin comment if provided
     if (comment) {
       resource.comments = resource.comments || [];
@@ -1301,19 +1301,19 @@ app.post('/api/content/clinical/:id/review', async (req, res) => {
         isAdminFeedback: true
       });
     }
-    
+
     // Remove from pending list
     data.pendingApprovalIds = (data.pendingApprovalIds || []).filter(pid => pid !== id);
-    
+
     data.resources[index] = resource;
     data.lastUpdated = new Date().toISOString();
-    
+
     await writeGcsJson(BUCKETS.metadata, 'clinical-resources/resources.json', data);
-    
-    res.json({ 
-      success: true, 
+
+    res.json({
+      success: true,
       message: `Resource ${action === 'approve' ? 'approved' : 'rejected'}`,
-      resource 
+      resource
     });
   } catch (error) {
     console.error('Error reviewing clinical resource:', error.message);
@@ -1330,31 +1330,31 @@ app.get('/api/consultants', async (req, res) => {
   try {
     const { specialty, available, search } = req.query;
     const data = await readGcsJson(BUCKETS.metadata, 'consultants/consultants.json');
-    
+
     if (!data || !data.consultants) {
       return res.json({ consultants: [], lastUpdated: new Date().toISOString() });
     }
-    
+
     let consultants = data.consultants;
-    
+
     // Apply filters
     if (specialty && specialty !== 'All Specialties') {
       consultants = consultants.filter(c => c.specialty === specialty);
     }
-    
+
     if (available === 'true') {
       consultants = consultants.filter(c => c.available);
     }
-    
+
     if (search) {
       const searchLower = search.toLowerCase();
-      consultants = consultants.filter(c => 
+      consultants = consultants.filter(c =>
         c.name.toLowerCase().includes(searchLower) ||
         c.specialty.toLowerCase().includes(searchLower) ||
         c.hospital.toLowerCase().includes(searchLower)
       );
     }
-    
+
     res.json({ consultants, lastUpdated: data.lastUpdated });
   } catch (error) {
     console.error('Error fetching consultants:', error.message);
@@ -1367,16 +1367,16 @@ app.get('/api/consultants/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const data = await readGcsJson(BUCKETS.metadata, 'consultants/consultants.json');
-    
+
     if (!data || !data.consultants) {
       return res.status(404).json({ error: 'Consultant not found' });
     }
-    
+
     const consultant = data.consultants.find(c => c.id === id);
     if (!consultant) {
       return res.status(404).json({ error: 'Consultant not found' });
     }
-    
+
     res.json(consultant);
   } catch (error) {
     console.error('Error fetching consultant:', error.message);
@@ -1388,26 +1388,26 @@ app.get('/api/consultants/:id', async (req, res) => {
 app.post('/api/consultants', async (req, res) => {
   try {
     const { userId, userName, isAdmin, ...consultantData } = req.body;
-    
+
     if (!isAdmin) {
       return res.status(403).json({ error: 'Only admins can add consultants' });
     }
-    
+
     if (!consultantData.name || !consultantData.specialty || !consultantData.email) {
       return res.status(400).json({ error: 'Missing required fields: name, specialty, email' });
     }
-    
+
     let data = await readGcsJson(BUCKETS.metadata, 'consultants/consultants.json');
     if (!data) {
       data = { consultants: [], lastUpdated: new Date().toISOString() };
     }
-    
+
     // Check for duplicate email
     const existingConsultant = data.consultants.find(c => c.email === consultantData.email);
     if (existingConsultant) {
       return res.status(400).json({ error: 'A consultant with this email already exists' });
     }
-    
+
     const newConsultant = {
       id: generateContentId('CONS'),
       name: consultantData.name,
@@ -1433,14 +1433,14 @@ app.post('/api/consultants', async (req, res) => {
       updatedByName: userName || 'Admin',
       updatedAt: new Date().toISOString(),
     };
-    
+
     data.consultants.push(newConsultant);
     data.lastUpdated = new Date().toISOString();
-    
+
     await writeGcsJson(BUCKETS.metadata, 'consultants/consultants.json', data);
-    
+
     console.log(`✅ Created consultant: ${newConsultant.name} (${newConsultant.id})`);
-    
+
     res.status(201).json(newConsultant);
   } catch (error) {
     console.error('Error creating consultant:', error.message);
@@ -1453,36 +1453,36 @@ app.put('/api/consultants/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const { userId, userName, isAdmin, ...updates } = req.body;
-    
+
     if (!isAdmin) {
       return res.status(403).json({ error: 'Only admins can update consultants' });
     }
-    
+
     const data = await readGcsJson(BUCKETS.metadata, 'consultants/consultants.json');
     if (!data || !data.consultants) {
       return res.status(404).json({ error: 'Consultant not found' });
     }
-    
+
     const index = data.consultants.findIndex(c => c.id === id);
     if (index === -1) {
       return res.status(404).json({ error: 'Consultant not found' });
     }
-    
+
     const consultant = data.consultants[index];
-    
+
     // Update consultant
     Object.assign(consultant, updates);
     consultant.updatedBy = userId;
     consultant.updatedByName = userName || 'Admin';
     consultant.updatedAt = new Date().toISOString();
-    
+
     data.consultants[index] = consultant;
     data.lastUpdated = new Date().toISOString();
-    
+
     await writeGcsJson(BUCKETS.metadata, 'consultants/consultants.json', data);
-    
+
     console.log(`✅ Updated consultant: ${consultant.name} (${consultant.id})`);
-    
+
     res.json(consultant);
   } catch (error) {
     console.error('Error updating consultant:', error.message);
@@ -1495,29 +1495,29 @@ app.delete('/api/consultants/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const { isAdmin } = req.query;
-    
+
     if (isAdmin !== 'true') {
       return res.status(403).json({ error: 'Only admins can delete consultants' });
     }
-    
+
     const data = await readGcsJson(BUCKETS.metadata, 'consultants/consultants.json');
     if (!data || !data.consultants) {
       return res.status(404).json({ error: 'Consultant not found' });
     }
-    
+
     const index = data.consultants.findIndex(c => c.id === id);
     if (index === -1) {
       return res.status(404).json({ error: 'Consultant not found' });
     }
-    
+
     const deletedConsultant = data.consultants[index];
     data.consultants.splice(index, 1);
     data.lastUpdated = new Date().toISOString();
-    
+
     await writeGcsJson(BUCKETS.metadata, 'consultants/consultants.json', data);
-    
+
     console.log(`✅ Deleted consultant: ${deletedConsultant.name} (${id})`);
-    
+
     res.json({ success: true, message: 'Consultant deleted' });
   } catch (error) {
     console.error('Error deleting consultant:', error.message);
@@ -1530,21 +1530,21 @@ app.post('/api/consultants/:id/availability', async (req, res) => {
   try {
     const { id } = req.params;
     const { available, availableSlots, userId, userName, isAdmin } = req.body;
-    
+
     if (!isAdmin) {
       return res.status(403).json({ error: 'Only admins can update availability' });
     }
-    
+
     const data = await readGcsJson(BUCKETS.metadata, 'consultants/consultants.json');
     if (!data || !data.consultants) {
       return res.status(404).json({ error: 'Consultant not found' });
     }
-    
+
     const index = data.consultants.findIndex(c => c.id === id);
     if (index === -1) {
       return res.status(404).json({ error: 'Consultant not found' });
     }
-    
+
     const consultant = data.consultants[index];
     consultant.available = available;
     if (availableSlots) {
@@ -1553,12 +1553,12 @@ app.post('/api/consultants/:id/availability', async (req, res) => {
     consultant.updatedBy = userId;
     consultant.updatedByName = userName || 'Admin';
     consultant.updatedAt = new Date().toISOString();
-    
+
     data.consultants[index] = consultant;
     data.lastUpdated = new Date().toISOString();
-    
+
     await writeGcsJson(BUCKETS.metadata, 'consultants/consultants.json', data);
-    
+
     res.json({ success: true, consultant });
   } catch (error) {
     console.error('Error updating availability:', error.message);
@@ -1571,24 +1571,24 @@ app.post('/api/consultants/:id/review', async (req, res) => {
   try {
     const { id } = req.params;
     const { rating, comment, userId, userName } = req.body;
-    
+
     if (!rating || rating < 1 || rating > 5) {
       return res.status(400).json({ error: 'Rating must be between 1 and 5' });
     }
-    
+
     const data = await readGcsJson(BUCKETS.metadata, 'consultants/consultants.json');
     if (!data || !data.consultants) {
       return res.status(404).json({ error: 'Consultant not found' });
     }
-    
+
     const index = data.consultants.findIndex(c => c.id === id);
     if (index === -1) {
       return res.status(404).json({ error: 'Consultant not found' });
     }
-    
+
     const consultant = data.consultants[index];
     consultant.reviews = consultant.reviews || [];
-    
+
     // Check if user already reviewed
     const existingReviewIndex = consultant.reviews.findIndex(r => r.userId === userId);
     if (existingReviewIndex >= 0) {
@@ -1610,18 +1610,18 @@ app.post('/api/consultants/:id/review', async (req, res) => {
         createdAt: new Date().toISOString()
       });
     }
-    
+
     // Recalculate average rating
     const totalRating = consultant.reviews.reduce((sum, r) => sum + r.rating, 0);
     consultant.rating = Math.round((totalRating / consultant.reviews.length) * 10) / 10;
     consultant.reviewCount = consultant.reviews.length;
     consultant.updatedAt = new Date().toISOString();
-    
+
     data.consultants[index] = consultant;
     data.lastUpdated = new Date().toISOString();
-    
+
     await writeGcsJson(BUCKETS.metadata, 'consultants/consultants.json', data);
-    
+
     res.json({ success: true, consultant });
   } catch (error) {
     console.error('Error adding review:', error.message);
@@ -1633,10 +1633,10 @@ app.post('/api/consultants/:id/review', async (req, res) => {
 app.get('/api/consultants/specialties/list', async (req, res) => {
   try {
     const data = await readGcsJson(BUCKETS.metadata, 'consultants/specialties.json');
-    
+
     if (!data || !data.specialties) {
       // Return default specialties
-      return res.json({ 
+      return res.json({
         specialties: [
           'Cardiology',
           'Neurology',
@@ -1660,7 +1660,7 @@ app.get('/api/consultants/specialties/list', async (req, res) => {
         ]
       });
     }
-    
+
     res.json({ specialties: data.specialties });
   } catch (error) {
     console.error('Error fetching specialties:', error.message);
@@ -1676,16 +1676,16 @@ app.get('/api/consultants/specialties/list', async (req, res) => {
 app.get('/api/content/tags/:type', async (req, res) => {
   try {
     const { type } = req.params;
-    const filePath = type === 'medical' 
-      ? 'medical-content/tags.json' 
+    const filePath = type === 'medical'
+      ? 'medical-content/tags.json'
       : 'clinical-resources/tags.json';
-    
+
     const data = await readGcsJson(BUCKETS.metadata, filePath);
-    
+
     if (!data || !data.tags) {
       return res.json({ tags: [] });
     }
-    
+
     res.json({ tags: data.tags });
   } catch (error) {
     console.error('Error fetching tags:', error.message);
@@ -1698,29 +1698,29 @@ app.post('/api/content/tags/:type', async (req, res) => {
   try {
     const { type } = req.params;
     const { name, nameTh, userId } = req.body;
-    
+
     if (!name) {
       return res.status(400).json({ error: 'Tag name is required' });
     }
-    
-    const filePath = type === 'medical' 
-      ? 'medical-content/tags.json' 
+
+    const filePath = type === 'medical'
+      ? 'medical-content/tags.json'
       : 'clinical-resources/tags.json';
-    
+
     let data = await readGcsJson(BUCKETS.metadata, filePath);
     if (!data) {
       data = { tags: [], lastUpdated: new Date().toISOString() };
     }
-    
+
     // Check if tag already exists
-    const existingTag = data.tags.find(t => 
+    const existingTag = data.tags.find(t =>
       t.name.toLowerCase() === name.toLowerCase()
     );
-    
+
     if (existingTag) {
       return res.json(existingTag);
     }
-    
+
     const newTag = {
       id: generateContentId('TAG'),
       name,
@@ -1729,12 +1729,12 @@ app.post('/api/content/tags/:type', async (req, res) => {
       createdAt: new Date().toISOString(),
       usageCount: 0
     };
-    
+
     data.tags.push(newTag);
     data.lastUpdated = new Date().toISOString();
-    
+
     await writeGcsJson(BUCKETS.metadata, filePath, data);
-    
+
     res.status(201).json(newTag);
   } catch (error) {
     console.error('Error creating tag:', error.message);
@@ -1751,29 +1751,29 @@ app.post('/api/content/:type/:id/comments', async (req, res) => {
   try {
     const { type, id } = req.params;
     const { userId, userName, userRole, content, isAdminFeedback } = req.body;
-    
+
     if (!content) {
       return res.status(400).json({ error: 'Comment content is required' });
     }
-    
-    const filePath = type === 'medical' 
-      ? 'medical-content/articles.json' 
+
+    const filePath = type === 'medical'
+      ? 'medical-content/articles.json'
       : 'clinical-resources/resources.json';
     const itemKey = type === 'medical' ? 'articles' : 'resources';
-    
+
     const data = await readGcsJson(BUCKETS.metadata, filePath);
     if (!data || !data[itemKey]) {
       return res.status(404).json({ error: 'Content not found' });
     }
-    
+
     const index = data[itemKey].findIndex(item => item.id === id);
     if (index === -1) {
       return res.status(404).json({ error: 'Content not found' });
     }
-    
+
     const item = data[itemKey][index];
     item.comments = item.comments || [];
-    
+
     const newComment = {
       id: generateContentId('CMT'),
       authorId: userId,
@@ -1783,13 +1783,13 @@ app.post('/api/content/:type/:id/comments', async (req, res) => {
       createdAt: new Date().toISOString(),
       isAdminFeedback: isAdminFeedback || false
     };
-    
+
     item.comments.push(newComment);
     data[itemKey][index] = item;
     data.lastUpdated = new Date().toISOString();
-    
+
     await writeGcsJson(BUCKETS.metadata, filePath, data);
-    
+
     res.status(201).json(newComment);
   } catch (error) {
     console.error('Error adding comment:', error.message);
@@ -1806,15 +1806,15 @@ app.post('/api/patients/:patientId/health-logs', async (req, res) => {
   try {
     const { patientId } = req.params;
     const healthLogEntry = req.body;
-    
+
     if (!healthLogEntry || !healthLogEntry.emrId) {
       return res.status(400).json({ error: 'Missing required health log data' });
     }
-    
+
     // Read existing health logs for patient
     const healthLogsPath = `patients/${patientId}/health-logs.json`;
     let healthLogs = await readGcsJson(BUCKETS.patient, healthLogsPath);
-    
+
     if (!healthLogs) {
       healthLogs = {
         patientId,
@@ -1822,7 +1822,7 @@ app.post('/api/patients/:patientId/health-logs', async (req, res) => {
         lastUpdated: new Date().toISOString()
       };
     }
-    
+
     // Add new entry
     healthLogs.entries = healthLogs.entries || [];
     healthLogs.entries.push({
@@ -1830,16 +1830,16 @@ app.post('/api/patients/:patientId/health-logs', async (req, res) => {
       addedAt: new Date().toISOString()
     });
     healthLogs.lastUpdated = new Date().toISOString();
-    
+
     // Save updated health logs
     await writeGcsJson(BUCKETS.patient, healthLogsPath, healthLogs);
-    
+
     console.log(`✅ Added EMR ${healthLogEntry.emrId} to patient ${patientId} health logs`);
-    
-    res.status(201).json({ 
-      success: true, 
+
+    res.status(201).json({
+      success: true,
       message: 'Health log entry added',
-      entryId: healthLogEntry.id 
+      entryId: healthLogEntry.id
     });
   } catch (error) {
     console.error('Error adding health log entry:', error.message);
@@ -1852,17 +1852,17 @@ app.get('/api/patients/:patientId/health-logs', async (req, res) => {
   try {
     const { patientId } = req.params;
     const healthLogsPath = `patients/${patientId}/health-logs.json`;
-    
+
     const healthLogs = await readGcsJson(BUCKETS.patient, healthLogsPath);
-    
+
     if (!healthLogs) {
-      return res.json({ 
-        patientId, 
-        entries: [], 
-        lastUpdated: new Date().toISOString() 
+      return res.json({
+        patientId,
+        entries: [],
+        lastUpdated: new Date().toISOString()
       });
     }
-    
+
     res.json(healthLogs);
   } catch (error) {
     console.error('Error fetching health logs:', error.message);
@@ -1877,24 +1877,24 @@ app.get('/api/patients/:patientId/health-logs', async (req, res) => {
 // POST notify patient that EMR is ready
 app.post('/api/notifications/emr-signed', async (req, res) => {
   try {
-    const { 
-      patientId, 
-      patientEmail, 
-      patientName, 
-      doctorName, 
-      encounterDate, 
+    const {
+      patientId,
+      patientEmail,
+      patientName,
+      doctorName,
+      encounterDate,
       emrId,
-      appointmentId 
+      appointmentId
     } = req.body;
-    
+
     if (!patientId || !emrId) {
       return res.status(400).json({ error: 'Missing required notification data' });
     }
-    
+
     // Create in-app notification
     const notificationPath = `patients/${patientId}/notifications.json`;
     let notifications = await readGcsJson(BUCKETS.patient, notificationPath);
-    
+
     if (!notifications) {
       notifications = {
         patientId,
@@ -1902,13 +1902,13 @@ app.post('/api/notifications/emr-signed', async (req, res) => {
         lastUpdated: new Date().toISOString()
       };
     }
-    
+
     const formattedDate = new Date(encounterDate).toLocaleDateString('th-TH', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
     });
-    
+
     const newNotification = {
       id: generateContentId('NOTIF'),
       type: 'emr_ready',
@@ -1921,26 +1921,26 @@ app.post('/api/notifications/emr-signed', async (req, res) => {
       isRead: false,
       createdAt: new Date().toISOString()
     };
-    
+
     notifications.notifications = notifications.notifications || [];
     notifications.notifications.unshift(newNotification);
     notifications.lastUpdated = new Date().toISOString();
-    
+
     // Keep only last 100 notifications
     if (notifications.notifications.length > 100) {
       notifications.notifications = notifications.notifications.slice(0, 100);
     }
-    
+
     await writeGcsJson(BUCKETS.patient, notificationPath, notifications);
-    
+
     // TODO: Send email notification if email service is configured
     // This would integrate with the emailService.cjs
     console.log(`✅ EMR ready notification created for patient ${patientId}`);
-    
-    res.status(201).json({ 
-      success: true, 
+
+    res.status(201).json({
+      success: true,
       message: 'Patient notified about EMR',
-      notificationId: newNotification.id 
+      notificationId: newNotification.id
     });
   } catch (error) {
     console.error('Error sending EMR notification:', error.message);
@@ -1957,29 +1957,29 @@ app.put('/api/appointments/:appointmentId/status', async (req, res) => {
   try {
     const { appointmentId } = req.params;
     const { status, completedAt, emrId } = req.body;
-    
+
     if (!status) {
       return res.status(400).json({ error: 'Status is required' });
     }
-    
+
     // Read appointments from GCS
     const appointmentsPath = 'appointments.json';
     let appointmentsData = await readGcsJson(BUCKETS.appointments, appointmentsPath);
-    
+
     if (!appointmentsData) {
       return res.status(404).json({ error: 'Appointments not found' });
     }
-    
+
     // Handle both array format and object with appointments property
-    let appointments = Array.isArray(appointmentsData) 
-      ? appointmentsData 
+    let appointments = Array.isArray(appointmentsData)
+      ? appointmentsData
       : (appointmentsData.appointments || []);
-    
+
     const index = appointments.findIndex(a => a.id === appointmentId);
     if (index === -1) {
       return res.status(404).json({ error: 'Appointment not found' });
     }
-    
+
     // Update appointment
     appointments[index] = {
       ...appointments[index],
@@ -1988,7 +1988,7 @@ app.put('/api/appointments/:appointmentId/status', async (req, res) => {
       emrId: emrId || appointments[index].emrId,
       lastModified: new Date().toISOString()
     };
-    
+
     // Save back in original format
     let dataToSave;
     if (Array.isArray(appointmentsData)) {
@@ -1998,14 +1998,14 @@ app.put('/api/appointments/:appointmentId/status', async (req, res) => {
       appointmentsData.lastUpdated = new Date().toISOString();
       dataToSave = appointmentsData;
     }
-    
+
     await writeGcsJson(BUCKETS.appointments, appointmentsPath, dataToSave);
-    
+
     console.log(`✅ Appointment ${appointmentId} status updated to ${status}`);
-    
-    res.json({ 
-      success: true, 
-      appointment: appointments[index] 
+
+    res.json({
+      success: true,
+      appointment: appointments[index]
     });
   } catch (error) {
     console.error('Error updating appointment status:', error.message);
@@ -2021,26 +2021,26 @@ app.put('/api/appointments/:appointmentId/status', async (req, res) => {
 app.post('/api/emr', async (req, res) => {
   try {
     const emrData = req.body;
-    
+
     if (!emrData || !emrData.id) {
       return res.status(400).json({ error: 'EMR data with id is required' });
     }
-    
+
     const emrPath = `emr/${emrData.id}.json`;
-    
+
     // Add timestamps
     const emrRecord = {
       ...emrData,
       createdAt: emrData.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
-    
+
     await writeGcsJson(BUCKETS.doctor, emrPath, emrRecord);
-    
+
     // Also update the EMR index
     const indexPath = 'emr/index.json';
     let emrIndex = await readGcsJson(BUCKETS.doctor, indexPath) || { emrs: [], lastUpdated: null };
-    
+
     // Check if EMR already exists in index
     const existingIndex = emrIndex.emrs.findIndex(e => e.id === emrData.id);
     const indexEntry = {
@@ -2053,20 +2053,20 @@ app.post('/api/emr', async (req, res) => {
       createdAt: emrRecord.createdAt,
       updatedAt: emrRecord.updatedAt
     };
-    
+
     if (existingIndex >= 0) {
       emrIndex.emrs[existingIndex] = indexEntry;
     } else {
       emrIndex.emrs.push(indexEntry);
     }
     emrIndex.lastUpdated = new Date().toISOString();
-    
+
     await writeGcsJson(BUCKETS.doctor, indexPath, emrIndex);
-    
+
     console.log(`✅ EMR saved: ${emrData.id}`);
-    
-    res.status(201).json({ 
-      success: true, 
+
+    res.status(201).json({
+      success: true,
       emr: emrRecord,
       message: 'EMR saved successfully'
     });
@@ -2081,13 +2081,13 @@ app.get('/api/emr/:emrId', async (req, res) => {
   try {
     const { emrId } = req.params;
     const emrPath = `emr/${emrId}.json`;
-    
+
     const emrData = await readGcsJson(BUCKETS.doctor, emrPath);
-    
+
     if (!emrData) {
       return res.status(404).json({ error: 'EMR not found' });
     }
-    
+
     res.json(emrData);
   } catch (error) {
     console.error('Error fetching EMR:', error.message);
@@ -2101,22 +2101,22 @@ app.put('/api/emr/:emrId', async (req, res) => {
     const { emrId } = req.params;
     const updates = req.body;
     const emrPath = `emr/${emrId}.json`;
-    
+
     let emrData = await readGcsJson(BUCKETS.doctor, emrPath);
-    
+
     if (!emrData) {
       return res.status(404).json({ error: 'EMR not found' });
     }
-    
+
     // Merge updates
     emrData = {
       ...emrData,
       ...updates,
       updatedAt: new Date().toISOString()
     };
-    
+
     await writeGcsJson(BUCKETS.doctor, emrPath, emrData);
-    
+
     // Update index
     const indexPath = 'emr/index.json';
     let emrIndex = await readGcsJson(BUCKETS.doctor, indexPath) || { emrs: [] };
@@ -2130,9 +2130,9 @@ app.put('/api/emr/:emrId', async (req, res) => {
       emrIndex.lastUpdated = new Date().toISOString();
       await writeGcsJson(BUCKETS.doctor, indexPath, emrIndex);
     }
-    
+
     console.log(`✅ EMR updated: ${emrId}`);
-    
+
     res.json({ success: true, emr: emrData });
   } catch (error) {
     console.error('Error updating EMR:', error.message);
@@ -2145,23 +2145,23 @@ app.get('/api/emr/patient/:patientId', async (req, res) => {
   try {
     const { patientId } = req.params;
     const { limit, offset } = req.query;
-    
+
     // Read from EMR index
     const indexPath = 'emr/index.json';
     const emrIndex = await readGcsJson(BUCKETS.doctor, indexPath) || { emrs: [] };
-    
+
     // Filter by patient
     let patientEmrs = emrIndex.emrs.filter(e => e.patientId === patientId);
-    
+
     // Sort by date (newest first)
     patientEmrs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    
+
     // Apply pagination
-    const offsetNum = parseInt(offset) || 0;
-    const limitNum = parseInt(limit) || 50;
+    const offsetNum = Number.parseInt(offset, 10) || 0;
+    const limitNum = Number.parseInt(limit, 10) || 50;
     const total = patientEmrs.length;
     patientEmrs = patientEmrs.slice(offsetNum, offsetNum + limitNum);
-    
+
     // Optionally fetch full EMR details
     const fullEmrs = await Promise.all(
       patientEmrs.map(async (entry) => {
@@ -2169,7 +2169,7 @@ app.get('/api/emr/patient/:patientId', async (req, res) => {
         return emrData || entry;
       })
     );
-    
+
     res.json({
       emrs: fullEmrs,
       total,
@@ -2191,24 +2191,24 @@ app.get('/api/emr/patient/:patientId', async (req, res) => {
 app.get('/api/patients/:patientId', async (req, res) => {
   try {
     const { patientId } = req.params;
-    
+
     // Try to get patient profile from patient data bucket
     const profilePath = `patients/${patientId}/profile.json`;
     let patientData = await readGcsJson(BUCKETS.patient, profilePath);
-    
+
     // If not found, try credentials bucket
     if (!patientData) {
       const credPath = `users/${patientId}.json`;
       patientData = await readGcsJson(BUCKETS.credentials, credPath);
     }
-    
+
     // If still not found, create basic record from appointments
     if (!patientData) {
       const appointmentsData = await readGcsJson(BUCKETS.appointments, 'appointments.json');
       if (appointmentsData) {
         // Handle both array format and object with appointments property
-        const appointments = Array.isArray(appointmentsData) 
-          ? appointmentsData 
+        const appointments = Array.isArray(appointmentsData)
+          ? appointmentsData
           : (appointmentsData.appointments || []);
         const patientAppointment = appointments.find(a => a.patientId === patientId);
         if (patientAppointment) {
@@ -2221,28 +2221,28 @@ app.get('/api/patients/:patientId', async (req, res) => {
         }
       }
     }
-    
+
     if (!patientData) {
       return res.status(404).json({ error: 'Patient not found' });
     }
-    
+
     // Get patient's health logs
     const healthLogsPath = `patients/${patientId}/health-logs.json`;
     const healthLogs = await readGcsJson(BUCKETS.patient, healthLogsPath) || { entries: [] };
-    
+
     // Get patient's EMR history
     const emrIndexPath = 'emr/index.json';
     const emrIndex = await readGcsJson(BUCKETS.doctor, emrIndexPath) || { emrs: [] };
     const patientEmrs = emrIndex.emrs.filter(e => e.patientId === patientId);
-    
+
     // Get patient's appointments
     const appointmentsData = await readGcsJson(BUCKETS.appointments, 'appointments.json') || [];
     // Handle both array format and object with appointments property
-    const allAppointments = Array.isArray(appointmentsData) 
-      ? appointmentsData 
+    const allAppointments = Array.isArray(appointmentsData)
+      ? appointmentsData
       : (appointmentsData.appointments || []);
     const patientAppointments = allAppointments.filter(a => a.patientId === patientId);
-    
+
     res.json({
       ...patientData,
       healthLogs: healthLogs.entries || [],
@@ -2260,15 +2260,15 @@ app.get('/api/patients/:patientId', async (req, res) => {
 app.get('/api/patients', async (req, res) => {
   try {
     const { search, limit, offset } = req.query;
-    
+
     // Get unique patients from appointments
     const appointmentsData = await readGcsJson(BUCKETS.appointments, 'appointments.json') || [];
-    
+
     // Handle both array format and object with appointments property
-    const appointments = Array.isArray(appointmentsData) 
-      ? appointmentsData 
+    const appointments = Array.isArray(appointmentsData)
+      ? appointmentsData
       : (appointmentsData.appointments || []);
-    
+
     // Create unique patient map
     const patientMap = new Map();
     appointments.forEach(apt => {
@@ -2288,27 +2288,27 @@ app.get('/api/patients', async (req, res) => {
         }
       }
     });
-    
+
     let patients = Array.from(patientMap.values());
-    
+
     // Apply search filter
     if (search) {
       const searchLower = search.toLowerCase();
-      patients = patients.filter(p => 
+      patients = patients.filter(p =>
         p.name?.toLowerCase().includes(searchLower) ||
         p.email?.toLowerCase().includes(searchLower)
       );
     }
-    
+
     // Sort by last visit
     patients.sort((a, b) => new Date(b.lastVisit) - new Date(a.lastVisit));
-    
+
     // Apply pagination
-    const offsetNum = parseInt(offset) || 0;
-    const limitNum = parseInt(limit) || 50;
+    const offsetNum = Number.parseInt(offset, 10) || 0;
+    const limitNum = Number.parseInt(limit, 10) || 50;
     const total = patients.length;
     patients = patients.slice(offsetNum, offsetNum + limitNum);
-    
+
     res.json({
       patients,
       total,
@@ -2329,42 +2329,42 @@ app.get('/api/patients', async (req, res) => {
 app.get('/api/appointments/completed', async (req, res) => {
   try {
     const { doctorId, patientId, limit, offset } = req.query;
-    
+
     const appointmentsData = await readGcsJson(BUCKETS.appointments, 'appointments.json');
-    
+
     if (!appointmentsData) {
       return res.json({ appointments: [], total: 0 });
     }
-    
+
     // Handle both array format and object with appointments property
-    let appointments = Array.isArray(appointmentsData) 
-      ? appointmentsData 
+    let appointments = Array.isArray(appointmentsData)
+      ? appointmentsData
       : (appointmentsData.appointments || []);
-    
+
     // Filter completed appointments
-    let completed = appointments.filter(apt => 
+    let completed = appointments.filter(apt =>
       apt.status === 'completed'
     );
-    
+
     // Filter by doctor if specified
     if (doctorId) {
       completed = completed.filter(apt => apt.doctorId === doctorId);
     }
-    
+
     // Filter by patient if specified
     if (patientId) {
       completed = completed.filter(apt => apt.patientId === patientId);
     }
-    
+
     // Sort by completion date (newest first)
     completed.sort((a, b) => new Date(b.completedAt || b.updatedAt) - new Date(a.completedAt || a.updatedAt));
-    
+
     // Apply pagination
-    const offsetNum = parseInt(offset) || 0;
-    const limitNum = parseInt(limit) || 50;
+    const offsetNum = Number.parseInt(offset, 10) || 0;
+    const limitNum = Number.parseInt(limit, 10) || 50;
     const total = completed.length;
     completed = completed.slice(offsetNum, offsetNum + limitNum);
-    
+
     res.json({
       appointments: completed,
       total,
@@ -2381,18 +2381,18 @@ app.get('/api/appointments/completed', async (req, res) => {
 app.get('/api/appointments', async (req, res) => {
   try {
     const { status, doctorId, patientId, date, limit, offset } = req.query;
-    
+
     const appointmentsData = await readGcsJson(BUCKETS.appointments, 'appointments.json');
-    
+
     if (!appointmentsData) {
       return res.json({ appointments: [], total: 0 });
     }
-    
+
     // Handle both array format and object with appointments property
-    let appointments = Array.isArray(appointmentsData) 
-      ? [...appointmentsData] 
+    let appointments = Array.isArray(appointmentsData)
+      ? [...appointmentsData]
       : [...(appointmentsData.appointments || [])];
-    
+
     // Apply filters
     if (status) {
       appointments = appointments.filter(apt => apt.status === status);
@@ -2406,20 +2406,20 @@ app.get('/api/appointments', async (req, res) => {
     if (date) {
       appointments = appointments.filter(apt => apt.scheduledDate === date);
     }
-    
+
     // Sort by scheduled date (newest first)
     appointments.sort((a, b) => {
       const dateA = new Date(a.scheduledDate + 'T' + (a.scheduledTime || '00:00'));
       const dateB = new Date(b.scheduledDate + 'T' + (b.scheduledTime || '00:00'));
       return dateB - dateA;
     });
-    
+
     // Apply pagination
-    const offsetNum = parseInt(offset) || 0;
-    const limitNum = parseInt(limit) || 100;
+    const offsetNum = Number.parseInt(offset, 10) || 0;
+    const limitNum = Number.parseInt(limit, 10) || 100;
     const total = appointments.length;
     appointments = appointments.slice(offsetNum, offsetNum + limitNum);
-    
+
     res.json({
       appointments,
       total,
@@ -2437,20 +2437,20 @@ app.get('/api/appointments', async (req, res) => {
 app.get('/api/appointments/:appointmentId', async (req, res) => {
   try {
     const { appointmentId } = req.params;
-    
+
     const appointmentsData = await readGcsJson(BUCKETS.appointments, 'appointments.json');
-    
+
     if (!appointmentsData) {
       return res.status(404).json({ error: 'Appointments not found' });
     }
-    
+
     // Handle both array format and object with appointments property
-    const appointments = Array.isArray(appointmentsData) 
-      ? appointmentsData 
+    const appointments = Array.isArray(appointmentsData)
+      ? appointmentsData
       : (appointmentsData.appointments || []);
-    
+
     const appointment = appointments.find(a => a.id === appointmentId);
-    
+
     if (!appointment) {
       // Try individual appointment file
       const detailsPath = `appointments/${appointmentId}/details.json`;
@@ -2460,7 +2460,7 @@ app.get('/api/appointments/:appointmentId', async (req, res) => {
       }
       return res.status(404).json({ error: 'Appointment not found' });
     }
-    
+
     res.json(appointment);
   } catch (error) {
     console.error('Error fetching appointment:', error.message);
@@ -2483,14 +2483,14 @@ app.use(secureErrorHandler());
 app.get('/api/notifications/doctor/:doctorId', async (req, res) => {
   try {
     const { doctorId } = req.params;
-    
+
     if (!doctorId) {
       return res.status(400).json({ error: 'Doctor ID is required' });
     }
-    
+
     const notificationPath = `doctors/${doctorId}/notifications.json`;
     let notifications = await readGcsJson(BUCKETS.doctor, notificationPath);
-    
+
     if (!notifications) {
       notifications = {
         doctorId,
@@ -2498,7 +2498,7 @@ app.get('/api/notifications/doctor/:doctorId', async (req, res) => {
         lastUpdated: new Date().toISOString()
       };
     }
-    
+
     res.json(notifications);
   } catch (error) {
     console.error('Error fetching doctor notifications:', error.message);
@@ -2511,22 +2511,22 @@ app.put('/api/notifications/:notificationId/read', async (req, res) => {
   try {
     const { notificationId } = req.params;
     const { doctorId } = req.body;
-    
+
     if (!doctorId) {
       return res.json({ success: true }); // Silent success if no doctorId
     }
-    
+
     const notificationPath = `doctors/${doctorId}/notifications.json`;
     let data = await readGcsJson(BUCKETS.doctor, notificationPath);
-    
+
     if (data && data.notifications) {
-      data.notifications = data.notifications.map(n => 
+      data.notifications = data.notifications.map(n =>
         n.id === notificationId ? { ...n, isRead: true, readAt: new Date().toISOString() } : n
       );
       data.lastUpdated = new Date().toISOString();
       await writeGcsJson(BUCKETS.doctor, notificationPath, data);
     }
-    
+
     res.json({ success: true });
   } catch (error) {
     console.error('Error marking notification as read:', error.message);
@@ -2538,17 +2538,17 @@ app.put('/api/notifications/:notificationId/read', async (req, res) => {
 app.put('/api/notifications/doctor/:doctorId/read-all', async (req, res) => {
   try {
     const { doctorId } = req.params;
-    
+
     const notificationPath = `doctors/${doctorId}/notifications.json`;
     let data = await readGcsJson(BUCKETS.doctor, notificationPath);
-    
+
     if (data && data.notifications) {
       const now = new Date().toISOString();
       data.notifications = data.notifications.map(n => ({ ...n, isRead: true, readAt: now }));
       data.lastUpdated = now;
       await writeGcsJson(BUCKETS.doctor, notificationPath, data);
     }
-    
+
     res.json({ success: true });
   } catch (error) {
     console.error('Error marking all notifications as read:', error.message);
@@ -2559,21 +2559,21 @@ app.put('/api/notifications/doctor/:doctorId/read-all', async (req, res) => {
 // POST - Create notification for doctor (from patient appointment requests)
 app.post('/api/notifications/doctor', async (req, res) => {
   try {
-    const { 
-      doctorId, 
-      type, 
-      title, 
-      message, 
-      data 
+    const {
+      doctorId,
+      type,
+      title,
+      message,
+      data
     } = req.body;
-    
+
     if (!doctorId) {
       return res.status(400).json({ error: 'Doctor ID is required' });
     }
-    
+
     const notificationPath = `doctors/${doctorId}/notifications.json`;
     let notifications = await readGcsJson(BUCKETS.doctor, notificationPath);
-    
+
     if (!notifications) {
       notifications = {
         doctorId,
@@ -2581,7 +2581,7 @@ app.post('/api/notifications/doctor', async (req, res) => {
         lastUpdated: new Date().toISOString()
       };
     }
-    
+
     const newNotification = {
       id: generateContentId('NOTIF'),
       type: type || 'system',
@@ -2591,23 +2591,23 @@ app.post('/api/notifications/doctor', async (req, res) => {
       isRead: false,
       createdAt: new Date().toISOString()
     };
-    
+
     notifications.notifications = notifications.notifications || [];
     notifications.notifications.unshift(newNotification);
     notifications.lastUpdated = new Date().toISOString();
-    
+
     // Keep only last 100 notifications
     if (notifications.notifications.length > 100) {
       notifications.notifications = notifications.notifications.slice(0, 100);
     }
-    
+
     await writeGcsJson(BUCKETS.doctor, notificationPath, notifications);
-    
+
     console.log(`✅ Notification created for doctor ${doctorId}: ${type}`);
-    
-    res.status(201).json({ 
-      success: true, 
-      notification: newNotification 
+
+    res.status(201).json({
+      success: true,
+      notification: newNotification
     });
   } catch (error) {
     console.error('Error creating doctor notification:', error.message);

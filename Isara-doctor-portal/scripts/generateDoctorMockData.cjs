@@ -14,8 +14,8 @@
  * Run: npm run generate:doctors
  */
 
-const fs = require('fs');
-const path = require('path');
+const fs = require('node:fs');
+const path = require('node:path');
 
 // Create mockData directory
 const mockDataDir = path.join(__dirname, '..', 'public', 'mockData');
@@ -85,7 +85,7 @@ function generateDoctors(count = 10) {
     const doctor = {
       id: `DOC${String(i + 1).padStart(4, '0')}`,
       name,
-      email: `${firstName.toLowerCase()}.${lastName.toLowerCase()}@${hospital.toLowerCase().replace(/\s+/g, '')}.com`,
+      email: `${firstName.toLowerCase()}.${lastName.toLowerCase()}@${hospital.toLowerCase().replaceAll(/\s+/g, '')}.com`,
       role: 'doctor',
       medicalLicenseNumber: `MD-${Math.floor(Math.random() * 900000 + 100000)}`,
       specialty,
@@ -313,7 +313,7 @@ function generatePatients(count = 50) {
         age,
         gender,
         photo: `https://i.pravatar.cc/150?u=${name.replace(' ', '')}`,
-        idNumber: `${Math.floor(Math.random() * 9 + 1)}${Math.floor(Math.random() * 10000)  }${Math.floor(Math.random() * 100000)}${Math.floor(Math.random() * 90 + 10)}-${Math.floor(Math.random() * 10)}`,
+        idNumber: `${Math.floor(Math.random() * 9 + 1)}${Math.floor(Math.random() * 10000)}${Math.floor(Math.random() * 100000)}${Math.floor(Math.random() * 90 + 10)}-${Math.floor(Math.random() * 10)}`,
       },
       contact: {
         phone: `+66 ${Math.floor(Math.random() * 20) + 80} ${Math.floor(Math.random() * 900) + 100} ${Math.floor(Math.random() * 9000) + 1000}`,

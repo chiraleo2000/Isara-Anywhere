@@ -95,6 +95,75 @@ type PersonFilter = 'patient' | 'doctor' | 'healthcare-team';
 type MeetingTab = 'investigation' | 'treatment' | 'refer';
 type StudioModal = 'diagnosis' | 'treatment-plan' | 'system-report' | 'radiology' | 'laboratory' | 'pathology' | null;
 type TreatmentTab = 'protocols' | 'prescribe' | 'history';
+type ChatMessage = { id: string; role: 'user' | 'assistant'; content: string };
+
+const createChatMessage = (role: 'user' | 'assistant', content: string): ChatMessage => {
+  const hasCrypto = typeof crypto !== 'undefined' && 'randomUUID' in crypto;
+  const id = hasCrypto ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  return { id, role, content };
+};
+
+const getAppointmentDate = (appointment: any): string | null => {
+  const rawDate = appointment?.appointmentDate || appointment?.scheduledDate || appointment?.date;
+  return rawDate ? rawDate.split('T')[0] : null;
+};
+
+const getDoctorAppointments = (appointments: any[], doctorId: string) => {
+  return appointments.filter((apt: any) =>
+    apt.doctorId === doctorId ||
+    apt.doctor_id === doctorId ||
+    apt.assignedDoctorId === doctorId ||
+    apt.adminAssignedDoctorId === doctorId ||
+    apt.confirmedBy === doctorId
+  );
+};
+
+const getPendingConfirmationsCount = (appointments: any[]) => {
+  return appointments.filter((apt: any) =>
+    apt.status === 'awaiting_doctor_response' ||
+    apt.status === 'assigned' ||
+    (apt.status === 'pending' && (apt.assignedDoctorId || apt.adminAssignedDoctorId))
+  ).length;
+};
+
+const getAssignedPatients = (patients: PatientRecord[], appointments: any[]) => {
+  const appointmentPatientIds = new Set(appointments.map((apt: any) => apt.patientId));
+  return patients.filter((patient: PatientRecord) => appointmentPatientIds.has(patient.id));
+};
+
+const getPatientsByAppointmentStatus = (
+  patients: PatientRecord[],
+  appointments: any[],
+  statuses: string[]
+) => {
+  const statusSet = new Set(statuses);
+  const patientIds = new Set(
+    appointments.filter((apt: any) => statusSet.has(apt.status)).map((apt: any) => apt.patientId)
+  );
+  return patients.filter((patient: PatientRecord) => patientIds.has(patient.id));
+};
+
+const getUpcomingAppointments = (appointments: any[], today: string) => {
+  return appointments
+    .filter((apt: any) => {
+      const aptDate = getAppointmentDate(apt);
+      const isActiveStatus = ['confirmed', 'scheduled'].includes(apt.status);
+      return isActiveStatus && aptDate && aptDate >= today;
+    })
+    .sort((a: any, b: any) => {
+      const dateA = getAppointmentDate(a) || '';
+      const dateB = getAppointmentDate(b) || '';
+      return dateA.localeCompare(dateB);
+    });
+};
+
+const getTodaysMeetings = (appointments: any[], today: string) => {
+  return appointments.filter((apt: any) => {
+    const aptDate = getAppointmentDate(apt);
+    const isActiveStatus = ['confirmed', 'scheduled'].includes(apt.status);
+    return isActiveStatus && aptDate === today;
+  });
+};
 
 // ============================================================================
 // MAIN DASHBOARD COMPONENT
@@ -150,14 +219,14 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
 
   // AI Chatbot state
   const [chatInput, setChatInput] = useState('');
-  const [chatMessages, setChatMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([]);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [isChatLoading, setIsChatLoading] = useState(false);
 
   // Man-in-the-Loop AI validation states (Phase 1 Requirements 4.3)
   const [aiValidationTab, setAiValidationTab] = useState<'summary' | 'documents' | 'cds'>('summary');
   const [aiPreSummary, setAiPreSummary] = useState<any>(null);
-  const [aiDocuments, setAiDocuments] = useState<any[]>([]);
-  const [cdsAlerts, setCdsAlerts] = useState<any[]>([]);
+  const [aiDocuments] = useState<any[]>([]);
+  const [cdsAlerts] = useState<any[]>([]);
   const [isLoadingAI, setIsLoadingAI] = useState(false);
   const [aiValidationStatus, setAiValidationStatus] = useState<'pending' | 'approved' | 'rejected'>('pending');
 
@@ -194,13 +263,7 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
       setPatients(loadedPatients);
 
       // Filter appointments for this doctor (additional client-side filter if needed)
-      const doctorAppointments = allAppointments.filter((apt: any) => {
-        return apt.doctorId === doctor.id || 
-               apt.doctor_id === doctor.id ||
-               apt.assignedDoctorId === doctor.id ||
-               apt.adminAssignedDoctorId === doctor.id ||
-               apt.confirmedBy === doctor.id;  // Include appointments confirmed by this doctor
-      });
+      const doctorAppointments = getDoctorAppointments(allAppointments, doctor.id);
 
       console.log('[Dashboard] Doctor appointments:', doctorAppointments.length);
       console.log('[Dashboard] Doctor ID:', doctor.id);
@@ -215,44 +278,28 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
       }
       
       // Count pending confirmations
-      const pendingConfirmations = doctorAppointments.filter((apt: any) => 
-        apt.status === 'awaiting_doctor_response' || 
-        apt.status === 'assigned' || 
-        (apt.status === 'pending' && (apt.assignedDoctorId || apt.adminAssignedDoctorId))
-      ).length;
-
-      // Get unique patient IDs from doctor's appointments
-      const appointmentPatientIds = new Set(
-        doctorAppointments.map((apt: any) => apt.patientId)
-      );
+      const pendingConfirmations = getPendingConfirmationsCount(doctorAppointments);
 
       // Filter patients who have appointments with this doctor
-      const assignedPatients = loadedPatients.filter((p: PatientRecord) => 
-        appointmentPatientIds.has(p.id)
-      );
+      const assignedPatients = getAssignedPatients(loadedPatients, doctorAppointments);
 
       // For Investigation/Treatment/Refer, only show patients assigned to this doctor
       // Investigation: patients with pending/scheduled appointments
       // Treatment: patients with confirmed appointments
       // Refer: none for now (would need referral data)
-      
-      const scheduledAppts = doctorAppointments.filter((apt: any) => 
-        apt.status === 'scheduled' || apt.status === 'pending' || apt.status === 'confirmed' || apt.status === 'assigned'
+      const investigationPatientsData = getPatientsByAppointmentStatus(
+        loadedPatients,
+        doctorAppointments,
+        ['scheduled', 'pending', 'confirmed', 'assigned']
       );
-      const inProgressAppts = doctorAppointments.filter((apt: any) => 
-        apt.status === 'in_progress' || apt.status === 'in-progress'
+      const treatmentPatientsData = getPatientsByAppointmentStatus(
+        loadedPatients,
+        doctorAppointments,
+        ['in_progress', 'in-progress']
       );
 
-      // Map to patient records
-      const investigationPatientIds = new Set(scheduledAppts.map((apt: any) => apt.patientId));
-      const treatmentPatientIds = new Set(inProgressAppts.map((apt: any) => apt.patientId));
-
-      setInvestigationPatients(
-        loadedPatients.filter((p: PatientRecord) => investigationPatientIds.has(p.id))
-      );
-      setTreatmentPatients(
-        loadedPatients.filter((p: PatientRecord) => treatmentPatientIds.has(p.id))
-      );
+      setInvestigationPatients(investigationPatientsData);
+      setTreatmentPatients(treatmentPatientsData);
       setReferPatients([]); // No referral data yet
       
       // Set upcoming appointments (confirmed/scheduled) sorted by date
@@ -265,32 +312,13 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
         appointmentDate: apt.appointmentDate,
         rawDate: apt.appointmentDate || apt.scheduledDate || apt.date
       })));
-      
-      const upcoming = doctorAppointments
-        .filter((apt: any) => {
-          const rawDate = apt.appointmentDate || apt.scheduledDate || apt.date;
-          // Normalize date - handle both "2025-12-11" and "2025-12-11T00:00:00.000Z" formats
-          const aptDate = rawDate ? rawDate.split('T')[0] : null;
-          const isActiveStatus = ['confirmed', 'scheduled'].includes(apt.status);
-          console.log(`[Dashboard] Filter apt ${apt.id}: status=${apt.status}, rawDate=${rawDate}, aptDate=${aptDate}, today=${today}, isActive=${isActiveStatus}, dateCheck=${aptDate && aptDate >= today}`);
-          return isActiveStatus && aptDate && aptDate >= today;
-        })
-        .sort((a: any, b: any) => {
-          const dateA = (a.appointmentDate || a.scheduledDate || a.date || '').split('T')[0];
-          const dateB = (b.appointmentDate || b.scheduledDate || b.date || '').split('T')[0];
-          return dateA.localeCompare(dateB);
-        });
+
+      const upcoming = getUpcomingAppointments(doctorAppointments, today);
       console.log('[Dashboard] Upcoming appointments after filter:', upcoming.length);
       setUpcomingAppointments(upcoming);
       
       // Set today's meetings
-      const todaysMeetings = doctorAppointments.filter((apt: any) => {
-        const rawDate = apt.appointmentDate || apt.scheduledDate || apt.date;
-        // Normalize date - handle both formats
-        const aptDate = rawDate ? rawDate.split('T')[0] : null;
-        const isActiveStatus = ['confirmed', 'scheduled'].includes(apt.status);
-        return isActiveStatus && aptDate === today;
-      });
+      const todaysMeetings = getTodaysMeetings(doctorAppointments, today);
       console.log('[Dashboard] Today meetings:', todaysMeetings.length);
       setTodayMeetings(todaysMeetings);
 
@@ -351,16 +379,17 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
       // Try to load meeting summary from most recent completed appointment
       try {
         // Find the patient's most recent appointment with this doctor
-        const patientAppointments = upcomingAppointments.filter(apt => 
-          apt.patientId === patientId && 
-          (apt.status === 'completed' || apt.status === 'Completed')
+      const patientAppointments = upcomingAppointments.filter(apt => 
+        apt.patientId === patientId && 
+        (apt.status === 'completed' || apt.status === 'Completed')
+      );
+      
+      if (patientAppointments.length > 0) {
+        // Get the most recent completed appointment
+        const sortedAppointments = [...patientAppointments].sort((a: any, b: any) => 
+          new Date(b.date || b.appointmentDate).getTime() - new Date(a.date || a.appointmentDate).getTime()
         );
-        
-        if (patientAppointments.length > 0) {
-          // Get the most recent completed appointment
-          const recentAppointment = patientAppointments.sort((a: any, b: any) => 
-            new Date(b.date || b.appointmentDate).getTime() - new Date(a.date || a.appointmentDate).getTime()
-          )[0];
+        const recentAppointment = sortedAppointments[0];
           
           // Fetch meeting files/summary from GCS
           const meetingData = await meetingService.getMeetingFiles(recentAppointment.id, doctor.id);
@@ -376,7 +405,7 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
         }
       } catch (meetingError) {
         // Silent fail - meeting summary is optional
-        console.log('ℹ️ No meeting summary found for patient:', patientId);
+        console.warn('ℹ️ No meeting summary found for patient:', patientId, meetingError);
       }
       
       // Load AI pre-consultation summary (Phase 1 Requirement 2.2)
@@ -431,6 +460,12 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
   // Handle AI validation decision (Man-in-the-Loop DR-05)
   const handleAIValidation = async (decision: 'approved' | 'rejected', notes?: string) => {
     try {
+      const validationContent = (() => {
+        if (aiValidationTab === 'summary') return aiHistorySummary;
+        if (aiValidationTab === 'documents') return aiDocuments;
+        return cdsAlerts;
+      })();
+
       // Log the validation decision
       await fetch('/api/ai/validation', {
         method: 'POST',
@@ -441,8 +476,7 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
           doctorId: doctor.id,
           decision,
           notes,
-          content: aiValidationTab === 'summary' ? aiHistorySummary : 
-                   aiValidationTab === 'documents' ? aiDocuments : cdsAlerts,
+          content: validationContent,
           timestamp: new Date().toISOString()
         })
       });
@@ -568,7 +602,7 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
 
     const userMessage = chatInput.trim();
     setChatInput('');
-    setChatMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+    setChatMessages(prev => [...prev, createChatMessage('user', userMessage)]);
     setIsChatLoading(true);
 
     try {
@@ -589,17 +623,65 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
         chatMessages
       );
 
-      setChatMessages(prev => [...prev, { role: 'assistant', content: aiResponse }]);
+      setChatMessages(prev => [...prev, createChatMessage('assistant', aiResponse)]);
     } catch (error: any) {
       console.error('Chat error:', error);
-      setChatMessages(prev => [...prev, { 
-        role: 'assistant', 
-        content: `Sorry, I encountered an error: ${error.message || 'Unknown error'}. Please try again.` 
-      }]);
+      setChatMessages(prev => [
+        ...prev,
+        createChatMessage(
+          'assistant',
+          `Sorry, I encountered an error: ${error.message || 'Unknown error'}. Please try again.`
+        )
+      ]);
     } finally {
       setIsChatLoading(false);
     }
   };
+
+  const meetingStatusStyles: Record<string, string> = {
+    confirmed: 'bg-green-100 text-green-700',
+    assigned: 'bg-amber-100 text-amber-700',
+  };
+
+  const getMeetingStatusClass = (status: string) => {
+    return meetingStatusStyles[status] || 'bg-blue-100 text-blue-700';
+  };
+
+  const prescriptionStatusStyles: Record<string, string> = {
+    active: 'bg-green-100 text-green-700',
+    completed: 'bg-gray-100 text-gray-700',
+  };
+
+  const getPrescriptionStatusClass = (status: string) => {
+    return prescriptionStatusStyles[status] || 'bg-yellow-100 text-yellow-700';
+  };
+
+  const getQueueItemClass = (patient: QueuePatient) => {
+    if (selectedPatientId === patient.patientId) {
+      return 'bg-emerald-100 border-emerald-500 shadow-md';
+    }
+    if (patient.priority === 'urgent') {
+      return 'bg-red-50 border-red-300 hover:bg-red-100 hover:shadow';
+    }
+    return 'bg-blue-50 border-blue-200 hover:bg-blue-100 hover:shadow';
+  };
+
+  const aiValidationStatusMeta = {
+    pending: {
+      className: 'bg-yellow-100 text-yellow-700',
+      label: '🟡 รอตรวจสอบ',
+    },
+    approved: {
+      className: 'bg-green-100 text-green-700',
+      label: '🟢 อนุมัติแล้ว',
+    },
+    rejected: {
+      className: 'bg-red-100 text-red-700',
+      label: '🔴 ปฏิเสธ',
+    },
+  } as const;
+
+  const currentAiValidationStatus = aiValidationStatusMeta[aiValidationStatus];
 
   const renderPatientListForTab = (patientList: PatientRecord[], title: string) => {
     if (patientList.length === 0) {
@@ -621,9 +703,10 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
           const patientPhoto = patient.demographics?.photo || patient.photo;
           
           return (
-            <div
+            <button
               key={patient.id}
-              className="bg-white rounded-lg border border-gray-200 p-3 hover:shadow-md transition-all cursor-pointer"
+              type="button"
+              className="bg-white rounded-lg border border-gray-200 p-3 hover:shadow-md transition-all cursor-pointer w-full text-left"
               onClick={() => handleViewPatient(patient)}
             >
               <div className="flex items-center space-x-3">
@@ -639,6 +722,7 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
                   </p>
                 </div>
                 <button
+                  type="button"
                   onClick={(e) => {
                     e.stopPropagation();
                     handleStartConsultation(patient.id);
@@ -648,21 +732,609 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
                   View
                 </button>
               </div>
-            </div>
+            </button>
           );
         })}
       </div>
     );
   };
 
+  const renderDiagnosisModalContent = (
+    patientName: string,
+    latestEMR: EMRRecord | null,
+    allergies: string[],
+    conditions: string[],
+    medications: string[]
+  ) => (
+    <div className="space-y-4">
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <h3 className="font-bold text-blue-900 mb-2">Patient: {patientName}</h3>
+        <p className="text-sm text-blue-800">
+          Chief Complaint: {latestEMR?.chiefComplaint || 'General consultation'}
+        </p>
+        {allergies.length > 0 && (
+          <p className="text-sm text-red-600 mt-1">⚠️ Allergies: {allergies.join(', ')}</p>
+        )}
+      </div>
+
+      <div className="bg-white border rounded-lg p-4">
+        <h4 className="font-semibold text-gray-900 mb-3">Clinical Assessment</h4>
+        <div className="space-y-2 text-sm">
+          <div>
+            <strong>Vital Signs:</strong>
+            {latestEMR?.vitalSigns ? (
+              <ul className="ml-4 mt-1 text-gray-700">
+                <li>• BP: {latestEMR.vitalSigns.bloodPressure} mmHg</li>
+                <li>• HR: {latestEMR.vitalSigns.heartRate} bpm</li>
+                <li>• Temp: {latestEMR.vitalSigns.temperature}°C</li>
+                <li>• SpO2: {latestEMR.vitalSigns.oxygenSaturation}%</li>
+                <li>• RR: {latestEMR.vitalSigns.respiratoryRate}/min</li>
+                <li>• BMI: {latestEMR.vitalSigns.bmi}</li>
+              </ul>
+            ) : (
+              <p className="ml-4 mt-1 text-gray-500">No vital signs recorded</p>
+            )}
+          </div>
+          <div>
+            <strong>Current Conditions:</strong>
+            <ul className="ml-4 mt-1 text-gray-700">
+              {conditions.length > 0 ? (
+                conditions.map((condition) => (
+                  <li key={`${condition}-${selectedPatient?.id || 'patient'}`}>• {condition}</li>
+                ))
+              ) : (
+                <li className="text-gray-500">No chronic conditions recorded</li>
+              )}
+            </ul>
+          </div>
+          <div>
+            <strong>Current Medications:</strong>
+            <ul className="ml-4 mt-1 text-gray-700">
+              {medications.length > 0 ? (
+                medications.map((med) => (
+                  <li key={`${med}-${selectedPatient?.id || 'patient'}`}>• {med}</li>
+                ))
+              ) : (
+                <li className="text-gray-500">No current medications</li>
+              )}
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white border rounded-lg p-4">
+        <h4 className="font-semibold text-gray-900 mb-3">Diagnosis from EMR</h4>
+        <div className="space-y-2 text-sm text-gray-700">
+          {latestEMR?.diagnosis && latestEMR.diagnosis.length > 0 ? (
+            latestEMR.diagnosis.map((dx, index) => (
+              <div
+                key={`${dx.code || dx.description}-${dx.type}`}
+                className={`flex items-center justify-between p-2 rounded ${dx.type === 'primary' ? 'bg-green-50' : 'bg-gray-50'}`}
+              >
+                <span>{index + 1}. [{dx.code}] {dx.description}</span>
+                <span className={dx.type === 'primary' ? 'text-green-700 font-semibold' : 'text-gray-600'}>
+                  {dx.type === 'primary' ? 'Primary' : 'Secondary'}
+                </span>
+              </div>
+            ))
+          ) : (
+            <p className="text-gray-500">No diagnosis recorded yet</p>
+          )}
+        </div>
+      </div>
+
+      <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
+        <h4 className="font-semibold text-emerald-900 mb-2">Treatment Plan</h4>
+        <p className="text-sm text-emerald-800">
+          {latestEMR?.treatmentPlan || 'No treatment plan recorded yet. Please create an EMR to add recommendations.'}
+        </p>
+      </div>
+    </div>
+  );
+
+  const renderTreatmentProtocolsContent = () => (
+    <div className="space-y-4">
+      <h4 className="font-semibold text-gray-900">Evidence-Based Treatment Guidelines</h4>
+
+      {/* Hypertension Protocol */}
+      <div className="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer">
+        <div className="flex items-start justify-between">
+          <div>
+            <h5 className="font-semibold text-emerald-700">🩺 Hypertension Management</h5>
+            <p className="text-sm text-gray-600 mt-1">Target: {"<"}140/90 mmHg ({"<"}130/80 for high-risk)</p>
+          </div>
+          <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded">JNC 8</span>
+        </div>
+        <div className="mt-3 text-sm">
+          <p className="font-medium text-gray-700">First-Line Options:</p>
+          <ul className="ml-4 text-gray-600 mt-1 space-y-1">
+            <li>• ACE Inhibitors (Enalapril, Lisinopril)</li>
+            <li>• ARBs (Losartan, Valsartan)</li>
+            <li>• CCBs (Amlodipine)</li>
+            <li>• Thiazide Diuretics</li>
+          </ul>
+        </div>
+      </div>
+
+      {/* Diabetes Protocol */}
+      <div className="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer">
+        <div className="flex items-start justify-between">
+          <div>
+            <h5 className="font-semibold text-blue-700">🍬 Type 2 Diabetes Management</h5>
+            <p className="text-sm text-gray-600 mt-1">Target HbA1c: {"<"}7% for most adults</p>
+          </div>
+          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">ADA 2024</span>
+        </div>
+        <div className="mt-3 text-sm">
+          <p className="font-medium text-gray-700">Stepwise Approach:</p>
+          <ul className="ml-4 text-gray-600 mt-1 space-y-1">
+            <li>• Step 1: Lifestyle + Metformin 500-2000mg/day</li>
+            <li>• Step 2: Add SGLT2i or GLP-1 agonist</li>
+            <li>• Step 3: Combination therapy or insulin</li>
+          </ul>
+        </div>
+      </div>
+
+      {/* Dyslipidemia Protocol */}
+      <div className="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer">
+        <div className="flex items-start justify-between">
+          <div>
+            <h5 className="font-semibold text-purple-700">🫀 Dyslipidemia Management</h5>
+            <p className="text-sm text-gray-600 mt-1">LDL targets vary by cardiovascular risk</p>
+          </div>
+          <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">ACC/AHA</span>
+        </div>
+        <div className="mt-3 text-sm">
+          <p className="font-medium text-gray-700">Statin Therapy:</p>
+          <ul className="ml-4 text-gray-600 mt-1 space-y-1">
+            <li>• High-intensity: Atorvastatin 40-80mg, Rosuvastatin 20-40mg</li>
+            <li>• Moderate: Atorvastatin 10-20mg, Simvastatin 20-40mg</li>
+            <li>• Add Ezetimibe if target not reached</li>
+          </ul>
+        </div>
+      </div>
+
+      {/* Respiratory Protocol */}
+      <div className="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer">
+        <div className="flex items-start justify-between">
+          <div>
+            <h5 className="font-semibold text-orange-700">🌬️ Asthma/COPD Management</h5>
+            <p className="text-sm text-gray-600 mt-1">GINA/GOLD stepwise approach</p>
+          </div>
+          <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded">GINA 2024</span>
+        </div>
+        <div className="mt-3 text-sm">
+          <p className="font-medium text-gray-700">Controller Therapy:</p>
+          <ul className="ml-4 text-gray-600 mt-1 space-y-1">
+            <li>• ICS-formoterol as needed (mild)</li>
+            <li>• Low-dose ICS daily (moderate)</li>
+            <li>• ICS/LABA combination (severe)</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderTreatmentPrescribeContent = (medications: string[]) => (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h4 className="font-semibold text-gray-900">Quick Prescription</h4>
+        <button
+          onClick={() => {
+            setStudioModal(null);
+            if (onCreatePrescription) onCreatePrescription();
+          }}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
+        >
+          Open Full Prescriber
+        </button>
+      </div>
+
+      <div className="bg-gray-50 border rounded-lg p-4">
+        <h5 className="font-medium text-gray-700 mb-3">Current Medications</h5>
+        {medications.length > 0 ? (
+          <div className="space-y-2">
+            {medications.map((med) => (
+              <div key={`${med}-${selectedPatient?.id || 'patient'}`} className="flex items-center justify-between p-2 bg-white rounded border">
+                <span className="text-sm">{med}</span>
+                <button className="text-xs text-blue-600 hover:text-blue-800">Refill</button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-gray-500">No current medications on record</p>
+        )}
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <button className="p-3 text-left bg-white border rounded-lg hover:bg-gray-50">
+          <div className="font-medium text-gray-900">💊 Common Meds</div>
+          <div className="text-xs text-gray-600 mt-1">Frequently prescribed medications</div>
+        </button>
+        <button className="p-3 text-left bg-white border rounded-lg hover:bg-gray-50">
+          <div className="font-medium text-gray-900">📋 Favorites</div>
+          <div className="text-xs text-gray-600 mt-1">Your saved prescriptions</div>
+        </button>
+        <button className="p-3 text-left bg-white border rounded-lg hover:bg-gray-50">
+          <div className="font-medium text-gray-900">🔄 Previous Rx</div>
+          <div className="text-xs text-gray-600 mt-1">Copy from past prescriptions</div>
+        </button>
+        <button className="p-3 text-left bg-white border rounded-lg hover:bg-gray-50">
+          <div className="font-medium text-gray-900">⚠️ Interactions</div>
+          <div className="text-xs text-gray-600 mt-1">Check drug interactions</div>
+        </button>
+      </div>
+    </div>
+  );
+
+  const renderTreatmentHistoryContent = () => (
+    <div className="space-y-4">
+      <h4 className="font-semibold text-gray-900">Prescription History</h4>
+
+      {selectedPatientPrescriptions.length > 0 ? (
+        selectedPatientPrescriptions.map((rx: any) => (
+          <div key={rx.id} className="border rounded-lg p-4">
+            <div className="flex items-start justify-between mb-3">
+              <div>
+                <span className="text-sm font-medium text-gray-900">{rx.id}</span>
+                <p className="text-xs text-gray-500">
+                  {new Date(rx.prescribedDate).toLocaleDateString('th-TH')} • {rx.doctorName}
+                </p>
+              </div>
+              <span className={`text-xs px-2 py-1 rounded ${getPrescriptionStatusClass(rx.status)}`}>
+                {rx.status}
+              </span>
+            </div>
+
+            <div className="space-y-2">
+              {rx.medications?.map((med: any) => (
+                <div
+                  key={`${rx.id}-${med.name}-${med.strength}-${med.frequency}`}
+                  className="flex items-center justify-between p-2 bg-gray-50 rounded text-sm"
+                >
+                  <div>
+                    <span className="font-medium">{med.name}</span>
+                    <span className="text-gray-500 ml-2">{med.strength} - {med.frequency}</span>
+                  </div>
+                  <span className="text-xs text-gray-500">{med.duration}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-3 flex justify-end space-x-2">
+              <button className="text-xs text-blue-600 hover:text-blue-800">View Details</button>
+              <button className="text-xs text-emerald-600 hover:text-emerald-800">Copy to New Rx</button>
+            </div>
+          </div>
+        ))
+      ) : (
+        <div className="text-center py-8 text-gray-500">
+          <div className="text-4xl mb-2">📜</div>
+          <p>No prescription history found</p>
+          <button
+            onClick={() => {
+              setStudioModal(null);
+              if (onCreatePrescription) onCreatePrescription();
+            }}
+            className="mt-3 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
+          >
+            Create First Prescription
+          </button>
+        </div>
+      )}
+    </div>
+  );
+
+  const renderTreatmentTabContent = (medications: string[]) => {
+    if (treatmentTab === 'protocols') return renderTreatmentProtocolsContent();
+    if (treatmentTab === 'prescribe') return renderTreatmentPrescribeContent(medications);
+    return renderTreatmentHistoryContent();
+  };
+
+  const renderTreatmentPlanModalContent = (
+    patientName: string,
+    allergies: string[],
+    medications: string[]
+  ) => (
+    <div className="space-y-4">
+      {/* Patient Summary */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <h3 className="font-bold text-blue-900 mb-2">Patient: {patientName}</h3>
+        <div className="flex flex-wrap gap-4 text-sm text-blue-800">
+          <span>Age: {selectedPatient?.demographics?.age || '-'}</span>
+          <span>Gender: {selectedPatient?.demographics?.gender || '-'}</span>
+          {allergies.length > 0 && (
+            <span className="text-red-600 font-medium">⚠️ Allergies: {allergies.join(', ')}</span>
+          )}
+        </div>
+      </div>
+
+      {/* Treatment Tabs */}
+      <div className="bg-white border rounded-lg overflow-hidden">
+        <div className="flex border-b">
+          <button
+            onClick={() => setTreatmentTab('protocols')}
+            className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
+              treatmentTab === 'protocols'
+                ? 'bg-blue-50 text-blue-700 border-b-2 border-blue-600'
+                : 'text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            📋 Treatment Protocols
+          </button>
+          <button
+            onClick={() => setTreatmentTab('prescribe')}
+            className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
+              treatmentTab === 'prescribe'
+                ? 'bg-blue-50 text-blue-700 border-b-2 border-blue-600'
+                : 'text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            💊 Quick Prescribe
+          </button>
+          <button
+            onClick={() => setTreatmentTab('history')}
+            className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
+              treatmentTab === 'history'
+                ? 'bg-blue-50 text-blue-700 border-b-2 border-blue-600'
+                : 'text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            📜 Prescription History
+          </button>
+        </div>
+
+        <div className="p-4">{renderTreatmentTabContent(medications)}</div>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="flex justify-end space-x-3">
+        <button
+          onClick={() => {
+            setStudioModal(null);
+            if (onCreatePrescription) onCreatePrescription();
+          }}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+        >
+          💊 New Prescription
+        </button>
+      </div>
+    </div>
+  );
+
+  const renderSystemReportModalContent = (
+    patientName: string,
+    latestEMR: EMRRecord | null,
+    selectedPatientEMRs: EMRRecord[]
+  ) => (
+    <div className="space-y-4">
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <h3 className="font-bold text-blue-900 mb-2">Patient: {patientName}</h3>
+        <p className="text-sm text-blue-800">
+          Last Encounter: {latestEMR ? new Date(latestEMR.encounterDate).toLocaleDateString('th-TH') : 'No records'}
+        </p>
+      </div>
+
+      <div className="bg-white border rounded-lg p-4">
+        <h4 className="font-semibold text-gray-900 mb-3">History of Present Illness</h4>
+        <p className="text-sm text-gray-700">
+          {latestEMR?.historyOfPresentIllness || 'No HPI recorded'}
+        </p>
+      </div>
+
+      <div className="bg-white border rounded-lg p-4">
+        <h4 className="font-semibold text-gray-900 mb-3">Physical Examination</h4>
+        {latestEMR?.physicalExamination ? (
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            {Object.entries(latestEMR.physicalExamination).map(([system, finding]) => (
+              <div key={system}>
+                <strong className="text-gray-700 capitalize">{system}:</strong>
+                <p className="text-gray-600">{finding}</p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-gray-500">No physical examination recorded</p>
+        )}
+      </div>
+
+      <div className="bg-white border rounded-lg p-4">
+        <h4 className="font-semibold text-gray-900 mb-3">EMR History ({selectedPatientEMRs.length} records)</h4>
+        <div className="space-y-2 max-h-40 overflow-y-auto">
+          {selectedPatientEMRs.length > 0 ? (
+            selectedPatientEMRs.map((emr) => (
+              <div key={emr.id} className="p-2 bg-gray-50 rounded text-sm">
+                <div className="flex justify-between">
+                  <span className="font-medium">{new Date(emr.encounterDate).toLocaleDateString('th-TH')}</span>
+                  <span className="text-gray-500">{emr.encounterType}</span>
+                </div>
+                <p className="text-gray-600 truncate">{emr.chiefComplaint}</p>
+              </div>
+            ))
+          ) : (
+            <p className="text-gray-500">No EMR records found</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderRadiologyModalContent = (
+    patientName: string,
+    latestEMR: EMRRecord | null,
+    allergies: string[]
+  ) => (
+    <div className="space-y-4">
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <h3 className="font-bold text-blue-900 mb-2">Patient: {patientName}</h3>
+        <p className="text-sm text-blue-800">Imaging orders from EMR records</p>
+      </div>
+
+      <div className="bg-white border rounded-lg p-4">
+        <h4 className="font-semibold text-gray-900 mb-3">Imaging Studies</h4>
+        <div className="space-y-3">
+          {latestEMR?.imagingOrders && latestEMR.imagingOrders.length > 0 ? (
+            latestEMR.imagingOrders.map((orderId) => (
+              <div key={String(orderId)} className="border-l-4 border-blue-500 bg-blue-50 p-3 rounded">
+                <div className="flex items-center justify-between mb-2">
+                  <h5 className="font-semibold text-blue-900">Imaging Order #{orderId}</h5>
+                  <span className="text-xs bg-blue-200 text-blue-800 px-2 py-1 rounded">Ordered</span>
+                </div>
+                <button className="text-sm text-blue-600 hover:text-blue-800 font-medium">
+                  📄 View Report & Images →
+                </button>
+              </div>
+            ))
+          ) : (
+            <div className="text-center py-4 text-gray-500">
+              <p>No imaging orders for this patient</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+        <h4 className="font-semibold text-orange-900 mb-2">⚠️ Important Notes</h4>
+        <ul className="text-sm text-orange-800 space-y-1">
+          <li>• Contrast studies require renal function check</li>
+          {allergies.length > 0 && <li>• Patient allergies: {allergies.join(', ')}</li>}
+          <li>• Ensure pregnancy status before ionizing radiation</li>
+        </ul>
+      </div>
+    </div>
+  );
+
+  const renderPathologyModalContent = (patientName: string) => (
+    <div className="space-y-4">
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <h3 className="font-bold text-blue-900 mb-2">Patient: {patientName}</h3>
+        <p className="text-sm text-blue-800">Pathology specimens and reports</p>
+      </div>
+
+      <div className="bg-white border rounded-lg p-4">
+        <h4 className="font-semibold text-gray-900 mb-3">Pathology Results</h4>
+        <div className="space-y-3">
+          <div className="bg-gray-50 border border-gray-200 rounded p-3">
+            <p className="text-sm text-gray-600 text-center py-4">
+              No pathology specimens have been submitted for this patient.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white border rounded-lg p-4">
+        <h4 className="font-semibold text-gray-900 mb-3">Available Pathology Services</h4>
+        <div className="grid grid-cols-2 gap-3 text-sm">
+          <div className="border rounded p-3 hover:bg-gray-50 cursor-pointer">
+            <p className="font-semibold text-gray-800">🔬 Tissue Biopsy</p>
+            <p className="text-xs text-gray-600 mt-1">Histopathological examination</p>
+          </div>
+          <div className="border rounded p-3 hover:bg-gray-50 cursor-pointer">
+            <p className="font-semibold text-gray-800">🧫 Cytology</p>
+            <p className="text-xs text-gray-600 mt-1">Cell analysis and screening</p>
+          </div>
+          <div className="border rounded p-3 hover:bg-gray-50 cursor-pointer">
+            <p className="font-semibold text-gray-800">🔍 Fine Needle Aspiration</p>
+            <p className="text-xs text-gray-600 mt-1">FNA cytology</p>
+          </div>
+          <div className="border rounded p-3 hover:bg-gray-50 cursor-pointer">
+            <p className="font-semibold text-gray-800">🧬 Molecular Pathology</p>
+            <p className="text-xs text-gray-600 mt-1">Genetic testing</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+        <h4 className="font-semibold text-purple-900 mb-2">📚 Clinical Resources</h4>
+        <p className="text-sm text-purple-800">
+          Access comprehensive pathology interpretation guidelines in the <strong>Clinical Resources</strong> menu.
+        </p>
+      </div>
+    </div>
+  );
+
+  const renderLaboratoryModalContent = (patientName: string) => (
+    <div className="space-y-4">
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <h3 className="font-bold text-blue-900 mb-2">Patient: {patientName}</h3>
+        <p className="text-sm text-blue-800">Laboratory orders and results</p>
+      </div>
+
+      {selectedPatientLabs.length > 0 ? (
+        selectedPatientLabs.map((lab) => (
+          <div key={lab.id} className="bg-white border rounded-lg p-4">
+            <div className="flex justify-between items-center mb-3">
+              <h4 className="font-semibold text-gray-900">{lab.testCategory}</h4>
+              <span className={`text-xs px-2 py-1 rounded ${
+                lab.status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+              }`}>
+                {lab.status}
+              </span>
+            </div>
+            <p className="text-xs text-gray-500 mb-3">
+              Ordered: {new Date(lab.orderDate).toLocaleDateString('th-TH')} by {lab.doctorName}
+            </p>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="text-left p-2">Test</th>
+                    <th className="text-left p-2">Result</th>
+                    <th className="text-left p-2">Reference</th>
+                    <th className="text-left p-2">Flag</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {lab.tests.map((test) => (
+                    <tr
+                      key={`${test.code || test.name}-${test.result}-${test.unit}`}
+                      className={test.abnormalFlag ? 'bg-red-50' : ''}
+                    >
+                      <td className="p-2">{test.name}</td>
+                      <td className="p-2 font-medium">{test.result} {test.unit}</td>
+                      <td className="p-2 text-gray-500">{test.referenceRange}</td>
+                      <td className="p-2">
+                        {test.abnormalFlag && (
+                          <span className="text-red-600 font-bold">{test.abnormalFlag}</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {lab.interpretation && (
+              <div className="mt-3 p-2 bg-gray-50 rounded text-sm">
+                <strong>Interpretation:</strong> {lab.interpretation}
+              </div>
+            )}
+          </div>
+        ))
+      ) : (
+        <div className="bg-white border rounded-lg p-8 text-center text-gray-500">
+          <p>No laboratory results found for this patient</p>
+          <button
+            onClick={() => onOrderLab?.()}
+            className="mt-3 px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700"
+          >
+            Order Lab Tests
+          </button>
+        </div>
+      )}
+    </div>
+  );
+
   // Render Health Studio Modal Content - Dynamic Data
   const renderStudioModalContent = () => {
     if (!studioModal) return null;
 
     // Get latest EMR for clinical data
-    const latestEMR = selectedPatientEMRs.length > 0
-      ? selectedPatientEMRs.sort((a, b) => new Date(b.encounterDate).getTime() - new Date(a.encounterDate).getTime())[0]
-      : null;
+    const sortedEMRs = [...selectedPatientEMRs].sort(
+      (a, b) => new Date(b.encounterDate).getTime() - new Date(a.encounterDate).getTime()
+    );
+    const latestEMR = sortedEMRs.length > 0 ? sortedEMRs[0] : null;
 
     // Support both flat structure (name) and nested structure (demographics.name)
     const patientName = selectedPatient?.demographics?.name || selectedPatient?.name || 'Select a patient';
@@ -673,584 +1345,27 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
     const modalContent: Record<string, { title: string; content: React.ReactNode }> = {
       diagnosis: {
         title: '🔍 การวินิจฉัย / วินิจฉัยแยกโรค (Diagnosis & Differential)',
-        content: (
-          <div className="space-y-4">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <h3 className="font-bold text-blue-900 mb-2">Patient: {patientName}</h3>
-              <p className="text-sm text-blue-800">
-                Chief Complaint: {latestEMR?.chiefComplaint || 'General consultation'}
-              </p>
-              {allergies.length > 0 && (
-                <p className="text-sm text-red-600 mt-1">⚠️ Allergies: {allergies.join(', ')}</p>
-              )}
-            </div>
-
-            <div className="bg-white border rounded-lg p-4">
-              <h4 className="font-semibold text-gray-900 mb-3">Clinical Assessment</h4>
-              <div className="space-y-2 text-sm">
-                <div>
-                  <strong>Vital Signs:</strong>
-                  {latestEMR?.vitalSigns ? (
-                    <ul className="ml-4 mt-1 text-gray-700">
-                      <li>• BP: {latestEMR.vitalSigns.bloodPressure} mmHg</li>
-                      <li>• HR: {latestEMR.vitalSigns.heartRate} bpm</li>
-                      <li>• Temp: {latestEMR.vitalSigns.temperature}°C</li>
-                      <li>• SpO2: {latestEMR.vitalSigns.oxygenSaturation}%</li>
-                      <li>• RR: {latestEMR.vitalSigns.respiratoryRate}/min</li>
-                      <li>• BMI: {latestEMR.vitalSigns.bmi}</li>
-                    </ul>
-                  ) : (
-                    <p className="ml-4 mt-1 text-gray-500">No vital signs recorded</p>
-                  )}
-                </div>
-                <div>
-                  <strong>Current Conditions:</strong>
-                  <ul className="ml-4 mt-1 text-gray-700">
-                    {conditions.length > 0 ? (
-                      conditions.map((condition, i) => <li key={i}>• {condition}</li>)
-                    ) : (
-                      <li className="text-gray-500">No chronic conditions recorded</li>
-                    )}
-                  </ul>
-                </div>
-                <div>
-                  <strong>Current Medications:</strong>
-                  <ul className="ml-4 mt-1 text-gray-700">
-                    {medications.length > 0 ? (
-                      medications.map((med, i) => <li key={i}>• {med}</li>)
-                    ) : (
-                      <li className="text-gray-500">No current medications</li>
-                    )}
-                  </ul>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white border rounded-lg p-4">
-              <h4 className="font-semibold text-gray-900 mb-3">Diagnosis from EMR</h4>
-              <div className="space-y-2 text-sm text-gray-700">
-                {latestEMR?.diagnosis && latestEMR.diagnosis.length > 0 ? (
-                  latestEMR.diagnosis.map((dx, i) => (
-                    <div key={i} className={`flex items-center justify-between p-2 rounded ${dx.type === 'primary' ? 'bg-green-50' : 'bg-gray-50'}`}>
-                      <span>{i + 1}. [{dx.code}] {dx.description}</span>
-                      <span className={dx.type === 'primary' ? 'text-green-700 font-semibold' : 'text-gray-600'}>
-                        {dx.type === 'primary' ? 'Primary' : 'Secondary'}
-                      </span>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-gray-500">No diagnosis recorded yet</p>
-                )}
-              </div>
-            </div>
-
-            <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
-              <h4 className="font-semibold text-emerald-900 mb-2">Treatment Plan</h4>
-              <p className="text-sm text-emerald-800">
-                {latestEMR?.treatmentPlan || 'No treatment plan recorded yet. Please create an EMR to add recommendations.'}
-              </p>
-            </div>
-          </div>
-        ),
+        content: renderDiagnosisModalContent(patientName, latestEMR, allergies, conditions, medications),
       },
       'treatment-plan': {
         title: '💊 แผนการรักษา (Treatment Plan / Prescribe)',
-        content: (
-          <div className="space-y-4">
-            {/* Patient Summary */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <h3 className="font-bold text-blue-900 mb-2">Patient: {patientName}</h3>
-              <div className="flex flex-wrap gap-4 text-sm text-blue-800">
-                <span>Age: {selectedPatient?.demographics?.age || '-'}</span>
-                <span>Gender: {selectedPatient?.demographics?.gender || '-'}</span>
-                {allergies.length > 0 && (
-                  <span className="text-red-600 font-medium">⚠️ Allergies: {allergies.join(', ')}</span>
-                )}
-              </div>
-            </div>
-
-            {/* Treatment Tabs */}
-            <div className="bg-white border rounded-lg overflow-hidden">
-              <div className="flex border-b">
-                <button
-                  onClick={() => setTreatmentTab('protocols')}
-                  className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
-                    treatmentTab === 'protocols'
-                      ? 'bg-blue-50 text-blue-700 border-b-2 border-blue-600'
-                      : 'text-gray-600 hover:bg-gray-50'
-                  }`}
-                >
-                  📋 Treatment Protocols
-                </button>
-                <button
-                  onClick={() => setTreatmentTab('prescribe')}
-                  className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
-                    treatmentTab === 'prescribe'
-                      ? 'bg-blue-50 text-blue-700 border-b-2 border-blue-600'
-                      : 'text-gray-600 hover:bg-gray-50'
-                  }`}
-                >
-                  💊 Quick Prescribe
-                </button>
-                <button
-                  onClick={() => setTreatmentTab('history')}
-                  className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
-                    treatmentTab === 'history'
-                      ? 'bg-blue-50 text-blue-700 border-b-2 border-blue-600'
-                      : 'text-gray-600 hover:bg-gray-50'
-                  }`}
-                >
-                  📜 Prescription History
-                </button>
-              </div>
-
-              <div className="p-4">
-                {/* Treatment Protocols Tab */}
-                {treatmentTab === 'protocols' && (
-                  <div className="space-y-4">
-                    <h4 className="font-semibold text-gray-900">Evidence-Based Treatment Guidelines</h4>
-                    
-                    {/* Hypertension Protocol */}
-                    <div className="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <h5 className="font-semibold text-emerald-700">🩺 Hypertension Management</h5>
-                          <p className="text-sm text-gray-600 mt-1">Target: {"<"}140/90 mmHg ({"<"}130/80 for high-risk)</p>
-                        </div>
-                        <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded">JNC 8</span>
-                      </div>
-                      <div className="mt-3 text-sm">
-                        <p className="font-medium text-gray-700">First-Line Options:</p>
-                        <ul className="ml-4 text-gray-600 mt-1 space-y-1">
-                          <li>• ACE Inhibitors (Enalapril, Lisinopril)</li>
-                          <li>• ARBs (Losartan, Valsartan)</li>
-                          <li>• CCBs (Amlodipine)</li>
-                          <li>• Thiazide Diuretics</li>
-                        </ul>
-                      </div>
-                    </div>
-
-                    {/* Diabetes Protocol */}
-                    <div className="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <h5 className="font-semibold text-blue-700">🍬 Type 2 Diabetes Management</h5>
-                          <p className="text-sm text-gray-600 mt-1">Target HbA1c: {"<"}7% for most adults</p>
-                        </div>
-                        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">ADA 2024</span>
-                      </div>
-                      <div className="mt-3 text-sm">
-                        <p className="font-medium text-gray-700">Stepwise Approach:</p>
-                        <ul className="ml-4 text-gray-600 mt-1 space-y-1">
-                          <li>• Step 1: Lifestyle + Metformin 500-2000mg/day</li>
-                          <li>• Step 2: Add SGLT2i or GLP-1 agonist</li>
-                          <li>• Step 3: Combination therapy or insulin</li>
-                        </ul>
-                      </div>
-                    </div>
-
-                    {/* Dyslipidemia Protocol */}
-                    <div className="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <h5 className="font-semibold text-purple-700">🫀 Dyslipidemia Management</h5>
-                          <p className="text-sm text-gray-600 mt-1">LDL targets vary by cardiovascular risk</p>
-                        </div>
-                        <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">ACC/AHA</span>
-                      </div>
-                      <div className="mt-3 text-sm">
-                        <p className="font-medium text-gray-700">Statin Therapy:</p>
-                        <ul className="ml-4 text-gray-600 mt-1 space-y-1">
-                          <li>• High-intensity: Atorvastatin 40-80mg, Rosuvastatin 20-40mg</li>
-                          <li>• Moderate: Atorvastatin 10-20mg, Simvastatin 20-40mg</li>
-                          <li>• Add Ezetimibe if target not reached</li>
-                        </ul>
-                      </div>
-                    </div>
-
-                    {/* Respiratory Protocol */}
-                    <div className="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <h5 className="font-semibold text-orange-700">🌬️ Asthma/COPD Management</h5>
-                          <p className="text-sm text-gray-600 mt-1">GINA/GOLD stepwise approach</p>
-                        </div>
-                        <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded">GINA 2024</span>
-                      </div>
-                      <div className="mt-3 text-sm">
-                        <p className="font-medium text-gray-700">Controller Therapy:</p>
-                        <ul className="ml-4 text-gray-600 mt-1 space-y-1">
-                          <li>• ICS-formoterol as needed (mild)</li>
-                          <li>• Low-dose ICS daily (moderate)</li>
-                          <li>• ICS/LABA combination (severe)</li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Quick Prescribe Tab */}
-                {treatmentTab === 'prescribe' && (
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h4 className="font-semibold text-gray-900">Quick Prescription</h4>
-                      <button
-                        onClick={() => {
-                          setStudioModal(null);
-                          if (onCreatePrescription) onCreatePrescription();
-                        }}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
-                      >
-                        Open Full Prescriber
-                      </button>
-                    </div>
-
-                    <div className="bg-gray-50 border rounded-lg p-4">
-                      <h5 className="font-medium text-gray-700 mb-3">Current Medications</h5>
-                      {medications.length > 0 ? (
-                        <div className="space-y-2">
-                          {medications.map((med, i) => (
-                            <div key={i} className="flex items-center justify-between p-2 bg-white rounded border">
-                              <span className="text-sm">{med}</span>
-                              <button className="text-xs text-blue-600 hover:text-blue-800">Refill</button>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-sm text-gray-500">No current medications on record</p>
-                      )}
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <button className="p-3 text-left bg-white border rounded-lg hover:bg-gray-50">
-                        <div className="font-medium text-gray-900">💊 Common Meds</div>
-                        <div className="text-xs text-gray-600 mt-1">Frequently prescribed medications</div>
-                      </button>
-                      <button className="p-3 text-left bg-white border rounded-lg hover:bg-gray-50">
-                        <div className="font-medium text-gray-900">📋 Favorites</div>
-                        <div className="text-xs text-gray-600 mt-1">Your saved prescriptions</div>
-                      </button>
-                      <button className="p-3 text-left bg-white border rounded-lg hover:bg-gray-50">
-                        <div className="font-medium text-gray-900">🔄 Previous Rx</div>
-                        <div className="text-xs text-gray-600 mt-1">Copy from past prescriptions</div>
-                      </button>
-                      <button className="p-3 text-left bg-white border rounded-lg hover:bg-gray-50">
-                        <div className="font-medium text-gray-900">⚠️ Interactions</div>
-                        <div className="text-xs text-gray-600 mt-1">Check drug interactions</div>
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Prescription History Tab */}
-                {treatmentTab === 'history' && (
-                  <div className="space-y-4">
-                    <h4 className="font-semibold text-gray-900">Prescription History</h4>
-                    
-                    {selectedPatientPrescriptions.length > 0 ? (
-                      selectedPatientPrescriptions.map((rx: any) => (
-                        <div key={rx.id} className="border rounded-lg p-4">
-                          <div className="flex items-start justify-between mb-3">
-                            <div>
-                              <span className="text-sm font-medium text-gray-900">{rx.id}</span>
-                              <p className="text-xs text-gray-500">
-                                {new Date(rx.prescribedDate).toLocaleDateString('th-TH')} • {rx.doctorName}
-                              </p>
-                            </div>
-                            <span className={`text-xs px-2 py-1 rounded ${
-                              rx.status === 'active' ? 'bg-green-100 text-green-700' :
-                              rx.status === 'completed' ? 'bg-gray-100 text-gray-700' :
-                              'bg-yellow-100 text-yellow-700'
-                            }`}>
-                              {rx.status}
-                            </span>
-                          </div>
-                          
-                          <div className="space-y-2">
-                            {rx.medications?.map((med: any, i: number) => (
-                              <div key={i} className="flex items-center justify-between p-2 bg-gray-50 rounded text-sm">
-                                <div>
-                                  <span className="font-medium">{med.name}</span>
-                                  <span className="text-gray-500 ml-2">{med.strength} - {med.frequency}</span>
-                                </div>
-                                <span className="text-xs text-gray-500">{med.duration}</span>
-                              </div>
-                            ))}
-                          </div>
-
-                          <div className="mt-3 flex justify-end space-x-2">
-                            <button className="text-xs text-blue-600 hover:text-blue-800">View Details</button>
-                            <button className="text-xs text-emerald-600 hover:text-emerald-800">Copy to New Rx</button>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="text-center py-8 text-gray-500">
-                        <div className="text-4xl mb-2">📜</div>
-                        <p>No prescription history found</p>
-                        <button
-                          onClick={() => {
-                            setStudioModal(null);
-                            if (onCreatePrescription) onCreatePrescription();
-                          }}
-                          className="mt-3 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
-                        >
-                          Create First Prescription
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Quick Actions */}
-            <div className="flex justify-end space-x-3">
-              <button
-                onClick={() => {
-                  setStudioModal(null);
-                  if (onCreatePrescription) onCreatePrescription();
-                }}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
-              >
-                💊 New Prescription
-              </button>
-            </div>
-          </div>
-        ),
+        content: renderTreatmentPlanModalContent(patientName, allergies, medications),
       },
       'system-report': {
         title: '📊 รายงานเวชระเบียน (Medical Record)',
-        content: (
-          <div className="space-y-4">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <h3 className="font-bold text-blue-900 mb-2">Patient: {patientName}</h3>
-              <p className="text-sm text-blue-800">
-                Last Encounter: {latestEMR ? new Date(latestEMR.encounterDate).toLocaleDateString('th-TH') : 'No records'}
-              </p>
-            </div>
-
-            <div className="bg-white border rounded-lg p-4">
-              <h4 className="font-semibold text-gray-900 mb-3">History of Present Illness</h4>
-              <p className="text-sm text-gray-700">
-                {latestEMR?.historyOfPresentIllness || 'No HPI recorded'}
-              </p>
-            </div>
-
-            <div className="bg-white border rounded-lg p-4">
-              <h4 className="font-semibold text-gray-900 mb-3">Physical Examination</h4>
-              {latestEMR?.physicalExamination ? (
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  {Object.entries(latestEMR.physicalExamination).map(([system, finding]) => (
-                    <div key={system}>
-                      <strong className="text-gray-700 capitalize">{system}:</strong>
-                      <p className="text-gray-600">{finding}</p>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-gray-500">No physical examination recorded</p>
-              )}
-            </div>
-
-            <div className="bg-white border rounded-lg p-4">
-              <h4 className="font-semibold text-gray-900 mb-3">EMR History ({selectedPatientEMRs.length} records)</h4>
-              <div className="space-y-2 max-h-40 overflow-y-auto">
-                {selectedPatientEMRs.length > 0 ? (
-                  selectedPatientEMRs.map((emr) => (
-                    <div key={emr.id} className="p-2 bg-gray-50 rounded text-sm">
-                      <div className="flex justify-between">
-                        <span className="font-medium">{new Date(emr.encounterDate).toLocaleDateString('th-TH')}</span>
-                        <span className="text-gray-500">{emr.encounterType}</span>
-                      </div>
-                      <p className="text-gray-600 truncate">{emr.chiefComplaint}</p>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-gray-500">No EMR records found</p>
-                )}
-              </div>
-            </div>
-          </div>
-        ),
+        content: renderSystemReportModalContent(patientName, latestEMR, selectedPatientEMRs),
       },
       radiology: {
         title: '🩻 ภาพวินิจฉัยทางรังสีวิทยา (Radiological Imaging)',
-        content: (
-          <div className="space-y-4">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <h3 className="font-bold text-blue-900 mb-2">Patient: {patientName}</h3>
-              <p className="text-sm text-blue-800">Imaging orders from EMR records</p>
-            </div>
-
-            <div className="bg-white border rounded-lg p-4">
-              <h4 className="font-semibold text-gray-900 mb-3">Imaging Studies</h4>
-              <div className="space-y-3">
-                {latestEMR?.imagingOrders && latestEMR.imagingOrders.length > 0 ? (
-                  latestEMR.imagingOrders.map((orderId, i) => (
-                    <div key={i} className="border-l-4 border-blue-500 bg-blue-50 p-3 rounded">
-                      <div className="flex items-center justify-between mb-2">
-                        <h5 className="font-semibold text-blue-900">Imaging Order #{orderId}</h5>
-                        <span className="text-xs bg-blue-200 text-blue-800 px-2 py-1 rounded">Ordered</span>
-                      </div>
-                      <button className="text-sm text-blue-600 hover:text-blue-800 font-medium">
-                        📄 View Report & Images →
-                      </button>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-center py-4 text-gray-500">
-                    <p>No imaging orders for this patient</p>
-                  </div>
-                )}
-
-                <div className="border-t pt-3 mt-3">
-                  <h5 className="font-semibold text-gray-700 mb-2">Order New Imaging</h5>
-                  <div className="grid grid-cols-3 gap-2">
-                    <button className="p-2 text-sm bg-gray-100 hover:bg-gray-200 rounded">X-Ray</button>
-                    <button className="p-2 text-sm bg-gray-100 hover:bg-gray-200 rounded">CT Scan</button>
-                    <button className="p-2 text-sm bg-gray-100 hover:bg-gray-200 rounded">Ultrasound</button>
-                    <button className="p-2 text-sm bg-gray-100 hover:bg-gray-200 rounded">MRI</button>
-                    <button className="p-2 text-sm bg-gray-100 hover:bg-gray-200 rounded">Mammogram</button>
-                    <button className="p-2 text-sm bg-gray-100 hover:bg-gray-200 rounded">Echocardiogram</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-              <h4 className="font-semibold text-orange-900 mb-2">⚠️ Important Notes</h4>
-              <ul className="text-sm text-orange-800 space-y-1">
-                <li>• Contrast studies require renal function check</li>
-                {allergies.length > 0 && <li>• Patient allergies: {allergies.join(', ')}</li>}
-                <li>• Ensure pregnancy status before ionizing radiation</li>
-              </ul>
-            </div>
-          </div>
-        ),
+        content: renderRadiologyModalContent(patientName, latestEMR, allergies),
       },
       pathology: {
         title: '🔬 รายงานทางพยาธิวิทยา (Pathology Reports)',
-        content: (
-          <div className="space-y-4">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <h3 className="font-bold text-blue-900 mb-2">Patient: {patientName}</h3>
-              <p className="text-sm text-blue-800">Pathology specimens and reports</p>
-            </div>
-
-            <div className="bg-white border rounded-lg p-4">
-              <h4 className="font-semibold text-gray-900 mb-3">Pathology Results</h4>
-              <div className="space-y-3">
-                <div className="bg-gray-50 border border-gray-200 rounded p-3">
-                  <p className="text-sm text-gray-600 text-center py-4">
-                    No pathology specimens have been submitted for this patient.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white border rounded-lg p-4">
-              <h4 className="font-semibold text-gray-900 mb-3">Available Pathology Services</h4>
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <div className="border rounded p-3 hover:bg-gray-50 cursor-pointer">
-                  <p className="font-semibold text-gray-800">🔬 Tissue Biopsy</p>
-                  <p className="text-xs text-gray-600 mt-1">Histopathological examination</p>
-                </div>
-                <div className="border rounded p-3 hover:bg-gray-50 cursor-pointer">
-                  <p className="font-semibold text-gray-800">🧫 Cytology</p>
-                  <p className="text-xs text-gray-600 mt-1">Cell analysis and screening</p>
-                </div>
-                <div className="border rounded p-3 hover:bg-gray-50 cursor-pointer">
-                  <p className="font-semibold text-gray-800">🔍 Fine Needle Aspiration</p>
-                  <p className="text-xs text-gray-600 mt-1">FNA cytology</p>
-                </div>
-                <div className="border rounded p-3 hover:bg-gray-50 cursor-pointer">
-                  <p className="font-semibold text-gray-800">🧬 Molecular Pathology</p>
-                  <p className="text-xs text-gray-600 mt-1">Genetic testing</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-              <h4 className="font-semibold text-purple-900 mb-2">📚 Clinical Resources</h4>
-              <p className="text-sm text-purple-800">
-                Access comprehensive pathology interpretation guidelines in the <strong>Clinical Resources</strong> menu.
-              </p>
-            </div>
-          </div>
-        ),
+        content: renderPathologyModalContent(patientName),
       },
       laboratory: {
         title: '🧪 รายงานทางห้องปฏิบัติการ (Laboratory Results)',
-        content: (
-          <div className="space-y-4">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <h3 className="font-bold text-blue-900 mb-2">Patient: {patientName}</h3>
-              <p className="text-sm text-blue-800">Laboratory orders and results</p>
-            </div>
-
-            {selectedPatientLabs.length > 0 ? (
-              selectedPatientLabs.map((lab) => (
-                <div key={lab.id} className="bg-white border rounded-lg p-4">
-                  <div className="flex justify-between items-center mb-3">
-                    <h4 className="font-semibold text-gray-900">{lab.testCategory}</h4>
-                    <span className={`text-xs px-2 py-1 rounded ${
-                      lab.status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
-                    }`}>
-                      {lab.status}
-                    </span>
-                  </div>
-                  <p className="text-xs text-gray-500 mb-3">
-                    Ordered: {new Date(lab.orderDate).toLocaleDateString('th-TH')} by {lab.doctorName}
-                  </p>
-
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="text-left p-2">Test</th>
-                          <th className="text-left p-2">Result</th>
-                          <th className="text-left p-2">Reference</th>
-                          <th className="text-left p-2">Flag</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {lab.tests.map((test, i) => (
-                          <tr key={i} className={test.abnormalFlag ? 'bg-red-50' : ''}>
-                            <td className="p-2">{test.name}</td>
-                            <td className="p-2 font-medium">{test.result} {test.unit}</td>
-                            <td className="p-2 text-gray-500">{test.referenceRange}</td>
-                            <td className="p-2">
-                              {test.abnormalFlag && (
-                                <span className="text-red-600 font-bold">{test.abnormalFlag}</span>
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {lab.interpretation && (
-                    <div className="mt-3 p-2 bg-gray-50 rounded text-sm">
-                      <strong>Interpretation:</strong> {lab.interpretation}
-                    </div>
-                  )}
-                </div>
-              ))
-            ) : (
-              <div className="bg-white border rounded-lg p-8 text-center text-gray-500">
-                <p>No laboratory results found for this patient</p>
-                <button
-                  onClick={() => onOrderLab && onOrderLab()}
-                  className="mt-3 px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700"
-                >
-                  Order Lab Tests
-                </button>
-              </div>
-            )}
-          </div>
-        ),
+        content: renderLaboratoryModalContent(patientName),
       },
     };
 
@@ -1326,24 +1441,26 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
 
         {/* KPI Cards - Clickable to navigate to Appointments & Meetings */}
         <div className="grid grid-cols-2 md:grid-cols-7 gap-3">
-          <div 
+          <button 
+            type="button"
             onClick={() => navigate(`/doctor/${doctor.id}/health-meeting`)}
-            className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-200 cursor-pointer hover:shadow-lg hover:border-blue-400 transition-all"
+            className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-200 cursor-pointer hover:shadow-lg hover:border-blue-400 transition-all text-left"
           >
             <div className="text-2xl font-bold text-blue-700">{dashboardStats.todayAppointments}</div>
             <div className="text-xs text-blue-600 mt-1">Today's Appointments</div>
-          </div>
+          </button>
           <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-lg border border-green-200">
             <div className="text-2xl font-bold text-green-700">{dashboardStats.patientsSeen}</div>
             <div className="text-xs text-green-600 mt-1">Patients Seen</div>
           </div>
-          <div 
+          <button 
+            type="button"
             onClick={() => navigate(`/doctor/${doctor.id}/health-meeting`)}
-            className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-lg border border-orange-200 cursor-pointer hover:shadow-lg hover:border-orange-400 transition-all"
+            className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-lg border border-orange-200 cursor-pointer hover:shadow-lg hover:border-orange-400 transition-all text-left"
           >
             <div className="text-2xl font-bold text-orange-700">{dashboardStats.patientsInQueue}</div>
             <div className="text-xs text-orange-600 mt-1">In Queue</div>
-          </div>
+          </button>
           <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-lg border border-purple-200">
             <div className="text-2xl font-bold text-purple-700">{dashboardStats.pendingPrescriptions}</div>
             <div className="text-xs text-purple-600 mt-1">Pending Rx</div>
@@ -1356,9 +1473,10 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
             <div className="text-2xl font-bold text-cyan-700">{dashboardStats.averageWaitTime}</div>
             <div className="text-xs text-cyan-600 mt-1">Avg Wait (min)</div>
           </div>
-          <div 
+          <button 
+            type="button"
             onClick={() => navigate(`/doctor/${doctor.id}/health-meeting`)}
-            className="bg-gradient-to-br from-amber-50 to-amber-100 p-4 rounded-lg border-2 border-amber-400 relative cursor-pointer hover:shadow-lg hover:border-amber-500 transition-all"
+            className="bg-gradient-to-br from-amber-50 to-amber-100 p-4 rounded-lg border-2 border-amber-400 relative cursor-pointer hover:shadow-lg hover:border-amber-500 transition-all text-left"
           >
             <div className="text-2xl font-bold text-amber-700">{dashboardStats.pendingConfirmations}</div>
             <div className="text-xs text-amber-600 mt-1">Need Confirmation</div>
@@ -1367,7 +1485,7 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
                 <span className="text-xs text-white font-bold">!</span>
               </div>
             )}
-          </div>
+          </button>
         </div>
         
         {/* Today's Meetings Quick View */}
@@ -1439,11 +1557,7 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
                         🎥 Meet
                       </a>
                     )}
-                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                      apt.status === 'confirmed' ? 'bg-green-100 text-green-700' : 
-                      apt.status === 'assigned' ? 'bg-amber-100 text-amber-700' :
-                      'bg-blue-100 text-blue-700'
-                    }`}>
+                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${getMeetingStatusClass(apt.status)}`}>
                       {apt.status}
                     </span>
                   </div>
@@ -1473,13 +1587,7 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
                 <button
                   key={patient.id}
                   onClick={() => handleViewPatient(patient)}
-                  className={`w-full text-left p-3 rounded-lg border-2 transition-all ${
-                    selectedPatientId === patient.patientId
-                      ? 'bg-emerald-100 border-emerald-500 shadow-md'
-                      : patient.priority === 'urgent'
-                      ? 'bg-red-50 border-red-300 hover:bg-red-100 hover:shadow'
-                      : 'bg-blue-50 border-blue-200 hover:bg-blue-100 hover:shadow'
-                  }`}
+                  className={`w-full text-left p-3 rounded-lg border-2 transition-all ${getQueueItemClass(patient)}`}
                 >
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-sm font-bold text-gray-900">#{idx + 1}</span>
@@ -1644,14 +1752,8 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
                     {aiValidationTab === 'cds' && 'Clinical Decision Support'}
                   </h3>
                 </div>
-                <span className={`px-2 py-0.5 text-xs rounded-full font-medium ${
-                  aiValidationStatus === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                  aiValidationStatus === 'approved' ? 'bg-green-100 text-green-700' :
-                  'bg-red-100 text-red-700'
-                }`}>
-                  {aiValidationStatus === 'pending' ? '🟡 รอตรวจสอบ' :
-                   aiValidationStatus === 'approved' ? '🟢 อนุมัติแล้ว' :
-                   '🔴 ปฏิเสธ'}
+                <span className={`px-2 py-0.5 text-xs rounded-full font-medium ${currentAiValidationStatus.className}`}>
+                  {currentAiValidationStatus.label}
                 </span>
               </div>
 
@@ -1676,8 +1778,11 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
                   {aiValidationTab === 'documents' && (
                     <div className="space-y-2">
                       {aiDocuments.length > 0 ? (
-                        aiDocuments.map((doc, idx) => (
-                          <div key={idx} className="p-2 bg-gray-50 rounded border text-xs">
+                        aiDocuments.map((doc) => (
+                          <div
+                            key={doc.id ?? doc.filename ?? `${doc.filename || 'doc'}-${doc.summary || ''}`}
+                            className="p-2 bg-gray-50 rounded border text-xs"
+                          >
                             <div className="font-medium text-gray-700">{doc.filename}</div>
                             <div className="text-gray-600 mt-1">{doc.summary}</div>
                           </div>
@@ -1699,8 +1804,8 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
                   {aiValidationTab === 'cds' && (
                     <div className="space-y-2">
                       {aiPreSummary?.aiTriage?.alertFlags?.length > 0 ? (
-                        aiPreSummary.aiTriage.alertFlags.map((alert: string, idx: number) => (
-                          <div key={idx} className="p-2 bg-yellow-50 border border-yellow-200 rounded text-xs">
+                        aiPreSummary.aiTriage.alertFlags.map((alert: string) => (
+                          <div key={alert} className="p-2 bg-yellow-50 border border-yellow-200 rounded text-xs">
                             <div className="text-yellow-800">{alert}</div>
                           </div>
                         ))
@@ -1715,8 +1820,8 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
                         <div className="mt-3 pt-3 border-t border-gray-200">
                           <p className="text-xs font-medium text-gray-700 mb-2">💡 คำถามที่แนะนำ:</p>
                           <ul className="space-y-1">
-                            {aiPreSummary.aiTriage.suggestedQuestions.map((q: string, idx: number) => (
-                              <li key={idx} className="text-xs text-gray-600 flex items-start">
+                            {aiPreSummary.aiTriage.suggestedQuestions.map((q: string) => (
+                              <li key={q} className="text-xs text-gray-600 flex items-start">
                                 <span className="mr-1">•</span> {q}
                               </li>
                             ))}
@@ -1953,9 +2058,9 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {chatMessages.map((msg, idx) => (
+                  {chatMessages.map((msg) => (
                     <div
-                      key={idx}
+                      key={msg.id}
                       className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                     >
                       <div
@@ -2038,3 +2143,4 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
 };
 
 export default DoctorDashboard;
+

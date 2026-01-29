@@ -299,7 +299,7 @@ All validation decisions are logged with:
 | Medical Records | Summary, relevant history |
 | Referral Letters | Chief complaint, reason for referral |
 
-#### Workflow
+#### Workflow (2)
 
 ```text
 1. Doctor uploads PDF/image
@@ -413,12 +413,12 @@ ai_validations         -- Man-in-the-loop audit log
 
 | Role | Email | Password |
 | ------ | ------- | ---------- |
-| Patient | demo.test@gmail.com | P@ssw0rd |
-| Patient | Somchai.Mankong@gmail.com | P@ssw0rd |
-| Patient | Anan.Khayanrian@gmail.com | P@ssw0rd |
-| Doctor | doctor.test@izara.com | IzaraDoctor@2024 |
-| Doctor | specialist.test@izara.com | IzaraDoctor@2024 |
-| Admin | admin.test@izara.com | IzaraAdmin@2024 |
+| Patient | `demo.test@gmail.com` | YOUR_TEST_PASSWORD |
+| Patient | `Somchai.Mankong@gmail.com` | YOUR_TEST_PASSWORD |
+| Patient | `Anan.Khayanrian@gmail.com` | YOUR_TEST_PASSWORD |
+| Doctor | `doctor.test@izara.com` | YOUR_TEST_DOCTOR_PASSWORD |
+| Doctor | `specialist.test@izara.com` | YOUR_TEST_DOCTOR_PASSWORD |
+| Admin | `admin.test@izara.com` | YOUR_TEST_ADMIN_PASSWORD |
 
 ---
 
@@ -468,4 +468,4 @@ ai_validations         -- Man-in-the-loop audit log
 
 ---
 
-#### End of Phase 1 Requirements v3.0
+### End of Phase 1 Requirements v3.0

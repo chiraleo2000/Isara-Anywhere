@@ -9,9 +9,9 @@
  */
 
 const { Storage } = require('@google-cloud/storage');
-const crypto = require('crypto');
+const crypto = require('node:crypto');
 const bcrypt = require('bcryptjs');
-const path = require('path');
+const path = require('node:path');
 
 // Initialize GCS
 const storage = new Storage({
@@ -57,11 +57,11 @@ async function fetchFromGCS(bucketName, fileName) {
     const bucket = storage.bucket(bucketName);
     const file = bucket.file(fileName);
     const [exists] = await file.exists();
-    
+
     if (!exists) {
       return null;
     }
-    
+
     const [content] = await file.download();
     return JSON.parse(content.toString());
   } catch (error) {
@@ -100,9 +100,9 @@ const USERS = {
 
 async function createUser(userDef) {
   console.log(`\n📝 Creating user: ${userDef.name} (${userDef.email})`);
-  
+
   const now = new Date().toISOString();
-  
+
   // Create user credential
   const userCredential = {
     id: userDef.id,
@@ -169,20 +169,20 @@ async function createUser(userDef) {
   console.log(`   ✅ User created successfully`);
   console.log(`   📧 Email: ${userDef.email}`);
   console.log(`   🔑 Password: ${userDef.password}`);
-  
+
   return userCredential;
 }
 
 async function updateUsersIndex(users) {
   console.log('\n📋 Updating users index...');
-  
+
   // Fetch existing index or create new
   let usersIndex = await fetchFromGCS(BUCKETS.credentials, 'users/index.json') || [];
-  
+
   for (const user of users) {
     // Remove existing entry if exists
     usersIndex = usersIndex.filter(u => u.id !== user.id && u.email !== user.email);
-    
+
     // Add new entry
     usersIndex.push({
       id: user.id,
@@ -193,21 +193,21 @@ async function updateUsersIndex(users) {
       approvalStatus: 'approved'
     });
   }
-  
+
   await writeToGCS(BUCKETS.credentials, 'users/index.json', usersIndex);
   console.log('✅ Users index updated');
 }
 
 async function updateDoctorsList(doctors) {
   console.log('\n📋 Updating doctors list...');
-  
+
   // Fetch existing list or create new
   let doctorsList = await fetchFromGCS(BUCKETS.doctor, 'doctors.json') || [];
-  
+
   for (const doc of doctors) {
     // Remove existing entry if exists
     doctorsList = doctorsList.filter(d => d.id !== doc.id && d.email !== doc.email);
-    
+
     // Add new entry
     doctorsList.push({
       id: doc.id,
@@ -223,7 +223,7 @@ async function updateDoctorsList(doctors) {
       isAdmin: doc.isAdmin
     });
   }
-  
+
   await writeToGCS(BUCKETS.doctor, 'doctors.json', doctorsList);
   console.log('✅ Doctors list updated');
 }
@@ -232,21 +232,21 @@ async function main() {
   console.log('═══════════════════════════════════════════════════════════════');
   console.log('🏥 IZARA - Generate Mock Users');
   console.log('═══════════════════════════════════════════════════════════════');
-  
+
   const createdUsers = [];
-  
+
   // Create Admin
   const admin = await createUser(USERS.admin);
   createdUsers.push({ ...admin, ...USERS.admin });
-  
+
   // Create Doctor
   const doctor = await createUser(USERS.doctor);
   createdUsers.push({ ...doctor, ...USERS.doctor });
-  
+
   // Update indexes
   await updateUsersIndex(createdUsers);
   await updateDoctorsList(createdUsers);
-  
+
   console.log('\n═══════════════════════════════════════════════════════════════');
   console.log('✅ MOCK USERS CREATED SUCCESSFULLY!');
   console.log('═══════════════════════════════════════════════════════════════');

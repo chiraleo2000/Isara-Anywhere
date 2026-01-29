@@ -292,7 +292,7 @@ This document details the full health record workflow for Izara Telemedicine, in
 
 ### 3.2 Health Studio (`HealthStudio.tsx`)
 
-#### Tabs
+#### Tabs (2)
 
 - **Health Overview**: Quick stats, recent appointments
 - **Treatment Results**: EMR summaries from doctors
@@ -314,7 +314,7 @@ Patient enters vital signs → POST /api/phr/{patientId}/vitals
 
 ### 4.1 Patient Record Viewer (`PatientRecordViewer.tsx`)
 
-#### Tabs
+#### Tabs (3)
 
 - **PHR (Personal Health Record)**: Patient's self-entered data
   - Demographics (name, age, gender, weight, height, BMI)
@@ -612,7 +612,7 @@ When doctor signs EMR or creates prescription, patient receives:
 
 Both portals now use a shared type definition for PHR data to ensure consistency:
 
-#### File Locations
+### File Locations
 
 - Patient Portal: `src/types/sharedPHRTypes.ts`
 - Doctor Portal: `src/types/sharedPHRTypes.ts`
@@ -721,7 +721,7 @@ node scripts/phrDataSyncSeleniumTests.cjs --headless
 6. Verify AI summary is visible
 7. **Verify medications are visible** (new)
 
-#### Run Test
+#### Run Test (2)
 
 ```bash
 node scripts/lifestyleAndEMRSeleniumTests.cjs

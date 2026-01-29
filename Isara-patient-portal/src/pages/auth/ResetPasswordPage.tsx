@@ -48,6 +48,8 @@ export default function ResetPasswordPage() {
           setError(result.error || 'โทเค็นไม่ถูกต้องหรือหมดอายุแล้ว');
         }
       } catch (err) {
+        // Log error for debugging and set user-friendly message
+        console.error('Token verification error:', err instanceof Error ? err.message : 'Unknown error');
         setError('ไม่สามารถตรวจสอบโทเค็นได้ กรุณาลองใหม่อีกครั้ง');
       } finally {
         setVerifying(false);
@@ -202,10 +204,11 @@ export default function ResetPasswordPage() {
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">รหัสผ่านใหม่</label>
+              <label htmlFor="reset-new-password" className="block text-sm font-medium text-gray-700 mb-1">รหัสผ่านใหม่</label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
+                  id="reset-new-password"
                   type={showNewPassword ? 'text' : 'password'}
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
@@ -222,7 +225,7 @@ export default function ResetPasswordPage() {
                   {showNewPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
-              
+
               {/* Password strength indicators */}
               <div className="mt-2 space-y-1">
                 <div className={`flex items-center gap-2 text-xs ${passwordStrength.length ? 'text-emerald-600' : 'text-gray-400'}`}>
@@ -241,16 +244,16 @@ export default function ResetPasswordPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">ยืนยันรหัสผ่านใหม่</label>
+              <label htmlFor="reset-confirm-password" className="block text-sm font-medium text-gray-700 mb-1">ยืนยันรหัสผ่านใหม่</label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
+                  id="reset-confirm-password"
                   type={showConfirmPassword ? 'text' : 'password'}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className={`w-full pl-10 pr-12 py-3 border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all ${
-                    confirmPassword && !passwordsMatch ? 'border-red-300' : 'border-gray-200'
-                  }`}
+                  className={`w-full pl-10 pr-12 py-3 border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all ${confirmPassword && !passwordsMatch ? 'border-red-300' : 'border-gray-200'
+                    }`}
                   placeholder="••••••••"
                   required
                 />

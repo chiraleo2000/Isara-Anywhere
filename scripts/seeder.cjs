@@ -18,34 +18,27 @@ const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
 const fs = require('node:fs');
 const path = require('node:path');
+const { PASSWORD_HASHES, getLocalConfig, parseArgs } = require('./lib/db-config.cjs');
 
 // =============================================================================
 // CONFIGURATION - PostgreSQL Docker Service Only
 // =============================================================================
 
-const verifyOnly = process.argv.includes('--verify');
+const args = parseArgs();
+const verifyOnly = args.has('--verify');
 
 // PostgreSQL Docker service configuration (same for local and cloud)
-const config = {
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD || 'P@ssw0rd',
-  database: process.env.DB_NAME || 'izara_phase1',
-  port: Number.parseInt(process.env.DB_PORT || '5433')  // Docker exposes on 5433
-};
+const config = getLocalConfig();
 
 const pool = new Pool(config);
 
 // =============================================================================
-// PASSWORD HASHES (Pre-computed for consistency)
+// PASSWORD HASHES (From shared config)
 // =============================================================================
 
-// P@ssw0rd
-const PATIENT_PASSWORD_HASH = '$2b$10$64bK0EpjyC7quRGJNvRqmuH/jX3mA4dzyzYa2vgA2q.H3ZxkQwAmy';
-// IzaraDoctor@2024
-const DOCTOR_PASSWORD_HASH = '$2b$10$aPN6uhBrLoms36C8/017be2GWqUqaPJa6WaTaZ8LrnwAeaf3GajrO';
-// IzaraAdmin@2024
-const ADMIN_PASSWORD_HASH = '$2b$10$fx5arkpb8YI7lEK5lcHdXeksczdG.qloim/uWghlBZXyxv.dNo/wq';
+const PATIENT_PASSWORD_HASH = PASSWORD_HASHES.patient;
+const DOCTOR_PASSWORD_HASH = PASSWORD_HASHES.doctor;
+const ADMIN_PASSWORD_HASH = PASSWORD_HASHES.admin;
 
 // =============================================================================
 // SEED DATA
@@ -144,7 +137,7 @@ async function clearData() {
 
 async function seedUsers() {
   console.log('👤 Seeding users...');
-  
+
   for (const user of USERS) {
     await pool.query(`
       INSERT INTO users (id, email, password_hash, role, name, name_thai, doctor_id, medical_license_number, specialty, patient_id, is_active, is_verified, is_approved, approval_status, is_admin, admin_privileges)
@@ -162,7 +155,7 @@ async function seedUsers() {
 
 async function seedDoctors() {
   console.log('🩺 Seeding doctors table...');
-  
+
   await pool.query(`
     INSERT INTO doctors (id, name, name_thai, specialty, specialty_thai, hospital, hospital_thai, avatar_url, rating, review_count, experience_years, consultation_fee, is_available)
     VALUES 
@@ -174,7 +167,7 @@ async function seedDoctors() {
 
 async function seedPHR() {
   console.log('📋 Seeding PHR records...');
-  
+
   await pool.query(`
     INSERT INTO phr (id, patient_id, demographics, allergies, chronic_conditions, medications, lifestyle)
     VALUES 
@@ -188,7 +181,7 @@ async function seedPHR() {
 
 async function seedMedicalContent() {
   console.log('📚 Seeding medical content...');
-  
+
   await pool.query(`
     INSERT INTO medical_content (id, title_thai, title_english, content_thai, content_english, category, author_id, status, view_count, tags, image_url)
     VALUES 
@@ -202,7 +195,7 @@ async function seedMedicalContent() {
 
 async function seedClinicalResources() {
   console.log('📖 Seeding clinical resources...');
-  
+
   await pool.query(`
     INSERT INTO clinical_resources (id, title_thai, title_english, content_thai, content_english, category, specialty, guideline_year, source, status)
     VALUES 
@@ -215,7 +208,7 @@ async function seedClinicalResources() {
 
 async function seedKnowledgeBase() {
   console.log('🧠 Seeding knowledge base...');
-  
+
   await pool.query(`
     INSERT INTO knowledge_base (title, content, source, category, guideline_year, language)
     VALUES 
@@ -229,7 +222,7 @@ async function seedKnowledgeBase() {
 
 async function seedAppointments() {
   console.log('📅 Seeding appointments...');
-  
+
   await pool.query(`
     INSERT INTO appointments (id, patient_id, doctor_id, requested_date, requested_time, confirmed_date, confirmed_time, status, symptoms, symptom_description, urgency_level, jitsi_room_name)
     VALUES 
@@ -243,7 +236,7 @@ async function seedAppointments() {
 
 async function seedConsultants() {
   console.log('👨‍⚕️ Seeding consultants...');
-  
+
   await pool.query(`
     INSERT INTO consultants (id, name, specialty, email, phone, hospital, languages, experience_years, bio, is_available, rating)
     VALUES 
@@ -256,7 +249,7 @@ async function seedConsultants() {
 
 async function seedVitalSigns() {
   console.log('💓 Seeding vital signs...');
-  
+
   await pool.query(`
     INSERT INTO vital_signs (patient_id, blood_pressure_systolic, blood_pressure_diastolic, heart_rate, temperature, oxygen_saturation, source)
     VALUES 
@@ -273,19 +266,19 @@ async function seedVitalSigns() {
 
 async function verifyData() {
   console.log('\n📊 Verifying data...\n');
-  
+
   const tables = [
-    'users', 'doctors', 'phr', 'medical_content', 
-    'clinical_resources', 'knowledge_base', 'appointments', 
+    'users', 'doctors', 'phr', 'medical_content',
+    'clinical_resources', 'knowledge_base', 'appointments',
     'consultants', 'vital_signs'
   ];
-  
+
   for (const table of tables) {
     const result = await pool.query(`SELECT count(*) FROM ${table}`);
     const count = result.rows[0].count;
     console.log(`  ${table}: ${count} records`);
   }
-  
+
   console.log('\n✅ Verification complete');
 }
 
@@ -297,14 +290,14 @@ async function main() {
   console.log('\n╔═══════════════════════════════════════════════════════════╗');
   console.log('║        IZARA TELEMEDICINE - DATA SEEDER                   ║');
   console.log('╚═══════════════════════════════════════════════════════════╝\n');
-  
+
   console.log(`Environment: PostgreSQL Docker Service (Port ${config.port})\n`);
-  
+
   try {
     // Test connection
     await pool.query('SELECT 1');
     console.log('✅ Database connection successful\n');
-    
+
     if (verifyOnly) {
       await verifyData();
     } else {
@@ -320,7 +313,7 @@ async function main() {
       await seedVitalSigns();
       await verifyData();
     }
-    
+
   } catch (error) {
     console.error('❌ Error:', error.message);
     process.exit(1);

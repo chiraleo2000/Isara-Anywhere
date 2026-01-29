@@ -23,14 +23,14 @@
 #>
 
 param(
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [ValidateSet("all", "postgres", "pgadmin", "patient", "doctor", "meeting")]
     [string]$Service = "all",
     
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$SkipBuild,
     
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$SkipTests
 )
 
@@ -42,20 +42,26 @@ $ErrorActionPreference = "Stop"
 
 $GCP_PROJECT = "izara-telemedicine"
 $GCP_REGION = "asia-southeast1"
+# ARTIFACT_REGISTRY used for docker image paths in deployment commands
 $ARTIFACT_REGISTRY = "$GCP_REGION-docker.pkg.dev/$GCP_PROJECT/isara-anywhere-portals"
 $VERSION = "1.4.5"
 
-# PostgreSQL Configuration (Cloud SQL instance)
-$POSTGRES_HOST = "34.143.228.135"
-$POSTGRES_PORT = "5432"
-$POSTGRES_DB = "izara_phase1"
+# PostgreSQL Configuration (Cloud SQL instance) - Used in DATABASE_URL construction
+$DB_HOST = "34.143.228.135"
+$DB_PORT = "5432"
+$DB_NAME = "izara_phase1"
+$DATABASE_URL = "postgresql://postgres@${DB_HOST}:${DB_PORT}/${DB_NAME}"
 
 # Service URLs (after deployment)
-$PATIENT_PORTAL_URL = "https://izara-patient-portal-724889190329.asia-southeast1.run.app"
-$DOCTOR_PORTAL_URL = "https://izara-doctor-portal-724889190329.asia-southeast1.run.app"
-$MEETING_SERVER_URL = "https://izara-jitsi-meeting-portal-724889190329.asia-southeast1.run.app"
-$POSTGRES_URL = "https://izara-postgres-724889190329.asia-southeast1.run.app"
-$PGADMIN_URL = "https://izara-pgadmin-724889190329.asia-southeast1.run.app"
+$PATIENT_PORTAL_URL = "https://izara-patient-portal-hvht4obouq-as.a.run.app"
+$DOCTOR_PORTAL_URL = "https://izara-doctor-portal-hvht4obouq-as.a.run.app"
+$MEETING_SERVER_URL = "https://izara-jitsi-meeting-portal-hvht4obouq-as.a.run.app"
+$POSTGRES_URL = "https://izara-postgres-hvht4obouq-as.a.run.app"
+$PGADMIN_URL = "https://izara-pgadmin-hvht4obouq-as.a.run.app"
+
+# Log configuration for reference
+Write-Host "Using Artifact Registry: $ARTIFACT_REGISTRY" -ForegroundColor DarkGray
+Write-Host "Database URL: postgresql://postgres@${DB_HOST}:${DB_PORT}/${DB_NAME}" -ForegroundColor DarkGray
 
 # Colors
 function Write-Success { param($msg) Write-Host "✅ $msg" -ForegroundColor Green }

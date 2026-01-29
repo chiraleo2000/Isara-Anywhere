@@ -5,8 +5,8 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  BookOpen, Video, FileText, Heart, Brain, Pill, ChevronRight, Clock, 
+import {
+  BookOpen, Video, FileText, Heart, Brain, Pill, ChevronRight, Clock,
   User, Star, Eye, Search, RefreshCw, ChevronLeft, Tag, Calendar
 } from 'lucide-react';
 
@@ -83,12 +83,12 @@ export const MedicalContent: React.FC<MedicalContentProps> = ({ className = '' }
   const [tags, setTags] = useState<ContentTag[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Filter state
   const [activeCategory, setActiveCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
-  
+
   // UI state
   const [selectedArticle, setSelectedArticle] = useState<MedicalArticle | null>(null);
   const [viewMode, setViewMode] = useState<'list' | 'detail'>('list');
@@ -97,7 +97,7 @@ export const MedicalContent: React.FC<MedicalContentProps> = ({ className = '' }
     try {
       setLoading(true);
       setError(null);
-      
+
       // Use the patient portal content API with timeout
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000);
@@ -109,15 +109,15 @@ export const MedicalContent: React.FC<MedicalContentProps> = ({ className = '' }
           'Cache-Control': 'no-cache'
         }
       });
-      
+
       clearTimeout(timeoutId);
-      
+
       if (!response.ok) {
         throw new Error(`Failed to fetch articles (${response.status})`);
       }
-      
+
       const data = await response.json();
-      
+
       // API already filters to published articles
       setArticles(data.articles || []);
     } catch (err) {
@@ -153,8 +153,8 @@ export const MedicalContent: React.FC<MedicalContentProps> = ({ className = '' }
         method: 'POST',
       });
     } catch (err) {
-      // Silent fail for analytics
-      console.log('View tracking failed');
+      // Silent fail for analytics - log for debugging
+      console.warn('View tracking failed:', err instanceof Error ? err.message : 'Unknown error');
     }
   };
 
@@ -172,12 +172,12 @@ export const MedicalContent: React.FC<MedicalContentProps> = ({ className = '' }
     } else if (activeCategory !== 'all') {
       if (article.category !== activeCategory) return false;
     }
-    
+
     // Tag filter
     if (selectedTag && article.tags && !article.tags.includes(selectedTag)) {
       return false;
     }
-    
+
     // Search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
@@ -192,7 +192,7 @@ export const MedicalContent: React.FC<MedicalContentProps> = ({ className = '' }
         summaryTh.includes(query)
       );
     }
-    
+
     return true;
   });
 
@@ -350,7 +350,7 @@ export const MedicalContent: React.FC<MedicalContentProps> = ({ className = '' }
 
   if (viewMode === 'detail' && selectedArticle) {
     const CategoryIcon = getCategoryIcon(selectedArticle.category);
-    
+
     return (
       <div className={`${className}`}>
         {/* Back Button */}
@@ -382,15 +382,15 @@ export const MedicalContent: React.FC<MedicalContentProps> = ({ className = '' }
               </span>
             )}
           </div>
-          
+
           <h1 className="text-2xl font-bold mb-2">
             {selectedArticle.titleTh || selectedArticle.title}
           </h1>
-          
+
           <p className="text-emerald-100 mb-4">
             {selectedArticle.summaryTh || selectedArticle.summary}
           </p>
-          
+
           <div className="flex flex-wrap items-center gap-4 text-sm text-emerald-100">
             <span className="flex items-center gap-1.5">
               <User className="w-4 h-4" />
@@ -417,6 +417,7 @@ export const MedicalContent: React.FC<MedicalContentProps> = ({ className = '' }
             {selectedArticle.videoUrl.includes('youtube') ? (
               <iframe
                 src={selectedArticle.videoUrl.replace('watch?v=', 'embed/')}
+                title={`Video: ${selectedArticle.title}`}
                 className="w-full h-full"
                 allowFullScreen
               />
@@ -425,7 +426,9 @@ export const MedicalContent: React.FC<MedicalContentProps> = ({ className = '' }
                 src={selectedArticle.videoUrl}
                 controls
                 className="w-full h-full"
-              />
+              >
+                <track kind="captions" srcLang="th" label="Thai captions" />
+              </video>
             )}
           </div>
         )}
@@ -503,11 +506,10 @@ export const MedicalContent: React.FC<MedicalContentProps> = ({ className = '' }
                 setActiveCategory(category.id);
                 setSelectedTag(null);
               }}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
-                activeCategory === category.id
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all ${activeCategory === category.id
                   ? 'bg-emerald-600 text-white'
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
+                }`}
             >
               <Icon className="w-4 h-4" />
               {category.name}
@@ -523,11 +525,10 @@ export const MedicalContent: React.FC<MedicalContentProps> = ({ className = '' }
             <button
               key={tag.id}
               onClick={() => setSelectedTag(selectedTag === tag.id ? null : tag.id)}
-              className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium transition-all ${
-                selectedTag === tag.id
+              className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium transition-all ${selectedTag === tag.id
                   ? 'bg-emerald-100 text-emerald-700 border border-emerald-300'
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
+                }`}
             >
               <Tag className="w-3 h-3" />
               {tag.nameTh || tag.name}
@@ -575,14 +576,14 @@ export const MedicalContent: React.FC<MedicalContentProps> = ({ className = '' }
           {filteredArticles.map((article) => {
             const CategoryIcon = getCategoryIcon(article.category);
             return (
-              <div
+              <button
+                type="button"
                 key={article.id}
                 onClick={() => handleOpenArticle(article)}
-                className={`rounded-xl p-4 transition-all cursor-pointer border ${
-                  article.isFeatured
+                className={`w-full text-left rounded-xl p-4 transition-all cursor-pointer border ${article.isFeatured
                     ? 'bg-gradient-to-r from-yellow-50 to-amber-50 border-yellow-200 hover:border-yellow-300'
                     : 'bg-gray-50 border-gray-100 hover:bg-emerald-50 hover:border-emerald-200'
-                }`}
+                  }`}
               >
                 <div className="flex items-start gap-3">
                   {article.thumbnail ? (
@@ -638,7 +639,7 @@ export const MedicalContent: React.FC<MedicalContentProps> = ({ className = '' }
                   </div>
                   <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
                 </div>
-              </div>
+              </button>
             );
           })}
         </div>

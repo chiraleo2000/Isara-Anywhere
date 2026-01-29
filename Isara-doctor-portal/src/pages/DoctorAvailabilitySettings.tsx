@@ -88,23 +88,22 @@ const DoctorAvailabilitySettings: React.FC = () => {
   // Check authentication
   useEffect(() => {
     if (authLoading) return;
-    
+
     if (!isAuthenticated || !user) {
       navigate('/login');
-      return;
     }
   }, [authLoading, isAuthenticated, user, navigate]);
 
   // Load doctor's availability
   const loadAvailability = useCallback(async () => {
     if (!user?.id) return;
-    
+
     try {
       setLoading(true);
-      
+
       // Try to fetch existing availability from GCS
       const response = await fetch(`${API_URL}/api/storage/read?bucket=credentials&path=doctors/${user.id}/availability.json`);
-      
+
       if (response.ok) {
         const data = await response.json();
         if (data.data) {
@@ -127,19 +126,19 @@ const DoctorAvailabilitySettings: React.FC = () => {
   // Load pending appointments for this doctor
   const loadPendingAppointments = useCallback(async () => {
     if (!user?.id) return;
-    
+
     try {
       const response = await fetch(`${MAIN_API_URL}/api/appointments`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
         }
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         const appointments = (data.appointments || data || [])
-          .filter((apt: any) => 
-            apt.doctorId === user.id && 
+          .filter((apt: any) =>
+            apt.doctorId === user.id &&
             (apt.status === 'assigned' || apt.status === 'pending')
           )
           .map((apt: any) => ({
@@ -174,7 +173,7 @@ const DoctorAvailabilitySettings: React.FC = () => {
     try {
       setSaving(true);
       setError(null);
-      
+
       const response = await fetch(`${API_URL}/api/storage/write`, {
         method: 'POST',
         headers: {
@@ -187,11 +186,11 @@ const DoctorAvailabilitySettings: React.FC = () => {
           data: availability
         })
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to save availability');
       }
-      
+
       setSuccessMessage('Availability saved successfully!');
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err) {
@@ -211,7 +210,7 @@ const DoctorAvailabilitySettings: React.FC = () => {
       endTime: newSlot.endTime,
       isRecurring: newSlot.isRecurring
     };
-    
+
     setAvailability(prev => ({
       ...prev,
       weeklySchedule: [...prev.weeklySchedule, slot]
@@ -234,12 +233,12 @@ const DoctorAvailabilitySettings: React.FC = () => {
       setError('Please select a date and time');
       return;
     }
-    
+
     try {
       setSaving(true);
-      
+
       const confirmedDateTime = `${approvalData.date}T${approvalData.time}:00`;
-      
+
       const response = await fetch(`${MAIN_API_URL}/api/appointments/${selectedAppointment.id}`, {
         method: 'PUT',
         headers: {
@@ -255,17 +254,17 @@ const DoctorAvailabilitySettings: React.FC = () => {
           confirmedByDoctor: user?.id
         })
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to confirm appointment');
       }
-      
+
       setSuccessMessage('Appointment confirmed successfully!');
       setShowApproveModal(false);
       setSelectedAppointment(null);
       setApprovalData({ date: '', time: '', notes: '' });
       loadPendingAppointments();
-      
+
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err) {
       console.error('Error confirming appointment:', err);
@@ -279,7 +278,7 @@ const DoctorAvailabilitySettings: React.FC = () => {
   const handleRejectAppointment = async (appointmentId: string) => {
     const reason = prompt('Please enter reason for rejection:');
     if (!reason) return;
-    
+
     try {
       const response = await fetch(`${MAIN_API_URL}/api/appointments/${appointmentId}`, {
         method: 'PUT',
@@ -294,11 +293,11 @@ const DoctorAvailabilitySettings: React.FC = () => {
           rejectedByDoctor: user?.id
         })
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to reject appointment');
       }
-      
+
       setSuccessMessage('Appointment rejected');
       loadPendingAppointments();
       setTimeout(() => setSuccessMessage(null), 3000);
@@ -312,16 +311,16 @@ const DoctorAvailabilitySettings: React.FC = () => {
   const getAvailableTimeSlotsForDate = (dateStr: string) => {
     const date = new Date(dateStr);
     const dayOfWeek = date.getDay();
-    
+
     // Get slots for this day of week
     const daySlots = availability.weeklySchedule.filter(s => s.dayOfWeek === dayOfWeek);
-    
+
     // Check if this date is an exception
     const exception = availability.exceptions.find(e => e.date === dateStr);
     if (exception && !exception.isAvailable) {
       return [];
     }
-    
+
     // Generate time slots based on consultation duration
     const slots: string[] = [];
     daySlots.forEach(slot => {
@@ -336,7 +335,7 @@ const DoctorAvailabilitySettings: React.FC = () => {
         currentTime = `${newHours.toString().padStart(2, '0')}:${newMins.toString().padStart(2, '0')}`;
       }
     });
-    
+
     return slots;
   };
 
@@ -377,21 +376,19 @@ const DoctorAvailabilitySettings: React.FC = () => {
         <div className="flex space-x-2 mb-6">
           <button
             onClick={() => setActiveTab('schedule')}
-            className={`px-6 py-3 rounded-lg font-medium transition-colors ${
-              activeTab === 'schedule'
+            className={`px-6 py-3 rounded-lg font-medium transition-colors ${activeTab === 'schedule'
                 ? 'bg-emerald-600 text-white'
                 : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
-            }`}
+              }`}
           >
             My Schedule
           </button>
           <button
             onClick={() => setActiveTab('appointments')}
-            className={`px-6 py-3 rounded-lg font-medium transition-colors ${
-              activeTab === 'appointments'
+            className={`px-6 py-3 rounded-lg font-medium transition-colors ${activeTab === 'appointments'
                 ? 'bg-emerald-600 text-white'
                 : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
-            }`}
+              }`}
           >
             Pending Appointments
             {pendingAppointments.length > 0 && (
@@ -418,13 +415,14 @@ const DoctorAvailabilitySettings: React.FC = () => {
             {/* Consultation Settings */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="consultation-duration" className="block text-sm font-medium text-gray-700 mb-1">
                   Consultation Duration (minutes)
                 </label>
                 <input
+                  id="consultation-duration"
                   type="number"
                   value={availability.consultationDuration}
-                  onChange={(e) => setAvailability(prev => ({ ...prev, consultationDuration: parseInt(e.target.value) || 30 }))}
+                  onChange={(e) => setAvailability(prev => ({ ...prev, consultationDuration: Number.parseInt(e.target.value, 10) || 30 }))}
                   min={15}
                   max={120}
                   step={5}
@@ -432,13 +430,14 @@ const DoctorAvailabilitySettings: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="break-duration" className="block text-sm font-medium text-gray-700 mb-1">
                   Break Between Consultations (minutes)
                 </label>
                 <input
+                  id="break-duration"
                   type="number"
                   value={availability.breakBetweenConsultations}
-                  onChange={(e) => setAvailability(prev => ({ ...prev, breakBetweenConsultations: parseInt(e.target.value) || 5 }))}
+                  onChange={(e) => setAvailability(prev => ({ ...prev, breakBetweenConsultations: Number.parseInt(e.target.value, 10) || 5 }))}
                   min={0}
                   max={60}
                   step={5}
@@ -461,7 +460,7 @@ const DoctorAvailabilitySettings: React.FC = () => {
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {daySlots.map(slot => (
-                        <div 
+                        <div
                           key={slot.id}
                           className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-lg text-sm"
                         >
@@ -497,7 +496,7 @@ const DoctorAvailabilitySettings: React.FC = () => {
         {activeTab === 'appointments' && (
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Pending Appointment Requests</h2>
-            
+
             {pendingAppointments.length === 0 ? (
               <div className="text-center py-12">
                 <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -509,7 +508,7 @@ const DoctorAvailabilitySettings: React.FC = () => {
             ) : (
               <div className="space-y-4">
                 {pendingAppointments.map(apt => (
-                  <div 
+                  <div
                     key={apt.id}
                     className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
                   >
@@ -517,17 +516,15 @@ const DoctorAvailabilitySettings: React.FC = () => {
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
                           <h3 className="font-semibold text-gray-900">{apt.patientName}</h3>
-                          <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
-                            apt.urgency === 'emergency' ? 'bg-red-100 text-red-800' :
-                            apt.urgency === 'high' ? 'bg-orange-100 text-orange-800' :
-                            apt.urgency === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-green-100 text-green-800'
-                          }`}>
+                          <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${apt.urgency === 'emergency' ? 'bg-red-100 text-red-800' :
+                              apt.urgency === 'high' ? 'bg-orange-100 text-orange-800' :
+                                apt.urgency === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                                  'bg-green-100 text-green-800'
+                            }`}>
                             {apt.urgency}
                           </span>
-                          <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
-                            apt.status === 'assigned' ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800'
-                          }`}>
+                          <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${apt.status === 'assigned' ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800'
+                            }`}>
                             {apt.status}
                           </span>
                         </div>
@@ -581,13 +578,14 @@ const DoctorAvailabilitySettings: React.FC = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4">
             <h3 className="text-xl font-bold text-gray-900 mb-4">Add Available Time Slot</h3>
-            
+
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Day of Week</label>
+                <label htmlFor="slot-day-of-week" className="block text-sm font-medium text-gray-700 mb-1">Day of Week</label>
                 <select
+                  id="slot-day-of-week"
                   value={newSlot.dayOfWeek}
-                  onChange={(e) => setNewSlot({ ...newSlot, dayOfWeek: parseInt(e.target.value) })}
+                  onChange={(e) => setNewSlot({ ...newSlot, dayOfWeek: Number.parseInt(e.target.value, 10) })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
                 >
                   {DAYS_OF_WEEK.map((day, index) => (
@@ -595,11 +593,12 @@ const DoctorAvailabilitySettings: React.FC = () => {
                   ))}
                 </select>
               </div>
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
+                  <label htmlFor="slot-start-time" className="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
                   <input
+                    id="slot-start-time"
                     type="time"
                     value={newSlot.startTime}
                     onChange={(e) => setNewSlot({ ...newSlot, startTime: e.target.value })}
@@ -607,8 +606,9 @@ const DoctorAvailabilitySettings: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">End Time</label>
+                  <label htmlFor="slot-end-time" className="block text-sm font-medium text-gray-700 mb-1">End Time</label>
                   <input
+                    id="slot-end-time"
                     type="time"
                     value={newSlot.endTime}
                     onChange={(e) => setNewSlot({ ...newSlot, endTime: e.target.value })}
@@ -617,7 +617,7 @@ const DoctorAvailabilitySettings: React.FC = () => {
                 </div>
               </div>
             </div>
-            
+
             <div className="flex gap-3 mt-6">
               <button
                 onClick={() => setShowTimeSlotModal(false)}
@@ -641,16 +641,17 @@ const DoctorAvailabilitySettings: React.FC = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
             <h3 className="text-xl font-bold text-gray-900 mb-4">Confirm Appointment</h3>
-            
+
             <div className="mb-4 p-3 bg-gray-50 rounded-lg">
               <p className="font-medium">{selectedAppointment.patientName}</p>
               <p className="text-sm text-gray-600">{selectedAppointment.reason}</p>
             </div>
-            
+
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Select Date *</label>
+                <label htmlFor="approval-date" className="block text-sm font-medium text-gray-700 mb-1">Select Date *</label>
                 <input
+                  id="approval-date"
                   type="date"
                   value={approvalData.date}
                   onChange={(e) => setApprovalData({ ...approvalData, date: e.target.value })}
@@ -658,9 +659,9 @@ const DoctorAvailabilitySettings: React.FC = () => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
-              
+
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Select Time *</label>
+                <span id="approval-time-label" className="block text-sm font-medium text-gray-700 mb-1">Select Time *</span>
                 {approvalData.date ? (
                   <div className="flex flex-wrap gap-2">
                     {getAvailableTimeSlotsForDate(approvalData.date).length > 0 ? (
@@ -668,11 +669,10 @@ const DoctorAvailabilitySettings: React.FC = () => {
                         <button
                           key={time}
                           onClick={() => setApprovalData({ ...approvalData, time })}
-                          className={`px-3 py-2 rounded-lg text-sm ${
-                            approvalData.time === time
+                          className={`px-3 py-2 rounded-lg text-sm ${approvalData.time === time
                               ? 'bg-emerald-600 text-white'
                               : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                          }`}
+                            }`}
                         >
                           {time}
                         </button>
@@ -693,10 +693,11 @@ const DoctorAvailabilitySettings: React.FC = () => {
                   <p className="text-sm text-gray-500">Select a date first</p>
                 )}
               </div>
-              
+
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Notes for Patient</label>
+                <label htmlFor="approval-notes" className="block text-sm font-medium text-gray-700 mb-1">Notes for Patient</label>
                 <textarea
+                  id="approval-notes"
                   value={approvalData.notes}
                   onChange={(e) => setApprovalData({ ...approvalData, notes: e.target.value })}
                   rows={3}
@@ -705,7 +706,7 @@ const DoctorAvailabilitySettings: React.FC = () => {
                 />
               </div>
             </div>
-            
+
             <div className="flex gap-3 mt-6">
               <button
                 onClick={() => {

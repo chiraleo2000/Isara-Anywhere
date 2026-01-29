@@ -26,11 +26,11 @@ This document details the full appointment workflow for Izara Telemedicine, cove
 
 | Role | Email | Password | Portal |
 | ------ | ------- | ---------- | -------- |
-| Patient | <demo.test@gmail.com> | P@ssw0rd | localhost:3005 |
-| Patient | <Somchai.Mankong@gmail.com> | P@ssw0rd | localhost:3005 |
-| Patient | <Anan.Khayanrian@gmail.com> | P@ssw0rd | localhost:3005 |
-| Doctor | <doctor.test@izara.com> | IzaraDoctor@2024 | localhost:3010 |
-| Admin | <admin.test@izara.com> | IzaraAdmin@2024 | localhost:3010 |
+| Patient | <demo.test@gmail.com> | YOUR_TEST_PASSWORD | localhost:3005 |
+| Patient | <Somchai.Mankong@gmail.com> | YOUR_TEST_PASSWORD | localhost:3005 |
+| Patient | <Anan.Khayanrian@gmail.com> | YOUR_TEST_PASSWORD | localhost:3005 |
+| Doctor | <doctor.test@izara.com> | YOUR_TEST_DOCTOR_PASSWORD | localhost:3010 |
+| Admin | <admin.test@izara.com> | YOUR_TEST_ADMIN_PASSWORD | localhost:3010 |
 
 ---
 
@@ -55,10 +55,10 @@ This document details the full appointment workflow for Izara Telemedicine, cove
 
 | Role | Email | Password | Portal |
 | ------ | ------- | ---------- | -------- |
-| Doctor | <doctor.test@izara.com> | IzaraDoctor@2024 | localhost:3010 |
-| Patient | <demo.test@gmail.com> | P@ssw0rd | localhost:3005 |
-| Patient Relative (demo2) | <demo2.test@gmail.com> | P@ssw0rd | localhost:3005 |
-| Admin/Unit Test Doctor | <doctorunit.test@izara.com> | P@ssw0rd | localhost:3010 |
+| Doctor | <doctor.test@izara.com> | YOUR_TEST_DOCTOR_PASSWORD | localhost:3010 |
+| Patient | <demo.test@gmail.com> | YOUR_TEST_PASSWORD | localhost:3005 |
+| Patient Relative (demo2) | <demo2.test@gmail.com> | YOUR_TEST_PASSWORD | localhost:3005 |
+| Admin/Unit Test Doctor | <doctorunit.test@izara.com> | YOUR_TEST_PASSWORD | localhost:3010 |
 
 ### External Guest Access (Non-Registered Users) ✅
 
@@ -138,7 +138,7 @@ External guests who are **NOT registered** in the Izara system can join meetings
 
 ## 2. Patient Queue - Appointments Awaiting Confirmation
 
-**IMPORTANT: Patient Queue shows ALL pending appointments from ALL dates (not just today)**
+### IMPORTANT: Patient Queue shows ALL pending appointments from ALL dates (not just today)
 
 - **Location**: "Appointments & Meetings" page (`HealthMeeting.tsx`) → Patient Queue tab
 
@@ -201,7 +201,7 @@ External guests who are **NOT registered** in the Izara system can join meetings
 
 ## 4. Scheduled Meetings Tab
 
-**Only CONFIRMED appointments appear here**
+### Only CONFIRMED appointments appear here
 
 - **Contents**:
   - Appointments with status: `confirmed`, `scheduled`
@@ -364,7 +364,7 @@ External guests who are **NOT registered** in the Izara system can join meetings
 
 ### Recording Upload (Post-Meeting)
 
-```
+```text
 Doctor's device → POST /api/video-meeting/:appointmentId/end
                   └─→ Video uploaded to GCS (izara-doctors-data)
                   └─→ Audio transcribed via Speech-to-Text
@@ -376,7 +376,7 @@ Doctor's device → POST /api/video-meeting/:appointmentId/end
 
 ### GCS Storage Structure
 
-```
+```text
 izara-doctors-data/
 └── doctors/{doctorId}/
     └── meetings/{appointmentId}/
@@ -427,7 +427,7 @@ For meetings longer than 30 minutes:
 
 ### Recording & Transcription Flow
 
-```
+```text
 ┌──────────────────────────────────────────────────────────────────────────┐
 │  POST-MEETING AI PROCESSING                                               │
 ├──────────────────────────────────────────────────────────────────────────┤
@@ -724,7 +724,7 @@ return isRelevantStatus && (matchesDoctorId || matchesDoctorEmail || isAdminSeei
 
 ## 12. Status Flow
 
-```
+```text
 [Patient creates request]
          ↓
 ┌─────────────────────────────────┐
@@ -892,3 +892,5 @@ This generates:
 **This workflow covers all scenarios, notifications, error handling, video meeting, and AI processing for appointments, so agents can follow every step without missing any point.**
 
 **Last Updated:** December 2025
+
+

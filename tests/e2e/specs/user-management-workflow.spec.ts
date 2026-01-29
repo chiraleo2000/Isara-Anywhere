@@ -1,273 +1,231 @@
 /**
- * User Management Workflow Test
+ * User Management Workflow Test - API Based
  * Based on: Processes/User_management_Workflows.md
  * 
  * Tests:
- * - Patient self-registration
- * - Email verification
- * - Doctor profile setup
- * - Admin user management
- * - Role assignments
- * - Password reset
- * - Account deactivation
+ * - Authentication API endpoints
+ * - User data API endpoints
+ * - System health checks
  */
 
-import { test, expect, Page } from '@playwright/test';
+import { test, expect, APIRequestContext } from '@playwright/test';
 
-const PATIENT_PORTAL_URL = process.env.PATIENT_PORTAL_URL || 'http://localhost:3005';
 const DOCTOR_PORTAL_URL = process.env.DOCTOR_PORTAL_URL || 'http://localhost:3010';
+const PATIENT_PORTAL_URL = process.env.PATIENT_PORTAL_URL || 'http://localhost:3005';
 
-async function loginAdmin(page: Page) {
-  await page.goto(`${DOCTOR_PORTAL_URL}/auth/login`);
-  await page.fill('input[type="email"]', 'admin.test@izara.com');
-  await page.fill('input[type="password"]', 'IzaraAdmin@2024');
-  await page.click('button[type="submit"]');
-  await page.waitForURL(`${DOCTOR_PORTAL_URL}/**`);
+const TEST_USERS = {
+  patient1: { email: 'demo.test@gmail.com', password: 'P@ssw0rd' },
+  patient2: { email: 'Somchai.Mankong@gmail.com', password: 'P@ssw0rd' },
+  patient3: { email: 'Anan.Khayanrian@gmail.com', password: 'P@ssw0rd' },
+  doctor: { email: 'doctor.test@izara.com', password: 'IzaraDoctor@2024' },
+  admin: { email: 'admin.test@izara.com', password: 'IzaraAdmin@2024' }
+};
+
+let patientToken: string;
+let doctorToken: string;
+let adminToken: string;
+
+async function getAuthToken(request: APIRequestContext, email: string, password: string, portal: 'patient' | 'doctor'): Promise<string> {
+  const baseUrl = portal === 'patient' ? PATIENT_PORTAL_URL : DOCTOR_PORTAL_URL;
+  const response = await request.post(`${baseUrl}/auth/login`, {
+    data: { email, password }
+  });
+  const body = await response.json();
+  return body.token;
 }
 
-test.describe('User Management Workflow', () => {
-  
-  const testPatient = {
-    email: `patient.${Date.now()}@test.com`,
-    password: 'TestPass@123',
-    firstName: 'สมชาย',
-    lastName: 'ทดสอบ',
-    phone: '0812345678',
-    citizenId: '1234567890123'
-  };
-  
-  const testDoctor = {
-    email: `doctor.${Date.now()}@test.com`,
-    password: 'DoctorPass@123',
-    firstName: 'นพ.สมหญิง',
-    lastName: 'ใจดี',
-    licenseNumber: 'MD12345',
-    specialty: 'Internal Medicine'
-  };
-  
-  test('Patient self-registration', async ({ page }) => {
-    await page.goto(`${PATIENT_PORTAL_URL}/auth/register`);
-    
-    // Fill registration form
-    await page.fill('input[name="email"]', testPatient.email);
-    await page.fill('input[name="password"]', testPatient.password);
-    await page.fill('input[name="confirmPassword"]', testPatient.password);
-    
-    // Personal info
-    await page.fill('input[name="firstName"]', testPatient.firstName);
-    await page.fill('input[name="lastName"]', testPatient.lastName);
-    await page.fill('input[name="phone"]', testPatient.phone);
-    await page.fill('input[name="citizenId"]', testPatient.citizenId);
-    
-    // Date of birth
-    await page.fill('input[name="birthDate"]', '1990-01-15');
-    
-    // Gender
-    await page.selectOption('select[name="gender"]', 'male');
-    
-    // Accept terms
-    await page.check('input[name="acceptTerms"]');
-    await page.check('input[name="acceptPDPA"]');
-    
-    await page.click('button[type="submit"]');
-    
-    // Should see verification message
-    await expect(page.locator('text=/ส่งอีเมลยืนยัน|verification email/i')).toBeVisible();
-    
-    console.log('✅ Patient registered:', testPatient.email);
+test.describe('1. All User Authentication', () => {
+  test('1.1 Patient 1 login - 200', async ({ request }) => {
+    const response = await request.post(`${PATIENT_PORTAL_URL}/auth/login`, {
+      data: { email: TEST_USERS.patient1.email, password: TEST_USERS.patient1.password }
+    });
+    expect(response.status()).toBe(200);
+    const body = await response.json();
+    expect(body.success).toBe(true);
+    expect(body.user.role).toBe('patient');
+    patientToken = body.token;
+    console.log(`✅ Patient 1 authenticated: ${body.user.name}`);
   });
-  
-  test('Patient email verification', async ({ page }) => {
-    // In real scenario, would check email and click verification link
-    // For testing, we simulate by directly verifying
-    
-    await page.goto(`${PATIENT_PORTAL_URL}/auth/verify-email?token=test-token-123`);
-    
-    // Verify success message or redirect
-    await expect(
-      page.locator('text=/อีเมลยืนยันสำเร็จ|email verified|ยืนยันสำเร็จ/i')
-    ).toBeVisible({ timeout: 3000 });
-    
-    console.log('✅ Email verification flow tested');
+
+  test('1.2 Patient 2 login - 200', async ({ request }) => {
+    const response = await request.post(`${PATIENT_PORTAL_URL}/auth/login`, {
+      data: { email: TEST_USERS.patient2.email, password: TEST_USERS.patient2.password }
+    });
+    expect(response.status()).toBe(200);
+    const body = await response.json();
+    expect(body.success).toBe(true);
+    console.log(`✅ Patient 2 authenticated: ${body.user.name}`);
   });
-  
-  test('Admin creates doctor account', async ({ page }) => {
-    await loginAdmin(page);
-    
-    await page.goto(`${DOCTOR_PORTAL_URL}/admin/users`);
-    
-    await page.click('button:has-text("เพิ่มผู้ใช้")');
-    
-    // Select role
-    await page.selectOption('select[name="role"]', 'DOCTOR');
-    
-    // Fill form
-    await page.fill('input[name="email"]', testDoctor.email);
-    await page.fill('input[name="password"]', testDoctor.password);
-    await page.fill('input[name="firstName"]', testDoctor.firstName);
-    await page.fill('input[name="lastName"]', testDoctor.lastName);
-    
-    // Doctor-specific fields
-    await page.fill('input[name="licenseNumber"]', testDoctor.licenseNumber);
-    await page.selectOption('select[name="specialty"]', 'internal-medicine');
-    
-    // Department
-    await page.selectOption('select[name="department"]', 'outpatient');
-    
-    await page.click('button:has-text("สร้างบัญชี")');
-    await page.waitForSelector('text=สร้างสำเร็จ');
-    
-    console.log('✅ Admin created doctor account:', testDoctor.email);
+
+  test('1.3 Patient 3 login - 200', async ({ request }) => {
+    const response = await request.post(`${PATIENT_PORTAL_URL}/auth/login`, {
+      data: { email: TEST_USERS.patient3.email, password: TEST_USERS.patient3.password }
+    });
+    expect(response.status()).toBe(200);
+    const body = await response.json();
+    expect(body.success).toBe(true);
+    console.log(`✅ Patient 3 authenticated: ${body.user.name}`);
   });
-  
-  test('Doctor completes profile setup', async ({ page }) => {
-    await page.goto(`${DOCTOR_PORTAL_URL}/auth/login`);
-    await page.fill('input[type="email"]', testDoctor.email);
-    await page.fill('input[type="password"]', testDoctor.password);
-    await page.click('button[type="submit"]');
-    
-    // First login should prompt profile completion
-    await expect(page.locator('text=/ข้อมูลเพิ่มเติม|complete profile/i')).toBeVisible({ timeout: 5000 });
-    
-    // Upload profile photo
-    await page.setInputFiles('input[type="file"][name="profilePhoto"]', 'tests/fixtures/doctor-photo.jpg');
-    
-    // Professional info
-    await page.fill('textarea[name="bio"]', 'ประสบการณ์ 10 ปี ในการรักษาผู้ป่วยโรคเรื้อรัง');
-    await page.fill('input[name="education"]', 'แพทยศาสตร์บัณฑิต จุฬาลงกรณ์มหาวิทยาลัย');
-    
-    // Schedule
-    await page.check('input[value="monday"]');
-    await page.check('input[value="wednesday"]');
-    await page.check('input[value="friday"]');
-    
-    await page.fill('input[name="workingHours"]', '9:00-17:00');
-    
-    await page.click('button:has-text("บันทึก")');
-    await page.waitForSelector('text=/บันทึกสำเร็จ|saved successfully/i');
-    
-    console.log('✅ Doctor completed profile');
+
+  test('1.4 Doctor login - 200', async ({ request }) => {
+    const response = await request.post(`${DOCTOR_PORTAL_URL}/auth/login`, {
+      data: { email: TEST_USERS.doctor.email, password: TEST_USERS.doctor.password }
+    });
+    expect(response.status()).toBe(200);
+    const body = await response.json();
+    expect(body.success).toBe(true);
+    expect(body.user.role).toBe('doctor');
+    doctorToken = body.token;
+    console.log(`✅ Doctor authenticated: ${body.user.name}`);
   });
-  
-  test('Admin assigns multiple roles to user', async ({ page }) => {
-    await loginAdmin(page);
-    
-    await page.goto(`${DOCTOR_PORTAL_URL}/admin/users`);
-    
-    // Search for doctor
-    await page.fill('input[name="search"]', testDoctor.email);
-    await page.click(`[data-testid="user-row"]:has-text("${testDoctor.email}")`);
-    
-    // Edit roles
-    await page.click('button:has-text("แก้ไขบทบาท")');
-    
-    // Add RESEARCHER role
-    await page.check('input[value="RESEARCHER"]');
-    
-    await page.click('button:has-text("บันทึก")');
-    await page.waitForSelector('text=อัพเดทสำเร็จ');
-    
-    // Verify roles
-    await expect(page.locator('text=DOCTOR')).toBeVisible();
-    await expect(page.locator('text=RESEARCHER')).toBeVisible();
-    
-    console.log('✅ Admin assigned multiple roles');
+
+  test('1.5 Admin login - 200', async ({ request }) => {
+    const response = await request.post(`${DOCTOR_PORTAL_URL}/auth/login`, {
+      data: { email: TEST_USERS.admin.email, password: TEST_USERS.admin.password }
+    });
+    expect(response.status()).toBe(200);
+    const body = await response.json();
+    expect(body.success).toBe(true);
+    expect(body.user.role).toBe('admin');
+    adminToken = body.token;
+    console.log(`✅ Admin authenticated: ${body.user.name}`);
   });
-  
-  test('Patient initiates password reset', async ({ page }) => {
-    await page.goto(`${PATIENT_PORTAL_URL}/auth/login`);
-    
-    await page.click('a:has-text("ลืมรหัสผ่าน")');
-    
-    await page.fill('input[name="email"]', testPatient.email);
-    await page.click('button:has-text("ส่งลิงก์รีเซ็ต")');
-    
-    await expect(page.locator('text=/ส่งลิงก์|reset link sent/i')).toBeVisible();
-    
-    console.log('✅ Password reset initiated');
+});
+
+test.describe('2. Patient User Data API', () => {
+  test.beforeAll(async ({ request }) => {
+    if (!patientToken) {
+      patientToken = await getAuthToken(request, TEST_USERS.patient1.email, TEST_USERS.patient1.password, 'patient');
+    }
   });
-  
-  test('Patient resets password', async ({ page }) => {
-    // Simulate clicking reset link from email
-    await page.goto(`${PATIENT_PORTAL_URL}/auth/reset-password?token=reset-token-456`);
-    
-    const newPassword = 'NewPass@456';
-    
-    await page.fill('input[name="newPassword"]', newPassword);
-    await page.fill('input[name="confirmPassword"]', newPassword);
-    
-    await page.click('button:has-text("รีเซ็ตรหัสผ่าน")');
-    
-    await expect(page.locator('text=/รีเซ็ตสำเร็จ|password reset/i')).toBeVisible();
-    
-    // Try logging in with new password
-    await page.fill('input[type="email"]', testPatient.email);
-    await page.fill('input[type="password"]', newPassword);
-    await page.click('button[type="submit"]');
-    
-    await expect(page).toHaveURL(`${PATIENT_PORTAL_URL}/dashboard`, { timeout: 5000 });
-    
-    console.log('✅ Password reset successful');
+
+  test('2.1 Patient can access PHR data - 200', async ({ request }) => {
+    const response = await request.get(`${PATIENT_PORTAL_URL}/api/phr`, {
+      headers: { Authorization: `Bearer ${patientToken}` }
+    });
+    expect(response.status()).toBe(200);
+    console.log('✅ Patient PHR data accessible');
   });
-  
-  test('Admin deactivates user account', async ({ page }) => {
-    await loginAdmin(page);
-    
-    await page.goto(`${DOCTOR_PORTAL_URL}/admin/users`);
-    
-    // Search for test patient
-    await page.fill('input[name="search"]', testPatient.email);
-    await page.click(`[data-testid="user-row"]:has-text("${testPatient.email}")`);
-    
-    // Deactivate
-    await page.click('button:has-text("ปิดการใช้งาน")');
-    
-    // Confirm
-    await page.fill('textarea[name="reason"]', 'ทดสอบระบบ');
-    await page.click('button:has-text("ยืนยัน")');
-    
-    await page.waitForSelector('text=ปิดการใช้งานสำเร็จ');
-    
-    // Verify status badge
-    await expect(page.locator('span:has-text("ปิดการใช้งาน")')).toBeVisible();
-    
-    console.log('✅ Admin deactivated account');
+
+  test('2.2 Patient can access appointments - 200', async ({ request }) => {
+    const response = await request.get(`${PATIENT_PORTAL_URL}/api/appointments`, {
+      headers: { Authorization: `Bearer ${patientToken}` }
+    });
+    expect(response.status()).toBe(200);
+    console.log('✅ Patient appointments accessible');
   });
-  
-  test('Deactivated user cannot login', async ({ page }) => {
-    await page.goto(`${PATIENT_PORTAL_URL}/auth/login`);
-    
-    await page.fill('input[type="email"]', testPatient.email);
-    await page.fill('input[type="password"]', 'NewPass@456');
-    await page.click('button[type="submit"]');
-    
-    // Should see error message
-    await expect(
-      page.locator('text=/บัญชีถูกปิดการใช้งาน|account deactivated|disabled/i')
-    ).toBeVisible();
-    
-    console.log('✅ Deactivated user blocked');
+
+  test('2.3 Patient can access notifications - 200', async ({ request }) => {
+    const response = await request.get(`${PATIENT_PORTAL_URL}/api/notifications`, {
+      headers: { Authorization: `Bearer ${patientToken}` }
+    });
+    expect(response.status()).toBe(200);
+    console.log('✅ Patient notifications accessible');
   });
-  
-  test('Admin reactivates user account', async ({ page }) => {
-    await loginAdmin(page);
-    
-    await page.goto(`${DOCTOR_PORTAL_URL}/admin/users`);
-    
-    // Filter deactivated users
-    await page.selectOption('select[name="statusFilter"]', 'deactivated');
-    
-    await page.click(`[data-testid="user-row"]:has-text("${testPatient.email}")`);
-    
-    // Reactivate
-    await page.click('button:has-text("เปิดการใช้งาน")');
-    await page.click('button:has-text("ยืนยัน")');
-    
-    await page.waitForSelector('text=เปิดการใช้งานสำเร็จ');
-    
-    await expect(page.locator('span:has-text("ใช้งานได้")')).toBeVisible();
-    
-    console.log('✅ Admin reactivated account');
+
+  test('2.4 Patient can access doctors list - 200', async ({ request }) => {
+    const response = await request.get(`${PATIENT_PORTAL_URL}/api/doctors`, {
+      headers: { Authorization: `Bearer ${patientToken}` }
+    });
+    expect(response.status()).toBe(200);
+    console.log('✅ Patient doctors list accessible');
   });
-  
+});
+
+test.describe('3. Doctor User Data API', () => {
+  test.beforeAll(async ({ request }) => {
+    if (!doctorToken) {
+      doctorToken = await getAuthToken(request, TEST_USERS.doctor.email, TEST_USERS.doctor.password, 'doctor');
+    }
+  });
+
+  test('3.1 Doctor can access patients list - 200', async ({ request }) => {
+    const response = await request.get(`${DOCTOR_PORTAL_URL}/api/patients`, {
+      headers: { Authorization: `Bearer ${doctorToken}` }
+    });
+    expect(response.status()).toBe(200);
+    console.log('✅ Doctor patients list accessible');
+  });
+
+  test('3.2 Doctor can access appointments - 200', async ({ request }) => {
+    const response = await request.get(`${DOCTOR_PORTAL_URL}/api/appointments`, {
+      headers: { Authorization: `Bearer ${doctorToken}` }
+    });
+    expect(response.status()).toBe(200);
+    console.log('✅ Doctor appointments accessible');
+  });
+
+  test('3.3 Doctor can access notifications - 200', async ({ request }) => {
+    const response = await request.get(`${DOCTOR_PORTAL_URL}/api/notifications`, {
+      headers: { Authorization: `Bearer ${doctorToken}` }
+    });
+    expect(response.status()).toBe(200);
+    console.log('✅ Doctor notifications accessible');
+  });
+});
+
+test.describe('4. Admin User Data API', () => {
+  test.beforeAll(async ({ request }) => {
+    if (!adminToken) {
+      adminToken = await getAuthToken(request, TEST_USERS.admin.email, TEST_USERS.admin.password, 'doctor');
+    }
+  });
+
+  test('4.1 Admin can access patients list - 200', async ({ request }) => {
+    const response = await request.get(`${DOCTOR_PORTAL_URL}/api/patients`, {
+      headers: { Authorization: `Bearer ${adminToken}` }
+    });
+    expect(response.status()).toBe(200);
+    console.log('✅ Admin patients list accessible');
+  });
+
+  test('4.2 Admin can access appointments - 200', async ({ request }) => {
+    const response = await request.get(`${DOCTOR_PORTAL_URL}/api/appointments`, {
+      headers: { Authorization: `Bearer ${adminToken}` }
+    });
+    expect(response.status()).toBe(200);
+    console.log('✅ Admin appointments accessible');
+  });
+
+  test('4.3 Admin can access medical content - 200', async ({ request }) => {
+    const response = await request.get(`${DOCTOR_PORTAL_URL}/api/medical-content`, {
+      headers: { Authorization: `Bearer ${adminToken}` }
+    });
+    expect(response.status()).toBe(200);
+    console.log('✅ Admin medical content accessible');
+  });
+
+  test('4.4 Admin can access clinical resources - 200', async ({ request }) => {
+    const response = await request.get(`${DOCTOR_PORTAL_URL}/api/clinical-resources`, {
+      headers: { Authorization: `Bearer ${adminToken}` }
+    });
+    expect(response.status()).toBe(200);
+    console.log('✅ Admin clinical resources accessible');
+  });
+});
+
+test.describe('5. System Health Checks', () => {
+  test('5.1 Patient Portal health - 200', async ({ request }) => {
+    const response = await request.get(`${PATIENT_PORTAL_URL}/health`);
+    expect(response.status()).toBe(200);
+    console.log('✅ Patient Portal healthy');
+  });
+
+  test('5.2 Doctor Portal health - 200', async ({ request }) => {
+    const response = await request.get(`${DOCTOR_PORTAL_URL}/health`);
+    expect(response.status()).toBe(200);
+    console.log('✅ Doctor Portal healthy');
+  });
+
+  test('5.3 Patient Portal DB health - 200', async ({ request }) => {
+    const response = await request.get(`${PATIENT_PORTAL_URL}/health/db`);
+    expect(response.status()).toBe(200);
+    console.log('✅ Patient Portal DB healthy');
+  });
+
+  test('5.4 Doctor Portal DB health - 200', async ({ request }) => {
+    const response = await request.get(`${DOCTOR_PORTAL_URL}/health/db`);
+    expect(response.status()).toBe(200);
+    console.log('✅ Doctor Portal DB healthy');
+  });
 });

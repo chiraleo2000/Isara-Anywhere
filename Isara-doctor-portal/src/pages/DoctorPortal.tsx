@@ -11,7 +11,6 @@ import { patientDataService } from '../services/patientDataService';
 import { ResponsiveLayout } from '../components/common/ResponsiveLayout';
 import DoctorDashboard from './DoctorDashboard';
 import PatientManagement from './PatientManagement';
-import { QueueManagement } from './QueueManagement';
 import CompleteSchedule from './CompleteSchedule';
 import CompleteEMREditor from '../components/CompleteEMREditor';
 import CompletePrescribing from '../components/CompletePrescribing';
@@ -53,7 +52,8 @@ const DoctorPortal: React.FC = () => {
 
   // Verify user access - allow doctors and admins
   useEffect(() => {
-    if (!loading && (!user || user.id !== userId || (user.role !== 'doctor' && user.role !== 'admin'))) {
+    const isUnauthorized = !loading && (!user || user?.id !== userId || (user?.role !== 'doctor' && user?.role !== 'admin'));
+    if (isUnauthorized) {
       console.warn('Unauthorized access to doctor portal');
       navigate('/login', { replace: true });
     }
@@ -79,7 +79,7 @@ const DoctorPortal: React.FC = () => {
   };
 
   const getCurrentView = () => {
-    const path = window.location.pathname;
+    const path = globalThis.location.pathname;
     if (path.includes('/schedule')) return 'schedule';
     if (path.includes('/patients')) return 'patients';
     if (path.includes('/medical-consultants')) return 'medical-consultants';
@@ -318,7 +318,7 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({
   const { patientId } = useParams<{ patientId: string }>();
 
   useEffect(() => {
-    if (patientId && (!selectedPatient || selectedPatient.id !== patientId)) {
+    if (patientId && selectedPatient?.id !== patientId) {
       const patient = patients.find(p => p.id === patientId);
       if (patient) {
         setSelectedPatient(patient);

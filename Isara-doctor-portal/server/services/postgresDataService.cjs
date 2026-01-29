@@ -33,10 +33,11 @@ if (process.env.DATABASE_URL) {
   }
 }
 
-// PostgreSQL Docker service configuration (NO Cloud SQL)
+// PostgreSQL Docker service configuration (supports Cloud SQL and local Docker)
 const dbHost = dbConfig.host || process.env.DB_HOST || 'localhost';
+const isProduction = process.env.NODE_ENV === 'production';
 
-// Configure connection - Standard TCP only (no Cloud SQL Unix socket)
+// Configure connection - Standard TCP (supports Cloud SQL and local Docker)
 const poolConfig = {
   host: dbHost,
   port: dbConfig.port || Number.parseInt(process.env.DB_PORT || '5433', 10),
@@ -45,7 +46,8 @@ const poolConfig = {
   password: dbConfig.password || process.env.DB_PASSWORD || 'P@ssw0rd',
   max: 20,
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 5000,
+  connectionTimeoutMillis: isProduction ? 30000 : 5000, // 30s for Cloud SQL, 5s for local
+  ssl: isProduction ? { rejectUnauthorized: false } : false, // SSL for Cloud SQL
 };
 
 console.log(`📦 Database: PostgreSQL TCP - ${dbHost}:${poolConfig.port}`);
@@ -463,11 +465,11 @@ const AppointmentService = {
         data.patientId || data.patient_id,
         data.doctorId || data.doctor_id,
         data.requestedDate || data.requested_date || data.dateTime?.split('T')[0] || null,
-        data.requestedTime || data.requested_time || data.dateTime?.split('T')[1]?.substring(0,5) || null,
+        data.requestedTime || data.requested_time || data.dateTime?.split('T')[1]?.substring(0, 5) || null,
         data.confirmedDate || data.confirmed_date || null,
         data.confirmedTime || data.confirmed_time || null,
         data.appointmentDate || data.appointment_date || data.dateTime?.split('T')[0] || null,
-        data.appointmentTime || data.appointment_time || data.dateTime?.split('T')[1]?.substring(0,5) || null,
+        data.appointmentTime || data.appointment_time || data.dateTime?.split('T')[1]?.substring(0, 5) || null,
         data.type || data.appointment_type || 'general',
         data.reason || null,
         data.symptoms || null,
@@ -1016,14 +1018,14 @@ const MeetingService = {
   async addParticipant(meetingId, participant) {
     const meeting = await this.getMeetingById(meetingId);
     if (!meeting) return null;
-    
+
     const config = meeting.meeting_config || {};
     config.participants = config.participants || [];
     config.participants.push({
       ...participant,
       joinedAt: new Date().toISOString()
     });
-    
+
     const result = await pool.query(
       `UPDATE meeting_records SET meeting_config = $2 WHERE id = $1 RETURNING *`,
       [meetingId, JSON.stringify(config)]
@@ -1280,27 +1282,27 @@ const AdminService = {
     let query = 'SELECT * FROM users WHERE 1=1';
     const params = [];
     let paramCount = 0;
-    
+
     if (role) {
       paramCount++;
       query += ` AND role = $${paramCount}`;
       params.push(role);
     }
-    
+
     if (status) {
       paramCount++;
       query += ` AND (approval_status = $${paramCount} OR (is_active = ($${paramCount} = 'active')))`;
       params.push(status);
     }
-    
+
     if (search) {
       paramCount++;
       query += ` AND (LOWER(name) LIKE $${paramCount} OR LOWER(email) LIKE $${paramCount})`;
       params.push(`%${search.toLowerCase()}%`);
     }
-    
+
     query += ' ORDER BY created_at DESC';
-    
+
     const result = await pool.query(query, params);
     return result.rows;
   },
@@ -1318,9 +1320,9 @@ const AdminService = {
        RETURNING *`,
       [newRole, newRole === 'admin', userId]
     );
-    
+
     if (result.rows.length === 0) return null;
-    
+
     // Log the role change (non-blocking, table may not exist)
     try {
       await pool.query(
@@ -1337,7 +1339,7 @@ const AdminService = {
     } catch (error_) {
       console.warn('⚠️ Audit log failed (table may not exist):', error_.message);
     }
-    
+
     return result.rows[0];
   },
 
@@ -1349,9 +1351,9 @@ const AdminService = {
       'SELECT admin_privileges, is_admin, role FROM users WHERE id = $1',
       [userId]
     );
-    
+
     if (result.rows.length === 0) return null;
-    
+
     const user = result.rows[0];
     const getDoctorLevel = () => user.role === 'doctor' ? 'doctor' : 'none';
     return user.admin_privileges || {
@@ -1376,7 +1378,7 @@ const AdminService = {
        RETURNING admin_privileges`,
       [JSON.stringify(privileges), userId]
     );
-    
+
     return result.rows[0]?.admin_privileges || privileges;
   },
 
@@ -1407,7 +1409,7 @@ const AdminService = {
        RETURNING *`,
       [doctorId]
     );
-    
+
     return result.rows[0] || null;
   },
 
@@ -1424,7 +1426,7 @@ const AdminService = {
        RETURNING *`,
       [doctorId]
     );
-    
+
     return result.rows[0] || null;
   },
 
@@ -1510,7 +1512,7 @@ const AdminService = {
       pool.query("SELECT COUNT(*) as count FROM clinical_resources WHERE status = 'pending'"),
       pool.query("SELECT role, COUNT(*) as count FROM users GROUP BY role")
     ]);
-    
+
     return {
       pendingDoctors: Number.parseInt(pendingDoctors.rows[0]?.count || 0, 10),
       pendingContent: Number.parseInt(pendingContent.rows[0]?.count || 0, 10),

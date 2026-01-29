@@ -362,9 +362,7 @@ app.get('/api/dashboard/stats', authMiddleware, async (req: Request, res: Respon
       return res.status(401).json({ error: 'Unauthorized' });
     }
     
-    // Get stats from PostgreSQL
-    const pool = getPool();
-    
+    // Get stats from PostgreSQL using the imported pool
     // Count upcoming appointments
     const upcomingAppts = await pool.query(
       `SELECT COUNT(*) as count FROM appointments 
@@ -382,9 +380,9 @@ app.get('/api/dashboard/stats', authMiddleware, async (req: Request, res: Respon
       [userId]
     );
     
-    // Get latest vital signs
+    // Get latest vital signs - use vital_signs table
     const latestVitals = await pool.query(
-      `SELECT * FROM vitals 
+      `SELECT * FROM vital_signs 
        WHERE patient_id = $1 
        ORDER BY recorded_at DESC 
        LIMIT 1`,
@@ -402,9 +400,9 @@ app.get('/api/dashboard/stats', authMiddleware, async (req: Request, res: Respon
     res.json({
       success: true,
       stats: {
-        upcomingAppointments: parseInt(upcomingAppts.rows[0]?.count || 0),
-        activeMedications: parseInt(activeMeds.rows[0]?.count || 0),
-        unreadNotifications: parseInt(unreadNotifs.rows[0]?.count || 0),
+        upcomingAppointments: Number.parseInt(upcomingAppts.rows[0]?.count || 0, 10),
+        activeMedications: Number.parseInt(activeMeds.rows[0]?.count || 0, 10),
+        unreadNotifications: Number.parseInt(unreadNotifs.rows[0]?.count || 0, 10),
         latestVitals: latestVitals.rows[0] || null
       }
     });

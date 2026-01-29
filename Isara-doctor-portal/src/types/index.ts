@@ -3,6 +3,13 @@
 // ============================================================================
 
 /**
+ * Common type aliases for reusability
+ */
+export type UrgencyLevel = 'low' | 'medium' | 'high';
+export type LabPriority = 'routine' | 'urgent' | 'stat';
+export type ResultStatus = 'normal' | 'abnormal' | 'critical';
+
+/**
  * User Preferences stored in GCS
  */
 export interface UserPreferences {
@@ -180,6 +187,11 @@ export interface Appointment {
   confirmedTime?: string;
   appointmentDate?: string;
   appointmentTime?: string;
+  // Rejection/Decline tracking
+  rejectedBy?: string;
+  declinedBy?: string;
+  rejectionReason?: string;
+  declineReason?: string;
 }
 
 export interface AppointmentResult {
@@ -209,7 +221,7 @@ export interface NewAppointmentInfo {
   aiSummary?: string;
   suggestedSymptoms?: string[];
   attachments?: File[];
-  urgencyLevel?: 'low' | 'medium' | 'high';
+  urgencyLevel?: UrgencyLevel;
 }
 
 export interface AppointmentBooking {
@@ -218,7 +230,7 @@ export interface AppointmentBooking {
   preferredDate: string;
   preferredTime: string;
   doctorSpecialty: string;
-  urgencyLevel: 'low' | 'medium' | 'high';
+  urgencyLevel: UrgencyLevel;
   attachments?: File[];
   appointmentType?: AppointmentType;
 }
@@ -253,7 +265,7 @@ export interface LabOrder {
   instructions?: string;
   results?: LabResult[];
   orderedBy?: string;
-  priority?: 'routine' | 'urgent' | 'stat';
+  priority?: LabPriority;
 }
 
 export interface LabResult {
@@ -261,7 +273,7 @@ export interface LabResult {
   value: string;
   unit: string;
   referenceRange: string;
-  status: 'normal' | 'abnormal' | 'critical';
+  status: ResultStatus;
   notes?: string;
 }
 
@@ -277,7 +289,7 @@ export interface RadiologyOrder {
   instructions?: string;
   contrast?: boolean;
   orderedBy?: string;
-  priority?: 'routine' | 'urgent' | 'stat';
+  priority?: LabPriority;
   results?: string;
   imageUrls?: string[];
 }
@@ -286,7 +298,7 @@ export interface HospitalReferral {
   hospitalName: string;
   department: string;
   reason: string;
-  urgency: 'low' | 'medium' | 'high';
+  urgency: UrgencyLevel;
   doctorName?: string;
   contactNumber?: string;
   appointmentDate?: string;
@@ -438,7 +450,7 @@ export const THAI_MEDICAL_PRICES = {
     emergency: 0,
     followUp: 0
   },
-  
+
   // Common Medications (Thai Baht)
   medications: {
     paracetamol: 30,
@@ -452,7 +464,7 @@ export const THAI_MEDICAL_PRICES = {
     coughSyrup: 85,
     topicalCream: 95
   },
-  
+
   // Lab Tests (Thai Baht)
   labTests: {
     cbc: 250,
@@ -464,7 +476,7 @@ export const THAI_MEDICAL_PRICES = {
     urinalysis: 180,
     hba1c: 500
   },
-  
+
   // Imaging (Thai Baht)
   imaging: {
     xray: 500,
@@ -473,7 +485,7 @@ export const THAI_MEDICAL_PRICES = {
     mri: 8000,
     mammogram: 1200
   },
-  
+
   // Procedures (Thai Baht)
   procedures: {
     vaccination: 300,
@@ -954,8 +966,8 @@ export type DeepPartial<T> = {
 
 export type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
 
-export type RequireAtLeastOne<T, Keys extends keyof T = keyof T> = 
-  Pick<T, Exclude<keyof T, Keys>> & 
+export type RequireAtLeastOne<T, Keys extends keyof T = keyof T> =
+  Pick<T, Exclude<keyof T, Keys>> &
   { [K in Keys]-?: Required<Pick<T, K>> & Partial<Pick<T, Exclude<Keys, K>>> }[Keys];
 
 export type Nullable<T> = T | null;
@@ -1014,13 +1026,16 @@ export function isHealthRecord(obj: any): obj is HealthRecord {
 // DOCTOR PORTAL TYPES
 // ============================================================================
 
+// Gender type alias for reuse
+export type GenderType = 'male' | 'female' | 'other';
+
 // Patient Record for Doctor View - supports both nested and flat data structures
 export interface PatientRecord {
   id: string;
   // Flat structure fields (from GCS)
   name?: string;
   age?: number;
-  gender?: 'male' | 'female' | 'other' | string;
+  gender?: GenderType;
   photo?: string;
   email?: string;
   phone?: string;
@@ -1029,7 +1044,7 @@ export interface PatientRecord {
     name: string;
     dateOfBirth: string;
     age: number;
-    gender: 'male' | 'female' | 'other';
+    gender: GenderType;
     photo?: string;
     idNumber?: string;
   };
@@ -1241,6 +1256,9 @@ export interface ImagingReport {
   reportDate: Date;
 }
 
+// Queue status type alias
+export type QueueStatusType = 'waiting' | 'in-consultation' | 'in-progress' | 'completed' | 'no-show' | 'skipped';
+
 // Patient Queue Types
 export interface QueuePatient {
   id: string;
@@ -1253,7 +1271,7 @@ export interface QueuePatient {
   reasonForVisit?: string;
   reason: string; // Alias for reasonForVisit
   priority: 'routine' | 'urgent' | 'emergency' | 'high';
-  status: 'waiting' | 'in-consultation' | 'in-progress' | 'completed' | 'no-show' | 'skipped' | string;
+  status: QueueStatusType;
   estimatedWaitTime?: number;
   queuePosition: number;
   queueNumber?: number; // Alias for queuePosition

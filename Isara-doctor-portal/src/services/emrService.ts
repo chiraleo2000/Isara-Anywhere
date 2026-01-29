@@ -29,9 +29,9 @@ import {
 class EMRService {
   private static instance: EMRService;
   private autoSaveInterval: number | null = null;
-  private autoSaveDelay = config.features.emrAutoSaveInterval; // From config
+  private readonly autoSaveDelay = config.features.emrAutoSaveInterval; // From config
 
-  private constructor() {}
+  private constructor() { }
 
   static getInstance(): EMRService {
     if (!EMRService.instance) {
@@ -447,15 +447,15 @@ class EMRService {
           <table>
             <tr>
               <th>Blood Pressure</th>
-              <td>${emr.vitalSigns.bloodPressure ? `${emr.vitalSigns.bloodPressure.systolic}/${emr.vitalSigns.bloodPressure.diastolic} mmHg` : 'N/A'}</td>
+              <td>${this.formatBloodPressure(emr.vitalSigns.bloodPressure)}</td>
               <th>Heart Rate</th>
-              <td>${emr.vitalSigns.heartRate ? `${emr.vitalSigns.heartRate.value} bpm` : 'N/A'}</td>
+              <td>${this.formatVitalValue(emr.vitalSigns.heartRate, 'bpm')}</td>
             </tr>
             <tr>
               <th>Temperature</th>
-              <td>${emr.vitalSigns.temperature ? `${emr.vitalSigns.temperature.value} °C` : 'N/A'}</td>
+              <td>${this.formatVitalValue(emr.vitalSigns.temperature, '°C')}</td>
               <th>SpO2</th>
-              <td>${emr.vitalSigns.oxygenSaturation ? `${emr.vitalSigns.oxygenSaturation.value}%` : 'N/A'}</td>
+              <td>${this.formatVitalValue(emr.vitalSigns.oxygenSaturation, '%')}</td>
             </tr>
           </table>
         </div>
@@ -526,6 +526,20 @@ class EMRService {
 
     printWindow.document.write(htmlContent);
     printWindow.document.close();
+  }
+
+  /**
+   * Format blood pressure for display
+   */
+  private formatBloodPressure(bp: { systolic: number; diastolic: number } | undefined): string {
+    return bp ? `${bp.systolic}/${bp.diastolic} mmHg` : 'N/A';
+  }
+
+  /**
+   * Format vital sign value with unit
+   */
+  private formatVitalValue(vital: { value: number } | undefined, unit: string): string {
+    return vital ? `${vital.value}${unit}` : 'N/A';
   }
 }
 

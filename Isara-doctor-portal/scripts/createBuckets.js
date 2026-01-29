@@ -1,8 +1,8 @@
 import { Storage } from '@google-cloud/storage';
 import dotenv from 'dotenv';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -58,15 +58,15 @@ async function setServiceAccountPermissions(bucket) {
   try {
     // FIX: Changed bucket.getIamPolicy() to bucket.iam.getPolicy()
     const [policy] = await bucket.iam.getPolicy();
-    
+
     const role = 'roles/storage.objectAdmin';
     const member = `serviceAccount:${serviceAccountEmail}`;
 
     const bindingExists = policy.bindings.some(b => b.role === role && b.members.includes(member));
 
     if (bindingExists) {
-        console.log(`   ✓ Service account ${serviceAccountEmail} already has '${role}' permissions.`);
-        return;
+      console.log(`   ✓ Service account ${serviceAccountEmail} already has '${role}' permissions.`);
+      return;
     }
 
     policy.bindings.push({
@@ -113,7 +113,7 @@ async function createBuckets() {
     try {
       const bucket = storage.bucket(bucketName);
       const [exists] = await bucket.exists();
-      
+
       if (exists) {
         console.log(`📦 Bucket ${bucketName} already exists`);
       } else {

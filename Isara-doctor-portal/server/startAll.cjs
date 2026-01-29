@@ -7,8 +7,8 @@
  * 3. Main API Server (port 3009) - Clinical operations
  */
 
-const { spawn } = require('child_process');
-const path = require('path');
+const { spawn } = require('node:child_process');
+const path = require('node:path');
 
 const servers = [
   {

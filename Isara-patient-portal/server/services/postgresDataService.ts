@@ -56,7 +56,10 @@ interface PoolConfig {
   connectionTimeoutMillis: number;
   host: string;
   port: number;
+  ssl?: { rejectUnauthorized: boolean } | boolean;
 }
+
+const isProduction = process.env.NODE_ENV === 'production';
 
 const poolConfig: PoolConfig = {
   database: dbConfig.database || process.env.DB_NAME || 'izara_phase1',
@@ -64,9 +67,10 @@ const poolConfig: PoolConfig = {
   password: dbConfig.password || process.env.DB_PASSWORD || '',
   max: 20,
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 5000,
+  connectionTimeoutMillis: isProduction ? 30000 : 5000, // 30s for Cloud SQL, 5s for local
   host: dbHost,
   port: dbConfig.port || Number.parseInt(process.env.DB_PORT || '5433', 10),
+  ssl: isProduction ? { rejectUnauthorized: false } : false, // SSL for Cloud SQL
 };
 
 console.log(`🔌 Using PostgreSQL TCP connection: ${dbHost}:${poolConfig.port}`);
@@ -383,12 +387,12 @@ export const PHRService = {
          RETURNING *`,
         [
           patientId,
-          data.allergies !== undefined ? JSON.stringify(data.allergies) : null,
-          data.chronic_conditions !== undefined ? JSON.stringify(data.chronic_conditions) : null,
-          data.medications !== undefined ? JSON.stringify(data.medications) : null,
-          data.emergency_contacts !== undefined ? JSON.stringify(data.emergency_contacts) : null,
-          data.lifestyle !== undefined ? JSON.stringify(data.lifestyle) : null,
-          data.demographics !== undefined ? JSON.stringify(data.demographics) : null
+          data.allergies === undefined ? null : JSON.stringify(data.allergies),
+          data.chronic_conditions === undefined ? null : JSON.stringify(data.chronic_conditions),
+          data.medications === undefined ? null : JSON.stringify(data.medications),
+          data.emergency_contacts === undefined ? null : JSON.stringify(data.emergency_contacts),
+          data.lifestyle === undefined ? null : JSON.stringify(data.lifestyle),
+          data.demographics === undefined ? null : JSON.stringify(data.demographics)
         ]
       );
       return result.rows[0];
@@ -942,7 +946,7 @@ export const MeetingService = {
     config?: Record<string, unknown>;
   }) {
     const meetingId = `meet-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
-    
+
     const result = await pool.query(
       `INSERT INTO meeting_records (
         id, appointment_id, doctor_id, patient_id, room_id,
@@ -967,7 +971,7 @@ export const MeetingService = {
         })
       ]
     );
-    
+
     return result.rows[0];
   },
 
@@ -997,19 +1001,19 @@ export const MeetingService = {
       'SELECT meeting_config FROM meeting_records WHERE id = $1',
       [meetingId]
     );
-    
+
     if (current.rows.length === 0) return null;
-    
+
     const config = current.rows[0].meeting_config || {};
     const participants = config.participants || [];
-    
+
     participants.push({
       ...participant,
       joinedAt: new Date().toISOString()
     });
-    
+
     config.participants = participants;
-    
+
     const result = await pool.query(
       `UPDATE meeting_records 
        SET meeting_config = $2, status = CASE WHEN status = 'waiting' THEN 'active' ELSE status END, 
@@ -1017,7 +1021,7 @@ export const MeetingService = {
        WHERE id = $1 RETURNING *`,
       [meetingId, JSON.stringify(config)]
     );
-    
+
     return result.rows[0];
   },
 
@@ -1025,10 +1029,10 @@ export const MeetingService = {
    * Save transcript to meeting
    */
   async saveTranscript(meetingId: string, transcript: string | Record<string, unknown>) {
-    const transcriptValue = typeof transcript === 'string' 
+    const transcriptValue = typeof transcript === 'string'
       ? JSON.stringify({ text: transcript, savedAt: new Date().toISOString() })
       : JSON.stringify(transcript);
-    
+
     const result = await pool.query(
       `UPDATE meeting_records 
        SET transcript = $2, updated_at = NOW()
@@ -1051,39 +1055,39 @@ export const MeetingService = {
     const updates: string[] = ['status = $2', 'ended_at = NOW()', 'updated_at = NOW()'];
     const params: unknown[] = [meetingId, 'ended'];
     let paramIndex = 3;
-    
+
     if (data.transcript) {
       updates.push(`transcript = $${paramIndex++}`);
-      params.push(typeof data.transcript === 'string' 
-        ? JSON.stringify({ text: data.transcript }) 
+      params.push(typeof data.transcript === 'string'
+        ? JSON.stringify({ text: data.transcript })
         : JSON.stringify(data.transcript));
     }
-    
+
     if (data.summary) {
       updates.push(`ai_summary = $${paramIndex++}`);
       params.push(JSON.stringify(data.summary));
     }
-    
+
     if (data.recommendations) {
       updates.push(`ai_recommendations = $${paramIndex++}`);
       params.push(JSON.stringify(data.recommendations));
     }
-    
+
     if (data.recordingUrl) {
       updates.push(`recording_url = $${paramIndex++}`);
       params.push(data.recordingUrl);
     }
-    
+
     if (data.duration) {
       updates.push(`duration = $${paramIndex++}`);
       params.push(data.duration);
     }
-    
+
     const result = await pool.query(
       `UPDATE meeting_records SET ${updates.join(', ')} WHERE id = $1 RETURNING *`,
       params
     );
-    
+
     return result.rows[0];
   },
 

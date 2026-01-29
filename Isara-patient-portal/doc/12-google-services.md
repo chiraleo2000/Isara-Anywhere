@@ -439,13 +439,13 @@ GCS_BUCKET_METADATA=izara-meta-data
 # Google APIs
 GOOGLE_CALENDAR_CLIENT_ID=xxx.apps.googleusercontent.com
 GOOGLE_CALENDAR_CLIENT_SECRET=xxx
-GOOGLE_MAPS_API_KEY=AIzaSyXXX
+GOOGLE_MAPS_API_KEY=YOUR_GOOGLE_MAPS_API_KEY
 
 # Gemini AI
 GEMINI_API_KEY=xxx
 
 # Frontend (Vite)
-VITE_GOOGLE_MAPS_API_KEY=AIzaSyXXX
+VITE_GOOGLE_MAPS_API_KEY=YOUR_GOOGLE_MAPS_API_KEY
 VITE_GCP_PROJECT_ID=your-project-id
 ```
 
@@ -555,3 +555,4 @@ const getServicesStatus = async () => {
 ---
 
 [← Previous: AI Assistant](./11-ai-assistant.md) | [Next: Deployment →](./13-deployment.md)
+

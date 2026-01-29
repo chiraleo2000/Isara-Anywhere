@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChatMessage, Appointment, Doctor, AppointmentStatus } from '../types';
-import { Send, Mic, Paperclip, X, Clock, MapPin } from 'lucide-react';
-import { LucideIcon } from 'lucide-react';
+import { Send, Mic, Paperclip, X, Clock, MapPin, LucideIcon } from 'lucide-react';
 
 interface StatsCardProps {
   label: string;
@@ -99,7 +98,10 @@ export const UpcomingAppointmentCard: React.FC<UpcomingAppointmentCardProps> = (
 
   return (
     <div
+      role="button"
+      tabIndex={0}
       onClick={onClick}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } }}
       className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-lg transition-shadow cursor-pointer"
     >
       <div className="flex items-start gap-4">
@@ -119,7 +121,7 @@ export const UpcomingAppointmentCard: React.FC<UpcomingAppointmentCardProps> = (
             </span>
           </div>
           <div className="mt-3 flex items-center gap-4 text-sm text-gray-600">
-            <span>📅 {new Date(appointment.date).toLocaleDateString('th-TH', { 
+            <span>📅 {new Date(appointment.date).toLocaleDateString('th-TH', {
               day: 'numeric',
               month: 'short',
               year: 'numeric'
@@ -288,8 +290,15 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex min-h-screen items-center justify-center p-4">
-        <div className="fixed inset-0 bg-black bg-opacity-50 transition-opacity" onClick={onClose} />
-        
+        <div
+          role="button"
+          tabIndex={0}
+          aria-label="Close modal"
+          className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
+          onClick={onClose}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClose(); } }}
+        />
+
         <div className={`relative bg-white rounded-2xl shadow-xl ${sizeClasses[size]} w-full max-h-[90vh] overflow-hidden`}>
           <div className="flex items-center justify-between p-6 border-b border-gray-200">
             <h2 className="text-2xl font-bold text-gray-800">{title}</h2>
@@ -300,7 +309,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
               <span className="text-2xl text-gray-500">×</span>
             </button>
           </div>
-          
+
           <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
             {children}
           </div>
@@ -328,11 +337,10 @@ export const Tabs: React.FC<TabsProps> = ({ tabs, activeTab, onChange }) => {
             <button
               key={tab.id}
               onClick={() => onChange(tab.id)}
-              className={`flex items-center gap-2 px-4 py-3 font-medium transition-colors border-b-2 ${
-                isActive
+              className={`flex items-center gap-2 px-4 py-3 font-medium transition-colors border-b-2 ${isActive
                   ? 'border-emerald-600 text-emerald-600'
                   : 'border-transparent text-gray-600 hover:text-gray-800'
-              }`}
+                }`}
             >
               {Icon && <Icon className="w-5 h-5" />}
               {tab.label}
@@ -385,11 +393,10 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div
-              className={`max-w-[70%] rounded-2xl px-4 py-3 ${
-                message.role === 'user'
+              className={`max-w-[70%] rounded-2xl px-4 py-3 ${message.role === 'user'
                   ? 'bg-emerald-600 text-white'
                   : 'bg-gray-100 text-gray-800'
-              }`}
+                }`}
             >
               <p className="text-sm whitespace-pre-wrap">{message.content}</p>
               <p className={`text-xs mt-1 ${message.role === 'user' ? 'text-emerald-100' : 'text-gray-500'}`}>
@@ -500,14 +507,14 @@ export const DoctorCard: React.FC<DoctorCardProps> = ({ doctor, onSelect, showBo
         <div className="flex-1">
           <h3 className="text-lg font-semibold text-gray-800">{doctor.name}</h3>
           <p className="text-sm text-gray-600 mb-2">{doctor.specialty}</p>
-          
+
           {doctor.hospital && (
             <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
               <MapPin className="w-4 h-4" />
               <span>{doctor.hospital}</span>
             </div>
           )}
-          
+
           {doctor.experience && (
             <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
               <Clock className="w-4 h-4" />

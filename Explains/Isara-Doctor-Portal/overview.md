@@ -13,9 +13,9 @@ The Izara Doctor Portal is a clinical workflow management platform for healthcar
 ### Test Accounts
 | Role | Email | Password |
 |------|-------|----------|
-| Doctor | doctor.test@izara.com | IzaraDoctor@2024 |
-| Unit Test Doctor | doctorunit.test@izara.com | P@ssw0rd |
-| Admin | admin.test@izara.com | IzaraAdmin@2024 |
+| Doctor | doctor.test@izara.com | YOUR_TEST_DOCTOR_PASSWORD |
+| Unit Test Doctor | doctorunit.test@izara.com | YOUR_TEST_PASSWORD |
+| Admin | admin.test@izara.com | YOUR_TEST_ADMIN_PASSWORD |
 
 ## 👥 User Types
 
@@ -119,3 +119,5 @@ Isara-doctor-portal/
 ---
 **Last Updated:** January 9, 2026
 **Version:** 1.2.1
+
+

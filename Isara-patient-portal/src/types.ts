@@ -164,12 +164,20 @@ export interface Appointment {
   labOrders?: LabOrder[];
   result?: AppointmentResult;
   meetingLink?: string; // Google Meet link
+  patientMeetingUrl?: string; // Jitsi meeting URL for patient
+  doctorMeetingUrl?: string; // Jitsi meeting URL for doctor
   calendarEventId?: string; // Google Calendar event ID
   preferredTimeSlots?: string[]; // For pending appointments before doctor confirms
   preferredDates?: string[]; // Patient's preferred dates
+  preferredDate?: string; // Single preferred date (for API compatibility)
+  preferredTime?: string; // Preferred time (for API compatibility)
+  requestedDate?: string; // Requested date (for API compatibility)
+  requestedTime?: string; // Requested time (for API compatibility)
   preferredTimeSlot?: string; // morning, afternoon, evening
   urgency?: string; // normal, urgent, emergency
   aiAnalysis?: string; // AI analysis of symptoms
+  symptomDescription?: string; // Text description of symptoms
+  appointmentType?: string; // Alternative name for type field
   // Health Log / EMR reference
   healthLogEntryId?: string; // Reference to health-logs entry with detailed EMR data
   emrId?: string; // EMR ID from doctor portal (same as healthLogEntryId)
@@ -243,6 +251,7 @@ export interface PersonalHealthRecord {
   allergies?: string[];
   chronicConditions?: string[];
   currentMedications?: Medication[];
+  medications?: Medication[]; // Alias for currentMedications
   vaccinations?: Vaccination[];
   documents?: MedicalDocument[];
   wearableData?: WearableData;
@@ -750,5 +759,3 @@ declare global {
     };
   }
 }
-
-export {};

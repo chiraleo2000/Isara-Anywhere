@@ -13,8 +13,8 @@ The Izara Patient Portal is a healthcare platform enabling patients to manage th
 ### Test Accounts
 | Role | Email | Password |
 |------|-------|----------|
-| Patient | demo.test@gmail.com | P@ssw0rd |
-| Patient Relative | demo2.test@gmail.com | P@ssw0rd |
+| Patient | demo.test@gmail.com | YOUR_TEST_PASSWORD |
+| Patient Relative | demo2.test@gmail.com | YOUR_TEST_PASSWORD |
 
 ## 👤 User Type
 
@@ -95,3 +95,5 @@ Isara-patient-portal/
 ---
 **Last Updated:** January 9, 2026
 **Version:** 1.2.1
+
+

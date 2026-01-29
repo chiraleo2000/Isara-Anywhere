@@ -50,7 +50,7 @@ export default function ProfilePage() {
       reader.onload = async (e) => {
         const base64 = e.target?.result as string;
         setAvatarUrl(base64);
-        
+
         // Update user profile with new avatar
         const token = localStorage.getItem('token');
         if (token) {
@@ -62,7 +62,7 @@ export default function ProfilePage() {
             },
             body: JSON.stringify({ avatarUrl: base64 }),
           });
-          
+
           if (response.ok) {
             updateUser({ ...user, avatarUrl: base64 });
           }
@@ -117,7 +117,7 @@ export default function ProfilePage() {
           relationship: '',
         },
       };
-      
+
       if (phr) {
         const updatedPhr: PersonalHealthRecord = {
           ...phr,
@@ -130,7 +130,7 @@ export default function ProfilePage() {
         };
         await phrService.update(user.id, updatedPhr);
       }
-      
+
       updateUser(updatedUser);
       setEditing(false);
     } catch (e) {
@@ -152,15 +152,7 @@ export default function ProfilePage() {
     <div className="max-w-2xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-800">โปรไฟล์</h1>
-        {!editing ? (
-          <button
-            onClick={() => setEditing(true)}
-            className="flex items-center gap-2 px-4 py-2 text-emerald-600 hover:bg-emerald-50 rounded-xl transition-colors"
-          >
-            <Edit2 className="w-4 h-4" />
-            แก้ไข
-          </button>
-        ) : (
+        {editing ? (
           <button
             onClick={handleSave}
             disabled={saving}
@@ -168,6 +160,14 @@ export default function ProfilePage() {
           >
             <Save className="w-4 h-4" />
             {saving ? 'กำลังบันทึก...' : 'บันทึก'}
+          </button>
+        ) : (
+          <button
+            onClick={() => setEditing(true)}
+            className="flex items-center gap-2 px-4 py-2 text-emerald-600 hover:bg-emerald-50 rounded-xl transition-colors"
+          >
+            <Edit2 className="w-4 h-4" />
+            แก้ไข
           </button>
         )}
       </div>
@@ -178,9 +178,9 @@ export default function ProfilePage() {
             <div className="relative">
               <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center overflow-hidden">
                 {avatarUrl || user?.avatarUrl ? (
-                  <img 
-                    src={avatarUrl || user?.avatarUrl} 
-                    alt="Profile" 
+                  <img
+                    src={avatarUrl || user?.avatarUrl}
+                    alt="Profile"
                     className="w-full h-full object-cover"
                   />
                 ) : (
@@ -218,9 +218,10 @@ export default function ProfilePage() {
 
         <div className="p-6 space-y-6">
           <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">ชื่อ-นามสกุล</label>
+            <label htmlFor="profile-name" className="block text-sm font-medium text-gray-600 mb-1">ชื่อ-นามสกุล</label>
             {editing ? (
               <input
+                id="profile-name"
                 type="text"
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
@@ -235,9 +236,10 @@ export default function ProfilePage() {
             <div className="flex items-start gap-3">
               <Phone className="w-5 h-5 text-gray-400 mt-2" />
               <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-600 mb-1">เบอร์โทรศัพท์</label>
+                <label htmlFor="profile-phone" className="block text-sm font-medium text-gray-600 mb-1">เบอร์โทรศัพท์</label>
                 {editing ? (
                   <input
+                    id="profile-phone"
                     type="tel"
                     value={form.phone}
                     onChange={(e) => setForm({ ...form, phone: e.target.value })}
@@ -251,9 +253,10 @@ export default function ProfilePage() {
             <div className="flex items-start gap-3">
               <Mail className="w-5 h-5 text-gray-400 mt-2" />
               <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-600 mb-1">อีเมล</label>
+                <label htmlFor="profile-email" className="block text-sm font-medium text-gray-600 mb-1">อีเมล</label>
                 {editing ? (
                   <input
+                    id="profile-email"
                     type="email"
                     value={form.email}
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
@@ -270,9 +273,10 @@ export default function ProfilePage() {
             <div className="flex items-start gap-3">
               <Calendar className="w-5 h-5 text-gray-400 mt-2" />
               <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-600 mb-1">วันเกิด</label>
+                <label htmlFor="profile-dob" className="block text-sm font-medium text-gray-600 mb-1">วันเกิด</label>
                 {editing ? (
                   <input
+                    id="profile-dob"
                     type="date"
                     value={form.dateOfBirth}
                     onChange={(e) => setForm({ ...form, dateOfBirth: e.target.value })}
@@ -286,9 +290,10 @@ export default function ProfilePage() {
             <div className="flex items-start gap-3">
               <Heart className="w-5 h-5 text-gray-400 mt-2" />
               <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-600 mb-1">กรุ๊ปเลือด</label>
+                <label htmlFor="profile-bloodtype" className="block text-sm font-medium text-gray-600 mb-1">กรุ๊ปเลือด</label>
                 {editing ? (
                   <select
+                    id="profile-bloodtype"
                     value={form.bloodType}
                     onChange={(e) => setForm({ ...form, bloodType: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
@@ -309,9 +314,10 @@ export default function ProfilePage() {
           <div className="flex items-start gap-3">
             <MapPin className="w-5 h-5 text-gray-400 mt-2" />
             <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-600 mb-1">ที่อยู่</label>
+              <label htmlFor="profile-address" className="block text-sm font-medium text-gray-600 mb-1">ที่อยู่</label>
               {editing ? (
                 <textarea
+                  id="profile-address"
                   value={form.address}
                   onChange={(e) => setForm({ ...form, address: e.target.value })}
                   rows={2}
@@ -332,9 +338,10 @@ export default function ProfilePage() {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">ชื่อ-นามสกุล</label>
+            <label htmlFor="profile-emergency-name" className="block text-sm font-medium text-gray-600 mb-1">ชื่อ-นามสกุล</label>
             {editing ? (
               <input
+                id="profile-emergency-name"
                 type="text"
                 value={form.emergencyContact}
                 onChange={(e) => setForm({ ...form, emergencyContact: e.target.value })}
@@ -345,9 +352,10 @@ export default function ProfilePage() {
             )}
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">เบอร์โทรศัพท์</label>
+            <label htmlFor="profile-emergency-phone" className="block text-sm font-medium text-gray-600 mb-1">เบอร์โทรศัพท์</label>
             {editing ? (
               <input
+                id="profile-emergency-phone"
                 type="tel"
                 value={form.emergencyPhone}
                 onChange={(e) => setForm({ ...form, emergencyPhone: e.target.value })}

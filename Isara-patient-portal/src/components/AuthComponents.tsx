@@ -19,10 +19,11 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, loading }) => {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">อีเมล</label>
+        <label htmlFor="login-email" className="block text-sm font-medium text-gray-700 mb-2">อีเมล</label>
         <div className="relative">
           <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
           <input
+            id="login-email"
             type="email"
             value={formData.email}
             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
@@ -34,10 +35,11 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, loading }) => {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">รหัสผ่าน</label>
+        <label htmlFor="login-password-2" className="block text-sm font-medium text-gray-700 mb-2">รหัสผ่าน</label>
         <div className="relative">
           <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
           <input
+            id="login-password-2"
             type={showPassword ? 'text' : 'password'}
             value={formData.password}
             onChange={(e) => setFormData({ ...formData, password: e.target.value })}
@@ -91,10 +93,11 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSubmit, loading })
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">ชื่อ-นามสกุล</label>
+        <label htmlFor="register-name" className="block text-sm font-medium text-gray-700 mb-2">ชื่อ-นามสกุล</label>
         <div className="relative">
           <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
           <input
+            id="register-name"
             type="text"
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -106,10 +109,11 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSubmit, loading })
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">อีเมล</label>
+        <label htmlFor="register-email" className="block text-sm font-medium text-gray-700 mb-2">อีเมล</label>
         <div className="relative">
           <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
           <input
+            id="register-email"
             type="email"
             value={formData.email}
             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
@@ -121,10 +125,11 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSubmit, loading })
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">เบอร์โทรศัพท์</label>
+        <label htmlFor="register-phone" className="block text-sm font-medium text-gray-700 mb-2">เบอร์โทรศัพท์</label>
         <div className="relative">
           <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
           <input
+            id="register-phone"
             type="tel"
             value={formData.phone}
             onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
@@ -136,10 +141,11 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSubmit, loading })
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">วันเกิด</label>
+        <label htmlFor="register-dob" className="block text-sm font-medium text-gray-700 mb-2">วันเกิด</label>
         <div className="relative">
           <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
           <input
+            id="register-dob"
             type="date"
             value={formData.dateOfBirth}
             onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
@@ -150,10 +156,11 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSubmit, loading })
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">รหัสผ่าน</label>
+        <label htmlFor="register-password" className="block text-sm font-medium text-gray-700 mb-2">รหัสผ่าน</label>
         <div className="relative">
           <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
           <input
+            id="register-password"
             type={showPassword ? 'text' : 'password'}
             value={formData.password}
             onChange={(e) => setFormData({ ...formData, password: e.target.value })}
@@ -172,10 +179,11 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSubmit, loading })
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">ยืนยันรหัสผ่าน</label>
+        <label htmlFor="register-confirm-password" className="block text-sm font-medium text-gray-700 mb-2">ยืนยันรหัสผ่าน</label>
         <div className="relative">
           <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
           <input
+            id="register-confirm-password"
             type={showConfirmPassword ? 'text' : 'password'}
             value={formData.confirmPassword}
             onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}

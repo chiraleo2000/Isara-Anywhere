@@ -8,15 +8,16 @@ Write-Host "============================================" -ForegroundColor Cyan
 Write-Host ""
 
 # Cloud Run URLs
-$PATIENT_PORTAL = "https://izara-patient-portal-724889190329.asia-southeast1.run.app"
-$DOCTOR_PORTAL = "https://izara-doctor-portal-724889190329.asia-southeast1.run.app"
+$PATIENT_PORTAL = "https://izara-patient-portal-hvht4obouq-as.a.run.app"
+$DOCTOR_PORTAL = "https://izara-doctor-portal-hvht4obouq-as.a.run.app"
 
 # Check Cloud Run services
 Write-Host "[1/3] Checking Cloud Run deployments..." -ForegroundColor Yellow
 try {
     $patientHealth = Invoke-WebRequest -Uri $PATIENT_PORTAL -Method GET -UseBasicParsing -TimeoutSec 30
     Write-Host "✅ Patient Portal: $($patientHealth.StatusCode)" -ForegroundColor Green
-} catch {
+}
+catch {
     Write-Host "ERROR: Cloud Patient Portal not responding!" -ForegroundColor Red
     Write-Host "URL: $PATIENT_PORTAL" -ForegroundColor Yellow
     exit 1
@@ -25,7 +26,8 @@ try {
 try {
     $doctorHealth = Invoke-WebRequest -Uri $DOCTOR_PORTAL -Method GET -UseBasicParsing -TimeoutSec 30
     Write-Host "✅ Doctor Portal: $($doctorHealth.StatusCode)" -ForegroundColor Green
-} catch {
+}
+catch {
     Write-Host "ERROR: Cloud Doctor Portal not responding!" -ForegroundColor Red
     Write-Host "URL: $DOCTOR_PORTAL" -ForegroundColor Yellow
     exit 1

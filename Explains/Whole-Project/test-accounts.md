@@ -11,7 +11,7 @@ Use these accounts for testing in development environment.
 | Field | Value |
 |-------|-------|
 | Email | `demo.test@gmail.com` |
-| Password | `P@ssw0rd` |
+| Password | `YOUR_TEST_PASSWORD` |
 | User ID | `PAT-DEMO-001` |
 | Portal | http://localhost:3005 |
 
@@ -37,7 +37,7 @@ Use these accounts for testing in development environment.
 | Field | Value |
 |-------|-------|
 | Email | `doctor.test@izara.com` |
-| Password | `IzaraDoctor@2024` |
+| Password | `YOUR_TEST_DOCTOR_PASSWORD` |
 | User ID | `DOC-DEMO-001` |
 | Portal | http://localhost:3010 |
 | Role | Doctor |
@@ -65,7 +65,7 @@ Use these accounts for testing in development environment.
 | Field | Value |
 |-------|-------|
 | Email | `admin.test@izara.com` |
-| Password | `IzaraAdmin@2024` |
+| Password | `YOUR_TEST_ADMIN_PASSWORD` |
 | User ID | `ADMIN-001` |
 | Portal | http://localhost:3010 |
 | Role | Admin |
@@ -98,7 +98,7 @@ Use these accounts for testing in development environment.
 | Field | Value |
 |-------|-------|
 | Email | `demo2.test@gmail.com` |
-| Password | `P@ssw0rd` |
+| Password | `YOUR_TEST_PASSWORD` |
 | User ID | `PAT-DEMO2-001` |
 | Portal | http://localhost:3005 |
 | Role | Patient Relative |
@@ -124,7 +124,7 @@ Use these accounts for testing in development environment.
 | Field | Value |
 |-------|-------|
 | Email | `doctorunit.test@izara.com` |
-| Password | `P@ssw0rd` |
+| Password | `YOUR_TEST_PASSWORD` |
 | User ID | `DOC-UNIT-001` |
 | Portal | http://localhost:3010 |
 | Role | Doctor |
@@ -191,7 +191,7 @@ curl -X POST http://localhost:3011/auth/register \
   -H "Content-Type: application/json" \
   -d '{
     "email": "newpatient@test.com",
-    "password": "Test@1234",
+    "password": "EXAMPLE_PASSWORD",
     "name": "New Patient",
     "phone": "0800000000"
   }'
@@ -205,7 +205,7 @@ curl -X POST http://localhost:3011/auth/register \
   -H "Content-Type: application/json" \
   -d '{
     "email": "newdoctor@test.com",
-    "password": "Doctor@1234",
+    "password": "EXAMPLE_PASSWORD",
     "name": "New Doctor",
     "medicalLicenseNumber": "MD-999999",
     "specialty": "General Practice"
@@ -282,3 +282,5 @@ curl -X POST http://localhost:3011/auth/register \
 ---
 **Last Updated:** January 9, 2026
 **Version:** 1.2.1
+
+

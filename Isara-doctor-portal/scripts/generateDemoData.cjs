@@ -9,9 +9,9 @@
  * Usage: node scripts/generateDemoData.cjs
  */
 
-const fs = require('fs');
-const path = require('path');
-const crypto = require('crypto');
+const fs = require('node:fs');
+const path = require('node:path');
+const crypto = require('node:crypto');
 
 // ============================================================================
 // CONFIGURATION
@@ -113,7 +113,7 @@ function generateUserCredentials() {
     lastLogin: getDateString(0),
     loginAttempts: 0,
     lockedUntil: null,
-    
+
     // =====================================================
     // ADMIN PRIVILEGES - First administrator of application
     // =====================================================
@@ -129,7 +129,7 @@ function generateUserCredentials() {
       grantedAt: getDateString(-365),
       description: 'First administrator - full system access'
     },
-    
+
     preferences: {
       theme: 'light',
       language: 'en',
@@ -379,7 +379,7 @@ function generateEMRs() {
           oxygenSaturation: 98 - (pIndex % 2),
           weight: 60 + pIndex * 5,
           height: 160 + pIndex * 3,
-          bmi: parseFloat((20 + pIndex * 1.5).toFixed(1))
+          bmi: Number.parseFloat((20 + pIndex * 1.5).toFixed(1))
         },
         physicalExamination: {
           general: 'Alert, oriented, no acute distress',
@@ -781,7 +781,7 @@ function generateDemoEMRs() {
         encounterDate: getDateString(-7 * (i + 1)),
         chiefComplaint: ['Headache and fatigue', 'Follow-up visit', 'Chronic condition management'][idx % 3],
         historyOfPresentIllness: 'Patient presents with symptoms as noted above.',
-        assessment: patient.chronicConditions.length > 0 
+        assessment: patient.chronicConditions.length > 0
           ? `Chronic conditions under control: ${patient.chronicConditions.join(', ')}`
           : 'Acute condition, recommend follow-up in 1 week',
         treatmentPlan: 'Continue current medications. Lifestyle modifications advised.',
@@ -804,7 +804,7 @@ function generateDemoEMRs() {
 function generateDemoAppointments() {
   const appointments = [];
   const now = new Date();
-  
+
   // Create appointments for each demo patient
   DEMO_PATIENTS.forEach((patient, idx) => {
     // Past appointment
@@ -822,7 +822,7 @@ function generateDemoAppointments() {
       meetingUrl: null,
       createdAt: getDateString(-14)
     });
-    
+
     // Upcoming appointment (today or next few days)
     appointments.push({
       id: `APT-UPCOMING-${patient.id}`,
@@ -833,22 +833,22 @@ function generateDemoAppointments() {
       status: 'scheduled',
       scheduledTime: getDateString(idx + 1),
       duration: 30,
-      chiefComplaint: patient.chronicConditions.length > 0 
-        ? 'Follow-up for chronic condition' 
+      chiefComplaint: patient.chronicConditions.length > 0
+        ? 'Follow-up for chronic condition'
         : 'General consultation',
       notes: '',
       meetingUrl: `https://meet.google.com/demo-${patient.id.toLowerCase()}`,
       createdAt: getDateString(-3)
     });
   });
-  
+
   return appointments;
 }
 
 function generateDemoQueue() {
   // Create a queue with one patient waiting
   if (DEMO_PATIENTS.length === 0) return [];
-  
+
   const firstPatient = DEMO_PATIENTS[0];
   return [
     {
@@ -960,15 +960,15 @@ generateAllData();
 
 // Optionally upload the demo doctor credential/profile to GCS via the helper script.
 // By default this runs when you execute the generator. Set SKIP_UPLOAD=true to skip.
-if (process.env.SKIP_UPLOAD !== 'true') {
+if (process.env.SKIP_UPLOAD === 'true') {
+  console.log('\n⏭️ SKIP_UPLOAD=true - skipping automatic upload to GCS');
+} else {
   try {
-    const { execSync } = require('child_process');
+    const { execSync } = require('node:child_process');
     console.log('\n🔼 Auto-upload: running scripts/uploadDemoDoctor.cjs to push demo doctor to GCS...');
     execSync('node ./scripts/uploadDemoDoctor.cjs', { stdio: 'inherit' });
   } catch (err) {
     console.error('⚠️ Auto-upload failed:', err && err.message ? err.message : err);
     console.error('You can still upload manually: node scripts/uploadDemoDoctor.cjs');
   }
-} else {
-  console.log('\n⏭️ SKIP_UPLOAD=true - skipping automatic upload to GCS');
 }

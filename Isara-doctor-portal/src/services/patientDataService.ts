@@ -18,15 +18,12 @@ import config from './config';
 import {
   // Patient bucket (izara-patients-data)
   fetchAllPatients,
-  saveAllPatients,
   fetchPatientById,
   savePatientProfile,
   fetchPatientVitals,
   savePatientVitals,
   fetchPatientPHR,
-  savePatientPHR,
   fetchPatientLivingWill,
-  savePatientLivingWill,
   fetchPatientConsents,
   savePatientConsents,
   verifyPatientConsent,
@@ -77,10 +74,10 @@ function transformPatientData(rawPatient: any): PatientRecord {
     contact: {
       phone: rawPatient.phone || '',
       email: rawPatient.email || '',
-      address: rawPatient.address 
-        ? (typeof rawPatient.address === 'string' 
-            ? rawPatient.address 
-            : `${rawPatient.address.street || ''}, ${rawPatient.address.district || ''}, ${rawPatient.address.province || ''} ${rawPatient.address.postalCode || ''}`)
+      address: rawPatient.address
+        ? (typeof rawPatient.address === 'string'
+          ? rawPatient.address
+          : `${rawPatient.address.street || ''}, ${rawPatient.address.district || ''}, ${rawPatient.address.province || ''} ${rawPatient.address.postalCode || ''}`)
         : '',
       emergencyContact: rawPatient.emergencyContact || {
         name: 'Not provided',
@@ -113,7 +110,7 @@ function transformPatientData(rawPatient: any): PatientRecord {
 class PatientDataService {
   private static instance: PatientDataService;
 
-  private constructor() {}
+  private constructor() { }
 
   static getInstance(): PatientDataService {
     if (!PatientDataService.instance) {
@@ -329,7 +326,7 @@ class PatientDataService {
     console.log('📋 Fetching all patients from GCS (patients.json)...');
 
     const rawPatients = await fetchAllPatients() as any[];
-    
+
     // Transform raw data to PatientRecord format
     let patients: PatientRecord[] = rawPatients.map(transformPatientData);
 
@@ -587,9 +584,9 @@ class PatientDataService {
         `Doctor ${doctorId}`,
         patientId,
         accessType === 'phr-access' ? 'patient_phr' :
-        accessType === 'living-will' ? 'e_living_will' :
-        accessType === 'vitals-update' ? 'patient_demographics' :
-        'patient_ehr',
+          accessType === 'living-will' ? 'e_living_will' :
+            accessType === 'vitals-update' ? 'patient_demographics' :
+              'patient_ehr',
         accessType
       );
     } catch (error) {

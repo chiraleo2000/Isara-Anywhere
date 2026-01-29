@@ -6,11 +6,11 @@
       "localStorage": [
         {
           "name": "izara_device_id",
-          "value": "dev_snspas_mkwdqri4"
+          "value": "dev_snspas_mkz17u4h"
         },
         {
           "name": "izara_session_expiry",
-          "value": "1769507058270"
+          "value": "1769667418311"
         },
         {
           "name": "doctor-portal-theme",
@@ -22,11 +22,11 @@
         },
         {
           "name": "izara_auth_token",
-          "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJET0MtVEVTVC0wMDEiLCJlbWFpbCI6ImRvY3Rvci50ZXN0QGl6YXJhLmNvbSIsInJvbGUiOiJkb2N0b3IiLCJuYW1lIjoiRHIuIFRlc3QgR29vZCIsImRvY3RvcklkIjoiRE9DLVRFU1QtMDAxIiwiaXNBZG1pbiI6ZmFsc2UsImlhdCI6MTc2OTUwNTI1NywiZXhwIjoxNzY5NTkxNjU3LCJpc3MiOiJpemFyYS10ZWxlbWVkaWNpbmUifQ.0zoOA4zG5R-aUlzS7qw_9UKtqHDfmmgD-kPlYwYKWDA"
+          "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJET0MtVEVTVC0wMDEiLCJlbWFpbCI6ImRvY3Rvci50ZXN0QGl6YXJhLmNvbSIsInJvbGUiOiJkb2N0b3IiLCJuYW1lIjoiRHIuIFRlc3QgR29vZCIsImRvY3RvcklkIjoiRE9DLVRFU1QtMDAxIiwiaXNBZG1pbiI6ZmFsc2UsImlhdCI6MTc2OTY2NTYxNywiZXhwIjoxNzY5NzUyMDE3LCJpc3MiOiJpemFyYS10ZWxlbWVkaWNpbmUifQ.neDSUm76GueBVmnudokMd6AVqIp-oRht7NtazhqLoBs"
         },
         {
           "name": "izara_last_activity",
-          "value": "1769505258270"
+          "value": "1769665618311"
         },
         {
           "name": "izara_current_user",

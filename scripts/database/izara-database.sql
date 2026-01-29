@@ -55,38 +55,38 @@ CREATE EXTENSION IF NOT EXISTS "vector";
 -- =============================================================================
 \echo '>>> Dropping existing tables...'
 
--- Drop in reverse dependency order
-DROP TABLE IF EXISTS audit_logs CASCADE;
-DROP TABLE IF EXISTS ai_validations CASCADE;
-DROP TABLE IF EXISTS cds_logs CASCADE;
-DROP TABLE IF EXISTS ai_document_analysis CASCADE;
-DROP TABLE IF EXISTS ai_chat_history CASCADE;
-DROP TABLE IF EXISTS knowledge_base CASCADE;
-DROP TABLE IF EXISTS notifications CASCADE;
-DROP TABLE IF EXISTS clinical_resources CASCADE;
-DROP TABLE IF EXISTS medical_content CASCADE;
-DROP TABLE IF EXISTS drugs CASCADE;
-DROP TABLE IF EXISTS icd10_codes CASCADE;
-DROP TABLE IF EXISTS lab_orders CASCADE;
-DROP TABLE IF EXISTS prescriptions CASCADE;
-DROP TABLE IF EXISTS emr CASCADE;
-DROP TABLE IF EXISTS meeting_transcripts CASCADE;
-DROP TABLE IF EXISTS meeting_records CASCADE;
-DROP TABLE IF EXISTS appointments CASCADE;
-DROP TABLE IF EXISTS consultants CASCADE;
-DROP TABLE IF EXISTS doctor_reviews CASCADE;
-DROP TABLE IF EXISTS doctor_schedules CASCADE;
-DROP TABLE IF EXISTS doctors CASCADE;
-DROP TABLE IF EXISTS doctor_profiles CASCADE;
-DROP TABLE IF EXISTS patient_consents CASCADE;
-DROP TABLE IF EXISTS living_will_versions CASCADE;
-DROP TABLE IF EXISTS living_wills CASCADE;
-DROP TABLE IF EXISTS vital_signs CASCADE;
-DROP TABLE IF EXISTS phr CASCADE;
-DROP TABLE IF EXISTS patient_profiles CASCADE;
-DROP TABLE IF EXISTS password_resets CASCADE;
-DROP TABLE IF EXISTS sessions CASCADE;
-DROP TABLE IF EXISTS users CASCADE;
+-- Drop in reverse dependency order (PostgreSQL CASCADE syntax)
+DROP TABLE IF EXISTS audit_logs;
+DROP TABLE IF EXISTS ai_validations;
+DROP TABLE IF EXISTS cds_logs;
+DROP TABLE IF EXISTS ai_document_analysis;
+DROP TABLE IF EXISTS ai_chat_history;
+DROP TABLE IF EXISTS knowledge_base;
+DROP TABLE IF EXISTS notifications;
+DROP TABLE IF EXISTS clinical_resources;
+DROP TABLE IF EXISTS medical_content;
+DROP TABLE IF EXISTS drugs;
+DROP TABLE IF EXISTS icd10_codes;
+DROP TABLE IF EXISTS lab_orders;
+DROP TABLE IF EXISTS prescriptions;
+DROP TABLE IF EXISTS emr;
+DROP TABLE IF EXISTS meeting_transcripts;
+DROP TABLE IF EXISTS meeting_records;
+DROP TABLE IF EXISTS appointments;
+DROP TABLE IF EXISTS consultants;
+DROP TABLE IF EXISTS doctor_reviews;
+DROP TABLE IF EXISTS doctor_schedules;
+DROP TABLE IF EXISTS doctors;
+DROP TABLE IF EXISTS doctor_profiles;
+DROP TABLE IF EXISTS patient_consents;
+DROP TABLE IF EXISTS living_will_versions;
+DROP TABLE IF EXISTS living_wills;
+DROP TABLE IF EXISTS vital_signs;
+DROP TABLE IF EXISTS phr;
+DROP TABLE IF EXISTS patient_profiles;
+DROP TABLE IF EXISTS password_resets;
+DROP TABLE IF EXISTS sessions;
+DROP TABLE IF EXISTS users;
 
 -- =============================================================================
 -- SECTION 3: CORE USER TABLES

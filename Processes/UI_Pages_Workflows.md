@@ -31,7 +31,7 @@ This document provides comprehensive UI/UX specifications for all pages across t
 
 ---
 
-# 🏥 DOCTOR PORTAL
+## 🏥 DOCTOR PORTAL
 
 ## Doctor Portal Navigation Structure
 
@@ -148,11 +148,11 @@ Central hub displaying today's appointments, pending tasks, notifications, and q
 **Access:** Doctor, Admin  
 **Component:** `AppointmentSchedule.tsx`
 
-### Purpose
+### Purpose (2)
 
 Calendar view of all appointments with filtering, status management, and quick actions.
 
-### UI Layout
+### UI Layout (2)
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -196,7 +196,7 @@ Calendar view of all appointments with filtering, status management, and quick a
 | Completed | ✅ | เสร็จสิ้น | Consultation completed |
 | Cancelled | ❌ | ยกเลิก | Cancelled by patient/doctor |
 
-### Actions & Buttons
+### Actions & Buttons (2)
 
 | Button | Action | Backend API |
 | -------- | -------- | ------------- |
@@ -215,7 +215,7 @@ Calendar view of all appointments with filtering, status management, and quick a
 **Access:** Doctor, Admin  
 **Component:** `PatientList.tsx`, `PatientRecordViewer.tsx`
 
-### Purpose
+### Purpose (3)
 
 Patient directory with search, filtering, and comprehensive health record viewing.
 
@@ -289,7 +289,7 @@ Patient directory with search, filtering, and comprehensive health record viewin
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Actions & Buttons
+### Actions & Buttons (3)
 
 | Button | Action | Backend API |
 | -------- | -------- | ------------- |
@@ -306,7 +306,7 @@ Patient directory with search, filtering, and comprehensive health record viewin
 **Access:** Doctor, Admin  
 **Component:** `AppointmentManagement.tsx`, `MeetingRoom.tsx`
 
-### Purpose
+### Purpose (4)
 
 Manage appointment queue, conduct video meetings, document EMR, and generate patient instructions.
 
@@ -422,11 +422,11 @@ Manage appointment queue, conduct video meetings, document EMR, and generate pat
 **Access:** Doctor, Admin (Admin has full CRUD)  
 **Component:** `MedicalConsultants.tsx`
 
-### Purpose
+### Purpose (5)
 
 Directory of specialist consultants for referrals and second opinions.
 
-### UI Layout
+### UI Layout (3)
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -472,11 +472,11 @@ Directory of specialist consultants for referrals and second opinions.
 **Access:** Doctor, Admin  
 **Component:** `MedicalContent.tsx`
 
-### Purpose
+### Purpose (6)
 
 Health education articles for patients. Doctors create, admin approves before publishing.
 
-### UI Layout
+### UI Layout (4)
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -521,7 +521,7 @@ Health education articles for patients. Doctors create, admin approves before pu
 **Access:** Doctor, Admin  
 **Component:** `ClinicalResources.tsx`
 
-### Purpose
+### Purpose (7)
 
 Medical guidelines, protocols, and research papers for healthcare professionals only.
 
@@ -550,11 +550,11 @@ Same layout as Medical Content but:
 **Access:** Admin only  
 **Component:** `ManageDoctors.tsx`
 
-### Purpose
+### Purpose (8)
 
 View all doctors, manage accounts, and handle administrative tasks.
 
-### UI Layout
+### UI Layout (5)
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -583,11 +583,11 @@ View all doctors, manage accounts, and handle administrative tasks.
 **Access:** Admin only  
 **Component:** `PendingDoctorApproval.tsx`
 
-### Purpose
+### Purpose (9)
 
 Review and approve/reject new doctor registration requests.
 
-### UI Layout
+### UI Layout (6)
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -626,7 +626,7 @@ Review and approve/reject new doctor registration requests.
 
 ---
 
-# 👤 PATIENT PORTAL
+## 👤 PATIENT PORTAL
 
 ## Patient Portal Navigation Structure
 
@@ -651,11 +651,11 @@ Patient Portal (localhost:3005)
 **Access:** Patient  
 **Component:** `PatientDashboard.tsx`
 
-### Purpose
+### Purpose (10)
 
 Overview of health status, upcoming appointments, and quick actions.
 
-### UI Layout
+### UI Layout (7)
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -691,7 +691,7 @@ Overview of health status, upcoming appointments, and quick actions.
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Actions & Buttons
+### Actions & Buttons (4)
 
 | Button | Action | Backend API |
 | -------- | -------- | ------------- |
@@ -711,11 +711,11 @@ Overview of health status, upcoming appointments, and quick actions.
 **Access:** Patient  
 **Component:** `PatientAppointments.tsx`
 
-### Purpose
+### Purpose (11)
 
 View, book, and manage appointments.
 
-### UI Layout
+### UI Layout (8)
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -768,11 +768,11 @@ View, book, and manage appointments.
 **Access:** Patient  
 **Component:** `AIChatPage.tsx`
 
-### Purpose
+### Purpose (12)
 
 AI health assistant for basic health questions and symptom checking.
 
-### UI Layout
+### UI Layout (9)
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -827,11 +827,11 @@ AI health assistant for basic health questions and symptom checking.
 **Access:** Patient  
 **Component:** `MedicalContentLibrary.tsx`
 
-### Purpose
+### Purpose (13)
 
 Read health education articles created by doctors.
 
-### UI Layout
+### UI Layout (10)
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -864,7 +864,7 @@ Read health education articles created by doctors.
 **Access:** Patient  
 **Component:** `PHRPage.tsx`
 
-### Purpose
+### Purpose (14)
 
 Personal Health Record management - vitals, medications, allergies.
 
@@ -917,11 +917,11 @@ Personal Health Record management - vitals, medications, allergies.
 **Access:** Patient  
 **Component:** `HealthTimeline.tsx`
 
-### Purpose
+### Purpose (15)
 
 Chronological view of all health events, consultations, and records.
 
-### UI Layout
+### UI Layout (11)
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -959,11 +959,11 @@ Chronological view of all health events, consultations, and records.
 **Access:** Patient  
 **Component:** `PDPAConsentPage.tsx`, `LivingWillForm.tsx`
 
-### Purpose
+### Purpose (16)
 
 Manage data privacy consent and living will documentation.
 
-### Tabs
+### Tabs (2)
 
 | Tab | Content |
 | ----- | --------- |
@@ -987,7 +987,7 @@ Manage data privacy consent and living will documentation.
 **Access:** Patient  
 **Component:** `MapPage.tsx`
 
-### Purpose
+### Purpose (17)
 
 Find nearby hospitals, clinics, and pharmacies.
 
@@ -1009,7 +1009,7 @@ Find nearby hospitals, clinics, and pharmacies.
 **Access:** Patient  
 **Component:** `SettingsPage.tsx`
 
-### Purpose
+### Purpose (18)
 
 Account and notification preferences.
 
@@ -1027,7 +1027,7 @@ Account and notification preferences.
 
 ---
 
-# 🎨 Theme & Internationalization (i18n)
+## 🎨 Theme & Internationalization (i18n)
 
 ## Overview
 
@@ -1068,7 +1068,6 @@ const { isDarkMode } = useSettings();
     : 'bg-white border-gray-100 text-slate-900'
 }`}>
   Content here
-</div>
 ```
 
 ### CSS Override Rules (index.css)
@@ -1095,7 +1094,7 @@ html.dark [class*="bg-gradient-to-"] {
 | Thai | `th` | Default |
 | English | `en` | Option |
 
-### How It Works
+### How It Works (2)
 
 1. **Settings Storage:** Language preference is stored in `localStorage` as `patient-portal-language`
 2. **Translation Function:** The `t(key)` function from `SettingsContext` returns the translated string
@@ -1122,7 +1121,7 @@ const translations = {
 };
 ```
 
-### Implementation Pattern
+### Implementation Pattern (2)
 
 ```tsx
 // Use the useSettings hook to get translation function
@@ -1174,7 +1173,7 @@ When navigating between steps (e.g., in appointment booking):
 
 ---
 
-# 🔌 Backend API Reference
+## 🔌 Backend API Reference
 
 ## Core Endpoints
 
@@ -1222,7 +1221,7 @@ When navigating between steps (e.g., in appointment booking):
 
 ---
 
-# 📊 Database Tables Reference
+## 📊 Database Tables Reference
 
 ## Core Tables
 
@@ -1249,4 +1248,4 @@ When navigating between steps (e.g., in appointment booking):
 
 ---
 
-#### End of UI Pages Workflows Documentation v1.0
+### End of UI Pages Workflows Documentation v1.0

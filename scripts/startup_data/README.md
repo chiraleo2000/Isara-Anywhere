@@ -16,19 +16,19 @@ This folder contains JSON startup data files for initializing the Izara Telemedi
 ### Patients
 | Email | Password | Name |
 |-------|----------|------|
-| demo.test@gmail.com | P@ssw0rd | Demo Test Patient |
-| Somchai.Mankong@gmail.com | P@ssw0rd | นายสมชาย มั่นคง |
-| Anan.Khayanrian@gmail.com | P@ssw0rd | นายอนันต์ ขยันเรียน |
+| demo.test@gmail.com | YOUR_TEST_PASSWORD | Demo Test Patient |
+| Somchai.Mankong@gmail.com | YOUR_TEST_PASSWORD | นายสมชาย มั่นคง |
+| Anan.Khayanrian@gmail.com | YOUR_TEST_PASSWORD | นายอนันต์ ขยันเรียน |
 
 ### Doctors
 | Email | Password | Name |
 |-------|----------|------|
-| doctor.test@izara.com | IzaraDoctor@2024 | นายแพทย์ ทดสอบ ระบบ |
+| doctor.test@izara.com | YOUR_TEST_DOCTOR_PASSWORD | นายแพทย์ ทดสอบ ระบบ |
 
 ### Admins
 | Email | Password | Name |
 |-------|----------|------|
-| admin.test@izara.com | IzaraAdmin@2024 | ผู้ดูแลระบบ ทดสอบ |
+| admin.test@izara.com | YOUR_TEST_ADMIN_PASSWORD | ผู้ดูแลระบบ ทดสอบ |
 
 ## Usage
 
@@ -55,3 +55,5 @@ Get-Content scripts\database\izara-database.sql | docker exec -i izara-postgres 
 ## Encoding
 
 All files use UTF-8 encoding to properly support Thai language (ภาษาไทย).
+
+

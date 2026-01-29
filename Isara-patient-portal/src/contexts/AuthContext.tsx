@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from 'react';
 import { User } from '../types';
 
 interface AuthContextType {
@@ -50,11 +50,11 @@ function generateDeviceId(): string {
     new Date().getTimezoneOffset(),
     navigator.hardwareConcurrency || 'unknown',
   ];
-  
+
   const fingerprint = components.join('|');
   let hash = 0;
   for (let i = 0; i < fingerprint.length; i++) {
-    const char = fingerprint.charCodeAt(i);
+    const char = fingerprint.codePointAt(i) ?? 0;
     hash = ((hash << 5) - hash) + char;
     hash = hash & hash;
   }
@@ -79,7 +79,7 @@ const getApiUrl = (path: string) => {
   return `${baseUrl}${path}`;
 };
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -95,7 +95,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Check if inactive for 15 minutes
   const isInactive = useCallback(() => {
     const stored = localStorage.getItem('izara_patient_last_activity');
-    const lastActiveTime = stored ? parseInt(stored) : lastActivity;
+    const lastActiveTime = stored ? Number.parseInt(stored, 10) : lastActivity;
     return (Date.now() - lastActiveTime) > INACTIVITY_TIMEOUT;
   }, [lastActivity]);
 
@@ -109,7 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const activityEvents = ['mousedown', 'keydown', 'scroll', 'touchstart', 'click'];
     activityEvents.forEach(event => {
-      window.addEventListener(event, updateActivity, { passive: true });
+      globalThis.addEventListener(event, updateActivity, { passive: true });
     });
 
     // Check for inactivity every minute
@@ -117,13 +117,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (user && isInactive()) {
         console.log('⚠️ Session expired due to 15 minutes of inactivity');
         clearAuth();
-        window.location.href = '/login?reason=inactivity';
+        globalThis.location.href = '/login?reason=inactivity';
       }
     }, INACTIVITY_CHECK_INTERVAL);
 
     return () => {
       activityEvents.forEach(event => {
-        window.removeEventListener(event, updateActivity);
+        globalThis.removeEventListener(event, updateActivity);
       });
       clearInterval(inactivityInterval);
     };
@@ -133,21 +133,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const storedUser = localStorage.getItem('izara_user');
       const storedToken = localStorage.getItem('auth_token');
-      
+
       // Check if session has expired due to inactivity
       const lastActivityStored = localStorage.getItem('izara_patient_last_activity');
-      if (lastActivityStored && (Date.now() - parseInt(lastActivityStored)) > INACTIVITY_TIMEOUT) {
+      if (lastActivityStored && (Date.now() - Number.parseInt(lastActivityStored, 10)) > INACTIVITY_TIMEOUT) {
         console.log('⚠️ Session expired - clearing stored auth');
         clearAuth();
         return;
       }
-      
+
       if (storedUser && storedToken) {
         setUser(JSON.parse(storedUser));
         setToken(storedToken);
         updateActivity();
       }
-    } catch (e) {
+    } catch (error) {
+      console.error('Failed to load stored auth:', error);
       clearAuth();
     } finally {
       setIsLoading(false);
@@ -172,12 +173,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string) => {
     const deviceId = getDeviceId();
-    
+
     const res = await fetch(getApiUrl('/api/auth/login'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        email, 
+      body: JSON.stringify({
+        email,
         password,
         deviceId,
         userAgent: navigator.userAgent
@@ -211,7 +212,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token }),
-      }).catch(() => {});
+      }).catch(() => { });
     }
     clearAuth();
   };
@@ -222,19 +223,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     updateActivity();
   };
 
+  // Memoize context value to prevent unnecessary re-renders
+  const contextValue = useMemo(() => ({
+    user,
+    token,
+    isLoading,
+    isAuthenticated: !!user && !!token,
+    login,
+    register,
+    logout,
+    updateUser,
+  }), [user, token, isLoading, login, register]);
+
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        token,
-        isLoading,
-        isAuthenticated: !!user && !!token,
-        login,
-        register,
-        logout,
-        updateUser,
-      }}
-    >
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );

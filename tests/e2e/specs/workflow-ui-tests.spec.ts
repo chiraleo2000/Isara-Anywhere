@@ -18,7 +18,7 @@
  * ============================================================================
  */
 
-import { test, expect, Page, BrowserContext } from '@playwright/test';
+import { test, expect, Page } from '@playwright/test';
 
 // Test credentials
 const PATIENTS = {
@@ -34,8 +34,7 @@ const ADMIN = { email: 'admin.test@izara.com', password: 'IzaraAdmin@2024', name
 const PATIENT_PORTAL = process.env.PATIENT_PORTAL_URL || 'http://localhost:3005';
 const DOCTOR_PORTAL = process.env.DOCTOR_PORTAL_URL || 'http://localhost:3010';
 
-// Test timeout for workflow tests
-test.setTimeout(60000);
+// Test timeout configured in each test.describe block using test.slow() or individual test timeout
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -114,7 +113,7 @@ async function checkApiStatus(page: Page, url: string): Promise<number> {
 // ============================================================================
 test.describe('🏥 Complete Appointment Workflow', () => {
   
-  test.describe.configure({ mode: 'serial' }); // Run tests in order
+  test.describe.configure({ mode: 'serial', timeout: 60000 }); // Run tests in order with 60s timeout
 
   test('Step 1: Patient Portal Loads Successfully', async ({ page }) => {
     // Navigate to patient portal
@@ -131,7 +130,7 @@ test.describe('🏥 Complete Appointment Workflow', () => {
 
   test('Step 2: Patient Login with Valid Credentials', async ({ page }) => {
     // Login - this may succeed or fail depending on portal config
-    const loginSuccess = await loginPatientPortal(page, PATIENTS.patient1.email, PATIENTS.patient1.password);
+    await loginPatientPortal(page, PATIENTS.patient1.email, PATIENTS.patient1.password);
     
     // Just verify page loaded successfully (authentication may require different setup)
     const title = await page.title();
@@ -196,7 +195,7 @@ test.describe('🏥 Complete Appointment Workflow', () => {
 // ============================================================================
 test.describe('👨‍⚕️ Doctor Portal Workflow', () => {
   
-  test.describe.configure({ mode: 'serial' });
+  test.describe.configure({ mode: 'serial', timeout: 60000 });
 
   test('Step 6: Doctor Portal Loads Successfully', async ({ page }) => {
     const response = await page.goto(`${DOCTOR_PORTAL}`, { waitUntil: 'domcontentloaded' });
@@ -270,23 +269,30 @@ test.describe('👨‍⚕️ Doctor Portal Workflow', () => {
 // TEST SUITE: VIDEO MEETING WORKFLOW (Steps 11-13)
 // ============================================================================
 test.describe('📹 Video Meeting Workflow', () => {
+  
+  test.describe.configure({ mode: 'serial', timeout: 60000 });
 
   test('Step 11: Meeting Server Health Check', async ({ page }) => {
-    // Check meeting server availability (Jitsi)
+    // Check meeting server availability (Jitsi on port 3020)
     try {
-      const response = await page.goto(`http://localhost:3030/health`, { 
+      const response = await page.goto(`http://localhost:3020/health`, { 
         waitUntil: 'domcontentloaded',
         timeout: 10000
       });
       
-      // Meeting server may return various status codes
-      expect(response?.status()).toBeLessThan(500);
+      // Meeting server should return 200
+      expect(response?.status()).toBe(200);
+      
+      // Verify response contains expected health check data
+      const bodyText = await page.textContent('body');
+      expect(bodyText).toContain('izara-jitsi-server');
       
       console.log('✅ Step 11 PASSED: Meeting server health check OK');
     } catch (error) {
-      // If meeting server not running, skip gracefully
-      console.log('⚠️ Step 11 SKIPPED: Meeting server not running locally');
-      test.skip();
+      // If meeting server not running, fail with clear message
+      console.error('❌ Step 11 FAILED: Meeting server not running on port 3020');
+      console.error('   Run: cd Izara-jitsi-server && npm run dev');
+      throw error;
     }
   });
 
@@ -324,6 +330,8 @@ test.describe('📹 Video Meeting Workflow', () => {
 // TEST SUITE: ADMIN & ADDITIONAL FEATURES (Steps 14-15+)
 // ============================================================================
 test.describe('⚙️ Admin & Additional Features', () => {
+  
+  test.describe.configure({ mode: 'serial', timeout: 60000 });
 
   test('Step 14: Admin Portal Login', async ({ page }) => {
     const loginSuccess = await loginDoctorPortal(page, ADMIN.email, ADMIN.password);
@@ -401,15 +409,17 @@ test.describe('⚙️ Admin & Additional Features', () => {
     try {
       const patientResponse = await page.request.get(`${PATIENT_PORTAL}/api/health`);
       patientApiOk = patientResponse.status() === 200;
-    } catch (e) {
+    } catch (error) {
       // API may not have health endpoint
+      console.log('Patient API check skipped:', (error as Error).message);
       patientApiOk = true;
     }
     
     try {
       const doctorResponse = await page.request.get(`${DOCTOR_PORTAL}/api/health`);
       doctorApiOk = doctorResponse.status() === 200;
-    } catch (e) {
+    } catch (error) {
+      console.log('Doctor API check skipped:', (error as Error).message);
       doctorApiOk = true;
     }
     

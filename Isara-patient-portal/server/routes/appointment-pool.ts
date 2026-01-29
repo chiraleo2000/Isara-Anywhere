@@ -93,6 +93,11 @@ const DEFAULT_MEETING_RULES: MeetingTimeRules = {
 // Helper functions
 async function readJSON(bucket: string, filePath: string): Promise<any> {
   try {
+    // Check if storage is available (PostgreSQL mode disables GCS)
+    if (!storage) {
+      console.log('[APPOINTMENT-POOL] Storage is null (PostgreSQL mode) - returning empty data');
+      return null;
+    }
     const file = storage.bucket(bucket).file(filePath);
     const [contents] = await file.download();
     return JSON.parse(contents.toString());
@@ -100,11 +105,17 @@ async function readJSON(bucket: string, filePath: string): Promise<any> {
     if (error.code === 404) {
       return null;
     }
-    throw error;
+    console.error('[APPOINTMENT-POOL] readJSON error:', error.message);
+    return null;
   }
 }
 
 async function writeJSON(bucket: string, filePath: string, data: any): Promise<void> {
+  // Check if storage is available
+  if (!storage) {
+    console.log('[APPOINTMENT-POOL] Storage is null (PostgreSQL mode) - skipping write');
+    return;
+  }
   const file = storage.bucket(bucket).file(filePath);
   await file.save(JSON.stringify(data, null, 2), {
     contentType: 'application/json',

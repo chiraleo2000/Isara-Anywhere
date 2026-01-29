@@ -285,7 +285,7 @@ const MedicalConsultants: React.FC = () => {
         body: JSON.stringify({
           ...formData,
           languages: formData.languages.split(',').map(l => l.trim()).filter(Boolean),
-          experience: parseInt(formData.experience) || 0,
+          experience: Number.parseInt(formData.experience, 10) || 0,
           userId: user?.id,
           userName: user?.name || user?.email || 'Admin',
           isAdmin: true,
@@ -320,7 +320,7 @@ const MedicalConsultants: React.FC = () => {
         body: JSON.stringify({
           ...formData,
           languages: formData.languages.split(',').map(l => l.trim()).filter(Boolean),
-          experience: parseInt(formData.experience) || 0,
+          experience: Number.parseInt(formData.experience, 10) || 0,
           userId: user?.id,
           userName: user?.name || user?.email || 'Admin',
           isAdmin: true,
@@ -464,11 +464,11 @@ const MedicalConsultants: React.FC = () => {
   };
 
   const handleSendEmail = (email: string) => {
-    window.location.href = `mailto:${email}`;
+    globalThis.location.href = `mailto:${email}`;
   };
 
   const handleCall = (phone: string) => {
-    window.location.href = `tel:${phone}`;
+    globalThis.location.href = `tel:${phone}`;
   };
 
   // ============================================================================
@@ -565,7 +565,7 @@ const MedicalConsultants: React.FC = () => {
 
       {/* Stats Bar */}
       <div className="flex gap-4 mb-6 text-sm text-gray-600">
-        <span>{filteredConsultants.length} consultant{filteredConsultants.length !== 1 ? 's' : ''} found</span>
+        <span>{filteredConsultants.length} consultant{filteredConsultants.length === 1 ? '' : 's'} found</span>
         <span>•</span>
         <span className="text-green-600">
           {filteredConsultants.filter(c => c.available).length} available

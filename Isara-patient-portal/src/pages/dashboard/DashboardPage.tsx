@@ -82,6 +82,91 @@ export default function DashboardPage() {
     );
   };
 
+  const pendingAppointments = appointments.filter((appointment) => appointment.status === 'pending');
+  const pendingAppointmentsCount = pendingAppointments.length;
+  const hasPendingAppointments = pendingAppointmentsCount > 0;
+
+  let appointmentContent = null;
+  if (loading) {
+    appointmentContent = (
+      <div className="space-y-3">
+        {[1, 2].map((i) => (
+          <div key={i} className={`animate-pulse h-20 rounded-xl ${isDarkMode ? 'bg-slate-700' : 'bg-gray-100'}`} />
+        ))}
+      </div>
+    );
+  } else if (appointments.length === 0) {
+    appointmentContent = (
+      <div className={`text-center py-8 ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
+        <Calendar className="w-12 h-12 mx-auto mb-2 opacity-30" />
+        <p className="mb-2">{t('dashboard.noAppointments')}</p>
+        <Link
+          to="/appointments/book"
+          className="inline-flex items-center gap-1 text-emerald-500 text-sm hover:underline font-medium"
+        >
+          <Plus className="w-4 h-4" /> {t('dashboard.makeAppointment')}
+        </Link>
+      </div>
+    );
+  } else {
+    appointmentContent = (
+      <div className="space-y-3">
+        {appointments.map((apt) => (
+          <Link
+            key={apt.id}
+            to={`/appointments/${apt.id}`}
+            className="block p-4 bg-gray-50 rounded-xl hover:bg-emerald-50 transition-all group border border-transparent hover:border-emerald-200"
+          >
+            <div className="flex justify-between items-start mb-2">
+              <div className="flex items-center gap-3">
+                <img
+                  src={apt.doctorAvatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(apt.doctorId)}`}
+                  alt={apt.doctorName}
+                  className="w-10 h-10 rounded-full"
+                />
+                <div>
+                  <p className="font-medium text-gray-800 group-hover:text-emerald-700">{apt.doctorName}</p>
+                  <p className="text-sm text-gray-600">{apt.doctorSpecialty}</p>
+                </div>
+              </div>
+              {getStatusBadge(apt.status)}
+            </div>
+            <div className="flex items-center gap-4 text-sm text-gray-500">
+              <span className="flex items-center gap-1">
+                <Calendar className="w-4 h-4" />
+                {formatDate(apt.appointmentDate)}
+              </span>
+              <span className="flex items-center gap-1">
+                <Clock className="w-4 h-4" />
+                {apt.appointmentTime}
+              </span>
+              <span className="flex items-center gap-1">
+                {apt.type === 'telehealth' ? <Video className="w-4 h-4" /> : <MapPin className="w-4 h-4" />}
+                {apt.type === 'telehealth' ? 'ออนไลน์' : 'โรงพยาบาล'}
+              </span>
+            </div>
+
+            {/* Meeting Link for Confirmed Telehealth */}
+            {apt.status === 'confirmed' && apt.type === 'telehealth' && apt.meetingLink && (
+              <div className="mt-3 pt-3 border-t border-gray-200">
+                <a
+                  href={apt.meetingLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  <Video className="w-4 h-4" />
+                  เข้าร่วมการประชุม
+                </a>
+              </div>
+            )}
+          </Link>
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen">
       {/* Welcome Header */}
@@ -141,79 +226,7 @@ export default function DashboardPage() {
             </div>
 
             <div className="p-4">
-              {loading ? (
-                <div className="space-y-3">
-                  {[1, 2].map((i) => (
-                    <div key={i} className={`animate-pulse h-20 rounded-xl ${isDarkMode ? 'bg-slate-700' : 'bg-gray-100'}`} />
-                  ))}
-                </div>
-              ) : appointments.length === 0 ? (
-                <div className={`text-center py-8 ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
-                  <Calendar className="w-12 h-12 mx-auto mb-2 opacity-30" />
-                  <p className="mb-2">{t('dashboard.noAppointments')}</p>
-                  <Link 
-                    to="/appointments/book" 
-                    className="inline-flex items-center gap-1 text-emerald-500 text-sm hover:underline font-medium"
-                  >
-                    <Plus className="w-4 h-4" /> {t('dashboard.makeAppointment')}
-                  </Link>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {appointments.map((apt) => (
-                    <Link
-                      key={apt.id}
-                      to={`/appointments/${apt.id}`}
-                      className="block p-4 bg-gray-50 rounded-xl hover:bg-emerald-50 transition-all group border border-transparent hover:border-emerald-200"
-                    >
-                      <div className="flex justify-between items-start mb-2">
-                        <div className="flex items-center gap-3">
-                          <img
-                            src={apt.doctorAvatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(apt.doctorId)}`}
-                            alt={apt.doctorName}
-                            className="w-10 h-10 rounded-full"
-                          />
-                          <div>
-                            <p className="font-medium text-gray-800 group-hover:text-emerald-700">{apt.doctorName}</p>
-                            <p className="text-sm text-gray-600">{apt.doctorSpecialty}</p>
-                          </div>
-                        </div>
-                        {getStatusBadge(apt.status)}
-                      </div>
-                      <div className="flex items-center gap-4 text-sm text-gray-500">
-                        <span className="flex items-center gap-1">
-                          <Calendar className="w-4 h-4" />
-                          {formatDate(apt.appointmentDate)}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-4 h-4" />
-                          {apt.appointmentTime}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          {apt.type === 'telehealth' ? <Video className="w-4 h-4" /> : <MapPin className="w-4 h-4" />}
-                          {apt.type === 'telehealth' ? 'ออนไลน์' : 'โรงพยาบาล'}
-                        </span>
-                      </div>
-                      
-                      {/* Meeting Link for Confirmed Telehealth */}
-                      {apt.status === 'confirmed' && apt.type === 'telehealth' && apt.meetingLink && (
-                        <div className="mt-3 pt-3 border-t border-gray-200">
-                          <a
-                            href={apt.meetingLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
-                          >
-                            <Video className="w-4 h-4" />
-                            เข้าร่วมการประชุม
-                          </a>
-                        </div>
-                      )}
-                    </Link>
-                  ))}
-                </div>
-              )}
+              {appointmentContent}
             </div>
           </div>
 
@@ -225,12 +238,12 @@ export default function DashboardPage() {
                 การแจ้งเตือน
               </h3>
               <span className="text-xs bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full">
-                {appointments.filter(a => a.status === 'pending').length} รายการ
+                {pendingAppointmentsCount} รายการ
               </span>
             </div>
-            {appointments.filter(a => a.status === 'pending').length > 0 ? (
+            {hasPendingAppointments ? (
               <div className="space-y-2">
-                {appointments.filter(a => a.status === 'pending').slice(0, 2).map((apt) => (
+                {pendingAppointments.slice(0, 2).map((apt) => (
                   <div key={apt.id} className="flex items-center gap-3 p-2 bg-yellow-50 rounded-lg text-sm">
                     <div className="w-2 h-2 bg-yellow-500 rounded-full" />
                     <span className="text-yellow-800">รอแพทย์ยืนยันนัดหมาย - {apt.doctorName}</span>

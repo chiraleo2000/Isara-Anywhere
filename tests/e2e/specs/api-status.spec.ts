@@ -6,50 +6,43 @@
  */
 
 import { test, expect } from '@playwright/test';
+import {
+  PATIENT_PORTAL_URL,
+  DOCTOR_PORTAL_URL,
+  CREDENTIALS,
+  getAuthToken,
+  ENDPOINTS
+} from '../lib/test-config';
 
-// Environment configuration - all tests run against local
-const LOCAL_PATIENT = 'http://localhost:3005';
-const LOCAL_DOCTOR = 'http://localhost:3010';
+// Use local URLs from shared config
+const LOCAL_PATIENT = PATIENT_PORTAL_URL;
+const LOCAL_DOCTOR = DOCTOR_PORTAL_URL;
 
-// Test credentials
-const CREDENTIALS = {
-  patient: { email: 'demo.test@gmail.com', password: 'P@ssw0rd' },
-  doctor: { email: 'doctor.test@izara.com', password: 'IzaraDoctor@2024' }
-};
-
-// Helper: Get auth token
+// Helper: Get auth token (using shared config)
 async function getToken(request: any, base: string, creds: { email: string; password: string }) {
-  const response = await request.post(`${base}/api/auth/login`, {
-    data: creds,
-    headers: { 'Content-Type': 'application/json' }
-  });
-  if (response.status() === 200) {
-    const data = await response.json();
-    return data.token || data.accessToken || '';
-  }
-  return '';
+  return getAuthToken(request, base, creds);
 }
 
 test.describe('Patient Portal API Status Tests', () => {
   let patientToken: string;
 
   test.beforeAll(async ({ request }) => {
-    patientToken = await getToken(request, LOCAL_PATIENT, CREDENTIALS.patient);
+    patientToken = await getToken(request, LOCAL_PATIENT, CREDENTIALS.patient1);
   });
 
   test('API Health Check - 200', async ({ request }) => {
-    const response = await request.get(`${LOCAL_PATIENT}/api/health`);
+    const response = await request.get(`${LOCAL_PATIENT}${ENDPOINTS.health}`);
     expect(response.status()).toBe(200);
   });
 
   test('API Database Health - 200', async ({ request }) => {
-    const response = await request.get(`${LOCAL_PATIENT}/api/health/db`);
+    const response = await request.get(`${LOCAL_PATIENT}${ENDPOINTS.healthDb}`);
     expect(response.status()).toBe(200);
   });
 
   test('API Auth Login - 200', async ({ request }) => {
-    const response = await request.post(`${LOCAL_PATIENT}/api/auth/login`, {
-      data: CREDENTIALS.patient,
+    const response = await request.post(`${LOCAL_PATIENT}${ENDPOINTS.login}`, {
+      data: CREDENTIALS.patient1,
       headers: { 'Content-Type': 'application/json' }
     });
     expect(response.status()).toBe(200);

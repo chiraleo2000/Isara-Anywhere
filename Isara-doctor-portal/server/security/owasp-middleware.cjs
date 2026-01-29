@@ -35,11 +35,11 @@ function checkPermission(requiredPermission) {
   return (req, res, next) => {
     const userRole = req.user?.role || 'guest';
     const permissions = ROLE_PERMISSIONS[userRole] || [];
-    
+
     // Check for exact permission or wildcard
     const hasPermission = permissions.includes(requiredPermission) ||
-                          permissions.some(p => p.endsWith(':all') && requiredPermission.startsWith(p.replace(':all', ':')));
-    
+      permissions.some(p => p.endsWith(':all') && requiredPermission.startsWith(p.replace(':all', ':')));
+
     if (!hasPermission) {
       securityAuditLog({
         event: 'ACCESS_DENIED',
@@ -50,7 +50,7 @@ function checkPermission(requiredPermission) {
         path: req.path,
         ip: getClientIP(req)
       });
-      return res.status(403).json({ 
+      return res.status(403).json({
         error: 'Access denied',
         code: 'INSUFFICIENT_PERMISSIONS'
       });
@@ -67,18 +67,18 @@ function verifyResourceOwnership(resourceIdParam = 'id', resourceType = 'generic
     const resourceId = req.params[resourceIdParam] || req.body[resourceIdParam];
     const userId = req.user?.id;
     const userRole = req.user?.role;
-    
+
     // Admins can access all resources
     if (userRole === 'admin') {
       return next();
     }
-    
+
     // Doctors can access their assigned patients
     if (userRole === 'doctor' && resourceType === 'patient') {
       // Would need to verify patient is assigned to this doctor
       return next();
     }
-    
+
     // Patients can only access their own resources
     if (userRole === 'patient' && resourceId !== userId && resourceId !== req.user?.patientId) {
       securityAuditLog({
@@ -94,7 +94,7 @@ function verifyResourceOwnership(resourceIdParam = 'id', resourceType = 'generic
         code: 'RESOURCE_ACCESS_DENIED'
       });
     }
-    
+
     next();
   };
 }
@@ -109,7 +109,7 @@ function verifyResourceOwnership(resourceIdParam = 'id', resourceType = 'generic
 function securityHeaders() {
   return (req, res, next) => {
     // Content Security Policy
-    res.setHeader('Content-Security-Policy', 
+    res.setHeader('Content-Security-Policy',
       "default-src 'self'; " +
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://maps.googleapis.com; " +
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
@@ -118,32 +118,32 @@ function securityHeaders() {
       "connect-src 'self' http://localhost:* https://*.googleapis.com wss://*; " +
       "frame-src 'self' https://meet.google.com https://calendar.google.com;"
     );
-    
+
     // Prevent clickjacking
     res.setHeader('X-Frame-Options', 'SAMEORIGIN');
-    
+
     // Prevent MIME type sniffing
     res.setHeader('X-Content-Type-Options', 'nosniff');
-    
+
     // XSS Protection
     res.setHeader('X-XSS-Protection', '1; mode=block');
-    
+
     // Referrer Policy
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-    
+
     // Permissions Policy
-    res.setHeader('Permissions-Policy', 
+    res.setHeader('Permissions-Policy',
       'camera=(self), microphone=(self), geolocation=(self), payment=()'
     );
-    
+
     // HSTS (for production)
     if (process.env.NODE_ENV === 'production') {
       res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
     }
-    
+
     // Remove server fingerprint
     res.removeHeader('X-Powered-By');
-    
+
     next();
   };
 }
@@ -154,7 +154,7 @@ function securityHeaders() {
 function strictCors(allowedOrigins) {
   return (req, res, next) => {
     const origin = req.headers.origin;
-    
+
     if (allowedOrigins.includes(origin)) {
       res.setHeader('Access-Control-Allow-Origin', origin);
       res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -162,11 +162,11 @@ function strictCors(allowedOrigins) {
       res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Request-ID, X-CSRF-Token');
       res.setHeader('Access-Control-Max-Age', '86400');
     }
-    
+
     if (req.method === 'OPTIONS') {
       return res.sendStatus(204);
     }
-    
+
     next();
   };
 }
@@ -195,35 +195,35 @@ const COMMON_PASSWORDS = [
 
 function validatePassword(password) {
   const errors = [];
-  
+
   if (!password || password.length < PASSWORD_POLICY.minLength) {
     errors.push(`Password must be at least ${PASSWORD_POLICY.minLength} characters`);
   }
-  
+
   if (PASSWORD_POLICY.requireUppercase && !/[A-Z]/.test(password)) {
     errors.push('Password must contain at least one uppercase letter');
   }
-  
+
   if (PASSWORD_POLICY.requireLowercase && !/[a-z]/.test(password)) {
     errors.push('Password must contain at least one lowercase letter');
   }
-  
-  if (PASSWORD_POLICY.requireNumbers && !/[0-9]/.test(password)) {
+
+  if (PASSWORD_POLICY.requireNumbers && !/\d/.test(password)) {
     errors.push('Password must contain at least one number');
   }
-  
-  if (PASSWORD_POLICY.requireSpecial && !/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+
+  if (PASSWORD_POLICY.requireSpecial && !/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password)) {
     errors.push('Password must contain at least one special character');
   }
-  
+
   // Check for repeating characters
   if (PASSWORD_POLICY.maxRepeatingChars) {
-    const regex = new RegExp(`(.)\\1{${PASSWORD_POLICY.maxRepeatingChars},}`);
+    const regex = new RegExp(String.raw`(.)\1{${PASSWORD_POLICY.maxRepeatingChars},}`);
     if (regex.test(password)) {
       errors.push(`Password cannot have more than ${PASSWORD_POLICY.maxRepeatingChars} repeating characters`);
     }
   }
-  
+
   // Check against common passwords
   if (PASSWORD_POLICY.preventCommonPasswords) {
     const lowerPassword = password.toLowerCase();
@@ -231,7 +231,7 @@ function validatePassword(password) {
       errors.push('Password is too common or easily guessable');
     }
   }
-  
+
   return {
     valid: errors.length === 0,
     errors
@@ -260,12 +260,12 @@ function encryptData(data, key = process.env.ENCRYPTION_KEY || crypto.randomByte
   const iv = crypto.randomBytes(16);
   const keyBuffer = Buffer.from(key.slice(0, 32).padEnd(32, '0'));
   const cipher = crypto.createCipheriv('aes-256-gcm', keyBuffer, iv);
-  
+
   let encrypted = cipher.update(JSON.stringify(data), 'utf8', 'hex');
   encrypted += cipher.final('hex');
-  
+
   const authTag = cipher.getAuthTag();
-  
+
   return {
     encrypted,
     iv: iv.toString('hex'),
@@ -285,10 +285,10 @@ function decryptData(encryptedObj, key = process.env.ENCRYPTION_KEY || '') {
       Buffer.from(encryptedObj.iv, 'hex')
     );
     decipher.setAuthTag(Buffer.from(encryptedObj.authTag, 'hex'));
-    
+
     let decrypted = decipher.update(encryptedObj.encrypted, 'hex', 'utf8');
     decrypted += decipher.final('utf8');
-    
+
     return JSON.parse(decrypted);
   } catch (e) {
     throw new Error('Decryption failed - data may be corrupted or tampered with');
@@ -310,7 +310,7 @@ const SANITIZATION_PATTERNS = {
   // XSS patterns
   xss: /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>|javascript:|on\w+\s*=/gi,
   // Path traversal
-  pathTraversal: /\.\.[\/\\]|[\/\\]\.\.|\%2e\%2e/gi,
+  pathTraversal: /\.\.[/\\]|[/\\]\.\.|%2e%2e/gi,
   // Command injection
   command: /[;&|`$(){}[\]!]/g
 };
@@ -320,20 +320,20 @@ const SANITIZATION_PATTERNS = {
  */
 function sanitizeInput(input, type = 'general') {
   if (typeof input !== 'string') return input;
-  
+
   let sanitized = input.trim();
-  
+
   // Remove null bytes
-  sanitized = sanitized.replace(/\0/g, '');
-  
+  sanitized = sanitized.replaceAll('\0', '');
+
   // HTML entity encoding for XSS prevention
   sanitized = sanitized
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#x27;');
-  
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#x27;');
+
   return sanitized;
 }
 
@@ -344,13 +344,13 @@ function sanitizeRequestBody(allowedFields = []) {
   return (req, res, next) => {
     if (req.body && typeof req.body === 'object') {
       const sanitizedBody = {};
-      
+
       for (const [key, value] of Object.entries(req.body)) {
         // Only allow specified fields
         if (allowedFields.length > 0 && !allowedFields.includes(key)) {
           continue;
         }
-        
+
         // Sanitize based on value type
         if (typeof value === 'string') {
           // Check for injection attempts
@@ -375,7 +375,7 @@ function sanitizeRequestBody(allowedFields = []) {
           sanitizedBody[key] = value;
         }
       }
-      
+
       req.body = sanitizedBody;
     }
     next();
@@ -418,20 +418,20 @@ function rateLimit(options = {}) {
       retryAfter: Math.ceil(windowMs / 1000)
     })
   } = options;
-  
+
   return (req, res, next) => {
     const key = keyGenerator(req);
     const now = Date.now();
-    
+
     // Get or create entry
     let entry = rateLimitStore.get(key);
     if (!entry || now - entry.windowStart > windowMs) {
       entry = { count: 0, windowStart: now };
     }
-    
+
     entry.count++;
     rateLimitStore.set(key, entry);
-    
+
     // Clean old entries periodically
     if (Math.random() < 0.01) {
       for (const [k, v] of rateLimitStore) {
@@ -440,12 +440,12 @@ function rateLimit(options = {}) {
         }
       }
     }
-    
+
     // Set headers
     res.setHeader('X-RateLimit-Limit', maxRequests);
     res.setHeader('X-RateLimit-Remaining', Math.max(0, maxRequests - entry.count));
     res.setHeader('X-RateLimit-Reset', new Date(entry.windowStart + windowMs).toISOString());
-    
+
     if (entry.count > maxRequests) {
       securityAuditLog({
         event: 'RATE_LIMIT_EXCEEDED',
@@ -456,7 +456,7 @@ function rateLimit(options = {}) {
       });
       return handler(req, res);
     }
-    
+
     next();
   };
 }
@@ -479,35 +479,35 @@ const loginAttempts = new Map();
 
 function trackLoginAttempt(email, success) {
   const key = email.toLowerCase();
-  
+
   if (success) {
     loginAttempts.delete(key);
     return { locked: false };
   }
-  
+
   let entry = loginAttempts.get(key) || { count: 0, firstAttempt: Date.now() };
   entry.count++;
   entry.lastAttempt = Date.now();
-  
+
   // Lock account after 100 failed attempts (increased for testing - was 5)
   if (entry.count >= 100) {
     entry.lockedUntil = Date.now() + 1 * 60 * 1000; // 1 minute (reduced for testing - was 30 min)
     loginAttempts.set(key, entry);
-    
+
     securityAuditLog({
       event: 'ACCOUNT_LOCKED',
       severity: 'WARN',
       email: key,
       attempts: entry.count
     });
-    
+
     return {
       locked: true,
       lockedUntil: entry.lockedUntil,
       remainingTime: Math.ceil((entry.lockedUntil - Date.now()) / 1000)
     };
   }
-  
+
   loginAttempts.set(key, entry);
   return { locked: false, attempts: entry.count };
 }
@@ -515,14 +515,14 @@ function trackLoginAttempt(email, success) {
 function isAccountLocked(email) {
   const key = email.toLowerCase();
   const entry = loginAttempts.get(key);
-  
+
   if (!entry || !entry.lockedUntil) return { locked: false };
-  
+
   if (Date.now() > entry.lockedUntil) {
     loginAttempts.delete(key);
     return { locked: false };
   }
-  
+
   return {
     locked: true,
     lockedUntil: entry.lockedUntil,
@@ -542,19 +542,19 @@ function validateSession(fetchFromGCS, BUCKETS) {
         code: 'NO_TOKEN'
       });
     }
-    
+
     const token = authHeader.split(' ')[1];
-    
+
     try {
       const session = await fetchFromGCS(BUCKETS.credentials, `sessions/${token}.json`);
-      
+
       if (!session) {
         return res.status(401).json({
           error: 'Invalid session',
           code: 'INVALID_SESSION'
         });
       }
-      
+
       // Check expiration
       if (new Date(session.expiresAt) < new Date()) {
         return res.status(401).json({
@@ -562,7 +562,7 @@ function validateSession(fetchFromGCS, BUCKETS) {
           code: 'SESSION_EXPIRED'
         });
       }
-      
+
       // Verify session integrity (IP binding in production)
       if (process.env.NODE_ENV === 'production' && session.ip && session.ip !== getClientIP(req)) {
         securityAuditLog({
@@ -577,14 +577,14 @@ function validateSession(fetchFromGCS, BUCKETS) {
           code: 'SESSION_INVALID'
         });
       }
-      
+
       req.user = {
         id: session.userId,
         email: session.email,
         role: session.role,
         sessionId: session.id
       };
-      
+
       next();
     } catch (error) {
       return res.status(401).json({
@@ -606,15 +606,15 @@ function verifyRequestIntegrity(secret = process.env.HMAC_SECRET || 'default-sec
   return (req, res, next) => {
     const signature = req.headers['x-signature'];
     const timestamp = req.headers['x-timestamp'];
-    
+
     // Skip for GET requests and non-critical endpoints
     if (req.method === 'GET' || !signature) {
       return next();
     }
-    
+
     // Check timestamp freshness (5 minute window)
     if (timestamp) {
-      const requestTime = parseInt(timestamp);
+      const requestTime = Number.parseInt(timestamp, 10);
       const now = Date.now();
       if (Math.abs(now - requestTime) > 5 * 60 * 1000) {
         return res.status(400).json({
@@ -623,14 +623,14 @@ function verifyRequestIntegrity(secret = process.env.HMAC_SECRET || 'default-sec
         });
       }
     }
-    
+
     // Verify HMAC signature
     const payload = JSON.stringify(req.body) + (timestamp || '');
     const expectedSignature = crypto
       .createHmac('sha256', secret)
       .update(payload)
       .digest('hex');
-    
+
     if (signature !== expectedSignature) {
       securityAuditLog({
         event: 'INTEGRITY_VIOLATION',
@@ -643,7 +643,7 @@ function verifyRequestIntegrity(secret = process.env.HMAC_SECRET || 'default-sec
         code: 'INTEGRITY_FAILED'
       });
     }
-    
+
     next();
   };
 }
@@ -674,7 +674,7 @@ function securityAuditLog(logEntry) {
     environment: process.env.NODE_ENV || 'development',
     service: 'izara-doctor-portal'
   };
-  
+
   // Console log for immediate visibility
   const severityColors = {
     INFO: '\x1b[36m',   // Cyan
@@ -683,17 +683,17 @@ function securityAuditLog(logEntry) {
     CRITICAL: '\x1b[35m' // Magenta
   };
   const color = severityColors[entry.severity] || '\x1b[0m';
-  console.log(`${color}[SECURITY AUDIT] [${entry.severity}] ${entry.event}\x1b[0m`, 
+  console.log(`${color}[SECURITY AUDIT] [${entry.severity}] ${entry.event}\x1b[0m`,
     JSON.stringify({ ...entry, timestamp: undefined, severity: undefined, event: undefined }));
-  
+
   // Buffer for batch writing
   auditLogBuffer.push(entry);
-  
+
   // Flush if buffer is full
   if (auditLogBuffer.length >= AUDIT_LOG_FLUSH_SIZE) {
     flushAuditLog();
   }
-  
+
   // Alert on critical events
   if (entry.severity === 'CRITICAL' || entry.severity === 'HIGH') {
     triggerSecurityAlert(entry);
@@ -705,19 +705,19 @@ function securityAuditLog(logEntry) {
  */
 async function flushAuditLog() {
   if (auditLogBuffer.length === 0) return;
-  
+
   const logsToFlush = [...auditLogBuffer];
   auditLogBuffer.length = 0;
-  
+
   try {
     const logDir = path.join(__dirname, '..', 'logs', 'security');
     if (!fs.existsSync(logDir)) {
       fs.mkdirSync(logDir, { recursive: true });
     }
-    
+
     const date = new Date().toISOString().split('T')[0];
     const logFile = path.join(logDir, `security-audit-${date}.json`);
-    
+
     let existingLogs = [];
     if (fs.existsSync(logFile)) {
       try {
@@ -726,7 +726,7 @@ async function flushAuditLog() {
         existingLogs = [];
       }
     }
-    
+
     existingLogs.push(...logsToFlush);
     fs.writeFileSync(logFile, JSON.stringify(existingLogs, null, 2));
   } catch (e) {
@@ -743,7 +743,7 @@ setInterval(flushAuditLog, AUDIT_LOG_FLUSH_INTERVAL);
 function triggerSecurityAlert(entry) {
   // In production, this would integrate with alerting systems
   console.log('\x1b[41m\x1b[37m[SECURITY ALERT]\x1b[0m', entry);
-  
+
   // Could integrate with:
   // - Email notifications
   // - Slack/Teams webhooks
@@ -759,9 +759,9 @@ function requestLogger() {
     const requestId = crypto.randomUUID();
     req.requestId = requestId;
     res.setHeader('X-Request-ID', requestId);
-    
+
     const startTime = Date.now();
-    
+
     // Log request
     const requestLog = {
       requestId,
@@ -773,12 +773,12 @@ function requestLogger() {
       userId: req.user?.id,
       timestamp: new Date().toISOString()
     };
-    
+
     // Capture response
     const originalEnd = res.end;
-    res.end = function(...args) {
+    res.end = function (...args) {
       const duration = Date.now() - startTime;
-      
+
       // Log response
       if (res.statusCode >= 400) {
         securityAuditLog({
@@ -789,10 +789,10 @@ function requestLogger() {
           duration
         });
       }
-      
+
       return originalEnd.apply(this, args);
     };
-    
+
     next();
   };
 }
@@ -816,12 +816,12 @@ function secureErrorHandler() {
       error: err.message,
       stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
     });
-    
+
     // Determine safe error response
     let statusCode = err.statusCode || 500;
     let message = 'An error occurred';
     let code = 'INTERNAL_ERROR';
-    
+
     // Map known error types to safe responses
     if (err.name === 'ValidationError') {
       statusCode = 400;
@@ -840,18 +840,18 @@ function secureErrorHandler() {
       message = 'Resource not found';
       code = 'NOT_FOUND';
     }
-    
+
     // Never expose internal details in production
     const response = {
       error: message,
       code,
       requestId: req.requestId
     };
-    
+
     if (process.env.NODE_ENV === 'development') {
       response.details = err.message;
     }
-    
+
     res.status(statusCode).json(response);
   };
 }
@@ -885,10 +885,10 @@ function safeJsonParse(str, defaultValue = null) {
  */
 function getClientIP(req) {
   return req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
-         req.headers['x-real-ip'] ||
-         req.connection?.remoteAddress ||
-         req.socket?.remoteAddress ||
-         'unknown';
+    req.headers['x-real-ip'] ||
+    req.connection?.remoteAddress ||
+    req.socket?.remoteAddress ||
+    'unknown';
 }
 
 /**
@@ -896,9 +896,9 @@ function getClientIP(req) {
  */
 function maskSensitiveData(obj, sensitiveFields = ['password', 'passwordHash', 'token', 'secret', 'apiKey']) {
   if (!obj || typeof obj !== 'object') return obj;
-  
+
   const masked = Array.isArray(obj) ? [...obj] : { ...obj };
-  
+
   for (const key of Object.keys(masked)) {
     if (sensitiveFields.some(sf => key.toLowerCase().includes(sf.toLowerCase()))) {
       masked[key] = '[REDACTED]';
@@ -906,7 +906,7 @@ function maskSensitiveData(obj, sensitiveFields = ['password', 'passwordHash', '
       masked[key] = maskSensitiveData(masked[key], sensitiveFields);
     }
   }
-  
+
   return masked;
 }
 
@@ -927,13 +927,13 @@ function generateCSRFToken(sessionId) {
 function validateCSRFToken(sessionId, token) {
   const stored = csrfTokens.get(sessionId);
   if (!stored) return false;
-  
+
   // Token valid for 1 hour
   if (Date.now() - stored.createdAt > 3600000) {
     csrfTokens.delete(sessionId);
     return false;
   }
-  
+
   return stored.token === token;
 }
 
@@ -946,11 +946,11 @@ module.exports = {
   checkPermission,
   verifyResourceOwnership,
   ROLE_PERMISSIONS,
-  
+
   // A02 - Security Misconfiguration
   securityHeaders,
   strictCors,
-  
+
   // A04 - Cryptographic Failures
   validatePassword,
   PASSWORD_POLICY,
@@ -958,35 +958,35 @@ module.exports = {
   hashData,
   encryptData,
   decryptData,
-  
+
   // A05 - Injection
   sanitizeInput,
   sanitizeRequestBody,
   isValidEmail,
   isValidPhone,
   SANITIZATION_PATTERNS,
-  
+
   // A07 - Authentication Failures
   rateLimit,
   trackLoginAttempt,
   isAccountLocked,
   validateSession,
   resetRateLimits,  // For testing only
-  
+
   // A08 - Data Integrity
   verifyRequestIntegrity,
   generateRequestSignature,
-  
+
   // A09 - Logging
   securityAuditLog,
   requestLogger,
   flushAuditLog,
-  
+
   // A10 - Error Handling
   secureErrorHandler,
   asyncHandler,
   safeJsonParse,
-  
+
   // Utilities
   getClientIP,
   maskSensitiveData,

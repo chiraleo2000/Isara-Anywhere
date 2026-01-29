@@ -80,6 +80,12 @@ const ArrowLeftIcon: React.FC<{ className?: string }> = ({ className }) => (
   </svg>
 );
 
+const CheckIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+  </svg>
+);
+
 interface DoctorProfilePageProps {
   readonly onBack?: () => void;
 }
@@ -267,7 +273,7 @@ const LockIcon: React.FC<{ className?: string }> = ({ className }) => (
 );
 
 export default function DoctorProfilePage({ onBack }: DoctorProfilePageProps) {
-  const { user, refreshUser, updateUser } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState(user?.avatarUrl || '');
@@ -386,15 +392,7 @@ export default function DoctorProfilePage({ onBack }: DoctorProfilePageProps) {
           )}
           <h1 className="text-2xl font-bold text-gray-800">โปรไฟล์แพทย์</h1>
         </div>
-        {!editing ? (
-          <button
-            onClick={() => setEditing(true)}
-            className="flex items-center gap-2 px-4 py-2 text-emerald-600 hover:bg-emerald-50 rounded-xl transition-colors"
-          >
-            <EditIcon className="w-4 h-4" />
-            แก้ไข
-          </button>
-        ) : (
+        {editing ? (
           <div className="flex gap-2">
             <button
               onClick={() => setEditing(false)}
@@ -408,10 +406,18 @@ export default function DoctorProfilePage({ onBack }: DoctorProfilePageProps) {
               disabled={saving}
               className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 disabled:opacity-50"
             >
-              <SaveIcon className="w-4 h-4" />
+              <CheckIcon className="w-4 h-4" />
               {saving ? 'กำลังบันทึก...' : 'บันทึก'}
             </button>
           </div>
+        ) : (
+          <button
+            onClick={() => setEditing(true)}
+            className="flex items-center gap-2 px-4 py-2 text-emerald-600 hover:bg-emerald-50 rounded-xl transition-colors"
+          >
+            <EditIcon className="w-4 h-4" />
+            แก้ไข
+          </button>
         )}
       </div>
 

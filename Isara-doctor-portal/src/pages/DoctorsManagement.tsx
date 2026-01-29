@@ -254,7 +254,7 @@ const DoctorsManagement: React.FC = () => {
       status: 'active',
       joinDate: new Date().toISOString().split('T')[0],
       languages: newDoctor.languages.split(',').map((l) => l.trim()),
-      experience: parseInt(newDoctor.experience) || 0,
+      experience: Number.parseInt(newDoctor.experience, 10) || 0,
       patientsHandled: 0,
       isVerified: false,
     };
@@ -511,14 +511,14 @@ const DoctorsManagement: React.FC = () => {
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() => (window.location.href = `mailto:${doctor.email}`)}
+                        onClick={() => { globalThis.location.href = `mailto:${doctor.email}`; }}
                         className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
                         title="Send Email"
                       >
                         <EnvelopeIcon className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => (window.location.href = `tel:${doctor.phone}`)}
+                        onClick={() => { globalThis.location.href = `tel:${doctor.phone}`; }}
                         className="p-2 text-green-600 hover:bg-green-50 rounded-lg"
                         title="Call"
                       >
@@ -576,10 +576,11 @@ const DoctorsManagement: React.FC = () => {
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="doctor-name" className="block text-sm font-medium text-gray-700 mb-1">
                     Full Name *
                   </label>
                   <input
+                    id="doctor-name"
                     type="text"
                     value={newDoctor.name}
                     onChange={(e) => setNewDoctor({ ...newDoctor, name: e.target.value })}
@@ -590,10 +591,11 @@ const DoctorsManagement: React.FC = () => {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="doctor-specialty" className="block text-sm font-medium text-gray-700 mb-1">
                       Specialty *
                     </label>
                     <select
+                      id="doctor-specialty"
                       value={newDoctor.specialty}
                       onChange={(e) => setNewDoctor({ ...newDoctor, specialty: e.target.value })}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
@@ -607,10 +609,11 @@ const DoctorsManagement: React.FC = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="doctor-department" className="block text-sm font-medium text-gray-700 mb-1">
                       Department
                     </label>
                     <select
+                      id="doctor-department"
                       value={newDoctor.department}
                       onChange={(e) => setNewDoctor({ ...newDoctor, department: e.target.value })}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
@@ -626,10 +629,11 @@ const DoctorsManagement: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="doctor-license" className="block text-sm font-medium text-gray-700 mb-1">
                     Medical License Number *
                   </label>
                   <input
+                    id="doctor-license"
                     type="text"
                     value={newDoctor.licenseNumber}
                     onChange={(e) => setNewDoctor({ ...newDoctor, licenseNumber: e.target.value })}
@@ -640,10 +644,11 @@ const DoctorsManagement: React.FC = () => {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="doctor-phone" className="block text-sm font-medium text-gray-700 mb-1">
                       Phone
                     </label>
                     <input
+                      id="doctor-phone"
                       type="tel"
                       value={newDoctor.phone}
                       onChange={(e) => setNewDoctor({ ...newDoctor, phone: e.target.value })}
@@ -652,10 +657,11 @@ const DoctorsManagement: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="doctor-email" className="block text-sm font-medium text-gray-700 mb-1">
                       Email *
                     </label>
                     <input
+                      id="doctor-email"
                       type="email"
                       value={newDoctor.email}
                       onChange={(e) => setNewDoctor({ ...newDoctor, email: e.target.value })}
@@ -667,10 +673,11 @@ const DoctorsManagement: React.FC = () => {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="doctor-languages" className="block text-sm font-medium text-gray-700 mb-1">
                       Languages (comma separated)
                     </label>
                     <input
+                      id="doctor-languages"
                       type="text"
                       value={newDoctor.languages}
                       onChange={(e) => setNewDoctor({ ...newDoctor, languages: e.target.value })}
@@ -679,10 +686,11 @@ const DoctorsManagement: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="doctor-experience" className="block text-sm font-medium text-gray-700 mb-1">
                       Years of Experience
                     </label>
                     <input
+                      id="doctor-experience"
                       type="number"
                       value={newDoctor.experience}
                       onChange={(e) => setNewDoctor({ ...newDoctor, experience: e.target.value })}

@@ -26,7 +26,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
   const [dragActive, setDragActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [previewImage, setPreviewImage] = useState<ImageFile | null>(null);
-  
+
   const inputRef = useRef<HTMLInputElement>(null);
 
   const validateFile = (file: File): string | null => {
@@ -42,28 +42,28 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
   const processFiles = useCallback((files: FileList | File[]) => {
     setError(null);
     const fileArray = Array.from(files);
-    
+
     if (images.length + fileArray.length > maxImages) {
       setError(`อัพโหลดได้สูงสุด ${maxImages} รูป`);
       return;
     }
 
     const newImages: ImageFile[] = [];
-    
+
     for (const file of fileArray) {
       const validationError = validateFile(file);
       if (validationError) {
         setError(validationError);
         return;
       }
-      
+
       newImages.push({
         id: `img_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         file,
         preview: URL.createObjectURL(file),
       });
     }
-    
+
     const updatedImages = [...images, ...newImages];
     setImages(updatedImages);
     onImagesChange(updatedImages);
@@ -83,7 +83,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    
+
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       processFiles(e.dataTransfer.files);
     }
@@ -100,7 +100,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
     if (imageToRemove) {
       URL.revokeObjectURL(imageToRemove.preview);
     }
-    
+
     const updatedImages = images.filter(img => img.id !== id);
     setImages(updatedImages);
     onImagesChange(updatedImages);
@@ -112,7 +112,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
       // For now, just open file picker with camera capture
       // In production, you'd implement a full camera capture UI
       stream.getTracks().forEach(track => track.stop());
-      
+
       if (inputRef.current) {
         inputRef.current.setAttribute('capture', 'environment');
         inputRef.current.click();
@@ -135,22 +135,26 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
           {images.length}/{maxImages} รูป
         </span>
       </div>
-      
+
       {/* Drop Zone */}
       <div
+        role="button"
+        tabIndex={images.length >= maxImages ? -1 : 0}
         onDragEnter={handleDrag}
         onDragLeave={handleDrag}
         onDragOver={handleDrag}
         onDrop={handleDrop}
         className={`
           relative border-2 border-dashed rounded-2xl p-8 text-center transition-all
-          ${dragActive 
-            ? 'border-blue-500 bg-blue-50' 
+          ${dragActive
+            ? 'border-blue-500 bg-blue-50'
             : 'border-gray-300 bg-gray-50 hover:border-blue-400 hover:bg-blue-50/50'
           }
           ${images.length >= maxImages ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
         `}
         onClick={() => images.length < maxImages && inputRef.current?.click()}
+        onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && images.length < maxImages) { e.preventDefault(); inputRef.current?.click(); } }}
+        aria-label="อัพโหลดรูปภาพ"
       >
         <input
           ref={inputRef}
@@ -160,7 +164,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
           onChange={handleFileInput}
           className="hidden"
         />
-        
+
         <div className="space-y-3">
           <div className="flex justify-center gap-4">
             <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center">
@@ -170,14 +174,14 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
               <Camera className="w-8 h-8 text-emerald-600" />
             </div>
           </div>
-          
+
           <div>
             <p className="font-medium text-gray-700">ลากไฟล์มาวางที่นี่ หรือคลิกเพื่อเลือก</p>
             <p className="text-sm text-gray-500 mt-1">
               รองรับ JPEG, PNG, WebP ขนาดไม่เกิน {maxSizeMB}MB
             </p>
           </div>
-          
+
           <div className="flex justify-center gap-3">
             <button
               type="button"
@@ -204,14 +208,14 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
           </div>
         </div>
       </div>
-      
+
       {/* Error Message */}
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-red-700 text-sm">
           {error}
         </div>
       )}
-      
+
       {/* Image Previews */}
       {images.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
@@ -225,7 +229,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
                 alt="Preview"
                 className="w-full h-full object-cover"
               />
-              
+
               {/* Overlay Actions */}
               <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                 <button
@@ -243,7 +247,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
                   <X className="w-5 h-5 text-white" />
                 </button>
               </div>
-              
+
               {/* File Name */}
               <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2">
                 <p className="text-xs text-white truncate">{image.file.name}</p>
@@ -252,12 +256,16 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
           ))}
         </div>
       )}
-      
+
       {/* Full Preview Modal */}
       {previewImage && (
         <div
+          role="button"
+          tabIndex={0}
           className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
           onClick={() => setPreviewImage(null)}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') { e.preventDefault(); setPreviewImage(null); } }}
+          aria-label="Close preview"
         >
           <div className="relative max-w-4xl max-h-[90vh]">
             <img

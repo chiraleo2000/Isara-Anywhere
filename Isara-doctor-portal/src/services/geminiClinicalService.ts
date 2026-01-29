@@ -60,9 +60,9 @@ export const TASK_CONFIGS: Record<string, TaskConfig> = {
 };
 
 class GeminiClinicalService {
-  private genAI: GoogleGenerativeAI | null = null;
-  private models: Map<string, GenerativeModel> = new Map();
-  private isConfigured: boolean = false;
+  private readonly genAI: GoogleGenerativeAI | null = null;
+  private readonly models: Map<string, GenerativeModel> = new Map();
+  private readonly isConfigured: boolean = false;
 
   constructor() {
     if (!GEMINI_API_KEY || GEMINI_API_KEY === 'xxx') {
@@ -87,8 +87,9 @@ class GeminiClinicalService {
     if (!this.genAI || !this.isConfigured) return null;
 
     // Check if we already have a cached model for this task
-    if (this.models.has(taskType)) {
-      return this.models.get(taskType)!;
+    const cachedModel = this.models.get(taskType);
+    if (cachedModel) {
+      return cachedModel;
     }
 
     const config = TASK_CONFIGS[taskType];
@@ -180,7 +181,7 @@ class GeminiClinicalService {
     plan: string;
   }> {
     const model = this.getModelForTask('summarization');
-    
+
     // Fallback if not configured
     if (!model) {
       return {
@@ -208,11 +209,11 @@ Please provide:
 Return ONLY valid JSON with these fields: chiefComplaint, historyOfPresentIllness, assessment, plan`;
 
       const result = await model.generateContent(prompt);
-      const response = await result.response;
+      const response = result.response;
       const text = response.text();
 
       // Parse JSON response
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      const jsonMatch = /\{[\s\S]*\}/.exec(text);
       if (jsonMatch) {
         return JSON.parse(jsonMatch[0]);
       }
@@ -228,7 +229,7 @@ Return ONLY valid JSON with these fields: chiefComplaint, historyOfPresentIllnes
 
   async suggestICD10Codes(diagnosisText: string): Promise<DiagnosisCode[]> {
     const model = this.getModelForTask('icd-coding');
-    
+
     if (!model) {
       return [{
         code: 'R69',
@@ -255,10 +256,10 @@ Return ONLY valid JSON array with this structure:
 Provide 1-3 most relevant codes.`;
 
       const result = await model.generateContent(prompt);
-      const response = await result.response;
+      const response = result.response;
       const text = response.text();
 
-      const jsonMatch = text.match(/\[[\s\S]*\]/);
+      const jsonMatch = /\[[\s\S]*\]/.exec(text);
       if (jsonMatch) {
         const codes = JSON.parse(jsonMatch[0]);
         return codes.map((c: any) => ({
@@ -282,7 +283,7 @@ Provide 1-3 most relevant codes.`;
     allergies: string[]
   ): Promise<DrugInteraction[]> {
     const model = this.getModelForTask('drug-interaction');
-    
+
     if (!model) {
       // Return a warning that interactions couldn't be checked
       return [{
@@ -318,10 +319,10 @@ Return ONLY valid JSON array:
 If no interactions found, return empty array [].`;
 
       const result = await model.generateContent(prompt);
-      const response = await result.response;
+      const response = result.response;
       const text = response.text();
 
-      const jsonMatch = text.match(/\[[\s\S]*\]/);
+      const jsonMatch = /\[[\s\S]*\]/.exec(text);
       if (jsonMatch) {
         return JSON.parse(jsonMatch[0]);
       }
@@ -342,7 +343,7 @@ If no interactions found, return empty array [].`;
     patientGender: string
   ): Promise<string[]> {
     const model = this.getModelForTask('diagnosis');
-    
+
     if (!model) {
       return [
         'AI diagnosis assistance unavailable',
@@ -362,10 +363,10 @@ Provide 5-10 possible diagnoses ranked by likelihood. Return ONLY a JSON array o
 ["diagnosis 1", "diagnosis 2", ...]`;
 
       const result = await model.generateContent(prompt);
-      const response = await result.response;
+      const response = result.response;
       const text = response.text();
 
-      const jsonMatch = text.match(/\[[\s\S]*\]/);
+      const jsonMatch = /\[[\s\S]*\]/.exec(text);
       if (jsonMatch) {
         return JSON.parse(jsonMatch[0]);
       }
@@ -395,7 +396,7 @@ Provide 5-10 possible diagnoses ranked by likelihood. Return ONLY a JSON array o
     warnings: string[];
   }> {
     const model = this.getModelForTask('treatment');
-    
+
     if (!model) {
       return {
         medications: ['AI recommendation unavailable - consult guidelines'],
@@ -424,10 +425,10 @@ Provide treatment recommendations. Return ONLY valid JSON:
 }`;
 
       const result = await model.generateContent(prompt);
-      const response = await result.response;
+      const response = result.response;
       const text = response.text();
 
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      const jsonMatch = /\{[\s\S]*\}/.exec(text);
       if (jsonMatch) {
         return JSON.parse(jsonMatch[0]);
       }
@@ -450,7 +451,7 @@ Provide treatment recommendations. Return ONLY valid JSON:
     dosage: string;
   }> {
     const model = this.getModelForTask('medical-qa');
-    
+
     if (!model) {
       return {
         name: drugName,
@@ -476,10 +477,10 @@ Return ONLY valid JSON:
 }`;
 
       const result = await model.generateContent(prompt);
-      const response = await result.response;
+      const response = result.response;
       const text = response.text();
 
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      const jsonMatch = /\{[\s\S]*\}/.exec(text);
       if (jsonMatch) {
         return JSON.parse(jsonMatch[0]);
       }
@@ -495,12 +496,12 @@ Return ONLY valid JSON:
 
   async askMedicalQuestion(question: string, context?: any): Promise<ClinicalAIResponse> {
     const model = this.getModelForTask('medical-qa');
-    
+
     if (!model) {
       return {
         type: 'medical-qa',
         suggestions: ['AI service not configured. Please set up your Gemini API key to enable AI-powered responses.'],
-        details: { 
+        details: {
           answer: 'The AI clinical assistant is currently unavailable. Please configure the VITE_GEMINI_API_KEY environment variable to enable this feature.',
           status: 'api_not_configured'
         },
@@ -516,7 +517,7 @@ Return ONLY valid JSON:
 Provide a detailed, evidence-based answer. Include references to clinical guidelines when relevant.`;
 
       const result = await model.generateContent(prompt);
-      const response = await result.response;
+      const response = result.response;
       const text = response.text();
 
       return {
@@ -551,7 +552,7 @@ Provide a detailed, evidence-based answer. Include references to clinical guidel
     conversationHistory?: { role: string; content: string }[]
   ): Promise<string> {
     const model = this.getModelForTask('clinical-chat');
-    
+
     if (!model) {
       return this.getFallbackChatResponse(message, patientContext);
     }
@@ -559,9 +560,9 @@ Provide a detailed, evidence-based answer. Include references to clinical guidel
     try {
       // Get system instruction for clinical chat
       const systemPrompt = this.getSystemPrompt('clinical-chat');
-      
+
       let contextPrompt = '';
-      
+
       if (patientContext) {
         contextPrompt = `\n\nPatient Context:
 - Name: ${patientContext.name || 'Unknown'}
@@ -575,7 +576,7 @@ Provide a detailed, evidence-based answer. Include references to clinical guidel
       let historyPrompt = '';
       if (conversationHistory && conversationHistory.length > 0) {
         const recentHistory = conversationHistory.slice(-6);
-        historyPrompt = '\n\nRecent conversation:\n' + 
+        historyPrompt = '\n\nRecent conversation:\n' +
           recentHistory.map(m => `${m.role}: ${m.content}`).join('\n');
       }
 
@@ -586,7 +587,7 @@ Doctor's question: ${message}
 Provide a concise, clinically relevant response. Be helpful and actionable.`;
 
       const result = await model.generateContent(prompt);
-      const response = await result.response;
+      const response = result.response;
       return response.text();
 
     } catch (error: any) {
@@ -600,7 +601,7 @@ Provide a concise, clinically relevant response. Be helpful and actionable.`;
    */
   private getFallbackChatResponse(message: string, patientContext?: any): string {
     const lowerMessage = message.toLowerCase();
-    
+
     if (lowerMessage.includes('drug interaction') || lowerMessage.includes('drug-drug')) {
       return `🔍 **Drug Interactions Query**
 
@@ -615,7 +616,7 @@ To provide accurate drug interaction information, the AI service needs to be con
 
 💡 *Configure VITE_GEMINI_API_KEY for personalized interaction checking.*`;
     }
-    
+
     if (lowerMessage.includes('chest pain') || lowerMessage.includes('differential')) {
       return `🩺 **Differential Diagnosis - Chest Pain**
 
@@ -636,7 +637,7 @@ To provide accurate drug interaction information, the AI service needs to be con
 
 💡 *Configure AI for patient-specific analysis.*`;
     }
-    
+
     if (lowerMessage.includes('hypertension') || lowerMessage.includes('blood pressure')) {
       return `📋 **Hypertension Management**
 
@@ -711,7 +712,7 @@ Select a patient or ask a clinical question to get started.`;
     }
 
     return {
-      value: parseFloat(bmi.toFixed(1)),
+      value: Number.parseFloat(bmi.toFixed(1)),
       category,
       interpretation,
     };
@@ -737,7 +738,7 @@ Select a patient or ask a clinical question to get started.`;
     const maxValue = Math.max(creatinine / kappa, 1);
 
     const gfr = 141 * Math.pow(minValue, alpha) * Math.pow(maxValue, -1.209) *
-                Math.pow(0.993, age) * genderFactor * raceFactor;
+      Math.pow(0.993, age) * genderFactor * raceFactor;
 
     let category = '';
     let interpretation = '';
@@ -798,18 +799,15 @@ Select a patient or ask a clinical question to get started.`;
     if (score === 0) {
       category = 'Low Risk';
       interpretation = 'Annual stroke risk < 1%';
-      recommendations.push('No anticoagulation recommended');
-      recommendations.push('Consider aspirin or no therapy');
+      recommendations.push('No anticoagulation recommended', 'Consider aspirin or no therapy');
     } else if (score === 1) {
       category = 'Low-Moderate Risk';
       interpretation = 'Annual stroke risk ~1-2%';
-      recommendations.push('Consider anticoagulation');
-      recommendations.push('Shared decision-making with patient');
+      recommendations.push('Consider anticoagulation', 'Shared decision-making with patient');
     } else {
       category = 'High Risk';
       interpretation = `Annual stroke risk ~${score * 2}%`;
-      recommendations.push('Anticoagulation recommended');
-      recommendations.push('Consider direct oral anticoagulants (DOACs)');
+      recommendations.push('Anticoagulation recommended', 'Consider direct oral anticoagulants (DOACs)');
     }
 
     return {
@@ -844,7 +842,7 @@ Select a patient or ask a clinical question to get started.`;
     transcript: string;
   }> {
     const model = this.getModelForTask('summarization');
-    
+
     // Fallback if AI is not configured
     if (!model) {
       return {
@@ -886,14 +884,14 @@ Return ONLY valid JSON:
 }`;
 
       const result = await model.generateContent(prompt);
-      const response = await result.response;
+      const response = result.response;
       const text = response.text();
 
       // Parse JSON response
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      const jsonMatch = /\{[\s\S]*\}/.exec(text);
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0]);
-        
+
         // Combine into a formatted summary
         const summary = `
 📋 **สรุปเวชระเบียน / EMR Summary**

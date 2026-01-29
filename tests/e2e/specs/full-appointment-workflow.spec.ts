@@ -20,13 +20,13 @@
  * 15. Patient views results in Health History
  */
 
-import { test, expect, Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 
 // Environment URLs
 const LOCAL_PATIENT = 'http://localhost:3005';
 const LOCAL_DOCTOR = 'http://localhost:3010';
-const CLOUD_PATIENT = 'https://izara-patient-portal-724889190329.asia-southeast1.run.app';
-const CLOUD_DOCTOR = 'https://izara-doctor-portal-724889190329.asia-southeast1.run.app';
+const CLOUD_PATIENT = 'https://izara-patient-portal-hvht4obouq-as.a.run.app';
+const CLOUD_DOCTOR = 'https://izara-doctor-portal-hvht4obouq-as.a.run.app';
 
 // Test credentials from Process docs
 const CREDENTIALS = {
@@ -43,7 +43,7 @@ const DOCTOR_URL = process.env.TEST_ENV === 'cloud' ? CLOUD_DOCTOR : LOCAL_DOCTO
 
 // Helper: Get auth token via API
 async function getToken(request: any, baseUrl: string, creds: { email: string; password: string }): Promise<string> {
-  const response = await request.post(`${baseUrl}/api/auth/login`, {
+  const response = await request.post(`${baseUrl}/auth/login`, {
     data: creds,
     headers: { 'Content-Type': 'application/json' }
   });
@@ -58,7 +58,7 @@ async function getToken(request: any, baseUrl: string, creds: { email: string; p
 // SECTION 1: AUTHENTICATION TESTS (All 5 Users)
 // ============================================================================
 test.describe('Step 1-2: Authentication - All 5 Test Users', () => {
-  
+
   test('1.1 Patient 1 (demo.test) can login - 200', async ({ request }) => {
     const response = await request.post(`${PATIENT_URL}/api/auth/login`, {
       data: CREDENTIALS.patient1,
@@ -203,13 +203,6 @@ test.describe('Step 5-6: Doctor Queue & Appointment Confirmation', () => {
 // SECTION 4: MEETING SYSTEM
 // ============================================================================
 test.describe('Step 7-8: Meeting System (Jitsi Integration)', () => {
-  let doctorToken: string;
-  let patientToken: string;
-
-  test.beforeAll(async ({ request }) => {
-    doctorToken = await getToken(request, DOCTOR_URL, CREDENTIALS.doctor);
-    patientToken = await getToken(request, PATIENT_URL, CREDENTIALS.patient1);
-  });
 
   test('7.1 Video Meeting health check - 200', async ({ request }) => {
     const response = await request.get(`${DOCTOR_URL}/api/video-meeting/health`);
@@ -294,7 +287,7 @@ test.describe('Step 11-12: Transcript & AI Summary', () => {
   test('11.3 AI pre-consultation summary endpoint - 200', async ({ request }) => {
     const response = await request.post(`${DOCTOR_URL}/api/ai/pre-consultation-summary`, {
       data: { patientId: 'PATIENT-DEMO' },
-      headers: { 
+      headers: {
         'Authorization': `Bearer ${doctorToken}`,
         'Content-Type': 'application/json'
       }
@@ -420,7 +413,7 @@ test.describe('Notification System Verification', () => {
 // SECTION 10: HEALTH CHECKS
 // ============================================================================
 test.describe('System Health Checks', () => {
-  
+
   test('Patient Portal API health - 200', async ({ request }) => {
     const response = await request.get(`${PATIENT_URL}/api/health`);
     expect(response.status()).toBe(200);

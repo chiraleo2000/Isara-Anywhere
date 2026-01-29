@@ -6,10 +6,32 @@ This folder contains all database-related scripts for the Izara Telemedicine pla
 
 ```
 scripts/database/
-├── README.md                    # This file
-├── izara-database.sql          # 🔥 UNIFIED database init (schema + seed data)
+├── README.md                     # This file
+├── izara-database.sql            # 🔥 UNIFIED database init (schema + seed data)
+├── init-cloud-db.js              # @deprecated - Use cloud-db-tool.cjs
+├── init-cloud-sql.js             # @deprecated - Use cloud-db-tool.cjs
+├── seed-cloud-sql.js             # @deprecated - Use cloud-db-tool.cjs
+├── test-cloud-db.js              # @deprecated - Use cloud-db-tool.cjs --verify
 └── migrations/
-    └── v1.4.3-fix-categories.sql  # Category format fixes
+    └── v1.4.3-fix-categories.sql # Category format fixes
+```
+
+## ⚠️ Deprecated Scripts
+
+The following scripts are deprecated and will be removed in a future version.
+Use the unified `scripts/cloud-db-tool.cjs` instead:
+
+| Old Script | New Command |
+|------------|-------------|
+| `init-cloud-db.js` | `node scripts/cloud-db-tool.cjs --all` |
+| `init-cloud-sql.js` | `node scripts/cloud-db-tool.cjs --all` |
+| `seed-cloud-sql.js` | `node scripts/cloud-db-tool.cjs --all` |
+| `test-cloud-db.js` | `node scripts/cloud-db-tool.cjs --verify` |
+
+**Environment Variable Required:**
+
+```powershell
+$env:DB_PASSWORD = "your_password"
 ```
 
 ## 🚀 Quick Start
@@ -34,17 +56,17 @@ Get-Content scripts\database\izara-database.sql | docker exec -i izara-postgres 
 Get-Content scripts\database\migrations\v1.4.3-fix-categories.sql | docker exec -i izara-postgres psql -U postgres -d izara_phase1
 ```
 
-> **Note:** This project uses PostgreSQL as a Docker service. NO Cloud SQL is used.
+> **Note:** This project uses PostgreSQL as a Docker service. Cloud SQL scripts require DB_PASSWORD environment variable.
 
 ## 📋 Test Credentials
 
 | Role | Email | Password |
 |------|-------|----------|
-| Patient | demo.test@gmail.com | P@ssw0rd |
-| Patient | Somchai.Mankong@gmail.com | P@ssw0rd |
-| Patient | Anan.Khayanrian@gmail.com | P@ssw0rd |
-| Doctor | doctor.test@izara.com | IzaraDoctor@2024 |
-| Admin | admin.test@izara.com | IzaraAdmin@2024 |
+| Patient | <demo.test@gmail.com> | YOUR_TEST_PASSWORD |
+| Patient | <Somchai.Mankong@gmail.com> | YOUR_TEST_PASSWORD |
+| Patient | <Anan.Khayanrian@gmail.com> | YOUR_TEST_PASSWORD |
+| Doctor | <doctor.test@izara.com> | YOUR_TEST_DOCTOR_PASSWORD |
+| Admin | <admin.test@izara.com> | YOUR_TEST_ADMIN_PASSWORD |
 
 ## 📊 Database Overview
 
@@ -64,6 +86,7 @@ Get-Content scripts\database\migrations\v1.4.3-fix-categories.sql | docker exec 
 ### Medical Content Categories
 
 Frontend uses hyphenated format for filters:
+
 - `general-health`, `nutrition`, `exercise`, `mental-health`
 - `chronic-disease`, `preventive-care`, `medications`, `first-aid`
 
@@ -80,3 +103,5 @@ Frontend uses hyphenated format for filters:
 - The `izara-database.sql` file is idempotent (safe to re-run)
 - Extensions required: uuid-ossp, pgcrypto, vector (pgvector)
 - **NO Cloud SQL used** - PostgreSQL runs as Docker service
+
+

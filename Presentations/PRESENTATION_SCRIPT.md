@@ -414,9 +414,9 @@ Draft → Pending → Published
 
 | Role | Email | Password |
 |------|-------|----------|
-| Patient | demo.test@gmail.com | P@ssw0rd |
-| Doctor | doctor.test@izara.com | IzaraDoctor@2024 |
-| Admin | admin.test@izara.com | IzaraAdmin@2024 |
+| Patient | demo.test@gmail.com | YOUR_TEST_PASSWORD |
+| Doctor | doctor.test@izara.com | YOUR_TEST_DOCTOR_PASSWORD |
+| Admin | admin.test@izara.com | YOUR_TEST_ADMIN_PASSWORD |
 
 ## Development URLs
 
@@ -447,3 +447,5 @@ Draft → Pending → Published
 ---
 
 *End of Presentation Script - Last Updated: December 15, 2025*
+
+

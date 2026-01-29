@@ -242,7 +242,10 @@ const MedicalContentLibrary: React.FC = () => {
             {featuredContent.slice(0, 3).map((article) => (
               <div
                 key={article.id}
+                role="button"
+                tabIndex={0}
                 onClick={() => handleViewArticle(article)}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleViewArticle(article); } }}
                 className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl p-6 text-white cursor-pointer hover:shadow-lg transition-shadow"
               >
                 <div className="flex items-center gap-2 mb-3">
@@ -316,11 +319,10 @@ const MedicalContentLibrary: React.FC = () => {
         <div className="flex gap-2 pb-2">
           <button
             onClick={() => setSelectedCategory('all')}
-            className={`px-4 py-2 rounded-full whitespace-nowrap transition-colors ${
-              selectedCategory === 'all'
+            className={`px-4 py-2 rounded-full whitespace-nowrap transition-colors ${selectedCategory === 'all'
                 ? 'bg-emerald-600 text-white'
                 : 'bg-white text-gray-700 hover:bg-emerald-50'
-            }`}
+              }`}
           >
             ทั้งหมด
           </button>
@@ -328,11 +330,10 @@ const MedicalContentLibrary: React.FC = () => {
             <button
               key={cat.id}
               onClick={() => setSelectedCategory(cat.id)}
-              className={`px-4 py-2 rounded-full whitespace-nowrap transition-colors ${
-                selectedCategory === cat.id
+              className={`px-4 py-2 rounded-full whitespace-nowrap transition-colors ${selectedCategory === cat.id
                   ? 'bg-emerald-600 text-white'
                   : 'bg-white text-gray-700 hover:bg-emerald-50'
-              }`}
+                }`}
             >
               {cat.icon} {cat.nameTh}
             </button>
@@ -354,7 +355,10 @@ const MedicalContentLibrary: React.FC = () => {
           {filteredContent.map((article) => (
             <div
               key={article.id}
+              role="button"
+              tabIndex={0}
               onClick={() => handleViewArticle(article)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleViewArticle(article); } }}
               className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
             >
               {/* Thumbnail */}
@@ -525,7 +529,7 @@ const MedicalContentLibrary: React.FC = () => {
                 <div
                   dangerouslySetInnerHTML={{
                     __html: (selectedArticle.contentTh || selectedArticle.content || '')
-                      .replace(/\n/g, '<br />')
+                      .replaceAll('\n', '<br />')
                   }}
                 />
               </div>

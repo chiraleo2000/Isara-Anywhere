@@ -9,8 +9,8 @@
  * NOTE: googleapis is lazy-loaded to avoid slow Cloud Run cold starts
  */
 
-const path = require('path');
-const fs = require('fs');
+const path = require('node:path');
+const fs = require('node:fs');
 
 // Lazy-loaded to avoid slow Cloud Run cold starts
 let google = null;
@@ -308,16 +308,16 @@ class EmailService {
     try {
       // Try to load service account credentials
       const keyFilePath = path.join(__dirname, '..', 'public', 'izara-telemedicine-dd0b6abe2bc8.json');
-      
+
       if (fs.existsSync(keyFilePath)) {
         // Lazy-load googleapis only when needed
         const google = getGoogleApis();
-        
+
         const auth = new google.auth.GoogleAuth({
           keyFile: keyFilePath,
           scopes: ['https://www.googleapis.com/auth/gmail.send']
         });
-        
+
         this.gmail = google.gmail({ version: 'v1', auth });
         this.initialized = true;
         console.log('✅ Email service initialized with service account');
@@ -336,7 +336,7 @@ class EmailService {
    */
   encodeMessage(to, subject, htmlContent, textContent) {
     const boundary = 'boundary_' + Date.now();
-    
+
     const message = [
       `From: Izara Doctor Portal <${this.senderEmail}>`,
       `To: ${to}`,
@@ -359,8 +359,8 @@ class EmailService {
 
     return Buffer.from(message)
       .toString('base64')
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
+      .replaceAll('+', '-')
+      .replaceAll('/', '_')
       .replace(/=+$/, '');
   }
 
@@ -381,7 +381,7 @@ class EmailService {
 
     try {
       const encodedMessage = this.encodeMessage(to, template.subject, template.html, template.text);
-      
+
       await this.gmail.users.messages.send({
         userId: 'me',
         requestBody: {

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PatientRecord } from '../types';
 import { patientDataService } from '../services/patientDataService';
@@ -35,7 +35,7 @@ const TestHarness: React.FC<TestHarnessProps> = ({ doctor, patients: initialPati
   const [chatResponse, setChatResponse] = useState<string>('');
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(patients[0]?.id || null);
   const [status, setStatus] = useState<string>('idle');
-  
+
   // Comprehensive testing state
   const [activeTab, setActiveTab] = useState<'overview' | 'patients' | 'emr' | 'labs' | 'imaging' | 'prescriptions' | 'timeline' | 'ai' | 'navigation'>('overview');
   const [testResults, setTestResults] = useState<TestResult[]>([]);
@@ -65,7 +65,7 @@ const TestHarness: React.FC<TestHarnessProps> = ({ doctor, patients: initialPati
   const runTest = async (testName: string, testFn: () => Promise<any>): Promise<TestResult> => {
     const result: TestResult = { name: testName, status: 'running' };
     setTestResults(prev => [...prev.filter(t => t.name !== testName), result]);
-    
+
     try {
       const data = await testFn();
       const passed: TestResult = { name: testName, status: 'passed', message: 'Success', data };
@@ -143,7 +143,7 @@ const TestHarness: React.FC<TestHarnessProps> = ({ doctor, patients: initialPati
   const runAllTests = async () => {
     setRunningAllTests(true);
     setTestResults([]);
-    
+
     await testPatientsList();
     await testPatientById();
     await testEMRRecords();
@@ -152,7 +152,7 @@ const TestHarness: React.FC<TestHarnessProps> = ({ doctor, patients: initialPati
     await testImagingResults();
     await testEHRTimeline();
     await testGeminiAPI();
-    
+
     setRunningAllTests(false);
   };
 
@@ -239,13 +239,13 @@ const TestHarness: React.FC<TestHarnessProps> = ({ doctor, patients: initialPati
         <div className="max-w-7xl mx-auto">
           <h1 className="text-3xl font-bold">🧪 Comprehensive Test Harness</h1>
           <p className="text-indigo-200 mt-1">Full feature testing for Isara Doctor Portal</p>
-          
+
           {/* Patient Selector in Header */}
           <div className="mt-4 flex items-center gap-4">
             <label className="text-sm font-medium">Active Patient Context:</label>
-            <select 
-              value={selectedPatientId || ''} 
-              onChange={(e) => setSelectedPatientId(e.target.value)} 
+            <select
+              value={selectedPatientId || ''}
+              onChange={(e) => setSelectedPatientId(e.target.value)}
               className="p-2 rounded bg-white text-gray-800 min-w-64"
             >
               {patients.map((p) => (
@@ -269,11 +269,10 @@ const TestHarness: React.FC<TestHarnessProps> = ({ doctor, patients: initialPati
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
-                  activeTab === tab.id 
-                    ? 'border-indigo-600 text-indigo-600 bg-indigo-50' 
+                className={`px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${activeTab === tab.id
+                    ? 'border-indigo-600 text-indigo-600 bg-indigo-50'
                     : 'border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                }`}
+                  }`}
               >
                 {tab.label}
               </button>
@@ -317,7 +316,7 @@ const TestHarness: React.FC<TestHarnessProps> = ({ doctor, patients: initialPati
             <div className="bg-white p-6 rounded-lg shadow">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold">Automated Test Suite</h2>
-                <button 
+                <button
                   onClick={runAllTests}
                   disabled={runningAllTests}
                   className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
@@ -325,7 +324,7 @@ const TestHarness: React.FC<TestHarnessProps> = ({ doctor, patients: initialPati
                   {runningAllTests ? '⟳ Running Tests...' : '▶ Run All Tests'}
                 </button>
               </div>
-              
+
               {testResults.length > 0 && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                   {testResults.map((test) => (
@@ -383,7 +382,7 @@ const TestHarness: React.FC<TestHarnessProps> = ({ doctor, patients: initialPati
                   </button>
                 </div>
               </div>
-              
+
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead className="bg-gray-50">
@@ -412,16 +411,15 @@ const TestHarness: React.FC<TestHarnessProps> = ({ doctor, patients: initialPati
                           </div>
                         </td>
                         <td className="px-4 py-2">
-                          <span className={`px-2 py-1 rounded text-xs ${
-                            patient.riskLevel === 'high' ? 'bg-red-100 text-red-700' :
-                            patient.riskLevel === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                            'bg-green-100 text-green-700'
-                          }`}>
+                          <span className={`px-2 py-1 rounded text-xs ${patient.riskLevel === 'high' ? 'bg-red-100 text-red-700' :
+                              patient.riskLevel === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                                'bg-green-100 text-green-700'
+                            }`}>
                             {patient.riskLevel || 'low'}
                           </span>
                         </td>
                         <td className="px-4 py-2">
-                          <button 
+                          <button
                             onClick={() => setSelectedPatientId(patient.id)}
                             className="text-indigo-600 hover:underline text-sm"
                           >
@@ -439,7 +437,7 @@ const TestHarness: React.FC<TestHarnessProps> = ({ doctor, patients: initialPati
             {selectedPatientId && (
               <div className="bg-white p-6 rounded-lg shadow">
                 <h3 className="text-lg font-bold mb-4">Selected Patient Details: {selectedPatientId}</h3>
-                <button 
+                <button
                   onClick={() => previewData('patient', () => patientDataService.getPatientDetails(selectedPatientId!, doctor?.id || 'DOC-DEMO-001'))}
                   className="px-3 py-2 bg-indigo-600 text-white rounded mb-4"
                 >
@@ -474,7 +472,7 @@ const TestHarness: React.FC<TestHarnessProps> = ({ doctor, patients: initialPati
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <h3 className="font-medium mb-2">EMR Records</h3>
-                  <button 
+                  <button
                     onClick={() => previewData('emr', () => patientRecordService.getEMRs(selectedPatientId!))}
                     className="px-3 py-2 bg-indigo-100 text-indigo-700 rounded mb-2 w-full"
                   >
@@ -482,15 +480,15 @@ const TestHarness: React.FC<TestHarnessProps> = ({ doctor, patients: initialPati
                   </button>
                   {dataPreview.type === 'emr' && (
                     <pre className="bg-gray-50 p-4 rounded overflow-auto max-h-80 text-xs">
-                      {dataPreview.loading ? 'Loading...' : 
-                       dataPreview.error ? `Error: ${dataPreview.error}` :
-                       JSON.stringify(dataPreview.data, null, 2)}
+                      {dataPreview.loading ? 'Loading...' :
+                        dataPreview.error ? `Error: ${dataPreview.error}` :
+                          JSON.stringify(dataPreview.data, null, 2)}
                     </pre>
                   )}
                 </div>
                 <div>
                   <h3 className="font-medium mb-2">PHR Data</h3>
-                  <button 
+                  <button
                     onClick={() => previewData('phr', () => patientRecordService.getPHR(selectedPatientId!))}
                     className="px-3 py-2 bg-green-100 text-green-700 rounded mb-2 w-full"
                   >
@@ -498,9 +496,9 @@ const TestHarness: React.FC<TestHarnessProps> = ({ doctor, patients: initialPati
                   </button>
                   {dataPreview.type === 'phr' && (
                     <pre className="bg-gray-50 p-4 rounded overflow-auto max-h-80 text-xs">
-                      {dataPreview.loading ? 'Loading...' : 
-                       dataPreview.error ? `Error: ${dataPreview.error}` :
-                       JSON.stringify(dataPreview.data, null, 2)}
+                      {dataPreview.loading ? 'Loading...' :
+                        dataPreview.error ? `Error: ${dataPreview.error}` :
+                          JSON.stringify(dataPreview.data, null, 2)}
                     </pre>
                   )}
                 </div>
@@ -520,7 +518,7 @@ const TestHarness: React.FC<TestHarnessProps> = ({ doctor, patients: initialPati
                 </button>
               </div>
 
-              <button 
+              <button
                 onClick={() => previewData('labs', () => patientRecordService.getLabResults(selectedPatientId!))}
                 className="px-3 py-2 bg-indigo-100 text-indigo-700 rounded mb-4"
               >
@@ -539,11 +537,10 @@ const TestHarness: React.FC<TestHarnessProps> = ({ doctor, patients: initialPati
                         <div key={idx} className="p-4 border rounded-lg">
                           <div className="flex justify-between items-start mb-2">
                             <div className="font-medium">{lab.orderId || lab.id}</div>
-                            <span className={`px-2 py-1 rounded text-xs ${
-                              lab.status === 'completed' ? 'bg-green-100 text-green-700' :
-                              lab.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                              'bg-blue-100 text-blue-700'
-                            }`}>{lab.status}</span>
+                            <span className={`px-2 py-1 rounded text-xs ${lab.status === 'completed' ? 'bg-green-100 text-green-700' :
+                                lab.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                                  'bg-blue-100 text-blue-700'
+                              }`}>{lab.status}</span>
                           </div>
                           <div className="text-sm text-gray-600 mb-2">
                             Order Date: {lab.orderDate ? new Date(lab.orderDate).toLocaleDateString() : 'N/A'}
@@ -578,7 +575,7 @@ const TestHarness: React.FC<TestHarnessProps> = ({ doctor, patients: initialPati
                 </button>
               </div>
 
-              <button 
+              <button
                 onClick={() => previewData('imaging', () => patientRecordService.getImagingResults(selectedPatientId!))}
                 className="px-3 py-2 bg-indigo-100 text-indigo-700 rounded mb-4"
               >
@@ -600,11 +597,10 @@ const TestHarness: React.FC<TestHarnessProps> = ({ doctor, patients: initialPati
                               <div className="font-medium">{img.imagingType} - {img.bodyPart}</div>
                               <div className="text-sm text-gray-600">{img.studyDescription}</div>
                             </div>
-                            <span className={`px-2 py-1 rounded text-xs ${
-                              img.status === 'completed' ? 'bg-green-100 text-green-700' :
-                              img.status === 'scheduled' ? 'bg-blue-100 text-blue-700' :
-                              'bg-yellow-100 text-yellow-700'
-                            }`}>{img.status}</span>
+                            <span className={`px-2 py-1 rounded text-xs ${img.status === 'completed' ? 'bg-green-100 text-green-700' :
+                                img.status === 'scheduled' ? 'bg-blue-100 text-blue-700' :
+                                  'bg-yellow-100 text-yellow-700'
+                              }`}>{img.status}</span>
                           </div>
                           {img.report && (
                             <div className="mt-2 p-2 bg-gray-50 rounded text-sm">
@@ -630,8 +626,8 @@ const TestHarness: React.FC<TestHarnessProps> = ({ doctor, patients: initialPati
           <div className="space-y-6">
             <div className="bg-white p-6 rounded-lg shadow">
               <h2 className="text-xl font-bold mb-4">Prescription Testing</h2>
-              
-              <button 
+
+              <button
                 onClick={() => previewData('prescriptions', async () => {
                   const res = await fetch('/mockData/prescriptions.json');
                   return res.json();
@@ -653,11 +649,10 @@ const TestHarness: React.FC<TestHarnessProps> = ({ doctor, patients: initialPati
                         <div key={idx} className="p-4 border rounded-lg">
                           <div className="flex justify-between items-start mb-2">
                             <div className="font-medium">{rx.prescriptionId}</div>
-                            <span className={`px-2 py-1 rounded text-xs ${
-                              rx.status === 'active' ? 'bg-green-100 text-green-700' :
-                              rx.status === 'completed' ? 'bg-gray-100 text-gray-700' :
-                              'bg-yellow-100 text-yellow-700'
-                            }`}>{rx.status}</span>
+                            <span className={`px-2 py-1 rounded text-xs ${rx.status === 'active' ? 'bg-green-100 text-green-700' :
+                                rx.status === 'completed' ? 'bg-gray-100 text-gray-700' :
+                                  'bg-yellow-100 text-yellow-700'
+                              }`}>{rx.status}</span>
                           </div>
                           <div className="text-sm text-gray-600 mb-2">
                             Date: {rx.prescriptionDate ? new Date(rx.prescriptionDate).toLocaleDateString() : 'N/A'}
@@ -692,7 +687,7 @@ const TestHarness: React.FC<TestHarnessProps> = ({ doctor, patients: initialPati
                 </button>
               </div>
 
-              <button 
+              <button
                 onClick={() => previewData('timeline', () => patientRecordService.getEHRTimeline(selectedPatientId!))}
                 className="px-3 py-2 bg-indigo-100 text-indigo-700 rounded mb-4"
               >
@@ -746,25 +741,25 @@ const TestHarness: React.FC<TestHarnessProps> = ({ doctor, patients: initialPati
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="bg-white p-6 rounded-lg shadow">
                 <h3 className="text-lg font-bold mb-4">🧠 Ask Medical Question (one-off)</h3>
-                <textarea 
-                  value={aiPrompt} 
-                  onChange={(e) => setAiPrompt(e.target.value)} 
+                <textarea
+                  value={aiPrompt}
+                  onChange={(e) => setAiPrompt(e.target.value)}
                   className="w-full p-3 border rounded-lg h-32"
                   placeholder="Enter a medical question..."
                 />
                 <div className="mt-3 flex gap-2">
-                  <button 
-                    onClick={handleAskAI} 
-                    disabled={status !== 'idle'} 
+                  <button
+                    onClick={handleAskAI}
+                    disabled={status !== 'idle'}
                     className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"
                   >
                     {status === 'calling-ai' ? '⟳ Processing...' : 'Ask AI'}
                   </button>
-                  <button 
-                    onClick={() => { 
-                      setAiPrompt('What are the key differential diagnoses for a 45-year-old male presenting with chest pain and shortness of breath?'); 
-                      setAiResponse(''); 
-                    }} 
+                  <button
+                    onClick={() => {
+                      setAiPrompt('What are the key differential diagnoses for a 45-year-old male presenting with chest pain and shortness of breath?');
+                      setAiResponse('');
+                    }}
                     className="px-3 py-2 bg-gray-200 rounded-lg hover:bg-gray-300"
                   >
                     Load Example
@@ -780,22 +775,22 @@ const TestHarness: React.FC<TestHarnessProps> = ({ doctor, patients: initialPati
 
               <div className="bg-white p-6 rounded-lg shadow">
                 <h3 className="text-lg font-bold mb-4">💬 Clinical Chat (conversation)</h3>
-                <textarea 
-                  value={chatMessage} 
-                  onChange={(e) => setChatMessage(e.target.value)} 
+                <textarea
+                  value={chatMessage}
+                  onChange={(e) => setChatMessage(e.target.value)}
                   className="w-full p-3 border rounded-lg h-32"
                   placeholder="Enter a chat message..."
                 />
                 <div className="mt-3 flex gap-2">
-                  <button 
-                    onClick={handleChatAI} 
-                    disabled={status !== 'idle'} 
+                  <button
+                    onClick={handleChatAI}
+                    disabled={status !== 'idle'}
                     className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50"
                   >
                     {status === 'chatting' ? '⟳ Chatting...' : 'Send Chat'}
                   </button>
-                  <button 
-                    onClick={() => { setChatMessage(''); setChatResponse(''); }} 
+                  <button
+                    onClick={() => { setChatMessage(''); setChatResponse(''); }}
                     className="px-3 py-2 bg-gray-200 rounded-lg hover:bg-gray-300"
                   >
                     Clear
@@ -817,14 +812,14 @@ const TestHarness: React.FC<TestHarnessProps> = ({ doctor, patients: initialPati
                 <div className={`p-4 rounded-lg ${geminiClinicalService.isApiConfigured() ? 'bg-green-50' : 'bg-yellow-50'}`}>
                   <div className="font-medium">Gemini API</div>
                   <div className="text-sm mt-1">
-                    {geminiClinicalService.isApiConfigured() 
-                      ? '✓ API key is configured and ready' 
+                    {geminiClinicalService.isApiConfigured()
+                      ? '✓ API key is configured and ready'
                       : '⚠ Set VITE_GEMINI_API_KEY in your .env file'}
                   </div>
                 </div>
                 <div className="p-4 rounded-lg bg-gray-50">
                   <div className="font-medium">Test AI Connection</div>
-                  <button 
+                  <button
                     onClick={testAIQuestion}
                     className="mt-2 px-3 py-1 bg-indigo-600 text-white rounded text-sm"
                   >
@@ -842,7 +837,7 @@ const TestHarness: React.FC<TestHarnessProps> = ({ doctor, patients: initialPati
             <div className="bg-white p-6 rounded-lg shadow">
               <h2 className="text-xl font-bold mb-4">Navigation Testing</h2>
               <p className="text-gray-600 mb-4">Click any button to navigate to that section and verify it loads correctly.</p>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <h3 className="font-medium text-gray-700">Core Pages</h3>
@@ -896,26 +891,26 @@ const TestHarness: React.FC<TestHarnessProps> = ({ doctor, patients: initialPati
               <div className="bg-white p-6 rounded-lg shadow">
                 <h3 className="text-lg font-bold mb-4">Patient-Specific Pages ({selectedPatientId})</h3>
                 <div className="flex flex-wrap gap-2">
-                  <button 
-                    onClick={() => handleNavigate(`/doctor/${doctor?.id}/patient/${selectedPatientId}`)} 
+                  <button
+                    onClick={() => handleNavigate(`/doctor/${doctor?.id}/patient/${selectedPatientId}`)}
                     className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
                   >
                     View Patient Record
                   </button>
-                  <button 
-                    onClick={() => handleNavigate(`/doctor/${doctor?.id}/emr?patientId=${selectedPatientId}`)} 
+                  <button
+                    onClick={() => handleNavigate(`/doctor/${doctor?.id}/emr?patientId=${selectedPatientId}`)}
                     className="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600"
                   >
                     Create EMR
                   </button>
-                  <button 
-                    onClick={() => handleNavigate(`/doctor/${doctor?.id}/prescribe?patientId=${selectedPatientId}`)} 
+                  <button
+                    onClick={() => handleNavigate(`/doctor/${doctor?.id}/prescribe?patientId=${selectedPatientId}`)}
                     className="px-4 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600"
                   >
                     Prescribe Medication
                   </button>
-                  <button 
-                    onClick={() => handleNavigate(`/doctor/${doctor?.id}/lab-orders?patientId=${selectedPatientId}`)} 
+                  <button
+                    onClick={() => handleNavigate(`/doctor/${doctor?.id}/lab-orders?patientId=${selectedPatientId}`)}
                     className="px-4 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600"
                   >
                     Order Labs
@@ -928,20 +923,20 @@ const TestHarness: React.FC<TestHarnessProps> = ({ doctor, patients: initialPati
             <div className="bg-white p-6 rounded-lg shadow">
               <h3 className="text-lg font-bold mb-4">Developer Tools</h3>
               <div className="flex flex-wrap gap-2">
-                <button 
-                  onClick={() => window.location.reload()} 
+                <button
+                  onClick={() => window.location.reload()}
                   className="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-800"
                 >
                   🔄 Reload App
                 </button>
-                <button 
-                  onClick={() => console.log('Current State:', { patients, selectedPatientId, doctor })} 
+                <button
+                  onClick={() => console.log('Current State:', { patients, selectedPatientId, doctor })}
                   className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
                 >
                   📋 Log State
                 </button>
-                <button 
-                  onClick={() => localStorage.clear()} 
+                <button
+                  onClick={() => localStorage.clear()}
                   className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
                 >
                   🗑️ Clear LocalStorage

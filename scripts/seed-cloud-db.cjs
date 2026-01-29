@@ -24,23 +24,28 @@ const path = require('node:path');
 // CONFIGURATION - Cloud PostgreSQL Service
 // =============================================================================
 
-const args = process.argv.slice(2);
-const verifyOnly = args.includes('--verify');
-const freshStart = args.includes('--fresh');
+const args = new Set(process.argv.slice(2));
+const verifyOnly = args.has('--verify');
+const freshStart = args.has('--fresh');
 
 // Cloud PostgreSQL Configuration
 // Get URL from Cloud Run service
-const CLOUD_POSTGRES_URL = process.env.CLOUD_POSTGRES_URL || 
-  'https://izara-postgres-724889190329.asia-southeast1.run.app';
+const CLOUD_POSTGRES_URL = process.env.CLOUD_POSTGRES_URL ||
+  'https://izara-postgres-hvht4obouq-as.a.run.app';
 
 console.log('\n🌐 Connecting to Cloud PostgreSQL...');
 console.log(`   Service URL: ${CLOUD_POSTGRES_URL}`);
 
-// Database connection config
+// Database connection config - password from environment variable
+const dbPassword = process.env.DB_PASSWORD || process.env.CLOUD_DB_PASSWORD;
+if (!dbPassword && !process.env.DB_HOST) {
+  console.warn('⚠️  Warning: DB_PASSWORD not set. Using default for local development only.');
+}
+
 const config = {
-  host: process.env.CLOUD_DB_HOST || 'izara-postgres',
+  host: process.env.CLOUD_DB_HOST || process.env.DB_HOST || 'izara-postgres',
   user: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD || 'P@ssw0rd',
+  password: dbPassword || process.env.POSTGRES_PASSWORD,
   database: process.env.DB_NAME || 'izara_phase1',
   port: Number.parseInt(process.env.DB_PORT || '5432'),
   ssl: false,  // Cloud Run internal connection
@@ -54,14 +59,13 @@ const pool = new Pool(config);
 
 // =============================================================================
 // PASSWORD HASHES (Pre-computed for consistency)
+// Using shared config module
 // =============================================================================
 
-// P@ssw0rd
-const PATIENT_PASSWORD_HASH = '$2b$10$64bK0EpjyC7quRGJNvRqmuH/jX3mA4dzyzYa2vgA2q.H3ZxkQwAmy';
-// IzaraDoctor@2024
-const DOCTOR_PASSWORD_HASH = '$2b$10$aPN6uhBrLoms36C8/017be2GWqUqaPJa6WaTaZ8LrnwAeaf3GajrO';
-// IzaraAdmin@2024
-const ADMIN_PASSWORD_HASH = '$2b$10$fx5arkpb8YI7lEK5lcHdXeksczdG.qloim/uWghlBZXyxv.dNo/wq';
+const { PASSWORD_HASHES } = require('./lib/db-config.cjs');
+const PATIENT_PASSWORD_HASH = PASSWORD_HASHES.patient;
+const DOCTOR_PASSWORD_HASH = PASSWORD_HASHES.doctor;
+const ADMIN_PASSWORD_HASH = PASSWORD_HASHES.admin;
 
 // =============================================================================
 // MAIN EXECUTION
@@ -88,7 +92,7 @@ async function main() {
         'emr', 'meeting_transcripts', 'meeting_records', 'appointments',
         'consultants', 'doctor_reviews', 'patients', 'doctors', 'users'
       ];
-      
+
       for (const table of tables) {
         try {
           await pool.query(`TRUNCATE TABLE ${table} CASCADE`);
@@ -111,7 +115,7 @@ async function main() {
 
     console.log('\n✅ Cloud database seeding complete!');
     console.log('\n📋 Next Steps:');
-    console.log('   1. Test portals: https://izara-patient-portal-724889190329.asia-southeast1.run.app');
+    console.log('   1. Test portals: https://izara-patient-portal-hvht4obouq-as.a.run.app');
     console.log('   2. Verify data: node scripts/seed-cloud-db.cjs --verify');
     console.log('   3. Run tests: .\\scripts\\deploy.ps1 -Target test\n');
 
@@ -131,29 +135,29 @@ async function main() {
 async function seedAllData() {
   // Import seeding logic from local seeder
   const localSeederPath = path.join(__dirname, 'seeder.cjs');
-  
+
   if (!fs.existsSync(localSeederPath)) {
     throw new Error('Local seeder not found: ' + localSeederPath);
   }
 
   console.log('📥 Using seeding logic from local seeder...\n');
-  
+
   // Execute the same seeding steps as local deployment
   console.log('📝 Step 1: Seeding users (patients, doctors, admin)...');
   await seedUsers();
-  
+
   console.log('📝 Step 2: Seeding medical content...');
   await seedMedicalContent();
-  
+
   console.log('📝 Step 3: Seeding clinical resources...');
   await seedClinicalResources();
-  
+
   console.log('📝 Step 4: Seeding consultants...');
   await seedConsultants();
-  
+
   console.log('📝 Step 5: Seeding knowledge base...');
   await seedKnowledgeBase();
-  
+
   console.log('');
 }
 

@@ -4,7 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { pdpaService, doctorService } from '../../lib/services';
 import { Doctor } from '../../types';
 import {
-  ChevronLeft, Save, Check, Heart, 
+  ChevronLeft, Save, Check, Heart,
   User, Phone, Mail, Home, Users, Stethoscope, Plus, X,
   PenTool, Trash2, Info, Shield, CheckCircle2, Search,
   History, RotateCcw, Clock, Eye
@@ -74,7 +74,7 @@ export default function LivingWillPage() {
   const [showDoctorModal, setShowDoctorModal] = useState(false);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  
+
   // Version history
   const [versions, setVersions] = useState<LivingWillVersion[]>([]);
   const [showVersionModal, setShowVersionModal] = useState(false);
@@ -148,15 +148,15 @@ export default function LivingWillPage() {
 
   const handleRollback = async (versionId: string) => {
     if (!user?.id) return;
-    
-    const confirmed = window.confirm('คุณต้องการกู้คืนพินัยกรรมชีวิตเวอร์ชันนี้หรือไม่? เวอร์ชันปัจจุบันจะถูกบันทึกไว้ในประวัติ');
+
+    const confirmed = globalThis.confirm('คุณต้องการกู้คืนพินัยกรรมชีวิตเวอร์ชันนี้หรือไม่? เวอร์ชันปัจจุบันจะถูกบันทึกไว้ในประวัติ');
     if (!confirmed) return;
 
     setRollingBack(true);
     try {
       const patientId = user.patientId || user.id;
       const result = await pdpaService.rollbackLivingWill(patientId, versionId);
-      
+
       if (result.success) {
         // Reload all data
         await loadData();
@@ -222,15 +222,15 @@ export default function LivingWillPage() {
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    
+
     setIsDrawing(true);
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    
+
     const rect = canvas.getBoundingClientRect();
     const x = 'touches' in e ? e.touches[0].clientX - rect.left : e.clientX - rect.left;
     const y = 'touches' in e ? e.touches[0].clientY - rect.top : e.clientY - rect.top;
-    
+
     ctx.beginPath();
     ctx.moveTo(x, y);
   };
@@ -239,14 +239,14 @@ export default function LivingWillPage() {
     if (!isDrawing) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
-    
+
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    
+
     const rect = canvas.getBoundingClientRect();
     const x = 'touches' in e ? e.touches[0].clientX - rect.left : e.clientX - rect.left;
     const y = 'touches' in e ? e.touches[0].clientY - rect.top : e.clientY - rect.top;
-    
+
     ctx.lineTo(x, y);
     ctx.strokeStyle = '#1a1a1a';
     ctx.lineWidth = 2;
@@ -262,10 +262,10 @@ export default function LivingWillPage() {
   const clearSignature = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    
+
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    
+
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     setForm((prev) => ({ ...prev, digitalSignature: '' }));
   };
@@ -273,7 +273,7 @@ export default function LivingWillPage() {
   const saveSignature = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    
+
     const dataUrl = canvas.toDataURL('image/png');
     setForm((prev) => ({ ...prev, digitalSignature: dataUrl }));
   };
@@ -296,14 +296,14 @@ export default function LivingWillPage() {
 
   const handleSave = async () => {
     if (!user?.id) return;
-    
+
     // Validate
     if (!form.healthcareProxy.primary.name || !form.healthcareProxy.primary.phone) {
       alert('กรุณากรอกข้อมูลผู้มีอำนาจตัดสินใจหลัก');
       setStep(1);
       return;
     }
-    
+
     if (!form.digitalSignature) {
       alert('กรุณาลงลายมือชื่อดิจิทัล');
       setStep(3);
@@ -406,26 +406,23 @@ export default function LivingWillPage() {
           <div key={s.num} className="flex items-center flex-1">
             <button
               onClick={() => setStep(s.num)}
-              className={`flex items-center justify-center w-10 h-10 rounded-full text-sm font-medium transition-all ${
-                step >= s.num
+              className={`flex items-center justify-center w-10 h-10 rounded-full text-sm font-medium transition-all ${step >= s.num
                   ? 'bg-emerald-600 text-white'
                   : 'bg-gray-200 text-gray-500'
-              }`}
+                }`}
             >
               {step > s.num ? <Check className="w-5 h-5" /> : s.num}
             </button>
             <span
-              className={`ml-2 text-xs hidden lg:block ${
-                step >= s.num ? 'text-emerald-600 font-medium' : 'text-gray-400'
-              }`}
+              className={`ml-2 text-xs hidden lg:block ${step >= s.num ? 'text-emerald-600 font-medium' : 'text-gray-400'
+                }`}
             >
               {s.label}
             </span>
             {i < 3 && (
               <div
-                className={`flex-1 h-1 mx-2 rounded ${
-                  step > s.num ? 'bg-emerald-600' : 'bg-gray-200'
-                }`}
+                className={`flex-1 h-1 mx-2 rounded ${step > s.num ? 'bg-emerald-600' : 'bg-gray-200'
+                  }`}
               />
             )}
           </div>
@@ -446,10 +443,11 @@ export default function LivingWillPage() {
 
             <div className="grid md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="proxy-primary-name" className="block text-sm font-medium text-gray-700 mb-1">
                   ชื่อ-นามสกุล *
                 </label>
                 <input
+                  id="proxy-primary-name"
                   type="text"
                   value={form.healthcareProxy.primary.name}
                   onChange={(e) => updateProxy('primary', 'name', e.target.value)}
@@ -458,10 +456,11 @@ export default function LivingWillPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="proxy-primary-relationship" className="block text-sm font-medium text-gray-700 mb-1">
                   ความสัมพันธ์ *
                 </label>
                 <select
+                  id="proxy-primary-relationship"
                   value={form.healthcareProxy.primary.relationship}
                   onChange={(e) => updateProxy('primary', 'relationship', e.target.value)}
                   className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500"
@@ -475,12 +474,13 @@ export default function LivingWillPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="proxy-primary-phone" className="block text-sm font-medium text-gray-700 mb-1">
                   เบอร์โทรศัพท์ *
                 </label>
                 <div className="relative">
                   <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
+                    id="proxy-primary-phone"
                     type="tel"
                     value={form.healthcareProxy.primary.phone}
                     onChange={(e) => updateProxy('primary', 'phone', e.target.value)}
@@ -490,12 +490,13 @@ export default function LivingWillPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="proxy-primary-email" className="block text-sm font-medium text-gray-700 mb-1">
                   อีเมล
                 </label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
+                    id="proxy-primary-email"
                     type="email"
                     value={form.healthcareProxy.primary.email}
                     onChange={(e) => updateProxy('primary', 'email', e.target.value)}
@@ -505,12 +506,13 @@ export default function LivingWillPage() {
                 </div>
               </div>
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="proxy-primary-address" className="block text-sm font-medium text-gray-700 mb-1">
                   ที่อยู่
                 </label>
                 <div className="relative">
                   <Home className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
                   <textarea
+                    id="proxy-primary-address"
                     value={form.healthcareProxy.primary.address}
                     onChange={(e) => updateProxy('primary', 'address', e.target.value)}
                     className="w-full pl-10 p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 resize-none h-20"
@@ -528,7 +530,7 @@ export default function LivingWillPage() {
               ผู้มีอำนาจตัดสินใจสำรอง (ถ้ามี)
             </h2>
 
-            {!form.healthcareProxy.alternate ? (
+            {form.healthcareProxy.alternate === undefined ? (
               <button
                 onClick={() =>
                   setForm((prev) => ({
@@ -570,10 +572,11 @@ export default function LivingWillPage() {
                 </div>
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="proxy-alternate-name" className="block text-sm font-medium text-gray-700 mb-1">
                       ชื่อ-นามสกุล
                     </label>
                     <input
+                      id="proxy-alternate-name"
                       type="text"
                       value={form.healthcareProxy.alternate?.name || ''}
                       onChange={(e) => updateProxy('alternate', 'name', e.target.value)}
@@ -582,10 +585,11 @@ export default function LivingWillPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="proxy-alternate-relationship" className="block text-sm font-medium text-gray-700 mb-1">
                       ความสัมพันธ์
                     </label>
                     <select
+                      id="proxy-alternate-relationship"
                       value={form.healthcareProxy.alternate?.relationship || ''}
                       onChange={(e) => updateProxy('alternate', 'relationship', e.target.value)}
                       className="w-full p-3 border border-gray-200 rounded-xl"
@@ -599,10 +603,11 @@ export default function LivingWillPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="proxy-alternate-phone" className="block text-sm font-medium text-gray-700 mb-1">
                       เบอร์โทรศัพท์
                     </label>
                     <input
+                      id="proxy-alternate-phone"
                       type="tel"
                       value={form.healthcareProxy.alternate?.phone || ''}
                       onChange={(e) => updateProxy('alternate', 'phone', e.target.value)}
@@ -611,10 +616,11 @@ export default function LivingWillPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="proxy-alternate-email" className="block text-sm font-medium text-gray-700 mb-1">
                       อีเมล
                     </label>
                     <input
+                      id="proxy-alternate-email"
                       type="email"
                       value={form.healthcareProxy.alternate?.email || ''}
                       onChange={(e) => updateProxy('alternate', 'email', e.target.value)}
@@ -683,21 +689,19 @@ export default function LivingWillPage() {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => togglePreference(item.key)}
-                      className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                        form.preferences[item.key]
+                      className={`px-4 py-2 rounded-lg font-medium transition-all ${form.preferences[item.key]
                           ? 'bg-emerald-600 text-white'
                           : 'bg-gray-200 text-gray-600'
-                      }`}
+                        }`}
                     >
                       ต้องการ
                     </button>
                     <button
                       onClick={() => togglePreference(item.key)}
-                      className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                        !form.preferences[item.key]
+                      className={`px-4 py-2 rounded-lg font-medium transition-all ${form.preferences[item.key] === false || form.preferences[item.key] === undefined
                           ? 'bg-red-600 text-white'
                           : 'bg-gray-200 text-gray-600'
-                      }`}
+                        }`}
                     >
                       ไม่ต้องการ
                     </button>
@@ -722,14 +726,12 @@ export default function LivingWillPage() {
               </div>
               <button
                 onClick={() => togglePreference('organDonation')}
-                className={`relative w-14 h-7 rounded-full transition-colors ${
-                  form.preferences.organDonation ? 'bg-emerald-500' : 'bg-gray-300'
-                }`}
+                className={`relative w-14 h-7 rounded-full transition-colors ${form.preferences.organDonation ? 'bg-emerald-500' : 'bg-gray-300'
+                  }`}
               >
                 <div
-                  className={`absolute top-0.5 w-6 h-6 bg-white rounded-full shadow-md transform transition-transform ${
-                    form.preferences.organDonation ? 'translate-x-7' : 'translate-x-0.5'
-                  }`}
+                  className={`absolute top-0.5 w-6 h-6 bg-white rounded-full shadow-md transform transition-transform ${form.preferences.organDonation ? 'translate-x-7' : 'translate-x-0.5'
+                    }`}
                 />
               </button>
             </div>
@@ -768,11 +770,10 @@ export default function LivingWillPage() {
                       },
                     }))
                   }
-                  className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
-                    form.preferences.painManagement === option.value
+                  className={`w-full p-4 rounded-xl border-2 text-left transition-all ${form.preferences.painManagement === option.value
                       ? 'border-emerald-500 bg-emerald-50'
                       : 'border-gray-200 hover:border-gray-300'
-                  }`}
+                    }`}
                 >
                   <p className="font-medium text-gray-800">{option.label}</p>
                   <p className="text-sm text-gray-600">{option.desc}</p>
@@ -787,10 +788,11 @@ export default function LivingWillPage() {
             </h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="living-will-religious" className="block text-sm font-medium text-gray-700 mb-2">
                   ความต้องการทางศาสนา/จิตวิญญาณ
                 </label>
                 <textarea
+                  id="living-will-religious"
                   value={form.religiousPreferences}
                   onChange={(e) =>
                     setForm((prev) => ({
@@ -803,10 +805,11 @@ export default function LivingWillPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="living-will-additional" className="block text-sm font-medium text-gray-700 mb-2">
                   ความต้องการอื่นๆ
                 </label>
                 <textarea
+                  id="living-will-additional"
                   value={form.preferences.additionalWishes}
                   onChange={(e) =>
                     setForm((prev) => ({
@@ -1071,11 +1074,10 @@ export default function LivingWillPage() {
                   key={doctor.id}
                   onClick={() => addDoctorToShare(doctor)}
                   disabled={(form.sharedWith || []).includes(doctor.id)}
-                  className={`w-full flex items-center gap-3 p-3 rounded-xl text-left transition-colors ${
-                    (form.sharedWith || []).includes(doctor.id)
+                  className={`w-full flex items-center gap-3 p-3 rounded-xl text-left transition-colors ${(form.sharedWith || []).includes(doctor.id)
                       ? 'bg-gray-100 opacity-50'
                       : 'bg-gray-50 hover:bg-gray-100'
-                  }`}
+                    }`}
                 >
                   <img
                     src={doctor.avatarUrl || `https://i.pravatar.cc/150?u=${doctor.id}`}

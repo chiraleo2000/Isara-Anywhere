@@ -10,9 +10,7 @@ export const summarizeSymptomsWithAI = async (
   audioInfo: string
 ): Promise<string> => {
   if (!genAI) {
-    return Promise.resolve(
-      `สรุปโดย AI (จำลอง): ผู้ป่วยแจ้งอาการ: "${symptoms}". ${fileInfo}. ${audioInfo}. ข้อมูลนี้จะถูกส่งให้แพทย์เพื่อการวินิจฉัยต่อไป`
-    );
+    return `สรุปโดย AI (จำลอง): ผู้ป่วยแจ้งอาการ: "${symptoms}". ${fileInfo}. ${audioInfo}. ข้อมูลนี้จะถูกส่งให้แพทย์เพื่อการวินิจฉัยต่อไป`;
   }
 
   try {
@@ -28,7 +26,7 @@ export const summarizeSymptomsWithAI = async (
 จงสรุปข้อมูลนี้เป็นย่อหน้าที่สั้น กระชับ และเป็นกลาง สำหรับให้แพทย์ตรวจสอบเบื้องต้น เริ่มต้นด้วย "สรุปการคัดกรองโดย AI:"`;
 
     const result = await model.generateContent(prompt);
-    const response = await result.response;
+    const response = result.response;
     return response.text();
   } catch (error) {
     console.error("Gemini API error:", error);
@@ -47,8 +45,8 @@ export const suggestSymptoms = async (initialSymptoms: string): Promise<string[]
 ตัวอย่าง: ["ไข้", "ปวดหัว", "เจ็บคอ", "น้ำมูกไหล"]`;
 
     const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text().replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+    const response = result.response;
+    const text = response.text().replaceAll(/```json\n?/g, "").replaceAll(/```\n?/g, "").trim();
     return JSON.parse(text);
   } catch (error) {
     console.error("Error suggesting symptoms:", error);
@@ -67,7 +65,7 @@ export const chatWithAI = async (
   try {
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
     const contextPrompt = context ? `\n\nบริบทเพิ่มเติม:\n${context}` : '';
-    const conversationHistory = messages.map(msg => 
+    const conversationHistory = messages.map(msg =>
       `${msg.role === 'user' ? 'ผู้ใช้' : 'AI'}: ${msg.content}`
     ).join('\n');
 
@@ -81,7 +79,7 @@ ${conversationHistory}
 กรุณาตอบคำถามล่าสุดของผู้ใช้:`;
 
     const result = await model.generateContent(prompt);
-    const response = await result.response;
+    const response = result.response;
     return response.text();
   } catch (error) {
     console.error("Error in AI chat:", error);
@@ -109,9 +107,9 @@ export class GoogleMeetService {
 
   private initializeGoogleAPIs() {
     // Check if credentials are configured
-    if (!this.CLIENT_ID || !this.API_KEY || 
-        this.CLIENT_ID.includes('your-client-id') || 
-        this.API_KEY.includes('your-api-key')) {
+    if (!this.CLIENT_ID || !this.API_KEY ||
+      this.CLIENT_ID.includes('your-client-id') ||
+      this.API_KEY.includes('your-api-key')) {
       console.warn('⚠️ Google Calendar API credentials not configured.');
       console.info('ℹ️ To enable Google Meet integration:');
       console.info('1. Set VITE_GOOGLE_CLIENT_ID in your .env file');
@@ -142,7 +140,7 @@ export class GoogleMeetService {
   private handleInitError(service: string) {
     console.error(`Failed to load ${service}`);
     this.initializationAttempts++;
-    
+
     if (this.initializationAttempts < this.MAX_INIT_ATTEMPTS) {
       console.log(`Retrying ${service} initialization (${this.initializationAttempts}/${this.MAX_INIT_ATTEMPTS})...`);
       setTimeout(() => this.initializeGoogleAPIs(), 2000);
@@ -241,7 +239,7 @@ export class GoogleMeetService {
 
       // Validate and sanitize attendees
       const validAttendees = data.attendees
-        .filter(email => email && email.trim() && this.isValidEmail(email))
+        .filter(email => email?.trim() && this.isValidEmail(email))
         .map(email => ({ email: email.trim() }));
 
       // Create calendar event with conferencing
@@ -286,14 +284,14 @@ export class GoogleMeetService {
       });
 
       const result = response.result;
-      
+
       // Extract Meet link with multiple fallback methods
       let meetLink = this.extractMeetLink(result);
 
       // If no valid meet link, delete event and create mock
       if (!meetLink) {
         console.warn('⚠️ No Meet link in response, deleting incomplete event and creating mock');
-        
+
         try {
           await (window as any).gapi.client.calendar.events.delete({
             calendarId: 'primary',
@@ -302,7 +300,7 @@ export class GoogleMeetService {
         } catch (deleteError) {
           console.error('Failed to delete incomplete event:', deleteError);
         }
-        
+
         return this.createMockMeeting(data);
       }
 
@@ -321,13 +319,13 @@ export class GoogleMeetService {
 
     } catch (error: any) {
       console.error('❌ Error creating Google Calendar event:', error);
-      
+
       // Handle specific error cases
       if (error.status === 401 || error.status === 403) {
         console.warn('🔐 Authorization error. Token may be expired.');
         this.accessToken = null;
       }
-      
+
       // Always fallback to functional mock meeting
       return this.createMockMeeting(data);
     }
@@ -341,10 +339,10 @@ export class GoogleMeetService {
       );
       if (videoEntry?.uri) return videoEntry.uri;
     }
-    
+
     // Method 2: Check hangoutLink
     if (result.hangoutLink) return result.hangoutLink;
-    
+
     // Method 3: Check conferenceData directly
     if (result.conferenceData?.conferenceId) {
       return `https://meet.google.com/${result.conferenceData.conferenceId}`;
@@ -371,14 +369,14 @@ export class GoogleMeetService {
   }): { eventId: string; meetLink: string; htmlLink: string } {
     // Use Jitsi Meet instead of fake Google Meet codes
     const JITSI_DOMAIN = 'meet.jit.si';
-    
+
     const meetId = `izara-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    
+
     // Generate secure room name for medical consultation
     const timestamp = Date.now().toString(36);
     const randomPart = Math.random().toString(36).substring(2, 8);
     const roomName = `Izara-Med-${timestamp}-${randomPart}`;
-    
+
     // Build Jitsi URL with medical consultation configuration
     const config = new URLSearchParams({
       'config.prejoinPageEnabled': 'true',
@@ -395,10 +393,10 @@ export class GoogleMeetService {
       'interfaceConfig.DISABLE_JOIN_LEAVE_NOTIFICATIONS': 'false',
       'interfaceConfig.SHOW_CHROME_EXTENSION_BANNER': 'false'
     });
-    
+
     // Create real Jitsi Meet link
     const meetLink = `https://${JITSI_DOMAIN}/${roomName}#${config.toString()}`;
-    
+
     // Store meeting details for reference
     const meetingData = {
       id: meetId,
@@ -411,7 +409,7 @@ export class GoogleMeetService {
       createdAt: new Date().toISOString(),
       type: 'jitsi',
     };
-    
+
     // Save to localStorage for persistence
     try {
       const existingMeetings = JSON.parse(localStorage.getItem('izara_jitsi_meetings') || '[]');
@@ -420,7 +418,7 @@ export class GoogleMeetService {
     } catch (error) {
       console.error('Error saving Jitsi meeting:', error);
     }
-    
+
     console.log('🎥 Created Jitsi Meet for medical consultation:', {
       eventId: meetId,
       roomName: roomName,
@@ -443,9 +441,9 @@ export class GoogleMeetService {
 
   isConfigured(): boolean {
     return !!(
-      this.CLIENT_ID && 
-      this.API_KEY && 
-      !this.CLIENT_ID.includes('your-client-id') && 
+      this.CLIENT_ID &&
+      this.API_KEY &&
+      !this.CLIENT_ID.includes('your-client-id') &&
       !this.API_KEY.includes('your-api-key')
     );
   }

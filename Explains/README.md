@@ -78,10 +78,10 @@ Explains/
 
 | Role | Email | Password | Portal |
 |------|-------|----------|--------|
-| Patient | demo.test@gmail.com | P@ssw0rd | Patient Portal |
-| Patient Relative | demo2.test@gmail.com | P@ssw0rd | Patient Portal |
-| Doctor | doctor.test@izara.com | IzaraDoctor@2024 | Doctor Portal |
-| Admin/Unit Test | doctorunit.test@izara.com | P@ssw0rd | Doctor Portal |
+| Patient | demo.test@gmail.com | YOUR_TEST_PASSWORD | Patient Portal |
+| Patient Relative | demo2.test@gmail.com | YOUR_TEST_PASSWORD | Patient Portal |
+| Doctor | doctor.test@izara.com | YOUR_TEST_DOCTOR_PASSWORD | Doctor Portal |
+| Admin/Unit Test | doctorunit.test@izara.com | YOUR_TEST_PASSWORD | Doctor Portal |
 
 ## 🔗 Portal URLs (Development)
 
@@ -174,3 +174,5 @@ See `Presentations/` folder for:
 
 **Last Updated:** January 9, 2026
 **Version:** 1.2.1
+
+

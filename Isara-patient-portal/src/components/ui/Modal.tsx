@@ -50,10 +50,21 @@ export const Modal: React.FC<ModalProps> = ({
     if (e.target === overlayRef.current) onClose();
   };
 
+  const handleOverlayKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onClose();
+    }
+  };
+
   return (
     <div
       ref={overlayRef}
+      role="button"
+      tabIndex={0}
+      aria-label="Close modal"
       onClick={handleOverlayClick}
+      onKeyDown={handleOverlayKeyDown}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
     >
       <div

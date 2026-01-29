@@ -18,27 +18,19 @@ import React, { useState, useEffect } from 'react';
 import { User, QueuePatient } from '../types';
 import { doctorDataService } from '../services/doctorDataService';
 // PostgreSQL-backed API service - NO GCS!
-import { 
-  fetchDoctorAppointments, 
-  fetchAllAppointments, 
-  fetchAllPatients, 
-  fetchAllDoctors, 
-  saveAllAppointments, 
-  saveAppointment, 
-  clearCache, 
+import {
+  fetchAllAppointments,
+  fetchAllDoctors,
+  saveAllAppointments,
+  saveAppointment,
+  clearCache,
   fetchDashboardData as fetchDoctorQueue
 } from '../services/apiDataService';
-import { googleMeetService } from '../services/externalServices';
 import appointmentService from '../services/appointmentService';
 import {
   VideoCameraIcon,
-  EnvelopeIcon,
   CalendarIcon,
-  LinkIcon,
-  PhoneIcon,
   SearchIcon,
-  UserGroupIcon,
-  ClockIcon,
 } from '../assets/NewSvgIcons';
 
 // ============================================================================
@@ -75,6 +67,12 @@ interface AppointmentRequest {
   notes?: string;
   poolStatus?: string;
   requiredSpecialty?: string;
+  // Additional optional properties for compatibility
+  email?: string;
+  appointmentDate?: string;
+  date?: string;
+  appointmentTime?: string;
+  time?: string;
 }
 
 // ============================================================================
@@ -122,22 +120,19 @@ type TabType = 'queue' | 'meetings' | 'all-appointments';
 // ============================================================================
 
 const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
-  const [participants, setParticipants] = useState<MeetingParticipant[]>([]);
   const [meetings, setMeetings] = useState<ScheduledMeeting[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [roleFilter, setRoleFilter] = useState<'all' | 'patient' | 'doctor' | 'consultant'>('all');
-  const [meetingFilter, setMeetingFilter] = useState<'all' | 'scheduled' | 'completed'>('all');
   const [activeTab, setActiveTab] = useState<TabType>('queue');
   const [loading, setLoading] = useState(true);
-  
+
   // Check if current user is admin - MULTIPLE CHECKS
   const isAdmin = !!(
-    doctor.isAdmin === true || 
-    doctor.role === 'admin' || 
+    doctor.isAdmin === true ||
+    doctor.role === 'admin' ||
     (doctor as any).isAdmin === 'true' ||
     doctor.email?.includes('admin')
   );
-  
+
   // DEBUG: Log admin status
   console.log('[HealthMeeting] 🔐 Admin Detection:', {
     'doctor.isAdmin': doctor.isAdmin,
@@ -145,39 +140,41 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
     'doctor.email': doctor.email,
     'FINAL isAdmin': isAdmin
   });
-  
+
   // Patient Queue State - Now shows ALL pending appointments (not just today's in-clinic queue)
   const [queue, setQueue] = useState<QueuePatient[]>([]);
   const [pendingQueue, setPendingQueue] = useState<AppointmentRequest[]>([]); // All pending appointments awaiting confirmation
-  const [queueStats, setQueueStats] = useState({
+  // Queue statistics are tracked internally but displayed through pendingQueue
+  const [, setQueueStats] = useState({
     averageWaitTime: 0,
     patientsSeenToday: 0,
     patientsRemaining: 0,
-    pendingConfirmation: 0, // New: appointments awaiting confirmation
+    pendingConfirmation: 0,
   });
   const [skipReason, setSkipReason] = useState('');
   const [showSkipModal, setShowSkipModal] = useState(false);
   const [selectedQueuePatient, setSelectedQueuePatient] = useState<QueuePatient | null>(null);
-  
-  // Appointment confirmation state
-  const [pendingAppointments, setPendingAppointments] = useState<any[]>([]);
+
+  // Appointment confirmation state - displayed via pendingQueue
+  const [, setPendingAppointments] = useState<AppointmentRequest[]>([]);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [selectedAppointment, setSelectedAppointment] = useState<any | null>(null);
+  // Using AppointmentRequest type for consistency
+  const [selectedAppointment, setSelectedAppointment] = useState<AppointmentRequest | null>(null);
   const [confirmNotes, setConfirmNotes] = useState('');
   const [confirmDate, setConfirmDate] = useState(''); // For admin/doctor to set/change date
   const [confirmTime, setConfirmTime] = useState(''); // For admin/doctor to set/change time
-  
+
   // Email recipient selection state
   const [emailRecipients, setEmailRecipients] = useState({
     sendToPatient: true,
     sendToDoctor: true,
     additionalEmails: '' // Comma-separated additional emails
   });
-  
+
   // Admin-only state: All Appointments (removed patientPool - merged into pendingQueue)
   const [allAppointments, setAllAppointments] = useState<AppointmentRequest[]>([]);
   const [availableDoctors, setAvailableDoctors] = useState<DoctorOption[]>();
-  
+
   // Admin assign modal state
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [selectedPoolRequest, setSelectedPoolRequest] = useState<AppointmentRequest | null>(null);
@@ -187,10 +184,10 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
     time: '',
     notes: ''
   });
-  
+
   // Messages
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Load all data on mount - ONLY ONCE, no auto-refresh interval
   // Auto-refresh was causing performance issues and unnecessary API calls
@@ -210,26 +207,26 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
         name: doctor.name,
         isAdmin: isAdmin
       });
-      
+
       // CRITICAL CHECK: Verify user has proper ID (but allow admin even without ID)
       if (!doctor.id && !doctor.email && !isAdmin) {
         console.error('❌ CRITICAL: Doctor has no ID or email! User session may be invalid.');
-        setError('⚠️ Your user session is invalid. Please log out and log back in.');
+        setErrorMessage('⚠️ Your user session is invalid. Please log out and log back in.');
         setLoading(false);
         return;
       }
-      
+
       // Clear appointment cache to ensure fresh data
       clearCache('appointments');
-      
+
       // Load pending queue (ALL pending appointments) and scheduled meetings
       const loadTasks = [loadPendingQueue(), loadDoctorMeetings(), loadPendingAppointments()];
-      
+
       // Admin gets additional data: All Appointments list and doctors
       if (isAdmin) {
         loadTasks.push(loadAllAppointmentsData(), loadAvailableDoctors());
       }
-      
+
       await Promise.all(loadTasks);
     } catch (error) {
       console.error('Error loading data:', error);
@@ -243,17 +240,18 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
   const loadPendingQueue = async () => {
     try {
       // CRITICAL: Bypass cache to get fresh data
-      const appointments = await fetchAllAppointments({ cache: false });
-      
+      clearCache();
+      const appointments = await fetchAllAppointments();
+
       // Filter for appointments awaiting confirmation
       // For Admin: ALL pending/in_pool appointments (regardless of doctor assignment)
       // For Doctor: Only appointments assigned to this doctor that need confirmation
-      const pendingStatuses = ['pending', 'in_pool', 'awaiting_doctor_response', 'assigned'];
-      
+      const pendingStatuses = new Set(['pending', 'in_pool', 'awaiting_doctor_response', 'assigned']);
+
       const queueRequests = appointments
         .filter((apt: any) => {
-          const isPendingStatus = pendingStatuses.includes(apt.status);
-          
+          const isPendingStatus = pendingStatuses.has(apt.status);
+
           if (isAdmin) {
             // Admin sees ALL pending appointments
             return isPendingStatus;
@@ -261,11 +259,11 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
             // Doctor sees only appointments assigned to them
             // Use same identifier logic (ID or email)
             const doctorIdentifier = doctor.id || doctor.email;
-            const isAssignedToMe = apt.doctorId === doctorIdentifier || 
-                                   apt.assignedDoctorId === doctorIdentifier ||
-                                   apt.adminAssignedDoctorId === doctorIdentifier ||
-                                   apt.doctorEmail === doctor.email ||
-                                   apt.assignedDoctorEmail === doctor.email;
+            const isAssignedToMe = apt.doctorId === doctorIdentifier ||
+              apt.assignedDoctorId === doctorIdentifier ||
+              apt.adminAssignedDoctorId === doctorIdentifier ||
+              apt.doctorEmail === doctor.email ||
+              apt.assignedDoctorEmail === doctor.email;
             return isPendingStatus && isAssignedToMe;
           }
         })
@@ -298,7 +296,7 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
           if (urgencyDiff !== 0) return urgencyDiff;
           return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
         });
-      
+
       setPendingQueue(queueRequests);
       setQueueStats(prev => ({
         ...prev,
@@ -314,11 +312,12 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
   // Load all appointments - Admin only
   const loadAllAppointmentsData = async () => {
     if (!isAdmin) return;
-    
+
     try {
       // CRITICAL: Bypass cache to get fresh data
-      const appointments = await fetchAllAppointments({ cache: false });
-      
+      clearCache();
+      const appointments = await fetchAllAppointments();
+
       const allRequests = appointments.map((apt: any) => ({
         id: apt.id,
         patientId: apt.patientId || apt.userId || '',
@@ -341,12 +340,12 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
         notes: apt.notes || '',
         requiredSpecialty: apt.requiredSpecialty || apt.suggestedSpecialty || ''
       }));
-      
+
       // Sort by date (newest first)
-      allRequests.sort((a: AppointmentRequest, b: AppointmentRequest) => 
+      allRequests.sort((a: AppointmentRequest, b: AppointmentRequest) =>
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
-      
+
       setAllAppointments(allRequests);
       console.log('[HealthMeeting] All appointments loaded:', allRequests.length);
     } catch (error) {
@@ -358,10 +357,10 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
   // Load available doctors - Admin only
   const loadAvailableDoctors = async () => {
     if (!isAdmin) return;
-    
+
     try {
       const doctors = await fetchAllDoctors();
-      
+
       const approvedDoctors = doctors
         .filter((d: any) => d.approvalStatus === 'approved' || d.isApproved || d.isActive !== false)
         .map((d: any) => ({
@@ -370,7 +369,7 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
           email: d.email || '',
           specialty: d.specialty || 'General Practice'
         }));
-      
+
       setAvailableDoctors(approvedDoctors);
       console.log('[HealthMeeting] Available doctors loaded:', approvedDoctors.length);
     } catch (error) {
@@ -382,14 +381,14 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
   // Admin: Assign appointment from pool to doctor
   const handleAssignFromPool = async () => {
     if (!selectedPoolRequest || !assignData.doctorId || !assignData.date || !assignData.time) {
-      setError('Please fill in all required fields (Doctor, Date, Time)');
+      setErrorMessage('Please fill in all required fields (Doctor, Date, Time)');
       return;
     }
 
     try {
       setLoading(true);
-      setError(null);
-      
+      setErrorMessage(null);
+
       const selectedDoctor = availableDoctors?.find(d => d.id === assignData.doctorId);
       const assignedDateTime = `${assignData.date}T${assignData.time}:00`;
 
@@ -420,14 +419,14 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
       setShowAssignModal(false);
       setSelectedPoolRequest(null);
       setAssignData({ doctorId: '', date: '', time: '', notes: '' });
-      
+
       // Refresh data
       await loadAllData();
 
       setTimeout(() => setSuccessMessage(null), 4000);
     } catch (err: any) {
       console.error('Error assigning appointment:', err);
-      setError(err.message || 'Failed to assign appointment');
+      setErrorMessage(err.message || 'Failed to assign appointment');
     } finally {
       setLoading(false);
     }
@@ -438,21 +437,22 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
       // Fetch all appointments directly from GCS (like loadDoctorMeetings)
       // This loads appointments specifically assigned to this doctor awaiting their response
       // CRITICAL: Bypass cache to get fresh data
-      const allAppointments = await fetchAllAppointments({ cache: false });
+      clearCache();
+      const allAppointments = await fetchAllAppointments();
       console.log('[HealthMeeting] Total appointments loaded:', allAppointments.length);
-      
+
       // Filter for pending appointments assigned to this doctor
       const pending = allAppointments.filter((apt: any) => {
-        const matchesDoctor = apt.doctorId === doctor.id || 
-                             apt.assignedDoctorId === doctor.id ||
-                             apt.adminAssignedDoctorId === doctor.id;
+        const matchesDoctor = apt.doctorId === doctor.id ||
+          apt.assignedDoctorId === doctor.id ||
+          apt.adminAssignedDoctorId === doctor.id;
         // Pending = needs doctor confirmation (assigned but not yet confirmed)
-        const needsConfirmation = apt.status === 'pending' || 
-                                  apt.status === 'awaiting_doctor_response' || 
-                                  apt.status === 'assigned';
+        const needsConfirmation = apt.status === 'pending' ||
+          apt.status === 'awaiting_doctor_response' ||
+          apt.status === 'assigned';
         return matchesDoctor && needsConfirmation;
       });
-      
+
       setPendingAppointments(pending);
       console.log('[HealthMeeting] Pending appointments for doctor', doctor.id, ':', pending.length);
       if (pending.length > 0) {
@@ -471,24 +471,25 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
       // Fetch all appointments and filter for this doctor
       // CRITICAL: Bypass cache to get fresh data
       console.log('[HealthMeeting] 🔄 Fetching from GCS...');
-      const allAppointments = await fetchAllAppointments({ cache: false });
+      clearCache();
+      const allAppointments = await fetchAllAppointments();
       console.log('[HealthMeeting] ✅ Fetched appointments:', allAppointments.length);
       console.log('[HealthMeeting] 📋 Appointment IDs:', allAppointments.map((a: any) => a.id).join(', '));
-      console.log('[HealthMeeting] 📊 Status breakdown:', 
-        allAppointments.reduce((acc: any, apt: any) => { 
-          acc[apt.status] = (acc[apt.status] || 0) + 1; 
-          return acc; 
+      console.log('[HealthMeeting] 📊 Status breakdown:',
+        allAppointments.reduce((acc: any, apt: any) => {
+          acc[apt.status] = (acc[apt.status] || 0) + 1;
+          return acc;
         }, {}));
       console.log('[HealthMeeting] Current Doctor ID:', doctor.id);
       console.log('[HealthMeeting] Is Admin:', isAdmin);
-      
+
       // Filter appointments for Scheduled Meetings tab
       // SCHEDULED MEETINGS: Only CONFIRMED appointments
       console.log('[HealthMeeting] 🔍 FILTERING FOR SCHEDULED MEETINGS:');
       console.log('[HealthMeeting] Current Doctor ID:', doctor.id);
       console.log('[HealthMeeting] Doctor Email:', doctor.email);
       console.log('[HealthMeeting] Is Admin:', isAdmin);
-      
+
       // CRITICAL FIX: Use SAME filter logic as Dashboard for consistency
       // Filter appointments for this doctor FIRST, then filter by status
       const doctorAppointments = allAppointments.filter((apt: any) => {
@@ -498,39 +499,39 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
           console.log(`[HealthMeeting] ❌ apt ${apt.id} skipped: status=${apt.status} not in [confirmed,scheduled]`);
           return false;
         }
-        
+
         // CRITICAL FIX: Admin sees ALL confirmed appointments
         if (isAdmin) {
           console.log(`[HealthMeeting] ✅ ADMIN sees apt ${apt.id}`);
           return true;
         }
-        
+
         // CRITICAL: Use EXACT SAME logic as Dashboard (lines 180-185 of DoctorDashboard.tsx)
         // This ensures both pages show the same appointments
-        const matchesDoctorById = apt.doctorId === doctor.id || 
-                                  apt.assignedDoctorId === doctor.id ||
-                                  apt.adminAssignedDoctorId === doctor.id ||
-                                  apt.confirmedBy === doctor.id;
-        
+        const matchesDoctorById = apt.doctorId === doctor.id ||
+          apt.assignedDoctorId === doctor.id ||
+          apt.adminAssignedDoctorId === doctor.id ||
+          apt.confirmedBy === doctor.id;
+
         // ALSO match by email as fallback (for doctors without userId in session)
         const matchesDoctorByEmail = doctor.email && (
-                                     apt.doctorEmail === doctor.email || 
-                                     apt.assignedDoctorEmail === doctor.email ||
-                                     apt.confirmedByEmail === doctor.email ||
-                                     apt.doctorId === doctor.email ||
-                                     apt.assignedDoctorId === doctor.email ||
-                                     apt.confirmedBy === doctor.email
-                                   );
-        
+          apt.doctorEmail === doctor.email ||
+          apt.assignedDoctorEmail === doctor.email ||
+          apt.confirmedByEmail === doctor.email ||
+          apt.doctorId === doctor.email ||
+          apt.assignedDoctorId === doctor.email ||
+          apt.confirmedBy === doctor.email
+        );
+
         const matches = matchesDoctorById || matchesDoctorByEmail;
         console.log(`[HealthMeeting] 🔍 apt ${apt.id}: status=${apt.status}, doctorId=${apt.doctorId}, confirmedBy=${apt.confirmedBy} => doctorMatch=${matches}`);
-        
+
         return matches;
       });
-      
+
       console.log('[HealthMeeting] Doctor confirmed appointments:', doctorAppointments.length);
       console.log('[HealthMeeting] Filtered appointment IDs:', doctorAppointments.map((a: any) => a.id));
-      
+
       // Convert appointments to ScheduledMeeting format
       const convertedMeetings: ScheduledMeeting[] = doctorAppointments.map((apt: any) => {
         // Build participant from patient info
@@ -610,8 +611,8 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
   // Load in-clinic queue (separate from appointment queue)
   const loadQueue = async () => {
     try {
-      const queueData = await fetchDoctorQueue(doctor.id);
-      setQueue(queueData);
+      const dashboardData = await fetchDoctorQueue(doctor.id);
+      setQueue(dashboardData.queue || []);
     } catch (error) {
       console.error('[HealthMeeting] Error loading clinic queue:', error);
     }
@@ -625,10 +626,7 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
     }
   };
 
-  const handleSkipPatient = (patient: QueuePatient) => {
-    setSelectedQueuePatient(patient);
-    setShowSkipModal(true);
-  };
+  // handleSkipPatient removed - currently unused
 
   const confirmSkip = async () => {
     if (selectedQueuePatient && skipReason) {
@@ -640,130 +638,42 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
     }
   };
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'urgent':
-        return 'bg-red-100 text-red-800 border-red-300';
-      case 'routine':
-        return 'bg-green-100 text-green-800 border-green-300';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-300';
-    }
+  // Helper function for request urgency styling
+  const getUrgencyStyle = (urgency: string): string => {
+    if (urgency === 'emergency') return 'border-red-500 bg-red-50';
+    if (urgency === 'urgent') return 'border-orange-300 bg-orange-50';
+    return 'border-emerald-100 bg-gradient-to-r from-emerald-50/50 to-white hover:border-emerald-300';
   };
 
-  const getQueueStatusColor = (status: string) => {
-    switch (status) {
-      case 'in-consultation':
-        return 'bg-blue-500 text-white';
-      case 'waiting':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'completed':
-        return 'bg-gray-400 text-white';
-      case 'skipped':
-        return 'bg-orange-100 text-orange-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
+  // Helper function for urgency badge styling (bold version with solid background)
+  const getUrgencyBadgeStyleBold = (urgency: string): string => {
+    if (urgency === 'emergency') return 'bg-red-500 text-white';
+    if (urgency === 'urgent') return 'bg-orange-500 text-white';
+    return 'bg-green-100 text-green-700';
   };
 
-  const filteredMeetings = meetings.filter((m) => {
-    const matchesFilter =
-      meetingFilter === 'all' ||
-      (meetingFilter === 'scheduled' && m.status === 'scheduled') ||
-      (meetingFilter === 'completed' && m.status === 'completed');
-    return matchesFilter;
-  });
-
-  const getRoleColor = (role: string) => {
-    switch (role) {
-      case 'patient':
-        return 'bg-blue-100 text-blue-700';
-      case 'doctor':
-        return 'bg-emerald-100 text-emerald-700';
-      case 'consultant':
-        return 'bg-purple-100 text-purple-700';
-      default:
-        return 'bg-gray-100 text-gray-700';
-    }
+  // Helper function for urgency badge styling (light version)
+  const getUrgencyBadgeStyle = (urgency: string): string => {
+    if (urgency === 'emergency') return 'bg-red-100 text-red-700';
+    if (urgency === 'urgent') return 'bg-orange-100 text-orange-700';
+    return 'bg-green-100 text-green-700';
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'available':
-        return 'bg-green-500';
-      case 'busy':
-        return 'bg-yellow-500';
-      case 'offline':
-        return 'bg-gray-400';
-      default:
-        return 'bg-gray-400';
-    }
+  // Helper function for status badge styling
+  const getStatusBadgeStyle = (status: string): string => {
+    if (status === 'pending' || status === 'in_pool') return 'bg-yellow-100 text-yellow-700';
+    if (status === 'awaiting_doctor_response') return 'bg-blue-100 text-blue-700';
+    return 'bg-gray-100 text-gray-600';
   };
 
-  const getMeetingTypeColor = (type: string) => {
-    switch (type) {
-      case 'consultation':
-        return 'bg-blue-100 text-blue-700';
-      case 'follow-up':
-        return 'bg-green-100 text-green-700';
-      case 'team-meeting':
-        return 'bg-purple-100 text-purple-700';
-      case 'referral':
-        return 'bg-orange-100 text-orange-700';
-      default:
-        return 'bg-gray-100 text-gray-700';
-    }
-  };
-
-  const handleSendEmail = (email: string, subject?: string) => {
-    const mailtoLink = subject
-      ? `mailto:${email}?subject=${encodeURIComponent(subject)}`
-      : `mailto:${email}`;
-    window.location.href = mailtoLink;
-  };
-
-  const handleJoinMeeting = (meetingLink: string) => {
-    window.open(meetingLink, '_blank');
-  };
-
-  const handleAddToCalendar = (meeting: ScheduledMeeting) => {
-    // Create Google Calendar link
-    const startTime = new Date(`${meeting.date}T${meeting.time}:00`);
-    const endTime = new Date(startTime.getTime() + meeting.duration * 60000);
-
-    const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(
-      meeting.title
-    )}&dates=${startTime.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')}/${endTime
-      .toISOString()
-      .replace(/[-:]/g, '')
-      .replace(/\.\d{3}/, '')}&details=${encodeURIComponent(
-      meeting.notes || ''
-    )}&location=${encodeURIComponent(meeting.meetingLink)}`;
-
-    window.open(calendarUrl, '_blank');
-  };
-
-  const handleSendMeetingInvite = (meeting: ScheduledMeeting) => {
-    const participantEmails = meeting.participants.map((p) => p.email).join(',');
-    const subject = `Meeting Invitation: ${meeting.title}`;
-    const body = `
-You are invited to a meeting:
-
-Title: ${meeting.title}
-Date: ${meeting.date}
-Time: ${meeting.time}
-Duration: ${meeting.duration} minutes
-
-Meeting Link: ${meeting.meetingLink}
-
-Notes: ${meeting.notes || 'N/A'}
-
-Please click the link above to join the meeting at the scheduled time.
-    `.trim();
-
-    window.location.href = `mailto:${participantEmails}?subject=${encodeURIComponent(
-      subject
-    )}&body=${encodeURIComponent(body)}`;
+  // Helper function for appointment status badge styling
+  const getAppointmentStatusBadgeStyle = (status: string): string => {
+    if (status === 'confirmed') return 'bg-green-100 text-green-700';
+    if (status === 'pending' || status === 'in_pool') return 'bg-yellow-100 text-yellow-700';
+    if (status === 'assigned' || status === 'awaiting_doctor_response') return 'bg-blue-100 text-blue-700';
+    if (status === 'completed') return 'bg-gray-100 text-gray-700';
+    if (status === 'cancelled' || status === 'declined') return 'bg-red-100 text-red-700';
+    return 'bg-gray-100 text-gray-600';
   };
 
   // Generate Jitsi meeting link helper
@@ -775,7 +685,7 @@ Please click the link above to join the meeting at the scheduled time.
     const randomPart = Math.random().toString(36).substring(2, 8);
     const aptId = appointmentId || selectedAppointment?.id || 'direct';
     const roomName = `Izara-Med-${aptId.substring(0, 8)}-${timestamp}-${randomPart}`;
-    
+
     // Base Jitsi configuration for medical consultations
     const baseConfig = new URLSearchParams({
       // Basic setup
@@ -785,23 +695,23 @@ Please click the link above to join the meeting at the scheduled time.
       'config.enableClosePage': 'true',
       'config.disableDeepLinking': 'true',
       'config.defaultLanguage': 'th',
-      
+
       // Security settings
       'config.enableInsecureRoomNameWarning': 'false',
       'config.requireDisplayName': 'true',
-      
+
       // LOBBY FEATURE - Doctor must approve participants (HOST CONTROL)
       'config.enableLobby': 'true',
       'config.hideLobbyButton': 'false',
-      
+
       // Recording (local recording enabled)
       'config.fileRecordingsEnabled': 'true',
       'config.localRecording.enabled': 'true',
       'config.liveStreamingEnabled': 'false',
-      
+
       // Disable Jitsi transcription - we use Gemini AI instead
       'config.transcribingEnabled': 'false',
-      
+
       // UI customization for medical consultations
       'interfaceConfig.TOOLBAR_BUTTONS': JSON.stringify([
         'microphone', 'camera', 'desktop', 'chat', 'raisehand',
@@ -817,7 +727,7 @@ Please click the link above to join the meeting at the scheduled time.
       'interfaceConfig.DEFAULT_LOGO_URL': '',
       'interfaceConfig.JITSI_WATERMARK_LINK': ''
     });
-    
+
     // DOCTOR URL - Automatically becomes moderator/host
     // First person to join with this URL becomes the host
     const doctorConfig = new URLSearchParams(baseConfig);
@@ -828,29 +738,29 @@ Please click the link above to join the meeting at the scheduled time.
     // Doctor should be moderator - first to join gets moderator rights
     doctorConfig.set('config.startAudioOnly', 'false');
     const doctorUrl = `https://${JITSI_DOMAIN}/${roomName}#${doctorConfig.toString()}`;
-    
+
     // PATIENT URL - Standard participant (lobby applies if enabled)
     const patientConfig = new URLSearchParams(baseConfig);
     patientConfig.set('userInfo.displayName', selectedAppointment?.patientName || 'Patient');
     const patientUrl = `https://${JITSI_DOMAIN}/${roomName}#${patientConfig.toString()}`;
-    
+
     // GUEST URL - For family members or other consultants (lobby applies)
     const guestConfig = new URLSearchParams(baseConfig);
     guestConfig.set('config.requireDisplayName', 'true');
     const guestUrl = `https://${JITSI_DOMAIN}/${roomName}#${guestConfig.toString()}`;
-    
+
     // Primary meeting link (generic - doctor should use doctorUrl)
     const meetLink = `https://${JITSI_DOMAIN}/${roomName}#${baseConfig.toString()}`;
-    
+
     const calendarLink = `https://calendar.google.com/calendar/event?action=TEMPLATE&text=`;
-    
+
     console.log(`🎥 Generated Jitsi Meet Room: ${roomName}`);
     console.log(`   Doctor URL (Host): ${doctorUrl.substring(0, 80)}...`);
     console.log(`   Patient URL: ${patientUrl.substring(0, 80)}...`);
-    
-    return { 
-      meetLink, 
-      meetCode: roomName, 
+
+    return {
+      meetLink,
+      meetCode: roomName,
       calendarLink,
       doctorUrl,
       patientUrl,
@@ -862,15 +772,15 @@ Please click the link above to join the meeting at the scheduled time.
   const sendConfirmationEmail = async (appointment: any, meetingDetails: any) => {
     const patientEmail = appointment.patientEmail || appointment.email;
     const doctorEmail = doctor.email;
-    
+
     const appointmentDate = appointment.appointmentDate || appointment.date;
     const appointmentTime = appointment.appointmentTime || appointment.time || '10:00';
-    
+
     const subject = `✅ Appointment Confirmed - ${appointmentDate} at ${appointmentTime}`;
-    
+
     // Use patient-specific URL if available, otherwise use generic meetLink
     const patientMeetingLink = meetingDetails.patientUrl || meetingDetails.meetLink;
-    
+
     const body = `
 Dear ${appointment.patientName || 'Patient'},
 
@@ -911,36 +821,37 @@ Izara Telehealth Team
     // Build recipient list based on selection
     const recipients: string[] = [];
     let ccList: string[] = [];
-    
+
     // Primary recipient - patient
     if (emailRecipients.sendToPatient && patientEmail) {
       recipients.push(patientEmail);
     }
-    
+
     // CC - doctor
     if (emailRecipients.sendToDoctor && doctorEmail) {
       ccList.push(doctorEmail);
     }
-    
+
     // Additional recipients
     if (emailRecipients.additionalEmails.trim()) {
       const additionalList = emailRecipients.additionalEmails
         .split(',')
         .map(e => e.trim())
-        .filter(e => e && e.includes('@'));
+        .filter(e => e?.includes('@'));
       ccList = [...ccList, ...additionalList];
     }
-    
+
     // If no recipients selected, use patient as default
     const toField = recipients.length > 0 ? recipients.join(',') : patientEmail;
     const ccField = ccList.length > 0 ? ccList.join(',') : '';
-    
+
     // Open mailto link to send email
-    const mailtoLink = `mailto:${toField}?${ccField ? `cc=${ccField}&` : ''}subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    
+    const ccParam = ccField ? 'cc=' + ccField + '&' : '';
+    const mailtoLink = `mailto:${toField}?${ccParam}subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+
     // Open in new window/tab
     window.open(mailtoLink, '_blank');
-    
+
     return { sent: true, method: 'mailto', recipients: toField, cc: ccField };
   };
 
@@ -950,44 +861,45 @@ Izara Telehealth Team
       alert('Please select both date and time for the appointment');
       return;
     }
-    
+
     try {
       console.log('🔄 Starting appointment confirmation process...');
-      
+
       // Step 1: Generate Jitsi meeting links (with doctor URL as host, patient URL, and guest URL)
       console.log('📹 Generating Jitsi Meet links...');
       const meetingDetails = generateMeetingLink(selectedAppointment.id);
       console.log('✅ Jitsi Meet room created:', meetingDetails.meetCode);
       console.log('✅ Doctor URL (Host):', meetingDetails.doctorUrl?.substring(0, 80) + '...');
       console.log('✅ Patient URL:', meetingDetails.patientUrl?.substring(0, 80) + '...');
-      
+
       // Step 2: Use the CONFIRMED date/time (from modal inputs), not the patient's requested time
       const appointmentDate = confirmDate;
       const appointmentTime = confirmTime;
-      
+
       // Parse date and time for calendar event
       const [year, month, day] = appointmentDate.split('-').map(Number);
       const [hours, minutes] = appointmentTime.split(':').map(Number);
       const startDateTime = new Date(year, month - 1, day, hours, minutes);
       const endDateTime = new Date(startDateTime.getTime() + 30 * 60 * 1000); // 30 min consultation
-      
+
       // Step 3: Create Google Calendar link - use doctor URL for calendar
       const calendarTitle = `Telehealth: ${selectedAppointment.patientName || 'Patient'} - Dr. ${doctor.name}`;
       const calendarDescription = `Video consultation via Izara Telehealth (Jitsi Meet)\n\n🎥 DOCTOR LINK (Click to join as HOST):\n${meetingDetails.doctorUrl}\n\n👤 Patient Link:\n${meetingDetails.patientUrl}\n\n📝 Reason: ${selectedAppointment.reason || 'General Consultation'}${confirmNotes ? '\n\nDoctor Notes: ' + confirmNotes : ''}`;
-      
-      const googleCalendarUrl = `https://calendar.google.com/calendar/event?action=TEMPLATE&text=${encodeURIComponent(calendarTitle)}&details=${encodeURIComponent(calendarDescription)}&dates=${startDateTime.toISOString().replace(/[-:]/g, '').replace('.000', '')}/${endDateTime.toISOString().replace(/[-:]/g, '').replace('.000', '')}&location=${encodeURIComponent(meetingDetails.doctorUrl)}`;
-      
+
+      const formatDateForCalendar = (date: Date) => date.toISOString().replaceAll('-', '').replaceAll(':', '').replace('.000', '');
+      const googleCalendarUrl = `https://calendar.google.com/calendar/event?action=TEMPLATE&text=${encodeURIComponent(calendarTitle)}&details=${encodeURIComponent(calendarDescription)}&dates=${formatDateForCalendar(startDateTime)}/${formatDateForCalendar(endDateTime)}&location=${encodeURIComponent(meetingDetails.doctorUrl)}`;
+
       // Step 4: Update appointment with ALL meeting details in GCS
       console.log('💾 Saving appointment with meeting details to GCS...');
       console.log('🔍 Looking for appointment ID:', selectedAppointment.id);
-      
+
       // CRITICAL: Clear cache before fetching to get fresh data
-      clearCache('appointments');
-      
-      const allAppointments = await fetchAllAppointments({ cache: false });
+      clearCache();
+
+      const allAppointments = await fetchAllAppointments();
       console.log('📋 Total appointments in GCS:', allAppointments.length);
       console.log('📋 Appointment IDs:', allAppointments.map((a: any) => a.id));
-      
+
       // Find the appointment to confirm
       const appointmentToUpdate = allAppointments.find((apt: any) => apt.id === selectedAppointment.id);
       if (!appointmentToUpdate) {
@@ -995,12 +907,12 @@ Izara Telehealth Team
         throw new Error(`Appointment ${selectedAppointment.id} not found in GCS. Data may be out of sync.`);
       }
       console.log('✅ Found appointment to update:', appointmentToUpdate.id, 'status:', appointmentToUpdate.status);
-      
+
       // CRITICAL: Get doctor identifier - use ID if available, otherwise email
       const doctorIdentifier = doctor.id || doctor.email || 'unknown-doctor';
       console.log('👨‍⚕️ Doctor Identifier for confirmation:', doctorIdentifier);
       console.log('👨‍⚕️ Doctor object:', JSON.stringify({ id: doctor.id, email: doctor.email, name: doctor.name }));
-      
+
       // Build the updated appointment object
       const updatedAppointment = {
         ...appointmentToUpdate,
@@ -1056,21 +968,21 @@ Izara Telehealth Team
           location: 'Jitsi Meet - Izara Telemedicine'
         }
       };
-      
+
       console.log('💾 Saving appointment to BOTH individual file AND appointments.json...');
-      
+
       // CRITICAL FIX: Use saveAppointment() which saves to BOTH:
       // 1. appointments/{id}.json (individual file)
       // 2. appointments.json (master list)
       // This is the ROOT CAUSE - we were only updating appointments.json before!
       const saveResult = await saveAppointment(updatedAppointment);
       if (!saveResult.success) {
-        throw new Error('Failed to save appointment to GCS: ' + (saveResult.error || 'Unknown error'));
+        throw new Error('Failed to save appointment to GCS: ' + ((saveResult as { error?: string }).error || 'Unknown error'));
       }
       console.log('✅ Appointment saved to PostgreSQL');
-      
+
       // No need to wait for cache/propagation - PostgreSQL is instant
-      
+
       // Verify the save worked by reading back
       const verifyAppointments = await fetchAllAppointments();
       const verifiedApt = verifyAppointments.find((apt: any) => apt.id === selectedAppointment.id);
@@ -1091,19 +1003,19 @@ Izara Telehealth Team
         appointmentTime: verifiedApt.appointmentTime,
         meetingLink: verifiedApt.meetingLink
       }, null, 2));
-      
+
       // Meeting link data is already included in the appointment - no separate write needed
       // PostgreSQL stores all data in one place
       console.log('✅ Meeting link included in appointment data');
-      
+
       // All meeting data is already saved in the appointment record above
       // No need for separate writeToGCS calls - PostgreSQL handles everything
-      
+
       // Step 6: Send confirmation email
       console.log('📧 Sending confirmation email...');
       await sendConfirmationEmail(selectedAppointment, meetingDetails);
       console.log('✅ Email triggered');
-      
+
       // Step 7: Reset UI state FIRST
       setShowConfirmModal(false);
       setSelectedAppointment(null);
@@ -1111,22 +1023,22 @@ Izara Telehealth Team
       setConfirmDate('');
       setConfirmTime('');
       setEmailRecipients({ sendToPatient: true, sendToDoctor: true, additionalEmails: '' });
-      
+
       // No need for cache clearing or delays - PostgreSQL is instant
-      
+
       // Reload all data to reflect changes
       console.log('🔄 Reloading all data...');
       await loadAllData();
       console.log('✅ Data reloaded');
-      
+
       // NOW show success message with both URLs
       alert(`✅ Appointment Confirmed with Jitsi Meet!\n\n🎥 YOUR LINK (HOST):\n${meetingDetails.doctorUrl?.substring(0, 60)}...\n\n👤 PATIENT LINK:\n${meetingDetails.patientUrl?.substring(0, 60)}...\n\n📅 The appointment appears in Scheduled Meetings tab!\n📧 Confirmation email prepared for patient.\n\nClick OK to add to Google Calendar.`);
-      
+
       // Open Google Calendar link for easy adding
       window.open(googleCalendarUrl, '_blank');
-      
+
       console.log('🎉 Appointment confirmation complete!');
-      
+
     } catch (error) {
       console.error('❌ Error confirming appointment:', error);
       alert('Error confirming appointment: ' + (error instanceof Error ? error.message : 'Unknown error'));
@@ -1138,9 +1050,9 @@ Izara Telehealth Team
     const patientEmail = appointment.patientEmail || appointment.email;
     const appointmentDate = appointment.appointmentDate || appointment.date;
     const appointmentTime = appointment.appointmentTime || appointment.time || '10:00';
-    
+
     const subject = `❌ Appointment Request Declined - ${appointmentDate}`;
-    
+
     const body = `
 Dear ${appointment.patientName || 'Patient'},
 
@@ -1171,7 +1083,7 @@ Izara Telehealth Team
 
     const mailtoLink = `mailto:${patientEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     window.open(mailtoLink, '_blank');
-    
+
     return { sent: true, method: 'mailto' };
   };
 
@@ -1180,19 +1092,19 @@ Izara Telehealth Team
       alert('Please provide a reason for rejection');
       return;
     }
-    
+
     try {
       console.log('🔄 Starting appointment decline process...');
-      
+
       // Get the appointment details first for email
       const allAppointments = await fetchAllAppointments();
       const appointmentToDecline = allAppointments.find((apt: any) => apt.id === appointmentId);
-      
+
       if (!appointmentToDecline) {
         alert('Appointment not found');
         return;
       }
-      
+
       // Update appointment status
       const updatedAppointments = allAppointments.map((apt: any) => {
         if (apt.id === appointmentId) {
@@ -1208,22 +1120,22 @@ Izara Telehealth Team
         }
         return apt;
       });
-      
+
       // Save back to GCS
       await saveAllAppointments(updatedAppointments);
       console.log('✅ Appointment declined in GCS');
-      
+
       // Send decline email notification
       console.log('📧 Sending decline notification...');
       await sendDeclineEmail(appointmentToDecline, reason);
       console.log('✅ Decline email triggered');
-      
+
       alert(`❌ Appointment Declined\n\nReason: ${reason}\n\n📧 Decline notification email has been prepared.`);
-      
+
       await loadAllData(); // Reload all data
-      
+
       console.log('🎉 Appointment decline complete!');
-      
+
     } catch (error) {
       console.error('❌ Error declining appointment:', error);
       alert('Error declining appointment: ' + (error instanceof Error ? error.message : 'Unknown error'));
@@ -1250,8 +1162,8 @@ Izara Telehealth Team
               </p>
               <div className="bg-white border border-red-300 rounded-lg p-4">
                 <p className="text-sm text-gray-700">
-                  <strong>Current Session:</strong><br/>
-                  Email: {doctor.email || 'Not found'}<br/>
+                  <strong>Current Session:</strong><br />
+                  Email: {doctor.email || 'Not found'}<br />
                   User ID: <span className="text-red-600 font-bold">{doctor.id || 'MISSING'}</span>
                 </p>
               </div>
@@ -1259,7 +1171,7 @@ Izara Telehealth Team
           </div>
         </div>
       )}
-      
+
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
         <div>
@@ -1314,17 +1226,16 @@ Izara Telehealth Team
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <span className="text-green-700 flex-1">{successMessage}</span>
-          <button onClick={() => setSuccessMessage(null)} className="text-green-500 hover:text-green-700">✕</button>
+          <button onClick={() => setSuccessMessage(null)} className="text-green-500 hover:text-green-700">&times;</button>
         </div>
       )}
-      
-      {error && (
+      {Boolean(errorMessage) && (
         <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3">
           <svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          <span className="text-red-700 flex-1">{error}</span>
-          <button onClick={() => setError(null)} className="text-red-500 hover:text-red-700">✕</button>
+          <span className="text-red-700 flex-1">{errorMessage}</span>
+          <button onClick={() => setErrorMessage(null)} className="text-red-500 hover:text-red-700">&times;</button>
         </div>
       )}
 
@@ -1332,25 +1243,23 @@ Izara Telehealth Team
       <div className="flex flex-wrap gap-2 mb-6">
         <button
           onClick={() => setActiveTab('queue')}
-          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-            activeTab === 'queue'
+          className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === 'queue'
               ? 'bg-emerald-600 text-white'
               : 'bg-white text-gray-700 hover:bg-gray-50'
-          }`}
+            }`}
         >
           🏥 Patient Queue ({pendingQueue.length})
         </button>
         {/* Removed Scheduled Meetings tab button */}
-        
+
         {/* Admin-only: All Appointments tab */}
         {isAdmin && (
           <button
             onClick={() => setActiveTab('all-appointments')}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              activeTab === 'all-appointments'
+            className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === 'all-appointments'
                 ? 'bg-indigo-600 text-white'
                 : 'bg-white text-gray-700 hover:bg-gray-50 border border-indigo-200'
-            }`}
+              }`}
           >
             📋 All Appointments ({allAppointments.length})
           </button>
@@ -1384,7 +1293,7 @@ Izara Telehealth Team
               Refresh
             </button>
           </div>
-          
+
           <div className="space-y-4">
             {pendingQueue.length === 0 ? (
               <div className="text-center py-12 text-gray-500">
@@ -1398,11 +1307,7 @@ Izara Telehealth Team
               pendingQueue.map((request) => (
                 <div
                   key={request.id}
-                  className={`border-2 rounded-xl p-4 transition-colors ${
-                    request.urgency === 'emergency' ? 'border-red-300 bg-red-50' :
-                    request.urgency === 'urgent' ? 'border-orange-300 bg-orange-50' :
-                    'border-emerald-100 bg-gradient-to-r from-emerald-50/50 to-white hover:border-emerald-300'
-                  }`}
+                  className={`border-2 rounded-xl p-4 transition-colors ${getUrgencyStyle(request.urgency)}`}
                 >
                   <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                     <div className="flex-1">
@@ -1423,15 +1328,11 @@ Izara Telehealth Team
                             )}
                           </div>
                         </div>
-                        <span className={`ml-auto px-3 py-1 rounded-full text-xs font-bold uppercase ${
-                          request.urgency === 'emergency' ? 'bg-red-500 text-white' :
-                          request.urgency === 'urgent' ? 'bg-orange-500 text-white' :
-                          'bg-green-100 text-green-700'
-                        }`}>
+                        <span className={`ml-auto px-3 py-1 rounded-full text-xs font-bold uppercase ${getUrgencyBadgeStyleBold(request.urgency)}`}>
                           {request.urgency}
                         </span>
                       </div>
-                      
+
                       {/* Appointment Details Grid */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
                         <div className="bg-blue-50 p-3 rounded-lg">
@@ -1461,13 +1362,13 @@ Izara Telehealth Team
                           )}
                         </div>
                       </div>
-                      
+
                       {/* AI Analysis / Symptom Description */}
                       {request.symptomDescription && (
                         <div className="bg-gray-50 p-3 rounded-lg mb-3">
                           <div className="font-semibold text-gray-700 text-sm">AI Analysis / Details</div>
                           <div className="text-sm text-gray-600 mt-1 whitespace-pre-wrap max-h-32 overflow-y-auto">
-                            {typeof request.symptomDescription === 'string' 
+                            {typeof request.symptomDescription === 'string'
                               ? request.symptomDescription.substring(0, 500)
                               : JSON.stringify(request.symptomDescription).substring(0, 500)}
                             {(request.symptomDescription?.length || 0) > 500 && '...'}
@@ -1477,12 +1378,8 @@ Izara Telehealth Team
 
                       {/* Status & Assignment Info */}
                       <div className="flex items-center gap-3 text-xs text-gray-500">
-                        <span className={`px-2 py-1 rounded-full ${
-                          request.status === 'in_pool' ? 'bg-yellow-100 text-yellow-700' :
-                          request.status === 'awaiting_doctor_response' ? 'bg-blue-100 text-blue-700' :
-                          'bg-gray-100 text-gray-600'
-                        }`}>
-                          {request.status.replace(/_/g, ' ')}
+                        <span className={`px-2 py-1 rounded-full ${getStatusBadgeStyle(request.status)}`}>
+                          {request.status.replaceAll('_', ' ')}
                         </span>
                         {request.assignedDoctorName && (
                           <span className="text-blue-600">
@@ -1507,7 +1404,7 @@ Izara Telehealth Team
                       >
                         ✓ Confirm Appointment
                       </button>
-                      
+
                       {/* Admin can ALWAYS assign/reassign to any doctor */}
                       {isAdmin && (
                         <button
@@ -1526,7 +1423,7 @@ Izara Telehealth Team
                           👨‍⚕️ {request.assignedDoctorId ? 'Reassign Doctor' : 'Assign to Doctor'}
                         </button>
                       )}
-                      
+
                       <button
                         onClick={() => {
                           const reason = prompt('Reason for declining this appointment:');
@@ -1538,12 +1435,12 @@ Izara Telehealth Team
                       >
                         ✗ Decline
                       </button>
-                      
+
                       <button
                         onClick={() => {
                           const email = request.patientEmail;
                           if (email) {
-                            window.location.href = `mailto:${email}?subject=Regarding your appointment request`;
+                            globalThis.location.href = `mailto:${email}?subject=Regarding your appointment request`;
                           }
                         }}
                         className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm"
@@ -1561,7 +1458,15 @@ Izara Telehealth Team
 
       {/* Meetings Tab */}
       {!loading && activeTab === 'meetings' && (
-        {/* Removed Scheduled Meetings tab content */}
+        <div className="bg-white rounded-xl shadow-lg p-6">
+          <div className="text-center py-12 text-gray-500">
+            <div className="text-6xl mb-4">📅</div>
+            <div className="text-lg font-medium">Scheduled Meetings Tab Removed</div>
+            <p className="text-sm text-gray-400 mt-2">
+              This tab has been removed. Use Patient Queue to manage appointments.
+            </p>
+          </div>
+        </div>
       )}
 
       {/* ========== ADMIN ONLY: All Appointments Tab ========== */}
@@ -1576,7 +1481,7 @@ Izara Telehealth Team
                 </span>
               </h2>
             </div>
-            
+
             {/* Search */}
             <div className="flex items-center gap-2">
               <div className="relative">
@@ -1607,7 +1512,7 @@ Izara Telehealth Team
               { status: 'completed', label: 'Completed', color: 'gray' },
               { status: 'cancelled', label: 'Cancelled', color: 'red' }
             ].map(({ status, label, color }) => {
-              const count = allAppointments.filter(a => a.status === status || 
+              const count = allAppointments.filter(a => a.status === status ||
                 (status === 'pending' && (a.status === 'in_pool' || a.status === 'awaiting_doctor_response'))).length;
               return (
                 <div key={status} className={`bg-${color}-50 rounded-lg p-3 border border-${color}-200`}>
@@ -1633,66 +1538,59 @@ Izara Telehealth Team
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {allAppointments
-                  .filter(apt => 
+                  .filter(apt =>
                     searchTerm === '' ||
                     apt.patientName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                     apt.patientEmail?.toLowerCase().includes(searchTerm.toLowerCase())
                   )
                   .map((apt) => (
-                  <tr key={apt.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-4">
-                      <div className="font-medium text-gray-900">{apt.patientName}</div>
-                      <div className="text-sm text-gray-500">{apt.patientEmail}</div>
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="text-sm text-gray-900">{apt.requestedDate?.split('T')[0] || 'TBD'}</div>
-                      <div className="text-sm text-gray-500">{apt.preferredTime || apt.preferredTimeSlot || 'TBD'}</div>
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="text-sm text-gray-900 max-w-xs truncate">
-                        {apt.reason || 'Not specified'}
-                      </div>
-                    </td>
-                    <td className="px-4 py-4">
-                      {apt.assignedDoctorName ? (
-                        <div className="text-sm text-gray-900">Dr. {apt.assignedDoctorName}</div>
-                      ) : (
-                        <span className="text-sm text-gray-400 italic">Unassigned</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-4">
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                        apt.status === 'confirmed' ? 'bg-green-100 text-green-700' :
-                        apt.status === 'pending' || apt.status === 'in_pool' ? 'bg-yellow-100 text-yellow-700' :
-                        apt.status === 'assigned' || apt.status === 'awaiting_doctor_response' ? 'bg-blue-100 text-blue-700' :
-                        apt.status === 'completed' ? 'bg-gray-100 text-gray-700' :
-                        apt.status === 'cancelled' || apt.status === 'declined' ? 'bg-red-100 text-red-700' :
-                        'bg-gray-100 text-gray-600'
-                      }`}>
-                        {apt.status.replace(/_/g, ' ')}
-                      </span>
-                    </td>
-                    <td className="px-4 py-4">
-                      {(!apt.assignedDoctorId || apt.status === 'pending' || apt.status === 'in_pool') && (
-                        <button
-                          onClick={() => {
-                            setSelectedPoolRequest(apt);
-                            setAssignData({
-                              doctorId: apt.assignedDoctorId || '',
-                              date: apt.requestedDate?.split('T')[0] || new Date().toISOString().split('T')[0],
-                              time: apt.preferredTime || '10:00',
-                              notes: ''
-                            });
-                            setShowAssignModal(true);
-                          }}
-                          className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
-                        >
-                          Assign
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                    <tr key={apt.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-4">
+                        <div className="font-medium text-gray-900">{apt.patientName}</div>
+                        <div className="text-sm text-gray-500">{apt.patientEmail}</div>
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className="text-sm text-gray-900">{apt.requestedDate?.split('T')[0] || 'TBD'}</div>
+                        <div className="text-sm text-gray-500">{apt.preferredTime || apt.preferredTimeSlot || 'TBD'}</div>
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className="text-sm text-gray-900 max-w-xs truncate">
+                          {apt.reason || 'Not specified'}
+                        </div>
+                      </td>
+                      <td className="px-4 py-4">
+                        {apt.assignedDoctorName ? (
+                          <div className="text-sm text-gray-900">Dr. {apt.assignedDoctorName}</div>
+                        ) : (
+                          <span className="text-sm text-gray-400 italic">Unassigned</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-4">
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getAppointmentStatusBadgeStyle(apt.status)}`}>
+                          {apt.status.replaceAll('_', ' ')}
+                        </span>
+                      </td>
+                      <td className="px-4 py-4">
+                        {(!apt.assignedDoctorId || apt.status === 'pending' || apt.status === 'in_pool') && (
+                          <button
+                            onClick={() => {
+                              setSelectedPoolRequest(apt);
+                              setAssignData({
+                                doctorId: apt.assignedDoctorId || '',
+                                date: apt.requestedDate?.split('T')[0] || new Date().toISOString().split('T')[0],
+                                time: apt.preferredTime || '10:00',
+                                notes: ''
+                              });
+                              setShowAssignModal(true);
+                            }}
+                            className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
+                          >
+                            Assign
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
           </div>
@@ -1713,7 +1611,7 @@ Izara Telehealth Team
             <h3 className="text-xl font-bold mb-4 text-indigo-600 flex items-center gap-2">
               📋 Assign Appointment
             </h3>
-            
+
             {/* Patient Info */}
             <div className="bg-gray-50 rounded-lg p-4 mb-6">
               <h4 className="font-medium text-gray-700 mb-2">Patient Information</h4>
@@ -1721,12 +1619,8 @@ Izara Telehealth Team
                 <p><span className="text-gray-500">Name:</span> {selectedPoolRequest.patientName}</p>
                 <p><span className="text-gray-500">Email:</span> {selectedPoolRequest.patientEmail}</p>
                 <p><span className="text-gray-500">Reason:</span> {selectedPoolRequest.reason}</p>
-                <p><span className="text-gray-500">Urgency:</span> 
-                  <span className={`ml-1 px-2 py-0.5 rounded text-xs ${
-                    selectedPoolRequest.urgency === 'emergency' ? 'bg-red-100 text-red-700' :
-                    selectedPoolRequest.urgency === 'urgent' ? 'bg-orange-100 text-orange-700' :
-                    'bg-green-100 text-green-700'
-                  }`}>{selectedPoolRequest.urgency}</span>
+                <p><span className="text-gray-500">Urgency:</span>
+                  <span className={`ml-1 px-2 py-0.5 rounded text-xs ${getUrgencyBadgeStyle(selectedPoolRequest.urgency)}`}>{selectedPoolRequest.urgency}</span>
                 </p>
               </div>
             </div>
@@ -1852,7 +1746,7 @@ Izara Telehealth Team
             <h3 className="text-xl font-bold mb-4 text-emerald-600 flex items-center gap-2">
               ✓ Confirm Appointment
             </h3>
-            
+
             {/* Patient Info */}
             <div className="bg-gray-50 rounded-lg p-4 mb-4">
               <h4 className="font-medium text-gray-700 mb-2">Patient Information</h4>
@@ -1862,7 +1756,7 @@ Izara Telehealth Team
                 <p><span className="text-gray-500">Reason:</span> {selectedAppointment.reason || selectedAppointment.symptoms?.join(', ') || 'General consultation'}</p>
               </div>
             </div>
-            
+
             {/* Patient's Requested Date/Time */}
             <div className="bg-blue-50 rounded-lg p-4 mb-4">
               <h4 className="font-medium text-blue-700 mb-2">📅 Patient's Requested Schedule</h4>
@@ -1900,7 +1794,7 @@ Izara Telehealth Team
                 </div>
               </div>
             </div>
-            
+
             <div className="mb-4">
               <label className="block font-medium mb-2 text-gray-700">Notes for Patient (Optional)</label>
               <textarea
@@ -1911,7 +1805,7 @@ Izara Telehealth Team
                 className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
               />
             </div>
-            
+
             {/* Email Recipients Selection */}
             <div className="mb-4 bg-blue-50 rounded-lg p-4">
               <h4 className="font-medium text-blue-700 mb-3 flex items-center gap-2">
@@ -1922,7 +1816,7 @@ Izara Telehealth Team
                   <input
                     type="checkbox"
                     checked={emailRecipients.sendToPatient}
-                    onChange={(e) => setEmailRecipients({...emailRecipients, sendToPatient: e.target.checked})}
+                    onChange={(e) => setEmailRecipients({ ...emailRecipients, sendToPatient: e.target.checked })}
                     className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                   />
                   <span className="text-gray-700">Send to Patient</span>
@@ -1932,7 +1826,7 @@ Izara Telehealth Team
                   <input
                     type="checkbox"
                     checked={emailRecipients.sendToDoctor}
-                    onChange={(e) => setEmailRecipients({...emailRecipients, sendToDoctor: e.target.checked})}
+                    onChange={(e) => setEmailRecipients({ ...emailRecipients, sendToDoctor: e.target.checked })}
                     className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                   />
                   <span className="text-gray-700">CC Doctor</span>
@@ -1943,14 +1837,14 @@ Izara Telehealth Team
                   <input
                     type="text"
                     value={emailRecipients.additionalEmails}
-                    onChange={(e) => setEmailRecipients({...emailRecipients, additionalEmails: e.target.value})}
+                    onChange={(e) => setEmailRecipients({ ...emailRecipients, additionalEmails: e.target.value })}
                     placeholder="e.g., family@example.com, nurse@clinic.com"
                     className="w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
               </div>
             </div>
-            
+
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => {

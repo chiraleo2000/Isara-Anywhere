@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { 
-  Calendar, Clock, Video, MapPin, FileText, Pill, Stethoscope, 
+import {
+  Calendar, Clock, Video, MapPin, FileText, Pill, Stethoscope,
   AlertCircle, ExternalLink, ChevronDown, ChevronUp, Filter, History,
   ClipboardList, Brain, Activity
 } from 'lucide-react';
@@ -36,7 +36,7 @@ export const TreatmentResults: React.FC<TreatmentResultsProps> = ({
 
   const fetchHealthLogs = async () => {
     if (!user?.patientId && !user?.id) return;
-    
+
     setLoadingLogs(true);
     try {
       const response = await healthLogsService.getHealthLogs(user.patientId || user.id);
@@ -63,7 +63,7 @@ export const TreatmentResults: React.FC<TreatmentResultsProps> = ({
       .sort((a, b) => new Date(b.appointmentDate).getTime() - new Date(a.appointmentDate).getTime());
 
     const now = new Date();
-    
+
     switch (activeFilter) {
       case 'last5':
         return completed.slice(0, 5);
@@ -139,16 +139,18 @@ export const TreatmentResults: React.FC<TreatmentResultsProps> = ({
   // Render EMR entry card
   const renderEMRCard = (entry: HealthLogEntry) => {
     const isExpanded = expandedId === `emr-${entry.id}`;
-    
+
     return (
       <div
         key={`emr-${entry.id}`}
-        className={`bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border transition-all ${
-          isExpanded ? 'border-blue-300' : 'border-blue-100'
-        }`}
+        className={`bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border transition-all ${isExpanded ? 'border-blue-300' : 'border-blue-100'
+          }`}
       >
         <div
+          role="button"
+          tabIndex={0}
           onClick={() => setExpandedId(isExpanded ? null : `emr-${entry.id}`)}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpandedId(isExpanded ? null : `emr-${entry.id}`); } }}
           className="p-3 cursor-pointer"
         >
           <div className="flex items-center gap-3">
@@ -238,9 +240,8 @@ export const TreatmentResults: React.FC<TreatmentResultsProps> = ({
                 <div className="space-y-1.5">
                   {entry.diagnosis.map((d, index) => (
                     <div key={index} className="flex items-center gap-2 text-sm">
-                      <div className={`w-1.5 h-1.5 rounded-full ${
-                        d.status === 'primary' ? 'bg-blue-500' : 'bg-gray-400'
-                      }`} />
+                      <div className={`w-1.5 h-1.5 rounded-full ${d.status === 'primary' ? 'bg-blue-500' : 'bg-gray-400'
+                        }`} />
                       <span className="text-gray-800">{d.description}</span>
                       <span className="text-xs text-gray-500">({d.status})</span>
                     </div>
@@ -339,26 +340,24 @@ export const TreatmentResults: React.FC<TreatmentResultsProps> = ({
       <div className="flex items-center gap-2 overflow-x-auto pb-1 border-b border-gray-100 mb-2">
         {viewTypes.map((vt) => {
           const Icon = vt.icon;
-          const count = vt.id === 'appointments' 
-            ? filteredAppointments.length 
-            : vt.id === 'emr' 
-              ? healthLogs.length 
+          const count = vt.id === 'appointments'
+            ? filteredAppointments.length
+            : vt.id === 'emr'
+              ? healthLogs.length
               : filteredAppointments.length + healthLogs.length;
           return (
             <button
               key={vt.id}
               onClick={() => setViewType(vt.id)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
-                viewType === vt.id
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${viewType === vt.id
                   ? 'bg-emerald-100 text-emerald-700'
                   : 'text-gray-600 hover:bg-gray-100'
-              }`}
+                }`}
             >
               <Icon className="w-3.5 h-3.5" />
               {vt.label}
-              <span className={`px-1.5 py-0.5 rounded-full text-xs ${
-                viewType === vt.id ? 'bg-emerald-200' : 'bg-gray-200'
-              }`}>
+              <span className={`px-1.5 py-0.5 rounded-full text-xs ${viewType === vt.id ? 'bg-emerald-200' : 'bg-gray-200'
+                }`}>
                 {count}
               </span>
             </button>
@@ -373,11 +372,10 @@ export const TreatmentResults: React.FC<TreatmentResultsProps> = ({
           <button
             key={filter.id}
             onClick={() => setActiveFilter(filter.id)}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all ${
-              activeFilter === filter.id
+            className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all ${activeFilter === filter.id
                 ? 'bg-emerald-600 text-white'
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
+              }`}
           >
             {filter.shortLabel}
           </button>
@@ -447,166 +445,168 @@ export const TreatmentResults: React.FC<TreatmentResultsProps> = ({
               </div>
             ) : (
               filteredAppointments.map((apt) => {
-            const isExpanded = expandedId === apt.id;
-            const hasPrescription = (apt.prescription as any)?.medications?.length > 0;
-            
-            return (
-              <div
-                key={apt.id}
-                className={`bg-gray-50 rounded-xl border transition-all ${
-                  isExpanded ? 'border-emerald-300 bg-emerald-50/30' : 'border-gray-100'
-                }`}
-              >
-                {/* Collapsed View */}
-                <div
-                  onClick={() => setExpandedId(isExpanded ? null : apt.id)}
-                  className="p-3 cursor-pointer"
-                >
-                  <div className="flex items-center gap-3">
-                    <img
-                      src={apt.doctorAvatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(apt.doctorId)}`}
-                      alt={apt.doctorName}
-                      className="w-10 h-10 rounded-full border-2 border-white shadow-sm flex-shrink-0"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium text-gray-800 truncate">{apt.doctorName}</p>
-                        {apt.type === 'telehealth' ? (
-                          <Video className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />
-                        ) : (
-                          <MapPin className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
-                        <span>{apt.doctorSpecialty}</span>
-                        <span>•</span>
-                        <span>{formatDate(apt.appointmentDate)}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      {hasPrescription && (
-                        <span className="p-1 bg-green-100 rounded-full">
-                          <Pill className="w-3 h-3 text-green-600" />
-                        </span>
-                      )}
-                      {apt.diagnosis && (
-                        <span className="p-1 bg-blue-100 rounded-full">
-                          <Stethoscope className="w-3 h-3 text-blue-600" />
-                        </span>
-                      )}
-                      {isExpanded ? (
-                        <ChevronUp className="w-4 h-4 text-gray-400" />
-                      ) : (
-                        <ChevronDown className="w-4 h-4 text-gray-400" />
-                      )}
-                    </div>
-                  </div>
+                const isExpanded = expandedId === apt.id;
+                const hasPrescription = (apt.prescription as any)?.medications?.length > 0;
 
-                  {/* Brief Summary when collapsed */}
-                  {!isExpanded && apt.diagnosis && (
-                    <p className="text-xs text-gray-600 mt-2 line-clamp-1 pl-13">
-                      {apt.diagnosis}
-                    </p>
-                  )}
-                </div>
-
-                {/* Expanded Details */}
-                {isExpanded && (
-                  <div className="px-3 pb-3 space-y-3 border-t border-gray-200 pt-3">
-                    {/* Date & Time */}
-                    <div className="flex items-center gap-4 text-sm text-gray-600">
-                      <span className="flex items-center gap-1">
-                        <Calendar className="w-4 h-4" />
-                        {formatFullDate(apt.appointmentDate)}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-4 h-4" />
-                        {apt.appointmentTime}
-                      </span>
-                    </div>
-
-                    {/* Diagnosis */}
-                    {apt.diagnosis && (
-                      <div className="bg-white rounded-lg p-3 border border-gray-200">
-                        <h5 className="font-medium text-gray-800 flex items-center gap-2 mb-1 text-sm">
-                          <Stethoscope className="w-4 h-4 text-blue-600" />
-                          การวินิจฉัย
-                        </h5>
-                        <p className="text-sm text-gray-700">{apt.diagnosis}</p>
-                      </div>
-                    )}
-
-                    {/* Treatment Notes */}
-                    {apt.notes && (
-                      <div className="bg-white rounded-lg p-3 border border-gray-200">
-                        <h5 className="font-medium text-gray-800 flex items-center gap-2 mb-1 text-sm">
-                          <FileText className="w-4 h-4 text-purple-600" />
-                          บันทึกการรักษา
-                        </h5>
-                        <p className="text-sm text-gray-700 whitespace-pre-wrap">{apt.notes}</p>
-                      </div>
-                    )}
-
-                    {/* Prescription */}
-                    {hasPrescription && (
-                      <div className="bg-white rounded-lg p-3 border border-gray-200">
-                        <h5 className="font-medium text-gray-800 flex items-center gap-2 mb-2 text-sm">
-                          <Pill className="w-4 h-4 text-green-600" />
-                          ยาที่สั่ง ({(apt.prescription as any).medications.length} รายการ)
-                        </h5>
-                        <div className="space-y-1.5">
-                          {((apt.prescription as any).medications || []).slice(0, 3).map((item: any, index: number) => (
-                            <div key={index} className="flex items-center gap-2 text-sm">
-                              <div className="w-1.5 h-1.5 bg-green-500 rounded-full" />
-                              <span className="font-medium text-gray-800">{item.name || item.drugName}</span>
-                              <span className="text-gray-500">{item.dosage}</span>
-                            </div>
-                          ))}
-                          {(apt.prescription as any).medications.length > 3 && (
-                            <p className="text-xs text-gray-500 ml-3">
-                              +{(apt.prescription as any).medications.length - 3} รายการเพิ่มเติม
-                            </p>
+                return (
+                  <div
+                    key={apt.id}
+                    className={`bg-gray-50 rounded-xl border transition-all ${isExpanded ? 'border-emerald-300 bg-emerald-50/30' : 'border-gray-100'
+                      }`}
+                  >
+                    {/* Collapsed View */}
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => setExpandedId(isExpanded ? null : apt.id)}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpandedId(isExpanded ? null : apt.id); } }}
+                      className="p-3 cursor-pointer"
+                    >
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={apt.doctorAvatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(apt.doctorId)}`}
+                          alt={apt.doctorName}
+                          className="w-10 h-10 rounded-full border-2 border-white shadow-sm flex-shrink-0"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-gray-800 truncate">{apt.doctorName}</p>
+                            {apt.type === 'telehealth' ? (
+                              <Video className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />
+                            ) : (
+                              <MapPin className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
+                            <span>{apt.doctorSpecialty}</span>
+                            <span>•</span>
+                            <span>{formatDate(apt.appointmentDate)}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          {hasPrescription && (
+                            <span className="p-1 bg-green-100 rounded-full">
+                              <Pill className="w-3 h-3 text-green-600" />
+                            </span>
+                          )}
+                          {apt.diagnosis && (
+                            <span className="p-1 bg-blue-100 rounded-full">
+                              <Stethoscope className="w-3 h-3 text-blue-600" />
+                            </span>
+                          )}
+                          {isExpanded ? (
+                            <ChevronUp className="w-4 h-4 text-gray-400" />
+                          ) : (
+                            <ChevronDown className="w-4 h-4 text-gray-400" />
                           )}
                         </div>
                       </div>
-                    )}
 
-                    {/* Follow-up */}
-                    {(apt as any).followUpDate && (
-                      <div className="bg-yellow-50 rounded-lg p-3 border border-yellow-200">
-                        <h5 className="font-medium text-yellow-800 flex items-center gap-2 text-sm">
-                          <AlertCircle className="w-4 h-4" />
-                          นัดติดตามผล: {formatDate((apt as any).followUpDate)}
-                        </h5>
+                      {/* Brief Summary when collapsed */}
+                      {!isExpanded && apt.diagnosis && (
+                        <p className="text-xs text-gray-600 mt-2 line-clamp-1 pl-13">
+                          {apt.diagnosis}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Expanded Details */}
+                    {isExpanded && (
+                      <div className="px-3 pb-3 space-y-3 border-t border-gray-200 pt-3">
+                        {/* Date & Time */}
+                        <div className="flex items-center gap-4 text-sm text-gray-600">
+                          <span className="flex items-center gap-1">
+                            <Calendar className="w-4 h-4" />
+                            {formatFullDate(apt.appointmentDate)}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-4 h-4" />
+                            {apt.appointmentTime}
+                          </span>
+                        </div>
+
+                        {/* Diagnosis */}
+                        {apt.diagnosis && (
+                          <div className="bg-white rounded-lg p-3 border border-gray-200">
+                            <h5 className="font-medium text-gray-800 flex items-center gap-2 mb-1 text-sm">
+                              <Stethoscope className="w-4 h-4 text-blue-600" />
+                              การวินิจฉัย
+                            </h5>
+                            <p className="text-sm text-gray-700">{apt.diagnosis}</p>
+                          </div>
+                        )}
+
+                        {/* Treatment Notes */}
+                        {apt.notes && (
+                          <div className="bg-white rounded-lg p-3 border border-gray-200">
+                            <h5 className="font-medium text-gray-800 flex items-center gap-2 mb-1 text-sm">
+                              <FileText className="w-4 h-4 text-purple-600" />
+                              บันทึกการรักษา
+                            </h5>
+                            <p className="text-sm text-gray-700 whitespace-pre-wrap">{apt.notes}</p>
+                          </div>
+                        )}
+
+                        {/* Prescription */}
+                        {hasPrescription && (
+                          <div className="bg-white rounded-lg p-3 border border-gray-200">
+                            <h5 className="font-medium text-gray-800 flex items-center gap-2 mb-2 text-sm">
+                              <Pill className="w-4 h-4 text-green-600" />
+                              ยาที่สั่ง ({(apt.prescription as any).medications.length} รายการ)
+                            </h5>
+                            <div className="space-y-1.5">
+                              {((apt.prescription as any).medications || []).slice(0, 3).map((item: any, index: number) => (
+                                <div key={index} className="flex items-center gap-2 text-sm">
+                                  <div className="w-1.5 h-1.5 bg-green-500 rounded-full" />
+                                  <span className="font-medium text-gray-800">{item.name || item.drugName}</span>
+                                  <span className="text-gray-500">{item.dosage}</span>
+                                </div>
+                              ))}
+                              {(apt.prescription as any).medications.length > 3 && (
+                                <p className="text-xs text-gray-500 ml-3">
+                                  +{(apt.prescription as any).medications.length - 3} รายการเพิ่มเติม
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Follow-up */}
+                        {(apt as any).followUpDate && (
+                          <div className="bg-yellow-50 rounded-lg p-3 border border-yellow-200">
+                            <h5 className="font-medium text-yellow-800 flex items-center gap-2 text-sm">
+                              <AlertCircle className="w-4 h-4" />
+                              นัดติดตามผล: {formatDate((apt as any).followUpDate)}
+                            </h5>
+                          </div>
+                        )}
+
+                        {/* View Full Details */}
+                        <a
+                          href={`/appointments/${apt.id}`}
+                          className="flex items-center justify-center gap-2 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 transition-colors"
+                        >
+                          ดูรายละเอียดทั้งหมด
+                          <ExternalLink className="w-4 h-4" />
+                        </a>
                       </div>
                     )}
-
-                    {/* View Full Details */}
-                    <a
-                      href={`/appointments/${apt.id}`}
-                      className="flex items-center justify-center gap-2 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 transition-colors"
-                    >
-                      ดูรายละเอียดทั้งหมด
-                      <ExternalLink className="w-4 h-4" />
-                    </a>
                   </div>
-                )}
-              </div>
-            );
-          })
+                );
+              })
             )}
           </>
         )}
 
         {/* Empty state when no data */}
-        {!loadingLogs && 
+        {!loadingLogs &&
           ((viewType === 'emr' && healthLogs.length === 0) ||
-           (viewType === 'all' && healthLogs.length === 0 && filteredAppointments.length === 0)) && (
-          <div className="text-center py-6 text-gray-500">
-            <History className="w-10 h-10 mx-auto mb-2 opacity-40" />
-            <p className="text-sm">ไม่มีข้อมูลในช่วงเวลานี้</p>
-          </div>
-        )}
+            (viewType === 'all' && healthLogs.length === 0 && filteredAppointments.length === 0)) && (
+            <div className="text-center py-6 text-gray-500">
+              <History className="w-10 h-10 mx-auto mb-2 opacity-40" />
+              <p className="text-sm">ไม่มีข้อมูลในช่วงเวลานี้</p>
+            </div>
+          )}
       </div>
 
       {/* View All Link */}

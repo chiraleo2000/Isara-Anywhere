@@ -12,7 +12,7 @@
  * because the buckets are private and require authentication.
  */
 
-import config, { GcsBucketType, getGcsBucketName } from './config';
+import { GcsBucketType } from './config';
 
 // GCS API Server URL (proxied by Vite in development)
 const GCS_API_BASE = '/api/storage';
@@ -286,7 +286,7 @@ export async function deleteFromGCS(
 // --- CREDENTIALS BUCKET (izara-users-credentials) ---
 // Documented paths: users/{id}.json, sessions/{id}.json, oauth/tokens/{id}.json, login-history/{id}.json
 
-export async function fetchUserById(userId: string): Promise<any | null> {
+export async function fetchUserById(userId: string): Promise<any> {
   return fetchFromGCS('credentials', `users/${userId}.json`);
 }
 
@@ -294,7 +294,7 @@ export async function saveUser(userId: string, userData: any): Promise<GCSWriteR
   return writeToGCS('credentials', `users/${userId}.json`, userData);
 }
 
-export async function fetchUserByEmail(email: string): Promise<any | null> {
+export async function fetchUserByEmail(email: string): Promise<any> {
   // First try to fetch all users index, then find by email
   const usersIndex = await fetchFromGCS<any[]>('credentials', 'users/index.json');
   if (usersIndex) {
@@ -306,7 +306,7 @@ export async function fetchUserByEmail(email: string): Promise<any | null> {
   return null;
 }
 
-export async function fetchSession(sessionId: string): Promise<any | null> {
+export async function fetchSession(sessionId: string): Promise<any> {
   return fetchFromGCS('credentials', `sessions/${sessionId}.json`);
 }
 
@@ -318,7 +318,7 @@ export async function deleteSession(sessionId: string): Promise<boolean> {
   return deleteFromGCS('credentials', `sessions/${sessionId}.json`);
 }
 
-export async function fetchOAuthTokens(userId: string): Promise<any | null> {
+export async function fetchOAuthTokens(userId: string): Promise<any> {
   return fetchFromGCS('credentials', `oauth/tokens/${userId}.json`);
 }
 
@@ -345,7 +345,7 @@ export async function saveDoctors(doctors: any[]): Promise<GCSWriteResult> {
   return writeToGCS('doctor', 'doctors.json', doctors);
 }
 
-export async function fetchDoctorById(doctorId: string): Promise<any | null> {
+export async function fetchDoctorById(doctorId: string): Promise<any> {
   const doctors = await fetchAllDoctors();
   return doctors.find(d => d.id === doctorId) || null;
 }
@@ -377,7 +377,7 @@ export async function fetchDoctorQueue(doctorId: string): Promise<any[]> {
 }
 
 // Doctor Schedule - Per-doctor schedule
-export async function fetchDoctorSchedule(doctorId: string): Promise<any | null> {
+export async function fetchDoctorSchedule(doctorId: string): Promise<any> {
   return fetchFromGCS('doctor', `doctors/${doctorId}/schedule.json`);
 }
 
@@ -386,7 +386,7 @@ export async function saveDoctorSchedule(doctorId: string, schedule: any): Promi
 }
 
 // Doctor Stats
-export async function fetchDoctorStats(doctorId: string): Promise<any | null> {
+export async function fetchDoctorStats(doctorId: string): Promise<any> {
   return fetchFromGCS('doctor', `doctors/${doctorId}/stats.json`);
 }
 
@@ -420,7 +420,7 @@ export async function saveAllPatients(patients: any[]): Promise<GCSWriteResult> 
   return writeToGCS('patient', 'patients.json', patients);
 }
 
-export async function fetchPatientById(patientId: string): Promise<any | null> {
+export async function fetchPatientById(patientId: string): Promise<any> {
   const patients = await fetchAllPatients();
   return patients.find(p => p.id === patientId) || null;
 }
@@ -450,7 +450,7 @@ export async function fetchPatientEMRs(patientId: string): Promise<any[]> {
   return allEMRs.filter(e => e.patientId === patientId);
 }
 
-export async function fetchEMRById(emrId: string): Promise<any | null> {
+export async function fetchEMRById(emrId: string): Promise<any> {
   const allEMRs = await fetchAllEMRs();
   return allEMRs.find(e => e.id === emrId) || null;
 }
@@ -485,7 +485,7 @@ export async function fetchPatientPrescriptions(patientId: string): Promise<any[
   return allPrescriptions.filter(p => p.patientId === patientId);
 }
 
-export async function fetchPrescriptionById(prescriptionId: string): Promise<any | null> {
+export async function fetchPrescriptionById(prescriptionId: string): Promise<any> {
   const allPrescriptions = await fetchAllPrescriptions();
   return allPrescriptions.find(p => p.id === prescriptionId) || null;
 }
@@ -515,7 +515,7 @@ export async function fetchPatientLabOrders(patientId: string): Promise<any[]> {
   return allLabOrders.filter(l => l.patientId === patientId);
 }
 
-export async function fetchLabOrderById(labOrderId: string): Promise<any | null> {
+export async function fetchLabOrderById(labOrderId: string): Promise<any> {
   const allLabOrders = await fetchAllLabOrders();
   return allLabOrders.find(l => l.id === labOrderId) || null;
 }
@@ -545,7 +545,7 @@ export async function fetchPatientImagingOrders(patientId: string): Promise<any[
   return allImagingOrders.filter(i => i.patientId === patientId);
 }
 
-export async function fetchImagingOrderById(imagingOrderId: string): Promise<any | null> {
+export async function fetchImagingOrderById(imagingOrderId: string): Promise<any> {
   const allImagingOrders = await fetchAllImagingOrders();
   return allImagingOrders.find(i => i.id === imagingOrderId) || null;
 }
@@ -562,7 +562,7 @@ export async function saveImagingOrder(imagingOrder: any): Promise<GCSWriteResul
 }
 
 // Patient Vital Signs - Per-patient file
-export async function fetchPatientVitals(patientId: string): Promise<any | null> {
+export async function fetchPatientVitals(patientId: string): Promise<any> {
   return fetchFromGCS('patient', `patients/${patientId}/vital-signs.json`);
 }
 
@@ -571,7 +571,7 @@ export async function savePatientVitals(patientId: string, vitals: any): Promise
 }
 
 // Patient PHR - Per-patient file
-export async function fetchPatientPHR(patientId: string): Promise<any | null> {
+export async function fetchPatientPHR(patientId: string): Promise<any> {
   return fetchFromGCS('patient', `patients/${patientId}/phr.json`);
 }
 
@@ -580,7 +580,7 @@ export async function savePatientPHR(patientId: string, phr: any): Promise<GCSWr
 }
 
 // Patient PDPA Consents - Per-patient file
-export async function fetchPatientConsents(patientId: string): Promise<any | null> {
+export async function fetchPatientConsents(patientId: string): Promise<any> {
   return fetchFromGCS('patient', `patients/${patientId}/pdpa/consents.json`);
 }
 
@@ -609,7 +609,7 @@ export async function verifyPatientConsent(
 }
 
 // Patient Living Will - Per-patient file
-export async function fetchPatientLivingWill(patientId: string): Promise<any | null> {
+export async function fetchPatientLivingWill(patientId: string): Promise<any> {
   return fetchFromGCS('patient', `patients/${patientId}/living-will.json`);
 }
 
@@ -637,7 +637,7 @@ export async function addTimelineEntry(patientId: string, entry: any): Promise<G
 }
 
 // Audit Logs - Per-log file in patient bucket
-export async function fetchAuditLogs(logId: string): Promise<any | null> {
+export async function fetchAuditLogs(logId: string): Promise<any> {
   return fetchFromGCS('patient', `audit/access-logs/${logId}.json`);
 }
 
@@ -671,31 +671,31 @@ export async function saveAllAppointments(appointments: any[]): Promise<GCSWrite
   return writeToGCS('appointments', 'appointments.json', appointments);
 }
 
-export async function fetchAppointmentById(appointmentId: string): Promise<any | null> {
+export async function fetchAppointmentById(appointmentId: string): Promise<any> {
   // First try individual file
   let appointment = await fetchFromGCS('appointments', `appointments/${appointmentId}.json`);
-  
+
   // If not found, try with /details.json subfolder (legacy format)
   if (!appointment) {
     appointment = await fetchFromGCS('appointments', `appointments/${appointmentId}/details.json`);
   }
-  
+
   // If still not found, search in main appointments.json
   if (!appointment) {
     const allAppointments = await fetchAllAppointments();
     appointment = allAppointments.find((a: any) => a.id === appointmentId) || null;
   }
-  
+
   return appointment;
 }
 
 export async function saveAppointment(appointment: any): Promise<GCSWriteResult> {
   console.log(`📅 Saving appointment: ${appointment.id}`);
-  
+
   // Invalidate cache before writing to ensure fresh data
   invalidateCache('appointments', 'appointments.json');
   invalidateCache('appointments', `appointments/${appointment.id}.json`);
-  
+
   // Save individual appointment
   const result = await writeToGCS('appointments', `appointments/${appointment.id}.json`, appointment);
 
@@ -710,10 +710,10 @@ export async function saveAppointment(appointment: any): Promise<GCSWriteResult>
       allAppointments.push(appointment);
     }
     const indexResult = await writeToGCS('appointments', 'appointments.json', allAppointments);
-    
+
     // Invalidate cache again after write
     invalidateCache('appointments', 'appointments.json');
-    
+
     console.log(`✅ Appointment saved: ${appointment.id}, index updated: ${indexResult.success}`);
   }
 
@@ -736,7 +736,7 @@ export async function deleteAppointment(appointmentId: string): Promise<boolean>
 }
 
 // Meeting Link Management
-export async function fetchMeetingLink(appointmentId: string): Promise<any | null> {
+export async function fetchMeetingLink(appointmentId: string): Promise<any> {
   return fetchFromGCS('appointments', `appointments/${appointmentId}/meeting-link.json`);
 }
 
@@ -767,15 +767,15 @@ export async function fetchDoctorAppointments(doctorId: string, date?: string): 
       return dayAppointments;
     }
   }
-  
+
   // Fetch all and filter by ALL possible doctor ID fields
   const allAppointments = await fetchAllAppointments();
-  const filtered = allAppointments.filter(a => 
-    a.doctorId === doctorId || 
-    a.assignedDoctorId === doctorId || 
+  const filtered = allAppointments.filter(a =>
+    a.doctorId === doctorId ||
+    a.assignedDoctorId === doctorId ||
     a.adminAssignedDoctorId === doctorId
   );
-  
+
   // If date specified, filter by date
   if (date) {
     return filtered.filter(a => {
@@ -783,7 +783,7 @@ export async function fetchDoctorAppointments(doctorId: string, date?: string): 
       return aptDate && aptDate.startsWith(date);
     });
   }
-  
+
   return filtered;
 }
 
@@ -798,7 +798,7 @@ export async function fetchPatientAppointments(patientId: string): Promise<any[]
 }
 
 // Appointment with Meeting Link (combined fetch)
-export async function fetchAppointmentWithMeetLink(appointmentId: string): Promise<any | null> {
+export async function fetchAppointmentWithMeetLink(appointmentId: string): Promise<any> {
   const [appointment, meetingLink] = await Promise.all([
     fetchAppointmentById(appointmentId),
     fetchMeetingLink(appointmentId),
@@ -889,22 +889,22 @@ export async function savePoolItem(item: AppointmentPoolItem): Promise<GCSWriteR
 
 export async function fetchPoolItemsBySpecialty(specialty: string): Promise<AppointmentPoolItem[]> {
   const allItems = await fetchAllPoolItems();
-  return allItems.filter(item => 
-    item.matchedSpecialties?.includes(specialty) || 
+  return allItems.filter(item =>
+    item.matchedSpecialties?.includes(specialty) ||
     item.requiredSpecialty === specialty
   );
 }
 
 export async function fetchPendingPoolItems(): Promise<AppointmentPoolItem[]> {
   const allItems = await fetchAllPoolItems();
-  return allItems.filter(item => 
+  return allItems.filter(item =>
     item.poolStatus === 'pending' || item.poolStatus === 'ai_matched'
   );
 }
 
 export async function fetchPoolItemsByDoctor(doctorId: string): Promise<AppointmentPoolItem[]> {
   const allItems = await fetchAllPoolItems();
-  return allItems.filter(item => 
+  return allItems.filter(item =>
     item.claimedByDoctorId === doctorId ||
     item.aiMatchedDoctorId === doctorId ||
     item.adminAssignedDoctorId === doctorId
@@ -970,7 +970,7 @@ export async function getReferenceRange(
   testCode: string,
   ageGroup?: 'adult' | 'pediatric' | 'geriatric',
   gender?: 'male' | 'female'
-): Promise<any | null> {
+): Promise<any> {
   const ranges = await fetchReferenceRanges();
   return ranges.find(
     (r: any) =>
@@ -1075,7 +1075,7 @@ export default {
   saveDoctorDayAppointments,
   fetchPatientAppointments,
   fetchAppointmentWithMeetLink,
-  
+
   // Appointment Pool (izara-appointments/appointment-pool)
   fetchAllPoolItems,
   saveAllPoolItems,

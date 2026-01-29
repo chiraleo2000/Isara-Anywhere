@@ -190,7 +190,7 @@ This document describes the video meeting implementation using:
 | Doctor Recommendations | Gemini AI | ~$0.001/1K tokens |
 | Recording | Jitsi Built-in Local Recording | **$0** (FREE) |
 | Video Storage | GCS (izara-doctors-data) | ~$0.02/GB/month |
-| **Total per 15-min consultation** |  | **~$0.50-1.00** |
+| **Total per 15-min consultation** | | **~$0.50-1.00** |
 
 ## API Endpoints
 
@@ -312,7 +312,7 @@ const SECTION_DURATION_MS = 30 * 60 * 1000; // 30 minutes
 function splitIntoSections(transcript, totalDuration) {
   const sections = [];
   const numSections = Math.ceil(totalDuration / SECTION_DURATION_MS);
-  
+
   for (let i = 0; i < numSections; i++) {
     const startTime = i * SECTION_DURATION_MS;
     const endTime = Math.min((i + 1) * SECTION_DURATION_MS, totalDuration);
@@ -770,6 +770,7 @@ node scripts/generators/generateTestAudio.cjs
 ```
 
 ### Test Files Generated
+
 - `thai-headache-consultation-transcript.txt` - Reference Thai transcript
 - `thai-fever-consultation-transcript.txt` - Reference Thai transcript
 - `english-general-consultation-transcript.txt` - Reference English transcript
@@ -796,23 +797,27 @@ curl http://localhost:3009/api/video-meeting/APT-TEST-001/files?doctorId=DOC-001
 ## Troubleshooting
 
 ### Meeting Won't Start
+
 1. Check browser permissions for camera/microphone
 2. Ensure HTTPS is enabled (required for WebRTC)
 3. Try a different browser (Chrome/Edge recommended)
 
 ### Transcription Not Working
+
 1. Verify GOOGLE_SPEECH_API_KEY is set correctly
 2. Check audio format is supported (webm, mp3, wav)
 3. Ensure audio quality is sufficient
 4. Check API quota limits
 
 ### Video Upload Failed
+
 1. Check file size (max 200MB)
 2. Verify content type (video/webm, video/mp4)
 3. Check GCS API server is running
 4. Verify bucket permissions
 
 ### Meeting Link Invalid
+
 1. Meetings expire 30 minutes after scheduled end time
 2. Check appointment status is not cancelled
 3. Verify appointmentId is correct

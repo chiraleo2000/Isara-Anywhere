@@ -3,7 +3,7 @@ import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { appointmentService, doctorService, googleService } from '../../lib/services';
 import { Appointment, Doctor, AppointmentStatus } from '../../types';
-import { Calendar, Clock, Video, MapPin, Plus, ChevronLeft, CalendarPlus, ExternalLink, FileText, AlertCircle, Thermometer, Activity, Pill, Stethoscope, MessageSquare, CheckCircle2, Info, Mic, MicOff, Camera, Upload, X, Image, Play, Pause, Trash2 } from 'lucide-react';
+import { Calendar, Clock, Video, MapPin, Plus, ChevronLeft, CalendarPlus, ExternalLink, FileText, AlertCircle, Activity, Pill, Stethoscope, CheckCircle2, Info, Mic, Image, Play } from 'lucide-react';
 import SymptomInputStep from '../../components/appointments/SymptomInputStep';
 
 export function AppointmentListPage() {
@@ -105,7 +105,7 @@ export function AppointmentListPage() {
             {f === 'pending' ? '⏳ รอการยืนยัน' : f === 'all' ? '📋 ทั้งหมด' : f === 'confirmed' ? '✅ ยืนยันแล้ว' : '📂 ที่ผ่านมา'}
           </button>
         ))}
-        
+
         {/* Sort buttons */}
         <div className="ml-auto flex items-center gap-2">
           <span className="text-sm text-gray-500">เรียงตามวันที่:</span>
@@ -139,16 +139,15 @@ export function AppointmentListPage() {
       ) : (
         <div className="space-y-4">
           {filteredAppointments.map((apt) => (
-            <Link 
-              key={apt.id} 
-              to={`/appointments/${apt.id}`} 
-              className={`block bg-white rounded-xl p-5 border transition-all hover:shadow-md ${
-                apt.status === 'pending' 
-                  ? 'border-yellow-200 bg-yellow-50/30' 
-                  : apt.status === 'confirmed'
+            <Link
+              key={apt.id}
+              to={`/appointments/${apt.id}`}
+              className={`block bg-white rounded-xl p-5 border transition-all hover:shadow-md ${apt.status === 'pending'
+                ? 'border-yellow-200 bg-yellow-50/30'
+                : apt.status === 'confirmed'
                   ? 'border-green-200 bg-green-50/30'
                   : 'border-gray-100'
-              }`}
+                }`}
             >
               <div className="flex justify-between items-start mb-3">
                 <div className="flex items-center gap-3">
@@ -160,7 +159,7 @@ export function AppointmentListPage() {
                 </div>
                 {getStatusBadge(apt.status)}
               </div>
-              
+
               {/* Symptom preview if available */}
               {apt.reason && (
                 <div className="mb-3 p-3 bg-gray-50 rounded-lg">
@@ -188,7 +187,7 @@ export function AppointmentListPage() {
                       </div>
                     </div>
                   </div>
-                  
+
                   {/* Meeting Link for Telehealth - Use patientMeetingUrl if available */}
                   {apt.type === 'telehealth' && (apt.meetingLink || apt.patientMeetingUrl) && (
                     <div className="mt-3 pt-3 border-t border-green-200">
@@ -218,7 +217,7 @@ export function AppointmentListPage() {
                       </p>
                     </div>
                   )}
-                  
+
                   {/* Quick Join Button */}
                   {apt.type === 'telehealth' && (apt.meetingLink || apt.patientMeetingUrl) && (
                     <button
@@ -240,7 +239,7 @@ export function AppointmentListPage() {
               {apt.status !== 'confirmed' && (
                 <div className="flex flex-wrap gap-4 text-sm text-gray-600">
                   <span className="flex items-center gap-1">
-                    <Calendar className="w-4 h-4" /> 
+                    <Calendar className="w-4 h-4" />
                     {apt.status === 'pending' ? (
                       <span className="text-yellow-600">รอแพทย์นัดเวลา</span>
                     ) : (
@@ -251,7 +250,7 @@ export function AppointmentListPage() {
                     <span className="flex items-center gap-1"><Clock className="w-4 h-4" /> {apt.appointmentTime}</span>
                   )}
                   <span className="flex items-center gap-1">
-                    {apt.type === 'telehealth' ? <Video className="w-4 h-4" /> : <MapPin className="w-4 h-4" />} 
+                    {apt.type === 'telehealth' ? <Video className="w-4 h-4" /> : <MapPin className="w-4 h-4" />}
                     {apt.type === 'telehealth' ? 'ออนไลน์' : apt.hospitalName || 'ที่โรงพยาบาล'}
                   </span>
                 </div>
@@ -281,7 +280,7 @@ export function BookAppointmentPage() {
   const [submitting, setSubmitting] = useState(false);
   const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
   const [step, setStep] = useState(1);
-  
+
   // AI Analysis state
   const [aiAnalyzing, setAiAnalyzing] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState<{
@@ -293,7 +292,7 @@ export function BookAppointmentPage() {
     suggestedSpecialties?: string[];
   } | null>(null);
   const [showAiAnalysis, setShowAiAnalysis] = useState(false);
-  
+
   // AI Suggestion state (for improving description)
   const [aiSuggesting, setAiSuggesting] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState<{
@@ -301,7 +300,7 @@ export function BookAppointmentPage() {
     improvedDescription?: string;
     followUpQuestions?: string[];
   } | null>(null);
-  
+
   // Form state with detailed symptoms
   const [form, setForm] = useState({
     // Preferred schedule (patient preference, doctor will confirm)
@@ -309,7 +308,7 @@ export function BookAppointmentPage() {
     preferredTimeSlot: 'morning' as 'morning' | 'afternoon' | 'evening',
     type: 'telehealth' as 'telehealth' | 'in_person',
     urgency: 'normal' as 'normal' | 'urgent' | 'emergency',
-    
+
     // Symptom details
     mainSymptom: '',
     symptomDescription: '',
@@ -317,31 +316,31 @@ export function BookAppointmentPage() {
     symptomDurationUnit: 'days' as 'hours' | 'days' | 'weeks' | 'months',
     symptomSeverity: 3 as number, // 1-5 scale
     bodyParts: [] as string[],
-    
+
     // Additional symptoms
     additionalSymptoms: [] as string[],
     fever: false,
     feverTemp: '',
-    
+
     // Medical context
     currentMedications: '',
     allergies: '',
     previousTreatment: '',
     medicalHistory: '',
-    
+
     // Additional notes
     additionalNotes: '',
     attachments: [] as string[],
-    
+
     // AI recommendation
     suggestedSpecialty: '',
     skipDoctorSelection: false,
-    
+
     // Audio recording
     audioBlob: null as Blob | null,
     audioUrl: '' as string,
     audioTranscript: '' as string,
-    
+
     // Image uploads  
     images: [] as { file: File; preview: string; description?: string }[],
   });
@@ -361,14 +360,9 @@ export function BookAppointmentPage() {
 
   // Common symptom options
   const commonSymptoms = [
-    'ปวดหัว', 'ไข้', 'ไอ', 'เจ็บคอ', 'คลื่นไส้', 'อาเจียน', 
-    'ท้องเสีย', 'ปวดท้อง', 'อ่อนเพลีย', 'เวียนศีรษะ', 
+    'ปวดหัว', 'ไข้', 'ไอ', 'เจ็บคอ', 'คลื่นไส้', 'อาเจียน',
+    'ท้องเสีย', 'ปวดท้อง', 'อ่อนเพลีย', 'เวียนศีรษะ',
     'หายใจลำบาก', 'ผื่น', 'ปวดกล้ามเนื้อ', 'นอนไม่หลับ'
-  ];
-
-  const bodyPartOptions = [
-    'ศีรษะ', 'ตา', 'หู', 'จมูก', 'ปาก/คอ', 'คอ', 
-    'หน้าอก', 'หลัง', 'ท้อง', 'แขน', 'ขา', 'ผิวหนัง', 'ทั่วร่างกาย'
   ];
 
   useEffect(() => {
@@ -414,7 +408,7 @@ export function BookAppointmentPage() {
       mediaRecorder.start();
       setIsRecording(true);
       setRecordingTime(0);
-      
+
       recordingIntervalRef.current = setInterval(() => {
         setRecordingTime(prev => prev + 1);
       }, 1000);
@@ -463,7 +457,7 @@ export function BookAppointmentPage() {
   // Image Upload Functions
   const handleImageUpload = (files: FileList | null) => {
     if (!files) return;
-    
+
     const validFiles = Array.from(files).filter(file => {
       const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
       const maxSize = 10 * 1024 * 1024; // 10MB
@@ -496,73 +490,73 @@ export function BookAppointmentPage() {
   const analyzeSymptoms = async () => {
     // Check if there's ANY input to analyze
     const hasAnyInput = form.mainSymptom || form.symptomDescription || form.audioBlob || form.images.length > 0 ||
-                        form.fever || form.symptomDuration || form.currentMedications || form.allergies;
-    
+      form.fever || form.symptomDuration || form.currentMedications || form.allergies;
+
     if (!hasAnyInput) {
       alert('กรุณากรอกอาการ หรืออัดเสียง หรือแนบรูปภาพ');
       return;
     }
-    
+
     setAiAnalyzing(true);
     try {
       // Build comprehensive symptom text from ALL inputs
       const symptomParts: string[] = [];
-      
+
       // Main symptom
       if (form.mainSymptom) {
         symptomParts.push(`อาการหลัก: ${form.mainSymptom}`);
       }
-      
+
       // Description
       if (form.symptomDescription) {
         symptomParts.push(`รายละเอียด: ${form.symptomDescription}`);
       }
-      
+
       // Duration
       if (form.symptomDuration) {
         const unitMap = { hours: 'ชั่วโมง', days: 'วัน', weeks: 'สัปดาห์', months: 'เดือน' };
         symptomParts.push(`ระยะเวลา: ${form.symptomDuration} ${unitMap[form.symptomDurationUnit]}`);
       }
-      
+
       // Severity
       if (form.symptomSeverity) {
         symptomParts.push(`ความรุนแรง: ${form.symptomSeverity}/5`);
       }
-      
+
       // Fever
       if (form.fever) {
         symptomParts.push(`มีไข้: ใช่ ${form.feverTemp ? `(${form.feverTemp}°C)` : ''}`);
       }
-      
+
       // Medications
       if (form.currentMedications) {
         symptomParts.push(`ยาที่ใช้อยู่: ${form.currentMedications}`);
       }
-      
+
       // Allergies
       if (form.allergies) {
         symptomParts.push(`ประวัติแพ้ยา/อาหาร: ${form.allergies}`);
       }
-      
+
       // Previous treatment
       if (form.previousTreatment) {
         symptomParts.push(`การรักษาก่อนหน้า: ${form.previousTreatment}`);
       }
-      
+
       // Audio transcript
       if (form.audioTranscript) {
         symptomParts.push(`คำอธิบายเพิ่มเติม (จากเสียง): ${form.audioTranscript}`);
       }
-      
+
       // Images count
       if (form.images.length > 0) {
         symptomParts.push(`แนบรูปภาพ: ${form.images.length} รูป`);
       }
-      
+
       const symptomText = symptomParts.join('\n');
-      
+
       console.log('[AI Analysis] Sending symptoms:', symptomText);
-      
+
       // Send to API
       const response = await fetch('/api/ai/symptom-analysis', {
         method: 'POST',
@@ -570,7 +564,7 @@ export function BookAppointmentPage() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           symptoms: symptomText,
           patientContext: {
             name: user?.name,
@@ -579,20 +573,20 @@ export function BookAppointmentPage() {
           }
         }),
       });
-      
+
       if (response.ok) {
         const analysis = await response.json();
         console.log('[AI Analysis] Received:', analysis);
         setAiAnalysis(analysis);
         setShowAiAnalysis(true);
-        
+
         // Auto-set urgency based on triage level
         if (analysis.triageLevel === 'Emergency') {
           setForm(prev => ({ ...prev, urgency: 'emergency' }));
         } else if (analysis.triageLevel === 'Urgent') {
           setForm(prev => ({ ...prev, urgency: 'urgent' }));
         }
-        
+
         // Set suggested specialty if provided
         if (analysis.suggestedSpecialties && analysis.suggestedSpecialties.length > 0) {
           setForm(prev => ({ ...prev, suggestedSpecialty: analysis.suggestedSpecialties[0] }));
@@ -620,12 +614,12 @@ export function BookAppointmentPage() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           currentDescription: form.symptomDescription,
           selectedSymptoms: form.mainSymptom
         }),
       });
-      
+
       if (response.ok) {
         const suggestions = await response.json();
         setAiSuggestions(suggestions);
@@ -654,15 +648,15 @@ export function BookAppointmentPage() {
 
   const handleSubmit = async () => {
     if (!user) return;
-    
+
     // Either need a selected doctor OR skipDoctorSelection must be true
     if (!selectedDoctor && !form.skipDoctorSelection) return;
-    
+
     setSubmitting(true);
-    
+
     try {
       const patientId = user.patientId || user.id;
-      
+
       // Create symptom summary for the appointment
       const symptomSummary = {
         mainSymptom: form.mainSymptom,
@@ -681,17 +675,17 @@ export function BookAppointmentPage() {
 
       // Determine assignment method and initial status based on doctor selection
       const assignmentMethod = selectedDoctor ? 'patient_selected' : undefined;
-      const initialStatus = selectedDoctor 
+      const initialStatus = selectedDoctor
         ? 'awaiting_doctor_response' as AppointmentStatus  // Selected doctor needs to respond
         : 'in_pool' as AppointmentStatus;  // Goes to pool for assignment
 
       // Create appointment request - Use field names that match the backend route
-      const preferredDate = form.preferredDates[0] 
+      const preferredDate = form.preferredDates[0]
         ? new Date(form.preferredDates[0]).toISOString().split('T')[0]
         : new Date().toISOString().split('T')[0];
-      const preferredTime = form.preferredTimeSlot === 'morning' ? '09:00' 
-        : form.preferredTimeSlot === 'afternoon' ? '13:00' 
-        : '17:00';
+      const preferredTime = form.preferredTimeSlot === 'morning' ? '09:00'
+        : form.preferredTimeSlot === 'afternoon' ? '13:00'
+          : '17:00';
 
       const appointment = await appointmentService.create({
         patientId,
@@ -751,13 +745,13 @@ export function BookAppointmentPage() {
         }
       }
 
-      navigate('/appointments', { 
-        state: { 
-          message: selectedDoctor 
+      navigate('/appointments', {
+        state: {
+          message: selectedDoctor
             ? 'ส่งคำขอนัดหมายสำเร็จ! กรุณารอแพทย์ยืนยันเวลานัด หากแพทย์ไม่ว่างระบบจะจัดหาแพทย์ท่านอื่นให้'
             : 'ส่งคำขอนัดหมายสำเร็จ! ระบบจะจัดสรรแพทย์ที่เหมาะสมกับอาการของคุณ',
-          type: 'success' 
-        } 
+          type: 'success'
+        }
       });
     } catch (e) {
       console.error(e);
@@ -882,11 +876,10 @@ export function BookAppointmentPage() {
                   key={opt.value}
                   type="button"
                   onClick={() => setForm({ ...form, urgency: opt.value as any })}
-                  className={`p-3 rounded-xl border-2 transition-all text-center ${
-                    form.urgency === opt.value 
-                      ? `border-${opt.color}-500 bg-${opt.color}-50` 
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
+                  className={`p-3 rounded-xl border-2 transition-all text-center ${form.urgency === opt.value
+                    ? `border-${opt.color}-500 bg-${opt.color}-50`
+                    : 'border-gray-200 hover:border-gray-300'
+                    }`}
                 >
                   <p className={`font-medium ${form.urgency === opt.value ? `text-${opt.color}-700` : 'text-gray-600'}`}>{opt.label}</p>
                   <p className="text-xs text-gray-500 mt-1">{opt.desc}</p>
@@ -920,13 +913,12 @@ export function BookAppointmentPage() {
                         key={dateStr}
                         type="button"
                         onClick={() => setForm({ ...form, preferredDates: toggleArrayItem(form.preferredDates, dateStr) })}
-                        className={`p-2 rounded-xl border-2 transition-all text-center ${
-                          isSelected 
-                            ? 'border-emerald-500 bg-emerald-50' 
-                            : isWeekend 
-                              ? 'border-gray-200 bg-gray-50 hover:border-gray-300' 
-                              : 'border-gray-200 hover:border-gray-300'
-                        }`}
+                        className={`p-2 rounded-xl border-2 transition-all text-center ${isSelected
+                          ? 'border-emerald-500 bg-emerald-50'
+                          : isWeekend
+                            ? 'border-gray-200 bg-gray-50 hover:border-gray-300'
+                            : 'border-gray-200 hover:border-gray-300'
+                          }`}
                       >
                         <p className={`text-xs ${isWeekend ? 'text-red-500' : 'text-gray-500'}`}>{dayName}</p>
                         <p className={`text-lg font-semibold ${isSelected ? 'text-emerald-600' : 'text-gray-700'}`}>{dayNum}</p>
@@ -1026,16 +1018,15 @@ export function BookAppointmentPage() {
                       <button
                         key={doc.id}
                         onClick={() => setSelectedDoctor(doc)}
-                        className={`w-full p-3 rounded-xl border-2 text-left transition-all hover:shadow-md ${
-                          selectedDoctor?.id === doc.id 
-                            ? 'border-emerald-500 bg-emerald-50' 
-                            : 'border-gray-100 hover:border-emerald-300'
-                        }`}
+                        className={`w-full p-3 rounded-xl border-2 text-left transition-all hover:shadow-md ${selectedDoctor?.id === doc.id
+                          ? 'border-emerald-500 bg-emerald-50'
+                          : 'border-gray-100 hover:border-emerald-300'
+                          }`}
                       >
                         <div className="flex items-center gap-3">
-                          <img 
-                            src={doc.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(doc.id)}`} 
-                            alt={doc.name} 
+                          <img
+                            src={doc.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(doc.id)}`}
+                            alt={doc.name}
                             className="w-12 h-12 rounded-full"
                           />
                           <div className="flex-1 min-w-0">
@@ -1060,9 +1051,9 @@ export function BookAppointmentPage() {
                 <div className="mt-4 pt-4 border-t border-gray-100">
                   <p className="text-xs text-gray-500 mb-2">แพทย์ที่เลือก:</p>
                   <div className="flex items-center gap-3 p-3 bg-emerald-50 rounded-lg">
-                    <img 
-                      src={selectedDoctor.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(selectedDoctor.id)}`} 
-                      alt={selectedDoctor.name} 
+                    <img
+                      src={selectedDoctor.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(selectedDoctor.id)}`}
+                      alt={selectedDoctor.name}
                       className="w-10 h-10 rounded-full"
                     />
                     <div>
@@ -1089,12 +1080,12 @@ export function BookAppointmentPage() {
             />
           </div>
 
-          <button 
+          <button
             onClick={() => {
               // Scroll to top of page when moving to next step
               globalThis.scrollTo({ top: 0, behavior: 'smooth' });
               setStep(3);
-            }} 
+            }}
             disabled={!canProceedStep3}
             className="w-full bg-emerald-600 text-white py-3 rounded-xl hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
           >
@@ -1187,7 +1178,7 @@ export function BookAppointmentPage() {
                   <span className="font-medium text-red-600">{form.allergies}</span>
                 </div>
               )}
-              
+
               {/* Audio Recording Summary */}
               {form.audioUrl && (
                 <div className="py-2 border-b border-gray-100">
@@ -1205,7 +1196,7 @@ export function BookAppointmentPage() {
                   )}
                 </div>
               )}
-              
+
               {/* Images Summary */}
               {form.images.length > 0 && (
                 <div className="py-2 border-b border-gray-100">
@@ -1258,8 +1249,8 @@ export function BookAppointmentPage() {
             </div>
           </div>
 
-          <button 
-            onClick={handleSubmit} 
+          <button
+            onClick={handleSubmit}
             disabled={submitting}
             className="w-full bg-emerald-600 text-white py-4 rounded-xl hover:bg-emerald-700 disabled:opacity-50 font-medium flex items-center justify-center gap-2"
           >
@@ -1300,7 +1291,7 @@ export function AppointmentDetailPage() {
     try {
       const data = await appointmentService.getById(id!);
       setAppointment(data);
-      
+
       // Load Meet link if telehealth appointment
       if (data.type === 'telehealth') {
         try {
@@ -1334,11 +1325,11 @@ export function AppointmentDetailPage() {
 
   const addToCalendar = async () => {
     if (!appointment) return;
-    
+
     try {
       const startDateTime = new Date(`${new Date(appointment.appointmentDate).toISOString().split('T')[0]}T${appointment.appointmentTime}:00`);
       const endDateTime = new Date(startDateTime.getTime() + 60 * 60 * 1000);
-      
+
       const response = await googleService.createCalendarEvent({
         summary: `นัดหมาย: ${appointment.doctorName}`,
         description: `นัดหมายแพทย์ ${appointment.doctorName} (${appointment.doctorSpecialty})`,
@@ -1358,31 +1349,31 @@ export function AppointmentDetailPage() {
 
   const getStatusInfo = (status: string) => {
     const info: Record<string, { bg: string; text: string; icon: string; label: string; description: string }> = {
-      pending: { 
-        bg: 'bg-yellow-50 border-yellow-200', 
-        text: 'text-yellow-700', 
-        icon: '⏳', 
+      pending: {
+        bg: 'bg-yellow-50 border-yellow-200',
+        text: 'text-yellow-700',
+        icon: '⏳',
         label: 'รอแพทย์ยืนยัน',
         description: 'แพทย์กำลังตรวจสอบอาการและจะนัดเวลาที่เหมาะสมให้คุณ'
       },
-      confirmed: { 
-        bg: 'bg-green-50 border-green-200', 
-        text: 'text-green-700', 
-        icon: '✅', 
+      confirmed: {
+        bg: 'bg-green-50 border-green-200',
+        text: 'text-green-700',
+        icon: '✅',
         label: 'ยืนยันแล้ว',
         description: 'แพทย์ยืนยันนัดหมายแล้ว กรุณามาตามเวลานัด'
       },
-      completed: { 
-        bg: 'bg-blue-50 border-blue-200', 
-        text: 'text-blue-700', 
-        icon: '✔️', 
+      completed: {
+        bg: 'bg-blue-50 border-blue-200',
+        text: 'text-blue-700',
+        icon: '✔️',
         label: 'เสร็จสิ้น',
         description: 'นัดหมายนี้เสร็จสิ้นแล้ว'
       },
-      cancelled: { 
-        bg: 'bg-red-50 border-red-200', 
-        text: 'text-red-700', 
-        icon: '❌', 
+      cancelled: {
+        bg: 'bg-red-50 border-red-200',
+        text: 'text-red-700',
+        icon: '❌',
         label: 'ยกเลิก',
         description: 'นัดหมายนี้ถูกยกเลิก'
       },
@@ -1476,7 +1467,7 @@ export function AppointmentDetailPage() {
             <Stethoscope className="w-5 h-5 text-emerald-600" />
             ข้อมูลอาการที่แจ้ง
           </h2>
-          
+
           {appointment.reason && (
             <div className="mb-4">
               <p className="text-sm text-gray-500 mb-1">อาการหลัก</p>
@@ -1548,12 +1539,12 @@ export function AppointmentDetailPage() {
           )}
         </div>
       )}
-        
+
       {/* Actions */}
       <div className="bg-white rounded-xl p-6 border border-gray-100">
         {/* Add to Calendar button - only for confirmed appointments */}
         {appointment.status === 'confirmed' && (
-          <button 
+          <button
             onClick={addToCalendar}
             className="w-full flex items-center justify-center gap-2 bg-gray-100 text-gray-700 py-3 rounded-xl hover:bg-gray-200 mb-3"
           >
@@ -1563,17 +1554,17 @@ export function AppointmentDetailPage() {
 
         {/* Join Meeting button for telehealth */}
         {appointment.status === 'confirmed' && (meetLink || appointment.meetingLink) && (
-          <a 
-            href={meetLink || appointment.meetingLink} 
-            target="_blank" 
-            rel="noopener noreferrer" 
+          <a
+            href={meetLink || appointment.meetingLink}
+            target="_blank"
+            rel="noopener noreferrer"
             className="flex items-center justify-center gap-2 w-full bg-blue-600 text-white py-3 rounded-xl text-center hover:bg-blue-700 mb-3"
           >
             <Video className="w-5 h-5" /> เข้าห้องประชุม
             <ExternalLink className="w-4 h-4" />
           </a>
         )}
-        
+
         {(appointment.status === 'pending' || appointment.status === 'confirmed') && (
           <button onClick={handleCancel} className="w-full border border-red-300 text-red-600 py-3 rounded-xl hover:bg-red-50">
             ยกเลิกนัดหมาย

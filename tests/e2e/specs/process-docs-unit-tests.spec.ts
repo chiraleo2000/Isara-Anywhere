@@ -11,8 +11,8 @@ import { test, expect } from '@playwright/test';
 // Environment URLs
 const LOCAL_PATIENT = 'http://localhost:3005';
 const LOCAL_DOCTOR = 'http://localhost:3010';
-const CLOUD_PATIENT = 'https://izara-patient-portal-724889190329.asia-southeast1.run.app';
-const CLOUD_DOCTOR = 'https://izara-doctor-portal-724889190329.asia-southeast1.run.app';
+const CLOUD_PATIENT = 'https://izara-patient-portal-hvht4obouq-as.a.run.app';
+const CLOUD_DOCTOR = 'https://izara-doctor-portal-hvht4obouq-as.a.run.app';
 
 // Use local by default, cloud if TEST_ENV=cloud
 const PATIENT_URL = process.env.TEST_ENV === 'cloud' ? CLOUD_PATIENT : LOCAL_PATIENT;
@@ -231,7 +231,7 @@ test.describe('Notification_Workflows.md Tests', () => {
 // USER MANAGEMENT (User_management_Workflows.md)
 // ============================================================================
 test.describe('User_management_Workflows.md Tests', () => {
-  
+
   test('USER-01: Patient 1 login - 200', async ({ request }) => {
     const response = await request.post(`${PATIENT_URL}/api/auth/login`, {
       data: CREDENTIALS.patient1,
@@ -281,7 +281,7 @@ test.describe('User_management_Workflows.md Tests', () => {
 // DATA SYNC (Data_Sync_Documentation.md)
 // ============================================================================
 test.describe('Data_Sync_Documentation.md Tests', () => {
-  
+
   test('SYNC-01: Patient Portal DB health - 200', async ({ request }) => {
     const response = await request.get(`${PATIENT_URL}/api/health/db`);
     expect(response.status()).toBe(200);
@@ -360,7 +360,7 @@ test.describe('Medicine_Content_Processes.md Tests', () => {
 // ALL PORTALS ACCESSIBILITY
 // ============================================================================
 test.describe('Portal Accessibility Tests', () => {
-  
+
   test('PORTAL-01: Patient Portal reachable - 200', async ({ request }) => {
     const response = await request.get(`${PATIENT_URL}/api/health`);
     expect(response.status()).toBe(200);

@@ -99,7 +99,7 @@ const users = [
       level: 'super_admin'
     }
   },
-  
+
   // DOCTORS
   {
     id: 'DOC-001',
@@ -206,7 +206,7 @@ const users = [
     lockedUntil: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
     lockReason: 'Multiple failed login attempts'
   },
-  
+
   // PATIENT
   {
     id: 'PATIENT-001',
@@ -243,25 +243,25 @@ function generateDoctorProfile(user) {
     avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.name}`,
     rating: Math.random() * 1 + 4, // 4.0 - 5.0
     yearsOfExperience: user.yearsOfExperience,
-    
+
     qualifications: [
       'MD',
       `Board Certified - ${user.specialty}`,
       randomElement(['Fellowship in Advanced Medicine', 'Clinical Research Certification'])
     ],
-    
+
     languages: ['Thai', 'English'],
-    
+
     medicalSchool: randomElement([
       'Mahidol University Faculty of Medicine',
       'Chulalongkorn University Faculty of Medicine',
       'Siriraj Hospital'
     ]),
-    
+
     boardCertifications: [user.specialty],
-    
+
     consultationFee: Math.floor(Math.random() * 1000 + 500),
-    
+
     availability: {
       monday: [{ start: '09:00', end: '17:00' }],
       tuesday: [{ start: '09:00', end: '17:00' }],
@@ -271,13 +271,13 @@ function generateDoctorProfile(user) {
       saturday: [{ start: '09:00', end: '13:00' }],
       sunday: []
     },
-    
+
     bio: `Dr. ${user.name.split(' ').slice(1).join(' ')} is a dedicated ${user.specialty} specialist with ${user.yearsOfExperience} years of experience. Known for compassionate patient care and evidence-based treatment approaches.`,
-    
+
     isApproved: user.isApproved,
     isActive: user.isActive,
     approvalStatus: user.status,
-    
+
     statistics: {
       totalPatients: Math.floor(Math.random() * 500 + 100),
       totalConsultations: Math.floor(Math.random() * 1000 + 200),
@@ -299,7 +299,7 @@ function generatePatientProfile(user) {
     age: new Date().getFullYear() - new Date(user.dateOfBirth).getFullYear(),
     gender: randomElement(['male', 'female']),
     bloodType: user.bloodType,
-    
+
     address: {
       street: '123 Sukhumvit Road',
       district: 'Khlong Toei',
@@ -308,16 +308,16 @@ function generatePatientProfile(user) {
       postalCode: '10110',
       country: 'Thailand'
     },
-    
+
     emergencyContact: {
       name: 'Jane Smith',
       relationship: 'Spouse',
       phone: '+66 92 345 6789'
     },
-    
+
     allergies: user.allergies || [],
     chronicConditions: user.chronicConditions || [],
-    
+
     medications: [
       {
         name: 'Metformin',
@@ -334,14 +334,14 @@ function generatePatientProfile(user) {
         prescribedBy: 'DOC-003'
       }
     ],
-    
+
     insurance: {
       provider: 'Thai Health Insurance',
       policyNumber: 'THI-123456789',
       expiryDate: '2025-12-31',
       coverageType: 'Premium'
     },
-    
+
     preferences: {
       language: 'th',
       notifications: {
@@ -350,7 +350,7 @@ function generatePatientProfile(user) {
         push: true
       }
     },
-    
+
     consentStatus: {
       pdpaConsent: true,
       consentDate: '2024-01-01T00:00:00Z',
@@ -362,12 +362,12 @@ function generatePatientProfile(user) {
 function generateAppointments(doctorId, patientId) {
   const appointments = [];
   const now = new Date();
-  
+
   // Past appointments
   for (let i = 0; i < 3; i++) {
     const date = new Date(now);
     date.setDate(date.getDate() - (i * 7 + Math.floor(Math.random() * 7)));
-    
+
     appointments.push({
       id: generateId('APT'),
       patientId: patientId,
@@ -387,11 +387,11 @@ function generateAppointments(doctorId, patientId) {
       createdAt: new Date(date.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString()
     });
   }
-  
+
   // Upcoming appointment
   const futureDate = new Date(now);
   futureDate.setDate(futureDate.getDate() + 7);
-  
+
   appointments.push({
     id: generateId('APT'),
     patientId: patientId,
@@ -405,32 +405,32 @@ function generateAppointments(doctorId, patientId) {
     notes: '',
     createdAt: now.toISOString()
   });
-  
+
   return appointments;
 }
 
 function generateEMRRecords(patientId, doctorId) {
   const records = [];
   const now = new Date();
-  
+
   for (let i = 0; i < 3; i++) {
     const date = new Date(now);
     date.setDate(date.getDate() - (i * 30 + Math.floor(Math.random() * 15)));
-    
+
     records.push({
       id: generateId('EMR'),
       patientId: patientId,
       doctorId: doctorId,
       visitDate: date.toISOString(),
       visitType: randomElement(['consultation', 'follow-up', 'emergency']),
-      
+
       chiefComplaint: randomElement([
         'Headache and dizziness',
         'Chest pain',
         'Abdominal pain',
         'Fever and cough'
       ]),
-      
+
       vitals: {
         bloodPressure: `${Math.floor(Math.random() * 40 + 110)}/${Math.floor(Math.random() * 20 + 70)}`,
         heartRate: Math.floor(Math.random() * 30 + 60),
@@ -441,9 +441,9 @@ function generateEMRRecords(patientId, doctorId) {
         height: Math.floor(Math.random() * 20 + 160),
         bmi: (Math.random() * 10 + 20).toFixed(1)
       },
-      
+
       historyOfPresentIllness: 'Patient presents with complaints starting 2 days ago. Symptoms have been gradually worsening.',
-      
+
       physicalExamination: {
         general: 'Alert and oriented, no acute distress',
         heent: 'Normal',
@@ -452,7 +452,7 @@ function generateEMRRecords(patientId, doctorId) {
         abdomen: 'Soft, non-tender',
         neurological: 'Cranial nerves intact, normal reflexes'
       },
-      
+
       diagnosis: {
         primary: randomElement([
           'Essential Hypertension',
@@ -463,7 +463,7 @@ function generateEMRRecords(patientId, doctorId) {
         secondary: [],
         icdCodes: ['I10', 'E11.9']
       },
-      
+
       treatment: {
         medications: [
           {
@@ -476,43 +476,43 @@ function generateEMRRecords(patientId, doctorId) {
         procedures: [],
         referrals: []
       },
-      
+
       plan: 'Continue current medications. Follow up in 4 weeks. Patient advised on lifestyle modifications.',
-      
+
       followUpDate: new Date(date.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      
+
       createdBy: doctorId,
       createdAt: date.toISOString(),
       lastModified: date.toISOString()
     });
   }
-  
+
   return records;
 }
 
 function generatePrescriptions(patientId, doctorId) {
   const prescriptions = [];
   const now = new Date();
-  
+
   const medications = [
     { name: 'Metformin', dosage: '500mg', frequency: 'Twice daily' },
     { name: 'Lisinopril', dosage: '10mg', frequency: 'Once daily' },
     { name: 'Atorvastatin', dosage: '20mg', frequency: 'Once daily at bedtime' },
     { name: 'Omeprazole', dosage: '20mg', frequency: 'Once daily before breakfast' }
   ];
-  
+
   for (let i = 0; i < 2; i++) {
     const date = new Date(now);
     date.setDate(date.getDate() - (i * 30));
     const med = medications[i];
-    
+
     prescriptions.push({
       id: generateId('RX'),
       patientId: patientId,
       doctorId: doctorId,
       prescriptionDate: date.toISOString(),
       status: i === 0 ? 'active' : 'expired',
-      
+
       medications: [
         {
           name: med.name,
@@ -526,39 +526,39 @@ function generatePrescriptions(patientId, doctorId) {
           warnings: ['Do not consume alcohol']
         }
       ],
-      
+
       diagnosis: 'Hypertension / Diabetes Management',
       notes: 'Monitor blood pressure and glucose levels regularly',
-      
+
       pharmacyInstructions: 'Dispense as written',
-      
+
       validUntil: new Date(date.getTime() + 90 * 24 * 60 * 60 * 1000).toISOString(),
-      
+
       dispensed: i === 1,
       dispensedDate: i === 1 ? new Date(date.getTime() + 2 * 24 * 60 * 60 * 1000).toISOString() : null,
       dispensedBy: i === 1 ? 'Bangkok Pharmacy' : null
     });
   }
-  
+
   return prescriptions;
 }
 
 function generateLabOrders(patientId, doctorId) {
   const labOrders = [];
   const now = new Date();
-  
+
   const tests = [
     { name: 'Complete Blood Count (CBC)', category: 'Hematology' },
     { name: 'Lipid Profile', category: 'Chemistry' },
     { name: 'HbA1c', category: 'Chemistry' },
     { name: 'Thyroid Function Test', category: 'Endocrinology' }
   ];
-  
+
   for (let i = 0; i < 2; i++) {
     const date = new Date(now);
     date.setDate(date.getDate() - (i * 60));
     const test = tests[i];
-    
+
     labOrders.push({
       id: generateId('LAB'),
       patientId: patientId,
@@ -566,7 +566,7 @@ function generateLabOrders(patientId, doctorId) {
       orderDate: date.toISOString(),
       status: i === 0 ? 'pending' : 'completed',
       priority: randomElement(['routine', 'urgent']),
-      
+
       tests: [
         {
           name: test.name,
@@ -575,11 +575,11 @@ function generateLabOrders(patientId, doctorId) {
           instructions: 'Fasting required'
         }
       ],
-      
+
       clinicalIndication: 'Routine health check / Chronic disease monitoring',
-      
+
       scheduledDate: new Date(date.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      
+
       results: i === 1 ? {
         completedDate: new Date(date.getTime() + 10 * 24 * 60 * 60 * 1000).toISOString(),
         findings: 'Results within normal limits',
@@ -594,7 +594,7 @@ function generateLabOrders(patientId, doctorId) {
       } : null
     });
   }
-  
+
   return labOrders;
 }
 
@@ -653,7 +653,7 @@ function generateClinicalResources() {
         warnings: ['Monitor liver enzymes', 'Risk of rhabdomyolysis']
       }
     ],
-    
+
     icd10Codes: [
       { code: 'I10', description: 'Essential (primary) hypertension', category: 'Cardiovascular' },
       { code: 'E11.9', description: 'Type 2 diabetes mellitus without complications', category: 'Endocrine' },
@@ -662,7 +662,7 @@ function generateClinicalResources() {
       { code: 'M79.3', description: 'Panniculitis, unspecified', category: 'Musculoskeletal' },
       { code: 'R50.9', description: 'Fever, unspecified', category: 'Symptoms' }
     ],
-    
+
     labTests: [
       {
         id: 'LAB-TEST-001',
@@ -705,7 +705,7 @@ function generateClinicalResources() {
         turnaroundTime: '24-48 hours'
       }
     ],
-    
+
     clinicalGuidelines: [
       {
         id: 'GUIDE-001',
@@ -774,7 +774,7 @@ function generateMedicalContent() {
         views: 987
       }
     ],
-    
+
     videos: [
       {
         id: 'VIDEO-001',
@@ -799,7 +799,7 @@ function generateMedicalContent() {
         views: 3210
       }
     ],
-    
+
     infographics: [
       {
         id: 'INFOGRAPHIC-001',
@@ -945,8 +945,7 @@ async function generateAllData() {
         patientsList.push(patientProfile);
 
         // Generate patient medical data
-        const approvedDoctors = users.filter(u => u.role === 'doctor' && u.isApproved && u.isActive);
-        const primaryDoctor = approvedDoctors[0];
+        const primaryDoctor = users.find(u => u.role === 'doctor' && u.isApproved && u.isActive);
 
         if (primaryDoctor) {
           // Generate appointments
@@ -1021,37 +1020,37 @@ async function generateAllData() {
     console.log(`   🎥 Videos: ${medicalContent.videos.length}`);
 
     console.log('\n👥 TEST USERS:\n');
-    
+
     console.log('═══ ADMIN ═══');
     console.log('Email: admin.test@izara.com');
     console.log('Password: IzaraAdmin@2024');
     console.log('Status: ✅ Approved\n');
-    
+
     console.log('═══ DOCTORS ═══');
     console.log('1. Email: doctor.test@izara.com');
     console.log('   Password: IzaraDoctor@2024');
     console.log('   Status: ✅ Approved (General Practice)\n');
-    
+
     console.log('2. Email: doctor02.test@izara.com');
     console.log('   Password: IzaraDoctor@2024');
     console.log('   Status: ⏳ Pending Approval (Pediatrics)\n');
-    
+
     console.log('3. Email: cardio.doctor@izara.com');
     console.log('   Password: IzaraDoctor@2024');
     console.log('   Status: ✅ Approved (Cardiology)\n');
-    
+
     console.log('4. Email: inactive.doctor@izara.com');
     console.log('   Password: InactiveDoc@2024');
     console.log('   Status: 🚫 Inactive (Dermatology)\n');
-    
+
     console.log('5. Email: rejected.doctor@izara.com');
     console.log('   Password: RejectedDoc@2024');
     console.log('   Status: ❌ Rejected (Psychiatry)\n');
-    
+
     console.log('6. Email: locked.doctor@izara.com');
     console.log('   Password: LockedDoc@2024');
     console.log('   Status: 🔒 Locked (Orthopedics)\n');
-    
+
     console.log('═══ PATIENT ═══');
     console.log('Email: demo.test@gmail.com');
     console.log('Password: P@ssw0rd');

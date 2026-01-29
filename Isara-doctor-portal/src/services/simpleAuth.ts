@@ -17,6 +17,7 @@ export {
   getToken,
   getAuthHeaders,
   refreshSession,
+  checkInactivityTimeout,
 } from './authServices';
 
 // Re-export default for compatibility

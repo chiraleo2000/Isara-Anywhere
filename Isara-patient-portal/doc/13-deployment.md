@@ -92,11 +92,11 @@ GCS_BUCKET_APPOINTMENTS=izara-appointments
 GCS_BUCKET_METADATA=izara-meta-data
 
 # Google APIs
-GOOGLE_MAPS_API_KEY=AIzaSyXXX
+GOOGLE_MAPS_API_KEY=YOUR_GOOGLE_MAPS_API_KEY
 GEMINI_API_KEY=xxx
 
 # Frontend (Vite)
-VITE_GOOGLE_MAPS_API_KEY=AIzaSyXXX
+VITE_GOOGLE_MAPS_API_KEY=YOUR_GOOGLE_MAPS_API_KEY
 VITE_GCP_PROJECT_ID=your-project-id
 VITE_API_URL=
 ```
@@ -768,3 +768,4 @@ exports.backupPatientData = async () => {
 ---
 
 [← Previous: Google Services](./12-google-services.md) | [Back to README →](./README.md)
+

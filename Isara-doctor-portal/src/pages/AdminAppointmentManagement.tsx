@@ -11,6 +11,7 @@ import { useAuth } from '../components/common/AuthProvider';
 import { useNavigate } from 'react-router-dom';
 // PostgreSQL-backed API service - NO GCS!
 import { fetchAllAppointments, fetchAllDoctors } from '../services/apiDataService';
+import { AppointmentStatus } from '../types';
 import appointmentService from '../services/appointmentService';
 
 interface Patient {
@@ -102,16 +103,15 @@ const AdminAppointmentManagement: React.FC = () => {
   // Check if user is admin
   useEffect(() => {
     if (authLoading) return;
-    
+
     if (!isAuthenticated || !user) {
       navigate('/login');
       return;
     }
-    
+
     const isAdmin = user.isAdmin || user.role === 'admin';
     if (!isAdmin) {
       navigate(-1);
-      return;
     }
   }, [authLoading, isAuthenticated, user, navigate]);
 
@@ -165,7 +165,7 @@ const AdminAppointmentManagement: React.FC = () => {
   const fetchDoctors = useCallback(async () => {
     try {
       console.log('🔍 Fetching doctors...');
-      
+
       const doctorsList = await fetchAllDoctors();
       console.log(`✅ Found ${doctorsList.length} doctors from GCS`);
 
@@ -179,7 +179,7 @@ const AdminAppointmentManagement: React.FC = () => {
           specialty: d.specialty,
           availableSlots: d.availableSlots || []
         }));
-      
+
       console.log(`✅ ${approvedDoctors.length} approved doctors available`);
       setDoctors(approvedDoctors);
     } catch (err) {
@@ -202,7 +202,7 @@ const AdminAppointmentManagement: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      
+
       const selectedDoctor = doctors.find(d => d.id === assignData.doctorId);
       const assignedDateTime = `${assignData.date}T${assignData.time}:00`;
 
@@ -254,7 +254,7 @@ const AdminAppointmentManagement: React.FC = () => {
   const handleRejectAppointment = async (requestId: string, reason: string) => {
     try {
       const result = await appointmentService.updateAppointment(requestId, {
-        status: 'rejected',
+        status: AppointmentStatus.Rejected,
         notes: reason,
         updatedAt: new Date(),
         rejectedBy: user?.id,
@@ -278,18 +278,18 @@ const AdminAppointmentManagement: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      
+
       console.log('🤖 Auto-assigning appointment:', request.id);
-      
+
       // Find doctors matching the required specialty based on symptoms/reason
       const matchingDoctors = doctors.filter(doctor => {
         // Match based on specialty keywords in reason or symptoms
         const reasonLower = request.reason?.toLowerCase() || '';
         const symptomsLower = request.symptoms?.map(s => s.toLowerCase()).join(' ') || '';
         const searchText = `${reasonLower} ${symptomsLower}`;
-        
+
         const specialtyLower = doctor.specialty?.toLowerCase() || '';
-        
+
         // Specialty matching logic
         const specialtyMatches: Record<string, string[]> = {
           'general': ['general', 'ทั่วไป', 'checkup', 'ตรวจสุขภาพ'],
@@ -304,7 +304,7 @@ const AdminAppointmentManagement: React.FC = () => {
           'ent': ['ear', 'หู', 'nose', 'จมูก', 'throat', 'คอ', 'sore throat', 'เจ็บคอ'],
           'ophthalmology': ['eye', 'ตา', 'vision', 'การมองเห็น'],
         };
-        
+
         // Check if doctor's specialty matches any keywords
         for (const [specialty, keywords] of Object.entries(specialtyMatches)) {
           if (specialtyLower.includes(specialty)) {
@@ -313,17 +313,17 @@ const AdminAppointmentManagement: React.FC = () => {
             }
           }
         }
-        
+
         // Default: include general practitioners
         if (specialtyLower.includes('general') || specialtyLower.includes('ทั่วไป')) {
           return true;
         }
-        
+
         return false;
       });
-      
+
       console.log(`📊 Found ${matchingDoctors.length} matching doctors`);
-      
+
       if (matchingDoctors.length === 0) {
         // No matching doctors - keep in admin pool for manual assignment
         setError('No matching doctors found. Please assign manually.');
@@ -331,37 +331,33 @@ const AdminAppointmentManagement: React.FC = () => {
         setShowAssignModal(true);
         return;
       }
-      
+
       // Sort by availability (doctors with available slots first)
       // For now, we'll randomly pick one from matching doctors
       const randomIndex = Math.floor(Math.random() * matchingDoctors.length);
       const selectedDoctor = matchingDoctors[randomIndex];
-      
+
       // Get next available date/time (default to requested date or tomorrow)
       const requestedDate = new Date(request.requestedDate);
-      const assignDate = requestedDate > new Date() 
+      const assignDate = requestedDate > new Date()
         ? requestedDate.toISOString().split('T')[0]
         : new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-      
+
       // Parse preferred time or default to morning
-      let assignTime = '10:00';
-      if (request.preferredTime) {
-        if (request.preferredTime.includes('morning') || request.preferredTime.includes('เช้า')) {
-          assignTime = '10:00';
-        } else if (request.preferredTime.includes('afternoon') || request.preferredTime.includes('บ่าย')) {
-          assignTime = '14:00';
-        } else if (request.preferredTime.includes('evening') || request.preferredTime.includes('เย็น')) {
-          assignTime = '17:00';
-        } else {
-          assignTime = request.preferredTime;
-        }
-      }
-      
+      const getTimeFromPreference = (pref?: string): string => {
+        if (!pref) return '10:00';
+        if (pref.includes('morning') || pref.includes('เช้า')) return '10:00';
+        if (pref.includes('afternoon') || pref.includes('บ่าย')) return '14:00';
+        if (pref.includes('evening') || pref.includes('เย็น')) return '17:00';
+        return pref;
+      };
+      const assignTime = getTimeFromPreference(request.preferredTime);
+
       const assignedDateTime = `${assignDate}T${assignTime}:00`;
-      
+
       console.log(`🎯 Auto-assigning to: ${selectedDoctor.name} (${selectedDoctor.specialty})`);
       console.log(`📅 Date: ${assignDate}, Time: ${assignTime}`);
-      
+
       const result = await appointmentService.updateAppointment(request.id, {
         doctorId: selectedDoctor.id,
         assignedDoctorId: selectedDoctor.id,
@@ -381,14 +377,14 @@ const AdminAppointmentManagement: React.FC = () => {
         assignedAt: new Date(),
         autoAssigned: true
       } as any);
-      
+
       if (!result.success) {
         throw new Error(result.error || 'Failed to auto-assign appointment');
       }
-      
+
       setSuccessMessage(`✅ Auto-assigned to ${selectedDoctor.name} (${selectedDoctor.specialty || 'General'}) - awaiting doctor confirmation`);
       fetchAppointmentRequests();
-      
+
       setTimeout(() => setSuccessMessage(null), 5000);
     } catch (err) {
       console.error('Error auto-assigning appointment:', err);
@@ -401,17 +397,17 @@ const AdminAppointmentManagement: React.FC = () => {
   // Auto-assign all pending appointments
   const handleAutoAssignAll = async () => {
     const pendingRequests = appointmentRequests.filter(r => r.status === 'pending');
-    
+
     if (pendingRequests.length === 0) {
       setSuccessMessage('No pending appointments to auto-assign');
       setTimeout(() => setSuccessMessage(null), 3000);
       return;
     }
-    
+
     setLoading(true);
     let successCount = 0;
     let failCount = 0;
-    
+
     for (const request of pendingRequests) {
       try {
         await handleAutoAssign(request);
@@ -421,7 +417,7 @@ const AdminAppointmentManagement: React.FC = () => {
         failCount++;
       }
     }
-    
+
     setLoading(false);
     setSuccessMessage(`Auto-assignment complete: ${successCount} assigned, ${failCount} failed`);
     setTimeout(() => setSuccessMessage(null), 5000);
@@ -429,11 +425,11 @@ const AdminAppointmentManagement: React.FC = () => {
 
   // Filter appointments
   const filteredRequests = appointmentRequests.filter(req => {
-    const matchesSearch = 
+    const matchesSearch =
       req.patientName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       req.patientEmail?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       req.reason?.toLowerCase().includes(searchTerm.toLowerCase());
-    
+
     if (activeTab === 'pending') return matchesSearch && req.status === 'pending';
     if (activeTab === 'assigned') return matchesSearch && (req.status === 'assigned' || req.status === 'confirmed');
     return matchesSearch;
@@ -549,11 +545,10 @@ const AdminAppointmentManagement: React.FC = () => {
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      activeTab === tab
-                        ? 'bg-emerald-600 text-white'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === tab
+                      ? 'bg-emerald-600 text-white'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
                   >
                     {tab.charAt(0).toUpperCase() + tab.slice(1)}
                     {tab === 'pending' && pendingCount > 0 && (
@@ -602,7 +597,7 @@ const AdminAppointmentManagement: React.FC = () => {
                 </svg>
                 <h3 className="text-lg font-medium text-gray-700 mb-2">No Appointment Requests</h3>
                 <p className="text-gray-500">
-                  {activeTab === 'pending' 
+                  {activeTab === 'pending'
                     ? 'No pending appointment requests at this time.'
                     : 'No appointments found.'}
                 </p>
@@ -610,8 +605,8 @@ const AdminAppointmentManagement: React.FC = () => {
             ) : (
               <div className="space-y-4">
                 {filteredRequests.map((request) => (
-                  <div 
-                    key={request.id} 
+                  <div
+                    key={request.id}
                     className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
                   >
                     <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
@@ -691,11 +686,12 @@ const AdminAppointmentManagement: React.FC = () => {
               <p className="font-medium">{selectedRequest.patientName}</p>
               <p className="text-sm text-gray-600">{selectedRequest.reason}</p>
             </div>
-            
+
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Select Doctor *</label>
+                <label htmlFor="assign-doctor-select" className="block text-sm font-medium text-gray-700 mb-1">Select Doctor *</label>
                 <select
+                  id="assign-doctor-select"
                   value={assignData.doctorId}
                   onChange={(e) => setAssignData({ ...assignData, doctorId: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
@@ -708,10 +704,11 @@ const AdminAppointmentManagement: React.FC = () => {
                   ))}
                 </select>
               </div>
-              
+
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Date *</label>
+                <label htmlFor="assign-date-input" className="block text-sm font-medium text-gray-700 mb-1">Date *</label>
                 <input
+                  id="assign-date-input"
                   type="date"
                   value={assignData.date}
                   onChange={(e) => setAssignData({ ...assignData, date: e.target.value })}
@@ -719,20 +716,22 @@ const AdminAppointmentManagement: React.FC = () => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
-              
+
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Time *</label>
+                <label htmlFor="assign-time-input" className="block text-sm font-medium text-gray-700 mb-1">Time *</label>
                 <input
+                  id="assign-time-input"
                   type="time"
                   value={assignData.time}
                   onChange={(e) => setAssignData({ ...assignData, time: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
-              
+
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                <label htmlFor="assign-notes-textarea" className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
                 <textarea
+                  id="assign-notes-textarea"
                   value={assignData.notes}
                   onChange={(e) => setAssignData({ ...assignData, notes: e.target.value })}
                   rows={3}
@@ -741,7 +740,7 @@ const AdminAppointmentManagement: React.FC = () => {
                 />
               </div>
             </div>
-            
+
             <div className="flex gap-3 mt-6">
               <button
                 onClick={() => {

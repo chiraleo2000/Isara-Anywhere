@@ -10,7 +10,7 @@
 
 A **Living Will** (พินัยกรรมชีวิต) is a legal document that allows a patient to specify their wishes regarding medical treatment in situations where they may be unable to communicate. In Izara Telemedicine, the Living Will is part of the patient's Personal Health Record (PHR) and includes **PDPA consent controls** for sharing with healthcare providers.
 
-### Key Features:
+### Key Features
 
 - ✅ Patient creates and manages their Living Will
 - ✅ PDPA-compliant sharing controls (public to all authorized doctors OR private)
@@ -18,7 +18,7 @@ A **Living Will** (พินัยกรรมชีวิต) is a legal docume
 - ✅ Displayed prominently in PHR tab of Patient Record Viewer (Doctor Portal)
 - ✅ Full audit trail of access and modifications
 
-### Implementation Status:
+### Implementation Status
 
 - ✅ **Patient Portal:** API routes implemented in `server/routes/phr.ts`
 - ✅ **Doctor Portal:** API endpoint in `server/mainApiServer.cjs`
@@ -36,9 +36,9 @@ A **Living Will** (พินัยกรรมชีวิต) is a legal docume
 | Doctor | ❌ | ✅* | ❌ | ❌ | ❌ |
 | Admin (Doctor) | ❌ | ✅* | ❌ | ❌ | ❌ |
 
-**✅* = Only if patient has shared Living Will (PDPA consent granted)**
+### ✅* = Only if patient has shared Living Will (PDPA consent granted)
 
-### Doctor/Admin Access Rules:
+### Doctor/Admin Access Rules
 
 1. **If `isSharedWithDoctors: true`** → All doctors AND admins with ANY history/logs with the patient can view
 2. **If `isSharedWithDoctors: false`** → Living Will is hidden (private)
@@ -57,15 +57,15 @@ A **Living Will** (พินัยกรรมชีวิต) is a legal docume
   "id": "living-will_{patientId}",
   "patientId": "PATIENT-001",
   "version": "1.0",
-  
+
   "status": "active",
   "createdAt": "2025-12-12T10:00:00Z",
   "updatedAt": "2025-12-12T10:00:00Z",
   "effectiveDate": "2025-12-12",
   "revokedAt": null,
-  
+
   "statement": "ข้าพเจ้าประสงค์ที่จะไม่รับการรักษาที่ยืดชีวิตหากอยู่ในภาวะที่ไม่มีทางหายขาด...",
-  
+
   "treatments": {
     "resuscitation": {
       "allowed": false,
@@ -93,7 +93,7 @@ A **Living Will** (พินัยกรรมชีวิต) is a legal docume
     },
     "other": "ต้องการการดูแลแบบประคับประคองเท่านั้น"
   },
-  
+
   "representative": {
     "name": "นางสาวสมหญิง ใจดี",
     "relationship": "spouse",
@@ -102,21 +102,21 @@ A **Living Will** (พินัยกรรมชีวิต) is a legal docume
     "nationalId": "1234567890123",
     "isPrimary": true
   },
-  
+
   "alternativeRepresentative": {
     "name": "นายสมชาย ใจดี",
     "relationship": "child",
     "phone": "089-876-5432",
     "email": "somchai@example.com"
   },
-  
+
   "signature": {
     "patientSignature": "base64_encoded_signature_image",
     "signedAt": "2025-12-12T10:00:00Z",
     "witnessName": "นายแพทย์ วิชัย หมอดี",
     "witnessSignature": "base64_encoded_witness_signature"
   },
-  
+
   "pdpaConsent": {
     "isSharedWithDoctors": true,
     "shareScope": "all_authorized",
@@ -130,7 +130,7 @@ A **Living Will** (พินัยกรรมชีวิต) is a legal docume
       }
     ]
   },
-  
+
   "auditLog": [
     {
       "action": "created",
@@ -257,22 +257,22 @@ A **Living Will** (พินัยกรรมชีวิต) is a legal docume
 async function canViewLivingWill(doctorId: string, patientId: string): Promise<boolean> {
   // 1. Load Living Will
   const livingWill = await loadLivingWill(patientId);
-  
+
   if (!livingWill || livingWill.status === 'revoked') {
     return false;
   }
-  
+
   // 2. Check PDPA sharing consent
   if (!livingWill.pdpaConsent.isSharedWithDoctors) {
     return false; // Private - not shared
   }
-  
+
   // 3. Verify doctor has history with patient
   const hasHistory = await checkDoctorPatientHistory(doctorId, patientId);
-  
+
   // 4. Or check if doctor is admin
   const isAdmin = await checkDoctorIsAdmin(doctorId);
-  
+
   return hasHistory || isAdmin;
 }
 
@@ -280,13 +280,13 @@ async function checkDoctorPatientHistory(doctorId: string, patientId: string): P
   // Check appointments, EMR records, or health logs
   const appointments = await getAppointments(patientId);
   const hasAppointment = appointments.some(apt => apt.doctorId === doctorId);
-  
+
   const emrRecords = await getEMRRecords(patientId);
   const hasEMR = emrRecords.some(emr => emr.doctorId === doctorId);
-  
+
   const healthLogs = await getHealthLogs(patientId);
   const hasHealthLog = healthLogs.some(log => log.doctorId === doctorId);
-  
+
   return hasAppointment || hasEMR || hasHealthLog;
 }
 ```
@@ -481,4 +481,4 @@ If the patient has not shared their Living Will:
 
 ---
 
-#### End of Living Will Process Documentation v2.0
+### End of Living Will Process Documentation v2.0

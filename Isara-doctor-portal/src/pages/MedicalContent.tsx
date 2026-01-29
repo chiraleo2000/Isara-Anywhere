@@ -90,7 +90,7 @@ const statusOptions: { value: ContentStatus; label: string; color: string }[] = 
 const MedicalContent: React.FC = () => {
   const { user } = useAuth();
   const isAdmin = user?.email?.includes('admin') || user?.role === 'admin';
-  
+
   const [content, setContent] = useState<MedicalContentArticle[]>([]);
   const [tags, setTags] = useState<ContentTag[]>([]);
   const [loading, setLoading] = useState(true);
@@ -113,7 +113,7 @@ const MedicalContent: React.FC = () => {
   const [showApprovalModal, setShowApprovalModal] = useState(false);
   const [showPendingList, setShowPendingList] = useState(false);
   const [selectedArticle, setSelectedArticle] = useState<MedicalContentArticle | null>(null);
-  
+
   // Approval workflow states
   const [approvalComment, setApprovalComment] = useState('');
   const [rejectionReason, setRejectionReason] = useState('');
@@ -466,16 +466,16 @@ const MedicalContent: React.FC = () => {
   // Format: [image:URL:description] will be rendered as <img>
   const renderContentWithImages = (content: string) => {
     if (!content) return '';
-    
+
     // Replace [image:URL:description] with actual img tags
     const imagePattern = /\[image:([^\]:]+):([^\]]*)\]/g;
-    let processedContent = content.replace(imagePattern, (match, url, description) => {
+    let processedContent = content.replaceAll(imagePattern, (match, url, description) => {
       return `<figure class="my-6"><img src="${url}" alt="${description}" class="w-full max-w-2xl mx-auto rounded-lg shadow-md" loading="lazy" /><figcaption class="text-center text-sm text-gray-500 mt-2">${description || ''}</figcaption></figure>`;
     });
-    
-    // Also replace \n with <br/>
-    processedContent = processedContent.replace(/\n/g, '<br/>');
-    
+
+    // Also replace newlines with <br/>
+    processedContent = processedContent.replaceAll('\n', '<br/>');
+
     return processedContent;
   };
 
@@ -553,10 +553,12 @@ const MedicalContent: React.FC = () => {
           <h2 className="text-lg font-semibold text-gray-900 mb-4">✨ Featured Content</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {featuredContent.slice(0, 3).map((item) => (
-              <div
+              <button
+                type="button"
                 key={item.id}
                 onClick={() => openViewModal(item)}
-                className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow cursor-pointer"
+                onKeyDown={(e) => e.key === 'Enter' && openViewModal(item)}
+                className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow cursor-pointer text-left w-full"
               >
                 <div className="relative">
                   <img
@@ -580,7 +582,7 @@ const MedicalContent: React.FC = () => {
                     <span>{(item.views || 0).toLocaleString()} views</span>
                   </div>
                 </div>
-              </div>
+              </button>
             ))}
           </div>
         </div>
@@ -787,11 +789,10 @@ const MedicalContent: React.FC = () => {
             <button
               key={category.id}
               onClick={() => setSelectedCategory(category.id)}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                selectedCategory === category.id
-                  ? 'bg-emerald-600 text-white'
-                  : 'bg-white text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 shadow'
-              }`}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${selectedCategory === category.id
+                ? 'bg-emerald-600 text-white'
+                : 'bg-white text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 shadow'
+                }`}
             >
               {category.name}
             </button>

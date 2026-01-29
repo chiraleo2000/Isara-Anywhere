@@ -6,7 +6,7 @@
 
 import { ChatSession, StorageFile, StorageUploadOptions, Appointment, HealthRecord, Herb, Doctor } from '../types';
 import * as authService from './simpleAuth';
-import config, { GcsBucketType } from './config';
+import config from './config';
 import {
   fetchAllDoctors,
   fetchAllAppointments,
@@ -32,7 +32,7 @@ const BUCKETS = {
 export class UserFolderService {
   private static instance: UserFolderService;
 
-  private constructor() {}
+  private constructor() { }
 
   static getInstance(): UserFolderService {
     if (!UserFolderService.instance) {
@@ -58,17 +58,17 @@ export class UserFolderService {
       recordings: this.getUserFolder(userId, 'consultations/recordings'),
       transcriptions: this.getUserFolder(userId, 'consultations/transcriptions'),
       analytics: this.getUserFolder(userId, 'consultations/analytics'),
-      
+
       // Medical bucket
       medicalImages: this.getUserFolder(userId, 'images'),
       reports: this.getUserFolder(userId, 'reports'),
-      
+
       // Prescriptions bucket
       prescriptions: this.getUserFolder(userId, 'prescriptions'),
-      
+
       // Lab bucket
       labResults: this.getUserFolder(userId, 'lab-results'),
-      
+
       // Uploads bucket
       documents: this.getUserFolder(userId, 'documents'),
       appointments: this.getUserFolder(userId, 'appointments'),
@@ -84,7 +84,7 @@ export class RecordingStorageService {
   private static instance: RecordingStorageService;
   private readonly BUCKET_NAME = BUCKETS.doctor; // Store doctor's recordings in doctor bucket
 
-  private constructor() {}
+  private constructor() { }
 
   static getInstance(): RecordingStorageService {
     if (!RecordingStorageService.instance) {
@@ -108,7 +108,7 @@ export class RecordingStorageService {
 
     const userFolderService = UserFolderService.getInstance();
     const folder = userFolderService.getFolders(userId).recordings;
-    
+
     const timestamp = Date.now();
     const filename = `recording_${appointmentId}_${timestamp}.webm`;
 
@@ -171,10 +171,10 @@ export class RecordingStorageService {
 
     const userFolderService = UserFolderService.getInstance();
     const folder = userFolderService.getFolders(userId).transcriptions;
-    
+
     const timestamp = Date.now();
     const filename = `transcription_${appointmentId}_${timestamp}.json`;
-    
+
     const jsonData = JSON.stringify(transcriptionData, null, 2);
     const blob = new Blob([jsonData], { type: 'application/json' });
     const file = new File([blob], filename, { type: 'application/json' });
@@ -235,10 +235,10 @@ export class RecordingStorageService {
 
     const userFolderService = UserFolderService.getInstance();
     const folder = userFolderService.getFolders(userId).analytics;
-    
+
     const timestamp = Date.now();
     const filename = `analytics_${appointmentId}_${timestamp}.json`;
-    
+
     const jsonData = JSON.stringify(analyticsData, null, 2);
     const blob = new Blob([jsonData], { type: 'application/json' });
     const file = new File([blob], filename, { type: 'application/json' });
@@ -380,7 +380,7 @@ export class RecordingStorageService {
   async getTranscriptionByAppointment(appointmentId: string, userId: string): Promise<any | null> {
     const transcriptions = await this.getUserTranscriptions(userId);
     const transcriptionFile = transcriptions.find(t => t.name.includes(appointmentId));
-    
+
     if (!transcriptionFile) return null;
 
     try {
@@ -399,7 +399,7 @@ export class RecordingStorageService {
   async getAnalyticsByAppointment(appointmentId: string, userId: string): Promise<any | null> {
     const analytics = await this.getUserAnalytics(userId);
     const analyticsFile = analytics.find(a => a.name.includes(appointmentId));
-    
+
     if (!analyticsFile) return null;
 
     try {
@@ -442,7 +442,7 @@ export class ChatStorageService {
   private sessionsCache: ChatSession[] = [];
   private cacheLoaded: boolean = false;
 
-  private constructor() {}
+  private constructor() { }
 
   static getInstance(): ChatStorageService {
     if (!ChatStorageService.instance) {
@@ -569,7 +569,7 @@ export class AppointmentStorageService {
   private appointmentsCache: Appointment[] = [];
   private cacheLoaded: boolean = false;
 
-  private constructor() {}
+  private constructor() { }
 
   static getInstance(): AppointmentStorageService {
     if (!AppointmentStorageService.instance) {
@@ -682,7 +682,7 @@ export class MockDataService {
   } = {};
   private readonly CACHE_DURATION = 5 * 60 * 1000;
 
-  private constructor() {}
+  private constructor() { }
 
   static getInstance(): MockDataService {
     if (!MockDataService.instance) {
@@ -812,7 +812,7 @@ export class MockDataService {
 export class CloudStorageService {
   private static instance: CloudStorageService;
 
-  private constructor() {}
+  private constructor() { }
 
   static getInstance(): CloudStorageService {
     if (!CloudStorageService.instance) {
@@ -956,8 +956,8 @@ export class StorageService {
   }
 
   async uploadConsultationRecording(
-    file: File, 
-    appointmentId: string, 
+    file: File,
+    appointmentId: string,
     patientId: string
   ): Promise<StorageFile> {
     const recordingStorage = RecordingStorageService.getInstance();

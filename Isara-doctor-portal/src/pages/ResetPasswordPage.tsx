@@ -17,7 +17,7 @@ const ResetPasswordPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
-  
+
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -32,7 +32,7 @@ const ResetPasswordPage: React.FC = () => {
   const getPasswordStrength = (pwd: string): PasswordStrength => ({
     hasMinLength: pwd.length >= 8,
     hasLetter: /[a-zA-Z]/.test(pwd),
-    hasNumber: /[0-9]/.test(pwd),
+    hasNumber: /\d/.test(pwd),
   });
 
   const passwordStrength = getPasswordStrength(password);
@@ -69,12 +69,12 @@ const ResetPasswordPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!isPasswordValid) {
       setError('Please ensure your password meets all requirements.');
       return;
     }
-    
+
     if (!passwordsMatch) {
       setError('Passwords do not match.');
       return;
@@ -229,7 +229,7 @@ const ResetPasswordPage: React.FC = () => {
                   )}
                 </button>
               </div>
-              
+
               {/* Password strength indicators */}
               <div className="mt-3 space-y-2">
                 <div className="flex items-center text-sm">
@@ -288,13 +288,12 @@ const ResetPasswordPage: React.FC = () => {
                   required
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className={`w-full px-4 py-3 pr-12 border-2 rounded-xl transition-all ${
-                    confirmPassword.length > 0
+                  className={`w-full px-4 py-3 pr-12 border-2 rounded-xl transition-all ${confirmPassword.length > 0
                       ? passwordsMatch
                         ? 'border-emerald-500 focus:ring-2 focus:ring-emerald-500'
                         : 'border-red-300 focus:ring-2 focus:ring-red-500'
                       : 'border-gray-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500'
-                  }`}
+                    }`}
                   placeholder="Confirm new password"
                 />
                 <button

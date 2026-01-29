@@ -17,23 +17,23 @@ export default defineConfig({
     ['html', { open: 'never' }],
     ['list']
   ],
-  
+
   use: {
     // Show browser UI for testing
     headless: false,
-    
+
     // Base URL - can be overridden by environment
     baseURL: process.env.TEST_URL || 'http://localhost:3005',
-    
+
     // Capture screenshot on failure
     screenshot: 'only-on-failure',
-    
+
     // Capture video for debugging
     video: 'on-first-retry',
-    
+
     // Trace on failure
     trace: 'on-first-retry',
-    
+
     // Slow down for visibility
     launchOptions: {
       slowMo: 500,
@@ -47,13 +47,15 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
         baseURL: 'http://localhost:3005',
       },
+      testIgnore: ['**/cloud-*.spec.ts', '**/cloud*.spec.ts'],
     },
     {
       name: 'Cloud E2E Tests',
       use: {
         ...devices['Desktop Chrome'],
-        baseURL: 'https://izara-patient-portal-724889190329.asia-southeast1.run.app',
+        baseURL: 'https://izara-patient-portal-hvht4obouq-as.a.run.app',
       },
+      testMatch: ['**/cloud-*.spec.ts', '**/cloud*.spec.ts'],
     },
   ],
 

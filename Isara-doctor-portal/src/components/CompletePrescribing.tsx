@@ -188,10 +188,10 @@ export const CompletePrescribing: React.FC<CompletePrescribingProps> = ({
     };
 
     addMockDataRecord('prescriptions.json', prescription);
-    
+
     // Send to patient health logs
     const sentToPatient = await sendPrescriptionToPatientHealthLogs(prescription);
-    
+
     if (sentToPatient) {
       alert('✅ Prescription saved and sent to patient!');
     } else {
@@ -376,7 +376,7 @@ export const CompletePrescribing: React.FC<CompletePrescribingProps> = ({
                   <input
                     type="number"
                     value={item.quantity}
-                    onChange={(e) => updateItem(index, 'quantity', parseInt(e.target.value))}
+                    onChange={(e) => updateItem(index, 'quantity', Number.parseInt(e.target.value, 10) || 0)}
                     className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
                   />
                 </div>
@@ -386,7 +386,7 @@ export const CompletePrescribing: React.FC<CompletePrescribingProps> = ({
                   <input
                     type="number"
                     value={item.refills}
-                    onChange={(e) => updateItem(index, 'refills', parseInt(e.target.value))}
+                    onChange={(e) => updateItem(index, 'refills', Number.parseInt(e.target.value, 10) || 0)}
                     className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
                   />
                 </div>

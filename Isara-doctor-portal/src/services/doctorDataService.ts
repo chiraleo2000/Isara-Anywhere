@@ -35,7 +35,6 @@ import {
   fetchDoctorSchedule,
   saveDoctorSchedule,
   fetchDoctorStats,
-  saveDoctorStats,
   // Patient bucket (izara-patients-data)
   fetchPatientEMRs,
   saveEMR,
@@ -74,7 +73,7 @@ interface DoctorStats {
 class DoctorDataService {
   private static instance: DoctorDataService;
 
-  private constructor() {}
+  private constructor() { }
 
   static getInstance(): DoctorDataService {
     if (!DoctorDataService.instance) {
@@ -101,7 +100,7 @@ class DoctorDataService {
    * Get doctor profile by ID
    * Uses: doctors.json (filters by ID)
    */
-  async getDoctorProfile(doctorId: string): Promise<any | null> {
+  async getDoctorProfile(doctorId: string): Promise<any> {
     console.log(`👨‍⚕️ Fetching doctor profile: ${doctorId}`);
     return fetchDoctorById(doctorId);
   }
@@ -394,7 +393,7 @@ class DoctorDataService {
    * Save prescription
    * Uses: prescriptions.json
    */
-  async savePrescription(prescription: Prescription & { patientId: string; [key: string]: any }): Promise<GCSWriteResult> {
+  async savePrescription(prescription: Prescription & { patientId: string;[key: string]: any }): Promise<GCSWriteResult> {
     console.log(`💾 Saving prescription: ${prescription.id}`);
     const result = await savePrescription(prescription);
 
@@ -437,7 +436,7 @@ class DoctorDataService {
    * Save lab order
    * Uses: lab-orders.json
    */
-  async saveLabOrder(labOrder: LabOrder & { patientId: string; [key: string]: any }): Promise<GCSWriteResult> {
+  async saveLabOrder(labOrder: LabOrder & { patientId: string;[key: string]: any }): Promise<GCSWriteResult> {
     console.log(`💾 Saving lab order: ${labOrder.id}`);
     const result = await saveLabOrder(labOrder);
 

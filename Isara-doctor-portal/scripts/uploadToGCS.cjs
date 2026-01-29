@@ -23,8 +23,8 @@
  */
 
 const { Storage } = require('@google-cloud/storage');
-const fs = require('fs');
-const path = require('path');
+const fs = require('node:fs');
+const path = require('node:path');
 
 // ============================================================================
 // CONFIGURATION
@@ -99,15 +99,15 @@ async function ensureBucketExists(storage, bucketName) {
   try {
     const [exists] = await storage.bucket(bucketName).exists();
 
-    if (!exists) {
+    if (exists) {
+      console.log(`✅ Bucket exists: ${bucketName}`);
+    } else {
       console.log(`📦 Creating bucket: ${bucketName}`);
       await storage.createBucket(bucketName, {
         location: REGION,
         storageClass: 'STANDARD'
       });
       console.log(`✅ Bucket created: ${bucketName}`);
-    } else {
-      console.log(`✅ Bucket exists: ${bucketName}`);
     }
 
     return storage.bucket(bucketName);

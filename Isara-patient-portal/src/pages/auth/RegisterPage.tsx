@@ -1,8 +1,8 @@
 import { useState, FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { 
-  Eye, EyeOff, Mail, Lock, User, Phone, Calendar, 
+import {
+  Eye, EyeOff, Mail, Lock, User, Phone, Calendar,
   Heart, Ruler, Weight, Droplets, AlertCircle, ChevronRight, ChevronLeft,
   UserCircle, Activity
 } from 'lucide-react';
@@ -88,8 +88,8 @@ export default function RegisterPage() {
     try {
       await register({
         ...form,
-        height: form.height ? parseFloat(form.height) : undefined,
-        weight: form.weight ? parseFloat(form.weight) : undefined,
+        height: form.height ? Number.parseFloat(form.height) : undefined,
+        weight: form.weight ? Number.parseFloat(form.weight) : undefined,
       } as any);
       navigate('/');
     } catch (err: any) {
@@ -115,10 +115,11 @@ export default function RegisterPage() {
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="md:col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-1">ชื่อ-นามสกุล</label>
+          <label htmlFor="register-name" className="block text-sm font-medium text-gray-700 mb-1">ชื่อ-นามสกุล</label>
           <div className="relative">
             <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
+              id="register-name"
               type="text"
               name="name"
               value={form.name}
@@ -131,10 +132,11 @@ export default function RegisterPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">อีเมล</label>
+          <label htmlFor="register-email" className="block text-sm font-medium text-gray-700 mb-1">อีเมล</label>
           <div className="relative">
             <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
+              id="register-email"
               type="email"
               name="email"
               value={form.email}
@@ -147,10 +149,11 @@ export default function RegisterPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">เบอร์โทรศัพท์</label>
+          <label htmlFor="register-phone" className="block text-sm font-medium text-gray-700 mb-1">เบอร์โทรศัพท์</label>
           <div className="relative">
             <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
+              id="register-phone"
               type="tel"
               name="phone"
               value={form.phone}
@@ -163,10 +166,11 @@ export default function RegisterPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">วันเกิด</label>
+          <label htmlFor="register-dob" className="block text-sm font-medium text-gray-700 mb-1">วันเกิด</label>
           <div className="relative">
             <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
+              id="register-dob"
               type="date"
               name="dateOfBirth"
               value={form.dateOfBirth}
@@ -178,8 +182,9 @@ export default function RegisterPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">เพศ</label>
+          <label htmlFor="register-gender" className="block text-sm font-medium text-gray-700 mb-1">เพศ</label>
           <select
+            id="register-gender"
             name="gender"
             value={form.gender}
             onChange={handleChange}
@@ -194,10 +199,11 @@ export default function RegisterPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">รหัสผ่าน</label>
+          <label htmlFor="register-password" className="block text-sm font-medium text-gray-700 mb-1">รหัสผ่าน</label>
           <div className="relative">
             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
+              id="register-password"
               type={showPassword ? 'text' : 'password'}
               name="password"
               value={form.password}
@@ -218,10 +224,11 @@ export default function RegisterPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">ยืนยันรหัสผ่าน</label>
+          <label htmlFor="register-confirm-password" className="block text-sm font-medium text-gray-700 mb-1">ยืนยันรหัสผ่าน</label>
           <div className="relative">
             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
+              id="register-confirm-password"
               type={showPassword ? 'text' : 'password'}
               name="confirmPassword"
               value={form.confirmPassword}
@@ -259,10 +266,11 @@ export default function RegisterPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">ส่วนสูง (ซม.)</label>
+          <label htmlFor="register-height" className="block text-sm font-medium text-gray-700 mb-1">ส่วนสูง (ซม.)</label>
           <div className="relative">
             <Ruler className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
+              id="register-height"
               type="number"
               name="height"
               value={form.height}
@@ -276,10 +284,11 @@ export default function RegisterPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">น้ำหนัก (กก.)</label>
+          <label htmlFor="register-weight" className="block text-sm font-medium text-gray-700 mb-1">น้ำหนัก (กก.)</label>
           <div className="relative">
             <Weight className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
+              id="register-weight"
               type="number"
               name="weight"
               value={form.weight}
@@ -293,10 +302,11 @@ export default function RegisterPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">กรุ๊ปเลือด</label>
+          <label htmlFor="register-bloodtype" className="block text-sm font-medium text-gray-700 mb-1">กรุ๊ปเลือด</label>
           <div className="relative">
             <Droplets className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <select
+              id="register-bloodtype"
               name="bloodType"
               value={form.bloodType}
               onChange={handleChange}
@@ -312,11 +322,12 @@ export default function RegisterPage() {
       </div>
 
       <div className="mt-4">
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label htmlFor="register-allergies" className="block text-sm font-medium text-gray-700 mb-1">
           <AlertCircle className="w-4 h-4 inline mr-1 text-red-500" />
           อาการแพ้ยา/อาหาร
         </label>
         <textarea
+          id="register-allergies"
           name="allergies"
           value={form.allergies}
           onChange={handleChange}
@@ -327,8 +338,9 @@ export default function RegisterPage() {
       </div>
 
       <div className="mt-4">
-        <label className="block text-sm font-medium text-gray-700 mb-1">โรคประจำตัว</label>
+        <label htmlFor="register-chronic" className="block text-sm font-medium text-gray-700 mb-1">โรคประจำตัว</label>
         <textarea
+          id="register-chronic"
           name="chronicConditions"
           value={form.chronicConditions}
           onChange={handleChange}
@@ -339,8 +351,9 @@ export default function RegisterPage() {
       </div>
 
       <div className="mt-4">
-        <label className="block text-sm font-medium text-gray-700 mb-1">ยาที่ใช้ประจำ</label>
+        <label htmlFor="register-medications" className="block text-sm font-medium text-gray-700 mb-1">ยาที่ใช้ประจำ</label>
         <textarea
+          id="register-medications"
           name="currentMedications"
           value={form.currentMedications}
           onChange={handleChange}
@@ -357,8 +370,9 @@ export default function RegisterPage() {
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">ชื่อ</label>
+            <label htmlFor="register-emergency-name" className="block text-sm font-medium text-gray-700 mb-1">ชื่อ</label>
             <input
+              id="register-emergency-name"
               type="text"
               name="emergencyContactName"
               value={form.emergencyContactName}
@@ -368,8 +382,9 @@ export default function RegisterPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">เบอร์โทร</label>
+            <label htmlFor="register-emergency-phone" className="block text-sm font-medium text-gray-700 mb-1">เบอร์โทร</label>
             <input
+              id="register-emergency-phone"
               type="tel"
               name="emergencyContactPhone"
               value={form.emergencyContactPhone}
@@ -379,8 +394,9 @@ export default function RegisterPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">ความสัมพันธ์</label>
+            <label htmlFor="register-emergency-relation" className="block text-sm font-medium text-gray-700 mb-1">ความสัมพันธ์</label>
             <input
+              id="register-emergency-relation"
               type="text"
               name="emergencyContactRelation"
               value={form.emergencyContactRelation}

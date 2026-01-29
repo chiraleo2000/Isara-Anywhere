@@ -1120,9 +1120,9 @@ app.get('/api/emr', authenticateToken, async (req, res) => {
       });
     }
     
-    // Return recent EMRs
+    // Return recent EMRs from emr table
     const result = await PostgresDataService.pool.query(
-      `SELECT * FROM emr_records ORDER BY created_at DESC LIMIT 50`
+      `SELECT * FROM emr ORDER BY created_at DESC LIMIT 50`
     );
     res.json({ emrs: result.rows || [] });
   } catch (error) {
@@ -4576,7 +4576,7 @@ app.get('/api/prescriptions/pending/count/:doctorId', authenticateToken, async (
       [doctorId]
     );
     
-    const count = parseInt(result.rows[0]?.count || 0);
+    const count = Number.parseInt(result.rows[0]?.count || 0, 10);
     console.log(`💊 Found ${count} pending prescriptions for doctor ${doctorId}`);
     
     res.json({ success: true, count });
@@ -5504,7 +5504,7 @@ app.get('/api/consultants', async (req, res) => {
       phone: c.phone,
       email: c.email,
       photo: c.avatar_url || c.photo || `https://api.dicebear.com/7.x/avataaars/svg?seed=${c.id}`,
-      available: c.is_available !== undefined ? c.is_available : true,
+      available: c.is_available ?? true,
       languages: c.languages || ['Thai'],
       experience: c.experience_years || c.experience || 0,
       rating: c.rating || 4.5,

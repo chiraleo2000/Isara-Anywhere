@@ -17,8 +17,8 @@ import { test, expect } from '@playwright/test';
 const LOCAL_PATIENT = 'http://localhost:3005';
 const LOCAL_DOCTOR = 'http://localhost:3010';
 const LOCAL_MEETING = 'http://localhost:3020';
-const CLOUD_PATIENT = 'https://izara-patient-portal-724889190329.asia-southeast1.run.app';
-const CLOUD_DOCTOR = 'https://izara-doctor-portal-724889190329.asia-southeast1.run.app';
+const CLOUD_PATIENT = 'https://izara-patient-portal-hvht4obouq-as.a.run.app';
+const CLOUD_DOCTOR = 'https://izara-doctor-portal-hvht4obouq-as.a.run.app';
 
 // Test credentials
 const CREDENTIALS = {
@@ -76,7 +76,7 @@ async function getToken(request: any, baseUrl: string, creds: { email: string; p
 // SECTION 1: VIDEO MEETING INFRASTRUCTURE
 // ============================================================================
 test.describe('Meeting Infrastructure Tests', () => {
-  
+
   test('1.1 Video Meeting service health - 200', async ({ request }) => {
     const response = await request.get(`${DOCTOR_URL}/api/video-meeting/health`);
     expect(response.status()).toBe(200);
@@ -100,9 +100,9 @@ test.describe('Meeting Infrastructure Tests', () => {
     try {
       const response = await request.get(`${MEETING_URL}/health`, { timeout: 5000 });
       expect([200, 404].includes(response.status())).toBe(true);
-    } catch (e) {
+    } catch (error) {
       // Meeting server may not be running in test environment
-      console.log('Meeting server not available (expected in some environments)');
+      console.log('Meeting server not available (expected in some environments):', error instanceof Error ? error.message : 'Unknown error');
     }
   });
 });
@@ -250,7 +250,7 @@ test.describe('AI Summary Generation', () => {
   test('6.1 AI pre-consultation summary endpoint - 200', async ({ request }) => {
     const response = await request.post(`${DOCTOR_URL}/api/ai/pre-consultation-summary`, {
       data: { patientId: 'PATIENT-DEMO' },
-      headers: { 
+      headers: {
         'Authorization': `Bearer ${doctorToken}`,
         'Content-Type': 'application/json'
       }
@@ -341,7 +341,7 @@ test.describe('Patient Health History Results', () => {
 // DEMO MEETING DATA FIXTURE
 // ============================================================================
 test.describe('Demo Meeting Data Verification', () => {
-  
+
   test('Demo transcript contains valid medical conversation', () => {
     const transcript = DEMO_MEETING.transcript;
     expect(transcript).toContain('ปวดหัว');

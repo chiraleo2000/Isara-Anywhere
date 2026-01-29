@@ -13,8 +13,10 @@ interface Message {
 interface ChatSession {
   session_id: string;
   title?: string;
-  created_at: string;
-  updated_at: string;
+  created_at?: string;
+  updated_at?: string;
+  started_at?: string;
+  last_message_at?: string;
   message_count?: number;
 }
 
@@ -79,7 +81,7 @@ export default function AIDoctorPage() {
   const deleteSession = async (sessId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     if (!confirm('ต้องการลบการสนทนานี้หรือไม่?')) return;
-    
+
     try {
       await aiService.clearChatHistory(sessId);
       setSessions(prev => prev.filter(s => s.session_id !== sessId));
@@ -96,7 +98,7 @@ export default function AIDoctorPage() {
     const now = new Date();
     const diff = now.getTime() - date.getTime();
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    
+
     if (days === 0) return 'วันนี้';
     if (days === 1) return 'เมื่อวาน';
     if (days < 7) return `${days} วันที่แล้ว`;
@@ -190,10 +192,10 @@ export default function AIDoctorPage() {
             สนทนาใหม่
           </button>
         </div>
-        
+
         <div className="flex-1 overflow-y-auto p-2">
           <p className="text-xs text-gray-500 px-2 py-1 font-medium">ประวัติการสนทนา</p>
-          
+
           {loadingSessions ? (
             <div className="flex justify-center py-8">
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-emerald-600"></div>
@@ -209,11 +211,10 @@ export default function AIDoctorPage() {
                 <button
                   key={session.session_id}
                   onClick={() => loadSession(session.session_id)}
-                  className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-left group transition-colors ${
-                    sessionId === session.session_id
+                  className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-left group transition-colors ${sessionId === session.session_id
                       ? 'bg-emerald-100 text-emerald-800'
                       : 'hover:bg-gray-100 text-gray-700'
-                  }`}
+                    }`}
                 >
                   <MessageSquare className="w-4 h-4 flex-shrink-0 opacity-60" />
                   <div className="flex-1 min-w-0">
@@ -221,7 +222,7 @@ export default function AIDoctorPage() {
                       {session.title || 'การสนทนา'}
                     </p>
                     <p className="text-xs text-gray-400">
-                      {formatDate(session.created_at)}
+                      {formatDate(session.created_at || session.started_at || '')}
                     </p>
                   </div>
                   <button
@@ -306,22 +307,22 @@ export default function AIDoctorPage() {
                 );
               })
             )}
-          {loading && (
-            <div className="flex gap-3">
-              <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
-                <Bot className="w-4 h-4 text-purple-600" />
-              </div>
-              <div className="bg-gray-100 rounded-xl p-3">
-                <div className="flex gap-1">
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-100" />
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200" />
+            {loading && (
+              <div className="flex gap-3">
+                <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
+                  <Bot className="w-4 h-4 text-purple-600" />
+                </div>
+                <div className="bg-gray-100 rounded-xl p-3">
+                  <div className="flex gap-1">
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-100" />
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200" />
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
-          <div ref={messagesEndRef} />
-        </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
         </div>
 
         <div className="p-4 border-t border-gray-100">
