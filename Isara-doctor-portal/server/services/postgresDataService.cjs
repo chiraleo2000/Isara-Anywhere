@@ -36,6 +36,9 @@ if (process.env.DATABASE_URL) {
 // PostgreSQL Docker service configuration (supports Cloud SQL and local Docker)
 const dbHost = dbConfig.host || process.env.DB_HOST || 'localhost';
 const isProduction = process.env.NODE_ENV === 'production';
+// Use DB_SSL env var to control SSL - default to false for Docker deployments
+// Cloud SQL uses SSL but local Docker doesn't
+const useSSL = process.env.DB_SSL === 'true' || process.env.DB_SSL === '1';
 
 // Configure connection - Standard TCP (supports Cloud SQL and local Docker)
 const poolConfig = {
@@ -47,7 +50,7 @@ const poolConfig = {
   max: 20,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: isProduction ? 30000 : 5000, // 30s for Cloud SQL, 5s for local
-  ssl: isProduction ? { rejectUnauthorized: false } : false, // SSL for Cloud SQL
+  ssl: useSSL ? { rejectUnauthorized: false } : false, // SSL only when explicitly enabled
 };
 
 console.log(`📦 Database: PostgreSQL TCP - ${dbHost}:${poolConfig.port}`);

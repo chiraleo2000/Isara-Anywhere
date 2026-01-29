@@ -1,4 +1,5 @@
 # 📚 Izara Telemedicine Documentation
+
 # เอกสารประกอบระบบ Telemedicine อิสระ
 
 ---
@@ -11,6 +12,7 @@
 2. **Doctor Portal** (ระบบแพทย์) - For healthcare providers to manage consultations, EMR, prescriptions, and clinical resources
 
 ### Key Features / ฟีเจอร์หลัก
+
 - 📹 Video consultations via Jitsi Meet (free, no account required)
 - 🔔 Real-time notification system (in-app + email)
 - 📋 Electronic Medical Records (EMR) with SOAP notes
@@ -54,22 +56,26 @@ Explains/
 ## 🚀 Quick Links
 
 ### For Developers
+
 - [System Architecture](Whole-Project/architecture.md)
 - [API Reference](Whole-Project/api-reference.md)
 - [Database Schema](Whole-Project/database-schema.dbml)
 - [GCS Bucket Structure](Whole-Project/gcs-buckets.md)
 
 ### For Processes
+
 - [Notification Workflows](../Processes/Notification_Workflows.md)
 - [Appointment Workflows](../Processes/Appointment_Workflows.md)
 - [User Management](../Processes/User_management_Workflows.md)
 
 ### For Patient Portal
+
 - [Patient Portal Overview](Isara-Patient-Portal/overview.md)
 - [Patient Features](Isara-Patient-Portal/features.md)
 - [Patient Workflows](Isara-Patient-Portal/workflows.md)
 
 ### For Doctor Portal
+
 - [Doctor Portal Overview](Isara-Doctor-Portal/overview.md)
 - [Doctor Features](Isara-Doctor-Portal/features.md)
 - [Admin Features](Isara-Doctor-Portal/admin-features.md)
@@ -78,17 +84,17 @@ Explains/
 
 | Role | Email | Password | Portal |
 |------|-------|----------|--------|
-| Patient | demo.test@gmail.com | YOUR_TEST_PASSWORD | Patient Portal |
-| Patient Relative | demo2.test@gmail.com | YOUR_TEST_PASSWORD | Patient Portal |
-| Doctor | doctor.test@izara.com | YOUR_TEST_DOCTOR_PASSWORD | Doctor Portal |
-| Admin/Unit Test | doctorunit.test@izara.com | YOUR_TEST_PASSWORD | Doctor Portal |
+| Patient | <demo.test@gmail.com> | YOUR_TEST_PASSWORD | Patient Portal |
+| Patient Relative | <demo2.test@gmail.com> | YOUR_TEST_PASSWORD | Patient Portal |
+| Doctor | <doctor.test@izara.com> | YOUR_TEST_DOCTOR_PASSWORD | Doctor Portal |
+| Admin/Unit Test | <doctorunit.test@izara.com> | YOUR_TEST_PASSWORD | Doctor Portal |
 
 ## 🔗 Portal URLs (Development)
 
 | Portal | Frontend | Backend |
 |--------|----------|---------|
-| Patient | http://localhost:3005 | http://localhost:3004 |
-| Doctor | http://localhost:3010 | Auth: 3011, GCS: 3012, Main: 3009 |
+| Patient | <http://localhost:3005> | <http://localhost:3004> |
+| Doctor | <http://localhost:3010> | Auth: 3011, GCS: 3012, Main: 3009 |
 
 ---
 
@@ -96,8 +102,8 @@ Explains/
 
 | Portal | URL |
 |--------|-----|
-| **Patient Portal** | https://izara-patient-portal-hvht4obouq-as.a.run.app |
-| **Doctor Portal** | https://izara-doctor-portal-hvht4obouq-as.a.run.app |
+| **Patient Portal** | <https://izara-patient-portal-hvht4obouq-as.a.run.app> |
+| **Doctor Portal** | <https://izara-doctor-portal-hvht4obouq-as.a.run.app> |
 
 ---
 
@@ -116,17 +122,20 @@ Explains/
 ## 🛠️ Tech Stack / เทคโนโลยีที่ใช้
 
 ### Frontend
+
 - ⚛️ React 18 with TypeScript
 - ⚡ Vite build tool
 - 🎨 Tailwind CSS
 
 ### Backend
+
 - 🟢 Node.js 22
 - 🚂 Express.js
 - 🔥 Firebase Auth
 - ☁️ Google Cloud Storage SDK
 
 ### Google Services
+
 - 📹 Jitsi Meet (meet.jit.si) - FREE video conferencing
 - 📅 Google Calendar API
 - 🗺️ Google Maps JavaScript API
@@ -135,6 +144,7 @@ Explains/
 - 📧 Gmail API
 
 ### Video Meeting Features
+
 - 👨‍⚕️ Doctor as HOST with lobby/moderator controls
 - 🚪 Patient joins via lobby (doctor approval)
 - 👥 External guest invites (non-registered users)
@@ -146,6 +156,7 @@ Explains/
 ## 📋 Presentation Materials / เอกสารนำเสนอ
 
 See `Presentations/` folder for:
+
 - Complete presentation script
 - 16 Mermaid workflow diagrams
 - Comprehensive DBML database schema
@@ -174,5 +185,3 @@ See `Presentations/` folder for:
 
 **Last Updated:** January 9, 2026
 **Version:** 1.2.1
-
-

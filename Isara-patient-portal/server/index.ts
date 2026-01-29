@@ -283,20 +283,54 @@ app.get('/api/health/db', async (req: Request, res: Response) => {
 });
 
 // ============================================================================
-// CONSULTANTS LIST (for patient to view available doctors)
+// CONSULTANTS LIST (for patient to view available doctors) - PUBLIC ACCESS
 // ============================================================================
-app.get('/api/consultants', authMiddleware, async (req: Request, res: Response) => {
+app.get('/api/consultants', async (req: Request, res: Response) => {
   try {
-    console.log('[CONSULTANTS] Getting list of available consultants');
+    console.log('[CONSULTANTS] Getting list of available consultants (PUBLIC)');
     
-    // Return list of available doctors/consultants
-    res.json({
-      success: true,
-      consultants: [
+    // Try PostgreSQL first
+    let consultants: any[] = [];
+    try {
+      const result = await pool.query(`
+        SELECT mc.*, u.name as user_name, u.avatar_url 
+        FROM medical_consultants mc
+        LEFT JOIN users u ON mc.user_id = u.id
+        WHERE mc.is_available = true
+        ORDER BY mc.rating DESC NULLS LAST
+      `);
+      consultants = result.rows.map(c => ({
+        id: c.id,
+        name: c.name || c.user_name,
+        nameThai: c.name_thai,
+        specialty: c.specialty,
+        specialtyThai: c.specialty_thai,
+        hospital: c.hospital,
+        hospitalThai: c.hospital_thai,
+        phone: c.phone,
+        email: c.email,
+        avatarUrl: c.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${c.id}`,
+        rating: c.rating || 4.5,
+        available: c.is_available ?? true,
+        experience: c.experience_years || 0,
+        languages: c.languages || ['Thai'],
+        bio: c.bio
+      }));
+    } catch (dbError: any) {
+      console.log('[CONSULTANTS] DB error, using demo data:', dbError.message);
+    }
+    
+    // Fallback to demo data if no DB results
+    if (consultants.length === 0) {
+      consultants = [
         {
           id: 'DOC-TEST-001',
           name: 'Dr. Test Doctor',
+          nameThai: 'นพ. ทดสอบ',
           specialty: 'General Practice',
+          specialtyThai: 'เวชศาสตร์ทั่วไป',
+          hospital: 'Izara Hospital',
+          hospitalThai: 'โรงพยาบาลอิซาระ',
           avatarUrl: 'https://i.pravatar.cc/150?u=doctor1',
           rating: 4.8,
           available: true
@@ -304,13 +338,22 @@ app.get('/api/consultants', authMiddleware, async (req: Request, res: Response) 
         {
           id: 'DOC-TEST-002',
           name: 'Dr. Jane Smith',
+          nameThai: 'พญ. เจน สมิธ',
           specialty: 'Cardiology',
+          specialtyThai: 'หัวใจ',
+          hospital: 'Bumrungrad Hospital',
+          hospitalThai: 'โรงพยาบาลบำรุงราษฎร์',
           avatarUrl: 'https://i.pravatar.cc/150?u=doctor2',
           rating: 4.9,
           available: true
         }
-      ],
-      total: 2,
+      ];
+    }
+    
+    res.json({
+      success: true,
+      consultants,
+      total: consultants.length,
       message: 'Consultants retrieved successfully'
     });
   } catch (error: any) {
@@ -320,6 +363,41 @@ app.get('/api/consultants', authMiddleware, async (req: Request, res: Response) 
       consultants: [],
       total: 0,
       message: 'No consultants available'
+    });
+  }
+});
+
+// CONSULTANTS SPECIALTIES (PUBLIC ACCESS)
+app.get('/api/consultants/specialties', async (req: Request, res: Response) => {
+  try {
+    console.log('[CONSULTANTS] Getting specialties list (PUBLIC)');
+    
+    const defaultSpecialties = [
+      { id: 'cardiology', name: 'Cardiology', nameThai: 'หัวใจ' },
+      { id: 'neurology', name: 'Neurology', nameThai: 'ประสาทวิทยา' },
+      { id: 'oncology', name: 'Oncology', nameThai: 'มะเร็งวิทยา' },
+      { id: 'nephrology', name: 'Nephrology', nameThai: 'โรคไต' },
+      { id: 'dermatology', name: 'Dermatology', nameThai: 'ผิวหนัง' },
+      { id: 'gastroenterology', name: 'Gastroenterology', nameThai: 'ทางเดินอาหาร' },
+      { id: 'pulmonology', name: 'Pulmonology', nameThai: 'ปอด' },
+      { id: 'endocrinology', name: 'Endocrinology', nameThai: 'ต่อมไร้ท่อ' },
+      { id: 'rheumatology', name: 'Rheumatology', nameThai: 'โรคข้อ' },
+      { id: 'general-practice', name: 'General Practice', nameThai: 'เวชศาสตร์ทั่วไป' },
+      { id: 'internal-medicine', name: 'Internal Medicine', nameThai: 'อายุรศาสตร์' },
+      { id: 'pediatrics', name: 'Pediatrics', nameThai: 'กุมารเวชศาสตร์' }
+    ];
+    
+    res.json({
+      success: true,
+      specialties: defaultSpecialties,
+      total: defaultSpecialties.length
+    });
+  } catch (error: any) {
+    console.error('[CONSULTANTS] Specialties error:', error);
+    res.json({
+      success: true,
+      specialties: [],
+      total: 0
     });
   }
 });

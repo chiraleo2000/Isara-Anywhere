@@ -5524,50 +5524,74 @@ app.get('/api/consultants', async (req, res) => {
   }
 });
 
-// Get list of specialties for consultants dropdown - PUBLIC ACCESS
+// Helper function for getting specialties
+async function getConsultantSpecialties() {
+  const defaultSpecialties = [
+    { id: 'cardiology', name: 'Cardiology', nameThai: 'หัวใจ' },
+    { id: 'neurology', name: 'Neurology', nameThai: 'ประสาทวิทยา' },
+    { id: 'oncology', name: 'Oncology', nameThai: 'มะเร็งวิทยา' },
+    { id: 'nephrology', name: 'Nephrology', nameThai: 'โรคไต' },
+    { id: 'dermatology', name: 'Dermatology', nameThai: 'ผิวหนัง' },
+    { id: 'gastroenterology', name: 'Gastroenterology', nameThai: 'ทางเดินอาหาร' },
+    { id: 'pulmonology', name: 'Pulmonology', nameThai: 'ปอด' },
+    { id: 'endocrinology', name: 'Endocrinology', nameThai: 'ต่อมไร้ท่อ' },
+    { id: 'rheumatology', name: 'Rheumatology', nameThai: 'โรคข้อ' },
+    { id: 'urology', name: 'Urology', nameThai: 'ระบบปัสสาวะ' },
+    { id: 'ophthalmology', name: 'Ophthalmology', nameThai: 'จักษุ' },
+    { id: 'ent', name: 'ENT', nameThai: 'หู คอ จมูก' },
+    { id: 'psychiatry', name: 'Psychiatry', nameThai: 'จิตเวช' },
+    { id: 'pediatrics', name: 'Pediatrics', nameThai: 'กุมารเวชศาสตร์' },
+    { id: 'gynecology', name: 'Gynecology', nameThai: 'สูตินรีเวช' },
+    { id: 'general-surgery', name: 'General Surgery', nameThai: 'ศัลยกรรมทั่วไป' },
+    { id: 'plastic-surgery', name: 'Plastic Surgery', nameThai: 'ศัลยกรรมตกแต่ง' },
+    { id: 'internal-medicine', name: 'Internal Medicine', nameThai: 'อายุรศาสตร์' },
+    { id: 'general-practice', name: 'General Practice', nameThai: 'เวชศาสตร์ทั่วไป' }
+  ];
+  
+  // Try to get unique specialties from DB
+  let specialties = defaultSpecialties;
+  try {
+    if (DB_AVAILABLE && PostgresDataService && PostgresDataService.pool) {
+      const { pool } = PostgresDataService;
+      const result = await pool.query(`
+        SELECT DISTINCT specialty, specialty_thai FROM medical_consultants 
+        WHERE specialty IS NOT NULL
+        ORDER BY specialty
+      `);
+      if (result.rows.length > 0) {
+        specialties = result.rows.map(r => ({
+          id: r.specialty.toLowerCase().replace(/\s+/g, '-'),
+          name: r.specialty,
+          nameThai: r.specialty_thai || r.specialty
+        }));
+      }
+    }
+  } catch (dbError) {
+    console.log('⚠️ DB error, using default specialties');
+  }
+  
+  return specialties;
+}
+
+// Get list of specialties for consultants dropdown - PUBLIC ACCESS (short URL)
+app.get('/api/consultants/specialties', async (req, res) => {
+  try {
+    console.log('👨‍⚕️ Fetching consultant specialties (PUBLIC /api/consultants/specialties)...');
+    const specialties = await getConsultantSpecialties();
+    res.json({ success: true, specialties, total: specialties.length });
+  } catch (error) {
+    console.error('❌ Specialties fetch error:', error);
+    res.json({ success: true, specialties: [], total: 0 });
+  }
+});
+
+// Get list of specialties for consultants dropdown - PUBLIC ACCESS (original URL)
 app.get('/api/consultants/specialties/list', async (req, res) => {
   try {
-    console.log('👨‍⚕️ Fetching consultant specialties (PUBLIC)...');
-    
-    const defaultSpecialties = [
-      'Cardiology',
-      'Neurology',
-      'Oncology',
-      'Nephrology',
-      'Dermatology',
-      'Gastroenterology',
-      'Pulmonology',
-      'Endocrinology',
-      'Rheumatology',
-      'Urology',
-      'Ophthalmology',
-      'ENT',
-      'Psychiatry',
-      'Pediatrics',
-      'Gynecology',
-      'General Surgery',
-      'Plastic Surgery',
-      'Internal Medicine'
-    ];
-    
-    // Try to get unique specialties from DB
-    let specialties = defaultSpecialties;
-    try {
-      if (DB_AVAILABLE) {
-        const { pool } = PostgresDataService;
-        const result = await pool.query(`
-          SELECT DISTINCT specialty FROM medical_consultants 
-          WHERE specialty IS NOT NULL
-          ORDER BY specialty
-        `);
-        if (result.rows.length > 0) {
-          specialties = result.rows.map(r => r.specialty);
-        }
-      }
-    } catch (dbError) {
-      console.log('⚠️ DB error, using default specialties');
-    }
-    
+    console.log('👨‍⚕️ Fetching consultant specialties (PUBLIC /api/consultants/specialties/list)...');
+    const specialtiesData = await getConsultantSpecialties();
+    // Return simple string array for backward compatibility
+    const specialties = specialtiesData.map(s => s.name);
     res.json({ success: true, specialties });
   } catch (error) {
     console.error('❌ Specialties fetch error:', error);

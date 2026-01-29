@@ -60,6 +60,9 @@ interface PoolConfig {
 }
 
 const isProduction = process.env.NODE_ENV === 'production';
+// Use DB_SSL env var to control SSL - default to false for Docker deployments
+// Cloud SQL uses SSL but local Docker doesn't
+const useSSL = process.env.DB_SSL === 'true' || process.env.DB_SSL === '1';
 
 const poolConfig: PoolConfig = {
   database: dbConfig.database || process.env.DB_NAME || 'izara_phase1',
@@ -70,7 +73,7 @@ const poolConfig: PoolConfig = {
   connectionTimeoutMillis: isProduction ? 30000 : 5000, // 30s for Cloud SQL, 5s for local
   host: dbHost,
   port: dbConfig.port || Number.parseInt(process.env.DB_PORT || '5433', 10),
-  ssl: isProduction ? { rejectUnauthorized: false } : false, // SSL for Cloud SQL
+  ssl: useSSL ? { rejectUnauthorized: false } : false, // SSL only when explicitly enabled
 };
 
 console.log(`🔌 Using PostgreSQL TCP connection: ${dbHost}:${poolConfig.port}`);

@@ -50,20 +50,24 @@ test.describe('Cloud Patient Portal Health - 200 Status Only', () => {
     expect(response.status()).toBe(200);
   });
 
-  test('CLOUD-PAT-05: Consultants endpoint exists - 200/401', async ({ request }) => {
+  test('CLOUD-PAT-05: Consultants endpoint - 200', async ({ request }) => {
     const response = await request.get(`${CLOUD_PATIENT}/api/consultants`, {
       timeout: 30000
     });
-    // 200 = public access, 401 = auth required (both valid)
-    expect([200, 401].includes(response.status())).toBe(true);
+    // Should return 200 for public access
+    expect(response.status()).toBe(200);
+    const data = await response.json();
+    expect(data.success).toBe(true);
   });
 
-  test('CLOUD-PAT-06: Consultants specialties endpoint - 200/404', async ({ request }) => {
+  test('CLOUD-PAT-06: Consultants specialties endpoint - 200', async ({ request }) => {
     const response = await request.get(`${CLOUD_PATIENT}/api/consultants/specialties`, {
       timeout: 30000
     });
-    // 200 = exists, 404 = not deployed (both valid on cloud)
-    expect([200, 401, 404].includes(response.status())).toBe(true);
+    // Should return 200 for public access
+    expect(response.status()).toBe(200);
+    const data = await response.json();
+    expect(data.success).toBe(true);
   });
 });
 

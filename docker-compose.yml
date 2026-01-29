@@ -3,13 +3,13 @@
 # Version: 3.1.0
 # Updated: 2026-01-27
 # ============================================================================
-# 
+#
 # This docker-compose provides:
 # - PostgreSQL with pgvector for primary database
 # - pgAdmin for database management
 # - Patient Portal (unified frontend + backend on port 3005)
 # - Doctor Portal (unified frontend + backend on port 3010)
-# 
+#
 # Environment Variables:
 #   Shared variables loaded from .env.docker in root directory
 #   Portal-specific variables loaded from their respective .env files
@@ -100,10 +100,10 @@ services:
       # Server Configuration
       NODE_ENV: production
       PORT: 3005
-      
+
       # DEMO MODE - Disabled for local Docker (use real PostgreSQL)
       DEMO_MODE: "false"
-      
+
       # Database Configuration - Docker internal network
       # NOTE: URL-encode special characters in POSTGRES_PASSWORD for DATABASE_URL
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-izara_phase1}
@@ -112,9 +112,10 @@ services:
       DB_NAME: izara_phase1
       DB_USER: postgres
       DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_SSL: "false"
       USE_POSTGRESQL: "true"
       VITE_USE_POSTGRESQL: "true"
-      
+
       # GCS DISABLED - PostgreSQL only
       USE_GCS: "false"
       VITE_USE_GCS: "false"
@@ -160,10 +161,10 @@ services:
       PORT: 3010
       AUTH_PORT: 3010
       GCS_API_PORT: 3010
-      
+
       # DEMO MODE - Disabled for local Docker (use real PostgreSQL)
       DEMO_MODE: "false"
-      
+
       # Database Configuration - Docker internal network
       # NOTE: URL-encode special characters in POSTGRES_PASSWORD for DATABASE_URL
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-izara_phase1}
@@ -172,14 +173,15 @@ services:
       DB_NAME: izara_phase1
       DB_USER: postgres
       DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_SSL: "false"
       USE_POSTGRESQL: "true"
       VITE_USE_POSTGRESQL: "true"
-      
+
       # GCS DISABLED - PostgreSQL only
       USE_GCS: "false"
       VITE_USE_GCS: "false"
       GOOGLE_APPLICATION_CREDENTIALS: /app/credentials/service-account.json
-      
+
       # GCS API URL (internal)
       GCS_API_URL: http://localhost:3010
     volumes:
@@ -214,7 +216,7 @@ services:
       # Server Configuration
       NODE_ENV: production
       PORT: 3020
-      
+
       # Database Configuration - Docker internal network
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-izara_phase1}
       DB_HOST: postgres
@@ -222,17 +224,17 @@ services:
       DB_NAME: ${POSTGRES_DB:-izara_phase1}
       DB_USER: ${POSTGRES_USER:-postgres}
       DB_PASSWORD: ${POSTGRES_PASSWORD}
-      
+
       # Jitsi Configuration - loaded from .env.docker
       JITSI_DOMAIN: ${JITSI_DOMAIN}
-      
+
       # Gemini AI Configuration - loaded from .env.docker
       GEMINI_API_KEY: ${GEMINI_API_KEY}
       GEMINI_MODEL: ${GEMINI_MODEL}
-      
+
       # Google Speech-to-Text - loaded from .env.docker
       GOOGLE_SPEECH_API_KEY: ${GOOGLE_SPEECH_API_KEY}
-      
+
       # CORS
       CORS_ORIGINS: http://localhost:3005,http://localhost:3010
     volumes:
@@ -245,7 +247,15 @@ services:
     networks:
       - izara-network
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3020/health"]
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:3020/health",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -260,4 +270,3 @@ volumes:
 networks:
   izara-network:
     driver: bridge
-

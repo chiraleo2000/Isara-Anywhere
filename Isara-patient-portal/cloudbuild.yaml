@@ -4,56 +4,56 @@
 
 steps:
   # Build the unified Docker image
-  - name: 'gcr.io/cloud-builders/docker'
+  - name: "gcr.io/cloud-builders/docker"
     args:
-      - 'build'
-      - '-f'
-      - 'Dockerfile.unified'
-      - '-t'
-      - 'asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-patient-portal:v1.4.5'
-      - '-t'
-      - 'asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-patient-portal:latest'
-      - '--build-arg'
-      - 'VITE_APP_ENV=production'
-      - '--build-arg'
-      - 'VITE_GCP_PROJECT_ID=$PROJECT_ID'
-      - '.'
+      - "build"
+      - "-f"
+      - "Dockerfile.unified"
+      - "-t"
+      - "asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-patient-portal:v1.4.5"
+      - "-t"
+      - "asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-patient-portal:latest"
+      - "--build-arg"
+      - "VITE_APP_ENV=production"
+      - "--build-arg"
+      - "VITE_GCP_PROJECT_ID=$PROJECT_ID"
+      - "."
 
   # Push image to Artifact Registry
-  - name: 'gcr.io/cloud-builders/docker'
+  - name: "gcr.io/cloud-builders/docker"
     args:
-      - 'push'
-      - '--all-tags'
-      - 'asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-patient-portal'
+      - "push"
+      - "--all-tags"
+      - "asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-patient-portal"
 
   # Deploy to Cloud Run with Cloud SQL PostgreSQL
-  - name: 'gcr.io/cloud-builders/gcloud'
+  - name: "gcr.io/cloud-builders/gcloud"
     args:
-      - 'run'
-      - 'deploy'
-      - 'izara-patient-portal'
-      - '--image=asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-patient-portal:v1.4.5'
-      - '--region=asia-southeast1'
-      - '--platform=managed'
-      - '--allow-unauthenticated'
-      - '--port=3005'
-      - '--memory=2Gi'
-      - '--cpu=2'
-      - '--min-instances=0'
-      - '--max-instances=10'
-      - '--timeout=300'
-      - '--set-env-vars=NODE_ENV=production,USE_POSTGRESQL=true,VITE_USE_POSTGRESQL=true,VITE_GCP_PROJECT_ID=$PROJECT_ID,VITE_GCP_REGION=asia-southeast1,POSTGRES_HOST=34.143.228.135,POSTGRES_PORT=5432,DB_HOST=34.143.228.135,DB_PORT=5432,DB_NAME=izara_phase1,DB_USER=postgres,DB_PASSWORD=P@ssw0rd,GEMINI_MODEL=gemini-2.5-flash-lite,DATABASE_URL=postgresql://postgres:P%40ssw0rd@34.143.228.135:5432/izara_phase1'
-      - '--set-secrets=VITE_GOOGLE_MAPS_API_KEY=google-maps-api-key:latest,VITE_GEMINI_API_KEY=gemini-api-key:latest,GEMINI_API_KEY=gemini-api-key:latest'
+      - "run"
+      - "deploy"
+      - "izara-patient-portal"
+      - "--image=asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-patient-portal:v1.4.5"
+      - "--region=asia-southeast1"
+      - "--platform=managed"
+      - "--allow-unauthenticated"
+      - "--port=3005"
+      - "--memory=2Gi"
+      - "--cpu=2"
+      - "--min-instances=0"
+      - "--max-instances=10"
+      - "--timeout=300"
+      - "--set-env-vars=NODE_ENV=production,USE_POSTGRESQL=true,VITE_USE_POSTGRESQL=true,VITE_GCP_PROJECT_ID=$PROJECT_ID,VITE_GCP_REGION=asia-southeast1,POSTGRES_HOST=34.143.228.135,POSTGRES_PORT=5432,DB_HOST=34.143.228.135,DB_PORT=5432,DB_NAME=izara_phase1,DB_USER=postgres,DB_SSL=true,GEMINI_MODEL=gemini-2.5-flash-lite"
+      - "--set-secrets=VITE_GOOGLE_MAPS_API_KEY=google-maps-api-key:latest,VITE_GEMINI_API_KEY=gemini-api-key:latest,GEMINI_API_KEY=gemini-api-key:latest,DB_PASSWORD=db-password:latest,DATABASE_URL=database-url:latest"
 
 # Store images in Artifact Registry
 images:
-  - 'asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-patient-portal:v1.4.5'
-  - 'asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-patient-portal:latest'
+  - "asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-patient-portal:v1.4.5"
+  - "asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-patient-portal:latest"
 
 # Build timeout (20 minutes)
-timeout: '1200s'
+timeout: "1200s"
 
 # Build options
 options:
   logging: CLOUD_LOGGING_ONLY
-  machineType: 'E2_HIGHCPU_8'
+  machineType: "E2_HIGHCPU_8"
