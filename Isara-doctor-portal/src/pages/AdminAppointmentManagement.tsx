@@ -9,6 +9,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../components/common/AuthProvider';
 import { useNavigate } from 'react-router-dom';
+import { useSettings } from '../hooks/useSettings';
 // PostgreSQL-backed API service - NO GCS!
 import { fetchAllAppointments, fetchAllDoctors } from '../services/apiDataService';
 import { AppointmentStatus } from '../types';
@@ -80,6 +81,37 @@ interface PoolItem {
 }
 
 const AdminAppointmentManagement: React.FC = () => {
+  const { theme, language, t } = useSettings();
+  const isDark = theme === 'dark';
+  
+  // i18n labels
+  const labels = {
+    pageTitle: { en: 'Appointment Management', th: 'จัดการนัดหมาย' },
+    pending: { en: 'Pending', th: 'รอดำเนินการ' },
+    assigned: { en: 'Assigned', th: 'มอบหมายแล้ว' },
+    all: { en: 'All', th: 'ทั้งหมด' },
+    search: { en: 'Search appointments...', th: 'ค้นหานัดหมาย...' },
+    patient: { en: 'Patient', th: 'ผู้ป่วย' },
+    doctor: { en: 'Doctor', th: 'แพทย์' },
+    date: { en: 'Date', th: 'วันที่' },
+    time: { en: 'Time', th: 'เวลา' },
+    status: { en: 'Status', th: 'สถานะ' },
+    urgency: { en: 'Urgency', th: 'ความเร่งด่วน' },
+    reason: { en: 'Reason', th: 'เหตุผล' },
+    actions: { en: 'Actions', th: 'การดำเนินการ' },
+    assign: { en: 'Assign', th: 'มอบหมาย' },
+    cancel: { en: 'Cancel', th: 'ยกเลิก' },
+    confirm: { en: 'Confirm', th: 'ยืนยัน' },
+    notes: { en: 'Notes', th: 'หมายเหตุ' },
+    loading: { en: 'Loading...', th: 'กำลังโหลด...' },
+    noResults: { en: 'No appointments found', th: 'ไม่พบนัดหมาย' },
+    low: { en: 'Low', th: 'ต่ำ' },
+    medium: { en: 'Medium', th: 'ปานกลาง' },
+    high: { en: 'High', th: 'สูง' },
+    emergency: { en: 'Emergency', th: 'ฉุกเฉิน' },
+  };
+  const label = (key: keyof typeof labels) => labels[key][language] || labels[key].en;
+
   const { user, isAuthenticated, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 

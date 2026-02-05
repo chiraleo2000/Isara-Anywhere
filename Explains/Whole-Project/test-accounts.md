@@ -1,28 +1,54 @@
 # Izara Telehealth - Test Accounts
 
+> **Updated:** February 5, 2026  
+> **Status:** All accounts verified (92 tests passing on LOCAL + CLOUD)
+
 ## Development Test Accounts
 
 Use these accounts for testing in development environment.
 
 ---
 
-## 👤 Patient Account
+## 🌐 Portal URLs
+
+### Local Environment (Docker)
+
+| Service | URL | Port |
+|---------|-----|------|
+| Patient Portal | http://localhost:3005 | 3005 |
+| Doctor Portal | http://localhost:3010 | 3010 |
+| Meeting Server | http://localhost:3020 | 3020 |
+| PostgreSQL | localhost:5433 | 5433 |
+| pgAdmin | http://localhost:5050 | 5050 |
+
+### Cloud Environment (Google Cloud Run)
+
+| Service | URL |
+|---------|-----|
+| Patient Portal | https://izara-patient-portal-hvht4obouq-as.a.run.app |
+| Doctor Portal | https://izara-doctor-portal-hvht4obouq-as.a.run.app |
+| Meeting Server | https://izara-jitsi-meeting-portal-hvht4obouq-as.a.run.app |
+| pgAdmin | https://izara-pgadmin-hvht4obouq-as.a.run.app |
+| Cloud SQL | 34.143.228.135:5432 |
+
+---
+
+## 👤 Patient Account 1 (Primary Demo)
 
 | Field | Value |
 |-------|-------|
 | Email | `demo.test@gmail.com` |
 | Password | `YOUR_TEST_PASSWORD` |
-| User ID | `PAT-DEMO-001` |
+| User ID | `PATIENT-DEMO` |
 | Portal | http://localhost:3005 |
 
 ### Test Patient Profile
 
 ```json
 {
-  "id": "PAT-DEMO-001",
+  "id": "PATIENT-DEMO",
   "email": "demo.test@gmail.com",
-  "name": "Demo Patient",
-  "nameThai": "ผู้ป่วยทดสอบ",
+  "name": "นาย ทดสอบ ระบบ",
   "dateOfBirth": "1990-05-15",
   "gender": "male",
   "bloodType": "A+",
@@ -32,13 +58,35 @@ Use these accounts for testing in development environment.
 
 ---
 
+## 👤 Patient Account 2 (Somchai)
+
+| Field | Value |
+|-------|-------|
+| Email | `Somchai.Mankong@gmail.com` |
+| Password | `YOUR_TEST_PASSWORD` |
+| User ID | `PATIENT-SOMCHAI` |
+| Portal | http://localhost:3005 |
+
+---
+
+## 👤 Patient Account 3 (Anan)
+
+| Field | Value |
+|-------|-------|
+| Email | `Anan.Khayanrian@gmail.com` |
+| Password | `YOUR_TEST_PASSWORD` |
+| User ID | `PATIENT-ANAN` |
+| Portal | http://localhost:3005 |
+
+---
+
 ## 👨‍⚕️ Doctor Account
 
 | Field | Value |
 |-------|-------|
 | Email | `doctor.test@izara.com` |
 | Password | `YOUR_TEST_DOCTOR_PASSWORD` |
-| User ID | `DOC-DEMO-001` |
+| User ID | `DOC-TEST-001` |
 | Portal | http://localhost:3010 |
 | Role | Doctor |
 
@@ -46,7 +94,7 @@ Use these accounts for testing in development environment.
 
 ```json
 {
-  "id": "DOC-DEMO-001",
+  "id": "DOC-TEST-001",
   "email": "doctor.test@izara.com",
   "name": "Dr. Test Doctor",
   "nameThai": "หมอทดสอบ",
@@ -66,7 +114,7 @@ Use these accounts for testing in development environment.
 |-------|-------|
 | Email | `admin.test@izara.com` |
 | Password | `YOUR_TEST_ADMIN_PASSWORD` |
-| User ID | `ADMIN-001` |
+| User ID | `ADMIN-TEST-001` |
 | Portal | http://localhost:3010 |
 | Role | Admin |
 
@@ -74,7 +122,7 @@ Use these accounts for testing in development environment.
 
 ```json
 {
-  "id": "ADMIN-001",
+  "id": "ADMIN-TEST-001",
   "email": "admin.test@izara.com",
   "name": "Admin User",
   "role": "admin",

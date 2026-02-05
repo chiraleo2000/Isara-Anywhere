@@ -26,7 +26,7 @@ This document outlines the comprehensive deployment and testing strategy for dep
 ### Services to Deploy
 
 | Service | Local | Cloud Run | Status |
-|---------|-------|-----------|--------|
+| --- | --- | --- | --- |
 | PostgreSQL | localhost:5433 | izara-postgres | ⏳ Needs deployment |
 | pgAdmin | localhost:5050 | izara-pgadmin | ⏳ Needs deployment |
 | Patient Portal | localhost:3005 | izara-patient-portal | ✅ Deployed |
@@ -48,11 +48,13 @@ This document outlines the comprehensive deployment and testing strategy for dep
 ### Doctor Portal Dashboard
 
 **Current Issues:**
+
 - ❌ Pending Prescriptions always shows 0
 - ❌ Unread Messages always shows 0  
 - ❌ Stats not updating after actions
 
 **Required Fixes:**
+
 1. Add API endpoint for pending prescriptions count
 2. Add API endpoint for unread notifications/messages
 3. Implement real-time or polling updates
@@ -60,6 +62,7 @@ This document outlines the comprehensive deployment and testing strategy for dep
 5. Query notifications with read_at IS NULL from PostgreSQL
 
 **Implementation:**
+
 ```typescript
 // Add to apiDataService.ts
 export async function fetchPendingPrescriptions(doctorId: string): Promise<number> {
@@ -78,10 +81,12 @@ export async function fetchUnreadNotifications(userId: string): Promise<number> 
 ### Patient Portal Dashboard
 
 **Current Issues:**
+
 - ✅ Appointments loading correctly
 - ⚠️ Could add health summary stats (vitals, medications, etc.)
 
 **Optional Enhancements:**
+
 1. Add vitals trend widget (BP, weight, glucose)
 2. Add medication adherence tracking
 3. Add appointment reminder notifications
@@ -160,7 +165,7 @@ export async function fetchUnreadNotifications(userId: string): Promise<number> 
 ### Test Coverage Matrix
 
 | Process Document | Test File | Status |
-|------------------|-----------|--------|
+| --- | --- | --- |
 | Appointment_Workflows.md | appointment-workflow.spec.ts | ✅ Exists |
 | Clinical_Resources_&_Medical_Library_Workflows.md | clinical-resources.spec.ts | ❌ To create |
 | Health_Records_Processes.md | health-records.spec.ts | ❌ To create |
@@ -279,18 +284,18 @@ npm run test:cloud
 
 ### In Progress ⏳
 
-3. ⏳ Fixing dashboard data detection
+1. ⏳ Fixing dashboard data detection
 
 ### To Do ❌
 
-4. ❌ Fix Doctor Portal dashboard data detection
-5. ❌ Create comprehensive appointment workflow tests  
-6. ❌ Create full meeting workflow UI tests
-7. ❌ Create process-based unit tests
-8. ❌ Deploy all services to Cloud Run
-9. ❌ Run and fix local tests
-10. ❌ Run and fix cloud tests
-11. ❌ Update all documentation
+1. ❌ Fix Doctor Portal dashboard data detection
+2. ❌ Create comprehensive appointment workflow tests  
+3. ❌ Create full meeting workflow UI tests
+4. ❌ Create process-based unit tests
+5. ❌ Deploy all services to Cloud Run
+6. ❌ Run and fix local tests
+7. ❌ Run and fix cloud tests
+8. ❌ Update all documentation
 
 ---
 
@@ -306,6 +311,7 @@ npm run test:cloud
 ## 📞 Support
 
 For issues or questions:
+
 - Check logs in Cloud Run console
 - Review PostgreSQL logs in pgAdmin
 - Check service connectivity with health endpoints

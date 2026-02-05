@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Izara Diagram: 09-deployment-architecture</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5; }
+        .container { max-width: 100%; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; text-align: center; border-bottom: 2px solid #eee; padding-bottom: 15px; }
+        .mermaid { display: flex; justify-content: center; margin-top: 20px; }
+        .nav { margin-bottom: 20px; text-align: center; }
+        .nav a { margin: 0 10px; color: #3498db; text-decoration: none; font-weight: bold; }
+        .nav a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="nav">
+        <a href="index.html">🔙 Back to Index</a>
+        <span>|</span>
+        <a href="javascript:location.reload()">🔄 Refresh</a>
+    </div>
+    <div class="container">
+        <h1>09-deployment-architecture</h1>
+        <div class="mermaid">
+            %%{init: {
+  'theme': 'base',
+  'themeVariables': {
+    'primaryColor': '#ECEFF1',
+    'primaryTextColor': '#37474F',
+    'primaryBorderColor': '#607D8B',
+    'lineColor': '#546E7A',
+    'fontSize': '20px',
+    'fontFamily': 'Segoe UI, Arial'
+  }
+}}%%
+
+flowchart TB
+    subgraph LOCAL["💻 LOCAL DEVELOPMENT"]
+        direction TB
+        L1["🐳 Docker Compose"]
+        L2["📱 Patient Portal<br/>localhost:3005"]
+        L3["💻 Doctor Portal<br/>localhost:3010"]
+        L4["📹 Meeting Server<br/>localhost:3020"]
+        L5["🗄️ PostgreSQL 16<br/>localhost:5433"]
+        L6["🔧 pgAdmin 4<br/>localhost:5050"]
+    end
+
+    subgraph CLI["⚡ UNIFIED CLI (izara-cli.ps1)"]
+        direction LR
+        C1["🚀 start"]
+        C2["🛑 stop"]
+        C3["🗄️ db"]
+        C4["🔄 reset"]
+        C5["🧪 test"]
+    end
+
+    subgraph GCP["☁️ GOOGLE CLOUD PLATFORM"]
+        direction TB
+        subgraph CLOUDRUN["🚀 Cloud Run (asia-southeast1)"]
+            CR1["📱 patient-portal-service"]
+            CR2["💻 doctor-portal-service"]
+            CR3["📹 jitsi-server-service"]
+        end
+        subgraph STORAGE["📦 Cloud Storage"]
+            S1["📄 izara-documents"]
+            S2["🖼️ izara-images"]
+            S3["🎥 izara-recordings"]
+            S4["🧪 izara-lab-results"]
+            S5["🔬 izara-imaging-results"]
+        end
+        subgraph DATABASE["🗄️ Cloud SQL"]
+            DB1[("🐘 PostgreSQL 16<br/>+ pgvector")]
+        end
+    end
+
+    subgraph CICD["🔄 CI/CD PIPELINE"]
+        direction LR
+        CI1["📝 Cloud Build"]
+        CI2["🐳 Container Registry"]
+        CI3["🚀 Deploy to Cloud Run"]
+    end
+
+    %% Local Development Flow
+    CLI --> L1
+    L1 --> L2
+    L1 --> L3
+    L1 --> L4
+    L1 --> L5
+    L1 --> L6
+
+    %% CI/CD Flow
+    CI1 --> CI2 --> CI3
+    CI3 --> CLOUDRUN
+
+    %% Cloud Run connections
+    CR1 --> DB1
+    CR2 --> DB1
+    CR3 --> DB1
+    CR1 --> STORAGE
+    CR2 --> STORAGE
+    CR3 --> STORAGE
+
+    classDef localStyle fill:#E3F2FD,stroke:#1976D2,stroke-width:2px,color:#0D47A1
+    classDef cliStyle fill:#FFF8E1,stroke:#FFA000,stroke-width:2px,color:#E65100
+    classDef cloudrunStyle fill:#E8F5E9,stroke:#388E3C,stroke-width:2px,color:#1B5E20
+    classDef storageStyle fill:#F3E5F5,stroke:#7B1FA2,stroke-width:2px,color:#4A148C
+    classDef dbStyle fill:#FFEBEE,stroke:#E53935,stroke-width:2px,color:#B71C1C
+    classDef cicdStyle fill:#E0F7FA,stroke:#00ACC1,stroke-width:2px,color:#006064
+
+    class L1,L2,L3,L4,L5,L6 localStyle
+    class C1,C2,C3,C4,C5 cliStyle
+    class CR1,CR2,CR3 cloudrunStyle
+    class S1,S2,S3,S4,S5 storageStyle
+    class DB1 dbStyle
+    class CI1,CI2,CI3 cicdStyle
+
+        </div>
+    </div>
+    <script>
+        mermaid.initialize({ 
+            startOnLoad: true, 
+            theme: 'base',
+            securityLevel: 'loose',
+            themeVariables: {
+                primaryColor: '#E3F2FD',
+                secondaryColor: '#E8F5E9',
+                tertiaryColor: '#FFF3E0',
+                fontSize: '16px'
+            }
+        });
+    </script>
+</body>
+</html>

@@ -446,7 +446,5 @@ npx playwright test --debug
 
 ---
 
-*Documentation generated for Izara Telemedicine Platform v3.0.0*
-*Phase 1: AI-Assisted Consultation with Man-in-the-Loop Validation*
-
-
+Documentation generated for Izara Telemedicine Platform v3.0.0
+Phase 1: AI-Assisted Consultation with Man-in-the-Loop Validation

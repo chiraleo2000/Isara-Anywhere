@@ -1,9 +1,9 @@
 # PostgreSQL with pgvector for Cloud Run
 # Data initialized from seed file on startup
 # Same architecture as local Docker container
-# Version: 1.1.0 - Security hardened
+# Version: 1.2.0 - Updated to use stable pgvector tag
 
-FROM pgvector/pgvector:pg16-v0.8.0
+FROM pgvector/pgvector:pg16
 
 # Set environment variables
 # NOTE: Password should be overridden at runtime via -e POSTGRES_PASSWORD

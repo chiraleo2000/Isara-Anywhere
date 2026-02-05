@@ -236,13 +236,7 @@ async function seedDatabase() {
   }
 }
 
-// Use top-level await (requires package.json type: "module" or .mjs extension)
-// For CommonJS compatibility, we use an IIFE with proper error handling
-(async () => {
-  try {
-    await seedDatabase();
-  } catch (err) {
-    console.error('Fatal error:', err);
-    process.exit(1);
-  }
-})();
+seedDatabase().catch((err) => {
+  console.error('Fatal error:', err);
+  process.exit(1);
+});

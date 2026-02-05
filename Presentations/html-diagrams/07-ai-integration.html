@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Izara Diagram: 07-ai-integration</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5; }
+        .container { max-width: 100%; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; text-align: center; border-bottom: 2px solid #eee; padding-bottom: 15px; }
+        .mermaid { display: flex; justify-content: center; margin-top: 20px; }
+        .nav { margin-bottom: 20px; text-align: center; }
+        .nav a { margin: 0 10px; color: #3498db; text-decoration: none; font-weight: bold; }
+        .nav a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="nav">
+        <a href="index.html">🔙 Back to Index</a>
+        <span>|</span>
+        <a href="javascript:location.reload()">🔄 Refresh</a>
+    </div>
+    <div class="container">
+        <h1>07-ai-integration</h1>
+        <div class="mermaid">
+            %%{init: {
+  'theme': 'base',
+  'themeVariables': {
+    'primaryColor': '#FFF8E1',
+    'primaryTextColor': '#E65100',
+    'primaryBorderColor': '#FFA000',
+    'lineColor': '#FF9800',
+    'fontSize': '20px',
+    'fontFamily': 'Segoe UI, Arial'
+  }
+}}%%
+
+flowchart TB
+    subgraph GEMINI["🧠 GEMINI 2.5 FLASH"]
+        direction TB
+        G1["🤖 Language Model<br/>Multi-modal Support"]
+    end
+
+    subgraph PATIENT_AI["📱 PATIENT PORTAL AI"]
+        direction TB
+        P1["💬 Health Assistant Chat"]
+        P2["📄 Document Analysis<br/>(Medical Records)"]
+        P3["🔍 Symptom Assessment<br/>& Triage"]
+        P4["❓ Health Q&A"]
+    end
+
+    subgraph DOCTOR_AI["💻 DOCTOR PORTAL AI"]
+        direction TB
+        D1["📝 Transcript Summary"]
+        D2["📋 SOAP Note Suggestions"]
+        D3["💊 CDS Recommendations"]
+        D4["📊 Patient History Analysis"]
+    end
+
+    subgraph MEETING_AI["📹 VIDEO MEETING AI"]
+        direction TB
+        M1["🎤 Speech-to-Text<br/>(Real-time)"]
+        M2["📝 Live Transcription"]
+        M3["🌐 Multi-language Support"]
+    end
+
+    subgraph SAFETY["⚠️ SAFETY MEASURES"]
+        direction TB
+        S1["👨‍⚕️ Man-in-the-Loop"]
+        S2["⚠️ Medical Disclaimer"]
+        S3["🔒 No Diagnosis/Rx<br/>Without Doctor"]
+        S4["📋 Audit Logging"]
+    end
+
+    subgraph DATA_CONTEXT["📊 CONTEXT SOURCES"]
+        direction TB
+        C1["📋 Patient PHR"]
+        C2["💊 Medication History"]
+        C3["🩺 Allergy Information"]
+        C4["📖 Encounter History"]
+    end
+
+    %% Connections
+    GEMINI --> PATIENT_AI
+    GEMINI --> DOCTOR_AI
+    GEMINI --> MEETING_AI
+
+    DATA_CONTEXT --> P1
+    DATA_CONTEXT --> P3
+    DATA_CONTEXT --> D1
+    DATA_CONTEXT --> D2
+    DATA_CONTEXT --> D3
+
+    M1 --> M2
+    M2 --> D1
+
+    D1 --> D2 --> D3
+    D3 --> S1
+
+    P3 --> S2
+    P4 --> S3
+
+    DOCTOR_AI --> S4
+
+    classDef geminiStyle fill:#FFF8E1,stroke:#FFA000,stroke-width:3px,color:#E65100
+    classDef patientStyle fill:#E3F2FD,stroke:#1976D2,stroke-width:2px,color:#0D47A1
+    classDef doctorStyle fill:#E8F5E9,stroke:#388E3C,stroke-width:2px,color:#1B5E20
+    classDef meetingStyle fill:#E0F7FA,stroke:#00ACC1,stroke-width:2px,color:#006064
+    classDef safetyStyle fill:#FFEBEE,stroke:#E53935,stroke-width:2px,color:#B71C1C
+    classDef contextStyle fill:#F3E5F5,stroke:#7B1FA2,stroke-width:2px,color:#4A148C
+
+    class G1 geminiStyle
+    class P1,P2,P3,P4 patientStyle
+    class D1,D2,D3,D4 doctorStyle
+    class M1,M2,M3 meetingStyle
+    class S1,S2,S3,S4 safetyStyle
+    class C1,C2,C3,C4 contextStyle
+
+        </div>
+    </div>
+    <script>
+        mermaid.initialize({ 
+            startOnLoad: true, 
+            theme: 'base',
+            securityLevel: 'loose',
+            themeVariables: {
+                primaryColor: '#E3F2FD',
+                secondaryColor: '#E8F5E9',
+                tertiaryColor: '#FFF3E0',
+                fontSize: '16px'
+            }
+        });
+    </script>
+</body>
+</html>

@@ -115,7 +115,7 @@ export default function DashboardPage() {
           <Link
             key={apt.id}
             to={`/appointments/${apt.id}`}
-            className="block p-4 bg-gray-50 rounded-xl hover:bg-emerald-50 transition-all group border border-transparent hover:border-emerald-200"
+            className={`block p-4 rounded-xl transition-all group border ${isDarkMode ? 'bg-slate-800 hover:bg-emerald-900/30 border-slate-700 hover:border-emerald-700' : 'bg-gray-50 hover:bg-emerald-50 border-transparent hover:border-emerald-200'}`}
           >
             <div className="flex justify-between items-start mb-2">
               <div className="flex items-center gap-3">
@@ -125,13 +125,13 @@ export default function DashboardPage() {
                   className="w-10 h-10 rounded-full"
                 />
                 <div>
-                  <p className="font-medium text-gray-800 group-hover:text-emerald-700">{apt.doctorName}</p>
-                  <p className="text-sm text-gray-600">{apt.doctorSpecialty}</p>
+                  <p className={`font-medium ${isDarkMode ? 'text-white group-hover:text-emerald-400' : 'text-gray-800 group-hover:text-emerald-700'}`}>{apt.doctorName}</p>
+                  <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>{apt.doctorSpecialty}</p>
                 </div>
               </div>
               {getStatusBadge(apt.status)}
             </div>
-            <div className="flex items-center gap-4 text-sm text-gray-500">
+            <div className={`flex items-center gap-4 text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
               <span className="flex items-center gap-1">
                 <Calendar className="w-4 h-4" />
                 {formatDate(apt.appointmentDate)}
@@ -142,13 +142,13 @@ export default function DashboardPage() {
               </span>
               <span className="flex items-center gap-1">
                 {apt.type === 'telehealth' ? <Video className="w-4 h-4" /> : <MapPin className="w-4 h-4" />}
-                {apt.type === 'telehealth' ? 'ออนไลน์' : 'โรงพยาบาล'}
+                {apt.type === 'telehealth' ? (t('common.loading') === 'Loading...' ? 'Online' : 'ออนไลน์') : (t('common.loading') === 'Loading...' ? 'Hospital' : 'โรงพยาบาล')}
               </span>
             </div>
 
             {/* Meeting Link for Confirmed Telehealth */}
             {apt.status === 'confirmed' && apt.type === 'telehealth' && apt.meetingLink && (
-              <div className="mt-3 pt-3 border-t border-gray-200">
+              <div className={`mt-3 pt-3 border-t ${isDarkMode ? 'border-slate-700' : 'border-gray-200'}`}>
                 <a
                   href={apt.meetingLink}
                   target="_blank"
@@ -157,7 +157,7 @@ export default function DashboardPage() {
                   className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
                 >
                   <Video className="w-4 h-4" />
-                  เข้าร่วมการประชุม
+                  {t('common.loading') === 'Loading...' ? 'Join Meeting' : 'เข้าร่วมการประชุม'}
                 </a>
               </div>
             )}
@@ -231,27 +231,31 @@ export default function DashboardPage() {
           </div>
 
           {/* Notifications Summary */}
-          <div className="bg-white rounded-xl border border-gray-100 p-4">
+          <div className={`rounded-xl border p-4 ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100'}`}>
             <div className="flex items-center justify-between mb-3">
-              <h3 className="font-semibold text-gray-800 flex items-center gap-2">
+              <h3 className={`font-semibold flex items-center gap-2 ${isDarkMode ? 'text-slate-200' : 'text-gray-800'}`}>
                 <Bell className="w-5 h-5 text-orange-500" />
-                การแจ้งเตือน
+                {t('common.loading') === 'Loading...' ? 'Notifications' : 'การแจ้งเตือน'}
               </h3>
-              <span className="text-xs bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full">
-                {pendingAppointmentsCount} รายการ
+              <span className={`text-xs px-2 py-0.5 rounded-full ${isDarkMode ? 'bg-orange-900/50 text-orange-300' : 'bg-orange-100 text-orange-600'}`}>
+                {pendingAppointmentsCount} {t('common.loading') === 'Loading...' ? 'items' : 'รายการ'}
               </span>
             </div>
             {hasPendingAppointments ? (
               <div className="space-y-2">
                 {pendingAppointments.slice(0, 2).map((apt) => (
-                  <div key={apt.id} className="flex items-center gap-3 p-2 bg-yellow-50 rounded-lg text-sm">
+                  <div key={apt.id} className={`flex items-center gap-3 p-2 rounded-lg text-sm ${isDarkMode ? 'bg-yellow-900/30' : 'bg-yellow-50'}`}>
                     <div className="w-2 h-2 bg-yellow-500 rounded-full" />
-                    <span className="text-yellow-800">รอแพทย์ยืนยันนัดหมาย - {apt.doctorName}</span>
+                    <span className={isDarkMode ? 'text-yellow-300' : 'text-yellow-800'}>
+                      {t('common.loading') === 'Loading...' ? 'Awaiting doctor confirmation' : 'รอแพทย์ยืนยันนัดหมาย'} - {apt.doctorName}
+                    </span>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-gray-500">ไม่มีการแจ้งเตือนใหม่</p>
+              <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
+                {t('common.loading') === 'Loading...' ? 'No new notifications' : 'ไม่มีการแจ้งเตือนใหม่'}
+              </p>
             )}
           </div>
         </div>

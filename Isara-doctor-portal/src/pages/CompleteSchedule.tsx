@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { User } from '../types';
+import { useSettings } from '../hooks/useSettings';
 // PostgreSQL-backed API service - NO GCS!
 import { fetchAllAppointments } from '../services/apiDataService';
 
@@ -12,7 +13,23 @@ interface CompleteScheduleProps {
   doctor: User;
 }
 
+// i18n labels for Complete Schedule page
+const labels = {
+  pageTitle: { en: 'Schedule', th: 'ตารางนัดหมาย' },
+  viewAndManage: { en: 'View and manage your appointments', th: 'ดูและจัดการการนัดหมายของคุณ' },
+  day: { en: 'Day', th: 'วัน' },
+  week: { en: 'Week', th: 'สัปดาห์' },
+  month: { en: 'Month', th: 'เดือน' },
+  todaySchedule: { en: "Today's Schedule", th: 'ตารางวันนี้' },
+  upcomingAppointments: { en: 'Upcoming Appointments', th: 'การนัดหมายที่กำลังจะมาถึง' },
+  noAppointments: { en: 'No appointments scheduled', th: 'ไม่มีการนัดหมาย' },
+  loading: { en: 'Loading appointments...', th: 'กำลังโหลดการนัดหมาย...' },
+};
+
 export const CompleteSchedule: React.FC<CompleteScheduleProps> = ({ doctor }) => {
+  const { theme, language, t } = useSettings();
+  const isDark = theme === 'dark';
+
   const [appointments, setAppointments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<'day' | 'week' | 'month'>('day');
@@ -68,10 +85,10 @@ export const CompleteSchedule: React.FC<CompleteScheduleProps> = ({ doctor }) =>
   });
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className={`p-6 max-w-7xl mx-auto ${isDark ? 'bg-gray-900' : ''}`}>
       <div className="mb-6">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">📅 Schedule</h1>
-        <p className="text-gray-600 mt-1">View and manage your appointments</p>
+        <h1 className={`text-2xl sm:text-3xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>📅 Schedule</h1>
+        <p className={`mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>View and manage your appointments</p>
       </div>
 
       {/* View Toggle */}
@@ -83,7 +100,7 @@ export const CompleteSchedule: React.FC<CompleteScheduleProps> = ({ doctor }) =>
             className={`px-4 py-2 rounded-lg font-medium ${
               view === v
                 ? 'bg-emerald-600 text-white'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                : isDark ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
             {v.charAt(0).toUpperCase() + v.slice(1)}
@@ -100,8 +117,8 @@ export const CompleteSchedule: React.FC<CompleteScheduleProps> = ({ doctor }) =>
 
       {/* Today's Appointments */}
       {!loading && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">
+        <div className={`rounded-xl shadow-sm p-6 mb-6 ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border`}>
+          <h2 className={`text-xl font-bold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
             📆 Today - {currentDate.toLocaleDateString('en-US', {
               weekday: 'long',
               year: 'numeric',
@@ -111,12 +128,12 @@ export const CompleteSchedule: React.FC<CompleteScheduleProps> = ({ doctor }) =>
           </h2>
 
           {todayAppointments.length === 0 && (
-            <div className="text-center py-8 bg-gray-50 rounded-lg">
-              <svg className="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className={`text-center py-8 rounded-lg ${isDark ? 'bg-gray-700' : 'bg-gray-50'}`}>
+              <svg className={`w-12 h-12 mx-auto mb-3 ${isDark ? 'text-gray-500' : 'text-gray-300'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
-              <h3 className="text-lg font-medium text-gray-700">No Appointments Today</h3>
-              <p className="text-gray-500 text-sm">Check Appointments & Meetings page for pending confirmations</p>
+              <h3 className={`text-lg font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>No Appointments Today</h3>
+              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Check Appointments & Meetings page for pending confirmations</p>
             </div>
           )}
 
@@ -172,11 +189,11 @@ export const CompleteSchedule: React.FC<CompleteScheduleProps> = ({ doctor }) =>
 
       {/* Upcoming Appointments */}
       {!loading && upcomingAppointments.length > 0 && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">📋 Upcoming Appointments ({upcomingAppointments.length})</h2>
+        <div className={`rounded-xl shadow-sm p-6 ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border`}>
+          <h2 className={`text-xl font-bold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>📋 Upcoming Appointments ({upcomingAppointments.length})</h2>
           <div className="space-y-3">
             {upcomingAppointments.map((apt) => (
-              <div key={apt.id} className="p-4 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors">
+              <div key={apt.id} className={`p-4 rounded-lg border transition-colors ${isDark ? 'bg-gray-700 border-gray-600 hover:bg-gray-600' : 'bg-gray-50 border-gray-200 hover:bg-gray-100'}`}>
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center space-x-3 flex-wrap gap-2">

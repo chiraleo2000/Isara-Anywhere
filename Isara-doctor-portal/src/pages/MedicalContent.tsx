@@ -13,6 +13,7 @@ import {
   XMarkIcon,
 } from '../assets/NewSvgIcons';
 import { useAuth } from '../components/common/AuthProvider';
+import { useSettings } from '../hooks/useSettings';
 import {
   type MedicalContentArticle,
   type ContentTag,
@@ -87,8 +88,25 @@ const statusOptions: { value: ContentStatus; label: string; color: string }[] = 
 // MAIN COMPONENT
 // ============================================================================
 
+// i18n labels for Medical Content page
+const labels = {
+  pageTitle: { en: 'Medical Content', th: 'เนื้อหาทางการแพทย์' },
+  healthLibrary: { en: 'Health Knowledge Library', th: 'ห้องสมุดความรู้สุขภาพ' },
+  searchContent: { en: 'Search articles, videos, guides...', th: 'ค้นหาบทความ วิดีโอ คู่มือ...' },
+  createNew: { en: 'Create New', th: 'สร้างใหม่' },
+  allTypes: { en: 'All Types', th: 'ทุกประเภท' },
+  articles: { en: 'Articles', th: 'บทความ' },
+  videos: { en: 'Videos', th: 'วิดีโอ' },
+  guides: { en: 'Guides', th: 'คู่มือ' },
+  infographics: { en: 'Infographics', th: 'อินโฟกราฟิก' },
+  pendingApproval: { en: 'Pending Approval', th: 'รอการอนุมัติ' },
+  myContentOnly: { en: 'My Content Only', th: 'เนื้อหาของฉันเท่านั้น' },
+};
+
 const MedicalContent: React.FC = () => {
   const { user } = useAuth();
+  const { theme, language, t } = useSettings();
+  const isDark = theme === 'dark';
   const isAdmin = user?.email?.includes('admin') || user?.role === 'admin';
 
   const [content, setContent] = useState<MedicalContentArticle[]>([]);
@@ -503,11 +521,11 @@ const MedicalContent: React.FC = () => {
       {/* Header */}
       <div className="flex justify-between items-start mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+          <h1 className={`text-2xl font-bold flex items-center gap-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
             <BookOpenIcon className="w-8 h-8 text-emerald-600" />
             Medical Content Library
           </h1>
-          <p className="text-gray-600 mt-1">
+          <p className={`mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
             Health education resources for patient medical journeys
           </p>
         </div>
@@ -550,7 +568,7 @@ const MedicalContent: React.FC = () => {
       {/* Featured Section */}
       {featuredContent.length > 0 && (
         <div className="mb-8">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">✨ Featured Content</h2>
+          <h2 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>✨ Featured Content</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {featuredContent.slice(0, 3).map((item) => (
               <button
@@ -589,7 +607,7 @@ const MedicalContent: React.FC = () => {
       )}
 
       {/* Search and Filter */}
-      <div className="bg-white rounded-xl shadow-lg p-4 mb-6">
+      <div className={`rounded-xl shadow-lg p-4 mb-6 ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1 relative">
             <SearchIcon className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -598,13 +616,13 @@ const MedicalContent: React.FC = () => {
               placeholder="Search articles, guides, videos..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+              className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${isDark ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'border-gray-300'}`}
             />
           </div>
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+            className={`px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'border-gray-300'}`}
           >
             <option value="all">All Categories</option>
             {MEDICAL_CONTENT_CATEGORIES.map((category) => (
@@ -616,7 +634,7 @@ const MedicalContent: React.FC = () => {
           <select
             value={selectedType}
             onChange={(e) => setSelectedType(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+            className={`px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'border-gray-300'}`}
           >
             {contentTypes.map((type) => (
               <option key={type.value} value={type.value}>
@@ -627,7 +645,7 @@ const MedicalContent: React.FC = () => {
           <select
             value={selectedStatus}
             onChange={(e) => setSelectedStatus(e.target.value as ContentStatus | 'all')}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+            className={`px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'border-gray-300'}`}
           >
             <option value="all">All Status</option>
             {statusOptions.map((status) => (
@@ -636,14 +654,14 @@ const MedicalContent: React.FC = () => {
               </option>
             ))}
           </select>
-          <label className="flex items-center gap-2 px-4 py-2 bg-gray-50 rounded-lg cursor-pointer">
+          <label className={`flex items-center gap-2 px-4 py-2 rounded-lg cursor-pointer ${isDark ? 'bg-gray-700' : 'bg-gray-50'}`}>
             <input
               type="checkbox"
               checked={showMyContentOnly}
               onChange={(e) => setShowMyContentOnly(e.target.checked)}
               className="rounded text-emerald-600 focus:ring-emerald-500"
             />
-            <span className="text-sm text-gray-700">My Content</span>
+            <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>My Content</span>
           </label>
         </div>
       </div>

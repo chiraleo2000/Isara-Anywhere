@@ -1,8 +1,8 @@
 # Video Meeting Implementation - Jitsi Meet + Device Speech-to-Text + Gemini AI
 
-**Version:** 3.0.0  
-**Last Updated:** January 21, 2026  
-**Status:** ✅ Phase 1 Implementation
+**Version:** 3.1.0  
+**Last Updated:** February 4, 2026  
+**Status:** ✅ Phase 1 Complete
 
 ---
 
@@ -67,28 +67,38 @@ This document describes the video meeting implementation using:
 
 ## Storage Architecture (PostgreSQL)
 
+**IMPORTANT:** All meeting data is stored in PostgreSQL database. NO GCS bucket storage is used.
+
 ```text
 ┌─────────────────────────────────────────────────────────────────────────┐
-│                      GCS STORAGE STRUCTURE                               │
+│                   PostgreSQL DATABASE STRUCTURE                      │
 ├─────────────────────────────────────────────────────────────────────────┤
-│                                                                          │
-│  izara-doctors-data/                                                    │
-│  └── doctors/{doctorId}/                                                │
-│      └── meetings/{appointmentId}/                                      │
-│          ├── recording.webm         # Video recording (doctor as host) │
-│          ├── transcript.txt         # Speech-to-Text transcription      │
-│          ├── summary.txt            # AI-generated EMR summary          │
-│          ├── recommendations.txt    # AI clinical decision support      │
-│          ├── section-0-summary.txt  # 30-min section summary (if >30m) │
-│          ├── section-1-summary.txt  # Next 30-min section summary      │
-│          └── final-combined.txt     # Combined summary from all sections│
-│                                                                          │
-│  izara-appointments/                                                    │
-│  └── appointments/{appointmentId}/                                      │
-│      ├── meeting-link.json          # Jitsi room info                   │
-│      ├── meeting-data.json          # Complete meeting metadata         │
-│      └── guest-invites.json         # Guest invite records              │
-│                                                                          │
+│                                                                       │
+│  meeting_records table:                                              │
+│    ├── id (UUID)                # Primary key                        │
+│    ├── appointment_id           # Links to appointments              │
+│    ├── doctor_id, patient_id    # Participant IDs                    │
+│    ├── room_name, jitsi_domain  # Jitsi room info                    │
+│    ├── meeting_url, doctor_url  # Meeting URLs                       │
+│    ├── transcript               # Full meeting transcript (TEXT)     │
+│    ├── ai_summary               # Gemini-generated summary           │
+│    ├── ai_recommendations       # Clinical decision support          │
+│    ├── section_summaries        # 30-min section summaries (JSONB)   │
+│    └── status, started_at, ended_at, duration_minutes              │
+│                                                                       │
+│  meeting_transcripts table:                                          │
+│    ├── id (UUID)                # Primary key                        │
+│    ├── meeting_record_id        # Links to meeting_records           │
+│    ├── speaker_id, speaker_role # Who is speaking                    │
+│    ├── content                  # Transcribed text                   │
+│    ├── language (th/en)         # Speech language                    │
+│    └── start_time_seconds, end_time_seconds                        │
+│                                                                       │
+│  emr table:                                                          │
+│    ├── ai_summary               # AI-generated EMR summary           │
+│    ├── ai_transcript            # Meeting transcript for EMR         │
+│    └── patient_instructions     # AI-generated patient instructions  │
+│                                                                       │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 

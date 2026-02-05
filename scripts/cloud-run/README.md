@@ -4,7 +4,7 @@ This folder contains Docker configurations for PostgreSQL deployments.
 
 ## 📁 Structure
 
-```
+```text
 scripts/cloud-run/
 ├── README.md                    # This file
 ├── Dockerfile.pgadmin          # pgAdmin container config
@@ -18,14 +18,14 @@ scripts/cloud-run/
 
 The database schema is now centralized in `scripts/database/izara-database.sql`.
 
-### For Cloud SQL Deployment:
+### For Cloud SQL Deployment
 
 ```bash
 # Connect and initialize
 gcloud sql connect izara-instance --user=postgres --database=izara_phase1 < scripts/database/izara-database.sql
 ```
 
-### For Docker (Cloud Run Emulation):
+### For Docker (Cloud Run Emulation)
 
 ```bash
 # Build and run PostgreSQL

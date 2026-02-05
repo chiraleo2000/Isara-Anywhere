@@ -7,7 +7,7 @@ RUN apk add --no-cache wget
 
 # Install dependencies
 COPY package*.json ./
-RUN npm install --production
+RUN npm ci --omit=dev && npm cache clean --force
 
 # Copy application
 COPY . .
@@ -19,8 +19,12 @@ USER appuser
 # Expose port
 EXPOSE 3020
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+# Set environment variables
+ENV NODE_ENV=production
+ENV PORT=3020
+
+# Health check - give more time to start
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:3020/health || exit 1
 
 # Start server

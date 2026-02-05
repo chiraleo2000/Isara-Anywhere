@@ -5,7 +5,7 @@ This folder contains JSON startup data files for initializing the Izara Telemedi
 ## Files
 
 | File | Description |
-|------|-------------|
+| --- | --- |
 | [users.json](users.json) | Test users (patients, doctors, admins) with credentials |
 | [phr_records.json](phr_records.json) | Personal Health Records for patients |
 | [doctors.json](doctors.json) | Doctor profiles and consultant information |
@@ -14,25 +14,29 @@ This folder contains JSON startup data files for initializing the Izara Telemedi
 ## Test Credentials
 
 ### Patients
+
 | Email | Password | Name |
-|-------|----------|------|
-| demo.test@gmail.com | YOUR_TEST_PASSWORD | Demo Test Patient |
-| Somchai.Mankong@gmail.com | YOUR_TEST_PASSWORD | นายสมชาย มั่นคง |
-| Anan.Khayanrian@gmail.com | YOUR_TEST_PASSWORD | นายอนันต์ ขยันเรียน |
+| --- | --- | --- |
+| <demo.test@gmail.com> | YOUR_TEST_PASSWORD | Demo Test Patient |
+| <Somchai.Mankong@gmail.com> | YOUR_TEST_PASSWORD | นายสมชาย มั่นคง |
+| <Anan.Khayanrian@gmail.com> | YOUR_TEST_PASSWORD | นายอนันต์ ขยันเรียน |
 
 ### Doctors
+
 | Email | Password | Name |
-|-------|----------|------|
-| doctor.test@izara.com | YOUR_TEST_DOCTOR_PASSWORD | นายแพทย์ ทดสอบ ระบบ |
+| --- | --- | --- |
+| <doctor.test@izara.com> | YOUR_TEST_DOCTOR_PASSWORD | นายแพทย์ ทดสอบ ระบบ |
 
 ### Admins
+
 | Email | Password | Name |
-|-------|----------|------|
-| admin.test@izara.com | YOUR_TEST_ADMIN_PASSWORD | ผู้ดูแลระบบ ทดสอบ |
+| --- | --- | --- |
+| <admin.test@izara.com> | YOUR_TEST_ADMIN_PASSWORD | ผู้ดูแลระบบ ทดสอบ |
 
 ## Usage
 
 ### Using Seeder Script
+
 ```bash
 # Seed PostgreSQL Docker database
 node scripts/seeder.cjs
@@ -42,6 +46,7 @@ node scripts/seeder.cjs --verify
 ```
 
 ### Using SQL Directly
+
 ```bash
 # PostgreSQL Docker container
 docker exec -i izara-postgres psql -U postgres -d izara_phase1 < scripts/database/izara-database.sql
@@ -55,5 +60,3 @@ Get-Content scripts\database\izara-database.sql | docker exec -i izara-postgres 
 ## Encoding
 
 All files use UTF-8 encoding to properly support Thai language (ภาษาไทย).
-
-

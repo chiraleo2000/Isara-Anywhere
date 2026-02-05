@@ -1,225 +1,172 @@
 # Izara Telemedicine User Management Workflows
 
-This document details the full user management workflow for both Patient Portal and Doctor Portal, including user creation, authentication, role management, admin privileges, and account lifecycle management.
+Complete user management documentation for the Izara Telemedicine platform, covering authentication, registration, role management, and security.
 
-**Version:** 3.0.0  
-**Last Updated:** January 21, 2026  
-**Status:** ✅ PostgreSQL Implementation
+**Version:** 3.2.0  
+**Last Updated:** February 4, 2026  
+**Status:** ✅ PostgreSQL Implementation Complete
 
 ---
 
-## 0. System Overview
+## 📋 Table of Contents
 
-Izara Telemedicine has **two separate portals** with different user types:
+1. [System Overview](#1-system-overview)
+2. [Database Schema](#2-database-schema)
+3. [API Endpoints](#3-api-endpoints)
+4. [User Workflows](#4-user-workflows)
+5. [Security Features](#5-security-features)
+6. [Role-Based Access Control](#6-role-based-access-control)
+7. [Test Accounts](#7-test-accounts)
+8. [Frontend Components](#8-frontend-components)
+9. [Error Codes](#9-error-codes)
 
-| Portal | URL | User Types | Auth Server |
-| -------- | ----- | ------------ | ------------- |
-| **Patient Portal** | `localhost:3005` | Patients | Backend on Port 3005 |
-| **Doctor Portal** | `localhost:3010` | Doctors, Admins | Backend on Port 3010 |
+---
 
-### Key Differences
+## 1. System Overview
+
+Izara Telemedicine uses a unified PostgreSQL database with two separate portals:
+
+| Portal | URL | User Types | Backend Port |
+| -------- | ----- | ------------ | -------------- |
+| **Patient Portal** | `localhost:3005` | Patients | 3005 |
+| **Doctor Portal** | `localhost:3010` | Doctors, Admins | 3010 |
+
+### Docker Services
+
+| Service | Container Name | Port | Purpose |
+| --------- | ---------------- | ------ | --------- |
+| PostgreSQL | izara-postgres | 5433 (ext) / 5432 (int) | Primary database |
+| Patient Portal | izara-patient-portal | 3005 | Patient frontend + backend |
+| Doctor Portal | izara-doctor-portal | 3010 | Doctor frontend + backend |
+| pgAdmin | izara-pgadmin | 5050 | Database administration |
+
+### Portal Comparison
 
 | Feature | Patient Portal | Doctor Portal |
-| --------- | --------------- | --------------- |
-| Password Hashing | bcrypt (secure) | bcrypt (secure) |
+| --------- | ---------------- | --------------- |
+| Password Hashing | bcrypt | bcrypt |
 | Registration | Immediate access | Admin approval required |
 | Role Types | `patient` only | `doctor`, `admin` |
-| Session Duration | 15 min inactivity | Session-based |
+| Session Duration | Session-based | Session-based |
 | Storage | PostgreSQL `users` table | PostgreSQL `users` table |
 
 ---
 
-## 1. Data Model
+## 2. Database Schema
 
-### 1.1 Patient User (Patient Portal)
+All user data is stored in the PostgreSQL database `izara_phase1`.
 
-**Storage Location**: PostgreSQL `users` and `patient_profiles` tables
+### 2.1 Users Table
 
-```typescript
-interface PatientUser {
-  id: string;                      // Format: user_1234567890_abc123xyz
-  patientId: string;               // Format: patient_1234567890_abc123xyz
-  email: string;                   // Lowercase, trimmed
-  passwordHash: string;            // Base64 encoded (legacy)
-  profile: {
-    id: string;
-    patientId: string;
-    name: string;
-    email: string;
-    phone: string;
-    avatarUrl: string;
-    dateOfBirth: string;           // YYYY-MM-DD
-    gender: 'male' | 'female' | 'other';
-    createdAt: string;             // ISO timestamp
-    updatedAt: string;
-  };
-  createdAt: string;
-  updatedAt: string;
-}
+The unified `users` table stores all user types (patients, doctors, admins):
+
+```sql
+CREATE TABLE users (
+    id VARCHAR(50) PRIMARY KEY,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    role VARCHAR(20) NOT NULL CHECK (role IN ('doctor', 'admin', 'patient')),
+    name VARCHAR(255) NOT NULL,
+    name_thai VARCHAR(255),
+    avatar_url TEXT,
+    phone VARCHAR(50),
+    date_of_birth DATE,
+    gender VARCHAR(20),
+    national_id VARCHAR(20),
+    
+    -- Doctor-specific fields
+    doctor_id VARCHAR(50),
+    medical_license_number VARCHAR(50),
+    specialty VARCHAR(100),
+    hospital_name VARCHAR(255),
+    
+    -- Patient-specific fields
+    patient_id VARCHAR(50),
+    
+    -- Status fields
+    is_active BOOLEAN DEFAULT true,
+    is_verified BOOLEAN DEFAULT false,
+    is_approved BOOLEAN DEFAULT false,
+    approval_status VARCHAR(20) DEFAULT 'pending',
+    approved_at TIMESTAMP WITH TIME ZONE,
+    approved_by VARCHAR(50),
+    rejected_at TIMESTAMP WITH TIME ZONE,
+    rejected_by VARCHAR(50),
+    
+    -- Admin fields
+    admin_privileges JSONB,
+    is_admin BOOLEAN DEFAULT false,
+    
+    -- Settings
+    preferences JSONB DEFAULT '{"language": "th", "theme": "light"}'::jsonb,
+    notification_settings JSONB,
+    
+    -- Timestamps
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    last_login TIMESTAMP WITH TIME ZONE,
+    
+    -- Security
+    login_attempts INTEGER DEFAULT 0,
+    locked_until TIMESTAMP WITH TIME ZONE
+);
 ```
 
-### 1.2 Patient Profile Data
+### 2.2 Sessions Table
 
-**Storage Location**: `izara-patients-data/patients/{patientId}/profile.json`
-
-```typescript
-interface PatientProfile {
-  patientId: string;
-  userId: string;
-  personalInfo: {
-    name: string;
-    dateOfBirth: string;
-    gender: string;
-    phone: string;
-    email: string;
-    nationalId: string;
-    address: string;
-  };
-  physicalInfo: {
-    height: number;                // cm
-    weight: number;                // kg
-    bloodType: string;             // A+, B-, O+, etc.
-    bmi: number;
-  };
-  medicalInfo: {
-    allergies: string[];
-    chronicConditions: string[];
-    currentMedications: string[];
-    bloodPressure: string;
-    heartRate: number;
-    bloodSugar: string;
-  };
-  emergencyContact: {
-    name: string;
-    phone: string;
-    relation: string;
-  };
-  vitalHistory: VitalRecord[];
-  labResults: LabResult[];
-  immunizations: Immunization[];
-  createdAt: string;
-  updatedAt: string;
-}
+```sql
+CREATE TABLE sessions (
+    id VARCHAR(128) PRIMARY KEY,
+    user_id VARCHAR(50) REFERENCES users(id),
+    token TEXT NOT NULL,
+    ip_address VARCHAR(45),
+    user_agent TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    logged_out_at TIMESTAMP WITH TIME ZONE
+);
 ```
 
-### 1.3 Doctor/Admin User (Doctor Portal)
+### 2.3 Password Reset Tokens
 
-**Storage Location**: `izara-users-credentials/users/{userId}.json`
-
-```typescript
-interface DoctorUser {
-  id: string;                      // Format: DOC-TIMESTAMP-RANDOM or DOC-DEMO-001
-  email: string;                   // Lowercase, trimmed
-  passwordHash: string;            // bcrypt hash ($2b$...)
-  role: 'doctor' | 'admin';
-  doctorId: string;                // Same as id
-  medicalLicenseNumber: string;    // Format: MD-123456
-
-  // Status Fields
-  isAdmin: boolean;                // Admin privileges flag
-  isActive: boolean;               // Account active/deactivated
-  isApproved: boolean;             // Approval status
-  approvalStatus: 'pending' | 'approved' | 'rejected';
-  emailVerified: boolean;
-
-  // Profile Data
-  name: string;
-  nameThai?: string;
-  phone?: string;
-  dateOfBirth?: string;
-  avatarUrl?: string;
-  specialty?: string;
-  specialtyThai?: string;
-  hospital?: string;
-  qualifications?: string[];
-  experience?: string;
-
-  // Security
-  loginAttempts: number;           // Failed login count
-  lockedUntil: string | null;      // ISO timestamp when locked
-  lastLogin: string | null;
-
-  // Admin Specific
-  adminPrivileges?: AdminPrivileges;
-
-  // Timestamps
-  createdAt: string;
-  updatedAt: string;
-  approvedAt?: string;
-  approvedBy?: string;
-  rejectedAt?: string;
-  rejectedBy?: string;
-  rejectionReason?: string;
-
-  // Preferences
-  preferences: {
-    theme: 'light' | 'dark' | 'system';
-    language: 'en' | 'th';
-    notifications: {
-      email: boolean;
-      push: boolean;
-      sms: boolean;
-    };
-  };
-}
+```sql
+CREATE TABLE password_resets (
+    id VARCHAR(50) PRIMARY KEY,
+    user_id VARCHAR(50) REFERENCES users(id),
+    token VARCHAR(128) UNIQUE NOT NULL,
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    used BOOLEAN DEFAULT false,
+    used_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
 ```
 
-### 1.4 Admin Privileges
+### 2.4 Patient Profiles Table
 
-```typescript
-interface AdminPrivileges {
-  canManageDoctors: boolean;       // Approve/reject doctor registrations
-  canManagePatients: boolean;      // View/manage patient data
-  canManageAppointments: boolean;  // Manage all appointments
-  canViewAnalytics: boolean;       // Access analytics dashboard
-  canManageSettings: boolean;      // System settings
-  canAssignRoles: boolean;         // Promote/demote users
-  level: 'super_admin' | 'admin' | 'moderator';
-}
+```sql
+CREATE TABLE patient_profiles (
+    patient_id VARCHAR(50) PRIMARY KEY REFERENCES users(id),
+    demographics JSONB NOT NULL,
+    emergency_contact JSONB,
+    insurance_info JSONB,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
 ```
 
-### 1.5 User Index (Doctor Portal)
+### 2.5 User ID Formats
 
-**Storage Location**: `izara-users-credentials/users/index.json`
-
-```typescript
-interface UserIndexEntry {
-  id: string;
-  email: string;
-  role: 'doctor' | 'admin';
-  isActive: boolean;
-  approvalStatus: 'pending' | 'approved' | 'rejected';
-}
-
-// Array of all users for quick lookup
-type UsersIndex = UserIndexEntry[];
-```
-
-### 1.6 Session Data
-
-**Storage Location**: `izara-users-credentials/sessions/{sessionToken}.json`
-
-```typescript
-interface Session {
-  id: string;                      // Session token (64 hex chars)
-  userId: string;
-  email: string;
-  role: 'doctor' | 'admin' | 'patient';
-  createdAt: string;
-  expiresAt: string;
-  lastActivity: string;
-  ip: string;                      // Client IP
-  userAgent: string;               // Browser info
-  isValid?: boolean;               // Set to false on logout
-  loggedOutAt?: string;
-}
-```
+| Role | ID Format | Example |
+| ------ | ----------- | --------- |
+| Patient | `patient_{timestamp}_{random}` | `patient_1706123456789_abc123` |
+| Doctor | `DOC-{TIMESTAMP}-{RANDOM}` | `DOC-1706123456-XYZ789` |
+| Admin | `DOC-DEMO-001` or `DOC-{...}` | `DOC-DEMO-001` |
 
 ---
 
-## 2. API Endpoints
+## 3. API Endpoints
 
-### 2.1 Patient Portal Authentication (`/api/auth/*`)
+### 3.1 Patient Portal Authentication (`/api/auth/*`)
 
 | Method | Endpoint | Description | Access |
 | -------- | ---------- | ------------- | -------- |
@@ -229,7 +176,7 @@ interface Session {
 | POST | `/api/auth/validate` | Validate session token | Authenticated |
 | GET | `/api/auth/me` | Get current user profile | Authenticated |
 
-### 2.2 Doctor Portal Authentication (`/auth/*`)
+### 3.2 Doctor Portal Authentication (`/auth/*`)
 
 | Method | Endpoint | Description | Access |
 | -------- | ---------- | ------------- | -------- |
@@ -240,7 +187,7 @@ interface Session {
 | POST | `/auth/request-password-reset` | Request password reset | Public |
 | POST | `/auth/reset-password` | Reset password with token | Public |
 
-### 2.3 Admin Management (`/admin/*`)
+### 3.3 Admin Management (`/admin/*`)
 
 | Method | Endpoint | Description | Access |
 | -------- | ---------- | ------------- | -------- |
@@ -251,346 +198,398 @@ interface Session {
 
 ---
 
-## 3. Workflows
+## 4. User Workflows
 
-### 3.1 Patient Registration Flow
+### 4.1 Patient Registration Flow
 
 ```text
-[Patient visits Registration Page]
-         ↓
-┌─────────────────────────────────┐
-│ Step 1: Basic Information       │
-│ - Name, Email, Phone            │
-│ - Date of Birth, Gender         │
-│ - Password, Confirm Password    │
-└─────────────────────────────────┘
-         ↓
-┌─────────────────────────────────┐
-│ Step 2: Health Information      │
-│ - Height, Weight, Blood Type    │
-│ - Allergies                     │
-│ - Chronic Conditions            │
-│ - Current Medications           │
-│ - Emergency Contact             │
-└─────────────────────────────────┘
-         ↓
-[POST /api/auth/register]
-         ↓
-┌─────────────────────────────────┐
-│ System Actions:                 │
-│ 1. Validate email uniqueness    │
-│ 2. Generate userId & patientId  │
-│ 3. Hash password (Base64)       │
-│ 4. Create user record           │
-│ 5. Create patient profile       │
-│ 6. Create session               │
-│ 7. Log registration audit       │
-└─────────────────────────────────┘
-         ↓
-[Patient automatically logged in]
-         ↓
-[Redirect to Dashboard]
+┌─────────────────────────────────────────────────────────────────┐
+│                    PATIENT REGISTRATION FLOW                     │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  [Patient Portal Registration Page]                              │
+│               ↓                                                  │
+│  ┌─────────────────────────────┐                                │
+│  │ Step 1: Basic Information   │                                │
+│  │ • Name, Email, Phone        │                                │
+│  │ • Date of Birth, Gender     │                                │
+│  │ • Password (min 6 chars)    │                                │
+│  └─────────────────────────────┘                                │
+│               ↓                                                  │
+│  ┌─────────────────────────────┐                                │
+│  │ Step 2: Health Information  │                                │
+│  │ • Height, Weight, Blood Type│                                │
+│  │ • Allergies                 │                                │
+│  │ • Chronic Conditions        │                                │
+│  │ • Emergency Contact         │                                │
+│  └─────────────────────────────┘                                │
+│               ↓                                                  │
+│        POST /api/auth/register                                   │
+│               ↓                                                  │
+│  ┌─────────────────────────────┐                                │
+│  │ Backend Actions:            │                                │
+│  │ 1. Validate email unique    │                                │
+│  │ 2. Generate patient_id      │                                │
+│  │ 3. Hash password (bcrypt)   │                                │
+│  │ 4. Insert into users table  │                                │
+│  │ 5. Create patient_profiles  │                                │
+│  │ 6. Create session           │                                │
+│  └─────────────────────────────┘                                │
+│               ↓                                                  │
+│     [Auto-login → Dashboard]                                     │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-**Code Reference**: `Isara-patient-portal/server/routes/auth.ts` - `/register` endpoint
-
-### 3.2 Doctor Registration Flow
+### 4.2 Doctor Registration Flow
 
 ```text
-[Doctor visits Registration Page]
-         ↓
-┌─────────────────────────────────┐
-│ Registration Form:              │
-│ - Name, Email, Phone            │
-│ - Medical License Number        │
-│ - Specialty                     │
-│ - Password, Confirm Password    │
-└─────────────────────────────────┘
-         ↓
-[POST /auth/register]
-         ↓
-┌─────────────────────────────────┐
-│ System Actions:                 │
-│ 1. Validate email uniqueness    │
-│ 2. Generate DOC-xxx userId      │
-│ 3. Hash password (bcrypt)       │
-│ 4. Create user credential       │
-│ 5. Add to users index           │
-│ 6. Create doctor profile        │
-│ 7. Add to pending-approvals     │
-│ 8. Send email to admin          │
-└─────────────────────────────────┘
-         ↓
-┌─────────────────────────────────┐
-│ Status: PENDING APPROVAL        │
-│ - isActive: false               │
-│ - isApproved: false             │
-│ - approvalStatus: 'pending'     │
-└─────────────────────────────────┘
-         ↓
-[Show "Pending Approval" message]
+┌─────────────────────────────────────────────────────────────────┐
+│                     DOCTOR REGISTRATION FLOW                     │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  [Doctor Portal Registration Page]                               │
+│               ↓                                                  │
+│  ┌─────────────────────────────┐                                │
+│  │ Registration Form:          │                                │
+│  │ • Name, Email, Phone        │                                │
+│  │ • Medical License Number    │                                │
+│  │ • Specialty                 │                                │
+│  │ • Password (min 8 chars)    │                                │
+│  └─────────────────────────────┘                                │
+│               ↓                                                  │
+│         POST /auth/register                                      │
+│               ↓                                                  │
+│  ┌─────────────────────────────┐                                │
+│  │ Backend Actions:            │                                │
+│  │ 1. Validate email unique    │                                │
+│  │ 2. Generate DOC-xxx ID      │                                │
+│  │ 3. Hash password (bcrypt)   │                                │
+│  │ 4. Insert user with:        │                                │
+│  │    is_active: false         │                                │
+│  │    is_approved: false       │                                │
+│  │    approval_status: pending │                                │
+│  │ 5. Notify admin             │                                │
+│  └─────────────────────────────┘                                │
+│               ↓                                                  │
+│     [Show "Pending Approval" Message]                            │
+│               ↓                                                  │
+│  ┌─────────────────────────────┐                                │
+│  │ ⚠️ DOCTOR CANNOT LOGIN      │                                │
+│  │                             │                                │
+│  │ Doctor must wait for Admin  │                                │
+│  │ to verify and approve via   │                                │
+│  │ Doctor Management Page      │                                │
+│  │ (/admin/doctors)            │                                │
+│  └─────────────────────────────┘                                │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-**Code Reference**: `Isara-doctor-portal/server/authServer.cjs` - `/auth/register` endpoint
+### 4.2.1 Patient vs Doctor Registration Comparison
 
-### 3.3 Patient Login Flow
+| Feature | Patient Registration | Doctor Registration |
+| ------- | -------------------- | ------------------- |
+| **Portal** | Patient Portal (localhost:3005) | Doctor Portal (localhost:3010) |
+| **Endpoint** | `POST /api/auth/register` | `POST /auth/register` |
+| **Required Fields** | Name, Email, Password, Phone | Name, Email, Password, Medical License, Specialty |
+| **Password Minimum** | 6 characters | 8 characters |
+| **Health Info** | Height, Weight, Blood Type, Allergies | N/A |
+| **Professional Info** | N/A | Medical License Number, Specialty, Hospital |
+| **Immediate Access** | ✅ Yes - Can login immediately | ❌ No - Must wait for admin approval |
+| **Initial Status** | `is_active: true`, `is_approved: true` | `is_active: false`, `is_approved: false` |
+| **Approval Required** | ❌ No | ✅ Yes - Admin must approve |
+| **Auto-Login** | ✅ Yes - Logged in after registration | ❌ No - Must wait for approval |
+
+### 4.2.2 Doctor Registration States
 
 ```text
-[Patient visits Login Page]
-         ↓
-[Enter Email & Password]
-         ↓
-[POST /api/auth/login]
-         ↓
-┌─────────────────────────────────┐
-│ Validation Steps:               │
-│ 1. Find user by email           │
-│ 2. Check password (Base64)      │
-│ 3. Create 30-min session        │
-│ 4. Return user + token          │
-└─────────────────────────────────┘
-         ↓
-[Store token in localStorage]
-         ↓
-[Redirect to Dashboard]
+┌─────────────────────────────────────────────────────────────────┐
+│                    DOCTOR APPROVAL STATES                        │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐          │
+│  │   PENDING   │ → │  APPROVED   │    │  REJECTED   │          │
+│  └─────────────┘    └─────────────┘    └─────────────┘          │
+│        ↓                  ↓                  ↓                  │
+│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐          │
+│  │ is_active:  │    │ is_active:  │    │ is_active:  │          │
+│  │   false     │    │   true      │    │   false     │          │
+│  │ is_approved:│    │ is_approved:│    │ is_approved:│          │
+│  │   false     │    │   true      │    │   false     │          │
+│  │ approval_   │    │ approval_   │    │ approval_   │          │
+│  │ status:     │    │ status:     │    │ status:     │          │
+│  │  'pending'  │    │  'approved' │    │  'rejected' │          │
+│  └─────────────┘    └─────────────┘    └─────────────┘          │
+│        ↓                  ↓                  ↓                  │
+│  Cannot login       Can login         Cannot login              │
+│  Waiting for        Full access       May re-register           │
+│  admin approval     to portal         with correct info         │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-### 3.4 Doctor/Admin Login Flow
+### 4.3 Login Flow
 
 ```text
-[Doctor visits Login Page]
-         ↓
-[Enter Email & Password]
-         ↓
-[POST /auth/login]
-         ↓
-┌─────────────────────────────────┐
-│ Security Checks (OWASP):        │
-│ 1. Rate limit check (10/15min)  │
-│ 2. Account lock check           │
-│ 3. Find user by email           │
-│ 4. Check approval status        │
-│ 5. Check account active         │
-│ 6. Verify password (bcrypt)     │
-│ 7. Reset login attempts         │
-│ 8. Create 24-hour session       │
-│ 9. Log to audit history         │
-└─────────────────────────────────┘
-         ↓
-[Return token + user data]
-         ↓
-[Redirect based on role]
-   ├─→ Admin: /doctor/{id}/dashboard (with admin features)
-   └─→ Doctor: /doctor/{id}/dashboard
+┌─────────────────────────────────────────────────────────────────┐
+│                         LOGIN FLOW                               │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  [Enter Email & Password]                                        │
+│               ↓                                                  │
+│       POST /auth/login (or /api/auth/login)                      │
+│               ↓                                                  │
+│  ┌─────────────────────────────┐                                │
+│  │ Security Checks:            │                                │
+│  │ 1. Rate limit (10/15min)    │                                │
+│  │ 2. Account lock check       │                                │
+│  │ 3. Find user by email       │                                │
+│  │ 4. Check approval status    │  ← Doctor Portal only          │
+│  │ 5. Verify password (bcrypt) │                                │
+│  │ 6. Reset login_attempts     │                                │
+│  │ 7. Create session           │                                │
+│  │ 8. Update last_login        │                                │
+│  └─────────────────────────────┘                                │
+│               ↓                                                  │
+│     [Return token + user data]                                   │
+│               ↓                                                  │
+│     [Redirect to Dashboard]                                      │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-### 3.5 Login Error Handling
-
-| Error Code | Message | Action |
-| ------------ | --------- | -------- |
-| `RATE_LIMIT_EXCEEDED` | Too many attempts | Wait 15 minutes |
-| `ACCOUNT_LOCKED` | Account locked | Wait 30 minutes or contact admin |
-| `PENDING_APPROVAL` | Awaiting approval | Wait for admin approval |
-| `ACCOUNT_REJECTED` | Application rejected | Contact administrator |
-| `ACCOUNT_DEACTIVATED` | Account disabled | Contact administrator |
-| `INVALID_CREDENTIALS` | Wrong email/password | Check credentials |
-
-### 3.6 Admin: Approve Doctor Registration
+### 4.4 Admin: Approve Doctor
 
 ```text
-[Admin logs into Doctor Portal]
-         ↓
-[Navigate to "Doctor Management" page]
-         ↓
-┌─────────────────────────────────┐
-│ View Pending Tab:               │
-│ - See all pending registrations │
-│ - Doctor name, email, license   │
-│ - Specialty, registration date  │
-└─────────────────────────────────┘
-         ↓
-[Click "Approve" button]
-         ↓
-[Confirmation Modal]
-         ↓
-[POST /admin/approve-doctor]
-         ↓
-┌─────────────────────────────────┐
-│ System Updates:                 │
-│ 1. Set isActive: true           │
-│ 2. Set isApproved: true         │
-│ 3. Set approvalStatus: approved │
-│ 4. Set approvedAt timestamp     │
-│ 5. Set approvedBy admin ID      │
-│ 6. Update users index           │
-│ 7. Update doctors.json          │
-│ 8. Remove from pending list     │
-│ 9. Send approval email          │
-└─────────────────────────────────┘
-         ↓
-[Doctor can now log in]
+┌─────────────────────────────────────────────────────────────────┐
+│                   ADMIN APPROVE DOCTOR FLOW                      │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  [Admin → Doctor Management Page]                                │
+│               ↓                                                  │
+│  ┌─────────────────────────────┐                                │
+│  │ View Pending Tab:           │                                │
+│  │ • List pending doctors      │                                │
+│  │ • Name, Email, License      │                                │
+│  │ • Specialty, Reg Date       │                                │
+│  └─────────────────────────────┘                                │
+│               ↓                                                  │
+│     [Click "Approve" Button]                                     │
+│               ↓                                                  │
+│      POST /admin/approve-doctor                                  │
+│               ↓                                                  │
+│  ┌─────────────────────────────┐                                │
+│  │ Database Updates:           │                                │
+│  │ UPDATE users SET            │                                │
+│  │   is_active = true,         │                                │
+│  │   is_approved = true,       │                                │
+│  │   approval_status = 'approved',                              │
+│  │   approved_at = NOW(),      │                                │
+│  │   approved_by = {adminId}   │                                │
+│  │ WHERE id = {doctorId}       │                                │
+│  └─────────────────────────────┘                                │
+│               ↓                                                  │
+│     [Send approval email to doctor]                              │
+│               ↓                                                  │
+│     [Doctor can now login]                                       │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-**Code Reference**: `Isara-doctor-portal/server/authServer.cjs` - `/admin/approve-doctor` endpoint
+### 4.4.1 Doctor Management Page (Admin Only)
 
-### 3.7 Admin: Reject Doctor Registration
+**Route:** `/admin/doctors` or "จัดการแพทย์" in sidebar  
+**Component:** `AdminDoctorManagement.tsx`  
+**Access:** Admin users only (role = 'admin' or is_admin = true)
 
 ```text
-[Admin selects doctor to reject]
-         ↓
-[Click "Reject" button]
-         ↓
-[Enter rejection reason]
-         ↓
-[POST /admin/reject-doctor]
-         ↓
-┌─────────────────────────────────┐
-│ System Updates:                 │
-│ 1. Set isActive: false          │
-│ 2. Set isApproved: false        │
-│ 3. Set approvalStatus: rejected │
-│ 4. Set rejectedAt timestamp     │
-│ 5. Set rejectedBy admin ID      │
-│ 6. Set rejectionReason          │
-│ 7. Update users index           │
-│ 8. Send rejection email         │
-└─────────────────────────────────┘
-         ↓
-[Doctor receives rejection email]
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  🏥 Doctor Portal                              🔔(3)  👤 Admin User  ⚙️     │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  📋 แดชบอร์ด                                                                 │
+│  📅 ตารางนัดหมาย                                                             │
+│  👥 ผู้ป่วย                                                                  │
+│  ─────────────────                                                          │
+│  👨‍⚕️ จัดการแพทย์  ◀── Admin Only                                            │
+│  ✅ อนุมัติแพทย์ใหม่ (3)  ◀── Badge shows pending count                      │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │  👨‍⚕️ Doctor Management / จัดการแพทย์                                    │  │
+│  │                                                                       │  │
+│  │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐                  │  │
+│  │  │ All (15) │ │Pending(3)│ │Approved  │ │Rejected  │                  │  │
+│  │  │          │ │    ⚠️    │ │  (10)    │ │   (2)    │                  │  │
+│  │  └──────────┘ └──────────┘ └──────────┘ └──────────┘                  │  │
+│  │                                                                       │  │
+│  │  ┌─────────────────────────────────────────────────────────────────┐  │  │
+│  │  │ 🔍 Search doctors...                          [Filter ▼]       │  │  │
+│  │  └─────────────────────────────────────────────────────────────────┘  │  │
+│  │                                                                       │  │
+│  │  ┌─────────────────────────────────────────────────────────────────┐  │  │
+│  │  │ ⏳ PENDING APPROVAL                                             │  │  │
+│  │  ├─────────────────────────────────────────────────────────────────┤  │  │
+│  │  │                                                                 │  │  │
+│  │  │  👤 Dr. Somchai Jaidee                                          │  │  │
+│  │  │  📧 somchai.dr@hospital.co.th                                   │  │  │
+│  │  │  🔢 License: ว.12345                                            │  │  │
+│  │  │  🏥 Specialty: Internal Medicine                                │  │  │
+│  │  │  📅 Registered: Feb 4, 2026                                     │  │  │
+│  │  │                                                                 │  │  │
+│  │  │  [✓ Approve]  [✗ Reject]  [👁 View Details]                     │  │  │
+│  │  │                                                                 │  │  │
+│  │  ├─────────────────────────────────────────────────────────────────┤  │  │
+│  │  │                                                                 │  │  │
+│  │  │  👤 Dr. Wanida Sukjai                                           │  │  │
+│  │  │  📧 wanida.dr@clinic.com                                        │  │  │
+│  │  │  🔢 License: ว.67890                                            │  │  │
+│  │  │  🏥 Specialty: Pediatrics                                       │  │  │
+│  │  │  📅 Registered: Feb 3, 2026                                     │  │  │
+│  │  │                                                                 │  │  │
+│  │  │  [✓ Approve]  [✗ Reject]  [👁 View Details]                     │  │  │
+│  │  │                                                                 │  │  │
+│  │  └─────────────────────────────────────────────────────────────────┘  │  │
+│  │                                                                       │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 3.8 Admin: Grant Admin Privileges
+#### Doctor Management Page Features
+
+| Feature | Description |
+| ------- | ----------- |
+| **Tabs** | All, Pending, Approved, Rejected |
+| **Pending Badge** | Shows count of doctors waiting for approval |
+| **Search** | Search by name, email, license number |
+| **Filter** | Filter by specialty, registration date |
+| **Approve Button** | Approve doctor - enables login |
+| **Reject Button** | Reject with reason - doctor cannot login |
+| **View Details** | Full profile, documents, registration info |
+| **Role Management** | Promote doctor to admin or demote admin to doctor |
+
+### 4.5 Admin: Reject Doctor
 
 ```text
-[Admin navigates to Doctor Management]
-         ↓
-[Find approved doctor]
-         ↓
-[Click "Manage Role" button]
-         ↓
-┌─────────────────────────────────┐
-│ Role Modal:                     │
-│ ○ Doctor (regular access)       │
-│ ● Admin (elevated privileges)   │
-│                                 │
-│ [Cancel] [Save Changes]         │
-└─────────────────────────────────┘
-         ↓
-[POST /admin/update-role]
-         ↓
-┌─────────────────────────────────┐
-│ System Updates:                 │
-│ 1. Update role: 'admin'         │
-│ 2. Set isAdmin: true            │
-│ 3. Add adminPrivileges object   │
-│ 4. Update users index           │
-│ 5. Log role change audit        │
-└─────────────────────────────────┘
-         ↓
-[Doctor now has admin access]
+┌─────────────────────────────────────────────────────────────────┐
+│                    ADMIN REJECT DOCTOR FLOW                      │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  [Select Doctor → Click "Reject"]                                │
+│               ↓                                                  │
+│     [Enter Rejection Reason]                                     │
+│               ↓                                                  │
+│       POST /admin/reject-doctor                                  │
+│               ↓                                                  │
+│  ┌─────────────────────────────┐                                │
+│  │ Database Updates:           │                                │
+│  │ UPDATE users SET            │                                │
+│  │   is_active = false,        │                                │
+│  │   is_approved = false,      │                                │
+│  │   approval_status = 'rejected',                              │
+│  │   rejected_at = NOW(),      │                                │
+│  │   rejected_by = {adminId}   │                                │
+│  │ WHERE id = {doctorId}       │                                │
+│  └─────────────────────────────┘                                │
+│               ↓                                                  │
+│     [Send rejection email with reason]                           │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-**IMPORTANT**: The `/admin/update-role` endpoint needs to be implemented in the backend.
-
-### 3.9 Password Reset Flow
+### 4.6 Password Reset Flow
 
 ```text
-[User clicks "Forgot Password"]
-         ↓
-[Enter email address]
-         ↓
-[POST /auth/request-password-reset]
-         ↓
-┌─────────────────────────────────┐
-│ System Actions:                 │
-│ 1. Find user by email           │
-│ 2. Generate reset token (64chr) │
-│ 3. Set 1-hour expiration        │
-│ 4. Store token in GCS           │
-│ 5. Send reset email             │
-└─────────────────────────────────┘
-         ↓
-[User receives email with link]
-         ↓
-[User clicks reset link]
-         ↓
-[Enter new password]
-         ↓
-[POST /auth/reset-password]
-         ↓
-┌─────────────────────────────────┐
-│ Validation:                     │
-│ 1. Verify token exists          │
-│ 2. Check not expired            │
-│ 3. Check not already used       │
-│ 4. Update password hash         │
-│ 5. Mark token as used           │
-└─────────────────────────────────┘
-         ↓
-[Show "Password Reset Success"]
+┌─────────────────────────────────────────────────────────────────┐
+│                     PASSWORD RESET FLOW                          │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  [Click "Forgot Password"]                                       │
+│               ↓                                                  │
+│     [Enter email address]                                        │
+│               ↓                                                  │
+│    POST /auth/request-password-reset                             │
+│               ↓                                                  │
+│  ┌─────────────────────────────┐                                │
+│  │ Backend Actions:            │                                │
+│  │ 1. Find user by email       │                                │
+│  │ 2. Generate reset token     │                                │
+│  │ 3. Insert into password_resets                               │
+│  │    (expires in 1 hour)      │                                │
+│  │ 4. Send reset email         │                                │
+│  └─────────────────────────────┘                                │
+│               ↓                                                  │
+│     [User clicks email link]                                     │
+│               ↓                                                  │
+│     [Enter new password]                                         │
+│               ↓                                                  │
+│      POST /auth/reset-password                                   │
+│               ↓                                                  │
+│  ┌─────────────────────────────┐                                │
+│  │ Validation:                 │                                │
+│  │ 1. Verify token exists      │                                │
+│  │ 2. Check not expired        │                                │
+│  │ 3. Check not already used   │                                │
+│  │ 4. Update password_hash     │                                │
+│  │ 5. Mark token as used       │                                │
+│  └─────────────────────────────┘                                │
+│               ↓                                                  │
+│     [Password Reset Success]                                     │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 4. Security Features (OWASP Top 10:2025)
+## 5. Security Features
 
-### 4.1 Rate Limiting (A07)
+### 5.1 Rate Limiting
 
 | Endpoint | Limit | Window | Action on Exceed |
 | ---------- | ------- | -------- | ------------------ |
-| `/auth/login` | 10 requests | 15 minutes | Return 429 error |
-| `/auth/request-password-reset` | 5 requests | 1 hour | Return 429 error |
+| Login | 10 requests | 15 minutes | Return 429 error |
+| Password Reset | 5 requests | 1 hour | Return 429 error |
 | General API | 500 requests | 15 minutes | Return 429 error |
 
-### 4.2 Account Lockout (A07)
+### 5.2 Account Lockout
 
-```text
-Failed Login Attempt
-         ↓
-[Increment loginAttempts]
-         ↓
-[loginAttempts >= 5?]
-    │
-    ├─→ Yes: Lock account for 30 minutes
-    │        Set lockedUntil timestamp
-    │        Log security event
-    │
-    └─→ No: Continue normal flow
+After 5 failed login attempts:
+
+- Account is locked for 30 minutes
+- `locked_until` timestamp is set
+- Security event is logged
+
+```sql
+UPDATE users 
+SET login_attempts = login_attempts + 1,
+    locked_until = CASE 
+      WHEN login_attempts >= 4 THEN NOW() + INTERVAL '30 minutes'
+      ELSE locked_until 
+    END
+WHERE email = $1;
 ```
 
-### 4.3 Password Security (A04)
+### 5.3 Password Security
 
-| Portal | Hash Algorithm | Salt Rounds | Min Length |
-| -------- | --------------- | ------------- | ------------ |
-| Patient Portal | Base64 (legacy) | N/A | 6 chars |
-| Doctor Portal | bcrypt | 10 | 8 chars |
+| Feature | Implementation |
+| --------- | ---------------- |
+| Algorithm | bcrypt (all portals) |
+| Salt Rounds | 10 |
+| Min Length | 6 chars (patient) / 8 chars (doctor) |
 
-**Note**: Patient portal should be upgraded to bcrypt in future.
+### 5.4 Session Security
 
-### 4.4 Session Security (A07)
-
-- **Doctor Portal**: Sessions bound to IP and User-Agent
-- **Session invalidation**: Marked as `isValid: false` on logout
-- **Token format**: 64-character cryptographic random hex string
-
-### 4.5 Audit Logging (A09)
-
-All security events are logged:
-
-- Login success/failure
-- Registration
-- Password reset requests
-- Account lockouts
-- Role changes
-- Admin actions
-
-**Storage**: `izara-users-credentials/login-history/{userId}.json`
+- **Token Format**: 64-character cryptographic random hex string
+- **IP Binding**: Sessions track client IP address
+- **User-Agent**: Sessions track browser information
+- **Invalidation**: Sessions marked with `logged_out_at` on logout
 
 ---
 
-## 5. Role-Based Access Control (RBAC)
+## 6. Role-Based Access Control
 
-### 5.1 Patient Portal Access
+### 6.1 Patient Portal Access
 
 | Feature | Patient |
 | --------- | --------- |
@@ -600,7 +599,7 @@ All security events are logged:
 | AI Health Chat | ✅ |
 | Cancel Appointments | ✅ (own only) |
 
-### 5.2 Doctor Portal Access
+### 6.2 Doctor Portal Access
 
 | Feature | Doctor | Admin |
 | --------- | -------- | ------- |
@@ -610,94 +609,67 @@ All security events are logged:
 | View Scheduled Meetings | ✅ (own) | ✅ (all) |
 | Complete EMR | ✅ | ✅ |
 | Write Prescriptions | ✅ | ✅ |
+| AI Chat Assistant | ✅ | ✅ |
 | Doctor Management | ❌ | ✅ |
 | Approve Registrations | ❌ | ✅ |
 | Assign Roles | ❌ | ✅ |
 | View Analytics | ❌ | ✅ |
-| Manage All Appointments | ❌ | ✅ |
 
-### 5.3 Checking Admin Status in Code
+### 6.3 Admin Privileges (JSONB)
+
+```json
+{
+  "canManageDoctors": true,
+  "canManagePatients": true,
+  "canManageAppointments": true,
+  "canViewAnalytics": true,
+  "canManageSettings": true,
+  "canAssignRoles": true,
+  "level": "admin"
+}
+```
+
+### 6.4 Checking Admin Status
 
 ```typescript
 // Check if user is admin
-const isAdmin = user.isAdmin || user.role === 'admin';
+const isAdmin = user.is_admin || user.role === 'admin';
 
 // Check specific privilege
-const canManageDoctors = user.adminPrivileges?.canManageDoctors || user.isAdmin;
+const canManageDoctors = user.admin_privileges?.canManageDoctors || user.is_admin;
 ```
 
 ---
 
-## 6. Data Storage Structure
+## 7. Test Accounts
 
-### 6.1 GCS Bucket Layout
+### 7.1 Pre-seeded Accounts
 
-```text
-izara-users-credentials/
-├── users/
-│   ├── index.json                    # All users index
-│   ├── DOC-DEMO-001.json            # Admin user
-│   ├── DOC-DEMO-002.json            # Doctor user
-│   └── DOC-xxx-xxx.json             # Other doctors
-├── sessions/
-│   └── {sessionToken}.json          # Active sessions
-├── password-resets/
-│   └── {resetToken}.json            # Password reset tokens
-├── login-history/
-│   └── {userId}.json                # Login audit trail
-├── pending-approvals.json           # Pending doctor registrations
-└── email-logs.json                  # Sent email log
+| Portal | Email | Password | Role |
+| -------- | ------- | ---------- | ------ |
+| Doctor Portal | `admin.test@izara.com` | `IzaraAdmin@2024` | Admin |
+| Doctor Portal | `doctor.test@izara.com` | `IzaraDoctor@2024` | Doctor |
+| Patient Portal | `demo.test@gmail.com` | `P@ssw0rd` | Patient |
+| Patient Portal | `Somchai.Mankong@gmail.com` | `P@ssw0rd` | Patient |
+| Patient Portal | `Anan.Khayanrian@gmail.com` | `P@ssw0rd` | Patient |
 
-# All users (patients, doctors, admins) stored in izara-users-credentials
-# Patients: users/PATIENT-xxx.json
-# Doctors: doctors/DOC-xxx.json  
-# Admins: admins/ADMIN-xxx.json
+### 7.2 Seeding Data
 
-izara-patients-data/
-├── patients.json                    # Patients index
-└── patients/
-    └── {patientId}/
-        ├── profile.json             # Patient profile
-        └── phr.json                 # Health records
+```powershell
+# Seed database with test data
+cd scripts/database
+node seed-database.cjs
 
-izara-doctors-data/
-├── doctors.json                     # Doctors index
-└── doctors/
-    └── {doctorId}/
-        └── profile.json             # Doctor profile
-```
-
----
-
-## 7. Email Notifications
-
-### 7.1 Notification Triggers
-
-| Event | Recipient | Template |
-| ------- | ----------- | ---------- |
-| Doctor Registration | Admin | New registration alert |
-| Doctor Approved | Doctor | Approval confirmation |
-| Doctor Rejected | Doctor | Rejection with reason |
-| Password Reset | User | Reset link email |
-| Role Changed | Doctor | New privileges notification |
-
-### 7.2 Email Service
-
-**Code Reference**: `Isara-doctor-portal/server/emailService.cjs`
-
-```javascript
-// Available methods
-emailService.sendAdminNotification(adminEmail, doctorInfo)
-emailService.sendApprovalNotification(doctorEmail, doctorName)
-emailService.sendRejectionNotification(doctorEmail, doctorName, reason)
-emailService.sendPasswordResetEmail(email, resetToken, userName)
+# Or use cloud-db-tool
+cd scripts
+node cloud-db-tool.cjs seed
 ```
 
 ---
 
 ## 8. Frontend Components
 
-### 8.1 Patient Portal
+### 8.1 Patient Portal Components
 
 | Component | Path | Purpose |
 | ----------- | ------ | --------- |
@@ -705,7 +677,7 @@ emailService.sendPasswordResetEmail(email, resetToken, userName)
 | `RegisterPage` | `/pages/auth/RegisterPage.tsx` | Patient registration |
 | `AuthContext` | `/contexts/AuthContext.tsx` | Auth state management |
 
-### 8.2 Doctor Portal
+### 8.2 Doctor Portal Components
 
 | Component | Path | Purpose |
 | ----------- | ------ | --------- |
@@ -716,31 +688,7 @@ emailService.sendPasswordResetEmail(email, resetToken, userName)
 
 ---
 
-## 9. Default Test Accounts
-
-### 9.1 Pre-seeded Accounts
-
-| Portal | Email | Password | Role |
-| -------- | ------- | ---------- | ------ |
-| Doctor | `admin.test@izara.com` | `YOUR_TEST_PASSWORD` | Admin |
-| Doctor | `doctor.test@izara.com` | `YOUR_TEST_PASSWORD` | Doctor |
-| Patient | `patient.test@izara.com` | `YOUR_TEST_PASSWORD` | Patient |
-| Patient | `demo.test@gmail.com` | `YOUR_TEST_PASSWORD` | Patient (auto-created) |
-
-### 9.2 Seeding Data
-
-```bash
-# Seed minimal test data
-cd scripts/seeders
-node seedMinimalDataToGCS.cjs
-
-# Or seed all data
-node seedAllData.cjs
-```
-
----
-
-## 10. Error Codes Reference
+## 9. Error Codes
 
 | Code | HTTP Status | Description |
 | ------ | ------------- | ------------- |
@@ -756,61 +704,20 @@ node seedAllData.cjs
 
 ---
 
-## 11. Implementation TODOs
+## Summary
 
-### 11.1 Missing Backend Endpoint
-
-**Issue**: The frontend calls `/admin/update-role` but the endpoint doesn't exist.
-
-**Required Implementation**:
-
-```javascript
-// Add to authServer.cjs
-app.post('/admin/update-role', async (req, res) => {
-  const { userId, adminId, role, isAdmin } = req.body;
-
-  // 1. Verify admin permissions
-  // 2. Fetch user credential
-  // 3. Update role and isAdmin flag
-  // 4. Set adminPrivileges if promoting to admin
-  // 5. Update users index
-  // 6. Log audit event
-  // 7. Send notification email
-});
-```
-
-### 11.2 Security Improvements
-
-- [ ] Upgrade Patient Portal to bcrypt password hashing
-- [ ] Add two-factor authentication (2FA)
-- [ ] Implement refresh tokens
-- [ ] Add CAPTCHA to registration forms
-- [ ] Implement session revocation for all devices
-
-### 11.3 Feature Enhancements
-
-- [ ] Email verification for new registrations
-- [ ] Profile photo upload
-- [ ] Account deletion/PDPA compliance
-- [ ] Admin activity audit dashboard
+| Action | User | Portal | Status After |
+| -------- | ------ | -------- | -------------- |
+| Register | Patient | Patient | Active immediately |
+| Register | Doctor | Doctor | Pending approval |
+| Login | Patient | Patient | Session created |
+| Login | Doctor | Doctor | Checked for approval |
+| Approve | Admin | Doctor | approved, is_active=true |
+| Reject | Admin | Doctor | rejected, is_active=false |
+| Grant Admin | Admin | Doctor | role=admin, is_admin=true |
+| Reset Password | Any | Both | Password updated |
+| Logout | Any | Both | Session invalidated |
 
 ---
 
-## 12. Summary Table
-
-| Step | User | Portal | Page/Component | Action | Status Update |
-| ------ | ------ | -------- | ---------------- | -------- | --------------- |
-| Register | Patient | Patient | RegisterPage | Fill form, submit | Active immediately |
-| Register | Doctor | Doctor | DoctorRegister | Fill form, submit | Pending approval |
-| Login | Patient | Patient | LoginPage | Enter credentials | Session created |
-| Login | Doctor | Doctor | DoctorLogin | Enter credentials | Checked for approval |
-| Approve | Admin | Doctor | AdminDoctorManagement | Click approve | approved, isActive=true |
-| Reject | Admin | Doctor | AdminDoctorManagement | Click reject | rejected, isActive=false |
-| Grant Admin | Admin | Doctor | AdminDoctorManagement | Change role | role=admin, isAdmin=true |
-| Revoke Admin | Admin | Doctor | AdminDoctorManagement | Change role | role=doctor, isAdmin=false |
-| Reset Password | Any | Both | Forgot Password | Request + new password | Password updated |
-| Logout | Any | Both | Header/Menu | Click logout | Session invalidated |
-
----
-
-### This workflow document covers all user management scenarios for the Izara Telemedicine platform. Developers and AI agents should reference this for implementing and maintaining user-related features
+This document reflects the current PostgreSQL-based implementation of Izara Telemedicine (Phase 1 Complete).

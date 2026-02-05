@@ -5,63 +5,68 @@
     'primaryTextColor': '#0D47A1',
     'primaryBorderColor': '#2196F3',
     'lineColor': '#1976D2',
-    'secondaryColor': '#E8F5E9',
-    'tertiaryColor': '#FFF8E1',
-    'fontSize': '28px',
+    'fontSize': '20px',
     'fontFamily': 'Segoe UI, Arial'
   }
 }}%%
 
-flowchart LR
-    subgraph PATIENT["👤 PATIENT"]
-        direction TB
-        P1["🔐 Login"]
-        P2["🩺 Enter Symptoms"]
-        P3["👨‍⚕️ Select Doctor"]
-        P4["📅 Select Slot"]
-        P5["✅ Confirm"]
-        P1 --> P2 --> P3 --> P4 --> P5
+sequenceDiagram
+    autonumber
+    participant P as 🧑‍🤝‍🧑 Patient
+    participant PP as 📱 Patient Portal
+    participant AI as 🤖 Gemini AI
+    participant DB as 🗄️ Database
+    participant DP as 💻 Doctor Portal
+    participant D as 👨‍⚕️ Doctor
+    participant MS as 📹 Meeting Server
+
+    rect rgb(227, 242, 253)
+        Note over P,AI: 📝 SYMPTOM COLLECTION & AI TRIAGE
+        P->>PP: Enter symptoms
+        PP->>AI: Analyze symptoms
+        AI-->>PP: Suggested specialty + urgency
+        PP->>P: Show recommended doctors
     end
 
-    subgraph SYSTEM["⚙️ SYSTEM"]
-        direction TB
-        S1["🤖 AI Analysis<br/>Gemini"]
-        S2["💾 Save to DB<br/>PostgreSQL"]
-        S3["📧 Notify Doctor"]
+    rect rgb(232, 245, 233)
+        Note over P,DB: 📅 BOOKING PROCESS
+        P->>PP: Select doctor & time slot
+        PP->>DB: Check availability
+        DB-->>PP: Slot available
+        PP->>DB: Create appointment (status: pending)
+        PP->>P: Booking confirmation
     end
 
-    subgraph DOCTOR["👨‍⚕️ DOCTOR"]
-        direction TB
-        D1["👀 Review"]
-        D2{{"Decision"}}
-        D3["✅ Accept"]
-        D4["❌ Reject"]
-        D1 --> D2
-        D2 -->|Yes| D3
-        D2 -->|No| D4
+    rect rgb(255, 243, 224)
+        Note over DB,D: ✅ DOCTOR CONFIRMATION
+        DB->>DP: New appointment notification
+        DP->>D: Show pending request
+        D->>DP: Confirm/Reject
+        DP->>DB: Update status (confirmed/rejected)
+        DB->>PP: Status update
+        PP->>P: Email notification
     end
 
-    subgraph RESULT["🎉 RESULT"]
-        direction TB
-        R1["📹 Jitsi Link"]
-        R2["📧 Notify Patient"]
-        R3["✅ Confirmed"]
-        R1 --> R2 --> R3
+    rect rgb(224, 247, 250)
+        Note over P,MS: 📹 VIDEO CONSULTATION
+        P->>PP: Join meeting (at scheduled time)
+        D->>DP: Join meeting
+        PP->>MS: Request room (JWT auth)
+        DP->>MS: Request room (JWT auth)
+        MS-->>PP: Jitsi room URL
+        MS-->>DP: Jitsi room URL
+        P->>MS: Connect to video call
+        D->>MS: Connect to video call
+        MS->>MS: Real-time transcription
     end
 
-    P2 -.-> S1
-    P5 --> S2 --> S3 --> D1
-    D3 --> R1
-    D4 --> END(["❌ Cancelled"])
-
-    classDef patientStyle fill:#E3F2FD,stroke:#2196F3,stroke-width:2px,color:#0D47A1
-    classDef systemStyle fill:#FFF3E0,stroke:#FF9800,stroke-width:2px,color:#E65100
-    classDef doctorStyle fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px,color:#1B5E20
-    classDef resultStyle fill:#E0F7FA,stroke:#00BCD4,stroke-width:2px,color:#006064
-    classDef decisionStyle fill:#FFF8E1,stroke:#FFC107,stroke-width:2px,color:#FF6F00
-
-    class P1,P2,P3,P4,P5 patientStyle
-    class S1,S2,S3 systemStyle
-    class D1,D3,D4 doctorStyle
-    class D2 decisionStyle
-    class R1,R2,R3 resultStyle
+    rect rgb(243, 229, 245)
+        Note over D,DB: 📋 POST-CONSULTATION
+        MS-->>DP: Transcript + AI summary
+        D->>DP: Complete SOAP notes
+        D->>DP: E-prescription
+        D->>DP: Sign record
+        DP->>DB: Save encounter & prescription
+        DB->>PP: Records available
+        PP->>P: Notification: records ready
+    end

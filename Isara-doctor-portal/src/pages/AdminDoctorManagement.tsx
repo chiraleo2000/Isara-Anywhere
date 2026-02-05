@@ -7,6 +7,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../components/common/AuthProvider';
 import { useNavigate } from 'react-router-dom';
+import { useSettings } from '../hooks/useSettings';
 
 interface DoctorUser {
   id: string;
@@ -36,6 +37,33 @@ interface ApprovalHistory {
 }
 
 const AdminDoctorManagement: React.FC = () => {
+  const { theme, language, t } = useSettings();
+  const isDark = theme === 'dark';
+  
+  // i18n labels
+  const labels = {
+    pageTitle: { en: 'Doctor Management', th: 'จัดการแพทย์' },
+    addDoctor: { en: 'Add Doctor', th: 'เพิ่มแพทย์' },
+    allDoctors: { en: 'All Doctors', th: 'แพทย์ทั้งหมด' },
+    pending: { en: 'Pending', th: 'รอดำเนินการ' },
+    approved: { en: 'Approved', th: 'อนุมัติแล้ว' },
+    rejected: { en: 'Rejected', th: 'ปฏิเสธแล้ว' },
+    admins: { en: 'Admins', th: 'ผู้ดูแลระบบ' },
+    search: { en: 'Search doctors...', th: 'ค้นหาแพทย์...' },
+    approve: { en: 'Approve', th: 'อนุมัติ' },
+    reject: { en: 'Reject', th: 'ปฏิเสธ' },
+    manageRole: { en: 'Manage Role', th: 'จัดการบทบาท' },
+    doctor: { en: 'Doctor', th: 'แพทย์' },
+    admin: { en: 'Admin', th: 'ผู้ดูแลระบบ' },
+    email: { en: 'Email', th: 'อีเมล' },
+    specialty: { en: 'Specialty', th: 'ความเชี่ยวชาญ' },
+    status: { en: 'Status', th: 'สถานะ' },
+    actions: { en: 'Actions', th: 'การดำเนินการ' },
+    loading: { en: 'Loading...', th: 'กำลังโหลด...' },
+    noResults: { en: 'No doctors found', th: 'ไม่พบแพทย์' },
+  };
+  const label = (key: keyof typeof labels) => labels[key][language] || labels[key].en;
+
   const { user, isAuthenticated, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   
@@ -360,16 +388,16 @@ const AdminDoctorManagement: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className={isDark ? 'min-h-screen bg-gray-900 p-6' : 'min-h-screen bg-gray-50 p-6'}>
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+        <h1 className={`text-3xl font-bold ${isDark ? 'text-white' : 'text-gray-900'} flex items-center gap-3`}>
           <svg className="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
           </svg>
-          Doctor Approval
+          {label('pageTitle')}
         </h1>
-        <p className="text-gray-600 mt-2">
+        <p className={isDark ? 'text-gray-400 mt-2' : 'text-gray-600 mt-2'}>
           Review and approve doctor registration requests
         </p>
       </div>
@@ -405,10 +433,10 @@ const AdminDoctorManagement: React.FC = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+        <div className={isDark ? 'bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-700' : 'bg-white rounded-xl shadow-sm p-6 border border-gray-100'}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-500 text-sm">Total Doctors</p>
+              <p className={isDark ? 'text-gray-400 text-sm' : 'text-gray-500 text-sm'}>Total Doctors</p>
               <p className="text-3xl font-bold text-indigo-600">{allDoctors.length}</p>
             </div>
             <div className="bg-indigo-100 p-3 rounded-full">
@@ -419,10 +447,10 @@ const AdminDoctorManagement: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+        <div className={isDark ? 'bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-700' : 'bg-white rounded-xl shadow-sm p-6 border border-gray-100'}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-500 text-sm">Pending Approval</p>
+              <p className={isDark ? 'text-gray-400 text-sm' : 'text-gray-500 text-sm'}>Pending Approval</p>
               <p className="text-3xl font-bold text-yellow-600">{pendingCount}</p>
             </div>
             <div className="bg-yellow-100 p-3 rounded-full">
@@ -433,10 +461,10 @@ const AdminDoctorManagement: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+        <div className={isDark ? 'bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-700' : 'bg-white rounded-xl shadow-sm p-6 border border-gray-100'}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-500 text-sm">Approved</p>
+              <p className={isDark ? 'text-gray-400 text-sm' : 'text-gray-500 text-sm'}>Approved</p>
               <p className="text-3xl font-bold text-green-600">{approvedCount}</p>
             </div>
             <div className="bg-green-100 p-3 rounded-full">
@@ -447,10 +475,10 @@ const AdminDoctorManagement: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+        <div className={isDark ? 'bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-700' : 'bg-white rounded-xl shadow-sm p-6 border border-gray-100'}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-500 text-sm">Rejected</p>
+              <p className={isDark ? 'text-gray-400 text-sm' : 'text-gray-500 text-sm'}>Rejected</p>
               <p className="text-3xl font-bold text-red-600">{rejectedCount}</p>
             </div>
             <div className="bg-red-100 p-3 rounded-full">
@@ -463,8 +491,8 @@ const AdminDoctorManagement: React.FC = () => {
       </div>
 
       {/* Tabs */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="border-b border-gray-200">
+      <div className={isDark ? 'bg-gray-800 rounded-xl shadow-sm border border-gray-700 overflow-hidden' : 'bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden'}>
+        <div className={isDark ? 'border-b border-gray-700' : 'border-b border-gray-200'}>
           <nav className="flex flex-wrap">
             <button
               onClick={() => setActiveTab('all')}

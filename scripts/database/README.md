@@ -4,7 +4,7 @@ This folder contains all database-related scripts for the Izara Telemedicine pla
 
 ## 📁 Folder Structure
 
-```
+```text
 scripts/database/
 ├── README.md                     # This file
 ├── izara-database.sql            # 🔥 UNIFIED database init (schema + seed data)
@@ -22,7 +22,7 @@ The following scripts are deprecated and will be removed in a future version.
 Use the unified `scripts/cloud-db-tool.cjs` instead:
 
 | Old Script | New Command |
-|------------|-------------|
+| --- | --- |
 | `init-cloud-db.js` | `node scripts/cloud-db-tool.cjs --all` |
 | `init-cloud-sql.js` | `node scripts/cloud-db-tool.cjs --all` |
 | `seed-cloud-sql.js` | `node scripts/cloud-db-tool.cjs --all` |
@@ -61,7 +61,7 @@ Get-Content scripts\database\migrations\v1.4.3-fix-categories.sql | docker exec 
 ## 📋 Test Credentials
 
 | Role | Email | Password |
-|------|-------|----------|
+| --- | --- | --- |
 | Patient | <demo.test@gmail.com> | YOUR_TEST_PASSWORD |
 | Patient | <Somchai.Mankong@gmail.com> | YOUR_TEST_PASSWORD |
 | Patient | <Anan.Khayanrian@gmail.com> | YOUR_TEST_PASSWORD |
@@ -73,7 +73,7 @@ Get-Content scripts\database\migrations\v1.4.3-fix-categories.sql | docker exec 
 ### Tables (24 total)
 
 | Category | Tables |
-|----------|--------|
+| --- | --- |
 | **Core Users** | users, sessions, password_resets |
 | **Patient Data** | patient_profiles, phr, vital_signs, living_wills, living_will_versions, patient_consents |
 | **Doctor Data** | doctor_profiles, doctors, doctor_schedules, doctor_reviews, consultants |
@@ -103,5 +103,3 @@ Frontend uses hyphenated format for filters:
 - The `izara-database.sql` file is idempotent (safe to re-run)
 - Extensions required: uuid-ossp, pgcrypto, vector (pgvector)
 - **NO Cloud SQL used** - PostgreSQL runs as Docker service
-
-

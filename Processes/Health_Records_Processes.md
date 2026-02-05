@@ -2,9 +2,9 @@
 
 This document details the full health record workflow for Izara Telemedicine, including all user roles, notification logic, error handling, and business rules for PHR (Personal Health Record) and EMR (Electronic Medical Record). It covers data integration, access, and the relationship between appointment outcomes, EMR, and lab results.
 
-**Version:** 3.0.0  
-**Last Updated:** January 21, 2026  
-**Status:** ✅ PostgreSQL Implementation
+**Version:** 3.1.0  
+**Last Updated:** February 4, 2026  
+**Status:** ✅ PostgreSQL Implementation Complete
 
 ---
 
@@ -88,15 +88,20 @@ This document details the full health record workflow for Izara Telemedicine, in
 
 ## 2. Data Storage & Structure
 
-### 2.1 GCS Bucket Structure
+### 2.1 PostgreSQL Database Tables
 
-| Bucket | Purpose | Files |
+**IMPORTANT:** All data is stored in PostgreSQL database `izara_phase1`. NO GCS bucket storage is used.
+
+| Table | Purpose | Key Fields |
 | -------- | --------- | ------- |
-| `izara-patients-data` | Patient data | `patients/{patientId}/phr.json`, `patients/{patientId}/vital-signs.json`, `patients/{patientId}/health-logs.json` |
-| `izara-appointments` | Appointment & EMR data | `appointments/{appointmentId}.json`, `appointments.json` |
-| `izara-doctors-data` | Doctor profiles | `doctors/{doctorId}.json` |
-| `izara-users-credentials` | Authentication | `users/{userId}.json`, `users/index.json` |
-| `izara-meta-data` | Reference data | Specialties, medications, ICD codes |
+| `users` | All user accounts | id, email, password_hash, role (patient/doctor/admin) |
+| `patient_profiles` | Patient demographics | patient_id, demographics, emergency_contact |
+| `phr` | Personal Health Records | patient_id, vital_signs_history, allergies, medications |
+| `vital_signs` | Individual vital measurements | patient_id, blood_pressure, heart_rate, temperature |
+| `emr` | Electronic Medical Records | patient_id, doctor_id, subjective, objective, assessment, plan |
+| `appointments` | Appointment bookings | patient_id, doctor_id, status, meeting_link |
+| `prescriptions` | Medication prescriptions | emr_id, patient_id, medications, status |
+| `lab_orders` | Lab test orders | emr_id, patient_id, tests, results |
 
 ### 2.2 Patient PHR File (`patients/{patientId}/phr.json`)
 
@@ -303,7 +308,7 @@ This document details the full health record workflow for Izara Telemedicine, in
 ```text
 Patient enters vital signs → POST /api/phr/{patientId}/vitals
                            ↓
-                    Data saved to GCS: patients/{patientId}/vital-signs.json
+                    Data saved to PostgreSQL: phr and vital_signs tables
                            ↓
                     Doctor can view in PatientRecordViewer.tsx
 ```
@@ -329,8 +334,9 @@ Patient enters vital signs → POST /api/phr/{patientId}/vitals
 
 #### API Endpoints (Doctor Portal)
 
-- `GET /api/storage/read?bucket=patient&path=patients/{patientId}/phr.json`
-- `GET /api/storage/read?bucket=patient&path=patients/{patientId}/vital-signs.json`
+- `GET /api/phr/{patientId}` - Get patient PHR data
+- `GET /api/phr/{patientId}/vitals` - Get patient vital signs history
+- `GET /api/patients/{patientId}` - Get patient profile
 - `patientRecordService.getPHR(patientId)` - Aggregated PHR data
 
 ### 4.2 Data Mapping (Patient → Doctor)
@@ -413,7 +419,7 @@ Patient enters vital signs → POST /api/phr/{patientId}/vitals
 1. Patient logs in to Patient Portal with their credentials
 2. Navigates to PHR page (`/phr`)
 3. Adds vital signs, medications, or allergies
-4. Data is validated and saved to GCS under their `patientId`
+4. Data is validated and saved to PostgreSQL tables (`phr`, `vital_signs`)
 5. Confirmation shown to patient
 
 ### 6.2 Patient Edits Lifestyle Data
@@ -430,7 +436,7 @@ Patient enters vital signs → POST /api/phr/{patientId}/vitals
    - **การใช้อาหารเสริม** (Supplements): free text
    - **การรักษาอื่นๆ** (Other treatments): free text
 5. Clicks "บันทึก" (Save) button
-6. Data saved to GCS: `patients/{patientId}/phr.json` in lifestyle section
+6. Data saved to PostgreSQL `phr` table in lifestyle JSONB column
 7. Doctor can immediately view updated data in PatientRecordViewer
 
 ### 6.3 Doctor Views Patient PHR
@@ -439,7 +445,7 @@ Patient enters vital signs → POST /api/phr/{patientId}/vitals
 2. Searches for patient or selects from appointment list
 3. Opens Patient Record Viewer
 4. Clicks PHR tab to view patient's self-entered data
-5. PHR data is fetched from GCS and transformed for display
+5. PHR data is fetched from PostgreSQL and transformed for display
 6. Doctor sees formatted vital signs, allergies, medications, lifestyle (including supplements and other treatments)
 
 ### 6.4 Doctor Creates and Signs EMR (Thai OPD Card Format)

@@ -2,8 +2,8 @@
 
 ## Presentation Script & Guide
 
-> **Version:** 1.4.4 | **Date:** January 2025  
-> **Tests:** 528 Local + 65 Cloud Tests (100% Passing)  
+> **Version:** 2.0.0 | **Date:** February 2026  
+> **Status:** Phase 1 Complete (Production Ready)  
 > **Duration:** 30-45 minutes  
 > **Audience:** Stakeholders, Technical Team, Medical Staff
 
@@ -35,6 +35,7 @@
 - ✅ **Thai-First Design** - ออกแบบเพื่อคนไทยเป็นหลัก
 - ✅ **Cloud Native** - ทำงานบน Google Cloud Platform
 - ✅ **PDPA Compliant** - รองรับ พ.ร.บ. คุ้มครองข้อมูลส่วนบุคคล
+- ✅ **AI-Powered** - Gemini AI สำหรับการวิเคราะห์และช่วยเหลือ
 
 ---
 
@@ -61,13 +62,13 @@
 
 | Portal | Users | Key Functions |
 |--------|-------|---------------|
-| **Patient Portal** | ผู้ป่วย, ประชาชน | นัดหมาย, ดูผลการรักษา, PHR |
-| **Doctor Portal** | แพทย์, Admin | ตรวจรักษา, EMR, จัดการนัดหมาย |
+| **Patient Portal** | ผู้ป่วย, ประชาชน | นัดหมาย, ดูผลการรักษา, PHR, AI Health Assistant |
+| **Doctor Portal** | แพทย์, Admin | ตรวจรักษา, EMR, จัดการนัดหมาย, CDS |
 
 **Live URLs:**
 
-- Patient: <https://izara-patient-portal-hvht4obouq-as.a.run.app>
-- Doctor: <https://izara-doctor-portal-hvht4obouq-as.a.run.app>
+- Patient: `https://izara-patient-portal-*.run.app`
+- Doctor: `https://izara-doctor-portal-*.run.app`
 
 ---
 
@@ -76,7 +77,7 @@
 ## 🏗️ Slide 4: High-Level Architecture
 
 **Script:**
-> "ระบบของเราถูกออกแบบเป็น Microservices Architecture บน Google Cloud Platform โดยใช้ Cloud Run สำหรับ hosting และ Google Cloud Storage สำหรับเก็บข้อมูล"
+> "ระบบของเราถูกออกแบบเป็น Container-based Architecture บน Docker และ Google Cloud Run โดยใช้ PostgreSQL เป็นฐานข้อมูลหลัก"
 
 **📊 See:** `diagrams/01-system-architecture.mmd`
 
@@ -84,9 +85,10 @@
 
 1. **Frontend** - React + TypeScript + Vite
 2. **Backend** - Node.js Express API
-3. **Storage** - Google Cloud Storage (6 Buckets)
-4. **AI Services** - Google Gemini AI
-5. **Integration** - Google Calendar, Meet, Maps
+3. **Database** - PostgreSQL 16 + pgvector
+4. **Storage** - Google Cloud Storage (5 Buckets)
+5. **AI Services** - Google Gemini 2.5 Flash
+6. **Video** - Jitsi Meet (Self-Hosted)
 
 ---
 
@@ -99,11 +101,12 @@
 |-------|------------|
 | **Frontend** | React 18, TypeScript, Tailwind CSS, Vite |
 | **Backend** | Node.js 22, Express.js |
-| **Database** | PostgreSQL 16 |
-| **Hosting** | Google Cloud Run |
+| **Database** | PostgreSQL 16 + pgvector |
+| **Hosting** | Docker, Google Cloud Run |
 | **AI** | Google Gemini 2.5 Flash |
 | **Video** | Jitsi Meet (Self-Hosted) |
 | **Maps** | Google Maps Platform |
+| **Testing** | Playwright E2E |
 
 ---
 
@@ -118,12 +121,13 @@
 
 **Core Features:**
 
-- 📅 **Smart Appointment Booking** - นัดหมายอัจฉริยะ
+- 📅 **Smart Appointment Booking** - นัดหมายอัจฉริยะพร้อม AI Triage
 - 📋 **Personal Health Records (PHR)** - ประวัติสุขภาพส่วนตัว
 - 💊 **Medication Tracking** - ติดตามการใช้ยา
-- 🤖 **AI Health Assistant** - ผู้ช่วยสุขภาพ AI
+- 🤖 **AI Health Assistant** - ผู้ช่วยสุขภาพ Gemini AI
 - 🗺️ **Healthcare Facility Map** - แผนที่สถานพยาบาล
 - 📚 **Medical Content Library** - คลังความรู้สุขภาพ
+- 📜 **Living Will** - หนังสือแสดงเจตนา
 
 ---
 
@@ -136,12 +140,12 @@
 
 **Core Features:**
 
-- 🩺 **Complete EMR System** - ระบบบันทึกเวชระเบียนอิเล็กทรอนิกส์
-- 💊 **E-Prescribing** - สั่งยาอิเล็กทรอนิกส์
+- 🩺 **Complete EMR System** - บันทึกเวชระเบียนแบบ SOAP
+- 💊 **E-Prescribing** - สั่งยาพร้อม Drug Interaction Check
 - 🧪 **Lab & Imaging Orders** - สั่งตรวจแล็บและภาพถ่ายรังสี
-- 📹 **Video Consultation** - ตรวจผ่าน Video Call
+- 📹 **Video Consultation** - ตรวจผ่าน Jitsi Video Call
 - 📅 **Schedule Management** - จัดการตารางนัดหมาย
-- 🤖 **AI Clinical Copilot** - AI ช่วยวินิจฉัย
+- 🤖 **AI Clinical Copilot** - AI ช่วยวินิจฉัยและสรุป
 
 ---
 
@@ -152,7 +156,7 @@
 
 **Admin Capabilities:**
 
-- 👨‍⚕️ **Doctor Approval** - อนุมัติแพทย์ใหม่
+- 👨‍⚕️ **Doctor Approval** - อนุมัติแพทย์ใหม่ (pending → approved)
 - 📊 **Content Management** - จัดการเนื้อหาสุขภาพ
 - 📅 **Appointment Pool** - จัดการ Pool นัดหมาย
 - 📈 **Analytics Dashboard** - รายงานสถิติ
@@ -165,7 +169,7 @@
 ## 🔄 Slide 9: Patient Appointment Flow
 
 **Script:**
-> "ขั้นตอนการนัดหมายของผู้ป่วยเริ่มจากการเลือกอาการ ระบบจะแนะนำแพทย์ที่เหมาะสม"
+> "ขั้นตอนการนัดหมายของผู้ป่วยเริ่มจากการเลือกอาการ ระบบ AI จะวิเคราะห์ความเร่งด่วนและแนะนำแพทย์ที่เหมาะสม"
 
 **📊 See:** `diagrams/04-appointment-workflow.mmd`
 
@@ -174,31 +178,33 @@
 1. ผู้ป่วย Login เข้าระบบ
 2. เลือก "นัดหมายแพทย์"
 3. ระบุอาการ (Symptom Input)
-4. AI วิเคราะห์และแนะนำแผนก
+4. **AI วิเคราะห์ความเร่งด่วน (Triage)**
 5. เลือกแพทย์และเวลา
 6. ยืนยันการนัดหมาย
-7. รอการยืนยันจากแพทย์
-8. รับ Google Meet Link
+7. ระบบแจ้งเตือนแพทย์
+8. รอการยืนยันจากแพทย์
+9. **รับ Jitsi Meet Link**
 
 ---
 
 ## 🔄 Slide 10: Doctor Consultation Flow
 
 **Script:**
-> "เมื่อถึงเวลานัดหมาย แพทย์สามารถเริ่มการตรวจผ่าน Video Call และบันทึก EMR"
+> "เมื่อถึงเวลานัดหมาย แพทย์สามารถเริ่มการตรวจผ่าน Video Call และบันทึก EMR โดยมี AI ช่วยถอดเสียงและสรุป"
 
 **📊 See:** `diagrams/05-consultation-workflow.mmd`
 
 **Steps:**
 
 1. แพทย์ดูรายการนัดหมาย
-2. เริ่ม Video Consultation
-3. บันทึก EMR (SOAP Notes)
-4. สั่งยา (E-Prescribing)
-5. สั่งตรวจ Lab/Imaging
-6. บันทึกผลและคำแนะนำ
-7. ปิดการตรวจ
-8. ข้อมูลอัพเดทไปยัง Patient Portal
+2. เริ่ม Video Consultation (Jitsi)
+3. **AI Transcription** - ถอดเสียงการสนทนา
+4. บันทึก EMR (SOAP Notes)
+5. สั่งยา (E-Prescribing)
+6. สั่งตรวจ Lab/Imaging
+7. **AI สรุปการตรวจ**
+8. แพทย์ตรวจสอบและลงนาม
+9. ข้อมูลอัพเดทไปยัง Patient Portal
 
 ---
 
@@ -211,263 +217,174 @@
 
 **SOAP Note Structure:**
 
-- **S** - Subjective: อาการที่ผู้ป่วยบอก
-- **O** - Objective: ผลตรวจร่างกาย/Lab
-- **A** - Assessment: การวินิจฉัย
-- **P** - Plan: แผนการรักษา
+| Section | Content | AI Assistance |
+|---------|---------|---------------|
+| **S** - Subjective | อาการที่ผู้ป่วยบอก | สกัดจาก Transcript |
+| **O** - Objective | ผลตรวจร่างกาย/Lab | วิเคราะห์ผล Lab |
+| **A** - Assessment | การวินิจฉัย (ICD-10) | แนะนำ Diagnosis |
+| **P** - Plan | แผนการรักษา | Drug Interaction Check |
 
 ---
 
 ## 🔄 Slide 12: Prescribing Workflow
 
 **Script:**
-> "ระบบสั่งยามี Drug Interaction Check และ Drug-Allergy Check อัตโนมัติ"
+> "ระบบสั่งยามี Clinical Decision Support (CDS) ตรวจสอบ Drug Interaction และ Drug-Allergy อัตโนมัติ"
 
 **📊 See:** `diagrams/07-prescribing-workflow.mmd`
 
-**Safety Features:**
+**CDS Features:**
 
 - ✅ Drug-Drug Interaction Check
-- ✅ Drug-Allergy Alert
-- ✅ Dosage Validation
-- ✅ Thai Drug Database
-- ✅ Prescription History
-
----
-
-## 🔄 Slide 13: Content Management Flow
-
-**Script:**
-> "การจัดการเนื้อหาสุขภาพมีระบบ Approval Workflow เพื่อตรวจสอบความถูกต้อง"
-
-**📊 See:** `diagrams/08-content-workflow.mmd`
-
-**Status Flow:**
-
-```
-Draft → Pending → Published
-         ↓
-       Rejected → Revise → Pending
-```
+- ✅ Drug-Allergy Conflict Detection
+- ✅ Dosage Appropriateness
+- ✅ Renal/Hepatic Adjustment Suggestions
+- ✅ **Man-in-the-Loop**: แพทย์ต้องยืนยันทุกคำเตือน
 
 ---
 
 # 5. DATA STRUCTURE & DATABASE
 
-## 💾 Slide 14: Data Storage Overview
+## 💾 Slide 13: Database Schema
 
 **Script:**
-> "เราใช้ PostgreSQL เป็น Database หลักในการเก็บข้อมูลทั้งหมด เพื่อความมั่นคงและความรวดเร็วในการเรียกใช้ข้อมูล ขณะที่ไฟล์เอกสารและรูปภาพจะถูกเก็บใน Google Cloud Storage"
+> "ฐานข้อมูลใช้ PostgreSQL 16 พร้อม pgvector สำหรับ AI Embedding มีการออกแบบให้รองรับ PDPA และ HIPAA"
 
-**📊 See:** `diagrams/01-system-architecture.mmd`  
-**📊 See:** `database/izara-complete-schema-v3.dbml`
+**Schema Reference:** `database/izara-complete-schema-v4.dbml`
 
-**Core Database Tables:**
+**Table Groups:**
 
-| Category | Tables |
-|----------|--------|
-| **Users** | `users`, `sessions`, `roles` |
-| **Clinical** | `emr`, `prescriptions`, `lab_orders` |
-| **Records** | `patient_profiles`, `phr` |
-| **Operations** | `appointments`, `meeting_records` |
+| Group | Tables |
+|-------|--------|
+| **Auth** | users, sessions, password_resets |
+| **Patient** | patient_profiles, phr, vital_signs, living_wills |
+| **Doctor** | doctor_profiles, doctors, doctor_schedules, consultants |
+| **Appointments** | appointments, meeting_records, meeting_transcripts |
+| **Clinical** | emr, prescriptions, lab_orders |
+| **Content** | medical_content, clinical_resources, icd10_codes, drugs |
+| **AI** | knowledge_base, ai_chat_history, cds_logs, ai_validations |
+| **Audit** | audit_logs |
 
 ---
 
-## 💾 Slide 15: Key Data Models
+## 💾 Slide 14: Key Data Relationships
 
 **Script:**
-> "ข้อมูลหลักที่ระบบจัดเก็บ ได้แก่ ข้อมูลผู้ใช้ การนัดหมาย EMR และเนื้อหาสุขภาพ"
+> "ระบบออกแบบให้ users table เป็น unified table รองรับทุก role ลด join complexity"
 
-**Core Entities:**
-
-- 👤 **User** - ข้อมูลผู้ใช้ (Patient/Doctor/Admin)
-- 📅 **Appointment** - การนัดหมาย
-- 📋 **EMR Record** - บันทึกเวชระเบียน
-- 💊 **Prescription** - ใบสั่งยา
-- 📚 **Medical Content** - เนื้อหาสุขภาพ
+```
+users (unified)
+  ├── patient_profiles (1:1)
+  ├── doctor_profiles (1:1)
+  ├── phr (1:1)
+  ├── appointments (1:N as patient or doctor)
+  │     └── meeting_records (1:1)
+  │           └── meeting_transcripts (1:N)
+  │     └── emr (1:1)
+  │           ├── prescriptions (1:N)
+  │           └── lab_orders (1:N)
+  └── ai_chat_history (1:N)
+```
 
 ---
 
 # 6. CLOUD SERVICES & INTEGRATION
 
-## ☁️ Slide 16: Google Cloud Platform
+## ☁️ Slide 15: Google Cloud Services
 
 **Script:**
-> "ระบบทำงานบน Google Cloud Platform โดยใช้บริการหลักๆ คือ Cloud Run และ Cloud Storage"
+> "ระบบใช้บริการของ Google Cloud Platform หลายรายการ"
 
 **📊 See:** `diagrams/10-gcp-services.mmd`
 
-**GCP Services Used:**
-
-- 🏃 **Cloud Run** - Serverless Container Hosting
-- 📦 **Cloud Storage** - Object Storage
-- 🔐 **IAM** - Identity & Access Management
-- 📈 **Cloud Monitoring** - Performance Monitoring
+| Service | Usage |
+|---------|-------|
+| **Cloud Run** | Container hosting (Patient, Doctor, Meeting) |
+| **Cloud SQL** | PostgreSQL 16 (Production) |
+| **Cloud Storage** | 5 Buckets for files |
+| **Secret Manager** | API Keys & credentials |
+| **Cloud Build** | CI/CD Pipeline |
 
 ---
 
-## ☁️ Slide 17: Google Services Integration
+## ☁️ Slide 16: External Integrations
 
 **Script:**
-> "เราเชื่อมต่อกับ Google Services ต่างๆ เพื่อเพิ่มความสามารถของระบบ"
-
-**📊 See:** `diagrams/11-google-services.mmd`
-
-**Integrated Services:**
+> "ระบบเชื่อมต่อกับบริการภายนอกหลายรายการ"
 
 | Service | Purpose |
 |---------|---------|
-| **Google Meet** | Video Consultation |
-| **Google Calendar** | Schedule Management |
-| **Google Maps** | Healthcare Facility Map |
-| **Gemini AI** | AI Health Assistant |
-| **Gmail API** | Email Notifications |
+| **Gemini AI** | Health Assistant, Transcript Summary, CDS |
+| **Jitsi Meet** | Video Consultation |
+| **Google Maps** | Healthcare Facility Locator |
+| **Speech-to-Text** | Real-time Transcription |
 
 ---
 
 # 7. SECURITY & COMPLIANCE
 
-## 🔐 Slide 18: Security Measures
+## 🔐 Slide 17: Security Features
 
 **Script:**
-> "ความปลอดภัยเป็นสิ่งสำคัญที่สุด เราใช้มาตรฐาน OWASP และรองรับ PDPA"
+> "ระบบมีการรักษาความปลอดภัยหลายชั้น เพื่อปกป้องข้อมูลผู้ป่วย"
 
-**Security Features:**
+**Security Measures:**
 
-- 🔒 **JWT Authentication** - Token-based auth
-- 🛡️ **OWASP Middleware** - Security headers (CSP, HSTS)
-- 🔐 **bcrypt Password Hashing** - Secure password storage
-- 📝 **Audit Logging** - All actions logged
-- 🔑 **Role-Based Access Control** - Patient/Doctor/Admin
+- 🔒 **Password Hashing**: bcrypt
+- 🔒 **Session Management**: Server-side with JWT
+- 🔒 **HTTPS**: TLS encryption
+- 🔒 **RBAC**: Role-based access control
+- 🔒 **Audit Logging**: Complete trail in audit_logs
 
 ---
 
-## 🔐 Slide 19: PDPA Compliance
+## 🔐 Slide 18: PDPA Compliance
 
 **Script:**
-> "ระบบรองรับ พ.ร.บ. คุ้มครองข้อมูลส่วนบุคคล (PDPA) อย่างเต็มรูปแบบ"
+> "ระบบรองรับ พ.ร.บ. คุ้มครองข้อมูลส่วนบุคคล (PDPA)"
 
-**PDPA Features:**
+**Compliance Features:**
 
-- ✅ **Consent Management** - ขอความยินยอมก่อนใช้ข้อมูล
-- ✅ **Data Portability** - ส่งออกข้อมูลได้
-- ✅ **Right to Delete** - ลบข้อมูลได้
-- ✅ **Access Control** - ควบคุมการเข้าถึง
-- ✅ **Audit Trail** - บันทึกการเข้าถึงข้อมูล
+- ✅ **Consent Management**: patient_consents table
+- ✅ **Data Access Control**: Role-based permissions
+- ✅ **Audit Trail**: Complete logging
+- ✅ **Data Portability**: PHR export capability
+- ✅ **Right to Erasure**: Data deletion workflow
 
 ---
 
 # 8. DEMO WALKTHROUGH
 
-## 🖥️ Slide 20: Demo - Patient Journey
+## 🎬 Slide 19: Live Demo
 
-**Script:**
-> "มาดู Demo การใช้งานจริง เริ่มจากฝั่งผู้ป่วย"
-
-**Demo Steps:**
-
-1. Login ด้วย <patient.test@izara.com>
-2. ดู Dashboard
-3. นัดหมายแพทย์ใหม่
-4. ดูประวัติการรักษา
-5. ใช้ AI Health Chat
-
----
-
-## 🖥️ Slide 21: Demo - Doctor Journey
-
-**Script:**
-> "ต่อมาเป็นฝั่งแพทย์"
-
-**Demo Steps:**
-
-1. Login ด้วย <doctor.test@izara.com>
-2. ดูรายการนัดหมาย
-3. เริ่ม Consultation
-4. บันทึก EMR
-5. สั่งยาและตรวจ Lab
-
----
-
-## 🖥️ Slide 22: Demo - Admin Functions
-
-**Script:**
-> "สุดท้ายเป็นฝั่ง Admin"
-
-**Demo Steps:**
-
-1. Login ด้วย <admin.test@izara.com>
-2. อนุมัติแพทย์ใหม่
-3. จัดการเนื้อหาสุขภาพ
-4. ดู Analytics
-
----
-
-# 📞 CLOSING
-
-## Slide 23: Summary & Next Steps
-
-**Script:**
-> "สรุป IZARA Anywhere เป็นแพลตฟอร์ม Telemedicine ที่ครบวงจร ใช้งานง่าย และปลอดภัย พร้อมให้บริการแล้ววันนี้"
-
-**Key Takeaways:**
-
-- ✅ ครบวงจร Patient + Doctor Portal
-- ✅ AI-Powered Clinical Support
-- ✅ Thai-First Design
-- ✅ PDPA Compliant
-- ✅ Cloud Native & Scalable
-
----
-
-## Slide 24: Q&A
-
-**Script:**
-> "ขอบคุณครับ/ค่ะ มีคำถามอะไรไหมครับ/คะ?"
-
-**Contact:**
-
-- 📧 Email: <support@izara.health>
-- 🌐 Website: <https://izara.health>
-- 📱 Demo: See live URLs
-
----
-
-# 📎 APPENDIX
-
-## Test Accounts
+**Demo Accounts:**
 
 | Role | Email | Password |
 |------|-------|----------|
-| Patient | <demo.test@gmail.com> | YOUR_TEST_PASSWORD |
-| Doctor | <doctor.test@izara.com> | YOUR_TEST_DOCTOR_PASSWORD |
-| Admin | <admin.test@izara.com> | YOUR_TEST_ADMIN_PASSWORD |
+| Patient | demo.test@gmail.com | P@ssw0rd |
+| Doctor | doctor.test@izara.com | IzaraDoctor@2024 |
+| Admin | admin.test@izara.com | IzaraAdmin@2024 |
 
-## Development URLs
+**Demo Flow:**
 
-| Service | URL |
-|---------|-----|
-| Patient Portal | <http://localhost:3005> |
-| Doctor Portal | <http://localhost:3010> |
-| Jitsi Server | <http://localhost:3020> |
-
-## Production URLs
-
-| Service | URL |
-|---------|-----|
-| Patient Portal | <https://izara-patient-portal-hvht4obouq-as.a.run.app> |
-| Doctor Portal | <https://izara-doctor-portal-hvht4obouq-as.a.run.app> |
-
-## ✅ E2E Test Results (January 29, 2026)
-
-| Test Suite | Pass Rate | Duration |
-|------------|-----------|----------|
-| Local E2E Tests | 100% (528 tests) | 11.6m |
-| Cloud E2E Tests | 100% (65 tests) | 1.0m |
-| Total | 593 tests | 12.6m |
-
-**All test suites passing at 100%**
+1. Patient Login → View PHR → Book Appointment
+2. Doctor Login → View Queue → Start Consultation
+3. Video Call → AI Transcription → Create EMR
+4. E-Prescribe → CDS Alert → Sign & Complete
+5. Patient sees summary in portal
 
 ---
 
-*End of Presentation Script - Last Updated: December 15, 2025*
+## 🎬 Slide 20: Q&A
+
+**Script:**
+> "ขอบคุณครับ/ค่ะ ที่รับฟัง มีคำถามหรือข้อสงสัยอะไรบ้างครับ/ค่ะ?"
+
+**Contact:**
+
+- 📧 Email: support@izara-health.com
+- 🌐 Website: https://izara-anywhere.com
+
+---
+
+*Last Updated: February 4, 2026*

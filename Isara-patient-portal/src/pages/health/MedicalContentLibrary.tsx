@@ -5,6 +5,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useSettings } from '../../contexts/SettingsContext';
 
 // In production, use relative URLs (proxied by nginx)
 // In development, use relative URLs (proxied by vite) 
@@ -103,6 +104,27 @@ const PlayIcon: React.FC<{ className?: string }> = ({ className }) => (
 
 // Main Component
 const MedicalContentLibrary: React.FC = () => {
+  const { theme, language } = useSettings();
+  const isDark = theme === 'dark';
+  
+  const labels = {
+    title: { en: 'Health Knowledge Library', th: 'คลังความรู้สุขภาพ' },
+    subtitle: { en: 'Medical Content Library - Your trusted health resource', th: 'Medical Content Library - แหล่งความรู้เพื่อสุขภาพที่ดีของคุณ' },
+    loading: { en: 'Loading medical content...', th: 'กำลังโหลดเนื้อหาทางการแพทย์...' },
+    retry: { en: 'Try again', th: 'ลองใหม่อีกครั้ง' },
+    featured: { en: '✨ Featured Content', th: '✨ เนื้อหาแนะนำ' },
+    readTime: { en: 'min read', th: 'นาที' },
+    search: { en: 'Search content...', th: 'ค้นหาเนื้อหา...' },
+    allCategories: { en: 'All Categories', th: 'ทุกหมวดหมู่' },
+    all: { en: 'All', th: 'ทั้งหมด' },
+    noContent: { en: 'No content found', th: 'ไม่พบเนื้อหา' },
+    noContentHint: { en: 'Try searching with different keywords or change category', th: 'ลองค้นหาด้วยคำอื่น หรือเปลี่ยนหมวดหมู่' },
+    noContentYet: { en: 'No content available yet', th: 'ยังไม่มีเนื้อหาในระบบ' },
+    close: { en: 'Close', th: 'ปิด' },
+    timeout: { en: 'Connection timeout. Please try again.', th: 'การเชื่อมต่อหมดเวลา กรุณาลองใหม่อีกครั้ง' },
+    errorLoading: { en: 'Error loading content', th: 'เกิดข้อผิดพลาดในการโหลดเนื้อหา' },
+  };
+  
   const [content, setContent] = useState<MedicalContentArticle[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -188,7 +210,7 @@ const MedicalContentLibrary: React.FC = () => {
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return '-';
-    return new Date(dateString).toLocaleDateString('th-TH', {
+    return new Date(dateString).toLocaleDateString(language === 'th' ? 'th-TH' : 'en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -197,39 +219,39 @@ const MedicalContentLibrary: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
+      <div className={`flex items-center justify-center min-h-[400px] ${isDark ? 'bg-gray-900' : ''}`}>
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto mb-4" />
-          <p className="text-gray-600">กำลังโหลดเนื้อหาทางการแพทย์...</p>
+          <p className={isDark ? 'text-gray-400' : 'text-gray-600'}>{labels.loading[language]}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+    <div className={`p-6 min-h-screen ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
-          <div className="p-3 bg-emerald-100 rounded-xl">
+          <div className={`p-3 rounded-xl ${isDark ? 'bg-emerald-900/30' : 'bg-emerald-100'}`}>
             <BookOpenIcon className="w-8 h-8 text-emerald-600" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">คลังความรู้สุขภาพ</h1>
-            <p className="text-gray-600">Medical Content Library - แหล่งความรู้เพื่อสุขภาพที่ดีของคุณ</p>
+            <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{labels.title[language]}</h1>
+            <p className={isDark ? 'text-gray-400' : 'text-gray-600'}>{labels.subtitle[language]}</p>
           </div>
         </div>
       </div>
 
       {/* Error Display */}
       {error && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
-          <p className="text-red-600">{error}</p>
+        <div className={`mb-6 p-4 rounded-xl border ${isDark ? 'bg-red-900/30 border-red-700' : 'bg-red-50 border-red-200'}`}>
+          <p className={isDark ? 'text-red-300' : 'text-red-600'}>{error}</p>
           <button
             onClick={fetchContent}
-            className="mt-2 text-sm text-red-700 hover:text-red-800 underline"
+            className={`mt-2 text-sm underline ${isDark ? 'text-red-400 hover:text-red-300' : 'text-red-700 hover:text-red-800'}`}
           >
-            ลองใหม่อีกครั้ง
+            {labels.retry[language]}
           </button>
         </div>
       )}
@@ -237,7 +259,7 @@ const MedicalContentLibrary: React.FC = () => {
       {/* Featured Content Section */}
       {featuredContent.length > 0 && (
         <div className="mb-8">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">✨ เนื้อหาแนะนำ</h2>
+          <h2 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>{labels.featured[language]}</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {featuredContent.slice(0, 3).map((article) => (
               <div
@@ -251,17 +273,17 @@ const MedicalContentLibrary: React.FC = () => {
                 <div className="flex items-center gap-2 mb-3">
                   <span className="text-2xl">{getTypeIcon(article.type)}</span>
                   <span className="text-xs bg-white/20 px-2 py-1 rounded-full">
-                    {getCategoryInfo(article.category).nameTh}
+                    {language === 'th' ? getCategoryInfo(article.category).nameTh : getCategoryInfo(article.category).name}
                   </span>
                 </div>
-                <h3 className="font-semibold text-lg mb-2">{article.titleTh || article.title}</h3>
+                <h3 className="font-semibold text-lg mb-2">{language === 'th' ? (article.titleTh || article.title) : article.title}</h3>
                 <p className="text-emerald-100 text-sm line-clamp-2">
-                  {article.summaryTh || article.summary}
+                  {language === 'th' ? (article.summaryTh || article.summary) : article.summary}
                 </p>
                 {article.readTime && (
                   <div className="mt-4 flex items-center gap-1 text-xs text-emerald-100">
                     <ClockIcon className="w-4 h-4" />
-                    <span>อ่าน {article.readTime} นาที</span>
+                    <span>{article.readTime} {labels.readTime[language]}</span>
                   </div>
                 )}
               </div>
@@ -271,17 +293,17 @@ const MedicalContentLibrary: React.FC = () => {
       )}
 
       {/* Filters */}
-      <div className="bg-white rounded-xl shadow-sm p-4 mb-6">
+      <div className={`rounded-xl shadow-sm p-4 mb-6 ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
         <div className="flex flex-col md:flex-row gap-4">
           {/* Search */}
           <div className="flex-1 relative">
             <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
               type="text"
-              placeholder="ค้นหาเนื้อหา..."
+              placeholder={labels.search[language]}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+              className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent ${isDark ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'border-gray-200'}`}
             />
           </div>
 
@@ -289,12 +311,12 @@ const MedicalContentLibrary: React.FC = () => {
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+            className={`px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'border-gray-200'}`}
           >
-            <option value="all">ทุกหมวดหมู่</option>
+            <option value="all">{labels.allCategories[language]}</option>
             {CATEGORIES.map((cat) => (
               <option key={cat.id} value={cat.id}>
-                {cat.icon} {cat.nameTh}
+                {cat.icon} {language === 'th' ? cat.nameTh : cat.name}
               </option>
             ))}
           </select>
@@ -303,7 +325,7 @@ const MedicalContentLibrary: React.FC = () => {
           <select
             value={selectedType}
             onChange={(e) => setSelectedType(e.target.value)}
-            className="px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+            className={`px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'border-gray-200'}`}
           >
             {CONTENT_TYPES.map((type) => (
               <option key={type.value} value={type.value}>
@@ -321,10 +343,10 @@ const MedicalContentLibrary: React.FC = () => {
             onClick={() => setSelectedCategory('all')}
             className={`px-4 py-2 rounded-full whitespace-nowrap transition-colors ${selectedCategory === 'all'
                 ? 'bg-emerald-600 text-white'
-                : 'bg-white text-gray-700 hover:bg-emerald-50'
+                : isDark ? 'bg-gray-800 text-gray-300 hover:bg-gray-700' : 'bg-white text-gray-700 hover:bg-emerald-50'
               }`}
           >
-            ทั้งหมด
+            {labels.all[language]}
           </button>
           {CATEGORIES.map((cat) => (
             <button
@@ -332,10 +354,10 @@ const MedicalContentLibrary: React.FC = () => {
               onClick={() => setSelectedCategory(cat.id)}
               className={`px-4 py-2 rounded-full whitespace-nowrap transition-colors ${selectedCategory === cat.id
                   ? 'bg-emerald-600 text-white'
-                  : 'bg-white text-gray-700 hover:bg-emerald-50'
+                  : isDark ? 'bg-gray-800 text-gray-300 hover:bg-gray-700' : 'bg-white text-gray-700 hover:bg-emerald-50'
                 }`}
             >
-              {cat.icon} {cat.nameTh}
+              {cat.icon} {language === 'th' ? cat.nameTh : cat.name}
             </button>
           ))}
         </div>
@@ -343,11 +365,11 @@ const MedicalContentLibrary: React.FC = () => {
 
       {/* Content Grid */}
       {filteredContent.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-xl">
-          <BookOpenIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">ไม่พบเนื้อหา</h3>
-          <p className="text-gray-500">
-            {searchTerm ? 'ลองค้นหาด้วยคำอื่น หรือเปลี่ยนหมวดหมู่' : 'ยังไม่มีเนื้อหาในระบบ'}
+        <div className={`text-center py-12 rounded-xl ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
+          <BookOpenIcon className={`w-16 h-16 mx-auto mb-4 ${isDark ? 'text-gray-600' : 'text-gray-300'}`} />
+          <h3 className={`text-lg font-medium mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>{labels.noContent[language]}</h3>
+          <p className={isDark ? 'text-gray-400' : 'text-gray-500'}>
+            {searchTerm ? labels.noContentHint[language] : labels.noContentYet[language]}
           </p>
         </div>
       ) : (
@@ -359,10 +381,10 @@ const MedicalContentLibrary: React.FC = () => {
               tabIndex={0}
               onClick={() => handleViewArticle(article)}
               onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleViewArticle(article); } }}
-              className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+              className={`rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow cursor-pointer ${isDark ? 'bg-gray-800' : 'bg-white'}`}
             >
               {/* Thumbnail */}
-              <div className="relative h-48 bg-gradient-to-br from-gray-100 to-gray-200">
+              <div className={`relative h-48 ${isDark ? 'bg-gradient-to-br from-gray-700 to-gray-800' : 'bg-gradient-to-br from-gray-100 to-gray-200'}`}>
                 {article.thumbnail ? (
                   <img
                     src={article.thumbnail}
@@ -380,19 +402,19 @@ const MedicalContentLibrary: React.FC = () => {
                   </div>
                 )}
                 <div className="absolute top-3 left-3">
-                  <span className="px-2 py-1 bg-white/90 rounded-full text-xs font-medium">
-                    {getCategoryInfo(article.category).icon} {getCategoryInfo(article.category).nameTh}
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${isDark ? 'bg-gray-900/80 text-white' : 'bg-white/90'}`}>
+                    {getCategoryInfo(article.category).icon} {language === 'th' ? getCategoryInfo(article.category).nameTh : getCategoryInfo(article.category).name}
                   </span>
                 </div>
               </div>
 
               {/* Content */}
               <div className="p-4">
-                <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">
-                  {article.titleTh || article.title}
+                <h3 className={`font-semibold mb-2 line-clamp-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  {language === 'th' ? (article.titleTh || article.title) : article.title}
                 </h3>
-                <p className="text-sm text-gray-600 line-clamp-2 mb-3">
-                  {article.summaryTh || article.summary}
+                <p className={`text-sm line-clamp-2 mb-3 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                  {language === 'th' ? (article.summaryTh || article.summary) : article.summary}
                 </p>
 
                 {/* Tags */}
@@ -401,7 +423,7 @@ const MedicalContentLibrary: React.FC = () => {
                     {article.tags.slice(0, 3).map((tag, idx) => (
                       <span
                         key={idx}
-                        className="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-xs rounded-full"
+                        className={`px-2 py-0.5 text-xs rounded-full ${isDark ? 'bg-emerald-900/30 text-emerald-300' : 'bg-emerald-50 text-emerald-700'}`}
                       >
                         #{tag}
                       </span>
@@ -410,12 +432,12 @@ const MedicalContentLibrary: React.FC = () => {
                 )}
 
                 {/* Meta */}
-                <div className="flex items-center justify-between text-xs text-gray-500">
+                <div className={`flex items-center justify-between text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                   <div className="flex items-center gap-3">
                     {article.readTime && (
                       <span className="flex items-center gap-1">
                         <ClockIcon className="w-4 h-4" />
-                        {article.readTime} นาที
+                        {article.readTime} {labels.readTime[language]}
                       </span>
                     )}
                     {article.viewCount !== undefined && (
@@ -436,18 +458,18 @@ const MedicalContentLibrary: React.FC = () => {
       {/* View Modal */}
       {showViewModal && selectedArticle && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+          <div className={`rounded-xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
             {/* Modal Header */}
-            <div className="flex items-center justify-between p-4 border-b">
+            <div className={`flex items-center justify-between p-4 border-b ${isDark ? 'border-gray-700' : ''}`}>
               <div className="flex items-center gap-2">
                 <span className="text-2xl">{getTypeIcon(selectedArticle.type)}</span>
-                <span className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded-full text-sm">
-                  {getCategoryInfo(selectedArticle.category).nameTh}
+                <span className={`px-2 py-1 rounded-full text-sm ${isDark ? 'bg-emerald-900/30 text-emerald-300' : 'bg-emerald-100 text-emerald-700'}`}>
+                  {language === 'th' ? getCategoryInfo(selectedArticle.category).nameTh : getCategoryInfo(selectedArticle.category).name}
                 </span>
               </div>
               <button
                 onClick={() => setShowViewModal(false)}
-                className="p-2 hover:bg-gray-100 rounded-full"
+                className={`p-2 rounded-full ${isDark ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-100'}`}
               >
                 <XMarkIcon className="w-5 h-5" />
               </button>
@@ -474,29 +496,29 @@ const MedicalContentLibrary: React.FC = () => {
               ) : null}
 
               {/* Title */}
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                {selectedArticle.titleTh || selectedArticle.title}
+              <h1 className={`text-2xl font-bold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                {language === 'th' ? (selectedArticle.titleTh || selectedArticle.title) : selectedArticle.title}
               </h1>
               {selectedArticle.titleTh && selectedArticle.title !== selectedArticle.titleTh && (
-                <p className="text-gray-500 mb-4">{selectedArticle.title}</p>
+                <p className={`mb-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{language === 'en' ? selectedArticle.titleTh : selectedArticle.title}</p>
               )}
 
               {/* Meta Info */}
-              <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 mb-6">
+              <div className={`flex flex-wrap items-center gap-4 text-sm mb-6 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                 {selectedArticle.authorName && (
-                  <span>โดย: {selectedArticle.authorName}</span>
+                  <span>{language === 'th' ? 'โดย:' : 'By:'} {selectedArticle.authorName}</span>
                 )}
-                <span>เผยแพร่: {formatDate(selectedArticle.createdAt)}</span>
+                <span>{language === 'th' ? 'เผยแพร่:' : 'Published:'} {formatDate(selectedArticle.createdAt)}</span>
                 {selectedArticle.readTime && (
                   <span className="flex items-center gap-1">
                     <ClockIcon className="w-4 h-4" />
-                    อ่าน {selectedArticle.readTime} นาที
+                    {selectedArticle.readTime} {labels.readTime[language]}
                   </span>
                 )}
                 {selectedArticle.viewCount !== undefined && (
                   <span className="flex items-center gap-1">
                     <EyeIcon className="w-4 h-4" />
-                    {selectedArticle.viewCount.toLocaleString()} ครั้ง
+                    {selectedArticle.viewCount.toLocaleString()} {language === 'th' ? 'ครั้ง' : 'views'}
                   </span>
                 )}
               </div>
@@ -507,7 +529,7 @@ const MedicalContentLibrary: React.FC = () => {
                   {selectedArticle.tags.map((tag, idx) => (
                     <span
                       key={idx}
-                      className="px-3 py-1 bg-emerald-50 text-emerald-700 text-sm rounded-full"
+                      className={`px-3 py-1 text-sm rounded-full ${isDark ? 'bg-emerald-900/30 text-emerald-300' : 'bg-emerald-50 text-emerald-700'}`}
                     >
                       #{tag}
                     </span>
@@ -517,18 +539,18 @@ const MedicalContentLibrary: React.FC = () => {
 
               {/* Summary */}
               {(selectedArticle.summaryTh || selectedArticle.summary) && (
-                <div className="bg-emerald-50 p-4 rounded-lg mb-6">
-                  <p className="text-gray-700 font-medium">
-                    {selectedArticle.summaryTh || selectedArticle.summary}
+                <div className={`p-4 rounded-lg mb-6 ${isDark ? 'bg-emerald-900/30' : 'bg-emerald-50'}`}>
+                  <p className={`font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
+                    {language === 'th' ? (selectedArticle.summaryTh || selectedArticle.summary) : selectedArticle.summary}
                   </p>
                 </div>
               )}
 
               {/* Main Content */}
-              <div className="prose prose-emerald max-w-none">
+              <div className={`prose max-w-none ${isDark ? 'prose-invert' : 'prose-emerald'}`}>
                 <div
                   dangerouslySetInnerHTML={{
-                    __html: (selectedArticle.contentTh || selectedArticle.content || '')
+                    __html: (language === 'th' ? (selectedArticle.contentTh || selectedArticle.content || '') : (selectedArticle.content || ''))
                       .replaceAll('\n', '<br />')
                   }}
                 />
@@ -536,12 +558,12 @@ const MedicalContentLibrary: React.FC = () => {
             </div>
 
             {/* Modal Footer */}
-            <div className="p-4 border-t bg-gray-50">
+            <div className={`p-4 border-t ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-gray-50'}`}>
               <button
                 onClick={() => setShowViewModal(false)}
                 className="w-full py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
               >
-                ปิด
+                {labels.close[language]}
               </button>
             </div>
           </div>

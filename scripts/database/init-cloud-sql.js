@@ -77,12 +77,7 @@ async function initializeDatabase() {
   }
 }
 
-// Use IIFE for CommonJS compatibility with proper error handling
-(async () => {
-  try {
-    await initializeDatabase();
-  } catch (err) {
-    console.error('Fatal error:', err);
-    process.exit(1);
-  }
-})();
+initializeDatabase().catch((err) => {
+  console.error('Fatal error:', err);
+  process.exit(1);
+});

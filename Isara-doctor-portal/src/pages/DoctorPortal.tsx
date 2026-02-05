@@ -4,6 +4,7 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, useParams, useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '../components/common/AuthProvider';
+import { useSettings } from '../hooks/useSettings';
 import { PatientRecord, UserPreferences } from '../types';
 import { patientDataService } from '../services/patientDataService';
 
@@ -39,6 +40,8 @@ const DEFAULT_PREFERENCES: UserPreferences = {
 const DoctorPortal: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
   const { user, logout, loading } = useAuth();
+  const { theme, language, t } = useSettings();
+  const isDark = theme === 'dark';
   const navigate = useNavigate();
 
   const [patients, setPatients] = useState<PatientRecord[]>([]);

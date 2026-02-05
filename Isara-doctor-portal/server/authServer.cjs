@@ -618,6 +618,11 @@ app.post('/auth/register', async (req, res) => {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
+    // Password validation
+    if (password.length < 8) {
+      return res.status(400).json({ error: 'Password must be at least 8 characters' });
+    }
+
     // Check PostgreSQL availability
     if (!pgPool) {
       console.error('[AUTH] PostgreSQL connection not available for registration');
@@ -627,50 +632,61 @@ app.post('/auth/register', async (req, res) => {
       });
     }
 
+    const emailLower = email.toLowerCase().trim();
+
     // Check if user already exists
     const existingUserResult = await pgPool.query(
       'SELECT id FROM users WHERE LOWER(email) = LOWER($1)',
-      [email.trim()]
+      [emailLower]
     );
 
     if (existingUserResult.rows.length > 0) {
-      return res.status(409).json({ error: 'User already exists' });
+      return res.status(409).json({ error: 'Email already registered. Please login instead.' });
     }
 
-    // Create user ID
-    const userId = `DOC-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+    // Create user ID - consistent format
+    const userId = `DOC-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 
     // Determine if pending approval
     const isPending = status === 'pending_approval';
     const passwordHash = hashPassword(password);
 
-    // Insert user into PostgreSQL
-    const userResult = await pgPool.query(
-      `INSERT INTO users (id, email, password_hash, name, role, doctor_id, is_active, is_approved, approval_status, phone, date_of_birth, specialty, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW())
-       RETURNING *`,
+    // Insert user into PostgreSQL with all required fields
+    await pgPool.query(
+      `INSERT INTO users (id, email, password_hash, name, role, doctor_id, medical_license_number, specialty, is_active, is_approved, is_verified, approval_status, phone, date_of_birth, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW(), NOW())`,
       [
         userId,
-        email.toLowerCase().trim(),
+        emailLower,
         passwordHash,
         name,
         'doctor',
         userId, // doctor_id = user_id for doctors
+        medicalLicenseNumber,
+        specialty || 'General Practice',
         !isPending, // is_active
         !isPending, // is_approved
+        true, // is_verified
         isPending ? 'pending' : 'approved',
         phone || null,
-        dateOfBirth || null,
-        specialty || 'General Practice'
+        dateOfBirth || null
       ]
     );
 
-    // Insert doctor profile
+    // Insert doctor profile - doctor_id must reference users.id
     await pgPool.query(
-      `INSERT INTO doctor_profiles (doctor_id, specialty, qualifications, hospital_name, created_at)
-       VALUES ($1, $2, $3, $4, NOW())
-       ON CONFLICT (doctor_id) DO UPDATE SET specialty = $2, qualifications = $3, hospital_name = $4`,
-      [userId, specialty || 'General Practice', medicalLicenseNumber, '']
+      `INSERT INTO doctor_profiles (doctor_id, specialty, qualifications, hospital_name, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, NOW(), NOW())
+       ON CONFLICT (doctor_id) DO UPDATE SET specialty = $2, qualifications = $3, hospital_name = $4, updated_at = NOW()`,
+      [userId, specialty || 'General Practice', medicalLicenseNumber, 'Izara Telemedicine Hospital']
+    );
+
+    // Also insert into doctors table for patient-facing listing
+    await pgPool.query(
+      `INSERT INTO doctors (id, name, specialty, hospital, is_available, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+       ON CONFLICT (id) DO UPDATE SET name = $2, specialty = $3, hospital = $4, updated_at = NOW()`,
+      [userId, name, specialty || 'General Practice', 'Izara Telemedicine Hospital', !isPending]
     );
 
     // Send email notification to admin if pending
@@ -678,11 +694,11 @@ app.post('/auth/register', async (req, res) => {
       try {
         await emailService.sendAdminNotification(ADMIN_EMAIL, {
           name,
-          email: email.toLowerCase().trim(),
+          email: emailLower,
           specialty: specialty || 'General Practice',
           createdAt: new Date().toISOString()
         });
-        console.log(`📧 Admin notification email sent for new registration: ${email}`);
+        console.log(`📧 Admin notification email sent for new registration: ${emailLower}`);
       } catch (emailError) {
         console.error('Failed to send admin notification email:', emailError);
       }
@@ -693,16 +709,18 @@ app.post('/auth/register', async (req, res) => {
       event: 'USER_REGISTERED',
       severity: 'INFO',
       userId,
-      email: email.toLowerCase().trim(),
+      email: emailLower,
       role: 'doctor',
       isPending,
       ip: getClientIP(req),
       source: 'PostgreSQL'
     });
 
+    console.log(`✅ Doctor registered successfully: ${emailLower}, ID: ${userId}, Status: ${isPending ? 'pending' : 'approved'}`);
+
     const userCredential = {
       id: userId,
-      email: email.toLowerCase().trim(),
+      email: emailLower,
       name,
       role: 'doctor',
       doctorId: userId,

@@ -1,8 +1,8 @@
 # Notification Workflows / ขั้นตอนการแจ้งเตือน
 
-**Version:** 3.0.0  
-**Last Updated:** January 21, 2026  
-**Status:** ✅ PostgreSQL Implementation
+**Version:** 3.1.0  
+**Last Updated:** February 4, 2026  
+**Status:** ✅ PostgreSQL Implementation Complete
 
 ---
 
@@ -486,7 +486,5 @@ https://meet.jit.si/izara-{appointmentId}-{timestamp}-{random}
 
 ---
 
-*อัปเดตล่าสุด: January 2025*
-*เวอร์ชัน: 1.1.0 - Updated with verified test results*
-
-
+อัปเดตล่าสุด: January 2025
+เวอร์ชัน: 1.1.0 - Updated with verified test results

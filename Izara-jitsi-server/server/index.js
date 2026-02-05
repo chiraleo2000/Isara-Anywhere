@@ -107,7 +107,12 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', service: 'izara-jitsi-server', timestamp: new Date().toISOString() });
 });
 
-// Create new meeting room
+// API Health check
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'healthy', service: 'izara-jitsi-server', timestamp: new Date().toISOString() });
+});
+
+// Create new meeting room (primary endpoint)
 app.post('/api/meetings/create', authenticateToken, async (req, res) => {
   try {
     const { appointmentId, patientId, doctorId, patientName, doctorName, scheduledTime } = req.body;
@@ -171,6 +176,34 @@ app.post('/api/meetings/create', authenticateToken, async (req, res) => {
         doctor: doctorUrl,
         patient: patientUrl,
         guest: meetingUrl
+      }
+    });
+    
+  } catch (error) {
+    console.error('[Meeting] Create error:', error);
+    res.status(500).json({ error: 'Failed to create meeting' });
+  }
+});
+
+// Alias: /api/meeting/create (alternative endpoint for tests)
+app.post('/api/meeting/create', async (req, res) => {
+  try {
+    const { appointmentId, patientId, doctorId, title } = req.body;
+    
+    const meetingId = uuidv4();
+    const roomName = `izara-${appointmentId?.substring(0, 12) || meetingId.substring(0, 8)}-${Date.now().toString(36)}`;
+    const meetingUrl = `https://${JITSI_DOMAIN}/${roomName}`;
+    
+    res.json({
+      success: true,
+      meetingId,
+      roomName,
+      meetingUrl,
+      title: title || 'Izara Consultation',
+      urls: {
+        base: meetingUrl,
+        doctor: meetingUrl,
+        patient: meetingUrl
       }
     });
     
@@ -546,9 +579,18 @@ io.on('connection', (socket) => {
 
 const startServer = async () => {
   try {
-    // Test database connection
-    await pool.query('SELECT NOW()');
-    console.log('✅ PostgreSQL connected');
+    // Test database connection (optional for Cloud Run)
+    const DB_ENABLED = process.env.DB_HOST && process.env.DB_HOST !== 'localhost';
+    if (DB_ENABLED) {
+      try {
+        await pool.query('SELECT NOW()');
+        console.log('✅ PostgreSQL connected');
+      } catch (dbError) {
+        console.warn('⚠️ Database connection failed, running in memory-only mode:', dbError.message);
+      }
+    } else {
+      console.log('ℹ️ Database not configured, running in memory-only mode');
+    }
     
     server.listen(PORT, () => {
       console.log(`
@@ -559,7 +601,7 @@ const startServer = async () => {
 ║  Port:       ${PORT}                                          ║
 ║  Jitsi:      ${JITSI_DOMAIN}                               ║
 ║  AI:         ${genAI ? 'Gemini Ready' : 'Not configured'}                               ║
-║  Database:   PostgreSQL connected                          ║
+║  Database:   ${DB_ENABLED ? 'PostgreSQL' : 'In-Memory Mode'}                          ║
 ╚════════════════════════════════════════════════════════════╝
       `);
     });

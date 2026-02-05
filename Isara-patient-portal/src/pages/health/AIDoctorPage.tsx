@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { aiService } from '../../lib/services';
 import { useAuth } from '../../contexts/AuthContext';
+import { useSettings } from '../../contexts/SettingsContext';
 import { Send, Bot, User, Sparkles, AlertCircle, Plus, MessageSquare, Trash2, Menu, X } from 'lucide-react';
 
 interface Message {
@@ -22,6 +23,35 @@ interface ChatSession {
 
 export default function AIDoctorPage() {
   const { user } = useAuth();
+  const { theme, language } = useSettings();
+  const isDark = theme === 'dark';
+  
+  const labels = {
+    newChat: { en: 'New Chat', th: 'สนทนาใหม่' },
+    chatHistory: { en: 'Chat History', th: 'ประวัติการสนทนา' },
+    noHistory: { en: 'No chat history', th: 'ยังไม่มีประวัติการสนทนา' },
+    conversation: { en: 'Conversation', th: 'การสนทนา' },
+    deleteChat: { en: 'Delete chat', th: 'ลบการสนทนา' },
+    deleteConfirm: { en: 'Delete this conversation?', th: 'ต้องการลบการสนทนานี้หรือไม่?' },
+    today: { en: 'Today', th: 'วันนี้' },
+    yesterday: { en: 'Yesterday', th: 'เมื่อวาน' },
+    daysAgo: { en: ' days ago', th: ' วันที่แล้ว' },
+    hideHistory: { en: 'Hide history', th: 'ซ่อนประวัติ' },
+    showHistory: { en: 'Show history', th: 'แสดงประวัติ' },
+    title: { en: 'AI Health Assistant', th: 'AI Health Assistant' },
+    subtitle: { en: 'Ask health questions anytime', th: 'ถามคำถามเกี่ยวกับสุขภาพได้เลย' },
+    disclaimer: { en: 'This AI provides preliminary advice only, not medical diagnosis. Please consult a doctor for serious health issues.', th: 'AI นี้ให้คำแนะนำเบื้องต้นเท่านั้น ไม่ใช่การวินิจฉัยทางการแพทย์ กรุณาปรึกษาแพทย์สำหรับปัญหาสุขภาพที่รุนแรง' },
+    startChat: { en: 'Start chatting with AI Health Assistant', th: 'เริ่มสนทนากับ AI Health Assistant' },
+    placeholder: { en: 'Type your question...', th: 'พิมพ์คำถามของคุณ...' },
+    errorReply: { en: 'Sorry, an error occurred. Please try again.', th: 'ขออภัย เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง' },
+    cantAnswer: { en: 'Sorry, I cannot answer that right now.', th: 'ขออภัย ไม่สามารถตอบคำถามได้ในขณะนี้' },
+  };
+  
+  const suggestionsData = {
+    en: ['Severe headache, what should I do?', 'Heart-healthy foods', 'Ways to reduce stress', 'Exercise for beginners'],
+    th: ['ปวดหัวมาก ควรทำอย่างไร', 'อาหารที่ดีต่อสุขภาพหัวใจ', 'วิธีลดความเครียด', 'การออกกำลังกายสำหรับผู้เริ่มต้น'],
+  };
+  
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -80,7 +110,7 @@ export default function AIDoctorPage() {
   // Delete a session
   const deleteSession = async (sessId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!confirm('ต้องการลบการสนทนานี้หรือไม่?')) return;
+    if (!confirm(labels.deleteConfirm[language])) return;
 
     try {
       await aiService.clearChatHistory(sessId);
@@ -99,10 +129,10 @@ export default function AIDoctorPage() {
     const diff = now.getTime() - date.getTime();
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
 
-    if (days === 0) return 'วันนี้';
-    if (days === 1) return 'เมื่อวาน';
-    if (days < 7) return `${days} วันที่แล้ว`;
-    return date.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
+    if (days === 0) return labels.today[language];
+    if (days === 1) return labels.yesterday[language];
+    if (days < 7) return `${days}${labels.daysAgo[language]}`;
+    return date.toLocaleDateString(language === 'th' ? 'th-TH' : 'en-US', { day: 'numeric', month: 'short' });
   };
 
   useEffect(() => {
@@ -154,7 +184,7 @@ export default function AIDoctorPage() {
       const assistantMessage: Message = {
         id: `msg_${Date.now()}_ai`,
         role: 'assistant',
-        content: response.reply || 'ขออภัย ไม่สามารถตอบคำถามได้ในขณะนี้',
+        content: response.reply || labels.cantAnswer[language],
         timestamp: new Date(),
       };
 
@@ -163,7 +193,7 @@ export default function AIDoctorPage() {
       const errorMessage: Message = {
         id: `msg_${Date.now()}_err`,
         role: 'assistant',
-        content: 'ขออภัย เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง',
+        content: labels.errorReply[language],
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errorMessage]);
@@ -172,38 +202,33 @@ export default function AIDoctorPage() {
     }
   };
 
-  const suggestions = [
-    'ปวดหัวมาก ควรทำอย่างไร',
-    'อาหารที่ดีต่อสุขภาพหัวใจ',
-    'วิธีลดความเครียด',
-    'การออกกำลังกายสำหรับผู้เริ่มต้น',
-  ];
+  const suggestions = suggestionsData[language];
 
   return (
     <div className="flex h-[calc(100vh-8rem)] -mx-4 sm:-mx-6 lg:-mx-8">
       {/* Sidebar - Chat History */}
-      <div className={`${sidebarOpen ? 'w-72' : 'w-0'} transition-all duration-300 bg-gray-50 border-r border-gray-200 flex-shrink-0 flex flex-col overflow-hidden`}>
-        <div className="p-3 border-b border-gray-200">
+      <div className={`${sidebarOpen ? 'w-72' : 'w-0'} transition-all duration-300 flex-shrink-0 flex flex-col overflow-hidden ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'} border-r`}>
+        <div className={`p-3 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
           <button
             onClick={startNewChat}
             className="w-full flex items-center gap-2 px-4 py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors font-medium"
           >
             <Plus className="w-5 h-5" />
-            สนทนาใหม่
+            {labels.newChat[language]}
           </button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-2">
-          <p className="text-xs text-gray-500 px-2 py-1 font-medium">ประวัติการสนทนา</p>
+          <p className={`text-xs px-2 py-1 font-medium ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{labels.chatHistory[language]}</p>
 
           {loadingSessions ? (
             <div className="flex justify-center py-8">
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-emerald-600"></div>
             </div>
           ) : sessions.length === 0 ? (
-            <div className="text-center py-8 text-gray-400 text-sm">
+            <div className={`text-center py-8 text-sm ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
               <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-50" />
-              ยังไม่มีประวัติการสนทนา
+              {labels.noHistory[language]}
             </div>
           ) : (
             <div className="space-y-1">
@@ -213,22 +238,22 @@ export default function AIDoctorPage() {
                   onClick={() => loadSession(session.session_id)}
                   className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-left group transition-colors ${sessionId === session.session_id
                       ? 'bg-emerald-100 text-emerald-800'
-                      : 'hover:bg-gray-100 text-gray-700'
+                      : isDark ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-700'
                     }`}
                 >
                   <MessageSquare className="w-4 h-4 flex-shrink-0 opacity-60" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm truncate">
-                      {session.title || 'การสนทนา'}
+                      {session.title || labels.conversation[language]}
                     </p>
-                    <p className="text-xs text-gray-400">
+                    <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
                       {formatDate(session.created_at || session.started_at || '')}
                     </p>
                   </div>
                   <button
                     onClick={(e) => deleteSession(session.session_id, e)}
                     className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-100 rounded transition-all"
-                    title="ลบการสนทนา"
+                    title={labels.deleteChat[language]}
                   >
                     <Trash2 className="w-3.5 h-3.5 text-red-500" />
                   </button>
@@ -242,11 +267,11 @@ export default function AIDoctorPage() {
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
-        <div className="flex items-center gap-3 p-4 border-b border-gray-100 bg-white">
+        <div className={`flex items-center gap-3 p-4 border-b ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            title={sidebarOpen ? 'ซ่อนประวัติ' : 'แสดงประวัติ'}
+            className={`p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-100'}`}
+            title={sidebarOpen ? labels.hideHistory[language] : labels.showHistory[language]}
           >
             {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
@@ -254,32 +279,32 @@ export default function AIDoctorPage() {
             <Sparkles className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-gray-800">AI Health Assistant</h1>
-            <p className="text-xs text-gray-600">ถามคำถามเกี่ยวกับสุขภาพได้เลย</p>
+            <h1 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{labels.title[language]}</h1>
+            <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{labels.subtitle[language]}</p>
           </div>
         </div>
 
-        <div className="px-4 py-2 bg-white">
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start gap-2">
-            <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-amber-700">
-              AI นี้ให้คำแนะนำเบื้องต้นเท่านั้น ไม่ใช่การวินิจฉัยทางการแพทย์ กรุณาปรึกษาแพทย์สำหรับปัญหาสุขภาพที่รุนแรง
+        <div className={isDark ? 'px-4 py-2 bg-gray-800' : 'px-4 py-2 bg-white'}>
+          <div className={`border rounded-xl p-3 flex items-start gap-2 ${isDark ? 'bg-amber-900/30 border-amber-700' : 'bg-amber-50 border-amber-200'}`}>
+            <AlertCircle className={`w-5 h-5 flex-shrink-0 mt-0.5 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
+            <p className={`text-sm ${isDark ? 'text-amber-300' : 'text-amber-700'}`}>
+              {labels.disclaimer[language]}
             </p>
           </div>
         </div>
 
-        <div className="flex-1 bg-white overflow-hidden flex flex-col">
+        <div className={`flex-1 overflow-hidden flex flex-col ${isDark ? 'bg-gray-900' : 'bg-white'}`}>
           <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4">
             {messages.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center">
-                <Bot className="w-16 h-16 text-gray-300 mb-4" />
-                <p className="text-gray-500 mb-4">เริ่มสนทนากับ AI Health Assistant</p>
+                <Bot className={`w-16 h-16 mb-4 ${isDark ? 'text-gray-600' : 'text-gray-300'}`} />
+                <p className={`mb-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{labels.startChat[language]}</p>
                 <div className="flex flex-wrap justify-center gap-2 max-w-md">
                   {suggestions.map((s) => (
                     <button
                       key={s}
                       onClick={() => setInput(s)}
-                      className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-emerald-100 hover:text-emerald-700 transition-colors"
+                      className={`px-3 py-2 rounded-lg text-sm transition-colors ${isDark ? 'bg-gray-800 text-gray-300 hover:bg-emerald-900/50 hover:text-emerald-300' : 'bg-gray-100 text-gray-700 hover:bg-emerald-100 hover:text-emerald-700'}`}
                     >
                       {s}
                     </button>
@@ -295,7 +320,7 @@ export default function AIDoctorPage() {
                         <Bot className="w-4 h-4 text-purple-600" />
                       </div>
                     )}
-                    <div className={`max-w-[70%] p-3 rounded-xl ${msg.role === 'user' ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-800'}`}>
+                    <div className={`max-w-[70%] p-3 rounded-xl ${msg.role === 'user' ? 'bg-emerald-600 text-white' : isDark ? 'bg-gray-800 text-gray-200' : 'bg-gray-100 text-gray-800'}`}>
                       <p className="whitespace-pre-wrap">{msg.content}</p>
                     </div>
                     {msg.role === 'user' && (
@@ -312,7 +337,7 @@ export default function AIDoctorPage() {
                 <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
                   <Bot className="w-4 h-4 text-purple-600" />
                 </div>
-                <div className="bg-gray-100 rounded-xl p-3">
+                <div className={`rounded-xl p-3 ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
                   <div className="flex gap-1">
                     <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
                     <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-100" />
@@ -325,15 +350,15 @@ export default function AIDoctorPage() {
           </div>
         </div>
 
-        <div className="p-4 border-t border-gray-100">
+        <div className={`p-4 border-t ${isDark ? 'border-gray-700 bg-gray-800' : 'border-gray-100'}`}>
           <div className="flex gap-2">
             <input
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
-              placeholder="พิมพ์คำถามของคุณ..."
-              className="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+              placeholder={labels.placeholder[language]}
+              className={`flex-1 px-4 py-3 border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent ${isDark ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'border-gray-200'}`}
               disabled={loading}
             />
             <button

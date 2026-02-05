@@ -6,6 +6,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../components/common/AuthProvider';
+import { useSettings } from '../hooks/useSettings';
 import {
   type ClinicalResourceItem,
   type ContentTag,
@@ -79,8 +80,25 @@ const BellIcon: React.FC<{ className?: string }> = ({ className }) => (
 // ============================================================================
 // MAIN COMPONENT
 // ============================================================================
+
+// i18n labels for Clinical Resources page
+const labels = {
+  pageTitle: { en: 'Clinical Resources', th: 'ทรัพยากรทางคลินิก' },
+  subtitle: { en: 'Medical Guidelines, Research Papers & Study Materials', th: 'แนวทางการแพทย์ งานวิจัย และเอกสารการศึกษา' },
+  searchResources: { en: 'Search resources...', th: 'ค้นหาทรัพยากร...' },
+  createNew: { en: 'Create New', th: 'สร้างใหม่' },
+  allCategories: { en: 'All Categories', th: 'ทุกหมวดหมู่' },
+  guidelines: { en: 'Guidelines', th: 'แนวทาง' },
+  research: { en: 'Research Papers', th: 'งานวิจัย' },
+  protocols: { en: 'Protocols', th: 'โปรโตคอล' },
+  pendingApproval: { en: 'Pending Approval', th: 'รอการอนุมัติ' },
+  myContentOnly: { en: 'My Content Only', th: 'เนื้อหาของฉันเท่านั้น' },
+};
+
 export const ClinicalResources: React.FC = () => {
   const { user } = useAuth();
+  const { theme, language, t } = useSettings();
+  const isDark = theme === 'dark';
   const isAdmin = user?.email?.includes('admin') || user?.role === 'admin';
 
   // Data states
@@ -443,15 +461,15 @@ export const ClinicalResources: React.FC = () => {
   // RENDER - MAIN
   // ============================================================================
   return (
-    <div className="h-full flex flex-col bg-gray-50">
+    <div className={`h-full flex flex-col ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
+      <div className={`border-b px-6 py-4 ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
         <div className="flex justify-between items-start">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-1">
+            <h1 className={`text-2xl font-bold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>
               📚 Clinical Resources & Medical Library
             </h1>
-            <p className="text-gray-600 text-sm">
+            <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
               Access medical guidelines, research papers, and evidence-based study materials
             </p>
           </div>
@@ -481,7 +499,7 @@ export const ClinicalResources: React.FC = () => {
       </div>
 
       {/* Search & Filter Bar */}
-      <div className="bg-white border-b border-gray-200 px-6 py-3">
+      <div className={`border-b px-6 py-3 ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
         <div className="flex flex-wrap gap-3 items-center">
           <div className="flex-1 min-w-[200px] relative">
             <input
@@ -489,7 +507,7 @@ export const ClinicalResources: React.FC = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search guidelines, topics, or keywords..."
-              className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+              className={`w-full px-4 py-2 pl-10 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent ${isDark ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'border-gray-300'}`}
             />
             <svg
               className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"
@@ -503,7 +521,7 @@ export const ClinicalResources: React.FC = () => {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as ContentStatus | 'all')}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+            className={`px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'border-gray-300'}`}
           >
             <option value="all">All Status</option>
             <option value="draft">Draft</option>
@@ -511,26 +529,26 @@ export const ClinicalResources: React.FC = () => {
             <option value="published">Published</option>
             <option value="rejected">Rejected</option>
           </select>
-          <label className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg cursor-pointer">
+          <label className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer ${isDark ? 'bg-gray-700' : 'bg-gray-50'}`}>
             <input
               type="checkbox"
               checked={showMyContentOnly}
               onChange={(e) => setShowMyContentOnly(e.target.checked)}
               className="rounded text-emerald-600 focus:ring-emerald-500"
             />
-            <span className="text-sm text-gray-700">My Content</span>
+            <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>My Content</span>
           </label>
         </div>
       </div>
 
       {/* Category Tabs */}
-      <div className="bg-white border-b border-gray-200 px-6 py-3 overflow-x-auto">
+      <div className={`border-b px-6 py-3 overflow-x-auto ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
         <div className="flex space-x-2">
           <button
             onClick={() => setSelectedCategory('all')}
             className={`px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-colors ${selectedCategory === 'all'
               ? 'bg-emerald-100 text-emerald-700 border-2 border-emerald-500'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              : isDark ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
           >
             📚 All Resources
@@ -561,9 +579,9 @@ export const ClinicalResources: React.FC = () => {
       {/* Content Area */}
       <div className="flex-1 flex overflow-hidden">
         {/* Resource List */}
-        <div className="w-96 bg-white border-r border-gray-200 flex flex-col">
-          <div className="p-4 border-b border-gray-200">
-            <p className="text-sm text-gray-600">
+        <div className={`w-96 border-r flex flex-col ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+          <div className={`p-4 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+            <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
               {filteredResources.length} resource{filteredResources.length === 1 ? '' : 's'} found
             </p>
           </div>

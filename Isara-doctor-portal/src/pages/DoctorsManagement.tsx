@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { useSettings } from '../hooks/useSettings';
 // PostgreSQL-backed API service - NO GCS!
 import { fetchAllDoctors } from '../services/apiDataService';
 import {
@@ -174,6 +175,36 @@ const specialties = [
 // ============================================================================
 
 const DoctorsManagement: React.FC = () => {
+  const { theme, language, t } = useSettings();
+  const isDark = theme === 'dark';
+  
+  // i18n labels
+  const labels = {
+    pageTitle: { en: 'Doctors Management', th: 'จัดการแพทย์' },
+    addDoctor: { en: 'Add Doctor', th: 'เพิ่มแพทย์' },
+    search: { en: 'Search doctors...', th: 'ค้นหาแพทย์...' },
+    allDepartments: { en: 'All Departments', th: 'แผนกทั้งหมด' },
+    all: { en: 'All', th: 'ทั้งหมด' },
+    active: { en: 'Active', th: 'ใช้งาน' },
+    inactive: { en: 'Inactive', th: 'ไม่ใช้งาน' },
+    onLeave: { en: 'On Leave', th: 'ลา' },
+    name: { en: 'Name', th: 'ชื่อ' },
+    specialty: { en: 'Specialty', th: 'ความเชี่ยวชาญ' },
+    department: { en: 'Department', th: 'แผนก' },
+    hospital: { en: 'Hospital', th: 'โรงพยาบาล' },
+    phone: { en: 'Phone', th: 'โทรศัพท์' },
+    email: { en: 'Email', th: 'อีเมล' },
+    status: { en: 'Status', th: 'สถานะ' },
+    actions: { en: 'Actions', th: 'การดำเนินการ' },
+    experience: { en: 'Experience', th: 'ประสบการณ์' },
+    years: { en: 'years', th: 'ปี' },
+    patients: { en: 'Patients', th: 'ผู้ป่วย' },
+    verified: { en: 'Verified', th: 'ยืนยันแล้ว' },
+    loading: { en: 'Loading...', th: 'กำลังโหลด...' },
+    noResults: { en: 'No doctors found', th: 'ไม่พบแพทย์' },
+  };
+  const label = (key: keyof typeof labels) => labels[key][language] || labels[key].en;
+
   const [doctors, setDoctors] = useState<Doctor[]>(mockDoctors);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDepartment, setSelectedDepartment] = useState('All Departments');
@@ -365,15 +396,15 @@ const DoctorsManagement: React.FC = () => {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className={isDark ? 'p-6 max-w-7xl mx-auto text-white' : 'p-6 max-w-7xl mx-auto'}>
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+          <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'} flex items-center gap-2`}>
             <UserGroupIcon className="w-8 h-8 text-emerald-600" />
-            Doctors Management
+            {label('pageTitle')}
           </h1>
-          <p className="text-gray-600 mt-1">Manage all doctors in the system</p>
+          <p className={isDark ? 'text-gray-400 mt-1' : 'text-gray-600 mt-1'}>Manage all doctors in the system</p>
         </div>
         <button
           onClick={() => setShowAddModal(true)}
@@ -386,32 +417,32 @@ const DoctorsManagement: React.FC = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white rounded-xl shadow-lg p-4">
+        <div className={isDark ? 'bg-gray-800 rounded-xl shadow-lg p-4' : 'bg-white rounded-xl shadow-lg p-4'}>
           <div className="text-3xl font-bold text-emerald-600">{doctors.length}</div>
-          <div className="text-sm text-gray-600">Total Doctors</div>
+          <div className={isDark ? 'text-sm text-gray-400' : 'text-sm text-gray-600'}>Total Doctors</div>
         </div>
-        <div className="bg-white rounded-xl shadow-lg p-4">
+        <div className={isDark ? 'bg-gray-800 rounded-xl shadow-lg p-4' : 'bg-white rounded-xl shadow-lg p-4'}>
           <div className="text-3xl font-bold text-green-600">
             {doctors.filter((d) => d.status === 'active').length}
           </div>
-          <div className="text-sm text-gray-600">Active</div>
+          <div className={isDark ? 'text-sm text-gray-400' : 'text-sm text-gray-600'}>Active</div>
         </div>
-        <div className="bg-white rounded-xl shadow-lg p-4">
+        <div className={isDark ? 'bg-gray-800 rounded-xl shadow-lg p-4' : 'bg-white rounded-xl shadow-lg p-4'}>
           <div className="text-3xl font-bold text-yellow-600">
             {doctors.filter((d) => d.status === 'on-leave').length}
           </div>
-          <div className="text-sm text-gray-600">On Leave</div>
+          <div className={isDark ? 'text-sm text-gray-400' : 'text-sm text-gray-600'}>On Leave</div>
         </div>
-        <div className="bg-white rounded-xl shadow-lg p-4">
+        <div className={isDark ? 'bg-gray-800 rounded-xl shadow-lg p-4' : 'bg-white rounded-xl shadow-lg p-4'}>
           <div className="text-3xl font-bold text-blue-600">
             {doctors.filter((d) => d.isVerified).length}
           </div>
-          <div className="text-sm text-gray-600">Verified</div>
+          <div className={isDark ? 'text-sm text-gray-400' : 'text-sm text-gray-600'}>Verified</div>
         </div>
       </div>
 
       {/* Search and Filter */}
-      <div className="bg-white rounded-xl shadow-lg p-4 mb-6">
+      <div className={isDark ? 'bg-gray-800 rounded-xl shadow-lg p-4 mb-6' : 'bg-white rounded-xl shadow-lg p-4 mb-6'}>
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1 relative">
             <SearchIcon className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -420,7 +451,7 @@ const DoctorsManagement: React.FC = () => {
               placeholder="Search by name, specialty, or email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+              className={isDark ? 'w-full pl-10 pr-4 py-2 border border-gray-600 bg-gray-700 text-white rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500' : 'w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500'}
             />
           </div>
           <select
@@ -448,10 +479,10 @@ const DoctorsManagement: React.FC = () => {
       </div>
 
       {/* Doctors Table */}
-      <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+      <div className={isDark ? 'bg-gray-800 rounded-xl shadow-lg overflow-hidden' : 'bg-white rounded-xl shadow-lg overflow-hidden'}>
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50">
+            <thead className={isDark ? 'bg-gray-700' : 'bg-gray-50'}>
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Doctor
@@ -473,9 +504,9 @@ const DoctorsManagement: React.FC = () => {
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200">
+            <tbody className={isDark ? 'divide-y divide-gray-700' : 'divide-y divide-gray-200'}>
               {filteredDoctors.map((doctor) => (
-                <tr key={doctor.id} className="hover:bg-gray-50">
+                <tr key={doctor.id} className={isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
                       <img
@@ -485,17 +516,17 @@ const DoctorsManagement: React.FC = () => {
                       />
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="font-medium text-gray-900">{doctor.name}</span>
+                          <span className={isDark ? 'font-medium text-white' : 'font-medium text-gray-900'}>{doctor.name}</span>
                           {doctor.isVerified && (
                             <CheckCircleIcon className="w-4 h-4 text-blue-500" />
                           )}
                         </div>
-                        <div className="text-sm text-gray-500">{doctor.specialty}</div>
+                        <div className={isDark ? 'text-sm text-gray-400' : 'text-sm text-gray-500'}>{doctor.specialty}</div>
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-900">{doctor.department}</td>
-                  <td className="px-6 py-4 text-sm text-gray-900">{doctor.licenseNumber}</td>
+                  <td className={isDark ? 'px-6 py-4 text-sm text-gray-300' : 'px-6 py-4 text-sm text-gray-900'}>{doctor.department}</td>
+                  <td className={isDark ? 'px-6 py-4 text-sm text-gray-300' : 'px-6 py-4 text-sm text-gray-900'}>{doctor.licenseNumber}</td>
                   <td className="px-6 py-4">
                     <span
                       className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
@@ -505,7 +536,7 @@ const DoctorsManagement: React.FC = () => {
                       {doctor.status}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-900">
+                  <td className={isDark ? 'px-6 py-4 text-sm text-gray-300' : 'px-6 py-4 text-sm text-gray-900'}>
                     {doctor.patientsHandled.toLocaleString()}
                   </td>
                   <td className="px-6 py-4">

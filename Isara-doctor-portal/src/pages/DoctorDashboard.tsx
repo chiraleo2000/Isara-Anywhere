@@ -10,6 +10,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, QueuePatient, PatientRecord } from '../types';
+import { useSettings } from '../hooks/useSettings';
 import {
   CalendarDaysIcon,
   ClockIcon,
@@ -179,6 +180,52 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
   // Navigation hook for linking to Appointments & Meetings page
   const navigate = useNavigate();
   
+  // Theme and language settings
+  const { theme, language, t } = useSettings();
+  const isDark = theme === 'dark';
+
+  // Bilingual labels for UI text
+  const labels = {
+    doctorDashboard: { en: 'Doctor Dashboard', th: 'แดชบอร์ดแพทย์' },
+    welcomeBack: { en: 'Welcome back', th: 'ยินดีต้อนรับ' },
+    todayAppointments: { en: "Today's Appointments", th: 'นัดหมายวันนี้' },
+    patientsSeen: { en: 'Patients Seen', th: 'ผู้ป่วยที่พบแล้ว' },
+    inQueue: { en: 'In Queue', th: 'ในคิว' },
+    pendingRx: { en: 'Pending Rx', th: 'ใบสั่งยารอดำเนินการ' },
+    unreadMessages: { en: 'Unread Messages', th: 'ข้อความที่ยังไม่ได้อ่าน' },
+    avgWait: { en: 'Avg Wait (min)', th: 'เวลารอเฉลี่ย (นาที)' },
+    needConfirmation: { en: 'Need Confirmation', th: 'รอยืนยัน' },
+    todayMeetings: { en: "Today's Meetings", th: 'การประชุมวันนี้' },
+    upcomingAppointments: { en: 'Upcoming Appointments', th: 'นัดหมายที่จะถึง' },
+    healthData: { en: 'Health Data', th: 'ข้อมูลสุขภาพ' },
+    patientQueueRecords: { en: 'Patient Queue & Records', th: 'คิวผู้ป่วยและบันทึก' },
+    searchPastRecords: { en: 'Retrieve Past Records for AI Summary', th: 'ดึงข้อมูลการรักษาเดิมให้ AI สรุป' },
+    viewAllPatients: { en: 'View All Patients', th: 'ดูผู้ป่วยทั้งหมด' },
+    healthMeeting: { en: 'Health Meeting', th: 'การประชุมสุขภาพ' },
+    videoConsultation: { en: 'Video Consultation & AI Notes', th: 'ปรึกษาผ่านวิดีโอและบันทึก AI' },
+    patient: { en: 'Patient', th: 'ผู้ป่วย' },
+    doctor: { en: 'Doctor', th: 'แพทย์' },
+    team: { en: 'Team', th: 'ทีม' },
+    startVideoCall: { en: 'Start Video Call', th: 'เริ่มวิดีโอคอล' },
+    investigation: { en: 'Investigation', th: 'การตรวจสอบ' },
+    treatment: { en: 'Treatment', th: 'การรักษา' },
+    refer: { en: 'Refer', th: 'ส่งต่อ' },
+    healthStudio: { en: 'Health Studio', th: 'สตูดิโอสุขภาพ' },
+    clinicalTools: { en: 'Clinical Tools & Resources', th: 'เครื่องมือและทรัพยากรทางคลินิก' },
+    aiClinicalAssistant: { en: 'AI Clinical Assistant', th: 'ผู้ช่วย AI ทางคลินิก' },
+    askAnything: { en: 'Ask anything about diagnosis or treatment', th: 'ถามเกี่ยวกับการวินิจฉัยหรือการรักษา' },
+    noPatientData: { en: 'No patient data', th: 'ไม่มีข้อมูลผู้ป่วย' },
+    joinMeeting: { en: 'Join Meeting', th: 'เข้าร่วมประชุม' },
+    moreMeetings: { en: 'more meetings', th: 'การประชุมเพิ่มเติม' },
+    aiHistorySummary: { en: 'AI Patient History Summary', th: 'AI สรุปประวัติผู้ป่วย' },
+    aiDocumentAnalysis: { en: 'AI Document Analysis', th: 'AI วิเคราะห์เอกสาร' },
+    clinicalDecisionSupport: { en: 'Clinical Decision Support', th: 'ระบบช่วยตัดสินใจทางคลินิก' },
+    approve: { en: 'Approve', th: 'อนุมัติ' },
+    reject: { en: 'Reject', th: 'ปฏิเสธ' },
+    useInEMR: { en: 'Use in EMR', th: 'ใช้ใน EMR' },
+    aiMeetingSummary: { en: 'AI Summary from Health Meeting', th: 'AI สรุปจาก Health Meeting' },
+  };
+
   // State
   const [personFilter, setPersonFilter] = useState<PersonFilter>('patient');
   const [meetingTab, setMeetingTab] = useState<MeetingTab>('investigation');
@@ -686,9 +733,9 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
   const renderPatientListForTab = (patientList: PatientRecord[], title: string) => {
     if (patientList.length === 0) {
       return (
-        <div className="text-center py-8 text-gray-500">
+        <div className={`text-center py-8 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
           <div className="text-4xl mb-2">📋</div>
-          <div className="text-sm">ไม่มีข้อมูลผู้ป่วย</div>
+          <div className="text-sm">{labels.noPatientData[language]}</div>
         </div>
       );
     }
@@ -706,7 +753,7 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
             <button
               key={patient.id}
               type="button"
-              className="bg-white rounded-lg border border-gray-200 p-3 hover:shadow-md transition-all cursor-pointer w-full text-left"
+              className={`rounded-lg border p-3 hover:shadow-md transition-all cursor-pointer w-full text-left ${isDark ? 'bg-gray-700 border-gray-600 hover:bg-gray-600' : 'bg-white border-gray-200 hover:bg-gray-50'}`}
               onClick={() => handleViewPatient(patient)}
             >
               <div className="flex items-center space-x-3">
@@ -716,9 +763,9 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
                   className="w-10 h-10 rounded-full"
                 />
                 <div className="flex-1 min-w-0">
-                  <h4 className="font-semibold text-gray-900 text-sm truncate">{patientName}</h4>
-                  <p className="text-xs text-gray-600">
-                    {patientAge} ปี • {patientGender}
+                  <h4 className={`font-semibold text-sm truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{patientName}</h4>
+                  <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                    {patientAge} {language === 'th' ? 'ปี' : 'yrs'} • {patientGender}
                   </p>
                 </div>
                 <button
@@ -1419,17 +1466,17 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
   }
 
   return (
-    <div className="min-h-full flex flex-col bg-gray-50 overflow-y-auto">
+    <div className={`min-h-full flex flex-col overflow-y-auto ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
       {/* ============================================================================ */}
       {/* DASHBOARD OVERVIEW - TOP KPI CARDS */}
       {/* ============================================================================ */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
+      <div className={`px-6 py-4 border-b ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Doctor Dashboard</h1>
-            <p className="text-sm text-gray-600">Welcome back, {doctor.name}</p>
+            <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{labels.doctorDashboard[language]}</h1>
+            <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{labels.welcomeBack[language]}, {doctor.name}</p>
           </div>
-          <div className="flex items-center space-x-2 text-sm text-gray-600">
+          <div className={`flex items-center space-x-2 text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
             <CalendarDaysIcon className="w-5 h-5" />
             <span>{new Date().toLocaleDateString('th-TH', {
               year: 'numeric',
@@ -1444,42 +1491,42 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
           <button 
             type="button"
             onClick={() => navigate(`/doctor/${doctor.id}/health-meeting`)}
-            className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-200 cursor-pointer hover:shadow-lg hover:border-blue-400 transition-all text-left"
+            className={`p-4 rounded-lg border cursor-pointer hover:shadow-lg transition-all text-left ${isDark ? 'bg-gradient-to-br from-blue-900 to-blue-800 border-blue-600 hover:border-blue-500' : 'bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 hover:border-blue-400'}`}
           >
-            <div className="text-2xl font-bold text-blue-700">{dashboardStats.todayAppointments}</div>
-            <div className="text-xs text-blue-600 mt-1">Today's Appointments</div>
+            <div className={`text-2xl font-bold ${isDark ? 'text-blue-300' : 'text-blue-700'}`}>{dashboardStats.todayAppointments}</div>
+            <div className={`text-xs mt-1 ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>{labels.todayAppointments[language]}</div>
           </button>
-          <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-lg border border-green-200">
-            <div className="text-2xl font-bold text-green-700">{dashboardStats.patientsSeen}</div>
-            <div className="text-xs text-green-600 mt-1">Patients Seen</div>
+          <div className={`p-4 rounded-lg border ${isDark ? 'bg-gradient-to-br from-green-900 to-green-800 border-green-600' : 'bg-gradient-to-br from-green-50 to-green-100 border-green-200'}`}>
+            <div className={`text-2xl font-bold ${isDark ? 'text-green-300' : 'text-green-700'}`}>{dashboardStats.patientsSeen}</div>
+            <div className={`text-xs mt-1 ${isDark ? 'text-green-400' : 'text-green-600'}`}>{labels.patientsSeen[language]}</div>
           </div>
           <button 
             type="button"
             onClick={() => navigate(`/doctor/${doctor.id}/health-meeting`)}
-            className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-lg border border-orange-200 cursor-pointer hover:shadow-lg hover:border-orange-400 transition-all text-left"
+            className={`p-4 rounded-lg border cursor-pointer hover:shadow-lg transition-all text-left ${isDark ? 'bg-gradient-to-br from-orange-900 to-orange-800 border-orange-600 hover:border-orange-500' : 'bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200 hover:border-orange-400'}`}
           >
-            <div className="text-2xl font-bold text-orange-700">{dashboardStats.patientsInQueue}</div>
-            <div className="text-xs text-orange-600 mt-1">In Queue</div>
+            <div className={`text-2xl font-bold ${isDark ? 'text-orange-300' : 'text-orange-700'}`}>{dashboardStats.patientsInQueue}</div>
+            <div className={`text-xs mt-1 ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{labels.inQueue[language]}</div>
           </button>
-          <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-lg border border-purple-200">
-            <div className="text-2xl font-bold text-purple-700">{dashboardStats.pendingPrescriptions}</div>
-            <div className="text-xs text-purple-600 mt-1">Pending Rx</div>
+          <div className={`p-4 rounded-lg border ${isDark ? 'bg-gradient-to-br from-purple-900 to-purple-800 border-purple-600' : 'bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200'}`}>
+            <div className={`text-2xl font-bold ${isDark ? 'text-purple-300' : 'text-purple-700'}`}>{dashboardStats.pendingPrescriptions}</div>
+            <div className={`text-xs mt-1 ${isDark ? 'text-purple-400' : 'text-purple-600'}`}>{labels.pendingRx[language]}</div>
           </div>
-          <div className="bg-gradient-to-br from-pink-50 to-pink-100 p-4 rounded-lg border border-pink-200">
-            <div className="text-2xl font-bold text-pink-700">{dashboardStats.unreadMessages}</div>
-            <div className="text-xs text-pink-600 mt-1">Unread Messages</div>
+          <div className={`p-4 rounded-lg border ${isDark ? 'bg-gradient-to-br from-pink-900 to-pink-800 border-pink-600' : 'bg-gradient-to-br from-pink-50 to-pink-100 border-pink-200'}`}>
+            <div className={`text-2xl font-bold ${isDark ? 'text-pink-300' : 'text-pink-700'}`}>{dashboardStats.unreadMessages}</div>
+            <div className={`text-xs mt-1 ${isDark ? 'text-pink-400' : 'text-pink-600'}`}>{labels.unreadMessages[language]}</div>
           </div>
-          <div className="bg-gradient-to-br from-cyan-50 to-cyan-100 p-4 rounded-lg border border-cyan-200">
-            <div className="text-2xl font-bold text-cyan-700">{dashboardStats.averageWaitTime}</div>
-            <div className="text-xs text-cyan-600 mt-1">Avg Wait (min)</div>
+          <div className={`p-4 rounded-lg border ${isDark ? 'bg-gradient-to-br from-cyan-900 to-cyan-800 border-cyan-600' : 'bg-gradient-to-br from-cyan-50 to-cyan-100 border-cyan-200'}`}>
+            <div className={`text-2xl font-bold ${isDark ? 'text-cyan-300' : 'text-cyan-700'}`}>{dashboardStats.averageWaitTime}</div>
+            <div className={`text-xs mt-1 ${isDark ? 'text-cyan-400' : 'text-cyan-600'}`}>{labels.avgWait[language]}</div>
           </div>
           <button 
             type="button"
             onClick={() => navigate(`/doctor/${doctor.id}/health-meeting`)}
-            className="bg-gradient-to-br from-amber-50 to-amber-100 p-4 rounded-lg border-2 border-amber-400 relative cursor-pointer hover:shadow-lg hover:border-amber-500 transition-all text-left"
+            className={`p-4 rounded-lg border-2 relative cursor-pointer hover:shadow-lg transition-all text-left ${isDark ? 'bg-gradient-to-br from-amber-900 to-amber-800 border-amber-500 hover:border-amber-400' : 'bg-gradient-to-br from-amber-50 to-amber-100 border-amber-400 hover:border-amber-500'}`}
           >
-            <div className="text-2xl font-bold text-amber-700">{dashboardStats.pendingConfirmations}</div>
-            <div className="text-xs text-amber-600 mt-1">Need Confirmation</div>
+            <div className={`text-2xl font-bold ${isDark ? 'text-amber-300' : 'text-amber-700'}`}>{dashboardStats.pendingConfirmations}</div>
+            <div className={`text-xs mt-1 ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>{labels.needConfirmation[language]}</div>
             {dashboardStats.pendingConfirmations > 0 && (
               <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center animate-pulse">
                 <span className="text-xs text-white font-bold">!</span>
@@ -1490,13 +1537,13 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
         
         {/* Today's Meetings Quick View */}
         {todayMeetings.length > 0 && (
-          <div className="mt-4 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl border border-emerald-200 p-4">
-            <h3 className="text-lg font-bold text-emerald-800 mb-3">📅 Today's Meetings ({todayMeetings.length})</h3>
+          <div className={`mt-4 rounded-xl border p-4 ${isDark ? 'bg-gradient-to-r from-emerald-900 to-teal-900 border-emerald-700' : 'bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200'}`}>
+            <h3 className={`text-lg font-bold mb-3 ${isDark ? 'text-emerald-300' : 'text-emerald-800'}`}>📅 {labels.todayMeetings[language]} ({todayMeetings.length})</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {todayMeetings.slice(0, 3).map((apt: any) => (
-                <div key={apt.id} className="bg-white rounded-lg p-3 shadow-sm border border-emerald-100">
+                <div key={apt.id} className={`rounded-lg p-3 shadow-sm border ${isDark ? 'bg-gray-800 border-emerald-700' : 'bg-white border-emerald-100'}`}>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="font-semibold text-gray-900">
+                    <span className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
                       ⏰ {apt.appointmentTime || apt.scheduledTime || apt.time || 'TBD'}
                     </span>
                     <span className={`px-2 py-0.5 rounded text-xs font-medium ${
@@ -1505,8 +1552,8 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
                       {apt.status}
                     </span>
                   </div>
-                  <div className="text-sm text-gray-800">👤 {apt.patientName || 'Patient'}</div>
-                  <div className="text-xs text-gray-500 mt-1">{apt.reason || 'Consultation'}</div>
+                  <div className={`text-sm ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>👤 {apt.patientName || labels.patient[language]}</div>
+                  <div className={`text-xs mt-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{apt.reason || 'Consultation'}</div>
                   {apt.meetingLink && (
                     <a 
                       href={apt.meetingLink}
@@ -1514,7 +1561,7 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
                       rel="noopener noreferrer"
                       className="inline-flex items-center mt-2 px-3 py-1 bg-emerald-600 text-white text-xs rounded-lg hover:bg-emerald-700"
                     >
-                      🎥 Join Meeting
+                      🎥 {labels.joinMeeting[language]}
                     </a>
                   )}
                 </div>
@@ -1522,7 +1569,7 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
             </div>
             {todayMeetings.length > 3 && (
               <div className="text-center mt-3">
-                <span className="text-sm text-emerald-600">+{todayMeetings.length - 3} more meetings</span>
+                <span className={`text-sm ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>+{todayMeetings.length - 3} {labels.moreMeetings[language]}</span>
               </div>
             )}
           </div>
@@ -1530,20 +1577,20 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
         
         {/* Upcoming Appointments Quick View */}
         {upcomingAppointments.length > 0 && (
-          <div className="mt-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-4">
-            <h3 className="text-lg font-bold text-blue-800 mb-3">📋 Upcoming Appointments ({upcomingAppointments.length})</h3>
+          <div className={`mt-4 rounded-xl border p-4 ${isDark ? 'bg-gradient-to-r from-blue-900 to-indigo-900 border-blue-700' : 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200'}`}>
+            <h3 className={`text-lg font-bold mb-3 ${isDark ? 'text-blue-300' : 'text-blue-800'}`}>📋 {labels.upcomingAppointments[language]} ({upcomingAppointments.length})</h3>
             <div className="space-y-2 max-h-32 overflow-y-auto">
               {upcomingAppointments.slice(0, 5).map((apt: any) => (
-                <div key={apt.id} className="flex items-center justify-between bg-white rounded-lg px-3 py-2 shadow-sm">
+                <div key={apt.id} className={`flex items-center justify-between rounded-lg px-3 py-2 shadow-sm ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
                   <div className="flex items-center gap-3">
-                    <div className="text-sm font-medium text-blue-700">
+                    <div className={`text-sm font-medium ${isDark ? 'text-blue-400' : 'text-blue-700'}`}>
                       📅 {apt.appointmentDate || apt.scheduledDate || apt.date}
                     </div>
-                    <div className="text-sm text-gray-600">
+                    <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                       ⏰ {apt.appointmentTime || apt.scheduledTime || apt.time || 'TBD'}
                     </div>
-                    <div className="text-sm text-gray-800">
-                      👤 {apt.patientName || 'Patient'}
+                    <div className={`text-sm ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
+                      👤 {apt.patientName || labels.patient[language]}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -1575,10 +1622,10 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
         {/* ========================================================================== */}
         {/* LEFT COLUMN: HEALTH DATA */}
         {/* ========================================================================== */}
-        <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
-          <div className="p-4 bg-emerald-50 border-b border-emerald-200">
-            <h2 className="text-lg font-bold text-emerald-700">Health Data</h2>
-            <p className="text-xs text-emerald-600">Patient Queue & Records</p>
+        <div className={`w-80 flex flex-col border-r ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+          <div className={`p-4 border-b ${isDark ? 'bg-emerald-900 border-emerald-700' : 'bg-emerald-50 border-emerald-200'}`}>
+            <h2 className={`text-lg font-bold ${isDark ? 'text-emerald-300' : 'text-emerald-700'}`}>{labels.healthData[language]}</h2>
+            <p className={`text-xs ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>{labels.patientQueueRecords[language]}</p>
           </div>
 
           <div className="flex-1 overflow-y-auto p-4">
@@ -1610,16 +1657,16 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
             </div>
           </div>
 
-          <div className="p-4 border-t border-gray-200 space-y-2">
+          <div className={`p-4 border-t space-y-2 ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
             <button 
               className="w-full py-2 px-4 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 transition-colors"
               title="ดึงข้อมูลการรักษาเดิมย้อนหลัง นำมาสรุปเพื่อเป็น input ให้แพทย์"
             >
               <span className="block">🔍 ค้นหาประวัติการรักษา</span>
-              <span className="block text-xs opacity-80">Retrieve Past Records for AI Summary</span>
+              <span className="block text-xs opacity-80">{labels.searchPastRecords[language]}</span>
             </button>
             <button className="w-full py-2 px-4 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
-              View All Patients
+              {labels.viewAllPatients[language]}
             </button>
           </div>
         </div>
@@ -1627,59 +1674,59 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
         {/* ========================================================================== */}
         {/* MIDDLE COLUMN: HEALTH MEETING */}
         {/* ========================================================================== */}
-        <div className="flex-1 bg-gray-50 flex flex-col overflow-hidden">
-          <div className="p-4 bg-purple-50 border-b border-purple-200">
-            <h2 className="text-lg font-bold text-purple-700">Health Meeting</h2>
-            <p className="text-xs text-purple-600">Video Consultation & AI Notes</p>
+        <div className={`flex-1 flex flex-col overflow-hidden ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
+          <div className={`p-4 border-b ${isDark ? 'bg-purple-900 border-purple-700' : 'bg-purple-50 border-purple-200'}`}>
+            <h2 className={`text-lg font-bold ${isDark ? 'text-purple-300' : 'text-purple-700'}`}>{labels.healthMeeting[language]}</h2>
+            <p className={`text-xs ${isDark ? 'text-purple-400' : 'text-purple-600'}`}>{labels.videoConsultation[language]}</p>
           </div>
 
           {/* Meeting Area */}
           <div className="flex-1 p-4 overflow-y-auto">
             {/* Person Filter Tabs */}
-            <div className="bg-white rounded-lg shadow-sm mb-3">
-              <div className="flex border-b border-gray-200">
+            <div className={`rounded-lg shadow-sm mb-3 ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
+              <div className={`flex border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
                 <button
                   onClick={() => setPersonFilter('patient')}
                   className={`flex-1 px-4 py-2 text-xs font-medium transition-colors ${
                     personFilter === 'patient'
-                      ? 'bg-purple-50 text-purple-700 border-b-2 border-purple-600'
-                      : 'text-gray-600 hover:bg-gray-50'
+                      ? isDark ? 'bg-purple-900 text-purple-300 border-b-2 border-purple-500' : 'bg-purple-50 text-purple-700 border-b-2 border-purple-600'
+                      : isDark ? 'text-gray-400 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-50'
                   }`}
                 >
-                  Patient
+                  {labels.patient[language]}
                 </button>
                 <button
                   onClick={() => setPersonFilter('doctor')}
                   className={`flex-1 px-4 py-2 text-xs font-medium transition-colors ${
                     personFilter === 'doctor'
-                      ? 'bg-purple-50 text-purple-700 border-b-2 border-purple-600'
-                      : 'text-gray-600 hover:bg-gray-50'
+                      ? isDark ? 'bg-purple-900 text-purple-300 border-b-2 border-purple-500' : 'bg-purple-50 text-purple-700 border-b-2 border-purple-600'
+                      : isDark ? 'text-gray-400 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-50'
                   }`}
                 >
-                  Doctor
+                  {labels.doctor[language]}
                 </button>
                 <button
                   onClick={() => setPersonFilter('healthcare-team')}
                   className={`flex-1 px-4 py-2 text-xs font-medium transition-colors ${
                     personFilter === 'healthcare-team'
-                      ? 'bg-purple-50 text-purple-700 border-b-2 border-purple-600'
-                      : 'text-gray-600 hover:bg-gray-50'
+                      ? isDark ? 'bg-purple-900 text-purple-300 border-b-2 border-purple-500' : 'bg-purple-50 text-purple-700 border-b-2 border-purple-600'
+                      : isDark ? 'text-gray-400 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-50'
                   }`}
                 >
-                  Team
+                  {labels.team[language]}
                 </button>
               </div>
 
               {/* Video Meeting Area */}
-              <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30" style={{ minHeight: '180px' }}>
+              <div className={`p-4 ${isDark ? 'bg-gradient-to-br from-blue-900/50 to-indigo-900/50' : 'bg-gradient-to-br from-blue-50 to-indigo-50'}`} style={{ minHeight: '180px' }}>
                 <div className="flex items-center justify-center h-full">
                   <div className="text-center">
-                    <VideoCameraIcon className="w-12 h-12 mx-auto mb-2 text-gray-400 dark:text-gray-500" />
-                    <p className="text-gray-600 dark:text-gray-300 text-sm font-medium mb-2">
-                      Video Consultation
-                      {personFilter === 'patient' && ' - Patient View'}
-                      {personFilter === 'doctor' && ' - Doctor View'}
-                      {personFilter === 'healthcare-team' && ' - Team View'}
+                    <VideoCameraIcon className={`w-12 h-12 mx-auto mb-2 ${isDark ? 'text-gray-500' : 'text-gray-400'}`} />
+                    <p className={`text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                      {language === 'th' ? 'ปรึกษาผ่านวิดีโอ' : 'Video Consultation'}
+                      {personFilter === 'patient' && ` - ${labels.patient[language]} View`}
+                      {personFilter === 'doctor' && ` - ${labels.doctor[language]} View`}
+                      {personFilter === 'healthcare-team' && ` - ${labels.team[language]} View`}
                     </p>
                     <button
                       onClick={() => handleStartJitsiMeeting()}
@@ -1690,7 +1737,7 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                       </svg>
-                      Start Video Call
+                      {labels.startVideoCall[language]}
                     </button>
                   </div>
                 </div>
@@ -1698,35 +1745,35 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
             </div>
 
             {/* AI Summary Areas - Enhanced with Man-in-the-Loop Validation (Phase 1 DR-05) */}
-            <div className="bg-white rounded-lg shadow-sm p-3 mb-3">
+            <div className={`rounded-lg shadow-sm p-3 mb-3 ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
               {/* Tab Navigation for AI Content */}
-              <div className="flex border-b border-gray-200 mb-3">
+              <div className={`flex border-b mb-3 ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
                 <button
                   onClick={() => setAiValidationTab('summary')}
                   className={`flex-1 px-2 py-1.5 text-xs font-medium transition-colors ${
                     aiValidationTab === 'summary'
-                      ? 'text-purple-700 border-b-2 border-purple-500 bg-purple-50'
-                      : 'text-gray-500 hover:text-purple-600'
+                      ? isDark ? 'text-purple-300 border-b-2 border-purple-500 bg-purple-900/50' : 'text-purple-700 border-b-2 border-purple-500 bg-purple-50'
+                      : isDark ? 'text-gray-400 hover:text-purple-400' : 'text-gray-500 hover:text-purple-600'
                   }`}
                 >
-                  📋 สรุปประวัติ
+                  📋 {language === 'th' ? 'สรุปประวัติ' : 'Summary'}
                 </button>
                 <button
                   onClick={() => setAiValidationTab('documents')}
                   className={`flex-1 px-2 py-1.5 text-xs font-medium transition-colors ${
                     aiValidationTab === 'documents'
-                      ? 'text-purple-700 border-b-2 border-purple-500 bg-purple-50'
-                      : 'text-gray-500 hover:text-purple-600'
+                      ? isDark ? 'text-purple-300 border-b-2 border-purple-500 bg-purple-900/50' : 'text-purple-700 border-b-2 border-purple-500 bg-purple-50'
+                      : isDark ? 'text-gray-400 hover:text-purple-400' : 'text-gray-500 hover:text-purple-600'
                   }`}
                 >
-                  📄 วิเคราะห์เอกสาร
+                  📄 {language === 'th' ? 'วิเคราะห์เอกสาร' : 'Documents'}
                 </button>
                 <button
                   onClick={() => setAiValidationTab('cds')}
                   className={`flex-1 px-2 py-1.5 text-xs font-medium transition-colors relative ${
                     aiValidationTab === 'cds'
-                      ? 'text-purple-700 border-b-2 border-purple-500 bg-purple-50'
-                      : 'text-gray-500 hover:text-purple-600'
+                      ? isDark ? 'text-purple-300 border-b-2 border-purple-500 bg-purple-900/50' : 'text-purple-700 border-b-2 border-purple-500 bg-purple-50'
+                      : isDark ? 'text-gray-400 hover:text-purple-400' : 'text-gray-500 hover:text-purple-600'
                   }`}
                 >
                   ⚠️ CDS
@@ -1746,10 +1793,10 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
                       <path d="M10 2a1 1 0 011 1v1.323l3.954 1.582 1.599-.8a1 1 0 01.894 1.79l-1.233.616 1.738 5.42a1 1 0 01-.285 1.05A3.989 3.989 0 0115 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.715-5.349L11 6.477V16h2a1 1 0 110 2H7a1 1 0 110-2h2V6.477L6.237 7.582l1.715 5.349a1 1 0 01-.285 1.05A3.989 3.989 0 015 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.738-5.42-1.233-.617a1 1 0 01.894-1.788l1.599.799L9 4.323V3a1 1 0 011-1z" />
                     </svg>
                   </div>
-                  <h3 className="text-sm font-bold text-purple-700">
-                    {aiValidationTab === 'summary' && 'AI สรุปประวัติผู้ป่วย'}
-                    {aiValidationTab === 'documents' && 'AI วิเคราะห์เอกสาร'}
-                    {aiValidationTab === 'cds' && 'Clinical Decision Support'}
+                  <h3 className={`text-sm font-bold ${isDark ? 'text-purple-300' : 'text-purple-700'}`}>
+                    {aiValidationTab === 'summary' && labels.aiHistorySummary[language]}
+                    {aiValidationTab === 'documents' && labels.aiDocumentAnalysis[language]}
+                    {aiValidationTab === 'cds' && labels.clinicalDecisionSupport[language]}
                   </h3>
                 </div>
                 <span className={`px-2 py-0.5 text-xs rounded-full font-medium ${currentAiValidationStatus.className}`}>
@@ -1761,7 +1808,7 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
               {isLoadingAI ? (
                 <div className="flex items-center justify-center py-8">
                   <div className="animate-spin w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full"></div>
-                  <span className="ml-2 text-sm text-gray-500">กำลังโหลด AI สรุป...</span>
+                  <span className={`ml-2 text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{language === 'th' ? 'กำลังโหลด AI สรุป...' : 'Loading AI summary...'}</span>
                 </div>
               ) : (
                 <>
@@ -1769,8 +1816,8 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
                     <textarea
                       value={aiHistorySummary}
                       onChange={(e) => { setAiHistorySummary(e.target.value); setAiValidationStatus('pending'); }}
-                      placeholder="เลือกผู้ป่วยเพื่อดู AI สรุปประวัติอัตโนมัติ..."
-                      className="w-full p-2 border border-gray-300 rounded text-xs focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                      placeholder={language === 'th' ? 'เลือกผู้ป่วยเพื่อดู AI สรุปประวัติอัตโนมัติ...' : 'Select a patient to view AI summary...'}
+                      className={`w-full p-2 border rounded text-xs focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none ${isDark ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 text-gray-900'}`}
                       rows={6}
                     />
                   )}
@@ -1834,24 +1881,24 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
               )}
 
               {/* Man-in-the-Loop Validation Buttons (DR-05) */}
-              <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-200">
+              <div className={`flex items-center justify-between mt-3 pt-3 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
                 <div className="flex space-x-2">
                   <button
                     onClick={() => handleAIValidation('approved')}
                     disabled={!aiHistorySummary && aiValidationTab === 'summary'}
                     className="px-3 py-1.5 bg-green-100 text-green-700 rounded text-xs font-medium hover:bg-green-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
                   >
-                    ✅ อนุมัติ
+                    ✅ {labels.approve[language]}
                   </button>
                   <button
                     onClick={() => {
-                      const reason = prompt('กรุณาระบุเหตุผลในการปฏิเสธ:');
+                      const reason = prompt(language === 'th' ? 'กรุณาระบุเหตุผลในการปฏิเสธ:' : 'Please provide rejection reason:');
                       if (reason) handleAIValidation('rejected', reason);
                     }}
                     disabled={!aiHistorySummary && aiValidationTab === 'summary'}
                     className="px-3 py-1.5 bg-red-100 text-red-700 rounded text-xs font-medium hover:bg-red-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
                   >
-                    ❌ ปฏิเสธ
+                    ❌ {labels.reject[language]}
                   </button>
                 </div>
                 <button
@@ -1859,64 +1906,64 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
                   disabled={aiValidationStatus !== 'approved'}
                   className="px-3 py-1.5 bg-blue-600 text-white rounded text-xs font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
                 >
-                  📝 ใช้ใน EMR
+                  📝 {labels.useInEMR[language]}
                 </button>
               </div>
             </div>
 
             {/* Meeting AI Summary - Real-time during video */}
-            <div className="bg-white rounded-lg shadow-sm p-3">
+            <div className={`rounded-lg shadow-sm p-3 ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
               <div className="flex items-center space-x-2 mb-2">
                 <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded flex items-center justify-center">
                   <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M10 2a1 1 0 011 1v1.323l3.954 1.582 1.599-.8a1 1 0 01.894 1.79l-1.233.616 1.738 5.42a1 1 0 01-.285 1.05A3.989 3.989 0 0115 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.715-5.349L11 6.477V16h2a1 1 0 110 2H7a1 1 0 110-2h2V6.477L6.237 7.582l1.715 5.349a1 1 0 01-.285 1.05A3.989 3.989 0 015 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.738-5.42-1.233-.617a1 1 0 01.894-1.788l1.599.799L9 4.323V3a1 1 0 011-1z" />
                   </svg>
                 </div>
-                <h3 className="text-sm font-bold text-purple-700">AI สรุปจาก Health Meeting</h3>
+                <h3 className={`text-sm font-bold ${isDark ? 'text-purple-300' : 'text-purple-700'}`}>{labels.aiMeetingSummary[language]}</h3>
                 <span className="px-2 py-0.5 text-xs bg-blue-100 text-blue-700 rounded-full">Transcript</span>
               </div>
               <textarea
                 value={aiMeetingSummary}
                 onChange={(e) => setAiMeetingSummary(e.target.value)}
-                placeholder="AI จะสรุปจากการถอดเสียงระหว่าง Video Consultation..."
-                className="w-full p-2 border border-gray-300 rounded text-xs focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                placeholder={language === 'th' ? 'AI จะสรุปจากการถอดเสียงระหว่าง Video Consultation...' : 'AI will summarize from video transcription...'}
+                className={`w-full p-2 border rounded text-xs focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none ${isDark ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 text-gray-900'}`}
                 rows={4}
               />
             </div>
           </div>
 
           {/* Bottom Tabs - Patient Lists */}
-          <div className="bg-white border-t border-gray-200">
-            <div className="flex border-b border-gray-200">
+          <div className={`border-t ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+            <div className={`flex border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
               <button
                 onClick={() => setMeetingTab('investigation')}
                 className={`flex-1 px-4 py-2 text-xs font-medium transition-colors ${
                   meetingTab === 'investigation'
-                    ? 'bg-yellow-50 text-gray-900 border-b-2 border-yellow-600'
-                    : 'text-gray-600 hover:bg-gray-50'
+                    ? isDark ? 'bg-yellow-900/50 text-yellow-300 border-b-2 border-yellow-500' : 'bg-yellow-50 text-gray-900 border-b-2 border-yellow-600'
+                    : isDark ? 'text-gray-400 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-50'
                 }`}
               >
-                Investigation ({investigationPatients.length})
+                {labels.investigation[language]} ({investigationPatients.length})
               </button>
               <button
                 onClick={() => setMeetingTab('treatment')}
                 className={`flex-1 px-4 py-2 text-xs font-medium transition-colors ${
                   meetingTab === 'treatment'
-                    ? 'bg-yellow-50 text-gray-900 border-b-2 border-yellow-600'
-                    : 'text-gray-600 hover:bg-gray-50'
+                    ? isDark ? 'bg-yellow-900/50 text-yellow-300 border-b-2 border-yellow-500' : 'bg-yellow-50 text-gray-900 border-b-2 border-yellow-600'
+                    : isDark ? 'text-gray-400 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-50'
                 }`}
               >
-                Treatment ({treatmentPatients.length})
+                {labels.treatment[language]} ({treatmentPatients.length})
               </button>
               <button
                 onClick={() => setMeetingTab('refer')}
                 className={`flex-1 px-4 py-2 text-xs font-medium transition-colors ${
                   meetingTab === 'refer'
-                    ? 'bg-yellow-50 text-gray-900 border-b-2 border-yellow-600'
-                    : 'text-gray-600 hover:bg-gray-50'
+                    ? isDark ? 'bg-yellow-900/50 text-yellow-300 border-b-2 border-yellow-500' : 'bg-yellow-50 text-gray-900 border-b-2 border-yellow-600'
+                    : isDark ? 'text-gray-400 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-50'
                 }`}
               >
-                Refer ({referPatients.length})
+                {labels.refer[language]} ({referPatients.length})
               </button>
             </div>
 
@@ -1931,10 +1978,10 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
         {/* ========================================================================== */}
         {/* RIGHT COLUMN: HEALTH STUDIO */}
         {/* ========================================================================== */}
-        <div className="w-96 bg-white border-l border-gray-200 flex flex-col">
-          <div className="p-4 bg-teal-50 border-b border-teal-200">
-            <h2 className="text-lg font-bold text-teal-700">Health Studio</h2>
-            <p className="text-xs text-teal-600">Clinical Tools & Resources</p>
+        <div className={`w-96 flex flex-col border-l ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+          <div className={`p-4 border-b ${isDark ? 'bg-teal-900 border-teal-700' : 'bg-teal-50 border-teal-200'}`}>
+            <h2 className={`text-lg font-bold ${isDark ? 'text-teal-300' : 'text-teal-700'}`}>{labels.healthStudio[language]}</h2>
+            <p className={`text-xs ${isDark ? 'text-teal-400' : 'text-teal-600'}`}>{labels.clinicalTools[language]}</p>
           </div>
 
           <div className="flex-1 overflow-y-auto p-4">
@@ -2034,8 +2081,8 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
           </div>
 
           {/* AI Chatbot Assistant Section */}
-          <div className="border-t border-gray-200 bg-gradient-to-br from-blue-50 to-purple-50">
-            <div className="p-3 border-b border-blue-200">
+          <div className={`border-t ${isDark ? 'border-gray-700 bg-gradient-to-br from-blue-900/50 to-purple-900/50' : 'border-gray-200 bg-gradient-to-br from-blue-50 to-purple-50'}`}>
+            <div className={`p-3 border-b ${isDark ? 'border-blue-800' : 'border-blue-200'}`}>
               <div className="flex items-center space-x-2">
                 <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center">
                   <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2043,18 +2090,18 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
                   </svg>
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-blue-900">AI Clinical Assistant</h3>
-                  <p className="text-xs text-blue-600">Ask anything about diagnosis or treatment</p>
+                  <h3 className={`text-sm font-bold ${isDark ? 'text-blue-300' : 'text-blue-900'}`}>{labels.aiClinicalAssistant[language]}</h3>
+                  <p className={`text-xs ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>{labels.askAnything[language]}</p>
                 </div>
               </div>
             </div>
 
             {/* Chat Messages Area */}
-            <div className="p-3 max-h-60 overflow-y-auto bg-white/50">
+            <div className={`p-3 max-h-60 overflow-y-auto ${isDark ? 'bg-gray-900/50' : 'bg-white/50'}`}>
               {chatMessages.length === 0 ? (
-                <div className="text-center py-4 text-gray-500 text-xs">
-                  <p>👋 Hello, Dr. {doctor.name?.split(' ')[0]}!</p>
-                  <p className="mt-1">I'm ready to assist with clinical questions.</p>
+                <div className={`text-center py-4 text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                  <p>👋 {language === 'th' ? 'สวัสดีครับ' : 'Hello'}, Dr. {doctor.name?.split(' ')[0]}!</p>
+                  <p className="mt-1">{language === 'th' ? 'พร้อมช่วยเหลือด้านคลินิก' : "I'm ready to assist with clinical questions."}</p>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -2067,7 +2114,7 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
                         className={`max-w-[85%] p-2 rounded-lg text-xs ${
                           msg.role === 'user'
                             ? 'bg-blue-600 text-white rounded-br-none'
-                            : 'bg-gray-100 text-gray-800 rounded-bl-none'
+                            : isDark ? 'bg-gray-700 text-gray-200 rounded-bl-none' : 'bg-gray-100 text-gray-800 rounded-bl-none'
                         }`}
                       >
                         {msg.content}
@@ -2090,15 +2137,15 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
             </div>
 
             {/* Chat Input */}
-            <div className="p-3 pb-16 border-t border-blue-200">
+            <div className={`p-3 pb-16 border-t ${isDark ? 'border-blue-800' : 'border-blue-200'}`}>
               <div className="flex space-x-2">
                 <input
                   type="text"
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleSendChatMessage()}
-                  placeholder="Ask about symptoms, drugs, protocols..."
-                  className="flex-1 px-3 py-2 text-xs border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder={language === 'th' ? 'ถามเกี่ยวกับอาการ, ยา, แนวทางการรักษา...' : 'Ask about symptoms, drugs, protocols...'}
+                  className={`flex-1 px-3 py-2 text-xs border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${isDark ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-blue-200 text-gray-900'}`}
                   disabled={isChatLoading}
                 />
                 <button

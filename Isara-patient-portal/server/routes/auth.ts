@@ -149,8 +149,11 @@ router.post('/register', async (req: Request, res: Response) => {
     }
 
     // Generate IDs and hash password
-    const userId = `user_${Date.now()}_${node_crypto.randomBytes(4).toString('hex')}`;
-    const patientId = `patient_${Date.now()}_${node_crypto.randomBytes(4).toString('hex')}`;
+    // IMPORTANT: Use same ID for userId and patientId to satisfy FK constraints
+    // PHR table references users(id), so patient_id in PHR must match users.id
+    const uniqueId = `PATIENT-${Date.now()}-${node_crypto.randomBytes(4).toString('hex').toUpperCase()}`;
+    const userId = uniqueId;
+    const patientId = uniqueId; // Same as userId for FK constraint compatibility
     const passwordHash = await hashPassword(password);
     const now = new Date();
 
@@ -161,13 +164,15 @@ router.post('/register', async (req: Request, res: Response) => {
     };
 
     // Insert user into PostgreSQL
+    // Note: id and patient_id are the same to satisfy FK constraints
     await pool.query(
-      `INSERT INTO users (id, patient_id, email, password_hash, name, phone, date_of_birth, gender, role, is_active, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'patient', true, $9, $9)`,
+      `INSERT INTO users (id, patient_id, email, password_hash, name, phone, date_of_birth, gender, role, is_active, is_verified, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'patient', true, true, $9, $9)`,
       [userId, patientId, emailLower, passwordHash, name || 'User', phone, dateOfBirth, gender, now]
     );
 
     // Create initial PHR record
+    // patient_id references users(id), so use userId (which equals patientId)
     const bmi = height && weight ? (Number.parseFloat(weight) / Math.pow(Number.parseFloat(height) / 100, 2)).toFixed(1) : null;
     
     await pool.query(
@@ -180,8 +185,8 @@ router.post('/register', async (req: Request, res: Response) => {
          medications = EXCLUDED.medications,
          updated_at = NOW()`,
       [
-        `phr_${patientId}`,
-        patientId,
+        `phr_${userId}`,
+        userId, // Must reference users.id, not a separate patient_id
         bloodType || null,
         JSON.stringify(parseList(allergies)),
         JSON.stringify(parseList(chronicConditions)),

@@ -80,10 +80,45 @@ console.log(`🔌 Using PostgreSQL TCP connection: ${dbHost}:${poolConfig.port}`
 
 const pool = new Pool(poolConfig);
 
+// Run migrations to ensure schema is up-to-date
+async function runMigrations() {
+  try {
+    // Add missing columns to phr table (for registration)
+    await pool.query(`
+      DO $$ 
+      BEGIN
+        -- Add columns if they don't exist
+        ALTER TABLE phr ADD COLUMN IF NOT EXISTS blood_type VARCHAR(10);
+        ALTER TABLE phr ADD COLUMN IF NOT EXISTS height_cm DECIMAL(5,1);
+        ALTER TABLE phr ADD COLUMN IF NOT EXISTS weight_kg DECIMAL(5,1);
+        ALTER TABLE phr ADD COLUMN IF NOT EXISTS bmi DECIMAL(4,1);
+        ALTER TABLE phr ADD COLUMN IF NOT EXISTS emergency_contact_name VARCHAR(255);
+        ALTER TABLE phr ADD COLUMN IF NOT EXISTS emergency_contact_phone VARCHAR(50);
+        ALTER TABLE phr ADD COLUMN IF NOT EXISTS emergency_contact_relation VARCHAR(100);
+        ALTER TABLE phr ADD COLUMN IF NOT EXISTS vital_signs_history JSONB DEFAULT '[]'::jsonb;
+        ALTER TABLE phr ADD COLUMN IF NOT EXISTS vaccinations JSONB DEFAULT '[]'::jsonb;
+        ALTER TABLE phr ADD COLUMN IF NOT EXISTS family_history JSONB DEFAULT '[]'::jsonb;
+        ALTER TABLE phr ADD COLUMN IF NOT EXISTS surgical_history JSONB DEFAULT '[]'::jsonb;
+        ALTER TABLE phr ADD COLUMN IF NOT EXISTS social_history JSONB;
+        ALTER TABLE phr ADD COLUMN IF NOT EXISTS latest_lab_results JSONB DEFAULT '[]'::jsonb;
+        ALTER TABLE phr ADD COLUMN IF NOT EXISTS clinical_decision_support JSONB;
+        ALTER TABLE phr ADD COLUMN IF NOT EXISTS last_synced_at TIMESTAMP;
+      EXCEPTION WHEN OTHERS THEN
+        -- Table might not exist yet, that's OK
+        NULL;
+      END $$;
+    `);
+    console.log('✅ Database migrations completed');
+  } catch (err) {
+    console.warn('⚠️ Migration warning:', (err as Error).message);
+  }
+}
+
 // Test connection on init
 try {
   await pool.query('SELECT NOW()');
   console.log('✅ PostgreSQL connected successfully');
+  await runMigrations();
 } catch (err) {
   console.error('❌ PostgreSQL connection error:', (err as Error).message);
 }
@@ -731,28 +766,28 @@ export const LivingWillService = {
       const result = await pool.query(
         `UPDATE living_wills SET
           statement = COALESCE($2, statement),
-          treatment_preferences = COALESCE($3, treatment_preferences),
+          treatments = COALESCE($3, treatments),
           representatives = COALESCE($4, representatives),
-          is_shared_with_doctors = COALESCE($5, is_shared_with_doctors),
-          signatures = COALESCE($6, signatures),
+          signature = COALESCE($5, signature),
+          pdpa_consent = COALESCE($6, pdpa_consent),
           updated_at = NOW()
          WHERE patient_id = $1
          RETURNING *`,
         [
           patientId,
           data.statement,
-          JSON.stringify(data.treatment_preferences),
-          JSON.stringify(data.representatives),
-          data.is_shared_with_doctors,
-          JSON.stringify(data.signatures)
+          JSON.stringify(data.treatments || data.treatment_preferences || data.preferences),
+          JSON.stringify(data.representatives || data.healthcareProxy),
+          JSON.stringify(data.signature || data.signatures || data.digitalSignature),
+          JSON.stringify(data.pdpa_consent || {})
         ]
       );
       return result.rows[0];
     } else {
       const result = await pool.query(
         `INSERT INTO living_wills (
-          id, patient_id, statement, treatment_preferences, representatives,
-          is_shared_with_doctors, signatures, status
+          id, patient_id, statement, treatments, representatives,
+          signature, pdpa_consent, status
         )
          VALUES ($1, $2, $3, $4, $5, $6, $7, 'active')
          RETURNING *`,
@@ -760,10 +795,10 @@ export const LivingWillService = {
           `lw_${patientId}`,
           patientId,
           data.statement,
-          JSON.stringify(data.treatment_preferences || {}),
-          JSON.stringify(data.representatives || []),
-          data.is_shared_with_doctors || false,
-          JSON.stringify(data.signatures || {})
+          JSON.stringify(data.treatments || data.treatment_preferences || data.preferences || {}),
+          JSON.stringify(data.representatives || data.healthcareProxy || []),
+          JSON.stringify(data.signature || data.signatures || data.digitalSignature || {}),
+          JSON.stringify(data.pdpa_consent || {})
         ]
       );
       return result.rows[0];

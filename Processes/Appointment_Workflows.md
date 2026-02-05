@@ -2,7 +2,7 @@
 
 This document details the full appointment workflow for Izara Telemedicine, covering video consultations, EMR documentation, and AI-assisted post-consultation features.
 
-**Last Updated:** January 21, 2026 (v3.0.0 - Phase 1 Complete)
+**Last Updated:** February 4, 2026 (v3.1.0 - Phase 1 Complete)
 
 ---
 
@@ -14,23 +14,23 @@ This document details the full appointment workflow for Izara Telemedicine, cove
 | --------- | -------- | ------------- |
 | **Video Meeting (Jitsi)** | ✅ | Doctor as HOST, patient lobby, guest invites |
 | **EMR Documentation** | ✅ | SOAP format during/after meeting |
-| **PostgreSQL Database** | ✅ | Migrated from GCS to PostgreSQL + pgvector |
-| **AI Pre-Consultation Summary** | 🚧 | AI summarizes patient history before meeting |
-| **AI Chat Assistant** | 🚧 | Helps doctor during consultation |
-| **Patient Instruction Sheet** | 📋 | Auto-generated post-consultation instructions |
-| **Clinical Decision Support** | 📋 | Drug interaction & dose adjustment alerts |
-| **Man-in-the-Loop Validation** | 🚧 | Doctor approval before AI content goes to patient |
-| **Device Speech-to-Text** | 📋 | Free browser-based dictation |
+| **PostgreSQL Database** | ✅ | All data stored in PostgreSQL (NO GCS) |
+| **AI Pre-Consultation Summary** | ✅ | AI summarizes patient history before meeting |
+| **AI Chat Assistant** | ✅ | Helps doctor during consultation |
+| **Patient Instruction Sheet** | ✅ | Auto-generated post-consultation instructions |
+| **Clinical Decision Support** | ✅ | Drug interaction & dose adjustment alerts |
+| **Man-in-the-Loop Validation** | ✅ | Doctor approval before AI content goes to patient |
+| **Device Speech-to-Text** | ✅ | Free browser-based dictation (Web Speech API) |
 
 ### Test Credentials
 
 | Role | Email | Password | Portal |
 | ------ | ------- | ---------- | -------- |
-| Patient | <demo.test@gmail.com> | YOUR_TEST_PASSWORD | localhost:3005 |
-| Patient | <Somchai.Mankong@gmail.com> | YOUR_TEST_PASSWORD | localhost:3005 |
-| Patient | <Anan.Khayanrian@gmail.com> | YOUR_TEST_PASSWORD | localhost:3005 |
-| Doctor | <doctor.test@izara.com> | YOUR_TEST_DOCTOR_PASSWORD | localhost:3010 |
-| Admin | <admin.test@izara.com> | YOUR_TEST_ADMIN_PASSWORD | localhost:3010 |
+| Patient | <demo.test@gmail.com> | P@ssw0rd | localhost:3005 |
+| Patient | <Somchai.Mankong@gmail.com> | P@ssw0rd | localhost:3005 |
+| Patient | <Anan.Khayanrian@gmail.com> | P@ssw0rd | localhost:3005 |
+| Doctor | <doctor.test@izara.com> | IzaraDoctor@2024 | localhost:3010 |
+| Admin | <admin.test@izara.com> | IzaraAdmin@2024 | localhost:3010 |
 
 ---
 
@@ -55,10 +55,10 @@ This document details the full appointment workflow for Izara Telemedicine, cove
 
 | Role | Email | Password | Portal |
 | ------ | ------- | ---------- | -------- |
-| Doctor | <doctor.test@izara.com> | YOUR_TEST_DOCTOR_PASSWORD | localhost:3010 |
-| Patient | <demo.test@gmail.com> | YOUR_TEST_PASSWORD | localhost:3005 |
-| Patient Relative (demo2) | <demo2.test@gmail.com> | YOUR_TEST_PASSWORD | localhost:3005 |
-| Admin/Unit Test Doctor | <doctorunit.test@izara.com> | YOUR_TEST_PASSWORD | localhost:3010 |
+| Doctor | <doctor.test@izara.com> | IzaraDoctor@2024 | localhost:3010 |
+| Patient | <demo.test@gmail.com> | P@ssw0rd | localhost:3005 |
+| Patient Relative (demo2) | <demo2.test@gmail.com> | P@ssw0rd | localhost:3005 |
+| Admin/Unit Test Doctor | <doctorunit.test@izara.com> | P@ssw0rd | localhost:3010 |
 
 ### External Guest Access (Non-Registered Users) ✅
 

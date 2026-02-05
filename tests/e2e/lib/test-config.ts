@@ -23,6 +23,7 @@ export const URLS = {
         meeting: process.env.LOCAL_MEETING_URL || 'http://localhost:3020'
     },
     cloud: {
+        // Cloud Run URLs (project hash: hvht4obouq, project: izara-telemedicine)
         patient: process.env.CLOUD_PATIENT_URL || 'https://izara-patient-portal-hvht4obouq-as.a.run.app',
         doctor: process.env.CLOUD_DOCTOR_URL || 'https://izara-doctor-portal-hvht4obouq-as.a.run.app',
         meeting: process.env.CLOUD_MEETING_URL || 'https://izara-jitsi-meeting-portal-hvht4obouq-as.a.run.app'
@@ -43,7 +44,7 @@ export const CREDENTIALS = {
     patient1: {
         email: process.env.TEST_PATIENT1_EMAIL || 'demo.test@gmail.com',
         password: process.env.TEST_PATIENT_PASSWORD || process.env.IZARA_PATIENT_PASSWORD || 'P@ssw0rd',
-        id: 'PATIENT-001',
+        id: 'PATIENT-DEMO',
         name: 'Demo Test Patient'
     },
     patient2: {
@@ -61,14 +62,45 @@ export const CREDENTIALS = {
     doctor: {
         email: process.env.TEST_DOCTOR_EMAIL || 'doctor.test@izara.com',
         password: process.env.TEST_DOCTOR_PASSWORD || process.env.IZARA_DOCTOR_PASSWORD || 'IzaraDoctor@2024',
-        id: 'DOC-001',
-        name: 'Dr. Test Doctor'
+        id: 'DOC-TEST-001',
+        name: 'Dr. Test Good'
     },
     admin: {
         email: process.env.TEST_ADMIN_EMAIL || 'admin.test@izara.com',
         password: process.env.TEST_ADMIN_PASSWORD || process.env.IZARA_ADMIN_PASSWORD || 'IzaraAdmin@2024',
-        id: 'ADMIN-001',
-        name: 'Admin User'
+        id: 'ADMIN-TEST-001',
+        name: 'Dr. Admin Kind'
+    }
+};
+
+// =============================================================================
+// NEW USER REGISTRATION TEST DATA
+// =============================================================================
+export const REGISTRATION_DATA = {
+    newPatient: {
+        name: 'ทดสอบ ผู้ป่วยใหม่',
+        email: `test.patient.${Date.now()}@gmail.com`,
+        password: 'Test@12345678',
+        phone: '0891234567',
+        dateOfBirth: '1990-05-15',
+        gender: 'male',
+        height: '175',
+        weight: '70',
+        bloodType: 'O+',
+        allergies: 'ไม่มี',
+        chronicConditions: '',
+        emergencyContactName: 'คุณแม่ ทดสอบ',
+        emergencyContactPhone: '0898765432',
+        emergencyContactRelation: 'แม่'
+    },
+    newDoctor: {
+        name: 'นพ. ทดสอบ แพทย์ใหม่',
+        email: `test.doctor.${Date.now()}@izara.com`,
+        password: 'Test@12345678',
+        medicalLicenseNumber: `MD.TEST${Date.now()}`,
+        specialty: 'General Practice',
+        phone: '0812345678',
+        dateOfBirth: '1985-03-20'
     }
 };
 

@@ -154,6 +154,13 @@ const translations: Translations = {
   'dashboard.viewAll': { en: 'View All', th: 'ดูทั้งหมด' },
   'dashboard.noAppointments': { en: 'No upcoming appointments', th: 'ไม่มีนัดหมายที่จะถึง' },
   'dashboard.makeAppointment': { en: 'Make your first appointment', th: 'นัดหมายแพทย์ครั้งแรก' },
+  'dashboard.healthLibrary': { en: 'Health Library', th: 'คลังความรู้สุขภาพ' },
+  'dashboard.timeline': { en: 'Timeline', th: 'ไทม์ไลน์' },
+  'dashboard.settings': { en: 'Settings', th: 'ตั้งค่า' },
+  'dashboard.profile': { en: 'Profile', th: 'โปรไฟล์' },
+  'dashboard.logout': { en: 'Logout', th: 'ออกจากระบบ' },
+  'dashboard.pdpa': { en: 'Privacy Settings', th: 'การตั้งค่าความเป็นส่วนตัว' },
+  'dashboard.livingWill': { en: 'Living Will', th: 'หนังสือแสดงเจตนา' },
 
   // Appointment Booking
   'booking.title': { en: 'Book Doctor Appointment', th: 'ขอนัดหมายแพทย์' },
@@ -174,6 +181,7 @@ const translations: Translations = {
 
   // Health Records
   'phr.title': { en: 'Personal Health Records', th: 'ประวัติสุขภาพส่วนตัว' },
+  'phr.overview': { en: 'Overview', th: 'ภาพรวม' },
   'phr.vitalSigns': { en: 'Vital Signs', th: 'สัญญาณชีพ' },
   'phr.medications': { en: 'Medications', th: 'ยาที่ใช้ประจำ' },
   'phr.allergies': { en: 'Allergies', th: 'การแพ้' },

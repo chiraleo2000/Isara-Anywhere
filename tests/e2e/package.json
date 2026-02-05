@@ -1,16 +1,15 @@
 {
   "name": "isara-e2e-tests",
-  "version": "1.0.0",
-  "description": "E2E tests for Isara Telemedicine Platform",
+  "version": "2.0.0",
+  "description": "E2E tests for Isara Telemedicine Platform - Consolidated",
   "scripts": {
     "test": "npx playwright test",
-    "test:ui": "npx playwright test --ui",
-    "test:headed": "npx playwright test --headed",
-    "test:local": "cross-env TEST_ENV=local npx playwright test",
-    "test:cloud": "cross-env TEST_ENV=cloud npx playwright test",
-    "test:appointment": "npx playwright test appointment-workflow.spec.ts --headed",
-    "test:meeting": "npx playwright test meeting-workflow.spec.ts --headed",
-    "test:api": "npx playwright test api-status.spec.ts",
+    "smoke": "npx playwright test specs/core-e2e.spec.ts --grep @smoke",
+    "api": "npx playwright test specs/core-e2e.spec.ts --grep @api",
+    "ui": "npx playwright test specs/core-e2e.spec.ts --headed",
+    "full": "npx playwright test specs/core-e2e.spec.ts",
+    "local": "cross-env TEST_ENV=local npx playwright test specs/core-e2e.spec.ts",
+    "cloud": "cross-env TEST_ENV=cloud npx playwright test specs/core-e2e.spec.ts",
     "report": "npx playwright show-report"
   },
   "devDependencies": {

@@ -4,7 +4,7 @@ This folder contains structured startup data for the PostgreSQL database.
 
 ## Structure
 
-```
+```text
 output/
 ├── startup-data/
 │   ├── 01-users.json          # User accounts and profiles
@@ -17,11 +17,13 @@ output/
 ## Usage
 
 These JSON files are reference data that can be used for:
+
 - Seeding the database
 - Testing API endpoints
 - Documentation purposes
 - Data migration
 
 For actual database seeding, use:
+
 - **Local Docker**: `scripts/database/seed-local.sql`
 - **Cloud SQL**: `scripts/database/seed-cloud.sql`

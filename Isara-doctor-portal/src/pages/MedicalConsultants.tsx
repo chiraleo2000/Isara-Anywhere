@@ -20,6 +20,7 @@ import {
   TrashIcon,
 } from '../assets/NewSvgIcons';
 import { useAuth } from '../components/common/AuthProvider';
+import { useSettings } from '../hooks/useSettings';
 
 // ============================================================================
 // API BASE URL - Use VITE_API_URL for main API endpoints (consultants, etc.)
@@ -161,8 +162,25 @@ const StarRating: React.FC<{
 // MAIN COMPONENT
 // ============================================================================
 
+// i18n labels for Medical Consultants page
+const labels = {
+  pageTitle: { en: 'Medical Consultants', th: 'แพทย์ที่ปรึกษา' },
+  subtitle: { en: 'Specialist Contacts & Referrals', th: 'ผู้เชี่ยวชาญและการส่งต่อ' },
+  searchConsultants: { en: 'Search consultants...', th: 'ค้นหาแพทย์ที่ปรึกษา...' },
+  addConsultant: { en: 'Add Consultant', th: 'เพิ่มแพทย์ที่ปรึกษา' },
+  allSpecialties: { en: 'All Specialties', th: 'ทุกสาขา' },
+  availableOnly: { en: 'Available Only', th: 'พร้อมให้บริการเท่านั้น' },
+  viewProfile: { en: 'View Profile', th: 'ดูโปรไฟล์' },
+  contact: { en: 'Contact', th: 'ติดต่อ' },
+  rating: { en: 'Rating', th: 'คะแนน' },
+  experience: { en: 'Experience', th: 'ประสบการณ์' },
+  years: { en: 'years', th: 'ปี' },
+};
+
 const MedicalConsultants: React.FC = () => {
   const { user } = useAuth();
+  const { theme, language, t } = useSettings();
+  const isDark = theme === 'dark';
   const isAdmin = user?.email?.includes('admin') || user?.role === 'admin' || user?.isAdmin;
 
   // Data states
@@ -493,11 +511,11 @@ const MedicalConsultants: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+          <h1 className={`text-2xl font-bold flex items-center gap-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
             <UserGroupIcon className="w-8 h-8 text-emerald-600" />
             Medical Consultants
           </h1>
-          <p className="text-gray-600 mt-1">
+          <p className={`mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
             {isAdmin 
               ? 'Manage specialist contacts for patient referrals' 
               : 'Find specialists for patient referrals'}
@@ -528,7 +546,7 @@ const MedicalConsultants: React.FC = () => {
       )}
 
       {/* Search and Filter */}
-      <div className="bg-white rounded-xl shadow-lg p-4 mb-6">
+      <div className={`rounded-xl shadow-lg p-4 mb-6 ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1 relative">
             <SearchIcon className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -537,13 +555,13 @@ const MedicalConsultants: React.FC = () => {
               placeholder="Search by name, specialty, or hospital..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+              className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${isDark ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'border-gray-300'}`}
             />
           </div>
           <select
             value={selectedSpecialty}
             onChange={(e) => setSelectedSpecialty(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            className={`px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'border-gray-300'}`}
           >
             {specialties.map((specialty) => (
               <option key={specialty} value={specialty}>
@@ -551,20 +569,20 @@ const MedicalConsultants: React.FC = () => {
               </option>
             ))}
           </select>
-          <label className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg cursor-pointer">
+          <label className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer ${isDark ? 'bg-gray-700' : 'bg-gray-50'}`}>
             <input
               type="checkbox"
               checked={showAvailableOnly}
               onChange={(e) => setShowAvailableOnly(e.target.checked)}
               className="rounded text-emerald-600 focus:ring-emerald-500"
             />
-            <span className="text-sm text-gray-700 whitespace-nowrap">Available only</span>
+            <span className={`text-sm whitespace-nowrap ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Available only</span>
           </label>
         </div>
       </div>
 
       {/* Stats Bar */}
-      <div className="flex gap-4 mb-6 text-sm text-gray-600">
+      <div className={`flex gap-4 mb-6 text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
         <span>{filteredConsultants.length} consultant{filteredConsultants.length === 1 ? '' : 's'} found</span>
         <span>•</span>
         <span className="text-green-600">
@@ -577,7 +595,7 @@ const MedicalConsultants: React.FC = () => {
         {filteredConsultants.map((consultant) => (
           <div
             key={consultant.id}
-            className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow"
+            className={`rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow ${isDark ? 'bg-gray-800' : 'bg-white'}`}
           >
             <div className="p-6">
               <div className="flex items-start gap-4">
@@ -590,7 +608,7 @@ const MedicalConsultants: React.FC = () => {
                   }}
                 />
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-gray-900 truncate">{consultant.name}</h3>
+                  <h3 className={`font-semibold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{consultant.name}</h3>
                   <p className="text-emerald-600 font-medium">{consultant.specialty}</p>
                   <p className="text-sm text-gray-500 truncate">{consultant.hospital || 'No hospital'}</p>
                 </div>

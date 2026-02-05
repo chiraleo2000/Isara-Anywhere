@@ -62,11 +62,53 @@ pool.on('error', (err) => {
   console.error('❌ PostgreSQL pool error:', err.message);
 });
 
+// Run migrations to ensure schema is up-to-date
+async function runMigrations() {
+  try {
+    // Create doctor_profiles table if not exists (required for doctor registration)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS doctor_profiles (
+        doctor_id VARCHAR(50) PRIMARY KEY,
+        specialty VARCHAR(100),
+        specialty_thai VARCHAR(100),
+        qualifications JSONB DEFAULT '[]'::jsonb,
+        hospital_name VARCHAR(255),
+        hospital_name_thai VARCHAR(255),
+        bio TEXT,
+        bio_thai TEXT,
+        consultation_fee DECIMAL(10,2) DEFAULT 0,
+        available_slots JSONB DEFAULT '[]'::jsonb,
+        is_accepting_patients BOOLEAN DEFAULT true,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    
+    // Add date_of_birth column to users if missing
+    await pool.query(`
+      DO $$ 
+      BEGIN
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS date_of_birth DATE;
+      EXCEPTION WHEN OTHERS THEN
+        NULL;
+      END $$;
+    `);
+    
+    console.log('✅ Database migrations completed (Doctor Portal)');
+  } catch (err) {
+    console.warn('⚠️ Migration warning:', err.message);
+  }
+}
+
 // Test connection async - don't block module load
-setTimeout(() => {
-  pool.query('SELECT NOW()')
-    .then(() => console.log('✅ PostgreSQL connected successfully (Doctor Portal)'))
-    .catch(err => console.error('❌ PostgreSQL connection error:', err.message));
+setTimeout(async () => {
+  try {
+    await pool.query('SELECT NOW()');
+    console.log('✅ PostgreSQL connected successfully (Doctor Portal)');
+    await runMigrations();
+  } catch (err) {
+    console.error('❌ PostgreSQL connection error:', err.message);
+  }
 }, 1000);
 
 console.log('📦 PostgreSQL pool initialized (connection test pending)');

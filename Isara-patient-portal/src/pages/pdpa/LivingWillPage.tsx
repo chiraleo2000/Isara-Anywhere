@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useSettings } from '../../contexts/SettingsContext';
 import { pdpaService, doctorService } from '../../lib/services';
 import { Doctor } from '../../types';
 import {
@@ -64,9 +65,75 @@ const RELATIONSHIP_OPTIONS = [
 
 export default function LivingWillPage() {
   const { user } = useAuth();
+  const { theme, language } = useSettings();
+  const isDark = theme === 'dark';
   const navigate = useNavigate();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [loading, setLoading] = useState(true);
+
+  // i18n labels
+  const labels = {
+    pageTitle: { en: 'Living Will', th: 'พินัยกรรมชีวิต' },
+    backToPrivacy: { en: 'Back to Privacy', th: 'กลับ' },
+    save: { en: 'Save', th: 'บันทึก' },
+    saving: { en: 'Saving...', th: 'กำลังบันทึก...' },
+    step1: { en: 'Healthcare Proxy', th: 'ผู้รับมอบฉันทะดูแลสุขภาพ' },
+    step2: { en: 'Treatment Preferences', th: 'การตัดสินใจทางการแพทย์' },
+    step3: { en: 'Signature', th: 'ลายเซ็นและยืนยัน' },
+    step4: { en: 'Share', th: 'แชร์กับแพทย์' },
+    primaryProxy: { en: 'Primary Healthcare Proxy', th: 'ผู้รับมอบฉันทะหลัก' },
+    alternateProxy: { en: 'Alternate Proxy (Optional)', th: 'ผู้รับมอบฉันทะสำรอง (ไม่บังคับ)' },
+    addAlternate: { en: 'Add Alternate Proxy', th: 'เพิ่มผู้รับมอบฉันทะสำรอง' },
+    name: { en: 'Full Name', th: 'ชื่อ-นามสกุล' },
+    relationship: { en: 'Relationship', th: 'ความสัมพันธ์' },
+    phone: { en: 'Phone Number', th: 'เบอร์โทรศัพท์' },
+    email: { en: 'Email', th: 'อีเมล' },
+    address: { en: 'Address', th: 'ที่อยู่' },
+    cpr: { en: 'CPR', th: 'การกู้ชีพ (CPR)' },
+    cprDesc: { en: 'Cardiopulmonary resuscitation if heart stops', th: 'กู้ชีพหากหัวใจหยุดเต้น' },
+    mechanicalVentilation: { en: 'Mechanical Ventilation', th: 'เครื่องช่วยหายใจ' },
+    mechanicalVentilationDesc: { en: 'Use of breathing machine when unable to breathe independently', th: 'ใช้เครื่องช่วยเมื่อหายใจเองไม่ได้' },
+    artificialNutrition: { en: 'Artificial Nutrition', th: 'อาหารทางสายยาง' },
+    artificialNutritionDesc: { en: 'Tube feeding when unable to eat normally', th: 'ให้อาหารผ่านสายเมื่อกินเองไม่ได้' },
+    dialysis: { en: 'Dialysis', th: 'ฟอกไต' },
+    dialysisDesc: { en: 'Dialysis when kidneys fail', th: 'ฟอกไตเมื่อไตวาย' },
+    organDonation: { en: 'Organ Donation', th: 'บริจาคอวัยวะ' },
+    organDonationDesc: { en: 'Donate organs after death', th: 'บริจาคอวัยวะหลังเสียชีวิต' },
+    painManagement: { en: 'Pain Management', th: 'การจัดการความเจ็บปวด' },
+    additionalWishes: { en: 'Additional Wishes', th: 'ความประสงค์เพิ่มเติม' },
+    religiousPreferences: { en: 'Religious Preferences', th: 'ความต้องการทางศาสนา' },
+    signature: { en: 'Your Signature', th: 'ลายเซ็นของคุณ' },
+    clearSignature: { en: 'Clear', th: 'ล้าง' },
+    shareWithDoctors: { en: 'Share with Doctors', th: 'แชร์กับแพทย์' },
+    versionHistory: { en: 'Version History', th: 'ประวัติเวอร์ชัน' },
+    currentVersion: { en: 'Current Version', th: 'เวอร์ชันปัจจุบัน' },
+    rollback: { en: 'Restore', th: 'กู้คืน' },
+    preview: { en: 'Preview', th: 'ดูตัวอย่าง' },
+    confirmRollback: { en: 'Are you sure you want to restore this version? The current version will be saved in history.', th: 'คุณต้องการกู้คืนพินัยกรรมชีวิตเวอร์ชันนี้หรือไม่? เวอร์ชันปัจจุบันจะถูกบันทึกไว้ในประวัติ' },
+    rollbackSuccess: { en: 'Version restored successfully', th: 'กู้คืนเวอร์ชันสำเร็จ' },
+    error: { en: 'An error occurred. Please try again.', th: 'เกิดข้อผิดพลาด กรุณาลองใหม่' },
+    saveSuccess: { en: 'Living Will saved successfully', th: 'บันทึกพินัยกรรมชีวิตสำเร็จ' },
+    loading: { en: 'Loading...', th: 'กำลังโหลด...' },
+    noVersions: { en: 'No version history available', th: 'ยังไม่มีประวัติเวอร์ชัน' },
+    selectDoctor: { en: 'Select Doctor', th: 'เลือกแพทย์' },
+    searchDoctor: { en: 'Search doctor...', th: 'ค้นหาแพทย์...' },
+    sharedWith: { en: 'Shared with', th: 'แชร์กับ' },
+    noSharing: { en: 'Not shared with any doctor yet', th: 'ยังไม่ได้แชร์กับแพทย์' },
+    next: { en: 'Next', th: 'ถัดไป' },
+    previous: { en: 'Previous', th: 'ก่อนหน้า' },
+    complete: { en: 'Complete', th: 'เสร็จสิ้น' },
+  };
+
+  const RELATIONSHIP_OPTIONS_BILINGUAL = [
+    { en: 'Spouse', th: 'คู่สมรส' },
+    { en: 'Child', th: 'บุตร' },
+    { en: 'Father', th: 'บิดา' },
+    { en: 'Mother', th: 'มารดา' },
+    { en: 'Sibling', th: 'พี่น้อง' },
+    { en: 'Relative', th: 'ญาติ' },
+    { en: 'Close Friend', th: 'เพื่อนสนิท' },
+    { en: 'Other', th: 'อื่นๆ' },
+  ];
   const [saving, setSaving] = useState(false);
   const [hasExisting, setHasExisting] = useState(false);
   const [step, setStep] = useState(1);
@@ -163,18 +230,18 @@ export default function LivingWillPage() {
         setShowVersionModal(false);
         setShowVersionPreview(false);
         setSelectedVersion(null);
-        alert('กู้คืนเวอร์ชันสำเร็จ');
+        alert(labels.rollbackSuccess[language]);
       }
     } catch (e) {
       console.error('Failed to rollback:', e);
-      alert('เกิดข้อผิดพลาด กรุณาลองใหม่');
+      alert(labels.error[language]);
     } finally {
       setRollingBack(false);
     }
   };
 
   const formatDateTime = (dateStr: string) => {
-    return new Date(dateStr).toLocaleString('th-TH', {
+    return new Date(dateStr).toLocaleString(language === 'th' ? 'th-TH' : 'en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
@@ -299,13 +366,13 @@ export default function LivingWillPage() {
 
     // Validate
     if (!form.healthcareProxy.primary.name || !form.healthcareProxy.primary.phone) {
-      alert('กรุณากรอกข้อมูลผู้มีอำนาจตัดสินใจหลัก');
+      alert(language === 'th' ? 'กรุณากรอกข้อมูลผู้มีอำนาจตัดสินใจหลัก' : 'Please fill in primary healthcare proxy information');
       setStep(1);
       return;
     }
 
     if (!form.digitalSignature) {
-      alert('กรุณาลงลายมือชื่อดิจิทัล');
+      alert(language === 'th' ? 'กรุณาลงลายมือชื่อดิจิทัล' : 'Please sign your digital signature');
       setStep(3);
       return;
     }
@@ -314,11 +381,11 @@ export default function LivingWillPage() {
     try {
       const patientId = user.patientId || user.id;
       await pdpaService.saveLivingWill(patientId, form);
-      alert('บันทึกพินัยกรรมชีวิตเรียบร้อยแล้ว');
+      alert(labels.saveSuccess[language]);
       navigate('/pdpa');
     } catch (e) {
       console.error('Failed to save living will:', e);
-      alert('เกิดข้อผิดพลาด กรุณาลองใหม่');
+      alert(labels.error[language]);
     } finally {
       setSaving(false);
     }
@@ -334,7 +401,7 @@ export default function LivingWillPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className={`flex items-center justify-center h-64 ${isDark ? 'bg-gray-900' : ''}`}>
         <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
@@ -346,41 +413,41 @@ export default function LivingWillPage() {
       <div className="flex items-center gap-4 mb-6">
         <button
           onClick={() => navigate('/pdpa')}
-          className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
+          className={`p-2 rounded-xl transition-colors ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
         >
-          <ChevronLeft className="w-6 h-6" />
+          <ChevronLeft className={`w-6 h-6 ${isDark ? 'text-gray-300' : ''}`} />
         </button>
         <div className="flex-1">
-          <h1 className="text-2xl font-bold text-gray-800">พินัยกรรมชีวิต</h1>
-          <p className="text-gray-600">หนังสือแสดงเจตนาล่วงหน้าเกี่ยวกับการรักษาพยาบาล</p>
+          <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{labels.pageTitle[language]}</h1>
+          <p className={isDark ? 'text-gray-400' : 'text-gray-600'}>{language === 'th' ? 'หนังสือแสดงเจตนาล่วงหน้าเกี่ยวกับการรักษาพยาบาล' : 'Advance directive for medical treatment'}</p>
         </div>
         <div className="flex items-center gap-2">
           {hasExisting && (
             <>
-              <span className="px-3 py-1 bg-blue-100 text-blue-700 text-sm rounded-full flex items-center gap-1">
+              <span className={`px-3 py-1 text-sm rounded-full flex items-center gap-1 ${isDark ? 'bg-blue-900/50 text-blue-300' : 'bg-blue-100 text-blue-700'}`}>
                 <Clock className="w-3 h-3" />
                 v{currentVersion}
               </span>
               <button
                 onClick={() => setShowVersionModal(true)}
-                className="px-3 py-1.5 bg-gray-100 text-gray-700 text-sm rounded-lg flex items-center gap-1.5 hover:bg-gray-200 transition-colors"
+                className={`px-3 py-1.5 text-sm rounded-lg flex items-center gap-1.5 transition-colors ${isDark ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
               >
                 <History className="w-4 h-4" />
-                ประวัติ
+                {labels.versionHistory[language]}
               </button>
             </>
           )}
           {hasExisting && (
-            <span className="px-3 py-1 bg-green-100 text-green-700 text-sm rounded-full flex items-center gap-1">
+            <span className={`px-3 py-1 text-sm rounded-full flex items-center gap-1 ${isDark ? 'bg-green-900/50 text-green-300' : 'bg-green-100 text-green-700'}`}>
               <CheckCircle2 className="w-4 h-4" />
-              มีอยู่แล้ว
+              {language === 'th' ? 'มีอยู่แล้ว' : 'Exists'}
             </span>
           )}
         </div>
       </div>
 
       {/* Info Banner */}
-      <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 mb-6">
+      <div className={`border rounded-2xl p-5 mb-6 ${isDark ? 'bg-amber-900/20 border-amber-700' : 'bg-amber-50 border-amber-200'}`}>
         <div className="flex items-start gap-4">
           <div className="p-2 bg-amber-100 rounded-xl">
             <Info className="w-6 h-6 text-amber-600" />
@@ -398,30 +465,30 @@ export default function LivingWillPage() {
       {/* Progress Steps */}
       <div className="flex items-center gap-2 mb-8">
         {[
-          { num: 1, label: 'ผู้มีอำนาจตัดสินใจ' },
-          { num: 2, label: 'ความต้องการ' },
-          { num: 3, label: 'ลายมือชื่อ' },
-          { num: 4, label: 'แชร์กับแพทย์' },
+          { num: 1, label: labels.step1[language] },
+          { num: 2, label: labels.step2[language] },
+          { num: 3, label: labels.step3[language] },
+          { num: 4, label: labels.step4[language] },
         ].map((s, i) => (
           <div key={s.num} className="flex items-center flex-1">
             <button
               onClick={() => setStep(s.num)}
               className={`flex items-center justify-center w-10 h-10 rounded-full text-sm font-medium transition-all ${step >= s.num
                   ? 'bg-emerald-600 text-white'
-                  : 'bg-gray-200 text-gray-500'
+                  : isDark ? 'bg-gray-700 text-gray-400' : 'bg-gray-200 text-gray-500'
                 }`}
             >
               {step > s.num ? <Check className="w-5 h-5" /> : s.num}
             </button>
             <span
-              className={`ml-2 text-xs hidden lg:block ${step >= s.num ? 'text-emerald-600 font-medium' : 'text-gray-400'
+              className={`ml-2 text-xs hidden lg:block ${step >= s.num ? 'text-emerald-600 font-medium' : isDark ? 'text-gray-500' : 'text-gray-400'
                 }`}
             >
               {s.label}
             </span>
             {i < 3 && (
               <div
-                className={`flex-1 h-1 mx-2 rounded ${step > s.num ? 'bg-emerald-600' : 'bg-gray-200'
+                className={`flex-1 h-1 mx-2 rounded ${step > s.num ? 'bg-emerald-600' : isDark ? 'bg-gray-700' : 'bg-gray-200'
                   }`}
               />
             )}
@@ -432,53 +499,53 @@ export default function LivingWillPage() {
       {/* Step 1: Healthcare Proxy */}
       {step === 1 && (
         <div className="space-y-6">
-          <div className="bg-white rounded-2xl border border-gray-100 p-6">
-            <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-              <User className="w-5 h-5 text-emerald-600" />
-              ผู้มีอำนาจตัดสินใจหลัก *
+          <div className={`rounded-2xl border p-6 ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
+            <h2 className={`text-lg font-semibold mb-4 flex items-center gap-2 ${isDark ? 'text-white' : 'text-gray-800'}`}>
+              <User className={`w-5 h-5 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`} />
+              {labels.primaryProxy[language]} *
             </h2>
-            <p className="text-sm text-gray-600 mb-4">
-              บุคคลที่คุณมอบหมายให้ตัดสินใจเรื่องการรักษาพยาบาลแทนคุณ
+            <p className={`text-sm mb-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+              {language === 'th' ? 'บุคคลที่คุณมอบหมายให้ตัดสินใจเรื่องการรักษาพยาบาลแทนคุณ' : 'The person you designate to make healthcare decisions for you'}
             </p>
 
             <div className="grid md:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="proxy-primary-name" className="block text-sm font-medium text-gray-700 mb-1">
-                  ชื่อ-นามสกุล *
+                <label htmlFor="proxy-primary-name" className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                  {labels.name[language]} *
                 </label>
                 <input
                   id="proxy-primary-name"
                   type="text"
                   value={form.healthcareProxy.primary.name}
                   onChange={(e) => updateProxy('primary', 'name', e.target.value)}
-                  className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500"
-                  placeholder="ชื่อ นามสกุล"
+                  className={`w-full p-3 border rounded-xl focus:ring-2 focus:ring-emerald-500 ${isDark ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'border-gray-200'}`}
+                  placeholder={labels.name[language]}
                 />
               </div>
               <div>
-                <label htmlFor="proxy-primary-relationship" className="block text-sm font-medium text-gray-700 mb-1">
-                  ความสัมพันธ์ *
+                <label htmlFor="proxy-primary-relationship" className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                  {labels.relationship[language]} *
                 </label>
                 <select
                   id="proxy-primary-relationship"
                   value={form.healthcareProxy.primary.relationship}
                   onChange={(e) => updateProxy('primary', 'relationship', e.target.value)}
-                  className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500"
+                  className={`w-full p-3 border rounded-xl focus:ring-2 focus:ring-emerald-500 ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'border-gray-200'}`}
                 >
-                  <option value="">เลือกความสัมพันธ์</option>
-                  {RELATIONSHIP_OPTIONS.map((opt) => (
-                    <option key={opt} value={opt}>
-                      {opt}
+                  <option value="">{language === 'th' ? 'เลือกความสัมพันธ์' : 'Select relationship'}</option>
+                  {RELATIONSHIP_OPTIONS_BILINGUAL.map((opt) => (
+                    <option key={opt.en} value={opt.th}>
+                      {opt[language]}
                     </option>
                   ))}
                 </select>
               </div>
               <div>
-                <label htmlFor="proxy-primary-phone" className="block text-sm font-medium text-gray-700 mb-1">
-                  เบอร์โทรศัพท์ *
+                <label htmlFor="proxy-primary-phone" className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                  {labels.phone[language]} *
                 </label>
                 <div className="relative">
-                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <Phone className={`absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`} />
                   <input
                     id="proxy-primary-phone"
                     type="tel"

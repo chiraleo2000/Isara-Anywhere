@@ -1,5 +1,6 @@
 import { useEffect, useState, type Dispatch, type SetStateAction } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useSettings } from '../../contexts/SettingsContext';
 import { phrService } from '../../lib/services';
 import { PersonalHealthRecord, VitalSigns, Medication, User, LifestyleData } from '../../types';
 import { Heart, Activity, Pill, AlertTriangle, Plus, Edit3, Save, X, TrendingUp, TrendingDown, Minus, Scale, Thermometer, Droplet, User as UserIcon, FileText } from 'lucide-react';
@@ -143,6 +144,29 @@ function OverviewTab({
   onOpenAllergy,
   onOpenProfile
 }: OverviewTabProps) {
+  const { theme, language } = useSettings();
+  const isDark = theme === 'dark';
+  
+  const labels = {
+    bloodPressure: { en: 'Blood Pressure', th: 'ความดันโลหิต' },
+    heartRate: { en: 'Heart Rate (bpm)', th: 'ชีพจร (bpm)' },
+    weight: { en: 'Weight (kg)', th: 'น้ำหนัก (กก.)' },
+    temperature: { en: 'Temperature (°C)', th: 'อุณหภูมิ (°C)' },
+    basicInfo: { en: 'Basic Information', th: 'ข้อมูลพื้นฐาน' },
+    bloodType: { en: 'Blood Type', th: 'หมู่เลือด' },
+    height: { en: 'Height', th: 'ส่วนสูง' },
+    latestWeight: { en: 'Latest Weight', th: 'น้ำหนักล่าสุด' },
+    chronicConditions: { en: 'Chronic Conditions', th: 'โรคประจำตัว' },
+    none: { en: 'None', th: 'ไม่มี' },
+    recordHealth: { en: 'Record Health Data', th: 'บันทึกข้อมูลสุขภาพ' },
+    vitals: { en: 'Vital Signs', th: 'สัญญาณชีพ' },
+    medications: { en: 'Medications', th: 'ยาที่ใช้' },
+    allergies: { en: 'Allergies', th: 'การแพ้' },
+    editProfile: { en: 'Edit Profile', th: 'แก้ไขข้อมูล' },
+    cm: { en: ' cm', th: ' ซม.' },
+    kg: { en: ' kg', th: ' กก.' },
+  };
+  
   // Use weight from PHR demographics or latest vital
   const currentWeight = phr?.demographics?.weight || latestVital?.weight?.value;
   const bmi = calculateBMI(phr?.demographics?.height, currentWeight);
@@ -152,131 +176,131 @@ function OverviewTab({
     <div className="space-y-6">
       {/* Quick Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-gradient-to-br from-red-50 to-pink-50 rounded-xl p-4 border border-red-100">
+        <div className={`rounded-xl p-4 border ${isDark ? 'bg-gradient-to-br from-red-900/30 to-pink-900/30 border-red-800' : 'bg-gradient-to-br from-red-50 to-pink-50 border-red-100'}`}>
           <div className="flex items-center justify-between mb-2">
             <Heart className="w-5 h-5 text-red-500" />
             <TrendIcon current={latestVital?.bloodPressure?.systolic} previous={previousVital?.bloodPressure?.systolic} />
           </div>
-          <p className="text-2xl font-bold text-gray-800">
+          <p className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>
             {latestVital?.bloodPressure ? `${latestVital.bloodPressure.systolic}/${latestVital.bloodPressure.diastolic}` : '-'}
           </p>
-          <p className="text-xs text-gray-500">ความดันโลหิต</p>
+          <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{labels.bloodPressure[language]}</p>
           {latestVital?.bloodPressure && (
-            <p className={`text-xs mt-1 text-${bpStatus.color}-600`}>
+            <p className={`text-xs mt-1 text-${bpStatus.color}-${isDark ? '400' : '600'}`}>
               {bpStatus.label}
             </p>
           )}
         </div>
 
-        <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl p-4 border border-purple-100">
+        <div className={`rounded-xl p-4 border ${isDark ? 'bg-gradient-to-br from-purple-900/30 to-indigo-900/30 border-purple-800' : 'bg-gradient-to-br from-purple-50 to-indigo-50 border-purple-100'}`}>
           <div className="flex items-center justify-between mb-2">
             <Activity className="w-5 h-5 text-purple-500" />
             <TrendIcon current={latestVital?.heartRate?.value} previous={previousVital?.heartRate?.value} />
           </div>
-          <p className="text-2xl font-bold text-gray-800">
+          <p className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>
             {latestVital?.heartRate?.value || '-'}
           </p>
-          <p className="text-xs text-gray-500">ชีพจร (bpm)</p>
+          <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{labels.heartRate[language]}</p>
         </div>
 
-        <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-4 border border-blue-100">
+        <div className={`rounded-xl p-4 border ${isDark ? 'bg-gradient-to-br from-blue-900/30 to-cyan-900/30 border-blue-800' : 'bg-gradient-to-br from-blue-50 to-cyan-50 border-blue-100'}`}>
           <div className="flex items-center justify-between mb-2">
             <Scale className="w-5 h-5 text-blue-500" />
             <TrendIcon current={latestVital?.weight?.value} previous={previousVital?.weight?.value} />
           </div>
-          <p className="text-2xl font-bold text-gray-800">
+          <p className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>
             {latestVital?.weight?.value || '-'}
           </p>
-          <p className="text-xs text-gray-500">น้ำหนัก (กก.)</p>
+          <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{labels.weight[language]}</p>
           {bmi && (
-            <p className="text-xs mt-1 text-gray-600">BMI: {bmi}</p>
+            <p className={`text-xs mt-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>BMI: {bmi}</p>
           )}
         </div>
 
-        <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl p-4 border border-orange-100">
+        <div className={`rounded-xl p-4 border ${isDark ? 'bg-gradient-to-br from-orange-900/30 to-amber-900/30 border-orange-800' : 'bg-gradient-to-br from-orange-50 to-amber-50 border-orange-100'}`}>
           <div className="flex items-center justify-between mb-2">
             <Thermometer className="w-5 h-5 text-orange-500" />
           </div>
-          <p className="text-2xl font-bold text-gray-800">
+          <p className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>
             {latestVital?.temperature?.value || '-'}
           </p>
-          <p className="text-xs text-gray-500">อุณหภูมิ (°C)</p>
+          <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{labels.temperature[language]}</p>
         </div>
       </div>
 
       {/* Basic Info & Conditions */}
       <div className="grid md:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl p-5 border border-gray-100">
-          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            <Heart className="w-5 h-5 text-red-500" /> ข้อมูลพื้นฐาน
+        <div className={`rounded-xl p-5 border ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
+          <h2 className={`text-lg font-semibold mb-4 flex items-center gap-2 ${isDark ? 'text-white' : ''}`}>
+            <Heart className="w-5 h-5 text-red-500" /> {labels.basicInfo[language]}
           </h2>
           <div className="space-y-3">
             <div className="flex justify-between">
-              <span className="text-gray-600">หมู่เลือด</span>
-              <span className="font-medium">{phr?.demographics?.bloodType || user?.bloodType || '-'}</span>
+              <span className={isDark ? 'text-gray-400' : 'text-gray-600'}>{labels.bloodType[language]}</span>
+              <span className={`font-medium ${isDark ? 'text-white' : ''}`}>{phr?.demographics?.bloodType || user?.bloodType || '-'}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">ส่วนสูง</span>
-              <span className="font-medium">{phr?.demographics?.height ? `${phr.demographics.height} ซม.` : '-'}</span>
+              <span className={isDark ? 'text-gray-400' : 'text-gray-600'}>{labels.height[language]}</span>
+              <span className={`font-medium ${isDark ? 'text-white' : ''}`}>{phr?.demographics?.height ? `${phr.demographics.height}${labels.cm[language]}` : '-'}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">น้ำหนักล่าสุด</span>
-              <span className="font-medium">{phr?.demographics?.weight || latestVital?.weight?.value ? `${phr?.demographics?.weight || latestVital?.weight?.value} กก.` : '-'}</span>
+              <span className={isDark ? 'text-gray-400' : 'text-gray-600'}>{labels.latestWeight[language]}</span>
+              <span className={`font-medium ${isDark ? 'text-white' : ''}`}>{phr?.demographics?.weight || latestVital?.weight?.value ? `${phr?.demographics?.weight || latestVital?.weight?.value}${labels.kg[language]}` : '-'}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">BMI</span>
-              <span className="font-medium">{bmi || '-'}</span>
+              <span className={isDark ? 'text-gray-400' : 'text-gray-600'}>BMI</span>
+              <span className={`font-medium ${isDark ? 'text-white' : ''}`}>{bmi || '-'}</span>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-5 border border-gray-100">
-          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            <AlertTriangle className="w-5 h-5 text-yellow-500" /> โรคประจำตัว
+        <div className={`rounded-xl p-5 border ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
+          <h2 className={`text-lg font-semibold mb-4 flex items-center gap-2 ${isDark ? 'text-white' : ''}`}>
+            <AlertTriangle className="w-5 h-5 text-yellow-500" /> {labels.chronicConditions[language]}
           </h2>
           {user?.chronicConditions?.length ? (
             <div className="flex flex-wrap gap-2">
               {user.chronicConditions.map((condition) => (
-                <span key={condition} className="px-3 py-1 bg-yellow-50 text-yellow-700 rounded-full text-sm">{condition}</span>
+                <span key={condition} className={`px-3 py-1 rounded-full text-sm ${isDark ? 'bg-yellow-900/30 text-yellow-300' : 'bg-yellow-50 text-yellow-700'}`}>{condition}</span>
               ))}
             </div>
           ) : (
-            <p className="text-gray-500">ไม่มี</p>
+            <p className={isDark ? 'text-gray-400' : 'text-gray-500'}>{labels.none[language]}</p>
           )}
         </div>
       </div>
 
       {/* Quick Actions */}
-      <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl p-6 border border-emerald-200">
-        <h3 className="font-semibold text-emerald-800 mb-4">บันทึกข้อมูลสุขภาพ</h3>
+      <div className={`rounded-xl p-6 border ${isDark ? 'bg-gradient-to-r from-emerald-900/30 to-teal-900/30 border-emerald-800' : 'bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200'}`}>
+        <h3 className={`font-semibold mb-4 ${isDark ? 'text-emerald-300' : 'text-emerald-800'}`}>{labels.recordHealth[language]}</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <button
             onClick={onOpenVitals}
-            className="flex flex-col items-center gap-2 p-4 bg-white rounded-xl hover:shadow-md transition-all"
+            className={`flex flex-col items-center gap-2 p-4 rounded-xl hover:shadow-md transition-all ${isDark ? 'bg-gray-700 hover:bg-gray-600' : 'bg-white'}`}
           >
             <Activity className="w-6 h-6 text-emerald-600" />
-            <span className="text-sm text-gray-600">สัญญาณชีพ</span>
+            <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{labels.vitals[language]}</span>
           </button>
           <button
             onClick={onOpenMedication}
-            className="flex flex-col items-center gap-2 p-4 bg-white rounded-xl hover:shadow-md transition-all"
+            className={`flex flex-col items-center gap-2 p-4 rounded-xl hover:shadow-md transition-all ${isDark ? 'bg-gray-700 hover:bg-gray-600' : 'bg-white'}`}
           >
             <Pill className="w-6 h-6 text-blue-600" />
-            <span className="text-sm text-gray-600">ยาที่ใช้</span>
+            <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{labels.medications[language]}</span>
           </button>
           <button
             onClick={onOpenAllergy}
-            className="flex flex-col items-center gap-2 p-4 bg-white rounded-xl hover:shadow-md transition-all"
+            className={`flex flex-col items-center gap-2 p-4 rounded-xl hover:shadow-md transition-all ${isDark ? 'bg-gray-700 hover:bg-gray-600' : 'bg-white'}`}
           >
             <AlertTriangle className="w-6 h-6 text-red-600" />
-            <span className="text-sm text-gray-600">การแพ้</span>
+            <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{labels.allergies[language]}</span>
           </button>
           <button
             onClick={onOpenProfile}
-            className="flex flex-col items-center gap-2 p-4 bg-white rounded-xl hover:shadow-md transition-all"
+            className={`flex flex-col items-center gap-2 p-4 rounded-xl hover:shadow-md transition-all ${isDark ? 'bg-gray-700 hover:bg-gray-600' : 'bg-white'}`}
           >
             <UserIcon className="w-6 h-6 text-purple-600" />
-            <span className="text-sm text-gray-600">แก้ไขข้อมูล</span>
+            <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{labels.editProfile[language]}</span>
           </button>
         </div>
       </div>
@@ -302,66 +326,88 @@ function VitalsTab({
   saving,
   onAddVitals
 }: VitalsTabProps) {
+  const { theme, language } = useSettings();
+  const isDark = theme === 'dark';
+  
+  const labels = {
+    title: { en: 'Vital Signs', th: 'สัญญาณชีพ' },
+    record: { en: 'Record', th: 'บันทึก' },
+    newRecord: { en: 'Record New Vital Signs', th: 'บันทึกสัญญาณชีพใหม่' },
+    systolic: { en: 'Systolic BP (mmHg)', th: 'ความดันบน (mmHg)' },
+    diastolic: { en: 'Diastolic BP (mmHg)', th: 'ความดันล่าง (mmHg)' },
+    heartRate: { en: 'Heart Rate (bpm)', th: 'ชีพจร (bpm)' },
+    weight: { en: 'Weight (kg)', th: 'น้ำหนัก (กก.)' },
+    temperature: { en: 'Temperature (°C)', th: 'อุณหภูมิ (°C)' },
+    bloodGlucose: { en: 'Blood Glucose (mg/dL)', th: 'น้ำตาลในเลือด (mg/dL)' },
+    oxygen: { en: 'Oxygen Saturation (%)', th: 'ออกซิเจนในเลือด (%)' },
+    normalRange: { en: 'Normal range: 36.1-37.2°C', th: 'ช่วงปกติ: 36.1-37.2°C' },
+    save: { en: 'Save', th: 'บันทึก' },
+    cancel: { en: 'Cancel', th: 'ยกเลิก' },
+    noData: { en: 'No vital signs data yet', th: 'ยังไม่มีข้อมูลสัญญาณชีพ' },
+    addData: { en: '+ Add vital signs data', th: '+ เพิ่มข้อมูลสัญญาณชีพ' },
+    tempValidation: { en: 'Temperature must be between 35.0-42.0°C', th: 'อุณหภูมิต้องอยู่ระหว่าง 35.0-42.0°C' },
+  };
+  
   return (
-    <div className="bg-white rounded-xl p-5 border border-gray-100">
+    <div className={`rounded-xl p-5 border ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold flex items-center gap-2"><Activity className="w-5 h-5 text-emerald-600" /> สัญญาณชีพ</h2>
+        <h2 className={`text-lg font-semibold flex items-center gap-2 ${isDark ? 'text-white' : ''}`}><Activity className="w-5 h-5 text-emerald-600" /> {labels.title[language]}</h2>
         <button onClick={() => setShowAddVitals(true)} className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700">
-          <Plus className="w-4 h-4" /> บันทึก
+          <Plus className="w-4 h-4" /> {labels.record[language]}
         </button>
       </div>
 
       {showAddVitals && (
-        <div className="p-4 bg-emerald-50 rounded-xl mb-4">
-          <h3 className="font-medium text-emerald-800 mb-4">บันทึกสัญญาณชีพใหม่</h3>
+        <div className={`p-4 rounded-xl mb-4 ${isDark ? 'bg-emerald-900/30 border border-emerald-700' : 'bg-emerald-50'}`}>
+          <h3 className={`font-medium mb-4 ${isDark ? 'text-emerald-300' : 'text-emerald-800'}`}>{labels.newRecord[language]}</h3>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
             <div>
-              <label htmlFor="vitals-systolic" className="block text-sm text-gray-600 mb-1">ความดันบน (mmHg)</label>
+              <label htmlFor="vitals-systolic" className={`block text-sm mb-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{labels.systolic[language]}</label>
               <input
                 id="vitals-systolic"
                 type="number"
                 value={newVitals.bloodPressureSystolic}
                 onChange={(e) => setNewVitals({ ...newVitals, bloodPressureSystolic: e.target.value })}
-                className="w-full p-2 border rounded-lg"
+                className={`w-full p-2 border rounded-lg ${isDark ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
                 placeholder="120"
               />
             </div>
             <div>
-              <label htmlFor="vitals-diastolic" className="block text-sm text-gray-600 mb-1">ความดันล่าง (mmHg)</label>
+              <label htmlFor="vitals-diastolic" className={`block text-sm mb-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{labels.diastolic[language]}</label>
               <input
                 id="vitals-diastolic"
                 type="number"
                 value={newVitals.bloodPressureDiastolic}
                 onChange={(e) => setNewVitals({ ...newVitals, bloodPressureDiastolic: e.target.value })}
-                className="w-full p-2 border rounded-lg"
+                className={`w-full p-2 border rounded-lg ${isDark ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
                 placeholder="80"
               />
             </div>
             <div>
-              <label htmlFor="vitals-heart-rate" className="block text-sm text-gray-600 mb-1">ชีพจร (bpm)</label>
+              <label htmlFor="vitals-heart-rate" className={`block text-sm mb-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{labels.heartRate[language]}</label>
               <input
                 id="vitals-heart-rate"
                 type="number"
                 value={newVitals.heartRate}
                 onChange={(e) => setNewVitals({ ...newVitals, heartRate: e.target.value })}
-                className="w-full p-2 border rounded-lg"
+                className={`w-full p-2 border rounded-lg ${isDark ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
                 placeholder="72"
               />
             </div>
             <div>
-              <label htmlFor="vitals-weight" className="block text-sm text-gray-600 mb-1">น้ำหนัก (กก.)</label>
+              <label htmlFor="vitals-weight" className={`block text-sm mb-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{labels.weight[language]}</label>
               <input
                 id="vitals-weight"
                 type="number"
                 step="0.1"
                 value={newVitals.weight}
                 onChange={(e) => setNewVitals({ ...newVitals, weight: e.target.value })}
-                className="w-full p-2 border rounded-lg"
+                className={`w-full p-2 border rounded-lg ${isDark ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
                 placeholder="70"
               />
             </div>
             <div>
-              <label htmlFor="vitals-temperature" className="block text-sm text-gray-600 mb-1">อุณหภูมิ (°C)</label>
+              <label htmlFor="vitals-temperature" className={`block text-sm mb-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{labels.temperature[language]}</label>
               <input
                 id="vitals-temperature"
                 type="number"
@@ -373,40 +419,39 @@ function VitalsTab({
                   setNewVitals({ ...newVitals, temperature: e.target.value });
                 }}
                 onBlur={(e) => {
-                  // Validate on blur - must be between 35-42
                   const value = e.target.value;
                   if (value !== '') {
                     const num = Number.parseFloat(value);
                     if (Number.isNaN(num) || num < 35 || num > 42) {
-                      alert('อุณหภูมิต้องอยู่ระหว่าง 35.0-42.0°C');
+                      alert(labels.tempValidation[language]);
                       setNewVitals({ ...newVitals, temperature: '' });
                     }
                   }
                 }}
-                className="w-full p-2 border rounded-lg"
+                className={`w-full p-2 border rounded-lg ${isDark ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
                 placeholder="36.5"
               />
-              <p className="text-xs text-gray-400 mt-1">ช่วงปกติ: 36.1-37.2°C</p>
+              <p className={`text-xs mt-1 ${isDark ? 'text-gray-400' : 'text-gray-400'}`}>{labels.normalRange[language]}</p>
             </div>
             <div>
-              <label htmlFor="vitals-blood-glucose" className="block text-sm text-gray-600 mb-1">น้ำตาลในเลือด (mg/dL)</label>
+              <label htmlFor="vitals-blood-glucose" className={`block text-sm mb-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{labels.bloodGlucose[language]}</label>
               <input
                 id="vitals-blood-glucose"
                 type="number"
                 value={newVitals.bloodGlucose}
                 onChange={(e) => setNewVitals({ ...newVitals, bloodGlucose: e.target.value })}
-                className="w-full p-2 border rounded-lg"
+                className={`w-full p-2 border rounded-lg ${isDark ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
                 placeholder="100"
               />
             </div>
             <div>
-              <label htmlFor="vitals-oxygen" className="block text-sm text-gray-600 mb-1">ออกซิเจนในเลือด (%)</label>
+              <label htmlFor="vitals-oxygen" className={`block text-sm mb-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{labels.oxygen[language]}</label>
               <input
                 id="vitals-oxygen"
                 type="number"
                 value={newVitals.oxygenSaturation}
                 onChange={(e) => setNewVitals({ ...newVitals, oxygenSaturation: e.target.value })}
-                className="w-full p-2 border rounded-lg"
+                className={`w-full p-2 border rounded-lg ${isDark ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
                 placeholder="98"
               />
             </div>
@@ -414,29 +459,29 @@ function VitalsTab({
           <div className="flex gap-2">
             <button onClick={onAddVitals} disabled={saving} className="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 disabled:opacity-50 flex items-center gap-2">
               {saving ? <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" /> : <Save className="w-4 h-4" />}
-              บันทึก
+              {labels.save[language]}
             </button>
-            <button onClick={() => setShowAddVitals(false)} className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 flex items-center gap-2">
-              <X className="w-4 h-4" /> ยกเลิก
+            <button onClick={() => setShowAddVitals(false)} className={`px-4 py-2 rounded-lg flex items-center gap-2 ${isDark ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}>
+              <X className="w-4 h-4" /> {labels.cancel[language]}
             </button>
           </div>
         </div>
       )}
 
       {vitals.length === 0 ? (
-        <div className="text-center py-8 text-gray-500">
+        <div className={`text-center py-8 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
           <Activity className="w-12 h-12 mx-auto mb-2 opacity-30" />
-          <p>ยังไม่มีข้อมูลสัญญาณชีพ</p>
+          <p>{labels.noData[language]}</p>
           <button onClick={() => setShowAddVitals(true)} className="mt-4 text-emerald-600 hover:underline">
-            + เพิ่มข้อมูลสัญญาณชีพ
+            {labels.addData[language]}
           </button>
         </div>
       ) : (
         <div className="space-y-3">
           {vitals.slice(0, 10).map((v) => (
-            <div key={getVitalKey(v)} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-              <span className="text-sm text-gray-600 font-medium">
-                {v.measuredAt ? new Date(v.measuredAt).toLocaleDateString('th-TH', {
+            <div key={getVitalKey(v)} className={`flex items-center justify-between p-4 rounded-lg transition-colors ${isDark ? 'bg-gray-700/50 hover:bg-gray-700' : 'bg-gray-50 hover:bg-gray-100'}`}>
+              <span className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                {v.measuredAt ? new Date(v.measuredAt).toLocaleDateString(language === 'th' ? 'th-TH' : 'en-US', {
                   year: 'numeric',
                   month: 'short',
                   day: 'numeric',
@@ -444,7 +489,7 @@ function VitalsTab({
                   minute: '2-digit'
                 }) : '-'}
               </span>
-              <div className="flex flex-wrap gap-4 text-sm">
+              <div className={`flex flex-wrap gap-4 text-sm ${isDark ? 'text-gray-200' : ''}`}>
                 {v.bloodPressure && (
                   <span className="flex items-center gap-1">
                     <Heart className="w-4 h-4 text-red-400" />
@@ -502,71 +547,95 @@ function MedicationsTab({
   saving,
   onAddMedication
 }: MedicationsTabProps) {
+  const { theme, language } = useSettings();
+  const isDark = theme === 'dark';
+  
+  const labels = {
+    title: { en: 'Current Medications', th: 'ยาที่ใช้ประจำ' },
+    add: { en: 'Add Medication', th: 'เพิ่มยา' },
+    addTitle: { en: 'Add Medication', th: 'เพิ่มยาที่ใช้' },
+    name: { en: 'Medication Name *', th: 'ชื่อยา *' },
+    dosage: { en: 'Dosage *', th: 'ขนาดยา *' },
+    frequency: { en: 'Frequency', th: 'ความถี่' },
+    purpose: { en: 'Purpose', th: 'วัตถุประสงค์' },
+    save: { en: 'Save', th: 'บันทึก' },
+    cancel: { en: 'Cancel', th: 'ยกเลิก' },
+    active: { en: 'Active', th: 'ใช้อยู่' },
+    stopped: { en: 'Stopped', th: 'หยุดใช้' },
+    noMeds: { en: 'No current medications', th: 'ไม่มียาที่ใช้ประจำ' },
+    addMeds: { en: '+ Add medication', th: '+ เพิ่มยาที่ใช้' },
+    namePlaceholder: { en: 'e.g. Paracetamol', th: 'เช่น Paracetamol' },
+    dosagePlaceholder: { en: 'e.g. 500mg', th: 'เช่น 500mg' },
+    frequencyPlaceholder: { en: 'e.g. 3 times daily', th: 'เช่น วันละ 3 ครั้ง' },
+    purposePlaceholder: { en: 'e.g. Fever relief, pain relief', th: 'เช่น ลดไข้ บรรเทาปวด' },
+    purposeLabel: { en: 'Purpose:', th: 'วัตถุประสงค์:' },
+  };
+  
   return (
-    <div className="bg-white rounded-xl p-5 border border-gray-100">
+    <div className={`rounded-xl p-5 border ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold flex items-center gap-2"><Pill className="w-5 h-5 text-blue-500" /> ยาที่ใช้ประจำ</h2>
+        <h2 className={`text-lg font-semibold flex items-center gap-2 ${isDark ? 'text-white' : ''}`}><Pill className="w-5 h-5 text-blue-500" /> {labels.title[language]}</h2>
         <button onClick={() => setShowAddMedication(true)} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
-          <Plus className="w-4 h-4" /> เพิ่มยา
+          <Plus className="w-4 h-4" /> {labels.add[language]}
         </button>
       </div>
 
       {showAddMedication && (
-        <div className="p-4 bg-blue-50 rounded-xl mb-4">
-          <h3 className="font-medium text-blue-800 mb-4">เพิ่มยาที่ใช้</h3>
+        <div className={`p-4 rounded-xl mb-4 ${isDark ? 'bg-blue-900/30 border border-blue-700' : 'bg-blue-50'}`}>
+          <h3 className={`font-medium mb-4 ${isDark ? 'text-blue-300' : 'text-blue-800'}`}>{labels.addTitle[language]}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
-              <label htmlFor="medication-name" className="block text-sm text-gray-600 mb-1">ชื่อยา *</label>
+              <label htmlFor="medication-name" className={`block text-sm mb-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{labels.name[language]}</label>
               <input
                 id="medication-name"
                 type="text"
                 value={newMedication.name}
                 onChange={(e) => setNewMedication({ ...newMedication, name: e.target.value })}
-                className="w-full p-2 border rounded-lg"
-                placeholder="เช่น Paracetamol"
+                className={`w-full p-2 border rounded-lg ${isDark ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
+                placeholder={labels.namePlaceholder[language]}
               />
             </div>
             <div>
-              <label htmlFor="medication-dosage" className="block text-sm text-gray-600 mb-1">ขนาดยา *</label>
+              <label htmlFor="medication-dosage" className={`block text-sm mb-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{labels.dosage[language]}</label>
               <input
                 id="medication-dosage"
                 type="text"
                 value={newMedication.dosage}
                 onChange={(e) => setNewMedication({ ...newMedication, dosage: e.target.value })}
-                className="w-full p-2 border rounded-lg"
-                placeholder="เช่น 500mg"
+                className={`w-full p-2 border rounded-lg ${isDark ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
+                placeholder={labels.dosagePlaceholder[language]}
               />
             </div>
             <div>
-              <label htmlFor="medication-frequency" className="block text-sm text-gray-600 mb-1">ความถี่</label>
+              <label htmlFor="medication-frequency" className={`block text-sm mb-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{labels.frequency[language]}</label>
               <input
                 id="medication-frequency"
                 type="text"
                 value={newMedication.frequency}
                 onChange={(e) => setNewMedication({ ...newMedication, frequency: e.target.value })}
-                className="w-full p-2 border rounded-lg"
-                placeholder="เช่น วันละ 3 ครั้ง"
+                className={`w-full p-2 border rounded-lg ${isDark ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
+                placeholder={labels.frequencyPlaceholder[language]}
               />
             </div>
             <div>
-              <label htmlFor="medication-purpose" className="block text-sm text-gray-600 mb-1">วัตถุประสงค์</label>
+              <label htmlFor="medication-purpose" className={`block text-sm mb-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{labels.purpose[language]}</label>
               <input
                 id="medication-purpose"
                 type="text"
                 value={newMedication.purpose}
                 onChange={(e) => setNewMedication({ ...newMedication, purpose: e.target.value })}
-                className="w-full p-2 border rounded-lg"
-                placeholder="เช่น ลดไข้ บรรเทาปวด"
+                className={`w-full p-2 border rounded-lg ${isDark ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
+                placeholder={labels.purposePlaceholder[language]}
               />
             </div>
           </div>
           <div className="flex gap-2">
             <button onClick={onAddMedication} disabled={saving || !newMedication.name || !newMedication.dosage} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2">
               {saving ? <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" /> : <Save className="w-4 h-4" />}
-              บันทึก
+              {labels.save[language]}
             </button>
-            <button onClick={() => setShowAddMedication(false)} className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 flex items-center gap-2">
-              <X className="w-4 h-4" /> ยกเลิก
+            <button onClick={() => setShowAddMedication(false)} className={`px-4 py-2 rounded-lg flex items-center gap-2 ${isDark ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}>
+              <X className="w-4 h-4" /> {labels.cancel[language]}
             </button>
           </div>
         </div>
@@ -575,26 +644,28 @@ function MedicationsTab({
       {medications?.length ? (
         <div className="space-y-3">
           {medications.map((med) => (
-            <div key={med.id} className="p-4 bg-blue-50 rounded-lg border border-blue-100">
+            <div key={med.id} className={`p-4 rounded-lg border ${isDark ? 'bg-blue-900/20 border-blue-800' : 'bg-blue-50 border-blue-100'}`}>
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="font-medium text-gray-800">{med.name}</p>
-                  <p className="text-sm text-gray-600">{med.dosage} - {med.frequency}</p>
-                  {med.purpose && <p className="text-xs text-gray-500 mt-1">วัตถุประสงค์: {med.purpose}</p>}
+                  <p className={`font-medium ${isDark ? 'text-white' : 'text-gray-800'}`}>{med.name}</p>
+                  <p className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{med.dosage} - {med.frequency}</p>
+                  {med.purpose && <p className={`text-xs mt-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{labels.purposeLabel[language]} {med.purpose}</p>}
                 </div>
-                <span className={`px-2 py-1 text-xs rounded-full ${med.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
-                  {med.status === 'active' ? 'ใช้อยู่' : 'หยุดใช้'}
+                <span className={`px-2 py-1 text-xs rounded-full ${med.status === 'active' 
+                  ? (isDark ? 'bg-green-900/50 text-green-300' : 'bg-green-100 text-green-700') 
+                  : (isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600')}`}>
+                  {med.status === 'active' ? labels.active[language] : labels.stopped[language]}
                 </span>
               </div>
             </div>
           ))}
         </div>
       ) : (
-        <div className="text-center py-8 text-gray-500">
+        <div className={`text-center py-8 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
           <Pill className="w-12 h-12 mx-auto mb-2 opacity-30" />
-          <p>ไม่มียาที่ใช้ประจำ</p>
+          <p>{labels.noMeds[language]}</p>
           <button onClick={() => setShowAddMedication(true)} className="mt-4 text-blue-600 hover:underline">
-            + เพิ่มยาที่ใช้
+            {labels.addMeds[language]}
           </button>
         </div>
       )}
@@ -620,33 +691,46 @@ function AllergiesTab({
   saving,
   onAddAllergy
 }: AllergiesTabProps) {
+  const { theme, language } = useSettings();
+  const isDark = theme === 'dark';
+  
+  const labels = {
+    title: { en: 'Allergies', th: 'การแพ้' },
+    add: { en: 'Add', th: 'เพิ่ม' },
+    addTitle: { en: 'Add Allergy', th: 'เพิ่มการแพ้' },
+    save: { en: 'Save', th: 'บันทึก' },
+    placeholder: { en: 'e.g. Penicillin, Seafood, Nuts', th: 'เช่น Penicillin, อาหารทะเล, ถั่ว' },
+    noAllergies: { en: 'No allergy history', th: 'ไม่มีประวัติการแพ้' },
+    addAllergy: { en: '+ Add allergy', th: '+ เพิ่มการแพ้' },
+  };
+  
   return (
-    <div className="bg-white rounded-xl p-5 border border-gray-100">
+    <div className={`rounded-xl p-5 border ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-red-500" /> การแพ้</h2>
+        <h2 className={`text-lg font-semibold flex items-center gap-2 ${isDark ? 'text-white' : ''}`}><AlertTriangle className="w-5 h-5 text-red-500" /> {labels.title[language]}</h2>
         <button onClick={() => setShowAddAllergy(true)} className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">
-          <Plus className="w-4 h-4" /> เพิ่ม
+          <Plus className="w-4 h-4" /> {labels.add[language]}
         </button>
       </div>
 
       {showAddAllergy && (
-        <div className="p-4 bg-red-50 rounded-xl mb-4">
-          <h3 className="font-medium text-red-800 mb-4">เพิ่มการแพ้</h3>
+        <div className={`p-4 rounded-xl mb-4 ${isDark ? 'bg-red-900/30 border border-red-700' : 'bg-red-50'}`}>
+          <h3 className={`font-medium mb-4 ${isDark ? 'text-red-300' : 'text-red-800'}`}>{labels.addTitle[language]}</h3>
           <div className="flex gap-2">
-            <label htmlFor="allergy-input" className="sr-only">เพิ่มการแพ้</label>
+            <label htmlFor="allergy-input" className="sr-only">{labels.addTitle[language]}</label>
             <input
               id="allergy-input"
               type="text"
               value={newAllergy}
               onChange={(e) => setNewAllergy(e.target.value)}
-              className="flex-1 p-2 border rounded-lg"
-              placeholder="เช่น Penicillin, อาหารทะเล, ถั่ว"
+              className={`flex-1 p-2 border rounded-lg ${isDark ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
+              placeholder={labels.placeholder[language]}
             />
             <button onClick={onAddAllergy} disabled={saving || !newAllergy.trim()} className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 disabled:opacity-50 flex items-center gap-2">
               {saving ? <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" /> : <Save className="w-4 h-4" />}
-              บันทึก
+              {labels.save[language]}
             </button>
-            <button onClick={() => { setShowAddAllergy(false); setNewAllergy(''); }} className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300">
+            <button onClick={() => { setShowAddAllergy(false); setNewAllergy(''); }} className={`px-4 py-2 rounded-lg ${isDark ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}>
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -656,18 +740,18 @@ function AllergiesTab({
       {allergies?.length ? (
         <div className="flex flex-wrap gap-2">
           {allergies.map((allergy) => (
-            <span key={allergy} className="px-4 py-2 bg-red-50 text-red-700 rounded-full border border-red-200 flex items-center gap-2">
+            <span key={allergy} className={`px-4 py-2 rounded-full border flex items-center gap-2 ${isDark ? 'bg-red-900/30 text-red-300 border-red-700' : 'bg-red-50 text-red-700 border-red-200'}`}>
               <AlertTriangle className="w-4 h-4" />
               {allergy}
             </span>
           ))}
         </div>
       ) : (
-        <div className="text-center py-8 text-gray-500">
+        <div className={`text-center py-8 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
           <AlertTriangle className="w-12 h-12 mx-auto mb-2 opacity-30" />
-          <p>ไม่มีประวัติการแพ้</p>
+          <p>{labels.noAllergies[language]}</p>
           <button onClick={() => setShowAddAllergy(true)} className="mt-4 text-red-600 hover:underline">
-            + เพิ่มการแพ้
+            {labels.addAllergy[language]}
           </button>
         </div>
       )}
@@ -1035,6 +1119,8 @@ function ProfileTab({
 
 function PHRPage() {
   const { user, updateUser } = useAuth();
+  const { theme, t, language } = useSettings();
+  const isDark = theme === 'dark';
   const [phr, setPhr] = useState<PersonalHealthRecord | null>(null);
   const [vitals, setVitals] = useState<VitalSigns[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1334,11 +1420,11 @@ function PHRPage() {
   if (loading) return <div className="flex items-center justify-center h-64"><div className="animate-spin w-8 h-8 border-4 border-emerald-600 border-t-transparent rounded-full" /></div>;
 
   const tabs = [
-    { id: 'overview', label: 'ภาพรวม', icon: FileText },
-    { id: 'vitals', label: 'สัญญาณชีพ', icon: Activity },
-    { id: 'medications', label: 'ยาที่ใช้', icon: Pill },
-    { id: 'allergies', label: 'การแพ้', icon: AlertTriangle },
-    { id: 'profile', label: 'ข้อมูลส่วนตัว', icon: UserIcon },
+    { id: 'overview', label: t('phr.overview') || (language === 'th' ? 'ภาพรวม' : 'Overview'), icon: FileText },
+    { id: 'vitals', label: t('phr.vitalSigns'), icon: Activity },
+    { id: 'medications', label: t('phr.medications'), icon: Pill },
+    { id: 'allergies', label: t('phr.allergies'), icon: AlertTriangle },
+    { id: 'profile', label: t('phr.personalInfo'), icon: UserIcon },
   ] as const;
 
   const tabPanels: Record<TabId, JSX.Element> = {
@@ -1410,17 +1496,23 @@ function PHRPage() {
   return (
     <div className="max-w-4xl mx-auto">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">ประวัติสุขภาพส่วนบุคคล</h1>
+        <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('phr.title')}</h1>
       </div>
 
       <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-        {tabs.map((t) => (
+        {tabs.map((tabItem) => (
           <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg whitespace-nowrap transition-colors ${tab === t.id ? 'bg-emerald-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'}`}
+            key={tabItem.id}
+            onClick={() => setTab(tabItem.id)}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg whitespace-nowrap transition-colors ${
+              tab === tabItem.id 
+                ? 'bg-emerald-600 text-white' 
+                : isDark 
+                  ? 'bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700' 
+                  : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+            }`}
           >
-            <t.icon className="w-4 h-4" /> {t.label}
+            <tabItem.icon className="w-4 h-4" /> {tabItem.label}
           </button>
         ))}
       </div>

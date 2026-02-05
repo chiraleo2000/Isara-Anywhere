@@ -407,24 +407,35 @@ RUN printf '%s\n' \
 'mkdir -p /app/server/logs /var/log /var/run' \
 'echo "Environment configured"' \
 '' \
-'# Start nginx in background' \
-'echo "Starting nginx..."' \
-'/usr/sbin/nginx &' \
-'sleep 1' \
-'' \
-'# Start GCS API server' \
-'echo "Starting GCS API server..."' \
+'# Start GCS API server first' \
+'echo "Starting GCS API server (port 3012)..."' \
 'cd /app && NODE_ENV=production GCS_API_PORT=3012 PORT=3012 node /app/server/gcsApiServer.cjs &' \
-'sleep 3' \
+'sleep 2' \
 '' \
 '# Start Auth server' \
-'echo "Starting Auth server..."' \
+'echo "Starting Auth server (port 3011)..."' \
 'cd /app && NODE_ENV=production AUTH_PORT=3011 GCS_API_URL=http://127.0.0.1:3012 node /app/server/authServer.cjs &' \
 'sleep 3' \
 '' \
-'# Start Main API server (foreground to keep container running)' \
-'echo "Starting Main API server..."' \
-'cd /app && MAIN_API_PORT=3009 PORT=3009 exec node /app/server/mainApiServer.cjs' > /docker-entrypoint.sh && \
+'# Start Main API server (in background)' \
+'echo "Starting Main API server (port 3009)..."' \
+'cd /app && MAIN_API_PORT=3009 PORT=3009 node /app/server/mainApiServer.cjs &' \
+'sleep 5' \
+'' \
+'# Wait for Main API to be ready' \
+'echo "Waiting for Main API server to be ready..."' \
+'for i in {1..30}; do' \
+'  if curl -sf http://127.0.0.1:3009/api/health > /dev/null 2>&1; then' \
+'    echo "Main API server is ready!"' \
+'    break' \
+'  fi' \
+'  echo "Waiting... attempt $i/30"' \
+'  sleep 1' \
+'done' \
+'' \
+'# Start nginx last (after all backends are ready)' \
+'echo "Starting nginx..."' \
+'exec /usr/sbin/nginx -g "daemon off;"' > /docker-entrypoint.sh && \
     chmod +x /docker-entrypoint.sh && \
     chown -R nginx:nginx /usr/share/nginx/html && \
     chmod -R 755 /usr/share/nginx/html && \

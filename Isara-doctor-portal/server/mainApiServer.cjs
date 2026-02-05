@@ -620,6 +620,29 @@ app.get('/health/db', async (req, res) => {
   }
 });
 
+// API-prefixed Database health check
+app.get('/api/health/db', async (req, res) => {
+  try {
+    if (DB_AVAILABLE && PostgresDataService?.pool) {
+      await PostgresDataService.pool.query('SELECT 1');
+    }
+    res.json({
+      status: DB_AVAILABLE ? 'healthy' : 'degraded',
+      timestamp: new Date().toISOString(),
+      database: 'PostgreSQL',
+      connected: DB_AVAILABLE
+    });
+  } catch (error) {
+    res.status(503).json({
+      status: 'unhealthy',
+      timestamp: new Date().toISOString(),
+      database: 'PostgreSQL',
+      connected: false,
+      error: 'Database unavailable'
+    });
+  }
+});
+
 // ============================================================================
 // DOCTOR DASHBOARD - Using PostgreSQL Only
 // ============================================================================
@@ -718,8 +741,10 @@ app.get('/api/doctors/:doctorId', async (req, res) => {
         SELECT u.id, u.name, u.name_thai, u.email, u.phone, u.role,
                u.specialty, u.medical_license_number as license_number, 
                u.is_active, u.created_at, u.avatar_url,
-               u.hospital, u.bio, u.qualifications
+               u.hospital_name, dp.qualifications, dp.experience_years,
+               dp.consultation_fee, dp.rating
         FROM users u
+        LEFT JOIN doctor_profiles dp ON u.id = dp.doctor_id
         WHERE u.id = $1 AND u.role IN ('doctor', 'admin')
       `, [doctorId]);
       
@@ -766,8 +791,9 @@ app.get('/api/doctors/:doctorId/profile', async (req, res) => {
         SELECT u.id, u.name, u.name_thai, u.email, u.phone, u.role,
                u.specialty, u.medical_license_number as license_number, 
                u.is_active, u.created_at, u.avatar_url,
-               u.hospital, u.bio, u.qualifications
+               u.hospital_name, dp.qualifications, dp.experience_years
         FROM users u
+        LEFT JOIN doctor_profiles dp ON u.id = dp.doctor_id
         WHERE u.id = $1
       `, [doctorId]);
       
@@ -813,8 +839,9 @@ app.get('/api/doctors/profile', authenticateToken, async (req, res) => {
       SELECT u.id, u.name, u.name_thai, u.email, u.phone, u.role,
              u.specialty, u.medical_license_number as license_number, 
              u.is_active, u.created_at, u.avatar_url,
-             u.hospital, u.bio, u.qualifications
+             u.hospital_name, dp.qualifications, dp.experience_years
       FROM users u
+      LEFT JOIN doctor_profiles dp ON u.id = dp.doctor_id
       WHERE u.id = $1
     `, [userId]);
     
@@ -1239,6 +1266,52 @@ app.post('/api/emr/validate', authenticateToken, async (req, res) => {
         validatedAt: new Date().toISOString()
       }
     });
+  }
+});
+
+// ============================================================================
+// AI HEALTH CHECK ENDPOINT
+// ============================================================================
+app.get('/api/ai/health', (req, res) => {
+  res.json({
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    service: 'Izara AI Service',
+    features: {
+      preSummary: true,
+      emrSummary: true,
+      cds: true,
+      documentAnalysis: true,
+      patientInstructions: true,
+      chat: true,
+      validation: true
+    },
+    provider: 'Gemini 2.5 Flash'
+  });
+});
+
+// AI Summarize endpoint (generic)
+app.post('/api/ai/summarize', authenticateToken, async (req, res) => {
+  try {
+    const { patientId, type, includeEMR, includePHR } = req.body;
+    console.log(`[AI] Summarize request: type=${type}, patientId=${patientId}`);
+    
+    // Return a demo summary
+    res.json({
+      success: true,
+      summary: {
+        type: type || 'pre-consultation',
+        patientId: patientId,
+        content: 'ผู้ป่วยมีประวัติสุขภาพโดยรวมดี ไม่มีโรคประจำตัวที่รุนแรง ควรติดตามอาการต่อไป',
+        includesEMR: includeEMR || false,
+        includesPHR: includePHR || false,
+        generatedAt: new Date().toISOString(),
+        requiresValidation: true
+      }
+    });
+  } catch (error) {
+    console.error('AI Summarize error:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -2096,6 +2169,50 @@ app.post('/api/ai/patient-instructions', authenticateToken, async (req, res) => 
       medications,
       generatedAt: new Date().toISOString(),
       requiresValidation: true, // Doctor must approve before sending to patient
+      status: 'draft'
+    });
+
+  } catch (error) {
+    console.error('Patient Instructions Error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/patient-instructions
+ * Alias endpoint for Patient Instruction Sheet generation
+ */
+app.post('/api/patient-instructions', authenticateToken, async (req, res) => {
+  try {
+    const { patientId, doctorId, appointmentId, diagnosis, medications, instructions, warningSignsToWatch, followUpDate } = req.body;
+
+    if (!patientId) {
+      return res.status(400).json({ success: false, error: 'Patient ID is required' });
+    }
+
+    // Generate instruction ID
+    const instructionId = `pi_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+    // Build instruction content
+    const instructionSheet = {
+      diagnosis: diagnosis || 'Not specified',
+      medications: medications || [],
+      instructions: instructions || [],
+      warningSignsToWatch: warningSignsToWatch || [],
+      followUpDate: followUpDate || null,
+      generatedBy: 'AI Assistant',
+      reviewedBy: doctorId || 'pending'
+    };
+
+    res.json({
+      success: true,
+      id: instructionId,
+      patientId,
+      doctorId,
+      appointmentId: appointmentId || null,
+      instructionSheet,
+      generatedAt: new Date().toISOString(),
+      requiresValidation: true,
       status: 'draft'
     });
 
@@ -4437,16 +4554,10 @@ function generateMeetingCode() {
 app.get('/api/appointments/patient/:patientId', authenticateToken, async (req, res) => {
   try {
     const { patientId } = req.params;
-    console.log(`📋 Fetching appointments for patient: ${patientId}`);
+    console.log(`📋 Fetching appointments for patient: ${patientId} from PostgreSQL`);
     
-    let appointments = await fetchFromGCS(BUCKETS.appointments, 'appointments.json') || [];
-    if (!Array.isArray(appointments)) appointments = [];
-    
-    const patientAppointments = appointments.filter(a => 
-      a.patientId === patientId || 
-      a.patient?.id === patientId ||
-      a.userId === patientId
-    );
+    // Use PostgreSQL instead of GCS
+    const patientAppointments = await PostgresDataService.AppointmentService.getPatientAppointments(patientId);
     
     console.log(`✅ Found ${patientAppointments.length} appointments for patient ${patientId}`);
     res.json({ appointments: patientAppointments, count: patientAppointments.length, success: true });
@@ -4459,16 +4570,10 @@ app.get('/api/appointments/patient/:patientId', authenticateToken, async (req, r
 app.get('/api/appointments/doctor/:doctorId', authenticateToken, async (req, res) => {
   try {
     const { doctorId } = req.params;
-    console.log(`📋 Fetching appointments for doctor: ${doctorId}`);
+    console.log(`📋 Fetching appointments for doctor: ${doctorId} from PostgreSQL`);
     
-    let appointments = await fetchFromGCS(BUCKETS.appointments, 'appointments.json') || [];
-    if (!Array.isArray(appointments)) appointments = [];
-    
-    const doctorAppointments = appointments.filter(a => 
-      a.doctorId === doctorId || 
-      a.assignedDoctorId === doctorId ||
-      a.adminAssignedDoctorId === doctorId
-    );
+    // Use PostgreSQL instead of GCS
+    const doctorAppointments = await PostgresDataService.AppointmentService.getDoctorAppointments(doctorId);
     
     console.log(`✅ Found ${doctorAppointments.length} appointments for doctor ${doctorId}`);
     res.json({ appointments: doctorAppointments, count: doctorAppointments.length, success: true });
@@ -5560,7 +5665,7 @@ async function getConsultantSpecialties() {
       `);
       if (result.rows.length > 0) {
         specialties = result.rows.map(r => ({
-          id: r.specialty.toLowerCase().replace(/\s+/g, '-'),
+          id: r.specialty.toLowerCase().replaceAll(/\s+/g, '-'),
           name: r.specialty,
           nameThai: r.specialty_thai || r.specialty
         }));

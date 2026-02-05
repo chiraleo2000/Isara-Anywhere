@@ -1,13 +1,15 @@
 import { useState, FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { Eye, EyeOff, Mail, Lock, ArrowLeft, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { useSettings } from '../../contexts/SettingsContext';
+import { Eye, EyeOff, Mail, Lock, ArrowLeft, CheckCircle, AlertCircle, Loader2, Sun, Moon, Globe } from 'lucide-react';
 
 type ViewMode = 'login' | 'forgot-password' | 'reset-sent';
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const { login } = useAuth();
+  const { theme, language, toggleTheme, toggleLanguage, t } = useSettings();
 
   // View mode state
   const [viewMode, setViewMode] = useState<ViewMode>('login');
@@ -94,7 +96,26 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 flex items-center justify-center p-4">
+    <div className={`min-h-screen flex items-center justify-center p-4 transition-colors duration-300 ${theme === 'dark' ? 'bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900' : 'bg-gradient-to-br from-emerald-50 via-white to-teal-50'}`}>
+      {/* Theme and Language Toggle - Top Right */}
+      <div className="absolute top-4 right-4 flex items-center gap-2">
+        <button
+          onClick={toggleTheme}
+          className={`p-2 rounded-lg transition-colors ${theme === 'dark' ? 'bg-slate-700 text-yellow-400 hover:bg-slate-600' : 'bg-white/80 text-gray-600 hover:bg-gray-100'} shadow-sm`}
+          title={theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+        >
+          {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+        </button>
+        <button
+          onClick={toggleLanguage}
+          className={`p-2 rounded-lg transition-colors flex items-center gap-1 ${theme === 'dark' ? 'bg-slate-700 text-gray-200 hover:bg-slate-600' : 'bg-white/80 text-gray-600 hover:bg-gray-100'} shadow-sm`}
+          title="Change Language"
+        >
+          <Globe className="w-5 h-5" />
+          <span className="text-xs font-medium">{language === 'th' ? 'TH' : 'EN'}</span>
+        </button>
+      </div>
+
       <div className="w-full max-w-md">
         {/* Logo and Header */}
         <div className="text-center mb-8">
@@ -106,18 +127,18 @@ export default function LoginPage() {
               (e.target as HTMLImageElement).style.display = 'none';
             }}
           />
-          <h1 className="text-2xl font-bold text-gray-800">Izara Patient Portal</h1>
-          <p className="text-gray-600 mt-1">
-            {viewMode === 'login' && 'เข้าสู่ระบบเพื่อจัดการสุขภาพของคุณ'}
-            {viewMode === 'forgot-password' && 'รีเซ็ตรหัสผ่านของคุณ'}
+          <h1 className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>Izara Patient Portal</h1>
+          <p className={`mt-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+            {viewMode === 'login' && t('auth.login')}
+            {viewMode === 'forgot-password' && t('auth.forgotPassword')}
             {viewMode === 'reset-sent' && 'ตรวจสอบอีเมลของคุณ'}
           </p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-xl p-8">
+        <div className={`rounded-2xl shadow-xl p-8 transition-colors duration-300 ${theme === 'dark' ? 'bg-slate-800 border border-slate-700' : 'bg-white'}`}>
           {/* Error Message */}
           {error && (
-            <div className="mb-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg flex items-center gap-2">
+            <div className={`mb-4 px-4 py-3 rounded-lg flex items-center gap-2 ${theme === 'dark' ? 'bg-red-900/30 border border-red-800 text-red-400' : 'bg-red-50 border border-red-200 text-red-600'}`}>
               <AlertCircle className="w-5 h-5 flex-shrink-0" />
               <span className="text-sm">{error}</span>
             </div>
@@ -125,7 +146,7 @@ export default function LoginPage() {
 
           {/* Success Message */}
           {success && (
-            <div className="mb-4 bg-green-50 border border-green-200 text-green-600 px-4 py-3 rounded-lg flex items-center gap-2">
+            <div className={`mb-4 px-4 py-3 rounded-lg flex items-center gap-2 ${theme === 'dark' ? 'bg-green-900/30 border border-green-800 text-green-400' : 'bg-green-50 border border-green-200 text-green-600'}`}>
               <CheckCircle className="w-5 h-5 flex-shrink-0" />
               <span className="text-sm">{success}</span>
             </div>
@@ -135,16 +156,16 @@ export default function LoginPage() {
           {viewMode === 'login' && (
             <form onSubmit={handleLogin} className="space-y-5">
               <div>
-                <label htmlFor="login-email" className="block text-sm font-medium text-gray-700 mb-1">อีเมล</label>
+                <label htmlFor="login-email" className={`block text-sm font-medium mb-1 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>{t('auth.email')}</label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <Mail className={`absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`} />
                   <input
                     id="login-email"
                     type="email"
                     name="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                    className={`w-full pl-10 pr-4 py-3 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all ${theme === 'dark' ? 'bg-slate-700 border-slate-600 text-white placeholder-gray-400' : 'border border-gray-200 text-gray-900'}`}
                     placeholder="your@email.com"
                     required
                     autoComplete="email"
@@ -154,24 +175,24 @@ export default function LoginPage() {
 
               <div>
                 <div className="flex justify-between items-center mb-1">
-                  <label htmlFor="login-password" className="block text-sm font-medium text-gray-700">รหัสผ่าน</label>
+                  <label htmlFor="login-password" className={`block text-sm font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>{t('auth.password')}</label>
                   <button
                     type="button"
                     onClick={switchToForgotPassword}
-                    className="text-sm text-emerald-600 hover:text-emerald-700 hover:underline"
+                    className={`text-sm hover:underline ${theme === 'dark' ? 'text-emerald-400 hover:text-emerald-300' : 'text-emerald-600 hover:text-emerald-700'}`}
                   >
-                    ลืมรหัสผ่าน?
+                    {t('auth.forgotPassword')}
                   </button>
                 </div>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <Lock className={`absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`} />
                   <input
                     id="login-password"
                     type={showPassword ? 'text' : 'password'}
                     name="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-10 pr-12 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                    className={`w-full pl-10 pr-12 py-3 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all ${theme === 'dark' ? 'bg-slate-700 border-slate-600 text-white placeholder-gray-400' : 'border border-gray-200 text-gray-900'}`}
                     placeholder="••••••••"
                     required
                     autoComplete="current-password"
@@ -179,7 +200,7 @@ export default function LoginPage() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className={`absolute right-3 top-1/2 -translate-y-1/2 ${theme === 'dark' ? 'text-gray-400 hover:text-gray-200' : 'text-gray-400 hover:text-gray-600'}`}
                   >
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
@@ -194,10 +215,10 @@ export default function LoginPage() {
                 {loading ? (
                   <>
                     <Loader2 className="w-5 h-5 animate-spin" />
-                    กำลังเข้าสู่ระบบ...
+                    {t('common.loading')}
                   </>
                 ) : (
-                  'เข้าสู่ระบบ'
+                  t('auth.login')
                 )}
               </button>
             </form>
@@ -209,33 +230,33 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={switchToLogin}
-                className="flex items-center gap-1 text-gray-600 hover:text-gray-800 text-sm mb-4"
+                className={`flex items-center gap-1 text-sm mb-4 ${theme === 'dark' ? 'text-gray-400 hover:text-gray-200' : 'text-gray-600 hover:text-gray-800'}`}
               >
                 <ArrowLeft className="w-4 h-4" />
-                กลับไปหน้าเข้าสู่ระบบ
+                {t('common.back')}
               </button>
 
               <div className="text-center mb-6">
-                <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Mail className="w-8 h-8 text-emerald-600" />
+                <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${theme === 'dark' ? 'bg-emerald-900/50' : 'bg-emerald-100'}`}>
+                  <Mail className={`w-8 h-8 ${theme === 'dark' ? 'text-emerald-400' : 'text-emerald-600'}`} />
                 </div>
-                <h2 className="text-lg font-semibold text-gray-800 mb-2">ลืมรหัสผ่าน?</h2>
-                <p className="text-sm text-gray-600">
+                <h2 className={`text-lg font-semibold mb-2 ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>{t('auth.forgotPassword')}</h2>
+                <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
                   กรอกอีเมลที่ลงทะเบียนไว้ เราจะส่งลิงก์สำหรับรีเซ็ตรหัสผ่านให้คุณ
                 </p>
               </div>
 
               <div>
-                <label htmlFor="forgot-email" className="block text-sm font-medium text-gray-700 mb-1">อีเมล</label>
+                <label htmlFor="forgot-email" className={`block text-sm font-medium mb-1 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>{t('auth.email')}</label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <Mail className={`absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`} />
                   <input
                     id="forgot-email"
                     type="email"
                     name="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                    className={`w-full pl-10 pr-4 py-3 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all ${theme === 'dark' ? 'bg-slate-700 border-slate-600 text-white placeholder-gray-400' : 'border border-gray-200 text-gray-900'}`}
                     placeholder="your@email.com"
                     required
                     autoComplete="email"
@@ -267,15 +288,15 @@ export default function LoginPage() {
               <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
                 <CheckCircle className="w-10 h-10 text-emerald-600" />
               </div>
-              <h2 className="text-xl font-semibold text-gray-800 mb-2">ตรวจสอบอีเมลของคุณ</h2>
-              <p className="text-gray-600 mb-6">
+              <h2 className={`text-xl font-semibold mb-2 ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>ตรวจสอบอีเมลของคุณ</h2>
+              <p className={`mb-6 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
                 เราได้ส่งลิงก์สำหรับรีเซ็ตรหัสผ่านไปยัง
                 <br />
-                <span className="font-medium text-gray-800">{email}</span>
+                <span className={`font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>{email}</span>
               </p>
 
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
-                <p className="text-sm text-amber-800">
+              <div className={`rounded-lg p-4 mb-6 ${theme === 'dark' ? 'bg-amber-900/30 border border-amber-800' : 'bg-amber-50 border border-amber-200'}`}>
+                <p className={`text-sm ${theme === 'dark' ? 'text-amber-400' : 'text-amber-800'}`}>
                   <strong>หมายเหตุ:</strong> ลิงก์จะหมดอายุภายใน 1 ชั่วโมง
                   <br />
                   หากไม่พบอีเมล กรุณาตรวจสอบโฟลเดอร์สแปม
@@ -284,9 +305,9 @@ export default function LoginPage() {
 
               <button
                 onClick={switchToLogin}
-                className="text-emerald-600 font-medium hover:underline"
+                className={`font-medium hover:underline ${theme === 'dark' ? 'text-emerald-400' : 'text-emerald-600'}`}
               >
-                กลับไปหน้าเข้าสู่ระบบ
+                {t('common.back')}
               </button>
             </div>
           )}
@@ -294,10 +315,10 @@ export default function LoginPage() {
           {/* Register Link */}
           {viewMode === 'login' && (
             <div className="mt-6 text-center">
-              <p className="text-gray-600">
-                ยังไม่มีบัญชี?{' '}
-                <Link to="/register" className="text-emerald-600 font-medium hover:underline">
-                  สมัครสมาชิก
+              <p className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>
+                {t('auth.noAccount')}{' '}
+                <Link to="/register" className={`font-medium hover:underline ${theme === 'dark' ? 'text-emerald-400' : 'text-emerald-600'}`}>
+                  {t('auth.register')}
                 </Link>
               </p>
             </div>
@@ -305,7 +326,7 @@ export default function LoginPage() {
         </div>
 
         {/* Footer */}
-        <p className="text-center text-gray-500 text-sm mt-6">
+        <p className={`text-center text-sm mt-6 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-500'}`}>
           ข้อมูลของคุณได้รับการปกป้องตาม พ.ร.บ. คุ้มครองข้อมูลส่วนบุคคล (PDPA)
         </p>
       </div>

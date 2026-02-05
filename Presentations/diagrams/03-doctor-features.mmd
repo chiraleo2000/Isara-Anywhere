@@ -7,70 +7,84 @@
     'lineColor': '#2E7D32',
     'secondaryColor': '#E3F2FD',
     'tertiaryColor': '#FFF3E0',
-    'fontSize': '28px',
+    'fontSize': '22px',
     'fontFamily': 'Segoe UI, Arial'
   }
 }}%%
 
-flowchart LR
-    subgraph CENTER["💻 DOCTOR PORTAL"]
-        HOME["🏠 Dashboard<br/>หน้าแรก"]
+flowchart TB
+    subgraph DP["💻 DOCTOR PORTAL"]
+        direction TB
+        
+        subgraph AUTH["🔐 Authentication"]
+            A1["Login"]
+            A2["Doctor Registration<br/>(Pending Approval)"]
+            A3["Profile & Credentials"]
+        end
+        
+        subgraph QUEUE["📋 Queue Management"]
+            B1["📅 Today's Appointments"]
+            B2["⏳ Pending Requests"]
+            B3["✅ Confirm / ❌ Reject"]
+            B4["📊 Patient Queue"]
+        end
+        
+        subgraph CONSULT["📹 Consultation"]
+            C1["🎥 Jitsi Video Call"]
+            C2["🎤 AI Transcription"]
+            C3["📝 Real-time Notes"]
+            C4["👥 Multi-participant"]
+        end
+        
+        subgraph EMR["🩺 EMR System"]
+            D1["📋 SOAP Notes"]
+            D2["🔍 Patient History"]
+            D3["📊 AI Summary"]
+            D4["✍️ Doctor Signature"]
+        end
+        
+        subgraph PRESCRIBE["💊 Prescribing"]
+            E1["💊 E-Prescription"]
+            E2["⚠️ Drug Interaction Check"]
+            E3["🔔 CDS Alerts"]
+            E4["✅ Man-in-the-Loop"]
+        end
+        
+        subgraph ORDERS["🧪 Orders"]
+            F1["🧪 Lab Orders"]
+            F2["🔬 Imaging Orders"]
+            F3["📊 Result Review"]
+            F4["🤖 AI Analysis"]
+        end
+        
+        subgraph ADMIN["🔧 Admin Panel"]
+            G1["👨‍⚕️ Doctor Approval"]
+            G2["📝 Content Management"]
+            G3["📊 Analytics"]
+            G4["⚙️ System Settings"]
+        end
     end
 
-    subgraph CLINICAL["📋 CLINICAL TOOLS"]
-        E1["📝 EMR Editor<br/>บันทึก SOAP"]
-        E2["💊 Prescribing<br/>สั่งยา"]
-        E3["🧪 Lab Orders<br/>สั่งตรวจ"]
-        E4["🤖 AI Copilot<br/>Gemini AI"]
-    end
+    A1 --> B1
+    B1 --> B4 --> C1
+    C1 --> C2 --> D1
+    D1 --> D3 --> D4
+    D1 --> E1 --> E2 --> E3 --> E4
+    D1 --> F1
+    A1 --> G1
 
-    subgraph PATIENTS["👥 PATIENT MANAGEMENT"]
-        P1["📋 Patient List<br/>รายชื่อผู้ป่วย"]
-        P2["👁️ View Records<br/>ดูประวัติ"]
-        P3["📊 Queue<br/>คิวผู้ป่วย"]
-    end
+    classDef authStyle fill:#FFEBEE,stroke:#E53935,stroke-width:2px,color:#B71C1C
+    classDef queueStyle fill:#E3F2FD,stroke:#1976D2,stroke-width:2px,color:#0D47A1
+    classDef consultStyle fill:#E0F7FA,stroke:#00ACC1,stroke-width:2px,color:#006064
+    classDef emrStyle fill:#E8F5E9,stroke:#388E3C,stroke-width:2px,color:#1B5E20
+    classDef rxStyle fill:#FFF3E0,stroke:#FF9800,stroke-width:2px,color:#E65100
+    classDef orderStyle fill:#F3E5F5,stroke:#7B1FA2,stroke-width:2px,color:#4A148C
+    classDef adminStyle fill:#ECEFF1,stroke:#607D8B,stroke-width:2px,color:#37474F
 
-    subgraph SCHEDULE["📅 SCHEDULING"]
-        S1["📅 Calendar<br/>ปฏิทินนัดหมาย"]
-        S2["⏰ Availability<br/>ตั้งเวลาว่าง"]
-        S3["📹 Video Call<br/>Jitsi Meet"]
-    end
-
-    subgraph RESOURCES["📚 RESOURCES"]
-        R1["📖 Clinical Resources<br/>แนวทางรักษา"]
-        R2["📄 Medical Content<br/>สร้างเนื้อหา"]
-        R3["👨‍⚕️ Consultants<br/>ที่ปรึกษา"]
-    end
-
-    subgraph ADMIN["⚙️ ADMIN"]
-        A1["👨‍⚕️ Doctor Mgmt<br/>จัดการแพทย์"]
-        A2["📅 Appointment Pool<br/>จัดการ Pool"]
-    end
-
-    %% Connections from Dashboard
-    HOME --> CLINICAL
-    HOME --> PATIENTS
-    HOME --> SCHEDULE
-    HOME --> RESOURCES
-    HOME --> ADMIN
-
-    %% Internal flows
-    E1 --> E4
-    P1 --> P2
-    S1 --> S3
-
-    %% Styling
-    classDef centerStyle fill:#E8F5E9,stroke:#4CAF50,stroke-width:3px,color:#1B5E20
-    classDef clinicalStyle fill:#E3F2FD,stroke:#2196F3,stroke-width:2px,color:#0D47A1
-    classDef patientStyle fill:#FFF3E0,stroke:#FF9800,stroke-width:2px,color:#E65100
-    classDef scheduleStyle fill:#F3E5F5,stroke:#9C27B0,stroke-width:2px,color:#4A148C
-    classDef resourceStyle fill:#E0F7FA,stroke:#00BCD4,stroke-width:2px,color:#006064
-    classDef adminStyle fill:#FFF8E1,stroke:#FFC107,stroke-width:2px,color:#FF6F00
-
-    class HOME centerStyle
-    class E1,E2,E3,E4 clinicalStyle
-    class P1,P2,P3 patientStyle
-    class S1,S2,S3 scheduleStyle
-    class R1,R2,R3 resourceStyle
-    class A1,A2 adminStyle
-
+    class A1,A2,A3 authStyle
+    class B1,B2,B3,B4 queueStyle
+    class C1,C2,C3,C4 consultStyle
+    class D1,D2,D3,D4 emrStyle
+    class E1,E2,E3,E4 rxStyle
+    class F1,F2,F3,F4 orderStyle
+    class G1,G2,G3,G4 adminStyle

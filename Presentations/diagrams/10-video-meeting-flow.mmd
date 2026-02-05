@@ -1,0 +1,75 @@
+%%{init: {
+  'theme': 'base',
+  'themeVariables': {
+    'primaryColor': '#E0F7FA',
+    'primaryTextColor': '#006064',
+    'primaryBorderColor': '#00ACC1',
+    'lineColor': '#0097A7',
+    'fontSize': '20px',
+    'fontFamily': 'Segoe UI, Arial'
+  }
+}}%%
+
+sequenceDiagram
+    autonumber
+    participant P as 🧑‍🤝‍🧑 Patient
+    participant PP as 📱 Patient Portal
+    participant MS as 📹 Meeting Server
+    participant JITSI as 🎥 Jitsi Meet
+    participant STT as 🎤 Speech-to-Text
+    participant AI as 🤖 Gemini AI
+    participant DP as 💻 Doctor Portal
+    participant D as 👨‍⚕️ Doctor
+    participant DB as 🗄️ Database
+
+    rect rgb(224, 247, 250)
+        Note over P,D: 📅 PRE-MEETING SETUP
+        P->>PP: Click "Join Meeting"
+        D->>DP: Click "Start Consultation"
+        PP->>MS: Request JWT token
+        DP->>MS: Request JWT token
+        MS-->>PP: JWT for patient
+        MS-->>DP: JWT for doctor
+    end
+
+    rect rgb(232, 245, 233)
+        Note over PP,JITSI: 🎥 VIDEO CONNECTION
+        PP->>JITSI: Connect (JWT)
+        DP->>JITSI: Connect (JWT)
+        JITSI-->>PP: Room joined
+        JITSI-->>DP: Room joined
+        JITSI->>JITSI: WebRTC P2P established
+    end
+
+    rect rgb(255, 248, 225)
+        Note over JITSI,AI: 🎤 REAL-TIME TRANSCRIPTION
+        loop Every audio chunk
+            JITSI->>MS: Audio stream
+            MS->>STT: Process audio
+            STT-->>MS: Text transcript
+            MS->>DP: Live transcript update
+            MS->>DB: Store transcript segment
+        end
+    end
+
+    rect rgb(243, 229, 245)
+        Note over D,AI: 🤖 AI SUMMARY GENERATION
+        D->>DP: End consultation
+        DP->>MS: Request summary
+        MS->>DB: Get full transcript
+        DB-->>MS: Transcript data
+        MS->>AI: Generate clinical summary
+        AI-->>MS: SOAP suggestions
+        MS-->>DP: AI summary + suggestions
+    end
+
+    rect rgb(227, 242, 253)
+        Note over D,DB: 📋 DOCUMENTATION
+        D->>DP: Review & edit SOAP notes
+        D->>DP: Add prescriptions
+        D->>DP: Digital signature
+        DP->>DB: Save encounter record
+        DP->>DB: Save prescriptions
+        DB->>PP: Notify patient
+        PP->>P: "Records available" notification
+    end

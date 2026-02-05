@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Izara Diagram: 12-prescription-workflow</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5; }
+        .container { max-width: 100%; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; text-align: center; border-bottom: 2px solid #eee; padding-bottom: 15px; }
+        .mermaid { display: flex; justify-content: center; margin-top: 20px; }
+        .nav { margin-bottom: 20px; text-align: center; }
+        .nav a { margin: 0 10px; color: #3498db; text-decoration: none; font-weight: bold; }
+        .nav a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="nav">
+        <a href="index.html">🔙 Back to Index</a>
+        <span>|</span>
+        <a href="javascript:location.reload()">🔄 Refresh</a>
+    </div>
+    <div class="container">
+        <h1>12-prescription-workflow</h1>
+        <div class="mermaid">
+            %%{init: {
+  'theme': 'base',
+  'themeVariables': {
+    'primaryColor': '#F3E5F5',
+    'primaryTextColor': '#4A148C',
+    'primaryBorderColor': '#7B1FA2',
+    'lineColor': '#9C27B0',
+    'fontSize': '20px',
+    'fontFamily': 'Segoe UI, Arial'
+  }
+}}%%
+
+flowchart TB
+    subgraph CONSULT["📹 CONSULTATION"]
+        C1["🩺 Complete examination"]
+        C2["📋 Diagnosis confirmed"]
+    end
+
+    subgraph PRESCRIBE["💊 PRESCRIPTION CREATION"]
+        P1["💊 Select medication"]
+        P2["📏 Set dosage"]
+        P3["📅 Set duration"]
+        P4["📝 Add instructions"]
+    end
+
+    subgraph CDS["⚠️ CLINICAL DECISION SUPPORT"]
+        D1{"🔍 Drug-Drug<br/>Interaction?"}
+        D2{"⚠️ Patient<br/>Allergies?"}
+        D3{"📏 Dosage<br/>Appropriate?"}
+        D4["✅ All checks passed"]
+        D5["⚠️ Warning displayed"]
+    end
+
+    subgraph REVIEW["👨‍⚕️ DOCTOR REVIEW"]
+        R1["📋 Review warnings"]
+        R2["✅ Override with reason"]
+        R3["✍️ Digital signature"]
+    end
+
+    subgraph DISPATCH["📤 DISPATCH"]
+        S1["📧 Send to pharmacy"]
+        S2["📱 Notify patient"]
+        S3["📋 Add to PHR"]
+    end
+
+    subgraph PATIENT_VIEW["👤 PATIENT VIEW"]
+        PV1["📱 View prescription"]
+        PV2["🔔 Medication reminders"]
+        PV3["📊 Track adherence"]
+    end
+
+    %% Main flow
+    C1 --> C2 --> P1 --> P2 --> P3 --> P4
+
+    %% CDS checks
+    P4 --> D1
+    D1 -->|Yes| D5
+    D1 -->|No| D2
+    D2 -->|Yes| D5
+    D2 -->|No| D3
+    D3 -->|Issue| D5
+    D3 -->|OK| D4
+
+    %% Warning handling
+    D5 --> R1 --> R2 --> R3
+    D4 --> R3
+
+    %% Dispatch
+    R3 --> S1
+    R3 --> S2
+    R3 --> S3
+
+    %% Patient view
+    S2 --> PV1 --> PV2 --> PV3
+
+    classDef consultStyle fill:#E0F7FA,stroke:#00ACC1,stroke-width:2px,color:#006064
+    classDef prescribeStyle fill:#F3E5F5,stroke:#7B1FA2,stroke-width:2px,color:#4A148C
+    classDef cdsStyle fill:#FFF3E0,stroke:#FF9800,stroke-width:2px,color:#E65100
+    classDef warningStyle fill:#FFEBEE,stroke:#E53935,stroke-width:2px,color:#B71C1C
+    classDef reviewStyle fill:#E8F5E9,stroke:#388E3C,stroke-width:2px,color:#1B5E20
+    classDef dispatchStyle fill:#E3F2FD,stroke:#1976D2,stroke-width:2px,color:#0D47A1
+    classDef patientStyle fill:#FFF8E1,stroke:#FFA000,stroke-width:2px,color:#E65100
+
+    class C1,C2 consultStyle
+    class P1,P2,P3,P4 prescribeStyle
+    class D1,D2,D3,D4 cdsStyle
+    class D5 warningStyle
+    class R1,R2,R3 reviewStyle
+    class S1,S2,S3 dispatchStyle
+    class PV1,PV2,PV3 patientStyle
+
+        </div>
+    </div>
+    <script>
+        mermaid.initialize({ 
+            startOnLoad: true, 
+            theme: 'base',
+            securityLevel: 'loose',
+            themeVariables: {
+                primaryColor: '#E3F2FD',
+                secondaryColor: '#E8F5E9',
+                tertiaryColor: '#FFF3E0',
+                fontSize: '16px'
+            }
+        });
+    </script>
+</body>
+</html>

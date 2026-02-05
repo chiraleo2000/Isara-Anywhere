@@ -1,0 +1,115 @@
+%%{init: {
+  'theme': 'base',
+  'themeVariables': {
+    'primaryColor': '#F3E5F5',
+    'primaryTextColor': '#4A148C',
+    'primaryBorderColor': '#9C27B0',
+    'lineColor': '#7B1FA2',
+    'fontSize': '18px',
+    'fontFamily': 'Segoe UI, Arial'
+  }
+}}%%
+
+erDiagram
+    %% AUTH & USER MANAGEMENT
+    users ||--o{ user_sessions : has
+    users ||--o{ password_history : has
+    users ||--o| patient_profiles : has
+    users ||--o| doctor_profiles : has
+
+    %% PATIENT DOMAIN
+    patient_profiles ||--o{ personal_health_records : owns
+    personal_health_records ||--o{ vital_signs : contains
+    personal_health_records ||--o{ allergies : contains
+    personal_health_records ||--o{ medications : contains
+    personal_health_records ||--o{ chronic_conditions : contains
+    personal_health_records ||--o| living_wills : has
+
+    %% DOCTOR DOMAIN
+    doctor_profiles ||--o{ doctor_qualifications : has
+    doctor_profiles ||--o{ doctor_schedules : has
+    doctor_profiles ||--o{ doctor_availability : has
+
+    %% APPOINTMENTS
+    patient_profiles ||--o{ appointments : books
+    doctor_profiles ||--o{ appointments : handles
+    appointments ||--|| appointment_details : has
+    appointments ||--o{ appointment_attachments : has
+
+    %% CLINICAL
+    appointments ||--o| medical_encounters : results_in
+    medical_encounters ||--o{ encounter_documents : has
+    medical_encounters ||--o{ prescriptions : includes
+    prescriptions ||--o{ prescription_medications : contains
+    medical_encounters ||--o{ lab_orders : includes
+    lab_orders ||--o{ lab_results : has
+    medical_encounters ||--o{ imaging_orders : includes
+    imaging_orders ||--o{ imaging_results : has
+
+    %% VIDEO MEETINGS
+    appointments ||--o| video_meetings : has
+    video_meetings ||--o{ meeting_transcripts : has
+    video_meetings ||--o{ meeting_recordings : has
+
+    %% AI & ANALYTICS
+    users ||--o{ ai_chat_history : has
+    patient_profiles ||--o{ symptom_assessments : takes
+
+    %% CONTENT MANAGEMENT
+    articles ||--o{ article_categories : belongs_to
+    consultants ||--o{ consultant_specialties : has
+
+    %% SCHEMA SUMMARY
+    users {
+        uuid id PK
+        varchar email UK
+        varchar password_hash
+        user_role role
+        boolean is_active
+        timestamp created_at
+    }
+
+    patient_profiles {
+        uuid id PK
+        uuid user_id FK
+        varchar thai_id UK
+        varchar first_name
+        varchar last_name
+        date date_of_birth
+    }
+
+    doctor_profiles {
+        uuid id PK
+        uuid user_id FK
+        varchar license_number UK
+        varchar specialty
+        varchar hospital
+        approval_status status
+    }
+
+    appointments {
+        uuid id PK
+        uuid patient_id FK
+        uuid doctor_id FK
+        timestamp scheduled_time
+        appointment_status status
+        varchar channel
+    }
+
+    medical_encounters {
+        uuid id PK
+        uuid appointment_id FK
+        text subjective
+        text objective
+        text assessment
+        text plan
+        uuid signed_by FK
+    }
+
+    prescriptions {
+        uuid id PK
+        uuid encounter_id FK
+        uuid prescribed_by FK
+        prescription_status status
+        timestamp created_at
+    }

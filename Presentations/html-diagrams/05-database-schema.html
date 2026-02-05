@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Izara Diagram: 05-database-schema</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5; }
+        .container { max-width: 100%; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; text-align: center; border-bottom: 2px solid #eee; padding-bottom: 15px; }
+        .mermaid { display: flex; justify-content: center; margin-top: 20px; }
+        .nav { margin-bottom: 20px; text-align: center; }
+        .nav a { margin: 0 10px; color: #3498db; text-decoration: none; font-weight: bold; }
+        .nav a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="nav">
+        <a href="index.html">🔙 Back to Index</a>
+        <span>|</span>
+        <a href="javascript:location.reload()">🔄 Refresh</a>
+    </div>
+    <div class="container">
+        <h1>05-database-schema</h1>
+        <div class="mermaid">
+            %%{init: {
+  'theme': 'base',
+  'themeVariables': {
+    'primaryColor': '#F3E5F5',
+    'primaryTextColor': '#4A148C',
+    'primaryBorderColor': '#9C27B0',
+    'lineColor': '#7B1FA2',
+    'fontSize': '18px',
+    'fontFamily': 'Segoe UI, Arial'
+  }
+}}%%
+
+erDiagram
+    %% AUTH & USER MANAGEMENT
+    users ||--o{ user_sessions : has
+    users ||--o{ password_history : has
+    users ||--o| patient_profiles : has
+    users ||--o| doctor_profiles : has
+
+    %% PATIENT DOMAIN
+    patient_profiles ||--o{ personal_health_records : owns
+    personal_health_records ||--o{ vital_signs : contains
+    personal_health_records ||--o{ allergies : contains
+    personal_health_records ||--o{ medications : contains
+    personal_health_records ||--o{ chronic_conditions : contains
+    personal_health_records ||--o| living_wills : has
+
+    %% DOCTOR DOMAIN
+    doctor_profiles ||--o{ doctor_qualifications : has
+    doctor_profiles ||--o{ doctor_schedules : has
+    doctor_profiles ||--o{ doctor_availability : has
+
+    %% APPOINTMENTS
+    patient_profiles ||--o{ appointments : books
+    doctor_profiles ||--o{ appointments : handles
+    appointments ||--|| appointment_details : has
+    appointments ||--o{ appointment_attachments : has
+
+    %% CLINICAL
+    appointments ||--o| medical_encounters : results_in
+    medical_encounters ||--o{ encounter_documents : has
+    medical_encounters ||--o{ prescriptions : includes
+    prescriptions ||--o{ prescription_medications : contains
+    medical_encounters ||--o{ lab_orders : includes
+    lab_orders ||--o{ lab_results : has
+    medical_encounters ||--o{ imaging_orders : includes
+    imaging_orders ||--o{ imaging_results : has
+
+    %% VIDEO MEETINGS
+    appointments ||--o| video_meetings : has
+    video_meetings ||--o{ meeting_transcripts : has
+    video_meetings ||--o{ meeting_recordings : has
+
+    %% AI & ANALYTICS
+    users ||--o{ ai_chat_history : has
+    patient_profiles ||--o{ symptom_assessments : takes
+
+    %% CONTENT MANAGEMENT
+    articles ||--o{ article_categories : belongs_to
+    consultants ||--o{ consultant_specialties : has
+
+    %% SCHEMA SUMMARY
+    users {
+        uuid id PK
+        varchar email UK
+        varchar password_hash
+        user_role role
+        boolean is_active
+        timestamp created_at
+    }
+
+    patient_profiles {
+        uuid id PK
+        uuid user_id FK
+        varchar thai_id UK
+        varchar first_name
+        varchar last_name
+        date date_of_birth
+    }
+
+    doctor_profiles {
+        uuid id PK
+        uuid user_id FK
+        varchar license_number UK
+        varchar specialty
+        varchar hospital
+        approval_status status
+    }
+
+    appointments {
+        uuid id PK
+        uuid patient_id FK
+        uuid doctor_id FK
+        timestamp scheduled_time
+        appointment_status status
+        varchar channel
+    }
+
+    medical_encounters {
+        uuid id PK
+        uuid appointment_id FK
+        text subjective
+        text objective
+        text assessment
+        text plan
+        uuid signed_by FK
+    }
+
+    prescriptions {
+        uuid id PK
+        uuid encounter_id FK
+        uuid prescribed_by FK
+        prescription_status status
+        timestamp created_at
+    }
+
+        </div>
+    </div>
+    <script>
+        mermaid.initialize({ 
+            startOnLoad: true, 
+            theme: 'base',
+            securityLevel: 'loose',
+            themeVariables: {
+                primaryColor: '#E3F2FD',
+                secondaryColor: '#E8F5E9',
+                tertiaryColor: '#FFF3E0',
+                fontSize: '16px'
+            }
+        });
+    </script>
+</body>
+</html>

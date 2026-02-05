@@ -129,6 +129,137 @@
         0% { transform: rotate(0deg); }
         100% { transform: rotate(360deg); }
       }
+
+      /* ============================================ */
+      /* COMPREHENSIVE DARK MODE STYLES              */
+      /* ============================================ */
+      
+      /* Base dark mode backgrounds */
+      .dark body {
+        background: linear-gradient(to bottom, #1a1a2e, #16213e);
+        color: #e5e5e5;
+      }
+      
+      /* Force all white backgrounds to dark */
+      .dark .bg-white {
+        background-color: #1e293b !important;
+        color: #f1f5f9 !important;
+      }
+
+      .dark .bg-gray-50, .dark .bg-gray-100 {
+        background-color: #0f172a !important;
+      }
+
+      /* Text color fixes for dark mode */
+      .dark .text-gray-900 { color: #ffffff !important; }
+      .dark .text-gray-800 { color: #f1f5f9 !important; }
+      .dark .text-gray-700 { color: #e2e8f0 !important; }
+      .dark .text-gray-600 { color: #cbd5e1 !important; }
+      .dark .text-gray-500 { color: #94a3b8 !important; }
+
+      /* Border colors in dark mode */
+      .dark .border-gray-100, .dark .border-gray-200, .dark .border-gray-300 {
+        border-color: #475569 !important;
+      }
+
+      /* Input fields in dark mode */
+      .dark input, .dark textarea, .dark select {
+        background-color: #1e293b !important;
+        border-color: #475569 !important;
+        color: #f1f5f9 !important;
+      }
+
+      .dark input::placeholder, .dark textarea::placeholder {
+        color: #64748b !important;
+      }
+
+      .dark input:focus, .dark textarea:focus, .dark select:focus {
+        border-color: #10b981 !important;
+        box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+      }
+
+      /* Cards and containers */
+      .dark div[class*="rounded-xl"], .dark div[class*="rounded-lg"], .dark div[class*="rounded-2xl"] {
+        border-color: #334155;
+      }
+
+      /* Table styling */
+      .dark table { background-color: #1e293b; }
+      .dark th { background-color: #0f172a !important; color: #f1f5f9 !important; }
+      .dark td { color: #e2e8f0 !important; border-color: #334155 !important; }
+      .dark tr:hover td { background-color: #334155 !important; }
+
+      /* Button fixes */
+      .dark button.bg-gray-100, .dark button.bg-gray-200 {
+        background-color: #334155 !important;
+        color: #e2e8f0 !important;
+      }
+
+      /* Modal backgrounds */
+      .dark [class*="modal"] .bg-white, .dark [role="dialog"] .bg-white {
+        background-color: #1e293b !important;
+      }
+
+      /* Sidebar and navigation */
+      .dark nav, .dark aside, .dark .sidebar {
+        background-color: #0f172a !important;
+        color: #e2e8f0 !important;
+      }
+
+      .dark nav a, .dark .sidebar a {
+        color: #e2e8f0 !important;
+      }
+
+      .dark nav a:hover, .dark .sidebar a:hover {
+        background-color: #1e293b !important;
+      }
+
+      /* Page titles and headers - CRITICAL FIX */
+      .dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6 {
+        color: #f1f5f9 !important;
+      }
+
+      /* Menu labels visibility fix */
+      .dark .menu-label, .dark .nav-label, .dark [class*="title"] {
+        color: #f1f5f9 !important;
+      }
+
+      /* Dropdown menus */
+      .dark [class*="dropdown"], .dark [class*="menu"] {
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+      }
+
+      /* Calendar styling */
+      .dark .react-calendar, .dark [class*="calendar"] {
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+        color: #f1f5f9 !important;
+      }
+
+      /* Shadows in dark mode */
+      .dark .shadow-sm, .dark .shadow, .dark .shadow-md, .dark .shadow-lg, .dark .shadow-xl {
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3) !important;
+      }
+
+      /* Gradient backgrounds in dark mode */
+      .dark .from-emerald-50, .dark .from-teal-50, .dark .from-blue-50 {
+        background: linear-gradient(to bottom right, #1e3a3a, #1e293b) !important;
+      }
+
+      /* Notification and toast */
+      .dark .toast, .dark [class*="notification"] {
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+        color: #f1f5f9 !important;
+      }
+
+      /* Links */
+      .dark a.text-emerald-600, .dark a.text-teal-600, .dark a.text-blue-600 {
+        color: #34d399 !important;
+      }
+
+      /* ============================================ */
     </style>
     
     <!-- Import Map for React and other dependencies -->

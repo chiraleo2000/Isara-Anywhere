@@ -1,88 +1,202 @@
 # Isara Telemedicine - E2E Test Suite
 
-## Overview
+> **Updated:** February 5, 2026  
+> **Tests:** 123 LOCAL + 123 CLOUD = 246 Total (100% Passing, 0 Skipped)
 
-This test suite provides comprehensive End-to-End (E2E) testing for the Isara Telemedicine platform using Playwright.
+## 🚀 Quick Start
 
-## Directory Structure
+```powershell
+# Navigate to test directory
+cd tests/e2e
 
+# Run ALL Phase 1 tests on LOCAL (123 tests, 0 skipped)
+$env:TEST_ENV="local"
+npx playwright test specs/phase1-full-coverage.spec.ts specs/phase1-comprehensive-meeting.spec.ts --timeout=180000 --workers=4
+
+# Run ALL Phase 1 tests on CLOUD (123 tests, 0 skipped)
+$env:TEST_ENV="cloud"
+npx playwright test specs/phase1-full-coverage.spec.ts specs/phase1-comprehensive-meeting.spec.ts --timeout=180000 --workers=4
+
+# Run with visible browser (headed mode)
+npx playwright test specs/phase1-full-coverage.spec.ts --headed
+
+# View HTML Report
+npx playwright show-report
 ```
+
+---
+
+## 🌐 Portal URLs
+
+### Local Environment (Docker)
+
+| Service | URL | Port |
+|---------|-----|------|
+| Patient Portal | http://localhost:3005 | 3005 |
+| Doctor Portal | http://localhost:3010 | 3010 |
+| Meeting Server | http://localhost:3020 | 3020 |
+
+### Cloud Environment (Google Cloud Run)
+
+| Service | URL |
+|---------|-----|
+| Patient Portal | https://izara-patient-portal-hvht4obouq-as.a.run.app |
+| Doctor Portal | https://izara-doctor-portal-hvht4obouq-as.a.run.app |
+| Meeting Server | https://izara-jitsi-meeting-portal-hvht4obouq-as.a.run.app |
+
+---
+
+## 📁 Directory Structure
+
+```text
 tests/e2e/
-├── lib/                          # Shared test utilities
-│   └── test-config.ts            # Centralized configuration (URLs, credentials, helpers)
-│
-├── specs/                        # Test specifications (organized by category)
-│   ├── core/                     # Core tests (smoke, health, API status)
-│   │   ├── smoke-test.spec.ts    # Basic portal accessibility tests
-│   │   ├── api-status.spec.ts    # API endpoint status tests
-│   │   └── cloud-health-tests.spec.ts  # Cloud deployment health tests
-│   │
-│   ├── workflows/                # Workflow tests (patient journey)
-│   │   ├── appointment-workflow.spec.ts  # Appointment booking flow
-│   │   ├── meeting-workflow.spec.ts      # Video meeting flow
-│   │   └── health-records-workflow.spec.ts  # PHR/EMR flow
-│   │
-│   └── features/                 # Feature-specific tests
-│       ├── living-will-workflow.spec.ts
-│       ├── notifications-workflow.spec.ts
-│       └── clinical-resources-workflow.spec.ts
-│
-├── fixtures/                     # Test data fixtures
-│   ├── audio/                    # Audio samples for voice recognition tests
-│   │   ├── thai-fever-consultation-*.{txt,json,xml}
-│   │   ├── thai-headache-consultation-*.{txt,json,xml}
-│   │   └── english-general-consultation-*.{txt,json,xml}
-│   ├── complete-meeting-simulation.json
-│   └── demo-meeting-*.json
-│
-├── tests/e2e/.auth/              # Saved authentication states
-├── global-setup.ts               # Pre-test authentication setup
-└── playwright.config.ts          # Playwright configuration
+├── run-tests.ps1               # ⭐ MAIN TEST RUNNER - Use this!
+├── lib/
+│   └── test-config.ts          # Shared configuration (URLs, credentials)
+├── specs/
+│   ├── phase1-full-coverage.spec.ts  # ⭐ MAIN TEST FILE (92 tests, 0 skipped)
+│   ├── smoke-test.spec.ts      # Quick health checks
+│   ├── api-status.spec.ts      # API endpoint tests
+│   └── ...                     # Other workflow tests
+├── fixtures/                   # Test data
+└── playwright.config.ts        # Playwright configuration
 ```
 
-## Important: Use Shared Configuration
+---
 
-**All test files should import from `lib/test-config.ts`** instead of defining their own credentials:
+## 🧪 Test Categories (20 Total - 92 Tests)
+
+| # | Category | Tests | Description |
+| - | -------- | ----- | ----------- |
+| 1 | API Health & Database | 6 | Health endpoints, DB connection |
+| 2 | User Management | 8 | Login (5 users), profiles, sessions |
+| 3 | Appointment Workflow | 7 | Book, list, pool, history |
+| 4 | Video Meeting (Jitsi) | 8 | Transcription, AI summary |
+| 5 | Health Records (PHR) | 7 | Vitals, medications, allergies |
+| 6 | EMR Workflow | 4 | SOAP format, AI summary |
+| 7 | Patient Instructions | 2 | Generate & list |
+| 8 | AI Features | 4 | Chat, CDS, Document Analysis |
+| 9 | PDPA & Living Will | 3 | Consent management |
+| 10 | Clinical Resources | 4 | Medical content |
+| 11 | Notifications | 3 | Patient/Doctor alerts |
+| 12 | Patient Portal UI | 6 | Dashboard, appointments |
+| 13 | Doctor Portal UI | 5 | Dashboard, patients |
+| 14 | Admin Portal UI | 3 | Admin features |
+| 15 | Theme & Language | 2 | Dark mode, Thai/English |
+| 16 | Doctor Data Services | 3 | Doctors list, specialties |
+| 17 | Multi-Portal Parallel | 3 | Simultaneous multi-user |
+| 18 | Full Workflow E2E | 2 | Appointment→Meeting→EMR |
+| 19 | Error Handling | 4 | Invalid credentials |
+| 20 | Phase 1 Requirements | 8 | Stakeholder verification |
+
+---
+
+## 🧪 Test Commands
+
+### Using Playwright Directly (Recommended)
+
+```powershell
+cd tests/e2e
+
+# Run LOCAL tests (92 tests)
+$env:TEST_ENV="local"
+npx playwright test specs/phase1-full-coverage.spec.ts --timeout=180000 --workers=4
+
+# Run CLOUD tests (92 tests)
+$env:TEST_ENV="cloud"
+npx playwright test specs/phase1-full-coverage.spec.ts --timeout=180000 --workers=4
+
+# Run specific category
+npx playwright test specs/phase1-full-coverage.spec.ts --grep "Video Meeting"
+npx playwright test specs/phase1-full-coverage.spec.ts --grep "Multi-Portal"
+
+# Run with visible browser
+npx playwright test specs/phase1-full-coverage.spec.ts --headed
+
+# View report
+npx playwright show-report
+```
+
+### Using run-tests.ps1
+
+```powershell
+# Test suites
+.\tests\e2e\run-tests.ps1 smoke    # Quick health check (~2 min)
+.\tests\e2e\run-tests.ps1 api      # API tests (~5 min)
+.\tests\e2e\run-tests.ps1 ui       # UI tests with browser (~10 min)
+.\tests\e2e\run-tests.ps1 full     # Full tests (~15 min)
+.\tests\e2e\run-tests.ps1 all      # Everything (~20 min)
+
+# Target environment
+.\tests\e2e\run-tests.ps1 full local   # Local Docker
+.\tests\e2e\run-tests.ps1 full cloud   # Cloud Run
+
+# Options
+.\tests\e2e\run-tests.ps1 full -Headed     # Visible browser
+.\tests\e2e\run-tests.ps1 full -Workers 4  # 4 parallel workers
+```
+
+---
+
+## 📋 Test Suites
+
+| Suite | Files | Duration |
+|-------|-------|----------|
+| `smoke` | smoke-test.spec.ts | ~2 min |
+| `api` | api-status.spec.ts, health-records-api.spec.ts | ~5 min |
+| `ui` | comprehensive-parallel-ui.spec.ts, ui-pages-workflow.spec.ts | ~10 min |
+| `full` | phase1-full-coverage.spec.ts | ~1.2 min |
+
+---
+
+## 🔧 Configuration
+
+### Import from test-config.ts
 
 ```typescript
 import { 
   PATIENT_PORTAL_URL, 
   DOCTOR_PORTAL_URL, 
   CREDENTIALS, 
-  getAuthToken 
+  getAuthToken,
+  logTestSuccess
 } from '../lib/test-config';
 ```
 
-This ensures:
-
-- Consistent URLs across all tests
-- Secure credential management via environment variables
-- Easy switching between local and cloud environments
-
-## Security
-
 ### Environment Variables
 
-Credentials can be overridden via environment variables for CI/CD:
-
 ```powershell
-# Set test credentials
-$env:TEST_PATIENT_PASSWORD = "YOUR_TEST_PASSWORD"
-$env:TEST_DOCTOR_PASSWORD = "YOUR_TEST_DOCTOR_PASSWORD"
-$env:TEST_ADMIN_PASSWORD = "YOUR_TEST_ADMIN_PASSWORD"
+# Test environment
+$env:TEST_ENV = "local"  # or "cloud"
 
-# Or use IZARA prefixed variables
-$env:IZARA_PATIENT_PASSWORD = "YOUR_TEST_PASSWORD"
-$env:IZARA_DOCTOR_PASSWORD = "YOUR_TEST_DOCTOR_PASSWORD"
-$env:IZARA_ADMIN_PASSWORD = "YOUR_TEST_ADMIN_PASSWORD"
+# Override credentials (optional)
+$env:TEST_PATIENT_PASSWORD = "your_password"
+$env:TEST_DOCTOR_PASSWORD = "your_password"
 ```
 
-**Security note:** Use CI secrets or local `.env` files for real values. Do not commit credentials to Markdown.
+---
+
+## 📦 Key Test Files
+
+| File | Description |
+|------|-------------|
+| `core-e2e.spec.ts` | ⭐ Consolidated core tests - run this first |
+| `smoke-test.spec.ts` | Quick portal accessibility |
+| `api-status.spec.ts` | API endpoint verification |
+| `comprehensive-parallel-ui.spec.ts` | Full UI workflow |
+| `appointment-workflow.spec.ts` | Appointment booking |
+| `meeting-workflow.spec.ts` | Video meeting workflow |
+
+---
+
+## 📝 Version: 2.0.0 (February 4, 2026)
+
+**Security note:** Use CI secrets or local `.env` files for real values. Do not commit credentials.
 
 ### Available Environment Variables
 
 | Variable | Description | Default |
-|----------|-------------|---------|
+| --- | --- | --- |
 | `TEST_ENV` | Test environment (local/cloud) | local |
 | `LOCAL_PATIENT_URL` | Local patient portal URL | <http://localhost:3005> |
 | `LOCAL_DOCTOR_URL` | Local doctor portal URL | <http://localhost:3010> |
@@ -234,7 +348,7 @@ Tests for appointment booking and management:
 
 ## Test Configuration
 
-### Environment Variables
+### Runtime Environment Variables
 
 | Variable | Default | Description |
 | --- | --- | --- |
@@ -355,5 +469,3 @@ This opens an interactive report showing:
 - Screenshots on failure
 - Video recordings (on retry)
 - Trace files for debugging
-
-

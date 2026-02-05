@@ -1,0 +1,893 @@
+// =============================================================================
+// IZARA TELEMEDICINE - UNIFIED DATABASE SCHEMA (v4.0)
+// =============================================================================
+// Based on: scripts/database/izara-database.sql v5.1.0
+// Updated: 2026-02-04
+// Author: Izara Development Team
+// 
+// Database: PostgreSQL 16 with pgvector extension
+// Deployment: Docker Container (local) / Cloud SQL (production)
+
+Project Izara_Telemedicine {
+  database_type: 'PostgreSQL'
+  Note: '''
+    Complete schema for Izara Telemedicine Platform
+    
+    ## Architecture
+    - PostgreSQL 16 with pgvector for AI embeddings
+    - JSONB for flexible clinical data
+    - Row-level security for HIPAA/PDPA compliance
+    
+    ## Test Credentials
+    - Patient: demo.test@gmail.com / P@ssw0rd
+    - Doctor: doctor.test@izara.com / IzaraDoctor@2024
+    - Admin: admin.test@izara.com / IzaraAdmin@2024
+  '''
+}
+
+// =============================================================================
+// ENUMS
+// =============================================================================
+
+Enum user_role {
+  doctor
+  admin
+  patient
+}
+
+Enum approval_status {
+  pending
+  approved
+  rejected
+}
+
+Enum appointment_status {
+  pending
+  confirmed
+  completed
+  cancelled
+}
+
+Enum meeting_status {
+  scheduled
+  waiting
+  active
+  in_progress
+  completed
+  cancelled
+}
+
+Enum speaker_role {
+  doctor
+  patient
+  guest
+}
+
+Enum urgency_level {
+  normal
+  urgent
+  emergency
+}
+
+Enum severity_level {
+  info
+  warning
+  critical
+}
+
+Enum decision_type {
+  accepted
+  rejected
+  modified
+}
+
+Enum ai_role {
+  user
+  assistant
+  system
+}
+
+// =============================================================================
+// TABLE GROUP: AUTHENTICATION & USERS
+// =============================================================================
+
+TableGroup auth_tables {
+  users
+  sessions
+  password_resets
+}
+
+Table users {
+  id varchar(50) [pk, note: 'Format: PATIENT-XXX, DOC-XXX, ADMIN-XXX']
+  email varchar(255) [not null, unique]
+  password_hash varchar(255) [not null, note: 'bcrypt hashed']
+  role user_role [not null]
+  name varchar(255) [not null]
+  name_thai varchar(255)
+  avatar_url text
+  phone varchar(50)
+  date_of_birth date
+  gender varchar(20)
+  national_id varchar(20)
+  
+  // Doctor-specific fields
+  doctor_id varchar(50) [note: 'Redundant but used for lookup']
+  medical_license_number varchar(50)
+  specialty varchar(100)
+  hospital_name varchar(255)
+  
+  // Patient-specific fields
+  patient_id varchar(50) [note: 'Redundant but used for lookup']
+  
+  // Status flags
+  is_active boolean [default: true]
+  is_verified boolean [default: false]
+  is_approved boolean [default: false]
+  approval_status approval_status [default: 'pending']
+  approved_at timestamptz
+  approved_by varchar(50) [ref: > users.id]
+  rejected_at timestamptz
+  rejected_by varchar(50) [ref: > users.id]
+  
+  // Admin capabilities
+  admin_privileges jsonb [note: 'Array of admin permission strings']
+  is_admin boolean [default: false]
+  
+  // User preferences
+  preferences jsonb [default: '{"language": "th", "theme": "light"}']
+  notification_settings jsonb
+  
+  // Timestamps
+  created_at timestamptz [default: `CURRENT_TIMESTAMP`]
+  updated_at timestamptz [default: `CURRENT_TIMESTAMP`]
+  last_login timestamptz
+  
+  // Security
+  login_attempts integer [default: 0]
+  locked_until timestamptz
+  
+  indexes {
+    email
+    role
+    approval_status
+  }
+  
+  Note: 'Unified user table for all roles (patient, doctor, admin)'
+}
+
+Table sessions {
+  id varchar(128) [pk]
+  user_id varchar(50) [ref: > users.id]
+  token text [not null]
+  ip_address varchar(45)
+  user_agent text
+  created_at timestamptz [default: `CURRENT_TIMESTAMP`]
+  expires_at timestamptz [not null]
+  logged_out_at timestamptz
+  
+  indexes {
+    user_id
+    expires_at
+  }
+  
+  Note: 'Server-side session storage for JWT tokens'
+}
+
+Table password_resets {
+  id varchar(50) [pk]
+  user_id varchar(50) [ref: > users.id]
+  token varchar(128) [unique, not null]
+  expires_at timestamptz [not null]
+  used boolean [default: false]
+  used_at timestamptz
+  created_at timestamptz [default: `CURRENT_TIMESTAMP`]
+}
+
+// =============================================================================
+// TABLE GROUP: PATIENT DATA
+// =============================================================================
+
+TableGroup patient_tables {
+  patient_profiles
+  phr
+  vital_signs
+  living_wills
+  living_will_versions
+  patient_consents
+}
+
+Table patient_profiles {
+  patient_id varchar(50) [pk, ref: - users.id]
+  demographics jsonb [not null, note: 'Name, DOB, address, etc.']
+  emergency_contact jsonb
+  insurance_info jsonb
+  created_at timestamptz [default: `CURRENT_TIMESTAMP`]
+  updated_at timestamptz [default: `CURRENT_TIMESTAMP`]
+}
+
+Table phr {
+  id varchar(50) [pk, note: 'Format: PHR-{patient_id}']
+  patient_id varchar(50) [ref: > users.id, unique]
+  demographics jsonb
+  vital_signs_history jsonb [default: '[]']
+  allergies jsonb [default: '[]', note: 'Drug/Food/Environment allergies']
+  chronic_conditions jsonb [default: '[]', note: 'ICD-10 coded conditions']
+  medications jsonb [default: '[]', note: 'Current medications']
+  vaccinations jsonb [default: '[]']
+  lifestyle jsonb [note: 'Smoking, alcohol, exercise']
+  family_history jsonb [default: '[]']
+  surgical_history jsonb [default: '[]']
+  social_history jsonb
+  latest_lab_results jsonb [default: '[]']
+  clinical_decision_support jsonb [note: 'AI-generated insights']
+  
+  // Quick-access vitals
+  blood_type varchar(10)
+  height_cm decimal(5,1)
+  weight_kg decimal(5,1)
+  bmi decimal(4,1)
+  
+  // Emergency contact (denormalized for quick access)
+  emergency_contact_name varchar(255)
+  emergency_contact_phone varchar(50)
+  emergency_contact_relation varchar(100)
+  
+  created_at timestamptz [default: `CURRENT_TIMESTAMP`]
+  updated_at timestamptz [default: `CURRENT_TIMESTAMP`]
+  last_synced_at timestamptz
+  
+  indexes {
+    patient_id [unique]
+  }
+  
+  Note: 'Personal Health Record - patient-owned health data'
+}
+
+Table vital_signs {
+  id uuid [pk, default: `uuid_generate_v4()`]
+  patient_id varchar(50) [ref: > users.id]
+  blood_pressure_systolic integer
+  blood_pressure_diastolic integer
+  heart_rate integer
+  temperature decimal(4,1)
+  respiratory_rate integer
+  oxygen_saturation integer
+  blood_glucose integer
+  blood_glucose_type varchar(20) [note: 'fasting/random/post-meal']
+  weight decimal(5,1)
+  height decimal(5,1)
+  bmi decimal(4,1)
+  measured_at timestamptz [default: `CURRENT_TIMESTAMP`]
+  source varchar(20) [default: 'patient_input', note: 'patient_input/device/clinical']
+  notes text
+  
+  indexes {
+    patient_id
+    measured_at
+  }
+}
+
+Table living_wills {
+  id varchar(50) [pk]
+  patient_id varchar(50) [ref: > users.id]
+  statement text [note: 'Free-text advance directive']
+  treatments jsonb [note: 'Treatment preferences object']
+  representatives jsonb [note: 'Healthcare proxy designations']
+  signature jsonb
+  pdpa_consent jsonb [note: 'Data processing consent']
+  status varchar(20) [default: 'active']
+  signed_at timestamptz
+  decisions jsonb [default: '{}']
+  witness_info jsonb [default: '{}']
+  signature_data text [note: 'Base64 signature image']
+  version integer [default: 1]
+  restored_from varchar(50)
+  created_at timestamptz [default: `CURRENT_TIMESTAMP`]
+  updated_at timestamptz [default: `CURRENT_TIMESTAMP`]
+  audit_log jsonb [default: '[]']
+  
+  Note: 'Advance Directives / Living Will documents'
+}
+
+Table living_will_versions {
+  id varchar(50) [pk]
+  patient_id varchar(50) [ref: > users.id]
+  version integer [not null]
+  data jsonb [not null]
+  note text
+  created_at timestamptz [default: `CURRENT_TIMESTAMP`]
+}
+
+Table patient_consents {
+  id varchar(50) [pk]
+  patient_id varchar(50) [ref: > users.id]
+  consent_type varchar(100) [not null, note: 'phr_sharing/treatment/research']
+  granted boolean [default: false]
+  doctor_id varchar(50)
+  doctor_name varchar(255)
+  data_types jsonb [default: '["all"]']
+  granted_at timestamptz
+  expires_at timestamptz
+  revoked_at timestamptz
+  revoke_reason text
+  status varchar(20) [default: 'pending']
+  created_at timestamptz [default: `CURRENT_TIMESTAMP`]
+  updated_at timestamptz [default: `CURRENT_TIMESTAMP`]
+  
+  indexes {
+    patient_id
+  }
+}
+
+// =============================================================================
+// TABLE GROUP: DOCTOR DATA
+// =============================================================================
+
+TableGroup doctor_tables {
+  doctor_profiles
+  doctors
+  doctor_schedules
+  doctor_reviews
+  consultants
+}
+
+Table doctor_profiles {
+  doctor_id varchar(50) [pk, ref: - users.id]
+  specialty varchar(100)
+  sub_specialties jsonb
+  qualifications text
+  experience_years integer
+  hospital_name varchar(255)
+  department varchar(100)
+  languages jsonb [default: '["Thai", "English"]']
+  rating decimal(2,1)
+  total_reviews integer [default: 0]
+  consultation_fee decimal(10,2)
+  is_available boolean [default: true]
+  schedule jsonb [note: 'Weekly availability pattern']
+  created_at timestamptz [default: `CURRENT_TIMESTAMP`]
+  updated_at timestamptz [default: `CURRENT_TIMESTAMP`]
+}
+
+Table doctors {
+  id varchar(50) [pk]
+  name varchar(255) [not null]
+  name_thai varchar(255)
+  specialty varchar(100)
+  specialty_thai varchar(100)
+  hospital varchar(255)
+  hospital_thai varchar(255)
+  avatar_url text
+  rating decimal(2,1) [default: 0]
+  review_count integer [default: 0]
+  experience_years integer
+  consultation_fee decimal(10,2)
+  is_available boolean [default: true]
+  created_at timestamptz [default: `CURRENT_TIMESTAMP`]
+  updated_at timestamptz [default: `CURRENT_TIMESTAMP`]
+  
+  indexes {
+    specialty
+    is_available
+  }
+  
+  Note: 'Simplified doctor listing for patient-facing features'
+}
+
+Table doctor_schedules {
+  id varchar(50) [pk]
+  doctor_id varchar(50) [ref: > users.id]
+  day_of_week integer [not null, note: '0=Sunday, 6=Saturday']
+  start_time time [not null]
+  end_time time [not null]
+  slot_duration_minutes integer [default: 30]
+  is_available boolean [default: true]
+  created_at timestamptz [default: `CURRENT_TIMESTAMP`]
+  updated_at timestamptz [default: `CURRENT_TIMESTAMP`]
+  
+  indexes {
+    doctor_id
+  }
+}
+
+Table doctor_reviews {
+  id varchar(50) [pk]
+  doctor_id varchar(50) [ref: > users.id]
+  patient_id varchar(50) [ref: > users.id]
+  appointment_id varchar(50)
+  rating integer [not null, note: '1-5 stars']
+  comment text
+  created_at timestamptz [default: `CURRENT_TIMESTAMP`]
+}
+
+Table consultants {
+  id varchar(50) [pk]
+  name varchar(255) [not null]
+  specialty varchar(100) [not null]
+  email varchar(255)
+  phone varchar(50)
+  hospital varchar(255)
+  languages jsonb
+  experience_years integer
+  bio text
+  is_available boolean [default: true]
+  rating decimal(2,1)
+  reviews jsonb [default: '[]']
+  admin_notes text
+  created_by varchar(50)
+  created_at timestamptz [default: `CURRENT_TIMESTAMP`]
+  updated_at timestamptz [default: `CURRENT_TIMESTAMP`]
+  
+  Note: 'External medical consultants / specialists'
+}
+
+// =============================================================================
+// TABLE GROUP: APPOINTMENTS & MEETINGS
+// =============================================================================
+
+TableGroup appointment_tables {
+  appointments
+  meeting_records
+  meeting_transcripts
+}
+
+Table appointments {
+  id varchar(50) [pk, note: 'Format: APT-YYYYMMDD-XXXX']
+  patient_id varchar(50) [ref: > users.id]
+  doctor_id varchar(50) [ref: > users.id]
+  
+  // Scheduling
+  requested_date date
+  requested_time time
+  confirmed_date date
+  confirmed_time time
+  appointment_type varchar(50) [default: 'Telehealth']
+  appointment_date date
+  appointment_time time
+  
+  // Clinical info
+  reason text
+  status appointment_status [default: 'pending']
+  urgency_level urgency_level [default: 'normal']
+  symptoms jsonb [default: '[]']
+  symptom_description text
+  ai_triage jsonb [note: 'AI urgency assessment']
+  notes text
+  
+  // Meeting links
+  meet_link text [note: 'Google Meet fallback']
+  meeting_link text
+  jitsi_room_name varchar(255) [note: 'Jitsi room identifier']
+  invitees jsonb [default: '[]']
+  
+  // Timestamps
+  created_at timestamptz [default: `CURRENT_TIMESTAMP`]
+  updated_at timestamptz [default: `CURRENT_TIMESTAMP`]
+  confirmed_at timestamptz
+  completed_at timestamptz
+  cancelled_at timestamptz
+  cancellation_reason text
+  
+  indexes {
+    patient_id
+    doctor_id
+    status
+    confirmed_date
+  }
+}
+
+Table meeting_records {
+  id uuid [pk, default: `uuid_generate_v4()`]
+  appointment_id varchar(50) [ref: > appointments.id]
+  doctor_id varchar(50) [ref: > users.id]
+  patient_id varchar(50) [ref: > users.id]
+  
+  // Room configuration
+  room_id varchar(100)
+  room_name varchar(255)
+  jitsi_domain varchar(255)
+  meeting_url text
+  doctor_url text
+  patient_url text
+  guest_url text
+  
+  status meeting_status [default: 'scheduled']
+  meeting_config jsonb
+  
+  // AI-generated content
+  recording_url text
+  transcript text
+  ai_summary text
+  ai_recommendations text
+  section_summaries jsonb [note: 'SOAP sections from AI']
+  
+  // Timing
+  duration_minutes integer
+  started_at timestamptz
+  ended_at timestamptz
+  created_at timestamptz [default: `CURRENT_TIMESTAMP`]
+}
+
+Table meeting_transcripts {
+  id uuid [pk, default: `uuid_generate_v4()`]
+  meeting_record_id uuid [ref: > meeting_records.id]
+  appointment_id varchar(50) [ref: > appointments.id]
+  speaker_id varchar(50) [ref: > users.id]
+  speaker_role speaker_role [not null]
+  speaker_name varchar(255)
+  content text [not null]
+  language varchar(10) [default: 'th']
+  confidence decimal(3,2)
+  start_time_seconds integer
+  end_time_seconds integer
+  is_final boolean [default: true]
+  created_at timestamptz [default: `CURRENT_TIMESTAMP`]
+  
+  indexes {
+    appointment_id
+  }
+  
+  Note: 'Speech-to-text segments from video consultations'
+}
+
+// =============================================================================
+// TABLE GROUP: CLINICAL RECORDS
+// =============================================================================
+
+TableGroup clinical_tables {
+  emr
+  prescriptions
+  lab_orders
+}
+
+Table emr {
+  id varchar(50) [pk, note: 'Format: EMR-YYYYMMDD-XXXX']
+  appointment_id varchar(50) [ref: > appointments.id]
+  patient_id varchar(50) [ref: > users.id]
+  doctor_id varchar(50) [ref: > users.id]
+  
+  // SOAP Notes (structured)
+  subjective jsonb [note: 'Chief complaint, HPI, ROS']
+  objective jsonb [note: 'Vitals, PE findings, labs']
+  assessment jsonb [note: 'Diagnoses with ICD-10']
+  plan jsonb [note: 'Treatment plan, referrals']
+  
+  // AI assistance
+  ai_summary text [note: 'AI-generated consultation summary']
+  ai_summary_approved boolean [default: false]
+  ai_summary_approved_at timestamptz
+  ai_transcript text
+  
+  // Patient instructions
+  patient_instructions text
+  patient_instructions_thai text
+  
+  // Signing
+  doctor_signature text
+  signed_at timestamptz
+  status varchar(20) [default: 'draft', note: 'draft/signed/amended']
+  
+  created_at timestamptz [default: `CURRENT_TIMESTAMP`]
+  updated_at timestamptz [default: `CURRENT_TIMESTAMP`]
+  
+  indexes {
+    appointment_id
+    patient_id
+  }
+  
+  Note: 'Electronic Medical Record using SOAP format'
+}
+
+Table prescriptions {
+  id varchar(50) [pk]
+  emr_id varchar(50) [ref: > emr.id]
+  appointment_id varchar(50) [ref: > appointments.id]
+  patient_id varchar(50) [ref: > users.id]
+  doctor_id varchar(50) [ref: > users.id]
+  medications jsonb [not null, note: 'Array of medication objects']
+  pharmacy_instructions text
+  cds_warnings jsonb [note: 'Drug interaction alerts']
+  cds_approved boolean [default: false]
+  status varchar(20) [default: 'pending']
+  dispensed_at timestamptz
+  created_at timestamptz [default: `CURRENT_TIMESTAMP`]
+  
+  Note: 'E-Prescriptions with CDS integration'
+}
+
+Table lab_orders {
+  id varchar(50) [pk]
+  emr_id varchar(50) [ref: > emr.id]
+  appointment_id varchar(50) [ref: > appointments.id]
+  patient_id varchar(50) [ref: > users.id]
+  doctor_id varchar(50) [ref: > users.id]
+  tests jsonb [not null, note: 'Ordered lab tests']
+  priority varchar(20) [default: 'routine']
+  lab_name varchar(255)
+  results jsonb
+  ai_analysis text [note: 'AI interpretation of results']
+  status varchar(20) [default: 'ordered']
+  ordered_at timestamptz [default: `CURRENT_TIMESTAMP`]
+  completed_at timestamptz
+}
+
+// =============================================================================
+// TABLE GROUP: CONTENT & REFERENCE
+// =============================================================================
+
+TableGroup content_tables {
+  medical_content
+  clinical_resources
+  icd10_codes
+  drugs
+}
+
+Table medical_content {
+  id varchar(50) [pk]
+  title_thai varchar(500) [not null]
+  title_english varchar(500)
+  content_thai text [not null]
+  content_english text
+  category varchar(100) [note: 'general-health, nutrition, etc.']
+  tags jsonb
+  author_id varchar(50) [ref: > users.id]
+  status varchar(20) [default: 'draft']
+  published_at timestamptz
+  view_count integer [default: 0]
+  image_url text
+  created_at timestamptz [default: `CURRENT_TIMESTAMP`]
+  updated_at timestamptz [default: `CURRENT_TIMESTAMP`]
+  
+  Note: 'Patient health education content'
+}
+
+Table clinical_resources {
+  id varchar(50) [pk]
+  title_thai varchar(500) [not null]
+  title_english varchar(500)
+  content_thai text [not null]
+  content_english text
+  category varchar(100)
+  specialty varchar(100)
+  guideline_year integer
+  source varchar(255) [note: 'WHO, Thai FDA, etc.']
+  tags jsonb
+  status varchar(20) [default: 'pending']
+  image_url text
+  author_id varchar(50) [ref: > users.id]
+  author_name varchar(255)
+  approved_by varchar(50) [ref: > users.id]
+  approved_at timestamptz
+  created_at timestamptz [default: `CURRENT_TIMESTAMP`]
+  updated_at timestamptz [default: `CURRENT_TIMESTAMP`]
+  
+  Note: 'Clinical guidelines and resources for doctors'
+}
+
+Table icd10_codes {
+  code varchar(10) [pk]
+  description_english varchar(500)
+  description_thai varchar(500)
+  category varchar(100)
+  chapter varchar(10)
+}
+
+Table drugs {
+  id varchar(50) [pk]
+  generic_name varchar(255) [not null]
+  brand_names jsonb
+  drug_class varchar(100)
+  dosage_forms jsonb
+  indications jsonb
+  contraindications jsonb
+  interactions jsonb [note: 'Drug-drug interactions']
+  side_effects jsonb
+  pregnancy_category varchar(5)
+  renal_adjustment jsonb
+  hepatic_adjustment jsonb
+  
+  Note: 'Drug database for prescribing and CDS'
+}
+
+// =============================================================================
+// TABLE GROUP: AI & NOTIFICATIONS
+// =============================================================================
+
+TableGroup ai_tables {
+  notifications
+  knowledge_base
+  ai_chat_history
+  ai_document_analysis
+  cds_logs
+  ai_validations
+}
+
+Table notifications {
+  id uuid [pk, default: `uuid_generate_v4()`]
+  user_id varchar(50) [ref: > users.id]
+  type varchar(50) [not null, note: 'appointment/message/alert']
+  title varchar(255) [not null]
+  title_thai varchar(255)
+  message text
+  message_thai text
+  data jsonb [note: 'Additional notification data']
+  read_at timestamptz
+  created_at timestamptz [default: `CURRENT_TIMESTAMP`]
+  
+  indexes {
+    user_id
+    read_at
+  }
+}
+
+Table knowledge_base {
+  id serial [pk]
+  title varchar(500) [not null]
+  content text [not null]
+  source varchar(255)
+  category varchar(100)
+  guideline_year varchar(10)
+  language varchar(10) [default: 'th']
+  embedding "vector(768)" [note: 'pgvector for RAG']
+  is_active boolean [default: true]
+  created_at timestamptz [default: `CURRENT_TIMESTAMP`]
+  updated_at timestamptz [default: `CURRENT_TIMESTAMP`]
+  
+  Note: 'Vector store for AI RAG queries'
+}
+
+Table ai_chat_history {
+  id serial [pk]
+  user_id varchar(50) [not null, ref: > users.id]
+  session_id varchar(100) [not null]
+  role ai_role [not null]
+  content text [not null]
+  context jsonb
+  created_at timestamptz [default: `CURRENT_TIMESTAMP`]
+  
+  indexes {
+    user_id
+    session_id
+  }
+  
+  Note: 'AI Health Assistant chat history'
+}
+
+Table ai_document_analysis {
+  id serial [pk]
+  patient_id varchar(50) [ref: > users.id]
+  doctor_id varchar(50) [ref: > users.id]
+  document_type varchar(50) [not null, note: 'lab_result/imaging/referral']
+  filename varchar(255)
+  file_path text
+  mime_type varchar(100)
+  summary text
+  key_findings jsonb [default: '[]']
+  abnormal_values jsonb [default: '[]']
+  raw_analysis jsonb
+  validation_status varchar(20) [default: 'pending']
+  validated_by varchar(50) [ref: > users.id]
+  validated_at timestamptz
+  created_at timestamptz [default: `CURRENT_TIMESTAMP`]
+  
+  Note: 'AI analysis of uploaded medical documents'
+}
+
+Table cds_logs {
+  id varchar(50) [pk]
+  patient_id varchar(50) [ref: > users.id]
+  doctor_id varchar(50) [not null, ref: > users.id]
+  appointment_id varchar(50) [ref: > appointments.id]
+  recommendation_type varchar(50) [not null, note: 'drug_interaction/alert/guideline']
+  severity severity_level [not null]
+  title text [not null]
+  title_thai text
+  description text
+  description_thai text
+  suggested_action text
+  guideline_source varchar(255)
+  guideline_year varchar(10)
+  doctor_decision decision_type
+  doctor_notes text
+  decided_at timestamptz
+  created_at timestamptz [default: `CURRENT_TIMESTAMP`]
+  
+  indexes {
+    patient_id
+    doctor_id
+  }
+  
+  Note: 'Clinical Decision Support audit log (Man-in-the-Loop)'
+}
+
+Table ai_validations {
+  id varchar(50) [pk]
+  type varchar(50) [not null]
+  patient_id varchar(50) [ref: > users.id]
+  doctor_id varchar(50) [not null, ref: > users.id]
+  decision varchar(20) [not null, note: 'approved/rejected']
+  notes text
+  content_snapshot text
+  validated_at timestamptz [default: `CURRENT_TIMESTAMP`]
+  
+  Note: 'Audit trail for AI output validation'
+}
+
+// =============================================================================
+// TABLE GROUP: AUDIT
+// =============================================================================
+
+TableGroup audit_tables {
+  audit_logs
+}
+
+Table audit_logs {
+  id varchar(50) [pk]
+  user_id varchar(50)
+  patient_id varchar(50)
+  action varchar(100) [not null]
+  entity_type varchar(50)
+  entity_id varchar(50)
+  details jsonb
+  old_value jsonb
+  new_value jsonb
+  ip_address varchar(45)
+  user_agent text
+  performed_by varchar(50)
+  created_at timestamptz [default: `CURRENT_TIMESTAMP`]
+  
+  indexes {
+    user_id
+    action
+    created_at
+  }
+  
+  Note: 'Complete audit trail for HIPAA/PDPA compliance'
+}
+
+// =============================================================================
+// RELATIONSHIPS DIAGRAM
+// =============================================================================
+
+// User relationships
+Ref: patient_profiles.patient_id - users.id [delete: cascade]
+Ref: doctor_profiles.doctor_id - users.id [delete: cascade]
+
+// PHR relationships
+Ref: phr.patient_id > users.id [delete: cascade]
+Ref: vital_signs.patient_id > users.id
+Ref: living_wills.patient_id > users.id
+Ref: patient_consents.patient_id > users.id
+
+// Appointment relationships
+Ref: appointments.patient_id > users.id
+Ref: appointments.doctor_id > users.id
+Ref: meeting_records.appointment_id > appointments.id
+Ref: meeting_transcripts.meeting_record_id > meeting_records.id
+
+// Clinical relationships
+Ref: emr.appointment_id > appointments.id
+Ref: emr.patient_id > users.id
+Ref: emr.doctor_id > users.id
+Ref: prescriptions.emr_id > emr.id
+Ref: lab_orders.emr_id > emr.id
+
+// =============================================================================
+// NOTES
+// =============================================================================
+// 
+// Generated from: scripts/database/izara-database.sql v5.1.0
+// 
+// Extensions required:
+//   - uuid-ossp (UUID generation)
+//   - pgcrypto (encryption functions)
+//   - vector (pgvector for AI embeddings)
+//
+// Key design decisions:
+//   1. Unified users table for all roles (reduces join complexity)
+//   2. JSONB for flexible clinical data (allergies, medications, etc.)
+//   3. pgvector for AI RAG capabilities in knowledge_base
+//   4. Comprehensive audit logging for PDPA compliance
+//   5. Man-in-the-Loop pattern for all AI recommendations
+//
+// =============================================================================

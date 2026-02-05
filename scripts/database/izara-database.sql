@@ -716,6 +716,7 @@ CREATE INDEX idx_sessions_expires_at ON sessions(expires_at);
 
 -- Patient data indexes
 CREATE INDEX idx_phr_patient_id ON phr(patient_id);
+CREATE UNIQUE INDEX idx_phr_patient_id_unique ON phr(patient_id);
 CREATE INDEX idx_vital_signs_patient_id ON vital_signs(patient_id);
 CREATE INDEX idx_vital_signs_measured_at ON vital_signs(measured_at);
 CREATE INDEX idx_patient_consents_patient_id ON patient_consents(patient_id);

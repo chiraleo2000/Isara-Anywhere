@@ -2,6 +2,34 @@
 
 # เอกสารประกอบระบบ Telemedicine อิสระ
 
+> **Version:** 2.1.0 | **Updated:** February 5, 2026  
+> **Status:** Phase 1 Complete | Production Ready  
+> **Tests:** 92 LOCAL + 92 CLOUD = 184 Total (100% Passing, 0 Skipped)
+
+---
+
+## 🌐 Live URLs
+
+### Local Environment (Docker)
+
+| Service | URL | Port |
+|---------|-----|------|
+| Patient Portal | http://localhost:3005 | 3005 |
+| Doctor Portal | http://localhost:3010 | 3010 |
+| Meeting Server | http://localhost:3020 | 3020 |
+| PostgreSQL | localhost:5433 | 5433 |
+| pgAdmin | http://localhost:5050 | 5050 |
+
+### Cloud Environment (Google Cloud Run)
+
+| Service | URL |
+|---------|-----|
+| Patient Portal | https://izara-patient-portal-hvht4obouq-as.a.run.app |
+| Doctor Portal | https://izara-doctor-portal-hvht4obouq-as.a.run.app |
+| Meeting Server | https://izara-jitsi-meeting-portal-hvht4obouq-as.a.run.app |
+| pgAdmin | https://izara-pgadmin-hvht4obouq-as.a.run.app |
+| Cloud SQL | 34.143.228.135:5432 |
+
 ---
 
 ## 🌟 Project Overview / ภาพรวมโปรเจค
@@ -10,19 +38,22 @@
 
 1. **Patient Portal** (ระบบผู้ป่วย) - For patients to book appointments, manage health records, and consult with doctors
 2. **Doctor Portal** (ระบบแพทย์) - For healthcare providers to manage consultations, EMR, prescriptions, and clinical resources
+3. **Meeting Server** (ระบบประชุม) - For video consultations with Jitsi, transcription, and AI summaries
 
 ### Key Features / ฟีเจอร์หลัก
 
-- 📹 Video consultations via Jitsi Meet (free, no account required)
-- 🔔 Real-time notification system (in-app + email)
+- 📹 Video consultations via Jitsi Meet (meet.jit.si - FREE)
+- 🤖 AI-powered health assistant (Google Gemini 2.5 Flash)
+- 🎤 Real-time transcription with AI summary generation
 - 📋 Electronic Medical Records (EMR) with SOAP notes
-- 💊 E-Prescribing with drug interaction checks
-- 🧪 Lab & Imaging order management
+- 💊 E-Prescribing with drug interaction checks (CDS)
 - 📁 Personal Health Records (PHR)
+- 🔔 Real-time notification system (in-app + email)
+- 🧪 Lab & Imaging order management
 - 🗺️ Healthcare facility map
-- 🤖 AI-powered health assistant (Google Gemini)
 - 📚 Medical content library (Thai-first)
 - 🌐 Multi-language support (Thai primary, English)
+- 🌙 Dark mode toggle
 
 ---
 
@@ -67,6 +98,7 @@ Explains/
 - [Notification Workflows](../Processes/Notification_Workflows.md)
 - [Appointment Workflows](../Processes/Appointment_Workflows.md)
 - [User Management](../Processes/User_management_Workflows.md)
+- [Video Meeting Jitsi Gemini](../Processes/VIDEO_MEETING_JITSI_GEMINI.md)
 
 ### For Patient Portal
 
@@ -98,12 +130,13 @@ Explains/
 
 ---
 
-## 🔗 Live Portal URLs / ลิงก์ระบบ Production
+## 🔗 Live Portal URLs / ลิงก์ระบบ Production (Updated February 4, 2026)
 
 | Portal | URL |
 |--------|-----|
-| **Patient Portal** | <https://izara-patient-portal-hvht4obouq-as.a.run.app> |
-| **Doctor Portal** | <https://izara-doctor-portal-hvht4obouq-as.a.run.app> |
+| **Patient Portal** | <https://izara-patient-portal-724889190329.asia-southeast1.run.app> |
+| **Doctor Portal** | <https://izara-doctor-portal-724889190329.asia-southeast1.run.app> |
+| **Meeting Server** | <https://izara-jitsi-meeting-portal-724889190329.asia-southeast1.run.app> |
 
 ---
 

@@ -33,68 +33,80 @@
     'lineColor': '#1976D2',
     'secondaryColor': '#E8F5E9',
     'tertiaryColor': '#FFF8E1',
-    'fontSize': '20px',
+    'fontSize': '22px',
     'fontFamily': 'Segoe UI, Arial'
   }
 }}%%
 
-flowchart LR
-    subgraph CENTER["📱 PATIENT PORTAL"]
-        HOME["🏠 Dashboard<br/>หน้าแรก"]
+flowchart TB
+    subgraph PP["📱 PATIENT PORTAL"]
+        direction TB
+        
+        subgraph AUTH["🔐 Authentication"]
+            A1["Login / Register"]
+            A2["Profile Management"]
+            A3["Password Reset"]
+        end
+        
+        subgraph APPT["📅 Appointments"]
+            B1["🔍 Symptom Input<br/>(AI Triage)"]
+            B2["👨‍⚕️ Doctor Selection"]
+            B3["📆 Slot Booking"]
+            B4["✅ Confirmation"]
+            B5["📹 Video Call<br/>(Jitsi)"]
+        end
+        
+        subgraph PHR["📋 Health Records"]
+            C1["📊 Personal Health Record"]
+            C2["💉 Vital Signs"]
+            C3["💊 Medications"]
+            C4["🩺 Allergies"]
+            C5["📜 Living Will"]
+        end
+        
+        subgraph AI_ASSIST["🤖 AI Assistant"]
+            D1["💬 Health Chat<br/>(Gemini AI)"]
+            D2["📄 Document Analysis"]
+            D3["❓ Symptom Checker"]
+        end
+        
+        subgraph CONTENT["📚 Content"]
+            E1["📖 Medical Articles"]
+            E2["🗺️ Hospital Map"]
+            E3["👨‍⚕️ Consultant Directory"]
+        end
+        
+        subgraph NOTIFY["🔔 Notifications"]
+            F1["📧 Appointment Reminders"]
+            F2["💊 Medication Alerts"]
+            F3["📋 Results Ready"]
+        end
     end
 
-    subgraph BOOKING["📅 APPOINTMENTS"]
-        B1["📝 Book Appointment<br/>นัดพบแพทย์"]
-        B2["📋 My Appointments<br/>รายการนัดหมาย"]
-        B3["📹 Video Call<br/>Jitsi Meet"]
-    end
+    A1 --> B1
+    B1 --> B2 --> B3 --> B4 --> B5
+    A1 --> C1
+    C1 --> C2
+    C1 --> C3
+    C1 --> C4
+    C1 --> C5
+    A1 --> D1
+    D1 --> D2
+    D1 --> D3
 
-    subgraph PHR["📋 HEALTH RECORDS"]
-        P1["📊 PHR Dashboard<br/>ข้อมูลสุขภาพ"]
-        P2["💊 Medications<br/>รายการยา"]
-        P3["⚠️ Allergies<br/>ประวัติแพ้ยา"]
-        P4["📈 Vitals<br/>สัญญาณชีพ"]
-    end
+    classDef authStyle fill:#FFEBEE,stroke:#E53935,stroke-width:2px,color:#B71C1C
+    classDef apptStyle fill:#E3F2FD,stroke:#1976D2,stroke-width:2px,color:#0D47A1
+    classDef phrStyle fill:#E8F5E9,stroke:#388E3C,stroke-width:2px,color:#1B5E20
+    classDef aiStyle fill:#FFF8E1,stroke:#FFA000,stroke-width:2px,color:#E65100
+    classDef contentStyle fill:#F3E5F5,stroke:#7B1FA2,stroke-width:2px,color:#4A148C
+    classDef notifyStyle fill:#E0F7FA,stroke:#0097A7,stroke-width:2px,color:#006064
 
-    subgraph HEALTH["🏥 HEALTH STUDIO"]
-        H1["🤖 AI Health Chat<br/>Gemini AI"]
-        H2["📚 Medical Library<br/>คลังความรู้"]
-        H3["📋 Treatment Results<br/>ผลการรักษา"]
-    end
-
-    subgraph EXTRA["🔧 UTILITIES"]
-        M1["🗺️ Healthcare Map<br/>แผนที่รพ."]
-        PR1["👤 Profile<br/>โปรไฟล์"]
-        PR2["📜 PDPA<br/>ความยินยอม"]
-        LW["📄 Living Will<br/>พินัยกรรมชีวิต"]
-    end
-
-    %% Connections from Dashboard
-    HOME --> BOOKING
-    HOME --> PHR
-    HOME --> HEALTH
-    HOME --> EXTRA
-
-    %% Internal flows
-    B1 --> B2
-    B2 --> B3
-    P1 --> P2
-    P1 --> P3
-    P1 --> P4
-
-    %% Styling
-    classDef centerStyle fill:#E3F2FD,stroke:#2196F3,stroke-width:3px,color:#0D47A1
-    classDef bookingStyle fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px,color:#1B5E20
-    classDef phrStyle fill:#FFF3E0,stroke:#FF9800,stroke-width:2px,color:#E65100
-    classDef healthStyle fill:#F3E5F5,stroke:#9C27B0,stroke-width:2px,color:#4A148C
-    classDef extraStyle fill:#ECEFF1,stroke:#607D8B,stroke-width:2px,color:#37474F
-
-    class HOME centerStyle
-    class B1,B2,B3 bookingStyle
-    class P1,P2,P3,P4 phrStyle
-    class H1,H2,H3 healthStyle
-    class M1,PR1,PR2,LW extraStyle
-
+    class A1,A2,A3 authStyle
+    class B1,B2,B3,B4,B5 apptStyle
+    class C1,C2,C3,C4,C5 phrStyle
+    class D1,D2,D3 aiStyle
+    class E1,E2,E3 contentStyle
+    class F1,F2,F3 notifyStyle
 
         </div>
     </div>

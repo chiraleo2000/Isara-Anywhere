@@ -9,6 +9,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { PatientRecord, User } from '../types';
+import { useSettings } from '../hooks/useSettings';
 import { patientDataService } from '../services/patientDataService';
 // PostgreSQL-backed API service - NO GCS!
 import { fetchAllAppointments } from '../services/apiDataService';
@@ -268,12 +269,29 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, doctor, onClick, onS
 // MAIN PATIENT MANAGEMENT COMPONENT
 // ============================================================================
 
+// i18n labels for Patient Management page
+const labels = {
+  pageTitle: { en: 'Patient Management', th: 'การจัดการผู้ป่วย' },
+  searchPatients: { en: 'Search patients...', th: 'ค้นหาผู้ป่วย...' },
+  filters: { en: 'Filters', th: 'ตัวกรอง' },
+  allPatients: { en: 'All Patients', th: 'ผู้ป่วยทั้งหมด' },
+  activePatients: { en: 'Active', th: 'กำลังรักษา' },
+  newPatients: { en: 'New', th: 'ใหม่' },
+  highRisk: { en: 'High Risk', th: 'ความเสี่ยงสูง' },
+  viewProfile: { en: 'View Profile', th: 'ดูโปรไฟล์' },
+  createEMR: { en: 'Create EMR', th: 'สร้าง EMR' },
+  createPrescription: { en: 'Create Prescription', th: 'สร้างใบสั่งยา' },
+  consentStatus: { en: 'Consent Status', th: 'สถานะการยินยอม' },
+};
+
 export const PatientManagement: React.FC<PatientManagementProps> = ({
   doctor,
   onSelectPatient,
   onCreateEMR,
   onCreatePrescription,
 }) => {
+  const { theme, language, t } = useSettings();
+  const isDark = theme === 'dark';
   useResponsive(); // Hook for responsive behavior
   const [searchParams] = useSearchParams();
 
@@ -428,8 +446,8 @@ export const PatientManagement: React.FC<PatientManagementProps> = ({
     <ResponsiveContainer className="py-6">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Patient Management</h1>
-        <p className="text-gray-600 mt-1">Search and manage your patients</p>
+        <h1 className={`text-2xl sm:text-3xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Patient Management</h1>
+        <p className={`mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Search and manage your patients</p>
       </div>
 
       {/* Search and Filters */}
@@ -442,7 +460,7 @@ export const PatientManagement: React.FC<PatientManagementProps> = ({
               placeholder="Search by name, ID, email, or phone..."
               value={filters.query}
               onChange={(e) => setFilters({ ...filters, query: e.target.value })}
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+              className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent ${isDark ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'border-gray-300'}`}
             />
             <svg className="w-5 h-5 text-gray-400 absolute left-3 top-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -461,11 +479,11 @@ export const PatientManagement: React.FC<PatientManagementProps> = ({
           {showFilters && (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-4 border-t">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
+                <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Gender</label>
                 <select
                   value={filters.gender}
                   onChange={(e) => setFilters({ ...filters, gender: e.target.value as any })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'border-gray-300'}`}
                 >
                   <option value="">All</option>
                   <option value="male">Male</option>
@@ -475,11 +493,11 @@ export const PatientManagement: React.FC<PatientManagementProps> = ({
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Risk Level</label>
+                <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Risk Level</label>
                 <select
                   value={filters.riskLevel}
                   onChange={(e) => setFilters({ ...filters, riskLevel: e.target.value as any })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'border-gray-300'}`}
                 >
                   <option value="">All</option>
                   <option value="low">Low</option>
@@ -550,7 +568,7 @@ export const PatientManagement: React.FC<PatientManagementProps> = ({
 
       {/* Results Count */}
       <div className="mb-4 flex items-center justify-between">
-        <p className="text-gray-600">
+        <p className={isDark ? 'text-gray-400' : 'text-gray-600'}>
           <span className="font-semibold">{filteredPatients.length}</span> patients found
         </p>
       </div>

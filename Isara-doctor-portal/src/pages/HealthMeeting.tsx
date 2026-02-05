@@ -16,6 +16,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { User, QueuePatient } from '../types';
+import { useSettings } from '../hooks/useSettings';
 import { doctorDataService } from '../services/doctorDataService';
 // PostgreSQL-backed API service - NO GCS!
 import {
@@ -119,7 +120,25 @@ type TabType = 'queue' | 'meetings' | 'all-appointments';
 // MAIN COMPONENT
 // ============================================================================
 
+// i18n labels for Health Meeting page
+const labels = {
+  pageTitle: { en: 'Health Meeting', th: 'การประชุมสุขภาพ' },
+  patientQueue: { en: 'Patient Queue', th: 'คิวผู้ป่วย' },
+  scheduledMeetings: { en: 'Scheduled Meetings', th: 'การประชุมที่กำหนด' },
+  allAppointments: { en: 'All Appointments', th: 'การนัดหมายทั้งหมด' },
+  search: { en: 'Search patients...', th: 'ค้นหาผู้ป่วย...' },
+  refresh: { en: 'Refresh', th: 'รีเฟรช' },
+  confirm: { en: 'Confirm', th: 'ยืนยัน' },
+  decline: { en: 'Decline', th: 'ปฏิเสธ' },
+  pending: { en: 'Pending', th: 'รอดำเนินการ' },
+  confirmed: { en: 'Confirmed', th: 'ยืนยันแล้ว' },
+  joinMeeting: { en: 'Join Meeting', th: 'เข้าร่วมประชุม' },
+};
+
 const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
+  const { theme, language, t } = useSettings();
+  const isDark = theme === 'dark';
+
   const [meetings, setMeetings] = useState<ScheduledMeeting[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState<TabType>('queue');
@@ -1175,11 +1194,11 @@ Izara Telehealth Team
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+          <h1 className={`text-2xl font-bold flex items-center gap-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
             <VideoCameraIcon className="w-8 h-8 text-emerald-600" />
             Appointments & Meetings
           </h1>
-          <p className="text-gray-600 mt-1">
+          <p className={`mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
             Manage patient queue and meetings with patients, doctors, and consultants
           </p>
         </div>
@@ -1196,25 +1215,25 @@ Izara Telehealth Team
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white rounded-xl shadow-lg p-4 border-2 border-amber-500">
+        <div className={`rounded-xl shadow-lg p-4 border-2 border-amber-500 ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
           <div className="text-3xl font-bold text-amber-600">
             {pendingQueue.length}
           </div>
-          <div className="text-sm text-gray-600">Awaiting Confirmation</div>
+          <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Awaiting Confirmation</div>
         </div>
         {/* Removed Scheduled Meetings card */}
-        <div className="bg-white rounded-xl shadow-lg p-4">
+        <div className={`rounded-xl shadow-lg p-4 ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
           <div className="text-3xl font-bold text-green-600">
             {meetings.filter(m => m.status === 'completed').length}
           </div>
-          <div className="text-sm text-gray-600">Completed</div>
+          <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Completed</div>
         </div>
         {isAdmin && (
-          <div className="bg-white rounded-xl shadow-lg p-4">
+          <div className={`rounded-xl shadow-lg p-4 ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
             <div className="text-3xl font-bold text-blue-600">
               {allAppointments.length}
             </div>
-            <div className="text-sm text-gray-600">Total Appointments</div>
+            <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Total Appointments</div>
           </div>
         )}
       </div>
@@ -1245,7 +1264,7 @@ Izara Telehealth Team
           onClick={() => setActiveTab('queue')}
           className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === 'queue'
               ? 'bg-emerald-600 text-white'
-              : 'bg-white text-gray-700 hover:bg-gray-50'
+              : isDark ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-white text-gray-700 hover:bg-gray-50'
             }`}
         >
           🏥 Patient Queue ({pendingQueue.length})
@@ -1258,7 +1277,7 @@ Izara Telehealth Team
             onClick={() => setActiveTab('all-appointments')}
             className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === 'all-appointments'
                 ? 'bg-indigo-600 text-white'
-                : 'bg-white text-gray-700 hover:bg-gray-50 border border-indigo-200'
+                : isDark ? 'bg-gray-700 text-gray-300 hover:bg-gray-600 border border-indigo-400' : 'bg-white text-gray-700 hover:bg-gray-50 border border-indigo-200'
               }`}
           >
             📋 All Appointments ({allAppointments.length})
@@ -1275,11 +1294,11 @@ Izara Telehealth Team
 
       {/* Patient Queue Tab - Shows ALL pending appointments awaiting confirmation */}
       {!loading && activeTab === 'queue' && (
-        <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
+        <div className={`rounded-xl shadow-lg p-6 mb-6 ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="text-xl font-bold text-gray-800">Patient Queue - Appointments Awaiting Confirmation</h2>
-              <p className="text-sm text-gray-600 mt-1">
+              <h2 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>Patient Queue - Appointments Awaiting Confirmation</h2>
+              <p className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                 Review patient requests and confirm appointment date/time
               </p>
             </div>

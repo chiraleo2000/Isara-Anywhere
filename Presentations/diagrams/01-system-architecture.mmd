@@ -7,7 +7,7 @@
     'lineColor': '#2E7D32',
     'secondaryColor': '#E3F2FD',
     'tertiaryColor': '#FFF3E0',
-    'fontSize': '28px',
+    'fontSize': '24px',
     'fontFamily': 'Segoe UI, Arial'
   }
 }}%%
@@ -17,58 +17,86 @@ flowchart TB
         direction LR
         P["🧑‍🤝‍🧑 Patients<br/>ผู้ป่วย"]
         D["👨‍⚕️ Doctors<br/>แพทย์"]
+        A["🔧 Admins<br/>ผู้ดูแล"]
     end
 
-    subgraph CONTAINERS["🐳 DOCKER CONTAINERS"]
-        direction LR
-        subgraph PP_CONT["🏥 Patient Portal"]
-            PP["📱 Frontend + Backend<br/>React + Node.js<br/>Port: 3005"]
+    subgraph CONTAINERS["🐳 DOCKER CONTAINERS (Local/Cloud Run)"]
+        direction TB
+        subgraph PP_CONT["🏥 Patient Portal (Port 3005)"]
+            PP_FE["📱 React Frontend<br/>TypeScript + Vite"]
+            PP_BE["⚙️ Express Backend<br/>Node.js 22"]
         end
-        subgraph DP_CONT["👨‍⚕️ Doctor Portal"]
-            DP["💻 Frontend + Backend<br/>React + Node.js<br/>Port: 3010"]
+        subgraph DP_CONT["👨‍⚕️ Doctor Portal (Port 3010)"]
+            DP_FE["💻 React Frontend<br/>TypeScript + Vite"]
+            DP_BE["⚙️ Express Backend<br/>Node.js 22"]
+        end
+        subgraph MS_CONT["📹 Meeting Server (Port 3020)"]
+            MS["🎥 Jitsi + Node.js<br/>Video & Transcription"]
         end
     end
 
     subgraph DATA_LAYER["💾 DATA LAYER"]
-        POSTGRES[("🐘 PostgreSQL<br/>Primary Database<br/>Port: 5432/5433")]
-        GCS["📦 GCS - 5 BUCKETS<br/>File Storage (Docs, Images)"]
-    end
-
-    subgraph SERVICES["🔗 EXTERNAL SERVICES"]
         direction LR
-        JITSI["📹 Jitsi Meeting Server<br/>Port: 3020"]
-        GEMINI["🤖 Gemini AI<br/>Health Assistant"]
-        MAPS["🗺️ Google Maps API<br/>Healthcare Locations"]
+        POSTGRES[("🐘 PostgreSQL 16<br/>+ pgvector<br/>Port: 5433")]
+        GCS["📦 Google Cloud Storage<br/>5 Buckets<br/>(Docs, Images, Recordings)"]
     end
 
-    %% User to Portal connections
-    P --> PP
-    D --> DP
+    subgraph AI_SERVICES["🤖 AI SERVICES"]
+        direction LR
+        GEMINI["🧠 Gemini 2.5 Flash<br/>Health Assistant<br/>Transcript Summary"]
+        STT["🎤 Speech-to-Text<br/>Real-time Transcription"]
+    end
 
-    %% Portal to Database
-    PP --> POSTGRES
-    DP --> POSTGRES
+    subgraph EXTERNAL["🔗 EXTERNAL SERVICES"]
+        direction LR
+        MAPS["🗺️ Google Maps<br/>Healthcare Locations"]
+        EMAIL["📧 Email Service<br/>Notifications"]
+    end
 
-    %% Portal to Storage
-    PP --> GCS
-    DP --> GCS
+    %% User connections
+    P --> PP_FE
+    D --> DP_FE
+    A --> DP_FE
 
-    %% Portal to Services
-    PP -.-> JITSI
-    PP -.-> GEMINI
-    PP -.-> MAPS
-    DP -.-> JITSI
-    DP -.-> GEMINI
+    %% Frontend to Backend
+    PP_FE --> PP_BE
+    DP_FE --> DP_BE
 
-    %% Styling
+    %% Backend to Database
+    PP_BE --> POSTGRES
+    DP_BE --> POSTGRES
+    MS --> POSTGRES
+
+    %% Backend to Storage
+    PP_BE --> GCS
+    DP_BE --> GCS
+    MS --> GCS
+
+    %% Backend to AI
+    PP_BE -.-> GEMINI
+    DP_BE -.-> GEMINI
+    MS -.-> STT
+    MS -.-> GEMINI
+
+    %% Backend to External
+    PP_BE -.-> MAPS
+    PP_BE -.-> EMAIL
+    DP_BE -.-> EMAIL
+
+    %% Portal to Meeting Server
+    PP_BE -.-> MS
+    DP_BE -.-> MS
+
     classDef userStyle fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px,color:#1B5E20
     classDef containerStyle fill:#E3F2FD,stroke:#2196F3,stroke-width:2px,color:#0D47A1
     classDef dbStyle fill:#F3E5F5,stroke:#9C27B0,stroke-width:2px,color:#4A148C
     classDef storageStyle fill:#ECEFF1,stroke:#607D8B,stroke-width:2px,color:#37474F
+    classDef aiStyle fill:#FFF8E1,stroke:#FFC107,stroke-width:2px,color:#F57F17
     classDef serviceStyle fill:#E0F7FA,stroke:#00BCD4,stroke-width:2px,color:#006064
 
-    class P,D userStyle
-    class PP,DP containerStyle
+    class P,D,A userStyle
+    class PP_FE,PP_BE,DP_FE,DP_BE,MS containerStyle
     class POSTGRES dbStyle
     class GCS storageStyle
-    class JITSI,GEMINI,MAPS serviceStyle
+    class GEMINI,STT aiStyle
+    class MAPS,EMAIL serviceStyle
