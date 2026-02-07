@@ -38,7 +38,7 @@ steps:
       - '--min-instances=0'
       - '--max-instances=5'
       - '--timeout=600'
-      - '--set-env-vars=NODE_ENV=production'
+      - '--set-env-vars=NODE_ENV=production,JWT_SECRET=izara-telemedicine-secret-key-2025'
       - '--set-secrets=GEMINI_API_KEY=gemini-api-key:latest'
       - '--cpu-boost'
 

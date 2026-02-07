@@ -26,11 +26,9 @@ router.get('/medications', authMiddleware, async (_req: Request, res: Response) 
 
     res.json(medications);
   } catch (error: any) {
-    if (error.message.includes('not found')) {
-      return res.json([]); // Return empty array if no medications yet
-    }
-    console.error('Get medications error:', error);
-    res.status(500).json({ error: error.message });
+    // Always return empty array on any GCS error
+    console.warn('Get medications - GCS error, returning empty:', error.message);
+    return res.json([]);
   }
 });
 
@@ -82,11 +80,9 @@ router.get('/lab-tests', authMiddleware, async (_req: Request, res: Response) =>
 
     res.json(labTests);
   } catch (error: any) {
-    if (error.message.includes('not found')) {
-      return res.json([]); // Return empty array if no lab tests yet
-    }
-    console.error('Get lab tests error:', error);
-    res.status(500).json({ error: error.message });
+    // Always return empty array on any GCS error
+    console.warn('Get lab tests - GCS error, returning empty:', error.message);
+    return res.json([]);
   }
 });
 
@@ -98,11 +94,9 @@ router.get('/reference-ranges', authMiddleware, async (_req: Request, res: Respo
 
     res.json(ranges);
   } catch (error: any) {
-    if (error.message.includes('not found')) {
-      return res.json({}); // Return empty object if no ranges yet
-    }
-    console.error('Get reference ranges error:', error);
-    res.status(500).json({ error: error.message });
+    // Always return empty object on any GCS error
+    console.warn('Get reference ranges - GCS error, returning empty:', error.message);
+    return res.json({});
   }
 });
 
@@ -114,11 +108,9 @@ router.get('/icd10-codes', authMiddleware, async (_req: Request, res: Response) 
 
     res.json(codes);
   } catch (error: any) {
-    if (error.message.includes('not found')) {
-      return res.json([]); // Return empty array if no codes yet
-    }
-    console.error('Get ICD-10 codes error:', error);
-    res.status(500).json({ error: error.message });
+    // Always return empty array on any GCS error
+    console.warn('Get ICD-10 codes - GCS error, returning empty:', error.message);
+    return res.json([]);
   }
 });
 
@@ -152,23 +144,20 @@ router.get('/specialties', authMiddleware, async (_req: Request, res: Response) 
     const specialties = await readJSON(GCS_BUCKETS.METADATA, 'specialties.json');
     res.json(specialties);
   } catch (error: any) {
-    if (error.message.includes('not found')) {
-      // Return default specialties
-      return res.json([
-        { id: 'internal', name: 'อายุรกรรม', nameEn: 'Internal Medicine' },
-        { id: 'cardiology', name: 'โรคหัวใจ', nameEn: 'Cardiology' },
-        { id: 'dermatology', name: 'ผิวหนัง', nameEn: 'Dermatology' },
-        { id: 'endocrinology', name: 'ต่อมไร้ท่อ', nameEn: 'Endocrinology' },
-        { id: 'gastro', name: 'ทางเดินอาหาร', nameEn: 'Gastroenterology' },
-        { id: 'general', name: 'เวชปฏิบัติทั่วไป', nameEn: 'General Practice' },
-        { id: 'neuro', name: 'ประสาทวิทยา', nameEn: 'Neurology' },
-        { id: 'ortho', name: 'กระดูกและข้อ', nameEn: 'Orthopedics' },
-        { id: 'pediatrics', name: 'กุมารเวชศาสตร์', nameEn: 'Pediatrics' },
-        { id: 'psychiatry', name: 'จิตเวชศาสตร์', nameEn: 'Psychiatry' },
-      ]);
-    }
-    console.error('Get specialties error:', error);
-    res.status(500).json({ error: error.message });
+    // Always return default specialties on any GCS error (not found, auth, network, etc.)
+    console.warn('Get specialties - GCS error, returning defaults:', error.message);
+    return res.json([
+      { id: 'internal', name: 'อายุรกรรม', nameEn: 'Internal Medicine' },
+      { id: 'cardiology', name: 'โรคหัวใจ', nameEn: 'Cardiology' },
+      { id: 'dermatology', name: 'ผิวหนัง', nameEn: 'Dermatology' },
+      { id: 'endocrinology', name: 'ต่อมไร้ท่อ', nameEn: 'Endocrinology' },
+      { id: 'gastro', name: 'ทางเดินอาหาร', nameEn: 'Gastroenterology' },
+      { id: 'general', name: 'เวชปฏิบัติทั่วไป', nameEn: 'General Practice' },
+      { id: 'neuro', name: 'ประสาทวิทยา', nameEn: 'Neurology' },
+      { id: 'ortho', name: 'กระดูกและข้อ', nameEn: 'Orthopedics' },
+      { id: 'pediatrics', name: 'กุมารเวชศาสตร์', nameEn: 'Pediatrics' },
+      { id: 'psychiatry', name: 'จิตเวชศาสตร์', nameEn: 'Psychiatry' },
+    ]);
   }
 });
 

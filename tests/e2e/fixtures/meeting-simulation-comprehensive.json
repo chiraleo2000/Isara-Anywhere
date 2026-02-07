@@ -1,0 +1,310 @@
+{
+  "meetingId": "E2E-COMPREHENSIVE-MEETING",
+  "appointmentId": "E2E-APT-001",
+  "doctorId": "DOC-TEST-001",
+  "patientId": "PATIENT-DEMO",
+  "startTime": "2026-02-07T10:00:00Z",
+  "endTime": "2026-02-07T10:30:00Z",
+  "durationMinutes": 30,
+  "participants": [
+    {
+      "userId": "DOC-TEST-001",
+      "role": "doctor",
+      "name": "Dr. Test",
+      "joinedAt": "2026-02-07T10:00:00Z",
+      "leftAt": "2026-02-07T10:30:00Z",
+      "isModerator": true
+    },
+    {
+      "userId": "PATIENT-DEMO",
+      "role": "patient",
+      "name": "Demo Test Patient",
+      "joinedAt": "2026-02-07T10:02:00Z",
+      "leftAt": "2026-02-07T10:30:00Z",
+      "isModerator": false
+    }
+  ],
+  "transcripts": [
+    {
+      "id": "T-001",
+      "speakerId": "DOC-TEST-001",
+      "speakerRole": "doctor",
+      "content": "สวัสดีครับคุณคนไข้ วันนี้มีอาการอย่างไรบ้างครับ",
+      "language": "th",
+      "startTimeSeconds": 0,
+      "endTimeSeconds": 5,
+      "confidence": 0.95
+    },
+    {
+      "id": "T-002",
+      "speakerId": "PATIENT-DEMO",
+      "speakerRole": "patient",
+      "content": "สวัสดีค่ะหมอ หนูปวดหัวมากค่ะ มีไข้สูง 39 องศา มา 2 วันแล้ว คลื่นไส้อาเจียนด้วย",
+      "language": "th",
+      "startTimeSeconds": 6,
+      "endTimeSeconds": 15,
+      "confidence": 0.92
+    },
+    {
+      "id": "T-003",
+      "speakerId": "DOC-TEST-001",
+      "speakerRole": "doctor",
+      "content": "เข้าใจครับ ขอตรวจร่างกายนะครับ คุณคนไข้ช่วยเปิดกล้องให้หมอดูหน่อยครับ",
+      "language": "th",
+      "startTimeSeconds": 16,
+      "endTimeSeconds": 23,
+      "confidence": 0.96
+    },
+    {
+      "id": "T-004",
+      "speakerId": "PATIENT-DEMO",
+      "speakerRole": "patient",
+      "content": "ค่ะ",
+      "language": "th",
+      "startTimeSeconds": 24,
+      "endTimeSeconds": 25,
+      "confidence": 0.99
+    },
+    {
+      "id": "T-005",
+      "speakerId": "DOC-TEST-001",
+      "speakerRole": "doctor",
+      "content": "เห็นว่าหน้าแดง ตาแดง ดูเหมือนจะมีไข้สูงจริงครับ มีน้ำมูกไหมครับ",
+      "language": "th",
+      "startTimeSeconds": 26,
+      "endTimeSeconds": 35,
+      "confidence": 0.94
+    },
+    {
+      "id": "T-006",
+      "speakerId": "PATIENT-DEMO",
+      "speakerRole": "patient",
+      "content": "มีค่ะ มีน้ำมูกเยอะ เจ็บคอด้วย กลืนลำบาก",
+      "language": "th",
+      "startTimeSeconds": 36,
+      "endTimeSeconds": 42,
+      "confidence": 0.93
+    },
+    {
+      "id": "T-007",
+      "speakerId": "DOC-TEST-001",
+      "speakerRole": "doctor",
+      "content": "เข้าใจแล้วครับ จากอาการที่เล่ามา น่าจะเป็นไข้หวัดใหญ่ Influenza ครับ หมอจะสั่งยาให้นะครับ",
+      "language": "th",
+      "startTimeSeconds": 43,
+      "endTimeSeconds": 55,
+      "confidence": 0.97
+    },
+    {
+      "id": "T-008",
+      "speakerId": "DOC-TEST-001",
+      "speakerRole": "doctor",
+      "content": "ยาพาราเซตามอล 500mg กินวันละ 3 ครั้ง หลังอาหาร สำหรับลดไข้และปวดหัว",
+      "language": "th",
+      "startTimeSeconds": 56,
+      "endTimeSeconds": 66,
+      "confidence": 0.98
+    },
+    {
+      "id": "T-009",
+      "speakerId": "DOC-TEST-001",
+      "speakerRole": "doctor",
+      "content": "ยาแก้ไอ ดีกซ์โตรเมทอร์แฟน วันละ 3 ครั้ง และยาแก้คัดจมูก",
+      "language": "th",
+      "startTimeSeconds": 67,
+      "endTimeSeconds": 75,
+      "confidence": 0.96
+    },
+    {
+      "id": "T-010",
+      "speakerId": "PATIENT-DEMO",
+      "speakerRole": "patient",
+      "content": "ค่ะ กินยาอะไรมั้ยอีกคะ",
+      "language": "th",
+      "startTimeSeconds": 76,
+      "endTimeSeconds": 80,
+      "confidence": 0.91
+    },
+    {
+      "id": "T-011",
+      "speakerId": "DOC-TEST-001",
+      "speakerRole": "doctor",
+      "content": "หมอจะสั่งยาต้านไวรัส Oseltamivir (Tamiflu) ด้วยครับ กินวันละ 2 ครั้ง นาน 5 วัน",
+      "language": "th",
+      "startTimeSeconds": 81,
+      "endTimeSeconds": 92,
+      "confidence": 0.97
+    },
+    {
+      "id": "T-012",
+      "speakerId": "PATIENT-DEMO",
+      "speakerRole": "patient",
+      "content": "เข้าใจค่ะ ต้องกินยานานเท่าไหร่คะ",
+      "language": "th",
+      "startTimeSeconds": 93,
+      "endTimeSeconds": 98,
+      "confidence": 0.95
+    },
+    {
+      "id": "T-013",
+      "speakerId": "DOC-TEST-001",
+      "speakerRole": "doctor",
+      "content": "พาราเซตามอล กินได้ตามอาการ ถ้าปวดหัวหรือมีไข้ แต่ห่างอย่างน้อย 4-6 ชั่วโมง ยาอื่นกินครบ 5-7 วันตามที่สั่ง",
+      "language": "th",
+      "startTimeSeconds": 99,
+      "endTimeSeconds": 115,
+      "confidence": 0.96
+    },
+    {
+      "id": "T-014",
+      "speakerId": "PATIENT-DEMO",
+      "speakerRole": "patient",
+      "content": "ค่ะ แล้วต้องกลับมาพบหมออีกมั้ยคะ",
+      "language": "th",
+      "startTimeSeconds": 116,
+      "endTimeSeconds": 121,
+      "confidence": 0.94
+    },
+    {
+      "id": "T-015",
+      "speakerId": "DOC-TEST-001",
+      "speakerRole": "doctor",
+      "content": "ถ้ากินยาแล้ว 3-5 วัน อาการไม่ดีขึ้น หรือมีไข้สูงต่อเนื่อง ให้กลับมาพบหมอนะครับ",
+      "language": "th",
+      "startTimeSeconds": 122,
+      "endTimeSeconds": 135,
+      "confidence": 0.97
+    },
+    {
+      "id": "T-016",
+      "speakerId": "PATIENT-DEMO",
+      "speakerRole": "patient",
+      "content": "ค่ะ ขอบคุณค่ะหมอ",
+      "language": "th",
+      "startTimeSeconds": 136,
+      "endTimeSeconds": 140,
+      "confidence": 0.98
+    },
+    {
+      "id": "T-017",
+      "speakerId": "DOC-TEST-001",
+      "speakerRole": "doctor",
+      "content": "หายไวๆ นะครับ พักผ่อนให้เพียงพอ ดื่มน้ำเยอะๆ",
+      "language": "th",
+      "startTimeSeconds": 141,
+      "endTimeSeconds": 148,
+      "confidence": 0.99
+    }
+  ],
+  "chatMessages": [
+    {
+      "id": "MSG-001",
+      "senderId": "PATIENT-DEMO",
+      "senderName": "Demo Test Patient",
+      "content": "หมอครับ หนูแพ้ยาเพนนิซิลลินค่ะ",
+      "timestamp": "2026-02-07T10:05:30Z"
+    },
+    {
+      "id": "MSG-002",
+      "senderId": "DOC-TEST-001",
+      "senderName": "Dr. Test",
+      "content": "รับทราบครับ หมอจะไม่สั่งยาในกลุ่มเพนนิซิลลิน",
+      "timestamp": "2026-02-07T10:05:45Z"
+    }
+  ],
+  "aiSummary": {
+    "chiefComplaint": "ปวดหัวมาก มีไข้สูง 39 องศา 2 วัน คลื่นไส้อาเจียน น้ำมูกเยอะ เจ็บคอ กลืนลำบาก",
+    "physicalExamination": "หน้าแดง ตาแดง มีน้ำมูก",
+    "assessment": "Influenza (ไข้หวัดใหญ่) - ICD-10: J11.1",
+    "plan": {
+      "medications": [
+        {
+          "name": "Paracetamol",
+          "dosage": "500mg",
+          "frequency": "3 times daily after meals",
+          "duration": "as needed",
+          "indication": "ลดไข้และปวดหัว"
+        },
+        {
+          "name": "Dextromethorphan",
+          "dosage": "Standard dose",
+          "frequency": "3 times daily",
+          "duration": "5-7 days",
+          "indication": "แก้ไอ"
+        },
+        {
+          "name": "Decongestant",
+          "dosage": "Standard dose",
+          "frequency": "as directed",
+          "duration": "as needed",
+          "indication": "แก้คัดจมูก"
+        },
+        {
+          "name": "Oseltamivir (Tamiflu)",
+          "dosage": "75mg",
+          "frequency": "2 times daily",
+          "duration": "5 days",
+          "indication": "ยาต้านไวรัสไข้หวัดใหญ่"
+        }
+      ],
+      "advice": [
+        "พักผ่อนให้เพียงพอ",
+        "ดื่มน้ำมากๆ",
+        "หากอาการไม่ดีขึ้นภายใน 3-5 วัน หรือมีไข้สูงต่อเนื่อง ให้กลับมาพบแพทย์"
+      ],
+      "followUp": "หากอาการไม่ดีขึ้นภายใน 3-5 วัน"
+    },
+    "patientAllergies": ["Penicillin"],
+    "requiresValidation": true,
+    "generatedAt": "2026-02-07T10:30:30Z"
+  },
+  "patientInstructions": {
+    "diagnosisExplanation": "คุณป่วยเป็นไข้หวัดใหญ่ (Influenza) ซึ่งเป็นโรคติดเชื้อไวรัส มักมีอาการไข้สูง ปวดหัว ปวดเมื่อยตามตัว เจ็บคอ น้ำมูก ไอ",
+    "medicationInstructions": [
+      {
+        "medication": "พาราเซตามอล (Paracetamol) 500mg",
+        "howToTake": "กินวันละ 3 ครั้ง หลังอาหาร หรือเมื่อมีไข้/ปวดหัว",
+        "duration": "กินได้ตามอาการ ห่างอย่างน้อย 4-6 ชั่วโมง",
+        "warnings": "ห้ามกินเกิน 4,000mg ต่อวัน"
+      },
+      {
+        "medication": "ยาแก้ไอ (Dextromethorphan)",
+        "howToTake": "กินวันละ 3 ครั้ง หลังอาหาร",
+        "duration": "กินครบ 5-7 วัน",
+        "warnings": "อาจทำให้ง่วงนอน"
+      },
+      {
+        "medication": "ยาแก้คัดจมูก (Decongestant)",
+        "howToTake": "กินตามอาการ",
+        "duration": "เมื่อมีอาการคัดจมูก",
+        "warnings": "อาจทำให้เกิดอาการนอนไม่หลับ ควรหลีกเลี่ยงก่อนนอน"
+      },
+      {
+        "medication": "Oseltamivir (Tamiflu) 75mg",
+        "howToTake": "กินวันละ 2 ครั้ง เช้า-เย็น",
+        "duration": "กินครบ 5 วัน",
+        "warnings": "ต้องกินครบตามที่แพทย์สั่ง แม้อาการจะดีขึ้นแล้ว"
+      }
+    ],
+    "selfCareInstructions": [
+      "พักผ่อนให้เพียงพอ นอนหลับ 7-8 ชั่วโมงต่อวัน",
+      "ดื่มน้ำสะอาดมากๆ วันละ 2-3 ลิตร",
+      "หลีกเลี่ยงการไปในที่แออัด",
+      "สวมหน้ากากอนามัย เพื่อไม่ให้แพร่เชื้อ",
+      "ล้างมือบ่อยๆ ด้วยสบู่หรือเจลแอลกอฮอล์"
+    ],
+    "warningSigns": [
+      "มีไข้สูงต่อเนื่องเกิน 3 วัน แม้จะกินยาแล้ว",
+      "หายใจเหนื่อย หายใจเร็ว หรือแน่นหน้าอก",
+      "อาเจียนรุนแรง ดื่มน้ำไม่ได้",
+      "ชัก หรือมีอาการทางระบบประสาท",
+      "ตัวซีด ริมฝีปากเขียว"
+    ],
+    "followUpDate": "หากอาการไม่ดีขึ้นภายใน 3-5 วัน หรือมีอาการเตือนดังกล่าว",
+    "emergencyContact": "โทร. 02-XXX-XXXX (ตลอด 24 ชั่วโมง)",
+    "requiresValidation": true,
+    "generatedAt": "2026-02-07T10:31:00Z"
+  },
+  "videoRecordingUrl": "doctors/DOC-TEST-001/meetings/E2E-APT-001/recording-2026-02-07.webm",
+  "status": "completed"
+}

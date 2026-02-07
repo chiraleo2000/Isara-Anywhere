@@ -1,29 +1,38 @@
 <#
 .SYNOPSIS
-    Izara Telemedicine - Unified Test Runner
+    Izara Telemedicine - Unified Test Runner v4.0.0
     Single script to run ALL E2E tests for local and cloud environments.
 
 .DESCRIPTION
     ╔══════════════════════════════════════════════════════════════════════════╗
-    ║                    IZARA TELEMEDICINE TEST RUNNER v2.0.0                  ║
-    ║                     Unified E2E Testing Framework                          ║
+    ║                    IZARA TELEMEDICINE TEST RUNNER v4.0.0                  ║
+    ║                 Comprehensive E2E Testing Framework (9 Specs)            ║
     ╚══════════════════════════════════════════════════════════════════════════╝
 
-    Consolidates all test scripts into ONE command:
-    - Smoke tests (quick health check)
-    - Full E2E tests (comprehensive workflow)
-    - API tests (endpoint verification)
-    - UI tests (visual browser testing)
-    - Cloud tests (Cloud Run verification)
+    9 spec files, 200+ tests across ALL processes:
+    - Smoke tests (health endpoints)
+    - API exhaustive status checks
+    - Appointment workflow (full lifecycle)
+    - Meeting workflow (Jitsi, transcript, AI, EMR)
+    - Health Records & EMR
+    - AI Features (chat, CDS, summarization)
+    - UI Navigation (all pages, parallel multi-portal)
+    - Content, Consultants, Notifications, Metadata
+    - Cloud E2E (Cloud Run deployment validation)
 
 .PARAMETER Suite
     Test suite to run:
-    - smoke     : Quick health check (2-3 min)
-    - api       : API endpoint tests (5 min)
-    - ui        : UI workflow tests with visible browser (10 min)
-    - full      : Full comprehensive tests (15 min)
-    - cloud     : Cloud-specific tests
-    - all       : Run everything
+    - smoke       : Quick health check (~2 min)            → 01-smoke.spec.ts
+    - api         : API endpoint tests (~5 min)            → 02-api-status.spec.ts
+    - appointment : Appointment workflow (~5 min)           → 03-appointment-workflow.spec.ts
+    - meeting     : Meeting/Transcript/AI/EMR (~5 min)     → 04-meeting-workflow.spec.ts
+    - health      : Health Records & EMR (~5 min)          → 05-health-records-emr.spec.ts
+    - ai          : AI Features (~3 min)                   → 06-ai-features.spec.ts
+    - ui          : UI navigation with visible browser     → 07-ui-navigation.spec.ts
+    - content     : Content/Notifications/Metadata (~3 min)→ 08-content-notifications.spec.ts
+    - cloud       : Cloud-specific tests                   → 09-cloud-e2e.spec.ts
+    - full        : Full comprehensive tests (all local, 01-08)
+    - all         : Run everything (01-09)
 
 .PARAMETER Target
     Environment to test: local, cloud
@@ -32,7 +41,7 @@
     Run with visible browser (default for UI tests)
 
 .PARAMETER Workers
-    Number of parallel workers (default: 3)
+    Number of parallel workers (default: 4)
 
 .EXAMPLE
     .\tests\e2e\run-tests.ps1 smoke
@@ -43,27 +52,29 @@
     Full tests against cloud environment
 
 .EXAMPLE
-    .\tests\e2e\run-tests.ps1 ui -Headed
-    UI tests with visible browser
+    .\tests\e2e\run-tests.ps1 meeting -Headed
+    Meeting workflow tests with visible browser
 
 .NOTES
-    Version: 2.0.0
+    Version: 4.0.0
     Author: Izara Telemedicine Team
-    Last Updated: February 4, 2026
+    Last Updated: February 6, 2026
     
-    Replaces:
-    - run-local-tests.ps1
-    - run-cloud-tests.ps1
-    - run-comprehensive-ui-tests.ps1
-    - run-phase1-parallel-ui.ps1
-    - run-registration-tests.ps1
-    - run-complete-local-tests.ps1
-    - run-complete-cloud-tests.ps1
+    Test files (9 total, 200+ tests):
+    - 01-smoke.spec.ts                  — Portal health checks (14 tests)
+    - 02-api-status.spec.ts             — All API endpoints → 200 (40 tests)
+    - 03-appointment-workflow.spec.ts   — Full appointment lifecycle (18 tests)
+    - 04-meeting-workflow.spec.ts       — Meeting, transcript, AI, EMR (24 tests)
+    - 05-health-records-emr.spec.ts     — PHR, EMR, prescriptions (25 tests)
+    - 06-ai-features.spec.ts           — AI chat, CDS, summarization (18 tests)
+    - 07-ui-navigation.spec.ts         — All pages + parallel (25 tests)
+    - 08-content-notifications.spec.ts — Content, consultants, notifications (25 tests)
+    - 09-cloud-e2e.spec.ts            — Cloud Run deployment E2E (39 tests)
 #>
 
 param(
     [Parameter(Position=0)]
-    [ValidateSet("smoke", "api", "ui", "full", "cloud", "all", "help")]
+    [ValidateSet("smoke", "api", "appointment", "meeting", "health", "ai", "ui", "content", "cloud", "full", "all", "help")]
     [string]$Suite = "smoke",
 
     [Parameter(Position=1)]
@@ -74,7 +85,7 @@ param(
     [switch]$Headed,
 
     [Parameter(Mandatory=$false)]
-    [int]$Workers = 3,
+    [int]$Workers = 4,
 
     [Parameter(Mandatory=$false)]
     [switch]$Debug
@@ -96,9 +107,9 @@ $LOCAL_DOCTOR = "http://localhost:3010"
 $LOCAL_MEETING = "http://localhost:3020"
 
 # Cloud URLs
-$CLOUD_PATIENT = "https://izara-patient-portal-724889190329.asia-southeast1.run.app"
-$CLOUD_DOCTOR = "https://izara-doctor-portal-724889190329.asia-southeast1.run.app"
-$CLOUD_MEETING = "https://izara-jitsi-meeting-portal-724889190329.asia-southeast1.run.app"
+$CLOUD_PATIENT = "https://izara-patient-portal-hvht4obouq-as.a.run.app"
+$CLOUD_DOCTOR = "https://izara-doctor-portal-hvht4obouq-as.a.run.app"
+$CLOUD_MEETING = "https://izara-jitsi-meeting-portal-hvht4obouq-as.a.run.app"
 
 # ============================================================================
 # HELPER FUNCTIONS
@@ -107,8 +118,8 @@ $CLOUD_MEETING = "https://izara-jitsi-meeting-portal-724889190329.asia-southeast
 function Write-Banner {
     Write-Host ""
     Write-Host "╔══════════════════════════════════════════════════════════════════════════╗" -ForegroundColor Cyan
-    Write-Host "║                    IZARA TELEMEDICINE TEST RUNNER v2.0.0                  ║" -ForegroundColor Cyan
-    Write-Host "║                      Unified E2E Testing Framework                         ║" -ForegroundColor Cyan
+    Write-Host "║                    IZARA TELEMEDICINE TEST RUNNER v4.0.0                  ║" -ForegroundColor Cyan
+    Write-Host "║               Comprehensive E2E Testing Framework (9 Specs)               ║" -ForegroundColor Cyan
     Write-Host "╚══════════════════════════════════════════════════════════════════════════╝" -ForegroundColor Cyan
     Write-Host ""
 }
@@ -237,7 +248,7 @@ function Run-SmokeTests {
     $projectFlag = if ($Target -eq "cloud") { "--project='Cloud E2E Tests'" } else { "" }
     
     Push-Location $E2EDir
-    npx playwright test specs/smoke-test.spec.ts $headedFlag $projectFlag
+    npx playwright test specs/01-smoke.spec.ts $headedFlag $projectFlag
     $exitCode = $LASTEXITCODE
     Pop-Location
     
@@ -254,7 +265,7 @@ function Run-ApiTests {
     $projectFlag = if ($Target -eq "cloud") { "--project='Cloud E2E Tests'" } else { "" }
     
     Push-Location $E2EDir
-    npx playwright test specs/api-status.spec.ts specs/health-records-api.spec.ts $headedFlag $projectFlag
+    npx playwright test specs/02-api-status.spec.ts $headedFlag $projectFlag
     $exitCode = $LASTEXITCODE
     Pop-Location
     
@@ -272,7 +283,7 @@ function Run-UiTests {
     $projectFlag = if ($Target -eq "cloud") { "--project='Cloud E2E Tests'" } else { "--project='Local E2E Tests'" }
     
     Push-Location $E2EDir
-    npx playwright test specs/comprehensive-parallel-ui.spec.ts specs/ui-pages-workflow.spec.ts --workers=$Workers $headedFlag $projectFlag
+    npx playwright test specs/07-ui-navigation.spec.ts --workers=$Workers $headedFlag $projectFlag
     $exitCode = $LASTEXITCODE
     Pop-Location
     
@@ -282,20 +293,22 @@ function Run-UiTests {
 function Run-FullTests {
     param([string]$Target, [switch]$Headed, [int]$Workers)
     
-    Write-Host "RUNNING FULL COMPREHENSIVE TESTS" -ForegroundColor Magenta
+    Write-Host "RUNNING FULL COMPREHENSIVE TESTS (8 LOCAL SPECS)" -ForegroundColor Magenta
     Write-Host ""
     
     $headedFlag = if ($Headed) { "--headed" } else { "" }
-    $projectFlag = if ($Target -eq "cloud") { "--project='Cloud E2E Tests'" } else { "--project='Local E2E Tests'" }
+    $projectFlag = if ($Target -eq "cloud") { "--project='Cloud'" } else { "--project='Local'" }
     
-    # Run comprehensive test files
+    # Run all local test files (01-08)
     $testFiles = @(
-        "specs/smoke-test.spec.ts",
-        "specs/api-status.spec.ts",
-        "specs/comprehensive-parallel-ui.spec.ts",
-        "specs/appointment-workflow.spec.ts",
-        "specs/meeting-workflow.spec.ts",
-        "specs/health-records-workflow.spec.ts"
+        "specs/01-smoke.spec.ts",
+        "specs/02-api-status.spec.ts",
+        "specs/03-appointment-workflow.spec.ts",
+        "specs/04-meeting-workflow.spec.ts",
+        "specs/05-health-records-emr.spec.ts",
+        "specs/06-ai-features.spec.ts",
+        "specs/07-ui-navigation.spec.ts",
+        "specs/08-content-notifications.spec.ts"
     )
     
     Push-Location $E2EDir
@@ -311,7 +324,7 @@ function Run-CloudTests {
     Write-Host ""
     
     Push-Location $E2EDir
-    npx playwright test specs/cloud-*.spec.ts --headed --project='Cloud E2E Tests'
+    npx playwright test specs/09-cloud-e2e.spec.ts --headed --project='Cloud'
     $exitCode = $LASTEXITCODE
     Pop-Location
     
@@ -325,7 +338,7 @@ function Run-AllTests {
     Write-Host ""
     
     $headedFlag = if ($Headed) { "--headed" } else { "" }
-    $projectFlag = if ($Target -eq "cloud") { "--project='Cloud E2E Tests'" } else { "--project='Local E2E Tests'" }
+    $projectFlag = if ($Target -eq "cloud") { "--project='Cloud'" } else { "--project='Local'" }
     
     Push-Location $E2EDir
     npx playwright test --workers=$Workers $headedFlag $projectFlag
@@ -347,12 +360,17 @@ function Show-Help {
     Write-Host ""
     
     Write-Host "SUITES:" -ForegroundColor Yellow
-    Write-Host "  smoke     Quick health check tests (~2 min)" -ForegroundColor Gray
-    Write-Host "  api       API endpoint verification (~5 min)" -ForegroundColor Gray
-    Write-Host "  ui        UI workflow tests with visible browser (~10 min)" -ForegroundColor Gray
-    Write-Host "  full      Full comprehensive tests (~15 min)" -ForegroundColor Gray
-    Write-Host "  cloud     Cloud-specific tests" -ForegroundColor Gray
-    Write-Host "  all       Run all test suites" -ForegroundColor Gray
+    Write-Host "  smoke        Quick health check tests (~2 min)" -ForegroundColor Gray
+    Write-Host "  api          API endpoint verification (~5 min)" -ForegroundColor Gray
+    Write-Host "  appointment  Appointment workflow (~5 min)" -ForegroundColor Gray
+    Write-Host "  meeting      Meeting/Transcript/AI/EMR (~5 min)" -ForegroundColor Gray
+    Write-Host "  health       Health Records & EMR (~5 min)" -ForegroundColor Gray
+    Write-Host "  ai           AI Features (~3 min)" -ForegroundColor Gray
+    Write-Host "  ui           UI navigation with visible browser (~10 min)" -ForegroundColor Gray
+    Write-Host "  content      Content/Notifications/Metadata (~3 min)" -ForegroundColor Gray
+    Write-Host "  cloud        Cloud-specific tests" -ForegroundColor Gray
+    Write-Host "  full         Full comprehensive tests (~20 min)" -ForegroundColor Gray
+    Write-Host "  all          Run all test suites (~25 min)" -ForegroundColor Gray
     Write-Host ""
     
     Write-Host "TARGETS:" -ForegroundColor Yellow
@@ -368,9 +386,9 @@ function Show-Help {
     
     Write-Host "EXAMPLES:" -ForegroundColor Yellow
     Write-Host "  .\tests\e2e\run-tests.ps1 smoke                    # Quick local smoke test" -ForegroundColor Gray
-    Write-Host "  .\tests\e2e\run-tests.ps1 full local               # Full local tests" -ForegroundColor Gray
-    Write-Host "  .\tests\e2e\run-tests.ps1 ui -Headed               # UI tests with browser" -ForegroundColor Gray
-    Write-Host "  .\tests\e2e\run-tests.ps1 full cloud               # Full cloud tests" -ForegroundColor Gray
+    Write-Host "  .\tests\e2e\run-tests.ps1 full local               # Full local tests (01-08)" -ForegroundColor Gray
+    Write-Host "  .\tests\e2e\run-tests.ps1 meeting -Headed          # Meeting workflow with browser" -ForegroundColor Gray
+    Write-Host "  .\tests\e2e\run-tests.ps1 cloud                    # Cloud deployment tests" -ForegroundColor Gray
     Write-Host "  .\tests\e2e\run-tests.ps1 all -Workers 4           # All tests, 4 workers" -ForegroundColor Gray
     Write-Host ""
     
@@ -410,8 +428,48 @@ switch ($Suite) {
     "api" {
         $exitCode = Run-ApiTests -Target $Target -Headed:$Headed
     }
+    "appointment" {
+        Write-Host "RUNNING APPOINTMENT WORKFLOW TESTS" -ForegroundColor Magenta
+        Push-Location $E2EDir
+        $headedFlag = if ($Headed) { "--headed" } else { "" }
+        npx playwright test specs/03-appointment-workflow.spec.ts $headedFlag
+        $exitCode = $LASTEXITCODE
+        Pop-Location
+    }
+    "meeting" {
+        Write-Host "RUNNING MEETING WORKFLOW TESTS" -ForegroundColor Magenta
+        Push-Location $E2EDir
+        $headedFlag = if ($Headed) { "--headed" } else { "" }
+        npx playwright test specs/04-meeting-workflow.spec.ts $headedFlag
+        $exitCode = $LASTEXITCODE
+        Pop-Location
+    }
+    "health" {
+        Write-Host "RUNNING HEALTH RECORDS & EMR TESTS" -ForegroundColor Magenta
+        Push-Location $E2EDir
+        $headedFlag = if ($Headed) { "--headed" } else { "" }
+        npx playwright test specs/05-health-records-emr.spec.ts $headedFlag
+        $exitCode = $LASTEXITCODE
+        Pop-Location
+    }
+    "ai" {
+        Write-Host "RUNNING AI FEATURES TESTS" -ForegroundColor Magenta
+        Push-Location $E2EDir
+        $headedFlag = if ($Headed) { "--headed" } else { "" }
+        npx playwright test specs/06-ai-features.spec.ts $headedFlag
+        $exitCode = $LASTEXITCODE
+        Pop-Location
+    }
     "ui" {
         $exitCode = Run-UiTests -Target $Target -Headed:$true -Workers $Workers
+    }
+    "content" {
+        Write-Host "RUNNING CONTENT & NOTIFICATIONS TESTS" -ForegroundColor Magenta
+        Push-Location $E2EDir
+        $headedFlag = if ($Headed) { "--headed" } else { "" }
+        npx playwright test specs/08-content-notifications.spec.ts $headedFlag
+        $exitCode = $LASTEXITCODE
+        Pop-Location
     }
     "full" {
         $exitCode = Run-FullTests -Target $Target -Headed:$Headed -Workers $Workers

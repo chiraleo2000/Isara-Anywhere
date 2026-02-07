@@ -289,7 +289,7 @@ const PatientService = {
     const result = await pool.query(
       `SELECT * FROM vital_signs 
        WHERE patient_id = $1 
-       ORDER BY recorded_at DESC 
+       ORDER BY measured_at DESC 
        LIMIT $2`,
       [patientId, limit]
     );
@@ -361,13 +361,17 @@ const AppointmentService = {
    * Get doctor appointments
    */
   async getDoctorAppointments(doctorId, date) {
+    // Match doctor_id whether it's a users.id or a doctors.id
     let query = `
       SELECT a.*, 
              u.name as patient_name, u.name_thai as patient_name_thai,
              u.email as patient_email, u.phone as patient_phone
       FROM appointments a
-      JOIN users u ON a.patient_id = u.id
-      WHERE a.doctor_id = $1
+      LEFT JOIN users u ON a.patient_id = u.id
+      WHERE (
+        a.doctor_id = $1
+        OR a.doctor_id IN (SELECT doctor_id FROM doctor_profiles WHERE doctor_id = $1)
+      )
     `;
     const params = [doctorId];
 
@@ -391,8 +395,8 @@ const AppointmentService = {
              p.name as patient_name, p.name_thai as patient_name_thai,
              d.name as doctor_name, d.name_thai as doctor_name_thai
       FROM appointments a
-      JOIN users p ON a.patient_id = p.id
-      JOIN users d ON a.doctor_id = d.id
+      LEFT JOIN users p ON a.patient_id = p.id
+      LEFT JOIN users d ON d.id = a.doctor_id
       WHERE 1=1
     `;
     const params = [];
@@ -423,6 +427,7 @@ const AppointmentService = {
    * Get appointment by ID
    */
   async getAppointmentById(appointmentId) {
+    // Use LEFT JOINs to handle doctor_id that may not match users.id
     const result = await pool.query(
       `SELECT a.*, 
               p.name as patient_name, p.name_thai as patient_name_thai,
@@ -430,10 +435,11 @@ const AppointmentService = {
               d.name as doctor_name, d.name_thai as doctor_name_thai,
               dp.specialty as doctor_specialty
        FROM appointments a
-       JOIN users p ON a.patient_id = p.id
-       JOIN users d ON a.doctor_id = d.id
-       LEFT JOIN doctor_profiles dp ON dp.doctor_id = d.id
-       WHERE a.id = $1`,
+       LEFT JOIN users p ON a.patient_id = p.id
+       LEFT JOIN users d ON d.id = a.doctor_id
+       LEFT JOIN doctor_profiles dp ON dp.doctor_id = COALESCE(d.id, a.doctor_id)
+       WHERE a.id = $1
+       LIMIT 1`,
       [appointmentId]
     );
     return result.rows[0] || null;
@@ -451,8 +457,14 @@ const AppointmentService = {
       fields.push(`status = $${paramIndex++}`);
       values.push(data.status);
     }
+    if (data.doctor_id !== undefined) {
+      fields.push(`doctor_id = $${paramIndex++}`);
+      values.push(data.doctor_id);
+    }
     if (data.meeting_link !== undefined) {
-      fields.push(`meeting_link = $${paramIndex++}`);
+      // Update both meet_link and meeting_link columns
+      fields.push(`meeting_link = $${paramIndex}`);
+      fields.push(`meet_link = $${paramIndex++}`);
       values.push(data.meeting_link);
     }
     if (data.notes !== undefined) {

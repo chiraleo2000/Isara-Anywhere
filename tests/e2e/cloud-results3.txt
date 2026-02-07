@@ -1,0 +1,87 @@
+
+Running 39 tests using 4 workers
+
+Γ£à Cloud Doctor health OK (200)
+Γ£à Cloud Patient health OK (200)
+Γ£à Cloud Patient latency 134ms
+  Γ£ô   1 [Cloud] ΓÇ║ specs\09-cloud-e2e.spec.ts:48:7 ΓÇ║ 1. Cloud Health & Connectivity ΓÇ║ CLOUD-02: Doctor portal reachable (149ms)
+  Γ£ô   3 [Cloud] ΓÇ║ specs\09-cloud-e2e.spec.ts:42:7 ΓÇ║ 1. Cloud Health & Connectivity ΓÇ║ CLOUD-01: Patient portal reachable (143ms)
+  Γ£ô   4 [Cloud] ΓÇ║ specs\09-cloud-e2e.spec.ts:60:7 ΓÇ║ 1. Cloud Health & Connectivity ΓÇ║ CLOUD-04: Patient portal latency < 30s (143ms)
+Γ£à Cloud Meeting health OK (200)
+  Γ£ô   2 [Cloud] ΓÇ║ specs\09-cloud-e2e.spec.ts:54:7 ΓÇ║ 1. Cloud Health & Connectivity ΓÇ║ CLOUD-03: Meeting server reachable (162ms)
+Γ£à Cloud Doctor latency 46ms
+  Γ£ô   5 [Cloud] ΓÇ║ specs\09-cloud-e2e.spec.ts:69:7 ΓÇ║ 1. Cloud Health & Connectivity ΓÇ║ CLOUD-05: Doctor portal latency < 10s (50ms)
+Γ£à Cloud patient login OK
+  Γ£ô   6 [Cloud] ΓÇ║ specs\09-cloud-e2e.spec.ts:82:7 ΓÇ║ 2. Cloud Authentication ΓÇ║ CLOUD-06: Patient login (181ms)
+Γ£à Cloud doctor login OK
+Γ£à Cloud admin login OK
+  Γ£ô   7 [Cloud] ΓÇ║ specs\09-cloud-e2e.spec.ts:93:7 ΓÇ║ 2. Cloud Authentication ΓÇ║ CLOUD-07: Doctor login (380ms)
+  Γ£ô   8 [Cloud] ΓÇ║ specs\09-cloud-e2e.spec.ts:104:7 ΓÇ║ 2. Cloud Authentication ΓÇ║ CLOUD-08: Admin login (368ms)
+Γ£à Cloud doctor registration status 500
+  Γ£ô  10 [Cloud] ΓÇ║ specs\09-cloud-e2e.spec.ts:307:7 ΓÇ║ 7. Cloud Registration ΓÇ║ CLOUD-31: Doctor registration (pending) (298ms)
+Γ£à Cloud patient registered
+  Γ£ô   9 [Cloud] ΓÇ║ specs\09-cloud-e2e.spec.ts:287:7 ΓÇ║ 7. Cloud Registration ΓÇ║ CLOUD-30: Patient self-registration (678ms)
+Γ£à Cloud patient portal loaded
+Γ£à Cloud doctor portal loaded
+Γ£à Cloud doctor login flow OK
+Γ£à Cloud patient login flow OK
+  Γ£ô  11 [Cloud] ΓÇ║ specs\09-cloud-e2e.spec.ts:331:7 ΓÇ║ 8. Cloud UI Pages ΓÇ║ CLOUD-32: Patient portal loads (19.0s)
+  Γ£ô  12 [Cloud] ΓÇ║ specs\09-cloud-e2e.spec.ts:337:7 ΓÇ║ 8. Cloud UI Pages ΓÇ║ CLOUD-33: Doctor portal loads (19.6s)
+Γ£à Cloud patient profile OK
+  Γ£ô  15 [Cloud] ΓÇ║ specs\09-cloud-e2e.spec.ts:121:7 ΓÇ║ 3. Cloud Patient API ΓÇ║ CLOUD-09: Patient profile (180ms)
+  Γ£ô  14 [Cloud] ΓÇ║ specs\09-cloud-e2e.spec.ts:357:7 ΓÇ║ 8. Cloud UI Pages ΓÇ║ CLOUD-35: Doctor login flow (18.0s)
+Γ£à Cloud patient appointments OK
+  Γ£ô  17 [Cloud] ΓÇ║ specs\09-cloud-e2e.spec.ts:127:7 ΓÇ║ 3. Cloud Patient API ΓÇ║ CLOUD-10: Patient appointments (148ms)
+Γ£à Cloud doctor profile OK
+Γ£à Cloud patient health records OK
+  Γ£ô  16 [Cloud] ΓÇ║ specs\09-cloud-e2e.spec.ts:170:7 ΓÇ║ 4. Cloud Doctor API ΓÇ║ CLOUD-16: Doctor profile (137ms)
+  Γ£ô  19 [Cloud] ΓÇ║ specs\09-cloud-e2e.spec.ts:133:7 ΓÇ║ 3. Cloud Patient API ΓÇ║ CLOUD-11: Patient health records (184ms)
+Γ£à Cloud patient notifications OK
+Γ£à Cloud doctor appointments OK
+  Γ£ô  20 [Cloud] ΓÇ║ specs\09-cloud-e2e.spec.ts:179:7 ΓÇ║ 4. Cloud Doctor API ΓÇ║ CLOUD-17: Doctor appointments (122ms)
+  Γ£ô  21 [Cloud] ΓÇ║ specs\09-cloud-e2e.spec.ts:139:7 ΓÇ║ 3. Cloud Patient API ΓÇ║ CLOUD-12: Patient notifications (86ms)
+Γ£à Cloud doctor patients OK
+Γ£à Cloud patient content OK
+  Γ£ô  22 [Cloud] ΓÇ║ specs\09-cloud-e2e.spec.ts:185:7 ΓÇ║ 4. Cloud Doctor API ΓÇ║ CLOUD-18: Doctor patients list (91ms)
+  Γ£ô  23 [Cloud] ΓÇ║ specs\09-cloud-e2e.spec.ts:145:7 ΓÇ║ 3. Cloud Patient API ΓÇ║ CLOUD-13: Patient medical content (120ms)
+Γ£à Cloud doctor queue OK
+Γ£à Cloud patient specialties OK
+  Γ£ô  24 [Cloud] ΓÇ║ specs\09-cloud-e2e.spec.ts:191:7 ΓÇ║ 4. Cloud Doctor API ΓÇ║ CLOUD-19: Doctor queue (110ms)
+  Γ£ô  25 [Cloud] ΓÇ║ specs\09-cloud-e2e.spec.ts:151:7 ΓÇ║ 3. Cloud Patient API ΓÇ║ CLOUD-14: Patient metadata specialties (132ms)
+Γ£à Cloud admin users OK
+Γ£à Cloud doctor consultants OK
+Γ£à Cloud patient timeline OK
+  Γ£ô  18 [Cloud] ΓÇ║ specs\09-cloud-e2e.spec.ts:221:7 ΓÇ║ 5. Cloud Admin API ΓÇ║ CLOUD-23: Admin users (270ms)
+  Γ£ô  27 [Cloud] ΓÇ║ specs\09-cloud-e2e.spec.ts:158:7 ΓÇ║ 3. Cloud Patient API ΓÇ║ CLOUD-15: Patient timeline (116ms)
+  Γ£ô  26 [Cloud] ΓÇ║ specs\09-cloud-e2e.spec.ts:197:7 ΓÇ║ 4. Cloud Doctor API ΓÇ║ CLOUD-20: Doctor consultants (177ms)
+Γ£à Cloud admin pending OK
+Γ£à Cloud doctor EMR OK
+  Γ£ô  28 [Cloud] ΓÇ║ specs\09-cloud-e2e.spec.ts:227:7 ΓÇ║ 5. Cloud Admin API ΓÇ║ CLOUD-24: Admin pending doctors (137ms)
+  Γ£ô  30 [Cloud] ΓÇ║ specs\09-cloud-e2e.spec.ts:203:7 ΓÇ║ 4. Cloud Doctor API ΓÇ║ CLOUD-21: Doctor EMR (116ms)
+Γ£à Cloud admin content OK
+Γ£à Cloud AI health OK
+Γ£à Cloud doctor clinical resources OK
+  Γ£ô  31 [Cloud] ΓÇ║ specs\09-cloud-e2e.spec.ts:233:7 ΓÇ║ 5. Cloud Admin API ΓÇ║ CLOUD-25: Admin medical content (113ms)
+  Γ£ô  29 [Cloud] ΓÇ║ specs\09-cloud-e2e.spec.ts:377:7 ΓÇ║ 9. Cloud AI Features ΓÇ║ CLOUD-36: AI health endpoint (85ms)
+  Γ£ô  32 [Cloud] ΓÇ║ specs\09-cloud-e2e.spec.ts:209:7 ΓÇ║ 4. Cloud Doctor API ΓÇ║ CLOUD-22: Doctor clinical resources (105ms)
+Γ£à Cloud admin notifications OK
+  Γ£ô  33 [Cloud] ΓÇ║ specs\09-cloud-e2e.spec.ts:239:7 ΓÇ║ 5. Cloud Admin API ΓÇ║ CLOUD-26: Admin notifications (97ms)
+Γ£à Cloud meeting health OK
+  Γ£ô  13 [Cloud] ΓÇ║ specs\09-cloud-e2e.spec.ts:343:7 ΓÇ║ 8. Cloud UI Pages ΓÇ║ CLOUD-34: Patient login flow (21.7s)
+  Γ£ô  35 [Cloud] ΓÇ║ specs\09-cloud-e2e.spec.ts:251:7 ΓÇ║ 6. Cloud Meeting API ΓÇ║ CLOUD-27: Meeting server health (161ms)
+Γ£à Cloud meeting created
+  Γ£ô  36 [Cloud] ΓÇ║ specs\09-cloud-e2e.spec.ts:257:7 ΓÇ║ 6. Cloud Meeting API ΓÇ║ CLOUD-28: Create meeting on cloud (77ms)
+Γ£à Cloud meetings status 500
+  Γ£ô  37 [Cloud] ΓÇ║ specs\09-cloud-e2e.spec.ts:273:7 ΓÇ║ 6. Cloud Meeting API ΓÇ║ CLOUD-29: List meetings on cloud (79ms)
+Γ£à Cloud AI chat OK
+  Γ£ô  34 [Cloud] ΓÇ║ specs\09-cloud-e2e.spec.ts:383:7 ΓÇ║ 9. Cloud AI Features ΓÇ║ CLOUD-37: AI chat availability (5.0s)
+Γ£à Cloud AI symptom check OK
+  Γ£ô  38 [Cloud] ΓÇ║ specs\09-cloud-e2e.spec.ts:393:7 ΓÇ║ 9. Cloud AI Features ΓÇ║ CLOUD-38: Patient AI symptom checker (2.1s)
+Γ£à Cloud: appointment booked
+Γ£à Cloud: appointment confirm status 404
+Γ£à Cloud: meeting created for workflow
+Γ£à Cloud: transcript status 200
+Γ£à Cloud: EMR status 200 ΓÇö FULL WORKFLOW COMPLETE
+  Γ£ô  39 [Cloud] ΓÇ║ specs\09-cloud-e2e.spec.ts:410:7 ΓÇ║ 10. Cloud Full Workflow ΓÇ║ CLOUD-39: End-to-end appointment ΓåÆ meeting ΓåÆ EMR (431ms)
+
+  39 passed (36.7s)

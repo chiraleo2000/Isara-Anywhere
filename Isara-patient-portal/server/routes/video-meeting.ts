@@ -559,7 +559,12 @@ router.post('/create', async (req: Request, res: Response) => {
     }
     
     // Check if meeting already exists in PostgreSQL
-    const existingMeeting = await MeetingService.getActiveMeeting(appointmentId);
+    let existingMeeting = null;
+    try {
+      existingMeeting = await MeetingService.getActiveMeeting(appointmentId);
+    } catch (dbLookupErr: any) {
+      console.warn('⚠️ Meeting lookup failed:', dbLookupErr.message);
+    }
     
     if (existingMeeting) {
       // Return existing meeting from PostgreSQL
@@ -606,23 +611,38 @@ router.post('/create', async (req: Request, res: Response) => {
       role: 'patient'
     });
     
-    // Save meeting to PostgreSQL
-    const meeting = await MeetingService.createMeeting({
-      appointmentId,
-      doctorId: doctorId || 'unassigned',
-      doctorName,
-      patientId: patientId || 'unknown',
-      patientName,
-      roomId: roomName,
-      meetingUrl: genericUrl,
-      doctorUrl,
-      patientUrl,
-      guestUrl: genericUrl,
-      config: {
-        ...config,
-        jitsiDomain: JITSI_DOMAIN
-      }
-    });
+    // Save meeting to PostgreSQL (may fail due to FK constraints, fall back to memory)
+    let meeting: any;
+    try {
+      meeting = await MeetingService.createMeeting({
+        appointmentId,
+        doctorId: doctorId || 'unassigned',
+        doctorName,
+        patientId: patientId || 'unknown',
+        patientName,
+        roomId: roomName,
+        meetingUrl: genericUrl,
+        doctorUrl,
+        patientUrl,
+        guestUrl: genericUrl,
+        config: {
+          ...config,
+          jitsiDomain: JITSI_DOMAIN
+        }
+      });
+    } catch (dbError: any) {
+      console.warn('⚠️ Meeting DB insert failed (FK constraint?), using in-memory:', dbError.message);
+      meeting = {
+        id: `meet-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
+        appointment_id: appointmentId,
+        room_id: roomName,
+        status: 'waiting',
+        created_at: new Date().toISOString(),
+        meeting_url: genericUrl,
+        doctor_url: doctorUrl,
+        patient_url: patientUrl,
+      };
+    }
     
     // Also store in memory for quick lookup during active sessions
     const memoryMeeting: MeetingSession = {

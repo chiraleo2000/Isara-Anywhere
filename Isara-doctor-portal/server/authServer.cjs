@@ -2142,6 +2142,52 @@ const profileUpdateHandler = async (req, res) => {
 app.put('/auth/profile', profileUpdateHandler);
 app.put('/api/auth/profile', profileUpdateHandler);
 
+// ============================================================================
+// GET /auth/me - Get current user profile (also handles /api/auth/me via nginx)
+// ============================================================================
+app.get('/auth/me', async (req, res) => {
+  try {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    if (!token) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+    let decoded;
+    try {
+      decoded = jwt.verify(token, JWT_SECRET);
+    } catch (e) {
+      return res.status(401).json({ error: 'Invalid or expired token' });
+    }
+    const userId = decoded.userId || decoded.id;
+    if (pgPool) {
+      try {
+        const result = await pgPool.query(
+          'SELECT id, email, display_name, role, specialization, phone, avatar_url, medical_license_number, created_at FROM users WHERE id = $1',
+          [userId]
+        );
+        if (result.rows.length > 0) {
+          return res.json({ success: true, user: result.rows[0] });
+        }
+      } catch (dbErr) {
+        console.log('[AUTH] DB query error for /auth/me:', dbErr.message);
+      }
+    }
+    // Fallback: return from JWT payload
+    res.json({
+      success: true,
+      user: {
+        id: userId,
+        email: decoded.email || '',
+        role: decoded.role || 'doctor',
+        display_name: decoded.name || decoded.displayName || '',
+      }
+    });
+  } catch (error) {
+    console.error('[AUTH] /auth/me error:', error);
+    res.status(500).json({ error: 'Failed to get profile' });
+  }
+});
+
 // POST /api/profile/avatar - Update user avatar URL
 app.post('/api/profile/avatar', async (req, res) => {
   try {

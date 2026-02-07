@@ -237,6 +237,7 @@ CREATE TABLE living_wills (
     decisions JSONB DEFAULT '{}'::jsonb,
     witness_info JSONB DEFAULT '{}'::jsonb,
     signature_data TEXT,
+    is_shared_with_doctors BOOLEAN DEFAULT false,
     version INTEGER DEFAULT 1,
     restored_from VARCHAR(50),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,

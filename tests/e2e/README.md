@@ -1,48 +1,25 @@
 # Isara Telemedicine - E2E Test Suite
 
-> **Updated:** February 5, 2026  
-> **Tests:** 123 LOCAL + 123 CLOUD = 246 Total (100% Passing, 0 Skipped)
+> **Version:** 3.0.0 | **Updated:** February 6, 2026  
+> **Files:** 6 spec files | **Coverage:** Full Phase 1 (all workflows, all users, all pages)
 
 ## 🚀 Quick Start
 
 ```powershell
-# Navigate to test directory
 cd tests/e2e
 
-# Run ALL Phase 1 tests on LOCAL (123 tests, 0 skipped)
-$env:TEST_ENV="local"
-npx playwright test specs/phase1-full-coverage.spec.ts specs/phase1-comprehensive-meeting.spec.ts --timeout=180000 --workers=4
+# Smoke test (quick health check)
+npm run smoke
 
-# Run ALL Phase 1 tests on CLOUD (123 tests, 0 skipped)
-$env:TEST_ENV="cloud"
-npx playwright test specs/phase1-full-coverage.spec.ts specs/phase1-comprehensive-meeting.spec.ts --timeout=180000 --workers=4
+# All local tests
+npm run full
 
-# Run with visible browser (headed mode)
-npx playwright test specs/phase1-full-coverage.spec.ts --headed
+# Cloud tests
+npm run cloud
 
-# View HTML Report
-npx playwright show-report
+# View HTML report
+npm run report
 ```
-
----
-
-## 🌐 Portal URLs
-
-### Local Environment (Docker)
-
-| Service | URL | Port |
-|---------|-----|------|
-| Patient Portal | http://localhost:3005 | 3005 |
-| Doctor Portal | http://localhost:3010 | 3010 |
-| Meeting Server | http://localhost:3020 | 3020 |
-
-### Cloud Environment (Google Cloud Run)
-
-| Service | URL |
-|---------|-----|
-| Patient Portal | https://izara-patient-portal-hvht4obouq-as.a.run.app |
-| Doctor Portal | https://izara-doctor-portal-hvht4obouq-as.a.run.app |
-| Meeting Server | https://izara-jitsi-meeting-portal-hvht4obouq-as.a.run.app |
 
 ---
 
@@ -50,154 +27,131 @@ npx playwright show-report
 
 ```text
 tests/e2e/
-├── run-tests.ps1               # ⭐ MAIN TEST RUNNER - Use this!
+├── run-tests.ps1               # ⭐ Main test runner (PowerShell)
+├── playwright.config.ts        # Playwright config (3 projects: Local, Cloud, All)
+├── package.json                # npm scripts
+├── global-setup.ts             # Pre-authenticates users
 ├── lib/
-│   └── test-config.ts          # Shared configuration (URLs, credentials)
+│   └── test-config.ts          # Shared URLs, credentials, helpers
 ├── specs/
-│   ├── phase1-full-coverage.spec.ts  # ⭐ MAIN TEST FILE (92 tests, 0 skipped)
-│   ├── smoke-test.spec.ts      # Quick health checks
-│   ├── api-status.spec.ts      # API endpoint tests
-│   └── ...                     # Other workflow tests
-├── fixtures/                   # Test data
-└── playwright.config.ts        # Playwright configuration
+│   ├── 01-smoke.spec.ts        # Portal accessibility + health checks
+│   ├── 02-api-status.spec.ts   # All API endpoints → 200 (both portals)
+│   ├── 03-workflow.spec.ts     # Appointment → Meeting → EMR → AI → Notifications
+│   ├── 04-ui-navigation.spec.ts # All pages: Patient (9) + Doctor (8) + Admin (10)
+│   ├── 05-cloud.spec.ts        # Cloud Run health, infra, latency, OWASP
+│   └── 06-registration.spec.ts # Patient & Doctor registration flows
+├── fixtures/                   # Test data & audio transcripts
+├── deprecated/
+│   └── specs/                  # Archived old test files (42 files)
+└── test-results/               # Screenshots, videos, reports
 ```
 
 ---
 
-## 🧪 Test Categories (20 Total - 92 Tests)
+## 🧪 Test Files & Coverage
 
-| # | Category | Tests | Description |
-| - | -------- | ----- | ----------- |
-| 1 | API Health & Database | 6 | Health endpoints, DB connection |
-| 2 | User Management | 8 | Login (5 users), profiles, sessions |
-| 3 | Appointment Workflow | 7 | Book, list, pool, history |
-| 4 | Video Meeting (Jitsi) | 8 | Transcription, AI summary |
-| 5 | Health Records (PHR) | 7 | Vitals, medications, allergies |
-| 6 | EMR Workflow | 4 | SOAP format, AI summary |
-| 7 | Patient Instructions | 2 | Generate & list |
-| 8 | AI Features | 4 | Chat, CDS, Document Analysis |
-| 9 | PDPA & Living Will | 3 | Consent management |
-| 10 | Clinical Resources | 4 | Medical content |
-| 11 | Notifications | 3 | Patient/Doctor alerts |
-| 12 | Patient Portal UI | 6 | Dashboard, appointments |
-| 13 | Doctor Portal UI | 5 | Dashboard, patients |
-| 14 | Admin Portal UI | 3 | Admin features |
-| 15 | Theme & Language | 2 | Dark mode, Thai/English |
-| 16 | Doctor Data Services | 3 | Doctors list, specialties |
-| 17 | Multi-Portal Parallel | 3 | Simultaneous multi-user |
-| 18 | Full Workflow E2E | 2 | Appointment→Meeting→EMR |
-| 19 | Error Handling | 4 | Invalid credentials |
-| 20 | Phase 1 Requirements | 8 | Stakeholder verification |
+| # | File | Tests | Coverage |
+|---|------|-------|----------|
+| 1 | `01-smoke.spec.ts` | 8 | Portal loads, login pages, API health, DB health, meeting server |
+| 2 | `02-api-status.spec.ts` | ~40 | Auth (5 users), Patient endpoints (11), Doctor endpoints (7), Admin endpoints (6), Meeting (3), System (4) |
+| 3 | `03-workflow.spec.ts` | ~25 | Appointments, video meeting, health records/EMR, notifications, AI features, multi-patient |
+| 4 | `04-ui-navigation.spec.ts` | ~35 | Login (5 users), Patient pages (8), Doctor pages (8), Admin pages (10), Appointment UI flow |
+| 5 | `05-cloud.spec.ts` | ~20 | Cloud patient health (6), Cloud doctor health (4), Infrastructure (5), Connectivity (2), Cloud auth (3) |
+| 6 | `06-registration.spec.ts` | 6 | Patient registration (3), Doctor registration (3) |
+
+### Total: ~134 tests covering ALL Phase 1 requirements
 
 ---
 
-## 🧪 Test Commands
+## 📋 npm Scripts
 
-### Using Playwright Directly (Recommended)
+| Script | Command | What it runs |
+|--------|---------|--------------|
+| `npm run smoke` | `01-smoke` | Quick health check (~1 min) |
+| `npm run api` | `02-api-status` | All API endpoints (~3 min) |
+| `npm run workflow` | `03-workflow` | Full workflow (~3 min) |
+| `npm run ui` | `04-ui-navigation` | All UI pages, headed (~5 min) |
+| `npm run registration` | `06-registration` | Registration flows, headed (~2 min) |
+| `npm run cloud` | `05-cloud` | Cloud deployment tests (~3 min) |
+| `npm run local` | All local specs | Everything except cloud (~10 min) |
+| `npm run full` | All local specs | Same as local, headed (~10 min) |
+| `npm run all` | All specs | Local + cloud (~15 min) |
+
+---
+
+## 🔧 PowerShell Runner
 
 ```powershell
-cd tests/e2e
-
-# Run LOCAL tests (92 tests)
-$env:TEST_ENV="local"
-npx playwright test specs/phase1-full-coverage.spec.ts --timeout=180000 --workers=4
-
-# Run CLOUD tests (92 tests)
-$env:TEST_ENV="cloud"
-npx playwright test specs/phase1-full-coverage.spec.ts --timeout=180000 --workers=4
-
-# Run specific category
-npx playwright test specs/phase1-full-coverage.spec.ts --grep "Video Meeting"
-npx playwright test specs/phase1-full-coverage.spec.ts --grep "Multi-Portal"
-
-# Run with visible browser
-npx playwright test specs/phase1-full-coverage.spec.ts --headed
-
-# View report
-npx playwright show-report
-```
-
-### Using run-tests.ps1
-
-```powershell
-# Test suites
-.\tests\e2e\run-tests.ps1 smoke    # Quick health check (~2 min)
-.\tests\e2e\run-tests.ps1 api      # API tests (~5 min)
-.\tests\e2e\run-tests.ps1 ui       # UI tests with browser (~10 min)
-.\tests\e2e\run-tests.ps1 full     # Full tests (~15 min)
-.\tests\e2e\run-tests.ps1 all      # Everything (~20 min)
-
-# Target environment
-.\tests\e2e\run-tests.ps1 full local   # Local Docker
-.\tests\e2e\run-tests.ps1 full cloud   # Cloud Run
-
-# Options
-.\tests\e2e\run-tests.ps1 full -Headed     # Visible browser
-.\tests\e2e\run-tests.ps1 full -Workers 4  # 4 parallel workers
+.\tests\e2e\run-tests.ps1 smoke                   # Quick local smoke test
+.\tests\e2e\run-tests.ps1 api                      # API endpoints
+.\tests\e2e\run-tests.ps1 workflow                  # Appointment/Meeting/EMR
+.\tests\e2e\run-tests.ps1 ui -Headed               # UI tests with browser
+.\tests\e2e\run-tests.ps1 registration              # Registration tests
+.\tests\e2e\run-tests.ps1 full local               # Full local tests
+.\tests\e2e\run-tests.ps1 cloud                    # Cloud tests
+.\tests\e2e\run-tests.ps1 all -Workers 4           # All tests, 4 workers
 ```
 
 ---
 
-## 📋 Test Suites
+## 🌐 Portal URLs
 
-| Suite | Files | Duration |
-|-------|-------|----------|
-| `smoke` | smoke-test.spec.ts | ~2 min |
-| `api` | api-status.spec.ts, health-records-api.spec.ts | ~5 min |
-| `ui` | comprehensive-parallel-ui.spec.ts, ui-pages-workflow.spec.ts | ~10 min |
-| `full` | phase1-full-coverage.spec.ts | ~1.2 min |
+### Local (Docker)
+
+| Service | URL |
+|---------|-----|
+| Patient Portal | http://localhost:3005 |
+| Doctor Portal | http://localhost:3010 |
+| Meeting Server | http://localhost:3020 |
+
+### Cloud (Google Cloud Run)
+
+| Service | URL |
+|---------|-----|
+| Patient Portal | https://izara-patient-portal-724889190329.asia-southeast1.run.app |
+| Doctor Portal | https://izara-doctor-portal-724889190329.asia-southeast1.run.app |
 
 ---
 
 ## 🔧 Configuration
 
-### Import from test-config.ts
+### Shared Config (`lib/test-config.ts`)
 
 ```typescript
-import { 
-  PATIENT_PORTAL_URL, 
-  DOCTOR_PORTAL_URL, 
-  CREDENTIALS, 
-  getAuthToken,
-  logTestSuccess
+import {
+  PATIENT_PORTAL_URL, DOCTOR_PORTAL_URL, MEETING_URL,
+  CREDENTIALS, getAuthToken, authHeaders, logTestSuccess,
+  URLS, TEST_ENV, TIMEOUTS, ENDPOINTS, REGISTRATION_DATA
 } from '../lib/test-config';
 ```
 
 ### Environment Variables
 
-```powershell
-# Test environment
-$env:TEST_ENV = "local"  # or "cloud"
-
-# Override credentials (optional)
-$env:TEST_PATIENT_PASSWORD = "your_password"
-$env:TEST_DOCTOR_PASSWORD = "your_password"
-```
-
----
-
-## 📦 Key Test Files
-
-| File | Description |
-|------|-------------|
-| `core-e2e.spec.ts` | ⭐ Consolidated core tests - run this first |
-| `smoke-test.spec.ts` | Quick portal accessibility |
-| `api-status.spec.ts` | API endpoint verification |
-| `comprehensive-parallel-ui.spec.ts` | Full UI workflow |
-| `appointment-workflow.spec.ts` | Appointment booking |
-| `meeting-workflow.spec.ts` | Video meeting workflow |
-
----
-
-## 📝 Version: 2.0.0 (February 4, 2026)
-
-**Security note:** Use CI secrets or local `.env` files for real values. Do not commit credentials.
-
-### Available Environment Variables
-
 | Variable | Description | Default |
-| --- | --- | --- |
-| `TEST_ENV` | Test environment (local/cloud) | local |
+|----------|-------------|---------|
+| `TEST_ENV` | Environment (local/cloud) | `local` |
+| `TEST_PATIENT_PASSWORD` | Override patient password | `P@ssw0rd` |
+| `TEST_DOCTOR_PASSWORD` | Override doctor password | `IzaraDoctor@2024` |
+| `TEST_ADMIN_PASSWORD` | Override admin password | `IzaraAdmin@2024` |
+| `CLOUD_PATIENT_URL` | Cloud patient URL | (auto) |
+| `CLOUD_DOCTOR_URL` | Cloud doctor URL | (auto) |
+
+---
+
+## 📝 Consolidation History (v3.0.0)
+
+**Reduced from 42 → 6 spec files** while maintaining full coverage.
+
+Old files are archived in `deprecated/specs/` for reference.
+
+| Removed (archived) | Absorbed into |
+|---------------------|---------------|
+| smoke-test, core-e2e | `01-smoke` |
+| api-status, health-records-*, clinical-resources-*, medical-consultants-*, medicine-content-*, notifications-*, living-will-*, video-meeting-jitsi, user-management-* | `02-api-status` |
+| appointment-workflow, full-appointment-*, full-meeting-*, meeting-workflow, complete-workflow-*, process-docs-unit*, all phase1-* workflow files | `03-workflow` |
+| ui-pages-workflow, ui-workflow-tests, workflow-ui-tests, comprehensive-parallel-ui, comprehensive-local-tests, multi-window-parallel-test, parallel-comprehensive-workflow, phase1-parallel-ui-workflow | `04-ui-navigation` |
+| cloud-e2e-workflow, cloud-health-tests, full-workflow-cloud-tests | `05-cloud` |
+| comprehensive-registration-workflow, registration-and-full-workflow | `06-registration` |
 | `LOCAL_PATIENT_URL` | Local patient portal URL | <http://localhost:3005> |
 | `LOCAL_DOCTOR_URL` | Local doctor portal URL | <http://localhost:3010> |
 | `CLOUD_PATIENT_URL` | Cloud patient portal URL | (Cloud Run URL) |
@@ -243,229 +197,25 @@ $env:TEST_DOCTOR_PASSWORD = "your_password"
 ## Prerequisites
 
 1. **Node.js 18+**
+## 🛠 Prerequisites
+
+1. **Node.js ≥ 22** and **npm**
 2. **Docker containers running** (Patient Portal, Doctor Portal, PostgreSQL)
-3. **Playwright browsers installed**
+3. **Playwright browsers installed** (`npx playwright install chromium`)
 
-## Quick Start
+## 🐛 Troubleshooting
 
-```bash
-# Navigate to tests directory
-cd tests/e2e
+| Issue | Solution |
+|-------|----------|
+| Connection refused | Ensure Docker containers are running: `docker compose up -d` |
+| Auth fails | Verify test credentials in database |
+| Timeout | Increase timeout or run with `--headed` to debug |
+| Browser not found | Run `npx playwright install chromium` |
 
-# Install dependencies
-npm install
+```powershell
+# Debug mode
+DEBUG=pw:api npx playwright test specs/01-smoke.spec.ts
 
-# Install Playwright browsers
-npx playwright install chromium
-
-# Run all tests
-npm test
-
-# Run with visible browser (UI mode)
-npm run test:headed
+# Run single test
+npx playwright test -g "SMOKE-01" --headed
 ```
-
-## Available Scripts
-
-| Command | Description |
-| --- | --- |
-| `npm test` | Run all tests |
-| `npm run test:ui` | Open Playwright UI |
-| `npm run test:headed` | Run with visible browser |
-| `npm run test:local` | Run against local environment |
-| `npm run test:cloud` | Run against cloud environment |
-| `npm run test:api` | Run API status tests only |
-| `npm run test:appointment` | Run appointment workflow tests |
-| `npm run test:meeting` | Run meeting workflow tests |
-| `npm run report` | Open HTML test report |
-
-## Test Structure
-
-```text
-tests/e2e/
-├── specs/
-│   ├── api-status.spec.ts          # API endpoint tests (19 tests)
-│   ├── process-docs-unit.spec.ts   # Unit tests from Process docs (30 tests)
-│   ├── appointment-workflow.spec.ts # Appointment UI workflow tests
-│   └── meeting-workflow.spec.ts    # Meeting UI workflow tests
-├── fixtures/
-│   ├── demo-meeting-data.json      # Sample meeting data for testing
-│   └── README.md                   # Fixtures documentation
-├── playwright.config.ts            # Playwright configuration
-├── global-setup.ts                 # Auth state setup
-└── package.json                    # Dependencies and scripts
-```
-
-## Test Categories
-
-### 1. API Status Tests (api-status.spec.ts)
-
-Tests that all API endpoints return HTTP 200:
-
-- Health Check endpoints
-- Authentication (login)
-- Appointments
-- PHR (Personal Health Records)
-- Consultants
-- Doctors
-- Notifications
-- Video Meeting endpoints
-
-### 2. Process Documentation Unit Tests (process-docs-unit.spec.ts)
-
-Tests generated from the Process documentation files:
-
-- **Appointment Workflow** (APT-001 to APT-006)
-- **Meeting Workflow** (MEET-001 to MEET-005)
-- **PHR Workflow** (PHR-001 to PHR-006)
-- **EMR Workflow** (EMR-001 to EMR-005)
-- **AI Integration** (AI-001 to AI-004)
-- **Notifications** (NOTIF-001, NOTIF-002)
-- **Clinical Resources** (CR-001, CR-002)
-
-### 3. Meeting Workflow Tests (meeting-workflow.spec.ts)
-
-Tests for video consultation features:
-
-- Patient creates meeting with guest invites
-- Doctor invites specialist consultants
-- Host lobby management
-- Transcript streaming (start/stop)
-- AI meeting summary
-- EMR generation from meeting
-- Man-in-the-Loop validation
-- Patient health history display
-
-### 4. Appointment Workflow Tests (appointment-workflow.spec.ts)
-
-Tests for appointment booking and management:
-
-- Patient views appointments
-- Patient books new appointment
-- Doctor views pending appointments
-- Doctor confirms appointments
-- Admin manages appointments
-
-## Test Configuration
-
-### Runtime Environment Variables
-
-| Variable | Default | Description |
-| --- | --- | --- |
-| `TEST_ENV` | `local` | Environment to test (`local` or `cloud`) |
-| `TEST_URL` | `http://localhost:3005` | Base URL for tests |
-
-### Test Credentials
-
-| Role | Email | Password | Portal |
-| --- | --- | --- | --- |
-| Patient | `demo.test@gmail.com` | `YOUR_TEST_PASSWORD` | `localhost:3005` |
-| Doctor | `doctor.test@izara.com` | `YOUR_TEST_DOCTOR_PASSWORD` | `localhost:3010` |
-| Admin | `admin.test@izara.com` | `YOUR_TEST_ADMIN_PASSWORD` | `localhost:3010` |
-
-## Running Against Different Environments
-
-### Local Testing
-
-```bash
-# Make sure containers are running
-docker-compose up -d
-
-# Run tests
-npm run test:local
-```
-
-### Cloud Testing
-
-```bash
-# Set environment
-$env:TEST_ENV = "cloud"
-
-# Run tests
-npm run test:cloud
-```
-
-## Demo Meeting Data
-
-Sample meeting data is available in `fixtures/demo-meeting-data.json` for testing:
-
-- 15-minute consultation (900 seconds)
-- 3 participants (Patient, Doctor, Relative)
-- Thai language transcript with timestamps
-- Chat messages
-- Pre-generated AI summary
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Tests fail with "connection refused"**
-   - Ensure Docker containers are running
-   - Check ports 3005, 3010, 5433 are available
-
-2. **Auth fails during tests**
-   - Verify test credentials in database
-   - Check JWT secret configuration
-
-3. **Browser tests timeout**
-   - Increase timeout in playwright.config.ts
-   - Run with `--headed` to debug visually
-
-### Debug Mode
-
-```bash
-# Run with debug logging
-DEBUG=pw:api npx playwright test
-
-# Run single test with visibility
-npx playwright test -g "API Health Check" --headed
-```
-
-## Adding New Tests
-
-1. Create test file in `specs/` directory
-2. Import Playwright test utilities
-3. Follow naming convention: `feature-name.spec.ts`
-4. Use existing helper functions from other specs
-
-Example:
-
-```typescript
-import { test, expect } from '@playwright/test';
-
-test.describe('New Feature', () => {
-  test('should do something', async ({ request }) => {
-    const response = await request.get('http://localhost:3005/api/health');
-    expect(response.status()).toBe(200);
-  });
-});
-```
-
-## Integration with CI/CD
-
-The test suite can be integrated with GitHub Actions or Cloud Build:
-
-```yaml
-# Example GitHub Actions workflow
-- name: Run E2E Tests
-  run: |
-    cd tests/e2e
-    npm ci
-    npx playwright install chromium
-    npm test
-```
-
-## Reports
-
-After running tests, HTML report is generated:
-
-```bash
-npm run report
-```
-
-This opens an interactive report showing:
-
-- Test results summary
-- Screenshots on failure
-- Video recordings (on retry)
-- Trace files for debugging

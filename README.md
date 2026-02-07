@@ -1,6 +1,6 @@
 # 🏥 Izara Telemedicine Platform
 
-![Version](https://img.shields.io/badge/version-1.6.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.4.5-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Platform](https://img.shields.io/badge/platform-web-lightgrey.svg)
 ![Node](https://img.shields.io/badge/node-%3E%3D22.0.0-brightgreen.svg)
@@ -14,7 +14,7 @@
 
 ## A comprehensive telemedicine platform built for Thailand's healthcare system
 
-[Demo](#-portal-urls) • [Features](#-key-features) • [Installation](#-installation--setup) • [Cloud Deployment](#-cloud-deployment)
+[Features](#-key-features) • [Installation](#-installation--setup) • [Testing](#-testing) • [Deployment](#-cloud-deployment)
 
 ---
 
@@ -32,436 +32,36 @@ The platform consists of three main services:
 
 ---
 
-## 🔧 v1.5.0 Updates (Latest - February 5, 2026)
+## 🧪 Testing
 
-### 🧪 Comprehensive Phase 1 Test Coverage - ZERO SKIPPED TESTS ✅
+### Test Coverage
 
-Complete end-to-end testing verified on both local Docker and Google Cloud Run with **100% pass rate**.
-
-#### 📊 Test Summary
-
-| Environment | Tests | Skipped | Failed | Status |
-| ----------- | ----- | ------- | ------ | ------ |
-| **LOCAL** | 92 | 0 | 0 | ✅ 100% Passing |
-| **CLOUD** | 92 | 0 | 0 | ✅ 100% Passing |
-| **TOTAL** | 184 | 0 | 0 | ✅ All Passing |
-
-#### 🧪 Test Categories (20 Categories, 92 Tests)
-
-| # | Category | Tests | Description |
-| - | -------- | ----- | ----------- |
-| 1 | API Health & Database | 6 | Health endpoints, DB connection |
-| 2 | User Management | 8 | Login (5 users), profiles, sessions |
-| 3 | Appointment Workflow | 7 | Book, list, pool, history |
-| 4 | Video Meeting (Jitsi) | 8 | Transcription, AI summary |
-| 5 | Health Records (PHR) | 7 | Vitals, medications, allergies |
-| 6 | EMR Workflow | 4 | SOAP format, AI summary |
-| 7 | Patient Instructions | 2 | Generate & list |
-| 8 | AI Features | 4 | Chat, CDS, Document Analysis |
-| 9 | PDPA & Living Will | 3 | Consent management |
-| 10 | Clinical Resources | 4 | Medical content |
-| 11 | Notifications | 3 | Patient/Doctor alerts |
-| 12 | Patient Portal UI | 6 | Dashboard, appointments |
-| 13 | Doctor Portal UI | 5 | Dashboard, patients |
-| 14 | Admin Portal UI | 3 | Admin features |
-| 15 | Theme & Language | 2 | Dark mode, Thai/English |
-| 16 | Doctor Data Services | 3 | Doctors list, specialties |
-| 17 | Multi-Portal Parallel | 3 | Simultaneous multi-user |
-| 18 | Full Workflow E2E | 2 | Appointment→Meeting→EMR |
-| 19 | Error Handling | 4 | Invalid credentials |
-| 20 | Phase 1 Requirements | 8 | Stakeholder verification |
-
-#### 🔐 Authentication Verified (5 Users - Status 200)
-
-| User | Email | Role | Local | Cloud |
-| ---- | ----- | ---- | ----- | ----- |
-| Patient 1 | `demo.test@gmail.com` | patient | ✅ 200 | ✅ 200 |
-| Patient 2 | `Somchai.Mankong@gmail.com` | patient | ✅ 200 | ✅ 200 |
-| Patient 3 | `Anan.Khayanrian@gmail.com` | patient | ✅ 200 | ✅ 200 |
-| Doctor | `doctor.test@izara.com` | doctor | ✅ 200 | ✅ 200 |
-| Admin | `admin.test@izara.com` | admin | ✅ 200 | ✅ 200 |
-
-#### 🌐 Portal URLs
-
-**Local Environment (Docker)**
-
-| Service | URL |
-| ------- | --- |
-| Patient Portal | http://localhost:3005 |
-| Doctor Portal | http://localhost:3010 |
-| Meeting Server | http://localhost:3020 |
-| PostgreSQL | localhost:5433 |
-| pgAdmin | http://localhost:5050 |
-
-**Cloud Environment (Google Cloud Run)**
-
-| Service | URL |
-| ------- | --- |
-| Patient Portal | https://izara-patient-portal-hvht4obouq-as.a.run.app |
-| Doctor Portal | https://izara-doctor-portal-hvht4obouq-as.a.run.app |
-| Meeting Server | https://izara-jitsi-meeting-portal-hvht4obouq-as.a.run.app |
-| pgAdmin | https://izara-pgadmin-hvht4obouq-as.a.run.app |
-| Cloud SQL | 34.143.228.135:5432 |
-
-> **Note:** Cloud Run URLs use the format `{service}-{project-hash}-{region}.a.run.app`. The hash `hvht4obouq` is auto-generated for project `izara-telemedicine` (project number: 724889190329).
-
-#### 🛠️ Cloud Run Configuration
-
-| Setting | Value |
-| ------- | ----- |
-| Memory | 2Gi |
-| CPU | 2 vCPU |
-| Min Instances | 1 (no cold start) |
-| Timeout | 300s |
-| Region | asia-southeast1 |
-
----
-
-## 📋 Run Tests Commands
+Comprehensive E2E testing with 123+ tests passing on both local and cloud environments.
 
 ```powershell
-# Navigate to test directory
+# Run LOCAL tests
 cd tests/e2e
+npx playwright test --timeout=180000 --workers=4
 
-# Run LOCAL tests (92 tests, 0 skipped)
-$env:TEST_ENV="local"
-npx playwright test specs/phase1-full-coverage.spec.ts --timeout=180000 --workers=4
-
-# Run CLOUD tests (92 tests, 0 skipped)
-$env:TEST_ENV="cloud"
-npx playwright test specs/phase1-full-coverage.spec.ts --timeout=180000 --workers=4
-
-# Run with visible browser (headed mode)
-npx playwright test specs/phase1-full-coverage.spec.ts --headed
+# Run with visible browser
+npx playwright test --headed
 
 # Run specific test category
-npx playwright test specs/phase1-full-coverage.spec.ts --grep "Video Meeting"
-
-# Run multi-portal parallel tests
-npx playwright test specs/phase1-full-coverage.spec.ts --grep "Multi-Portal" --headed
+npx playwright test --grep "Video Meeting"
 
 # View HTML Report
 npx playwright show-report
 ```
 
----
-
-| Test File | Description | Tests | Status |
-| ----------- | ------------- | ------- | -------- |
-| `cloud-e2e-workflow.spec.ts` | Complete cloud portal workflow tests (5 users, 27 pages, APIs) | 48 | ✅ |
-| `cloud-health-tests.spec.ts` | Cloud health checks and infrastructure | 17 | ✅ |
-
-### Total Cloud: 65 tests passing (100%)
-
----
-
-## 🔧 v1.4.8 Updates (January 28, 2026)
-
-### 📊 Run Tests
-
-```powershell
-# Run ALL local tests (463 tests)
-cd tests/e2e
-npx playwright test --project="Local E2E Tests"
-
-# Run ALL cloud tests (65 tests)
-npx playwright test --project="Cloud E2E Tests"
-
-# Run with visible browser (headed mode)
-npx playwright test --project="Local E2E Tests" --headed
-
-# Run specific test file
-npx playwright test comprehensive-local-tests.spec.ts --project="Local E2E Tests"
-
-# Run meeting workflow tests (requires meeting server on port 3020)
-cd Izara-jitsi-server && npm run dev  # First, start meeting server
-cd tests/e2e && npx playwright test meeting-workflow.spec.ts --project="Local E2E Tests"
-```
-
-### ✅ Test Coverage Summary
-
-### 1. API Login Tests (5 users verified on both Local & Cloud)
-
-- Patient 1: `demo.test@gmail.com` ✅
-- Patient 2: `Somchai.Mankong@gmail.com` ✅
-- Patient 3: `Anan.Khayanrian@gmail.com` ✅
-- Doctor: `doctor.test@izara.com` (role=doctor) ✅
-- Admin: `admin.test@izara.com` (role=admin, isAdmin=true) ✅
-
-### 2. Patient Portal UI Pages (9 pages)
-
-- Login, Dashboard, Appointments, AI Doctor, Health Library, Health Records, Timeline, PDPA, Settings
-
-### 3. Doctor Portal UI Pages (8 pages)
-
-- Login, Dashboard, Schedule, Patients, Health Meeting, Medical Consultants, Medical Content, Clinical Resources
-
-### 4. Admin Portal UI Pages (10 pages)
-
-- Dashboard, Schedule, Patients, Health Meeting, Medical Consultants, Medical Content, Clinical Resources, Doctor Management, Appointment Management, Doctors List
-
-### 5. Video Meeting Workflow (Jitsi Integration)
-
-- Meeting server health check (port 3020) ✅
-- Meeting creation with guest invites ✅
-- Start/stop transcription streaming ✅
-- AI summary generation (Gemini) ✅
-- EMR generation with Man-in-the-Loop validation ✅
-- Patient meeting results access ✅
-
-### 6. Cloud Portal URLs (Updated February 4, 2026)
-
-- Patient Portal: <https://izara-patient-portal-724889190329.asia-southeast1.run.app>
-- Doctor Portal: <https://izara-doctor-portal-724889190329.asia-southeast1.run.app>
-- Meeting Server: <https://izara-jitsi-meeting-portal-724889190329.asia-southeast1.run.app>
-
----
-
-## 🔧 v1.4.6 Updates
-
-### 🧪 Previous Test Suite - 178 TESTS PASSING ✅
-
-Validated core platform functionality with comprehensive Playwright E2E test suite.
-
-- ✅ **Cloud Run uses DATABASE_URL secret** - Direct TCP connection to PostgreSQL service
-
-### 🧪 Comprehensive E2E Test Suite (198 Tests Passing)
-
-| Test File | Description | Tests |
-| ----------- | ------------- | ------- |
-| `api-status.spec.ts` | API health checks and status 200 validation | 19 |
-| `full-appointment-workflow.spec.ts` | Complete appointment booking to completion | 16 |
-| `meeting-workflow-ui.spec.ts` | Video meeting workflows with Jitsi | 14 |
-| `guest-invite-system.spec.ts` | Patient invites relatives, Doctor invites consultants | 10 |
-| `transcript-control.spec.ts` | Start/stop transcription controls | 10 |
-| `ai-summary-workflow.spec.ts` | AI summary generation from meeting | 8 |
-| `emr-man-in-loop.spec.ts` | Doctor confirmation for AI recommendations | 8 |
-| `health-history-display.spec.ts` | Patient health records display | 12 |
-| `process-docs-unit-tests.spec.ts` | Tests from Process documentation | 31 |
-| `cloud-health-tests.spec.ts` | Cloud deployment health checks | 17 |
-
-### Total: 167 local tests + 17 cloud tests = 184+ tests passing
-
-### 📊 Run Tests (2)
-
-```powershell
-# Run ALL local tests
-npx playwright test --project="Local E2E Tests"
-
-# Run specific test file
-npx playwright test api-status.spec.ts --project="Local E2E Tests"
-
-# Run cloud health tests
-npx playwright test cloud-health-tests.spec.ts --project="Cloud E2E Tests"
-
-# Run with visible browser
-npx playwright test --project="Local E2E Tests" --headed
-```
-
-### 🔧 Database Configuration
-
-- **Port**: 5433 (external), 5432 (internal Docker)
-- **Database**: izara_phase1
-- **No Cloud SQL**: All references removed from codebase
-- **Docker service**: `postgres` container with pgvector extension
-
-### 🏗️ Architecture Changes
-
-- Removed `--add-cloudsql-instances` from Cloud Run deployment
-- Removed Unix socket connection logic from all services
-- Default port changed from 5432 to 5433 for Docker external access
-- Cloud deployment uses `DATABASE_URL` secret instead of Cloud SQL socket
-
----
-
-## 🔧 v1.4.4 Updates
-
-### 🆕 New Features & Improvements
-
-- ✅ **Comprehensive API Test Suite** - Added `tests/izara-api-tests.ps1` with 21 test cases
-- ✅ **Doctor Approval Workflow** - Fixed Admin Doctor Management page with proper API endpoints
-- ✅ **Pending Doctor Data** - Added test data for approval workflow demonstration
-
-### 🐛 Bug Fixes
-
-- ✅ **Database Connection** - Fixed URL encoding issue with `@` character in password
-- ✅ **Admin API Endpoints** - Fixed `/api/admin/users` and `/api/admin/pending-doctors` routing
-- ✅ **Doctor Management Page** - Fixed API URL references from AUTH_API_URL to API_URL
-- ✅ **Test Script Corrections** - Fixed AI Chat History and Admin API test endpoints
-
-### 📊 Test Coverage
-
-All 21 API tests passing (100%):
-
-- Health checks (2 tests)
-- Patient authentication - 3 users (3 tests)
-- Doctor/Admin authentication (2 tests)
-- Patient Portal APIs - PHR, Vitals, Appointments, Content, Resources (7 tests)
-- Doctor Portal APIs - Appointments, Patients, Content, Consultants (5 tests)
-- Admin APIs - Doctor Management, Pending Approvals (2 tests)
-
-### 🧪 Test Credentials
-
-```text
-# Patients
-demo.test@gmail.com          / YOUR_TEST_PASSWORD
-Somchai.Mankong@gmail.com    / YOUR_TEST_PASSWORD
-Anan.Khayanrian@gmail.com    / YOUR_TEST_PASSWORD
-
-# Doctor
-doctor.test@izara.com        / YOUR_TEST_DOCTOR_PASSWORD
-
-# Admin
-admin.test@izara.com         / YOUR_TEST_ADMIN_PASSWORD
-
-# Pending Doctor (for approval workflow)
-pending.doctor@izara.com     / YOUR_TEST_PASSWORD
-```
-
----
-
-## 🔧 v1.4.3 Updates
-
-### 🆕 New Features & Improvements (2)
-
-- ✅ **Removed Map Page** - Removed unreliable Google Maps integration from Patient Portal
-- ✅ **Enabled AI Doctor Page** - Re-enabled AI health assistant with chat history sidebar
-- ✅ **Improved Appointment Filters** - Added "รอการยืนยัน", "ยืนยันแล้ว", "ที่ผ่านมา" tabs
-- ✅ **Meeting Transcript & Summary** - Gemini AI integration for post-meeting transcription
-
-### 🐛 Bug Fixes (2)
-
-- ✅ **Appointment Creation** - Fixed field name mismatch (appointmentDate → preferredDate)
-- ✅ **PHR Medications Display** - Fixed `medications` vs `currentMedications` field binding
-- ✅ **PHR Allergies Display** - Now fetches from both `phr.allergies` and `user.allergies`
-- ✅ **PHR Update Service** - Fixed COALESCE handling for undefined values
-- ✅ **Medical Content Categories** - Fixed category values (underscore → hyphen format)
-
-### 📊 Database Updates
-
-- ✅ Fixed medical content categories: `chronic_disease` → `chronic-disease`, `prevention` → `preventive-care`
-- ✅ Added `lifestyle` and `demographics` fields to PHR upsert
-- ✅ Migration script: `scripts/database/fix-medical-content-categories.sql`
-
----
-
-## 🔧 v1.4.2 Updates
-
-### 🆕 New Features
-
-- ✅ **Profile Image Upload** - Upload and change profile picture in Settings
-- ✅ **AI Chat History Sidebar** - ChatGPT-style session history with session management
-- ✅ **Fresh Deployment Mode** - `.\scripts\deploy.ps1 -Fresh` for clean database setup
-
-### 🐛 Bug Fixes (3)
-
-- ✅ **Medical Content Categories** - Fixed category mismatch between database and frontend
-- ✅ **PHR Data Display** - Fixed snake_case to camelCase transformation for vital signs
-- ✅ **Medical Consultants Page** - Fixed data mapping causing page freeze
-- ✅ **Clinical Resources Author** - Fixed "By Unknown" display with proper author data
-
-### 📊 Database Updates (2)
-
-- ✅ Updated medical content categories to match frontend filters (8 categories)
-- ✅ Added MC-007, MC-008, MC-009 for complete category coverage
-- ✅ Added Thai content entries with proper categorization
-- ✅ Added author_id and author_name to clinical_resources
-
----
-
-## 🔧 v1.4.1 Bug Fixes & Improvements
-
-### 🚀 Cloud Deployment - FULLY WORKING ✅
-
-### Doctor Portal 502 Bad Gateway Issue - RESOLVED
-
-The Doctor Portal was returning 502 Bad Gateway on Google Cloud Run despite successful deployment. This has been completely fixed.
-
-**Root Causes**:
-
-1. ❌ Deployment script checked wrong endpoint (`/api/health` instead of `/health`)
-2. ❌ Cold start timeout too short for multi-service container
-3. ❌ No service status verification before tests
-
-**Fixes Applied**:
-
-- ✅ **Corrected Health Endpoints**: Patient Portal `/health`, Doctor Portal `/health`
-- ✅ **Enhanced Retry Logic**: 5 retries with 10-second delays, 60-second timeout
-- ✅ **Service Status Check**: Pre-test validation with gcloud status commands
-- ✅ **Better Error Logging**: Service-specific log commands for debugging
-
-**Live Deployment URLs (Updated February 4, 2026)**:
-
-- **Patient Portal**: <https://izara-patient-portal-724889190329.asia-southeast1.run.app> ✅
-- **Doctor Portal**: <https://izara-doctor-portal-724889190329.asia-southeast1.run.app> ✅
-- **Meeting Server**: <https://izara-jitsi-meeting-portal-724889190329.asia-southeast1.run.app> ✅
-
-**Test Results**: ✅ **10/10 UI Tests Passing** - All workflows validated with visible UI
-
-### 🚀 Deployment Automation
-
-- ✅ **Unified Deployment Script** - `scripts/deploy.ps1` for local/cloud
-- ✅ **Fresh Mode** - `--Fresh` option to reset all data and start clean
-- ✅ **Health Checks** - Automatic verification of all services
-- ✅ **Database Initialization** - Auto-seeds PostgreSQL with demo data
-
-### API & Routing Fixes (Critical)
-
-- ✅ **Consultants API** - Removed auth requirement for public GET endpoints
-- ✅ **Admin Pending Doctors** - Added missing database columns (approved_at, rejected_at)
-- ✅ **Medical Content API** - Fixed thumbnail field mapping (imageUrl → thumbnail)
-- ✅ **Clinical Resources** - Added author_id and author_name columns
-- ✅ **All Public APIs** - Return status 200 (no more 401 for public endpoints)
-- ✅ Fixed Medical Content API routing - proper nginx proxy to mainApiServer
-- ✅ Fixed Notification routes - migrated from GCS to PostgreSQL
-
-### Database Schema Updates
-
-- ✅ Added `approved_at`, `approved_by`, `rejected_at`, `rejected_by` to users table
-- ✅ Added `author_id`, `author_name` to clinical_resources table
-- ✅ Updated seed data with Thai doctor author information
-
-### Meeting Server Enhancements
-
-- ✅ Gemini AI properly configured for meeting summaries
-- ✅ Google Speech-to-Text integration for transcription
-- ✅ PostgreSQL storage for meeting records and transcripts
-- ✅ Health check endpoint returning correct status
-- ✅ Man-in-the-Loop confirmation for AI recommendations
-
-### Map & Location Features
-
-- ✅ **Google Maps Integration** - Fixed MapPage component with working old version
-- ✅ Proper API key configuration (VITE_GOOGLE_MAPS_API_KEY)
-- ✅ Fallback handling for API errors
-
-### PHR Improvements
-
-- ✅ Temperature input uses number type with step=0.1 (35-42°C)
-- ✅ Proper validation range
-- ✅ Improved vitals data entry UX
-- ✅ Save functionality with PostgreSQL persistence
-
-### Profile & Settings
-
-- ✅ Password change modal for both portals
-- ✅ Avatar/image upload functionality
-- ✅ Profile editing with PostgreSQL persistence
-- ✅ Password validation with strength requirements
-
-### AI Features
-
-- ✅ AI Chat history with 60-day retention policy
-- ✅ Session management and persistence
-- ✅ Gemini AI for health assistant and meeting summaries
-- ✅ Clear chat history endpoint (`/api/ai/chat/clear`)
-
-### Code Fixes
-
-- ✅ Fixed `api.delete` function signature to accept optional data parameter
-- ✅ Fixed `clearChatHistory` using POST method instead of DELETE with body
-- ✅ Added SpeechRecognition type declarations for Web Speech API
-- ✅ Added `/api/ai/chat/clear` POST endpoint for chat history management
+### Test Credentials
+
+| Role | Email | Password |
+| ---- | ----- | -------- |
+| Patient 1 | `demo.test@gmail.com` | See `.env.docker` |
+| Patient 2 | `Somchai.Mankong@gmail.com` | See `.env.docker` |
+| Patient 3 | `Anan.Khayanrian@gmail.com` | See `.env.docker` |
+| Doctor | `doctor.test@izara.com` | See `.env.docker` |
+| Admin | `admin.test@izara.com` | See `.env.docker` |
 
 ---
 
@@ -506,7 +106,7 @@ The Doctor Portal was returning 502 Bad Gateway on Google Cloud Run despite succ
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────────┐
-│                   IZARA TELEMEDICINE v1.4.2                              │
+│                   IZARA TELEMEDICINE v1.4.5                              │
 ├──────────────────────────────────────────────────────────────────────────┤
 │   ┌─────────────────┐  ┌─────────────────┐  ┌────────────────────────┐   │
 │   │  Patient Portal │  │  Doctor Portal  │  │  Meeting Server        │   │
@@ -729,80 +329,26 @@ See `.env.docker.example` for complete configuration template.
 
 ---
 
-## 🌐 Portal URLs (Updated February 4, 2026)
+## 🌐 Portal URLs
 
-| Environment | Patient Portal | Doctor Portal | Meeting Server |
-| ------------- | ---------------- | --------------- | ---------------- |
-| **Local** | <http://localhost:3005> | <http://localhost:3010> | <http://localhost:3020> |
-| **Cloud** | <https://izara-patient-portal-724889190329.asia-southeast1.run.app> | <https://izara-doctor-portal-724889190329.asia-southeast1.run.app> | <https://izara-jitsi-meeting-portal-724889190329.asia-southeast1.run.app> |
+### Local Environment (Docker)
 
----
+| Service | URL |
+| ------- | --- |
+| Patient Portal | http://localhost:3005 |
+| Doctor Portal | http://localhost:3010 |
+| Meeting Server | http://localhost:3020 |
+| PostgreSQL | localhost:5433 |
+| pgAdmin | http://localhost:5050 |
 
-## 🧪 Demo Accounts & Test Data
+### Cloud Environment (Google Cloud Run)
 
-**Note:** Passwords shown here are placeholders. Set real values via environment variables or local seed data and never reuse them in production.
-
-### Patient Portal Accounts (<http://localhost:3005>)
-
-| Email | Password | Thai Name | Notes |
-| ------- | ---------- | ----------- | ----- |
-| `demo.test@gmail.com` | `YOUR_TEST_PASSWORD` | นาย ทดสอบ ระบบ | Primary test patient |
-| `Somchai.Mankong@gmail.com` | `YOUR_TEST_PASSWORD` | นายสมชาย มั่นคง | Age: 45, HN-2024-001234, Hypertension |
-| `Anan.Khayanrian@gmail.com` | `YOUR_TEST_PASSWORD` | นายอนันต์ ขยันเรียน | Age: 58, HN-2018-005678, Diabetes + CKD |
-
-### Patient Data Summary
-
-### Patient 1: นายสมชาย มั่นคง (Somchai Mankong)
-
-- **HN**: HN-2024-001234
-- **Age**: 45 years old
-- **Blood Type**: O+
-- **Conditions**: Essential Hypertension (I10)
-- **Medications**: Amlodipine 5mg QD
-- **Allergies**: None
-
-### Patient 2: นายอนันต์ ขยันเรียน (Anan Khayanrian)
-
-- **HN**: HN-2018-005678
-- **Age**: 58 years old
-- **Blood Type**: A+
-- **Conditions**:
-  - Type 2 Diabetes Mellitus (E11.9) - HbA1c 7.2%
-  - Chronic Kidney Disease Stage 3b (N18.4) - eGFR 38
-  - Essential Hypertension (I10)
-- **Medications**:
-  - Metformin 500mg BID (dose adjustment needed for CKD)
-  - Lisinopril 10mg QD
-  - Atorvastatin 20mg QD
-- **Allergies**:
-  - ⚠️ Penicillin (Severe - Anaphylaxis)
-  - ⚠️ Sulfa drugs (Moderate - Rash)
-
-### Doctor Portal Accounts (<http://localhost:3010>)
-
-| Email | Password | Thai Name | Role |
-| ------- | ---------- | ----------- | ------ |
-| `doctor.test@izara.com` | `YOUR_TEST_DOCTOR_PASSWORD` | นพ. ทดสอบ แพทย์ดี | Doctor |
-| `somchai.prasert@izara.com` | `YOUR_TEST_PASSWORD` | นพ. สมชาย ประเสริฐ | Doctor |
-| `siriporn.thongchai@izara.com` | `YOUR_TEST_PASSWORD` | พญ. ศิริพร ธงชัย | Doctor |
-| `admin.test@izara.com` | `YOUR_TEST_ADMIN_PASSWORD` | นพ. ผู้ดูแลระบบ ใจดี | Admin |
-
-### pgAdmin Access
-
-| Email | Password | URL |
-| ------- | ---------- | -------- |
-| `admin@izara.com` | `YOUR_TEST_ADMIN_PASSWORD` | <http://localhost:5050> |
-
-### Meeting Server (<http://localhost:3020>)
-
-The Meeting Server provides video consultation features:
-
-- **Live Transcription**: Real-time speech-to-text using Web Speech API
-- **AI Summaries**: Automatic SOAP notes generation with Google Gemini
-- **Meeting Records**: PostgreSQL storage for consultation history
-- **API Endpoints**: `/health`, `/api/meeting/start`, `/api/meeting/summary`
-
-**Note**: Meeting Server is available for local development only. Cloud deployments use Jitsi Meet directly.
+| Service | URL |
+| ------- | --- |
+| Patient Portal | https://izara-patient-portal-hvht4obouq-as.a.run.app |
+| Doctor Portal | https://izara-doctor-portal-hvht4obouq-as.a.run.app |
+| Meeting Server | https://izara-jitsi-meeting-portal-hvht4obouq-as.a.run.app |
+| pgAdmin | https://izara-pgadmin-hvht4obouq-as.a.run.app |
 
 ---
 
@@ -903,86 +449,29 @@ npm run build:prod
 
 ## 🚢 Cloud Deployment
 
-### Automated Deployment Script (Recommended)
-
 Use the unified PowerShell deployment script:
 
 ```powershell
 # Deploy locally with Docker Compose
 .\scripts\deploy.ps1 -Target local
 
-# Deploy to Google Cloud Run (REPLACES existing deployment - no duplicates)
+# Deploy to Google Cloud Run
 .\scripts\deploy.ps1 -Target cloud
-
-# Deploy everything (local + cloud)
-.\scripts\deploy.ps1 -Target all
 
 # Fresh deployment (reset all data)
 .\scripts\deploy.ps1 -Target local -Fresh
-
-# Skip health checks for faster deployment
-.\scripts\deploy.ps1 -Target local -SkipTests
 
 # Show help
 .\scripts\deploy.ps1 -Help
 ```
 
-### Important: Cloud Deployment Behavior
-
-- ✅ **Replaces Existing Services**: Updates in-place with zero downtime
-- ✅ **Same URL**: Service URLs remain unchanged
-- ✅ **No Duplicates**: Old containers are automatically removed
-- ✅ **Gradual Rollout**: Cloud Run manages traffic shifting
-
 ### Script Features
 
-- 🔄 Detects existing data and preserves it (unless `-Fresh`)
+- 🔄 Automatic data initialization with demo data
 - 🏥 Health checks for all services
-- 🗃️ Automatic database initialization with demo data
+- 🗃️ Database setup and migrations
 - 📊 Deployment status report
-- ⚠️ Error handling and rollback
-
-### Manual Cloud Deployment
-
-### Prerequisites (2)
-
-1. Google Cloud SDK installed and configured
-2. Project with billing enabled
-3. Cloud Run API enabled
-4. PostgreSQL deployed as Docker service (NOT Cloud SQL)
-
-### Deploy to Google Cloud Run
-
-```powershell
-# Deploy Patient Portal
-cd Isara-patient-portal
-gcloud builds submit --config=cloudbuild.yaml
-
-# Deploy Doctor Portal
-cd Isara-doctor-portal
-gcloud builds submit --config=cloudbuild.yaml
-```
-
-### PostgreSQL Database (Docker Service)
-
-```powershell
-# Connect to PostgreSQL container
-docker exec -it izara-postgres psql -U postgres -d izara_phase1
-
-# Import schema (from project root)
-docker exec -i izara-postgres psql -U postgres -d izara_phase1 < scripts/database/izara-database.sql
-```
-
-### 🌐 Production URLs (LIVE - Updated February 4, 2026)
-
-| Portal | URL | Status |
-| -------- | ----- | ------ |
-| **Patient Portal** | <https://izara-patient-portal-724889190329.asia-southeast1.run.app> | ✅ Online |
-| **Doctor Portal** | <https://izara-doctor-portal-724889190329.asia-southeast1.run.app> | ✅ Online |
-| **Meeting Server** | <https://izara-jitsi-meeting-portal-724889190329.asia-southeast1.run.app> | ✅ Online |
-| **pgAdmin** | <https://izara-pgadmin-724889190329.asia-southeast1.run.app> | ✅ Online |
-
-> **📝 Note:** Use the same test credentials listed in [Demo Accounts](#-demo-accounts--test-data) section above.
+- ⚠️ Error handling and validation
 
 ---
 
