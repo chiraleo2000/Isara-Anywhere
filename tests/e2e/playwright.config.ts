@@ -11,7 +11,7 @@
  * - Multi-user parallel testing (patient, doctor, admin)
  * - Full meeting lifecycle simulation
  * - AI features testing (Req 2.1-2.5, 4.1-4.5)
- * - 108 comprehensive tests (all passing)
+ * - 170 comprehensive tests across 15 sections (A-O), 5 users
  * ═══════════════════════════════════════════════════════════════════════
  */
 import { defineConfig, devices } from '@playwright/test';
