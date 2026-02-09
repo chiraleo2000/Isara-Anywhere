@@ -1,0 +1,130 @@
+{
+  "meeting_id": "MEET-TEST-001",
+  "duration_seconds": 1200,
+  "participants": [
+    {
+      "name": "Dr. Isara Wongchai",
+      "role": "doctor",
+      "joined_at": "2026-02-09T10:00:00Z",
+      "left_at": "2026-02-09T10:20:00Z"
+    },
+    {
+      "name": "สมชาย ใจดี",
+      "role": "patient",
+      "joined_at": "2026-02-09T10:00:30Z",
+      "left_at": "2026-02-09T10:20:00Z"
+    }
+  ],
+  "transcript": [
+    {
+      "timestamp": "00:00:15",
+      "speaker": "Doctor",
+      "text": "สวัสดีครับคุณสมชาย วันนี้สบายดีไหมครับ"
+    },
+    {
+      "timestamp": "00:00:20",
+      "speaker": "Patient",
+      "text": "สวัสดีครับหมอ ไม่ค่อยสบายเลยครับ ปวดหัวมากเลย"
+    },
+    {
+      "timestamp": "00:00:30",
+      "speaker": "Doctor",
+      "text": "ปวดหัวมานานแค่ไหนแล้วครับ"
+    },
+    {
+      "timestamp": "00:00:35",
+      "speaker": "Patient",
+      "text": "ประมาณ 3 วันแล้วครับ แล้วก็มีไข้ด้วย วัดได้ 37.8 องศา"
+    },
+    {
+      "timestamp": "00:00:50",
+      "speaker": "Doctor",
+      "text": "มีอาการอื่นๆ ประกอบด้วยไหมครับ เช่น คลื่นไส้ อาเจียน"
+    },
+    {
+      "timestamp": "00:00:58",
+      "speaker": "Patient",
+      "text": "มีครับ คลื่นไส้บ้าง แล้วก็เวียนหัวนิดหน่อย"
+    },
+    {
+      "timestamp": "00:01:10",
+      "speaker": "Doctor",
+      "text": "เคยมีอาการปวดหัวแบบนี้มาก่อนไหมครับ หรือมีประวัติโรคประจำตัว"
+    },
+    {
+      "timestamp": "00:01:18",
+      "speaker": "Patient",
+      "text": "ไม่เคยมีครับ แล้วก็ไม่มีโรคประจำตัวนะครับ"
+    },
+    {
+      "timestamp": "00:01:30",
+      "speaker": "Doctor",
+      "text": "ตอนนี้ผมจะตรวจดูอาการนะครับ ให้ผมดูว่าคอแข็งไหม หรือมีอาการผิดปกติอื่นๆ"
+    },
+    {
+      "timestamp": "00:15:00",
+      "speaker": "Doctor",
+      "text": "จากการตรวจ ผมคิดว่าคุณน่าจะเป็น Tension Headache ครับ คือปวดหัวจากความเครียดหรือความตึงเครียดของกล้ามเนื้อ"
+    },
+    {
+      "timestamp": "00:15:15",
+      "speaker": "Patient",
+      "text": "แล้วต้องรักษายังไงครับหมอ"
+    },
+    {
+      "timestamp": "00:15:25",
+      "speaker": "Doctor",
+      "text": "ผมจะสั่งยาแก้ปวด พาราเซตามอล 500 มิลลิกรัม กินวันละ 3 ครั้ง หลังอาหาร และให้พักผ่อนให้เพียงพอ หลีกเลี่ยงความเครียด"
+    },
+    {
+      "timestamp": "00:16:00",
+      "speaker": "Doctor",
+      "text": "ถ้าอาการไม่ดีขึ้นภายใน 3 วัน หรือปวดหัวมากขึ้น ให้กลับมาพบหมออีกนะครับ"
+    },
+    {
+      "timestamp": "00:16:15",
+      "speaker": "Patient",
+      "text": "ครับ ขอบคุณครับหมอ"
+    },
+    {
+      "timestamp": "00:16:20",
+      "speaker": "Doctor",
+      "text": "ครับ หายเร็วๆ นะครับ"
+    }
+  ],
+  "audio_metadata": {
+    "sample_rate": 16000,
+    "channels": 1,
+    "format": "wav",
+    "total_duration_seconds": 1200
+  },
+  "chat_messages": [
+    {
+      "timestamp": "00:05:00",
+      "sender": "Patient",
+      "message": "หมอครับ ผมลืมบอกว่ามีอาการปวดตาด้วยครับ"
+    },
+    {
+      "timestamp": "00:05:10",
+      "sender": "Doctor",
+      "message": "ขอบคุณที่บอกนะครับ ผมจะบันทึกไว้"
+    }
+  ],
+  "sample_lab_pdf_base64": "JVBERi0xLjQKJeLjz9MKMSAwIG9iago8PAovVHlwZSAvQ2F0YWxvZwovUGFnZXMgMiAwIFIKPj4KZW5kb2JqCjIgMCBvYmoKPDwKL1R5cGUgL1BhZ2VzCi9LaWRzIFszIDAgUl0KL0NvdW50IDEKL01lZGlhQm94IFswIDAgNTk1IDg0Ml0KPj4KZW5kb2JqCjMgMCBvYmoKPDwKL1R5cGUgL1BhZ2UKL1BhcmVudCAyIDAgUgovUmVzb3VyY2VzIDw8Ci9Gb250IDw8Ci9GMSA0IDAgUgo+Pgo+PgovQ29udGVudHMgNSAwIFIKPj4KZW5kb2JqCjQgMCBvYmoKPDwKL1R5cGUgL0ZvbnQKL1N1YnR5cGUgL1R5cGUxCi9CYXNlRm9udCAvSGVsdmV0aWNhCj4+CmVuZG9iago1IDAgb2JqCjw8Ci9MZW5ndGggMTAwCj4+CnN0cmVhbQpCVAovRjEgMTIgVGYKMTAwIDcwMCBUZAooTGFiIFJlc3VsdHM6IENCQyBOb3JtYWwsIEdsdWNvc2UgOTAgbWcvZEwpIFRqCkVUCmVuZHN0cmVhbQplbmRvYmoKeHJlZgowIDYKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMDE1IDAwMDAwIG4gCjAwMDAwMDAwNzQgMDAwMDAgbiAKMDAwMDAwMDE2NiAwMDAwMCBuIAowMDAwMDAwMjgzIDAwMDAwIG4gCjAwMDAwMDAzNzEgMDAwMDAgbiAKdHJhaWxlcgo8PAovUm9vdCAxIDAgUgovU2l6ZSA2Cj4+CnN0YXJ0eHJlZgo1MjIKJSVFT0YK",
+  "sample_external_document": "Patient History: Previous headaches in 2023, treated with NSAIDs. No chronic conditions. Family history: Mother has migraines.",
+  "ai_summary": {
+    "chief_complaint": "ปวดหัวมาก 3 วัน มีไข้",
+    "symptoms": [
+      "Severe headache for 3 days",
+      "Fever 37.8°C",
+      "Nausea",
+      "Dizziness",
+      "Eye pain"
+    ],
+    "physical_examination": "No neck stiffness, normal neurological exam",
+    "diagnosis": "Tension Headache",
+    "treatment_plan": "Paracetamol 500mg TID PC, rest, avoid stress",
+    "follow_up": "Return if no improvement in 3 days or worsening symptoms",
+    "duration_minutes": 20
+  }
+}

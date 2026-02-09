@@ -110,10 +110,11 @@ export default defineConfig({
         '**/22-deep-ai-features-cds.spec.ts',
         '**/23-deep-user-mgmt-notifications.spec.ts',
         '**/24-deep-content-clinical-consultants.spec.ts',
+        '**/25-comprehensive-appointments-meeting.spec.ts',
       ],
     },
     // ================================================================
-    // ALL — every spec (01–16)
+    // ALL — every spec (01–25)
     // ================================================================
     {
       name: 'All',

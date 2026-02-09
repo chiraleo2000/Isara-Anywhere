@@ -47,7 +47,7 @@ function getLocalConfig() {
         host: process.env.DB_HOST || 'localhost',
         port: Number.parseInt(process.env.DB_PORT || '5433'),
         user: process.env.DB_USER || 'postgres',
-        password: process.env.DB_PASSWORD || process.env.POSTGRES_PASSWORD,
+        password: process.env.DB_PASSWORD || process.env.POSTGRES_PASSWORD || 'IzaraDb2024',
         database: process.env.DB_NAME || 'izara_phase1',
         ssl: false,
         connectionTimeoutMillis: 10000,

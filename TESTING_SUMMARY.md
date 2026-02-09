@@ -1,6 +1,6 @@
 # Testing Summary & Deployment Readiness — v1.4.6
 
-**Date:** February 7, 2026  
+**Date:** February 9, 2026  
 **Status:** ✅ **ALL TESTS PASSING — LOCAL & CLOUD**
 
 ---
@@ -11,13 +11,13 @@
 
 | Environment | Tests Passed | Tests Failed | Flaky | Duration |
 |---|---|---|---|---|
-| **LOCAL** | **2,438** | 0 | 0 | ~9.0 min |
-| **CLOUD** | **691** | 0 | 0 | ~1.6 min |
-| **TOTAL** | **3,129** | **0** | **0** | **100% Pass** |
+| **LOCAL** | **2,533** | 0 | 0 | ~10.4 min |
+| **CLOUD** | **786** | 0 | 0 | ~1.9 min |
+| **TOTAL** | **3,319** | **0** | **0** | **100% Pass** |
 
 ---
 
-## 📁 Test Spec Files (24 Total)
+## 📁 Test Spec Files (25 Total)
 
 | # | File | Tests | Description |
 |---|---|---|---|
@@ -45,8 +45,10 @@
 | **22** | `22-deep-ai-features-cds.spec.ts` | **21** | Deep AI chat/CDS/knowledge |
 | **23** | `23-deep-user-mgmt-notifications.spec.ts` | **27** | Deep auth/profile/notifications |
 | **24** | `24-deep-content-clinical-consultants.spec.ts` | **40** | Deep content/clinical/metadata |
+| **25** | `25-comprehensive-appointments-meeting.spec.ts` | **95** | Full end-to-end continuous workflow |
 
-**Specs 19-24 are NEW** — covering ALL 13 Process documents with deep testing.
+**Specs 19-24 are deep process coverage** — covering ALL 13 Process documents.  
+**Spec 25 is NEW** — comprehensive 95-test continuous workflow (A→N) covering all 13 processes in a single sequential flow with single login per user.
 
 ---
 
@@ -54,19 +56,19 @@
 
 | Process Document | Spec Coverage |
 |---|---|
-| Appointment_Workflows.md | Specs 11, 13, 15, 16, **19** |
-| Health_Records_Processes.md | Specs 11, 13, 15, 16, **21** |
-| Living_Will_Processes.md | Specs 11, 13, 15, 16, **21** |
-| User_management_Workflows.md | Specs 11, 13, 15, 16, **23** |
-| Notification_Workflows.md | Specs 11, 13, 15, 16, **23** |
-| Medicine_Content_Processes.md | Specs 11, 13, 15, 16, **24** |
-| Clinical_Resources_&_Medical_Library_Workflows.md | Specs 11, 13, 15, 16, **24** |
-| Medical_Consultants_Workflows.md | Specs 11, 13, 15, 16, **24** |
-| VIDEO_MEETING_JITSI_GEMINI.md | Specs 11, 13, 17, **20** |
-| Data_Sync_Documentation.md | Specs 08, 13, 16, **24** |
-| UI_Pages_Workflows.md | Specs 13, 18, **19**, **20**, **21**, **24** |
-| PHASE1_REQUIREMENTS.md | Specs 11, 13, 15, 16 |
-| Living_Will_Implementation_Plan.md | Specs **21** |
+| Appointment_Workflows.md | Specs 11, 13, 15, 16, **19**, **25** |
+| Health_Records_Processes.md | Specs 11, 13, 15, 16, **21**, **25** |
+| Living_Will_Processes.md | Specs 11, 13, 15, 16, **21**, **25** |
+| User_management_Workflows.md | Specs 11, 13, 15, 16, **23**, **25** |
+| Notification_Workflows.md | Specs 11, 13, 15, 16, **23**, **25** |
+| Medicine_Content_Processes.md | Specs 11, 13, 15, 16, **24**, **25** |
+| Clinical_Resources_&_Medical_Library_Workflows.md | Specs 11, 13, 15, 16, **24**, **25** |
+| Medical_Consultants_Workflows.md | Specs 11, 13, 15, 16, **24**, **25** |
+| VIDEO_MEETING_JITSI_GEMINI.md | Specs 11, 13, 17, **20**, **25** |
+| Data_Sync_Documentation.md | Specs 08, 13, 16, **24**, **25** |
+| UI_Pages_Workflows.md | Specs 13, 18, **19**, **20**, **21**, **24**, **25** |
+| PHASE1_REQUIREMENTS.md | Specs 11, 13, 15, 16, **25** |
+| Living_Will_Implementation_Plan.md | Specs **21**, **25** |
 
 ---
 
@@ -82,11 +84,14 @@
 
 ### Cloud SQL (PostgreSQL)
 
-- **Instance:** `34.143.228.135:5432`
+- **Instance:** `izara-db-instance` @ `34.143.228.135:5432` (PostgreSQL 15)
 - **Database:** `izara_phase1`
 - **Tables:** 29 tables fully synced
 - **Schema:** All columns aligned (vital_signs, living_wills, health_logs, video_meetings, etc.)
 - **User IDs:** Aligned with test config (PATIENT-DEMO, DOC-TEST-001, ADMIN-TEST-001)
+- **Users:** 206 registered users
+- **Password:** Managed via GCP Secret Manager (`db-password`, `database-url`)
+- **SSL:** Enabled for Cloud Run → Cloud SQL connections
 
 ---
 
@@ -118,4 +123,5 @@
 | v1.4.0 | Feb 2 | 123/123 | 123/123 | Initial Phase 1 |
 | v1.4.3 | Feb 4 | 246/246 | 246/246 | Added meeting specs |
 | v1.4.5 | Feb 5 | 372/372 | 266/266 | Cloud deployment |
-| **v1.4.6** | **Feb 7** | **2,438/2,438** | **691/691** | **Deep coverage, all process docs** |
+| v1.4.6-rc | Feb 7 | 2,438/2,438 | 691/691 | Deep coverage, all process docs |
+| **v1.4.6** | **Feb 9** | **2,533/2,533** | **786/786** | **Cloud SQL fix, spec-25 continuous workflow, full deployment** |
