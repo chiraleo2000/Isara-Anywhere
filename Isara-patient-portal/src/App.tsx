@@ -17,6 +17,7 @@ import SettingsPage from './pages/settings/SettingsPage';
 import PDPAPage from './pages/pdpa/PDPAPage';
 import LivingWillPage from './pages/pdpa/LivingWillPage';
 import TimelinePage from './pages/timeline/TimelinePage';
+import MapPage from './pages/map/MapPage';
 import GCSStatusPage from './pages/admin/GCSStatusPage';
 
 // Enhanced Scroll to top on route change - uses useLayoutEffect for immediate scroll
@@ -97,6 +98,7 @@ function AppRoutes() {
         <Route path="pdpa" element={<PDPAPage />} />
         <Route path="living-will" element={<LivingWillPage />} />
         <Route path="timeline" element={<TimelinePage />} />
+        <Route path="map" element={<MapPage />} />
         <Route path="admin/gcs" element={<GCSStatusPage />} />
       </Route>
 

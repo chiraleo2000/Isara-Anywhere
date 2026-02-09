@@ -17,7 +17,9 @@ import {
   ChevronLeft,
   ChevronRight,
   BookOpen,
+  MapPin,
 } from 'lucide-react';
+import MiniMapWidget from '../map/MiniMapWidget';
 import { useState } from 'react';
 
 // Mini Calendar Component - With dark mode and i18n support
@@ -107,6 +109,7 @@ export default function MainLayout() {
     { icon: BookOpen, label: language === 'th' ? 'คลังความรู้สุขภาพ' : 'Health Library', path: '/health-library' },
     { icon: FileText, label: language === 'th' ? 'ประวัติสุขภาพ' : 'Health Records', path: '/phr' },
     { icon: Activity, label: language === 'th' ? 'เส้นทางสุขภาพ' : 'Health Timeline', path: '/timeline' },
+    { icon: MapPin, label: language === 'th' ? 'แผนที่สถานพยาบาล' : 'Nearby Healthcare', path: '/map' },
     { icon: Shield, label: language === 'th' ? 'PDPA & Living Will' : 'PDPA & Living Will', path: '/pdpa' },
     { icon: Settings, label: language === 'th' ? 'ตั้งค่า' : 'Settings', path: '/settings' },
   ];
@@ -148,8 +151,9 @@ export default function MainLayout() {
             })}
           </nav>
 
-          {/* Mini Calendar Widget */}
+          {/* Mini Map & Calendar Widgets */}
           <div className="px-4 pb-2 space-y-3">
+            <MiniMapWidget />
             <MiniCalendar />
           </div>
 

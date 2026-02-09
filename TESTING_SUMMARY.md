@@ -1,7 +1,7 @@
 # Testing Summary & Deployment Readiness — v1.4.6
 
 **Date:** February 9, 2026  
-**Status:** ✅ **ALL TESTS PASSING — LOCAL & CLOUD**
+**Status:** ✅ **ALL 109 TESTS PASSING — LOCAL & CLOUD (100%)**
 
 ---
 
@@ -9,104 +9,77 @@
 
 ### Overall Summary
 
-| Environment | Tests Passed | Tests Failed | Flaky | Duration |
-|---|---|---|---|---|
-| **LOCAL** | **2,533** | 0 | 0 | ~10.4 min |
-| **CLOUD** | **786** | 0 | 0 | ~1.9 min |
-| **TOTAL** | **3,319** | **0** | **0** | **100% Pass** |
-
----
-
-## 📁 Test Spec Files (25 Total)
-
-| # | File | Tests | Description |
+| Environment | Tests Passed | Tests Failed | Duration |
 |---|---|---|---|
-| 01 | `01-phase1-patient-portal.spec.ts` | ~20 | Patient portal basics |
-| 02 | `02-phase1-doctor-portal.spec.ts` | ~20 | Doctor portal basics |
-| 03 | `03-phase1-video-meeting.spec.ts` | ~15 | Video meeting basics |
-| 04 | `04-meeting-comprehensive.spec.ts` | ~25 | Meeting + transcription |
-| 05 | `05-doctor-gcs-api.spec.ts` | ~15 | Doctor GCS metadata API |
-| 06 | `06-patient-comprehensive.spec.ts` | ~25 | Patient portal comprehensive |
-| 07 | `07-admin-features.spec.ts` | ~15 | Admin features |
-| 08 | `08-cross-portal-sync.spec.ts` | ~20 | Cross-portal data sync |
-| 09 | `09-ai-features.spec.ts` | ~20 | AI chat, CDS, knowledge base |
-| 10 | `10-comprehensive-workflows.spec.ts` | ~35 | Comprehensive workflows |
-| 11 | `11-phase1-requirements.spec.ts` | ~95 | Full Phase 1 requirements |
-| 12 | `12-cloud-comprehensive.spec.ts` | ~65 | Cloud comprehensive |
-| 13 | `13-full-workflow-local.spec.ts` | ~130 | Full local workflow |
-| 14 | `14-full-workflow-cloud.spec.ts` | ~75 | Full cloud workflow |
-| 15 | `15-comprehensive-all-workflows.spec.ts` | ~70 | All workflows comprehensive |
-| 16 | `16-cloud-all-workflows.spec.ts` | ~90 | Cloud all workflows |
-| 17 | `17-meeting-full-workflow.spec.ts` | ~40 | Meeting full workflow |
-| 18 | `18-ui-multi-portal-workflow.spec.ts` | ~55 | UI multi-portal |
-| **19** | `19-deep-appointment-workflow.spec.ts` | **51** | Deep appointment lifecycle |
-| **20** | `20-deep-meeting-emr-workflow.spec.ts` | **31** | Deep meeting→EMR chain |
-| **21** | `21-deep-health-records-phr.spec.ts` | **40** | Deep PHR/vitals/living will |
-| **22** | `22-deep-ai-features-cds.spec.ts` | **21** | Deep AI chat/CDS/knowledge |
-| **23** | `23-deep-user-mgmt-notifications.spec.ts` | **27** | Deep auth/profile/notifications |
-| **24** | `24-deep-content-clinical-consultants.spec.ts` | **40** | Deep content/clinical/metadata |
-| **25** | `25-comprehensive-appointments-meeting.spec.ts` | **95** | Full end-to-end continuous workflow |
-
-**Specs 19-24 are deep process coverage** — covering ALL 13 Process documents.  
-**Spec 25 is NEW** — comprehensive 95-test continuous workflow (A→N) covering all 13 processes in a single sequential flow with single login per user.
+| **LOCAL (Docker)** | **109** | 0 | ~49s |
+| **CLOUD (Cloud Run)** | **109** | 0 | ~51s |
+| **TOTAL** | **218** | **0** | **100% Pass** |
 
 ---
 
-## 📋 Process Document Coverage
+## 📁 Unified Comprehensive Test Spec
 
-| Process Document | Spec Coverage |
-|---|---|
-| Appointment_Workflows.md | Specs 11, 13, 15, 16, **19**, **25** |
-| Health_Records_Processes.md | Specs 11, 13, 15, 16, **21**, **25** |
-| Living_Will_Processes.md | Specs 11, 13, 15, 16, **21**, **25** |
-| User_management_Workflows.md | Specs 11, 13, 15, 16, **23**, **25** |
-| Notification_Workflows.md | Specs 11, 13, 15, 16, **23**, **25** |
-| Medicine_Content_Processes.md | Specs 11, 13, 15, 16, **24**, **25** |
-| Clinical_Resources_&_Medical_Library_Workflows.md | Specs 11, 13, 15, 16, **24**, **25** |
-| Medical_Consultants_Workflows.md | Specs 11, 13, 15, 16, **24**, **25** |
-| VIDEO_MEETING_JITSI_GEMINI.md | Specs 11, 13, 17, **20**, **25** |
-| Data_Sync_Documentation.md | Specs 08, 13, 16, **24**, **25** |
-| UI_Pages_Workflows.md | Specs 13, 18, **19**, **20**, **21**, **24**, **25** |
-| PHASE1_REQUIREMENTS.md | Specs 11, 13, 15, 16, **25** |
-| Living_Will_Implementation_Plan.md | Specs **21**, **25** |
+All 25 legacy spec files have been **consolidated into ONE single spec**:
 
----
-
-## 🏗️ Cloud Deployment
-
-### Services (Google Cloud Run — asia-southeast1)
-
-| Service | URL | Status |
+| File | Tests | Description |
 |---|---|---|
-| Patient Portal | `https://izara-patient-portal-hvht4obouq-as.a.run.app` | ✅ Healthy |
-| Doctor Portal | `https://izara-doctor-portal-hvht4obouq-as.a.run.app` | ✅ Healthy |
-| Meeting Server | `https://izara-jitsi-meeting-portal-hvht4obouq-as.a.run.app` | ✅ Healthy |
+| `00-unified-comprehensive.spec.ts` | **109** | Full E2E coverage across 15 sections (A–O) |
 
-### Cloud SQL (PostgreSQL)
+Legacy specs archived to `tests/e2e/specs/_archive/` (25 files).
 
-- **Instance:** `izara-db-instance` @ `34.143.228.135:5432` (PostgreSQL 15)
-- **Database:** `izara_phase1`
-- **Tables:** 29 tables fully synced
-- **Schema:** All columns aligned (vital_signs, living_wills, health_logs, video_meetings, etc.)
-- **User IDs:** Aligned with test config (PATIENT-DEMO, DOC-TEST-001, ADMIN-TEST-001)
-- **Users:** 206 registered users
-- **Password:** Managed via GCP Secret Manager (`db-password`, `database-url`)
-- **SSL:** Enabled for Cloud Run → Cloud SQL connections
+### Test Sections (15 Total)
+
+| Section | Tests | Description | Coverage |
+|---|---|---|---|
+| **A. Smoke & Health** | 5 | Portal health checks, DB connectivity, meeting server | Infrastructure |
+| **B. User Management** | 8 | 3 patients + doctor + admin login, session validation, profiles | User_management_Workflows.md |
+| **C. Appointments** | 9 | Create, view, confirm, history, queue | Appointment_Workflows.md |
+| **D. Video Meeting** | 8 | Config, room creation, transcripts, invites | VIDEO_MEETING_JITSI_GEMINI.md |
+| **E. Health Records (PHR)** | 11 | PHR, vitals, medications, allergies, timeline, doctor access | Health_Records_Processes.md |
+| **F. EMR & Prescriptions** | 8 | EMR creation, prescriptions, lab orders, patient lists | Health_Records_Processes.md |
+| **G. AI Features** | 10 | AI chat, CDS, EMR summary, document analysis, instructions | AI & Clinical Decision Support |
+| **H. Living Will & PDPA** | 6 | Living will CRUD, PDPA consent, audit trail | Living_Will_Processes.md |
+| **I. Notifications** | 6 | Patient/doctor notifications, unread count, create, mark read | Notification_Workflows.md |
+| **J. Medical Content** | 7 | Medical content, health tips, clinical resources, tags | Medicine_Content_Processes.md |
+| **K. Consultants & Metadata** | 7 | Consultants, specialties, dashboard, admin stats | Medical_Consultants_Workflows.md |
+| **L. Data Sync** | 3 | Cross-portal patient data, appointments, doctor list sync | Data_Sync_Documentation.md |
+| **M. UI Navigation** | 7 | Login/register pages, health check endpoints, redirects | UI_Pages_Workflows.md |
+| **N. Map & Nearby Healthcare** | 2 | Map page route, Google Maps API config | Map feature |
+| **O. Multi-User E2E Workflow** | 12 | Full workflow: booking → meeting → transcript → EMR → PHR | All processes end-to-end |
+
+---
+
+## 📋 Process Document Coverage (All 13 Documents)
+
+| Process Document | Test Sections |
+|---|---|
+| Appointment_Workflows.md | C, O |
+| Health_Records_Processes.md | E, F, O |
+| Living_Will_Processes.md | H |
+| Living_Will_Implementation_Plan.md | H |
+| User_management_Workflows.md | B |
+| Notification_Workflows.md | I |
+| Medicine_Content_Processes.md | J |
+| Clinical_Resources_&_Medical_Library_Workflows.md | J |
+| Medical_Consultants_Workflows.md | K |
+| Data_Sync_Documentation.md | L |
+| VIDEO_MEETING_JITSI_GEMINI.md | D, O |
+| UI_Pages_Workflows.md | M, N |
+| PHASE1_REQUIREMENTS.md | A–O (all) |
 
 ---
 
 ## 🔧 Test Configuration
 
 - **Framework:** Playwright v1.58.0
-- **Config version:** v9.0.0
-- **Mode:** Headed (UI visible)
-- **Workers:** 4 parallel
-- **Retries:** 1
-- **Timeouts:** 15s local / 30s cloud (standard), 30s local / 90s cloud (long AI calls)
+- **Mode:** Headed (visible browser), 1 worker, no retries
+- **Projects:** Local (Docker) + Cloud (Cloud Run)
+- **Auth:** Auto-refresh tokens via `test.beforeEach` hook (5 users)
+- **Multi-user:** 3 patients + 1 doctor + 1 admin
 
-### Credentials
+### Test Users
 
-| Role | Email | User ID |
+| Role | Email | ID |
 |---|---|---|
 | Patient 1 | demo.test@gmail.com | PATIENT-DEMO |
 | Patient 2 | Somchai.Mankong@gmail.com | PATIENT-SOMCHAI |
@@ -116,12 +89,28 @@
 
 ---
 
-## 📊 Test History
+## 🌐 Cloud Deployment URLs
 
-| Version | Date | Local | Cloud | Notes |
-|---|---|---|---|---|
-| v1.4.0 | Feb 2 | 123/123 | 123/123 | Initial Phase 1 |
-| v1.4.3 | Feb 4 | 246/246 | 246/246 | Added meeting specs |
-| v1.4.5 | Feb 5 | 372/372 | 266/266 | Cloud deployment |
-| v1.4.6-rc | Feb 7 | 2,438/2,438 | 691/691 | Deep coverage, all process docs |
-| **v1.4.6** | **Feb 9** | **2,533/2,533** | **786/786** | **Cloud SQL fix, spec-25 continuous workflow, full deployment** |
+| Service | URL |
+|---|---|
+| Patient Portal | https://izara-patient-portal-hvht4obouq-as.a.run.app |
+| Doctor Portal | https://izara-doctor-portal-hvht4obouq-as.a.run.app |
+| Meeting Server | https://izara-jitsi-meeting-portal-hvht4obouq-as.a.run.app |
+
+---
+
+## 🗂️ New Features in v1.4.6
+
+### Map & Nearby Healthcare
+- **MapPage** (`/map`): Google Maps + Places API integration
+  - GPS geolocation
+  - Range selector: 1 / 5 / 10 / 15 / 20 km
+  - Facility type filter: hospitals, clinics, pharmacies, health centers
+  - Dark mode support, Thai/English
+- **MiniMapWidget**: Compact sidebar widget linking to /map page
+- Integrated in patient portal navigation (between Health Timeline and PDPA)
+
+### Test Consolidation
+- 25 separate specs → 1 unified comprehensive spec
+- Eliminated redundant tests and dead code
+- All old specs archived to `_archive/`
