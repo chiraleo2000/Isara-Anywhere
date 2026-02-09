@@ -1,6 +1,6 @@
 # 🏥 Izara Telemedicine Platform
 
-![Version](https://img.shields.io/badge/version-1.4.7-blue.svg)
+![Version](https://img.shields.io/badge/version-1.4.6-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Platform](https://img.shields.io/badge/platform-web-lightgrey.svg)
 ![Node](https://img.shields.io/badge/node-%3E%3D22.0.0-brightgreen.svg)
@@ -57,10 +57,9 @@ The platform consists of three main services:
 
 ## 🧪 Testing
 
-### Test Architecture (v1.4.7)
+### Test Architecture (v1.4.6)
 
 - **Single unified spec**: `tests/e2e/specs/00-unified-comprehensive.spec.ts`
-- **209 tests** across 18 sections (A–R), covering all 14 process documents
 - **Headed mode** (visible browser UI during tests)
 - **1 worker**, serial execution for workflow integrity
 - **0 skipped tests** — every test must pass
@@ -81,28 +80,25 @@ cross-env TEST_ENV=cloud npx playwright test --project=Cloud --headed --workers=
 npx playwright show-report
 ```
 
-### Test Coverage — 18 Sections (A–R)
+### Test Coverage — 15 Sections
 
-| Section | Coverage Area | Tests | Process Documents |
-| ------- | ------------- | ----- | ----------------- |
-| A | Smoke & Health Checks | 9 | All portals reachable, DB connected |
-| B | User Management | 14 | Multi-user auth (3 patients, doctor, admin) |
-| C | Appointments | 17 | Book, confirm, cancel, pool, queue, history |
-| D | Video Meeting | 12 | Transcript save/retrieve, multi-segment, Thai |
-| E | Health Records (PHR) | 19 | Vitals, medications, allergies, 3 patients |
-| F | EMR & Prescriptions | 14 | SOAP notes, prescriptions, lab orders, metadata |
-| G | AI Features | 16 | Chat, CDS, doc analysis, instructions, summary |
-| H | Living Will & PDPA | 9 | Create will, consent, audit trail |
-| I | Notifications | 11 | CRUD, mark read, multi-user |
-| J | Medical Content | 10 | Articles, clinical resources, tags, categories |
-| K | Consultants & Metadata | 12 | Specialist directory, admin stats, dashboard |
-| L | Data Sync | 8 | Cross-portal consistency |
-| M | UI Navigation | 11 | All pages render (patient + doctor) |
-| N | Map / Nearby Healthcare | 3 | Map page, config, title |
-| O | Multi-User E2E | 17 | Full appointment → meeting → EMR workflow |
-| P | AI Meeting Summary Svc | 4 | Gradio AI summary service (local only) |
-| Q | Full Meeting Lifecycle | 15 | Appointment→Transcript→AI→EMR→Instructions |
-| R | Error Handling & Security | 8 | Intentional failures, auth validation |
+| Section | Coverage Area | Process Documents |
+| ------- | ------------- | ----------------- |
+| A | Smoke & Health Checks | All portals reachable, DB connected |
+| B | User Management | Multi-user auth (3 patients, doctor, admin) |
+| C | Appointments | Book, confirm, cancel, pool, queue, history |
+| D | Video Meeting | Create, join, transcript, AI summary, EMR |
+| E | Health Records (PHR) | Vitals, medications, allergies, timeline |
+| F | EMR & Prescriptions | SOAP notes, prescriptions, lab orders |
+| G | AI Features | Chat, CDS, document analysis, instructions |
+| H | Living Will & PDPA | Create will, consent, audit trail |
+| I | Notifications | CRUD, mark read, settings |
+| J | Medical Content | Articles, clinical resources, tags |
+| K | Consultants & Metadata | Specialist directory, admin stats |
+| L | Data Sync | Cross-portal consistency |
+| M | UI Navigation | All pages render (patient + doctor) |
+| N | Map / Nearby Healthcare | GPS, range selector, facility filter |
+| O | Multi-User E2E | Full appointment → meeting → EMR workflow |
 
 ### Test Credentials
 

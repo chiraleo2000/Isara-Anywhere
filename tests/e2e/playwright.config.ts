@@ -1,11 +1,17 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════
- * IZARA TELEMEDICINE — PLAYWRIGHT E2E CONFIG v1.4.6
+ * IZARA TELEMEDICINE — PLAYWRIGHT E2E CONFIG v1.4.7
  * ═══════════════════════════════════════════════════════════════════════
  * Single unified spec: 00-unified-comprehensive.spec.ts
  * Projects: Local (Docker), Cloud (Google Cloud Run)
  * Mode: HEADED — UI visible for all tests
  * Updated: February 9, 2026
+ * 
+ * Features:
+ * - Multi-user parallel testing (patient, doctor, admin)
+ * - Full meeting lifecycle simulation
+ * - AI features testing (Req 2.1-2.5, 4.1-4.5)
+ * - 108 comprehensive tests (all passing)
  * ═══════════════════════════════════════════════════════════════════════
  */
 import { defineConfig, devices } from '@playwright/test';
@@ -26,11 +32,14 @@ export default defineConfig({
     ['json', { outputFile: './test-results/results.json' }],
   ],
   use: {
-    headless: false,             // ★ UI VISIBLE — HEADED MODE
+    headless: false,             // ★★★ UI VISIBLE — HEADED MODE ★★★
     screenshot: 'on',
     video: 'on',
     trace: 'on-first-retry',
-    launchOptions: { slowMo: 50 },
+    launchOptions: { 
+      slowMo: 50,
+      args: ['--start-maximized'],
+    },
     actionTimeout: 20_000,
     navigationTimeout: isCloud ? 60_000 : 30_000,
   },
@@ -42,7 +51,7 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
         baseURL: 'http://localhost:3005',
         viewport: { width: 1920, height: 1080 },
-        headless: false,
+        headless: false,         // ★★★ HEADED MODE ★★★
       },
       testMatch: ['**/00-unified-comprehensive.spec.ts'],
     },
@@ -52,7 +61,7 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
         baseURL: 'https://izara-patient-portal-hvht4obouq-as.a.run.app',
         viewport: { width: 1920, height: 1080 },
-        headless: false,
+        headless: false,         // ★★★ HEADED MODE ★★★
       },
       testMatch: ['**/00-unified-comprehensive.spec.ts'],
     },
