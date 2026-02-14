@@ -1,6 +1,75 @@
 import React, { useState, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 
+/** Get day-of-week color class (Sunday=red, Saturday=blue, else gray) */
+const getDayColor = (dayIndex: number): string => {
+  if (dayIndex === 0) return 'text-red-500';
+  if (dayIndex === 6) return 'text-blue-500';
+  return 'text-gray-600';
+};
+
+/** Compute CSS class for a calendar day button (extracted to reduce cognitive complexity) */
+function getDayButtonClass(_date: Date, isDisabledDay: boolean, isSelectedDay: boolean, isTodayDay: boolean, isHighlightedDay: boolean): string {
+  const parts = ['w-full h-full p-2 rounded-lg transition-all text-left'];
+  if (isDisabledDay) {
+    parts.push('opacity-30 cursor-not-allowed');
+  } else {
+    parts.push('hover:bg-emerald-50');
+  }
+  if (isSelectedDay) {
+    parts.push('bg-emerald-600 text-white hover:bg-emerald-700');
+  }
+  if (isTodayDay && !isSelectedDay) {
+    parts.push('ring-2 ring-emerald-500 ring-offset-1');
+  }
+  if (isHighlightedDay && !isSelectedDay) {
+    parts.push('bg-yellow-50');
+  }
+  return parts.join(' ');
+}
+
+/** Compute CSS class for the day number text */
+function getDayTextClass(date: Date, isSelectedDay: boolean): string {
+  const parts = ['text-sm font-medium block'];
+  if (isSelectedDay) {
+    parts.push('text-white');
+  } else if (date.getDay() === 0) {
+    parts.push('text-red-500');
+  } else if (date.getDay() === 6) {
+    parts.push('text-blue-500');
+  }
+  return parts.join(' ');
+}
+
+/** Compute CSS class for a time-slot button */
+function getTimeSlotClass(isAvailable: boolean, isSelected: boolean): string {
+  if (!isAvailable) {
+    return 'py-2 px-3 rounded-lg text-sm font-medium transition-all bg-gray-100 text-gray-400 cursor-not-allowed line-through';
+  }
+  if (isSelected) {
+    return 'py-2 px-3 rounded-lg text-sm font-medium transition-all bg-emerald-600 text-white shadow-md';
+  }
+  return 'py-2 px-3 rounded-lg text-sm font-medium transition-all bg-white border border-gray-200 text-gray-700 hover:border-emerald-500 hover:text-emerald-600';
+}
+
+/** Compute CSS class for a weekly-grid slot button */
+function getWeeklySlotClass(available: boolean, selected: boolean): string {
+  if (!available) {
+    return 'w-full h-10 rounded-lg text-xs font-medium transition-all bg-gray-50 text-gray-300 cursor-not-allowed';
+  }
+  if (selected) {
+    return 'w-full h-10 rounded-lg text-xs font-medium transition-all bg-emerald-600 text-white shadow-md';
+  }
+  return 'w-full h-10 rounded-lg text-xs font-medium transition-all bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200';
+}
+
+/** Compute label for a weekly-grid slot */
+function getWeeklySlotLabel(available: boolean, selected: boolean): string {
+  if (!available) return '-';
+  if (selected) return '✓';
+  return 'ว่าง';
+}
+
 interface TimeSlot {
   time: string;
   available: boolean;
@@ -86,7 +155,7 @@ export const Calendar: React.FC<CalendarProps> = ({
   const hasSlots = (date: Date) => {
     const dateStr = date.toISOString().split('T')[0];
     const slots = availableSlots[dateStr];
-    return slots && slots.some(s => s.available);
+    return slots?.some(s => s.available) ?? false;
   };
 
   const isHighlighted = (date: Date) => {
@@ -135,9 +204,7 @@ export const Calendar: React.FC<CalendarProps> = ({
         {dayNames.map((day, i) => (
           <div
             key={day}
-            className={`py-3 text-center text-sm font-medium ${
-              i === 0 ? 'text-red-500' : i === 6 ? 'text-blue-500' : 'text-gray-600'
-            }`}
+            className={`py-3 text-center text-sm font-medium ${getDayColor(i)}`}
           >
             {day}
           </div>
@@ -148,7 +215,7 @@ export const Calendar: React.FC<CalendarProps> = ({
       <div className="grid grid-cols-7 gap-px bg-gray-200">
         {daysInMonth.map((date, index) => (
           <div
-            key={index}
+            key={date?.toISOString() ?? `empty-${index}`}
             className={`
               bg-white min-h-[60px] p-1
               ${date ? 'cursor-pointer' : ''}
@@ -158,20 +225,9 @@ export const Calendar: React.FC<CalendarProps> = ({
               <button
                 onClick={() => !isDisabled(date) && onDateSelect(date)}
                 disabled={isDisabled(date)}
-                className={`
-                  w-full h-full p-2 rounded-lg transition-all text-left
-                  ${isDisabled(date) ? 'opacity-30 cursor-not-allowed' : 'hover:bg-emerald-50'}
-                  ${isSelected(date) ? 'bg-emerald-600 text-white hover:bg-emerald-700' : ''}
-                  ${isToday(date) && !isSelected(date) ? 'ring-2 ring-emerald-500 ring-offset-1' : ''}
-                  ${isHighlighted(date) && !isSelected(date) ? 'bg-yellow-50' : ''}
-                `}
+                className={getDayButtonClass(date, isDisabled(date), isSelected(date), isToday(date), isHighlighted(date))}
               >
-                <span className={`
-                  text-sm font-medium block
-                  ${isSelected(date) ? 'text-white' : ''}
-                  ${date.getDay() === 0 && !isSelected(date) ? 'text-red-500' : ''}
-                  ${date.getDay() === 6 && !isSelected(date) ? 'text-blue-500' : ''}
-                `}>
+                <span className={getDayTextClass(date, isSelected(date))}>
                   {date.getDate()}
                 </span>
                 {hasSlots(date) && !isSelected(date) && (
@@ -199,20 +255,12 @@ export const Calendar: React.FC<CalendarProps> = ({
             </p>
           ) : (
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
-              {selectedDateSlots.map((slot, index) => (
+              {selectedDateSlots.map((slot) => (
                 <button
-                  key={index}
+                  key={slot.time}
                   onClick={() => slot.available && onTimeSelect?.(slot.time, slot)}
                   disabled={!slot.available}
-                  className={`
-                    py-2 px-3 rounded-lg text-sm font-medium transition-all
-                    ${!slot.available
-                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed line-through'
-                      : selectedTime === slot.time
-                        ? 'bg-emerald-600 text-white shadow-md'
-                        : 'bg-white border border-gray-200 text-gray-700 hover:border-emerald-500 hover:text-emerald-600'
-                    }
-                  `}
+                  className={getTimeSlotClass(slot.available, selectedTime === slot.time)}
                 >
                   {slot.time}
                   {slot.doctorName && slot.available && (
@@ -347,10 +395,10 @@ export const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({
               const isToday = date.toDateString() === new Date().toDateString();
               return (
                 <div
-                  key={i}
+                  key={date.toISOString()}
                   className={`p-3 text-center ${isToday ? 'bg-emerald-50' : 'bg-gray-50'}`}
                 >
-                  <div className={`text-xs font-medium ${i === 0 ? 'text-red-500' : i === 6 ? 'text-blue-500' : 'text-gray-600'}`}>
+                  <div className={`text-xs font-medium ${getDayColor(i)}`}>
                     {dayNames[i]}
                   </div>
                   <div className={`text-lg font-bold ${isToday ? 'text-emerald-600' : 'text-gray-800'}`}>
@@ -367,12 +415,12 @@ export const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({
               <div className="p-2 text-center text-sm text-gray-500 bg-gray-50 flex items-center justify-center">
                 {time}
               </div>
-              {weekDays.map((date, i) => {
+              {weekDays.map((date) => {
                 const available = isSlotAvailable(date, time);
                 const selected = isSelected(date, time);
                 
                 return (
-                  <div key={i} className="p-1">
+                  <div key={date.toISOString()} className="p-1">
                     <button
                       onClick={() => {
                         if (available) {
@@ -381,17 +429,9 @@ export const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({
                         }
                       }}
                       disabled={!available}
-                      className={`
-                        w-full h-10 rounded-lg text-xs font-medium transition-all
-                        ${!available
-                          ? 'bg-gray-50 text-gray-300 cursor-not-allowed'
-                          : selected
-                            ? 'bg-emerald-600 text-white shadow-md'
-                            : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'
-                        }
-                      `}
+                      className={getWeeklySlotClass(available, selected)}
                     >
-                      {available ? (selected ? '✓' : 'ว่าง') : '-'}
+                      {getWeeklySlotLabel(available, selected)}
                     </button>
                   </div>
                 );

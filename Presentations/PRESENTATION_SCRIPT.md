@@ -85,7 +85,7 @@
 
 1. **Frontend** - React + TypeScript + Vite
 2. **Backend** - Node.js Express API
-3. **Database** - PostgreSQL 16 + pgvector
+3. **Database** - PostgreSQL 18 + pgvector
 4. **Storage** - Google Cloud Storage (5 Buckets)
 5. **AI Services** - Google Gemini 2.5 Flash
 6. **Video** - Jitsi Meet (Self-Hosted)
@@ -101,7 +101,7 @@
 |-------|------------|
 | **Frontend** | React 18, TypeScript, Tailwind CSS, Vite |
 | **Backend** | Node.js 22, Express.js |
-| **Database** | PostgreSQL 16 + pgvector |
+| **Database** | PostgreSQL 18 + pgvector |
 | **Hosting** | Docker, Google Cloud Run |
 | **AI** | Google Gemini 2.5 Flash |
 | **Video** | Jitsi Meet (Self-Hosted) |
@@ -248,7 +248,7 @@
 ## 💾 Slide 13: Database Schema
 
 **Script:**
-> "ฐานข้อมูลใช้ PostgreSQL 16 พร้อม pgvector สำหรับ AI Embedding มีการออกแบบให้รองรับ PDPA และ HIPAA"
+> "ฐานข้อมูลใช้ PostgreSQL 18 พร้อม pgvector สำหรับ AI Embedding มีการออกแบบให้รองรับ PDPA และ HIPAA"
 
 **Schema Reference:** `database/izara-complete-schema-v4.dbml`
 
@@ -300,7 +300,7 @@ users (unified)
 | Service | Usage |
 |---------|-------|
 | **Cloud Run** | Container hosting (Patient, Doctor, Meeting) |
-| **Cloud SQL** | PostgreSQL 16 (Production) |
+| **Cloud SQL** | PostgreSQL 18 (Production) |
 | **Cloud Storage** | 5 Buckets for files |
 | **Secret Manager** | API Keys & credentials |
 | **Cloud Build** | CI/CD Pipeline |

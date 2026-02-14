@@ -64,6 +64,91 @@ const LoginPage: React.FC = () => {
     setSuccess('');
   };
 
+  const handleRegisterSubmit = async () => {
+    if (!formData.name?.trim()) {
+      throw new Error('Full name is required');
+    }
+    if (!validateEmail(formData.email)) {
+      throw new Error('Please enter a valid email address');
+    }
+    if (!validatePassword(formData.password)) {
+      throw new Error('Password must be at least 8 characters');
+    }
+    if (formData.password !== formData.confirmPassword) {
+      throw new Error('Passwords do not match');
+    }
+    if (!formData.medicalLicenseNumber?.trim()) {
+      throw new Error('Medical License Number is required');
+    }
+
+    const response = await fetch('/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: formData.email.toLowerCase().trim(),
+        password: formData.password,
+        name: formData.name.trim(),
+        phone: formData.phone?.trim(),
+        dateOfBirth: formData.dateOfBirth,
+        medicalLicenseNumber: formData.medicalLicenseNumber.trim(),
+        specialty: formData.specialty?.trim() || 'General Practice',
+        status: 'pending_approval',
+      }),
+    });
+
+    const responseText = await response.text();
+    let result;
+    try {
+      result = responseText ? JSON.parse(responseText) : {};
+    } catch {
+      throw new Error('Server response was not valid. Please try again.');
+    }
+
+    if (!response.ok) {
+      throw new Error(result.error || 'Registration failed');
+    }
+
+    await sendEmail(
+      'admin.test@izara.com',
+      'New Doctor Registration - Pending Approval',
+      `A new doctor has registered and requires approval:\n\n` +
+      `Name: ${formData.name}\n` +
+      `Email: ${formData.email}\n` +
+      `Medical License: ${formData.medicalLicenseNumber}\n` +
+      `Specialty: ${formData.specialty || 'General Practice'}\n\n` +
+      `Please review and approve this registration in the Doctor Management section.`
+    );
+
+    setSuccess('Registration submitted! Please wait for admin approval.');
+    setViewMode('pending-approval');
+  };
+
+  const handleForgotPasswordSubmit = async () => {
+    if (!validateEmail(formData.email)) {
+      throw new Error('Please enter a valid email address');
+    }
+
+    const response = await fetch('/auth/request-password-reset', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: formData.email.toLowerCase().trim() }),
+    });
+
+    const responseText = await response.text();
+    let result;
+    try {
+      result = responseText ? JSON.parse(responseText) : {};
+    } catch {
+      throw new Error('Server response was not valid. Please try again.');
+    }
+
+    if (!response.ok) {
+      throw new Error(result.error || 'Password reset request failed');
+    }
+
+    setSuccess('Password reset link sent to your email. Please check your inbox.');
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -77,87 +162,9 @@ const LoginPage: React.FC = () => {
           setSuccess('Login successful! Redirecting...');
         }
       } else if (viewMode === 'register') {
-        if (!formData.name?.trim()) {
-          throw new Error('Full name is required');
-        }
-        if (!validateEmail(formData.email)) {
-          throw new Error('Please enter a valid email address');
-        }
-        if (!validatePassword(formData.password)) {
-          throw new Error('Password must be at least 8 characters');
-        }
-        if (formData.password !== formData.confirmPassword) {
-          throw new Error('Passwords do not match');
-        }
-        if (!formData.medicalLicenseNumber?.trim()) {
-          throw new Error('Medical License Number is required');
-        }
-
-        const response = await fetch('/auth/register', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: formData.email.toLowerCase().trim(),
-            password: formData.password,
-            name: formData.name.trim(),
-            phone: formData.phone?.trim(),
-            dateOfBirth: formData.dateOfBirth,
-            medicalLicenseNumber: formData.medicalLicenseNumber.trim(),
-            specialty: formData.specialty?.trim() || 'General Practice',
-            status: 'pending_approval',
-          }),
-        });
-
-        const responseText = await response.text();
-        let result;
-        try {
-          result = responseText ? JSON.parse(responseText) : {};
-        } catch {
-          throw new Error('Server response was not valid. Please try again.');
-        }
-
-        if (!response.ok) {
-          throw new Error(result.error || 'Registration failed');
-        }
-
-        await sendEmail(
-          'admin.test@izara.com',
-          'New Doctor Registration - Pending Approval',
-          `A new doctor has registered and requires approval:\n\n` +
-          `Name: ${formData.name}\n` +
-          `Email: ${formData.email}\n` +
-          `Medical License: ${formData.medicalLicenseNumber}\n` +
-          `Specialty: ${formData.specialty || 'General Practice'}\n\n` +
-          `Please review and approve this registration in the Doctor Management section.`
-        );
-
-        setSuccess('Registration submitted! Please wait for admin approval.');
-        setViewMode('pending-approval');
-        
+        await handleRegisterSubmit();
       } else if (viewMode === 'forgot-password') {
-        if (!validateEmail(formData.email)) {
-          throw new Error('Please enter a valid email address');
-        }
-
-        const response = await fetch('/auth/request-password-reset', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: formData.email.toLowerCase().trim() }),
-        });
-
-        const responseText = await response.text();
-        let result;
-        try {
-          result = responseText ? JSON.parse(responseText) : {};
-        } catch {
-          throw new Error('Server response was not valid. Please try again.');
-        }
-
-        if (!response.ok) {
-          throw new Error(result.error || 'Password reset request failed');
-        }
-
-        setSuccess('Password reset link sent to your email. Please check your inbox.');
+        await handleForgotPasswordSubmit();
       }
     } catch (err: any) {
       setError(err.message || 'Authentication failed. Please check your credentials.');
@@ -408,10 +415,11 @@ const LoginPage: React.FC = () => {
                 {/* NAME */}
                 {viewMode === 'register' && (
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    <label htmlFor="register-name" className="block text-sm font-semibold text-gray-700 mb-2">
                       Full Name <span className="text-red-500">*</span>
                     </label>
                     <input
+                      id="register-name"
                       type="text"
                       required
                       value={formData.name}
@@ -424,10 +432,11 @@ const LoginPage: React.FC = () => {
 
                 {/* EMAIL */}
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label htmlFor="login-email" className="block text-sm font-semibold text-gray-700 mb-2">
                     Email Address <span className="text-red-500">*</span>
                   </label>
                   <input
+                    id="login-email"
                     type="email"
                     required
                     value={formData.email}
@@ -440,8 +449,9 @@ const LoginPage: React.FC = () => {
                 {/* SPECIALTY */}
                 {viewMode === 'register' && (
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Specialty</label>
+                    <label htmlFor="register-specialty" className="block text-sm font-semibold text-gray-700 mb-2">Specialty</label>
                     <select
+                      id="register-specialty"
                       value={formData.specialty}
                       onChange={(e) => setFormData({ ...formData, specialty: e.target.value })}
                       className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
@@ -468,10 +478,11 @@ const LoginPage: React.FC = () => {
                 {/* MEDICAL LICENSE */}
                 {viewMode === 'register' && (
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    <label htmlFor="register-license" className="block text-sm font-semibold text-gray-700 mb-2">
                       Medical License Number <span className="text-red-500">*</span>
                     </label>
                     <input
+                      id="register-license"
                       type="text"
                       required
                       value={formData.medicalLicenseNumber}
@@ -486,8 +497,9 @@ const LoginPage: React.FC = () => {
                 {viewMode === 'register' && (
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Phone Number</label>
+                      <label htmlFor="register-phone" className="block text-sm font-semibold text-gray-700 mb-2">Phone Number</label>
                       <input
+                        id="register-phone"
                         type="tel"
                         value={formData.phone}
                         onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
@@ -496,8 +508,9 @@ const LoginPage: React.FC = () => {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Date of Birth</label>
+                      <label htmlFor="register-dob" className="block text-sm font-semibold text-gray-700 mb-2">Date of Birth</label>
                       <input
+                        id="register-dob"
                         type="date"
                         value={formData.dateOfBirth}
                         onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
@@ -510,11 +523,12 @@ const LoginPage: React.FC = () => {
                 {/* PASSWORD */}
                 {viewMode !== 'forgot-password' && (
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    <label htmlFor="login-password" className="block text-sm font-semibold text-gray-700 mb-2">
                       Password <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
                       <input
+                        id="login-password"
                         type={showPassword ? 'text' : 'password'}
                         required
                         value={formData.password}
@@ -548,11 +562,12 @@ const LoginPage: React.FC = () => {
                 {/* CONFIRM PASSWORD */}
                 {viewMode === 'register' && (
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    <label htmlFor="register-confirm-password" className="block text-sm font-semibold text-gray-700 mb-2">
                       Confirm Password <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
                       <input
+                        id="register-confirm-password"
                         type={showConfirmPassword ? 'text' : 'password'}
                         required
                         value={formData.confirmPassword}

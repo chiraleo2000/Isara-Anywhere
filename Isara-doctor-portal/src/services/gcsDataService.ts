@@ -595,7 +595,7 @@ export async function verifyPatientConsent(
   dataTypes: string[]
 ): Promise<boolean> {
   const consents = await fetchPatientConsents(patientId);
-  if (!consents || !consents.activeConsents) return false;
+  if (!consents?.activeConsents) return false;
 
   // Check if doctor has valid consent for all requested data types
   const doctorConsent = consents.activeConsents.find(
@@ -780,7 +780,7 @@ export async function fetchDoctorAppointments(doctorId: string, date?: string): 
   if (date) {
     return filtered.filter(a => {
       const aptDate = a.date || a.appointmentDate;
-      return aptDate && aptDate.startsWith(date);
+      return aptDate?.startsWith(date);
     });
   }
 

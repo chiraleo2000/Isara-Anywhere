@@ -77,7 +77,7 @@ const AIChatCopilot: React.FC<AIChatCopilotProps> = ({
     setError(null);
 
     try {
-      const response = await aiCopilot.chat(userMessage);
+      await aiCopilot.chat(userMessage);
       setMessages(aiCopilot.getHistory());
     } catch (err: any) {
       setError(err.message || 'Failed to get AI response');
@@ -99,7 +99,7 @@ const AIChatCopilot: React.FC<AIChatCopilotProps> = ({
     setError(null);
 
     try {
-      const response = await aiCopilot.chat(action);
+      await aiCopilot.chat(action);
       setMessages(aiCopilot.getHistory());
     } catch (err: any) {
       setError(err.message || 'Failed to process action');
@@ -123,11 +123,12 @@ const AIChatCopilot: React.FC<AIChatCopilotProps> = ({
 
   if (isMinimized) {
     return (
-      <div 
-        className={`fixed bottom-4 right-4 z-50 ${className}`}
-        onClick={onToggleMinimize}
-      >
-        <button className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full shadow-lg hover:shadow-xl transition-all">
+      <div className={`fixed bottom-4 right-4 z-50 ${className}`}>
+        <button
+          type="button"
+          className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full shadow-lg hover:shadow-xl transition-all"
+          onClick={onToggleMinimize}
+        >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
           </svg>
@@ -175,7 +176,7 @@ const AIChatCopilot: React.FC<AIChatCopilotProps> = ({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
             </svg>
             <span className="font-medium">{patientInfo.demographics?.name || 'Patient'}</span>
-            {patientInfo.demographics?.age && (
+            {Boolean(patientInfo.demographics?.age) && (
               <span className="text-blue-600">({patientInfo.demographics.age} yrs)</span>
             )}
           </div>
@@ -192,9 +193,9 @@ const AIChatCopilot: React.FC<AIChatCopilotProps> = ({
         <div className="px-4 py-3 border-b bg-gray-50">
           <div className="text-xs font-medium text-gray-500 mb-2">Quick Suggestions</div>
           <div className="flex flex-wrap gap-2">
-            {suggestions.slice(0, 3).map((suggestion, idx) => (
+            {suggestions.slice(0, 3).map((suggestion) => (
               <button
-                key={idx}
+                key={suggestion}
                 onClick={() => handleQuickAction(`Tell me more about: ${suggestion}`)}
                 className="text-xs px-3 py-1.5 bg-white border border-gray-200 rounded-full hover:bg-blue-50 hover:border-blue-200 transition-colors truncate max-w-[200px]"
                 title={suggestion}
@@ -268,7 +269,7 @@ const AIChatCopilot: React.FC<AIChatCopilotProps> = ({
                   Warning
                 </div>
               )}
-              <p className={`text-sm whitespace-pre-wrap ${msg.role !== 'user' ? 'text-gray-800' : ''}`}>
+              <p className={`text-sm whitespace-pre-wrap ${msg.role === 'user' ? '' : 'text-gray-800'}`}>
                 {msg.content}
               </p>
               {msg.metadata?.actionable && msg.role !== 'user' && (

@@ -56,7 +56,7 @@ function generateDeviceFingerprint(): string {
   const fingerprint = components.join('|');
   let hash = 0;
   for (let i = 0; i < fingerprint.length; i++) {
-    const char = fingerprint.charCodeAt(i);
+    const char = fingerprint.codePointAt(i);
     hash = ((hash << 5) - hash) + char;
     hash = hash & hash; // Convert to 32bit integer
   }
@@ -403,7 +403,7 @@ export class AuthService {
       try {
         result = responseText ? JSON.parse(responseText) : {};
       } catch (parseError) {
-        console.error('❌ Failed to parse auth server response:', responseText);
+        console.error('❌ Failed to parse auth server response:', responseText, parseError);
         throw new Error('Server response was not valid JSON. Please try again.');
       }
 
@@ -495,7 +495,8 @@ export class AuthService {
     try {
       const userJson = localStorage.getItem(STORAGE_KEYS.CURRENT_USER);
       return userJson ? JSON.parse(userJson) : null;
-    } catch {
+    } catch (error) {
+      console.error('Failed to get current user from session:', error);
       return null;
     }
   }
@@ -700,7 +701,7 @@ export class AuthService {
         email,
         action,
         success,
-        userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'server',
+        userAgent: typeof navigator === 'undefined' ? 'server' : navigator.userAgent,
         source: 'doctor-portal',
       });
 

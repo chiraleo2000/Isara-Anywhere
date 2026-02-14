@@ -298,11 +298,9 @@ const EMAIL_TEMPLATES = {
 };
 
 class EmailService {
-  constructor() {
-    this.gmail = null;
-    this.initialized = false;
-    this.senderEmail = process.env.GMAIL_SENDER_EMAIL || 'admin.test@izara.com';
-  }
+  gmail = null;
+  initialized = false;
+  senderEmail = process.env.GMAIL_SENDER_EMAIL || 'admin.test@izara.com';
 
   async initialize() {
     try {

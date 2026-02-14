@@ -102,7 +102,7 @@ export const LatestAppointmentResult: React.FC<LatestAppointmentResultProps> = (
           </h5>
           <div className="space-y-2">
             {((appointment.prescription as any).medications || []).map((item: any, index: number) => (
-              <div key={index} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+              <div key={item.name || item.drugName || `med-${index}`} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
                 <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
                   <Pill className="w-4 h-4 text-green-600" />
                 </div>

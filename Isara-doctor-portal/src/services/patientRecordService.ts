@@ -320,37 +320,47 @@ class PatientRecordService {
       }
 
       // Get latest vitals (can be array or single object)
-      const latestVitals = Array.isArray(vitalsArray) 
-        ? vitalsArray.sort((a: any, b: any) => 
-            new Date(b.measuredAt || b.date || 0).getTime() - 
-            new Date(a.measuredAt || a.date || 0).getTime()
-          )[0]
-        : vitalsArray;
+      let latestVitals;
+      if (Array.isArray(vitalsArray)) {
+        const sorted = [...vitalsArray];
+        sorted.sort((a: any, b: any) =>
+          new Date(b.measuredAt || b.date || 0).getTime() -
+          new Date(a.measuredAt || a.date || 0).getTime()
+        );
+        latestVitals = sorted[0];
+      } else {
+        latestVitals = vitalsArray;
+      }
 
       // Build vital signs history from patient's vital-signs.json
-      const vitalSignsHistory = Array.isArray(vitalsArray) 
-        ? vitalsArray.map((v: any) => ({
-            date: new Date(v.measuredAt || v.date || new Date()),
-            bloodPressure: v.bloodPressure ? {
-              systolic: v.bloodPressure.systolic || 0,
-              diastolic: v.bloodPressure.diastolic || 0,
-            } : { systolic: 0, diastolic: 0 },
-            heartRate: v.heartRate?.value || 0,
-            temperature: v.temperature?.value || 0,
-            oxygenSaturation: v.oxygenSaturation?.value || 0,
-            bloodGlucose: v.bloodGlucose?.value,
-          }))
-        : latestVitals ? [{
-            date: new Date(latestVitals.measuredAt || latestVitals.date || new Date()),
-            bloodPressure: latestVitals.bloodPressure ? {
-              systolic: latestVitals.bloodPressure.systolic || 0,
-              diastolic: latestVitals.bloodPressure.diastolic || 0,
-            } : { systolic: 0, diastolic: 0 },
-            heartRate: latestVitals.heartRate?.value || 0,
-            temperature: latestVitals.temperature?.value || 0,
-            oxygenSaturation: latestVitals.oxygenSaturation?.value || 0,
-            bloodGlucose: latestVitals.bloodGlucose?.value,
-          }] : [];
+      let vitalSignsHistory;
+      if (Array.isArray(vitalsArray)) {
+        vitalSignsHistory = vitalsArray.map((v: any) => ({
+          date: new Date(v.measuredAt || v.date || new Date()),
+          bloodPressure: v.bloodPressure ? {
+            systolic: v.bloodPressure.systolic || 0,
+            diastolic: v.bloodPressure.diastolic || 0,
+          } : { systolic: 0, diastolic: 0 },
+          heartRate: v.heartRate?.value || 0,
+          temperature: v.temperature?.value || 0,
+          oxygenSaturation: v.oxygenSaturation?.value || 0,
+          bloodGlucose: v.bloodGlucose?.value,
+        }));
+      } else if (latestVitals) {
+        vitalSignsHistory = [{
+          date: new Date(latestVitals.measuredAt || latestVitals.date || new Date()),
+          bloodPressure: latestVitals.bloodPressure ? {
+            systolic: latestVitals.bloodPressure.systolic || 0,
+            diastolic: latestVitals.bloodPressure.diastolic || 0,
+          } : { systolic: 0, diastolic: 0 },
+          heartRate: latestVitals.heartRate?.value || 0,
+          temperature: latestVitals.temperature?.value || 0,
+          oxygenSaturation: latestVitals.oxygenSaturation?.value || 0,
+          bloodGlucose: latestVitals.bloodGlucose?.value,
+        }];
+      } else {
+        vitalSignsHistory = [];
+      }
 
       // Extract medications from PHR or patient profile
       const medications = phrData?.currentMedications || patient.medicalInfo?.currentMedications || [];
@@ -497,8 +507,8 @@ class PatientRecordService {
         return null;
       }
 
-      const patientName = (patient as any)?.fullName || 
-                         (patient as any)?.demographics?.fullName || 
+      const patientName = patient?.fullName || 
+                         patient?.demographics?.fullName || 
                          `Patient ${patientId}`;
 
       // Find main representative
@@ -591,7 +601,7 @@ class PatientRecordService {
 
     try {
       // Fetch all data in parallel
-      const [emrs, prescriptions, labOrders, imagingOrders, appointments] = await Promise.all([
+      const [emrs, prescriptions, labOrders, imagingOrders, _appointments] = await Promise.all([
         fetchPatientEMRs(patientId),
         fetchPatientPrescriptions(patientId),
         fetchPatientLabOrders(patientId),
@@ -817,22 +827,23 @@ class PatientRecordService {
       fetchPatientPrescriptions(patientId),
     ]);
 
-    const recentDiagnoses = (emrs as any[])
+    const recentDiagnoses = emrs
       .slice(0, 5)
       .flatMap(emr => (emr.diagnosis || []).map((d: any) => d.description))
       .filter((v, i, a) => a.indexOf(v) === i);
 
-    const currentMedications = (prescriptions as any[]).map(rx => rx.medication);
+    const currentMedications = prescriptions.map(rx => rx.medication);
 
-    const sortedEMRs = (emrs as any[]).sort((a, b) =>
+    const sortedEMRs = [...emrs];
+    sortedEMRs.sort((a, b) =>
       new Date(b.encounterDate).getTime() - new Date(a.encounterDate).getTime()
     );
     const lastVisit = sortedEMRs.length > 0 ? new Date(sortedEMRs[0].encounterDate) : null;
 
     return {
-      allergies: (patient as any)?.medicalInfo?.allergies || [],
-      chronicConditions: (patient as any)?.medicalInfo?.chronicConditions || [],
-      currentMedications: (patient as any)?.medicalInfo?.currentMedications || currentMedications,
+      allergies: patient?.medicalInfo?.allergies || [],
+      chronicConditions: patient?.medicalInfo?.chronicConditions || [],
+      currentMedications: patient?.medicalInfo?.currentMedications || currentMedications,
       pastProcedures: [],
       recentDiagnoses,
       lastVisit,

@@ -137,23 +137,17 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
       </div>
 
       {/* Drop Zone */}
+      {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
       <div
-        role="button"
-        tabIndex={images.length >= maxImages ? -1 : 0}
         onDragEnter={handleDrag}
         onDragLeave={handleDrag}
         onDragOver={handleDrag}
         onDrop={handleDrop}
         className={`
           relative border-2 border-dashed rounded-2xl p-8 text-center transition-all
-          ${dragActive
-            ? 'border-blue-500 bg-blue-50'
-            : 'border-gray-300 bg-gray-50 hover:border-blue-400 hover:bg-blue-50/50'
-          }
-          ${images.length >= maxImages ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+          ${dragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300 bg-gray-50 hover:border-blue-400 hover:bg-blue-50/50'}
+          ${images.length >= maxImages ? 'opacity-50 cursor-not-allowed' : ''}
         `}
-        onClick={() => images.length < maxImages && inputRef.current?.click()}
-        onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && images.length < maxImages) { e.preventDefault(); inputRef.current?.click(); } }}
         aria-label="อัพโหลดรูปภาพ"
       >
         <input
@@ -163,6 +157,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
           multiple
           onChange={handleFileInput}
           className="hidden"
+          aria-label="อัพโหลดรูปภาพ"
         />
 
         <div className="space-y-3">
@@ -260,13 +255,16 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
       {/* Full Preview Modal */}
       {previewImage && (
         <div
-          role="button"
-          tabIndex={0}
           className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
-          onClick={() => setPreviewImage(null)}
-          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') { e.preventDefault(); setPreviewImage(null); } }}
-          aria-label="Close preview"
         >
+          <button
+            type="button"
+            className="fixed inset-0 bg-transparent border-none cursor-default"
+            onClick={() => setPreviewImage(null)}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setPreviewImage(null); } }}
+            aria-label="Close preview"
+            tabIndex={0}
+          />
           <div className="relative max-w-4xl max-h-[90vh]">
             <img
               src={previewImage.preview}

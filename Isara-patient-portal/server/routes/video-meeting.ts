@@ -1,23 +1,26 @@
 /**
- * Video Meeting Service using Jitsi Meet + Google Cloud Speech-to-Text + Gemini AI
+ * Video Meeting Service using Jitsi Meet + Web Speech API + Gemini AI v1.4.7
  * 
- * LOWEST COST SOLUTION:
+ * ZERO-COST TRANSCRIPTION SOLUTION:
  * - Jitsi Meet: FREE video conferencing (no licensing costs)
- * - Google Cloud Speech-to-Text: For accurate transcription (~$0.006/15s)
+ * - Web Speech API: FREE browser-native real-time transcription (no API key needed)
  * - Gemini AI: For summary and recommendations (~$0.001/1K tokens)
  * 
  * Features:
  * - Google account login support for users
  * - Anonymous access for patients without Google accounts
- * - POST-MEETING transcription using Google Cloud Speech-to-Text API
+ * - REAL-TIME transcription using Web Speech API (browser-native, FREE)
  * - AI-powered meeting summarization & doctor recommendations via Gemini
  * - Recording support (Jitsi built-in)
+ * - In-meeting chat messages
+ * - Guest invite management
  * 
  * Workflow:
- * 1. Meeting ends with audio recording
- * 2. Audio sent to Google Cloud Speech-to-Text for transcription
- * 3. Transcript sent to Gemini for summary + doctor recommendations
- * 4. Results saved to PostgreSQL meeting_records table
+ * 1. Meeting starts with Web Speech API real-time transcription in browser
+ * 2. Transcript segments sent to meeting server as they are recognized
+ * 3. On meeting end, Gemini generates SOAP summary + doctor recommendations
+ * 4. Doctor validates AI content (man-in-the-loop)
+ * 5. Results saved to PostgreSQL meeting_records table
  * 
  * STORAGE: PostgreSQL meeting_records table (NOT GCS or in-memory)
  */
@@ -40,12 +43,8 @@ const router = Router();
 const JITSI_DOMAIN = process.env.JITSI_DOMAIN || process.env.VITE_JITSI_DOMAIN || 'meet.jit.si';
 const JITSI_APP_ID = process.env.JITSI_APP_ID || process.env.VITE_JITSI_APP_ID || 'izara-telemedicine';
 
-// Google Cloud Speech-to-Text Configuration
-// Note: API key should be set via environment variable in production
-const GOOGLE_SPEECH_API_KEY = process.env.GOOGLE_SPEECH_API_KEY || 
-                               process.env.VITE_GOOGLE_SPEECH_API_KEY || 
-                               process.env.VITE_GOOGLE_MEET_API_KEY || 
-                               '';
+// Transcription: Web Speech API (browser-native, FREE - no API key needed)
+// The browser handles speech recognition directly - zero cost!
 
 // Gemini AI Configuration (for summary & recommendations)
 // Note: API key should be set via environment variable in production
@@ -53,11 +52,12 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API
 const GEMINI_MODEL = process.env.GEMINI_MODEL || process.env.VITE_GEMINI_MODEL || 'gemini-2.5-flash-lite';
 
 // Log configuration at startup
-console.log('[Video Meeting] ===== Configuration =====');
+console.log('[Video Meeting] ===== Configuration v1.4.7 =====');
 console.log('[Video Meeting] Jitsi Domain:', JITSI_DOMAIN);
+console.log('[Video Meeting] Transcription: Web Speech API (browser-native, FREE)');
 console.log('[Video Meeting] Gemini API Key:', GEMINI_API_KEY ? `${GEMINI_API_KEY.substring(0, 15)}...` : '❌ NOT FOUND');
 console.log('[Video Meeting] Gemini Model:', GEMINI_MODEL);
-console.log('[Video Meeting] ===========================');
+console.log('[Video Meeting] ===============================');
 
 // ============================================================================
 // TYPES
@@ -254,134 +254,21 @@ async function callGeminiAI(prompt: string, maxTokens: number = 2048): Promise<s
 }
 
 /**
- * Transcribe audio using Google Cloud Speech-to-Text API
- * This is called AFTER the meeting ends to transcribe the recorded audio
+ * [DEPRECATED] Transcription is now handled by Web Speech API in the browser.
  * 
- * Cost: ~$0.006 per 15 seconds of audio
- * Supports Thai (th-TH) and English (en-US)
+ * Web Speech API (browser-native, FREE):
+ * - Runs entirely in the browser — no API key, no server costs
+ * - Supports Thai (th-TH) and English (en-US) 
+ * - Real-time results sent to server via /transcript endpoint
+ * - Confidence scores included automatically
+ * 
+ * This function is kept as a no-op fallback for backward compatibility.
  */
 async function transcribeWithSpeechToText(audioBase64: string, encoding: string = 'WEBM_OPUS', languageCode: string = 'th-TH'): Promise<{ transcript: string; confidence: number; words: any[] }> {
-  if (!GOOGLE_SPEECH_API_KEY) {
-    console.warn('⚠️ Google Speech-to-Text API key not configured');
-    return { transcript: '', confidence: 0, words: [] };
-  }
-  
-  try {
-    console.log('🎙️ Transcribing audio with Google Cloud Speech-to-Text...');
-    console.log(`   Language: ${languageCode}, Encoding: ${encoding}`);
-    
-    // Map common audio encodings to Speech-to-Text format
-    const encodingMap: { [key: string]: string } = {
-      'audio/webm': 'WEBM_OPUS',
-      'audio/webm;codecs=opus': 'WEBM_OPUS',
-      'audio/ogg': 'OGG_OPUS',
-      'audio/mp3': 'MP3',
-      'audio/mpeg': 'MP3',
-      'audio/wav': 'LINEAR16',
-      'audio/flac': 'FLAC',
-      'WEBM_OPUS': 'WEBM_OPUS',
-      'LINEAR16': 'LINEAR16',
-      'FLAC': 'FLAC',
-      'MP3': 'MP3',
-      'OGG_OPUS': 'OGG_OPUS'
-    };
-    
-    const audioEncoding = encodingMap[encoding] || 'WEBM_OPUS';
-    
-    // Call Google Cloud Speech-to-Text API
-    const response = await fetch(
-      `https://speech.googleapis.com/v1/speech:recognize?key=${GOOGLE_SPEECH_API_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          config: {
-            encoding: audioEncoding,
-            sampleRateHertz: 48000, // Standard for WebM Opus
-            languageCode: languageCode,
-            alternativeLanguageCodes: languageCode === 'th-TH' ? ['en-US'] : ['th-TH'],
-            enableAutomaticPunctuation: true,
-            enableWordTimeOffsets: true,
-            enableWordConfidence: true,
-            model: 'latest_long', // Best for medical consultations
-            useEnhanced: true, // Better quality for medical terminology
-            metadata: {
-              interactionType: 'DISCUSSION',
-              industryNaicsCodeOfAudio: 621111, // NAICS code for medical offices
-              originalMediaType: 'VIDEO',
-              recordingDeviceType: 'PC'
-            },
-            speechContexts: [{
-              phrases: [
-                // Thai medical terms
-                'อาการ', 'ปวดหัว', 'ไข้', 'ไอ', 'เจ็บคอ', 'ท้องเสีย', 'คลื่นไส้', 'อาเจียน',
-                'ความดัน', 'เบาหวาน', 'หัวใจ', 'ปอด', 'ตับ', 'ไต', 'กระเพาะ',
-                'ยา', 'วิตามิน', 'การรักษา', 'การวินิจฉัย', 'การตรวจ',
-                // English medical terms
-                'symptom', 'headache', 'fever', 'cough', 'sore throat', 'diarrhea', 'nausea',
-                'blood pressure', 'diabetes', 'heart', 'lung', 'liver', 'kidney',
-                'medication', 'treatment', 'diagnosis', 'examination'
-              ],
-              boost: 20
-            }]
-          },
-          audio: {
-            content: audioBase64
-          }
-        })
-      }
-    );
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Speech-to-Text API error:', response.status, errorText);
-      throw new Error(`Speech-to-Text API error: ${response.status} - ${errorText}`);
-    }
-    
-    const data = await response.json();
-    
-    // Extract results
-    const results = data.results || [];
-    let fullTranscript = '';
-    let totalConfidence = 0;
-    let confidenceCount = 0;
-    let allWords: any[] = [];
-    
-    results.forEach((result: any) => {
-      if (result.alternatives && result.alternatives[0]) {
-        const alternative = result.alternatives[0];
-        fullTranscript += (fullTranscript ? ' ' : '') + alternative.transcript;
-        
-        if (alternative.confidence) {
-          totalConfidence += alternative.confidence;
-          confidenceCount++;
-        }
-        
-        if (alternative.words) {
-          allWords = allWords.concat(alternative.words.map((w: any) => ({
-            word: w.word,
-            startTime: w.startTime,
-            endTime: w.endTime,
-            confidence: w.confidence
-          })));
-        }
-      }
-    });
-    
-    const avgConfidence = confidenceCount > 0 ? totalConfidence / confidenceCount : 0;
-    
-    console.log(`✅ Transcription complete: ${fullTranscript.length} characters, ${avgConfidence.toFixed(2)} confidence`);
-    
-    return {
-      transcript: fullTranscript,
-      confidence: avgConfidence,
-      words: allWords
-    };
-    
-  } catch (error) {
-    console.error('Speech-to-Text transcription error:', error);
-    return { transcript: '', confidence: 0, words: [] };
-  }
+  console.log('ℹ️ Transcription is handled by Web Speech API in the browser (FREE).');
+  console.log('   Audio transcription via Google Cloud STT has been deprecated.');
+  console.log('   Use real-time transcript segments via POST /transcript endpoint instead.');
+  return { transcript: '', confidence: 0, words: [] };
 }
 
 /**
@@ -511,6 +398,79 @@ IMPORTANT: These are suggestions for the doctor to consider, not final diagnoses
   return null;
 }
 
+/** Mark all participants as left and end the in-memory meeting session */
+function endMemoryMeeting(memMeeting: MeetingSession): void {
+  memMeeting.participants.forEach(p => {
+    if (!p.leftAt) {
+      p.leftAt = new Date();
+    }
+  });
+  memMeeting.status = 'ended';
+  memMeeting.endedAt = new Date();
+}
+
+/** Process post-meeting audio transcription — extracted to reduce endpoint complexity */
+async function processAudioTranscription(
+  audioBase64: string,
+  transcriptData: TranscriptEntry[],
+  memMeeting: MeetingSession | undefined,
+  encoding?: string,
+  langCode?: string
+): Promise<void> {
+  console.log('🎙️ Transcribing meeting audio using Google Cloud Speech-to-Text...');
+  const transcriptionResult = await transcribeWithSpeechToText(
+    audioBase64,
+    encoding || 'WEBM_OPUS',
+    langCode || 'th-TH'
+  );
+  if (!transcriptionResult.transcript) return;
+
+  const entry: TranscriptEntry = {
+    id: `trans-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`,
+    participantId: 'meeting-audio',
+    participantName: 'Meeting Recording',
+    text: transcriptionResult.transcript,
+    timestamp: new Date(),
+    confidence: transcriptionResult.confidence,
+    language: langCode || 'th-TH'
+  };
+  transcriptData.push(entry);
+  if (memMeeting) {
+    memMeeting.transcript.push(entry);
+  }
+  console.log(`✅ Transcription complete: ${transcriptionResult.transcript.length} characters`);
+}
+
+/** Generate AI summary and recommendations for completed meeting */
+async function generatePostMeetingContent(
+  transcriptData: TranscriptEntry[],
+  memMeeting: MeetingSession | undefined,
+  genSummary: boolean,
+  genRecommendations: boolean,
+  patientInfo?: any
+): Promise<{ summary: MeetingSummary | null; recommendations: DoctorRecommendation | null }> {
+  let summary: MeetingSummary | null = null;
+  let recommendations: DoctorRecommendation | null = null;
+
+  if (genSummary && transcriptData.length > 0) {
+    console.log('📝 Generating meeting summary using Gemini AI...');
+    summary = await generateMeetingSummary(transcriptData, patientInfo);
+    if (memMeeting) {
+      memMeeting.summary = summary || undefined;
+    }
+  }
+
+  if (genRecommendations && transcriptData.length > 0) {
+    console.log('💡 Generating doctor recommendations using Gemini AI...');
+    recommendations = await generateDoctorRecommendations(transcriptData, summary, patientInfo);
+    if (memMeeting) {
+      memMeeting.doctorRecommendations = recommendations || undefined;
+    }
+  }
+
+  return { summary, recommendations };
+}
+
 // ============================================================================
 // API ENDPOINTS
 // ============================================================================
@@ -525,11 +485,14 @@ router.get('/config', (req: Request, res: Response) => {
     jitsiDomain: JITSI_DOMAIN,
     features: {
       recording: true,
-      transcription: !!GOOGLE_SPEECH_API_KEY,
+      transcription: true, // Web Speech API (browser-native, FREE - always available)
       aiSummary: !!GEMINI_API_KEY,
       lobby: true,
-      guestInvites: true
+      guestInvites: true,
+      chat: true
     },
+    transcriptionEngine: 'web-speech-api',
+    transcriptionCost: '$0 (browser-native)',
     defaultLanguage: 'th'
   });
 });
@@ -562,8 +525,8 @@ router.post('/create', async (req: Request, res: Response) => {
     let existingMeeting = null;
     try {
       existingMeeting = await MeetingService.getActiveMeeting(appointmentId);
-    } catch (dbLookupErr: any) {
-      console.warn('⚠️ Meeting lookup failed:', dbLookupErr.message);
+    } catch (error_: unknown) {
+      console.warn('⚠️ Meeting lookup failed:', error_ instanceof Error ? error_.message : String(error_));
     }
     
     if (existingMeeting) {
@@ -702,11 +665,12 @@ router.post('/create', async (req: Request, res: Response) => {
 router.get('/health', (req: Request, res: Response) => {
   res.json({
     status: 'healthy',
-    service: 'Jitsi Meet + Google Speech-to-Text + Gemini AI Video Meeting Service',
+    service: 'Jitsi Meet + Web Speech API + Gemini AI Video Meeting Service v1.4.7',
+    version: '1.4.7',
     timestamp: new Date().toISOString(),
     config: {
       jitsiDomain: JITSI_DOMAIN,
-      speechToTextConfigured: !!GOOGLE_SPEECH_API_KEY,
+      transcription: 'web-speech-api (browser-native, FREE)',
       geminiConfigured: !!GEMINI_API_KEY,
       geminiModel: GEMINI_MODEL,
       activeMeetings: meetingSessions.size,
@@ -717,7 +681,8 @@ router.get('/health', (req: Request, res: Response) => {
       googleAccountAuth: 'Supported',
       anonymousAccess: 'Supported',
       guestInviteLinks: 'Supported (patient relatives, doctor specialists)',
-      transcription: 'Google Cloud Speech-to-Text API',
+      transcription: 'Web Speech API (browser-native, FREE)',
+      chat: 'In-meeting text chat',
       summarization: `Gemini AI (${GEMINI_MODEL})`,
       doctorRecommendations: `Gemini AI (${GEMINI_MODEL})`,
       recording: 'Jitsi Built-in (FREE)'
@@ -736,9 +701,9 @@ router.get('/health', (req: Request, res: Response) => {
     },
     costs: {
       video: '$0 (Jitsi Meet)',
-      transcription: '~$0.006/15s (Google Speech-to-Text)',
+      transcription: '$0 (Web Speech API - browser-native)',
       summarization: '~$0.001/1K tokens (Gemini)',
-      total: 'Low cost - pay only for API usage'
+      total: 'Near-zero cost - only Gemini API usage'
     }
   });
 });
@@ -1009,17 +974,18 @@ router.post('/:appointmentId/transcribe-audio', async (req: Request, res: Respon
 });
 
 /**
- * End meeting, transcribe audio, and generate summary + doctor recommendations
+ * End meeting and generate summary + doctor recommendations
  * POST /api/video-meeting/:appointmentId/end
  * USES POSTGRESQL - All data saved to meeting_records table
  * 
  * Workflow:
  * 1. Mark meeting as ended (PostgreSQL)
- * 2. If audioBase64 provided, transcribe using Google Cloud Speech-to-Text
+ * 2. Collect transcript from real-time Web Speech API segments (already saved)
  * 3. Generate EMR summary using Gemini AI
  * 4. Generate doctor recommendations using Gemini AI
- * 5. Save all to PostgreSQL meeting_records
- * 6. Return results for EMR integration
+ * 5. Doctor validates AI content (man-in-the-loop)
+ * 6. Save all to PostgreSQL meeting_records
+ * 7. Return results for EMR integration
  */
 router.post('/:appointmentId/end', async (req: Request, res: Response) => {
   try {
@@ -1045,69 +1011,21 @@ router.post('/:appointmentId/end', async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Active meeting not found' });
     }
     
-    // Update in-memory meeting if exists
+    // End in-memory meeting if exists
     if (memMeeting) {
-      memMeeting.participants.forEach(p => {
-        if (!p.leftAt) {
-          p.leftAt = new Date();
-        }
-      });
-      memMeeting.status = 'ended';
-      memMeeting.endedAt = new Date();
+      endMemoryMeeting(memMeeting);
     }
     
-    // Get transcript from memory
-    let transcriptData = memMeeting?.transcript || [];
-    
-    // Step 1: Transcribe audio if provided (POST-MEETING transcription)
+    // Get transcript and process audio
+    const transcriptData = memMeeting?.transcript || [];
     if (audioBase64) {
-      console.log('🎙️ Transcribing meeting audio using Google Cloud Speech-to-Text...');
-      
-      const transcriptionResult = await transcribeWithSpeechToText(
-        audioBase64,
-        audioEncoding || 'WEBM_OPUS',
-        languageCode || 'th-TH'
-      );
-      
-      if (transcriptionResult.transcript) {
-        const entry: TranscriptEntry = {
-          id: `trans-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`,
-          participantId: 'meeting-audio',
-          participantName: 'Meeting Recording',
-          text: transcriptionResult.transcript,
-          timestamp: new Date(),
-          confidence: transcriptionResult.confidence,
-          language: languageCode || 'th-TH'
-        };
-        transcriptData.push(entry);
-        
-        if (memMeeting) {
-          memMeeting.transcript.push(entry);
-        }
-        
-        console.log(`✅ Transcription complete: ${transcriptionResult.transcript.length} characters`);
-      }
+      await processAudioTranscription(audioBase64, transcriptData, memMeeting, audioEncoding, languageCode);
     }
     
-    // Step 2: Generate EMR summary using Gemini
-    let summary: MeetingSummary | null = null;
-    if (generateSummary && transcriptData.length > 0) {
-      console.log('📝 Generating meeting summary using Gemini AI...');
-      summary = await generateMeetingSummary(transcriptData, patientInfo);
-      if (memMeeting) {
-        memMeeting.summary = summary || undefined;
-      }
-    }
-    
-    // Step 3: Generate doctor recommendations using Gemini
-    let recommendations: DoctorRecommendation | null = null;
-    if (generateRecommendations && transcriptData.length > 0) {
-      console.log('💡 Generating doctor recommendations using Gemini AI...');
-      recommendations = await generateDoctorRecommendations(transcriptData, summary, patientInfo);
-      if (memMeeting) {
-        memMeeting.doctorRecommendations = recommendations || undefined;
-      }
-    }
+    // Generate AI content (summary + recommendations)
+    const { summary, recommendations } = await generatePostMeetingContent(
+      transcriptData, memMeeting, generateSummary, generateRecommendations, patientInfo
+    );
     
     // Calculate duration
     const startTime = dbMeeting?.started_at || memMeeting?.startedAt;
@@ -1172,7 +1090,7 @@ router.post('/:appointmentId/end', async (req: Request, res: Response) => {
         recommendations: recommendations,
         generatedAt: new Date().toISOString(),
         apiUsed: {
-          transcription: 'Google Cloud Speech-to-Text',
+          transcription: 'Web Speech API (browser-native, FREE)',
           summarization: 'Gemini AI',
           recommendations: 'Gemini AI'
         }

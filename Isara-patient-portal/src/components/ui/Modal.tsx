@@ -46,10 +46,6 @@ export const Modal: React.FC<ModalProps> = ({
     full: 'max-w-[95vw] max-h-[95vh]',
   };
 
-  const handleOverlayClick = (e: React.MouseEvent) => {
-    if (e.target === overlayRef.current) onClose();
-  };
-
   const handleOverlayKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
@@ -60,16 +56,19 @@ export const Modal: React.FC<ModalProps> = ({
   return (
     <div
       ref={overlayRef}
-      role="button"
-      tabIndex={0}
-      aria-label="Close modal"
-      onClick={handleOverlayClick}
-      onKeyDown={handleOverlayKeyDown}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
     >
+      <button
+        type="button"
+        aria-label="Close modal"
+        onClick={onClose}
+        onKeyDown={handleOverlayKeyDown}
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm border-none cursor-default"
+        tabIndex={-1}
+      />
       <div
         className={`
-          bg-white rounded-2xl shadow-xl w-full ${sizeClasses[size]}
+          relative bg-white rounded-2xl shadow-xl w-full ${sizeClasses[size]}
           animate-in fade-in zoom-in-95 duration-200
         `}
       >

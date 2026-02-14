@@ -83,10 +83,8 @@ param(
     [switch]$SkipTests,
 
     [Parameter(Mandatory=$false)]
-    [switch]$Full,
+    [switch]$Full
 
-    [Parameter(Mandatory=$false)]
-    [switch]$Verbose
 )
 
 # ============================================================================
@@ -177,7 +175,7 @@ function Wait-ForService {
 # DEPLOY FUNCTIONS
 # ============================================================================
 
-function Deploy-Local {
+function Publish-Local {
     param([switch]$Fresh)
     
     Write-Step 1 5 "DEPLOYING TO LOCAL DOCKER"
@@ -221,7 +219,8 @@ function Deploy-Local {
     
     $services = @(
         @{ Name = "Patient Portal"; Url = "http://localhost:$PATIENT_PORTAL_PORT/api/health" },
-        @{ Name = "Doctor Portal"; Url = "http://localhost:$DOCTOR_PORTAL_PORT/api/health" }
+        @{ Name = "Doctor Portal"; Url = "http://localhost:$DOCTOR_PORTAL_PORT/api/health" },
+        @{ Name = "Meeting Server"; Url = "http://localhost:$MEETING_SERVER_PORT/api/health" }
     )
     
     foreach ($svc in $services) {
@@ -236,13 +235,14 @@ function Deploy-Local {
     Write-Success "LOCAL DEPLOYMENT COMPLETE!"
     Write-Host ""
     Write-Host "  Services:" -ForegroundColor Yellow
-    Write-Host "    Patient Portal: http://localhost:$PATIENT_PORTAL_PORT" -ForegroundColor Gray
-    Write-Host "    Doctor Portal:  http://localhost:$DOCTOR_PORTAL_PORT" -ForegroundColor Gray
-    Write-Host "    pgAdmin:        http://localhost:$PGADMIN_PORT" -ForegroundColor Gray
+    Write-Host "    Patient Portal:  http://localhost:$PATIENT_PORTAL_PORT" -ForegroundColor Gray
+    Write-Host "    Doctor Portal:   http://localhost:$DOCTOR_PORTAL_PORT" -ForegroundColor Gray
+    Write-Host "    Meeting Server:  http://localhost:$MEETING_SERVER_PORT" -ForegroundColor Gray
+    Write-Host "    pgAdmin:         http://localhost:$PGADMIN_PORT" -ForegroundColor Gray
     Write-Host ""
 }
 
-function Deploy-Cloud {
+function Publish-Cloud {
     param([switch]$Fresh)
     
     Write-Step 1 6 "DEPLOYING TO GOOGLE CLOUD RUN"
@@ -363,6 +363,7 @@ function Invoke-HealthCheck {
         $endpoints = @(
             @{ Name = "Patient Portal"; Url = "http://localhost:$PATIENT_PORTAL_PORT/api/health" },
             @{ Name = "Doctor Portal"; Url = "http://localhost:$DOCTOR_PORTAL_PORT/api/health" },
+            @{ Name = "Meeting Server"; Url = "http://localhost:$MEETING_SERVER_PORT/api/health" },
             @{ Name = "PostgreSQL"; Url = "http://localhost:$POSTGRES_PORT"; Type = "tcp" }
         )
     } else {
@@ -526,11 +527,11 @@ Write-Banner
 switch ($Action) {
     "deploy" {
         switch ($Target) {
-            "local" { Deploy-Local -Fresh:$Fresh }
-            "cloud" { Deploy-Cloud -Fresh:$Fresh }
+            "local" { Publish-Local -Fresh:$Fresh }
+            "cloud" { Publish-Cloud -Fresh:$Fresh }
             "all" {
-                Deploy-Local -Fresh:$Fresh
-                Deploy-Cloud -Fresh:$Fresh
+                Publish-Local -Fresh:$Fresh
+                Publish-Cloud -Fresh:$Fresh
             }
         }
         

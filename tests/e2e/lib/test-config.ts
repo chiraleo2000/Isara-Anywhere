@@ -1,8 +1,8 @@
 /**
  * =============================================================================
- * IZARA TELEMEDICINE - SHARED TEST CONFIGURATION v4.0
+ * IZARA TELEMEDICINE - SHARED TEST CONFIGURATION v1.4.8-dev
  * =============================================================================
- * Version: 4.0.0 | Updated: February 6, 2026
+ * Version: 1.4.8-dev | Updated: February 14, 2026
  *
  * Centralized configuration for ALL E2E tests (Local + Cloud).
  * Set TEST_ENV=cloud to switch to Cloud Run URLs.
@@ -10,7 +10,7 @@
  */
 
 export const TEST_ENV = process.env.TEST_ENV || 'local';
-export const IS_CLOUD = TEST_ENV === 'cloud';
+export const IS_CLOUD = TEST_ENV === 'cloud' || TEST_ENV === 'cloud-dev';
 
 export const URLS = {
   local: {
@@ -22,6 +22,11 @@ export const URLS = {
     patient: process.env.CLOUD_PATIENT_URL || 'https://izara-patient-portal-hvht4obouq-as.a.run.app',
     doctor: process.env.CLOUD_DOCTOR_URL || 'https://izara-doctor-portal-hvht4obouq-as.a.run.app',
     meeting: process.env.CLOUD_MEETING_URL || 'https://izara-jitsi-meeting-portal-hvht4obouq-as.a.run.app',
+  },
+  'cloud-dev': {
+    patient: process.env.CLOUD_DEV_PATIENT_URL || 'https://izara-patient-portal-dev-testing-hvht4obouq-as.a.run.app',
+    doctor: process.env.CLOUD_DEV_DOCTOR_URL || 'https://izara-doctor-portal-dev-testing-hvht4obouq-as.a.run.app',
+    meeting: process.env.CLOUD_DEV_MEETING_URL || 'https://izara-meeting-server-dev-testing-hvht4obouq-as.a.run.app',
   },
 };
 

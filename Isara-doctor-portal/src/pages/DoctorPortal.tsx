@@ -40,8 +40,7 @@ const DEFAULT_PREFERENCES: UserPreferences = {
 const DoctorPortal: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
   const { user, logout, loading } = useAuth();
-  const { theme, language, t } = useSettings();
-  const isDark = theme === 'dark';
+  useSettings(); // maintain hook call order
   const navigate = useNavigate();
 
   const [patients, setPatients] = useState<PatientRecord[]>([]);
@@ -431,6 +430,13 @@ interface LabImagingPageProps {
   onOrderLab: () => void;
 }
 
+// Lab status badge class mapping (SonarQube S3358)
+const labStatusClasses: Record<string, string> = {
+  completed: 'bg-green-100 text-green-700',
+  in_progress: 'bg-blue-100 text-blue-700',
+};
+const getLabStatusClass = (status: string) => labStatusClasses[status] || 'bg-yellow-100 text-yellow-700';
+
 const LabImagingPage: React.FC<LabImagingPageProps> = ({
   doctor,
   patients,
@@ -577,12 +583,17 @@ const LabImagingPage: React.FC<LabImagingPageProps> = ({
                   </div>
                 </div>
 
-                {loading ? (
-                  <div className="text-center py-12">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
-                    <p className="text-gray-600 mt-2">Loading lab results...</p>
-                  </div>
-                ) : labResults.length > 0 ? (
+                {(() => {
+                  if (loading) {
+                    return (
+                      <div className="text-center py-12">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
+                        <p className="text-gray-600 mt-2">Loading lab results...</p>
+                      </div>
+                    );
+                  }
+                  if (labResults.length > 0) {
+                    return (
                   <div className="space-y-4">
                     {labResults.map((lab) => (
                       <div key={lab.id} className="bg-white rounded-lg border border-gray-200 p-4">
@@ -593,13 +604,7 @@ const LabImagingPage: React.FC<LabImagingPageProps> = ({
                               Ordered: {new Date(lab.orderDate).toLocaleDateString('th-TH')}
                             </p>
                           </div>
-                          <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                            lab.status === 'completed'
-                              ? 'bg-green-100 text-green-700'
-                              : lab.status === 'in_progress'
-                              ? 'bg-blue-100 text-blue-700'
-                              : 'bg-yellow-100 text-yellow-700'
-                          }`}>
+                          <span className={`px-3 py-1 rounded-full text-sm font-medium ${getLabStatusClass(lab.status)}`}>
                             {lab.status}
                           </span>
                         </div>
@@ -616,7 +621,7 @@ const LabImagingPage: React.FC<LabImagingPageProps> = ({
                             </thead>
                             <tbody>
                               {lab.tests?.map((test: any, i: number) => (
-                                <tr key={i} className={test.abnormalFlag ? 'bg-red-50' : ''}>
+                                <tr key={`${lab.id}-${test.name || i}-${test.code || ''}`} className={test.abnormalFlag ? 'bg-red-50' : ''}>
                                   <td className="p-2">{test.name}</td>
                                   <td className="p-2 font-medium">{test.result} {test.unit}</td>
                                   <td className="p-2 text-gray-500">{test.referenceRange}</td>
@@ -639,7 +644,9 @@ const LabImagingPage: React.FC<LabImagingPageProps> = ({
                       </div>
                     ))}
                   </div>
-                ) : (
+                    );
+                  }
+                  return (
                   <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
                     <div className="text-6xl mb-4">🧪</div>
                     <h3 className="text-xl font-semibold text-gray-900 mb-2">No Lab Results</h3>
@@ -651,7 +658,8 @@ const LabImagingPage: React.FC<LabImagingPageProps> = ({
                       Order Lab Tests
                     </button>
                   </div>
-                )}
+                  );
+                })()}
               </>
             ) : (
               <div className="text-center py-12 bg-white rounded-lg border border-gray-200">

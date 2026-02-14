@@ -81,7 +81,6 @@ const AppointmentPoolManagement: React.FC = () => {
     
     if (!isAuthenticated || !user) {
       navigate('/login');
-      return;
     }
   }, [authLoading, isAuthenticated, user, navigate]);
 
@@ -553,7 +552,8 @@ const AppointmentPoolManagement: React.FC = () => {
                     <button
                       onClick={() => {
                         const date = apt.preferredDates?.[0] || new Date().toISOString().split('T')[0];
-                        const time = apt.preferredTimeSlot === 'morning' ? '10:00' : apt.preferredTimeSlot === 'afternoon' ? '14:00' : '18:00';
+                        const timeSlotDefaults: Record<string, string> = { morning: '10:00', afternoon: '14:00', evening: '18:00' };
+                        const time = timeSlotDefaults[apt.preferredTimeSlot] || '18:00';
                         handleRespondToAppointment(apt.id, 'accept', date, time);
                       }}
                       className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-medium"
@@ -626,8 +626,9 @@ const AppointmentPoolManagement: React.FC = () => {
 
               <div className="space-y-4 mb-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">วันที่</label>
+                  <label htmlFor="claim-date-select" className="block text-sm font-medium text-gray-700 mb-1">วันที่</label>
                   <select
+                    id="claim-date-select"
                     value={claimData.date}
                     onChange={(e) => setClaimData({ ...claimData, date: e.target.value })}
                     className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
@@ -640,8 +641,9 @@ const AppointmentPoolManagement: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">เวลา</label>
+                  <label htmlFor="claim-time-select" className="block text-sm font-medium text-gray-700 mb-1">เวลา</label>
                   <select
+                    id="claim-time-select"
                     value={claimData.time}
                     onChange={(e) => setClaimData({ ...claimData, time: e.target.value })}
                     className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
@@ -681,8 +683,9 @@ const AppointmentPoolManagement: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">หมายเหตุ (ถ้ามี)</label>
+                  <label htmlFor="claim-notes-textarea" className="block text-sm font-medium text-gray-700 mb-1">หมายเหตุ (ถ้ามี)</label>
                   <textarea
+                    id="claim-notes-textarea"
                     value={claimData.notes}
                     onChange={(e) => setClaimData({ ...claimData, notes: e.target.value })}
                     placeholder="หมายเหตุสำหรับผู้ป่วย..."

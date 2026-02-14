@@ -119,6 +119,102 @@ const ChatHistoryService = {
 };
 
 // =============================================================================
+// AI CHAT MEMORY SERVICE - Long-term vector memory for RAG-enhanced chat
+// =============================================================================
+
+const ChatMemoryService = {
+  // Save a memory with embedding (embedding generated externally or null for now)
+  async saveMemory(
+    userId: string,
+    memoryType: 'conversation_summary' | 'health_context' | 'preference' | 'important_fact',
+    content: string,
+    title?: string,
+    sourceSessionId?: string
+  ): Promise<number | null> {
+    try {
+      const result = await pool.query(
+        `INSERT INTO ai_chat_memory (user_id, memory_type, title, content, source_session_id)
+         VALUES ($1, $2, $3, $4, $5)
+         RETURNING id`,
+        [userId, memoryType, title || content.substring(0, 100), content, sourceSessionId]
+      );
+      return result.rows[0]?.id || null;
+    } catch (error) {
+      console.error('[AI Memory] Failed to save memory:', error);
+      return null;
+    }
+  },
+
+  // Get relevant memories for a user (text-based fallback when no embeddings)
+  async getRelevantMemories(userId: string, limit: number = 5): Promise<Array<{id: number; memory_type: string; title: string; content: string}>> {
+    try {
+      const result = await pool.query(
+        `SELECT id, memory_type, title, content FROM ai_chat_memory
+         WHERE user_id = $1 AND is_active = true
+         AND (expires_at IS NULL OR expires_at > NOW())
+         ORDER BY relevance_score DESC, updated_at DESC
+         LIMIT $2`,
+        [userId, limit]
+      );
+      // Update access count
+      if (result.rows.length > 0) {
+        const ids = result.rows.map((r: { id: number }) => r.id);
+        await pool.query(
+          `UPDATE ai_chat_memory SET access_count = access_count + 1, last_accessed_at = NOW()
+           WHERE id = ANY($1)`,
+          [ids]
+        );
+      }
+      return result.rows;
+    } catch (error) {
+      console.error('[AI Memory] Failed to get memories:', error);
+      return [];
+    }
+  },
+
+  // Summarize and store a conversation session as long-term memory
+  async summarizeSession(userId: string, sessionId: string): Promise<void> {
+    try {
+      const messages = await ChatHistoryService.getHistory(userId, sessionId, 50);
+      if (messages.length < 4) return; // Not enough to summarize
+
+      const conversationText = messages
+        .map(m => `${m.role === 'user' ? 'Patient' : 'AI'}: ${m.content}`)
+        .join('\n');
+
+      // Store as conversation summary memory
+      const summary = conversationText.length > 2000
+        ? conversationText.substring(0, 2000) + '...'
+        : conversationText;
+
+      await this.saveMemory(
+        userId,
+        'conversation_summary',
+        summary,
+        `Chat session ${sessionId.substring(0, 20)}`,
+        sessionId
+      );
+      console.log(`[AI Memory] 💾 Saved session summary for user ${userId}`);
+    } catch (error) {
+      console.error('[AI Memory] Failed to summarize session:', error);
+    }
+  },
+
+  // Cleanup expired memories
+  async cleanupExpiredMemories(): Promise<number> {
+    try {
+      const result = await pool.query(
+        `DELETE FROM ai_chat_memory WHERE expires_at IS NOT NULL AND expires_at < NOW() RETURNING id`
+      );
+      return result.rowCount || 0;
+    } catch (error) {
+      console.error('[AI Memory] Failed to cleanup:', error);
+      return 0;
+    }
+  }
+};
+
+// =============================================================================
 // GEMINI AI CONFIGURATION - Works in both local dev and Cloud Run production
 // =============================================================================
 
@@ -296,6 +392,52 @@ function getModel(config: AIConfig): GenerativeModel | null {
   }
 }
 
+// Helper: Build prompt with memory and conversation history
+async function buildChatPrompt(
+  userId: string, sessionId: string, message: string,
+  conversationHistory?: ChatMessage[]
+): Promise<string> {
+  // Get persistent chat history from PostgreSQL if no conversationHistory provided
+  let historyToUse = conversationHistory || [];
+  if (!conversationHistory || conversationHistory.length === 0) {
+    const dbHistory = await ChatHistoryService.getHistory(userId, sessionId, 10);
+    if (dbHistory.length > 0) {
+      historyToUse = dbHistory;
+      console.log(`[AI Chat] 📚 Loaded ${dbHistory.length} messages from database`);
+    }
+  }
+
+  // Load long-term memory context from vector store
+  const memories = await ChatMemoryService.getRelevantMemories(userId, 3);
+  let memoryContext = '';
+  if (memories.length > 0) {
+    memoryContext = '\n=== ความจำระยะยาว (Long-term Memory) ===\n';
+    for (const mem of memories) {
+      memoryContext += `[${mem.memory_type}] ${mem.content.substring(0, 300)}\n`;
+    }
+    memoryContext += '\n';
+    console.log(`[AI Chat] 🧠 Loaded ${memories.length} long-term memories`);
+  }
+
+  // Build prompt with system instruction, memory, and conversation history
+  let fullPrompt = AI_CONFIGS.chat.systemInstruction + '\n\n';
+  
+  if (memoryContext) {
+    fullPrompt += memoryContext;
+  }
+  
+  if (historyToUse && Array.isArray(historyToUse) && historyToUse.length > 0) {
+    fullPrompt += '=== บทสนทนาก่อนหน้า ===\n';
+    for (const msg of historyToUse.slice(-6)) {
+      fullPrompt += `${msg.role === 'user' ? 'ผู้ใช้' : 'AI'}: ${msg.content}\n`;
+    }
+    fullPrompt += '\n';
+  }
+  
+  fullPrompt += `ผู้ใช้: ${message}\n\nAI:`;
+  return fullPrompt;
+}
+
 // Health Q&A Chatbot - Main endpoint with persistent history
 router.post('/chat', authMiddleware, async (req: Request, res: Response) => {
   const startTime = Date.now();
@@ -320,28 +462,7 @@ router.post('/chat', authMiddleware, async (req: Request, res: Response) => {
       });
     }
 
-    // Get persistent chat history from PostgreSQL if no conversationHistory provided
-    let historyToUse = conversationHistory || [];
-    if (!conversationHistory || conversationHistory.length === 0) {
-      const dbHistory = await ChatHistoryService.getHistory(userId, chatSessionId, 10);
-      if (dbHistory.length > 0) {
-        historyToUse = dbHistory;
-        console.log(`[AI Chat] 📚 Loaded ${dbHistory.length} messages from database`);
-      }
-    }
-
-    // Build prompt with system instruction and conversation history
-    let fullPrompt = AI_CONFIGS.chat.systemInstruction + '\n\n';
-    
-    if (historyToUse && Array.isArray(historyToUse) && historyToUse.length > 0) {
-      fullPrompt += '=== บทสนทนาก่อนหน้า ===\n';
-      for (const msg of historyToUse.slice(-6)) { // Keep last 6 messages for context
-        fullPrompt += `${msg.role === 'user' ? 'ผู้ใช้' : 'AI'}: ${msg.content}\n`;
-      }
-      fullPrompt += '\n';
-    }
-    
-    fullPrompt += `ผู้ใช้: ${message}\n\nAI:`;
+    const fullPrompt = await buildChatPrompt(userId, chatSessionId, message, conversationHistory);
 
     console.log('[AI Chat] 🚀 Sending to Gemini...');
     
@@ -449,6 +570,98 @@ router.delete('/chat/history', authMiddleware, async (req: Request, res: Respons
   } catch (error: any) {
     console.error('[AI Chat History] Error:', error.message);
     res.status(500).json({ error: 'Failed to clear chat history' });
+  }
+});
+
+// =============================================================================
+// AI MEMORY MANAGEMENT ROUTES
+// =============================================================================
+
+// Get user's long-term memories
+router.get('/chat/memory', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    const limit = Math.min(Number.parseInt(req.query.limit as string) || 20, 50);
+    const memories = await ChatMemoryService.getRelevantMemories(userId, limit);
+    res.json({ memories, count: memories.length });
+  } catch (error: any) {
+    console.error('[AI Memory] Error fetching memories:', error.message);
+    res.status(500).json({ error: 'Failed to fetch memories' });
+  }
+});
+
+// Save a new memory manually
+router.post('/chat/memory', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    const { memoryType, content, title } = req.body;
+    if (!content || !memoryType) {
+      return res.status(400).json({ error: 'content and memoryType are required' });
+    }
+
+    const validTypes = ['conversation_summary', 'health_context', 'preference', 'important_fact'];
+    if (!validTypes.includes(memoryType)) {
+      return res.status(400).json({ error: `memoryType must be one of: ${validTypes.join(', ')}` });
+    }
+
+    const id = await ChatMemoryService.saveMemory(userId, memoryType, content, title);
+    res.json({ success: true, id });
+  } catch (error: any) {
+    console.error('[AI Memory] Error saving memory:', error.message);
+    res.status(500).json({ error: 'Failed to save memory' });
+  }
+});
+
+// Summarize a chat session into long-term memory
+router.post('/chat/memory/summarize', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    const { sessionId } = req.body;
+    if (!sessionId) {
+      return res.status(400).json({ error: 'sessionId is required' });
+    }
+
+    await ChatMemoryService.summarizeSession(userId, sessionId);
+    res.json({ success: true, message: 'Session summarized into long-term memory' });
+  } catch (error: any) {
+    console.error('[AI Memory] Error summarizing session:', error.message);
+    res.status(500).json({ error: 'Failed to summarize session' });
+  }
+});
+
+// Delete a specific memory
+router.delete('/chat/memory/:memoryId', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    const memoryId = Number.parseInt(req.params.memoryId);
+    if (Number.isNaN(memoryId)) {
+      return res.status(400).json({ error: 'Invalid memory ID' });
+    }
+
+    await pool.query(
+      'DELETE FROM ai_chat_memory WHERE id = $1 AND user_id = $2',
+      [memoryId, userId]
+    );
+    res.json({ success: true, message: 'Memory deleted' });
+  } catch (error: any) {
+    console.error('[AI Memory] Error deleting memory:', error.message);
+    res.status(500).json({ error: 'Failed to delete memory' });
   }
 });
 
@@ -847,7 +1060,7 @@ router.post('/symptom-suggest', authMiddleware, async (req: Request, res: Respon
 // =============================================================================
 router.post('/validate', async (req: Request, res: Response) => {
   try {
-    const { content, type = 'general', action = 'validate' } = req.body;
+    const { type = 'general', action = 'validate' } = req.body;
     
     console.log(`[AI Validate] Processing ${type} validation, action: ${action}`);
     

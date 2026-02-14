@@ -194,8 +194,14 @@ app.get('/api/health', (_req: Request, res: Response) => {
     status: 'healthy',
     timestamp: new Date().toISOString(),
     service: 'Izara Patient Portal API',
-    version: '1.1.6',
-    security: 'OWASP Top 10:2025 Compliant'
+    version: '1.4.7',
+    security: 'OWASP Top 10:2025 Compliant',
+    features: {
+      videoMeeting: 'Jitsi Meet (FREE)',
+      transcription: 'Web Speech API (FREE)',
+      aiAssistant: 'Gemini 2.5 Flash Lite (FREE)',
+      storage: 'PostgreSQL + pgvector'
+    }
   });
 });
 
@@ -456,7 +462,7 @@ app.get('/api/dashboard/stats', authMiddleware, async (req: Request, res: Respon
         [userId]
       );
       upcomingCount = Number.parseInt(upcomingAppts.rows[0]?.count || 0, 10);
-    } catch (e) { console.log('[DASHBOARD] appointments query fallback'); }
+    } catch (e) { console.warn('[DASHBOARD] appointments query fallback:', e); }
     
     try {
       const activeMeds = await pool.query(
@@ -465,7 +471,7 @@ app.get('/api/dashboard/stats', authMiddleware, async (req: Request, res: Respon
         [userId]
       );
       activeMedsCount = Number.parseInt(activeMeds.rows[0]?.count || 0, 10);
-    } catch (e) { console.log('[DASHBOARD] prescriptions query fallback'); }
+    } catch (e) { console.warn('[DASHBOARD] prescriptions query fallback:', e); }
     
     try {
       const latestVitals = await pool.query(
@@ -475,7 +481,7 @@ app.get('/api/dashboard/stats', authMiddleware, async (req: Request, res: Respon
         [userId]
       );
       vitals = latestVitals.rows[0] || null;
-    } catch (e) { console.log('[DASHBOARD] vital_signs query fallback'); }
+    } catch (e) { console.warn('[DASHBOARD] vital_signs query fallback:', e); }
     
     try {
       const unreadNotifs = await pool.query(
@@ -484,7 +490,7 @@ app.get('/api/dashboard/stats', authMiddleware, async (req: Request, res: Respon
         [userId]
       );
       unreadCount = Number.parseInt(unreadNotifs.rows[0]?.count || 0, 10);
-    } catch (e) { console.log('[DASHBOARD] notifications query fallback'); }
+    } catch (e) { console.warn('[DASHBOARD] notifications query fallback:', e); }
     
     res.json({
       success: true,
@@ -1055,11 +1061,14 @@ try {
 
   app.listen(PORT, () => {
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log(`🚀 Izara Patient Portal API Server`);
+    console.log(`🚀 Izara Patient Portal API Server v1.4.7`);
     console.log(`🛡️  OWASP Top 10:2025 Security Enabled`);
     console.log(`📡 Server running on http://localhost:${PORT}`);
     console.log(`🏥 Health check: http://localhost:${PORT}/health`);
-    console.log(`☁️  GCS status: http://localhost:${PORT}/api/health/gcs`);
+    console.log(`🎥 Video Meeting: Jitsi Meet (FREE)`);
+    console.log(`🎤 Transcription: Web Speech API (FREE)`);
+    console.log(`🤖 AI Assistant: Gemini 2.5 Flash Lite (FREE)`);
+    console.log(`📊 Database: PostgreSQL + pgvector`);
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
   });
 } catch (error) {

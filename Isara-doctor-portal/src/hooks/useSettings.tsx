@@ -1,4 +1,4 @@
-import React, { useState, useEffect, createContext, useContext, ReactNode } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, createContext, useContext, ReactNode } from 'react';
 
 /**
  * Settings Hook for Theme and Language
@@ -157,12 +157,12 @@ const translations: Translations = {
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
 export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [theme, setThemeState] = useState<Theme>(() => {
+  const [theme, setTheme] = useState<Theme>(() => {
     const saved = localStorage.getItem('doctor-portal-theme');
     return (saved as Theme) || 'light';
   });
 
-  const [language, setLanguageState] = useState<Language>(() => {
+  const [language, setLanguage] = useState<Language>(() => {
     const saved = localStorage.getItem('doctor-portal-language');
     return (saved as Language) || 'th';
   });
@@ -182,37 +182,31 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
     document.documentElement.lang = language;
   }, [language]);
 
-  const setTheme = (newTheme: Theme) => {
-    setThemeState(newTheme);
-  };
+  const toggleTheme = useCallback(() => {
+    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
+  }, []);
 
-  const setLanguage = (newLanguage: Language) => {
-    setLanguageState(newLanguage);
-  };
+  const toggleLanguage = useCallback(() => {
+    setLanguage((prev) => (prev === 'en' ? 'th' : 'en'));
+  }, []);
 
-  const toggleTheme = () => {
-    setThemeState((prev) => (prev === 'light' ? 'dark' : 'light'));
-  };
-
-  const toggleLanguage = () => {
-    setLanguageState((prev) => (prev === 'en' ? 'th' : 'en'));
-  };
-
-  const t = (key: string): string => {
+  const t = useCallback((key: string): string => {
     return translations[key]?.[language] || key;
-  };
+  }, [language]);
+
+  const contextValue = useMemo(() => ({
+    theme,
+    language,
+    setTheme,
+    setLanguage,
+    toggleTheme,
+    toggleLanguage,
+    t,
+  }), [theme, language, setTheme, setLanguage, toggleTheme, toggleLanguage, t]);
 
   return (
     <SettingsContext.Provider
-      value={{
-        theme,
-        language,
-        setTheme,
-        setLanguage,
-        toggleTheme,
-        toggleLanguage,
-        t,
-      }}
+      value={contextValue}
     >
       {children}
     </SettingsContext.Provider>

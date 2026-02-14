@@ -66,6 +66,62 @@ interface AIClinicalAssistantProps {
 
 type TabType = 'chat' | 'summary' | 'documents' | 'cds';
 
+/** Helper to get severity CSS classes */
+const getSeverityBorderClass = (severity: string) => {
+  if (severity === 'critical') return 'border-red-300 bg-red-50';
+  if (severity === 'warning') return 'border-yellow-300 bg-yellow-50';
+  return 'border-blue-300 bg-blue-50';
+};
+
+const getSeverityTextClass = (severity: string) => {
+  if (severity === 'critical') return 'text-red-800';
+  if (severity === 'warning') return 'text-yellow-800';
+  return 'text-blue-800';
+};
+
+const getSeverityBadgeClass = (severity: string) => {
+  if (severity === 'critical') return 'bg-red-600 text-white';
+  if (severity === 'warning') return 'bg-yellow-600 text-white';
+  return 'bg-blue-600 text-white';
+};
+
+const getCdsTypeLabel = (type: string) => {
+  if (type === 'drug_interaction') return 'Drug Interaction';
+  if (type === 'dose_adjustment') return 'Dose Adjustment';
+  if (type === 'contraindication') return 'Contraindication';
+  return 'Guideline Alert';
+};
+
+const getDecisionClass = (decision: string) => {
+  if (decision === 'accepted') return 'bg-green-100 text-green-800';
+  if (decision === 'modified') return 'bg-yellow-100 text-yellow-800';
+  return 'bg-red-100 text-red-800';
+};
+
+const getDecisionLabel = (decision: string) => {
+  if (decision === 'accepted') return '✓ ยอมรับแล้ว';
+  if (decision === 'modified') return '⚡ ปรับแต่งแล้ว';
+  return '✗ ปฏิเสธแล้ว';
+};
+
+const getUrgencyClass = (level: string) => {
+  if (level === 'high') return 'bg-red-100 text-red-800';
+  if (level === 'medium') return 'bg-yellow-100 text-yellow-800';
+  return 'bg-green-100 text-green-800';
+};
+
+const getTrendLabel = (trend: string) => {
+  if (trend === 'improving') return '↑ ดีขึ้น';
+  if (trend === 'worsening') return '↓ แย่ลง';
+  return '→ คงที่';
+};
+
+const getTrendClass = (trend: string) => {
+  if (trend === 'improving') return 'bg-green-100 text-green-800';
+  if (trend === 'worsening') return 'bg-red-100 text-red-800';
+  return 'bg-gray-100 text-gray-800';
+};
+
 const AIClinicalAssistant: React.FC<AIClinicalAssistantProps> = ({
   patientId,
   appointmentId,
@@ -314,9 +370,9 @@ const AIClinicalAssistant: React.FC<AIClinicalAssistantProps> = ({
           <div className="flex flex-col h-full">
             {/* Quick Prompts */}
             <div className="flex flex-wrap gap-2 p-3 border-b bg-gray-50">
-              {quickPrompts.map((prompt, idx) => (
+              {quickPrompts.map((prompt) => (
                 <button
-                  key={idx}
+                  key={prompt.label}
                   onClick={() => setInputValue(prompt.prompt)}
                   className="px-3 py-1 text-xs bg-white border rounded-full hover:bg-blue-50 hover:border-blue-300 transition-colors"
                 >
@@ -335,9 +391,9 @@ const AIClinicalAssistant: React.FC<AIClinicalAssistantProps> = ({
                 </div>
               )}
               
-              {messages.map((msg, idx) => (
+              {messages.map((msg) => (
                 <div
-                  key={idx}
+                  key={`msg-${msg.role}-${msg.createdAt}`}
                   className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
@@ -403,11 +459,12 @@ const AIClinicalAssistant: React.FC<AIClinicalAssistantProps> = ({
         {/* Pre-Consultation Summary Tab */}
         {activeTab === 'summary' && (
           <div className="h-full overflow-y-auto p-4">
-            {isSummaryLoading ? (
+            {isSummaryLoading && (
               <div className="flex items-center justify-center h-full">
                 <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-600 border-t-transparent" />
               </div>
-            ) : preSummary ? (
+            )}
+            {!isSummaryLoading && preSummary && (
               <div className="space-y-4">
                 {/* Patient Snapshot */}
                 <div className="bg-blue-50 rounded-lg p-4">
@@ -428,8 +485,8 @@ const AIClinicalAssistant: React.FC<AIClinicalAssistantProps> = ({
                       แพ้ยา
                     </h3>
                     <ul className="list-disc list-inside text-sm text-red-700">
-                      {preSummary.patientSnapshot.drugAllergies.map((allergy, idx) => (
-                        <li key={idx}>
+                      {preSummary.patientSnapshot.drugAllergies.map((allergy) => (
+                        <li key={`allergy-${allergy.allergen}`}>
                           <strong>{allergy.allergen}</strong>: {allergy.reaction}
                           {allergy.severity === 'life_threatening' && (
                             <span className="ml-2 px-2 py-0.5 bg-red-600 text-white text-xs rounded">อันตราย!</span>
@@ -445,8 +502,8 @@ const AIClinicalAssistant: React.FC<AIClinicalAssistantProps> = ({
                   <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                     <h3 className="font-semibold text-yellow-800 mb-2">⚠️ ประเด็นสำคัญ</h3>
                     <ul className="list-disc list-inside text-sm text-yellow-700">
-                      {preSummary.aiTriage.alertFlags.map((flag, idx) => (
-                        <li key={idx}>{flag}</li>
+                      {preSummary.aiTriage.alertFlags.map((flag) => (
+                        <li key={`alert-${flag}`}>{flag}</li>
                       ))}
                     </ul>
                   </div>
@@ -456,8 +513,8 @@ const AIClinicalAssistant: React.FC<AIClinicalAssistantProps> = ({
                 <div className="bg-gray-50 rounded-lg p-4">
                   <h3 className="font-semibold text-gray-800 mb-2">โรคประจำตัว</h3>
                   <ul className="list-disc list-inside text-sm">
-                    {preSummary.patientSnapshot.primaryConditions.map((condition, idx) => (
-                      <li key={idx}>{condition}</li>
+                    {preSummary.patientSnapshot.primaryConditions.map((condition) => (
+                      <li key={`cond-${condition}`}>{condition}</li>
                     ))}
                   </ul>
                 </div>
@@ -466,18 +523,14 @@ const AIClinicalAssistant: React.FC<AIClinicalAssistantProps> = ({
                 <div className="bg-gray-50 rounded-lg p-4">
                   <h3 className="font-semibold text-gray-800 mb-2">อาการปัจจุบัน</h3>
                   <div className="flex flex-wrap gap-2">
-                    {preSummary.currentSymptoms.map((symptom, idx) => (
-                      <span key={idx} className="px-2 py-1 bg-white border rounded text-sm">
+                    {preSummary.currentSymptoms.map((symptom) => (
+                      <span key={`sym-${symptom}`} className="px-2 py-1 bg-white border rounded text-sm">
                         {symptom}
                       </span>
                     ))}
                   </div>
                   <div className="mt-2">
-                    <span className={`px-2 py-1 rounded text-sm ${
-                      preSummary.urgencyLevel === 'high' ? 'bg-red-100 text-red-800' :
-                      preSummary.urgencyLevel === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-green-100 text-green-800'
-                    }`}>
+                    <span className={`px-2 py-1 rounded text-sm ${getUrgencyClass(preSummary.urgencyLevel)}`}>
                       ความเร่งด่วน: {preSummary.urgencyLevel}
                     </span>
                   </div>
@@ -487,8 +540,8 @@ const AIClinicalAssistant: React.FC<AIClinicalAssistantProps> = ({
                 <div className="bg-indigo-50 rounded-lg p-4">
                   <h3 className="font-semibold text-indigo-800 mb-2">💡 คำถามที่แนะนำ</h3>
                   <ul className="list-decimal list-inside text-sm text-indigo-700">
-                    {preSummary.aiTriage.suggestedQuestions.map((q, idx) => (
-                      <li key={idx}>{q}</li>
+                    {preSummary.aiTriage.suggestedQuestions.map((q) => (
+                      <li key={`q-${q.slice(0, 30)}`}>{q}</li>
                     ))}
                   </ul>
                 </div>
@@ -498,16 +551,11 @@ const AIClinicalAssistant: React.FC<AIClinicalAssistantProps> = ({
                   <div className="bg-gray-50 rounded-lg p-4">
                     <h3 className="font-semibold text-gray-800 mb-2">📊 แนวโน้มผล Lab</h3>
                     <div className="space-y-2">
-                      {preSummary.labTrends.map((trend, idx) => (
-                        <div key={idx} className="flex items-center justify-between text-sm">
+                      {preSummary.labTrends.map((trend) => (
+                        <div key={`trend-${trend.parameter}`} className="flex items-center justify-between text-sm">
                           <span>{trend.parameter}</span>
-                          <span className={`px-2 py-0.5 rounded ${
-                            trend.trend === 'improving' ? 'bg-green-100 text-green-800' :
-                            trend.trend === 'worsening' ? 'bg-red-100 text-red-800' :
-                            'bg-gray-100 text-gray-800'
-                          }`}>
-                            {trend.trend === 'improving' ? '↑ ดีขึ้น' :
-                             trend.trend === 'worsening' ? '↓ แย่ลง' : '→ คงที่'}
+                          <span className={`px-2 py-0.5 rounded ${getTrendClass(trend.trend)}`}>
+                            {getTrendLabel(trend.trend)}
                           </span>
                         </div>
                       ))}
@@ -515,7 +563,8 @@ const AIClinicalAssistant: React.FC<AIClinicalAssistantProps> = ({
                   </div>
                 )}
               </div>
-            ) : (
+            )}
+            {!isSummaryLoading && !preSummary && (
               <div className="text-center text-gray-500 py-8">
                 <p>ไม่พบข้อมูลผู้ป่วย</p>
                 <p className="text-sm">เลือกผู้ป่วยเพื่อดูสรุปก่อนพบแพทย์</p>
@@ -577,8 +626,8 @@ const AIClinicalAssistant: React.FC<AIClinicalAssistantProps> = ({
                     <div className="mb-3">
                       <h5 className="text-sm font-medium text-gray-700 mb-1">ประเด็นสำคัญ</h5>
                       <ul className="list-disc list-inside text-sm text-gray-600">
-                        {doc.keyFindings.map((finding, idx) => (
-                          <li key={idx}>{finding}</li>
+                        {doc.keyFindings.map((finding) => (
+                          <li key={`finding-${finding.slice(0, 30)}`}>{finding}</li>
                         ))}
                       </ul>
                     </div>
@@ -588,8 +637,8 @@ const AIClinicalAssistant: React.FC<AIClinicalAssistantProps> = ({
                       <div className="bg-red-50 rounded p-3">
                         <h5 className="text-sm font-medium text-red-700 mb-1">⚠️ ค่าผิดปกติ</h5>
                         <ul className="list-disc list-inside text-sm text-red-600">
-                          {doc.abnormalValues.map((val, idx) => (
-                            <li key={idx}>{val}</li>
+                          {doc.abnormalValues.map((val) => (
+                            <li key={`abnormal-${val.slice(0, 30)}`}>{val}</li>
                           ))}
                         </ul>
                       </div>
@@ -610,41 +659,27 @@ const AIClinicalAssistant: React.FC<AIClinicalAssistantProps> = ({
         {/* CDS Tab */}
         {activeTab === 'cds' && (
           <div className="h-full overflow-y-auto p-4">
-            {isCdsLoading ? (
+            {isCdsLoading && (
               <div className="flex items-center justify-center h-full">
                 <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-600 border-t-transparent" />
               </div>
-            ) : cdsRecommendations.length > 0 ? (
+            )}
+            {!isCdsLoading && cdsRecommendations.length > 0 && (
               <div className="space-y-4">
                 {cdsRecommendations.map((rec) => (
                   <div
                     key={rec.id}
-                    className={`border rounded-lg p-4 ${
-                      rec.severity === 'critical' ? 'border-red-300 bg-red-50' :
-                      rec.severity === 'warning' ? 'border-yellow-300 bg-yellow-50' :
-                      'border-blue-300 bg-blue-50'
-                    }`}
+                    className={`border rounded-lg p-4 ${getSeverityBorderClass(rec.severity)}`}
                   >
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex items-center gap-2">
                         <AlertIcon />
-                        <h4 className={`font-semibold ${
-                          rec.severity === 'critical' ? 'text-red-800' :
-                          rec.severity === 'warning' ? 'text-yellow-800' :
-                          'text-blue-800'
-                        }`}>
+                        <h4 className={`font-semibold ${getSeverityTextClass(rec.severity)}`}>
                           {rec.titleThai || rec.title}
                         </h4>
                       </div>
-                      <span className={`px-2 py-0.5 text-xs rounded ${
-                        rec.severity === 'critical' ? 'bg-red-600 text-white' :
-                        rec.severity === 'warning' ? 'bg-yellow-600 text-white' :
-                        'bg-blue-600 text-white'
-                      }`}>
-                        {rec.type === 'drug_interaction' ? 'Drug Interaction' :
-                         rec.type === 'dose_adjustment' ? 'Dose Adjustment' :
-                         rec.type === 'contraindication' ? 'Contraindication' :
-                         'Guideline Alert'}
+                      <span className={`px-2 py-0.5 text-xs rounded ${getSeverityBadgeClass(rec.severity)}`}>
+                        {getCdsTypeLabel(rec.type)}
                       </span>
                     </div>
 
@@ -668,7 +703,14 @@ const AIClinicalAssistant: React.FC<AIClinicalAssistantProps> = ({
                     )}
 
                     {/* Decision Buttons */}
-                    {!rec.doctorDecision ? (
+                    {rec.doctorDecision ? (
+                      <div className={`mt-2 p-2 rounded text-sm ${getDecisionClass(rec.doctorDecision)}`}>
+                        <strong>
+                          {getDecisionLabel(rec.doctorDecision)}
+                        </strong>
+                        {rec.doctorNotes && <span className="ml-2">- {rec.doctorNotes}</span>}
+                      </div>
+                    ) : (
                       <div className="flex gap-2 pt-2 border-t">
                         <button
                           onClick={() => handleCDSDecision(rec.id, 'accepted')}
@@ -697,24 +739,12 @@ const AIClinicalAssistant: React.FC<AIClinicalAssistantProps> = ({
                           ปฏิเสธ
                         </button>
                       </div>
-                    ) : (
-                      <div className={`mt-2 p-2 rounded text-sm ${
-                        rec.doctorDecision === 'accepted' ? 'bg-green-100 text-green-800' :
-                        rec.doctorDecision === 'modified' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-red-100 text-red-800'
-                      }`}>
-                        <strong>
-                          {rec.doctorDecision === 'accepted' ? '✓ ยอมรับแล้ว' :
-                           rec.doctorDecision === 'modified' ? '⚡ ปรับแต่งแล้ว' :
-                           '✗ ปฏิเสธแล้ว'}
-                        </strong>
-                        {rec.doctorNotes && <span className="ml-2">- {rec.doctorNotes}</span>}
-                      </div>
                     )}
                   </div>
                 ))}
               </div>
-            ) : (
+            )}
+            {!isCdsLoading && cdsRecommendations.length === 0 && (
               <div className="text-center text-gray-500 py-8">
                 <CheckIcon />
                 <p className="mt-2">ไม่มีคำแนะนำ CDS ที่รอตรวจสอบ</p>

@@ -143,31 +143,11 @@ export const QueueManagement: React.FC<QueueManagementProps> = ({
     }
   };
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'urgent':
-        return 'bg-red-100 text-red-800 border-red-300';
-      case 'routine':
-        return 'bg-green-100 text-green-800 border-green-300';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-300';
-    }
-  };
+  const priorityColorMap: Record<string, string> = { urgent: 'bg-red-100 text-red-800 border-red-300', routine: 'bg-green-100 text-green-800 border-green-300' };
+  const getPriorityColor = (priority: string) => priorityColorMap[priority] || 'bg-gray-100 text-gray-800 border-gray-300';
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'in-progress':
-        return 'bg-blue-500 text-white';
-      case 'waiting':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'completed':
-        return 'bg-gray-400 text-white';
-      case 'skipped':
-        return 'bg-orange-100 text-orange-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
+  const statusColorMap: Record<string, string> = { 'in-progress': 'bg-blue-500 text-white', waiting: 'bg-yellow-100 text-yellow-800', completed: 'bg-gray-400 text-white', skipped: 'bg-orange-100 text-orange-800' };
+  const getStatusColor = (status: string) => statusColorMap[status] || 'bg-gray-100 text-gray-800';
 
   return (
     <div className="bg-white rounded-xl shadow-lg p-6">
@@ -219,19 +199,20 @@ export const QueueManagement: React.FC<QueueManagementProps> = ({
 
       {/* Queue List */}
       <div className="space-y-3">
-        {loading ? (
+        {loading && (
           <div className="text-center py-12 text-gray-500">
             <div className="text-4xl mb-4 animate-spin">⏳</div>
             <div className="text-lg">Loading queue...</div>
           </div>
-        ) : queue.length === 0 ? (
+        )}
+        {!loading && queue.length === 0 && (
           <div className="text-center py-12 text-gray-500">
             <div className="text-6xl mb-4">✅</div>
             <div className="text-lg">No patients in queue</div>
             <div className="text-sm mt-2">Appointments will appear here when patients book for today</div>
           </div>
-        ) : (
-          queue.map((patient) => (
+        )}
+        {!loading && queue.length > 0 && queue.map((patient) => (
             <div
               key={patient.id}
               className={`p-4 border-2 rounded-lg transition-all ${
@@ -311,7 +292,7 @@ export const QueueManagement: React.FC<QueueManagementProps> = ({
               </div>
             </div>
           ))
-        )}
+        }
       </div>
 
       {/* Skip Modal */}
@@ -322,8 +303,9 @@ export const QueueManagement: React.FC<QueueManagementProps> = ({
             <p className="text-gray-700 mb-4">
               Are you sure you want to skip <strong>{selectedPatient.patientName}</strong>?
             </p>
-            <label className="block font-medium mb-2">Reason for Skipping</label>
+            <label htmlFor="skip-reason" className="block font-medium mb-2">Reason for Skipping</label>
             <textarea
+              id="skip-reason"
               value={skipReason}
               onChange={(e) => setSkipReason(e.target.value)}
               placeholder="Enter reason..."

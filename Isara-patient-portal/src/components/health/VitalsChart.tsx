@@ -39,7 +39,7 @@ export const VitalsChart: React.FC<VitalsChartProps> = ({
     <div className={`h-16 flex items-end gap-1 ${className}`}>
       {values.slice(-7).map((value, index) => (
         <div
-          key={index}
+          key={`${type}-${index}`}
           className="flex-1 bg-emerald-500 rounded-t transition-all hover:bg-emerald-600"
           style={{
             height: `${Math.max(((value - min) / range) * 100, 10)}%`,

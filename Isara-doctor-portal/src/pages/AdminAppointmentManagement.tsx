@@ -81,8 +81,7 @@ interface PoolItem {
 }
 
 const AdminAppointmentManagement: React.FC = () => {
-  const { theme, language, t } = useSettings();
-  const isDark = theme === 'dark';
+  const { language } = useSettings();
   
   // i18n labels
   const labels = {
@@ -617,12 +616,13 @@ const AdminAppointmentManagement: React.FC = () => {
 
           {/* Appointments List */}
           <div className="p-4">
-            {loading ? (
+            {loading && (
               <div className="text-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600 mx-auto"></div>
                 <p className="text-gray-500 mt-2">Loading appointments...</p>
               </div>
-            ) : filteredRequests.length === 0 ? (
+            )}
+            {!loading && filteredRequests.length === 0 && (
               <div className="text-center py-12">
                 <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -634,7 +634,8 @@ const AdminAppointmentManagement: React.FC = () => {
                     : 'No appointments found.'}
                 </p>
               </div>
-            ) : (
+            )}
+            {!loading && filteredRequests.length > 0 && (
               <div className="space-y-4">
                 {filteredRequests.map((request) => (
                   <div

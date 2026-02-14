@@ -1,6 +1,6 @@
 {
-  "name": "isara-anywhere-v0.0.2",
-  "version": "1.4.6",
+  "name": "isara-anywhere",
+  "version": "1.4.8-dev",
   "description": "Izara Telemedicine Platform - Patient and Doctor Portals",
   "main": "index.js",
   "scripts": {

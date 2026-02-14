@@ -1,8 +1,11 @@
 # Video Meeting Implementation - Jitsi Meet + Device Speech-to-Text + Gemini AI
 
-**Version:** 3.1.0  
-**Last Updated:** February 4, 2026  
-**Status:** ✅ Phase 1 Complete
+**Version:** 1.4.7  
+**Last Updated:** January 2025  
+**Status:** ✅ Phase 1 — Comprehensive Meeting Workflow (Microsoft Teams-Like Experience)
+
+> This document is the core Phase 1 deliverable describing the complete meeting workflow:
+> Appointment → Multi-Party Meeting → Transcript Streaming → AI Summary → EMR → Patient Delivery
 
 ---
 
@@ -44,26 +47,64 @@ This document describes the video meeting implementation using:
 - **Text Chat**: Always available for communication
 - Users can mute/unmute at any time
 
-### 5. Real-Time Transcription (Phase 1 Feature)
+### 5. Real-Time Transcript Streaming (Phase 1 Feature — HOST Control)
 
-- **Device/Browser Speech-to-Text API** (FREE - no Google Cloud cost)
-- Real-time transcription during the meeting
-- Transcript saved to PostgreSQL `meeting_transcripts` table
-- Supports Thai and English languages
+- **Device/Browser Web Speech API** (FREE - no Google Cloud cost)
+- **Doctor (HOST) controls**: START / PAUSE / RESUME / STOP transcript
+- Real-time transcript streaming via Socket.IO during the meeting
+- Speaker labels: 👨‍⚕️ Doctor / 🧑 Patient / 👥 Guest
+- Interim text shown with yellow pulsing background
+- Language switching: Thai (th-TH) ↔ English (en-US)
+- Transcript saved to PostgreSQL `meeting_transcripts` table continuously
+- **Requirement 3.2:** ระบบ transcript หลังบ้านใน meeting
+- **Requirement 3.5:** ใช้ Speech-to-Text บนอุปกรณ์ (ฟรี)
 
-### 6. AI-Powered EMR Generation with Man-in-the-Loop
+### 6. Chat Integration During Meeting
 
-- **Gemini 2.5 Flash** processes full meeting transcript
-- Generates SOAP format EMR draft
-- **Doctor must validate** before saving (Man-in-the-Loop)
-- Doctor can edit, approve, or regenerate
+- **Text chat available to ALL participants** (like Microsoft Teams)
+- All chat messages are **CAPTURED with timestamps and sender attribution**
+- Chat messages included in AI summary processing alongside transcript
+- Chat provides secondary communication channel during consultation
+- Doctor, patient, relatives, guests can all send chat messages
 
-### 7. Patient Instruction Sheet Generation
+### 7. Multi-Party Meeting Support
 
-- AI generates patient-friendly summary from EMR
-- Includes diagnosis explanation, medication instructions, warning signs
-- Doctor validates before sending to patient
-- Patient views in Patient Portal under Health Records
+- **Patient can invite**: relatives, friends (via Patient Portal sharing)
+- **Doctor can invite**: other doctors, admin, specialists (token-based)
+- **Non-registered users**: receive link → create display name from BLANK → enter LOBBY
+- Doctor as HOST approves/rejects each participant from lobby
+- Up to 8 participants per meeting recommended
+
+### 8. AI-Powered EMR Generation with Man-in-the-Loop
+
+- **Gemini 2.5 Flash Lite** processes: transcript + chats + video metadata + patient PHR
+- Generates SOAP format EMR draft (Thai OPD Card standard)
+- **Doctor MUST validate** before patient receives any data (Man-in-the-Loop)
+- Actions: [✅ Approve] [✏️ Edit] [🔄 Regenerate] [❌ Reject]
+- **Requirement 2.5:** แพทย์ตรวจสอบก่อนส่งข้อมูลถึงคนไข้
+
+### 9. Patient Instruction Sheet Auto-Generation
+
+- AI generates patient-friendly summary in simple Thai
+- Content: วินิจฉัย, ยาที่ได้รับ, การปฏิบัติตัว, อาการเตือน, นัดติดตาม
+- Doctor validates before sending to patient (Man-in-the-Loop)
+- Patient views and downloads PDF in Patient Portal → Health History
+- **Requirement 2.1:** สร้างเอกสารสรุปคำแนะนำให้ผู้ป่วย
+- **Requirement 4.5:** Patient Instruction Sheet อัตโนมัติ
+
+### 10. Post-Meeting AI Pipeline (Automatic)
+
+- **INPUT to Gemini AI:**
+  - ① Full transcript from streaming (with speaker labels and timestamps)
+  - ② All chat messages (with timestamps and senders)
+  - ③ Video recording metadata (duration, participants)
+  - ④ Patient's existing PHR/EMR context
+- **OUTPUT:**
+  - SOAP summary (Thai) with 30-minute sections for long meetings
+  - Clinical Decision Support recommendations
+  - Patient Instruction Sheet draft
+  - Red flags and follow-up schedule
+- All outputs marked `requiresValidation: true`
 
 ## Storage Architecture (PostgreSQL)
 
@@ -134,73 +175,131 @@ This document describes the video meeting implementation using:
 │  │  • Unauthorized guests are rejected by Doctor                    │   │
 │  └───────────────────────────┬─────────────────────────────────────┘   │
 │                              ▼                                          │
-│  3. VIDEO CONSULTATION (Jitsi Meet - FREE)                              │
+│  3. VIDEO CONSULTATION + TRANSCRIPT STREAMING + CHAT                    │
 │  ┌─────────────────────────────────────────────────────────────────┐   │
 │  │  • All participants in meeting with video/audio/chat             │   │
 │  │  • Meeting recorded locally (FREE)                               │   │
-│  │  • Doctor acts as HOST with recording permissions                │   │
+│  │  • Doctor acts as HOST with full control                         │   │
 │  │  • Users can mute mic/camera at any time                         │   │
-│  │  • Meeting ends when Doctor closes                               │   │
+│  │  ──────────────────────────────────────────────────              │   │
+│  │  TRANSCRIPT STREAMING (Doctor HOST controls):                    │   │
+│  │  • Doctor clicks [▶ Start Transcription]                         │   │
+│  │  • Web Speech API begins listening (FREE, browser-based)         │   │
+│  │  • Real-time transcript with speaker labels (Socket.IO)          │   │
+│  │  • Doctor can [⏸ Pause] / [▶ Resume] / [⏹ Stop]                 │   │
+│  │  • Language: Thai (th-TH) ↔ English (en-US)                     │   │
+│  │  • Transcript segments saved to PostgreSQL continuously          │   │
+│  │  ──────────────────────────────────────────────────              │   │
+│  │  CHAT (All participants):                                        │   │
+│  │  • Text chat available throughout (like Microsoft Teams)         │   │
+│  │  • All messages CAPTURED with timestamps + sender name           │   │
+│  │  • Chat included in AI summary processing                       │   │
+│  │  ──────────────────────────────────────────────────              │   │
+│  │  Cost: $0 (FREE - Web Speech API + Jitsi + local recording)     │   │
 │  └───────────────────────────┬─────────────────────────────────────┘   │
 │                              ▼                                          │
-│  4. VIDEO UPLOAD (GCS - izara-doctors-data)                            │
+│  4. MEETING ENDS (Doctor HOST control)                                  │
 │  ┌─────────────────────────────────────────────────────────────────┐   │
-│  │  • Video recording uploaded to doctor's storage                  │   │
-│  │  • Path: doctors/{doctorId}/meetings/{appointmentId}/           │   │
+│  │  • Doctor clicks [End Meeting] → All participants disconnected   │   │
+│  │  • Recording stops and prepares for upload                       │   │
+│  │  • Full transcript compiled from streaming segments              │   │
+│  │  • All chat messages collected and merged with transcript        │   │
+│  └───────────────────────────┬─────────────────────────────────────┘   │
+│                              ▼                                          │
+│  5. VIDEO UPLOAD (PostgreSQL / Cloud Storage)                           │
+│  ┌─────────────────────────────────────────────────────────────────┐   │
+│  │  • Video recording uploaded to PostgreSQL/cloud storage          │   │
 │  │  • Format: WebM (up to 200MB)                                    │   │
 │  │  • Private storage (not public)                                  │   │
+│  │  Cost: ~$0.02/GB/month (PostgreSQL storage)                      │   │
 │  └───────────────────────────┬─────────────────────────────────────┘   │
 │                              ▼                                          │
-│  5. TRANSCRIPTION (Google Cloud Speech-to-Text)                         │
+│  6. AI PROCESSES ALL MEETING DATA (Gemini 2.5 Flash Lite)               │
 │  ┌─────────────────────────────────────────────────────────────────┐   │
-│  │  • Audio sent to Speech-to-Text API                              │   │
-│  │  • Thai/English medical speech recognition                       │   │
-│  │  • Returns timestamped transcript with confidence                │   │
-│  │  • Output: transcript.txt in GCS                                 │   │
-│  │  Cost: ~$0.006 per 15 seconds                                    │   │
-│  └───────────────────────────┬─────────────────────────────────────┘   │
-│                              ▼                                          │
-│  6. EMR SUMMARY (Gemini AI with 30-Min Sections)                        │
-│  ┌─────────────────────────────────────────────────────────────────┐   │
-│  │  • IF video > 30 min: split into 30-min sections                 │   │
+│  │  INPUT to Gemini:                                                │   │
+│  │  ① Full transcript (with speaker labels + timestamps)            │   │
+│  │  ② All chat messages (with timestamps + senders)                 │   │
+│  │  ③ Video metadata (duration, participants)                       │   │
+│  │  ④ Patient's existing PHR/EMR context                            │   │
+│  │                                                                  │   │
+│  │  PROCESSING:                                                     │   │
+│  │  • IF meeting > 30 min: split into 30-min sections               │   │
 │  │  • Each section generates separate summary                       │   │
 │  │  • Sections combined into final comprehensive summary            │   │
-│  │  • SOAP format: Chief Complaint, HPI, Exam, Assessment, Plan    │   │
-│  │  • Output: summary.txt + section-X-summary.txt in GCS            │   │
-│  │  Cost: ~$0.001 per 1K tokens                                     │   │
+│  │  • SOAP format (Thai OPD Card standard)                          │   │
+│  │                                                                  │   │
+│  │  OUTPUT:                                                         │   │
+│  │  • 🎯 อาการสำคัญ (Chief Complaint)                                │   │
+│  │  • 📝 อาการที่พบ (Presenting Symptoms)                            │   │
+│  │  • 🔍 การสืบค้น (Investigation / Findings)                        │   │
+│  │  • 📋 การประเมิน (Assessment)                                     │   │
+│  │  • 💊 แผนการรักษา (Treatment Plan)                                │   │
+│  │  • 🚩 อาการเตือน (Red Flags)                                     │   │
+│  │  • 📅 นัดติดตาม (Follow-up Schedule)                              │   │
+│  │  • ⚠️ requiresValidation: true (Man-in-the-Loop)                │   │
+│  │                                                                  │   │
+│  │  Cost: ~$0.001 per 1K tokens (Gemini Flash Lite)                 │   │
 │  └───────────────────────────┬─────────────────────────────────────┘   │
 │                              ▼                                          │
-│  7. DOCTOR RECOMMENDATIONS (Gemini AI)                                  │
+│  7. CLINICAL DECISION SUPPORT (Gemini AI)                               │
 │  ┌─────────────────────────────────────────────────────────────────┐   │
-│  │  • Generates clinical decision support for doctor                │   │
 │  │  • Differential diagnosis suggestions                            │   │
-│  │  • Suggested tests and treatment options                         │   │
+│  │  • Suggested tests and imaging                                   │   │
+│  │  • Drug interaction alerts if prescribing                        │   │
+│  │  • Guideline references (2024-2025)                              │   │
 │  │  • Red flags and clinical notes                                  │   │
-│  │  • Output: recommendations.txt in GCS                            │   │
+│  │  • Requirement 2.4: CDS ช่วยแพทย์ตัดสินใจ                         │   │
 │  └───────────────────────────┬─────────────────────────────────────┘   │
 │                              ▼                                          │
-│  8. DOCTOR PORTAL DELIVERY                                              │
+│  8. DOCTOR REVIEW (Man-in-the-Loop) — Health Meeting Page               │
 │  ┌─────────────────────────────────────────────────────────────────┐   │
-│  │  • Summary and recommendations sent to Doctor Portal             │   │
-│  │  • Appears in appointment details and reports                    │   │
-│  │  • Doctor reviews and approves summary                           │   │
-│  │  • Can be added to patient's medical records                     │   │
+│  │  • AI summary appears in Doctor Portal → Health Meeting page     │   │
+│  │  • Doctor reviews summary + CDS recommendations                  │   │
+│  │  • Actions: [✅ Approve] [✏️ Edit] [🔄 Regenerate] [❌ Reject]   │   │
+│  │  • Requirement 2.5: แพทย์ตรวจสอบก่อนส่งข้อมูลถึงคนไข้             │   │
+│  └───────────────────────────┬─────────────────────────────────────┘   │
+│                              ▼                                          │
+│  9. EMR DOCUMENTATION + PATIENT INSTRUCTION SHEET                       │
+│  ┌─────────────────────────────────────────────────────────────────┐   │
+│  │  • Doctor opens EMR Editor → AI-prefilled SOAP tabs              │   │
+│  │  • Doctor edits, signs, and finalizes EMR                        │   │
+│  │  • AI generates Patient Instruction Sheet:                       │   │
+│  │    - วินิจฉัย (Diagnosis in simple Thai)                         │   │
+│  │    - ยาที่ได้รับ (Medications with dosage)                        │   │
+│  │    - การปฏิบัติตัว (Self-care instructions)                       │   │
+│  │    - อาการเตือน (Warning signs)                                   │   │
+│  │    - นัดติดตาม (Follow-up schedule)                               │   │
+│  │  • Doctor validates instruction sheet (Man-in-the-Loop)          │   │
+│  │  • EMR stored in PostgreSQL                                      │   │
+│  └───────────────────────────┬─────────────────────────────────────┘   │
+│                              ▼                                          │
+│  10. PATIENT DELIVERY                                                   │
+│  ┌─────────────────────────────────────────────────────────────────┐   │
+│  │  • Approved data sent to Patient Portal → Health History         │   │
+│  │  • Patient receives notification: "แพทย์ส่งผลการตรวจ"             │   │
+│  │  • Patient views: Dashboard → Timeline → PHR                    │   │
+│  │  • Patient downloads Instruction Sheet as PDF                    │   │
+│  │  • Appointment status → completed                                │   │
 │  └─────────────────────────────────────────────────────────────────┘   │
 │                                                                          │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-## Cost Analysis
+## Cost Analysis (Phase 1 — Optimized for FREE)
 
 | Component | Provider | Cost |
-| ----------- | ---------- | ------ |
+| --------- | -------- | ---- |
 | Video Conferencing | Jitsi Meet (meet.jit.si) | **$0** (FREE) |
-| Transcription | Google Cloud Speech-to-Text | ~$0.006/15s |
+| Transcription | **Web Speech API** (browser-based) | **$0** (FREE) |
+| Chat Messaging | Jitsi + Socket.IO | **$0** (FREE) |
 | EMR Summary | Gemini AI (gemini-2.5-flash-lite) | ~$0.001/1K tokens |
-| Doctor Recommendations | Gemini AI | ~$0.001/1K tokens |
+| CDS Recommendations | Gemini AI | ~$0.001/1K tokens |
+| Patient Instruction Sheet | Gemini AI | ~$0.001/1K tokens |
 | Recording | Jitsi Built-in Local Recording | **$0** (FREE) |
-| Video Storage | GCS (izara-doctors-data) | ~$0.02/GB/month |
-| **Total per 15-min consultation** | | **~$0.50-1.00** |
+| Video Storage | **PostgreSQL** / Cloud Storage | ~$0.02/GB/month |
+| **Total per 15-min consultation** | | **~$0.01-0.05** |
+
+> **KEY CHANGE:** Transcription is now **FREE** using Web Speech API (browser-native) instead of Google Cloud Speech-to-Text. This dramatically reduces per-consultation cost.
 
 ## API Endpoints
 
@@ -373,12 +472,11 @@ function splitIntoSections(transcript, totalDuration) {
 ### Storage for Sectioned Summaries
 
 ```text
-izara-doctors-data/doctors/{doctorId}/meetings/{appointmentId}/
-├── section-0-summary.txt    # First 30-min summary
-├── section-1-summary.txt    # Second 30-min summary
-├── section-2-summary.txt    # Third 30-min summary (if needed)
-├── final-combined.txt       # Combined summary from all sections
-└── summary.txt              # Same as final-combined.txt
+PostgreSQL meeting_records table:
+├── section_summaries (JSONB)     # Array of 30-min section summaries
+├── ai_summary (TEXT)             # Final combined summary
+├── transcript (TEXT)             # Full meeting transcript
+└── ai_recommendations (TEXT)     # CDS recommendations
 ```
 
 ## New Endpoints for Video Recording
@@ -400,10 +498,11 @@ Content-Type: application/json
 Response:
 {
   "success": true,
-  "videoUrl": "gs://izara-doctors-data/doctors/DOC-001/meetings/APT-123/recording.webm",
-  "path": "doctors/DOC-001/meetings/APT-123/recording.webm",
+  "videoUrl": "pg://meeting_records/{meetingId}/recording",
+  "path": "meetings/{meetingId}/recording.webm",
   "size": 52428800,
-  "sizeFormatted": "50.00MB"
+  "sizeFormatted": "50.00MB",
+  "storage": "postgresql"
 }
 ```
 
@@ -420,53 +519,81 @@ Response:
   "meetingId": "meet-uuid-123",
   "duration": 900,
   "files": {
-    "video": "gs://izara-doctors-data/doctors/DOC-001/meetings/APT-123/recording.webm",
-    "transcript": "gs://izara-doctors-data/doctors/DOC-001/meetings/APT-123/transcript.txt",
-    "summary": "gs://izara-doctors-data/doctors/DOC-001/meetings/APT-123/summary.txt",
-    "recommendations": "gs://izara-doctors-data/doctors/DOC-001/meetings/APT-123/recommendations.txt"
+    "video": "pg://meeting_records/meet-uuid-123/recording",
+    "transcript": "pg://meeting_records/meet-uuid-123/transcript",
+    "summary": "pg://meeting_records/meet-uuid-123/ai_summary",
+    "recommendations": "pg://meeting_records/meet-uuid-123/ai_recommendations",
+    "chats": "pg://meeting_records/meet-uuid-123/chat_messages"
   },
   "transcript": [...],
   "summary": {...},
-  "recommendations": {...}
+  "recommendations": {...},
+  "chatMessages": [...],
+  "storage": "postgresql"
 }
 ```
 
-## Google Cloud Speech-to-Text Integration
+## Web Speech API Integration (FREE — Browser-Native)
 
-### API Configuration
+### Configuration
 
 ```typescript
-const GOOGLE_SPEECH_API_KEY = process.env.VITE_GOOGLE_SPEECH_API_KEY;
+// Web Speech API - FREE, no API key required
+const SPEECH_CONFIG = {
+  api: 'Web Speech API (SpeechRecognition)',
+  cost: 'FREE',
+  languages: ['th-TH', 'en-US'],
+  continuous: true,
+  interimResults: true,
+  maxAlternatives: 1
+};
 
-// Request to Speech-to-Text API
-POST https://speech.googleapis.com/v1/speech:recognize?key={API_KEY}
-{
-  "config": {
-    "encoding": "WEBM_OPUS",
-    "sampleRateHertz": 48000,
-    "languageCode": "th-TH",
-    "alternativeLanguageCodes": ["en-US"],
-    "enableAutomaticPunctuation": true,
-    "enableWordTimeOffsets": true,
-    "model": "latest_long",
-    "useEnhanced": true,
-    "speechContexts": [{
-      "phrases": ["อาการ", "ปวดหัว", "ไข้", "medication", "diagnosis"],
-      "boost": 20
-    }]
-  },
-  "audio": {
-    "content": "base64-encoded-audio-data"
-  }
-}
+// Initialize Speech Recognition
+const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+recognition.lang = 'th-TH';  // or 'en-US'
+recognition.continuous = true;
+recognition.interimResults = true;
 ```
+
+### HOST Transcript Control Flow
+
+```typescript
+// Doctor (HOST) controls transcript streaming
+// Step 1: Doctor clicks [Start Transcription]
+POST /api/meetings/:id/start-transcription
+// → Activates Web Speech API on doctor's browser
+// → Socket.IO broadcasts transcript segments to all participants
+
+// Step 2: Real-time streaming
+// → recognition.onresult fires with interim and final results
+// → Final results saved to PostgreSQL meeting_transcripts table
+// → Interim results shown with yellow pulsing background
+
+// Step 3: Doctor clicks [Pause] / [Resume]
+POST /api/meetings/:id/pause-transcription
+// → recognition.stop() / recognition.start()
+
+// Step 4: Doctor clicks [Stop Transcription]
+POST /api/meetings/:id/stop-transcription
+// → recognition.stop()
+// → Full transcript compiled from all segments
+```
+
+### Speaker Label Assignment
+
+- 👨‍⚕️ **Doctor**: Speaker detected from doctor's audio stream
+- 🧑 **Patient**: Speaker detected from patient's audio stream
+- 👥 **Guest**: Speaker detected from guest audio streams (by display name)
+- Timestamps: Each segment includes `start_time_seconds` and `end_time_seconds`
+- Language: Each segment tagged with detected language (th/en)
 
 ### Medical Speech Recognition Features
 
-- **Enhanced Model**: Uses `latest_long` model optimized for conversations
-- **Thai + English**: Primary Thai with English alternative
-- **Medical Context**: Boosted recognition for medical terms
-- **Word Timestamps**: For timeline-aligned transcripts
+- **Continuous Mode**: Uninterrupted transcription during consultation
+- **Interim Results**: Real-time display of partial recognition (pulsing yellow)
+- **Thai + English**: Primary Thai with English switching by HOST
+- **No Cost**: Browser-native API, zero API charges
+- **Browser Support**: Chrome, Edge, Safari (WebKit)
 
 ## Jitsi Meet Configuration
 
@@ -577,15 +704,21 @@ JITSI_DOMAIN=meet.jit.si
 VITE_JITSI_DOMAIN=meet.jit.si
 VITE_JITSI_APP_ID=izara-telemedicine
 
-# Google Cloud Speech-to-Text API (for transcription)
-VITE_GOOGLE_SPEECH_API_KEY=your-google-api-key
-GOOGLE_SPEECH_API_KEY=your-google-api-key
+# Speech-to-Text: Web Speech API (FREE - browser-native, no API key needed)
+# No environment variable required for transcription
 
-# Gemini AI Configuration (for summary & recommendations)
+# Gemini AI Configuration (for summary, CDS, patient instructions)
 VITE_GEMINI_API_KEY=your-gemini-api-key
 VITE_GEMINI_MODEL=gemini-2.5-flash-lite
 VITE_GEMINI_TEMPERATURE=0.3
 VITE_GEMINI_MAX_TOKENS=8192
+
+# PostgreSQL Database
+DATABASE_URL=postgresql://izara_user:password@localhost:5432/izara_phase1
+
+# Meeting Server
+MEETING_SERVER_PORT=3020
+MEETING_SERVER_URL=http://localhost:3020
 
 ```
 
@@ -719,10 +852,20 @@ const response = await fetch('/api/video-meeting/APT-2025-001/summarize', {
 3. **No Persistent Storage**: Meeting URLs expire after meeting ends
 4. **PDPA Compliance**: Transcripts stored according to PDPA guidelines
 5. **End-to-End Encryption**: Jitsi supports E2EE for sensitive consultations
-6. **Doctor-Owned Storage**: Video recordings stored in doctor's GCS folder (not public)
+6. **PostgreSQL Storage**: All meeting data stored in PostgreSQL (not public cloud buckets)
 7. **File Size Limits**: 200MB max for video uploads
+8. **Man-in-the-Loop**: All AI outputs require doctor validation before patient delivery
+9. **Guest Lobby Control**: Non-registered users cannot enter meeting without HOST approval
+10. **Chat Privacy**: Meeting chat messages are private to the consultation and stored securely
 
 ## Testing
+
+### Test Environments
+
+| Environment | Patient Portal | Doctor Portal | Meeting Server | Database |
+| ----------- | ------------- | ------------- | -------------- | -------- |
+| **Local** | localhost:3005 | localhost:3010 | localhost:3020 | localhost:5432 |
+| **Cloud** | patient-portal-xxxxx.run.app | doctor-portal-xxxxx.run.app | meeting-server-xxxxx.run.app | CloudSQL |
 
 ### E2E Test Suite
 
@@ -734,7 +877,7 @@ node scripts/tests/e2e/dualPortalMeetingTests.cjs
 node scripts/tests/e2e/dualPortalMeetingTests.cjs --headless
 ```
 
-### 4-User Meeting UI Test (NEW)
+### 4-User Meeting UI Test
 
 ```bash
 # Test with 4 visible browser windows (Doctor, Patient, Relative, Admin)
@@ -744,32 +887,50 @@ node scripts/tests/fourUserMeetingUITest.cjs
 node scripts/tests/fourUserMeetingUITest.cjs --cloud
 
 # Test users:
-# - Doctor: doctor@demo.com
-# - Patient: patient@demo.com
-# - Patient Relative: demo2@demo.com (invited by doctor)
-# - Admin: admin@demo.com
+# - Doctor HOST: doctor.test@izara.com (IzaraDoctor@2024)
+# - Patient: demo.test@gmail.com (P@ssw0rd)
+# - Patient Relative: (no login - creates display name from blank)
+# - Admin: admin.test@izara.com (IzaraAdmin@2024)
 ```
 
-### Comprehensive Meeting Tests (NEW)
+### Comprehensive Meeting Test Scenarios
 
-```bash
-# Run comprehensive meeting API tests
-node scripts/tests/comprehensiveMeetingTests.cjs
+| # | Test | Validates |
+| - | ---- | --------- |
+| 1 | Doctor creates meeting as HOST | Jitsi URL generation, moderator flag |
+| 2 | Patient enters lobby, doctor admits | Lobby system, admission control |
+| 3 | Guest creates display name from blank, enters lobby | Guest self-registration |
+| 4 | Doctor selectively admits/rejects guests | HOST lobby control |
+| 5 | Doctor starts transcript streaming | Web Speech API activation |
+| 6 | Real-time transcript with speaker labels | Socket.IO streaming + speaker ID |
+| 7 | Doctor pauses/resumes transcript | HOST transcript control |
+| 8 | All participants send chat messages | Chat capture with timestamps |
+| 9 | Doctor stops transcript | Transcript finalization |
+| 10 | Doctor ends meeting | All disconnected, data compiled |
+| 11 | AI processes transcript + chats | Gemini summary pipeline |
+| 12 | 30-min sectioned summaries for long meetings | Section splitting |
+| 13 | Doctor reviews AI summary (Man-in-the-Loop) | Validation UI |
+| 14 | EMR Editor pre-filled with AI SOAP data | Auto-population |
+| 15 | Patient Instruction Sheet generated | AI + doctor validation |
+| 16 | Patient receives results in Health History | Patient delivery pipeline |
 
-# Run against cloud deployments
-node scripts/tests/comprehensiveMeetingTests.cjs --cloud
+### Demo Meeting Test Procedure (Local)
 
-# Tests cover:
-# - Health check endpoints
-# - Meeting creation (Doctor as HOST)
-# - Host control verification
-# - Patient joining (waits in lobby)
-# - Guest invite creation
-# - Guest joining with token
-# - Transcript entries
-# - AI summary generation
-# - 30-minute sectioned summaries
-# - Meeting end workflow
+```text
+1. docker-compose up -d (start all 4 services)
+2. Login as doctor (localhost:3010) and patient (localhost:3005)
+3. Patient books appointment with Thai symptoms
+4. Doctor confirms appointment → Jitsi URLs generated
+5. Doctor clicks "Join Meeting" → enters as HOST
+6. Patient clicks meeting link → enters LOBBY → Doctor admits
+7. (Optional) Open incognito window → Guest link → Create name → LOBBY
+8. Doctor clicks "Start Transcription" → Speak test phrases
+9. Verify real-time transcript with speaker labels
+10. Send chat messages → Verify captured
+11. Doctor clicks "Stop Transcription" then "End Meeting"
+12. Verify AI summary generated → Doctor reviews on Health Meeting page
+13. Doctor opens EMR Editor → Verify AI pre-filled SOAP tabs
+14. Doctor signs EMR → Patient sees results in Dashboard + Timeline
 ```
 
 ### Generate Test Audio
@@ -832,19 +993,22 @@ curl http://localhost:3009/api/video-meeting/APT-TEST-001/files?doctorId=DOC-001
 2. Check appointment status is not cancelled
 3. Verify appointmentId is correct
 
-## Future Improvements
+## Future Improvements (Phase 2)
 
-1. **Self-hosted Jitsi**: For complete control, can deploy own Jitsi server
-2. **Real-time Transcription**: Stream audio to Speech-to-Text for live captions
-3. **Multi-party Calls**: Support for family members in consultations
+1. **Self-hosted Jitsi**: For complete control, deploy own Jitsi server
+2. **Gemini LLM Fine-Tuning**: Fine-tune on Thai medical data (Requirement 3.4)
+3. **Multi-language Support**: Automatic language detection during transcription
 4. **Chunked Upload**: Support for large video files via chunked upload
 5. **Video Playback**: In-portal video playback for doctor review
+6. **Waiting Room UI**: Enhanced lobby with estimated wait time
+7. **AI Chat History**: Long-term AI knowledge base from meeting data (Requirement 3.3)
 
 ## References
 
 - [Jitsi Meet API](https://jitsi.github.io/handbook/docs/dev-guide/dev-guide-iframe)
-- [Google Cloud Speech-to-Text](https://cloud.google.com/speech-to-text/docs)
+- [Web Speech API (MDN)](https://developer.mozilla.org/en-US/docs/Web/API/Web_Speech_API)
 - [Gemini AI API](https://ai.google.dev/docs)
 - [WebRTC Standards](https://webrtc.org/)
+- [Socket.IO Documentation](https://socket.io/docs/v4/)
 
-**Last Updated:** December 2025
+**Last Updated:** January 2025 (v1.4.7)

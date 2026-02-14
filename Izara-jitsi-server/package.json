@@ -1,7 +1,7 @@
 {
   "name": "izara-jitsi-server",
-  "version": "1.0.0",
-  "description": "Izara Jitsi Meeting Server with Transcription and AI Summary",
+  "version": "1.4.8-dev",
+  "description": "Izara Jitsi Meeting Server - Video, Transcription (Web Speech API), AI Summary (Gemini)",
   "main": "server/index.js",
   "type": "module",
   "scripts": {
@@ -12,7 +12,6 @@
     "docker:run": "docker run -p 3020:3020 --env-file .env izara-jitsi-server"
   },
   "dependencies": {
-    "@google-cloud/speech": "^6.5.0",
     "@google/generative-ai": "^0.21.0",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
@@ -20,18 +19,11 @@
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.2",
     "pg": "^8.17.2",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
     "socket.io": "^4.8.1",
-    "socket.io-client": "^4.8.1",
-    "uuid": "^11.1.0",
-    "ws": "^8.18.0"
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
-    "@types/react": "^18.3.18",
-    "@types/react-dom": "^18.3.5",
-    "nodemon": "^3.1.9",
-    "typescript": "^5.7.3"
+    "nodemon": "^3.1.9"
   },
   "engines": {
     "node": ">=20.0.0"

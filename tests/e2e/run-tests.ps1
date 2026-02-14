@@ -78,7 +78,7 @@ param(
     [string]$Suite = "smoke",
 
     [Parameter(Position=1)]
-    [ValidateSet("local", "cloud")]
+    [ValidateSet("local", "cloud", "cloud-dev")]
     [string]$Target = "local",
 
     [Parameter(Mandatory=$false)]
@@ -106,10 +106,15 @@ $LOCAL_PATIENT = "http://localhost:3005"
 $LOCAL_DOCTOR = "http://localhost:3010"
 $LOCAL_MEETING = "http://localhost:3020"
 
-# Cloud URLs
+# Cloud URLs (production)
 $CLOUD_PATIENT = "https://izara-patient-portal-hvht4obouq-as.a.run.app"
 $CLOUD_DOCTOR = "https://izara-doctor-portal-hvht4obouq-as.a.run.app"
 $CLOUD_MEETING = "https://izara-jitsi-meeting-portal-hvht4obouq-as.a.run.app"
+
+# Cloud Dev-Testing URLs (isolated dev environment)
+$CLOUD_DEV_PATIENT = "https://izara-patient-portal-dev-testing-hvht4obouq-as.a.run.app"
+$CLOUD_DEV_DOCTOR = "https://izara-doctor-portal-dev-testing-hvht4obouq-as.a.run.app"
+$CLOUD_DEV_MEETING = "https://izara-meeting-server-dev-testing-hvht4obouq-as.a.run.app"
 
 # ============================================================================
 # HELPER FUNCTIONS
@@ -142,7 +147,7 @@ function Test-ServiceHealth {
     }
 }
 
-function Ensure-Dependencies {
+function Initialize-Dependencies {
     Push-Location $E2EDir
     
     if (-not (Test-Path "node_modules")) {
@@ -158,7 +163,7 @@ function Ensure-Dependencies {
 # ENVIRONMENT SETUP
 # ============================================================================
 
-function Setup-Environment {
+function Initialize-Environment {
     param([string]$Target)
     
     if ($Target -eq "cloud") {
@@ -167,15 +172,27 @@ function Setup-Environment {
         $env:CLOUD_DOCTOR_URL = $CLOUD_DOCTOR
         $env:CLOUD_MEETING_URL = $CLOUD_MEETING
         
-        Write-Host "  Environment: CLOUD" -ForegroundColor Yellow
+        Write-Host "  Environment: CLOUD (Production)" -ForegroundColor Yellow
         Write-Host "    Patient: $CLOUD_PATIENT" -ForegroundColor Gray
         Write-Host "    Doctor:  $CLOUD_DOCTOR" -ForegroundColor Gray
+        Write-Host "    Meeting: $CLOUD_MEETING" -ForegroundColor Gray
+    } elseif ($Target -eq "cloud-dev") {
+        $env:TEST_ENV = "cloud-dev"
+        $env:CLOUD_DEV_PATIENT_URL = $CLOUD_DEV_PATIENT
+        $env:CLOUD_DEV_DOCTOR_URL = $CLOUD_DEV_DOCTOR
+        $env:CLOUD_DEV_MEETING_URL = $CLOUD_DEV_MEETING
+        
+        Write-Host "  Environment: CLOUD-DEV (Dev-Testing)" -ForegroundColor Magenta
+        Write-Host "    Patient: $CLOUD_DEV_PATIENT" -ForegroundColor Gray
+        Write-Host "    Doctor:  $CLOUD_DEV_DOCTOR" -ForegroundColor Gray
+        Write-Host "    Meeting: $CLOUD_DEV_MEETING" -ForegroundColor Gray
     } else {
         $env:TEST_ENV = "local"
         
         Write-Host "  Environment: LOCAL" -ForegroundColor Green
         Write-Host "    Patient: $LOCAL_PATIENT" -ForegroundColor Gray
         Write-Host "    Doctor:  $LOCAL_DOCTOR" -ForegroundColor Gray
+        Write-Host "    Meeting: $LOCAL_MEETING" -ForegroundColor Gray
     }
     Write-Host ""
 }
@@ -238,7 +255,7 @@ function Invoke-PreflightChecks {
 # TEST SUITES
 # ============================================================================
 
-function Run-SmokeTests {
+function Invoke-SmokeTests {
     param([string]$Target, [switch]$Headed)
     
     Write-Host "RUNNING SMOKE TESTS" -ForegroundColor Magenta
@@ -255,7 +272,7 @@ function Run-SmokeTests {
     return $exitCode
 }
 
-function Run-ApiTests {
+function Invoke-ApiTests {
     param([string]$Target, [switch]$Headed)
     
     Write-Host "RUNNING API TESTS" -ForegroundColor Magenta
@@ -272,7 +289,7 @@ function Run-ApiTests {
     return $exitCode
 }
 
-function Run-UiTests {
+function Invoke-UiTests {
     param([string]$Target, [switch]$Headed, [int]$Workers)
     
     Write-Host "RUNNING UI TESTS" -ForegroundColor Magenta
@@ -290,7 +307,7 @@ function Run-UiTests {
     return $exitCode
 }
 
-function Run-FullTests {
+function Invoke-FullTests {
     param([string]$Target, [switch]$Headed, [int]$Workers)
     
     Write-Host "RUNNING FULL COMPREHENSIVE TESTS (8 LOCAL SPECS)" -ForegroundColor Magenta
@@ -319,7 +336,7 @@ function Run-FullTests {
     return $exitCode
 }
 
-function Run-CloudTests {
+function Invoke-CloudTests {
     Write-Host "RUNNING CLOUD-SPECIFIC TESTS" -ForegroundColor Magenta
     Write-Host ""
     
@@ -331,7 +348,7 @@ function Run-CloudTests {
     return $exitCode
 }
 
-function Run-AllTests {
+function Invoke-AllTests {
     param([string]$Target, [switch]$Headed, [int]$Workers)
     
     Write-Host "RUNNING ALL TESTS" -ForegroundColor Magenta
@@ -346,6 +363,281 @@ function Run-AllTests {
     Pop-Location
     
     return $exitCode
+}
+
+# ============================================================================
+# UI STATUS CHECKING
+# ============================================================================
+
+function Test-UiPageStatus {
+    <#
+    .SYNOPSIS
+        Checks HTTP status codes for all UI portal pages and reports results.
+    #>
+    param([string]$Target)
+
+    Write-Host ""
+    Write-Host "UI PAGE STATUS CHECK" -ForegroundColor Magenta
+    Write-Host ""
+
+    # Determine base URLs
+    if ($Target -eq "cloud") {
+        $patientBase = $CLOUD_PATIENT
+        $doctorBase  = $CLOUD_DOCTOR
+        $meetingBase = $CLOUD_MEETING
+    } elseif ($Target -eq "cloud-dev") {
+        $patientBase = $CLOUD_DEV_PATIENT
+        $doctorBase  = $CLOUD_DEV_DOCTOR
+        $meetingBase = $CLOUD_DEV_MEETING
+    } else {
+        $patientBase = $LOCAL_PATIENT
+        $doctorBase  = $LOCAL_DOCTOR
+        $meetingBase = $LOCAL_MEETING
+    }
+
+    # Patient Portal pages
+    $patientPages = @(
+        @{ Path = "/";                 Name = "Home" },
+        @{ Path = "/login";            Name = "Login" },
+        @{ Path = "/register";         Name = "Register" },
+        @{ Path = "/dashboard";        Name = "Dashboard" },
+        @{ Path = "/appointments";     Name = "Appointments" },
+        @{ Path = "/health-records";   Name = "Health Records" },
+        @{ Path = "/doctors";          Name = "Find Doctors" },
+        @{ Path = "/living-will";      Name = "Living Will" },
+        @{ Path = "/profile";          Name = "Profile" },
+        @{ Path = "/api/health";       Name = "API Health" }
+    )
+
+    # Doctor Portal pages
+    $doctorPages = @(
+        @{ Path = "/";                 Name = "Home" },
+        @{ Path = "/login";            Name = "Login" },
+        @{ Path = "/dashboard";        Name = "Dashboard" },
+        @{ Path = "/appointments";     Name = "Appointments" },
+        @{ Path = "/patients";         Name = "Patients" },
+        @{ Path = "/clinical-resources"; Name = "Clinical Resources" },
+        @{ Path = "/medical-content";  Name = "Medical Content" },
+        @{ Path = "/admin";            Name = "Admin Panel" },
+        @{ Path = "/api/health";       Name = "API Health" }
+    )
+
+    $results = @()
+    $totalPass = 0
+    $totalFail = 0
+
+    # Check Patient Portal pages
+    Write-Host "  Patient Portal ($patientBase)" -ForegroundColor Yellow
+    foreach ($page in $patientPages) {
+        $url = "$patientBase$($page.Path)"
+        try {
+            $response = Invoke-WebRequest -Uri $url -Method GET -TimeoutSec 10 -UseBasicParsing -ErrorAction Stop -MaximumRedirection 5
+            $status = $response.StatusCode
+            $passed = ($status -ge 200 -and $status -lt 400)
+            if ($passed) {
+                Write-Success "[$status] $($page.Name) → $($page.Path)"
+                $totalPass++
+            } else {
+                Write-Err "[$status] $($page.Name) → $($page.Path)"
+                $totalFail++
+            }
+            $results += @{ Portal = "Patient"; Page = $page.Name; Path = $page.Path; Status = $status; Result = if ($passed) { "PASS" } else { "FAIL" } }
+        } catch {
+            $statusCode = 0
+            if ($_.Exception.Response) {
+                $statusCode = [int]$_.Exception.Response.StatusCode
+            }
+            Write-Err "[$statusCode] $($page.Name) → $($page.Path) — $($_.Exception.Message)"
+            $totalFail++
+            $results += @{ Portal = "Patient"; Page = $page.Name; Path = $page.Path; Status = $statusCode; Result = "FAIL" }
+        }
+    }
+
+    Write-Host ""
+
+    # Check Doctor Portal pages
+    Write-Host "  Doctor Portal ($doctorBase)" -ForegroundColor Yellow
+    foreach ($page in $doctorPages) {
+        $url = "$doctorBase$($page.Path)"
+        try {
+            $response = Invoke-WebRequest -Uri $url -Method GET -TimeoutSec 10 -UseBasicParsing -ErrorAction Stop -MaximumRedirection 5
+            $status = $response.StatusCode
+            $passed = ($status -ge 200 -and $status -lt 400)
+            if ($passed) {
+                Write-Success "[$status] $($page.Name) → $($page.Path)"
+                $totalPass++
+            } else {
+                Write-Err "[$status] $($page.Name) → $($page.Path)"
+                $totalFail++
+            }
+            $results += @{ Portal = "Doctor"; Page = $page.Name; Path = $page.Path; Status = $status; Result = if ($passed) { "PASS" } else { "FAIL" } }
+        } catch {
+            $statusCode = 0
+            if ($_.Exception.Response) {
+                $statusCode = [int]$_.Exception.Response.StatusCode
+            }
+            Write-Err "[$statusCode] $($page.Name) → $($page.Path) — $($_.Exception.Message)"
+            $totalFail++
+            $results += @{ Portal = "Doctor"; Page = $page.Name; Path = $page.Path; Status = $statusCode; Result = "FAIL" }
+        }
+    }
+
+    Write-Host ""
+
+    # Check Meeting Server
+    Write-Host "  Meeting Server ($meetingBase)" -ForegroundColor Yellow
+    try {
+        $response = Invoke-WebRequest -Uri "$meetingBase/api/health" -Method GET -TimeoutSec 10 -UseBasicParsing -ErrorAction Stop
+        $status = $response.StatusCode
+        if ($status -eq 200) {
+            Write-Success "[$status] Meeting Server Health"
+            $totalPass++
+        } else {
+            Write-Err "[$status] Meeting Server Health"
+            $totalFail++
+        }
+        $results += @{ Portal = "Meeting"; Page = "Health"; Path = "/api/health"; Status = $status; Result = if ($status -eq 200) { "PASS" } else { "FAIL" } }
+    } catch {
+        Write-Err "[0] Meeting Server Health — $($_.Exception.Message)"
+        $totalFail++
+        $results += @{ Portal = "Meeting"; Page = "Health"; Path = "/api/health"; Status = 0; Result = "FAIL" }
+    }
+
+    Write-Host ""
+
+    # Summary
+    $totalChecks = $totalPass + $totalFail
+    if ($totalFail -eq 0) {
+        Write-Success "UI Status: $totalPass/$totalChecks pages responding correctly"
+    } else {
+        Write-Warn "UI Status: $totalPass/$totalChecks passed, $totalFail FAILED"
+    }
+
+    return @{ Results = $results; Passed = $totalPass; Failed = $totalFail; Total = $totalChecks }
+}
+
+# ============================================================================
+# TEST RESULT REPORTING
+# ============================================================================
+
+function Write-TestReport {
+    <#
+    .SYNOPSIS
+        Generates a detailed pass/fail test report with per-suite breakdown.
+    #>
+    param(
+        [hashtable[]]$SuiteResults,
+        [hashtable]$UiStatus,
+        [string]$Duration,
+        [string]$Target,
+        [string]$Suite
+    )
+
+    Write-Host ""
+    Write-Host "╔══════════════════════════════════════════════════════════════════════════╗" -ForegroundColor Cyan
+    Write-Host "║                        TEST EXECUTION REPORT                             ║" -ForegroundColor Cyan
+    Write-Host "╠══════════════════════════════════════════════════════════════════════════╣" -ForegroundColor Cyan
+
+    # Environment info
+    Write-Host "║  Environment : $Target                                                    " -ForegroundColor White
+    Write-Host "║  Suite       : $Suite                                                     " -ForegroundColor White
+    Write-Host "║  Duration    : $Duration                                                  " -ForegroundColor White
+    Write-Host "║  Timestamp   : $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')                  " -ForegroundColor White
+    Write-Host "╠══════════════════════════════════════════════════════════════════════════╣" -ForegroundColor Cyan
+
+    # Suite results
+    if ($SuiteResults -and $SuiteResults.Count -gt 0) {
+        Write-Host "║  TEST SUITES                                                           ║" -ForegroundColor Yellow
+        Write-Host "║  ────────────────────────────────────────────────────────────────       ║" -ForegroundColor Gray
+
+        foreach ($sr in $SuiteResults) {
+            $icon = if ($sr.ExitCode -eq 0) { "PASS" } else { "FAIL" }
+            $color = if ($sr.ExitCode -eq 0) { "Green" } else { "Red" }
+            Write-Host "║    [$icon] $($sr.Name)" -ForegroundColor $color
+        }
+        Write-Host "║" -ForegroundColor Cyan
+    }
+
+    # UI Status results
+    if ($UiStatus -and $UiStatus.Total -gt 0) {
+        Write-Host "║  UI PAGE STATUS                                                        ║" -ForegroundColor Yellow
+        Write-Host "║  ────────────────────────────────────────────────────────────────       ║" -ForegroundColor Gray
+        Write-Host "║    Checked : $($UiStatus.Total) pages" -ForegroundColor White
+        Write-Host "║    Passed  : $($UiStatus.Passed)" -ForegroundColor Green
+        Write-Host "║    Failed  : $($UiStatus.Failed)" -ForegroundColor $(if ($UiStatus.Failed -gt 0) { "Red" } else { "Green" })
+        Write-Host "║" -ForegroundColor Cyan
+
+        # Show failed pages
+        if ($UiStatus.Failed -gt 0 -and $UiStatus.Results) {
+            Write-Host "║    FAILED PAGES:" -ForegroundColor Red
+            foreach ($r in $UiStatus.Results) {
+                if ($r.Result -eq "FAIL") {
+                    Write-Host "║      [$($r.Status)] $($r.Portal) → $($r.Page) ($($r.Path))" -ForegroundColor Red
+                }
+            }
+            Write-Host "║" -ForegroundColor Cyan
+        }
+    }
+
+    # Overall verdict
+    $overallPass = $true
+    if ($SuiteResults) {
+        foreach ($sr in $SuiteResults) {
+            if ($sr.ExitCode -ne 0) { $overallPass = $false; break }
+        }
+    }
+    if ($UiStatus -and $UiStatus.Failed -gt 0) { $overallPass = $false }
+
+    Write-Host "╠══════════════════════════════════════════════════════════════════════════╣" -ForegroundColor Cyan
+    if ($overallPass) {
+        Write-Host "║                     OVERALL RESULT:  ✅ PASSED                          ║" -ForegroundColor Green
+    } else {
+        Write-Host "║                     OVERALL RESULT:  ❌ FAILED                          ║" -ForegroundColor Red
+    }
+    Write-Host "╚══════════════════════════════════════════════════════════════════════════╝" -ForegroundColor Cyan
+    Write-Host ""
+
+    # Save report to file
+    $reportDir = Join-Path $E2EDir "reports"
+    if (-not (Test-Path $reportDir)) {
+        New-Item -ItemType Directory -Force -Path $reportDir | Out-Null
+    }
+    $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+    $reportFile = Join-Path $reportDir "test-report-$timestamp.txt"
+
+    $reportContent = @(
+        "IZARA TELEMEDICINE - TEST REPORT",
+        "================================",
+        "Date      : $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')",
+        "Suite     : $Suite",
+        "Target    : $Target",
+        "Duration  : $Duration",
+        ""
+    )
+
+    if ($SuiteResults) {
+        $reportContent += "TEST SUITES:"
+        foreach ($sr in $SuiteResults) {
+            $icon = if ($sr.ExitCode -eq 0) { "PASS" } else { "FAIL" }
+            $reportContent += "  [$icon] $($sr.Name)"
+        }
+        $reportContent += ""
+    }
+
+    if ($UiStatus -and $UiStatus.Total -gt 0) {
+        $reportContent += "UI PAGE STATUS:"
+        $reportContent += "  Checked: $($UiStatus.Total) | Passed: $($UiStatus.Passed) | Failed: $($UiStatus.Failed)"
+        foreach ($r in $UiStatus.Results) {
+            $reportContent += "  [$($r.Result)] $($r.Portal) → $($r.Page) ($($r.Path)) [HTTP $($r.Status)]"
+        }
+        $reportContent += ""
+    }
+
+    $reportContent += "OVERALL: $(if ($overallPass) { 'PASSED' } else { 'FAILED' })"
+
+    $reportContent | Out-File -FilePath $reportFile -Encoding UTF8
+    Write-Host "  Report saved: $reportFile" -ForegroundColor Gray
+    Write-Host ""
 }
 
 # ============================================================================
@@ -411,22 +703,28 @@ if ($Suite -eq "help") {
 }
 
 # Setup
-Setup-Environment -Target $Target
+Initialize-Environment -Target $Target
 Invoke-PreflightChecks -Target $Target
-Ensure-Dependencies
+Initialize-Dependencies
 
 # Track start time
 $startTime = Get-Date
 
+# Run UI status pre-check
+$uiStatus = Test-UiPageStatus -Target $Target
+
 # Run selected suite
 $exitCode = 0
+$suiteResults = @()
 
 switch ($Suite) {
     "smoke" {
-        $exitCode = Run-SmokeTests -Target $Target -Headed:$Headed
+        $exitCode = Invoke-SmokeTests -Target $Target -Headed:$Headed
+        $suiteResults += @{ Name = "01-smoke.spec.ts"; ExitCode = $exitCode }
     }
     "api" {
-        $exitCode = Run-ApiTests -Target $Target -Headed:$Headed
+        $exitCode = Invoke-ApiTests -Target $Target -Headed:$Headed
+        $suiteResults += @{ Name = "02-api-status.spec.ts"; ExitCode = $exitCode }
     }
     "appointment" {
         Write-Host "RUNNING APPOINTMENT WORKFLOW TESTS" -ForegroundColor Magenta
@@ -435,6 +733,7 @@ switch ($Suite) {
         npx playwright test specs/03-appointment-workflow.spec.ts $headedFlag
         $exitCode = $LASTEXITCODE
         Pop-Location
+        $suiteResults += @{ Name = "03-appointment-workflow.spec.ts"; ExitCode = $exitCode }
     }
     "meeting" {
         Write-Host "RUNNING MEETING WORKFLOW TESTS" -ForegroundColor Magenta
@@ -443,6 +742,7 @@ switch ($Suite) {
         npx playwright test specs/04-meeting-workflow.spec.ts $headedFlag
         $exitCode = $LASTEXITCODE
         Pop-Location
+        $suiteResults += @{ Name = "04-meeting-workflow.spec.ts"; ExitCode = $exitCode }
     }
     "health" {
         Write-Host "RUNNING HEALTH RECORDS & EMR TESTS" -ForegroundColor Magenta
@@ -451,6 +751,7 @@ switch ($Suite) {
         npx playwright test specs/05-health-records-emr.spec.ts $headedFlag
         $exitCode = $LASTEXITCODE
         Pop-Location
+        $suiteResults += @{ Name = "05-health-records-emr.spec.ts"; ExitCode = $exitCode }
     }
     "ai" {
         Write-Host "RUNNING AI FEATURES TESTS" -ForegroundColor Magenta
@@ -459,9 +760,11 @@ switch ($Suite) {
         npx playwright test specs/06-ai-features.spec.ts $headedFlag
         $exitCode = $LASTEXITCODE
         Pop-Location
+        $suiteResults += @{ Name = "06-ai-features.spec.ts"; ExitCode = $exitCode }
     }
     "ui" {
-        $exitCode = Run-UiTests -Target $Target -Headed:$true -Workers $Workers
+        $exitCode = Invoke-UiTests -Target $Target -Headed:$true -Workers $Workers
+        $suiteResults += @{ Name = "07-ui-navigation.spec.ts"; ExitCode = $exitCode }
     }
     "content" {
         Write-Host "RUNNING CONTENT & NOTIFICATIONS TESTS" -ForegroundColor Magenta
@@ -470,16 +773,20 @@ switch ($Suite) {
         npx playwright test specs/08-content-notifications.spec.ts $headedFlag
         $exitCode = $LASTEXITCODE
         Pop-Location
+        $suiteResults += @{ Name = "08-content-notifications.spec.ts"; ExitCode = $exitCode }
     }
     "full" {
-        $exitCode = Run-FullTests -Target $Target -Headed:$Headed -Workers $Workers
+        $exitCode = Invoke-FullTests -Target $Target -Headed:$Headed -Workers $Workers
+        $suiteResults += @{ Name = "Full Suite (01-08)"; ExitCode = $exitCode }
     }
     "cloud" {
-        Setup-Environment -Target "cloud"
-        $exitCode = Run-CloudTests
+        Initialize-Environment -Target "cloud"
+        $exitCode = Invoke-CloudTests
+        $suiteResults += @{ Name = "09-cloud-e2e.spec.ts"; ExitCode = $exitCode }
     }
     "all" {
-        $exitCode = Run-AllTests -Target $Target -Headed:$Headed -Workers $Workers
+        $exitCode = Invoke-AllTests -Target $Target -Headed:$Headed -Workers $Workers
+        $suiteResults += @{ Name = "All Suites (01-09)"; ExitCode = $exitCode }
     }
 }
 
@@ -487,27 +794,11 @@ switch ($Suite) {
 $duration = (Get-Date) - $startTime
 $durationStr = "{0:mm}m {0:ss}s" -f $duration
 
-# Results summary
-Write-Host ""
-Write-Host "════════════════════════════════════════════════════════════════════════════" -ForegroundColor Cyan
+# Generate detailed test report with UI status and pass/fail results
+Write-TestReport -SuiteResults $suiteResults -UiStatus $uiStatus -Duration $durationStr -Target $Target -Suite $Suite
 
-if ($exitCode -eq 0) {
-    Write-Host ""
-    Write-Host "  ✅ ALL TESTS PASSED!" -ForegroundColor Green
-    Write-Host "     Duration: $durationStr" -ForegroundColor Gray
-    Write-Host ""
-} else {
-    Write-Host ""
-    Write-Host "  ❌ SOME TESTS FAILED (Exit Code: $exitCode)" -ForegroundColor Red
-    Write-Host "     Duration: $durationStr" -ForegroundColor Gray
-    Write-Host ""
-}
-
-Write-Host "════════════════════════════════════════════════════════════════════════════" -ForegroundColor Cyan
-Write-Host ""
-
-# Show how to view report
-Write-Host "  View detailed report: npx playwright show-report" -ForegroundColor Yellow
+# Show how to view Playwright report
+Write-Host "  View Playwright report: npx playwright show-report" -ForegroundColor Yellow
 Write-Host ""
 
 exit $exitCode

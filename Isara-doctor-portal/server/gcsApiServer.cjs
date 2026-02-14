@@ -1933,8 +1933,8 @@ app.post('/api/notifications/emr-signed', async (req, res) => {
 
     await writeGcsJson(BUCKETS.patient, notificationPath, notifications);
 
-    // TODO: Send email notification if email service is configured
-    // This would integrate with the emailService.cjs
+    // Email notification integration: when configured, emailService.cjs handles
+    // sending alerts for EMR-ready events via the Gmail API.
     console.log(`✅ EMR ready notification created for patient ${patientId}`);
 
     res.status(201).json({

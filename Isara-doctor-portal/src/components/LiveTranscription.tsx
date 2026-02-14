@@ -122,7 +122,7 @@ const LiveTranscription: React.FC<LiveTranscriptionProps> = ({
 
   // Initialize Speech Recognition
   const initRecognition = useCallback(() => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const SpeechRecognition = (globalThis as any).SpeechRecognition || (globalThis as any).webkitSpeechRecognition;
     
     if (!SpeechRecognition) {
       setError('เบราว์เซอร์ของคุณไม่รองรับ Speech Recognition กรุณาใช้ Google Chrome');
@@ -236,15 +236,13 @@ const LiveTranscription: React.FC<LiveTranscriptionProps> = ({
           recognitionRef.current.start();
           startTimeRef.current = Date.now();
         } catch (e) {
-          console.log('Recognition already started');
+          console.warn('Recognition already started:', e);
         }
       }
-    } else {
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
-        setIsListening(false);
-        setInterimTranscript('');
-      }
+    } else if (recognitionRef.current) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+      setInterimTranscript('');
     }
 
     return () => {
@@ -266,7 +264,7 @@ const LiveTranscription: React.FC<LiveTranscriptionProps> = ({
         try {
           recognitionRef.current.start();
         } catch (e) {
-          console.log('Recognition restart failed');
+          console.warn('Recognition restart failed:', e);
         }
       }
     }
@@ -374,7 +372,7 @@ const LiveTranscription: React.FC<LiveTranscriptionProps> = ({
               <span className="font-semibold">Live Transcription</span>
               {isListening && (
                 <span className="flex items-center text-xs bg-red-500 px-2 py-0.5 rounded-full animate-pulse">
-                  <span className="w-2 h-2 bg-white rounded-full mr-1"></span>
+                  <span className="w-2 h-2 bg-white rounded-full mr-1"></span>{' '}
                   LIVE
                 </span>
               )}

@@ -244,7 +244,9 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({
             src={audioUrl}
             onEnded={() => setIsPlaying(false)}
             className="hidden"
-          />
+          >
+            <track kind="captions" />
+          </audio>
         )}
       </div>
     </div>

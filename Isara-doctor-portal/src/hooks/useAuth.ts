@@ -72,7 +72,7 @@ export function useAuth() {
         const isStillValid = authService.checkInactivityTimeout();
         if (!isStillValid) {
           setUser(null);
-          window.location.href = '/login?reason=inactivity';
+          globalThis.location.href = '/login?reason=inactivity';
         }
       }
     }, INACTIVITY_CHECK_INTERVAL);
@@ -80,14 +80,14 @@ export function useAuth() {
     // Track user activity events
     const activityEvents = ['mousedown', 'keydown', 'scroll', 'touchstart', 'click'];
     activityEvents.forEach(event => {
-      window.addEventListener(event, handleUserActivity, { passive: true });
+      globalThis.addEventListener(event, handleUserActivity, { passive: true });
     });
 
     return () => {
       clearInterval(refreshInterval);
       clearInterval(inactivityInterval);
       activityEvents.forEach(event => {
-        window.removeEventListener(event, handleUserActivity);
+        globalThis.removeEventListener(event, handleUserActivity);
       });
     };
   }, [checkAuth, refreshSession, handleUserActivity, user]);

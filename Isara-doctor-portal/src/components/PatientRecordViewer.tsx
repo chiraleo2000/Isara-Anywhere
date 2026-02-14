@@ -338,6 +338,56 @@ const LivingWillCard: React.FC<{ livingWill: LivingWillForDoctorView | null }> =
 };
 
 // ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+function getExerciseLabel(exercise: string | undefined): string {
+  const labels: Record<string, string> = {
+    'none': 'ไม่ออกกำลังกาย',
+    'light': 'เบา (1-2 วัน/สัปดาห์)',
+    'moderate': 'ปานกลาง (3-4 วัน/สัปดาห์)',
+    'active': 'บ่อย (5-6 วัน/สัปดาห์)',
+    'very-active': 'มาก (ทุกวัน)',
+  };
+  return exercise ? (labels[exercise] || exercise) : 'ไม่ระบุ';
+}
+
+function getSmokingLabel(smoking: boolean | string | undefined): string {
+  if (smoking === true || smoking === 'current') return 'สูบอยู่';
+  if (smoking === 'former') return 'เคยสูบ (เลิกแล้ว)';
+  if (smoking === 'occasional') return 'สูบเป็นครั้งคราว';
+  if (smoking === false || smoking === 'never') return 'ไม่สูบ';
+  return 'ไม่ระบุ';
+}
+
+function getAlcoholLabel(alcohol: boolean | string | undefined): string {
+  if (alcohol === true) return 'ดื่ม';
+  if (alcohol === 'occasional') return 'ดื่มเป็นครั้งคราว';
+  if (alcohol === 'moderate') return 'ดื่มปานกลาง';
+  if (alcohol === 'frequent') return 'ดื่มบ่อย';
+  if (alcohol === 'former') return 'เคยดื่ม (เลิกแล้ว)';
+  if (alcohol === false || alcohol === 'never') return 'ไม่ดื่ม';
+  return 'ไม่ระบุ';
+}
+
+function getEventTypeClass(type: string): string {
+  const classes: Record<string, string> = {
+    'consultation': 'bg-blue-100 text-blue-700',
+    'lab': 'bg-purple-100 text-purple-700',
+    'prescription': 'bg-green-100 text-green-700',
+  };
+  return classes[type] || 'bg-gray-100 text-gray-700';
+}
+
+function getTestFlagClass(flag: string): string {
+  const classes: Record<string, string> = {
+    'critical': 'bg-red-100 text-red-700',
+    'high': 'bg-yellow-100 text-yellow-700',
+  };
+  return classes[flag] || 'bg-blue-100 text-blue-700';
+}
+
+// ============================================================================
 // PHR VIEW
 // ============================================================================
 
@@ -364,27 +414,27 @@ const PHRView: React.FC<{ phrData: PHRData | null; patient: PatientRecord; livin
         </h3>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="text-sm text-gray-600">Name :</label>
+            <span className="text-sm text-gray-600">Name :</span>
             <p className="font-medium">{phrData.demographics.name}</p>
           </div>
           <div>
-            <label className="text-sm text-gray-600">Age :</label>
+            <span className="text-sm text-gray-600">Age :</span>
             <p className="font-medium">{phrData.demographics.age} years</p>
           </div>
           <div>
-            <label className="text-sm text-gray-600">Sex :</label>
+            <span className="text-sm text-gray-600">Sex :</span>
             <p className="font-medium">{phrData.demographics.sex}</p>
           </div>
           <div>
-            <label className="text-sm text-gray-600">Weight :</label>
+            <span className="text-sm text-gray-600">Weight :</span>
             <p className="font-medium">{phrData.demographics.weight} kg</p>
           </div>
           <div>
-            <label className="text-sm text-gray-600">Height :</label>
+            <span className="text-sm text-gray-600">Height :</span>
             <p className="font-medium">{phrData.demographics.height} cm</p>
           </div>
           <div>
-            <label className="text-sm text-gray-600">BMI :</label>
+            <span className="text-sm text-gray-600">BMI :</span>
             <p className="font-medium">{phrData.demographics.bmi}</p>
           </div>
         </div>
@@ -397,19 +447,19 @@ const PHRView: React.FC<{ phrData: PHRData | null; patient: PatientRecord; livin
         </h3>
         <div className="space-y-3">
           <div>
-            <label className="text-sm text-emerald-600">ประวัติการรักษา :</label>
+            <span className="text-sm text-emerald-600">ประวัติการรักษา :</span>
             <p className="text-gray-700">{phrData.chronicConditions.join(', ') || 'None'}</p>
           </div>
           <div>
-            <label className="text-sm text-emerald-600">ผลตรวจ :</label>
+            <span className="text-sm text-emerald-600">ผลตรวจ :</span>
             <p className="text-gray-700">Recent vitals recorded</p>
           </div>
           <div>
-            <label className="text-sm text-emerald-600">การวินิจฉัยโรค :</label>
+            <span className="text-sm text-emerald-600">การวินิจฉัยโรค :</span>
             <p className="text-gray-700">{phrData.chronicConditions.join(', ')}</p>
           </div>
           <div>
-            <label className="text-sm text-emerald-600">รายการยา :</label>
+            <span className="text-sm text-emerald-600">รายการยา :</span>
             <p className="text-gray-700">{phrData.currentMedications.map(m => m.name).join(', ')}</p>
           </div>
         </div>
@@ -422,48 +472,29 @@ const PHRView: React.FC<{ phrData: PHRData | null; patient: PatientRecord; livin
         </h3>
         <div className="space-y-3">
           <div>
-            <label className="text-sm text-emerald-600">การกินอาหาร :</label>
+            <span className="text-sm text-emerald-600">การกินอาหาร :</span>
             <p className="text-gray-700">{phrData.lifestyle.diet || 'ไม่ระบุ'}</p>
           </div>
           <div>
-            <label className="text-sm text-emerald-600">การออกกำลังกาย :</label>
-            <p className="text-gray-700">{
-              phrData.lifestyle.exercise === 'none' ? 'ไม่ออกกำลังกาย' :
-              phrData.lifestyle.exercise === 'light' ? 'เบา (1-2 วัน/สัปดาห์)' :
-              phrData.lifestyle.exercise === 'moderate' ? 'ปานกลาง (3-4 วัน/สัปดาห์)' :
-              phrData.lifestyle.exercise === 'active' ? 'บ่อย (5-6 วัน/สัปดาห์)' :
-              phrData.lifestyle.exercise === 'very-active' ? 'มาก (ทุกวัน)' : 
-              phrData.lifestyle.exercise || 'ไม่ระบุ'
-            }</p>
+            <span className="text-sm text-emerald-600">การออกกำลังกาย :</span>
+            <p className="text-gray-700">{getExerciseLabel(phrData.lifestyle.exercise)}</p>
           </div>
           <div>
-            <label className="text-sm text-emerald-600">การนอน :</label>
+            <span className="text-sm text-emerald-600">การนอน :</span>
             <p className="text-gray-700">{phrData.lifestyle.sleep || 'ไม่ระบุ'}</p>
           </div>
           <div>
-            <label className="text-sm text-emerald-600">สูบบุหรี่/ดื่มแอลกอฮอล์ :</label>
+            <span className="text-sm text-emerald-600">สูบบุหรี่/ดื่มแอลกอฮอล์ :</span>
             <p className="text-gray-700">
-              สูบบุหรี่: {
-                phrData.lifestyle.smoking === true || phrData.lifestyle.smoking === 'current' ? 'สูบอยู่' :
-                phrData.lifestyle.smoking === 'former' ? 'เคยสูบ (เลิกแล้ว)' :
-                phrData.lifestyle.smoking === 'occasional' ? 'สูบเป็นครั้งคราว' :
-                phrData.lifestyle.smoking === false || phrData.lifestyle.smoking === 'never' ? 'ไม่สูบ' : 'ไม่ระบุ'
-              }, ดื่มแอลกอฮอล์: {
-                phrData.lifestyle.alcohol === true ? 'ดื่ม' :
-                phrData.lifestyle.alcohol === 'occasional' ? 'ดื่มเป็นครั้งคราว' :
-                phrData.lifestyle.alcohol === 'moderate' ? 'ดื่มปานกลาง' :
-                phrData.lifestyle.alcohol === 'frequent' ? 'ดื่มบ่อย' :
-                phrData.lifestyle.alcohol === 'former' ? 'เคยดื่ม (เลิกแล้ว)' :
-                phrData.lifestyle.alcohol === false || phrData.lifestyle.alcohol === 'never' ? 'ไม่ดื่ม' : 'ไม่ระบุ'
-              }
+              สูบบุหรี่: {getSmokingLabel(phrData.lifestyle.smoking)}, ดื่มแอลกอฮอล์: {getAlcoholLabel(phrData.lifestyle.alcohol)}
             </p>
           </div>
           <div>
-            <label className="text-sm text-emerald-600">การใช้อาหารเสริม :</label>
+            <span className="text-sm text-emerald-600">การใช้อาหารเสริม :</span>
             <p className="text-gray-700">{phrData.lifestyle.supplements || 'ไม่มี'}</p>
           </div>
           <div>
-            <label className="text-sm text-emerald-600">การรักษาอื่น :</label>
+            <span className="text-sm text-emerald-600">การรักษาอื่น :</span>
             <p className="text-gray-700">{phrData.lifestyle.otherTreatments || 'ไม่มี'}</p>
           </div>
         </div>
@@ -477,25 +508,25 @@ const PHRView: React.FC<{ phrData: PHRData | null; patient: PatientRecord; livin
           </h3>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-sm text-emerald-600">ระดับน้ำตาลในเลือด :</label>
+              <span className="text-sm text-emerald-600">ระดับน้ำตาลในเลือด :</span>
               <p className="text-gray-700">{phrData.vitalSigns[0]?.bloodGlucose || 'N/A'} mg/dL</p>
             </div>
             <div>
-              <label className="text-sm text-emerald-600">ค่าความดันโลหิต :</label>
+              <span className="text-sm text-emerald-600">ค่าความดันโลหิต :</span>
               <p className="text-gray-700">
                 {phrData.vitalSigns[0]?.bloodPressure.systolic}/{phrData.vitalSigns[0]?.bloodPressure.diastolic} mmHg
               </p>
             </div>
             <div>
-              <label className="text-sm text-emerald-600">อัตราการเดินของหัวใจ :</label>
+              <span className="text-sm text-emerald-600">อัตราการเดินของหัวใจ :</span>
               <p className="text-gray-700">{phrData.wearableData.steps} steps</p>
             </div>
             <div>
-              <label className="text-sm text-emerald-600">จำนวนก้าวเดิน :</label>
+              <span className="text-sm text-emerald-600">จำนวนก้าวเดิน :</span>
               <p className="text-gray-700">{phrData.wearableData.steps} steps</p>
             </div>
             <div>
-              <label className="text-sm text-emerald-600">คุณภาพการนอนหลับ :</label>
+              <span className="text-sm text-emerald-600">คุณภาพการนอนหลับ :</span>
               <p className="text-gray-700">{phrData.wearableData.sleepHours} hours</p>
             </div>
           </div>
@@ -510,7 +541,7 @@ const PHRView: React.FC<{ phrData: PHRData | null; patient: PatientRecord; livin
 // ============================================================================
 
 const EMRView: React.FC<{ emrRecords: EMRRecord[] }> = ({ emrRecords }) => {
-  const [selectedEMR, setSelectedEMR] = useState<EMRRecord | null>(
+  const [selectedEMR] = useState<EMRRecord | null>(
     emrRecords.length > 0 ? emrRecords[0] : null
   );
 
@@ -544,11 +575,11 @@ const EMRView: React.FC<{ emrRecords: EMRRecord[] }> = ({ emrRecords }) => {
         <div className="mb-4">
           <h4 className="font-bold text-orange-600 mb-2">Medical History</h4>
           <div>
-            <label className="text-sm">CC :</label>
+            <span className="text-sm">CC :</span>
             <p className="text-gray-700 ml-4">{emr.chiefComplaint}</p>
           </div>
           <div className="mt-2">
-            <label className="text-sm">PI :</label>
+            <span className="text-sm">PI :</span>
             <p className="text-gray-700 ml-4">{emr.historyOfPresentIllness}</p>
           </div>
         </div>
@@ -556,14 +587,14 @@ const EMRView: React.FC<{ emrRecords: EMRRecord[] }> = ({ emrRecords }) => {
         <div className="mb-4">
           <h4 className="font-bold text-orange-600 mb-2">Clinical Note</h4>
           <div>
-            <label className="text-sm text-green-600">Vital sign :</label>
+            <span className="text-sm text-green-600">Vital sign :</span>
             <p className="text-gray-700 ml-4">
               BP {emr.physicalExamination.vitalSigns.bp}, HR {emr.physicalExamination.vitalSigns.hr},
               RR {emr.physicalExamination.vitalSigns.rr}, Temp {emr.physicalExamination.vitalSigns.temp}
             </p>
           </div>
           <div className="mt-2">
-            <label className="text-sm text-green-600">PE :</label>
+            <span className="text-sm text-green-600">PE :</span>
             <p className="text-gray-700 ml-4">{emr.physicalExamination.general}</p>
           </div>
         </div>
@@ -571,11 +602,11 @@ const EMRView: React.FC<{ emrRecords: EMRRecord[] }> = ({ emrRecords }) => {
         <div className="mb-4">
           <h4 className="font-bold text-orange-600 mb-2">Investigation</h4>
           <div>
-            <label className="text-sm text-green-600">LAB :</label>
+            <span className="text-sm text-green-600">LAB :</span>
             <p className="text-gray-700 ml-4">{emr.labOrders.map(l => l.test).join(', ') || 'None'}</p>
           </div>
           <div className="mt-2">
-            <label className="text-sm text-green-600">X-ray :</label>
+            <span className="text-sm text-green-600">X-ray :</span>
             <p className="text-gray-700 ml-4">{emr.imagingOrders.map(i => i.modality).join(', ') || 'None'}</p>
           </div>
         </div>
@@ -588,13 +619,13 @@ const EMRView: React.FC<{ emrRecords: EMRRecord[] }> = ({ emrRecords }) => {
         <div className="mb-4">
           <h4 className="font-bold text-orange-600 mb-2">Treatment</h4>
           <div>
-            <label className="text-sm text-green-600">Prescription :</label>
+            <span className="text-sm text-green-600">Prescription :</span>
             <p className="text-gray-700 ml-4">
               {emr.prescriptions.map(p => `${p.medication} ${p.dosage} ${p.frequency}`).join('; ')}
             </p>
           </div>
           <div className="mt-2">
-            <label className="text-sm text-green-600">Operation :</label>
+            <span className="text-sm text-green-600">Operation :</span>
             <p className="text-gray-700 ml-4">None</p>
           </div>
         </div>
@@ -695,12 +726,7 @@ const EHRView: React.FC<{
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center space-x-3 mb-2">
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                          event.type === 'consultation' ? 'bg-blue-100 text-blue-700' :
-                          event.type === 'lab' ? 'bg-purple-100 text-purple-700' :
-                          event.type === 'prescription' ? 'bg-green-100 text-green-700' :
-                          'bg-gray-100 text-gray-700'
-                        }`}>
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${getEventTypeClass(event.type)}`}>
                           {event.type.toUpperCase()}
                         </span>
                         <p className="text-sm text-gray-500">
@@ -740,17 +766,13 @@ const EHRView: React.FC<{
                     </thead>
                     <tbody>
                       {lab.tests.map((test, idx) => (
-                        <tr key={idx} className="border-t">
+                        <tr key={`test-${test.name}`} className="border-t">
                           <td className="p-2">{test.name}</td>
                           <td className="p-2">{test.value} {test.unit}</td>
                           <td className="p-2">{test.normalRange}</td>
                           <td className="p-2">
                             {test.flag && (
-                              <span className={`px-2 py-1 rounded text-xs font-medium ${
-                                test.flag === 'critical' ? 'bg-red-100 text-red-700' :
-                                test.flag === 'high' ? 'bg-yellow-100 text-yellow-700' :
-                                'bg-blue-100 text-blue-700'
-                              }`}>
+                              <span className={`px-2 py-1 rounded text-xs font-medium ${getTestFlagClass(test.flag)}`}>
                                 {test.flag.toUpperCase()}
                               </span>
                             )}

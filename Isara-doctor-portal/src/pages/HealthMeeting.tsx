@@ -84,15 +84,20 @@ interface HealthMeetingProps {
   doctor: User;
 }
 
+type ParticipantRole = 'patient' | 'doctor' | 'consultant';
+type ParticipantStatus = 'available' | 'busy' | 'offline';
+type MeetingType = 'consultation' | 'follow-up' | 'team-meeting' | 'referral';
+type MeetingStatus = 'scheduled' | 'in-progress' | 'completed' | 'cancelled';
+
 interface MeetingParticipant {
   id: string;
   name: string;
-  role: 'patient' | 'doctor' | 'consultant';
+  role: ParticipantRole;
   specialty?: string;
   email: string;
   phone: string;
   photo: string;
-  status: 'available' | 'busy' | 'offline';
+  status: ParticipantStatus;
 }
 
 interface ScheduledMeeting {
@@ -108,8 +113,8 @@ interface ScheduledMeeting {
   guestMeetingUrl?: string;   // For family/consultants
   jitsiRoomName?: string;     // Room name for tracking
   participants: MeetingParticipant[];
-  type: 'consultation' | 'follow-up' | 'team-meeting' | 'referral';
-  status: 'scheduled' | 'in-progress' | 'completed' | 'cancelled';
+  type: MeetingType;
+  status: MeetingStatus;
   notes?: string;
 }
 
@@ -135,8 +140,21 @@ const labels = {
   joinMeeting: { en: 'Join Meeting', th: 'เข้าร่วมประชุม' },
 };
 
+// Helper: get inactive tab class based on dark mode
+const inactiveTabClass = (isDark: boolean) =>
+  isDark ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-white text-gray-700 hover:bg-gray-50';
+
+// Helper: get inactive admin tab class
+const inactiveAdminTabClass = (isDark: boolean) =>
+  isDark ? 'bg-gray-700 text-gray-300 hover:bg-gray-600 border border-indigo-400' : 'bg-white text-gray-700 hover:bg-gray-50 border border-indigo-200';
+
+// Dark mode class helpers
+const hmDarkText = (isDark: boolean) => isDark ? 'text-white' : 'text-gray-900';
+const hmDarkSubtext = (isDark: boolean) => isDark ? 'text-gray-400' : 'text-gray-600';
+const hmDarkCard = (isDark: boolean) => isDark ? 'bg-gray-800' : 'bg-white';
+
 const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
-  const { theme, language, t } = useSettings();
+  const { theme } = useSettings();
   const isDark = theme === 'dark';
 
   const [meetings, setMeetings] = useState<ScheduledMeeting[]>([]);
@@ -163,19 +181,12 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
   // Patient Queue State - Now shows ALL pending appointments (not just today's in-clinic queue)
   const [queue, setQueue] = useState<QueuePatient[]>([]);
   const [pendingQueue, setPendingQueue] = useState<AppointmentRequest[]>([]); // All pending appointments awaiting confirmation
-  // Queue statistics are tracked internally but displayed through pendingQueue
-  const [, setQueueStats] = useState({
-    averageWaitTime: 0,
-    patientsSeenToday: 0,
-    patientsRemaining: 0,
-    pendingConfirmation: 0,
-  });
+  // Queue statistics - pendingConfirmation tracked via pendingQueue.length directly
   const [skipReason, setSkipReason] = useState('');
   const [showSkipModal, setShowSkipModal] = useState(false);
   const [selectedQueuePatient, setSelectedQueuePatient] = useState<QueuePatient | null>(null);
 
-  // Appointment confirmation state - displayed via pendingQueue
-  const [, setPendingAppointments] = useState<AppointmentRequest[]>([]);
+  // Appointment confirmation state - pendingAppointments displayed via pendingQueue directly
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   // Using AppointmentRequest type for consistency
   const [selectedAppointment, setSelectedAppointment] = useState<AppointmentRequest | null>(null);
@@ -254,6 +265,41 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
     }
   };
 
+  // Helper: Map raw appointment data to AppointmentRequest
+  const mapRawToAppointmentRequest = (apt: any): AppointmentRequest => ({
+    id: apt.id,
+    patientId: apt.patientId || apt.userId || '',
+    patientName: apt.patientName || apt.user?.name || 'Unknown Patient',
+    patientEmail: apt.patientEmail || apt.email || '',
+    patientPhone: apt.patientPhone || apt.phone,
+    requestedDate: apt.appointmentDate || apt.date || apt.preferredDates?.[0] || new Date().toISOString(),
+    preferredTime: apt.appointmentTime || apt.time || apt.preferredTimeSlot || '',
+    preferredDates: apt.preferredDates || [],
+    preferredTimeSlot: apt.preferredTimeSlot || '',
+    reason: apt.reason || apt.mainSymptom || (apt.symptoms?.join(', ')) || 'Consultation',
+    symptoms: apt.symptoms || [],
+    symptomDescription: apt.symptomDescription || apt.aiAnalysis || '',
+    urgency: apt.urgency || 'normal',
+    status: apt.status || 'pending',
+    assignedDoctorId: apt.assignedDoctorId || apt.doctorId,
+    assignedDoctorName: apt.assignedDoctorName || apt.doctorName,
+    createdAt: apt.createdAt || new Date().toISOString(),
+    updatedAt: apt.updatedAt,
+    notes: apt.notes || '',
+    requiredSpecialty: apt.requiredSpecialty || apt.suggestedSpecialty || '',
+    poolStatus: apt.poolStatus || 'pending',
+  });
+
+  // Helper: Check if appointment is assigned to current doctor
+  const isAssignedToCurrentDoctor = (apt: any): boolean => {
+    const doctorIdentifier = doctor.id || doctor.email;
+    return apt.doctorId === doctorIdentifier ||
+      apt.assignedDoctorId === doctorIdentifier ||
+      apt.adminAssignedDoctorId === doctorIdentifier ||
+      apt.doctorEmail === doctor.email ||
+      apt.assignedDoctorEmail === doctor.email;
+  };
+
   // Load Pending Queue - ALL appointments awaiting confirmation (pending, in_pool, awaiting_doctor_response)
   // This replaces the old "Patient Pool" tab - shows appointments from ALL dates, not just today
   const loadPendingQueue = async () => {
@@ -274,40 +320,11 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
           if (isAdmin) {
             // Admin sees ALL pending appointments
             return isPendingStatus;
-          } else {
-            // Doctor sees only appointments assigned to them
-            // Use same identifier logic (ID or email)
-            const doctorIdentifier = doctor.id || doctor.email;
-            const isAssignedToMe = apt.doctorId === doctorIdentifier ||
-              apt.assignedDoctorId === doctorIdentifier ||
-              apt.adminAssignedDoctorId === doctorIdentifier ||
-              apt.doctorEmail === doctor.email ||
-              apt.assignedDoctorEmail === doctor.email;
-            return isPendingStatus && isAssignedToMe;
           }
+          // Doctor sees only appointments assigned to them
+          return isPendingStatus && isAssignedToCurrentDoctor(apt);
         })
-        .map((apt: any) => ({
-          id: apt.id,
-          patientId: apt.patientId || apt.userId || '',
-          patientName: apt.patientName || apt.user?.name || 'Unknown Patient',
-          patientEmail: apt.patientEmail || apt.email || '',
-          patientPhone: apt.patientPhone || apt.phone,
-          requestedDate: apt.appointmentDate || apt.date || apt.preferredDates?.[0] || new Date().toISOString(),
-          preferredTime: apt.appointmentTime || apt.time || apt.preferredTimeSlot || '',
-          preferredDates: apt.preferredDates || [],
-          preferredTimeSlot: apt.preferredTimeSlot || '',
-          reason: apt.reason || apt.mainSymptom || (apt.symptoms?.join(', ')) || 'Consultation',
-          symptoms: apt.symptoms || [],
-          symptomDescription: apt.symptomDescription || apt.aiAnalysis || '',
-          urgency: apt.urgency || 'normal',
-          status: apt.status || 'pending',
-          assignedDoctorId: apt.assignedDoctorId || apt.doctorId,
-          assignedDoctorName: apt.assignedDoctorName || apt.doctorName,
-          createdAt: apt.createdAt || new Date().toISOString(),
-          requiredSpecialty: apt.requiredSpecialty || apt.suggestedSpecialty || '',
-          poolStatus: apt.poolStatus || 'pending',
-          notes: apt.notes || ''
-        }))
+        .map(mapRawToAppointmentRequest)
         // Sort by urgency first, then by date (oldest first to process FIFO)
         .sort((a: AppointmentRequest, b: AppointmentRequest) => {
           const urgencyOrder: { [key: string]: number } = { emergency: 0, urgent: 1, normal: 2 };
@@ -317,10 +334,6 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
         });
 
       setPendingQueue(queueRequests);
-      setQueueStats(prev => ({
-        ...prev,
-        pendingConfirmation: queueRequests.length
-      }));
       console.log('[HealthMeeting] Pending Queue loaded:', queueRequests.length, 'appointments awaiting confirmation');
     } catch (error) {
       console.error('Error loading pending queue:', error);
@@ -337,28 +350,7 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
       clearCache();
       const appointments = await fetchAllAppointments();
 
-      const allRequests = appointments.map((apt: any) => ({
-        id: apt.id,
-        patientId: apt.patientId || apt.userId || '',
-        patientName: apt.patientName || apt.user?.name || 'Unknown Patient',
-        patientEmail: apt.patientEmail || apt.email || '',
-        patientPhone: apt.patientPhone || apt.phone,
-        requestedDate: apt.appointmentDate || apt.date || new Date().toISOString(),
-        preferredTime: apt.appointmentTime || apt.time || '',
-        preferredDates: apt.preferredDates || [],
-        preferredTimeSlot: apt.preferredTimeSlot || '',
-        reason: apt.reason || apt.mainSymptom || (apt.symptoms?.join(', ')) || 'Consultation',
-        symptoms: apt.symptoms || [],
-        symptomDescription: apt.symptomDescription || '',
-        urgency: apt.urgency || 'normal',
-        status: apt.status || 'pending',
-        assignedDoctorId: apt.assignedDoctorId || apt.doctorId,
-        assignedDoctorName: apt.assignedDoctorName || apt.doctorName,
-        createdAt: apt.createdAt || new Date().toISOString(),
-        updatedAt: apt.updatedAt,
-        notes: apt.notes || '',
-        requiredSpecialty: apt.requiredSpecialty || apt.suggestedSpecialty || ''
-      }));
+      const allRequests = appointments.map(mapRawToAppointmentRequest);
 
       // Sort by date (newest first)
       allRequests.sort((a: AppointmentRequest, b: AppointmentRequest) =>
@@ -472,14 +464,12 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
         return matchesDoctor && needsConfirmation;
       });
 
-      setPendingAppointments(pending);
       console.log('[HealthMeeting] Pending appointments for doctor', doctor.id, ':', pending.length);
       if (pending.length > 0) {
         console.log('[HealthMeeting] Pending appointment IDs:', pending.map((a: any) => a.id));
       }
     } catch (error) {
       console.error('Error loading pending appointments:', error);
-      setPendingAppointments([]);
     }
   };
 
@@ -576,16 +566,9 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
           status: 'available',
         };
 
-        // Determine meeting status
-        let meetingStatus: 'scheduled' | 'completed' | 'in-progress' | 'cancelled' = 'scheduled';
-        if (apt.status === 'completed') meetingStatus = 'completed';
-        if (apt.status === 'cancelled') meetingStatus = 'cancelled';
-        if (apt.status === 'in_progress' || apt.status === 'in-progress') meetingStatus = 'in-progress';
-
-        // Determine meeting type
-        let meetingType: 'consultation' | 'follow-up' | 'team-meeting' | 'referral' = 'consultation';
-        if (apt.appointmentType === 'follow_up' || apt.type === 'follow-up') meetingType = 'follow-up';
-        if (apt.appointmentType === 'referral') meetingType = 'referral';
+        // Determine meeting status and type
+        const meetingStatus = getMeetingStatus(apt.status);
+        const meetingType = getMeetingType(apt);
 
         // Normalize date - handle both "2025-12-11" and "2025-12-11T00:00:00.000Z" formats
         const rawDate = apt.appointmentDate || apt.date || apt.preferredDates?.[0] || new Date().toISOString();
@@ -646,6 +629,24 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
   };
 
   // handleSkipPatient removed - currently unused
+
+  // Helper: Determine meeting status from appointment status
+  const getMeetingStatus = (status: string): 'scheduled' | 'completed' | 'in-progress' | 'cancelled' => {
+    const statusMap: Record<string, 'scheduled' | 'completed' | 'in-progress' | 'cancelled'> = {
+      completed: 'completed',
+      cancelled: 'cancelled',
+      in_progress: 'in-progress',
+      'in-progress': 'in-progress',
+    };
+    return statusMap[status] || 'scheduled';
+  };
+
+  // Helper: Determine meeting type from appointment type
+  const getMeetingType = (apt: any): 'consultation' | 'follow-up' | 'team-meeting' | 'referral' => {
+    if (apt.appointmentType === 'follow_up' || apt.type === 'follow-up') return 'follow-up';
+    if (apt.appointmentType === 'referral') return 'referral';
+    return 'consultation';
+  };
 
   const confirmSkip = async () => {
     if (selectedQueuePatient && skipReason) {
@@ -1194,11 +1195,11 @@ Izara Telehealth Team
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
         <div>
-          <h1 className={`text-2xl font-bold flex items-center gap-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+          <h1 className={`text-2xl font-bold flex items-center gap-2 ${hmDarkText(isDark)}`}>
             <VideoCameraIcon className="w-8 h-8 text-emerald-600" />
             Appointments & Meetings
           </h1>
-          <p className={`mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+          <p className={`mt-1 ${hmDarkSubtext(isDark)}`}>
             Manage patient queue and meetings with patients, doctors, and consultants
           </p>
         </div>
@@ -1215,25 +1216,25 @@ Izara Telehealth Team
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <div className={`rounded-xl shadow-lg p-4 border-2 border-amber-500 ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
+        <div className={`rounded-xl shadow-lg p-4 border-2 border-amber-500 ${hmDarkCard(isDark)}`}>
           <div className="text-3xl font-bold text-amber-600">
             {pendingQueue.length}
           </div>
-          <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Awaiting Confirmation</div>
+          <div className={`text-sm ${hmDarkSubtext(isDark)}`}>Awaiting Confirmation</div>
         </div>
         {/* Removed Scheduled Meetings card */}
-        <div className={`rounded-xl shadow-lg p-4 ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
+        <div className={`rounded-xl shadow-lg p-4 ${hmDarkCard(isDark)}`}>
           <div className="text-3xl font-bold text-green-600">
             {meetings.filter(m => m.status === 'completed').length}
           </div>
-          <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Completed</div>
+          <div className={`text-sm ${hmDarkSubtext(isDark)}`}>Completed</div>
         </div>
         {isAdmin && (
-          <div className={`rounded-xl shadow-lg p-4 ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
+          <div className={`rounded-xl shadow-lg p-4 ${hmDarkCard(isDark)}`}>
             <div className="text-3xl font-bold text-blue-600">
               {allAppointments.length}
             </div>
-            <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Total Appointments</div>
+            <div className={`text-sm ${hmDarkSubtext(isDark)}`}>Total Appointments</div>
           </div>
         )}
       </div>
@@ -1264,7 +1265,7 @@ Izara Telehealth Team
           onClick={() => setActiveTab('queue')}
           className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === 'queue'
               ? 'bg-emerald-600 text-white'
-              : isDark ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-white text-gray-700 hover:bg-gray-50'
+              : inactiveTabClass(isDark)
             }`}
         >
           🏥 Patient Queue ({pendingQueue.length})
@@ -1277,7 +1278,7 @@ Izara Telehealth Team
             onClick={() => setActiveTab('all-appointments')}
             className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === 'all-appointments'
                 ? 'bg-indigo-600 text-white'
-                : isDark ? 'bg-gray-700 text-gray-300 hover:bg-gray-600 border border-indigo-400' : 'bg-white text-gray-700 hover:bg-gray-50 border border-indigo-200'
+                : inactiveAdminTabClass(isDark)
               }`}
           >
             📋 All Appointments ({allAppointments.length})
@@ -1294,11 +1295,11 @@ Izara Telehealth Team
 
       {/* Patient Queue Tab - Shows ALL pending appointments awaiting confirmation */}
       {!loading && activeTab === 'queue' && (
-        <div className={`rounded-xl shadow-lg p-6 mb-6 ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
+        <div className={`rounded-xl shadow-lg p-6 mb-6 ${hmDarkCard(isDark)}`}>
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>Patient Queue - Appointments Awaiting Confirmation</h2>
-              <p className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+              <h2 className={`text-xl font-bold ${hmDarkText(isDark)}`}>Patient Queue - Appointments Awaiting Confirmation</h2>
+              <p className={`text-sm mt-1 ${hmDarkSubtext(isDark)}`}>
                 Review patient requests and confirm appointment date/time
               </p>
             </div>
@@ -1494,7 +1495,7 @@ Izara Telehealth Team
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
             <div>
               <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                📋 All Appointments
+                📋 All Appointments{' '}
                 <span className="text-sm font-normal text-gray-500 ml-2">
                   ({allAppointments.length} total)
                 </span>
@@ -1647,8 +1648,9 @@ Izara Telehealth Team
             {/* Assignment Form */}
             <div className="space-y-4">
               <div>
-                <label className="block font-medium text-gray-700 mb-2">Select Doctor *</label>
+                <label htmlFor="assign-doctor-select" className="block font-medium text-gray-700 mb-2">Select Doctor *</label>
                 <select
+                  id="assign-doctor-select"
                   value={assignData.doctorId}
                   onChange={(e) => setAssignData({ ...assignData, doctorId: e.target.value })}
                   className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
@@ -1664,8 +1666,9 @@ Izara Telehealth Team
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block font-medium text-gray-700 mb-2">Date *</label>
+                  <label htmlFor="assign-date" className="block font-medium text-gray-700 mb-2">Date *</label>
                   <input
+                    id="assign-date"
                     type="date"
                     value={assignData.date}
                     onChange={(e) => setAssignData({ ...assignData, date: e.target.value })}
@@ -1674,8 +1677,9 @@ Izara Telehealth Team
                   />
                 </div>
                 <div>
-                  <label className="block font-medium text-gray-700 mb-2">Time *</label>
+                  <label htmlFor="assign-time" className="block font-medium text-gray-700 mb-2">Time *</label>
                   <input
+                    id="assign-time"
                     type="time"
                     value={assignData.time}
                     onChange={(e) => setAssignData({ ...assignData, time: e.target.value })}
@@ -1685,8 +1689,9 @@ Izara Telehealth Team
               </div>
 
               <div>
-                <label className="block font-medium text-gray-700 mb-2">Notes (Optional)</label>
+                <label htmlFor="assign-notes" className="block font-medium text-gray-700 mb-2">Notes (Optional)</label>
                 <textarea
+                  id="assign-notes"
                   value={assignData.notes}
                   onChange={(e) => setAssignData({ ...assignData, notes: e.target.value })}
                   placeholder="Add any notes for the doctor..."
@@ -1727,8 +1732,9 @@ Izara Telehealth Team
             <p className="text-gray-700 mb-4">
               Are you sure you want to skip <strong>{selectedQueuePatient.patientName}</strong>?
             </p>
-            <label className="block font-medium mb-2">Reason for Skipping</label>
+            <label htmlFor="skip-reason" className="block font-medium mb-2">Reason for Skipping</label>
             <textarea
+              id="skip-reason"
               value={skipReason}
               onChange={(e) => setSkipReason(e.target.value)}
               placeholder="Enter reason..."
@@ -1793,8 +1799,9 @@ Izara Telehealth Team
               <h4 className="font-medium text-gray-700">📆 Confirm Date & Time</h4>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Date *</label>
+                  <label htmlFor="confirm-date" className="block text-sm font-medium text-gray-700 mb-1">Date *</label>
                   <input
+                    id="confirm-date"
                     type="date"
                     value={confirmDate}
                     onChange={(e) => setConfirmDate(e.target.value)}
@@ -1803,8 +1810,9 @@ Izara Telehealth Team
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Time *</label>
+                  <label htmlFor="confirm-time" className="block text-sm font-medium text-gray-700 mb-1">Time *</label>
                   <input
+                    id="confirm-time"
                     type="time"
                     value={confirmTime}
                     onChange={(e) => setConfirmTime(e.target.value)}
@@ -1815,8 +1823,9 @@ Izara Telehealth Team
             </div>
 
             <div className="mb-4">
-              <label className="block font-medium mb-2 text-gray-700">Notes for Patient (Optional)</label>
+              <label htmlFor="confirm-notes" className="block font-medium mb-2 text-gray-700">Notes for Patient (Optional)</label>
               <textarea
+                id="confirm-notes"
                 value={confirmNotes}
                 onChange={(e) => setConfirmNotes(e.target.value)}
                 placeholder="Add any notes or instructions for the patient..."
@@ -1852,8 +1861,9 @@ Izara Telehealth Team
                   <span className="text-gray-400 text-xs">({doctor.email})</span>
                 </label>
                 <div>
-                  <label className="block text-sm text-gray-700 mb-1">Additional Recipients (comma-separated)</label>
+                  <label htmlFor="additional-emails" className="block text-sm text-gray-700 mb-1">Additional Recipients (comma-separated)</label>
                   <input
+                    id="additional-emails"
                     type="text"
                     value={emailRecipients.additionalEmails}
                     onChange={(e) => setEmailRecipients({ ...emailRecipients, additionalEmails: e.target.value })}

@@ -201,7 +201,7 @@ export const CompletePrescribing: React.FC<CompletePrescribingProps> = ({
   };
 
   const handlePrint = () => {
-    window.print();
+    globalThis.print();
   };
 
   return (
@@ -235,8 +235,8 @@ export const CompletePrescribing: React.FC<CompletePrescribingProps> = ({
               <div>
                 <p className="font-medium text-red-900">Drug Warnings:</p>
                 <ul className="mt-1 text-sm text-red-700">
-                  {warnings.map((warning, index) => (
-                    <li key={index}>{warning}</li>
+                  {warnings.map((warning) => (
+                    <li key={`warn-${warning.slice(0, 40)}`}>{warning}</li>
                   ))}
                 </ul>
               </div>
@@ -246,11 +246,12 @@ export const CompletePrescribing: React.FC<CompletePrescribingProps> = ({
 
         {/* Drug Search */}
         <div className="p-6 border-b border-gray-200">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label htmlFor="drug-search" className="block text-sm font-medium text-gray-700 mb-2">
             Search Drug
           </label>
           <div className="relative">
             <input
+              id="drug-search"
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -260,9 +261,9 @@ export const CompletePrescribing: React.FC<CompletePrescribingProps> = ({
 
             {showSearch && searchResults.length > 0 && (
               <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                {searchResults.map((drug, index) => (
+                {searchResults.map((drug) => (
                   <button
-                    key={index}
+                    key={`drug-${drug.name}-${drug.generic}`}
                     onClick={() => addMedication(drug)}
                     className="w-full px-4 py-3 text-left hover:bg-blue-50 border-b border-gray-100 last:border-0"
                   >
@@ -297,7 +298,7 @@ export const CompletePrescribing: React.FC<CompletePrescribingProps> = ({
           )}
 
           {prescriptionItems.map((item, index) => (
-            <div key={index} className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <div key={`rx-${item.drugName}-${item.genericName}`} className="p-4 bg-gray-50 rounded-lg border border-gray-200">
               {item.warnings && item.warnings.length > 0 && (
                 <div className="mb-3 p-2 bg-red-100 border border-red-300 rounded text-sm text-red-800">
                   {item.warnings.join(' • ')}
@@ -319,8 +320,9 @@ export const CompletePrescribing: React.FC<CompletePrescribingProps> = ({
 
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                 <div>
-                  <label className="text-xs text-gray-600">Dosage/Strength</label>
+                  <label htmlFor={`dosage-${index}`} className="text-xs text-gray-600">Dosage/Strength</label>
                   <input
+                    id={`dosage-${index}`}
                     type="text"
                     value={item.dosage}
                     onChange={(e) => updateItem(index, 'dosage', e.target.value)}
@@ -329,8 +331,9 @@ export const CompletePrescribing: React.FC<CompletePrescribingProps> = ({
                 </div>
 
                 <div>
-                  <label className="text-xs text-gray-600">Route</label>
+                  <label htmlFor={`route-${index}`} className="text-xs text-gray-600">Route</label>
                   <select
+                    id={`route-${index}`}
                     value={item.route}
                     onChange={(e) => updateItem(index, 'route', e.target.value)}
                     className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
@@ -344,8 +347,9 @@ export const CompletePrescribing: React.FC<CompletePrescribingProps> = ({
                 </div>
 
                 <div>
-                  <label className="text-xs text-gray-600">Frequency</label>
+                  <label htmlFor={`frequency-${index}`} className="text-xs text-gray-600">Frequency</label>
                   <select
+                    id={`frequency-${index}`}
                     value={item.frequency}
                     onChange={(e) => updateItem(index, 'frequency', e.target.value)}
                     className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
@@ -361,8 +365,9 @@ export const CompletePrescribing: React.FC<CompletePrescribingProps> = ({
                 </div>
 
                 <div>
-                  <label className="text-xs text-gray-600">Duration</label>
+                  <label htmlFor={`duration-${index}`} className="text-xs text-gray-600">Duration</label>
                   <input
+                    id={`duration-${index}`}
                     type="text"
                     value={item.duration}
                     onChange={(e) => updateItem(index, 'duration', e.target.value)}
@@ -372,8 +377,9 @@ export const CompletePrescribing: React.FC<CompletePrescribingProps> = ({
                 </div>
 
                 <div>
-                  <label className="text-xs text-gray-600">Quantity</label>
+                  <label htmlFor={`quantity-${index}`} className="text-xs text-gray-600">Quantity</label>
                   <input
+                    id={`quantity-${index}`}
                     type="number"
                     value={item.quantity}
                     onChange={(e) => updateItem(index, 'quantity', Number.parseInt(e.target.value, 10) || 0)}
@@ -382,8 +388,9 @@ export const CompletePrescribing: React.FC<CompletePrescribingProps> = ({
                 </div>
 
                 <div>
-                  <label className="text-xs text-gray-600">Refills</label>
+                  <label htmlFor={`refills-${index}`} className="text-xs text-gray-600">Refills</label>
                   <input
+                    id={`refills-${index}`}
                     type="number"
                     value={item.refills}
                     onChange={(e) => updateItem(index, 'refills', Number.parseInt(e.target.value, 10) || 0)}
@@ -393,8 +400,9 @@ export const CompletePrescribing: React.FC<CompletePrescribingProps> = ({
               </div>
 
               <div className="mt-3">
-                <label className="text-xs text-gray-600">Instructions</label>
+                <label htmlFor={`instructions-${index}`} className="text-xs text-gray-600">Instructions</label>
                 <input
+                  id={`instructions-${index}`}
                   type="text"
                   value={item.instructions}
                   onChange={(e) => updateItem(index, 'instructions', e.target.value)}

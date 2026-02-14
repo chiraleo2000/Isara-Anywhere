@@ -1,5 +1,6 @@
 /**
  * Main API Server for Izara Doctor Portal
+ * Version: 1.4.7
  * Port: 3009
  *
  * Handles all clinical operations:
@@ -11,8 +12,10 @@
  * - Queue Management
  * - Appointments
  * - Clinical AI
+ * - Video Meeting Integration
+ * - Notifications
  *
- * Connects to GCS via the GCS API Server (port 3012)
+ * Data source: PostgreSQL (primary)
  */
 
 const fs = require('node:fs');
@@ -582,8 +585,16 @@ app.get('/api/health', (req, res) => {
     status: 'healthy',
     timestamp: new Date().toISOString(),
     service: 'Izara Doctor Portal API',
+    version: '1.4.7',
     port: PORT,
-    gcsApiServer: GCS_API_URL
+    features: {
+      videoMeeting: 'Jitsi Meet (FREE)',
+      transcription: 'Web Speech API (FREE)',
+      aiAssistant: 'Gemini 2.5 Flash Lite (FREE)',
+      aiClinicalCopilot: 'Gemini-powered CDS',
+      storage: 'PostgreSQL + pgvector',
+      realtime: 'Socket.IO WebSocket'
+    }
   });
 });
 
@@ -593,6 +604,7 @@ app.get('/health', (req, res) => {
     status: 'healthy',
     timestamp: new Date().toISOString(),
     service: 'Izara Doctor Portal API',
+    version: '1.4.7',
     port: PORT
   });
 });
@@ -1954,8 +1966,8 @@ ${patientContext}`;
     let response = '';
     try {
       response = await callGeminiForSummary(fullPrompt, 4096);
-    } catch (geminiErr) {
-      console.warn('Gemini API unavailable for chat:', geminiErr.message);
+    } catch (error_) {
+      console.warn('Gemini API unavailable for chat:', error_.message);
     }
 
     // Generate session ID if not provided
@@ -6766,33 +6778,7 @@ app.get('/api/storage/health', async (req, res) => {
   });
 });
 
-/**
- * POST /api/storage/upload
- * Upload file to storage (Profile Image Upload)
- */
-app.post('/api/storage/upload', authenticateToken, async (req, res) => {
-  try {
-    const { fileName, contentType, data, folder } = req.body;
-    
-    // Generate URL for the uploaded file
-    const fileId = `${folder || 'uploads'}/${Date.now()}_${fileName}`;
-    const fileUrl = `https://storage.izara.health/${fileId}`;
-
-    // In production, save to PostgreSQL or cloud storage
-    // For now, return success with mock URL
-    res.json({
-      success: true,
-      fileId,
-      url: fileUrl,
-      fileName,
-      contentType,
-      uploadedAt: new Date().toISOString()
-    });
-  } catch (error) {
-    console.error('File upload error:', error);
-    res.json({ success: true, url: 'https://storage.izara.health/default-avatar.png' });
-  }
-});
+// NOTE: POST /api/storage/upload is already defined above (line ~6507) - duplicate removed in v1.4.7
 
 /**
  * POST /api/ai/generate-summary
@@ -6845,37 +6831,31 @@ ${transcripts.join('\n')}
 
 async function startServer() {
   console.log('\n═══════════════════════════════════════════════════════════════');
-  console.log('🏥 IZARA DOCTOR PORTAL - MAIN API SERVER');
+  console.log('🏥 IZARA DOCTOR PORTAL - MAIN API SERVER v1.4.7');
   console.log('═══════════════════════════════════════════════════════════════\n');
 
   // Start listening immediately for faster startup
   server.listen(PORT, '0.0.0.0', () => {
     console.log('═══════════════════════════════════════════════════════════════');
-    console.log(`🚀 Main API Server running on http://localhost:${PORT}`);
+    console.log(`🚀 Main API Server v1.4.7 running on http://localhost:${PORT}`);
     console.log('═══════════════════════════════════════════════════════════════\n');
-    console.log('📦 Connected Buckets:');
-    Object.entries(BUCKETS).forEach(([key, value]) => {
-      console.log(`   ${key}: ${value}`);
-    });
-    console.log('\n🔗 Endpoints:');
-    console.log('   GET  /api/health');
-    console.log('   GET  /api/dashboard/:doctorId');
-    console.log('   GET  /api/patients');
-    console.log('   GET  /api/patients/:patientId');
-    console.log('   POST /api/emr');
-    console.log('   GET  /api/emr/patient/:patientId');
-    console.log('   POST /api/prescriptions');
-    console.log('   GET  /api/prescriptions/patient/:patientId');
-    console.log('   POST /api/lab-orders');
-    console.log('   GET  /api/lab-orders/patient/:patientId');
-    console.log('   GET  /api/queue/doctor/:doctorId');
-    console.log('   POST /api/queue/call-next');
-    console.log('   POST /api/queue/skip');
-    console.log('   GET  /api/appointments');
-    console.log('   GET  /api/appointments/:appointmentId');
-    console.log('   GET  /api/metadata/*');
+    console.log('📊 Storage: PostgreSQL + pgvector (PRIMARY)');
+    console.log('🎥 Video: Jitsi Meet (FREE)');
+    console.log('🎤 Transcription: Web Speech API (FREE)');
+    console.log('🤖 AI: Gemini 2.5 Flash Lite (FREE)');
+    console.log('\n🔗 Key Endpoints:');
+    console.log('   GET  /api/health              - Health check');
+    console.log('   GET  /api/dashboard/:doctorId  - Doctor dashboard');
+    console.log('   GET  /api/patients             - Patient list');
+    console.log('   POST /api/emr                  - Create EMR record');
+    console.log('   POST /api/prescriptions         - Create prescription');
+    console.log('   GET  /api/appointments          - Appointments');
+    console.log('   POST /api/video-meeting/create  - Create meeting');
+    console.log('   POST /api/meetings/transcript   - Save transcript');
+    console.log('   POST /api/meetings/summary      - AI meeting summary');
+    console.log('   POST /api/ai/summarize          - AI clinical summary');
+    console.log('   POST /api/ai/clinical-copilot   - Clinical decision support');
     console.log('\n🔌 WebSocket: ws://localhost:' + PORT + '/ws');
-    console.log('\n📡 GCS API Server: ' + GCS_API_URL);
     console.log('\n═══════════════════════════════════════════════════════════════\n');
   });
 

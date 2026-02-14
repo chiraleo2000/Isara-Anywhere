@@ -3,6 +3,14 @@
  * Centralizes all environment variable access
  */
 
+function getDefaultWebSocketUrl(): string {
+  if (typeof globalThis !== 'undefined' && globalThis.location) {
+    const protocol = globalThis.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    return `${protocol}//${globalThis.location.host}/ws`;
+  }
+  return 'ws://localhost:3011/ws';
+}
+
 export const config = {
   // Application Info
   app: {
@@ -18,7 +26,7 @@ export const config = {
     gcsApiUrl: import.meta.env.VITE_GCS_API_URL || '', // Empty for relative paths
     authUrl: import.meta.env.VITE_AUTH_URL || '', // Empty for relative paths
     doctorUrl: import.meta.env.VITE_DOCTOR_URL || '', // Empty for relative paths
-    websocketUrl: import.meta.env.VITE_WEBSOCKET_URL || `${typeof window !== 'undefined' ? (window.location.protocol === 'https:' ? 'wss:' : 'ws:') + '//' + window.location.host : 'ws://localhost:3011'}/ws`,
+    websocketUrl: import.meta.env.VITE_WEBSOCKET_URL || getDefaultWebSocketUrl(),
   },
 
   // Google Cloud Platform

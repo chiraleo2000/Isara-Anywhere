@@ -37,7 +37,7 @@ export interface DrugInfo {
 }
 
 class GeminiService {
-  private model: any;
+  private readonly model: any;
 
   constructor() {
     if (genAI) {

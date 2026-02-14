@@ -56,7 +56,7 @@ const ConsentBadge: React.FC<ConsentBadgeProps> = ({ hasConsent, onClick }) => {
 
   return (
     <button
-      onClick={onClick}
+      onClick={(e) => { e.stopPropagation(); onClick?.(); }}
       className={`px-2 py-1 rounded-full text-xs font-medium ${hasConsent
         ? 'bg-green-100 text-green-700'
         : 'bg-red-100 text-red-700'
@@ -248,12 +248,7 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, doctor, onClick, onS
           </div>
 
           {/* Consent Badge */}
-          <div
-            className="mt-2"
-            onClick={(e) => e.stopPropagation()}
-            onKeyDown={(e) => e.key === 'Enter' && e.stopPropagation()}
-            role="presentation"
-          >
+          <div className="mt-2">
             <ConsentBadge
               hasConsent={patient.consentStatus.hasConsent}
               onClick={onShowConsent}
@@ -290,7 +285,7 @@ export const PatientManagement: React.FC<PatientManagementProps> = ({
   onCreateEMR,
   onCreatePrescription,
 }) => {
-  const { theme, language, t } = useSettings();
+  const { theme } = useSettings();
   const isDark = theme === 'dark';
   useResponsive(); // Hook for responsive behavior
   const [searchParams] = useSearchParams();
@@ -391,10 +386,10 @@ export const PatientManagement: React.FC<PatientManagementProps> = ({
 
     // Age filter
     if (filters.ageMin) {
-      filtered = filtered.filter((p) => p.demographics.age >= filters.ageMin!);
+      filtered = filtered.filter((p) => p.demographics.age >= filters.ageMin);
     }
     if (filters.ageMax) {
-      filtered = filtered.filter((p) => p.demographics.age <= filters.ageMax!);
+      filtered = filtered.filter((p) => p.demographics.age <= filters.ageMax);
     }
 
     // Gender filter
@@ -479,8 +474,9 @@ export const PatientManagement: React.FC<PatientManagementProps> = ({
           {showFilters && (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-4 border-t">
               <div>
-                <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Gender</label>
+                <label htmlFor="filter-gender" className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Gender</label>
                 <select
+                  id="filter-gender"
                   value={filters.gender}
                   onChange={(e) => setFilters({ ...filters, gender: e.target.value as any })}
                   className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'border-gray-300'}`}
@@ -493,8 +489,9 @@ export const PatientManagement: React.FC<PatientManagementProps> = ({
               </div>
 
               <div>
-                <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Risk Level</label>
+                <label htmlFor="filter-riskLevel" className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Risk Level</label>
                 <select
+                  id="filter-riskLevel"
                   value={filters.riskLevel}
                   onChange={(e) => setFilters({ ...filters, riskLevel: e.target.value as any })}
                   className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'border-gray-300'}`}
@@ -507,8 +504,9 @@ export const PatientManagement: React.FC<PatientManagementProps> = ({
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Age Min</label>
+                <label htmlFor="filter-ageMin" className="block text-sm font-medium text-gray-700 mb-1">Age Min</label>
                 <input
+                  id="filter-ageMin"
                   type="number"
                   value={filters.ageMin || ''}
                   onChange={(e) => setFilters({ ...filters, ageMin: Number.parseInt(e.target.value, 10) || undefined })}
@@ -518,8 +516,9 @@ export const PatientManagement: React.FC<PatientManagementProps> = ({
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Age Max</label>
+                <label htmlFor="filter-ageMax" className="block text-sm font-medium text-gray-700 mb-1">Age Max</label>
                 <input
+                  id="filter-ageMax"
                   type="number"
                   value={filters.ageMax || ''}
                   onChange={(e) => setFilters({ ...filters, ageMax: Number.parseInt(e.target.value, 10) || undefined })}

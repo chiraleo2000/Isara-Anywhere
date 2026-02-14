@@ -1,8 +1,8 @@
 # Izara Telemedicine Appointment Workflows
 
-This document details the full appointment workflow for Izara Telemedicine, covering video consultations, EMR documentation, and AI-assisted post-consultation features.
+This document details the full appointment workflow for Izara Telemedicine, covering video consultations, EMR documentation, and AI-assisted post-consultation features. This is the **core Phase 1 deliverable** covering the complete end-to-end flow: Appointment → Approval → Meeting (Microsoft Teams-like) → AI Summary → EMR → Patient Delivery.
 
-**Last Updated:** February 4, 2026 (v3.1.0 - Phase 1 Complete)
+**Last Updated:** February 10, 2026 (v1.4.7 - Comprehensive Meeting Workflow Update)
 
 ---
 
@@ -21,6 +21,14 @@ This document details the full appointment workflow for Izara Telemedicine, cove
 | **Clinical Decision Support** | ✅ | Drug interaction & dose adjustment alerts |
 | **Man-in-the-Loop Validation** | ✅ | Doctor approval before AI content goes to patient |
 | **Device Speech-to-Text** | ✅ | Free browser-based dictation (Web Speech API) |
+| **Transcript Streaming Control** | ✅ | Doctor (HOST) starts/stops real-time transcript during meeting |
+| **Chat Integration** | ✅ | In-meeting text chat aggregated into AI summary |
+| **Multi-Party Meeting** | ✅ | Patient relatives, friends, other doctors, admin can join |
+| **Guest Self-Registration** | ✅ | Non-registered users create display name from blank and join lobby |
+| **Post-Meeting AI Pipeline** | ✅ | AI summarizes from video input + transcript + chats |
+| **Patient Instruction Sheet** | ✅ | Auto-generated post-consultation instructions (Thai PDF) |
+| **EMR Auto-Population** | ✅ | AI pre-fills SOAP from meeting transcript + summary |
+| **Patient Health History** | ✅ | Relevant EMR parts sent to patient's Health History page |
 
 ### Test Credentials
 
@@ -330,21 +338,381 @@ External guests who are **NOT registered** in the Izara system can join meetings
 
 4. **During meeting**
    - Video/audio consultation (all participants)
-   - **Text chat available** for all participants
+   - **Text chat available** for all participants — ALL chat messages are captured and included in AI summary
    - **Screen sharing** for medical images
    - **Local recording** (if enabled by doctor)
    - Users can mute/unmute their camera/mic at any time
+   - **Doctor controls transcript streaming**: START / PAUSE / STOP
+   - Transcript runs in real-time alongside the meeting
+   - Chat messages timestamped and attributed to speakers
 
 5. **Meeting ends**
    - Doctor ends the meeting (host control)
    - Recording saved locally on doctor's device
-   - **Automatic post-meeting processing**:
-     - Video uploaded to izara-doctors-data
-     - Audio transcribed via Speech-to-Text
-     - AI summary generated via Gemini
+   - **Comprehensive post-meeting AI processing**:
+     - Video uploaded to PostgreSQL/storage
+     - Full transcript compiled from real-time streaming segments
+     - All chat messages collected and merged with transcript
+     - AI (Gemini) processes: video + transcript + chats
+     - AI generates structured summary:
+       - 🎯 Chief Complaint / อาการสำคัญ
+       - 🔍 Investigation findings / ข้อค้นพบ
+       - 📋 Recommendations / คำแนะนำ
+       - 💊 Treatment suggestions / แนวทางการรักษา
+       - ⚠️ Red flags / อาการที่ต้องเฝ้าระวัง
      - 30-minute sections for long meetings
-     - Recommendations generated for doctor
-     - Summary delivered to Doctor Portal
+     - Summary delivered to Doctor Portal → Health Meeting page
+     - Doctor reviews (Man-in-the-Loop) → Approves → EMR generated
+     - EMR report stored in PostgreSQL
+     - Relevant parts sent to Patient Portal → Health History page
+
+---
+
+## 7b. COMPREHENSIVE END-TO-END MEETING WORKFLOW (Microsoft Teams-Like Experience)
+
+### Overview
+
+The meeting experience is designed to work like **Microsoft Teams** — the doctor acts as HOST who controls all aspects of the meeting including admitting participants, starting/stopping transcript streaming, managing recording, and processing the AI summary afterward.
+
+### Participant Types & Invitation Flow
+
+```text
+┌── WHO CAN JOIN THE MEETING ─────────────────────────────────────────────┐
+│                                                                          │
+│  👨‍⚕️ DOCTOR (HOST/MODERATOR)                                            │
+│  ├── The doctor who confirmed the appointment                           │
+│  ├── Joins with doctorMeetingUrl (moderator privileges)                 │
+│  ├── Controls: lobby admission, recording, transcript, mute all        │
+│  └── Can invite: other doctors, admin, specialists                     │
+│                                                                          │
+│  🧑 PATIENT                                                              │
+│  ├── The patient who booked the appointment                             │
+│  ├── Joins with patientMeetingUrl (waits in lobby)                     │
+│  ├── Can invite: relatives, friends (via Patient Portal)               │
+│  └── Admitted by doctor from lobby                                     │
+│                                                                          │
+│  👥 PATIENT'S RELATIVES/FRIENDS (Invited by Patient)                    │
+│  ├── Patient sends meeting link to relatives/friends                    │
+│  ├── Guest clicks link → Creates display name from BLANK               │
+│  ├── Guest enters lobby → Waits for doctor approval                    │
+│  └── Doctor sees guest name and admits/rejects from lobby              │
+│                                                                          │
+│  👨‍⚕️ OTHER DOCTORS/ADMIN (Invited by Doctor)                            │
+│  ├── Doctor sends meeting link to colleagues/specialists               │
+│  ├── Invited doctor/admin clicks link → Enters lobby                   │
+│  ├── HOST doctor approves from lobby                                    │
+│  └── Joins as participant (not moderator)                              │
+│                                                                          │
+│  🌐 EXTERNAL GUESTS (Non-registered users)                              │
+│  ├── Receive meeting link (via email or direct share)                  │
+│  ├── Click link → No login required                                     │
+│  ├── Create username/display name from blank                           │
+│  ├── Enter lobby → Wait for doctor approval                            │
+│  └── Doctor approves based on guest name                               │
+│                                                                          │
+└──────────────────────────────────────────────────────────────────────────┘
+```
+
+### Test User Mapping for E2E Testing
+
+| Role | Test Email | Test Password | Portal | Meeting Role |
+| ---- | ---------- | ------------- | ------ | ------------ |
+| Doctor (HOST) | `doctor.test@izara.com` | IzaraDoctor@2024 | Doctor Portal | Moderator |
+| Patient | `demo.test@gmail.com` | P@ssw0rd | Patient Portal | Participant (lobby) |
+| Patient Relative | `demo2.test@gmail.com` | P@ssw0rd | Patient Portal | Guest (lobby) |
+| Admin/2nd Doctor | `admin.test@izara.com` | IzaraAdmin@2024 | Doctor Portal | Participant (lobby) |
+| External Guest | (any email) | (none) | Direct link | Guest (create name + lobby) |
+
+### Full Meeting Lifecycle (Step-by-Step)
+
+```text
+╔══════════════════════════════════════════════════════════════════════════╗
+║  PHASE 1: APPOINTMENT BOOKING & APPROVAL                                ║
+╠══════════════════════════════════════════════════════════════════════════╣
+║                                                                          ║
+║  Step 1:  Patient logs in → Patient Portal (localhost:3005)              ║
+║  Step 2:  Patient books appointment (symptoms + preferred time)          ║
+║           - AI analyzes symptoms → urgency level + specialty             ║
+║           - Patient can optionally select a specific doctor              ║
+║           - Status: pending (specific doctor) or in_pool (unassigned)   ║
+║                                                                          ║
+║  Step 3:  APPROVAL PATH A — Doctor confirms directly                    ║
+║           - Doctor sees pending appointment in Health Meeting → Queue    ║
+║           - Reviews patient symptoms and AI analysis                     ║
+║           - Clicks "Confirm" → Sets date/time                           ║
+║           - System generates Jitsi meeting URLs (doctor/patient/guest)  ║
+║           - Status: confirmed                                           ║
+║                                                                          ║
+║  Step 3:  APPROVAL PATH B — Admin assigns then doctor confirms          ║
+║           - Admin sees in_pool appointments in Admin Appointment Mgmt   ║
+║           - AI auto-matches specialty (11 categories)                   ║
+║           - Admin assigns to specific doctor (manual or AI)             ║
+║           - Status: awaiting_doctor_response                            ║
+║           - Doctor confirms → Jitsi URLs generated → Status: confirmed  ║
+║                                                                          ║
+║  Step 4:  NOTIFICATIONS SENT                                             ║
+║           - Patient: in-app notification + email with meeting link       ║
+║           - Doctor: appointment appears in Scheduled Meetings tab        ║
+║           - Calendar event created for both parties                      ║
+║                                                                          ║
+╠══════════════════════════════════════════════════════════════════════════╣
+║  PHASE 2: PRE-MEETING PREPARATION                                       ║
+╠══════════════════════════════════════════════════════════════════════════╣
+║                                                                          ║
+║  Step 5:  Patient invites relatives/friends (optional)                  ║
+║           - Patient shares meeting link via Patient Portal               ║
+║           - Patient can also share link externally (email, LINE, etc.)  ║
+║           - Recipients do NOT need an account                           ║
+║                                                                          ║
+║  Step 6:  Doctor invites other doctors/admin/specialists (optional)     ║
+║           - Doctor sends invite from Health Meeting page                 ║
+║           - System generates token-based invite link                     ║
+║           - Invite email sent with join URL                             ║
+║                                                                          ║
+║  Step 7:  AI Pre-Consultation Summary generated                         ║
+║           - POST /api/ai/pre-consultation-summary                       ║
+║           - Input: Patient's PHR + EMR history + symptoms + Q&A        ║
+║           - Output: Key findings, suggested questions, risk alerts      ║
+║           - Requirement 2.2: AI สรุปข้อมูลประวัติผู้ป่วยทั้ง EMR        ║
+║           - Doctor reviews in Dashboard → Health Meeting column         ║
+║                                                                          ║
+╠══════════════════════════════════════════════════════════════════════════╣
+║  PHASE 3: MEETING EXECUTION (Microsoft Teams-Like Experience)            ║
+╠══════════════════════════════════════════════════════════════════════════╣
+║                                                                          ║
+║  Step 8:  Doctor starts meeting (HOST)                                   ║
+║           - Clicks "Join Meeting" from Scheduled Meetings tab            ║
+║           - Jitsi opens with moderator/HOST privileges                  ║
+║           - Pre-join screen: camera/mic preview (both ON by default)    ║
+║           - Doctor is FIRST in the room                                 ║
+║           - HOST controls activated:                                     ║
+║             • Lobby admission (approve/reject each participant)         ║
+║             • Start/Stop recording                                       ║
+║             • Start/Stop transcript streaming                           ║
+║             • Mute/unmute all participants                              ║
+║             • Kick participants                                         ║
+║                                                                          ║
+║  Step 9:  Patient joins (enters LOBBY)                                  ║
+║           - Patient clicks meeting link from "นัดหมายของฉัน" page       ║
+║           - Uses patientMeetingUrl with pre-filled display name          ║
+║           - Enters LOBBY → Waits for doctor to admit                    ║
+║           - Doctor sees "Patient waiting in lobby" notification          ║
+║           - Doctor clicks "Admit" → Patient joins the room              ║
+║                                                                          ║
+║  Step 10: Guests join (enter LOBBY → Doctor approves)                   ║
+║           - Patient's relatives/friends click shared meeting link        ║
+║           - Non-registered users: create display name from BLANK        ║
+║           - All guests enter LOBBY → Wait for doctor approval           ║
+║           - Doctor sees guest names in lobby queue                       ║
+║           - Doctor selectively admits or rejects each guest             ║
+║           - Other doctors/admin invited by doctor also enter lobby      ║
+║                                                                          ║
+║  Step 11: Doctor starts TRANSCRIPT STREAMING                            ║
+║           - Doctor clicks "Start Transcription" button                  ║
+║           - POST /api/meetings/:id/start-transcription                  ║
+║           - Web Speech API begins listening (FREE, browser-based)       ║
+║           - Real-time transcript appears in bottom panel                ║
+║           - Speaker labels: 👨‍⚕️ Doctor / 🧑 Patient / 👥 Guest          ║
+║           - Interim text shown with yellow background (pulsing)         ║
+║           - Doctor can PAUSE / RESUME transcript anytime                ║
+║           - Doctor can switch language: Thai (th-TH) ↔ English (en-US) ║
+║           - Transcript segments saved to PostgreSQL continuously        ║
+║           - Requirement 3.2: ระบบ transcript หลังบ้านใน meeting          ║
+║           - Requirement 3.5: ใช้ Speech-to-Text บนอุปกรณ์ (ฟรี)         ║
+║                                                                          ║
+║  Step 12: Video consultation in progress                                ║
+║           - All participants have video + audio + chat                  ║
+║           - TEXT CHAT available throughout (like Microsoft Teams)        ║
+║           - All chat messages are CAPTURED with timestamps              ║
+║           - Chat messages attributed to sender (name + role)            ║
+║           - Screen sharing for medical images/reports                    ║
+║           - Doctor can share screen to show test results                ║
+║           - AI Clinical Copilot provides real-time suggestions          ║
+║           - Requirement 2.4: Clinical Decision Support active            ║
+║                                                                          ║
+║  Step 13: Doctor stops transcript streaming                             ║
+║           - Doctor clicks "Stop Transcription"                          ║
+║           - POST /api/meetings/:id/stop-transcription                   ║
+║           - Full transcript compiled from all streaming segments        ║
+║           - Transcript stored in meeting_transcripts table              ║
+║                                                                          ║
+║  Step 14: Doctor ends meeting                                           ║
+║           - Doctor clicks "End Meeting" (only HOST can end)             ║
+║           - All participants disconnected                               ║
+║           - Recording stops and prepares for upload                     ║
+║                                                                          ║
+╠══════════════════════════════════════════════════════════════════════════╣
+║  PHASE 4: POST-MEETING AI PROCESSING (Automatic Pipeline)               ║
+╠══════════════════════════════════════════════════════════════════════════╣
+║                                                                          ║
+║  Step 15: Video recording uploaded                                      ║
+║           - Recording uploaded to PostgreSQL/cloud storage               ║
+║           - POST /api/meetings/:id/upload-recording                     ║
+║                                                                          ║
+║  Step 16: AI processes ALL meeting data                                 ║
+║           - INPUT to Gemini AI:                                         ║
+║             ① Full transcript from streaming (with speaker labels)      ║
+║             ② All chat messages (with timestamps and senders)           ║
+║             ③ Video input metadata (duration, participants)             ║
+║             ④ Patient's existing PHR/EMR context                        ║
+║           - POST /api/meetings/:id/generate-summary                     ║
+║           - Requirement 2.1: สรุปอาการผู้ป่วย                            ║
+║           - Requirement 3.2: ประเมินช่วงเวลาและสคริปให้ AI สรุป          ║
+║                                                                          ║
+║  Step 17: AI generates structured output (Thai SOAP format)             ║
+║           OUTPUT:                                                        ║
+║           ┌────────────────────────────────────────────────────────┐    ║
+║           │  🎯 อาการสำคัญ (Chief Complaint)                       │    ║
+║           │  📝 อาการที่พบ (Presenting Symptoms)                   │    ║
+║           │  🔍 การสืบค้น/ตรวจเพิ่มเติม (Investigation)             │    ║
+║           │  📋 การประเมินเบื้องต้น (Preliminary Assessment)        │    ║
+║           │  💊 คำแนะนำการรักษา (Treatment Recommendations)        │    ║
+║           │  📅 นัดติดตาม (Follow-up Schedule)                     │    ║
+║           │  🚩 อาการที่ต้องเฝ้าระวัง (Red Flags)                   │    ║
+║           │  🏠 คำแนะนำด้านไลฟ์สไตล์ (Lifestyle Recommendations)   │    ║
+║           │  ⚠️ requiresValidation: true (Man-in-the-Loop)        │    ║
+║           └────────────────────────────────────────────────────────┘    ║
+║           - For meetings > 30 min: 30-minute sectioned summaries       ║
+║           - All sections combined into final comprehensive summary     ║
+║                                                                          ║
+║  Step 18: Doctor recommendations generated (CDS)                       ║
+║           - Differential diagnosis suggestions                          ║
+║           - Suggested lab tests and imaging                             ║
+║           - Drug interaction alerts if prescribing                     ║
+║           - Guideline references (2024-2025)                           ║
+║           - Requirement 2.4: CDS ช่วยแพทย์ตัดสินใจ                      ║
+║                                                                          ║
+╠══════════════════════════════════════════════════════════════════════════╣
+║  PHASE 5: DOCTOR REVIEW & EMR DOCUMENTATION                             ║
+╠══════════════════════════════════════════════════════════════════════════╣
+║                                                                          ║
+║  Step 19: Results displayed on Doctor's Health Meeting page             ║
+║           - AI summary appears in Health Meeting → meeting results      ║
+║           - Doctor reviews on Dashboard → Health Meeting column         ║
+║           - Man-in-the-Loop: Doctor validates all AI content            ║
+║           - Actions: [✅ Approve] [✏️ Edit] [🔄 Regenerate]            ║
+║           - Requirement 2.5: แพทย์ตรวจสอบก่อนส่งข้อมูลถึงคนไข้          ║
+║                                                                          ║
+║  Step 20: Doctor creates/edits EMR                                      ║
+║           - Opens CompleteEMREditor with AI-prefilled SOAP tabs         ║
+║           - Tab S: Chief complaint (from AI + transcript)               ║
+║           - Tab O: Physical exam + vitals                               ║
+║           - Tab A: Diagnosis (ICD-10 codes from AI suggestion)          ║
+║           - Tab P: Treatment plan (from AI recommendations)             ║
+║           - Voice dictation available (Web Speech API)                  ║
+║           - Auto-save every 30 seconds                                  ║
+║           - Doctor edits and finalizes EMR                              ║
+║           - Requirement 4.1: หมอทำเอกสารรายงานอาการผู้ป่วยลง EMR        ║
+║                                                                          ║
+║  Step 21: Doctor signs EMR + generates Patient Instruction Sheet        ║
+║           - Doctor clicks "Sign & Finalize"                             ║
+║           - Digital signature applied                                   ║
+║           - AI generates Patient Instruction Sheet:                     ║
+║             • วินิจฉัย (Diagnosis in simple Thai)                       ║
+║             • ยาที่ได้รับ (Medications with dosage/frequency)            ║
+║             • การปฏิบัติตัว (Self-care instructions)                     ║
+║             • อาการที่ควรพบแพทย์ทันที (Warning signs)                     ║
+║             • นัดหมายครั้งต่อไป (Follow-up schedule)                     ║
+║           - Doctor reviews instruction sheet (Man-in-the-Loop)          ║
+║           - Approved → Ready to send to patient                        ║
+║           - Requirement 2.1: สร้างเอกสารสรุปคำแนะนำให้ผู้ป่วย            ║
+║           - Requirement 4.5: Patient Instruction Sheet อัตโนมัติ          ║
+║                                                                          ║
+║  Step 22: E-Prescribing (optional)                                      ║
+║           - Doctor opens CompletePrescribing for medications             ║
+║           - Drug search, allergy alerts, interaction warnings           ║
+║           - Requirement 2.4: CDS drug interaction alerts                ║
+║                                                                          ║
+║  Step 23: Lab Orders (optional)                                         ║
+║           - Doctor orders follow-up lab tests                           ║
+║           - Common panels + individual tests                            ║
+║                                                                          ║
+╠══════════════════════════════════════════════════════════════════════════╣
+║  PHASE 6: PATIENT DELIVERY                                               ║
+╠══════════════════════════════════════════════════════════════════════════╣
+║                                                                          ║
+║  Step 24: EMR data sent to patient                                      ║
+║           - POST /api/patients/:id/health-logs                          ║
+║           - Patient receives notification: "แพทย์ส่งผลการตรวจ"           ║
+║           - WHAT PATIENT RECEIVES:                                       ║
+║             ✅ Chief complaint and diagnosis (patient-friendly)          ║
+║             ✅ Treatment plan summary                                    ║
+║             ✅ Medications with instructions (วิธีกินยา)                  ║
+║             ✅ Patient Instruction Sheet (PDF, Thai)                     ║
+║             ✅ Follow-up schedule                                        ║
+║             ✅ Warning signs to watch for                                ║
+║           - WHAT PATIENT DOES NOT RECEIVE:                              ║
+║             ❌ Internal doctor notes                                     ║
+║             ❌ Raw AI outputs                                            ║
+║             ❌ Doctor-to-doctor communications                           ║
+║             ❌ CDS alerts (internal)                                     ║
+║                                                                          ║
+║  Step 25: Patient views results in Health History pages                 ║
+║           - Patient Portal → Dashboard → Latest Appointment Result      ║
+║           - Patient Portal → Timeline → Treatment history entry         ║
+║           - Patient Portal → PHR → Health logs tab                      ║
+║           - Patient Instruction Sheet downloadable as PDF               ║
+║           - Appointment status: completed                               ║
+║                                                                          ║
+╚══════════════════════════════════════════════════════════════════════════╝
+```
+
+### Meeting Data Flow Diagram
+
+```text
+┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│   Patient    │    │   Doctor    │    │  Relatives  │    │ Other Doc   │
+│   Portal     │    │   Portal    │    │  (Guest)    │    │ (Invited)   │
+└──────┬───────┘    └──────┬──────┘    └──────┬──────┘    └──────┬──────┘
+       │                   │                  │                  │
+       └───────────────────┼──────────────────┼──────────────────┘
+                           │                  │
+                    ┌──────▼──────────────────▼──────┐
+                    │      JITSI MEETING ROOM         │
+                    │   (Doctor as HOST/Moderator)     │
+                    │                                  │
+                    │  📹 Video  🎤 Audio  💬 Chat     │
+                    │  🔴 Recording  📝 Transcript     │
+                    └──────────────┬───────────────────┘
+                                   │
+                    ┌──────────────▼───────────────────┐
+                    │      MEETING SERVER (Port 3020)   │
+                    │                                   │
+                    │  Collects:                         │
+                    │  ① Transcript segments (streaming) │
+                    │  ② Chat messages (all)             │
+                    │  ③ Recording metadata              │
+                    │  ④ Participant info                 │
+                    └──────────────┬───────────────────┘
+                                   │
+                    ┌──────────────▼───────────────────┐
+                    │      GEMINI AI PROCESSING         │
+                    │                                   │
+                    │  Input: transcript + chat + PHR   │
+                    │  Output: SOAP summary + CDS       │
+                    │  requiresValidation: true          │
+                    └──────────────┬───────────────────┘
+                                   │
+                    ┌──────────────▼───────────────────┐
+                    │      DOCTOR REVIEW (Man-in-Loop)  │
+                    │                                   │
+                    │  [✅ Approve] [✏️ Edit] [❌ Reject]│
+                    └────────┬─────────────┬───────────┘
+                             │             │
+                    ┌────────▼────┐  ┌─────▼──────────┐
+                    │ EMR Report  │  │ Patient        │
+                    │ (PostgreSQL)│  │ Instruction    │
+                    │             │  │ Sheet (PDF)    │
+                    └────────┬────┘  └─────┬──────────┘
+                             │             │
+                    ┌────────▼─────────────▼───────────┐
+                    │  PATIENT PORTAL                    │
+                    │  → Dashboard (Latest Result)       │
+                    │  → Timeline (Treatment History)    │
+                    │  → PHR (Health Logs)                │
+                    │  → Instruction Sheet (Download)     │
+                    └──────────────────────────────────┘
+```
 
 ### Meeting Link Data Structure
 
@@ -825,14 +1193,30 @@ Alternative paths:
 
 ---
 
-## 16. E2E Testing
+## 16. E2E Testing — Comprehensive Meeting Workflow
+
+### Testing Environments
+
+| Environment | Patient Portal | Doctor Portal | Meeting Server | Database |
+| ----------- | ------------- | ------------- | -------------- | -------- |
+| **Local (Docker)** | localhost:3005 | localhost:3010 | localhost:3020 | localhost:5432 (izara_phase1) |
+| **Cloud (GCP)** | patient-portal-xxxxx.run.app | doctor-portal-xxxxx.run.app | meeting-server-xxxxx.run.app | CloudSQL (izara_phase1) |
+
+### Test Credentials (Deployment)
+
+| Role | Email | Password | Portal |
+| ---- | ----- | -------- | ------ |
+| Doctor (HOST) | `doctor.test@izara.com` | IzaraDoctor@2024 | Doctor Portal |
+| Patient | `demo.test@gmail.com` | P@ssw0rd | Patient Portal |
+| Admin | `admin.test@izara.com` | IzaraAdmin@2024 | Doctor Portal |
+| External Guest | (no login required) | (none) | Direct meeting link |
 
 ### Dual Portal Testing
 
-The appointment workflow can be tested end-to-end using the Selenium test suite that runs both Patient and Doctor portals simultaneously:
+The appointment workflow is tested end-to-end using the Selenium test suite that runs both Patient and Doctor portals simultaneously:
 
 ```bash
-# Run full dual-portal meeting workflow test
+# Run full dual-portal meeting workflow test (local)
 node scripts/tests/e2e/dualPortalMeetingTests.cjs
 
 # Run with headless browsers
@@ -840,21 +1224,84 @@ node scripts/tests/e2e/dualPortalMeetingTests.cjs --headless
 
 # Run standard appointment workflow tests
 node scripts/tests/e2e/appointmentWorkflowTests.cjs
+
+# Run cloud environment tests
+node scripts/tests/e2e/dualPortalMeetingTests.cjs --env=cloud
 ```
 
-### Test Coverage
+### Comprehensive Test Coverage Matrix
 
-| Phase | Test | Portal |
-| ------- | ------ | -------- |
-| Pre-Meeting | Patient books appointment | Patient |
-| Pre-Meeting | Doctor confirms with Jitsi link | Doctor |
-| During Meeting | Both access meeting links | Both |
-| Post-Meeting | Recording upload to GCS | Doctor |
-| Post-Meeting | Speech-to-Text transcription | System |
-| Post-Meeting | AI summary generation | System |
-| Post-Meeting | Doctor creates EMR | Doctor |
-| Post-Meeting | EMR signed and sent | Doctor |
-| Post-Meeting | Patient views results | Patient |
+| # | Phase | Test Scenario | Portal(s) | Validates |
+| - | ----- | ------------- | --------- | --------- |
+| 1 | **Pre-Meeting** | Patient logs in and books appointment | Patient | Auth + booking flow |
+| 2 | **Pre-Meeting** | AI analyzes symptoms and sets urgency | System | Gemini integration |
+| 3 | **Pre-Meeting** | Doctor sees pending appointment in queue | Doctor | Health Meeting queue |
+| 4 | **Pre-Meeting** | Doctor confirms appointment with date/time | Doctor | Status → confirmed |
+| 5 | **Pre-Meeting** | System generates Jitsi meeting URLs | System | 3 URLs: doctor/patient/guest |
+| 6 | **Pre-Meeting** | Patient receives notification with link | Patient | Notification system |
+| 7 | **Pre-Meeting** | AI generates pre-consultation summary | System | Requirement 2.2 |
+| 8 | **Pre-Meeting** | Patient invites relatives/friends (share link) | Patient | Guest invite flow |
+| 9 | **Pre-Meeting** | Doctor invites other doctors (token invite) | Doctor | Multi-party invite |
+| 10 | **Meeting** | Doctor starts meeting (HOST/moderator) | Doctor | Jitsi HOST controls |
+| 11 | **Meeting** | Patient enters LOBBY → Doctor admits | Both | Lobby admission |
+| 12 | **Meeting** | Guest creates display name from BLANK → LOBBY | Guest | Guest self-registration |
+| 13 | **Meeting** | Doctor admits/rejects guests from lobby | Doctor | Selective admission |
+| 14 | **Meeting** | Doctor starts transcript streaming | Doctor | Web Speech API activation |
+| 15 | **Meeting** | Real-time transcript appears with speaker labels | Both | Socket.IO streaming |
+| 16 | **Meeting** | All participants can send text chat | All | Chat capture system |
+| 17 | **Meeting** | Doctor pauses/resumes transcript | Doctor | HOST transcript control |
+| 18 | **Meeting** | Doctor stops transcript | Doctor | Transcript finalization |
+| 19 | **Meeting** | Screen sharing for medical images | Doctor | Jitsi screen share |
+| 20 | **Meeting** | Demo meeting with simulated video/audio | Both | Local testing |
+| 21 | **Post-Meeting** | Doctor ends meeting | Doctor | HOST end control |
+| 22 | **Post-Meeting** | Recording uploaded to PostgreSQL | System | Storage pipeline |
+| 23 | **Post-Meeting** | AI processes transcript + chats + video | System | Gemini summary pipeline |
+| 24 | **Post-Meeting** | AI generates SOAP summary (Thai) | System | Requirement 2.1, 3.2 |
+| 25 | **Post-Meeting** | 30-min sectioned summaries for long meetings | System | Section splitting |
+| 26 | **Post-Meeting** | Summary displayed on Doctor's Health Meeting | Doctor | Results display |
+| 27 | **Post-Meeting** | Doctor reviews AI summary (Man-in-the-Loop) | Doctor | Requirement 2.5 |
+| 28 | **Post-Meeting** | Doctor approves/edits/rejects summary | Doctor | Validation UI |
+| 29 | **EMR** | EMR Editor pre-filled with AI SOAP data | Doctor | Auto-population |
+| 30 | **EMR** | Doctor edits and finalizes EMR | Doctor | EMR workflow |
+| 31 | **EMR** | Doctor signs EMR (digital signature) | Doctor | Sign & finalize |
+| 32 | **EMR** | Patient Instruction Sheet auto-generated | System | Requirement 4.5 |
+| 33 | **EMR** | Doctor reviews instruction sheet | Doctor | Man-in-the-Loop |
+| 34 | **Delivery** | EMR data sent to patient | System | POST health-logs |
+| 35 | **Delivery** | Patient views results in Dashboard | Patient | Latest Result widget |
+| 36 | **Delivery** | Patient views results in Timeline | Patient | Treatment history |
+| 37 | **Delivery** | Patient downloads Instruction Sheet (PDF) | Patient | PDF generation |
+| 38 | **Delivery** | Appointment status → completed | Both | Final status |
+
+### Demo Meeting Test Procedure
+
+For testing on local environment with simulated video/audio:
+
+```text
+Step 1:  Start Docker → docker-compose up -d (all 4 services)
+Step 2:  Open Patient Portal (localhost:3005) → Login as patient
+Step 3:  Book appointment with Thai symptoms (ปวดหัว ไข้สูง 2 วัน)
+Step 4:  Open Doctor Portal (localhost:3010) → Login as doctor
+Step 5:  See appointment in Health Meeting → Queue tab
+Step 6:  Confirm appointment → Set time → Jitsi URLs generated
+Step 7:  Patient gets notification → Sees meeting link in Appointments
+Step 8:  (Optional) Patient shares guest link with test email
+Step 9:  Doctor clicks "Join Meeting" → Enters as HOST
+Step 10: Patient clicks "Join Meeting" → Enters LOBBY
+Step 11: Doctor admits patient from lobby
+Step 12: (Optional) Guest opens link → Creates name → LOBBY → Doctor admits
+Step 13: Doctor clicks "Start Transcription" → Speak test phrases
+Step 14: Verify: real-time transcript appears with speaker labels
+Step 15: Use chat to send text messages → Verify chat is captured
+Step 16: Doctor clicks "Stop Transcription"
+Step 17: Doctor clicks "End Meeting"
+Step 18: Verify: AI processes transcript + chat → Summary generated
+Step 19: Verify: Summary appears in Health Meeting → Results
+Step 20: Doctor reviews and approves summary
+Step 21: Doctor opens EMR → Verify AI pre-filled SOAP tabs
+Step 22: Doctor signs EMR → Patient Instruction Sheet generated
+Step 23: Verify: Patient sees results in Dashboard + Timeline
+Step 24: Verify: Patient can download Instruction Sheet PDF
+```
 
 ### Generate Test Audio Files
 
@@ -873,22 +1320,80 @@ This generates:
 
 ## 17. API Endpoints Reference
 
+### Appointment Endpoints (Patient Portal - Port 3005)
+
+| Endpoint | Method | Description |
+| -------- | ------ | ----------- |
+| `/api/appointments` | POST | Create new appointment |
+| `/api/appointments/:id` | GET | Get appointment details |
+| `/api/appointments/:id/meeting-link` | GET | Get patient meeting URL |
+| `/api/appointments/:id/invite-guest` | POST | Generate guest invite link |
+
 ### Video Meeting Endpoints (Doctor Portal - Port 3009)
 
 | Endpoint | Method | Description |
-| ---------- | -------- | ------------- |
-| `/api/video-meeting/create` | POST | Create Jitsi meeting |
-| `/api/video-meeting/:id` | GET | Get meeting details |
-| `/api/video-meeting/:id/join` | POST | Join meeting |
-| `/api/video-meeting/:id/end` | POST | End meeting + upload + AI processing |
-| `/api/video-meeting/:id/upload-recording` | POST | Upload video separately |
-| `/api/video-meeting/:id/files` | GET | Get meeting files |
-| `/api/video-meeting/:id/transcribe-audio` | POST | Transcribe audio |
-| `/api/video-meeting/:id/recommendations` | POST | Generate AI recommendations |
+| -------- | ------ | ----------- |
+| `/api/video-meeting/create` | POST | Create Jitsi meeting (generates 3 URLs) |
+| `/api/video-meeting/:id` | GET | Get meeting details + participant list |
+| `/api/video-meeting/:id/join` | POST | Join meeting (sets lobby status) |
+| `/api/video-meeting/:id/end` | POST | End meeting + trigger AI pipeline |
+| `/api/video-meeting/:id/upload-recording` | POST | Upload video recording |
+| `/api/video-meeting/:id/files` | GET | Get meeting files/recordings |
+| `/api/video-meeting/:id/invite` | POST | Send invite to other doctor/admin |
 | `/api/video-meeting/health` | GET | Health check |
+
+### Transcript Streaming Endpoints (Meeting Server - Port 3020)
+
+| Endpoint | Method | Description |
+| -------- | ------ | ----------- |
+| `/api/meetings/:id/start-transcription` | POST | Start transcript streaming (HOST only) |
+| `/api/meetings/:id/stop-transcription` | POST | Stop transcript streaming (HOST only) |
+| `/api/meetings/:id/pause-transcription` | POST | Pause transcript streaming (HOST only) |
+| `/api/meetings/:id/transcript` | GET | Get full transcript with speaker labels |
+| `/api/meetings/:id/transcript/sections` | GET | Get 30-min sectioned transcript |
+| `/api/meetings/:id/chats` | GET | Get all chat messages |
+| `Socket.IO: transcript-segment` | WS | Real-time transcript segment broadcast |
+| `Socket.IO: chat-message` | WS | Real-time chat message broadcast |
+
+### AI Processing Endpoints (Meeting Server - Port 3020)
+
+| Endpoint | Method | Description |
+| -------- | ------ | ----------- |
+| `/api/meetings/:id/generate-summary` | POST | Generate AI summary from transcript + chats |
+| `/api/meetings/:id/summary` | GET | Get AI-generated SOAP summary |
+| `/api/meetings/:id/recommendations` | GET | Get CDS recommendations |
+| `/api/ai/pre-consultation-summary` | POST | Generate pre-consultation summary (Req 2.2) |
+| `/api/ai/patient-instruction-sheet` | POST | Generate patient instruction sheet (Req 4.5) |
+| `/api/ai/document-analysis` | POST | Analyze uploaded PDF/lab results (Req 2.3) |
+
+### EMR Endpoints (Doctor Portal - Port 3009)
+
+| Endpoint | Method | Description |
+| -------- | ------ | ----------- |
+| `/api/emr/:id` | GET | Get EMR record |
+| `/api/emr` | POST | Create new EMR (AI-prefilled SOAP) |
+| `/api/emr/:id` | PUT | Update EMR |
+| `/api/emr/:id/sign` | POST | Sign and finalize EMR |
+| `/api/emr/:id/instruction-sheet` | GET | Get patient instruction sheet |
+
+### Patient Delivery Endpoints (Patient Portal - Port 3005)
+
+| Endpoint | Method | Description |
+| -------- | ------ | ----------- |
+| `/api/patients/:id/health-logs` | POST | Receive EMR data from doctor |
+| `/api/patients/:id/health-logs` | GET | Get patient health history |
+| `/api/patients/:id/instruction-sheets` | GET | Get instruction sheets |
+| `/api/patients/:id/instruction-sheets/:id/pdf` | GET | Download instruction sheet PDF |
+
+### Guest Meeting Endpoints (Public - No Auth Required)
+
+| Endpoint | Method | Description |
+| -------- | ------ | ----------- |
+| `/api/guest/meeting/:token` | GET | Validate guest meeting token |
+| `/api/guest/meeting/:token/join` | POST | Join meeting as guest (display name required) |
 
 ---
 
-**This workflow covers all scenarios, notifications, error handling, video meeting, and AI processing for appointments, so agents can follow every step without missing any point.**
+**This workflow covers the COMPLETE appointment-to-delivery lifecycle including multi-party meetings, transcript streaming, AI summary pipeline, EMR documentation, and patient delivery — the core Phase 1 deliverable.**
 
-**Last Updated:** December 2025
+**Last Updated:** January 2025 (v1.4.7)

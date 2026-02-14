@@ -28,7 +28,7 @@ import {
 
 class EMRService {
   private static instance: EMRService;
-  private autoSaveInterval: number | null = null;
+  private autoSaveInterval: ReturnType<typeof setInterval> | null = null;
   private readonly autoSaveDelay = config.features.emrAutoSaveInterval; // From config
 
   private constructor() { }
@@ -218,7 +218,7 @@ class EMRService {
 
     console.log(`🔄 Starting auto-save for EMR: ${emr.id}`);
 
-    this.autoSaveInterval = window.setInterval(async () => {
+    this.autoSaveInterval = globalThis.setInterval(async () => {
       try {
         const result = await this.saveEMR(emr);
         if (result.success) {
@@ -348,11 +348,11 @@ class EMRService {
     }
 
     // Auto-populate
-    emr.vitalSigns = vitals as VitalSigns;
-    emr.physicalExamination.vitalSigns = vitals as VitalSigns;
+    emr.vitalSigns = vitals;
+    emr.physicalExamination.vitalSigns = vitals;
 
     console.log('✅ Vital signs auto-populated');
-    return vitals as VitalSigns;
+    return vitals;
   }
 
   // ===========================================================================
@@ -363,7 +363,7 @@ class EMRService {
    * Export EMR to PDF
    */
   exportEMRToPDF(emr: EMR): void {
-    const printWindow = window.open('', '_blank');
+    const printWindow = globalThis.open('', '_blank');
     if (!printWindow) {
       console.error('❌ Failed to open print window');
       return;
@@ -516,7 +516,7 @@ class EMRService {
         </div>
 
         <div class="no-print" style="margin-top: 20px; text-align: center;">
-          <button onclick="window.print()" style="padding: 10px 20px; cursor: pointer;">
+          <button onclick="globalThis.print()" style="padding: 10px 20px; cursor: pointer;">
             Print / Save as PDF
           </button>
         </div>

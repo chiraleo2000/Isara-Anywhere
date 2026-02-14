@@ -46,10 +46,10 @@ function ProtectedRoute({ children }: RouteGuardProps) {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 to-teal-50">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-gray-900 dark:to-gray-800">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-emerald-600 mx-auto mb-4" />
-          <p className="text-gray-600 font-medium">กำลังโหลด...</p>
+          <div className="animate-spin rounded-full h-14 w-14 border-b-4 border-emerald-600 mx-auto mb-4" />
+          <p className="text-gray-600 dark:text-gray-300 font-medium">Loading...</p>
         </div>
       </div>
     );
@@ -63,10 +63,10 @@ function PublicRoute({ children }: RouteGuardProps) {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 to-teal-50">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-gray-900 dark:to-gray-800">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-emerald-600 mx-auto mb-4" />
-          <p className="text-gray-600 font-medium">กำลังโหลด...</p>
+          <div className="animate-spin rounded-full h-14 w-14 border-b-4 border-emerald-600 mx-auto mb-4" />
+          <p className="text-gray-600 dark:text-gray-300 font-medium">Loading...</p>
         </div>
       </div>
     );

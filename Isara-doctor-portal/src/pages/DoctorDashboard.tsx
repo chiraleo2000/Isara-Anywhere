@@ -181,8 +181,29 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
   const navigate = useNavigate();
   
   // Theme and language settings
-  const { theme, language, t } = useSettings();
+  const { theme, language } = useSettings();
   const isDark = theme === 'dark';
+
+  // Helper functions to avoid nested ternaries (SonarQube S3358)
+  const getPersonFilterTabClass = (isActive: boolean): string => {
+    if (isActive) return isDark ? 'bg-purple-900 text-purple-300 border-b-2 border-purple-500' : 'bg-purple-50 text-purple-700 border-b-2 border-purple-600';
+    return isDark ? 'text-gray-400 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-50';
+  };
+
+  const getAiValidationTabClass = (isActive: boolean): string => {
+    if (isActive) return isDark ? 'text-purple-300 border-b-2 border-purple-500 bg-purple-900/50' : 'text-purple-700 border-b-2 border-purple-500 bg-purple-50';
+    return isDark ? 'text-gray-400 hover:text-purple-400' : 'text-gray-500 hover:text-purple-600';
+  };
+
+  const getMeetingTabClass = (isActive: boolean): string => {
+    if (isActive) return isDark ? 'bg-yellow-900/50 text-yellow-300 border-b-2 border-yellow-500' : 'bg-yellow-50 text-gray-900 border-b-2 border-yellow-600';
+    return isDark ? 'text-gray-400 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-50';
+  };
+
+  const getChatBubbleClass = (role: string): string => {
+    if (role === 'user') return 'bg-blue-600 text-white rounded-br-none';
+    return isDark ? 'bg-gray-700 text-gray-200 rounded-bl-none' : 'bg-gray-100 text-gray-800 rounded-bl-none';
+  };
 
   // Bilingual labels for UI text
   const labels = {
@@ -405,6 +426,33 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
     }
   };
 
+  /** Extracted: load meeting summary for a patient (reduces nesting in loadPatientClinicalData) */
+  const loadMeetingSummary = async (patientId: string) => {
+    try {
+      const patientAppointments = upcomingAppointments.filter(apt =>
+        apt.patientId === patientId &&
+        (apt.status === 'completed' || apt.status === 'Completed')
+      );
+      if (patientAppointments.length === 0) return;
+
+      const sortedAppointments = [...patientAppointments].sort((a: any, b: any) =>
+        new Date(b.date || b.appointmentDate).getTime() - new Date(a.date || a.appointmentDate).getTime()
+      );
+      const recentAppointment = sortedAppointments[0];
+      const meetingData = await meetingService.getMeetingFiles(recentAppointment.id, doctor.id);
+
+      if (meetingData.success && meetingData.summary) {
+        const summaryText = typeof meetingData.summary === 'string'
+          ? meetingData.summary
+          : JSON.stringify(meetingData.summary, null, 2);
+        setAiMeetingSummary(summaryText);
+        console.log('📋 Loaded meeting summary from GCS:', meetingData);
+      }
+    } catch (meetingError) {
+      console.warn('ℹ️ No meeting summary found for patient:', patientId, meetingError);
+    }
+  };
+
   const loadPatientClinicalData = async (patientId: string) => {
     try {
       const [emrs, labs, prescriptions] = await Promise.all([
@@ -424,36 +472,7 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
       }
       
       // Try to load meeting summary from most recent completed appointment
-      try {
-        // Find the patient's most recent appointment with this doctor
-      const patientAppointments = upcomingAppointments.filter(apt => 
-        apt.patientId === patientId && 
-        (apt.status === 'completed' || apt.status === 'Completed')
-      );
-      
-      if (patientAppointments.length > 0) {
-        // Get the most recent completed appointment
-        const sortedAppointments = [...patientAppointments].sort((a: any, b: any) => 
-          new Date(b.date || b.appointmentDate).getTime() - new Date(a.date || a.appointmentDate).getTime()
-        );
-        const recentAppointment = sortedAppointments[0];
-          
-          // Fetch meeting files/summary from GCS
-          const meetingData = await meetingService.getMeetingFiles(recentAppointment.id, doctor.id);
-          
-          if (meetingData.success && meetingData.summary) {
-            // Format the summary for display
-            const summaryText = typeof meetingData.summary === 'string' 
-              ? meetingData.summary 
-              : JSON.stringify(meetingData.summary, null, 2);
-            setAiMeetingSummary(summaryText);
-            console.log('📋 Loaded meeting summary from GCS:', meetingData);
-          }
-        }
-      } catch (meetingError) {
-        // Silent fail - meeting summary is optional
-        console.warn('ℹ️ No meeting summary found for patient:', patientId, meetingError);
-      }
+      await loadMeetingSummary(patientId);
       
       // Load AI pre-consultation summary (Phase 1 Requirement 2.2)
       await loadAIPreSummary(patientId);
@@ -507,11 +526,7 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
   // Handle AI validation decision (Man-in-the-Loop DR-05)
   const handleAIValidation = async (decision: 'approved' | 'rejected', notes?: string) => {
     try {
-      const validationContent = (() => {
-        if (aiValidationTab === 'summary') return aiHistorySummary;
-        if (aiValidationTab === 'documents') return aiDocuments;
-        return cdsAlerts;
-      })();
+      const validationContent = validationContentMap[aiValidationTab];
 
       // Log the validation decision
       await fetch('/api/ai/validation', {
@@ -1457,6 +1472,295 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
     );
   };
 
+  // ============================================================================
+  // EXTRACTED HELPERS - Reduce cognitive complexity (SonarQube S3776)
+  // ============================================================================
+
+  /** Theme class shorthand - each call is 0 complexity vs +1 for a ternary */
+  const tc = (dark: string, light: string) => isDark ? dark : light;
+
+  /** Lookup maps to replace conditional chains */
+  const personFilterViewLabel: Record<PersonFilter, string> = {
+    patient: labels.patient[language],
+    doctor: labels.doctor[language],
+    'healthcare-team': labels.team[language],
+  };
+
+  const aiValidationTabTitle: Record<string, string> = {
+    summary: labels.aiHistorySummary[language],
+    documents: labels.aiDocumentAnalysis[language],
+    cds: labels.clinicalDecisionSupport[language],
+  };
+
+  const validationContentMap: Record<string, any> = {
+    summary: aiHistorySummary,
+    documents: aiDocuments,
+    cds: cdsAlerts,
+  };
+
+  /** Meeting tab patient list - replaces 3-way && chain */
+  const renderMeetingPatientList = () => {
+    const tabConfig: Record<MeetingTab, { patients: PatientRecord[]; title: string }> = {
+      investigation: { patients: investigationPatients, title: 'Investigation' },
+      treatment: { patients: treatmentPatients, title: 'Treatment' },
+      refer: { patients: referPatients, title: 'Refer' },
+    };
+    const { patients: pl, title } = tabConfig[meetingTab];
+    return renderPatientListForTab(pl, title);
+  };
+
+  /** KPI Cards Grid */
+  const renderKPICards = () => (
+    <div className="grid grid-cols-2 md:grid-cols-7 gap-3">
+      <button
+        type="button"
+        onClick={() => navigate(`/doctor/${doctor.id}/health-meeting`)}
+        className={`p-4 rounded-lg border cursor-pointer hover:shadow-lg transition-all text-left ${tc('bg-gradient-to-br from-blue-900 to-blue-800 border-blue-600 hover:border-blue-500', 'bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 hover:border-blue-400')}`}
+      >
+        <div className={`text-2xl font-bold ${tc('text-blue-300', 'text-blue-700')}`}>{dashboardStats.todayAppointments}</div>
+        <div className={`text-xs mt-1 ${tc('text-blue-400', 'text-blue-600')}`}>{labels.todayAppointments[language]}</div>
+      </button>
+      <div className={`p-4 rounded-lg border ${tc('bg-gradient-to-br from-green-900 to-green-800 border-green-600', 'bg-gradient-to-br from-green-50 to-green-100 border-green-200')}`}>
+        <div className={`text-2xl font-bold ${tc('text-green-300', 'text-green-700')}`}>{dashboardStats.patientsSeen}</div>
+        <div className={`text-xs mt-1 ${tc('text-green-400', 'text-green-600')}`}>{labels.patientsSeen[language]}</div>
+      </div>
+      <button
+        type="button"
+        onClick={() => navigate(`/doctor/${doctor.id}/health-meeting`)}
+        className={`p-4 rounded-lg border cursor-pointer hover:shadow-lg transition-all text-left ${tc('bg-gradient-to-br from-orange-900 to-orange-800 border-orange-600 hover:border-orange-500', 'bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200 hover:border-orange-400')}`}
+      >
+        <div className={`text-2xl font-bold ${tc('text-orange-300', 'text-orange-700')}`}>{dashboardStats.patientsInQueue}</div>
+        <div className={`text-xs mt-1 ${tc('text-orange-400', 'text-orange-600')}`}>{labels.inQueue[language]}</div>
+      </button>
+      <div className={`p-4 rounded-lg border ${tc('bg-gradient-to-br from-purple-900 to-purple-800 border-purple-600', 'bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200')}`}>
+        <div className={`text-2xl font-bold ${tc('text-purple-300', 'text-purple-700')}`}>{dashboardStats.pendingPrescriptions}</div>
+        <div className={`text-xs mt-1 ${tc('text-purple-400', 'text-purple-600')}`}>{labels.pendingRx[language]}</div>
+      </div>
+      <div className={`p-4 rounded-lg border ${tc('bg-gradient-to-br from-pink-900 to-pink-800 border-pink-600', 'bg-gradient-to-br from-pink-50 to-pink-100 border-pink-200')}`}>
+        <div className={`text-2xl font-bold ${tc('text-pink-300', 'text-pink-700')}`}>{dashboardStats.unreadMessages}</div>
+        <div className={`text-xs mt-1 ${tc('text-pink-400', 'text-pink-600')}`}>{labels.unreadMessages[language]}</div>
+      </div>
+      <div className={`p-4 rounded-lg border ${tc('bg-gradient-to-br from-cyan-900 to-cyan-800 border-cyan-600', 'bg-gradient-to-br from-cyan-50 to-cyan-100 border-cyan-200')}`}>
+        <div className={`text-2xl font-bold ${tc('text-cyan-300', 'text-cyan-700')}`}>{dashboardStats.averageWaitTime}</div>
+        <div className={`text-xs mt-1 ${tc('text-cyan-400', 'text-cyan-600')}`}>{labels.avgWait[language]}</div>
+      </div>
+      <button
+        type="button"
+        onClick={() => navigate(`/doctor/${doctor.id}/health-meeting`)}
+        className={`p-4 rounded-lg border-2 relative cursor-pointer hover:shadow-lg transition-all text-left ${tc('bg-gradient-to-br from-amber-900 to-amber-800 border-amber-500 hover:border-amber-400', 'bg-gradient-to-br from-amber-50 to-amber-100 border-amber-400 hover:border-amber-500')}`}
+      >
+        <div className={`text-2xl font-bold ${tc('text-amber-300', 'text-amber-700')}`}>{dashboardStats.pendingConfirmations}</div>
+        <div className={`text-xs mt-1 ${tc('text-amber-400', 'text-amber-600')}`}>{labels.needConfirmation[language]}</div>
+        {dashboardStats.pendingConfirmations > 0 && (
+          <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center animate-pulse">
+            <span className="text-xs text-white font-bold">!</span>
+          </div>
+        )}
+      </button>
+    </div>
+  );
+
+  /** Today's Meetings Quick View */
+  const renderTodayMeetingsSection = () => {
+    if (todayMeetings.length === 0) return null;
+    return (
+      <div className={`mt-4 rounded-xl border p-4 ${tc('bg-gradient-to-r from-emerald-900 to-teal-900 border-emerald-700', 'bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200')}`}>
+        <h3 className={`text-lg font-bold mb-3 ${tc('text-emerald-300', 'text-emerald-800')}`}>📅 {labels.todayMeetings[language]} ({todayMeetings.length})</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          {todayMeetings.slice(0, 3).map((apt: any) => (
+            <div key={apt.id} className={`rounded-lg p-3 shadow-sm border ${tc('bg-gray-800 border-emerald-700', 'bg-white border-emerald-100')}`}>
+              <div className="flex items-center justify-between mb-2">
+                <span className={`font-semibold ${tc('text-white', 'text-gray-900')}`}>
+                  ⏰ {apt.appointmentTime || apt.scheduledTime || apt.time || 'TBD'}
+                </span>
+                <span className={`px-2 py-0.5 rounded text-xs font-medium ${apt.status === 'confirmed' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
+                  {apt.status}
+                </span>
+              </div>
+              <div className={`text-sm ${tc('text-gray-200', 'text-gray-800')}`}>👤 {apt.patientName || labels.patient[language]}</div>
+              <div className={`text-xs mt-1 ${tc('text-gray-400', 'text-gray-500')}`}>{apt.reason || 'Consultation'}</div>
+              {apt.meetingLink && (
+                <a
+                  href={apt.meetingLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center mt-2 px-3 py-1 bg-emerald-600 text-white text-xs rounded-lg hover:bg-emerald-700"
+                >
+                  🎥 {labels.joinMeeting[language]}
+                </a>
+              )}
+            </div>
+          ))}
+        </div>
+        {todayMeetings.length > 3 && (
+          <div className="text-center mt-3">
+            <span className={`text-sm ${tc('text-emerald-400', 'text-emerald-600')}`}>+{todayMeetings.length - 3} {labels.moreMeetings[language]}</span>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  /** Upcoming Appointments Quick View */
+  const renderUpcomingAppointmentsSection = () => {
+    if (upcomingAppointments.length === 0) return null;
+    return (
+      <div className={`mt-4 rounded-xl border p-4 ${tc('bg-gradient-to-r from-blue-900 to-indigo-900 border-blue-700', 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200')}`}>
+        <h3 className={`text-lg font-bold mb-3 ${tc('text-blue-300', 'text-blue-800')}`}>📋 {labels.upcomingAppointments[language]} ({upcomingAppointments.length})</h3>
+        <div className="space-y-2 max-h-32 overflow-y-auto">
+          {upcomingAppointments.slice(0, 5).map((apt: any) => (
+            <div key={apt.id} className={`flex items-center justify-between rounded-lg px-3 py-2 shadow-sm ${tc('bg-gray-800', 'bg-white')}`}>
+              <div className="flex items-center gap-3">
+                <div className={`text-sm font-medium ${tc('text-blue-400', 'text-blue-700')}`}>
+                  📅 {apt.appointmentDate || apt.scheduledDate || apt.date}
+                </div>
+                <div className={`text-sm ${tc('text-gray-400', 'text-gray-600')}`}>
+                  ⏰ {apt.appointmentTime || apt.scheduledTime || apt.time || 'TBD'}
+                </div>
+                <div className={`text-sm ${tc('text-gray-200', 'text-gray-800')}`}>
+                  👤 {apt.patientName || labels.patient[language]}
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {apt.meetingLink && (
+                  <a
+                    href={apt.meetingLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-emerald-600 hover:text-emerald-800"
+                  >
+                    🎥 Meet
+                  </a>
+                )}
+                <span className={`px-2 py-0.5 rounded text-xs font-medium ${getMeetingStatusClass(apt.status)}`}>
+                  {apt.status}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  /** AI Validation Tab Content - isLoadingAI + 3 tab conditionals */
+  const renderAIValidationTabContent = () => {
+    if (isLoadingAI) {
+      return (
+        <div className="flex items-center justify-center py-8">
+          <div className="animate-spin w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full"></div>
+          <span className={`ml-2 text-sm ${tc('text-gray-400', 'text-gray-500')}`}>{language === 'th' ? 'กำลังโหลด AI สรุป...' : 'Loading AI summary...'}</span>
+        </div>
+      );
+    }
+    if (aiValidationTab === 'summary') {
+      return (
+        <textarea
+          value={aiHistorySummary}
+          onChange={(e) => { setAiHistorySummary(e.target.value); setAiValidationStatus('pending'); }}
+          placeholder={language === 'th' ? 'เลือกผู้ป่วยเพื่อดู AI สรุปประวัติอัตโนมัติ...' : 'Select a patient to view AI summary...'}
+          aria-label="AI Patient History Summary"
+          className={`w-full p-2 border rounded text-xs focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none ${tc('bg-gray-700 border-gray-600 text-white placeholder-gray-400', 'bg-white border-gray-300 text-gray-900')}`}
+          rows={6}
+        />
+      );
+    }
+    if (aiValidationTab === 'documents') {
+      return (
+        <div className="space-y-2">
+          {aiDocuments.length > 0 ? (
+            aiDocuments.map((doc) => (
+              <div
+                key={doc.id ?? doc.filename ?? `${doc.filename || 'doc'}-${doc.summary || ''}`}
+                className="p-2 bg-gray-50 rounded border text-xs"
+              >
+                <div className="font-medium text-gray-700">{doc.filename}</div>
+                <div className="text-gray-600 mt-1">{doc.summary}</div>
+              </div>
+            ))
+          ) : (
+            <div className="text-center py-4 text-gray-500 text-xs">
+              <p>📄 ยังไม่มีเอกสารที่วิเคราะห์</p>
+              <button
+                onClick={() => alert('Upload document feature coming soon')}
+                className="mt-2 px-3 py-1 bg-purple-100 text-purple-700 rounded text-xs hover:bg-purple-200"
+              >
+                อัปโหลดเอกสาร
+              </button>
+            </div>
+          )}
+        </div>
+      );
+    }
+    // cds tab
+    return (
+      <div className="space-y-2">
+        {aiPreSummary?.aiTriage?.alertFlags?.length > 0 ? (
+          aiPreSummary.aiTriage.alertFlags.map((alert: string) => (
+            <div key={alert} className="p-2 bg-yellow-50 border border-yellow-200 rounded text-xs">
+              <div className="text-yellow-800">{alert}</div>
+            </div>
+          ))
+        ) : (
+          <div className="text-center py-4 text-gray-500 text-xs">
+            <p>✅ ไม่มีข้อควรระวังพิเศษ</p>
+          </div>
+        )}
+        {aiPreSummary?.aiTriage?.suggestedQuestions?.length > 0 && (
+          <div className="mt-3 pt-3 border-t border-gray-200">
+            <p className="text-xs font-medium text-gray-700 mb-2">💡 คำถามที่แนะนำ:</p>
+            <ul className="space-y-1">
+              {aiPreSummary.aiTriage.suggestedQuestions.map((q: string) => (
+                <li key={q} className="text-xs text-gray-600 flex items-start">
+                  <span className="mr-1">•</span> {q}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  /** Chat Messages Area */
+  const renderChatMessagesArea = () => {
+    if (chatMessages.length === 0) {
+      return (
+        <div className={`text-center py-4 text-xs ${tc('text-gray-400', 'text-gray-500')}`}>
+          <p>👋 {language === 'th' ? 'สวัสดีครับ' : 'Hello'}, Dr. {doctor.name?.split(' ')[0]}!</p>
+          <p className="mt-1">{language === 'th' ? 'พร้อมช่วยเหลือด้านคลินิก' : "I'm ready to assist with clinical questions."}</p>
+        </div>
+      );
+    }
+    return (
+      <div className="space-y-2">
+        {chatMessages.map((msg) => (
+          <div
+            key={msg.id}
+            className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+          >
+            <div
+              className={`max-w-[85%] p-2 rounded-lg text-xs ${getChatBubbleClass(msg.role)}`}
+            >
+              {msg.content}
+            </div>
+          </div>
+        ))}
+        {isChatLoading && (
+          <div className="flex justify-start">
+            <div className="bg-gray-100 p-2 rounded-lg rounded-bl-none">
+              <div className="flex space-x-1">
+                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -1466,17 +1770,17 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
   }
 
   return (
-    <div className={`min-h-full flex flex-col overflow-y-auto ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
+    <div className={`min-h-full flex flex-col overflow-y-auto ${tc('bg-gray-900', 'bg-gray-50')}`}>
       {/* ============================================================================ */}
       {/* DASHBOARD OVERVIEW - TOP KPI CARDS */}
       {/* ============================================================================ */}
-      <div className={`px-6 py-4 border-b ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+      <div className={`px-6 py-4 border-b ${tc('bg-gray-800 border-gray-700', 'bg-white border-gray-200')}`}>
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{labels.doctorDashboard[language]}</h1>
-            <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{labels.welcomeBack[language]}, {doctor.name}</p>
+            <h1 className={`text-2xl font-bold ${tc('text-white', 'text-gray-900')}`}>{labels.doctorDashboard[language]}</h1>
+            <p className={`text-sm ${tc('text-gray-400', 'text-gray-600')}`}>{labels.welcomeBack[language]}, {doctor.name}</p>
           </div>
-          <div className={`flex items-center space-x-2 text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+          <div className={`flex items-center space-x-2 text-sm ${tc('text-gray-400', 'text-gray-600')}`}>
             <CalendarDaysIcon className="w-5 h-5" />
             <span>{new Date().toLocaleDateString('th-TH', {
               year: 'numeric',
@@ -1487,132 +1791,13 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
         </div>
 
         {/* KPI Cards - Clickable to navigate to Appointments & Meetings */}
-        <div className="grid grid-cols-2 md:grid-cols-7 gap-3">
-          <button 
-            type="button"
-            onClick={() => navigate(`/doctor/${doctor.id}/health-meeting`)}
-            className={`p-4 rounded-lg border cursor-pointer hover:shadow-lg transition-all text-left ${isDark ? 'bg-gradient-to-br from-blue-900 to-blue-800 border-blue-600 hover:border-blue-500' : 'bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 hover:border-blue-400'}`}
-          >
-            <div className={`text-2xl font-bold ${isDark ? 'text-blue-300' : 'text-blue-700'}`}>{dashboardStats.todayAppointments}</div>
-            <div className={`text-xs mt-1 ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>{labels.todayAppointments[language]}</div>
-          </button>
-          <div className={`p-4 rounded-lg border ${isDark ? 'bg-gradient-to-br from-green-900 to-green-800 border-green-600' : 'bg-gradient-to-br from-green-50 to-green-100 border-green-200'}`}>
-            <div className={`text-2xl font-bold ${isDark ? 'text-green-300' : 'text-green-700'}`}>{dashboardStats.patientsSeen}</div>
-            <div className={`text-xs mt-1 ${isDark ? 'text-green-400' : 'text-green-600'}`}>{labels.patientsSeen[language]}</div>
-          </div>
-          <button 
-            type="button"
-            onClick={() => navigate(`/doctor/${doctor.id}/health-meeting`)}
-            className={`p-4 rounded-lg border cursor-pointer hover:shadow-lg transition-all text-left ${isDark ? 'bg-gradient-to-br from-orange-900 to-orange-800 border-orange-600 hover:border-orange-500' : 'bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200 hover:border-orange-400'}`}
-          >
-            <div className={`text-2xl font-bold ${isDark ? 'text-orange-300' : 'text-orange-700'}`}>{dashboardStats.patientsInQueue}</div>
-            <div className={`text-xs mt-1 ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{labels.inQueue[language]}</div>
-          </button>
-          <div className={`p-4 rounded-lg border ${isDark ? 'bg-gradient-to-br from-purple-900 to-purple-800 border-purple-600' : 'bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200'}`}>
-            <div className={`text-2xl font-bold ${isDark ? 'text-purple-300' : 'text-purple-700'}`}>{dashboardStats.pendingPrescriptions}</div>
-            <div className={`text-xs mt-1 ${isDark ? 'text-purple-400' : 'text-purple-600'}`}>{labels.pendingRx[language]}</div>
-          </div>
-          <div className={`p-4 rounded-lg border ${isDark ? 'bg-gradient-to-br from-pink-900 to-pink-800 border-pink-600' : 'bg-gradient-to-br from-pink-50 to-pink-100 border-pink-200'}`}>
-            <div className={`text-2xl font-bold ${isDark ? 'text-pink-300' : 'text-pink-700'}`}>{dashboardStats.unreadMessages}</div>
-            <div className={`text-xs mt-1 ${isDark ? 'text-pink-400' : 'text-pink-600'}`}>{labels.unreadMessages[language]}</div>
-          </div>
-          <div className={`p-4 rounded-lg border ${isDark ? 'bg-gradient-to-br from-cyan-900 to-cyan-800 border-cyan-600' : 'bg-gradient-to-br from-cyan-50 to-cyan-100 border-cyan-200'}`}>
-            <div className={`text-2xl font-bold ${isDark ? 'text-cyan-300' : 'text-cyan-700'}`}>{dashboardStats.averageWaitTime}</div>
-            <div className={`text-xs mt-1 ${isDark ? 'text-cyan-400' : 'text-cyan-600'}`}>{labels.avgWait[language]}</div>
-          </div>
-          <button 
-            type="button"
-            onClick={() => navigate(`/doctor/${doctor.id}/health-meeting`)}
-            className={`p-4 rounded-lg border-2 relative cursor-pointer hover:shadow-lg transition-all text-left ${isDark ? 'bg-gradient-to-br from-amber-900 to-amber-800 border-amber-500 hover:border-amber-400' : 'bg-gradient-to-br from-amber-50 to-amber-100 border-amber-400 hover:border-amber-500'}`}
-          >
-            <div className={`text-2xl font-bold ${isDark ? 'text-amber-300' : 'text-amber-700'}`}>{dashboardStats.pendingConfirmations}</div>
-            <div className={`text-xs mt-1 ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>{labels.needConfirmation[language]}</div>
-            {dashboardStats.pendingConfirmations > 0 && (
-              <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center animate-pulse">
-                <span className="text-xs text-white font-bold">!</span>
-              </div>
-            )}
-          </button>
-        </div>
+        {renderKPICards()}
         
         {/* Today's Meetings Quick View */}
-        {todayMeetings.length > 0 && (
-          <div className={`mt-4 rounded-xl border p-4 ${isDark ? 'bg-gradient-to-r from-emerald-900 to-teal-900 border-emerald-700' : 'bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200'}`}>
-            <h3 className={`text-lg font-bold mb-3 ${isDark ? 'text-emerald-300' : 'text-emerald-800'}`}>📅 {labels.todayMeetings[language]} ({todayMeetings.length})</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {todayMeetings.slice(0, 3).map((apt: any) => (
-                <div key={apt.id} className={`rounded-lg p-3 shadow-sm border ${isDark ? 'bg-gray-800 border-emerald-700' : 'bg-white border-emerald-100'}`}>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                      ⏰ {apt.appointmentTime || apt.scheduledTime || apt.time || 'TBD'}
-                    </span>
-                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                      apt.status === 'confirmed' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
-                    }`}>
-                      {apt.status}
-                    </span>
-                  </div>
-                  <div className={`text-sm ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>👤 {apt.patientName || labels.patient[language]}</div>
-                  <div className={`text-xs mt-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{apt.reason || 'Consultation'}</div>
-                  {apt.meetingLink && (
-                    <a 
-                      href={apt.meetingLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center mt-2 px-3 py-1 bg-emerald-600 text-white text-xs rounded-lg hover:bg-emerald-700"
-                    >
-                      🎥 {labels.joinMeeting[language]}
-                    </a>
-                  )}
-                </div>
-              ))}
-            </div>
-            {todayMeetings.length > 3 && (
-              <div className="text-center mt-3">
-                <span className={`text-sm ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>+{todayMeetings.length - 3} {labels.moreMeetings[language]}</span>
-              </div>
-            )}
-          </div>
-        )}
+        {renderTodayMeetingsSection()}
         
         {/* Upcoming Appointments Quick View */}
-        {upcomingAppointments.length > 0 && (
-          <div className={`mt-4 rounded-xl border p-4 ${isDark ? 'bg-gradient-to-r from-blue-900 to-indigo-900 border-blue-700' : 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200'}`}>
-            <h3 className={`text-lg font-bold mb-3 ${isDark ? 'text-blue-300' : 'text-blue-800'}`}>📋 {labels.upcomingAppointments[language]} ({upcomingAppointments.length})</h3>
-            <div className="space-y-2 max-h-32 overflow-y-auto">
-              {upcomingAppointments.slice(0, 5).map((apt: any) => (
-                <div key={apt.id} className={`flex items-center justify-between rounded-lg px-3 py-2 shadow-sm ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
-                  <div className="flex items-center gap-3">
-                    <div className={`text-sm font-medium ${isDark ? 'text-blue-400' : 'text-blue-700'}`}>
-                      📅 {apt.appointmentDate || apt.scheduledDate || apt.date}
-                    </div>
-                    <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                      ⏰ {apt.appointmentTime || apt.scheduledTime || apt.time || 'TBD'}
-                    </div>
-                    <div className={`text-sm ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
-                      👤 {apt.patientName || labels.patient[language]}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {apt.meetingLink && (
-                      <a 
-                        href={apt.meetingLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs text-emerald-600 hover:text-emerald-800"
-                      >
-                        🎥 Meet
-                      </a>
-                    )}
-                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${getMeetingStatusClass(apt.status)}`}>
-                      {apt.status}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+        {renderUpcomingAppointmentsSection()}
       </div>
 
       {/* ============================================================================ */}
@@ -1622,10 +1807,10 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
         {/* ========================================================================== */}
         {/* LEFT COLUMN: HEALTH DATA */}
         {/* ========================================================================== */}
-        <div className={`w-80 flex flex-col border-r ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
-          <div className={`p-4 border-b ${isDark ? 'bg-emerald-900 border-emerald-700' : 'bg-emerald-50 border-emerald-200'}`}>
-            <h2 className={`text-lg font-bold ${isDark ? 'text-emerald-300' : 'text-emerald-700'}`}>{labels.healthData[language]}</h2>
-            <p className={`text-xs ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>{labels.patientQueueRecords[language]}</p>
+        <div className={`w-80 flex flex-col border-r ${tc('bg-gray-800 border-gray-700', 'bg-white border-gray-200')}`}>
+          <div className={`p-4 border-b ${tc('bg-emerald-900 border-emerald-700', 'bg-emerald-50 border-emerald-200')}`}>
+            <h2 className={`text-lg font-bold ${tc('text-emerald-300', 'text-emerald-700')}`}>{labels.healthData[language]}</h2>
+            <p className={`text-xs ${tc('text-emerald-400', 'text-emerald-600')}`}>{labels.patientQueueRecords[language]}</p>
           </div>
 
           <div className="flex-1 overflow-y-auto p-4">
@@ -1657,7 +1842,7 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
             </div>
           </div>
 
-          <div className={`p-4 border-t space-y-2 ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+          <div className={`p-4 border-t space-y-2 ${tc('border-gray-700', 'border-gray-200')}`}>
             <button 
               className="w-full py-2 px-4 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 transition-colors"
               title="ดึงข้อมูลการรักษาเดิมย้อนหลัง นำมาสรุปเพื่อเป็น input ให้แพทย์"
@@ -1674,59 +1859,45 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
         {/* ========================================================================== */}
         {/* MIDDLE COLUMN: HEALTH MEETING */}
         {/* ========================================================================== */}
-        <div className={`flex-1 flex flex-col overflow-hidden ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
-          <div className={`p-4 border-b ${isDark ? 'bg-purple-900 border-purple-700' : 'bg-purple-50 border-purple-200'}`}>
-            <h2 className={`text-lg font-bold ${isDark ? 'text-purple-300' : 'text-purple-700'}`}>{labels.healthMeeting[language]}</h2>
-            <p className={`text-xs ${isDark ? 'text-purple-400' : 'text-purple-600'}`}>{labels.videoConsultation[language]}</p>
+        <div className={`flex-1 flex flex-col overflow-hidden ${tc('bg-gray-900', 'bg-gray-50')}`}>
+          <div className={`p-4 border-b ${tc('bg-purple-900 border-purple-700', 'bg-purple-50 border-purple-200')}`}>
+            <h2 className={`text-lg font-bold ${tc('text-purple-300', 'text-purple-700')}`}>{labels.healthMeeting[language]}</h2>
+            <p className={`text-xs ${tc('text-purple-400', 'text-purple-600')}`}>{labels.videoConsultation[language]}</p>
           </div>
 
           {/* Meeting Area */}
           <div className="flex-1 p-4 overflow-y-auto">
             {/* Person Filter Tabs */}
-            <div className={`rounded-lg shadow-sm mb-3 ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
-              <div className={`flex border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+            <div className={`rounded-lg shadow-sm mb-3 ${tc('bg-gray-800', 'bg-white')}`}>
+              <div className={`flex border-b ${tc('border-gray-700', 'border-gray-200')}`}>
                 <button
                   onClick={() => setPersonFilter('patient')}
-                  className={`flex-1 px-4 py-2 text-xs font-medium transition-colors ${
-                    personFilter === 'patient'
-                      ? isDark ? 'bg-purple-900 text-purple-300 border-b-2 border-purple-500' : 'bg-purple-50 text-purple-700 border-b-2 border-purple-600'
-                      : isDark ? 'text-gray-400 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-50'
-                  }`}
+                  className={`flex-1 px-4 py-2 text-xs font-medium transition-colors ${getPersonFilterTabClass(personFilter === 'patient')}`}
                 >
                   {labels.patient[language]}
                 </button>
                 <button
                   onClick={() => setPersonFilter('doctor')}
-                  className={`flex-1 px-4 py-2 text-xs font-medium transition-colors ${
-                    personFilter === 'doctor'
-                      ? isDark ? 'bg-purple-900 text-purple-300 border-b-2 border-purple-500' : 'bg-purple-50 text-purple-700 border-b-2 border-purple-600'
-                      : isDark ? 'text-gray-400 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-50'
-                  }`}
+                  className={`flex-1 px-4 py-2 text-xs font-medium transition-colors ${getPersonFilterTabClass(personFilter === 'doctor')}`}
                 >
                   {labels.doctor[language]}
                 </button>
                 <button
                   onClick={() => setPersonFilter('healthcare-team')}
-                  className={`flex-1 px-4 py-2 text-xs font-medium transition-colors ${
-                    personFilter === 'healthcare-team'
-                      ? isDark ? 'bg-purple-900 text-purple-300 border-b-2 border-purple-500' : 'bg-purple-50 text-purple-700 border-b-2 border-purple-600'
-                      : isDark ? 'text-gray-400 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-50'
-                  }`}
+                  className={`flex-1 px-4 py-2 text-xs font-medium transition-colors ${getPersonFilterTabClass(personFilter === 'healthcare-team')}`}
                 >
                   {labels.team[language]}
                 </button>
               </div>
 
               {/* Video Meeting Area */}
-              <div className={`p-4 ${isDark ? 'bg-gradient-to-br from-blue-900/50 to-indigo-900/50' : 'bg-gradient-to-br from-blue-50 to-indigo-50'}`} style={{ minHeight: '180px' }}>
+              <div className={`p-4 ${tc('bg-gradient-to-br from-blue-900/50 to-indigo-900/50', 'bg-gradient-to-br from-blue-50 to-indigo-50')}`} style={{ minHeight: '180px' }}>
                 <div className="flex items-center justify-center h-full">
                   <div className="text-center">
-                    <VideoCameraIcon className={`w-12 h-12 mx-auto mb-2 ${isDark ? 'text-gray-500' : 'text-gray-400'}`} />
-                    <p className={`text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                    <VideoCameraIcon className={`w-12 h-12 mx-auto mb-2 ${tc('text-gray-500', 'text-gray-400')}`} />
+                    <p className={`text-sm font-medium mb-2 ${tc('text-gray-300', 'text-gray-600')}`}>
                       {language === 'th' ? 'ปรึกษาผ่านวิดีโอ' : 'Video Consultation'}
-                      {personFilter === 'patient' && ` - ${labels.patient[language]} View`}
-                      {personFilter === 'doctor' && ` - ${labels.doctor[language]} View`}
-                      {personFilter === 'healthcare-team' && ` - ${labels.team[language]} View`}
+                      {` - ${personFilterViewLabel[personFilter]} View`}
                     </p>
                     <button
                       onClick={() => handleStartJitsiMeeting()}
@@ -1745,36 +1916,24 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
             </div>
 
             {/* AI Summary Areas - Enhanced with Man-in-the-Loop Validation (Phase 1 DR-05) */}
-            <div className={`rounded-lg shadow-sm p-3 mb-3 ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
+            <div className={`rounded-lg shadow-sm p-3 mb-3 ${tc('bg-gray-800', 'bg-white')}`}>
               {/* Tab Navigation for AI Content */}
-              <div className={`flex border-b mb-3 ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+              <div className={`flex border-b mb-3 ${tc('border-gray-700', 'border-gray-200')}`}>
                 <button
                   onClick={() => setAiValidationTab('summary')}
-                  className={`flex-1 px-2 py-1.5 text-xs font-medium transition-colors ${
-                    aiValidationTab === 'summary'
-                      ? isDark ? 'text-purple-300 border-b-2 border-purple-500 bg-purple-900/50' : 'text-purple-700 border-b-2 border-purple-500 bg-purple-50'
-                      : isDark ? 'text-gray-400 hover:text-purple-400' : 'text-gray-500 hover:text-purple-600'
-                  }`}
+                  className={`flex-1 px-2 py-1.5 text-xs font-medium transition-colors ${getAiValidationTabClass(aiValidationTab === 'summary')}`}
                 >
                   📋 {language === 'th' ? 'สรุปประวัติ' : 'Summary'}
                 </button>
                 <button
                   onClick={() => setAiValidationTab('documents')}
-                  className={`flex-1 px-2 py-1.5 text-xs font-medium transition-colors ${
-                    aiValidationTab === 'documents'
-                      ? isDark ? 'text-purple-300 border-b-2 border-purple-500 bg-purple-900/50' : 'text-purple-700 border-b-2 border-purple-500 bg-purple-50'
-                      : isDark ? 'text-gray-400 hover:text-purple-400' : 'text-gray-500 hover:text-purple-600'
-                  }`}
+                  className={`flex-1 px-2 py-1.5 text-xs font-medium transition-colors ${getAiValidationTabClass(aiValidationTab === 'documents')}`}
                 >
                   📄 {language === 'th' ? 'วิเคราะห์เอกสาร' : 'Documents'}
                 </button>
                 <button
                   onClick={() => setAiValidationTab('cds')}
-                  className={`flex-1 px-2 py-1.5 text-xs font-medium transition-colors relative ${
-                    aiValidationTab === 'cds'
-                      ? isDark ? 'text-purple-300 border-b-2 border-purple-500 bg-purple-900/50' : 'text-purple-700 border-b-2 border-purple-500 bg-purple-50'
-                      : isDark ? 'text-gray-400 hover:text-purple-400' : 'text-gray-500 hover:text-purple-600'
-                  }`}
+                  className={`flex-1 px-2 py-1.5 text-xs font-medium transition-colors relative ${getAiValidationTabClass(aiValidationTab === 'cds')}`}
                 >
                   ⚠️ CDS
                   {aiPreSummary?.aiTriage?.alertFlags?.length > 0 && (
@@ -1793,10 +1952,8 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
                       <path d="M10 2a1 1 0 011 1v1.323l3.954 1.582 1.599-.8a1 1 0 01.894 1.79l-1.233.616 1.738 5.42a1 1 0 01-.285 1.05A3.989 3.989 0 0115 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.715-5.349L11 6.477V16h2a1 1 0 110 2H7a1 1 0 110-2h2V6.477L6.237 7.582l1.715 5.349a1 1 0 01-.285 1.05A3.989 3.989 0 015 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.738-5.42-1.233-.617a1 1 0 01.894-1.788l1.599.799L9 4.323V3a1 1 0 011-1z" />
                     </svg>
                   </div>
-                  <h3 className={`text-sm font-bold ${isDark ? 'text-purple-300' : 'text-purple-700'}`}>
-                    {aiValidationTab === 'summary' && labels.aiHistorySummary[language]}
-                    {aiValidationTab === 'documents' && labels.aiDocumentAnalysis[language]}
-                    {aiValidationTab === 'cds' && labels.clinicalDecisionSupport[language]}
+                  <h3 className={`text-sm font-bold ${tc('text-purple-300', 'text-purple-700')}`}>
+                    {aiValidationTabTitle[aiValidationTab]}
                   </h3>
                 </div>
                 <span className={`px-2 py-0.5 text-xs rounded-full font-medium ${currentAiValidationStatus.className}`}>
@@ -1805,83 +1962,10 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
               </div>
 
               {/* AI Content Display */}
-              {isLoadingAI ? (
-                <div className="flex items-center justify-center py-8">
-                  <div className="animate-spin w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full"></div>
-                  <span className={`ml-2 text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{language === 'th' ? 'กำลังโหลด AI สรุป...' : 'Loading AI summary...'}</span>
-                </div>
-              ) : (
-                <>
-                  {aiValidationTab === 'summary' && (
-                    <textarea
-                      value={aiHistorySummary}
-                      onChange={(e) => { setAiHistorySummary(e.target.value); setAiValidationStatus('pending'); }}
-                      placeholder={language === 'th' ? 'เลือกผู้ป่วยเพื่อดู AI สรุปประวัติอัตโนมัติ...' : 'Select a patient to view AI summary...'}
-                      className={`w-full p-2 border rounded text-xs focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none ${isDark ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 text-gray-900'}`}
-                      rows={6}
-                    />
-                  )}
-
-                  {aiValidationTab === 'documents' && (
-                    <div className="space-y-2">
-                      {aiDocuments.length > 0 ? (
-                        aiDocuments.map((doc) => (
-                          <div
-                            key={doc.id ?? doc.filename ?? `${doc.filename || 'doc'}-${doc.summary || ''}`}
-                            className="p-2 bg-gray-50 rounded border text-xs"
-                          >
-                            <div className="font-medium text-gray-700">{doc.filename}</div>
-                            <div className="text-gray-600 mt-1">{doc.summary}</div>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="text-center py-4 text-gray-500 text-xs">
-                          <p>📄 ยังไม่มีเอกสารที่วิเคราะห์</p>
-                          <button 
-                            onClick={() => alert('Upload document feature coming soon')}
-                            className="mt-2 px-3 py-1 bg-purple-100 text-purple-700 rounded text-xs hover:bg-purple-200"
-                          >
-                            อัปโหลดเอกสาร
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {aiValidationTab === 'cds' && (
-                    <div className="space-y-2">
-                      {aiPreSummary?.aiTriage?.alertFlags?.length > 0 ? (
-                        aiPreSummary.aiTriage.alertFlags.map((alert: string) => (
-                          <div key={alert} className="p-2 bg-yellow-50 border border-yellow-200 rounded text-xs">
-                            <div className="text-yellow-800">{alert}</div>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="text-center py-4 text-gray-500 text-xs">
-                          <p>✅ ไม่มีข้อควรระวังพิเศษ</p>
-                        </div>
-                      )}
-                      
-                      {/* Suggested Questions */}
-                      {aiPreSummary?.aiTriage?.suggestedQuestions?.length > 0 && (
-                        <div className="mt-3 pt-3 border-t border-gray-200">
-                          <p className="text-xs font-medium text-gray-700 mb-2">💡 คำถามที่แนะนำ:</p>
-                          <ul className="space-y-1">
-                            {aiPreSummary.aiTriage.suggestedQuestions.map((q: string) => (
-                              <li key={q} className="text-xs text-gray-600 flex items-start">
-                                <span className="mr-1">•</span> {q}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </>
-              )}
+              {renderAIValidationTabContent()}
 
               {/* Man-in-the-Loop Validation Buttons (DR-05) */}
-              <div className={`flex items-center justify-between mt-3 pt-3 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+              <div className={`flex items-center justify-between mt-3 pt-3 border-t ${tc('border-gray-700', 'border-gray-200')}`}>
                 <div className="flex space-x-2">
                   <button
                     onClick={() => handleAIValidation('approved')}
@@ -1912,65 +1996,52 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
             </div>
 
             {/* Meeting AI Summary - Real-time during video */}
-            <div className={`rounded-lg shadow-sm p-3 ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
+            <div className={`rounded-lg shadow-sm p-3 ${tc('bg-gray-800', 'bg-white')}`}>
               <div className="flex items-center space-x-2 mb-2">
                 <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded flex items-center justify-center">
                   <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M10 2a1 1 0 011 1v1.323l3.954 1.582 1.599-.8a1 1 0 01.894 1.79l-1.233.616 1.738 5.42a1 1 0 01-.285 1.05A3.989 3.989 0 0115 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.715-5.349L11 6.477V16h2a1 1 0 110 2H7a1 1 0 110-2h2V6.477L6.237 7.582l1.715 5.349a1 1 0 01-.285 1.05A3.989 3.989 0 015 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.738-5.42-1.233-.617a1 1 0 01.894-1.788l1.599.799L9 4.323V3a1 1 0 011-1z" />
                   </svg>
                 </div>
-                <h3 className={`text-sm font-bold ${isDark ? 'text-purple-300' : 'text-purple-700'}`}>{labels.aiMeetingSummary[language]}</h3>
+                <h3 className={`text-sm font-bold ${tc('text-purple-300', 'text-purple-700')}`}>{labels.aiMeetingSummary[language]}</h3>
                 <span className="px-2 py-0.5 text-xs bg-blue-100 text-blue-700 rounded-full">Transcript</span>
               </div>
               <textarea
                 value={aiMeetingSummary}
                 onChange={(e) => setAiMeetingSummary(e.target.value)}
                 placeholder={language === 'th' ? 'AI จะสรุปจากการถอดเสียงระหว่าง Video Consultation...' : 'AI will summarize from video transcription...'}
-                className={`w-full p-2 border rounded text-xs focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none ${isDark ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 text-gray-900'}`}
+                aria-label="AI Meeting Summary"
+                className={`w-full p-2 border rounded text-xs focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none ${tc('bg-gray-700 border-gray-600 text-white placeholder-gray-400', 'bg-white border-gray-300 text-gray-900')}`}
                 rows={4}
               />
             </div>
           </div>
 
           {/* Bottom Tabs - Patient Lists */}
-          <div className={`border-t ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
-            <div className={`flex border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+          <div className={`border-t ${tc('bg-gray-800 border-gray-700', 'bg-white border-gray-200')}`}>
+            <div className={`flex border-b ${tc('border-gray-700', 'border-gray-200')}`}>
               <button
                 onClick={() => setMeetingTab('investigation')}
-                className={`flex-1 px-4 py-2 text-xs font-medium transition-colors ${
-                  meetingTab === 'investigation'
-                    ? isDark ? 'bg-yellow-900/50 text-yellow-300 border-b-2 border-yellow-500' : 'bg-yellow-50 text-gray-900 border-b-2 border-yellow-600'
-                    : isDark ? 'text-gray-400 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-50'
-                }`}
+                className={`flex-1 px-4 py-2 text-xs font-medium transition-colors ${getMeetingTabClass(meetingTab === 'investigation')}`}
               >
                 {labels.investigation[language]} ({investigationPatients.length})
               </button>
               <button
                 onClick={() => setMeetingTab('treatment')}
-                className={`flex-1 px-4 py-2 text-xs font-medium transition-colors ${
-                  meetingTab === 'treatment'
-                    ? isDark ? 'bg-yellow-900/50 text-yellow-300 border-b-2 border-yellow-500' : 'bg-yellow-50 text-gray-900 border-b-2 border-yellow-600'
-                    : isDark ? 'text-gray-400 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-50'
-                }`}
+                className={`flex-1 px-4 py-2 text-xs font-medium transition-colors ${getMeetingTabClass(meetingTab === 'treatment')}`}
               >
                 {labels.treatment[language]} ({treatmentPatients.length})
               </button>
               <button
                 onClick={() => setMeetingTab('refer')}
-                className={`flex-1 px-4 py-2 text-xs font-medium transition-colors ${
-                  meetingTab === 'refer'
-                    ? isDark ? 'bg-yellow-900/50 text-yellow-300 border-b-2 border-yellow-500' : 'bg-yellow-50 text-gray-900 border-b-2 border-yellow-600'
-                    : isDark ? 'text-gray-400 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-50'
-                }`}
+                className={`flex-1 px-4 py-2 text-xs font-medium transition-colors ${getMeetingTabClass(meetingTab === 'refer')}`}
               >
                 {labels.refer[language]} ({referPatients.length})
               </button>
             </div>
 
             <div className="p-3 max-h-48 overflow-y-auto">
-              {meetingTab === 'investigation' && renderPatientListForTab(investigationPatients, 'Investigation')}
-              {meetingTab === 'treatment' && renderPatientListForTab(treatmentPatients, 'Treatment')}
-              {meetingTab === 'refer' && renderPatientListForTab(referPatients, 'Refer')}
+              {renderMeetingPatientList()}
             </div>
           </div>
         </div>
@@ -1978,10 +2049,10 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
         {/* ========================================================================== */}
         {/* RIGHT COLUMN: HEALTH STUDIO */}
         {/* ========================================================================== */}
-        <div className={`w-96 flex flex-col border-l ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
-          <div className={`p-4 border-b ${isDark ? 'bg-teal-900 border-teal-700' : 'bg-teal-50 border-teal-200'}`}>
-            <h2 className={`text-lg font-bold ${isDark ? 'text-teal-300' : 'text-teal-700'}`}>{labels.healthStudio[language]}</h2>
-            <p className={`text-xs ${isDark ? 'text-teal-400' : 'text-teal-600'}`}>{labels.clinicalTools[language]}</p>
+        <div className={`w-96 flex flex-col border-l ${tc('bg-gray-800 border-gray-700', 'bg-white border-gray-200')}`}>
+          <div className={`p-4 border-b ${tc('bg-teal-900 border-teal-700', 'bg-teal-50 border-teal-200')}`}>
+            <h2 className={`text-lg font-bold ${tc('text-teal-300', 'text-teal-700')}`}>{labels.healthStudio[language]}</h2>
+            <p className={`text-xs ${tc('text-teal-400', 'text-teal-600')}`}>{labels.clinicalTools[language]}</p>
           </div>
 
           <div className="flex-1 overflow-y-auto p-4">
@@ -2081,8 +2152,8 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
           </div>
 
           {/* AI Chatbot Assistant Section */}
-          <div className={`border-t ${isDark ? 'border-gray-700 bg-gradient-to-br from-blue-900/50 to-purple-900/50' : 'border-gray-200 bg-gradient-to-br from-blue-50 to-purple-50'}`}>
-            <div className={`p-3 border-b ${isDark ? 'border-blue-800' : 'border-blue-200'}`}>
+          <div className={`border-t ${tc('border-gray-700 bg-gradient-to-br from-blue-900/50 to-purple-900/50', 'border-gray-200 bg-gradient-to-br from-blue-50 to-purple-50')}`}>
+            <div className={`p-3 border-b ${tc('border-blue-800', 'border-blue-200')}`}>
               <div className="flex items-center space-x-2">
                 <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center">
                   <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2090,54 +2161,19 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
                   </svg>
                 </div>
                 <div>
-                  <h3 className={`text-sm font-bold ${isDark ? 'text-blue-300' : 'text-blue-900'}`}>{labels.aiClinicalAssistant[language]}</h3>
-                  <p className={`text-xs ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>{labels.askAnything[language]}</p>
+                  <h3 className={`text-sm font-bold ${tc('text-blue-300', 'text-blue-900')}`}>{labels.aiClinicalAssistant[language]}</h3>
+                  <p className={`text-xs ${tc('text-blue-400', 'text-blue-600')}`}>{labels.askAnything[language]}</p>
                 </div>
               </div>
             </div>
 
             {/* Chat Messages Area */}
-            <div className={`p-3 max-h-60 overflow-y-auto ${isDark ? 'bg-gray-900/50' : 'bg-white/50'}`}>
-              {chatMessages.length === 0 ? (
-                <div className={`text-center py-4 text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                  <p>👋 {language === 'th' ? 'สวัสดีครับ' : 'Hello'}, Dr. {doctor.name?.split(' ')[0]}!</p>
-                  <p className="mt-1">{language === 'th' ? 'พร้อมช่วยเหลือด้านคลินิก' : "I'm ready to assist with clinical questions."}</p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {chatMessages.map((msg) => (
-                    <div
-                      key={msg.id}
-                      className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                    >
-                      <div
-                        className={`max-w-[85%] p-2 rounded-lg text-xs ${
-                          msg.role === 'user'
-                            ? 'bg-blue-600 text-white rounded-br-none'
-                            : isDark ? 'bg-gray-700 text-gray-200 rounded-bl-none' : 'bg-gray-100 text-gray-800 rounded-bl-none'
-                        }`}
-                      >
-                        {msg.content}
-                      </div>
-                    </div>
-                  ))}
-                  {isChatLoading && (
-                    <div className="flex justify-start">
-                      <div className="bg-gray-100 p-2 rounded-lg rounded-bl-none">
-                        <div className="flex space-x-1">
-                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
+            <div className={`p-3 max-h-60 overflow-y-auto ${tc('bg-gray-900/50', 'bg-white/50')}`}>
+              {renderChatMessagesArea()}
             </div>
 
             {/* Chat Input */}
-            <div className={`p-3 pb-16 border-t ${isDark ? 'border-blue-800' : 'border-blue-200'}`}>
+            <div className={`p-3 pb-16 border-t ${tc('border-blue-800', 'border-blue-200')}`}>
               <div className="flex space-x-2">
                 <input
                   type="text"
@@ -2145,7 +2181,8 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
                   onChange={(e) => setChatInput(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleSendChatMessage()}
                   placeholder={language === 'th' ? 'ถามเกี่ยวกับอาการ, ยา, แนวทางการรักษา...' : 'Ask about symptoms, drugs, protocols...'}
-                  className={`flex-1 px-3 py-2 text-xs border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${isDark ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-blue-200 text-gray-900'}`}
+                  aria-label="AI Clinical Assistant chat input"
+                  className={`flex-1 px-3 py-2 text-xs border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${tc('bg-gray-700 border-gray-600 text-white placeholder-gray-400', 'bg-white border-blue-200 text-gray-900')}`}
                   disabled={isChatLoading}
                 />
                 <button

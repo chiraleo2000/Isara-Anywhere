@@ -58,10 +58,431 @@ export const DATA_TYPE_LABELS: Record<string, string> = {
   all: 'ข้อมูลทั้งหมด',
 };
 
+function getPdpaClasses(isDark: boolean) {
+  const dark = {
+    loadingBg: 'bg-gray-900',
+    heading: 'text-white',
+    subtitle: 'text-gray-400',
+    bodyText: 'text-gray-300',
+    mutedText: 'text-gray-500',
+    infoBanner: 'bg-gradient-to-r from-blue-900/30 to-indigo-900/30 border-blue-700',
+    infoIconBg: 'bg-blue-900/50',
+    infoIcon: 'text-blue-400',
+    infoTitle: 'text-blue-300',
+    infoDesc: 'text-blue-200',
+    tabBorder: 'border-gray-700',
+    tabInactive: 'border-transparent text-gray-400 hover:text-gray-200',
+    cardBg: 'bg-gray-800 border-gray-700',
+    cardBgDivide: 'bg-gray-800 border-gray-700 divide-gray-700',
+    requiredBadge: 'bg-red-900/50 text-red-400',
+    toggleOff: 'bg-gray-600',
+    surfaceBg: 'bg-gray-700',
+    surfaceBgBorder: 'bg-gray-700 border-gray-600',
+    emeraldIconBg: 'bg-emerald-900/50',
+    emeraldIcon: 'text-emerald-400',
+    sharingHeader: 'bg-gradient-to-r from-emerald-900/30 to-teal-900/30 border-emerald-800',
+    consentChecked: 'bg-emerald-900/30 border-emerald-700',
+    successBg: 'bg-green-900/30 border-green-700',
+    successIcon: 'text-green-400',
+    successTitle: 'text-green-300',
+    successDesc: 'text-green-400',
+    successDate: 'text-green-500',
+    greenBg: 'bg-green-900/50',
+    warningBg: 'bg-amber-900/30 border-amber-700',
+    warningIcon: 'text-amber-400',
+    warningTitle: 'text-amber-300',
+    warningDesc: 'text-amber-400',
+    securityBg: 'bg-amber-900/20 border-amber-700',
+    blueIcon: 'text-blue-400',
+    blueBg: 'bg-blue-900/50',
+    blueHighlight: 'bg-blue-900/30 border-blue-700',
+    redIcon: 'text-red-400',
+    redBg: 'bg-red-900/50',
+    auditEmptyIcon: 'text-gray-600',
+    auditEmptyText: 'text-gray-400',
+    auditDivide: 'divide-gray-700',
+    auditHover: 'hover:bg-gray-700',
+  };
+
+  const light = {
+    loadingBg: '',
+    heading: 'text-gray-800',
+    subtitle: 'text-gray-600',
+    bodyText: 'text-gray-700',
+    mutedText: 'text-gray-400',
+    infoBanner: 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200',
+    infoIconBg: 'bg-blue-100',
+    infoIcon: 'text-blue-600',
+    infoTitle: 'text-blue-800',
+    infoDesc: 'text-blue-700',
+    tabBorder: 'border-gray-200',
+    tabInactive: 'border-transparent text-gray-500 hover:text-gray-700',
+    cardBg: 'bg-white border-gray-100',
+    cardBgDivide: 'bg-white border-gray-100 divide-gray-100',
+    requiredBadge: 'bg-red-100 text-red-600',
+    toggleOff: 'bg-gray-300',
+    surfaceBg: 'bg-gray-50',
+    surfaceBgBorder: 'bg-gray-50 border-gray-200',
+    emeraldIconBg: 'bg-emerald-100',
+    emeraldIcon: 'text-emerald-600',
+    sharingHeader: 'bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-100',
+    consentChecked: 'bg-emerald-50 border-emerald-300',
+    successBg: 'bg-green-50 border-green-200',
+    successIcon: 'text-green-600',
+    successTitle: 'text-green-800',
+    successDesc: 'text-green-700',
+    successDate: 'text-green-600',
+    greenBg: 'bg-green-100',
+    warningBg: 'bg-amber-50 border-amber-200',
+    warningIcon: 'text-amber-600',
+    warningTitle: 'text-amber-800',
+    warningDesc: 'text-amber-700',
+    securityBg: 'bg-amber-50 border-amber-200',
+    blueIcon: 'text-blue-600',
+    blueBg: 'bg-blue-100',
+    blueHighlight: 'bg-blue-50 border-blue-200',
+    redIcon: 'text-red-600',
+    redBg: 'bg-red-100',
+    auditEmptyIcon: 'text-gray-300',
+    auditEmptyText: 'text-gray-500',
+    auditDivide: 'divide-gray-100',
+    auditHover: 'hover:bg-gray-50',
+  };
+
+  return isDark ? dark : light;
+}
+
+type PdpaClasses = ReturnType<typeof getPdpaClasses>;
+
+function tl(language: string, th: string, en: string): string {
+  return language === 'th' ? th : en;
+}
+
+function AuditEntryIcon({ action, iconClass }: Readonly<{ action: string; iconClass: string }>) {
+  if (action.includes('REVOKED')) {
+    return <EyeOff className={`w-4 h-4 ${iconClass}`} />;
+  }
+  if (action.includes('GRANTED')) {
+    return <Check className={`w-4 h-4 ${iconClass}`} />;
+  }
+  return <Eye className={`w-4 h-4 ${iconClass}`} />;
+}
+
+interface TabLabels {
+  [key: string]: Record<string, string>;
+}
+
+interface ConsentsTabProps {
+  consents: Consent[];
+  saving: string | null;
+  handleToggleConsent: (id: string, granted: boolean) => void;
+  labels: TabLabels;
+  language: string;
+  cls: PdpaClasses;
+  formatDate: (dateStr: string) => string;
+}
+
+function ConsentsTab({ consents, saving, handleToggleConsent, labels, language, cls, formatDate }: Readonly<ConsentsTabProps>) {
+  return (
+    <div className="space-y-4">
+      <div className={`rounded-2xl border overflow-hidden divide-y ${cls.cardBgDivide}`}>
+        {consents.map((consent) => (
+          <div key={consent.id} className="p-5">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-1">
+                  <h3 className={`font-semibold ${cls.heading}`}>{consent.title}</h3>
+                  {consent.required && (
+                    <span className={`px-2 py-0.5 text-xs rounded-full font-medium ${cls.requiredBadge}`}>
+                      {tl(language, 'จำเป็น', 'Required')}
+                    </span>
+                  )}
+                </div>
+                <p className={`text-sm leading-relaxed ${cls.subtitle}`}>{consent.description}</p>
+                {consent.granted && consent.grantedAt && (
+                  <div className="flex items-center gap-1.5 mt-2 text-xs text-gray-500">
+                    <Clock className="w-3.5 h-3.5" />
+                    <span>{tl(language, 'ยินยอมเมื่อ', 'Consented on')} {formatDate(consent.grantedAt)}</span>
+                  </div>
+                )}
+              </div>
+              <button
+                onClick={() => handleToggleConsent(consent.id, !consent.granted)}
+                disabled={consent.required || saving === consent.id}
+                className={`relative w-14 h-7 rounded-full transition-colors ${consent.granted ? 'bg-emerald-500' : cls.toggleOff
+                  } ${consent.required ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-90'}`}
+              >
+                {saving === consent.id ? (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  </div>
+                ) : (
+                  <div
+                    className={`absolute top-0.5 w-6 h-6 bg-white rounded-full shadow-md transform transition-transform ${consent.granted ? 'translate-x-7' : 'translate-x-0.5'
+                      }`}
+                  />
+                )}
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className={`rounded-2xl border p-6 ${cls.cardBg}`}>
+        <div className="flex items-center gap-3 mb-4">
+          <div className={`p-2 rounded-lg ${cls.emeraldIconBg}`}>
+            <Check className={`w-5 h-5 ${cls.emeraldIcon}`} />
+          </div>
+          <h3 className={`font-semibold ${cls.heading}`}>{labels.yourRights[language]}</h3>
+        </div>
+        <div className="grid sm:grid-cols-2 gap-3">
+          {[
+            { icon: Eye, text: labels.rightAccess[language] },
+            { icon: FileText, text: labels.rightCorrect[language] },
+            { icon: Trash2, text: labels.rightDelete[language] },
+            { icon: EyeOff, text: labels.rightWithdraw[language] },
+            { icon: Lock, text: labels.rightRestrict[language] },
+            { icon: AlertCircle, text: labels.rightComplain[language] },
+          ].map((item) => (
+            <div key={item.text} className={`flex items-center gap-3 p-3 rounded-xl ${cls.surfaceBg}`}>
+              <item.icon className={`w-4 h-4 ${cls.emeraldIcon}`} />
+              <span className={`text-sm ${cls.bodyText}`}>{item.text}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+interface DoctorsTabProps {
+  consents: Consent[];
+  saving: string | null;
+  handleToggleConsent: (id: string, granted: boolean) => void;
+  labels: TabLabels;
+  language: string;
+  cls: PdpaClasses;
+  formatDate: (dateStr: string) => string;
+}
+
+function DoctorsTab({ consents, saving, handleToggleConsent, labels, language, cls, formatDate }: Readonly<DoctorsTabProps>) {
+  const dataSharingConsent = consents.find(c => c.id === 'data_sharing');
+
+  return (
+    <div className="space-y-6">
+      <div className={`rounded-2xl border overflow-hidden ${cls.cardBg}`}>
+        <div className={`px-6 py-4 border-b ${cls.sharingHeader}`}>
+          <h3 className={`font-bold flex items-center gap-2 ${cls.heading}`}>
+            <Users className={`w-5 h-5 ${cls.emeraldIcon}`} />
+            {labels.shareDoctors[language]}
+          </h3>
+          <p className={`text-sm mt-1 ${cls.subtitle}`}>
+            {tl(language, 'อนุญาตให้แพทย์และผู้ดูแลระบบในโครงการ Izara เข้าถึงข้อมูลของคุณ', 'Allow doctors and admins in Izara project to access your data')}
+          </p>
+        </div>
+
+        <div className="p-6 space-y-6">
+          <div className={`p-5 rounded-xl border-2 transition-all ${dataSharingConsent?.granted
+            ? cls.consentChecked
+            : cls.surfaceBgBorder
+            }`}>
+            <label className="flex items-start gap-4 cursor-pointer">
+              <div className="pt-1">
+                <input
+                  type="checkbox"
+                  checked={dataSharingConsent?.granted || false}
+                  onChange={(e) => handleToggleConsent('data_sharing', e.target.checked)}
+                  disabled={saving === 'data_sharing'}
+                  className="w-6 h-6 rounded-md border-2 border-emerald-400 text-emerald-600 focus:ring-emerald-500 focus:ring-offset-0 cursor-pointer"
+                />
+              </div>
+              <div className="flex-1">
+                <p className={`font-semibold text-lg ${cls.heading}`}>
+                  {tl(language, 'ยินยอมแชร์ข้อมูลกับแพทย์และผู้ดูแลระบบทุกท่านในโครงการ', 'Consent to share data with all doctors and admins in the project')}
+                </p>
+                <p className={`mt-2 leading-relaxed ${cls.subtitle}`}>
+                  {tl(language,
+                    'ข้าพเจ้ายินยอมให้แพทย์และผู้ดูแลระบบทุกท่านในโครงการ Izara Telemedicine สามารถเข้าถึงข้อมูลสุขภาพของข้าพเจ้าได้ รวมถึง:',
+                    'I consent to allow all doctors and admins in Izara Telemedicine project to access my health data, including:')}
+                </p>
+                <ul className={`mt-3 space-y-2 text-sm ${cls.bodyText}`}>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                    {tl(language, 'ข้อมูลประวัติการรักษาและการนัดหมาย', 'Treatment history and appointments')}
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                    {tl(language, 'ข้อมูลยาที่ใช้และประวัติการแพ้', 'Medications and allergy history')}
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                    {tl(language, 'ผลตรวจทางห้องปฏิบัติการและผลเอกซเรย์', 'Lab results and X-rays')}
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                    <strong>{tl(language, 'พินัยกรรมชีวิต (Living Will) เพื่อการดูแลรักษาตามความประสงค์', 'Living Will for care according to your wishes')}</strong>
+                  </li>
+                </ul>
+
+                {saving === 'data_sharing' && (
+                  <div className="mt-3 flex items-center gap-2 text-emerald-600">
+                    <div className="w-4 h-4 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+                    <span className="text-sm">{tl(language, 'กำลังบันทึก...', 'Saving...')}</span>
+                  </div>
+                )}
+              </div>
+            </label>
+          </div>
+
+          {dataSharingConsent?.granted ? (
+            <div className={`p-4 border rounded-xl ${cls.successBg}`}>
+              <div className="flex items-center gap-3">
+                <CheckCircle2 className={`w-8 h-8 ${cls.successIcon}`} />
+                <div>
+                  <p className={`font-semibold ${cls.successTitle}`}>✓ {tl(language, 'การแชร์ข้อมูลเปิดใช้งานแล้ว', 'Data sharing is enabled')}</p>
+                  <p className={`text-sm mt-1 ${cls.successDesc}`}>
+                    {tl(language,
+                      'แพทย์และผู้ดูแลระบบทุกท่านในโครงการสามารถเข้าถึงข้อมูลและพินัยกรรมชีวิตของคุณได้',
+                      'All doctors and admins in the project can access your data and Living Will')}
+                  </p>
+                  {dataSharingConsent?.grantedAt && (
+                    <p className={`text-xs mt-2 ${cls.successDate}`}>
+                      {tl(language, 'ยินยอมเมื่อ: ', 'Consented on: ')}{formatDate(dataSharingConsent.grantedAt)}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className={`p-4 border rounded-xl ${cls.warningBg}`}>
+              <div className="flex items-center gap-3">
+                <AlertCircle className={`w-8 h-8 ${cls.warningIcon}`} />
+                <div>
+                  <p className={`font-semibold ${cls.warningTitle}`}>⚠ {tl(language, 'ยังไม่ได้ให้ความยินยอม', 'Consent not yet given')}</p>
+                  <p className={`text-sm mt-1 ${cls.warningDesc}`}>
+                    {tl(language,
+                      'กรุณาทำเครื่องหมายในช่องด้านบนเพื่อให้ความยินยอมแชร์ข้อมูลกับแพทย์ในโครงการ',
+                      'Please check the box above to consent to share data with doctors in the project')}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className={`rounded-2xl border p-6 ${cls.cardBg}`}>
+        <h4 className={`font-semibold mb-4 flex items-center gap-2 ${cls.heading}`}>
+          <FileText className={`w-5 h-5 ${cls.blueIcon}`} />
+          {tl(language, 'เงื่อนไขการแชร์ข้อมูล', 'Data Sharing Terms')}
+        </h4>
+        <div className={`space-y-3 text-sm ${cls.subtitle}`}>
+          <p className={`p-3 rounded-lg ${cls.surfaceBg}`}>
+            <strong>1. {tl(language, 'วัตถุประสงค์:', 'Purpose:')}</strong> {tl(language, 'ข้อมูลจะถูกใช้เพื่อการดูแลรักษาสุขภาพของผู้ป่วยเท่านั้น', 'Data will only be used for patient healthcare')}
+          </p>
+          <p className={`p-3 rounded-lg ${cls.surfaceBg}`}>
+            <strong>2. {tl(language, 'ผู้ที่สามารถเข้าถึง:', 'Who can access:')}</strong> {tl(language, 'แพทย์และผู้ดูแลระบบที่ลงทะเบียนในโครงการ Izara Telemedicine เท่านั้น', 'Only doctors and admins registered in Izara Telemedicine')}
+          </p>
+          <p className={`p-3 rounded-lg ${cls.surfaceBg}`}>
+            <strong>3. {tl(language, 'การบันทึก:', 'Recording:')}</strong> {tl(language, 'การเข้าถึงข้อมูลทุกครั้งจะถูกบันทึกไว้ในประวัติและสามารถตรวจสอบได้', 'All data access will be recorded and auditable')}
+          </p>
+          <p className={`p-3 rounded-lg ${cls.surfaceBg}`}>
+            <strong>4. {tl(language, 'การเพิกถอน:', 'Revocation:')}</strong> {tl(language, 'ท่านสามารถเพิกถอนความยินยอมได้ตลอดเวลาโดยยกเลิกเครื่องหมายในช่องด้านบน', 'You can revoke consent anytime by unchecking the box above')}
+          </p>
+          <p className={`p-3 rounded-lg border ${cls.blueHighlight}`}>
+            <strong>5. {tl(language, 'พินัยกรรมชีวิต:', 'Living Will:')}</strong> {tl(language, 'หากท่านมีพินัยกรรมชีวิต (Living Will) และให้ความยินยอมนี้ แพทย์ทุกท่านจะสามารถเข้าถึงเพื่อดำเนินการตามความประสงค์ของท่านได้', 'If you have a Living Will and give this consent, all doctors can access it to fulfill your wishes')}
+          </p>
+        </div>
+      </div>
+
+      <div className={`border rounded-xl p-4 ${cls.securityBg}`}>
+        <div className="flex items-start gap-3">
+          <Lock className={`w-5 h-5 mt-0.5 ${cls.warningIcon}`} />
+          <div>
+            <p className={`font-medium text-sm ${cls.warningTitle}`}>{tl(language, 'การรักษาความปลอดภัย', 'Security')}</p>
+            <p className={`text-xs mt-1 ${cls.warningDesc}`}>
+              {tl(language,
+                'การเข้าถึงข้อมูลทุกครั้งจะถูกบันทึกและตรวจสอบได้ หากพบการเข้าถึงที่ไม่เหมาะสม สามารถแจ้งเจ้าหน้าที่ได้ที่ support@izara.com',
+                'All data access is logged and auditable. Report any inappropriate access to support@izara.com')}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function getAuditEntryClasses(action: string, cls: PdpaClasses) {
+  if (action.includes('REVOKED')) return { bg: cls.redBg, icon: cls.redIcon };
+  if (action.includes('GRANTED')) return { bg: cls.greenBg, icon: cls.successIcon };
+  return { bg: cls.blueBg, icon: cls.blueIcon };
+}
+
+interface AuditTabProps {
+  auditLog: AuditLogEntry[];
+  labels: TabLabels;
+  language: string;
+  cls: PdpaClasses;
+  formatDate: (dateStr: string) => string;
+}
+
+function AuditTab({ auditLog, labels, language, cls, formatDate }: Readonly<AuditTabProps>) {
+  return (
+    <div className="space-y-4">
+      <div className={`rounded-2xl border overflow-hidden ${cls.cardBg}`}>
+        {auditLog.length === 0 ? (
+          <div className="p-8 text-center">
+            <History className={`w-12 h-12 mx-auto mb-3 ${cls.auditEmptyIcon}`} />
+            <p className={cls.auditEmptyText}>{labels.noHistory[language]}</p>
+          </div>
+        ) : (
+          <div className={`divide-y ${cls.auditDivide}`}>
+            {auditLog.slice().reverse().map((entry) => {
+              const entryClasses = getAuditEntryClasses(entry.action, cls);
+              return (
+                <div key={`${entry.timestamp}-${entry.action}`} className={`p-4 ${cls.auditHover}`}>
+                  <div className="flex items-start gap-3">
+                    <div className={`p-2 rounded-lg ${entryClasses.bg}`}>
+                      <AuditEntryIcon action={entry.action} iconClass={entryClasses.icon} />
+                    </div>
+                    <div className="flex-1">
+                      <p className={`font-medium ${cls.heading}`}>
+                        {entry.action === 'CONSENT_GRANTED' && tl(language, 'ให้สิทธิ์เข้าถึงข้อมูล', 'Granted data access')}
+                        {entry.action === 'CONSENT_REVOKED' && tl(language, 'เพิกถอนสิทธิ์', 'Revoked access')}
+                        {entry.action === 'LIVING_WILL_CREATED' && tl(language, 'สร้างพินัยกรรมชีวิต', 'Created Living Will')}
+                        {entry.action === 'LIVING_WILL_UPDATED' && tl(language, 'อัปเดตพินัยกรรมชีวิต', 'Updated Living Will')}
+                        {entry.action === 'DATA_ACCESSED' && tl(language, 'เข้าถึงข้อมูล', 'Accessed data')}
+                      </p>
+                      {entry.doctorName && (
+                        <p className={`text-sm ${cls.subtitle}`}>
+                          {tl(language, 'แพทย์: ', 'Doctor: ')}{entry.doctorName}
+                        </p>
+                      )}
+                      {entry.dataAccessed && (
+                        <p className="text-sm text-gray-500">
+                          {tl(language, 'ข้อมูล: ', 'Data: ')}{entry.dataAccessed}
+                        </p>
+                      )}
+                      <p className={`text-xs mt-1 ${cls.mutedText}`}>
+                        {formatDate(entry.timestamp)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function PDPAPage() {
   const { user } = useAuth();
   const { theme, language } = useSettings();
   const isDark = theme === 'dark';
+  const cls = getPdpaClasses(isDark);
   
   const labels = {
     pageTitle: { en: 'Privacy & Consent Management', th: 'การจัดการความเป็นส่วนตัว' },
@@ -83,6 +504,15 @@ export default function PDPAPage() {
     close: { en: 'Close', th: 'ปิด' },
     save: { en: 'Save', th: 'บันทึก' },
     cancel: { en: 'Cancel', th: 'ยกเลิก' },
+    yourRights: { en: 'Your Rights', th: 'สิทธิ์ของคุณ' },
+    rightAccess: { en: 'Right to access your data', th: 'สิทธิ์ในการเข้าถึงข้อมูล' },
+    rightCorrect: { en: 'Right to correct your data', th: 'สิทธิ์ในการแก้ไขข้อมูล' },
+    rightDelete: { en: 'Right to delete your data', th: 'สิทธิ์ในการลบข้อมูล' },
+    rightWithdraw: { en: 'Right to withdraw consent', th: 'สิทธิ์ในการถอนความยินยอม' },
+    rightRestrict: { en: 'Right to restrict processing', th: 'สิทธิ์ในการจำกัดการประมวลผล' },
+    rightComplain: { en: 'Right to file a complaint', th: 'สิทธิ์ในการร้องเรียน' },
+    shareDoctors: { en: 'Share Data with Doctors', th: 'แชร์ข้อมูลกับแพทย์' },
+    noHistory: { en: 'No access history yet', th: 'ยังไม่มีประวัติการเข้าถึง' },
   };
   
   const [activeTab, setActiveTab] = useState<'consents' | 'doctors' | 'audit'>('consents');
@@ -95,7 +525,7 @@ export default function PDPAPage() {
   // Grant consent modal state
   const [showGrantModal, setShowGrantModal] = useState(false);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery] = useState('');
   const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
   const [selectedDataTypes, setSelectedDataTypes] = useState<string[]>([]);
   const [consentPurpose, setConsentPurpose] = useState('');
@@ -296,7 +726,7 @@ export default function PDPAPage() {
 
   if (loading) {
     return (
-      <div className={`flex items-center justify-center h-64 ${isDark ? 'bg-gray-900' : ''}`}>
+      <div className={`flex items-center justify-center h-64 ${cls.loadingBg}`}>
         <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
@@ -310,8 +740,8 @@ export default function PDPAPage() {
           <Shield className="w-7 h-7 text-white" />
         </div>
         <div className="flex-1">
-          <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{labels.pageTitle[language]}</h1>
-          <p className={isDark ? 'text-gray-400' : 'text-gray-600'}>{labels.pageSubtitle[language]}</p>
+          <h1 className={`text-2xl font-bold ${cls.heading}`}>{labels.pageTitle[language]}</h1>
+          <p className={cls.subtitle}>{labels.pageSubtitle[language]}</p>
         </div>
         <Link
           to="/living-will"
@@ -323,16 +753,16 @@ export default function PDPAPage() {
       </div>
 
       {/* PDPA Info Banner */}
-      <div className={`rounded-2xl p-5 border ${isDark ? 'bg-gradient-to-r from-blue-900/30 to-indigo-900/30 border-blue-700' : 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200'}`}>
+      <div className={`rounded-2xl p-5 border ${cls.infoBanner}`}>
         <div className="flex items-start gap-4">
-          <div className={`p-2 rounded-xl ${isDark ? 'bg-blue-900/50' : 'bg-blue-100'}`}>
-            <Info className={`w-6 h-6 ${isDark ? 'text-blue-400' : 'text-blue-600'}`} />
+          <div className={`p-2 rounded-xl ${cls.infoIconBg}`}>
+            <Info className={`w-6 h-6 ${cls.infoIcon}`} />
           </div>
           <div>
-            <p className={`font-semibold ${isDark ? 'text-blue-300' : 'text-blue-800'}`}>
+            <p className={`font-semibold ${cls.infoTitle}`}>
               {language === 'th' ? 'พ.ร.บ.คุ้มครองข้อมูลส่วนบุคคล พ.ศ.2562 (PDPA)' : 'Personal Data Protection Act (PDPA)'}
             </p>
-            <p className={`mt-1 text-sm leading-relaxed ${isDark ? 'text-blue-200' : 'text-blue-700'}`}>
+            <p className={`mt-1 text-sm leading-relaxed ${cls.infoDesc}`}>
               {language === 'th' 
                 ? 'คุณมีสิทธิ์ในการเลือกว่าจะอนุญาตให้ใครเข้าถึงข้อมูลสุขภาพของคุณ สามารถให้ความยินยอมหรือเพิกถอนได้ตลอดเวลา ข้อมูลของคุณจะถูกเก็บรักษาอย่างปลอดภัยตามมาตรฐานสากล'
                 : 'You have the right to choose who can access your health data. You can grant or revoke consent at any time. Your data is stored securely according to international standards.'}
@@ -342,7 +772,7 @@ export default function PDPAPage() {
       </div>
 
       {/* Tabs */}
-      <div className={`flex gap-2 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+      <div className={`flex gap-2 border-b ${cls.tabBorder}`}>
         {[
           { id: 'consents', label: labels.consentsTab[language], icon: <Shield className="w-4 h-4" /> },
           { id: 'doctors', label: labels.doctorsTab[language], icon: <Users className="w-4 h-4" /> },
@@ -353,7 +783,7 @@ export default function PDPAPage() {
             onClick={() => setActiveTab(tab.id as any)}
             className={`flex items-center gap-2 px-4 py-3 font-medium transition-colors border-b-2 -mb-px ${activeTab === tab.id
               ? 'border-emerald-600 text-emerald-600'
-              : isDark ? 'border-transparent text-gray-400 hover:text-gray-200' : 'border-transparent text-gray-500 hover:text-gray-700'
+              : cls.tabInactive
               }`}
           >
             {tab.icon}
@@ -364,284 +794,38 @@ export default function PDPAPage() {
 
       {/* Tab Content */}
       {activeTab === 'consents' && (
-        <div className="space-y-4">
-          {/* Consent Cards */}
-          <div className={`rounded-2xl border overflow-hidden divide-y ${isDark ? 'bg-gray-800 border-gray-700 divide-gray-700' : 'bg-white border-gray-100 divide-gray-100'}`}>
-            {consents.map((consent) => (
-              <div key={consent.id} className="p-5">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-1">
-                      <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>{consent.title}</h3>
-                      {consent.required && (
-                        <span className={`px-2 py-0.5 text-xs rounded-full font-medium ${isDark ? 'bg-red-900/50 text-red-400' : 'bg-red-100 text-red-600'}`}>
-                          {language === 'th' ? 'จำเป็น' : 'Required'}
-                        </span>
-                      )}
-                    </div>
-                    <p className={`text-sm leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{consent.description}</p>
-                    {consent.granted && consent.grantedAt && (
-                      <div className={`flex items-center gap-1.5 mt-2 text-xs ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
-                        <Clock className="w-3.5 h-3.5" />
-                        <span>{language === 'th' ? 'ยินยอมเมื่อ' : 'Consented on'} {formatDate(consent.grantedAt)}</span>
-                      </div>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => handleToggleConsent(consent.id, !consent.granted)}
-                    disabled={consent.required || saving === consent.id}
-                    className={`relative w-14 h-7 rounded-full transition-colors ${consent.granted ? 'bg-emerald-500' : isDark ? 'bg-gray-600' : 'bg-gray-300'
-                      } ${consent.required ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-90'}`}
-                  >
-                    {saving === consent.id ? (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      </div>
-                    ) : (
-                      <div
-                        className={`absolute top-0.5 w-6 h-6 bg-white rounded-full shadow-md transform transition-transform ${consent.granted ? 'translate-x-7' : 'translate-x-0.5'
-                          }`}
-                      />
-                    )}
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Rights Section */}
-          <div className={`rounded-2xl border p-6 ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
-            <div className="flex items-center gap-3 mb-4">
-              <div className={`p-2 rounded-lg ${isDark ? 'bg-emerald-900/50' : 'bg-emerald-100'}`}>
-                <Check className={`w-5 h-5 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`} />
-              </div>
-              <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>{labels.yourRights[language]}</h3>
-            </div>
-            <div className="grid sm:grid-cols-2 gap-3">
-              {[
-                { icon: Eye, text: labels.rightAccess[language] },
-                { icon: FileText, text: labels.rightCorrect[language] },
-                { icon: Trash2, text: labels.rightDelete[language] },
-                { icon: EyeOff, text: labels.rightWithdraw[language] },
-                { icon: Lock, text: labels.rightRestrict[language] },
-                { icon: AlertCircle, text: labels.rightComplain[language] },
-              ].map((item, i) => (
-                <div key={i} className={`flex items-center gap-3 p-3 rounded-xl ${isDark ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                  <item.icon className={`w-4 h-4 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`} />
-                  <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{item.text}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+        <ConsentsTab
+          consents={consents}
+          saving={saving}
+          handleToggleConsent={handleToggleConsent}
+          labels={labels}
+          language={language}
+          cls={cls}
+          formatDate={formatDate}
+        />
       )}
 
       {activeTab === 'doctors' && (
-        <div className="space-y-6">
-          {/* Main Sharing Consent Section */}
-          <div className={`rounded-2xl border overflow-hidden ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
-            <div className={`px-6 py-4 border-b ${isDark ? 'bg-gradient-to-r from-emerald-900/30 to-teal-900/30 border-emerald-800' : 'bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-100'}`}>
-              <h3 className={`font-bold flex items-center gap-2 ${isDark ? 'text-white' : 'text-gray-800'}`}>
-                <Users className={`w-5 h-5 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`} />
-                {labels.shareDoctors[language]}
-              </h3>
-              <p className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                {language === 'th' ? 'อนุญาตให้แพทย์และผู้ดูแลระบบในโครงการ Izara เข้าถึงข้อมูลของคุณ' : 'Allow doctors and admins in Izara project to access your data'}
-              </p>
-            </div>
-
-            <div className="p-6 space-y-6">
-              {/* Consent Checkbox */}
-              <div className={`p-5 rounded-xl border-2 transition-all ${consents.find(c => c.id === 'data_sharing')?.granted
-                ? isDark ? 'bg-emerald-900/30 border-emerald-700' : 'bg-emerald-50 border-emerald-300'
-                : isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'
-                }`}>
-                <label className="flex items-start gap-4 cursor-pointer">
-                  <div className="pt-1">
-                    <input
-                      type="checkbox"
-                      checked={consents.find(c => c.id === 'data_sharing')?.granted || false}
-                      onChange={(e) => handleToggleConsent('data_sharing', e.target.checked)}
-                      disabled={saving === 'data_sharing'}
-                      className="w-6 h-6 rounded-md border-2 border-emerald-400 text-emerald-600 focus:ring-emerald-500 focus:ring-offset-0 cursor-pointer"
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <p className={`font-semibold text-lg ${isDark ? 'text-white' : 'text-gray-800'}`}>
-                      {language === 'th' ? 'ยินยอมแชร์ข้อมูลกับแพทย์และผู้ดูแลระบบทุกท่านในโครงการ' : 'Consent to share data with all doctors and admins in the project'}
-                    </p>
-                    <p className={`mt-2 leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                      {language === 'th' 
-                        ? 'ข้าพเจ้ายินยอมให้แพทย์และผู้ดูแลระบบทุกท่านในโครงการ Izara Telemedicine สามารถเข้าถึงข้อมูลสุขภาพของข้าพเจ้าได้ รวมถึง:'
-                        : 'I consent to allow all doctors and admins in Izara Telemedicine project to access my health data, including:'}
-                    </p>
-                    <ul className={`mt-3 space-y-2 text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                      <li className="flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-                        {language === 'th' ? 'ข้อมูลประวัติการรักษาและการนัดหมาย' : 'Treatment history and appointments'}
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-                        {language === 'th' ? 'ข้อมูลยาที่ใช้และประวัติการแพ้' : 'Medications and allergy history'}
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-                        {language === 'th' ? 'ผลตรวจทางห้องปฏิบัติการและผลเอกซเรย์' : 'Lab results and X-rays'}
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-                        <strong>{language === 'th' ? 'พินัยกรรมชีวิต (Living Will) เพื่อการดูแลรักษาตามความประสงค์' : 'Living Will for care according to your wishes'}</strong>
-                      </li>
-                    </ul>
-
-                    {saving === 'data_sharing' && (
-                      <div className="mt-3 flex items-center gap-2 text-emerald-600">
-                        <div className="w-4 h-4 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" />
-                        <span className="text-sm">{language === 'th' ? 'กำลังบันทึก...' : 'Saving...'}</span>
-                      </div>
-                    )}
-                  </div>
-                </label>
-              </div>
-
-              {/* Status Display */}
-              {consents.find(c => c.id === 'data_sharing')?.granted ? (
-                <div className={`p-4 border rounded-xl ${isDark ? 'bg-green-900/30 border-green-700' : 'bg-green-50 border-green-200'}`}>
-                  <div className="flex items-center gap-3">
-                    <CheckCircle2 className={`w-8 h-8 ${isDark ? 'text-green-400' : 'text-green-600'}`} />
-                    <div>
-                      <p className={`font-semibold ${isDark ? 'text-green-300' : 'text-green-800'}`}>✓ {language === 'th' ? 'การแชร์ข้อมูลเปิดใช้งานแล้ว' : 'Data sharing is enabled'}</p>
-                      <p className={`text-sm mt-1 ${isDark ? 'text-green-400' : 'text-green-700'}`}>
-                        {language === 'th' 
-                          ? 'แพทย์และผู้ดูแลระบบทุกท่านในโครงการสามารถเข้าถึงข้อมูลและพินัยกรรมชีวิตของคุณได้'
-                          : 'All doctors and admins in the project can access your data and Living Will'}
-                      </p>
-                      {consents.find(c => c.id === 'data_sharing')?.grantedAt && (
-                        <p className={`text-xs mt-2 ${isDark ? 'text-green-500' : 'text-green-600'}`}>
-                          {language === 'th' ? 'ยินยอมเมื่อ: ' : 'Consented on: '}{formatDate(consents.find(c => c.id === 'data_sharing')?.grantedAt || '')}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className={`p-4 border rounded-xl ${isDark ? 'bg-amber-900/30 border-amber-700' : 'bg-amber-50 border-amber-200'}`}>
-                  <div className="flex items-center gap-3">
-                    <AlertCircle className={`w-8 h-8 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
-                    <div>
-                      <p className={`font-semibold ${isDark ? 'text-amber-300' : 'text-amber-800'}`}>⚠ {language === 'th' ? 'ยังไม่ได้ให้ความยินยอม' : 'Consent not yet given'}</p>
-                      <p className={`text-sm mt-1 ${isDark ? 'text-amber-400' : 'text-amber-700'}`}>
-                        {language === 'th' 
-                          ? 'กรุณาทำเครื่องหมายในช่องด้านบนเพื่อให้ความยินยอมแชร์ข้อมูลกับแพทย์ในโครงการ'
-                          : 'Please check the box above to consent to share data with doctors in the project'}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Terms & Conditions */}
-          <div className={`rounded-2xl border p-6 ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
-            <h4 className={`font-semibold mb-4 flex items-center gap-2 ${isDark ? 'text-white' : 'text-gray-800'}`}>
-              <FileText className={`w-5 h-5 ${isDark ? 'text-blue-400' : 'text-blue-600'}`} />
-              {language === 'th' ? 'เงื่อนไขการแชร์ข้อมูล' : 'Data Sharing Terms'}
-            </h4>
-            <div className={`space-y-3 text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-              <p className={`p-3 rounded-lg ${isDark ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                <strong>1. {language === 'th' ? 'วัตถุประสงค์:' : 'Purpose:'}</strong> {language === 'th' ? 'ข้อมูลจะถูกใช้เพื่อการดูแลรักษาสุขภาพของผู้ป่วยเท่านั้น' : 'Data will only be used for patient healthcare'}
-              </p>
-              <p className={`p-3 rounded-lg ${isDark ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                <strong>2. {language === 'th' ? 'ผู้ที่สามารถเข้าถึง:' : 'Who can access:'}</strong> {language === 'th' ? 'แพทย์และผู้ดูแลระบบที่ลงทะเบียนในโครงการ Izara Telemedicine เท่านั้น' : 'Only doctors and admins registered in Izara Telemedicine'}
-              </p>
-              <p className={`p-3 rounded-lg ${isDark ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                <strong>3. {language === 'th' ? 'การบันทึก:' : 'Recording:'}</strong> {language === 'th' ? 'การเข้าถึงข้อมูลทุกครั้งจะถูกบันทึกไว้ในประวัติและสามารถตรวจสอบได้' : 'All data access will be recorded and auditable'}
-              </p>
-              <p className={`p-3 rounded-lg ${isDark ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                <strong>4. {language === 'th' ? 'การเพิกถอน:' : 'Revocation:'}</strong> {language === 'th' ? 'ท่านสามารถเพิกถอนความยินยอมได้ตลอดเวลาโดยยกเลิกเครื่องหมายในช่องด้านบน' : 'You can revoke consent anytime by unchecking the box above'}
-              </p>
-              <p className={`p-3 rounded-lg border ${isDark ? 'bg-blue-900/30 border-blue-700' : 'bg-blue-50 border-blue-200'}`}>
-                <strong>5. {language === 'th' ? 'พินัยกรรมชีวิต:' : 'Living Will:'}</strong> {language === 'th' ? 'หากท่านมีพินัยกรรมชีวิต (Living Will) และให้ความยินยอมนี้ แพทย์ทุกท่านจะสามารถเข้าถึงเพื่อดำเนินการตามความประสงค์ของท่านได้' : 'If you have a Living Will and give this consent, all doctors can access it to fulfill your wishes'}
-              </p>
-            </div>
-          </div>
-
-          {/* Security Notice */}
-          <div className={`border rounded-xl p-4 ${isDark ? 'bg-amber-900/20 border-amber-700' : 'bg-amber-50 border-amber-200'}`}>
-            <div className="flex items-start gap-3">
-              <Lock className={`w-5 h-5 mt-0.5 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
-              <div>
-                <p className={`font-medium text-sm ${isDark ? 'text-amber-300' : 'text-amber-800'}`}>{language === 'th' ? 'การรักษาความปลอดภัย' : 'Security'}</p>
-                <p className={`text-xs mt-1 ${isDark ? 'text-amber-400' : 'text-amber-700'}`}>
-                  {language === 'th' 
-                    ? 'การเข้าถึงข้อมูลทุกครั้งจะถูกบันทึกและตรวจสอบได้ หากพบการเข้าถึงที่ไม่เหมาะสม สามารถแจ้งเจ้าหน้าที่ได้ที่ support@izara.com'
-                    : 'All data access is logged and auditable. Report any inappropriate access to support@izara.com'}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
+        <DoctorsTab
+          consents={consents}
+          saving={saving}
+          handleToggleConsent={handleToggleConsent}
+          labels={labels}
+          language={language}
+          cls={cls}
+          formatDate={formatDate}
+        />
       )}
 
       {activeTab === 'audit' && (
-        <div className="space-y-4">
-          <div className={`rounded-2xl border overflow-hidden ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
-            {auditLog.length === 0 ? (
-              <div className="p-8 text-center">
-                <History className={`w-12 h-12 mx-auto mb-3 ${isDark ? 'text-gray-600' : 'text-gray-300'}`} />
-                <p className={isDark ? 'text-gray-400' : 'text-gray-500'}>{labels.noHistory[language]}</p>
-              </div>
-            ) : (
-              <div className={`divide-y ${isDark ? 'divide-gray-700' : 'divide-gray-100'}`}>
-                {auditLog.slice().reverse().map((entry, index) => (
-                  <div key={index} className={`p-4 ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`}>
-                    <div className="flex items-start gap-3">
-                      <div className={`p-2 rounded-lg ${entry.action.includes('REVOKED')
-                        ? isDark ? 'bg-red-900/50' : 'bg-red-100'
-                        : entry.action.includes('GRANTED')
-                          ? isDark ? 'bg-green-900/50' : 'bg-green-100'
-                          : isDark ? 'bg-blue-900/50' : 'bg-blue-100'
-                        }`}>
-                        {entry.action.includes('REVOKED') ? (
-                          <EyeOff className={`w-4 h-4 ${isDark ? 'text-red-400' : 'text-red-600'}`} />
-                        ) : entry.action.includes('GRANTED') ? (
-                          <Check className={`w-4 h-4 ${isDark ? 'text-green-400' : 'text-green-600'}`} />
-                        ) : (
-                          <Eye className={`w-4 h-4 ${isDark ? 'text-blue-400' : 'text-blue-600'}`} />
-                        )}
-                      </div>
-                      <div className="flex-1">
-                        <p className={`font-medium ${isDark ? 'text-white' : 'text-gray-800'}`}>
-                          {entry.action === 'CONSENT_GRANTED' && (language === 'th' ? 'ให้สิทธิ์เข้าถึงข้อมูล' : 'Granted data access')}
-                          {entry.action === 'CONSENT_REVOKED' && (language === 'th' ? 'เพิกถอนสิทธิ์' : 'Revoked access')}
-                          {entry.action === 'LIVING_WILL_CREATED' && (language === 'th' ? 'สร้างพินัยกรรมชีวิต' : 'Created Living Will')}
-                          {entry.action === 'LIVING_WILL_UPDATED' && (language === 'th' ? 'อัปเดตพินัยกรรมชีวิต' : 'Updated Living Will')}
-                          {entry.action === 'DATA_ACCESSED' && (language === 'th' ? 'เข้าถึงข้อมูล' : 'Accessed data')}
-                        </p>
-                        {entry.doctorName && (
-                          <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                            {language === 'th' ? 'แพทย์: ' : 'Doctor: '}{entry.doctorName}
-                          </p>
-                        )}
-                        {entry.dataAccessed && (
-                          <p className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
-                            {language === 'th' ? 'ข้อมูล: ' : 'Data: '}{entry.dataAccessed}
-                          </p>
-                        )}
-                        <p className={`text-xs mt-1 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-                          {formatDate(entry.timestamp)}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
+        <AuditTab
+          auditLog={auditLog}
+          labels={labels}
+          language={language}
+          cls={cls}
+          formatDate={formatDate}
+        />
       )}
-
     </div>
   );
 }

@@ -82,6 +82,122 @@ const ALCOHOL_LABELS: Record<string, string> = {
 
 const getLabel = (value: string, map: Record<string, string>) => map[value] ?? value;
 
+/** Build VitalSigns object from form state — extracted to reduce handleAddVitals complexity */
+function buildVitalsData(newVitals: NewVitalsState): VitalSigns {
+  const data: VitalSigns = { measuredAt: new Date() };
+
+  if (newVitals.bloodPressureSystolic && newVitals.bloodPressureDiastolic) {
+    data.bloodPressure = {
+      systolic: Number.parseInt(newVitals.bloodPressureSystolic, 10),
+      diastolic: Number.parseInt(newVitals.bloodPressureDiastolic, 10),
+      unit: 'mmHg'
+    };
+  }
+  if (newVitals.heartRate) {
+    data.heartRate = { value: Number.parseInt(newVitals.heartRate, 10), unit: 'bpm' };
+  }
+  if (newVitals.weight) {
+    data.weight = { value: Number.parseFloat(newVitals.weight), unit: 'kg' };
+  }
+  if (newVitals.temperature) {
+    data.temperature = { value: Number.parseFloat(newVitals.temperature), unit: 'celsius' };
+  }
+  if (newVitals.bloodGlucose) {
+    data.bloodGlucose = { value: Number.parseFloat(newVitals.bloodGlucose), unit: 'mg/dL', testType: 'random' };
+  }
+  if (newVitals.oxygenSaturation) {
+    data.oxygenSaturation = { value: Number.parseFloat(newVitals.oxygenSaturation), unit: '%' };
+  }
+
+  return data;
+}
+
+/** Build demographics update payload — extracted to reduce handleSaveProfile complexity */
+function buildDemographicsUpdate(
+  phr: PersonalHealthRecord | null,
+  user: User | null,
+  height: string
+): PersonalHealthRecord['demographics'] {
+  return {
+    name: phr?.demographics?.name || user?.name || '',
+    dateOfBirth: phr?.demographics?.dateOfBirth || user?.dateOfBirth || '',
+    gender: phr?.demographics?.gender || user?.gender || 'other',
+    bloodType: phr?.demographics?.bloodType,
+    weight: phr?.demographics?.weight,
+    ethnicity: phr?.demographics?.ethnicity,
+    occupation: phr?.demographics?.occupation,
+    height: Number.parseFloat(height)
+  };
+}
+
+/** Compute theme-dependent CSS classes for OverviewTab — extracted to reduce cognitive complexity */
+function getOverviewThemeClasses(isDark: boolean) {
+  return {
+    text: isDark ? 'text-white' : 'text-gray-800',
+    mutedText: isDark ? 'text-gray-400' : 'text-gray-500',
+    dimText: isDark ? 'text-gray-400' : 'text-gray-600',
+    boldText: isDark ? 'text-white' : '',
+    cardBg: isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100',
+    actionCardBg: isDark ? 'bg-gray-700 hover:bg-gray-600' : 'bg-white',
+    actionText: isDark ? 'text-gray-300' : 'text-gray-600',
+    tagBg: isDark ? 'bg-yellow-900/30 text-yellow-300' : 'bg-yellow-50 text-yellow-700',
+    noDataText: isDark ? 'text-gray-400' : 'text-gray-500',
+    quickActionBg: isDark
+      ? 'bg-gradient-to-r from-emerald-900/30 to-teal-900/30 border-emerald-800'
+      : 'bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200',
+    quickActionTitle: isDark ? 'text-emerald-300' : 'text-emerald-800',
+    heartCardBg: isDark
+      ? 'bg-gradient-to-br from-red-900/30 to-pink-900/30 border-red-800'
+      : 'bg-gradient-to-br from-red-50 to-pink-50 border-red-100',
+    pulseCardBg: isDark
+      ? 'bg-gradient-to-br from-purple-900/30 to-indigo-900/30 border-purple-800'
+      : 'bg-gradient-to-br from-purple-50 to-indigo-50 border-purple-100',
+    weightCardBg: isDark
+      ? 'bg-gradient-to-br from-blue-900/30 to-cyan-900/30 border-blue-800'
+      : 'bg-gradient-to-br from-blue-50 to-cyan-50 border-blue-100',
+    tempCardBg: isDark
+      ? 'bg-gradient-to-br from-orange-900/30 to-amber-900/30 border-orange-800'
+      : 'bg-gradient-to-br from-orange-50 to-amber-50 border-orange-100',
+  };
+}
+
+/** Theme classes for VitalsTab — extracted to reduce cognitive complexity */
+function getVitalsThemeClasses(isDark: boolean) {
+  return {
+    cardBg: isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100',
+    titleText: isDark ? 'text-white' : '',
+    formBg: isDark ? 'bg-emerald-900/30 border border-emerald-700' : 'bg-emerald-50',
+    formTitle: isDark ? 'text-emerald-300' : 'text-emerald-800',
+    labelText: isDark ? 'text-gray-300' : 'text-gray-600',
+    inputBg: isDark ? 'bg-gray-700 border-gray-600 text-white' : '',
+    cancelBtn: isDark ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300',
+    emptyText: isDark ? 'text-gray-400' : 'text-gray-500',
+    rowBg: isDark ? 'bg-gray-700/50 hover:bg-gray-700' : 'bg-gray-50 hover:bg-gray-100',
+    dateText: isDark ? 'text-gray-300' : 'text-gray-600',
+    vitalsText: isDark ? 'text-gray-200' : '',
+  };
+}
+
+/** Theme classes for MedicationsTab — extracted to reduce cognitive complexity */
+function getMedsThemeClasses(isDark: boolean) {
+  return {
+    cardBg: isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100',
+    titleText: isDark ? 'text-white' : '',
+    formBg: isDark ? 'bg-blue-900/30 border border-blue-700' : 'bg-blue-50',
+    formTitle: isDark ? 'text-blue-300' : 'text-blue-800',
+    labelText: isDark ? 'text-gray-300' : 'text-gray-600',
+    inputBg: isDark ? 'bg-gray-700 border-gray-600 text-white' : '',
+    cancelBtn: isDark ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300',
+    emptyText: isDark ? 'text-gray-400' : 'text-gray-500',
+    medCardBg: isDark ? 'bg-blue-900/20 border-blue-800' : 'bg-blue-50 border-blue-100',
+    medName: isDark ? 'text-white' : 'text-gray-800',
+    medDosage: isDark ? 'text-gray-300' : 'text-gray-600',
+    medPurpose: isDark ? 'text-gray-400' : 'text-gray-500',
+    activeStatus: isDark ? 'bg-green-900/50 text-green-300' : 'bg-green-100 text-green-700',
+    inactiveStatus: isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600',
+  };
+}
+
 const getVitalKey = (vital: VitalSigns) => {
   if (vital.measuredAt) {
     return new Date(vital.measuredAt).toISOString();
@@ -146,6 +262,7 @@ function OverviewTab({
 }: OverviewTabProps) {
   const { theme, language } = useSettings();
   const isDark = theme === 'dark';
+  const tc = getOverviewThemeClasses(isDark);
   
   const labels = {
     bloodPressure: { en: 'Blood Pressure', th: 'ความดันโลหิต' },
@@ -176,15 +293,15 @@ function OverviewTab({
     <div className="space-y-6">
       {/* Quick Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className={`rounded-xl p-4 border ${isDark ? 'bg-gradient-to-br from-red-900/30 to-pink-900/30 border-red-800' : 'bg-gradient-to-br from-red-50 to-pink-50 border-red-100'}`}>
+        <div className={`rounded-xl p-4 border ${tc.heartCardBg}`}>
           <div className="flex items-center justify-between mb-2">
             <Heart className="w-5 h-5 text-red-500" />
             <TrendIcon current={latestVital?.bloodPressure?.systolic} previous={previousVital?.bloodPressure?.systolic} />
           </div>
-          <p className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>
+          <p className={`text-2xl font-bold ${tc.text}`}>
             {latestVital?.bloodPressure ? `${latestVital.bloodPressure.systolic}/${latestVital.bloodPressure.diastolic}` : '-'}
           </p>
-          <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{labels.bloodPressure[language]}</p>
+          <p className={`text-xs ${tc.mutedText}`}>{labels.bloodPressure[language]}</p>
           {latestVital?.bloodPressure && (
             <p className={`text-xs mt-1 text-${bpStatus.color}-${isDark ? '400' : '600'}`}>
               {bpStatus.label}
@@ -192,115 +309,115 @@ function OverviewTab({
           )}
         </div>
 
-        <div className={`rounded-xl p-4 border ${isDark ? 'bg-gradient-to-br from-purple-900/30 to-indigo-900/30 border-purple-800' : 'bg-gradient-to-br from-purple-50 to-indigo-50 border-purple-100'}`}>
+        <div className={`rounded-xl p-4 border ${tc.pulseCardBg}`}>
           <div className="flex items-center justify-between mb-2">
             <Activity className="w-5 h-5 text-purple-500" />
             <TrendIcon current={latestVital?.heartRate?.value} previous={previousVital?.heartRate?.value} />
           </div>
-          <p className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>
+          <p className={`text-2xl font-bold ${tc.text}`}>
             {latestVital?.heartRate?.value || '-'}
           </p>
-          <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{labels.heartRate[language]}</p>
+          <p className={`text-xs ${tc.mutedText}`}>{labels.heartRate[language]}</p>
         </div>
 
-        <div className={`rounded-xl p-4 border ${isDark ? 'bg-gradient-to-br from-blue-900/30 to-cyan-900/30 border-blue-800' : 'bg-gradient-to-br from-blue-50 to-cyan-50 border-blue-100'}`}>
+        <div className={`rounded-xl p-4 border ${tc.weightCardBg}`}>
           <div className="flex items-center justify-between mb-2">
             <Scale className="w-5 h-5 text-blue-500" />
             <TrendIcon current={latestVital?.weight?.value} previous={previousVital?.weight?.value} />
           </div>
-          <p className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>
+          <p className={`text-2xl font-bold ${tc.text}`}>
             {latestVital?.weight?.value || '-'}
           </p>
-          <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{labels.weight[language]}</p>
+          <p className={`text-xs ${tc.mutedText}`}>{labels.weight[language]}</p>
           {bmi && (
-            <p className={`text-xs mt-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>BMI: {bmi}</p>
+            <p className={`text-xs mt-1 ${tc.dimText}`}>BMI: {bmi}</p>
           )}
         </div>
 
-        <div className={`rounded-xl p-4 border ${isDark ? 'bg-gradient-to-br from-orange-900/30 to-amber-900/30 border-orange-800' : 'bg-gradient-to-br from-orange-50 to-amber-50 border-orange-100'}`}>
+        <div className={`rounded-xl p-4 border ${tc.tempCardBg}`}>
           <div className="flex items-center justify-between mb-2">
             <Thermometer className="w-5 h-5 text-orange-500" />
           </div>
-          <p className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>
+          <p className={`text-2xl font-bold ${tc.text}`}>
             {latestVital?.temperature?.value || '-'}
           </p>
-          <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{labels.temperature[language]}</p>
+          <p className={`text-xs ${tc.mutedText}`}>{labels.temperature[language]}</p>
         </div>
       </div>
 
       {/* Basic Info & Conditions */}
       <div className="grid md:grid-cols-2 gap-6">
-        <div className={`rounded-xl p-5 border ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
-          <h2 className={`text-lg font-semibold mb-4 flex items-center gap-2 ${isDark ? 'text-white' : ''}`}>
+        <div className={`rounded-xl p-5 border ${tc.cardBg}`}>
+          <h2 className={`text-lg font-semibold mb-4 flex items-center gap-2 ${tc.boldText}`}>
             <Heart className="w-5 h-5 text-red-500" /> {labels.basicInfo[language]}
           </h2>
           <div className="space-y-3">
             <div className="flex justify-between">
-              <span className={isDark ? 'text-gray-400' : 'text-gray-600'}>{labels.bloodType[language]}</span>
-              <span className={`font-medium ${isDark ? 'text-white' : ''}`}>{phr?.demographics?.bloodType || user?.bloodType || '-'}</span>
+              <span className={tc.dimText}>{labels.bloodType[language]}</span>
+              <span className={`font-medium ${tc.boldText}`}>{phr?.demographics?.bloodType || user?.bloodType || '-'}</span>
             </div>
             <div className="flex justify-between">
-              <span className={isDark ? 'text-gray-400' : 'text-gray-600'}>{labels.height[language]}</span>
-              <span className={`font-medium ${isDark ? 'text-white' : ''}`}>{phr?.demographics?.height ? `${phr.demographics.height}${labels.cm[language]}` : '-'}</span>
+              <span className={tc.dimText}>{labels.height[language]}</span>
+              <span className={`font-medium ${tc.boldText}`}>{phr?.demographics?.height ? `${phr.demographics.height}${labels.cm[language]}` : '-'}</span>
             </div>
             <div className="flex justify-between">
-              <span className={isDark ? 'text-gray-400' : 'text-gray-600'}>{labels.latestWeight[language]}</span>
-              <span className={`font-medium ${isDark ? 'text-white' : ''}`}>{phr?.demographics?.weight || latestVital?.weight?.value ? `${phr?.demographics?.weight || latestVital?.weight?.value}${labels.kg[language]}` : '-'}</span>
+              <span className={tc.dimText}>{labels.latestWeight[language]}</span>
+              <span className={`font-medium ${tc.boldText}`}>{phr?.demographics?.weight || latestVital?.weight?.value ? `${phr?.demographics?.weight || latestVital?.weight?.value}${labels.kg[language]}` : '-'}</span>
             </div>
             <div className="flex justify-between">
-              <span className={isDark ? 'text-gray-400' : 'text-gray-600'}>BMI</span>
-              <span className={`font-medium ${isDark ? 'text-white' : ''}`}>{bmi || '-'}</span>
+              <span className={tc.dimText}>BMI</span>
+              <span className={`font-medium ${tc.boldText}`}>{bmi || '-'}</span>
             </div>
           </div>
         </div>
 
-        <div className={`rounded-xl p-5 border ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
-          <h2 className={`text-lg font-semibold mb-4 flex items-center gap-2 ${isDark ? 'text-white' : ''}`}>
+        <div className={`rounded-xl p-5 border ${tc.cardBg}`}>
+          <h2 className={`text-lg font-semibold mb-4 flex items-center gap-2 ${tc.boldText}`}>
             <AlertTriangle className="w-5 h-5 text-yellow-500" /> {labels.chronicConditions[language]}
           </h2>
           {user?.chronicConditions?.length ? (
             <div className="flex flex-wrap gap-2">
               {user.chronicConditions.map((condition) => (
-                <span key={condition} className={`px-3 py-1 rounded-full text-sm ${isDark ? 'bg-yellow-900/30 text-yellow-300' : 'bg-yellow-50 text-yellow-700'}`}>{condition}</span>
+                <span key={condition} className={`px-3 py-1 rounded-full text-sm ${tc.tagBg}`}>{condition}</span>
               ))}
             </div>
           ) : (
-            <p className={isDark ? 'text-gray-400' : 'text-gray-500'}>{labels.none[language]}</p>
+            <p className={tc.noDataText}>{labels.none[language]}</p>
           )}
         </div>
       </div>
 
       {/* Quick Actions */}
-      <div className={`rounded-xl p-6 border ${isDark ? 'bg-gradient-to-r from-emerald-900/30 to-teal-900/30 border-emerald-800' : 'bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200'}`}>
-        <h3 className={`font-semibold mb-4 ${isDark ? 'text-emerald-300' : 'text-emerald-800'}`}>{labels.recordHealth[language]}</h3>
+      <div className={`rounded-xl p-6 border ${tc.quickActionBg}`}>
+        <h3 className={`font-semibold mb-4 ${tc.quickActionTitle}`}>{labels.recordHealth[language]}</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <button
             onClick={onOpenVitals}
-            className={`flex flex-col items-center gap-2 p-4 rounded-xl hover:shadow-md transition-all ${isDark ? 'bg-gray-700 hover:bg-gray-600' : 'bg-white'}`}
+            className={`flex flex-col items-center gap-2 p-4 rounded-xl hover:shadow-md transition-all ${tc.actionCardBg}`}
           >
             <Activity className="w-6 h-6 text-emerald-600" />
-            <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{labels.vitals[language]}</span>
+            <span className={`text-sm ${tc.actionText}`}>{labels.vitals[language]}</span>
           </button>
           <button
             onClick={onOpenMedication}
-            className={`flex flex-col items-center gap-2 p-4 rounded-xl hover:shadow-md transition-all ${isDark ? 'bg-gray-700 hover:bg-gray-600' : 'bg-white'}`}
+            className={`flex flex-col items-center gap-2 p-4 rounded-xl hover:shadow-md transition-all ${tc.actionCardBg}`}
           >
             <Pill className="w-6 h-6 text-blue-600" />
-            <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{labels.medications[language]}</span>
+            <span className={`text-sm ${tc.actionText}`}>{labels.medications[language]}</span>
           </button>
           <button
             onClick={onOpenAllergy}
-            className={`flex flex-col items-center gap-2 p-4 rounded-xl hover:shadow-md transition-all ${isDark ? 'bg-gray-700 hover:bg-gray-600' : 'bg-white'}`}
+            className={`flex flex-col items-center gap-2 p-4 rounded-xl hover:shadow-md transition-all ${tc.actionCardBg}`}
           >
             <AlertTriangle className="w-6 h-6 text-red-600" />
-            <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{labels.allergies[language]}</span>
+            <span className={`text-sm ${tc.actionText}`}>{labels.allergies[language]}</span>
           </button>
           <button
             onClick={onOpenProfile}
-            className={`flex flex-col items-center gap-2 p-4 rounded-xl hover:shadow-md transition-all ${isDark ? 'bg-gray-700 hover:bg-gray-600' : 'bg-white'}`}
+            className={`flex flex-col items-center gap-2 p-4 rounded-xl hover:shadow-md transition-all ${tc.actionCardBg}`}
           >
             <UserIcon className="w-6 h-6 text-purple-600" />
-            <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{labels.editProfile[language]}</span>
+            <span className={`text-sm ${tc.actionText}`}>{labels.editProfile[language]}</span>
           </button>
         </div>
       </div>
@@ -328,6 +445,8 @@ function VitalsTab({
 }: VitalsTabProps) {
   const { theme, language } = useSettings();
   const isDark = theme === 'dark';
+  const tc = getVitalsThemeClasses(isDark);
+  const locale = language === 'th' ? 'th-TH' : 'en-US';
   
   const labels = {
     title: { en: 'Vital Signs', th: 'สัญญาณชีพ' },
@@ -349,65 +468,65 @@ function VitalsTab({
   };
   
   return (
-    <div className={`rounded-xl p-5 border ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
+    <div className={`rounded-xl p-5 border ${tc.cardBg}`}>
       <div className="flex items-center justify-between mb-4">
-        <h2 className={`text-lg font-semibold flex items-center gap-2 ${isDark ? 'text-white' : ''}`}><Activity className="w-5 h-5 text-emerald-600" /> {labels.title[language]}</h2>
+        <h2 className={`text-lg font-semibold flex items-center gap-2 ${tc.titleText}`}><Activity className="w-5 h-5 text-emerald-600" /> {labels.title[language]}</h2>
         <button onClick={() => setShowAddVitals(true)} className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700">
           <Plus className="w-4 h-4" /> {labels.record[language]}
         </button>
       </div>
 
       {showAddVitals && (
-        <div className={`p-4 rounded-xl mb-4 ${isDark ? 'bg-emerald-900/30 border border-emerald-700' : 'bg-emerald-50'}`}>
-          <h3 className={`font-medium mb-4 ${isDark ? 'text-emerald-300' : 'text-emerald-800'}`}>{labels.newRecord[language]}</h3>
+        <div className={`p-4 rounded-xl mb-4 ${tc.formBg}`}>
+          <h3 className={`font-medium mb-4 ${tc.formTitle}`}>{labels.newRecord[language]}</h3>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
             <div>
-              <label htmlFor="vitals-systolic" className={`block text-sm mb-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{labels.systolic[language]}</label>
+              <label htmlFor="vitals-systolic" className={`block text-sm mb-1 ${tc.labelText}`}>{labels.systolic[language]}</label>
               <input
                 id="vitals-systolic"
                 type="number"
                 value={newVitals.bloodPressureSystolic}
                 onChange={(e) => setNewVitals({ ...newVitals, bloodPressureSystolic: e.target.value })}
-                className={`w-full p-2 border rounded-lg ${isDark ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
+                className={`w-full p-2 border rounded-lg ${tc.inputBg}`}
                 placeholder="120"
               />
             </div>
             <div>
-              <label htmlFor="vitals-diastolic" className={`block text-sm mb-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{labels.diastolic[language]}</label>
+              <label htmlFor="vitals-diastolic" className={`block text-sm mb-1 ${tc.labelText}`}>{labels.diastolic[language]}</label>
               <input
                 id="vitals-diastolic"
                 type="number"
                 value={newVitals.bloodPressureDiastolic}
                 onChange={(e) => setNewVitals({ ...newVitals, bloodPressureDiastolic: e.target.value })}
-                className={`w-full p-2 border rounded-lg ${isDark ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
+                className={`w-full p-2 border rounded-lg ${tc.inputBg}`}
                 placeholder="80"
               />
             </div>
             <div>
-              <label htmlFor="vitals-heart-rate" className={`block text-sm mb-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{labels.heartRate[language]}</label>
+              <label htmlFor="vitals-heart-rate" className={`block text-sm mb-1 ${tc.labelText}`}>{labels.heartRate[language]}</label>
               <input
                 id="vitals-heart-rate"
                 type="number"
                 value={newVitals.heartRate}
                 onChange={(e) => setNewVitals({ ...newVitals, heartRate: e.target.value })}
-                className={`w-full p-2 border rounded-lg ${isDark ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
+                className={`w-full p-2 border rounded-lg ${tc.inputBg}`}
                 placeholder="72"
               />
             </div>
             <div>
-              <label htmlFor="vitals-weight" className={`block text-sm mb-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{labels.weight[language]}</label>
+              <label htmlFor="vitals-weight" className={`block text-sm mb-1 ${tc.labelText}`}>{labels.weight[language]}</label>
               <input
                 id="vitals-weight"
                 type="number"
                 step="0.1"
                 value={newVitals.weight}
                 onChange={(e) => setNewVitals({ ...newVitals, weight: e.target.value })}
-                className={`w-full p-2 border rounded-lg ${isDark ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
+                className={`w-full p-2 border rounded-lg ${tc.inputBg}`}
                 placeholder="70"
               />
             </div>
             <div>
-              <label htmlFor="vitals-temperature" className={`block text-sm mb-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{labels.temperature[language]}</label>
+              <label htmlFor="vitals-temperature" className={`block text-sm mb-1 ${tc.labelText}`}>{labels.temperature[language]}</label>
               <input
                 id="vitals-temperature"
                 type="number"
@@ -428,30 +547,30 @@ function VitalsTab({
                     }
                   }
                 }}
-                className={`w-full p-2 border rounded-lg ${isDark ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
+                className={`w-full p-2 border rounded-lg ${tc.inputBg}`}
                 placeholder="36.5"
               />
-              <p className={`text-xs mt-1 ${isDark ? 'text-gray-400' : 'text-gray-400'}`}>{labels.normalRange[language]}</p>
+              <p className="text-xs mt-1 text-gray-400">{labels.normalRange[language]}</p>
             </div>
             <div>
-              <label htmlFor="vitals-blood-glucose" className={`block text-sm mb-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{labels.bloodGlucose[language]}</label>
+              <label htmlFor="vitals-blood-glucose" className={`block text-sm mb-1 ${tc.labelText}`}>{labels.bloodGlucose[language]}</label>
               <input
                 id="vitals-blood-glucose"
                 type="number"
                 value={newVitals.bloodGlucose}
                 onChange={(e) => setNewVitals({ ...newVitals, bloodGlucose: e.target.value })}
-                className={`w-full p-2 border rounded-lg ${isDark ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
+                className={`w-full p-2 border rounded-lg ${tc.inputBg}`}
                 placeholder="100"
               />
             </div>
             <div>
-              <label htmlFor="vitals-oxygen" className={`block text-sm mb-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{labels.oxygen[language]}</label>
+              <label htmlFor="vitals-oxygen" className={`block text-sm mb-1 ${tc.labelText}`}>{labels.oxygen[language]}</label>
               <input
                 id="vitals-oxygen"
                 type="number"
                 value={newVitals.oxygenSaturation}
                 onChange={(e) => setNewVitals({ ...newVitals, oxygenSaturation: e.target.value })}
-                className={`w-full p-2 border rounded-lg ${isDark ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
+                className={`w-full p-2 border rounded-lg ${tc.inputBg}`}
                 placeholder="98"
               />
             </div>
@@ -461,7 +580,7 @@ function VitalsTab({
               {saving ? <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" /> : <Save className="w-4 h-4" />}
               {labels.save[language]}
             </button>
-            <button onClick={() => setShowAddVitals(false)} className={`px-4 py-2 rounded-lg flex items-center gap-2 ${isDark ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}>
+            <button onClick={() => setShowAddVitals(false)} className={`px-4 py-2 rounded-lg flex items-center gap-2 ${tc.cancelBtn}`}>
               <X className="w-4 h-4" /> {labels.cancel[language]}
             </button>
           </div>
@@ -469,7 +588,7 @@ function VitalsTab({
       )}
 
       {vitals.length === 0 ? (
-        <div className={`text-center py-8 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+        <div className={`text-center py-8 ${tc.emptyText}`}>
           <Activity className="w-12 h-12 mx-auto mb-2 opacity-30" />
           <p>{labels.noData[language]}</p>
           <button onClick={() => setShowAddVitals(true)} className="mt-4 text-emerald-600 hover:underline">
@@ -479,9 +598,9 @@ function VitalsTab({
       ) : (
         <div className="space-y-3">
           {vitals.slice(0, 10).map((v) => (
-            <div key={getVitalKey(v)} className={`flex items-center justify-between p-4 rounded-lg transition-colors ${isDark ? 'bg-gray-700/50 hover:bg-gray-700' : 'bg-gray-50 hover:bg-gray-100'}`}>
-              <span className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-                {v.measuredAt ? new Date(v.measuredAt).toLocaleDateString(language === 'th' ? 'th-TH' : 'en-US', {
+            <div key={getVitalKey(v)} className={`flex items-center justify-between p-4 rounded-lg transition-colors ${tc.rowBg}`}>
+              <span className={`text-sm font-medium ${tc.dateText}`}>
+                {v.measuredAt ? new Date(v.measuredAt).toLocaleDateString(locale, {
                   year: 'numeric',
                   month: 'short',
                   day: 'numeric',
@@ -489,7 +608,7 @@ function VitalsTab({
                   minute: '2-digit'
                 }) : '-'}
               </span>
-              <div className={`flex flex-wrap gap-4 text-sm ${isDark ? 'text-gray-200' : ''}`}>
+              <div className={`flex flex-wrap gap-4 text-sm ${tc.vitalsText}`}>
                 {v.bloodPressure && (
                   <span className="flex items-center gap-1">
                     <Heart className="w-4 h-4 text-red-400" />
@@ -549,6 +668,7 @@ function MedicationsTab({
 }: MedicationsTabProps) {
   const { theme, language } = useSettings();
   const isDark = theme === 'dark';
+  const tc = getMedsThemeClasses(isDark);
   
   const labels = {
     title: { en: 'Current Medications', th: 'ยาที่ใช้ประจำ' },
@@ -570,61 +690,61 @@ function MedicationsTab({
     purposePlaceholder: { en: 'e.g. Fever relief, pain relief', th: 'เช่น ลดไข้ บรรเทาปวด' },
     purposeLabel: { en: 'Purpose:', th: 'วัตถุประสงค์:' },
   };
-  
+
   return (
-    <div className={`rounded-xl p-5 border ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
+    <div className={`rounded-xl p-5 border ${tc.cardBg}`}>
       <div className="flex items-center justify-between mb-4">
-        <h2 className={`text-lg font-semibold flex items-center gap-2 ${isDark ? 'text-white' : ''}`}><Pill className="w-5 h-5 text-blue-500" /> {labels.title[language]}</h2>
+        <h2 className={`text-lg font-semibold flex items-center gap-2 ${tc.titleText}`}><Pill className="w-5 h-5 text-blue-500" /> {labels.title[language]}</h2>
         <button onClick={() => setShowAddMedication(true)} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
           <Plus className="w-4 h-4" /> {labels.add[language]}
         </button>
       </div>
 
       {showAddMedication && (
-        <div className={`p-4 rounded-xl mb-4 ${isDark ? 'bg-blue-900/30 border border-blue-700' : 'bg-blue-50'}`}>
-          <h3 className={`font-medium mb-4 ${isDark ? 'text-blue-300' : 'text-blue-800'}`}>{labels.addTitle[language]}</h3>
+        <div className={`p-4 rounded-xl mb-4 ${tc.formBg}`}>
+          <h3 className={`font-medium mb-4 ${tc.formTitle}`}>{labels.addTitle[language]}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
-              <label htmlFor="medication-name" className={`block text-sm mb-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{labels.name[language]}</label>
+              <label htmlFor="medication-name" className={`block text-sm mb-1 ${tc.labelText}`}>{labels.name[language]}</label>
               <input
                 id="medication-name"
                 type="text"
                 value={newMedication.name}
                 onChange={(e) => setNewMedication({ ...newMedication, name: e.target.value })}
-                className={`w-full p-2 border rounded-lg ${isDark ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
+                className={`w-full p-2 border rounded-lg ${tc.inputBg}`}
                 placeholder={labels.namePlaceholder[language]}
               />
             </div>
             <div>
-              <label htmlFor="medication-dosage" className={`block text-sm mb-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{labels.dosage[language]}</label>
+              <label htmlFor="medication-dosage" className={`block text-sm mb-1 ${tc.labelText}`}>{labels.dosage[language]}</label>
               <input
                 id="medication-dosage"
                 type="text"
                 value={newMedication.dosage}
                 onChange={(e) => setNewMedication({ ...newMedication, dosage: e.target.value })}
-                className={`w-full p-2 border rounded-lg ${isDark ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
+                className={`w-full p-2 border rounded-lg ${tc.inputBg}`}
                 placeholder={labels.dosagePlaceholder[language]}
               />
             </div>
             <div>
-              <label htmlFor="medication-frequency" className={`block text-sm mb-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{labels.frequency[language]}</label>
+              <label htmlFor="medication-frequency" className={`block text-sm mb-1 ${tc.labelText}`}>{labels.frequency[language]}</label>
               <input
                 id="medication-frequency"
                 type="text"
                 value={newMedication.frequency}
                 onChange={(e) => setNewMedication({ ...newMedication, frequency: e.target.value })}
-                className={`w-full p-2 border rounded-lg ${isDark ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
+                className={`w-full p-2 border rounded-lg ${tc.inputBg}`}
                 placeholder={labels.frequencyPlaceholder[language]}
               />
             </div>
             <div>
-              <label htmlFor="medication-purpose" className={`block text-sm mb-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{labels.purpose[language]}</label>
+              <label htmlFor="medication-purpose" className={`block text-sm mb-1 ${tc.labelText}`}>{labels.purpose[language]}</label>
               <input
                 id="medication-purpose"
                 type="text"
                 value={newMedication.purpose}
                 onChange={(e) => setNewMedication({ ...newMedication, purpose: e.target.value })}
-                className={`w-full p-2 border rounded-lg ${isDark ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
+                className={`w-full p-2 border rounded-lg ${tc.inputBg}`}
                 placeholder={labels.purposePlaceholder[language]}
               />
             </div>
@@ -634,7 +754,7 @@ function MedicationsTab({
               {saving ? <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" /> : <Save className="w-4 h-4" />}
               {labels.save[language]}
             </button>
-            <button onClick={() => setShowAddMedication(false)} className={`px-4 py-2 rounded-lg flex items-center gap-2 ${isDark ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}>
+            <button onClick={() => setShowAddMedication(false)} className={`px-4 py-2 rounded-lg flex items-center gap-2 ${tc.cancelBtn}`}>
               <X className="w-4 h-4" /> {labels.cancel[language]}
             </button>
           </div>
@@ -644,16 +764,14 @@ function MedicationsTab({
       {medications?.length ? (
         <div className="space-y-3">
           {medications.map((med) => (
-            <div key={med.id} className={`p-4 rounded-lg border ${isDark ? 'bg-blue-900/20 border-blue-800' : 'bg-blue-50 border-blue-100'}`}>
+            <div key={med.id} className={`p-4 rounded-lg border ${tc.medCardBg}`}>
               <div className="flex items-start justify-between">
                 <div>
-                  <p className={`font-medium ${isDark ? 'text-white' : 'text-gray-800'}`}>{med.name}</p>
-                  <p className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{med.dosage} - {med.frequency}</p>
-                  {med.purpose && <p className={`text-xs mt-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{labels.purposeLabel[language]} {med.purpose}</p>}
+                  <p className={`font-medium ${tc.medName}`}>{med.name}</p>
+                  <p className={`text-sm ${tc.medDosage}`}>{med.dosage} - {med.frequency}</p>
+                  {med.purpose && <p className={`text-xs mt-1 ${tc.medPurpose}`}>{labels.purposeLabel[language]} {med.purpose}</p>}
                 </div>
-                <span className={`px-2 py-1 text-xs rounded-full ${med.status === 'active' 
-                  ? (isDark ? 'bg-green-900/50 text-green-300' : 'bg-green-100 text-green-700') 
-                  : (isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600')}`}>
+                <span className={`px-2 py-1 text-xs rounded-full ${med.status === 'active' ? tc.activeStatus : tc.inactiveStatus}`}>
                   {med.status === 'active' ? labels.active[language] : labels.stopped[language]}
                 </span>
               </div>
@@ -661,7 +779,7 @@ function MedicationsTab({
           ))}
         </div>
       ) : (
-        <div className={`text-center py-8 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+        <div className={`text-center py-8 ${tc.emptyText}`}>
           <Pill className="w-12 h-12 mx-auto mb-2 opacity-30" />
           <p>{labels.noMeds[language]}</p>
           <button onClick={() => setShowAddMedication(true)} className="mt-4 text-blue-600 hover:underline">
@@ -1217,33 +1335,7 @@ function PHRPage() {
     if (!user) return;
     setSaving(true);
     try {
-      const vitalsData: VitalSigns = {
-        measuredAt: new Date(),
-      };
-
-      // Only add fields that have values
-      if (newVitals.bloodPressureSystolic && newVitals.bloodPressureDiastolic) {
-        vitalsData.bloodPressure = {
-          systolic: Number.parseInt(newVitals.bloodPressureSystolic, 10),
-          diastolic: Number.parseInt(newVitals.bloodPressureDiastolic, 10),
-          unit: 'mmHg'
-        };
-      }
-      if (newVitals.heartRate) {
-        vitalsData.heartRate = { value: Number.parseInt(newVitals.heartRate, 10), unit: 'bpm' };
-      }
-      if (newVitals.weight) {
-        vitalsData.weight = { value: Number.parseFloat(newVitals.weight), unit: 'kg' };
-      }
-      if (newVitals.temperature) {
-        vitalsData.temperature = { value: Number.parseFloat(newVitals.temperature), unit: 'celsius' };
-      }
-      if (newVitals.bloodGlucose) {
-        vitalsData.bloodGlucose = { value: Number.parseFloat(newVitals.bloodGlucose), unit: 'mg/dL', testType: 'random' };
-      }
-      if (newVitals.oxygenSaturation) {
-        vitalsData.oxygenSaturation = { value: Number.parseFloat(newVitals.oxygenSaturation), unit: '%' };
-      }
+      const vitalsData = buildVitalsData(newVitals);
 
       await phrService.addVitals(user.id, vitalsData);
       setShowAddVitals(false);
@@ -1332,16 +1424,7 @@ function PHRPage() {
       if (profileData.height) {
         await phrService.update(user.id, {
           ...phr,
-          demographics: {
-            name: phr?.demographics?.name || user?.name || '',
-            dateOfBirth: phr?.demographics?.dateOfBirth || user?.dateOfBirth || '',
-            gender: phr?.demographics?.gender || user?.gender || 'other',
-            bloodType: phr?.demographics?.bloodType,
-            weight: phr?.demographics?.weight,
-            ethnicity: phr?.demographics?.ethnicity,
-            occupation: phr?.demographics?.occupation,
-            height: Number.parseFloat(profileData.height)
-          },
+          demographics: buildDemographicsUpdate(phr, user, profileData.height),
           updatedAt: new Date()
         });
       }
@@ -1427,6 +1510,13 @@ function PHRPage() {
     { id: 'profile', label: t('phr.personalInfo'), icon: UserIcon },
   ] as const;
 
+  const getTabClass = (isActive: boolean) => {
+    if (isActive) return 'bg-emerald-600 text-white';
+    return isDark
+      ? 'bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700'
+      : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200';
+  };
+
   const tabPanels: Record<TabId, JSX.Element> = {
     overview: (
       <OverviewTab
@@ -1504,13 +1594,7 @@ function PHRPage() {
           <button
             key={tabItem.id}
             onClick={() => setTab(tabItem.id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg whitespace-nowrap transition-colors ${
-              tab === tabItem.id 
-                ? 'bg-emerald-600 text-white' 
-                : isDark 
-                  ? 'bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700' 
-                  : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
-            }`}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg whitespace-nowrap transition-colors ${getTabClass(tab === tabItem.id)}`}
           >
             <tabItem.icon className="w-4 h-4" /> {tabItem.label}
           </button>

@@ -22,26 +22,28 @@ export const Card: React.FC<CardProps> = ({
     lg: 'p-6',
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (onClick && (e.key === 'Enter' || e.key === ' ')) {
-      e.preventDefault();
-      onClick();
-    }
-  };
+  const baseClassName = `
+    bg-white rounded-xl border border-gray-100 
+    ${paddingClasses[padding]}
+    ${hover ? 'hover:shadow-lg hover:border-gray-200 transition-all cursor-pointer' : ''}
+    ${className}
+  `;
+
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        className={baseClassName}
+        style={{ textAlign: 'left' }}
+      >
+        {children}
+      </button>
+    );
+  }
 
   return (
-    <div
-      role={onClick ? 'button' : undefined}
-      tabIndex={onClick ? 0 : undefined}
-      onClick={onClick}
-      onKeyDown={onClick ? handleKeyDown : undefined}
-      className={`
-        bg-white rounded-xl border border-gray-100 
-        ${paddingClasses[padding]}
-        ${hover ? 'hover:shadow-lg hover:border-gray-200 transition-all cursor-pointer' : ''}
-        ${className}
-      `}
-    >
+    <div className={baseClassName}>
       {children}
     </div>
   );

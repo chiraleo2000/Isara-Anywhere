@@ -78,6 +78,41 @@ const BellIcon: React.FC<{ className?: string }> = ({ className }) => (
 );
 
 // ============================================================================
+// HELPER FUNCTIONS (module scope - S2004)
+// ============================================================================
+const getCategoryIcon = (categoryId: string) => {
+  switch (categoryId) {
+    case 'diagnosis': return '🔍';
+    case 'treatment': return '💊';
+    case 'pharmacology': return '💊';
+    case 'surgery': return '🔪';
+    case 'emergency': return '🚨';
+    case 'pediatrics': return '👶';
+    case 'radiology': return '🩻';
+    case 'laboratory': return '🧪';
+    case 'pathology': return '🔬';
+    default: return '📄';
+  }
+};
+
+// Render content with inline images support
+// Format: [image:URL:description] will be rendered as <img>
+const renderContentWithImages = (content: string) => {
+  if (!content) return '';
+
+  // Replace [image:URL:description] with actual img tags
+  const imagePattern = /\[image:([^\]:]+):([^\]]*)\]/g;
+  let processedContent = content.replaceAll(imagePattern, (match, url, description) => {
+    return `<figure class="my-6"><img src="${url}" alt="${description}" class="w-full max-w-2xl mx-auto rounded-lg shadow-md" loading="lazy" /><figcaption class="text-center text-sm text-gray-500 mt-2">${description || ''}</figcaption></figure>`;
+  });
+
+  // Also replace newlines with <br/>
+  processedContent = processedContent.replaceAll('\n', '<br/>');
+
+  return processedContent;
+};
+
+// ============================================================================
 // MAIN COMPONENT
 // ============================================================================
 
@@ -97,8 +132,31 @@ const labels = {
 
 export const ClinicalResources: React.FC = () => {
   const { user } = useAuth();
-  const { theme, language, t } = useSettings();
+  const { theme } = useSettings();
   const isDark = theme === 'dark';
+  const themeClasses = isDark ? {
+    container: 'bg-gray-900',
+    panelBg: 'bg-gray-800 border-gray-700',
+    titleText: 'text-white',
+    subtitleText: 'text-gray-400',
+    searchInput: 'bg-gray-700 border-gray-600 text-white placeholder-gray-400',
+    selectInput: 'bg-gray-700 border-gray-600 text-white',
+    checkboxBg: 'bg-gray-700',
+    checkboxText: 'text-gray-300',
+    inactiveCategory: 'bg-gray-700 text-gray-300 hover:bg-gray-600',
+    divider: 'border-gray-700',
+  } : {
+    container: 'bg-gray-50',
+    panelBg: 'bg-white border-gray-200',
+    titleText: 'text-gray-900',
+    subtitleText: 'text-gray-600',
+    searchInput: 'border-gray-300',
+    selectInput: 'border-gray-300',
+    checkboxBg: 'bg-gray-50',
+    checkboxText: 'text-gray-700',
+    inactiveCategory: 'bg-gray-100 text-gray-600 hover:bg-gray-200',
+    divider: 'border-gray-200',
+  };
   const isAdmin = user?.email?.includes('admin') || user?.role === 'admin';
 
   // Data states
@@ -370,6 +428,17 @@ export const ClinicalResources: React.FC = () => {
   // ============================================================================
   // HELPERS
   // ============================================================================
+  const handleRemoveTag = (tag: string) => {
+    setFormData((prev) => ({ ...prev, tags: prev.tags.filter((t) => t !== tag) }));
+  };
+
+  const handleRemoveReference = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      references: prev.references.filter((_, i) => i !== index),
+    }));
+  };
+
   const resetForm = () => {
     setFormData({
       title: '',
@@ -411,38 +480,6 @@ export const ClinicalResources: React.FC = () => {
     return cat || { id: categoryId, name: categoryId, nameTh: categoryId };
   };
 
-  const getCategoryIcon = (categoryId: string) => {
-    switch (categoryId) {
-      case 'diagnosis': return '🔍';
-      case 'treatment': return '💊';
-      case 'pharmacology': return '💊';
-      case 'surgery': return '🔪';
-      case 'emergency': return '🚨';
-      case 'pediatrics': return '👶';
-      case 'radiology': return '🩻';
-      case 'laboratory': return '🧪';
-      case 'pathology': return '🔬';
-      default: return '📄';
-    }
-  };
-
-  // Render content with inline images support
-  // Format: [image:URL:description] will be rendered as <img>
-  const renderContentWithImages = (content: string) => {
-    if (!content) return '';
-
-    // Replace [image:URL:description] with actual img tags
-    const imagePattern = /\[image:([^\]:]+):([^\]]*)\]/g;
-    let processedContent = content.replaceAll(imagePattern, (match, url, description) => {
-      return `<figure class="my-6"><img src="${url}" alt="${description}" class="w-full max-w-2xl mx-auto rounded-lg shadow-md" loading="lazy" /><figcaption class="text-center text-sm text-gray-500 mt-2">${description || ''}</figcaption></figure>`;
-    });
-
-    // Also replace newlines with <br/>
-    processedContent = processedContent.replaceAll('\n', '<br/>');
-
-    return processedContent;
-  };
-
   // ============================================================================
   // RENDER - LOADING
   // ============================================================================
@@ -460,16 +497,163 @@ export const ClinicalResources: React.FC = () => {
   // ============================================================================
   // RENDER - MAIN
   // ============================================================================
+
+  const renderResourceDetail = (resource: ClinicalResourceItem) => (
+    <div className="max-w-4xl mx-auto">
+      {/* Resource Header */}
+      <div className="mb-6">
+        <div className="flex items-center gap-2 mb-3">
+          <span className={`text-sm px-3 py-1 rounded-full ${statusConfig[resource.status]?.bgColor} ${statusConfig[resource.status]?.color}`}>
+            {statusConfig[resource.status]?.label}
+          </span>
+          <span className="text-sm px-3 py-1 rounded-full bg-emerald-100 text-emerald-700">
+            {getCategoryInfo(resource.category).name}
+          </span>
+          <span className="text-sm text-gray-500">v{resource.version || 1}</span>
+        </div>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          {resource.titleTh || resource.title}
+        </h1>
+        {resource.title && resource.titleTh && (
+          <h2 className="text-xl text-gray-500 mb-3">{resource.title}</h2>
+        )}
+        <p className="text-gray-700">{resource.descriptionTh || resource.description}</p>
+
+        {/* Tags */}
+        {resource.tags && resource.tags.length > 0 && (
+          <div className="flex flex-wrap gap-2 mt-3">
+            {resource.tags.map((tag) => (
+              <span key={tag} className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600">
+                #{tag}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Meta Info */}
+        <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-gray-500">
+          <span>By {resource.createdByName || resource.source || 'ทีมแพทย์ Isara'}</span>
+          <span>Updated: {new Date(resource.updatedAt || resource.createdAt).toLocaleDateString()}</span>
+          {resource.source && <span>Source: {resource.source}</span>}
+        </div>
+
+        {/* Rejection Reason */}
+        {resource.status === 'rejected' && resource.rejectionReason && (
+          <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-700 font-medium">Rejection Reason:</p>
+            <p className="text-red-600">{resource.rejectionReason}</p>
+          </div>
+        )}
+
+        {/* Action Buttons */}
+        <div className="mt-4 flex flex-wrap gap-2">
+          {/* Owner actions */}
+          {resource.createdBy === user?.id && (
+            <>
+              <button
+                onClick={() => openEditModal(resource)}
+                className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                <EditIcon className="w-4 h-4" />
+                Edit
+              </button>
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-white border border-red-300 text-red-600 rounded-lg hover:bg-red-50"
+              >
+                <TrashIcon className="w-4 h-4" />
+                Delete
+              </button>
+              {resource.status === 'draft' && (
+                <button
+                  onClick={() => handleSubmitForApproval(resource)}
+                  className="flex items-center gap-2 px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600"
+                >
+                  Submit for Approval
+                </button>
+              )}
+            </>
+          )}
+          {/* Admin actions */}
+          {isAdmin && resource.status === 'pending' && (
+            <button
+              onClick={() => setShowApprovalModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"
+            >
+              Review & Approve
+            </button>
+          )}
+          <button
+            onClick={() => setShowHistoryModal(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+          >
+            <HistoryIcon className="w-4 h-4" />
+            History
+          </button>
+        </div>
+      </div>
+
+      {/* Resource Content - Thai as Primary */}
+      <div className="prose prose-lg max-w-none">
+        <div
+          className="text-gray-800 leading-relaxed"
+          style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+          dangerouslySetInnerHTML={{ __html: renderContentWithImages(resource.contentTh || resource.content) }}
+        />
+      </div>
+
+      {/* English Content as Secondary */}
+      {resource.content && resource.contentTh && (
+        <div className="mt-8 pt-6 border-t">
+          <h3 className="text-lg font-semibold text-gray-700 mb-4">🇬🇧 English Version</h3>
+          <div
+            className="text-gray-800 leading-relaxed"
+            dangerouslySetInnerHTML={{ __html: renderContentWithImages(resource.content) }}
+          />
+        </div>
+      )}
+
+      {/* References */}
+      {resource.references && resource.references.length > 0 && (
+        <div className="mt-8 p-6 bg-gray-50 rounded-lg border border-gray-200">
+          <h3 className="text-lg font-bold text-gray-900 mb-3">References</h3>
+          <ul className="space-y-2">
+            {resource.references.map((ref) => (
+              <li key={`ref-${ref}`} className="text-sm text-gray-700">• {ref}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Comments */}
+      {resource.comments && resource.comments.length > 0 && (
+        <div className="mt-8">
+          <h3 className="text-lg font-bold text-gray-900 mb-3">Admin Feedback</h3>
+          <div className="space-y-3">
+            {resource.comments.filter(c => c.isAdminFeedback).map((comment) => (
+              <div key={comment.id} className="p-4 bg-blue-50 rounded-lg">
+                <p className="text-gray-700">{comment.content}</p>
+                <p className="text-xs text-gray-500 mt-2">
+                  — {comment.authorName}, {new Date(comment.createdAt).toLocaleString()}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
   return (
-    <div className={`h-full flex flex-col ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
+    <div className={`h-full flex flex-col ${themeClasses.container}`}>
       {/* Header */}
-      <div className={`border-b px-6 py-4 ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+      <div className={`border-b px-6 py-4 ${themeClasses.panelBg}`}>
         <div className="flex justify-between items-start">
           <div>
-            <h1 className={`text-2xl font-bold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+            <h1 className={`text-2xl font-bold mb-1 ${themeClasses.titleText}`}>
               📚 Clinical Resources & Medical Library
             </h1>
-            <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+            <p className={`text-sm ${themeClasses.subtitleText}`}>
               Access medical guidelines, research papers, and evidence-based study materials
             </p>
           </div>
@@ -499,7 +683,7 @@ export const ClinicalResources: React.FC = () => {
       </div>
 
       {/* Search & Filter Bar */}
-      <div className={`border-b px-6 py-3 ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+      <div className={`border-b px-6 py-3 ${themeClasses.panelBg}`}>
         <div className="flex flex-wrap gap-3 items-center">
           <div className="flex-1 min-w-[200px] relative">
             <input
@@ -507,7 +691,7 @@ export const ClinicalResources: React.FC = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search guidelines, topics, or keywords..."
-              className={`w-full px-4 py-2 pl-10 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent ${isDark ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'border-gray-300'}`}
+              className={`w-full px-4 py-2 pl-10 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent ${themeClasses.searchInput}`}
             />
             <svg
               className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"
@@ -521,7 +705,7 @@ export const ClinicalResources: React.FC = () => {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as ContentStatus | 'all')}
-            className={`px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'border-gray-300'}`}
+            className={`px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 ${themeClasses.selectInput}`}
           >
             <option value="all">All Status</option>
             <option value="draft">Draft</option>
@@ -529,26 +713,26 @@ export const ClinicalResources: React.FC = () => {
             <option value="published">Published</option>
             <option value="rejected">Rejected</option>
           </select>
-          <label className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer ${isDark ? 'bg-gray-700' : 'bg-gray-50'}`}>
+          <label className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer ${themeClasses.checkboxBg}`}>
             <input
               type="checkbox"
               checked={showMyContentOnly}
               onChange={(e) => setShowMyContentOnly(e.target.checked)}
               className="rounded text-emerald-600 focus:ring-emerald-500"
             />
-            <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>My Content</span>
+            <span className={`text-sm ${themeClasses.checkboxText}`}>My Content</span>
           </label>
         </div>
       </div>
 
       {/* Category Tabs */}
-      <div className={`border-b px-6 py-3 overflow-x-auto ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+      <div className={`border-b px-6 py-3 overflow-x-auto ${themeClasses.panelBg}`}>
         <div className="flex space-x-2">
           <button
             onClick={() => setSelectedCategory('all')}
             className={`px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-colors ${selectedCategory === 'all'
               ? 'bg-emerald-100 text-emerald-700 border-2 border-emerald-500'
-              : isDark ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              : themeClasses.inactiveCategory
               }`}
           >
             📚 All Resources
@@ -579,9 +763,9 @@ export const ClinicalResources: React.FC = () => {
       {/* Content Area */}
       <div className="flex-1 flex overflow-hidden">
         {/* Resource List */}
-        <div className={`w-96 border-r flex flex-col ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
-          <div className={`p-4 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
-            <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+        <div className={`w-96 border-r flex flex-col ${themeClasses.panelBg}`}>
+          <div className={`p-4 border-b ${themeClasses.divider}`}>
+            <p className={`text-sm ${themeClasses.subtitleText}`}>
               {filteredResources.length} resource{filteredResources.length === 1 ? '' : 's'} found
             </p>
           </div>
@@ -623,151 +807,7 @@ export const ClinicalResources: React.FC = () => {
 
         {/* Resource Content */}
         <div className="flex-1 overflow-y-auto p-6 bg-white">
-          {selectedResource ? (
-            <div className="max-w-4xl mx-auto">
-              {/* Resource Header */}
-              <div className="mb-6">
-                <div className="flex items-center gap-2 mb-3">
-                  <span className={`text-sm px-3 py-1 rounded-full ${statusConfig[selectedResource.status]?.bgColor} ${statusConfig[selectedResource.status]?.color}`}>
-                    {statusConfig[selectedResource.status]?.label}
-                  </span>
-                  <span className="text-sm px-3 py-1 rounded-full bg-emerald-100 text-emerald-700">
-                    {getCategoryInfo(selectedResource.category).name}
-                  </span>
-                  <span className="text-sm text-gray-500">v{selectedResource.version || 1}</span>
-                </div>
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                  {selectedResource.titleTh || selectedResource.title}
-                </h1>
-                {selectedResource.title && selectedResource.titleTh && (
-                  <h2 className="text-xl text-gray-500 mb-3">{selectedResource.title}</h2>
-                )}
-                <p className="text-gray-700">{selectedResource.descriptionTh || selectedResource.description}</p>
-
-                {/* Tags */}
-                {selectedResource.tags && selectedResource.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-3">
-                    {selectedResource.tags.map((tag) => (
-                      <span key={tag} className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600">
-                        #{tag}
-                      </span>
-                    ))}
-                  </div>
-                )}
-
-                {/* Meta Info */}
-                <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-gray-500">
-                  <span>By {selectedResource.createdByName || selectedResource.source || 'ทีมแพทย์ Isara'}</span>
-                  <span>Updated: {new Date(selectedResource.updatedAt || selectedResource.createdAt).toLocaleDateString()}</span>
-                  {selectedResource.source && <span>Source: {selectedResource.source}</span>}
-                </div>
-
-                {/* Rejection Reason */}
-                {selectedResource.status === 'rejected' && selectedResource.rejectionReason && (
-                  <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                    <p className="text-red-700 font-medium">Rejection Reason:</p>
-                    <p className="text-red-600">{selectedResource.rejectionReason}</p>
-                  </div>
-                )}
-
-                {/* Action Buttons */}
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {/* Owner actions */}
-                  {selectedResource.createdBy === user?.id && (
-                    <>
-                      <button
-                        onClick={() => openEditModal(selectedResource)}
-                        className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
-                      >
-                        <EditIcon className="w-4 h-4" />
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => setShowDeleteConfirm(true)}
-                        className="flex items-center gap-2 px-4 py-2 bg-white border border-red-300 text-red-600 rounded-lg hover:bg-red-50"
-                      >
-                        <TrashIcon className="w-4 h-4" />
-                        Delete
-                      </button>
-                      {selectedResource.status === 'draft' && (
-                        <button
-                          onClick={() => handleSubmitForApproval(selectedResource)}
-                          className="flex items-center gap-2 px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600"
-                        >
-                          Submit for Approval
-                        </button>
-                      )}
-                    </>
-                  )}
-                  {/* Admin actions */}
-                  {isAdmin && selectedResource.status === 'pending' && (
-                    <button
-                      onClick={() => setShowApprovalModal(true)}
-                      className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"
-                    >
-                      Review & Approve
-                    </button>
-                  )}
-                  <button
-                    onClick={() => setShowHistoryModal(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
-                  >
-                    <HistoryIcon className="w-4 h-4" />
-                    History
-                  </button>
-                </div>
-              </div>
-
-              {/* Resource Content - Thai as Primary */}
-              <div className="prose prose-lg max-w-none">
-                <div
-                  className="text-gray-800 leading-relaxed"
-                  style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
-                  dangerouslySetInnerHTML={{ __html: renderContentWithImages(selectedResource.contentTh || selectedResource.content) }}
-                />
-              </div>
-
-              {/* English Content as Secondary */}
-              {selectedResource.content && selectedResource.contentTh && (
-                <div className="mt-8 pt-6 border-t">
-                  <h3 className="text-lg font-semibold text-gray-700 mb-4">🇬🇧 English Version</h3>
-                  <div
-                    className="text-gray-800 leading-relaxed"
-                    dangerouslySetInnerHTML={{ __html: renderContentWithImages(selectedResource.content) }}
-                  />
-                </div>
-              )}
-
-              {/* References */}
-              {selectedResource.references && selectedResource.references.length > 0 && (
-                <div className="mt-8 p-6 bg-gray-50 rounded-lg border border-gray-200">
-                  <h3 className="text-lg font-bold text-gray-900 mb-3">References</h3>
-                  <ul className="space-y-2">
-                    {selectedResource.references.map((ref, idx) => (
-                      <li key={idx} className="text-sm text-gray-700">• {ref}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {/* Comments */}
-              {selectedResource.comments && selectedResource.comments.length > 0 && (
-                <div className="mt-8">
-                  <h3 className="text-lg font-bold text-gray-900 mb-3">Admin Feedback</h3>
-                  <div className="space-y-3">
-                    {selectedResource.comments.filter(c => c.isAdminFeedback).map((comment) => (
-                      <div key={comment.id} className="p-4 bg-blue-50 rounded-lg">
-                        <p className="text-gray-700">{comment.content}</p>
-                        <p className="text-xs text-gray-500 mt-2">
-                          — {comment.authorName}, {new Date(comment.createdAt).toLocaleString()}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : (
+          {selectedResource ? renderResourceDetail(selectedResource) : (
             <div className="flex items-center justify-center h-full text-gray-500">
               <div className="text-center">
                 <div className="text-8xl mb-6">📚</div>
@@ -954,13 +994,13 @@ export const ClinicalResources: React.FC = () => {
 
               {/* Tags */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Tags</label>
+                <span className="block text-sm font-medium text-gray-700 mb-1">Tags</span>
                 <div className="flex flex-wrap gap-2 mb-2">
                   {formData.tags.map((tag) => (
                     <span key={tag} className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded-full text-sm flex items-center gap-1">
                       #{tag}
                       <button
-                        onClick={() => setFormData((prev) => ({ ...prev, tags: prev.tags.filter((t) => t !== tag) }))}
+                        onClick={() => handleRemoveTag(tag)}
                         className="hover:text-red-600"
                       >×</button>
                     </span>
@@ -998,16 +1038,13 @@ export const ClinicalResources: React.FC = () => {
 
               {/* References */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">References</label>
+                <span className="block text-sm font-medium text-gray-700 mb-1">References</span>
                 <div className="space-y-2 mb-2">
                   {formData.references.map((ref, idx) => (
-                    <div key={idx} className="flex items-center gap-2">
+                    <div key={`formref-${idx}-${ref}`} className="flex items-center gap-2">
                       <span className="flex-1 px-3 py-2 bg-gray-50 rounded-lg text-sm">{ref}</span>
                       <button
-                        onClick={() => setFormData((prev) => ({
-                          ...prev,
-                          references: prev.references.filter((_, i) => i !== idx),
-                        }))}
+                        onClick={() => handleRemoveReference(idx)}
                         className="p-2 text-red-600 hover:bg-red-50 rounded"
                       >×</button>
                     </div>
@@ -1040,8 +1077,9 @@ export const ClinicalResources: React.FC = () => {
               {/* Change Note (Edit only) */}
               {showEditModal && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Change Note</label>
+                  <label htmlFor="resource-change-note" className="block text-sm font-medium text-gray-700 mb-1">Change Note</label>
                   <input
+                    id="resource-change-note"
                     type="text"
                     value={changeNote}
                     onChange={(e) => setChangeNote(e.target.value)}
@@ -1086,8 +1124,9 @@ export const ClinicalResources: React.FC = () => {
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Comment (optional)</label>
+                <label htmlFor="approval-comment" className="block text-sm font-medium text-gray-700 mb-1">Comment (optional)</label>
                 <textarea
+                  id="approval-comment"
                   value={approvalComment}
                   onChange={(e) => setApprovalComment(e.target.value)}
                   rows={3}
@@ -1096,8 +1135,9 @@ export const ClinicalResources: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Rejection Reason (if rejecting)</label>
+                <label htmlFor="approval-rejection-reason" className="block text-sm font-medium text-gray-700 mb-1">Rejection Reason (if rejecting)</label>
                 <input
+                  id="approval-rejection-reason"
                   type="text"
                   value={rejectionReason}
                   onChange={(e) => setRejectionReason(e.target.value)}
@@ -1199,7 +1239,7 @@ export const ClinicalResources: React.FC = () => {
               {selectedResource.history && selectedResource.history.length > 0 ? (
                 <div className="space-y-4">
                   {[...selectedResource.history].reverse().map((version: ContentVersion, index: number) => (
-                    <div key={index} className="border rounded-xl p-4">
+                    <div key={`history-v${version.version}-${index}`} className="border rounded-xl p-4">
                       <div className="flex items-center justify-between mb-2">
                         <span className="font-medium text-gray-700">Version {version.version}</span>
                         <span className="text-sm text-gray-500">{new Date(version.modifiedAt).toLocaleString()}</span>

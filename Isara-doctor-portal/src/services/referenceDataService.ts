@@ -83,8 +83,10 @@ interface LabTestInfo {
   price?: number;
 }
 
+type AgeGroup = 'adult' | 'pediatric' | 'geriatric';
+
 interface ReferenceRange {
-  ageGroup: 'all' | 'adult' | 'pediatric' | 'geriatric';
+  ageGroup: 'all' | AgeGroup;
   gender?: 'male' | 'female' | 'all';
   min?: number;
   max?: number;
@@ -215,7 +217,7 @@ class ReferenceDataService {
         m.name.toLowerCase() === name.toLowerCase() ||
         m.genericName.toLowerCase() === name.toLowerCase()
       )
-    ).filter(Boolean) as Medication[];
+    ).filter((m): m is Medication => Boolean(m));
 
     // Check for interactions in the drug-interactions.json database
     for (let i = 0; i < drugs.length; i++) {
@@ -335,7 +337,7 @@ class ReferenceDataService {
    */
   async getReferenceRange(
     testCode: string,
-    ageGroup: 'adult' | 'pediatric' | 'geriatric' = 'adult',
+    ageGroup: AgeGroup = 'adult',
     gender?: 'male' | 'female'
   ): Promise<ReferenceRange | null> {
     const test = await this.getLabTestByCode(testCode);
@@ -354,7 +356,7 @@ class ReferenceDataService {
   async interpretLabResult(
     testCode: string,
     value: number,
-    ageGroup: 'adult' | 'pediatric' | 'geriatric' = 'adult',
+    ageGroup: AgeGroup = 'adult',
     gender?: 'male' | 'female'
   ): Promise<{
     status: 'normal' | 'low' | 'high' | 'critical';
@@ -478,7 +480,7 @@ class ReferenceDataService {
    */
   async getReferenceRangeFromFile(
     testCode: string,
-    ageGroup?: 'adult' | 'pediatric' | 'geriatric',
+    ageGroup?: AgeGroup,
     gender?: 'male' | 'female'
   ): Promise<ReferenceRange | null> {
     return gcsGetReferenceRange(testCode, ageGroup, gender);
@@ -536,8 +538,8 @@ class ReferenceDataService {
   async getCommonDiagnoses(): Promise<ICD10Code[]> {
     const codes = await this.getAllICD10Codes();
     // Return common conditions
-    const commonCodes = ['J06.9', 'I10', 'E11.9', 'J18.9', 'K21.0', 'F32.9', 'M54.5'];
-    return codes.filter(c => commonCodes.includes(c.code));
+    const commonCodes = new Set(['J06.9', 'I10', 'E11.9', 'J18.9', 'K21.0', 'F32.9', 'M54.5']);
+    return codes.filter(c => commonCodes.has(c.code));
   }
 }
 

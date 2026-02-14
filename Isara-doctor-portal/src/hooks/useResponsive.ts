@@ -20,22 +20,22 @@ export type Breakpoint = keyof typeof breakpoints;
  */
 export const useResponsive = () => {
   const [windowSize, setWindowSize] = useState({
-    width: typeof window !== 'undefined' ? window.innerWidth : 0,
-    height: typeof window !== 'undefined' ? window.innerHeight : 0,
+    width: globalThis.window === undefined ? 0 : globalThis.innerWidth,
+    height: globalThis.window === undefined ? 0 : globalThis.innerHeight,
   });
 
   useEffect(() => {
     const handleResize = () => {
       setWindowSize({
-        width: window.innerWidth,
-        height: window.innerHeight,
+        width: globalThis.innerWidth,
+        height: globalThis.innerHeight,
       });
     };
 
-    window.addEventListener('resize', handleResize);
+    globalThis.addEventListener('resize', handleResize);
     handleResize(); // Call once to set initial size
 
-    return () => window.removeEventListener('resize', handleResize);
+    return () => globalThis.removeEventListener('resize', handleResize);
   }, []);
 
   const isMobile = windowSize.width < breakpoints.md;
@@ -72,7 +72,7 @@ export const useMediaQuery = (minWidth: Breakpoint): boolean => {
 
   useEffect(() => {
     const query = `(min-width: ${breakpoints[minWidth]}px)`;
-    const media = window.matchMedia(query);
+    const media = globalThis.matchMedia(query);
 
     const updateMatch = () => setMatches(media.matches);
     updateMatch();
@@ -100,7 +100,7 @@ export const useTouchDevice = (): boolean => {
   useEffect(() => {
     const checkTouch = () => {
       setIsTouch(
-        'ontouchstart' in window ||
+        'ontouchstart' in globalThis ||
         navigator.maxTouchPoints > 0 ||
         // @ts-ignore
         navigator.msMaxTouchPoints > 0
@@ -122,17 +122,17 @@ export const useOrientation = () => {
   useEffect(() => {
     const updateOrientation = () => {
       setOrientation(
-        window.innerHeight > window.innerWidth ? 'portrait' : 'landscape'
+        globalThis.innerHeight > globalThis.innerWidth ? 'portrait' : 'landscape'
       );
     };
 
     updateOrientation();
-    window.addEventListener('resize', updateOrientation);
-    window.addEventListener('orientationchange', updateOrientation);
+    globalThis.addEventListener('resize', updateOrientation);
+    globalThis.addEventListener('orientationchange', updateOrientation);
 
     return () => {
-      window.removeEventListener('resize', updateOrientation);
-      window.removeEventListener('orientationchange', updateOrientation);
+      globalThis.removeEventListener('resize', updateOrientation);
+      globalThis.removeEventListener('orientationchange', updateOrientation);
     };
   }, []);
 

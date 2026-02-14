@@ -68,7 +68,7 @@ export const CompleteLabOrders: React.FC<CompleteLabOrdersProps> = ({
   }, [patient]);
 
   const addTest = (test: LabTest) => {
-    if (!selectedTests.find(t => t.code === test.code)) {
+    if (!selectedTests.some(t => t.code === test.code)) {
       setSelectedTests([...selectedTests, test]);
     }
   };
@@ -79,7 +79,7 @@ export const CompleteLabOrders: React.FC<CompleteLabOrdersProps> = ({
 
   const addPanel = (panelTests: string[]) => {
     const testsToAdd = labTestCatalog.filter(t => panelTests.includes(t.code));
-    const newTests = testsToAdd.filter(t => !selectedTests.find(st => st.code === t.code));
+    const newTests = testsToAdd.filter(t => !selectedTests.some(st => st.code === t.code));
     setSelectedTests([...selectedTests, ...newTests]);
   };
 
@@ -172,9 +172,9 @@ export const CompleteLabOrders: React.FC<CompleteLabOrdersProps> = ({
                   Common Test Panels
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {commonPanels.map((panel, index) => (
+                  {commonPanels.map((panel) => (
                     <button
-                      key={index}
+                      key={panel.name}
                       onClick={() => addPanel(panel.tests)}
                       className="p-4 bg-purple-50 border-2 border-purple-200 rounded-lg text-left hover:bg-purple-100 hover:border-purple-300 transition-colors"
                     >
@@ -235,10 +235,11 @@ export const CompleteLabOrders: React.FC<CompleteLabOrdersProps> = ({
 
                     <div className="space-y-3">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label htmlFor="clinical-indication" className="block text-sm font-medium text-gray-700 mb-1">
                           Clinical Indication *
                         </label>
                         <input
+                          id="clinical-indication"
                           type="text"
                           value={clinicalIndication}
                           onChange={(e) => setClinicalIndication(e.target.value)}
@@ -248,10 +249,11 @@ export const CompleteLabOrders: React.FC<CompleteLabOrdersProps> = ({
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label htmlFor="urgency" className="block text-sm font-medium text-gray-700 mb-1">
                           Urgency
                         </label>
                         <select
+                          id="urgency"
                           value={urgency}
                           onChange={(e) => setUrgency(e.target.value as any)}
                           className="px-3 py-2 border border-gray-300 rounded-lg"
@@ -294,8 +296,8 @@ export const CompleteLabOrders: React.FC<CompleteLabOrdersProps> = ({
                 </div>
               )}
 
-              {pastOrders.map((order, index) => (
-                <div key={index} className="p-4 bg-white border border-gray-200 rounded-lg">
+              {pastOrders.map((order) => (
+                <div key={order.id} className="p-4 bg-white border border-gray-200 rounded-lg">
                   <div className="flex items-start justify-between mb-3">
                     <div>
                       <div className="font-semibold text-gray-900">
@@ -305,13 +307,11 @@ export const CompleteLabOrders: React.FC<CompleteLabOrdersProps> = ({
                         Ordered: {new Date(order.orderDate).toLocaleDateString()} • Dr. {order.doctorName}
                       </div>
                     </div>
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                      order.status === 'completed'
-                        ? 'bg-green-100 text-green-700'
-                        : order.status === 'in_progress'
-                        ? 'bg-blue-100 text-blue-700'
-                        : 'bg-yellow-100 text-yellow-700'
-                    }`}>
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${(() => {
+                      if (order.status === 'completed') return 'bg-green-100 text-green-700';
+                      if (order.status === 'in_progress') return 'bg-blue-100 text-blue-700';
+                      return 'bg-yellow-100 text-yellow-700';
+                    })()}`}>
                       {order.status}
                     </span>
                   </div>
@@ -328,16 +328,14 @@ export const CompleteLabOrders: React.FC<CompleteLabOrdersProps> = ({
                       <div className="text-sm font-medium text-gray-700 mb-2">Results:</div>
                       <div className="space-y-1">
                         {order.results.map((result: any, i: number) => (
-                          <div key={i} className="flex items-center justify-between text-sm">
+                          <div key={`result-${result.testName}-${i}`} className="flex items-center justify-between text-sm">
                             <span className="text-gray-700">{result.testName}:</span>
                             <div className="flex items-center space-x-2">
-                              <span className={`font-medium ${
-                                result.flag === 'high' || result.flag === 'low'
-                                  ? 'text-red-600'
-                                  : result.flag === 'critical'
-                                  ? 'text-red-700 font-bold'
-                                  : 'text-gray-900'
-                              }`}>
+                              <span className={`font-medium ${(() => {
+                                if (result.flag === 'high' || result.flag === 'low') return 'text-red-600';
+                                if (result.flag === 'critical') return 'text-red-700 font-bold';
+                                return 'text-gray-900';
+                              })()}`}>
                                 {result.value} {result.unit}
                               </span>
                               <span className="text-gray-500 text-xs">

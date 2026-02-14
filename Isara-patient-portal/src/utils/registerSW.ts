@@ -1,32 +1,39 @@
 // Register Service Worker for PWA functionality
 
+function handleInstallingWorker(newWorker: ServiceWorker) {
+  newWorker.addEventListener('statechange', () => {
+    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+      console.log('[PWA] New version available!');
+      showUpdateNotification();
+    }
+  });
+}
+
+function handleUpdateFound(registration: ServiceWorkerRegistration) {
+  const newWorker = registration.installing;
+  if (newWorker) {
+    handleInstallingWorker(newWorker);
+  }
+}
+
+function handleRegistration(registration: ServiceWorkerRegistration) {
+  console.log('[PWA] Service Worker registered successfully:', registration.scope);
+
+  // Check for updates periodically
+  setInterval(() => {
+    registration.update();
+  }, 60000); // Check every minute
+
+  // Listen for new service worker waiting to activate
+  registration.addEventListener('updatefound', () => handleUpdateFound(registration));
+}
+
 export function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
+    globalThis.addEventListener('load', () => {
       navigator.serviceWorker
         .register('/service-worker.js')
-        .then((registration) => {
-          console.log('[PWA] Service Worker registered successfully:', registration.scope);
-
-          // Check for updates periodically
-          setInterval(() => {
-            registration.update();
-          }, 60000); // Check every minute
-
-          // Listen for new service worker waiting to activate
-          registration.addEventListener('updatefound', () => {
-            const newWorker = registration.installing;
-            if (newWorker) {
-              newWorker.addEventListener('statechange', () => {
-                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                  // New service worker available
-                  console.log('[PWA] New version available!');
-                  showUpdateNotification();
-                }
-              });
-            }
-          });
-        })
+        .then(handleRegistration)
         .catch((error) => {
           console.error('[PWA] Service Worker registration failed:', error);
         });
@@ -36,7 +43,7 @@ export function registerServiceWorker() {
 
 function showUpdateNotification() {
   // Show a notification to the user that an update is available
-  if ('Notification' in window && Notification.permission === 'granted') {
+  if ('Notification' in globalThis && Notification.permission === 'granted') {
     new Notification('Update Available', {
       body: 'A new version of Izara Patient Portal is available. Refresh to update.',
       icon: '/IzaraLogo.png',
@@ -46,7 +53,7 @@ function showUpdateNotification() {
 }
 
 export function requestNotificationPermission() {
-  if ('Notification' in window && Notification.permission === 'default') {
+  if ('Notification' in globalThis && Notification.permission === 'default') {
     Notification.requestPermission().then((permission) => {
       console.log('[PWA] Notification permission:', permission);
     });
@@ -54,7 +61,7 @@ export function requestNotificationPermission() {
 }
 
 export async function subscribeToPushNotifications() {
-  if ('serviceWorker' in navigator && 'PushManager' in window) {
+  if ('serviceWorker' in navigator && 'PushManager' in globalThis) {
     try {
       const registration = await navigator.serviceWorker.ready;
 
@@ -86,13 +93,13 @@ export async function subscribeToPushNotifications() {
 
 function urlBase64ToUint8Array(base64String: string) {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const base64 = (base64String + padding).replaceAll('-', '+').replaceAll('_', '/');
 
-  const rawData = window.atob(base64);
+  const rawData = globalThis.atob(base64);
   const outputArray = new Uint8Array(rawData.length);
 
   for (let i = 0; i < rawData.length; ++i) {
-    outputArray[i] = rawData.charCodeAt(i);
+    outputArray[i] = rawData.codePointAt(i) ?? 0;
   }
   return outputArray;
 }

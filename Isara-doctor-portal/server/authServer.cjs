@@ -2168,8 +2168,8 @@ app.get('/auth/me', async (req, res) => {
         if (result.rows.length > 0) {
           return res.json({ success: true, user: result.rows[0] });
         }
-      } catch (dbErr) {
-        console.log('[AUTH] DB query error for /auth/me:', dbErr.message);
+      } catch (error_) {
+        console.log('[AUTH] DB query error for /auth/me:', error_.message);
       }
     }
     // Fallback: return from JWT payload

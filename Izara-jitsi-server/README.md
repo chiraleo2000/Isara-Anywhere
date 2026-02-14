@@ -1,135 +1,141 @@
-# 🎥 Izara Jitsi Meeting Server
+# 🎥 Izara Meeting Server
 
-Custom Jitsi Meet server for Izara Telemedicine with integrated:
+![Version](https://img.shields.io/badge/version-1.4.7-blue.svg)
+![Node.js](https://img.shields.io/badge/Node.js-22+-green.svg)
+![Socket.IO](https://img.shields.io/badge/Socket.IO-4.x-black.svg)
+![License](https://img.shields.io/badge/license-MIT-green.svg)
 
-- Google Speech-to-Text transcription
-- Gemini AI meeting summarization
-- PostgreSQL data persistence
-- Thai language support
+> Central meeting server for Izara Telemedicine — Jitsi Meet video conferencing, real-time transcription, AI meeting summaries, and in-meeting chat.
 
-## 📋 Features
+---
 
-| Feature | Description | Status |
-|---------|-------------|--------|
-| **Video Meeting** | Jitsi Meet integration | ✅ |
-| **Host Controls** | Doctor as meeting host with lobby control | ✅ |
-| **Live Transcription** | Google Speech-to-Text API | ✅ |
-| **AI Summary** | Gemini 2.5 Flash meeting summary | ✅ |
-| **PostgreSQL Storage** | Meeting records, transcripts, summaries | ✅ |
-| **Thai Language** | Native Thai language support | ✅ |
+## 🏗 Architecture
 
-## 🏗️ Architecture
-
+```text
+┌──────────────────────────────────────────────────────────────┐
+│                 Meeting Server (Port 3020)                    │
+│  Express.js + Socket.IO + Jitsi Meet + Gemini AI             │
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│  Meeting Management ──── Create / Join / Status / End        │
+│  Transcription ────────── Web Speech API (browser, FREE)     │
+│  AI Summaries ─────────── Gemini 2.5 Flash Lite              │
+│  In-Meeting Chat ──────── Socket.IO real-time messaging      │
+│  Guest Invites ────────── External participant links          │
+│  Patient Instructions ─── Auto-generated care sheets         │
+│  Clinical Decision ────── AI pre-consultation summary        │
+│                                                              │
+├──────────────────────────────────────────────────────────────┤
+│  Storage: PostgreSQL (primary) + In-memory fallback          │
+│  Video: meet.jit.si (FREE, no licensing costs)               │
+│  AI: Google Gemini 2.5 Flash Lite (FREE tier)                │
+└──────────────────────────────────────────────────────────────┘
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                    Izara Jitsi Server                           │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  ┌──────────────────┐    ┌──────────────────┐                   │
-│  │   Jitsi Meet     │    │  Transcription   │                   │
-│  │   (Video/Audio)  │───▶│  Service         │                   │
-│  └──────────────────┘    └────────┬─────────┘                   │
-│                                   │                              │
-│                                   ▼                              │
-│  ┌──────────────────┐    ┌──────────────────┐                   │
-│  │   PostgreSQL     │◀───│  AI Summary      │                   │
-│  │   Storage        │    │  (Gemini)        │                   │
-│  └──────────────────┘    └──────────────────┘                   │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
-```
+
+---
+
+## ✨ Features
+
+| Feature | Description | Cost |
+| --------- | ------------- | ------ |
+| 🎥 Video Conferencing | Jitsi Meet (meet.jit.si) | FREE |
+| 🎙️ Live Transcription | Web Speech API (browser-native) | FREE |
+| 🤖 AI Meeting Summary | Gemini-generated SOAP notes | FREE tier |
+| 💬 In-Meeting Chat | Socket.IO real-time messaging | — |
+| 👥 Guest Invites | External participants via invite links | — |
+| 📋 Patient Instructions | Auto-generated post-visit care sheets | — |
+| 🧠 Pre-consultation Summary | AI analysis before appointment | — |
+| 📄 Document Analysis | AI analysis of uploaded medical documents | — |
+| ✅ Man-in-the-Loop | Doctor validates all AI outputs | — |
+
+---
 
 ## 🚀 Quick Start
 
-### Prerequisites
-
-- Docker & Docker Compose
-- Google Cloud account with:
-  - Speech-to-Text API enabled
-  - Gemini API key
-- PostgreSQL database (shared with Izara portals)
-
-### Environment Setup
-
-Copy `.env.example` to `.env` and configure:
+### With Docker (Recommended)
 
 ```bash
-cp .env.example .env
+# From the root Isara-Anywhere directory
+docker compose up -d --build
+# Meeting Server: http://localhost:3020
 ```
 
-### Run Locally
+### Local Development
 
 ```bash
-docker-compose up -d
+cd Izara-jitsi-server
+npm install
+cp .env.example .env   # Add your Gemini API key
+npm run dev
 ```
 
-### Access
+---
 
-- **Meeting Room**: <http://localhost:8443/{room-name}>
-- **API Server**: <http://localhost:3020>
+## 📁 Project Structure
+
+```text
+Izara-jitsi-server/
+├── server/
+│   └── index.js              # Main server (Express + Socket.IO)
+├── client/
+│   ├── LiveTranscriptionService.ts  # Browser transcription service
+│   └── MeetingTranscription.tsx     # React transcription component
+├── Dockerfile                # Docker image
+├── package.json              # Dependencies & scripts
+└── cloudbuild.yaml           # Google Cloud Build config
+```
+
+---
 
 ## 📡 API Endpoints
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/meetings/create` | Create new meeting room |
-| GET | `/api/meetings/:id` | Get meeting info |
-| POST | `/api/meetings/:id/start-transcription` | Start live transcription |
-| POST | `/api/meetings/:id/stop-transcription` | Stop transcription |
-| POST | `/api/meetings/:id/generate-summary` | Generate AI summary |
-| GET | `/api/meetings/:id/transcript` | Get meeting transcript |
-| GET | `/api/meetings/:id/summary` | Get AI summary |
+| Endpoint | Method | Description |
+| ---------- | -------- | ------------- |
+| `/health` | GET | Health check |
+| `/api/health` | GET | Detailed health with uptime |
+| `/api/meeting/create` | POST | Create a new meeting room |
+| `/api/meeting/:id/status` | GET | Get meeting status |
+| `/api/meeting/:id/end` | POST | End a meeting |
+| `/api/meeting/:id/transcript` | POST | Save transcript segment |
+| `/api/meeting/:id/transcript` | GET | Get full transcript |
+| `/api/meeting/:id/summary` | POST | Generate AI summary |
+| `/api/meeting/:id/chat` | GET | Get chat messages |
+| `/api/meeting/:id/invite` | POST | Create guest invite |
+| `/api/meeting/:id/instructions` | POST | Generate patient instructions |
+| `/api/meeting/:id/cds` | POST | Clinical decision support |
+| `/api/meeting/:id/analyze-document` | POST | AI document analysis |
 
-## 🗄️ Database Schema
+### Socket.IO Events
 
-Meetings data is stored in shared `izara_phase1` PostgreSQL database:
+| Event | Direction | Description |
+| ------- | ----------- | ------------- |
+| `join-meeting` | Client → Server | Join a meeting room |
+| `leave-meeting` | Client → Server | Leave a meeting room |
+| `transcript-segment` | Client → Server | Send transcript text |
+| `chat-message` | Client → Server | Send chat message |
+| `transcript-update` | Server → Client | Broadcast transcript |
+| `chat-update` | Server → Client | Broadcast chat message |
+| `meeting-ended` | Server → Client | Meeting end notification |
 
-- `meeting_records` - Meeting metadata
-- `meeting_transcripts` - Real-time transcripts
-- `emr` - AI summaries linked to EMR
+---
 
-## 🔧 Configuration
+## ⚙️ Configuration
 
-### Jitsi Config
+| Variable | Default | Description |
+| ---------- | --------- | ------------- |
+| `PORT` | 3020 | Server port |
+| `JITSI_DOMAIN` | meet.jit.si | Jitsi Meet domain |
+| `GEMINI_API_KEY` | — | Google Gemini AI API key |
+| `GEMINI_MODEL` | gemini-2.5-flash-lite | AI model |
+| `DATABASE_URL` | — | PostgreSQL connection string |
+| `JWT_SECRET` | — | JWT signing secret |
 
-Located in `config/`:
-
-- `config.js` - Jitsi Meet UI configuration
-- `interface_config.js` - Interface customization
-
-### Transcription Config
-
-Speech-to-Text settings in `.env`:
-
-- `GOOGLE_STT_ENABLED=true`
-- `GOOGLE_STT_LANGUAGE=th-TH`
-- `GOOGLE_STT_MODEL=latest_long`
-
-## 📦 Docker Services
-
-| Service | Port | Description |
-|---------|------|-------------|
-| jitsi-web | 8443 | Jitsi Meet Web Interface |
-| jitsi-prosody | 5222 | XMPP Server |
-| jitsi-jicofo | 5347 | Focus Component |
-| jitsi-jvb | 10000 | Video Bridge |
-| izara-meeting-api | 3020 | Transcription & AI API |
-
-## 🔗 Integration with Izara Portals
-
-### Doctor Portal
-
-- Meeting links generated when appointment confirmed
-- Host controls available in meeting
-- Transcription start/stop buttons
-- AI summary displayed in EMR
-
-### Patient Portal
-
-- Join meeting via appointment link
-- Lobby waiting for doctor admission
-- Post-meeting summary in Health Records
+---
 
 ## 📄 License
 
-MIT License - Izara Telemedicine Platform
+MIT License
+
+---
+
+**Izara Meeting Server v1.4.7** — Zero-cost video consultations with AI 🎥

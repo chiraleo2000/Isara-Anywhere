@@ -1,7 +1,7 @@
 {
   "name": "izara-doctor-portal",
   "private": true,
-  "version": "1.4.4",
+  "version": "1.4.8-dev",
   "description": "Izara Telemedicine Doctor Portal - AI-assisted clinical workflows, EMR/EHR management, and video consultations",
   "type": "module",
   "scripts": {

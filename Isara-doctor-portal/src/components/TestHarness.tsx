@@ -25,6 +25,54 @@ interface DataPreview {
   error?: string;
 }
 
+type TabId = 'overview' | 'patients' | 'emr' | 'labs' | 'imaging' | 'prescriptions' | 'timeline' | 'ai' | 'navigation';
+
+const RISK_LEVEL_CLASSES: Record<string, string> = {
+  high: 'bg-red-100 text-red-700',
+  medium: 'bg-yellow-100 text-yellow-700',
+};
+
+const LAB_STATUS_CLASSES: Record<string, string> = {
+  completed: 'bg-green-100 text-green-700',
+  pending: 'bg-yellow-100 text-yellow-700',
+};
+
+const IMAGING_STATUS_CLASSES: Record<string, string> = {
+  completed: 'bg-green-100 text-green-700',
+  scheduled: 'bg-blue-100 text-blue-700',
+};
+
+const RX_STATUS_CLASSES: Record<string, string> = {
+  active: 'bg-green-100 text-green-700',
+  completed: 'bg-gray-100 text-gray-700',
+};
+
+function formatPreviewText(preview: DataPreview): string {
+  if (preview.loading) return 'Loading...';
+  if (preview.error) return `Error: ${preview.error}`;
+  return JSON.stringify(preview.data, null, 2);
+}
+
+function renderDataPreviewContent(
+  preview: DataPreview,
+  renderItems: (data: any[]) => React.ReactNode
+): React.ReactNode {
+  if (preview.loading) {
+    return <div className="text-center py-8">Loading...</div>;
+  }
+  if (preview.error) {
+    return <div className="text-red-600 p-4 bg-red-50 rounded">{preview.error}</div>;
+  }
+  if (preview.data && Array.isArray(preview.data)) {
+    return renderItems(preview.data);
+  }
+  return (
+    <pre className="bg-gray-50 p-4 rounded overflow-auto max-h-96 text-xs">
+      {JSON.stringify(preview.data, null, 2)}
+    </pre>
+  );
+}
+
 const TestHarness: React.FC<TestHarnessProps> = ({ doctor, patients: initialPatients }) => {
   const navigate = useNavigate();
   const [patients, setPatients] = useState<PatientRecord[]>(initialPatients || []);
@@ -37,7 +85,7 @@ const TestHarness: React.FC<TestHarnessProps> = ({ doctor, patients: initialPati
   const [status, setStatus] = useState<string>('idle');
 
   // Comprehensive testing state
-  const [activeTab, setActiveTab] = useState<'overview' | 'patients' | 'emr' | 'labs' | 'imaging' | 'prescriptions' | 'timeline' | 'ai' | 'navigation'>('overview');
+  const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [testResults, setTestResults] = useState<TestResult[]>([]);
   const [dataPreview, setDataPreview] = useState<DataPreview>({ type: '', data: null, loading: false });
   const [runningAllTests, setRunningAllTests] = useState(false);
@@ -53,7 +101,7 @@ const TestHarness: React.FC<TestHarnessProps> = ({ doctor, patients: initialPati
     try {
       const data = await patientDataService.getAllPatients();
       setPatients(data || []);
-      if (data && data.length > 0) setSelectedPatientId(data[0].id);
+      if (data?.length) setSelectedPatientId(data[0].id);
     } catch (err) {
       console.error('Error loading patients', err);
     } finally {
@@ -123,7 +171,7 @@ const TestHarness: React.FC<TestHarnessProps> = ({ doctor, patients: initialPati
   const testEHRTimeline = () => runTest('Load EHR Timeline', async () => {
     if (!selectedPatientId) throw new Error('No patient selected');
     const data = await patientRecordService.getEHRTimeline(selectedPatientId);
-    if (!data || !data.events || data.events.length === 0) throw new Error('No timeline events found');
+    if (!data?.events?.length) throw new Error('No timeline events found');
     return { count: data.events.length, sample: data.events[0] };
   });
 
@@ -187,7 +235,6 @@ const TestHarness: React.FC<TestHarnessProps> = ({ doctor, patients: initialPati
     setChatResponse('');
     try {
       const response = await geminiClinicalService.clinicalChat(chatMessage, {
-        id: selectedPatientId || 'test-patient',
         demographics: { name: 'Test Patient' },
       } as any, []);
       setChatResponse(typeof response === 'string' ? response : JSON.stringify(response, null, 2));
@@ -220,7 +267,7 @@ const TestHarness: React.FC<TestHarnessProps> = ({ doctor, patients: initialPati
     }
   };
 
-  const tabs = [
+  const tabs: { id: TabId; label: string; icon: string }[] = [
     { id: 'overview', label: '📊 Overview', icon: '📊' },
     { id: 'patients', label: '👥 Patients', icon: '👥' },
     { id: 'emr', label: '📋 EMR/EHR', icon: '📋' },
@@ -232,6 +279,8 @@ const TestHarness: React.FC<TestHarnessProps> = ({ doctor, patients: initialPati
     { id: 'navigation', label: '🔗 Navigation', icon: '🔗' },
   ];
 
+  const isGeminiConfigured = geminiClinicalService.isApiConfigured();
+
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Header */}
@@ -242,7 +291,7 @@ const TestHarness: React.FC<TestHarnessProps> = ({ doctor, patients: initialPati
 
           {/* Patient Selector in Header */}
           <div className="mt-4 flex items-center gap-4">
-            <label className="text-sm font-medium">Active Patient Context:</label>
+            <span className="text-sm font-medium">Active Patient Context:</span>
             <select
               value={selectedPatientId || ''}
               onChange={(e) => setSelectedPatientId(e.target.value)}
@@ -268,7 +317,7 @@ const TestHarness: React.FC<TestHarnessProps> = ({ doctor, patients: initialPati
             {tabs.map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
+                onClick={() => setActiveTab(tab.id)}
                 className={`px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${activeTab === tab.id
                     ? 'border-indigo-600 text-indigo-600 bg-indigo-50'
                     : 'border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50'
@@ -306,7 +355,7 @@ const TestHarness: React.FC<TestHarnessProps> = ({ doctor, patients: initialPati
               </div>
               <div className="bg-white p-4 rounded-lg shadow">
                 <div className="text-3xl font-bold text-purple-600">
-                  {geminiClinicalService.isApiConfigured() ? '✓' : '✗'}
+                  {isGeminiConfigured ? '✓' : '✗'}
                 </div>
                 <div className="text-sm text-gray-600">Gemini API</div>
               </div>
@@ -354,12 +403,12 @@ const TestHarness: React.FC<TestHarnessProps> = ({ doctor, patients: initialPati
                   <div className="font-medium text-green-800">Patient Record Service</div>
                   <div className="text-sm text-green-600">✓ Operational</div>
                 </div>
-                <div className={`p-4 rounded-lg ${geminiClinicalService.isApiConfigured() ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'}`}>
-                  <div className={`font-medium ${geminiClinicalService.isApiConfigured() ? 'text-green-800' : 'text-yellow-800'}`}>
+                <div className={`p-4 rounded-lg ${isGeminiConfigured ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'}`}>
+                  <div className={`font-medium ${isGeminiConfigured ? 'text-green-800' : 'text-yellow-800'}`}>
                     Gemini Clinical Service
                   </div>
-                  <div className={`text-sm ${geminiClinicalService.isApiConfigured() ? 'text-green-600' : 'text-yellow-600'}`}>
-                    {geminiClinicalService.isApiConfigured() ? '✓ Configured' : '⚠ API Key Required'}
+                  <div className={`text-sm ${isGeminiConfigured ? 'text-green-600' : 'text-yellow-600'}`}>
+                    {isGeminiConfigured ? '✓ Configured' : '⚠ API Key Required'}
                   </div>
                 </div>
               </div>
@@ -405,16 +454,13 @@ const TestHarness: React.FC<TestHarnessProps> = ({ doctor, patients: initialPati
                         </td>
                         <td className="px-4 py-2">
                           <div className="flex flex-wrap gap-1">
-                            {patient.medicalInfo?.chronicConditions?.slice(0, 2).map((c, i) => (
-                              <span key={i} className="px-2 py-0.5 bg-orange-100 text-orange-700 rounded text-xs">{c}</span>
+                            {patient.medicalInfo?.chronicConditions?.slice(0, 2).map((c) => (
+                              <span key={c} className="px-2 py-0.5 bg-orange-100 text-orange-700 rounded text-xs">{c}</span>
                             ))}
                           </div>
                         </td>
                         <td className="px-4 py-2">
-                          <span className={`px-2 py-1 rounded text-xs ${patient.riskLevel === 'high' ? 'bg-red-100 text-red-700' :
-                              patient.riskLevel === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                                'bg-green-100 text-green-700'
-                            }`}>
+                          <span className={`px-2 py-1 rounded text-xs ${RISK_LEVEL_CLASSES[patient.riskLevel || 'low'] || 'bg-green-100 text-green-700'}`}>
                             {patient.riskLevel || 'low'}
                           </span>
                         </td>
@@ -438,14 +484,17 @@ const TestHarness: React.FC<TestHarnessProps> = ({ doctor, patients: initialPati
               <div className="bg-white p-6 rounded-lg shadow">
                 <h3 className="text-lg font-bold mb-4">Selected Patient Details: {selectedPatientId}</h3>
                 <button
-                  onClick={() => previewData('patient', () => patientDataService.getPatientDetails(selectedPatientId!, doctor?.id || 'DOC-DEMO-001'))}
+                  onClick={() => {
+                    if (!selectedPatientId) { return; }
+                    previewData('patient', () => patientDataService.getPatientDetails(selectedPatientId, doctor?.id || 'DOC-DEMO-001'));
+                  }}
                   className="px-3 py-2 bg-indigo-600 text-white rounded mb-4"
                 >
                   Load Full Details
                 </button>
                 {dataPreview.type === 'patient' && (
                   <pre className="bg-gray-50 p-4 rounded overflow-auto max-h-96 text-xs">
-                    {dataPreview.loading ? 'Loading...' : JSON.stringify(dataPreview.data, null, 2)}
+                    {formatPreviewText(dataPreview)}
                   </pre>
                 )}
               </div>
@@ -473,32 +522,34 @@ const TestHarness: React.FC<TestHarnessProps> = ({ doctor, patients: initialPati
                 <div>
                   <h3 className="font-medium mb-2">EMR Records</h3>
                   <button
-                    onClick={() => previewData('emr', () => patientRecordService.getEMRs(selectedPatientId!))}
+                    onClick={() => {
+                      if (!selectedPatientId) { return; }
+                      previewData('emr', () => patientRecordService.getEMRs(selectedPatientId));
+                    }}
                     className="px-3 py-2 bg-indigo-100 text-indigo-700 rounded mb-2 w-full"
                   >
                     Preview EMR Data
                   </button>
                   {dataPreview.type === 'emr' && (
                     <pre className="bg-gray-50 p-4 rounded overflow-auto max-h-80 text-xs">
-                      {dataPreview.loading ? 'Loading...' :
-                        dataPreview.error ? `Error: ${dataPreview.error}` :
-                          JSON.stringify(dataPreview.data, null, 2)}
+                      {formatPreviewText(dataPreview)}
                     </pre>
                   )}
                 </div>
                 <div>
                   <h3 className="font-medium mb-2">PHR Data</h3>
                   <button
-                    onClick={() => previewData('phr', () => patientRecordService.getPHR(selectedPatientId!))}
+                    onClick={() => {
+                      if (!selectedPatientId) { return; }
+                      previewData('phr', () => patientRecordService.getPHR(selectedPatientId));
+                    }}
                     className="px-3 py-2 bg-green-100 text-green-700 rounded mb-2 w-full"
                   >
                     Preview PHR Data
                   </button>
                   {dataPreview.type === 'phr' && (
                     <pre className="bg-gray-50 p-4 rounded overflow-auto max-h-80 text-xs">
-                      {dataPreview.loading ? 'Loading...' :
-                        dataPreview.error ? `Error: ${dataPreview.error}` :
-                          JSON.stringify(dataPreview.data, null, 2)}
+                      {formatPreviewText(dataPreview)}
                     </pre>
                   )}
                 </div>
@@ -519,7 +570,10 @@ const TestHarness: React.FC<TestHarnessProps> = ({ doctor, patients: initialPati
               </div>
 
               <button
-                onClick={() => previewData('labs', () => patientRecordService.getLabResults(selectedPatientId!))}
+                onClick={() => {
+                  if (!selectedPatientId) { return; }
+                  previewData('labs', () => patientRecordService.getLabResults(selectedPatientId));
+                }}
                 className="px-3 py-2 bg-indigo-100 text-indigo-700 rounded mb-4"
               >
                 Preview Lab Data for {selectedPatientId}
@@ -527,20 +581,13 @@ const TestHarness: React.FC<TestHarnessProps> = ({ doctor, patients: initialPati
 
               {dataPreview.type === 'labs' && (
                 <div>
-                  {dataPreview.loading ? (
-                    <div className="text-center py-8">Loading...</div>
-                  ) : dataPreview.error ? (
-                    <div className="text-red-600 p-4 bg-red-50 rounded">{dataPreview.error}</div>
-                  ) : dataPreview.data && Array.isArray(dataPreview.data) ? (
+                  {renderDataPreviewContent(dataPreview, (data) => (
                     <div className="space-y-4">
-                      {dataPreview.data.map((lab: any, idx: number) => (
-                        <div key={idx} className="p-4 border rounded-lg">
+                      {data.map((lab: any) => (
+                        <div key={lab.orderId || lab.id} className="p-4 border rounded-lg">
                           <div className="flex justify-between items-start mb-2">
                             <div className="font-medium">{lab.orderId || lab.id}</div>
-                            <span className={`px-2 py-1 rounded text-xs ${lab.status === 'completed' ? 'bg-green-100 text-green-700' :
-                                lab.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                                  'bg-blue-100 text-blue-700'
-                              }`}>{lab.status}</span>
+                            <span className={`px-2 py-1 rounded text-xs ${LAB_STATUS_CLASSES[lab.status] || 'bg-blue-100 text-blue-700'}`}>{lab.status}</span>
                           </div>
                           <div className="text-sm text-gray-600 mb-2">
                             Order Date: {lab.orderDate ? new Date(lab.orderDate).toLocaleDateString() : 'N/A'}
@@ -553,11 +600,7 @@ const TestHarness: React.FC<TestHarnessProps> = ({ doctor, patients: initialPati
                         </div>
                       ))}
                     </div>
-                  ) : (
-                    <pre className="bg-gray-50 p-4 rounded overflow-auto max-h-96 text-xs">
-                      {JSON.stringify(dataPreview.data, null, 2)}
-                    </pre>
-                  )}
+                  ))}
                 </div>
               )}
             </div>
@@ -576,7 +619,10 @@ const TestHarness: React.FC<TestHarnessProps> = ({ doctor, patients: initialPati
               </div>
 
               <button
-                onClick={() => previewData('imaging', () => patientRecordService.getImagingResults(selectedPatientId!))}
+                onClick={() => {
+                  if (!selectedPatientId) { return; }
+                  previewData('imaging', () => patientRecordService.getImagingResults(selectedPatientId));
+                }}
                 className="px-3 py-2 bg-indigo-100 text-indigo-700 rounded mb-4"
               >
                 Preview Imaging Data for {selectedPatientId}
@@ -584,37 +630,26 @@ const TestHarness: React.FC<TestHarnessProps> = ({ doctor, patients: initialPati
 
               {dataPreview.type === 'imaging' && (
                 <div>
-                  {dataPreview.loading ? (
-                    <div className="text-center py-8">Loading...</div>
-                  ) : dataPreview.error ? (
-                    <div className="text-red-600 p-4 bg-red-50 rounded">{dataPreview.error}</div>
-                  ) : dataPreview.data && Array.isArray(dataPreview.data) ? (
+                  {renderDataPreviewContent(dataPreview, (data) => (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {dataPreview.data.map((img: any, idx: number) => (
-                        <div key={idx} className="p-4 border rounded-lg">
+                      {data.map((img: any) => (
+                        <div key={img.id || `${img.imagingType}-${img.bodyPart}`} className="p-4 border rounded-lg">
                           <div className="flex justify-between items-start mb-2">
                             <div>
                               <div className="font-medium">{img.imagingType} - {img.bodyPart}</div>
                               <div className="text-sm text-gray-600">{img.studyDescription}</div>
                             </div>
-                            <span className={`px-2 py-1 rounded text-xs ${img.status === 'completed' ? 'bg-green-100 text-green-700' :
-                                img.status === 'scheduled' ? 'bg-blue-100 text-blue-700' :
-                                  'bg-yellow-100 text-yellow-700'
-                              }`}>{img.status}</span>
+                            <span className={`px-2 py-1 rounded text-xs ${IMAGING_STATUS_CLASSES[img.status] || 'bg-yellow-100 text-yellow-700'}`}>{img.status}</span>
                           </div>
                           {img.report && (
                             <div className="mt-2 p-2 bg-gray-50 rounded text-sm">
-                              <strong>Impression:</strong> {img.report.impression}
+                              <strong>Impression:</strong> {img.report?.impression}
                             </div>
                           )}
                         </div>
                       ))}
                     </div>
-                  ) : (
-                    <pre className="bg-gray-50 p-4 rounded overflow-auto max-h-96 text-xs">
-                      {JSON.stringify(dataPreview.data, null, 2)}
-                    </pre>
-                  )}
+                  ))}
                 </div>
               )}
             </div>
@@ -639,28 +674,21 @@ const TestHarness: React.FC<TestHarnessProps> = ({ doctor, patients: initialPati
 
               {dataPreview.type === 'prescriptions' && (
                 <div>
-                  {dataPreview.loading ? (
-                    <div className="text-center py-8">Loading...</div>
-                  ) : dataPreview.error ? (
-                    <div className="text-red-600 p-4 bg-red-50 rounded">{dataPreview.error}</div>
-                  ) : dataPreview.data && Array.isArray(dataPreview.data) ? (
+                  {renderDataPreviewContent(dataPreview, (data) => (
                     <div className="space-y-4">
-                      {dataPreview.data.filter((rx: any) => rx.patientId === selectedPatientId).map((rx: any, idx: number) => (
-                        <div key={idx} className="p-4 border rounded-lg">
+                      {data.filter((rx: any) => rx.patientId === selectedPatientId).map((rx: any) => (
+                        <div key={rx.prescriptionId} className="p-4 border rounded-lg">
                           <div className="flex justify-between items-start mb-2">
                             <div className="font-medium">{rx.prescriptionId}</div>
-                            <span className={`px-2 py-1 rounded text-xs ${rx.status === 'active' ? 'bg-green-100 text-green-700' :
-                                rx.status === 'completed' ? 'bg-gray-100 text-gray-700' :
-                                  'bg-yellow-100 text-yellow-700'
-                              }`}>{rx.status}</span>
+                            <span className={`px-2 py-1 rounded text-xs ${RX_STATUS_CLASSES[rx.status] || 'bg-yellow-100 text-yellow-700'}`}>{rx.status}</span>
                           </div>
                           <div className="text-sm text-gray-600 mb-2">
                             Date: {rx.prescriptionDate ? new Date(rx.prescriptionDate).toLocaleDateString() : 'N/A'}
                           </div>
                           {rx.medications && (
                             <div className="space-y-1">
-                              {rx.medications.map((med: any, midx: number) => (
-                                <div key={midx} className="text-sm p-2 bg-gray-50 rounded">
+                              {rx.medications.map((med: any) => (
+                                <div key={med.drugName} className="text-sm p-2 bg-gray-50 rounded">
                                   <strong>{med.drugName}</strong> {med.dosage} - {med.frequency}
                                 </div>
                               ))}
@@ -669,7 +697,7 @@ const TestHarness: React.FC<TestHarnessProps> = ({ doctor, patients: initialPati
                         </div>
                       ))}
                     </div>
-                  ) : null}
+                  ))}
                 </div>
               )}
             </div>
@@ -688,7 +716,10 @@ const TestHarness: React.FC<TestHarnessProps> = ({ doctor, patients: initialPati
               </div>
 
               <button
-                onClick={() => previewData('timeline', () => patientRecordService.getEHRTimeline(selectedPatientId!))}
+                onClick={() => {
+                  if (!selectedPatientId) { return; }
+                  previewData('timeline', () => patientRecordService.getEHRTimeline(selectedPatientId));
+                }}
                 className="px-3 py-2 bg-indigo-100 text-indigo-700 rounded mb-4"
               >
                 Preview Timeline for {selectedPatientId}
@@ -696,16 +727,12 @@ const TestHarness: React.FC<TestHarnessProps> = ({ doctor, patients: initialPati
 
               {dataPreview.type === 'timeline' && (
                 <div>
-                  {dataPreview.loading ? (
-                    <div className="text-center py-8">Loading...</div>
-                  ) : dataPreview.error ? (
-                    <div className="text-red-600 p-4 bg-red-50 rounded">{dataPreview.error}</div>
-                  ) : dataPreview.data && Array.isArray(dataPreview.data) ? (
+                  {renderDataPreviewContent(dataPreview, (data) => (
                     <div className="relative">
                       <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-200"></div>
                       <div className="space-y-4">
-                        {dataPreview.data.map((event: any, idx: number) => (
-                          <div key={idx} className="ml-8 p-4 border rounded-lg relative">
+                        {data.map((event: any) => (
+                          <div key={event.id || event.title} className="ml-8 p-4 border rounded-lg relative">
                             <div className="absolute -left-6 top-4 w-4 h-4 rounded-full bg-indigo-500"></div>
                             <div className="flex justify-between items-start">
                               <div>
@@ -724,11 +751,7 @@ const TestHarness: React.FC<TestHarnessProps> = ({ doctor, patients: initialPati
                         ))}
                       </div>
                     </div>
-                  ) : (
-                    <pre className="bg-gray-50 p-4 rounded overflow-auto max-h-96 text-xs">
-                      {JSON.stringify(dataPreview.data, null, 2)}
-                    </pre>
-                  )}
+                  ))}
                 </div>
               )}
             </div>
@@ -809,10 +832,10 @@ const TestHarness: React.FC<TestHarnessProps> = ({ doctor, patients: initialPati
             <div className="bg-white p-6 rounded-lg shadow">
               <h3 className="text-lg font-bold mb-4">API Configuration Status</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className={`p-4 rounded-lg ${geminiClinicalService.isApiConfigured() ? 'bg-green-50' : 'bg-yellow-50'}`}>
+                <div className={`p-4 rounded-lg ${isGeminiConfigured ? 'bg-green-50' : 'bg-yellow-50'}`}>
                   <div className="font-medium">Gemini API</div>
                   <div className="text-sm mt-1">
-                    {geminiClinicalService.isApiConfigured()
+                    {isGeminiConfigured
                       ? '✓ API key is configured and ready'
                       : '⚠ Set VITE_GEMINI_API_KEY in your .env file'}
                   </div>
@@ -924,7 +947,7 @@ const TestHarness: React.FC<TestHarnessProps> = ({ doctor, patients: initialPati
               <h3 className="text-lg font-bold mb-4">Developer Tools</h3>
               <div className="flex flex-wrap gap-2">
                 <button
-                  onClick={() => window.location.reload()}
+                  onClick={() => globalThis.location.reload()}
                   className="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-800"
                 >
                   🔄 Reload App

@@ -172,10 +172,14 @@ const specialties = [
 
 // ============================================================================
 // MAIN COMPONENT
+// Helper: dark mode card class
+const cardClass = (isDark: boolean) => isDark ? 'bg-gray-800 rounded-xl shadow-lg p-4' : 'bg-white rounded-xl shadow-lg p-4';
+const subtextClass = (isDark: boolean) => isDark ? 'text-sm text-gray-400' : 'text-sm text-gray-600';
+
 // ============================================================================
 
 const DoctorsManagement: React.FC = () => {
-  const { theme, language, t } = useSettings();
+  const { theme, language } = useSettings();
   const isDark = theme === 'dark';
   
   // i18n labels
@@ -417,27 +421,27 @@ const DoctorsManagement: React.FC = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className={isDark ? 'bg-gray-800 rounded-xl shadow-lg p-4' : 'bg-white rounded-xl shadow-lg p-4'}>
+        <div className={cardClass(isDark)}>
           <div className="text-3xl font-bold text-emerald-600">{doctors.length}</div>
-          <div className={isDark ? 'text-sm text-gray-400' : 'text-sm text-gray-600'}>Total Doctors</div>
+          <div className={subtextClass(isDark)}>Total Doctors</div>
         </div>
-        <div className={isDark ? 'bg-gray-800 rounded-xl shadow-lg p-4' : 'bg-white rounded-xl shadow-lg p-4'}>
+        <div className={cardClass(isDark)}>
           <div className="text-3xl font-bold text-green-600">
             {doctors.filter((d) => d.status === 'active').length}
           </div>
-          <div className={isDark ? 'text-sm text-gray-400' : 'text-sm text-gray-600'}>Active</div>
+          <div className={subtextClass(isDark)}>Active</div>
         </div>
-        <div className={isDark ? 'bg-gray-800 rounded-xl shadow-lg p-4' : 'bg-white rounded-xl shadow-lg p-4'}>
+        <div className={cardClass(isDark)}>
           <div className="text-3xl font-bold text-yellow-600">
             {doctors.filter((d) => d.status === 'on-leave').length}
           </div>
-          <div className={isDark ? 'text-sm text-gray-400' : 'text-sm text-gray-600'}>On Leave</div>
+          <div className={subtextClass(isDark)}>On Leave</div>
         </div>
-        <div className={isDark ? 'bg-gray-800 rounded-xl shadow-lg p-4' : 'bg-white rounded-xl shadow-lg p-4'}>
+        <div className={cardClass(isDark)}>
           <div className="text-3xl font-bold text-blue-600">
             {doctors.filter((d) => d.isVerified).length}
           </div>
-          <div className={isDark ? 'text-sm text-gray-400' : 'text-sm text-gray-600'}>Verified</div>
+          <div className={subtextClass(isDark)}>Verified</div>
         </div>
       </div>
 
@@ -451,12 +455,14 @@ const DoctorsManagement: React.FC = () => {
               placeholder="Search by name, specialty, or email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              aria-label="Search doctors"
               className={isDark ? 'w-full pl-10 pr-4 py-2 border border-gray-600 bg-gray-700 text-white rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500' : 'w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500'}
             />
           </div>
           <select
             value={selectedDepartment}
             onChange={(e) => setSelectedDepartment(e.target.value)}
+            aria-label="Filter by department"
             className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
           >
             {departments.map((dept) => (
@@ -468,6 +474,7 @@ const DoctorsManagement: React.FC = () => {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as any)}
+            aria-label="Filter by status"
             className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
           >
             <option value="all">All Status</option>

@@ -104,6 +104,24 @@ export function AppointmentListPage() {
     return <span className={`text-xs px-2 py-1 rounded-full font-medium ${styles[status] || styles.pending}`}>{statusLabels[status] || status}</span>;
   };
 
+  const filterLabelMap: Record<string, string> = {
+    pending: `⏳ ${labels.pending[language]}`,
+    all: `📋 ${labels.all[language]}`,
+    confirmed: `✅ ${labels.confirmed[language]}`,
+    completed: `📂 ${labels.completed[language]}`,
+  };
+
+  const getAppointmentCardClass = (status: string) => {
+    if (status === 'pending') return isDark ? 'border-yellow-700 bg-yellow-900/20' : 'border-yellow-200 bg-yellow-50/30';
+    if (status === 'confirmed') return isDark ? 'border-green-700 bg-green-900/20' : 'border-green-200 bg-green-50/30';
+    return isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100';
+  };
+
+  const getToggleClass = (isActive: boolean, activeClass: string) => {
+    if (isActive) return activeClass;
+    return isDark ? 'bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700' : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200';
+  };
+
   return (
     <div className="max-w-4xl mx-auto">
       <div className="flex items-center justify-between mb-6">
@@ -133,9 +151,9 @@ export function AppointmentListPage() {
           <button
             key={f}
             onClick={() => setFilter(f)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${filter === f ? 'bg-emerald-600 text-white' : isDark ? 'bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700' : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'}`}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${getToggleClass(filter === f, 'bg-emerald-600 text-white')}`}
           >
-            {f === 'pending' ? `⏳ ${labels.pending[language]}` : f === 'all' ? `📋 ${labels.all[language]}` : f === 'confirmed' ? `✅ ${labels.confirmed[language]}` : `📂 ${labels.completed[language]}`}
+            {filterLabelMap[f]}
           </button>
         ))}
 
@@ -144,24 +162,25 @@ export function AppointmentListPage() {
           <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{language === 'th' ? 'เรียงตามวันที่:' : 'Sort by date:'}</span>
           <button
             onClick={() => setSortOrder('desc')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${sortOrder === 'desc' ? 'bg-blue-600 text-white' : isDark ? 'bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700' : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'}`}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${getToggleClass(sortOrder === 'desc', 'bg-blue-600 text-white')}`}
           >
             {labels.dateNewest[language]}
           </button>
           <button
             onClick={() => setSortOrder('asc')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${sortOrder === 'asc' ? 'bg-blue-600 text-white' : isDark ? 'bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700' : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'}`}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${getToggleClass(sortOrder === 'asc', 'bg-blue-600 text-white')}`}
           >
             {labels.dateOldest[language]}
           </button>
         </div>
       </div>
 
-      {loading ? (
+      {loading && (
         <div className="space-y-4">
-          {[1, 2, 3].map((i) => <div key={i} className={`animate-pulse h-32 rounded-xl ${isDark ? 'bg-gray-800' : 'bg-white'}`} />)}
+          {[1, 2, 3].map((i) => <div key={`skeleton-${i}`} className={`animate-pulse h-32 rounded-xl ${isDark ? 'bg-gray-800' : 'bg-white'}`} />)}
         </div>
-      ) : filteredAppointments.length === 0 ? (
+      )}
+      {!loading && filteredAppointments.length === 0 && (
         <div className={`rounded-xl p-12 text-center border ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
           <Calendar className={`w-16 h-16 mx-auto mb-4 ${isDark ? 'text-gray-600' : 'text-gray-300'}`} />
           <p className={`mb-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{labels.noAppointments[language]}</p>
@@ -169,18 +188,14 @@ export function AppointmentListPage() {
             <Plus className="w-4 h-4" /> {labels.bookAppointmentCta[language]}
           </Link>
         </div>
-      ) : (
+      )}
+      {!loading && filteredAppointments.length > 0 && (
         <div className="space-y-4">
           {filteredAppointments.map((apt) => (
             <Link
               key={apt.id}
               to={`/appointments/${apt.id}`}
-              className={`block rounded-xl p-5 border transition-all hover:shadow-md ${apt.status === 'pending'
-                ? isDark ? 'border-yellow-700 bg-yellow-900/20' : 'border-yellow-200 bg-yellow-50/30'
-                : apt.status === 'confirmed'
-                  ? isDark ? 'border-green-700 bg-green-900/20' : 'border-green-200 bg-green-50/30'
-                  : isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'
-                }`}
+              className={`block rounded-xl p-5 border transition-all hover:shadow-md ${getAppointmentCardClass(apt.status)}`}
             >
               <div className="flex justify-between items-start mb-3">
                 <div className="flex items-center gap-3">
@@ -307,43 +322,13 @@ export function AppointmentListPage() {
 
 export function BookAppointmentPage() {
   const { user } = useAuth();
-  const { theme, language } = useSettings();
-  const isDark = theme === 'dark';
+  const { language } = useSettings();
   const navigate = useNavigate();
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
   const [step, setStep] = useState(1);
-
-  // i18n labels for booking page
-  const bookLabels = {
-    bookAppointment: { en: 'Book Appointment', th: 'ขอนัดหมายแพทย์' },
-    back: { en: 'Back', th: 'กลับ' },
-    step1: { en: 'Describe Symptoms', th: 'บอกอาการ' },
-    step2: { en: 'Select Doctor', th: 'เลือกแพทย์' },
-    step3: { en: 'Confirm', th: 'ยืนยัน' },
-    next: { en: 'Next', th: 'ถัดไป' },
-    previous: { en: 'Previous', th: 'ก่อนหน้า' },
-    submit: { en: 'Submit Request', th: 'ส่งคำขอนัดหมาย' },
-    submitting: { en: 'Submitting...', th: 'กำลังส่ง...' },
-    mainSymptom: { en: 'Main Symptom', th: 'อาการหลัก' },
-    symptomDescription: { en: 'Symptom Description', th: 'รายละเอียดอาการ' },
-    severity: { en: 'Severity', th: 'ความรุนแรง' },
-    duration: { en: 'Duration', th: 'ระยะเวลา' },
-    selectDoctor: { en: 'Select Doctor', th: 'เลือกแพทย์' },
-    anyDoctor: { en: 'Let system assign doctor', th: 'ให้ระบบจัดหาแพทย์' },
-    preferredTime: { en: 'Preferred Time', th: 'เวลาที่สะดวก' },
-    appointmentType: { en: 'Appointment Type', th: 'ประเภทการนัด' },
-    telehealth: { en: 'Telehealth', th: 'ทางไกล' },
-    inPerson: { en: 'In Person', th: 'พบตัว' },
-    morning: { en: 'Morning', th: 'เช้า' },
-    afternoon: { en: 'Afternoon', th: 'บ่าย' },
-    evening: { en: 'Evening', th: 'เย็น' },
-    confirmDetails: { en: 'Confirm Details', th: 'ยืนยันรายละเอียด' },
-    success: { en: 'Appointment request submitted successfully', th: 'ส่งคำขอนัดหมายสำเร็จ' },
-    error: { en: 'Failed to submit. Please try again.', th: 'ส่งไม่สำเร็จ กรุณาลองใหม่' },
-  };
 
   // AI Analysis state
   const [aiAnalyzing, setAiAnalyzing] = useState(false);
@@ -549,6 +534,28 @@ export function BookAppointmentPage() {
   };
 
   // AI-assisted symptom analysis (with audio and image support)
+  /** Build symptom description from all form fields */
+  const buildSymptomParts = (): string[] => {
+    const parts: string[] = [];
+    if (form.mainSymptom) parts.push(`อาการหลัก: ${form.mainSymptom}`);
+    if (form.symptomDescription) parts.push(`รายละเอียด: ${form.symptomDescription}`);
+    if (form.symptomDuration) {
+      const unitMap = { hours: 'ชั่วโมง', days: 'วัน', weeks: 'สัปดาห์', months: 'เดือน' };
+      parts.push(`ระยะเวลา: ${form.symptomDuration} ${unitMap[form.symptomDurationUnit]}`);
+    }
+    if (form.symptomSeverity) parts.push(`ความรุนแรง: ${form.symptomSeverity}/5`);
+    if (form.fever) {
+      const feverDetail = form.feverTemp ? `(${form.feverTemp}°C)` : '';
+      parts.push(`มีไข้: ใช่ ${feverDetail}`);
+    }
+    if (form.currentMedications) parts.push(`ยาที่ใช้อยู่: ${form.currentMedications}`);
+    if (form.allergies) parts.push(`ประวัติแพ้ยา/อาหาร: ${form.allergies}`);
+    if (form.previousTreatment) parts.push(`การรักษาก่อนหน้า: ${form.previousTreatment}`);
+    if (form.audioTranscript) parts.push(`คำอธิบายเพิ่มเติม (จากเสียง): ${form.audioTranscript}`);
+    if (form.images.length > 0) parts.push(`แนบรูปภาพ: ${form.images.length} รูป`);
+    return parts;
+  };
+
   const analyzeSymptoms = async () => {
     // Check if there's ANY input to analyze
     const hasAnyInput = form.mainSymptom || form.symptomDescription || form.audioBlob || form.images.length > 0 ||
@@ -561,61 +568,7 @@ export function BookAppointmentPage() {
 
     setAiAnalyzing(true);
     try {
-      // Build comprehensive symptom text from ALL inputs
-      const symptomParts: string[] = [];
-
-      // Main symptom
-      if (form.mainSymptom) {
-        symptomParts.push(`อาการหลัก: ${form.mainSymptom}`);
-      }
-
-      // Description
-      if (form.symptomDescription) {
-        symptomParts.push(`รายละเอียด: ${form.symptomDescription}`);
-      }
-
-      // Duration
-      if (form.symptomDuration) {
-        const unitMap = { hours: 'ชั่วโมง', days: 'วัน', weeks: 'สัปดาห์', months: 'เดือน' };
-        symptomParts.push(`ระยะเวลา: ${form.symptomDuration} ${unitMap[form.symptomDurationUnit]}`);
-      }
-
-      // Severity
-      if (form.symptomSeverity) {
-        symptomParts.push(`ความรุนแรง: ${form.symptomSeverity}/5`);
-      }
-
-      // Fever
-      if (form.fever) {
-        symptomParts.push(`มีไข้: ใช่ ${form.feverTemp ? `(${form.feverTemp}°C)` : ''}`);
-      }
-
-      // Medications
-      if (form.currentMedications) {
-        symptomParts.push(`ยาที่ใช้อยู่: ${form.currentMedications}`);
-      }
-
-      // Allergies
-      if (form.allergies) {
-        symptomParts.push(`ประวัติแพ้ยา/อาหาร: ${form.allergies}`);
-      }
-
-      // Previous treatment
-      if (form.previousTreatment) {
-        symptomParts.push(`การรักษาก่อนหน้า: ${form.previousTreatment}`);
-      }
-
-      // Audio transcript
-      if (form.audioTranscript) {
-        symptomParts.push(`คำอธิบายเพิ่มเติม (จากเสียง): ${form.audioTranscript}`);
-      }
-
-      // Images count
-      if (form.images.length > 0) {
-        symptomParts.push(`แนบรูปภาพ: ${form.images.length} รูป`);
-      }
-
-      const symptomText = symptomParts.join('\n');
+      const symptomText = buildSymptomParts().join('\n');
 
       console.log('[AI Analysis] Sending symptoms:', symptomText);
 
@@ -745,9 +698,7 @@ export function BookAppointmentPage() {
       const preferredDate = form.preferredDates[0]
         ? new Date(form.preferredDates[0]).toISOString().split('T')[0]
         : new Date().toISOString().split('T')[0];
-      const preferredTime = form.preferredTimeSlot === 'morning' ? '09:00'
-        : form.preferredTimeSlot === 'afternoon' ? '13:00'
-          : '17:00';
+      const preferredTime = timeSlotTimeValues[form.preferredTimeSlot];
 
       const appointment = await appointmentService.create({
         patientId,
@@ -822,6 +773,19 @@ export function BookAppointmentPage() {
       setSubmitting(false);
     }
   };
+
+  // Helper maps to avoid nested ternaries
+  const durationUnitLabels: Record<string, string> = { hours: 'ชั่วโมง', days: 'วัน', weeks: 'สัปดาห์', months: 'เดือน' };
+  const urgencyDisplayLabels: Record<string, string> = { normal: 'ปกติ', urgent: 'เร่งด่วน', emergency: 'ฉุกเฉิน' };
+  const urgencyColorClass: Record<string, string> = { normal: 'text-green-600', urgent: 'text-yellow-600', emergency: 'text-red-600' };
+  const timeSlotDisplayLabels: Record<string, string> = { morning: 'เช้า (09:00-12:00)', afternoon: 'บ่าย (13:00-16:00)', evening: 'เย็น (17:00-20:00)' };
+  const getSeverityColorClass = (severity: number) => {
+    if (severity <= 2) return 'text-green-600';
+    if (severity <= 3) return 'text-yellow-600';
+    return 'text-red-600';
+  };
+
+  const timeSlotTimeValues: Record<string, string> = { morning: '09:00', afternoon: '13:00', evening: '17:00' };
 
   // Step validation - NEW FLOW: Symptoms (with audio/image) → Schedule + Doctor Selection → Confirm
   const hasSymptomInput = form.mainSymptom.trim() !== '' || form.symptomDescription.trim() !== '' || form.audioBlob !== null || form.images.length > 0;
@@ -933,20 +897,24 @@ export function BookAppointmentPage() {
                 { value: 'normal', label: 'ปกติ', desc: 'นัดได้ตามตาราง', color: 'green' },
                 { value: 'urgent', label: 'เร่งด่วน', desc: 'ต้องการพบเร็ว', color: 'yellow' },
                 { value: 'emergency', label: 'ฉุกเฉิน', desc: 'ต้องการพบทันที', color: 'red' },
-              ].map((opt) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => setForm({ ...form, urgency: opt.value as any })}
-                  className={`p-3 rounded-xl border-2 transition-all text-center ${form.urgency === opt.value
-                    ? `border-${opt.color}-500 bg-${opt.color}-50`
-                    : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                >
-                  <p className={`font-medium ${form.urgency === opt.value ? `text-${opt.color}-700` : 'text-gray-600'}`}>{opt.label}</p>
-                  <p className="text-xs text-gray-500 mt-1">{opt.desc}</p>
-                </button>
-              ))}
+              ].map((opt) => {
+                const isSelected = form.urgency === opt.value;
+                const borderBgClass = isSelected
+                  ? `border-${opt.color}-500 bg-${opt.color}-50`
+                  : 'border-gray-200 hover:border-gray-300';
+                const textClass = isSelected ? `text-${opt.color}-700` : 'text-gray-600';
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setForm({ ...form, urgency: opt.value as any })}
+                    className={`p-3 rounded-xl border-2 transition-all text-center ${borderBgClass}`}
+                  >
+                    <p className={`font-medium ${textClass}`}>{opt.label}</p>
+                    <p className="text-xs text-gray-500 mt-1">{opt.desc}</p>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -970,17 +938,17 @@ export function BookAppointmentPage() {
                     const monthName = date.toLocaleDateString('th-TH', { month: 'short' });
                     const isSelected = form.preferredDates.includes(dateStr);
                     const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+                    const getDateButtonClass = () => {
+                      if (isSelected) return 'border-emerald-500 bg-emerald-50';
+                      if (isWeekend) return 'border-gray-200 bg-gray-50 hover:border-gray-300';
+                      return 'border-gray-200 hover:border-gray-300';
+                    };
                     return (
                       <button
                         key={dateStr}
                         type="button"
                         onClick={() => setForm({ ...form, preferredDates: toggleArrayItem(form.preferredDates, dateStr) })}
-                        className={`p-2 rounded-xl border-2 transition-all text-center ${isSelected
-                          ? 'border-emerald-500 bg-emerald-50'
-                          : isWeekend
-                            ? 'border-gray-200 bg-gray-50 hover:border-gray-300'
-                            : 'border-gray-200 hover:border-gray-300'
-                          }`}
+                        className={`p-2 rounded-xl border-2 transition-all text-center ${getDateButtonClass()}`}
                       >
                         <p className={`text-xs ${isWeekend ? 'text-red-500' : 'text-gray-500'}`}>{dayName}</p>
                         <p className={`text-lg font-semibold ${isSelected ? 'text-emerald-600' : 'text-gray-700'}`}>{dayNum}</p>
@@ -1039,8 +1007,9 @@ export function BookAppointmentPage() {
 
               {/* Skip Doctor Selection Option */}
               <div className="mb-4 p-4 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl border border-emerald-200">
-                <label className="flex items-start gap-3 cursor-pointer">
+                <label htmlFor="skip-doctor-selection" className="flex items-start gap-3 cursor-pointer">
                   <input
+                    id="skip-doctor-selection"
                     type="checkbox"
                     checked={form.skipDoctorSelection}
                     onChange={(e) => {
@@ -1048,6 +1017,7 @@ export function BookAppointmentPage() {
                       if (e.target.checked) setSelectedDoctor(null);
                     }}
                     className="w-5 h-5 rounded text-emerald-600 mt-0.5"
+                    aria-label="ให้ระบบจัดสรรแพทย์ให้"
                   />
                   <div>
                     <p className="font-medium text-emerald-800">ให้ระบบจัดสรรแพทย์ให้</p>
@@ -1135,6 +1105,8 @@ export function BookAppointmentPage() {
               หมายเหตุเพิ่มเติม
             </h3>
             <textarea
+              id="additional-notes"
+              aria-label="หมายเหตุเพิ่มเติม"
               value={form.additionalNotes}
               onChange={(e) => setForm({ ...form, additionalNotes: e.target.value })}
               placeholder="ข้อมูลเพิ่มเติมที่ต้องการแจ้งแพทย์..."
@@ -1211,12 +1183,12 @@ export function BookAppointmentPage() {
               {form.symptomDuration && (
                 <div className="flex justify-between py-2 border-b border-gray-100">
                   <span className="text-gray-500">ระยะเวลา:</span>
-                  <span className="font-medium">{form.symptomDuration} {form.symptomDurationUnit === 'hours' ? 'ชั่วโมง' : form.symptomDurationUnit === 'days' ? 'วัน' : form.symptomDurationUnit === 'weeks' ? 'สัปดาห์' : 'เดือน'}</span>
+                  <span className="font-medium">{form.symptomDuration} {durationUnitLabels[form.symptomDurationUnit]}</span>
                 </div>
               )}
               <div className="flex justify-between py-2 border-b border-gray-100">
                 <span className="text-gray-500">ความรุนแรง:</span>
-                <span className={`font-medium ${form.symptomSeverity <= 2 ? 'text-green-600' : form.symptomSeverity <= 3 ? 'text-yellow-600' : 'text-red-600'}`}>
+                <span className={`font-medium ${getSeverityColorClass(form.symptomSeverity)}`}>
                   ระดับ {form.symptomSeverity}/5
                 </span>
               </div>
@@ -1268,7 +1240,7 @@ export function BookAppointmentPage() {
                   <div className="mt-2 flex gap-2 overflow-x-auto pb-2">
                     {form.images.map((img, index) => (
                       <img
-                        key={index}
+                        key={img.preview}
                         src={img.preview}
                         alt={`Attachment ${index + 1}`}
                         className="w-16 h-16 object-cover rounded-lg border border-gray-200 flex-shrink-0"
@@ -1290,8 +1262,8 @@ export function BookAppointmentPage() {
               </div>
               <div className="flex justify-between py-2 border-b border-gray-100">
                 <span className="text-gray-500">ความเร่งด่วน:</span>
-                <span className={`font-medium ${form.urgency === 'normal' ? 'text-green-600' : form.urgency === 'urgent' ? 'text-yellow-600' : 'text-red-600'}`}>
-                  {form.urgency === 'normal' ? 'ปกติ' : form.urgency === 'urgent' ? 'เร่งด่วน' : 'ฉุกเฉิน'}
+                <span className={`font-medium ${urgencyColorClass[form.urgency]}`}>
+                  {urgencyDisplayLabels[form.urgency]}
                 </span>
               </div>
               <div className="py-2 border-b border-gray-100">
@@ -1306,7 +1278,7 @@ export function BookAppointmentPage() {
               </div>
               <div className="flex justify-between py-2">
                 <span className="text-gray-500">ช่วงเวลา:</span>
-                <span className="font-medium">{form.preferredTimeSlot === 'morning' ? 'เช้า (09:00-12:00)' : form.preferredTimeSlot === 'afternoon' ? 'บ่าย (13:00-16:00)' : 'เย็น (17:00-20:00)'}</span>
+                <span className="font-medium">{timeSlotDisplayLabels[form.preferredTimeSlot]}</span>
               </div>
             </div>
           </div>
@@ -1384,6 +1356,7 @@ export function AppointmentDetailPage() {
             setMeetLink(meetInfo.meetLink);
           }
         } catch (e) {
+          console.error('Failed to get Meet info:', e);
           // Try to get from appointment data
           if (data.meetingLink) {
             setMeetLink(data.meetingLink);
@@ -1414,12 +1387,22 @@ export function AppointmentDetailPage() {
       const startDateTime = new Date(`${new Date(appointment.appointmentDate).toISOString().split('T')[0]}T${appointment.appointmentTime}:00`);
       const endDateTime = new Date(startDateTime.getTime() + 60 * 60 * 1000);
 
+      const hospitalLabel = language === 'th' ? 'โรงพยาบาล' : 'Hospital';
+      const eventLocation = appointment.type === 'telehealth'
+        ? 'Google Meet'
+        : (appointment.hospitalName || hospitalLabel);
+
+      const appointmentLabel = language === 'th' ? 'นัดหมาย' : 'Appointment';
+      const appointmentWith = language === 'th' ? 'นัดหมายแพทย์' : 'Appointment with';
+      const eventSummary = `${appointmentLabel}: ${appointment.doctorName}`;
+      const eventDescription = `${appointmentWith} ${appointment.doctorName} (${appointment.doctorSpecialty})`;
+
       const response = await googleService.createCalendarEvent({
-        summary: `${language === 'th' ? 'นัดหมาย' : 'Appointment'}: ${appointment.doctorName}`,
-        description: `${language === 'th' ? 'นัดหมายแพทย์' : 'Appointment with'} ${appointment.doctorName} (${appointment.doctorSpecialty})`,
+        summary: eventSummary,
+        description: eventDescription,
         startDateTime: startDateTime.toISOString(),
         endDateTime: endDateTime.toISOString(),
-        location: appointment.type === 'telehealth' ? 'Google Meet' : (appointment.hospitalName || (language === 'th' ? 'โรงพยาบาล' : 'Hospital')),
+        location: eventLocation,
       });
 
       if (response.calendarUrl) {
@@ -1432,20 +1415,29 @@ export function AppointmentDetailPage() {
   };
 
   const getStatusInfo = (status: string) => {
-    const infoTh: Record<string, { bg: string; text: string; icon: string; label: string; description: string }> = {
-      pending: { bg: isDark ? 'bg-yellow-900/20 border-yellow-700' : 'bg-yellow-50 border-yellow-200', text: isDark ? 'text-yellow-300' : 'text-yellow-700', icon: '⏳', label: 'รอแพทย์ยืนยัน', description: 'แพทย์กำลังตรวจสอบอาการและจะนัดเวลาที่เหมาะสมให้คุณ' },
-      confirmed: { bg: isDark ? 'bg-green-900/20 border-green-700' : 'bg-green-50 border-green-200', text: isDark ? 'text-green-300' : 'text-green-700', icon: '✅', label: 'ยืนยันแล้ว', description: 'แพทย์ยืนยันนัดหมายแล้ว กรุณามาตามเวลานัด' },
-      completed: { bg: isDark ? 'bg-blue-900/20 border-blue-700' : 'bg-blue-50 border-blue-200', text: isDark ? 'text-blue-300' : 'text-blue-700', icon: '✔️', label: 'เสร็จสิ้น', description: 'นัดหมายนี้เสร็จสิ้นแล้ว' },
-      cancelled: { bg: isDark ? 'bg-red-900/20 border-red-700' : 'bg-red-50 border-red-200', text: isDark ? 'text-red-300' : 'text-red-700', icon: '❌', label: 'ยกเลิก', description: 'นัดหมายนี้ถูกยกเลิก' },
+    type StatusInfo = { bg: string; text: string; icon: string; label: string; description: string };
+    const statusColors: Record<string, { bg: string; text: string }> = {
+      pending: { bg: isDark ? 'bg-yellow-900/20 border-yellow-700' : 'bg-yellow-50 border-yellow-200', text: isDark ? 'text-yellow-300' : 'text-yellow-700' },
+      confirmed: { bg: isDark ? 'bg-green-900/20 border-green-700' : 'bg-green-50 border-green-200', text: isDark ? 'text-green-300' : 'text-green-700' },
+      completed: { bg: isDark ? 'bg-blue-900/20 border-blue-700' : 'bg-blue-50 border-blue-200', text: isDark ? 'text-blue-300' : 'text-blue-700' },
+      cancelled: { bg: isDark ? 'bg-red-900/20 border-red-700' : 'bg-red-50 border-red-200', text: isDark ? 'text-red-300' : 'text-red-700' },
     };
-    const infoEn: Record<string, { bg: string; text: string; icon: string; label: string; description: string }> = {
-      pending: { bg: isDark ? 'bg-yellow-900/20 border-yellow-700' : 'bg-yellow-50 border-yellow-200', text: isDark ? 'text-yellow-300' : 'text-yellow-700', icon: '⏳', label: 'Awaiting Confirmation', description: 'Doctor is reviewing your symptoms and will schedule an appropriate time' },
-      confirmed: { bg: isDark ? 'bg-green-900/20 border-green-700' : 'bg-green-50 border-green-200', text: isDark ? 'text-green-300' : 'text-green-700', icon: '✅', label: 'Confirmed', description: 'Doctor confirmed the appointment. Please arrive on time' },
-      completed: { bg: isDark ? 'bg-blue-900/20 border-blue-700' : 'bg-blue-50 border-blue-200', text: isDark ? 'text-blue-300' : 'text-blue-700', icon: '✔️', label: 'Completed', description: 'This appointment is completed' },
-      cancelled: { bg: isDark ? 'bg-red-900/20 border-red-700' : 'bg-red-50 border-red-200', text: isDark ? 'text-red-300' : 'text-red-700', icon: '❌', label: 'Cancelled', description: 'This appointment was cancelled' },
+    const labelsTh: Record<string, { icon: string; label: string; description: string }> = {
+      pending: { icon: '⏳', label: 'รอแพทย์ยืนยัน', description: 'แพทย์กำลังตรวจสอบอาการและจะนัดเวลาที่เหมาะสมให้คุณ' },
+      confirmed: { icon: '✅', label: 'ยืนยันแล้ว', description: 'แพทย์ยืนยันนัดหมายแล้ว กรุณามาตามเวลานัด' },
+      completed: { icon: '✔️', label: 'เสร็จสิ้น', description: 'นัดหมายนี้เสร็จสิ้นแล้ว' },
+      cancelled: { icon: '❌', label: 'ยกเลิก', description: 'นัดหมายนี้ถูกยกเลิก' },
     };
-    const info = language === 'th' ? infoTh : infoEn;
-    return info[status] || info.pending;
+    const labelsEn: Record<string, { icon: string; label: string; description: string }> = {
+      pending: { icon: '⏳', label: 'Awaiting Confirmation', description: 'Doctor is reviewing your symptoms and will schedule an appropriate time' },
+      confirmed: { icon: '✅', label: 'Confirmed', description: 'Doctor confirmed the appointment. Please arrive on time' },
+      completed: { icon: '✔️', label: 'Completed', description: 'This appointment is completed' },
+      cancelled: { icon: '❌', label: 'Cancelled', description: 'This appointment was cancelled' },
+    };
+    const key = status in statusColors ? status : 'pending';
+    const color = statusColors[key];
+    const label = (language === 'th' ? labelsTh : labelsEn)[key];
+    return { ...color, ...label } as StatusInfo;
   };
 
   if (loading) return <div className={`flex items-center justify-center h-64 ${isDark ? 'bg-gray-900' : ''}`}><div className="animate-spin w-8 h-8 border-4 border-emerald-600 border-t-transparent rounded-full" /></div>;
@@ -1491,8 +1483,8 @@ export function AppointmentDetailPage() {
               <div className="text-sm text-yellow-700">
                 <p className="mb-1">ช่วงเวลาที่คุณสะดวก:</p>
                 <ul className="list-disc list-inside ml-2">
-                  {(appointment.preferredTimeSlots as string[]).map((slot, i) => (
-                    <li key={i}>{slot}</li>
+                  {appointment.preferredTimeSlots.map((slot: string) => (
+                    <li key={`slot-${slot}`}>{slot}</li>
                   ))}
                 </ul>
               </div>
@@ -1550,7 +1542,7 @@ export function AppointmentDetailPage() {
                   <span className="text-sm text-gray-600">ระยะเวลา: <span className="font-medium text-gray-800">{appointment.symptoms.duration}</span></span>
                 </div>
               )}
-              {appointment.symptoms.severity && (
+              {Boolean(appointment.symptoms.severity) && (
                 <div className="flex items-center gap-2">
                   <Activity className="w-4 h-4 text-gray-400" />
                   <span className="text-sm text-gray-600">ระดับความรุนแรง: <span className="font-medium text-gray-800">{appointment.symptoms.severity}/10</span></span>
@@ -1586,8 +1578,8 @@ export function AppointmentDetailPage() {
             <div className="mt-3">
               <p className="text-sm text-gray-500 mb-1">อาการ</p>
               <div className="flex flex-wrap gap-2">
-                {appointment.symptoms.map((symptom: string, i: number) => (
-                  <span key={i} className="px-2 py-1 bg-blue-50 text-blue-600 text-xs rounded-full">{symptom}</span>
+                {appointment.symptoms.map((symptom: string) => (
+                  <span key={`symptom-${symptom}`} className="px-2 py-1 bg-blue-50 text-blue-600 text-xs rounded-full">{symptom}</span>
                 ))}
               </div>
             </div>

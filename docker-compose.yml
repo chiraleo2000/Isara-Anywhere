@@ -1,24 +1,27 @@
 # ============================================================================
 # IZARA TELEMEDICINE - COMPLETE DOCKER COMPOSE
-# Version: 3.1.0
-# Updated: 2026-01-27
+# Version: 1.4.8-dev
+# Updated: 2026-02-12
 # ============================================================================
 #
 # This docker-compose provides:
-# - PostgreSQL with pgvector for primary database
+# - PostgreSQL 18 with pgvector for primary database
 # - pgAdmin for database management
 # - Patient Portal (unified frontend + backend on port 3005)
 # - Doctor Portal (unified frontend + backend on port 3010)
+# - Meeting Server (transcription + AI on port 3020)
 #
-# Environment Variables:
-#   Shared variables loaded from .env.docker in root directory
-#   Portal-specific variables loaded from their respective .env files
-#   DO NOT hardcode API keys in this file!
+# ALL SERVICES USE FREE TIER:
+#   - Video: Jitsi Meet (meet.jit.si) - FREE
+#   - Transcription: Web Speech API (browser-native) - FREE
+#   - AI: Gemini 2.5 Flash Lite - FREE
+#   - Database: PostgreSQL + pgvector - FREE
 #
 # Run: docker-compose up --build
 # Access:
 #   - Patient Portal: http://localhost:3005
 #   - Doctor Portal:  http://localhost:3010
+#   - Meeting Server: http://localhost:3020
 #   - pgAdmin:        http://localhost:5050
 # ============================================================================
 
@@ -27,7 +30,7 @@ services:
   # PostgreSQL Database with pgvector
   # ==========================================================================
   postgres:
-    image: pgvector/pgvector:pg16
+    image: pgvector/pgvector:pg18
     container_name: izara-postgres
     restart: unless-stopped
     env_file:
@@ -40,7 +43,7 @@ services:
     ports:
       - "5433:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql
       - ./scripts/database/izara-database.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d izara_phase1"]
@@ -82,9 +85,10 @@ services:
       args:
         VITE_API_URL: http://localhost:3005
         VITE_APP_NAME: Izara Patient Portal
-        VITE_APP_VERSION: 2.0.0
+        VITE_APP_VERSION: 1.4.8-dev
         VITE_APP_ENV: production
         VITE_USE_POSTGRESQL: "true"
+        VITE_MEETING_SERVER_URL: http://localhost:3020
         # Google Maps API - loaded from .env.docker
         VITE_GOOGLE_MAPS_API_KEY: ${VITE_GOOGLE_MAPS_API_KEY}
         VITE_GOOGLE_MAPS_MAP_ID: ${VITE_GOOGLE_MAPS_MAP_ID}
@@ -120,6 +124,13 @@ services:
       USE_GCS: "false"
       VITE_USE_GCS: "false"
       GOOGLE_APPLICATION_CREDENTIALS: /app/credentials/service-account.json
+
+      # Meeting Server URL
+      MEETING_SERVER_URL: http://meeting-server:3020
+      VITE_MEETING_SERVER_URL: http://localhost:3020
+
+      # Google Maps server-side API key
+      GOOGLE_MAPS_API_KEY: ${VITE_GOOGLE_MAPS_API_KEY}
     volumes:
       - ./credentials/service-account.json:/app/credentials/service-account.json:ro
     ports:
@@ -147,9 +158,10 @@ services:
         VITE_API_URL: http://localhost:3010
         VITE_AUTH_URL: http://localhost:3010/auth
         VITE_APP_NAME: Izara Doctor Portal
-        VITE_APP_VERSION: 2.0.0
+        VITE_APP_VERSION: 1.4.8-dev
         VITE_APP_ENV: production
         VITE_USE_POSTGRESQL: "true"
+        VITE_MEETING_SERVER_URL: http://localhost:3020
     container_name: izara-doctor-portal
     restart: unless-stopped
     env_file:
@@ -184,6 +196,10 @@ services:
 
       # GCS API URL (internal)
       GCS_API_URL: http://localhost:3010
+
+      # Meeting Server URL
+      MEETING_SERVER_URL: http://meeting-server:3020
+      VITE_MEETING_SERVER_URL: http://localhost:3020
     volumes:
       - ./credentials/service-account.json:/app/credentials/service-account.json:ro
     ports:
@@ -230,10 +246,10 @@ services:
 
       # Gemini AI Configuration - loaded from .env.docker
       GEMINI_API_KEY: ${GEMINI_API_KEY}
-      GEMINI_MODEL: ${GEMINI_MODEL}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash-lite}
 
-      # Google Speech-to-Text - loaded from .env.docker
-      GOOGLE_SPEECH_API_KEY: ${GOOGLE_SPEECH_API_KEY}
+      # Transcription: Web Speech API (browser-native, FREE - no API key needed)
+      # GOOGLE_SPEECH_API_KEY is NOT required
 
       # CORS
       CORS_ORIGINS: http://localhost:3005,http://localhost:3010

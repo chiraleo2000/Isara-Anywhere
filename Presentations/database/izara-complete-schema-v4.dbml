@@ -5,7 +5,7 @@
 // Updated: 2026-02-04
 // Author: Izara Development Team
 // 
-// Database: PostgreSQL 16 with pgvector extension
+// Database: PostgreSQL 18 with pgvector extension
 // Deployment: Docker Container (local) / Cloud SQL (production)
 
 Project Izara_Telemedicine {
@@ -14,7 +14,7 @@ Project Izara_Telemedicine {
     Complete schema for Izara Telemedicine Platform
     
     ## Architecture
-    - PostgreSQL 16 with pgvector for AI embeddings
+    - PostgreSQL 18 with pgvector for AI embeddings
     - JSONB for flexible clinical data
     - Row-level security for HIPAA/PDPA compliance
     

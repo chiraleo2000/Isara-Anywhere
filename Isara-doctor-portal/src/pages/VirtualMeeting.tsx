@@ -41,7 +41,7 @@ const VirtualMeeting: React.FC<VirtualMeetingProps> = ({
   const [recordingStatus, setRecordingStatus] = useState<string>('');
   // Live Transcription state (Phase 1 - Requirement 3.2)
   const [isLiveTranscriptActive, setIsLiveTranscriptActive] = useState(false);
-  const [liveTranscripts, setLiveTranscripts] = useState<TranscriptEntry[]>([]);
+  const liveTranscriptsRef = useRef<TranscriptEntry[]>([]);
   
   const startTimeRef = useRef<number>(Date.now());
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -360,55 +360,58 @@ const VirtualMeeting: React.FC<VirtualMeetingProps> = ({
     }
   };
 
-  const handleTranscript = async (transcript: string, isFinal: boolean) => {
-    if (isFinal) {
-      setInterimTranscript('');
-      
-      if (transcript.trim()) {
-        const userMessage: Message = {
-          role: 'user',
-          content: transcript,
-          timestamp: new Date()
-        };
+  const handleFinalTranscript = async (transcript: string) => {
+    setInterimTranscript('');
 
-        setMessages(prev => [...prev, userMessage]);
-        setIsAITyping(true);
+    if (!transcript.trim()) return;
 
-        try {
-          const aiResponse = await doctorAIService.sendMessage(transcript);
-          
-          const aiMessage: Message = {
-            role: 'assistant',
-            content: aiResponse,
-            timestamp: new Date()
-          };
-          
-          setMessages(prev => [...prev, aiMessage]);
-          doctorAIService.speakText(aiResponse);
-        } catch (error: any) {
-          console.error('AI Doctor error:', error);
-          const errorMessage: Message = {
-            role: 'assistant',
-            content: error.message || 'ขอโทษครับ เกิดข้อผิดพลาด กรุณาพูดใหม่อีกครั้ง',
-            timestamp: new Date()
-          };
-          setMessages(prev => [...prev, errorMessage]);
-          doctorAIService.speakText(errorMessage.content);
-        } finally {
-          setIsAITyping(false);
-        }
-      }
-    } else {
-      setInterimTranscript(transcript);
+    const userMessage: Message = {
+      role: 'user',
+      content: transcript,
+      timestamp: new Date()
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    setIsAITyping(true);
+
+    try {
+      const aiResponse = await doctorAIService.sendMessage(transcript);
+
+      const aiMessage: Message = {
+        role: 'assistant',
+        content: aiResponse,
+        timestamp: new Date()
+      };
+
+      setMessages(prev => [...prev, aiMessage]);
+      doctorAIService.speakText(aiResponse);
+    } catch (error: any) {
+      console.error('AI Doctor error:', error);
+      const errorMessage: Message = {
+        role: 'assistant',
+        content: error.message || 'ขอโทษครับ เกิดข้อผิดพลาด กรุณาพูดใหม่อีกครั้ง',
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, errorMessage]);
+      doctorAIService.speakText(errorMessage.content);
+    } finally {
+      setIsAITyping(false);
     }
   };
+
+  const handleInterimTranscript = (transcript: string) => {
+    setInterimTranscript(transcript);
+  };
+
+  const onSpeechResult = (transcript: string, isFinal: boolean) =>
+    isFinal ? handleFinalTranscript(transcript) : handleInterimTranscript(transcript);
 
   const toggleInputMode = () => {
     const newMode = inputMode === 'text' ? 'voice' : 'text';
     setInputMode(newMode);
     
     if (newMode === 'voice') {
-      const success = doctorAIService.startSpeechRecognition(handleTranscript);
+      const success = doctorAIService.startSpeechRecognition(onSpeechResult);
       if (success) {
         setIsMicOn(true);
       } else {
@@ -429,7 +432,7 @@ const VirtualMeeting: React.FC<VirtualMeetingProps> = ({
       setIsMicOn(false);
       setInterimTranscript('');
     } else {
-      const success = doctorAIService.startSpeechRecognition(handleTranscript);
+      const success = doctorAIService.startSpeechRecognition(onSpeechResult);
       setIsMicOn(success);
     }
   };
@@ -445,123 +448,95 @@ const VirtualMeeting: React.FC<VirtualMeetingProps> = ({
     }
   };
 
+  const saveMeetingToCloud = async (results: any) => {
+    try {
+      const doctorId = appointment.user?.doctorId || appointment.user?.id || 'unknown-doctor';
+      const doctorName = appointment.doctor?.name || appointment.user?.name || 'Doctor';
+
+      const savedData = await meetingService.saveMeetingResults(
+        appointment.id,
+        results,
+        doctorId,
+        doctorName
+      );
+      console.log('☁️ Meeting results saved to GCS:', savedData);
+
+      if (savedData.storage) {
+        results.recordingUrl = savedData.storage.files?.video || null;
+      }
+    } catch (saveError) {
+      console.warn('⚠️ Could not save to cloud (will use local only):', saveError);
+    }
+  };
+
+  const buildFallbackResults = () => {
+    const actualDuration = doctorAIService.getDuration();
+    const conversationHistory = doctorAIService.getConversationHistory();
+
+    return {
+      summary: {
+        chiefComplaint: appointment.symptoms.join(', '),
+        presentingSymptoms: appointment.symptoms,
+        preliminaryAssessment: 'การปรึกษาทางไกลเสร็จสมบูรณ์ กรุณาติดตามผลกับแพทย์',
+        recommendations: ['พักผ่อนให้เพียงพอ', 'ดื่มน้ำมากๆ', 'หากอาการไม่ดีขึ้น ภายใน 3-5 วันให้พบแพทย์'],
+        prescriptions: [],
+        followUp: 'ติดตามอาการใน 3-5 วัน',
+        redFlags: ['ไข้สูงเกิน 39°C', 'หายใจลำบาก', 'อาการแย่ลงอย่างรวดเร็ว'],
+        lifestyleAdvice: ['รับประทานอาหารที่มีประโยชน์', 'ออกกำลังกายสม่ำเสมอ'],
+        needsFollowUp: false,
+        followUpDate: null
+      },
+      duration: actualDuration,
+      messages: conversationHistory,
+      doctor: appointment.doctor,
+      conversationComplete: conversationHistory.length > 1,
+      timestamp: new Date().toISOString()
+    };
+  };
+
   const handleEndMeeting = async () => {
     if (!confirm('คุณต้องการจบการปรึกษาใช่หรือไม่?')) return;
 
     console.log('📊 Ending meeting, conversation has', messages.length, 'messages');
-    
+
     setMeetingState('ended');
     setRecordingStatus('Processing meeting data...');
-    
-    // Stop recording
+
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       mediaRecorderRef.current.stop();
     }
-    
-    stopAllMedia();
 
-    // Wait for recording to finish uploading
+    stopAllMedia();
     await new Promise(resolve => setTimeout(resolve, 2000));
 
     try {
       setRecordingStatus('Generating AI consultation report...');
-      
-      // Get actual meeting duration
+
       const actualDuration = doctorAIService.getDuration();
-      console.log('⏱️ Meeting duration:', actualDuration, 'seconds');
-      
-      // Get conversation history
       const conversationHistory = doctorAIService.getConversationHistory();
-      console.log('💬 Conversation history:', conversationHistory.length, 'messages');
-      
-      // Generate comprehensive AI report
       const report = await doctorAIService.generateConsultationReport();
-      console.log('📋 Generated report:', report);
-      
+
       const results = {
         summary: report,
         duration: actualDuration,
         messages: conversationHistory,
         doctor: doctorAIService.getDoctor(),
         recordingUrl: null,
-        conversationComplete: conversationHistory.length > 1, // At least greeting + 1 response
-        timestamp: new Date().toISOString()
-      };
-
-      console.log('✅ Meeting results prepared:', {
-        duration: actualDuration,
-        messageCount: conversationHistory.length,
-        hasReport: !!report,
-        reportKeys: Object.keys(report)
-      });
-
-      // 🔥 NEW: Save meeting results to GCS via backend API
-      setRecordingStatus('Saving meeting summary to cloud...');
-      try {
-        const doctorId = appointment.user?.doctorId || appointment.user?.id || 'unknown-doctor';
-        const doctorName = appointment.doctor?.name || appointment.user?.name || 'Doctor';
-        
-        const savedData = await meetingService.saveMeetingResults(
-          appointment.id,
-          results,
-          doctorId,
-          doctorName
-        );
-        console.log('☁️ Meeting results saved to GCS:', savedData);
-        
-        // Update results with storage info from backend
-        if (savedData.storage) {
-          results.recordingUrl = savedData.storage.files?.video || null;
-        }
-      } catch (saveError) {
-        console.warn('⚠️ Could not save to cloud (will use local only):', saveError);
-        // Continue anyway - local results still work
-      }
-
-      setRecordingStatus('Meeting ended successfully');
-      onMeetingEnd(appointment.id, results);
-      
-    } catch (error) {
-      console.error('❌ Error generating report:', error);
-      
-      // Fallback with actual conversation data
-      const actualDuration = doctorAIService.getDuration();
-      const conversationHistory = doctorAIService.getConversationHistory();
-      
-      const results = {
-        summary: {
-          chiefComplaint: appointment.symptoms.join(', '),
-          presentingSymptoms: appointment.symptoms,
-          preliminaryAssessment: 'การปรึกษาทางไกลเสร็จสมบูรณ์ กรุณาติดตามผลกับแพทย์',
-          recommendations: ['พักผ่อนให้เพียงพอ', 'ดื่มน้ำมากๆ', 'หากอาการไม่ดีขึ้น ภายใน 3-5 วันให้พบแพทย์'],
-          prescriptions: [],
-          followUp: 'ติดตามอาการใน 3-5 วัน',
-          redFlags: ['ไข้สูงเกิน 39°C', 'หายใจลำบาก', 'อาการแย่ลงอย่างรวดเร็ว'],
-          lifestyleAdvice: ['รับประทานอาหารที่มีประโยชน์', 'ออกกำลังกายสม่ำเสมอ'],
-          needsFollowUp: false,
-          followUpDate: null
-        },
-        duration: actualDuration,
-        messages: conversationHistory,
-        doctor: appointment.doctor,
         conversationComplete: conversationHistory.length > 1,
         timestamp: new Date().toISOString()
       };
-      
-      console.log('⚠️ Using fallback results with actual data:', {
-        duration: actualDuration,
-        messageCount: conversationHistory.length
-      });
-      
-      // Try to save fallback results too
-      try {
-        const doctorId = appointment.user?.doctorId || appointment.user?.id || 'unknown-doctor';
-        const doctorName = appointment.doctor?.name || appointment.user?.name || 'Doctor';
-        await meetingService.saveMeetingResults(appointment.id, results, doctorId, doctorName);
-      } catch {
-        console.warn('⚠️ Could not save fallback results to cloud');
-      }
-      
+
+      setRecordingStatus('Saving meeting summary to cloud...');
+      await saveMeetingToCloud(results);
+
+      setRecordingStatus('Meeting ended successfully');
+      onMeetingEnd(appointment.id, results);
+
+    } catch (error) {
+      console.error('❌ Error generating report:', error);
+
+      const results = buildFallbackResults();
+      await saveMeetingToCloud(results);
       onMeetingEnd(appointment.id, results);
     }
   };
@@ -573,9 +548,9 @@ const VirtualMeeting: React.FC<VirtualMeetingProps> = ({
   };
 
   // Time check screen - shows when user tries to join outside meeting window
-  if (meetingState === 'time_check') {
+  const renderTimeCheckScreen = () => {
     const rules = meetingTimeService.getRules();
-    
+
     return (
       <div className="fixed inset-0 bg-gray-900 z-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full p-8">
@@ -623,14 +598,14 @@ const VirtualMeeting: React.FC<VirtualMeetingProps> = ({
             </div>
           )}
 
-          {meetingTimeCheck?.isEarly && meetingTimeCheck?.minutesUntilStart && (
+          {meetingTimeCheck?.isEarly && meetingTimeCheck?.minutesUntilStart != null ? (
             <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 mb-6 text-center">
               <p className="text-sm text-emerald-600 mb-1">เวลาที่เหลือก่อนเริ่ม</p>
               <p className="text-3xl font-bold text-emerald-600">
                 {meetingTimeCheck.minutesUntilStart} นาที
               </p>
             </div>
-          )}
+          ) : null}
 
           {meetingTimeCheck?.isLate && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
@@ -671,9 +646,9 @@ const VirtualMeeting: React.FC<VirtualMeetingProps> = ({
         </div>
       </div>
     );
-  }
+  };
 
-  if (meetingState === 'consent') {
+  const renderConsentScreen = () => {
     return (
       <div className="fixed inset-0 bg-gray-900 z-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full p-8">
@@ -693,7 +668,7 @@ const VirtualMeeting: React.FC<VirtualMeetingProps> = ({
 
           <div className="bg-yellow-50 border-2 border-yellow-400 rounded-lg p-6 mb-6">
             <h3 className="font-bold text-yellow-900 text-lg mb-3 flex items-center">
-              <span className="text-2xl mr-2">⚠️</span>
+              <span className="text-2xl mr-2">⚠️</span>{' '}
               ประกาศสำคัญ
             </h3>
             <ul className="space-y-3 text-gray-700">
@@ -734,6 +709,7 @@ const VirtualMeeting: React.FC<VirtualMeetingProps> = ({
                 checked={consentGiven}
                 onChange={(e) => setConsentGiven(e.target.checked)}
                 className="mt-1 h-5 w-5 text-emerald-600 rounded focus:ring-2 focus:ring-emerald-500"
+                aria-label="ฉันยอมรับและเข้าใจข้อตกลง"
               />
               <span className="ml-3 text-gray-800">
                 <strong className="block text-lg mb-1">ฉันยอมรับและเข้าใจข้อตกลง</strong>
@@ -771,9 +747,9 @@ const VirtualMeeting: React.FC<VirtualMeetingProps> = ({
         </div>
       </div>
     );
-  }
+  };
 
-  if (meetingState === 'ended') {
+  const renderEndedScreen = () => {
     return (
       <div className="fixed inset-0 bg-gray-900 z-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-8 text-center">
@@ -789,11 +765,11 @@ const VirtualMeeting: React.FC<VirtualMeetingProps> = ({
             ขอบคุณที่ใช้บริการ Izara Anywhere
           </p>
           
-          {recordingStatus && (
+          {recordingStatus ? (
             <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
               <p className="text-sm text-blue-800">{recordingStatus}</p>
             </div>
-          )}
+          ) : null}
 
           <div className="bg-gray-50 rounded-lg p-4 mb-6">
             <p className="text-sm text-gray-600 mb-2">ระยะเวลา</p>
@@ -809,69 +785,121 @@ const VirtualMeeting: React.FC<VirtualMeetingProps> = ({
         </div>
       </div>
     );
-  }
+  };
+
+  if (meetingState === 'time_check') return renderTimeCheckScreen();
+  if (meetingState === 'consent') return renderConsentScreen();
+  if (meetingState === 'ended') return renderEndedScreen();
+
+  const renderMeetingHeader = () => (
+    <div className="bg-gray-800 text-white px-6 py-3 flex justify-between items-center">
+      <div className="flex items-center space-x-4">
+        {isRecording && (
+          <div className="flex items-center space-x-2 bg-red-600 px-3 py-1 rounded-full animate-pulse">
+            <div className="w-3 h-3 bg-white rounded-full"></div>
+            <span className="text-sm font-semibold">REC</span>
+          </div>
+        )}
+        <span className="text-sm text-gray-300">{formatDuration(meetingDuration)}</span>
+        {recordingStatus ? (
+          <span className="text-xs text-gray-400">{recordingStatus}</span>
+        ) : null}
+      </div>
+
+      <div className="flex items-center space-x-2">
+        <button
+          onClick={toggleMic}
+          className={`p-3 rounded-full transition-all ${
+            isMicOn ? 'bg-red-600 animate-pulse' : 'bg-gray-700 hover:bg-gray-600'
+          }`}
+          title={isMicOn ? 'ปิดไมค์' : 'เปิดไมค์'}
+        >
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            {isMicOn ? (
+              <path d="M7 4a3 3 0 016 0v6a3 3 0 11-6 0V4z M5.5 9.643a.75.75 0 00-1.5 0V10c0 3.06 2.29 5.585 5.25 5.954V17.5h-1.5a.75.75 0 000 1.5h4.5a.75.75 0 000-1.5h-1.5v-1.546A6.001 6.001 0 0016 10v-.357a.75.75 0 00-1.5 0V10a4.5 4.5 0 01-9 0v-.357z" />
+            ) : (
+              <path d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-14-14zM10 5a3 3 0 013 3v1.293l-3.707-3.707A2.993 2.993 0 0110 5z" />
+            )}
+          </svg>
+        </button>
+
+        <button
+          onClick={toggleVideo}
+          className={`p-3 rounded-full transition-all ${
+            isVideoOn ? 'bg-gray-700 hover:bg-gray-600' : 'bg-red-600 hover:bg-red-700'
+          }`}
+        >
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
+          </svg>
+        </button>
+
+        <button
+          onClick={toggleInputMode}
+          className={`px-4 py-2 rounded-lg font-medium transition-all ${
+            inputMode === 'voice' ? 'bg-red-600' : 'bg-blue-600'
+          }`}
+        >
+          {inputMode === 'voice' ? '🎤 โหมดเสียง' : '⌨️ โหมดข้อความ'}
+        </button>
+
+        <button
+          onClick={handleEndMeeting}
+          className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg font-semibold"
+        >
+          จบการปรึกษา
+        </button>
+      </div>
+    </div>
+  );
+
+  const renderInputArea = () => (
+    <div className="border-t p-4 bg-gray-50">
+      {inputMode === 'text' ? (
+        <div className="flex space-x-2">
+          <input
+            type="text"
+            value={inputMessage}
+            onChange={(e) => setInputMessage(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+            placeholder="พิมพ์ข้อความถึงแพทย์..."
+            aria-label="พิมพ์ข้อความถึงแพทย์"
+            disabled={isAITyping}
+            className="flex-1 px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
+          />
+          <button
+            onClick={handleSendMessage}
+            disabled={!inputMessage.trim() || isAITyping}
+            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:bg-gray-300"
+          >
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+            </svg>
+          </button>
+        </div>
+      ) : (
+        <div className="text-center py-4">
+          <button
+            onClick={toggleMic}
+            className={`w-20 h-20 rounded-full flex items-center justify-center transition-all shadow-lg ${
+              isMicOn ? 'bg-red-600 animate-pulse' : 'bg-gray-400'
+            }`}
+          >
+            <svg className="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M7 4a3 3 0 016 0v6a3 3 0 11-6 0V4z M5.5 9.643a.75.75 0 00-1.5 0V10c0 3.06 2.29 5.585 5.25 5.954V17.5h-1.5a.75.75 0 000 1.5h4.5a.75.75 0 000-1.5h-1.5v-1.546A6.001 6.001 0 0016 10v-.357a.75.75 0 00-1.5 0V10a4.5 4.5 0 01-9 0v-.357z" />
+            </svg>
+          </button>
+          <p className="text-sm font-medium text-gray-700 mt-3">
+            {isMicOn ? '🎤 กำลังฟังเสียงคุณ...' : 'กดเพื่อเริ่มพูด'}
+          </p>
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <div className="fixed inset-0 bg-gray-900 z-50 flex flex-col">
-      <div className="bg-gray-800 text-white px-6 py-3 flex justify-between items-center">
-        <div className="flex items-center space-x-4">
-          {isRecording && (
-            <div className="flex items-center space-x-2 bg-red-600 px-3 py-1 rounded-full animate-pulse">
-              <div className="w-3 h-3 bg-white rounded-full"></div>
-              <span className="text-sm font-semibold">REC</span>
-            </div>
-          )}
-          <span className="text-sm text-gray-300">{formatDuration(meetingDuration)}</span>
-          {recordingStatus && (
-            <span className="text-xs text-gray-400">{recordingStatus}</span>
-          )}
-        </div>
-
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={toggleMic}
-            className={`p-3 rounded-full transition-all ${
-              isMicOn ? 'bg-red-600 animate-pulse' : 'bg-gray-700 hover:bg-gray-600'
-            }`}
-            title={isMicOn ? 'ปิดไมค์' : 'เปิดไมค์'}
-          >
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              {isMicOn ? (
-                <path d="M7 4a3 3 0 016 0v6a3 3 0 11-6 0V4z M5.5 9.643a.75.75 0 00-1.5 0V10c0 3.06 2.29 5.585 5.25 5.954V17.5h-1.5a.75.75 0 000 1.5h4.5a.75.75 0 000-1.5h-1.5v-1.546A6.001 6.001 0 0016 10v-.357a.75.75 0 00-1.5 0V10a4.5 4.5 0 01-9 0v-.357z" />
-              ) : (
-                <path d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-14-14zM10 5a3 3 0 013 3v1.293l-3.707-3.707A2.993 2.993 0 0110 5z" />
-              )}
-            </svg>
-          </button>
-
-          <button
-            onClick={toggleVideo}
-            className={`p-3 rounded-full transition-all ${
-              isVideoOn ? 'bg-gray-700 hover:bg-gray-600' : 'bg-red-600 hover:bg-red-700'
-            }`}
-          >
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
-            </svg>
-          </button>
-
-          <button
-            onClick={toggleInputMode}
-            className={`px-4 py-2 rounded-lg font-medium transition-all ${
-              inputMode === 'voice' ? 'bg-red-600' : 'bg-blue-600'
-            }`}
-          >
-            {inputMode === 'voice' ? '🎤 โหมดเสียง' : '⌨️ โหมดข้อความ'}
-          </button>
-
-          <button
-            onClick={handleEndMeeting}
-            className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg font-semibold"
-          >
-            จบการปรึกษา
-          </button>
-        </div>
-      </div>
+      {renderMeetingHeader()}
 
       <div className="flex-1 flex overflow-hidden">
         <div className="w-2/3 bg-gray-900 flex flex-col p-4 space-y-4">
@@ -900,6 +928,7 @@ const VirtualMeeting: React.FC<VirtualMeetingProps> = ({
                 autoPlay
                 playsInline
                 muted
+                aria-label="User video feed"
                 className="w-full h-full object-cover rounded-xl"
               />
             ) : (
@@ -931,8 +960,8 @@ const VirtualMeeting: React.FC<VirtualMeetingProps> = ({
           </div>
 
           <div className="flex-1 overflow-y-auto p-6 space-y-4">
-            {messages.map((msg, idx) => (
-              <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+            {messages.map((msg) => (
+              <div key={`${msg.role}-${msg.timestamp.getTime()}`} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div className="flex items-start space-x-2 max-w-[85%]">
                   {msg.role === 'assistant' && (
                     <img src={appointment.doctor?.avatarUrl} alt="Doctor" className="w-8 h-8 rounded-full" />
@@ -954,13 +983,13 @@ const VirtualMeeting: React.FC<VirtualMeetingProps> = ({
               </div>
             ))}
             
-            {interimTranscript && (
+            {interimTranscript ? (
               <div className="flex justify-end">
                 <div className="bg-blue-400 text-white px-4 py-3 rounded-2xl opacity-70 max-w-[85%]">
                   <p className="text-sm italic">{interimTranscript}...</p>
                 </div>
               </div>
-            )}
+            ) : null}
             
             {isAITyping && (
               <div className="flex justify-start">
@@ -976,46 +1005,7 @@ const VirtualMeeting: React.FC<VirtualMeetingProps> = ({
             <div ref={messagesEndRef} />
           </div>
 
-          <div className="border-t p-4 bg-gray-50">
-            {inputMode === 'text' ? (
-              <div className="flex space-x-2">
-                <input
-                  type="text"
-                  value={inputMessage}
-                  onChange={(e) => setInputMessage(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                  placeholder="พิมพ์ข้อความถึงแพทย์..."
-                  disabled={isAITyping}
-                  className="flex-1 px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
-                <button
-                  onClick={handleSendMessage}
-                  disabled={!inputMessage.trim() || isAITyping}
-                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:bg-gray-300"
-                >
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
-                  </svg>
-                </button>
-              </div>
-            ) : (
-              <div className="text-center py-4">
-                <button
-                  onClick={toggleMic}
-                  className={`w-20 h-20 rounded-full flex items-center justify-center transition-all shadow-lg ${
-                    isMicOn ? 'bg-red-600 animate-pulse' : 'bg-gray-400'
-                  }`}
-                >
-                  <svg className="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M7 4a3 3 0 016 0v6a3 3 0 11-6 0V4z M5.5 9.643a.75.75 0 00-1.5 0V10c0 3.06 2.29 5.585 5.25 5.954V17.5h-1.5a.75.75 0 000 1.5h4.5a.75.75 0 000-1.5h-1.5v-1.546A6.001 6.001 0 0016 10v-.357a.75.75 0 00-1.5 0V10a4.5 4.5 0 01-9 0v-.357z" />
-                  </svg>
-                </button>
-                <p className="text-sm font-medium text-gray-700 mt-3">
-                  {isMicOn ? '🎤 กำลังฟังเสียงคุณ...' : 'กดเพื่อเริ่มพูด'}
-                </p>
-              </div>
-            )}
-          </div>
+          {renderInputArea()}
         </div>
       </div>
       
@@ -1029,7 +1019,7 @@ const VirtualMeeting: React.FC<VirtualMeetingProps> = ({
           language="th"
           appointmentId={appointment.id}
           autoSave={true}
-          onTranscriptUpdate={(entries) => setLiveTranscripts(entries)}
+          onTranscriptUpdate={(entries) => { liveTranscriptsRef.current = entries; }}
           onNewEntry={(entry) => {
             console.log('📝 New transcript entry:', entry.content.substring(0, 50));
           }}

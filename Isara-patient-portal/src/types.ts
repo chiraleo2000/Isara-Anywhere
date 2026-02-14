@@ -1,3 +1,6 @@
+// Common type aliases
+export type RiskLevel = 'low' | 'moderate' | 'high';
+
 // User & Auth Types
 export interface User {
   id: string;
@@ -318,7 +321,7 @@ export interface LifestyleData {
   diet?: string;
   sleepHours?: number;
   sleep?: string;
-  stressLevel?: 'low' | 'moderate' | 'high';
+  stressLevel?: RiskLevel;
   occupation?: string;
   supplements?: string;
   otherTreatments?: string;
@@ -554,9 +557,9 @@ export interface SymptomAnalysis {
 
 export interface HealthRiskAssessment {
   overallRisk: string;
-  cardiovascularRisk: 'low' | 'moderate' | 'high';
-  diabetesRisk: 'low' | 'moderate' | 'high';
-  obesityRisk: 'low' | 'moderate' | 'high';
+  cardiovascularRisk: RiskLevel;
+  diabetesRisk: RiskLevel;
+  obesityRisk: RiskLevel;
   recommendations: string[];
 }
 

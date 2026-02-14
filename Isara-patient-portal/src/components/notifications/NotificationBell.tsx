@@ -156,25 +156,25 @@ export function NotificationBell({ className = '' }: Readonly<NotificationBellPr
 
           {/* Notifications List */}
           <div className="max-h-96 overflow-y-auto">
-            {loading ? (
+            {loading && (
               <div className="p-4 text-center">
                 <div className="animate-spin w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full mx-auto"></div>
               </div>
-            ) : notifications.length === 0 ? (
+            )}
+            {!loading && notifications.length === 0 && (
               <div className="p-8 text-center text-gray-500">
                 <Bell className="w-12 h-12 mx-auto mb-2 opacity-30" />
                 <p>ไม่มีการแจ้งเตือน</p>
               </div>
-            ) : (
+            )}
+            {!loading && notifications.length > 0 && (
               <div className="divide-y divide-gray-100">
                 {notifications.slice(0, 10).map((notification) => (
-                  <div
+                  <button
+                    type="button"
                     key={notification.id}
-                    role="button"
-                    tabIndex={0}
                     onClick={() => handleMarkAsRead(notification.id)}
-                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleMarkAsRead(notification.id); } }}
-                    className={`p-4 hover:bg-gray-50 transition-colors cursor-pointer ${notification.isRead ? '' : 'bg-emerald-50/50'
+                    className={`p-4 hover:bg-gray-50 transition-colors cursor-pointer w-full text-left ${notification.isRead ? '' : 'bg-emerald-50/50'
                       }`}
                   >
                     <div className="flex gap-3">
@@ -240,7 +240,7 @@ export function NotificationBell({ className = '' }: Readonly<NotificationBellPr
                         </div>
                       </div>
                     </div>
-                  </div>
+                  </button>
                 ))}
               </div>
             )}

@@ -90,13 +90,66 @@ interface DoctorProfilePageProps {
   readonly onBack?: () => void;
 }
 
+// Extracted validation helper to reduce cognitive complexity (SonarQube S3776)
+const validatePasswordChange = (newPassword: string, confirmPassword: string): string | null => {
+  if (newPassword !== confirmPassword) return 'รหัสผ่านไม่ตรงกัน';
+  if (newPassword.length < 8) return 'รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร';
+  return null;
+};
+
+// Extracted avatar file validation helper (SonarQube S3776)
+const VALID_AVATAR_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const MAX_AVATAR_SIZE = 5 * 1024 * 1024;
+const validateAvatarFile = (file: File): string | null => {
+  if (!VALID_AVATAR_TYPES.has(file.type)) return 'กรุณาเลือกไฟล์รูปภาพ (JPG, PNG, หรือ WebP)';
+  if (file.size > MAX_AVATAR_SIZE) return 'ขนาดไฟล์ต้องไม่เกิน 5MB';
+  return null;
+};
+
+// Extracted password input field to reduce cognitive complexity (SonarQube S3776)
+function PasswordField({
+  id, label, value, onChange, show, onToggleShow, minLength
+}: {
+  readonly id: string;
+  readonly label: string;
+  readonly value: string;
+  readonly onChange: (v: string) => void;
+  readonly show: boolean;
+  readonly onToggleShow: () => void;
+  readonly minLength?: number;
+}) {
+  return (
+    <div>
+      <label htmlFor={id} className="block text-sm font-medium mb-1 text-gray-700">{label}</label>
+      <div className="relative">
+        <input
+          id={id}
+          type={show ? 'text' : 'password'}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+          required
+          minLength={minLength}
+        />
+        <button
+          type="button"
+          onClick={onToggleShow}
+          className="absolute right-3 top-1/2 -translate-y-1/2"
+        >
+          {show ? '🙈' : '👁'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // Password Change Modal Component
 function PasswordChangeModal({ 
   isOpen, 
   onClose 
 }: { 
-  isOpen: boolean; 
-  onClose: () => void; 
+  readonly isOpen: boolean; 
+  readonly onClose: () => void; 
 }) {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -108,17 +161,20 @@ function PasswordChangeModal({
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
 
+  const resetForm = () => {
+    setSuccess(false);
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     
-    if (newPassword !== confirmPassword) {
-      setError('รหัสผ่านไม่ตรงกัน');
-      return;
-    }
-    
-    if (newPassword.length < 8) {
-      setError('รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร');
+    const validationError = validatePasswordChange(newPassword, confirmPassword);
+    if (validationError) {
+      setError(validationError);
       return;
     }
 
@@ -141,13 +197,7 @@ function PasswordChangeModal({
       }
 
       setSuccess(true);
-      setTimeout(() => {
-        onClose();
-        setSuccess(false);
-        setCurrentPassword('');
-        setNewPassword('');
-        setConfirmPassword('');
-      }, 2000);
+      setTimeout(() => { onClose(); resetForm(); }, 2000);
     } catch (err: any) {
       setError(err.message || 'เกิดข้อผิดพลาด กรุณาลองใหม่');
     } finally {
@@ -180,67 +230,34 @@ function PasswordChangeModal({
                 </div>
               )}
               
-              <div>
-                <label className="block text-sm font-medium mb-1 text-gray-700">รหัสผ่านปัจจุบัน</label>
-                <div className="relative">
-                  <input
-                    type={showCurrentPassword ? 'text' : 'password'}
-                    value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
-                    className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2"
-                  >
-                    {showCurrentPassword ? '🙈' : '👁'}
-                  </button>
-                </div>
-              </div>
+              <PasswordField
+                id="current-password"
+                label="รหัสผ่านปัจจุบัน"
+                value={currentPassword}
+                onChange={setCurrentPassword}
+                show={showCurrentPassword}
+                onToggleShow={() => setShowCurrentPassword(!showCurrentPassword)}
+              />
 
-              <div>
-                <label className="block text-sm font-medium mb-1 text-gray-700">รหัสผ่านใหม่</label>
-                <div className="relative">
-                  <input
-                    type={showNewPassword ? 'text' : 'password'}
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
-                    required
-                    minLength={8}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowNewPassword(!showNewPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2"
-                  >
-                    {showNewPassword ? '🙈' : '👁'}
-                  </button>
-                </div>
-              </div>
+              <PasswordField
+                id="new-password"
+                label="รหัสผ่านใหม่"
+                value={newPassword}
+                onChange={setNewPassword}
+                show={showNewPassword}
+                onToggleShow={() => setShowNewPassword(!showNewPassword)}
+                minLength={8}
+              />
 
-              <div>
-                <label className="block text-sm font-medium mb-1 text-gray-700">ยืนยันรหัสผ่านใหม่</label>
-                <div className="relative">
-                  <input
-                    type={showConfirmPassword ? 'text' : 'password'}
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
-                    required
-                    minLength={8}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2"
-                  >
-                    {showConfirmPassword ? '🙈' : '👁'}
-                  </button>
-                </div>
-              </div>
+              <PasswordField
+                id="confirm-password"
+                label="ยืนยันรหัสผ่านใหม่"
+                value={confirmPassword}
+                onChange={setConfirmPassword}
+                show={showConfirmPassword}
+                onToggleShow={() => setShowConfirmPassword(!showConfirmPassword)}
+                minLength={8}
+              />
 
               <div className="flex gap-3 pt-2">
                 <button
@@ -308,14 +325,9 @@ export default function DoctorProfilePage({ onBack }: DoctorProfilePageProps) {
     const file = event.target.files?.[0];
     if (!file || !user) return;
 
-    // Validate file type and size
-    const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
-    if (!validTypes.includes(file.type)) {
-      setError('กรุณาเลือกไฟล์รูปภาพ (JPG, PNG, หรือ WebP)');
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      setError('ขนาดไฟล์ต้องไม่เกิน 5MB');
+    const validationError = validateAvatarFile(file);
+    if (validationError) {
+      setError(validationError);
       return;
     }
 
@@ -489,12 +501,13 @@ export default function DoctorProfilePage({ onBack }: DoctorProfilePageProps) {
         <div className="p-6 space-y-6">
           {/* Name */}
           <div>
-            <label className="flex items-center gap-2 text-sm font-medium text-gray-600 mb-2">
+            <label htmlFor="profile-name" className="flex items-center gap-2 text-sm font-medium text-gray-600 mb-2">
               <UserIcon className="w-4 h-4" />
               ชื่อ-นามสกุล
             </label>
             {editing ? (
               <input
+                id="profile-name"
                 type="text"
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
@@ -508,12 +521,13 @@ export default function DoctorProfilePage({ onBack }: DoctorProfilePageProps) {
           {/* Phone & Email */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="flex items-center gap-2 text-sm font-medium text-gray-600 mb-2">
+              <label htmlFor="profile-phone" className="flex items-center gap-2 text-sm font-medium text-gray-600 mb-2">
                 <PhoneIcon className="w-4 h-4" />
                 เบอร์โทรศัพท์
               </label>
               {editing ? (
                 <input
+                  id="profile-phone"
                   type="tel"
                   value={form.phone}
                   onChange={(e) => setForm({ ...form, phone: e.target.value })}
@@ -524,11 +538,11 @@ export default function DoctorProfilePage({ onBack }: DoctorProfilePageProps) {
               )}
             </div>
             <div>
-              <label className="flex items-center gap-2 text-sm font-medium text-gray-600 mb-2">
+              <label htmlFor="profile-email" className="flex items-center gap-2 text-sm font-medium text-gray-600 mb-2">
                 <MailIcon className="w-4 h-4" />
                 อีเมล
               </label>
-              <p className="px-4 py-3 bg-gray-100 rounded-xl text-gray-600">{form.email || '-'}</p>
+              <p id="profile-email" className="px-4 py-3 bg-gray-100 rounded-xl text-gray-600">{form.email || '-'}</p>
               {editing && (
                 <p className="text-xs text-gray-500 mt-1">* อีเมลไม่สามารถแก้ไขได้</p>
               )}
@@ -538,12 +552,13 @@ export default function DoctorProfilePage({ onBack }: DoctorProfilePageProps) {
           {/* Date of Birth & Specialty */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="flex items-center gap-2 text-sm font-medium text-gray-600 mb-2">
+              <label htmlFor="profile-dob" className="flex items-center gap-2 text-sm font-medium text-gray-600 mb-2">
                 <CalendarIcon className="w-4 h-4" />
                 วันเกิด
               </label>
               {editing ? (
                 <input
+                  id="profile-dob"
                   type="date"
                   value={form.dateOfBirth}
                   onChange={(e) => setForm({ ...form, dateOfBirth: e.target.value })}
@@ -554,12 +569,13 @@ export default function DoctorProfilePage({ onBack }: DoctorProfilePageProps) {
               )}
             </div>
             <div>
-              <label className="flex items-center gap-2 text-sm font-medium text-gray-600 mb-2">
+              <label htmlFor="profile-specialty" className="flex items-center gap-2 text-sm font-medium text-gray-600 mb-2">
                 <AwardIcon className="w-4 h-4" />
                 สาขาเฉพาะทาง
               </label>
               {editing ? (
                 <select
+                  id="profile-specialty"
                   value={form.specialty}
                   onChange={(e) => setForm({ ...form, specialty: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent"

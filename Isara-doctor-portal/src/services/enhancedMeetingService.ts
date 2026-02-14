@@ -1,16 +1,21 @@
-// enhancedMeetingService.ts - FIXED VERSION WITH AUTO FOLLOW-UP SCHEDULING
-// Enhanced with AI Copilot integration and patient-doctor connection support
+// enhancedMeetingService.ts - v1.4.7 ENHANCED WITH MEETING SERVER INTEGRATION
+// AI Copilot integration, patient-doctor connection, auto follow-up scheduling
+// Gemini AI used directly for real-time doctor AI personality (low latency)
+// Meeting server used for transcript persistence, summaries, and CDS
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { aiClinicalService, type CopilotMessage, type CopilotContext } from './aiClinicalCopilot';
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 const GEMINI_MODEL = import.meta.env.VITE_GEMINI_MODEL || 'gemini-2.5-flash-lite';
+const MEETING_SERVER_URL = import.meta.env.VITE_MEETING_SERVER_URL || 'http://localhost:3020';
 const genAI = GEMINI_API_KEY?.startsWith('AIza') ? new GoogleGenerativeAI(GEMINI_API_KEY) : null;
 
 // Log initialization status
 if (genAI) {
-  console.log('✅ Enhanced Meeting Service: Gemini AI initialized with model:', GEMINI_MODEL);
+  console.log('✅ Enhanced Meeting Service v1.4.7: Gemini AI initialized');
+  console.log(`   Model: ${GEMINI_MODEL}`);
+  console.log(`   Meeting Server: ${MEETING_SERVER_URL}`);
 } else {
   console.warn('⚠️ Enhanced Meeting Service: Gemini API key not configured');
 }
@@ -149,13 +154,13 @@ export class DoctorSpecificAIService {
   }
 
   private initializeVoices(): void {
-    if (!('speechSynthesis' in window)) {
+    if (!('speechSynthesis' in globalThis)) {
       console.warn('⚠️ Speech synthesis not supported');
       return;
     }
 
     const loadVoices = () => {
-      const voices = window.speechSynthesis.getVoices();
+      const voices = globalThis.speechSynthesis.getVoices();
 
       if (voices.length === 0) {
         console.warn('⚠️ No voices available yet');
@@ -182,7 +187,7 @@ export class DoctorSpecificAIService {
     loadVoices();
 
     if (!this.voicesLoaded) {
-      window.speechSynthesis.onvoiceschanged = () => {
+      globalThis.speechSynthesis.onvoiceschanged = () => {
         if (!this.voicesLoaded) {
           loadVoices();
         }
@@ -389,7 +394,7 @@ ${conversationText}
   }
 
   speakText(text: string, lang: string = 'th-TH'): void {
-    if (!('speechSynthesis' in window)) {
+    if (!('speechSynthesis' in globalThis)) {
       console.warn('⚠️ Speech synthesis not supported');
       return;
     }
@@ -425,23 +430,23 @@ ${conversationText}
       }
     };
 
-    window.speechSynthesis.speak(utterance);
+    globalThis.speechSynthesis.speak(utterance);
   }
 
   stopSpeaking(): void {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
+    if ('speechSynthesis' in globalThis) {
+      globalThis.speechSynthesis.cancel();
       this.currentUtterance = null;
     }
   }
 
   isSpeaking(): boolean {
-    return window.speechSynthesis?.speaking || false;
+    return globalThis.speechSynthesis?.speaking || false;
   }
 
   getAvailableVoices(): SpeechSynthesisVoice[] {
-    if ('speechSynthesis' in window) {
-      return window.speechSynthesis.getVoices();
+    if ('speechSynthesis' in globalThis) {
+      return globalThis.speechSynthesis.getVoices();
     }
     return [];
   }
@@ -453,7 +458,7 @@ ${conversationText}
 
   startSpeechRecognition(onTranscript: (transcript: string, isFinal: boolean) => void): boolean {
     try {
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      const SpeechRecognition = (globalThis as any).SpeechRecognition || (globalThis as any).webkitSpeechRecognition;
 
       if (!SpeechRecognition) {
         console.error('Speech Recognition not supported');
@@ -1001,12 +1006,82 @@ export class EnhancedMeetingService {
       duration
     };
 
+    // Sync transcript to meeting server for persistence
+    try {
+      await this.syncTranscriptToMeetingServer(
+        this.currentSession.appointmentId,
+        this.getFullTranscript(),
+        duration
+      );
+    } catch (syncError) {
+      console.warn('⚠️ Failed to sync transcript to meeting server:', syncError);
+    }
+
     // Reset session
     this.currentSession = null;
     this.patientConnection = null;
     this.copilotContext = null;
 
     return result;
+  }
+
+  // ----------------------------------------------------------------------------
+  // MEETING SERVER INTEGRATION (v1.4.7)
+  // ----------------------------------------------------------------------------
+
+  /**
+   * Sync transcript data to the central meeting server for persistence
+   */
+  private async syncTranscriptToMeetingServer(
+    appointmentId: string,
+    transcript: TranscriptEntry[],
+    duration: number
+  ): Promise<void> {
+    try {
+      const response = await fetch(`${MEETING_SERVER_URL}/api/meetings/transcript`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          meetingId: appointmentId,
+          segments: transcript.map(t => ({
+            speakerId: t.speakerId,
+            speakerName: t.speakerName,
+            speakerRole: t.speakerRole,
+            content: t.text,
+            language: 'th-TH',
+            confidence: 0.9,
+            timestamp: t.timestamp,
+            isFinal: t.isFinal
+          })),
+          duration
+        })
+      });
+      if (response.ok) {
+        console.log('✅ Transcript synced to meeting server');
+      }
+    } catch (error) {
+      console.warn('⚠️ Meeting server sync failed (non-critical):', error);
+    }
+  }
+
+  /**
+   * Request AI summary from the meeting server
+   */
+  async requestMeetingServerSummary(meetingId: string): Promise<any> {
+    try {
+      const response = await fetch(`${MEETING_SERVER_URL}/api/meetings/${meetingId}/summary`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ meetingId })
+      });
+      if (response.ok) {
+        return await response.json();
+      }
+      return null;
+    } catch (error) {
+      console.warn('⚠️ Meeting server summary request failed:', error);
+      return null;
+    }
   }
 
   /**
@@ -1058,7 +1133,7 @@ export class EnhancedMeetingService {
 export const enhancedMeetingService = new EnhancedMeetingService();
 
 export const areGoogleApisReady = (): boolean => {
-  return !!(window as any).google &&
-    !!(window as any).gapi &&
-    !!(window as any).gapi.client;
+  return !!(globalThis as any).google &&
+    !!(globalThis as any).gapi &&
+    !!(globalThis as any).gapi.client;
 };

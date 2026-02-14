@@ -17,7 +17,7 @@ flowchart TB
         L2["📱 Patient Portal<br/>localhost:3005"]
         L3["💻 Doctor Portal<br/>localhost:3010"]
         L4["📹 Meeting Server<br/>localhost:3020"]
-        L5["🗄️ PostgreSQL 16<br/>localhost:5433"]
+        L5["🗄️ PostgreSQL 18<br/>localhost:5433"]
         L6["🔧 pgAdmin 4<br/>localhost:5050"]
     end
 
@@ -45,7 +45,7 @@ flowchart TB
             S5["🔬 izara-imaging-results"]
         end
         subgraph DATABASE["🗄️ Cloud SQL"]
-            DB1[("🐘 PostgreSQL 16<br/>+ pgvector")]
+            DB1[("🐘 PostgreSQL 18<br/>+ pgvector")]
         end
     end
 

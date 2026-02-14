@@ -3,7 +3,7 @@
 # Same architecture as local Docker container
 # Version: 1.2.0 - Updated to use stable pgvector tag
 
-FROM pgvector/pgvector:pg16
+FROM pgvector/pgvector:pg18
 
 # Set environment variables
 # NOTE: Password should be overridden at runtime via -e POSTGRES_PASSWORD

@@ -148,9 +148,9 @@ export class GoogleMeetService {
   }
 
   private gapiLoad() {
-    (window as any).gapi.load('client', async () => {
+    (globalThis as any).gapi.load('client', async () => {
       try {
-        await (window as any).gapi.client.init({
+        await (globalThis as any).gapi.client.init({
           apiKey: this.API_KEY,
           discoveryDocs: [this.DISCOVERY_DOC],
         });
@@ -168,7 +168,7 @@ export class GoogleMeetService {
     }
 
     try {
-      this.tokenClient = (window as any).google.accounts.oauth2.initTokenClient({
+      this.tokenClient = (globalThis as any).google.accounts.oauth2.initTokenClient({
         client_id: this.CLIENT_ID,
         scope: this.SCOPES,
         callback: '',
@@ -276,7 +276,7 @@ export class GoogleMeetService {
 
       console.log('📅 Creating Google Calendar event with Meet link...');
 
-      const response = await (window as any).gapi.client.calendar.events.insert({
+      const response = await (globalThis as any).gapi.client.calendar.events.insert({
         calendarId: 'primary',
         conferenceDataVersion: 1,
         sendNotifications: true,
@@ -293,7 +293,7 @@ export class GoogleMeetService {
         console.warn('⚠️ No Meet link in response, deleting incomplete event and creating mock');
 
         try {
-          await (window as any).gapi.client.calendar.events.delete({
+          await (globalThis as any).gapi.client.calendar.events.delete({
             calendarId: 'primary',
             eventId: result.id,
           });
@@ -464,7 +464,7 @@ export class GoogleMeetService {
 
   revokeAccess(): void {
     if (this.accessToken) {
-      (window as any).google.accounts.oauth2.revoke(this.accessToken, () => {
+      (globalThis as any).google.accounts.oauth2.revoke(this.accessToken, () => {
         console.log('Access revoked');
         this.accessToken = null;
       });

@@ -133,12 +133,12 @@ class GeminiClinicalService {
 
   private transcribeWithWebSpeech(): Promise<string> {
     return new Promise((resolve, reject) => {
-      if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+      if (!('webkitSpeechRecognition' in globalThis) && !('SpeechRecognition' in globalThis)) {
         reject(new Error('Speech recognition not supported'));
         return;
       }
 
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      const SpeechRecognition = (globalThis as any).SpeechRecognition || (globalThis as any).webkitSpeechRecognition;
       const recognition = new SpeechRecognition();
 
       recognition.lang = 'th-TH,en-US';

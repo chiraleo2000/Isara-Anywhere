@@ -139,9 +139,10 @@ export class RecordsService {
   async getLatestAppointmentResult(): Promise<AppointmentResult | null> {
     const results = await this.getAppointmentResults();
     if (results.length === 0) return null;
-    return results.sort((a, b) => 
+    const sorted = [...results].sort((a, b) => 
       new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    )[0];
+    );
+    return sorted[0];
   }
 }
 

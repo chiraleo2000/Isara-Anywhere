@@ -32,11 +32,21 @@ import {
   appendAuditLog,
   GCSWriteResult,
 } from './gcsDataService';
-import { auditLogService } from './auditLogService';
+import { auditLogService, AuditResource } from './auditLogService';
 
 // ============================================================================
 // HELPER: Transform flat patient data to nested PatientRecord format
 // ============================================================================
+
+/**
+ * Format patient address from raw data (string or object).
+ */
+function formatPatientAddress(rawPatient: any): string {
+  if (!rawPatient.address) return '';
+  if (typeof rawPatient.address === 'string') return rawPatient.address;
+  const { street = '', district = '', province = '', postalCode = '' } = rawPatient.address;
+  return `${street}, ${district}, ${province} ${postalCode}`;
+}
 
 /**
  * Transform flat patient data from GCS to nested PatientRecord format.
@@ -74,11 +84,7 @@ function transformPatientData(rawPatient: any): PatientRecord {
     contact: {
       phone: rawPatient.phone || '',
       email: rawPatient.email || '',
-      address: rawPatient.address
-        ? (typeof rawPatient.address === 'string'
-          ? rawPatient.address
-          : `${rawPatient.address.street || ''}, ${rawPatient.address.district || ''}, ${rawPatient.address.province || ''} ${rawPatient.address.postalCode || ''}`)
-        : '',
+      address: formatPatientAddress(rawPatient),
       emergencyContact: rawPatient.emergencyContact || {
         name: 'Not provided',
         relationship: 'Unknown',
@@ -153,7 +159,7 @@ class PatientDataService {
 
     // Fetch the full consent record
     const consentsData = await fetchPatientConsents(patientId);
-    if (!consentsData || !consentsData.activeConsents) {
+    if (!consentsData?.activeConsents) {
       return null;
     }
 
@@ -325,7 +331,7 @@ class PatientDataService {
   }): Promise<PatientRecord[]> {
     console.log('📋 Fetching all patients from GCS (patients.json)...');
 
-    const rawPatients = await fetchAllPatients() as any[];
+    const rawPatients = await fetchAllPatients();
 
     // Transform raw data to PatientRecord format
     let patients: PatientRecord[] = rawPatients.map(transformPatientData);
@@ -333,10 +339,10 @@ class PatientDataService {
     // Apply filters if provided
     if (filters) {
       if (filters.ageMin) {
-        patients = patients.filter(p => (p.demographics?.age || 0) >= filters.ageMin!);
+        patients = patients.filter(p => (p.demographics?.age || 0) >= filters.ageMin);
       }
       if (filters.ageMax) {
-        patients = patients.filter(p => (p.demographics?.age || 0) <= filters.ageMax!);
+        patients = patients.filter(p => (p.demographics?.age || 0) <= filters.ageMax);
       }
       if (filters.gender) {
         patients = patients.filter(p => p.demographics?.gender === filters.gender);
@@ -346,7 +352,7 @@ class PatientDataService {
       }
       if (filters.chronicConditions && filters.chronicConditions.length > 0) {
         patients = patients.filter(p =>
-          filters.chronicConditions!.some(cc =>
+          filters.chronicConditions?.some(cc =>
             p.medicalInfo?.chronicConditions?.includes(cc)
           )
         );
@@ -373,7 +379,7 @@ class PatientDataService {
     // Verify consent first (PDPA compliance)
     if (config.features.pdpaEnabled) {
       const consent = await this.verifyConsent(patientId, doctorId);
-      if (!consent || !consent.granted) {
+      if (!consent?.granted) {
         console.error('❌ No consent granted for accessing patient data');
         throw new Error('No consent granted for accessing patient data');
       }
@@ -405,7 +411,7 @@ class PatientDataService {
     // Verify consent
     if (config.features.pdpaEnabled) {
       const consent = await this.verifyConsent(patientId, doctorId);
-      if (!consent || !consent.granted) {
+      if (!consent?.granted) {
         return { success: false, error: 'No consent granted' };
       }
     }
@@ -493,13 +499,13 @@ class PatientDataService {
   async getPatientELivingForm(
     patientId: string,
     doctorId: string
-  ): Promise<any | null> {
+  ): Promise<unknown> {
     console.log(`📜 Fetching e-living form for patient: ${patientId}`);
 
     // Verify consent
     if (config.features.pdpaEnabled) {
       const consent = await this.verifyConsent(patientId, doctorId);
-      if (!consent || !consent.granted) {
+      if (!consent?.granted) {
         throw new Error('No consent granted for e-living form access');
       }
     }
@@ -565,7 +571,7 @@ class PatientDataService {
       accessType,
       timestamp: new Date().toISOString(),
       source: 'doctor-portal',
-      userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'N/A',
+      userAgent: typeof navigator === 'undefined' ? 'N/A' : navigator.userAgent,
     };
 
     console.log('📋 PDPA Audit Log:', logEntry);
@@ -579,14 +585,17 @@ class PatientDataService {
 
     // Also use audit log service for compliance reports
     try {
-      await auditLogService.logPatientDataAccess(
+      const resourceMap: Record<string, AuditResource> = {
+          'phr-access': 'patient_phr',
+          'living-will': 'e_living_will',
+          'vitals-update': 'patient_demographics',
+        };
+        const auditResource = resourceMap[accessType] || 'patient_ehr';
+        await auditLogService.logPatientDataAccess(
         doctorId,
         `Doctor ${doctorId}`,
         patientId,
-        accessType === 'phr-access' ? 'patient_phr' :
-          accessType === 'living-will' ? 'e_living_will' :
-            accessType === 'vitals-update' ? 'patient_demographics' :
-              'patient_ehr',
+        auditResource,
         accessType
       );
     } catch (error) {

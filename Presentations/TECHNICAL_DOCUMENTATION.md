@@ -2,7 +2,7 @@
 
 > **Version:** 2.1.0 (Updated February 5, 2026)  
 > **Status:** Phase 1 Complete (Production Ready)  
-> **Database:** PostgreSQL 16 + pgvector  
+> **Database:** PostgreSQL 18 + pgvector  
 > **Stack:** PostgreSQL / Express / React / Jitsi / Gemini AI / Google Cloud  
 > **Tests:** 92 LOCAL + 92 CLOUD = 184 Total (100% Passing, 0 Skipped)
 
@@ -25,7 +25,7 @@
 
 ### 1.1 Project Structure
 
-```
+```text
 Isara-Anywhere/
 ├── credentials/                    # GCP Service Account Keys (gitignored)
 ├── Isara-patient-portal/           # 📱 Patient Front-end Application
@@ -57,33 +57,33 @@ Isara-Anywhere/
 ### 1.2 Core Services
 
 | Service | Port | Description | Technology |
-|---------|------|-------------|------------|
+| --------- | ------ | ------------- | ------------ |
 | **Patient Portal** | 3005 | Telehealth booking, PHR, Health Assistant | React + Express |
 | **Doctor Portal** | 3010 | EMR, Prescribing, Tele-consultation | React + Express |
 | **Meeting Server** | 3020 | Jitsi Meet, Recording, AI Transcription | Node.js + Jitsi |
-| **PostgreSQL** | 5433 | Primary relational database | PostgreSQL 16 |
+| **PostgreSQL** | 5433 | Primary relational database | PostgreSQL 18 |
 | **pgAdmin** | 5050 | Database management UI | pgAdmin 4 |
 
 ### 1.3 Live URLs
 
-**Local Environment (Docker)**
+#### Local Environment (Docker)
 
 | Service | URL |
-|---------|-----|
-| Patient Portal | http://localhost:3005 |
-| Doctor Portal | http://localhost:3010 |
-| Meeting Server | http://localhost:3020 |
+| --------- | ----- |
+| Patient Portal | `http://localhost:3005` |
+| Doctor Portal | `http://localhost:3010` |
+| Meeting Server | `http://localhost:3020` |
 | PostgreSQL | localhost:5433 |
-| pgAdmin | http://localhost:5050 |
+| pgAdmin | `http://localhost:5050` |
 
-**Cloud Environment (Google Cloud Run)**
+#### Cloud Environment (Google Cloud Run)
 
 | Service | URL |
-|---------|-----|
-| Patient Portal | https://izara-patient-portal-hvht4obouq-as.a.run.app |
-| Doctor Portal | https://izara-doctor-portal-hvht4obouq-as.a.run.app |
-| Meeting Server | https://izara-jitsi-meeting-portal-hvht4obouq-as.a.run.app |
-| pgAdmin | https://izara-pgadmin-hvht4obouq-as.a.run.app |
+| --------- | ----- |
+| Patient Portal | `https://izara-patient-portal-hvht4obouq-as.a.run.app` |
+| Doctor Portal | `https://izara-doctor-portal-hvht4obouq-as.a.run.app` |
+| Meeting Server | `https://izara-jitsi-meeting-portal-hvht4obouq-as.a.run.app` |
+| pgAdmin | `https://izara-pgadmin-hvht4obouq-as.a.run.app` |
 | Cloud SQL | 34.143.228.135:5432 |
 
 ---
@@ -94,7 +94,7 @@ Isara-Anywhere/
 
 The platform uses a **Hybrid Cloud-Native Architecture**:
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                           USERS                                          │
 │   🧑‍🤝‍🧑 Patients                              👨‍⚕️ Doctors                    │
@@ -120,7 +120,7 @@ The platform uses a **Hybrid Cloud-Native Architecture**:
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                        💾 DATA LAYER                                     │
 │  ┌─────────────────────────┐    ┌─────────────────────────┐            │
-│  │   🐘 PostgreSQL 16      │    │   📦 Google Cloud       │            │
+│  │   🐘 PostgreSQL 18      │    │   📦 Google Cloud       │            │
 │  │   + pgvector            │    │   Storage (5 Buckets)   │            │
 │  │   Port: 5433            │    │   Documents, Images     │            │
 │  └─────────────────────────┘    └─────────────────────────┘            │
@@ -140,10 +140,10 @@ The platform uses a **Hybrid Cloud-Native Architecture**:
 ### 2.2 Technology Stack
 
 | Layer | Technology | Version |
-|-------|------------|---------|
+| ------- | ------------ | --------- |
 | **Frontend** | React, TypeScript, Tailwind CSS, Vite | React 18, Vite 5 |
 | **Backend** | Node.js, Express.js | Node 22, Express 4 |
-| **Database** | PostgreSQL with pgvector | PostgreSQL 16 |
+| **Database** | PostgreSQL with pgvector | PostgreSQL 18 |
 | **Hosting** | Docker, Google Cloud Run | Latest |
 | **AI** | Google Gemini | 2.5 Flash |
 | **Video** | Jitsi Meet (meet.jit.si - FREE) | Latest |
@@ -155,7 +155,7 @@ The platform uses a **Hybrid Cloud-Native Architecture**:
 > 📊 **Interactive Diagrams:** [Open All Diagrams](html-diagrams/index.html)
 
 | Diagram | Description | View |
-|---------|-------------|------|
+| --------- | ------------- | ------ |
 | System Architecture | High-level overview | [View](html-diagrams/01-system-architecture.html) |
 | Patient Features | Patient portal capabilities | [View](html-diagrams/02-patient-features.html) |
 | Doctor Features | Doctor portal capabilities | [View](html-diagrams/03-doctor-features.html) |
@@ -182,7 +182,7 @@ The system uses a robust **PostgreSQL Relational Database** with:
 ### 3.2 Schema Reference
 
 | File | Purpose |
-|------|---------|
+| ------ | --------- |
 | `database/izara-complete-schema-v4.dbml` | Visual schema (DBML format) |
 | `scripts/database/izara-database.sql` | SQL implementation (v5.1.0) |
 

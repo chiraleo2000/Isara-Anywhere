@@ -200,13 +200,13 @@ const translations: Translations = {
 export const useLanguage = () => {
   // Use the centralized useSettings for language management
   // This ensures language is synced across all components
-  const [language, setLanguageState] = useState<Language>(() => {
+  const [language, setLanguage] = useState<Language>(() => {
     const saved = localStorage.getItem('doctor-portal-language');
     return (saved as Language) || 'th'; // Default to Thai
   });
 
-  const setLanguage = (newLang: Language) => {
-    setLanguageState(newLang);
+  const updateLanguage = (newLang: Language) => {
+    setLanguage(newLang);
     localStorage.setItem('doctor-portal-language', newLang);
     document.documentElement.lang = newLang;
   };
@@ -215,16 +215,16 @@ export const useLanguage = () => {
     // Listen for storage changes to sync language across tabs/components
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'doctor-portal-language' && e.newValue) {
-        setLanguageState(e.newValue as Language);
+        setLanguage(e.newValue as Language);
       }
     };
     
-    window.addEventListener('storage', handleStorageChange);
+    globalThis.addEventListener('storage', handleStorageChange);
     
     // Set initial lang attribute
     document.documentElement.lang = language;
     
-    return () => window.removeEventListener('storage', handleStorageChange);
+    return () => globalThis.removeEventListener('storage', handleStorageChange);
   }, [language]);
 
   const t = (key: string): string => {
@@ -233,12 +233,12 @@ export const useLanguage = () => {
 
   const toggleLanguage = () => {
     const newLang = language === 'en' ? 'th' : 'en';
-    setLanguage(newLang);
+    updateLanguage(newLang);
   };
 
   return {
     language,
-    setLanguage,
+    setLanguage: updateLanguage,
     toggleLanguage,
     t,
   };

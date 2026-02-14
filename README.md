@@ -1,14 +1,12 @@
 # 🏥 Izara Telemedicine Platform
 
-![Version](https://img.shields.io/badge/version-1.4.6-blue.svg)
+![Version](https://img.shields.io/badge/version-1.4.8--dev-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Platform](https://img.shields.io/badge/platform-web-lightgrey.svg)
 ![Node](https://img.shields.io/badge/node-%3E%3D22.0.0-brightgreen.svg)
-![Database](https://img.shields.io/badge/database-PostgreSQL%2016-blue.svg)
+![Database](https://img.shields.io/badge/database-PostgreSQL%2018-blue.svg)
 ![Docker](https://img.shields.io/badge/docker-ready-blue.svg)
-![Local Tests](https://img.shields.io/badge/local%20tests-passing-brightgreen.svg)
-![Cloud Tests](https://img.shields.io/badge/cloud%20tests-passing-brightgreen.svg)
-![Skipped Tests](https://img.shields.io/badge/skipped%20tests-0-brightgreen.svg)
+![Tests](https://img.shields.io/badge/tests-774%20passing-brightgreen.svg)
 ![Cloud Run](https://img.shields.io/badge/Cloud%20Run-deployed-blue.svg)
 
 ## A comprehensive telemedicine platform built for Thailand's healthcare system
@@ -37,44 +35,67 @@ The platform consists of three main services:
 
 | Service | URL |
 | ------- | --- |
-| Patient Portal | http://localhost:3005 |
-| Doctor Portal | http://localhost:3010 |
-| Meeting Server | http://localhost:3020 |
+| Patient Portal | <http://localhost:3005> |
+| Doctor Portal | <http://localhost:3010> |
+| Meeting Server | <http://localhost:3020> |
 | PostgreSQL | localhost:5433 |
-| pgAdmin | http://localhost:5050 |
+| pgAdmin | <http://localhost:5050> |
 
-### Cloud Environment (Google Cloud Run)
+### Cloud Environment — Dev (v1.4.8-dev) (Google Cloud Run)
 
 | Service | URL |
 | ------- | --- |
-| Patient Portal | https://izara-patient-portal-hvht4obouq-as.a.run.app |
-| Doctor Portal | https://izara-doctor-portal-hvht4obouq-as.a.run.app |
-| Meeting Server | https://izara-jitsi-meeting-portal-hvht4obouq-as.a.run.app |
-| pgAdmin | https://izara-pgadmin-hvht4obouq-as.a.run.app |
+| Patient Portal | <https://izara-patient-portal-dev-testing-hvht4obouq-as.a.run.app> |
+| Doctor Portal | <https://izara-doctor-portal-dev-testing-hvht4obouq-as.a.run.app> |
+| Meeting Server | <https://izara-meeting-server-dev-testing-hvht4obouq-as.a.run.app> |
+
+### Cloud Environment — Production (v1.4.7) (Google Cloud Run)
+
+| Service | URL |
+| ------- | --- |
+| Patient Portal | <https://izara-patient-portal-hvht4obouq-as.a.run.app> |
+| Doctor Portal | <https://izara-doctor-portal-hvht4obouq-as.a.run.app> |
+| Meeting Server | <https://izara-jitsi-meeting-portal-hvht4obouq-as.a.run.app> |
+| pgAdmin | <https://izara-pgadmin-hvht4obouq-as.a.run.app> |
 | Cloud SQL | 34.143.228.135:5432 |
+
+### Previous Version (v1.4.7) Cloud URLs
+
+| Service | URL | Status |
+| ------- | --- | ------ |
+| Patient Portal | <https://izara-patient-portal-hvht4obouq-as.a.run.app> | Production |
+| Doctor Portal | <https://izara-doctor-portal-hvht4obouq-as.a.run.app> | Production |
+| Meeting Server | <https://izara-jitsi-meeting-portal-hvht4obouq-as.a.run.app> | Production |
 
 ---
 
 ## 🧪 Testing
 
-### Test Architecture (v1.4.6)
+### Test Architecture (v1.4.8-dev)
 
-- **Single unified spec**: `tests/e2e/specs/00-unified-comprehensive.spec.ts`
-- **Headed mode** (visible browser UI during tests)
+- **4 test spec files**: `00-unified-comprehensive`, `02-v350-workflows`, `03-v360-comprehensive`, `05-multi-user-browser`
+- **774 total tests** across 4 spec files (658 + 116 multi-user browser)
+- **Headed mode** (visible browser UI) and headless mode available
 - **1 worker**, serial execution for workflow integrity
 - **0 skipped tests** — every test must pass
-- **2 projects**: Local (Docker) + Cloud (Google Cloud Run)
+- **4 projects**: Local-API (headless fast), Local (headed UI), Cloud, Cloud-Dev
 
 ### Run Tests
 
 ```powershell
 cd tests/e2e
 
-# Run LOCAL tests (headed, visible browser)
-npx playwright test --project=Local --headed --workers=1
+# Run LOCAL tests (headless, fast)
+npx playwright test --project="Local-API" --reporter=line
 
-# Run CLOUD tests
-cross-env TEST_ENV=cloud npx playwright test --project=Cloud --headed --workers=1
+# Run LOCAL tests (headed, visible browser)
+npx playwright test --project="Local" --reporter=line
+
+# Run CLOUD tests (production)
+cross-env TEST_ENV=cloud npx playwright test --project=Cloud
+
+# Run CLOUD-DEV tests (dev-testing)
+$env:TEST_ENV='cloud-dev'; npx playwright test specs/05-multi-user-browser.spec.ts --project=Cloud-Dev --reporter=list
 
 # View HTML Report
 npx playwright show-report
@@ -157,7 +178,7 @@ npx playwright show-report
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────────┐
-│                   IZARA TELEMEDICINE v1.4.6                              │
+│                   IZARA TELEMEDICINE v1.4.8-dev                             │
 ├──────────────────────────────────────────────────────────────────────────┤
 │   ┌─────────────────┐  ┌─────────────────┐  ┌────────────────────────┐   │
 │   │  Patient Portal │  │  Doctor Portal  │  │  Meeting Server        │   │
@@ -168,7 +189,7 @@ npx playwright show-report
 │            └────────────────────┼─────────────────────┘                   │
 │                                 ▼                                         │
 │   ┌───────────────────────────────────────────────────────────────────┐  │
-│   │         PostgreSQL 16 + pgvector (Primary Database)               │  │
+│   │         PostgreSQL 18 + pgvector (Primary Database)               │  │
 │   │         Local: Docker port 5433 | Cloud: Cloud SQL 34.143.228.135│  │
 │   └───────────────────────────────────────────────────────────────────┘  │
 │                                                                           │
@@ -191,7 +212,7 @@ npx playwright show-report
 | ----- | ---------- | ------- |
 | Frontend | React 18, TypeScript, Vite 7, Tailwind CSS | UI |
 | Backend | Node.js 22, Express.js | API servers |
-| Database | PostgreSQL 16 + pgvector | Primary data store |
+| Database | PostgreSQL 18 + pgvector | Primary data store |
 | Auth | bcrypt + JWT (doctor) / Session tokens (patient) | Authentication |
 | Realtime | Socket.io | WebSocket |
 | AI | Google Gemini | Chat, CDS, summaries |
@@ -287,13 +308,21 @@ cd Izara-jitsi-server
 gcloud builds submit --config=cloudbuild.yaml
 ```
 
-### Cloud URLs (Production)
+### Cloud URLs (Production — v1.4.7)
 
 | Service | URL |
 | ------- | --- |
-| Patient Portal | https://izara-patient-portal-hvht4obouq-as.a.run.app |
-| Doctor Portal | https://izara-doctor-portal-hvht4obouq-as.a.run.app |
-| Meeting Server | https://izara-jitsi-meeting-portal-hvht4obouq-as.a.run.app |
+| Patient Portal | <https://izara-patient-portal-hvht4obouq-as.a.run.app> |
+| Doctor Portal | <https://izara-doctor-portal-hvht4obouq-as.a.run.app> |
+| Meeting Server | <https://izara-jitsi-meeting-portal-hvht4obouq-as.a.run.app> |
+
+### Cloud URLs (Dev — v1.4.8-dev)
+
+| Service | URL |
+| ------- | --- |
+| Patient Portal | <https://izara-patient-portal-dev-testing-hvht4obouq-as.a.run.app> |
+| Doctor Portal | <https://izara-doctor-portal-dev-testing-hvht4obouq-as.a.run.app> |
+| Meeting Server | <https://izara-meeting-server-dev-testing-hvht4obouq-as.a.run.app> |
 
 ---
 
@@ -312,12 +341,10 @@ Isara-Anywhere/
 ├── Izara-jitsi-server/       # Meeting server with transcription
 │   ├── server/               # Express + Socket.IO
 │   └── client/               # Transcription components
-├── tests/e2e/                # Playwright E2E tests
+├── tests/e2e/                # Playwright E2E tests (774 tests)
 │   ├── specs/                # Test specifications
-│   ├── lib/                  # Shared test config
-│   └── fixtures/             # Test data
+│   └── lib/                  # Shared test config
 ├── Processes/                # Workflow documentation (13 docs)
-├── Explains/                 # Technical documentation
 ├── Presentations/            # Project presentations & diagrams
 ├── scripts/                  # Utility & deployment scripts
 └── docker-compose.yml        # Docker orchestration
@@ -329,13 +356,10 @@ Isara-Anywhere/
 
 | Document | Description |
 | -------- | ----------- |
-| [Architecture](Explains/Whole-Project/architecture.md) | System architecture & data flow |
-| [API Reference](Explains/Whole-Project/api-reference.md) | API endpoints documentation |
-| [Database Schema](Explains/Whole-Project/database-schema.dbml) | Data models (DBML format) |
-| [Security](Explains/Whole-Project/security.md) | Security implementation |
-| [Patient Features](Explains/Isara-Patient-Portal/features.md) | Patient portal features |
-| [Doctor Features](Explains/Isara-Doctor-Portal/features.md) | Doctor portal features |
-| [Testing Summary](TESTING_SUMMARY.md) | E2E test results & coverage |
+| [Patient Portal Doc](Isara-patient-portal/doc/) | Patient portal architecture, features & APIs |
+| [Doctor Portal Doc](Isara-doctor-portal/doc/) | Doctor portal architecture, features & APIs |
+| [Workflow Processes](Processes/) | 13 workflow & process documents |
+| [Presentations](Presentations/) | Technical diagrams & project presentations |
 
 ---
 
@@ -370,14 +394,15 @@ This project is licensed under the MIT License.
 
 ## 👥 Team
 
-**Izara Telemedicine Development Team**
+### Izara Telemedicine Development Team
+
 - Healthcare technology innovation for Thailand
 - Focused on accessibility and user experience
 - PDPA-compliant data handling
 
 ## 📞 Support
 
-- 📧 Email: chirapathleo.saeliM@gmail.com / chirapath.s@betimes.biz
+- 📧 Email: <chirapathleo.saeliM@gmail.com> / <chirapath.s@betimes.biz>
 - 🐛 Issues: [GitHub Issues](https://github.com/chiraleo2000/Isara-Anywhere/issues)
 
 ---

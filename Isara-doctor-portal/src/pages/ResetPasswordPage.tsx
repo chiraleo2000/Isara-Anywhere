@@ -13,6 +13,39 @@ interface PasswordStrength {
   hasNumber: boolean;
 }
 
+const getPasswordStrength = (pwd: string): PasswordStrength => ({
+  hasMinLength: pwd.length >= 8,
+  hasLetter: /[a-zA-Z]/.test(pwd),
+  hasNumber: /\d/.test(pwd),
+});
+
+const getConfirmPasswordBorderClass = (confirmPassword: string, passwordsMatch: boolean): string => {
+  if (confirmPassword.length > 0 && passwordsMatch) {
+    return 'border-emerald-500 focus:ring-2 focus:ring-emerald-500';
+  }
+  if (confirmPassword.length > 0) {
+    return 'border-red-300 focus:ring-2 focus:ring-red-500';
+  }
+  return 'border-gray-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500';
+};
+
+const PasswordStrengthItem: React.FC<{ met: boolean; text: string }> = ({ met, text }) => (
+  <div className="flex items-center text-sm">
+    {met ? (
+      <svg className="w-4 h-4 text-emerald-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+      </svg>
+    ) : (
+      <svg className="w-4 h-4 text-gray-300 mr-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm0-2a6 6 0 100-12 6 6 0 000 12z" clipRule="evenodd" />
+      </svg>
+    )}
+    <span className={met ? 'text-emerald-700' : 'text-gray-500'}>
+      {text}
+    </span>
+  </div>
+);
+
 const ResetPasswordPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -27,13 +60,6 @@ const ResetPasswordPage: React.FC = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [tokenValid, setTokenValid] = useState(false);
-
-  // Password strength validation
-  const getPasswordStrength = (pwd: string): PasswordStrength => ({
-    hasMinLength: pwd.length >= 8,
-    hasLetter: /[a-zA-Z]/.test(pwd),
-    hasNumber: /\d/.test(pwd),
-  });
 
   const passwordStrength = getPasswordStrength(password);
   const isPasswordValid = passwordStrength.hasMinLength && passwordStrength.hasLetter && passwordStrength.hasNumber;
@@ -58,6 +84,7 @@ const ResetPasswordPage: React.FC = () => {
           setError(data.error || 'This reset link is invalid or has expired. Please request a new one.');
         }
       } catch (err) {
+        console.error('Token verification failed:', err);
         setError('Unable to verify reset link. Please try again later.');
       } finally {
         setIsLoading(false);
@@ -98,6 +125,7 @@ const ResetPasswordPage: React.FC = () => {
         setError(data.error || 'Failed to reset password. Please try again.');
       }
     } catch (err) {
+      console.error('Password reset failed:', err);
       setError('Network error. Please check your connection and try again.');
     } finally {
       setIsSubmitting(false);
@@ -169,6 +197,8 @@ const ResetPasswordPage: React.FC = () => {
   }
 
   // Reset password form
+  const confirmPasswordBorderClass = getConfirmPasswordBorderClass(confirmPassword, passwordsMatch);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 flex items-center justify-center p-4">
       <div className="max-w-md w-full">
@@ -200,11 +230,12 @@ const ResetPasswordPage: React.FC = () => {
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* New Password */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label htmlFor="new-password" className="block text-sm font-semibold text-gray-700 mb-2">
                 New Password <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <input
+                  id="new-password"
                   type={showPassword ? 'text' : 'password'}
                   required
                   value={password}
@@ -232,68 +263,25 @@ const ResetPasswordPage: React.FC = () => {
 
               {/* Password strength indicators */}
               <div className="mt-3 space-y-2">
-                <div className="flex items-center text-sm">
-                  {passwordStrength.hasMinLength ? (
-                    <svg className="w-4 h-4 text-emerald-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                    </svg>
-                  ) : (
-                    <svg className="w-4 h-4 text-gray-300 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm0-2a6 6 0 100-12 6 6 0 000 12z" clipRule="evenodd" />
-                    </svg>
-                  )}
-                  <span className={passwordStrength.hasMinLength ? 'text-emerald-700' : 'text-gray-500'}>
-                    At least 8 characters
-                  </span>
-                </div>
-                <div className="flex items-center text-sm">
-                  {passwordStrength.hasLetter ? (
-                    <svg className="w-4 h-4 text-emerald-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                    </svg>
-                  ) : (
-                    <svg className="w-4 h-4 text-gray-300 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm0-2a6 6 0 100-12 6 6 0 000 12z" clipRule="evenodd" />
-                    </svg>
-                  )}
-                  <span className={passwordStrength.hasLetter ? 'text-emerald-700' : 'text-gray-500'}>
-                    Contains at least one letter
-                  </span>
-                </div>
-                <div className="flex items-center text-sm">
-                  {passwordStrength.hasNumber ? (
-                    <svg className="w-4 h-4 text-emerald-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                    </svg>
-                  ) : (
-                    <svg className="w-4 h-4 text-gray-300 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm0-2a6 6 0 100-12 6 6 0 000 12z" clipRule="evenodd" />
-                    </svg>
-                  )}
-                  <span className={passwordStrength.hasNumber ? 'text-emerald-700' : 'text-gray-500'}>
-                    Contains at least one number
-                  </span>
-                </div>
+                <PasswordStrengthItem met={passwordStrength.hasMinLength} text="At least 8 characters" />
+                <PasswordStrengthItem met={passwordStrength.hasLetter} text="Contains at least one letter" />
+                <PasswordStrengthItem met={passwordStrength.hasNumber} text="Contains at least one number" />
               </div>
             </div>
 
             {/* Confirm Password */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label htmlFor="confirm-password" className="block text-sm font-semibold text-gray-700 mb-2">
                 Confirm Password <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <input
+                  id="confirm-password"
                   type={showConfirmPassword ? 'text' : 'password'}
                   required
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className={`w-full px-4 py-3 pr-12 border-2 rounded-xl transition-all ${confirmPassword.length > 0
-                      ? passwordsMatch
-                        ? 'border-emerald-500 focus:ring-2 focus:ring-emerald-500'
-                        : 'border-red-300 focus:ring-2 focus:ring-red-500'
-                      : 'border-gray-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500'
-                    }`}
+                  className={`w-full px-4 py-3 pr-12 border-2 rounded-xl transition-all ${confirmPasswordBorderClass}`}
                   placeholder="Confirm new password"
                 />
                 <button

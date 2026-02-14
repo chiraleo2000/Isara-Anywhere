@@ -497,8 +497,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   };
 
   return (
-    <div
-      role="region"
+    <section
       aria-label="File upload area"
       onDragEnter={handleDrag}
       onDragLeave={handleDrag}
@@ -535,7 +534,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       <p className="text-xs text-gray-500 mt-4">
         ขนาดไฟล์สูงสุด {maxSize / 1024 / 1024} MB
       </p>
-    </div>
+    </section>
   );
 };
 

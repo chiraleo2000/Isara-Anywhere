@@ -377,7 +377,7 @@ export class RecordingStorageService {
   /**
    * Get transcription by appointment ID
    */
-  async getTranscriptionByAppointment(appointmentId: string, userId: string): Promise<any | null> {
+  async getTranscriptionByAppointment(appointmentId: string, userId: string): Promise<any> {
     const transcriptions = await this.getUserTranscriptions(userId);
     const transcriptionFile = transcriptions.find(t => t.name.includes(appointmentId));
 
@@ -396,7 +396,7 @@ export class RecordingStorageService {
   /**
    * Get analytics by appointment ID
    */
-  async getAnalyticsByAppointment(appointmentId: string, userId: string): Promise<any | null> {
+  async getAnalyticsByAppointment(appointmentId: string, userId: string): Promise<any> {
     const analytics = await this.getUserAnalytics(userId);
     const analyticsFile = analytics.find(a => a.name.includes(appointmentId));
 
@@ -897,8 +897,11 @@ export class StorageService {
    */
   async uploadFile(
     file: File,
-    options: StorageUploadOptions = { bucket: this.buckets.doctor }
+    options?: StorageUploadOptions
   ): Promise<StorageFile> {
+    if (!options) {
+      options = { bucket: this.buckets.doctor };
+    }
     const formData = new FormData();
     formData.append('file', file);
     formData.append('bucket', options.bucket);

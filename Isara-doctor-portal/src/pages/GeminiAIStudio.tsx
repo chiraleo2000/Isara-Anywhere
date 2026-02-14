@@ -98,7 +98,7 @@ export const GeminiAIStudio: React.FC = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900 flex items-center">
-              <span className="text-3xl mr-3">🤖</span>
+              <span className="text-3xl mr-3">🤖</span>{' '}
               Gemini AI Studio
             </h1>
             <p className="text-gray-600 mt-1">ผู้ช่วยทางการแพทย์ด้วย AI</p>
@@ -116,7 +116,7 @@ export const GeminiAIStudio: React.FC = () => {
         </div>
         {!isApiConfigured && (
           <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800">
-            ⚠️ Gemini API key not configured. Set <code className="bg-yellow-100 px-1 rounded">VITE_GEMINI_API_KEY</code> in your environment to enable full AI capabilities.
+            ⚠️ Gemini API key not configured. Set{' '}<code className="bg-yellow-100 px-1 rounded">VITE_GEMINI_API_KEY</code>{' '}in your environment to enable full AI capabilities.
           </div>
         )}
       </div>
@@ -128,7 +128,7 @@ export const GeminiAIStudio: React.FC = () => {
           <div className="flex-1">
             <h3 className="text-lg font-bold text-indigo-900 mb-2">Looking for Clinical Guidelines & Research Papers?</h3>
             <p className="text-sm text-indigo-700 mb-4">
-              Access comprehensive medical literature, evidence-based guidelines, and the latest research papers in our <strong>Clinical Resources</strong> section.
+              Access comprehensive medical literature, evidence-based guidelines, and the latest research papers in our{' '}<strong>Clinical Resources</strong>{' '}section.
             </p>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs text-indigo-600">
               <div>• Diagnosis & Differential Guidelines</div>
@@ -139,7 +139,7 @@ export const GeminiAIStudio: React.FC = () => {
               <div>• Pathology Reports</div>
             </div>
             <p className="text-xs text-gray-600 mt-3">
-              💡 Navigate to <strong>Clinical Resources</strong> in the main menu to access all medical guidelines and study materials.
+              💡 Navigate to{' '}<strong>Clinical Resources</strong>{' '}in the main menu to access all medical guidelines and study materials.
             </p>
           </div>
         </div>
@@ -252,10 +252,11 @@ export const GeminiAIStudio: React.FC = () => {
               <h3 className="text-lg font-semibold mb-4">BMI Calculator</h3>
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="bmi-weight" className="block text-sm font-medium text-gray-700 mb-1">
                     น้ำหนัก (kg)
                   </label>
                   <input
+                    id="bmi-weight"
                     type="number"
                     value={bmiInputs.weight}
                     onChange={(e) => setBmiInputs({ ...bmiInputs, weight: e.target.value })}
@@ -264,10 +265,11 @@ export const GeminiAIStudio: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="bmi-height" className="block text-sm font-medium text-gray-700 mb-1">
                     ส่วนสูง (cm)
                   </label>
                   <input
+                    id="bmi-height"
                     type="number"
                     value={bmiInputs.height}
                     onChange={(e) => setBmiInputs({ ...bmiInputs, height: e.target.value })}
@@ -289,10 +291,11 @@ export const GeminiAIStudio: React.FC = () => {
               <h3 className="text-lg font-semibold mb-4">eGFR Calculator (CKD-EPI)</h3>
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="gfr-creatinine" className="block text-sm font-medium text-gray-700 mb-1">
                     Creatinine (mg/dL)
                   </label>
                   <input
+                    id="gfr-creatinine"
                     type="number"
                     step="0.01"
                     value={gfrInputs.creatinine}
@@ -302,8 +305,9 @@ export const GeminiAIStudio: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">อายุ (ปี)</label>
+                  <label htmlFor="gfr-age" className="block text-sm font-medium text-gray-700 mb-1">อายุ (ปี)</label>
                   <input
+                    id="gfr-age"
                     type="number"
                     value={gfrInputs.age}
                     onChange={(e) => setGfrInputs({ ...gfrInputs, age: e.target.value })}
@@ -312,8 +316,9 @@ export const GeminiAIStudio: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">เพศ</label>
+                  <label htmlFor="gfr-gender" className="block text-sm font-medium text-gray-700 mb-1">เพศ</label>
                   <select
+                    id="gfr-gender"
                     value={gfrInputs.gender}
                     onChange={(e) => setGfrInputs({ ...gfrInputs, gender: e.target.value })}
                     className="w-full p-2 border rounded-lg"
@@ -323,8 +328,9 @@ export const GeminiAIStudio: React.FC = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">เชื้อชาติ</label>
+                  <label htmlFor="gfr-race" className="block text-sm font-medium text-gray-700 mb-1">เชื้อชาติ</label>
                   <select
+                    id="gfr-race"
                     value={gfrInputs.race}
                     onChange={(e) => setGfrInputs({ ...gfrInputs, race: e.target.value })}
                     className="w-full p-2 border rounded-lg"

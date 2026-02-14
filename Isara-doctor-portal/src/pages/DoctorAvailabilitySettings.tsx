@@ -49,6 +49,31 @@ interface PendingAppointment {
 
 const DAYS_OF_WEEK = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
+// Helper: normalize raw appointment API data into PendingAppointment shape
+const normalizeAppointment = (apt: any, doctorId: string): PendingAppointment => ({
+  id: apt.id,
+  patientId: apt.patientId || apt.user?.id,
+  patientName: apt.user?.name || apt.patientName || 'Unknown',
+  patientEmail: apt.user?.email || apt.patientEmail || '',
+  requestedDate: apt.date || apt.requestedDate,
+  preferredTime: apt.preferredTime,
+  reason: apt.reason || apt.symptoms?.join(', ') || 'Consultation',
+  symptoms: apt.symptoms || [],
+  urgency: apt.urgency || 'medium',
+  status: apt.status,
+  assignedDateTime: apt.assignedDateTime,
+  notes: apt.notes,
+  createdAt: apt.createdAt,
+});
+
+// Urgency badge class mapping (SonarQube S3358)
+const urgencyBadgeClasses: Record<string, string> = {
+  emergency: 'bg-red-100 text-red-800',
+  high: 'bg-orange-100 text-orange-800',
+  medium: 'bg-yellow-100 text-yellow-800',
+};
+const getUrgencyBadgeClass = (urgency: string) => urgencyBadgeClasses[urgency] || 'bg-green-100 text-green-800';
+
 const DoctorAvailabilitySettings: React.FC = () => {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -136,27 +161,12 @@ const DoctorAvailabilitySettings: React.FC = () => {
 
       if (response.ok) {
         const data = await response.json();
-        const appointments = (data.appointments || data || [])
-          .filter((apt: any) =>
-            apt.doctorId === user.id &&
-            (apt.status === 'assigned' || apt.status === 'pending')
-          )
-          .map((apt: any) => ({
-            id: apt.id,
-            patientId: apt.patientId || apt.user?.id,
-            patientName: apt.user?.name || apt.patientName || 'Unknown',
-            patientEmail: apt.user?.email || apt.patientEmail || '',
-            requestedDate: apt.date || apt.requestedDate,
-            preferredTime: apt.preferredTime,
-            reason: apt.reason || apt.symptoms?.join(', ') || 'Consultation',
-            symptoms: apt.symptoms || [],
-            urgency: apt.urgency || 'medium',
-            status: apt.status,
-            assignedDateTime: apt.assignedDateTime,
-            notes: apt.notes,
-            createdAt: apt.createdAt
-          }));
-        setPendingAppointments(appointments);
+        const rawAppointments = data.appointments || data || [];
+        const filtered = rawAppointments.filter((apt: any) =>
+          apt.doctorId === user.id &&
+          (apt.status === 'assigned' || apt.status === 'pending')
+        );
+        setPendingAppointments(filtered.map((apt: any) => normalizeAppointment(apt, user.id)));
       }
     } catch (err) {
       console.error('Error loading appointments:', err);
@@ -516,11 +526,7 @@ const DoctorAvailabilitySettings: React.FC = () => {
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
                           <h3 className="font-semibold text-gray-900">{apt.patientName}</h3>
-                          <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${apt.urgency === 'emergency' ? 'bg-red-100 text-red-800' :
-                              apt.urgency === 'high' ? 'bg-orange-100 text-orange-800' :
-                                apt.urgency === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                                  'bg-green-100 text-green-800'
-                            }`}>
+                          <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${getUrgencyBadgeClass(apt.urgency)}`}>
                             {apt.urgency}
                           </span>
                           <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${apt.status === 'assigned' ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800'

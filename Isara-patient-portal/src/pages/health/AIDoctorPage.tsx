@@ -21,11 +21,158 @@ interface ChatSession {
   message_count?: number;
 }
 
+/* ---- Extracted sub-components to reduce cognitive complexity ---- */
+
+interface SessionListContentProps {
+  readonly loadingSessions: boolean;
+  readonly sessions: ChatSession[];
+  readonly sessionId: string | null;
+  readonly language: 'th' | 'en';
+  readonly isDark: boolean;
+  readonly labels: Record<string, Record<string, string>>;
+  readonly formatDate: (dateStr: string) => string;
+  readonly loadSession: (sessId: string) => void;
+  readonly deleteSession: (sessId: string, e: React.MouseEvent) => void;
+  readonly getSessionButtonClass: (isActive: boolean) => string;
+}
+
+function SessionListContent({
+  loadingSessions, sessions, sessionId, language, isDark, labels,
+  formatDate, loadSession, deleteSession, getSessionButtonClass,
+}: SessionListContentProps) {
+  if (loadingSessions) {
+    return (
+      <div className="flex justify-center py-8">
+        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-emerald-600"></div>
+      </div>
+    );
+  }
+  if (sessions.length === 0) {
+    return (
+      <div className={`text-center py-8 text-sm ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+        <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-50" />
+        {labels.noHistory[language]}
+      </div>
+    );
+  }
+  return (
+    <div className="space-y-1">
+      {sessions.map((session) => (
+        <button
+          key={session.session_id}
+          onClick={() => loadSession(session.session_id)}
+          className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-left group transition-colors ${getSessionButtonClass(sessionId === session.session_id)}`}
+        >
+          <MessageSquare className="w-4 h-4 flex-shrink-0 opacity-60" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm truncate">
+              {session.title || labels.conversation[language]}
+            </p>
+            <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+              {formatDate(session.created_at || session.started_at || '')}
+            </p>
+          </div>
+          <button
+            onClick={(e) => deleteSession(session.session_id, e)}
+            className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-100 rounded transition-all"
+            title={labels.deleteChat[language]}
+          >
+            <Trash2 className="w-3.5 h-3.5 text-red-500" />
+          </button>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+interface ChatMessageListProps {
+  readonly messages: Message[];
+  readonly suggestions: string[];
+  readonly isDark: boolean;
+  readonly labels: Record<string, Record<string, string>>;
+  readonly language: 'th' | 'en';
+  readonly loading: boolean;
+  readonly setInput: (val: string) => void;
+  readonly getMessageBubbleClass: (role: string) => string;
+  readonly chatContainerRef: React.RefObject<HTMLDivElement>;
+  readonly messagesEndRef: React.RefObject<HTMLDivElement>;
+}
+
+function ChatMessageList({
+  messages, suggestions, isDark, labels, language, loading,
+  setInput, getMessageBubbleClass, chatContainerRef, messagesEndRef,
+}: ChatMessageListProps) {
+  return (
+    <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4">
+      {messages.length === 0 ? (
+        <div className="h-full flex flex-col items-center justify-center text-center">
+          <Bot className={`w-16 h-16 mb-4 ${isDark ? 'text-gray-600' : 'text-gray-300'}`} />
+          <p className={`mb-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{labels.startChat[language]}</p>
+          <div className="flex flex-wrap justify-center gap-2 max-w-md">
+            {suggestions.map((s) => (
+              <button
+                key={s}
+                onClick={() => setInput(s)}
+                className={`px-3 py-2 rounded-lg text-sm transition-colors ${isDark ? 'bg-gray-800 text-gray-300 hover:bg-emerald-900/50 hover:text-emerald-300' : 'bg-gray-100 text-gray-700 hover:bg-emerald-100 hover:text-emerald-700'}`}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : (
+        messages.map((msg) => (
+          <div key={msg.id} className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : ''}`}>
+            {msg.role === 'assistant' && (
+              <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <Bot className="w-4 h-4 text-purple-600" />
+              </div>
+            )}
+            <div className={`max-w-[70%] p-3 rounded-xl ${getMessageBubbleClass(msg.role)}`}>
+              <p className="whitespace-pre-wrap">{msg.content}</p>
+            </div>
+            {msg.role === 'user' && (
+              <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <User className="w-4 h-4 text-emerald-600" />
+              </div>
+            )}
+          </div>
+        ))
+      )}
+      {loading && (
+        <div className="flex gap-3">
+          <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
+            <Bot className="w-4 h-4 text-purple-600" />
+          </div>
+          <div className={`rounded-xl p-3 ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
+            <div className="flex gap-1">
+              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
+              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-100" />
+              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200" />
+            </div>
+          </div>
+        </div>
+      )}
+      <div ref={messagesEndRef} />
+    </div>
+  );
+}
+
+/** Theme classes for AIDoctorPage — extracted to reduce cognitive complexity */
+function getAIDoctorClasses(isDark: boolean) {
+  return {
+    sidebarBg: isDark ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200',
+    chatHeaderBg: isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100',
+    chatBg: isDark ? 'bg-gray-900' : 'bg-white',
+  };
+}
+
 export default function AIDoctorPage() {
   const { user } = useAuth();
   const { theme, language } = useSettings();
   const isDark = theme === 'dark';
-  
+  const tc = getAIDoctorClasses(isDark);
+
   const labels = {
     newChat: { en: 'New Chat', th: 'สนทนาใหม่' },
     chatHistory: { en: 'Chat History', th: 'ประวัติการสนทนา' },
@@ -190,6 +337,7 @@ export default function AIDoctorPage() {
 
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (e: any) {
+      console.error('[AI Chat] Send failed:', e);
       const errorMessage: Message = {
         id: `msg_${Date.now()}_err`,
         role: 'assistant',
@@ -204,10 +352,20 @@ export default function AIDoctorPage() {
 
   const suggestions = suggestionsData[language];
 
+  const getSessionButtonClass = (isActive: boolean) => {
+    if (isActive) return 'bg-emerald-100 text-emerald-800';
+    return isDark ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-700';
+  };
+
+  const getMessageBubbleClass = (role: string) => {
+    if (role === 'user') return 'bg-emerald-600 text-white';
+    return isDark ? 'bg-gray-800 text-gray-200' : 'bg-gray-100 text-gray-800';
+  };
+
   return (
     <div className="flex h-[calc(100vh-8rem)] -mx-4 sm:-mx-6 lg:-mx-8">
       {/* Sidebar - Chat History */}
-      <div className={`${sidebarOpen ? 'w-72' : 'w-0'} transition-all duration-300 flex-shrink-0 flex flex-col overflow-hidden ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'} border-r`}>
+      <div className={`${sidebarOpen ? 'w-72' : 'w-0'} transition-all duration-300 flex-shrink-0 flex flex-col overflow-hidden ${tc.sidebarBg} border-r`}>
         <div className={`p-3 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
           <button
             onClick={startNewChat}
@@ -221,53 +379,25 @@ export default function AIDoctorPage() {
         <div className="flex-1 overflow-y-auto p-2">
           <p className={`text-xs px-2 py-1 font-medium ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{labels.chatHistory[language]}</p>
 
-          {loadingSessions ? (
-            <div className="flex justify-center py-8">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-emerald-600"></div>
-            </div>
-          ) : sessions.length === 0 ? (
-            <div className={`text-center py-8 text-sm ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-              <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-50" />
-              {labels.noHistory[language]}
-            </div>
-          ) : (
-            <div className="space-y-1">
-              {sessions.map((session) => (
-                <button
-                  key={session.session_id}
-                  onClick={() => loadSession(session.session_id)}
-                  className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-left group transition-colors ${sessionId === session.session_id
-                      ? 'bg-emerald-100 text-emerald-800'
-                      : isDark ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-700'
-                    }`}
-                >
-                  <MessageSquare className="w-4 h-4 flex-shrink-0 opacity-60" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm truncate">
-                      {session.title || labels.conversation[language]}
-                    </p>
-                    <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-                      {formatDate(session.created_at || session.started_at || '')}
-                    </p>
-                  </div>
-                  <button
-                    onClick={(e) => deleteSession(session.session_id, e)}
-                    className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-100 rounded transition-all"
-                    title={labels.deleteChat[language]}
-                  >
-                    <Trash2 className="w-3.5 h-3.5 text-red-500" />
-                  </button>
-                </button>
-              ))}
-            </div>
-          )}
+          <SessionListContent
+            loadingSessions={loadingSessions}
+            sessions={sessions}
+            sessionId={sessionId}
+            language={language}
+            isDark={isDark}
+            labels={labels}
+            formatDate={formatDate}
+            loadSession={loadSession}
+            deleteSession={deleteSession}
+            getSessionButtonClass={getSessionButtonClass}
+          />
         </div>
       </div>
 
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
-        <div className={`flex items-center gap-3 p-4 border-b ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
+        <div className={`flex items-center gap-3 p-4 border-b ${tc.chatHeaderBg}`}>
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
             className={`p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-100'}`}
@@ -293,61 +423,19 @@ export default function AIDoctorPage() {
           </div>
         </div>
 
-        <div className={`flex-1 overflow-hidden flex flex-col ${isDark ? 'bg-gray-900' : 'bg-white'}`}>
-          <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4">
-            {messages.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-center">
-                <Bot className={`w-16 h-16 mb-4 ${isDark ? 'text-gray-600' : 'text-gray-300'}`} />
-                <p className={`mb-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{labels.startChat[language]}</p>
-                <div className="flex flex-wrap justify-center gap-2 max-w-md">
-                  {suggestions.map((s) => (
-                    <button
-                      key={s}
-                      onClick={() => setInput(s)}
-                      className={`px-3 py-2 rounded-lg text-sm transition-colors ${isDark ? 'bg-gray-800 text-gray-300 hover:bg-emerald-900/50 hover:text-emerald-300' : 'bg-gray-100 text-gray-700 hover:bg-emerald-100 hover:text-emerald-700'}`}
-                    >
-                      {s}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              messages.map((msg) => {
-                return (
-                  <div key={msg.id} className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : ''}`}>
-                    {msg.role === 'assistant' && (
-                      <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
-                        <Bot className="w-4 h-4 text-purple-600" />
-                      </div>
-                    )}
-                    <div className={`max-w-[70%] p-3 rounded-xl ${msg.role === 'user' ? 'bg-emerald-600 text-white' : isDark ? 'bg-gray-800 text-gray-200' : 'bg-gray-100 text-gray-800'}`}>
-                      <p className="whitespace-pre-wrap">{msg.content}</p>
-                    </div>
-                    {msg.role === 'user' && (
-                      <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0">
-                        <User className="w-4 h-4 text-emerald-600" />
-                      </div>
-                    )}
-                  </div>
-                );
-              })
-            )}
-            {loading && (
-              <div className="flex gap-3">
-                <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  <Bot className="w-4 h-4 text-purple-600" />
-                </div>
-                <div className={`rounded-xl p-3 ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
-                  <div className="flex gap-1">
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-100" />
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200" />
-                  </div>
-                </div>
-              </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
+        <div className={`flex-1 overflow-hidden flex flex-col ${tc.chatBg}`}>
+          <ChatMessageList
+            messages={messages}
+            suggestions={suggestions}
+            isDark={isDark}
+            labels={labels}
+            language={language}
+            loading={loading}
+            setInput={setInput}
+            getMessageBubbleClass={getMessageBubbleClass}
+            chatContainerRef={chatContainerRef}
+            messagesEndRef={messagesEndRef}
+          />
         </div>
 
         <div className={`p-4 border-t ${isDark ? 'border-gray-700 bg-gray-800' : 'border-gray-100'}`}>

@@ -146,12 +146,10 @@ export const TreatmentResults: React.FC<TreatmentResultsProps> = ({
         className={`bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border transition-all ${isExpanded ? 'border-blue-300' : 'border-blue-100'
           }`}
       >
-        <div
-          role="button"
-          tabIndex={0}
+        <button
+          type="button"
           onClick={() => setExpandedId(isExpanded ? null : `emr-${entry.id}`)}
-          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpandedId(isExpanded ? null : `emr-${entry.id}`); } }}
-          className="p-3 cursor-pointer"
+          className="p-3 cursor-pointer w-full text-left"
         >
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-blue-100 border-2 border-white shadow-sm flex-shrink-0 flex items-center justify-center">
@@ -195,7 +193,7 @@ export const TreatmentResults: React.FC<TreatmentResultsProps> = ({
               อาการ: {entry.chiefComplaint}
             </p>
           )}
-        </div>
+        </button>
 
         {/* Expanded Details */}
         {isExpanded && (
@@ -238,8 +236,8 @@ export const TreatmentResults: React.FC<TreatmentResultsProps> = ({
                   การวินิจฉัย
                 </h5>
                 <div className="space-y-1.5">
-                  {entry.diagnosis.map((d, index) => (
-                    <div key={index} className="flex items-center gap-2 text-sm">
+                  {entry.diagnosis.map((d) => (
+                    <div key={`${d.description}-${d.status}`} className="flex items-center gap-2 text-sm">
                       <div className={`w-1.5 h-1.5 rounded-full ${d.status === 'primary' ? 'bg-blue-500' : 'bg-gray-400'
                         }`} />
                       <span className="text-gray-800">{d.description}</span>
@@ -290,7 +288,7 @@ export const TreatmentResults: React.FC<TreatmentResultsProps> = ({
                           {med.warnings && med.warnings.length > 0 && (
                             <div className="mt-1 flex flex-wrap gap-1">
                               {med.warnings.map((warning: string, wIdx: number) => (
-                                <span key={wIdx} className="text-xs px-1.5 py-0.5 bg-yellow-100 text-yellow-700 rounded">
+                                <span key={`${warning}-${wIdx}`} className="text-xs px-1.5 py-0.5 bg-yellow-100 text-yellow-700 rounded">
                                   ⚠️ {warning}
                                 </span>
                               ))}
@@ -340,11 +338,14 @@ export const TreatmentResults: React.FC<TreatmentResultsProps> = ({
       <div className="flex items-center gap-2 overflow-x-auto pb-1 border-b border-gray-100 mb-2">
         {viewTypes.map((vt) => {
           const Icon = vt.icon;
-          const count = vt.id === 'appointments'
-            ? filteredAppointments.length
-            : vt.id === 'emr'
-              ? healthLogs.length
-              : filteredAppointments.length + healthLogs.length;
+          let count: number;
+          if (vt.id === 'appointments') {
+            count = filteredAppointments.length;
+          } else if (vt.id === 'emr') {
+            count = healthLogs.length;
+          } else {
+            count = filteredAppointments.length + healthLogs.length;
+          }
           return (
             <button
               key={vt.id}
@@ -455,12 +456,10 @@ export const TreatmentResults: React.FC<TreatmentResultsProps> = ({
                       }`}
                   >
                     {/* Collapsed View */}
-                    <div
-                      role="button"
-                      tabIndex={0}
+                    <button
+                      type="button"
                       onClick={() => setExpandedId(isExpanded ? null : apt.id)}
-                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpandedId(isExpanded ? null : apt.id); } }}
-                      className="p-3 cursor-pointer"
+                      className="p-3 cursor-pointer w-full text-left"
                     >
                       <div className="flex items-center gap-3">
                         <img
@@ -508,7 +507,7 @@ export const TreatmentResults: React.FC<TreatmentResultsProps> = ({
                           {apt.diagnosis}
                         </p>
                       )}
-                    </div>
+                    </button>
 
                     {/* Expanded Details */}
                     {isExpanded && (
@@ -556,7 +555,7 @@ export const TreatmentResults: React.FC<TreatmentResultsProps> = ({
                             </h5>
                             <div className="space-y-1.5">
                               {((apt.prescription as any).medications || []).slice(0, 3).map((item: any, index: number) => (
-                                <div key={index} className="flex items-center gap-2 text-sm">
+                                <div key={item.name || item.drugName || `med-${index}`} className="flex items-center gap-2 text-sm">
                                   <div className="w-1.5 h-1.5 bg-green-500 rounded-full" />
                                   <span className="font-medium text-gray-800">{item.name || item.drugName}</span>
                                   <span className="text-gray-500">{item.dosage}</span>

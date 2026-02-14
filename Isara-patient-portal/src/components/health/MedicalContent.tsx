@@ -447,16 +447,17 @@ export const MedicalContent: React.FC<MedicalContentProps> = ({ className = '' }
           <div className="prose prose-emerald max-w-none">
             {/* Parse and render markdown-like content */}
             {(selectedArticle.contentTh || selectedArticle.content).split('\n').map((paragraph, idx) => {
+              const key = `${selectedArticle.id}-p-${idx}`;
               if (paragraph.startsWith('# ')) {
-                return <h1 key={idx} className="text-2xl font-bold text-gray-800 mb-4">{paragraph.slice(2)}</h1>;
+                return <h1 key={key} className="text-2xl font-bold text-gray-800 mb-4">{paragraph.slice(2)}</h1>;
               } else if (paragraph.startsWith('## ')) {
-                return <h2 key={idx} className="text-xl font-bold text-gray-800 mb-3 mt-6">{paragraph.slice(3)}</h2>;
+                return <h2 key={key} className="text-xl font-bold text-gray-800 mb-3 mt-6">{paragraph.slice(3)}</h2>;
               } else if (paragraph.startsWith('### ')) {
-                return <h3 key={idx} className="text-lg font-bold text-gray-800 mb-2 mt-4">{paragraph.slice(4)}</h3>;
+                return <h3 key={key} className="text-lg font-bold text-gray-800 mb-2 mt-4">{paragraph.slice(4)}</h3>;
               } else if (paragraph.startsWith('- ')) {
-                return <li key={idx} className="text-gray-700 ml-4">{paragraph.slice(2)}</li>;
+                return <li key={key} className="text-gray-700 ml-4">{paragraph.slice(2)}</li>;
               } else if (paragraph.trim()) {
-                return <p key={idx} className="text-gray-700 leading-relaxed mb-4">{paragraph}</p>;
+                return <p key={key} className="text-gray-700 leading-relaxed mb-4">{paragraph}</p>;
               }
               return null;
             })}
@@ -552,13 +553,15 @@ export const MedicalContent: React.FC<MedicalContentProps> = ({ className = '' }
       )}
 
       {/* Articles List */}
-      {loading ? (
+      {loading && (
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
             <div key={i} className="animate-pulse bg-gray-100 h-24 rounded-xl" />
           ))}
         </div>
-      ) : filteredArticles.length === 0 ? (
+      )}
+
+      {!loading && filteredArticles.length === 0 && (
         <div className="text-center py-8 text-gray-500">
           <BookOpen className="w-12 h-12 mx-auto mb-2 opacity-30" />
           <p>ไม่พบเนื้อหาที่ค้นหา</p>
@@ -571,7 +574,9 @@ export const MedicalContent: React.FC<MedicalContentProps> = ({ className = '' }
             </button>
           )}
         </div>
-      ) : (
+      )}
+
+      {!loading && filteredArticles.length > 0 && (
         <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
           {filteredArticles.map((article) => {
             const CategoryIcon = getCategoryIcon(article.category);

@@ -1,6 +1,6 @@
 # Cloud Build configuration for Jitsi Meeting Server
 # Builds and deploys Jitsi Meeting Server to Cloud Run
-# Version: 1.4.5
+# Version: 1.4.7
 
 steps:
   # Build Meeting Server Docker image

@@ -68,7 +68,7 @@ class MeetingTimeService {
         this.rules = { ...DEFAULT_MEETING_RULES, ...rulesData };
       }
     } catch (error) {
-      console.log('Using default meeting rules');
+      console.warn('Using default meeting rules:', error);
     }
     return this.rules;
   }
@@ -133,13 +133,18 @@ class MeetingTimeService {
     const isEarly = now < meetingStart;
     const isLate = now > meetingStart;
 
+    let reason: string;
+    if (isEarly) {
+      reason = `คุณสามารถเข้าร่วมได้เลย (ก่อนเวลานัด ${Math.abs(minutesUntilStart)} นาที)`;
+    } else if (isLate) {
+      reason = `คุณสามารถเข้าร่วมได้ (หลังเวลานัด ${Math.abs(minutesUntilStart)} นาที)`;
+    } else {
+      reason = 'ถึงเวลานัดหมายแล้ว เข้าร่วมได้เลย';
+    }
+
     return {
       canJoin: true,
-      reason: isEarly 
-        ? `คุณสามารถเข้าร่วมได้เลย (ก่อนเวลานัด ${Math.abs(minutesUntilStart)} นาที)`
-        : isLate
-          ? `คุณสามารถเข้าร่วมได้ (หลังเวลานัด ${Math.abs(minutesUntilStart)} นาที)`
-          : 'ถึงเวลานัดหมายแล้ว เข้าร่วมได้เลย',
+      reason,
       minutesUntilStart: isEarly ? minutesUntilStart : undefined,
       minutesSinceEnd: isLate ? Math.abs(minutesUntilStart) : undefined,
       isEarly,

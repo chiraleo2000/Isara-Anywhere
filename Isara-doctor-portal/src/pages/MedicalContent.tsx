@@ -85,6 +85,27 @@ const statusOptions: { value: ContentStatus; label: string; color: string }[] = 
 ];
 
 // ============================================================================
+// HELPER FUNCTIONS (module scope - S2004)
+// ============================================================================
+
+// Render content with inline images support
+// Format: [image:URL:description] will be rendered as <img>
+const renderContentWithImages = (content: string) => {
+  if (!content) return '';
+
+  // Replace [image:URL:description] with actual img tags
+  const imagePattern = /\[image:([^\]:]+):([^\]]*)\]/g;
+  let processedContent = content.replaceAll(imagePattern, (match, url, description) => {
+    return `<figure class="my-6"><img src="${url}" alt="${description}" class="w-full max-w-2xl mx-auto rounded-lg shadow-md" loading="lazy" /><figcaption class="text-center text-sm text-gray-500 mt-2">${description || ''}</figcaption></figure>`;
+  });
+
+  // Also replace newlines with <br/>
+  processedContent = processedContent.replaceAll('\n', '<br/>');
+
+  return processedContent;
+};
+
+// ============================================================================
 // MAIN COMPONENT
 // ============================================================================
 
@@ -105,8 +126,25 @@ const labels = {
 
 const MedicalContent: React.FC = () => {
   const { user } = useAuth();
-  const { theme, language, t } = useSettings();
+  const { theme } = useSettings();
   const isDark = theme === 'dark';
+  const themeClasses = isDark ? {
+    titleText: 'text-white',
+    subtitleText: 'text-gray-400',
+    cardBg: 'bg-gray-800',
+    searchInput: 'bg-gray-700 border-gray-600 text-white placeholder-gray-400',
+    selectInput: 'bg-gray-700 border-gray-600 text-white',
+    checkboxBg: 'bg-gray-700',
+    checkboxText: 'text-gray-300',
+  } : {
+    titleText: 'text-gray-900',
+    subtitleText: 'text-gray-600',
+    cardBg: 'bg-white',
+    searchInput: 'border-gray-300',
+    selectInput: 'border-gray-300',
+    checkboxBg: 'bg-gray-50',
+    checkboxText: 'text-gray-700',
+  };
   const isAdmin = user?.email?.includes('admin') || user?.role === 'admin';
 
   const [content, setContent] = useState<MedicalContentArticle[]>([]);
@@ -397,6 +435,10 @@ const MedicalContent: React.FC = () => {
   // HELPERS
   // ============================================================================
 
+  const handleRemoveTag = (tag: string) => {
+    setFormData((prev) => ({ ...prev, tags: prev.tags.filter((t) => t !== tag) }));
+  };
+
   const resetForm = () => {
     setFormData({
       title: '',
@@ -452,23 +494,11 @@ const MedicalContent: React.FC = () => {
     setShowDeleteConfirm(true);
   };
 
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case 'video': return '🎥';
-      case 'guide': return '📚';
-      case 'infographic': return '📊';
-      default: return '📄';
-    }
-  };
+  const typeIconMap: Record<string, string> = { video: '🎥', guide: '📚', infographic: '📊' };
+  const getTypeIcon = (type: string) => typeIconMap[type] || '📄';
 
-  const getTypeBadgeColor = (type: string) => {
-    switch (type) {
-      case 'video': return 'bg-red-100 text-red-700';
-      case 'guide': return 'bg-blue-100 text-blue-700';
-      case 'infographic': return 'bg-purple-100 text-purple-700';
-      default: return 'bg-gray-100 text-gray-700';
-    }
-  };
+  const typeBadgeColorMap: Record<string, string> = { video: 'bg-red-100 text-red-700', guide: 'bg-blue-100 text-blue-700', infographic: 'bg-purple-100 text-purple-700' };
+  const getTypeBadgeColor = (type: string) => typeBadgeColorMap[type] || 'bg-gray-100 text-gray-700';
 
   const getStatusBadge = (status: ContentStatus) => {
     const config = statusOptions.find((s) => s.value === status);
@@ -478,23 +508,6 @@ const MedicalContent: React.FC = () => {
   const getCategoryName = (categoryId: string) => {
     const cat = MEDICAL_CONTENT_CATEGORIES.find((c) => c.id === categoryId);
     return cat?.name || categoryId;
-  };
-
-  // Render content with inline images support
-  // Format: [image:URL:description] will be rendered as <img>
-  const renderContentWithImages = (content: string) => {
-    if (!content) return '';
-
-    // Replace [image:URL:description] with actual img tags
-    const imagePattern = /\[image:([^\]:]+):([^\]]*)\]/g;
-    let processedContent = content.replaceAll(imagePattern, (match, url, description) => {
-      return `<figure class="my-6"><img src="${url}" alt="${description}" class="w-full max-w-2xl mx-auto rounded-lg shadow-md" loading="lazy" /><figcaption class="text-center text-sm text-gray-500 mt-2">${description || ''}</figcaption></figure>`;
-    });
-
-    // Also replace newlines with <br/>
-    processedContent = processedContent.replaceAll('\n', '<br/>');
-
-    return processedContent;
   };
 
   // ============================================================================
@@ -521,11 +534,11 @@ const MedicalContent: React.FC = () => {
       {/* Header */}
       <div className="flex justify-between items-start mb-8">
         <div>
-          <h1 className={`text-2xl font-bold flex items-center gap-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+          <h1 className={`text-2xl font-bold flex items-center gap-2 ${themeClasses.titleText}`}>
             <BookOpenIcon className="w-8 h-8 text-emerald-600" />
             Medical Content Library
           </h1>
-          <p className={`mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+          <p className={`mt-1 ${themeClasses.subtitleText}`}>
             Health education resources for patient medical journeys
           </p>
         </div>
@@ -568,7 +581,7 @@ const MedicalContent: React.FC = () => {
       {/* Featured Section */}
       {featuredContent.length > 0 && (
         <div className="mb-8">
-          <h2 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>✨ Featured Content</h2>
+          <h2 className={`text-lg font-semibold mb-4 ${themeClasses.titleText}`}>✨ Featured Content</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {featuredContent.slice(0, 3).map((item) => (
               <button
@@ -607,7 +620,7 @@ const MedicalContent: React.FC = () => {
       )}
 
       {/* Search and Filter */}
-      <div className={`rounded-xl shadow-lg p-4 mb-6 ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
+      <div className={`rounded-xl shadow-lg p-4 mb-6 ${themeClasses.cardBg}`}>
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1 relative">
             <SearchIcon className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -616,13 +629,13 @@ const MedicalContent: React.FC = () => {
               placeholder="Search articles, guides, videos..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${isDark ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'border-gray-300'}`}
+              className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${themeClasses.searchInput}`}
             />
           </div>
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className={`px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'border-gray-300'}`}
+            className={`px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 ${themeClasses.selectInput}`}
           >
             <option value="all">All Categories</option>
             {MEDICAL_CONTENT_CATEGORIES.map((category) => (
@@ -634,7 +647,7 @@ const MedicalContent: React.FC = () => {
           <select
             value={selectedType}
             onChange={(e) => setSelectedType(e.target.value)}
-            className={`px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'border-gray-300'}`}
+            className={`px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 ${themeClasses.selectInput}`}
           >
             {contentTypes.map((type) => (
               <option key={type.value} value={type.value}>
@@ -645,7 +658,7 @@ const MedicalContent: React.FC = () => {
           <select
             value={selectedStatus}
             onChange={(e) => setSelectedStatus(e.target.value as ContentStatus | 'all')}
-            className={`px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'border-gray-300'}`}
+            className={`px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 ${themeClasses.selectInput}`}
           >
             <option value="all">All Status</option>
             {statusOptions.map((status) => (
@@ -654,14 +667,14 @@ const MedicalContent: React.FC = () => {
               </option>
             ))}
           </select>
-          <label className={`flex items-center gap-2 px-4 py-2 rounded-lg cursor-pointer ${isDark ? 'bg-gray-700' : 'bg-gray-50'}`}>
+          <label className={`flex items-center gap-2 px-4 py-2 rounded-lg cursor-pointer ${themeClasses.checkboxBg}`}>
             <input
               type="checkbox"
               checked={showMyContentOnly}
               onChange={(e) => setShowMyContentOnly(e.target.checked)}
               className="rounded text-emerald-600 focus:ring-emerald-500"
             />
-            <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>My Content</span>
+            <span className={`text-sm ${themeClasses.checkboxText}`}>My Content</span>
           </label>
         </div>
       </div>
@@ -844,10 +857,11 @@ const MedicalContent: React.FC = () => {
               {/* Basic Info - Thai as Primary */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="form-titleTh" className="block text-sm font-medium text-gray-700 mb-1">
                     ชื่อเรื่อง (ภาษาไทย) *
                   </label>
                   <input
+                    id="form-titleTh"
                     type="text"
                     value={formData.titleTh}
                     onChange={(e) => setFormData((prev) => ({ ...prev, titleTh: e.target.value }))}
@@ -857,10 +871,11 @@ const MedicalContent: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="form-title" className="block text-sm font-medium text-gray-700 mb-1">
                     Title (English)
                   </label>
                   <input
+                    id="form-title"
                     type="text"
                     value={formData.title}
                     onChange={(e) => setFormData((prev) => ({ ...prev, title: e.target.value }))}
@@ -873,10 +888,11 @@ const MedicalContent: React.FC = () => {
               {/* Summary - Thai as Primary */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="form-summaryTh" className="block text-sm font-medium text-gray-700 mb-1">
                     บทคัดย่อ (ภาษาไทย) *
                   </label>
                   <textarea
+                    id="form-summaryTh"
                     value={formData.summaryTh}
                     onChange={(e) => setFormData((prev) => ({ ...prev, summaryTh: e.target.value }))}
                     rows={2}
@@ -886,10 +902,11 @@ const MedicalContent: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="form-summary" className="block text-sm font-medium text-gray-700 mb-1">
                     Summary (English)
                   </label>
                   <textarea
+                    id="form-summary"
                     value={formData.summary}
                     onChange={(e) => setFormData((prev) => ({ ...prev, summary: e.target.value }))}
                     rows={2}
@@ -901,7 +918,7 @@ const MedicalContent: React.FC = () => {
 
               {/* Content - Thai as Primary with Image Support */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="form-contentTh" className="block text-sm font-medium text-gray-700 mb-1">
                   เนื้อหา (ภาษาไทย) *
                 </label>
                 <div className="mb-2 p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-700">
@@ -910,6 +927,7 @@ const MedicalContent: React.FC = () => {
                   <p>ตัวอย่าง: <code className="bg-blue-100 px-1 rounded">[image:https://example.com/heart.jpg:ภาพหัวใจมนุษย์]</code></p>
                 </div>
                 <textarea
+                  id="form-contentTh"
                   value={formData.contentTh}
                   onChange={(e) => setFormData((prev) => ({ ...prev, contentTh: e.target.value }))}
                   rows={10}
@@ -919,7 +937,7 @@ const MedicalContent: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="form-content" className="block text-sm font-medium text-gray-700 mb-1">
                   Content (English)
                 </label>
                 <div className="mb-2 p-3 bg-gray-50 border border-gray-200 rounded-lg text-xs text-gray-600">
@@ -928,6 +946,7 @@ const MedicalContent: React.FC = () => {
                   <p>Example: <code className="bg-gray-100 px-1 rounded">[image:https://example.com/heart.jpg:Human heart diagram]</code></p>
                 </div>
                 <textarea
+                  id="form-content"
                   value={formData.content}
                   onChange={(e) => setFormData((prev) => ({ ...prev, content: e.target.value }))}
                   rows={8}
@@ -939,8 +958,9 @@ const MedicalContent: React.FC = () => {
               {/* Category, Type, Status */}
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Category *</label>
+                  <label htmlFor="form-category" className="block text-sm font-medium text-gray-700 mb-1">Category *</label>
                   <select
+                    id="form-category"
                     value={formData.category}
                     onChange={(e) => setFormData((prev) => ({ ...prev, category: e.target.value as MedicalContentCategoryId }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
@@ -953,8 +973,9 @@ const MedicalContent: React.FC = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Type *</label>
+                  <label htmlFor="form-type" className="block text-sm font-medium text-gray-700 mb-1">Type *</label>
                   <select
+                    id="form-type"
                     value={formData.type}
                     onChange={(e) =>
                       setFormData((prev) => ({
@@ -971,8 +992,9 @@ const MedicalContent: React.FC = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Status *</label>
+                  <label htmlFor="form-status" className="block text-sm font-medium text-gray-700 mb-1">Status *</label>
                   <select
+                    id="form-status"
                     value={formData.status}
                     onChange={(e) =>
                       setFormData((prev) => ({ ...prev, status: e.target.value as ContentStatus }))
@@ -991,10 +1013,11 @@ const MedicalContent: React.FC = () => {
               {/* URLs */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="form-thumbnail" className="block text-sm font-medium text-gray-700 mb-1">
                     Thumbnail URL
                   </label>
                   <input
+                    id="form-thumbnail"
                     type="url"
                     value={formData.thumbnail}
                     onChange={(e) => setFormData((prev) => ({ ...prev, thumbnail: e.target.value }))}
@@ -1004,10 +1027,11 @@ const MedicalContent: React.FC = () => {
                 </div>
                 {formData.type === 'video' && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="form-videoUrl" className="block text-sm font-medium text-gray-700 mb-1">
                       Video URL
                     </label>
                     <input
+                      id="form-videoUrl"
                       type="url"
                       value={formData.videoUrl}
                       onChange={(e) => setFormData((prev) => ({ ...prev, videoUrl: e.target.value }))}
@@ -1020,7 +1044,7 @@ const MedicalContent: React.FC = () => {
 
               {/* Tags */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Tags</label>
+                <label htmlFor="form-tags" className="block text-sm font-medium text-gray-700 mb-1">Tags</label>
                 <div className="flex flex-wrap gap-2 mb-2">
                   {formData.tags.map((tag) => (
                     <span
@@ -1029,12 +1053,7 @@ const MedicalContent: React.FC = () => {
                     >
                       #{tag}
                       <button
-                        onClick={() =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            tags: prev.tags.filter((t) => t !== tag),
-                          }))
-                        }
+                        onClick={() => handleRemoveTag(tag)}
                         className="hover:text-red-600"
                       >
                         ×
@@ -1044,6 +1063,7 @@ const MedicalContent: React.FC = () => {
                 </div>
                 <div className="flex gap-2">
                   <select
+                    id="form-tags"
                     onChange={(e) => {
                       if (e.target.value && !formData.tags.includes(e.target.value)) {
                         setFormData((prev) => ({ ...prev, tags: [...prev.tags, e.target.value] }));
@@ -1093,10 +1113,11 @@ const MedicalContent: React.FC = () => {
 
               {showEditModal && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="form-changeNote" className="block text-sm font-medium text-gray-700 mb-1">
                     Change Note (for version history)
                   </label>
                   <input
+                    id="form-changeNote"
                     type="text"
                     value={changeNote}
                     onChange={(e) => setChangeNote(e.target.value)}
@@ -1295,8 +1316,8 @@ const MedicalContent: React.FC = () => {
 
               {selectedArticle.history && selectedArticle.history.length > 0 ? (
                 <div className="space-y-4">
-                  {[...selectedArticle.history].reverse().map((version: ContentVersion, index: number) => (
-                    <div key={index} className="border rounded-xl p-4">
+                  {[...selectedArticle.history].reverse().map((version: ContentVersion) => (
+                    <div key={`v-${version.version}-${version.modifiedAt}`} className="border rounded-xl p-4">
                       <div className="flex items-center justify-between mb-2">
                         <span className="font-medium text-gray-700">Version {version.version}</span>
                         <span className="text-sm text-gray-500">
@@ -1409,10 +1430,11 @@ const MedicalContent: React.FC = () => {
 
               {/* Approval Comment */}
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="approval-comment" className="block text-sm font-medium text-gray-700 mb-2">
                   Review Comment (Optional)
                 </label>
                 <textarea
+                  id="approval-comment"
                   value={approvalComment}
                   onChange={(e) => setApprovalComment(e.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
@@ -1423,10 +1445,11 @@ const MedicalContent: React.FC = () => {
 
               {/* Rejection Reason (shown when rejecting) */}
               <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="rejection-reason" className="block text-sm font-medium text-gray-700 mb-2">
                   Rejection Reason (Required for rejection)
                 </label>
                 <textarea
+                  id="rejection-reason"
                   value={rejectionReason}
                   onChange={(e) => setRejectionReason(e.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500"

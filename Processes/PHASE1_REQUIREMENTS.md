@@ -1,8 +1,8 @@
 # Izara Telemedicine - Phase 1 Requirements
 
-**Version:** 3.4.0  
-**Last Updated:** February 4, 2026  
-**Status:** ✅ Phase 1 Complete - Full Test Verification
+**Version:** 1.4.7  
+**Last Updated:** January 2025  
+**Status:** ✅ Phase 1 — Comprehensive Meeting Workflow (Core Deliverable)
 
 ---
 
@@ -10,11 +10,15 @@
 
 Phase 1 focuses on core telemedicine functionality with AI-assisted clinical workflows, emphasizing the "Man-in-the-Loop" approach where AI serves as a clinical assistant while doctors retain final decision authority.
 
+**Core Phase 1 Deliverable:** Complete meeting workflow from Appointment → Multi-Party Meeting (Microsoft Teams-like) → Transcript Streaming → AI Summary Pipeline → EMR Documentation → Patient Delivery
+
 **Verification Status:** All Phase 1 requirements verified working (January 22, 2026)
 
 - **Playwright Tests:** 1,287 tests (941 local + 311 cloud + 35 fetch-detection)
 - **Full Workflow:** Appointment → Meeting → AI Summary → EMR → Patient Access ✅
 - **PostgreSQL:** All data stored in PostgreSQL (NO GCS)
+- **FREE Transcription:** Web Speech API (browser-native, no API cost)
+- **FREE Video:** Jitsi Meet (meet.jit.si, no server cost)
 
 ---
 
@@ -121,13 +125,36 @@ Phase 1 focuses on core telemedicine functionality with AI-assisted clinical wor
 - [x] Patient Access to Health Logs (EMR records)
 - [x] **Man-in-the-Loop** - All AI outputs include `requiresValidation: true`
 
-### 🚧 Remaining UI Work
+### 🚧 Remaining UI Work (Meeting Workflow)
 
-- [ ] **Man-in-the-Loop UI in Dashboard** - Show AI results in Health Meeting panel
-- [ ] **Doctor Validation Actions** - Approve/Edit/Reject buttons for AI outputs
-- [ ] **AI Summary → EMR Flow** - Use AI results to populate EMR sections
-- [ ] **Patient Instruction Sheet UI** - Generate and preview before sending
-- [ ] **Meeting Transcription UI** - Start/Stop transcript during meeting
+- [ ] **Multi-Party Meeting UI** — Patient invites relatives/friends, Doctor invites other doctors/admin
+- [ ] **Guest Self-Registration** — Non-registered users create display name from blank, enter lobby
+- [ ] **HOST Lobby Control** — Doctor approves/rejects each participant from lobby
+- [ ] **Transcript Streaming Control UI** — Doctor START/PAUSE/RESUME/STOP buttons
+- [ ] **Real-time Transcript Display** — Bottom panel with speaker labels (👨‍⚕️/🧑/👥), interim yellow pulsing
+- [ ] **Chat Integration During Meeting** — Text chat captured with timestamps for AI summary
+- [ ] **Post-Meeting AI Summary Display** — Results shown on Health Meeting page
+- [ ] **Man-in-the-Loop Validation UI** — [✅ Approve] [✏️ Edit] [🔄 Regenerate] [❌ Reject] buttons
+- [ ] **AI Summary → EMR Flow** — Auto-populate EMR SOAP tabs from AI summary
+- [ ] **Patient Instruction Sheet UI** — Generate, preview, doctor validates, then send to patient
+- [ ] **Patient Health History Display** — Patient receives results in Dashboard + Timeline + PHR
+- [ ] **PDF Download** — Patient downloads Instruction Sheet as PDF
+
+### 📋 Testing Requirements (Meeting Workflow E2E)
+
+- [ ] **Local Docker Testing** — All 4 services (localhost:3005 + 3010 + 3020 + 5432)
+- [ ] **Cloud Testing** — All services on Cloud Run + CloudSQL
+- [ ] **Demo Meeting Test** — Simulated video/audio with transcript streaming
+- [ ] **4-User Meeting Test** — Doctor HOST + Patient + Patient Relative + Admin
+- [ ] **Guest Self-Registration Test** — Non-registered user creates name and enters lobby
+- [ ] **Transcript Streaming Test** — Start/Pause/Resume/Stop with Thai and English
+- [ ] **Chat Capture Test** — All messages captured with timestamps and attributed to senders
+- [ ] **AI Pipeline Test** — Transcript + Chats → Gemini → SOAP Summary
+- [ ] **30-Minute Section Test** — Long meetings split into 30-min section summaries
+- [ ] **Man-in-the-Loop Test** — Doctor approves/edits/rejects AI summary
+- [ ] **EMR Auto-Population Test** — AI summary populates SOAP tabs in EMR Editor
+- [ ] **Patient Delivery Test** — EMR data + Instruction Sheet delivered to Patient Portal
+- [ ] **Full E2E Test** — Complete flow: Book → Confirm → Meet → Transcript → AI → EMR → Patient
 
 ### 📋 Phase 2 Planned
 
@@ -139,31 +166,65 @@ Phase 1 focuses on core telemedicine functionality with AI-assisted clinical wor
 
 ## 3️⃣ Feature Specifications
 
-### 3.1 Video Meeting + EMR Documentation (DR-01)
+### 3.1 Video Meeting + EMR Documentation (DR-01) — Core Phase 1 Deliverable
 
 **Current Status:** ✅ Implemented
 
 #### Components
 
-- Jitsi Meet integration (doctor as HOST)
-- EMR Editor with SOAP format (Thai/English)
-- Patient lobby system
-- Guest invite system (relatives, specialists)
+- Jitsi Meet integration (doctor as HOST/moderator)
+- EMR Editor with SOAP format (Thai OPD Card standard)
+- Patient lobby system (all participants wait for HOST)
+- Guest invite system (relatives, friends, specialists, admin)
+- **Web Speech API** for real-time transcript streaming (FREE)
+- **Chat integration** — all messages captured for AI processing
+- **Gemini AI** for post-meeting SOAP summary, CDS, patient instructions
+- **Man-in-the-Loop** — doctor validates before patient receives data
 
-#### Workflow
+#### Participant Types
+
+| Participant | Invited By | Login Required | Enters Lobby |
+| ----------- | ---------- | -------------- | ------------ |
+| Doctor (HOST) | System | Yes (Doctor Portal) | No (is HOST) |
+| Patient | System | Yes (Patient Portal) | Yes → Doctor admits |
+| Patient Relatives/Friends | Patient | No → create display name | Yes → Doctor admits |
+| Other Doctors/Admin | Doctor | Yes (Doctor Portal) | Yes → Doctor admits |
+| External Guests | Patient/Doctor | No → create display name | Yes → Doctor admits |
+
+#### Full Workflow (Microsoft Teams-Like)
 
 ```text
-1. Doctor confirms appointment → Meeting link generated
-2. Patient enters lobby → Waits for doctor
-3. Doctor joins → Admits patient from lobby
-4. During meeting:
-   - Video/audio consultation
-   - EMR documentation in real-time
-   - AI chat assistant available
-5. Post-meeting:
-   - AI generates EMR summary (pending review)
-   - AI generates patient instructions (pending review)
-   - Doctor approves/edits before sending to patient
+PHASE 1: BOOKING
+  Patient books appointment → AI analyzes → Doctor confirms → Jitsi URLs
+
+PHASE 2: PRE-MEETING
+  Patient invites relatives → Doctor invites colleagues
+  AI generates pre-consultation summary (Req 2.2)
+
+PHASE 3: MEETING (Doctor as HOST)
+  Doctor starts meeting → Patient enters LOBBY → Doctor admits
+  Guests create name from blank → LOBBY → Doctor admits/rejects
+  Doctor starts TRANSCRIPT STREAMING (Web Speech API, FREE)
+  All participants use VIDEO + AUDIO + TEXT CHAT
+  Doctor controls: lobby, transcript start/pause/stop, recording
+  Chat messages captured with timestamps and sender names
+
+PHASE 4: POST-MEETING AI PIPELINE
+  AI processes: transcript + chat messages + video metadata + patient PHR
+  Output: SOAP summary + CDS + Patient Instruction Sheet
+  30-minute sections for long meetings
+  All outputs: requiresValidation = true
+
+PHASE 5: DOCTOR REVIEW (Man-in-the-Loop)
+  Summary on Health Meeting page → Doctor validates
+  EMR Editor pre-filled with SOAP data → Doctor signs
+  Patient Instruction Sheet generated → Doctor approves
+
+PHASE 6: PATIENT DELIVERY
+  EMR + Instruction Sheet → Patient Portal
+  Patient views: Dashboard → Timeline → Health History
+  Patient downloads: Instruction Sheet PDF
+  Appointment status → completed
 ```
 
 ### 3.2 AI Chat Assistant (DR-02, PB-03)
@@ -468,4 +529,4 @@ ai_validations         -- Man-in-the-loop audit log
 
 ---
 
-### End of Phase 1 Requirements v3.4.0 (February 4, 2026)
+### End of Phase 1 Requirements v1.4.7 (January 2025)

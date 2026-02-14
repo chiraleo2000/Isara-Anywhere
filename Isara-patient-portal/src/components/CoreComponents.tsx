@@ -97,12 +97,10 @@ export const UpcomingAppointmentCard: React.FC<UpcomingAppointmentCardProps> = (
   };
 
   return (
-    <div
-      role="button"
-      tabIndex={0}
+    <button
+      type="button"
       onClick={onClick}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } }}
-      className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-lg transition-shadow cursor-pointer"
+      className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-lg transition-shadow cursor-pointer w-full text-left"
     >
       <div className="flex items-start gap-4">
         <img
@@ -133,7 +131,7 @@ export const UpcomingAppointmentCard: React.FC<UpcomingAppointmentCardProps> = (
           )}
         </div>
       </div>
-    </div>
+    </button>
   );
 };
 
@@ -290,13 +288,11 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex min-h-screen items-center justify-center p-4">
-        <div
-          role="button"
-          tabIndex={0}
+        <button
+          type="button"
           aria-label="Close modal"
-          className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
+          className="fixed inset-0 bg-black bg-opacity-50 transition-opacity border-none cursor-pointer"
           onClick={onClose}
-          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClose(); } }}
         />
 
         <div className={`relative bg-white rounded-2xl shadow-xl ${sizeClasses[size]} w-full max-h-[90vh] overflow-hidden`}>
@@ -435,6 +431,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder={placeholder}
+            aria-label={placeholder}
             className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
             disabled={loading}
           />
@@ -562,6 +559,69 @@ interface FormFieldProps {
   icon?: React.ReactNode;
 }
 
+/** Render the appropriate form control based on type (extracted to reduce cognitive complexity) */
+function renderFormControl(
+  fieldId: string,
+  type: FormFieldProps['type'],
+  value: string | number,
+  onChange: (value: string) => void,
+  { placeholder, required, options, rows, icon, label }: Pick<FormFieldProps, 'placeholder' | 'required' | 'options' | 'rows' | 'icon' | 'label'>,
+) {
+  const baseClass = 'w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500';
+
+  if (type === 'textarea') {
+    return (
+      <textarea
+        id={fieldId}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        required={required}
+        rows={rows}
+        className={baseClass}
+      />
+    );
+  }
+
+  if (type === 'select') {
+    return (
+      <select
+        id={fieldId}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        required={required}
+        className={baseClass}
+      >
+        <option value="">เลือก{label}</option>
+        {options?.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    );
+  }
+
+  return (
+    <div className="relative">
+      {icon && (
+        <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+          {icon}
+        </div>
+      )}
+      <input
+        id={fieldId}
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        required={required}
+        className={`w-full ${icon ? 'pl-10' : ''} px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500`}
+      />
+    </div>
+  );
+}
+
 export const FormField: React.FC<FormFieldProps> = ({
   label,
   type = 'text',
@@ -574,53 +634,16 @@ export const FormField: React.FC<FormFieldProps> = ({
   rows = 4,
   icon,
 }) => {
+  const fieldId = `field-${label.replaceAll(/\s+/g, '-').toLowerCase()}`;
+
   return (
     <div className="space-y-2">
-      <label className="block text-sm font-medium text-gray-700">
+      <label htmlFor={fieldId} className="block text-sm font-medium text-gray-700">
         {label}
         {required && <span className="text-red-500 ml-1">*</span>}
       </label>
 
-      {type === 'textarea' ? (
-        <textarea
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          required={required}
-          rows={rows}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-        />
-      ) : type === 'select' ? (
-        <select
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          required={required}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-        >
-          <option value="">เลือก{label}</option>
-          {options?.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-      ) : (
-        <div className="relative">
-          {icon && (
-            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
-              {icon}
-            </div>
-          )}
-          <input
-            type={type}
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            placeholder={placeholder}
-            required={required}
-            className={`w-full ${icon ? 'pl-10' : ''} px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500`}
-          />
-        </div>
-      )}
+      {renderFormControl(fieldId, type, value, onChange, { placeholder, required, options, rows, icon, label })}
 
       {error && <p className="text-sm text-red-600">{error}</p>}
     </div>
@@ -795,6 +818,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
+        aria-label={placeholder}
         className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
       />
       <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">

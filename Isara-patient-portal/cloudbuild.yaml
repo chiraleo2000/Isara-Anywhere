@@ -1,4 +1,4 @@
-# Cloud Build configuration for Izara Patient Portal v1.4.6
+# Cloud Build configuration for Izara Patient Portal v1.4.7
 # Builds unified Docker image and deploys to Cloud Run
 # Uses Cloud SQL PostgreSQL (same architecture as local Docker PostgreSQL)
 

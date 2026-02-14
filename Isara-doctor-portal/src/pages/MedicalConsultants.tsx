@@ -177,9 +177,147 @@ const labels = {
   years: { en: 'years', th: 'ปี' },
 };
 
+// Helper: Dark mode aware class names
+const darkText = (isDark: boolean) => isDark ? 'text-white' : 'text-gray-900';
+const darkSubtext = (isDark: boolean) => isDark ? 'text-gray-400' : 'text-gray-600';
+const darkCard = (isDark: boolean) => isDark ? 'bg-gray-800' : 'bg-white';
+
+// Helper: get no-results message
+const getNoResultsMessage = (hasConsultants: boolean, isAdmin: boolean): string => {
+  if (hasConsultants) return 'Try adjusting your search or filter criteria';
+  if (isAdmin) return 'Add your first consultant to get started';
+  return 'No consultants have been added yet';
+};
+
+// Helper: get save button text
+const getSaveButtonText = (actionLoading: boolean, isAdd: boolean): string => {
+  if (actionLoading) return 'Saving...';
+  return isAdd ? 'Add Consultant' : 'Save Changes';
+};
+
+// Extracted consultant card component to reduce cognitive complexity
+const ConsultantCard: React.FC<{
+  consultant: Consultant;
+  isDark: boolean;
+  isAdmin: boolean;
+  onToggleAvailability: (c: Consultant) => void;
+  onSendEmail: (email: string) => void;
+  onCall: (phone: string) => void;
+  onViewDetail: (c: Consultant) => void;
+  onRate: (c: Consultant) => void;
+  onEdit: (c: Consultant) => void;
+  onDelete: (c: Consultant) => void;
+}> = ({ consultant, isDark, isAdmin, onToggleAvailability, onSendEmail, onCall, onViewDetail, onRate, onEdit, onDelete }) => (
+  <div className={`rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow ${darkCard(isDark)}`}>
+    <div className="p-6">
+      <div className="flex items-start gap-4">
+        <img
+          src={consultant.photo}
+          alt={consultant.name}
+          className="w-16 h-16 rounded-full object-cover"
+          onError={(e) => {
+            (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(consultant.name)}&background=10b981&color=fff`;
+          }}
+        />
+        <div className="flex-1 min-w-0">
+          <h3 className={`font-semibold truncate ${darkText(isDark)}`}>{consultant.name}</h3>
+          <p className="text-emerald-600 font-medium">{consultant.specialty}</p>
+          <p className="text-sm text-gray-500 truncate">{consultant.hospital || 'No hospital'}</p>
+        </div>
+        <button
+          onClick={() => isAdmin && onToggleAvailability(consultant)}
+          className={`px-2 py-1 rounded-full text-xs font-medium ${
+            consultant.available
+              ? 'bg-green-100 text-green-700'
+              : 'bg-gray-100 text-gray-600'
+          } ${isAdmin ? 'cursor-pointer hover:opacity-80' : 'cursor-default'}`}
+          disabled={!isAdmin}
+          title={isAdmin ? 'Click to toggle availability' : ''}
+        >
+          {consultant.available ? 'Available' : 'Busy'}
+        </button>
+      </div>
+
+      <div className="mt-4 space-y-2 text-sm text-gray-600">
+        <div className="flex items-center gap-2">
+          <span className="font-medium">Experience:</span>
+          <span>{consultant.experience} years</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="font-medium">Languages:</span>
+          <span>{consultant.languages?.join(', ') || 'N/A'}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="font-medium">Rating:</span>
+          <StarRating rating={consultant.rating || 0} size="sm" />
+          <span className="ml-1">
+            {(consultant.rating || 0).toFixed(1)} ({consultant.reviewCount || 0})
+          </span>
+        </div>
+      </div>
+
+      <div className="mt-4 flex gap-2 flex-wrap">
+        <button
+          onClick={() => onSendEmail(consultant.email)}
+          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors min-w-0"
+        >
+          <EnvelopeIcon className="w-4 h-4 flex-shrink-0" />
+          <span className="truncate">Email</span>
+        </button>
+        <button
+          onClick={() => onCall(consultant.phone)}
+          disabled={!consultant.phone}
+          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-w-0"
+        >
+          <PhoneIcon className="w-4 h-4 flex-shrink-0" />
+          <span className="truncate">Call</span>
+        </button>
+        <button
+          onClick={() => onViewDetail(consultant)}
+          className="px-3 py-2 bg-gray-50 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
+          title="View Details"
+        >
+          <EyeIcon className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* Action buttons */}
+      <div className="mt-3 pt-3 border-t flex gap-2">
+        {!isAdmin && (
+          <button
+            onClick={() => onRate(consultant)}
+            className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-yellow-50 text-yellow-700 rounded-lg hover:bg-yellow-100 transition-colors"
+          >
+            <StarIcon className="w-4 h-4" />
+            Rate
+          </button>
+        )}
+        {isAdmin && (
+          <>
+            <button
+              onClick={() => onEdit(consultant)}
+              className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-gray-50 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
+            >
+              <EditIcon className="w-4 h-4" />
+              Edit
+            </button>
+            <button
+              onClick={() => onDelete(consultant)}
+              className="flex items-center justify-center gap-2 px-3 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
+              title="Remove Consultant"
+            >
+              <TrashIcon className="w-4 h-4" />
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  </div>
+);
+
 const MedicalConsultants: React.FC = () => {
   const { user } = useAuth();
-  const { theme, language, t } = useSettings();
+  const { theme } = useSettings();
   const isDark = theme === 'dark';
   const isAdmin = user?.email?.includes('admin') || user?.role === 'admin' || user?.isAdmin;
 
@@ -511,11 +649,11 @@ const MedicalConsultants: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
         <div>
-          <h1 className={`text-2xl font-bold flex items-center gap-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+          <h1 className={`text-2xl font-bold flex items-center gap-2 ${darkText(isDark)}`}>
             <UserGroupIcon className="w-8 h-8 text-emerald-600" />
             Medical Consultants
           </h1>
-          <p className={`mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+          <p className={`mt-1 ${darkSubtext(isDark)}`}>
             {isAdmin 
               ? 'Manage specialist contacts for patient referrals' 
               : 'Find specialists for patient referrals'}
@@ -546,7 +684,7 @@ const MedicalConsultants: React.FC = () => {
       )}
 
       {/* Search and Filter */}
-      <div className={`rounded-xl shadow-lg p-4 mb-6 ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
+      <div className={`rounded-xl shadow-lg p-4 mb-6 ${darkCard(isDark)}`}>
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1 relative">
             <SearchIcon className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -556,12 +694,14 @@ const MedicalConsultants: React.FC = () => {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${isDark ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'border-gray-300'}`}
+              aria-label="Search consultants"
             />
           </div>
           <select
             value={selectedSpecialty}
             onChange={(e) => setSelectedSpecialty(e.target.value)}
             className={`px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'border-gray-300'}`}
+            aria-label="Filter by specialty"
           >
             {specialties.map((specialty) => (
               <option key={specialty} value={specialty}>
@@ -569,8 +709,9 @@ const MedicalConsultants: React.FC = () => {
               </option>
             ))}
           </select>
-          <label className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer ${isDark ? 'bg-gray-700' : 'bg-gray-50'}`}>
+          <label className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer ${isDark ? 'bg-gray-700' : 'bg-gray-50'}`} htmlFor="available-only-checkbox">
             <input
+              id="available-only-checkbox"
               type="checkbox"
               checked={showAvailableOnly}
               onChange={(e) => setShowAvailableOnly(e.target.checked)}
@@ -582,7 +723,7 @@ const MedicalConsultants: React.FC = () => {
       </div>
 
       {/* Stats Bar */}
-      <div className={`flex gap-4 mb-6 text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+      <div className={`flex gap-4 mb-6 text-sm ${darkSubtext(isDark)}`}>
         <span>{filteredConsultants.length} consultant{filteredConsultants.length === 1 ? '' : 's'} found</span>
         <span>•</span>
         <span className="text-green-600">
@@ -593,124 +734,19 @@ const MedicalConsultants: React.FC = () => {
       {/* Consultants Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredConsultants.map((consultant) => (
-          <div
+          <ConsultantCard
             key={consultant.id}
-            className={`rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow ${isDark ? 'bg-gray-800' : 'bg-white'}`}
-          >
-            <div className="p-6">
-              <div className="flex items-start gap-4">
-                <img
-                  src={consultant.photo}
-                  alt={consultant.name}
-                  className="w-16 h-16 rounded-full object-cover"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(consultant.name)}&background=10b981&color=fff`;
-                  }}
-                />
-                <div className="flex-1 min-w-0">
-                  <h3 className={`font-semibold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{consultant.name}</h3>
-                  <p className="text-emerald-600 font-medium">{consultant.specialty}</p>
-                  <p className="text-sm text-gray-500 truncate">{consultant.hospital || 'No hospital'}</p>
-                </div>
-                <button
-                  onClick={() => isAdmin && handleToggleAvailability(consultant)}
-                  className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    consultant.available
-                      ? 'bg-green-100 text-green-700'
-                      : 'bg-gray-100 text-gray-600'
-                  } ${isAdmin ? 'cursor-pointer hover:opacity-80' : 'cursor-default'}`}
-                  disabled={!isAdmin}
-                  title={isAdmin ? 'Click to toggle availability' : ''}
-                >
-                  {consultant.available ? 'Available' : 'Busy'}
-                </button>
-              </div>
-
-              <div className="mt-4 space-y-2 text-sm text-gray-600">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">Experience:</span>
-                  <span>{consultant.experience} years</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">Languages:</span>
-                  <span>{consultant.languages?.join(', ') || 'N/A'}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">Rating:</span>
-                  <StarRating rating={consultant.rating || 0} size="sm" />
-                  <span className="ml-1">
-                    {(consultant.rating || 0).toFixed(1)} ({consultant.reviewCount || 0})
-                  </span>
-                </div>
-              </div>
-
-              <div className="mt-4 flex gap-2 flex-wrap">
-                <button
-                  onClick={() => handleSendEmail(consultant.email)}
-                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors min-w-0"
-                >
-                  <EnvelopeIcon className="w-4 h-4 flex-shrink-0" />
-                  <span className="truncate">Email</span>
-                </button>
-                <button
-                  onClick={() => handleCall(consultant.phone)}
-                  disabled={!consultant.phone}
-                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-w-0"
-                >
-                  <PhoneIcon className="w-4 h-4 flex-shrink-0" />
-                  <span className="truncate">Call</span>
-                </button>
-                <button
-                  onClick={() => {
-                    setSelectedConsultant(consultant);
-                    setShowDetailModal(true);
-                  }}
-                  className="px-3 py-2 bg-gray-50 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
-                  title="View Details"
-                >
-                  <EyeIcon className="w-4 h-4" />
-                </button>
-              </div>
-
-              {/* Action buttons */}
-              <div className="mt-3 pt-3 border-t flex gap-2">
-                {!isAdmin && (
-                  <button
-                    onClick={() => {
-                      setSelectedConsultant(consultant);
-                      setRatingData({ rating: 0, comment: '' });
-                      setShowRateModal(true);
-                    }}
-                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-yellow-50 text-yellow-700 rounded-lg hover:bg-yellow-100 transition-colors"
-                  >
-                    <StarIcon className="w-4 h-4" />
-                    Rate
-                  </button>
-                )}
-                {isAdmin && (
-                  <>
-                    <button
-                      onClick={() => openEditModal(consultant)}
-                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-gray-50 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
-                    >
-                      <EditIcon className="w-4 h-4" />
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => {
-                        setSelectedConsultant(consultant);
-                        setShowDeleteConfirm(true);
-                      }}
-                      className="flex items-center justify-center gap-2 px-3 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
-                      title="Remove Consultant"
-                    >
-                      <TrashIcon className="w-4 h-4" />
-                    </button>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
+            consultant={consultant}
+            isDark={isDark}
+            isAdmin={isAdmin}
+            onToggleAvailability={handleToggleAvailability}
+            onSendEmail={handleSendEmail}
+            onCall={handleCall}
+            onViewDetail={(c) => { setSelectedConsultant(c); setShowDetailModal(true); }}
+            onRate={(c) => { setSelectedConsultant(c); setRatingData({ rating: 0, comment: '' }); setShowRateModal(true); }}
+            onEdit={openEditModal}
+            onDelete={(c) => { setSelectedConsultant(c); setShowDeleteConfirm(true); }}
+          />
         ))}
       </div>
 
@@ -719,11 +755,7 @@ const MedicalConsultants: React.FC = () => {
           <UserGroupIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900">No consultants found</h3>
           <p className="text-gray-600">
-            {consultants.length === 0
-              ? isAdmin
-                ? 'Add your first consultant to get started'
-                : 'No consultants have been added yet'
-              : 'Try adjusting your search or filter criteria'}
+            {getNoResultsMessage(consultants.length > 0, isAdmin)}
           </p>
           {isAdmin && consultants.length === 0 && (
             <button
@@ -765,10 +797,11 @@ const MedicalConsultants: React.FC = () => {
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="consultant-name" className="block text-sm font-medium text-gray-700 mb-1">
                     Full Name *
                   </label>
                   <input
+                    id="consultant-name"
                     type="text"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -778,10 +811,11 @@ const MedicalConsultants: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="consultant-specialty" className="block text-sm font-medium text-gray-700 mb-1">
                     Specialty *
                   </label>
                   <select
+                    id="consultant-specialty"
                     value={formData.specialty}
                     onChange={(e) => setFormData({ ...formData, specialty: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
@@ -796,10 +830,11 @@ const MedicalConsultants: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="consultant-hospital" className="block text-sm font-medium text-gray-700 mb-1">
                     Hospital/Institution
                   </label>
                   <input
+                    id="consultant-hospital"
                     type="text"
                     value={formData.hospital}
                     onChange={(e) => setFormData({ ...formData, hospital: e.target.value })}
@@ -810,8 +845,9 @@ const MedicalConsultants: React.FC = () => {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                    <label htmlFor="consultant-phone" className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
                     <input
+                      id="consultant-phone"
                       type="tel"
                       value={formData.phone}
                       onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
@@ -820,8 +856,9 @@ const MedicalConsultants: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                    <label htmlFor="consultant-email" className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
                     <input
+                      id="consultant-email"
                       type="email"
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
@@ -832,10 +869,11 @@ const MedicalConsultants: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="consultant-languages" className="block text-sm font-medium text-gray-700 mb-1">
                     Languages (comma separated)
                   </label>
                   <input
+                    id="consultant-languages"
                     type="text"
                     value={formData.languages}
                     onChange={(e) => setFormData({ ...formData, languages: e.target.value })}
@@ -845,10 +883,11 @@ const MedicalConsultants: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="consultant-experience" className="block text-sm font-medium text-gray-700 mb-1">
                     Years of Experience
                   </label>
                   <input
+                    id="consultant-experience"
                     type="number"
                     value={formData.experience}
                     onChange={(e) => setFormData({ ...formData, experience: e.target.value })}
@@ -859,8 +898,9 @@ const MedicalConsultants: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Bio</label>
+                  <label htmlFor="consultant-bio" className="block text-sm font-medium text-gray-700 mb-1">Bio</label>
                   <textarea
+                    id="consultant-bio"
                     value={formData.bio}
                     onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
@@ -871,10 +911,11 @@ const MedicalConsultants: React.FC = () => {
 
                 {isAdmin && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="consultant-notes" className="block text-sm font-medium text-gray-700 mb-1">
                       Internal Notes (Admin only)
                     </label>
                     <textarea
+                      id="consultant-notes"
                       value={formData.notes}
                       onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
@@ -902,7 +943,7 @@ const MedicalConsultants: React.FC = () => {
                     disabled={actionLoading || !formData.name || !formData.specialty || !formData.email}
                     className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50"
                   >
-                    {actionLoading ? 'Saving...' : showAddModal ? 'Add Consultant' : 'Save Changes'}
+                    {getSaveButtonText(actionLoading, showAddModal)}
                   </button>
                 </div>
               </div>
@@ -1064,10 +1105,11 @@ const MedicalConsultants: React.FC = () => {
               </div>
 
               <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="review-comment" className="block text-sm font-medium text-gray-700 mb-1">
                   Comment (optional)
                 </label>
                 <textarea
+                  id="review-comment"
                   value={ratingData.comment}
                   onChange={(e) => setRatingData({ ...ratingData, comment: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"

@@ -170,27 +170,35 @@ export const getDrugById = (id: string): Drug | undefined => {
   return drugDatabase.find(drug => drug.id === id);
 };
 
+/**
+ * Check if two drugs have a known interaction
+ */
+const hasMutualInteraction = (drug1: Drug, drug2: Drug): boolean => {
+  return (
+    drug1.interactions.some(int => drug2.name.toLowerCase().includes(int.toLowerCase())) ||
+    drug2.interactions.some(int => drug1.name.toLowerCase().includes(int.toLowerCase()))
+  );
+};
+
+/**
+ * Build an interaction record between two drugs
+ */
+const buildInteractionRecord = (drug1: Drug, drug2: Drug) => ({
+  drug1: drug1.name,
+  drug2: drug2.name,
+  severity: 'moderate',
+  description: `Potential interaction between ${drug1.name} and ${drug2.name}`,
+  recommendation: 'Monitor patient closely',
+});
+
 export const checkDrugInteractions = (drugIds: string[]): any[] => {
-  const drugs = drugIds.map(id => getDrugById(id)).filter(Boolean) as Drug[];
+  const drugs = drugIds.map(id => getDrugById(id)).filter((d): d is Drug => d !== undefined);
   const interactions: any[] = [];
 
   for (let i = 0; i < drugs.length; i++) {
     for (let j = i + 1; j < drugs.length; j++) {
-      const drug1 = drugs[i];
-      const drug2 = drugs[j];
-
-      const hasInteraction =
-        drug1.interactions.some(int => drug2.name.toLowerCase().includes(int.toLowerCase())) ||
-        drug2.interactions.some(int => drug1.name.toLowerCase().includes(int.toLowerCase()));
-
-      if (hasInteraction) {
-        interactions.push({
-          drug1: drug1.name,
-          drug2: drug2.name,
-          severity: 'moderate',
-          description: `Potential interaction between ${drug1.name} and ${drug2.name}`,
-          recommendation: 'Monitor patient closely',
-        });
+      if (hasMutualInteraction(drugs[i], drugs[j])) {
+        interactions.push(buildInteractionRecord(drugs[i], drugs[j]));
       }
     }
   }

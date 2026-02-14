@@ -54,7 +54,7 @@ export type AuditResource =
 class AuditLogService {
   private readonly logs: AuditLog[] = [];
   private readonly pendingLogs: AuditLog[] = [];
-  private flushInterval: NodeJS.Timeout | null = null;
+  private readonly flushInterval: NodeJS.Timeout | null = null;
 
   /**
    * Log an audit event
@@ -257,8 +257,8 @@ class AuditLogService {
    */
   async getUserAuditLogs(userId: string, limit: number = 100): Promise<AuditLog[]> {
     const filtered = this.logs.filter((log) => log.userId === userId);
-    return filtered
-      .toSorted((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+    return [...filtered]
+      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
       .slice(0, limit);
   }
 
@@ -386,12 +386,12 @@ class AuditLogService {
   downloadCSV(logs: AuditLog[], filename: string = 'audit-logs.csv'): void {
     const csv = this.exportToCSV(logs);
     const blob = new Blob([csv], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
+    const url = globalThis.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = filename;
     a.click();
-    window.URL.revokeObjectURL(url);
+    globalThis.URL.revokeObjectURL(url);
   }
 }
 
