@@ -81,6 +81,101 @@ router.get('/status', authMiddleware, async (req: Request, res: Response) => {
   }
 });
 
+// GET /api/pdpa/consents - Get current user's consents (convenience route)
+router.get('/consents', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    // @ts-ignore - patientId added by authMiddleware
+    const patientId = req.patientId || req.userId || 'demo_patient_001';
+    console.log(`[PDPA] Getting consents for authenticated user: ${patientId}`);
+
+    const useDemo = DEMO_MODE || !(await checkDbConnection());
+    if (useDemo) {
+      return res.json([{ id: 'consent_demo', patientId, type: 'dataProcessing', granted: true, demoMode: true }]);
+    }
+
+    const result = await pool.query(
+      `SELECT * FROM patient_consents WHERE patient_id = $1 ORDER BY created_at DESC`,
+      [patientId]
+    );
+
+    const consents = result.rows.map((row: any) => ({
+      id: row.id,
+      patientId: row.patient_id,
+      type: row.consent_type,
+      granted: row.granted,
+      doctorId: row.doctor_id,
+      grantedAt: row.created_at,
+      updatedAt: row.updated_at,
+    }));
+
+    res.json(consents);
+  } catch (error: any) {
+    console.error('[PDPA] Get consents error:', error);
+    res.json([]);
+  }
+});
+
+// GET /api/pdpa/audit - Get current user's audit logs (convenience route)
+router.get('/audit', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    // @ts-ignore - patientId added by authMiddleware
+    const patientId = req.patientId || req.userId || 'demo_patient_001';
+    console.log(`[PDPA] Getting audit for authenticated user: ${patientId}`);
+
+    const useDemo = DEMO_MODE || !(await checkDbConnection());
+    if (useDemo) {
+      return res.json([{ id: 'audit_demo', patientId, action: 'consent_granted', demoMode: true }]);
+    }
+
+    const result = await pool.query(
+      `SELECT * FROM audit_logs WHERE patient_id = $1 ORDER BY created_at DESC LIMIT 100`,
+      [patientId]
+    );
+
+    res.json(result.rows);
+  } catch (error: any) {
+    console.error('[PDPA] Get audit error:', error);
+    res.json([]);
+  }
+});
+
+// POST /api/pdpa/living-will/share - Share living will with doctor (convenience route)
+router.post('/living-will/share', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    // @ts-ignore - patientId added by authMiddleware
+    const patientId = req.patientId || req.userId || 'demo_patient_001';
+    const { doctorId } = req.body;
+    console.log(`[PDPA] Sharing living will for patient ${patientId} with doctor ${doctorId}`);
+
+    const useDemo = DEMO_MODE || !(await checkDbConnection());
+    if (useDemo) {
+      return res.json({ success: true, shared: true, patientId, doctorId, demoMode: true });
+    }
+
+    // Check if living will exists
+    const lwResult = await pool.query(
+      'SELECT id FROM living_wills WHERE patient_id = $1',
+      [patientId]
+    );
+
+    if (lwResult.rows.length === 0) {
+      return res.status(404).json({ error: 'No living will found' });
+    }
+
+    // Log the share action
+    await pool.query(
+      `INSERT INTO audit_logs (id, patient_id, action, details, created_at)
+       VALUES ($1, $2, 'living_will_shared', $3, NOW())`,
+      [`audit_${Date.now()}`, patientId, JSON.stringify({ doctorId, sharedAt: new Date().toISOString() })]
+    ).catch(() => {});
+
+    res.json({ success: true, shared: true, patientId, doctorId });
+  } catch (error: any) {
+    console.error('[PDPA] Share living will error:', error);
+    res.status(500).json({ error: 'Failed to share living will' });
+  }
+});
+
 // POST /api/pdpa/consent - Grant PDPA consent for current user
 router.post('/consent', authMiddleware, async (req: Request, res: Response) => {
   try {

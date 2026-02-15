@@ -152,7 +152,7 @@ CREATE TABLE sessions (
 -- Password Reset Tokens
 CREATE TABLE password_resets (
     id VARCHAR(50) PRIMARY KEY,
-    user_id VARCHAR(50) REFERENCES users(id),
+    user_id VARCHAR(50) UNIQUE REFERENCES users(id),
     token VARCHAR(128) UNIQUE NOT NULL,
     expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
     used BOOLEAN DEFAULT false,

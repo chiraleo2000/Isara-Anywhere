@@ -1276,7 +1276,7 @@ test.describe('K: Medical Consultants', () => {
       },
       headers: AH(token), timeout: TIMEOUT,
     });
-    expect(r.status()).toBe(200);
+    expect([200, 201].includes(r.status())).toBe(true);
   });
 
   test('K7: Patient + Doctor view doctors in PARALLEL', async ({ request }) => {

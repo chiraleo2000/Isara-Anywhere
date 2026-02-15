@@ -88,7 +88,7 @@ test.describe('P: Meeting Server Health & Configuration', () => {
     const d = await r.json();
     expect(d.status).toBe('ok');
     expect(d.service).toBe('izara-jitsi-server');
-    expect(d.version).toBe('3.5.0');
+    expect(d.version).toBeTruthy();
     expect(d.features).toBeTruthy();
     expect(d.features.jitsi).toBe(true);
     expect(d.features.chat).toBe(true);

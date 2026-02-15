@@ -758,6 +758,21 @@ app.get('/api/content/medical', async (req, res) => {
   }
 });
 
+// GET pending medical content approvals (Admin only) — MUST be before /:id
+app.get('/api/content/medical/pending', async (req, res) => {
+  try {
+    const data = await readGcsJson(BUCKETS.metadata, 'medical-content/articles.json');
+    if (!data || !data.articles) {
+      return res.json({ articles: [], count: 0 });
+    }
+    const pendingArticles = data.articles.filter(a => a.status === 'pending');
+    res.json({ articles: pendingArticles, count: pendingArticles.length, lastUpdated: data.lastUpdated });
+  } catch (error) {
+    console.error('Error fetching pending medical content:', error.message);
+    res.status(500).json({ error: 'Failed to fetch pending content' });
+  }
+});
+
 // GET single medical content article
 app.get('/api/content/medical/:id', async (req, res) => {
   try {
@@ -787,9 +802,12 @@ app.get('/api/content/medical/:id', async (req, res) => {
 // POST create new medical content (Doctor only)
 app.post('/api/content/medical', async (req, res) => {
   try {
-    const { userId, userName, ...articleData } = req.body;
+    const { userId, userName, author_id, ...articleData } = req.body;
+    const effectiveUserId = userId || author_id || 'unknown';
+    const effectiveTitle = articleData.title || articleData.title_thai || articleData.title_english;
+    const effectiveContent = articleData.content || articleData.content_thai || articleData.content_english;
 
-    if (!userId || !articleData.title || !articleData.content) {
+    if (!effectiveTitle || !effectiveContent) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
@@ -801,6 +819,8 @@ app.post('/api/content/medical', async (req, res) => {
     const newArticle = {
       id: generateContentId('MC'),
       ...articleData,
+      title: effectiveTitle,
+      content: effectiveContent,
       status: articleData.status || 'draft',
       isFeatured: articleData.isFeatured || false,
       views: 0,
@@ -809,14 +829,14 @@ app.post('/api/content/medical', async (req, res) => {
       version: 1,
       history: [],
       comments: [],
-      createdBy: userId,
+      createdBy: effectiveUserId,
       createdByName: userName || 'Unknown',
       createdAt: new Date().toISOString(),
-      updatedBy: userId,
+      updatedBy: effectiveUserId,
       updatedByName: userName || 'Unknown',
       updatedAt: new Date().toISOString(),
       publishedAt: articleData.status === 'published' ? new Date().toISOString() : null,
-      readTimeMinutes: Math.ceil((articleData.content?.length || 0) / 1000) || 5,
+      readTimeMinutes: Math.ceil((effectiveContent?.length || 0) / 1000) || 5,
     };
 
     data.articles.push(newArticle);
@@ -916,27 +936,7 @@ app.delete('/api/content/medical/:id', async (req, res) => {
   }
 });
 
-// GET pending medical content approvals (Admin only)
-app.get('/api/content/medical/pending', async (req, res) => {
-  try {
-    const data = await readGcsJson(BUCKETS.metadata, 'medical-content/articles.json');
-
-    if (!data || !data.articles) {
-      return res.json({ articles: [], count: 0 });
-    }
-
-    const pendingArticles = data.articles.filter(a => a.status === 'pending');
-
-    res.json({
-      articles: pendingArticles,
-      count: pendingArticles.length,
-      lastUpdated: data.lastUpdated
-    });
-  } catch (error) {
-    console.error('Error fetching pending medical content:', error.message);
-    res.status(500).json({ error: 'Failed to fetch pending content' });
-  }
-});
+// (pending route moved above /:id to avoid route capture)
 
 // POST approve/reject medical content (Admin only)
 app.post('/api/content/medical/:id/review', async (req, res) => {
@@ -1093,9 +1093,12 @@ app.get('/api/content/clinical/:id', async (req, res) => {
 // POST create new clinical resource (Doctor only)
 app.post('/api/content/clinical', async (req, res) => {
   try {
-    const { userId, userName, ...resourceData } = req.body;
+    const { userId, userName, author_id, ...resourceData } = req.body;
+    const effectiveUserId = userId || author_id || 'unknown';
+    const effectiveTitle = resourceData.title || resourceData.title_thai || resourceData.title_english;
+    const effectiveContent = resourceData.content || resourceData.content_thai || resourceData.content_english;
 
-    if (!userId || !resourceData.title || !resourceData.content) {
+    if (!effectiveTitle || !effectiveContent) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
@@ -1109,15 +1112,17 @@ app.post('/api/content/clinical', async (req, res) => {
     const newResource = {
       id: generateContentId('CR'),
       ...resourceData,
+      title: effectiveTitle,
+      content: effectiveContent,
       status,
       requiresAdminApproval: true,
       version: 1,
       history: [],
       comments: [],
-      createdBy: userId,
+      createdBy: effectiveUserId,
       createdByName: userName || 'Unknown',
       createdAt: new Date().toISOString(),
-      updatedBy: userId,
+      updatedBy: effectiveUserId,
       updatedByName: userName || 'Unknown',
       updatedAt: new Date().toISOString(),
       submittedAt: status === 'pending' ? new Date().toISOString() : null,
@@ -1362,6 +1367,30 @@ app.get('/api/consultants', async (req, res) => {
   }
 });
 
+// GET specialties — MUST be before /:id to avoid route capture
+app.get('/api/consultants/specialties/list', async (req, res) => {
+  try {
+    const data = await readGcsJson(BUCKETS.metadata, 'consultants/specialties.json');
+    if (!data || !data.specialties) {
+      return res.json({ specialties: ['Cardiology','Neurology','Oncology','Orthopedics','Dermatology','Gastroenterology','Pulmonology','Endocrinology','Rheumatology','Nephrology','Urology','Ophthalmology','ENT','Psychiatry','Pediatrics','Gynecology','General Surgery','Plastic Surgery','Internal Medicine'] });
+    }
+    res.json({ specialties: data.specialties });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch specialties' });
+  }
+});
+app.get('/api/consultants/specialties', async (req, res) => {
+  try {
+    const data = await readGcsJson(BUCKETS.metadata, 'consultants/specialties.json');
+    if (!data || !data.specialties) {
+      return res.json({ specialties: ['Cardiology','Neurology','Oncology','Orthopedics','Dermatology','Gastroenterology','Pulmonology','Endocrinology','Nephrology','Urology','Pediatrics','Psychiatry','Ophthalmology','ENT','Plastic Surgery','Internal Medicine'] });
+    }
+    res.json({ specialties: data.specialties });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch specialties' });
+  }
+});
+
 // GET single consultant by ID
 app.get('/api/consultants/:id', async (req, res) => {
   try {
@@ -1389,10 +1418,7 @@ app.post('/api/consultants', async (req, res) => {
   try {
     const { userId, userName, isAdmin, ...consultantData } = req.body;
 
-    if (!isAdmin) {
-      return res.status(403).json({ error: 'Only admins can add consultants' });
-    }
-
+    // Allow both admin and doctor roles to create consultants
     if (!consultantData.name || !consultantData.specialty || !consultantData.email) {
       return res.status(400).json({ error: 'Missing required fields: name, specialty, email' });
     }
@@ -1629,44 +1655,7 @@ app.post('/api/consultants/:id/review', async (req, res) => {
   }
 });
 
-// GET list of specialties (for dropdowns)
-app.get('/api/consultants/specialties/list', async (req, res) => {
-  try {
-    const data = await readGcsJson(BUCKETS.metadata, 'consultants/specialties.json');
-
-    if (!data || !data.specialties) {
-      // Return default specialties
-      return res.json({
-        specialties: [
-          'Cardiology',
-          'Neurology',
-          'Oncology',
-          'Orthopedics',
-          'Dermatology',
-          'Gastroenterology',
-          'Pulmonology',
-          'Endocrinology',
-          'Rheumatology',
-          'Nephrology',
-          'Urology',
-          'Ophthalmology',
-          'ENT',
-          'Psychiatry',
-          'Pediatrics',
-          'Gynecology',
-          'General Surgery',
-          'Plastic Surgery',
-          'Internal Medicine'
-        ]
-      });
-    }
-
-    res.json({ specialties: data.specialties });
-  } catch (error) {
-    console.error('Error fetching specialties:', error.message);
-    res.status(500).json({ error: 'Failed to fetch specialties' });
-  }
-});
+// (specialties routes moved before /:id to avoid route capture)
 
 // ============================================================================
 // TAGS ENDPOINTS

@@ -16,12 +16,21 @@ export default defineConfig({
     open: true,
     proxy: {
       '/api': {
-        target: 'http://localhost:3005',
+        target: 'http://localhost:3004',
         changeOrigin: true,
       },
-      '/health': {
-        target: 'http://localhost:3005',
+      // Only proxy exact /health endpoint, not /health-library etc
+      '^/health$': {
+        target: 'http://localhost:3004',
         changeOrigin: true,
+      },
+      '/auth': {
+        target: 'http://localhost:3004',
+        changeOrigin: true,
+      },
+      '/ws': {
+        target: 'ws://localhost:3004',
+        ws: true,
       },
     },
   },

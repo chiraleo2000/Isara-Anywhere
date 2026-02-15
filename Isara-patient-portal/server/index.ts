@@ -1,12 +1,10 @@
+import 'dotenv/config';
 import express, { Express, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import { Storage } from '@google-cloud/storage';
 import path from 'node:path';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
-
-dotenv.config();
 
 // ES Module __dirname equivalent
 const __filename = fileURLToPath(import.meta.url);

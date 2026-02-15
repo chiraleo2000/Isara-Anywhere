@@ -166,6 +166,69 @@ app.get('/api/health', (req, res) => {
 // MEETING MANAGEMENT ROUTES
 // ============================================================================
 
+// GET /api/health/db - Database health check
+app.get('/api/health/db', async (req, res) => {
+  try {
+    await pool.query('SELECT 1');
+    res.json({ status: 'healthy', database: 'connected' });
+  } catch (error) {
+    res.json({ status: 'degraded', database: 'disconnected', error: error.message });
+  }
+});
+
+// GET /api/config - Jitsi configuration
+app.get('/api/config', (req, res) => {
+  res.json({
+    jitsiDomain: JITSI_DOMAIN,
+    prejoinEnabled: true,
+    enableRecording: true,
+    enableTranscription: true,
+    aiEnabled: !!genAI,
+    aiModel: GEMINI_MODEL,
+    features: {
+      videoConferencing: true,
+      screenSharing: true,
+      chat: true,
+      recording: true,
+      transcription: true,
+      aiSummary: !!genAI
+    }
+  });
+});
+
+// GET /api/meetings - List all meetings (must be before /:id)
+app.get('/api/meetings', async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT * FROM meeting_records ORDER BY created_at DESC LIMIT 50'
+    );
+    res.json({ meetings: result.rows });
+  } catch (error) {
+    console.error('[MEETINGS] List error:', error.message);
+    // Fallback to in-memory
+    const meetings = Array.from(activeMeetings.values()).map(m => ({
+      id: m.meetingId, appointmentId: m.appointmentId, roomName: m.roomName, status: m.status
+    }));
+    res.json({ meetings });
+  }
+});
+
+// GET /api/meetings/active - Active meetings only (must be before /:id)
+app.get('/api/meetings/active', async (req, res) => {
+  try {
+    const result = await pool.query(
+      "SELECT * FROM meeting_records WHERE status IN ('active', 'waiting', 'in_progress') ORDER BY created_at DESC"
+    );
+    res.json({ meetings: result.rows });
+  } catch (error) {
+    console.error('[MEETINGS] Active list error:', error.message);
+    const meetings = Array.from(activeMeetings.values())
+      .filter(m => m.status === 'active' || m.status === 'waiting')
+      .map(m => ({ id: m.meetingId, appointmentId: m.appointmentId, roomName: m.roomName, status: m.status }));
+    res.json({ meetings });
+  }
+});
+
 // Create new meeting room (primary endpoint — requires auth)
 app.post('/api/meetings/create', authenticateToken, async (req, res) => {
   try {

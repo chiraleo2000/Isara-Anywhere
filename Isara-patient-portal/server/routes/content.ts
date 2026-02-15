@@ -345,10 +345,10 @@ router.post('/medical/:id/view', async (req: Request, res: Response) => {
 // ============================================================================
 
 /**
- * GET /api/content/clinical-resources
+ * GET /api/content/clinical-resources (and /api/content/clinical alias)
  * Get clinical resources for health education
  */
-router.get('/clinical-resources', async (req: Request, res: Response) => {
+const clinicalResourcesHandler = async (req: Request, res: Response) => {
   try {
     const { category } = req.query;
     console.log(`[CONTENT] Getting clinical resources, category: ${category || 'all'}`);
@@ -424,7 +424,10 @@ router.get('/clinical-resources', async (req: Request, res: Response) => {
       demoMode: true
     });
   }
-});
+};
+
+router.get('/clinical-resources', clinicalResourcesHandler);
+router.get('/clinical', clinicalResourcesHandler);
 
 // ============================================================================
 // HEALTH TIPS ROUTES
@@ -575,6 +578,36 @@ router.get('/categories', async (_req: Request, res: Response) => {
   } catch (error: any) {
     console.error('[CONTENT] Get categories error:', error);
     res.status(500).json({ categories: [] });
+  }
+});
+
+// GET /api/content/search - Search across content
+router.get('/search', async (req: Request, res: Response) => {
+  try {
+    const q = (req.query.q as string) || '';
+    if (!q) return res.json({ results: [] });
+    
+    const query = q.toLowerCase();
+    
+    // Search in clinical resources from PostgreSQL
+    let results: any[] = [];
+    try {
+      const searchResult = await pool.query(
+        `SELECT * FROM clinical_resources 
+         WHERE LOWER(title) LIKE $1 OR LOWER(content) LIKE $1 OR LOWER(category) LIKE $1
+         LIMIT 50`,
+        [`%${query}%`]
+      );
+      results = searchResult.rows;
+    } catch {
+      // If table doesn't exist, return empty
+      results = [];
+    }
+    
+    res.json({ results, query: q, total: results.length });
+  } catch (error: any) {
+    console.error('[CONTENT] Search error:', error);
+    res.json({ results: [], query: req.query.q, total: 0 });
   }
 });
 

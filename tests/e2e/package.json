@@ -1,7 +1,7 @@
 {
   "name": "isara-e2e-tests",
-  "version": "7.0.0",
-  "description": "Izara Telemedicine E2E Tests v7 — Single unified spec covering ALL 13 process workflows",
+  "version": "8.0.0",
+  "description": "Izara Telemedicine E2E Tests v8 — 10 spec files, 500+ tests covering ALL pages, features, workflows",
   "scripts": {
     "test": "npx playwright test --project=Local --headed",
     "local": "npx playwright test --project=Local --headed",

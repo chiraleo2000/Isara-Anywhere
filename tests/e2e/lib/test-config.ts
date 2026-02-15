@@ -1,8 +1,8 @@
 /**
  * =============================================================================
- * IZARA TELEMEDICINE - SHARED TEST CONFIGURATION v1.4.8-dev
+ * IZARA TELEMEDICINE - SHARED TEST CONFIGURATION v1.4.8
  * =============================================================================
- * Version: 1.4.8-dev | Updated: February 14, 2026
+ * Version: 1.4.8 | Updated: February 15, 2026
  *
  * Centralized configuration for ALL E2E tests (Local + Cloud).
  * Set TEST_ENV=cloud to switch to Cloud Run URLs.

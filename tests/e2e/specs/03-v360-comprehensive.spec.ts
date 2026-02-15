@@ -1005,7 +1005,7 @@ test.describe('F: Video Meeting & Jitsi', () => {
     if (!meetingId) return;
     const res = await request.post(`${MEETING_SERVER_URL}/api/meetings/${meetingId}/invite`, {
       headers: authHeaders(meetingToken),
-      data: { name: 'Family Member', role: 'observer' },
+      data: { name: 'Family Member', email: 'family@test.com', role: 'observer' },
     });
     expect(res.status()).toBe(200);
   });
@@ -1365,7 +1365,7 @@ test.describe('H: Medical Content & Library', () => {
   });
 
   test('H16: Consultant specialties', async ({ request }) => {
-    const res = await request.get(`${DOCTOR_URL}/api/consultants/specialties`);
+    const res = await request.get(`${DOCTOR_URL}/api/consultants/specialties/list`);
     expect(res.status()).toBe(200);
   });
 
@@ -1375,12 +1375,14 @@ test.describe('H: Medical Content & Library', () => {
   });
 
   test('H18: Create consultant', async ({ request }) => {
+    const ts = Date.now();
     const res = await request.post(`${DOCTOR_URL}/api/consultants`, {
       headers: authHeaders(doctorToken),
       data: {
         name: 'Dr. Specialist Test',
         specialty: 'Cardiology',
         hospital: 'Test Hospital',
+        email: `specialist.${ts}@test.com`,
       },
     });
     expect([200, 201]).toContain(res.status());

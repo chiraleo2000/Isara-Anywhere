@@ -1,15 +1,15 @@
 <#
 .SYNOPSIS
-    Izara Telemedicine - Unified Test Runner v4.0.0
+    Izara Telemedicine - Unified Test Runner v5.0.0
     Single script to run ALL E2E tests for local and cloud environments.
 
 .DESCRIPTION
     ╔══════════════════════════════════════════════════════════════════════════╗
-    ║                    IZARA TELEMEDICINE TEST RUNNER v4.0.0                  ║
-    ║                 Comprehensive E2E Testing Framework (9 Specs)            ║
+    ║                    IZARA TELEMEDICINE TEST RUNNER v5.0.0                  ║
+    ║              Comprehensive E2E Testing Framework (10 Specs)              ║
     ╚══════════════════════════════════════════════════════════════════════════╝
 
-    9 spec files, 200+ tests across ALL processes:
+    10 spec files, 500+ tests across ALL processes:
     - Smoke tests (health endpoints)
     - API exhaustive status checks
     - Appointment workflow (full lifecycle)
@@ -56,7 +56,7 @@
     Meeting workflow tests with visible browser
 
 .NOTES
-    Version: 4.0.0
+    Version: 5.0.0
     Author: Izara Telemedicine Team
     Last Updated: February 6, 2026
     

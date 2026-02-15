@@ -167,43 +167,40 @@ router.get('/health-tips', authMiddleware, async (_req: Request, res: Response) 
     const tips = await readJSON(GCS_BUCKETS.METADATA, 'health-tips.json');
     res.json(tips);
   } catch (error: any) {
-    if (error.message.includes('not found')) {
-      // Return default health tips
-      return res.json([
-        {
-          id: 'tip_001',
-          title: 'ดื่มน้ำให้เพียงพอ',
-          content: 'ควรดื่มน้ำอย่างน้อย 8 แก้วต่อวัน เพื่อให้ร่างกายทำงานได้อย่างมีประสิทธิภาพ',
-          category: 'hydration',
-        },
-        {
-          id: 'tip_002',
-          title: 'ออกกำลังกายสม่ำเสมอ',
-          content: 'ออกกำลังกายอย่างน้อย 30 นาทีต่อวัน ช่วยเสริมสร้างสุขภาพหัวใจและลดความเครียด',
-          category: 'exercise',
-        },
-        {
-          id: 'tip_003',
-          title: 'นอนหลับให้เพียงพอ',
-          content: 'ผู้ใหญ่ควรนอนหลับ 7-9 ชั่วโมงต่อคืน เพื่อให้ร่างกายได้พักผ่อนอย่างเต็มที่',
-          category: 'sleep',
-        },
-        {
-          id: 'tip_004',
-          title: 'ตรวจสุขภาพประจำปี',
-          content: 'การตรวจสุขภาพประจำปีช่วยตรวจพบปัญหาสุขภาพแต่เนิ่นๆ และรักษาได้ทันท่วงที',
-          category: 'checkup',
-        },
-        {
-          id: 'tip_005',
-          title: 'ลดอาหารหวานและเค็ม',
-          content: 'การลดน้ำตาลและโซเดียมช่วยลดความเสี่ยงโรคเบาหวานและความดันโลหิตสูง',
-          category: 'nutrition',
-        },
-      ]);
-    }
-    console.error('Get health tips error:', error);
-    res.status(500).json({ error: error.message });
+    // Always return default health tips on any error (GCS null, not found, auth, network, etc.)
+    console.warn('Get health tips - returning defaults:', error.message);
+    return res.json([
+      {
+        id: 'tip_001',
+        title: 'ดื่มน้ำให้เพียงพอ',
+        content: 'ควรดื่มน้ำอย่างน้อย 8 แก้วต่อวัน เพื่อให้ร่างกายทำงานได้อย่างมีประสิทธิภาพ',
+        category: 'hydration',
+      },
+      {
+        id: 'tip_002',
+        title: 'ออกกำลังกายสม่ำเสมอ',
+        content: 'ออกกำลังกายอย่างน้อย 30 นาทีต่อวัน ช่วยเสริมสร้างสุขภาพหัวใจและลดความเครียด',
+        category: 'exercise',
+      },
+      {
+        id: 'tip_003',
+        title: 'นอนหลับให้เพียงพอ',
+        content: 'ผู้ใหญ่ควรนอนหลับ 7-9 ชั่วโมงต่อคืน เพื่อให้ร่างกายได้พักผ่อนอย่างเต็มที่',
+        category: 'sleep',
+      },
+      {
+        id: 'tip_004',
+        title: 'ตรวจสุขภาพประจำปี',
+        content: 'การตรวจสุขภาพประจำปีช่วยตรวจพบปัญหาสุขภาพแต่เนิ่นๆ และรักษาได้ทันท่วงที',
+        category: 'checkup',
+      },
+      {
+        id: 'tip_005',
+        title: 'ลดอาหารหวานและเค็ม',
+        content: 'การลดน้ำตาลและโซเดียมช่วยลดความเสี่ยงโรคเบาหวานและความดันโลหิตสูง',
+        category: 'nutrition',
+      },
+    ]);
   }
 });
 
@@ -223,6 +220,48 @@ router.get('/medical-content', authMiddleware, async (_req: Request, res: Respon
     }
     console.error('Get medical content error:', error);
     res.status(500).json({ error: error.message });
+  }
+});
+
+// === Convenience aliases for common metadata endpoint names ===
+
+// /api/metadata/symptoms - Alias (return default symptoms list)
+router.get('/symptoms', authMiddleware, async (_req: Request, res: Response) => {
+  try {
+    res.json([
+      { id: 'fever', name: 'Fever', nameTh: '\u0e44\u0e02\u0e49' },
+      { id: 'headache', name: 'Headache', nameTh: '\u0e1b\u0e27\u0e14\u0e2b\u0e31\u0e27' },
+      { id: 'cough', name: 'Cough', nameTh: '\u0e44\u0e2d' },
+      { id: 'sore_throat', name: 'Sore Throat', nameTh: '\u0e40\u0e08\u0e47\u0e1a\u0e04\u0e2d' },
+      { id: 'fatigue', name: 'Fatigue', nameTh: '\u0e2d\u0e48\u0e2d\u0e19\u0e40\u0e1e\u0e25\u0e35\u0e22' },
+      { id: 'nausea', name: 'Nausea', nameTh: '\u0e04\u0e25\u0e37\u0e48\u0e19\u0e44\u0e2a\u0e49' },
+      { id: 'chest_pain', name: 'Chest Pain', nameTh: '\u0e40\u0e08\u0e47\u0e1a\u0e2b\u0e19\u0e49\u0e32\u0e2d\u0e01' },
+      { id: 'dizziness', name: 'Dizziness', nameTh: '\u0e27\u0e34\u0e07\u0e40\u0e27\u0e35\u0e22\u0e19' }
+    ]);
+  } catch (error: any) {
+    res.json([]);
+  }
+});
+
+// /api/metadata/medicines - Alias for /medications
+router.get('/medicines', authMiddleware, async (_req: Request, res: Response) => {
+  try {
+    const data = await readJSON(GCS_BUCKETS.METADATA, 'medication-database.json');
+    const medications = data.medications || data || [];
+    res.json(medications);
+  } catch (error: any) {
+    res.json([]);
+  }
+});
+
+// /api/metadata/icd10 - Alias for /icd10-codes
+router.get('/icd10', authMiddleware, async (_req: Request, res: Response) => {
+  try {
+    const data = await readJSON(GCS_BUCKETS.METADATA, 'icd10-codes.json');
+    const codes = data.codes || data || [];
+    res.json(codes);
+  } catch (error: any) {
+    res.json([]);
   }
 });
 

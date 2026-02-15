@@ -901,4 +901,68 @@ router.post('/vitals', authMiddleware, async (req: Request, res: Response) => {
   }
 });
 
+// POST /api/phr/medications - Add medication for current user (convenience route)
+router.post('/medications', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    // @ts-ignore - patientId added by authMiddleware
+    const patientId = req.patientId || req.userId;
+    
+    if (!patientId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+    
+    const medicationData = req.body;
+    console.log(`[PHR] Adding medication for authenticated user: ${patientId}`, medicationData);
+
+    const phr = await PHRService.getPHR(patientId);
+    const medications = phr?.medications || [];
+    
+    const newMedication = {
+      id: `med_${Date.now()}`,
+      ...medicationData,
+      addedAt: new Date().toISOString()
+    };
+    
+    medications.push(newMedication);
+    
+    await PHRService.upsertPHR(patientId, { medications });
+    res.json(newMedication);
+  } catch (error: any) {
+    console.error('[PHR] Add medication error:', error);
+    return res.status(500).json({ error: 'Failed to add medication', message: error.message });
+  }
+});
+
+// POST /api/phr/allergies - Add allergy for current user (convenience route)
+router.post('/allergies', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    // @ts-ignore - patientId added by authMiddleware
+    const patientId = req.patientId || req.userId;
+    
+    if (!patientId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+    
+    const allergyData = req.body;
+    console.log(`[PHR] Adding allergy for authenticated user: ${patientId}`, allergyData);
+
+    const phr = await PHRService.getPHR(patientId);
+    const allergies = phr?.allergies || [];
+    
+    const newAllergy = {
+      id: `allergy_${Date.now()}`,
+      ...allergyData,
+      addedAt: new Date().toISOString()
+    };
+    
+    allergies.push(newAllergy);
+    
+    await PHRService.upsertPHR(patientId, { allergies });
+    res.json(newAllergy);
+  } catch (error: any) {
+    console.error('[PHR] Add allergy error:', error);
+    return res.status(500).json({ error: 'Failed to add allergy', message: error.message });
+  }
+});
+
 export default router;

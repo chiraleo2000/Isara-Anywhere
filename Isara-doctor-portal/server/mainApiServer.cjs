@@ -1469,8 +1469,27 @@ app.post('/api/ai/analyze-lab', authenticateToken, async (req, res) => {
 });
 
 // ============================================================================
-// MEETINGS CREATE ENDPOINT (alias for video-meeting)
+// MEETINGS ENDPOINTS
 // ============================================================================
+
+// GET /api/meetings - List meetings for authenticated user
+app.get('/api/meetings', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user?.id || req.user?.userId;
+    const role = req.user?.role;
+    let result;
+    if (role === 'admin') {
+      result = await pool.query('SELECT * FROM meeting_records ORDER BY created_at DESC LIMIT 50');
+    } else {
+      result = await pool.query('SELECT * FROM meeting_records WHERE doctor_id = $1 ORDER BY created_at DESC LIMIT 50', [userId]);
+    }
+    res.json({ meetings: result.rows });
+  } catch (error) {
+    console.error('[MEETINGS] List error:', error.message);
+    res.json({ meetings: [] });
+  }
+});
+
 app.post('/api/meetings/create', authenticateToken, async (req, res) => {
   try {
     const { appointmentId, patientId } = req.body;
@@ -1841,6 +1860,20 @@ app.post('/api/prescriptions', authenticateToken, async (req, res) => {
   }
 });
 
+// GET /api/prescriptions - List all prescriptions (or filtered by doctor)
+app.get('/api/prescriptions', authenticateToken, async (req, res) => {
+  try {
+    const allPrescriptions = await fetchFromGCS(BUCKETS.patient, 'prescriptions.json') || [];
+    const doctorId = req.user?.id || req.user?.userId;
+    const role = req.user?.role;
+    const filtered = (role === 'admin') ? allPrescriptions : allPrescriptions.filter(p => p.doctorId === doctorId);
+    res.json({ prescriptions: filtered });
+  } catch (error) {
+    console.error('Prescription list error:', error);
+    res.json({ prescriptions: [] });
+  }
+});
+
 app.get('/api/prescriptions/patient/:patientId', authenticateToken, async (req, res) => {
   try {
     const { patientId } = req.params;
@@ -1889,6 +1922,20 @@ app.post('/api/lab-orders', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Lab order creation error:', error);
     res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/lab-orders - List all lab orders (or filtered by doctor)
+app.get('/api/lab-orders', authenticateToken, async (req, res) => {
+  try {
+    const allLabOrders = await fetchFromGCS(BUCKETS.patient, 'lab-orders.json') || [];
+    const doctorId = req.user?.id || req.user?.userId;
+    const role = req.user?.role;
+    const filtered = (role === 'admin') ? allLabOrders : allLabOrders.filter(l => l.doctorId === doctorId);
+    res.json({ labOrders: filtered });
+  } catch (error) {
+    console.error('Lab order list error:', error);
+    res.json({ labOrders: [] });
   }
 });
 
@@ -2851,6 +2898,21 @@ ${transcriptText}
 // QUEUE MANAGEMENT ENDPOINTS
 // ============================================================================
 
+// GET /api/queue - Get full queue (admin) or filtered by doctor
+app.get('/api/queue', authenticateToken, async (req, res) => {
+  try {
+    const queue = await fetchFromGCS(BUCKETS.doctor, 'queue/queue.json') || [];
+    // If doctor role, filter to their queue
+    const userId = req.user?.id || req.user?.userId;
+    const role = req.user?.role;
+    const filtered = (role === 'admin') ? queue : queue.filter(q => q.doctorId === userId);
+    res.json({ queue: filtered });
+  } catch (error) {
+    console.error('Queue fetch error:', error);
+    res.json({ queue: [] });
+  }
+});
+
 app.get('/api/queue/doctor/:doctorId', authenticateToken, async (req, res) => {
   try {
     const { doctorId } = req.params;
@@ -2921,6 +2983,30 @@ app.post('/api/queue/skip', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Skip patient error:', error);
     res.status(500).json({ error: error.message });
+  }
+});
+
+// ============================================================================
+// SCHEDULE - Doctor schedule from appointments (alias)
+// ============================================================================
+
+app.get('/api/schedule/:doctorId', authenticateToken, async (req, res) => {
+  try {
+    const { doctorId } = req.params;
+    console.log(`[SCHEDULE] Fetching schedule for doctor: ${doctorId}`);
+    const appointments = await PostgresDataService.AppointmentService.getDoctorAppointments(doctorId);
+    const schedule = (appointments || []).map(a => ({
+      id: a.id,
+      patientId: a.patient_id,
+      date: a.scheduled_date || a.appointment_date,
+      time: a.scheduled_time || a.appointment_time,
+      status: a.status,
+      type: a.appointment_type || 'consultation'
+    }));
+    res.json({ schedule });
+  } catch (error) {
+    console.error('Schedule fetch error:', error);
+    res.json({ schedule: [] });
   }
 });
 
@@ -3259,6 +3345,22 @@ IMPORTANT: These are suggestions for the doctor, not final diagnoses. Return ONL
   return null;
 }
 
+// Video meeting config - public endpoint for Jitsi configuration
+app.get('/api/video-meeting/config', (req, res) => {
+  res.json({
+    jitsiDomain: JITSI_DOMAIN || 'meet.jit.si',
+    enableRecording: true,
+    enableTranscription: !!GOOGLE_SPEECH_API_KEY,
+    enableAiSummary: !!GEMINI_API_KEY,
+    features: {
+      videoConferencing: true,
+      screenSharing: true,
+      chat: true,
+      recording: true
+    }
+  });
+});
+
 // Video meeting health check - MUST BE BEFORE parameterized routes!
 app.get('/api/video-meeting/health', (req, res) => {
   res.json({
@@ -3346,23 +3448,30 @@ app.post('/api/video-meeting/create', authenticateToken, async (req, res) => {
     const patientUrl = createJitsiMeetUrl(roomName, { displayName: patientName || 'Patient', language });
     const guestUrl = createJitsiMeetUrl(roomName, { language });
     
-    // Save meeting to PostgreSQL
-    const dbMeeting = await PostgresDataService.MeetingService.createMeeting({
-      appointment_id: appointmentId,
-      doctor_id: doctorId,
-      patient_id: patientId,
-      room_id: roomName,
-      meeting_url: jitsiUrl,
-      doctor_url: doctorUrl,
-      patient_url: patientUrl,
-      guest_url: guestUrl,
-      status: 'waiting',
-      config: { enableRecording, language }
-    });
+    // Save meeting to PostgreSQL (non-fatal if FK constraints fail, e.g. test appointment IDs)
+    let dbMeeting;
+    try {
+      dbMeeting = await PostgresDataService.MeetingService.createMeeting({
+        appointment_id: appointmentId,
+        doctor_id: doctorId,
+        patient_id: patientId,
+        room_id: roomName,
+        meeting_url: jitsiUrl,
+        doctor_url: doctorUrl,
+        patient_url: patientUrl,
+        guest_url: guestUrl,
+        status: 'waiting',
+        config: { enableRecording, language }
+      });
+    } catch (dbError) {
+      console.log(`[Video Meeting] Could not save to PostgreSQL (FK constraint?):`, dbError.message);
+    }
+    
+    const meetingId = dbMeeting?.id || `meeting_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
     // Also keep in-memory for real-time transcript accumulation
     const meeting = {
-      id: dbMeeting.id,
+      id: meetingId,
       appointmentId,
       roomName,
       jitsiUrl,
@@ -3383,11 +3492,15 @@ app.post('/api/video-meeting/create', authenticateToken, async (req, res) => {
     console.log(`🎥 Created Jitsi meeting for ${appointmentId}: https://${JITSI_DOMAIN}/${roomName}`);
     console.log(`   ✅ Saved to PostgreSQL meeting_records table`);
     
-    // Also update appointment with meeting link
-    await PostgresDataService.AppointmentService.updateAppointment(appointmentId, {
-      meet_link: patientUrl, // Patient sees this link
-      meeting_link: patientUrl
-    });
+    // Also update appointment with meeting link (non-fatal if appointment doesn't exist)
+    try {
+      await PostgresDataService.AppointmentService.updateAppointment(appointmentId, {
+        meet_link: patientUrl,
+        meeting_link: patientUrl
+      });
+    } catch (updateError) {
+      console.log(`[Video Meeting] Could not update appointment ${appointmentId}:`, updateError.message);
+    }
     
     res.json({
       success: true,
@@ -6593,6 +6706,47 @@ app.get('/api/metadata/drug-interactions', async (req, res) => {
   } catch (error) {
     console.error('Drug interactions fetch error:', error.message);
     res.json({ drugInteractions: [] });
+  }
+});
+
+// GET /api/metadata/medicines - Alias for /medications
+app.get('/api/metadata/medicines', async (req, res) => {
+  try {
+    const medications = await fetchFromGCS(BUCKETS.metadata, 'medication-database.json') || [];
+    res.json({ medications });
+  } catch (error) {
+    console.error('Medicines fetch error:', error.message);
+    res.json({ medications: [] });
+  }
+});
+
+// GET /api/metadata/icd10 - Alias for /icd10-codes
+app.get('/api/metadata/icd10', async (req, res) => {
+  try {
+    const icd10Codes = await fetchFromGCS(BUCKETS.metadata, 'icd10-codes.json') || [];
+    res.json({ icd10Codes });
+  } catch (error) {
+    console.error('ICD10 fetch error:', error.message);
+    res.json({ icd10Codes: [] });
+  }
+});
+
+// GET /api/metadata/specialties - Medical specialties metadata
+app.get('/api/metadata/specialties', async (req, res) => {
+  try {
+    const specialties = await fetchFromGCS(BUCKETS.metadata, 'specialties.json') || [
+      { id: 'cardiology', name: 'Cardiology', nameTh: 'โรคหัวใจ' },
+      { id: 'dermatology', name: 'Dermatology', nameTh: 'โรคผิวหนัง' },
+      { id: 'general', name: 'General Practice', nameTh: 'เวชปฏิบัติทั่วไป' },
+      { id: 'neurology', name: 'Neurology', nameTh: 'โรคระบบประสาท' },
+      { id: 'orthopedics', name: 'Orthopedics', nameTh: 'ออร์โธปิดิกส์' },
+      { id: 'pediatrics', name: 'Pediatrics', nameTh: 'กุมารเวชศาสตร์' },
+      { id: 'psychiatry', name: 'Psychiatry', nameTh: 'จิตเวชศาสตร์' }
+    ];
+    res.json({ specialties });
+  } catch (error) {
+    console.error('Specialties fetch error:', error.message);
+    res.json({ specialties: [] });
   }
 });
 

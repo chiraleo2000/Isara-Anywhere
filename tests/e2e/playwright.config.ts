@@ -1,16 +1,17 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════
- * IZARA TELEMEDICINE — PLAYWRIGHT E2E CONFIG v1.4.8-dev
+ * IZARA TELEMEDICINE — PLAYWRIGHT E2E CONFIG v1.4.8
  * ═══════════════════════════════════════════════════════════════════════
- * Test specs: 00-unified + 02-v350 + 03-v360-comprehensive
- * Projects: Local-API (headless fast), Local (headed UI), Cloud
- * Updated: February 12, 2026
+ * Test specs: 10 spec files (00-10) covering ALL pages, features, workflows
+ * Projects: Local-API, Local (headed UI), Cloud, Cloud-Dev
+ * Updated: February 15, 2026
  *
  * Features:
  * - Multi-user parallel testing (patient, doctor, admin)
  * - Full meeting lifecycle simulation
  * - AI features testing (Req 2.1-2.5, 4.1-4.5)
- * - 250+ comprehensive tests across 20+ sections, 5 users
+ * - 500+ comprehensive tests across 40+ sections, 5 users, 10 specs
+ * - Patient Portal (15 pages) + Doctor Portal (21 pages) + Meeting Server
  * - ALL FREE TIER: Jitsi Meet, Web Speech API, Gemini, PostgreSQL
  * ═══════════════════════════════════════════════════════════════════════
  */
@@ -53,7 +54,7 @@ export default defineConfig({
         viewport: { width: 1920, height: 1080 },
         headless: false,         // ★★★ HEADED — show UI actions ★★★
       },
-      testMatch: ['**/00-unified-comprehensive.spec.ts', '**/02-v350-workflows.spec.ts', '**/03-v360-comprehensive.spec.ts', '**/04-advanced-coverage.spec.ts', '**/05-multi-user-browser.spec.ts'],
+      testMatch: ['**/00-unified-comprehensive.spec.ts', '**/01-meeting-workflows.spec.ts', '**/02-v350-workflows.spec.ts', '**/03-v360-comprehensive.spec.ts', '**/04-advanced-coverage.spec.ts', '**/05-multi-user-browser.spec.ts', '**/06-patient-portal-complete.spec.ts', '**/07-doctor-portal-complete.spec.ts', '**/08-workflow-processes-complete.spec.ts', '**/09-meeting-ai-complete.spec.ts', '**/10-admin-metadata-complete.spec.ts'],
     },
     {
       name: 'Local',
@@ -63,7 +64,7 @@ export default defineConfig({
         viewport: { width: 1920, height: 1080 },
         headless: false,         // ★★★ HEADED — show UI actions ★★★
       },
-      testMatch: ['**/00-unified-comprehensive.spec.ts', '**/02-v350-workflows.spec.ts', '**/03-v360-comprehensive.spec.ts', '**/04-advanced-coverage.spec.ts', '**/05-multi-user-browser.spec.ts'],
+      testMatch: ['**/00-unified-comprehensive.spec.ts', '**/01-meeting-workflows.spec.ts', '**/02-v350-workflows.spec.ts', '**/03-v360-comprehensive.spec.ts', '**/04-advanced-coverage.spec.ts', '**/05-multi-user-browser.spec.ts', '**/06-patient-portal-complete.spec.ts', '**/07-doctor-portal-complete.spec.ts', '**/08-workflow-processes-complete.spec.ts', '**/09-meeting-ai-complete.spec.ts', '**/10-admin-metadata-complete.spec.ts'],
     },
     {
       name: 'Cloud',
@@ -73,7 +74,7 @@ export default defineConfig({
         viewport: { width: 1920, height: 1080 },
         headless: false,         // ★★★ HEADED — show UI actions ★★★
       },
-      testMatch: ['**/00-unified-comprehensive.spec.ts', '**/02-v350-workflows.spec.ts', '**/03-v360-comprehensive.spec.ts', '**/04-advanced-coverage.spec.ts', '**/05-multi-user-browser.spec.ts'],
+      testMatch: ['**/00-unified-comprehensive.spec.ts', '**/01-meeting-workflows.spec.ts', '**/02-v350-workflows.spec.ts', '**/03-v360-comprehensive.spec.ts', '**/04-advanced-coverage.spec.ts', '**/05-multi-user-browser.spec.ts', '**/06-patient-portal-complete.spec.ts', '**/07-doctor-portal-complete.spec.ts', '**/08-workflow-processes-complete.spec.ts', '**/09-meeting-ai-complete.spec.ts', '**/10-admin-metadata-complete.spec.ts'],
     },
     {
       name: 'Cloud-Dev',
@@ -83,7 +84,7 @@ export default defineConfig({
         viewport: { width: 1920, height: 1080 },
         headless: false,         // ★★★ HEADED — show UI actions ★★★
       },
-      testMatch: ['**/00-unified-comprehensive.spec.ts', '**/02-v350-workflows.spec.ts', '**/03-v360-comprehensive.spec.ts', '**/04-advanced-coverage.spec.ts', '**/05-multi-user-browser.spec.ts'],
+      testMatch: ['**/00-unified-comprehensive.spec.ts', '**/01-meeting-workflows.spec.ts', '**/02-v350-workflows.spec.ts', '**/03-v360-comprehensive.spec.ts', '**/04-advanced-coverage.spec.ts', '**/05-multi-user-browser.spec.ts', '**/06-patient-portal-complete.spec.ts', '**/07-doctor-portal-complete.spec.ts', '**/08-workflow-processes-complete.spec.ts', '**/09-meeting-ai-complete.spec.ts', '**/10-admin-metadata-complete.spec.ts'],
     },
   ],
 });

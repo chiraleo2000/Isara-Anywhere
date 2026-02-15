@@ -492,6 +492,21 @@ router.post('/chat', authMiddleware, async (req: Request, res: Response) => {
   }
 });
 
+// GET /api/ai/history - Alias for /chat/history (convenience route)
+router.get('/history', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+    const sessions = await ChatHistoryService.getSessions(userId);
+    return res.json({ sessions });
+  } catch (error: any) {
+    console.error('[AI History] Error:', error.message);
+    res.json({ sessions: [] });
+  }
+});
+
 // Get chat history from PostgreSQL (with 2-month retention)
 router.get('/chat/history', authMiddleware, async (req: Request, res: Response) => {
   try {

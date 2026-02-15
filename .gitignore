@@ -34,6 +34,8 @@ lerna-debug.log*
 # Testing
 coverage/
 *.lcov
+tests/e2e/test-results/
+tests/e2e/playwright-report/
 
 # Editor directories and files
 .vscode/
