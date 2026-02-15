@@ -1,40 +1,124 @@
 {
-  "description": "Doctor profiles and consultant information",
+  "description": "Doctor profiles and consultants (exported from production v1.4.7)",
   "encoding": "UTF-8",
-  "version": "1.4.0",
+  "version": "1.4.8",
+  "exportedAt": "2026-02-15T11:09:53.011Z",
   "doctors": [
     {
+      "id": "DOC-SIRIPORN",
+      "name": "Dr. Siriporn Thongchai",
+      "name_thai": "พญ.ศิริพร ธงชัย",
+      "specialty": "Endocrinology",
+      "specialty_thai": "ต่อมไร้ท่อ",
+      "hospital": "Diabetes Care Center",
+      "hospital_thai": "ศูนย์เบาหวาน",
+      "avatar_url": "https://i.pravatar.cc/150?u=docsiriporn",
+      "rating": "4.80",
+      "review_count": 200,
+      "experience_years": 12,
+      "consultation_fee": "1200.00",
+      "is_available": true,
+      "created_at": "2026-01-27T02:31:27.991Z"
+    },
+    {
+      "id": "DOC-SOMCHAI",
+      "name": "Dr. Somchai Prasert",
+      "name_thai": "นพ.สมชาย ประเสริฐ",
+      "specialty": "Cardiology",
+      "specialty_thai": "โรคหัวใจ",
+      "hospital": "Bangkok Heart Hospital",
+      "hospital_thai": "โรงพยาบาลหัวใจกรุงเทพ",
+      "avatar_url": "https://i.pravatar.cc/150?u=docsomchai",
+      "rating": "4.90",
+      "review_count": 150,
+      "experience_years": 15,
+      "consultation_fee": "1500.00",
+      "is_available": true,
+      "created_at": "2026-01-27T02:31:27.991Z"
+    },
+    {
       "id": "DOC-TEST-001",
-      "user_id": "DOC-TEST-001",
-      "medical_license_number": "TH-MD-2020-001",
+      "name": "Dr. Test Doctor",
+      "name_thai": "นพ.ทดสอบ แพทย์ดี",
       "specialty": "Internal Medicine",
-      "specialty_thai": "อายุรศาสตร์",
-      "sub_specialties": ["Diabetes", "Hypertension", "Kidney Disease"],
-      "qualifications": [
-        "แพทยศาสตรบัณฑิต จุฬาลงกรณ์มหาวิทยาลัย",
-        "วุฒิบัตรอายุรศาสตร์ แพทยสภา"
-      ],
-      "hospital_name": "Izara Telemedicine Hospital",
-      "hospital_name_thai": "โรงพยาบาลอิซาระ เทเลเมดิซีน",
-      "consultation_fee": 500,
-      "rating": 4.8,
-      "total_reviews": 127,
-      "years_experience": 15,
-      "available_for_telemedicine": true
+      "specialty_thai": "อายุรกรรมทั่วไป",
+      "hospital": "Izara Test Hospital",
+      "hospital_thai": "โรงพยาบาลอิซาร่า",
+      "avatar_url": "https://i.pravatar.cc/150?u=doctest",
+      "rating": "5.00",
+      "review_count": 10,
+      "experience_years": 5,
+      "consultation_fee": "300.00",
+      "is_available": true,
+      "created_at": "2026-01-27T02:31:27.991Z"
     }
   ],
   "consultants": [
     {
-      "id": "CONS-TEST-001",
-      "doctor_id": "DOC-TEST-001",
-      "name": "Doctor Test",
-      "name_thai": "นายแพทย์ ทดสอบ ระบบ",
-      "specialty": "Internal Medicine",
-      "specialty_thai": "อายุรศาสตร์",
-      "avatar_url": "https://i.pravatar.cc/150?u=DOC-TEST-001",
+      "id": "CONS-001",
+      "name": "นพ. สมศักดิ์ ศรีสุข",
+      "specialty": "อายุรกรรม",
+      "hospital": "โรงพยาบาลกรุงเทพ",
+      "email": "somsak@hospital.com",
+      "phone": null,
       "is_available": true,
-      "consultation_fee": 500,
-      "rating": 4.8
+      "created_at": "2026-01-27T01:12:09.124Z",
+      "updated_at": "2026-01-27T01:12:09.124Z"
+    },
+    {
+      "id": "CONS-002",
+      "name": "พญ. สุภาพร ใจดี",
+      "specialty": "กุมารเวชกรรม",
+      "hospital": "โรงพยาบาลรามา",
+      "email": "supaporn@hospital.com",
+      "phone": null,
+      "is_available": true,
+      "created_at": "2026-01-27T01:12:09.124Z",
+      "updated_at": "2026-01-27T01:12:09.124Z"
+    },
+    {
+      "id": "CONS-003",
+      "name": "นพ. วิชัย มั่นคง",
+      "specialty": "ศัลยกรรม",
+      "hospital": "โรงพยาบาลจุฬา",
+      "email": "wichai@hospital.com",
+      "phone": null,
+      "is_available": true,
+      "created_at": "2026-01-27T01:12:09.124Z",
+      "updated_at": "2026-01-27T01:12:09.124Z"
+    },
+    {
+      "id": "CONSULT-001",
+      "name": "Dr. Suthep Wongchai",
+      "specialty": "Nephrology",
+      "hospital": "Kidney Care Center",
+      "email": "suthep@hospital.com",
+      "phone": null,
+      "is_available": true,
+      "created_at": "2026-01-27T02:34:13.347Z",
+      "updated_at": "2026-01-27T02:34:13.347Z"
+    },
+    {
+      "id": "CONSULT-002",
+      "name": "Dr. Pranee Suksan",
+      "specialty": "Oncology",
+      "hospital": "Cancer Institute",
+      "email": "pranee@hospital.com",
+      "phone": null,
+      "is_available": true,
+      "created_at": "2026-01-27T02:34:13.379Z",
+      "updated_at": "2026-01-27T02:34:13.379Z"
+    },
+    {
+      "id": "CONSULT-003",
+      "name": "Dr. Wichai Thongdee",
+      "specialty": "Pulmonology",
+      "hospital": "Chest Hospital",
+      "email": "wichai@hospital.com",
+      "phone": null,
+      "is_available": true,
+      "created_at": "2026-01-27T02:34:13.410Z",
+      "updated_at": "2026-01-27T02:34:13.410Z"
     }
   ]
 }

@@ -46,7 +46,7 @@ const poolConfig = {
   port: dbConfig.port || Number.parseInt(process.env.DB_PORT || '5433', 10),
   database: dbConfig.database || process.env.DB_NAME || 'izara_phase1',
   user: dbConfig.user || process.env.DB_USER || 'postgres',
-  password: dbConfig.password || process.env.DB_PASSWORD || 'P@ssw0rd',
+  password: dbConfig.password || process.env.DB_PASSWORD || 'IzaraDb2024',
   max: 20,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: isProduction ? 30000 : 5000, // 30s for Cloud SQL, 5s for local
@@ -463,8 +463,7 @@ const AppointmentService = {
     }
     if (data.meeting_link !== undefined) {
       // Update both meet_link and meeting_link columns
-      fields.push(`meeting_link = $${paramIndex}`);
-      fields.push(`meet_link = $${paramIndex++}`);
+      fields.push(`meeting_link = $${paramIndex}`, `meet_link = $${paramIndex++}`);
       values.push(data.meeting_link);
     }
     if (data.notes !== undefined) {

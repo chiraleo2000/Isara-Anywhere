@@ -1,6 +1,6 @@
 # Cloud Build configuration for Jitsi Meeting Server
 # Builds and deploys Jitsi Meeting Server to Cloud Run
-# Version: 1.4.7
+# Version: 1.4.8
 
 steps:
   # Build Meeting Server Docker image
@@ -12,7 +12,7 @@ steps:
       - '-t'
       - 'asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-jitsi-meeting:latest'
       - '-t'
-      - 'asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-jitsi-meeting:v1.4.5'
+      - 'asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-jitsi-meeting:v1.4.8'
       - '.'
 
   # Push image to Artifact Registry
@@ -45,7 +45,7 @@ steps:
 # Store images in Artifact Registry
 images:
   - 'asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-jitsi-meeting:latest'
-  - 'asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-jitsi-meeting:v1.4.5'
+  - 'asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-jitsi-meeting:v1.4.8'
 
 # Build timeout (10 minutes)
 timeout: '600s'

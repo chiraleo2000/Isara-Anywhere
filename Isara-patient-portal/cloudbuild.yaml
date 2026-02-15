@@ -1,4 +1,4 @@
-# Cloud Build configuration for Izara Patient Portal v1.4.7
+# Cloud Build configuration for Izara Patient Portal v1.4.8
 # Builds unified Docker image and deploys to Cloud Run
 # Uses Cloud SQL PostgreSQL (same architecture as local Docker PostgreSQL)
 
@@ -10,7 +10,7 @@ steps:
       - "-f"
       - "Dockerfile.unified"
       - "-t"
-      - "asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-patient-portal:v1.4.6"
+      - "asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-patient-portal:v1.4.8"
       - "-t"
       - "asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-patient-portal:latest"
       - "--build-arg"
@@ -32,7 +32,7 @@ steps:
       - "run"
       - "deploy"
       - "izara-patient-portal"
-      - "--image=asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-patient-portal:v1.4.6"
+      - "--image=asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-patient-portal:v1.4.8"
       - "--region=asia-southeast1"
       - "--platform=managed"
       - "--allow-unauthenticated"
@@ -47,7 +47,7 @@ steps:
 
 # Store images in Artifact Registry
 images:
-  - "asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-patient-portal:v1.4.6"
+  - "asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-patient-portal:v1.4.8"
   - "asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-patient-portal:latest"
 
 # Build timeout (20 minutes)

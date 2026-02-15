@@ -95,3 +95,32 @@
 - **Parallel health checks** — `Promise.all()` for concurrent endpoint validation
 - **Resilient assertions** — `toBeLessThan(500)` for optional/new endpoints, `toBe(200)` for core
 - **Cloud + Local** — same tests run on both via `TEST_ENV` and `IS_CLOUD` flag
+
+---
+
+## 6. Production Deployment (Feb 15, 2026)
+
+### Bug Fixes
+| File | Change |
+|---|---|
+| `.vscode/settings.json` | Disabled MSSQL IntelliSense to prevent false SQL linter errors on PostgreSQL files |
+| `Isara-doctor-portal/server/services/postgresDataService.cjs` | Fixed DB password fallback from `P@ssw0rd` → `IzaraDb2024` |
+| `Isara-doctor-portal/server/authServer.cjs` | Fixed DB password fallback from `P@ssw0rd` → `IzaraDb2024` |
+| `Isara-doctor-portal/src/services/config.ts` | Fixed OAuth redirect URI port from 3001 → 3010 |
+| `scripts/migrate-prod-to-dev.cjs` | Fixed SonarLint warnings: `Number.parseInt`, `replaceAll` |
+
+### Deployment
+| Service | Version | Status |
+|---|---|---|
+| Patient Portal (production) | v1.4.8 | ✅ Deployed & Verified |
+| Doctor Portal (production) | v1.4.8 | ✅ Deployed & Verified |
+| Meeting Server (production) | v1.4.8 | ✅ Deployed & Verified |
+| Docker Local | v1.4.8 | ✅ All 5 services running & healthy |
+
+### API Endpoint Verification — ALL 200 ✅
+
+| Environment | Doctor Portal | Patient Portal | Meeting Server |
+|---|---|---|---|
+| Local Docker | 22/22 endpoints | 19/19 endpoints | 1/1 health |
+| Dev Cloud | 14/14 endpoints | 16/16 endpoints | 1/1 health |
+| Production | 16/16 endpoints | 16/16 endpoints | 1/1 health |

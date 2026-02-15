@@ -1,46 +1,273 @@
 {
-  "description": "Patient Health Records for startup users",
+  "description": "PHR records (exported from production v1.4.7)",
   "encoding": "UTF-8",
-  "version": "1.4.0",
-  "phr_records": [
+  "version": "1.4.8",
+  "exportedAt": "2026-02-15T11:09:53.011Z",
+  "records": [
     {
-      "patient_id": "PATIENT-SOMCHAI",
-      "blood_type": "A+",
-      "height_cm": 175,
-      "weight_kg": 78,
-      "bmi": 25.5,
-      "allergies": ["เพนิซิลลิน (Penicillin)", "ถั่วลิสง (Peanuts)"],
-      "chronic_conditions": ["ความดันโลหิตสูง (Hypertension)", "เบาหวานชนิดที่ 2 (Type 2 Diabetes)"],
-      "medications": ["Amlodipine 5mg วันละ 1 ครั้ง", "Metformin 500mg วันละ 2 ครั้ง"],
-      "emergency_contact_name": "นางสมศรี มั่นคง",
-      "emergency_contact_phone": "+66812345679",
-      "emergency_contact_relation": "ภรรยา"
-    },
-    {
-      "patient_id": "PATIENT-ANAN",
-      "blood_type": "B+",
-      "height_cm": 168,
-      "weight_kg": 75,
-      "bmi": 26.6,
-      "allergies": ["ซัลฟา (Sulfa drugs)"],
-      "chronic_conditions": ["โรคไตเรื้อรังระยะ 3 (CKD Stage 3)", "เบาหวานชนิดที่ 2 (Type 2 Diabetes)"],
-      "medications": ["Losartan 50mg วันละ 1 ครั้ง", "Empagliflozin 10mg วันละ 1 ครั้ง"],
-      "emergency_contact_name": "นายอนุชา ขยันเรียน",
-      "emergency_contact_phone": "+66823456790",
-      "emergency_contact_relation": "บุตรชาย"
-    },
-    {
-      "patient_id": "PATIENT-DEMO",
-      "blood_type": "O+",
-      "height_cm": 170,
-      "weight_kg": 70,
-      "bmi": 24.2,
+      "id": "phr_PATIENT-1770207922727-46910DF4",
+      "patient_id": "PATIENT-1770207922727-46910DF4",
+      "demographics": null,
+      "vital_signs_history": [],
       "allergies": [],
       "chronic_conditions": [],
       "medications": [],
-      "emergency_contact_name": "ผู้ติดต่อฉุกเฉิน",
-      "emergency_contact_phone": "+66891234568",
-      "emergency_contact_relation": "ครอบครัว"
+      "vaccinations": [],
+      "lifestyle": null,
+      "family_history": [],
+      "surgical_history": [],
+      "social_history": null,
+      "latest_lab_results": [],
+      "clinical_decision_support": null,
+      "blood_type": null,
+      "height_cm": null,
+      "weight_kg": null,
+      "bmi": null,
+      "emergency_contact_name": null,
+      "emergency_contact_phone": null,
+      "emergency_contact_relation": null,
+      "created_at": "2026-02-04T12:25:23.257Z",
+      "updated_at": "2026-02-04T12:25:23.257Z",
+      "last_synced_at": null
+    },
+    {
+      "id": "phr_PATIENT-1770264475811-643F62B2",
+      "patient_id": "PATIENT-1770264475811-643F62B2",
+      "demographics": null,
+      "vital_signs_history": [],
+      "allergies": [
+        "แฝเซฟฟาโซลิน"
+      ],
+      "chronic_conditions": [
+        "มะเร็งกล้ามเนื้อมดลูก"
+      ],
+      "medications": [],
+      "vaccinations": [],
+      "lifestyle": null,
+      "family_history": [],
+      "surgical_history": [],
+      "social_history": null,
+      "latest_lab_results": [],
+      "clinical_decision_support": null,
+      "blood_type": null,
+      "height_cm": null,
+      "weight_kg": null,
+      "bmi": null,
+      "emergency_contact_name": "นายสุชาติ อิ่มบัญชร",
+      "emergency_contact_phone": "0813410486",
+      "emergency_contact_relation": "คู่สมรส",
+      "created_at": "2026-02-05T04:07:56.219Z",
+      "updated_at": "2026-02-05T04:07:56.219Z",
+      "last_synced_at": null
+    },
+    {
+      "id": "phr_PATIENT-1770271446249-72434918",
+      "patient_id": "PATIENT-1770271446249-72434918",
+      "demographics": null,
+      "vital_signs_history": [],
+      "allergies": [],
+      "chronic_conditions": [
+        "อ้วน"
+      ],
+      "medications": [],
+      "vaccinations": [],
+      "lifestyle": null,
+      "family_history": [],
+      "surgical_history": [],
+      "social_history": null,
+      "latest_lab_results": [],
+      "clinical_decision_support": null,
+      "blood_type": "O+",
+      "height_cm": "178.0",
+      "weight_kg": "109.0",
+      "bmi": "34.4",
+      "emergency_contact_name": "นันทพร",
+      "emergency_contact_phone": "0819999787",
+      "emergency_contact_relation": "ภรรยา",
+      "created_at": "2026-02-05T06:04:06.650Z",
+      "updated_at": "2026-02-05T06:04:06.650Z",
+      "last_synced_at": null
+    },
+    {
+      "id": "phr_PATIENT-1770273021831-7C4A33A3",
+      "patient_id": "PATIENT-1770273021831-7C4A33A3",
+      "demographics": null,
+      "vital_signs_history": [],
+      "allergies": [
+        "แพ้อาหารทะเล"
+      ],
+      "chronic_conditions": [],
+      "medications": [],
+      "vaccinations": [],
+      "lifestyle": null,
+      "family_history": [],
+      "surgical_history": [],
+      "social_history": null,
+      "latest_lab_results": [],
+      "clinical_decision_support": null,
+      "blood_type": "ไม่ทราบ",
+      "height_cm": null,
+      "weight_kg": null,
+      "bmi": null,
+      "emergency_contact_name": null,
+      "emergency_contact_phone": null,
+      "emergency_contact_relation": null,
+      "created_at": "2026-02-05T06:30:22.255Z",
+      "updated_at": "2026-02-05T06:30:22.255Z",
+      "last_synced_at": null
+    },
+    {
+      "id": "phr_PATIENT-DEMO",
+      "patient_id": "PATIENT-DEMO",
+      "demographics": {},
+      "vital_signs_history": [],
+      "allergies": [
+        "Penicillin",
+        {
+          "id": "allergy_1770615282492",
+          "addedAt": "2026-02-09T05:34:42.492Z",
+          "allergen": "Penicillin",
+          "reaction": "ผื่นแดงทั่วตัว",
+          "severity": "severe"
+        },
+        {
+          "id": "allergy_1770615729706",
+          "addedAt": "2026-02-09T05:42:09.706Z",
+          "allergen": "Penicillin",
+          "reaction": "ผื่นแดงทั่วตัว",
+          "severity": "severe"
+        },
+        {
+          "id": "allergy_1770615791125",
+          "addedAt": "2026-02-09T05:43:11.125Z",
+          "allergen": "Penicillin",
+          "reaction": "ผื่นแดงทั่วตัว",
+          "severity": "severe"
+        },
+        {
+          "id": "allergy_1770619976560",
+          "addedAt": "2026-02-09T06:52:56.560Z",
+          "allergen": "Penicillin",
+          "reaction": "ผื่นแดงทั่วตัว",
+          "severity": "severe"
+        },
+        {
+          "id": "allergy_1770620255594",
+          "addedAt": "2026-02-09T06:57:35.594Z",
+          "allergen": "Penicillin",
+          "reaction": "ผื่นแดงทั่วตัว",
+          "severity": "severe"
+        },
+        {
+          "id": "allergy_1770620407201",
+          "addedAt": "2026-02-09T07:00:07.201Z",
+          "allergen": "Penicillin",
+          "reaction": "ผื่นแดงทั่วตัว",
+          "severity": "severe"
+        }
+      ],
+      "chronic_conditions": [
+        "Hypertension",
+        "Type 2 Diabetes"
+      ],
+      "medications": [
+        "Sumatriptan",
+        {
+          "id": "med_1770615282353",
+          "name": "Paracetamol 500mg",
+          "dosage": "1 เม็ด",
+          "addedAt": "2026-02-09T05:34:42.353Z",
+          "frequency": "ทุก 6 ชั่วโมง",
+          "startDate": "2026-02-09T05:34:43.063Z"
+        },
+        {
+          "id": "med_1770615729583",
+          "name": "Paracetamol 500mg",
+          "dosage": "1 เม็ด",
+          "addedAt": "2026-02-09T05:42:09.583Z",
+          "frequency": "ทุก 6 ชั่วโมง",
+          "startDate": "2026-02-09T05:42:10.296Z"
+        },
+        {
+          "id": "med_1770615790994",
+          "name": "Paracetamol 500mg",
+          "dosage": "1 เม็ด",
+          "addedAt": "2026-02-09T05:43:10.994Z",
+          "frequency": "ทุก 6 ชั่วโมง",
+          "startDate": "2026-02-09T05:43:11.705Z"
+        },
+        {
+          "id": "med_1770619976426",
+          "name": "Paracetamol 500mg",
+          "dosage": "1 เม็ด",
+          "addedAt": "2026-02-09T06:52:56.426Z",
+          "frequency": "ทุก 6 ชั่วโมง",
+          "startDate": "2026-02-09T06:52:57.146Z"
+        },
+        {
+          "id": "med_1770620255264",
+          "name": "Paracetamol 500mg",
+          "dosage": "1 เม็ด",
+          "addedAt": "2026-02-09T06:57:35.264Z",
+          "frequency": "ทุก 6 ชั่วโมง",
+          "startDate": "2026-02-09T06:57:35.982Z"
+        },
+        {
+          "id": "med_1770620407064",
+          "name": "Paracetamol 500mg",
+          "dosage": "1 เม็ด",
+          "addedAt": "2026-02-09T07:00:07.064Z",
+          "frequency": "ทุก 6 ชั่วโมง",
+          "startDate": "2026-02-09T07:00:07.785Z"
+        }
+      ],
+      "vaccinations": [],
+      "lifestyle": {},
+      "family_history": [],
+      "surgical_history": [],
+      "social_history": null,
+      "latest_lab_results": [],
+      "clinical_decision_support": null,
+      "blood_type": null,
+      "height_cm": null,
+      "weight_kg": null,
+      "bmi": null,
+      "emergency_contact_name": null,
+      "emergency_contact_phone": null,
+      "emergency_contact_relation": null,
+      "created_at": "2026-02-07T06:10:55.319Z",
+      "updated_at": "2026-02-09T07:00:07.202Z",
+      "last_synced_at": null
+    },
+    {
+      "id": "phr_PATIENT-SOMCHAI",
+      "patient_id": "PATIENT-SOMCHAI",
+      "demographics": {},
+      "vital_signs_history": [],
+      "allergies": [
+        "Aspirin"
+      ],
+      "chronic_conditions": [
+        "Asthma"
+      ],
+      "medications": [],
+      "vaccinations": [],
+      "lifestyle": {},
+      "family_history": [],
+      "surgical_history": [],
+      "social_history": null,
+      "latest_lab_results": [],
+      "clinical_decision_support": null,
+      "blood_type": null,
+      "height_cm": null,
+      "weight_kg": null,
+      "bmi": null,
+      "emergency_contact_name": null,
+      "emergency_contact_phone": null,
+      "emergency_contact_relation": null,
+      "created_at": "2026-02-07T04:47:46.598Z",
+      "updated_at": "2026-02-07T06:11:47.680Z",
+      "last_synced_at": null
     }
   ]
 }
