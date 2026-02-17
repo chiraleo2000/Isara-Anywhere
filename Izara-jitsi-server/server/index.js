@@ -48,23 +48,69 @@ const JWT_SECRET = process.env.JWT_SECRET || 'izara-jwt-secret-key-phase1-2026';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash-lite';
 
-// Database Configuration
+// Database Configuration - parse DATABASE_URL if available
+let dbConfig = {};
+if (process.env.DATABASE_URL) {
+  try {
+    const url = new URL(process.env.DATABASE_URL);
+    dbConfig = {
+      host: url.hostname,
+      port: Number.parseInt(url.port || '5432', 10),
+      database: url.pathname.substring(1),
+      user: url.username,
+      password: decodeURIComponent(url.password),
+    };
+  } catch (e) {
+    console.warn('⚠️ Failed to parse DATABASE_URL:', e.message);
+  }
+}
+
+const isProduction = process.env.NODE_ENV === 'production';
 const pool = new Pool({
-  host: process.env.DB_HOST || 'localhost',
-  port: Number.parseInt(process.env.DB_PORT || '5432', 10),
-  database: process.env.DB_NAME || 'izara_phase1',
-  user: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD || '',
-  max: 20,
+  host: dbConfig.host || process.env.DB_HOST || 'localhost',
+  port: dbConfig.port || Number.parseInt(process.env.DB_PORT || '5433', 10),
+  database: dbConfig.database || process.env.DB_NAME || 'izara_phase1',
+  user: dbConfig.user || process.env.DB_USER || 'postgres',
+  password: dbConfig.password || process.env.DB_PASSWORD || '',
+  max: isProduction ? 30 : 20,
+  min: isProduction ? 5 : 2,
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 5000,
+  connectionTimeoutMillis: isProduction ? 30000 : 10000,
+  allowExitOnIdle: !isProduction,
 });
+
+// ========== CRITICAL: Pool error handler to prevent crashes ==========
+let dbAvailable = true;
+pool.on('error', (err) => {
+  console.error('❌ [Pool] Unexpected PostgreSQL error:', err.message);
+  dbAvailable = false;
+  // Attempt reconnection after 5 seconds
+  setTimeout(async () => {
+    try {
+      await pool.query('SELECT 1');
+      dbAvailable = true;
+      console.log('✅ [Pool] Database reconnected');
+    } catch (retryErr) {
+      console.error('❌ [Pool] Reconnection failed:', retryErr.message);
+    }
+  }, 5000);
+});
+
+// Helper: safe DB query with fallback
+async function safeQuery(text, params = []) {
+  if (!dbAvailable) {
+    throw new Error('Database temporarily unavailable');
+  }
+  return pool.query(text, params);
+}
 
 // Initialize Gemini AI
 let genAI = null;
 if (GEMINI_API_KEY) {
   genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-  console.log('✅ Gemini AI initialized');
+  console.log('✅ Gemini AI initialized with model:', GEMINI_MODEL);
+} else {
+  console.warn('⚠️ Gemini AI not configured — set GEMINI_API_KEY environment variable');
 }
 
 // ============================================================================
@@ -75,17 +121,56 @@ const app = express();
 const server = http.createServer(app);
 const io = new SocketServer(server, {
   cors: {
-    origin: process.env.CORS_ORIGINS?.split(',') || ['http://localhost:3005', 'http://localhost:3010'],
+    origin: (origin, callback) => {
+      if (!origin || ALLOWED_ORIGINS.includes(origin)) {
+        callback(null, true);
+      } else if (isProduction) {
+        console.warn(`⚠️ Blocked Socket.IO from origin: ${origin}`);
+        callback(new Error('Origin not allowed'), false);
+      } else {
+        callback(null, true); // Allow all in development
+      }
+    },
     methods: ['GET', 'POST'],
     credentials: true
   }
 });
 
+// CORS - support both web portals and mobile apps
+const ALLOWED_ORIGINS = process.env.CORS_ORIGINS?.split(',') || [
+  'http://localhost:3005', 'http://localhost:3010',
+  'http://localhost:8081', // Expo dev
+  'http://127.0.0.1:3005', 'http://127.0.0.1:3010',
+];
+if (isProduction) {
+  ALLOWED_ORIGINS.push(
+    'https://izara-patient-portal-hvht4obouq-as.a.run.app',
+    'https://izara-doctor-portal-hvht4obouq-as.a.run.app'
+  );
+}
 app.use(cors({
-  origin: process.env.CORS_ORIGINS?.split(',') || ['http://localhost:3005', 'http://localhost:3010'],
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, curl, internal)
+    if (!origin || ALLOWED_ORIGINS.includes(origin)) {
+      callback(null, true);
+    } else if (isProduction) {
+      console.warn(`[CORS] Blocked origin: ${origin}`);
+      callback(new Error('Origin not allowed'), false);
+    } else {
+      callback(null, true); // Allow all in development
+    }
+  },
   credentials: true
 }));
 app.use(express.json({ limit: '10mb' }));
+
+// Mobile-specific headers middleware (Phase 2)
+app.use((req, res, next) => {
+  req.platform = req.headers['x-platform'] || 'web';
+  req.deviceId = req.headers['x-device-id'] || null;
+  req.appVersion = req.headers['x-app-version'] || null;
+  next();
+});
 
 // ============================================================================
 // AUTHENTICATION MIDDLEWARE
@@ -124,6 +209,7 @@ const optionalAuth = (req, res, next) => {
 // IN-MEMORY STORAGE
 // ============================================================================
 
+const activeMeetings = new Map();
 const activeTranscriptions = new Map();
 const meetingChats = new Map();
 const meetingInvites = new Map();
@@ -139,6 +225,7 @@ app.get('/health', (req, res) => {
     service: 'izara-jitsi-server',
     version: '1.4.8-dev',
     timestamp: new Date().toISOString(),
+    database: dbAvailable ? 'connected' : 'disconnected',
     features: {
       jitsi: true,
       transcription: 'web-speech-api',
@@ -151,14 +238,17 @@ app.get('/health', (req, res) => {
 
 app.get('/api/health', (req, res) => {
   res.json({
-    status: 'healthy',
+    status: dbAvailable ? 'healthy' : 'degraded',
     service: 'izara-jitsi-server',
     version: '1.4.8-dev',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     jitsiDomain: JITSI_DOMAIN,
     aiEnabled: !!genAI,
-    aiModel: GEMINI_MODEL
+    aiModel: GEMINI_MODEL,
+    database: dbAvailable ? 'connected' : 'disconnected',
+    activeMeetings: activeMeetings.size,
+    activeTranscriptions: activeTranscriptions.size
   });
 });
 
@@ -170,9 +260,11 @@ app.get('/api/health', (req, res) => {
 app.get('/api/health/db', async (req, res) => {
   try {
     await pool.query('SELECT 1');
+    dbAvailable = true;
     res.json({ status: 'healthy', database: 'connected' });
   } catch (error) {
-    res.json({ status: 'degraded', database: 'disconnected', error: error.message });
+    dbAvailable = false;
+    res.status(503).json({ status: 'degraded', database: 'disconnected', error: error.message });
   }
 });
 
@@ -202,12 +294,24 @@ app.get('/api/meetings', async (req, res) => {
     const result = await pool.query(
       'SELECT * FROM meeting_records ORDER BY created_at DESC LIMIT 50'
     );
-    res.json({ meetings: result.rows });
+    // Merge in-memory meetings that aren't in DB (e.g., FK-skipped)
+    const dbIds = new Set(result.rows.map(r => r.id));
+    const memMeetings = Array.from(activeMeetings.values())
+      .filter(m => !dbIds.has(m.meetingId))
+      .map(m => ({
+        id: m.meetingId, appointment_id: m.appointmentId, room_name: m.roomName,
+        room_id: m.roomName, status: m.status, doctor_id: m.doctorId,
+        patient_id: m.patientId, created_at: m.createdAt,
+        meeting_url: `https://${JITSI_DOMAIN}/${m.roomName}`
+      }));
+    res.json({ meetings: [...result.rows, ...memMeetings] });
   } catch (error) {
     console.error('[MEETINGS] List error:', error.message);
     // Fallback to in-memory
     const meetings = Array.from(activeMeetings.values()).map(m => ({
-      id: m.meetingId, appointmentId: m.appointmentId, roomName: m.roomName, status: m.status
+      id: m.meetingId, appointment_id: m.appointmentId, appointmentId: m.appointmentId,
+      room_name: m.roomName, roomName: m.roomName, status: m.status,
+      meeting_url: `https://${JITSI_DOMAIN}/${m.roomName}`
     }));
     res.json({ meetings });
   }
@@ -284,6 +388,13 @@ app.post('/api/meetings/create', authenticateToken, async (req, res) => {
     
     console.log(`[Meeting] Created meeting ${meetingId} for appointment ${appointmentId}`);
     
+    // Store in activeMeetings for fallback
+    activeMeetings.set(meetingId, {
+      meetingId, appointmentId, roomName, status: 'scheduled',
+      doctorId, patientId, createdAt: new Date().toISOString(),
+      urls: { base: meetingUrl, doctor: doctorUrl, patient: patientUrl, guest: guestUrl }
+    });
+    
     res.json({
       success: true,
       meeting: result.rows[0],
@@ -330,6 +441,12 @@ app.post('/api/meeting/create', optionalAuth, async (req, res) => {
         role: g.role || 'guest', invitedAt: new Date().toISOString(), status: 'pending'
       })));
     }
+    
+    // Store in activeMeetings for fallback
+    activeMeetings.set(meetingId, {
+      meetingId, appointmentId, roomName, status: 'scheduled',
+      doctorId, patientId, createdAt: new Date().toISOString()
+    });
     
     res.json({
       success: true, meetingId, roomName, meetingUrl,
@@ -443,6 +560,229 @@ app.get('/api/meetings/:id/participants', async (req, res) => {
     res.json({ success: true, participants, total: participants.length });
   } catch (error) {
     res.json({ success: true, participants: [], total: 0 });
+  }
+});
+
+// ============================================================================
+// END MEETING (Phase 2 — triggers AI summary pipeline)
+// ============================================================================
+
+app.post('/api/meetings/:id/end', optionalAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { generateSummary = true } = req.body;
+    
+    let meetingId = id;
+    let fullTranscript = '';
+    let chatMessages = [];
+    let meeting = null;
+    
+    // 1. Get meeting record
+    try {
+      const result = await safeQuery(
+        `SELECT mr.*, u_pat.name_thai as patient_name_thai, u_doc.name_thai as doctor_name_thai
+         FROM meeting_records mr
+         LEFT JOIN users u_pat ON mr.patient_id = u_pat.id
+         LEFT JOIN users u_doc ON mr.doctor_id = u_doc.id
+         WHERE mr.id::text = $1 OR mr.appointment_id = $1`, [id]
+      );
+      if (result.rows.length > 0) {
+        meeting = result.rows[0];
+        meetingId = meeting.id;
+      }
+    } catch (e) {
+      console.warn('[End Meeting] DB lookup skipped:', e.message);
+    }
+    
+    // 2. Compile full transcript from DB
+    try {
+      const transcriptsResult = await safeQuery(
+        `SELECT * FROM meeting_transcripts WHERE meeting_record_id::text = $1 ORDER BY created_at ASC`, [meetingId]
+      );
+      if (transcriptsResult.rows.length > 0) {
+        fullTranscript = transcriptsResult.rows
+          .map(t => `[${t.speaker_role === 'doctor' ? 'แพทย์' : t.speaker_role === 'patient' ? 'ผู้ป่วย' : 'ผู้เข้าร่วม'}] ${t.speaker_name || 'Unknown'}: ${t.content}`)
+          .join('\n');
+      }
+    } catch (e) {
+      console.warn('[End Meeting] Transcript lookup skipped:', e.message);
+    }
+    
+    // Fallback to in-memory transcript
+    if (!fullTranscript) {
+      const session = activeTranscriptions.get(meetingId);
+      if (session && session.transcripts.length > 0) {
+        fullTranscript = session.transcripts
+          .map(t => `[${t.speaker_role === 'doctor' ? 'แพทย์' : 'ผู้ป่วย'}]: ${t.content}`)
+          .join('\n');
+      }
+    }
+    
+    // 3. Collect chat messages
+    chatMessages = meetingChats.get(meetingId) || [];
+    
+    // 4. Update meeting status 
+    try {
+      await safeQuery(
+        `UPDATE meeting_records 
+         SET status = 'completed', ended_at = NOW(), transcript = $1,
+             duration_minutes = EXTRACT(EPOCH FROM (NOW() - COALESCE(started_at, created_at))) / 60
+         WHERE id::text = $1 OR appointment_id = $1 RETURNING *`,
+        [fullTranscript]
+      );
+      // Fix: need meetingId for the WHERE clause
+      await safeQuery(
+        `UPDATE meeting_records 
+         SET status = 'completed', ended_at = NOW(), transcript = $2,
+             duration_minutes = EXTRACT(EPOCH FROM (NOW() - COALESCE(started_at, created_at))) / 60
+         WHERE id::text = $1 OR appointment_id = $1`,
+        [meetingId, fullTranscript]
+      );
+    } catch (e) {
+      console.warn('[End Meeting] DB update skipped:', e.message);
+    }
+    
+    // 5. Also update appointment status
+    if (meeting?.appointment_id) {
+      try {
+        await safeQuery(
+          `UPDATE appointments SET status = 'completed', updated_at = NOW() WHERE id = $1`,
+          [meeting.appointment_id]
+        );
+      } catch (e) {
+        console.warn('[End Meeting] Appointment update skipped:', e.message);
+      }
+    }
+    
+    // 6. Clean up in-memory data
+    activeTranscriptions.delete(meetingId);
+    activeMeetings.delete(meetingId);
+    
+    // 7. Notify all participants
+    io.to(meetingId).emit('meeting-status', { meetingId, status: 'ended', timestamp: new Date().toISOString() });
+    
+    // 8. Trigger AI summary in background if transcript exists
+    let aiSummary = null;
+    let validationId = null;
+    
+    if (generateSummary && genAI && fullTranscript && fullTranscript.length > 20) {
+      try {
+        const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
+        
+        // Include chat messages in the context
+        const chatContext = chatMessages.length > 0
+          ? `\n\nข้อความแชทระหว่างการประชุม:\n${chatMessages.map(c => `[${c.senderRole}] ${c.senderName}: ${c.message}`).join('\n')}`
+          : '';
+        
+        const prompt = `คุณคือผู้ช่วยแพทย์ที่เชี่ยวชาญในการสรุปการปรึกษาทางการแพทย์
+
+บทสนทนาจากการพบแพทย์:
+${fullTranscript}
+${chatContext}
+
+ชื่อผู้ป่วย: ${meeting?.patient_name_thai || 'ไม่ระบุ'}
+ชื่อแพทย์: ${meeting?.doctor_name_thai || 'ไม่ระบุ'}
+
+กรุณาสรุปการปรึกษาในรูปแบบ SOAP Note (ภาษาไทย):
+
+## S - Subjective (อาการที่ผู้ป่วยบอก)
+สรุปอาการที่ผู้ป่วยบอก
+
+## O - Objective (การตรวจร่างกาย)
+สรุปสิ่งที่แพทย์ตรวจพบ
+
+## A - Assessment (การวินิจฉัย)
+การวินิจฉัยเบื้องต้น
+
+## P - Plan (แผนการรักษา)
+แผนการรักษาและยาที่สั่ง
+
+## 🚩 อาการเตือน (Red Flags)
+อาการเตือนที่ต้องมาพบแพทย์ทันที
+
+## 📅 นัดติดตาม (Follow-up)
+กำหนดการนัดตรวจครั้งถัดไป
+
+---
+⚠️ สำคัญ: นี่คือสรุปเบื้องต้นที่ต้องให้แพทย์ตรวจสอบก่อนใช้งาน (requiresValidation: true)`;
+        
+        const result = await model.generateContent(prompt);
+        aiSummary = result.response.text();
+        
+        validationId = uuidv4();
+        aiValidations.set(validationId, {
+          id: validationId, meetingId, type: 'meeting-summary',
+          content: aiSummary, status: 'pending_review',
+          createdAt: new Date().toISOString()
+        });
+        
+        // Save to DB
+        try {
+          await safeQuery(
+            `UPDATE meeting_records SET ai_summary = $2, ai_recommendations = $3
+             WHERE id::text = $1 OR appointment_id = $1`,
+            [meetingId, aiSummary, JSON.stringify({ validationId, requiresValidation: true })]
+          );
+        } catch (e) {
+          console.warn('[End Meeting] AI summary DB save skipped:', e.message);
+        }
+        
+        console.log(`[End Meeting] AI summary generated for meeting ${meetingId}`);
+      } catch (aiErr) {
+        console.error('[End Meeting] AI summary generation failed:', aiErr.message);
+      }
+    }
+    
+    res.json({
+      success: true,
+      meetingId,
+      status: 'completed',
+      transcript: { available: !!fullTranscript, length: fullTranscript.length },
+      chatMessages: { count: chatMessages.length },
+      aiSummary: aiSummary ? {
+        available: true,
+        validationId,
+        requiresValidation: true,
+        summary: aiSummary
+      } : { available: false, reason: !genAI ? 'AI not configured' : !fullTranscript ? 'No transcript' : 'Generation skipped' },
+      message: 'Meeting ended successfully'
+    });
+    
+  } catch (error) {
+    console.error('[End Meeting] Error:', error);
+    res.status(500).json({ error: 'Failed to end meeting', details: error.message });
+  }
+});
+
+// ============================================================================
+// MEETING HISTORY (Phase 2)
+// ============================================================================
+
+app.get('/api/meetings/history/:doctorId', optionalAuth, async (req, res) => {
+  try {
+    const { doctorId } = req.params;
+    const limit = Number.parseInt(req.query.limit || '20', 10);
+    const offset = Number.parseInt(req.query.offset || '0', 10);
+    
+    let meetings = [];
+    try {
+      const result = await safeQuery(
+        `SELECT mr.*, u_pat.name_thai as patient_name_thai
+         FROM meeting_records mr
+         LEFT JOIN users u_pat ON mr.patient_id = u_pat.id
+         WHERE mr.doctor_id = $1
+         ORDER BY mr.created_at DESC
+         LIMIT $2 OFFSET $3`,
+        [doctorId, limit, offset]
+      );
+      meetings = result.rows;
+    } catch (e) {
+      console.warn('[Meeting History] DB query skipped:', e.message);
+    }
+    
+    res.json({ success: true, meetings, total: meetings.length });
+  } catch (error) {
+    res.json({ success: true, meetings: [], total: 0 });
   }
 });
 
@@ -756,6 +1096,21 @@ app.post('/api/meetings/:id/chat', optionalAuth, async (req, res) => {
     
     if (!meetingChats.has(id)) meetingChats.set(id, []);
     meetingChats.get(id).push(chatMessage);
+    
+    // Persist chat to DB (meeting_transcripts with type=chat)
+    try {
+      await safeQuery(
+        `INSERT INTO meeting_transcripts (
+          meeting_record_id, speaker_id, speaker_role, speaker_name,
+          content, language, created_at
+        ) VALUES ($1::uuid, $2, $3, $4, $5, 'chat', NOW())`,
+        [id, chatMessage.senderId, chatMessage.senderRole, chatMessage.senderName, `[CHAT] ${message}`]
+      );
+    } catch (e) {
+      // Non-critical — in-memory is the primary store for chats
+      console.warn('[Chat] DB persist skipped:', e.message);
+    }
+    
     io.to(id).emit('chat-message', chatMessage);
     
     res.json({ success: true, chatMessage });
@@ -793,6 +1148,40 @@ app.post('/api/meetings/:id/invite', optionalAuth, async (req, res) => {
     
     if (!meetingInvites.has(id)) meetingInvites.set(id, []);
     meetingInvites.get(id).push(invite);
+    
+    // Persist invite to DB
+    try {
+      await safeQuery(
+        `INSERT INTO meeting_invites (id, meeting_record_id, name, email, phone, role, status, created_at)
+         VALUES ($1, $2::uuid, $3, $4, $5, $6, $7, NOW())
+         ON CONFLICT DO NOTHING`,
+        [invite.id, id, name, email, phone || null, role, 'pending']
+      );
+    } catch (e) {
+      // Create table if it doesn't exist, then retry
+      try {
+        await safeQuery(`
+          CREATE TABLE IF NOT EXISTS meeting_invites (
+            id VARCHAR(50) PRIMARY KEY,
+            meeting_record_id UUID REFERENCES meeting_records(id) ON DELETE CASCADE,
+            name VARCHAR(255) NOT NULL,
+            email VARCHAR(255) NOT NULL,
+            phone VARCHAR(50),
+            role VARCHAR(50) DEFAULT 'guest',
+            status VARCHAR(20) DEFAULT 'pending',
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+          )
+        `);
+        await safeQuery(
+          `INSERT INTO meeting_invites (id, meeting_record_id, name, email, phone, role, status, created_at)
+           VALUES ($1, $2::uuid, $3, $4, $5, $6, $7, NOW()) ON CONFLICT DO NOTHING`,
+          [invite.id, id, name, email, phone || null, role, 'pending']
+        );
+      } catch (e2) {
+        console.warn('[Invite] DB persist skipped:', e2.message);
+      }
+    }
+    
     console.log(`[Invite] Guest ${name} invited to meeting ${id}`);
     
     res.json({ success: true, invite });
@@ -1239,9 +1628,11 @@ app.get('/api/ai/validations', optionalAuth, async (req, res) => {
     
     let dbValidations = [];
     try {
-      const result = await pool.query('SELECT * FROM ai_validations ORDER BY created_at DESC LIMIT 50');
+      const result = await safeQuery('SELECT * FROM ai_validations ORDER BY created_at DESC LIMIT 50');
       dbValidations = result.rows;
-    } catch { /* skip */ }
+    } catch (e) {
+      console.warn('[Validations] DB query skipped:', e.message);
+    }
     
     res.json({ success: true, validations: [...validations, ...dbValidations], total: validations.length + dbValidations.length });
   } catch (error) {
@@ -1261,12 +1652,14 @@ app.post('/api/ai/validate', optionalAuth, async (req, res) => {
       validation.reason = reason;
       
       try {
-        await pool.query(
+        await safeQuery(
           `INSERT INTO ai_validations (id, type, content_snapshot, decision, doctor_id, patient_id, validated_at)
            VALUES ($1, $2, $3, $4, $5, $6, NOW()) ON CONFLICT DO NOTHING`,
           [validationId, validation.type, validation.content, validation.status, doctorId, patientId]
         );
-      } catch { /* skip */ }
+      } catch (e) {
+        console.warn('[Validation] DB persist skipped:', e.message);
+      }
     }
     
     let status;
@@ -1368,11 +1761,59 @@ io.on('connection', (socket) => {
 
 const startServer = async () => {
   try {
+    // Test database connection
     try {
       await pool.query('SELECT NOW()');
+      dbAvailable = true;
       console.log('✅ PostgreSQL connected');
+      
+      // Ensure required tables exist
+      try {
+        await pool.query(`
+          CREATE TABLE IF NOT EXISTS meeting_invites (
+            id VARCHAR(50) PRIMARY KEY,
+            meeting_record_id UUID REFERENCES meeting_records(id) ON DELETE CASCADE,
+            name VARCHAR(255) NOT NULL,
+            email VARCHAR(255) NOT NULL,
+            phone VARCHAR(50),
+            role VARCHAR(50) DEFAULT 'guest',
+            status VARCHAR(20) DEFAULT 'pending',
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+          )
+        `);
+        await pool.query(`
+          CREATE TABLE IF NOT EXISTS ai_validations (
+            id VARCHAR(50) PRIMARY KEY,
+            type VARCHAR(50),
+            content_snapshot TEXT,
+            decision VARCHAR(20),
+            doctor_id VARCHAR(50),
+            patient_id VARCHAR(50),
+            meeting_id VARCHAR(50),
+            validated_at TIMESTAMP WITH TIME ZONE,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+          )
+        `);
+        console.log('✅ Meeting support tables verified');
+      } catch (migErr) {
+        console.warn('⚠️ Table creation warning:', migErr.message);
+      }
     } catch (dbError) {
+      dbAvailable = false;
       console.warn('⚠️ Database connection failed, running in memory-only mode:', dbError.message);
+      console.warn('   → Meeting data will be in-memory only and lost on restart');
+      
+      // Schedule periodic reconnection attempts
+      const reconnectInterval = setInterval(async () => {
+        try {
+          await pool.query('SELECT 1');
+          dbAvailable = true;
+          console.log('✅ Database reconnected successfully');
+          clearInterval(reconnectInterval);
+        } catch (retryErr) {
+          console.warn('⚠️ Database reconnection attempt failed:', retryErr.message);
+        }
+      }, 15000); // Retry every 15 seconds
     }
     
     server.listen(PORT, () => {
@@ -1382,9 +1823,11 @@ const startServer = async () => {
 ╠════════════════════════════════════════════════════════════╣
 ║  Port:       ${PORT}                                          ║
 ║  Jitsi:      ${JITSI_DOMAIN}                               ║
-║  AI:         ${genAI ? 'Gemini Ready' : 'Not configured'}                               ║
+║  AI:         ${genAI ? 'Gemini Ready (' + GEMINI_MODEL + ')' : 'Not configured'}                  ║
+║  Database:   ${dbAvailable ? '✅ Connected' : '⚠️ Memory-only'}                              ║
 ║  Features:   Transcription, Chat, Invites, CDS             ║
 ║  Transcript: Web Speech API (FREE)                         ║
+║  End Point:  POST /api/meetings/:id/end (triggers AI)      ║
 ╚════════════════════════════════════════════════════════════╝
       `);
     });

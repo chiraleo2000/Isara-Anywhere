@@ -557,6 +557,164 @@ export async function syncHealthData(data: {
   });
 }
 
+// ===== Phase 2: Device Tokens =====
+
+export async function registerDeviceToken(data: {
+  token: string;
+  platform: 'ios' | 'android' | 'web';
+  device_name?: string;
+}): Promise<ApiResponse<{ id: string }>> {
+  return apiCall('/api/device-tokens', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function getDeviceTokens(): Promise<ApiResponse<any[]>> {
+  return apiCall('/api/device-tokens');
+}
+
+export async function deactivateDeviceToken(token: string): Promise<ApiResponse<void>> {
+  return apiCall('/api/device-tokens', {
+    method: 'DELETE',
+    body: JSON.stringify({ token }),
+  });
+}
+
+// ===== Phase 2: Biometric Authentication =====
+
+export async function registerBiometric(data: {
+  credential_id: string;
+  public_key: string;
+  device_name: string;
+  auth_type: 'fingerprint' | 'face_id' | 'iris';
+}): Promise<ApiResponse<{ id: string }>> {
+  return apiCall('/api/biometric/register', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function verifyBiometric(data: {
+  credential_id: string;
+  signature: string;
+}): Promise<ApiResponse<{ session_token: string }>> {
+  return apiCall('/api/biometric/verify', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function getBiometricStatus(): Promise<ApiResponse<{
+  enabled: boolean;
+  credentials: any[];
+}>> {
+  return apiCall('/api/biometric/status');
+}
+
+// ===== Phase 2: Offline Sync =====
+
+export async function pushSyncQueue(changes: any[]): Promise<ApiResponse<{
+  processed: number;
+  conflicts: number;
+}>> {
+  return apiCall('/api/sync/push', {
+    method: 'POST',
+    body: JSON.stringify({ changes }),
+  });
+}
+
+export async function pullSyncChanges(since?: string): Promise<ApiResponse<{
+  changes: any[];
+  server_timestamp: string;
+}>> {
+  const query = since ? `?since=${since}` : '';
+  return apiCall(`/api/sync/pull${query}`);
+}
+
+export async function getSyncConflicts(): Promise<ApiResponse<any[]>> {
+  return apiCall('/api/sync/conflicts');
+}
+
+export async function resolveSyncConflict(
+  conflictId: string,
+  resolution: 'client' | 'server'
+): Promise<ApiResponse<void>> {
+  return apiCall(`/api/sync/conflicts/${conflictId}`, {
+    method: 'PUT',
+    body: JSON.stringify({ resolution }),
+  });
+}
+
+export async function getSyncStatus(): Promise<ApiResponse<{
+  pending: number;
+  last_sync: string;
+}>> {
+  return apiCall('/api/sync/status');
+}
+
+// ===== Phase 2: API Connections =====
+
+export async function getApiConnections(): Promise<ApiResponse<any[]>> {
+  return apiCall('/api/connections');
+}
+
+export async function connectApiService(data: {
+  service_type: string;
+  access_token?: string;
+  config?: Record<string, any>;
+}): Promise<ApiResponse<{ id: string }>> {
+  return apiCall('/api/connections', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function disconnectApiService(serviceType: string): Promise<ApiResponse<void>> {
+  return apiCall(`/api/connections/${serviceType}`, {
+    method: 'DELETE',
+  });
+}
+
+export async function getApiConnectionHealth(): Promise<ApiResponse<{
+  services: Array<{ service_type: string; status: string; latency_ms: number }>;
+}>> {
+  return apiCall('/api/connections/health/check');
+}
+
+// ===== Phase 2: User Settings =====
+
+export async function getUserSettings(): Promise<ApiResponse<any>> {
+  return apiCall('/api/settings');
+}
+
+export async function updateUserSettings(settings: Record<string, any>): Promise<ApiResponse<any>> {
+  return apiCall('/api/settings', {
+    method: 'PUT',
+    body: JSON.stringify(settings),
+  });
+}
+
+export async function getNotificationPreferences(): Promise<ApiResponse<any[]>> {
+  return apiCall('/api/settings/notifications');
+}
+
+export async function updateNotificationPreferences(
+  preferences: any[]
+): Promise<ApiResponse<void>> {
+  return apiCall('/api/settings/notifications', {
+    method: 'PUT',
+    body: JSON.stringify({ preferences }),
+  });
+}
+
+export async function switchUserRole(role: 'patient' | 'doctor'): Promise<ApiResponse<void>> {
+  return apiCall('/api/settings/role', {
+    method: 'PUT',
+    body: JSON.stringify({ role }),
+  });
+}
+
 // Export service object
 export const postgresService = {
   // Auth
@@ -610,6 +768,36 @@ export const postgresService = {
   
   // Health Sync
   syncHealthData,
+
+  // Phase 2: Device Tokens
+  registerDeviceToken,
+  getDeviceTokens,
+  deactivateDeviceToken,
+
+  // Phase 2: Biometric
+  registerBiometric,
+  verifyBiometric,
+  getBiometricStatus,
+
+  // Phase 2: Offline Sync
+  pushSyncQueue,
+  pullSyncChanges,
+  getSyncConflicts,
+  resolveSyncConflict,
+  getSyncStatus,
+
+  // Phase 2: API Connections
+  getApiConnections,
+  connectApiService,
+  disconnectApiService,
+  getApiConnectionHealth,
+
+  // Phase 2: Settings
+  getUserSettings,
+  updateUserSettings,
+  getNotificationPreferences,
+  updateNotificationPreferences,
+  switchUserRole,
 };
 
 export default postgresService;

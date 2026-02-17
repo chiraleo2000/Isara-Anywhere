@@ -969,4 +969,111 @@ router.get('/', async (req: Request, res: Response) => {
   }
 });
 
+// ============================================================================
+// TOKEN REFRESH - Phase 2 (Mobile App Support)
+// ============================================================================
+router.post('/refresh', async (req: Request, res: Response) => {
+  try {
+    const { refreshToken, deviceId } = req.body;
+    
+    if (!refreshToken) {
+      return res.status(400).json({ error: 'Refresh token is required' });
+    }
+    
+    // Check DB
+    if (!dbAvailable) {
+      const connectionOk = await checkDbConnection();
+      if (!connectionOk) {
+        return res.status(503).json({ error: 'Database temporarily unavailable' });
+      }
+    }
+    
+    // Hash the token to compare
+    const tokenHash = node_crypto.createHash('sha256').update(refreshToken).digest('hex');
+    
+    // Find valid refresh token
+    const tokenResult = await pool.query(
+      `SELECT rt.*, u.id as user_id, u.email, u.name, u.name_thai, u.role, u.patient_id, u.is_active
+       FROM refresh_tokens rt
+       JOIN users u ON rt.user_id = u.id
+       WHERE rt.token_hash = $1 AND rt.is_revoked = false AND rt.expires_at > NOW()`,
+      [tokenHash]
+    );
+    
+    if (tokenResult.rows.length === 0) {
+      return res.status(401).json({ error: 'Invalid or expired refresh token' });
+    }
+    
+    const tokenRow = tokenResult.rows[0];
+    
+    if (!tokenRow.is_active) {
+      return res.status(401).json({ error: 'Account is deactivated' });
+    }
+    
+    // Revoke old refresh token (token rotation)
+    const newRefreshToken = generateSecureToken(64);
+    const newRefreshHash = node_crypto.createHash('sha256').update(newRefreshToken).digest('hex');
+    const newTokenId = `rt_${Date.now()}_${node_crypto.randomBytes(8).toString('hex')}`;
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
+    
+    await pool.query(
+      `UPDATE refresh_tokens SET is_revoked = true, revoked_at = NOW(), replaced_by = $2 WHERE id = $1`,
+      [tokenRow.id, newTokenId]
+    );
+    
+    // Create new refresh token
+    await pool.query(
+      `INSERT INTO refresh_tokens (id, user_id, token_hash, device_id, expires_at, ip_address, user_agent) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [newTokenId, tokenRow.user_id, newRefreshHash, deviceId || tokenRow.device_id, 
+       expiresAt, req.ip || 'unknown', req.headers['user-agent'] || 'unknown']
+    );
+    
+    // Create new session token (access token)
+    const sessionToken = generateSessionToken();
+    const sessionExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes for mobile
+    
+    await pool.query(
+      `INSERT INTO sessions (id, user_id, token, ip_address, user_agent, expires_at, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
+      [`session_${Date.now()}`, tokenRow.user_id, sessionToken, req.ip || 'unknown',
+       req.headers['user-agent'] || 'unknown', sessionExpires]
+    );
+    
+    console.log(`[AUTH] Token refreshed for user: ${tokenRow.email}`);
+    
+    res.json({
+      success: true,
+      token: sessionToken,
+      refreshToken: newRefreshToken,
+      expiresIn: 900, // 15 minutes in seconds
+      user: {
+        id: tokenRow.user_id,
+        patientId: tokenRow.patient_id || tokenRow.user_id,
+        name: tokenRow.name,
+        nameThai: tokenRow.name_thai,
+        email: tokenRow.email,
+        role: tokenRow.role,
+      }
+    });
+  } catch (error: any) {
+    console.error('[AUTH] Token refresh error:', error);
+    res.status(500).json({ error: 'Token refresh failed' });
+  }
+});
+
+// ============================================================================
+// DATABASE HEALTH CHECK
+// ============================================================================
+router.get('/health/db', async (_req: Request, res: Response) => {
+  try {
+    await pool.query('SELECT 1');
+    dbAvailable = true;
+    res.json({ status: 'healthy', database: 'connected' });
+  } catch (error) {
+    dbAvailable = false;
+    res.status(503).json({ status: 'degraded', database: 'disconnected' });
+  }
+});
+
 export default router;

@@ -19,6 +19,7 @@ import LivingWillPage from './pages/pdpa/LivingWillPage';
 import TimelinePage from './pages/timeline/TimelinePage';
 import MapPage from './pages/map/MapPage';
 import GCSStatusPage from './pages/admin/GCSStatusPage';
+import PatientMeetingRoom from './pages/meeting/PatientMeetingRoom';
 
 // Enhanced Scroll to top on route change - uses useLayoutEffect for immediate scroll
 function ScrollToTop() {
@@ -90,6 +91,7 @@ function AppRoutes() {
         <Route path="appointments" element={<AppointmentListPage />} />
         <Route path="appointments/book" element={<BookAppointmentPage />} />
         <Route path="appointments/:id" element={<AppointmentDetailPage />} />
+        <Route path="meeting/:appointmentId" element={<PatientMeetingRoom />} />
         <Route path="phr" element={<PHRPage />} />
         <Route path="ai-doctor" element={<AIDoctorPage />} />
         <Route path="health-library" element={<MedicalContentLibrary />} />

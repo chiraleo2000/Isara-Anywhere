@@ -93,8 +93,170 @@ async function runMigrations() {
         NULL;
       END $$;
     `);
+
+    // ========================================================================
+    // Phase 2 Migrations - Mobile App Support
+    // ========================================================================
+
+    // Device tokens for push notifications
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS device_tokens (
+        id VARCHAR(50) PRIMARY KEY,
+        user_id VARCHAR(50) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        device_token TEXT NOT NULL,
+        platform VARCHAR(20) NOT NULL CHECK (platform IN ('ios', 'android', 'web')),
+        device_name VARCHAR(255),
+        device_model VARCHAR(255),
+        os_version VARCHAR(50),
+        app_version VARCHAR(50),
+        is_active BOOLEAN DEFAULT true,
+        last_used_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Biometric credentials
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS biometric_credentials (
+        id VARCHAR(50) PRIMARY KEY,
+        user_id VARCHAR(50) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        credential_type VARCHAR(20) NOT NULL CHECK (credential_type IN ('fingerprint', 'face_id', 'iris')),
+        public_key TEXT NOT NULL,
+        credential_id TEXT NOT NULL,
+        device_id VARCHAR(255) NOT NULL,
+        device_name VARCHAR(255),
+        is_active BOOLEAN DEFAULT true,
+        last_used_at TIMESTAMP WITH TIME ZONE,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Refresh tokens for token rotation
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS refresh_tokens (
+        id VARCHAR(50) PRIMARY KEY,
+        user_id VARCHAR(50) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        token_hash VARCHAR(255) NOT NULL,
+        device_id VARCHAR(255),
+        expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+        is_revoked BOOLEAN DEFAULT false,
+        revoked_at TIMESTAMP WITH TIME ZONE,
+        replaced_by VARCHAR(50),
+        ip_address VARCHAR(45),
+        user_agent TEXT,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Push notification subscriptions
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS push_subscriptions (
+        id VARCHAR(50) PRIMARY KEY,
+        user_id VARCHAR(50) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        appointment_reminders BOOLEAN DEFAULT true,
+        medication_reminders BOOLEAN DEFAULT true,
+        health_tips BOOLEAN DEFAULT true,
+        lab_results BOOLEAN DEFAULT true,
+        doctor_messages BOOLEAN DEFAULT true,
+        system_updates BOOLEAN DEFAULT true,
+        quiet_hours_start TIME,
+        quiet_hours_end TIME,
+        language_preference VARCHAR(10) DEFAULT 'th',
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Multi-API connections
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS user_api_connections (
+        id VARCHAR(50) PRIMARY KEY,
+        user_id VARCHAR(50) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        service_type VARCHAR(50) NOT NULL,
+        service_url TEXT,
+        access_token_encrypted TEXT,
+        refresh_token_encrypted TEXT,
+        token_expires_at TIMESTAMP WITH TIME ZONE,
+        connection_status VARCHAR(20) DEFAULT 'active',
+        last_sync_at TIMESTAMP WITH TIME ZONE,
+        metadata JSONB DEFAULT '{}'::jsonb,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // API connection audit
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS api_connection_audit (
+        id VARCHAR(50) PRIMARY KEY,
+        connection_id VARCHAR(50),
+        user_id VARCHAR(50) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        action VARCHAR(50) NOT NULL,
+        service_type VARCHAR(50) NOT NULL,
+        details JSONB DEFAULT '{}'::jsonb,
+        ip_address VARCHAR(45),
+        user_agent TEXT,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Offline sync queue
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS sync_queue (
+        id VARCHAR(50) PRIMARY KEY,
+        user_id VARCHAR(50) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        entity_type VARCHAR(50) NOT NULL,
+        entity_id VARCHAR(50) NOT NULL,
+        operation VARCHAR(20) NOT NULL CHECK (operation IN ('create', 'update', 'delete')),
+        payload JSONB NOT NULL,
+        client_timestamp TIMESTAMP WITH TIME ZONE NOT NULL,
+        server_timestamp TIMESTAMP WITH TIME ZONE,
+        sync_status VARCHAR(20) DEFAULT 'pending',
+        conflict_resolution JSONB,
+        retry_count INTEGER DEFAULT 0,
+        max_retries INTEGER DEFAULT 5,
+        error_message TEXT,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Notification preferences
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS notification_preferences (
+        id VARCHAR(50) PRIMARY KEY,
+        user_id VARCHAR(50) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        channel VARCHAR(20) NOT NULL CHECK (channel IN ('push', 'email', 'sms', 'in_app', 'line')),
+        category VARCHAR(50) NOT NULL,
+        enabled BOOLEAN DEFAULT true,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // User settings (mobile + web)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS user_settings (
+        user_id VARCHAR(50) PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+        theme VARCHAR(20) DEFAULT 'system',
+        language VARCHAR(10) DEFAULT 'th',
+        font_size VARCHAR(10) DEFAULT 'medium',
+        biometric_enabled BOOLEAN DEFAULT false,
+        auto_sync BOOLEAN DEFAULT true,
+        sync_on_wifi_only BOOLEAN DEFAULT false,
+        data_saver_mode BOOLEAN DEFAULT false,
+        accessibility_high_contrast BOOLEAN DEFAULT false,
+        accessibility_screen_reader BOOLEAN DEFAULT false,
+        last_active_role VARCHAR(20) DEFAULT 'patient',
+        onboarding_completed BOOLEAN DEFAULT false,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
     
-    console.log('✅ Database migrations completed (Doctor Portal)');
+    console.log('✅ Database migrations completed (Doctor Portal - Phase 1 + Phase 2)');
   } catch (err) {
     console.warn('⚠️ Migration warning:', err.message);
   }

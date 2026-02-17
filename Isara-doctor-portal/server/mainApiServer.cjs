@@ -110,13 +110,41 @@ try {
 // MIDDLEWARE
 // ============================================================================
 
+const isProduction = process.env.NODE_ENV === 'production';
+const ALLOWED_ORIGINS = [
+  'http://localhost:3010', 'http://127.0.0.1:3010', 'http://0.0.0.0:3010',
+  'http://localhost:3005', 'http://localhost:8081', // Expo dev
+];
+if (isProduction) {
+  ALLOWED_ORIGINS.push(
+    'https://izara-doctor-portal-hvht4obouq-as.a.run.app',
+    'https://izara-patient-portal-hvht4obouq-as.a.run.app'
+  );
+}
+
 app.use(cors({
-  origin: ['http://localhost:3010', 'http://127.0.0.1:3010', 'http://0.0.0.0:3010'],
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, curl, internal)
+    if (!origin || ALLOWED_ORIGINS.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.warn(`[CORS] Non-listed origin: ${origin} — allowing in dev`);
+      callback(null, !isProduction); // Allow all in dev, block in production
+    }
+  },
   credentials: true
 }));
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+// Mobile-specific headers middleware (Phase 2)
+app.use((req, res, next) => {
+  req.platform = req.headers['x-platform'] || 'web';
+  req.deviceId = req.headers['x-device-id'] || null;
+  req.appVersion = req.headers['x-app-version'] || null;
+  next();
+});
 
 // Request logging
 app.use((req, res, next) => {
@@ -131,7 +159,13 @@ app.use((req, res, next) => {
 
 const io = new Server(server, {
   cors: {
-    origin: ['http://localhost:3010', 'http://127.0.0.1:3010', 'http://0.0.0.0:3010'],
+    origin: (origin, callback) => {
+      if (!origin || ALLOWED_ORIGINS.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(null, !isProduction);
+      }
+    },
     credentials: true
   },
   path: '/ws'
@@ -6976,6 +7010,283 @@ ${transcripts.join('\n')}
       summary: 'การสรุปอยู่ระหว่างดำเนินการ',
       appointmentId: req.body.appointmentId
     });
+  }
+});
+
+// ============================================================================
+// PHASE 2: Common pool reference
+// ============================================================================
+const pool = PostgresDataService?.pool;
+
+// ============================================================================
+// PHASE 2: DEVICE TOKEN REGISTRATION (Push Notifications)
+// ============================================================================
+
+// Register device token
+app.post('/api/device-tokens', authenticateToken, async (req, res) => {
+  try {
+    const { deviceToken, platform, deviceName, deviceModel, osVersion, appVersion } = req.body;
+    if (!deviceToken || !platform) {
+      return res.status(400).json({ error: 'deviceToken and platform are required' });
+    }
+    const id = `DT-${crypto.randomUUID().substring(0, 12)}`;
+    const result = await pool.query(
+      `INSERT INTO device_tokens (id, user_id, device_token, platform, device_name, device_model, os_version, app_version)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       ON CONFLICT (user_id, device_token) DO UPDATE SET
+         platform = EXCLUDED.platform, device_name = EXCLUDED.device_name, device_model = EXCLUDED.device_model,
+         os_version = EXCLUDED.os_version, app_version = EXCLUDED.app_version, is_active = true,
+         last_used_at = NOW(), updated_at = NOW()
+       RETURNING *`,
+      [id, req.user.id, deviceToken, platform, deviceName, deviceModel, osVersion, appVersion]
+    );
+    res.status(201).json({ success: true, deviceToken: result.rows[0] });
+  } catch (error) {
+    console.error('[DEVICE-TOKENS] Error:', error);
+    res.status(500).json({ error: 'Failed to register device token' });
+  }
+});
+
+// Get user's device tokens
+app.get('/api/device-tokens', authenticateToken, async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT * FROM device_tokens WHERE user_id = $1 AND is_active = true ORDER BY last_used_at DESC',
+      [req.user.id]
+    );
+    res.json({ success: true, devices: result.rows });
+  } catch (error) {
+    console.error('[DEVICE-TOKENS] Error:', error);
+    res.status(500).json({ error: 'Failed to fetch device tokens' });
+  }
+});
+
+// Deactivate device token
+app.delete('/api/device-tokens', authenticateToken, async (req, res) => {
+  try {
+    const { deviceToken } = req.body;
+    if (!deviceToken) return res.status(400).json({ error: 'deviceToken is required' });
+    await pool.query(
+      'UPDATE device_tokens SET is_active = false, updated_at = NOW() WHERE user_id = $1 AND device_token = $2',
+      [req.user.id, deviceToken]
+    );
+    res.json({ success: true, message: 'Device token deactivated' });
+  } catch (error) {
+    console.error('[DEVICE-TOKENS] Error:', error);
+    res.status(500).json({ error: 'Failed to deactivate device token' });
+  }
+});
+
+// ============================================================================
+// PHASE 2: USER SETTINGS (Mobile + Web)
+// ============================================================================
+
+// Get user settings
+app.get('/api/settings', authenticateToken, async (req, res) => {
+  try {
+    let result = await pool.query('SELECT * FROM user_settings WHERE user_id = $1', [req.user.id]);
+    if (result.rows.length === 0) {
+      result = await pool.query(
+        "INSERT INTO user_settings (user_id, last_active_role) VALUES ($1, 'doctor') RETURNING *",
+        [req.user.id]
+      );
+    }
+    
+    // Get push subscription
+    let pushResult = await pool.query('SELECT * FROM push_subscriptions WHERE user_id = $1', [req.user.id]);
+    
+    res.json({
+      success: true,
+      settings: result.rows[0],
+      push: pushResult.rows[0] || null
+    });
+  } catch (error) {
+    console.error('[SETTINGS] Error:', error);
+    res.status(500).json({ error: 'Failed to fetch settings' });
+  }
+});
+
+// Update user settings
+app.put('/api/settings', authenticateToken, async (req, res) => {
+  try {
+    const { push, ...appSettings } = req.body;
+    const fields = [];
+    const values = [req.user.id];
+    let idx = 2;
+
+    const allowed = ['theme', 'language', 'font_size', 'biometric_enabled', 'auto_sync',
+      'sync_on_wifi_only', 'data_saver_mode', 'accessibility_high_contrast',
+      'accessibility_screen_reader', 'last_active_role', 'onboarding_completed'];
+
+    for (const field of allowed) {
+      if (field in appSettings) {
+        fields.push(`${field} = $${idx++}`);
+        values.push(appSettings[field]);
+      }
+    }
+
+    // Upsert user settings
+    await pool.query(
+      "INSERT INTO user_settings (user_id, last_active_role) VALUES ($1, 'doctor') ON CONFLICT (user_id) DO NOTHING",
+      [req.user.id]
+    );
+
+    if (fields.length > 0) {
+      fields.push('updated_at = NOW()');
+      await pool.query(`UPDATE user_settings SET ${fields.join(', ')} WHERE user_id = $1`, values);
+    }
+
+    // Update push preferences if provided
+    if (push) {
+      const pushFields = [];
+      const pushValues = [req.user.id];
+      let pIdx = 2;
+      const pushAllowed = ['appointment_reminders', 'medication_reminders', 'health_tips',
+        'lab_results', 'doctor_messages', 'system_updates', 'quiet_hours_start',
+        'quiet_hours_end', 'language_preference'];
+
+      for (const field of pushAllowed) {
+        if (field in push) {
+          pushFields.push(`${field} = $${pIdx++}`);
+          pushValues.push(push[field]);
+        }
+      }
+
+      if (pushFields.length > 0) {
+        const psId = `PS-${crypto.randomUUID().substring(0, 12)}`;
+        await pool.query(
+          `INSERT INTO push_subscriptions (id, user_id) VALUES ($1, $2) ON CONFLICT (user_id) DO NOTHING`,
+          [psId, req.user.id]
+        );
+        pushFields.push('updated_at = NOW()');
+        await pool.query(`UPDATE push_subscriptions SET ${pushFields.join(', ')} WHERE user_id = $1`, pushValues);
+      }
+    }
+
+    const updated = await pool.query('SELECT * FROM user_settings WHERE user_id = $1', [req.user.id]);
+    res.json({ success: true, settings: updated.rows[0] });
+  } catch (error) {
+    console.error('[SETTINGS] Error:', error);
+    res.status(500).json({ error: 'Failed to update settings' });
+  }
+});
+
+// ============================================================================
+// PHASE 2: API CONNECTIONS (Multi-service management)
+// ============================================================================
+
+// Get user's API connections
+app.get('/api/connections', authenticateToken, async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT id, user_id, service_type, service_url, connection_status, last_sync_at, metadata, created_at FROM user_api_connections WHERE user_id = $1 ORDER BY created_at',
+      [req.user.id]
+    );
+    res.json({ success: true, connections: result.rows });
+  } catch (error) {
+    console.error('[API-CONNECTIONS] Error:', error);
+    res.status(500).json({ error: 'Failed to fetch connections' });
+  }
+});
+
+// Connect to a service
+app.post('/api/connections', authenticateToken, async (req, res) => {
+  try {
+    const { serviceType, serviceUrl, accessToken, metadata } = req.body;
+    if (!serviceType) return res.status(400).json({ error: 'serviceType is required' });
+
+    const id = `CONN-${crypto.randomUUID().substring(0, 12)}`;
+    const result = await pool.query(
+      `INSERT INTO user_api_connections (id, user_id, service_type, service_url, access_token_encrypted, metadata)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       ON CONFLICT (user_id, service_type) DO UPDATE SET
+         service_url = COALESCE(EXCLUDED.service_url, user_api_connections.service_url),
+         access_token_encrypted = COALESCE(EXCLUDED.access_token_encrypted, user_api_connections.access_token_encrypted),
+         connection_status = 'active', metadata = COALESCE(EXCLUDED.metadata, user_api_connections.metadata),
+         updated_at = NOW()
+       RETURNING *`,
+      [id, req.user.id, serviceType, serviceUrl, accessToken, JSON.stringify(metadata || {})]
+    );
+
+    // Audit
+    const auditId = `ACA-${crypto.randomUUID().substring(0, 12)}`;
+    await pool.query(
+      'INSERT INTO api_connection_audit (id, connection_id, user_id, action, service_type, details) VALUES ($1, $2, $3, $4, $5, $6)',
+      [auditId, result.rows[0].id, req.user.id, 'connect', serviceType, JSON.stringify({ serviceUrl })]
+    );
+
+    res.status(201).json({ success: true, connection: result.rows[0] });
+  } catch (error) {
+    console.error('[API-CONNECTIONS] Error:', error);
+    res.status(500).json({ error: 'Failed to connect service' });
+  }
+});
+
+// Disconnect from a service
+app.delete('/api/connections/:serviceType', authenticateToken, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `UPDATE user_api_connections SET connection_status = 'revoked', access_token_encrypted = NULL, updated_at = NOW()
+       WHERE user_id = $1 AND service_type = $2 RETURNING *`,
+      [req.user.id, req.params.serviceType]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Connection not found' });
+
+    const auditId = `ACA-${crypto.randomUUID().substring(0, 12)}`;
+    await pool.query(
+      'INSERT INTO api_connection_audit (id, connection_id, user_id, action, service_type) VALUES ($1, $2, $3, $4, $5)',
+      [auditId, result.rows[0].id, req.user.id, 'disconnect', req.params.serviceType]
+    );
+
+    res.json({ success: true, message: `Disconnected from ${req.params.serviceType}` });
+  } catch (error) {
+    console.error('[API-CONNECTIONS] Error:', error);
+    res.status(500).json({ error: 'Failed to disconnect service' });
+  }
+});
+
+// ============================================================================
+// PHASE 2: SYNC QUEUE (Offline support)
+// ============================================================================
+
+// Push sync items from client
+app.post('/api/sync/push', authenticateToken, async (req, res) => {
+  try {
+    const { items } = req.body;
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ error: 'items array required' });
+    }
+
+    const results = [];
+    for (const item of items) {
+      const id = `SQ-${crypto.randomUUID().substring(0, 12)}`;
+      const result = await pool.query(
+        `INSERT INTO sync_queue (id, user_id, entity_type, entity_id, operation, payload, client_timestamp, server_timestamp, sync_status)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), 'synced') RETURNING *`,
+        [id, req.user.id, item.entityType, item.entityId, item.operation, JSON.stringify(item.payload), item.clientTimestamp]
+      );
+      results.push(result.rows[0]);
+    }
+
+    res.json({ success: true, synced: results.length, serverTimestamp: new Date().toISOString() });
+  } catch (error) {
+    console.error('[SYNC] Push error:', error);
+    res.status(500).json({ error: 'Sync push failed' });
+  }
+});
+
+// Pull sync items from server
+app.get('/api/sync/pull', authenticateToken, async (req, res) => {
+  try {
+    const since = req.query.since || new Date(0).toISOString();
+    const result = await pool.query(
+      'SELECT * FROM sync_queue WHERE user_id = $1 AND server_timestamp > $2 ORDER BY server_timestamp ASC',
+      [req.user.id, since]
+    );
+    res.json({ success: true, items: result.rows, serverTimestamp: new Date().toISOString() });
+  } catch (error) {
+    console.error('[SYNC] Pull error:', error);
+    res.status(500).json({ error: 'Sync pull failed' });
   }
 });
 

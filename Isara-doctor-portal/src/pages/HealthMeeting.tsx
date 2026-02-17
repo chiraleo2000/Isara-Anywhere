@@ -15,6 +15,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { User, QueuePatient } from '../types';
 import { useSettings } from '../hooks/useSettings';
 import { doctorDataService } from '../services/doctorDataService';
@@ -156,6 +157,7 @@ const hmDarkCard = (isDark: boolean) => isDark ? 'bg-gray-800' : 'bg-white';
 const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
   const { theme } = useSettings();
   const isDark = theme === 'dark';
+  const navigate = useNavigate();
 
   const [meetings, setMeetings] = useState<ScheduledMeeting[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -1478,13 +1480,70 @@ Izara Telehealth Team
 
       {/* Meetings Tab */}
       {!loading && activeTab === 'meetings' && (
-        <div className="bg-white rounded-xl shadow-lg p-6">
-          <div className="text-center py-12 text-gray-500">
-            <div className="text-6xl mb-4">📅</div>
-            <div className="text-lg font-medium">Scheduled Meetings Tab Removed</div>
-            <p className="text-sm text-gray-400 mt-2">
-              This tab has been removed. Use Patient Queue to manage appointments.
-            </p>
+        <div className={`${hmDarkCard(isDark)} rounded-xl shadow-lg p-6`}>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+            <h2 className={`text-xl font-bold ${hmDarkText(isDark)} flex items-center gap-2`}>
+              🎥 Scheduled Meetings
+              <span className="text-sm font-normal text-gray-500 ml-2">
+                ({allAppointments.filter((a: any) => a.status === 'confirmed').length} confirmed)
+              </span>
+            </h2>
+            <button
+              onClick={loadAllData}
+              className="px-4 py-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-colors"
+            >
+              🔄 Refresh
+            </button>
+          </div>
+
+          {/* Confirmed appointments with meeting links */}
+          <div className="space-y-4">
+            {allAppointments.filter((a: any) => a.status === 'confirmed').length === 0 ? (
+              <div className="text-center py-12 text-gray-500">
+                <div className="text-6xl mb-4">📅</div>
+                <p>No confirmed meetings yet. Confirm appointments from Patient Queue.</p>
+              </div>
+            ) : (
+              allAppointments.filter((a: any) => a.status === 'confirmed').map((apt: any) => (
+                <div key={apt.id} className={`${isDark ? 'bg-gray-700' : 'bg-gray-50'} rounded-lg p-4 border ${isDark ? 'border-gray-600' : 'border-gray-200'}`}>
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h3 className={`font-bold ${hmDarkText(isDark)}`}>
+                        {apt.patientName || 'Unknown Patient'}
+                      </h3>
+                      <p className={`text-sm ${hmDarkSubtext(isDark)}`}>
+                        📅 {apt.appointmentDate || apt.scheduledDate || 'N/A'} | ⏰ {apt.appointmentTime || apt.scheduledTime || 'N/A'}
+                      </p>
+                      <p className={`text-sm ${hmDarkSubtext(isDark)} mt-1`}>
+                        📋 {apt.reason || apt.symptoms || 'General Consultation'}
+                      </p>
+                      {apt.jitsiRoomName && (
+                        <p className="text-xs text-blue-400 mt-1">🔗 Room: {apt.jitsiRoomName}</p>
+                      )}
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      {/* Start Meeting In-App (with Transcript + AI) */}
+                      <button
+                        onClick={() => navigate(`/doctor/${doctor.id}/meeting/${apt.id}`)}
+                        className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-1"
+                      >
+                        🎥 Start Meeting (In-App)
+                      </button>
+                      {/* Open in External Tab */}
+                      {apt.doctorMeetingUrl && (
+                        <button
+                          onClick={() => window.open(apt.doctorMeetingUrl, '_blank')}
+                          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-colors flex items-center gap-1"
+                        >
+                          🔗 Open Jitsi (New Tab)
+                        </button>
+                      )}
+                      <span className="text-xs text-green-500 text-center">✅ Confirmed</span>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       )}

@@ -23,6 +23,12 @@ import googleServicesRoutes from './routes/google-services';
 import contentRoutes from './routes/content';
 import videoMeetingRoutes from './routes/video-meeting';
 import notificationRoutes from './routes/notifications';
+// Phase 2 routes
+import deviceTokenRoutes from './routes/device-tokens';
+import biometricRoutes from './routes/biometric';
+import syncRoutes from './routes/sync';
+import apiConnectionRoutes from './routes/api-connections';
+import settingsRoutes from './routes/settings';
 import { authMiddleware } from './middleware/auth';
 import postgresDataService from './services/postgresDataService';
 
@@ -107,11 +113,14 @@ const ALLOWED_ORIGINS: (string | RegExp | boolean)[] = process.env.NODE_ENV === 
       // Allow localhost for testing Docker containers locally
       'http://localhost:3005',
       'http://localhost:3004',
+      'http://localhost:3010',
+      'http://localhost:8081', // Expo dev server
       'http://127.0.0.1:3005',
       'http://127.0.0.1:3004',
       /\.run\.app$/
     ]
-  : ['http://localhost:3005', 'http://localhost:3004', 'http://127.0.0.1:3005', 'http://0.0.0.0:3005', true];
+  : ['http://localhost:3005', 'http://localhost:3004', 'http://localhost:3010', 'http://localhost:8081',
+     'http://127.0.0.1:3005', 'http://0.0.0.0:3005', true];
 
 // OWASP Security Middleware
 
@@ -141,17 +150,19 @@ app.use(cors({
       severity: 'WARN',
       origin
     });
-    callback(new Error('CORS policy violation'));
+    // Return 403 instead of throwing - prevents unhandled errors
+    callback(null, false);
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID', 'X-Platform', 'X-Device-ID', 'X-App-Version'],
 }));
 
-// A07 - Rate Limiting (increased for development/testing)
+// A07 - Rate Limiting
+const rateLimitMax = parseInt(process.env.RATE_LIMIT_MAX || '0') || (process.env.NODE_ENV === 'production' ? 2000 : 10000);
 app.use(rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute window
-  maxRequests: 10000, // High limit for testing - 10000 requests per minute
+  maxRequests: rateLimitMax,
   keyGenerator: (req) => getClientIP(req)
 }));
 
@@ -540,6 +551,13 @@ app.use('/api/google', googleServicesRoutes);
 app.use('/api/content', contentRoutes);
 app.use('/api/video-meeting', videoMeetingRoutes);
 app.use('/api/notifications', notificationRoutes);
+
+// Phase 2 routes - Mobile app support
+app.use('/api/device-tokens', deviceTokenRoutes);
+app.use('/api/biometric', biometricRoutes);
+app.use('/api/sync', syncRoutes);
+app.use('/api/connections', apiConnectionRoutes);
+app.use('/api/settings', settingsRoutes);
 
 // ============================================================================
 // HEALTH RECORDS - GET ALL (for Step 10: Patient views health records)

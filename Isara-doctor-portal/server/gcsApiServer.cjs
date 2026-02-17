@@ -147,9 +147,10 @@ app.use(cors({
 }));
 
 // A07 - Rate Limiting
+const rateLimitMax = parseInt(process.env.RATE_LIMIT_MAX || '0') || (process.env.NODE_ENV === 'production' ? 2000 : 10000);
 app.use(rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  maxRequests: 200, // 200 requests per minute
+  maxRequests: rateLimitMax,
   keyGenerator: (req) => getClientIP(req)
 }));
 

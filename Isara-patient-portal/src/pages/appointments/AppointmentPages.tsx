@@ -268,17 +268,27 @@ export function AppointmentListPage() {
 
                   {/* Quick Join Button */}
                   {apt.type === 'telehealth' && (apt.meetingLink || apt.patientMeetingUrl) && (
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        window.open(apt.patientMeetingUrl || apt.meetingLink, '_blank');
-                      }}
-                      className="mt-3 w-full flex items-center justify-center gap-2 bg-emerald-600 text-white py-2.5 rounded-lg hover:bg-emerald-700 font-medium"
-                    >
-                      <Video className="w-5 h-5" />
-                      🎥 เข้าห้องประชุมเลย
-                    </button>
+                    <div className="mt-3 flex flex-col gap-2">
+                      <Link
+                        to={`/meeting/${apt.id}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-full flex items-center justify-center gap-2 bg-emerald-600 text-white py-2.5 rounded-lg hover:bg-emerald-700 font-medium"
+                      >
+                        <Video className="w-5 h-5" />
+                        🎥 เข้าห้องประชุม (In-App)
+                      </Link>
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          window.open(apt.patientMeetingUrl || apt.meetingLink, '_blank');
+                        }}
+                        className="w-full flex items-center justify-center gap-2 bg-gray-100 text-gray-700 py-2 rounded-lg hover:bg-gray-200 text-sm"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                        Open in New Tab
+                      </button>
+                    </div>
                   )}
                 </div>
               )}

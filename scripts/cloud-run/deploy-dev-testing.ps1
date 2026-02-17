@@ -1,7 +1,7 @@
 #!/usr/bin/env pwsh
 # ============================================================================
 # IZARA TELEMEDICINE — Cloud Run Dev-Testing Deployment Script
-# Version: 1.4.8
+# Version: 2.0.0-phase2
 # ============================================================================
 #
 # Deploys all 5 services to Google Cloud Run with "-dev-testing" suffix:
@@ -36,7 +36,7 @@ param(
 $PROJECT_ID     = "izara-telemedicine"
 $REGION         = "asia-southeast1"
 $REGISTRY       = "asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals"
-$TAG            = "v1.4.8-dev"
+$TAG            = "v2.0.0-dev"
 $SUFFIX         = "-dev-testing"
 $ROOT_DIR       = (Resolve-Path "$PSScriptRoot\..\..").Path
 
@@ -117,7 +117,7 @@ if ($Teardown) {
 # PRE-FLIGHT CHECKS
 # ============================================================================
 Write-Host "`n═══════════════════════════════════════════════════════════════" -ForegroundColor Magenta
-Write-Host "  IZARA TELEMEDICINE v1.4.8 — Cloud Run Dev-Testing Deployment" -ForegroundColor Magenta
+Write-Host "  IZARA TELEMEDICINE v2.0.0 — Cloud Run Dev-Testing Deployment" -ForegroundColor Magenta
 Write-Host "═══════════════════════════════════════════════════════════════" -ForegroundColor Magenta
 
 Write-Step "Pre-flight checks..."
@@ -245,7 +245,7 @@ if (-not $SkipBuild) {
     docker build -f Dockerfile.unified `
         --build-arg VITE_API_URL="" `
         --build-arg VITE_APP_NAME="Izara Patient Portal (Dev)" `
-        --build-arg VITE_APP_VERSION="1.4.8-dev" `
+        --build-arg VITE_APP_VERSION="2.0.0-dev" `
         --build-arg VITE_APP_ENV=production `
         --build-arg VITE_USE_POSTGRESQL=true `
         --build-arg VITE_MEETING_SERVER_URL=$MEETING_URL `
@@ -293,7 +293,7 @@ if (-not $SkipBuild) {
         --build-arg VITE_API_URL="" `
         --build-arg VITE_AUTH_URL="" `
         --build-arg VITE_APP_NAME="Izara Doctor Portal (Dev)" `
-        --build-arg VITE_APP_VERSION="1.4.8-dev" `
+        --build-arg VITE_APP_VERSION="2.0.0-dev" `
         --build-arg VITE_APP_ENV=production `
         --build-arg VITE_USE_POSTGRESQL=true `
         --build-arg VITE_MEETING_SERVER_URL=$MEETING_URL `
@@ -344,7 +344,7 @@ Write-OK "Meeting Server CORS updated"
 # ============================================================================
 Write-Host "`n" -NoNewline
 Write-Host "═══════════════════════════════════════════════════════════════" -ForegroundColor Green
-Write-Host "  DEPLOYMENT COMPLETE — Izara Telemedicine v1.4.8 Dev-Testing" -ForegroundColor Green
+Write-Host "  DEPLOYMENT COMPLETE — Izara Telemedicine v2.0.0 Dev-Testing" -ForegroundColor Green
 Write-Host "═══════════════════════════════════════════════════════════════" -ForegroundColor Green
 
 Write-Host ""

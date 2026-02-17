@@ -215,6 +215,26 @@ export const ENDPOINTS = {
     medical: '/api/content/tags/medical',
     clinical: '/api/content/tags/clinical',
   },
+  // Phase 2 endpoints
+  deviceTokens: '/api/device-tokens',
+  biometric: {
+    register: '/api/biometric/register',
+    verify: '/api/biometric/verify',
+    status: '/api/biometric/status',
+  },
+  sync: {
+    push: '/api/sync/push',
+    pull: '/api/sync/pull',
+    conflicts: '/api/sync/conflicts',
+    status: '/api/sync/status',
+  },
+  connections: '/api/connections',
+  settings: {
+    base: '/api/settings',
+    notifications: '/api/settings/notifications',
+    role: '/api/settings/role',
+    onboarding: '/api/settings/onboarding',
+  },
 };
 
 /** Helper: get doctor auth login endpoint (doctor portal uses /auth/login not /api/auth/login) */

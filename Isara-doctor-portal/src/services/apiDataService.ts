@@ -392,6 +392,105 @@ export async function saveAllAppointments(appointments: any[]): Promise<{ succes
 }
 
 // ============================================================================
+// PHASE 2: DEVICE TOKENS
+// ============================================================================
+
+export async function registerDeviceToken(data: {
+  token: string;
+  platform: 'ios' | 'android' | 'web';
+  device_name?: string;
+}): Promise<{ id: string }> {
+  return fetchAPI('/api/device-tokens', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function getDeviceTokens(): Promise<any[]> {
+  return fetchAPI('/api/device-tokens');
+}
+
+export async function deactivateDeviceToken(token: string): Promise<void> {
+  return fetchAPI('/api/device-tokens', {
+    method: 'DELETE',
+    body: JSON.stringify({ token }),
+  });
+}
+
+// ============================================================================
+// PHASE 2: USER SETTINGS & NOTIFICATIONS
+// ============================================================================
+
+export async function getUserSettings(): Promise<any> {
+  return fetchAPI('/api/settings');
+}
+
+export async function updateUserSettings(settings: Record<string, any>): Promise<any> {
+  return fetchAPI('/api/settings', {
+    method: 'PUT',
+    body: JSON.stringify(settings),
+  });
+}
+
+export async function getNotificationPreferences(): Promise<any[]> {
+  return fetchAPI('/api/settings/notifications');
+}
+
+export async function updateNotificationPreferences(preferences: any[]): Promise<void> {
+  return fetchAPI('/api/settings/notifications', {
+    method: 'PUT',
+    body: JSON.stringify({ preferences }),
+  });
+}
+
+// ============================================================================
+// PHASE 2: API CONNECTIONS
+// ============================================================================
+
+export async function getApiConnections(): Promise<any[]> {
+  return fetchAPI('/api/connections');
+}
+
+export async function connectApiService(data: {
+  service_type: string;
+  access_token?: string;
+  config?: Record<string, any>;
+}): Promise<{ id: string }> {
+  return fetchAPI('/api/connections', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function disconnectApiService(serviceType: string): Promise<void> {
+  return fetchAPI(`/api/connections/${serviceType}`, {
+    method: 'DELETE',
+  });
+}
+
+// ============================================================================
+// PHASE 2: OFFLINE SYNC
+// ============================================================================
+
+export async function pushSyncQueue(changes: any[]): Promise<{
+  processed: number;
+  conflicts: number;
+}> {
+  return fetchAPI('/api/sync/push', {
+    method: 'POST',
+    body: JSON.stringify({ changes }),
+  });
+}
+
+export async function pullSyncChanges(since?: string): Promise<{
+  changes: any[];
+  server_timestamp: string;
+}> {
+  const query = since ? `?since=${since}` : '';
+  return fetchAPI(`/api/sync/pull${query}`);
+}
+
+// ============================================================================
 // GCS REPLACEMENT - Data operations go to PostgreSQL
 // ============================================================================
 

@@ -51,11 +51,11 @@ const JITSI_APP_ID = process.env.JITSI_APP_ID || process.env.VITE_JITSI_APP_ID |
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || '';
 const GEMINI_MODEL = process.env.GEMINI_MODEL || process.env.VITE_GEMINI_MODEL || 'gemini-2.5-flash-lite';
 
-// Log configuration at startup
-console.log('[Video Meeting] ===== Configuration v1.4.7 =====');
+// Log configuration at startup (without leaking API key)
+console.log('[Video Meeting] ===== Configuration v1.4.8 =====');
 console.log('[Video Meeting] Jitsi Domain:', JITSI_DOMAIN);
 console.log('[Video Meeting] Transcription: Web Speech API (browser-native, FREE)');
-console.log('[Video Meeting] Gemini API Key:', GEMINI_API_KEY ? `${GEMINI_API_KEY.substring(0, 15)}...` : '❌ NOT FOUND');
+console.log('[Video Meeting] Gemini API Key:', GEMINI_API_KEY ? '✅ Configured' : '❌ NOT FOUND');
 console.log('[Video Meeting] Gemini Model:', GEMINI_MODEL);
 console.log('[Video Meeting] ===============================');
 
@@ -221,8 +221,8 @@ function createJitsiUrl(roomName: string, config: JitsiConfig, userInfo?: { name
  */
 async function callGeminiAI(prompt: string, maxTokens: number = 2048): Promise<string> {
   if (!GEMINI_API_KEY) {
-    console.warn('⚠️ Gemini API key not configured');
-    return '';
+    console.warn('⚠️ Gemini API key not configured — AI features disabled');
+    throw new Error('AI_NOT_CONFIGURED: Gemini API key not set');
   }
   
   try {
@@ -242,14 +242,26 @@ async function callGeminiAI(prompt: string, maxTokens: number = 2048): Promise<s
     );
     
     if (!response.ok) {
-      throw new Error(`Gemini API error: ${response.status}`);
+      const errorBody = await response.text().catch(() => 'unknown');
+      console.error(`Gemini API HTTP ${response.status}:`, errorBody);
+      throw new Error(`Gemini API error: ${response.status} - ${errorBody.substring(0, 200)}`);
     }
     
     const data = await response.json();
-    return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-  } catch (error) {
-    console.error('Gemini API error:', error);
-    return '';
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    
+    if (!text) {
+      console.warn('⚠️ Gemini returned empty response');
+      throw new Error('AI_EMPTY_RESPONSE: Gemini returned no content');
+    }
+    
+    return text;
+  } catch (error: any) {
+    if (error.message?.startsWith('AI_')) {
+      throw error; // Re-throw our custom errors
+    }
+    console.error('Gemini API error:', error.message);
+    throw new Error(`AI_API_ERROR: ${error.message}`);
   }
 }
 
@@ -454,17 +466,25 @@ async function generatePostMeetingContent(
 
   if (genSummary && transcriptData.length > 0) {
     console.log('📝 Generating meeting summary using Gemini AI...');
-    summary = await generateMeetingSummary(transcriptData, patientInfo);
-    if (memMeeting) {
-      memMeeting.summary = summary || undefined;
+    try {
+      summary = await generateMeetingSummary(transcriptData, patientInfo);
+      if (memMeeting) {
+        memMeeting.summary = summary || undefined;
+      }
+    } catch (aiError: any) {
+      console.warn('⚠️ AI summary generation failed (meeting still ends):', aiError.message);
     }
   }
 
   if (genRecommendations && transcriptData.length > 0) {
     console.log('💡 Generating doctor recommendations using Gemini AI...');
-    recommendations = await generateDoctorRecommendations(transcriptData, summary, patientInfo);
-    if (memMeeting) {
-      memMeeting.doctorRecommendations = recommendations || undefined;
+    try {
+      recommendations = await generateDoctorRecommendations(transcriptData, summary, patientInfo);
+      if (memMeeting) {
+        memMeeting.doctorRecommendations = recommendations || undefined;
+      }
+    } catch (aiError: any) {
+      console.warn('⚠️ AI recommendations generation failed (meeting still ends):', aiError.message);
     }
   }
 
@@ -750,6 +770,34 @@ router.get('/:appointmentId', async (req: Request, res: Response) => {
       .find(m => m.appointmentId === appointmentId && m.status !== 'ended');
     
     if (!memMeeting) {
+      // Fallback: query the meeting server directly
+      try {
+        const meetingServerUrl = process.env.MEETING_SERVER_URL || process.env.VITE_MEETING_SERVER_URL || 'http://meeting-server:3020';
+        const msRes = await fetch(`${meetingServerUrl}/api/meetings?appointmentId=${appointmentId}`);
+        if (msRes.ok) {
+          const msData = await msRes.json() as any;
+          const found = Array.isArray(msData.meetings) ? msData.meetings.find((m: any) => m.appointment_id === appointmentId || m.appointmentId === appointmentId) : null;
+          if (found) {
+            return res.json({
+              success: true,
+              meeting: {
+                id: found.id,
+                appointmentId: found.appointment_id || found.appointmentId || appointmentId,
+                roomName: found.room_id || found.roomName,
+                jitsiUrl: found.meeting_url || found.jitsiUrl,
+                status: found.status || 'active',
+                participants: found.participants || [],
+                createdAt: found.created_at || found.createdAt,
+                startedAt: found.started_at || found.startedAt
+              },
+              source: 'meeting-server'
+            });
+          }
+        }
+      } catch (fallbackErr) {
+        console.log('[VIDEO-MEETING] Meeting server fallback failed:', (fallbackErr as Error).message);
+      }
+
       return res.status(404).json({ error: 'Meeting not found' });
     }
     
