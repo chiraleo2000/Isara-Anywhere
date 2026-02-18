@@ -6,7 +6,24 @@
 
 import { Tabs } from 'expo-router';
 import { Platform } from 'react-native';
-import { TabBarIcon } from '../../../../src/components/navigation/TabBarIcon';
+import { TabBarIcon } from '../../../src/components/navigation/TabBarIcon';
+
+/** Extracted tab bar icon renderers to satisfy react/no-unstable-nested-components */
+const HomeIcon = ({ color, size }: { color: string; size: number }) => (
+  <TabBarIcon name="grid" color={color} size={size} />
+);
+const ScheduleIcon = ({ color, size }: { color: string; size: number }) => (
+  <TabBarIcon name="calendar" color={color} size={size} />
+);
+const PatientsIcon = ({ color, size }: { color: string; size: number }) => (
+  <TabBarIcon name="people" color={color} size={size} />
+);
+const QueueIcon = ({ color, size }: { color: string; size: number }) => (
+  <TabBarIcon name="list" color={color} size={size} />
+);
+const ProfileIcon = ({ color, size }: { color: string; size: number }) => (
+  <TabBarIcon name="person" color={color} size={size} />
+);
 
 export default function DoctorTabLayout() {
   return (
@@ -33,7 +50,7 @@ export default function DoctorTabLayout() {
         options={{
           title: 'หน้าหลัก',
           headerTitle: 'Izara Doctor',
-          tabBarIcon: ({ color, size }) => <TabBarIcon name="grid" color={color} size={size} />,
+          tabBarIcon: HomeIcon,
         }}
       />
       <Tabs.Screen
@@ -41,7 +58,7 @@ export default function DoctorTabLayout() {
         options={{
           title: 'ตารางนัด',
           headerTitle: 'ตารางนัดหมาย',
-          tabBarIcon: ({ color, size }) => <TabBarIcon name="calendar" color={color} size={size} />,
+          tabBarIcon: ScheduleIcon,
         }}
       />
       <Tabs.Screen
@@ -49,7 +66,7 @@ export default function DoctorTabLayout() {
         options={{
           title: 'ผู้ป่วย',
           headerTitle: 'รายชื่อผู้ป่วย',
-          tabBarIcon: ({ color, size }) => <TabBarIcon name="people" color={color} size={size} />,
+          tabBarIcon: PatientsIcon,
         }}
       />
       <Tabs.Screen
@@ -57,7 +74,7 @@ export default function DoctorTabLayout() {
         options={{
           title: 'คิว',
           headerTitle: 'จัดการคิว',
-          tabBarIcon: ({ color, size }) => <TabBarIcon name="list" color={color} size={size} />,
+          tabBarIcon: QueueIcon,
         }}
       />
       <Tabs.Screen
@@ -65,7 +82,7 @@ export default function DoctorTabLayout() {
         options={{
           title: 'โปรไฟล์',
           headerTitle: 'โปรไฟล์แพทย์',
-          tabBarIcon: ({ color, size }) => <TabBarIcon name="person" color={color} size={size} />,
+          tabBarIcon: ProfileIcon,
         }}
       />
     </Tabs>

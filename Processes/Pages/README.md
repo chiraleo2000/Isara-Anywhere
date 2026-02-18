@@ -123,9 +123,9 @@ Pages/
 
 | Service | Local URL | Cloud URL |
 | ------- | --------- | --------- |
-| Patient Portal | http://localhost:3005 | https://izara-patient-portal-hvht4obouq-as.a.run.app |
-| Doctor Portal | http://localhost:3010 | https://izara-doctor-portal-hvht4obouq-as.a.run.app |
-| Meeting Server | http://localhost:3020 | https://izara-jitsi-meeting-portal-hvht4obouq-as.a.run.app |
+| Patient Portal | <http://localhost:3005> | <https://izara-patient-portal-hvht4obouq-as.a.run.app> |
+| Doctor Portal | <http://localhost:3010> | <https://izara-doctor-portal-hvht4obouq-as.a.run.app> |
+| Meeting Server | <http://localhost:3020> | <https://izara-jitsi-meeting-portal-hvht4obouq-as.a.run.app> |
 
 ---
 

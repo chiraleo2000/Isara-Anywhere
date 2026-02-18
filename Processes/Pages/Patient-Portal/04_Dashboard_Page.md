@@ -135,6 +135,7 @@ Central hub for patient activities — quick access to key features, upcoming ap
 | เอกสารคำแนะนำ (Instruction Sheet) | Generated PDF | Downloadable Patient Instruction Sheet |
 
 **What Patient SEES in this widget:**
+
 - ✅ Chief complaint and diagnosis (patient-friendly Thai)
 - ✅ Treatment plan summary
 - ✅ Medications with instructions (วิธีกินยา)
@@ -143,6 +144,7 @@ Central hub for patient activities — quick access to key features, upcoming ap
 - ✅ PDF download link for Patient Instruction Sheet
 
 **What Patient does NOT see:**
+
 - ❌ Internal doctor notes
 - ❌ Raw AI outputs
 - ❌ Doctor-to-doctor communications
@@ -167,6 +169,7 @@ Central hub for patient activities — quick access to key features, upcoming ap
 ```
 
 **Features:**
+
 - Shows the nearest confirmed appointment prominently on dashboard
 - Meeting link available for confirmed telehealth appointments
 - Copy link button for easy sharing with relatives/friends

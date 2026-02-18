@@ -110,8 +110,8 @@
 
 ### Admin-Only Navigation (2 additional items)
 
-10. **👥 จัดการแพทย์** (Manage Doctors) → `/admin/doctors`
-11. **✅ จัดการนัดหมาย** (Manage Appointments) → `/admin/appointments`
+1. **👥 จัดการแพทย์** (Manage Doctors) → `/admin/doctors`
+2. **✅ จัดการนัดหมาย** (Manage Appointments) → `/admin/appointments`
 
 ---
 

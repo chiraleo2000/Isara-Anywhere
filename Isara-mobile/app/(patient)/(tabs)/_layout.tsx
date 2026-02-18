@@ -6,7 +6,24 @@
 
 import { Tabs } from 'expo-router';
 import { Platform } from 'react-native';
-import { TabBarIcon } from '../../../../src/components/navigation/TabBarIcon';
+import { TabBarIcon } from '../../../src/components/navigation/TabBarIcon';
+
+/** Extracted tab bar icon renderers to satisfy react/no-unstable-nested-components */
+const HomeIcon = ({ color, size }: { color: string; size: number }) => (
+  <TabBarIcon name="home" color={color} size={size} />
+);
+const AppointmentsIcon = ({ color, size }: { color: string; size: number }) => (
+  <TabBarIcon name="calendar" color={color} size={size} />
+);
+const HealthIcon = ({ color, size }: { color: string; size: number }) => (
+  <TabBarIcon name="heart" color={color} size={size} />
+);
+const AiChatIcon = ({ color, size }: { color: string; size: number }) => (
+  <TabBarIcon name="chatbubble-ellipses" color={color} size={size} />
+);
+const ProfileIcon = ({ color, size }: { color: string; size: number }) => (
+  <TabBarIcon name="person" color={color} size={size} />
+);
 
 export default function PatientTabLayout() {
   return (
@@ -33,7 +50,7 @@ export default function PatientTabLayout() {
         options={{
           title: 'หน้าหลัก',
           headerTitle: 'Izara Patient',
-          tabBarIcon: ({ color, size }) => <TabBarIcon name="home" color={color} size={size} />,
+          tabBarIcon: HomeIcon,
         }}
       />
       <Tabs.Screen
@@ -41,7 +58,7 @@ export default function PatientTabLayout() {
         options={{
           title: 'นัดหมาย',
           headerTitle: 'นัดหมายของฉัน',
-          tabBarIcon: ({ color, size }) => <TabBarIcon name="calendar" color={color} size={size} />,
+          tabBarIcon: AppointmentsIcon,
         }}
       />
       <Tabs.Screen
@@ -49,7 +66,7 @@ export default function PatientTabLayout() {
         options={{
           title: 'สุขภาพ',
           headerTitle: 'ข้อมูลสุขภาพ',
-          tabBarIcon: ({ color, size }) => <TabBarIcon name="heart" color={color} size={size} />,
+          tabBarIcon: HealthIcon,
         }}
       />
       <Tabs.Screen
@@ -57,9 +74,7 @@ export default function PatientTabLayout() {
         options={{
           title: 'AI แพทย์',
           headerTitle: 'ปรึกษา AI',
-          tabBarIcon: ({ color, size }) => (
-            <TabBarIcon name="chatbubble-ellipses" color={color} size={size} />
-          ),
+          tabBarIcon: AiChatIcon,
         }}
       />
       <Tabs.Screen
@@ -67,7 +82,7 @@ export default function PatientTabLayout() {
         options={{
           title: 'โปรไฟล์',
           headerTitle: 'โปรไฟล์ของฉัน',
-          tabBarIcon: ({ color, size }) => <TabBarIcon name="person" color={color} size={size} />,
+          tabBarIcon: ProfileIcon,
         }}
       />
     </Tabs>

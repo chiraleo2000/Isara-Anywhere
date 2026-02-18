@@ -370,6 +370,7 @@ function Invoke-AllTests {
 }
 
 function Invoke-Phase2Tests {
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments', 'headedFlag')]
     param([string]$Target, [switch]$Headed, [int]$Workers)
     
     Write-Host "RUNNING PHASE 2 TESTS (SPECS 11-14)" -ForegroundColor Magenta
