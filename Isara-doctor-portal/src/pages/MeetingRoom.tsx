@@ -54,8 +54,8 @@ interface MeetingState {
 
 const JITSI_DOMAIN = 'meet.jit.si';
 const MEETING_SERVER_URL = (() => {
-  if (typeof window !== 'undefined') {
-    const env = (window as any).ENV;
+  if (globalThis.window !== undefined) {
+    const env = (globalThis as any).ENV;
     if (env?.MEETING_SERVER_URL) return env.MEETING_SERVER_URL;
   }
   return import.meta.env?.VITE_MEETING_SERVER_URL || 'http://localhost:3020';
@@ -88,10 +88,10 @@ const MeetingRoom: React.FC = () => {
   const [chatInput, setChatInput] = useState('');
   const [aiSummary, setAiSummary] = useState<string | null>(null);
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
-  const [meetingInfo, setMeetingInfo] = useState<any>(null);
+  const meetingInfoRef = useRef<any>(null);
   const [showPanel, setShowPanel] = useState<'transcript' | 'chat' | 'summary' | null>('transcript');
   const [error, setError] = useState<string | null>(null);
-  const [participants, setParticipants] = useState<string[]>([]);
+  const participantsRef = useRef<string[]>([]);
   const [meetingDuration, setMeetingDuration] = useState(0);
   const [guestEmail, setGuestEmail] = useState('');
   const [guestName, setGuestName] = useState('');
@@ -100,12 +100,23 @@ const MeetingRoom: React.FC = () => {
   const durationTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // ============================================================================
+  // DURATION TIMER (moved before useEffect so handlers can reference it)
+  // ============================================================================
+
+  const startDurationTimer = useCallback(() => {
+    const start = Date.now();
+    durationTimerRef.current = setInterval(() => {
+      setMeetingDuration(Math.floor((Date.now() - start) / 1000));
+    }, 1000);
+  }, []);
+
+  // ============================================================================
   // JITSI EXTERNAL API LOADER
   // ============================================================================
 
   const loadJitsiScript = useCallback((): Promise<void> => {
     return new Promise((resolve, reject) => {
-      if ((window as any).JitsiMeetExternalAPI) {
+      if ((globalThis as any).JitsiMeetExternalAPI) {
         resolve();
         return;
       }
@@ -122,7 +133,57 @@ const MeetingRoom: React.FC = () => {
   // INITIALIZE MEETING
   // ============================================================================
 
+  // Socket event handlers (component-level to reduce nesting depth)
+  const handleTranscriptUpdate = useCallback((data: TranscriptSegment) => {
+    setTranscripts(prev => [...prev, data]);
+  }, []);
+
+  const handleChatMessage = useCallback((msg: ChatMessage) => {
+    setChatMessages(prev => [...prev, msg]);
+  }, []);
+
+  const handleConferenceJoined = useCallback((data: any) => {
+    console.log('[Jitsi] Conference joined:', data);
+    setMeetingState(prev => ({ ...prev, status: 'in_progress' }));
+    startDurationTimer();
+  }, [startDurationTimer]);
+
+  const handleParticipantJoined = useCallback((data: any) => {
+    console.log('[Jitsi] Participant joined:', data.displayName);
+    participantsRef.current = [...participantsRef.current, data.displayName || 'Unknown'];
+  }, []);
+
   useEffect(() => {
+    const connectSocket = async () => {
+      try {
+        const { io } = await import('socket.io-client');
+        const socket = io(MEETING_SERVER_URL, {
+          transports: ['websocket', 'polling'],
+          autoConnect: true,
+        });
+
+        socket.on('connect', () => {
+          console.log('[Socket] Connected to meeting server');
+          socket.emit('join-meeting', {
+            meetingId: appointmentId,
+            userName: user?.displayName || user?.name || 'Doctor',
+            role: 'doctor',
+          });
+        });
+
+        socket.on('transcript-update', handleTranscriptUpdate);
+        socket.on('chat-message', handleChatMessage);
+
+        socket.on('meeting-status', (data: any) => {
+          console.log('[Socket] Meeting status:', data.status);
+        });
+
+        socketRef.current = socket;
+      } catch {
+        console.warn('[MeetingRoom] Socket.IO connection skipped (meeting server may be unavailable)');
+      }
+    };
+
     const initMeeting = async () => {
       try {
         // 1. Fetch meeting info from meeting server
@@ -133,7 +194,7 @@ const MeetingRoom: React.FC = () => {
           if (res.ok) {
             const data = await res.json();
             if (data.meeting) {
-              setMeetingInfo(data.meeting);
+              meetingInfoRef.current = data.meeting;
               roomName = data.meeting.room_name || roomName;
             }
           }
@@ -145,8 +206,8 @@ const MeetingRoom: React.FC = () => {
         await loadJitsiScript();
 
         // 3. Initialize Jitsi
-        if (jitsiContainerRef.current && (window as any).JitsiMeetExternalAPI) {
-          const api = new (window as any).JitsiMeetExternalAPI(JITSI_DOMAIN, {
+        if (jitsiContainerRef.current && (globalThis as any).JitsiMeetExternalAPI) {
+          const api = new (globalThis as any).JitsiMeetExternalAPI(JITSI_DOMAIN, {
             roomName,
             parentNode: jitsiContainerRef.current,
             width: '100%',
@@ -193,68 +254,27 @@ const MeetingRoom: React.FC = () => {
 
           jitsiApiRef.current = api;
 
+          // Simple Jitsi event handlers (local to avoid excessive nesting)
+          const handleReadyToClose = () => handleMeetingEnd();
+          const handleParticipantLeft = (data: any) => {
+            console.log('[Jitsi] Participant left:', data);
+          };
+          const handleChatUpdated = (data: any) => {
+            if (data.isOpen) setShowPanel('chat');
+          };
+
           // Event listeners
-          api.on('readyToClose', () => {
-            handleMeetingEnd();
-          });
-
-          api.on('videoConferenceJoined', (data: any) => {
-            console.log('[Jitsi] Conference joined:', data);
-            setMeetingState(prev => ({ ...prev, status: 'in_progress' }));
-            startDurationTimer();
-          });
-
-          api.on('participantJoined', (data: any) => {
-            console.log('[Jitsi] Participant joined:', data.displayName);
-            setParticipants(prev => [...prev, data.displayName || 'Unknown']);
-          });
-
-          api.on('participantLeft', (data: any) => {
-            console.log('[Jitsi] Participant left:', data.id);
-          });
-
-          api.on('chatUpdated', (data: any) => {
-            if (data.isOpen === false) {
-              // Chat messages from Jitsi's built-in chat
-            }
-          });
+          api.on('readyToClose', handleReadyToClose);
+          api.on('videoConferenceJoined', handleConferenceJoined);
+          api.on('participantJoined', handleParticipantJoined);
+          api.on('participantLeft', handleParticipantLeft);
+          api.on('chatUpdated', handleChatUpdated);
 
           setMeetingState(prev => ({ ...prev, status: 'ready' }));
         }
 
         // 4. Connect Socket.IO
-        try {
-          const { io } = await import('socket.io-client');
-          const socket = io(MEETING_SERVER_URL, {
-            transports: ['websocket', 'polling'],
-            autoConnect: true,
-          });
-
-          socket.on('connect', () => {
-            console.log('[Socket] Connected to meeting server');
-            socket.emit('join-meeting', {
-              meetingId: appointmentId,
-              userName: user?.displayName || user?.name || 'Doctor',
-              role: 'doctor',
-            });
-          });
-
-          socket.on('transcript-update', (data: TranscriptSegment) => {
-            setTranscripts(prev => [...prev, data]);
-          });
-
-          socket.on('chat-message', (msg: ChatMessage) => {
-            setChatMessages(prev => [...prev, msg]);
-          });
-
-          socket.on('meeting-status', (data: any) => {
-            console.log('[Socket] Meeting status:', data.status);
-          });
-
-          socketRef.current = socket;
-        } catch {
-          console.warn('[MeetingRoom] Socket.IO connection skipped (meeting server may be unavailable)');
-        }
+        await connectSocket();
 
       } catch (err: any) {
         console.error('[MeetingRoom] Init error:', err);
@@ -282,23 +302,12 @@ const MeetingRoom: React.FC = () => {
         clearInterval(durationTimerRef.current);
       }
     };
-  }, [appointmentId, user, loadJitsiScript]);
+  }, [appointmentId, user, loadJitsiScript, startDurationTimer, handleTranscriptUpdate, handleChatMessage, handleConferenceJoined, handleParticipantJoined]);
 
   // Auto-scroll transcript
   useEffect(() => {
     transcriptEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [transcripts]);
-
-  // ============================================================================
-  // DURATION TIMER
-  // ============================================================================
-
-  const startDurationTimer = () => {
-    const start = Date.now();
-    durationTimerRef.current = setInterval(() => {
-      setMeetingDuration(Math.floor((Date.now() - start) / 1000));
-    }, 1000);
-  };
 
   const formatDuration = (seconds: number) => {
     const h = Math.floor(seconds / 3600);
@@ -314,7 +323,7 @@ const MeetingRoom: React.FC = () => {
   // ============================================================================
 
   const startTranscription = useCallback(() => {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const SpeechRecognition = (globalThis as any).SpeechRecognition || (globalThis as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
       setError('Speech recognition is not supported in this browser');
       return;
@@ -575,6 +584,60 @@ const MeetingRoom: React.FC = () => {
   // RENDER
   // ============================================================================
 
+  const getSpeakerBadgeClass = (role: string): string => {
+    if (role === 'doctor') return 'bg-blue-900 text-blue-300';
+    if (role === 'patient') return 'bg-green-900 text-green-300';
+    return 'bg-gray-600 text-gray-300';
+  };
+
+  const getSpeakerEmoji = (role: string): string => {
+    if (role === 'doctor') return '👨‍⚕️';
+    if (role === 'patient') return '🧑';
+    return '👥';
+  };
+
+  const renderTranscriptButtons = () => {
+    if (meetingState.isTranscribing) {
+      return (
+        <>
+          {meetingState.isPaused ? (
+            <button
+              onClick={resumeTranscription}
+              className="px-2 py-1 bg-yellow-600 hover:bg-yellow-700 rounded text-sm transition"
+              title="Resume Transcription"
+            >
+              ▶ ต่อ
+            </button>
+          ) : (
+            <button
+              onClick={pauseTranscription}
+              className="px-2 py-1 bg-yellow-600 hover:bg-yellow-700 rounded text-sm transition"
+              title="Pause Transcription"
+            >
+              ⏸ หยุดชั่วคราว
+            </button>
+          )}
+          <button
+            onClick={stopTranscription}
+            className="px-2 py-1 bg-red-600 hover:bg-red-700 rounded text-sm transition"
+            title="Stop Transcription"
+          >
+            ⏹ หยุด
+          </button>
+        </>
+      );
+    }
+    return (
+      <button
+        onClick={startTranscription}
+        className="px-3 py-1 bg-green-600 hover:bg-green-700 rounded text-sm transition"
+        title="Start Transcription"
+      >
+        ▶ เริ่ม Transcript
+      </button>
+    );
+  };
+
   return (
     <div className="h-screen flex flex-col bg-gray-900 text-white">
       {/* Top Bar */}
@@ -604,42 +667,7 @@ const MeetingRoom: React.FC = () => {
 
           {/* Transcript Controls */}
           <div className="flex items-center gap-1 bg-gray-700 rounded-lg px-2 py-1">
-            {!meetingState.isTranscribing ? (
-              <button
-                onClick={startTranscription}
-                className="px-3 py-1 bg-green-600 hover:bg-green-700 rounded text-sm transition"
-                title="Start Transcription"
-              >
-                ▶ เริ่ม Transcript
-              </button>
-            ) : (
-              <>
-                {meetingState.isPaused ? (
-                  <button
-                    onClick={resumeTranscription}
-                    className="px-2 py-1 bg-yellow-600 hover:bg-yellow-700 rounded text-sm transition"
-                    title="Resume Transcription"
-                  >
-                    ▶ ต่อ
-                  </button>
-                ) : (
-                  <button
-                    onClick={pauseTranscription}
-                    className="px-2 py-1 bg-yellow-600 hover:bg-yellow-700 rounded text-sm transition"
-                    title="Pause Transcription"
-                  >
-                    ⏸ หยุดชั่วคราว
-                  </button>
-                )}
-                <button
-                  onClick={stopTranscription}
-                  className="px-2 py-1 bg-red-600 hover:bg-red-700 rounded text-sm transition"
-                  title="Stop Transcription"
-                >
-                  ⏹ หยุด
-                </button>
-              </>
-            )}
+            {renderTranscriptButtons()}
             <button
               onClick={toggleLanguage}
               className="px-2 py-1 bg-gray-600 hover:bg-gray-500 rounded text-xs transition"
@@ -737,9 +765,11 @@ const MeetingRoom: React.FC = () => {
             {/* Panel Header */}
             <div className="flex items-center justify-between p-3 border-b border-gray-700">
               <h3 className="font-medium text-sm">
-                {showPanel === 'transcript' && '📝 Real-time Transcript'}
-                {showPanel === 'chat' && '💬 Meeting Chat'}
-                {showPanel === 'summary' && '🤖 AI Summary'}
+                {{
+                  transcript: '📝 Real-time Transcript',
+                  chat: '💬 Meeting Chat',
+                  summary: '🤖 AI Summary',
+                }[showPanel]}
               </h3>
               <button onClick={() => setShowPanel(null)} className="text-gray-400 hover:text-white">✕</button>
             </div>
@@ -758,12 +788,8 @@ const MeetingRoom: React.FC = () => {
                     transcripts.map((seg) => (
                       <div key={seg.id} className="bg-gray-700/50 rounded p-2 text-sm">
                         <div className="flex items-center gap-2 mb-1">
-                          <span className={`text-xs px-1.5 py-0.5 rounded ${
-                            seg.speakerRole === 'doctor' ? 'bg-blue-900 text-blue-300' :
-                            seg.speakerRole === 'patient' ? 'bg-green-900 text-green-300' :
-                            'bg-gray-600 text-gray-300'
-                          }`}>
-                            {seg.speakerRole === 'doctor' ? '👨‍⚕️' : seg.speakerRole === 'patient' ? '🧑' : '👥'}
+                          <span className={`text-xs px-1.5 py-0.5 rounded ${getSpeakerBadgeClass(seg.speakerRole)}`}>
+                            {getSpeakerEmoji(seg.speakerRole)}
                             {seg.speakerName}
                           </span>
                           <span className="text-gray-500 text-xs">
@@ -778,13 +804,13 @@ const MeetingRoom: React.FC = () => {
 
                   {meetingState.isTranscribing && !meetingState.isPaused && (
                     <div className="flex items-center gap-2 text-green-400 text-xs animate-pulse">
-                      <span className="w-2 h-2 bg-green-400 rounded-full" />
+                      <span className="w-2 h-2 bg-green-400 rounded-full" />{' '}
                       กำลังบันทึก... ({meetingState.transcriptLanguage})
                     </div>
                   )}
                   {meetingState.isPaused && (
                     <div className="flex items-center gap-2 text-yellow-400 text-xs">
-                      <span className="w-2 h-2 bg-yellow-400 rounded-full" />
+                      <span className="w-2 h-2 bg-yellow-400 rounded-full" />{' '}
                       หยุดชั่วคราว
                     </div>
                   )}

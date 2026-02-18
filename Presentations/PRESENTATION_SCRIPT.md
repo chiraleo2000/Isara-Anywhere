@@ -9,7 +9,7 @@
 
 ---
 
-# 📑 TABLE OF CONTENTS
+## 📑 TABLE OF CONTENTS
 
 1. [Project Overview](#1-project-overview) (5 min)
 2. [System Architecture](#2-system-architecture) (5 min)
@@ -22,9 +22,9 @@
 
 ---
 
-# 1. PROJECT OVERVIEW
+## 1. PROJECT OVERVIEW
 
-## 🎯 Slide 1: Introduction
+### 🎯 Slide 1: Introduction
 
 **Script:**
 > "สวัสดีครับ/ค่ะ วันนี้ผมจะนำเสนอแพลตฟอร์ม IZARA Telemedicine ซึ่งเป็นระบบ Telehealth ครบวงจรที่พัฒนาขึ้นมาเพื่อรองรับการให้บริการทางการแพทย์ทางไกลของประเทศไทย"
@@ -61,7 +61,7 @@
 **Two-Portal Architecture:**
 
 | Portal | Users | Key Functions |
-|--------|-------|---------------|
+| -------- | ------- | --------------- |
 | **Patient Portal** | ผู้ป่วย, ประชาชน | นัดหมาย, ดูผลการรักษา, PHR, AI Health Assistant |
 | **Doctor Portal** | แพทย์, Admin | ตรวจรักษา, EMR, จัดการนัดหมาย, CDS |
 
@@ -72,9 +72,9 @@
 
 ---
 
-# 2. SYSTEM ARCHITECTURE
+## 2. SYSTEM ARCHITECTURE
 
-## 🏗️ Slide 4: High-Level Architecture
+### 🏗️ Slide 4: High-Level Architecture
 
 **Script:**
 > "ระบบของเราถูกออกแบบเป็น Container-based Architecture บน Docker และ Google Cloud Run โดยใช้ PostgreSQL เป็นฐานข้อมูลหลัก"
@@ -98,7 +98,7 @@
 > "เราใช้เทคโนโลยีที่ทันสมัยและได้รับการพิสูจน์แล้วว่าเสถียรและปลอดภัย"
 
 | Layer | Technology |
-|-------|------------|
+| ------- | ------------ |
 | **Frontend** | React 18, TypeScript, Tailwind CSS, Vite |
 | **Backend** | Node.js 22, Express.js |
 | **Database** | PostgreSQL 18 + pgvector |
@@ -110,9 +110,9 @@
 
 ---
 
-# 3. FEATURES & CAPABILITIES
+## 3. FEATURES & CAPABILITIES
 
-## ⭐ Slide 6: Patient Portal Features
+### ⭐ Slide 6: Patient Portal Features
 
 **Script:**
 > "Patient Portal ให้บริการครบวงจรสำหรับผู้ป่วย ตั้งแต่การนัดหมาย ดูประวัติการรักษา ไปจนถึง AI Health Assistant"
@@ -164,9 +164,9 @@
 
 ---
 
-# 4. WORKFLOW PROCESSES
+## 4. WORKFLOW PROCESSES
 
-## 🔄 Slide 9: Patient Appointment Flow
+### 🔄 Slide 9: Patient Appointment Flow
 
 **Script:**
 > "ขั้นตอนการนัดหมายของผู้ป่วยเริ่มจากการเลือกอาการ ระบบ AI จะวิเคราะห์ความเร่งด่วนและแนะนำแพทย์ที่เหมาะสม"
@@ -218,7 +218,7 @@
 **SOAP Note Structure:**
 
 | Section | Content | AI Assistance |
-|---------|---------|---------------|
+| --------- | --------- | --------------- |
 | **S** - Subjective | อาการที่ผู้ป่วยบอก | สกัดจาก Transcript |
 | **O** - Objective | ผลตรวจร่างกาย/Lab | วิเคราะห์ผล Lab |
 | **A** - Assessment | การวินิจฉัย (ICD-10) | แนะนำ Diagnosis |
@@ -243,9 +243,9 @@
 
 ---
 
-# 5. DATA STRUCTURE & DATABASE
+## 5. DATA STRUCTURE & DATABASE
 
-## 💾 Slide 13: Database Schema
+### 💾 Slide 13: Database Schema
 
 **Script:**
 > "ฐานข้อมูลใช้ PostgreSQL 18 พร้อม pgvector สำหรับ AI Embedding มีการออกแบบให้รองรับ PDPA และ HIPAA"
@@ -255,7 +255,7 @@
 **Table Groups:**
 
 | Group | Tables |
-|-------|--------|
+| ------- | -------- |
 | **Auth** | users, sessions, password_resets |
 | **Patient** | patient_profiles, phr, vital_signs, living_wills |
 | **Doctor** | doctor_profiles, doctors, doctor_schedules, consultants |
@@ -272,7 +272,7 @@
 **Script:**
 > "ระบบออกแบบให้ users table เป็น unified table รองรับทุก role ลด join complexity"
 
-```
+```text
 users (unified)
   ├── patient_profiles (1:1)
   ├── doctor_profiles (1:1)
@@ -288,9 +288,9 @@ users (unified)
 
 ---
 
-# 6. CLOUD SERVICES & INTEGRATION
+## 6. CLOUD SERVICES & INTEGRATION
 
-## ☁️ Slide 15: Google Cloud Services
+### ☁️ Slide 15: Google Cloud Services
 
 **Script:**
 > "ระบบใช้บริการของ Google Cloud Platform หลายรายการ"
@@ -298,7 +298,7 @@ users (unified)
 **📊 See:** `diagrams/10-gcp-services.mmd`
 
 | Service | Usage |
-|---------|-------|
+| --------- | ------- |
 | **Cloud Run** | Container hosting (Patient, Doctor, Meeting) |
 | **Cloud SQL** | PostgreSQL 18 (Production) |
 | **Cloud Storage** | 5 Buckets for files |
@@ -313,7 +313,7 @@ users (unified)
 > "ระบบเชื่อมต่อกับบริการภายนอกหลายรายการ"
 
 | Service | Purpose |
-|---------|---------|
+| --------- | --------- |
 | **Gemini AI** | Health Assistant, Transcript Summary, CDS |
 | **Jitsi Meet** | Video Consultation |
 | **Google Maps** | Healthcare Facility Locator |
@@ -321,9 +321,9 @@ users (unified)
 
 ---
 
-# 7. SECURITY & COMPLIANCE
+## 7. SECURITY & COMPLIANCE
 
-## 🔐 Slide 17: Security Features
+### 🔐 Slide 17: Security Features
 
 **Script:**
 > "ระบบมีการรักษาความปลอดภัยหลายชั้น เพื่อปกป้องข้อมูลผู้ป่วย"
@@ -353,17 +353,17 @@ users (unified)
 
 ---
 
-# 8. DEMO WALKTHROUGH
+## 8. DEMO WALKTHROUGH
 
-## 🎬 Slide 19: Live Demo
+### 🎬 Slide 19: Live Demo
 
 **Demo Accounts:**
 
 | Role | Email | Password |
-|------|-------|----------|
-| Patient | demo.test@gmail.com | P@ssw0rd |
-| Doctor | doctor.test@izara.com | IzaraDoctor@2024 |
-| Admin | admin.test@izara.com | IzaraAdmin@2024 |
+| ------ | ------- | ---------- |
+| Patient | <demo.test@gmail.com> | P@ssw0rd |
+| Doctor | <doctor.test@izara.com> | IzaraDoctor@2024 |
+| Admin | <admin.test@izara.com> | IzaraAdmin@2024 |
 
 **Demo Flow:**
 
@@ -382,9 +382,9 @@ users (unified)
 
 **Contact:**
 
-- 📧 Email: support@izara-health.com
-- 🌐 Website: https://izara-anywhere.com
+- 📧 Email: <support@izara-health.com>
+- 🌐 Website: <https://izara-anywhere.com>
 
 ---
 
-*Last Updated: February 4, 2026*
+### Last Updated: February 4, 2026

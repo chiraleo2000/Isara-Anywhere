@@ -81,6 +81,7 @@ export interface UserIndexEntry {
  * Used in frontend after login
  */
 export interface User {
+  displayName: string;
   id: string;
   email: string;
   name: string;

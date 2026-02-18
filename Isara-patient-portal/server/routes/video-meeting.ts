@@ -794,8 +794,8 @@ router.get('/:appointmentId', async (req: Request, res: Response) => {
             });
           }
         }
-      } catch (fallbackErr) {
-        console.log('[VIDEO-MEETING] Meeting server fallback failed:', (fallbackErr as Error).message);
+      } catch (error_) {
+        console.log('[VIDEO-MEETING] Meeting server fallback failed:', (error_ as Error).message);
       }
 
       return res.status(404).json({ error: 'Meeting not found' });

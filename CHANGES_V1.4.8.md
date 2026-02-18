@@ -13,7 +13,7 @@
 ### New Test Files Created (500+ total tests across 10 spec files)
 
 | Spec File | Tests | Coverage |
-|---|---|---|
+| --- | --- | --- |
 | `06-patient-portal-complete.spec.ts` | ~90 | All 15 patient portal pages: Auth, Dashboard, Appointments, PHR, AI Doctor, Content Library, Map, PDPA, Living Will, Profile, Settings, Timeline, Notifications, Metadata, System Health |
 | `07-doctor-portal-complete.spec.ts` | ~104 | All 21 doctor portal pages: Auth, Dashboard, Schedule, Patient Management, Meeting, EMR/Rx/Lab, Content, AI Studio, Consultants, Admin, Profile, Queue/Pool, Metadata |
 | `08-workflow-processes-complete.spec.ts` | ~100 | All 13 process documents: Appointment lifecycle, Health Records, Video Meeting, User Management, Notifications, Living Will/PDPA, Content/Clinical Resources, Consultants, Data Sync, Phase 1 Requirements |
@@ -23,7 +23,7 @@
 ### Pre-existing Test Files (retained)
 
 | Spec File | Tests | Status |
-|---|---|---|
+| --- | --- | --- |
 | `00-unified-comprehensive.spec.ts` | 170 | Legacy |
 | `02-v350-workflows.spec.ts` | 220 | Legacy |
 | `03-v360-comprehensive.spec.ts` | 288 | Legacy |
@@ -35,7 +35,7 @@
 ## 2. Test Coverage by Process Document
 
 | Process Document | Spec Files Covering It |
-|---|---|
+| --- | --- |
 | Appointment_Workflows.md | 06 (PP-C), 07 (DP-D), 08 (WF-A), 10 (AD-B) |
 | Health_Records_Processes.md | 06 (PP-D), 07 (DP-F), 08 (WF-B) |
 | VIDEO_MEETING_JITSI_GEMINI.md | 07 (DP-E), 08 (WF-C), 09 (MT-A, MT-B) |
@@ -55,6 +55,7 @@
 ## 3. Test Coverage by Portal Page
 
 ### Patient Portal (15 pages → ALL covered in 06-patient-portal-complete.spec.ts)
+
 - Login, Register, Reset Password
 - Dashboard, Appointments, PHR (5 tabs)
 - AI Doctor, Medical Content Library, Map
@@ -62,6 +63,7 @@
 - Profile, Settings, Timeline, Notifications
 
 ### Doctor Portal (21 pages → ALL covered in 07-doctor-portal-complete.spec.ts)
+
 - Login, Reset Password, Dashboard, Schedule
 - Patient Management, Health Meeting, Virtual Meeting
 - EMR Editor, Prescribing, Lab Orders
@@ -71,6 +73,7 @@
 - Queue Management, Appointment Pool
 
 ### Meeting Server (→ covered in 09-meeting-ai-complete.spec.ts)
+
 - Health, Config, Create/List/Active/History, Transcriptions
 
 ---
@@ -78,7 +81,7 @@
 ## 4. Configuration Updates
 
 | File | Change |
-|---|---|
+| --- | --- |
 | `playwright.config.ts` | v1.4.8, 10 spec files in all 4 projects |
 | `test-config.ts` | v1.4.8 header |
 | `package.json` (root) | v1.4.8 |
@@ -101,8 +104,9 @@
 ## 6. Production Deployment (Feb 15, 2026)
 
 ### Bug Fixes
+
 | File | Change |
-|---|---|
+| --- | --- |
 | `.vscode/settings.json` | Disabled MSSQL IntelliSense to prevent false SQL linter errors on PostgreSQL files |
 | `Isara-doctor-portal/server/services/postgresDataService.cjs` | Fixed DB password fallback from `P@ssw0rd` → `IzaraDb2024` |
 | `Isara-doctor-portal/server/authServer.cjs` | Fixed DB password fallback from `P@ssw0rd` → `IzaraDb2024` |
@@ -110,8 +114,9 @@
 | `scripts/migrate-prod-to-dev.cjs` | Fixed SonarLint warnings: `Number.parseInt`, `replaceAll` |
 
 ### Deployment
+
 | Service | Version | Status |
-|---|---|---|
+| --- | --- | --- |
 | Patient Portal (production) | v1.4.8 | ✅ Deployed & Verified |
 | Doctor Portal (production) | v1.4.8 | ✅ Deployed & Verified |
 | Meeting Server (production) | v1.4.8 | ✅ Deployed & Verified |
@@ -120,7 +125,7 @@
 ### API Endpoint Verification — ALL 200 ✅
 
 | Environment | Doctor Portal | Patient Portal | Meeting Server |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Local Docker | 22/22 endpoints | 19/19 endpoints | 1/1 health |
 | Dev Cloud | 14/14 endpoints | 16/16 endpoints | 1/1 health |
 | Production | 16/16 endpoints | 16/16 endpoints | 1/1 health |

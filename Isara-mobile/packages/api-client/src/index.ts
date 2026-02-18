@@ -340,8 +340,8 @@ export class PatientApiClient extends BaseApiClient {
 // ─────────────────────────────────────────────
 
 export class DoctorApiClient extends BaseApiClient {
-  private authClient: AxiosInstance;
-  private gcsClient: AxiosInstance;
+  private readonly authClient: AxiosInstance;
+  private readonly gcsClient: AxiosInstance;
 
   constructor(config: {
     apiBaseURL: string;      // port 3009

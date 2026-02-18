@@ -186,12 +186,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     await SecureStore.setItemAsync(KEYS.USER_DATA, JSON.stringify(userData));
     await SecureStore.setItemAsync(KEYS.ACTIVE_ROLE, role);
 
+    // Mark onboarding complete on successful login
+    await SecureStore.setItemAsync(KEYS.ONBOARDING_DONE, 'true');
+
     set({
       user: userData,
       accessToken: access_token,
       refreshToken: refresh_token,
       isAuthenticated: true,
       lastActiveRole: role,
+      onboardingCompleted: true,
     });
   },
 
@@ -231,12 +235,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const userData = { ...user, role };
     await SecureStore.setItemAsync(KEYS.USER_DATA, JSON.stringify(userData));
 
+    // Mark onboarding complete after first successful registration
+    await SecureStore.setItemAsync(KEYS.ONBOARDING_DONE, 'true');
+
     set({
       user: userData,
       accessToken: access_token,
       refreshToken: refresh_token,
       isAuthenticated: true,
       lastActiveRole: role,
+      onboardingCompleted: true,
     });
   },
 

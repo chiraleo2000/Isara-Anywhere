@@ -3,17 +3,17 @@
  * Fullscreen modal, shared between patient and doctor
  */
 
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert, Platform } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
-import { WebView } from 'react-native-webview';
+import WebView from 'react-native-webview';
 import { useAuthStore } from '../../src/stores/authStore';
 import Constants from 'expo-constants';
 
 export default function MeetingScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user, activeRole, accessToken } = useAuthStore();
-  const webViewRef = useRef<WebView>(null);
+  const webViewRef = useRef<any>(null);
   const [isConnecting, setIsConnecting] = useState(true);
 
   const meetingServerUrl =
@@ -57,7 +57,6 @@ export default function MeetingScreen() {
         domStorageEnabled
         mediaPlaybackRequiresUserAction={false}
         allowsInlineMediaPlayback
-        allowsFullscreenVideo
         onLoad={() => setIsConnecting(false)}
         onError={() => {
           setIsConnecting(false);

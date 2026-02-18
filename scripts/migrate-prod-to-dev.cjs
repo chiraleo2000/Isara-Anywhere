@@ -248,7 +248,8 @@ function formatTable(rows, columns) {
     const header = columns.map((c, i) => c.padEnd(widths[i])).join(' | ');
     const sep = widths.map(w => '-'.repeat(w)).join('-+-');
     const body = rows.map(r => columns.map((c, i) => String(r[c] || '').substring(0, 40).padEnd(widths[i])).join(' | '));
-    return `  ${header}\n  ${sep}\n${body.map(l => `  ${l}`).join('\n')}\n`;
+    const bodyLines = body.map(l => '  ' + l);
+    return `  ${header}\n  ${sep}\n${bodyLines.join('\n')}\n`;
 }
 
 // =============================================================================
@@ -364,14 +365,16 @@ async function exportProdData() {
 
     try {
         const sqlLines = [];
-        sqlLines.push('-- =============================================================================');
-        sqlLines.push('-- IZARA TELEMEDICINE — PRODUCTION DATA EXPORT (v1.4.7 → v1.4.8)');
-        sqlLines.push(`-- Exported: ${new Date().toISOString()}`);
-        sqlLines.push(`-- Source: ${PROD_CONFIG.host}:${PROD_CONFIG.port}/${PROD_CONFIG.database}`);
-        sqlLines.push('-- =============================================================================');
-        sqlLines.push('');
-        sqlLines.push('BEGIN;');
-        sqlLines.push('');
+        sqlLines.push(
+            '-- =============================================================================',
+            '-- IZARA TELEMEDICINE — PRODUCTION DATA EXPORT (v1.4.7 → v1.4.8)',
+            `-- Exported: ${new Date().toISOString()}`,
+            `-- Source: ${PROD_CONFIG.host}:${PROD_CONFIG.port}/${PROD_CONFIG.database}`,
+            '-- =============================================================================',
+            '',
+            'BEGIN;',
+            ''
+        );
 
         for (const table of EXPORT_TABLES) {
             try {
@@ -392,14 +395,16 @@ async function exportProdData() {
             }
         }
 
-        sqlLines.push('COMMIT;');
-        sqlLines.push('');
-        sqlLines.push('-- Status verification');
-        sqlLines.push("SELECT 'Users' as table_name, count(*) as count FROM users");
-        sqlLines.push("UNION ALL SELECT 'Doctors', count(*) FROM doctors");
-        sqlLines.push("UNION ALL SELECT 'PHR Records', count(*) FROM phr");
-        sqlLines.push("UNION ALL SELECT 'Appointments', count(*) FROM appointments");
-        sqlLines.push("UNION ALL SELECT 'Medical Content', count(*) FROM medical_content;");
+        sqlLines.push(
+            'COMMIT;',
+            '',
+            '-- Status verification',
+            "SELECT 'Users' as table_name, count(*) as count FROM users",
+            "UNION ALL SELECT 'Doctors', count(*) FROM doctors",
+            "UNION ALL SELECT 'PHR Records', count(*) FROM phr",
+            "UNION ALL SELECT 'Appointments', count(*) FROM appointments",
+            "UNION ALL SELECT 'Medical Content', count(*) FROM medical_content;"
+        );
 
         // Write SQL file
         if (!fs.existsSync(OUTPUT_DIR)) {
@@ -547,7 +552,7 @@ async function importToTarget(config, label, data) {
         
         if (schemaCheck.rows.length === 0) {
             console.log('   ⚠️  Schema not found. Please run izara-database.sql first.');
-            console.log('   For local: Get-Content scripts\\database\\izara-database.sql | docker exec -i izara-postgres psql -U postgres -d izara_phase1');
+            console.log(String.raw`   For local: Get-Content scripts\database\izara-database.sql | docker exec -i izara-postgres psql -U postgres -d izara_phase1`);
             return;
         }
 

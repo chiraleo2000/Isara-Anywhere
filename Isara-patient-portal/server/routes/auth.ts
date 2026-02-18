@@ -27,14 +27,14 @@ async function checkDbConnection(): Promise<boolean> {
 }
 
 // Initialize db check - run immediately (fire and forget with logging)
-(async () => {
-  try {
-    const available = await checkDbConnection();
-    console.log(available 
-      ? '✅ PostgreSQL connected - Production mode active' 
-      : '❌ PostgreSQL unavailable - Authentication will fail until DB is available');
-  } catch {}
-})().catch(() => {});
+try {
+  const available = await checkDbConnection();
+  console.log(available 
+    ? '✅ PostgreSQL connected - Production mode active' 
+    : '❌ PostgreSQL unavailable - Authentication will fail until DB is available');
+} catch (error_) {
+  console.warn('⚠️ Initial DB connection check failed:', (error_ as Error).message);
+}
 
 // Keep-alive: periodically check database connection
 setInterval(() => {
@@ -1070,8 +1070,9 @@ router.get('/health/db', async (_req: Request, res: Response) => {
     await pool.query('SELECT 1');
     dbAvailable = true;
     res.json({ status: 'healthy', database: 'connected' });
-  } catch (error) {
+  } catch (error_) {
     dbAvailable = false;
+    console.warn('DB health check failed:', (error_ as Error).message);
     res.status(503).json({ status: 'degraded', database: 'disconnected' });
   }
 });

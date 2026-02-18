@@ -90,8 +90,8 @@ pool.on('error', (err) => {
       await pool.query('SELECT 1');
       dbAvailable = true;
       console.log('✅ [Pool] Database reconnected');
-    } catch (retryErr) {
-      console.error('❌ [Pool] Reconnection failed:', retryErr.message);
+    } catch (error_) {
+      console.error('❌ [Pool] Reconnection failed:', error_.message);
     }
   }, 5000);
 });
@@ -567,6 +567,12 @@ app.get('/api/meetings/:id/participants', async (req, res) => {
 // END MEETING (Phase 2 — triggers AI summary pipeline)
 // ============================================================================
 
+function getNoSummaryReason(genAI, fullTranscript) {
+  if (!genAI) return 'AI not configured';
+  if (!fullTranscript) return 'No transcript';
+  return 'Generation skipped';
+}
+
 app.post('/api/meetings/:id/end', optionalAuth, async (req, res) => {
   try {
     const { id } = req.params;
@@ -601,7 +607,12 @@ app.post('/api/meetings/:id/end', optionalAuth, async (req, res) => {
       );
       if (transcriptsResult.rows.length > 0) {
         fullTranscript = transcriptsResult.rows
-          .map(t => `[${t.speaker_role === 'doctor' ? 'แพทย์' : t.speaker_role === 'patient' ? 'ผู้ป่วย' : 'ผู้เข้าร่วม'}] ${t.speaker_name || 'Unknown'}: ${t.content}`)
+          .map(t => {
+            let roleLabel = 'ผู้เข้าร่วม';
+            if (t.speaker_role === 'doctor') roleLabel = 'แพทย์';
+            else if (t.speaker_role === 'patient') roleLabel = 'ผู้ป่วย';
+            return `[${roleLabel}] ${t.speaker_name || 'Unknown'}: ${t.content}`;
+          })
           .join('\n');
       }
     } catch (e) {
@@ -670,9 +681,11 @@ app.post('/api/meetings/:id/end', optionalAuth, async (req, res) => {
         const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
         
         // Include chat messages in the context
-        const chatContext = chatMessages.length > 0
-          ? `\n\nข้อความแชทระหว่างการประชุม:\n${chatMessages.map(c => `[${c.senderRole}] ${c.senderName}: ${c.message}`).join('\n')}`
-          : '';
+        const chatLines = chatMessages.map(c => `[${c.senderRole}] ${c.senderName}: ${c.message}`).join('\n');
+        let chatContext = '';
+        if (chatMessages.length > 0) {
+          chatContext = `\n\nข้อความแชทระหว่างการประชุม:\n${chatLines}`;
+        }
         
         const prompt = `คุณคือผู้ช่วยแพทย์ที่เชี่ยวชาญในการสรุปการปรึกษาทางการแพทย์
 
@@ -728,8 +741,8 @@ ${chatContext}
         }
         
         console.log(`[End Meeting] AI summary generated for meeting ${meetingId}`);
-      } catch (aiErr) {
-        console.error('[End Meeting] AI summary generation failed:', aiErr.message);
+      } catch (error_) {
+        console.error('[End Meeting] AI summary generation failed:', error_.message);
       }
     }
     
@@ -744,7 +757,7 @@ ${chatContext}
         validationId,
         requiresValidation: true,
         summary: aiSummary
-      } : { available: false, reason: !genAI ? 'AI not configured' : !fullTranscript ? 'No transcript' : 'Generation skipped' },
+      } : { available: false, reason: getNoSummaryReason(genAI, fullTranscript) },
       message: 'Meeting ended successfully'
     });
     
@@ -1177,8 +1190,8 @@ app.post('/api/meetings/:id/invite', optionalAuth, async (req, res) => {
            VALUES ($1, $2::uuid, $3, $4, $5, $6, $7, NOW()) ON CONFLICT DO NOTHING`,
           [invite.id, id, name, email, phone || null, role, 'pending']
         );
-      } catch (e2) {
-        console.warn('[Invite] DB persist skipped:', e2.message);
+      } catch (error_) {
+        console.warn('[Invite] DB persist skipped:', error_.message);
       }
     }
     
@@ -1795,8 +1808,8 @@ const startServer = async () => {
           )
         `);
         console.log('✅ Meeting support tables verified');
-      } catch (migErr) {
-        console.warn('⚠️ Table creation warning:', migErr.message);
+      } catch (error_) {
+        console.warn('⚠️ Table creation warning:', error_.message);
       }
     } catch (dbError) {
       dbAvailable = false;
@@ -1810,8 +1823,8 @@ const startServer = async () => {
           dbAvailable = true;
           console.log('✅ Database reconnected successfully');
           clearInterval(reconnectInterval);
-        } catch (retryErr) {
-          console.warn('⚠️ Database reconnection attempt failed:', retryErr.message);
+        } catch (error_) {
+          console.warn('⚠️ Database reconnection attempt failed:', error_.message);
         }
       }, 15000); // Retry every 15 seconds
     }

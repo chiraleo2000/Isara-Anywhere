@@ -24,7 +24,7 @@
 import { test, expect, APIRequestContext, Browser, BrowserContext, Page } from '@playwright/test';
 import {
   PATIENT_URL, DOCTOR_URL, MEETING_SERVER_URL,
-  CREDENTIALS, IS_CLOUD, TIMEOUTS,
+  CREDENTIALS, IS_CLOUD,
   logTestSuccess, logTestInfo, logTestWarning,
 } from '../lib/test-config';
 
@@ -45,34 +45,45 @@ let createdMeetingRoomName = '';
 
 // ─── Auth Helpers ─────────────────────────────────────────────────────
 
-async function loginPatient(request: APIRequestContext) {
-  const r = await request.post(`${PATIENT_URL}/api/auth/login`, {
-    data: { email: P1.email, password: P1.password },
-    headers: { 'Content-Type': 'application/json' },
-    timeout: TIMEOUT,
-  });
-  if (r.status() !== 200) {
-    logTestWarning(`Patient login failed: ${r.status()}`);
-    return '';
-  }
-  const d = await r.json();
-  return d.token || d.accessToken || '';
-}
-
-async function loginDoctor(request: APIRequestContext) {
-  for (const path of ['/auth/login', '/api/auth/login']) {
+async function loginPatient(request: APIRequestContext): Promise<string> {
+  for (let attempt = 0; attempt < 3; attempt++) {
     try {
-      const r = await request.post(`${DOCTOR_URL}${path}`, {
-        data: { email: DOC.email, password: DOC.password },
+      const r = await request.post(`${PATIENT_URL}/api/auth/login`, {
+        data: { email: P1.email, password: P1.password },
         headers: { 'Content-Type': 'application/json' },
         timeout: TIMEOUT,
       });
       if (r.status() === 200) {
         const d = await r.json();
-        return d.token || d.accessToken || d.data?.token || '';
+        const token = d.token || d.accessToken || '';
+        if (token) return token;
       }
-    } catch { /* try next */ }
+    } catch (e) { logTestWarning(`Patient login attempt ${attempt + 1} error: ${(e as Error).message}`); }
+    if (attempt < 2) await new Promise(r => setTimeout(r, 2000));
   }
+  logTestWarning('Patient login failed after 3 attempts');
+  return '';
+}
+
+async function loginDoctor(request: APIRequestContext): Promise<string> {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    for (const path of ['/auth/login', '/api/auth/login']) {
+      try {
+        const r = await request.post(`${DOCTOR_URL}${path}`, {
+          data: { email: DOC.email, password: DOC.password },
+          headers: { 'Content-Type': 'application/json' },
+          timeout: TIMEOUT,
+        });
+        if (r.status() === 200) {
+          const d = await r.json();
+          const token = d.token || d.accessToken || d.data?.token || '';
+          if (token) return token;
+        }
+      } catch { /* try next */ }
+    }
+    if (attempt < 2) await new Promise(r => setTimeout(r, 2000));
+  }
+  logTestWarning('Doctor login failed after 3 attempts');
   return '';
 }
 
@@ -178,10 +189,32 @@ test.describe('MW-B: Meeting Lifecycle CRUD', () => {
     doctorToken = await loginDoctor(request as any);
     logTestInfo(`Patient token: ${patientToken ? 'obtained' : 'MISSING'}`);
     logTestInfo(`Doctor token: ${doctorToken ? 'obtained' : 'MISSING'}`);
+
+    // Pre-create meeting so all downstream tests have a meeting ID
+    if (doctorToken) {
+      try {
+        const r = await (request as any).post(`${MEETING_SERVER_URL}/api/meetings/create`, {
+          headers: AH(doctorToken),
+          data: {
+            appointmentId: `APT-SETUP-${Date.now()}`,
+            doctorId: DOC.id, patientId: P1.id,
+            doctorName: DOC.name, patientName: P1.name,
+            roomName: `izara-setup-${Date.now()}`, type: 'consultation',
+          },
+          timeout: TIMEOUT,
+        });
+        if (r.status() === 200) {
+          const d = await r.json();
+          createdMeetingId = d.meetingId || d.meeting?.id || d.id || '';
+          createdMeetingRoomName = d.roomName || d.meeting?.roomName || '';
+          logTestInfo(`Pre-created meeting: ${createdMeetingId}`);
+        }
+      } catch (e) { logTestWarning(`Meeting pre-creation failed: ${(e as Error).message}`); }
+    }
   });
 
   test('MW-B01: Doctor creates meeting via authenticated endpoint', async ({ request }) => {
-    test.skip(!doctorToken, 'No doctor token');
+    expect(doctorToken).toBeTruthy();
     const r = await request.post(`${MEETING_SERVER_URL}/api/meetings/create`, {
       headers: AH(doctorToken),
       data: {
@@ -197,8 +230,12 @@ test.describe('MW-B: Meeting Lifecycle CRUD', () => {
     });
     expect(r.status()).toBe(200);
     const d = await r.json();
-    createdMeetingId = d.meetingId || d.meeting?.id || d.id || '';
-    createdMeetingRoomName = d.roomName || d.meeting?.roomName || '';
+    // Update shared meeting ID if this one is newer
+    const newId = d.meetingId || d.meeting?.id || d.id || '';
+    if (newId) {
+      createdMeetingId = newId;
+      createdMeetingRoomName = d.roomName || d.meeting?.roomName || '';
+    }
     expect(createdMeetingId).toBeTruthy();
     logTestSuccess(`Meeting created: ${createdMeetingId}`);
   });
@@ -220,7 +257,7 @@ test.describe('MW-B: Meeting Lifecycle CRUD', () => {
   });
 
   test('MW-B03: Get single meeting by ID', async ({ request }) => {
-    test.skip(!createdMeetingId, 'No meeting created');
+    expect(createdMeetingId).toBeTruthy();
     const r = await request.get(`${MEETING_SERVER_URL}/api/meetings/${createdMeetingId}`, {
       timeout: TIMEOUT,
     });
@@ -231,7 +268,7 @@ test.describe('MW-B: Meeting Lifecycle CRUD', () => {
   });
 
   test('MW-B04: Get meeting status', async ({ request }) => {
-    test.skip(!createdMeetingId, 'No meeting created');
+    expect(createdMeetingId).toBeTruthy();
     const r = await request.get(`${MEETING_SERVER_URL}/api/meetings/${createdMeetingId}/status`, {
       timeout: TIMEOUT,
     });
@@ -242,7 +279,7 @@ test.describe('MW-B: Meeting Lifecycle CRUD', () => {
   });
 
   test('MW-B05: Get meeting participants', async ({ request }) => {
-    test.skip(!createdMeetingId, 'No meeting created');
+    expect(createdMeetingId).toBeTruthy();
     const r = await request.get(`${MEETING_SERVER_URL}/api/meetings/${createdMeetingId}/participants`, {
       timeout: TIMEOUT,
     });
@@ -282,7 +319,8 @@ test.describe('MW-B: Meeting Lifecycle CRUD', () => {
 test.describe('MW-C: Transcription Pipeline', () => {
 
   test('MW-C01: Start transcription for meeting', async ({ request }) => {
-    test.skip(!createdMeetingId || !doctorToken, 'Requires meeting + doctor token');
+    expect(createdMeetingId).toBeTruthy();
+    expect(doctorToken).toBeTruthy();
     const r = await request.post(`${MEETING_SERVER_URL}/api/meetings/${createdMeetingId}/start-transcription`, {
       headers: AH(doctorToken),
       data: { language: 'th-TH' },
@@ -293,7 +331,8 @@ test.describe('MW-C: Transcription Pipeline', () => {
   });
 
   test('MW-C02: Add transcript segment via REST', async ({ request }) => {
-    test.skip(!createdMeetingId || !doctorToken, 'Requires meeting + doctor token');
+    expect(createdMeetingId).toBeTruthy();
+    expect(doctorToken).toBeTruthy();
     const r = await request.post(`${MEETING_SERVER_URL}/api/meetings/${createdMeetingId}/transcript`, {
       headers: AH(doctorToken),
       data: {
@@ -310,7 +349,8 @@ test.describe('MW-C: Transcription Pipeline', () => {
   });
 
   test('MW-C03: Add multiple transcript segments', async ({ request }) => {
-    test.skip(!createdMeetingId || !doctorToken, 'Requires meeting + doctor token');
+    expect(createdMeetingId).toBeTruthy();
+    expect(doctorToken).toBeTruthy();
     const segments = [
       { speakerName: P1.name, speakerRole: 'patient', text: 'ปวดหัวมาสามวันครับ', language: 'th-TH' },
       { speakerName: DOC.name, speakerRole: 'doctor', text: 'ปวดตรงไหนครับ ด้านหน้าหรือด้านหลัง', language: 'th-TH' },
@@ -329,7 +369,8 @@ test.describe('MW-C: Transcription Pipeline', () => {
   });
 
   test('MW-C04: Pause transcription', async ({ request }) => {
-    test.skip(!createdMeetingId || !doctorToken, 'Requires meeting + doctor token');
+    expect(createdMeetingId).toBeTruthy();
+    expect(doctorToken).toBeTruthy();
     const r = await request.post(`${MEETING_SERVER_URL}/api/meetings/${createdMeetingId}/pause-transcription`, {
       headers: AH(doctorToken),
       data: {},
@@ -340,7 +381,8 @@ test.describe('MW-C: Transcription Pipeline', () => {
   });
 
   test('MW-C05: Resume/restart transcription after pause', async ({ request }) => {
-    test.skip(!createdMeetingId || !doctorToken, 'Requires meeting + doctor token');
+    expect(createdMeetingId).toBeTruthy();
+    expect(doctorToken).toBeTruthy();
     const r = await request.post(`${MEETING_SERVER_URL}/api/meetings/${createdMeetingId}/start-transcription`, {
       headers: AH(doctorToken),
       data: { language: 'th-TH' },
@@ -351,7 +393,8 @@ test.describe('MW-C: Transcription Pipeline', () => {
   });
 
   test('MW-C06: Stop transcription', async ({ request }) => {
-    test.skip(!createdMeetingId || !doctorToken, 'Requires meeting + doctor token');
+    expect(createdMeetingId).toBeTruthy();
+    expect(doctorToken).toBeTruthy();
     const r = await request.post(`${MEETING_SERVER_URL}/api/meetings/${createdMeetingId}/stop-transcription`, {
       headers: AH(doctorToken),
       data: {},
@@ -362,7 +405,7 @@ test.describe('MW-C: Transcription Pipeline', () => {
   });
 
   test('MW-C07: Get transcript for meeting', async ({ request }) => {
-    test.skip(!createdMeetingId, 'No meeting created');
+    expect(createdMeetingId).toBeTruthy();
     const r = await request.get(`${MEETING_SERVER_URL}/api/meetings/${createdMeetingId}/transcript`, {
       timeout: TIMEOUT,
     });
@@ -375,7 +418,7 @@ test.describe('MW-C: Transcription Pipeline', () => {
   });
 
   test('MW-C08: Get transcript sections', async ({ request }) => {
-    test.skip(!createdMeetingId, 'No meeting created');
+    expect(createdMeetingId).toBeTruthy();
     const r = await request.get(`${MEETING_SERVER_URL}/api/meetings/${createdMeetingId}/transcript/sections`, {
       timeout: TIMEOUT,
     });
@@ -391,7 +434,8 @@ test.describe('MW-C: Transcription Pipeline', () => {
 test.describe('MW-D: AI Summary & SOAP Generation', () => {
 
   test('MW-D01: Generate AI summary (SOAP format)', async ({ request }) => {
-    test.skip(!createdMeetingId || !doctorToken, 'Requires meeting + doctor token');
+    expect(createdMeetingId).toBeTruthy();
+    expect(doctorToken).toBeTruthy();
     const r = await request.post(`${MEETING_SERVER_URL}/api/meetings/${createdMeetingId}/generate-summary`, {
       headers: AH(doctorToken),
       data: {
@@ -412,7 +456,7 @@ test.describe('MW-D: AI Summary & SOAP Generation', () => {
   });
 
   test('MW-D02: Get stored summary for meeting', async ({ request }) => {
-    test.skip(!createdMeetingId, 'No meeting created');
+    expect(createdMeetingId).toBeTruthy();
     const r = await request.get(`${MEETING_SERVER_URL}/api/meetings/${createdMeetingId}/summary`, {
       timeout: TIMEOUT,
     });
@@ -494,7 +538,8 @@ test.describe('MW-D: AI Summary & SOAP Generation', () => {
   });
 
   test('MW-D06: Process transcript embeddings', async ({ request }) => {
-    test.skip(!createdMeetingId || !doctorToken, 'Requires meeting + doctor token');
+    expect(createdMeetingId).toBeTruthy();
+    expect(doctorToken).toBeTruthy();
     const r = await request.post(`${MEETING_SERVER_URL}/api/meetings/${createdMeetingId}/process-embeddings`, {
       headers: AH(doctorToken),
       data: {},
@@ -513,7 +558,7 @@ test.describe('MW-D: AI Summary & SOAP Generation', () => {
 test.describe('MW-E: Chat & Guest Invites', () => {
 
   test('MW-E01: Send chat message to meeting', async ({ request }) => {
-    test.skip(!createdMeetingId, 'No meeting created');
+    expect(createdMeetingId).toBeTruthy();
     const r = await request.post(`${MEETING_SERVER_URL}/api/meetings/${createdMeetingId}/chat`, {
       headers: { 'Content-Type': 'application/json' },
       data: {
@@ -529,7 +574,7 @@ test.describe('MW-E: Chat & Guest Invites', () => {
   });
 
   test('MW-E02: Send multiple chat messages', async ({ request }) => {
-    test.skip(!createdMeetingId, 'No meeting created');
+    expect(createdMeetingId).toBeTruthy();
     const messages = [
       { senderName: P1.name, senderRole: 'patient', message: 'สวัสดีครับหมอ' },
       { senderName: DOC.name, senderRole: 'doctor', message: 'มีอาการอะไรบ้างครับ' },
@@ -547,7 +592,7 @@ test.describe('MW-E: Chat & Guest Invites', () => {
   });
 
   test('MW-E03: Get chat messages for meeting', async ({ request }) => {
-    test.skip(!createdMeetingId, 'No meeting created');
+    expect(createdMeetingId).toBeTruthy();
     const r = await request.get(`${MEETING_SERVER_URL}/api/meetings/${createdMeetingId}/chats`, {
       timeout: TIMEOUT,
     });
@@ -559,7 +604,7 @@ test.describe('MW-E: Chat & Guest Invites', () => {
   });
 
   test('MW-E04: Invite guest to meeting', async ({ request }) => {
-    test.skip(!createdMeetingId, 'No meeting created');
+    expect(createdMeetingId).toBeTruthy();
     const r = await request.post(`${MEETING_SERVER_URL}/api/meetings/${createdMeetingId}/invite`, {
       headers: { 'Content-Type': 'application/json' },
       data: {
@@ -575,7 +620,7 @@ test.describe('MW-E: Chat & Guest Invites', () => {
   });
 
   test('MW-E05: Get guest invites for meeting', async ({ request }) => {
-    test.skip(!createdMeetingId, 'No meeting created');
+    expect(createdMeetingId).toBeTruthy();
     const r = await request.get(`${MEETING_SERVER_URL}/api/meetings/${createdMeetingId}/invites`, {
       timeout: TIMEOUT,
     });
@@ -849,10 +894,10 @@ test.describe('MW-H: In-App Meeting Room Pages', () => {
     const isRemoved = bodyText.includes('has been removed') || bodyText.includes('ถูกลบ');
     expect(hasTab).toBeTruthy();
     // The tab should NOT say "removed" anymore
-    if (!isRemoved) {
-      logTestSuccess('Scheduled Meetings tab restored (not removed)');
-    } else {
+    if (isRemoved) {
       logTestWarning('Tab still shows "removed" text — may need check');
+    } else {
+      logTestSuccess('Scheduled Meetings tab restored (not removed)');
     }
     await context.close();
   });

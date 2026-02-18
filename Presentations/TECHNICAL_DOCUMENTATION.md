@@ -188,7 +188,7 @@ The system uses a robust **PostgreSQL Relational Database** with:
 
 ### 3.3 Table Groups
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                          DATABASE SCHEMA                                 │
 ├─────────────────────┬─────────────────────┬─────────────────────────────┤
@@ -218,6 +218,7 @@ The system uses a robust **PostgreSQL Relational Database** with:
 ### 3.4 Key Tables Detail
 
 #### Users (Unified)
+
 ```sql
 users (
   id, email, password_hash, role,         -- Core identity
@@ -229,6 +230,7 @@ users (
 ```
 
 #### Appointments
+
 ```sql
 appointments (
   id, patient_id, doctor_id,              -- Participants
@@ -239,6 +241,7 @@ appointments (
 ```
 
 #### EMR (SOAP Notes)
+
 ```sql
 emr (
   id, appointment_id, patient_id, doctor_id,
@@ -255,14 +258,14 @@ emr (
 ### 4.1 User Roles
 
 | Role | Access Level | Capabilities |
-|------|--------------|--------------|
+| ------ | -------------- | -------------- |
 | **Patient** | Basic | View own PHR, book appointments, health assistant |
 | **Doctor** | Elevated | View assigned patients, create EMR, prescribe (requires admin approval) |
 | **Admin** | System | Manage users, approve doctors, manage content |
 
 ### 4.2 Authentication Flow
 
-```
+```text
 User Login → bcrypt Verify → Create Session → Store in DB → Return JWT
      ↓
 API Request → Validate JWT → Check Session in DB → Authorize → Process
@@ -270,7 +273,7 @@ API Request → Validate JWT → Check Session in DB → Authorize → Process
 
 ### 4.3 Doctor Approval Workflow
 
-```
+```text
 1. Doctor registers → status = 'pending'
 2. Admin reviews credentials
 3. Admin approves/rejects → updates approval_status
@@ -283,7 +286,7 @@ API Request → Validate JWT → Check Session in DB → Authorize → Process
 
 ### 5.1 Appointment Flow
 
-```
+```text
 Patient                     System                      Doctor
    │                          │                           │
    │ 1. Select symptoms       │                           │
@@ -317,7 +320,7 @@ Patient                     System                      Doctor
 ### 5.2 EMR Documentation (SOAP)
 
 | Section | Content | AI Assistance |
-|---------|---------|---------------|
+| --------- | --------- | --------------- |
 | **S** - Subjective | Patient symptoms, HPI | Extracted from transcript |
 | **O** - Objective | Vitals, PE findings, labs | Lab result analysis |
 | **A** - Assessment | Diagnosis (ICD-10) | Suggested diagnoses |
@@ -325,7 +328,7 @@ Patient                     System                      Doctor
 
 ### 5.3 Prescribing with CDS
 
-```
+```text
 Doctor selects medication
         ↓
 CDS checks: Drug-drug interactions
@@ -478,15 +481,15 @@ This comprehensive test file covers ALL Phase 1 requirements with **ZERO skipped
 ### Test Credentials
 
 | Role | Email | Password |
-|------|-------|----------|
-| Patient | demo.test@gmail.com | P@ssw0rd |
-| Doctor | doctor.test@izara.com | IzaraDoctor@2024 |
-| Admin | admin.test@izara.com | IzaraAdmin@2024 |
+| ------ | ------- | ---------- |
+| Patient | <demo.test@gmail.com> | P@ssw0rd |
+| Doctor | <doctor.test@izara.com> | IzaraDoctor@2024 |
+| Admin | <admin.test@izara.com> | IzaraAdmin@2024 |
 
 ### Key Files
 
 | File | Purpose |
-|------|---------|
+| ------ | --------- |
 | `scripts/izara-cli.ps1` | Deployment & management |
 | `scripts/cloud-db-tool.cjs` | Database operations |
 | `tests/e2e/run-tests.ps1` | Test runner |
@@ -494,4 +497,4 @@ This comprehensive test file covers ALL Phase 1 requirements with **ZERO skipped
 
 ---
 
-*Last Updated: February 4, 2026*
+### Last Updated: February 4, 2026

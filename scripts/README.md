@@ -44,6 +44,7 @@ Isara-Anywhere/
 ## 🛠️ ONE Command for Everything: izara-cli.ps1
 
 ### Deployment
+
 ```powershell
 .\scripts\izara-cli.ps1 deploy local          # Local Docker
 .\scripts\izara-cli.ps1 deploy cloud          # Cloud Run
@@ -51,6 +52,7 @@ Isara-Anywhere/
 ```
 
 ### Database
+
 ```powershell
 .\scripts\izara-cli.ps1 db -DbAction verify   # Check connection
 .\scripts\izara-cli.ps1 db -DbAction seed     # Seed demo data
@@ -60,6 +62,7 @@ Isara-Anywhere/
 ```
 
 ### Health & Status
+
 ```powershell
 .\scripts\izara-cli.ps1 health local          # Check local services
 .\scripts\izara-cli.ps1 health cloud          # Check cloud services
@@ -67,6 +70,7 @@ Isara-Anywhere/
 ```
 
 ### Cleanup
+
 ```powershell
 .\scripts\izara-cli.ps1 clean                 # Stop containers
 .\scripts\izara-cli.ps1 clean -Full           # Remove everything
@@ -106,7 +110,7 @@ node scripts/cloud-db-tool.cjs --help                    # Show help
 ## 📋 Test Suites
 
 | Suite | Duration | Description |
-|-------|----------|-------------|
+| ------- | ---------- | ------------- |
 | `smoke` | ~2 min | Quick health checks |
 | `api` | ~5 min | API endpoint verification |
 | `ui` | ~10 min | UI with visible browser |
@@ -130,9 +134,9 @@ $env:TEST_ENV = "local"  # or "cloud"
 ## 📍 Service URLs
 
 | Service | Local | Cloud |
-|---------|-------|-------|
-| Patient Portal | http://localhost:3005 | https://izara-patient-portal-*.run.app |
-| Doctor Portal | http://localhost:3010 | https://izara-doctor-portal-*.run.app |
+| --------- | ------- | ------- |
+| Patient Portal | <http://localhost:3005> | <https://izara-patient-portal-*.run.app> |
+| Doctor Portal | <http://localhost:3010> | <https://izara-doctor-portal-*.run.app> |
 | PostgreSQL | localhost:5433 | 34.143.228.135:5432 |
 
 ---
@@ -140,6 +144,7 @@ $env:TEST_ENV = "local"  # or "cloud"
 ## 🔄 Common Workflows
 
 ### Development
+
 ```powershell
 .\scripts\izara-cli.ps1 deploy local    # Start
 .\tests\e2e\run-tests.ps1 smoke         # Quick test
@@ -147,14 +152,16 @@ $env:TEST_ENV = "local"  # or "cloud"
 .\tests\e2e\run-tests.ps1 full          # Full test before commit
 ```
 
-### Deployment
+### Deployment Workflow
+
 ```powershell
 .\tests\e2e\run-tests.ps1 full          # Test locally first
 .\scripts\izara-cli.ps1 deploy cloud    # Deploy to cloud
 .\tests\e2e\run-tests.ps1 full cloud    # Verify cloud
 ```
 
-### Cleanup
+### Cleanup Workflow
+
 ```powershell
 .\scripts\izara-cli.ps1 clean -Full     # Full cleanup
 ```
@@ -164,10 +171,13 @@ $env:TEST_ENV = "local"  # or "cloud"
 ## 📝 Version: 2.0.0 (February 4, 2026)
 
 **Key Files (Only 4 to Remember!):**
+
 1. `scripts/izara-cli.ps1` - Deployment & management
 2. `scripts/cloud-db-tool.cjs` - Database operations
 3. `tests/e2e/run-tests.ps1` - Test runner
 4. `tests/e2e/specs/core-e2e.spec.ts` - Core tests
+
+```powershell
 # Deploy locally
 .\scripts\deploy.ps1 -Target local
 

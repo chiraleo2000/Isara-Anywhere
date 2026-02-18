@@ -2,7 +2,7 @@
  * ═══════════════════════════════════════════════════════════════════════
  * IZARA TELEMEDICINE — PLAYWRIGHT E2E CONFIG v2.0.0
  * ═══════════════════════════════════════════════════════════════════════
- * Test specs: 15 spec files (00-14) covering ALL pages, features, workflows + Phase 2 + Meeting
+ * Test specs: 16 spec files (00-15) covering ALL pages, features, workflows + Phase 2 + Meeting + Multi-User
  * Projects: Local-API, Local (headed UI), Cloud, Cloud-Dev
  * Updated: February 15, 2026
  *
@@ -47,16 +47,6 @@ export default defineConfig({
   outputDir: './test-results',
   projects: [
     {
-      name: 'Local-API',
-      use: {
-        ...devices['Desktop Chrome'],
-        baseURL: 'http://localhost:3005',
-        viewport: { width: 1920, height: 1080 },
-        headless: false,         // ★★★ HEADED — show UI actions ★★★
-      },
-      testMatch: ['**/00-unified-comprehensive.spec.ts', '**/01-meeting-workflows.spec.ts', '**/02-v350-workflows.spec.ts', '**/03-v360-comprehensive.spec.ts', '**/04-advanced-coverage.spec.ts', '**/05-multi-user-browser.spec.ts', '**/06-patient-portal-complete.spec.ts', '**/07-doctor-portal-complete.spec.ts', '**/08-workflow-processes-complete.spec.ts', '**/09-meeting-ai-complete.spec.ts', '**/10-admin-metadata-complete.spec.ts', '**/11-phase2-features.spec.ts', '**/12-phase2-ui-browser.spec.ts', '**/13-meeting-workflow-integration.spec.ts', '**/14-multi-browser-meeting.spec.ts'],
-    },
-    {
       name: 'Local',
       use: {
         ...devices['Desktop Chrome'],
@@ -64,7 +54,7 @@ export default defineConfig({
         viewport: { width: 1920, height: 1080 },
         headless: false,         // ★★★ HEADED — show UI actions ★★★
       },
-      testMatch: ['**/00-unified-comprehensive.spec.ts', '**/01-meeting-workflows.spec.ts', '**/02-v350-workflows.spec.ts', '**/03-v360-comprehensive.spec.ts', '**/04-advanced-coverage.spec.ts', '**/05-multi-user-browser.spec.ts', '**/06-patient-portal-complete.spec.ts', '**/07-doctor-portal-complete.spec.ts', '**/08-workflow-processes-complete.spec.ts', '**/09-meeting-ai-complete.spec.ts', '**/10-admin-metadata-complete.spec.ts', '**/11-phase2-features.spec.ts', '**/12-phase2-ui-browser.spec.ts', '**/13-meeting-workflow-integration.spec.ts', '**/14-multi-browser-meeting.spec.ts'],
+      testMatch: ['**/00-unified-comprehensive.spec.ts', '**/01-meeting-workflows.spec.ts', '**/02-v350-workflows.spec.ts', '**/03-v360-comprehensive.spec.ts', '**/04-advanced-coverage.spec.ts', '**/05-multi-user-browser.spec.ts', '**/06-patient-portal-complete.spec.ts', '**/07-doctor-portal-complete.spec.ts', '**/08-workflow-processes-complete.spec.ts', '**/09-meeting-ai-complete.spec.ts', '**/10-admin-metadata-complete.spec.ts', '**/11-phase2-features.spec.ts', '**/12-phase2-ui-browser.spec.ts', '**/13-meeting-workflow-integration.spec.ts', '**/14-multi-browser-meeting.spec.ts', '**/15-multi-user-showcase.spec.ts'],
     },
     {
       name: 'Cloud',
@@ -74,7 +64,7 @@ export default defineConfig({
         viewport: { width: 1920, height: 1080 },
         headless: false,         // ★★★ HEADED — show UI actions ★★★
       },
-      testMatch: ['**/00-unified-comprehensive.spec.ts', '**/01-meeting-workflows.spec.ts', '**/02-v350-workflows.spec.ts', '**/03-v360-comprehensive.spec.ts', '**/04-advanced-coverage.spec.ts', '**/05-multi-user-browser.spec.ts', '**/06-patient-portal-complete.spec.ts', '**/07-doctor-portal-complete.spec.ts', '**/08-workflow-processes-complete.spec.ts', '**/09-meeting-ai-complete.spec.ts', '**/10-admin-metadata-complete.spec.ts', '**/11-phase2-features.spec.ts', '**/12-phase2-ui-browser.spec.ts', '**/13-meeting-workflow-integration.spec.ts', '**/14-multi-browser-meeting.spec.ts'],
+      testMatch: ['**/00-unified-comprehensive.spec.ts', '**/01-meeting-workflows.spec.ts', '**/02-v350-workflows.spec.ts', '**/03-v360-comprehensive.spec.ts', '**/04-advanced-coverage.spec.ts', '**/05-multi-user-browser.spec.ts', '**/06-patient-portal-complete.spec.ts', '**/07-doctor-portal-complete.spec.ts', '**/08-workflow-processes-complete.spec.ts', '**/09-meeting-ai-complete.spec.ts', '**/10-admin-metadata-complete.spec.ts', '**/11-phase2-features.spec.ts', '**/12-phase2-ui-browser.spec.ts', '**/13-meeting-workflow-integration.spec.ts', '**/14-multi-browser-meeting.spec.ts', '**/15-multi-user-showcase.spec.ts'],
     },
     {
       name: 'Cloud-Dev',
@@ -84,7 +74,7 @@ export default defineConfig({
         viewport: { width: 1920, height: 1080 },
         headless: false,         // ★★★ HEADED — show UI actions ★★★
       },
-      testMatch: ['**/00-unified-comprehensive.spec.ts', '**/01-meeting-workflows.spec.ts', '**/02-v350-workflows.spec.ts', '**/03-v360-comprehensive.spec.ts', '**/04-advanced-coverage.spec.ts', '**/05-multi-user-browser.spec.ts', '**/06-patient-portal-complete.spec.ts', '**/07-doctor-portal-complete.spec.ts', '**/08-workflow-processes-complete.spec.ts', '**/09-meeting-ai-complete.spec.ts', '**/10-admin-metadata-complete.spec.ts', '**/11-phase2-features.spec.ts', '**/12-phase2-ui-browser.spec.ts', '**/13-meeting-workflow-integration.spec.ts', '**/14-multi-browser-meeting.spec.ts'],
+      testMatch: ['**/00-unified-comprehensive.spec.ts', '**/01-meeting-workflows.spec.ts', '**/02-v350-workflows.spec.ts', '**/03-v360-comprehensive.spec.ts', '**/04-advanced-coverage.spec.ts', '**/05-multi-user-browser.spec.ts', '**/06-patient-portal-complete.spec.ts', '**/07-doctor-portal-complete.spec.ts', '**/08-workflow-processes-complete.spec.ts', '**/09-meeting-ai-complete.spec.ts', '**/10-admin-metadata-complete.spec.ts', '**/11-phase2-features.spec.ts', '**/12-phase2-ui-browser.spec.ts', '**/13-meeting-workflow-integration.spec.ts', '**/14-multi-browser-meeting.spec.ts', '**/15-multi-user-showcase.spec.ts'],
     },
   ],
 });

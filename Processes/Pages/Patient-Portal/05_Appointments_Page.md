@@ -78,7 +78,7 @@ Complete appointment management: view existing appointments, book new ones with 
 
 ## 4. Book Appointment Page (3-Step Wizard)
 
-### Layout
+### Book Appointment Layout
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -204,7 +204,7 @@ Complete appointment management: view existing appointments, book new ones with 
 
 ## 5. Appointment Detail Page
 
-### Layout
+### Appointment Detail Layout
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -421,6 +421,9 @@ Step 6: Notification sent to doctor
 | ✅ Patient Instruction Sheet (PDF, Thai) | ❌ CDS alerts (internal clinical decision support) |
 | ✅ Follow-up schedule | ❌ AI confidence scores |
 | ✅ Warning signs to watch for | ❌ Billing/insurance internal codes |
+
+| Method | Endpoint | Description |
+| ------ | -------- | ----------- |
 | POST | `/api/ai/symptom-triage` | AI symptom analysis |
 | POST | `/api/ai/symptom-suggest` | AI description improvement |
 

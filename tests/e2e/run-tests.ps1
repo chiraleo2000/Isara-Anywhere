@@ -74,7 +74,7 @@
 
 param(
     [Parameter(Position=0)]
-    [ValidateSet("smoke", "api", "appointment", "meeting", "health", "ai", "ui", "content", "cloud", "full", "all", "help")]
+    [ValidateSet("smoke", "api", "appointment", "meeting", "health", "ai", "ui", "content", "cloud", "phase2", "multi-ui", "showcase", "full", "complete", "all", "help")]
     [string]$Suite = "smoke",
 
     [Parameter(Position=1)]
@@ -316,7 +316,7 @@ function Invoke-FullTests {
     $headedFlag = if ($Headed) { "--headed" } else { "" }
     $projectFlag = if ($Target -eq "cloud") { "--project='Cloud'" } else { "--project='Local'" }
     
-    # Run all local test files (01-08)
+    # Run all local test files (01-08) + Phase 2 (11-14)
     $testFiles = @(
         "specs/01-smoke.spec.ts",
         "specs/02-api-status.spec.ts",
@@ -325,7 +325,11 @@ function Invoke-FullTests {
         "specs/05-health-records-emr.spec.ts",
         "specs/06-ai-features.spec.ts",
         "specs/07-ui-navigation.spec.ts",
-        "specs/08-content-notifications.spec.ts"
+        "specs/08-content-notifications.spec.ts",
+        "specs/11-phase2-features.spec.ts",
+        "specs/12-phase2-ui-browser.spec.ts",
+        "specs/13-meeting-workflow-integration.spec.ts",
+        "specs/14-multi-browser-meeting.spec.ts"
     )
     
     Push-Location $E2EDir
@@ -351,14 +355,160 @@ function Invoke-CloudTests {
 function Invoke-AllTests {
     param([string]$Target, [switch]$Headed, [int]$Workers)
     
-    Write-Host "RUNNING ALL TESTS" -ForegroundColor Magenta
+    Write-Host "RUNNING ALL TESTS (ALL SPECS INCLUDING CLOUD)" -ForegroundColor Magenta
     Write-Host ""
     
     $headedFlag = if ($Headed) { "--headed" } else { "" }
-    $projectFlag = if ($Target -eq "cloud") { "--project='Cloud'" } else { "--project='Local'" }
+    $projectFlag = if ($Target -eq "cloud") { "--project='Cloud'" } elseif ($Target -eq "cloud-dev") { "--project='Cloud-Dev'" } else { "--project='Local'" }
     
     Push-Location $E2EDir
     npx playwright test --workers=$Workers $headedFlag $projectFlag
+    $exitCode = $LASTEXITCODE
+    Pop-Location
+    
+    return $exitCode
+}
+
+function Invoke-Phase2Tests {
+    param([string]$Target, [switch]$Headed, [int]$Workers)
+    
+    Write-Host "RUNNING PHASE 2 TESTS (SPECS 11-14)" -ForegroundColor Magenta
+    Write-Host "  Includes: Phase 2 Features, UI Browser, Meeting Integration, Multi-Browser" -ForegroundColor DarkCyan
+    Write-Host ""
+    
+    $headedFlag = if ($Headed) { "--headed" } else { "" }
+    $projectFlag = if ($Target -eq "cloud") { "--project='Cloud'" } elseif ($Target -eq "cloud-dev") { "--project='Cloud-Dev'" } else { "--project='Local'" }
+    
+    $testFiles = @(
+        "specs/11-phase2-features.spec.ts",
+        "specs/12-phase2-ui-browser.spec.ts",
+        "specs/13-meeting-workflow-integration.spec.ts",
+        "specs/14-multi-browser-meeting.spec.ts"
+    )
+    
+    Push-Location $E2EDir
+    npx playwright test $testFiles --workers=1 $headedFlag $projectFlag
+    $exitCode = $LASTEXITCODE
+    Pop-Location
+    
+    return $exitCode
+}
+
+function Invoke-MultiUiTests {
+    <#
+    .SYNOPSIS
+        Multi-UI simultaneous testing: opens web portals for both Doctor and Patient.
+        Tests multi-browser meeting scenarios with headed browser (visible).
+        Spec 14 creates separate browser contexts for doctor + patient side by side.
+    #>
+    param([string]$Target, [int]$Workers)
+    
+    Write-Host "" -ForegroundColor Magenta
+    Write-Host "╔══════════════════════════════════════════════════════════════════════════╗" -ForegroundColor Magenta
+    Write-Host "║                    MULTI-UI SIMULTANEOUS TESTING                          ║" -ForegroundColor Magenta
+    Write-Host "║         Doctor + Patient portals open side-by-side in browser              ║" -ForegroundColor Magenta
+    Write-Host "╚══════════════════════════════════════════════════════════════════════════╝" -ForegroundColor Magenta
+    Write-Host ""
+    Write-Host "  Web Portals:" -ForegroundColor Cyan
+    Write-Host "    Patient: $LOCAL_PATIENT" -ForegroundColor White
+    Write-Host "    Doctor:  $LOCAL_DOCTOR" -ForegroundColor White
+    Write-Host "    Meeting: $LOCAL_MEETING" -ForegroundColor White
+    Write-Host ""
+    
+    $projectFlag = if ($Target -eq "cloud") { "--project='Cloud'" } elseif ($Target -eq "cloud-dev") { "--project='Cloud-Dev'" } else { "--project='Local'" }
+    
+    # Multi-browser tests always run headed with 1 worker (serial)
+    $testFiles = @(
+        "specs/12-phase2-ui-browser.spec.ts",
+        "specs/14-multi-browser-meeting.spec.ts",
+        "specs/15-multi-user-showcase.spec.ts"
+    )
+    
+    Push-Location $E2EDir
+    npx playwright test $testFiles --workers=1 --headed $projectFlag
+    $exitCode = $LASTEXITCODE
+    Pop-Location
+    
+    return $exitCode
+}
+
+function Invoke-ShowcaseTests {
+    <#
+    .SYNOPSIS
+        Multi-user showcase: opens Patient + Doctor + Admin in separate headed browsers.
+        Tests all key pages, API endpoints, cross-portal workflows, and screenshots.
+        Spec 15 creates 3 browser contexts simultaneously — visible side by side.
+    #>
+    param([string]$Target, [int]$Workers)
+
+    Write-Host "" -ForegroundColor Magenta
+    Write-Host "╔══════════════════════════════════════════════════════════════════════════╗" -ForegroundColor Yellow
+    Write-Host "║              MULTI-USER SHOWCASE — 3 PORTALS SIDE-BY-SIDE                 ║" -ForegroundColor Yellow
+    Write-Host "║      Patient + Doctor + Admin on separate browser pages simultaneously     ║" -ForegroundColor Yellow
+    Write-Host "╚══════════════════════════════════════════════════════════════════════════╝" -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "  Web Portals:" -ForegroundColor Cyan
+    Write-Host "    Patient: $LOCAL_PATIENT" -ForegroundColor White
+    Write-Host "    Doctor:  $LOCAL_DOCTOR" -ForegroundColor White
+    Write-Host "    Meeting: $LOCAL_MEETING" -ForegroundColor White
+    Write-Host ""
+    Write-Host "  Users:" -ForegroundColor Cyan
+    Write-Host "    Patient 1: demo.test@gmail.com" -ForegroundColor White
+    Write-Host "    Patient 2: Somchai.Mankong@gmail.com" -ForegroundColor White
+    Write-Host "    Doctor:    doctor.test@izara.com" -ForegroundColor White
+    Write-Host "    Admin:     admin.test@izara.com" -ForegroundColor White
+    Write-Host ""
+
+    $projectFlag = if ($Target -eq "cloud") { "--project='Cloud'" } elseif ($Target -eq "cloud-dev") { "--project='Cloud-Dev'" } else { "--project='Local'" }
+
+    # Showcase tests always run headed with 1 worker
+    $testFiles = @(
+        "specs/15-multi-user-showcase.spec.ts"
+    )
+
+    Push-Location $E2EDir
+    npx playwright test $testFiles --workers=1 --headed $projectFlag
+    $exitCode = $LASTEXITCODE
+    Pop-Location
+
+    return $exitCode
+}
+
+function Invoke-CompleteTests {
+    <#
+    .SYNOPSIS
+        Complete test suite: all 16 spec files (01-15) including Phase 2 + Multi-User Showcase.
+        Runs sequentially for reliability.
+    #>
+    param([string]$Target, [switch]$Headed, [int]$Workers)
+    
+    Write-Host "RUNNING COMPLETE TEST SUITE (ALL 16 SPECS)" -ForegroundColor Magenta
+    Write-Host ""
+    
+    $headedFlag = if ($Headed) { "--headed" } else { "" }
+    $projectFlag = if ($Target -eq "cloud") { "--project='Cloud'" } elseif ($Target -eq "cloud-dev") { "--project='Cloud-Dev'" } else { "--project='Local'" }
+    
+    $testFiles = @(
+        "specs/00-unified-comprehensive.spec.ts",
+        "specs/01-meeting-workflows.spec.ts",
+        "specs/02-v350-workflows.spec.ts",
+        "specs/03-v360-comprehensive.spec.ts",
+        "specs/04-advanced-coverage.spec.ts",
+        "specs/05-multi-user-browser.spec.ts",
+        "specs/06-patient-portal-complete.spec.ts",
+        "specs/07-doctor-portal-complete.spec.ts",
+        "specs/08-workflow-processes-complete.spec.ts",
+        "specs/09-meeting-ai-complete.spec.ts",
+        "specs/10-admin-metadata-complete.spec.ts",
+        "specs/11-phase2-features.spec.ts",
+        "specs/12-phase2-ui-browser.spec.ts",
+        "specs/13-meeting-workflow-integration.spec.ts",
+        "specs/14-multi-browser-meeting.spec.ts",
+        "specs/15-multi-user-showcase.spec.ts"
+    )
+    
+    Push-Location $E2EDir
+    npx playwright test $testFiles --workers=$Workers $headedFlag $projectFlag
     $exitCode = $LASTEXITCODE
     Pop-Location
     
@@ -661,6 +811,9 @@ function Show-Help {
     Write-Host "  ui           UI navigation with visible browser (~10 min)" -ForegroundColor Gray
     Write-Host "  content      Content/Notifications/Metadata (~3 min)" -ForegroundColor Gray
     Write-Host "  cloud        Cloud-specific tests" -ForegroundColor Gray
+    Write-Host "  phase2       Phase 2 tests (specs 11-14)" -ForegroundColor Gray
+    Write-Host "  multi-ui     Multi-browser UI tests (specs 12+14+15, headed)" -ForegroundColor Gray
+    Write-Host "  showcase     Multi-user showcase: 3 portals side-by-side (spec 15)" -ForegroundColor Gray
     Write-Host "  full         Full comprehensive tests (~20 min)" -ForegroundColor Gray
     Write-Host "  all          Run all test suites (~25 min)" -ForegroundColor Gray
     Write-Host ""
@@ -777,7 +930,23 @@ switch ($Suite) {
     }
     "full" {
         $exitCode = Invoke-FullTests -Target $Target -Headed:$Headed -Workers $Workers
-        $suiteResults += @{ Name = "Full Suite (01-08)"; ExitCode = $exitCode }
+        $suiteResults += @{ Name = "Full Suite (01-14)"; ExitCode = $exitCode }
+    }
+    "phase2" {
+        $exitCode = Invoke-Phase2Tests -Target $Target -Headed:$Headed -Workers $Workers
+        $suiteResults += @{ Name = "Phase 2 (11-14)"; ExitCode = $exitCode }
+    }
+    "multi-ui" {
+        $exitCode = Invoke-MultiUiTests -Target $Target -Workers $Workers
+        $suiteResults += @{ Name = "Multi-UI (12+14+15 headed)"; ExitCode = $exitCode }
+    }
+    "showcase" {
+        $exitCode = Invoke-ShowcaseTests -Target $Target -Workers $Workers
+        $suiteResults += @{ Name = "Showcase (15 multi-user headed)"; ExitCode = $exitCode }
+    }
+    "complete" {
+        $exitCode = Invoke-CompleteTests -Target $Target -Headed:$Headed -Workers $Workers
+        $suiteResults += @{ Name = "Complete (00-14)"; ExitCode = $exitCode }
     }
     "cloud" {
         Initialize-Environment -Target "cloud"

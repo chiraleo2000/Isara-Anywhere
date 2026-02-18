@@ -340,6 +340,7 @@ For meetings longer than 30 minutes, the AI automatically divides the transcript
 ### CDS Recommendations
 
 Generated alongside the SOAP summary, CDS provides:
+
 - **Drug interaction alerts** — cross-referenced with patient's current medications
 - **Clinical guideline references** — relevant Thai/international guidelines
 - **Follow-up suggestions** — recommended follow-up timeline and tests
@@ -587,7 +588,7 @@ izara-meeting-server:
 
 | Variable | Default | Description |
 | -------- | ------- | ----------- |
-| JITSI_SERVER_URL | https://meet.jit.si | Jitsi server |
+| JITSI_SERVER_URL | <https://meet.jit.si> | Jitsi server |
 | JITSI_APP_ID | — | App ID for auth |
 | JITSI_APP_SECRET | — | App secret |
 
@@ -677,4 +678,4 @@ Patient Portal ←→ Meeting Server ←→ Doctor Portal
 
 ---
 
-*Document version: v1.4.7 — Last updated: 2026-02-10*
+Document version: v1.4.7 — Last updated: 2026-02-10

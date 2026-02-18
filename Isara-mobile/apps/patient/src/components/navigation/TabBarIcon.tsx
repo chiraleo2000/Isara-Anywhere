@@ -9,6 +9,6 @@ interface TabBarIconProps {
   size: number;
 }
 
-export function TabBarIcon({ name, color, size }: TabBarIconProps) {
+export function TabBarIcon({ name, color, size }: Readonly<TabBarIconProps>) {
   return <Ionicons name={name} size={size} color={color} />;
 }

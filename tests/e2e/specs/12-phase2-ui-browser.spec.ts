@@ -71,6 +71,18 @@ async function browserLoginDoctor(page: Page, email: string, password: string) {
   await page.waitForTimeout(1500);
 }
 
+async function loginAndGetPage(browser: Browser): Promise<{ context: BrowserContext; page: Page }> {
+  const { context, page } = await createPage(browser);
+  await browserLoginPatient(page, P1.email, P1.password);
+  return { context, page };
+}
+
+async function loginAndGetDoctorPage(browser: Browser): Promise<{ context: BrowserContext; page: Page }> {
+  const { context, page } = await createPage(browser);
+  await browserLoginDoctor(page, DOC.email, DOC.password);
+  return { context, page };
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // SECTION A: PATIENT PORTAL — LOGIN + DASHBOARD UI (5 tests)
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -167,105 +179,106 @@ test.describe('P2-UI-A: Patient Portal Login & Dashboard', () => {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 test.describe('P2-UI-B: Patient Portal Pages', () => {
-  let patientContext: BrowserContext;
-  let patientPage: Page;
 
-  test.beforeAll(async ({ browser }) => {
-    const result = await createPage(browser);
-    patientContext = result.context;
-    patientPage = result.page;
-    await browserLoginPatient(patientPage, P1.email, P1.password);
-  });
+  test('P2-B01: Navigate to Appointments page', async ({ browser }) => {
+    const { context, page } = await loginAndGetPage(browser);
+    await page.goto(`${PATIENT_URL}/appointments`, { timeout: NAV_TIMEOUT, waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(1500);
 
-  test.afterAll(async () => {
-    await patientContext?.close();
-  });
-
-  test('P2-B01: Navigate to Appointments page', async () => {
-    await patientPage.goto(`${PATIENT_URL}/appointments`, { timeout: NAV_TIMEOUT, waitUntil: 'domcontentloaded' });
-    await patientPage.waitForTimeout(1500);
-
-    const body = (await patientPage.textContent('body'))!.toLowerCase();
+    const body = (await page.textContent('body'))!.toLowerCase();
     const hasContent = body.includes('appointment') || body.includes('นัดหมาย') || body.includes('schedule') || body.includes('booking');
     expect(hasContent).toBe(true);
 
-    await patientPage.screenshot({ path: 'test-results/p2-b01-appointments.png', fullPage: true });
+    await page.screenshot({ path: 'test-results/p2-b01-appointments.png', fullPage: true });
+    await context.close();
   });
 
-  test('P2-B02: Navigate to Health Records page', async () => {
-    await patientPage.goto(`${PATIENT_URL}/health-records`, { timeout: NAV_TIMEOUT, waitUntil: 'domcontentloaded' });
-    await patientPage.waitForTimeout(1500);
+  test('P2-B02: Navigate to Health Records page', async ({ browser }) => {
+    const { context, page } = await loginAndGetPage(browser);
+    await page.goto(`${PATIENT_URL}/health-records`, { timeout: NAV_TIMEOUT, waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(1500);
 
-    // The page loaded (may redirect to sub-page or show health content)
-    const body = (await patientPage.textContent('body'))!.toLowerCase();
+    const body = (await page.textContent('body'))!.toLowerCase();
     expect(body.length).toBeGreaterThan(50);
 
-    await patientPage.screenshot({ path: 'test-results/p2-b02-health-records.png', fullPage: true });
+    await page.screenshot({ path: 'test-results/p2-b02-health-records.png', fullPage: true });
+    await context.close();
   });
 
-  test('P2-B03: Navigate to AI Chat page', async () => {
-    await patientPage.goto(`${PATIENT_URL}/ai-chat`, { timeout: NAV_TIMEOUT, waitUntil: 'domcontentloaded' });
-    await patientPage.waitForTimeout(1500);
+  test('P2-B03: Navigate to AI Chat page', async ({ browser }) => {
+    const { context, page } = await loginAndGetPage(browser);
+    await page.goto(`${PATIENT_URL}/ai-chat`, { timeout: NAV_TIMEOUT, waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(1500);
 
-    // AI chat page has some content
-    const body = (await patientPage.textContent('body'))!.toLowerCase();
+    const body = (await page.textContent('body'))!.toLowerCase();
     const hasAI = body.includes('ai') || body.includes('chat') || body.includes('gemini') ||
       body.includes('ถาม') || body.includes('assist') || body.includes('message');
     expect(hasAI || body.length > 50).toBe(true);
 
-    await patientPage.screenshot({ path: 'test-results/p2-b03-ai-chat.png', fullPage: true });
+    await page.screenshot({ path: 'test-results/p2-b03-ai-chat.png', fullPage: true });
+    await context.close();
   });
 
-  test('P2-B04: Navigate to Profile/Settings page', async () => {
-    await patientPage.goto(`${PATIENT_URL}/profile`, { timeout: NAV_TIMEOUT, waitUntil: 'domcontentloaded' });
-    await patientPage.waitForTimeout(1500);
+  test('P2-B04: Navigate to Profile/Settings page', async ({ browser }) => {
+    const { context, page } = await loginAndGetPage(browser);
+    await page.goto(`${PATIENT_URL}/profile`, { timeout: NAV_TIMEOUT, waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(1500);
 
-    const body = (await patientPage.textContent('body'))!.toLowerCase();
+    const body = (await page.textContent('body'))!.toLowerCase();
     const hasProfile = body.includes('profile') || body.includes('setting') || body.includes('account') ||
       body.includes('โปรไฟล์') || body.includes('ตั้งค่า') || body.includes('email');
     expect(hasProfile || body.length > 50).toBe(true);
 
-    await patientPage.screenshot({ path: 'test-results/p2-b04-profile.png', fullPage: true });
+    await page.screenshot({ path: 'test-results/p2-b04-profile.png', fullPage: true });
+    await context.close();
   });
 
-  test('P2-B05: Navigate to Medical Library page', async () => {
-    await patientPage.goto(`${PATIENT_URL}/medical-library`, { timeout: NAV_TIMEOUT, waitUntil: 'domcontentloaded' });
-    await patientPage.waitForTimeout(1500);
+  test('P2-B05: Navigate to Medical Library page', async ({ browser }) => {
+    const { context, page } = await loginAndGetPage(browser);
+    await page.goto(`${PATIENT_URL}/medical-library`, { timeout: NAV_TIMEOUT, waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(1500);
 
-    const body = (await patientPage.textContent('body'))!.toLowerCase();
+    const body = (await page.textContent('body'))!.toLowerCase();
     expect(body.length).toBeGreaterThan(50);
 
-    await patientPage.screenshot({ path: 'test-results/p2-b05-medical-library.png', fullPage: true });
+    await page.screenshot({ path: 'test-results/p2-b05-medical-library.png', fullPage: true });
+    await context.close();
   });
 
-  test('P2-B06: Navigate to Notifications page', async () => {
-    await patientPage.goto(`${PATIENT_URL}/notifications`, { timeout: NAV_TIMEOUT, waitUntil: 'domcontentloaded' });
-    await patientPage.waitForTimeout(1500);
+  test('P2-B06: Navigate to Notifications page', async ({ browser }) => {
+    const { context, page } = await loginAndGetPage(browser);
+    await page.goto(`${PATIENT_URL}/notifications`, { timeout: NAV_TIMEOUT, waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(1500);
 
-    const body = (await patientPage.textContent('body'))!.toLowerCase();
+    const body = (await page.textContent('body'))!.toLowerCase();
     expect(body.length).toBeGreaterThan(50);
 
-    await patientPage.screenshot({ path: 'test-results/p2-b06-notifications.png', fullPage: true });
+    await page.screenshot({ path: 'test-results/p2-b06-notifications.png', fullPage: true });
+    await context.close();
   });
 
-  test('P2-B07: Navigate to Living Will page', async () => {
-    await patientPage.goto(`${PATIENT_URL}/living-will`, { timeout: NAV_TIMEOUT, waitUntil: 'domcontentloaded' });
-    await patientPage.waitForTimeout(1500);
+  test('P2-B07: Navigate to Living Will page', async ({ browser }) => {
+    const { context, page } = await loginAndGetPage(browser);
+    await page.goto(`${PATIENT_URL}/living-will`, { timeout: NAV_TIMEOUT, waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(1500);
 
-    const body = (await patientPage.textContent('body'))!.toLowerCase();
+    const body = (await page.textContent('body'))!.toLowerCase();
     expect(body.length).toBeGreaterThan(50);
 
-    await patientPage.screenshot({ path: 'test-results/p2-b07-living-will.png', fullPage: true });
+    await page.screenshot({ path: 'test-results/p2-b07-living-will.png', fullPage: true });
+    await context.close();
   });
 
-  test('P2-B08: Navigate to Consultants page', async () => {
-    await patientPage.goto(`${PATIENT_URL}/consultants`, { timeout: NAV_TIMEOUT, waitUntil: 'domcontentloaded' });
-    await patientPage.waitForTimeout(1500);
+  test('P2-B08: Navigate to Consultants page', async ({ browser }) => {
+    const { context, page } = await loginAndGetPage(browser);
+    await page.goto(`${PATIENT_URL}/consultants`, { timeout: NAV_TIMEOUT, waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(1500);
 
-    const body = (await patientPage.textContent('body'))!.toLowerCase();
+    const body = (await page.textContent('body'))!.toLowerCase();
     expect(body.length).toBeGreaterThan(50);
 
-    await patientPage.screenshot({ path: 'test-results/p2-b08-consultants.png', fullPage: true });
+    await page.screenshot({ path: 'test-results/p2-b08-consultants.png', fullPage: true });
+    await context.close();
   });
 });
 
@@ -341,98 +354,101 @@ test.describe('P2-UI-C: Doctor Portal Login & Dashboard', () => {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 test.describe('P2-UI-D: Doctor Portal Pages', () => {
-  let doctorContext: BrowserContext;
-  let doctorPage: Page;
 
-  test.beforeAll(async ({ browser }) => {
-    const result = await createPage(browser);
-    doctorContext = result.context;
-    doctorPage = result.page;
-    await browserLoginDoctor(doctorPage, DOC.email, DOC.password);
-  });
+  test('P2-D01: Navigate to Schedule page', async ({ browser }) => {
+    const { context, page } = await loginAndGetDoctorPage(browser);
+    await page.goto(`${DOCTOR_URL}/schedule`, { timeout: NAV_TIMEOUT, waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(1500);
 
-  test.afterAll(async () => {
-    await doctorContext?.close();
-  });
-
-  test('P2-D01: Navigate to Schedule page', async () => {
-    await doctorPage.goto(`${DOCTOR_URL}/schedule`, { timeout: NAV_TIMEOUT, waitUntil: 'domcontentloaded' });
-    await doctorPage.waitForTimeout(1500);
-
-    const body = (await doctorPage.textContent('body'))!.toLowerCase();
+    const body = (await page.textContent('body'))!.toLowerCase();
     expect(body.length).toBeGreaterThan(50);
 
-    await doctorPage.screenshot({ path: 'test-results/p2-d01-schedule.png', fullPage: true });
+    await page.screenshot({ path: 'test-results/p2-d01-schedule.png', fullPage: true });
+    await context.close();
   });
 
-  test('P2-D02: Navigate to Patients list page', async () => {
-    await doctorPage.goto(`${DOCTOR_URL}/patients`, { timeout: NAV_TIMEOUT, waitUntil: 'domcontentloaded' });
-    await doctorPage.waitForTimeout(1500);
+  test('P2-D02: Navigate to Patients list page', async ({ browser }) => {
+    const { context, page } = await loginAndGetDoctorPage(browser);
+    await page.goto(`${DOCTOR_URL}/patients`, { timeout: NAV_TIMEOUT, waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(1500);
 
-    const body = (await doctorPage.textContent('body'))!.toLowerCase();
+    const body = (await page.textContent('body'))!.toLowerCase();
     expect(body.length).toBeGreaterThan(50);
 
-    await doctorPage.screenshot({ path: 'test-results/p2-d02-patients.png', fullPage: true });
+    await page.screenshot({ path: 'test-results/p2-d02-patients.png', fullPage: true });
+    await context.close();
   });
 
-  test('P2-D03: Navigate to Queue page', async () => {
-    await doctorPage.goto(`${DOCTOR_URL}/queue`, { timeout: NAV_TIMEOUT, waitUntil: 'domcontentloaded' });
-    await doctorPage.waitForTimeout(1500);
+  test('P2-D03: Navigate to Queue page', async ({ browser }) => {
+    const { context, page } = await loginAndGetDoctorPage(browser);
+    await page.goto(`${DOCTOR_URL}/queue`, { timeout: NAV_TIMEOUT, waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(1500);
 
-    const body = (await doctorPage.textContent('body'))!.toLowerCase();
+    const body = (await page.textContent('body'))!.toLowerCase();
     expect(body.length).toBeGreaterThan(50);
 
-    await doctorPage.screenshot({ path: 'test-results/p2-d03-queue.png', fullPage: true });
+    await page.screenshot({ path: 'test-results/p2-d03-queue.png', fullPage: true });
+    await context.close();
   });
 
-  test('P2-D04: Navigate to EMR page', async () => {
-    await doctorPage.goto(`${DOCTOR_URL}/emr`, { timeout: NAV_TIMEOUT, waitUntil: 'domcontentloaded' });
-    await doctorPage.waitForTimeout(1500);
+  test('P2-D04: Navigate to EMR page', async ({ browser }) => {
+    const { context, page } = await loginAndGetDoctorPage(browser);
+    await page.goto(`${DOCTOR_URL}/emr`, { timeout: NAV_TIMEOUT, waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(1500);
 
-    const body = (await doctorPage.textContent('body'))!.toLowerCase();
+    const body = (await page.textContent('body'))!.toLowerCase();
     expect(body.length).toBeGreaterThan(50);
 
-    await doctorPage.screenshot({ path: 'test-results/p2-d04-emr.png', fullPage: true });
+    await page.screenshot({ path: 'test-results/p2-d04-emr.png', fullPage: true });
+    await context.close();
   });
 
-  test('P2-D05: Navigate to Prescriptions page', async () => {
-    await doctorPage.goto(`${DOCTOR_URL}/prescriptions`, { timeout: NAV_TIMEOUT, waitUntil: 'domcontentloaded' });
-    await doctorPage.waitForTimeout(1500);
+  test('P2-D05: Navigate to Prescriptions page', async ({ browser }) => {
+    const { context, page } = await loginAndGetDoctorPage(browser);
+    await page.goto(`${DOCTOR_URL}/prescriptions`, { timeout: NAV_TIMEOUT, waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(1500);
 
-    const body = (await doctorPage.textContent('body'))!.toLowerCase();
+    const body = (await page.textContent('body'))!.toLowerCase();
     expect(body.length).toBeGreaterThan(50);
 
-    await doctorPage.screenshot({ path: 'test-results/p2-d05-prescriptions.png', fullPage: true });
+    await page.screenshot({ path: 'test-results/p2-d05-prescriptions.png', fullPage: true });
+    await context.close();
   });
 
-  test('P2-D06: Navigate to Clinical Resources page', async () => {
-    await doctorPage.goto(`${DOCTOR_URL}/clinical-resources`, { timeout: NAV_TIMEOUT, waitUntil: 'domcontentloaded' });
-    await doctorPage.waitForTimeout(1500);
+  test('P2-D06: Navigate to Clinical Resources page', async ({ browser }) => {
+    const { context, page } = await loginAndGetDoctorPage(browser);
+    await page.goto(`${DOCTOR_URL}/clinical-resources`, { timeout: NAV_TIMEOUT, waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(1500);
 
-    const body = (await doctorPage.textContent('body'))!.toLowerCase();
+    const body = (await page.textContent('body'))!.toLowerCase();
     expect(body.length).toBeGreaterThan(50);
 
-    await doctorPage.screenshot({ path: 'test-results/p2-d06-clinical-resources.png', fullPage: true });
+    await page.screenshot({ path: 'test-results/p2-d06-clinical-resources.png', fullPage: true });
+    await context.close();
   });
 
-  test('P2-D07: Navigate to Doctor Profile page', async () => {
-    await doctorPage.goto(`${DOCTOR_URL}/profile`, { timeout: NAV_TIMEOUT, waitUntil: 'domcontentloaded' });
-    await doctorPage.waitForTimeout(1500);
+  test('P2-D07: Navigate to Doctor Profile page', async ({ browser }) => {
+    const { context, page } = await loginAndGetDoctorPage(browser);
+    await page.goto(`${DOCTOR_URL}/profile`, { timeout: NAV_TIMEOUT, waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(1500);
 
-    const body = (await doctorPage.textContent('body'))!.toLowerCase();
+    const body = (await page.textContent('body'))!.toLowerCase();
     expect(body.length).toBeGreaterThan(50);
 
-    await doctorPage.screenshot({ path: 'test-results/p2-d07-doctor-profile.png', fullPage: true });
+    await page.screenshot({ path: 'test-results/p2-d07-doctor-profile.png', fullPage: true });
+    await context.close();
   });
 
-  test('P2-D08: Navigate to Analytics/Reports page', async () => {
-    await doctorPage.goto(`${DOCTOR_URL}/analytics`, { timeout: NAV_TIMEOUT, waitUntil: 'domcontentloaded' });
-    await doctorPage.waitForTimeout(1500);
+  test('P2-D08: Navigate to Analytics/Reports page', async ({ browser }) => {
+    const { context, page } = await loginAndGetDoctorPage(browser);
+    await page.goto(`${DOCTOR_URL}/analytics`, { timeout: NAV_TIMEOUT, waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(1500);
 
-    const body = (await doctorPage.textContent('body'))!.toLowerCase();
+    const body = (await page.textContent('body'))!.toLowerCase();
     expect(body.length).toBeGreaterThan(50);
 
-    await doctorPage.screenshot({ path: 'test-results/p2-d08-analytics.png', fullPage: true });
+    await page.screenshot({ path: 'test-results/p2-d08-analytics.png', fullPage: true });
+    await context.close();
   });
 });
 
@@ -517,7 +533,6 @@ test.describe('P2-UI-E: Cross-Portal Phase 2 Features', () => {
     const count = await navLinks.count();
 
     if (count > 0) {
-      const initialUrl = page.url();
       await navLinks.first().click({ timeout: TIMEOUT });
       await page.waitForTimeout(1500);
       // URL may have changed — page should still have content

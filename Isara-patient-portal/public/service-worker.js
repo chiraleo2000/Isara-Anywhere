@@ -91,14 +91,12 @@ self.addEventListener('fetch', (event) => {
 
         return fetch(request).then((response) => {
           // Don't cache non-successful responses
-          if (!response || response.status !== 200 || response.type === 'error') {
-            return response;
+          if (response && response.status === 200 && response.type !== 'error') {
+            const responseClone = response.clone();
+            caches.open(RUNTIME_CACHE).then((cache) => {
+              cache.put(request, responseClone);
+            });
           }
-
-          const responseClone = response.clone();
-          caches.open(RUNTIME_CACHE).then((cache) => {
-            cache.put(request, responseClone);
-          });
 
           return response;
         });
@@ -136,13 +134,11 @@ self.addEventListener('sync', (event) => {
 async function syncAppointments() {
   console.log('[Service Worker] Syncing appointments...');
   // Implement appointment sync logic
-  return Promise.resolve();
 }
 
 async function syncPHR() {
   console.log('[Service Worker] Syncing PHR data...');
   // Implement PHR sync logic
-  return Promise.resolve();
 }
 
 // Push notification handler
@@ -187,8 +183,7 @@ self.addEventListener('notificationclick', (event) => {
     clients.matchAll({ type: 'window', includeUncontrolled: true })
       .then((clientList) => {
         // Check if there's already a window open
-        for (let i = 0; i < clientList.length; i++) {
-          const client = clientList[i];
+        for (const client of clientList) {
           if (client.url === urlToOpen && 'focus' in client) {
             return client.focus();
           }

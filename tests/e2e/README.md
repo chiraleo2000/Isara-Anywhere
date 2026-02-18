@@ -51,7 +51,7 @@ tests/e2e/
 ## 🧪 Test Files & Coverage
 
 | # | File | Tests | Coverage |
-|---|------|-------|----------|
+| --- | ------ | ------- | ---------- |
 | 1 | `01-smoke.spec.ts` | 8 | Portal loads, login pages, API health, DB health, meeting server |
 | 2 | `02-api-status.spec.ts` | ~40 | Auth (5 users), Patient endpoints (11), Doctor endpoints (7), Admin endpoints (6), Meeting (3), System (4) |
 | 3 | `03-workflow.spec.ts` | ~25 | Appointments, video meeting, health records/EMR, notifications, AI features, multi-patient |
@@ -66,7 +66,7 @@ tests/e2e/
 ## 📋 npm Scripts
 
 | Script | Command | What it runs |
-|--------|---------|--------------|
+| -------- | --------- | -------------- |
 | `npm run smoke` | `01-smoke` | Quick health check (~1 min) |
 | `npm run api` | `02-api-status` | All API endpoints (~3 min) |
 | `npm run workflow` | `03-workflow` | Full workflow (~3 min) |
@@ -99,17 +99,17 @@ tests/e2e/
 ### Local (Docker)
 
 | Service | URL |
-|---------|-----|
-| Patient Portal | http://localhost:3005 |
-| Doctor Portal | http://localhost:3010 |
-| Meeting Server | http://localhost:3020 |
+| --------- | ----- |
+| Patient Portal | <http://localhost:3005> |
+| Doctor Portal | <http://localhost:3010> |
+| Meeting Server | <http://localhost:3020> |
 
 ### Cloud (Google Cloud Run)
 
 | Service | URL |
-|---------|-----|
-| Patient Portal | https://izara-patient-portal-724889190329.asia-southeast1.run.app |
-| Doctor Portal | https://izara-doctor-portal-724889190329.asia-southeast1.run.app |
+| --------- | ----- |
+| Patient Portal | <https://izara-patient-portal-724889190329.asia-southeast1.run.app> |
+| Doctor Portal | <https://izara-doctor-portal-724889190329.asia-southeast1.run.app> |
 
 ---
 
@@ -128,7 +128,7 @@ import {
 ### Environment Variables
 
 | Variable | Description | Default |
-|----------|-------------|---------|
+| ---------- | ------------- | --------- |
 | `TEST_ENV` | Environment (local/cloud) | `local` |
 | `TEST_PATIENT_PASSWORD` | Override patient password | `P@ssw0rd` |
 | `TEST_DOCTOR_PASSWORD` | Override doctor password | `IzaraDoctor@2024` |
@@ -145,20 +145,13 @@ import {
 Old files are archived in `deprecated/specs/` for reference.
 
 | Removed (archived) | Absorbed into |
-|---------------------|---------------|
+| --------------------- | --------------- |
 | smoke-test, core-e2e | `01-smoke` |
 | api-status, health-records-*, clinical-resources-*, medical-consultants-*, medicine-content-*, notifications-*, living-will-*, video-meeting-jitsi, user-management-* | `02-api-status` |
 | appointment-workflow, full-appointment-*, full-meeting-*, meeting-workflow, complete-workflow-*, process-docs-unit*, all phase1-* workflow files | `03-workflow` |
 | ui-pages-workflow, ui-workflow-tests, workflow-ui-tests, comprehensive-parallel-ui, comprehensive-local-tests, multi-window-parallel-test, parallel-comprehensive-workflow, phase1-parallel-ui-workflow | `04-ui-navigation` |
 | cloud-e2e-workflow, cloud-health-tests, full-workflow-cloud-tests | `05-cloud` |
 | comprehensive-registration-workflow, registration-and-full-workflow | `06-registration` |
-| `LOCAL_PATIENT_URL` | Local patient portal URL | <http://localhost:3005> |
-| `LOCAL_DOCTOR_URL` | Local doctor portal URL | <http://localhost:3010> |
-| `CLOUD_PATIENT_URL` | Cloud patient portal URL | (Cloud Run URL) |
-| `CLOUD_DOCTOR_URL` | Cloud doctor portal URL | (Cloud Run URL) |
-| `TEST_PATIENT_PASSWORD` | Patient test password | YOUR_TEST_PASSWORD |
-| `TEST_DOCTOR_PASSWORD` | Doctor test password | YOUR_TEST_DOCTOR_PASSWORD |
-| `TEST_ADMIN_PASSWORD` | Admin test password | YOUR_TEST_ADMIN_PASSWORD |
 
 ## Test Results Summary (Latest: 2025-01-28)
 
@@ -197,6 +190,7 @@ Old files are archived in `deprecated/specs/` for reference.
 ## Prerequisites
 
 1. **Node.js 18+**
+
 ## 🛠 Prerequisites
 
 1. **Node.js ≥ 22** and **npm**
@@ -206,7 +200,7 @@ Old files are archived in `deprecated/specs/` for reference.
 ## 🐛 Troubleshooting
 
 | Issue | Solution |
-|-------|----------|
+| ------- | ---------- |
 | Connection refused | Ensure Docker containers are running: `docker compose up -d` |
 | Auth fails | Verify test credentials in database |
 | Timeout | Increase timeout or run with `--headed` to debug |

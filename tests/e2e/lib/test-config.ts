@@ -1,8 +1,8 @@
 /**
  * =============================================================================
- * IZARA TELEMEDICINE - SHARED TEST CONFIGURATION v1.4.8
+ * IZARA TELEMEDICINE - SHARED TEST CONFIGURATION v1.4.9
  * =============================================================================
- * Version: 1.4.8 | Updated: February 15, 2026
+ * Version: 1.4.9 | Updated: February 16, 2026
  *
  * Centralized configuration for ALL E2E tests (Local + Cloud).
  * Set TEST_ENV=cloud to switch to Cloud Run URLs.
@@ -159,7 +159,7 @@ export const ENDPOINTS = {
   medicalContent: '/api/medical-content',
   contentMedical: '/api/content/medical',
   contentClinical: '/api/content/clinical',
-  clinicalResources: '/api/clinical-resources',
+  clinicalResources: '/api/content/clinical-resources',
   timeline: '/api/timeline',
   treatmentResults: '/api/health-records/treatment-results',
   userProfile: '/api/users/profile',
@@ -180,7 +180,7 @@ export const ENDPOINTS = {
     health: '/api/health',
   },
   ai: {
-    health: '/api/ai/health',
+    health: '/api/health',   // AI services use meeting server /api/health
     chat: '/api/ai/chat',
     summarize: '/api/ai/summarize',
     preSummary: '/api/ai/pre-consultation-summary',
@@ -199,10 +199,10 @@ export const ENDPOINTS = {
     logs: '/api/ai/cds-logs',
   },
   admin: {
-    doctors: '/api/admin/doctors',
-    pendingDoctors: '/api/admin/pending-doctors',
-    approveDoctor: '/api/admin/approve-doctor',
-    rejectDoctor: '/api/admin/reject-doctor',
+    doctors: '/admin/pending-doctors',
+    pendingDoctors: '/admin/pending-doctors',
+    approveDoctor: '/auth/admin/approve-doctor',
+    rejectDoctor: '/auth/admin/reject-doctor',
     stats: '/api/admin/stats',
   },
   metadata: {

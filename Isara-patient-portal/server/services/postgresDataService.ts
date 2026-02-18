@@ -91,8 +91,8 @@ pool.on('error', (err: Error) => {
       await pool.query('SELECT 1');
       dbAvailable = true;
       console.log('✅ [Pool] Database reconnected');
-    } catch (retryErr) {
-      console.error('❌ [Pool] Reconnection failed:', (retryErr as Error).message);
+    } catch (error_) {
+      console.error('❌ [Pool] Reconnection failed:', (error_ as Error).message);
     }
   }, 5000);
 });
@@ -307,8 +307,8 @@ async function runMigrations() {
         CREATE INDEX IF NOT EXISTS idx_api_connections_user ON user_api_connections(user_id);
       `);
       console.log('✅ Phase 2 indexes created');
-    } catch (idxErr) {
-      console.warn('⚠️ Index creation warning:', (idxErr as Error).message);
+    } catch (error_) {
+      console.warn('⚠️ Index creation warning:', (error_ as Error).message);
     }
   } catch (err) {
     console.warn('⚠️ Migration warning:', (err as Error).message);
@@ -391,6 +391,8 @@ export interface PHR {
     frequency: string;
     route: string;
   }>;
+  lifestyle: Record<string, any>;
+  demographics: Record<string, any>;
   emergency_contacts: Array<{
     name: string;
     phone: string;
@@ -1750,7 +1752,7 @@ export const UserSettingsService = {
     fields.push('updated_at = NOW()');
 
     // Upsert
-    const result = await pool.query(
+    await pool.query(
       `INSERT INTO user_settings (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING`,
       [userId]
     );

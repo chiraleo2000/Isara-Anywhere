@@ -7,8 +7,7 @@
  */
 
 import { Router, Request, Response } from 'express';
-import { DeviceTokenService } from '../services/postgresDataService';
-import postgresDataService from '../services/postgresDataService';
+import postgresDataService, { DeviceTokenService } from '../services/postgresDataService';
 
 const { pool } = postgresDataService;
 const router = Router();

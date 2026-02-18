@@ -22,7 +22,7 @@
 import { test, expect, Browser, BrowserContext, Page, APIRequestContext } from '@playwright/test';
 import {
   PATIENT_URL, DOCTOR_URL, MEETING_SERVER_URL,
-  CREDENTIALS, IS_CLOUD, ENDPOINTS, TIMEOUTS,
+  CREDENTIALS, IS_CLOUD, ENDPOINTS,
   logTestSuccess, logTestInfo, logTestWarning,
 } from '../lib/test-config';
 
@@ -69,30 +69,42 @@ async function browserLoginDoctor(page: Page) {
   await page.waitForTimeout(1500);
 }
 
-async function apiLoginPatient(request: APIRequestContext) {
-  const r = await request.post(`${PATIENT_URL}/api/auth/login`, {
-    data: { email: P1.email, password: P1.password },
-    headers: { 'Content-Type': 'application/json' },
-    timeout: TIMEOUT,
-  });
-  if (r.status() !== 200) return '';
-  const d = await r.json();
-  return d.token || d.accessToken || '';
-}
-
-async function apiLoginDoctor(request: APIRequestContext) {
-  for (const path of ['/auth/login', '/api/auth/login']) {
+async function apiLoginPatient(request: APIRequestContext): Promise<string> {
+  for (let attempt = 0; attempt < 3; attempt++) {
     try {
-      const r = await request.post(`${DOCTOR_URL}${path}`, {
-        data: { email: DOC.email, password: DOC.password },
+      const r = await request.post(`${PATIENT_URL}/api/auth/login`, {
+        data: { email: P1.email, password: P1.password },
         headers: { 'Content-Type': 'application/json' },
         timeout: TIMEOUT,
       });
       if (r.status() === 200) {
         const d = await r.json();
-        return d.token || d.accessToken || d.data?.token || '';
+        const token = d.token || d.accessToken || '';
+        if (token) return token;
       }
-    } catch { /* try next */ }
+    } catch (e) { logTestWarning(`Patient login attempt ${attempt + 1}: ${(e as Error).message}`); }
+    if (attempt < 2) await new Promise(r => setTimeout(r, 2000));
+  }
+  return '';
+}
+
+async function apiLoginDoctor(request: APIRequestContext): Promise<string> {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    for (const path of ['/auth/login', '/api/auth/login']) {
+      try {
+        const r = await request.post(`${DOCTOR_URL}${path}`, {
+          data: { email: DOC.email, password: DOC.password },
+          headers: { 'Content-Type': 'application/json' },
+          timeout: TIMEOUT,
+        });
+        if (r.status() === 200) {
+          const d = await r.json();
+          const token = d.token || d.accessToken || d.data?.token || '';
+          if (token) return token;
+        }
+      } catch { /* try next */ }
+    }
+    if (attempt < 2) await new Promise(r => setTimeout(r, 2000));
   }
   return '';
 }
@@ -324,7 +336,7 @@ test.describe('MB-C: Appointment → Meeting Flow', () => {
 
   test('MB-C03: List appointments via API — patient portal', async ({ request }) => {
     const token = await apiLoginPatient(request);
-    test.skip(!token, 'No patient token');
+    expect(token).toBeTruthy();
     const r = await request.get(`${PATIENT_URL}${ENDPOINTS.appointments}`, {
       headers: AH(token),
       timeout: TIMEOUT,
@@ -335,7 +347,7 @@ test.describe('MB-C: Appointment → Meeting Flow', () => {
 
   test('MB-C04: List appointments via API — doctor portal', async ({ request }) => {
     const token = await apiLoginDoctor(request);
-    test.skip(!token, 'No doctor token');
+    expect(token).toBeTruthy();
     const r = await request.get(`${DOCTOR_URL}${ENDPOINTS.appointments}`, {
       headers: AH(token),
       timeout: TIMEOUT,
@@ -369,7 +381,7 @@ test.describe('MB-D: Phase 2 Cross-Portal Features', () => {
 
   test('MB-D01: Device tokens endpoint — patient portal', async ({ request }) => {
     const token = await apiLoginPatient(request);
-    test.skip(!token, 'No patient token');
+    expect(token).toBeTruthy();
     const r = await request.post(`${PATIENT_URL}${ENDPOINTS.deviceTokens}`, {
       headers: AH(token),
       data: {
@@ -385,7 +397,7 @@ test.describe('MB-D: Phase 2 Cross-Portal Features', () => {
 
   test('MB-D02: Sync pull — patient portal', async ({ request }) => {
     const token = await apiLoginPatient(request);
-    test.skip(!token, 'No patient token');
+    expect(token).toBeTruthy();
     const r = await request.post(`${PATIENT_URL}${ENDPOINTS.sync.pull}`, {
       headers: AH(token),
       data: { lastSyncAt: new Date(Date.now() - 86400000).toISOString() },
@@ -397,7 +409,7 @@ test.describe('MB-D: Phase 2 Cross-Portal Features', () => {
 
   test('MB-D03: Sync status — patient portal', async ({ request }) => {
     const token = await apiLoginPatient(request);
-    test.skip(!token, 'No patient token');
+    expect(token).toBeTruthy();
     const r = await request.get(`${PATIENT_URL}${ENDPOINTS.sync.status}`, {
       headers: AH(token),
       timeout: TIMEOUT,
@@ -408,7 +420,7 @@ test.describe('MB-D: Phase 2 Cross-Portal Features', () => {
 
   test('MB-D04: Settings endpoint — patient portal', async ({ request }) => {
     const token = await apiLoginPatient(request);
-    test.skip(!token, 'No patient token');
+    expect(token).toBeTruthy();
     const r = await request.get(`${PATIENT_URL}${ENDPOINTS.settings.base}`, {
       headers: AH(token),
       timeout: TIMEOUT,
@@ -419,7 +431,7 @@ test.describe('MB-D: Phase 2 Cross-Portal Features', () => {
 
   test('MB-D05: Connections endpoint — doctor portal', async ({ request }) => {
     const token = await apiLoginDoctor(request);
-    test.skip(!token, 'No doctor token');
+    expect(token).toBeTruthy();
     const r = await request.get(`${DOCTOR_URL}${ENDPOINTS.connections}`, {
       headers: AH(token),
       timeout: TIMEOUT,
@@ -430,7 +442,7 @@ test.describe('MB-D: Phase 2 Cross-Portal Features', () => {
 
   test('MB-D06: Biometric status — patient portal', async ({ request }) => {
     const token = await apiLoginPatient(request);
-    test.skip(!token, 'No patient token');
+    expect(token).toBeTruthy();
     const r = await request.get(`${PATIENT_URL}${ENDPOINTS.biometric.status}`, {
       headers: AH(token),
       timeout: TIMEOUT,
@@ -501,7 +513,7 @@ test.describe('MB-F: Error Handling — No 400-500s', () => {
 
   test('MB-F01: Patient portal — all key GET endpoints return 200', async ({ request }) => {
     const token = await apiLoginPatient(request);
-    test.skip(!token, 'No patient token');
+    expect(token).toBeTruthy();
     const endpoints = [
       ENDPOINTS.health,
       ENDPOINTS.healthDb,
@@ -522,7 +534,7 @@ test.describe('MB-F: Error Handling — No 400-500s', () => {
 
   test('MB-F02: Doctor portal — all key GET endpoints return 200', async ({ request }) => {
     const token = await apiLoginDoctor(request);
-    test.skip(!token, 'No doctor token');
+    expect(token).toBeTruthy();
     const endpoints = [
       ENDPOINTS.health,
       ENDPOINTS.healthDb,

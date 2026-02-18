@@ -15,7 +15,8 @@ const getBundleId = () => {
   return 'com.izara.anywhere';
 };
 
-export default ({ config }: ConfigContext): ExpoConfig => ({
+export default function appConfig({ config }: ConfigContext): ExpoConfig {
+  return {
   ...config,
   name: getAppName(),
   slug: 'izara-anywhere',
@@ -103,4 +104,5 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     // Meeting Server
     MEETING_SERVER_URL: process.env.MEETING_SERVER_URL ?? (IS_DEV ? 'http://localhost:3020' : 'https://izara-meeting-server-dev-testing-hvht4obouq-as.a.run.app'),
   },
-});
+  };
+}

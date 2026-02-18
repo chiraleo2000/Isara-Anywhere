@@ -6,8 +6,8 @@
  */
 
 const { Client } = require('pg');
-const fs = require('fs');
-const path = require('path');
+const fs = require('node:fs');
+const path = require('node:path');
 
 const PG_HOST = '35.240.162.227';
 const PG_PORT = 5432;
@@ -89,7 +89,7 @@ async function main() {
             for (const stmt of stmts) {
                 try {
                     await client.query(stmt);
-                    const preview = stmt.replace(/\s+/g, ' ').substring(0, 70);
+                    const preview = stmt.replaceAll(/\s+/g, ' ').substring(0, 70);
                     console.log('  OK:', preview + '...');
                     success++;
                 } catch (err) {
@@ -119,11 +119,11 @@ async function main() {
         result.rows.forEach(r => console.log('  ✓', r.table_name));
 
         if (result.rows.length < 9) {
-            const found = result.rows.map(r => r.table_name);
+            const found = new Set(result.rows.map(r => r.table_name));
             const expected = ['device_tokens', 'biometric_credentials', 'refresh_tokens',
                 'push_subscriptions', 'notification_preferences', 'user_api_connections',
                 'api_connection_audit', 'sync_queue', 'user_settings'];
-            const missing = expected.filter(t => !found.includes(t));
+            const missing = expected.filter(t => !found.has(t));
             if (missing.length > 0) {
                 console.log('  Missing:', missing.join(', '));
             }

@@ -12,6 +12,7 @@ The primary technical reference is located at:
 **[TECHNICAL_DOCUMENTATION.md](TECHNICAL_DOCUMENTATION.md)**
 
 This document covers:
+
 1. System Architecture
 2. Database Schema (v4.0)
 3. User Management & RBAC
@@ -26,28 +27,28 @@ This document covers:
 ### Local Environment (Docker)
 
 | Service | URL |
-|---------|-----|
-| Patient Portal | http://localhost:3005 |
-| Doctor Portal | http://localhost:3010 |
-| Meeting Server | http://localhost:3020 |
+| --------- | ----- |
+| Patient Portal | <http://localhost:3005> |
+| Doctor Portal | <http://localhost:3010> |
+| Meeting Server | <http://localhost:3020> |
 | PostgreSQL | localhost:5433 |
-| pgAdmin | http://localhost:5050 |
+| pgAdmin | <http://localhost:5050> |
 
 ### Cloud Environment (Google Cloud Run)
 
 | Service | URL |
-|---------|-----|
-| Patient Portal | https://izara-patient-portal-hvht4obouq-as.a.run.app |
-| Doctor Portal | https://izara-doctor-portal-hvht4obouq-as.a.run.app |
-| Meeting Server | https://izara-jitsi-meeting-portal-hvht4obouq-as.a.run.app |
-| pgAdmin | https://izara-pgadmin-hvht4obouq-as.a.run.app |
+| --------- | ----- |
+| Patient Portal | <https://izara-patient-portal-hvht4obouq-as.a.run.app> |
+| Doctor Portal | <https://izara-doctor-portal-hvht4obouq-as.a.run.app> |
+| Meeting Server | <https://izara-jitsi-meeting-portal-hvht4obouq-as.a.run.app> |
+| pgAdmin | <https://izara-pgadmin-hvht4obouq-as.a.run.app> |
 | Cloud SQL | 34.143.228.135:5432 |
 
 ---
 
 ## 📁 Folder Structure
 
-```
+```text
 Presentations/
 ├── TECHNICAL_DOCUMENTATION.md    # 🌟 MAIN TECHNICAL REFERENCE
 ├── PRESENTATION_SCRIPT.md        # Presentation script & guide
@@ -77,16 +78,20 @@ Presentations/
 ## 🛠️ Quick Usage
 
 ### View Diagrams
+
 Open **[html-diagrams/index.html](html-diagrams/index.html)** in your browser.
 
 ### Technical Overview
+
 Read **[TECHNICAL_DOCUMENTATION.md](TECHNICAL_DOCUMENTATION.md)**
 
 ### Database Schema
+
 View **[database/izara-complete-schema-v4.dbml](database/izara-complete-schema-v4.dbml)**  
 (Visualize with [dbdiagram.io](https://dbdiagram.io) or VS Code DBML extension)
 
 ### Regenerate HTML Diagrams
+
 ```powershell
 .\generate-diagrams.ps1
 ```
@@ -96,7 +101,7 @@ View **[database/izara-complete-schema-v4.dbml](database/izara-complete-schema-v
 ## 🎯 Key Diagrams
 
 | # | Diagram | Description |
-|---|---------|-------------|
+| --- | --------- | ------------- |
 | 01 | System Architecture | High-level platform overview |
 | 02 | Patient Features | Patient portal capabilities |
 | 03 | Doctor Features | Doctor portal capabilities |
@@ -115,21 +120,21 @@ View **[database/izara-complete-schema-v4.dbml](database/izara-complete-schema-v
 ## 📋 Test Credentials
 
 | Role | Email | Password |
-|------|-------|----------|
-| Patient | demo.test@gmail.com | P@ssw0rd |
-| Doctor | doctor.test@izara.com | IzaraDoctor@2024 |
-| Admin | admin.test@izara.com | IzaraAdmin@2024 |
+| ------ | ------- | ---------- |
+| Patient | <demo.test@gmail.com> | P@ssw0rd |
+| Doctor | <doctor.test@izara.com> | IzaraDoctor@2024 |
+| Admin | <admin.test@izara.com> | IzaraAdmin@2024 |
 
 ---
 
 ## 🔗 Service URLs
 
 | Service | Local | Cloud |
-|---------|-------|-------|
-| Patient Portal | http://localhost:3005 | https://izara-patient-portal-*.run.app |
-| Doctor Portal | http://localhost:3010 | https://izara-doctor-portal-*.run.app |
+| --------- | ------- | ------- |
+| Patient Portal | <http://localhost:3005> | <https://izara-patient-portal-*.run.app> |
+| Doctor Portal | <http://localhost:3010> | <https://izara-doctor-portal-*.run.app> |
 | PostgreSQL | localhost:5433 | Cloud SQL |
 
 ---
 
-*Last Updated: February 4, 2026*
+### Last Updated: February 4, 2026

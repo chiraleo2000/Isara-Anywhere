@@ -10,7 +10,6 @@ import {
   PATIENT_URL,
   DOCTOR_URL,
   CREDENTIALS,
-  IS_CLOUD,
   ENDPOINTS,
   TIMEOUTS,
   logTestSuccess,
@@ -217,7 +216,7 @@ test.describe('P2-C: Offline Sync Queue (Patient Portal)', () => {
       headers: AH(patientToken),
     });
     expect(r.status()).toBe(200);
-    const body = await r.json();
+    await r.json();
     logTestSuccess(`Pull sync returned data`);
   });
 
