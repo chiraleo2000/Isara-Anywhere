@@ -123,8 +123,8 @@ $CLOUD_DEV_MEETING = "https://izara-meeting-server-dev-testing-hvht4obouq-as.a.r
 function Write-Banner {
     Write-Host ""
     Write-Host "╔══════════════════════════════════════════════════════════════════════════╗" -ForegroundColor Cyan
-    Write-Host "║                    IZARA TELEMEDICINE TEST RUNNER v4.0.0                  ║" -ForegroundColor Cyan
-    Write-Host "║               Comprehensive E2E Testing Framework (9 Specs)               ║" -ForegroundColor Cyan
+    Write-Host "║                    IZARA TELEMEDICINE TEST RUNNER v5.0.0                  ║" -ForegroundColor Cyan
+    Write-Host "║            Comprehensive E2E Testing Framework (16 Specs, 94+)            ║" -ForegroundColor Cyan
     Write-Host "╚══════════════════════════════════════════════════════════════════════════╝" -ForegroundColor Cyan
     Write-Host ""
 }
@@ -370,15 +370,15 @@ function Invoke-AllTests {
 }
 
 function Invoke-Phase2Tests {
-    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments', 'headedFlag')]
     param([string]$Target, [switch]$Headed, [int]$Workers)
     
     Write-Host "RUNNING PHASE 2 TESTS (SPECS 11-14)" -ForegroundColor Magenta
     Write-Host "  Includes: Phase 2 Features, UI Browser, Meeting Integration, Multi-Browser" -ForegroundColor DarkCyan
     Write-Host ""
     
-    $headedFlag = if ($Headed) { "--headed" } else { "" }
-    $projectFlag = if ($Target -eq "cloud") { "--project='Cloud'" } elseif ($Target -eq "cloud-dev") { "--project='Cloud-Dev'" } else { "--project='Local'" }
+    $extra = @("--workers=1")
+    if ($Headed) { $extra += "--headed" }
+    if ($Target -eq "cloud") { $extra += "--project='Cloud'" } elseif ($Target -eq "cloud-dev") { $extra += "--project='Cloud-Dev'" } else { $extra += "--project='Local'" }
     
     $testFiles = @(
         "specs/11-phase2-features.spec.ts",
@@ -388,7 +388,7 @@ function Invoke-Phase2Tests {
     )
     
     Push-Location $E2EDir
-    npx playwright test $testFiles --workers=1 $headedFlag $projectFlag
+    npx playwright test $testFiles @extra
     $exitCode = $LASTEXITCODE
     Pop-Location
     
@@ -546,31 +546,38 @@ function Test-UiPageStatus {
         $meetingBase = $LOCAL_MEETING
     }
 
-    # Patient Portal pages
+    # Patient Portal pages (actual routes from React Router)
     $patientPages = @(
         @{ Path = "/";                 Name = "Home" },
         @{ Path = "/login";            Name = "Login" },
         @{ Path = "/register";         Name = "Register" },
-        @{ Path = "/dashboard";        Name = "Dashboard" },
         @{ Path = "/appointments";     Name = "Appointments" },
-        @{ Path = "/health-records";   Name = "Health Records" },
-        @{ Path = "/doctors";          Name = "Find Doctors" },
-        @{ Path = "/living-will";      Name = "Living Will" },
+        @{ Path = "/phr";              Name = "Health Records (PHR)" },
+        @{ Path = "/ai-doctor";        Name = "AI Doctor" },
+        @{ Path = "/health-library";   Name = "Health Library" },
         @{ Path = "/profile";          Name = "Profile" },
+        @{ Path = "/settings";         Name = "Settings" },
+        @{ Path = "/pdpa";             Name = "PDPA" },
+        @{ Path = "/living-will";      Name = "Living Will" },
+        @{ Path = "/timeline";         Name = "Timeline" },
+        @{ Path = "/map";              Name = "Map" },
         @{ Path = "/api/health";       Name = "API Health" }
     )
 
-    # Doctor Portal pages
+    # Doctor Portal pages (actual routes from React Router)
     $doctorPages = @(
-        @{ Path = "/";                 Name = "Home" },
-        @{ Path = "/login";            Name = "Login" },
-        @{ Path = "/dashboard";        Name = "Dashboard" },
-        @{ Path = "/appointments";     Name = "Appointments" },
-        @{ Path = "/patients";         Name = "Patients" },
-        @{ Path = "/clinical-resources"; Name = "Clinical Resources" },
-        @{ Path = "/medical-content";  Name = "Medical Content" },
-        @{ Path = "/admin";            Name = "Admin Panel" },
-        @{ Path = "/api/health";       Name = "API Health" }
+        @{ Path = "/";                   Name = "Home" },
+        @{ Path = "/login";              Name = "Login" },
+        @{ Path = "/doctor/DOC-TEST-001/dashboard";            Name = "Dashboard" },
+        @{ Path = "/doctor/DOC-TEST-001/schedule";             Name = "Schedule" },
+        @{ Path = "/doctor/DOC-TEST-001/patients";             Name = "Patients" },
+        @{ Path = "/doctor/DOC-TEST-001/health-meeting";       Name = "Health Meeting" },
+        @{ Path = "/doctor/DOC-TEST-001/clinical-resources";   Name = "Clinical Resources" },
+        @{ Path = "/doctor/DOC-TEST-001/medical-content";      Name = "Medical Content" },
+        @{ Path = "/doctor/DOC-TEST-001/medical-consultants";  Name = "Medical Consultants" },
+        @{ Path = "/doctor/DOC-TEST-001/profile";              Name = "Profile" },
+        @{ Path = "/doctor/DOC-TEST-001/doctor-management";    Name = "Doctor Management" },
+        @{ Path = "/api/health";         Name = "API Health" }
     )
 
     $results = @()
