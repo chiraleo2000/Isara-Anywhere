@@ -1,0 +1,161 @@
+
+Running 75 tests using 1 worker
+
+Γä╣∩╕Å  All 5 users authenticated for mobile viewport & sync tests
+Γ£à Mobile Patient Login ΓåÆ 200 (viewport: 393x851)
+  Γ£ô   1 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:71:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ A ΓÇö Mobile Patient Portal Pages ΓÇ║ A01 ΓÇö Mobile: Patient Login (/login) (831ms)
+Γ£à Mobile Patient Register ΓåÆ 200 (viewport: 393x851)
+  Γ£ô   2 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:71:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ A ΓÇö Mobile Patient Portal Pages ΓÇ║ A02 ΓÇö Mobile: Patient Register (/register) (419ms)
+Γ£à Mobile Patient Dashboard ΓåÆ 200 (viewport: 393x851)
+  Γ£ô   3 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:71:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ A ΓÇö Mobile Patient Portal Pages ΓÇ║ A03 ΓÇö Mobile: Patient Dashboard (/dashboard) (438ms)
+Γ£à Mobile Patient Appointments ΓåÆ 200 (viewport: 393x851)
+  Γ£ô   4 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:71:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ A ΓÇö Mobile Patient Portal Pages ΓÇ║ A04 ΓÇö Mobile: Patient Appointments (/appointments) (448ms)
+Γ£à Mobile Patient PHR ΓåÆ 200 (viewport: 393x851)
+  Γ£ô   5 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:71:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ A ΓÇö Mobile Patient Portal Pages ΓÇ║ A05 ΓÇö Mobile: Patient PHR (/phr) (1.5s)
+Γ£à Mobile Patient AI Doctor ΓåÆ 200 (viewport: 393x851)
+  Γ£ô   6 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:71:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ A ΓÇö Mobile Patient Portal Pages ΓÇ║ A06 ΓÇö Mobile: Patient AI Doctor (/ai-doctor) (1.1s)
+Γ£à Mobile Patient Medical Content ΓåÆ 200 (viewport: 393x851)
+  Γ£ô   7 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:71:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ A ΓÇö Mobile Patient Portal Pages ΓÇ║ A07 ΓÇö Mobile: Patient Medical Content (/medical-content) (986ms)
+Γ£à Mobile Patient Map ΓåÆ 200 (viewport: 393x851)
+  Γ£ô   8 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:71:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ A ΓÇö Mobile Patient Portal Pages ΓÇ║ A08 ΓÇö Mobile: Patient Map (/map) (1.1s)
+Γ£à Mobile Patient PDPA ΓåÆ 200 (viewport: 393x851)
+  Γ£ô   9 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:71:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ A ΓÇö Mobile Patient Portal Pages ΓÇ║ A09 ΓÇö Mobile: Patient PDPA (/pdpa) (1.1s)
+Γ£à Mobile Patient Living Will ΓåÆ 200 (viewport: 393x851)
+  Γ£ô  10 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:71:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ A ΓÇö Mobile Patient Portal Pages ΓÇ║ A10 ΓÇö Mobile: Patient Living Will (/living-will) (1.1s)
+Γ£à Mobile Patient Profile ΓåÆ 200 (viewport: 393x851)
+  Γ£ô  11 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:71:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ A ΓÇö Mobile Patient Portal Pages ΓÇ║ A11 ΓÇö Mobile: Patient Profile (/profile) (1.1s)
+Γ£à Mobile Patient Settings ΓåÆ 200 (viewport: 393x851)
+  Γ£ô  12 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:71:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ A ΓÇö Mobile Patient Portal Pages ΓÇ║ A12 ΓÇö Mobile: Patient Settings (/settings) (1.1s)
+Γ£à Mobile Patient Timeline ΓåÆ 200 (viewport: 393x851)
+  Γ£ô  13 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:71:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ A ΓÇö Mobile Patient Portal Pages ΓÇ║ A13 ΓÇö Mobile: Patient Timeline (/timeline) (966ms)
+Γ£à Mobile Patient Notifications ΓåÆ 200 (viewport: 393x851)
+  Γ£ô  14 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:71:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ A ΓÇö Mobile Patient Portal Pages ΓÇ║ A14 ΓÇö Mobile: Patient Notifications (/notifications) (1.1s)
+Γ£à Mobile Patient Reset Password ΓåÆ 200 (viewport: 393x851)
+  Γ£ô  15 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:71:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ A ΓÇö Mobile Patient Portal Pages ΓÇ║ A15 ΓÇö Mobile: Patient Reset Password (/reset-password) (969ms)
+Γ£à Mobile Doctor Login ΓåÆ 200 (viewport: 375x812)
+  Γ£ô  16 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:127:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ B ΓÇö Mobile Doctor Portal Pages ΓÇ║ B01 ΓÇö Mobile: Doctor Login (/login) (1.7s)
+Γ£à Mobile Doctor Dashboard ΓåÆ 200 (viewport: 375x812)
+  Γ£ô  17 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:127:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ B ΓÇö Mobile Doctor Portal Pages ΓÇ║ B02 ΓÇö Mobile: Doctor Dashboard (/dashboard) (1.2s)
+Γ£à Mobile Doctor Schedule ΓåÆ 200 (viewport: 375x812)
+  Γ£ô  18 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:127:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ B ΓÇö Mobile Doctor Portal Pages ΓÇ║ B03 ΓÇö Mobile: Doctor Schedule (/schedule) (1.2s)
+Γ£à Mobile Doctor Patients ΓåÆ 200 (viewport: 375x812)
+  Γ£ô  19 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:127:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ B ΓÇö Mobile Doctor Portal Pages ΓÇ║ B04 ΓÇö Mobile: Doctor Patients (/patients) (1.2s)
+Γ£à Mobile Doctor EMR ΓåÆ 200 (viewport: 375x812)
+  Γ£ô  20 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:127:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ B ΓÇö Mobile Doctor Portal Pages ΓÇ║ B05 ΓÇö Mobile: Doctor EMR (/emr) (1.7s)
+Γ£à Mobile Doctor Prescriptions ΓåÆ 200 (viewport: 375x812)
+  Γ£ô  21 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:127:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ B ΓÇö Mobile Doctor Portal Pages ΓÇ║ B06 ΓÇö Mobile: Doctor Prescriptions (/prescriptions) (1.7s)
+Γ£à Mobile Doctor Medical Content ΓåÆ 200 (viewport: 375x812)
+  Γ£ô  22 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:127:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ B ΓÇö Mobile Doctor Portal Pages ΓÇ║ B07 ΓÇö Mobile: Doctor Medical Content (/medical-content) (1.2s)
+Γ£à Mobile Doctor Clinical Resources ΓåÆ 200 (viewport: 375x812)
+  Γ£ô  23 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:127:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ B ΓÇö Mobile Doctor Portal Pages ΓÇ║ B08 ΓÇö Mobile: Doctor Clinical Resources (/clinical-resources) (1.2s)
+Γ£à Mobile Doctor Profile ΓåÆ 200 (viewport: 375x812)
+  Γ£ô  24 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:127:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ B ΓÇö Mobile Doctor Portal Pages ΓÇ║ B09 ΓÇö Mobile: Doctor Profile (/profile) (1.2s)
+Γ£à Mobile Doctor Queue ΓåÆ 200 (viewport: 375x812)
+  Γ£ô  25 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:127:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ B ΓÇö Mobile Doctor Portal Pages ΓÇ║ B10 ΓÇö Mobile: Doctor Queue (/queue) (1.1s)
+Γ£à Mobile Doctor Consultants ΓåÆ 200 (viewport: 375x812)
+  Γ£ô  26 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:127:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ B ΓÇö Mobile Doctor Portal Pages ΓÇ║ B11 ΓÇö Mobile: Doctor Consultants (/consultants) (2.1s)
+Γ£à Mobile Doctor Reset Password ΓåÆ 200 (viewport: 375x812)
+  Γ£ô  27 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:127:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ B ΓÇö Mobile Doctor Portal Pages ΓÇ║ B12 ΓÇö Mobile: Doctor Reset Password (/reset-password) (1.1s)
+Γ£à Mobile Patient1 (Demo Test Patient) profile
+  Γ£ô  28 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:154:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ C ΓÇö Mobile API Tests (All Demo Users) ΓÇ║ C01 ΓÇö Patient1 (Demo) auth + profile via mobile (15ms)
+Γ£à Mobile Patient2 (Somchai Mankong) appointments
+  Γ£ô  29 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:160:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ C ΓÇö Mobile API Tests (All Demo Users) ΓÇ║ C02 ΓÇö Patient2 (Somchai) auth + appointments (14ms)
+Γ£à Mobile Patient3 (Anan Khayanrian) PHR
+  Γ£ô  30 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:166:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ C ΓÇö Mobile API Tests (All Demo Users) ΓÇ║ C03 ΓÇö Patient3 (Anan) auth + PHR (10ms)
+Γ£à Mobile Doctor (Dr. Test Good) patients
+  Γ£ô  31 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:172:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ C ΓÇö Mobile API Tests (All Demo Users) ΓÇ║ C04 ΓÇö Doctor auth + patients list (17ms)
+Γ£à Mobile Admin (Dr. Admin Kind) stats ΓåÆ 200
+  Γ£ô  32 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:178:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ C ΓÇö Mobile API Tests (All Demo Users) ΓÇ║ C05 ΓÇö Admin auth + admin stats (13ms)
+Γ£à Mobile Patient1 notifications
+  Γ£ô  33 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:185:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ C ΓÇö Mobile API Tests (All Demo Users) ΓÇ║ C06 ΓÇö Mobile: Patient1 notifications (6ms)
+Γ£à Mobile Patient2 timeline
+  Γ£ô  34 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:191:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ C ΓÇö Mobile API Tests (All Demo Users) ΓÇ║ C07 ΓÇö Mobile: Patient2 timeline (5ms)
+Γ£à Mobile Doctor EMR list
+  Γ£ô  35 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:197:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ C ΓÇö Mobile API Tests (All Demo Users) ΓÇ║ C08 ΓÇö Mobile: Doctor EMR list (8ms)
+Γ£à Mobile Doctor prescriptions
+  Γ£ô  36 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:203:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ C ΓÇö Mobile API Tests (All Demo Users) ΓÇ║ C09 ΓÇö Mobile: Doctor prescriptions (5ms)
+Γ£à Mobile Medical content
+  Γ£ô  37 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:209:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ C ΓÇö Mobile API Tests (All Demo Users) ΓÇ║ C10 ΓÇö Mobile: Medical content (39ms)
+Γ£à Mobile Clinical resources
+  Γ£ô  38 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:215:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ C ΓÇö Mobile API Tests (All Demo Users) ΓÇ║ C11 ΓÇö Mobile: Clinical resources (9ms)
+Γ£à Mobile Meeting server healthy
+  Γ£ô  39 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:221:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ C ΓÇö Mobile API Tests (All Demo Users) ΓÇ║ C12 ΓÇö Mobile: Meeting server health (6ms)
+Γ£à Patient1 vitals read-back
+  Γ£ô  40 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:233:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ D ΓÇö Data Streaming & Real-time Sync ΓÇ║ D01 ΓÇö Patient1 PHR vitals create and read-back (15ms)
+Γ£à Patient2 appointment create ΓåÆ 200
+  Γ£ô  41 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:244:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ D ΓÇö Data Streaming & Real-time Sync ΓÇ║ D02 ΓÇö Patient2 appointment create (9ms)
+Γ£à Doctor sees appointments
+  Γ£ô  42 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:252:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ D ΓÇö Data Streaming & Real-time Sync ΓÇ║ D03 ΓÇö Doctor sees Patient2 appointment (37ms)
+Γ£à Patient3 PHR create ΓåÆ 200
+  Γ£ô  43 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:258:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ D ΓÇö Data Streaming & Real-time Sync ΓÇ║ D04 ΓÇö Patient3 PHR create (9ms)
+Γ£à Medical content visible to all 3 patients
+  Γ£ô  44 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:266:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ D ΓÇö Data Streaming & Real-time Sync ΓÇ║ D05 ΓÇö Medical content visible to all patients (12ms)
+Γ£à Notifications sync check
+  Γ£ô  45 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:276:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ D ΓÇö Data Streaming & Real-time Sync ΓÇ║ D06 ΓÇö Notification sync after operations (6ms)
+Γ£à Queue data streaming ΓåÆ 200
+  Γ£ô  46 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:282:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ D ΓÇö Data Streaming & Real-time Sync ΓÇ║ D07 ΓÇö Doctor queue data streaming (4ms)
+Γ£à Appointment pool streaming ΓåÆ 200
+  Γ£ô  47 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:289:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ D ΓÇö Data Streaming & Real-time Sync ΓÇ║ D08 ΓÇö Appointment pool data streaming (4ms)
+Γ£à Consultants data streaming
+  Γ£ô  48 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:296:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ D ΓÇö Data Streaming & Real-time Sync ΓÇ║ D09 ΓÇö Consultants data streaming (7ms)
+Γ£à Doctors list data streaming
+  Γ£ô  49 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:302:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ D ΓÇö Data Streaming & Real-time Sync ΓÇ║ D10 ΓÇö Doctors list data streaming (6ms)
+Γ£à Mobile patient login form is usable
+  Γ£ô  50 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:314:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ E ΓÇö Mobile Browser UI Interactions ΓÇ║ E01 ΓÇö Mobile login form is usable (patient portal) (1.0s)
+Γ£à Mobile doctor login form is usable
+  Γ£ô  51 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:335:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ E ΓÇö Mobile Browser UI Interactions ΓÇ║ E02 ΓÇö Mobile login form is usable (doctor portal) (1.3s)
+Γ£à Mobile patient navigation elements: 0
+  Γ£ô  52 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:353:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ E ΓÇö Mobile Browser UI Interactions ΓÇ║ E03 ΓÇö Mobile patient portal navigation renders (1.1s)
+Γ£à Mobile doctor navigation elements: 0
+  Γ£ô  53 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:368:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ E ΓÇö Mobile Browser UI Interactions ΓÇ║ E04 ΓÇö Mobile doctor portal navigation renders (1.7s)
+Γ£à Mobile register page responsive
+  Γ£ô  54 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:382:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ E ΓÇö Mobile Browser UI Interactions ΓÇ║ E05 ΓÇö Mobile: Patient register page responsive (997ms)
+Γ£à Mobile appointments responsive
+  Γ£ô  55 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:396:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ E ΓÇö Mobile Browser UI Interactions ΓÇ║ E06 ΓÇö Mobile: Appointments page responsive (1.1s)
+Γ£à Mobile PHR responsive
+  Γ£ô  56 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:410:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ E ΓÇö Mobile Browser UI Interactions ΓÇ║ E07 ΓÇö Mobile: PHR page responsive (1.1s)
+Γ£à Mobile AI Doctor responsive
+  Γ£ô  57 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:424:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ E ΓÇö Mobile Browser UI Interactions ΓÇ║ E08 ΓÇö Mobile: AI Doctor page responsive (1.0s)
+Γ£à Mobile Map responsive
+  Γ£ô  58 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:438:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ E ΓÇö Mobile Browser UI Interactions ΓÇ║ E09 ΓÇö Mobile: Map page responsive (1.1s)
+Γ£à Mobile Profile responsive
+  Γ£ô  59 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:452:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ E ΓÇö Mobile Browser UI Interactions ΓÇ║ E10 ΓÇö Mobile: Profile page responsive (1.0s)
+Γ£à Mobile sync status ΓåÆ 200
+  Γ£ô  60 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:472:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ F ΓÇö Phase 2 Mobile API Endpoints ΓÇ║ F01 ΓÇö Sync status (10ms)
+Γ£à Mobile device tokens ΓåÆ 200
+  Γ£ô  61 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:479:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ F ΓÇö Phase 2 Mobile API Endpoints ΓÇ║ F02 ΓÇö Device tokens endpoint (6ms)
+Γ£à Mobile biometric status ΓåÆ 200
+  Γ£ô  62 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:486:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ F ΓÇö Phase 2 Mobile API Endpoints ΓÇ║ F03 ΓÇö Biometric status (6ms)
+Γ£à Mobile CTM assessment ΓåÆ 404
+  Γ£ô  63 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:493:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ F ΓÇö Phase 2 Mobile API Endpoints ΓÇ║ F04 ΓÇö CTM assessment endpoint (4ms)
+Γ£à Mobile geriatric screening ΓåÆ 404
+  Γ£ô  64 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:500:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ F ΓÇö Phase 2 Mobile API Endpoints ΓÇ║ F05 ΓÇö Geriatric screening endpoint (4ms)
+Γ£à Mobile follow-up ΓåÆ 404
+  Γ£ô  65 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:507:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ F ΓÇö Phase 2 Mobile API Endpoints ΓÇ║ F06 ΓÇö Follow-up endpoint (4ms)
+Γ£à Mobile nursing dashboard ΓåÆ 404
+  Γ£ô  66 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:514:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ F ΓÇö Phase 2 Mobile API Endpoints ΓÇ║ F07 ΓÇö Nursing dashboard endpoint (4ms)
+Γ£à Mobile smart scheduling ΓåÆ 404
+  Γ£ô  67 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:521:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ F ΓÇö Phase 2 Mobile API Endpoints ΓÇ║ F08 ΓÇö Smart scheduling endpoint (4ms)
+Γ£à Patient dashboard on iPhone SE ΓåÆ 200
+  Γ£ô  68 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:545:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ G ΓÇö Multi-Device Viewport Comparison ΓÇ║ G01 ΓÇö Patient dashboard on iPhone SE (375x667) (971ms)
+Γ£à Patient dashboard on iPhone 13 ΓåÆ 200
+  Γ£ô  69 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:545:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ G ΓÇö Multi-Device Viewport Comparison ΓÇ║ G02 ΓÇö Patient dashboard on iPhone 13 (390x844) (1.1s)
+Γ£à Patient dashboard on Pixel 7 ΓåÆ 200
+  Γ£ô  70 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:545:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ G ΓÇö Multi-Device Viewport Comparison ΓÇ║ G03 ΓÇö Patient dashboard on Pixel 7 (393x851) (1.1s)
+Γ£à Patient dashboard on iPad Mini ΓåÆ 200
+  Γ£ô  71 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:545:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ G ΓÇö Multi-Device Viewport Comparison ΓÇ║ G04 ΓÇö Patient dashboard on iPad Mini (768x1024) (2.1s)
+Γ£à Doctor dashboard on iPhone SE ΓåÆ 200
+  Γ£ô  72 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:569:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ G ΓÇö Multi-Device Viewport Comparison ΓÇ║ G05 ΓÇö Doctor dashboard on iPhone SE (375x667) (1.3s)
+Γ£à Doctor dashboard on iPhone 13 ΓåÆ 200
+  Γ£ô  73 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:569:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ G ΓÇö Multi-Device Viewport Comparison ΓÇ║ G06 ΓÇö Doctor dashboard on iPhone 13 (390x844) (1.2s)
+Γ£à Doctor dashboard on Pixel 7 ΓåÆ 200
+  Γ£ô  74 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:569:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ G ΓÇö Multi-Device Viewport Comparison ΓÇ║ G07 ΓÇö Doctor dashboard on Pixel 7 (393x851) (1.5s)
+Γ£à Doctor dashboard on iPad Mini ΓåÆ 200
+  Γ£ô  75 [Mobile-Local] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:569:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ G ΓÇö Multi-Device Viewport Comparison ΓÇ║ G08 ΓÇö Doctor dashboard on iPad Mini (768x1024) (2.1s)
+
+  75 passed (56.2s)
+
+To open last HTML report run:
+[36m[39m
+[36m  npx playwright show-report[39m
+[36m[39m

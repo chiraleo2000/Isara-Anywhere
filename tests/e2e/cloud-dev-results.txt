@@ -1,0 +1,878 @@
+
+Running 632 tests using 2 workers
+
+Γä╣∩╕Å  All 5 users authenticated for appointment tests
+Γ£à Patient portal healthy
+  Γ£ô    1 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:33:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ A ΓÇö Service Health Checks ΓÇ║ A01 ΓÇö Patient portal API health (54ms)
+Γ£à Appointment created: APT-1771605806210-GEJ4BX
+  Γ£ô    2 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:42:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ A ΓÇö Patient Books Appointment ΓÇ║ A01 ΓÇö Patient1 creates a telemedicine appointment (63ms)
+Γ£à Patient DB healthy
+  Γ£ô    3 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:39:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ A ΓÇö Service Health Checks ΓÇ║ A02 ΓÇö Patient portal DB health (50ms)
+Γ£à Patient2 appointment created
+  Γ£ô    4 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:52:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ A ΓÇö Patient Books Appointment ΓÇ║ A02 ΓÇö Patient2 creates a different appointment (52ms)
+Γ£à Doctor portal healthy
+  Γ£ô    5 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:47:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ A ΓÇö Service Health Checks ΓÇ║ A03 ΓÇö Doctor portal API health (52ms)
+Γ£à Patient3 appointment created
+  Γ£ô    6 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:62:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ A ΓÇö Patient Books Appointment ΓÇ║ A03 ΓÇö Patient3 creates an appointment with different specialty (54ms)
+Γ£à Doctor DB healthy
+  Γ£ô    7 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:53:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ A ΓÇö Service Health Checks ΓÇ║ A04 ΓÇö Doctor portal DB health (49ms)
+Γ£à 3 parallel bookings succeeded
+  Γ£ô    8 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:72:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ A ΓÇö Patient Books Appointment ΓÇ║ A04 ΓÇö All 3 patients book appointments in parallel (79ms)
+  Γ£ô   10 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:88:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ A ΓÇö Patient Books Appointment ΓÇ║ A05 ΓÇö Appointment includes required fields in response (55ms)
+Γ£à Meeting server healthy
+  Γ£ô    9 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:59:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ A ΓÇö Service Health Checks ΓÇ║ A05 ΓÇö Meeting server health (1.4s)
+Γ£à All 3 services healthy in parallel
+  Γ£ô   12 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:65:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ A ΓÇö Service Health Checks ΓÇ║ A06 ΓÇö All 3 services parallel health check (50ms)
+  Γ£ô   13 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:77:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ A ΓÇö Service Health Checks ΓÇ║ A07 ΓÇö Patient portal login page loads (54ms)
+Γ£à Patient1 appointment list
+Γ£à Patient1 has 563 appointments
+  Γ£ô   11 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:98:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ A ΓÇö Patient Books Appointment ΓÇ║ A06 ΓÇö Patient can list own appointments (1.4s)
+  Γ£ô   14 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:82:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ A ΓÇö Service Health Checks ΓÇ║ A08 ΓÇö Doctor portal login page loads (59ms)
+Γ£à 5/5 users authenticated
+  Γ£ô   16 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:92:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ B ΓÇö Multi-User Authentication ΓÇ║ B01 ΓÇö All 5 users authenticated in beforeAll (2ms)
+  Γ£ô   15 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:110:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ A ΓÇö Patient Books Appointment ΓÇ║ A07 ΓÇö Missing required fields returns error (83ms)
+Γ£à Patient1 token valid
+  Γ£ô   17 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:100:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ B ΓÇö Multi-User Authentication ΓÇ║ B02 ΓÇö Patient1 token validates (55ms)
+Γ£à Patient2 token check
+  Γ£ô   19 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:107:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ B ΓÇö Multi-User Authentication ΓÇ║ B03 ΓÇö Patient2 token validates (50ms)
+  Γ£ô   18 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:116:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ A ΓÇö Patient Books Appointment ΓÇ║ A08 ΓÇö Past date appointment rejected (82ms)
+Γ£à Patient3 token check
+  Γ£ô   20 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:114:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ B ΓÇö Multi-User Authentication ΓÇ║ B04 ΓÇö Patient3 token validates (52ms)
+  Γ£ô   21 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:124:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ A ΓÇö Patient Books Appointment ΓÇ║ A09 ΓÇö Appointment with symptoms triggers AI urgency (66ms)
+Γ£à Doctor token valid
+  Γ£ô   22 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:121:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ B ΓÇö Multi-User Authentication ΓÇ║ B05 ΓÇö Doctor token validates (55ms)
+  Γ£ô   23 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:132:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ A ΓÇö Patient Books Appointment ΓÇ║ A10 ΓÇö Patient1 can get appointment by ID (66ms)
+Γ£à Admin token valid
+  Γ£ô   24 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:128:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ B ΓÇö Multi-User Authentication ΓÇ║ B06 ΓÇö Admin token validates (54ms)
+  Γ£ô   25 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:139:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ A ΓÇö Patient Books Appointment ΓÇ║ A11 ΓÇö Appointment pool endpoint accessible (walk-in queue) (49ms)
+  Γ£ô   27 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:145:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ A ΓÇö Patient Books Appointment ΓÇ║ A12 ΓÇö Queue management endpoint accessible (48ms)
+Γ£à Invalid password correctly rejected
+  Γ£ô   26 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:135:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ B ΓÇö Multi-User Authentication ΓÇ║ B07 ΓÇö Invalid password rejected (152ms)
+Γ£à Non-existent user correctly rejected
+  Γ£ô   29 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:144:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ B ΓÇö Multi-User Authentication ΓÇ║ B08 ΓÇö Non-existent user rejected (46ms)
+Γ£à Doctor appointment list
+  Γ£ô   28 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:156:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ B ΓÇö Doctor Views & Confirms ΓÇ║ B01 ΓÇö Doctor can list all appointments (127ms)
+  Γ£ô   30 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:153:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ B ΓÇö Multi-User Authentication ΓÇ║ B09 ΓÇö Missing email rejected (43ms)
+  Γ£ô   32 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:161:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ B ΓÇö Multi-User Authentication ΓÇ║ B10 ΓÇö Missing password rejected (52ms)
+Γ£à Invalid token ΓÇö correctly rejected
+Γä╣∩╕Å  Doctor sees 0 appointments
+  Γ£ô   33 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:169:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ B ΓÇö Multi-User Authentication ΓÇ║ B11 ΓÇö Invalid token rejected on protected endpoint (48ms)
+  Γ£ô   31 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:163:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ B ΓÇö Doctor Views & Confirms ΓÇ║ B02 ΓÇö Doctor sees patient appointments in schedule (148ms)
+Γ£à Empty token ΓÇö correctly rejected
+  Γ£ô   34 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:174:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ B ΓÇö Multi-User Authentication ΓÇ║ B12 ΓÇö Empty token rejected (46ms)
+Γ£à Doctor confirmed appointment
+  Γ£ô   35 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:171:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ B ΓÇö Doctor Views & Confirms ΓÇ║ B03 ΓÇö Doctor confirms appointment (PATCH) (90ms)
+  Γ£ô   36 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:179:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ B ΓÇö Multi-User Authentication ΓÇ║ B13 ΓÇö Patient token cannot access doctor portal protected endpoints (51ms)
+  Γ£ô   37 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:182:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ B ΓÇö Doctor Views & Confirms ΓÇ║ B04 ΓÇö Doctor confirms appointment (PUT fallback) (69ms)
+  Γ£ô   38 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:186:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ B ΓÇö Multi-User Authentication ΓÇ║ B14 ΓÇö Doctor token cannot access admin-only endpoints (non-admin) (72ms)
+Γ£à Admin appointment list
+  Γ£ô   39 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:192:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ B ΓÇö Doctor Views & Confirms ΓÇ║ B05 ΓÇö Admin can view all appointments (145ms)
+  Γ£ô   41 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:199:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ B ΓÇö Doctor Views & Confirms ΓÇ║ B06 ΓÇö Admin can assign doctor to appointment (68ms)
+Γ£à Patients authenticated in parallel
+  Γ£ô   40 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:193:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ B ΓÇö Multi-User Authentication ΓÇ║ B15 ΓÇö All 3 patients can authenticate in parallel (556ms)
+  Γ£ô   43 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:216:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ C ΓÇö Registration Flows ΓÇ║ C01 ΓÇö Patient registration endpoint exists (45ms)
+Γ£à Duplicate email registration handled
+  Γ£ô   44 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:225:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ C ΓÇö Registration Flows ΓÇ║ C02 ΓÇö Patient registration rejects duplicate email (48ms)
+  Γ£ô   45 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:240:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ C ΓÇö Registration Flows ΓÇ║ C03 ΓÇö Patient registration rejects weak password (43ms)
+  Γ£ô   46 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:253:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ C ΓÇö Registration Flows ΓÇ║ C04 ΓÇö Doctor registration endpoint exists (45ms)
+  Γ£ô   47 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:261:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ C ΓÇö Registration Flows ΓÇ║ C05 ΓÇö Doctor registration rejects duplicate email (49ms)
+  Γ£ô   48 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:274:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ C ΓÇö Registration Flows ΓÇ║ C06 ΓÇö Registration rejects missing required fields (43ms)
+  Γ£ô   49 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:282:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ C ΓÇö Registration Flows ΓÇ║ C07 ΓÇö Registration rejects invalid email format (43ms)
+  Γ£ô   50 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:290:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ C ΓÇö Registration Flows ΓÇ║ C08 ΓÇö Password reset endpoint exists or returns expected status (46ms)
+  Γ£ô   51 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:299:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ C ΓÇö Registration Flows ΓÇ║ C09 ΓÇö Doctor portal accepts registration with license (146ms)
+Γ£à Admin can access pending doctors
+  Γ£ô   52 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:316:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ C ΓÇö Registration Flows ΓÇ║ C10 ΓÇö Admin can view pending doctors (54ms)
+Γ£à Patient profile endpoint accessible
+  Γ£ô   53 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:328:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ D ΓÇö Role-Based Access Control ΓÇ║ D01 ΓÇö Patient can access own profile (51ms)
+Γ£à Patient appointments
+  Γ£ô   54 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:335:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ D ΓÇö Role-Based Access Control ΓÇ║ D02 ΓÇö Patient can access own appointments (1.5s)
+Γ£à Patient PHR
+  Γ£ô   55 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:342:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ D ΓÇö Role-Based Access Control ΓÇ║ D03 ΓÇö Patient can access own PHR (83ms)
+Γ£à Doctor patients
+  Γ£ô   56 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:349:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ D ΓÇö Role-Based Access Control ΓÇ║ D04 ΓÇö Doctor can access patient list (62ms)
+Γ£à Doctor appointments
+  Γ£ô   57 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:356:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ D ΓÇö Role-Based Access Control ΓÇ║ D05 ΓÇö Doctor can access appointments (137ms)
+  Γ£ô   58 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:363:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ D ΓÇö Role-Based Access Control ΓÇ║ D06 ΓÇö Admin can access admin stats (75ms)
+Γ£à Patient sees appointments after confirmation
+  Γ£ô   42 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:209:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ B ΓÇö Doctor Views & Confirms ΓÇ║ B07 ΓÇö Patient sees confirmed status after doctor confirms (2.9s)
+Γ£à Admin doctor management
+  Γ£ô   59 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:369:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ D ΓÇö Role-Based Access Control ΓÇ║ D07 ΓÇö Admin can access doctor management (71ms)
+  Γ£ô   61 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:376:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ D ΓÇö Role-Based Access Control ΓÇ║ D08 ΓÇö Doctor can access medical content (89ms)
+  Γ£ô   62 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:382:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ D ΓÇö Role-Based Access Control ΓÇ║ D09 ΓÇö Patient can access medical content library (read-only) (68ms)
+Γ£à Metadata endpoints accessible
+  Γ£ô   63 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:388:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ D ΓÇö Role-Based Access Control ΓÇ║ D10 ΓÇö All roles can access metadata endpoints in parallel (132ms)
+  Γ£ô   60 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:216:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ B ΓÇö Doctor Views & Confirms ΓÇ║ B08 ΓÇö Doctor generates pre-consultation AI summary (2.3s)
+  Γ£ô   65 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:225:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ B ΓÇö Doctor Views & Confirms ΓÇ║ B09 ΓÇö Meeting links created when appointment confirmed (85ms)
+Γ£à Full lifecycle appointment: APT-1771605814472-6AD3LU
+  Γ£ô   66 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:235:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ B ΓÇö Doctor Views & Confirms ΓÇ║ B10 ΓÇö Full appointment lifecycle helper succeeds (439ms)
+  Γ£ô   67 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:250:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ C ΓÇö Cancel & Reschedule ΓÇ║ C01 ΓÇö Create appointment for cancellation test (73ms)
+  Γ£ô   68 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:260:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ C ΓÇö Cancel & Reschedule ΓÇ║ C02 ΓÇö Patient cancels own appointment (64ms)
+Γ£à Patient1 logged in via browser
+  Γ£ô   64 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:409:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ E ΓÇö Multi-User Browser Login ΓÇ║ E01 ΓÇö Patient1 login via browser (4.9s)
+Γ£à Appointment list after cancel
+  Γ£ô   69 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:270:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ C ΓÇö Cancel & Reschedule ΓÇ║ C03 ΓÇö Cancelled appointment reflects in patient list (3.3s)
+  Γ£ô   71 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:277:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ C ΓÇö Cancel & Reschedule ΓÇ║ C04 ΓÇö Create appointment for reschedule test (81ms)
+  Γ£ô   72 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:287:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ C ΓÇö Cancel & Reschedule ΓÇ║ C05 ΓÇö Patient reschedules appointment (64ms)
+  Γ£ô   73 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:298:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ C ΓÇö Cancel & Reschedule ΓÇ║ C06 ΓÇö Doctor cancels appointment (130ms)
+  Γ£ô   74 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:315:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ C ΓÇö Cancel & Reschedule ΓÇ║ C07 ΓÇö Cancelled appointment triggers notification (94ms)
+  Γ£ô   75 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:321:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ C ΓÇö Cancel & Reschedule ΓÇ║ C08 ΓÇö Cannot cancel already cancelled appointment (60ms)
+  Γ£ô   76 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:331:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ C ΓÇö Cancel & Reschedule ΓÇ║ C09 ΓÇö Concurrent cancel from patient and doctor handled gracefully (144ms)
+Γ£à Doctor logged in via browser
+  Γ£ô   70 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:424:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ E ΓÇö Multi-User Browser Login ΓÇ║ E02 ΓÇö Doctor login via browser (3.7s)
+Γ£à Appointment history
+  Γ£ô   77 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:350:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ C ΓÇö Cancel & Reschedule ΓÇ║ C10 ΓÇö Appointment status history maintained (3.1s)
+Γ£à Meeting created: 
+  Γ£ô   79 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:364:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ D ΓÇö Meeting Link Management ΓÇ║ D01 ΓÇö Doctor creates video meeting (76ms)
+  Γ£ô   80 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:376:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ D ΓÇö Meeting Link Management ΓÇ║ D02 ΓÇö Meeting server creates meeting (121ms)
+  Γ£ô   81 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:387:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ D ΓÇö Meeting Link Management ΓÇ║ D03 ΓÇö Video meeting config endpoint available (60ms)
+  Γ£ô   82 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:393:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ D ΓÇö Meeting Link Management ΓÇ║ D04 ΓÇö Meeting health endpoint available (1ms)
+  Γ£ô   83 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:399:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ D ΓÇö Meeting Link Management ΓÇ║ D05 ΓÇö Patient can invite guest to meeting (62ms)
+  Γ£ô   84 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:409:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ D ΓÇö Meeting Link Management ΓÇ║ D06 ΓÇö Doctor can invite specialist to meeting (61ms)
+  Γ£ô   85 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:419:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ D ΓÇö Meeting Link Management ΓÇ║ D07 ΓÇö Meeting generates 3 unique URLs (doctor, patient, guest) (68ms)
+  Γ£ô   86 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:435:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ D ΓÇö Meeting Link Management ΓÇ║ D08 ΓÇö Meeting server health check pre-meeting (47ms)
+  Γ£ô   87 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:440:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ D ΓÇö Meeting Link Management ΓÇ║ D09 ΓÇö Video meeting config returns Jitsi settings (50ms)
+  Γ£ô   88 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:449:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ D ΓÇö Meeting Link Management ΓÇ║ D10 ΓÇö Both portals can check video meeting health (61ms)
+  Γ£ô   89 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:463:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ E ΓÇö Appointment Notifications ΓÇ║ E01 ΓÇö Patient notifications endpoint accessible (88ms)
+  Γ£ô   90 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:469:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ E ΓÇö Appointment Notifications ΓÇ║ E02 ΓÇö Doctor notifications accessible (60ms)
+  Γ£ô   91 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:475:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ E ΓÇö Appointment Notifications ΓÇ║ E03 ΓÇö All 3 patients can check notifications in parallel (90ms)
+  Γ£ô   92 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:484:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ E ΓÇö Appointment Notifications ΓÇ║ E04 ΓÇö Mark notification as read (152ms)
+  Γ£ô   93 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:497:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ E ΓÇö Appointment Notifications ΓÇ║ E05 ΓÇö Doctor mark all notifications as read (61ms)
+  Γ£ô   94 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:503:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ E ΓÇö Appointment Notifications ΓÇ║ E06 ΓÇö Create doctor notification (60ms)
+Γ£à Admin logged in via browser
+  Γ£ô   78 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:439:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ E ΓÇö Multi-User Browser Login ΓÇ║ E03 ΓÇö Admin login via browser (3.6s)
+Γ£à Notification bell visible
+  Γ£ô   95 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:514:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ E ΓÇö Appointment Notifications ΓÇ║ E07 ΓÇö Patient notification bell reflects unread count (3.8s)
+Γ£à Appointments with reminders
+  Γ£ô   97 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:530:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ E ΓÇö Appointment Notifications ΓÇ║ E08 ΓÇö Appointment reminder scheduling works (828ms)
+  Γ£ô   98 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:538:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ E ΓÇö Appointment Notifications ΓÇ║ E09 ΓÇö Notification for cancelled appointment (150ms)
+Γä╣∩╕Å  3 notification polls in 67ms
+  Γ£ô   99 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:554:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ E ΓÇö Appointment Notifications ΓÇ║ E10 ΓÇö Notification polling works (30-second interval simulation) (70ms)
+Γ£à 3 users logged in simultaneously
+  Γ£ô   96 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:454:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ E ΓÇö Multi-User Browser Login ΓÇ║ E04 ΓÇö 3 users login simultaneously (patient + doctor + admin) (6.6s)
+Γ£à Invalid login handled correctly
+  Γ£ô  101 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:495:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ E ΓÇö Multi-User Browser Login ΓÇ║ E05 ΓÇö Invalid login shows error message (3.6s)
+  Γ£ô  102 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:511:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ E ΓÇö Multi-User Browser Login ΓÇ║ E06 ΓÇö Patient portal login page has required form fields (698ms)
+  Γ£ô  103 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:518:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ E ΓÇö Multi-User Browser Login ΓÇ║ E07 ΓÇö Doctor portal login page has required form fields (964ms)
+  Γ£ô  104 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:525:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ E ΓÇö Multi-User Browser Login ΓÇ║ E08 ΓÇö Patient portal has registration link (680ms)
+  Γ£ô  105 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:531:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ E ΓÇö Multi-User Browser Login ΓÇ║ E09 ΓÇö Patient portal has forgot password link (681ms)
+  Γ£ô  106 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:537:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ E ΓÇö Multi-User Browser Login ΓÇ║ E10 ΓÇö Empty form submission prevented (1.7s)
+Γ£à 3 patients logged in simultaneously
+  Γ£ô  107 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:545:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ E ΓÇö Multi-User Browser Login ΓÇ║ E11 ΓÇö All 3 patients login to patient portal simultaneously (5.8s)
+Γ£à Session isolation verified
+  Γ£ô  108 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:574:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ E ΓÇö Multi-User Browser Login ΓÇ║ E12 ΓÇö Session isolation ΓÇö different users see own data (299ms)
+  Γ£ô  109 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:602:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ F ΓÇö Metadata & Reference Data ΓÇ║ F01 ΓÇö Specialties metadata available (44ms)
+  Γ£ô  110 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:611:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ F ΓÇö Metadata & Reference Data ΓÇ║ F02 ΓÇö Lab test catalog available (45ms)
+  Γ£ô  111 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:617:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ F ΓÇö Metadata & Reference Data ΓÇ║ F03 ΓÇö ICD-10 codes available (44ms)
+  Γ£ô  112 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:623:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ F ΓÇö Metadata & Reference Data ΓÇ║ F04 ΓÇö Medications database available (45ms)
+  Γ£ô  113 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:629:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ F ΓÇö Metadata & Reference Data ΓÇ║ F05 ΓÇö Medical content tags available (61ms)
+  Γ£ô  114 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:635:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ F ΓÇö Metadata & Reference Data ΓÇ║ F06 ΓÇö Clinical resource tags available (44ms)
+  Γ£ô  115 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:641:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ F ΓÇö Metadata & Reference Data ΓÇ║ F07 ΓÇö Doctors list available (54ms)
+  Γ£ô  116 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:647:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ F ΓÇö Metadata & Reference Data ΓÇ║ F08 ΓÇö Medical consultants list available (50ms)
+Γä╣∩╕Å  All metadata loaded in 99ms
+  Γ£ô  117 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:653:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ F ΓÇö Metadata & Reference Data ΓÇ║ F09 ΓÇö All metadata loads in parallel (performance) (101ms)
+  Γ£ô  118 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:669:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ F ΓÇö Metadata & Reference Data ΓÇ║ F10 ΓÇö Video meeting config available (45ms)
+  Γ£ô  119 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:680:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ G ΓÇö Extended Auth & Security ΓÇ║ G01 ΓÇö Password change endpoint available (43ms)
+  Γ£ô  120 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:689:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ G ΓÇö Extended Auth & Security ΓÇ║ G02 ΓÇö Account lockout after repeated failed logins (88ms)
+  Γ£ô  121 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:697:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ G ΓÇö Extended Auth & Security ΓÇ║ G03 ΓÇö Password reset token verify endpoint (43ms)
+  Γ£ô  122 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:702:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ G ΓÇö Extended Auth & Security ΓÇ║ G04 ΓÇö Session validates with correct token (41ms)
+  Γ£ô  123 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:708:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ G ΓÇö Extended Auth & Security ΓÇ║ G05 ΓÇö Expired/malformed JWT rejected (45ms)
+  Γ£ô  124 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:719:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ H ΓÇö Doctor Search & Dashboard ΓÇ║ H01 ΓÇö Patient dashboard stats (66ms)
+  Γ£ô  125 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:725:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ H ΓÇö Doctor Search & Dashboard ΓÇ║ H02 ΓÇö Doctor search by specialty (49ms)
+  Γ£ô  126 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:731:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ H ΓÇö Doctor Search & Dashboard ΓÇ║ H03 ΓÇö Doctor search by name (63ms)
+  Γ£ô  127 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:737:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ H ΓÇö Doctor Search & Dashboard ΓÇ║ H04 ΓÇö Doctor schedule endpoint (45ms)
+  Γ£ô  128 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:743:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ H ΓÇö Doctor Search & Dashboard ΓÇ║ H05 ΓÇö Doctor available time slots (51ms)
+  Γ£ô  129 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:750:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ H ΓÇö Doctor Search & Dashboard ΓÇ║ H06 ΓÇö Doctor reviews endpoint (47ms)
+  Γ£ô  130 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:756:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ H ΓÇö Doctor Search & Dashboard ΓÇ║ H07 ΓÇö User settings CRUD (95ms)
+  Γ£ô  131 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:766:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ H ΓÇö Doctor Search & Dashboard ΓÇ║ H08 ΓÇö Notification preferences CRUD (87ms)
+  Γ£ô  132 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:776:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ H ΓÇö Doctor Search & Dashboard ΓÇ║ H09 ΓÇö Profile update with Thai name (46ms)
+  Γ£ô  133 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:784:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ H ΓÇö Doctor Search & Dashboard ΓÇ║ H10 ΓÇö Admin can list all users (50ms)
+  Γ£ô  134 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:790:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ H ΓÇö Doctor Search & Dashboard ΓÇ║ H11 ΓÇö Admin analytics endpoint (42ms)
+  Γ£ô  135 [Cloud-Dev] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:796:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ H ΓÇö Doctor Search & Dashboard ΓÇ║ H12 ΓÇö Admin dashboard stats endpoint (63ms)
+Γ£à Patient1 PHR read
+  Γ£ô  136 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:38:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ A ΓÇö PHR Read & Update ΓÇ║ A01 ΓÇö Patient1 can read own PHR (46ms)
+Γ£à Patient2 PHR read
+  Γ£ô  137 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:45:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ A ΓÇö PHR Read & Update ΓÇ║ A02 ΓÇö Patient2 can read own PHR (61ms)
+Γ£à Patient3 PHR read
+  Γ£ô  138 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:52:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ A ΓÇö PHR Read & Update ΓÇ║ A03 ΓÇö Patient3 can read own PHR (47ms)
+Γ£à Parallel PHR
+Γ£à Parallel PHR
+Γ£à Parallel PHR
+Γ£à 3 patients read PHR in parallel
+  Γ£ô  139 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:59:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ A ΓÇö PHR Read & Update ΓÇ║ A04 ΓÇö All 3 patients read PHR in parallel (51ms)
+Γ£à PHR updated
+  Γ£ô  140 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:72:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ A ΓÇö PHR Read & Update ΓÇ║ A05 ΓÇö Patient1 updates PHR profile data (42ms)
+Γ£à PHR re-read after update
+  Γ£ô  141 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:85:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ A ΓÇö PHR Read & Update ΓÇ║ A06 ΓÇö PHR update persists on re-read (45ms)
+Γä╣∩╕Å  PHR sections: id, patient_id, demographics, vital_signs_history, allergies, chronic_conditions, medications, vaccinations, lifestyle, family_history, surgical_history, social_history, latest_lab_results, clinical_decision_support, blood_type, height_cm, weight_kg, bmi, emergency_contact_name, emergency_contact_phone, emergency_contact_relation, created_at, updated_at, last_synced_at
+  Γ£ô  142 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:92:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ A ΓÇö PHR Read & Update ΓÇ║ A07 ΓÇö Patient PHR has expected sections (46ms)
+  Γ£ô  143 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:101:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ A ΓÇö PHR Read & Update ΓÇ║ A08 ΓÇö Doctor can view patient PHR (82ms)
+  Γ£ô  144 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:107:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ A ΓÇö PHR Read & Update ΓÇ║ A09 ΓÇö PHR with Thai content (47ms)
+Γ£à PHR unauth ΓÇö correctly rejected
+  Γ£ô  145 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:116:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ A ΓÇö PHR Read & Update ΓÇ║ A10 ΓÇö PHR unauthorized access rejected (45ms)
+  Γ£ô  146 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:121:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ A ΓÇö PHR Read & Update ΓÇ║ A11 ΓÇö Patient2 cannot see Patient1 PHR data (47ms)
+Γä╣∩╕Å  PHR response: 45ms
+  Γ£ô  147 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:128:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ A ΓÇö PHR Read & Update ΓÇ║ A12 ΓÇö PHR API response time under threshold (46ms)
+Γ£à Vitals recorded
+  Γ£ô  148 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:142:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ B ΓÇö Vitals History ΓÇ║ B01 ΓÇö Patient1 records new vitals (46ms)
+  Γ£ô  149 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:150:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ B ΓÇö Vitals History ΓÇ║ B02 ΓÇö Patient2 records vitals independently (46ms)
+Γä╣∩╕Å  Patient1 has 0 vital records
+  Γ£ô  150 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:156:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ B ΓÇö Vitals History ΓÇ║ B03 ΓÇö Patient1 reads vitals history (46ms)
+Γ£à 3 vitals entries created
+  Γ£ô  151 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:166:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ B ΓÇö Vitals History ΓÇ║ B04 ΓÇö Multiple vitals entries for tracking (143ms)
+  Γ£ô  152 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:175:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ B ΓÇö Vitals History ΓÇ║ B05 ΓÇö Vitals include all expected fields (47ms)
+  Γ£ô  153 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:188:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ B ΓÇö Vitals History ΓÇ║ B06 ΓÇö Abnormal vitals values accepted (46ms)
+  Γ£ô  154 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:201:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ B ΓÇö Vitals History ΓÇ║ B07 ΓÇö Doctor can view patient vitals (45ms)
+Γ£à 3 patients recorded vitals simultaneously
+  Γ£ô  155 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:207:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ B ΓÇö Vitals History ΓÇ║ B08 ΓÇö 3 patients record vitals simultaneously (55ms)
+  Γ£ô  156 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:217:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ B ΓÇö Vitals History ΓÇ║ B09 ΓÇö Patient health logs endpoint (EMR summaries) (40ms)
+Γ£à Patient appointments page loaded
+  Γ£ô  100 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:575:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ F ΓÇö Browser Appointment UI ΓÇ║ F01 ΓÇö Patient portal appointments page loads (37.2s)
+Γ£à Doctor schedule page loaded
+  Γ£ô  158 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:591:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ F ΓÇö Browser Appointment UI ΓÇ║ F02 ΓÇö Doctor portal schedule page loads (3.7s)
+Γ£à Doctor dashboard loaded
+  Γ£ô  159 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:602:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ F ΓÇö Browser Appointment UI ΓÇ║ F03 ΓÇö Doctor dashboard shows today's appointments (3.6s)
+Γä╣∩╕Å  Found 0 tabs on Health Meeting page
+  Γ£ô  160 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:613:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ F ΓÇö Browser Appointment UI ΓÇ║ F04 ΓÇö Doctor Health Meeting page with 3 tabs (3.5s)
+Γ£à PHR page loaded with vitals
+  Γ£ô  157 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:223:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ B ΓÇö Vitals History ΓÇ║ B10 ΓÇö Patient vitals visible in PHR page (browser) (32.7s)
+Γ£à EMR created: 
+  Γ£ô  162 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:241:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ C ΓÇö EMR Creation & Management ΓÇ║ C01 ΓÇö Doctor creates EMR (SOAP format) (59ms)
+  Γ£ô  163 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:250:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ C ΓÇö EMR Creation & Management ΓÇ║ C02 ΓÇö EMR has SOAP sections (2ms)
+  Γ£ô  164 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:259:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ C ΓÇö EMR Creation & Management ΓÇ║ C03 ΓÇö Doctor reads EMR list (54ms)
+  Γ£ô  165 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:265:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ C ΓÇö EMR Creation & Management ΓÇ║ C04 ΓÇö Doctor reads EMR by ID (45ms)
+  Γ£ô  166 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:272:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ C ΓÇö EMR Creation & Management ΓÇ║ C05 ΓÇö Doctor updates EMR (46ms)
+  Γ£ô  167 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:281:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ C ΓÇö EMR Creation & Management ΓÇ║ C06 ΓÇö Doctor signs EMR (48ms)
+  Γ£ô  168 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:291:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ C ΓÇö EMR Creation & Management ΓÇ║ C07 ΓÇö EMR with AI-assisted flag (50ms)
+  Γ£ô  169 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:299:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ C ΓÇö EMR Creation & Management ΓÇ║ C08 ΓÇö EMR with Thai OPD card format (Thai SOAP) (48ms)
+  Γ£ô  170 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:313:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ C ΓÇö EMR Creation & Management ΓÇ║ C09 ΓÇö Multiple EMRs for same patient (103ms)
+  Γ£ô  171 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:321:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ C ΓÇö EMR Creation & Management ΓÇ║ C10 ΓÇö EMR for different patients (61ms)
+  Γ£ô  172 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:331:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ C ΓÇö EMR Creation & Management ΓÇ║ C11 ΓÇö Doctor EMR editor page loads (browser) (3.5s)
+  Γ£ô  173 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:341:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ C ΓÇö EMR Creation & Management ΓÇ║ C12 ΓÇö Patient sees EMR summary in health records (cross-portal) (45ms)
+Γ£à Prescription created
+  Γ£ô  174 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:352:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ D ΓÇö Prescriptions & Lab Orders ΓÇ║ D01 ΓÇö Doctor creates prescription (47ms)
+  Γ£ô  175 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:359:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ D ΓÇö Prescriptions & Lab Orders ΓÇ║ D02 ΓÇö Prescription includes multiple medications (2ms)
+  Γ£ô  176 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:366:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ D ΓÇö Prescriptions & Lab Orders ΓÇ║ D03 ΓÇö Doctor lists prescriptions (45ms)
+Γ£à Lab order created
+  Γ£ô  177 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:372:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ D ΓÇö Prescriptions & Lab Orders ΓÇ║ D04 ΓÇö Doctor creates lab order (44ms)
+  Γ£ô  178 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:379:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ D ΓÇö Prescriptions & Lab Orders ΓÇ║ D05 ΓÇö Lab order includes test details (3ms)
+  Γ£ô  179 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:386:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ D ΓÇö Prescriptions & Lab Orders ΓÇ║ D06 ΓÇö Doctor lists lab orders (47ms)
+  Γ£ô  180 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:392:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ D ΓÇö Prescriptions & Lab Orders ΓÇ║ D07 ΓÇö Prescriptions for multiple patients in parallel (45ms)
+  Γ£ô  181 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:401:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ D ΓÇö Prescriptions & Lab Orders ΓÇ║ D08 ΓÇö Lab order with multiple tests (47ms)
+  Γ£ô  182 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:417:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ D ΓÇö Prescriptions & Lab Orders ΓÇ║ D09 ΓÇö Patient can view own prescriptions (44ms)
+  Γ£ô  183 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:423:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ D ΓÇö Prescriptions & Lab Orders ΓÇ║ D10 ΓÇö Drug interaction check (AI CDS) (46ms)
+Γ£à Living will created
+  Γ£ô  184 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:438:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ E ΓÇö Living Will ΓÇ║ E01 ΓÇö Patient creates living will (50ms)
+  Γ£ô  185 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:462:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ E ΓÇö Living Will ΓÇ║ E02 ΓÇö Patient reads own living will (47ms)
+  Γ£ô  186 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:468:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ E ΓÇö Living Will ΓÇ║ E03 ΓÇö Patient updates living will (48ms)
+  Γ£ô  187 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:477:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ E ΓÇö Living Will ΓÇ║ E04 ΓÇö Patient updates sharing preference (PDPA) (50ms)
+  Γ£ô  188 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:485:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ E ΓÇö Living Will ΓÇ║ E05 ΓÇö Doctor can view shared living will (49ms)
+  Γ£ô  189 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:491:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ E ΓÇö Living Will ΓÇ║ E06 ΓÇö Doctor checks living will existence (46ms)
+  Γ£ô  190 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:497:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ E ΓÇö Living Will ΓÇ║ E07 ΓÇö Living will with digital signature data (52ms)
+  Γ£ô  191 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:506:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ E ΓÇö Living Will ΓÇ║ E08 ΓÇö Patient revokes living will (91ms)
+Γ£à Both portals show appointments simultaneously
+  Γ£ô  161 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:627:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ F ΓÇö Browser Appointment UI ΓÇ║ F05 ΓÇö Patient & doctor see same appointment simultaneously (36.3s)
+  Γ£ô  193 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:653:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ F ΓÇö Browser Appointment UI ΓÇ║ F06 ΓÇö Admin can view all appointments page (3.5s)
+Γä╣∩╕Å  Calendar view: not found (may use list view)
+  Γ£ô  194 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:663:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ F ΓÇö Browser Appointment UI ΓÇ║ F07 ΓÇö Appointment schedule has calendar view (3.5s)
+  Γ£ô  192 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:517:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ E ΓÇö Living Will ΓÇ║ E09 ΓÇö Living will page visible (browser) (32.8s)
+  Γ£ô  196 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:527:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ E ΓÇö Living Will ΓÇ║ E10 ΓÇö Private living will not visible to doctor (101ms)
+  Γ£ô  197 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:545:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ F ΓÇö Timeline & Treatment Results ΓÇ║ F01 ΓÇö Patient1 health timeline accessible (44ms)
+  Γ£ô  198 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:551:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ F ΓÇö Timeline & Treatment Results ΓÇ║ F02 ΓÇö Patient treatment results accessible (48ms)
+Γä╣∩╕Å  Timeline has 0 events
+  Γ£ô  199 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:557:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ F ΓÇö Timeline & Treatment Results ΓÇ║ F03 ΓÇö Timeline includes multiple event types (42ms)
+Γ£à Patient dashboard loaded with appointments
+  Γ£ô  195 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:676:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ F ΓÇö Browser Appointment UI ΓÇ║ F08 ΓÇö Patient dashboard shows upcoming appointments (32.9s)
+Γ£à Doctor sees new appointment
+  Γ£ô  201 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:692:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ G ΓÇö Cross-Portal Sync ΓÇ║ G01 ΓÇö Patient creates ΓåÆ Doctor sees (API verification) (169ms)
+  Γ£ô  200 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:566:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ F ΓÇö Timeline & Treatment Results ΓÇ║ F04 ΓÇö Health Timeline page loads (browser) (32.9s)
+Γ£à Patient sees confirmed appointment
+  Γ£ô  202 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:709:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ G ΓÇö Cross-Portal Sync ΓÇ║ G02 ΓÇö Doctor confirms ΓåÆ Patient sees confirmed (585ms)
+Γ£à Doctor sees admin-assigned appointment
+  Γ£ô  204 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:720:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ G ΓÇö Cross-Portal Sync ΓÇ║ G03 ΓÇö Admin assigns ΓåÆ Doctor notified (203ms)
+Γ£à Doctor sees all patient appointments
+  Γ£ô  205 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:743:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ G ΓÇö Cross-Portal Sync ΓÇ║ G04 ΓÇö All 3 patients create appointments ΓåÆ All visible to doctor (163ms)
+Γ£à Patient portal synced
+Γ£à Doctor portal synced
+  Γ£ô  206 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:760:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ G ΓÇö Cross-Portal Sync ΓÇ║ G05 ΓÇö Appointment status changes propagate to both portals (341ms)
+Γ£à Meeting link created for sync test
+  Γ£ô  207 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:774:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ G ΓÇö Cross-Portal Sync ΓÇ║ G06 ΓÇö Meeting link creates accessible from both portals (59ms)
+  Γ£ô  208 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:786:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ G ΓÇö Cross-Portal Sync ΓÇ║ G07 ΓÇö Patient appointment pool visible to all doctors (47ms)
+  Γ£ô  209 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:795:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ G ΓÇö Cross-Portal Sync ΓÇ║ G08 ΓÇö Queue updates reflect across sessions (46ms)
+Γ£à Patient1 appointments
+Γ£à Patient2 appointments
+  Γ£ô  210 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:806:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ G ΓÇö Cross-Portal Sync ΓÇ║ G09 ΓÇö Patient1 and Patient2 simultaneous appointment data isolation (262ms)
+Γä╣∩╕Å  5-user parallel appointment query: 261ms
+  Γ£ô  211 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:818:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ G ΓÇö Cross-Portal Sync ΓÇ║ G10 ΓÇö Performance: 5 users querying appointments in parallel (262ms)
+  Γ£ô  212 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:837:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ H ΓÇö Edge Cases ΓÇ║ H01 ΓÇö Non-existent appointment ID returns 404 (48ms)
+Γ£à Unauth appointment create ΓÇö correctly rejected
+  Γ£ô  213 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:843:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ H ΓÇö Edge Cases ΓÇ║ H02 ΓÇö Unauthenticated appointment creation rejected (47ms)
+  Γ£ô  214 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:848:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ H ΓÇö Edge Cases ΓÇ║ H03 ΓÇö Extremely long reason field handled (53ms)
+  Γ£ô  215 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:856:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ H ΓÇö Edge Cases ΓÇ║ H04 ΓÇö Special characters in appointment reason (46ms)
+  Γ£ô  216 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:864:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ H ΓÇö Edge Cases ΓÇ║ H05 ΓÇö Concurrent appointment creation (race condition) (52ms)
+  Γ£ô  217 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:875:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ H ΓÇö Edge Cases ΓÇ║ H06 ΓÇö Invalid date format rejected (47ms)
+  Γ£ô  218 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:883:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ H ΓÇö Edge Cases ΓÇ║ H07 ΓÇö Appointment with invalid doctor ID (50ms)
+  Γ£ô  219 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:891:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ H ΓÇö Edge Cases ΓÇ║ H08 ΓÇö Patient2 cannot modify Patient1 appointment (42ms)
+  Γ£ô  220 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:901:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ H ΓÇö Edge Cases ΓÇ║ H09 ΓÇö Empty request body handled (51ms)
+Γä╣∩╕Å  Appointment list API: 326ms
+  Γ£ô  221 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:907:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ H ΓÇö Edge Cases ΓÇ║ H10 ΓÇö API response times within acceptable limits (328ms)
+  Γ£ô  222 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:921:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ I ΓÇö Doctor-Side Appointment Management ΓÇ║ I01 ΓÇö Doctor views pending appointments (65ms)
+  Γ£ô  223 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:927:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ I ΓÇö Doctor-Side Appointment Management ΓÇ║ I02 ΓÇö Doctor views their appointments list (71ms)
+  Γ£ô  224 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:933:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ I ΓÇö Doctor-Side Appointment Management ΓÇ║ I03 ΓÇö Doctor decline appointment endpoint (61ms)
+  Γ£ô  225 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:942:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ I ΓÇö Doctor-Side Appointment Management ΓÇ║ I04 ΓÇö Doctor reject appointment endpoint (57ms)
+Γä╣∩╕Å  Onsite meetingLink: https://meet.jit.si/Izara-APT-17716059-88ded516#config.prejoinPageEnabled=true&config.startWithAudioMuted=false&config.startWithVideoMuted=false&config.enableClosePage=true&config.disableDeepLinking=true&config.defaultLanguage=th&config.requireDisplayName=true&config.enableLobbyChat=true&config.fileRecordingsEnabled=true&config.localRecording.enabled=true&interfaceConfig.APP_NAME=Izara+Telemedicine&interfaceConfig.SHOW_PROMOTIONAL_CLOSE_PAGE=false
+  Γ£ô  226 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:951:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ I ΓÇö Doctor-Side Appointment Management ΓÇ║ I05 ΓÇö Onsite appointment (no meeting link) (54ms)
+  Γ£ô  227 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:963:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ I ΓÇö Doctor-Side Appointment Management ΓÇ║ I06 ΓÇö AI doctor matching for pool appointment (40ms)
+  Γ£ô  228 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:972:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ I ΓÇö Doctor-Side Appointment Management ΓÇ║ I07 ΓÇö Meeting eligibility check (49ms)
+  Γ£ô  229 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:979:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ I ΓÇö Doctor-Side Appointment Management ΓÇ║ I08 ΓÇö Meeting rules CRUD (41ms)
+  Γ£ô  230 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:985:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ I ΓÇö Doctor-Side Appointment Management ΓÇ║ I09 ΓÇö Report missed meeting (43ms)
+  Γ£ô  231 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:994:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ I ΓÇö Doctor-Side Appointment Management ΓÇ║ I10 ΓÇö Google Calendar event creation (47ms)
+  Γ£ô  232 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:1005:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ I ΓÇö Doctor-Side Appointment Management ΓÇ║ I11 ΓÇö Calendar availability check (47ms)
+  Γ£ô  233 [Cloud-Dev] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:1011:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ I ΓÇö Doctor-Side Appointment Management ΓÇ║ I12 ΓÇö Notification generated on appointment action (48ms)
+Γ£à Meeting server alive
+  Γ£ô  234 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:39:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ A ΓÇö Meeting Creation & Config ΓÇ║ A01 ΓÇö Meeting server is healthy (49ms)
+Γä╣∩╕Å  Meeting config: {"jitsiDomain":"meet.jit.si","enableRecording":true,"enableTranscription":false,"enableAiSummary":true,"features":{"videoConferencing":true,"screenSharing":true,"chat":true,"recording":true}}
+  Γ£ô  235 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:45:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ A ΓÇö Meeting Creation & Config ΓÇ║ A02 ΓÇö Video meeting config available (41ms)
+Γ£à Meeting created: 
+  Γ£ô  236 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:54:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ A ΓÇö Meeting Creation & Config ΓÇ║ A03 ΓÇö Doctor creates video meeting from doctor portal (101ms)
+  Γ£ô  237 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:75:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ A ΓÇö Meeting Creation & Config ΓÇ║ A04 ΓÇö Meeting server creates meeting (49ms)
+  Γ£ô  238 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:85:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ A ΓÇö Meeting Creation & Config ΓÇ║ A05 ΓÇö Meeting creates unique URLs for each role (54ms)
+  Γ£ô  239 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:104:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ A ΓÇö Meeting Creation & Config ΓÇ║ A06 ΓÇö Meeting without appointment ID fails (42ms)
+Γä╣∩╕Å  Meeting health: {"status":"healthy","service":"izara-jitsi-server","version":"1.4.8-dev","timestamp":"2026-02-20T16:
+  Γ£ô  240 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:113:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ A ΓÇö Meeting Creation & Config ΓÇ║ A07 ΓÇö Meeting server health returns Jitsi config (40ms)
+  Γ£ô  241 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:120:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ A ΓÇö Meeting Creation & Config ΓÇ║ A08 ΓÇö Video meeting health from patient portal (41ms)
+  Γ£ô  242 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:125:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ A ΓÇö Meeting Creation & Config ΓÇ║ A09 ΓÇö Video meeting health from doctor portal (45ms)
+  Γ£ô  243 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:130:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ A ΓÇö Meeting Creation & Config ΓÇ║ A10 ΓÇö Create meeting for multi-patient scenario (52ms)
+  Γ£ô  244 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:148:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ B ΓÇö Meeting Join & Lobby ΓÇ║ B01 ΓÇö Patient can get meeting link (43ms)
+  Γ£ô  245 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:155:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ B ΓÇö Meeting Join & Lobby ΓÇ║ B02 ΓÇö Doctor joins meeting as host (44ms)
+  Γ£ô  246 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:165:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ B ΓÇö Meeting Join & Lobby ΓÇ║ B03 ΓÇö Patient joins meeting (lobby) (44ms)
+  Γ£ô  247 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:175:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ B ΓÇö Meeting Join & Lobby ΓÇ║ B04 ΓÇö Guest invite creation (44ms)
+  Γ£ô  248 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:186:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ B ΓÇö Meeting Join & Lobby ΓÇ║ B05 ΓÇö Guest join with invite token (43ms)
+  Γ£ô  249 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:192:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ B ΓÇö Meeting Join & Lobby ΓÇ║ B06 ΓÇö Invalid meeting ID returns 404 (44ms)
+  Γ£ô  250 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:200:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ B ΓÇö Meeting Join & Lobby ΓÇ║ B07 ΓÇö Meeting join without authentication fails (43ms)
+  Γ£ô  251 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:206:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ B ΓÇö Meeting Join & Lobby ΓÇ║ B08 ΓÇö Doctor opens meeting page (browser) (3.5s)
+  Γ£ô  203 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:576:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ F ΓÇö Timeline & Treatment Results ΓÇ║ F05 ΓÇö Health Studio page loads with tabs (32.9s)
+  Γ£ô  253 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:588:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ F ΓÇö Timeline & Treatment Results ΓÇ║ F06 ΓÇö All 3 patients access timeline in parallel (56ms)
+  Γ£ô  254 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:597:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ F ΓÇö Timeline & Treatment Results ΓÇ║ F07 ΓÇö Patient instruction sheet endpoint (43ms)
+Γ£à Both open meeting pages simultaneously
+  Γ£ô  252 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:216:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ B ΓÇö Meeting Join & Lobby ΓÇ║ B09 ΓÇö Patient and Doctor open meeting pages simultaneously (36.3s)
+Γ£à Transcription started
+  Γ£ô  256 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:247:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ C ΓÇö Transcription Lifecycle ΓÇ║ C01 ΓÇö Doctor starts transcription (47ms)
+  Γ£ô  257 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:258:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ C ΓÇö Transcription Lifecycle ΓÇ║ C02 ΓÇö Transcription can be paused (43ms)
+  Γ£ô  258 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:265:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ C ΓÇö Transcription Lifecycle ΓÇ║ C03 ΓÇö Transcription can be resumed (start again) (44ms)
+  Γ£ô  259 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:274:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ C ΓÇö Transcription Lifecycle ΓÇ║ C04 ΓÇö Switch transcription language (TH Γåö EN) (43ms)
+Γ£à Transcription stopped
+  Γ£ô  260 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:283:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ C ΓÇö Transcription Lifecycle ΓÇ║ C05 ΓÇö Doctor stops transcription (44ms)
+  Γ£ô  261 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:291:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ C ΓÇö Transcription Lifecycle ΓÇ║ C06 ΓÇö Get transcript for meeting (42ms)
+  Γ£ô  262 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:301:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ C ΓÇö Transcription Lifecycle ΓÇ║ C07 ΓÇö Transcription for non-existent meeting fails (54ms)
+  Γ£ô  263 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:309:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ C ΓÇö Transcription Lifecycle ΓÇ║ C08 ΓÇö Transcript includes speaker labels (44ms)
+  Γ£ô  264 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:320:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ C ΓÇö Transcription Lifecycle ΓÇ║ C09 ΓÇö Upload meeting recording (41ms)
+  Γ£ô  265 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:331:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ C ΓÇö Transcription Lifecycle ΓÇ║ C10 ΓÇö Get meeting files list (58ms)
+Γ£à AI SOAP summary requested
+  Γ£ô  266 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:343:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ D ΓÇö AI Meeting Summary & SOAP ΓÇ║ D01 ΓÇö Generate AI meeting summary (Gemini) (47ms)
+  Γ£ô  267 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:354:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ D ΓÇö AI Meeting Summary & SOAP ΓÇ║ D02 ΓÇö AI generates SOAP from transcript (45ms)
+  Γ£ô  268 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:365:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ D ΓÇö AI Meeting Summary & SOAP ΓÇ║ D03 ΓÇö AI summary includes SOAP sections (43ms)
+  Γ£ô  269 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:377:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ D ΓÇö AI Meeting Summary & SOAP ΓÇ║ D04 ΓÇö AI EMR summary endpoint (44ms)
+  Γ£ô  270 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:386:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ D ΓÇö AI Meeting Summary & SOAP ΓÇ║ D05 ΓÇö CDS recommendations after meeting (47ms)
+  Γ£ô  271 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:393:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ D ΓÇö AI Meeting Summary & SOAP ΓÇ║ D06 ΓÇö AI patient instruction sheet generation (41ms)
+  Γ£ô  272 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:405:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ D ΓÇö AI Meeting Summary & SOAP ΓÇ║ D07 ΓÇö AI summary for long meeting (30-min sections) (42ms)
+  Γ£ô  273 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:418:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ D ΓÇö AI Meeting Summary & SOAP ΓÇ║ D08 ΓÇö Man-in-the-loop validation endpoint (43ms)
+  Γ£ô  274 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:430:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ D ΓÇö AI Meeting Summary & SOAP ΓÇ║ D09 ΓÇö AI validations log accessible (43ms)
+Γ£à Meeting ΓåÆ AI Summary ΓåÆ EMR pipeline
+  Γ£ô  275 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:436:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ D ΓÇö AI Meeting Summary & SOAP ΓÇ║ D10 ΓÇö Meeting summary + EMR creation pipeline (95ms)
+  Γ£ô  276 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:463:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ E ΓÇö Meeting End & Post-Meeting ΓÇ║ E01 ΓÇö Doctor ends meeting (43ms)
+  Γ£ô  277 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:473:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ E ΓÇö Meeting End & Post-Meeting ΓÇ║ E02 ΓÇö Post-meeting AI processing triggered (42ms)
+  Γ£ô  278 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:483:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ E ΓÇö Meeting End & Post-Meeting ΓÇ║ E03 ΓÇö Meeting recording accessible (46ms)
+  Γ£ô  279 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:490:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ E ΓÇö Meeting End & Post-Meeting ΓÇ║ E04 ΓÇö Transcribe audio endpoint (44ms)
+  Γ£ô  280 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:500:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ E ΓÇö Meeting End & Post-Meeting ΓÇ║ E05 ΓÇö CDS alerts after meeting analysis (42ms)
+  Γ£ô  281 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:510:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ E ΓÇö Meeting End & Post-Meeting ΓÇ║ E06 ΓÇö CDS alerts log (45ms)
+  Γ£ô  282 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:516:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ E ΓÇö Meeting End & Post-Meeting ΓÇ║ E07 ΓÇö Patient instruction sheet after meeting (42ms)
+  Γ£ô  283 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:526:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ E ΓÇö Meeting End & Post-Meeting ΓÇ║ E08 ΓÇö Patient can view instruction sheet PDF (44ms)
+  Γ£ô  255 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:603:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ F ΓÇö Timeline & Treatment Results ΓÇ║ F08 ΓÇö Treatment results page loads (browser) (32.7s)
+Γ£à Patient list
+  Γ£ô  285 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:619:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ G ΓÇö Doctor Patient Record Viewer ΓÇ║ G01 ΓÇö Doctor lists all patients (52ms)
+  Γ£ô  286 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:626:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ G ΓÇö Doctor Patient Record Viewer ΓÇ║ G02 ΓÇö Doctor views patient1 record (81ms)
+  Γ£ô  287 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:632:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ G ΓÇö Doctor Patient Record Viewer ΓÇ║ G03 ΓÇö Doctor views patient2 record (70ms)
+Γ£à Admin patient list
+  Γ£ô  288 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:638:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ G ΓÇö Doctor Patient Record Viewer ΓÇ║ G04 ΓÇö Admin can view all patient records (48ms)
+  Γ£ô  289 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:645:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ G ΓÇö Doctor Patient Record Viewer ΓÇ║ G05 ΓÇö Patient record viewer page (browser) (3.6s)
+  Γ£ô  290 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:655:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ G ΓÇö Doctor Patient Record Viewer ΓÇ║ G06 ΓÇö Patient record has tabs (PHR, EMR, EHR, Lab, Documents, Living Will) (3.3s)
+  Γ£ô  291 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:674:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ G ΓÇö Doctor Patient Record Viewer ΓÇ║ G07 ΓÇö Doctor views EMR for patient (52ms)
+Γä╣∩╕Å  5-user parallel health data: 57ms
+  Γ£ô  292 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:680:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ G ΓÇö Doctor Patient Record Viewer ΓÇ║ G08 ΓÇö 5 users query patient data in parallel (58ms)
+Γ£à P1 PHR
+Γ£à P2 PHR
+  Γ£ô  293 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:694:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ G ΓÇö Doctor Patient Record Viewer ΓÇ║ G09 ΓÇö Patient data isolation between users (48ms)
+Γ£à Both portals open for meeting
+  Γ£ô  284 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:539:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ F ΓÇö Multi-Browser Meeting Simulation ΓÇ║ F01 ΓÇö Doctor and Patient open meeting pages simultaneously (30.9s)
+Γ£à Patient and doctor view records simultaneously
+  Γ£ô  294 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:706:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ G ΓÇö Doctor Patient Record Viewer ΓÇ║ G10 ΓÇö Doctor + Patient view records simultaneously (browser) (33.5s)
+  Γ£ô  296 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:737:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ H ΓÇö Edge Cases & Performance ΓÇ║ H01 ΓÇö EMR with empty subjective field (61ms)
+  Γ£ô  297 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:750:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ H ΓÇö Edge Cases & Performance ΓÇ║ H02 ΓÇö Prescription with invalid medication (42ms)
+  Γ£ô  298 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:759:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ H ΓÇö Edge Cases & Performance ΓÇ║ H03 ΓÇö Large PHR data update (45ms)
+  Γ£ô  299 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:772:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ H ΓÇö Edge Cases & Performance ΓÇ║ H04 ΓÇö Concurrent EMR creation for same patient (62ms)
+  Γ£ô  300 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:782:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ H ΓÇö Edge Cases & Performance ΓÇ║ H05 ΓÇö Non-existent patient ID handled gracefully (51ms)
+Γä╣∩╕Å  4 health records in parallel: 54ms
+  Γ£ô  301 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:788:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ H ΓÇö Edge Cases & Performance ΓÇ║ H06 ΓÇö PHR and EMR create under load (55ms)
+  Γ£ô  302 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:802:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ H ΓÇö Edge Cases & Performance ΓÇ║ H07 ΓÇö XSS prevention in EMR content (49ms)
+Γä╣∩╕Å  6 health record queries: 54ms
+  Γ£ô  303 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:814:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ H ΓÇö Edge Cases & Performance ΓÇ║ H08 ΓÇö All health record endpoints perform under limit (55ms)
+  Γ£ô  304 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:836:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ I ΓÇö PHR Extended Records ΓÇ║ I01 ΓÇö PHR medications CRUD (112ms)
+  Γ£ô  305 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:846:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ I ΓÇö PHR Extended Records ΓÇ║ I02 ΓÇö PHR allergies CRUD (100ms)
+  Γ£ô  306 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:856:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ I ΓÇö PHR Extended Records ΓÇ║ I03 ΓÇö PHR lifestyle data update (42ms)
+  Γ£ô  307 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:867:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ I ΓÇö PHR Extended Records ΓÇ║ I04 ΓÇö PHR emergency contacts (43ms)
+  Γ£ô  308 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:877:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ I ΓÇö PHR Extended Records ΓÇ║ I05 ΓÇö EMR with encounter types (142ms)
+  Γ£ô  309 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:892:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ I ΓÇö PHR Extended Records ΓÇ║ I06 ΓÇö EMR validation before signing (45ms)
+  Γ£ô  310 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:904:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ I ΓÇö PHR Extended Records ΓÇ║ I07 ΓÇö Pending prescriptions for doctor (95ms)
+  Γ£ô  311 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:917:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ J ΓÇö PDPA & Living Will Extended ΓÇ║ J01 ΓÇö PDPA consent status (51ms)
+  Γ£ô  312 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:923:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ J ΓÇö PDPA & Living Will Extended ΓÇ║ J02 ΓÇö PDPA consent grant (46ms)
+  Γ£ô  313 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:931:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ J ΓÇö PDPA & Living Will Extended ΓÇ║ J03 ΓÇö PDPA consent verify (48ms)
+  Γ£ô  314 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:939:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ J ΓÇö PDPA & Living Will Extended ΓÇ║ J04 ΓÇö PDPA audit log (66ms)
+  Γ£ô  315 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:945:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ J ΓÇö PDPA & Living Will Extended ΓÇ║ J05 ΓÇö Living will version history (51ms)
+  Γ£ô  316 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:951:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ J ΓÇö PDPA & Living Will Extended ΓÇ║ J06 ΓÇö Living will signature upload (48ms)
+  Γ£ô  317 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:959:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ J ΓÇö PDPA & Living Will Extended ΓÇ║ J07 ΓÇö Doctor consents list (47ms)
+  Γ£ô  318 [Cloud-Dev] ΓÇ║ specs\03-health-records-emr.spec.ts:965:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ J ΓÇö PDPA & Living Will Extended ΓÇ║ J08 ΓÇö Patient consents management (51ms)
+Γ£à Content created: 
+  Γ£ô  319 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:43:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ A ΓÇö Medical Content CRUD ΓÇ║ A01 ΓÇö Doctor creates medical content (draft) (47ms)
+  Γ£ô  320 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:52:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ A ΓÇö Medical Content CRUD ΓÇ║ A02 ΓÇö Doctor reads own draft content (51ms)
+  Γ£ô  321 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:59:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ A ΓÇö Medical Content CRUD ΓÇ║ A03 ΓÇö Doctor lists all medical content (49ms)
+  Γ£ô  322 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:65:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ A ΓÇö Medical Content CRUD ΓÇ║ A04 ΓÇö Doctor updates own content (41ms)
+Γ£à Content submitted for approval
+  Γ£ô  323 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:75:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ A ΓÇö Medical Content CRUD ΓÇ║ A05 ΓÇö Doctor submits content for approval (40ms)
+  Γ£ô  324 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:83:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ A ΓÇö Medical Content CRUD ΓÇ║ A06 ΓÇö Content with Thai bilingual text (47ms)
+Γ£à 3 articles created
+  Γ£ô  325 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:95:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ A ΓÇö Medical Content CRUD ΓÇ║ A07 ΓÇö Doctor creates multiple articles (60ms)
+  Γ£ÿ  295 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:564:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ F ΓÇö Multi-Browser Meeting Simulation ΓÇ║ F02 ΓÇö 3-way meeting simulation (doctor + patient + admin) (30.7s)
+  Γ£ô  326 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:109:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ A ΓÇö Medical Content CRUD ΓÇ║ A08 ΓÇö Doctor deletes own draft (47ms)
+Γ£à Patients cannot see drafts
+  Γ£ô  327 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:123:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ A ΓÇö Medical Content CRUD ΓÇ║ A09 ΓÇö Draft content NOT visible to patients (59ms)
+  Γ£ô  328 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:135:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ A ΓÇö Medical Content CRUD ΓÇ║ A10 ΓÇö Content view count increments (43ms)
+  Γ£ô  329 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:142:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ A ΓÇö Medical Content CRUD ΓÇ║ A11 ΓÇö Content like toggle works (43ms)
+  Γ£ô  330 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:149:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ A ΓÇö Medical Content CRUD ΓÇ║ A12 ΓÇö Medical content tags endpoint (47ms)
+Γ£à Clinical resource created: 
+  Γ£ô  331 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:162:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ B ΓÇö Clinical Resources CRUD ΓÇ║ B01 ΓÇö Doctor creates clinical resource (draft) (45ms)
+  Γ£ô  332 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:171:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ B ΓÇö Clinical Resources CRUD ΓÇ║ B02 ΓÇö Doctor reads own clinical resource (51ms)
+  Γ£ô  333 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:178:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ B ΓÇö Clinical Resources CRUD ΓÇ║ B03 ΓÇö Doctor lists clinical resources (49ms)
+  Γ£ô  334 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:184:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ B ΓÇö Clinical Resources CRUD ΓÇ║ B04 ΓÇö Doctor submits resource for approval (40ms)
+Γä╣∩╕Å  Resource status: undefined
+  Γ£ô  335 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:191:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ B ΓÇö Clinical Resources CRUD ΓÇ║ B05 ΓÇö Clinical resource ALWAYS requires admin approval (45ms)
+  Γ£ô  336 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:204:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ B ΓÇö Clinical Resources CRUD ΓÇ║ B06 ΓÇö Editing published content triggers re-approval (43ms)
+  Γ£ô  337 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:213:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ B ΓÇö Clinical Resources CRUD ΓÇ║ B07 ΓÇö Doctor deletes own clinical resource (47ms)
+  Γ£ô  338 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:227:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ B ΓÇö Clinical Resources CRUD ΓÇ║ B08 ΓÇö Clinical resource tags endpoint (45ms)
+  Γ£ô  339 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:233:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ B ΓÇö Clinical Resources CRUD ΓÇ║ B09 ΓÇö Create clinical tag (43ms)
+  Γ£ô  340 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:242:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ B ΓÇö Clinical Resources CRUD ΓÇ║ B10 ΓÇö Patients cannot access clinical resources (65ms)
+Γä╣∩╕Å  29 pending medical content items
+  Γ£ô  341 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:257:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ C ΓÇö Admin Approval Workflow ΓÇ║ C01 ΓÇö Admin sees pending medical content (50ms)
+  Γ£ô  342 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:267:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ C ΓÇö Admin Approval Workflow ΓÇ║ C02 ΓÇö Admin sees pending clinical resources (48ms)
+  Γ£ô  343 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:273:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ C ΓÇö Admin Approval Workflow ΓÇ║ C03 ΓÇö Doctor creates content ΓåÆ Admin sees in pending (100ms)
+Γ£à Admin approved medical content
+  Γ£ô  345 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:297:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ C ΓÇö Admin Approval Workflow ΓÇ║ C04 ΓÇö Admin approves medical content (41ms)
+  Γ£ô  346 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:308:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ C ΓÇö Admin Approval Workflow ΓÇ║ C05 ΓÇö Admin direct publish endpoint (46ms)
+  Γ£ô  347 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:322:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ C ΓÇö Admin Approval Workflow ΓÇ║ C06 ΓÇö Admin rejects medical content with reason (46ms)
+  Γ£ô  348 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:343:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ C ΓÇö Admin Approval Workflow ΓÇ║ C07 ΓÇö Admin approves clinical resource (46ms)
+  Γ£ô  349 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:362:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ C ΓÇö Admin Approval Workflow ΓÇ║ C08 ΓÇö Admin archives published content (43ms)
+Γ£à Content lifecycle: unknown ΓÇö "α╣éα╕úα╕äα╣Çα╕Üα╕▓α╕½α╕ºα╕▓α╕Ö: α╕äα╕ºα╕▓α╕íα╕úα╕╣α╣ëα╣Çα╕Üα╕╖α╣ëα╕¡α╕çα╕òα╣ëα╕Ö ΓÇö Test 1771606064566"
+  Γ£ô  350 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:369:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ C ΓÇö Admin Approval Workflow ΓÇ║ C09 ΓÇö Content approval lifecycle helper (46ms)
+  Γ£ô  351 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:378:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ C ΓÇö Admin Approval Workflow ΓÇ║ C10 ΓÇö Non-admin cannot approve content (44ms)
+Γä╣∩╕Å  New content visible to patient: false
+Γ£à Content sync API flow complete
+  Γ£ô  352 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:401:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ D ΓÇö ΓÿàΓÿàΓÿà Content Sync: Approve ΓåÆ Refresh ΓåÆ Visible ΓÿàΓÿàΓÿà ΓÇ║ D01 ΓÇö Doctor creates content ΓåÆ Admin approves ΓåÆ Patient sees on refresh (API) (98ms)
+  Γ£ô  344 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:594:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ F ΓÇö Multi-Browser Meeting Simulation ΓÇ║ F03 ΓÇö Doctor dashboard during active meeting (3.7s)
+Γä╣∩╕Å  Content visible after refresh: false
+Γä╣∩╕Å  API content accessible: true
+Γ£à Multiple patients viewing appointments
+Γ£à Browser content sync test complete
+  Γ£ô  353 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:441:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ D ΓÇö ΓÿàΓÿàΓÿà Content Sync: Approve ΓåÆ Refresh ΓåÆ Visible ΓÿàΓÿàΓÿà ΓÇ║ D02 ΓÇö ΓÿàΓÿàΓÿà BROWSER: Content visible to patient with ONE refresh ΓÿàΓÿàΓÿà (36.5s)
+  Γ£ô  354 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:609:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ F ΓÇö Multi-Browser Meeting Simulation ΓÇ║ F04 ΓÇö Multiple patients with different meeting statuses (32.7s)
+Γä╣∩╕Å  Clicked 0 tabs
+  Γ£ô  356 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:631:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ F ΓÇö Multi-Browser Meeting Simulation ΓÇ║ F05 ΓÇö Health Meeting page tabs work (3.5s)
+  Γ£ô  357 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:650:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ F ΓÇö Multi-Browser Meeting Simulation ΓÇ║ F06 ΓÇö Doctor completes EMR editor page after meeting (3.5s)
+Γä╣∩╕Å  Patient1 sees content: false
+Γä╣∩╕Å  Patient2 sees content: false
+Γä╣∩╕Å  Patient3 sees content: false
+Γ£à Multi-patient content sync test
+  Γ£ô  355 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:494:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ D ΓÇö ΓÿàΓÿàΓÿà Content Sync: Approve ΓåÆ Refresh ΓåÆ Visible ΓÿàΓÿàΓÿà ΓÇ║ D03 ΓÇö ΓÿàΓÿàΓÿà MULTI-BROWSER: Doctor creates ΓåÆ Admin approves ΓåÆ Patient1, Patient2, Patient3 all refresh and see ΓÿàΓÿàΓÿà (37.0s)
+  Γ£ô  358 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:660:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ F ΓÇö Multi-Browser Meeting Simulation ΓÇ║ F07 ΓÇö Patient gets notification after meeting (33.5s)
+Γä╣∩╕Å  Clinical resource visible to admin after refresh: false
+  Γ£ô  359 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:570:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ D ΓÇö ΓÿàΓÿàΓÿà Content Sync: Approve ΓåÆ Refresh ΓåÆ Visible ΓÿàΓÿàΓÿà ΓÇ║ D04 ΓÇö ΓÿàΓÿàΓÿà Clinical resource: Doctor creates ΓåÆ Admin approves ΓåÆ Other doctors see on refresh ΓÿàΓÿàΓÿà (6.8s)
+Γ£à All 3 patients can access content after approval
+  Γ£ô  361 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:607:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ D ΓÇö ΓÿàΓÿàΓÿà Content Sync: Approve ΓåÆ Refresh ΓåÆ Visible ΓÿàΓÿàΓÿà ΓÇ║ D05 ΓÇö Content sync verification via API after approval (101ms)
+  Γ£ô  360 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:675:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ F ΓÇö Multi-Browser Meeting Simulation ΓÇ║ F08 ΓÇö Patient views health history after meeting (32.9s)
+  Γ£ô  363 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:690:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ G ΓÇö Edge Cases & Performance ΓÇ║ G01 ΓÇö Meeting creation under load (3 parallel) (112ms)
+  Γ£ô  364 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:706:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ G ΓÇö Edge Cases & Performance ΓÇ║ G02 ΓÇö AI summary with empty transcript (42ms)
+  Γ£ô  365 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:715:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ G ΓÇö Edge Cases & Performance ΓÇ║ G03 ΓÇö AI summary with Thai-English mixed transcript (44ms)
+Γä╣∩╕Å  5 concurrent meeting server requests: 130ms
+  Γ£ô  366 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:724:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ G ΓÇö Edge Cases & Performance ΓÇ║ G04 ΓÇö Meeting server handles concurrent requests (132ms)
+  Γ£ô  367 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:739:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ G ΓÇö Edge Cases & Performance ΓÇ║ G05 ΓÇö CDS check with complex medication list (44ms)
+Γä╣∩╕Å  10 health checks: 89ms
+  Γ£ô  368 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:750:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ G ΓÇö Edge Cases & Performance ΓÇ║ G06 ΓÇö Video meeting health check under load (98ms)
+  Γ£ô  369 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:762:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ G ΓÇö Edge Cases & Performance ΓÇ║ G07 ΓÇö AI knowledge base accessible (46ms)
+Γ£à Draft content hidden from patients
+  Γ£ô  362 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:626:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ D ΓÇö ΓÿàΓÿàΓÿà Content Sync: Approve ΓåÆ Refresh ΓåÆ Visible ΓÿàΓÿàΓÿà ΓÇ║ D06 ΓÇö Draft content NOT visible to patients even with refresh (32.8s)
+  Γ£ô  371 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:652:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ D ΓÇö ΓÿàΓÿàΓÿà Content Sync: Approve ΓåÆ Refresh ΓåÆ Visible ΓÿàΓÿàΓÿà ΓÇ║ D07 ΓÇö Rejected content NOT visible to patients (104ms)
+  Γ£ô  372 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:681:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ D ΓÇö ΓÿàΓÿàΓÿà Content Sync: Approve ΓåÆ Refresh ΓåÆ Visible ΓÿàΓÿàΓÿà ΓÇ║ D08 ΓÇö Content update after publish requires re-approval (46ms)
+Γ£à 5 concurrent content creations completed
+  Γ£ô  373 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:698:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ D ΓÇö ΓÿàΓÿàΓÿà Content Sync: Approve ΓåÆ Refresh ΓåÆ Visible ΓÿàΓÿàΓÿà ΓÇ║ D09 ΓÇö Concurrent content creation by multiple doctors (92ms)
+Γä╣∩╕Å  5 rapid content fetches: 110ms
+  Γ£ô  374 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:714:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ D ΓÇö ΓÿàΓÿàΓÿà Content Sync: Approve ΓåÆ Refresh ΓåÆ Visible ΓÿàΓÿàΓÿà ΓÇ║ D10 ΓÇö Content sync performance under multiple refreshes (112ms)
+  Γ£ô  370 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:768:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ G ΓÇö Edge Cases & Performance ΓÇ║ G08 ΓÇö AI chat with medical question (9.7s)
+  Γ£ô  376 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:782:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ G ΓÇö Edge Cases & Performance ΓÇ║ G09 ΓÇö AI document analysis endpoint (6.0s)
+Γä╣∩╕Å  E2E meeting pipeline: 49ms
+  Γ£ô  377 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:795:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ G ΓÇö Edge Cases & Performance ΓÇ║ G10 ΓÇö End-to-end meeting performance (50ms)
+  Γ£ô  378 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:822:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ H ΓÇö Meeting Server Extended APIs ΓÇ║ H01 ΓÇö Meeting status check (59ms)
+  Γ£ô  379 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:829:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ H ΓÇö Meeting Server Extended APIs ΓÇ║ H02 ΓÇö Meeting participants list (49ms)
+  Γ£ô  380 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:836:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ H ΓÇö Meeting Server Extended APIs ΓÇ║ H03 ΓÇö Transcript sections (30-min segments) (78ms)
+  Γ£ô  381 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:843:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ H ΓÇö Meeting Server Extended APIs ΓÇ║ H04 ΓÇö Meeting chat send (48ms)
+  Γ£ô  382 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:852:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ H ΓÇö Meeting Server Extended APIs ΓÇ║ H05 ΓÇö Get meeting chat messages (45ms)
+  Γ£ô  383 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:859:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ H ΓÇö Meeting Server Extended APIs ΓÇ║ H06 ΓÇö Get saved meeting summary (64ms)
+  Γ£ô  384 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:866:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ H ΓÇö Meeting Server Extended APIs ΓÇ║ H07 ΓÇö Patient instruction sheet generation (4.1s)
+  Γ£ô  385 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:876:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ H ΓÇö Meeting Server Extended APIs ΓÇ║ H08 ΓÇö Upload meeting recording endpoint (45ms)
+  Γ£ô  386 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:886:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ H ΓÇö Meeting Server Extended APIs ΓÇ║ H09 ΓÇö Get meeting files (44ms)
+  Γ£ô  387 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:893:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ H ΓÇö Meeting Server Extended APIs ΓÇ║ H10 ΓÇö Meeting history by doctor (50ms)
+  Γ£ô  388 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:899:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ H ΓÇö Meeting Server Extended APIs ΓÇ║ H11 ΓÇö Generate summary from doctor portal (44ms)
+  Γ£ô  389 [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:909:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ H ΓÇö Meeting Server Extended APIs ΓÇ║ H12 ΓÇö Process embeddings (52ms)
+AI chat 200 but no recognized body field: {"reply":"α╕¬α╕ºα╕▒α╕¬α╕öα╕╡α╕äα╣êα╕░ α╕öα╕┤α╕ëα╕▒α╕Ö Izara AI α╕£α╕╣α╣ëα╕èα╣êα╕ºα╕óα╕öα╣ëα╕▓α╕Öα╕¬α╕╕α╕éα╕áα╕▓α╕₧α╕¡α╕▒α╕êα╕ëα╕úα╕┤α╕óα╕░ α╕óα╕┤α╕Öα╕öα╕╡α╣âα╕½α╣ëα╕äα╕│α╣üα╕Öα╕░α╕Öα╕│α╕äα╣êα╕░ ≡ƒÿè\n\nα╕¬α╕│α╕½α╕úα╕▒α╕Üα╕¡α╕▓α╕üα╕▓α╕úα╕éα╕¡α╕çα╣éα╕úα╕äα╣Çα╕Üα╕▓α╕½α╕ºα╕▓α╕Öα╕¢α╕úα╕░α╣Çα╕áα╕ù 2 α╕Öα╕▒α╣ëα╕Ö α╕¡α╕▓α╕êα╕íα╕╡α╣äα╕öα╣ëα╕½α╕Ñα╕▓α╕óα╕¡α╕óα╣êα╕▓α╕çα╕äα╣êα╕░ α╣üα╕òα╣êα╕ùα╕╡α╣êα╕₧α╕Üα╕Üα╣êα╕¡α╕óα╣å α╕üα╣çα╕êα╕░α╕íα╕╡α╕öα╕▒α╕çα╕Öα╕╡α╣ëα╕äα╣êα╕░\n\n*   **α╕úα╕╣α╣ëα╕¬α╕╢α╕üα╕üα╕úα╕░α╕½α╕▓α╕óα╕Öα╣ëα╕│α╕Ü
+Γ£à AI English chat response received
+  Γ£ô  390 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:37:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ A ΓÇö AI Chat (Patient Portal) ΓÇ║ A01 ΓÇö Patient sends AI chat message (English) (2.4s)
+Γ£à AI Thai chat response received
+  Γ£ô  391 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:51:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ A ΓÇö AI Chat (Patient Portal) ΓÇ║ A02 ΓÇö Patient sends AI chat message (Thai) (2.5s)
+  Γ£ô  392 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:61:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ A ΓÇö AI Chat (Patient Portal) ΓÇ║ A03 ΓÇö AI chat with clinical context (2.1s)
+  Γ£ô  393 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:74:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ A ΓÇö AI Chat (Patient Portal) ΓÇ║ A04 ΓÇö AI chat maintains conversation context (4.6s)
+  Γ£ô  394 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:92:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ A ΓÇö AI Chat (Patient Portal) ΓÇ║ A05 ΓÇö AI chat history retrieval (48ms)
+Γä╣∩╕Å  Patient1 AI chat: 200
+Γä╣∩╕Å  Patient2 AI chat: 200
+Γä╣∩╕Å  Patient3 AI chat: 200
+  Γ£ô  395 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:98:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ A ΓÇö AI Chat (Patient Portal) ΓÇ║ A06 ΓÇö Multiple patients use AI chat simultaneously (1.2s)
+  Γ£ô  396 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:113:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ A ΓÇö AI Chat (Patient Portal) ΓÇ║ A07 ΓÇö AI chat refuses harmful content (1.9s)
+Γ£à Health library loaded
+  Γ£ô  375 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:733:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ E ΓÇö Medical Content Library UI ΓÇ║ E01 ΓÇö Patient portal health library page loads (33.0s)
+  Γ£ô  398 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:746:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ E ΓÇö Medical Content Library UI ΓÇ║ E02 ΓÇö Doctor portal medical content page loads (3.6s)
+  Γ£ô  399 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:756:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ E ΓÇö Medical Content Library UI ΓÇ║ E03 ΓÇö Doctor portal clinical resources page loads (3.5s)
+  Γ£ô  400 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:766:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ E ΓÇö Medical Content Library UI ΓÇ║ E04 ΓÇö Admin approval badge count visible (3.7s)
+  Γ£ô  401 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:781:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ E ΓÇö Medical Content Library UI ΓÇ║ E05 ΓÇö Content filter by category works (3.4s)
+  Γ£ô  402 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:795:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ E ΓÇö Medical Content Library UI ΓÇ║ E06 ΓÇö "My Content" toggle works for doctor (3.3s)
+Γä╣∩╕Å  Chat inputs found: 1
+  Γ£ô  397 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:123:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ A ΓÇö AI Chat (Patient Portal) ΓÇ║ A08 ΓÇö AI Chat page loads in browser (33.9s)
+Γä╣∩╕Å  0 articles visible in patient library
+  Γ£ô  403 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:811:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ E ΓÇö Medical Content Library UI ΓÇ║ E07 ΓÇö Patient health library shows published articles (34.0s)
+  Γ£ô  404 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:138:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ A ΓÇö AI Chat (Patient Portal) ΓÇ║ A09 ΓÇö AI chat input sends message via browser (38.9s)
+  Γ£ô  406 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:161:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ A ΓÇö AI Chat (Patient Portal) ΓÇ║ A10 ΓÇö AI chat empty message handled (43ms)
+Γ£à CDS drug interaction check
+  Γ£ô  407 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:175:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ B ΓÇö Clinical Decision Support (CDS) ΓÇ║ B01 ΓÇö CDS check for drug interaction (46ms)
+  Γ£ô  408 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:190:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ B ΓÇö Clinical Decision Support (CDS) ΓÇ║ B02 ΓÇö CDS check for dosage validation (43ms)
+  Γ£ô  409 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:201:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ B ΓÇö Clinical Decision Support (CDS) ΓÇ║ B03 ΓÇö CDS check for allergy alert (44ms)
+  Γ£ô  410 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:212:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ B ΓÇö Clinical Decision Support (CDS) ΓÇ║ B04 ΓÇö CDS alerts list (45ms)
+  Γ£ô  411 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:218:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ B ΓÇö Clinical Decision Support (CDS) ΓÇ║ B05 ΓÇö CDS alerts for specific patient (45ms)
+  Γ£ô  412 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:225:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ B ΓÇö Clinical Decision Support (CDS) ΓÇ║ B06 ΓÇö CDS logs endpoint (49ms)
+  Γ£ô  413 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:231:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ B ΓÇö Clinical Decision Support (CDS) ΓÇ║ B07 ΓÇö CDS real-time check during prescription (46ms)
+  Γ£ô  414 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:243:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ B ΓÇö Clinical Decision Support (CDS) ΓÇ║ B08 ΓÇö CDS check with Thai medication names (42ms)
+  Γ£ô  415 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:254:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ B ΓÇö Clinical Decision Support (CDS) ΓÇ║ B09 ΓÇö CDS man-in-the-loop acknowledge alert (42ms)
+Γ£à Concurrent CDS checks for 3 patients
+  Γ£ô  416 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:274:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ B ΓÇö Clinical Decision Support (CDS) ΓÇ║ B10 ΓÇö CDS concurrent checks for multiple patients (45ms)
+Γä╣∩╕Å  Pre-consultation summary: {"success":true,"patientId":"PATIENT-DEMO","appointmentId":"test-apt-001","summary":"## α╕¬α╕úα╕╕α╕¢α╕éα╣ëα╕¡α╕íα╕╣α╕Ñα╕£α╕╣α╣ëα╕¢α╣êα╕ºα╕óα╕üα╣êα╕¡α╕Öα╕₧α╕Üα╣üα╕₧α╕ùα╕óα╣î (Pre-Consultation Summary)\n\n**α╕éα╣ëα╕¡α╕íα╕╣α╕Ñα╕£α╕╣α╣ëα╕¢α╣êα╕ºα╕ó:**\n\n*   **α╕èα╕╖α╣êα╕¡:** α╕£α╕╣α╣ëα╕¢α╣êα╕ºα╕ó\n*   **α╕¡α╕▓
+  Γ£ô  417 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:295:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ C ΓÇö AI Summarization ΓÇ║ C01 ΓÇö AI pre-consultation summary (2.8s)
+  Γ£ô  418 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:309:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ C ΓÇö AI Summarization ΓÇ║ C02 ΓÇö AI patient summary (45ms)
+Γä╣∩╕Å  SOAP sections: success, summary
+  Γ£ô  419 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:318:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ C ΓÇö AI Summarization ΓÇ║ C03 ΓÇö AI EMR summary from transcript (44ms)
+  Γ£ô  420 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:333:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ C ΓÇö AI Summarization ΓÇ║ C04 ΓÇö AI summarize generic document (46ms)
+  Γ£ô  421 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:342:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ C ΓÇö AI Summarization ΓÇ║ C05 ΓÇö AI summarize in Thai (45ms)
+  Γ£ô  422 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:351:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ C ΓÇö AI Summarization ΓÇ║ C06 ΓÇö AI patient instruction sheet generation (44ms)
+  Γ£ô  423 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:364:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ C ΓÇö AI Summarization ΓÇ║ C07 ΓÇö AI meeting summary with sections (42ms)
+  Γ£ô  424 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:384:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ C ΓÇö AI Summarization ΓÇ║ C08 ΓÇö AI summary with man-in-the-loop validation (42ms)
+Γ£à Both portals show content simultaneously
+  Γ£ô  405 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:827:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ E ΓÇö Medical Content Library UI ΓÇ║ E08 ΓÇö Doctor + Patient both view content simultaneously (33.0s)
+  Γ£ô  426 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:867:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ F ΓÇö Consultant Management ΓÇ║ F01 ΓÇö Admin creates consultant (66ms)
+  Γ£ô  427 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:883:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ F ΓÇö Consultant Management ΓÇ║ F02 ΓÇö Doctor lists all consultants (51ms)
+  Γ£ô  428 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:889:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ F ΓÇö Consultant Management ΓÇ║ F03 ΓÇö Doctor views consultant detail (49ms)
+  Γ£ô  429 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:896:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ F ΓÇö Consultant Management ΓÇ║ F04 ΓÇö Doctor rates consultant (43ms)
+  Γ£ô  430 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:906:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ F ΓÇö Consultant Management ΓÇ║ F05 ΓÇö Admin toggles consultant availability (43ms)
+  Γ£ô  431 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:915:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ F ΓÇö Consultant Management ΓÇ║ F06 ΓÇö Admin updates consultant (44ms)
+  Γ£ô  432 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:925:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ F ΓÇö Consultant Management ΓÇ║ F07 ΓÇö Specialties list for consultants (49ms)
+  Γ£ô  425 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:404:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ C ΓÇö AI Summarization ΓÇ║ C09 ΓÇö AI document analysis (9.0s)
+  Γ£ô  434 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:418:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ C ΓÇö AI Summarization ΓÇ║ C10 ΓÇö AI knowledge base query (43ms)
+  Γ£ô  435 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:432:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ D ΓÇö Doctor Portal AI Features ΓÇ║ D01 ΓÇö Doctor AI medical scribe (voiceΓåÆtext) (43ms)
+  Γ£ô  436 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:442:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ D ΓÇö Doctor Portal AI Features ΓÇ║ D02 ΓÇö Doctor AI-assisted EMR completion (47ms)
+  Γ£ô  437 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:453:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ D ΓÇö Doctor Portal AI Features ΓÇ║ D03 ΓÇö Doctor AI suggests differential diagnosis (46ms)
+  Γ£ô  438 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:463:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ D ΓÇö Doctor Portal AI Features ΓÇ║ D04 ΓÇö Doctor AI medication recommendation (42ms)
+  Γ£ô  433 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:931:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ F ΓÇö Consultant Management ΓÇ║ F08 ΓÇö Medical Consultants page loads (browser) (3.6s)
+  Γ£ô  440 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:946:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ G ΓÇö Admin Management ΓÇ║ G01 ΓÇö Admin views pending doctor approvals (55ms)
+Γ£à Admin doctor list
+  Γ£ô  441 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:952:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ G ΓÇö Admin Management ΓÇ║ G02 ΓÇö Admin can view doctor list (59ms)
+  Γ£ô  442 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:959:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ G ΓÇö Admin Management ΓÇ║ G03 ΓÇö Admin stats endpoint (61ms)
+  Γ£ô  439 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:475:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ D ΓÇö Doctor Portal AI Features ΓÇ║ D05 ΓÇö Doctor AI page loads (browser) (3.6s)
+  Γ£ô  443 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:965:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ G ΓÇö Admin Management ΓÇ║ G04 ΓÇö Admin manage doctors page (browser) (3.4s)
+  Γ£ô  444 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:487:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ D ΓÇö Doctor Portal AI Features ΓÇ║ D06 ΓÇö AI feature in patient record viewer (4.6s)
+  Γ£ô  446 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:503:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ D ΓÇö Doctor Portal AI Features ΓÇ║ D07 ΓÇö AI-generated instruction sheet for patient (45ms)
+  Γ£ô  447 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:516:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ D ΓÇö Doctor Portal AI Features ΓÇ║ D08 ΓÇö Doctor AI parallel queries from multiple doctors (45ms)
+  Γ£ô  448 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:538:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ E ΓÇö AI Meeting Integration ΓÇ║ E01 ΓÇö AI processes meeting transcript to SOAP (44ms)
+  Γ£ô  449 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:556:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ E ΓÇö AI Meeting Integration ΓÇ║ E02 ΓÇö AI generates post-meeting CDS alerts (46ms)
+  Γ£ô  450 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:569:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ E ΓÇö AI Meeting Integration ΓÇ║ E03 ΓÇö AI meeting summary with speaker diarization (46ms)
+  Γ£ô  451 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:579:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ E ΓÇö AI Meeting Integration ΓÇ║ E04 ΓÇö AI meeting notes auto-save to EMR (43ms)
+  Γ£ô  452 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:591:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ E ΓÇö AI Meeting Integration ΓÇ║ E05 ΓÇö AI detects critical findings in meeting (45ms)
+  Γ£ô  453 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:601:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ E ΓÇö AI Meeting Integration ΓÇ║ E06 ΓÇö AI bilingual meeting summary (ThaiΓåöEnglish) (45ms)
+  Γ£ô  454 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:611:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ E ΓÇö AI Meeting Integration ΓÇ║ E07 ΓÇö AI processes empty transcript gracefully (44ms)
+  Γ£ô  455 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:620:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ E ΓÇö AI Meeting Integration ΓÇ║ E08 ΓÇö AI processes very long transcript (46ms)
+  Γ£ô  456 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:638:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ F ΓÇö Notifications & Real-Time ΓÇ║ F01 ΓÇö Patient gets notifications (54ms)
+  Γ£ô  457 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:644:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ F ΓÇö Notifications & Real-Time ΓÇ║ F02 ΓÇö Doctor gets notifications (53ms)
+  Γ£ô  458 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:650:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ F ΓÇö Notifications & Real-Time ΓÇ║ F03 ΓÇö Mark notification as read (112ms)
+  Γ£ô  459 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:663:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ F ΓÇö Notifications & Real-Time ΓÇ║ F04 ΓÇö Mark all notifications as read (48ms)
+  Γ£ô  460 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:669:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ F ΓÇö Notifications & Real-Time ΓÇ║ F05 ΓÇö Notification count endpoint (49ms)
+  Γ£ô  461 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:675:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ F ΓÇö Notifications & Real-Time ΓÇ║ F06 ΓÇö All 3 patients poll notifications concurrently (63ms)
+  Γ£ô  462 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:684:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ F ΓÇö Notifications & Real-Time ΓÇ║ F07 ΓÇö Settings: notification preferences (45ms)
+  Γ£ô  463 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:690:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ F ΓÇö Notifications & Real-Time ΓÇ║ F08 ΓÇö Update notification preferences (70ms)
+  Γ£ô  464 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:707:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ G ΓÇö Edge Cases & Performance ΓÇ║ G01 ΓÇö AI endpoint refuses unauthenticated requests (43ms)
+  Γ£ô  465 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:714:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ G ΓÇö Edge Cases & Performance ΓÇ║ G02 ΓÇö CDS check with missing required fields (45ms)
+  Γ£ô  445 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:977:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ G ΓÇö Admin Management ΓÇ║ G05 ΓÇö Admin pending doctors page (browser) (3.4s)
+  Γ£ô  466 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:720:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ G ΓÇö Edge Cases & Performance ΓÇ║ G03 ΓÇö AI chat XSS prevention (2.1s)
+Γä╣∩╕Å  AI summarize latency: 41ms
+  Γ£ô  468 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:737:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ G ΓÇö Edge Cases & Performance ΓÇ║ G04 ΓÇö AI performance: summary under 30s (43ms)
+  Γ£ô  467 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:989:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ G ΓÇö Admin Management ΓÇ║ G06 ΓÇö Admin dashboard shows stats (3.5s)
+Γ£à 3 AI features parallel on same patient
+  Γ£ô  469 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:748:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ G ΓÇö Edge Cases & Performance ΓÇ║ G05 ΓÇö Multiple AI features used on same patient (3.2s)
+  Γ£ô  471 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:761:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ G ΓÇö Edge Cases & Performance ΓÇ║ G06 ΓÇö AI handles SQL injection attempts (1.4s)
+  Γ£ô  472 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:775:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ H ΓÇö AI Extended APIs & Notification Management ΓÇ║ H01 ΓÇö AI symptom checker (46ms)
+  Γ£ô  473 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:783:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ H ΓÇö AI Extended APIs & Notification Management ΓÇ║ H02 ΓÇö AI risk assessment (46ms)
+  Γ£ô  474 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:791:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ H ΓÇö AI Extended APIs & Notification Management ΓÇ║ H03 ΓÇö AI health info query (44ms)
+  Γ£ô  475 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:799:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ H ΓÇö AI Extended APIs & Notification Management ΓÇ║ H04 ΓÇö AI service status (43ms)
+  Γ£ô  476 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:805:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ H ΓÇö AI Extended APIs & Notification Management ΓÇ║ H05 ΓÇö AI chat memory list (50ms)
+  Γ£ô  477 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:811:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ H ΓÇö AI Extended APIs & Notification Management ΓÇ║ H06 ΓÇö AI chat clear history (46ms)
+  Γ£ô  478 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:817:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ H ΓÇö AI Extended APIs & Notification Management ΓÇ║ H07 ΓÇö CDS drug interaction check (48ms)
+  Γ£ô  479 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:827:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ H ΓÇö AI Extended APIs & Notification Management ΓÇ║ H08 ΓÇö CDS allergy alert check (41ms)
+  Γ£ô  480 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:837:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ H ΓÇö AI Extended APIs & Notification Management ΓÇ║ H09 ΓÇö AI knowledge base search (9.7s)
+  Γ£ô  481 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:845:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ H ΓÇö AI Extended APIs & Notification Management ΓÇ║ H10 ΓÇö AI lab analysis (42ms)
+  Γ£ô  482 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:854:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ H ΓÇö AI Extended APIs & Notification Management ΓÇ║ H11 ΓÇö Delete a notification (100ms)
+  Γ£ô  483 [Cloud-Dev] ΓÇ║ specs\06-ai-features-cds.spec.ts:867:9 ΓÇ║ 06 ΓÇö AI Features & Clinical Decision Support ΓÇ║ H ΓÇö AI Extended APIs & Notification Management ΓÇ║ H12 ΓÇö Update notification preferences (44ms)
+  Γ£ô  470 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:1004:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ H ΓÇö Cross-Cutting UI ΓÇ║ H01 ΓÇö Dark mode toggle works on patient portal (32.7s)
+Γä╣∩╕Å  Appointment created: APT-1771606358378-8R2O6J (200)
+Γä╣∩╕Å  Doctor confirmed: 404
+Γ£à Appointment visible in both portals
+  Γ£ô  484 [Cloud-Dev] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:42:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ A ΓÇö Appointment Flow: 4 Windows Simultaneously ΓÇ║ A01 ΓÇö Patient1 books ΓåÆ Doctor sees in schedule ΓåÆ Doctor confirms ΓåÆ Patient1 sees confirmed (42.9s)
+  Γ£ô  485 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:1024:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ H ΓÇö Cross-Cutting UI ΓÇ║ H02 ΓÇö Settings page loads (32.7s)
+Γ£à All 5 users logged in simultaneously across 5 browser windows
+  Γ£ô  486 [Cloud-Dev] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:112:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ A ΓÇö Appointment Flow: 4 Windows Simultaneously ΓÇ║ A02 ΓÇö All 5 users logged in simultaneously (33.4s)
+Γä╣∩╕Å  patient1 booking: 200
+Γä╣∩╕Å  patient2 booking: 200
+Γä╣∩╕Å  patient3 booking: 200
+Γ£à 3 concurrent appointment bookings
+  Γ£ô  488 [Cloud-Dev] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:144:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ A ΓÇö Appointment Flow: 4 Windows Simultaneously ΓÇ║ A03 ΓÇö 3 patients book appointments simultaneously (55ms)
+  Γ£ô  489 [Cloud-Dev] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:161:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ A ΓÇö Appointment Flow: 4 Windows Simultaneously ΓÇ║ A04 ΓÇö Doctor confirms multiple appointments in sequence (98ms)
+  Γ£ô  487 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:1034:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ H ΓÇö Cross-Cutting UI ΓÇ║ H03 ΓÇö AI Consultation page loads (32.8s)
+  Γ£ô  491 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:1049:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ H ΓÇö Cross-Cutting UI ΓÇ║ H04 ΓÇö Map page loads (32.8s)
+Γ£à Status change visible after refresh
+  Γ£ô  490 [Cloud-Dev] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:177:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ A ΓÇö Appointment Flow: 4 Windows Simultaneously ΓÇ║ A05 ΓÇö Patient sees appointment status change on refresh (44.9s)
+Γ£à Doctor + Admin view same schedule
+  Γ£ô  493 [Cloud-Dev] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:215:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ A ΓÇö Appointment Flow: 4 Windows Simultaneously ΓÇ║ A06 ΓÇö Doctor + Admin both view appointments simultaneously (3.9s)
+Γ£à Full lifecycle: APT-1771606447427-BL8GND
+  Γ£ô  494 [Cloud-Dev] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:245:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ A ΓÇö Appointment Flow: 4 Windows Simultaneously ΓÇ║ A07 ΓÇö Full lifecycle via API: create ΓåÆ confirm ΓåÆ meeting link (253ms)
+  Γ£ô  495 [Cloud-Dev] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:253:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ A ΓÇö Appointment Flow: 4 Windows Simultaneously ΓÇ║ A08 ΓÇö Appointment race condition: 2 patients book same slot (51ms)
+  Γ£ô  496 [Cloud-Dev] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:271:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ A ΓÇö Appointment Flow: 4 Windows Simultaneously ΓÇ║ A09 ΓÇö Admin assigns appointment to doctor (91ms)
+Γä╣∩╕Å  Appointment list: 328ms
+Γä╣∩╕Å  Appointment list: 50ms
+Γä╣∩╕Å  Appointment list: 47ms
+  Γ£ô  497 [Cloud-Dev] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:289:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ A ΓÇö Appointment Flow: 4 Windows Simultaneously ΓÇ║ A10 ΓÇö Appointment list loads under 3 seconds (429ms)
+Γ£à Content "α╣éα╕úα╕äα╣Çα╕Üα╕▓α╕½α╕ºα╕▓α╕Ö: α╕äα╕ºα╕▓α╕íα╕úα╕╣α╣ëα╣Çα╕Üα╕╖α╣ëα╕¡α╕çα╕òα╣ëα╕Ö ΓÇö Test 1771606449591" accessible to all patients
+  Γ£ô  498 [Cloud-Dev] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:305:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ B ΓÇö Content Flow: Doctor ΓåÆ Admin ΓåÆ All Patients See ΓÇ║ B01 ΓÇö Γÿà Full flow: doctor creates ΓåÆ admin approves ΓåÆ 3 patients see (API) (104ms)
+  Γ£ô  492 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:1059:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ H ΓÇö Cross-Cutting UI ΓÇ║ H05 ΓÇö Patient profile page loads (32.7s)
+Γ£à Content "α╣éα╕úα╕äα╣Çα╕Üα╕▓α╕½α╕ºα╕▓α╕Ö: α╕äα╕ºα╕▓α╕íα╕úα╕╣α╣ëα╣Çα╕Üα╕╖α╣ëα╕¡α╕çα╕òα╣ëα╕Ö ΓÇö Test 1771606482844" ΓÇö 4-window sync test
+  Γ£ô  499 [Cloud-Dev] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:324:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ B ΓÇö Content Flow: Doctor ΓåÆ Admin ΓåÆ All Patients See ΓÇ║ B02 ΓÇö Γÿà Full flow with 4 browser windows: doctor + admin + 2 patients (37.0s)
+Γä╣∩╕Å  JS errors across 5 pages: 0
+  Γ£ô  500 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:1071:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ H ΓÇö Cross-Cutting UI ΓÇ║ H06 ΓÇö All patient portal pages load without JS errors (36.1s)
+  Γ£ô  502 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:1092:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ I ΓÇö Content Extended & Admin Management ΓÇ║ I01 ΓÇö Featured articles endpoint (95ms)
+  Γ£ô  503 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:1098:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ I ΓÇö Content Extended & Admin Management ΓÇ║ I02 ΓÇö Content share count (42ms)
+  Γ£ô  504 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:1105:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ I ΓÇö Content Extended & Admin Management ΓÇ║ I03 ΓÇö Content audit log (123ms)
+  Γ£ô  505 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:1112:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ I ΓÇö Content Extended & Admin Management ΓÇ║ I04 ΓÇö Content comments (42ms)
+  Γ£ô  506 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:1121:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ I ΓÇö Content Extended & Admin Management ΓÇ║ I05 ΓÇö Content search by category (69ms)
+  Γ£ô  507 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:1127:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ I ΓÇö Content Extended & Admin Management ΓÇ║ I06 ΓÇö Content search by tag (78ms)
+  Γ£ô  508 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:1133:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ I ΓÇö Content Extended & Admin Management ΓÇ║ I07 ΓÇö Admin delete consultant (42ms)
+  Γ£ô  509 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:1140:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ I ΓÇö Content Extended & Admin Management ΓÇ║ I08 ΓÇö Consultant duplicate email rejection (45ms)
+  Γ£ô  510 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:1149:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ I ΓÇö Content Extended & Admin Management ΓÇ║ I09 ΓÇö Admin user management (52ms)
+  Γ£ô  511 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:1155:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ I ΓÇö Content Extended & Admin Management ΓÇ║ I10 ΓÇö Admin stats endpoint (58ms)
+  Γ£ô  512 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:1161:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ I ΓÇö Content Extended & Admin Management ΓÇ║ I11 ΓÇö Google Maps nearby endpoint (86ms)
+  Γ£ô  513 [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts:1167:9 ΓÇ║ 05 ΓÇö Content Sync & Approval ΓÿàΓÿàΓÿà ΓÇ║ I ΓÇö Content Extended & Admin Management ΓÇ║ I12 ΓÇö Google Maps geocode endpoint (129ms)
+Γ£à CTM assessment created: 
+  Γ£ô  514 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:41:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ A ΓÇö CTM (Thai Traditional Medicine) ΓÇ║ A01 ΓÇö Doctor creates CTM assessment (α╕ÿα╕▓α╕òα╕╕α╣Çα╕êα╣ëα╕▓α╣Çα╕úα╕╖α╕¡α╕Ö) (42ms)
+Γ£à α╕ÿα╕▓α╕òα╕╕: α╣Çα╕¬α╕íα╕½α╕░
+  Γ£ô  515 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:53:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ A ΓÇö CTM (Thai Traditional Medicine) ΓÇ║ A02 ΓÇö CTM assessment includes α╕ÿα╕▓α╕òα╕╕ classification (1ms)
+Γä╣∩╕Å  α╕¬α╕íα╕╕α╕Åα╕Éα╕▓α╕Ö: α╕¡α╕╕α╕òα╕╕α╕¬α╕íα╕╕α╕Åα╕Éα╕▓α╕Ö ΓÇö α╣Çα╕üα╕┤α╕öα╕êα╕▓α╕üα╕üα╕▓α╕úα╣Çα╕¢α╕Ñα╕╡α╣êα╕óα╕Öα╣üα╕¢α╕Ñα╕çα╕éα╕¡α╕çα╕ñα╕öα╕╣α╕üα╕▓α╕Ñ
+  Γ£ô  516 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:60:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ A ΓÇö CTM (Thai Traditional Medicine) ΓÇ║ A03 ΓÇö CTM assessment includes α╕¬α╕íα╕╕α╕Åα╕Éα╕▓α╕Ö analysis (1ms)
+  Γ£ô  517 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:66:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ A ΓÇö CTM (Thai Traditional Medicine) ΓÇ║ A04 ΓÇö CTM herbal prescription (44ms)
+  Γ£ô  518 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:82:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ A ΓÇö CTM (Thai Traditional Medicine) ΓÇ║ A05 ΓÇö Read CTM assessment (44ms)
+  Γ£ô  519 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:88:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ A ΓÇö CTM (Thai Traditional Medicine) ΓÇ║ A06 ΓÇö List CTM assessments for patient (46ms)
+Γ£à CTM assessments for 3 patients
+  Γ£ô  520 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:96:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ A ΓÇö CTM (Thai Traditional Medicine) ΓÇ║ A07 ΓÇö CTM assessment for multiple patients (85ms)
+  Γ£ô  521 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:110:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ A ΓÇö CTM (Thai Traditional Medicine) ΓÇ║ A08 ΓÇö Patient cannot create CTM assessment (59ms)
+  Γ£ô  522 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:119:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ A ΓÇö CTM (Thai Traditional Medicine) ΓÇ║ A09 ΓÇö CTM with AI recommendation (43ms)
+  Γ£ô  523 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:129:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ A ΓÇö CTM (Thai Traditional Medicine) ΓÇ║ A10 ΓÇö CTM page loads in doctor portal (browser) (3.6s)
+Γ£à Geriatric screening created: 
+  Γ£ô  524 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:148:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ B ΓÇö Geriatric Screening (8 Tools) ΓÇ║ B01 ΓÇö Create geriatric screening (all 8 tools) (44ms)
+Γä╣∩╕Å  ADL score: 16/20
+  Γ£ô  525 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:160:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ B ΓÇö Geriatric Screening (8 Tools) ΓÇ║ B02 ΓÇö Screening includes ADL (Activities of Daily Living) (1ms)
+  Γ£ô  526 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:168:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ B ΓÇö Geriatric Screening (8 Tools) ΓÇ║ B03 ΓÇö Screening includes IADL (Instrumental ADL) (1ms)
+  Γ£ô  527 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:175:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ B ΓÇö Geriatric Screening (8 Tools) ΓÇ║ B04 ΓÇö Screening includes TUG (Timed Up and Go) (0ms)
+  Γ£ô  528 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:181:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ B ΓÇö Geriatric Screening (8 Tools) ΓÇ║ B05 ΓÇö Screening includes Mini-Cog (0ms)
+  Γ£ô  529 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:188:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ B ΓÇö Geriatric Screening (8 Tools) ΓÇ║ B06 ΓÇö Screening includes MNA (Mini Nutritional Assessment) (0ms)
+  Γ£ô  530 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:194:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ B ΓÇö Geriatric Screening (8 Tools) ΓÇ║ B07 ΓÇö Screening includes GDS-15 (Depression) (1ms)
+  Γ£ô  531 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:201:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ B ΓÇö Geriatric Screening (8 Tools) ΓÇ║ B08 ΓÇö Screening includes SARC-F (Sarcopenia) (1ms)
+  Γ£ô  532 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:208:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ B ΓÇö Geriatric Screening (8 Tools) ΓÇ║ B09 ΓÇö Screening includes Braden Scale (Pressure Injury) (1ms)
+  Γ£ô  533 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:215:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ B ΓÇö Geriatric Screening (8 Tools) ΓÇ║ B10 ΓÇö List geriatric screenings for patient (42ms)
+Γ£à SOS alert created: SOS-mlv4rz2p-xj8zbx0y
+  Γ£ô  534 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:230:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ C ΓÇö SOS Emergency Alert ΓÇ║ C01 ΓÇö Patient triggers SOS alert (56ms)
+  Γ£ô  535 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:239:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ C ΓÇö SOS Emergency Alert ΓÇ║ C02 ΓÇö SOS alert includes GPS location (1ms)
+  Γ£ô  536 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:246:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ C ΓÇö SOS Emergency Alert ΓÇ║ C03 ΓÇö Doctor receives SOS notification (43ms)
+  Γ£ô  537 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:252:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ C ΓÇö SOS Emergency Alert ΓÇ║ C04 ΓÇö Doctor acknowledges SOS (43ms)
+  Γ£ô  538 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:261:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ C ΓÇö SOS Emergency Alert ΓÇ║ C05 ΓÇö SOS alert cancel (93ms)
+  Γ£ô  539 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:273:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ C ΓÇö SOS Emergency Alert ΓÇ║ C06 ΓÇö SOS sends to emergency contacts (62ms)
+  Γ£ô  540 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:285:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ C ΓÇö SOS Emergency Alert ΓÇ║ C07 ΓÇö SOS history list (59ms)
+  Γ£ô  541 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:291:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ C ΓÇö SOS Emergency Alert ΓÇ║ C08 ΓÇö SOS from multiple patients simultaneously (63ms)
+Γ£à Follow-up created: 
+  Γ£ô  542 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:307:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ D ΓÇö Follow-Up Tracking ΓÇ║ D01 ΓÇö Doctor creates follow-up schedule (42ms)
+  Γ£ô  543 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:319:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ D ΓÇö Follow-Up Tracking ΓÇ║ D02 ΓÇö Follow-up includes scheduled activities (0ms)
+  Γ£ô  544 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:325:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ D ΓÇö Follow-Up Tracking ΓÇ║ D03 ΓÇö Patient views follow-up schedule (64ms)
+  Γ£ô  545 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:331:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ D ΓÇö Follow-Up Tracking ΓÇ║ D04 ΓÇö Patient completes follow-up task (43ms)
+  Γ£ô  546 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:341:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ D ΓÇö Follow-Up Tracking ΓÇ║ D05 ΓÇö Doctor monitors follow-up compliance (46ms)
+  Γ£ô  547 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:349:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ D ΓÇö Follow-Up Tracking ΓÇ║ D06 ΓÇö Follow-up reminder notification (42ms)
+  Γ£ô  548 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:355:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ D ΓÇö Follow-Up Tracking ΓÇ║ D07 ΓÇö Follow-up for all 3 patients (44ms)
+  Γ£ô  549 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:368:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ D ΓÇö Follow-Up Tracking ΓÇ║ D08 ΓÇö Follow-up completion rate report (40ms)
+  Γ£ô  550 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:379:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ E ΓÇö Device Tokens & Biometric Auth ΓÇ║ E01 ΓÇö Register device token (push notifications) (64ms)
+  Γ£ô  551 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:389:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ E ΓÇö Device Tokens & Biometric Auth ΓÇ║ E02 ΓÇö List device tokens for user (56ms)
+  Γ£ô  552 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:395:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ E ΓÇö Device Tokens & Biometric Auth ΓÇ║ E03 ΓÇö Register biometric credential (46ms)
+  Γ£ô  553 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:405:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ E ΓÇö Device Tokens & Biometric Auth ΓÇ║ E04 ΓÇö Verify biometric credential (45ms)
+  Γ£ô  554 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:414:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ E ΓÇö Device Tokens & Biometric Auth ΓÇ║ E05 ΓÇö Biometric status check (45ms)
+  Γ£ô  555 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:420:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ E ΓÇö Device Tokens & Biometric Auth ΓÇ║ E06 ΓÇö Multiple device tokens per user (83ms)
+  Γ£ô  556 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:434:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ E ΓÇö Device Tokens & Biometric Auth ΓÇ║ E07 ΓÇö Delete device token (39ms)
+  Γ£ô  557 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:440:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ E ΓÇö Device Tokens & Biometric Auth ΓÇ║ E08 ΓÇö Device token for all 3 patients (52ms)
+  Γ£ô  558 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:458:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ F ΓÇö Offline Sync & Settings ΓÇ║ F01 ΓÇö Push offline data (46ms)
+  Γ£ô  559 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:471:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ F ΓÇö Offline Sync & Settings ΓÇ║ F02 ΓÇö Pull sync data (44ms)
+  Γ£ô  560 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:480:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ F ΓÇö Offline Sync & Settings ΓÇ║ F03 ΓÇö Sync conflict detection (50ms)
+  Γ£ô  561 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:486:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ F ΓÇö Offline Sync & Settings ΓÇ║ F04 ΓÇö Sync status endpoint (53ms)
+  Γ£ô  562 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:492:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ F ΓÇö Offline Sync & Settings ΓÇ║ F05 ΓÇö Get user settings (52ms)
+  Γ£ô  563 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:498:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ F ΓÇö Offline Sync & Settings ΓÇ║ F06 ΓÇö Update user settings (63ms)
+  Γ£ô  564 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:509:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ F ΓÇö Offline Sync & Settings ΓÇ║ F07 ΓÇö Role-specific settings (39ms)
+Γ£à Rejected content not visible to patients
+  Γ£ô  501 [Cloud-Dev] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:368:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ B ΓÇö Content Flow: Doctor ΓåÆ Admin ΓåÆ All Patients See ΓÇ║ B03 ΓÇö Rejected content: patients should NOT see after refresh (33.8s)
+Γ£à 0 articles batch-approved
+  Γ£ô  566 [Cloud-Dev] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:402:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ B ΓÇö Content Flow: Doctor ΓåÆ Admin ΓåÆ All Patients See ΓÇ║ B04 ΓÇö Multiple content items created and approved in batch (51ms)
+  Γ£ô  565 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:515:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ F ΓÇö Offline Sync & Settings ΓÇ║ F08 ΓÇö Settings persist across sessions (browser) (32.7s)
+  Γ£ô  568 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:530:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ G ΓÇö Nursing Dashboard & Predictive Analytics ΓÇ║ G01 ΓÇö Nursing dashboard endpoint (42ms)
+  Γ£ô  569 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:536:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ G ΓÇö Nursing Dashboard & Predictive Analytics ΓÇ║ G02 ΓÇö Nursing round data entry (43ms)
+  Γ£ô  570 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:550:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ G ΓÇö Nursing Dashboard & Predictive Analytics ΓÇ║ G03 ΓÇö Nursing task management (45ms)
+  Γ£ô  571 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:556:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ G ΓÇö Nursing Dashboard & Predictive Analytics ΓÇ║ G04 ΓÇö Predictive analytics ΓÇö readmission risk (43ms)
+  Γ£ô  572 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:566:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ G ΓÇö Nursing Dashboard & Predictive Analytics ΓÇ║ G05 ΓÇö Predictive analytics ΓÇö fall risk (43ms)
+  Γ£ô  573 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:576:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ G ΓÇö Nursing Dashboard & Predictive Analytics ΓÇ║ G06 ΓÇö Predictive analytics ΓÇö disease progression (43ms)
+  Γ£ô  574 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:587:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ G ΓÇö Nursing Dashboard & Predictive Analytics ΓÇ║ G07 ΓÇö Nursing dashboard page (browser) (3.7s)
+  Γ£ô  575 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:599:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ G ΓÇö Nursing Dashboard & Predictive Analytics ΓÇ║ G08 ΓÇö Multiple predictive queries concurrently (44ms)
+  Γ£ô  576 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:617:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ H ΓÇö Phase 2 Extended Features & Validation ΓÇ║ H01 ΓÇö Care team member update (39ms)
+  Γ£ô  577 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:626:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ H ΓÇö Phase 2 Extended Features & Validation ΓÇ║ H02 ΓÇö Care team member delete (42ms)
+  Γ£ô  578 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:633:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ H ΓÇö Phase 2 Extended Features & Validation ΓÇ║ H03 ΓÇö Health screening history (45ms)
+  Γ£ô  579 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:639:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ H ΓÇö Phase 2 Extended Features & Validation ΓÇ║ H04 ΓÇö Health screening detail (45ms)
+  Γ£ô  580 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:646:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ H ΓÇö Phase 2 Extended Features & Validation ΓÇ║ H05 ΓÇö SOS alert update (41ms)
+  Γ£ô  581 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:655:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ H ΓÇö Phase 2 Extended Features & Validation ΓÇ║ H06 ΓÇö Follow-up reminder list (44ms)
+  Γ£ô  582 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:661:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ H ΓÇö Phase 2 Extended Features & Validation ΓÇ║ H07 ΓÇö Follow-up complete (41ms)
+  Γ£ô  583 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:668:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ H ΓÇö Phase 2 Extended Features & Validation ΓÇ║ H08 ΓÇö HIS integration patient lookup (46ms)
+  Γ£ô  584 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:674:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ H ΓÇö Phase 2 Extended Features & Validation ΓÇ║ H09 ΓÇö HIS integration lab results (45ms)
+  Γ£ô  585 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:680:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ H ΓÇö Phase 2 Extended Features & Validation ΓÇ║ H10 ΓÇö Predictive analytics with invalid model (43ms)
+  Γ£ô  586 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:689:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ H ΓÇö Phase 2 Extended Features & Validation ΓÇ║ H11 ΓÇö Smart scheduling suggestion (44ms)
+  Γ£ô  587 [Cloud-Dev] ΓÇ║ specs\08-phase2-ai-his.spec.ts:698:9 ΓÇ║ 08 ΓÇö Phase 2: AI-Based HIS Features ΓÇ║ H ΓÇö Phase 2 Extended Features & Validation ΓÇ║ H12 ΓÇö Nursing workflow dashboard (43ms)
+Γ£à Content appeared during active browsing
+  Γ£ô  567 [Cloud-Dev] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:435:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ B ΓÇö Content Flow: Doctor ΓåÆ Admin ΓåÆ All Patients See ΓÇ║ B05 ΓÇö Doctor creates content while patient is actively browsing library (36.2s)
+  Γ£ô  588 [Cloud-Dev] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:457:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ B ΓÇö Content Flow: Doctor ΓåÆ Admin ΓåÆ All Patients See ΓÇ║ B06 ΓÇö Content tags synced across portals (50ms)
+Γä╣∩╕Å  5-user concurrent content fetch: 72ms
+  Γ£ô  589 [Cloud-Dev] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:470:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ B ΓÇö Content Flow: Doctor ΓåÆ Admin ΓåÆ All Patients See ΓÇ║ B07 ΓÇö 5 users polling content endpoint concurrently (75ms)
+  Γ£ô  590 [Cloud-Dev] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:487:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ B ΓÇö Content Flow: Doctor ΓåÆ Admin ΓåÆ All Patients See ΓÇ║ B08 ΓÇö Content visible across different patient accounts (105ms)
+Γ£à PHR update visible to doctor
+  Γ£ô  591 [Cloud-Dev] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:517:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ C ΓÇö Health Records Cross-Portal ΓÇ║ C01 ΓÇö Patient updates PHR ΓåÆ Doctor sees in record viewer (92ms)
+  Γ£ô  592 [Cloud-Dev] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:538:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ C ΓÇö Health Records Cross-Portal ΓÇ║ C02 ΓÇö Doctor creates EMR ΓåÆ Patient sees in health timeline (125ms)
+Γ£à Doctor + Patient view records simultaneously
+  Γ£ô  593 [Cloud-Dev] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:558:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ C ΓÇö Health Records Cross-Portal ΓÇ║ C03 ΓÇö Doctor and patient both view same record simultaneously (32.9s)
+  Γ£ô  594 [Cloud-Dev] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:586:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ C ΓÇö Health Records Cross-Portal ΓÇ║ C04 ΓÇö 3 patients access their PHR simultaneously (54ms)
+ΓÜá∩╕Å  Returned 200 ΓÇö verify data isolation in response
+  Γ£ô  595 [Cloud-Dev] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:595:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ C ΓÇö Health Records Cross-Portal ΓÇ║ C05 ΓÇö Patient data isolation: patient1 cannot see patient2 records (50ms)
+  Γ£ô  596 [Cloud-Dev] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:611:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ C ΓÇö Health Records Cross-Portal ΓÇ║ C06 ΓÇö Prescription created by doctor ΓåÆ patient sees in records (86ms)
+  Γ£ô  597 [Cloud-Dev] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:628:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ C ΓÇö Health Records Cross-Portal ΓÇ║ C07 ΓÇö Vitals recorded ΓåÆ appears in health timeline (101ms)
+  Γ£ô  598 [Cloud-Dev] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:643:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ C ΓÇö Health Records Cross-Portal ΓÇ║ C08 ΓÇö Living will access: patient shares ΓåÆ doctor views (85ms)
+  Γ£ô  599 [Cloud-Dev] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:665:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ D ΓÇö Meeting Multi-User ΓÇ║ D01 ΓÇö Meeting server health check (131ms)
+  Γ£ô  600 [Cloud-Dev] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:671:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ D ΓÇö Meeting Multi-User ΓÇ║ D02 ΓÇö Doctor creates meeting ΓåÆ Patient sees meeting link (49ms)
+Γ£à Doctor + Patient meeting pages open
+  Γ£ô  601 [Cloud-Dev] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:689:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ D ΓÇö Meeting Multi-User ΓÇ║ D03 ΓÇö Doctor and patient join meeting simultaneously (browser) (36.3s)
+  Γ£ô  602 [Cloud-Dev] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:725:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ D ΓÇö Meeting Multi-User ΓÇ║ D04 ΓÇö Meeting config endpoint (48ms)
+  Γ£ô  603 [Cloud-Dev] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:731:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ D ΓÇö Meeting Multi-User ΓÇ║ D05 ΓÇö Meeting list for doctor (77ms)
+  Γ£ô  604 [Cloud-Dev] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:737:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ D ΓÇö Meeting Multi-User ΓÇ║ D06 ΓÇö Meeting transcription start (41ms)
+  Γ£ô  605 [Cloud-Dev] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:747:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ D ΓÇö Meeting Multi-User ΓÇ║ D07 ΓÇö Guest invite to meeting (43ms)
+  Γ£ô  606 [Cloud-Dev] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:758:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ D ΓÇö Meeting Multi-User ΓÇ║ D08 ΓÇö Multiple meetings can exist simultaneously (100ms)
+  Γ£ô  607 [Cloud-Dev] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:777:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ E ΓÇö Queue & Dashboard ΓÇ║ E01 ΓÇö Doctor dashboard loads (4.6s)
+  Γ£ô  608 [Cloud-Dev] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:787:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ E ΓÇö Queue & Dashboard ΓÇ║ E02 ΓÇö Patient dashboard loads (33.9s)
+  Γ£ô  609 [Cloud-Dev] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:797:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ E ΓÇö Queue & Dashboard ΓÇ║ E03 ΓÇö Doctor queue management (47ms)
+  Γ£ô  610 [Cloud-Dev] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:803:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ E ΓÇö Queue & Dashboard ΓÇ║ E04 ΓÇö Queue updates visible across portals (86ms)
+  Γ£ô  611 [Cloud-Dev] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:816:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ E ΓÇö Queue & Dashboard ΓÇ║ E05 ΓÇö Dashboard stats consistent across views (71ms)
+Γ£à 3 dashboards open simultaneously
+  Γ£ô  612 [Cloud-Dev] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:828:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ E ΓÇö Queue & Dashboard ΓÇ║ E06 ΓÇö Doctor + Admin + Patient dashboards open simultaneously (33.1s)
+  Γ£ô  613 [Cloud-Dev] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:849:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ E ΓÇö Queue & Dashboard ΓÇ║ E07 ΓÇö Doctor schedule page (3.7s)
+  Γ£ô  614 [Cloud-Dev] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:861:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ E ΓÇö Queue & Dashboard ΓÇ║ E08 ΓÇö Notification badge updates across portals (59ms)
+Γä╣∩╕Å  10 concurrent mixed calls: 350ms
+  Γ£ô  615 [Cloud-Dev] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:877:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ F ΓÇö Stress & Edge Cases ΓÇ║ F01 ΓÇö 10 concurrent API calls mixed endpoints (354ms)
+  Γ£ô  616 [Cloud-Dev] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:896:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ F ΓÇö Stress & Edge Cases ΓÇ║ F02 ΓÇö Rapid page refreshes (5x in sequence) (33.7s)
+  Γ£ô  617 [Cloud-Dev] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:912:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ F ΓÇö Stress & Edge Cases ΓÇ║ F03 ΓÇö Token expiry handling across portals (48ms)
+  Γ£ô  618 [Cloud-Dev] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:924:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ F ΓÇö Stress & Edge Cases ΓÇ║ F04 ΓÇö Cross-portal token reuse prevented (44ms)
+  Γ£ô  619 [Cloud-Dev] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:931:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ F ΓÇö Stress & Edge Cases ΓÇ║ F05 ΓÇö Large payload handling (92ms)
+Γä╣∩╕Å  appointments: 81ms
+Γä╣∩╕Å  patients: 46ms
+Γä╣∩╕Å  doctors: 44ms
+Γä╣∩╕Å  content: 46ms
+Γä╣∩╕Å  notifications: 46ms
+  Γ£ô  620 [Cloud-Dev] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:942:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ F ΓÇö Stress & Edge Cases ΓÇ║ F06 ΓÇö API response time benchmark (all main endpoints) (265ms)
+Γä╣∩╕Å  Still logged in after navigation: true
+  Γ£ô  621 [Cloud-Dev] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:961:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ F ΓÇö Stress & Edge Cases ΓÇ║ F07 ΓÇö Session persistence after navigation (35.0s)
+Γä╣∩╕Å  20 concurrent calls: 984ms, failures: 0
+  Γ£ô  622 [Cloud-Dev] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:980:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ F ΓÇö Stress & Edge Cases ΓÇ║ F08 ΓÇö All portals accessible concurrently under load (989ms)
+  Γ£ô  623 [Cloud-Dev] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:1004:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ G ΓÇö Queue Management & Cross-Portal Notifications ΓÇ║ G01 ΓÇö Doctor queue list (49ms)
+  Γ£ô  624 [Cloud-Dev] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:1010:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ G ΓÇö Queue Management & Cross-Portal Notifications ΓÇ║ G02 ΓÇö Doctor call next in queue (45ms)
+  Γ£ô  625 [Cloud-Dev] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:1016:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ G ΓÇö Queue Management & Cross-Portal Notifications ΓÇ║ G03 ΓÇö Doctor skip queue patient (45ms)
+Γä╣∩╕Å  Patient1 notifications: 0
+  Γ£ô  626 [Cloud-Dev] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:1022:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ G ΓÇö Queue Management & Cross-Portal Notifications ΓÇ║ G04 ΓÇö Patient notification after EMR signature (58ms)
+  Γ£ô  627 [Cloud-Dev] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:1033:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ G ΓÇö Queue Management & Cross-Portal Notifications ΓÇ║ G05 ΓÇö Doctor notification list (55ms)
+  Γ£ô  628 [Cloud-Dev] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:1039:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ G ΓÇö Queue Management & Cross-Portal Notifications ΓÇ║ G06 ΓÇö Mark all notifications read (42ms)
+  Γ£ô  629 [Cloud-Dev] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:1045:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ G ΓÇö Queue Management & Cross-Portal Notifications ΓÇ║ G07 ΓÇö User preferences persistence after concurrent updates (119ms)
+Γä╣∩╕Å  Notification overlap check: 0 shared IDs
+  Γ£ô  630 [Cloud-Dev] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:1057:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ G ΓÇö Queue Management & Cross-Portal Notifications ΓÇ║ G08 ΓÇö Doctor and patient notifications do not leak across roles (53ms)
+  Γ£ô  631 [Cloud-Dev] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:1077:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ G ΓÇö Queue Management & Cross-Portal Notifications ΓÇ║ G09 ΓÇö Concurrent profile updates from different patients (51ms)
+  Γ£ô  632 [Cloud-Dev] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:1086:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ G ΓÇö Queue Management & Cross-Portal Notifications ΓÇ║ G10 ΓÇö Cross-portal data consistency after sync (132ms)
+
+
+  1) [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:564:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ F ΓÇö Multi-Browser Meeting Simulation ΓÇ║ F02 ΓÇö 3-way meeting simulation (doctor + patient + admin) 
+
+    Error: page.goto: net::ERR_CONNECTION_CLOSED at https://izara-doctor-portal-dev-testing-hvht4obouq-as.a.run.app/appointments
+    Call log:
+    [2m  - navigating to "https://izara-doctor-portal-dev-testing-hvht4obouq-as.a.run.app/appointments", waiting until "load"[22m
+
+
+      577 |
+      578 |       await Promise.all([
+    > 579 |         pages[0].goto(`${DOCTOR_URL}/appointments`, { timeout: TIMEOUTS.navigation }),
+          |                  ^
+      580 |         pages[1].goto(`${PATIENT_URL}/appointments`, { timeout: TIMEOUTS.navigation }),
+      581 |         pages[2].goto(`${DOCTOR_URL}/appointments`, { timeout: TIMEOUTS.navigation }),
+      582 |       ]);
+        at C:\Users\chira\Documents\Isara-telemed\Isara-Anywhere\tests\e2e\specs\04-video-meeting-transcription.spec.ts:579:18
+
+    attachment #1: screenshot (image/png) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    test-results\04-video-meeting-transcrip-a6d82-ation-doctor-patient-admin--Cloud-Dev\test-failed-1.png
+    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+    attachment #2: screenshot (image/png) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    test-results\04-video-meeting-transcrip-a6d82-ation-doctor-patient-admin--Cloud-Dev\test-failed-2.png
+    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+    attachment #3: screenshot (image/png) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    test-results\04-video-meeting-transcrip-a6d82-ation-doctor-patient-admin--Cloud-Dev\test-failed-3.png
+    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+  Slow test file: [Cloud-Dev] ΓÇ║ specs\07-multi-user-concurrent.spec.ts (7.5m)
+  Slow test file: [Cloud-Dev] ΓÇ║ specs\05-content-sync-approval.spec.ts (7.5m)
+  Consider running tests from slow files in parallel. See: https://playwright.dev/docs/test-parallel
+  1 failed
+    [Cloud-Dev] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:564:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ F ΓÇö Multi-Browser Meeting Simulation ΓÇ║ F02 ΓÇö 3-way meeting simulation (doctor + patient + admin) 
+  631 passed (16.3m)
+
+To open last HTML report run:
+[36m[39m
+[36m  npx playwright show-report[39m
+[36m[39m

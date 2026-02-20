@@ -54,10 +54,22 @@ erDiagram
     %% AI & ANALYTICS
     users ||--o{ ai_chat_history : has
     patient_profiles ||--o{ symptom_assessments : takes
+    users ||--o{ ai_chat_memory : remembers
 
     %% CONTENT MANAGEMENT
     articles ||--o{ article_categories : belongs_to
     consultants ||--o{ consultant_specialties : has
+
+    %% PHASE 2: MOBILE & MULTI-API
+    users ||--o{ device_tokens : registers
+    users ||--o{ biometric_credentials : enrolls
+    users ||--o{ refresh_tokens : holds
+    users ||--o| push_subscriptions : configures
+    users ||--o{ notification_preferences : sets
+    users ||--o{ user_api_connections : connects
+    user_api_connections ||--o{ api_connection_audit : audits
+    users ||--o{ sync_queue : queues
+    users ||--o| user_settings : configures
 
     %% SCHEMA SUMMARY
     users {
@@ -112,4 +124,49 @@ erDiagram
         uuid prescribed_by FK
         prescription_status status
         timestamp created_at
+    }
+
+    device_tokens {
+        varchar id PK
+        varchar user_id FK
+        text device_token
+        varchar platform
+        varchar device_model
+        boolean is_active
+    }
+
+    biometric_credentials {
+        varchar id PK
+        varchar user_id FK
+        varchar credential_type
+        text public_key
+        varchar device_id
+        boolean is_active
+    }
+
+    sync_queue {
+        varchar id PK
+        varchar user_id FK
+        varchar entity_type
+        varchar operation
+        jsonb payload
+        varchar sync_status
+    }
+
+    user_api_connections {
+        varchar id PK
+        varchar user_id FK
+        varchar service_type
+        varchar connection_status
+        timestamp last_sync_at
+        jsonb metadata
+    }
+
+    user_settings {
+        varchar user_id PK
+        varchar theme
+        varchar language
+        boolean biometric_enabled
+        boolean auto_sync
+        varchar last_active_role
     }

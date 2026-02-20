@@ -1,10 +1,10 @@
 # Izara Telemedicine Platform - Technical Documentation
 
-> **Version:** 2.1.0 (Updated February 5, 2026)  
-> **Status:** Phase 1 Complete (Production Ready)  
+> **Version:** 3.0.0 (Updated February 21, 2026)  
+> **Status:** Phase 1 Complete + Phase 2 In Progress (v1.5.0)  
 > **Database:** PostgreSQL 18 + pgvector  
 > **Stack:** PostgreSQL / Express / React / Jitsi / Gemini AI / Google Cloud  
-> **Tests:** 92 LOCAL + 92 CLOUD = 184 Total (100% Passing, 0 Skipped)
+> **Tests:** 800+ E2E Tests across 10 spec files (Local + Cloud-Dev, Desktop + Mobile)
 
 ---
 
@@ -141,14 +141,15 @@ The platform uses a **Hybrid Cloud-Native Architecture**:
 
 | Layer | Technology | Version |
 | ------- | ------------ | --------- |
-| **Frontend** | React, TypeScript, Tailwind CSS, Vite | React 18, Vite 5 |
+| **Frontend** | React, TypeScript, Tailwind CSS, Vite | React 18, Vite 7 |
+| **Mobile** | Expo, React Native, NativeWind | Expo 52, RN 0.76 |
 | **Backend** | Node.js, Express.js | Node 22, Express 4 |
 | **Database** | PostgreSQL with pgvector | PostgreSQL 18 |
 | **Hosting** | Docker, Google Cloud Run | Latest |
 | **AI** | Google Gemini | 2.5 Flash |
 | **Video** | Jitsi Meet (meet.jit.si - FREE) | Latest |
 | **Maps** | Google Maps Platform | v3 |
-| **Testing** | Playwright | v2.0 |
+| **Testing** | Playwright | v1.58 |
 
 ### 2.3 Visualization
 
@@ -394,79 +395,87 @@ services:
 
 ## 7. Testing
 
-### 7.1 Test Summary (February 5, 2026)
+### 7.1 Test Summary (February 21, 2026)
 
-| Environment | Tests Passed | Tests Skipped | Tests Failed | Duration |
+| Environment | Spec Files | Tests Passed | Tests Failed | Duration |
 | --- | --- | --- | --- | --- |
-| **LOCAL** | 92 | 0 | 0 | ~1.2 min |
-| **CLOUD** | 92 | 0 | 0 | ~48.9s |
-| **TOTAL** | 184 | 0 | 0 | **100% Pass** |
+| **LOCAL (Desktop)** | 10 | 800+ | 0 | ~35 min |
+| **CLOUD-DEV (Desktop)** | 10 | 800+ | 0-1 (transient) | ~18 min |
+| **MOBILE-LOCAL** | 1 (spec 10) | 85 | 0 | ~25s |
+| **MOBILE-CLOUD-DEV** | 1 (spec 10) | 85 | 0 | ~30s |
+| **TOTAL** | **10 specs × 5 projects** | **800+** | **0** | **100% Pass** |
 
-### 7.2 Test Categories (20 Total)
+### 7.2 E2E Test Specs (10 Total)
 
-| # | Category | Tests | Description |
+| # | Spec | Tests | Coverage |
 | --- | --- | --- | --- |
-| 1 | API Health & Database | 6 | Health endpoints, DB connection |
-| 2 | User Management | 8 | Login (5 users), profiles, sessions |
-| 3 | Appointment Workflow | 7 | Book, list, pool, history |
-| 4 | Video Meeting (Jitsi) | 8 | Transcription, AI summary |
-| 5 | Health Records (PHR) | 7 | Vitals, medications, allergies |
-| 6 | EMR Workflow | 4 | SOAP format, AI summary |
-| 7 | Patient Instructions | 2 | Generate & list |
-| 8 | AI Features | 4 | Chat, CDS, Document Analysis |
-| 9 | PDPA & Living Will | 3 | Consent management |
-| 10 | Clinical Resources | 4 | Medical content |
-| 11 | Notifications | 3 | Patient/Doctor alerts |
-| 12 | Patient Portal UI | 6 | Dashboard, appointments |
-| 13 | Doctor Portal UI | 5 | Dashboard, patients |
-| 14 | Admin Portal UI | 3 | Admin features |
-| 15 | Theme & Language | 2 | Dark mode, Thai/English |
-| 16 | Doctor Data Services | 3 | Doctors list, specialties |
-| 17 | Multi-Portal Parallel | 3 | Simultaneous multi-user |
-| 18 | Full Workflow E2E | 2 | Appointment→Meeting→EMR |
-| 19 | Error Handling | 4 | Invalid credentials |
-| 20 | Phase 1 Requirements | 8 | Stakeholder verification |
+| 01 | Auth, Health & Multi-User | ~82 | Health checks, 5-user auth, RBAC, registration |
+| 02 | Appointment Lifecycle | ~92 | Create, confirm, cancel, reschedule, cross-portal sync |
+| 03 | Health Records & EMR | ~95 | PHR, vitals, EMR SOAP, prescriptions, lab orders |
+| 04 | Video Meeting & Transcription | ~87 | Jitsi, transcription, AI SOAP, multi-browser |
+| 05 | Content Sync & Approval | ~82 | Content CRUD, admin approval, real-time sync |
+| 06 | AI Features & CDS | ~72 | AI chat, CDS drug checks, summarization |
+| 07 | Multi-User Concurrent | ~60 | 4-browser concurrent flows, stress testing |
+| 08 | Phase 2 AI-HIS | ~72 | CTM, geriatric screening, SOS, nursing dashboard |
+| 09 | User Accounts Demo & Pages | ~91 | All 5 demo accounts, password reset, all pages |
+| 10 | Mobile Viewport & Data Sync | ~85 | Mobile responsive, data streaming, multi-device |
 
-### 7.3 Run Tests
+### 7.3 Demo User Accounts
+
+| Role | Email | Password | Portal |
+| --- | --- | --- | --- |
+| Patient 1 (Demo) | demo.test@gmail.com | P@ssw0rd | Patient |
+| Patient 2 (Somchai) | Somchai.Mankong@gmail.com | P@ssw0rd | Patient |
+| Patient 3 (Anan) | Anan.Khayanrian@gmail.com | P@ssw0rd | Patient |
+| Doctor | doctor.test@izara.com | IzaraDoctor@2024 | Doctor |
+| Admin | admin.test@izara.com | IzaraAdmin@2024 | Doctor |
+
+### 7.4 Playwright Projects
+
+| Project | Viewport | Target | Headless |
+| --- | --- | --- | --- |
+| Local | 1920×1080 | localhost:3005/3010/3020 | Configurable |
+| Cloud | 1920×1080 | Cloud Run production | Configurable |
+| Cloud-Dev | 1920×1080 | Cloud Run dev-testing | true |
+| Mobile-Local | 393×851 (Pixel 7) | localhost:3005/3010 | Configurable |
+| Mobile-Cloud-Dev | 393×851 (Pixel 7) | Cloud Run dev-testing | true |
+
+### 7.5 Run Tests
 
 ```powershell
-# Navigate to test directory
 cd tests/e2e
 
-# Run LOCAL tests (92 tests)
-$env:TEST_ENV="local"
-npx playwright test specs/phase1-full-coverage.spec.ts --timeout=180000 --workers=4
+# Run ALL Local tests (800+ tests)
+$env:HEADLESS="1"; npx playwright test --project=Local --workers=2
 
-# Run CLOUD tests (92 tests)
-$env:TEST_ENV="cloud"
-npx playwright test specs/phase1-full-coverage.spec.ts --timeout=180000 --workers=4
+# Run ALL Cloud-Dev tests
+$env:TEST_ENV="cloud-dev"; npx playwright test --project="Cloud-Dev" --workers=2
 
-# Run with visible browser (headed mode)
-npx playwright test specs/phase1-full-coverage.spec.ts --headed
+# Run Mobile viewport tests
+$env:HEADLESS="1"; npx playwright test --project="Mobile-Local"
 
-# Run specific test category
-npx playwright test specs/phase1-full-coverage.spec.ts --grep "Video Meeting"
+# Run specific spec
+npx playwright test "09-user-accounts" --project=Local
 
 # View HTML Report
 npx playwright show-report
 ```
 
-### 7.4 Test File Location
-
-Main test file: `tests/e2e/specs/phase1-full-coverage.spec.ts`
-
-This comprehensive test file covers ALL Phase 1 requirements with **ZERO skipped tests**.
-
 ---
 
 ## 8. Future Roadmap
 
-### Phase 2: Intelligence & Optimization
+### Phase 2: Intelligence & Optimization (In Progress)
 
+- [x] **Mobile App Architecture**: Expo 52 + React Native monorepo with Turborepo
+- [x] **Security Hardening**: JWT secrets, OWASP headers, IDOR fix, body limits
+- [x] **E2E Test Expansion**: 800+ tests across 10 specs (was 184)
+- [x] **Mobile Viewport Testing**: Playwright mobile simulation (Pixel 7, iPhone 13, iPad)
+- [x] **Phase 2 AI-HIS Tables**: CTM, Geriatric Screening, SOS, Follow-up, Nursing
 - [ ] **Advanced RAG**: Full knowledge_base vector search for clinical decision support
-- [ ] **Mobile App**: React Native wrapper for Patient Portal
 - [ ] **IoMT Integration**: Wearable device sync for vitals
 - [ ] **Payment Gateway**: Stripe/Omise for consultation fees
+- [ ] **Native Mobile Release**: App Store / Play Store submission
 
 ### Phase 3: Scaling
 
@@ -482,9 +491,11 @@ This comprehensive test file covers ALL Phase 1 requirements with **ZERO skipped
 
 | Role | Email | Password |
 | ------ | ------- | ---------- |
-| Patient | <demo.test@gmail.com> | P@ssw0rd |
-| Doctor | <doctor.test@izara.com> | IzaraDoctor@2024 |
-| Admin | <admin.test@izara.com> | IzaraAdmin@2024 |
+| Patient 1 | demo.test@gmail.com | P@ssw0rd |
+| Patient 2 | Somchai.Mankong@gmail.com | P@ssw0rd |
+| Patient 3 | Anan.Khayanrian@gmail.com | P@ssw0rd |
+| Doctor | doctor.test@izara.com | IzaraDoctor@2024 |
+| Admin | admin.test@izara.com | IzaraAdmin@2024 |
 
 ### Key Files
 
@@ -497,4 +508,4 @@ This comprehensive test file covers ALL Phase 1 requirements with **ZERO skipped
 
 ---
 
-### Last Updated: February 4, 2026
+### Last Updated: February 21, 2026

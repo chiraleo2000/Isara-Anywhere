@@ -20,6 +20,12 @@ flowchart TB
         A["🔧 Admins<br/>ผู้ดูแล"]
     end
 
+    subgraph MOBILE["📱 MOBILE APP (Expo 52 + React Native)"]
+        direction LR
+        M_PAT["🩺 Patient App<br/>Health, AI Chat, Appointments"]
+        M_DOC["👨‍⚕️ Doctor App<br/>Queue, Patients, Schedule"]
+    end
+
     subgraph CONTAINERS["🐳 DOCKER CONTAINERS (Local/Cloud Run)"]
         direction TB
         subgraph PP_CONT["🏥 Patient Portal (Port 3005)"]
@@ -55,8 +61,16 @@ flowchart TB
 
     %% User connections
     P --> PP_FE
+    P --> M_PAT
     D --> DP_FE
+    D --> M_DOC
     A --> DP_FE
+
+    %% Mobile to Backend
+    M_PAT --> PP_BE
+    M_PAT -.-> MS
+    M_DOC --> DP_BE
+    M_DOC -.-> MS
 
     %% Frontend to Backend
     PP_FE --> PP_BE
@@ -89,6 +103,7 @@ flowchart TB
 
     classDef userStyle fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px,color:#1B5E20
     classDef containerStyle fill:#E3F2FD,stroke:#2196F3,stroke-width:2px,color:#0D47A1
+    classDef mobileStyle fill:#FFF3E0,stroke:#FF9800,stroke-width:2px,color:#E65100
     classDef dbStyle fill:#F3E5F5,stroke:#9C27B0,stroke-width:2px,color:#4A148C
     classDef storageStyle fill:#ECEFF1,stroke:#607D8B,stroke-width:2px,color:#37474F
     classDef aiStyle fill:#FFF8E1,stroke:#FFC107,stroke-width:2px,color:#F57F17
@@ -96,6 +111,7 @@ flowchart TB
 
     class P,D,A userStyle
     class PP_FE,PP_BE,DP_FE,DP_BE,MS containerStyle
+    class M_PAT,M_DOC mobileStyle
     class POSTGRES dbStyle
     class GCS storageStyle
     class GEMINI,STT aiStyle

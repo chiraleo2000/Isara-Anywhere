@@ -1,13 +1,14 @@
 # 🏥 Izara Telemedicine Platform
 
-![Version](https://img.shields.io/badge/version-1.4.8--dev-blue.svg)
+![Version](https://img.shields.io/badge/version-1.5.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
-![Platform](https://img.shields.io/badge/platform-web-lightgrey.svg)
+![Platform](https://img.shields.io/badge/platform-web%20%7C%20mobile-lightgrey.svg)
 ![Node](https://img.shields.io/badge/node-%3E%3D22.0.0-brightgreen.svg)
 ![Database](https://img.shields.io/badge/database-PostgreSQL%2018-blue.svg)
 ![Docker](https://img.shields.io/badge/docker-ready-blue.svg)
-![Tests](https://img.shields.io/badge/tests-774%20passing-brightgreen.svg)
+![Tests](https://img.shields.io/badge/E2E%20tests-800%2B%20passing-brightgreen.svg)
 ![Cloud Run](https://img.shields.io/badge/Cloud%20Run-deployed-blue.svg)
+![Mobile](https://img.shields.io/badge/mobile-Expo%20%2B%20React%20Native-blueviolet.svg)
 
 ## A comprehensive telemedicine platform built for Thailand's healthcare system
 
@@ -41,7 +42,7 @@ The platform consists of three main services:
 | PostgreSQL | localhost:5433 |
 | pgAdmin | <http://localhost:5050> |
 
-### Cloud Environment — Dev (v1.4.8-dev) (Google Cloud Run)
+### Cloud Environment — Dev (v1.5.0) (Google Cloud Run)
 
 | Service | URL |
 | ------- | --- |
@@ -49,7 +50,7 @@ The platform consists of three main services:
 | Doctor Portal | <https://izara-doctor-portal-dev-testing-hvht4obouq-as.a.run.app> |
 | Meeting Server | <https://izara-meeting-server-dev-testing-hvht4obouq-as.a.run.app> |
 
-### Cloud Environment — Production (v1.4.7) (Google Cloud Run)
+### Cloud Environment — Production (v1.5.0) (Google Cloud Run)
 
 | Service | URL |
 | ------- | --- |
@@ -59,67 +60,91 @@ The platform consists of three main services:
 | pgAdmin | <https://izara-pgadmin-hvht4obouq-as.a.run.app> |
 | Cloud SQL | 34.143.228.135:5432 |
 
-### Previous Version (v1.4.7) Cloud URLs
+### Mobile App (Expo + React Native)
 
-| Service | URL | Status |
-| ------- | --- | ------ |
-| Patient Portal | <https://izara-patient-portal-hvht4obouq-as.a.run.app> | Production |
-| Doctor Portal | <https://izara-doctor-portal-hvht4obouq-as.a.run.app> | Production |
-| Meeting Server | <https://izara-jitsi-meeting-portal-hvht4obouq-as.a.run.app> | Production |
+| Config | Value |
+| ------ | ----- |
+| Framework | Expo SDK 52 + React Native 0.76 |
+| Package | `isara-mobile` (monorepo with Turborepo) |
+| Patient Tabs | Dashboard, Appointments, Health Records, AI Chat, Profile |
+| Doctor Tabs | Dashboard, Queue, Schedule, Patients, Profile |
+| Run | `cd Isara-mobile && npx expo start` |
 
 ---
 
 ## 🧪 Testing
 
-### Test Architecture (v1.4.8-dev)
+### Test Architecture (v1.5.0)
 
-- **4 test spec files**: `00-unified-comprehensive`, `02-v350-workflows`, `03-v360-comprehensive`, `05-multi-user-browser`
-- **774 total tests** across 4 spec files (658 + 116 multi-user browser)
-- **Headed mode** (visible browser UI) and headless mode available
-- **1 worker**, serial execution for workflow integrity
+- **10 E2E spec files** (01-10): comprehensive workflow, API, UI, and mobile viewport testing
+- **800+ total tests** across 10 spec files
+- **5 simultaneous demo user accounts** (patient1, patient2, patient3, doctor, admin)
+- **5 Playwright projects**: Local, Cloud, Cloud-Dev, Mobile-Local, Mobile-Cloud-Dev
+- **Mobile viewport tests**: Pixel 7 (393×851), iPhone 13 (390×844), iPhone SE (375×667), iPad Mini (768×1024)
 - **0 skipped tests** — every test must pass
-- **4 projects**: Local-API (headless fast), Local (headed UI), Cloud, Cloud-Dev
+- **Serial + parallel execution** for workflow integrity
+
+### E2E Test Specs
+
+| Spec | Name | Tests | Coverage |
+| ---- | ---- | ----- | -------- |
+| 01 | Auth, Health & Multi-User | ~82 | Health checks, 5-user auth, registration, RBAC |
+| 02 | Appointment Lifecycle | ~92 | Create, confirm, cancel, reschedule, cross-portal sync |
+| 03 | Health Records & EMR | ~95 | PHR, vitals, EMR SOAP, prescriptions, lab orders, living will |
+| 04 | Video Meeting & Transcription | ~87 | Jitsi meeting, transcription, AI SOAP, multi-browser |
+| 05 | Content Sync & Approval | ~82 | Content CRUD, admin approval, real-time sync verification |
+| 06 | AI Features & CDS | ~72 | AI chat, CDS drug checks, summarization, doctor AI tools |
+| 07 | Multi-User Concurrent | ~60 | 4-browser concurrent flows, stress testing, cross-portal |
+| 08 | Phase 2 AI-HIS | ~72 | CTM assessment, geriatric screening (8 tools), SOS, follow-up |
+| 09 | User Accounts Demo & Pages | ~91 | All 5 demo accounts display, password reset, all portal pages |
+| 10 | Mobile Viewport & Data Sync | ~85 | Mobile responsive, data streaming, multi-device viewports |
 
 ### Run Tests
 
 ```powershell
 cd tests/e2e
 
-# Run LOCAL tests (headless, fast)
-npx playwright test --project="Local-API" --reporter=line
+# Run ALL Local tests (headless)
+$env:HEADLESS="1"; npx playwright test --project=Local --workers=2
 
-# Run LOCAL tests (headed, visible browser)
-npx playwright test --project="Local" --reporter=line
+# Run ALL Cloud-Dev tests
+$env:TEST_ENV="cloud-dev"; npx playwright test --project="Cloud-Dev" --workers=2
 
-# Run CLOUD tests (production)
-cross-env TEST_ENV=cloud npx playwright test --project=Cloud
+# Run Mobile viewport tests (local)
+$env:HEADLESS="1"; npx playwright test --project="Mobile-Local"
 
-# Run CLOUD-DEV tests (dev-testing)
-$env:TEST_ENV='cloud-dev'; npx playwright test specs/05-multi-user-browser.spec.ts --project=Cloud-Dev --reporter=list
+# Run Mobile viewport tests (cloud-dev)
+$env:TEST_ENV="cloud-dev"; npx playwright test --project="Mobile-Cloud-Dev"
+
+# Run specific spec (headed, visible browser)
+npx playwright test "09-user-accounts" --project=Local
 
 # View HTML Report
 npx playwright show-report
 ```
 
-### Test Coverage — 15 Sections
+### Test Coverage — 18 Sections
 
 | Section | Coverage Area | Process Documents |
 | ------- | ------------- | ----------------- |
 | A | Smoke & Health Checks | All portals reachable, DB connected |
-| B | User Management | Multi-user auth (3 patients, doctor, admin) |
+| B | User Management & Multi-User Auth | 5 demo accounts (3 patients, doctor, admin) |
 | C | Appointments | Book, confirm, cancel, pool, queue, history |
 | D | Video Meeting | Create, join, transcript, AI summary, EMR |
 | E | Health Records (PHR) | Vitals, medications, allergies, timeline |
 | F | EMR & Prescriptions | SOAP notes, prescriptions, lab orders |
 | G | AI Features | Chat, CDS, document analysis, instructions |
 | H | Living Will & PDPA | Create will, consent, audit trail |
-| I | Notifications | CRUD, mark read, settings |
-| J | Medical Content | Articles, clinical resources, tags |
-| K | Consultants & Metadata | Specialist directory, admin stats |
-| L | Data Sync | Cross-portal consistency |
-| M | UI Navigation | All pages render (patient + doctor) |
-| N | Map / Nearby Healthcare | GPS, range selector, facility filter |
-| O | Multi-User E2E | Full appointment → meeting → EMR workflow |
+| I | Notifications & Settings | CRUD, mark read, notification preferences |
+| J | Medical Content & Sync | Articles, clinical resources, tags, real-time sync |
+| K | Consultants & Metadata | Specialist directory, admin stats, ICD-10 |
+| L | Cross-Portal Data Integrity | Token isolation, role-based access, data sync |
+| M | Password Reset Flow | Forgot password, reset token validation |
+| N | All Pages Navigation (Patient) | 15 pages return 200 |
+| O | All Pages Navigation (Doctor) | 21 pages return 200 |
+| P | Mobile Viewport (Android/iOS) | Pixel 7, iPhone 13, iPhone SE, iPad Mini |
+| Q | Data Streaming & Sync | PHR, appointments, content streaming across users |
+| R | Phase 2 AI-HIS | CTM, Geriatric Screening, SOS, Nursing Dashboard |
 
 ### Test Credentials
 
@@ -178,7 +203,7 @@ npx playwright show-report
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────────┐
-│                   IZARA TELEMEDICINE v1.4.8-dev                             │
+│                     IZARA TELEMEDICINE v1.5.0                               │
 ├──────────────────────────────────────────────────────────────────────────┤
 │   ┌─────────────────┐  ┌─────────────────┐  ┌────────────────────────┐   │
 │   │  Patient Portal │  │  Doctor Portal  │  │  Meeting Server        │   │
@@ -308,7 +333,7 @@ cd Izara-jitsi-server
 gcloud builds submit --config=cloudbuild.yaml
 ```
 
-### Cloud URLs (Production — v1.4.7)
+### Cloud URLs (Production — v1.5.0)
 
 | Service | URL |
 | ------- | --- |
@@ -316,7 +341,7 @@ gcloud builds submit --config=cloudbuild.yaml
 | Doctor Portal | <https://izara-doctor-portal-hvht4obouq-as.a.run.app> |
 | Meeting Server | <https://izara-jitsi-meeting-portal-hvht4obouq-as.a.run.app> |
 
-### Cloud URLs (Dev — v1.4.8-dev)
+### Cloud URLs (Dev — v1.5.0)
 
 | Service | URL |
 | ------- | --- |
@@ -341,9 +366,12 @@ Isara-Anywhere/
 ├── Izara-jitsi-server/       # Meeting server with transcription
 │   ├── server/               # Express + Socket.IO
 │   └── client/               # Transcription components
-├── tests/e2e/                # Playwright E2E tests (774 tests)
-│   ├── specs/                # Test specifications
-│   └── lib/                  # Shared test config
+├── Isara-mobile/             # Mobile app (Expo + React Native)
+│   ├── app/                  # Expo Router screens
+│   └── packages/             # Shared packages (api-client, ui, shared)
+├── tests/e2e/                # Playwright E2E tests (800+ tests, 10 specs)
+│   ├── specs/                # 10 test spec files (01-10)
+│   └── lib/                  # Shared test config & helpers
 ├── Processes/                # Workflow documentation (13 docs)
 ├── Presentations/            # Project presentations & diagrams
 ├── scripts/                  # Utility & deployment scripts
@@ -363,12 +391,16 @@ Isara-Anywhere/
 
 ---
 
-## 🔒 Security
+## 🔒 Security (v1.5.0 Hardened)
 
-- **Authentication**: bcrypt password hashing (10 rounds)
+- **Authentication**: bcrypt password hashing (10 rounds), JWT + session tokens
+- **JWT Secrets**: Secure crypto-generated 256-bit secrets (no defaults)
 - **Session Management**: Secure token-based sessions (24hr expiry)
 - **Rate Limiting**: 10 login attempts per 15 minutes
-- **Security Headers**: Helmet.js (CSP, XSS protection, HSTS)
+- **OWASP Security Headers**: Helmet.js (CSP, XSS protection, HSTS, X-Frame, X-Content-Type)
+- **Body Limits**: 10KB JSON payload limit to prevent DoS
+- **Error Handling**: Global error handlers with sanitized error messages (no stack traces in production)
+- **IDOR Protection**: User-scoped data access enforcement
 - **Input Validation**: XSS prevention, SQL injection protection
 - **CORS**: Strict origin validation
 - **PDPA Compliance**: Thailand's data protection standards

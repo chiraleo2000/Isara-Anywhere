@@ -1,0 +1,348 @@
+
+Running 166 tests using 2 workers
+
+Γä╣∩╕Å  All 5 users authenticated for user account tests
+Γä╣∩╕Å  All 5 users authenticated for mobile viewport & sync tests
+Γ£à patient1: Demo Test Patient (demo.test@gmail.com) ΓÇö token OK
+Γ£à patient2: Somchai Mankong (Somchai.Mankong@gmail.com) ΓÇö token OK
+Γ£à patient3: Anan Khayanrian (Anan.Khayanrian@gmail.com) ΓÇö token OK
+Γ£à doctor: Dr. Test Good (doctor.test@izara.com) ΓÇö token OK
+Γ£à admin: Dr. Admin Kind (admin.test@izara.com) ΓÇö token OK
+  Γ£ô    1 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:43:9 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ A ΓÇö Demo User Accounts Display ΓÇ║ A01 ΓÇö All 5 demo accounts authenticated successfully (5ms)
+Γ£à Patient1 profile: Demo Test Patient ΓÇö demo.test@gmail.com
+  Γ£ô    3 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:53:9 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ A ΓÇö Demo User Accounts Display ΓÇ║ A02 ΓÇö Patient1 (Demo Test) profile loaded (56ms)
+Γ£à Patient2 profile: Somchai Mankong ΓÇö Somchai.Mankong@gmail.com
+  Γ£ô    4 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:61:9 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ A ΓÇö Demo User Accounts Display ΓÇ║ A03 ΓÇö Patient2 (Somchai) profile loaded (47ms)
+Γ£à Patient3 profile: Anan Khayanrian ΓÇö Anan.Khayanrian@gmail.com
+  Γ£ô    5 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:69:9 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ A ΓÇö Demo User Accounts Display ΓÇ║ A04 ΓÇö Patient3 (Anan) profile loaded (52ms)
+Γ£à Doctor profile: Dr. Test Good ΓÇö doctor.test@izara.com
+  Γ£ô    6 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:77:9 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ A ΓÇö Demo User Accounts Display ΓÇ║ A05 ΓÇö Doctor profile loaded (50ms)
+Γ£à Admin profile: Dr. Admin Kind ΓÇö admin.test@izara.com
+  Γ£ô    7 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:85:9 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ A ΓÇö Demo User Accounts Display ΓÇ║ A06 ΓÇö Admin profile loaded (46ms)
+Γ£à Patient1 and Patient2 are distinct accounts
+  Γ£ô    8 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:93:9 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ A ΓÇö Demo User Accounts Display ΓÇ║ A07 ΓÇö Patient1 has distinct data from Patient2 (2ms)
+Γ£à Patient2 and Patient3 are distinct accounts
+  Γ£ô    9 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:101:9 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ A ΓÇö Demo User Accounts Display ΓÇ║ A08 ΓÇö Patient2 has distinct data from Patient3 (2ms)
+Γ£à Doctor and Admin are distinct accounts
+  Γ£ô   10 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:109:9 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ A ΓÇö Demo User Accounts Display ΓÇ║ A09 ΓÇö Doctor and Admin are distinct accounts (1ms)
+Γ£à All 5 tokens are unique
+  Γ£ô   11 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:117:9 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ A ΓÇö Demo User Accounts Display ΓÇ║ A10 ΓÇö All tokens are unique per user (1ms)
+Γ£à All 3 patient tokens accepted by patient portal
+  Γ£ô   12 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:126:9 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ A ΓÇö Demo User Accounts Display ΓÇ║ A11 ΓÇö Patient portal accepts all 3 patient tokens (139ms)
+Γ£à Doctor + Admin tokens accepted by doctor portal
+  Γ£ô   13 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:135:9 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ A ΓÇö Demo User Accounts Display ΓÇ║ A12 ΓÇö Doctor portal accepts doctor and admin tokens (83ms)
+Γ£à Patient reset-password page loads
+  Γ£ô   14 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:150:9 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ B ΓÇö Password Reset Flow ΓÇ║ B01 ΓÇö Patient portal reset-password page loads (48ms)
+Γ£à Doctor reset-password page loads
+  Γ£ô   15 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:156:9 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ B ΓÇö Password Reset Flow ΓÇ║ B02 ΓÇö Doctor portal reset-password page loads (45ms)
+Γ£à Patient forgot-password returns 404
+  Γ£ô   16 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:162:9 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ B ΓÇö Password Reset Flow ΓÇ║ B03 ΓÇö Patient portal forgot-password API exists (41ms)
+Γ£à Doctor forgot-password returns 404
+  Γ£ô   17 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:172:9 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ B ΓÇö Password Reset Flow ΓÇ║ B04 ΓÇö Doctor portal forgot-password API exists (41ms)
+Γ£à Reset with invalid token correctly rejected
+  Γ£ô   18 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:181:9 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ B ΓÇö Password Reset Flow ΓÇ║ B05 ΓÇö Reset with invalid token is rejected (43ms)
+Γ£à Doctor reset with invalid token correctly rejected
+  Γ£ô   19 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:191:9 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ B ΓÇö Password Reset Flow ΓÇ║ B06 ΓÇö Doctor reset with invalid token is rejected (44ms)
+Γ£à Mobile Patient Login ΓåÆ 200 (viewport: 393x851)
+Γ£à Patient login page loaded ΓÇö forgot-password elements: 0
+  Γ£ô    2 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:71:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ A ΓÇö Mobile Patient Portal Pages ΓÇ║ A01 ΓÇö Mobile: Patient Login (/login) (1.7s)
+  Γ£ô   20 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:201:9 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ B ΓÇö Password Reset Flow ΓÇ║ B07 ΓÇö Patient portal login page has forgot-password link (1.1s)
+Γ£à Mobile Patient Register ΓåÆ 200 (viewport: 393x851)
+  Γ£ô   21 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:71:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ A ΓÇö Mobile Patient Portal Pages ΓÇ║ A02 ΓÇö Mobile: Patient Register (/register) (414ms)
+Γ£à Doctor login page loaded ΓÇö forgot-password elements: 1
+Γ£à Mobile Patient Dashboard ΓåÆ 200 (viewport: 393x851)
+  Γ£ô   23 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:71:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ A ΓÇö Mobile Patient Portal Pages ΓÇ║ A03 ΓÇö Mobile: Patient Dashboard (/dashboard) (409ms)
+  Γ£ô   22 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:210:9 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ B ΓÇö Password Reset Flow ΓÇ║ B08 ΓÇö Doctor portal login page has forgot-password link (740ms)
+Γ£à Patient Login page ΓåÆ 200
+  Γ£ô   25 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:246:11 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ C ΓÇö Patient Portal All Pages Load ΓÇ║ C01 ΓÇö Patient Login page loads (/login) (46ms)
+Γ£à Patient Register page ΓåÆ 200
+  Γ£ô   26 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:246:11 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ C ΓÇö Patient Portal All Pages Load ΓÇ║ C02 ΓÇö Patient Register page loads (/register) (44ms)
+Γ£à Patient Reset Password page ΓåÆ 200
+  Γ£ô   27 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:246:11 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ C ΓÇö Patient Portal All Pages Load ΓÇ║ C03 ΓÇö Patient Reset Password page loads (/reset-password) (45ms)
+Γ£à Patient Dashboard page ΓåÆ 200
+  Γ£ô   28 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:246:11 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ C ΓÇö Patient Portal All Pages Load ΓÇ║ C04 ΓÇö Patient Dashboard page loads (/dashboard) (40ms)
+Γ£à Mobile Patient Appointments ΓåÆ 200 (viewport: 393x851)
+Γ£à Patient Appointments page ΓåÆ 200
+  Γ£ô   29 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:246:11 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ C ΓÇö Patient Portal All Pages Load ΓÇ║ C05 ΓÇö Patient Appointments page loads (/appointments) (42ms)
+Γ£à Patient PHR (Health Records) page ΓåÆ 200
+  Γ£ô   30 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:246:11 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ C ΓÇö Patient Portal All Pages Load ΓÇ║ C06 ΓÇö Patient PHR (Health Records) page loads (/phr) (43ms)
+  Γ£ô   24 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:71:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ A ΓÇö Mobile Patient Portal Pages ΓÇ║ A04 ΓÇö Mobile: Patient Appointments (/appointments) (390ms)
+Γ£à Patient AI Doctor page ΓåÆ 200
+  Γ£ô   31 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:246:11 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ C ΓÇö Patient Portal All Pages Load ΓÇ║ C07 ΓÇö Patient AI Doctor page loads (/ai-doctor) (43ms)
+Γ£à Patient Medical Content page ΓåÆ 200
+  Γ£ô   33 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:246:11 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ C ΓÇö Patient Portal All Pages Load ΓÇ║ C08 ΓÇö Patient Medical Content page loads (/medical-content) (40ms)
+Γ£à Patient Map page ΓåÆ 200
+  Γ£ô   34 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:246:11 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ C ΓÇö Patient Portal All Pages Load ΓÇ║ C09 ΓÇö Patient Map page loads (/map) (41ms)
+Γ£à Patient PDPA Consent page ΓåÆ 200
+  Γ£ô   35 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:246:11 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ C ΓÇö Patient Portal All Pages Load ΓÇ║ C10 ΓÇö Patient PDPA Consent page loads (/pdpa) (51ms)
+Γ£à Patient Living Will page ΓåÆ 200
+  Γ£ô   36 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:246:11 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ C ΓÇö Patient Portal All Pages Load ΓÇ║ C11 ΓÇö Patient Living Will page loads (/living-will) (48ms)
+Γ£à Mobile Patient PHR ΓåÆ 200 (viewport: 393x851)
+Γ£à Patient Profile page ΓåÆ 200
+  Γ£ô   37 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:246:11 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ C ΓÇö Patient Portal All Pages Load ΓÇ║ C12 ΓÇö Patient Profile page loads (/profile) (57ms)
+Γ£à Patient Settings page ΓåÆ 200
+  Γ£ô   38 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:246:11 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ C ΓÇö Patient Portal All Pages Load ΓÇ║ C13 ΓÇö Patient Settings page loads (/settings) (41ms)
+Γ£à Patient Timeline page ΓåÆ 200
+  Γ£ô   39 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:246:11 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ C ΓÇö Patient Portal All Pages Load ΓÇ║ C14 ΓÇö Patient Timeline page loads (/timeline) (44ms)
+  Γ£ô   32 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:71:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ A ΓÇö Mobile Patient Portal Pages ΓÇ║ A05 ΓÇö Mobile: Patient PHR (/phr) (394ms)
+Γ£à Patient Notifications page ΓåÆ 200
+  Γ£ô   40 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:246:11 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ C ΓÇö Patient Portal All Pages Load ΓÇ║ C15 ΓÇö Patient Notifications page loads (/notifications) (41ms)
+Γ£à Doctor Login page ΓåÆ 200
+  Γ£ô   42 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:290:11 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ D ΓÇö Doctor Portal All Pages Load ΓÇ║ D01 ΓÇö Doctor Login page loads (/login) (43ms)
+Γ£à Doctor Reset Password page ΓåÆ 200
+  Γ£ô   43 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:290:11 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ D ΓÇö Doctor Portal All Pages Load ΓÇ║ D02 ΓÇö Doctor Reset Password page loads (/reset-password) (43ms)
+Γ£à Doctor Dashboard page ΓåÆ 200
+  Γ£ô   44 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:290:11 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ D ΓÇö Doctor Portal All Pages Load ΓÇ║ D03 ΓÇö Doctor Dashboard page loads (/dashboard) (45ms)
+Γ£à Doctor Schedule page ΓåÆ 200
+  Γ£ô   45 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:290:11 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ D ΓÇö Doctor Portal All Pages Load ΓÇ║ D04 ΓÇö Doctor Schedule page loads (/schedule) (43ms)
+Γ£à Doctor Patient Management page ΓåÆ 200
+  Γ£ô   46 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:290:11 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ D ΓÇö Doctor Portal All Pages Load ΓÇ║ D05 ΓÇö Doctor Patient Management page loads (/patients) (42ms)
+Γ£à Doctor Health Meeting page ΓåÆ 200
+  Γ£ô   47 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:290:11 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ D ΓÇö Doctor Portal All Pages Load ΓÇ║ D06 ΓÇö Doctor Health Meeting page loads (/health-meeting) (39ms)
+Γ£à Mobile Patient AI Doctor ΓåÆ 200 (viewport: 393x851)
+Γ£à Doctor Virtual Meeting page ΓåÆ 200
+  Γ£ô   48 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:290:11 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ D ΓÇö Doctor Portal All Pages Load ΓÇ║ D07 ΓÇö Doctor Virtual Meeting page loads (/meeting) (42ms)
+Γ£à Doctor EMR Editor page ΓåÆ 200
+  Γ£ô   49 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:290:11 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ D ΓÇö Doctor Portal All Pages Load ΓÇ║ D08 ΓÇö Doctor EMR Editor page loads (/emr) (43ms)
+  Γ£ô   41 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:71:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ A ΓÇö Mobile Patient Portal Pages ΓÇ║ A06 ΓÇö Mobile: Patient AI Doctor (/ai-doctor) (412ms)
+Γ£à Doctor Prescribing page ΓåÆ 200
+  Γ£ô   50 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:290:11 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ D ΓÇö Doctor Portal All Pages Load ΓÇ║ D09 ΓÇö Doctor Prescribing page loads (/prescriptions) (42ms)
+Γ£à Doctor Lab Orders page ΓåÆ 200
+  Γ£ô   52 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:290:11 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ D ΓÇö Doctor Portal All Pages Load ΓÇ║ D10 ΓÇö Doctor Lab Orders page loads (/lab-orders) (40ms)
+Γ£à Doctor Patient Records page ΓåÆ 200
+  Γ£ô   53 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:290:11 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ D ΓÇö Doctor Portal All Pages Load ΓÇ║ D11 ΓÇö Doctor Patient Records page loads (/patient-records) (41ms)
+Γ£à Doctor Medical Consultants page ΓåÆ 200
+  Γ£ô   54 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:290:11 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ D ΓÇö Doctor Portal All Pages Load ΓÇ║ D12 ΓÇö Doctor Medical Consultants page loads (/consultants) (41ms)
+Γ£à Doctor Medical Content page ΓåÆ 200
+  Γ£ô   55 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:290:11 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ D ΓÇö Doctor Portal All Pages Load ΓÇ║ D13 ΓÇö Doctor Medical Content page loads (/medical-content) (41ms)
+Γ£à Doctor Clinical Resources page ΓåÆ 200
+  Γ£ô   56 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:290:11 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ D ΓÇö Doctor Portal All Pages Load ΓÇ║ D14 ΓÇö Doctor Clinical Resources page loads (/clinical-resources) (40ms)
+Γ£à Doctor Gemini AI Studio page ΓåÆ 200
+  Γ£ô   57 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:290:11 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ D ΓÇö Doctor Portal All Pages Load ΓÇ║ D15 ΓÇö Doctor Gemini AI Studio page loads (/ai-studio) (40ms)
+Γ£à Mobile Patient Medical Content ΓåÆ 200 (viewport: 393x851)
+Γ£à Doctor Doctor Profile page ΓåÆ 200
+  Γ£ô   58 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:290:11 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ D ΓÇö Doctor Portal All Pages Load ΓÇ║ D16 ΓÇö Doctor Doctor Profile page loads (/profile) (41ms)
+Γ£à Doctor Appointments Manage page ΓåÆ 200
+  Γ£ô   51 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:71:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ A ΓÇö Mobile Patient Portal Pages ΓÇ║ A07 ΓÇö Mobile: Patient Medical Content (/medical-content) (401ms)
+  Γ£ô   59 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:290:11 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ D ΓÇö Doctor Portal All Pages Load ΓÇ║ D17 ΓÇö Doctor Appointments Manage page loads (/appointments/manage) (42ms)
+Γ£à Doctor Doctors List page ΓåÆ 200
+  Γ£ô   61 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:290:11 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ D ΓÇö Doctor Portal All Pages Load ΓÇ║ D18 ΓÇö Doctor Doctors List page loads (/doctors) (43ms)
+Γ£à Doctor Doctors Management page ΓåÆ 200
+  Γ£ô   62 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:290:11 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ D ΓÇö Doctor Portal All Pages Load ΓÇ║ D19 ΓÇö Doctor Doctors Management page loads (/doctor-management) (42ms)
+Γ£à Doctor Appointment Pool page ΓåÆ 200
+  Γ£ô   63 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:290:11 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ D ΓÇö Doctor Portal All Pages Load ΓÇ║ D20 ΓÇö Doctor Appointment Pool page loads (/appointment-pool) (41ms)
+Γ£à Doctor Queue Management page ΓåÆ 200
+  Γ£ô   64 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:290:11 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ D ΓÇö Doctor Portal All Pages Load ΓÇ║ D21 ΓÇö Doctor Queue Management page loads (/queue) (42ms)
+Γ£à Patient1 PHR accessible
+  Γ£ô   65 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:305:9 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ E ΓÇö User Data Sync & Streaming Across Portals ΓÇ║ E01 ΓÇö Patient1 PHR data accessible (48ms)
+Γ£à Patient2 PHR accessible
+  Γ£ô   66 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:311:9 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ E ΓÇö User Data Sync & Streaming Across Portals ΓÇ║ E02 ΓÇö Patient2 PHR data accessible (48ms)
+Γ£à Patient3 PHR accessible
+  Γ£ô   67 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:317:9 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ E ΓÇö User Data Sync & Streaming Across Portals ΓÇ║ E03 ΓÇö Patient3 PHR data accessible (44ms)
+Γ£à Mobile Patient Map ΓåÆ 200 (viewport: 393x851)
+Γ£à Doctor patients list
+  Γ£ô   68 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:323:9 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ E ΓÇö User Data Sync & Streaming Across Portals ΓÇ║ E04 ΓÇö Doctor can list all patients (54ms)
+  Γ£ô   60 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:71:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ A ΓÇö Mobile Patient Portal Pages ΓÇ║ A08 ΓÇö Mobile: Patient Map (/map) (419ms)
+Γ£à Admin patients list
+  Γ£ô   69 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:329:9 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ E ΓÇö User Data Sync & Streaming Across Portals ΓÇ║ E05 ΓÇö Admin can list all patients (47ms)
+Γ£à Content available in both portals
+  Γ£ô   71 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:335:9 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ E ΓÇö User Data Sync & Streaming Across Portals ΓÇ║ E06 ΓÇö Medical content synced across portals (125ms)
+Γ£à Clinical resources accessible
+  Γ£ô   72 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:349:9 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ E ΓÇö User Data Sync & Streaming Across Portals ΓÇ║ E07 ΓÇö Clinical resources synced (54ms)
+Γ£à Doctor appointments list
+  Γ£ô   73 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:355:9 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ E ΓÇö User Data Sync & Streaming Across Portals ΓÇ║ E08 ΓÇö Appointments visible to doctor (89ms)
+Γ£à Mobile Patient PDPA ΓåÆ 200 (viewport: 393x851)
+Γ£à Patient1 notifications
+  Γ£ô   74 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:361:9 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ E ΓÇö User Data Sync & Streaming Across Portals ΓÇ║ E09 ΓÇö Notifications accessible for patient1 (50ms)
+Γ£à Patient1 timeline
+  Γ£ô   75 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:367:9 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ E ΓÇö User Data Sync & Streaming Across Portals ΓÇ║ E10 ΓÇö Timeline data accessible (44ms)
+  Γ£ô   70 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:71:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ A ΓÇö Mobile Patient Portal Pages ΓÇ║ A09 ΓÇö Mobile: Patient PDPA (/pdpa) (413ms)
+Γ£à Treatment results ΓåÆ 200
+  Γ£ô   76 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:373:9 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ E ΓÇö User Data Sync & Streaming Across Portals ΓÇ║ E11 ΓÇö Treatment results accessible (40ms)
+Γ£à Doctor EMR list
+  Γ£ô   78 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:381:9 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ E ΓÇö User Data Sync & Streaming Across Portals ΓÇ║ E12 ΓÇö Doctor EMR list accessible (51ms)
+Γ£à Doctor prescriptions
+  Γ£ô   79 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:387:9 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ E ΓÇö User Data Sync & Streaming Across Portals ΓÇ║ E13 ΓÇö Doctor prescriptions accessible (45ms)
+Γ£à Doctor lab orders
+  Γ£ô   80 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:393:9 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ E ΓÇö User Data Sync & Streaming Across Portals ΓÇ║ E14 ΓÇö Doctor lab orders accessible (41ms)
+Γ£à Queue ΓåÆ 200
+  Γ£ô   81 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:399:9 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ E ΓÇö User Data Sync & Streaming Across Portals ΓÇ║ E15 ΓÇö Queue data accessible (42ms)
+Γ£à Patient1 settings ΓåÆ 200
+  Γ£ô   82 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:413:9 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ F ΓÇö Settings & Notification Preferences ΓÇ║ F01 ΓÇö Patient1 settings accessible (50ms)
+Γ£à Mobile Patient Living Will ΓåÆ 200 (viewport: 393x851)
+Γ£à Patient2 settings ΓåÆ 200
+  Γ£ô   83 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:420:9 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ F ΓÇö Settings & Notification Preferences ΓÇ║ F02 ΓÇö Patient2 settings accessible (48ms)
+Γ£à Notification preferences ΓåÆ 200
+  Γ£ô   84 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:427:9 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ F ΓÇö Settings & Notification Preferences ΓÇ║ F03 ΓÇö Patient notification preferences endpoint (49ms)
+  Γ£ô   77 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:71:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ A ΓÇö Mobile Patient Portal Pages ΓÇ║ A10 ΓÇö Mobile: Patient Living Will (/living-will) (394ms)
+Γ£à Mark all read ΓåÆ 404
+  Γ£ô   85 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:434:9 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ F ΓÇö Settings & Notification Preferences ΓÇ║ F04 ΓÇö Mark all notifications read (40ms)
+Γ£à Doctor consultants list
+  Γ£ô   87 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:441:9 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ F ΓÇö Settings & Notification Preferences ΓÇ║ F05 ΓÇö Doctor consultants list (47ms)
+Γ£à Pending doctors ΓåÆ 200
+  Γ£ô   88 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:447:9 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ F ΓÇö Settings & Notification Preferences ΓÇ║ F06 ΓÇö Admin can view pending doctors (53ms)
+Γ£à Admin stats ΓåÆ 200
+  Γ£ô   89 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:454:9 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ F ΓÇö Settings & Notification Preferences ΓÇ║ F07 ΓÇö Admin stats endpoint (64ms)
+Γ£à Specialties metadata
+  Γ£ô   90 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:461:9 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ F ΓÇö Settings & Notification Preferences ΓÇ║ F08 ΓÇö Metadata: specialties (42ms)
+Γ£à Mobile Patient Profile ΓåÆ 200 (viewport: 393x851)
+Γ£à Lab tests metadata
+  Γ£ô   91 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:466:9 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ F ΓÇö Settings & Notification Preferences ΓÇ║ F09 ΓÇö Metadata: lab tests catalog (41ms)
+Γ£à Medications metadata
+  Γ£ô   92 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:471:9 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ F ΓÇö Settings & Notification Preferences ΓÇ║ F10 ΓÇö Metadata: medications catalog (49ms)
+  Γ£ô   86 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:71:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ A ΓÇö Mobile Patient Portal Pages ΓÇ║ A11 ΓÇö Mobile: Patient Profile (/profile) (361ms)
+Γ£à Patient token on doctor portal ΓÇö correctly rejected
+  Γ£ô   93 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:482:9 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ G ΓÇö Cross-Portal Data Integrity ΓÇ║ G01 ΓÇö Patient token rejected by doctor portal protected routes (41ms)
+Γ£à Doctor token valid on doctor portal
+  Γ£ô   95 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:489:9 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ G ΓÇö Cross-Portal Data Integrity ΓÇ║ G02 ΓÇö Doctor token works on doctor portal (38ms)
+Γ£à Mobile Patient Settings ΓåÆ 200 (viewport: 393x851)
+  Γ£ô   94 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:71:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ A ΓÇö Mobile Patient Portal Pages ΓÇ║ A12 ΓÇö Mobile: Patient Settings (/settings) (411ms)
+Γ£à Mobile Patient Timeline ΓåÆ 200 (viewport: 393x851)
+  Γ£ô   97 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:71:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ A ΓÇö Mobile Patient Portal Pages ΓÇ║ A13 ΓÇö Mobile: Patient Timeline (/timeline) (420ms)
+Γ£à Mobile Patient Notifications ΓåÆ 200 (viewport: 393x851)
+Γ£à Meeting server accessible
+  Γ£ô   96 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:496:9 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ G ΓÇö Cross-Portal Data Integrity ΓÇ║ G03 ΓÇö Meeting server health from all portals (1.1s)
+  Γ£ô   98 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:71:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ A ΓÇö Mobile Patient Portal Pages ΓÇ║ A14 ΓÇö Mobile: Patient Notifications (/notifications) (371ms)
+Γ£à Appointment pool ΓåÆ 200
+  Γ£ô   99 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:502:9 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ G ΓÇö Cross-Portal Data Integrity ΓÇ║ G04 ΓÇö Appointment pool accessible (44ms)
+Γ£à ICD-10 codes
+  Γ£ô  101 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:509:9 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ G ΓÇö Cross-Portal Data Integrity ΓÇ║ G05 ΓÇö ICD-10 codes accessible (44ms)
+Γ£à Medical content tags ΓåÆ 200
+  Γ£ô  102 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:514:9 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ G ΓÇö Cross-Portal Data Integrity ΓÇ║ G06 ΓÇö Content tags: medical (51ms)
+Γ£à Clinical content tags ΓåÆ 200
+  Γ£ô  103 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:520:9 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ G ΓÇö Cross-Portal Data Integrity ΓÇ║ G07 ΓÇö Content tags: clinical (43ms)
+Γ£à Sync status ΓåÆ 200
+  Γ£ô  104 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:526:9 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ G ΓÇö Cross-Portal Data Integrity ΓÇ║ G08 ΓÇö Sync status endpoint (Phase 2) (49ms)
+Γ£à Device tokens ΓåÆ 200
+  Γ£ô  105 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:533:9 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ G ΓÇö Cross-Portal Data Integrity ΓÇ║ G09 ΓÇö Device tokens endpoint (Phase 2) (45ms)
+Γ£à Biometric status ΓåÆ 200
+  Γ£ô  106 [Cloud-Dev] ΓÇ║ specs\09-user-accounts-demo-pages.spec.ts:540:9 ΓÇ║ 09 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ G ΓÇö Cross-Portal Data Integrity ΓÇ║ G10 ΓÇö Biometric status endpoint (Phase 2) (49ms)
+Γ£à Mobile Patient Reset Password ΓåÆ 200 (viewport: 393x851)
+  Γ£ô  100 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:71:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ A ΓÇö Mobile Patient Portal Pages ΓÇ║ A15 ΓÇö Mobile: Patient Reset Password (/reset-password) (413ms)
+Γ£à Mobile Doctor Login ΓåÆ 200 (viewport: 375x812)
+  Γ£ô  107 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:127:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ B ΓÇö Mobile Doctor Portal Pages ΓÇ║ B01 ΓÇö Mobile: Doctor Login (/login) (427ms)
+Γ£à Mobile Doctor Dashboard ΓåÆ 200 (viewport: 375x812)
+  Γ£ô  108 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:127:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ B ΓÇö Mobile Doctor Portal Pages ΓÇ║ B02 ΓÇö Mobile: Doctor Dashboard (/dashboard) (397ms)
+Γ£à Mobile Doctor Schedule ΓåÆ 200 (viewport: 375x812)
+  Γ£ô  109 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:127:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ B ΓÇö Mobile Doctor Portal Pages ΓÇ║ B03 ΓÇö Mobile: Doctor Schedule (/schedule) (429ms)
+Γ£à Mobile Doctor Patients ΓåÆ 200 (viewport: 375x812)
+  Γ£ô  110 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:127:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ B ΓÇö Mobile Doctor Portal Pages ΓÇ║ B04 ΓÇö Mobile: Doctor Patients (/patients) (396ms)
+Γ£à Mobile Doctor EMR ΓåÆ 200 (viewport: 375x812)
+  Γ£ô  111 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:127:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ B ΓÇö Mobile Doctor Portal Pages ΓÇ║ B05 ΓÇö Mobile: Doctor EMR (/emr) (459ms)
+Γ£à Mobile Doctor Prescriptions ΓåÆ 200 (viewport: 375x812)
+  Γ£ô  112 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:127:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ B ΓÇö Mobile Doctor Portal Pages ΓÇ║ B06 ΓÇö Mobile: Doctor Prescriptions (/prescriptions) (424ms)
+Γ£à Mobile Doctor Medical Content ΓåÆ 200 (viewport: 375x812)
+  Γ£ô  113 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:127:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ B ΓÇö Mobile Doctor Portal Pages ΓÇ║ B07 ΓÇö Mobile: Doctor Medical Content (/medical-content) (436ms)
+Γ£à Mobile Doctor Clinical Resources ΓåÆ 200 (viewport: 375x812)
+  Γ£ô  114 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:127:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ B ΓÇö Mobile Doctor Portal Pages ΓÇ║ B08 ΓÇö Mobile: Doctor Clinical Resources (/clinical-resources) (395ms)
+Γ£à Mobile Doctor Profile ΓåÆ 200 (viewport: 375x812)
+  Γ£ô  115 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:127:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ B ΓÇö Mobile Doctor Portal Pages ΓÇ║ B09 ΓÇö Mobile: Doctor Profile (/profile) (454ms)
+Γ£à Mobile Doctor Queue ΓåÆ 200 (viewport: 375x812)
+  Γ£ô  116 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:127:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ B ΓÇö Mobile Doctor Portal Pages ΓÇ║ B10 ΓÇö Mobile: Doctor Queue (/queue) (447ms)
+Γ£à Mobile Doctor Consultants ΓåÆ 200 (viewport: 375x812)
+  Γ£ô  117 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:127:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ B ΓÇö Mobile Doctor Portal Pages ΓÇ║ B11 ΓÇö Mobile: Doctor Consultants (/consultants) (407ms)
+Γ£à Mobile Doctor Reset Password ΓåÆ 200 (viewport: 375x812)
+  Γ£ô  118 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:127:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ B ΓÇö Mobile Doctor Portal Pages ΓÇ║ B12 ΓÇö Mobile: Doctor Reset Password (/reset-password) (389ms)
+Γ£à Mobile Patient1 (Demo Test Patient) profile
+  Γ£ô  119 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:154:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ C ΓÇö Mobile API Tests (All Demo Users) ΓÇ║ C01 ΓÇö Patient1 (Demo) auth + profile via mobile (48ms)
+Γ£à Mobile Patient2 (Somchai Mankong) appointments
+  Γ£ô  120 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:160:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ C ΓÇö Mobile API Tests (All Demo Users) ΓÇ║ C02 ΓÇö Patient2 (Somchai) auth + appointments (166ms)
+Γ£à Mobile Patient3 (Anan Khayanrian) PHR
+  Γ£ô  121 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:166:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ C ΓÇö Mobile API Tests (All Demo Users) ΓÇ║ C03 ΓÇö Patient3 (Anan) auth + PHR (50ms)
+Γ£à Mobile Doctor (Dr. Test Good) patients
+  Γ£ô  122 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:172:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ C ΓÇö Mobile API Tests (All Demo Users) ΓÇ║ C04 ΓÇö Doctor auth + patients list (54ms)
+Γ£à Mobile Admin (Dr. Admin Kind) stats ΓåÆ 200
+  Γ£ô  123 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:178:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ C ΓÇö Mobile API Tests (All Demo Users) ΓÇ║ C05 ΓÇö Admin auth + admin stats (61ms)
+Γ£à Mobile Patient1 notifications
+  Γ£ô  124 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:185:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ C ΓÇö Mobile API Tests (All Demo Users) ΓÇ║ C06 ΓÇö Mobile: Patient1 notifications (52ms)
+Γ£à Mobile Patient2 timeline
+  Γ£ô  125 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:191:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ C ΓÇö Mobile API Tests (All Demo Users) ΓÇ║ C07 ΓÇö Mobile: Patient2 timeline (47ms)
+Γ£à Mobile Doctor EMR list
+  Γ£ô  126 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:197:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ C ΓÇö Mobile API Tests (All Demo Users) ΓÇ║ C08 ΓÇö Mobile: Doctor EMR list (49ms)
+Γ£à Mobile Doctor prescriptions
+  Γ£ô  127 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:203:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ C ΓÇö Mobile API Tests (All Demo Users) ΓÇ║ C09 ΓÇö Mobile: Doctor prescriptions (43ms)
+Γ£à Mobile Medical content
+  Γ£ô  128 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:209:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ C ΓÇö Mobile API Tests (All Demo Users) ΓÇ║ C10 ΓÇö Mobile: Medical content (64ms)
+Γ£à Mobile Clinical resources
+  Γ£ô  129 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:215:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ C ΓÇö Mobile API Tests (All Demo Users) ΓÇ║ C11 ΓÇö Mobile: Clinical resources (53ms)
+Γ£à Mobile Meeting server healthy
+  Γ£ô  130 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:221:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ C ΓÇö Mobile API Tests (All Demo Users) ΓÇ║ C12 ΓÇö Mobile: Meeting server health (85ms)
+Γ£à Patient1 vitals read-back
+  Γ£ô  131 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:233:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ D ΓÇö Data Streaming & Real-time Sync ΓÇ║ D01 ΓÇö Patient1 PHR vitals create and read-back (105ms)
+Γ£à Patient2 appointment create ΓåÆ 200
+  Γ£ô  132 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:244:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ D ΓÇö Data Streaming & Real-time Sync ΓÇ║ D02 ΓÇö Patient2 appointment create (48ms)
+Γ£à Doctor sees appointments
+  Γ£ô  133 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:252:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ D ΓÇö Data Streaming & Real-time Sync ΓÇ║ D03 ΓÇö Doctor sees Patient2 appointment (103ms)
+Γ£à Patient3 PHR create ΓåÆ 200
+  Γ£ô  134 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:258:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ D ΓÇö Data Streaming & Real-time Sync ΓÇ║ D04 ΓÇö Patient3 PHR create (51ms)
+Γ£à Medical content visible to all 3 patients
+  Γ£ô  135 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:266:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ D ΓÇö Data Streaming & Real-time Sync ΓÇ║ D05 ΓÇö Medical content visible to all patients (172ms)
+Γ£à Notifications sync check
+  Γ£ô  136 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:276:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ D ΓÇö Data Streaming & Real-time Sync ΓÇ║ D06 ΓÇö Notification sync after operations (52ms)
+Γ£à Queue data streaming ΓåÆ 200
+  Γ£ô  137 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:282:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ D ΓÇö Data Streaming & Real-time Sync ΓÇ║ D07 ΓÇö Doctor queue data streaming (43ms)
+Γ£à Appointment pool streaming ΓåÆ 200
+  Γ£ô  138 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:289:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ D ΓÇö Data Streaming & Real-time Sync ΓÇ║ D08 ΓÇö Appointment pool data streaming (41ms)
+Γ£à Consultants data streaming
+  Γ£ô  139 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:296:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ D ΓÇö Data Streaming & Real-time Sync ΓÇ║ D09 ΓÇö Consultants data streaming (45ms)
+Γ£à Doctors list data streaming
+  Γ£ô  140 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:302:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ D ΓÇö Data Streaming & Real-time Sync ΓÇ║ D10 ΓÇö Doctors list data streaming (43ms)
+Γ£à Mobile patient login form is usable
+  Γ£ô  141 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:314:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ E ΓÇö Mobile Browser UI Interactions ΓÇ║ E01 ΓÇö Mobile login form is usable (patient portal) (444ms)
+Γ£à Mobile doctor login form is usable
+  Γ£ô  142 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:335:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ E ΓÇö Mobile Browser UI Interactions ΓÇ║ E02 ΓÇö Mobile login form is usable (doctor portal) (465ms)
+Γ£à Mobile patient navigation elements: 0
+  Γ£ô  143 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:353:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ E ΓÇö Mobile Browser UI Interactions ΓÇ║ E03 ΓÇö Mobile patient portal navigation renders (377ms)
+Γ£à Mobile doctor navigation elements: 0
+  Γ£ô  144 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:368:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ E ΓÇö Mobile Browser UI Interactions ΓÇ║ E04 ΓÇö Mobile doctor portal navigation renders (447ms)
+Γ£à Mobile register page responsive
+  Γ£ô  145 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:382:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ E ΓÇö Mobile Browser UI Interactions ΓÇ║ E05 ΓÇö Mobile: Patient register page responsive (348ms)
+Γ£à Mobile appointments responsive
+  Γ£ô  146 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:396:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ E ΓÇö Mobile Browser UI Interactions ΓÇ║ E06 ΓÇö Mobile: Appointments page responsive (373ms)
+Γ£à Mobile PHR responsive
+  Γ£ô  147 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:410:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ E ΓÇö Mobile Browser UI Interactions ΓÇ║ E07 ΓÇö Mobile: PHR page responsive (429ms)
+Γ£à Mobile AI Doctor responsive
+  Γ£ô  148 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:424:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ E ΓÇö Mobile Browser UI Interactions ΓÇ║ E08 ΓÇö Mobile: AI Doctor page responsive (441ms)
+Γ£à Mobile Map responsive
+  Γ£ô  149 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:438:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ E ΓÇö Mobile Browser UI Interactions ΓÇ║ E09 ΓÇö Mobile: Map page responsive (499ms)
+Γ£à Mobile Profile responsive
+  Γ£ô  150 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:452:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ E ΓÇö Mobile Browser UI Interactions ΓÇ║ E10 ΓÇö Mobile: Profile page responsive (391ms)
+Γ£à Mobile sync status ΓåÆ 200
+  Γ£ô  151 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:472:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ F ΓÇö Phase 2 Mobile API Endpoints ΓÇ║ F01 ΓÇö Sync status (50ms)
+Γ£à Mobile device tokens ΓåÆ 200
+  Γ£ô  152 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:479:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ F ΓÇö Phase 2 Mobile API Endpoints ΓÇ║ F02 ΓÇö Device tokens endpoint (48ms)
+Γ£à Mobile biometric status ΓåÆ 200
+  Γ£ô  153 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:486:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ F ΓÇö Phase 2 Mobile API Endpoints ΓÇ║ F03 ΓÇö Biometric status (47ms)
+Γ£à Mobile CTM assessment ΓåÆ 404
+  Γ£ô  154 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:493:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ F ΓÇö Phase 2 Mobile API Endpoints ΓÇ║ F04 ΓÇö CTM assessment endpoint (45ms)
+Γ£à Mobile geriatric screening ΓåÆ 404
+  Γ£ô  155 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:500:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ F ΓÇö Phase 2 Mobile API Endpoints ΓÇ║ F05 ΓÇö Geriatric screening endpoint (41ms)
+Γ£à Mobile follow-up ΓåÆ 404
+  Γ£ô  156 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:507:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ F ΓÇö Phase 2 Mobile API Endpoints ΓÇ║ F06 ΓÇö Follow-up endpoint (43ms)
+Γ£à Mobile nursing dashboard ΓåÆ 404
+  Γ£ô  157 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:514:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ F ΓÇö Phase 2 Mobile API Endpoints ΓÇ║ F07 ΓÇö Nursing dashboard endpoint (43ms)
+Γ£à Mobile smart scheduling ΓåÆ 404
+  Γ£ô  158 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:521:9 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ F ΓÇö Phase 2 Mobile API Endpoints ΓÇ║ F08 ΓÇö Smart scheduling endpoint (42ms)
+Γ£à Patient dashboard on iPhone SE ΓåÆ 200
+  Γ£ô  159 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:545:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ G ΓÇö Multi-Device Viewport Comparison ΓÇ║ G01 ΓÇö Patient dashboard on iPhone SE (375x667) (346ms)
+Γ£à Patient dashboard on iPhone 13 ΓåÆ 200
+  Γ£ô  160 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:545:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ G ΓÇö Multi-Device Viewport Comparison ΓÇ║ G02 ΓÇö Patient dashboard on iPhone 13 (390x844) (404ms)
+Γ£à Patient dashboard on Pixel 7 ΓåÆ 200
+  Γ£ô  161 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:545:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ G ΓÇö Multi-Device Viewport Comparison ΓÇ║ G03 ΓÇö Patient dashboard on Pixel 7 (393x851) (413ms)
+Γ£à Patient dashboard on iPad Mini ΓåÆ 200
+  Γ£ô  162 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:545:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ G ΓÇö Multi-Device Viewport Comparison ΓÇ║ G04 ΓÇö Patient dashboard on iPad Mini (768x1024) (495ms)
+Γ£à Doctor dashboard on iPhone SE ΓåÆ 200
+  Γ£ô  163 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:569:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ G ΓÇö Multi-Device Viewport Comparison ΓÇ║ G05 ΓÇö Doctor dashboard on iPhone SE (375x667) (429ms)
+Γ£à Doctor dashboard on iPhone 13 ΓåÆ 200
+  Γ£ô  164 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:569:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ G ΓÇö Multi-Device Viewport Comparison ΓÇ║ G06 ΓÇö Doctor dashboard on iPhone 13 (390x844) (398ms)
+Γ£à Doctor dashboard on Pixel 7 ΓåÆ 200
+  Γ£ô  165 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:569:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ G ΓÇö Multi-Device Viewport Comparison ΓÇ║ G07 ΓÇö Doctor dashboard on Pixel 7 (393x851) (405ms)
+Γ£à Doctor dashboard on iPad Mini ΓåÆ 200
+  Γ£ô  166 [Cloud-Dev] ΓÇ║ specs\10-mobile-viewport-data-sync.spec.ts:569:11 ΓÇ║ 10 ΓÇö Mobile Viewport & Data Streaming Sync ΓÇ║ G ΓÇö Multi-Device Viewport Comparison ΓÇ║ G08 ΓÇö Doctor dashboard on iPad Mini (768x1024) (485ms)
+
+  166 passed (25.9s)
+
+To open last HTML report run:
+[36m[39m
+[36m  npx playwright show-report[39m
+[36m[39m

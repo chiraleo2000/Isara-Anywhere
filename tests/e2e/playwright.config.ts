@@ -1,25 +1,28 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════
- * IZARA TELEMEDICINE — PLAYWRIGHT E2E CONFIG v11.0.0
+ * IZARA TELEMEDICINE — PLAYWRIGHT E2E CONFIG v12.0.0
  * ═══════════════════════════════════════════════════════════════════════
- * 8 spec files (01-08) | ~530+ tests | 3 projects: Local, Cloud, Cloud-Dev
- * Updated: February 19, 2026
+ * 10 spec files (01-10) | ~800+ tests | 5 projects: Local, Cloud, Cloud-Dev, Mobile-Local, Mobile-Cloud-Dev
+ * Updated: February 21, 2026
  *
  * Suite:
- *   01: Auth, Health, Multi-User (65 tests)
- *   02: Appointment Full Lifecycle (80 tests)
- *   03: Health Records & EMR (80 tests)
- *   04: Video Meeting & Transcription (65 tests)
- *   05: ★★★ Content Sync & Approval — single-refresh visibility (70 tests)
- *   06: AI Features & CDS (60 tests)
- *   07: Multi-User Concurrent — 5 browser windows (50 tests)
- *   08: Phase 2 AI-HIS — CTM, Geriatric, SOS, Follow-Up (60 tests)
+ *   01: Auth, Health, Multi-User (82 tests)
+ *   02: Appointment Full Lifecycle (92 tests)
+ *   03: Health Records & EMR (95 tests)
+ *   04: Video Meeting & Transcription (87 tests)
+ *   05: ★★★ Content Sync & Approval — single-refresh visibility (82 tests)
+ *   06: AI Features & CDS (72 tests)
+ *   07: Multi-User Concurrent — 5 browser windows (60 tests)
+ *   08: Phase 2 AI-HIS — CTM, Geriatric, SOS, Follow-Up (72 tests)
+ *   09: User Accounts Demo, Password Reset & All Pages (91 tests)
+ *   10: Mobile Viewport & Data Streaming Sync (85 tests)
  *
  * Features:
  * - 5 simultaneous users (patient1, patient2, patient3, doctor, admin)
  * - Multi-browser real-time content sync verification
  * - Full meeting lifecycle with AI SOAP / CDS
  * - Phase 2: CTM, Geriatric Screening (8 tools), SOS, Nursing Dashboard
+ * - Mobile viewport tests (Android Pixel 7, iPhone 13, iPad Mini)
  * - ALL FREE TIER: Jitsi Meet, Web Speech API, Gemini, PostgreSQL
  * ═══════════════════════════════════════════════════════════════════════
  */
@@ -37,6 +40,8 @@ const SPEC_FILES = [
   '**/06-ai-features-cds.spec.ts',
   '**/07-multi-user-concurrent.spec.ts',
   '**/08-phase2-ai-his.spec.ts',
+  '**/09-user-accounts-demo-pages.spec.ts',
+  '**/10-mobile-viewport-data-sync.spec.ts',
 ];
 
 export default defineConfig({
@@ -94,6 +99,24 @@ export default defineConfig({
         headless: true,
       },
       testMatch: SPEC_FILES,
+    },
+    {
+      name: 'Mobile-Local',
+      use: {
+        ...devices['Pixel 7'],
+        baseURL: 'http://localhost:3005',
+        headless: isHeadless,
+      },
+      testMatch: ['**/10-mobile-viewport-data-sync.spec.ts'],
+    },
+    {
+      name: 'Mobile-Cloud-Dev',
+      use: {
+        ...devices['Pixel 7'],
+        baseURL: 'https://izara-patient-portal-dev-testing-hvht4obouq-as.a.run.app',
+        headless: true,
+      },
+      testMatch: ['**/10-mobile-viewport-data-sync.spec.ts'],
     },
   ],
 });
