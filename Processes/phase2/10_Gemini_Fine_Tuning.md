@@ -11,7 +11,7 @@
 ### 1.1 Why Fine-Tune?
 
 | Problem | Solution |
-|---------|----------|
+| --------- | ---------- |
 | Generic Gemini lacks Thai medical terminology | Fine-tune on Thai medical corpus |
 | Drug names in Thai script not recognized well | Train on Thai drug database (FDA) |
 | ICD-10 mapping inaccurate for Thai symptoms | Train on Thai symptom-to-ICD mappings |
@@ -21,7 +21,7 @@
 ### 1.2 Target Improvements
 
 | Metric | Current (Base) | Target (Fine-tuned) |
-|--------|:--------------:|:-------------------:|
+| -------- | :--------------: | :-------------------: |
 | Thai medical term accuracy | ~75% | 95%+ |
 | Drug name recognition (Thai) | ~60% | 90%+ |
 | ICD-10 mapping accuracy | ~70% | 90%+ |
@@ -36,7 +36,7 @@
 ### 2.1 Data Categories
 
 | Category | Source | Size | Format |
-|----------|--------|------|--------|
+| ---------- | -------- | ------ | -------- |
 | Thai Medical Terms | Thai Medical Council glossary | ~50,000 terms | Term pairs (TH↔EN) |
 | Drug Database | FDA Thailand drug directory | ~30,000 drugs | Structured JSON |
 | ICD-10 Thai Mappings | Thai Health Coding Center | ~68,000 codes | Code-description pairs |
@@ -48,7 +48,7 @@
 
 ### 2.2 Data Preparation Pipeline
 
-```
+```text
 Raw Data Sources
        │
        ▼
@@ -129,7 +129,7 @@ tuning_job.run()
 ### 3.2 Tuning Tasks
 
 | Task | Training Examples | Description |
-|------|:-----------------:|-------------|
+| ------ | :-----------------: | ------------- |
 | Thai Medical Chat | 10,000 | Patient symptom conversations in Thai |
 | Symptom-to-ICD | 20,000 | Map Thai symptoms to ICD-10 codes |
 | EMR Generation | 5,000 | Generate Thai EMR from meeting transcripts |
@@ -184,7 +184,7 @@ def evaluate_model(model, test_data):
 
 ### 4.1 Current RAG Architecture
 
-```
+```text
 User Query (Thai)
        │
        ▼
@@ -226,7 +226,7 @@ User Query (Thai)
 ### 4.2 Phase 2 RAG Improvements
 
 | Improvement | Description |
-|-------------|-------------|
+| ------------- | ------------- |
 | Hybrid Search | Combine vector + keyword search for Thai text |
 | Reranking | Rerank retrieved chunks with cross-encoder |
 | Chunk Optimization | Optimize chunk size for Thai text (2000 chars) |
@@ -271,7 +271,7 @@ CREATE INDEX idx_knowledge_thai_fts ON medical_knowledge
 
 ### 5.1 Model Versioning
 
-```
+```text
 izara-medical-thai-v1  → Phase 1 (base Gemini, no fine-tuning)
 izara-medical-thai-v2  → Phase 2 Sprint 5 (first fine-tune)
 izara-medical-thai-v3  → Phase 2.2 (second iteration with more data)
@@ -299,7 +299,7 @@ const MODEL_CONFIG = {
 ### 5.3 Monitoring Dashboard
 
 | Metric | Alert Threshold | Check Interval |
-|--------|:--------------:|:--------------:|
+| -------- | :--------------: | :--------------: |
 | Response latency (p95) | > 5s | 1 minute |
 | Error rate | > 2% | 1 minute |
 | ICD-10 accuracy (sampled) | < 85% | Daily |
@@ -312,7 +312,7 @@ const MODEL_CONFIG = {
 ## 6. Timeline
 
 | Phase | Tasks | Duration |
-|-------|-------|----------|
+| ------- | ------- | ---------- |
 | 6.1 Data Collection | Collect & clean training data | Weeks 1-4 |
 | 6.2 Data Preparation | Format JSONL, create validation set | Weeks 5-6 |
 | 6.3 Initial Fine-tune | First training run, evaluate | Weeks 7-8 |
@@ -326,7 +326,7 @@ const MODEL_CONFIG = {
 ## 7. Cost Estimation
 
 | Item | Monthly Cost (Est.) |
-|------|:------------------:|
+| ------ | :------------------: |
 | Fine-tuning compute (Vertex AI) | $200-500 (one-time per tune) |
 | Gemini API calls (fine-tuned) | $300-800 |
 | Embedding generation | $50-100 |

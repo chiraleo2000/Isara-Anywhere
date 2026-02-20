@@ -41,9 +41,10 @@ export default function PatientsScreen() {
         style={styles.list}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        {isLoading ? (
+        {isLoading && (
           <View style={styles.empty}><Text style={styles.emptyText}>กำลังโหลด...</Text></View>
-        ) : patients?.length > 0 ? (
+        )}
+        {!isLoading && patients?.length > 0 && (
           patients.map((patient: any) => (
             <TouchableOpacity
               key={patient.id}
@@ -61,7 +62,8 @@ export default function PatientsScreen() {
               <Text style={styles.arrow}>›</Text>
             </TouchableOpacity>
           ))
-        ) : (
+        )}
+        {!isLoading && (patients?.length ?? 0) <= 0 && (
           <View style={styles.empty}>
             <Text style={{ fontSize: 40 }}>👥</Text>
             <Text style={styles.emptyText}>

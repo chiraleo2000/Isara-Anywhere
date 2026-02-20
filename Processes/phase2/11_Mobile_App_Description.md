@@ -1,11 +1,12 @@
 # 📱 Izara Dr. Anywhere — Mobile Application Product Description
 
-**Version:** 2.1.0  
+**Version:** 2.2.0  
 **Date:** February 2026  
 **Status:** 📋 Planning & Architecture  
 **App Name:** "Izara Dr. Anywhere" (อิซาร่า หมอทุกที่)  
 **Platform:** React Native (Expo) — iOS & Android  
-**App Type:** Unified Single App — Patient & Doctor in One
+**App Type:** Unified Single App — Patient & Doctor in One  
+**System Type:** AI-Based HIS (Health Information System)
 
 ---
 
@@ -14,12 +15,23 @@
 > **"หมอทุกที่ — ดูแลสุขภาพได้ทุกที่ทุกเวลา"**  
 > (Doctor Anywhere — Healthcare accessible anytime, anywhere)
 
-Izara Dr. Anywhere is a **single unified mobile application** that serves both patients and doctors. Users select their role at the start and experience a tailored interface for their needs. The app is the mobile companion to the Izara Telemedicine web platform (Phase 1), replicating **100% of all webapp features** while adding native mobile capabilities like biometric login, push notifications, camera scanning, wearable integration, offline mode, and mobile payments.
+Izara Dr. Anywhere is a **single unified mobile application** that serves as the frontend for a **complete AI-Based Health Information System (HIS)**. The app goes beyond traditional telemedicine — it supports the full clinical workflow (Task 1–5): patient intake with AI history taking, healthcare team dashboards, investigation management (Lab/Radiology/Pathology), prescription & treatment (modern + Thai traditional medicine), and referral/data exchange with hospital HIS systems.
+
+The platform serves **5 user groups:** General Clinics, CTM Clinics (แพทย์แผนไทย), Elderly Care facilities, Health Centers (รพ.สต.), and Hospital OPDs. Users select their role at the start and experience a tailored interface for their needs.
+
+### 1.1 The 4 Pillars
+
+| Pillar | Description |
+| -------- | ------------- |
+| **Smart Data Architecture** | FHIR-compliant records, pgvector for RAG, machine-readable data |
+| **AI Integration Layers** | Medical Scribe, Predictive Analytics, CDS, AI History Taking |
+| **Modern Healthcare UI/UX** | Role-Based Dashboards, Wearable IoT, CTM-specific interfaces |
+| **Security & Compliance** | PDPA/HIPAA, Immutable Audit Logs, RBAC, e-Consent |
 
 ### 1.1 Why One App?
 
 | Aspect | Two Separate Apps ❌ | One Unified App ✅ |
-|--------|---------------------|-------------------|
+| -------- | --------------------- | ------------------- |
 | **User Experience** | Users must find/install the right app | One download, choose role |
 | **App Store Presence** | Diluted downloads across 2 listings | Single listing, higher visibility |
 | **Maintenance** | Update 2 apps, 2 builds, 2 reviews | Single codebase, single release |
@@ -31,10 +43,23 @@ Izara Dr. Anywhere is a **single unified mobile application** that serves both p
 ### 1.2 Target Users
 
 | User Type | Description | Thai |
-|-----------|-------------|------|
+| ----------- | ------------- | ------ |
 | **Patient** | Anyone seeking healthcare services, booking appointments, tracking health | ผู้ป่วย / ผู้ใช้ทั่วไป |
-| **Doctor** | Licensed medical professionals providing telemedicine consultations | แพทย์ / ผู้ให้บริการทางการแพทย์ |
-| **Admin** | System administrators managing doctors, appointments, and content (doctor portal sub-role) | ผู้ดูแลระบบ |
+| **Doctor** | Licensed medical professionals providing telemedicine/in-clinic consultations | แพทย์ / ผู้ให้บริการทางการแพทย์ |
+| **CTM Practitioner** | Thai Traditional Medicine practitioners (แพทย์แผนไทย) | แพทย์แผนไทยประยุกต์ |
+| **Nurse** | Nursing staff in elderly care facilities, clinics, health centers | พยาบาล / เจ้าหน้าที่ดูแล |
+| **Admin** | System administrators managing doctors, clinics, appointments | ผู้ดูแลระบบ |
+| **Elderly/Caregiver** | Elderly patients in care facilities or their family caregivers | ผู้สูงอายุ / ผู้ดูแล |
+
+### 1.3 Target Facilities
+
+| Facility | Thai | Key Features |
+| ---------- | ------ | ------------- |
+| **General Clinics** | คลินิกเวชกรรม (franchise) | AI History Taking, Queue, Prescription |
+| **CTM Clinics** | คลินิกแพทย์แผนไทยประยุกต์ | ธาตุเจ้าเรือน, สมุฏฐาน, Herbal Rx |
+| **Elderly Care** | ศูนย์ดูแลผู้สูงอายุ / Home Care | Geriatric Screening, Nursing Dashboard, SOS |
+| **Health Centers** | รพ.สต. | HIS Integration, PHR Sync, Referral |
+| **Hospital OPD** | แผนกผู้ป่วยนอก | Full EMR, Lab/Radiology/Pathology |
 
 ### 1.3 App Store Description
 
@@ -49,15 +74,20 @@ Izara Dr. Anywhere is a **single unified mobile application** that serves both p
 > "แอปเดียวสำหรับทั้งผู้ป่วยและแพทย์ — นัดหมาย ปรึกษาวิดีโอ ดูแลสุขภาพ AI ช่วยเหลือ จ่ายเงินออนไลน์ ทุกอย่างในที่เดียว"
 
 **Long Description:**  
-> Izara Dr. Anywhere รวมทุกอย่างในแอปเดียว ทั้งฝั่งผู้ป่วยและแพทย์  
+> Izara Dr. Anywhere — AI-Based HIS ครบวงจร รวมทุกอย่างในแอปเดียว ทั้งฝั่งผู้ป่วย แพทย์ พยาบาล และผู้ดูแลระบบ  
+> ✅ AI History Taking — ซักประวัติอัจฉริยะ ครอบคลุม OPD Card & Intake Form อัตโนมัติ  
+> ✅ Smart Queue — ระบบคิวอัจฉริยะ Real-time ลดเวลารอพบแพทย์  
 > ✅ นัดหมายแพทย์ออนไลน์ ง่ายใน 3 ขั้นตอน  
-> ✅ วิดีโอคอลปรึกษาแพทย์ HD คมชัด  
-> ✅ AI ช่วยวิเคราะห์อาการเบื้องต้น (Gemini AI)  
+> ✅ วิดีโอคอลปรึกษาแพทย์ HD — AI Medical Scribe ช่วยบันทึกอัตโนมัติ  
+> ✅ Gemini CDS — AI ช่วยวินิจฉัยและแนะนำการรักษา  
+> ✅ แพทย์แผนไทย (CTM) — วิเคราะห์ธาตุเจ้าเรือน สมุฏฐาน สั่งยาสมุนไพร  
+> ✅ ดูแลผู้สูงอายุ — Geriatric Screening (ADL, TUG, Mini-Cog, MNA, GDS)  
+> ✅ Nursing Dashboard — แผนดูแลรายบุคคล พร้อม SOS ฉุกเฉิน  
+> ✅ เวชระเบียนอิเล็กทรอนิกส์ FHIR R4 + Lab/Radiology/Pathology  
+> ✅ Predictive Analytics — AI ทำนายความเสี่ยงสุขภาพ  
 > ✅ บันทึกสุขภาพ วัดสัญญาณชีพ เชื่อมต่ออุปกรณ์  
-> ✅ เวชระเบียนอิเล็กทรอนิกส์ (EMR) ดิจิทัล  
 > ✅ จ่ายเงินค่าปรึกษาออนไลน์ (Stripe, PromptPay)  
-> ✅ แจ้งเตือนนัดหมาย ผลแล็บ ยา  
-> ✅ สแกนเอกสารทางการแพทย์ด้วยกล้อง  
+> ✅ HIS Integration — เชื่อมต่อ รพ.สต. และสถานพยาบาล  
 > ✅ ค้นหาสถานพยาบาลใกล้เคียงด้วยแผนที่  
 
 ---
@@ -228,7 +258,7 @@ This table ensures **every single webapp feature** is present in the mobile app.
 ### 3.1 Patient Features
 
 | # | Feature (Web) | Web Page | Mobile Screen | Status | Notes |
-|---|---------------|----------|---------------|--------|-------|
+| --- | --------------- | ---------- | --------------- | -------- | ------- |
 | 1 | Login | `/login` | `(auth)/login` | ✅ | + Biometric, PIN |
 | 2 | Registration | `/register` | `(auth)/register` | ✅ | 2-step wizard |
 | 3 | Password Reset | `/reset-password` | `(auth)/forgot-password` | ✅ | Same flow |
@@ -263,11 +293,15 @@ This table ensures **every single webapp feature** is present in the mobile app.
 | **32** | **Biometric Login (NEW)** | ❌ Not in web | Auth flow | 🆕 | Face ID / Fingerprint |
 | **33** | **Offline Mode (NEW)** | ❌ Not in web | Throughout app | 🆕 | SQLite cache + sync queue |
 | **34** | **Medication Reminders (NEW)** | ❌ Not in web | Push notifications | 🆕 | Scheduled local notifications |
+| **35** | **AI History Taking (NEW)** | ❌ Not in web | `(tabs)/ai/history-taking` | 🆕 | Interactive & voice-based, auto-generates OPD Card |
+| **36** | **SOS Emergency (NEW)** | ❌ Not in web | `sos/emergency` | 🆕 | One-tap emergency alert with GPS location |
+| **37** | **Follow-up Tracking (NEW)** | ❌ Not in web | `health/follow-ups` | 🆕 | View upcoming follow-up reminders & compliance |
+| **38** | **Predictive Health (NEW)** | ❌ Not in web | `(tabs)/ai/predictive` | 🆕 | AI risk scores for diabetes, CVD, CKD, etc. |
 
 ### 3.2 Doctor Features
 
 | # | Feature (Web) | Web Page | Mobile Screen | Status | Notes |
-|---|---------------|----------|---------------|--------|-------|
+| --- | --------------- | ---------- | --------------- | -------- | ------- |
 | 1 | Login | `/login` | `(auth)/login` | ✅ | + Biometric |
 | 2 | 2FA Verification | Part of login | `(auth)/two-factor` | ✅ | SMS/Email OTP |
 | 3 | Password Reset | `/reset-password` | `(auth)/forgot-password` | ✅ | Same flow |
@@ -299,10 +333,21 @@ This table ensures **every single webapp feature** is present in the mobile app.
 | 29 | Doctor Profile | `/profile` | `profile/index + edit` | ✅ | Avatar, specialty, license |
 | 30 | Doctors Directory | `/doctors` | admin/doctors-directory | ✅ | View all doctors, status |
 | 31 | Notification Center | Header bell | `notifications` | ✅ | Full page + push manager |
-| **Admin-only Features:** | | | | |
+| **Admin-only Features:** | | | | | |
 | 32 | Admin Appointment Management | `/admin/appointments` | `admin/appointments` | ✅ | Auto-assign, manual assign |
 | 33 | Admin Doctor Management | `/admin/doctors` | `admin/doctors` | ✅ | Approve/reject doctors, roles |
 | 34 | System Statistics | Part of dashboard | `admin/stats` | ✅ | Usage analytics, metrics |
+| **AI-HIS Features:** | | | | | |
+| **35** | **Nursing Dashboard (NEW)** | ❌ Not in web | `(tabs)/nursing` | 🆕 | Care plans, vital alerts, shift handover, resident profiles |
+| **36** | **Geriatric Screening (NEW)** | ❌ Not in web | `patients/[id]/geriatric` | 🆕 | ADL/IADL, TUG, Mini-Cog, MNA, GDS-15, SARC-F, Braden |
+| **37** | **CTM Dashboard (NEW)** | ❌ Not in web | `(tabs)/ctm` | 🆕 | ธาตุเจ้าเรือน, สมุฏฐาน, herbal prescription |
+| **38** | **Investigation Reports (NEW)** | ❌ Not in web | `patients/[id]/investigations` | 🆕 | Lab, Radiology, Pathology reports & orders |
+| **39** | **Follow-up Tracking (NEW)** | ❌ Not in web | `patients/[id]/follow-ups` | 🆕 | Automated recall scheduler, compliance dashboard |
+| **40** | **Executive Dashboard (NEW)** | ❌ Not in web | `(tabs)/executive` | 🆕 | Patient stats, revenue, AI insights per doctor |
+| **41** | **SOS Monitor (NEW)** | ❌ Not in web | `(tabs)/sos-alerts` | 🆕 | Real-time SOS emergency alerts with GPS |
+| **42** | **Clinic Network Admin (NEW)** | ❌ Not in web | `admin/network` | 🆕 | Multi-clinic analytics, doctor management |
+| **43** | **HIS Integration (NEW)** | ❌ Not in web | `admin/his-exchange` | 🆕 | Data sync with รพ.สต. via HL7 FHIR |
+| **44** | **Automated Refer Report (NEW)** | ❌ Not in web | `patients/[id]/refer` | 🆕 | AI auto-generate referral from EMR/AI notes |
 
 ---
 
@@ -346,7 +391,7 @@ The mobile app supports connecting to **multiple external services** via API tok
 ### 4.3 Token Types
 
 | Type | Example Services | Auth Method | Storage |
-|------|-----------------|-------------|---------|
+| ------ | ----------------- | ------------- | --------- |
 | **JWT (Auto-managed)** | Izara APIs | Login → auto-refresh | SecureStore |
 | **OAuth2** | Google Fit, Insurance | OAuth flow → refresh token | SecureStore |
 | **API Key** | Hospital EHR, Lab Service | User pastes key in settings | SecureStore (encrypted) |
@@ -435,10 +480,13 @@ The mobile app supports connecting to **multiple external services** via API tok
 ### 5.1 Patient Mode Features
 
 #### 5.1.1 🏠 Dashboard
+
 The patient dashboard is the central hub showing a personalized greeting, upcoming appointment cards with "Join Video" buttons, quick action shortcuts (Book Appointment, AI Chat, My Medications, Nearby Map), health summary (latest vitals), unread notification count, and medication reminders. Pull-to-refresh updates all data. Matches the webapp dashboard but optimized for mobile with card-based layout.
 
 #### 5.1.2 📅 Appointment Booking
+
 Full appointment workflow matching the webapp:
+
 1. **Symptom Input** — Text description + AI symptom analysis (Gemini). Voice input option (speech-to-text). Photo upload for visual symptoms.
 2. **Doctor Selection** — Browse by specialty with AI recommendation based on symptoms. View doctor profiles, ratings, availability.
 3. **Date & Time** — Calendar picker showing available slots per doctor. Time zone aware.
@@ -448,7 +496,9 @@ Full appointment workflow matching the webapp:
 Patients can view all appointments (upcoming/past/cancelled), see appointment details, cancel (with refund policy), and reschedule within allowed timeframes. Video appointments show a "Join Meeting" button that opens the Jitsi video consultation.
 
 #### 5.1.3 💊 Health Records (PHR)
+
 Complete Personal Health Record management identical to web PHR page:
+
 - **Overview** — Health profile with conditions, lifestyle, BMI visualization
 - **Vital Signs** — Record blood pressure, heart rate, temperature, weight, blood glucose, SpO₂. Charts with trend lines (Victory Native). Auto-sync from connected wearables (Apple Health/Google Fit).
 - **Medications** — Active/inactive medication list with dosage, frequency, prescriber. Set medication reminders (local push notifications). Scan medication label with camera.
@@ -460,7 +510,9 @@ Complete Personal Health Record management identical to web PHR page:
 - **Document Scanner** — Use camera to scan medical documents (prescriptions, lab results, referrals). AI-powered OCR extracts text. Documents attached to health record.
 
 #### 5.1.4 🤖 AI Health Assistant
+
 Gemini-powered health chat matching the webapp AI Doctor page:
+
 - **Chat Interface** — Natural language conversation about health questions (Thai primary, English supported). Message history preserved.
 - **Voice Input** — Tap microphone button, speak symptoms in Thai/English. Speech-to-text converts to chat message.
 - **Photo Symptoms** — Take photo of skin condition, rash, wound. AI analyzes image and provides preliminary guidance.
@@ -469,7 +521,9 @@ Gemini-powered health chat matching the webapp AI Doctor page:
 - **Safety Disclaimer** — Every AI response includes: "AI provides preliminary advice only. Always consult a healthcare professional."
 
 #### 5.1.5 📹 Video Meeting
+
 Patient joins video consultation:
+
 - Pre-join screen showing doctor info, appointment details, camera/mic test
 - Recording consent (Thai legal requirement)
 - Jitsi React Native SDK for HD video
@@ -480,7 +534,9 @@ Patient joins video consultation:
 - Deep link support for guest invites
 
 #### 5.1.6 🗺️ Nearby Healthcare
+
 Google Maps integration matching the webapp Map page:
+
 - Interactive map using react-native-maps (native MapView)
 - GPS location detection (expo-location)
 - Filter by facility type: hospitals, clinics, pharmacies, health centers
@@ -489,7 +545,9 @@ Google Maps integration matching the webapp Map page:
 - Search by name or address
 
 #### 5.1.7 📚 Medical Content Library
+
 Read-only access to health education content matching the webapp Health Library:
+
 - Browse articles by category (Thai health topics)
 - Search articles by keyword
 - Article detail view with rich text, images
@@ -497,14 +555,18 @@ Read-only access to health education content matching the webapp Health Library:
 - Share articles via iOS/Android share sheet
 
 #### 5.1.8 🔒 PDPA Privacy Management
+
 Full privacy controls matching the webapp PDPA page:
+
 - **Consent Management** — View and modify data sharing consents
 - **Doctor Access** — Control which doctors can view health records. Grant/revoke individual doctor access.
 - **Audit Log** — View who accessed your health data and when
 - Data export request, data deletion request
 
 #### 5.1.9 👤 Profile & Settings
+
 Complete profile management matching webapp Profile + Settings pages:
+
 - **Profile** — View/edit name, phone, email, avatar (camera or gallery), emergency contact, date of birth, gender, blood type, national ID
 - **Settings** — Theme (light/dark/auto), language (Thai/English), notification preferences, font size, biometric login toggle
 - **Notification Settings** — Toggle push notifications by category (appointments, medications, lab results, AI, system)
@@ -515,7 +577,9 @@ Complete profile management matching webapp Profile + Settings pages:
 ### 5.2 Doctor Mode Features
 
 #### 5.2.1 📊 Doctor Dashboard
+
 Clinical hub matching the webapp Doctor Dashboard:
+
 - **Statistics** — Today's appointments (total, completed, pending), waiting patients, average wait time
 - **Today's Queue** — Quick view of current patient queue with call button
 - **Upcoming Appointments** — Next 5 appointments with patient name, symptoms, time
@@ -525,14 +589,18 @@ Clinical hub matching the webapp Doctor Dashboard:
 - On tablet: 3-column layout matching web. On phone: scrollable cards.
 
 #### 5.2.2 📅 Schedule & Appointments
+
 Complete schedule management matching webapp Schedule + Health Meeting pages:
+
 - **Calendar Views** — Day/Week/Month with appointment blocks. Color-coded by status.
 - **Pending Confirmations** — Review and confirm/decline appointment requests with reason
 - **Appointment Pool** — View unassigned appointments matching doctor's specialty. Claim from pool.
 - **Appointment Detail** — Patient info, symptoms, AI summary, actions (confirm, decline, reschedule, start meeting)
 
 #### 5.2.3 👥 Patient Management
+
 Full patient management matching webapp Patient Management page:
+
 - **Patient List** — Search by name, ID, email, phone. Filter by status, PDPA consent.
 - **Patient Detail** — Demographics, contact, appointment history, quick actions
 - **Patient PHR Viewer** — View patient's health record (with PDPA consent). 3 tabs: PHR, EMR, EHR matching the webapp PatientRecordViewer modal.
@@ -548,7 +616,9 @@ Full patient management matching webapp Patient Management page:
 - **Patient Living Will** — View living will if patient has shared (PDPA consent)
 
 #### 5.2.4 🏥 Queue Management
+
 Real-time queue matching webapp Queue Management:
+
 - Today's confirmed appointments as queue items
 - **Call** — Call next patient (sends push notification to patient)
 - **Skip** — Skip patient (mark as no-show after timeout)
@@ -557,7 +627,9 @@ Real-time queue matching webapp Queue Management:
 - Walk-in patient registration with quick form
 
 #### 5.2.5 📹 Video Meeting (HOST)
+
 Doctor as meeting HOST with full clinical tools:
+
 - All patient meeting features PLUS:
 - **HOST Controls** — Lobby management, admit/deny participants, mute all, remove participant
 - **Side Panel: Patient Info** — Quick PHR view, allergies, medications, risk flags
@@ -570,19 +642,24 @@ Doctor as meeting HOST with full clinical tools:
 - CallKit integration (iOS) / ConnectionService (Android)
 
 #### 5.2.6 🤖 AI Studio
+
 Gemini AI assistant matching webapp Gemini AI Studio:
+
 - **AI Chat** — Medical question/answer with Thai medical terminology
 - **Medical Calculators** — BMI, eGFR, CHA₂DS₂-VASc, CURB-65, Wells Score, HEART Score, etc.
 - Accessible via floating action button (FAB) from any screen
 - Context-aware: if viewing a patient, chat pre-loaded with patient context
 
 #### 5.2.7 📚 Medical Content & Resources
+
 Content management matching webapp Medical Content + Clinical Resources + Medical Consultants:
+
 - **Clinical Resources** — View/create guidelines, protocols, research papers. Approval workflow (doctor creates → admin approves).
 - **Medical Content** — Create health education articles for patients. Same approval workflow.
 - **Medical Consultants** — Specialist directory for referrals. View profiles, ratings, contact info. Admin can add/edit/remove.
 
 #### 5.2.8 🔧 Admin Features (Admin role only)
+
 - **Appointment Management** — View all appointments. AI auto-assign to doctors by specialty. Manual assign/reject.
 - **Doctor Management** — Approve/reject new doctor registrations. Change roles (doctor ↔ admin). Toggle active/inactive.
 - **System Statistics** — Usage metrics, appointment counts, response times
@@ -595,7 +672,7 @@ Content management matching webapp Medical Content + Clinical Resources + Medica
 ### 6.1 Performance Budgets
 
 | Metric | Target |
-|--------|--------|
+| -------- | -------- |
 | Cold Start | < 2 seconds |
 | Screen Transition | < 300ms |
 | API Response (cached) | < 100ms |
@@ -614,7 +691,7 @@ Content management matching webapp Medical Content + Clinical Resources + Medica
 ### 6.2 Offline Support
 
 | Feature | Offline Behavior |
-|---------|-----------------|
+| --------- | ----------------- |
 | Dashboard | Show cached data with "Last updated" timestamp |
 | Appointments | View cached appointments. New bookings queued for sync. |
 | Vitals | Record vitals locally (SQLite). Auto-sync when online. |
@@ -627,7 +704,7 @@ Content management matching webapp Medical Content + Clinical Resources + Medica
 ### 6.3 Device Support Matrix
 
 | Platform | Minimum | Recommended |
-|----------|---------|-------------|
+| ---------- | --------- | ------------- |
 | iOS | iPhone SE (2nd gen), iOS 15.0 | iPhone 12+, iOS 17+ |
 | Android | Android 10 (API 29), 3GB RAM | Android 13+, 4GB+ RAM |
 | Tablet | iPad (9th gen), Android 10" | iPad Air/Pro, Galaxy Tab S |
@@ -635,7 +712,7 @@ Content management matching webapp Medical Content + Clinical Resources + Medica
 ### 6.4 Accessibility
 
 | Feature | Implementation |
-|---------|----------------|
+| --------- | ---------------- |
 | VoiceOver (iOS) | All UI elements labeled in Thai + English |
 | TalkBack (Android) | Same accessibility labels |
 | Dynamic Type | Text scales with system font size (1x to 2x) |
@@ -650,7 +727,7 @@ Content management matching webapp Medical Content + Clinical Resources + Medica
 ### 7.1 Data Protection
 
 | Requirement | Implementation |
-|-------------|----------------|
+| ------------- | ---------------- |
 | Encryption at Rest | AES-256 via SecureStore (Keychain/Keystore) |
 | Encryption in Transit | TLS 1.3, certificate pinning |
 | Token Storage | expo-secure-store with hardware-backed keys |
@@ -662,7 +739,7 @@ Content management matching webapp Medical Content + Clinical Resources + Medica
 ### 7.2 PDPA Compliance (Thailand)
 
 | Requirement | Mobile Implementation |
-|-------------|----------------------|
+| ------------- | ---------------------- |
 | Consent Collection | First-launch PDPA consent screen. Granular toggles. |
 | Data Access Control | Patient controls doctor access via PDPA settings |
 | Audit Trail | All data access logged with timestamp + accessor |
@@ -673,7 +750,7 @@ Content management matching webapp Medical Content + Clinical Resources + Medica
 ### 7.3 OWASP Mobile Top 10
 
 | Risk | Mitigation |
-|------|------------|
+| ------ | ------------ |
 | M1: Improper Credential Usage | SecureStore, no plaintext tokens |
 | M2: Inadequate Supply Chain Security | Dependency auditing, SRI |
 | M3: Insecure Authentication/Authorization | JWT, biometric, MFA for doctors |
@@ -724,7 +801,7 @@ The mobile app connects to the **exact same backend servers** as the web platfor
 ### 8.2 New Backend Endpoints for Mobile
 
 | Category | Endpoints | Purpose |
-|----------|-----------|---------|
+| ---------- | ----------- | --------- |
 | Device Registration | `POST /api/devices/register`, `DELETE /api/devices/:id` | Push notification tokens |
 | Biometric Auth | `POST /api/auth/biometric-enroll`, `POST /api/auth/biometric-login` | Biometric binding |
 | Push Delivery | `POST /api/notifications/push/send` | Send push via FCM/APNS |
@@ -733,6 +810,15 @@ The mobile app connects to the **exact same backend servers** as the web platfor
 | Offline Sync | `POST /api/sync/pull`, `POST /api/sync/push`, `POST /api/sync/resolve` | Sync queue management |
 | OCR Scanner | `POST /api/documents/scan`, `POST /api/documents/analyze` | Document OCR pipeline |
 | API Tokens | `GET /api/connections`, `POST /api/connections`, `DELETE /api/connections/:id` | External service management |
+| **AI History Taking** | `POST /api/ai/history-taking/start`, `POST /api/ai/history-taking/respond` | **AI-driven intake interview** |
+| **CTM Assessment** | `POST /api/ctm/assessment`, `GET /api/ctm/herbs` | **Thai Traditional Medicine** |
+| **Geriatric Screening** | `POST /api/geriatric/screening`, `GET /api/geriatric/tools` | **8-tool geriatric battery** |
+| **Follow-up Tracking** | `GET /api/follow-ups`, `POST /api/follow-ups/schedule` | **Automated recall system** |
+| **SOS Emergency** | `POST /api/sos/alert`, `GET /api/sos/active` | **Emergency alert with GPS** |
+| **Predictive Analytics** | `GET /api/analytics/risk-scores`, `POST /api/analytics/predict` | **AI health risk prediction** |
+| **HIS Integration** | `POST /api/his/sync`, `GET /api/his/exchange-log` | **รพ.สต. data exchange** |
+| **Nursing Dashboard** | `GET /api/nursing/residents`, `POST /api/nursing/care-plans` | **Care plan management** |
+| **Investigations** | `POST /api/investigations/order`, `GET /api/investigations/results` | **Lab/Rad/Pathology reports** |
 
 ### 8.3 Data Consistency
 
@@ -745,7 +831,7 @@ Both web and mobile apps read/write to the same database. Changes made on web ar
 ### 9.1 Build & Distribution
 
 | Stage | Platform | Method |
-|-------|----------|--------|
+| ------- | ---------- | -------- |
 | Development | iOS Simulator + Android Emulator | `expo start` |
 | Internal Testing | Physical devices | EAS Build → Internal distribution |
 | Beta Testing | Testers | TestFlight (iOS) + Internal Testing (Android) |
@@ -755,7 +841,7 @@ Both web and mobile apps read/write to the same database. Changes made on web ar
 ### 9.2 App Store Requirements
 
 | Requirement | iOS (App Store) | Android (Google Play) |
-|-------------|-----------------|----------------------|
+| ------------- | ----------------- | ---------------------- |
 | Developer Account | Apple Developer Program ($99/year) | Google Play Console ($25 one-time) |
 | Review Time | 1-3 business days | 1-7 business days |
 | Health Disclaimer | Required (medical app) | Required |
@@ -768,7 +854,7 @@ Both web and mobile apps read/write to the same database. Changes made on web ar
 ## 10. Document Index (Complete)
 
 | # | Document | Description |
-|---|----------|-------------|
+| --- | ---------- | ------------- |
 | — | **[README.md](README.md)** | Phase 2 overview (this file needs update) |
 | 0 | **[00_Phase2_Implementation_Plan.md](00_Phase2_Implementation_Plan.md)** | Master timeline & resources |
 | 1 | **[01_Mobile_App_Architecture.md](01_Mobile_App_Architecture.md)** | Technical architecture |
@@ -787,8 +873,9 @@ Both web and mobile apps read/write to the same database. Changes made on web ar
 | 14 | **[14_Mobile_PDPA_Privacy.md](14_Mobile_PDPA_Privacy.md)** | PDPA compliance mobile |
 | 15 | **[15_Mobile_Offline_Sync.md](15_Mobile_Offline_Sync.md)** | Offline mode & sync |
 | 16 | **[16_Unified_App_Role_Selection.md](16_Unified_App_Role_Selection.md)** | Role selection system |
+| — | **[PHASE2_MVP_COMPREHENSIVE.md](../../Phase2/PHASE2_MVP_COMPREHENSIVE.md)** | 🏗️ Master comprehensive plan (AI-Based HIS) |
 | — | **[Pages/Unified-App/](Pages/Unified-App/)** | All screen specifications (unified) |
 
 ---
 
-### End of Mobile Application Product Description — February 2026
+### End of AI-Based HIS & Mobile Application Product Description v2.2.0 — February 2026

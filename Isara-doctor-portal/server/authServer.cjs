@@ -76,7 +76,12 @@ const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin.test@izara.com';
 // ============================================================================
 // JWT CONFIGURATION - MUST match mainApiServer.cjs
 // ============================================================================
-const JWT_SECRET = process.env.JWT_SECRET || process.env.VITE_JWT_SECRET || 'izara-telemedicine-secret-key-2025';
+// SECURITY: No hardcoded fallback secrets
+const JWT_SECRET = process.env.JWT_SECRET || process.env.VITE_JWT_SECRET;
+if (!JWT_SECRET) {
+  console.error('[SECURITY] WARNING: JWT_SECRET not set. Using random ephemeral secret.');
+}
+const JWT_SECRET_FINAL = JWT_SECRET || require('node:crypto').randomBytes(64).toString('hex');
 const JWT_ISSUER = process.env.JWT_ISSUER || 'izara-telemedicine';
 const JWT_EXPIRES_IN = '24h';
 
@@ -93,7 +98,7 @@ function generateJWT(user) {
     isAdmin: user.is_admin || user.isAdmin || false
   };
   
-  return jwt.sign(payload, JWT_SECRET, {
+  return jwt.sign(payload, JWT_SECRET_FINAL, {
     issuer: JWT_ISSUER,
     expiresIn: JWT_EXPIRES_IN,
     algorithm: 'HS256'

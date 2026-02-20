@@ -15,14 +15,14 @@ Phase 2 mobile apps consume the **same REST APIs** as Phase 1 web portals. No du
 ### 1.2 API Base URLs
 
 | Environment | Patient API | Doctor API | Meeting API |
-|-------------|-------------|------------|-------------|
+| ------------- | ------------- | ------------ | ------------- |
 | Local | `http://localhost:3005` | `http://localhost:3010` | `http://localhost:3020` |
 | Dev Cloud | `https://izara-patient-portal-dev-testing-hvht4obouq-as.a.run.app` | `https://izara-doctor-portal-dev-testing-hvht4obouq-as.a.run.app` | `https://izara-meeting-server-dev-testing-hvht4obouq-as.a.run.app` |
 | Production | `https://izara-patient-portal-hvht4obouq-as.a.run.app` | `https://izara-doctor-portal-hvht4obouq-as.a.run.app` | `https://izara-jitsi-meeting-portal-hvht4obouq-as.a.run.app` |
 
 ### 1.3 Authentication Header
 
-```
+```text
 Authorization: Bearer <jwt_token>
 Content-Type: application/json
 X-Platform: mobile                    # NEW: Identifies mobile client
@@ -39,7 +39,7 @@ X-App-Version: 2.0.0                  # NEW: App version for compat
 #### Authentication (`/api/auth`)
 
 | Method | Endpoint | Mobile Usage | Description |
-|--------|----------|--------------|-------------|
+| -------- | ---------- | -------------- | ------------- |
 | POST | `/api/auth/register` | ✅ Register | New patient registration |
 | POST | `/api/auth/login` | ✅ Login | Returns JWT token |
 | POST | `/api/auth/validate` | ✅ Token check | Validate stored token on launch |
@@ -54,7 +54,7 @@ X-App-Version: 2.0.0                  # NEW: App version for compat
 #### PHR — Personal Health Records (`/api/phr`)
 
 | Method | Endpoint | Mobile Usage | Description |
-|--------|----------|--------------|-------------|
+| -------- | ---------- | -------------- | ------------- |
 | GET | `/api/phr/` | ✅ Health tab | Get own PHR data |
 | PUT | `/api/phr/:patientId` | ✅ Edit PHR | Update PHR (lifestyle, conditions) |
 | GET | `/api/phr/:patientId/vitals` | ✅ Vitals chart | Get vitals history |
@@ -72,7 +72,7 @@ X-App-Version: 2.0.0                  # NEW: App version for compat
 #### Appointments (`/api/appointments`)
 
 | Method | Endpoint | Mobile Usage | Description |
-|--------|----------|--------------|-------------|
+| -------- | ---------- | -------------- | ------------- |
 | GET | `/api/appointments/my` | ✅ Appts tab | Get my appointments |
 | GET | `/api/appointments/history` | ✅ History | Past appointments |
 | GET | `/api/appointments/:appointmentId` | ✅ Detail | Single appointment |
@@ -83,7 +83,7 @@ X-App-Version: 2.0.0                  # NEW: App version for compat
 #### AI Features (`/api/ai`)
 
 | Method | Endpoint | Mobile Usage | Description |
-|--------|----------|--------------|-------------|
+| -------- | ---------- | -------------- | ------------- |
 | POST | `/api/ai/chat` | ✅ AI chat | AI health assistant |
 | GET | `/api/ai/chat/history` | ✅ Chat history | Previous conversations |
 | POST | `/api/ai/chat/clear` | ✅ Clear | Clear chat history |
@@ -94,7 +94,7 @@ X-App-Version: 2.0.0                  # NEW: App version for compat
 #### Video Meeting (`/api/video-meeting`)
 
 | Method | Endpoint | Mobile Usage | Description |
-|--------|----------|--------------|-------------|
+| -------- | ---------- | -------------- | ------------- |
 | GET | `/api/video-meeting/config` | ✅ Meeting init | Get Jitsi config |
 | GET | `/api/video-meeting/:appointmentId` | ✅ Join meeting | Get meeting details + link |
 | POST | `/api/video-meeting/:appointmentId/join` | ✅ Join | Join meeting |
@@ -106,7 +106,7 @@ X-App-Version: 2.0.0                  # NEW: App version for compat
 #### Other Patient APIs
 
 | Method | Endpoint | Mobile Usage | Description |
-|--------|----------|--------------|-------------|
+| -------- | ---------- | -------------- | ------------- |
 | GET | `/api/doctors/` | ✅ Booking | List available doctors |
 | GET | `/api/doctors/:doctorId/slots` | ✅ Booking | Available time slots |
 | GET | `/api/content/medical` | ✅ Content tab | Medical articles |
@@ -127,7 +127,7 @@ X-App-Version: 2.0.0                  # NEW: App version for compat
 #### Doctor Authentication
 
 | Method | Endpoint | Mobile Usage | Description |
-|--------|----------|--------------|-------------|
+| -------- | ---------- | -------------- | ------------- |
 | POST | `/auth/login` | ✅ Login | Doctor login (rate limited) |
 | POST | `/auth/logout` | ✅ Logout | End session |
 | GET | `/auth/me` | ✅ Profile | Current doctor profile |
@@ -137,7 +137,7 @@ X-App-Version: 2.0.0                  # NEW: App version for compat
 #### Doctor Clinical APIs
 
 | Method | Endpoint | Mobile Usage | Description |
-|--------|----------|--------------|-------------|
+| -------- | ---------- | -------------- | ------------- |
 | GET | `/api/dashboard/:doctorId` | ✅ Dashboard | Doctor dashboard data |
 | GET | `/api/appointments` | ✅ Schedule | All appointments |
 | GET | `/api/appointments/doctor/:doctorId` | ✅ My schedule | Doctor's appointments |
@@ -158,7 +158,7 @@ X-App-Version: 2.0.0                  # NEW: App version for compat
 #### Doctor AI APIs
 
 | Method | Endpoint | Mobile Usage | Description |
-|--------|----------|--------------|-------------|
+| -------- | ---------- | -------------- | ------------- |
 | POST | `/api/ai/chat` | ✅ AI copilot | AI clinical chat |
 | GET | `/api/ai/pre-summary/:patientId` | ✅ Pre-consult | Pre-consultation summary |
 | POST | `/api/ai/cds` | ✅ CDS alerts | Clinical Decision Support |
@@ -171,7 +171,7 @@ X-App-Version: 2.0.0                  # NEW: App version for compat
 #### Doctor Video Meeting APIs
 
 | Method | Endpoint | Mobile Usage | Description |
-|--------|----------|--------------|-------------|
+| -------- | ---------- | -------------- | ------------- |
 | POST | `/api/video-meeting/create` | ✅ Start meeting | Create meeting as HOST |
 | GET | `/api/video-meeting/:appointmentId` | ✅ Meeting | Get meeting details |
 | POST | `/api/video-meeting/:appointmentId/join` | ✅ Join | Join meeting |
@@ -182,7 +182,7 @@ X-App-Version: 2.0.0                  # NEW: App version for compat
 #### Admin APIs (admin role only)
 
 | Method | Endpoint | Mobile Usage | Description |
-|--------|----------|--------------|-------------|
+| -------- | ---------- | -------------- | ------------- |
 | GET | `/api/admin/stats` | ✅ Admin tab | System statistics |
 | GET | `/api/admin/pending-doctors` | ✅ Admin | Pending doctor registrations |
 | PUT | `/api/admin/doctors/:doctorId/approve` | ✅ Admin | Approve doctor |
@@ -193,7 +193,7 @@ X-App-Version: 2.0.0                  # NEW: App version for compat
 ### 2.3 Meeting Server APIs (port 3020)
 
 | Method | Endpoint | Mobile Usage | Description |
-|--------|----------|--------------|-------------|
+| -------- | ---------- | -------------- | ------------- |
 | GET | `/api/health` | ✅ Health check | Server status |
 | POST | `/api/meetings/create` | ✅ Doctor app | Create meeting room |
 | GET | `/api/meetings/:id` | ✅ Both apps | Get meeting info |
@@ -212,7 +212,7 @@ X-App-Version: 2.0.0                  # NEW: App version for compat
 #### Socket.IO Events (Meeting Server)
 
 | Event | Direction | Mobile Usage | Description |
-|-------|-----------|--------------|-------------|
+| ------- | ----------- | -------------- | ------------- |
 | `join-meeting` | Client→Server | ✅ Both apps | Join meeting room |
 | `leave-meeting` | Client→Server | ✅ Both apps | Leave meeting |
 | `transcript-segment` | Client→Server | ✅ Both apps | Send transcript text |
@@ -229,7 +229,7 @@ X-App-Version: 2.0.0                  # NEW: App version for compat
 **Path prefix:** `/api/mobile`
 
 | Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
+| -------- | ---------- | ------ | ------------- |
 | POST | `/api/mobile/device/register` | Yes | Register device for push notifications |
 | DELETE | `/api/mobile/device/unregister` | Yes | Unregister device (logout) |
 | PUT | `/api/mobile/device/token` | Yes | Update push token (token refresh) |
@@ -288,7 +288,7 @@ CREATE INDEX idx_device_tokens_active ON device_tokens(is_active);
 **Path prefix:** `/api/mobile/biometric`
 
 | Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
+| -------- | ---------- | ------ | ------------- |
 | POST | `/api/mobile/biometric/enroll` | Yes | Enable biometric for this device |
 | POST | `/api/mobile/biometric/verify` | No | Verify biometric token |
 | DELETE | `/api/mobile/biometric/revoke` | Yes | Disable biometric for device |
@@ -364,7 +364,7 @@ async function sendAppointmentConfirmedPush(appointmentId: string) {
 #### Push Notification Types
 
 | Type | Title (Thai) | Trigger | Deep Link |
-|------|-------------|---------|-----------|
+| ------ | ------------- | --------- | ----------- |
 | `appointment_confirmed` | ✅ นัดหมายได้รับการยืนยัน | Doctor confirms | `/appointments/:id` |
 | `appointment_reminder` | ⏰ แจ้งเตือนนัดหมาย | 24h & 1h before | `/appointments/:id` |
 | `meeting_started` | 📹 แพทย์เริ่มการประชุมแล้ว | Doctor starts meeting | `/meeting/:id` |
@@ -384,7 +384,7 @@ async function sendAppointmentConfirmedPush(appointmentId: string) {
 **Path prefix:** `/api/mobile/payments`
 
 | Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
+| -------- | ---------- | ------ | ------------- |
 | POST | `/api/mobile/payments/create-intent` | Yes | Create payment intent (Stripe) |
 | POST | `/api/mobile/payments/confirm` | Yes | Confirm payment |
 | GET | `/api/mobile/payments/history` | Yes | Get payment history |
@@ -443,7 +443,7 @@ CREATE INDEX idx_payments_status ON payment_transactions(status);
 **Path prefix:** `/api/mobile/health-sync`
 
 | Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
+| -------- | ---------- | ------ | ------------- |
 | POST | `/api/mobile/health-sync/vitals` | Yes | Sync wearable vitals batch |
 | GET | `/api/mobile/health-sync/status` | Yes | Get sync status |
 | PUT | `/api/mobile/health-sync/settings` | Yes | Configure sync settings |
@@ -481,7 +481,7 @@ interface WearableSyncResponse {
 **Path prefix:** `/api/mobile/sync`
 
 | Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
+| -------- | ---------- | ------ | ------------- |
 | POST | `/api/mobile/sync/push` | Yes | Push offline changes to server |
 | GET | `/api/mobile/sync/pull` | Yes | Pull latest data since timestamp |
 | GET | `/api/mobile/sync/status` | Yes | Check sync queue status |
@@ -517,10 +517,10 @@ interface SyncPullResponse {
 
 **Path prefix:** `/api/mobile/scanner`
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| POST | `/api/mobile/scanner/ocr` | Yes | OCR scanned document image |
-| POST | `/api/mobile/scanner/analyze` | Yes | AI-analyze scanned document |
+| Method | Endpoint                       | Auth | Description                 |
+| ------ | ------------------------------ | ---- | --------------------------- |
+| POST   | `/api/mobile/scanner/ocr`      | Yes  | OCR scanned document image  |
+| POST   | `/api/mobile/scanner/analyze`  | Yes  | AI-analyze scanned document |
 
 ```typescript
 // POST /api/mobile/scanner/ocr (multipart/form-data)
@@ -791,7 +791,7 @@ const offlineFallback = {
 ## 6. Rate Limiting (Mobile-Specific)
 
 | Endpoint Group | Limit | Window |
-|---------------|-------|--------|
+| --------------- | ------- | -------- |
 | `/api/auth/login` | 10 requests | 15 minutes |
 | `/api/mobile/biometric/verify` | 5 requests | 5 minutes |
 | `/api/ai/chat` | 30 requests | 1 hour |

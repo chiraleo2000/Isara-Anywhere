@@ -16,7 +16,7 @@
 
 ### 1.1 Auth Flow Overview
 
-```
+```text
 ┌──────────────┐          ┌──────────────┐          ┌──────────────┐
 │  Mobile App  │──────────│  API Server  │──────────│  PostgreSQL  │
 │              │          │              │          │              │
@@ -29,7 +29,7 @@
 ### 1.2 Authentication Methods
 
 | Method | Patient Mode | Doctor Mode | Description |
-|--------|:-----------:|:----------:|-------------|
+| -------- | :-----------: | :----------: | ------------- |
 | Email + Password | ✅ | ✅ | Standard login (separate accounts per role) |
 | Biometric (Face ID / Fingerprint) | ✅ | ✅ | After initial login, per-role binding |
 | PIN Code | ✅ | ❌ | Fallback for older devices (patient only) |
@@ -46,7 +46,7 @@
 
 ### 2.1 JWT Token Strategy
 
-```
+```text
 Access Token:  Short-lived (15 minutes)
 Refresh Token: Long-lived (30 days) 
 Device Token:  Persistent (until logout/revoke)
@@ -99,7 +99,7 @@ async function clearAllTokens(): Promise<void> {
 
 ### 2.3 Token Refresh Flow
 
-```
+```text
 ┌──────────┐                    ┌──────────┐
 │  Mobile  │                    │  Server  │
 └────┬─────┘                    └────┬─────┘
@@ -185,7 +185,7 @@ apiClient.interceptors.response.use(
 
 ### 3.1 Enrollment Flow
 
-```
+```text
 User logs in with email/password
          │
          ▼
@@ -225,7 +225,7 @@ User logs in with email/password
 
 ### 3.2 Biometric Login Flow
 
-```
+```text
 App Launch
     │
     ▼
@@ -531,7 +531,7 @@ export class DataEncryption {
 ### 6.1 Compliance Matrix
 
 | # | Risk | Mitigation | Status |
-|---|------|------------|--------|
+| --- | ------ | ------------ | -------- |
 | M1 | Improper Platform Usage | Follow Apple/Google guidelines, use native APIs correctly | ✅ Planned |
 | M2 | Insecure Data Storage | SecureStore (Keychain/Keystore), encrypted SQLite | ✅ Planned |
 | M3 | Insecure Communication | TLS 1.3, certificate pinning, HSTS | ✅ Planned |
@@ -572,7 +572,7 @@ export async function checkDeviceSecurity(): Promise<SecurityCheckResult> {
 ### 7.1 Mobile-Specific Requirements
 
 | Requirement | Implementation |
-|-------------|---------------|
+| ------------- | --------------- |
 | Consent before data collection | PDPA consent screen on first launch |
 | Right to access personal data | Profile → Privacy → "ดาวน์โหลดข้อมูลของฉัน" |
 | Right to erasure | Profile → Privacy → "ลบบัญชีของฉัน" (30-day grace period) |

@@ -10,7 +10,7 @@
 
 ### 1.1 System Overview
 
-```
+```text
 ┌──────────────┐         ┌──────────────┐         ┌──────────────┐
 │  Mobile App  │─────────│  API Server  │─────────│   Stripe     │
 │              │         │              │         │              │
@@ -24,7 +24,7 @@
 ### 1.2 Supported Payment Methods
 
 | Method | iOS | Android | Description |
-|--------|:---:|:-------:|-------------|
+| -------- | :---: | :-------: | ------------- |
 | Credit/Debit Card | ✅ | ✅ | Visa, Mastercard, JCB |
 | PromptPay QR | ✅ | ✅ | Thai QR payment |
 | Apple Pay | ✅ | ❌ | Native iOS payment |
@@ -38,7 +38,7 @@
 
 ### 2.1 Consultation Fee Payment (During Booking)
 
-```
+```text
 Appointment Confirmation Screen
               │
               ▼
@@ -233,7 +233,7 @@ export function usePromptPayStatus(paymentId: string) {
 
 ### 3.1 Payment History Screen
 
-```
+```text
 Profile → Payment History
          │
          ▼
@@ -286,7 +286,7 @@ export async function downloadReceipt(paymentId: string): Promise<void> {
 ### 4.1 Refund Rules
 
 | Scenario | Refund Amount | Processing Time |
-|----------|:------------:|:---------------:|
+| ---------- | :------------: | :---------------: |
 | Cancel > 24h before | 100% | 3-5 business days |
 | Cancel 12-24h before | 50% | 3-5 business days |
 | Cancel < 12h before | 0% | N/A |
@@ -296,7 +296,7 @@ export async function downloadReceipt(paymentId: string): Promise<void> {
 
 ### 4.2 Refund Flow
 
-```
+```text
 Payment Detail → [ขอคืนเงิน]
               │
               ▼

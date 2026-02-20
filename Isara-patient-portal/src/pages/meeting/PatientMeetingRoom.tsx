@@ -7,14 +7,14 @@
  * - Chat integration via Socket.IO
  * - Post-meeting: view AI summary when doctor approves
  */
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 
 const JITSI_DOMAIN = 'meet.jit.si';
 const MEETING_SERVER_URL = (() => {
-  if (typeof window !== 'undefined') {
-    const env = (window as any).ENV;
+  if (globalThis.window !== undefined) {
+    const env = (globalThis as any).ENV;
     if (env?.MEETING_SERVER_URL) return env.MEETING_SERVER_URL;
   }
   return import.meta.env?.VITE_MEETING_SERVER_URL || 'http://localhost:3020';
@@ -27,6 +27,34 @@ interface TranscriptSegment {
   content: string;
   language: string;
   timestamp: string;
+}
+
+/** Load the Jitsi Meet External API script */
+function loadJitsiScript(): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    if ((globalThis as any).JitsiMeetExternalAPI) { resolve(); return; }
+    const script = document.createElement('script');
+    script.src = `https://${JITSI_DOMAIN}/external_api.js`;
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error('Failed to load Jitsi'));
+    document.head.appendChild(script);
+  });
+}
+
+/** Fetch the room name from the meeting server */
+async function fetchRoomName(appointmentId: string): Promise<string> {
+  const fallback = `izara-${appointmentId.substring(0, 12)}-meeting`;
+  try {
+    const res = await fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.meeting?.room_name) return data.meeting.room_name;
+    }
+  } catch {
+    console.log('[PatientMeeting] Using default room name');
+  }
+  return fallback;
 }
 
 const PatientMeetingRoom: React.FC = () => {
@@ -46,38 +74,35 @@ const PatientMeetingRoom: React.FC = () => {
   const durationTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
+    // Define handlers at useEffect level to reduce function nesting depth
+    const handleJoined = () => {
+      setStatus('in_meeting');
+      const start = Date.now();
+      durationTimerRef.current = setInterval(() => {
+        setMeetingDuration(Math.floor((Date.now() - start) / 1000));
+      }, 1000);
+    };
+
+    const handleClose = () => {
+      setStatus('ended');
+      if (durationTimerRef.current) clearInterval(durationTimerRef.current);
+    };
+
+    const appendTranscript = (data: TranscriptSegment) => {
+      setTranscripts(prev => [...prev, data]);
+    };
+
     const init = async () => {
       try {
-        // Determine room name from meeting server
-        let roomName = `izara-${appointmentId?.substring(0, 12) || 'room'}-meeting`;
-
-        try {
-          const res = await fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}`);
-          if (res.ok) {
-            const data = await res.json();
-            if (data.meeting?.room_name) {
-              roomName = data.meeting.room_name;
-            }
-          }
-        } catch {
-          console.log('[PatientMeeting] Using default room name');
-        }
+        const roomName = await fetchRoomName(appointmentId || 'room');
 
         // Load Jitsi script
-        await new Promise<void>((resolve, reject) => {
-          if ((window as any).JitsiMeetExternalAPI) { resolve(); return; }
-          const script = document.createElement('script');
-          script.src = `https://${JITSI_DOMAIN}/external_api.js`;
-          script.async = true;
-          script.onload = () => resolve();
-          script.onerror = () => reject(new Error('Failed to load Jitsi'));
-          document.head.appendChild(script);
-        });
+        await loadJitsiScript();
 
         // Init Jitsi
-        if (jitsiContainerRef.current && (window as any).JitsiMeetExternalAPI) {
-          const patientName = user?.name || user?.displayName || 'Patient';
-          const api = new (window as any).JitsiMeetExternalAPI(JITSI_DOMAIN, {
+        if (jitsiContainerRef.current && (globalThis as any).JitsiMeetExternalAPI) {
+          const patientName = user?.name || (user as any)?.displayName || 'Patient';
+          const api = new (globalThis as any).JitsiMeetExternalAPI(JITSI_DOMAIN, {
             roomName,
             parentNode: jitsiContainerRef.current,
             width: '100%',
@@ -115,20 +140,8 @@ const PatientMeetingRoom: React.FC = () => {
           });
 
           jitsiApiRef.current = api;
-
-          api.on('readyToClose', () => {
-            setStatus('ended');
-            if (durationTimerRef.current) clearInterval(durationTimerRef.current);
-          });
-
-          api.on('videoConferenceJoined', () => {
-            setStatus('in_meeting');
-            const start = Date.now();
-            durationTimerRef.current = setInterval(() => {
-              setMeetingDuration(Math.floor((Date.now() - start) / 1000));
-            }, 1000);
-          });
-
+          api.on('readyToClose', handleClose);
+          api.on('videoConferenceJoined', handleJoined);
           setStatus('ready');
         }
 
@@ -143,9 +156,7 @@ const PatientMeetingRoom: React.FC = () => {
               role: 'patient',
             });
           });
-          socket.on('transcript-update', (data: TranscriptSegment) => {
-            setTranscripts(prev => [...prev, data]);
-          });
+          socket.on('transcript-update', appendTranscript);
           socketRef.current = socket;
         } catch {
           console.warn('[PatientMeeting] Socket.IO skipped');

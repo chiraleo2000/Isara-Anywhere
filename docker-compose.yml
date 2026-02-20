@@ -1,7 +1,7 @@
 # ============================================================================
 # IZARA TELEMEDICINE - COMPLETE DOCKER COMPOSE
-# Version: 1.4.8-dev
-# Updated: 2026-02-12
+# Version: 1.5.0
+# Updated: 2026-02-16
 # ============================================================================
 #
 # This docker-compose provides:
@@ -43,8 +43,10 @@ services:
     ports:
       - "5433:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql
       - ./scripts/database/izara-database.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+      - ./scripts/database/migrations/v2.0.0-phase2-tables.sql:/docker-entrypoint-initdb.d/02-phase2.sql:ro
+      - ./scripts/database/migrations/v2.1.0-phase2-ai-his.sql:/docker-entrypoint-initdb.d/03-phase2-ai-his.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d izara_phase1"]
       interval: 10s
@@ -85,7 +87,7 @@ services:
       args:
         VITE_API_URL: http://localhost:3005
         VITE_APP_NAME: Izara Patient Portal
-        VITE_APP_VERSION: 1.4.8-dev
+        VITE_APP_VERSION: 1.5.0
         VITE_APP_ENV: production
         VITE_USE_POSTGRESQL: "true"
         VITE_MEETING_SERVER_URL: http://localhost:3020
@@ -158,7 +160,7 @@ services:
         VITE_API_URL: http://localhost:3010
         VITE_AUTH_URL: http://localhost:3010/auth
         VITE_APP_NAME: Izara Doctor Portal
-        VITE_APP_VERSION: 1.4.8-dev
+        VITE_APP_VERSION: 1.5.0
         VITE_APP_ENV: production
         VITE_USE_POSTGRESQL: "true"
         VITE_MEETING_SERVER_URL: http://localhost:3020

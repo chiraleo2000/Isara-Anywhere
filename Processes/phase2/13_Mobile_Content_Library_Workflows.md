@@ -12,7 +12,7 @@
 The Izara Dr. Anywhere mobile app provides access to health education content and clinical resources matching the webapp's Medical Content Library, Clinical Resources, and Medical Consultants pages.
 
 | Feature | Patient Mode | Doctor Mode |
-|---------|:----------:|:----------:|
+| --------- | :----------: | :----------: |
 | View Health Articles | ✅ Read-only | ✅ Read + Create |
 | Clinical Resources | ❌ | ✅ View + Create |
 | Medical Consultants Directory | ❌ | ✅ View + Manage |
@@ -363,7 +363,7 @@ Same approval workflow as Clinical Resources. After admin approves:
 ### 6.1 Health Library (Patient + Doctor)
 
 | Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
+| -------- | ---------- | ------------- | ------ |
 | `GET` | `/api/content/articles` | List published articles | JWT (optional) |
 | `GET` | `/api/content/articles/:id` | Get article detail | JWT (optional) |
 | `GET` | `/api/content/categories` | List categories | Public |
@@ -375,7 +375,7 @@ Same approval workflow as Clinical Resources. After admin approves:
 ### 6.2 Content Management (Doctor)
 
 | Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
+| -------- | ---------- | ------------- | ------ |
 | `POST` | `/api/content/articles` | Create draft article | Doctor JWT |
 | `PUT` | `/api/content/articles/:id` | Update article | Doctor JWT (author) |
 | `DELETE` | `/api/content/articles/:id` | Delete draft | Doctor JWT (author) |
@@ -386,7 +386,7 @@ Same approval workflow as Clinical Resources. After admin approves:
 ### 6.3 Clinical Resources (Doctor)
 
 | Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
+| -------- | ---------- | ------------- | ------ |
 | `GET` | `/api/clinical-resources` | List resources | Doctor JWT |
 | `GET` | `/api/clinical-resources/:id` | Get resource detail | Doctor JWT |
 | `POST` | `/api/clinical-resources` | Create resource | Doctor JWT |
@@ -397,7 +397,7 @@ Same approval workflow as Clinical Resources. After admin approves:
 ### 6.4 Content Approval (Admin)
 
 | Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
+| -------- | ---------- | ------------- | ------ |
 | `GET` | `/api/admin/content/pending` | List pending content | Admin JWT |
 | `POST` | `/api/admin/content/:id/approve` | Approve content | Admin JWT |
 | `POST` | `/api/admin/content/:id/reject` | Reject with reason | Admin JWT |
@@ -405,7 +405,7 @@ Same approval workflow as Clinical Resources. After admin approves:
 ### 6.5 Medical Consultants (Doctor)
 
 | Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
+| -------- | ---------- | ------------- | ------ |
 | `GET` | `/api/consultants` | List consultants | Doctor JWT |
 | `GET` | `/api/consultants/:id` | Get consultant detail | Doctor JWT |
 | `POST` | `/api/consultants` | Add consultant (Admin) | Admin JWT |
@@ -419,7 +419,7 @@ Same approval workflow as Clinical Resources. After admin approves:
 ## 7. Related Documents
 
 | Document | Relationship |
-|----------|-------------|
+| ---------- | ------------- |
 | Webapp: [Clinical_Resources_&_Medical_Library_Workflows.md](../Clinical_Resources_&_Medical_Library_Workflows.md) | Existing web workflows |
 | Webapp: [Medicine_Content_Processes.md](../Medicine_Content_Processes.md) | Medicine content web processes |
 | [11_Mobile_App_Description.md](11_Mobile_App_Description.md) | Feature matrix reference |

@@ -239,6 +239,7 @@ router.get('/symptoms', authMiddleware, async (_req: Request, res: Response) => 
       { id: 'dizziness', name: 'Dizziness', nameTh: '\u0e27\u0e34\u0e07\u0e40\u0e27\u0e35\u0e22\u0e19' }
     ]);
   } catch (error: any) {
+    console.warn('[METADATA] Symptoms fallback:', error.message);
     res.json([]);
   }
 });
@@ -250,6 +251,7 @@ router.get('/medicines', authMiddleware, async (_req: Request, res: Response) =>
     const medications = data.medications || data || [];
     res.json(medications);
   } catch (error: any) {
+    console.warn('[METADATA] Medicines fallback:', error.message);
     res.json([]);
   }
 });
@@ -261,6 +263,7 @@ router.get('/icd10', authMiddleware, async (_req: Request, res: Response) => {
     const codes = data.codes || data || [];
     res.json(codes);
   } catch (error: any) {
+    console.warn('[METADATA] ICD10 fallback:', error.message);
     res.json([]);
   }
 });

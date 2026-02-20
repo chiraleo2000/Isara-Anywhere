@@ -8,7 +8,7 @@
 
 ## Navigation Structure
 
-```
+```text
 (auth)/               — Unauthenticated screens
   login               — Doctor login (rate-limited)
   forgot-password     — Password reset
@@ -58,7 +58,7 @@ notifications         — Notification center
 ### 1. Doctor Login — `(auth)/login`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **API** | `POST /auth/login` (port 3011) |
 | **Components** | Logo, Email input, Password input, Login button, Biometric button |
 | **Security** | Rate-limited (10 attempts / 15 min), IP blocking, 2FA for admin |
@@ -69,7 +69,7 @@ notifications         — Notification center
 ### 2. Dashboard — `(tabs)/index`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **API** | `GET /api/dashboard/:doctorId` |
 | **Layout** | ScrollView with stats cards and quick actions |
 | **Stats Cards** | Today's appointments (count), Patients in queue, Pending confirmations, Completed today |
@@ -81,7 +81,7 @@ notifications         — Notification center
 ### 3. Schedule View — `(tabs)/appointments/index`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **APIs** | `GET /api/appointments/doctor/:doctorId` |
 | **Components** | Calendar header (day/week view switcher), Time slot list, Appointment cards |
 | **Day View** | Vertical timeline with appointment blocks |
@@ -93,7 +93,7 @@ notifications         — Notification center
 ### 4. Pending Appointments — `(tabs)/appointments/pending`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **API** | `GET /api/appointments/pending/:doctorId` |
 | **Components** | Pending appointment list with large action buttons |
 | **Card Info** | Patient name, AI symptom analysis preview, Requested date/time |
@@ -105,7 +105,7 @@ notifications         — Notification center
 ### 5. Patient List — `(tabs)/patients/index`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **API** | `GET /api/patients` |
 | **Components** | Search bar, Patient cards, Sort/Filter options |
 | **Search** | By name, patient ID |
@@ -116,7 +116,7 @@ notifications         — Notification center
 ### 6. Patient Detail — `(tabs)/patients/[patientId]/index`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **APIs** | `GET /api/patients/:patientId`, `GET /api/ai/pre-summary/:patientId` |
 | **Layout** | Header with patient info + Tab navigation (Overview, PHR, EMR, Rx) |
 | **Overview Sections** | Demographics, Active conditions, Allergies (⚠️ prominent), Current medications, AI Pre-consultation summary |
@@ -127,7 +127,7 @@ notifications         — Notification center
 ### 7. Patient PHR View — `(tabs)/patients/[patientId]/phr`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **API** | `GET /api/phr/patient/:patientId` |
 | **Components** | Read-only view of patient's PHR data |
 | **Sections** | Vital signs charts, Medications, Allergies, Lifestyle, Wearable data |
@@ -137,7 +137,7 @@ notifications         — Notification center
 ### 8. EMR History — `(tabs)/patients/[patientId]/emr`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **API** | `GET /api/patients/:patientId/emr` |
 | **Components** | EMR record list (chronological), Detail view |
 | **Card Info** | Date, Doctor name, Chief complaint, Diagnosis, Signed status |
@@ -147,7 +147,7 @@ notifications         — Notification center
 ### 9. Create EMR — `(tabs)/patients/[patientId]/emr/new`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **APIs** | `POST /api/emr`, `POST /api/emr/:id/sign`, `POST /api/ai/cds`, `POST /api/ai/emr-summary` |
 | **Components** | Form with AI pre-fill capability |
 | **Fields** | Chief Complaint, Present Illness (HPI), Past Medical History, Physical Exam (BP, HR, Temp, RR, SpO2, Weight), Assessment (ICD-10 search), Plan, Notes |
@@ -161,7 +161,7 @@ notifications         — Notification center
 ### 10. Write Prescription — `prescriptions` (modal)
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **APIs** | `POST /api/prescriptions`, `POST /api/ai/cds/drug-interactions` |
 | **Components** | Drug search, Dosage fields, Add multiple drugs |
 | **Drug Search** | Thai + English name search, Auto-complete from medication DB |
@@ -173,7 +173,7 @@ notifications         — Notification center
 ### 11. Queue Management — `(tabs)/queue/index`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **APIs** | `GET /api/queue/doctor/:doctorId`, `POST /api/queue/call-next` |
 | **Components** | Current patient card, Queue list, Call next button |
 | **Header** | "กำลังตรวจ: [patient name]" or "ว่าง" |
@@ -185,7 +185,7 @@ notifications         — Notification center
 ### 12. Video Meeting (HOST) — `meeting/[meetingId]`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **APIs** | `POST /api/video-meeting/create`, `POST /api/video-meeting/:appointmentId/end` |
 | **Components** | JitsiMeetingView (HOST), Side panel (tablet), Floating controls |
 | **HOST Controls** | Start/Stop transcription, Toggle AI CDS, End meeting for all |
@@ -197,7 +197,7 @@ notifications         — Notification center
 ### 13. Post-Meeting EMR — `meeting/[meetingId]/emr`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **APIs** | `GET /api/meetings/:id/summary`, `POST /api/emr`, `POST /api/ai/validate` |
 | **Components** | AI-generated EMR draft with edit capability |
 | **Sections** | Meeting summary, Draft EMR fields (AI pre-filled), Prescription builder, Lab order builder, Patient instructions generator |
@@ -208,7 +208,7 @@ notifications         — Notification center
 ### 14. Admin — Stats & Approvals — `admin/`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **APIs** | `GET /api/admin/stats`, `GET /api/admin/pending-doctors`, `PUT /api/admin/doctors/:id/approve` |
 | **Access** | Admin role only |
 | **Stats Screen** | Total patients, Total doctors, Appointments today, Active meetings, System health |
@@ -218,7 +218,7 @@ notifications         — Notification center
 ### 15. Doctor Profile — `(tabs)/profile/index`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **API** | `GET /auth/me` |
 | **Sections** | Avatar + name + specialty, Menu items |
 | **Menu** | Edit Profile (specialty, bio, schedule), Notification Settings, Availability Schedule, Security Settings (2FA), Language, About, Logout |
@@ -228,7 +228,7 @@ notifications         — Notification center
 ### 16. Notification Center — `notifications`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **API** | `GET /api/notifications/` |
 | **Types** | New appointment requests, Patient queue updates, AI analysis complete, System alerts |
 | **Actions** | Tap → Navigate to relevant screen |
@@ -239,7 +239,7 @@ notifications         — Notification center
 ## Responsive Layout Strategy
 
 | Screen Size | Layout |
-|-------------|--------|
+| ------------- | -------- |
 | Phone Portrait | Single column, bottom tabs |
 | Phone Landscape | Side-by-side in meeting, single column elsewhere |
 | Tablet Portrait | Split view (list + detail), bottom tabs |

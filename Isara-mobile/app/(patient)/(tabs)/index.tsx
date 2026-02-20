@@ -14,12 +14,12 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
-import { useAuthStore } from '../../../../src/stores/authStore';
+import { useAuthStore } from '../../../src/stores/authStore';
 import { patientApi } from '@izara/api-client';
 
-function QuickAction({ icon, label, onPress, bgColor }: {
+function QuickAction({ icon, label, onPress, bgColor }: Readonly<{
   icon: string; label: string; onPress: () => void; bgColor: string;
-}) {
+}>) {
   return (
     <TouchableOpacity style={[styles.quickAction, { backgroundColor: bgColor }]} onPress={onPress}>
       <Text style={styles.quickActionIcon}>{icon}</Text>
@@ -28,7 +28,7 @@ function QuickAction({ icon, label, onPress, bgColor }: {
   );
 }
 
-function AppointmentCard({ appointment }: { appointment: any }) {
+function AppointmentCard({ appointment }: Readonly<{ appointment: any }>) {
   const statusLabels: Record<string, string> = {
     confirmed: 'ยืนยันแล้ว', pending: 'รอการยืนยัน', in_progress: 'กำลังดำเนินการ',
   };
@@ -132,8 +132,8 @@ export default function PatientDashboardScreen() {
                 { icon: '🩸', value: healthSummary.bloodPressure || '--/--', label: 'ความดัน' },
                 { icon: '🌡️', value: healthSummary.temperature || '--', label: 'อุณหภูมิ (°C)' },
                 { icon: '⚖️', value: healthSummary.weight || '--', label: 'น้ำหนัก (kg)' },
-              ].map((item, i) => (
-                <View key={i} style={styles.healthItem}>
+              ].map((item) => (
+                <View key={item.label} style={styles.healthItem}>
                   <Text style={{ fontSize: 24 }}>{item.icon}</Text>
                   <Text style={styles.healthValue}>{item.value}</Text>
                   <Text style={styles.healthLabel}>{item.label}</Text>
@@ -152,11 +152,13 @@ export default function PatientDashboardScreen() {
             <Text style={styles.seeAll}>ดูทั้งหมด</Text>
           </TouchableOpacity>
         </View>
-        {isLoading ? (
+        {isLoading && (
           <View style={styles.emptyCard}><Text style={styles.emptyText}>กำลังโหลด...</Text></View>
-        ) : appointments?.length > 0 ? (
+        )}
+        {!isLoading && appointments && appointments.length > 0 && (
           appointments.slice(0, 3).map((apt: any) => <AppointmentCard key={apt.id} appointment={apt} />)
-        ) : (
+        )}
+        {!isLoading && (appointments?.length ?? 0) <= 0 && (
           <View style={styles.emptyCard}>
             <Text style={{ fontSize: 40, marginBottom: 8 }}>📅</Text>
             <Text style={styles.emptyText}>ไม่มีนัดหมายที่กำลังจะมาถึง</Text>

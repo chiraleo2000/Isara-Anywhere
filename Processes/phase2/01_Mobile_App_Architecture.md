@@ -106,7 +106,7 @@
 ### 2.1 Core Framework
 
 | Technology | Version | Purpose |
-|------------|---------|---------|
+| ------------ | --------- | --------- |
 | React Native | 0.76+ | Mobile UI framework |
 | Expo SDK | 52 | Managed platform services |
 | Expo Router | v4 | File-based routing |
@@ -116,7 +116,7 @@
 ### 2.2 State Management
 
 | Technology | Purpose |
-|------------|---------|
+| ------------ | --------- |
 | Zustand | Global state (auth, settings, offline queue) |
 | TanStack Query (React Query) | Server state, caching, background refetch |
 | React Context | Theme, locale, auth provider |
@@ -125,7 +125,7 @@
 ### 2.3 Native Modules (Expo)
 
 | Module | Purpose | Platform |
-|--------|---------|----------|
+| -------- | --------- | ---------- |
 | expo-local-authentication | Biometric auth (Face ID, fingerprint) | iOS + Android |
 | expo-notifications | Push notifications (FCM + APNS) | iOS + Android |
 | expo-camera | Document scanner | iOS + Android |
@@ -144,7 +144,7 @@
 ### 2.4 Networking
 
 | Technology | Purpose |
-|------------|---------|
+| ------------ | --------- |
 | Axios | HTTP API calls with interceptors |
 | Socket.IO Client | Real-time meeting communication |
 | NetInfo | Network connectivity monitoring |
@@ -152,7 +152,7 @@
 ### 2.5 UI Framework
 
 | Technology | Purpose |
-|------------|---------|
+| ------------ | --------- |
 | NativeWind (Tailwind) | Utility-first styling (compatible with web Tailwind) |
 | React Native Reanimated | Smooth animations |
 | React Native Gesture Handler | Touch gestures |
@@ -593,7 +593,7 @@ interface TokenManager {
 ### 6.2 Cacheable Data (Read Offline)
 
 | Data | Cache Duration | Priority |
-|------|---------------|----------|
+| ------ | --------------- | ---------- |
 | Appointments (own) | 24 hours | P0 |
 | PHR (own) | 24 hours | P0 |
 | Recent vitals | 24 hours | P0 |
@@ -606,7 +606,7 @@ interface TokenManager {
 ### 6.3 Offline-Capable Actions (Write Queued)
 
 | Action | Queue Strategy |
-|--------|---------------|
+| -------- | --------------- |
 | Record vital signs | Queue → sync on reconnect |
 | Update medications | Queue → sync on reconnect |
 | Update allergies | Queue → sync on reconnect |
@@ -621,7 +621,7 @@ interface TokenManager {
 ### 7.1 Performance Budgets
 
 | Metric | Target |
-|--------|--------|
+| -------- | -------- |
 | App launch (cold start) | < 2 seconds |
 | Screen transition | < 300ms |
 | API response display | < 1 second |
@@ -634,7 +634,7 @@ interface TokenManager {
 ### 7.2 Optimization Techniques
 
 | Technique | Implementation |
-|-----------|---------------|
+| ----------- | --------------- |
 | Lazy loading | Dynamic imports for non-critical screens |
 | Image optimization | expo-image with caching + WebP format |
 | List virtualization | FlashList for large lists (appointments, patients) |
@@ -683,7 +683,7 @@ interface TokenManager {
 ### 8.2 OWASP Mobile Top 10 Compliance
 
 | # | Risk | Mitigation |
-|---|------|------------|
+| --- | ------ | ------------ |
 | M1 | Improper Platform Usage | Follow iOS/Android security guidelines |
 | M2 | Insecure Data Storage | SecureStore + SQLCipher encryption |
 | M3 | Insecure Communication | Certificate pinning + TLS 1.3 |
@@ -738,7 +738,7 @@ export const theme = {
 ### 9.2 Component Library (@izara/ui)
 
 | Component | Description |
-|-----------|-------------|
+| ----------- | ------------- |
 | `IzaraButton` | Primary, secondary, outline, danger variants |
 | `IzaraCard` | Content container with shadow |
 | `IzaraInput` | Text input with validation states |
@@ -757,7 +757,7 @@ export const theme = {
 ## 10. Monitoring & Analytics
 
 | Tool | Purpose |
-|------|---------|
+| ------ | --------- |
 | Sentry | Crash reporting + error tracking |
 | Expo Updates | OTA update delivery tracking |
 | Firebase Analytics | User behavior analytics |
@@ -769,7 +769,7 @@ export const theme = {
 ## 11. Related Documents
 
 | Document | Relevance |
-|----------|-----------|
+| ---------- | ----------- |
 | [11_Mobile_App_Description.md](11_Mobile_App_Description.md) | Complete product description & feature matrix |
 | [12_Multi_API_Token_Management.md](12_Multi_API_Token_Management.md) | Multi-service API token architecture |
 | [13_Mobile_Content_Library_Workflows.md](13_Mobile_Content_Library_Workflows.md) | Content & clinical resources workflows |

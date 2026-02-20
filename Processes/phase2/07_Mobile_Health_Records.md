@@ -9,7 +9,7 @@
 
 ### 1.1 Mobile Health Data Architecture
 
-```
+```text
 ┌────────────────────────────────────────────┐
 │           Patient Mobile App               │
 │                                            │
@@ -37,7 +37,7 @@
 ### 1.2 Data Ownership Model
 
 | Data Type | Owner | Who Can Edit? | Mobile Access |
-|-----------|-------|---------------|:-------------:|
+| ----------- | ------- | --------------- | :-------------: |
 | PHR Profile | Patient | Patient | ✅ Read/Write |
 | Vital Signs | Patient | Patient + Wearable | ✅ Read/Write |
 | Medications | Patient | Patient | ✅ Read/Write |
@@ -54,7 +54,7 @@
 
 ### 2.1 Health Tab Navigation
 
-```
+```text
 Health Tab (🏥)
      │
      ├── 📊 Overview Dashboard
@@ -102,7 +102,7 @@ Health Tab (🏥)
 
 ### 2.2 Vital Signs Recording Flow
 
-```
+```text
 Health → Vital Signs → Blood Pressure
               │
               ▼
@@ -204,14 +204,14 @@ function VitalSignChart({ data, type }: { data: VitalSign[], type: string }) {
 ### 3.1 Supported Platforms
 
 | Platform | Data Types | SDK |
-|----------|-----------|-----|
+| ---------- | ----------- | ----- |
 | Apple Health (iOS) | HR, BP, SpO2, Steps, Sleep, Weight | `react-native-health` |
 | Google Fit (Android) | HR, BP, Steps, Sleep, Weight | `react-native-google-fit` |
 | Samsung Health | HR, SpO2, Steps, Sleep | `react-native-samsung-health` |
 
 ### 3.2 Connection Flow
 
-```
+```text
 Health → Connected Devices → [+ เชื่อมต่ออุปกรณ์]
               │
               ▼
@@ -316,7 +316,7 @@ export async function registerHealthSync() {
 
 ### 4.1 Health Logs Screen
 
-```
+```text
 Health → Health Logs
          │
          ▼
@@ -354,7 +354,7 @@ Health → Health Logs
 
 ### 4.2 EMR Detail View
 
-```
+```text
 EMR Detail #12345
          │
          ▼
@@ -406,7 +406,7 @@ EMR Detail #12345
 
 ### 5.1 Create EMR Flow
 
-```
+```text
 Post-Meeting → EMR Creation
          │
          ▼
@@ -463,7 +463,7 @@ Post-Meeting → EMR Creation
 
 ### 5.2 Quick Prescription (Mobile)
 
-```
+```text
 EMR Screen → [💊 สั่งยา]
          │
          ▼
@@ -504,7 +504,7 @@ EMR Screen → [💊 สั่งยา]
 
 ### 6.1 Scan Flow
 
-```
+```text
 Health Logs → [📷 สแกนเอกสาร]
               │
               ▼
@@ -583,7 +583,7 @@ Health Logs → [📷 สแกนเอกสาร]
 
 ### 7.1 Living Will Management
 
-```
+```text
 Health → Living Will
          │
          ▼
@@ -622,7 +622,7 @@ Health → Living Will
 ### 8.1 Cached Data Strategy
 
 | Data Type | Cache Duration | Sync Direction | Priority |
-|-----------|:-------------:|:--------------:|:--------:|
+| ----------- | :-------------: | :--------------: | :--------: |
 | PHR Profile | 7 days | Bidirectional | High |
 | Vital Signs | 30 days | Upload only | High |
 | Medications | 30 days | Bidirectional | High |

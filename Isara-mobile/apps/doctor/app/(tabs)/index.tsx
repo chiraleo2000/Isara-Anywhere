@@ -17,12 +17,12 @@ function StatCard({
   label,
   value,
   color,
-}: {
+}: Readonly<{
   icon: string;
   label: string;
   value: string | number;
   color: string;
-}) {
+}>) {
   return (
     <View className={`${color} rounded-2xl p-4 flex-1 mx-1`}>
       <Text className="text-xl">{icon}</Text>
@@ -35,7 +35,7 @@ function StatCard({
 // Active appointment card
 function ActiveAppointmentCard({
   appointment,
-}: {
+}: Readonly<{
   appointment: {
     id: string;
     patient_name: string;
@@ -46,7 +46,7 @@ function ActiveAppointmentCard({
     type: string;
     queue_number?: number;
   };
-}) {
+}>) {
   const statusColors: Record<string, string> = {
     confirmed: 'border-l-green-500',
     waiting: 'border-l-yellow-500',
@@ -234,15 +234,17 @@ export default function DoctorDashboardScreen() {
             <Text className="text-blue-800 text-sm font-medium">ดูทั้งหมด</Text>
           </TouchableOpacity>
         </View>
-        {isLoading ? (
+        {isLoading && (
           <View className="bg-white rounded-2xl p-8 items-center">
             <Text className="text-gray-400">กำลังโหลด...</Text>
           </View>
-        ) : (appointments?.length ?? 0) > 0 ? (
+        )}
+        {!isLoading && (appointments?.length ?? 0) > 0 && (
           appointments!.map((apt: any) => (
             <ActiveAppointmentCard key={apt.id} appointment={apt} />
           ))
-        ) : (
+        )}
+        {!isLoading && (appointments?.length ?? 0) <= 0 && (
           <View className="bg-white rounded-2xl p-8 items-center">
             <Text className="text-4xl mb-2">✨</Text>
             <Text className="text-gray-500 text-center">ไม่มีนัดหมายวันนี้</Text>

@@ -4,11 +4,11 @@
 
 import { View, Text, ScrollView, TouchableOpacity, Alert, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
-import { useAuthStore, type DoctorUser } from '../../../../src/stores/authStore';
+import { useAuthStore, type DoctorUser } from '@/stores/authStore';
 
-function MenuItem({ icon, label, onPress, danger }: {
+function MenuItem({ icon, label, onPress, danger }: Readonly<{
   icon: string; label: string; onPress: () => void; danger?: boolean;
-}) {
+}>) {
   return (
     <TouchableOpacity style={styles.menuItem} onPress={onPress}>
       <Text style={styles.menuIcon}>{icon}</Text>
@@ -28,9 +28,8 @@ export default function DoctorProfileScreen() {
       {
         text: 'ออกจากระบบ',
         style: 'destructive',
-        onPress: async () => {
-          await logout();
-          router.replace('/');
+        onPress: () => {
+          logout().then(() => router.replace('/')).catch(() => router.replace('/'));
         },
       },
     ]);
@@ -41,9 +40,8 @@ export default function DoctorProfileScreen() {
       { text: 'ยกเลิก', style: 'cancel' },
       {
         text: 'เปลี่ยน',
-        onPress: async () => {
-          await switchRole('patient');
-          router.replace('/');
+        onPress: () => {
+          switchRole('patient').then(() => router.replace('/')).catch(() => router.replace('/'));
         },
       },
     ]);

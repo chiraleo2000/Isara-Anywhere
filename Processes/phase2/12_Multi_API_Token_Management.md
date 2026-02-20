@@ -14,7 +14,7 @@ The Izara Dr. Anywhere mobile app manages connections to **multiple APIs and ext
 ### 1.1 Design Principles
 
 | Principle | Description |
-|-----------|-------------|
+| ----------- | ------------- |
 | **User-Controlled** | Users choose which services to connect. No mandatory third-party connections. |
 | **Add Later** | Services can be connected at any time, not just during setup |
 | **Secure Storage** | All tokens encrypted via hardware-backed keychain/keystore |
@@ -31,7 +31,7 @@ The Izara Dr. Anywhere mobile app manages connections to **multiple APIs and ext
 These tokens are managed automatically through the login flow. Users don't manually manage them.
 
 | Service | Base URL | Auth Type | Token Lifecycle | Used By |
-|---------|----------|-----------|-----------------|---------|
+| --------- | ---------- | ----------- | ----------------- | --------- |
 | **Patient API** | `https://patient-api.izara.app` | JWT (Bearer) | 15min access / 30-day refresh | Patient mode |
 | **Doctor Auth Server** | `https://doctor-auth.izara.app` | JWT (Bearer) | 15min access / 30-day refresh | Doctor mode |
 | **Doctor Main API** | `https://doctor-api.izara.app` | JWT (Bearer) | Session-linked | Doctor mode |
@@ -73,7 +73,7 @@ User Login (Patient or Doctor)
 ### 2.2 Health & Wearable Services (User-Initiated)
 
 | Service | Platform | Auth Type | Data Categories | Direction |
-|---------|----------|-----------|-----------------|-----------|
+| --------- | ---------- | ----------- | ----------------- | ----------- |
 | **Apple HealthKit** | iOS only | System Permission | Steps, Heart Rate, Sleep, SpO₂, Blood Glucose, Weight | Read + Write |
 | **Google Fit / Health Connect** | Android | OAuth2 (Google) | Steps, Heart Rate, Sleep, Activity, Weight | Read + Write |
 | **Samsung Health** | Android (Samsung) | SDK Key | Steps, Heart Rate, SpO₂, Blood Pressure | Read Only |
@@ -120,7 +120,7 @@ User Login (Patient or Doctor)
 ### 2.3 Payment Services (User-Initiated)
 
 | Service | Auth Type | Storage | When Added |
-|---------|-----------|---------|------------|
+| --------- | ----------- | --------- | ------------ |
 | **Stripe** | Customer Session (server-created) | SecureStore key | First payment or in Settings |
 | **Apple Pay** | Apple Wallet integration | Passkit (OS) | In Settings or during payment |
 | **Google Pay** | Google Pay API | OS-level | In Settings or during payment |
@@ -157,7 +157,7 @@ User Login (Patient or Doctor)
 These are optional integrations where users connect to external healthcare providers that expose APIs.
 
 | Service | Auth Type | How User Adds | Data Exchange | Thai Example |
-|---------|-----------|---------------|---------------|-------------|
+| --------- | ----------- | --------------- | --------------- | ------------- |
 | **Hospital EHR** | API Key | Paste key from hospital portal | Pull EMR, lab results | BNH, Bumrungrad |
 | **Pharmacy API** | API Key | Paste key from pharmacy | Prescription status, refills | Boots, Fasino |
 | **Lab Service** | API Key | Paste key from lab portal | Lab results, orders | N-Health, BPK9 |
@@ -246,7 +246,7 @@ These are optional integrations where users connect to external healthcare provi
 ### 3.2 Encryption Details
 
 | Item | Encryption | Key Derivation |
-|------|-----------|----------------|
+| ------ | ----------- | ---------------- |
 | JWT Access Token | SecureStore default (AES-256-GCM on iOS, AES-256-CBC on Android) | Device hardware key |
 | JWT Refresh Token | SecureStore + biometric binding | Hardware key + biometric |
 | External API Keys | AES-256-GCM (app-level, then SecureStore) | PBKDF2 from user PIN + device ID |
@@ -304,7 +304,7 @@ These are optional integrations where users connect to external healthcare provi
 ### 4.2 Status Display
 
 | Status | Icon | Color | User Action |
-|--------|------|-------|-------------|
+| -------- | ------ | ------- | ------------- |
 | Not Added | ⬜ | Gray | "Connect" button |
 | Pending | ⏳ | Blue | "Waiting..." spinner |
 | Active | ✅ | Green | "Manage" / "Disconnect" |
@@ -390,7 +390,7 @@ Request Pipeline:
 ### 6.1 Services by Role
 
 | Service | Patient Mode | Doctor Mode | Notes |
-|---------|:----------:|:----------:|-------|
+| --------- | :----------: | :----------: | ------- |
 | Izara Patient API | ✅ | — | Auto-connected on patient login |
 | Izara Doctor Auth | — | ✅ | Auto-connected on doctor login |
 | Izara Doctor API | — | ✅ | Auto-connected on doctor login |
@@ -494,7 +494,7 @@ Switch Role: Patient → Doctor
 ### 8.1 Thread Model
 
 | Threat | Mitigation |
-|--------|-----------|
+| -------- | ----------- |
 | Token theft (compromised device) | Hardware-backed SecureStore, app lock after timeout |
 | Man-in-the-middle | TLS 1.3, certificate pinning for Izara APIs |
 | Token replay | Short-lived JWT (15min), jti claim for single use |
@@ -509,7 +509,7 @@ Switch Role: Patient → Doctor
 All token operations logged to backend:
 
 | Event | Logged Data | PDPA |
-|-------|-------------|------|
+| ------- | ------------- | ------ |
 | Login | device_id, ip, timestamp, method | Required |
 | Token Refresh | service_id, success/fail, timestamp | Internal |
 | Service Connected | service_type, service_name, timestamp | User consent |
@@ -589,7 +589,7 @@ CREATE TABLE connections (
 ### 10.1 Connection Management APIs
 
 | Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
+| -------- | ---------- | ------------- | ------ |
 | `GET` | `/api/connections` | List all user's connections | JWT |
 | `POST` | `/api/connections` | Register new connection | JWT |
 | `PUT` | `/api/connections/:id` | Update connection metadata | JWT |
@@ -653,7 +653,7 @@ CREATE TABLE connections (
 ## 11. Related Documents
 
 | Document | Relationship |
-|----------|-------------|
+| ---------- | ------------- |
 | [03_Mobile_Authentication_Security.md](03_Mobile_Authentication_Security.md) | Core auth flow, JWT strategy |
 | [09_Mobile_Payment_Integration.md](09_Mobile_Payment_Integration.md) | Stripe/payment token details |
 | [07_Mobile_Health_Records.md](07_Mobile_Health_Records.md) | Wearable data sync details |

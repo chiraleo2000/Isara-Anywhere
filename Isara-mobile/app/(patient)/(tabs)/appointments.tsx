@@ -55,9 +55,10 @@ export default function AppointmentsScreen() {
         style={styles.list}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        {isLoading ? (
+        {isLoading && (
           <View style={styles.empty}><Text style={styles.emptyText}>กำลังโหลด...</Text></View>
-        ) : appointments?.length > 0 ? (
+        )}
+        {!isLoading && appointments?.length > 0 && (
           appointments.map((apt: any) => (
             <TouchableOpacity
               key={apt.id}
@@ -72,7 +73,8 @@ export default function AppointmentsScreen() {
               <Text style={styles.cardDate}>📅 {apt.date} • 🕐 {apt.time}</Text>
             </TouchableOpacity>
           ))
-        ) : (
+        )}
+        {!isLoading && (appointments?.length ?? 0) <= 0 && (
           <View style={styles.empty}>
             <Text style={{ fontSize: 48 }}>📋</Text>
             <Text style={styles.emptyText}>ไม่มีนัดหมาย</Text>

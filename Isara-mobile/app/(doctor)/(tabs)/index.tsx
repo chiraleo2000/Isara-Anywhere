@@ -12,9 +12,9 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuthStore, type DoctorUser } from '../../../../src/stores/authStore';
 import { doctorApi } from '@izara/api-client';
 
-function StatCard({ icon, label, value, bgColor }: {
+function StatCard({ icon, label, value, bgColor }: Readonly<{
   icon: string; label: string; value: string | number; bgColor: string;
-}) {
+}>) {
   return (
     <View style={[styles.statCard, { backgroundColor: bgColor }]}>
       <Text style={{ fontSize: 20 }}>{icon}</Text>
@@ -24,7 +24,7 @@ function StatCard({ icon, label, value, bgColor }: {
   );
 }
 
-function AppointmentCard({ appointment }: { appointment: any }) {
+function AppointmentCard({ appointment }: Readonly<{ appointment: any }>) {
   const borderColors: Record<string, string> = {
     confirmed: '#22c55e', waiting: '#eab308', in_progress: '#3b82f6', pending: '#f97316',
   };
@@ -153,11 +153,13 @@ export default function DoctorDashboardScreen() {
             <Text style={styles.seeAll}>ดูทั้งหมด</Text>
           </TouchableOpacity>
         </View>
-        {isLoading ? (
+        {isLoading && (
           <View style={styles.emptyCard}><Text style={styles.emptyText}>กำลังโหลด...</Text></View>
-        ) : appointments?.length > 0 ? (
+        )}
+        {!isLoading && appointments?.length > 0 && (
           appointments.map((apt: any) => <AppointmentCard key={apt.id} appointment={apt} />)
-        ) : (
+        )}
+        {!isLoading && (appointments?.length ?? 0) <= 0 && (
           <View style={styles.emptyCard}>
             <Text style={{ fontSize: 40, marginBottom: 8 }}>✨</Text>
             <Text style={styles.emptyText}>ไม่มีนัดหมายวันนี้</Text>

@@ -135,8 +135,21 @@ app.use(cors({
   credentials: true
 }));
 
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// OWASP Security Headers
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  if (isProduction) {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  }
+  next();
+});
 
 // Mobile-specific headers middleware (Phase 2)
 app.use((req, res, next) => {
@@ -560,8 +573,15 @@ async function verifyGCSConnection(maxRetries = 10, retryDelay = 3000) {
 
 const jwt = require('jsonwebtoken');
 
-// JWT Configuration
-const JWT_SECRET = process.env.JWT_SECRET || process.env.VITE_JWT_SECRET || 'izara-telemedicine-secret-key-2025';
+// JWT Configuration - SECURITY: No hardcoded fallback secrets
+const JWT_SECRET = process.env.JWT_SECRET || process.env.VITE_JWT_SECRET;
+if (!JWT_SECRET) {
+  console.error('[SECURITY] FATAL: JWT_SECRET environment variable is not set. Server cannot start securely.');
+  console.error('[SECURITY] Set JWT_SECRET in .env or environment variables before starting.');
+  // Use a randomly generated secret as emergency fallback (expires on restart)
+  // This ensures existing tokens won't work after restart
+}
+const JWT_SECRET_FINAL = JWT_SECRET || require('node:crypto').randomBytes(64).toString('hex');
 const JWT_ISSUER = process.env.JWT_ISSUER || 'izara-telemedicine';
 
 function authenticateToken(req, res, next) {
@@ -572,18 +592,21 @@ function authenticateToken(req, res, next) {
     return res.status(401).json({ error: 'No token provided' });
   }
 
-  console.log('[JWT-DEBUG] Token received:', token.substring(0, 50) + '...');
-  console.log('[JWT-DEBUG] JWT_SECRET:', JWT_SECRET);
-  console.log('[JWT-DEBUG] JWT_ISSUER:', JWT_ISSUER);
+  // SECURITY: Never log tokens or secrets in production
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('[JWT] Token received (first 20 chars):', token.substring(0, 20) + '...');
+  }
 
   try {
-    // Verify JWT token
-    const decoded = jwt.verify(token, JWT_SECRET, {
+    // Verify JWT token - restrict to HS256 only for security
+    const decoded = jwt.verify(token, JWT_SECRET_FINAL, {
       issuer: JWT_ISSUER,
-      algorithms: ['HS256', 'HS384', 'HS512']
+      algorithms: ['HS256']
     });
 
-    console.log('[JWT-DEBUG] Token verified successfully:', decoded.email);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[JWT] Token verified for:', decoded.email);
+    }
 
     // Attach user info from decoded token to request
     req.user = {
@@ -597,7 +620,7 @@ function authenticateToken(req, res, next) {
 
     next();
   } catch (error) {
-    console.error('[JWT-DEBUG] Token verification failed:', error.name, error.message);
+    console.error('[JWT] Token verification failed:', error.name);
     if (error.name === 'TokenExpiredError') {
       return res.status(401).json({ error: 'Token expired', code: 'TOKEN_EXPIRED' });
     }
@@ -619,7 +642,7 @@ app.get('/api/health', (req, res) => {
     status: 'healthy',
     timestamp: new Date().toISOString(),
     service: 'Izara Doctor Portal API',
-    version: '1.4.7',
+    version: '1.5.0',
     port: PORT,
     features: {
       videoMeeting: 'Jitsi Meet (FREE)',
@@ -638,7 +661,7 @@ app.get('/health', (req, res) => {
     status: 'healthy',
     timestamp: new Date().toISOString(),
     service: 'Izara Doctor Portal API',
-    version: '1.4.7',
+    version: '1.5.0',
     port: PORT
   });
 });
@@ -7296,13 +7319,13 @@ app.get('/api/sync/pull', authenticateToken, async (req, res) => {
 
 async function startServer() {
   console.log('\n═══════════════════════════════════════════════════════════════');
-  console.log('🏥 IZARA DOCTOR PORTAL - MAIN API SERVER v1.4.7');
+  console.log('🏥 IZARA DOCTOR PORTAL - MAIN API SERVER v1.5.0');
   console.log('═══════════════════════════════════════════════════════════════\n');
 
   // Start listening immediately for faster startup
   server.listen(PORT, '0.0.0.0', () => {
     console.log('═══════════════════════════════════════════════════════════════');
-    console.log(`🚀 Main API Server v1.4.7 running on http://localhost:${PORT}`);
+    console.log(`🚀 Main API Server v1.5.0 running on http://localhost:${PORT}`);
     console.log('═══════════════════════════════════════════════════════════════\n');
     console.log('📊 Storage: PostgreSQL + pgvector (PRIMARY)');
     console.log('🎥 Video: Jitsi Meet (FREE)');
@@ -7335,6 +7358,16 @@ async function startServer() {
 
 // Start the server
 startServer();
+
+// ============================================================================
+// GLOBAL ERROR HANDLER - SECURITY: Never leak internal errors to client
+// ============================================================================
+app.use((err, req, res, _next) => {
+  console.error('[GLOBAL-ERROR]', err.stack || err.message);
+  const statusCode = err.statusCode || 500;
+  const message = isProduction ? 'Internal server error' : err.message;
+  res.status(statusCode).json({ error: message, success: false });
+});
 
 // Keep the process alive (prevent exit when running in background)
 setInterval(() => {

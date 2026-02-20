@@ -7,8 +7,7 @@
  */
 
 import { Router, Request, Response } from 'express';
-import { ApiConnectionService } from '../services/postgresDataService';
-import postgresDataService from '../services/postgresDataService';
+import postgresDataService, { ApiConnectionService } from '../services/postgresDataService';
 
 const { pool } = postgresDataService;
 const router = Router();
@@ -165,7 +164,7 @@ router.get('/audit/log', async (req: Request, res: Response) => {
     const user = await getUserFromToken(token || '');
     if (!user) return res.status(401).json({ error: 'Unauthorized' });
 
-    const limit = parseInt(req.query.limit as string) || 50;
+    const limit = Number.parseInt(req.query.limit as string) || 50;
     const audit = await ApiConnectionService.getAuditLog(user.id, limit);
     res.json({ success: true, audit });
   } catch (error: any) {

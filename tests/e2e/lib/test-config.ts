@@ -1,8 +1,8 @@
 /**
  * =============================================================================
- * IZARA TELEMEDICINE - SHARED TEST CONFIGURATION v1.4.9
+ * IZARA TELEMEDICINE - SHARED TEST CONFIGURATION v1.5.0
  * =============================================================================
- * Version: 1.4.9 | Updated: February 16, 2026
+ * Version: 1.5.0 | Updated: February 16, 2026
  *
  * Centralized configuration for ALL E2E tests (Local + Cloud).
  * Set TEST_ENV=cloud to switch to Cloud Run URLs.
@@ -109,14 +109,26 @@ export async function getAuthToken(
   baseUrl: string,
   creds: { email: string; password: string },
 ): Promise<string> {
-  const res = await request.post(`${baseUrl}/api/auth/login`, {
-    data: creds,
-    headers: { 'Content-Type': 'application/json' },
-    timeout: IS_CLOUD ? 30000 : 15000,
-  });
-  if (res.status() === 200) {
-    const d = await res.json();
-    return d.token || d.accessToken || '';
+  const maxRetries = IS_CLOUD ? 3 : 1;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const res = await request.post(`${baseUrl}/api/auth/login`, {
+        data: creds,
+        headers: { 'Content-Type': 'application/json' },
+        timeout: IS_CLOUD ? 30000 : 15000,
+      });
+      if (res.status() === 200) {
+        const d = await res.json();
+        return d.token || d.accessToken || '';
+      }
+    } catch (err: any) {
+      const msg = err?.message || '';
+      const isTransient = msg.includes('ENOTFOUND') || msg.includes('ECONNRESET') || msg.includes('ETIMEDOUT');
+      if (attempt < maxRetries && isTransient) {
+        await new Promise(r => setTimeout(r, 3000 * (attempt + 1)));
+        continue;
+      }
+    }
   }
   return '';
 }
@@ -138,7 +150,7 @@ export const TIMEOUTS = {
   medium: 15_000,
   long: 30_000,
   cloud: 60_000,
-  navigation: IS_CLOUD ? 60_000 : 30_000,
+  navigation: 60_000,
   api: IS_CLOUD ? 30_000 : 15_000,
 };
 
@@ -155,7 +167,10 @@ export const ENDPOINTS = {
   phr: '/api/phr',
   doctors: '/api/doctors',
   consultants: '/api/consultants',
-  notifications: '/api/notifications',
+  notifications: {
+    list: '/api/notifications',
+    markAllRead: '/api/notifications/mark-all-read',
+  },
   medicalContent: '/api/medical-content',
   contentMedical: '/api/content/medical',
   contentClinical: '/api/content/clinical',
@@ -163,6 +178,7 @@ export const ENDPOINTS = {
   timeline: '/api/timeline',
   treatmentResults: '/api/health-records/treatment-results',
   userProfile: '/api/users/profile',
+  profile: '/api/users/profile',
   patients: '/api/patients',
   emr: '/api/emr',
   prescriptions: '/api/prescriptions',
@@ -178,20 +194,30 @@ export const ENDPOINTS = {
   meetings: {
     create: '/api/meetings/create',
     health: '/api/health',
+    list: '/api/meetings',
+    config: '/api/meetings/config',
+    invite: '/api/meetings/invite',
+    transcription: '/api/meetings/transcription',
   },
   ai: {
     health: '/api/health',   // AI services use meeting server /api/health
     chat: '/api/ai/chat',
     summarize: '/api/ai/summarize',
     preSummary: '/api/ai/pre-consultation-summary',
+    preConsultation: '/api/ai/pre-consultation-summary',
     patientSummary: '/api/ai/patient-summary',
     analyzeDocument: '/api/ai/analyze-document',
+    analyze: '/api/ai/analyze-document',
     emrSummary: '/api/ai/emr-summary',
     patientInstruction: '/api/ai/patient-instruction',
     meetingSummary: '/api/ai/meeting-summary',
     validate: '/api/ai/validate',
     knowledge: '/api/ai/knowledge',
+    knowledgeBase: '/api/ai/knowledge',
     validations: '/api/ai/validations',
+    cdsCheck: '/api/ai/cds-check',
+    cdsAlerts: '/api/ai/cds-alerts',
+    cdsLogs: '/api/ai/cds-logs',
   },
   cds: {
     check: '/api/ai/cds-check',
@@ -231,9 +257,48 @@ export const ENDPOINTS = {
   connections: '/api/connections',
   settings: {
     base: '/api/settings',
+    general: '/api/settings',
+    get: '/api/settings',
+    update: '/api/settings',
     notifications: '/api/settings/notifications',
     role: '/api/settings/role',
     onboarding: '/api/settings/onboarding',
+  },
+  // Health Records (grouped)
+  healthRecords: {
+    phr: '/api/phr',
+    emr: '/api/emr',
+    vitals: '/api/phr/vitals',
+    prescriptions: '/api/prescriptions',
+    labOrders: '/api/lab-orders',
+    livingWill: '/api/phr/living-will',
+    timeline: '/api/timeline',
+    treatmentResults: '/api/health-records/treatment-results',
+  },
+  // Phase 2 feature-specific endpoints
+  phase2: {
+    ctmAssessment: '/api/phase2/ctm-assessment',
+    geriatricScreening: '/api/phase2/geriatric-screening',
+    sosAlert: '/api/phase2/sos-alert',
+    followUp: '/api/phase2/follow-up',
+    nursingDashboard: '/api/phase2/nursing-dashboard',
+    predictiveAnalytics: '/api/phase2/predictive-analytics',
+    hisPatientLookup: '/api/phase2/his-patient-lookup',
+    hisLabResults: '/api/phase2/his-lab-results',
+    smartScheduling: '/api/phase2/smart-scheduling',
+    nursingWorkflow: '/api/phase2/nursing-workflow',
+    deviceTokens: '/api/device-tokens',
+    biometric: {
+      register: '/api/biometric/register',
+      verify: '/api/biometric/verify',
+      status: '/api/biometric/status',
+    },
+    sync: {
+      push: '/api/sync/push',
+      pull: '/api/sync/pull',
+      conflicts: '/api/sync/conflicts',
+      status: '/api/sync/status',
+    },
   },
 };
 
@@ -243,19 +308,30 @@ export async function getDoctorAuthToken(
   baseUrl: string,
   creds: { email: string; password: string },
 ): Promise<string> {
-  // Try /auth/login first (doctor portal auth server), then /api/auth/login
+  const maxRetries = IS_CLOUD ? 3 : 1;
   for (const path of ['/auth/login', '/api/auth/login']) {
-    try {
-      const res = await request.post(`${baseUrl}${path}`, {
-        data: creds,
-        headers: { 'Content-Type': 'application/json' },
-        timeout: IS_CLOUD ? 30000 : 15000,
-      });
-      if (res.status() === 200) {
-        const d = await res.json();
-        return d.token || d.accessToken || d.data?.token || '';
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        const res = await request.post(`${baseUrl}${path}`, {
+          data: creds,
+          headers: { 'Content-Type': 'application/json' },
+          timeout: IS_CLOUD ? 30000 : 15000,
+        });
+        if (res.status() === 200) {
+          const d = await res.json();
+          return d.token || d.accessToken || d.data?.token || '';
+        }
+        break; // Non-transient HTTP error, try next path
+      } catch (err: any) {
+        const msg = err?.message || '';
+        const isTransient = msg.includes('ENOTFOUND') || msg.includes('ECONNRESET') || msg.includes('ETIMEDOUT');
+        if (attempt < maxRetries && isTransient) {
+          await new Promise(r => setTimeout(r, 3000 * (attempt + 1)));
+          continue;
+        }
+        break; // Non-transient, try next path
       }
-    } catch { /* try next */ }
+    }
   }
   return '';
 }

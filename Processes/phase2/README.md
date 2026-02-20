@@ -1,50 +1,82 @@
-# 📱 Izara Telemedicine — Phase 2: Mobile Application
+# 📱 Izara Telemedicine — Phase 2: AI-Based HIS & Mobile Application
 
-**Version:** 2.1.0  
+**Version:** 2.2.0  
 **Date:** February 2026  
 **Status:** 📋 Planning & Architecture  
-**Platform:** React Native (Expo) — iOS & Android  
+**Platform:** React Native (Expo) — iOS & Android + Web Portal Enhancements  
 **Codename:** "Dr. Anywhere" (หมอทุกที่)  
-**Architecture:** Single Unified App with Patient / Doctor Role Selection
+**Architecture:** AI-Based HIS + Single Unified Mobile App with Patient / Doctor Role Selection
 
 ---
 
 ## 📖 Overview
 
-Phase 2 transforms the Izara Telemedicine web platform into a mobile-first experience using React Native (Expo). A **single unified app** ("Izara Dr. Anywhere") enables both patients and doctors to access telemedicine services on iOS and Android devices. Users select their role on first launch — Patient or Doctor — and the app provides the complete feature set for that role, identical to the corresponding web portal. The app includes native capabilities like biometric authentication, push notifications, camera-based document scanning, wearable device integration, multi-service API token management, and offline support.
+Phase 2 transforms Izara from a telemedicine platform into a **complete AI-Based HIS (Health Information System)** that goes beyond traditional HIS. It combines a **unified mobile application** ("Izara Dr. Anywhere") with a comprehensive backend expansion covering AI-powered clinical workflows, FHIR-compliant data architecture, Thai Traditional Medicine (CTM) support, clinic network management, and interoperability with government health systems (รพ.สต.).
 
-> **Key Decision:** ONE app for both roles, not two separate apps.  
-> Rationale: Lower maintenance, single download, shared codebase, easier user distribution.
+The platform serves **5 target user groups:** General Clinics (franchise network), CTM Clinics (แพทย์แผนไทย), Elderly Care (Home Care / Retirement Homes), Health Centers (รพ.สต.), and Hospital OPDs — all from a single unified system.
+
+> **Key Decision:** ONE app for both roles (Patient & Doctor), not two separate apps.  
+> Rationale: Lower maintenance, single download, shared codebase, easier distribution.
 
 ### Phase 2 Vision
 
 > **"หมอทุกที่ — ดูแลสุขภาพได้ทุกที่ทุกเวลา"**  
 > (Doctor Anywhere — Healthcare accessible anytime, anywhere)
 
+### The 4 Pillars
+
+| # | Pillar | Description |
+| --- | -------- | ------------- |
+| 1 | **Smart Data Architecture** | FHIR-compliant data, Vector DB (pgvector) for RAG, Machine-Readable records |
+| 2 | **AI Integration Layers** | Medical Scribe, Predictive Analytics, CDS, AI History Taking |
+| 3 | **Modern Healthcare UI/UX** | Role-Based Dashboards, Wearable IoT, CTM interfaces |
+| 4 | **Security & Compliance** | PDPA/HIPAA, Immutable Audit Logs, RBAC, e-Consent |
+
+### Clinical Task Workflow (Task 1–5)
+
+| Task | Name | Key Features |
+| ------ | ------ | ------------- |
+| **Task 1** | Patient & Family | AI History Taking, Self-entered Data, Wearable Sync, e-Living Will, PDPA |
+| **Task 2** | Healthcare Team | Executive Dashboard, Nursing Dashboard, CTM Dashboard, Geriatric Screening, Predictive Analytics |
+| **Task 3** | Investigation | Lab Reports, Radiology Reports, Pathology Reports, Critical Value Alerts |
+| **Task 4** | Treatment | Modern Rx, Herbal Rx (CTM), Medical Procedures, Follow-up Tracking |
+| **Task 5** | Refer & Data Exchange | Automated Referral PDF, FHIR HIE, รพ.สต. API, SOS Emergency |
+
 ---
 
 ## 🎯 Phase 2 Goals
 
 | # | Goal | Description |
-|---|------|-------------|
-| 1 | **Unified Mobile App** | Single app with Patient/Doctor role selection for iOS & Android |
-| 2 | **Full Webapp Feature Parity** | Every feature from both web portals available on mobile |
-| 3 | **Native Capabilities** | Biometrics, push notifications, camera, GPS, offline |
-| 4 | **Multi-Service API Tokens** | User-controlled connections to external services (add later) |
-| 5 | **API Compatibility** | Reuse 100% of existing Phase 1 backend APIs |
-| 6 | **Gemini Fine-Tuning** | Medical Thai language model optimization |
-| 7 | **Payment Integration** | Consultation fee payment via Stripe/Omise/PromptPay |
-| 8 | **Wearable Sync** | Apple Health / Google Fit vital signs sync |
-| 9 | **PDPA Compliance** | Full privacy management, consent, data export |
+| --- | ------ | ------------- |
+| 1 | **AI-Based HIS** | Transform from telemedicine into a full AI-Based Health Information System |
+| 2 | **Unified Mobile App** | Single app with Patient/Doctor role selection for iOS & Android |
+| 3 | **FHIR Compliance** | HL7 FHIR data standard for interoperability and HIS connectivity |
+| 4 | **AI Clinical Workflows** | AI History Taking, Medical Scribe, CDS, Predictive Analytics |
+| 5 | **Thai Traditional Medicine** | CTM recording, ธาตุเจ้าเรือน calculator, herbal prescriptions |
+| 6 | **Clinic Network Management** | Multi-facility admin dashboard for franchise networks |
+| 7 | **Elderly Care** | Geriatric Screening, Nursing Dashboard, SOS Emergency, Follow-up Tracking |
+| 8 | **HIS Integration** | API protocol for data exchange with รพ.สต. and hospital HIS |
+| 9 | **Native Capabilities** | Biometrics, push notifications, camera, GPS, offline |
+| 10 | **Wearable Sync** | Apple Health / Google Fit vital signs sync |
+| 11 | **Payment Integration** | Consultation fee payment via Stripe/PromptPay |
+| 12 | **API Compatibility** | Reuse 100% of existing Phase 1 backend APIs |
+| 13 | **Gemini Fine-Tuning** | Medical Thai language model optimization |
+| 14 | **PDPA Compliance** | Full privacy management, consent, data export, audit logs |
 
 ---
 
 ## 📁 Documentation Index
 
+### Master Reference
+
+| Document | Description |
+| ---------- | ------------- |
+| [../../Phase2/PHASE2_MVP_COMPREHENSIVE.md](../../Phase2/PHASE2_MVP_COMPREHENSIVE.md) | **Comprehensive MVP Plan** — 4 Pillars, Task 1-5, DB Schema, API Endpoints, AI Prompts, Mock Data |
+
 ### Core Documents
 
 | # | Document | Description |
-|---|----------|-------------|
+| --- | ---------- | ------------- |
 | 0 | [00_Phase2_Implementation_Plan.md](00_Phase2_Implementation_Plan.md) | Master implementation plan, timeline, resources |
 | 1 | [01_Mobile_App_Architecture.md](01_Mobile_App_Architecture.md) | Technical architecture, tech stack, patterns |
 | 2 | [02_Mobile_API_Specifications.md](02_Mobile_API_Specifications.md) | API endpoints, mobile-specific additions |
@@ -60,7 +92,7 @@ Phase 2 transforms the Izara Telemedicine web platform into a mobile-first exper
 ### New Documents (Unified App Architecture)
 
 | # | Document | Description |
-|---|----------|-------------|
+| --- | ---------- | ------------- |
 | 11 | [11_Mobile_App_Description.md](11_Mobile_App_Description.md) | Complete product description & feature matrix |
 | 12 | [12_Multi_API_Token_Management.md](12_Multi_API_Token_Management.md) | Multi-service API token architecture |
 | 13 | [13_Mobile_Content_Library_Workflows.md](13_Mobile_Content_Library_Workflows.md) | Medical content, clinical resources, consultants |
@@ -71,7 +103,7 @@ Phase 2 transforms the Izara Telemedicine web platform into a mobile-first exper
 ### Page Specifications
 
 | Portal | Document | Description |
-|--------|----------|-------------|
+| -------- | ---------- | ------------- |
 | **Unified App** | [Pages/Unified-App/Unified_App_Pages.md](Pages/Unified-App/Unified_App_Pages.md) | **All 77 screen specifications** (Patient + Doctor + Shared) |
 | ~~Patient~~ | ~~Pages/Patient-Mobile/~~ | _Deprecated — superseded by Unified App spec_ |
 | ~~Doctor~~ | ~~Pages/Doctor-Mobile/~~ | _Deprecated — superseded by Unified App spec_ |
@@ -83,7 +115,7 @@ Phase 2 transforms the Izara Telemedicine web platform into a mobile-first exper
 ### Backend Reuse (100% API Compatible)
 
 | Component | Phase 1 | Phase 2 | Change |
-|-----------|---------|---------|--------|
+| ----------- | --------- | --------- | -------- |
 | Patient Portal API | Express.js (port 3005) | Same — mobile calls same APIs | None |
 | Doctor Portal API | Express.js (port 3010) | Same — mobile calls same APIs | None |
 | Meeting Server | Express.js (port 3020) | Same — mobile uses Socket.IO | None |
@@ -94,7 +126,7 @@ Phase 2 transforms the Izara Telemedicine web platform into a mobile-first exper
 ### New Backend Additions for Phase 2
 
 | Component | Purpose | Priority |
-|-----------|---------|----------|
+| ----------- | --------- | ---------- |
 | Push Notification Service | FCM + APNS delivery | P0 |
 | Device Registration API | Store device tokens | P0 |
 | Biometric Auth Endpoints | Fingerprint/FaceID binding | P0 |
@@ -107,12 +139,24 @@ Phase 2 transforms the Izara Telemedicine web platform into a mobile-first exper
 
 ---
 
-## 📊 Feature Comparison: Web vs Mobile
+## 📊 Feature Comparison: Phase 1 vs Phase 2
 
-| Feature | Web (Phase 1) ✅ | Mobile (Phase 2) 📱 |
-|---------|-----------------|---------------------|
+| Feature | Phase 1 (Web) ✅ | Phase 2 (AI-HIS + Mobile) 📱 |
+| --------- | ----------------- | --------------------- |
 | Login | Email/Password | Email/Password + Biometric |
 | Role Selection | Separate portals | Single app with role picker |
+| Data Standard | PostgreSQL (custom) | FHIR-compliant + pgvector (RAG) |
+| AI History Taking | ❌ None | ✅ Automated CC/PI (chat + voice, OPQRST) |
+| CTM (Thai Medicine) | ❌ None | ✅ ธาตุเจ้าเรือน, สมุฏฐาน, herbal Rx |
+| Geriatric Screening | ❌ None | ✅ ADL, fall risk, cognitive, nutrition |
+| Nursing Dashboard | ❌ None | ✅ Vital grid, MAR, alerts, SOS receiver |
+| Predictive Analytics | ❌ None | ✅ Readmission, Sarcopenia, EWS |
+| Investigation Reports | Basic Lab | ✅ Lab + Radiology + Pathology (structured) |
+| Herbal Prescriptions | ❌ None | ✅ CTM herbal Rx with preparation instructions |
+| Follow-up Tracking | ❌ None | ✅ Recovery scoring, care team alerts |
+| Clinic Network Mgmt | ❌ None | ✅ Multi-facility admin dashboard |
+| HIS Integration | ❌ None | ✅ API protocol for รพ.สต. and hospital HIS |
+| SOS Emergency | ❌ None | ✅ Real-time alert to Nursing Dashboard |
 | Notifications | In-app + Email | Push + In-app + Email |
 | Video Meeting | Jitsi Web embed | Jitsi Mobile SDK (PiP) |
 | Speech-to-Text | Web Speech API | Native iOS/Android STT |
@@ -120,13 +164,10 @@ Phase 2 transforms the Izara Telemedicine web platform into a mobile-first exper
 | Maps | Google Maps embed | Native Maps (MapView) |
 | Health Data | Manual entry | Manual + Wearable auto-sync |
 | Offline | ❌ None | ✅ SQLite local cache |
-| Payment | ❌ None | ✅ Stripe/Omise/PromptPay |
-| GPS | Browser geolocation | Native GPS (background) |
-| API Connections | ❌ None | ✅ Multi-service token management |
+| Payment | ❌ None | ✅ Stripe/PromptPay |
+| Referral Reports | ❌ None | ✅ Auto-generated PDF with FHIR Bundle |
 | PDPA Management | Basic consent | Full privacy management + data export |
-| Living Will | ✅ Web form | ✅ 4-step wizard |
-| Medical Content | ✅ Read | ✅ Read + offline caching |
-| Clinical Resources | ✅ Manage | ✅ Manage + approval workflow |
+| Living Will | ✅ Web form | ✅ 4-step wizard + digital signature |
 
 ---
 
@@ -156,20 +197,24 @@ Isara-Anywhere/
 ## 🗓️ Timeline
 
 | Phase | Duration | Deliverable |
-|-------|----------|-------------|
+| ------- | ---------- | ------------- |
 | **Sprint 1** | Weeks 1-4 | Unified app setup, role selection, auth, push notifications |
 | **Sprint 2** | Weeks 5-8 | Patient mode MVP (appointments, PHR, AI, PDPA, API connections) |
 | **Sprint 3** | Weeks 9-12 | Doctor mode MVP (schedule, EMR, patients, content management) |
 | **Sprint 4** | Weeks 13-16 | Video meeting mobile SDK, transcription, post-meeting AI |
 | **Sprint 5** | Weeks 17-20 | Wearables, payment, document scanner, offline, living will |
-| **Sprint 6** | Weeks 21-24 | Testing, App Store submission, production launch |
+| **Sprint 6** | Weeks 21-24 | AI-HIS Backend: FHIR schema, AI History Taking, CTM module |
+| **Sprint 7** | Weeks 25-28 | Investigation reports (Lab/Radiology/Pathology), Herbal Rx, Follow-up |
+| **Sprint 8** | Weeks 29-32 | Nursing Dashboard, Geriatric Screening, SOS Emergency, Predictive Analytics |
+| **Sprint 9** | Weeks 33-36 | Clinic Network Admin, HIS integration (รพ.สต.), Referral system |
+| **Sprint 10** | Weeks 37-40 | Testing, Gemini fine-tuning, App Store submission, production launch |
 
 ---
 
 ## 📚 Related Phase 1 Documents
 
 | Document | Description |
-|----------|-------------|
+| ---------- | ------------- |
 | [../PHASE1_REQUIREMENTS.md](../PHASE1_REQUIREMENTS.md) | Phase 1 requirements (completed) |
 | [../Appointment_Workflows.md](../Appointment_Workflows.md) | Appointment workflows |
 | [../Health_Records_Processes.md](../Health_Records_Processes.md) | PHR/EMR processes |
@@ -180,4 +225,4 @@ Isara-Anywhere/
 
 ---
 
-### End of Phase 2 README — v2.1.0 — February 2026
+### End of Phase 2 README — v2.2.0 — February 2026

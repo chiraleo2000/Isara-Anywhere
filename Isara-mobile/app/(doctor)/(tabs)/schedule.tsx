@@ -55,9 +55,10 @@ export default function ScheduleScreen() {
         style={styles.list}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        {isLoading ? (
+        {isLoading && (
           <View style={styles.empty}><Text style={styles.emptyText}>กำลังโหลด...</Text></View>
-        ) : appointments?.length > 0 ? (
+        )}
+        {!isLoading && appointments?.length > 0 && (
           appointments.map((apt: any) => (
             <TouchableOpacity
               key={apt.id}
@@ -74,7 +75,8 @@ export default function ScheduleScreen() {
               </View>
             </TouchableOpacity>
           ))
-        ) : (
+        )}
+        {!isLoading && (appointments?.length ?? 0) <= 0 && (
           <View style={styles.empty}>
             <Text style={{ fontSize: 40 }}>📅</Text>
             <Text style={styles.emptyText}>ไม่มีนัดหมายในวันที่เลือก</Text>

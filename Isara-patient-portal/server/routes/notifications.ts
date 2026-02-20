@@ -1,6 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { NotificationService } from '../services/postgresDataService';
-import postgresDataService from '../services/postgresDataService';
+import postgresDataService, { NotificationService } from '../services/postgresDataService';
 
 const { pool } = postgresDataService;
 const router = Router();
@@ -63,7 +62,7 @@ router.get('/count', async (req: Request, res: Response) => {
       [user.id]
     );
     
-    const count = parseInt(result.rows[0]?.count || '0', 10);
+    const count = Number.parseInt(result.rows[0]?.count || '0', 10);
     
     res.json({ count, unreadCount: count });
   } catch (error: any) {

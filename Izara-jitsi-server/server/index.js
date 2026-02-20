@@ -1,8 +1,8 @@
 /**
  * Izara Jitsi Meeting Server — Phase 1 Complete
  * 
- * Version: 1.4.8-dev
- * Updated: 2026-02-14
+ * Version: 1.5.0
+ * Updated: 2026-02-16
  * 
  * Main API server for:
  * - Meeting room management (Jitsi Meet - FREE)
@@ -26,6 +26,7 @@
 
 import express from 'express';
 import cors from 'cors';
+import crypto from 'node:crypto';
 import http from 'node:http';
 import { Server as SocketServer } from 'socket.io';
 import dotenv from 'dotenv';
@@ -44,7 +45,11 @@ const { Pool } = pg;
 
 const PORT = process.env.PORT || 3020;
 const JITSI_DOMAIN = process.env.JITSI_DOMAIN || 'meet.jit.si';
-const JWT_SECRET = process.env.JWT_SECRET || 'izara-jwt-secret-key-phase1-2026';
+// SECURITY: No hardcoded fallback secrets
+const JWT_SECRET = process.env.JWT_SECRET || (() => {
+  console.error('[SECURITY] WARNING: JWT_SECRET not set. Using random ephemeral secret.');
+  return crypto.randomBytes(64).toString('hex');
+})();
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash-lite';
 

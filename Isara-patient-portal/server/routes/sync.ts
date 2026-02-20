@@ -7,8 +7,7 @@
  */
 
 import { Router, Request, Response } from 'express';
-import { SyncService } from '../services/postgresDataService';
-import postgresDataService from '../services/postgresDataService';
+import postgresDataService, { SyncService } from '../services/postgresDataService';
 
 const { pool } = postgresDataService;
 const router = Router();
@@ -155,7 +154,7 @@ router.get('/status', async (req: Request, res: Response) => {
     res.json({
       success: true,
       status: result.rows.reduce((acc: any, row: any) => {
-        acc[row.sync_status] = parseInt(row.count);
+        acc[row.sync_status] = Number.parseInt(row.count);
         return acc;
       }, {}),
       lastSync: lastSync.rows[0]?.last_sync || null,

@@ -178,11 +178,11 @@ export function validatePassword(password: string): PasswordValidationResult {
     errors.push('Password must contain at least one lowercase letter');
   }
   
-  if (PASSWORD_POLICY.requireNumbers && !/[0-9]/.test(password)) {
+  if (PASSWORD_POLICY.requireNumbers && !/\d/.test(password)) {
     errors.push('Password must contain at least one number');
   }
   
-  if (PASSWORD_POLICY.requireSpecial && !/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+  if (PASSWORD_POLICY.requireSpecial && !/[!@#$%^&*()\-_=+{};':"\\|,.<>?]/.test(password)) {
     errors.push('Password must contain at least one special character');
   }
   
@@ -194,22 +194,27 @@ export function generateSecureToken(length = 32): string {
 }
 
 export function hashPassword(password: string): string {
-  // For patient portal, using enhanced base64 with salt
-  // In production, should use bcrypt
+  // PBKDF2 with 600,000 iterations per OWASP 2024 password storage cheat sheet
   const salt = crypto.randomBytes(16).toString('hex');
-  const hash = crypto.pbkdf2Sync(password, salt, 10000, 64, 'sha512').toString('hex');
+  const hash = crypto.pbkdf2Sync(password, salt, 600000, 64, 'sha512').toString('hex');
   return `${salt}:${hash}`;
 }
 
 export function verifyPasswordHash(password: string, storedHash: string): boolean {
-  // Handle legacy base64 passwords
-  if (!storedHash.includes(':')) {
-    return Buffer.from(password).toString('base64') === storedHash;
+  if (!storedHash || !storedHash.includes(':')) {
+    // Reject plain/base64 passwords — require migration to PBKDF2
+    return false;
   }
   
   const [salt, hash] = storedHash.split(':');
-  const verifyHash = crypto.pbkdf2Sync(password, salt, 10000, 64, 'sha512').toString('hex');
-  return hash === verifyHash;
+  if (!salt || !hash) return false;
+  // Use timing-safe comparison to prevent timing attacks
+  const verifyHash = crypto.pbkdf2Sync(password, salt, 600000, 64, 'sha512').toString('hex');
+  try {
+    return crypto.timingSafeEqual(Buffer.from(hash, 'hex'), Buffer.from(verifyHash, 'hex'));
+  } catch {
+    return false;
+  }
 }
 
 // ============================================================================
@@ -220,56 +225,60 @@ const SANITIZATION_PATTERNS = {
   sql: /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|UNION|ALTER|CREATE|TRUNCATE)\b)|(--)|(;)|(')/gi,
   nosql: /(\$where|\$gt|\$lt|\$ne|\$or|\$and|\$regex)/gi,
   xss: /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>|javascript:|on\w+\s*=/gi,
-  pathTraversal: /\.\.[\/\\]|[\/\\]\.\./gi
+  pathTraversal: /\.\.[\\/]|[\\/]\.\./gi
 };
 
 export function sanitizeInput(input: string): string {
   if (typeof input !== 'string') return input;
   
   return input.trim()
-    .replace(/\0/g, '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#x27;');
+    .replaceAll('\0', '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#x27;');
+}
+
+// Helper: check a string value for injection patterns
+function detectInjection(value: string, key: string, req: Request): string | null {
+  for (const [patternName, pattern] of Object.entries(SANITIZATION_PATTERNS)) {
+    if (pattern.test(value)) {
+      securityAuditLog({
+        event: 'INJECTION_ATTEMPT',
+        severity: 'HIGH',
+        type: patternName,
+        field: key,
+        ip: getClientIP(req),
+        path: req.path
+      });
+      return patternName;
+    }
+  }
+  return null;
 }
 
 export function sanitizeRequestBody(allowedFields: string[] = []) {
   return (req: Request, res: Response, next: NextFunction) => {
-    if (req.body && typeof req.body === 'object') {
-      const sanitizedBody: Record<string, any> = {};
-      
-      for (const [key, value] of Object.entries(req.body)) {
-        if (allowedFields.length > 0 && !allowedFields.includes(key)) {
-          continue;
-        }
-        
-        if (typeof value === 'string') {
-          for (const [patternName, pattern] of Object.entries(SANITIZATION_PATTERNS)) {
-            if (pattern.test(value)) {
-              securityAuditLog({
-                event: 'INJECTION_ATTEMPT',
-                severity: 'HIGH',
-                type: patternName,
-                field: key,
-                ip: getClientIP(req),
-                path: req.path
-              });
-              return res.status(400).json({
-                error: 'Invalid input detected',
-                code: 'INVALID_INPUT'
-              });
-            }
-          }
-          sanitizedBody[key] = sanitizeInput(value);
-        } else {
-          sanitizedBody[key] = value;
-        }
-      }
-      
-      req.body = sanitizedBody;
+    if (!req.body || typeof req.body !== 'object') {
+      return next();
     }
+
+    const sanitizedBody: Record<string, any> = {};
+    for (const [key, value] of Object.entries(req.body)) {
+      if (allowedFields.length > 0 && !allowedFields.includes(key)) continue;
+
+      if (typeof value === 'string') {
+        const injectionType = detectInjection(value, key, req);
+        if (injectionType) {
+          return res.status(400).json({ error: 'Invalid input detected', code: 'INVALID_INPUT' });
+        }
+        sanitizedBody[key] = sanitizeInput(value);
+      } else {
+        sanitizedBody[key] = value;
+      }
+    }
+    req.body = sanitizedBody;
     next();
   };
 }
@@ -289,6 +298,16 @@ export function isValidPhone(phone: string): boolean {
 // ============================================================================
 
 const rateLimitStore = new Map<string, { count: number; windowStart: number }>();
+
+// Periodic cleanup of stale rate-limit entries to prevent memory leaks
+const cleanupTimer = setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of rateLimitStore.entries()) {
+    if (now - entry.windowStart > 120_000) rateLimitStore.delete(key);
+  }
+}, 60_000);
+// Prevent timer from keeping the process alive (Node.js only)
+(cleanupTimer as unknown as { unref?: () => void }).unref?.();
 
 export function rateLimit(options: RateLimitOptions = {}) {
   const {
@@ -429,7 +448,7 @@ export async function flushAuditLog(): Promise<void> {
     existingLogs.push(...logsToFlush);
     fs.writeFileSync(logFile, JSON.stringify(existingLogs, null, 2));
   } catch (e) {
-    console.error('Failed to flush audit log');
+    console.error('Failed to flush audit log:', e instanceof Error ? e.message : 'unknown error');
   }
 }
 

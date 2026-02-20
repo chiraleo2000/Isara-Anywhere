@@ -10,7 +10,7 @@
 
 ### 1.1 System Overview
 
-```
+```text
 ┌──────────────────┐         ┌──────────────────┐
 │  Patient Mobile  │         │  Doctor Mobile   │
 │                  │         │                  │
@@ -44,7 +44,7 @@
 ### 1.2 Phase 1 vs Phase 2 Comparison
 
 | Feature | Phase 1 (Web) | Phase 2 (Mobile) |
-|---------|:-------------:|:----------------:|
+| --------- | :-------------: | :----------------: |
 | Video Call | ✅ iframe/lib-jitsi-meet | ✅ @jitsi/react-native-sdk |
 | Audio Call | ✅ | ✅ |
 | Screen Share | ✅ | ✅ (broadcast extension) |
@@ -116,7 +116,7 @@ config.build_settings['ENABLE_BITCODE'] = 'NO'
 
 ### 3.1 Patient: Join Meeting Flow
 
-```
+```text
 Push Notification: "แพทย์เริ่มการประชุมแล้ว"
               │
               ▼
@@ -170,7 +170,7 @@ Push Notification: "แพทย์เริ่มการประชุมแ
 
 ### 3.2 Doctor: Create & Manage Meeting Flow
 
-```
+```text
 Appointment Detail → "เริ่มประชุม"
               │
               ▼
@@ -214,7 +214,7 @@ Appointment Detail → "เริ่มประชุม"
 
 ### 3.3 PiP (Picture-in-Picture) Mode
 
-```
+```text
 User goes to home screen or another app
               │
               ▼
@@ -622,7 +622,7 @@ export function showIncomingCall(meetingId: string, callerName: string) {
 
 ### 7.1 Doctor Post-Meeting Flow
 
-```
+```text
 Meeting Ends
      │
      ▼
@@ -667,7 +667,7 @@ Meeting Ends
 
 ### 7.2 Patient Post-Meeting Flow
 
-```
+```text
 Meeting Ends
      │
      ▼

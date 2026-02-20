@@ -11,7 +11,7 @@
 ### 1.1 Phase 1 vs Phase 2 Comparison
 
 | Feature | Web (Phase 1) | Mobile (Phase 2) |
-|---------|:-------------:|:----------------:|
+| --------- | :-------------: | :----------------: |
 | AI Health Chat | ✅ Text | ✅ Text + 🎤 Voice |
 | Symptom Checker | ✅ | ✅ + Camera scan |
 | Health Risk Assessment | ✅ | ✅ + Wearable data |
@@ -34,7 +34,7 @@
 
 ### 2.1 Chat Interface
 
-```
+```text
 AI Tab (🤖) → Chat
          │
          ▼
@@ -170,7 +170,7 @@ export async function analyzeSymptomPhoto(base64Image: string): Promise<AISympto
 
 ### 3.1 During Video Meeting
 
-```
+```text
 Meeting Screen → AI Side Panel
          │
          ▼
@@ -224,7 +224,7 @@ interface PreConsultationSummary {
 
 ### 3.3 EMR Auto-Draft from Meeting
 
-```
+```text
 Meeting Ends → AI Processing
          │
          ▼
@@ -266,7 +266,7 @@ Meeting Ends → AI Processing
 
 ### 4.1 Flow
 
-```
+```text
 Background: Wearable data synced
          │
          ▼
@@ -362,7 +362,7 @@ async function handleOfflineAIChat(message: string): Promise<string> {
 
 ### 6.1 Medical Disclaimer (Mandatory)
 
-```
+```text
 Every AI response MUST include:
 
 "⚠️ ข้อมูลนี้เป็นเพียงคำแนะนำเบื้องต้นจาก AI ไม่ใช่การวินิจฉัยทางการแพทย์
@@ -373,6 +373,7 @@ Every AI response MUST include:
 ### 6.2 Man-in-the-Loop Validation
 
 All AI-generated clinical content (EMR drafts, CDS alerts, instructions) must be:
+
 1. ✅ Reviewed by a licensed physician
 2. ✅ Explicitly approved or edited
 3. ✅ Logged with validation decision

@@ -17,7 +17,7 @@
  * 8. Onsite appointment → No meeting link, send symptoms to doctor via email/calendar
  */
 
-import { storage, GCS_BUCKETS, USE_POSTGRESQL } from '../index';
+import { storage, GCS_BUCKETS } from '../index';
 
 // Notification types
 export type NotificationType = 
@@ -43,9 +43,11 @@ export interface Notification {
   message: string;
   data?: {
     appointmentId?: string;
+    patientId?: string;
     meetingLink?: string;
     calendarEventUrl?: string;
     symptoms?: string[];
+    urgency?: string;
     doctorName?: string;
     patientName?: string;
     appointmentDate?: string;
@@ -90,6 +92,30 @@ async function writeJSON(bucket: string, filePath: string, data: any): Promise<v
   });
 }
 
+// Helper functions to avoid nested ternaries in templates
+const getUrgencyLabel = (urgency: string): string => {
+  if (urgency === 'emergency') return '🚨 ฉุกเฉิน';
+  if (urgency === 'urgent') return '⚠️ เร่งด่วน';
+  return '✅ ปกติ';
+};
+
+const formatSymptomsHtml = (symptoms: any): string => {
+  if (!symptoms) return '';
+  const text = typeof symptoms === 'object' ? JSON.stringify(symptoms) : symptoms;
+  return '<p><strong>รายละเอียด:</strong> ' + text + '</p>';
+};
+
+const getTimeSlotLabel = (slot: string): string => {
+  if (slot === 'morning') return 'เช้า';
+  if (slot === 'afternoon') return 'บ่าย';
+  return 'เย็น';
+};
+
+// Portal URLs (extracted to avoid nested template literals — S4624)
+const DOCTOR_PORTAL_URL = process.env.VITE_DOCTOR_PORTAL_URL || 'http://localhost:3010';
+const PATIENT_PORTAL_URL = process.env.VITE_PATIENT_PORTAL_URL || 'http://localhost:3005';
+const CURRENT_YEAR = new Date().getFullYear();
+
 // Email templates
 const EMAIL_TEMPLATES = {
   appointmentRequested: (data: any) => ({
@@ -123,23 +149,23 @@ const EMAIL_TEMPLATES = {
               <p><strong>ผู้ป่วย:</strong> ${data.patientName}</p>
               <p><strong>อีเมล:</strong> ${data.patientEmail}</p>
               <p><strong>รูปแบบการพบแพทย์:</strong> ${data.appointmentType === 'telehealth' ? '📹 ออนไลน์' : '🏥 ที่โรงพยาบาล'}</p>
-              <p><strong>ความเร่งด่วน:</strong> ${data.urgency === 'emergency' ? '🚨 ฉุกเฉิน' : data.urgency === 'urgent' ? '⚠️ เร่งด่วน' : '✅ ปกติ'}</p>
+              <p><strong>ความเร่งด่วน:</strong> ${getUrgencyLabel(data.urgency)}</p>
               <p><strong>วันที่ต้องการ:</strong> ${data.preferredDates?.join(', ') || 'ไม่ระบุ'}</p>
-              <p><strong>ช่วงเวลา:</strong> ${data.preferredTimeSlot === 'morning' ? 'เช้า' : data.preferredTimeSlot === 'afternoon' ? 'บ่าย' : 'เย็น'}</p>
+              <p><strong>ช่วงเวลา:</strong> ${getTimeSlotLabel(data.preferredTimeSlot)}</p>
             </div>
 
             <div class="symptoms">
               <h3 style="margin-top: 0;">📋 อาการของผู้ป่วย:</h3>
               <p><strong>อาการหลัก:</strong> ${data.reason || 'ไม่ระบุ'}</p>
-              ${data.symptoms ? `<p><strong>รายละเอียด:</strong> ${typeof data.symptoms === 'object' ? JSON.stringify(data.symptoms) : data.symptoms}</p>` : ''}
+              ${formatSymptomsHtml(data.symptoms)}
             </div>
 
             <div style="text-align: center;">
-              <a href="${process.env.VITE_DOCTOR_PORTAL_URL || 'http://localhost:3010'}/appointment-pool" class="button">ดูคำขอนัดหมาย</a>
+              <a href="${DOCTOR_PORTAL_URL}/appointment-pool" class="button">ดูคำขอนัดหมาย</a>
             </div>
           </div>
           <div class="footer">
-            <p>© ${new Date().getFullYear()} Izara Telemedicine</p>
+            <p>© ${CURRENT_YEAR} Izara Telemedicine</p>
           </div>
         </div>
       </body>
@@ -197,18 +223,18 @@ const EMAIL_TEMPLATES = {
 
             <div style="text-align: center;">
               <a href="${data.calendarEventUrl}" class="button">➕ เพิ่มในปฏิทิน</a>
-              <a href="${process.env.VITE_PATIENT_PORTAL_URL || 'http://localhost:3005'}/appointments" class="button">📋 ดูนัดหมาย</a>
+              <a href="${PATIENT_PORTAL_URL}/appointments" class="button">📋 ดูนัดหมาย</a>
             </div>
           </div>
           <div class="footer">
             <p>หากมีข้อสงสัยกรุณาติดต่อ support@izara-telemedicine.com</p>
-            <p>© ${new Date().getFullYear()} Izara Telemedicine</p>
+            <p>© ${CURRENT_YEAR} Izara Telemedicine</p>
           </div>
         </div>
       </body>
       </html>
     `,
-    text: `นัดหมายยืนยันแล้ว!\n\nวันที่: ${data.appointmentDate}\nเวลา: ${data.appointmentTime}\nแพทย์: ${data.doctorName}\n${data.meetingLink ? `\nลิงก์เข้าประชุม: ${data.meetingLink}` : ''}`
+    text: 'นัดหมายยืนยันแล้ว!\n\nวันที่: ' + data.appointmentDate + '\nเวลา: ' + data.appointmentTime + '\nแพทย์: ' + data.doctorName + (data.meetingLink ? '\nลิงก์เข้าประชุม: ' + data.meetingLink : '')
   }),
 
   appointmentDeclined: (data: any) => ({
@@ -242,7 +268,7 @@ const EMAIL_TEMPLATES = {
             </div>
           </div>
           <div class="footer">
-            <p>© ${new Date().getFullYear()} Izara Telemedicine</p>
+            <p>© ${CURRENT_YEAR} Izara Telemedicine</p>
           </div>
         </div>
       </body>
@@ -276,7 +302,7 @@ const EMAIL_TEMPLATES = {
             ${data.reason ? `<p><strong>เหตุผล:</strong> ${data.reason}</p>` : ''}
           </div>
           <div class="footer">
-            <p>© ${new Date().getFullYear()} Izara Telemedicine</p>
+            <p>© ${CURRENT_YEAR} Izara Telemedicine</p>
           </div>
         </div>
       </body>
@@ -324,11 +350,11 @@ const EMAIL_TEMPLATES = {
             </div>
 
             <div style="text-align: center;">
-              <a href="${process.env.VITE_DOCTOR_PORTAL_URL || 'http://localhost:3010'}/appointment-pool" class="button">ยืนยัน/ปฏิเสธนัดหมาย</a>
+              <a href="${DOCTOR_PORTAL_URL}/appointment-pool" class="button">ยืนยัน/ปฏิเสธนัดหมาย</a>
             </div>
           </div>
           <div class="footer">
-            <p>© ${new Date().getFullYear()} Izara Telemedicine</p>
+            <p>© ${CURRENT_YEAR} Izara Telemedicine</p>
           </div>
         </div>
       </body>
@@ -363,11 +389,11 @@ const EMAIL_TEMPLATES = {
             <p>คุณสามารถดูรายละเอียดได้ในประวัติสุขภาพของคุณ</p>
             
             <div style="text-align: center;">
-              <a href="${process.env.VITE_PATIENT_PORTAL_URL || 'http://localhost:3005'}/phr" class="button">ดูประวัติสุขภาพ</a>
+              <a href="${PATIENT_PORTAL_URL}/phr" class="button">ดูประวัติสุขภาพ</a>
             </div>
           </div>
           <div class="footer">
-            <p>© ${new Date().getFullYear()} Izara Telemedicine</p>
+            <p>© ${CURRENT_YEAR} Izara Telemedicine</p>
           </div>
         </div>
       </body>
@@ -401,7 +427,7 @@ const EMAIL_TEMPLATES = {
             <p>หากต้องการความช่วยเหลือ กรุณาติดต่อ support@izara-telemedicine.com</p>
           </div>
           <div class="footer">
-            <p>© ${new Date().getFullYear()} Izara Telemedicine</p>
+            <p>© ${CURRENT_YEAR} Izara Telemedicine</p>
           </div>
         </div>
       </body>
@@ -458,7 +484,8 @@ class NotificationService {
         try {
           doctorData = await readJSON(GCS_BUCKETS.DOCTOR, doctorNotificationPath);
         } catch (err) {
-          // File doesn't exist yet
+          // File doesn't exist yet - will create new
+          console.debug('[NOTIFICATION] Doctor notification file not found, creating new:', (err as Error).message);
         }
         
         if (!doctorData) {
@@ -532,8 +559,8 @@ class NotificationService {
     endDateTime: string;
     location?: string;
   }): string {
-    const startDate = new Date(data.startDateTime).toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
-    const endDate = new Date(data.endDateTime).toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+    const startDate = new Date(data.startDateTime).toISOString().replaceAll(/[-:]/g, '').split('.')[0] + 'Z';
+    const endDate = new Date(data.endDateTime).toISOString().replaceAll(/[-:]/g, '').split('.')[0] + 'Z';
     
     return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(data.title)}&dates=${startDate}/${endDate}&details=${encodeURIComponent(data.description)}&location=${encodeURIComponent(data.location || '')}`;
   }
@@ -635,7 +662,7 @@ class NotificationService {
     
     const calendarEventUrl = this.generateCalendarUrl({
       title: `นัดหมายแพทย์ - ${appointmentData.doctorName}`,
-      description: `นัดหมายกับ ${appointmentData.doctorName}\n${appointmentData.reason || ''}\n${meetingLink ? `ลิงก์ประชุม: ${meetingLink}` : ''}`,
+      description: 'นัดหมายกับ ' + appointmentData.doctorName + '\n' + (appointmentData.reason || '') + '\n' + (meetingLink ? 'ลิงก์ประชุม: ' + meetingLink : ''),
       startDateTime: startDateTime.toISOString(),
       endDateTime: endDateTime.toISOString(),
       location: meetingLink || 'โรงพยาบาล'

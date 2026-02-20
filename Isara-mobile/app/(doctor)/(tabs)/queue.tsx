@@ -88,9 +88,10 @@ export default function QueueScreen() {
         style={styles.list}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        {isLoading ? (
+        {isLoading && (
           <View style={styles.empty}><Text style={styles.emptyText}>กำลังโหลด...</Text></View>
-        ) : queue?.filter((q: any) => q.status === 'waiting')?.length > 0 ? (
+        )}
+        {!isLoading && queue?.filter((q: any) => q.status === 'waiting')?.length > 0 && (
           queue.filter((q: any) => q.status === 'waiting').map((item: any) => (
             <View key={item.id} style={styles.queueItem}>
               <View style={styles.queueNumBadge}>
@@ -102,7 +103,8 @@ export default function QueueScreen() {
               </View>
             </View>
           ))
-        ) : (
+        )}
+        {!isLoading && (queue?.filter((q: any) => q.status === 'waiting')?.length ?? 0) <= 0 && (
           <View style={styles.empty}>
             <Text style={{ fontSize: 40 }}>✨</Text>
             <Text style={styles.emptyText}>ไม่มีผู้ป่วยรอในคิว</Text>

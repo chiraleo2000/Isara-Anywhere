@@ -1483,8 +1483,7 @@ Izara Telehealth Team
         <div className={`${hmDarkCard(isDark)} rounded-xl shadow-lg p-6`}>
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
             <h2 className={`text-xl font-bold ${hmDarkText(isDark)} flex items-center gap-2`}>
-              🎥 Scheduled Meetings
-              <span className="text-sm font-normal text-gray-500 ml-2">
+              🎥 Scheduled Meetings<span className="text-sm font-normal text-gray-500 ml-2">
                 ({allAppointments.filter((a: any) => a.status === 'confirmed').length} confirmed)
               </span>
             </h2>

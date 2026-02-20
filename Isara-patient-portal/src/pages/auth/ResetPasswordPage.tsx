@@ -2,33 +2,13 @@ import { useState, useEffect, FormEvent } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { Eye, EyeOff, Lock, CheckCircle, AlertCircle, Loader2, ArrowLeft } from 'lucide-react';
 
-export default function ResetPasswordPage() {
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const token = searchParams.get('token');
-
-  // Form state
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
-  // UI state
-  const [loading, setLoading] = useState(false);
+// Custom hook for token verification
+function useTokenVerification(token: string | null) {
   const [verifying, setVerifying] = useState(true);
   const [tokenValid, setTokenValid] = useState(false);
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
 
-  // Password strength validation
-  const [passwordStrength, setPasswordStrength] = useState({
-    length: false,
-    hasNumber: false,
-    hasLetter: false,
-  });
-
-  // Verify token on mount
   useEffect(() => {
     const verifyToken = async () => {
       if (!token) {
@@ -48,7 +28,6 @@ export default function ResetPasswordPage() {
           setError(result.error || 'โทเค็นไม่ถูกต้องหรือหมดอายุแล้ว');
         }
       } catch (err) {
-        // Log error for debugging and set user-friendly message
         console.error('Token verification error:', err instanceof Error ? err.message : 'Unknown error');
         setError('ไม่สามารถตรวจสอบโทเค็นได้ กรุณาลองใหม่อีกครั้ง');
       } finally {
@@ -59,7 +38,17 @@ export default function ResetPasswordPage() {
     verifyToken();
   }, [token]);
 
-  // Check password strength
+  return { verifying, tokenValid, email, error };
+}
+
+// Custom hook for password validation
+function usePasswordValidation(newPassword: string, confirmPassword: string) {
+  const [passwordStrength, setPasswordStrength] = useState({
+    length: false,
+    hasNumber: false,
+    hasLetter: false,
+  });
+
   useEffect(() => {
     setPasswordStrength({
       length: newPassword.length >= 8,
@@ -71,8 +60,16 @@ export default function ResetPasswordPage() {
   const isPasswordValid = passwordStrength.length && passwordStrength.hasNumber && passwordStrength.hasLetter;
   const passwordsMatch = newPassword === confirmPassword && confirmPassword.length > 0;
 
-  // Handle password reset
-  const handleSubmit = async (e: FormEvent) => {
+  return { passwordStrength, isPasswordValid, passwordsMatch };
+}
+
+// Custom hook for password reset submission
+function usePasswordReset(token: string | null, newPassword: string, confirmPassword: string, isPasswordValid: boolean, passwordsMatch: boolean) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
+
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError('');
     setLoading(true);
@@ -103,74 +100,153 @@ export default function ResetPasswordPage() {
       }
 
       setSuccess(true);
-    } catch (err: any) {
-      setError(err.message || 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
-  // Loading state
-  if (verifying) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 flex items-center justify-center p-4">
-        <div className="text-center">
-          <Loader2 className="w-12 h-12 animate-spin text-emerald-600 mx-auto mb-4" />
-          <p className="text-gray-600">กำลังตรวจสอบโทเค็น...</p>
+  return { loading, error, success, handleSubmit, setError };
+}
+
+// ─── Extracted Components to Reduce Cognitive Complexity ───
+
+function LoadingState() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 flex items-center justify-center p-4">
+      <div className="text-center">
+        <Loader2 className="w-12 h-12 animate-spin text-emerald-600 mx-auto mb-4" />
+        <p className="text-gray-600">กำลังตรวจสอบโทเค็น...</p>
+      </div>
+    </div>
+  );
+}
+
+function InvalidTokenState({ error }: Readonly<{ error: string }>) {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
+          <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <AlertCircle className="w-10 h-10 text-red-600" />
+          </div>
+          <h2 className="text-xl font-semibold text-gray-800 mb-2">ลิงก์ไม่ถูกต้อง</h2>
+          <p className="text-gray-600 mb-6">
+            {error || 'ลิงก์รีเซ็ตรหัสผ่านไม่ถูกต้องหรือหมดอายุแล้ว'}
+          </p>
+          <Link
+            to="/login"
+            className="inline-flex items-center gap-2 text-emerald-600 font-medium hover:underline"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            กลับไปหน้าเข้าสู่ระบบ
+          </Link>
         </div>
       </div>
-    );
+    </div>
+  );
+}
+
+function SuccessState({ onNavigate }: Readonly<{ onNavigate: () => void }>) {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
+          <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <CheckCircle className="w-10 h-10 text-emerald-600" />
+          </div>
+          <h2 className="text-xl font-semibold text-gray-800 mb-2">รีเซ็ตรหัสผ่านสำเร็จ!</h2>
+          <p className="text-gray-600 mb-6">
+            รหัสผ่านของคุณได้รับการเปลี่ยนแล้ว คุณสามารถเข้าสู่ระบบด้วยรหัสผ่านใหม่ได้แล้ว
+          </p>
+          <button
+            onClick={onNavigate}
+            className="w-full bg-emerald-600 text-white py-3 rounded-xl font-medium hover:bg-emerald-700 transition-colors"
+          >
+            ไปหน้าเข้าสู่ระบบ
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+interface PasswordStrengthIndicatorProps {
+  passwordStrength: { length: boolean; hasNumber: boolean; hasLetter: boolean };
+}
+
+function PasswordStrengthIndicator({ passwordStrength }: Readonly<PasswordStrengthIndicatorProps>) {
+  return (
+    <div className="mt-2 space-y-1">
+      <div className={`flex items-center gap-2 text-xs ${passwordStrength.length ? 'text-emerald-600' : 'text-gray-400'}`}>
+        {passwordStrength.length ? <CheckCircle className="w-3 h-3" /> : <div className="w-3 h-3 rounded-full border border-gray-300" />}
+        อย่างน้อย 8 ตัวอักษร
+      </div>
+      <div className={`flex items-center gap-2 text-xs ${passwordStrength.hasLetter ? 'text-emerald-600' : 'text-gray-400'}`}>
+        {passwordStrength.hasLetter ? <CheckCircle className="w-3 h-3" /> : <div className="w-3 h-3 rounded-full border border-gray-300" />}
+        มีตัวอักษร (a-z, A-Z)
+      </div>
+      <div className={`flex items-center gap-2 text-xs ${passwordStrength.hasNumber ? 'text-emerald-600' : 'text-gray-400'}`}>
+        {passwordStrength.hasNumber ? <CheckCircle className="w-3 h-3" /> : <div className="w-3 h-3 rounded-full border border-gray-300" />}
+        มีตัวเลข (0-9)
+      </div>
+    </div>
+  );
+}
+
+interface PasswordMatchIndicatorProps {
+  confirmPassword: string;
+  passwordsMatch: boolean;
+}
+
+function PasswordMatchIndicator({ confirmPassword, passwordsMatch }: Readonly<PasswordMatchIndicatorProps>) {
+  if (!confirmPassword) return null;
+  
+  if (!passwordsMatch) {
+    return <p className="mt-1 text-xs text-red-600">รหัสผ่านไม่ตรงกัน</p>;
+  }
+  
+  return (
+    <p className="mt-1 text-xs text-emerald-600 flex items-center gap-1">
+      <CheckCircle className="w-3 h-3" />
+      รหัสผ่านตรงกัน
+    </p>
+  );
+}
+
+export default function ResetPasswordPage() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const token = searchParams.get('token');
+
+  // Form state
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Custom hooks
+  const { verifying, tokenValid, email, error: tokenError } = useTokenVerification(token);
+  const { passwordStrength, isPasswordValid, passwordsMatch } = usePasswordValidation(newPassword, confirmPassword);
+  const { loading, error: submitError, success, handleSubmit } = usePasswordReset(token, newPassword, confirmPassword, isPasswordValid, passwordsMatch);
+
+  const error = tokenError || submitError;
+
+  // Loading state
+  if (verifying) {
+    return <LoadingState />;
   }
 
   // Invalid token state
   if (!tokenValid && !success) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
-          <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
-            <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <AlertCircle className="w-10 h-10 text-red-600" />
-            </div>
-            <h2 className="text-xl font-semibold text-gray-800 mb-2">ลิงก์ไม่ถูกต้อง</h2>
-            <p className="text-gray-600 mb-6">
-              {error || 'ลิงก์รีเซ็ตรหัสผ่านไม่ถูกต้องหรือหมดอายุแล้ว'}
-            </p>
-            <Link
-              to="/login"
-              className="inline-flex items-center gap-2 text-emerald-600 font-medium hover:underline"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              กลับไปหน้าเข้าสู่ระบบ
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
+    return <InvalidTokenState error={error} />;
   }
 
   // Success state
   if (success) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
-          <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
-            <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <CheckCircle className="w-10 h-10 text-emerald-600" />
-            </div>
-            <h2 className="text-xl font-semibold text-gray-800 mb-2">รีเซ็ตรหัสผ่านสำเร็จ!</h2>
-            <p className="text-gray-600 mb-6">
-              รหัสผ่านของคุณได้รับการเปลี่ยนแล้ว คุณสามารถเข้าสู่ระบบด้วยรหัสผ่านใหม่ได้แล้ว
-            </p>
-            <button
-              onClick={() => navigate('/login')}
-              className="w-full bg-emerald-600 text-white py-3 rounded-xl font-medium hover:bg-emerald-700 transition-colors"
-            >
-              ไปหน้าเข้าสู่ระบบ
-            </button>
-          </div>
-        </div>
-      </div>
-    );
+    return <SuccessState onNavigate={() => navigate('/login')} />;
   }
 
   // Reset password form
@@ -225,22 +301,7 @@ export default function ResetPasswordPage() {
                   {showNewPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
-
-              {/* Password strength indicators */}
-              <div className="mt-2 space-y-1">
-                <div className={`flex items-center gap-2 text-xs ${passwordStrength.length ? 'text-emerald-600' : 'text-gray-400'}`}>
-                  {passwordStrength.length ? <CheckCircle className="w-3 h-3" /> : <div className="w-3 h-3 rounded-full border border-gray-300" />}
-                  อย่างน้อย 8 ตัวอักษร
-                </div>
-                <div className={`flex items-center gap-2 text-xs ${passwordStrength.hasLetter ? 'text-emerald-600' : 'text-gray-400'}`}>
-                  {passwordStrength.hasLetter ? <CheckCircle className="w-3 h-3" /> : <div className="w-3 h-3 rounded-full border border-gray-300" />}
-                  มีตัวอักษร (a-z, A-Z)
-                </div>
-                <div className={`flex items-center gap-2 text-xs ${passwordStrength.hasNumber ? 'text-emerald-600' : 'text-gray-400'}`}>
-                  {passwordStrength.hasNumber ? <CheckCircle className="w-3 h-3" /> : <div className="w-3 h-3 rounded-full border border-gray-300" />}
-                  มีตัวเลข (0-9)
-                </div>
-              </div>
+              <PasswordStrengthIndicator passwordStrength={passwordStrength} />
             </div>
 
             <div>
@@ -252,8 +313,7 @@ export default function ResetPasswordPage() {
                   type={showConfirmPassword ? 'text' : 'password'}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className={`w-full pl-10 pr-12 py-3 border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all ${confirmPassword && !passwordsMatch ? 'border-red-300' : 'border-gray-200'
-                    }`}
+                  className={`w-full pl-10 pr-12 py-3 border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all ${confirmPassword && !passwordsMatch ? 'border-red-300' : 'border-gray-200'}`}
                   placeholder="••••••••"
                   required
                 />
@@ -265,15 +325,7 @@ export default function ResetPasswordPage() {
                   {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
-              {confirmPassword && !passwordsMatch && (
-                <p className="mt-1 text-xs text-red-600">รหัสผ่านไม่ตรงกัน</p>
-              )}
-              {passwordsMatch && (
-                <p className="mt-1 text-xs text-emerald-600 flex items-center gap-1">
-                  <CheckCircle className="w-3 h-3" />
-                  รหัสผ่านตรงกัน
-                </p>
-              )}
+              <PasswordMatchIndicator confirmPassword={confirmPassword} passwordsMatch={passwordsMatch} />
             </div>
 
             <button

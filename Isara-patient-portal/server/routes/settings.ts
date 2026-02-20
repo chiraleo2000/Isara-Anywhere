@@ -7,8 +7,7 @@
  */
 
 import { Router, Request, Response } from 'express';
-import { UserSettingsService, PushSubscriptionService } from '../services/postgresDataService';
-import postgresDataService from '../services/postgresDataService';
+import postgresDataService, { UserSettingsService, PushSubscriptionService } from '../services/postgresDataService';
 
 const { pool } = postgresDataService;
 const router = Router();
@@ -78,16 +77,21 @@ router.put('/', async (req: Request, res: Response) => {
     let pushPrefs = null;
     if (push) {
       // Convert camelCase to snake_case for push preferences
+      const camelToSnake: Record<string, string> = {
+        appointmentReminders: 'appointment_reminders',
+        medicationReminders: 'medication_reminders',
+        healthTips: 'health_tips',
+        labResults: 'lab_results',
+        doctorMessages: 'doctor_messages',
+        systemUpdates: 'system_updates',
+        quietHoursStart: 'quiet_hours_start',
+        quietHoursEnd: 'quiet_hours_end',
+        languagePreference: 'language_preference',
+      };
       const pushData: Record<string, unknown> = {};
-      if ('appointmentReminders' in push) pushData.appointment_reminders = push.appointmentReminders;
-      if ('medicationReminders' in push) pushData.medication_reminders = push.medicationReminders;
-      if ('healthTips' in push) pushData.health_tips = push.healthTips;
-      if ('labResults' in push) pushData.lab_results = push.labResults;
-      if ('doctorMessages' in push) pushData.doctor_messages = push.doctorMessages;
-      if ('systemUpdates' in push) pushData.system_updates = push.systemUpdates;
-      if ('quietHoursStart' in push) pushData.quiet_hours_start = push.quietHoursStart;
-      if ('quietHoursEnd' in push) pushData.quiet_hours_end = push.quietHoursEnd;
-      if ('languagePreference' in push) pushData.language_preference = push.languagePreference;
+      for (const [camelKey, snakeKey] of Object.entries(camelToSnake)) {
+        if (camelKey in push) pushData[snakeKey] = push[camelKey];
+      }
 
       pushPrefs = await PushSubscriptionService.update(user.id, pushData);
     }

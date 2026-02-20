@@ -1,105 +1,77 @@
 # Izara Database Scripts
 
-This folder contains all database-related scripts for the Izara Telemedicine platform.
+All database-related files for the Izara Telemedicine platform.
 
-## 📁 Folder Structure
+## Files
 
 ```text
-scripts/database/
-├── README.md                     # This file
-├── izara-database.sql            # 🔥 UNIFIED database init (schema + seed data)
-├── init-cloud-db.js              # @deprecated - Use cloud-db-tool.cjs
-├── init-cloud-sql.js             # @deprecated - Use cloud-db-tool.cjs
-├── seed-cloud-sql.js             # @deprecated - Use cloud-db-tool.cjs
-├── test-cloud-db.js              # @deprecated - Use cloud-db-tool.cjs --verify
+database/
+├── db-tool.cjs                   # Unified DB tool (fix, seed, verify, migrate, export/import)
+├── izara-database.sql            # Master schema v5.1.0 (single source of truth)
 └── migrations/
-    └── v1.4.3-fix-categories.sql # Category format fixes
+    ├── v1.4.3-fix-categories.sql # Category format fixes
+    └── v2.0.0-phase2-tables.sql  # Phase 2 tables (living wills, AI, etc.)
 ```
 
-## ⚠️ Deprecated Scripts
-
-The following scripts are deprecated and will be removed in a future version.
-Use the unified `scripts/cloud-db-tool.cjs` instead:
-
-| Old Script | New Command |
-| --- | --- |
-| `init-cloud-db.js` | `node scripts/cloud-db-tool.cjs --all` |
-| `init-cloud-sql.js` | `node scripts/cloud-db-tool.cjs --all` |
-| `seed-cloud-sql.js` | `node scripts/cloud-db-tool.cjs --all` |
-| `test-cloud-db.js` | `node scripts/cloud-db-tool.cjs --verify` |
-
-**Environment Variable Required:**
+## Usage
 
 ```powershell
-$env:DB_PASSWORD = "your_password"
+# All-in-one: fix schema + seed + verify
+node scripts/database/db-tool.cjs --all
+
+# Individual operations
+node scripts/database/db-tool.cjs --fix
+node scripts/database/db-tool.cjs --seed
+node scripts/database/db-tool.cjs --verify
+
+# Migrations
+node scripts/database/db-tool.cjs --migrate-phase2
+node scripts/database/db-tool.cjs --migrate-ai
+
+# Target specific environment (default: local)
+node scripts/database/db-tool.cjs --target cloud --all
+node scripts/database/db-tool.cjs --target dev-cloud --verify
+
+# Production data transfer
+node scripts/database/db-tool.cjs --export
+node scripts/database/db-tool.cjs --import-local
+node scripts/database/db-tool.cjs --import-dev
+
+# Help
+node scripts/database/db-tool.cjs --help
 ```
 
-## 🚀 Quick Start
+## Local Docker Init
 
-### Local Docker
+The `izara-database.sql` file is automatically loaded into PostgreSQL via docker-compose:
 
-```bash
-# Initialize database (schema + seed data)
-docker exec -i izara-postgres psql -U postgres -d izara_phase1 < scripts/database/izara-database.sql
-
-# Run migrations (if needed)
-docker exec -i izara-postgres psql -U postgres -d izara_phase1 < scripts/database/migrations/v1.4.3-fix-categories.sql
+```yaml
+volumes:
+  - ./scripts/database/izara-database.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
 ```
 
-### PowerShell (Windows)
+Manual reload:
 
 ```powershell
-# Initialize database
 Get-Content scripts\database\izara-database.sql | docker exec -i izara-postgres psql -U postgres -d izara_phase1
-
-# Run migrations
-Get-Content scripts\database\migrations\v1.4.3-fix-categories.sql | docker exec -i izara-postgres psql -U postgres -d izara_phase1
 ```
 
-> **Note:** This project uses PostgreSQL as a Docker service. Cloud SQL scripts require DB_PASSWORD environment variable.
-
-## 📋 Test Credentials
-
-| Role | Email | Password |
-| --- | --- | --- |
-| Patient | <demo.test@gmail.com> | YOUR_TEST_PASSWORD |
-| Patient | <Somchai.Mankong@gmail.com> | YOUR_TEST_PASSWORD |
-| Patient | <Anan.Khayanrian@gmail.com> | YOUR_TEST_PASSWORD |
-| Doctor | <doctor.test@izara.com> | YOUR_TEST_DOCTOR_PASSWORD |
-| Admin | <admin.test@izara.com> | YOUR_TEST_ADMIN_PASSWORD |
-
-## 📊 Database Overview
-
-### Tables (24 total)
+## Database Overview (24+ tables)
 
 | Category | Tables |
 | --- | --- |
-| **Core Users** | users, sessions, password_resets |
-| **Patient Data** | patient_profiles, phr, vital_signs, living_wills, living_will_versions, patient_consents |
-| **Doctor Data** | doctor_profiles, doctors, doctor_schedules, doctor_reviews, consultants |
-| **Appointments** | appointments, meeting_records, meeting_transcripts |
-| **Clinical** | emr, prescriptions, lab_orders |
-| **Content** | medical_content, clinical_resources, icd10_codes, drugs |
-| **AI/Knowledge** | notifications, knowledge_base, ai_chat_history, ai_document_analysis, cds_logs, ai_validations |
-| **Audit** | audit_logs |
+| Core Users | users, sessions, password_resets |
+| Patient Data | patient_profiles, phr, vital_signs, living_wills, living_will_versions, patient_consents |
+| Doctor Data | doctor_profiles, doctors, doctor_schedules, doctor_reviews, consultants |
+| Appointments | appointments, meeting_records, meeting_transcripts |
+| Clinical | emr, prescriptions, lab_orders |
+| Content | medical_content, clinical_resources, icd10_codes, drugs |
+| AI/Knowledge | notifications, knowledge_base, ai_chat_history, ai_document_analysis, cds_logs, ai_validations |
+| Audit | audit_logs |
 
-### Medical Content Categories
+## Notes
 
-Frontend uses hyphenated format for filters:
-
-- `general-health`, `nutrition`, `exercise`, `mental-health`
-- `chronic-disease`, `preventive-care`, `medications`, `first-aid`
-
-## 🔄 Migration Guidelines
-
-1. Create new migration file: `migrations/vX.Y.Z-description.sql`
-2. Include rollback instructions as comments
-3. Test on local Docker first
-4. Apply to PostgreSQL Docker container in production
-
-## ⚠️ Important Notes
-
-- Always backup before running migrations in production
-- The `izara-database.sql` file is idempotent (safe to re-run)
 - Extensions required: uuid-ossp, pgcrypto, vector (pgvector)
-- **NO Cloud SQL used** - PostgreSQL runs as Docker service
+- `izara-database.sql` is idempotent (safe to re-run)
+- Always backup before running migrations in production
+- Medical content categories use hyphenated format: `general-health`, `nutrition`, `exercise`, etc.

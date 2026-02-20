@@ -15,7 +15,7 @@ const getBundleId = () => {
   return 'com.izara.doctor';
 };
 
-export default ({ config }: ConfigContext): ExpoConfig => ({
+const createExpoConfig = ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: getAppName(),
   slug: 'izara-doctor',
@@ -118,3 +118,5 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     MEETING_SERVER_URL: process.env.MEETING_SERVER_URL ?? 'https://meet.izara-anywhere.com',
   },
 });
+
+export default createExpoConfig;

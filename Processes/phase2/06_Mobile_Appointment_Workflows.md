@@ -11,7 +11,7 @@
 ### 1.1 Mobile vs Web Comparison
 
 | Feature | Web (Phase 1) | Mobile (Phase 2) |
-|---------|:-------------:|:----------------:|
+| --------- | :-------------: | :----------------: |
 | Browse Doctors | ✅ | ✅ |
 | Filter by Specialty | ✅ | ✅ |
 | View Time Slots | ✅ | ✅ |
@@ -36,6 +36,7 @@ All mobile appointment flows use the **same backend APIs** as Phase 1:
 - `PUT /api/appointments/:id/status` — Cancel appointment
 
 **New mobile-only additions:**
+
 - `POST /api/mobile/payments/create-intent` — Payment before confirmation
 - Calendar deep link — Add to device calendar
 
@@ -45,7 +46,7 @@ All mobile appointment flows use the **same backend APIs** as Phase 1:
 
 ### 2.1 Complete Booking Workflow
 
-```
+```text
 Home Tab → "นัดหมายแพทย์" Button
               │
               ▼
@@ -208,7 +209,7 @@ export async function addAppointmentToCalendar(appointment: Appointment): Promis
 
 ### 3.1 Appointment Management Dashboard
 
-```
+```text
 Doctor Appointments Tab
          │
          ▼
@@ -240,7 +241,7 @@ Doctor Appointments Tab
 
 ### 3.2 Confirm/Decline Flow
 
-```
+```text
 Pending Appointment Card → [✅ ยืนยัน]
               │
               ▼
@@ -269,7 +270,7 @@ Pending Appointment Card → [✅ ยืนยัน]
 
 ## 4. Appointment Status State Machine
 
-```
+```text
 ┌──────────┐
 │ PENDING  │ ──────── Patient books
 └────┬─────┘
@@ -302,7 +303,7 @@ Pending Appointment Card → [✅ ยืนยัน]
 
 ### 5.1 Walk-in Patient Flow (Mobile)
 
-```
+```text
 Patient at Clinic → Opens App → "Walk-in Queue"
               │
               ▼
@@ -341,7 +342,7 @@ Patient at Clinic → Opens App → "Walk-in Queue"
 
 ### 5.2 Doctor Queue Management (Mobile)
 
-```
+```text
 Queue Tab (Doctor App)
          │
          ▼
@@ -376,7 +377,7 @@ Queue Tab (Doctor App)
 ### 6.1 Reminder Schedule
 
 | Timing | Method | Message |
-|--------|--------|---------|
+| -------- | -------- | --------- |
 | 24 hours before | Push notification | "พรุ่งนี้มีนัดหมายกับ {doctor} เวลา {time}" |
 | 1 hour before | Push notification | "อีก 1 ชั่วโมงจะถึงเวลานัดหมาย" |
 | 15 minutes before | Push notification | "เตรียมตัว! อีก 15 นาทีจะถึงเวลานัดหมาย" |
@@ -404,7 +405,7 @@ interface AppointmentReminder {
 
 ### 7.1 Cancellation Policy
 
-```
+```text
 Cancellation Rules:
 ├── > 24h before  → Full refund  → No penalty
 ├── 12-24h before → 50% refund   → Warning
@@ -415,7 +416,7 @@ Cancellation Rules:
 
 ### 7.2 Cancellation Flow
 
-```
+```text
 Appointment Detail → [ยกเลิกนัดหมาย]
               │
               ▼

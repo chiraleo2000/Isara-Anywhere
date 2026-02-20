@@ -15,7 +15,7 @@ The Izara Dr. Anywhere mobile app handles **Protected Health Information (PHI)**
 ### 1.1 Data Categories
 
 | Category | Thai | Examples | Sensitivity |
-|----------|------|----------|------------|
+| ---------- | ------ | ---------- | ------------ |
 | Personal Identity | ข้อมูลส่วนบุคคล | Name, email, phone, national ID, DOB | Standard |
 | Health Data | ข้อมูลสุขภาพ | PHR, vitals, medications, allergies, EMR | **Sensitive** |
 | Biometric Data | ข้อมูลชีวมิติ | Face ID hash, fingerprint template | **Sensitive** |
@@ -27,7 +27,7 @@ The Izara Dr. Anywhere mobile app handles **Protected Health Information (PHI)**
 ### 1.2 PDPA Roles
 
 | PDPA Role | Izara Entity | Responsibility |
-|-----------|-------------|----------------|
+| ----------- | ------------- | ---------------- |
 | **Data Controller** (ผู้ควบคุมข้อมูล) | Izara Co., Ltd. | Determines purposes and means of processing |
 | **Data Processor** (ผู้ประมวลผลข้อมูล) | Backend servers, Google Cloud, Stripe | Processes data on behalf of controller |
 | **Data Subject** (เจ้าของข้อมูล) | Patient / Doctor users | The person whose data is collected |
@@ -198,7 +198,7 @@ Mobile (MMKV cache):
 PDPA provides 8 rights to data subjects. Here's how each is implemented in the mobile app:
 
 | # | Right (Thai) | Right (English) | Mobile Implementation |
-|---|-------------|-----------------|----------------------|
+| --- | ------------- | ----------------- | ---------------------- |
 | 1 | สิทธิในการเข้าถึง | Right of Access | View profile, health records, audit logs anytime |
 | 2 | สิทธิในการแก้ไข | Right to Rectification | Edit profile, health records. Request doctor to fix EMR. |
 | 3 | สิทธิในการลบ | Right to Erasure | Settings > Delete Account. Removes all data within 30 days. |
@@ -334,7 +334,7 @@ Doctor: "Request Access to Patient Data"
 ### 6.1 What Data Stays on Device
 
 | Data | Where | Encrypted | Clear on Logout |
-|------|-------|-----------|----------------|
+| ------ | ------- | ----------- | ---------------- |
 | JWT Tokens | SecureStore | ✅ Hardware-backed | ✅ Yes |
 | User Profile (cached) | MMKV | ✅ MMKV encryption | ✅ Yes |
 | PHR Data (cached) | SQLite | ✅ SQLCipher | ✅ Yes |
@@ -409,7 +409,7 @@ App Launch → Check consent version
 ## 8. API Endpoints for PDPA
 
 | Method | Endpoint | Description |
-|--------|----------|-------------|
+| -------- | ---------- | ------------- |
 | `GET` | `/api/pdpa/current-version` | Get current privacy policy version |
 | `POST` | `/api/pdpa/consent` | Submit consent (registration) |
 | `PUT` | `/api/pdpa/consent` | Update consents (toggle categories) |
@@ -430,7 +430,7 @@ App Launch → Check consent version
 ## 9. Related Documents
 
 | Document | Relationship |
-|----------|-------------|
+| ---------- | ------------- |
 | [03_Mobile_Authentication_Security.md](03_Mobile_Authentication_Security.md) | Security controls for data protection |
 | [12_Multi_API_Token_Management.md](12_Multi_API_Token_Management.md) | External service data sharing |
 | Web PDPA Implementation: [Living_Will_Processes.md](../Living_Will_Processes.md) | Existing web PDPA workflows |

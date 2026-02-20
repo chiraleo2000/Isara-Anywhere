@@ -10,7 +10,7 @@
 
 ### 1.1 System Overview
 
-```
+```text
 ┌───────────────┐         ┌──────────────┐         ┌──────────────┐
 │  API Server   │────────►│  FCM / APNS  │────────►│  Mobile App  │
 │               │         │              │         │              │
@@ -30,7 +30,7 @@
 ### 1.2 Notification Categories
 
 | Category | Icon | Patient App | Doctor App | Priority |
-|----------|------|:-----------:|:----------:|----------|
+| ---------- | ------ | :-----------: | :----------: | ---------- |
 | Appointment | 📅 | ✅ | ✅ | High |
 | Video Meeting | 📹 | ✅ | ✅ | Critical |
 | EMR/Prescriptions | 📋 | ✅ | ✅ | Normal |
@@ -144,7 +144,7 @@ export async function setupNotificationChannels() {
 
 ### 3.1 Registration Workflow
 
-```
+```text
 App Launch / Login
        │
        ▼
@@ -552,7 +552,7 @@ useEffect(() => {
 
 ### 5.3 Deep Link URL Scheme
 
-```
+```text
 // Expo Router linking configuration
 izara-patient://appointments/apt_12345
 izara-patient://meeting/meet_67890
@@ -599,7 +599,7 @@ interface NotificationPreferences {
 
 ### 6.2 Notification Settings UI Flow
 
-```
+```text
 Profile Tab → Settings → Notifications
        │
        ├── 🔔 Push Notifications [Toggle]

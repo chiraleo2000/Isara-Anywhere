@@ -14,7 +14,7 @@ The Izara Dr. Anywhere mobile app is a **single unified application** serving bo
 ### 1.1 Key Decisions
 
 | Decision | Choice | Rationale |
-|----------|--------|-----------|
+| ---------- | -------- | ----------- |
 | Separate accounts or shared? | **Separate accounts** | Patient and Doctor have different registration flows, different backends, different data. A person can have both. |
 | When is role selected? | **First launch + Settings** | User picks role on first launch. Can switch anytime via Settings. |
 | Can one person be both? | **Yes** | A doctor can also be a patient. They log in with different credentials per role. |
@@ -318,7 +318,7 @@ Patient Mode:                          Doctor Mode:
 ### 5.1 Patient Authentication
 
 | Method | Availability | Flow |
-|--------|-------------|------|
+| -------- | ------------- | ------ |
 | Email + Password | Always | Standard login → JWT |
 | Biometric (Face ID / Fingerprint) | After first login | Biometric → verify local key → JWT |
 | Social Login (Google) | Optional | OAuth2 → backend creates/links account → JWT |
@@ -329,7 +329,7 @@ Patient Mode:                          Doctor Mode:
 ### 5.2 Doctor Authentication
 
 | Method | Availability | Flow |
-|--------|-------------|------|
+| -------- | ------------- | ------ |
 | Email + Password + 2FA | Always | Login → OTP (SMS/Email) → JWT |
 | Biometric (Face ID / Fingerprint) | After first 2FA login | Biometric → verify → skip 2FA → JWT |
 | Medical License Verification | Registration | Upload license → admin approval → activate |
@@ -367,7 +367,7 @@ This isolation means:
 The app handles deep links with role context:
 
 | Link Pattern | Action |
-|-------------|--------|
+| ------------- | -------- |
 | `izara://role/patient` | Switch to patient mode, open home |
 | `izara://role/doctor` | Switch to doctor mode, open home |
 | `izara://patient/appointment/:id` | Open specific appointment (patient) |
@@ -422,7 +422,7 @@ packages/
 ### 7.2 Code Sharing Estimate
 
 | Code Area | Shared | Patient-Only | Doctor-Only |
-|-----------|:------:|:------------:|:-----------:|
+| ----------- | :------: | :------------: | :-----------: |
 | UI Components | 70% | 15% | 15% |
 | API Client | 90% | 5% | 5% |
 | Auth Logic | 50% | 25% | 25% |
@@ -556,7 +556,7 @@ The unified app adapts its layout for tablets:
 ## 10. Related Documents
 
 | Document | Relationship |
-|----------|-------------|
+| ---------- | ------------- |
 | [01_Mobile_App_Architecture.md](01_Mobile_App_Architecture.md) | Technical architecture (needs update for unified app) |
 | [03_Mobile_Authentication_Security.md](03_Mobile_Authentication_Security.md) | Auth flows per role |
 | [11_Mobile_App_Description.md](11_Mobile_App_Description.md) | Complete feature matrix |

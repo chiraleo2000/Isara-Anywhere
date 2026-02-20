@@ -46,7 +46,7 @@ export default function AIChatScreen() {
     setIsLoading(true);
 
     try {
-      const response = await patientApi.chatWithAI(userMessage.content, accessToken!);
+      const response = await patientApi.chatWithAI(userMessage.content, accessToken ?? '');
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',

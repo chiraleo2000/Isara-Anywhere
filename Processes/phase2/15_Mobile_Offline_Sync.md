@@ -47,7 +47,7 @@ The Izara Dr. Anywhere mobile app must provide a meaningful experience even with
 ### 1.2 Principles
 
 | Principle | Description |
-|-----------|-------------|
+| ----------- | ------------- |
 | **Cache-First** | Always show cached data first, then update from network |
 | **Optimistic Updates** | Apply changes locally immediately, sync to server in background |
 | **Conflict Resolution** | Server wins (last-write-wins for simple data), manual merge for complex data |
@@ -63,7 +63,7 @@ The Izara Dr. Anywhere mobile app must provide a meaningful experience even with
 ### 2.1 Patient Mode
 
 | Feature | View Offline | Create/Edit Offline | Sync Behavior |
-|---------|:----------:|:------------------:|---------------|
+| --------- | :----------: | :------------------: | --------------- |
 | Dashboard | ✅ Cached | — | Refresh on reconnect |
 | Appointment List | ✅ Cached | ❌ Cannot book | Refresh on reconnect |
 | Appointment Detail | ✅ Cached | ❌ Cannot cancel/reschedule | — |
@@ -88,7 +88,7 @@ The Izara Dr. Anywhere mobile app must provide a meaningful experience even with
 ### 2.2 Doctor Mode
 
 | Feature | View Offline | Create/Edit Offline | Sync Behavior |
-|---------|:----------:|:------------------:|---------------|
+| --------- | :----------: | :------------------: | --------------- |
 | Dashboard | ✅ Cached | — | Refresh on reconnect |
 | Schedule | ✅ Cached | ❌ Cannot confirm/decline | Refresh on reconnect |
 | Patient List | ✅ Cached recent | — | — |
@@ -187,7 +187,7 @@ CREATE INDEX idx_api_cache_expires ON api_cache(expires_at);
 ### 4.1 Cache Timing
 
 | Data Type | staleTime | cacheTime (gcTime) | Background Refetch |
-|-----------|-----------|-------|-------------------|
+| ----------- | ----------- | ------- | ------------------- |
 | User Profile | 5 min | 24 hours | On app resume |
 | Appointment List | 1 min | 1 hour | Every 60 seconds |
 | Appointment Detail | 2 min | 1 hour | On screen focus |
@@ -278,7 +278,7 @@ Result: Instant app start → data visible in < 100ms
 ### 5.2 Priority Levels
 
 | Priority | Category | Example |
-|:--------:|----------|---------|
+| :--------: | ---------- | --------- |
 | 1 | Authentication | Token refresh |
 | 2 | Medical Critical | EMR submission, prescription |
 | 3 | Appointment Actions | Booking confirmation |
@@ -449,7 +449,7 @@ Using expo-task-manager + WorkManager:
 ### 9.1 Cache Limits
 
 | Cache Type | Max Size | Eviction Policy |
-|-----------|----------|-----------------|
+| ----------- | ---------- | ----------------- |
 | API Response Cache | 50 MB | LRU (Least Recently Used) |
 | Offline Articles | 100 MB | Manual delete by user |
 | Article Images | 50 MB | LRU, oldest first |
@@ -487,7 +487,7 @@ Settings > Storage:
 ## 10. Backend Sync Endpoints
 
 | Method | Endpoint | Description |
-|--------|----------|-------------|
+| -------- | ---------- | ------------- |
 | `POST` | `/api/sync/pull` | Pull latest data changes since timestamp |
 | `POST` | `/api/sync/push` | Push queued changes from device |
 | `POST` | `/api/sync/resolve` | Resolve conflicts |
@@ -561,7 +561,7 @@ Settings > Storage:
 ## 11. Related Documents
 
 | Document | Relationship |
-|----------|-------------|
+| ---------- | ------------- |
 | [12_Multi_API_Token_Management.md](12_Multi_API_Token_Management.md) | Token management during offline |
 | [02_Mobile_API_Specifications.md](02_Mobile_API_Specifications.md) | API endpoints used for sync |
 | [07_Mobile_Health_Records.md](07_Mobile_Health_Records.md) | Wearable sync detail |

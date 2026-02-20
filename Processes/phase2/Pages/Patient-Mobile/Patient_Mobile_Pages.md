@@ -8,7 +8,7 @@
 
 ## Navigation Structure
 
-```
+```text
 (auth)/               — Unauthenticated screens
   login               — Login screen
   register            — Registration screen
@@ -60,7 +60,7 @@ notifications         — Notification center
 ### 1. Login Screen — `(auth)/login`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **API** | `POST /api/auth/login` |
 | **Components** | Logo, Email input, Password input, Login button, Biometric button, Forgot password link, Register link |
 | **State** | Email, password, loading, error, biometricAvailable |
@@ -73,7 +73,7 @@ notifications         — Notification center
 ### 2. Register Screen — `(auth)/register`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **API** | `POST /api/auth/register` |
 | **Components** | Step wizard (3 steps): Personal Info → Medical Info → PDPA Consent |
 | **Step 1** | First name, Last name, Email, Password, Confirm password, Phone, DOB |
@@ -85,7 +85,7 @@ notifications         — Notification center
 ### 3. Dashboard — `(tabs)/index`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **APIs** | `GET /api/auth/me`, `GET /api/appointments/my`, `GET /api/phr/:id/vitals`, `GET /api/notifications/` |
 | **Layout** | ScrollView with sections |
 | **Sections** | Greeting + avatar, Quick Actions (4 buttons), Upcoming Appointment card, Today's Vitals summary, Medication Reminders, AI Health Score, Health Tips carousel |
@@ -96,7 +96,7 @@ notifications         — Notification center
 ### 4. Appointments List — `(tabs)/appointments/index`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **API** | `GET /api/appointments/my`, `GET /api/appointments/history` |
 | **Components** | Tab switcher (Upcoming / History), Appointment cards, FAB (+ Book) |
 | **Card Info** | Doctor name, specialty, date, time, status badge, action buttons |
@@ -107,7 +107,7 @@ notifications         — Notification center
 ### 5. Book Appointment — `(tabs)/appointments/book`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **APIs** | `POST /api/ai/symptom-checker`, `GET /api/doctors/`, `GET /api/doctors/:id/slots`, `POST /api/appointments/`, `POST /api/mobile/payments/create-intent` |
 | **Flow** | Step wizard: Symptoms → Doctor → Date/Time → Confirm & Pay |
 | **Step 1** | Text input for symptoms, 🎤 voice input, 🤖 AI suggested specialty |
@@ -119,7 +119,7 @@ notifications         — Notification center
 ### 6. Appointment Detail — `(tabs)/appointments/[appointmentId]`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **API** | `GET /api/appointments/:appointmentId` |
 | **Sections** | Status header, Doctor info, Date/Time, Symptoms, Actions |
 | **Actions (Pending)** | Cancel appointment |
@@ -130,7 +130,7 @@ notifications         — Notification center
 ### 7. Health Overview — `(tabs)/health/index`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **APIs** | `GET /api/phr/`, `GET /api/phr/:id/vitals` |
 | **Layout** | Grid of health categories with latest values |
 | **Cards** | BP card, Heart Rate card, SpO2 card, Weight card, Medications count, Allergies count |
@@ -140,7 +140,7 @@ notifications         — Notification center
 ### 8. Vital Signs — `(tabs)/health/vitals`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **APIs** | `GET /api/phr/:id/vitals`, `POST /api/phr/:id/vitals` |
 | **Components** | Vital type tabs, Chart (7d/30d/90d), History list, Add button |
 | **Chart** | Victory Native line chart with normal range band |
@@ -150,7 +150,7 @@ notifications         — Notification center
 ### 9. Medications — `(tabs)/health/medications`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **APIs** | `GET /api/phr/:id/medications`, `POST /api/phr/:id/medications` |
 | **Sections** | Active medications, Past medications |
 | **Card Info** | Drug name, dosage, frequency, prescribing doctor, reminder toggle |
@@ -160,7 +160,7 @@ notifications         — Notification center
 ### 10. Health Logs — `(tabs)/health/health-logs`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **APIs** | `GET /api/phr/:id/health-logs`, `GET /api/emr/my` |
 | **Filters** | All, EMR, Prescriptions, Lab Results, Instructions |
 | **Card Info** | Type icon, Date, Doctor, Diagnosis/Title, Status |
@@ -170,7 +170,7 @@ notifications         — Notification center
 ### 11. AI Chat — `(tabs)/ai/index`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **APIs** | `POST /api/ai/chat`, `GET /api/ai/chat/history`, `POST /api/ai/chat/clear` |
 | **Components** | Chat message list, Text input, Voice button, Photo button |
 | **Message Types** | Text, Quick replies, Cards (doctor recommendation, booking CTA) |
@@ -181,7 +181,7 @@ notifications         — Notification center
 ### 12. Video Meeting — `meeting/[meetingId]`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **APIs** | `GET /api/video-meeting/:appointmentId`, `POST /api/video-meeting/:appointmentId/join` |
 | **Components** | JitsiMeetingView (full screen), Pre-join screen with camera preview |
 | **Controls** | Mute, Camera, Chat, PiP, Speaker, End call |
@@ -192,7 +192,7 @@ notifications         — Notification center
 ### 13. Profile — `(tabs)/profile/index`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **API** | `GET /api/auth/me` |
 | **Sections** | Avatar + name, Menu items |
 | **Menu** | Edit Profile, Notification Settings, Payment History, Connected Devices, Privacy & PDPA, Language, About, Logout |
@@ -202,7 +202,7 @@ notifications         — Notification center
 ### 14. Notification Center — `notifications`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **APIs** | `GET /api/notifications/`, `PUT /api/notifications/:id/read` |
 | **Components** | Notification list, Mark all read button, Filters |
 | **Card Info** | Icon, Title, Body, Time (relative), Read/Unread dot |
@@ -212,7 +212,7 @@ notifications         — Notification center
 ### 15. Nearby Map — `map`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **API** | `GET /api/google/maps/nearby` |
 | **Components** | MapView (react-native-maps), Location markers, List sheet |
 | **Permissions** | Location permission required |

@@ -1,23 +1,43 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════
- * IZARA TELEMEDICINE — PLAYWRIGHT E2E CONFIG v2.0.0
+ * IZARA TELEMEDICINE — PLAYWRIGHT E2E CONFIG v11.0.0
  * ═══════════════════════════════════════════════════════════════════════
- * Test specs: 16 spec files (00-15) covering ALL pages, features, workflows + Phase 2 + Meeting + Multi-User
- * Projects: Local-API, Local (headed UI), Cloud, Cloud-Dev
- * Updated: February 15, 2026
+ * 8 spec files (01-08) | ~530+ tests | 3 projects: Local, Cloud, Cloud-Dev
+ * Updated: February 19, 2026
+ *
+ * Suite:
+ *   01: Auth, Health, Multi-User (65 tests)
+ *   02: Appointment Full Lifecycle (80 tests)
+ *   03: Health Records & EMR (80 tests)
+ *   04: Video Meeting & Transcription (65 tests)
+ *   05: ★★★ Content Sync & Approval — single-refresh visibility (70 tests)
+ *   06: AI Features & CDS (60 tests)
+ *   07: Multi-User Concurrent — 5 browser windows (50 tests)
+ *   08: Phase 2 AI-HIS — CTM, Geriatric, SOS, Follow-Up (60 tests)
  *
  * Features:
- * - Multi-user parallel testing (patient, doctor, admin)
- * - Full meeting lifecycle simulation
- * - AI features testing (Req 2.1-2.5, 4.1-4.5)
- * - 500+ comprehensive tests across 40+ sections, 5 users, 10 specs
- * - Patient Portal (15 pages) + Doctor Portal (21 pages) + Meeting Server
+ * - 5 simultaneous users (patient1, patient2, patient3, doctor, admin)
+ * - Multi-browser real-time content sync verification
+ * - Full meeting lifecycle with AI SOAP / CDS
+ * - Phase 2: CTM, Geriatric Screening (8 tools), SOS, Nursing Dashboard
  * - ALL FREE TIER: Jitsi Meet, Web Speech API, Gemini, PostgreSQL
  * ═══════════════════════════════════════════════════════════════════════
  */
 import { defineConfig, devices } from '@playwright/test';
 
 const isCloud = process.env.TEST_ENV === 'cloud';
+const isHeadless = process.env.HEADLESS === '1' || process.env.CI === 'true';
+
+const SPEC_FILES = [
+  '**/01-auth-health-multiuser.spec.ts',
+  '**/02-appointment-lifecycle.spec.ts',
+  '**/03-health-records-emr.spec.ts',
+  '**/04-video-meeting-transcription.spec.ts',
+  '**/05-content-sync-approval.spec.ts',
+  '**/06-ai-features-cds.spec.ts',
+  '**/07-multi-user-concurrent.spec.ts',
+  '**/08-phase2-ai-his.spec.ts',
+];
 
 export default defineConfig({
   testDir: './specs',
@@ -33,16 +53,15 @@ export default defineConfig({
     ['json', { outputFile: './test-results/results.json' }],
   ],
   use: {
-    headless: false,             // ★★★ UI VISIBLE — HEADED MODE ★★★
-    screenshot: 'on',
-    video: 'on',
+    headless: true,
+    screenshot: 'only-on-failure',
+    video: 'retain-on-failure',
     trace: 'on-first-retry',
-    launchOptions: { 
-      slowMo: 50,
+    launchOptions: {
       args: ['--start-maximized'],
     },
-    actionTimeout: 20_000,
-    navigationTimeout: isCloud ? 60_000 : 30_000,
+    actionTimeout: 30_000,
+    navigationTimeout: 60_000,
   },
   outputDir: './test-results',
   projects: [
@@ -52,9 +71,9 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
         baseURL: 'http://localhost:3005',
         viewport: { width: 1920, height: 1080 },
-        headless: false,         // ★★★ HEADED — show UI actions ★★★
+        headless: isHeadless,
       },
-      testMatch: ['**/00-unified-comprehensive.spec.ts', '**/01-meeting-workflows.spec.ts', '**/02-v350-workflows.spec.ts', '**/03-v360-comprehensive.spec.ts', '**/04-advanced-coverage.spec.ts', '**/05-multi-user-browser.spec.ts', '**/06-patient-portal-complete.spec.ts', '**/07-doctor-portal-complete.spec.ts', '**/08-workflow-processes-complete.spec.ts', '**/09-meeting-ai-complete.spec.ts', '**/10-admin-metadata-complete.spec.ts', '**/11-phase2-features.spec.ts', '**/12-phase2-ui-browser.spec.ts', '**/13-meeting-workflow-integration.spec.ts', '**/14-multi-browser-meeting.spec.ts', '**/15-multi-user-showcase.spec.ts'],
+      testMatch: SPEC_FILES,
     },
     {
       name: 'Cloud',
@@ -62,9 +81,9 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
         baseURL: 'https://izara-patient-portal-hvht4obouq-as.a.run.app',
         viewport: { width: 1920, height: 1080 },
-        headless: false,         // ★★★ HEADED — show UI actions ★★★
+        headless: isHeadless,
       },
-      testMatch: ['**/00-unified-comprehensive.spec.ts', '**/01-meeting-workflows.spec.ts', '**/02-v350-workflows.spec.ts', '**/03-v360-comprehensive.spec.ts', '**/04-advanced-coverage.spec.ts', '**/05-multi-user-browser.spec.ts', '**/06-patient-portal-complete.spec.ts', '**/07-doctor-portal-complete.spec.ts', '**/08-workflow-processes-complete.spec.ts', '**/09-meeting-ai-complete.spec.ts', '**/10-admin-metadata-complete.spec.ts', '**/11-phase2-features.spec.ts', '**/12-phase2-ui-browser.spec.ts', '**/13-meeting-workflow-integration.spec.ts', '**/14-multi-browser-meeting.spec.ts', '**/15-multi-user-showcase.spec.ts'],
+      testMatch: SPEC_FILES,
     },
     {
       name: 'Cloud-Dev',
@@ -72,9 +91,9 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
         baseURL: 'https://izara-patient-portal-dev-testing-hvht4obouq-as.a.run.app',
         viewport: { width: 1920, height: 1080 },
-        headless: false,         // ★★★ HEADED — show UI actions ★★★
+        headless: true,
       },
-      testMatch: ['**/00-unified-comprehensive.spec.ts', '**/01-meeting-workflows.spec.ts', '**/02-v350-workflows.spec.ts', '**/03-v360-comprehensive.spec.ts', '**/04-advanced-coverage.spec.ts', '**/05-multi-user-browser.spec.ts', '**/06-patient-portal-complete.spec.ts', '**/07-doctor-portal-complete.spec.ts', '**/08-workflow-processes-complete.spec.ts', '**/09-meeting-ai-complete.spec.ts', '**/10-admin-metadata-complete.spec.ts', '**/11-phase2-features.spec.ts', '**/12-phase2-ui-browser.spec.ts', '**/13-meeting-workflow-integration.spec.ts', '**/14-multi-browser-meeting.spec.ts', '**/15-multi-user-showcase.spec.ts'],
+      testMatch: SPEC_FILES,
     },
   ],
 });

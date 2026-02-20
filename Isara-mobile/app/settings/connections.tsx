@@ -48,15 +48,15 @@ export default function ConnectionsSettingsScreen() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['settings', 'connections'] }),
   });
 
-  const handleToggle = (serviceType: string, isConnected: boolean) => {
-    if (isConnected) {
-      Alert.alert('ยกเลิกการเชื่อมต่อ', `ต้องการยกเลิกการเชื่อมต่อกับ ${serviceType}?`, [
-        { text: 'ยกเลิก', style: 'cancel' },
-        { text: 'ยืนยัน', style: 'destructive', onPress: () => disconnectMutation.mutate(serviceType) },
-      ]);
-    } else {
-      connectMutation.mutate(serviceType);
-    }
+  const handleConnect = (serviceType: string) => {
+    connectMutation.mutate(serviceType);
+  };
+
+  const handleDisconnect = (serviceType: string) => {
+    Alert.alert('ยกเลิกการเชื่อมต่อ', `ต้องการยกเลิกการเชื่อมต่อกับ ${serviceType}?`, [
+      { text: 'ยกเลิก', style: 'cancel' },
+      { text: 'ยืนยัน', style: 'destructive', onPress: () => disconnectMutation.mutate(serviceType) },
+    ]);
   };
 
   if (isLoading) {
@@ -83,7 +83,7 @@ export default function ConnectionsSettingsScreen() {
             </View>
             <TouchableOpacity
               style={[styles.connectBtn, isConnected && styles.disconnectBtn]}
-              onPress={() => handleToggle(svc.type, isConnected)}
+              onPress={() => isConnected ? handleDisconnect(svc.type) : handleConnect(svc.type)}
               disabled={connectMutation.isPending || disconnectMutation.isPending}
             >
               <Text style={[styles.connectBtnText, isConnected && styles.disconnectBtnText]}>

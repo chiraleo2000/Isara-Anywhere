@@ -1,20 +1,26 @@
-# Isara Telemedicine - E2E Test Suite
+# Izara Telemedicine — E2E Test Suite
 
-> **Version:** 3.0.0 | **Updated:** February 6, 2026  
-> **Files:** 6 spec files | **Coverage:** Full Phase 1 (all workflows, all users, all pages)
+> **Version:** 10.0.0 | **Updated:** February 19, 2026  
+> **Spec Files:** 8 (specs 20-27) | **Total Tests:** ~530  
+> **Users:** 5 simultaneous (patient1, patient2, patient3, doctor, admin)  
+> **Environments:** Local, Cloud, Cloud-Dev
 
-## 🚀 Quick Start
+---
+
+## Quick Start
 
 ```powershell
 cd tests/e2e
+npm install
+npx playwright install chromium
 
-# Smoke test (quick health check)
-npm run smoke
+# Run all tests locally
+npm test
 
-# All local tests
-npm run full
+# Run individual spec
+npm run test:content-sync    # Critical: content approval → single-refresh visibility
 
-# Cloud tests
+# Run on Cloud
 npm run cloud
 
 # View HTML report
@@ -23,78 +29,109 @@ npm run report
 
 ---
 
-## 📁 Directory Structure
+## Directory Structure
 
 ```text
 tests/e2e/
-├── run-tests.ps1               # ⭐ Main test runner (PowerShell)
-├── playwright.config.ts        # Playwright config (3 projects: Local, Cloud, All)
-├── package.json                # npm scripts
-├── global-setup.ts             # Pre-authenticates users
+├── playwright.config.ts        # 3 projects: Local, Cloud, Cloud-Dev
+├── package.json                # 12 npm scripts
+├── README.md
 ├── lib/
-│   └── test-config.ts          # Shared URLs, credentials, helpers
+│   ├── test-config.ts          # URLs, 5 user credentials, 50+ endpoints, timeouts
+│   └── test-helpers.ts         # Multi-browser helpers, API wrappers, generators, assertions
 ├── specs/
-│   ├── 01-smoke.spec.ts        # Portal accessibility + health checks
-│   ├── 02-api-status.spec.ts   # All API endpoints → 200 (both portals)
-│   ├── 03-workflow.spec.ts     # Appointment → Meeting → EMR → AI → Notifications
-│   ├── 04-ui-navigation.spec.ts # All pages: Patient (9) + Doctor (8) + Admin (10)
-│   ├── 05-cloud.spec.ts        # Cloud Run health, infra, latency, OWASP
-│   └── 06-registration.spec.ts # Patient & Doctor registration flows
-├── fixtures/                   # Test data & audio transcripts
-├── deprecated/
-│   └── specs/                  # Archived old test files (42 files)
-└── test-results/               # Screenshots, videos, reports
+│   ├── 20-auth-health-multiuser.spec.ts
+│   ├── 21-appointment-lifecycle.spec.ts
+│   ├── 22-health-records-emr.spec.ts
+│   ├── 23-video-meeting-transcription.spec.ts
+│   ├── 24-content-sync-approval.spec.ts        ★★★ CRITICAL
+│   ├── 25-ai-features-cds.spec.ts
+│   ├── 26-multi-user-concurrent.spec.ts
+│   └── 27-phase2-ai-his.spec.ts
+└── test-results/               # Screenshots, videos, HTML report
 ```
 
 ---
 
-## 🧪 Test Files & Coverage
+## Test Suite
 
-| # | File | Tests | Coverage |
-| --- | ------ | ------- | ---------- |
-| 1 | `01-smoke.spec.ts` | 8 | Portal loads, login pages, API health, DB health, meeting server |
-| 2 | `02-api-status.spec.ts` | ~40 | Auth (5 users), Patient endpoints (11), Doctor endpoints (7), Admin endpoints (6), Meeting (3), System (4) |
-| 3 | `03-workflow.spec.ts` | ~25 | Appointments, video meeting, health records/EMR, notifications, AI features, multi-patient |
-| 4 | `04-ui-navigation.spec.ts` | ~35 | Login (5 users), Patient pages (8), Doctor pages (8), Admin pages (10), Appointment UI flow |
-| 5 | `05-cloud.spec.ts` | ~20 | Cloud patient health (6), Cloud doctor health (4), Infrastructure (5), Connectivity (2), Cloud auth (3) |
-| 6 | `06-registration.spec.ts` | 6 | Patient registration (3), Doctor registration (3) |
+| # | File | Tests | Sections | Coverage |
+| --- | ------ | ------- | ---------- | ---------- |
+| 20 | `20-auth-health-multiuser.spec.ts` | ~65 | A–F | Health checks (3 services), multi-user auth, registration, RBAC, multi-browser login, metadata |
+| 21 | `21-appointment-lifecycle.spec.ts` | ~80 | A–H | Patient booking → doctor confirm → cancel/reschedule → meeting links → notifications → cross-portal sync |
+| 22 | `22-health-records-emr.spec.ts` | ~80 | A–H | PHR CRUD, vitals, EMR SOAP notes, prescriptions, lab orders, living will, timeline, patient record viewer |
+| 23 | `23-video-meeting-transcription.spec.ts` | ~65 | A–G | Meeting creation, join/lobby, transcription lifecycle, AI SOAP summary, post-meeting records, multi-browser |
+| 24 | `24-content-sync-approval.spec.ts` | ~70 | A–H | ★★★ Medical content CRUD → admin approval → **single-refresh visibility** → multi-browser 3-patient sync |
+| 25 | `25-ai-features-cds.spec.ts` | ~60 | A–G | AI chat (EN+TH), CDS drug interactions/dosage/allergy, AI summarization, medical scribe, notifications |
+| 26 | `26-multi-user-concurrent.spec.ts` | ~50 | A–F | 5 users in 5 browser windows simultaneously, concurrent appointment/content/meeting/queue flows |
+| 27 | `27-phase2-ai-his.spec.ts` | ~60 | A–G | CTM Thai medicine, geriatric screening (8 tools), SOS emergency, follow-up, biometric, offline sync, nursing dashboard |
 
-### Total: ~134 tests covering ALL Phase 1 requirements
+### ★★★ Critical Test: Content Sync (Spec 24, Section D)
 
----
+When content is approved, patients see it with **one page refresh**:
 
-## 📋 npm Scripts
+| Test | Description |
+| ------ | ------------- |
+| D01 | API flow: doctor creates → admin approves → patient API returns content |
+| D02 | **BROWSER**: Content approved → patient refreshes once → content visible in DOM |
+| D03 | **MULTI-BROWSER**: 3 patients in 3 separate browsers all refresh once and see approved content |
+| D04 | Clinical resource sync across doctor portal |
+| D05 | API verification: approved content visible to all 3 patient tokens |
+| D06 | Draft content NOT visible to patients |
+| D07 | Rejected content NOT visible to patients |
 
-| Script | Command | What it runs |
-| -------- | --------- | -------------- |
-| `npm run smoke` | `01-smoke` | Quick health check (~1 min) |
-| `npm run api` | `02-api-status` | All API endpoints (~3 min) |
-| `npm run workflow` | `03-workflow` | Full workflow (~3 min) |
-| `npm run ui` | `04-ui-navigation` | All UI pages, headed (~5 min) |
-| `npm run registration` | `06-registration` | Registration flows, headed (~2 min) |
-| `npm run cloud` | `05-cloud` | Cloud deployment tests (~3 min) |
-| `npm run local` | All local specs | Everything except cloud (~10 min) |
-| `npm run full` | All local specs | Same as local, headed (~10 min) |
-| `npm run all` | All specs | Local + cloud (~15 min) |
+### Multi-User / Multi-Browser Tests
 
----
+Tests use Playwright's `browser.newContext()` to open **separate browser windows** per user:
 
-## 🔧 PowerShell Runner
-
-```powershell
-.\tests\e2e\run-tests.ps1 smoke                   # Quick local smoke test
-.\tests\e2e\run-tests.ps1 api                      # API endpoints
-.\tests\e2e\run-tests.ps1 workflow                  # Appointment/Meeting/EMR
-.\tests\e2e\run-tests.ps1 ui -Headed               # UI tests with browser
-.\tests\e2e\run-tests.ps1 registration              # Registration tests
-.\tests\e2e\run-tests.ps1 full local               # Full local tests
-.\tests\e2e\run-tests.ps1 cloud                    # Cloud tests
-.\tests\e2e\run-tests.ps1 all -Workers 4           # All tests, 4 workers
-```
+- **Spec 20 Section E**: 5 users logged in simultaneously in 5 browsers
+- **Spec 24 Section D**: Doctor + Admin + 3 patients in 5 browsers for content sync
+- **Spec 26**: All major workflows with 3-5 concurrent browser windows
 
 ---
 
-## 🌐 Portal URLs
+## npm Scripts
+
+| Script | Description |
+| -------- | ------------- |
+| `npm test` | Run all 8 specs locally (headed) |
+| `npm run test:auth` | Spec 20 — Auth, health, multi-user |
+| `npm run test:appointments` | Spec 21 — Appointment lifecycle |
+| `npm run test:health` | Spec 22 — Health records & EMR |
+| `npm run test:meeting` | Spec 23 — Video meeting & transcription |
+| `npm run test:content-sync` | Spec 24 — ★★★ Content sync & approval |
+| `npm run test:ai` | Spec 25 — AI features & CDS |
+| `npm run test:multi-user` | Spec 26 — Multi-user concurrent |
+| `npm run test:phase2` | Spec 27 — Phase 2 AI-HIS features |
+| `npm run cloud` | All specs on Cloud Run |
+| `npm run cloud-dev` | All specs on Cloud-Dev |
+| `npm run report` | Open Playwright HTML report |
+
+---
+
+## Playwright Projects (3)
+
+| Project | Base URL | Purpose |
+| --------- | ---------- | --------- |
+| `Local` | localhost:3005 | Local Docker |
+| `Cloud` | Cloud Run | Production |
+| `Cloud-Dev` | Cloud-Dev | Dev/staging |
+
+---
+
+## Test Users (5)
+
+| Role | Email | Portal | ID |
+| ------ | ------- | -------- | ---- |
+| patient1 | `demo.test@gmail.com` | Patient Portal | PATIENT-DEMO |
+| patient2 | `Somchai.Mankong@gmail.com` | Patient Portal | PATIENT-SOMCHAI |
+| patient3 | `Anan.Khayanrian@gmail.com` | Patient Portal | PATIENT-ANAN |
+| doctor | `doctor.test@izara.com` | Doctor Portal | DOC-TEST-001 |
+| admin | `admin.test@izara.com` | Doctor Portal | ADMIN-TEST-001 |
+
+---
+
+## Service URLs
 
 ### Local (Docker)
 
@@ -108,108 +145,96 @@ tests/e2e/
 
 | Service | URL |
 | --------- | ----- |
-| Patient Portal | <https://izara-patient-portal-724889190329.asia-southeast1.run.app> |
-| Doctor Portal | <https://izara-doctor-portal-724889190329.asia-southeast1.run.app> |
+| Patient Portal | <https://izara-patient-portal-hvht4obouq-as.a.run.app> |
+| Doctor Portal | <https://izara-doctor-portal-hvht4obouq-as.a.run.app> |
+| Meeting Server | <https://izara-meeting-server-hvht4obouq-as.a.run.app> |
+
+### Cloud-Dev
+
+| Service | URL |
+| --------- | ----- |
+| Patient Portal | <https://izara-patient-portal-dev-testing-hvht4obouq-as.a.run.app> |
+| Doctor Portal | <https://izara-doctor-portal-dev-testing-hvht4obouq-as.a.run.app> |
+| Meeting Server | <https://izara-meeting-server-dev-testing-hvht4obouq-as.a.run.app> |
 
 ---
 
-## 🔧 Configuration
+## Shared Libraries
 
-### Shared Config (`lib/test-config.ts`)
+### test-config.ts
+
+50+ API endpoints across 12 groups:
+
+| Group | Endpoints |
+| ------- | ----------- |
+| `auth` | login, register |
+| `appointments` | appointments, appointmentPool, queue |
+| `healthRecords` | phr, emr, vitals, prescriptions, labOrders, livingWill, timeline, treatmentResults |
+| `content` | medicalContent, contentMedical, contentClinical, clinicalResources |
+| `meetings` | create, health, list, config, invite, transcription |
+| `ai` | chat, summarize, analyze, knowledge + 8 sub-endpoints |
+| `cds` | check, alerts, logs |
+| `admin` | doctors, pendingDoctors, approveDoctor, rejectDoctor, stats |
+| `metadata` | specialties, labTests, icd10, medications |
+| `settings` | general, notifications, role, onboarding |
+| `phase2` | ctmAssessment, geriatricScreening, sosAlert, followUp, nursingDashboard, predictiveAnalytics |
+| `device` | deviceTokens, biometric (register/verify/status), sync (push/pull/conflicts/status) |
+
+### test-helpers.ts
+
+| Category | Exports |
+| ---------- | --------- |
+| **Types** | `UserRole`, `AuthenticatedUser`, `MultiUserSession`, `ContentItem` |
+| **Auth** | `authenticateAllUsers()`, `authenticateUser()` |
+| **Multi-Browser** | `createMultiUserSession()`, `closeMultiUserSession()`, `loginViaBrowser()` |
+| **API Wrappers** | `patientApi()`, `doctorApi()`, `meetingApi()`, `apiRequest()` |
+| **Data Generators** | `generateAppointmentData()`, `generatePHRVitals()`, `generateEMRData()`, `generatePrescriptionData()`, `generateLabOrder()`, `generateMedicalContent()`, `generateClinicalResource()`, `generateGeriatricScreening()`, `generateCTMAssessment()`, `generateSOSAlert()`, `generateFollowUpSchedule()` |
+| **Assertions** | `assertSuccess()`, `assertOk()`, `assertUnauthorized()`, `assertNoJSErrors()` |
+| **Workflows** | `waitForContentAfterRefresh()`, `appointmentLifecycle()`, `contentApprovalLifecycle()` |
+
+---
+
+## Configuration
 
 ```typescript
-import {
-  PATIENT_PORTAL_URL, DOCTOR_PORTAL_URL, MEETING_URL,
-  CREDENTIALS, getAuthToken, authHeaders, logTestSuccess,
-  URLS, TEST_ENV, TIMEOUTS, ENDPOINTS, REGISTRATION_DATA
-} from '../lib/test-config';
+{
+  workers: 1,              // Serial execution (multi-user flows)
+  timeout: 180_000,        // 3 min per test
+  expect: { timeout: 30_000 },
+  headless: false,         // HEADED MODE — UI visible
+  screenshot: 'on',
+  video: 'on',
+  slowMo: 50,
+  viewport: { width: 1920, height: 1080 },
+}
 ```
 
-### Environment Variables
-
-| Variable | Description | Default |
-| ---------- | ------------- | --------- |
-| `TEST_ENV` | Environment (local/cloud) | `local` |
-| `TEST_PATIENT_PASSWORD` | Override patient password | `P@ssw0rd` |
-| `TEST_DOCTOR_PASSWORD` | Override doctor password | `IzaraDoctor@2024` |
-| `TEST_ADMIN_PASSWORD` | Override admin password | `IzaraAdmin@2024` |
-| `CLOUD_PATIENT_URL` | Cloud patient URL | (auto) |
-| `CLOUD_DOCTOR_URL` | Cloud doctor URL | (auto) |
-
 ---
-
-## 📝 Consolidation History (v3.0.0)
-
-**Reduced from 42 → 6 spec files** while maintaining full coverage.
-
-Old files are archived in `deprecated/specs/` for reference.
-
-| Removed (archived) | Absorbed into |
-| --------------------- | --------------- |
-| smoke-test, core-e2e | `01-smoke` |
-| api-status, health-records-*, clinical-resources-*, medical-consultants-*, medicine-content-*, notifications-*, living-will-*, video-meeting-jitsi, user-management-* | `02-api-status` |
-| appointment-workflow, full-appointment-*, full-meeting-*, meeting-workflow, complete-workflow-*, process-docs-unit*, all phase1-* workflow files | `03-workflow` |
-| ui-pages-workflow, ui-workflow-tests, workflow-ui-tests, comprehensive-parallel-ui, comprehensive-local-tests, multi-window-parallel-test, parallel-comprehensive-workflow, phase1-parallel-ui-workflow | `04-ui-navigation` |
-| cloud-e2e-workflow, cloud-health-tests, full-workflow-cloud-tests | `05-cloud` |
-| comprehensive-registration-workflow, registration-and-full-workflow | `06-registration` |
-
-## Test Results Summary (Latest: 2025-01-28)
-
-| Test Category | Tests | Status |
-| --- | --- | --- |
-| **Full Local E2E Suite** | **528** | ✅ All Passing |
-| Process Documentation Unit Tests | 31 | ✅ All Passing |
-| UI Pages Workflow (Headed) | 38 | ✅ All Passing |
-| Cloud E2E Tests | 65 | ✅ All Passing |
-| Full Appointment Workflow | 36 | ✅ All Passing |
-| Full Meeting Workflow | 27 | ✅ All Passing |
-| **Total Tests** | **528** | ✅ **ALL GREEN** |
-
-### Test Breakdown by User Role
-
-| Portal | User Type | Pages Tested | Status |
-| --- | --- | --- | --- |
-| Patient Portal | Patient (3 users) | 9 pages | ✅ All Passing |
-| Doctor Portal | Doctor | 8 pages | ✅ All Passing |
-| Doctor Portal | Admin | 10 pages | ✅ All Passing |
-
-### API Endpoints - All Return Status 200
-
-| Endpoint Category | Count | Status |
-| --- | --- | --- |
-| Health Check APIs | 6 | ✅ 200 |
-| Authentication APIs | 5 | ✅ 200 |
-| Appointment APIs | 8 | ✅ 200 |
-| PHR/Health Records | 4 | ✅ 200 |
-| Video Meeting (Jitsi) | 4 | ✅ 200 |
-| Medical Content | 3 | ✅ 200 |
-| Consultants | 2 | ✅ 200 |
-| Notifications | 2 | ✅ 200 |
-| Clinical Resources | 2 | ✅ 200 |
 
 ## Prerequisites
 
-1. **Node.js 18+**
+1. **Node.js >= 22** and **npm**
+2. **Docker containers running**: `docker compose up -d`
+3. **Playwright browsers**: `npx playwright install chromium`
+4. **Test users seeded in database** (5 users with credentials above)
 
-## 🛠 Prerequisites
-
-1. **Node.js ≥ 22** and **npm**
-2. **Docker containers running** (Patient Portal, Doctor Portal, PostgreSQL)
-3. **Playwright browsers installed** (`npx playwright install chromium`)
-
-## 🐛 Troubleshooting
+## Troubleshooting
 
 | Issue | Solution |
 | ------- | ---------- |
-| Connection refused | Ensure Docker containers are running: `docker compose up -d` |
-| Auth fails | Verify test credentials in database |
-| Timeout | Increase timeout or run with `--headed` to debug |
-| Browser not found | Run `npx playwright install chromium` |
+| Connection refused | `docker compose up -d` — ensure all 3 services are running |
+| Auth fails | Verify test credentials exist in database |
+| Timeout | Increase `timeout` in playwright.config.ts or check service health |
+| Browser not found | `npx playwright install chromium` |
+| Content sync fails | Confirm admin approved the content and patient portal serves `/api/content/medical` |
 
 ```powershell
-# Debug mode
-DEBUG=pw:api npx playwright test specs/01-smoke.spec.ts
+# Debug a single test
+DEBUG=pw:api npx playwright test --project=Local --headed -g "D02"
 
-# Run single test
-npx playwright test -g "SMOKE-01" --headed
+# List all tests without running
+npx playwright test --project=Local --list
+
+# Run with trace for debugging
+npx playwright test --project=Local --headed --trace on
 ```

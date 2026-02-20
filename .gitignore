@@ -56,9 +56,9 @@ tests/e2e/playwright-report/
 *.temp
 .cache/
 
-# Credentials (keep only sample files)
-# credentials/*.json
-# !credentials/*.sample.json
+# Credentials (NEVER commit service account keys!)
+credentials/
+!credentials/*.sample.json
 
 # OS generated files
 Thumbs.db

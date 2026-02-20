@@ -36,10 +36,10 @@ const ChatHistoryService = {
       const result = await pool.query(
         `SELECT role, content, context FROM ai_chat_history 
          WHERE user_id = $1 AND session_id = $2 
-         AND created_at > NOW() - INTERVAL '${CHAT_RETENTION_DAYS} days'
+         AND created_at > NOW() - make_interval(days => $3)
          ORDER BY created_at ASC 
-         LIMIT $3`,
-        [userId, sessionId, limit]
+         LIMIT $4`,
+        [userId, sessionId, CHAT_RETENTION_DAYS, limit]
       );
       return result.rows;
     } catch (error) {
@@ -60,11 +60,11 @@ const ChatHistoryService = {
            MAX(created_at) as updated_at
          FROM ai_chat_history 
          WHERE user_id = $1 
-         AND created_at > NOW() - INTERVAL '${CHAT_RETENTION_DAYS} days'
+         AND created_at > NOW() - make_interval(days => $2)
          AND role = 'user'
          GROUP BY session_id
          ORDER BY MAX(created_at) DESC`,
-        [userId]
+        [userId, CHAT_RETENTION_DAYS]
       );
       return result.rows;
     } catch (error) {
@@ -103,8 +103,9 @@ const ChatHistoryService = {
     try {
       const result = await pool.query(
         `DELETE FROM ai_chat_history 
-         WHERE created_at < NOW() - INTERVAL '${CHAT_RETENTION_DAYS} days'
-         RETURNING id`
+         WHERE created_at < NOW() - make_interval(days => $1)
+         RETURNING id`,
+        [CHAT_RETENTION_DAYS]
       );
       const deletedCount = result.rowCount || 0;
       if (deletedCount > 0) {

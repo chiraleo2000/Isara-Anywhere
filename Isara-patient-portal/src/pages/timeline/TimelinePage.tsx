@@ -129,6 +129,11 @@ export default function TimelinePage() {
     return acc;
   }, {} as Record<string, TimelineEvent[]>);
 
+  const getFilterLabel = (type: string): string => {
+    if (type === 'all') return language === 'th' ? 'ทั้งหมด' : 'All';
+    return getTypeLabel(type);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -152,21 +157,25 @@ export default function TimelinePage() {
       </div>
 
       <div className="flex gap-2 overflow-x-auto pb-2">
-        {['all', 'appointment', 'medication', 'lab', 'procedure', 'diagnosis'].map((type) => (
+        {['all', 'appointment', 'medication', 'lab', 'procedure', 'diagnosis'].map((type) => {
+          let btnClass: string;
+          if (filter === type) {
+            btnClass = 'bg-emerald-600 text-white';
+          } else if (isDark) {
+            btnClass = 'bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700';
+          } else {
+            btnClass = 'bg-gray-100 text-gray-600 hover:bg-gray-200';
+          }
+          return (
           <button
             key={type}
             onClick={() => setFilter(type)}
-            className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-colors ${
-              filter === type
-                ? 'bg-emerald-600 text-white'
-                : isDark 
-                  ? 'bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
+            className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-colors ${btnClass}`}
           >
-            {type === 'all' ? (language === 'th' ? 'ทั้งหมด' : 'All') : getTypeLabel(type)}
+            {getFilterLabel(type)}
           </button>
-        ))}
+          );
+        })}
       </div>
 
       {Object.keys(groupedEvents).length === 0 ? (
@@ -197,11 +206,11 @@ export default function TimelinePage() {
                         </div>
                         <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{event.description}</p>
                         {event.provider && (
-                          <p className={`text-sm mt-1 ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>{event.provider}</p>
+                          <p className="text-sm mt-1 text-gray-500">{event.provider}</p>
                         )}
                       </div>
                       <div className="text-right">
-                        <p className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
+                        <p className="text-sm text-gray-500">
                           {new Date(event.date).toLocaleDateString(language === 'th' ? 'th-TH' : 'en-US', { day: 'numeric', month: 'short' })}
                         </p>
                         {event.details && (
@@ -223,7 +232,7 @@ export default function TimelinePage() {
                         <div className="grid grid-cols-2 gap-2 text-sm">
                           {Object.entries(event.details).map(([key, value]) => (
                             <div key={key}>
-                              <span className={isDark ? 'text-gray-500' : 'text-gray-500'}>{key}: </span>
+                              <span className="text-gray-500">{key}: </span>
                               <span className={`font-medium ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{String(value)}</span>
                             </div>
                           ))}

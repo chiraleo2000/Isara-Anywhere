@@ -12,7 +12,7 @@
 
 ## 1. Unified Navigation Structure
 
-```
+```text
 app/
 ├── _layout.tsx                        — Root (providers, theme, role context)
 ├── index.tsx                          — Entry point (role-based redirect)
@@ -139,7 +139,7 @@ app/
 ### S01: Role Selection — `role-select.tsx`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **When Shown** | First launch, or via Settings "Switch Role" |
 | **Components** | App logo, 2 role cards (Patient / Doctor), Continue button |
 | **Patient Card** | Icon: 🧑, Title: "ผู้ป่วย / Patient", Subtitle: description of patient features |
@@ -151,7 +151,7 @@ app/
 ### S02: App Entry — `index.tsx`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **Logic** | Check MMKV `active_role` → redirect to appropriate flow |
 | **No role** | → `role-select` |
 | **Patient + valid token** | → `(patient)/(tabs)/` |
@@ -166,7 +166,7 @@ app/
 ### P01: Patient Login — `(patient)/(auth)/login`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **API** | `POST /api/auth/login` (Patient API :3005) |
 | **Components** | Logo, Email input, Password input, Login button, Biometric button (if enrolled), Social login (Google/LINE), Forgot password link, Register link, "Switch to Doctor" link |
 | **State** | email, password, loading, error, biometricAvailable |
@@ -180,7 +180,7 @@ app/
 ### P02: Registration — `(patient)/(auth)/register`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **API** | `POST /api/auth/register` |
 | **Components** | Step wizard (3 steps) with progress indicator |
 | **Step 1** | First name (TH), Last name (TH), Email, Password, Confirm password, Phone, Date of Birth |
@@ -192,7 +192,7 @@ app/
 ### P05: PDPA Consent — `(patient)/(auth)/pdpa-consent`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **API** | `POST /api/pdpa/consent` |
 | **When** | First login if consent not given, or when consent version changes |
 | **Required Consents** | ☑ Personal data collection, ☑ Health data collection (sensitive) |
@@ -204,7 +204,7 @@ app/
 ### P07: Patient Dashboard — `(patient)/(tabs)/index`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **APIs** | `GET /api/auth/me`, `GET /api/appointments/my`, `GET /api/phr/:id/vitals`, `GET /api/notifications/` |
 | **Layout** | ScrollView with sections |
 | **Sections** | 1. Greeting + Avatar 2. Quick Actions (4 icons) 3. Upcoming Appointment card 4. Today's Vitals snapshot 5. Medication Reminders 6. AI Health Score card 7. Health Tips carousel |
@@ -215,7 +215,7 @@ app/
 ### P09: Book Appointment — `(patient)/(tabs)/appointments/book`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **APIs** | `POST /api/ai/symptom-checker`, `GET /api/doctors/`, `GET /api/doctors/:id/slots`, `POST /api/appointments/`, `POST /api/payments/create-intent` |
 | **Flow** | 5-step wizard |
 | **Step 1: Symptoms** | Text input, 🎤 Voice input (STT), 📷 Photo upload, AI analyzes → suggests specialty |
@@ -228,7 +228,7 @@ app/
 ### P12: Vital Signs — `(patient)/(tabs)/health/vitals`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **APIs** | `GET /api/phr/:id/vitals`, `POST /api/phr/:id/vitals` |
 | **Components** | Vital type selector (tabs: BP, HR, SpO₂, Temp, Weight, Glucose), Chart (7d/30d/90d toggles), History list, Add button |
 | **Chart** | Victory Native line chart with normal range shading. Red dots for abnormal values. |
@@ -240,7 +240,7 @@ app/
 ### P17: Living Will — `(patient)/(tabs)/health/living-will`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **APIs** | `GET /api/living-will`, `POST /api/living-will`, `PUT /api/living-will` |
 | **Components** | 4-step wizard or view existing |
 | **Step 1** | Personal information + legal identity confirmation |
@@ -254,7 +254,7 @@ app/
 ### P20: AI Chat — `(patient)/(tabs)/ai/index`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **APIs** | `POST /api/ai/chat`, `GET /api/ai/chat/history`, `POST /api/ai/chat/clear` |
 | **Components** | Chat bubble list (FlatList), text input bar, voice button, camera button |
 | **Input Modes** | ⌨️ Text typing, 🎤 Voice (hold-to-record → STT → send), 📷 Photo (camera → AI visual analysis) |
@@ -268,7 +268,7 @@ app/
 ### P28: PDPA Privacy — `(patient)/(tabs)/profile/privacy`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **APIs** | `GET /api/pdpa/consent`, `PUT /api/pdpa/consent`, `GET /api/pdpa/audit-log`, `GET /api/pdpa/access-list`, `POST /api/pdpa/export-request`, `DELETE /api/users/me` |
 | **Tabs** | 3 tabs: Consent | Doctor Access | Audit Log |
 | **Consent Tab** | Toggle switches for each consent category. Required consents locked ON. |
@@ -280,7 +280,7 @@ app/
 ### P29: API Connections — `(patient)/(tabs)/profile/api-connections`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **APIs** | `GET /api/connections`, `POST /api/connections`, `DELETE /api/connections/:id`, `POST /api/connections/:id/test` |
 | **Sections** | Core (auto-managed), Health & Wearables, Payment Methods, External Medical Services |
 | **Each Service** | Status icon (✅⬜⚠️❌), name, last sync time, [Connect]/[Manage]/[Remove] |
@@ -290,7 +290,7 @@ app/
 ### P31: Video Meeting (Patient) — `(patient)/meeting/[meetingId]`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **APIs** | `GET /api/video-meeting/:appointmentId`, `POST /api/video-meeting/:appointmentId/join` |
 | **Pre-Join** | Camera preview, mic test, doctor info, appointment summary, recording consent dialog |
 | **Meeting** | JitsiMeetingView (full screen), controls bar at bottom |
@@ -302,7 +302,7 @@ app/
 ### P34: Nearby Map — `(patient)/map`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **API** | `GET /api/google/maps/nearby` |
 | **Components** | MapView (react-native-maps), markers, bottom sheet with list |
 | **Permissions** | `expo-location` - request "While Using" permission |
@@ -315,7 +315,7 @@ app/
 ### P35: Health Library — `(patient)/health-library`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **APIs** | `GET /api/content/articles`, `GET /api/content/categories` |
 | **Components** | Search bar, category chips, article cards (image + title + date + views) |
 | **Sort** | Latest, Most viewed, Bookmarked |
@@ -331,7 +331,7 @@ app/
 ### D01: Doctor Login — `(doctor)/(auth)/login`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **API** | `POST /auth/login` (Doctor Auth :3011) |
 | **Components** | Logo (doctor variant), Email input, Password input, Login button, Biometric button, "Switch to Patient" link |
 | **Security** | Rate-limited: 10 attempts / 15 min, IP tracking, mandatory 2FA |
@@ -343,7 +343,7 @@ app/
 ### D02: 2FA Verification — `(doctor)/(auth)/two-factor`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **API** | `POST /auth/verify-2fa` (Doctor Auth :3011) |
 | **Components** | OTP code input (6 digits), Resend button, Timer |
 | **Methods** | SMS OTP or Email OTP (user preference) |
@@ -354,7 +354,7 @@ app/
 ### D04: Doctor Dashboard — `(doctor)/(tabs)/index`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **APIs** | `GET /api/dashboard/:doctorId`, `GET /api/queue/doctor/:doctorId`, `GET /api/appointments/doctor/:doctorId` |
 | **Layout Phone** | ScrollView with stat cards + sections |
 | **Layout Tablet** | 3-column: Queue | Next Patient | Stats (see [16_Unified_App_Role_Selection.md](../16_Unified_App_Role_Selection.md)) |
@@ -368,7 +368,7 @@ app/
 ### D05: Schedule — `(doctor)/(tabs)/schedule/index`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **API** | `GET /api/appointments/doctor/:doctorId` |
 | **Components** | Calendar header (Day/Week/Month switcher), appointment list/grid |
 | **Day View** | Vertical timeline with appointment blocks (colored by status) |
@@ -381,7 +381,7 @@ app/
 ### D06: Pending Confirmations — `(doctor)/(tabs)/schedule/pending`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **API** | `GET /api/appointments/pending/:doctorId` |
 | **Components** | Pending appointment cards with large CTA buttons |
 | **Card Info** | Patient avatar + name, AI symptom analysis preview, requested date/time, symptoms text |
@@ -391,7 +391,7 @@ app/
 ### D07: Appointment Pool — `(doctor)/(tabs)/schedule/pool`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **API** | `GET /api/appointments/pool`, `POST /api/appointments/:id/claim` |
 | **Components** | List of unassigned appointments matching doctor's specialty |
 | **Card Info** | Patient name (anonymized), symptoms, preferred date/time, urgency level |
@@ -402,7 +402,7 @@ app/
 ### D09: Patient List — `(doctor)/(tabs)/patients/index`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **API** | `GET /api/patients` |
 | **Components** | Search bar (name, ID, email, phone), patient cards, filter/sort |
 | **Filter** | All, Recent (last 7 days), Today's appointments, By condition |
@@ -414,7 +414,7 @@ app/
 ### D10: Patient Detail — `(doctor)/(tabs)/patients/[patientId]/index`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **APIs** | `GET /api/patients/:patientId`, `GET /api/ai/pre-summary/:patientId`, `GET /api/patients/:patientId/pdpa-status` |
 | **Layout** | Header (avatar, name, demographics) + tab bar (Overview, PHR, EMR, Rx, Labs) |
 | **PDPA Check** | First check consent → if not granted, show limited view with "Request Access" button |
@@ -426,7 +426,7 @@ app/
 ### D13: Create EMR — `(doctor)/(tabs)/patients/[patientId]/emr/new`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **APIs** | `POST /api/emr`, `POST /api/emr/:id/sign`, `POST /api/ai/cds`, `POST /api/ai/emr-summary`, `GET /api/icd10/search` |
 | **Layout** | SOAP form with AI assistance panel |
 | **Fields** | Chief Complaint (CC), History of Present Illness (HPI), Past Medical History (PMH), Physical Examination (BP, HR, Temp, RR, SpO₂, Weight, Height), Assessment (ICD-10 search autocomplete), Plan, Follow-up instructions |
@@ -442,7 +442,7 @@ app/
 ### D15: E-Prescribing — `(doctor)/(tabs)/patients/[patientId]/prescriptions`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **APIs** | `POST /api/prescriptions`, `GET /api/drugs/search`, `POST /api/ai/cds/drug-interactions` |
 | **Components** | Drug search bar, prescription item list, AI safety panel |
 | **Drug Search** | Thai + English drug name autocomplete. Shows: generic name, brand, dose forms, route |
@@ -455,7 +455,7 @@ app/
 ### D16: Lab Orders — `(doctor)/(tabs)/patients/[patientId]/lab-orders`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **APIs** | `POST /api/lab-orders`, `GET /api/lab-tests/catalog`, `GET /api/patients/:id/lab-results` |
 | **Components** | Test catalog search, selected tests list, existing results |
 | **Order Flow** | Search test → Select → Add notes → Submit order |
@@ -466,7 +466,7 @@ app/
 ### D18: Queue Management — `(doctor)/(tabs)/queue/index`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **APIs** | `GET /api/queue/doctor/:doctorId`, `POST /api/queue/call-next`, `POST /api/queue/:id/skip`, `POST /api/queue/:id/complete` |
 | **Layout** | Current patient header + queue list |
 | **Header** | "กำลังตรวจ: คุณ[Name]" with timer (duration) or "ว่าง" (empty) |
@@ -479,7 +479,7 @@ app/
 ### D19: Walk-in Registration — `(doctor)/(tabs)/queue/walk-in`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **API** | `POST /api/queue/walk-in` |
 | **Components** | Quick form: patient name, phone, symptoms, urgency |
 | **For Existing Patient** | Search by name/phone → auto-fill |
@@ -489,7 +489,7 @@ app/
 ### D26: Video Meeting HOST — `(doctor)/meeting/[meetingId]`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **APIs** | `POST /api/video-meeting/create`, `POST /api/video-meeting/:appointmentId/end`, `POST /api/ai/cds/realtime`, Socket.IO |
 | **Pre-Join** | Camera/mic test, patient info summary, consent dialog |
 | **Meeting** | JitsiMeetingView (HOST mode), controls bar, side panels |
@@ -506,7 +506,7 @@ app/
 ### D27: Post-Meeting EMR — `(doctor)/meeting/[meetingId]/emr`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **APIs** | `GET /api/meetings/:id/summary`, `POST /api/emr`, `POST /api/ai/validate` |
 | **Components** | AI-generated EMR draft + edit capability |
 | **AI Pre-fill** | From meeting transcript: auto-fills CC, HPI, Assessment (suggested ICD-10), Plan |
@@ -518,7 +518,7 @@ app/
 ### D28: AI Studio — `(doctor)/ai/studio`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **APIs** | `POST /api/ai/chat` (doctor context), `GET /api/ai/chat/history` |
 | **Components** | Chat interface similar to P20 but with medical context |
 | **Capabilities** | Medical Q&A, Drug information lookup, Differential diagnosis assistance, Treatment protocol queries, Literature search |
@@ -529,7 +529,7 @@ app/
 ### D29: Medical Calculators — `(doctor)/ai/calculators`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **Components** | Calculator grid, input forms, result cards |
 | **Calculators** | BMI, BSA, eGFR (CKD-EPI), CHA₂DS₂-VASc, HAS-BLED, CURB-65, Wells Score (DVT/PE), HEART Score, SOFA Score, Child-Pugh, MELD, Corrected Calcium, Anion Gap |
 | **Each Calculator** | Input fields → Calculate → Result with interpretation + color-coded risk |
@@ -538,6 +538,7 @@ app/
 ### D30-D33: Content Management
 
 See [13_Mobile_Content_Library_Workflows.md](../13_Mobile_Content_Library_Workflows.md) for full specifications of:
+
 - D30: Clinical Resources (view/create guidelines)
 - D31: Medical Content (create patient-facing articles)
 - D32: Medical Consultants (specialist directory)
@@ -550,7 +551,7 @@ Only visible to doctors with `role = admin`.
 ### D34: System Statistics — `(doctor)/admin/stats`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **API** | `GET /api/admin/stats` |
 | **Cards** | Total patients, Total doctors, Today's appointments, Active meetings, Average wait time, Revenue |
 | **Charts** | Appointments per day (7d/30d), Peak hours, Specialty distribution |
@@ -559,7 +560,7 @@ Only visible to doctors with `role = admin`.
 ### D35: Doctor Management — `(doctor)/admin/doctors`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **APIs** | `GET /api/admin/doctors`, `PUT /api/admin/doctors/:id/approve`, `PUT /api/admin/doctors/:id/reject`, `PUT /api/admin/doctors/:id/role` |
 | **Components** | Doctor list with filters, detail view |
 | **Filters** | All, Pending Approval, Active, Inactive |
@@ -569,7 +570,7 @@ Only visible to doctors with `role = admin`.
 ### D36: Appointment Management — `(doctor)/admin/appointments`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **APIs** | `GET /api/admin/appointments`, `POST /api/admin/appointments/:id/assign`, `POST /api/admin/appointments/:id/auto-assign` |
 | **Components** | All appointments list, assign modal |
 | **Actions** | AI auto-assign (by specialty match), manual assign (pick doctor), reject (with reason) |
@@ -578,7 +579,7 @@ Only visible to doctors with `role = admin`.
 ### D38: Doctor Notification Center — `(doctor)/notifications`
 
 | Property | Value |
-|----------|-------|
+| ---------- | ------- |
 | **API** | `GET /api/notifications/` |
 | **Types** | 📅 New appointment request, 🔔 Patient queue update, 🧪 Lab results ready, 💊 Prescription filled, 📝 Content approval status, ⚙️ System alerts |
 | **Actions** | Tap → deep link to relevant screen |
@@ -592,7 +593,7 @@ Only visible to doctors with `role = admin`.
 ### Patient Mode (5 Tabs)
 
 | Tab | Icon | Label (TH) | Label (EN) | Badge |
-|-----|------|-----------|-----------|-------|
+| ----- | ------ | ----------- | ----------- | ------- |
 | 1 | 🏠 | หน้าหลัก | Home | — |
 | 2 | 📅 | นัดหมาย | Appointments | Upcoming count |
 | 3 | 💊 | สุขภาพ | Health | — |
@@ -602,7 +603,7 @@ Only visible to doctors with `role = admin`.
 ### Doctor Mode (5 Tabs)
 
 | Tab | Icon | Label (TH) | Label (EN) | Badge |
-|-----|------|-----------|-----------|-------|
+| ----- | ------ | ----------- | ----------- | ------- |
 | 1 | 📊 | แดชบอร์ด | Dashboard | — |
 | 2 | 📅 | ตาราง | Schedule | Pending count |
 | 3 | 👥 | ผู้ป่วย | Patients | — |
@@ -612,7 +613,7 @@ Only visible to doctors with `role = admin`.
 ### Role Visual Indicator
 
 | Attribute | Patient Mode | Doctor Mode |
-|-----------|:----------:|:----------:|
+| ----------- | :----------: | :----------: |
 | Status bar | Green tint | Blue tint |
 | Tab bar accent | #22C55E (green) | #3B82F6 (blue) |
 | Header subtitle | "🟢 Patient Mode" | "🔵 Doctor Mode" |
@@ -622,7 +623,7 @@ Only visible to doctors with `role = admin`.
 ## 6. Responsive Layout Matrix
 
 | Screen Type | Phone Portrait | Phone Landscape | Tablet Portrait | Tablet Landscape |
-|-------------|:-------------:|:--------------:|:--------------:|:---------------:|
+| ------------- | :-------------: | :--------------: | :--------------: | :---------------: |
 | Dashboard | Single column | Single column | 2-column grid | 3-column grid |
 | Lists (Appts, Patients) | Full width cards | Full width | Split: list + detail | Split: list + detail |
 | Forms (EMR, Booking) | Full width | Full width | Centered 70% | Centered 60% |
@@ -637,7 +638,7 @@ Only visible to doctors with `role = admin`.
 The following separate page specs are **superseded** by this unified document:
 
 | Old Document | Status |
-|-------------|--------|
+| ------------- | -------- |
 | `Pages/Patient-Mobile/Patient_Mobile_Pages.md` | ⚠️ Deprecated — use this document |
 | `Pages/Doctor-Mobile/Doctor_Mobile_Pages.md` | ⚠️ Deprecated — use this document |
 

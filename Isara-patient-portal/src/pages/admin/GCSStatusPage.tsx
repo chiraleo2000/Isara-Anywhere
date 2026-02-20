@@ -28,6 +28,12 @@ const BUCKET_ICONS: Record<string, any> = {
   METADATA: FileText,
 };
 
+const getProgressBarColor = (connected: number, total: number): string => {
+  if (connected === total) return 'bg-green-500';
+  if (connected > 0) return 'bg-yellow-500';
+  return 'bg-red-500';
+};
+
 const BUCKET_DESCRIPTIONS: Record<string, string> = {
   AUTH: 'ข้อมูลผู้ใช้และ Sessions',
   PATIENT: 'ข้อมูลสุขภาพผู้ป่วย (PHR)',
@@ -153,13 +159,7 @@ export default function GCSStatusPage() {
             <div className="mt-4">
               <div className="w-full bg-gray-200 rounded-full h-3">
                 <div
-                  className={`h-3 rounded-full transition-all duration-500 ${
-                    connectedCount === totalCount 
-                      ? 'bg-green-500' 
-                      : connectedCount > 0 
-                        ? 'bg-yellow-500' 
-                        : 'bg-red-500'
-                  }`}
+                  className={`h-3 rounded-full transition-all duration-500 ${getProgressBarColor(connectedCount, totalCount)}`}
                   style={{ width: `${(connectedCount / totalCount) * 100}%` }}
                 />
               </div>

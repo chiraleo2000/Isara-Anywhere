@@ -1,0 +1,32 @@
+# PostgreSQL with pgvector for Cloud Run
+# Data initialized from the single-source-of-truth schema file
+# Same architecture as local Docker container
+# Version: 2.0.0 - Uses master schema file (no duplicate init-scripts)
+
+FROM pgvector/pgvector:pg18
+
+# Set environment variables
+# NOTE: Password should be overridden at runtime via -e POSTGRES_PASSWORD
+ENV POSTGRES_USER=${POSTGRES_USER:-postgres}
+ARG POSTGRES_PASSWORD
+ENV POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-changeme}
+ENV POSTGRES_DB=izara_phase1
+ENV PGDATA=/var/lib/postgresql/data
+
+# Install additional packages
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy the master schema file (build context = repo root)
+COPY scripts/database/izara-database.sql /docker-entrypoint-initdb.d/01-init.sql
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD pg_isready -U postgres -d izara_phase1 || exit 1
+
+EXPOSE 5432
+
+# Use default postgres entrypoint
+CMD ["postgres"]

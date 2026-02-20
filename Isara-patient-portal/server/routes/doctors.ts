@@ -108,7 +108,7 @@ router.get('/:doctorId/slots', authMiddleware, async (req: Request, res: Respons
       [doctorId, date]
     );
     
-    const bookedTimes = appointmentsResult.rows.map(row => row.appointment_time);
+    const bookedTimes = new Set(appointmentsResult.rows.map(row => row.appointment_time));
     
     // Generate available slots
     const slots: { time: string; available: boolean }[] = [];
@@ -123,7 +123,7 @@ router.get('/:doctorId/slots', authMiddleware, async (req: Request, res: Respons
           const timeStr = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
           slots.push({
             time: timeStr,
-            available: !bookedTimes.includes(timeStr)
+            available: !bookedTimes.has(timeStr)
           });
         }
       }

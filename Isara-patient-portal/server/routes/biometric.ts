@@ -7,8 +7,7 @@
  */
 
 import { Router, Request, Response } from 'express';
-import { BiometricService } from '../services/postgresDataService';
-import postgresDataService from '../services/postgresDataService';
+import postgresDataService, { BiometricService } from '../services/postgresDataService';
 import crypto from 'node:crypto';
 
 const { pool } = postgresDataService;
@@ -70,7 +69,7 @@ router.post('/register', async (req: Request, res: Response) => {
 // ============================================================================
 router.post('/verify', async (req: Request, res: Response) => {
   try {
-    const { credentialId, deviceId, signature } = req.body;
+    const { credentialId, deviceId } = req.body;
 
     if (!credentialId || !deviceId) {
       return res.status(400).json({ error: 'credentialId and deviceId are required' });

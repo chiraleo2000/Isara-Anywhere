@@ -24,7 +24,7 @@ const queryClient = new QueryClient({
 });
 
 export default function RootLayout() {
-  const { isAuthenticated, isLoading, initialize } = useDoctorAuthStore();
+  const { isLoading, initialize } = useDoctorAuthStore();
 
   useEffect(() => {
     async function prepare() {

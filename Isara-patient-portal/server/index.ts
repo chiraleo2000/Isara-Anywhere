@@ -29,6 +29,7 @@ import biometricRoutes from './routes/biometric';
 import syncRoutes from './routes/sync';
 import apiConnectionRoutes from './routes/api-connections';
 import settingsRoutes from './routes/settings';
+import phase2Routes from './routes/phase2';
 import { authMiddleware } from './middleware/auth';
 import postgresDataService from './services/postgresDataService';
 
@@ -188,13 +189,24 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 });
 
 // Health check endpoint
-app.get('/health', (_req: Request, res: Response) => {
-  res.json({
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-    service: 'Izara Patient Portal API',
-    security: 'OWASP Top 10:2025 Compliant'
-  });
+app.get('/health', async (_req: Request, res: Response) => {
+  try {
+    await postgresDataService.pool.query('SELECT 1');
+    res.json({
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      service: 'Izara Patient Portal API',
+      version: '1.5.0',
+      security: 'OWASP Top 10:2025 Compliant'
+    });
+  } catch {
+    res.status(503).json({
+      status: 'unhealthy',
+      timestamp: new Date().toISOString(),
+      service: 'Izara Patient Portal API',
+      version: '1.5.0'
+    });
+  }
 });
 
 // API Health check endpoint (for compatibility)
@@ -203,7 +215,7 @@ app.get('/api/health', (_req: Request, res: Response) => {
     status: 'healthy',
     timestamp: new Date().toISOString(),
     service: 'Izara Patient Portal API',
-    version: '1.4.7',
+    version: '1.5.0',
     security: 'OWASP Top 10:2025 Compliant',
     features: {
       videoMeeting: 'Jitsi Meet (FREE)',
@@ -373,11 +385,11 @@ app.get('/api/consultants', async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error('[CONSULTANTS] Error:', error);
-    res.json({
-      success: true,
+    res.status(500).json({
+      success: false,
       consultants: [],
       total: 0,
-      message: 'No consultants available'
+      error: 'Failed to retrieve consultants'
     });
   }
 });
@@ -512,9 +524,9 @@ app.get('/api/dashboard/stats', authMiddleware, async (req: Request, res: Respon
     });
   } catch (error: any) {
     console.error('[DASHBOARD] Stats error:', error);
-    // Return success with defaults instead of 500
-    res.json({
-      success: true,
+    res.status(500).json({
+      success: false,
+      error: 'Failed to load dashboard stats',
       stats: { upcomingAppointments: 0, activeMedications: 0, unreadNotifications: 0, latestVitals: null }
     });
   }
@@ -559,6 +571,9 @@ app.use('/api/sync', syncRoutes);
 app.use('/api/connections', apiConnectionRoutes);
 app.use('/api/settings', settingsRoutes);
 
+// Phase 2 AI-HIS feature routes
+app.use('/api/phase2', phase2Routes);
+
 // ============================================================================
 // HEALTH RECORDS - GET ALL (for Step 10: Patient views health records)
 // ============================================================================
@@ -576,10 +591,10 @@ app.get('/api/health-records', authMiddleware, async (req: Request, res: Respons
     });
   } catch (error: any) {
     console.error('[HEALTH-RECORDS] Error:', error);
-    res.json({
-      success: true,
+    res.status(500).json({
+      success: false,
       records: [],
-      message: 'No records found'
+      error: 'Failed to retrieve health records'
     });
   }
 });
@@ -624,8 +639,7 @@ app.post('/api/storage/upload', (req: Request, res: Response) => {
     console.error('[STORAGE] Upload error:', error);
     res.status(500).json({
       success: false,
-      error: 'Upload failed',
-      message: error.message
+      error: 'Upload failed'
     });
   }
 });
@@ -661,7 +675,7 @@ app.put('/api/profile', authMiddleware, async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error('[PROFILE] Update error:', error);
-    res.json({ success: true, message: 'Profile update processed' });
+    res.status(500).json({ success: false, error: 'Profile update failed' });
   }
 });
 
@@ -868,8 +882,7 @@ app.post('/api/profile/image', authMiddleware, (req: Request, res: Response) => 
     console.error('[PROFILE] Image upload error:', error);
     res.status(500).json({ 
       success: false, 
-      error: 'Image upload failed',
-      message: error.message
+      error: 'Image upload failed'
     });
   }
 });
@@ -893,8 +906,7 @@ app.post('/api/profile/avatar', authMiddleware, (req: Request, res: Response) =>
     console.error('[PROFILE] Avatar update error:', error);
     res.status(500).json({ 
       success: false, 
-      error: 'Avatar update failed',
-      message: error.message
+      error: 'Avatar update failed'
     });
   }
 });
@@ -905,6 +917,17 @@ app.post('/api/profile/avatar', authMiddleware, (req: Request, res: Response) =>
 app.get('/api/emr/patient/:patientId', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { patientId } = req.params;
+    const authenticatedUserId = (req as any).user?.id || (req as any).user?.patientId;
+    
+    // SECURITY: IDOR protection - patients can only access their own EMR
+    const userRole = (req as any).user?.role;
+    if (userRole === 'patient' && patientId !== authenticatedUserId) {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied: You can only view your own medical records'
+      });
+    }
+    
     console.log(`[EMR] Getting EMR history for patient: ${patientId}`);
     
     try {
@@ -955,23 +978,7 @@ app.get('/api/emr/my', authMiddleware, async (req: Request, res: Response) => {
     }
     
     try {
-      // Ensure emr_records table exists
-      await pool.query(`
-        CREATE TABLE IF NOT EXISTS emr_records (
-          id VARCHAR(50) PRIMARY KEY,
-          patient_id VARCHAR(50),
-          doctor_id VARCHAR(50),
-          visit_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-          chief_complaint TEXT,
-          diagnosis TEXT,
-          diagnosis_code VARCHAR(20),
-          treatment TEXT,
-          notes TEXT,
-          status VARCHAR(20) DEFAULT 'active',
-          created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-          updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-        )
-      `);
+      // Query emr_records table (schema managed by migrations, not runtime DDL)
       const result = await pool.query(
         `SELECT e.*, 
                 u.name as doctor_name, u.name_thai as doctor_name_thai
@@ -988,19 +995,18 @@ app.get('/api/emr/my', authMiddleware, async (req: Request, res: Response) => {
       });
     } catch (dbError: any) {
       console.error('[EMR] DB error:', dbError.message);
-      // Return success with empty array instead of 500
-      res.json({
-        success: true,
+      res.status(500).json({
+        success: false,
         emrs: [],
-        message: 'EMR data currently unavailable'
+        error: 'EMR data currently unavailable'
       });
     }
   } catch (error: any) {
     console.error('[EMR] Get MY EMR error:', error);
-    res.json({
-      success: true,
+    res.status(500).json({
+      success: false,
       emrs: [],
-      message: 'EMR service temporarily unavailable'
+      error: 'EMR service temporarily unavailable'
     });
   }
 });
@@ -1077,7 +1083,7 @@ try {
 
   app.listen(PORT, () => {
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log(`🚀 Izara Patient Portal API Server v1.4.7`);
+    console.log(`🚀 Izara Patient Portal API Server v1.5.0`);
     console.log(`🛡️  OWASP Top 10:2025 Security Enabled`);
     console.log(`📡 Server running on http://localhost:${PORT}`);
     console.log(`🏥 Health check: http://localhost:${PORT}/health`);
@@ -1085,7 +1091,20 @@ try {
     console.log(`🎤 Transcription: Web Speech API (FREE)`);
     console.log(`🤖 AI Assistant: Gemini 2.5 Flash Lite (FREE)`);
     console.log(`📊 Database: PostgreSQL + pgvector`);
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\n');
+  });
+
+  // ============================================================================
+  // GLOBAL ERROR HANDLER - SECURITY: Never leak internal errors to client
+  // ============================================================================
+  app.use((err: any, _req: Request, res: Response, _next: any) => {
+    console.error('[GLOBAL-ERROR]', err.stack || err.message);
+    const statusCode = err.statusCode || 500;
+    const isProduction = process.env.NODE_ENV === 'production';
+    res.status(statusCode).json({ 
+      success: false, 
+      error: isProduction ? 'Internal server error' : err.message 
+    });
   });
 } catch (error) {
   console.error('❌ Failed to start server:', error);

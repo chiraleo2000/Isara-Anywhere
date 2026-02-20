@@ -7,9 +7,9 @@ import { router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { patientApi } from '@izara/api-client';
 
-function HealthCard({ icon, title, subtitle, onPress }: {
+function HealthCard({ icon, title, subtitle, onPress }: Readonly<{
   icon: string; title: string; subtitle: string; onPress: () => void;
-}) {
+}>) {
   return (
     <TouchableOpacity style={styles.card} onPress={onPress}>
       <Text style={styles.cardIcon}>{icon}</Text>

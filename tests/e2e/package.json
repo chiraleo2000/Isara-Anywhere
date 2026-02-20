@@ -1,11 +1,19 @@
 {
   "name": "isara-e2e-tests",
-  "version": "8.0.0",
-  "description": "Izara Telemedicine E2E Tests v8 — 10 spec files, 500+ tests covering ALL pages, features, workflows",
+  "version": "10.0.0",
+  "description": "Izara Telemedicine E2E Tests — 8 specs (20-27), ~530 tests, 5 users, multi-browser content sync",
   "scripts": {
     "test": "npx playwright test --project=Local --headed",
-    "local": "npx playwright test --project=Local --headed",
+    "test:auth": "npx playwright test --project=Local --headed -g '20 —'",
+    "test:appointments": "npx playwright test --project=Local --headed -g '21 —'",
+    "test:health": "npx playwright test --project=Local --headed -g '22 —'",
+    "test:meeting": "npx playwright test --project=Local --headed -g '23 —'",
+    "test:content-sync": "npx playwright test --project=Local --headed -g '24 —'",
+    "test:ai": "npx playwright test --project=Local --headed -g '25 —'",
+    "test:multi-user": "npx playwright test --project=Local --headed -g '26 —'",
+    "test:phase2": "npx playwright test --project=Local --headed -g '27 —'",
     "cloud": "cross-env TEST_ENV=cloud npx playwright test --project=Cloud --headed",
+    "cloud-dev": "cross-env TEST_ENV=cloud npx playwright test --project=Cloud-Dev --headed",
     "report": "npx playwright show-report"
   },
   "devDependencies": {

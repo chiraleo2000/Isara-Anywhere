@@ -308,19 +308,19 @@ function Invoke-DbAction {
     switch ($SubAction) {
         "seed" {
             Write-Info "Seeding database with demo data..."
-            node "$ScriptDir\cloud-db-tool.cjs" --all
+            node "$ScriptDir\database\db-tool.cjs" --seed
         }
         "migrate" {
             Write-Info "Running database migrations..."
-            node "$ScriptDir\cloud-db-tool.cjs" --fix-schema
+            node "$ScriptDir\database\db-tool.cjs" --fix --migrate-phase2
         }
         "verify" {
             Write-Info "Verifying database..."
-            node "$ScriptDir\cloud-db-tool.cjs" --verify
+            node "$ScriptDir\database\db-tool.cjs" --verify
         }
         "fix" {
             Write-Info "Fixing database issues..."
-            node "$ScriptDir\cloud-db-tool.cjs" --fix-schema --fix-passwords --fix-profiles
+            node "$ScriptDir\database\db-tool.cjs" --fix
         }
         "backup" {
             Write-Info "Creating database backup..."
@@ -337,7 +337,7 @@ function Invoke-DbAction {
             Write-Warn "This will DELETE ALL DATA. Are you sure? (y/N)"
             $confirm = Read-Host
             if ($confirm -eq "y") {
-                node "$ScriptDir\cloud-db-tool.cjs" --reset --all
+                node "$ScriptDir\database\db-tool.cjs" --all
                 Write-Success "Database reset complete"
             } else {
                 Write-Info "Reset cancelled"

@@ -3,6 +3,22 @@ import { Platform } from 'react-native';
 import { useDoctorAuthStore } from '@/stores/authStore';
 import { TabBarIcon } from '@/components/navigation/TabBarIcon';
 
+const renderGridIcon = ({ color, size }: { color: string; size: number }) => (
+  <TabBarIcon name="grid" color={color} size={size} />
+);
+const renderCalendarIcon = ({ color, size }: { color: string; size: number }) => (
+  <TabBarIcon name="calendar" color={color} size={size} />
+);
+const renderPeopleIcon = ({ color, size }: { color: string; size: number }) => (
+  <TabBarIcon name="people" color={color} size={size} />
+);
+const renderListIcon = ({ color, size }: { color: string; size: number }) => (
+  <TabBarIcon name="list" color={color} size={size} />
+);
+const renderPersonIcon = ({ color, size }: { color: string; size: number }) => (
+  <TabBarIcon name="person" color={color} size={size} />
+);
+
 export default function TabLayout() {
   const { isAuthenticated } = useDoctorAuthStore();
 
@@ -41,9 +57,7 @@ export default function TabLayout() {
         options={{
           title: 'หน้าหลัก',
           headerTitle: 'Izara Doctor',
-          tabBarIcon: ({ color, size }) => (
-            <TabBarIcon name="grid" color={color} size={size} />
-          ),
+          tabBarIcon: renderGridIcon,
         }}
       />
       <Tabs.Screen
@@ -51,9 +65,7 @@ export default function TabLayout() {
         options={{
           title: 'ตารางนัด',
           headerTitle: 'ตารางนัดหมาย',
-          tabBarIcon: ({ color, size }) => (
-            <TabBarIcon name="calendar" color={color} size={size} />
-          ),
+          tabBarIcon: renderCalendarIcon,
         }}
       />
       <Tabs.Screen
@@ -61,9 +73,7 @@ export default function TabLayout() {
         options={{
           title: 'ผู้ป่วย',
           headerTitle: 'รายชื่อผู้ป่วย',
-          tabBarIcon: ({ color, size }) => (
-            <TabBarIcon name="people" color={color} size={size} />
-          ),
+          tabBarIcon: renderPeopleIcon,
         }}
       />
       <Tabs.Screen
@@ -71,9 +81,7 @@ export default function TabLayout() {
         options={{
           title: 'คิว',
           headerTitle: 'จัดการคิว',
-          tabBarIcon: ({ color, size }) => (
-            <TabBarIcon name="list" color={color} size={size} />
-          ),
+          tabBarIcon: renderListIcon,
         }}
       />
       <Tabs.Screen
@@ -81,9 +89,7 @@ export default function TabLayout() {
         options={{
           title: 'โปรไฟล์',
           headerTitle: 'โปรไฟล์แพทย์',
-          tabBarIcon: ({ color, size }) => (
-            <TabBarIcon name="person" color={color} size={size} />
-          ),
+          tabBarIcon: renderPersonIcon,
         }}
       />
     </Tabs>

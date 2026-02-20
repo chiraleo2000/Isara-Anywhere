@@ -590,6 +590,7 @@ Express ESM JavaScript server.
 | **Total** | | **~407** |
 
 ### Base Path Conventions
+
 - **All servers** use `/api/...` as the primary prefix
 - **Patient Portal** additionally has `/health` (root-level health check)
 - **Doctor Portal Auth** has some routes under `/auth/...` and `/admin/...` (without `/api` prefix)
