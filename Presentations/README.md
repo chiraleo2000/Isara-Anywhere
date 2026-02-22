@@ -1,6 +1,6 @@
 # 📊 IZARA Telemedicine Platform - Presentation Materials
 
-> **Version:** 3.1.0 | **Updated:** February 22, 2026  
+> **Version:** 1.5.1 | **Updated:** February 22, 2026  
 > **Status:** Phase 1 Complete | Phase 2 In Progress (v1.5.1)  
 > **Tests:** 311 Unit Tests (Vitest) + 808 E2E Tests (Playwright) = 1,119 total × 5 Playwright Projects
 

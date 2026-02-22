@@ -2,7 +2,7 @@
 
 ## Presentation Script & Guide
 
-> **Version:** 3.1.0 | **Date:** February 2026  
+> **Version:** 1.5.1 | **Date:** February 2026  
 > **Status:** Phase 1 Complete + Phase 2 In Progress (v1.5.1)  
 > **Duration:** 30-45 minutes  
 > **Audience:** Stakeholders, Technical Team, Medical Staff

@@ -1,6 +1,6 @@
 # Izara Telemedicine Platform - Technical Documentation
 
-> **Version:** 3.1.0 (Updated February 22, 2026)  
+> **Version:** 1.5.1 (Updated February 22, 2026)  
 > **Status:** Phase 1 Complete + Phase 2 In Progress (v1.5.1)  
 > **Database:** PostgreSQL 18 + pgvector  
 > **Stack:** PostgreSQL / Express / React / Jitsi / Gemini AI / Google Cloud  

@@ -1,6 +1,6 @@
 # 🏥 Izara Doctor Portal
 
-![Version](https://img.shields.io/badge/version-1.4.8--dev-blue.svg)
+![Version](https://img.shields.io/badge/version-1.5.1-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![React](https://img.shields.io/badge/React-18-61dafb.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178c6.svg)
