@@ -1,8 +1,8 @@
 /**
  * =============================================================================
- * IZARA TELEMEDICINE - SHARED TEST CONFIGURATION v1.5.0
+ * IZARA TELEMEDICINE - SHARED TEST CONFIGURATION v1.5.1
  * =============================================================================
- * Version: 1.5.0 | Updated: February 16, 2026
+ * Version: 1.5.1 | Updated: February 22, 2026
  *
  * Centralized configuration for ALL E2E tests (Local + Cloud).
  * Set TEST_ENV=cloud to switch to Cloud Run URLs.
@@ -198,6 +198,7 @@ export const ENDPOINTS = {
     config: '/api/meetings/config',
     invite: '/api/meetings/invite',
     transcription: '/api/meetings/transcription',
+    sttConfig: '/api/meetings/stt/config',
   },
   ai: {
     health: '/api/health',   // AI services use meeting server /api/health

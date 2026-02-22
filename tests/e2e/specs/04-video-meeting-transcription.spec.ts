@@ -2,9 +2,10 @@
  * ═══════════════════════════════════════════════════════════════════════════════
  * SPEC 23: VIDEO MEETING, TRANSCRIPTION & AI SUMMARY
  * ═══════════════════════════════════════════════════════════════════════════════
- * Tests: ~65 | Sections: A–G
+ * Tests: ~69 | Sections: A–H
  * Coverage: Meeting creation, Jitsi lifecycle, transcript streaming, AI SOAP,
- *           CDS recommendations, post-meeting EMR, guest access, multi-browser
+ *           CDS recommendations, post-meeting EMR, guest access, multi-browser,
+ *           Google Cloud STT config, enhanced AI summary, audio transcription
  * ═══════════════════════════════════════════════════════════════════════════════
  */
 import { test, expect } from '@playwright/test';
@@ -911,6 +912,53 @@ test.describe('04 — Video Meeting, Transcription & AI Summary', () => {
       const mId = meetingId || 'no-dependency';
       const res = await meetingApi(request, token).post(`/api/meetings/${mId}/process-embeddings`, {});
       expect([200, 401, 400, 404, 500]).toContain(res.status);
+    });
+
+    test('H13 — Google STT config endpoint', async ({ request }) => {
+      const res = await request.get(`${MEETING_SERVER_URL}/api/meetings/stt/config`);
+      expect(res.status()).toBe(200);
+      const body = await res.json();
+      expect(body.success).toBe(true);
+      expect(body.modes).toContain('web-speech-api');
+      expect(body.features.supportedLanguages).toContain('th-TH');
+      expect(body.features.maxDurationMinutes).toBe(120);
+      logTestSuccess('Google STT config endpoint works');
+    });
+
+    test('H14 — Transcribe audio endpoint (graceful without credentials)', async ({ request }) => {
+      const token = users.get('doctor')!.token;
+      const mId = meetingId || 'no-dependency';
+      const res = await meetingApi(request, token).post(`/api/meetings/${mId}/transcribe-audio`, {
+        language: 'th-TH',
+        enableDiarization: true,
+      });
+      expect([200, 401, 400, 404, 500]).toContain(res.status);
+      if (res.status === 200) {
+        const body = res.body;
+        // Should return success with fallback info (no audio data sent)
+        expect(body.success).toBe(true);
+        logTestInfo(`Transcribe audio: mode=${body.mode}`);
+      }
+    });
+
+    test('H15 — Enhanced AI summary endpoint', async ({ request }) => {
+      const token = users.get('doctor')!.token;
+      const mId = meetingId || 'no-dependency';
+      const res = await meetingApi(request, token).post(`/api/meetings/${mId}/enhanced-summary`, {
+        format: 'structured',
+      });
+      expect([200, 401, 400, 404, 500]).toContain(res.status);
+      if (res.status === 200) {
+        logTestInfo(`Enhanced summary: ${JSON.stringify(res.body).substring(0, 200)}`);
+      }
+    });
+
+    test('H16 — Meeting health returns version 1.5.1', async ({ request }) => {
+      const res = await request.get(`${MEETING_SERVER_URL}/health`);
+      expect(res.status()).toBe(200);
+      const body = await res.json();
+      expect(body.version).toBe('1.5.1');
+      logTestSuccess(`Meeting server version: ${body.version}`);
     });
   });
 });

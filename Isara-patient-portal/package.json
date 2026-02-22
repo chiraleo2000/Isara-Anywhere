@@ -1,6 +1,6 @@
 {
   "name": "izara-patient-portal",
-  "version": "1.5.1-dev",
+  "version": "1.5.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -24,7 +24,7 @@
   },
   "dependencies": {
     "@google-cloud/storage": "^7.7.0",
-    "@google/generative-ai": "^0.2.1",
+    "@google/generative-ai": "^0.21.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/pg": "^8.16.0",

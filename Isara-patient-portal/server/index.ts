@@ -105,17 +105,23 @@ import {
 } from './security/owasp-middleware';
 
 // A02 - Allowed origins for CORS
-const ALLOWED_ORIGINS: (string | RegExp | boolean)[] = process.env.NODE_ENV === 'production'
-  ? [
-      'https://patient.izara.com',
-      'https://izara.com',
-      'https://izara-patient-portal-hvht4obouq-as.a.run.app',
-      'https://izara-doctor-portal-hvht4obouq-as.a.run.app',
-      'https://izara-jitsi-meeting-portal-hvht4obouq-as.a.run.app',
-      /^https:\/\/izara-[a-z-]+-hvht4obouq-as\.a\.run\.app$/
-    ]
-  : ['http://localhost:3005', 'http://localhost:3004', 'http://localhost:3010', 'http://localhost:8081',
-     'http://127.0.0.1:3005', 'http://0.0.0.0:3005'];
+// Always include localhost for local Docker (NODE_ENV=production) + CORS_ORIGINS env override
+const ALLOWED_ORIGINS: string[] = [
+  'http://localhost:3005', 'http://localhost:3004', 'http://localhost:3010', 'http://localhost:8081',
+  'http://127.0.0.1:3005', 'http://0.0.0.0:3005',
+  ...(process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',').map(s => s.trim()) : []),
+];
+if (process.env.NODE_ENV === 'production') {
+  ALLOWED_ORIGINS.push(
+    'https://patient.izara.com',
+    'https://izara.com',
+    'https://izara-patient-portal-hvht4obouq-as.a.run.app',
+    'https://izara-doctor-portal-hvht4obouq-as.a.run.app',
+    'https://izara-jitsi-meeting-portal-hvht4obouq-as.a.run.app',
+  );
+}
+// Regex pattern for Cloud Run dynamic URLs
+const CLOUD_RUN_PATTERN = /^https:\/\/izara-[a-z-]+-hvht4obouq-as\.a\.run\.app$/;
 
 // OWASP Security Middleware
 
@@ -132,12 +138,8 @@ app.use(cors({
     if (!origin) {
       return callback(null, true);
     }
-    // Check string, regex, and boolean matches
-    if (ALLOWED_ORIGINS.some(allowed => {
-      if (allowed === true) return true;
-      if (allowed instanceof RegExp) return allowed.test(origin);
-      return allowed === origin;
-    })) {
+    // Check string matches and Cloud Run regex pattern
+    if (ALLOWED_ORIGINS.includes(origin) || CLOUD_RUN_PATTERN.test(origin)) {
       return callback(null, true);
     }
     securityAuditLog({

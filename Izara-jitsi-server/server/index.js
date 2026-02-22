@@ -1,14 +1,16 @@
 /**
  * Izara Jitsi Meeting Server — Phase 1 Complete
  * 
- * Version: 1.5.0
- * Updated: 2026-02-16
+ * Version: 1.5.1
+ * Updated: 2026-02-22
  * 
  * Main API server for:
  * - Meeting room management (Jitsi Meet - FREE)
  * - Real-time transcription via Web Speech API (browser-native, FREE)
  * - In-meeting chat messaging
  * - AI meeting summarization via Gemini 2.5 Flash Lite
+ * - AI enhanced structured summary with diarized speaker context
+ * - Google Cloud Speech-to-Text (optional, server-side diarization)
  * - AI patient instruction sheet generation
  * - AI pre-consultation summary
  * - AI document analysis
@@ -228,7 +230,7 @@ app.get('/health', (req, res) => {
   res.json({
     status: 'ok',
     service: 'izara-jitsi-server',
-    version: '1.4.8-dev',
+    version: '1.5.1',
     timestamp: new Date().toISOString(),
     database: dbAvailable ? 'connected' : 'disconnected',
     features: {
@@ -245,7 +247,7 @@ app.get('/api/health', (req, res) => {
   res.json({
     status: dbAvailable ? 'healthy' : 'degraded',
     service: 'izara-jitsi-server',
-    version: '1.4.8-dev',
+    version: '1.5.1',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     jitsiDomain: JITSI_DOMAIN,
@@ -639,14 +641,6 @@ app.post('/api/meetings/:id/end', optionalAuth, async (req, res) => {
     
     // 4. Update meeting status 
     try {
-      await safeQuery(
-        `UPDATE meeting_records 
-         SET status = 'completed', ended_at = NOW(), transcript = $1,
-             duration_minutes = EXTRACT(EPOCH FROM (NOW() - COALESCE(started_at, created_at))) / 60
-         WHERE id::text = $1 OR appointment_id = $1 RETURNING *`,
-        [fullTranscript]
-      );
-      // Fix: need meetingId for the WHERE clause
       await safeQuery(
         `UPDATE meeting_records 
          SET status = 'completed', ended_at = NOW(), transcript = $2,
@@ -1700,6 +1694,267 @@ app.post('/api/ai/validate', optionalAuth, async (req, res) => {
 });
 
 // ============================================================================
+// GOOGLE CLOUD SPEECH-TO-TEXT — Server-Side Transcription with Diarization
+// ============================================================================
+
+// Google STT configuration endpoint
+app.get('/api/meetings/stt/config', (req, res) => {
+  const sttAvailable = !!process.env.GOOGLE_APPLICATION_CREDENTIALS || !!process.env.GOOGLE_SPEECH_API_KEY;
+  res.json({
+    success: true,
+    sttAvailable,
+    modes: ['web-speech-api', ...(sttAvailable ? ['google-cloud-stt'] : [])],
+    defaultMode: 'web-speech-api',
+    features: {
+      speakerDiarization: sttAvailable,
+      multiLanguage: true,
+      supportedLanguages: ['th-TH', 'en-US', 'en-GB'],
+      maxDurationMinutes: 120,
+    },
+  });
+});
+
+// POST /api/meetings/:id/transcribe-audio — Full audio file transcription via Google STT
+app.post('/api/meetings/:id/transcribe-audio', optionalAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { audioBase64, audioUrl, language = 'th-TH', enableDiarization = true } = req.body;
+
+    // Check if Google STT credentials are available
+    const hasCredentials = !!process.env.GOOGLE_APPLICATION_CREDENTIALS || !!process.env.GOOGLE_SPEECH_API_KEY;
+
+    if (!hasCredentials) {
+      // Graceful fallback — return info about using Web Speech API
+      return res.json({
+        success: true,
+        message: 'Google Cloud Speech-to-Text not configured — using Web Speech API mode',
+        mode: 'web-speech-api',
+        meetingId: id,
+        transcript: null,
+        configured: false,
+      });
+    }
+
+    // If credentials are available, use Google Cloud Speech-to-Text
+    let transcriptText = '';
+    let segments = [];
+    try {
+      const { SpeechClient } = await import('@google-cloud/speech');
+      const speechClient = new SpeechClient();
+
+      const config = {
+        encoding: 'WEBM_OPUS',
+        sampleRateHertz: 48000,
+        languageCode: language,
+        alternativeLanguageCodes: language === 'th-TH' ? ['en-US'] : ['th-TH'],
+        enableAutomaticPunctuation: true,
+        enableSpeakerDiarization: enableDiarization,
+        diarizationSpeakerCount: 2,
+        model: 'latest_long',
+        useEnhanced: true,
+      };
+
+      if (audioBase64) {
+        const [response] = await speechClient.recognize({
+          audio: { content: audioBase64 },
+          config,
+        });
+
+        if (response.results) {
+          for (const result of response.results) {
+            const alt = result.alternatives?.[0];
+            if (alt) {
+              const speakerTag = alt.words?.[0]?.speakerTag || 0;
+              segments.push({
+                content: alt.transcript,
+                confidence: alt.confidence,
+                speakerTag,
+                speakerRole: speakerTag === 1 ? 'doctor' : 'patient',
+              });
+              transcriptText += `[Speaker ${speakerTag}]: ${alt.transcript}\n`;
+            }
+          }
+        }
+      }
+    } catch (sttError) {
+      console.warn('[STT] Google Cloud Speech error:', sttError.message);
+      return res.json({
+        success: true,
+        message: 'Google STT processing failed — fallback to Web Speech API',
+        mode: 'web-speech-api-fallback',
+        error: sttError.message,
+        meetingId: id,
+      });
+    }
+
+    // Store results in DB if available
+    if (segments.length > 0) {
+      for (const seg of segments) {
+        try {
+          await safeQuery(
+            `INSERT INTO meeting_transcripts (
+              meeting_record_id, speaker_role, speaker_name, content,
+              language, confidence, created_at
+            ) VALUES ($1::uuid, $2, $3, $4, $5, $6, NOW())`,
+            [id, seg.speakerRole, `Speaker ${seg.speakerTag}`, seg.content,
+             language, seg.confidence]
+          );
+        } catch (e) {
+          console.warn('[STT] DB insert skipped:', e.message);
+        }
+      }
+    }
+
+    res.json({
+      success: true,
+      mode: 'google-cloud-stt',
+      meetingId: id,
+      segments,
+      fullTranscript: transcriptText,
+      totalSegments: segments.length,
+      diarization: enableDiarization,
+      language,
+    });
+  } catch (error) {
+    console.error('[STT] Transcribe audio error:', error);
+    res.status(500).json({ error: 'Failed to transcribe audio', details: error.message });
+  }
+});
+
+// POST /api/meetings/:id/enhanced-summary — Enhanced Gemini summary with diarized speaker context
+app.post('/api/meetings/:id/enhanced-summary', optionalAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { format = 'structured' } = req.body;
+
+    if (!genAI) {
+      return res.json({ success: true, summary: 'AI not configured', source: 'fallback' });
+    }
+
+    // Fetch meeting and transcript
+    let meeting = null;
+    let transcriptRows = [];
+    try {
+      const meetingResult = await pool.query(
+        `SELECT mr.*, u_pat.name_thai as patient_name_thai, u_doc.name_thai as doctor_name_thai
+         FROM meeting_records mr
+         LEFT JOIN users u_pat ON mr.patient_id = u_pat.id
+         LEFT JOIN users u_doc ON mr.doctor_id = u_doc.id
+         WHERE mr.id::text = $1 OR mr.appointment_id = $1`, [id]
+      );
+      if (meetingResult.rows.length > 0) meeting = meetingResult.rows[0];
+
+      const transcriptsResult = await pool.query(
+        `SELECT * FROM meeting_transcripts WHERE meeting_record_id::text = $1 ORDER BY created_at ASC`, [id]
+      );
+      transcriptRows = transcriptsResult.rows;
+    } catch (e) {
+      console.warn('[Enhanced Summary] DB lookup skipped:', e.message);
+    }
+
+    if (transcriptRows.length === 0) {
+      return res.json({
+        success: true,
+        summary: { soap: 'ไม่มีบทสนทนาสำหรับสรุป' },
+        meetingId: id,
+        source: 'empty',
+      });
+    }
+
+    // Build speaker-tagged transcript
+    const diarizedTranscript = transcriptRows.map(t => {
+      const role = t.speaker_role === 'doctor' ? 'แพทย์' : 'ผู้ป่วย';
+      return `${role}: ${t.content}`;
+    }).join('\n');
+
+    const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
+
+    const structuredPrompt = `คุณคือผู้ช่วยแพทย์ AI วิเคราะห์บทสนทนาระหว่างแพทย์กับผู้ป่วยจากระบบ Telemedicine
+
+บทสนทนา (แยกผู้พูด):
+${diarizedTranscript}
+
+ชื่อผู้ป่วย: ${meeting?.patient_name_thai || 'ไม่ระบุ'}
+ชื่อแพทย์: ${meeting?.doctor_name_thai || 'ไม่ระบุ'}
+
+กรุณาวิเคราะห์และสรุปเป็น JSON ดังนี้:
+{
+  "chiefComplaint": "อาการหลักที่ผู้ป่วยมาพบแพทย์ (จากคำพูดของผู้ป่วย)",
+  "soap": {
+    "subjective": "อาการที่ผู้ป่วยบอก",
+    "objective": "สิ่งที่แพทย์ตรวจพบ",
+    "assessment": "การวินิจฉัยเบื้องต้น",
+    "plan": "แผนการรักษา"
+  },
+  "doctorReasoning": "เหตุผลทางคลินิกของแพทย์ (จากคำพูดของแพทย์)",
+  "patientConcerns": ["ข้อกังวล/คำถามของผู้ป่วย"],
+  "prescribedPlan": "สิ่งที่แพทย์สั่ง (ยา, การตรวจ, นัดหมาย)",
+  "redFlags": ["อาการเตือนที่ต้องมาพบแพทย์ทันที"],
+  "followUp": "กำหนดการนัดตรวจครั้งถัดไป",
+  "emrFields": {
+    "icd10Suggestions": ["รหัส ICD-10 ที่แนะนำ"],
+    "medications": ["ยาที่สั่ง"],
+    "labOrders": ["การตรวจทางห้องปฏิบัติการ"]
+  }
+}
+⚠️ นี่คือสรุปเบื้องต้นจาก AI ต้องให้แพทย์ตรวจสอบก่อนใช้งาน
+ตอบเป็น JSON เท่านั้น ไม่ต้องมี markdown code block`;
+
+    const result = await model.generateContent(structuredPrompt);
+    let summaryText = result.response.text();
+
+    // Try to parse as JSON
+    let structuredSummary = null;
+    try {
+      // Remove markdown code block if present
+      const jsonMatch = summaryText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        structuredSummary = JSON.parse(jsonMatch[0]);
+      }
+    } catch (error_) {
+      console.warn('[Enhanced Summary] JSON parse failed, returning raw text', error_);
+    }
+
+    const validationId = uuidv4();
+    aiValidations.set(validationId, {
+      id: validationId, meetingId: id, type: 'enhanced-meeting-summary',
+      content: summaryText, status: 'pending_review',
+      createdAt: new Date().toISOString()
+    });
+
+    // Save to DB
+    try {
+      await safeQuery(
+        `UPDATE meeting_records SET ai_summary = $2, ai_recommendations = $3
+         WHERE id::text = $1 OR appointment_id = $1`,
+        [id, summaryText, JSON.stringify({
+          validationId, requiresValidation: true,
+          structured: !!structuredSummary, format: 'enhanced'
+        })]
+      );
+    } catch (e) {
+      console.warn('[Enhanced Summary] DB save skipped:', e.message);
+    }
+
+    res.json({
+      success: true,
+      meetingId: id,
+      summary: structuredSummary || summaryText,
+      rawText: summaryText,
+      isStructured: !!structuredSummary,
+      validationId,
+      requiresValidation: true,
+      source: 'gemini',
+      diarizedTranscript,
+      totalSegments: transcriptRows.length,
+    });
+  } catch (error) {
+    console.error('[Enhanced Summary] Error:', error);
+    res.status(500).json({ error: 'Failed to generate enhanced summary' });
+  }
+});
+
+// ============================================================================
 // SOCKET.IO FOR REAL-TIME COMMUNICATION
 // ============================================================================
 
@@ -1837,7 +2092,7 @@ const startServer = async () => {
     server.listen(PORT, () => {
       console.log(`
 ╔════════════════════════════════════════════════════════════╗
-║     🎥 Izara Jitsi Meeting Server v1.4.8-dev                ║
+║     🎥 Izara Jitsi Meeting Server v1.5.1                        ║
 ╠════════════════════════════════════════════════════════════╣
 ║  Port:       ${PORT}                                          ║
 ║  Jitsi:      ${JITSI_DOMAIN}                               ║

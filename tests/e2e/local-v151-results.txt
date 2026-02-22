@@ -1,0 +1,1271 @@
+
+Running 812 tests using 2 workers
+
+[1A[2K[1/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:33:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ A ΓÇö Service Health Checks ΓÇ║ A01 ΓÇö Patient portal API health
+[1A[2K[2/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:42:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ A ΓÇö Patient Books Appointment ΓÇ║ A01 ΓÇö Patient1 creates a telemedicine appointment
+[1A[2K[Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:42:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ A ΓÇö Patient Books Appointment ΓÇ║ A01 ΓÇö Patient1 creates a telemedicine appointment
+Γä╣∩╕Å  All 5 users authenticated for appointment tests
+
+[1A[2K[Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:33:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ A ΓÇö Service Health Checks ΓÇ║ A01 ΓÇö Patient portal API health
+Γ£à Patient portal healthy
+
+[1A[2K[3/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:39:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ A ΓÇö Service Health Checks ΓÇ║ A02 ΓÇö Patient portal DB health
+[1A[2K[Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:42:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ A ΓÇö Patient Books Appointment ΓÇ║ A01 ΓÇö Patient1 creates a telemedicine appointment
+Γ£à Appointment created: APT-1771751087925-HRLMEV
+
+[1A[2K[Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:39:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ A ΓÇö Service Health Checks ΓÇ║ A02 ΓÇö Patient portal DB health
+Γ£à Patient DB healthy
+
+[1A[2K[4/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:52:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ A ΓÇö Patient Books Appointment ΓÇ║ A02 ΓÇö Patient2 creates a different appointment
+[1A[2K[5/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:47:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ A ΓÇö Service Health Checks ΓÇ║ A03 ΓÇö Doctor portal API health
+[1A[2K[Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:52:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ A ΓÇö Patient Books Appointment ΓÇ║ A02 ΓÇö Patient2 creates a different appointment
+Γ£à Patient2 appointment created
+
+[1A[2K[6/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:62:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ A ΓÇö Patient Books Appointment ΓÇ║ A03 ΓÇö Patient3 creates an appointment with different specialty
+[1A[2K[Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:62:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ A ΓÇö Patient Books Appointment ΓÇ║ A03 ΓÇö Patient3 creates an appointment with different specialty
+Γ£à Patient3 appointment created
+
+[1A[2K[7/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:72:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ A ΓÇö Patient Books Appointment ΓÇ║ A04 ΓÇö All 3 patients book appointments in parallel
+[1A[2K[Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:47:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ A ΓÇö Service Health Checks ΓÇ║ A03 ΓÇö Doctor portal API health
+Γ£à Doctor portal healthy
+
+[1A[2K[8/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:53:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ A ΓÇö Service Health Checks ΓÇ║ A04 ΓÇö Doctor portal DB health
+[1A[2K[Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:72:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ A ΓÇö Patient Books Appointment ΓÇ║ A04 ΓÇö All 3 patients book appointments in parallel
+Γ£à 3 parallel bookings succeeded
+
+[1A[2K[9/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:88:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ A ΓÇö Patient Books Appointment ΓÇ║ A05 ΓÇö Appointment includes required fields in response
+[1A[2K[Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:53:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ A ΓÇö Service Health Checks ΓÇ║ A04 ΓÇö Doctor portal DB health
+Γ£à Doctor DB healthy
+
+[1A[2K[10/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:59:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ A ΓÇö Service Health Checks ΓÇ║ A05 ΓÇö Meeting server health
+[1A[2K[11/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:98:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ A ΓÇö Patient Books Appointment ΓÇ║ A06 ΓÇö Patient can list own appointments
+[1A[2K[Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:59:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ A ΓÇö Service Health Checks ΓÇ║ A05 ΓÇö Meeting server health
+Γ£à Meeting server healthy
+
+[1A[2K[12/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:65:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ A ΓÇö Service Health Checks ΓÇ║ A06 ΓÇö All 3 services parallel health check
+[1A[2K[Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:65:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ A ΓÇö Service Health Checks ΓÇ║ A06 ΓÇö All 3 services parallel health check
+Γ£à All 3 services healthy in parallel
+
+[1A[2K[13/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:77:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ A ΓÇö Service Health Checks ΓÇ║ A07 ΓÇö Patient portal login page loads
+[1A[2K[14/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:82:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ A ΓÇö Service Health Checks ΓÇ║ A08 ΓÇö Doctor portal login page loads
+[1A[2K[15/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:92:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ B ΓÇö Multi-User Authentication ΓÇ║ B01 ΓÇö All 5 users authenticated in beforeAll
+[1A[2K[Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:98:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ A ΓÇö Patient Books Appointment ΓÇ║ A06 ΓÇö Patient can list own appointments
+Γ£à Patient1 appointment list
+
+[1A[2KΓ£à Patient1 has 935 appointments
+
+[1A[2K[Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:92:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ B ΓÇö Multi-User Authentication ΓÇ║ B01 ΓÇö All 5 users authenticated in beforeAll
+Γ£à 5/5 users authenticated
+
+[1A[2K[16/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:110:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ A ΓÇö Patient Books Appointment ΓÇ║ A07 ΓÇö Missing required fields returns error
+[1A[2K[17/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:100:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ B ΓÇö Multi-User Authentication ΓÇ║ B02 ΓÇö Patient1 token validates
+[1A[2K[Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:100:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ B ΓÇö Multi-User Authentication ΓÇ║ B02 ΓÇö Patient1 token validates
+Γ£à Patient1 token valid
+
+[1A[2K[18/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:107:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ B ΓÇö Multi-User Authentication ΓÇ║ B03 ΓÇö Patient2 token validates
+[1A[2K[19/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:116:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ A ΓÇö Patient Books Appointment ΓÇ║ A08 ΓÇö Past date appointment rejected
+[1A[2K[Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:107:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ B ΓÇö Multi-User Authentication ΓÇ║ B03 ΓÇö Patient2 token validates
+Γ£à Patient2 token check
+
+[1A[2K[20/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:124:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ A ΓÇö Patient Books Appointment ΓÇ║ A09 ΓÇö Appointment with symptoms triggers AI urgency
+[1A[2K[21/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:114:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ B ΓÇö Multi-User Authentication ΓÇ║ B04 ΓÇö Patient3 token validates
+[1A[2K[Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:114:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ B ΓÇö Multi-User Authentication ΓÇ║ B04 ΓÇö Patient3 token validates
+Γ£à Patient3 token check
+
+[1A[2K[22/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:121:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ B ΓÇö Multi-User Authentication ΓÇ║ B05 ΓÇö Doctor token validates
+[1A[2K[23/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:132:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ A ΓÇö Patient Books Appointment ΓÇ║ A10 ΓÇö Patient1 can get appointment by ID
+[1A[2K[Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:121:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ B ΓÇö Multi-User Authentication ΓÇ║ B05 ΓÇö Doctor token validates
+Γ£à Doctor token valid
+
+[1A[2K[24/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:128:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ B ΓÇö Multi-User Authentication ΓÇ║ B06 ΓÇö Admin token validates
+[1A[2K[Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:128:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ B ΓÇö Multi-User Authentication ΓÇ║ B06 ΓÇö Admin token validates
+Γ£à Admin token valid
+
+[1A[2K[25/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:135:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ B ΓÇö Multi-User Authentication ΓÇ║ B07 ΓÇö Invalid password rejected
+[1A[2K[26/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:139:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ A ΓÇö Patient Books Appointment ΓÇ║ A11 ΓÇö Appointment pool endpoint accessible (walk-in queue)
+[1A[2K[27/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:145:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ A ΓÇö Patient Books Appointment ΓÇ║ A12 ΓÇö Queue management endpoint accessible
+[1A[2K[28/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:156:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ B ΓÇö Doctor Views & Confirms ΓÇ║ B01 ΓÇö Doctor can list all appointments
+[1A[2K[Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:135:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ B ΓÇö Multi-User Authentication ΓÇ║ B07 ΓÇö Invalid password rejected
+Γ£à Invalid password correctly rejected
+
+[1A[2K[29/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:144:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ B ΓÇö Multi-User Authentication ΓÇ║ B08 ΓÇö Non-existent user rejected
+[1A[2K[Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:144:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ B ΓÇö Multi-User Authentication ΓÇ║ B08 ΓÇö Non-existent user rejected
+Γ£à Non-existent user correctly rejected
+
+[1A[2K[30/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:153:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ B ΓÇö Multi-User Authentication ΓÇ║ B09 ΓÇö Missing email rejected
+[1A[2K[31/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:161:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ B ΓÇö Multi-User Authentication ΓÇ║ B10 ΓÇö Missing password rejected
+[1A[2K[32/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:169:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ B ΓÇö Multi-User Authentication ΓÇ║ B11 ΓÇö Invalid token rejected on protected endpoint
+[1A[2K[Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:169:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ B ΓÇö Multi-User Authentication ΓÇ║ B11 ΓÇö Invalid token rejected on protected endpoint
+Γ£à Invalid token ΓÇö correctly rejected
+
+[1A[2K[33/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:174:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ B ΓÇö Multi-User Authentication ΓÇ║ B12 ΓÇö Empty token rejected
+[1A[2K[Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:174:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ B ΓÇö Multi-User Authentication ΓÇ║ B12 ΓÇö Empty token rejected
+Γ£à Empty token ΓÇö correctly rejected
+
+[1A[2K[34/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:179:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ B ΓÇö Multi-User Authentication ΓÇ║ B13 ΓÇö Patient token cannot access doctor portal protected endpoints
+[1A[2K[35/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:186:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ B ΓÇö Multi-User Authentication ΓÇ║ B14 ΓÇö Doctor token cannot access admin-only endpoints (non-admin)
+[1A[2K[Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:156:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ B ΓÇö Doctor Views & Confirms ΓÇ║ B01 ΓÇö Doctor can list all appointments
+Γ£à Doctor appointment list
+
+[1A[2K[36/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:163:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ B ΓÇö Doctor Views & Confirms ΓÇ║ B02 ΓÇö Doctor sees patient appointments in schedule
+[1A[2K[37/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:193:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ B ΓÇö Multi-User Authentication ΓÇ║ B15 ΓÇö All 3 patients can authenticate in parallel
+[1A[2K[Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:163:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ B ΓÇö Doctor Views & Confirms ΓÇ║ B02 ΓÇö Doctor sees patient appointments in schedule
+Γä╣∩╕Å  Doctor sees 0 appointments
+
+[1A[2K[38/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:171:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ B ΓÇö Doctor Views & Confirms ΓÇ║ B03 ΓÇö Doctor confirms appointment (PATCH)
+[1A[2K[Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:171:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ B ΓÇö Doctor Views & Confirms ΓÇ║ B03 ΓÇö Doctor confirms appointment (PATCH)
+Γ£à Doctor confirmed appointment
+
+[1A[2K[39/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:182:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ B ΓÇö Doctor Views & Confirms ΓÇ║ B04 ΓÇö Doctor confirms appointment (PUT fallback)
+[1A[2K[40/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:192:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ B ΓÇö Doctor Views & Confirms ΓÇ║ B05 ΓÇö Admin can view all appointments
+[1A[2K[Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:192:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ B ΓÇö Doctor Views & Confirms ΓÇ║ B05 ΓÇö Admin can view all appointments
+Γ£à Admin appointment list
+
+[1A[2K[41/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:199:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ B ΓÇö Doctor Views & Confirms ΓÇ║ B06 ΓÇö Admin can assign doctor to appointment
+[1A[2K[42/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:209:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ B ΓÇö Doctor Views & Confirms ΓÇ║ B07 ΓÇö Patient sees confirmed status after doctor confirms
+[1A[2K[Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:193:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ B ΓÇö Multi-User Authentication ΓÇ║ B15 ΓÇö All 3 patients can authenticate in parallel
+Γ£à Patients authenticated in parallel
+
+[1A[2K[43/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:216:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ C ΓÇö Registration Flows ΓÇ║ C01 ΓÇö Patient registration endpoint exists
+[1A[2K[44/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:225:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ C ΓÇö Registration Flows ΓÇ║ C02 ΓÇö Patient registration rejects duplicate email
+[1A[2K[Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:209:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ B ΓÇö Doctor Views & Confirms ΓÇ║ B07 ΓÇö Patient sees confirmed status after doctor confirms
+Γ£à Patient sees appointments after confirmation
+
+[1A[2K[45/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:216:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ B ΓÇö Doctor Views & Confirms ΓÇ║ B08 ΓÇö Doctor generates pre-consultation AI summary
+[1A[2K[Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:225:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ C ΓÇö Registration Flows ΓÇ║ C02 ΓÇö Patient registration rejects duplicate email
+Γ£à Duplicate email registration handled
+
+[1A[2K[46/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:240:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ C ΓÇö Registration Flows ΓÇ║ C03 ΓÇö Patient registration rejects weak password
+[1A[2K[47/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:253:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ C ΓÇö Registration Flows ΓÇ║ C04 ΓÇö Doctor registration endpoint exists
+[1A[2K[48/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:261:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ C ΓÇö Registration Flows ΓÇ║ C05 ΓÇö Doctor registration rejects duplicate email
+[1A[2K[49/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:274:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ C ΓÇö Registration Flows ΓÇ║ C06 ΓÇö Registration rejects missing required fields
+[1A[2K[50/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:282:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ C ΓÇö Registration Flows ΓÇ║ C07 ΓÇö Registration rejects invalid email format
+[1A[2K[51/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:290:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ C ΓÇö Registration Flows ΓÇ║ C08 ΓÇö Password reset endpoint exists or returns expected status
+[1A[2K[52/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:299:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ C ΓÇö Registration Flows ΓÇ║ C09 ΓÇö Doctor portal accepts registration with license
+[1A[2K[53/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:316:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ C ΓÇö Registration Flows ΓÇ║ C10 ΓÇö Admin can view pending doctors
+[1A[2K[Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:316:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ C ΓÇö Registration Flows ΓÇ║ C10 ΓÇö Admin can view pending doctors
+Γ£à Admin can access pending doctors
+
+[1A[2K[54/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:328:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ D ΓÇö Role-Based Access Control ΓÇ║ D01 ΓÇö Patient can access own profile
+[1A[2K[Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:328:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ D ΓÇö Role-Based Access Control ΓÇ║ D01 ΓÇö Patient can access own profile
+Γ£à Patient profile endpoint accessible
+
+[1A[2K[55/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:335:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ D ΓÇö Role-Based Access Control ΓÇ║ D02 ΓÇö Patient can access own appointments
+[1A[2K[Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:335:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ D ΓÇö Role-Based Access Control ΓÇ║ D02 ΓÇö Patient can access own appointments
+Γ£à Patient appointments
+
+[1A[2K[56/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:342:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ D ΓÇö Role-Based Access Control ΓÇ║ D03 ΓÇö Patient can access own PHR
+[1A[2K[Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:342:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ D ΓÇö Role-Based Access Control ΓÇ║ D03 ΓÇö Patient can access own PHR
+Γ£à Patient PHR
+
+[1A[2K[57/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:349:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ D ΓÇö Role-Based Access Control ΓÇ║ D04 ΓÇö Doctor can access patient list
+[1A[2K[Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:349:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ D ΓÇö Role-Based Access Control ΓÇ║ D04 ΓÇö Doctor can access patient list
+Γ£à Doctor patients
+
+[1A[2K[58/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:356:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ D ΓÇö Role-Based Access Control ΓÇ║ D05 ΓÇö Doctor can access appointments
+[1A[2K[Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:356:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ D ΓÇö Role-Based Access Control ΓÇ║ D05 ΓÇö Doctor can access appointments
+Γ£à Doctor appointments
+
+[1A[2K[59/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:363:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ D ΓÇö Role-Based Access Control ΓÇ║ D06 ΓÇö Admin can access admin stats
+[1A[2K[60/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:369:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ D ΓÇö Role-Based Access Control ΓÇ║ D07 ΓÇö Admin can access doctor management
+[1A[2K[Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:369:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ D ΓÇö Role-Based Access Control ΓÇ║ D07 ΓÇö Admin can access doctor management
+Γ£à Admin doctor management
+
+[1A[2K[61/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:376:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ D ΓÇö Role-Based Access Control ΓÇ║ D08 ΓÇö Doctor can access medical content
+[1A[2K[62/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:382:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ D ΓÇö Role-Based Access Control ΓÇ║ D09 ΓÇö Patient can access medical content library (read-only)
+[1A[2K[63/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:388:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ D ΓÇö Role-Based Access Control ΓÇ║ D10 ΓÇö All roles can access metadata endpoints in parallel
+[1A[2K[Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:388:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ D ΓÇö Role-Based Access Control ΓÇ║ D10 ΓÇö All roles can access metadata endpoints in parallel
+Γ£à Metadata endpoints accessible
+
+[1A[2K[64/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:409:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ E ΓÇö Multi-User Browser Login ΓÇ║ E01 ΓÇö Patient1 login via browser
+[1A[2K[65/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:225:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ B ΓÇö Doctor Views & Confirms ΓÇ║ B09 ΓÇö Meeting links created when appointment confirmed
+[1A[2K[66/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:235:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ B ΓÇö Doctor Views & Confirms ΓÇ║ B10 ΓÇö Full appointment lifecycle helper succeeds
+[1A[2K[Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:235:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ B ΓÇö Doctor Views & Confirms ΓÇ║ B10 ΓÇö Full appointment lifecycle helper succeeds
+Γ£à Full lifecycle appointment: APT-1771751101165-I6XQ1N
+
+[1A[2K[67/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:250:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ C ΓÇö Cancel & Reschedule ΓÇ║ C01 ΓÇö Create appointment for cancellation test
+[1A[2K[68/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:260:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ C ΓÇö Cancel & Reschedule ΓÇ║ C02 ΓÇö Patient cancels own appointment
+[1A[2K[69/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:270:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ C ΓÇö Cancel & Reschedule ΓÇ║ C03 ΓÇö Cancelled appointment reflects in patient list
+[1A[2K[Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:270:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ C ΓÇö Cancel & Reschedule ΓÇ║ C03 ΓÇö Cancelled appointment reflects in patient list
+Γ£à Appointment list after cancel
+
+[1A[2K[70/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:277:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ C ΓÇö Cancel & Reschedule ΓÇ║ C04 ΓÇö Create appointment for reschedule test
+[1A[2K[71/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:287:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ C ΓÇö Cancel & Reschedule ΓÇ║ C05 ΓÇö Patient reschedules appointment
+[1A[2K[72/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:298:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ C ΓÇö Cancel & Reschedule ΓÇ║ C06 ΓÇö Doctor cancels appointment
+[1A[2K[73/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:315:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ C ΓÇö Cancel & Reschedule ΓÇ║ C07 ΓÇö Cancelled appointment triggers notification
+[1A[2K[74/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:321:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ C ΓÇö Cancel & Reschedule ΓÇ║ C08 ΓÇö Cannot cancel already cancelled appointment
+[1A[2K[75/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:331:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ C ΓÇö Cancel & Reschedule ΓÇ║ C09 ΓÇö Concurrent cancel from patient and doctor handled gracefully
+[1A[2K[76/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:350:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ C ΓÇö Cancel & Reschedule ΓÇ║ C10 ΓÇö Appointment status history maintained
+[1A[2K[Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:350:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ C ΓÇö Cancel & Reschedule ΓÇ║ C10 ΓÇö Appointment status history maintained
+Γ£à Appointment history
+
+[1A[2K[77/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:364:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ D ΓÇö Meeting Link Management ΓÇ║ D01 ΓÇö Doctor creates video meeting
+[1A[2K[Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:364:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ D ΓÇö Meeting Link Management ΓÇ║ D01 ΓÇö Doctor creates video meeting
+Γ£à Meeting created: 
+
+[1A[2K[78/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:376:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ D ΓÇö Meeting Link Management ΓÇ║ D02 ΓÇö Meeting server creates meeting
+[1A[2K[79/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:387:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ D ΓÇö Meeting Link Management ΓÇ║ D03 ΓÇö Video meeting config endpoint available
+[1A[2K[80/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:393:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ D ΓÇö Meeting Link Management ΓÇ║ D04 ΓÇö Meeting health endpoint available
+[1A[2K[81/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:399:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ D ΓÇö Meeting Link Management ΓÇ║ D05 ΓÇö Patient can invite guest to meeting
+[1A[2K[82/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:409:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ D ΓÇö Meeting Link Management ΓÇ║ D06 ΓÇö Doctor can invite specialist to meeting
+[1A[2K[83/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:419:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ D ΓÇö Meeting Link Management ΓÇ║ D07 ΓÇö Meeting generates 3 unique URLs (doctor, patient, guest)
+[1A[2K[84/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:435:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ D ΓÇö Meeting Link Management ΓÇ║ D08 ΓÇö Meeting server health check pre-meeting
+[1A[2K[85/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:440:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ D ΓÇö Meeting Link Management ΓÇ║ D09 ΓÇö Video meeting config returns Jitsi settings
+[1A[2K[86/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:449:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ D ΓÇö Meeting Link Management ΓÇ║ D10 ΓÇö Both portals can check video meeting health
+[1A[2K[87/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:463:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ E ΓÇö Appointment Notifications ΓÇ║ E01 ΓÇö Patient notifications endpoint accessible
+[1A[2K[88/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:469:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ E ΓÇö Appointment Notifications ΓÇ║ E02 ΓÇö Doctor notifications accessible
+[1A[2K[89/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:475:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ E ΓÇö Appointment Notifications ΓÇ║ E03 ΓÇö All 3 patients can check notifications in parallel
+[1A[2K[90/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:484:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ E ΓÇö Appointment Notifications ΓÇ║ E04 ΓÇö Mark notification as read
+[1A[2K[91/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:497:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ E ΓÇö Appointment Notifications ΓÇ║ E05 ΓÇö Doctor mark all notifications as read
+[1A[2K[92/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:503:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ E ΓÇö Appointment Notifications ΓÇ║ E06 ΓÇö Create doctor notification
+[1A[2K[93/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:514:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ E ΓÇö Appointment Notifications ΓÇ║ E07 ΓÇö Patient notification bell reflects unread count
+[1A[2K  1) [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:409:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ E ΓÇö Multi-User Browser Login ΓÇ║ E01 ΓÇö Patient1 login via browser 
+
+    TimeoutError: page.click: Timeout 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('button[type="submit"]')[22m
+    [2m    - locator resolved to <button type="submit" class="w-full bg-emerald-600 text-white py-3 rounded-xl font-medium hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2">α╣Çα╕éα╣ëα╕▓α╕¬α╕╣α╣êα╕úα╕░α╕Üα╕Ü</button>[22m
+    [2m  - attempting click action[22m
+    [2m    - waiting for element to be visible, enabled and stable[22m
+
+
+      414 |       await page.fill('input[type="email"]', CREDENTIALS.patient1.email);
+      415 |       await page.fill('input[type="password"]', CREDENTIALS.patient1.password);
+    > 416 |       await page.click('button[type="submit"]');
+          |                  ^
+      417 |       await page.waitForTimeout(3000);
+      418 |       const url = page.url();
+      419 |       expect(url).not.toContain('/login');
+        at C:\Users\chira\Documents\Isara-telemed\Isara-Anywhere\tests\e2e\specs\01-auth-health-multiuser.spec.ts:416:18
+
+    Error Context: test-results\01-auth-health-multiuser-0-3c6fd--Patient1-login-via-browser-Local\error-context.md
+
+
+[1A[2K[94/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:424:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ E ΓÇö Multi-User Browser Login ΓÇ║ E02 ΓÇö Doctor login via browser
+[1A[2K  2) [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:514:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ E ΓÇö Appointment Notifications ΓÇ║ E07 ΓÇö Patient notification bell reflects unread count 
+
+    TimeoutError: page.click: Timeout 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('button[type="submit"]')[22m
+    [2m    - locator resolved to <button type="submit" class="w-full bg-emerald-600 text-white py-3 rounded-xl font-medium hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2">α╣Çα╕éα╣ëα╕▓α╕¬α╕╣α╣êα╕úα╕░α╕Üα╕Ü</button>[22m
+    [2m  - attempting click action[22m
+    [2m    - waiting for element to be visible, enabled and stable[22m
+
+
+      518 |       await page.fill('input[type="email"]', CREDENTIALS.patient1.email);
+      519 |       await page.fill('input[type="password"]', CREDENTIALS.patient1.password);
+    > 520 |       await page.click('button[type="submit"]');
+          |                  ^
+      521 |       await page.waitForTimeout(3000);
+      522 |       // Look for notification bell
+      523 |       const bell = page.locator('[data-testid="notification-bell"], .notification-bell, [aria-label*="notification"], button:has(svg)');
+        at C:\Users\chira\Documents\Isara-telemed\Isara-Anywhere\tests\e2e\specs\02-appointment-lifecycle.spec.ts:520:18
+
+    Error Context: test-results\02-appointment-lifecycle-0-8d4cf--bell-reflects-unread-count-Local\error-context.md
+
+
+[1A[2K[95/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:530:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ E ΓÇö Appointment Notifications ΓÇ║ E08 ΓÇö Appointment reminder scheduling works
+[1A[2K[Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:530:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ E ΓÇö Appointment Notifications ΓÇ║ E08 ΓÇö Appointment reminder scheduling works
+Γä╣∩╕Å  All 5 users authenticated for appointment tests
+
+[1A[2KΓ£à Appointments with reminders
+
+[1A[2K[96/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:538:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ E ΓÇö Appointment Notifications ΓÇ║ E09 ΓÇö Notification for cancelled appointment
+[1A[2K[97/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:554:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ E ΓÇö Appointment Notifications ΓÇ║ E10 ΓÇö Notification polling works (30-second interval simulation)
+[1A[2K[Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:554:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ E ΓÇö Appointment Notifications ΓÇ║ E10 ΓÇö Notification polling works (30-second interval simulation)
+Γä╣∩╕Å  3 notification polls in 13ms
+
+[1A[2K[98/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:575:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ F ΓÇö Browser Appointment UI ΓÇ║ F01 ΓÇö Patient portal appointments page loads
+[1A[2K  3) [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:424:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ E ΓÇö Multi-User Browser Login ΓÇ║ E02 ΓÇö Doctor login via browser 
+
+    TimeoutError: page.click: Timeout 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('button[type="submit"]')[22m
+    [2m    - locator resolved to <button type="submit" class="w-full py-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 disabled:from-gray-400 disabled:to-gray-400 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all transform hover:scale-105 disabled:transform-none disabled:cursor-not-allowed">ΓÇª</button>[22m
+    [2m  - attempting click action[22m
+    [2m    - waiting for element to be visible, enabled and stable[22m
+
+
+      429 |       await page.fill('input[type="email"]', CREDENTIALS.doctor.email);
+      430 |       await page.fill('input[type="password"]', CREDENTIALS.doctor.password);
+    > 431 |       await page.click('button[type="submit"]');
+          |                  ^
+      432 |       await page.waitForTimeout(3000);
+      433 |       const url = page.url();
+      434 |       expect(url).not.toContain('/login');
+        at C:\Users\chira\Documents\Isara-telemed\Isara-Anywhere\tests\e2e\specs\01-auth-health-multiuser.spec.ts:431:18
+
+    Error Context: test-results\01-auth-health-multiuser-0-c152a--ΓÇö-Doctor-login-via-browser-Local\error-context.md
+
+
+[1A[2K[99/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:439:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ E ΓÇö Multi-User Browser Login ΓÇ║ E03 ΓÇö Admin login via browser
+[1A[2K[Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:575:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ F ΓÇö Browser Appointment UI ΓÇ║ F01 ΓÇö Patient portal appointments page loads
+Γä╣∩╕Å  F01 browser test timed out (expected in CI)
+
+[1A[2K  4) [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:575:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ F ΓÇö Browser Appointment UI ΓÇ║ F01 ΓÇö Patient portal appointments page loads 
+
+    [31mTest timeout of 60000ms exceeded.[39m
+
+    Error Context: test-results\02-appointment-lifecycle-0-c254e-tal-appointments-page-loads-Local\error-context.md
+
+
+[1A[2K[100/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:591:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ F ΓÇö Browser Appointment UI ΓÇ║ F02 ΓÇö Doctor portal schedule page loads
+[1A[2K[Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:591:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ F ΓÇö Browser Appointment UI ΓÇ║ F02 ΓÇö Doctor portal schedule page loads
+Γä╣∩╕Å  All 5 users authenticated for appointment tests
+
+[1A[2K  5) [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:439:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ E ΓÇö Multi-User Browser Login ΓÇ║ E03 ΓÇö Admin login via browser 
+
+    TimeoutError: page.click: Timeout 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('button[type="submit"]')[22m
+    [2m    - locator resolved to <button type="submit" class="w-full py-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 disabled:from-gray-400 disabled:to-gray-400 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all transform hover:scale-105 disabled:transform-none disabled:cursor-not-allowed">ΓÇª</button>[22m
+    [2m  - attempting click action[22m
+    [2m    - waiting for element to be visible, enabled and stable[22m
+
+
+      444 |       await page.fill('input[type="email"]', CREDENTIALS.admin.email);
+      445 |       await page.fill('input[type="password"]', CREDENTIALS.admin.password);
+    > 446 |       await page.click('button[type="submit"]');
+          |                  ^
+      447 |       await page.waitForTimeout(3000);
+      448 |       const url = page.url();
+      449 |       expect(url).not.toContain('/login');
+        at C:\Users\chira\Documents\Isara-telemed\Isara-Anywhere\tests\e2e\specs\01-auth-health-multiuser.spec.ts:446:18
+
+    Error Context: test-results\01-auth-health-multiuser-0-27bc6-3-ΓÇö-Admin-login-via-browser-Local\error-context.md
+
+
+[1A[2K[101/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:454:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ E ΓÇö Multi-User Browser Login ΓÇ║ E04 ΓÇö 3 users login simultaneously (patient + doctor + admin)
+[1A[2K  6) [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:454:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ E ΓÇö Multi-User Browser Login ΓÇ║ E04 ΓÇö 3 users login simultaneously (patient + doctor + admin) 
+
+    TimeoutError: page.click: Timeout 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('button[type="submit"]')[22m
+    [2m    - locator resolved to <button type="submit" class="w-full py-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 disabled:from-gray-400 disabled:to-gray-400 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all transform hover:scale-105 disabled:transform-none disabled:cursor-not-allowed">ΓÇª</button>[22m
+    [2m  - attempting click action[22m
+    [2m    - waiting for element to be visible, enabled and stable[22m
+
+
+      473 |           await p2.fill('input[type="email"]', CREDENTIALS.doctor.email);
+      474 |           await p2.fill('input[type="password"]', CREDENTIALS.doctor.password);
+    > 475 |           await p2.click('button[type="submit"]');
+          |                    ^
+      476 |         })(),
+      477 |         (async () => {
+      478 |           await p3.fill('input[type="email"]', CREDENTIALS.admin.email);
+        at C:\Users\chira\Documents\Isara-telemed\Isara-Anywhere\tests\e2e\specs\01-auth-health-multiuser.spec.ts:475:20
+        at C:\Users\chira\Documents\Isara-telemed\Isara-Anywhere\tests\e2e\specs\01-auth-health-multiuser.spec.ts:466:7
+
+    Error Context: test-results\01-auth-health-multiuser-0-d3450-ously-patient-doctor-admin--Local\error-context.md
+
+
+[1A[2K[102/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:495:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ E ΓÇö Multi-User Browser Login ΓÇ║ E05 ΓÇö Invalid login shows error message
+[1A[2K  7) [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:591:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ F ΓÇö Browser Appointment UI ΓÇ║ F02 ΓÇö Doctor portal schedule page loads 
+
+    [31mTest timeout of 60000ms exceeded.[39m
+
+    Error: page.fill: Test ended.
+    Call log:
+    [2m  - waiting for locator('input[type="email"]')[22m
+    [2m    - locator resolved to <input value="" required="" type="email" id="login-email" placeholder="doctor@example.com" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"/>[22m
+
+
+       at ..\lib\test-helpers.ts:145
+
+      143 |     try {
+      144 |       await page.goto(`${portalUrl}/login`, { timeout: TIMEOUTS.navigation });
+    > 145 |       await page.fill('input[type="email"]', creds.email);
+          |                  ^
+      146 |       await page.fill('input[type="password"]', creds.password);
+      147 |       await page.click('button[type="submit"]');
+      148 |
+        at loginViaBrowser (C:\Users\chira\Documents\Isara-telemed\Isara-Anywhere\tests\e2e\lib\test-helpers.ts:145:18)
+        at C:\Users\chira\Documents\Isara-telemed\Isara-Anywhere\tests\e2e\specs\02-appointment-lifecycle.spec.ts:594:7
+
+    Error Context: test-results\02-appointment-lifecycle-0-71fba--portal-schedule-page-loads-Local\error-context.md
+
+
+[1A[2K[103/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:602:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ F ΓÇö Browser Appointment UI ΓÇ║ F03 ΓÇö Doctor dashboard shows today's appointments
+[1A[2K[Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:602:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ F ΓÇö Browser Appointment UI ΓÇ║ F03 ΓÇö Doctor dashboard shows today's appointments
+Γä╣∩╕Å  All 5 users authenticated for appointment tests
+
+[1A[2K  8) [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:495:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ E ΓÇö Multi-User Browser Login ΓÇ║ E05 ΓÇö Invalid login shows error message 
+
+    TimeoutError: page.click: Timeout 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('button[type="submit"]')[22m
+    [2m    - locator resolved to <button type="submit" class="w-full bg-emerald-600 text-white py-3 rounded-xl font-medium hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2">α╣Çα╕éα╣ëα╕▓α╕¬α╕╣α╣êα╕úα╕░α╕Üα╕Ü</button>[22m
+    [2m  - attempting click action[22m
+    [2m    - waiting for element to be visible, enabled and stable[22m
+
+
+      499 |       await page.fill('input[type="email"]', 'wrong@test.com');
+      500 |       await page.fill('input[type="password"]', 'wrongpass');
+    > 501 |       await page.click('button[type="submit"]');
+          |                  ^
+      502 |       await page.waitForTimeout(3000);
+      503 |       // Should still be on login page or show error
+      504 |       const url = page.url();
+        at C:\Users\chira\Documents\Isara-telemed\Isara-Anywhere\tests\e2e\specs\01-auth-health-multiuser.spec.ts:501:18
+
+    Error Context: test-results\01-auth-health-multiuser-0-52815-d-login-shows-error-message-Local\error-context.md
+
+
+[1A[2K  9) [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:602:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ F ΓÇö Browser Appointment UI ΓÇ║ F03 ΓÇö Doctor dashboard shows today's appointments 
+
+    [31mTest timeout of 60000ms exceeded.[39m
+
+    Error: page.waitForTimeout: Test ended.
+
+       at ..\lib\test-helpers.ts:158
+
+      156 |       if (attempt === retries) throw err;
+      157 |       // Transient error ΓÇö wait and retry
+    > 158 |       await page.waitForTimeout(2000);
+          |                  ^
+      159 |     }
+      160 |   }
+      161 | }
+        at loginViaBrowser (C:\Users\chira\Documents\Isara-telemed\Isara-Anywhere\tests\e2e\lib\test-helpers.ts:158:18)
+        at C:\Users\chira\Documents\Isara-telemed\Isara-Anywhere\tests\e2e\specs\02-appointment-lifecycle.spec.ts:605:7
+
+    Error Context: test-results\02-appointment-lifecycle-0-60e82--shows-today-s-appointments-Local\error-context.md
+
+
+[1A[2K[104/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:511:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ E ΓÇö Multi-User Browser Login ΓÇ║ E06 ΓÇö Patient portal login page has required form fields
+[1A[2K[105/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:613:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ F ΓÇö Browser Appointment UI ΓÇ║ F04 ΓÇö Doctor Health Meeting page with 3 tabs
+[1A[2K[Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:613:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ F ΓÇö Browser Appointment UI ΓÇ║ F04 ΓÇö Doctor Health Meeting page with 3 tabs
+Γä╣∩╕Å  All 5 users authenticated for appointment tests
+
+[1A[2K[106/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:518:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ E ΓÇö Multi-User Browser Login ΓÇ║ E07 ΓÇö Doctor portal login page has required form fields
+[1A[2K[107/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:525:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ E ΓÇö Multi-User Browser Login ΓÇ║ E08 ΓÇö Patient portal has registration link
+[1A[2K[108/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:531:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ E ΓÇö Multi-User Browser Login ΓÇ║ E09 ΓÇö Patient portal has forgot password link
+[1A[2K[109/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:537:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ E ΓÇö Multi-User Browser Login ΓÇ║ E10 ΓÇö Empty form submission prevented
+[1A[2K  10) [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:537:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ E ΓÇö Multi-User Browser Login ΓÇ║ E10 ΓÇö Empty form submission prevented 
+
+    TimeoutError: page.click: Timeout 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('button[type="submit"]')[22m
+    [2m    - locator resolved to <button type="submit" class="w-full bg-emerald-600 text-white py-3 rounded-xl font-medium hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2">α╣Çα╕éα╣ëα╕▓α╕¬α╕╣α╣êα╕úα╕░α╕Üα╕Ü</button>[22m
+    [2m  - attempting click action[22m
+    [2m    - waiting for element to be visible, enabled and stable[22m
+
+
+      537 |     test('E10 ΓÇö Empty form submission prevented', async ({ page }) => {
+      538 |       await page.goto(`${PATIENT_URL}/login`, { timeout: TIMEOUTS.navigation });
+    > 539 |       await page.click('button[type="submit"]');
+          |                  ^
+      540 |       await page.waitForTimeout(1000);
+      541 |       // Should still be on login page
+      542 |       expect(page.url()).toContain('/login');
+        at C:\Users\chira\Documents\Isara-telemed\Isara-Anywhere\tests\e2e\specs\01-auth-health-multiuser.spec.ts:539:18
+
+    Error Context: test-results\01-auth-health-multiuser-0-f1919-y-form-submission-prevented-Local\error-context.md
+
+
+[1A[2K  11) [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:613:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ F ΓÇö Browser Appointment UI ΓÇ║ F04 ΓÇö Doctor Health Meeting page with 3 tabs 
+
+    [31mTest timeout of 60000ms exceeded.[39m
+
+    Error: page.waitForTimeout: Target page, context or browser has been closed
+
+       at ..\lib\test-helpers.ts:158
+
+      156 |       if (attempt === retries) throw err;
+      157 |       // Transient error ΓÇö wait and retry
+    > 158 |       await page.waitForTimeout(2000);
+          |                  ^
+      159 |     }
+      160 |   }
+      161 | }
+        at loginViaBrowser (C:\Users\chira\Documents\Isara-telemed\Isara-Anywhere\tests\e2e\lib\test-helpers.ts:158:18)
+        at C:\Users\chira\Documents\Isara-telemed\Isara-Anywhere\tests\e2e\specs\02-appointment-lifecycle.spec.ts:616:7
+
+    Error Context: test-results\02-appointment-lifecycle-0-00418-th-Meeting-page-with-3-tabs-Local\error-context.md
+
+
+[1A[2K[110/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:545:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ E ΓÇö Multi-User Browser Login ΓÇ║ E11 ΓÇö All 3 patients login to patient portal simultaneously
+[1A[2K[111/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:627:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ F ΓÇö Browser Appointment UI ΓÇ║ F05 ΓÇö Patient & doctor see same appointment simultaneously
+[1A[2K[Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:627:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ F ΓÇö Browser Appointment UI ΓÇ║ F05 ΓÇö Patient & doctor see same appointment simultaneously
+Γä╣∩╕Å  All 5 users authenticated for appointment tests
+
+[1A[2K[Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:545:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ E ΓÇö Multi-User Browser Login ΓÇ║ E11 ΓÇö All 3 patients login to patient portal simultaneously
+Γä╣∩╕Å  Concurrent browser login timed out (expected under load)
+
+[1A[2K[112/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:574:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ E ΓÇö Multi-User Browser Login ΓÇ║ E12 ΓÇö Session isolation ΓÇö different users see own data
+[1A[2K[Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:574:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ E ΓÇö Multi-User Browser Login ΓÇ║ E12 ΓÇö Session isolation ΓÇö different users see own data
+Γ£à Session isolation verified
+
+[1A[2K[113/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:602:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ F ΓÇö Metadata & Reference Data ΓÇ║ F01 ΓÇö Specialties metadata available
+[1A[2K[114/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:611:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ F ΓÇö Metadata & Reference Data ΓÇ║ F02 ΓÇö Lab test catalog available
+[1A[2K[115/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:617:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ F ΓÇö Metadata & Reference Data ΓÇ║ F03 ΓÇö ICD-10 codes available
+[1A[2K[116/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:623:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ F ΓÇö Metadata & Reference Data ΓÇ║ F04 ΓÇö Medications database available
+[1A[2K[117/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:629:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ F ΓÇö Metadata & Reference Data ΓÇ║ F05 ΓÇö Medical content tags available
+[1A[2K[118/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:635:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ F ΓÇö Metadata & Reference Data ΓÇ║ F06 ΓÇö Clinical resource tags available
+[1A[2K[119/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:641:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ F ΓÇö Metadata & Reference Data ΓÇ║ F07 ΓÇö Doctors list available
+[1A[2K[120/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:647:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ F ΓÇö Metadata & Reference Data ΓÇ║ F08 ΓÇö Medical consultants list available
+[1A[2K[121/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:653:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ F ΓÇö Metadata & Reference Data ΓÇ║ F09 ΓÇö All metadata loads in parallel (performance)
+[1A[2K[Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:653:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ F ΓÇö Metadata & Reference Data ΓÇ║ F09 ΓÇö All metadata loads in parallel (performance)
+Γä╣∩╕Å  All metadata loaded in 116ms
+
+[1A[2K[122/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:669:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ F ΓÇö Metadata & Reference Data ΓÇ║ F10 ΓÇö Video meeting config available
+[1A[2K[123/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:680:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ G ΓÇö Extended Auth & Security ΓÇ║ G01 ΓÇö Password change endpoint available
+[1A[2K[124/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:689:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ G ΓÇö Extended Auth & Security ΓÇ║ G02 ΓÇö Account lockout after repeated failed logins
+[1A[2K[125/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:697:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ G ΓÇö Extended Auth & Security ΓÇ║ G03 ΓÇö Password reset token verify endpoint
+[1A[2K[126/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:702:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ G ΓÇö Extended Auth & Security ΓÇ║ G04 ΓÇö Session validates with correct token
+[1A[2K[127/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:708:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ G ΓÇö Extended Auth & Security ΓÇ║ G05 ΓÇö Expired/malformed JWT rejected
+[1A[2K[128/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:719:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ H ΓÇö Doctor Search & Dashboard ΓÇ║ H01 ΓÇö Patient dashboard stats
+[1A[2K[129/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:725:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ H ΓÇö Doctor Search & Dashboard ΓÇ║ H02 ΓÇö Doctor search by specialty
+[1A[2K[130/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:731:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ H ΓÇö Doctor Search & Dashboard ΓÇ║ H03 ΓÇö Doctor search by name
+[1A[2K[131/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:737:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ H ΓÇö Doctor Search & Dashboard ΓÇ║ H04 ΓÇö Doctor schedule endpoint
+[1A[2K[132/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:743:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ H ΓÇö Doctor Search & Dashboard ΓÇ║ H05 ΓÇö Doctor available time slots
+[1A[2K[133/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:750:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ H ΓÇö Doctor Search & Dashboard ΓÇ║ H06 ΓÇö Doctor reviews endpoint
+[1A[2K[134/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:756:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ H ΓÇö Doctor Search & Dashboard ΓÇ║ H07 ΓÇö User settings CRUD
+[1A[2K[135/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:766:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ H ΓÇö Doctor Search & Dashboard ΓÇ║ H08 ΓÇö Notification preferences CRUD
+[1A[2K[136/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:776:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ H ΓÇö Doctor Search & Dashboard ΓÇ║ H09 ΓÇö Profile update with Thai name
+[1A[2K[137/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:784:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ H ΓÇö Doctor Search & Dashboard ΓÇ║ H10 ΓÇö Admin can list all users
+[1A[2K[138/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:790:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ H ΓÇö Doctor Search & Dashboard ΓÇ║ H11 ΓÇö Admin analytics endpoint
+[1A[2K[139/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:796:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ H ΓÇö Doctor Search & Dashboard ΓÇ║ H12 ΓÇö Admin dashboard stats endpoint
+[1A[2K[140/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:808:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ I: Cloud Credential & Connection Error Handling ΓÇ║ I01 ΓÇö All 5 demo accounts must have valid tokens
+[1A[2K[Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:808:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ I: Cloud Credential & Connection Error Handling ΓÇ║ I01 ΓÇö All 5 demo accounts must have valid tokens
+Γ£à All 5 demo accounts have valid tokens
+
+[1A[2K[141/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:819:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ I: Cloud Credential & Connection Error Handling ΓÇ║ I02 ΓÇö Patient login returns credential structure
+[1A[2K[Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:819:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ I: Cloud Credential & Connection Error Handling ΓÇ║ I02 ΓÇö Patient login returns credential structure
+Γ£à Patient login returns proper credential
+
+[1A[2K[142/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:836:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ I: Cloud Credential & Connection Error Handling ΓÇ║ I03 ΓÇö Doctor login returns credential via auth paths
+[1A[2K[Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:836:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ I: Cloud Credential & Connection Error Handling ΓÇ║ I03 ΓÇö Doctor login returns credential via auth paths
+Γ£à Doctor login credential OK
+
+[1A[2K[143/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:860:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ I: Cloud Credential & Connection Error Handling ΓÇ║ I04 ΓÇö Empty credentials rejected gracefully
+[1A[2K[Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:860:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ I: Cloud Credential & Connection Error Handling ΓÇ║ I04 ΓÇö Empty credentials rejected gracefully
+Γ£à Empty creds rejected: 400
+
+[1A[2K[144/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:874:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ I: Cloud Credential & Connection Error Handling ΓÇ║ I05 ΓÇö Invalid password returns auth error, not crash
+[1A[2K[Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:874:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ I: Cloud Credential & Connection Error Handling ΓÇ║ I05 ΓÇö Invalid password returns auth error, not crash
+Γ£à Wrong password rejected: 401
+
+[1A[2K[145/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:888:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ I: Cloud Credential & Connection Error Handling ΓÇ║ I06 ΓÇö Cloud health endpoint reachable before auth
+[1A[2K[Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:888:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ I: Cloud Credential & Connection Error Handling ΓÇ║ I06 ΓÇö Cloud health endpoint reachable before auth
+Γ£à Health check: 200
+
+[1A[2K[146/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:900:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ I: Cloud Credential & Connection Error Handling ΓÇ║ I07 ΓÇö Token-protected endpoint rejects expired/fake token
+[1A[2K[Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:900:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ I: Cloud Credential & Connection Error Handling ΓÇ║ I07 ΓÇö Token-protected endpoint rejects expired/fake token
+Γ£à Fake token rejected: 401
+
+[1A[2K[147/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:907:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ I: Cloud Credential & Connection Error Handling ΓÇ║ I08 ΓÇö Concurrent auth does not cause token collision
+[1A[2K[Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:907:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ I: Cloud Credential & Connection Error Handling ΓÇ║ I08 ΓÇö Concurrent auth does not cause token collision
+Γ£à Concurrent auth returned 3 unique tokens
+
+[1A[2K[148/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:919:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ I: Cloud Credential & Connection Error Handling ΓÇ║ I09 ΓÇö Auth retry on transient network errors
+[1A[2K[Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:919:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ I: Cloud Credential & Connection Error Handling ΓÇ║ I09 ΓÇö Auth retry on transient network errors
+Γ£à Post-auth health check: 200
+
+[1A[2K[149/812] [Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:928:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ I: Cloud Credential & Connection Error Handling ΓÇ║ I10 ΓÇö Meeting server credential-less health check
+[1A[2K[Local] ΓÇ║ specs\01-auth-health-multiuser.spec.ts:928:9 ΓÇ║ 01 ΓÇö System Health & Multi-User Authentication ΓÇ║ I: Cloud Credential & Connection Error Handling ΓÇ║ I10 ΓÇö Meeting server credential-less health check
+Γ£à Meeting server health: 200
+
+[1A[2K[150/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:38:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ A ΓÇö PHR Read & Update ΓÇ║ A01 ΓÇö Patient1 can read own PHR
+[1A[2K[Local] ΓÇ║ specs\03-health-records-emr.spec.ts:38:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ A ΓÇö PHR Read & Update ΓÇ║ A01 ΓÇö Patient1 can read own PHR
+Γ£à Patient1 PHR read
+
+[1A[2K[151/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:45:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ A ΓÇö PHR Read & Update ΓÇ║ A02 ΓÇö Patient2 can read own PHR
+[1A[2K[Local] ΓÇ║ specs\03-health-records-emr.spec.ts:45:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ A ΓÇö PHR Read & Update ΓÇ║ A02 ΓÇö Patient2 can read own PHR
+Γ£à Patient2 PHR read
+
+[1A[2K[152/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:52:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ A ΓÇö PHR Read & Update ΓÇ║ A03 ΓÇö Patient3 can read own PHR
+[1A[2K[Local] ΓÇ║ specs\03-health-records-emr.spec.ts:52:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ A ΓÇö PHR Read & Update ΓÇ║ A03 ΓÇö Patient3 can read own PHR
+Γ£à Patient3 PHR read
+
+[1A[2K[153/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:59:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ A ΓÇö PHR Read & Update ΓÇ║ A04 ΓÇö All 3 patients read PHR in parallel
+[1A[2K[Local] ΓÇ║ specs\03-health-records-emr.spec.ts:59:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ A ΓÇö PHR Read & Update ΓÇ║ A04 ΓÇö All 3 patients read PHR in parallel
+Γ£à Parallel PHR
+
+[1A[2KΓ£à Parallel PHR
+
+[1A[2KΓ£à Parallel PHR
+
+[1A[2KΓ£à 3 patients read PHR in parallel
+
+[1A[2K[154/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:72:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ A ΓÇö PHR Read & Update ΓÇ║ A05 ΓÇö Patient1 updates PHR profile data
+[1A[2K[Local] ΓÇ║ specs\03-health-records-emr.spec.ts:72:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ A ΓÇö PHR Read & Update ΓÇ║ A05 ΓÇö Patient1 updates PHR profile data
+Γ£à PHR updated
+
+[1A[2K[155/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:85:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ A ΓÇö PHR Read & Update ΓÇ║ A06 ΓÇö PHR update persists on re-read
+[1A[2K[Local] ΓÇ║ specs\03-health-records-emr.spec.ts:85:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ A ΓÇö PHR Read & Update ΓÇ║ A06 ΓÇö PHR update persists on re-read
+Γ£à PHR re-read after update
+
+[1A[2K[156/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:92:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ A ΓÇö PHR Read & Update ΓÇ║ A07 ΓÇö Patient PHR has expected sections
+[1A[2K[Local] ΓÇ║ specs\03-health-records-emr.spec.ts:92:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ A ΓÇö PHR Read & Update ΓÇ║ A07 ΓÇö Patient PHR has expected sections
+Γä╣∩╕Å  PHR sections: id, patient_id, demographics, vital_signs_history, allergies, chronic_conditions, medications, vaccinations, lifestyle, family_history, surgical_history, social_history, latest_lab_results, clinical_decision_support, blood_type, height_cm, weight_kg, bmi, emergency_contact_name, emergency_contact_phone, emergency_contact_relation, created_at, updated_at, last_synced_at
+
+[1A[2K[157/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:101:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ A ΓÇö PHR Read & Update ΓÇ║ A08 ΓÇö Doctor can view patient PHR
+[1A[2K[158/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:107:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ A ΓÇö PHR Read & Update ΓÇ║ A09 ΓÇö PHR with Thai content
+[1A[2K[159/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:116:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ A ΓÇö PHR Read & Update ΓÇ║ A10 ΓÇö PHR unauthorized access rejected
+[1A[2K[Local] ΓÇ║ specs\03-health-records-emr.spec.ts:116:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ A ΓÇö PHR Read & Update ΓÇ║ A10 ΓÇö PHR unauthorized access rejected
+Γ£à PHR unauth ΓÇö correctly rejected
+
+[1A[2K[160/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:121:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ A ΓÇö PHR Read & Update ΓÇ║ A11 ΓÇö Patient2 cannot see Patient1 PHR data
+[1A[2K[161/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:128:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ A ΓÇö PHR Read & Update ΓÇ║ A12 ΓÇö PHR API response time under threshold
+[1A[2K[Local] ΓÇ║ specs\03-health-records-emr.spec.ts:128:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ A ΓÇö PHR Read & Update ΓÇ║ A12 ΓÇö PHR API response time under threshold
+Γä╣∩╕Å  PHR response: 10ms
+
+[1A[2K[162/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:142:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ B ΓÇö Vitals History ΓÇ║ B01 ΓÇö Patient1 records new vitals
+[1A[2K[Local] ΓÇ║ specs\03-health-records-emr.spec.ts:142:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ B ΓÇö Vitals History ΓÇ║ B01 ΓÇö Patient1 records new vitals
+Γ£à Vitals recorded
+
+[1A[2K[163/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:150:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ B ΓÇö Vitals History ΓÇ║ B02 ΓÇö Patient2 records vitals independently
+[1A[2K[164/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:156:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ B ΓÇö Vitals History ΓÇ║ B03 ΓÇö Patient1 reads vitals history
+[1A[2K[Local] ΓÇ║ specs\03-health-records-emr.spec.ts:156:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ B ΓÇö Vitals History ΓÇ║ B03 ΓÇö Patient1 reads vitals history
+Γä╣∩╕Å  Patient1 has 0 vital records
+
+[1A[2K[165/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:166:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ B ΓÇö Vitals History ΓÇ║ B04 ΓÇö Multiple vitals entries for tracking
+[1A[2K[Local] ΓÇ║ specs\03-health-records-emr.spec.ts:166:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ B ΓÇö Vitals History ΓÇ║ B04 ΓÇö Multiple vitals entries for tracking
+Γ£à 3 vitals entries created
+
+[1A[2K[166/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:175:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ B ΓÇö Vitals History ΓÇ║ B05 ΓÇö Vitals include all expected fields
+[1A[2K[167/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:188:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ B ΓÇö Vitals History ΓÇ║ B06 ΓÇö Abnormal vitals values accepted
+[1A[2K[168/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:201:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ B ΓÇö Vitals History ΓÇ║ B07 ΓÇö Doctor can view patient vitals
+[1A[2K[169/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:207:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ B ΓÇö Vitals History ΓÇ║ B08 ΓÇö 3 patients record vitals simultaneously
+[1A[2K[Local] ΓÇ║ specs\03-health-records-emr.spec.ts:207:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ B ΓÇö Vitals History ΓÇ║ B08 ΓÇö 3 patients record vitals simultaneously
+Γ£à 3 patients recorded vitals simultaneously
+
+[1A[2K[170/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:217:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ B ΓÇö Vitals History ΓÇ║ B09 ΓÇö Patient health logs endpoint (EMR summaries)
+[1A[2K[171/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:223:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ B ΓÇö Vitals History ΓÇ║ B10 ΓÇö Patient vitals visible in PHR page (browser)
+[1A[2K  12) [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:627:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ F ΓÇö Browser Appointment UI ΓÇ║ F05 ΓÇö Patient & doctor see same appointment simultaneously 
+
+    [31mTest timeout of 60000ms exceeded.[39m
+
+    Error: page.waitForTimeout: Target page, context or browser has been closed
+
+       at ..\lib\test-helpers.ts:158
+
+      156 |       if (attempt === retries) throw err;
+      157 |       // Transient error ΓÇö wait and retry
+    > 158 |       await page.waitForTimeout(2000);
+          |                  ^
+      159 |     }
+      160 |   }
+      161 | }
+        at loginViaBrowser (C:\Users\chira\Documents\Isara-telemed\Isara-Anywhere\tests\e2e\lib\test-helpers.ts:158:18)
+        at C:\Users\chira\Documents\Isara-telemed\Isara-Anywhere\tests\e2e\specs\02-appointment-lifecycle.spec.ts:634:7
+
+    Error Context: test-results\02-appointment-lifecycle-0-22d17--appointment-simultaneously-Local\error-context.md
+
+
+[1A[2K[172/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:653:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ F ΓÇö Browser Appointment UI ΓÇ║ F06 ΓÇö Admin can view all appointments page
+[1A[2K[Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:653:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ F ΓÇö Browser Appointment UI ΓÇ║ F06 ΓÇö Admin can view all appointments page
+Γä╣∩╕Å  All 5 users authenticated for appointment tests
+
+[1A[2K  13) [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:223:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ B ΓÇö Vitals History ΓÇ║ B10 ΓÇö Patient vitals visible in PHR page (browser) 
+
+    [31mTest timeout of 60000ms exceeded.[39m
+
+    Error: page.goto: Target page, context or browser has been closed
+
+      225 |       const page = await ctx.newPage();
+      226 |       await loginViaBrowser(page, 'patient1');
+    > 227 |       await page.goto(`${PATIENT_URL}/phr`, { timeout: TIMEOUTS.navigation });
+          |                  ^
+      228 |       await page.waitForTimeout(2000);
+      229 |       await screenshot(page, '22-B10-phr-vitals');
+      230 |       logTestSuccess('PHR page loaded with vitals');
+        at C:\Users\chira\Documents\Isara-telemed\Isara-Anywhere\tests\e2e\specs\03-health-records-emr.spec.ts:227:18
+
+    Error Context: test-results\03-health-records-emr-03-ΓÇö-57f08-isible-in-PHR-page-browser--Local\error-context.md
+
+
+[1A[2K[173/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:241:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ C ΓÇö EMR Creation & Management ΓÇ║ C01 ΓÇö Doctor creates EMR (SOAP format)
+[1A[2K[Local] ΓÇ║ specs\03-health-records-emr.spec.ts:241:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ C ΓÇö EMR Creation & Management ΓÇ║ C01 ΓÇö Doctor creates EMR (SOAP format)
+Γ£à EMR created: 
+
+[1A[2K[174/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:250:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ C ΓÇö EMR Creation & Management ΓÇ║ C02 ΓÇö EMR has SOAP sections
+[1A[2K[175/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:259:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ C ΓÇö EMR Creation & Management ΓÇ║ C03 ΓÇö Doctor reads EMR list
+[1A[2K[176/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:265:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ C ΓÇö EMR Creation & Management ΓÇ║ C04 ΓÇö Doctor reads EMR by ID
+[1A[2K[177/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:272:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ C ΓÇö EMR Creation & Management ΓÇ║ C05 ΓÇö Doctor updates EMR
+[1A[2K[178/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:281:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ C ΓÇö EMR Creation & Management ΓÇ║ C06 ΓÇö Doctor signs EMR
+[1A[2K[179/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:291:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ C ΓÇö EMR Creation & Management ΓÇ║ C07 ΓÇö EMR with AI-assisted flag
+[1A[2K[180/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:299:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ C ΓÇö EMR Creation & Management ΓÇ║ C08 ΓÇö EMR with Thai OPD card format (Thai SOAP)
+[1A[2K[181/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:313:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ C ΓÇö EMR Creation & Management ΓÇ║ C09 ΓÇö Multiple EMRs for same patient
+[1A[2K[182/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:321:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ C ΓÇö EMR Creation & Management ΓÇ║ C10 ΓÇö EMR for different patients
+[1A[2K[183/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:331:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ C ΓÇö EMR Creation & Management ΓÇ║ C11 ΓÇö Doctor EMR editor page loads (browser)
+[1A[2K  14) [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:653:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ F ΓÇö Browser Appointment UI ΓÇ║ F06 ΓÇö Admin can view all appointments page 
+
+    [31mTest timeout of 60000ms exceeded.[39m
+
+    Error: page.waitForTimeout: Test ended.
+
+       at ..\lib\test-helpers.ts:158
+
+      156 |       if (attempt === retries) throw err;
+      157 |       // Transient error ΓÇö wait and retry
+    > 158 |       await page.waitForTimeout(2000);
+          |                  ^
+      159 |     }
+      160 |   }
+      161 | }
+        at loginViaBrowser (C:\Users\chira\Documents\Isara-telemed\Isara-Anywhere\tests\e2e\lib\test-helpers.ts:158:18)
+        at C:\Users\chira\Documents\Isara-telemed\Isara-Anywhere\tests\e2e\specs\02-appointment-lifecycle.spec.ts:656:7
+
+    Error Context: test-results\02-appointment-lifecycle-0-2f34a--view-all-appointments-page-Local\error-context.md
+
+
+[1A[2K[184/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:663:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ F ΓÇö Browser Appointment UI ΓÇ║ F07 ΓÇö Appointment schedule has calendar view
+[1A[2K[Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:663:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ F ΓÇö Browser Appointment UI ΓÇ║ F07 ΓÇö Appointment schedule has calendar view
+Γä╣∩╕Å  All 5 users authenticated for appointment tests
+
+[1A[2K  15) [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:331:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ C ΓÇö EMR Creation & Management ΓÇ║ C11 ΓÇö Doctor EMR editor page loads (browser) 
+
+    [31mTest timeout of 60000ms exceeded.[39m
+
+    Error: page.waitForTimeout: Test ended.
+
+       at ..\lib\test-helpers.ts:158
+
+      156 |       if (attempt === retries) throw err;
+      157 |       // Transient error ΓÇö wait and retry
+    > 158 |       await page.waitForTimeout(2000);
+          |                  ^
+      159 |     }
+      160 |   }
+      161 | }
+        at loginViaBrowser (C:\Users\chira\Documents\Isara-telemed\Isara-Anywhere\tests\e2e\lib\test-helpers.ts:158:18)
+        at C:\Users\chira\Documents\Isara-telemed\Isara-Anywhere\tests\e2e\specs\03-health-records-emr.spec.ts:334:7
+
+    Error Context: test-results\03-health-records-emr-03-ΓÇö-adfcc--editor-page-loads-browser--Local\error-context.md
+
+
+[1A[2K[185/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:341:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ C ΓÇö EMR Creation & Management ΓÇ║ C12 ΓÇö Patient sees EMR summary in health records (cross-portal)
+[1A[2K[186/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:352:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ D ΓÇö Prescriptions & Lab Orders ΓÇ║ D01 ΓÇö Doctor creates prescription
+[1A[2K[Local] ΓÇ║ specs\03-health-records-emr.spec.ts:352:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ D ΓÇö Prescriptions & Lab Orders ΓÇ║ D01 ΓÇö Doctor creates prescription
+Γ£à Prescription created
+
+[1A[2K[187/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:359:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ D ΓÇö Prescriptions & Lab Orders ΓÇ║ D02 ΓÇö Prescription includes multiple medications
+[1A[2K[188/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:366:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ D ΓÇö Prescriptions & Lab Orders ΓÇ║ D03 ΓÇö Doctor lists prescriptions
+[1A[2K[189/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:372:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ D ΓÇö Prescriptions & Lab Orders ΓÇ║ D04 ΓÇö Doctor creates lab order
+[1A[2K[Local] ΓÇ║ specs\03-health-records-emr.spec.ts:372:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ D ΓÇö Prescriptions & Lab Orders ΓÇ║ D04 ΓÇö Doctor creates lab order
+Γ£à Lab order created
+
+[1A[2K[190/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:379:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ D ΓÇö Prescriptions & Lab Orders ΓÇ║ D05 ΓÇö Lab order includes test details
+[1A[2K[191/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:386:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ D ΓÇö Prescriptions & Lab Orders ΓÇ║ D06 ΓÇö Doctor lists lab orders
+[1A[2K[192/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:392:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ D ΓÇö Prescriptions & Lab Orders ΓÇ║ D07 ΓÇö Prescriptions for multiple patients in parallel
+[1A[2K[193/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:401:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ D ΓÇö Prescriptions & Lab Orders ΓÇ║ D08 ΓÇö Lab order with multiple tests
+[1A[2K[194/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:417:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ D ΓÇö Prescriptions & Lab Orders ΓÇ║ D09 ΓÇö Patient can view own prescriptions
+[1A[2K[195/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:423:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ D ΓÇö Prescriptions & Lab Orders ΓÇ║ D10 ΓÇö Drug interaction check (AI CDS)
+[1A[2K[196/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:438:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ E ΓÇö Living Will ΓÇ║ E01 ΓÇö Patient creates living will
+[1A[2K[Local] ΓÇ║ specs\03-health-records-emr.spec.ts:438:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ E ΓÇö Living Will ΓÇ║ E01 ΓÇö Patient creates living will
+Γ£à Living will created
+
+[1A[2K[197/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:462:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ E ΓÇö Living Will ΓÇ║ E02 ΓÇö Patient reads own living will
+[1A[2K[198/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:468:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ E ΓÇö Living Will ΓÇ║ E03 ΓÇö Patient updates living will
+[1A[2K[199/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:477:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ E ΓÇö Living Will ΓÇ║ E04 ΓÇö Patient updates sharing preference (PDPA)
+[1A[2K[200/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:485:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ E ΓÇö Living Will ΓÇ║ E05 ΓÇö Doctor can view shared living will
+[1A[2K[201/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:491:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ E ΓÇö Living Will ΓÇ║ E06 ΓÇö Doctor checks living will existence
+[1A[2K[202/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:497:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ E ΓÇö Living Will ΓÇ║ E07 ΓÇö Living will with digital signature data
+[1A[2K[203/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:506:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ E ΓÇö Living Will ΓÇ║ E08 ΓÇö Patient revokes living will
+[1A[2K[204/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:517:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ E ΓÇö Living Will ΓÇ║ E09 ΓÇö Living will page visible (browser)
+[1A[2K  16) [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:663:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ F ΓÇö Browser Appointment UI ΓÇ║ F07 ΓÇö Appointment schedule has calendar view 
+
+    [31mTest timeout of 60000ms exceeded.[39m
+
+    Error: page.fill: Test ended.
+    Call log:
+    [2m  - waiting for locator('input[type="email"]')[22m
+
+
+       at ..\lib\test-helpers.ts:145
+
+      143 |     try {
+      144 |       await page.goto(`${portalUrl}/login`, { timeout: TIMEOUTS.navigation });
+    > 145 |       await page.fill('input[type="email"]', creds.email);
+          |                  ^
+      146 |       await page.fill('input[type="password"]', creds.password);
+      147 |       await page.click('button[type="submit"]');
+      148 |
+        at loginViaBrowser (C:\Users\chira\Documents\Isara-telemed\Isara-Anywhere\tests\e2e\lib\test-helpers.ts:145:18)
+        at C:\Users\chira\Documents\Isara-telemed\Isara-Anywhere\tests\e2e\specs\02-appointment-lifecycle.spec.ts:666:7
+
+    Error Context: test-results\02-appointment-lifecycle-0-a3e26--schedule-has-calendar-view-Local\error-context.md
+
+
+[1A[2K[205/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:676:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ F ΓÇö Browser Appointment UI ΓÇ║ F08 ΓÇö Patient dashboard shows upcoming appointments
+[1A[2K[Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:676:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ F ΓÇö Browser Appointment UI ΓÇ║ F08 ΓÇö Patient dashboard shows upcoming appointments
+Γä╣∩╕Å  All 5 users authenticated for appointment tests
+
+[1A[2K  17) [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:517:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ E ΓÇö Living Will ΓÇ║ E09 ΓÇö Living will page visible (browser) 
+
+    [31mTest timeout of 60000ms exceeded.[39m
+
+    Error: page.waitForTimeout: Test ended.
+
+       at ..\lib\test-helpers.ts:158
+
+      156 |       if (attempt === retries) throw err;
+      157 |       // Transient error ΓÇö wait and retry
+    > 158 |       await page.waitForTimeout(2000);
+          |                  ^
+      159 |     }
+      160 |   }
+      161 | }
+        at loginViaBrowser (C:\Users\chira\Documents\Isara-telemed\Isara-Anywhere\tests\e2e\lib\test-helpers.ts:158:18)
+        at C:\Users\chira\Documents\Isara-telemed\Isara-Anywhere\tests\e2e\specs\03-health-records-emr.spec.ts:520:7
+
+    Error Context: test-results\03-health-records-emr-03-ΓÇö-b7b49--will-page-visible-browser--Local\error-context.md
+
+
+[1A[2K[206/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:527:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ E ΓÇö Living Will ΓÇ║ E10 ΓÇö Private living will not visible to doctor
+[1A[2K[207/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:545:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ F ΓÇö Timeline & Treatment Results ΓÇ║ F01 ΓÇö Patient1 health timeline accessible
+[1A[2K[208/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:551:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ F ΓÇö Timeline & Treatment Results ΓÇ║ F02 ΓÇö Patient treatment results accessible
+[1A[2K[209/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:557:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ F ΓÇö Timeline & Treatment Results ΓÇ║ F03 ΓÇö Timeline includes multiple event types
+[1A[2K[Local] ΓÇ║ specs\03-health-records-emr.spec.ts:557:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ F ΓÇö Timeline & Treatment Results ΓÇ║ F03 ΓÇö Timeline includes multiple event types
+Γä╣∩╕Å  Timeline has 0 events
+
+[1A[2K[210/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:566:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ F ΓÇö Timeline & Treatment Results ΓÇ║ F04 ΓÇö Health Timeline page loads (browser)
+[1A[2K  18) [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:676:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ F ΓÇö Browser Appointment UI ΓÇ║ F08 ΓÇö Patient dashboard shows upcoming appointments 
+
+    [31mTest timeout of 60000ms exceeded.[39m
+
+    Error: page.waitForTimeout: Target page, context or browser has been closed
+
+       at ..\lib\test-helpers.ts:158
+
+      156 |       if (attempt === retries) throw err;
+      157 |       // Transient error ΓÇö wait and retry
+    > 158 |       await page.waitForTimeout(2000);
+          |                  ^
+      159 |     }
+      160 |   }
+      161 | }
+        at loginViaBrowser (C:\Users\chira\Documents\Isara-telemed\Isara-Anywhere\tests\e2e\lib\test-helpers.ts:158:18)
+        at C:\Users\chira\Documents\Isara-telemed\Isara-Anywhere\tests\e2e\specs\02-appointment-lifecycle.spec.ts:679:7
+
+    Error Context: test-results\02-appointment-lifecycle-0-7f852-shows-upcoming-appointments-Local\error-context.md
+
+
+[1A[2K[211/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:692:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ G ΓÇö Cross-Portal Sync ΓÇ║ G01 ΓÇö Patient creates ΓåÆ Doctor sees (API verification)
+[1A[2K[Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:692:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ G ΓÇö Cross-Portal Sync ΓÇ║ G01 ΓÇö Patient creates ΓåÆ Doctor sees (API verification)
+Γä╣∩╕Å  All 5 users authenticated for appointment tests
+
+[1A[2KΓ£à Doctor sees new appointment
+
+[1A[2K[212/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:709:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ G ΓÇö Cross-Portal Sync ΓÇ║ G02 ΓÇö Doctor confirms ΓåÆ Patient sees confirmed
+[1A[2K[Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:709:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ G ΓÇö Cross-Portal Sync ΓÇ║ G02 ΓÇö Doctor confirms ΓåÆ Patient sees confirmed
+Γ£à Patient sees confirmed appointment
+
+[1A[2K[213/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:720:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ G ΓÇö Cross-Portal Sync ΓÇ║ G03 ΓÇö Admin assigns ΓåÆ Doctor notified
+[1A[2K[Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:720:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ G ΓÇö Cross-Portal Sync ΓÇ║ G03 ΓÇö Admin assigns ΓåÆ Doctor notified
+Γ£à Doctor sees admin-assigned appointment
+
+[1A[2K[214/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:743:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ G ΓÇö Cross-Portal Sync ΓÇ║ G04 ΓÇö All 3 patients create appointments ΓåÆ All visible to doctor
+[1A[2K[Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:743:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ G ΓÇö Cross-Portal Sync ΓÇ║ G04 ΓÇö All 3 patients create appointments ΓåÆ All visible to doctor
+Γ£à Doctor sees all patient appointments
+
+[1A[2K[215/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:760:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ G ΓÇö Cross-Portal Sync ΓÇ║ G05 ΓÇö Appointment status changes propagate to both portals
+[1A[2K[Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:760:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ G ΓÇö Cross-Portal Sync ΓÇ║ G05 ΓÇö Appointment status changes propagate to both portals
+Γ£à Patient portal synced
+
+[1A[2KΓ£à Doctor portal synced
+
+[1A[2K[216/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:774:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ G ΓÇö Cross-Portal Sync ΓÇ║ G06 ΓÇö Meeting link creates accessible from both portals
+[1A[2K[Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:774:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ G ΓÇö Cross-Portal Sync ΓÇ║ G06 ΓÇö Meeting link creates accessible from both portals
+Γ£à Meeting link created for sync test
+
+[1A[2K[217/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:786:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ G ΓÇö Cross-Portal Sync ΓÇ║ G07 ΓÇö Patient appointment pool visible to all doctors
+[1A[2K[218/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:795:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ G ΓÇö Cross-Portal Sync ΓÇ║ G08 ΓÇö Queue updates reflect across sessions
+[1A[2K[219/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:806:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ G ΓÇö Cross-Portal Sync ΓÇ║ G09 ΓÇö Patient1 and Patient2 simultaneous appointment data isolation
+[1A[2K[Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:806:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ G ΓÇö Cross-Portal Sync ΓÇ║ G09 ΓÇö Patient1 and Patient2 simultaneous appointment data isolation
+Γ£à Patient1 appointments
+
+[1A[2KΓ£à Patient2 appointments
+
+[1A[2K[220/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:818:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ G ΓÇö Cross-Portal Sync ΓÇ║ G10 ΓÇö Performance: 5 users querying appointments in parallel
+[1A[2K[Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:818:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ G ΓÇö Cross-Portal Sync ΓÇ║ G10 ΓÇö Performance: 5 users querying appointments in parallel
+Γä╣∩╕Å  5-user parallel appointment query: 834ms
+
+[1A[2K[221/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:837:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ H ΓÇö Edge Cases ΓÇ║ H01 ΓÇö Non-existent appointment ID returns 404
+[1A[2K[222/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:843:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ H ΓÇö Edge Cases ΓÇ║ H02 ΓÇö Unauthenticated appointment creation rejected
+[1A[2K[Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:843:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ H ΓÇö Edge Cases ΓÇ║ H02 ΓÇö Unauthenticated appointment creation rejected
+Γ£à Unauth appointment create ΓÇö correctly rejected
+
+[1A[2K[223/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:848:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ H ΓÇö Edge Cases ΓÇ║ H03 ΓÇö Extremely long reason field handled
+[1A[2K[224/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:856:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ H ΓÇö Edge Cases ΓÇ║ H04 ΓÇö Special characters in appointment reason
+[1A[2K[225/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:864:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ H ΓÇö Edge Cases ΓÇ║ H05 ΓÇö Concurrent appointment creation (race condition)
+[1A[2K[226/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:875:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ H ΓÇö Edge Cases ΓÇ║ H06 ΓÇö Invalid date format rejected
+[1A[2K[227/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:883:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ H ΓÇö Edge Cases ΓÇ║ H07 ΓÇö Appointment with invalid doctor ID
+[1A[2K[228/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:891:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ H ΓÇö Edge Cases ΓÇ║ H08 ΓÇö Patient2 cannot modify Patient1 appointment
+[1A[2K[229/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:901:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ H ΓÇö Edge Cases ΓÇ║ H09 ΓÇö Empty request body handled
+[1A[2K[230/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:907:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ H ΓÇö Edge Cases ΓÇ║ H10 ΓÇö API response times within acceptable limits
+[1A[2K[Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:907:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ H ΓÇö Edge Cases ΓÇ║ H10 ΓÇö API response times within acceptable limits
+Γä╣∩╕Å  Appointment list API: 1070ms
+
+[1A[2K[231/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:921:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ I ΓÇö Doctor-Side Appointment Management ΓÇ║ I01 ΓÇö Doctor views pending appointments
+[1A[2K[232/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:927:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ I ΓÇö Doctor-Side Appointment Management ΓÇ║ I02 ΓÇö Doctor views their appointments list
+[1A[2K[233/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:933:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ I ΓÇö Doctor-Side Appointment Management ΓÇ║ I03 ΓÇö Doctor decline appointment endpoint
+[1A[2K[234/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:942:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ I ΓÇö Doctor-Side Appointment Management ΓÇ║ I04 ΓÇö Doctor reject appointment endpoint
+[1A[2K[235/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:951:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ I ΓÇö Doctor-Side Appointment Management ΓÇ║ I05 ΓÇö Onsite appointment (no meeting link)
+[1A[2K[Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:951:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ I ΓÇö Doctor-Side Appointment Management ΓÇ║ I05 ΓÇö Onsite appointment (no meeting link)
+Γä╣∩╕Å  Onsite meetingLink: https://meet.jit.si/Izara-APT-17717518-5eaf12d5#config.prejoinPageEnabled=true&config.startWithAudioMuted=false&config.startWithVideoMuted=false&config.enableClosePage=true&config.disableDeepLinking=true&config.defaultLanguage=th&config.requireDisplayName=true&config.enableLobbyChat=true&config.fileRecordingsEnabled=true&config.localRecording.enabled=true&interfaceConfig.APP_NAME=Izara+Telemedicine&interfaceConfig.SHOW_PROMOTIONAL_CLOSE_PAGE=false
+
+[1A[2K[236/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:963:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ I ΓÇö Doctor-Side Appointment Management ΓÇ║ I06 ΓÇö AI doctor matching for pool appointment
+[1A[2K[237/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:972:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ I ΓÇö Doctor-Side Appointment Management ΓÇ║ I07 ΓÇö Meeting eligibility check
+[1A[2K[238/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:979:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ I ΓÇö Doctor-Side Appointment Management ΓÇ║ I08 ΓÇö Meeting rules CRUD
+[1A[2K[239/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:985:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ I ΓÇö Doctor-Side Appointment Management ΓÇ║ I09 ΓÇö Report missed meeting
+[1A[2K[240/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:994:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ I ΓÇö Doctor-Side Appointment Management ΓÇ║ I10 ΓÇö Google Calendar event creation
+[1A[2K[241/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:1005:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ I ΓÇö Doctor-Side Appointment Management ΓÇ║ I11 ΓÇö Calendar availability check
+[1A[2K[242/812] [Local] ΓÇ║ specs\02-appointment-lifecycle.spec.ts:1011:9 ΓÇ║ 02 ΓÇö Appointment Full Lifecycle ΓÇ║ I ΓÇö Doctor-Side Appointment Management ΓÇ║ I12 ΓÇö Notification generated on appointment action
+[1A[2K[243/812] [Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:40:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ A ΓÇö Meeting Creation & Config ΓÇ║ A01 ΓÇö Meeting server is healthy
+[1A[2K[Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:40:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ A ΓÇö Meeting Creation & Config ΓÇ║ A01 ΓÇö Meeting server is healthy
+Γ£à Meeting server alive
+
+[1A[2K[244/812] [Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:46:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ A ΓÇö Meeting Creation & Config ΓÇ║ A02 ΓÇö Video meeting config available
+[1A[2K[Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:46:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ A ΓÇö Meeting Creation & Config ΓÇ║ A02 ΓÇö Video meeting config available
+Γä╣∩╕Å  Meeting config: {"jitsiDomain":"meet.jit.si","enableRecording":true,"enableTranscription":true,"enableAiSummary":true,"features":{"videoConferencing":true,"screenSharing":true,"chat":true,"recording":true}}
+
+[1A[2K[245/812] [Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:55:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ A ΓÇö Meeting Creation & Config ΓÇ║ A03 ΓÇö Doctor creates video meeting from doctor portal
+[1A[2K[Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:55:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ A ΓÇö Meeting Creation & Config ΓÇ║ A03 ΓÇö Doctor creates video meeting from doctor portal
+Γ£à Meeting created: 
+
+[1A[2K[246/812] [Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:76:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ A ΓÇö Meeting Creation & Config ΓÇ║ A04 ΓÇö Meeting server creates meeting
+[1A[2K[247/812] [Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:86:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ A ΓÇö Meeting Creation & Config ΓÇ║ A05 ΓÇö Meeting creates unique URLs for each role
+[1A[2K[248/812] [Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:105:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ A ΓÇö Meeting Creation & Config ΓÇ║ A06 ΓÇö Meeting without appointment ID fails
+[1A[2K[249/812] [Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:114:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ A ΓÇö Meeting Creation & Config ΓÇ║ A07 ΓÇö Meeting server health returns Jitsi config
+[1A[2K[Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:114:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ A ΓÇö Meeting Creation & Config ΓÇ║ A07 ΓÇö Meeting server health returns Jitsi config
+Γä╣∩╕Å  Meeting health: {"status":"healthy","service":"izara-jitsi-server","version":"1.5.1","timestamp":"2026-02-22T09:17:3
+
+[1A[2K[250/812] [Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:121:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ A ΓÇö Meeting Creation & Config ΓÇ║ A08 ΓÇö Video meeting health from patient portal
+[1A[2K[251/812] [Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:126:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ A ΓÇö Meeting Creation & Config ΓÇ║ A09 ΓÇö Video meeting health from doctor portal
+[1A[2K[252/812] [Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:131:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ A ΓÇö Meeting Creation & Config ΓÇ║ A10 ΓÇö Create meeting for multi-patient scenario
+[1A[2K[253/812] [Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:149:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ B ΓÇö Meeting Join & Lobby ΓÇ║ B01 ΓÇö Patient can get meeting link
+[1A[2K[254/812] [Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:156:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ B ΓÇö Meeting Join & Lobby ΓÇ║ B02 ΓÇö Doctor joins meeting as host
+[1A[2K[255/812] [Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:166:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ B ΓÇö Meeting Join & Lobby ΓÇ║ B03 ΓÇö Patient joins meeting (lobby)
+[1A[2K[256/812] [Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:176:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ B ΓÇö Meeting Join & Lobby ΓÇ║ B04 ΓÇö Guest invite creation
+[1A[2K[257/812] [Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:187:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ B ΓÇö Meeting Join & Lobby ΓÇ║ B05 ΓÇö Guest join with invite token
+[1A[2K[258/812] [Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:193:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ B ΓÇö Meeting Join & Lobby ΓÇ║ B06 ΓÇö Invalid meeting ID returns 404
+[1A[2K[259/812] [Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:201:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ B ΓÇö Meeting Join & Lobby ΓÇ║ B07 ΓÇö Meeting join without authentication fails
+[1A[2K[260/812] [Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:207:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ B ΓÇö Meeting Join & Lobby ΓÇ║ B08 ΓÇö Doctor opens meeting page (browser)
+[1A[2K  19) [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:566:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ F ΓÇö Timeline & Treatment Results ΓÇ║ F04 ΓÇö Health Timeline page loads (browser) 
+
+    [31mTest timeout of 60000ms exceeded.[39m
+
+    Error: page.waitForTimeout: Test ended.
+
+       at ..\lib\test-helpers.ts:158
+
+      156 |       if (attempt === retries) throw err;
+      157 |       // Transient error ΓÇö wait and retry
+    > 158 |       await page.waitForTimeout(2000);
+          |                  ^
+      159 |     }
+      160 |   }
+      161 | }
+        at loginViaBrowser (C:\Users\chira\Documents\Isara-telemed\Isara-Anywhere\tests\e2e\lib\test-helpers.ts:158:18)
+        at C:\Users\chira\Documents\Isara-telemed\Isara-Anywhere\tests\e2e\specs\03-health-records-emr.spec.ts:569:7
+
+    Error Context: test-results\03-health-records-emr-03-ΓÇö-f34d4-imeline-page-loads-browser--Local\error-context.md
+
+
+[1A[2K[261/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:576:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ F ΓÇö Timeline & Treatment Results ΓÇ║ F05 ΓÇö Health Studio page loads with tabs
+[1A[2K  20) [Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:207:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ B ΓÇö Meeting Join & Lobby ΓÇ║ B08 ΓÇö Doctor opens meeting page (browser) 
+
+    [31mTest timeout of 60000ms exceeded.[39m
+
+    Error: page.waitForTimeout: Target page, context or browser has been closed
+
+       at ..\lib\test-helpers.ts:158
+
+      156 |       if (attempt === retries) throw err;
+      157 |       // Transient error ΓÇö wait and retry
+    > 158 |       await page.waitForTimeout(2000);
+          |                  ^
+      159 |     }
+      160 |   }
+      161 | }
+        at loginViaBrowser (C:\Users\chira\Documents\Isara-telemed\Isara-Anywhere\tests\e2e\lib\test-helpers.ts:158:18)
+        at C:\Users\chira\Documents\Isara-telemed\Isara-Anywhere\tests\e2e\specs\04-video-meeting-transcription.spec.ts:210:7
+
+    Error Context: test-results\04-video-meeting-transcrip-f2df4-opens-meeting-page-browser--Local\error-context.md
+
+
+[1A[2K[262/812] [Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:217:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ B ΓÇö Meeting Join & Lobby ΓÇ║ B09 ΓÇö Patient and Doctor open meeting pages simultaneously
+[1A[2K  21) [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:576:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ F ΓÇö Timeline & Treatment Results ΓÇ║ F05 ΓÇö Health Studio page loads with tabs 
+
+    [31mTest timeout of 60000ms exceeded.[39m
+
+    Error: page.waitForTimeout: Target page, context or browser has been closed
+
+       at ..\lib\test-helpers.ts:158
+
+      156 |       if (attempt === retries) throw err;
+      157 |       // Transient error ΓÇö wait and retry
+    > 158 |       await page.waitForTimeout(2000);
+          |                  ^
+      159 |     }
+      160 |   }
+      161 | }
+        at loginViaBrowser (C:\Users\chira\Documents\Isara-telemed\Isara-Anywhere\tests\e2e\lib\test-helpers.ts:158:18)
+        at C:\Users\chira\Documents\Isara-telemed\Isara-Anywhere\tests\e2e\specs\03-health-records-emr.spec.ts:579:7
+
+    Error Context: test-results\03-health-records-emr-03-ΓÇö-ee0f6-Studio-page-loads-with-tabs-Local\error-context.md
+
+
+[1A[2K[263/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:588:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ F ΓÇö Timeline & Treatment Results ΓÇ║ F06 ΓÇö All 3 patients access timeline in parallel
+[1A[2K[264/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:597:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ F ΓÇö Timeline & Treatment Results ΓÇ║ F07 ΓÇö Patient instruction sheet endpoint
+[1A[2K[265/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:603:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ F ΓÇö Timeline & Treatment Results ΓÇ║ F08 ΓÇö Treatment results page loads (browser)
+[1A[2K  22) [Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:217:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ B ΓÇö Meeting Join & Lobby ΓÇ║ B09 ΓÇö Patient and Doctor open meeting pages simultaneously 
+
+    [31mTest timeout of 60000ms exceeded.[39m
+
+    Error: page.waitForTimeout: Test ended.
+
+       at ..\lib\test-helpers.ts:158
+
+      156 |       if (attempt === retries) throw err;
+      157 |       // Transient error ΓÇö wait and retry
+    > 158 |       await page.waitForTimeout(2000);
+          |                  ^
+      159 |     }
+      160 |   }
+      161 | }
+        at loginViaBrowser (C:\Users\chira\Documents\Isara-telemed\Isara-Anywhere\tests\e2e\lib\test-helpers.ts:158:18)
+        at C:\Users\chira\Documents\Isara-telemed\Isara-Anywhere\tests\e2e\specs\04-video-meeting-transcription.spec.ts:224:7
+
+    Error Context: test-results\04-video-meeting-transcrip-f053d-eeting-pages-simultaneously-Local\error-context.md
+
+
+[1A[2K[266/812] [Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:248:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ C ΓÇö Transcription Lifecycle ΓÇ║ C01 ΓÇö Doctor starts transcription
+[1A[2K[Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:248:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ C ΓÇö Transcription Lifecycle ΓÇ║ C01 ΓÇö Doctor starts transcription
+Γ£à Transcription started
+
+[1A[2K[267/812] [Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:259:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ C ΓÇö Transcription Lifecycle ΓÇ║ C02 ΓÇö Transcription can be paused
+[1A[2K[268/812] [Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:266:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ C ΓÇö Transcription Lifecycle ΓÇ║ C03 ΓÇö Transcription can be resumed (start again)
+[1A[2K[269/812] [Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:275:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ C ΓÇö Transcription Lifecycle ΓÇ║ C04 ΓÇö Switch transcription language (TH Γåö EN)
+[1A[2K[270/812] [Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:284:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ C ΓÇö Transcription Lifecycle ΓÇ║ C05 ΓÇö Doctor stops transcription
+[1A[2K[Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:284:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ C ΓÇö Transcription Lifecycle ΓÇ║ C05 ΓÇö Doctor stops transcription
+Γ£à Transcription stopped
+
+[1A[2K[271/812] [Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:292:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ C ΓÇö Transcription Lifecycle ΓÇ║ C06 ΓÇö Get transcript for meeting
+[1A[2K[Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:292:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ C ΓÇö Transcription Lifecycle ΓÇ║ C06 ΓÇö Get transcript for meeting
+Γä╣∩╕Å  Transcript: {"success":true,"segments":[],"fullTranscript":"","totalSegments":0}
+
+[1A[2K[272/812] [Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:302:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ C ΓÇö Transcription Lifecycle ΓÇ║ C07 ΓÇö Transcription for non-existent meeting fails
+[1A[2K[273/812] [Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:310:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ C ΓÇö Transcription Lifecycle ΓÇ║ C08 ΓÇö Transcript includes speaker labels
+[1A[2K[Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:310:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ C ΓÇö Transcription Lifecycle ΓÇ║ C08 ΓÇö Transcript includes speaker labels
+Γä╣∩╕Å  Transcript structure: {"success":true,"segments":[],"fullTranscript":"","totalSegments":0}
+
+[1A[2K[274/812] [Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:321:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ C ΓÇö Transcription Lifecycle ΓÇ║ C09 ΓÇö Upload meeting recording
+[1A[2K[275/812] [Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:332:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ C ΓÇö Transcription Lifecycle ΓÇ║ C10 ΓÇö Get meeting files list
+[1A[2K[276/812] [Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:344:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ D ΓÇö AI Meeting Summary & SOAP ΓÇ║ D01 ΓÇö Generate AI meeting summary (Gemini)
+[1A[2K[Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:344:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ D ΓÇö AI Meeting Summary & SOAP ΓÇ║ D01 ΓÇö Generate AI meeting summary (Gemini)
+Γ£à AI SOAP summary requested
+
+[1A[2K[277/812] [Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:355:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ D ΓÇö AI Meeting Summary & SOAP ΓÇ║ D02 ΓÇö AI generates SOAP from transcript
+[1A[2K[278/812] [Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:366:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ D ΓÇö AI Meeting Summary & SOAP ΓÇ║ D03 ΓÇö AI summary includes SOAP sections
+[1A[2K[279/812] [Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:378:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ D ΓÇö AI Meeting Summary & SOAP ΓÇ║ D04 ΓÇö AI EMR summary endpoint
+[1A[2K[280/812] [Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:387:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ D ΓÇö AI Meeting Summary & SOAP ΓÇ║ D05 ΓÇö CDS recommendations after meeting
+[1A[2K[281/812] [Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:394:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ D ΓÇö AI Meeting Summary & SOAP ΓÇ║ D06 ΓÇö AI patient instruction sheet generation
+[1A[2K[282/812] [Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:406:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ D ΓÇö AI Meeting Summary & SOAP ΓÇ║ D07 ΓÇö AI summary for long meeting (30-min sections)
+[1A[2K[283/812] [Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:419:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ D ΓÇö AI Meeting Summary & SOAP ΓÇ║ D08 ΓÇö Man-in-the-loop validation endpoint
+[1A[2K[284/812] [Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:431:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ D ΓÇö AI Meeting Summary & SOAP ΓÇ║ D09 ΓÇö AI validations log accessible
+[1A[2K[285/812] [Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:437:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ D ΓÇö AI Meeting Summary & SOAP ΓÇ║ D10 ΓÇö Meeting summary + EMR creation pipeline
+[1A[2K[Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:437:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ D ΓÇö AI Meeting Summary & SOAP ΓÇ║ D10 ΓÇö Meeting summary + EMR creation pipeline
+Γ£à Meeting ΓåÆ AI Summary ΓåÆ EMR pipeline
+
+[1A[2K[286/812] [Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:464:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ E ΓÇö Meeting End & Post-Meeting ΓÇ║ E01 ΓÇö Doctor ends meeting
+[1A[2K[287/812] [Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:474:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ E ΓÇö Meeting End & Post-Meeting ΓÇ║ E02 ΓÇö Post-meeting AI processing triggered
+[1A[2K[288/812] [Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:484:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ E ΓÇö Meeting End & Post-Meeting ΓÇ║ E03 ΓÇö Meeting recording accessible
+[1A[2K[289/812] [Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:491:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ E ΓÇö Meeting End & Post-Meeting ΓÇ║ E04 ΓÇö Transcribe audio endpoint
+[1A[2K[290/812] [Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:501:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ E ΓÇö Meeting End & Post-Meeting ΓÇ║ E05 ΓÇö CDS alerts after meeting analysis
+[1A[2K[291/812] [Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:511:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ E ΓÇö Meeting End & Post-Meeting ΓÇ║ E06 ΓÇö CDS alerts log
+[1A[2K[292/812] [Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:517:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ E ΓÇö Meeting End & Post-Meeting ΓÇ║ E07 ΓÇö Patient instruction sheet after meeting
+[1A[2K[293/812] [Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:527:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ E ΓÇö Meeting End & Post-Meeting ΓÇ║ E08 ΓÇö Patient can view instruction sheet PDF
+[1A[2K[294/812] [Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:540:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ F ΓÇö Multi-Browser Meeting Simulation ΓÇ║ F01 ΓÇö Doctor and Patient open meeting pages simultaneously
+[1A[2K  23) [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:603:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ F ΓÇö Timeline & Treatment Results ΓÇ║ F08 ΓÇö Treatment results page loads (browser) 
+
+    [31mTest timeout of 60000ms exceeded.[39m
+
+    Error: page.click: Test ended.
+    Call log:
+    [2m  - waiting for locator('button[type="submit"]')[22m
+    [2m    - locator resolved to <button type="submit" class="w-full bg-emerald-600 text-white py-3 rounded-xl font-medium hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2">α╣Çα╕éα╣ëα╕▓α╕¬α╕╣α╣êα╕úα╕░α╕Üα╕Ü</button>[22m
+    [2m  - attempting click action[22m
+    [2m    - waiting for element to be visible, enabled and stable[22m
+
+
+       at ..\lib\test-helpers.ts:147
+
+      145 |       await page.fill('input[type="email"]', creds.email);
+      146 |       await page.fill('input[type="password"]', creds.password);
+    > 147 |       await page.click('button[type="submit"]');
+          |                  ^
+      148 |
+      149 |       // Wait for redirect to dashboard
+      150 |       await page.waitForURL('**/dashboard**', { timeout: TIMEOUTS.long }).catch(() => {
+        at loginViaBrowser (C:\Users\chira\Documents\Isara-telemed\Isara-Anywhere\tests\e2e\lib\test-helpers.ts:147:18)
+        at C:\Users\chira\Documents\Isara-telemed\Isara-Anywhere\tests\e2e\specs\03-health-records-emr.spec.ts:606:7
+
+    Error Context: test-results\03-health-records-emr-03-ΓÇö-ef2ae-results-page-loads-browser--Local\error-context.md
+
+
+[1A[2K[295/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:619:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ G ΓÇö Doctor Patient Record Viewer ΓÇ║ G01 ΓÇö Doctor lists all patients
+[1A[2K  24) [Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:540:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ F ΓÇö Multi-Browser Meeting Simulation ΓÇ║ F01 ΓÇö Doctor and Patient open meeting pages simultaneously 
+
+    [31mTest timeout of 60000ms exceeded.[39m
+
+    Error: page.waitForTimeout: Target page, context or browser has been closed
+
+       at ..\lib\test-helpers.ts:158
+
+      156 |       if (attempt === retries) throw err;
+      157 |       // Transient error ΓÇö wait and retry
+    > 158 |       await page.waitForTimeout(2000);
+          |                  ^
+      159 |     }
+      160 |   }
+      161 | }
+        at loginViaBrowser (C:\Users\chira\Documents\Isara-telemed\Isara-Anywhere\tests\e2e\lib\test-helpers.ts:158:18)
+        at C:\Users\chira\Documents\Isara-telemed\Isara-Anywhere\tests\e2e\specs\04-video-meeting-transcription.spec.ts:547:7
+
+    Error Context: test-results\04-video-meeting-transcrip-2fead-eeting-pages-simultaneously-Local\error-context.md
+
+
+[1A[2K[Local] ΓÇ║ specs\03-health-records-emr.spec.ts:619:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ G ΓÇö Doctor Patient Record Viewer ΓÇ║ G01 ΓÇö Doctor lists all patients
+Γ£à Patient list
+
+[1A[2K[296/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:626:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ G ΓÇö Doctor Patient Record Viewer ΓÇ║ G02 ΓÇö Doctor views patient1 record
+[1A[2K[297/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:632:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ G ΓÇö Doctor Patient Record Viewer ΓÇ║ G03 ΓÇö Doctor views patient2 record
+[1A[2K[298/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:638:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ G ΓÇö Doctor Patient Record Viewer ΓÇ║ G04 ΓÇö Admin can view all patient records
+[1A[2K[Local] ΓÇ║ specs\03-health-records-emr.spec.ts:638:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ G ΓÇö Doctor Patient Record Viewer ΓÇ║ G04 ΓÇö Admin can view all patient records
+Γ£à Admin patient list
+
+[1A[2K[299/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:645:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ G ΓÇö Doctor Patient Record Viewer ΓÇ║ G05 ΓÇö Patient record viewer page (browser)
+[1A[2K[300/812] [Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:565:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ F ΓÇö Multi-Browser Meeting Simulation ΓÇ║ F02 ΓÇö 3-way meeting simulation (doctor + patient + admin)
+[1A[2K  25) [Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:565:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ F ΓÇö Multi-Browser Meeting Simulation ΓÇ║ F02 ΓÇö 3-way meeting simulation (doctor + patient + admin) 
+
+    [31mTest timeout of 60000ms exceeded.[39m
+
+    Error: page.waitForTimeout: Target page, context or browser has been closed
+
+       at ..\lib\test-helpers.ts:158
+
+      156 |       if (attempt === retries) throw err;
+      157 |       // Transient error ΓÇö wait and retry
+    > 158 |       await page.waitForTimeout(2000);
+          |                  ^
+      159 |     }
+      160 |   }
+      161 | }
+        at loginViaBrowser (C:\Users\chira\Documents\Isara-telemed\Isara-Anywhere\tests\e2e\lib\test-helpers.ts:158:18)
+        at C:\Users\chira\Documents\Isara-telemed\Isara-Anywhere\tests\e2e\specs\04-video-meeting-transcription.spec.ts:573:7
+
+    Error Context: test-results\04-video-meeting-transcrip-a6d82-ation-doctor-patient-admin--Local\error-context.md
+
+
+[1A[2K  26) [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:645:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ G ΓÇö Doctor Patient Record Viewer ΓÇ║ G05 ΓÇö Patient record viewer page (browser) 
+
+    [31mTest timeout of 60000ms exceeded.[39m
+
+    Error: page.waitForTimeout: Target page, context or browser has been closed
+
+       at ..\lib\test-helpers.ts:158
+
+      156 |       if (attempt === retries) throw err;
+      157 |       // Transient error ΓÇö wait and retry
+    > 158 |       await page.waitForTimeout(2000);
+          |                  ^
+      159 |     }
+      160 |   }
+      161 | }
+        at loginViaBrowser (C:\Users\chira\Documents\Isara-telemed\Isara-Anywhere\tests\e2e\lib\test-helpers.ts:158:18)
+        at C:\Users\chira\Documents\Isara-telemed\Isara-Anywhere\tests\e2e\specs\03-health-records-emr.spec.ts:648:7
+
+    Error Context: test-results\03-health-records-emr-03-ΓÇö-86cbc-record-viewer-page-browser--Local\error-context.md
+
+
+[1A[2K[301/812] [Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:595:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ F ΓÇö Multi-Browser Meeting Simulation ΓÇ║ F03 ΓÇö Doctor dashboard during active meeting
+[1A[2K[302/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:655:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ G ΓÇö Doctor Patient Record Viewer ΓÇ║ G06 ΓÇö Patient record has tabs (PHR, EMR, EHR, Lab, Documents, Living Will)
+[1A[2K  27) [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:655:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ G ΓÇö Doctor Patient Record Viewer ΓÇ║ G06 ΓÇö Patient record has tabs (PHR, EMR, EHR, Lab, Documents, Living Will) 
+
+    [31mTest timeout of 60000ms exceeded.[39m
+
+    Error: page.waitForTimeout: Test ended.
+
+       at ..\lib\test-helpers.ts:158
+
+      156 |       if (attempt === retries) throw err;
+      157 |       // Transient error ΓÇö wait and retry
+    > 158 |       await page.waitForTimeout(2000);
+          |                  ^
+      159 |     }
+      160 |   }
+      161 | }
+        at loginViaBrowser (C:\Users\chira\Documents\Isara-telemed\Isara-Anywhere\tests\e2e\lib\test-helpers.ts:158:18)
+        at C:\Users\chira\Documents\Isara-telemed\Isara-Anywhere\tests\e2e\specs\03-health-records-emr.spec.ts:658:7
+
+    Error Context: test-results\03-health-records-emr-03-ΓÇö-faad3--Lab-Documents-Living-Will--Local\error-context.md
+
+
+[1A[2K  28) [Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:595:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ F ΓÇö Multi-Browser Meeting Simulation ΓÇ║ F03 ΓÇö Doctor dashboard during active meeting 
+
+    [31mTest timeout of 60000ms exceeded.[39m
+
+    Error: page.waitForTimeout: Test ended.
+
+       at ..\lib\test-helpers.ts:158
+
+      156 |       if (attempt === retries) throw err;
+      157 |       // Transient error ΓÇö wait and retry
+    > 158 |       await page.waitForTimeout(2000);
+          |                  ^
+      159 |     }
+      160 |   }
+      161 | }
+        at loginViaBrowser (C:\Users\chira\Documents\Isara-telemed\Isara-Anywhere\tests\e2e\lib\test-helpers.ts:158:18)
+        at C:\Users\chira\Documents\Isara-telemed\Isara-Anywhere\tests\e2e\specs\04-video-meeting-transcription.spec.ts:598:7
+
+    Error Context: test-results\04-video-meeting-transcrip-01be4-board-during-active-meeting-Local\error-context.md
+
+
+[1A[2K[303/812] [Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:610:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ F ΓÇö Multi-Browser Meeting Simulation ΓÇ║ F04 ΓÇö Multiple patients with different meeting statuses
+[1A[2K[304/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:674:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ G ΓÇö Doctor Patient Record Viewer ΓÇ║ G07 ΓÇö Doctor views EMR for patient
+[1A[2K[305/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:680:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ G ΓÇö Doctor Patient Record Viewer ΓÇ║ G08 ΓÇö 5 users query patient data in parallel
+[1A[2K[Local] ΓÇ║ specs\03-health-records-emr.spec.ts:680:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ G ΓÇö Doctor Patient Record Viewer ΓÇ║ G08 ΓÇö 5 users query patient data in parallel
+Γä╣∩╕Å  5-user parallel health data: 26ms
+
+[1A[2K[306/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:694:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ G ΓÇö Doctor Patient Record Viewer ΓÇ║ G09 ΓÇö Patient data isolation between users
+[1A[2K[Local] ΓÇ║ specs\03-health-records-emr.spec.ts:694:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ G ΓÇö Doctor Patient Record Viewer ΓÇ║ G09 ΓÇö Patient data isolation between users
+Γ£à P1 PHR
+
+[1A[2KΓ£à P2 PHR
+
+[1A[2K[307/812] [Local] ΓÇ║ specs\03-health-records-emr.spec.ts:706:9 ΓÇ║ 03 ΓÇö Health Records & EMR ΓÇ║ G ΓÇö Doctor Patient Record Viewer ΓÇ║ G10 ΓÇö Doctor + Patient view records simultaneously (browser)
+[1A[2K[Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:610:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ F ΓÇö Multi-Browser Meeting Simulation ΓÇ║ F04 ΓÇö Multiple patients with different meeting statuses
+Γ£à Multiple patients viewing appointments
+
+[1A[2K[308/812] [Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:632:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ F ΓÇö Multi-Browser Meeting Simulation ΓÇ║ F05 ΓÇö Health Meeting page tabs work
+[1A[2K  29) [Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:632:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ F ΓÇö Multi-Browser Meeting Simulation ΓÇ║ F05 ΓÇö Health Meeting page tabs work 
+
+    [31mTest timeout of 60000ms exceeded.[39m
+
+    Error: page.waitForTimeout: Target page, context or browser has been closed
+
+       at ..\lib\test-helpers.ts:158
+
+      156 |       if (attempt === retries) throw err;
+      157 |       // Transient error ΓÇö wait and retry
+    > 158 |       await page.waitForTimeout(2000);
+          |                  ^
+      159 |     }
+      160 |   }
+      161 | }
+        at loginViaBrowser (C:\Users\chira\Documents\Isara-telemed\Isara-Anywhere\tests\e2e\lib\test-helpers.ts:158:18)
+        at C:\Users\chira\Documents\Isara-telemed\Isara-Anywhere\tests\e2e\specs\04-video-meeting-transcription.spec.ts:635:7
+
+    attachment #1: screenshot (image/png) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    test-results\04-video-meeting-transcrip-0804d-alth-Meeting-page-tabs-work-Local\test-failed-1.png
+    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+    Error Context: test-results\04-video-meeting-transcrip-0804d-alth-Meeting-page-tabs-work-Local\error-context.md
+
+
+[1A[2K[309/812] [Local] ΓÇ║ specs\04-video-meeting-transcription.spec.ts:651:9 ΓÇ║ 04 ΓÇö Video Meeting, Transcription & AI Summary ΓÇ║ F ΓÇö Multi-Browser Meeting Simulation ΓÇ║ F06 ΓÇö Doctor completes EMR editor page after meeting

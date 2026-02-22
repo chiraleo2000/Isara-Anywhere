@@ -1,3 +1,2 @@
 Need to install the following packages:
 playwright@1.58.2
-Ok to proceed? (y) 

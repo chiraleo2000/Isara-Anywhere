@@ -56,14 +56,21 @@ const SERVICE_ACCOUNT_PATH = process.env.GOOGLE_APPLICATION_CREDENTIALS
   || path.join(__dirname, '..', '..', 'credentials', 'service-account.json');
 
 // A02 - Allowed origins for CORS
-const ALLOWED_ORIGINS = process.env.NODE_ENV === 'production'
-  ? [
+// Always include localhost for local Docker (NODE_ENV=production) + CORS_ORIGINS env override
+const ALLOWED_ORIGINS = [
+  'http://localhost:3010', 'http://localhost:3011', 'http://localhost:3005',
+  'http://127.0.0.1:3010', 'http://0.0.0.0:3010',
+  ...(process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',').map(s => s.trim()) : []),
+];
+if (process.env.NODE_ENV === 'production') {
+  ALLOWED_ORIGINS.push(
     'https://doctor.izara.com',
     'https://izara-doctor-portal-hvht4obouq-as.a.run.app',
     'https://izara-patient-portal-hvht4obouq-as.a.run.app',
-    /^https:\/\/izara-[a-z-]+-hvht4obouq-as\.a\.run\.app$/
-  ]
-  : ['http://localhost:3010', 'http://localhost:3011', 'http://127.0.0.1:3010', 'http://0.0.0.0:3010'];
+  );
+}
+// Regex pattern for Cloud Run dynamic URLs
+const CLOUD_RUN_PATTERN = /^https:\/\/izara-[a-z-]+-hvht4obouq-as\.a\.run\.app$/;
 
 // ============================================================================
 // INITIALIZE GCS CLIENT
@@ -128,13 +135,8 @@ app.use(cors({
     if (!origin) {
       return callback(null, true);
     }
-    // Check string and regex matches
-    if (ALLOWED_ORIGINS.some(allowed => {
-      if (allowed instanceof RegExp) {
-        return allowed.test(origin);
-      }
-      return allowed === origin;
-    })) {
+    // Check string matches and Cloud Run regex pattern
+    if (ALLOWED_ORIGINS.includes(origin) || CLOUD_RUN_PATTERN.test(origin)) {
       return callback(null, true);
     }
     securityAuditLog({

@@ -1,0 +1,736 @@
+#0 building with "desktop-linux" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 724B 0.0s done
+#1 DONE 0.1s
+
+#2 [internal] load metadata for docker.io/library/node:22-alpine
+#2 DONE 1.5s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [1/7] FROM docker.io/library/node:22-alpine@sha256:e4bf2a82ad0a4037d28035ae71529873c069b13eb0455466ae0bc13363826e34
+#4 resolve docker.io/library/node:22-alpine@sha256:e4bf2a82ad0a4037d28035ae71529873c069b13eb0455466ae0bc13363826e34 0.0s done
+#4 DONE 0.1s
+
+#5 [internal] load build context
+#5 transferring context: 456.33kB 0.4s done
+#5 DONE 0.4s
+
+#6 [4/7] COPY package*.json ./
+#6 CACHED
+
+#7 [2/7] WORKDIR /app
+#7 CACHED
+
+#8 [3/7] RUN apk add --no-cache wget
+#8 CACHED
+
+#9 [5/7] RUN npm ci --omit=dev && npm cache clean --force
+#9 CACHED
+
+#10 [6/7] COPY . .
+#10 DONE 2.3s
+
+#11 [7/7] RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+#11 DONE 0.5s
+
+#12 exporting to image
+#12 exporting layers
+#12 exporting layers 1.8s done
+#12 exporting manifest sha256:9daad7e977380ec64f0e942e349c9486fe549df42e7d654c0aa9db02f9959616 0.0s done
+#12 exporting config sha256:a9d6d4764ad8ffc0ad158df828aa0d2e87b986ce6cf708cecbb841720a0d2eb2 0.0s done
+#12 exporting attestation manifest sha256:f57425b701bc251a3fe580ff5d7fd85c089148fc2b1512a7de4c75002d5a0828
+#12 exporting attestation manifest sha256:f57425b701bc251a3fe580ff5d7fd85c089148fc2b1512a7de4c75002d5a0828 0.1s done
+#12 exporting manifest list sha256:9bc810e585934b76cc479292a835578f53e7803d85a700696741bcb02da3b080 0.0s done
+#12 naming to asia-southeast1-docker.pkg.dev/izara-telemedicine/isara-anywhere-portals/izara-meeting-server:v1.5.1
+#12 naming to asia-southeast1-docker.pkg.dev/izara-telemedicine/isara-anywhere-portals/izara-meeting-server:v1.5.1 done
+#12 unpacking to asia-southeast1-docker.pkg.dev/izara-telemedicine/isara-anywhere-portals/izara-meeting-server:v1.5.1
+#12 unpacking to asia-southeast1-docker.pkg.dev/izara-telemedicine/isara-anywhere-portals/izara-meeting-server:v1.5.1 0.7s done
+#12 DONE 2.8s
+
+View build details: docker-desktop://dashboard/build/desktop-linux/desktop-linux/womrkwo01psmftjdejxeabo6u
+The push refers to repository [asia-southeast1-docker.pkg.dev/izara-telemedicine/isara-anywhere-portals/izara-meeting-server]
+d6c11904f78c: Waiting
+2b752f7c71fd: Waiting
+fd227a25de17: Waiting
+fc1c5222d85f: Waiting
+f71baa60d447: Waiting
+3f4a9185eab0: Waiting
+8e1bc9824eda: Waiting
+8d513d1f314d: Waiting
+b6a63746688a: Waiting
+105a1af14e0e: Waiting
+589002ba0eae: Waiting
+fd227a25de17: Waiting
+fc1c5222d85f: Waiting
+f71baa60d447: Waiting
+3f4a9185eab0: Waiting
+8e1bc9824eda: Waiting
+8d513d1f314d: Waiting
+b6a63746688a: Waiting
+105a1af14e0e: Waiting
+589002ba0eae: Waiting
+d6c11904f78c: Waiting
+2b752f7c71fd: Waiting
+8d513d1f314d: Waiting
+b6a63746688a: Waiting
+105a1af14e0e: Waiting
+589002ba0eae: Waiting
+d6c11904f78c: Waiting
+2b752f7c71fd: Waiting
+fd227a25de17: Waiting
+fc1c5222d85f: Waiting
+f71baa60d447: Waiting
+3f4a9185eab0: Waiting
+8e1bc9824eda: Waiting
+fd227a25de17: Waiting
+fc1c5222d85f: Waiting
+f71baa60d447: Waiting
+3f4a9185eab0: Waiting
+8e1bc9824eda: Waiting
+8d513d1f314d: Waiting
+b6a63746688a: Waiting
+105a1af14e0e: Waiting
+589002ba0eae: Waiting
+d6c11904f78c: Waiting
+2b752f7c71fd: Waiting
+fd227a25de17: Waiting
+fc1c5222d85f: Waiting
+f71baa60d447: Waiting
+3f4a9185eab0: Waiting
+8e1bc9824eda: Waiting
+8d513d1f314d: Waiting
+b6a63746688a: Waiting
+105a1af14e0e: Waiting
+589002ba0eae: Waiting
+d6c11904f78c: Waiting
+2b752f7c71fd: Waiting
+105a1af14e0e: Waiting
+589002ba0eae: Waiting
+d6c11904f78c: Waiting
+2b752f7c71fd: Waiting
+fd227a25de17: Waiting
+fc1c5222d85f: Waiting
+f71baa60d447: Waiting
+3f4a9185eab0: Waiting
+8e1bc9824eda: Waiting
+8d513d1f314d: Waiting
+b6a63746688a: Waiting
+105a1af14e0e: Waiting
+589002ba0eae: Waiting
+d6c11904f78c: Waiting
+2b752f7c71fd: Waiting
+fd227a25de17: Waiting
+fc1c5222d85f: Waiting
+f71baa60d447: Waiting
+3f4a9185eab0: Waiting
+8e1bc9824eda: Waiting
+8d513d1f314d: Waiting
+b6a63746688a: Waiting
+b6a63746688a: Waiting
+105a1af14e0e: Waiting
+589002ba0eae: Waiting
+d6c11904f78c: Waiting
+2b752f7c71fd: Waiting
+fd227a25de17: Waiting
+fc1c5222d85f: Waiting
+f71baa60d447: Waiting
+3f4a9185eab0: Waiting
+8e1bc9824eda: Waiting
+8d513d1f314d: Waiting
+d6c11904f78c: Waiting
+2b752f7c71fd: Waiting
+fc1c5222d85f: Waiting
+f71baa60d447: Layer already exists
+8e1bc9824eda: Waiting
+8d513d1f314d: Waiting
+b6a63746688a: Waiting
+589002ba0eae: Waiting
+2b752f7c71fd: Waiting
+fc1c5222d85f: Waiting
+8e1bc9824eda: Waiting
+8d513d1f314d: Waiting
+b6a63746688a: Waiting
+589002ba0eae: Layer already exists
+d6c11904f78c: Waiting
+2b752f7c71fd: Waiting
+fc1c5222d85f: Waiting
+3f4a9185eab0: Pushed
+8d513d1f314d: Waiting
+b6a63746688a: Waiting
+8d513d1f314d: Waiting
+b6a63746688a: Waiting
+2b752f7c71fd: Waiting
+fc1c5222d85f: Waiting
+8d513d1f314d: Waiting
+b6a63746688a: Waiting
+d6c11904f78c: Pushed
+2b752f7c71fd: Waiting
+fc1c5222d85f: Waiting
+8e1bc9824eda: Pushed
+2b752f7c71fd: Waiting
+fc1c5222d85f: Waiting
+8d513d1f314d: Waiting
+b6a63746688a: Waiting
+2b752f7c71fd: Waiting
+fc1c5222d85f: Waiting
+8d513d1f314d: Waiting
+b6a63746688a: Waiting
+2b752f7c71fd: Waiting
+fc1c5222d85f: Waiting
+8d513d1f314d: Waiting
+b6a63746688a: Waiting
+fc1c5222d85f: Waiting
+8d513d1f314d: Waiting
+b6a63746688a: Layer already exists
+2b752f7c71fd: Waiting
+2b752f7c71fd: Waiting
+fc1c5222d85f: Waiting
+8d513d1f314d: Waiting
+8d513d1f314d: Layer already exists
+2b752f7c71fd: Waiting
+fc1c5222d85f: Waiting
+2b752f7c71fd: Waiting
+fd227a25de17: Pushed
+fc1c5222d85f: Waiting
+2b752f7c71fd: Waiting
+fc1c5222d85f: Waiting
+2b752f7c71fd: Waiting
+fc1c5222d85f: Waiting
+2b752f7c71fd: Waiting
+fc1c5222d85f: Waiting
+fc1c5222d85f: Waiting
+2b752f7c71fd: Waiting
+2b752f7c71fd: Layer already exists
+fc1c5222d85f: Layer already exists
+105a1af14e0e: Pushed
+v1.5.1: digest: sha256:9bc810e585934b76cc479292a835578f53e7803d85a700696741bcb02da3b080 size: 856
+Deploying container to Cloud Run service [izara-meeting-server-dev-testing] in project [izara-telemedicine] region [asia-southeast1]
+Deploying...
+Setting IAM Policy...............done
+Creating Revision..............................................................................................done
+Routing traffic.....done
+Done.
+Service [izara-meeting-server-dev-testing] revision [izara-meeting-server-dev-testing-00012-wvv] has been deployed and is serving 100 percent of traffic.
+Service URL: https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app
+#0 building with "desktop-linux" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile.unified
+#1 transferring dockerfile: 8.98kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/node:22-alpine
+#2 DONE 0.9s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 528B done
+#3 DONE 0.0s
+
+#4 [builder 1/6] FROM docker.io/library/node:22-alpine@sha256:e4bf2a82ad0a4037d28035ae71529873c069b13eb0455466ae0bc13363826e34
+#4 resolve docker.io/library/node:22-alpine@sha256:e4bf2a82ad0a4037d28035ae71529873c069b13eb0455466ae0bc13363826e34 0.0s done
+#4 DONE 0.0s
+
+#5 [internal] load build context
+#5 transferring context: 5.62kB 0.0s done
+#5 DONE 0.0s
+
+#6 [builder 2/6] WORKDIR /app
+#6 CACHED
+
+#7 [builder 3/6] COPY package*.json ./
+#7 CACHED
+
+#8 [builder 4/6] RUN rm -f package-lock.json &&     npm install &&     npm install bcryptjs @types/bcryptjs tsx --save
+#8 CACHED
+
+#9 [builder 5/6] COPY . .
+#9 CACHED
+
+#10 [builder 6/6] RUN npm run build
+#10 0.388 
+#10 0.388 > izara-patient-portal@1.5.1 build
+#10 0.388 > vite build
+#10 0.388 
+#10 0.673 vite v7.3.1 building client environment for production...
+#10 1.196 transforming...
+#10 4.172 Γ£ô 1422 modules transformed.
+#10 4.229 Generated an empty chunk: "google-vendor".
+#10 4.315 rendering chunks...
+#10 4.708 computing gzip size...
+#10 4.738 dist/index.html                          2.00 kB Γöé gzip:   0.94 kB
+#10 4.738 dist/assets/index-hnLIEhwi.css          77.57 kB Γöé gzip:  12.49 kB
+#10 4.738 dist/assets/google-vendor-l0sNRNKZ.js    0.05 kB Γöé gzip:   0.07 kB Γöé map:     0.11 kB
+#10 4.738 dist/assets/index-Cl_BsGI8.js           42.20 kB Γöé gzip:  13.22 kB Γöé map:   189.18 kB
+#10 4.739 dist/assets/react-vendor-N--QU9DW.js   140.96 kB Γöé gzip:  45.35 kB Γöé map:   344.78 kB
+#10 4.739 dist/assets/index-CVef2fGT.js          466.66 kB Γöé gzip: 110.81 kB Γöé map: 1,457.93 kB
+#10 4.739 Γ£ô built in 4.04s
+#10 DONE 4.9s
+
+#11 [production 3/9] RUN apk add --no-cache curl
+#11 CACHED
+
+#12 [production 4/9] COPY package*.json ./
+#12 CACHED
+
+#13 [production 5/9] RUN npm install &&     npm install bcryptjs tsx dotenv --save
+#13 CACHED
+
+#14 [production 6/9] COPY --from=builder /app/dist ./dist
+#14 DONE 0.1s
+
+#15 [production 7/9] COPY --from=builder /app/server ./server
+#15 DONE 0.1s
+
+#16 [production 8/9] RUN mkdir -p ./credentials
+#16 DONE 0.4s
+
+#17 [production 9/9] RUN printf '%s\n'   '#!/bin/sh'   'echo "Starting Izara Patient Portal (Unified Server)..."'   'echo "Server: http://localhost:3005"'   'echo "Frontend + API served from same origin"'   'exec npx tsx server/index.ts'   > /app/start.sh && chmod +x /app/start.sh
+#17 DONE 0.4s
+
+#18 exporting to image
+#18 exporting layers
+#18 exporting layers 0.6s done
+#18 exporting manifest sha256:83fad599cb51f1b1e882bd3cc56a3d7fde07b04cdf18888489fc30cf77207c5e 0.0s done
+#18 exporting config sha256:f9bdf2ed597d09bbf36666e4335f3de5094619052f28d5602217816a45a8e6cf 0.0s done
+#18 exporting attestation manifest sha256:a36553b7b75f7e3eb88576b4060392e032a03a5fbcc11d536ecdce7d1f298655
+#18 exporting attestation manifest sha256:a36553b7b75f7e3eb88576b4060392e032a03a5fbcc11d536ecdce7d1f298655 0.1s done
+#18 exporting manifest list sha256:2e57f585991118d9cc00f338392a4a5b5e8a0ff63547cd17834a940d4125394a 0.0s done
+#18 naming to asia-southeast1-docker.pkg.dev/izara-telemedicine/isara-anywhere-portals/izara-patient-portal:v1.5.1
+#18 naming to asia-southeast1-docker.pkg.dev/izara-telemedicine/isara-anywhere-portals/izara-patient-portal:v1.5.1 done
+#18 unpacking to asia-southeast1-docker.pkg.dev/izara-telemedicine/isara-anywhere-portals/izara-patient-portal:v1.5.1
+#18 unpacking to asia-southeast1-docker.pkg.dev/izara-telemedicine/isara-anywhere-portals/izara-patient-portal:v1.5.1 0.2s done
+#18 DONE 1.0s
+
+ 33 warnings found (use docker --debug to expand):
+ - UndefinedVar: Usage of undefined variable '$GEMINI_API_KEY' (line 210)
+ - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ARG "VITE_GOOGLE_CALENDAR_API_KEY") (line 48)
+ - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ARG "VITE_GOOGLE_GMAIL_API_KEY") (line 52)
+ - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ENV "VITE_GCS_BUCKET_AUTH") (line 113)
+ - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ENV "VITE_GOOGLE_CALENDAR_API_KEY") (line 113)
+ - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ENV "VITE_GOOGLE_GMAIL_API_KEY") (line 113)
+ - UndefinedVar: Usage of undefined variable '$GCP_PROJECT_ID' (line 196)
+ - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ARG "GOOGLE_SPEECH_API_KEY") (line 57)
+ - UndefinedVar: Usage of undefined variable '$DATABASE_URL' (line 202)
+ - UndefinedVar: Usage of undefined variable '$DB_HOST' (line 203)
+ - UndefinedVar: Usage of undefined variable '$GOOGLE_SPEECH_API_KEY' (line 215)
+ - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ARG "VITE_GCS_BUCKET_AUTH") (line 40)
+ - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ENV "VITE_GOOGLE_SPEECH_API_KEY") (line 113)
+ - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ENV "VITE_GEMINI_API_KEY") (line 113)
+ - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ENV "GEMINI_API_KEY") (line 210)
+ - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ARG "VITE_GOOGLE_MAPS_API_KEY") (line 50)
+ - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ENV "VITE_GOOGLE_MEET_API_KEY") (line 113)
+ - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ENV "VITE_GOOGLE_SHEETS_API_KEY") (line 113)
+ - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ARG "VITE_GOOGLE_SHEETS_API_KEY") (line 53)
+ - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ENV "GOOGLE_SPEECH_API_KEY") (line 215)
+ - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ARG "VITE_GOOGLE_MEET_API_KEY") (line 49)
+ - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ARG "VITE_GOOGLE_SPEECH_API_KEY") (line 56)
+ - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ENV "VITE_GOOGLE_MAPS_API_KEY") (line 113)
+ - UndefinedVar: Usage of undefined variable '$DB_NAME' (line 204)
+ - UndefinedVar: Usage of undefined variable '$GEMINI_MODEL' (line 211)
+ - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ARG "VITE_GEMINI_API_KEY") (line 60)
+ - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ENV "GOOGLE_APPLICATION_CREDENTIALS") (line 197)
+ - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ENV "DB_PASSWORD") (line 206)
+ - UndefinedVar: Usage of undefined variable '$DB_PORT' (did you mean $DB_HOST?) (line 207)
+ - UndefinedVar: Usage of undefined variable '$JITSI_DOMAIN' (line 213)
+ - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ENV "GOOGLE_SPEECH_API_KEY") (line 113)
+ - UndefinedVar: Usage of undefined variable '$DB_USER' (line 205)
+ - UndefinedVar: Usage of undefined variable '$DB_PASSWORD' (line 206)
+
+View build details: docker-desktop://dashboard/build/desktop-linux/desktop-linux/thwjystp2mham1w2gkjrdcy5h
+The push refers to repository [asia-southeast1-docker.pkg.dev/izara-telemedicine/isara-anywhere-portals/izara-patient-portal]
+a222dc64ca1a: Waiting
+8d513d1f314d: Waiting
+2b752f7c71fd: Waiting
+fc1c5222d85f: Waiting
+4da2632ef820: Waiting
+f610b846f5e2: Waiting
+413bb96ccd80: Waiting
+589002ba0eae: Waiting
+f71baa60d447: Waiting
+007435a33e28: Waiting
+c65fedeb73aa: Waiting
+27080128c7a4: Waiting
+7517d423848f: Waiting
+7517d423848f: Waiting
+a222dc64ca1a: Waiting
+8d513d1f314d: Waiting
+2b752f7c71fd: Waiting
+fc1c5222d85f: Waiting
+4da2632ef820: Waiting
+f610b846f5e2: Waiting
+413bb96ccd80: Waiting
+589002ba0eae: Waiting
+f71baa60d447: Waiting
+007435a33e28: Waiting
+c65fedeb73aa: Waiting
+27080128c7a4: Waiting
+7517d423848f: Waiting
+a222dc64ca1a: Waiting
+8d513d1f314d: Waiting
+2b752f7c71fd: Waiting
+fc1c5222d85f: Waiting
+4da2632ef820: Waiting
+f610b846f5e2: Waiting
+413bb96ccd80: Waiting
+589002ba0eae: Waiting
+f71baa60d447: Waiting
+007435a33e28: Waiting
+c65fedeb73aa: Waiting
+27080128c7a4: Waiting
+589002ba0eae: Waiting
+f71baa60d447: Waiting
+007435a33e28: Waiting
+c65fedeb73aa: Waiting
+27080128c7a4: Waiting
+7517d423848f: Waiting
+a222dc64ca1a: Waiting
+8d513d1f314d: Waiting
+2b752f7c71fd: Waiting
+fc1c5222d85f: Waiting
+4da2632ef820: Waiting
+f610b846f5e2: Waiting
+413bb96ccd80: Waiting
+a222dc64ca1a: Waiting
+8d513d1f314d: Waiting
+2b752f7c71fd: Waiting
+fc1c5222d85f: Waiting
+4da2632ef820: Waiting
+f610b846f5e2: Waiting
+413bb96ccd80: Waiting
+589002ba0eae: Waiting
+f71baa60d447: Waiting
+007435a33e28: Waiting
+c65fedeb73aa: Waiting
+27080128c7a4: Waiting
+7517d423848f: Waiting
+413bb96ccd80: Waiting
+589002ba0eae: Waiting
+f71baa60d447: Waiting
+007435a33e28: Waiting
+c65fedeb73aa: Waiting
+27080128c7a4: Waiting
+7517d423848f: Waiting
+a222dc64ca1a: Waiting
+8d513d1f314d: Waiting
+2b752f7c71fd: Waiting
+fc1c5222d85f: Layer already exists
+4da2632ef820: Waiting
+f610b846f5e2: Waiting
+8d513d1f314d: Layer already exists
+2b752f7c71fd: Waiting
+4da2632ef820: Waiting
+589002ba0eae: Waiting
+f71baa60d447: Layer already exists
+007435a33e28: Waiting
+2b752f7c71fd: Waiting
+589002ba0eae: Waiting
+007435a33e28: Waiting
+007435a33e28: Layer already exists
+7517d423848f: Pushed
+a222dc64ca1a: Pushed
+2b752f7c71fd: Layer already exists
+413bb96ccd80: Pushed
+589002ba0eae: Layer already exists
+4da2632ef820: Pushed
+f610b846f5e2: Pushed
+27080128c7a4: Pushed
+c65fedeb73aa: Pushed
+v1.5.1: digest: sha256:2e57f585991118d9cc00f338392a4a5b5e8a0ff63547cd17834a940d4125394a size: 856
+Deploying container to Cloud Run service [izara-patient-portal-dev-testing] in project [izara-telemedicine] region [asia-southeast1]
+Deploying...
+Setting IAM Policy.............done
+Creating Revision........................................................................................................................................................................................................done
+Routing traffic.....done
+Done.
+Service [izara-patient-portal-dev-testing] revision [izara-patient-portal-dev-testing-00008-rjg] has been deployed and is serving 100 percent of traffic.
+Service URL: https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app
+#0 building with "desktop-linux" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile.unified
+#1 transferring dockerfile: 17.93kB 0.0s done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/node:22-alpine
+#2 DONE 0.9s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 970B done
+#3 DONE 0.0s
+
+#4 [frontend-builder 1/6] FROM docker.io/library/node:22-alpine@sha256:e4bf2a82ad0a4037d28035ae71529873c069b13eb0455466ae0bc13363826e34
+#4 resolve docker.io/library/node:22-alpine@sha256:e4bf2a82ad0a4037d28035ae71529873c069b13eb0455466ae0bc13363826e34 0.0s done
+#4 DONE 0.0s
+
+#5 [internal] load build context
+#5 transferring context: 5.04kB done
+#5 DONE 0.0s
+
+#6 [frontend-builder 2/6] WORKDIR /app
+#6 CACHED
+
+#7 [frontend-builder 3/6] COPY package*.json ./
+#7 CACHED
+
+#8 [frontend-builder 4/6] RUN npm ci && npm cache clean --force
+#8 CACHED
+
+#9 [frontend-builder 5/6] COPY . .
+#9 CACHED
+
+#10 [frontend-builder 6/6] RUN npm run build
+#10 0.373 
+#10 0.373 > izara-doctor-portal@1.5.1 build
+#10 0.373 > vite build
+#10 0.373 
+#10 0.644 vite v7.2.2 building client environment for production...
+#10 0.733 transforming...
+#10 2.268 Γ£ô 121 modules transformed.
+#10 2.791 rendering chunks...
+#10 2.983 computing gzip size...
+#10 3.016 dist/index.html                  16.54 kB Γöé gzip:   4.48 kB
+#10 3.016 dist/assets/ui-Bos78p3y.js        0.09 kB Γöé gzip:   0.10 kB
+#10 3.016 dist/assets/index-B9J4FjPO.js    41.43 kB Γöé gzip:  12.98 kB
+#10 3.016 dist/assets/vendor-labSKdyf.js  141.01 kB Γöé gzip:  45.33 kB
+#10 3.017 dist/assets/index-DhuCyRBa.js   754.16 kB Γöé gzip: 178.95 kB
+#10 3.017 
+#10 3.017 (!) Some chunks are larger than 500 kB after minification. Consider:
+#10 3.017 - Using dynamic import() to code-split the application
+#10 3.017 - Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+#10 3.017 - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+#10 3.018 Γ£ô built in 2.35s
+#10 DONE 3.1s
+
+#11 [production  3/10] RUN apk add --no-cache     nginx     bash     curl     gettext     supervisor   && rm -rf /var/cache/apk/*
+#11 CACHED
+
+#12 [production  4/10] COPY package*.json ./
+#12 CACHED
+
+#13 [production  5/10] RUN npm ci --only=production && npm cache clean --force
+#13 CACHED
+
+#14 [production  6/10] COPY server/ ./server/
+#14 CACHED
+
+#15 [production  7/10] RUN mkdir -p ./public
+#15 CACHED
+
+#16 [production  8/10] COPY --from=frontend-builder /app/dist /usr/share/nginx/html
+#16 DONE 0.1s
+
+#17 [production  9/10] RUN printf '%s\n' 'server {' '    listen 8080;' '    server_name localhost;' '    root /usr/share/nginx/html;' '    index index.html;' '    gzip on;' '    gzip_vary on;' '    gzip_min_length 1024;' '    gzip_types text/plain text/css text/xml text/javascript application/x-javascript' '        application/xml+rss application/javascript application/json;' '    add_header X-Frame-Options "SAMEORIGIN" always;' '    add_header X-Content-Type-Options "nosniff" always;' '    add_header X-XSS-Protection "1; mode=block" always;' '    location /health {' '        access_log off;' '        return 200 '"'"'{"status":"healthy","service":"izara-unified"}'"'"';' '        add_header Content-Type application/json;' '    }' '    location /env-config.js {' '        expires -1;' '        add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0";' '    }' '    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {' '        expires 1y;' '        add_header Cache-Control "public, immutable";' '    }' '    location /api/auth/ {' '        proxy_pass http://127.0.0.1:3011/auth/;' '        proxy_http_version 1.1;' '        proxy_set_header Upgrade $http_upgrade;' '        proxy_set_header Connection '"'"'upgrade'"'"';' '        proxy_set_header Host $host;' '        proxy_set_header X-Real-IP $remote_addr;' '        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;' '        proxy_set_header X-Forwarded-Proto $scheme;' '        proxy_cache_bypass $http_upgrade;' '        proxy_intercept_errors off;' '    }' '    location /api/storage/ {' '        proxy_pass http://127.0.0.1:3012/api/storage/;' '        proxy_http_version 1.1;' '        proxy_set_header Host $host;' '        proxy_set_header X-Real-IP $remote_addr;' '        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;' '        proxy_set_header X-Forwarded-Proto $scheme;' '        proxy_intercept_errors off;' '    }' '    location /api/consultants {' '        proxy_pass http://127.0.0.1:3009/api/consultants;' '        proxy_http_version 1.1;' '        proxy_set_header Host $host;' '        proxy_set_header X-Real-IP $remote_addr;' '        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;' '        proxy_set_header X-Forwarded-Proto $scheme;' '        proxy_intercept_errors off;' '    }' '    location /api/content/ {' '        proxy_pass http://127.0.0.1:3009/api/content/;' '        proxy_http_version 1.1;' '        proxy_set_header Host $host;' '        proxy_set_header X-Real-IP $remote_addr;' '        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;' '        proxy_set_header X-Forwarded-Proto $scheme;' '        proxy_intercept_errors off;' '    }' '    location /api/doctors {' '        proxy_pass http://127.0.0.1:3009/api/doctors;' '        proxy_http_version 1.1;' '        proxy_set_header Host $host;' '        proxy_set_header X-Real-IP $remote_addr;' '        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;' '        proxy_set_header X-Forwarded-Proto $scheme;' '        proxy_intercept_errors off;' '    }' '    location /api/ {' '        proxy_pass http://127.0.0.1:3009/api/;' '        proxy_http_version 1.1;' '        proxy_set_header Upgrade $http_upgrade;' '        proxy_set_header Connection '"'"'upgrade'"'"';' '        proxy_set_header Host $host;' '        proxy_set_header X-Real-IP $remote_addr;' '        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;' '        proxy_set_header X-Forwarded-Proto $scheme;' '        proxy_cache_bypass $http_upgrade;' '        proxy_intercept_errors off;' '    }' '    location /auth/ {' '        proxy_pass http://127.0.0.1:3011/auth/;' '        proxy_http_version 1.1;' '        proxy_set_header Upgrade $http_upgrade;' '        proxy_set_header Connection '"'"'upgrade'"'"';' '        proxy_set_header Host $host;' '        proxy_set_header X-Real-IP $remote_addr;' '        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;' '        proxy_set_header X-Forwarded-Proto $scheme;' '        proxy_cache_bypass $http_upgrade;' '        proxy_connect_timeout 10s;' '        proxy_read_timeout 30s;' '        proxy_intercept_errors off;' '    }' '    location /admin/ {' '        proxy_pass http://127.0.0.1:3011/admin/;' '        proxy_http_version 1.1;' '        proxy_set_header Host $host;' '        proxy_set_header X-Real-IP $remote_addr;' '        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;' '        proxy_set_header X-Forwarded-Proto $scheme;' '        proxy_intercept_errors off;' '    }' '    location /ws {' '        proxy_pass http://127.0.0.1:3011/ws;' '        proxy_http_version 1.1;' '        proxy_set_header Upgrade $http_upgrade;' '        proxy_set_header Connection "upgrade";' '        proxy_set_header Host $host;' '        proxy_read_timeout 86400;' '    }' '    location / {' '        try_files $uri $uri/ /index.html;' '        add_header Cache-Control "no-cache";' '    }' '    error_page 404 /index.html;' '}' > /etc/nginx/http.d/default.conf && printf '%s\n' 'window.ENV = {' '  API_URL: "${VITE_API_URL}",' '  AUTH_URL: "${VITE_AUTH_URL}",' '  DOCTOR_URL: "${VITE_DOCTOR_URL}",' '  WEBSOCKET_URL: "${VITE_WEBSOCKET_URL}",' '  GCS_API_URL: "${GCS_API_URL}",' '  GCP_PROJECT_ID: "${VITE_GCP_PROJECT_ID}",' '  GCP_REGION: "${VITE_GCP_REGION}",' '  GOOGLE_CLIENT_ID: "${VITE_GOOGLE_CLIENT_ID}",' '  GCS_BUCKET_AUTH: "${VITE_GCS_BUCKET_AUTH}",' '  GCS_BUCKET_DOCTOR: "${VITE_GCS_BUCKET_DOCTOR}",' '  GCS_BUCKET_PATIENT: "${VITE_GCS_BUCKET_PATIENT}",' '  GCS_BUCKET_APPOINTMENTS: "${VITE_GCS_BUCKET_APPOINTMENTS}",' '  GCS_BUCKET_METADATA: "${VITE_GCS_BUCKET_METADATA}",' '  GEMINI_API_KEY: "${VITE_GEMINI_API_KEY}",' '  GEMINI_MODEL: "${VITE_GEMINI_MODEL}",' '  PDPA_ENABLED: "${VITE_PDPA_ENABLED}",' '  CONSENT_REQUIRED: "${VITE_CONSENT_REQUIRED}"' '};' > /usr/share/nginx/html/env-config.template.js && printf '%s\n' '[supervisord]' 'nodaemon=true' 'logfile=/var/log/supervisord.log' 'pidfile=/var/run/supervisord.pid' 'loglevel=info' '' '[program:nginx]' 'command=/usr/sbin/nginx -g "daemon off;"' 'priority=10' 'autostart=true' 'autorestart=true' 'startsecs=1' 'stdout_logfile=/dev/stdout' 'stdout_logfile_maxbytes=0' 'stderr_logfile=/dev/stderr' 'stderr_logfile_maxbytes=0' '' '[program:gcs-api]' 'command=node /app/server/gcsApiServer.cjs' 'directory=/app' 'priority=20' 'autostart=true' 'autorestart=true' 'startsecs=5' 'startretries=3' 'environment=NODE_ENV="production",GCS_API_PORT="3012",PORT="3012"' 'stdout_logfile=/dev/stdout' 'stdout_logfile_maxbytes=0' 'stderr_logfile=/dev/stderr' 'stderr_logfile_maxbytes=0' '' '[program:auth-server]' 'command=node /app/server/authServer.cjs' 'directory=/app' 'priority=30' 'autostart=true' 'autorestart=true' 'startsecs=5' 'startretries=3' 'environment=NODE_ENV="production",AUTH_PORT="3011",GCS_API_URL="http://127.0.0.1:3012",' '    USE_POSTGRESQL="%(ENV_USE_POSTGRESQL)s",DB_HOST="%(ENV_DB_HOST)s",DB_NAME="%(ENV_DB_NAME)s",' '    DB_USER="%(ENV_DB_USER)s",DB_PASSWORD="%(ENV_DB_PASSWORD)s",DB_PORT="%(ENV_DB_PORT)s"' 'stdout_logfile=/dev/stdout' 'stdout_logfile_maxbytes=0' 'stderr_logfile=/dev/stderr' 'stderr_logfile_maxbytes=0' '' '[program:main-api]' 'command=node /app/server/mainApiServer.cjs' 'directory=/app' 'priority=40' 'autostart=true' 'autorestart=true' 'startsecs=5' 'startretries=3' 'environment=NODE_ENV="production",PORT="3009",GCS_API_URL="http://127.0.0.1:3012",GEMINI_API_KEY="%(ENV_GEMINI_API_KEY)s",' '    GEMINI_MODEL="%(ENV_GEMINI_MODEL)s",JITSI_DOMAIN="%(ENV_JITSI_DOMAIN)s",GOOGLE_SPEECH_API_KEY="%(ENV_GOOGLE_SPEECH_API_KEY)s",' '    USE_POSTGRESQL="%(ENV_USE_POSTGRESQL)s",DB_HOST="%(ENV_DB_HOST)s",DB_NAME="%(ENV_DB_NAME)s",DB_USER="%(ENV_DB_USER)s",' '    DB_PASSWORD="%(ENV_DB_PASSWORD)s",DB_PORT="%(ENV_DB_PORT)s"' 'stdout_logfile=/dev/stdout' 'stdout_logfile_maxbytes=0' 'stderr_logfile=/dev/stderr' 'stderr_logfile_maxbytes=0' > /etc/supervisord.conf
+#17 DONE 0.3s
+
+#18 [production 10/10] RUN printf '%s\n' '#!/bin/bash' 'set -e' 'echo "Starting Izara Doctor Portal (Unified)"' 'echo "======================================="' 'envsubst < /usr/share/nginx/html/env-config.template.js > /usr/share/nginx/html/env-config.js' 'mkdir -p /app/server/logs /var/log /var/run' 'echo "Environment configured"' '' '# Start GCS API server first' 'echo "Starting GCS API server (port 3012)..."' 'cd /app && NODE_ENV=production GCS_API_PORT=3012 PORT=3012 node /app/server/gcsApiServer.cjs &' 'sleep 2' '' '# Start Auth server' 'echo "Starting Auth server (port 3011)..."' 'cd /app && NODE_ENV=production AUTH_PORT=3011 GCS_API_URL=http://127.0.0.1:3012 node /app/server/authServer.cjs &' 'sleep 3' '' '# Start Main API server (in background)' 'echo "Starting Main API server (port 3009)..."' 'cd /app && MAIN_API_PORT=3009 PORT=3009 node /app/server/mainApiServer.cjs &' 'sleep 5' '' '# Wait for Main API to be ready' 'echo "Waiting for Main API server to be ready..."' 'for i in {1..30}; do' '  if curl -sf http://127.0.0.1:3009/api/health > /dev/null 2>&1; then' '    echo "Main API server is ready!"' '    break' '  fi' '  echo "Waiting... attempt $i/30"' '  sleep 1' 'done' '' '# Start nginx last (after all backends are ready)' 'echo "Starting nginx..."' 'exec /usr/sbin/nginx -g "daemon off;"' > /docker-entrypoint.sh &&     chmod +x /docker-entrypoint.sh &&     chown -R nginx:nginx /usr/share/nginx/html &&     chmod -R 755 /usr/share/nginx/html &&     mkdir -p /app/server/logs /var/secrets/google
+#18 DONE 0.4s
+
+#19 exporting to image
+#19 exporting layers
+#19 exporting layers 0.4s done
+#19 exporting manifest sha256:ba7538014831d055dcd4d01ce98ebc2704454dfed4b3c4192fd4fadcc759dfc6 0.0s done
+#19 exporting config sha256:d248101ec0556485696ac9c5d9a22a21034d40f9af841766b0c5c3146240187d 0.0s done
+#19 exporting attestation manifest sha256:0c255352c7923b1989053ab1c50389f8470821dacdeeddc95509be1ef2036955
+#19 exporting attestation manifest sha256:0c255352c7923b1989053ab1c50389f8470821dacdeeddc95509be1ef2036955 0.1s done
+#19 exporting manifest list sha256:942d4a7a333a09a8c63985a5f70fdf68fb085352256d14d8c03cd97bba7d3517 0.0s done
+#19 naming to asia-southeast1-docker.pkg.dev/izara-telemedicine/isara-anywhere-portals/izara-doctor-portal:v1.5.1
+#19 naming to asia-southeast1-docker.pkg.dev/izara-telemedicine/isara-anywhere-portals/izara-doctor-portal:v1.5.1 done
+#19 unpacking to asia-southeast1-docker.pkg.dev/izara-telemedicine/isara-anywhere-portals/izara-doctor-portal:v1.5.1
+#19 unpacking to asia-southeast1-docker.pkg.dev/izara-telemedicine/isara-anywhere-portals/izara-doctor-portal:v1.5.1 0.2s done
+#19 DONE 0.9s
+
+ 36 warnings found (use docker --debug to expand):
+ - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ARG "VITE_GOOGLE_CALENDAR_API_KEY") (line 48)
+ - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ARG "VITE_GOOGLE_MAPS_API_KEY") (line 50)
+ - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ARG "VITE_GOOGLE_GMAIL_API_KEY") (line 51)
+ - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ARG "VITE_GOOGLE_SHEETS_API_KEY") (line 52)
+ - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ARG "VITE_GEMINI_API_KEY") (line 62)
+ - UndefinedVar: Usage of undefined variable '$DATABASE_URL' (line 388)
+ - UndefinedVar: Usage of undefined variable '$DB_HOST' (line 388)
+ - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ARG "VITE_GCS_BUCKET_CREDENTIALS") (line 40)
+ - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ARG "VITE_GOOGLE_MEET_API_KEY") (line 49)
+ - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ENV "VITE_AUTH_URL") (line 98)
+ - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ENV "VITE_GCS_BUCKET_AUTH") (line 98)
+ - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ENV "VITE_GOOGLE_MEET_API_KEY") (line 98)
+ - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ENV "GOOGLE_SPEECH_API_KEY") (line 98)
+ - UndefinedVar: Usage of undefined variable '$DB_NAME' (line 388)
+ - UndefinedVar: Usage of undefined variable '$DB_USER' (line 388)
+ - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ARG "VITE_AUTH_URL") (line 25)
+ - UndefinedVar: Usage of undefined variable '$USE_POSTGRESQL' (line 388)
+ - UndefinedVar: Usage of undefined variable '$DB_PORT' (line 388)
+ - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ENV "GEMINI_API_KEY") (line 388)
+ - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ENV "GOOGLE_SPEECH_API_KEY") (line 388)
+ - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ENV "DB_PASSWORD") (line 388)
+ - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ARG "GOOGLE_SPEECH_API_KEY") (line 56)
+ - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ENV "VITE_GOOGLE_MAPS_API_KEY") (line 98)
+ - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ENV "VITE_GOOGLE_GMAIL_API_KEY") (line 98)
+ - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ENV "VITE_GEMINI_API_KEY") (line 98)
+ - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ARG "VITE_GCS_BUCKET_AUTH") (line 39)
+ - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ENV "VITE_GOOGLE_SHEETS_API_KEY") (line 98)
+ - UndefinedVar: Usage of undefined variable '$GEMINI_MODEL' (line 388)
+ - UndefinedVar: Usage of undefined variable '$DB_PASSWORD' (line 388)
+ - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ENV "VITE_GCS_BUCKET_CREDENTIALS") (line 98)
+ - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ENV "VITE_GOOGLE_CALENDAR_API_KEY") (line 98)
+ - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ENV "VITE_GOOGLE_SPEECH_API_KEY") (line 98)
+ - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ARG "VITE_GOOGLE_SPEECH_API_KEY") (line 55)
+ - UndefinedVar: Usage of undefined variable '$GEMINI_API_KEY' (line 388)
+ - UndefinedVar: Usage of undefined variable '$JITSI_DOMAIN' (line 388)
+ - UndefinedVar: Usage of undefined variable '$GOOGLE_SPEECH_API_KEY' (line 388)
+
+View build details: docker-desktop://dashboard/build/desktop-linux/desktop-linux/tkb3wssbf50hjw86zufyi6cns
+The push refers to repository [asia-southeast1-docker.pkg.dev/izara-telemedicine/isara-anywhere-portals/izara-doctor-portal]
+2b752f7c71fd: Waiting
+f71baa60d447: Waiting
+c92f851c61e6: Waiting
+9293e7baf610: Waiting
+f768ed0594a7: Waiting
+589002ba0eae: Waiting
+d9c47982f6f1: Waiting
+8d513d1f314d: Waiting
+fc1c5222d85f: Waiting
+fe2133fec8d0: Waiting
+988a64a7c0a0: Waiting
+8f0b7024e66e: Waiting
+1a57a0147c0c: Waiting
+575b1dd98af8: Waiting
+c92f851c61e6: Waiting
+9293e7baf610: Waiting
+f768ed0594a7: Waiting
+589002ba0eae: Waiting
+d9c47982f6f1: Waiting
+8d513d1f314d: Waiting
+fc1c5222d85f: Waiting
+fe2133fec8d0: Waiting
+988a64a7c0a0: Waiting
+8f0b7024e66e: Waiting
+1a57a0147c0c: Waiting
+575b1dd98af8: Waiting
+2b752f7c71fd: Waiting
+f71baa60d447: Waiting
+d9c47982f6f1: Waiting
+8d513d1f314d: Waiting
+fc1c5222d85f: Waiting
+fe2133fec8d0: Waiting
+988a64a7c0a0: Waiting
+8f0b7024e66e: Waiting
+1a57a0147c0c: Waiting
+575b1dd98af8: Waiting
+2b752f7c71fd: Waiting
+f71baa60d447: Waiting
+c92f851c61e6: Waiting
+9293e7baf610: Waiting
+f768ed0594a7: Waiting
+589002ba0eae: Waiting
+2b752f7c71fd: Waiting
+f71baa60d447: Waiting
+c92f851c61e6: Waiting
+9293e7baf610: Waiting
+f768ed0594a7: Waiting
+589002ba0eae: Waiting
+d9c47982f6f1: Waiting
+8d513d1f314d: Waiting
+fc1c5222d85f: Waiting
+fe2133fec8d0: Waiting
+988a64a7c0a0: Waiting
+8f0b7024e66e: Waiting
+1a57a0147c0c: Waiting
+575b1dd98af8: Waiting
+1a57a0147c0c: Waiting
+575b1dd98af8: Waiting
+2b752f7c71fd: Waiting
+f71baa60d447: Waiting
+c92f851c61e6: Waiting
+9293e7baf610: Waiting
+f768ed0594a7: Waiting
+589002ba0eae: Waiting
+d9c47982f6f1: Waiting
+8d513d1f314d: Waiting
+fc1c5222d85f: Waiting
+fe2133fec8d0: Waiting
+988a64a7c0a0: Waiting
+8f0b7024e66e: Waiting
+988a64a7c0a0: Waiting
+8f0b7024e66e: Waiting
+1a57a0147c0c: Waiting
+575b1dd98af8: Waiting
+2b752f7c71fd: Waiting
+f71baa60d447: Waiting
+c92f851c61e6: Waiting
+9293e7baf610: Waiting
+f768ed0594a7: Waiting
+589002ba0eae: Waiting
+d9c47982f6f1: Waiting
+8d513d1f314d: Waiting
+fc1c5222d85f: Waiting
+fe2133fec8d0: Waiting
+fe2133fec8d0: Waiting
+8f0b7024e66e: Waiting
+1a57a0147c0c: Waiting
+575b1dd98af8: Waiting
+2b752f7c71fd: Layer already exists
+f71baa60d447: Waiting
+c92f851c61e6: Waiting
+9293e7baf610: Waiting
+f768ed0594a7: Layer already exists
+589002ba0eae: Layer already exists
+d9c47982f6f1: Waiting
+8d513d1f314d: Layer already exists
+fc1c5222d85f: Waiting
+f71baa60d447: Layer already exists
+fc1c5222d85f: Layer already exists
+988a64a7c0a0: Pushed
+c92f851c61e6: Pushed
+9293e7baf610: Pushed
+1a57a0147c0c: Pushed
+d9c47982f6f1: Pushed
+fe2133fec8d0: Pushed
+8f0b7024e66e: Pushed
+575b1dd98af8: Pushed
+v1.5.1: digest: sha256:942d4a7a333a09a8c63985a5f70fdf68fb085352256d14d8c03cd97bba7d3517 size: 856
+Deploying container to Cloud Run service [izara-doctor-portal-dev-testing] in project [izara-telemedicine] region [asia-southeast1]
+Deploying...
+Setting IAM Policy..............done
+Creating Revision..................................................................................................................................................................................................done
+Routing traffic.....done
+Done.
+Service [izara-doctor-portal-dev-testing] revision [izara-doctor-portal-dev-testing-00008-2lr] has been deployed and is serving 100 percent of traffic.
+Service URL: https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app
+ERROR: (gcloud.run.services.update) argument --update-env-vars: Bad syntax for dict arg: [https://izara-doctor-portal-dev-testing-hvht4obouq-as.a.run.app]. Please see `gcloud topic flags-file` or `gcloud topic escaping` for information on providing list or dictionary flag values with special characters.
+Usage: gcloud run services update [[SERVICE] --namespace=NAMESPACE] [optional flags]
+  optional flags may be  --add-cloudsql-instances | --add-custom-audiences |
+                         --add-volume | --add-volume-mount | --args | --async |
+                         --binary-authorization | --breakglass |
+                         --clear-binary-authorization |
+                         --clear-cloudsql-instances | --clear-custom-audiences |
+                         --clear-encryption-key-shutdown-hours |
+                         --clear-env-vars | --clear-key | --clear-labels |
+                         --clear-network | --clear-network-tags |
+                         --clear-post-key-revocation-action-type |
+                         --clear-secrets | --clear-volume-mounts |
+                         --clear-volumes | --clear-vpc-connector | --command |
+                         --concurrency | --container | --cpu | --cpu-boost |
+                         --cpu-throttling | --default-url | --depends-on |
+                         --encryption-key-shutdown-hours | --env-vars-file |
+                         --execution-environment | --gpu | --gpu-type |
+                         --gpu-zonal-redundancy | --help | --image | --ingress |
+                         --invoker-iam-check | --key | --labels |
+                         --liveness-probe | --max | --max-instances | --memory |
+                         --min | --min-instances | --namespace | --network |
+                         --network-tags | --port |
+                         --post-key-revocation-action-type | --region |
+                         --remove-cloudsql-instances | --remove-containers |
+                         --remove-custom-audiences | --remove-env-vars |
+                         --remove-labels | --remove-secrets | --remove-volume |
+                         --remove-volume-mount | --revision-suffix | --scaling |
+                         --service-account | --session-affinity |
+                         --set-cloudsql-instances | --set-custom-audiences |
+                         --set-env-vars | --set-secrets | --startup-probe |
+                         --subnet | --tag | --timeout | --no-traffic |
+                         --update-env-vars | --update-labels |
+                         --update-secrets | --use-http2 | --vpc-connector |
+                         --vpc-egress
+
+For detailed information on this command and its flags, run:
+  gcloud run services update --help

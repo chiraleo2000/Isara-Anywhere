@@ -1,6 +1,6 @@
 {
   "name": "izara-jitsi-server",
-  "version": "1.5.1-dev",
+  "version": "1.5.1",
   "description": "Izara Jitsi Meeting Server - Video, Transcription (Web Speech API), AI Summary (Gemini)",
   "main": "server/index.js",
   "type": "module",
@@ -12,6 +12,7 @@
     "docker:run": "docker run -p 3020:3020 --env-file .env izara-jitsi-server"
   },
   "dependencies": {
+    "@google-cloud/speech": "^6.7.0",
     "@google/generative-ai": "^0.21.0",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",

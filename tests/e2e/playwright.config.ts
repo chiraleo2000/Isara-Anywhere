@@ -1,15 +1,15 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════
- * IZARA TELEMEDICINE — PLAYWRIGHT E2E CONFIG v12.0.0
+ * IZARA TELEMEDICINE — PLAYWRIGHT E2E CONFIG v12.1.0
  * ═══════════════════════════════════════════════════════════════════════
  * 10 spec files (01-10) | ~800+ tests | 5 projects: Local, Cloud, Cloud-Dev, Mobile-Local, Mobile-Cloud-Dev
- * Updated: February 21, 2026
+ * Updated: February 22, 2026
  *
  * Suite:
  *   01: Auth, Health, Multi-User (82 tests)
  *   02: Appointment Full Lifecycle (92 tests)
  *   03: Health Records & EMR (95 tests)
- *   04: Video Meeting & Transcription (87 tests)
+ *   04: Video Meeting & Transcription (91 tests) — incl. Google STT + enhanced summary
  *   05: ★★★ Content Sync & Approval — single-refresh visibility (82 tests)
  *   06: AI Features & CDS (72 tests)
  *   07: Multi-User Concurrent — 5 browser windows (60 tests)

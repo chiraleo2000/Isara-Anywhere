@@ -13,7 +13,7 @@
     "test:multi-user": "npx playwright test --project=Local --headed -g '26 —'",
     "test:phase2": "npx playwright test --project=Local --headed -g '27 —'",
     "cloud": "cross-env TEST_ENV=cloud npx playwright test --project=Cloud --headed",
-    "cloud-dev": "cross-env TEST_ENV=cloud npx playwright test --project=Cloud-Dev --headed",
+    "cloud-dev": "cross-env TEST_ENV=cloud-dev npx playwright test --project=Cloud-Dev --headed",
     "report": "npx playwright show-report"
   },
   "devDependencies": {
