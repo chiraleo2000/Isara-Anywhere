@@ -129,6 +129,7 @@ Bookmark Action:
 ### 3.1 Navigation
 
 `(doctor)/content/` — multiple sub-pages:
+
 - `library` — Clinical Resources (guidelines, protocols)
 - `medical-content` — Health Education Content (articles for patients)
 - `consultants` — Medical Consultants Directory
@@ -281,6 +282,7 @@ Health education articles created by doctors for patients (published to Patient 
 ### 4.2 Workflow
 
 Same approval workflow as Clinical Resources. After admin approves:
+
 - Article appears in Patient Health Library
 - Push notification to patients who follow the category (optional)
 - Author shows as the doctor (builds reputation)

@@ -1,14 +1,16 @@
 # 🏥 Izara Telemedicine Platform
 
-![Version](https://img.shields.io/badge/version-1.5.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.5.1-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Platform](https://img.shields.io/badge/platform-web%20%7C%20mobile-lightgrey.svg)
 ![Node](https://img.shields.io/badge/node-%3E%3D22.0.0-brightgreen.svg)
 ![Database](https://img.shields.io/badge/database-PostgreSQL%2018-blue.svg)
 ![Docker](https://img.shields.io/badge/docker-ready-blue.svg)
-![Tests](https://img.shields.io/badge/E2E%20tests-800%2B%20passing-brightgreen.svg)
+![Tests](https://img.shields.io/badge/Unit%20tests-311%20passing-brightgreen.svg)
+![Tests](https://img.shields.io/badge/E2E%20tests-808%20passing-brightgreen.svg)
 ![Cloud Run](https://img.shields.io/badge/Cloud%20Run-deployed-blue.svg)
 ![Mobile](https://img.shields.io/badge/mobile-Expo%20%2B%20React%20Native-blueviolet.svg)
+![Security](https://img.shields.io/badge/security-OWASP%20hardened-green.svg)
 
 ## A comprehensive telemedicine platform built for Thailand's healthcare system
 
@@ -42,7 +44,7 @@ The platform consists of three main services:
 | PostgreSQL | localhost:5433 |
 | pgAdmin | <http://localhost:5050> |
 
-### Cloud Environment — Dev (v1.5.0) (Google Cloud Run)
+### Cloud Environment — Dev (v1.5.1) (Google Cloud Run)
 
 | Service | URL |
 | ------- | --- |
@@ -50,7 +52,7 @@ The platform consists of three main services:
 | Doctor Portal | <https://izara-doctor-portal-dev-testing-hvht4obouq-as.a.run.app> |
 | Meeting Server | <https://izara-meeting-server-dev-testing-hvht4obouq-as.a.run.app> |
 
-### Cloud Environment — Production (v1.5.0) (Google Cloud Run)
+### Cloud Environment — Production (v1.5.1) (Google Cloud Run)
 
 | Service | URL |
 | ------- | --- |
@@ -66,6 +68,9 @@ The platform consists of three main services:
 | ------ | ----- |
 | Framework | Expo SDK 52 + React Native 0.76 |
 | Package | `isara-mobile` (monorepo with Turborepo) |
+| Local Storage | expo-sqlite (9 tables: user_profile, appointments, vital_signs, medications, medication_logs, phr_cache, notifications, sync_queue, sync_metadata) |
+| Sync Engine | Offline-first with conflict resolution (keep-local / keep-server / merge) |
+| State | Zustand 5.0 (authStore + syncStore) |
 | Patient Tabs | Dashboard, Appointments, Health Records, AI Chat, Profile |
 | Doctor Tabs | Dashboard, Queue, Schedule, Patients, Profile |
 | Run | `cd Isara-mobile && npx expo start` |
@@ -74,15 +79,24 @@ The platform consists of three main services:
 
 ## 🧪 Testing
 
-### Test Architecture (v1.5.0)
+### Test Architecture (v1.5.1)
 
+#### Unit Tests (Vitest — 311 tests)
+- **10 test suites** in `tests/unit/` — pure logic, no server required
+- **Coverage areas**: Drug database, config, PHR types, API service, mobile utils, API client, sync engine, Jitsi meeting, security validation, database schema
+- **Framework**: Vitest 2.1.9, runs in < 2 seconds
+- **Run**: `cd tests/unit && npx vitest run`
+
+#### E2E Tests (Playwright — 808 tests)
 - **10 E2E spec files** (01-10): comprehensive workflow, API, UI, and mobile viewport testing
-- **800+ total tests** across 10 spec files
+- **808 total tests** across 10 spec files
 - **5 simultaneous demo user accounts** (patient1, patient2, patient3, doctor, admin)
 - **5 Playwright projects**: Local, Cloud, Cloud-Dev, Mobile-Local, Mobile-Cloud-Dev
 - **Mobile viewport tests**: Pixel 7 (393×851), iPhone 13 (390×844), iPhone SE (375×667), iPad Mini (768×1024)
 - **0 skipped tests** — every test must pass
 - **Serial + parallel execution** for workflow integrity
+
+#### Combined: 1,119 tests (311 unit + 808 E2E)
 
 ### E2E Test Specs
 
@@ -102,6 +116,13 @@ The platform consists of three main services:
 ### Run Tests
 
 ```powershell
+# ── Unit Tests (311 tests, < 2 seconds) ──
+cd tests/unit
+npx vitest run              # Run all 311 unit tests
+npx vitest run --coverage    # With coverage report
+npx vitest watch             # Watch mode during development
+
+# ── E2E Tests (808 tests, requires Docker services running) ──
 cd tests/e2e
 
 # Run ALL Local tests (headless)
@@ -122,6 +143,21 @@ npx playwright test "09-user-accounts" --project=Local
 # View HTML Report
 npx playwright show-report
 ```
+
+### Unit Test Suites (tests/unit/)
+
+| Suite | Tests | Coverage Area |
+| ----- | ----- | ------------- |
+| doctor-portal/drugDatabase | 25 | Drug data integrity, search, interaction checking |
+| doctor-portal/config | 25 | GCS buckets, feature flags, WebSocket URLs |
+| patient-portal/sharedPHRTypes | 28 | PHR factory, living will, doctor view transforms |
+| patient-portal/api-service | 30 | Endpoint registry, query params, auth headers |
+| mobile/shared-utils | 32 | Thai date/currency formatters, validators |
+| mobile/api-client | 26 | Error normalization, token refresh, URL construction |
+| mobile/sync-engine | 31 | Offline queue, conflict resolution, delta sync |
+| meeting-server/jitsi-meeting | 31 | Transcript chunking, CDS rules, room names |
+| security/security-validation | 38 | Password policy, JWT, CORS, rate limiting, OWASP |
+| database/schema-validation | 45 | Table registry, appointment FSM, RBAC, PDPA |
 
 ### Test Coverage — 18 Sections
 
@@ -203,7 +239,7 @@ npx playwright show-report
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────────┐
-│                     IZARA TELEMEDICINE v1.5.0                               │
+│                     IZARA TELEMEDICINE v1.5.1                               │
 ├──────────────────────────────────────────────────────────────────────────┤
 │   ┌─────────────────┐  ┌─────────────────┐  ┌────────────────────────┐   │
 │   │  Patient Portal │  │  Doctor Portal  │  │  Meeting Server        │   │
@@ -333,7 +369,7 @@ cd Izara-jitsi-server
 gcloud builds submit --config=cloudbuild.yaml
 ```
 
-### Cloud URLs (Production — v1.5.0)
+### Cloud URLs (Production — v1.5.1)
 
 | Service | URL |
 | ------- | --- |
@@ -341,7 +377,7 @@ gcloud builds submit --config=cloudbuild.yaml
 | Doctor Portal | <https://izara-doctor-portal-hvht4obouq-as.a.run.app> |
 | Meeting Server | <https://izara-jitsi-meeting-portal-hvht4obouq-as.a.run.app> |
 
-### Cloud URLs (Dev — v1.5.0)
+### Cloud URLs (Dev — v1.5.1)
 
 | Service | URL |
 | ------- | --- |
@@ -368,10 +404,17 @@ Isara-Anywhere/
 │   └── client/               # Transcription components
 ├── Isara-mobile/             # Mobile app (Expo + React Native)
 │   ├── app/                  # Expo Router screens
+│   ├── src/                  # Stores (auth, sync) & services (syncEngine)
 │   └── packages/             # Shared packages (api-client, ui, shared)
-├── tests/e2e/                # Playwright E2E tests (800+ tests, 10 specs)
-│   ├── specs/                # 10 test spec files (01-10)
-│   └── lib/                  # Shared test config & helpers
+│       └── shared/src/db/    # SQLite schema, localDb, offlineQueue
+├── tests/
+│   ├── unit/                 # Vitest unit tests (311 tests, 10 suites)
+│   └── e2e/                  # Playwright E2E tests (808 tests, 10 specs)
+│       ├── specs/            # 10 test spec files (01-10)
+│       └── lib/              # Shared test config & helpers
+├── specs/                    # Specification documents
+│   ├── SPEC_KIT_PHASE1.md    # Phase 1 combined requirements
+│   └── SPEC_KIT_PHASE2.md    # Phase 2 mobile + sync requirements
 ├── Processes/                # Workflow documentation (13 docs)
 ├── Presentations/            # Project presentations & diagrams
 ├── scripts/                  # Utility & deployment scripts
@@ -384,17 +427,21 @@ Isara-Anywhere/
 
 | Document | Description |
 | -------- | ----------- |
+| [Spec Kit — Phase 1](specs/SPEC_KIT_PHASE1.md) | Combined Phase 1 requirements & feature matrix |
+| [Spec Kit — Phase 2](specs/SPEC_KIT_PHASE2.md) | Mobile app specifications, SQLite sync, security |
 | [Patient Portal Doc](Isara-patient-portal/doc/) | Patient portal architecture, features & APIs |
 | [Doctor Portal Doc](Isara-doctor-portal/doc/) | Doctor portal architecture, features & APIs |
 | [Workflow Processes](Processes/) | 13 workflow & process documents |
 | [Presentations](Presentations/) | Technical diagrams & project presentations |
+| [E2E Coverage Report](tests/E2E_COVERAGE_REPORT.md) | Per-spec E2E test coverage analysis |
 
 ---
 
-## 🔒 Security (v1.5.0 Hardened)
+## 🔒 Security (v1.5.1 Hardened)
 
 - **Authentication**: bcrypt password hashing (10 rounds), JWT + session tokens
-- **JWT Secrets**: Secure crypto-generated 256-bit secrets (no defaults)
+- **JWT Secrets**: Consistent `JWT_SECRET_FINAL` usage across all verify calls (sign/verify mismatch fixed)
+- **Password Policy**: Unified 12-character minimum with uppercase, lowercase, digit, and special character requirements across all portals
 - **Session Management**: Secure token-based sessions (24hr expiry)
 - **Rate Limiting**: 10 login attempts per 15 minutes
 - **OWASP Security Headers**: Helmet.js (CSP, XSS protection, HSTS, X-Frame, X-Content-Type)
@@ -402,7 +449,8 @@ Isara-Anywhere/
 - **Error Handling**: Global error handlers with sanitized error messages (no stack traces in production)
 - **IDOR Protection**: User-scoped data access enforcement
 - **Input Validation**: XSS prevention, SQL injection protection
-- **CORS**: Strict origin validation
+- **CORS**: Strict origin validation — no localhost in production, regex restricted to `izara-*` Cloud Run services
+- **Service Account Paths**: Credentials stored in `credentials/` directory (not in public/)
 - **PDPA Compliance**: Thailand's data protection standards
 - **Man-in-the-Loop AI**: Doctor validates all AI outputs before delivery
 

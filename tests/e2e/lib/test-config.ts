@@ -302,6 +302,39 @@ export const ENDPOINTS = {
   },
 };
 
+/** Attempt a single login request with retries for transient errors */
+async function tryLoginPath(
+  request: any,
+  url: string,
+  creds: { email: string; password: string },
+  maxRetries: number,
+): Promise<string | null> {
+  const timeout = IS_CLOUD ? 30000 : 15000;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const res = await request.post(url, {
+        data: creds,
+        headers: { 'Content-Type': 'application/json' },
+        timeout,
+      });
+      if (res.status() === 200) {
+        const d = await res.json();
+        return d.token || d.accessToken || d.data?.token || '';
+      }
+      return null; // Non-transient HTTP error
+    } catch (err: any) {
+      const msg = err?.message || '';
+      const isTransient = msg.includes('ENOTFOUND') || msg.includes('ECONNRESET') || msg.includes('ETIMEDOUT');
+      if (attempt < maxRetries && isTransient) {
+        await new Promise(r => setTimeout(r, 3000 * (attempt + 1)));
+        continue;
+      }
+      return null; // Non-transient or exhausted retries
+    }
+  }
+  return null;
+}
+
 /** Helper: get doctor auth login endpoint (doctor portal uses /auth/login not /api/auth/login) */
 export async function getDoctorAuthToken(
   request: any,
@@ -310,28 +343,8 @@ export async function getDoctorAuthToken(
 ): Promise<string> {
   const maxRetries = IS_CLOUD ? 3 : 1;
   for (const path of ['/auth/login', '/api/auth/login']) {
-    for (let attempt = 0; attempt <= maxRetries; attempt++) {
-      try {
-        const res = await request.post(`${baseUrl}${path}`, {
-          data: creds,
-          headers: { 'Content-Type': 'application/json' },
-          timeout: IS_CLOUD ? 30000 : 15000,
-        });
-        if (res.status() === 200) {
-          const d = await res.json();
-          return d.token || d.accessToken || d.data?.token || '';
-        }
-        break; // Non-transient HTTP error, try next path
-      } catch (err: any) {
-        const msg = err?.message || '';
-        const isTransient = msg.includes('ENOTFOUND') || msg.includes('ECONNRESET') || msg.includes('ETIMEDOUT');
-        if (attempt < maxRetries && isTransient) {
-          await new Promise(r => setTimeout(r, 3000 * (attempt + 1)));
-          continue;
-        }
-        break; // Non-transient, try next path
-      }
-    }
+    const token = await tryLoginPath(request, `${baseUrl}${path}`, creds, maxRetries);
+    if (token !== null) return token;
   }
   return '';
 }

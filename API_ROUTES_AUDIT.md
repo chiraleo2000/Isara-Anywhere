@@ -11,7 +11,7 @@ Express TypeScript server. Routes are registered via `app.use('/api/<prefix>', r
 ### Direct routes (index.ts)
 
 | Method | Path | Auth | Description |
-|--------|------|------|-------------|
+| -------- | ------ | ------ | ------------- |
 | GET | `/health` | No | Health check |
 | GET | `/api/health` | No | API health check |
 | GET | `/api/health/gcs` | No | GCS connection check |
@@ -37,7 +37,7 @@ Express TypeScript server. Routes are registered via `app.use('/api/<prefix>', r
 ### Auth routes — prefix `/api/auth` (also aliased as `/api/users` and `/auth`)
 
 | Method | Path | Auth | Description |
-|--------|------|------|-------------|
+| -------- | ------ | ------ | ------------- |
 | GET | `/api/auth/` | No | Get profile (standalone) |
 | POST | `/api/auth/register` | No | Register new user |
 | POST | `/api/auth/login` | No | Login |
@@ -58,7 +58,7 @@ Express TypeScript server. Routes are registered via `app.use('/api/<prefix>', r
 ### Appointments — prefix `/api/appointments`
 
 | Method | Path | Auth | Description |
-|--------|------|------|-------------|
+| -------- | ------ | ------ | ------------- |
 | GET | `/api/appointments/history` | Yes | Appointment history |
 | GET | `/api/appointments/my` | Yes | My appointments |
 | GET | `/api/appointments/` | Yes | All patient appointments |
@@ -76,7 +76,7 @@ Express TypeScript server. Routes are registered via `app.use('/api/<prefix>', r
 ### PHR (Personal Health Records) — prefix `/api/phr`
 
 | Method | Path | Auth | Description |
-|--------|------|------|-------------|
+| -------- | ------ | ------ | ------------- |
 | GET | `/api/phr/` | Yes | Get current user's PHR |
 | POST | `/api/phr/vitals` | Yes | Add vitals for current user |
 | GET | `/api/phr/patient/:patientId` | Yes | Get PHR by patient |
@@ -103,7 +103,7 @@ Express TypeScript server. Routes are registered via `app.use('/api/<prefix>', r
 ### AI — prefix `/api/ai`
 
 | Method | Path | Auth | Description |
-|--------|------|------|-------------|
+| -------- | ------ | ------ | ------------- |
 | POST | `/api/ai/chat` | Yes | Health Q&A chatbot |
 | GET | `/api/ai/chat/history` | Yes | Get chat history |
 | POST | `/api/ai/chat/clear` | Yes | Clear chat history |
@@ -123,7 +123,7 @@ Express TypeScript server. Routes are registered via `app.use('/api/<prefix>', r
 ### Notifications — prefix `/api/notifications`
 
 | Method | Path | Auth | Description |
-|--------|------|------|-------------|
+| -------- | ------ | ------ | ------------- |
 | GET | `/api/notifications/` | No | Get all notifications |
 | GET | `/api/notifications/count` | No | Get unread count |
 | PUT | `/api/notifications/:id/read` | No | Mark notification read |
@@ -136,7 +136,7 @@ Express TypeScript server. Routes are registered via `app.use('/api/<prefix>', r
 ### PDPA (Data Privacy) — prefix `/api/pdpa`
 
 | Method | Path | Auth | Description |
-|--------|------|------|-------------|
+| -------- | ------ | ------ | ------------- |
 | GET | `/api/pdpa/status` | Yes | Get PDPA status |
 | POST | `/api/pdpa/consent` | Yes | Grant consent |
 | DELETE | `/api/pdpa/consent` | Yes | Revoke all consents |
@@ -157,7 +157,7 @@ Express TypeScript server. Routes are registered via `app.use('/api/<prefix>', r
 ### Content — prefix `/api/content`
 
 | Method | Path | Auth | Description |
-|--------|------|------|-------------|
+| -------- | ------ | ------ | ------------- |
 | GET | `/api/content/medical` | No | Get medical content |
 | GET | `/api/content/medical/:id` | No | Get specific article |
 | POST | `/api/content/medical/:id/view` | No | Track article view |
@@ -166,7 +166,7 @@ Express TypeScript server. Routes are registered via `app.use('/api/<prefix>', r
 ### Metadata — prefix `/api/metadata`
 
 | Method | Path | Auth | Description |
-|--------|------|------|-------------|
+| -------- | ------ | ------ | ------------- |
 | GET | `/api/metadata/medications` | Yes | Get medications |
 | GET | `/api/metadata/medications/search` | Yes | Search medications |
 | GET | `/api/metadata/drug-interactions` | Yes | Get drug interactions |
@@ -181,7 +181,7 @@ Express TypeScript server. Routes are registered via `app.use('/api/<prefix>', r
 ### Doctors — prefix `/api/doctors`
 
 | Method | Path | Auth | Description |
-|--------|------|------|-------------|
+| -------- | ------ | ------ | ------------- |
 | GET | `/api/doctors/` | Yes | Get all doctors |
 | GET | `/api/doctors/:doctorId` | Yes | Get doctor by ID |
 | GET | `/api/doctors/:doctorId/schedule` | Yes | Get schedule |
@@ -193,7 +193,7 @@ Express TypeScript server. Routes are registered via `app.use('/api/<prefix>', r
 ### Video Meeting — prefix `/api/video-meeting`
 
 | Method | Path | Auth | Description |
-|--------|------|------|-------------|
+| -------- | ------ | ------ | ------------- |
 | GET | `/api/video-meeting/config` | No | Get config |
 | POST | `/api/video-meeting/create` | No | Create meeting |
 | GET | `/api/video-meeting/health` | No | Meeting service health |
@@ -213,7 +213,7 @@ Express TypeScript server. Routes are registered via `app.use('/api/<prefix>', r
 ### GCS (Google Cloud Storage) — prefix `/api/gcs`
 
 | Method | Path | Auth | Description |
-|--------|------|------|-------------|
+| -------- | ------ | ------ | ------------- |
 | GET | `/api/gcs/status` | No | GCS status |
 | GET | `/api/gcs/signed-url/download` | No | Get download URL |
 | GET | `/api/gcs/signed-url/upload` | No | Get upload URL |
@@ -226,7 +226,7 @@ Express TypeScript server. Routes are registered via `app.use('/api/<prefix>', r
 ### Appointment Pool — prefix `/api/appointment-pool`
 
 | Method | Path | Auth | Description |
-|--------|------|------|-------------|
+| -------- | ------ | ------ | ------------- |
 | GET | `/api/appointment-pool/` | Yes | Get pool items |
 | POST | `/api/appointment-pool/` | Yes | Add to pool |
 | POST | `/api/appointment-pool/:poolId/claim` | Yes | Doctor claims appointment |
@@ -241,7 +241,7 @@ Express TypeScript server. Routes are registered via `app.use('/api/<prefix>', r
 ### Google Services — prefix `/api/google`
 
 | Method | Path | Auth | Description |
-|--------|------|------|-------------|
+| -------- | ------ | ------ | ------------- |
 | GET | `/api/google/health` | No | Google services health |
 | GET | `/api/google/maps/config` | Yes | Get Maps API config |
 | POST | `/api/google/calendar/event` | Yes | Create calendar event |
@@ -256,7 +256,7 @@ Express TypeScript server. Routes are registered via `app.use('/api/<prefix>', r
 | GET | `/api/google/maps/directions` | No | Get directions |
 | GET | `/api/google/status` | No | Google services status |
 
-**Patient Portal Total: ~170 routes**
+> Patient Portal Total: ~170 routes
 
 ---
 
@@ -267,7 +267,7 @@ Three separate CJS Express servers behind an nginx proxy:
 ### 2a. Auth Server (authServer.cjs — port 3011)
 
 | Method | Path | Auth | Description |
-|--------|------|------|-------------|
+| -------- | ------ | ------ | ------------- |
 | GET | `/api/health` | No | Health check |
 | POST | `/auth/register` | No | Register doctor |
 | POST | `/auth/login` | No | Login |
@@ -301,7 +301,7 @@ Three separate CJS Express servers behind an nginx proxy:
 ### 2b. Main API Server (mainApiServer.cjs — port 3009)
 
 | Method | Path | Auth | Description |
-|--------|------|------|-------------|
+| -------- | ------ | ------ | ------------- |
 | GET | `/api/health` | No | Health check |
 | GET | `/health` | No | Health check |
 | GET | `/health/db` | No | Database health |
@@ -474,7 +474,7 @@ Three separate CJS Express servers behind an nginx proxy:
 ### 2c. GCS API Server (gcsApiServer.cjs — port 3012)
 
 | Method | Path | Auth | Description |
-|--------|------|------|-------------|
+| -------- | ------ | ------ | ------------- |
 | **Storage** | | | |
 | GET | `/api/health` | No | Health check |
 | GET | `/api/storage/health` | No | Storage health |
@@ -543,7 +543,7 @@ Three separate CJS Express servers behind an nginx proxy:
 Express ESM JavaScript server.
 
 | Method | Path | Auth | Description |
-|--------|------|------|-------------|
+| -------- | ------ | ------ | ------------- |
 | GET | `/health` | No | Health check |
 | GET | `/api/health` | No | API health check |
 | **Meetings** | | | |
@@ -581,7 +581,7 @@ Express ESM JavaScript server.
 ## Summary
 
 | Server | Port | Route Count |
-|--------|------|-------------|
+| -------- | ------ | ------------- |
 | Patient Portal | 3005 | ~170 |
 | Doctor Portal — Auth Server | 3011 | 29 |
 | Doctor Portal — Main API Server | 3009 | ~130 |

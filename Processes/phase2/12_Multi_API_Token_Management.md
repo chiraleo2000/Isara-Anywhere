@@ -410,6 +410,7 @@ Request Pipeline:
 ### 6.2 Settings Screen Layout by Role
 
 **Patient Mode:**
+
 ```text
 API Connections
 ├── 🔐 Core (Auto-managed)
@@ -430,6 +431,7 @@ API Connections
 ```
 
 **Doctor Mode:**
+
 ```text
 API Connections
 ├── 🔐 Core (Auto-managed)
@@ -601,6 +603,7 @@ CREATE TABLE connections (
 ### 10.2 Request/Response Examples
 
 **Register New Connection:**
+
 ```json
 // POST /api/connections
 {
@@ -622,6 +625,7 @@ CREATE TABLE connections (
 ```
 
 **List Connections:**
+
 ```json
 // GET /api/connections
 // Response 200

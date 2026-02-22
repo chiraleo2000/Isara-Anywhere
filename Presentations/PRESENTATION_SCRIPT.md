@@ -2,8 +2,8 @@
 
 ## Presentation Script & Guide
 
-> **Version:** 3.0.0 | **Date:** February 2026  
-> **Status:** Phase 1 Complete + Phase 2 In Progress (v1.5.0)  
+> **Version:** 3.1.0 | **Date:** February 2026  
+> **Status:** Phase 1 Complete + Phase 2 In Progress (v1.5.1)  
 > **Duration:** 30-45 minutes  
 > **Audience:** Stakeholders, Technical Team, Medical Staff
 
@@ -106,7 +106,7 @@
 | **AI** | Google Gemini 2.5 Flash |
 | **Video** | Jitsi Meet (Self-Hosted) |
 | **Maps** | Google Maps Platform |
-| **Testing** | Playwright E2E |
+| **Testing** | Playwright E2E + Vitest Unit |
 
 ---
 
@@ -330,11 +330,17 @@ users (unified)
 
 **Security Measures:**
 
-- 🔒 **Password Hashing**: bcrypt
-- 🔒 **Session Management**: Server-side with JWT
+- 🔒 **Password Hashing**: bcrypt (10 rounds)
+- 🔒 **Password Policy**: Unified 12-character minimum across all portals (uppercase + lowercase + digit + special)
+- 🔒 **JWT**: Consistent `JWT_SECRET_FINAL` for sign/verify (mismatch fixed)
+- 🔒 **Session Management**: Server-side with JWT (24hr expiry)
 - 🔒 **HTTPS**: TLS encryption
-- 🔒 **RBAC**: Role-based access control
+- 🔒 **RBAC**: Role-based access control (patient, doctor, admin)
+- 🔒 **CORS**: Strict origin validation — no localhost in production
+- 🔒 **OWASP Headers**: Helmet.js (CSP, XSS, HSTS, X-Frame)
+- 🔒 **Credentials**: Service account keys stored in `credentials/` (not public/)
 - 🔒 **Audit Logging**: Complete trail in audit_logs
+- 🔒 **Testing**: 1,119 tests (311 unit + 808 E2E) — 100% pass rate
 
 ---
 
@@ -387,4 +393,4 @@ users (unified)
 
 ---
 
-### Last Updated: February 4, 2026
+### Last Updated: February 22, 2026

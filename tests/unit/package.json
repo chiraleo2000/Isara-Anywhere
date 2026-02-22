@@ -1,0 +1,24 @@
+{
+  "name": "isara-unit-tests",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Izara Telemedicine Unit & Integration Tests — isolated from project source",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:doctor": "vitest run --config vitest.config.ts --dir doctor-portal",
+    "test:patient": "vitest run --config vitest.config.ts --dir patient-portal",
+    "test:mobile": "vitest run --config vitest.config.ts --dir mobile",
+    "test:meeting": "vitest run --config vitest.config.ts --dir meeting-server",
+    "test:security": "vitest run --config vitest.config.ts --dir security",
+    "test:database": "vitest run --config vitest.config.ts --dir database",
+    "test:sync": "vitest run --config vitest.config.ts --dir mobile"
+  },
+  "devDependencies": {
+    "vitest": "^2.1.0",
+    "@vitest/coverage-v8": "^2.1.0",
+    "typescript": "^5.3.3"
+  }
+}

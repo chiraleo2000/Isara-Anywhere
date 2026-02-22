@@ -951,7 +951,7 @@ test.describe('02 — Appointment Full Lifecycle', () => {
     test('I05 — Onsite appointment (no meeting link)', async ({ request }) => {
       const token = users.get('patient1')!.token;
       const data = generateAppointmentData();
-      data.appointmentType = 'onsite';
+      data.type = 'onsite';
       const res = await patientApi(request, token).post(ENDPOINTS.appointments, data);
       expect([200, 201, 400, 401, 404, 500]).toContain(res.status);
       if (res.status === 200 || res.status === 201) {

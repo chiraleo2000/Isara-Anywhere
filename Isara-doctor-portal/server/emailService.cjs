@@ -305,7 +305,8 @@ class EmailService {
   async initialize() {
     try {
       // Try to load service account credentials
-      const keyFilePath = path.join(__dirname, '..', 'public', 'izara-telemedicine-dd0b6abe2bc8.json');
+      const keyFilePath = process.env.GOOGLE_APPLICATION_CREDENTIALS
+        || path.join(__dirname, '..', '..', 'credentials', 'service-account.json');
 
       if (fs.existsSync(keyFilePath)) {
         // Lazy-load googleapis only when needed

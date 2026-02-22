@@ -102,8 +102,8 @@ function validateRegistrationInput(body: Record<string, unknown>): ValidationErr
   if (confirmPassword && password !== confirmPassword) {
     return { success: false, error: 'Passwords do not match', message: 'Password and confirmation must match' };
   }
-  if ((password as string).length < 6) {
-    return { success: false, error: 'Password too short', message: 'Password must be at least 6 characters' };
+  if ((password as string).length < 12) {
+    return { success: false, error: 'Password too short', message: 'Password must be at least 12 characters' };
   }
   return null;
 }
@@ -546,8 +546,8 @@ router.post('/change-password', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'New passwords do not match' });
     }
 
-    if (newPassword.length < 8) {
-      return res.status(400).json({ error: 'Password must be at least 8 characters' });
+    if (newPassword.length < 12) {
+      return res.status(400).json({ error: 'Password must be at least 12 characters' });
     }
 
     // Validate session and get user
@@ -729,8 +729,8 @@ router.post('/reset-password', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Passwords do not match' });
     }
 
-    if (newPassword.length < 8) {
-      return res.status(400).json({ error: 'Password must be at least 8 characters' });
+    if (newPassword.length < 12) {
+      return res.status(400).json({ error: 'Password must be at least 12 characters' });
     }
 
     // Verify token

@@ -155,11 +155,11 @@ export function securityHeaders() {
 // ============================================================================
 
 const PASSWORD_POLICY = {
-  minLength: 8,
+  minLength: 12,
   requireUppercase: true,
   requireLowercase: true,
   requireNumbers: true,
-  requireSpecial: false, // Relaxed for patient portal
+  requireSpecial: true,
   maxRepeatingChars: 3
 };
 

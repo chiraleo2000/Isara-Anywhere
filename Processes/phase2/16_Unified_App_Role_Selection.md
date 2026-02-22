@@ -354,6 +354,7 @@ SecureStore Keys:
 ```
 
 This isolation means:
+
 - Switching roles doesn't require re-login (if tokens are valid)
 - Logging out of patient mode doesn't affect doctor session
 - Each role has independent token lifecycle

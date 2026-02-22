@@ -1,8 +1,8 @@
 # 📊 IZARA Telemedicine Platform - Presentation Materials
 
-> **Version:** 3.0.0 | **Updated:** February 21, 2026  
-> **Status:** Phase 1 Complete | Phase 2 In Progress (v1.5.0)  
-> **Tests:** 800+ E2E Tests × 5 Playwright Projects (Local, Cloud, Cloud-Dev, Mobile-Local, Mobile-Cloud-Dev)
+> **Version:** 3.1.0 | **Updated:** February 22, 2026  
+> **Status:** Phase 1 Complete | Phase 2 In Progress (v1.5.1)  
+> **Tests:** 311 Unit Tests (Vitest) + 808 E2E Tests (Playwright) = 1,119 total × 5 Playwright Projects
 
 ---
 
@@ -18,7 +18,7 @@ This document covers:
 3. User Management & RBAC
 4. Core Workflows
 5. DevOps & Deployment
-6. **Testing** (800+ tests, 10 specs, 18 coverage areas, mobile viewport)
+6. **Testing** (1,119 tests: 311 unit + 808 E2E, 10 specs, 18 coverage areas, mobile viewport)
 
 ---
 
@@ -121,11 +121,11 @@ View **[database/izara-complete-schema-v4.dbml](database/izara-complete-schema-v
 
 | Role | Email | Password | Portal |
 | ------ | ------- | ---------- | ------- |
-| Patient 1 (Demo) | demo.test@gmail.com | P@ssw0rd | Patient |
-| Patient 2 (Somchai) | Somchai.Mankong@gmail.com | P@ssw0rd | Patient |
-| Patient 3 (Anan) | Anan.Khayanrian@gmail.com | P@ssw0rd | Patient |
-| Doctor | doctor.test@izara.com | IzaraDoctor@2024 | Doctor |
-| Admin | admin.test@izara.com | IzaraAdmin@2024 | Doctor |
+| Patient 1 (Demo) | `demo.test@gmail.com` | P@ssw0rd | Patient |
+| Patient 2 (Somchai) | `Somchai.Mankong@gmail.com` | P@ssw0rd | Patient |
+| Patient 3 (Anan) | `Anan.Khayanrian@gmail.com` | P@ssw0rd | Patient |
+| Doctor | `doctor.test@izara.com` | IzaraDoctor@2024 | Doctor |
+| Admin | `admin.test@izara.com` | IzaraAdmin@2024 | Doctor |
 
 ---
 
@@ -139,4 +139,4 @@ View **[database/izara-complete-schema-v4.dbml](database/izara-complete-schema-v
 
 ---
 
-### Last Updated: February 21, 2026
+### Last Updated: February 22, 2026

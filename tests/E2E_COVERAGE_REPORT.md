@@ -18,7 +18,7 @@
 **Sections:** A–H (8 `describe` blocks)
 
 | Section | Name | Tests | IDs |
-|---------|------|-------|-----|
+| --------- | ------ | ------- | ----- |
 | A | Service Health Checks | 8 | A01–A08 |
 | B | Multi-User Authentication | 15 | B01–B15 |
 | C | Registration Flows | 10 | C01–C10 |
@@ -31,6 +31,7 @@
 **User Accounts:** ALL 5 (patient1, patient2, patient3, doctor, admin)
 
 **Features Tested:**
+
 - Health endpoints for all 3 services (patient portal, doctor portal, meeting server)
 - 5-user simultaneous authentication with token validation
 - Invalid credentials, missing credentials, expired tokens
@@ -53,7 +54,7 @@
 **Sections:** A–I (9 `describe` blocks)
 
 | Section | Name | Tests | IDs |
-|---------|------|-------|-----|
+| --------- | ------ | ------- | ----- |
 | A | Patient Books Appointment | 12 | A01–A12 |
 | B | Doctor Views & Confirms | 10 | B01–B10 |
 | C | Cancel & Reschedule | 10 | C01–C10 |
@@ -67,6 +68,7 @@
 **User Accounts:** ALL 5
 
 **Features Tested:**
+
 - Full appointment CRUD for 3 patients (including parallel booking)
 - AI urgency assessment from symptoms
 - Appointment pool/queue management
@@ -92,7 +94,7 @@
 **Sections:** A–J (10 `describe` blocks)
 
 | Section | Name | Tests | IDs |
-|---------|------|-------|-----|
+| --------- | ------ | ------- | ----- |
 | A | PHR Read & Update | 12 | A01–A12 |
 | B | Vitals History | 10 | B01–B10 |
 | C | EMR Creation & Management | 12 | C01–C12 |
@@ -107,6 +109,7 @@
 **User Accounts:** ALL 5
 
 **Features Tested:**
+
 - PHR CRUD (all 3 patients, parallel, Thai content, unauthorized access, data isolation, response time)
 - Vitals history: record, read, multiple entries, abnormal values, doctor view, browser PHR page
 - EMR SOAP format: create, read, update, sign, AI-assisted, Thai OPD card, multi-patient, browser EMR editor, cross-portal view
@@ -126,7 +129,7 @@
 **Sections:** A–H (8 `describe` blocks)
 
 | Section | Name | Tests | IDs |
-|---------|------|-------|-----|
+| --------- | ------ | ------- | ----- |
 | A | Meeting Creation & Config | 10 | A01–A10 |
 | B | Meeting Join & Lobby | 9 | B01–B09 |
 | C | Transcription Lifecycle | 10 | C01–C10 |
@@ -139,6 +142,7 @@
 **User Accounts:** ALL 5
 
 **Features Tested:**
+
 - Meeting server health checks, video meeting configuration
 - Meeting creation: from doctor portal, from meeting server, unique URLs per role, multi-patient
 - Meeting join/lobby: patient get link, doctor host, patient participant, guest invite/join token, invalid meeting, unauthorized
@@ -156,7 +160,7 @@
 **Sections:** A–I (9 `describe` blocks)
 
 | Section | Name | Tests | IDs |
-|---------|------|-------|-----|
+| --------- | ------ | ------- | ----- |
 | A | Medical Content CRUD | 12 | A01–A12 |
 | B | Clinical Resources CRUD | 10 | B01–B10 |
 | C | Admin Approval Workflow | 10 | C01–C10 |
@@ -170,6 +174,7 @@
 **User Accounts:** ALL 5
 
 **Features Tested:**
+
 - Medical content CRUD: doctor create/read/list/update/submit/delete, Thai bilingual, multiple articles, draft visibility, view count, like, tags
 - Clinical resources CRUD: create/read/list/submit, admin approval required, re-approval on edit, delete, tags, patient access restriction
 - Admin approval workflow: pending lists, create→pending, approve, direct publish, reject with reason, clinical resource approval, archive, lifecycle helper
@@ -187,7 +192,7 @@
 **Sections:** A–H (8 `describe` blocks)
 
 | Section | Name | Tests | IDs |
-|---------|------|-------|-----|
+| --------- | ------ | ------- | ----- |
 | A | AI Chat (Patient Portal) | 10 | A01–A10 |
 | B | Clinical Decision Support (CDS) | 10 | B01–B10 |
 | C | AI Summarization | 10 | C01–C10 |
@@ -200,6 +205,7 @@
 **User Accounts:** ALL 5
 
 **Features Tested:**
+
 - AI chat patient portal: English, Thai, clinical context, conversation threading, history, multi-patient concurrent, harmful content refusal, browser AI chat page, message send via browser, empty message
 - CDS: drug interaction check, dosage validation, allergy alert, CDS alerts list/per patient, CDS logs, real-time prescription check, Thai medication names, man-in-the-loop acknowledge, concurrent multi-patient
 - AI summarization: pre-consultation, patient summary, EMR from transcript (SOAP), generic document, Thai, patient instruction sheet, meeting summary sections, man-in-the-loop validation, document analysis, knowledge base
@@ -216,7 +222,7 @@
 **Sections:** A–G (7 `describe` blocks)
 
 | Section | Name | Tests | IDs |
-|---------|------|-------|-----|
+| --------- | ------ | ------- | ----- |
 | A | Appointment Flow: 4 Windows Simultaneously | 10 | A01–A10 |
 | B | Content Flow: Doctor→Admin→All Patients | 8 | B01–B08 |
 | C | Health Records Cross-Portal | 8 | C01–C08 |
@@ -228,6 +234,7 @@
 **User Accounts:** ALL 5
 
 **Features Tested:**
+
 - 4-browser simultaneous appointment flow: patient books→doctor confirms→patient sees, 5 users simultaneously, 3 parallel bookings, doctor confirms multiple, status change on refresh, doctor+admin simultaneous, full lifecycle, race condition same slot, admin assigns
 - Content flow: full API flow (3 patients see), 4 browser windows, rejected content hidden, batch approve, live update during browsing, tags sync, 5-user concurrent poll, cross-account visibility
 - Health records cross-portal: PHR update→doctor sees, EMR→patient timeline, simultaneous record view, 3 patients PHR concurrent, data isolation, prescription→patient records, vitals→timeline, living will share→doctor view
@@ -243,7 +250,7 @@
 **Sections:** A–H (8 `describe` blocks)
 
 | Section | Name | Tests | IDs |
-|---------|------|-------|-----|
+| --------- | ------ | ------- | ----- |
 | A | CTM (Thai Traditional Medicine) | 10 | A01–A10 |
 | B | Geriatric Screening (8 Tools) | 10 | B01–B10 |
 | C | SOS Emergency Alert | 8 | C01–C08 |
@@ -256,6 +263,7 @@
 **User Accounts:** ALL 5
 
 **Features Tested:**
+
 - CTM Thai Traditional Medicine: ธาตุเจ้าเรือน (body element) assessment CRUD, ธาตุ classification, สมุฏฐาน analysis, herbal prescription, multi-patient, patient cannot create, AI recommendation, browser CTM page
 - Geriatric screening 8 tools: ADL, IADL, TUG, Mini-Cog, MNA, GDS-15, SARC-F, Braden Scale — create and list screenings
 - SOS emergency alert: patient trigger, GPS location, doctor notification, doctor acknowledge, patient cancel, emergency contacts, alert history, multi-patient alerts
@@ -270,6 +278,7 @@
 ## Part 2: Gap Analysis — Documented Pages vs. E2E Coverage
 
 ### Legend
+
 - ✅ **Covered** — Feature has dedicated tests or significant coverage in specs
 - ⚠️ **Partial** — Some aspects tested but significant gaps remain
 - ❌ **Not Covered** — No E2E tests found for this documented feature/page
@@ -279,7 +288,7 @@
 ### Patient Portal Pages (from Processes/Pages/Patient-Portal/)
 
 | # | Page | Status | Notes |
-|---|------|--------|-------|
+| --- | ------ | -------- | ------- |
 | 01 | Login Page | ✅ Covered | Spec 01 sections B, E test login for all roles |
 | 02 | Register Page | ✅ Covered | Spec 01 section C tests patient + doctor registration |
 | 03 | Reset Password Page | ❌ **NOT COVERED** | **No tests for password reset flow** — token verification, new password form, password strength, expired token |
@@ -299,7 +308,7 @@
 ### Doctor Portal Pages (from Processes/Pages/Doctor-Portal/)
 
 | # | Page | Status | Notes |
-|---|------|--------|-------|
+| --- | ------ | -------- | ------- |
 | 01 | Login Page | ✅ Covered | Spec 01 sections B, E |
 | 02 | Reset Password Page | ❌ **NOT COVERED** | **No doctor portal reset password tests** |
 | 03 | Dashboard Page | ⚠️ Partial | Spec 01-H tests dashboard stats API; spec 07-E tests dashboard browser. **Missing: dashboard widget interactions, today's schedule preview, patient count, pending actions** |
@@ -327,24 +336,28 @@
 ### Summary of Critical Gaps
 
 #### Completely Missing (❌)
+
 1. **Password Reset Flow** — Both portals document a `/reset-password` page with token verification, password strength indicators, and success states. Zero E2E tests exist.
 
 #### Major Gaps (⚠️ with significant missing coverage)
-2. **Patient Dashboard UI** — Dashboard widgets, quick actions, today's appointments preview, health summary cards
-3. **Map Page UI Interactions** — Geolocation permission handling, facility type filters, range selector, marker click, info windows, navigation button
-4. **PDPA Page Browser Tests** — 3-tab interface (Privacy Settings, Doctor Access, Access History), consent toggles, data sharing terms display
-5. **E-Prescribing Full UI Flow** — Drug search autocomplete, allergy cross-check popups, dosage selection, digital signature, print/send
-6. **Lab Orders Full UI Flow** — Test search, panel selection, ordering workflow, result entry
-7. **Gemini AI Studio Full UI** — Medical calculators, template selection, conversation management, FAB button launch
-8. **Admin Pages Full UI** — Admin appointment management grid, admin doctor approval UI with document review, bulk operations
-9. **Appointment Pool UI** — 3-tab pool interface, claim/respond interactions
-10. **Queue Management UI** — Call/skip buttons, real-time polling indicator, wait time estimates
+
+1. **Patient Dashboard UI** — Dashboard widgets, quick actions, today's appointments preview, health summary cards
+2. **Map Page UI Interactions** — Geolocation permission handling, facility type filters, range selector, marker click, info windows, navigation button
+3. **PDPA Page Browser Tests** — 3-tab interface (Privacy Settings, Doctor Access, Access History), consent toggles, data sharing terms display
+4. **E-Prescribing Full UI Flow** — Drug search autocomplete, allergy cross-check popups, dosage selection, digital signature, print/send
+5. **Lab Orders Full UI Flow** — Test search, panel selection, ordering workflow, result entry
+6. **Gemini AI Studio Full UI** — Medical calculators, template selection, conversation management, FAB button launch
+7. **Admin Pages Full UI** — Admin appointment management grid, admin doctor approval UI with document review, bulk operations
+8. **Appointment Pool UI** — 3-tab pool interface, claim/respond interactions
+9. **Queue Management UI** — Call/skip buttons, real-time polling indicator, wait time estimates
 
 #### Pattern Observed
+
 Most gaps follow a consistent pattern: **API-level tests exist but browser UI interaction tests are missing**. The specs heavily test backend endpoints and data flow but have lighter coverage of:
+
 - Form interactions and validation states
 - UI-specific behaviors (dropdowns, modals, tabs, drag-drop)
-- Responsive/mobile layout behavior 
+- Responsive/mobile layout behavior
 - Error state rendering (empty states, loading states, error banners)
 - Accessibility (keyboard navigation, ARIA labels, screen reader)
 
@@ -363,7 +376,7 @@ Most gaps follow a consistent pattern: **API-level tests exist but browser UI in
 
 ### 3.2 Monorepo Structure
 
-```
+```text
 Isara-mobile/
 ├── package.json              # Root workspace config
 ├── app.config.ts             # Expo config (root app)
@@ -454,7 +467,7 @@ Isara-mobile/
 ### 3.3 Key Dependencies
 
 | Category | Package | Version |
-|----------|---------|---------|
+| --------- | ------- | ------- |
 | **Framework** | expo | ~52.0.0 |
 | **UI** | react-native | 0.76.5 |
 | **Router** | expo-router | ~4.0.0 |
@@ -492,7 +505,7 @@ Isara-mobile/
 ### 3.6 Mobile vs. Web Feature Parity (Notable Differences)
 
 | Feature | Web Portals | Mobile App |
-|---------|-------------|------------|
+| --------- | ----------- | ---------- |
 | Patient Tabs | 9 sidebar items | 5 bottom tabs |
 | Doctor Tabs | 9+ sidebar + admin | 5 bottom tabs |
 | Medical Content Library | Full page | Not visible in routes |
@@ -508,6 +521,7 @@ Isara-mobile/
 | Nursing Dashboard | Planned (Phase 2) | Not visible |
 
 The mobile app appears to be in **early development** with basic navigation scaffolding and route groups established, but significantly fewer screens than the web portals. The `apps/doctor/` and `apps/patient/` standalone variants have minimal screens (just `index.tsx` in tabs), suggesting either:
+
 - The root `app/` is the primary development target
 - Or the standalone apps are planned for later
   
@@ -518,7 +532,7 @@ The shared packages (`@izara/api-client`, `@izara/shared`, `@izara/ui`) have `sr
 ## Part 4: Summary Statistics
 
 | Metric | Value |
-|--------|-------|
+| -------- | ------- |
 | Total spec files | 8 |
 | Total lines of test code | ~7,563 |
 | Total describe blocks | 67 |
@@ -537,7 +551,7 @@ The shared packages (`@izara/api-client`, `@izara/shared`, `@izara/ui`) have `sr
 ### Test Distribution by Feature Area
 
 | Area | Spec Files | ~Tests |
-|------|-----------|--------|
+| ------ | ---------- | ------ |
 | Auth, Health, RBAC | 01 | ~82 |
 | Appointments | 02 | ~92 |
 | Health Records & EMR | 03 | ~95 |

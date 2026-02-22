@@ -107,7 +107,7 @@ export default defineConfig({
         baseURL: 'http://localhost:3005',
         headless: isHeadless,
       },
-      testMatch: ['**/10-mobile-viewport-data-sync.spec.ts'],
+      testMatch: SPEC_FILES,
     },
     {
       name: 'Mobile-Cloud-Dev',
@@ -116,7 +116,7 @@ export default defineConfig({
         baseURL: 'https://izara-patient-portal-dev-testing-hvht4obouq-as.a.run.app',
         headless: true,
       },
-      testMatch: ['**/10-mobile-viewport-data-sync.spec.ts'],
+      testMatch: SPEC_FILES,
     },
   ],
 });

@@ -270,7 +270,7 @@ app/
 | Property | Value |
 | ---------- | ------- |
 | **APIs** | `GET /api/pdpa/consent`, `PUT /api/pdpa/consent`, `GET /api/pdpa/audit-log`, `GET /api/pdpa/access-list`, `POST /api/pdpa/export-request`, `DELETE /api/users/me` |
-| **Tabs** | 3 tabs: Consent | Doctor Access | Audit Log |
+| **Tabs** | 3 tabs: Consent, Doctor Access, Audit Log |
 | **Consent Tab** | Toggle switches for each consent category. Required consents locked ON. |
 | **Doctor Access** | List of doctors with access. Grant/revoke toggle. Request history. |
 | **Audit Log** | Scrollable list: who accessed what data when. Filterable by date. |
@@ -357,7 +357,7 @@ app/
 | ---------- | ------- |
 | **APIs** | `GET /api/dashboard/:doctorId`, `GET /api/queue/doctor/:doctorId`, `GET /api/appointments/doctor/:doctorId` |
 | **Layout Phone** | ScrollView with stat cards + sections |
-| **Layout Tablet** | 3-column: Queue | Next Patient | Stats (see [16_Unified_App_Role_Selection.md](../16_Unified_App_Role_Selection.md)) |
+| **Layout Tablet** | 3-column: Queue, Next Patient, Stats (see [16_Unified_App_Role_Selection.md](../16_Unified_App_Role_Selection.md)) |
 | **Stats Cards** | Today's appointments, Patients in queue, Pending confirmations, Completed today |
 | **Quick Actions** | 📅 ดูตาราง, 📋 คิวคนไข้, 🔔 รอยืนยัน, 📹 เริ่มประชุม |
 | **Upcoming** | Next 3 appointments with patient name, symptoms, countdown |

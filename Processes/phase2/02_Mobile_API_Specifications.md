@@ -316,7 +316,7 @@ interface BiometricVerifyResponse {
 }
 ```
 
-#### Database Table
+#### Database Table (Biometric)
 
 ```sql
 CREATE TABLE biometric_credentials (
@@ -410,7 +410,7 @@ interface CreatePaymentIntentResponse {
 }
 ```
 
-#### Database Table
+#### Database Table (Payments)
 
 ```sql
 CREATE TABLE payment_transactions (

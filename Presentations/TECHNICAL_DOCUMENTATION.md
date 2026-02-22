@@ -1,10 +1,10 @@
 # Izara Telemedicine Platform - Technical Documentation
 
-> **Version:** 3.0.0 (Updated February 21, 2026)  
-> **Status:** Phase 1 Complete + Phase 2 In Progress (v1.5.0)  
+> **Version:** 3.1.0 (Updated February 22, 2026)  
+> **Status:** Phase 1 Complete + Phase 2 In Progress (v1.5.1)  
 > **Database:** PostgreSQL 18 + pgvector  
 > **Stack:** PostgreSQL / Express / React / Jitsi / Gemini AI / Google Cloud  
-> **Tests:** 800+ E2E Tests across 10 spec files (Local + Cloud-Dev, Desktop + Mobile)
+> **Tests:** 311 Unit Tests (Vitest) + 808 E2E Tests (Playwright) = 1,119 total across Local + Cloud-Dev
 
 ---
 
@@ -37,6 +37,17 @@ Isara-Anywhere/
 │   ├── server/                     # Express Backend API (Port 3010)
 │   └── Dockerfile.unified          # Production Container Config
 ├── Izara-jitsi-server/             # 📹 Video Meeting & Transcription (Port 3020)
+├── Isara-mobile/                   # 📱 Mobile App (Expo SDK 52 + React Native)
+│   ├── app/                        # Expo Router screens & tabs
+│   ├── src/stores/                 # Zustand stores (authStore, syncStore)
+│   ├── src/services/               # Sync engine coordinator
+│   └── packages/                   # Monorepo shared packages
+│       ├── api-client/             # Typed API client (Patient + Doctor)
+│       ├── shared/src/db/          # SQLite schema, localDb, offlineQueue
+│       └── ui/                     # Shared UI components
+├── specs/                          # 📑 Specification Documents
+│   ├── SPEC_KIT_PHASE1.md          # Phase 1 combined requirements
+│   └── SPEC_KIT_PHASE2.md          # Phase 2 mobile + sync requirements
 ├── Presentations/                  # 📚 Documentation Hub (You are here)
 │   ├── database/                   # DBML Schemas
 │   ├── diagrams/                   # Mermaid.js Workflow Diagrams
@@ -46,11 +57,17 @@ Isara-Anywhere/
 │   ├── cloud-db-tool.cjs           # Database Operations Tool
 │   ├── database/                   # SQL Init Scripts
 │   └── deprecated/                 # Old scripts (archived)
-├── tests/                          # 🧪 Testing
-│   └── e2e/
-│       ├── run-tests.ps1           # ⭐ Unified Test Runner
-│       └── specs/                  # Playwright Test Specs
-│           └── phase1-full-coverage.spec.ts  # ⭐ Main test file (92 tests)
+├── tests/                          # 🧪 Testing (1,119 total tests)
+│   ├── unit/                       # ⭐ Vitest unit tests (311 tests, 10 suites)
+│   │   ├── doctor-portal/          # Drug DB, config tests
+│   │   ├── patient-portal/         # PHR, API service tests
+│   │   ├── mobile/                 # Utils, API client, sync tests
+│   │   ├── meeting-server/         # Jitsi, CDS rule tests
+│   │   ├── security/               # OWASP, password policy tests
+│   │   └── database/               # Schema, FSM, RBAC tests
+│   └── e2e/                        # Playwright E2E tests (808 tests, 10 specs)
+│       ├── specs/                  # 10 Playwright spec files (01-10)
+│       └── lib/                    # Shared test config & helpers
 └── docker-compose.yml              # Local Orchestration Config
 ```
 
@@ -149,7 +166,7 @@ The platform uses a **Hybrid Cloud-Native Architecture**:
 | **AI** | Google Gemini | 2.5 Flash |
 | **Video** | Jitsi Meet (meet.jit.si - FREE) | Latest |
 | **Maps** | Google Maps Platform | v3 |
-| **Testing** | Playwright | v1.58 |
+| **Testing** | Playwright, Vitest | Playwright 1.58, Vitest 2.1 |
 
 ### 2.3 Visualization
 
@@ -395,15 +412,31 @@ services:
 
 ## 7. Testing
 
-### 7.1 Test Summary (February 21, 2026)
+### 7.1 Test Summary (February 22, 2026)
 
-| Environment | Spec Files | Tests Passed | Tests Failed | Duration |
+| Layer | Framework | Suites | Tests | Duration |
 | --- | --- | --- | --- | --- |
-| **LOCAL (Desktop)** | 10 | 800+ | 0 | ~35 min |
-| **CLOUD-DEV (Desktop)** | 10 | 800+ | 0-1 (transient) | ~18 min |
-| **MOBILE-LOCAL** | 1 (spec 10) | 85 | 0 | ~25s |
-| **MOBILE-CLOUD-DEV** | 1 (spec 10) | 85 | 0 | ~30s |
-| **TOTAL** | **10 specs × 5 projects** | **800+** | **0** | **100% Pass** |
+| **Unit Tests** | Vitest 2.1.9 | 10 | 311 | ~1s |
+| **E2E — Local Desktop** | Playwright 1.58 | 10 | 808 | ~35 min |
+| **E2E — Cloud-Dev Desktop** | Playwright 1.58 | 10 | 808 | ~18 min |
+| **E2E — Mobile-Local** | Playwright 1.58 | 1 (spec 10) | 85 | ~25s |
+| **E2E — Mobile-Cloud-Dev** | Playwright 1.58 | 1 (spec 10) | 85 | ~30s |
+| **TOTAL** | | **10 unit + 10×5 E2E** | **1,119** | **100% Pass** |
+
+### 7.1.1 Unit Test Suites (tests/unit/)
+
+| Suite | Tests | Coverage |
+| --- | --- | --- |
+| doctor-portal/drugDatabase | 25 | Drug data integrity, search, interactions |
+| doctor-portal/config | 25 | GCS bucket names/URLs, feature flags, WebSocket |
+| patient-portal/sharedPHRTypes | 28 | PHR factory, living will, doctor view transforms |
+| patient-portal/api-service | 30 | Endpoint registry, query params, auth headers |
+| mobile/shared-utils | 32 | Thai date/currency formatters, ID/phone validators |
+| mobile/api-client | 26 | Error normalization, token refresh, URL construction |
+| mobile/sync-engine | 31 | Offline queue, conflict resolution, delta sync |
+| meeting-server/jitsi-meeting | 31 | Transcript chunking (incl. Thai), CDS rules, rooms |
+| security/security-validation | 38 | Password policy (12-char), JWT, CORS, OWASP headers |
+| database/schema-validation | 45 | Table registry, appointment FSM, RBAC, PDPA |
 
 ### 7.2 E2E Test Specs (10 Total)
 
@@ -424,11 +457,11 @@ services:
 
 | Role | Email | Password | Portal |
 | --- | --- | --- | --- |
-| Patient 1 (Demo) | demo.test@gmail.com | P@ssw0rd | Patient |
-| Patient 2 (Somchai) | Somchai.Mankong@gmail.com | P@ssw0rd | Patient |
-| Patient 3 (Anan) | Anan.Khayanrian@gmail.com | P@ssw0rd | Patient |
-| Doctor | doctor.test@izara.com | IzaraDoctor@2024 | Doctor |
-| Admin | admin.test@izara.com | IzaraAdmin@2024 | Doctor |
+| Patient 1 (Demo) | `demo.test@gmail.com` | P@ssw0rd | Patient |
+| Patient 2 (Somchai) | `Somchai.Mankong@gmail.com` | P@ssw0rd | Patient |
+| Patient 3 (Anan) | `Anan.Khayanrian@gmail.com` | P@ssw0rd | Patient |
+| Doctor | `doctor.test@izara.com` | IzaraDoctor@2024 | Doctor |
+| Admin | `admin.test@izara.com` | IzaraAdmin@2024 | Doctor |
 
 ### 7.4 Playwright Projects
 
@@ -443,6 +476,13 @@ services:
 ### 7.5 Run Tests
 
 ```powershell
+# ── Unit Tests (311 tests, < 2 seconds) ──
+cd tests/unit
+npx vitest run              # All 311 unit tests
+npx vitest run --coverage    # With coverage report
+npx vitest watch             # Watch mode
+
+# ── E2E Tests (808 tests, requires Docker running) ──
 cd tests/e2e
 
 # Run ALL Local tests (800+ tests)
@@ -468,10 +508,13 @@ npx playwright show-report
 ### Phase 2: Intelligence & Optimization (In Progress)
 
 - [x] **Mobile App Architecture**: Expo 52 + React Native monorepo with Turborepo
-- [x] **Security Hardening**: JWT secrets, OWASP headers, IDOR fix, body limits
-- [x] **E2E Test Expansion**: 800+ tests across 10 specs (was 184)
-- [x] **Mobile Viewport Testing**: Playwright mobile simulation (Pixel 7, iPhone 13, iPad)
+- [x] **Security Hardening**: JWT sign/verify consistency, OWASP headers, unified 12-char passwords, CORS production tightening, credential path security
+- [x] **Unit Test Layer**: 311 Vitest tests across 10 suites — pure logic, no server needed
+- [x] **E2E Test Expansion**: 808 tests across 10 Playwright specs
+- [x] **Mobile Viewport Testing**: Playwright simulation (Pixel 7, iPhone 13, iPad)
 - [x] **Phase 2 AI-HIS Tables**: CTM, Geriatric Screening, SOS, Follow-up, Nursing
+- [x] **Spec Kits**: Phase 1 + Phase 2 combined specification documents
+- [x] **Mobile Offline-First Sync**: SQLite schema (9 tables), offline queue repository, Zustand sync store, sync engine coordinator
 - [ ] **Advanced RAG**: Full knowledge_base vector search for clinical decision support
 - [ ] **IoMT Integration**: Wearable device sync for vitals
 - [ ] **Payment Gateway**: Stripe/Omise for consultation fees
@@ -491,11 +534,11 @@ npx playwright show-report
 
 | Role | Email | Password |
 | ------ | ------- | ---------- |
-| Patient 1 | demo.test@gmail.com | P@ssw0rd |
-| Patient 2 | Somchai.Mankong@gmail.com | P@ssw0rd |
-| Patient 3 | Anan.Khayanrian@gmail.com | P@ssw0rd |
-| Doctor | doctor.test@izara.com | IzaraDoctor@2024 |
-| Admin | admin.test@izara.com | IzaraAdmin@2024 |
+| Patient 1 | `demo.test@gmail.com` | P@ssw0rd |
+| Patient 2 | `Somchai.Mankong@gmail.com` | P@ssw0rd |
+| Patient 3 | `Anan.Khayanrian@gmail.com` | P@ssw0rd |
+| Doctor | `doctor.test@izara.com` | IzaraDoctor@2024 |
+| Admin | `admin.test@izara.com` | IzaraAdmin@2024 |
 
 ### Key Files
 
@@ -508,4 +551,4 @@ npx playwright show-report
 
 ---
 
-### Last Updated: February 21, 2026
+### Last Updated: February 22, 2026

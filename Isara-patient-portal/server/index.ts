@@ -61,7 +61,7 @@ function initializeStorage(): Storage {
   // Check multiple credential paths
   const credentialsPaths = [
     path.join(__dirname, '../credentials/service-account.json'),
-    path.join(__dirname, '../../Isara-doctor-portal/public/izara-telemedicine-dd0b6abe2bc8.json'),
+    path.join(__dirname, '../../credentials/service-account.json'),
     '/var/secrets/google/service-account.json',
   ];
   
@@ -111,17 +111,11 @@ const ALLOWED_ORIGINS: (string | RegExp | boolean)[] = process.env.NODE_ENV === 
       'https://izara.com',
       'https://izara-patient-portal-hvht4obouq-as.a.run.app',
       'https://izara-doctor-portal-hvht4obouq-as.a.run.app',
-      // Allow localhost for testing Docker containers locally
-      'http://localhost:3005',
-      'http://localhost:3004',
-      'http://localhost:3010',
-      'http://localhost:8081', // Expo dev server
-      'http://127.0.0.1:3005',
-      'http://127.0.0.1:3004',
-      /\.run\.app$/
+      'https://izara-jitsi-meeting-portal-hvht4obouq-as.a.run.app',
+      /^https:\/\/izara-[a-z-]+-hvht4obouq-as\.a\.run\.app$/
     ]
   : ['http://localhost:3005', 'http://localhost:3004', 'http://localhost:3010', 'http://localhost:8081',
-     'http://127.0.0.1:3005', 'http://0.0.0.0:3005', true];
+     'http://127.0.0.1:3005', 'http://0.0.0.0:3005'];
 
 // OWASP Security Middleware
 
@@ -1091,7 +1085,7 @@ try {
     console.log(`🎤 Transcription: Web Speech API (FREE)`);
     console.log(`🤖 AI Assistant: Gemini 2.5 Flash Lite (FREE)`);
     console.log(`📊 Database: PostgreSQL + pgvector`);
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\n');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
   });
 
   // ============================================================================

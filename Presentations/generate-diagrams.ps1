@@ -10,8 +10,6 @@
 
 $diagramsDir = Join-Path $PSScriptRoot "..\Presentations\diagrams"
 $outputDir = Join-Path $PSScriptRoot "..\Presentations\html-diagrams"
-$databaseFile = Join-Path $PSScriptRoot "..\Presentations\database\izara-complete-schema-v4.dbml"
-
 # Create output directory if it doesn't exist
 if (!(Test-Path $outputDir)) {
     New-Item -ItemType Directory -Path $outputDir | Out-Null

@@ -185,12 +185,8 @@ const ALLOWED_ORIGINS = process.env.NODE_ENV === 'production'
       'https://izara.com',
       'https://izara-doctor-portal-hvht4obouq-as.a.run.app',
       'https://izara-patient-portal-hvht4obouq-as.a.run.app',
-      // Allow localhost for testing Docker containers locally
-      'http://localhost:3010',
-      'http://localhost:3005',
-      'http://127.0.0.1:3010',
-      'http://127.0.0.1:3005',
-      /\.run\.app$/
+      'https://izara-jitsi-meeting-portal-hvht4obouq-as.a.run.app',
+      /^https:\/\/izara-[a-z-]+-hvht4obouq-as\.a\.run\.app$/
     ]
   : ['http://localhost:3010', 'http://localhost:3011', 'http://127.0.0.1:3010', 'http://0.0.0.0:3010'];
 
@@ -623,9 +619,10 @@ app.post('/auth/register', async (req, res) => {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    // Password validation
-    if (password.length < 8) {
-      return res.status(400).json({ error: 'Password must be at least 8 characters' });
+    // Password validation (OWASP policy: 12+ chars, upper, lower, number, special)
+    const passwordCheck = validatePassword(password);
+    if (!passwordCheck.valid) {
+      return res.status(400).json({ error: passwordCheck.errors.join('. ') });
     }
 
     // Check PostgreSQL availability
@@ -1098,8 +1095,8 @@ app.post('/auth/reset-password', async (req, res) => {
       return res.status(400).json({ error: 'Token and new password are required' });
     }
 
-    if (newPassword.length < 8) {
-      return res.status(400).json({ error: 'Password must be at least 8 characters' });
+    if (newPassword.length < 12) {
+      return res.status(400).json({ error: 'Password must be at least 12 characters' });
     }
 
     if (!pgPool) {
@@ -2028,7 +2025,7 @@ app.get('/api/profile', async (req, res) => {
 
     let decoded;
     try {
-      decoded = jwt.verify(token, JWT_SECRET);
+      decoded = jwt.verify(token, JWT_SECRET_FINAL);
     } catch (e) {
       return res.status(401).json({ error: 'Invalid or expired token' });
     }
@@ -2075,7 +2072,7 @@ const profileUpdateHandler = async (req, res) => {
     // Verify JWT token
     let decoded;
     try {
-      decoded = jwt.verify(token, JWT_SECRET);
+      decoded = jwt.verify(token, JWT_SECRET_FINAL);
     } catch (e) {
       return res.status(401).json({ error: 'Invalid or expired token' });
     }
@@ -2159,7 +2156,7 @@ const getProfileHandler = async (req, res) => {
     }
     let decoded;
     try {
-      decoded = jwt.verify(token, JWT_SECRET);
+      decoded = jwt.verify(token, JWT_SECRET_FINAL);
     } catch (e) {
       return res.status(401).json({ error: 'Invalid or expired token' });
     }
@@ -2204,7 +2201,7 @@ app.get('/auth/me', async (req, res) => {
     }
     let decoded;
     try {
-      decoded = jwt.verify(token, JWT_SECRET);
+      decoded = jwt.verify(token, JWT_SECRET_FINAL);
     } catch (e) {
       return res.status(401).json({ error: 'Invalid or expired token' });
     }
@@ -2251,7 +2248,7 @@ app.post('/api/profile/avatar', async (req, res) => {
     // Verify JWT token
     let decoded;
     try {
-      decoded = jwt.verify(token, JWT_SECRET);
+      decoded = jwt.verify(token, JWT_SECRET_FINAL);
     } catch (e) {
       return res.status(401).json({ error: 'Invalid or expired token' });
     }
@@ -2296,7 +2293,7 @@ app.post('/api/users/avatar', async (req, res) => {
     // Verify JWT token
     let decoded;
     try {
-      decoded = jwt.verify(token, JWT_SECRET);
+      decoded = jwt.verify(token, JWT_SECRET_FINAL);
     } catch (e) {
       return res.status(401).json({ error: 'Invalid or expired token' });
     }
