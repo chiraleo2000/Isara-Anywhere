@@ -30,6 +30,7 @@ const app = express();
 
 // Raw body required for LINE/WhatsApp HMAC validation — must come before json()
 app.use(express.json({
+  limit: '1mb',
   verify: (req, _res, buf) => {
     req.rawBody = buf;
   }
@@ -65,6 +66,9 @@ const CONSENT_URL = `${APP_BASE_URL}/consent`;
 const rateLimitStore = new Map();
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX = 30;
+
+// Maximum allowed message text length (prevents DoS via oversized payloads)
+const MAX_MESSAGE_TEXT_LENGTH = 4096;
 
 function isRateLimited(senderId) {
   const now = Date.now();
@@ -372,7 +376,9 @@ app.post('/webhook/line', async (req, res) => {
     if (event.type !== 'message' || event.message?.type !== 'text') continue;
 
     const userId = event.source?.userId;
-    const text = event.message?.text;
+    const text = typeof event.message?.text === 'string'
+      ? event.message.text.slice(0, MAX_MESSAGE_TEXT_LENGTH)
+      : '';
     const replyToken = event.replyToken;
 
     if (!userId || !text) continue;
@@ -431,7 +437,9 @@ app.post('/webhook/whatsapp', async (req, res) => {
       if (msg.type !== 'text') continue;
 
       const from = msg.from; // WhatsApp phone number
-      const text = msg.text?.body;
+      const text = typeof msg.text?.body === 'string'
+        ? msg.text.body.slice(0, MAX_MESSAGE_TEXT_LENGTH)
+        : '';
       if (!from || !text) continue;
 
       if (isRateLimited(from)) {
@@ -467,9 +475,11 @@ app.post('/webhook/telegram', async (req, res) => {
 
   const chatId = msg.chat?.id;
   const userId = String(msg.from?.id);
-  const text = msg.text;
+  const text = typeof msg.text === 'string'
+    ? msg.text.slice(0, MAX_MESSAGE_TEXT_LENGTH)
+    : '';
 
-  if (!chatId || !userId) return;
+  if (!chatId || !userId || !text) return;
   if (isRateLimited(userId)) {
     console.warn(`[WEBHOOK] Telegram rate limit hit for user ${userId}`);
     return;
