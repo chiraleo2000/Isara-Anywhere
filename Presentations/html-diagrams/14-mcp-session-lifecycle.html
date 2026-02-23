@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Izara Diagram: 14-mcp-session-lifecycle</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5; }
+        .container { max-width: 100%; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; text-align: center; border-bottom: 2px solid #eee; padding-bottom: 15px; }
+        .mermaid { display: flex; justify-content: center; margin-top: 20px; }
+        .nav { margin-bottom: 20px; text-align: center; }
+        .nav a { margin: 0 10px; color: #3498db; text-decoration: none; font-weight: bold; }
+        .nav a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="nav">
+        <a href="index.html">🔙 Back to Index</a>
+        <span>|</span>
+        <a href="javascript:location.reload()">🔄 Refresh</a>
+    </div>
+    <div class="container">
+        <h1>14-mcp-session-lifecycle</h1>
+        <div class="mermaid">
+%%{init: {
+  'theme': 'base',
+  'themeVariables': {
+    'primaryColor': '#E8F5E9',
+    'primaryTextColor': '#1B5E20',
+    'primaryBorderColor': '#4CAF50',
+    'lineColor': '#2E7D32',
+    'secondaryColor': '#E3F2FD',
+    'tertiaryColor': '#FFF3E0',
+    'fontSize': '14px',
+    'fontFamily': 'Segoe UI, Arial',
+    'actorBkg': '#E3F2FD',
+    'actorBorder': '#2196F3',
+    'actorTextColor': '#0D47A1',
+    'signalColor': '#2E7D32',
+    'signalTextColor': '#1B5E20',
+    'labelBoxBkgColor': '#FFF8E1',
+    'labelBoxBorderColor': '#FFC107',
+    'labelTextColor': '#F57F17',
+    'loopTextColor': '#1B5E20',
+    'noteBkgColor': '#FFF3E0',
+    'noteBorderColor': '#FF9800',
+    'noteTextColor': '#E65100'
+  }
+}}%%
+
+sequenceDiagram
+    autonumber
+    participant Patient as Patient
+    participant Omni as Omnichannel
+    participant MCP as MCP Server
+    participant Gemini as Gemini AI
+    participant GCS as GCS
+    participant Doctor as Doctor
+
+    Note over Patient,Doctor: MCP SESSION LIFECYCLE
+
+    rect rgb(232, 245, 233)
+        Note over Patient,MCP: Phase 1: CREATE SESSION
+        Patient->>+Omni: First message (LINE/WhatsApp)
+        Omni->>Omni: Validate + Check consent
+        Omni->>+MCP: POST /mcp/ingest
+        MCP->>MCP: createSession()
+        MCP->>GCS: Create session.json
+        GCS-->>MCP: Created
+        MCP-->>-Omni: Initialized
+        Omni-->>-Patient: Welcome
+    end
+
+    rect rgb(255, 248, 225)
+        Note over Patient,Doctor: Phase 2: TASK 1 - History Taking
+        Patient->>+Omni: Symptoms message
+        Omni->>+MCP: POST /mcp/ingest
+        MCP->>+Gemini: extractMedicalEntities()
+        Gemini-->>-MCP: Structured data
+        MCP->>MCP: updateContext()
+        MCP->>GCS: Write hpi.json
+        GCS-->>MCP: Saved
+        MCP-->>Doctor: Socket: context updated
+        MCP-->>-Omni: Updated
+        Omni-->>-Patient: Follow-up question
+        Doctor->>+MCP: GET /mcp/context
+        MCP-->>-Doctor: Full context
+    end
+
+    rect rgb(227, 242, 253)
+        Note over Doctor,GCS: Phase 3: TASK 2 - Team Conference
+        Doctor->>+MCP: POST /mcp/team-brief
+        MCP->>GCS: Read context
+        GCS-->>MCP: History + vitals
+        MCP->>+Gemini: generateTeamBrief()
+        Gemini-->>-MCP: Brief summary
+        MCP->>MCP: Post to Telegram
+        MCP-->>-Doctor: Sent
+    end
+
+    rect rgb(243, 229, 245)
+        Note over Doctor,GCS: Phase 4: TASK 3 - Investigation
+        Doctor->>+MCP: POST /mcp/investigate
+        MCP->>MCP: updateContext()
+        MCP->>GCS: Write lab_orders.json
+        GCS-->>MCP: Saved
+        MCP->>Patient: Lab orders notification
+        MCP-->>-Doctor: Orders created
+    end
+
+    rect rgb(255, 235, 238)
+        Note over Doctor,Patient: Phase 5: TASK 4 - Prescription
+        Doctor->>+MCP: POST /mcp/prescribe
+        MCP->>+Gemini: generatePrescription()
+        Gemini-->>-MCP: Prescription + follow-up
+        MCP->>GCS: Write prescriptions.json
+        GCS-->>MCP: Saved
+        MCP->>Patient: Prescription notification
+        MCP->>MCP: Schedule follow-up
+        MCP-->>-Doctor: Sent
+    end
+
+    rect rgb(224, 247, 250)
+        Note over Doctor,GCS: Phase 6: TASK 5 - Referral
+        Doctor->>+MCP: POST /mcp/referral
+        MCP->>GCS: Read full context
+        GCS-->>MCP: Complete data
+        MCP->>+Gemini: generateReferral()
+        Gemini-->>-MCP: Referral letter
+        MCP->>GCS: Write referral.json
+        GCS-->>MCP: Saved
+        MCP->>Patient: Referral notification
+        MCP-->>-Doctor: Ready
+    end
+
+    rect rgb(236, 239, 241)
+        Note over MCP,GCS: Phase 7: ARCHIVE or DELETE
+        alt Completed
+            Doctor->>+MCP: archiveSession
+            MCP->>GCS: Move to archive
+            GCS-->>MCP: Archived
+            MCP-->>-Doctor: Archived
+        else Revoked
+            Patient->>+Omni: Revoke consent
+            Omni->>+MCP: DELETE /mcp/context
+            MCP->>GCS: Delete all data
+            GCS-->>MCP: Deleted
+            MCP-->>-Omni: Purged
+            Omni-->>-Patient: Data deleted
+        end
+    end
+
+    Note over Patient,Doctor: SESSION COMPLETE
+        </div>
+    </div>
+    <script>
+        mermaid.initialize({ 
+            startOnLoad: true, 
+            theme: 'base',
+            securityLevel: 'loose',
+            themeVariables: {
+                primaryColor: '#E3F2FD',
+                secondaryColor: '#E8F5E9',
+                tertiaryColor: '#FFF3E0',
+                fontSize: '14px'
+            }
+        });
+    </script>
+</body>
+</html>

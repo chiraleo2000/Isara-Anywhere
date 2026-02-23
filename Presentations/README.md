@@ -1,8 +1,23 @@
 # 📊 IZARA Telemedicine Platform - Presentation Materials
 
-> **Version:** 1.5.1 | **Updated:** February 22, 2026  
-> **Status:** Phase 1 Complete | Phase 2 In Progress (v1.5.1)  
+> **Version:** 1.5.1 | **Updated:** February 23, 2026  
+> **Status:** Phase 1 Complete | Phase 2 + Phase 2.1 AI-HIS (v1.5.1)  
 > **Tests:** 311 Unit Tests (Vitest) + 808 E2E Tests (Playwright) = 1,119 total × 5 Playwright Projects
+
+---
+
+## 🎉 What's New in v1.5.1
+
+### Omnichannel & MCP Integration
+- **Omnichannel Webhook Server** (Port 3015): Handles LINE, WhatsApp, and Telegram webhooks with HMAC-SHA256 validation
+- **OpenClaw MCP Server** (Port 3016): AI context management with 5 Doctor AI Tasks
+- **PDPA Consent Gate**: All patient messaging requires explicit consent
+- **5 Doctor AI Tasks**: History Taking, Team Conference, Investigation, Prescription, Referral
+- **Phase 2.1 AI-HIS Tables**: CTM assessments, geriatric screening, SOS alerts, follow-ups, nursing tasks, predictive analytics
+
+### Database Schema Update
+- **v5.1**: Added 7 new AI-HIS tables (CTM, geriatric, SOS, follow-ups, nursing, predictive analytics, emr_records)
+- **Total: 40 tables** (Phase 1: 25 + Phase 2: 8 + Phase 2.1: 7)
 
 ---
 
@@ -53,8 +68,10 @@ Presentations/
 ├── TECHNICAL_DOCUMENTATION.md    # 🌟 MAIN TECHNICAL REFERENCE
 ├── PRESENTATION_SCRIPT.md        # Presentation script & guide
 ├── README.md                     # This file
+├── CHANGELOG.md                  # 🆕 Version history & changes
 ├── database/
-│   └── izara-complete-schema-v4.dbml  # Database schema (DBML)
+│   ├── izara-complete-schema-v4.dbml  # Database schema v4
+│   └── izara-complete-schema-v5.dbml  # 🆕 Database schema v5.1 (AI-HIS)
 ├── diagrams/                     # Mermaid workflow diagrams (.mmd)
 │   ├── 01-system-architecture.mmd
 │   ├── 02-patient-features.mmd
@@ -67,7 +84,9 @@ Presentations/
 │   ├── 09-deployment-architecture.mmd
 │   ├── 10-video-meeting-flow.mmd
 │   ├── 11-phr-management.mmd
-│   └── 12-prescription-workflow.mmd
+│   ├── 12-prescription-workflow.mmd
+│   ├── 13-omnichannel-workflow.mmd       # 🆕 Omnichannel messaging
+│   └── 14-mcp-session-lifecycle.mmd      # 🆕 MCP & 5 Doctor AI Tasks
 └── html-diagrams/                # 🌐 Interactive HTML Diagrams
     ├── index.html                # Start here to view all diagrams
     └── *.html                    # Individual diagram files
@@ -87,7 +106,7 @@ Read **[TECHNICAL_DOCUMENTATION.md](TECHNICAL_DOCUMENTATION.md)**
 
 ### Database Schema
 
-View **[database/izara-complete-schema-v4.dbml](database/izara-complete-schema-v4.dbml)**  
+View **[database/izara-complete-schema-v5.dbml](database/izara-complete-schema-v5.dbml)**  
 (Visualize with [dbdiagram.io](https://dbdiagram.io) or VS Code DBML extension)
 
 ### Regenerate HTML Diagrams
@@ -102,7 +121,7 @@ View **[database/izara-complete-schema-v4.dbml](database/izara-complete-schema-v
 
 | # | Diagram | Description |
 | --- | --------- | ------------- |
-| 01 | System Architecture | High-level platform overview |
+| 01 | System Architecture | High-level platform overview (updated with omnichannel) |
 | 02 | Patient Features | Patient portal capabilities |
 | 03 | Doctor Features | Doctor portal capabilities |
 | 04 | Appointment Workflow | Booking & confirmation flow |
@@ -114,6 +133,8 @@ View **[database/izara-complete-schema-v4.dbml](database/izara-complete-schema-v
 | 10 | Video Meeting Flow | Jitsi + transcription + AI |
 | 11 | PHR Management | Personal health records |
 | 12 | Prescription Workflow | E-prescribe with CDS |
+| 13 | **🆕 Omnichannel Workflow** | LINE/WhatsApp/Telegram → MCP → Doctor Portal |
+| 14 | **🆕 MCP Session Lifecycle** | 5 Doctor AI Tasks & session management |
 
 ---
 
@@ -139,4 +160,4 @@ View **[database/izara-complete-schema-v4.dbml](database/izara-complete-schema-v
 
 ---
 
-### Last Updated: February 22, 2026
+### Last Updated: February 23, 2026
