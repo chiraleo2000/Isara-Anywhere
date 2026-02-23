@@ -150,10 +150,12 @@ async function webhookFetch<T>(
 
 /**
  * Retrieve the full MCP session context for a patient.
+ * Uses POST to avoid exposing patientId in URL server logs.
  */
 export async function getPatientContext(patientId: string): Promise<MCPSession> {
   const data = await mcpFetch<{ success: boolean; context: MCPSession }>(
-    `/context/${encodeURIComponent(patientId)}`
+    '/context',
+    { method: 'POST', body: JSON.stringify({ patientId }) }
   );
   return data.context;
 }
@@ -179,10 +181,10 @@ export async function requestTeamBrief(
   requestedBy: string
 ): Promise<{ brief: string }> {
   return mcpFetch<{ success: boolean; brief: string }>(
-    `/team-brief/${encodeURIComponent(patientId)}`,
+    '/team-brief',
     {
       method: 'POST',
-      body: JSON.stringify({ question, requestedBy })
+      body: JSON.stringify({ patientId, question, requestedBy })
     }
   );
 }
@@ -200,10 +202,10 @@ export async function generateReferral(
   requestedBy: string
 ): Promise<ReferralDocument> {
   const data = await mcpFetch<{ success: boolean; referral: ReferralDocument }>(
-    `/referral/${encodeURIComponent(patientId)}`,
+    '/referral',
     {
       method: 'POST',
-      body: JSON.stringify({ targetFacility, requestedBy })
+      body: JSON.stringify({ patientId, targetFacility, requestedBy })
     }
   );
   return data.referral;
@@ -211,9 +213,10 @@ export async function generateReferral(
 
 /**
  * Delete a patient's MCP session (used on consent revocation).
+ * Uses POST to avoid exposing patientId in URL server logs.
  */
 export async function deleteMCPSession(patientId: string): Promise<void> {
-  await mcpFetch(`/context/${encodeURIComponent(patientId)}`, { method: 'DELETE' });
+  await mcpFetch('/context/delete', { method: 'POST', body: JSON.stringify({ patientId }) });
 }
 
 // ─── Consent API ──────────────────────────────────────────────────────────────

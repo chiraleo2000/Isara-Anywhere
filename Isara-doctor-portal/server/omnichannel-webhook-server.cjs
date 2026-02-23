@@ -24,6 +24,8 @@ const crypto = require('node:crypto');
 const https = require('node:https');
 const http = require('node:http');
 
+const IS_DEV = process.env.NODE_ENV !== 'production';
+
 const app = express();
 
 // Raw body required for LINE/WhatsApp HMAC validation — must come before json()
@@ -87,13 +89,23 @@ function isRateLimited(senderId) {
  * Header: X-Line-Signature = Base64(HMAC-SHA256(body, channelSecret))
  */
 function validateLineSignature(rawBody, signature) {
-  if (!LINE_CHANNEL_SECRET) return true; // dev mode
+  if (!LINE_CHANNEL_SECRET) {
+    if (!IS_DEV) {
+      console.error('[WEBHOOK] LINE_CHANNEL_SECRET is required in production');
+      return false;
+    }
+    console.warn('[WEBHOOK] LINE_CHANNEL_SECRET not set — skipping validation (dev only)');
+    return true;
+  }
   const expected = crypto
     .createHmac('sha256', LINE_CHANNEL_SECRET)
     .update(rawBody)
     .digest('base64');
+  const expectedBuf = Buffer.from(expected);
+  const providedBuf = Buffer.from(signature || '');
+  if (expectedBuf.length !== providedBuf.length) return false;
   try {
-    return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature || ''));
+    return crypto.timingSafeEqual(expectedBuf, providedBuf);
   } catch (_) {
     return false;
   }
@@ -104,13 +116,23 @@ function validateLineSignature(rawBody, signature) {
  * Header: X-Hub-Signature-256 = sha256=<hex>
  */
 function validateWhatsAppSignature(rawBody, signatureHeader) {
-  if (!WHATSAPP_APP_SECRET) return true; // dev mode
+  if (!WHATSAPP_APP_SECRET) {
+    if (!IS_DEV) {
+      console.error('[WEBHOOK] WHATSAPP_APP_SECRET is required in production');
+      return false;
+    }
+    console.warn('[WEBHOOK] WHATSAPP_APP_SECRET not set — skipping validation (dev only)');
+    return true;
+  }
   const expected = 'sha256=' + crypto
     .createHmac('sha256', WHATSAPP_APP_SECRET)
     .update(rawBody)
     .digest('hex');
+  const expectedBuf = Buffer.from(expected);
+  const providedBuf = Buffer.from(signatureHeader || '');
+  if (expectedBuf.length !== providedBuf.length) return false;
   try {
-    return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signatureHeader || ''));
+    return crypto.timingSafeEqual(expectedBuf, providedBuf);
   } catch (_) {
     return false;
   }
@@ -563,17 +585,23 @@ app.delete('/api/consent/:channel/:userId', async (req, res) => {
   gcsReq.write(gcsBody);
   gcsReq.end();
 
-  // Derive patientId and delete MCP context
-  const prefixMap = { line: 'line_', whatsapp: 'wa_', telegram: 'tg_' };
+  // Derive patientId and delete MCP context via POST (avoids patientId in URL logs)
+  const prefixMap = { line: 'line_', whatsapp: 'wa_', telegram: 'tg_', messages: 'msg_' };
   const patientId = (prefixMap[channel] || `${channel}_`) + userId;
-  const mcpDeleteUrl = new URL(`${MCP_URL}/mcp/context/${patientId}`);
+  const mcpDeleteBody = JSON.stringify({ patientId });
+  const mcpDeleteUrl = new URL(`${MCP_URL}/mcp/context/delete`);
   const mcpOptions = {
-    method: 'DELETE',
-    headers: { 'x-internal-secret': MCP_INTERNAL_SECRET }
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Content-Length': Buffer.byteLength(mcpDeleteBody),
+      'x-internal-secret': MCP_INTERNAL_SECRET
+    }
   };
   const mcpTransport = mcpDeleteUrl.protocol === 'https:' ? https : http;
   const mcpReq = mcpTransport.request(mcpDeleteUrl, mcpOptions, () => {});
   mcpReq.on('error', (e) => console.error('[WEBHOOK] MCP context delete error:', e.message));
+  mcpReq.write(mcpDeleteBody);
   mcpReq.end();
 
   return res.json({ success: true, message: 'Consent revoked and data purged' });

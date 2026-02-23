@@ -125,17 +125,59 @@ export async function replyToPatient(
 }
 
 // ─── Real-time Socket.io subscription ────────────────────────────────────────
+// Uses a Set of callbacks per event to avoid race conditions from async imports.
 
 let socket: SocketIOSocket | null = null;
-let listenerCount = 0;
+let socketInitPromise: Promise<SocketIOSocket> | null = null;
+
+const messageCallbacks = new Set<(message: OmnichannelMessage) => void>();
+const consentCallbacks = new Set<(event: { patientId: string; channel: string; consented: boolean }) => void>();
+
+function getOrCreateSocket(): Promise<SocketIOSocket> {
+  if (socket) return Promise.resolve(socket);
+  if (socketInitPromise) return socketInitPromise;
+
+  const wsUrl = config.api?.websocketUrl || 'ws://localhost:3009/ws';
+
+  socketInitPromise = import('socket.io-client').then(({ io }) => {
+    socket = io(wsUrl, {
+      transports: ['websocket'],
+      reconnectionAttempts: 10,
+      reconnectionDelay: 2000
+    });
+
+    socket.on('connect', () => console.log('[Omnichannel] Socket connected'));
+    socket.on('disconnect', () => console.log('[Omnichannel] Socket disconnected'));
+    socket.on('connect_error', (err: Error) => console.error('[Omnichannel] Socket error:', err.message));
+
+    // Dispatch to all registered callbacks
+    socket.on('omnichannel:message', (msg: OmnichannelMessage) => {
+      messageCallbacks.forEach((cb) => cb(msg));
+    });
+    socket.on('omnichannel:consent', (event: { patientId: string; channel: string; consented: boolean }) => {
+      consentCallbacks.forEach((cb) => cb(event));
+    });
+
+    return socket;
+  }).catch((err: Error) => {
+    console.error('[Omnichannel] Failed to load socket.io-client:', err.message);
+    socketInitPromise = null;
+    throw err;
+  });
+
+  return socketInitPromise;
+}
+
+function teardownSocketIfEmpty() {
+  if (messageCallbacks.size === 0 && consentCallbacks.size === 0 && socket) {
+    socket.disconnect();
+    socket = null;
+    socketInitPromise = null;
+  }
+}
 
 /**
- * Subscribe to live omnichannel events via Socket.io.
- *
- * Events emitted by the Main API Server:
- *  - `omnichannel:message`  — new inbound message (OmnichannelMessage)
- *  - `omnichannel:reply`    — outbound reply dispatched
- *  - `omnichannel:consent`  — consent status change
+ * Subscribe to live omnichannel message events via Socket.io.
  *
  * @param callback  Called with each new OmnichannelMessage event
  * @returns         Unsubscribe function — call to clean up listener
@@ -143,48 +185,12 @@ let listenerCount = 0;
 export function subscribeToMessages(
   callback: (message: OmnichannelMessage) => void
 ): () => void {
-  const wsUrl = config.api?.websocketUrl || 'ws://localhost:3009/ws';
-
-  if (!socket) {
-    import('socket.io-client').then(({ io }) => {
-      socket = io(wsUrl, {
-        transports: ['websocket'],
-        reconnectionAttempts: 10,
-        reconnectionDelay: 2000
-      });
-      socket.on('connect', () => console.log('[Omnichannel] Socket connected'));
-      socket.on('disconnect', () => console.log('[Omnichannel] Socket disconnected'));
-      socket.on('connect_error', (err: Error) => console.error('[Omnichannel] Socket error:', err.message));
-      socket.on('omnichannel:message', callback);
-    }).catch((err: Error) => console.error('[Omnichannel] Failed to load socket.io-client:', err.message));
-
-    listenerCount += 1;
-    return () => {
-      listenerCount -= 1;
-      if (socket && listenerCount <= 0) {
-        socket.off('omnichannel:message', callback);
-        socket.disconnect();
-        socket = null;
-        listenerCount = 0;
-      } else if (socket) {
-        socket.off('omnichannel:message', callback);
-      }
-    };
-  }
-
-  listenerCount += 1;
-  socket.on('omnichannel:message', callback);
+  messageCallbacks.add(callback);
+  getOrCreateSocket().catch(() => {/* error already logged */});
 
   return () => {
-    if (socket) {
-      socket.off('omnichannel:message', callback);
-      listenerCount -= 1;
-      if (listenerCount <= 0) {
-        socket.disconnect();
-        socket = null;
-        listenerCount = 0;
-      }
-    }
+    messageCallbacks.delete(callback);
+    teardownSocketIfEmpty();
   };
 }
 
@@ -197,41 +203,12 @@ export function subscribeToMessages(
 export function subscribeToConsentEvents(
   callback: (event: { patientId: string; channel: string; consented: boolean }) => void
 ): () => void {
-  const wsUrl = config.api?.websocketUrl || 'ws://localhost:3009/ws';
-
-  if (!socket) {
-    import('socket.io-client').then(({ io }) => {
-      socket = io(wsUrl, { transports: ['websocket'], reconnectionAttempts: 10 });
-      socket.on('omnichannel:consent', callback);
-    }).catch((err: Error) => console.error('[Omnichannel] Failed to load socket.io-client:', err.message));
-
-    listenerCount += 1;
-    return () => {
-      listenerCount -= 1;
-      if (socket && listenerCount <= 0) {
-        socket.off('omnichannel:consent', callback);
-        socket.disconnect();
-        socket = null;
-        listenerCount = 0;
-      } else if (socket) {
-        socket.off('omnichannel:consent', callback);
-      }
-    };
-  }
-
-  listenerCount += 1;
-  socket.on('omnichannel:consent', callback);
+  consentCallbacks.add(callback);
+  getOrCreateSocket().catch(() => {/* error already logged */});
 
   return () => {
-    if (socket) {
-      socket.off('omnichannel:consent', callback);
-      listenerCount -= 1;
-      if (listenerCount <= 0) {
-        socket.disconnect();
-        socket = null;
-        listenerCount = 0;
-      }
-    }
+    consentCallbacks.delete(callback);
+    teardownSocketIfEmpty();
   };
 }
 

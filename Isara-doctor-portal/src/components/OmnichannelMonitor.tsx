@@ -389,6 +389,13 @@ export default function OmnichannelMonitor({ userRole, userName = 'Care Team Mem
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [serviceAvailable, setServiceAvailable] = useState(true);
 
+  // ── Inline input state (replaces window.prompt) ────────────────────────────
+  const [consultQuestion, setConsultQuestion] = useState('');
+  const [showConsultInput, setShowConsultInput] = useState(false);
+  const [referralFacility, setReferralFacility] = useState('');
+  const [showReferralInput, setShowReferralInput] = useState(false);
+  const [pendingActionPatientId, setPendingActionPatientId] = useState<string | null>(null);
+
   // ── Load initial sessions ──────────────────────────────────────────────────
   useEffect(() => {
     getSessions()
@@ -431,37 +438,127 @@ export default function OmnichannelMonitor({ userRole, userName = 'Care Team Mem
     }
   }, [messages]);
 
-  // ── Team brief ─────────────────────────────────────────────────────────────
-  const handleTeamBrief = useCallback(async (patientId: string) => {
+  // ── Team brief — show inline input ────────────────────────────────────────
+  const handleTeamBrief = useCallback((patientId: string) => {
+    setPendingActionPatientId(patientId);
+    setConsultQuestion('');
+    setShowConsultInput(true);
+  }, []);
+
+  const submitTeamBrief = useCallback(async () => {
+    if (!pendingActionPatientId) return;
+    setShowConsultInput(false);
     setStatusMessage('Generating team brief and sending to Telegram…');
     try {
-      const question = window.prompt('Consult question (optional):') ?? '';
-      await requestTeamBrief(patientId, question, userName);
+      await requestTeamBrief(pendingActionPatientId, consultQuestion, userName);
       setStatusMessage('✅ Team brief sent to Telegram care-team group');
     } catch (err: unknown) {
       setStatusMessage(`❌ ${err instanceof Error ? err.message : 'Failed to send team brief'}`);
     }
+    setPendingActionPatientId(null);
     setTimeout(() => setStatusMessage(null), 5000);
-  }, [userName]);
+  }, [pendingActionPatientId, consultQuestion, userName]);
 
-  // ── Referral ───────────────────────────────────────────────────────────────
-  const handleReferral = useCallback(async (patientId: string) => {
-    const facility = window.prompt('Receiving facility name:');
-    if (!facility) return;
+  // ── Referral — show inline input ──────────────────────────────────────────
+  const handleReferral = useCallback((patientId: string) => {
+    setPendingActionPatientId(patientId);
+    setReferralFacility('');
+    setShowReferralInput(true);
+  }, []);
+
+  const submitReferral = useCallback(async () => {
+    if (!pendingActionPatientId || !referralFacility.trim()) return;
+    setShowReferralInput(false);
     setStatusMessage('Generating referral document…');
     try {
-      const referral = await generateReferral(patientId, facility, userName);
+      const referral = await generateReferral(pendingActionPatientId, referralFacility.trim(), userName);
       console.log('[OmnichannelMonitor] Referral generated:', referral);
-      setStatusMessage(`✅ Referral created for ${facility} — check patient records`);
+      setStatusMessage(`✅ Referral created for ${referralFacility.trim()} — check patient records`);
     } catch (err: unknown) {
       setStatusMessage(`❌ ${err instanceof Error ? err.message : 'Failed to generate referral'}`);
     }
+    setPendingActionPatientId(null);
     setTimeout(() => setStatusMessage(null), 5000);
-  }, [userName]);
+  }, [pendingActionPatientId, referralFacility, userName]);
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className="h-full flex flex-col bg-gray-50">
+      {/* Inline dialog — Team Consult question */}
+      {showConsultInput && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4">
+            <h3 className="text-base font-bold text-gray-900 mb-3">Request Team Consult</h3>
+            <label className="block text-sm text-gray-700 mb-1" htmlFor="consult-question">
+              Consult question (optional)
+            </label>
+            <textarea
+              id="consult-question"
+              value={consultQuestion}
+              onChange={(e) => setConsultQuestion(e.target.value)}
+              placeholder="e.g. Please advise on management of septic patient with renal impairment"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm h-24 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+              maxLength={500}
+            />
+            <p className="text-xs text-gray-400 mt-1">{consultQuestion.length}/500</p>
+            <div className="flex gap-3 mt-4">
+              <button
+                type="button"
+                onClick={submitTeamBrief}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+              >
+                Send to Telegram
+              </button>
+              <button
+                type="button"
+                onClick={() => { setShowConsultInput(false); setPendingActionPatientId(null); }}
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Inline dialog — Referral facility */}
+      {showReferralInput && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4">
+            <h3 className="text-base font-bold text-gray-900 mb-3">Generate Referral</h3>
+            <label className="block text-sm text-gray-700 mb-1" htmlFor="referral-facility">
+              Receiving facility name <span className="text-red-500">*</span>
+            </label>
+            <input
+              id="referral-facility"
+              type="text"
+              value={referralFacility}
+              onChange={(e) => setReferralFacility(e.target.value)}
+              placeholder="e.g. Ramathibodi Hospital"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+              maxLength={200}
+            />
+            <div className="flex gap-3 mt-4">
+              <button
+                type="button"
+                onClick={submitReferral}
+                disabled={!referralFacility.trim()}
+                className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Generate Referral
+              </button>
+              <button
+                type="button"
+                onClick={() => { setShowReferralInput(false); setPendingActionPatientId(null); }}
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-4 py-3">
         <div className="flex items-center justify-between">

@@ -20,11 +20,13 @@ const express = require('express');
 const crypto = require('node:crypto');
 const path = require('node:path');
 const https = require('node:https');
+const http = require('node:http');
 
 const app = express();
 app.use(express.json({ limit: '2mb' }));
 
 const PORT = process.env.OPENCLAW_MCP_PORT || 3016;
+const IS_DEV = process.env.NODE_ENV !== 'production';
 
 // ─── Encryption helpers (AES-256-GCM) ────────────────────────────────────────
 
@@ -33,11 +35,14 @@ const INTERNAL_SECRET = process.env.OPENCLAW_MCP_INTERNAL_SECRET || '';
 
 /**
  * Encrypt plaintext string → base64 ciphertext (AES-256-GCM).
- * Returns null and logs error if key is not configured.
+ * In production, throws if key is missing; in dev mode, warns and stores plaintext.
  */
 function encryptPayload(plaintext) {
   if (!ENCRYPTION_KEY_HEX || ENCRYPTION_KEY_HEX.length < 64) {
-    console.warn('[MCP] Encryption key not configured — storing plaintext (dev mode)');
+    if (!IS_DEV) {
+      throw new Error('[MCP] OPENCLAW_MCP_ENCRYPTION_KEY must be a 32-byte (64-char) hex string in production');
+    }
+    console.warn('[MCP] Encryption key not configured — storing plaintext (dev mode only)');
     return plaintext;
   }
   const key = Buffer.from(ENCRYPTION_KEY_HEX, 'hex');
@@ -68,15 +73,26 @@ function decryptPayload(ciphertext) {
 // ─── Internal authentication middleware ───────────────────────────────────────
 
 function requireInternalAuth(req, res, next) {
-  const provided = req.headers['x-internal-secret'];
+  // In production, INTERNAL_SECRET must be configured
   if (!INTERNAL_SECRET) {
+    if (!IS_DEV) {
+      console.error('[MCP] FATAL: OPENCLAW_MCP_INTERNAL_SECRET is not set in production');
+      return res.status(503).json({ error: 'Service misconfigured' });
+    }
     // Dev mode — skip auth
     return next();
   }
-  if (!provided || !crypto.timingSafeEqual(
-    Buffer.from(provided),
-    Buffer.from(INTERNAL_SECRET)
-  )) {
+  const provided = req.headers['x-internal-secret'];
+  if (!provided) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  const expectedBuf = Buffer.from(INTERNAL_SECRET);
+  const providedBuf = Buffer.from(provided);
+  // Buffers must be same length for timingSafeEqual
+  if (expectedBuf.length !== providedBuf.length) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  if (!crypto.timingSafeEqual(expectedBuf, providedBuf)) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
   next();
@@ -344,7 +360,7 @@ function persistSessionToGCS(session) {
     };
 
     const url = new URL(`${GCS_API_URL}/api/storage/write`);
-    const req = (url.protocol === 'https:' ? https : require('node:http')).request(url, options, () => {});
+    const req = (url.protocol === 'https:' ? https : http).request(url, options, () => {});
     req.on('error', (err) => console.error('[MCP] GCS persist error:', err.message));
     req.write(body);
     req.end();
@@ -447,15 +463,21 @@ app.post('/mcp/ingest', requireInternalAuth, async (req, res) => {
 });
 
 /**
- * GET /mcp/context/:patientId
+ * POST /mcp/context
  * Return full session context snapshot for a patient.
+ * Uses POST to keep patientId out of server logs/proxy URL history.
+ *
+ * Body: { patientId }
  */
-app.get('/mcp/context/:patientId', requireInternalAuth, (req, res) => {
-  const { patientId } = req.params;
+app.post('/mcp/context', requireInternalAuth, (req, res) => {
+  const { patientId } = req.body;
+  if (!patientId) {
+    return res.status(400).json({ error: 'patientId is required' });
+  }
   const session = sessionStore.get(patientId);
 
   if (!session) {
-    return res.status(404).json({ error: 'Session not found', patientId });
+    return res.status(404).json({ error: 'Session not found' });
   }
 
   return res.json({ success: true, context: session });
@@ -477,18 +499,21 @@ app.get('/mcp/sessions', requireInternalAuth, (_req, res) => {
 });
 
 /**
- * POST /mcp/team-brief/:patientId
+ * POST /mcp/team-brief
  * Generate a Gemini team-brief and dispatch it to the Telegram care-team group.
  *
- * Body: { question, requestedBy }
+ * Body: { patientId, question, requestedBy }
  */
-app.post('/mcp/team-brief/:patientId', requireInternalAuth, async (req, res) => {
-  const { patientId } = req.params;
-  const { question, requestedBy } = req.body;
+app.post('/mcp/team-brief', requireInternalAuth, async (req, res) => {
+  const { patientId, question, requestedBy } = req.body;
+
+  if (!patientId) {
+    return res.status(400).json({ error: 'patientId is required' });
+  }
 
   const session = sessionStore.get(patientId);
   if (!session) {
-    return res.status(404).json({ error: 'Session not found', patientId });
+    return res.status(404).json({ error: 'Session not found' });
   }
 
   const brief = await generateTeamBrief(session, question);
@@ -499,18 +524,21 @@ app.post('/mcp/team-brief/:patientId', requireInternalAuth, async (req, res) => 
 });
 
 /**
- * POST /mcp/referral/:patientId
+ * POST /mcp/referral
  * Generate a referral document from MCP context.
  *
- * Body: { targetFacility, requestedBy }
+ * Body: { patientId, targetFacility, requestedBy }
  */
-app.post('/mcp/referral/:patientId', requireInternalAuth, async (req, res) => {
-  const { patientId } = req.params;
-  const { targetFacility, requestedBy } = req.body;
+app.post('/mcp/referral', requireInternalAuth, async (req, res) => {
+  const { patientId, targetFacility, requestedBy } = req.body;
+
+  if (!patientId) {
+    return res.status(400).json({ error: 'patientId is required' });
+  }
 
   const session = sessionStore.get(patientId);
   if (!session) {
-    return res.status(404).json({ error: 'Session not found', patientId });
+    return res.status(404).json({ error: 'Session not found' });
   }
 
   const referral = await generateReferralDocument(session, targetFacility);
@@ -530,7 +558,7 @@ app.post('/mcp/referral/:patientId', requireInternalAuth, async (req, res) => {
     headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(gcsBody) }
   };
   const gcsUrl = new URL(`${GCS_API_URL}/api/storage/write`);
-  const gcsReq = (gcsUrl.protocol === 'https:' ? https : require('node:http')).request(gcsUrl, gcsOptions, () => {});
+  const gcsReq = (gcsUrl.protocol === 'https:' ? https : http).request(gcsUrl, gcsOptions, () => {});
   gcsReq.on('error', (e) => console.error('[MCP] GCS referral persist error:', e.message));
   gcsReq.write(gcsBody);
   gcsReq.end();
@@ -539,17 +567,23 @@ app.post('/mcp/referral/:patientId', requireInternalAuth, async (req, res) => {
 });
 
 /**
- * DELETE /mcp/context/:patientId
+ * POST /mcp/context/delete
  * Delete session context on consent revocation (PDPA right to erasure).
+ * Uses POST to avoid exposing patientId in URL logs.
+ *
+ * Body: { patientId }
  */
-app.delete('/mcp/context/:patientId', requireInternalAuth, (req, res) => {
-  const { patientId } = req.params;
+app.post('/mcp/context/delete', requireInternalAuth, (req, res) => {
+  const { patientId } = req.body;
+  if (!patientId) {
+    return res.status(400).json({ error: 'patientId is required' });
+  }
   if (sessionStore.has(patientId)) {
     sessionStore.delete(patientId);
-    console.log(`[MCP] Session deleted for patient ${patientId} (consent revoked)`);
+    console.log(`[MCP] Session deleted for patient (consent revoked)`);
     return res.json({ success: true, message: 'Session context purged' });
   }
-  return res.status(404).json({ error: 'Session not found', patientId });
+  return res.status(404).json({ error: 'Session not found' });
 });
 
 /**
