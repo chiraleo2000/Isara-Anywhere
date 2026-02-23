@@ -638,7 +638,7 @@ describe('Security Hardening — Input Validation', () => {
 describe('Security Hardening — Injection Detection', () => {
   const PATTERNS: Record<string, RegExp> = {
     sql: /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|UNION|ALTER|CREATE|TRUNCATE|EXEC|EXECUTE)\b)|(--)|(;)|(')/gi,
-    xss: /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>|javascript:|on\w+\s*=/gi,
+    xss: /<script[\s>]|javascript:|on\w+\s*=/gi,
     pathTraversal: /\.\.[/\\]|[/\\]\.\.|%2e%2e/gi,
   };
 

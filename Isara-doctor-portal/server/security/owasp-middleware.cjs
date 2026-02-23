@@ -309,7 +309,7 @@ const SANITIZATION_PATTERNS = {
   // NoSQL injection patterns
   nosql: /(\$where|\$gt|\$lt|\$ne|\$or|\$and|\$regex|\$in|\$nin)/gi,
   // XSS patterns
-  xss: /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>|javascript:|on\w+\s*=/gi,
+  xss: /<script[\s>]|<\/script\s*>|javascript:|on\w+\s*=/gi,
   // Path traversal
   pathTraversal: /\.\.[/\\]|[/\\]\.\.|%2e%2e/gi,
   // Command injection
