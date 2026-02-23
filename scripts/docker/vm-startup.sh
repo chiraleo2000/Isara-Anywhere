@@ -38,7 +38,7 @@ systemctl restart postgresql
 echo "=== IZARA: Creating database and user ==="
 
 # Create database and load extensions
-sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'IzaraDb2024';"
+sudo -u postgres psql -c "ALTER USER postgres PASSWORD '${POSTGRES_PASSWORD:?POSTGRES_PASSWORD environment variable is required}';"
 sudo -u postgres psql -c "CREATE DATABASE izara_phase1 OWNER postgres;"
 sudo -u postgres psql -d izara_phase1 -c "CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";"
 sudo -u postgres psql -d izara_phase1 -c "CREATE EXTENSION IF NOT EXISTS pgcrypto;"

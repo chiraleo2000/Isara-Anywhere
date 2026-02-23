@@ -23,16 +23,18 @@
 -- TEST CREDENTIALS
 -- =============================================================================
 -- 
--- Patient Accounts (password: P@ssw0rd)
+-- Patient Accounts
 --   - demo.test@gmail.com (Demo Patient)
 --   - Somchai.Mankong@gmail.com (นายสมชาย มั่นคง)
 --   - Anan.Khayanrian@gmail.com (นายอนันต์ ขยันเรียน - DM + CKD patient)
 --
--- Doctor Account (password: IzaraDoctor@2024)
+-- Doctor Account
 --   - doctor.test@izara.com (นพ. ทดสอบ แพทย์ดี)
 --
--- Admin Account (password: IzaraAdmin@2024)
+-- Admin Account
 --   - admin.test@izara.com (นพ. ผู้ดูแลระบบ ใจดี)
+--
+-- NOTE: Passwords are stored as bcrypt hashes. See project documentation for test credentials.
 --
 -- =============================================================================
 
@@ -874,11 +876,11 @@ WHERE u.role = 'doctor';
 -- =============================================================================
 \echo '>>> Seeding users...'
 
--- Admin (password: IzaraAdmin@2024)
+-- Admin
 INSERT INTO users (id, email, password_hash, role, name, name_thai, is_active, is_verified, is_approved, approval_status, is_admin, admin_privileges)
 VALUES ('ADMIN-TEST-001', 'admin.test@izara.com', '$2b$10$fx5arkpb8YI7lEK5lcHdXeksczdG.qloim/uWghlBZXyxv.dNo/wq', 'admin', 'Dr. Admin Kind', 'นพ. ผู้ดูแลระบบ ใจดี', true, true, true, 'approved', true, '{"canManageDoctors": true, "canManagePatients": true, "canManageAppointments": true, "canViewAnalytics": true, "canManageSettings": true, "level": "super_admin"}'::jsonb);
 
--- Doctor Test (password: IzaraDoctor@2024)
+-- Doctor Test
 INSERT INTO users (id, email, password_hash, role, name, name_thai, doctor_id, medical_license_number, specialty, is_active, is_verified, is_approved, approval_status)
 VALUES ('DOC-TEST-001', 'doctor.test@izara.com', '$2b$10$aPN6uhBrLoms36C8/017be2GWqUqaPJa6WaTaZ8LrnwAeaf3GajrO', 'doctor', 'Dr. Test Good', 'นพ. ทดสอบ แพทย์ดี', 'DOC-TEST-001', 'TH-MD-2020-001', 'Internal Medicine', true, true, true, 'approved');
 
@@ -890,7 +892,7 @@ VALUES ('DOC-SOMCHAI-001', 'somchai.prasert@izara.com', '$2b$10$aPN6uhBrLoms36C8
 INSERT INTO users (id, email, password_hash, role, name, name_thai, doctor_id, medical_license_number, specialty, hospital_name, is_active, is_verified, is_approved, approval_status)
 VALUES ('DOC-SIRIPORN-001', 'siriporn.thongchai@izara.com', '$2b$10$aPN6uhBrLoms36C8/017be2GWqUqaPJa6WaTaZ8LrnwAeaf3GajrO', 'doctor', 'Dr. Siriporn Thongchai', 'พญ.ศิริพร ทองชัย', 'DOC-SIRIPORN-001', 'TH-MD-2008-055', 'Endocrinology', 'Bumrungrad Hospital', true, true, true, 'approved');
 
--- Patient: Somchai Mankong (password: P@ssw0rd)
+-- Patient: Somchai Mankong
 INSERT INTO users (id, email, password_hash, role, name, name_thai, patient_id, is_active, is_verified, is_approved, approval_status)
 VALUES ('PATIENT-SOMCHAI', 'Somchai.Mankong@gmail.com', '$2b$10$64bK0EpjyC7quRGJNvRqmuH/jX3mA4dzyzYa2vgA2q.H3ZxkQwAmy', 'patient', 'Somchai Mankong', 'นายสมชาย มั่นคง', 'PATIENT-SOMCHAI', true, true, true, 'approved');
 

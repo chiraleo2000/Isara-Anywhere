@@ -46,7 +46,7 @@ const poolConfig = {
   port: dbConfig.port || Number.parseInt(process.env.DB_PORT || '5433', 10),
   database: dbConfig.database || process.env.DB_NAME || 'izara_phase1',
   user: dbConfig.user || process.env.DB_USER || 'postgres',
-  password: dbConfig.password || process.env.DB_PASSWORD || 'IzaraDb2024',
+  password: dbConfig.password || process.env.DB_PASSWORD || '',
   max: 20,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: isProduction ? 30000 : 5000, // 30s for Cloud SQL, 5s for local

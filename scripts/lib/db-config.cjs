@@ -26,11 +26,9 @@ const { Pool, Client } = require('pg');
 // =============================================================================
 
 const PASSWORD_HASHES = {
-    // P@ssw0rd (for patients)
+    // Pre-computed bcrypt hashes for seeding test/dev databases
     patient: '$2b$10$64bK0EpjyC7quRGJNvRqmuH/jX3mA4dzyzYa2vgA2q.H3ZxkQwAmy',
-    // IzaraDoctor@2024
     doctor: '$2b$10$aPN6uhBrLoms36C8/017be2GWqUqaPJa6WaTaZ8LrnwAeaf3GajrO',
-    // IzaraAdmin@2024
     admin: '$2b$10$fx5arkpb8YI7lEK5lcHdXeksczdG.qloim/uWghlBZXyxv.dNo/wq'
 };
 
@@ -47,7 +45,7 @@ function getLocalConfig() {
         host: process.env.DB_HOST || 'localhost',
         port: Number.parseInt(process.env.DB_PORT || '5433'),
         user: process.env.DB_USER || 'postgres',
-        password: process.env.DB_PASSWORD || process.env.POSTGRES_PASSWORD || 'IzaraDb2024',
+        password: process.env.DB_PASSWORD || process.env.POSTGRES_PASSWORD || '',
         database: process.env.DB_NAME || 'izara_phase1',
         ssl: false,
         connectionTimeoutMillis: 10000,
@@ -62,6 +60,7 @@ function getLocalConfig() {
  */
 function getCloudConfig() {
     const password = process.env.DB_PASSWORD || process.env.CLOUD_DB_PASSWORD;
+    const host = process.env.CLOUD_DB_HOST;
 
     if (!password) {
         console.error('❌ ERROR: DB_PASSWORD environment variable is required for cloud database connections.');
@@ -69,8 +68,14 @@ function getCloudConfig() {
         process.exit(1);
     }
 
+    if (!host) {
+        console.error('❌ ERROR: CLOUD_DB_HOST environment variable is required for cloud database connections.');
+        console.error('   Set it using: $env:CLOUD_DB_HOST="your_host"');
+        process.exit(1);
+    }
+
     return {
-        host: process.env.CLOUD_DB_HOST || '34.143.228.135',
+        host: host,
         port: Number.parseInt(process.env.CLOUD_DB_PORT || '5432'),
         user: process.env.DB_USER || 'postgres',
         password: password,

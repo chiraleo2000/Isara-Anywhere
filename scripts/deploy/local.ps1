@@ -231,17 +231,18 @@ if (-not $Migrate) {
         } else {
             @"
 # Izara Telemedicine - Docker Environment
-POSTGRES_USER=izara_admin
-POSTGRES_PASSWORD=IzaraDB2024!
+# IMPORTANT: Change all placeholder values before running!
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=CHANGE_ME_TO_SECURE_PASSWORD
 POSTGRES_DB=izara_phase1
 POSTGRES_HOST=postgres
 POSTGRES_PORT=5432
-JWT_SECRET=izara-jwt-secret-2024-docker-local
+JWT_SECRET=CHANGE_ME_TO_RANDOM_SECRET_MIN_64_CHARS
 GEMINI_API_KEY=
 GEMINI_MODEL=gemini-2.5-flash-lite
 JITSI_DOMAIN=meet.jit.si
 PGADMIN_DEFAULT_EMAIL=admin@izara.com
-PGADMIN_DEFAULT_PASSWORD=admin123
+PGADMIN_DEFAULT_PASSWORD=CHANGE_ME_TO_SECURE_PASSWORD
 "@ | Out-File -FilePath ".env.docker" -Encoding utf8
         }
     }

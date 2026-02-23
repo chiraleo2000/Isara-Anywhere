@@ -118,15 +118,15 @@
   "test_credentials": {
     "patient": {
       "email": "demo.test@gmail.com",
-      "password": "P@ssw0rd"
+      "password": "SET_VIA_ENVIRONMENT"
     },
     "doctor": {
       "email": "doctor.test@izara.com",
-      "password": "IzaraDoctor@2024"
+      "password": "SET_VIA_ENVIRONMENT"
     },
     "admin": {
       "email": "admin.test@izara.com",
-      "password": "IzaraAdmin@2024"
+      "password": "SET_VIA_ENVIRONMENT"
     }
   }
 }

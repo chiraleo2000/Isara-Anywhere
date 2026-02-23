@@ -602,7 +602,7 @@ function validateSession(fetchFromGCS, BUCKETS) {
 /**
  * Request integrity verification using HMAC
  */
-function verifyRequestIntegrity(secret = process.env.HMAC_SECRET || 'default-secret') {
+function verifyRequestIntegrity(secret = process.env.HMAC_SECRET) {
   return (req, res, next) => {
     const signature = req.headers['x-signature'];
     const timestamp = req.headers['x-timestamp'];
@@ -610,6 +610,20 @@ function verifyRequestIntegrity(secret = process.env.HMAC_SECRET || 'default-sec
     // Skip for GET requests and non-critical endpoints
     if (req.method === 'GET' || !signature) {
       return next();
+    }
+
+    // Reject if no HMAC secret is configured
+    if (!secret) {
+      securityAuditLog({
+        event: 'HMAC_SECRET_MISSING',
+        severity: 'HIGH',
+        path: req.path,
+        ip: getClientIP(req)
+      });
+      return res.status(500).json({
+        error: 'Server integrity verification not configured',
+        code: 'INTEGRITY_NOT_CONFIGURED'
+      });
     }
 
     // Check timestamp freshness (5 minute window)

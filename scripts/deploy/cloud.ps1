@@ -52,21 +52,21 @@ $IMG_PATIENT    = "$REGISTRY/izara-patient-portal:$TAG"
 $IMG_DOCTOR     = "$REGISTRY/izara-doctor-portal:$TAG"
 $IMG_MEETING    = "$REGISTRY/izara-meeting-server:$TAG"
 
-# Database credentials
-$DB_USER        = "postgres"
-$DB_PASSWORD    = "IzaraDb2024"
+# Database credentials - MUST be set via environment variables before running
+$DB_USER        = $env:DB_USER ?? "postgres"
+$DB_PASSWORD    = $env:DB_PASSWORD ?? $(throw "DB_PASSWORD environment variable is required")
 $DB_NAME        = "izara_phase1"
 
-# API Keys (from .env.docker)
-$GEMINI_API_KEY = "AIzaSyCaH9_CLZ6jZvRWYH-JSEnpj4TUn2UV5Vs"
-$MAPS_API_KEY   = "AIzaSyC2ihx457OgeZd-tgwtSBntrKpJtKhT19Y"
-$MAPS_MAP_ID    = "60687d30be2fe4b7e600b274"
-$JWT_SECRET     = "izara-jwt-secret-key-phase1-2026-dev-testing"
+# API Keys - MUST be set via environment variables before running
+$GEMINI_API_KEY = $env:GEMINI_API_KEY ?? $(throw "GEMINI_API_KEY environment variable is required")
+$MAPS_API_KEY   = $env:GOOGLE_MAPS_API_KEY ?? ""
+$MAPS_MAP_ID    = $env:GOOGLE_MAPS_MAP_ID ?? ""
+$JWT_SECRET     = $env:JWT_SECRET ?? $(throw "JWT_SECRET environment variable is required")
 
 # GCE VM config
 $VM_NAME  = "izara-postgres-dev-testing"
 $VM_ZONE  = "asia-southeast1-b"
-$PG_HOST  = "35.240.162.227"
+$PG_HOST  = $env:PG_HOST ?? $(throw "PG_HOST environment variable is required")
 $DATABASE_URL = "postgresql://${DB_USER}:${DB_PASSWORD}@${PG_HOST}:5432/${DB_NAME}"
 
 # ============================================================================
@@ -159,7 +159,8 @@ if (-not $OnlyApps) {
         --image=dpage/pgadmin4:8.14 --region=$REGION --platform=managed `
         --allow-unauthenticated --port=8080 --memory=1Gi --cpu=1 `
         --min-instances=0 --max-instances=1 --timeout=300 `
-        --set-env-vars="PGADMIN_DEFAULT_EMAIL=admin@izara.com,PGADMIN_DEFAULT_PASSWORD=IzaraAdmin@2024,PGADMIN_LISTEN_PORT=8080,PGADMIN_CONFIG_ENHANCED_COOKIE_PROTECTION=False,PGADMIN_CONFIG_WTF_CSRF_ENABLED=False" `
+        --set-env-vars="PGADMIN_DEFAULT_EMAIL=admin@izara.com,PGADMIN_LISTEN_PORT=8080,PGADMIN_CONFIG_ENHANCED_COOKIE_PROTECTION=False,PGADMIN_CONFIG_WTF_CSRF_ENABLED=False" `
+        --set-secrets="PGADMIN_DEFAULT_PASSWORD=pgadmin-password:latest" `
         --quiet
     if ($LASTEXITCODE -ne 0) { Write-Err "pgAdmin deployment failed!"; exit 1 }
     Write-OK "pgAdmin deployed: $(Get-ServiceUrl $SVC_PGADMIN)"
@@ -273,9 +274,10 @@ Write-Host "  👨‍⚕ Doctor Portal:   $(Get-ServiceUrl $SVC_DOCTOR)" -Foregr
 Write-Host "  🎥 Meeting Server:  $(Get-ServiceUrl $SVC_MEETING)" -ForegroundColor White
 Write-Host ""
 Write-Host "  👤 Test Accounts:" -ForegroundColor Yellow
-Write-Host "     Patient:  demo.test@gmail.com / P@ssw0rd"
-Write-Host "     Doctor:   doctor.test@izara.com / IzaraDoctor@2024"
-Write-Host "     Admin:    admin.test@izara.com / IzaraAdmin@2024"
+Write-Host "     Patient:  demo.test@gmail.com"
+Write-Host "     Doctor:   doctor.test@izara.com"
+Write-Host "     Admin:    admin.test@izara.com"
+Write-Host "     (Passwords are configured in the database seed scripts)" -ForegroundColor DarkGray
 Write-Host ""
 Write-Host "  🗑️  Teardown: .\scripts\deploy\cloud.ps1 -Teardown" -ForegroundColor Yellow
 Write-Host "═══════════════════════════════════════════════════════════════" -ForegroundColor Green

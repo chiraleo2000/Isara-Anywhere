@@ -39,7 +39,7 @@
  * 
  * Environment Variables:
  *   DB_PASSWORD       - Database password (REQUIRED for cloud/prod)
- *   DEV_DB_PASSWORD   - Dev database password (default: IzaraDb2024)
+ *   DEV_DB_PASSWORD   - Dev database password (REQUIRED)
  *   DB_HOST / DB_PORT - Override host/port
  * =============================================================================
  */
@@ -53,9 +53,9 @@ const path = require('node:path');
 // =============================================================================
 
 const PASSWORD_HASHES = {
-    patient: '$2b$10$64bK0EpjyC7quRGJNvRqmuH/jX3mA4dzyzYa2vgA2q.H3ZxkQwAmy',   // P@ssw0rd
-    doctor: '$2b$10$aPN6uhBrLoms36C8/017be2GWqUqaPJa6WaTaZ8LrnwAeaf3GajrO',      // IzaraDoctor@2024
-    admin: '$2b$10$fx5arkpb8YI7lEK5lcHdXeksczdG.qloim/uWghlBZXyxv.dNo/wq'        // IzaraAdmin@2024
+    patient: '$2b$10$64bK0EpjyC7quRGJNvRqmuH/jX3mA4dzyzYa2vgA2q.H3ZxkQwAmy',
+    doctor: '$2b$10$aPN6uhBrLoms36C8/017be2GWqUqaPJa6WaTaZ8LrnwAeaf3GajrO',
+    admin: '$2b$10$fx5arkpb8YI7lEK5lcHdXeksczdG.qloim/uWghlBZXyxv.dNo/wq'
 };
 
 const args = new Set(process.argv.slice(2));
@@ -75,14 +75,14 @@ const DB_CONFIGS = {
         host: process.env.DB_HOST || 'localhost',
         port: Number.parseInt(process.env.DB_PORT || '5433'),
         user: process.env.DB_USER || 'postgres',
-        password: process.env.DB_PASSWORD || process.env.POSTGRES_PASSWORD || 'IzaraDb2024',
+        password: process.env.DB_PASSWORD || process.env.POSTGRES_PASSWORD || '',
         database: process.env.DB_NAME || 'izara_phase1',
         ssl: false,
         connectionTimeoutMillis: 10000,
         max: 10
     },
     cloud: {
-        host: process.env.CLOUD_DB_HOST || '34.143.228.135',
+        host: process.env.CLOUD_DB_HOST || process.env.DB_HOST,
         port: Number.parseInt(process.env.CLOUD_DB_PORT || '5432'),
         user: process.env.DB_USER || 'postgres',
         password: process.env.DB_PASSWORD || process.env.CLOUD_DB_PASSWORD,
@@ -92,10 +92,10 @@ const DB_CONFIGS = {
         max: 5
     },
     'dev-cloud': {
-        host: process.env.DEV_DB_HOST || '35.240.162.227',
+        host: process.env.DEV_DB_HOST || process.env.DB_HOST,
         port: Number.parseInt(process.env.DEV_DB_PORT || '5432'),
         user: 'postgres',
-        password: process.env.DEV_DB_PASSWORD || 'IzaraDb2024',
+        password: process.env.DEV_DB_PASSWORD || process.env.DB_PASSWORD || '',
         database: 'izara_phase1',
         ssl: false,
         connectionTimeoutMillis: 30000,
@@ -764,7 +764,7 @@ async function updateStartupData(data) {
                 is_verified: u.is_verified, is_approved: u.is_approved, is_admin: u.is_admin,
                 admin_privileges: u.admin_privileges, gender: u.gender, date_of_birth: u.date_of_birth, phone: u.phone
             })),
-            password_hashes: { 'P@ssw0rd': PASSWORD_HASHES.patient, 'IzaraDoctor@2024': PASSWORD_HASHES.doctor, 'IzaraAdmin@2024': PASSWORD_HASHES.admin }
+            password_hashes: { patient: PASSWORD_HASHES.patient, doctor: PASSWORD_HASHES.doctor, admin: PASSWORD_HASHES.admin }
         }, null, 2), 'utf8');
         console.log(`      ✅ Updated users.json (${data.users.length} users)`);
     }
