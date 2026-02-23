@@ -119,6 +119,24 @@ export const config = {
     offlineModeEnabled: import.meta.env.VITE_OFFLINE_MODE_ENABLED === 'true',
     pushNotificationsEnabled: import.meta.env.VITE_PUSH_NOTIFICATIONS_ENABLED === 'true',
   },
+
+  // OpenClaw MCP Server
+  mcp: {
+    url: import.meta.env.VITE_MCP_URL || '/mcp',
+    port: Number.parseInt(import.meta.env.VITE_OPENCLAW_MCP_PORT || '3016', 10),
+  },
+
+  // Omnichannel (LINE / WhatsApp / Telegram)
+  omnichannel: {
+    webhookUrl: import.meta.env.VITE_OMNICHANNEL_WEBHOOK_URL || '/omnichannel',
+    webhookPort: Number.parseInt(import.meta.env.VITE_OMNICHANNEL_WEBHOOK_PORT || '3015', 10),
+    channels: {
+      lineEnabled: import.meta.env.VITE_LINE_ENABLED === 'true',
+      whatsappEnabled: import.meta.env.VITE_WHATSAPP_ENABLED === 'true',
+      telegramEnabled: import.meta.env.VITE_TELEGRAM_ENABLED === 'true',
+      messagesEnabled: import.meta.env.VITE_MESSAGES_ENABLED === 'true',
+    },
+  },
 };
 
 // Helper function to check if feature is enabled

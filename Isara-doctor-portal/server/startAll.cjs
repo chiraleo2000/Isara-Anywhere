@@ -28,6 +28,18 @@ const servers = [
     script: path.join(__dirname, 'mainApiServer.cjs'),
     port: 3009,
     color: '\x1b[35m' // Magenta
+  },
+  {
+    name: 'Omnichannel Webhook Server',
+    script: path.join(__dirname, 'omnichannel-webhook-server.cjs'),
+    port: 3015,
+    color: '\x1b[32m' // Green
+  },
+  {
+    name: 'OpenClaw MCP Server',
+    script: path.join(__dirname, 'openclaw-mcp-server.cjs'),
+    port: 3016,
+    color: '\x1b[34m' // Blue
   }
 ];
 
@@ -104,9 +116,11 @@ async function startAllServers() {
     console.log('✅ ALL SERVERS STARTED SUCCESSFULLY');
     console.log('═══════════════════════════════════════════════════════════════');
     console.log('\n📡 Backend Services:');
-    console.log('   • GCS API Server:  http://localhost:3012 (Internal)');
-    console.log('   • Auth Server:     http://localhost:3011');
-    console.log('   • Main API Server: http://localhost:3009');
+    console.log('   • GCS API Server:              http://localhost:3012 (Internal)');
+    console.log('   • Auth Server:                 http://localhost:3011');
+    console.log('   • Main API Server:             http://localhost:3009');
+    console.log('   • Omnichannel Webhook Server:  http://localhost:3015');
+    console.log('   • OpenClaw MCP Server:         http://localhost:3016');
     console.log('\n🔌 WebSockets:');
     console.log('   • Auth:     ws://localhost:3011/ws');
     console.log('   • Main API: ws://localhost:3009/ws');
