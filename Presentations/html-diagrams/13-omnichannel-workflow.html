@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Izara Diagram: 13-omnichannel-workflow</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5; }
+        .container { max-width: 100%; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; text-align: center; border-bottom: 2px solid #eee; padding-bottom: 15px; }
+        .mermaid { display: flex; justify-content: center; margin-top: 20px; }
+        .nav { margin-bottom: 20px; text-align: center; }
+        .nav a { margin: 0 10px; color: #3498db; text-decoration: none; font-weight: bold; }
+        .nav a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="nav">
+        <a href="index.html">🔙 Back to Index</a>
+        <span>|</span>
+        <a href="javascript:location.reload()">🔄 Refresh</a>
+    </div>
+    <div class="container">
+        <h1>13-omnichannel-workflow</h1>
+        <div class="mermaid">
+%%{init: {
+  'theme': 'base',
+  'themeVariables': {
+    'primaryColor': '#E8F5E9',
+    'primaryTextColor': '#1B5E20',
+    'primaryBorderColor': '#4CAF50',
+    'lineColor': '#2E7D32',
+    'secondaryColor': '#E3F2FD',
+    'tertiaryColor': '#FFF3E0',
+    'fontSize': '16px',
+    'fontFamily': 'Segoe UI, Arial'
+  }
+}}%%
+
+flowchart TB
+    subgraph CHANNELS["📱 OMNICHANNEL INPUT"]
+        direction LR
+        LINE["💚 LINE Official Account<br/>ช่องทาง LINE"]
+        WHATSAPP["💬 WhatsApp Business<br/>ช่องทาง WhatsApp"]
+        TELEGRAM["✈️ Telegram Bot<br/>ช่องทาง Telegram"]
+    end
+
+    subgraph WEBHOOK["🔐 OMNICHANNEL WEBHOOK SERVER<br/>Port 3015"]
+        direction TB
+        WH_RECEIVE["📥 Receive Webhook<br/>รับข้อความเข้า"]
+        WH_VALIDATE["🔒 HMAC-SHA256 Validation<br/>ตรวจสอบลายเซ็น"]
+        WH_CONSENT["✅ Consent Gate Check<br/>ตรวจสอบยินยอม PDPA"]
+        WH_NORMALIZE["📋 Message Normalizer<br/>ปรับรูปแบบข้อความ"]
+        WH_ROUTE["➡️ Route to MCP<br/>ส่งต่อข้อความ"]
+    end
+
+    subgraph MCP["🧠 OPENCLAW MCP SERVER<br/>Port 3016"]
+        direction TB
+        MCP_RECEIVE["📨 MCP Protocol Handler<br/>รับข้อมูลผ่าน MCP"]
+        MCP_SESSION["💾 Session Context Store<br/>เก็บบริบทการสนทนา"]
+        MCP_NLP["🤖 Entity Extraction<br/>(Gemini AI)<br/>แยกข้อมูลทางการแพทย์"]
+        MCP_ROUTER["🎯 Doctor AI Task Router<br/>เลือก Task ที่เหมาะสม"]
+        MCP_GCS["📦 GCS Persistence<br/>บันทึกลง Google Cloud"]
+    end
+
+    subgraph TASKS["🎯 DOCTOR AI TASKS (5 Tasks)"]
+        direction LR
+        TASK1["📝 Task 1<br/>History Taking<br/>ซักประวัติ"]
+        TASK2["👥 Task 2<br/>Team Conference<br/>ปรึกษาทีม"]
+        TASK3["🔬 Task 3<br/>Investigation<br/>สั่งตรวจ"]
+        TASK4["💊 Task 4<br/>Prescription<br/>สั่งยา"]
+        TASK5["📄 Task 5<br/>Referral<br/>ส่งต่อ"]
+    end
+
+    subgraph BACKEND["⚙️ BACKEND SERVICES"]
+        direction TB
+        API["🔧 Main API Server<br/>Port 3009<br/>EMR, Prescriptions"]
+        GCS_STORE["📦 Google Cloud Storage<br/>Patient Data Buckets"]
+        SOCKET["🔌 Socket.io Events<br/>Real-time Updates"]
+    end
+
+    subgraph UI["💻 DOCTOR PORTAL UI<br/>Port 3010"]
+        direction TB
+        MONITOR["📊 OmnichannelMonitor<br/>หน้าจอติดตาม"]
+        CONTEXT["📋 Patient Context Panel<br/>บริบทผู้ป่วย"]
+        ACTION["✅ AI Action Panel<br/>อนุมัติคำแนะนำจาก AI"]
+    end
+
+    %% Flow connections
+    LINE --> WH_RECEIVE
+    WHATSAPP --> WH_RECEIVE
+    TELEGRAM --> WH_RECEIVE
+
+    WH_RECEIVE --> WH_VALIDATE
+    WH_VALIDATE -->|✅ Valid| WH_CONSENT
+    WH_VALIDATE -->|❌ Invalid| REJECT["🚫 401 Unauthorized"]
+    WH_CONSENT -->|✅ Consented| WH_NORMALIZE
+    WH_CONSENT -->|❌ No Consent| PROMPT["📋 Send Consent Link"]
+    WH_NORMALIZE --> WH_ROUTE
+
+    WH_ROUTE --> MCP_RECEIVE
+    MCP_RECEIVE --> MCP_SESSION
+    MCP_SESSION --> MCP_NLP
+    MCP_NLP --> MCP_ROUTER
+    MCP_ROUTER --> MCP_GCS
+
+    MCP_ROUTER -.-> TASK1
+    MCP_ROUTER -.-> TASK2
+    MCP_ROUTER -.-> TASK3
+    MCP_ROUTER -.-> TASK4
+    MCP_ROUTER -.-> TASK5
+
+    MCP_GCS --> GCS_STORE
+    MCP_ROUTER --> API
+    API --> SOCKET
+
+    SOCKET -.-> MONITOR
+    API -.-> CONTEXT
+    API -.-> ACTION
+
+    MONITOR --> CONTEXT
+    CONTEXT --> ACTION
+
+    classDef channelStyle fill:#E8F5E9,stroke:#4CAF50,stroke-width:3px,color:#1B5E20
+    classDef webhookStyle fill:#E3F2FD,stroke:#2196F3,stroke-width:2px,color:#0D47A1
+    classDef mcpStyle fill:#FFF8E1,stroke:#FFC107,stroke-width:2px,color:#F57F17
+    classDef taskStyle fill:#F3E5F5,stroke:#9C27B0,stroke-width:2px,color:#4A148C
+    classDef backendStyle fill:#ECEFF1,stroke:#607D8B,stroke-width:2px,color:#37474F
+    classDef uiStyle fill:#E0F7FA,stroke:#00BCD4,stroke-width:2px,color:#006064
+    classDef errorStyle fill:#FFEBEE,stroke:#F44336,stroke-width:2px,color:#B71C1C
+
+    class LINE,WHATSAPP,TELEGRAM channelStyle
+    class WH_RECEIVE,WH_VALIDATE,WH_CONSENT,WH_NORMALIZE,WH_ROUTE webhookStyle
+    class MCP_RECEIVE,MCP_SESSION,MCP_NLP,MCP_ROUTER,MCP_GCS mcpStyle
+    class TASK1,TASK2,TASK3,TASK4,TASK5 taskStyle
+    class API,GCS_STORE,SOCKET backendStyle
+    class MONITOR,CONTEXT,ACTION uiStyle
+    class REJECT,PROMPT errorStyle
+        </div>
+    </div>
+    <script>
+        mermaid.initialize({ 
+            startOnLoad: true, 
+            theme: 'base',
+            securityLevel: 'loose',
+            themeVariables: {
+                primaryColor: '#E3F2FD',
+                secondaryColor: '#E8F5E9',
+                tertiaryColor: '#FFF3E0',
+                fontSize: '16px'
+            }
+        });
+    </script>
+</body>
+</html>

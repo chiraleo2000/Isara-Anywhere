@@ -1,7 +1,7 @@
 # Izara Telemedicine Platform - Technical Documentation
 
-> **Version:** 1.5.1 (Updated February 22, 2026)  
-> **Status:** Phase 1 Complete + Phase 2 In Progress (v1.5.1)  
+> **Version:** 1.5.1 (Updated February 23, 2026)  
+> **Status:** Phase 1 Complete + Phase 2 + Phase 2.1 AI-HIS  
 > **Database:** PostgreSQL 18 + pgvector  
 > **Stack:** PostgreSQL / Express / React / Jitsi / Gemini AI / Google Cloud  
 > **Tests:** 311 Unit Tests (Vitest) + 808 E2E Tests (Playwright) = 1,119 total across Local + Cloud-Dev
@@ -18,6 +18,7 @@
 6. [DevOps & Deployment](#6-devops--deployment)
 7. [Testing](#7-testing)
 8. [Future Roadmap](#8-future-roadmap)
+9. [Omnichannel & MCP Integration](#9-omnichannel--mcp-integration) ⭐ NEW
 
 ---
 
@@ -78,6 +79,8 @@ Isara-Anywhere/
 | **Patient Portal** | 3005 | Telehealth booking, PHR, Health Assistant | React + Express |
 | **Doctor Portal** | 3010 | EMR, Prescribing, Tele-consultation | React + Express |
 | **Meeting Server** | 3020 | Jitsi Meet, Recording, AI Transcription | Node.js + Jitsi |
+| **⭐ Omnichannel Webhook** | 3015 | LINE/WhatsApp/Telegram ingestion | Node.js CJS |
+| **⭐ OpenClaw MCP** | 3016 | AI context + 5 Doctor AI Tasks | Node.js CJS |
 | **PostgreSQL** | 5433 | Primary relational database | PostgreSQL 18 |
 | **pgAdmin** | 5050 | Database management UI | pgAdmin 4 |
 
@@ -174,7 +177,7 @@ The platform uses a **Hybrid Cloud-Native Architecture**:
 
 | Diagram | Description | View |
 | --------- | ------------- | ------ |
-| System Architecture | High-level overview | [View](html-diagrams/01-system-architecture.html) |
+| System Architecture | High-level overview (updated with omnichannel) | [View](html-diagrams/01-system-architecture.html) |
 | Patient Features | Patient portal capabilities | [View](html-diagrams/02-patient-features.html) |
 | Doctor Features | Doctor portal capabilities | [View](html-diagrams/03-doctor-features.html) |
 | Appointment Workflow | Booking flow | [View](html-diagrams/04-appointment-workflow.html) |
@@ -183,6 +186,8 @@ The platform uses a **Hybrid Cloud-Native Architecture**:
 | Video Meeting Flow | Jitsi + transcription | [View](html-diagrams/10-video-meeting-flow.html) |
 | PHR Management | Personal health records | [View](html-diagrams/11-phr-management.html) |
 | Prescription Workflow | E-prescribing with CDS | [View](html-diagrams/12-prescription-workflow.html) |
+| ⭐ **Omnichannel Workflow** | LINE/WhatsApp/Telegram → MCP → Doctor Portal | [View](html-diagrams/13-omnichannel-workflow.html) |
+| ⭐ **MCP Session Lifecycle** | 5 Doctor AI Tasks & session management | [View](html-diagrams/14-mcp-session-lifecycle.html) |
 
 ---
 
@@ -201,7 +206,7 @@ The system uses a robust **PostgreSQL Relational Database** with:
 
 | File | Purpose |
 | ------ | --------- |
-| `database/izara-complete-schema-v4.dbml` | Visual schema (DBML format) |
+| `database/izara-complete-schema-v5.dbml` | Visual schema (DBML format) — v5.1 (40 tables) |
 | `scripts/database/izara-database.sql` | SQL implementation (v5.1.0) |
 
 ### 3.3 Table Groups
@@ -515,6 +520,9 @@ npx playwright show-report
 - [x] **Phase 2 AI-HIS Tables**: CTM, Geriatric Screening, SOS, Follow-up, Nursing
 - [x] **Spec Kits**: Phase 1 + Phase 2 combined specification documents
 - [x] **Mobile Offline-First Sync**: SQLite schema (9 tables), offline queue repository, Zustand sync store, sync engine coordinator
+- [x] **Omnichannel Integration**: LINE, WhatsApp, Telegram webhooks with HMAC validation
+- [x] **OpenClaw MCP Server**: AI context management with 5 Doctor AI Tasks
+- [x] **PDPA Consent Gate**: Explicit consent workflow before PHI processing
 - [ ] **Advanced RAG**: Full knowledge_base vector search for clinical decision support
 - [ ] **IoMT Integration**: Wearable device sync for vitals
 - [ ] **Payment Gateway**: Stripe/Omise for consultation fees
@@ -525,6 +533,253 @@ npx playwright show-report
 - [ ] **Microservices Split**: Decouple Auth, Notifications, AI services
 - [ ] **Multi-Region**: GCS bucket replication, DB read replicas
 - [ ] **FHIR Compliance**: HL7 FHIR R4 for interoperability
+
+---
+
+## 9. Omnichannel & MCP Integration
+
+### 9.1 Overview
+
+The Omnichannel & MCP (Model Context Protocol) integration enables patients to interact with the healthcare team via popular messaging platforms (LINE, WhatsApp, Telegram) while maintaining a stateful AI context for intelligent clinical assistance.
+
+**Architecture:**
+```
+Patient (LINE/WhatsApp/Telegram) 
+  → Omnichannel Webhook Server (Port 3015)
+    → OpenClaw MCP Server (Port 3016)
+      → Google Gemini AI + GCS
+        → Doctor Portal UI (Port 3010)
+```
+
+### 9.2 Omnichannel Webhook Server (Port 3015)
+
+**Responsibilities:**
+- Receive and validate webhooks from LINE, WhatsApp, Telegram
+- HMAC-SHA256 signature validation per platform
+- PDPA consent gate (check consent before processing any PHI)
+- Message normalization to canonical `OmnichannelMessage` schema
+- Route to OpenClaw MCP Server via internal REST API
+
+**Supported Channels:**
+
+| Channel | SDK | Signature Header | Secret Key |
+|---------|-----|------------------|------------|
+| LINE Official Account | `@line/bot-sdk` | `X-Line-Signature` | `LINE_CHANNEL_SECRET` |
+| WhatsApp Business | Meta Cloud API | `X-Hub-Signature-256` | `WHATSAPP_APP_SECRET` |
+| Telegram Bot | `node-telegram-bot-api` | Token in URL | `TELEGRAM_BOT_TOKEN` |
+
+**Message Normalization:**
+```javascript
+OmnichannelMessage {
+  messageId: string,
+  patientId: string,
+  channel: 'line' | 'whatsapp' | 'telegram',
+  text: string,
+  timestamp: ISO8601,
+  metadata: {
+    senderName?: string,
+    mediaUrls?: string[],
+    location?: { lat, lon }
+  }
+}
+```
+
+### 9.3 OpenClaw MCP Server (Port 3016)
+
+**Responsibilities:**
+- MCP protocol handler (HTTP/SSE-based)
+- Stateful session context store (in-memory Map + GCS persistence)
+- NLP entity extraction via Google Gemini API
+- Doctor AI Task router (5 tasks)
+- GCS bucket read/write for patient data persistence
+- Socket.io event emission to Doctor Portal
+
+**MCP Endpoints:**
+
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| POST | `/mcp/ingest` | Ingest normalized message, extract entities, update context |
+| GET | `/mcp/context/:patientId` | Retrieve full session context snapshot |
+| DELETE | `/mcp/context/:patientId` | Delete session (consent revocation) |
+| POST | `/mcp/team-brief/:patientId` | Generate & dispatch Telegram team brief (Task 2) |
+| POST | `/mcp/investigate/:patientId` | Create investigation orders (Task 3) |
+| POST | `/mcp/prescribe/:patientId` | Draft prescription & follow-up (Task 4) |
+| POST | `/mcp/referral/:patientId` | Generate referral package (Task 5) |
+
+### 9.4 The 5 Doctor AI Tasks
+
+#### Task 1: History Taking (ซักประวัติ)
+- **Trigger:** Patient sends symptom description via chat
+- **Process:**
+  1. OpenClaw receives normalized message
+  2. Gemini API extracts medical entities (symptoms, vitals, HPI)
+  3. Structured data written to GCS: `patients/{id}/hpi.json`
+  4. Socket.io event emitted to Doctor Portal
+- **Output:** Updated patient context, follow-up question sent to patient
+
+#### Task 2: Care Team Conference (ปรึกษาทีม)
+- **Trigger:** Doctor clicks "Request Team Consult" in EMR UI
+- **Process:**
+  1. Doctor specifies question & urgency
+  2. OpenClaw retrieves full MCP context from GCS
+  3. Gemini generates team brief summary (<500 words)
+  4. Brief posted to secure Telegram care team group
+- **Output:** Telegram message with de-identified patient summary
+
+#### Task 3: Investigation Request (สั่งตรวจ)
+- **Trigger:** Doctor approves AI-suggested lab orders or manually creates orders
+- **Process:**
+  1. Orders submitted to OpenClaw MCP
+  2. Lab order record written to GCS patient bucket
+  3. Patient notified via preferred channel
+- **Output:** Lab orders created, patient notification sent
+
+#### Task 4: Prescription & Automated Follow-up (สั่งยา)
+- **Trigger:** Doctor approves treatment plan in EMR
+- **Process:**
+  1. OpenClaw generates prescription draft via Gemini
+  2. Doctor reviews and signs
+  3. Prescription persisted to GCS
+  4. Follow-up message dispatched to patient's channel
+  5. Follow-up reminders scheduled (T+24h, T+72h)
+- **Output:** Signed prescription, automated follow-up messages
+
+#### Task 5: Referral Package Generation (ส่งต่อ)
+- **Trigger:** Doctor clicks "Generate Referral" in EMR UI
+- **Process:**
+  1. OpenClaw retrieves full patient context (history, labs, meds, assessments)
+  2. Gemini generates referral letter (demographics, HPI, assessment, treatment, reason for referral)
+  3. PDF-ready JSON referral document written to GCS
+  4. Patient notified
+- **Output:** Referral package ready for download/transmission
+
+### 9.5 Security Architecture
+
+#### Webhook Authenticity
+- **LINE:** HMAC-SHA256 validation using `X-Line-Signature` header
+- **WhatsApp:** HMAC-SHA256 validation using `X-Hub-Signature-256` header
+- **Telegram:** Bot token validation in webhook URL path
+- **Rejection:** Invalid signatures → `401 Unauthorized` + audit log entry
+
+#### PDPA Consent Lifecycle
+```
+1. Patient sends first message
+2. Webhook server checks GCS consent record
+3. If no consent → Send consent link + PDPA summary, halt processing
+4. Patient clicks consent link, submits opt-in
+5. Consent record written to GCS: consent/{patientId}.json
+   {
+     consentedAt: ISO8601,
+     pdpaVersion: '1.0',
+     channels: ['line', 'whatsapp'],
+     scope: 'full'
+   }
+6. Subsequent messages processed normally
+7. If consent revoked → DELETE /mcp/context/{patientId} → purge all PHI
+```
+
+#### PHI Encryption
+- **In Transit:** TLS 1.3 enforced; internal services communicate via localhost
+- **At Rest:** AES-256-GCM applied before writing to GCS
+- **Key Management:** Encryption key stored in GCP Secret Manager
+
+### 9.6 Workflow State Machine
+
+**Omnichannel Message Processing:**
+```
+RECEIVED 
+  → SIGNATURE_VALIDATED (or → 401 Reject)
+    → CONSENT_CHECKED (or → CONSENT_REQUESTED)
+      → NORMALISED
+        → MCP_INGESTED
+          → GCS_WRITTEN
+            → UI_NOTIFIED
+```
+
+**MCP Session Lifecycle:**
+```
+createSession(patientId, channel)
+  ↓
+updateContext(sessionId, entities) — repeated per message
+  ↓
+getContext(patientId) — doctor requests full snapshot
+  ↓
+archiveSession(patientId) — appointment completed
+  OR
+deleteSession(patientId) — consent revoked
+```
+
+### 9.7 Frontend: OmnichannelMonitor Component
+
+**Location:** `Isara-doctor-portal/src/components/OmnichannelMonitor.tsx`
+
+**Sub-components:**
+
+| Component | Purpose |
+|-----------|---------|
+| `ChannelFilterBar` | Toggle LINE / WhatsApp / Telegram / All |
+| `MessageFeed` | Real-time scrolling feed (Socket.io) |
+| `PatientContextPanel` | Display MCP context (HPI, meds, labs) |
+| `AIActionPanel` | Approve/reject AI-suggested actions |
+| `ReplyComposer` | Send message to patient via their channel |
+| `ConsentStatusBadge` | Inline PDPA consent status indicator |
+
+**RBAC:** Requires role `doctor`, `nurse`, or `admin`
+
+### 9.8 External APIs & Credentials
+
+| API | Purpose | Secret Key Name |
+|-----|---------|-----------------|
+| LINE Messaging API | Receive/send patient messages | `LINE_CHANNEL_SECRET`, `LINE_CHANNEL_ACCESS_TOKEN` |
+| Meta WhatsApp Cloud API | Receive/send patient messages | `WHATSAPP_APP_SECRET`, `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID` |
+| Telegram Bot API | Secure care-team groups | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CARE_TEAM_CHAT_ID` |
+| Google Gemini API | NLP & clinical AI reasoning | `GEMINI_API_KEY` (existing) |
+| Google Cloud Storage | Patient data persistence | `GOOGLE_APPLICATION_CREDENTIALS` (existing) |
+
+### 9.9 Deployment Notes
+
+**Docker Compose Services:**
+```yaml
+izara-omnichannel-webhook:
+  build: ./Isara-doctor-portal
+  command: node server/omnichannel-webhook-server.cjs
+  ports:
+    - "3015:3015"
+  environment:
+    - LINE_CHANNEL_SECRET
+    - WHATSAPP_APP_SECRET
+    - TELEGRAM_BOT_TOKEN
+
+izara-openclaw-mcp:
+  build: ./Isara-doctor-portal
+  command: node server/openclaw-mcp-server.cjs
+  ports:
+    - "3016:3016"
+  environment:
+    - OPENCLAW_MCP_ENCRYPTION_KEY
+    - GEMINI_API_KEY
+```
+
+**Health Checks:**
+- `GET /health` on both ports 3015 and 3016
+- Expected response: `{ status: 'ok', timestamp: ISO8601 }`
+
+### 9.10 Monitoring & Logging
+
+**Audit Logging:**
+- All PHI access events written to `izara-users-credentials/audit/`
+- Log retention: ≥ 1 year (PDPA compliance)
+
+**Key Metrics:**
+- Webhook signature validation rejection rate
+- MCP context retrieval latency (target: ≤ 2s P95)
+- Socket.io event delivery rate
+- Consent opt-in rate
+
+**Alert Thresholds:**
+- Signature rejection rate > 5%
+- MCP latency > 5s P99
+- Consent opt-out spike (> 10 in 1 hour)
 
 ---
 
@@ -551,4 +806,4 @@ npx playwright show-report
 
 ---
 
-### Last Updated: February 22, 2026
+### Last Updated: February 23, 2026

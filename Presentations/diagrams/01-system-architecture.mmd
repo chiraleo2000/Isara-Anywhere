@@ -20,6 +20,13 @@ flowchart TB
         A["🔧 Admins<br/>ผู้ดูแล"]
     end
 
+    subgraph OMNI_CHANNELS["📱 OMNICHANNEL"]
+        direction LR
+        LINE["💚 LINE"]
+        WHATSAPP["💬 WhatsApp"]
+        TELEGRAM["✈️ Telegram"]
+    end
+
     subgraph MOBILE["📱 MOBILE APP (Expo 52 + React Native)"]
         direction LR
         M_PAT["🩺 Patient App<br/>Health, AI Chat, Appointments"]
@@ -28,6 +35,10 @@ flowchart TB
 
     subgraph CONTAINERS["🐳 DOCKER CONTAINERS (Local/Cloud Run)"]
         direction TB
+        subgraph NEW_SERVICES["🆕 NEW SERVICES"]
+            OMNI_WH["🔐 Omnichannel Webhook<br/>Port 3015<br/>LINE/WhatsApp/Telegram"]
+            OPENCLAW["🧠 OpenClaw MCP<br/>Port 3016<br/>AI Context + Tasks"]
+        end
         subgraph PP_CONT["🏥 Patient Portal (Port 3005)"]
             PP_FE["📱 React Frontend<br/>TypeScript + Vite"]
             PP_BE["⚙️ Express Backend<br/>Node.js 22"]
@@ -49,7 +60,7 @@ flowchart TB
 
     subgraph AI_SERVICES["🤖 AI SERVICES"]
         direction LR
-        GEMINI["🧠 Gemini 2.5 Flash<br/>Health Assistant<br/>Transcript Summary"]
+        GEMINI["🧠 Gemini 2.5 Flash<br/>Health Assistant<br/>Transcript Summary<br/>Doctor AI Tasks"]
         STT["🎤 Speech-to-Text<br/>Real-time Transcription"]
     end
 
@@ -59,9 +70,20 @@ flowchart TB
         EMAIL["📧 Email Service<br/>Notifications"]
     end
 
+    %% Omnichannel connections
+    LINE --> OMNI_WH
+    WHATSAPP --> OMNI_WH
+    TELEGRAM --> OMNI_WH
+    
+    OMNI_WH --> OPENCLAW
+    OPENCLAW -.-> GEMINI
+    OPENCLAW --> GCS
+
     %% User connections
     P --> PP_FE
     P --> M_PAT
+    P -.-> LINE
+    P -.-> WHATSAPP
     D --> DP_FE
     D --> M_DOC
     A --> DP_FE
@@ -80,6 +102,7 @@ flowchart TB
     PP_BE --> POSTGRES
     DP_BE --> POSTGRES
     MS --> POSTGRES
+    OPENCLAW --> POSTGRES
 
     %% Backend to Storage
     PP_BE --> GCS
@@ -100,8 +123,13 @@ flowchart TB
     %% Portal to Meeting Server
     PP_BE -.-> MS
     DP_BE -.-> MS
+    
+    %% MCP to Doctor Portal
+    OPENCLAW -.-> DP_BE
 
     classDef userStyle fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px,color:#1B5E20
+    classDef omniStyle fill:#FFF3E0,stroke:#FF9800,stroke-width:3px,color:#E65100
+    classDef newServiceStyle fill:#FFF8E1,stroke:#FFC107,stroke-width:3px,color:#F57F17
     classDef containerStyle fill:#E3F2FD,stroke:#2196F3,stroke-width:2px,color:#0D47A1
     classDef mobileStyle fill:#FFF3E0,stroke:#FF9800,stroke-width:2px,color:#E65100
     classDef dbStyle fill:#F3E5F5,stroke:#9C27B0,stroke-width:2px,color:#4A148C
@@ -110,6 +138,8 @@ flowchart TB
     classDef serviceStyle fill:#E0F7FA,stroke:#00BCD4,stroke-width:2px,color:#006064
 
     class P,D,A userStyle
+    class LINE,WHATSAPP,TELEGRAM omniStyle
+    class OMNI_WH,OPENCLAW newServiceStyle
     class PP_FE,PP_BE,DP_FE,DP_BE,MS containerStyle
     class M_PAT,M_DOC mobileStyle
     class POSTGRES dbStyle

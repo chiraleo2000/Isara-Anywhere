@@ -1,0 +1,137 @@
+%%{init: {
+  'theme': 'base',
+  'themeVariables': {
+    'primaryColor': '#E8F5E9',
+    'primaryTextColor': '#1B5E20',
+    'primaryBorderColor': '#4CAF50',
+    'lineColor': '#2E7D32',
+    'secondaryColor': '#E3F2FD',
+    'tertiaryColor': '#FFF3E0',
+    'fontSize': '16px',
+    'fontFamily': 'Segoe UI, Arial',
+    'actorBkg': '#E3F2FD',
+    'actorBorder': '#2196F3',
+    'actorTextColor': '#0D47A1',
+    'signalColor': '#2E7D32',
+    'signalTextColor': '#1B5E20',
+    'labelBoxBkgColor': '#FFF8E1',
+    'labelBoxBorderColor': '#FFC107',
+    'labelTextColor': '#F57F17',
+    'loopTextColor': '#1B5E20',
+    'noteBkgColor': '#FFF3E0',
+    'noteBorderColor': '#FF9800',
+    'noteTextColor': '#E65100'
+  }
+}}%%
+
+sequenceDiagram
+    autonumber
+    participant Patient as 👤 Patient<br/>ผู้ป่วย
+    participant Omni as 🔐 Omnichannel<br/>Webhook Server<br/>(Port 3015)
+    participant MCP as 🧠 OpenClaw<br/>MCP Server<br/>(Port 3016)
+    participant Gemini as 🤖 Google<br/>Gemini AI
+    participant GCS as 📦 Google<br/>Cloud Storage
+    participant Doctor as 👨‍⚕️ Doctor Portal<br/>แพทย์
+
+    Note over Patient,Doctor: 🔄 MCP SESSION LIFECYCLE<br/>วงจรชีวิตของ Session
+
+    %% Session Creation
+    rect rgb(232, 245, 233)
+        Note over Patient,MCP: Phase 1: CREATE SESSION (สร้างเซสชั่น)
+        Patient->>+Omni: Send first message via LINE/WhatsApp
+        Omni->>Omni: Validate signature (HMAC-SHA256)
+        Omni->>Omni: Check consent (PDPA)
+        Omni->>+MCP: POST /mcp/ingest<br/>{patientId, channel, message}
+        MCP->>MCP: createSession(patientId, channel)
+        MCP->>GCS: Create patient bucket<br/>patients/{id}/session.json
+        GCS-->>MCP: Session created ✅
+        MCP-->>-Omni: Session initialized
+        Omni-->>-Patient: ✅ ยินดีต้อนรับ
+    end
+
+    %% Update Context - Task 1
+    rect rgb(255, 248, 225)
+        Note over Patient,Doctor: Phase 2: TASK 1 - History Taking (ซักประวัติ)
+        Patient->>+Omni: "มีไข้ 3 วัน ปวดหัว คลื่นไส้"
+        Omni->>+MCP: POST /mcp/ingest<br/>{sessionId, message}
+        MCP->>+Gemini: extractMedicalEntities(text)
+        Gemini-->>-MCP: {symptoms: ["ไข้", "ปวดหัว", "คลื่นไส้"],<br/>duration: "3 days",<br/>vitalSigns: {}}
+        MCP->>MCP: updateContext(sessionId, entities)
+        MCP->>GCS: Write patients/{id}/hpi.json
+        GCS-->>MCP: Context saved ✅
+        MCP-->>Doctor: Socket.io: patient:context:updated
+        MCP-->>-Omni: Updated context
+        Omni-->>-Patient: "ขอบคุณ กรุณาระบุอุณหภูมิร่างกาย"
+        Doctor->>+MCP: GET /mcp/context/{patientId}
+        MCP-->>-Doctor: Full session context
+    end
+
+    %% Task 2 - Team Conference
+    rect rgb(227, 242, 253)
+        Note over Doctor,GCS: Phase 3: TASK 2 - Team Conference (ปรึกษาทีม)
+        Doctor->>+MCP: POST /mcp/team-brief/{patientId}<br/>{question, urgency}
+        MCP->>GCS: Read full context
+        GCS-->>MCP: Patient history + vitals + meds
+        MCP->>+Gemini: generateTeamBrief(context)
+        Gemini-->>-MCP: Brief summary (<500 words)
+        MCP->>MCP: Post to Telegram care team group
+        MCP-->>-Doctor: Consult sent ✅
+    end
+
+    %% Task 3 - Investigation
+    rect rgb(243, 229, 245)
+        Note over Doctor,GCS: Phase 4: TASK 3 - Investigation Request (สั่งตรวจ)
+        Doctor->>+MCP: POST /mcp/investigate/{patientId}<br/>{orders: ["CBC", "LFT"]}
+        MCP->>MCP: updateContext(sessionId, {labOrders})
+        MCP->>GCS: Write patients/{id}/lab_orders.json
+        GCS-->>MCP: Saved ✅
+        MCP->>Patient: "แพทย์สั่งตรวจ CBC, LFT<br/>กรุณาติดต่อห้องแล็บ"
+        MCP-->>-Doctor: Lab orders created
+    end
+
+    %% Task 4 - Prescription
+    rect rgb(255, 235, 238)
+        Note over Doctor,Patient: Phase 5: TASK 4 - Prescription (สั่งยา)
+        Doctor->>+MCP: POST /mcp/prescribe/{patientId}<br/>{medications: [...]}
+        MCP->>+Gemini: generatePrescription(medications)
+        Gemini-->>-MCP: Prescription draft + follow-up plan
+        MCP->>GCS: Write patients/{id}/prescriptions.json
+        GCS-->>MCP: Saved ✅
+        MCP->>Patient: "คุณได้รับใบสั่งยา: [รายการยา]<br/>หากมีผลข้างเคียงกรุณาติดต่อ"
+        MCP->>MCP: Schedule follow-up (T+24h, T+72h)
+        MCP-->>-Doctor: Prescription sent ✅
+    end
+
+    %% Task 5 - Referral
+    rect rgb(224, 247, 250)
+        Note over Doctor,GCS: Phase 6: TASK 5 - Referral Package (ส่งต่อ)
+        Doctor->>+MCP: POST /mcp/referral/{patientId}<br/>{facility, reason}
+        MCP->>GCS: Read full context (history + labs + meds)
+        GCS-->>MCP: Complete patient data
+        MCP->>+Gemini: generateReferral(context)
+        Gemini-->>-MCP: Referral letter (PDF-ready JSON)
+        MCP->>GCS: Write patients/{id}/referral.json
+        GCS-->>MCP: Saved ✅
+        MCP->>Patient: "แพทย์ได้ส่งต่อเวชระเบียนของท่านแล้ว"
+        MCP-->>-Doctor: Referral package ready for download
+    end
+
+    %% Session Archive/Delete
+    rect rgb(236, 239, 241)
+        Note over MCP,GCS: Phase 7: ARCHIVE or DELETE SESSION
+        alt Appointment completed
+            Doctor->>+MCP: POST /mcp/archiveSession/{patientId}
+            MCP->>GCS: Move to long-term archive<br/>archive/{year}/{id}/
+            GCS-->>MCP: Archived ✅
+            MCP-->>-Doctor: Session archived
+        else Patient revokes consent
+            Patient->>+Omni: Revoke consent (PDPA)
+            Omni->>+MCP: DELETE /mcp/context/{patientId}
+            MCP->>GCS: Delete all patient data
+            GCS-->>MCP: Deleted ✅
+            MCP-->>-Omni: Session purged
+            Omni-->>-Patient: ข้อมูลของท่านถูกลบแล้ว
+        end
+    end
+
+    Note over Patient,Doctor: ✅ MCP SESSION COMPLETE<br/>เสร็จสิ้นวงจรการทำงาน
