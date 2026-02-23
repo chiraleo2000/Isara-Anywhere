@@ -61,9 +61,9 @@ function decryptPayload(ciphertext) {
     return ciphertext;
   }
   const buf = Buffer.from(ciphertext, 'base64');
-  const iv = buf.slice(0, 12);
-  const tag = buf.slice(12, 28);
-  const encrypted = buf.slice(28);
+  const iv = buf.subarray(0, 12);
+  const tag = buf.subarray(12, 28);
+  const encrypted = buf.subarray(28);
   const key = Buffer.from(ENCRYPTION_KEY_HEX, 'hex');
   const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
   decipher.setAuthTag(tag);
@@ -180,10 +180,14 @@ Patient message:
       generationConfig: { temperature: 0.1, maxOutputTokens: 1024 }
     });
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
     const options = {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) }
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(body),
+        'x-goog-api-key': GEMINI_API_KEY
+      }
     };
 
     const req = https.request(url, options, (resp) => {
@@ -237,10 +241,14 @@ Provide: Chief complaint, key clinical findings, current plan, specific consult 
       generationConfig: { temperature: 0.3, maxOutputTokens: 600 }
     });
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
     const options = {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) }
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(body),
+        'x-goog-api-key': GEMINI_API_KEY
+      }
     };
 
     const req = https.request(url, options, (resp) => {
@@ -303,10 +311,14 @@ Return JSON:
       generationConfig: { temperature: 0.2, maxOutputTokens: 1500 }
     });
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
     const options = {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) }
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(body),
+        'x-goog-api-key': GEMINI_API_KEY
+      }
     };
 
     const req = https.request(url, options, (resp) => {
@@ -395,9 +407,13 @@ function sendTelegramMessage(text) {
     let data = '';
     resp.on('data', (chunk) => { data += chunk; });
     resp.on('end', () => {
-      const parsed = JSON.parse(data);
-      if (!parsed.ok) console.error('[MCP] Telegram API error:', parsed.description);
-      else console.log('[MCP] Team brief sent to Telegram ✓');
+      try {
+        const parsed = JSON.parse(data);
+        if (!parsed.ok) console.error('[MCP] Telegram API error:', parsed.description);
+        else console.log('[MCP] Team brief sent to Telegram ✓');
+      } catch (_) {
+        console.error('[MCP] Telegram response parse error');
+      }
     });
   });
 

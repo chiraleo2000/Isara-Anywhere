@@ -111,12 +111,13 @@ function securityHeaders() {
     // Content Security Policy
     res.setHeader('Content-Security-Policy',
       "default-src 'self'; " +
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://maps.googleapis.com; " +
+      "script-src 'self' 'unsafe-inline' https://apis.google.com https://maps.googleapis.com; " +
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
       "font-src 'self' https://fonts.gstatic.com; " +
       "img-src 'self' data: https: blob:; " +
       "connect-src 'self' http://localhost:* https://*.googleapis.com wss://*; " +
-      "frame-src 'self' https://meet.google.com https://calendar.google.com;"
+      "frame-src 'self' https://meet.google.com https://calendar.google.com; " +
+      "frame-ancestors 'self';"
     );
 
     // Prevent clickjacking
@@ -308,7 +309,7 @@ const SANITIZATION_PATTERNS = {
   // NoSQL injection patterns
   nosql: /(\$where|\$gt|\$lt|\$ne|\$or|\$and|\$regex|\$in|\$nin)/gi,
   // XSS patterns
-  xss: /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>|javascript:|on\w+\s*=/gi,
+  xss: /<script[\s>]|<\/script\s*>|javascript:|on\w+\s*=/gi,
   // Path traversal
   pathTraversal: /\.\.[/\\]|[/\\]\.\.|%2e%2e/gi,
   // Command injection
