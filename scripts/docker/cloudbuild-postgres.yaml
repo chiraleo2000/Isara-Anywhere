@@ -1,4 +1,4 @@
-# Cloud Build configuration for Izara PostgreSQL Database v2.0.0
+# Cloud Build configuration for Izara PostgreSQL Database v1.5.2
 # Deploys PostgreSQL with pgvector as a Cloud Run service
 # Build context: repo root. Submit with: gcloud builds submit --config=scripts/docker/cloudbuild-postgres.yaml .
 
@@ -10,7 +10,7 @@ steps:
       - '-f'
       - 'scripts/docker/Dockerfile.postgres'
       - '-t'
-      - 'asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-postgres:v2.0.0'
+      - 'asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-postgres:v1.5.2'
       - '-t'
       - 'asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-postgres:latest'
       - '.'
@@ -28,7 +28,7 @@ steps:
       - 'run'
       - 'deploy'
       - 'izara-postgres'
-      - '--image=asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-postgres:v2.0.0'
+      - '--image=asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-postgres:v1.5.2'
       - '--region=asia-southeast1'
       - '--platform=managed'
       - '--allow-unauthenticated'
@@ -46,7 +46,7 @@ steps:
 
 # Store images in Artifact Registry
 images:
-  - 'asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-postgres:v2.0.0'
+  - 'asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-postgres:v1.5.2'
   - 'asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-postgres:latest'
 
 # Build timeout (15 minutes)

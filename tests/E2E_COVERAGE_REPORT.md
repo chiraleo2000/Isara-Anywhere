@@ -1,11 +1,13 @@
-# E2E Test Coverage & Mobile App Structure Report
+# E2E Test Coverage Report — v1.5.3
 
-**Generated:** Research analysis of `tests/e2e/specs/` directory  
+**Generated:** 2025-03-01  
 **Framework:** Playwright (TypeScript)  
-**Total Spec Files:** 8  
-**Total Lines of Test Code:** ~7,563  
-**Estimated Total `test()` Calls:** ~642  
-**User Accounts Used:** 5 (patient1, patient2, patient3, doctor, admin)
+**Total Spec Files:** 10  
+**Total Lines of Test Code:** ~8,400+  
+**Estimated Total `test()` Calls:** ~807  
+**User Accounts Used:** 5 (patient1, patient2, patient3, doctor, admin)  
+**Parallel Workers:** 4 (configurable via PW_WORKERS env)  
+**Full Suite Duration:** ~10 minutes
 
 ---
 
@@ -535,18 +537,16 @@ The shared packages (`@izara/api-client`, `@izara/shared`, `@izara/ui`) have `sr
 | -------- | ------- |
 | Total spec files | 8 |
 | Total lines of test code | ~7,563 |
-| Total describe blocks | 67 |
-| Total estimated test() calls | ~642 |
+| Total describe blocks | 74 |
+| Total estimated test() calls | ~807 |
 | User accounts used | 5 (patient1, patient2, patient3, doctor, admin) |
 | Services tested | 3 (Patient Portal, Doctor Portal, Meeting Server) |
-| Patient Portal pages fully covered | 7 of 15 (47%) |
-| Patient Portal pages partially covered | 7 of 15 (47%) |
+| Patient Portal pages fully covered | 8 of 15 (53%) |
+| Patient Portal pages partially covered | 6 of 15 (40%) |
 | Patient Portal pages not covered | 1 of 15 (7%) |
-| Doctor Portal pages fully covered | 7 of 21 (33%) |
-| Doctor Portal pages partially covered | 13 of 21 (62%) |
+| Doctor Portal pages fully covered | 8 of 21 (38%) |
+| Doctor Portal pages partially covered | 12 of 21 (57%) |
 | Doctor Portal pages not covered | 1 of 21 (5%) |
-| Mobile app test files | 0 |
-| Mobile app screens (routes) | ~14 |
 
 ### Test Distribution by Feature Area
 
@@ -555,8 +555,10 @@ The shared packages (`@izara/api-client`, `@izara/shared`, `@izara/ui`) have `sr
 | Auth, Health, RBAC | 01 | ~82 |
 | Appointments | 02 | ~92 |
 | Health Records & EMR | 03 | ~95 |
-| Video Meeting & Transcription | 04 | ~87 |
+| Video Meeting & Transcription | 04 | ~91 |
 | Content Sync & Approval | 05 | ~82 |
 | AI & CDS | 06 | ~72 |
 | Multi-User Concurrent | 07 | ~60 |
 | Phase 2 (HIS) | 08 | ~72 |
+| User Accounts & Demo Pages | 09 | ~91 |
+| Lab/Imaging/Map & v1.5.3 | 10 | ~70 |

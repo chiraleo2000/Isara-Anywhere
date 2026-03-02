@@ -33,24 +33,24 @@ if (process.env.DATABASE_URL) {
   }
 }
 
-// PostgreSQL Docker service configuration (supports Cloud SQL and local Docker)
+// PostgreSQL Docker service configuration (supports embedded PG, Cloud SQL, and local Docker)
 const dbHost = dbConfig.host || process.env.DB_HOST || 'localhost';
 const isProduction = process.env.NODE_ENV === 'production';
-// Use DB_SSL env var to control SSL - default to false for Docker deployments
-// Cloud SQL uses SSL but local Docker doesn't
+const useEmbeddedPG = process.env.USE_EMBEDDED_PG === 'true';
+// Use DB_SSL env var to control SSL - default to false for embedded/Docker deployments
 const useSSL = process.env.DB_SSL === 'true' || process.env.DB_SSL === '1';
 
-// Configure connection - Standard TCP (supports Cloud SQL and local Docker)
+// Configure connection - Standard TCP (supports embedded PG, Cloud SQL, and local Docker)
 const poolConfig = {
   host: dbHost,
-  port: dbConfig.port || Number.parseInt(process.env.DB_PORT || '5433', 10),
+  port: dbConfig.port || Number.parseInt(process.env.DB_PORT || (useEmbeddedPG ? '5432' : '5433'), 10),
   database: dbConfig.database || process.env.DB_NAME || 'izara_phase1',
   user: dbConfig.user || process.env.DB_USER || 'postgres',
   password: dbConfig.password || process.env.DB_PASSWORD || 'IzaraDb2024',
   max: 20,
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: isProduction ? 30000 : 5000, // 30s for Cloud SQL, 5s for local
-  ssl: useSSL ? { rejectUnauthorized: false } : false, // SSL only when explicitly enabled
+  connectionTimeoutMillis: isProduction ? 30000 : 5000,
+  ssl: useSSL ? { rejectUnauthorized: false } : false,
 };
 
 console.log(`📦 Database: PostgreSQL TCP - ${dbHost}:${poolConfig.port}`);
@@ -92,6 +92,53 @@ async function runMigrations() {
       EXCEPTION WHEN OTHERS THEN
         NULL;
       END $$;
+    `);
+
+    // ========================================================================
+    // Lab Orders & Imaging - Add missing columns
+    // ========================================================================
+    
+    // Add updated_at to lab_orders if missing
+    await pool.query(`
+      DO $$ 
+      BEGIN
+        ALTER TABLE lab_orders ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+        ALTER TABLE lab_orders ADD COLUMN IF NOT EXISTS result_documents JSONB DEFAULT '[]'::jsonb;
+        ALTER TABLE lab_orders ADD COLUMN IF NOT EXISTS result_date TIMESTAMP WITH TIME ZONE;
+        ALTER TABLE lab_orders ADD COLUMN IF NOT EXISTS ordered_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+        ALTER TABLE lab_orders ADD COLUMN IF NOT EXISTS notes TEXT;
+        ALTER TABLE prescriptions ADD COLUMN IF NOT EXISTS notes TEXT;
+        ALTER TABLE prescriptions ADD COLUMN IF NOT EXISTS prescribed_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+        -- Drop restrictive FK constraints that prevent standalone lab/imaging orders
+        ALTER TABLE lab_orders DROP CONSTRAINT IF EXISTS lab_orders_appointment_id_fkey;
+        ALTER TABLE lab_orders DROP CONSTRAINT IF EXISTS lab_orders_emr_id_fkey;
+        ALTER TABLE imaging_orders DROP CONSTRAINT IF EXISTS imaging_orders_appointment_id_fkey;
+        ALTER TABLE imaging_orders DROP CONSTRAINT IF EXISTS imaging_orders_emr_id_fkey;
+      EXCEPTION WHEN OTHERS THEN
+        NULL;
+      END $$;
+    `);
+
+    // Create imaging_orders table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS imaging_orders (
+        id VARCHAR(50) PRIMARY KEY,
+        emr_id VARCHAR(50),
+        appointment_id VARCHAR(50),
+        patient_id VARCHAR(50),
+        doctor_id VARCHAR(50),
+        imaging_type VARCHAR(100) NOT NULL,
+        body_part VARCHAR(255),
+        clinical_indication TEXT,
+        priority VARCHAR(20) DEFAULT 'routine',
+        notes TEXT,
+        results JSONB,
+        result_documents JSONB DEFAULT '[]'::jsonb,
+        status VARCHAR(20) DEFAULT 'ordered',
+        ordered_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        completed_at TIMESTAMP WITH TIME ZONE,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      )
     `);
 
     // ========================================================================
@@ -922,11 +969,11 @@ const LabOrderService = {
        RETURNING *`,
       [
         `LAB-${Date.now()}`,
-        data.appointment_id,
-        data.patient_id,
+        data.appointment_id || null,
+        data.patient_id || null,
         data.doctor_id,
         JSON.stringify(data.tests || []),
-        data.notes,
+        data.notes || '',
         data.priority || 'routine'
       ]
     );
@@ -1508,9 +1555,15 @@ const AdminService = {
     }
 
     if (status) {
-      paramCount++;
-      query += ` AND (approval_status = $${paramCount} OR (is_active = ($${paramCount} = 'active')))`;
-      params.push(status);
+      if (status === 'active') {
+        query += ' AND is_active = true';
+      } else if (status === 'inactive') {
+        query += ' AND is_active = false';
+      } else {
+        paramCount++;
+        query += ` AND approval_status = $${paramCount}`;
+        params.push(status);
+      }
     }
 
     if (search) {
@@ -1743,6 +1796,71 @@ const AdminService = {
   },
 };
 
+// ============================================================================
+// IMAGING ORDER SERVICE
+// ============================================================================
+
+const ImagingOrderService = {
+  /**
+   * Get imaging orders by patient
+   */
+  async getPatientImagingOrders(patientId) {
+    const result = await pool.query(
+      `SELECT i.*, d.name as doctor_name
+       FROM imaging_orders i
+       LEFT JOIN users d ON i.doctor_id = d.id
+       WHERE i.patient_id = $1
+       ORDER BY i.ordered_at DESC`,
+      [patientId]
+    );
+    return result.rows;
+  },
+
+  /**
+   * Create imaging order
+   */
+  async createImagingOrder(data) {
+    const result = await pool.query(
+      `INSERT INTO imaging_orders (
+        id, emr_id, appointment_id, patient_id, doctor_id,
+        imaging_type, body_part, clinical_indication, priority, notes, status
+      )
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'ordered')
+       RETURNING *`,
+      [
+        `IMG-${Date.now()}`,
+        data.emr_id || null,
+        data.appointment_id || null,
+        data.patient_id || null,
+        data.doctor_id,
+        data.imaging_type || 'X-Ray',
+        data.body_part || '',
+        data.clinical_indication || '',
+        data.priority || 'routine',
+        data.notes || ''
+      ]
+    );
+    return result.rows[0];
+  },
+
+  /**
+   * Update imaging order results with documents
+   */
+  async updateImagingResults(orderId, results) {
+    const result = await pool.query(
+      `UPDATE imaging_orders SET
+        results = $2,
+        status = 'completed',
+        completed_at = NOW(),
+        updated_at = NOW()
+       WHERE id = $1
+       RETURNING *`,
+      [orderId, JSON.stringify(results)]
+    );
+    return result.rows[0];
+  },
+};
+
 // Export all services
 module.exports = {
   pool,
@@ -1753,6 +1871,7 @@ module.exports = {
   EMRService,
   PrescriptionService,
   LabOrderService,
+  ImagingOrderService,
   ContentService,
   ConsultantService,
   MeetingService,

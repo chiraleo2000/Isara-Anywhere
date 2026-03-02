@@ -39,7 +39,7 @@ export const config = {
   oauth: {
     clientId: import.meta.env.VITE_GOOGLE_CLIENT_ID || '',
     clientSecret: import.meta.env.VITE_GOOGLE_CLIENT_SECRET || '',
-    redirectUri: import.meta.env.VITE_OAUTH_REDIRECT_URI || 'http://localhost:3010/auth/callback',
+    redirectUri: import.meta.env.VITE_OAUTH_REDIRECT_URI || (typeof globalThis !== 'undefined' && globalThis.location ? `${globalThis.location.origin}/auth/callback` : 'http://localhost:3010/auth/callback'),
   },
 
   // Google Cloud Storage Buckets - All 5 Izara buckets

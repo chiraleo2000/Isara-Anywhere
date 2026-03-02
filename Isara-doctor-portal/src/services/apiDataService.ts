@@ -8,14 +8,14 @@
  */
 
 // API Base URL - connects to the mainApiServer
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3010';
+const API_BASE = import.meta.env.VITE_API_URL || '';
 
 // ============================================================================
 // AUTH HELPER
 // ============================================================================
 
 function getAuthHeaders(): HeadersInit {
-  const token = localStorage.getItem('doctorToken') || localStorage.getItem('token');
+  const token = localStorage.getItem('token');
   return {
     'Content-Type': 'application/json',
     'Authorization': token ? `Bearer ${token}` : ''

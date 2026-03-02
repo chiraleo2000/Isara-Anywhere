@@ -1,0 +1,223 @@
+{
+  "description": "Lab orders, prescriptions, and imaging orders demo data for cloud-dev testing",
+  "version": "2.0.0",
+  "tables": ["lab_orders", "prescriptions", "imaging_orders"],
+  "data": {
+    "lab_orders": [
+      {
+        "id": "LAB-DEMO-001",
+        "appointment_id": "APT-DEMO-001",
+        "patient_id": "PATIENT-DEMO",
+        "doctor_id": "DOC-TEST-001",
+        "tests": [
+          { "name": "Complete Blood Count (CBC)", "code": "CBC", "category": "Hematology" },
+          { "name": "Blood Glucose Fasting", "code": "FBS", "category": "Chemistry" }
+        ],
+        "priority": "routine",
+        "lab_name": "Izara Lab Center",
+        "status": "completed",
+        "results": {
+          "results": [
+            { "testName": "WBC", "value": "7.5", "unit": "10^3/uL", "refRange": "4.0-11.0", "status": "normal" },
+            { "testName": "RBC", "value": "4.8", "unit": "10^6/uL", "refRange": "4.2-5.8", "status": "normal" },
+            { "testName": "Hemoglobin", "value": "14.2", "unit": "g/dL", "refRange": "12.0-17.0", "status": "normal" },
+            { "testName": "Hematocrit", "value": "42.5", "unit": "%", "refRange": "36-50", "status": "normal" },
+            { "testName": "Platelet", "value": "250", "unit": "10^3/uL", "refRange": "150-400", "status": "normal" },
+            { "testName": "FBS", "value": "98", "unit": "mg/dL", "refRange": "70-100", "status": "normal" }
+          ],
+          "documents": [
+            {
+              "id": "doc_lab_001",
+              "name": "CBC_report_PATIENT-DEMO.pdf",
+              "type": "application/pdf",
+              "uploadedAt": "2026-03-10T14:30:00Z",
+              "uploadedBy": "DOC-TEST-001"
+            }
+          ]
+        },
+        "ordered_at": "2026-03-10T09:00:00Z",
+        "completed_at": "2026-03-10T14:30:00Z"
+      },
+      {
+        "id": "LAB-DEMO-002",
+        "appointment_id": "APT-DEMO-002",
+        "patient_id": "PATIENT-SOMCHAI",
+        "doctor_id": "DOC-TEST-001",
+        "tests": [
+          { "name": "Lipid Panel", "code": "LIPID", "category": "Chemistry" },
+          { "name": "HbA1c", "code": "HBA1C", "category": "Endocrine" },
+          { "name": "Blood Urea Nitrogen", "code": "BUN", "category": "Chemistry" },
+          { "name": "Creatinine", "code": "CR", "category": "Chemistry" }
+        ],
+        "priority": "routine",
+        "lab_name": "Izara Lab Center",
+        "status": "completed",
+        "results": {
+          "results": [
+            { "testName": "Total Cholesterol", "value": "245", "unit": "mg/dL", "refRange": "<200", "status": "high" },
+            { "testName": "LDL", "value": "165", "unit": "mg/dL", "refRange": "<130", "status": "high" },
+            { "testName": "HDL", "value": "42", "unit": "mg/dL", "refRange": ">40", "status": "normal" },
+            { "testName": "Triglycerides", "value": "190", "unit": "mg/dL", "refRange": "<150", "status": "high" },
+            { "testName": "HbA1c", "value": "7.8", "unit": "%", "refRange": "<6.5", "status": "high" },
+            { "testName": "BUN", "value": "18", "unit": "mg/dL", "refRange": "7-20", "status": "normal" },
+            { "testName": "Creatinine", "value": "1.1", "unit": "mg/dL", "refRange": "0.7-1.3", "status": "normal" }
+          ],
+          "documents": [
+            {
+              "id": "doc_lab_002",
+              "name": "Lipid_HbA1c_report_Somchai.pdf",
+              "type": "application/pdf",
+              "uploadedAt": "2026-03-12T16:00:00Z",
+              "uploadedBy": "DOC-TEST-001"
+            }
+          ]
+        },
+        "ordered_at": "2026-03-12T10:00:00Z",
+        "completed_at": "2026-03-12T16:00:00Z"
+      },
+      {
+        "id": "LAB-DEMO-003",
+        "patient_id": "PATIENT-ANAN",
+        "doctor_id": "DOC-SPECIALIST-001",
+        "tests": [
+          { "name": "Thyroid Function (TSH, FT4)", "code": "THYROID", "category": "Endocrine" },
+          { "name": "Liver Function Panel", "code": "LFT", "category": "Chemistry" }
+        ],
+        "priority": "urgent",
+        "lab_name": "Izara Lab Center",
+        "status": "ordered",
+        "results": null,
+        "ordered_at": "2026-03-15T08:30:00Z",
+        "completed_at": null
+      }
+    ],
+    "prescriptions": [
+      {
+        "id": "RX-DEMO-001",
+        "appointment_id": "APT-DEMO-001",
+        "patient_id": "PATIENT-DEMO",
+        "doctor_id": "DOC-TEST-001",
+        "medications": [
+          {
+            "name": "Amlodipine",
+            "dosage": "5mg",
+            "frequency": "Once daily",
+            "duration": "30 days",
+            "route": "oral",
+            "quantity": 30,
+            "instructions": "Take in the morning with water"
+          }
+        ],
+        "diagnosis": "Essential hypertension (I10)",
+        "notes": "Monitor blood pressure weekly",
+        "status": "active",
+        "created_at": "2026-03-10T09:15:00Z"
+      },
+      {
+        "id": "RX-DEMO-002",
+        "appointment_id": "APT-DEMO-002",
+        "patient_id": "PATIENT-SOMCHAI",
+        "doctor_id": "DOC-TEST-001",
+        "medications": [
+          {
+            "name": "Metformin",
+            "dosage": "500mg",
+            "frequency": "Twice daily",
+            "duration": "90 days",
+            "route": "oral",
+            "quantity": 180,
+            "instructions": "Take with meals"
+          },
+          {
+            "name": "Atorvastatin",
+            "dosage": "20mg",
+            "frequency": "Once daily at bedtime",
+            "duration": "90 days",
+            "route": "oral",
+            "quantity": 90,
+            "instructions": "Take at bedtime"
+          },
+          {
+            "name": "Losartan",
+            "dosage": "50mg",
+            "frequency": "Once daily",
+            "duration": "90 days",
+            "route": "oral",
+            "quantity": 90,
+            "instructions": "Take in the morning"
+          }
+        ],
+        "diagnosis": "Type 2 Diabetes with Hyperlipidemia (E11.65)",
+        "notes": "Follow-up in 3 months with repeat HbA1c and lipid panel",
+        "status": "active",
+        "created_at": "2026-03-12T10:30:00Z"
+      },
+      {
+        "id": "RX-DEMO-003",
+        "patient_id": "PATIENT-ANAN",
+        "doctor_id": "DOC-SPECIALIST-001",
+        "medications": [
+          {
+            "name": "Omeprazole",
+            "dosage": "20mg",
+            "frequency": "Once daily before breakfast",
+            "duration": "14 days",
+            "route": "oral",
+            "quantity": 14,
+            "instructions": "Take 30 minutes before breakfast"
+          }
+        ],
+        "diagnosis": "GERD (K21.0)",
+        "notes": "Lifestyle modifications advised",
+        "status": "active",
+        "created_at": "2026-03-15T08:45:00Z"
+      }
+    ],
+    "imaging_orders": [
+      {
+        "id": "IMG-DEMO-001",
+        "appointment_id": "APT-DEMO-002",
+        "patient_id": "PATIENT-SOMCHAI",
+        "doctor_id": "DOC-SPECIALIST-001",
+        "imaging_type": "Chest X-Ray",
+        "body_part": "Chest PA/Lateral",
+        "clinical_indication": "Routine cardiac evaluation, hypertensive patient",
+        "priority": "routine",
+        "status": "completed",
+        "facility": "Izara Imaging Center",
+        "results": {
+          "findings": "Heart size normal. Lungs clear. No pleural effusion. No focal consolidation.",
+          "impression": "Normal chest X-ray.",
+          "radiologist": "Dr. Radiology Demo",
+          "reportedAt": "2026-03-12T15:00:00Z"
+        },
+        "result_documents": [
+          {
+            "id": "img_doc_001",
+            "name": "chest_xray_PA_somchai.dcm",
+            "type": "image/dicom",
+            "uploadedAt": "2026-03-12T15:00:00Z",
+            "uploadedBy": "DOC-SPECIALIST-001"
+          }
+        ],
+        "ordered_at": "2026-03-12T10:00:00Z",
+        "completed_at": "2026-03-12T15:00:00Z"
+      },
+      {
+        "id": "IMG-DEMO-002",
+        "patient_id": "PATIENT-DEMO",
+        "doctor_id": "DOC-TEST-001",
+        "imaging_type": "Abdominal Ultrasound",
+        "body_part": "Abdomen - Upper",
+        "clinical_indication": "Abdominal pain evaluation",
+        "priority": "routine",
+        "status": "ordered",
+        "facility": "Izara Imaging Center",
+        "results": null,
+        "result_documents": [],
+        "ordered_at": "2026-03-15T09:00:00Z",
+        "completed_at": null
+      }
+    ]
+  }
+}

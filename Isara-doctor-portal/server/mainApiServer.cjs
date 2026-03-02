@@ -117,8 +117,11 @@ const ALLOWED_ORIGINS = [
 ];
 if (isProduction) {
   ALLOWED_ORIGINS.push(
-    'https://izara-doctor-portal-hvht4obouq-as.a.run.app',
-    'https://izara-patient-portal-hvht4obouq-as.a.run.app'
+    'https://izara-doctor-portal-724889190329.asia-southeast1.run.app',
+    'https://izara-patient-portal-724889190329.asia-southeast1.run.app',
+    'https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app',
+    'https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app',
+    'https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app'
   );
 }
 
@@ -1888,26 +1891,26 @@ app.post('/api/prescriptions', authenticateToken, async (req, res) => {
     const prescriptionData = req.body;
     const prescriptionId = `rx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-    const prescription = {
-      ...prescriptionData,
-      id: prescriptionId,
-      createdAt: new Date().toISOString(),
-      status: 'pending'
-    };
+    console.log('[RX] Creating prescription via PostgreSQL');
 
-    // Fetch all prescriptions
-    const allPrescriptions = await fetchFromGCS(BUCKETS.patient, 'prescriptions.json') || [];
-    allPrescriptions.push(prescription);
+    if (!DB_AVAILABLE || !PostgresDataService) {
+      return res.status(503).json({ error: 'Database unavailable' });
+    }
 
-    // Write back to GCS
-    await writeToGCS(BUCKETS.patient, 'prescriptions.json', allPrescriptions);
+    const prescription = await PostgresDataService.PrescriptionService.createPrescription({
+      appointment_id: prescriptionData.appointmentId || prescriptionData.appointment_id,
+      patient_id: prescriptionData.patientId || prescriptionData.patient_id,
+      doctor_id: prescriptionData.doctorId || prescriptionData.doctor_id || req.user?.id,
+      medications: prescriptionData.medications || [],
+      notes: prescriptionData.notes || ''
+    });
 
     // Log audit
     await logAuditAccess({
       userId: req.user.id,
       action: 'CREATE_PRESCRIPTION',
-      patientId: prescription.patientId,
-      resourceId: prescriptionId
+      patientId: prescriptionData.patientId || prescriptionData.patient_id,
+      resourceId: prescription.id
     });
 
     res.json({ success: true, prescription });
@@ -1920,11 +1923,34 @@ app.post('/api/prescriptions', authenticateToken, async (req, res) => {
 // GET /api/prescriptions - List all prescriptions (or filtered by doctor)
 app.get('/api/prescriptions', authenticateToken, async (req, res) => {
   try {
-    const allPrescriptions = await fetchFromGCS(BUCKETS.patient, 'prescriptions.json') || [];
+    if (!DB_AVAILABLE || !PostgresDataService) {
+      return res.json({ prescriptions: [] });
+    }
     const doctorId = req.user?.id || req.user?.userId;
     const role = req.user?.role;
-    const filtered = (role === 'admin') ? allPrescriptions : allPrescriptions.filter(p => p.doctorId === doctorId);
-    res.json({ prescriptions: filtered });
+    let prescriptions;
+    if (role === 'admin') {
+      const result = await PostgresDataService.pool.query(
+        `SELECT p.*, d.name as doctor_name, pt.name as patient_name
+         FROM prescriptions p
+         LEFT JOIN users d ON p.doctor_id = d.id
+         LEFT JOIN users pt ON p.patient_id = pt.id
+         ORDER BY p.created_at DESC`
+      );
+      prescriptions = result.rows;
+    } else {
+      const result = await PostgresDataService.pool.query(
+        `SELECT p.*, d.name as doctor_name, pt.name as patient_name
+         FROM prescriptions p
+         LEFT JOIN users d ON p.doctor_id = d.id
+         LEFT JOIN users pt ON p.patient_id = pt.id
+         WHERE p.doctor_id = $1
+         ORDER BY p.created_at DESC`,
+        [doctorId]
+      );
+      prescriptions = result.rows;
+    }
+    res.json({ prescriptions });
   } catch (error) {
     console.error('Prescription list error:', error);
     res.json({ prescriptions: [] });
@@ -1934,10 +1960,11 @@ app.get('/api/prescriptions', authenticateToken, async (req, res) => {
 app.get('/api/prescriptions/patient/:patientId', authenticateToken, async (req, res) => {
   try {
     const { patientId } = req.params;
-    const allPrescriptions = await fetchFromGCS(BUCKETS.patient, 'prescriptions.json') || [];
-    const patientPrescriptions = allPrescriptions.filter(p => p.patientId === patientId);
-
-    res.json({ prescriptions: patientPrescriptions });
+    if (!DB_AVAILABLE || !PostgresDataService) {
+      return res.json({ prescriptions: [] });
+    }
+    const prescriptions = await PostgresDataService.PrescriptionService.getPatientPrescriptions(patientId);
+    res.json({ prescriptions: prescriptions || [] });
   } catch (error) {
     console.error('Prescription fetch error:', error);
     res.status(500).json({ error: error.message });
@@ -1945,34 +1972,33 @@ app.get('/api/prescriptions/patient/:patientId', authenticateToken, async (req, 
 });
 
 // ============================================================================
-// LAB ORDERS
+// LAB ORDERS - PostgreSQL ONLY
 // ============================================================================
 
 app.post('/api/lab-orders', authenticateToken, async (req, res) => {
   try {
     const labOrderData = req.body;
-    const labOrderId = `lab_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    console.log('[LAB] Creating lab order via PostgreSQL');
 
-    const labOrder = {
-      ...labOrderData,
-      id: labOrderId,
-      orderDate: new Date().toISOString(),
-      status: 'ordered'
-    };
+    if (!DB_AVAILABLE || !PostgresDataService) {
+      return res.status(503).json({ error: 'Database unavailable' });
+    }
 
-    // Fetch all lab orders
-    const allLabOrders = await fetchFromGCS(BUCKETS.patient, 'lab-orders.json') || [];
-    allLabOrders.push(labOrder);
-
-    // Write back to GCS
-    await writeToGCS(BUCKETS.patient, 'lab-orders.json', allLabOrders);
+    const labOrder = await PostgresDataService.LabOrderService.createLabOrder({
+      appointment_id: labOrderData.appointmentId || labOrderData.appointment_id,
+      patient_id: labOrderData.patientId || labOrderData.patient_id,
+      doctor_id: labOrderData.doctorId || labOrderData.doctor_id || req.user?.id,
+      tests: labOrderData.tests || [],
+      notes: labOrderData.notes || '',
+      priority: labOrderData.priority || 'routine'
+    });
 
     // Log audit
     await logAuditAccess({
       userId: req.user.id,
       action: 'CREATE_LAB_ORDER',
-      patientId: labOrder.patientId,
-      resourceId: labOrderId
+      patientId: labOrderData.patientId || labOrderData.patient_id,
+      resourceId: labOrder.id
     });
 
     res.json({ success: true, labOrder });
@@ -1985,11 +2011,37 @@ app.post('/api/lab-orders', authenticateToken, async (req, res) => {
 // GET /api/lab-orders - List all lab orders (or filtered by doctor)
 app.get('/api/lab-orders', authenticateToken, async (req, res) => {
   try {
-    const allLabOrders = await fetchFromGCS(BUCKETS.patient, 'lab-orders.json') || [];
+    if (!DB_AVAILABLE || !PostgresDataService) {
+      return res.json({ labOrders: [] });
+    }
     const doctorId = req.user?.id || req.user?.userId;
     const role = req.user?.role;
-    const filtered = (role === 'admin') ? allLabOrders : allLabOrders.filter(l => l.doctorId === doctorId);
-    res.json({ labOrders: filtered });
+    
+    let labOrders;
+    if (role === 'admin') {
+      // Admin sees all lab orders
+      const result = await PostgresDataService.pool.query(
+        `SELECT l.*, d.name as doctor_name, p.name as patient_name
+         FROM lab_orders l
+         LEFT JOIN users d ON l.doctor_id = d.id
+         LEFT JOIN users p ON l.patient_id = p.id
+         ORDER BY l.ordered_at DESC`
+      );
+      labOrders = result.rows;
+    } else {
+      // Doctor sees their own lab orders
+      const result = await PostgresDataService.pool.query(
+        `SELECT l.*, d.name as doctor_name, p.name as patient_name
+         FROM lab_orders l
+         LEFT JOIN users d ON l.doctor_id = d.id
+         LEFT JOIN users p ON l.patient_id = p.id
+         WHERE l.doctor_id = $1
+         ORDER BY l.ordered_at DESC`,
+        [doctorId]
+      );
+      labOrders = result.rows;
+    }
+    res.json({ labOrders });
   } catch (error) {
     console.error('Lab order list error:', error);
     res.json({ labOrders: [] });
@@ -1999,12 +2051,220 @@ app.get('/api/lab-orders', authenticateToken, async (req, res) => {
 app.get('/api/lab-orders/patient/:patientId', authenticateToken, async (req, res) => {
   try {
     const { patientId } = req.params;
-    const allLabOrders = await fetchFromGCS(BUCKETS.patient, 'lab-orders.json') || [];
-    const patientLabOrders = allLabOrders.filter(l => l.patientId === patientId);
-
-    res.json({ labOrders: patientLabOrders });
+    if (!DB_AVAILABLE || !PostgresDataService) {
+      return res.json({ labOrders: [] });
+    }
+    const labOrders = await PostgresDataService.LabOrderService.getPatientLabOrders(patientId);
+    res.json({ labOrders: labOrders || [] });
   } catch (error) {
     console.error('Lab order fetch error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// PUT /api/lab-orders/:labOrderId/results - Upload lab results with documents
+app.put('/api/lab-orders/:labOrderId/results', authenticateToken, async (req, res) => {
+  try {
+    const { labOrderId } = req.params;
+    const { results, documents, notes } = req.body;
+    console.log(`[LAB] Updating results for lab order: ${labOrderId}`);
+
+    if (!DB_AVAILABLE || !PostgresDataService) {
+      return res.status(503).json({ error: 'Database unavailable' });
+    }
+
+    // results: array of { testName, value, unit, referenceRange, status, abnormal }
+    // documents: array of { name, type, data (base64), size }
+    const resultPayload = {
+      results: results || [],
+      documents: (documents || []).map(doc => ({
+        id: `doc_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+        name: doc.name,
+        type: doc.type,
+        data: doc.data, // base64 encoded
+        size: doc.size,
+        uploadedAt: new Date().toISOString(),
+        uploadedBy: req.user?.id
+      })),
+      notes: notes || '',
+      completedAt: new Date().toISOString(),
+      completedBy: req.user?.id
+    };
+
+    const updated = await PostgresDataService.LabOrderService.updateLabResults(labOrderId, resultPayload);
+    if (!updated) {
+      return res.status(404).json({ error: 'Lab order not found' });
+    }
+
+    // Log audit
+    await logAuditAccess({
+      userId: req.user.id,
+      action: 'UPDATE_LAB_RESULTS',
+      resourceId: labOrderId
+    });
+
+    res.json({ success: true, labOrder: updated });
+  } catch (error) {
+    console.error('Lab results update error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/lab-orders/:labOrderId - Get single lab order with results
+app.get('/api/lab-orders/:labOrderId', authenticateToken, async (req, res) => {
+  try {
+    const { labOrderId } = req.params;
+    if (!DB_AVAILABLE || !PostgresDataService) {
+      return res.status(503).json({ error: 'Database unavailable' });
+    }
+    const result = await PostgresDataService.pool.query(
+      `SELECT l.*, d.name as doctor_name, p.name as patient_name
+       FROM lab_orders l
+       LEFT JOIN users d ON l.doctor_id = d.id
+       LEFT JOIN users p ON l.patient_id = p.id
+       WHERE l.id = $1`,
+      [labOrderId]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Lab order not found' });
+    }
+    res.json({ labOrder: result.rows[0] });
+  } catch (error) {
+    console.error('Lab order get error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/lab-orders/:labOrderId/documents - Upload document/image for lab result
+app.post('/api/lab-orders/:labOrderId/documents', authenticateToken, async (req, res) => {
+  try {
+    const { labOrderId } = req.params;
+    const { name, type, data, size } = req.body; // data is base64
+    console.log(`[LAB] Uploading document for lab order: ${labOrderId}`);
+
+    if (!DB_AVAILABLE || !PostgresDataService) {
+      return res.status(503).json({ error: 'Database unavailable' });
+    }
+
+    // Get existing lab order
+    const existing = await PostgresDataService.pool.query(
+      'SELECT * FROM lab_orders WHERE id = $1', [labOrderId]
+    );
+    if (existing.rows.length === 0) {
+      return res.status(404).json({ error: 'Lab order not found' });
+    }
+
+    const currentResults = existing.rows[0].results || {};
+    const currentDocs = currentResults.documents || [];
+    
+    const newDoc = {
+      id: `doc_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+      name, type, data, size,
+      uploadedAt: new Date().toISOString(),
+      uploadedBy: req.user?.id
+    };
+    currentDocs.push(newDoc);
+    currentResults.documents = currentDocs;
+
+    await PostgresDataService.pool.query(
+      `UPDATE lab_orders SET results = $1, updated_at = NOW() WHERE id = $2`,
+      [JSON.stringify(currentResults), labOrderId]
+    );
+
+    res.json({ success: true, document: newDoc });
+  } catch (error) {
+    console.error('Lab document upload error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============================================================================
+// IMAGING ORDERS - PostgreSQL ONLY
+// ============================================================================
+
+app.post('/api/imaging-orders', authenticateToken, async (req, res) => {
+  try {
+    const data = req.body;
+    console.log('[IMAGING] Creating imaging order via PostgreSQL');
+
+    if (!DB_AVAILABLE || !PostgresDataService || !PostgresDataService.ImagingOrderService) {
+      return res.status(503).json({ error: 'Imaging service unavailable' });
+    }
+
+    const order = await PostgresDataService.ImagingOrderService.createImagingOrder({
+      emr_id: data.emrId || data.emr_id,
+      appointment_id: data.appointmentId || data.appointment_id,
+      patient_id: data.patientId || data.patient_id,
+      doctor_id: data.doctorId || data.doctor_id || req.user?.id,
+      imaging_type: data.imagingType || data.imaging_type || 'X-Ray',
+      body_part: data.bodyPart || data.body_part || '',
+      clinical_indication: data.clinicalIndication || data.clinical_indication || '',
+      priority: data.priority || 'routine',
+      notes: data.notes || ''
+    });
+
+    await logAuditAccess({
+      userId: req.user.id,
+      action: 'CREATE_IMAGING_ORDER',
+      patientId: data.patientId || data.patient_id,
+      resourceId: order.id
+    });
+
+    res.json({ success: true, imagingOrder: order });
+  } catch (error) {
+    console.error('Imaging order creation error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/imaging-orders/patient/:patientId', authenticateToken, async (req, res) => {
+  try {
+    const { patientId } = req.params;
+    if (!DB_AVAILABLE || !PostgresDataService || !PostgresDataService.ImagingOrderService) {
+      return res.json({ imagingOrders: [] });
+    }
+    const orders = await PostgresDataService.ImagingOrderService.getPatientImagingOrders(patientId);
+    res.json({ imagingOrders: orders || [] });
+  } catch (error) {
+    console.error('Imaging order fetch error:', error);
+    res.json({ imagingOrders: [] });
+  }
+});
+
+app.put('/api/imaging-orders/:orderId/results', authenticateToken, async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { results, documents, notes } = req.body;
+    console.log(`[IMAGING] Uploading results for order: ${orderId}`);
+
+    if (!DB_AVAILABLE || !PostgresDataService || !PostgresDataService.ImagingOrderService) {
+      return res.status(503).json({ error: 'Database unavailable' });
+    }
+
+    const resultPayload = {
+      findings: results || [],
+      documents: (documents || []).map(doc => ({
+        id: `img_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+        name: doc.name,
+        type: doc.type,
+        data: doc.data,
+        size: doc.size,
+        uploadedAt: new Date().toISOString(),
+        uploadedBy: req.user?.id
+      })),
+      notes: notes || '',
+      completedAt: new Date().toISOString(),
+      completedBy: req.user?.id
+    };
+
+    const updated = await PostgresDataService.ImagingOrderService.updateImagingResults(orderId, resultPayload);
+    if (!updated) {
+      return res.status(404).json({ error: 'Imaging order not found' });
+    }
+
+    res.json({ success: true, imagingOrder: updated });
+  } catch (error) {
+    console.error('Imaging results update error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -4245,6 +4505,50 @@ app.get('/api/appointments/pending/:doctorId', authenticateToken, async (req, re
 });
 
 /**
+ * PATCH /api/appointments/:id — Generic appointment update (status, notes, etc.)
+ * Supports: { status: 'confirmed'|'cancelled'|'completed', notes, ... }
+ */
+app.patch('/api/appointments/:appointmentId', authenticateToken, async (req, res) => {
+  try {
+    const { appointmentId } = req.params;
+    const { status, notes, confirmedDate, confirmedTime, doctorId: bodyDoctorId } = req.body;
+    const doctorId = bodyDoctorId || req.user?.id || req.user?.doctorId;
+    console.log(`📝 PATCH appointment ${appointmentId}: status=${status}`);
+
+    const appointment = await PostgresDataService.AppointmentService.getAppointmentById(appointmentId);
+    if (!appointment) {
+      return res.status(404).json({ error: 'Appointment not found' });
+    }
+
+    // Build update payload
+    const updates = { ...req.body };
+    if (status === 'confirmed') {
+      updates.doctor_id = appointment.doctor_id || doctorId;
+      // Generate meeting link if needed
+      if ((appointment.appointment_type === 'telehealth' || appointment.appointment_type === 'Telehealth') && !appointment.meet_link) {
+        const JITSI_DOMAIN = process.env.JITSI_DOMAIN || 'meet.jit.si';
+        const ts = Date.now().toString(36);
+        const rnd = Math.random().toString(36).substring(2, 8);
+        updates.meeting_link = `https://${JITSI_DOMAIN}/Izara-${appointmentId.substring(0, 8)}-${ts}-${rnd}`;
+      }
+    }
+
+    const updated = await PostgresDataService.AppointmentService.updateAppointment(appointmentId, updates);
+    
+    // Emit real-time update
+    if (io) {
+      io.to(`patient-${appointment.patient_id}`).emit('appointment-updated', { appointmentId, status });
+      io.to(`doctor-${doctorId}`).emit('appointment-updated', { appointmentId, status });
+    }
+
+    res.json({ success: true, appointment: updated || { ...appointment, ...updates } });
+  } catch (error) {
+    console.error('❌ PATCH appointment error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
  * Doctor confirms appointment - PostgreSQL Only
  */
 app.post('/api/appointments/:appointmentId/confirm', authenticateToken, async (req, res) => {
@@ -4879,6 +5183,78 @@ app.post('/api/appointments', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('❌ Create appointment error:', error);
     res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Alias: POST /api/appointments/book -> same as POST /api/appointments
+app.post('/api/appointments/book', authenticateToken, async (req, res) => {
+  try {
+    const appointmentData = req.body.data ? JSON.parse(req.body.data) : req.body;
+    console.log('📝 Booking appointment (via /book alias):', appointmentData);
+    const newAppointment = await PostgresDataService.AppointmentService.createAppointment(appointmentData);
+    console.log(`✅ Appointment booked: ${newAppointment.id}`);
+    res.json({ success: true, data: { appointment: newAppointment }, appointment: newAppointment });
+  } catch (error) {
+    console.error('❌ Book appointment error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// POST /api/appointments/:id/cancel -> update status to cancelled
+app.post('/api/appointments/:appointmentId/cancel', authenticateToken, async (req, res) => {
+  try {
+    const { appointmentId } = req.params;
+    console.log(`🚫 Cancelling appointment: ${appointmentId}`);
+    const updated = await PostgresDataService.AppointmentService.updateAppointmentStatus(appointmentId, 'cancelled');
+    res.json({ success: true, appointment: updated });
+  } catch (error) {
+    console.error('❌ Cancel appointment error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// GET /api/records - health records alias (EMR + prescriptions + lab orders)
+app.get('/api/records', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user?.userId || req.user?.id;
+    console.log(`📋 Fetching records for user: ${userId}`);
+    const emrRecords = await PostgresDataService.EMRService.getEMRByDoctor(userId);
+    const records = (emrRecords || []).map(emr => ({
+      id: emr.id,
+      type: 'emr',
+      patientId: emr.patient_id,
+      doctorId: emr.doctor_id,
+      date: emr.created_at,
+      summary: emr.ai_summary || 'EMR Record',
+      status: emr.status
+    }));
+    res.json({ success: true, records });
+  } catch (error) {
+    console.error('❌ Records fetch error:', error);
+    res.status(500).json({ success: false, error: error.message, records: [] });
+  }
+});
+
+// GET /api/records/appointment-results - post-visit results
+app.get('/api/records/appointment-results', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user?.userId || req.user?.id;
+    console.log(`📋 Fetching appointment results for: ${userId}`);
+    const appointments = await PostgresDataService.AppointmentService.getAppointmentsByDoctor(userId);
+    const completedAppts = (appointments || []).filter(a => a.status === 'completed');
+    const results = completedAppts.map(apt => ({
+      id: apt.id,
+      appointmentDate: apt.confirmed_date || apt.requested_date,
+      patientId: apt.patient_id,
+      doctorId: apt.doctor_id,
+      status: apt.status,
+      notes: apt.notes,
+      createdAt: apt.created_at
+    }));
+    res.json({ success: true, results });
+  } catch (error) {
+    console.error('❌ Appointment results error:', error);
+    res.status(500).json({ success: false, error: error.message, results: [] });
   }
 });
 

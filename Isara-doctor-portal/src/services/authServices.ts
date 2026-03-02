@@ -22,7 +22,7 @@ import config from './config';
 
 const STORAGE_KEYS = {
   CURRENT_USER: 'izara_current_user',
-  AUTH_TOKEN: 'izara_auth_token',
+  AUTH_TOKEN: 'token',
   SESSION_EXPIRY: 'izara_session_expiry',
   DEVICE_ID: 'izara_device_id',
   LAST_ACTIVITY: 'izara_last_activity',

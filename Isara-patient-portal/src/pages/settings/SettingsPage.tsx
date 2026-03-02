@@ -247,7 +247,7 @@ function PasswordChangeModal({
 
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       const response = await fetch('/api/auth/change-password', {
         method: 'POST',
         headers: {
@@ -417,7 +417,7 @@ function ProfileImageModal({
     setError('');
 
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       const userId = JSON.parse(localStorage.getItem('user') || '{}').id || 'unknown';
 
       const response = await fetch(`/api/phr/profile/${userId}/avatar`, {

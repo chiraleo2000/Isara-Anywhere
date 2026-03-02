@@ -94,8 +94,8 @@ External guests who are **NOT registered** in the Izara system can join meetings
 
 | Portal | URL | Version |
 | -------- | ----- | --------- |
-| Patient Portal | <https://izara-patient-portal-hvht4obouq-as.a.run.app> | v1.4.4 |
-| Doctor Portal | <https://izara-doctor-portal-hvht4obouq-as.a.run.app> | v1.4.4 |
+| Patient Portal | <https://izara-patient-portal-724889190329.asia-southeast1.run.app> | v1.4.4 |
+| Doctor Portal | <https://izara-doctor-portal-724889190329.asia-southeast1.run.app> | v1.4.4 |
 
 ### Docker Images (v1.4.4)
 

@@ -95,14 +95,14 @@ export default function appConfig({ config }: ConfigContext): ExpoConfig {
     router: { origin: false },
     eas: { projectId: 'izara-anywhere-project-id' },
     // Patient Portal
-    PATIENT_API_URL: process.env.PATIENT_API_URL ?? (IS_DEV ? 'http://localhost:3005' : 'https://izara-patient-portal-dev-testing-hvht4obouq-as.a.run.app'),
+    PATIENT_API_URL: process.env.PATIENT_API_URL ?? (IS_DEV ? 'http://localhost:3005' : 'https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app'),
     // Doctor Portal
-    DOCTOR_API_URL: process.env.DOCTOR_API_URL ?? (IS_DEV ? 'http://localhost:3010' : 'https://izara-doctor-portal-dev-testing-hvht4obouq-as.a.run.app'),
+    DOCTOR_API_URL: process.env.DOCTOR_API_URL ?? (IS_DEV ? 'http://localhost:3010' : 'https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app'),
     DOCTOR_AUTH_PORT: process.env.DOCTOR_AUTH_PORT ?? '3011',
     DOCTOR_API_PORT: process.env.DOCTOR_API_PORT ?? '3009',
     DOCTOR_GCS_PORT: process.env.DOCTOR_GCS_PORT ?? '3012',
     // Meeting Server
-    MEETING_SERVER_URL: process.env.MEETING_SERVER_URL ?? (IS_DEV ? 'http://localhost:3020' : 'https://izara-meeting-server-dev-testing-hvht4obouq-as.a.run.app'),
+    MEETING_SERVER_URL: process.env.MEETING_SERVER_URL ?? (IS_DEV ? 'http://localhost:3020' : 'https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app'),
   },
   };
 }

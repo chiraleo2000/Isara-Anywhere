@@ -52,7 +52,7 @@ export default function ProfilePage() {
         setAvatarUrl(base64);
 
         // Update user profile with new avatar
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem('auth_token');
         if (token) {
           const response = await fetch('/api/auth/profile', {
             method: 'PUT',

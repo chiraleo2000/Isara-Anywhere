@@ -10,7 +10,7 @@
  */
 
 export const TEST_ENV = process.env.TEST_ENV || 'local';
-export const IS_CLOUD = TEST_ENV === 'cloud' || TEST_ENV === 'cloud-dev';
+export const IS_CLOUD = TEST_ENV === 'cloud';
 
 export const URLS = {
   local: {
@@ -19,14 +19,9 @@ export const URLS = {
     meeting: process.env.LOCAL_MEETING_URL || 'http://localhost:3020',
   },
   cloud: {
-    patient: process.env.CLOUD_PATIENT_URL || 'https://izara-patient-portal-hvht4obouq-as.a.run.app',
-    doctor: process.env.CLOUD_DOCTOR_URL || 'https://izara-doctor-portal-hvht4obouq-as.a.run.app',
-    meeting: process.env.CLOUD_MEETING_URL || 'https://izara-jitsi-meeting-portal-hvht4obouq-as.a.run.app',
-  },
-  'cloud-dev': {
-    patient: process.env.CLOUD_DEV_PATIENT_URL || 'https://izara-patient-portal-dev-testing-hvht4obouq-as.a.run.app',
-    doctor: process.env.CLOUD_DEV_DOCTOR_URL || 'https://izara-doctor-portal-dev-testing-hvht4obouq-as.a.run.app',
-    meeting: process.env.CLOUD_DEV_MEETING_URL || 'https://izara-meeting-server-dev-testing-hvht4obouq-as.a.run.app',
+    patient: process.env.CLOUD_PATIENT_URL || 'https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app',
+    doctor: process.env.CLOUD_DOCTOR_URL || 'https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app',
+    meeting: process.env.CLOUD_MEETING_URL || 'https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app',
   },
 };
 
@@ -272,6 +267,9 @@ export const ENDPOINTS = {
     vitals: '/api/phr/vitals',
     prescriptions: '/api/prescriptions',
     labOrders: '/api/lab-orders',
+    imagingOrders: '/api/imaging-orders',
+    patientLabOrders: '/api/phr/lab-orders',
+    patientImagingOrders: '/api/phr/imaging-orders',
     livingWill: '/api/phr/living-will',
     timeline: '/api/timeline',
     treatmentResults: '/api/health-records/treatment-results',

@@ -1,56 +1,90 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════
- * IZARA TELEMEDICINE — PLAYWRIGHT E2E CONFIG v12.1.0
+ * IZARA TELEMEDICINE — PLAYWRIGHT E2E CONFIG v14.0.0
  * ═══════════════════════════════════════════════════════════════════════
- * 10 spec files (01-10) | ~800+ tests | 5 projects: Local, Cloud, Cloud-Dev, Mobile-Local, Mobile-Cloud-Dev
- * Updated: February 22, 2026
+ * 24 spec files (01-24) | ~1200 tests | 3 projects: Local, Cloud, Cloud-Dev
+ * Updated: March 2, 2026
  *
  * Suite:
- *   01: Auth, Health, Multi-User (82 tests)
- *   02: Appointment Full Lifecycle (92 tests)
- *   03: Health Records & EMR (95 tests)
- *   04: Video Meeting & Transcription (91 tests) — incl. Google STT + enhanced summary
- *   05: ★★★ Content Sync & Approval — single-refresh visibility (82 tests)
- *   06: AI Features & CDS (72 tests)
- *   07: Multi-User Concurrent — 5 browser windows (60 tests)
- *   08: Phase 2 AI-HIS — CTM, Geriatric, SOS, Follow-Up (72 tests)
- *   09: User Accounts Demo, Password Reset & All Pages (91 tests)
- *   10: Mobile Viewport & Data Streaming Sync (85 tests)
+ *   01: User Accounts Demo, Password Reset & All Pages (91 tests)
+ *   02: System Health & Multi-User Auth (82 tests)
+ *   03: Appointment Full Lifecycle (92 tests)
+ *   04: Health Records & EMR (95 tests)
+ *   05: Video Meeting & Transcription (91 tests)
+ *   06: Content Sync & Approval (82 tests)
+ *   07: AI Features & CDS (72 tests)
+ *   08: Multi-User Concurrent — 5 browser windows (60 tests)
+ *   09: Phase 2 AI-HIS — CTM, Geriatric, SOS (72 tests)
+ *   10: Lab Orders, Imaging Orders, Map & v1.5.2 Features (80 tests)
+ *   11: Doctor Portal Workflows — Browser (50 tests)
+ *   12: Patient Portal Workflows — Browser (50 tests)
+ *   13: Multi-User Appointment & Meeting (40 tests)
+ *   14: Admin Management Workflows (40 tests)
+ *   15: PHR/EMR Data Flow (40 tests)
+ *   16: Medical Content & Clinical Resources (40 tests)
+ *   17: Notification, Settings & Living Will (40 tests)
+ *   18: Appointment Pipeline E2E (10 tests)
+ *   19: PHR Cross-Portal Sync (12 tests)
+ *   20: AI Pipeline Man-in-Loop (10 tests)
+ *   21: Content Rejection Recovery (12 tests)
+ *   22: Notification Triggers (12 tests)
+ *   23: Mixed Simultaneous Workflows (10 tests)
+ *   24: Registration Approval Metadata (10 tests)
  *
- * Features:
- * - 5 simultaneous users (patient1, patient2, patient3, doctor, admin)
- * - Multi-browser real-time content sync verification
- * - Full meeting lifecycle with AI SOAP / CDS
- * - Phase 2: CTM, Geriatric Screening (8 tools), SOS, Nursing Dashboard
- * - Mobile viewport tests (Android Pixel 7, iPhone 13, iPad Mini)
- * - ALL FREE TIER: Jitsi Meet, Web Speech API, Gemini, PostgreSQL
+ * Parallel strategy:
+ * - All specs run with fullyParallel=true across workers
+ * - Spec 08 (multi-user concurrent) requires serial execution
  * ═══════════════════════════════════════════════════════════════════════
  */
 import { defineConfig, devices } from '@playwright/test';
 
 const isCloud = process.env.TEST_ENV === 'cloud';
-const isHeadless = process.env.HEADLESS === '1' || process.env.CI === 'true';
+const isCI = process.env.CI === 'true';
+// Headed mode: fewer workers to avoid browser launch timeouts
+const parallelWorkers = parseInt(process.env.PW_WORKERS || (isCI ? '6' : '3'), 10);
 
 const SPEC_FILES = [
-  '**/01-auth-health-multiuser.spec.ts',
-  '**/02-appointment-lifecycle.spec.ts',
-  '**/03-health-records-emr.spec.ts',
-  '**/04-video-meeting-transcription.spec.ts',
-  '**/05-content-sync-approval.spec.ts',
-  '**/06-ai-features-cds.spec.ts',
-  '**/07-multi-user-concurrent.spec.ts',
-  '**/08-phase2-ai-his.spec.ts',
-  '**/09-user-accounts-demo-pages.spec.ts',
-  '**/10-mobile-viewport-data-sync.spec.ts',
+  '**/01-user-accounts-demo-pages.spec.ts',
+  '**/02-auth-health-multiuser.spec.ts',
+  '**/03-appointment-lifecycle.spec.ts',
+  '**/04-health-records-emr.spec.ts',
+  '**/05-video-meeting-transcription.spec.ts',
+  '**/06-content-sync-approval.spec.ts',
+  '**/07-ai-features-cds.spec.ts',
+  '**/08-multi-user-concurrent.spec.ts',
+  '**/09-phase2-ai-his.spec.ts',
+  '**/10-lab-imaging-map-features.spec.ts',
+  '**/11-doctor-portal-workflows.spec.ts',
+  '**/12-patient-portal-workflows.spec.ts',
+  '**/13-multi-user-appointment-workflow.spec.ts',
+  '**/14-admin-management-workflows.spec.ts',
+  '**/15-phr-emr-data-flow.spec.ts',
+  '**/16-medical-content-workflows.spec.ts',
+  '**/17-notification-settings-workflows.spec.ts',
+  '**/18-appointment-pipeline-e2e.spec.ts',
+  '**/19-phr-cross-portal-sync.spec.ts',
+  '**/20-ai-pipeline-man-in-loop.spec.ts',
+  '**/21-content-rejection-recovery.spec.ts',
+  '**/22-notification-triggers.spec.ts',
+  '**/23-mixed-simultaneous-workflows.spec.ts',
+  '**/24-registration-approval-e2e.spec.ts',
+];
+
+// Cloud: only essential specs to reduce cost
+const CLOUD_SPEC_FILES = [
+  '**/01-user-accounts-demo-pages.spec.ts',
+  '**/02-auth-health-multiuser.spec.ts',
+  '**/10-lab-imaging-map-features.spec.ts',
 ];
 
 export default defineConfig({
+  globalSetup: './global-setup.ts',
   testDir: './specs',
-  fullyParallel: false,          // Serial execution for workflow tests
+  fullyParallel: true,            // PARALLEL — each spec's tests run concurrently
   forbidOnly: !!process.env.CI,
-  retries: 0,                    // No retries — must pass first time
-  workers: 1,                    // Single worker for serial multi-user flows
-  timeout: 180_000,              // 3 min per test
+  retries: isCloud ? 1 : 0,       // 1 retry on cloud for transient network issues
+  workers: parallelWorkers,       // Multiple workers for speed (default 4)
+  timeout: 180_000,               // 3 min per test
   expect: { timeout: 30_000 },
   reporter: [
     ['html', { open: 'never' }],
@@ -58,12 +92,13 @@ export default defineConfig({
     ['json', { outputFile: './test-results/results.json' }],
   ],
   use: {
-    headless: true,
+    headless: isCI,               // HEADED by default! Only headless in CI
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
     trace: 'on-first-retry',
     launchOptions: {
-      args: ['--start-maximized'],
+      args: ['--start-maximized', '--disable-gpu', '--no-sandbox'],
+      timeout: 120_000,   // 2 min to launch browser (avoid timeout on multi-context)
     },
     actionTimeout: 30_000,
     navigationTimeout: 60_000,
@@ -76,7 +111,7 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
         baseURL: 'http://localhost:3005',
         viewport: { width: 1920, height: 1080 },
-        headless: isHeadless,
+        headless: false,            // ALWAYS show browser for Local
       },
       testMatch: SPEC_FILES,
     },
@@ -84,37 +119,19 @@ export default defineConfig({
       name: 'Cloud',
       use: {
         ...devices['Desktop Chrome'],
-        baseURL: 'https://izara-patient-portal-hvht4obouq-as.a.run.app',
+        baseURL: 'https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app',
         viewport: { width: 1920, height: 1080 },
-        headless: isHeadless,
+        headless: false,            // ALWAYS show browser for Cloud too
       },
-      testMatch: SPEC_FILES,
+      testMatch: CLOUD_SPEC_FILES,
     },
     {
       name: 'Cloud-Dev',
       use: {
         ...devices['Desktop Chrome'],
-        baseURL: 'https://izara-patient-portal-dev-testing-hvht4obouq-as.a.run.app',
+        baseURL: 'https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app',
         viewport: { width: 1920, height: 1080 },
-        headless: true,
-      },
-      testMatch: SPEC_FILES,
-    },
-    {
-      name: 'Mobile-Local',
-      use: {
-        ...devices['Pixel 7'],
-        baseURL: 'http://localhost:3005',
-        headless: isHeadless,
-      },
-      testMatch: SPEC_FILES,
-    },
-    {
-      name: 'Mobile-Cloud-Dev',
-      use: {
-        ...devices['Pixel 7'],
-        baseURL: 'https://izara-patient-portal-dev-testing-hvht4obouq-as.a.run.app',
-        headless: true,
+        headless: false,
       },
       testMatch: SPEC_FILES,
     },

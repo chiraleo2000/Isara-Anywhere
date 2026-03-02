@@ -10,6 +10,8 @@ import { authMiddleware } from '../middleware/auth';
 import postgresDataService from '../services/postgresDataService';
 
 const { PHRService, LivingWillService } = postgresDataService;
+const LabOrderService = (postgresDataService as any).LabOrderService;
+const ImagingOrderService = (postgresDataService as any).ImagingOrderService;
 const { pool } = postgresDataService;
 
 const router = Router();
@@ -82,6 +84,142 @@ router.get('/patient/:patientId', authMiddleware, async (req: Request, res: Resp
   } catch (error: any) {
     console.error('[PHR] Get PHR error:', error);
     return res.status(500).json({ error: 'Failed to get PHR', message: error.message });
+  }
+});
+
+// ============================================================================
+// LAB ORDERS ROUTES (Patient Read-Only) — MUST be before /:patientId catch-all
+// ============================================================================
+
+// GET /api/phr/lab-orders - Get lab orders for current authenticated patient
+router.get('/lab-orders', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    // @ts-ignore
+    const patientId = req.patientId || req.userId;
+    if (!patientId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    console.log(`[PHR] Getting lab orders for patient: ${patientId}`);
+
+    if (LabOrderService) {
+      const labOrders = await LabOrderService.getPatientLabOrders(patientId);
+      return res.json({ labOrders: labOrders || [], count: (labOrders || []).length });
+    }
+
+    // Fallback: direct query
+    const result = await pool.query(
+      `SELECT lo.*, u.name as doctor_name, u.name_thai as doctor_name_thai
+       FROM lab_orders lo LEFT JOIN users u ON lo.doctor_id = u.id
+       WHERE lo.patient_id = $1 ORDER BY lo.created_at DESC`,
+      [patientId]
+    );
+    res.json({ labOrders: result.rows, count: result.rows.length });
+  } catch (error: any) {
+    console.error('[PHR] Get lab orders error:', error);
+    // Return empty array instead of error for graceful frontend handling
+    res.json({ labOrders: [], count: 0 });
+  }
+});
+
+// GET /api/phr/lab-orders/:orderId - Get specific lab order detail with results
+router.get('/lab-orders/:orderId', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    // @ts-ignore
+    const patientId = req.patientId || req.userId;
+    const { orderId } = req.params;
+
+    if (!patientId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    console.log(`[PHR] Getting lab order ${orderId} for patient: ${patientId}`);
+
+    if (LabOrderService) {
+      const labOrder = await LabOrderService.getLabOrderById(orderId, patientId);
+      if (!labOrder) {
+        return res.status(404).json({ error: 'Lab order not found' });
+      }
+      return res.json(labOrder);
+    }
+
+    const result = await pool.query(
+      `SELECT lo.*, u.name as doctor_name, u.name_thai as doctor_name_thai
+       FROM lab_orders lo LEFT JOIN users u ON lo.doctor_id = u.id
+       WHERE lo.id = $1 AND lo.patient_id = $2`,
+      [orderId, patientId]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Lab order not found' });
+    }
+    res.json(result.rows[0]);
+  } catch (error: any) {
+    console.error('[PHR] Get lab order detail error:', error);
+    return res.status(500).json({ error: 'Failed to get lab order' });
+  }
+});
+
+// ============================================================================
+// IMAGING ORDERS ROUTES (Patient Read-Only) — MUST be before /:patientId
+// ============================================================================
+
+// GET /api/phr/imaging-orders - Get imaging orders for current patient
+router.get('/imaging-orders', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    // @ts-ignore
+    const patientId = req.patientId || req.userId;
+    if (!patientId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    console.log(`[PHR] Getting imaging orders for patient: ${patientId}`);
+
+    if (ImagingOrderService) {
+      const imagingOrders = await ImagingOrderService.getPatientImagingOrders(patientId);
+      return res.json({ imagingOrders: imagingOrders || [], count: (imagingOrders || []).length });
+    }
+
+    const result = await pool.query(
+      `SELECT io.*, u.name as doctor_name, u.name_thai as doctor_name_thai
+       FROM imaging_orders io LEFT JOIN users u ON io.doctor_id = u.id
+       WHERE io.patient_id = $1 ORDER BY io.created_at DESC`,
+      [patientId]
+    );
+    res.json({ imagingOrders: result.rows, count: result.rows.length });
+  } catch (error: any) {
+    console.error('[PHR] Get imaging orders error:', error);
+    res.json({ imagingOrders: [], count: 0 });
+  }
+});
+
+// GET /api/phr/imaging-orders/:orderId - Get specific imaging order detail
+router.get('/imaging-orders/:orderId', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    // @ts-ignore
+    const patientId = req.patientId || req.userId;
+    const { orderId } = req.params;
+
+    if (!patientId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    if (ImagingOrderService) {
+      const order = await ImagingOrderService.getImagingOrderById(orderId, patientId);
+      if (!order) return res.status(404).json({ error: 'Imaging order not found' });
+      return res.json(order);
+    }
+
+    const result = await pool.query(
+      `SELECT io.*, u.name as doctor_name, u.name_thai as doctor_name_thai
+       FROM imaging_orders io LEFT JOIN users u ON io.doctor_id = u.id
+       WHERE io.id = $1 AND io.patient_id = $2`,
+      [orderId, patientId]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Imaging order not found' });
+    res.json(result.rows[0]);
+  } catch (error: any) {
+    console.error('[PHR] Get imaging order detail error:', error);
+    return res.status(500).json({ error: 'Failed to get imaging order' });
   }
 });
 

@@ -1,0 +1,261 @@
+
+≡ƒöÉ GLOBAL SETUP ΓÇö Authenticating all 5 users via API (ONE time)...
+   Γ£à patient1 | Γ£à patient2 | Γ£à patient3 | Γ£à doctor | Γ£à admin
+   Done in 218ms ΓÇö tokens cached to .auth-cache.json
+
+
+Running 1191 tests using 3 workers
+Γ£à Patient portal healthy
+┬╖Γ£à Patient DB healthy
+┬╖Γ£à Doctor portal healthy
+┬╖Γ£à Doctor DB healthy
+┬╖Γ£à Meeting server healthy
+┬╖┬╖Γ£à All 3 services healthy in parallel
+┬╖┬╖┬╖Γ£à Admin can access pending doctors
+┬╖┬╖Γ£à 5/5 users authenticated
+Γ£à Patient profile endpoint accessible
+┬╖┬╖Γä╣∩╕Å  All metadata loaded in 19ms
+┬╖┬╖Γ£à Patient1 token valid
+┬╖┬╖Γ£à Patient2 token check
+┬╖┬╖Γ£à Patient3 token check
+┬╖┬╖Γ£à Doctor token valid
+┬╖┬╖Γ£à Patient appointments
+┬╖Γ£à Admin token valid
+┬╖┬╖Γ£à Patient PHR
+┬╖Γ£à Doctor patients
+┬╖Γ£à Invalid password correctly rejected
+┬╖┬╖Γ£à Non-existent user correctly rejected
+┬╖┬╖Γ£à Doctor appointments
+┬╖┬╖┬╖┬╖Γ£à Invalid token ΓÇö correctly rejected
+┬╖┬╖┬╖Γ£à Empty token ΓÇö correctly rejected
+┬╖Γ£à Admin doctor management
+┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖Γ£à Metadata endpoints accessible
+┬╖┬╖┬╖┬╖┬╖┬╖Γ£à All 5 demo accounts have valid tokens
+┬╖Γ£à Patient login returns proper credential
+┬╖Γ£à Doctor login credential OK
+┬╖Γ£à Empty creds rejected: 400
+┬╖Γ£à Wrong password rejected: 401
+┬╖Γ£à Health check: 200
+┬╖Γ£à Patients authenticated in parallel
+┬╖Γ£à Fake token rejected: 401
+┬╖┬╖Γ£à Duplicate email registration handled
+┬╖┬╖┬╖┬╖┬╖┬╖Γ£à Concurrent auth returned 3 unique tokens
+┬╖┬╖Γ£à Post-auth health check: 200
+┬╖Γ£à Meeting server health: 200
+┬╖Γä╣∩╕Å  All 5 users authenticated for appointment tests
+Γä╣∩╕Å  All 5 users authenticated for appointment tests
+Γ£à Appointment created: APT-1772432430244-GD9AWV
+┬╖Γ£à Patient2 appointment created
+┬╖Γ£à Appointment history
+┬╖Γ£à Patient3 appointment created
+┬╖Γ£à Meeting created: 
+┬╖┬╖Γ£à 3 parallel bookings succeeded
+┬╖
+┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖Γ£à Patient1 appointment list
+Γ£à Patient1 has 1690 appointments
+┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖Γ£à Doctor appointment list
+┬╖Γä╣∩╕Å  Doctor sees 0 appointments
+┬╖Γ£à Doctor confirmed appointment
+┬╖┬╖Γ£à Admin appointment list
+┬╖┬╖Γ£à Patient sees appointments after confirmation
+┬╖Γ£à Patient1 logged in via browser
+┬╖Γ£à Notification bell visible
+┬╖Γ£à Appointments with reminders
+┬╖┬╖Γä╣∩╕Å  3 notification polls in 8ms
+┬╖Γ£à Doctor logged in via browser
+┬╖Γ£à Patient appointments page loaded
+┬╖┬╖┬╖Γ£à Full lifecycle appointment: APT-1772432439820-FML950
+┬╖┬╖┬╖Γ£à Appointment list after cancel
+┬╖┬╖┬╖┬╖┬╖┬╖┬╖Γä╣∩╕Å  All 5 users authenticated for appointment tests
+Γ£à Doctor sees admin-assigned appointment
+Γ£à Admin logged in via browser
+┬╖Γ£à Doctor sees all patient appointments
+┬╖Γ£à Patient portal synced
+Γ£à Doctor portal synced
+┬╖Γ£à Meeting link created for sync test
+┬╖┬╖┬╖┬╖Γ£à Patient1 appointments
+Γ£à Patient2 appointments
+┬╖Γä╣∩╕Å  5-user parallel appointment query: 139ms
+┬╖┬╖Γ£à Unauth appointment create ΓÇö correctly rejected
+┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖Γä╣∩╕Å  Appointment list API: 100ms
+┬╖┬╖┬╖┬╖┬╖Γä╣∩╕Å  Onsite meetingLink: https://meet.jit.si/Izara-APT-17724324-2a7f735c#config.prejoinPageEnabled=true&config.startWithAudioMuted=false&config.startWithVideoMuted=false&config.enableClosePage=true&config.disableDeepLinking=true&config.defaultLanguage=th&config.requireDisplayName=true&config.enableLobbyChat=true&config.fileRecordingsEnabled=true&config.localRecording.enabled=true&interfaceConfig.APP_NAME=Izara+Telemedicine&interfaceConfig.SHOW_PROMOTIONAL_CLOSE_PAGE=false
+┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖Γ£à Patient1 PHR read
+┬╖Γ£à Patient2 PHR read
+
+┬╖Γ£à Patient3 PHR read
+┬╖Γ£à Parallel PHR
+Γ£à Parallel PHR
+Γ£à Parallel PHR
+Γ£à 3 patients read PHR in parallel
+┬╖Γ£à PHR updated
+┬╖Γ£à PHR re-read after update
+┬╖Γä╣∩╕Å  PHR sections: id, patient_id, demographics, vital_signs_history, allergies, chronic_conditions, medications, vaccinations, lifestyle, family_history, surgical_history, social_history, latest_lab_results, clinical_decision_support, blood_type, height_cm, weight_kg, bmi, emergency_contact_name, emergency_contact_phone, emergency_contact_relation, created_at, updated_at, last_synced_at
+┬╖┬╖┬╖Γ£à PHR unauth ΓÇö correctly rejected
+┬╖┬╖Γä╣∩╕Å  PHR response: 7ms
+┬╖Γ£à Vitals recorded
+┬╖┬╖Γä╣∩╕Å  Patient1 has 0 vital records
+┬╖Γ£à 3 vitals entries created
+┬╖┬╖┬╖┬╖Γ£à 3 patients recorded vitals simultaneously
+┬╖┬╖Γ£à Doctor schedule page loaded
+┬╖Γ£à PHR page loaded with vitals
+┬╖Γ£à EMR created: 
+┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖Γ£à Doctor dashboard loaded
+┬╖Γ£à 3 users logged in simultaneously
+┬╖┬╖┬╖Γ£à Prescription created
+┬╖┬╖┬╖Γ£à Lab order created
+┬╖┬╖┬╖Γä╣∩╕Å  Found 0 tabs on Health Meeting page
+F┬╖┬╖┬╖┬╖Γ£à Living will created
+┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖Γ£à Invalid login handled correctly
+┬╖┬╖┬╖┬╖┬╖┬╖┬╖Γä╣∩╕Å  Timeline has 0 events
+┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖Γ£à Patient list
+┬╖┬╖┬╖Γ£à Admin patient list
+┬╖Γ£à 3 patients logged in simultaneously
+┬╖Γ£à Session isolation verified
+┬╖┬╖┬╖┬╖
+┬╖┬╖┬╖┬╖Γ£à Meeting server alive
+┬╖Γä╣∩╕Å  Meeting config: {"jitsiDomain":"meet.jit.si","enableRecording":true,"enableTranscription":true,"enableAiSummary":true,"features":{"videoConferencing":true,"screenSharing":true,"chat":true,"recording":true}}
+┬╖Γ£à Meeting created: 
+┬╖┬╖┬╖┬╖Γä╣∩╕Å  Meeting health: {"status":"healthy","service":"izara-jitsi-server","version":"1.5.1","timestamp":"2026-03-02T06:21:0
+┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖Γ£à Both portals show appointments simultaneously
+┬╖┬╖┬╖Γä╣∩╕Å  5-user parallel health data: 17ms
+┬╖Γ£à P1 PHR
+Γ£à P2 PHR
+┬╖┬╖Γ£à Patient and doctor view records simultaneously
+┬╖┬╖┬╖┬╖┬╖┬╖Γä╣∩╕Å  4 health records in parallel: 24ms
+┬╖┬╖Γä╣∩╕Å  6 health record queries: 24ms
+┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖Γ£à AI SOAP summary requested
+┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖Γ£à Meeting ΓåÆ AI Summary ΓåÆ EMR pipeline
+┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖Γä╣∩╕Å  Calendar view: not found (may use list view)
+┬╖Γ£à Both portals open for meeting
+┬╖Γ£à Patient dashboard loaded with appointments
+┬╖Γ£à Doctor sees new appointment
+┬╖Γ£à Patient sees confirmed appointment
+┬╖┬╖┬╖
+┬╖┬╖Γä╣∩╕Å  5 concurrent meeting server requests: 23ms
+┬╖┬╖Γä╣∩╕Å  10 health checks: 18ms
+┬╖┬╖Γ£à Both open meeting pages simultaneously
+┬╖Γ£à Transcription started
+┬╖┬╖┬╖┬╖Γ£à Transcription stopped
+┬╖┬╖┬╖┬╖Γ£à Content created: 
+┬╖┬╖┬╖┬╖Γ£à Content submitted for approval
+┬╖┬╖Γ£à 3 articles created
+┬╖┬╖Γ£à Patients cannot see drafts
+┬╖┬╖┬╖┬╖Γ£à Clinical resource created: 
+┬╖┬╖┬╖┬╖Γä╣∩╕Å  Resource status: undefined
+┬╖┬╖┬╖┬╖┬╖┬╖Γä╣∩╕Å  311 pending medical content items
+┬╖┬╖┬╖Γ£à Admin approved medical content
+┬╖┬╖┬╖┬╖┬╖Γ£à Content lifecycle: unknown ΓÇö "α╣éα╕úα╕äα╣Çα╕Üα╕▓α╕½α╕ºα╕▓α╕Ö: α╕äα╕ºα╕▓α╕íα╕úα╕╣α╣ëα╣Çα╕Üα╕╖α╣ëα╕¡α╕çα╕òα╣ëα╕Ö ΓÇö Test 1772432489622"
+┬╖┬╖Γä╣∩╕Å  New content visible to patient: false
+Γ£à Content sync API flow complete
+┬╖Γä╣∩╕Å  Content visible after refresh: false
+Γä╣∩╕Å  API content accessible: true
+Γ£à 3-way meeting simulation
+Γ£à Browser content sync test complete
+┬╖┬╖┬╖Γ£à Multiple patients viewing appointments
+┬╖Γä╣∩╕Å  Patient1 sees content: false
+Γä╣∩╕Å  Patient2 sees content: false
+Γä╣∩╕Å  Patient3 sees content: false
+Γ£à Multi-patient content sync test
+┬╖Γä╣∩╕Å  Clicked 0 tabs
+┬╖┬╖Γä╣∩╕Å  Clinical resource visible to admin after refresh: false
+┬╖Γ£à All 3 patients can access content after approval
+┬╖┬╖┬╖Γ£à Draft content hidden from patients
+┬╖Γä╣∩╕Å  AI chat endpoint timed out (expected in local)
+┬╖┬╖┬╖Γ£à 5 concurrent content creations completed
+┬╖Γä╣∩╕Å  5 rapid content fetches: 10ms
+┬╖┬╖┬╖Γ£à Admin doctor list
+┬╖┬╖Γ£à Health library loaded
+┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖
+┬╖Γä╣∩╕Å  0 articles visible in patient library
+┬╖┬╖┬╖Γ£à Both portals show content simultaneously
+┬╖┬╖┬╖┬╖┬╖┬╖┬╖AI chat 200 but no recognized body field: {"reply":"α╕¬α╕ºα╕▒α╕¬α╕öα╕╡α╕äα╣êα╕░ α╕öα╕┤α╕ëα╕▒α╕Ö Izara AI α╕£α╕╣α╣ëα╕èα╣êα╕ºα╕óα╕öα╣ëα╕▓α╕Öα╕¬α╕╕α╕éα╕áα╕▓α╕₧α╕¡α╕▒α╕êα╕ëα╕úα╕┤α╕óα╕░ α╕óα╕┤α╕Öα╕öα╕╡α╣âα╕½α╣ëα╕éα╣ëα╕¡α╕íα╕╣α╕Ñα╕Öα╕░α╕äα╕░ ≡ƒÿè\n\nα╕¬α╕│α╕½α╕úα╕▒α╕Üα╕¡α╕▓α╕üα╕▓α╕úα╕éα╕¡α╕çα╣éα╕úα╕äα╣Çα╕Üα╕▓α╕½α╕ºα╕▓α╕Öα╕èα╕Öα╕┤α╕öα╕ùα╕╡α╣ê 2 α╕Öα╕▒α╣ëα╕Ö α╕¡α╕▓α╕êα╕êα╕░α╕¬α╕▒α╕çα╣Çα╕üα╕òα╣äα╕öα╣ëα╕óα╕▓α╕üα╣âα╕Öα╕úα╕░α╕óα╕░α╣üα╕úα╕üα╣å α╣Çα╕₧α╕úα╕▓α╕░α╕Üα╕▓α╕çα╕äα╕Öα╕¡α╕▓α╕êα╕êα╕░α╣äα╕íα╣êα╕íα╕╡α╕¡α╕▓α╕üα╕▓α╕úα╣Çα╕Ñα╕ó α╕½α╕úα╕╖α╕¡α╕íα╕╡α╕¡α╕▓α╕üα╕▓α╕úα╣Çα╕₧α╕╡α╕óα╕çα╣Çα╕Ñ
+Γ£à AI English chat response received
+┬╖Γ£à AI Thai chat response received
+┬╖Γä╣∩╕Å  JS errors across 5 pages: 0
+┬╖┬╖┬╖┬╖┬╖┬╖Γä╣∩╕Å  AI document analysis endpoint timed out (expected in local)
+┬╖┬╖┬╖Γä╣∩╕Å  E2E meeting pipeline: 21ms
+┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖Γ£à Google STT config endpoint works
+┬╖Γä╣∩╕Å  Transcribe audio: mode=google-cloud-stt
+┬╖Γä╣∩╕Å  Enhanced summary: {"success":true,"summary":{"soap":"α╣äα╕íα╣êα╕íα╕╡α╕Üα╕ùα╕¬α╕Öα╕ùα╕Öα╕▓α╕¬α╕│α╕½α╕úα╕▒α╕Üα╕¬α╕úα╕╕α╕¢"},"meetingId":"no-dependency","source":"empty"}
+┬╖Γ£à Meeting server version: 1.5.1
+┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖Γä╣∩╕Å  Patient1 AI chat: 200
+Γä╣∩╕Å  Patient2 AI chat: 200
+Γä╣∩╕Å  Patient3 AI chat: 200
+┬╖┬╖Γä╣∩╕Å  AI summarize latency: 4ms
+┬╖┬╖Γä╣∩╕Å  Chat inputs found: 1
+┬╖Γ£à 3 AI features parallel on same patient
+┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖Γ£à CDS drug interaction check
+┬╖┬╖┬╖┬╖
+┬╖┬╖┬╖┬╖┬╖Γ£à Concurrent CDS checks for 3 patients
+┬╖┬╖┬╖┬╖┬╖Γä╣∩╕Å  Pre-consultation summary: {"success":true,"patientId":"PATIENT-DEMO","appointmentId":"test-apt-001","summary":"## α╕¬α╕úα╕╕α╕¢α╕éα╣ëα╕¡α╕íα╕╣α╕Ñα╕£α╕╣α╣ëα╕¢α╣êα╕ºα╕óα╕üα╣êα╕¡α╕Öα╕₧α╕Üα╣üα╕₧α╕ùα╕óα╣î (Pre-Consultation Summary)\n\n**α╕èα╕╖α╣êα╕¡α╕£α╕╣α╣ëα╕¢α╣êα╕ºα╕ó:** α╕£α╕╣α╣ëα╕¢α╣êα╕ºα╕ó\n**α╕¡α╕▓α╕óα╕╕:** α╣äα╕íα╣êα╕úα╕░α╕Üα╕╕ α╕¢α╕╡\n**α╕¬α╕ûα╕▓
+┬╖┬╖Γä╣∩╕Å  SOAP sections: success, summary
+┬╖┬╖Γä╣∩╕Å  AI document analysis endpoint timed out (expected in local)
+┬╖┬╖┬╖┬╖┬╖┬╖Γ£à Doctor + Patient view records simultaneously
+┬╖┬╖ΓÜá∩╕Å  Returned 200 ΓÇö verify data isolation in response
+┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖Γä╣∩╕Å  10 concurrent mixed calls: 132ms
+┬╖Γä╣∩╕Å  Appointment created: APT-1772432592555-ZPUIJW (200)
+Γä╣∩╕Å  Doctor confirmed: 200
+┬╖┬╖┬╖┬╖Γä╣∩╕Å  appointments: 68ms
+Γä╣∩╕Å  patients: 7ms
+Γä╣∩╕Å  doctors: 8ms
+Γä╣∩╕Å  content: 5ms
+Γä╣∩╕Å  notifications: 4ms
+┬╖Γä╣∩╕Å  Still logged in after navigation: true
+┬╖Γ£à Doctor + Patient meeting pages open
+Γä╣∩╕Å  20 concurrent calls: 599ms, failures: 0
+┬╖┬╖┬╖┬╖Γä╣∩╕Å  Patient1 notifications: 0
+┬╖┬╖┬╖┬╖Γä╣∩╕Å  Notification overlap check: 0 shared IDs
+┬╖┬╖┬╖┬╖┬╖Γ£à CTM assessment created: 
+┬╖Γ£à α╕ÿα╕▓α╕òα╕╕: α╕¬α╕▒α╕Öα╕Öα╕┤α╕¢α╕▓α╕òα╕░
+┬╖┬╖Γä╣∩╕Å  α╕¬α╕íα╕╕α╕Åα╕Éα╕▓α╕Ö: α╕¡α╕╕α╕òα╕╕α╕¬α╕íα╕╕α╕Åα╕Éα╕▓α╕Ö ΓÇö α╣Çα╕üα╕┤α╕öα╕êα╕▓α╕üα╕üα╕▓α╕úα╣Çα╕¢α╕Ñα╕╡α╣êα╕óα╕Öα╣üα╕¢α╕Ñα╕çα╕éα╕¡α╕çα╕ñα╕öα╕╣α╕üα╕▓α╕Ñ
+┬╖┬╖┬╖┬╖┬╖┬╖┬╖Γ£à CTM assessments for 3 patients
+┬╖┬╖┬╖┬╖Γ£à Geriatric screening created: 
+┬╖Γä╣∩╕Å  ADL score: 16/20
+┬╖
+┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖Γ£à SOS alert created: SOS-mm8slyi2-7gltv3zt
+┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖Γ£à Follow-up created: 
+┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖┬╖Γä╣∩╕Å  All 5 users authenticated for user account tests
+Γ£à patient1: Demo Test Patient (demo.test@gmail.com) ΓÇö token OK
+Γ£à patient2: Somchai Mankong (Somchai.Mankong@gmail.com) ΓÇö token OK
+Γ£à patient3: Anan Khayanrian (Anan.Khayanrian@gmail.com) ΓÇö token OK
+Γ£à doctor: Dr. Test Good (doctor.test@izara.com) ΓÇö token OK
+Γ£à admin: Dr. Admin Kind (admin.test@izara.com) ΓÇö token OK
+┬╖Γ£à Patient1 profile: Demo Test Patient ΓÇö demo.test@gmail.com
+┬╖Γ£à Patient2 profile: Somchai Mankong ΓÇö Somchai.Mankong@gmail.com
+┬╖Γ£à Patient3 profile: Anan Khayanrian ΓÇö Anan.Khayanrian@gmail.com
+┬╖Γ£à Doctor profile: Dr. Test Good ΓÇö doctor.test@izara.com
+┬╖Γ£à Admin profile: Dr. Admin Kind ΓÇö admin.test@izara.com
+┬╖Γ£à Patient1 and Patient2 are distinct accounts
+┬╖Γ£à Patient2 and Patient3 are distinct accounts
+┬╖Γ£à Doctor and Admin are distinct accounts
+┬╖Γ£à All 5 tokens are unique
+┬╖Γ£à All 3 patient tokens accepted by patient portal
+┬╖Γ£à Doctor + Admin tokens accepted by doctor portal
+┬╖Γ£à Patient reset-password page loads
+┬╖Γ£à Doctor reset-password page loads
+┬╖Γ£à Patient forgot-password returns 404
+┬╖Γ£à Doctor forgot-password returns 404
+
+┬╖Γ£à Reset with invalid token correctly rejected
+┬╖Γ£à Doctor reset with invalid token correctly rejected
+┬╖Γ£à Appointment visible in both portals
+┬╖Γ£à Patient login page loaded ΓÇö forgot-password elements: 0
+┬╖Γ£à Doctor login page loaded ΓÇö forgot-password elements: 1
+Γ£à 3 dashboards open simultaneously
+┬╖Γä╣∩╕Å  All 5 users authenticated for user account tests
+┬╖Γ£à Patient Login page visible in browser
+┬╖Γ£à Patient Register page visible in browser
+┬╖Γ£à Patient Reset Password page visible in browser
+Γ£à Patient Settings page visible in browser ΓåÆ http://localhost:3005/settings
+┬╖┬╖Γ£à All 5 users logged in simultaneously across 5 browser windows
+┬╖Γä╣∩╕Å  patient1 booking: 200
+Γä╣∩╕Å  patient2 booking: 200
+Γä╣∩╕Å  patient3 booking: 200
+Γ£à 3 concurrent appointment bookings
+┬╖┬╖Γ£à Patient PDPA Consent page visible in browser ΓåÆ http://localhost:3005/pdpa
+┬╖Γ£à Patient Dashboard page visible in browser ΓåÆ http://localhost:3005/
+┬╖Γ£à Patient Living Will page visible in browser ΓåÆ http://localhost:3005/living-will
+┬╖Γ£à Patient Appointments List page visible in browser ΓåÆ http://localhost:3005/appointments
+┬╖Γ£à Patient Timeline page visible in browser ΓåÆ http://localhost:3005/timeline
+┬╖Γ£à Patient Book Appointment page visible in browser ΓåÆ http://localhost:3005/appointments/book
+┬╖Γ£à Patient Map page visible in browser ΓåÆ http://localhost:3005/map

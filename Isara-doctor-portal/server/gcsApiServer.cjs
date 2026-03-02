@@ -65,12 +65,15 @@ const ALLOWED_ORIGINS = [
 if (process.env.NODE_ENV === 'production') {
   ALLOWED_ORIGINS.push(
     'https://doctor.izara.com',
-    'https://izara-doctor-portal-hvht4obouq-as.a.run.app',
-    'https://izara-patient-portal-hvht4obouq-as.a.run.app',
+    'https://izara-doctor-portal-724889190329.asia-southeast1.run.app',
+    'https://izara-patient-portal-724889190329.asia-southeast1.run.app',
+    'https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app',
+    'https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app',
+    'https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app',
   );
 }
-// Regex pattern for Cloud Run dynamic URLs
-const CLOUD_RUN_PATTERN = /^https:\/\/izara-[a-z-]+-hvht4obouq-as\.a\.run\.app$/;
+// Regex pattern for Cloud Run dynamic URLs (both old hvht4obouq and new 724889190329 formats)
+const CLOUD_RUN_PATTERN = /^https:\/\/izara-[a-z0-9-]+(-hvht4obouq-as\.a\.run\.app|-724889190329\.asia-southeast1\.run\.app)$/;
 
 // ============================================================================
 // INITIALIZE GCS CLIENT

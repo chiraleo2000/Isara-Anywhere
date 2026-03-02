@@ -1,5 +1,8 @@
 # 📋 Spec Kit — Phase 1: Telemedicine Core Platform
 
+> **⚠️ Superseded:** This document covers Phase 1 features only.
+> See **[SPEC_KIT.md](SPEC_KIT.md)** for the unified v1.5.2 specification covering all features, 42 database tables, and complete API endpoints.
+
 **Version:** 1.5.1  
 **Date:** February 22, 2026  
 **Status:** ✅ Phase 1 Complete — All Features Verified

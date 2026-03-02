@@ -667,7 +667,7 @@ const AdminDoctorManagement: React.FC = () => {
 
   // i18n labels
   const labels = {
-    pageTitle: { en: 'Doctor Management', th: 'จัดการแพทย์' },
+    pageTitle: { en: 'New Doctor Approval', th: 'อนุมัติแพทย์ใหม่' },
     addDoctor: { en: 'Add Doctor', th: 'เพิ่มแพทย์' },
     allDoctors: { en: 'All Doctors', th: 'แพทย์ทั้งหมด' },
     pending: { en: 'Pending', th: 'รอดำเนินการ' },
@@ -697,7 +697,7 @@ const AdminDoctorManagement: React.FC = () => {
   const [processing, setProcessing] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'approved' | 'rejected' | 'admins'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'approved' | 'rejected' | 'admins'>('pending');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDoctor, setSelectedDoctor] = useState<DoctorUser | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState<{ action: 'approve' | 'reject'; doctor: DoctorUser } | null>(null);
@@ -1022,7 +1022,9 @@ const AdminDoctorManagement: React.FC = () => {
           {label('pageTitle')}
         </h1>
         <p className={cx.subtitle}>
-          Review and approve doctor registration requests
+          {language === 'th'
+            ? 'ตรวจสอบและอนุมัติคำขอลงทะเบียนแพทย์ใหม่'
+            : 'Review and approve new doctor registration requests'}
         </p>
       </div>
 
@@ -1055,27 +1057,17 @@ const AdminDoctorManagement: React.FC = () => {
         </div>
       )}
 
-      {/* Stats Cards */}
+      {/* Stats Cards — focused on new request workflow */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className={cx.card}>
+        {/* Card 1: New Requests awaiting action (primary metric) */}
+        <div className={`${cx.card} ${pendingCount > 0 ? 'ring-2 ring-yellow-400' : ''}`}>
           <div className="flex items-center justify-between">
             <div>
-              <p className={cx.cardLabel}>Total Doctors</p>
-              <p className="text-3xl font-bold text-indigo-600">{allDoctors.length}</p>
-            </div>
-            <div className="bg-indigo-100 p-3 rounded-full">
-              <svg className="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-            </div>
-          </div>
-        </div>
-
-        <div className={cx.card}>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className={cx.cardLabel}>Pending Approval</p>
+              <p className={cx.cardLabel}>{language === 'th' ? 'คำขอใหม่รอพิจารณา' : 'New Requests'}</p>
               <p className="text-3xl font-bold text-yellow-600">{pendingCount}</p>
+              {pendingCount > 0 && (
+                <p className="text-xs text-yellow-500 mt-1">{language === 'th' ? 'รอการอนุมัติ' : 'Awaiting approval'}</p>
+              )}
             </div>
             <div className="bg-yellow-100 p-3 rounded-full">
               <svg className="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1085,10 +1077,11 @@ const AdminDoctorManagement: React.FC = () => {
           </div>
         </div>
 
+        {/* Card 2: Approved */}
         <div className={cx.card}>
           <div className="flex items-center justify-between">
             <div>
-              <p className={cx.cardLabel}>Approved</p>
+              <p className={cx.cardLabel}>{language === 'th' ? 'อนุมัติแล้ว' : 'Approved'}</p>
               <p className="text-3xl font-bold text-green-600">{approvedCount}</p>
             </div>
             <div className="bg-green-100 p-3 rounded-full">
@@ -1099,15 +1092,31 @@ const AdminDoctorManagement: React.FC = () => {
           </div>
         </div>
 
+        {/* Card 3: Rejected */}
         <div className={cx.card}>
           <div className="flex items-center justify-between">
             <div>
-              <p className={cx.cardLabel}>Rejected</p>
+              <p className={cx.cardLabel}>{language === 'th' ? 'ปฏิเสธแล้ว' : 'Rejected'}</p>
               <p className="text-3xl font-bold text-red-600">{rejectedCount}</p>
             </div>
             <div className="bg-red-100 p-3 rounded-full">
               <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        {/* Card 4: Admins */}
+        <div className={cx.card}>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className={cx.cardLabel}>{language === 'th' ? 'ผู้ดูแลระบบ' : 'Admins'}</p>
+              <p className="text-3xl font-bold text-purple-600">{adminCount}</p>
+            </div>
+            <div className="bg-purple-100 p-3 rounded-full">
+              <svg className="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
               </svg>
             </div>
           </div>

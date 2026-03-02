@@ -30,6 +30,7 @@ import syncRoutes from './routes/sync';
 import apiConnectionRoutes from './routes/api-connections';
 import settingsRoutes from './routes/settings';
 import phase2Routes from './routes/phase2';
+import mapRoutes from './routes/map';
 import { authMiddleware } from './middleware/auth';
 import postgresDataService from './services/postgresDataService';
 
@@ -115,13 +116,16 @@ if (process.env.NODE_ENV === 'production') {
   ALLOWED_ORIGINS.push(
     'https://patient.izara.com',
     'https://izara.com',
-    'https://izara-patient-portal-hvht4obouq-as.a.run.app',
-    'https://izara-doctor-portal-hvht4obouq-as.a.run.app',
-    'https://izara-jitsi-meeting-portal-hvht4obouq-as.a.run.app',
+    'https://izara-patient-portal-724889190329.asia-southeast1.run.app',
+    'https://izara-doctor-portal-724889190329.asia-southeast1.run.app',
+    'https://izara-jitsi-meeting-portal-724889190329.asia-southeast1.run.app',
+    'https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app',
+    'https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app',
+    'https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app',
   );
 }
-// Regex pattern for Cloud Run dynamic URLs
-const CLOUD_RUN_PATTERN = /^https:\/\/izara-[a-z-]+-hvht4obouq-as\.a\.run\.app$/;
+// Regex pattern for Cloud Run dynamic URLs (both old hvht4obouq and new 724889190329 formats)
+const CLOUD_RUN_PATTERN = /^https:\/\/izara-[a-z0-9-]+(-hvht4obouq-as\.a\.run\.app|-724889190329\.asia-southeast1\.run\.app)$/;
 
 // OWASP Security Middleware
 
@@ -569,6 +573,41 @@ app.use('/api/settings', settingsRoutes);
 
 // Phase 2 AI-HIS feature routes
 app.use('/api/phase2', phase2Routes);
+
+// Map — nearby healthcare facility search (Overpass API)
+app.use('/api/map', mapRoutes);
+
+// ============================================================================
+// PRESCRIPTIONS - Patient view prescriptions
+// ============================================================================
+app.get('/api/prescriptions', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.userId || (req as any).user?.id;
+    console.log(`[PRESCRIPTIONS] Fetching for patient: ${userId}`);
+    const result = await pool.query(
+      `SELECT p.*, d.name as doctor_name FROM prescriptions p 
+       LEFT JOIN users d ON p.doctor_id = d.id  
+       WHERE p.patient_id = $1 ORDER BY p.created_at DESC`,
+      [userId]
+    );
+    res.json({ success: true, prescriptions: result.rows });
+  } catch (error: any) {
+    console.error('[PRESCRIPTIONS] Error:', error);
+    res.status(500).json({ error: error.message, prescriptions: [] });
+  }
+});
+
+app.get('/api/prescriptions/:id', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const result = await pool.query('SELECT * FROM prescriptions WHERE id = $1', [id]);
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Prescription not found' });
+    res.json({ success: true, prescription: result.rows[0] });
+  } catch (error: any) {
+    console.error('[PRESCRIPTIONS] Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // ============================================================================
 // HEALTH RECORDS - GET ALL (for Step 10: Patient views health records)

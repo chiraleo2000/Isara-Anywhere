@@ -86,8 +86,8 @@
 
 | พอร์ทัล | URL | เวอร์ชัน |
 | -------- | ----- | --------- |
-| พอร์ทัลผู้ป่วย | <https://izara-patient-portal-hvht4obouq-as.a.run.app> | v1.4.4 |
-| พอร์ทัลแพทย์ | <https://izara-doctor-portal-hvht4obouq-as.a.run.app> | v1.4.4 |
+| พอร์ทัลผู้ป่วย | <https://izara-patient-portal-724889190329.asia-southeast1.run.app> | v1.4.4 |
+| พอร์ทัลแพทย์ | <https://izara-doctor-portal-724889190329.asia-southeast1.run.app> | v1.4.4 |
 
 ### Docker Images (v1.4.4)
 

@@ -1,7 +1,7 @@
 import { Appointment, AppointmentBooking, HealthRecord, AppointmentResult } from '../types';
 import * as authService from './simpleAuth';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL;
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 // Appointment Service
 export class AppointmentService {

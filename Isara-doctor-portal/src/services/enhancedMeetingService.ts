@@ -8,7 +8,7 @@ import { aiClinicalService, type CopilotMessage, type CopilotContext } from './a
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 const GEMINI_MODEL = import.meta.env.VITE_GEMINI_MODEL || 'gemini-2.5-flash-lite';
-const MEETING_SERVER_URL = import.meta.env.VITE_MEETING_SERVER_URL || 'http://localhost:3020';
+const MEETING_SERVER_URL = import.meta.env.VITE_MEETING_SERVER_URL || (typeof globalThis !== 'undefined' && globalThis.location ? `${globalThis.location.protocol}//${globalThis.location.host}` : 'http://localhost:3020');
 const genAI = GEMINI_API_KEY?.startsWith('AIza') ? new GoogleGenerativeAI(GEMINI_API_KEY) : null;
 
 // Log initialization status

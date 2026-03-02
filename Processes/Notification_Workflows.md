@@ -14,7 +14,7 @@
 | --------- | ------ | ------------- |
 | In-App | แจ้งเตือนในแอป | Real-time notifications within the portal |
 | Email | อีเมล | Email notifications via Gmail API |
-| Push | Push Notification | Browser/Mobile push notifications |
+| Push | Push Notification | Browser push notifications |
 | SMS | SMS | SMS notifications (future enhancement) |
 
 ### 1.2 ประเภทการแจ้งเตือน (Notification Types)

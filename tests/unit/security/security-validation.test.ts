@@ -140,14 +140,14 @@ describe('Security — CORS Origin Validation', () => {
     'http://localhost:3005',
     'http://localhost:3010',
     'http://localhost:3020',
-    'https://izara-patient-portal-hvht4obouq-as.a.run.app',
-    'https://izara-doctor-portal-hvht4obouq-as.a.run.app',
-    'https://izara-jitsi-meeting-portal-hvht4obouq-as.a.run.app',
+    'https://izara-patient-portal-724889190329.asia-southeast1.run.app',
+    'https://izara-doctor-portal-724889190329.asia-southeast1.run.app',
+    'https://izara-jitsi-meeting-portal-724889190329.asia-southeast1.run.app',
   ];
 
   function isAllowedOrigin(origin: string): boolean {
     return allowedOrigins.includes(origin) ||
-      origin.endsWith('.a.run.app') ||
+      /^https:\/\/izara-[\w-]+-\d+\.[\w-]+\.run\.app$/.test(origin) ||
       origin.startsWith('http://localhost:');
   }
 
@@ -160,11 +160,11 @@ describe('Security — CORS Origin Validation', () => {
   });
 
   it('C03 — allows Cloud Run origins', () => {
-    expect(isAllowedOrigin('https://izara-patient-portal-hvht4obouq-as.a.run.app')).toBe(true);
+    expect(isAllowedOrigin('https://izara-patient-portal-724889190329.asia-southeast1.run.app')).toBe(true);
   });
 
   it('C04 — allows any Cloud Run subdomain', () => {
-    expect(isAllowedOrigin('https://izara-custom-service-hvht4obouq-as.a.run.app')).toBe(true);
+    expect(isAllowedOrigin('https://izara-custom-service-724889190329.asia-southeast1.run.app')).toBe(true);
   });
 
   it('C05 — rejects unknown external origins', () => {

@@ -38,10 +38,10 @@ This document covers:
 
 | Service | URL |
 | --------- | ----- |
-| Patient Portal | <https://izara-patient-portal-hvht4obouq-as.a.run.app> |
-| Doctor Portal | <https://izara-doctor-portal-hvht4obouq-as.a.run.app> |
-| Meeting Server | <https://izara-jitsi-meeting-portal-hvht4obouq-as.a.run.app> |
-| pgAdmin | <https://izara-pgadmin-hvht4obouq-as.a.run.app> |
+| Patient Portal | <https://izara-patient-portal-724889190329.asia-southeast1.run.app> |
+| Doctor Portal | <https://izara-doctor-portal-724889190329.asia-southeast1.run.app> |
+| Meeting Server | <https://izara-jitsi-meeting-portal-724889190329.asia-southeast1.run.app> |
+| pgAdmin | <https://izara-pgadmin-724889190329.asia-southeast1.run.app> |
 | Cloud SQL | 34.143.228.135:5432 |
 
 ---

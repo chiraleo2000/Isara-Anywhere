@@ -1,12 +1,12 @@
 # 🏥 Izara Telemedicine Platform
 
-![Version](https://img.shields.io/badge/version-1.5.1-blue.svg)
+![Version](https://img.shields.io/badge/version-1.5.3-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Platform](https://img.shields.io/badge/platform-web%20%7C%20mobile-lightgrey.svg)
 ![Node](https://img.shields.io/badge/node-%3E%3D22.0.0-brightgreen.svg)
-![Database](https://img.shields.io/badge/database-PostgreSQL%2018-blue.svg)
+![Database](https://img.shields.io/badge/database-PostgreSQL%2016-blue.svg)
 ![Docker](https://img.shields.io/badge/docker-ready-blue.svg)
-![Tests](https://img.shields.io/badge/Unit%20tests-311%20passing-brightgreen.svg)
+![Tests](https://img.shields.io/badge/Unit%20tests-409%20passing-brightgreen.svg)
 ![Tests](https://img.shields.io/badge/E2E%20tests-808%20passing-brightgreen.svg)
 ![Cloud Run](https://img.shields.io/badge/Cloud%20Run-deployed-blue.svg)
 ![Mobile](https://img.shields.io/badge/mobile-Expo%20%2B%20React%20Native-blueviolet.svg)
@@ -44,23 +44,13 @@ The platform consists of three main services:
 | PostgreSQL | localhost:5433 |
 | pgAdmin | <http://localhost:5050> |
 
-### Cloud Environment — Dev (v1.5.1) (Google Cloud Run)
+### Cloud Environment — Production (v1.5.3) (Google Cloud Run)
 
 | Service | URL |
 | ------- | --- |
-| Patient Portal | <https://izara-patient-portal-dev-testing-hvht4obouq-as.a.run.app> |
-| Doctor Portal | <https://izara-doctor-portal-dev-testing-hvht4obouq-as.a.run.app> |
-| Meeting Server | <https://izara-meeting-server-dev-testing-hvht4obouq-as.a.run.app> |
-
-### Cloud Environment — Production (v1.5.1) (Google Cloud Run)
-
-| Service | URL |
-| ------- | --- |
-| Patient Portal | <https://izara-patient-portal-hvht4obouq-as.a.run.app> |
-| Doctor Portal | <https://izara-doctor-portal-hvht4obouq-as.a.run.app> |
-| Meeting Server | <https://izara-jitsi-meeting-portal-hvht4obouq-as.a.run.app> |
-| pgAdmin | <https://izara-pgadmin-hvht4obouq-as.a.run.app> |
-| Cloud SQL | 34.143.228.135:5432 |
+| Patient Portal | <https://izara-patient-portal-724889190329.asia-southeast1.run.app> |
+| Doctor Portal | <https://izara-doctor-portal-724889190329.asia-southeast1.run.app> |
+| Meeting Server | <https://izara-jitsi-meeting-portal-724889190329.asia-southeast1.run.app> |
 
 ### Mobile App (Expo + React Native)
 
@@ -79,10 +69,10 @@ The platform consists of three main services:
 
 ## 🧪 Testing
 
-### Test Architecture (v1.5.1)
+### Test Architecture (v1.5.3)
 
-#### Unit Tests (Vitest — 311 tests)
-- **10 test suites** in `tests/unit/` — pure logic, no server required
+#### Unit Tests (Vitest — 409 tests)
+- **15 test suites** in `tests/unit/` — pure logic, no server required
 - **Coverage areas**: Drug database, config, PHR types, API service, mobile utils, API client, sync engine, Jitsi meeting, security validation, database schema
 - **Framework**: Vitest 2.1.9, runs in < 2 seconds
 - **Run**: `cd tests/unit && npx vitest run`
@@ -96,7 +86,7 @@ The platform consists of three main services:
 - **0 skipped tests** — every test must pass
 - **Serial + parallel execution** for workflow integrity
 
-#### Combined: 1,119 tests (311 unit + 808 E2E)
+#### Combined: 1,217 tests (409 unit + 808 E2E)
 
 ### E2E Test Specs
 
@@ -158,6 +148,11 @@ npx playwright show-report
 | meeting-server/jitsi-meeting | 31 | Transcript chunking, CDS rules, room names |
 | security/security-validation | 38 | Password policy, JWT, CORS, rate limiting, OWASP |
 | database/schema-validation | 45 | Table registry, appointment FSM, RBAC, PDPA |
+| doctor-portal/labOrders | 18 | Lab order CRUD, validation, result upload, imaging |
+| doctor-portal/adminService | 22 | Admin getAllUsers SQL fix, doctor approval flow |
+| doctor-portal/prescriptions | 16 | Prescription validation, SQL builder, patient query |
+| doctor-portal/apiEndpoints | 25 | Route config, response format, error handling |
+| database/embeddedPg | 17 | Embedded PG config, connection validation, migrations |
 
 ### Test Coverage — 18 Sections
 
@@ -239,7 +234,7 @@ npx playwright show-report
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────────┐
-│                     IZARA TELEMEDICINE v1.5.1                               │
+│                     IZARA TELEMEDICINE v1.5.3                               │
 ├──────────────────────────────────────────────────────────────────────────┤
 │   ┌─────────────────┐  ┌─────────────────┐  ┌────────────────────────┐   │
 │   │  Patient Portal │  │  Doctor Portal  │  │  Meeting Server        │   │
@@ -250,8 +245,8 @@ npx playwright show-report
 │            └────────────────────┼─────────────────────┘                   │
 │                                 ▼                                         │
 │   ┌───────────────────────────────────────────────────────────────────┐  │
-│   │         PostgreSQL 18 + pgvector (Primary Database)               │  │
-│   │         Local: Docker port 5433 | Cloud: Cloud SQL 34.143.228.135│  │
+│   │         PostgreSQL 16 + pgvector (Primary Database)               │  │
+│   │         Local: Docker port 5433 | Cloud: Embedded PG in Cloud Run│  │
 │   └───────────────────────────────────────────────────────────────────┘  │
 │                                                                           │
 │   ┌─────────────────────────────────────────────────────────────────┐    │
@@ -273,7 +268,7 @@ npx playwright show-report
 | ----- | ---------- | ------- |
 | Frontend | React 18, TypeScript, Vite 7, Tailwind CSS | UI |
 | Backend | Node.js 22, Express.js | API servers |
-| Database | PostgreSQL 18 + pgvector | Primary data store |
+| Database | PostgreSQL 16 + pgvector | Primary data store |
 | Auth | bcrypt + JWT (doctor) / Session tokens (patient) | Authentication |
 | Realtime | Socket.io | WebSocket |
 | AI | Google Gemini | Chat, CDS, summaries |
@@ -369,21 +364,17 @@ cd Izara-jitsi-server
 gcloud builds submit --config=cloudbuild.yaml
 ```
 
-### Cloud URLs (Production — v1.5.1)
+### Cloud URLs (Production — v1.5.3)
 
 | Service | URL |
 | ------- | --- |
-| Patient Portal | <https://izara-patient-portal-hvht4obouq-as.a.run.app> |
-| Doctor Portal | <https://izara-doctor-portal-hvht4obouq-as.a.run.app> |
-| Meeting Server | <https://izara-jitsi-meeting-portal-hvht4obouq-as.a.run.app> |
+| Patient Portal | <https://izara-patient-portal-724889190329.asia-southeast1.run.app> |
+| Doctor Portal | <https://izara-doctor-portal-724889190329.asia-southeast1.run.app> |
+| Meeting Server | <https://izara-jitsi-meeting-portal-724889190329.asia-southeast1.run.app> |
 
-### Cloud URLs (Dev — v1.5.1)
+### No Dev Environment
 
-| Service | URL |
-| ------- | --- |
-| Patient Portal | <https://izara-patient-portal-dev-testing-hvht4obouq-as.a.run.app> |
-| Doctor Portal | <https://izara-doctor-portal-dev-testing-hvht4obouq-as.a.run.app> |
-| Meeting Server | <https://izara-meeting-server-dev-testing-hvht4obouq-as.a.run.app> |
+Dev testing removed to reduce Cloud Run costs. Test locally via Docker, then deploy directly to production.
 
 ---
 
@@ -408,7 +399,7 @@ Isara-Anywhere/
 │   └── packages/             # Shared packages (api-client, ui, shared)
 │       └── shared/src/db/    # SQLite schema, localDb, offlineQueue
 ├── tests/
-│   ├── unit/                 # Vitest unit tests (311 tests, 10 suites)
+│   ├── unit/                 # Vitest unit tests (409 tests, 15 suites)
 │   └── e2e/                  # Playwright E2E tests (808 tests, 10 specs)
 │       ├── specs/            # 10 test spec files (01-10)
 │       └── lib/              # Shared test config & helpers
@@ -437,7 +428,7 @@ Isara-Anywhere/
 
 ---
 
-## 🔒 Security (v1.5.1 Hardened)
+## 🔒 Security (v1.5.3 Hardened)
 
 - **Authentication**: bcrypt password hashing (10 rounds), JWT + session tokens
 - **JWT Secrets**: Consistent `JWT_SECRET_FINAL` usage across all verify calls (sign/verify mismatch fixed)

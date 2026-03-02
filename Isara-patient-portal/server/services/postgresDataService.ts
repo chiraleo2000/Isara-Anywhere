@@ -1764,6 +1764,64 @@ export const UserSettingsService = {
   }
 };
 
+// ============================================================================
+// Lab & Imaging Orders Service (Patient View - Read-Only)
+// ============================================================================
+
+const LabOrderService = {
+  async getPatientLabOrders(patientId: string) {
+    const result = await pool.query(
+      `SELECT lo.*, 
+              u_doc.name as doctor_name, u_doc.name_thai as doctor_name_thai
+       FROM lab_orders lo
+       LEFT JOIN users u_doc ON lo.doctor_id = u_doc.id
+       WHERE lo.patient_id = $1
+       ORDER BY lo.created_at DESC`,
+      [patientId]
+    );
+    return result.rows;
+  },
+
+  async getLabOrderById(labOrderId: string, patientId: string) {
+    const result = await pool.query(
+      `SELECT lo.*, 
+              u_doc.name as doctor_name, u_doc.name_thai as doctor_name_thai
+       FROM lab_orders lo
+       LEFT JOIN users u_doc ON lo.doctor_id = u_doc.id
+       WHERE lo.id = $1 AND lo.patient_id = $2`,
+      [labOrderId, patientId]
+    );
+    return result.rows[0] || null;
+  }
+};
+
+const ImagingOrderService = {
+  async getPatientImagingOrders(patientId: string) {
+    const result = await pool.query(
+      `SELECT io.*, 
+              u_doc.name as doctor_name, u_doc.name_thai as doctor_name_thai
+       FROM imaging_orders io
+       LEFT JOIN users u_doc ON io.doctor_id = u_doc.id
+       WHERE io.patient_id = $1
+       ORDER BY io.created_at DESC`,
+      [patientId]
+    );
+    return result.rows;
+  },
+
+  async getImagingOrderById(orderId: string, patientId: string) {
+    const result = await pool.query(
+      `SELECT io.*, 
+              u_doc.name as doctor_name, u_doc.name_thai as doctor_name_thai
+       FROM imaging_orders io
+       LEFT JOIN users u_doc ON io.doctor_id = u_doc.id
+       WHERE io.id = $1 AND io.patient_id = $2`,
+      [orderId, patientId]
+    );
+    return result.rows[0] || null;
+  }
+};
+
 // Export pool for direct queries if needed
 export { pool, usePostgres };
 
@@ -1785,6 +1843,8 @@ export default {
   ApiConnectionService,
   SyncService,
   UserSettingsService,
+  LabOrderService,
+  ImagingOrderService,
   pool,
   usePostgres,
 };

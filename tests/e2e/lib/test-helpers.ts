@@ -14,6 +14,7 @@ import {
   getAuthToken, getDoctorAuthToken, authHeaders,
   logTestSuccess, logTestWarning,
 } from './test-config';
+import { loadCachedUsers, getCachedUser } from './auth-store';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -49,34 +50,30 @@ export interface ContentItem {
 // AUTHENTICATION HELPERS
 // ═══════════════════════════════════════════════════════════════════════════════
 
-/** Authenticate all 5 users and return token map */
+/**
+ * Authenticate all 5 users — reads from the global-setup cache (ZERO API calls).
+ * Falls back to live API auth only if the cache file is missing.
+ */
 export async function authenticateAllUsers(request: APIRequestContext): Promise<Map<UserRole, AuthenticatedUser>> {
-  const users = new Map<UserRole, AuthenticatedUser>();
+  // ── Fast path: read from cache written by global-setup ──────────────
+  try {
+    return loadCachedUsers();
+  } catch {
+    // Cache missing — fall back to live auth (first run or globalSetup disabled)
+  }
 
-  // Patients login via patient portal
+  // ── Slow fallback: authenticate via API ─────────────────────────────
+  const users = new Map<UserRole, AuthenticatedUser>();
   const patientLogins = (['patient1', 'patient2', 'patient3'] as UserRole[]).map(async (role) => {
     const creds = CREDENTIALS[role];
     const token = await getAuthToken(request, PATIENT_URL, creds);
-    users.set(role, {
-      role, id: creds.id, token,
-      email: creds.email,
-      name: creds.name,
-      portalUrl: PATIENT_URL,
-    });
+    users.set(role, { role, id: creds.id, token, email: creds.email, name: creds.name, portalUrl: PATIENT_URL });
   });
-
-  // Doctor + Admin login via doctor portal
   const doctorLogins = (['doctor', 'admin'] as UserRole[]).map(async (role) => {
     const creds = CREDENTIALS[role];
     const token = await getDoctorAuthToken(request, DOCTOR_URL, creds);
-    users.set(role, {
-      role, id: creds.id, token,
-      email: creds.email,
-      name: creds.name,
-      portalUrl: DOCTOR_URL,
-    });
+    users.set(role, { role, id: creds.id, token, email: creds.email, name: creds.name, portalUrl: DOCTOR_URL });
   });
-
   await Promise.all([...patientLogins, ...doctorLogins]);
   return users;
 }
@@ -129,7 +126,11 @@ export async function closeMultiUserSession(session: MultiUserSession): Promise<
   }
 }
 
-/** Login a user via browser UI and return the page (with retry) */
+/**
+ * Login a user via browser — FAST path injects the cached JWT into
+ * localStorage so there is NO form-fill / submit / redirect wait.
+ * Falls back to UI login only if the cache is unavailable.
+ */
 export async function loginViaBrowser(
   page: Page,
   role: UserRole,
@@ -139,25 +140,130 @@ export async function loginViaBrowser(
   const isDoctor = role === 'doctor' || role === 'admin';
   const portalUrl = isDoctor ? DOCTOR_URL : PATIENT_URL;
 
+  // ── Fast path: inject token directly ────────────────────────────────
+  try {
+    const user = getCachedUser(role);
+    if (user.token) {
+      // Navigate to portal root first (needed to set localStorage on the correct origin)
+      await page.goto(`${portalUrl}/login`, { timeout: TIMEOUTS.navigation, waitUntil: 'domcontentloaded' });
+
+      // Inject auth into localStorage — must match EXACTLY what each portal reads:
+      //   Doctor portal (authServices.ts): token, izara_current_user, izara_session_expiry, izara_last_activity
+      //   Patient portal (AuthContext.tsx): auth_token, izara_user, izara_patient_last_activity
+      await page.evaluate(({ token, email, name, id, userRole, isDoctorPortal }) => {
+        const now = Date.now();
+        if (isDoctorPortal) {
+          localStorage.setItem('token', token);
+          localStorage.setItem('izara_current_user', JSON.stringify({
+            id, email, name, displayName: name, role: userRole,
+            doctorId: id, medicalLicenseNumber: 'TEST-LIC-001',
+            isActive: true, emailVerified: true,
+            isAdmin: userRole === 'admin',
+            adminPrivileges: userRole === 'admin'
+              ? { manageDoctors: true, manageAppointments: true, viewAllRecords: true, manageContent: true, systemSettings: true }
+              : undefined,
+            preferences: { theme: 'light', language: 'th', notifications: { email: true, push: true, sms: false } },
+          }));
+          localStorage.setItem('izara_session_expiry', (now + 3600000).toString());
+          localStorage.setItem('izara_last_activity', now.toString());
+        } else {
+          localStorage.setItem('auth_token', token);
+          localStorage.setItem('izara_user', JSON.stringify({ id, email, name, role: userRole }));
+          localStorage.setItem('izara_patient_last_activity', now.toString());
+        }
+        // Generic keys for components that read them directly
+        localStorage.setItem('izara_auth_token', token);
+        localStorage.setItem('user', JSON.stringify({ email, name, id, role: userRole, token }));
+      }, { token: user.token, email: user.email, name: user.name, id: user.id, userRole: role, isDoctorPortal: isDoctor });
+
+      // Navigate to dashboard — already "logged in" via localStorage
+      const dashPath = isDoctor ? `${portalUrl}/doctor/${user.id}/dashboard` : `${portalUrl}/dashboard`;
+      await page.goto(dashPath, { timeout: TIMEOUTS.navigation, waitUntil: 'domcontentloaded' });
+      return;
+    }
+  } catch {
+    // Cache unavailable — fall through to UI login
+  }
+
+  // ── Fallback: UI login ──────────────────────────────────────────────
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
       await page.goto(`${portalUrl}/login`, { timeout: TIMEOUTS.navigation });
       await page.fill('input[type="email"]', creds.email);
       await page.fill('input[type="password"]', creds.password);
       await page.click('button[type="submit"]');
-
-      // Wait for redirect to dashboard
       await page.waitForURL('**/dashboard**', { timeout: TIMEOUTS.long }).catch(() => {
-        // Some portals redirect to / instead of /dashboard
         return page.waitForURL('**/', { timeout: TIMEOUTS.medium });
       });
-      return; // success
+      return;
     } catch (err) {
       if (attempt === retries) throw err;
-      // Transient error — wait and retry
       await page.waitForTimeout(2000);
     }
   }
+}
+
+/**
+ * Navigate to ANY page in a portal with authentication already injected.
+ * Unlike loginViaBrowser (which always ends at dashboard), this lands on the
+ * exact `targetPath` you request.
+ *
+ * @param page       Playwright Page fixture
+ * @param role       UserRole to authenticate as
+ * @param targetPath The portal-relative path, e.g. '/appointments' for patient
+ *                   or '/doctor/DOC-TEST-001/schedule' for doctor.
+ *                   For doctor portal, pass the **full** sub-path including
+ *                   `/doctor/{userId}/...`; this helper prepends the portal base.
+ */
+export async function navigateWithAuth(
+  page: Page,
+  role: UserRole,
+  targetPath: string,
+): Promise<void> {
+  const isDoctor = role === 'doctor' || role === 'admin';
+  const portalUrl = isDoctor ? DOCTOR_URL : PATIENT_URL;
+
+  const user = getCachedUser(role);
+  // Navigate to login page to set localStorage on the correct origin
+  await page.goto(`${portalUrl}/login`, {
+    timeout: TIMEOUTS.navigation,
+    waitUntil: 'domcontentloaded',
+  });
+
+  // Inject auth into localStorage — keys must match each portal exactly
+  await page.evaluate(
+    ({ token, email, name, id, userRole, isDoctorPortal }) => {
+      const now = Date.now();
+      if (isDoctorPortal) {
+        localStorage.setItem('token', token);
+        localStorage.setItem('izara_current_user', JSON.stringify({
+          id, email, name, displayName: name, role: userRole,
+          doctorId: id, medicalLicenseNumber: 'TEST-LIC-001',
+          isActive: true, emailVerified: true,
+          isAdmin: userRole === 'admin',
+          adminPrivileges: userRole === 'admin'
+            ? { manageDoctors: true, manageAppointments: true, viewAllRecords: true, manageContent: true, systemSettings: true }
+            : undefined,
+          preferences: { theme: 'light', language: 'th', notifications: { email: true, push: true, sms: false } },
+        }));
+        localStorage.setItem('izara_session_expiry', (now + 3600000).toString());
+        localStorage.setItem('izara_last_activity', now.toString());
+      } else {
+        localStorage.setItem('auth_token', token);
+        localStorage.setItem('izara_user', JSON.stringify({ id, email, name, role: userRole }));
+        localStorage.setItem('izara_patient_last_activity', now.toString());
+      }
+      localStorage.setItem('izara_auth_token', token);
+      localStorage.setItem('user', JSON.stringify({ email, name, id, role: userRole, token }));
+    },
+    { token: user.token, email: user.email, name: user.name, id: user.id, userRole: role, isDoctorPortal: isDoctor },
+  );
+
+  // Navigate to the requested page
+  await page.goto(`${portalUrl}${targetPath}`, {
+    timeout: TIMEOUTS.navigation,
+    waitUntil: 'domcontentloaded',
+  });
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -278,13 +384,18 @@ export async function navigateAndVerify(
   return { loaded: true, errors };
 }
 
-/** Take a labeled screenshot for evidence */
+/** Take a labeled screenshot for evidence — never throws */
 export async function screenshot(page: Page, label: string): Promise<void> {
-  await page.screenshot({
-    path: `test-results/screenshots/${label.replaceAll(/[^a-zA-Z0-9-_]/g, '_')}.png`,
-    fullPage: true,
-    timeout: TIMEOUTS.long,
-  });
+  const safeName = label.replaceAll(/[^a-zA-Z0-9-_]/g, '_');
+  try {
+    await page.screenshot({
+      path: `test-results/screenshots/${safeName}.png`,
+      fullPage: false,
+      timeout: 5000,  // Short timeout — screenshot is evidence, not a test gate
+    });
+  } catch {
+    // Swallow — screenshot failure must never fail a test
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

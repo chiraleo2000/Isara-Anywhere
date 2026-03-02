@@ -22,7 +22,7 @@ const DB_CONFIG = {
 };
 
 // API Base URL (backend handles actual DB connection)
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3010';
+const API_BASE = import.meta.env.VITE_API_URL || '';
 
 // ============================================================================
 // TYPES
@@ -244,7 +244,7 @@ async function apiRequest<T>(
   body?: any
 ): Promise<DBQueryResult<T>> {
   try {
-    const response = await fetch(`${API_BASE}/api/db${endpoint}`, {
+    const response = await fetch(`${API_BASE}/api${endpoint}`, {
       method,
       headers: {
         'Content-Type': 'application/json',

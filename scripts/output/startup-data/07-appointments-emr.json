@@ -1,0 +1,134 @@
+{
+  "description": "Appointments and EMR records demo data for cloud-dev testing",
+  "version": "2.0.0",
+  "tables": ["appointments", "emr"],
+  "data": {
+    "appointments": [
+      {
+        "id": "APT-DEMO-001",
+        "patient_id": "PATIENT-DEMO",
+        "doctor_id": "DOC-TEST-001",
+        "date": "2026-03-10",
+        "time": "09:00",
+        "type": "follow_up",
+        "status": "completed",
+        "chief_complaint": "Follow-up for hypertension management",
+        "notes": "Blood pressure well controlled. Continue current medication.",
+        "created_at": "2026-03-08T10:00:00Z"
+      },
+      {
+        "id": "APT-DEMO-002",
+        "patient_id": "PATIENT-SOMCHAI",
+        "doctor_id": "DOC-TEST-001",
+        "date": "2026-03-12",
+        "time": "10:00",
+        "type": "follow_up",
+        "status": "completed",
+        "chief_complaint": "Diabetes and cholesterol follow-up",
+        "notes": "HbA1c elevated, lipid panel abnormal. Adjusted medications.",
+        "created_at": "2026-03-10T08:00:00Z"
+      },
+      {
+        "id": "APT-DEMO-003",
+        "patient_id": "PATIENT-ANAN",
+        "doctor_id": "DOC-SPECIALIST-001",
+        "date": "2026-03-15",
+        "time": "08:30",
+        "type": "new_visit",
+        "status": "completed",
+        "chief_complaint": "Heartburn and acid reflux for 2 weeks",
+        "notes": "Started PPI therapy. Labs ordered for thyroid and liver function.",
+        "created_at": "2026-03-13T14:00:00Z"
+      },
+      {
+        "id": "APT-DEMO-004",
+        "patient_id": "PATIENT-DEMO",
+        "doctor_id": "DOC-SPECIALIST-001",
+        "date": "2026-03-20",
+        "time": "14:00",
+        "type": "teleconsultation",
+        "status": "scheduled",
+        "chief_complaint": "Cardiac evaluation referral",
+        "notes": null,
+        "created_at": "2026-03-15T11:00:00Z"
+      },
+      {
+        "id": "APT-DEMO-005",
+        "patient_id": "PATIENT-SOMCHAI",
+        "doctor_id": "DOC-TEST-001",
+        "date": "2026-06-12",
+        "time": "10:00",
+        "type": "follow_up",
+        "status": "scheduled",
+        "chief_complaint": "3-month diabetes follow-up with repeat labs",
+        "notes": null,
+        "created_at": "2026-03-12T10:45:00Z"
+      }
+    ],
+    "emr": [
+      {
+        "id": "EMR-DEMO-001",
+        "appointment_id": "APT-DEMO-001",
+        "patient_id": "PATIENT-DEMO",
+        "doctor_id": "DOC-TEST-001",
+        "subjective": "Patient reports feeling well. No headaches, dizziness or chest pain. Taking medication regularly.",
+        "objective": "BP: 128/82 mmHg, HR: 72 bpm, Temp: 36.6°C, Weight: 75 kg. Heart: Regular rhythm, no murmurs. Lungs: Clear bilateral.",
+        "assessment": "Essential hypertension - well controlled on current regimen.",
+        "plan": "Continue Amlodipine 5mg daily. Routine blood work ordered (CBC, FBS). Follow up in 3 months.",
+        "vitals": {
+          "blood_pressure_systolic": 128,
+          "blood_pressure_diastolic": 82,
+          "heart_rate": 72,
+          "temperature": 36.6,
+          "weight": 75,
+          "height": 175,
+          "bmi": 24.5
+        },
+        "diagnosis_codes": ["I10"],
+        "created_at": "2026-03-10T09:30:00Z"
+      },
+      {
+        "id": "EMR-DEMO-002",
+        "appointment_id": "APT-DEMO-002",
+        "patient_id": "PATIENT-SOMCHAI",
+        "doctor_id": "DOC-TEST-001",
+        "subjective": "Increased thirst and frequent urination for past month. No vision changes. Occasional fatigue.",
+        "objective": "BP: 142/88 mmHg, HR: 78 bpm, Temp: 36.5°C, Weight: 82 kg. Fundoscopy: No retinopathy. Feet exam: Sensation intact.",
+        "assessment": "Type 2 Diabetes with suboptimal glycemic control (HbA1c 7.8%). Dyslipidemia. Hypertension Stage 1.",
+        "plan": "Start Metformin 500mg BID. Start Atorvastatin 20mg QHS. Start Losartan 50mg daily. Chest X-ray for cardiac eval. Repeat labs in 3 months. Dietary counseling.",
+        "vitals": {
+          "blood_pressure_systolic": 142,
+          "blood_pressure_diastolic": 88,
+          "heart_rate": 78,
+          "temperature": 36.5,
+          "weight": 82,
+          "height": 170,
+          "bmi": 28.4
+        },
+        "diagnosis_codes": ["E11.65", "E78.5", "I10"],
+        "created_at": "2026-03-12T10:45:00Z"
+      },
+      {
+        "id": "EMR-DEMO-003",
+        "appointment_id": "APT-DEMO-003",
+        "patient_id": "PATIENT-ANAN",
+        "doctor_id": "DOC-SPECIALIST-001",
+        "subjective": "Burning sensation in chest area after meals for 2 weeks. Worse when lying down. No weight loss. No dysphagia.",
+        "objective": "BP: 118/72 mmHg, HR: 68 bpm, Temp: 36.4°C, Weight: 68 kg. Abdomen: Soft, epigastric tenderness. No hepatomegaly.",
+        "assessment": "Gastroesophageal reflux disease (GERD). Rule out thyroid disorder.",
+        "plan": "Start Omeprazole 20mg daily before breakfast. Lifestyle modifications (avoid late meals, elevate head of bed). Labs: Thyroid function, Liver function panel. Follow up in 2 weeks.",
+        "vitals": {
+          "blood_pressure_systolic": 118,
+          "blood_pressure_diastolic": 72,
+          "heart_rate": 68,
+          "temperature": 36.4,
+          "weight": 68,
+          "height": 172,
+          "bmi": 23.0
+        },
+        "diagnosis_codes": ["K21.0"],
+        "created_at": "2026-03-15T09:00:00Z"
+      }
+    ]
+  }
+}

@@ -1386,7 +1386,7 @@ router.post('/:appointmentId/invite', async (req: Request, res: Response) => {
     
     // Generate the invite URL
     // This URL should be shared with the guest
-    const baseUrl = process.env.APP_URL || 'https://izara-patient-portal-hvht4obouq-as.a.run.app';
+    const baseUrl = process.env.APP_URL || 'https://izara-patient-portal-724889190329.asia-southeast1.run.app';
     const inviteUrl = `${baseUrl}/meeting/join?token=${inviteToken}`;
     
     // Also create direct Jitsi URL for the guest

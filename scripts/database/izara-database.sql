@@ -1322,10 +1322,10 @@ INSERT INTO push_subscriptions (id, user_id, appointment_reminders, medication_r
 ON CONFLICT DO NOTHING;
 
 INSERT INTO user_api_connections (id, user_id, service_type, service_url, connection_status, metadata) VALUES
-('CONN-SOMCHAI-PAT', 'PATIENT-SOMCHAI', 'patient_portal', 'https://izara-patient-portal-dev-testing-hvht4obouq-as.a.run.app', 'active', '{"version": "1.4.8"}'::jsonb),
-('CONN-SOMCHAI-MEET', 'PATIENT-SOMCHAI', 'meeting_server', 'https://izara-meeting-server-dev-testing-hvht4obouq-as.a.run.app', 'active', '{"version": "1.0.0"}'::jsonb),
-('CONN-DOC-DOC', 'DOC-TEST-001', 'doctor_portal', 'https://izara-doctor-portal-dev-testing-hvht4obouq-as.a.run.app', 'active', '{"version": "1.4.8"}'::jsonb),
-('CONN-DOC-MEET', 'DOC-TEST-001', 'meeting_server', 'https://izara-meeting-server-dev-testing-hvht4obouq-as.a.run.app', 'active', '{"version": "1.0.0"}'::jsonb)
+('CONN-SOMCHAI-PAT', 'PATIENT-SOMCHAI', 'patient_portal', 'https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app', 'active', '{"version": "1.4.8"}'::jsonb),
+('CONN-SOMCHAI-MEET', 'PATIENT-SOMCHAI', 'meeting_server', 'https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app', 'active', '{"version": "1.0.0"}'::jsonb),
+('CONN-DOC-DOC', 'DOC-TEST-001', 'doctor_portal', 'https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app', 'active', '{"version": "1.4.8"}'::jsonb),
+('CONN-DOC-MEET', 'DOC-TEST-001', 'meeting_server', 'https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app', 'active', '{"version": "1.0.0"}'::jsonb)
 ON CONFLICT DO NOTHING;
 
 INSERT INTO user_settings (user_id, theme, language, biometric_enabled, auto_sync, last_active_role, onboarding_completed) VALUES

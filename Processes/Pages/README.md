@@ -1,8 +1,8 @@
 # 📄 Izara Telemedicine — Page-by-Page Documentation
 
-**Version:** 1.4.7  
-**Last Updated:** January 2025  
-**Status:** ✅ Phase 1 — Comprehensive Meeting Workflow Documentation
+**Version:** 1.5.2  
+**Last Updated:** March 2026  
+**Status:** ✅ Phase 1 Complete — Web Platform Documentation
 
 ---
 
@@ -123,9 +123,9 @@ Pages/
 
 | Service | Local URL | Cloud URL |
 | ------- | --------- | --------- |
-| Patient Portal | <http://localhost:3005> | <https://izara-patient-portal-hvht4obouq-as.a.run.app> |
-| Doctor Portal | <http://localhost:3010> | <https://izara-doctor-portal-hvht4obouq-as.a.run.app> |
-| Meeting Server | <http://localhost:3020> | <https://izara-jitsi-meeting-portal-hvht4obouq-as.a.run.app> |
+| Patient Portal | <http://localhost:3005> | <https://izara-patient-portal-724889190329.asia-southeast1.run.app> |
+| Doctor Portal | <http://localhost:3010> | <https://izara-doctor-portal-724889190329.asia-southeast1.run.app> |
+| Meeting Server | <http://localhost:3020> | <https://izara-jitsi-meeting-portal-724889190329.asia-southeast1.run.app> |
 
 ---
 

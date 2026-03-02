@@ -16,7 +16,7 @@ import {
 } from './gcsDataService';
 
 // API base URL (proxied through Vite to GCS API server)
-const API_BASE_URL = '/api';
+const API_BASE_URL = '';
 
 // GCS Buckets from configuration
 const BUCKETS = {
@@ -126,7 +126,7 @@ export class RecordingStorageService {
     }));
 
     try {
-      const response = await fetch(`${API_BASE_URL}/storage/upload`, {
+      const response = await fetch(`${API_BASE_URL}/api/storage/upload`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${authService.getToken()}`,
@@ -917,7 +917,7 @@ export class StorageService {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/storage/upload`, {
+      const response = await fetch(`${API_BASE_URL}/api/storage/upload`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${authService.getToken()}`,

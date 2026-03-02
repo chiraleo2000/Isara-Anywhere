@@ -37,6 +37,7 @@ interface Doctor {
   experience: number;
   patientsHandled: number;
   isVerified: boolean;
+  approvalStatus?: 'approved' | 'rejected' | 'pending'; // only 'approved' shown here
 }
 
 // ============================================================================
@@ -233,24 +234,37 @@ const DoctorsManagement: React.FC = () => {
       try {
         const loaded = await fetchAllDoctors();
         if (Array.isArray(loaded) && loaded.length > 0) {
-          const normalized = loaded.map((d: any, idx: number) => ({
-            id: d.id || `doc-${idx + 1}`,
-            name: d.name || d.fullName || 'Unknown Doctor',
-            specialty: d.specialty || d.department || 'General Practice',
-            department: d.department || 'Primary Care',
-            hospital: d.hospital || 'Izara Health Center',
-            phone: d.phone || d.contact?.phone || '',
-            email: d.email || d.contact?.email || '',
-            photo: d.photo || d.avatarUrl || `https://i.pravatar.cc/150?u=${d.id || idx}`,
-            licenseNumber: d.medicalLicenseNumber || d.licenseNumber || 'N/A',
-            status: d.status || (d.isActive === false ? 'inactive' : 'active'),
-            joinDate: d.joinDate || new Date().toISOString().split('T')[0],
-            languages: d.languages || ['Thai'],
-            experience: d.experience || 0,
-            patientsHandled: d.patientsHandled || 0,
-            isVerified: d.isVerified ?? d.approvalStatus === 'approved',
-          })) as Doctor[];
-          setDoctors(normalized);
+          const rawApprovalStatus = (d: any): 'approved' | 'rejected' | 'pending' => {
+            const s = d.approvalStatus || d.approval_status || '';
+            if (s === 'rejected') return 'rejected';
+            if (s === 'pending') return 'pending';
+            // if is_approved flag present
+            if (d.is_approved === true || d.isVerified === true) return 'approved';
+            // default: treat as approved if no explicit pending/rejected
+            return s === '' ? 'approved' : 'pending';
+          };
+          const normalized = loaded
+            .map((d: any, idx: number) => ({
+              id: d.id || `doc-${idx + 1}`,
+              name: d.name || d.fullName || 'Unknown Doctor',
+              specialty: d.specialty || d.department || 'General Practice',
+              department: d.department || 'Primary Care',
+              hospital: d.hospital || 'Izara Health Center',
+              phone: d.phone || d.contact?.phone || '',
+              email: d.email || d.contact?.email || '',
+              photo: d.photo || d.avatarUrl || `https://i.pravatar.cc/150?u=${d.id || idx}`,
+              licenseNumber: d.medicalLicenseNumber || d.licenseNumber || 'N/A',
+              status: d.status || (d.isActive === false ? 'inactive' : 'active'),
+              joinDate: d.joinDate || new Date().toISOString().split('T')[0],
+              languages: d.languages || ['Thai'],
+              experience: d.experience || 0,
+              patientsHandled: d.patientsHandled || 0,
+              isVerified: d.isVerified ?? (rawApprovalStatus(d) === 'approved'),
+              approvalStatus: rawApprovalStatus(d),
+            })) as Doctor[];
+          // ✅ ONLY show approved doctors — pending registrations belong in อนุมัติแพทย์ใหม่
+          const approvedOnly = normalized.filter(d => d.approvalStatus === 'approved');
+          setDoctors(approvedOnly);
         }
       } catch (err) {
         console.error('Failed to load doctors from GCS, using mock data', err);
@@ -260,6 +274,8 @@ const DoctorsManagement: React.FC = () => {
   }, []);
 
   const filteredDoctors = doctors.filter((doctor) => {
+    // Only approved doctors should ever appear on this page
+    if (doctor.approvalStatus === 'pending' || doctor.approvalStatus === 'rejected') return false;
     const matchesSearch =
       doctor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       doctor.specialty.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -408,7 +424,9 @@ const DoctorsManagement: React.FC = () => {
             <UserGroupIcon className="w-8 h-8 text-emerald-600" />
             {label('pageTitle')}
           </h1>
-          <p className={isDark ? 'text-gray-400 mt-1' : 'text-gray-600 mt-1'}>Manage all doctors in the system</p>
+          <p className={isDark ? 'text-gray-400 mt-1' : 'text-gray-600 mt-1'}>
+            {language === 'th' ? 'แพทย์ที่ได้รับการอนุมัติให้ใช้งานแล้วเท่านั้น' : 'Approved & active doctors only — pending registrations are in New Doctor Approval'}
+          </p>
         </div>
         <button
           onClick={() => setShowAddModal(true)}

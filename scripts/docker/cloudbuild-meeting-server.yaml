@@ -1,4 +1,4 @@
-# Cloud Build configuration for Izara Meeting Server v2.0.0
+# Cloud Build configuration for Izara Meeting Server v1.5.2
 # Builds and deploys Jitsi Meeting Server to Cloud Run with PostgreSQL connection
 # Build context: Izara-jitsi-server/. Submit with: gcloud builds submit --config=../scripts/docker/cloudbuild-meeting-server.yaml .
 
@@ -10,7 +10,7 @@ steps:
       - "-f"
       - "Dockerfile"
       - "-t"
-      - "asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-jitsi-meeting:v2.0.0"
+      - "asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-jitsi-meeting:v1.5.2"
       - "-t"
       - "asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-jitsi-meeting:latest"
       - "."
@@ -28,7 +28,7 @@ steps:
       - "run"
       - "deploy"
       - "izara-jitsi-meeting-portal"
-      - "--image=asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-jitsi-meeting:v2.0.0"
+      - "--image=asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-jitsi-meeting:v1.5.2"
       - "--region=asia-southeast1"
       - "--platform=managed"
       - "--allow-unauthenticated"
@@ -38,12 +38,12 @@ steps:
       - "--min-instances=0"
       - "--max-instances=10"
       - "--timeout=300"
-      - "--set-env-vars=NODE_ENV=production,PORT=3020,DB_HOST=34.143.228.135,DB_PORT=5432,DB_NAME=izara_phase1,DB_USER=postgres,JITSI_DOMAIN=meet.jit.si,GEMINI_MODEL=gemini-2.0-flash-exp,CORS_ORIGINS=https://izara-patient-portal-hvht4obouq-as.a.run.app,https://izara-doctor-portal-hvht4obouq-as.a.run.app"
+      - "--set-env-vars=NODE_ENV=production,PORT=3020,DB_HOST=34.143.228.135,DB_PORT=5432,DB_NAME=izara_phase1,DB_USER=postgres,JITSI_DOMAIN=meet.jit.si,GEMINI_MODEL=gemini-2.0-flash-exp,CORS_ORIGINS=https://izara-patient-portal-724889190329.asia-southeast1.run.app,https://izara-doctor-portal-724889190329.asia-southeast1.run.app"
       - "--set-secrets=DB_PASSWORD=db-password:latest,DATABASE_URL=database-url:latest,GEMINI_API_KEY=gemini-api-key:latest,GOOGLE_SPEECH_API_KEY=google-speech-api-key:latest"
 
 # Store images in Artifact Registry
 images:
-  - "asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-jitsi-meeting:v2.0.0"
+  - "asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-jitsi-meeting:v1.5.2"
   - "asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-jitsi-meeting:latest"
 
 # Build timeout (15 minutes)

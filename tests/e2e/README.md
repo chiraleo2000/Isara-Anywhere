@@ -145,17 +145,17 @@ Tests use Playwright's `browser.newContext()` to open **separate browser windows
 
 | Service | URL |
 | --------- | ----- |
-| Patient Portal | <https://izara-patient-portal-hvht4obouq-as.a.run.app> |
-| Doctor Portal | <https://izara-doctor-portal-hvht4obouq-as.a.run.app> |
-| Meeting Server | <https://izara-meeting-server-hvht4obouq-as.a.run.app> |
+| Patient Portal | <https://izara-patient-portal-724889190329.asia-southeast1.run.app> |
+| Doctor Portal | <https://izara-doctor-portal-724889190329.asia-southeast1.run.app> |
+| Meeting Server | <https://izara-meeting-server-724889190329.asia-southeast1.run.app> |
 
 ### Cloud-Dev
 
 | Service | URL |
 | --------- | ----- |
-| Patient Portal | <https://izara-patient-portal-dev-testing-hvht4obouq-as.a.run.app> |
-| Doctor Portal | <https://izara-doctor-portal-dev-testing-hvht4obouq-as.a.run.app> |
-| Meeting Server | <https://izara-meeting-server-dev-testing-hvht4obouq-as.a.run.app> |
+| Patient Portal | <https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app> |
+| Doctor Portal | <https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app> |
+| Meeting Server | <https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app> |
 
 ---
 

@@ -189,13 +189,16 @@ if (process.env.NODE_ENV === 'production') {
   ALLOWED_ORIGINS.push(
     'https://doctor.izara.com',
     'https://izara.com',
-    'https://izara-doctor-portal-hvht4obouq-as.a.run.app',
-    'https://izara-patient-portal-hvht4obouq-as.a.run.app',
-    'https://izara-jitsi-meeting-portal-hvht4obouq-as.a.run.app',
+    'https://izara-doctor-portal-724889190329.asia-southeast1.run.app',
+    'https://izara-patient-portal-724889190329.asia-southeast1.run.app',
+    'https://izara-jitsi-meeting-portal-724889190329.asia-southeast1.run.app',
+    'https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app',
+    'https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app',
+    'https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app',
   );
 }
-// Regex pattern for Cloud Run dynamic URLs
-const CLOUD_RUN_PATTERN = /^https:\/\/izara-[a-z-]+-hvht4obouq-as\.a\.run\.app$/;
+// Regex pattern for Cloud Run dynamic URLs (both old hvht4obouq and new 724889190329 formats)
+const CLOUD_RUN_PATTERN = /^https:\/\/izara-[a-z0-9-]+(-hvht4obouq-as\.a\.run\.app|-724889190329\.asia-southeast1\.run\.app)$/;
 
 // ============================================================================
 // MIDDLEWARE - OWASP SECURITY
@@ -2102,7 +2105,7 @@ const profileUpdateHandler = async (req, res) => {
       values.push(avatarUrl);
     }
     if (displayName !== undefined) {
-      updates.push(`display_name = $${paramCount++}`);
+      updates.push(`name = $${paramCount++}`);
       values.push(displayName);
     }
     if (phone !== undefined) {
@@ -2110,12 +2113,8 @@ const profileUpdateHandler = async (req, res) => {
       values.push(phone);
     }
     if (specialization !== undefined) {
-      updates.push(`specialization = $${paramCount++}`);
+      updates.push(`specialty = $${paramCount++}`);
       values.push(specialization);
-    }
-    if (bio !== undefined) {
-      updates.push(`bio = $${paramCount++}`);
-      values.push(bio);
     }
 
     if (updates.length > 0) {
@@ -2166,11 +2165,12 @@ const getProfileHandler = async (req, res) => {
     if (pgPool) {
       try {
         const result = await pgPool.query(
-          'SELECT id, email, display_name, role, specialization, phone, avatar_url, medical_license_number, created_at FROM users WHERE id = $1',
+          'SELECT id, email, name, name_thai, role, specialty, phone, avatar_url, medical_license_number, is_admin, is_active, created_at FROM users WHERE id = $1',
           [userId]
         );
         if (result.rows.length > 0) {
-          return res.json({ success: true, user: result.rows[0] });
+          const u = result.rows[0];
+          return res.json({ success: true, user: { ...u, display_name: u.name, specialization: u.specialty } });
         }
       } catch (error_) {
         console.log('[AUTH] DB query error for profile:', error_.message);
@@ -2183,6 +2183,7 @@ const getProfileHandler = async (req, res) => {
         email: decoded.email || '',
         role: decoded.role || 'doctor',
         display_name: decoded.name || decoded.displayName || '',
+        name: decoded.name || decoded.displayName || '',
       }
     });
   } catch (error) {
@@ -2211,11 +2212,12 @@ app.get('/auth/me', async (req, res) => {
     if (pgPool) {
       try {
         const result = await pgPool.query(
-          'SELECT id, email, display_name, role, specialization, phone, avatar_url, medical_license_number, created_at FROM users WHERE id = $1',
+          'SELECT id, email, name, name_thai, role, specialty, phone, avatar_url, medical_license_number, is_admin, is_active, created_at FROM users WHERE id = $1',
           [userId]
         );
         if (result.rows.length > 0) {
-          return res.json({ success: true, user: result.rows[0] });
+          const u = result.rows[0];
+          return res.json({ success: true, user: { ...u, display_name: u.name, specialization: u.specialty } });
         }
       } catch (error_) {
         console.log('[AUTH] DB query error for /auth/me:', error_.message);

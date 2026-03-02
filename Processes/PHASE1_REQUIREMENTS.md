@@ -1,8 +1,8 @@
 # Izara Telemedicine - Phase 1 Requirements
 
-**Version:** 1.4.7  
-**Last Updated:** January 2025  
-**Status:** ✅ Phase 1 — Comprehensive Meeting Workflow (Core Deliverable)
+**Version:** 1.5.2  
+**Last Updated:** March 2026  
+**Status:** ✅ Phase 1 Complete — Web Platform (v1.5.2)
 
 ---
 
@@ -42,7 +42,7 @@ Phase 1 focuses on core telemedicine functionality with AI-assisted clinical wor
 | **3.2** | Meeting Transcription | ระบบ transcript หลังบ้านใน meeting และประเมินช่วงเวลาให้ AI สรุปอาการผู้ป่วย | ✅ API Verified |
 | **3.3** | AI Knowledge System | ระบบ chat หลังบ้านมี knowledge data, system prompt และ chat history ไว้สำหรับช่วยเหลือหมอในฝั่งเอกสาร | ✅ Done |
 | **3.4** | Gemini Fine-Tuning | ระบบที่อาจ Fine-tune Gemini LLM model ให้ทำงานเฉพาะทางในโปรเจคนี้ได้ | 📋 Phase 2 |
-| **3.5** | Device Speech-to-Text | ใช้ฟีเจอร์ Speech-to-Text ที่มีอยู่บนอุปกรณ์ Mobile (ฟรี, มีประสิทธิภาพ) มาช่วยแปลงเสียงเป็นข้อความ | ✅ Web Speech API Ready |
+| **3.5** | Browser Speech-to-Text | ใช้ Web Speech API (browser-native, ฟรี, มีประสิทธิภาพ) มาช่วยแปลงเสียงเป็นข้อความ | ✅ Web Speech API Ready |
 
 ### 4. กรอบขอบเขตของ Project ใน Phase 1
 
@@ -76,7 +76,7 @@ Phase 1 focuses on core telemedicine functionality with AI-assisted clinical wor
 | **PB-02** | Meeting Transcription | ระบบ transcript หลังบ้านใน meeting สำหรับให้ AI สรุปอาการ |
 | **PB-03** | AI Knowledge System | ระบบ chat หลังบ้านมี knowledge data, system prompt และ chat history เพื่อช่วยเหลือหมอ |
 | **PB-04** | Gemini Fine-tuning | ระบบที่อาจ Fine-tune Gemini LLM model ให้ทำงานเฉพาะทาง |
-| **PB-05** | Device Speech-to-Text | ใช้ Speech-to-Text บน Mobile device (ฟรี, มีประสิทธิภาพ) แทนการพัฒนาระบบถอดเสียงเอง |
+| **PB-05** | Browser Speech-to-Text | ใช้ Web Speech API (browser-native, ฟรี) แทนการพัฒนาระบบถอดเสียงเอง |
 
 ---
 
@@ -97,13 +97,12 @@ Phase 1 focuses on core telemedicine functionality with AI-assisted clinical wor
 | Meeting Transcription | ✅ Done | P1 | PB-02, 3.2 |
 | Device Speech-to-Text | ✅ Done | P2 | PB-05, 3.5 |
 
-### Phase 2 Scope (Future)
+### Future Scope
 
 | Feature | Status | Priority | Owner Requirement |
 | --------- | -------- | ---------- | ------------------- |
 | Gemini Fine-Tuning Service | 📋 Planned | P2 | PB-04, 3.4 |
 | Advanced RAG with Embeddings | 📋 Planned | P2 | PB-03 |
-| Mobile App Development | 📋 Planned | P3 | - |
 
 ---
 

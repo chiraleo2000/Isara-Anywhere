@@ -36,7 +36,7 @@ param(
 $PROJECT_ID     = "izara-telemedicine"
 $REGION         = "asia-southeast1"
 $REGISTRY       = "asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals"
-$TAG            = "v1.5.1"
+$TAG            = "v1.5.2"
 $SUFFIX         = "-dev-testing"
 $ROOT_DIR       = (Resolve-Path "$PSScriptRoot\..\..").Path
 
@@ -66,7 +66,7 @@ $JWT_SECRET     = "izara-jwt-secret-key-phase1-2026-dev-testing"
 # GCE VM config
 $VM_NAME  = "izara-postgres-dev-testing"
 $VM_ZONE  = "asia-southeast1-b"
-$PG_HOST  = "35.240.162.227"
+$PG_HOST  = "35.240.157.230"
 $DATABASE_URL = "postgresql://${DB_USER}:${DB_PASSWORD}@${PG_HOST}:5432/${DB_NAME}"
 
 # ============================================================================
@@ -118,7 +118,7 @@ if ($Teardown) {
 # PRE-FLIGHT CHECKS
 # ============================================================================
 Write-Host "`n═══════════════════════════════════════════════════════════════" -ForegroundColor Magenta
-Write-Host "  IZARA TELEMEDICINE v1.5.1 — Cloud Run Deployment" -ForegroundColor Magenta
+Write-Host "  IZARA TELEMEDICINE v1.5.2 — Cloud Run Deployment" -ForegroundColor Magenta
 Write-Host "═══════════════════════════════════════════════════════════════" -ForegroundColor Magenta
 
 Write-Step "Pre-flight checks..."
@@ -200,7 +200,7 @@ if (-not $SkipBuild) {
     Push-Location "$ROOT_DIR\Isara-patient-portal"
     docker build -f Dockerfile.unified `
         --build-arg VITE_API_URL="" --build-arg VITE_APP_NAME="Izara Patient Portal (Dev)" `
-        --build-arg VITE_APP_VERSION="1.5.1" --build-arg VITE_APP_ENV=production `
+        --build-arg VITE_APP_VERSION="1.5.2" --build-arg VITE_APP_ENV=production `
         --build-arg VITE_USE_POSTGRESQL=true --build-arg VITE_MEETING_SERVER_URL=$MEETING_URL `
         --build-arg VITE_GOOGLE_MAPS_API_KEY=$MAPS_API_KEY --build-arg VITE_GOOGLE_MAPS_MAP_ID=$MAPS_MAP_ID `
         --build-arg VITE_GEMINI_API_KEY=$GEMINI_API_KEY --build-arg VITE_GEMINI_MODEL=gemini-2.5-flash-lite `
@@ -214,8 +214,8 @@ if (-not $SkipBuild) {
 Write-Step "Deploying Patient Portal ($SVC_PATIENT)..."
 gcloud run deploy $SVC_PATIENT `
     --image=$IMG_PATIENT --region=$REGION --platform=managed `
-    --allow-unauthenticated --port=3005 --memory=2Gi --cpu=2 `
-    --min-instances=0 --max-instances=10 --timeout=300 `
+    --allow-unauthenticated --port=3005 --memory=1Gi --cpu=1 `
+    --min-instances=0 --max-instances=3 --timeout=300 `
     --set-env-vars="NODE_ENV=production,DEMO_MODE=false,DATABASE_URL=$DATABASE_URL,DB_HOST=$PG_HOST,DB_PORT=5432,DB_NAME=$DB_NAME,DB_USER=$DB_USER,DB_PASSWORD=$DB_PASSWORD,DB_SSL=false,USE_POSTGRESQL=true,VITE_USE_POSTGRESQL=true,USE_GCS=false,VITE_USE_GCS=false,MEETING_SERVER_URL=$MEETING_URL,VITE_MEETING_SERVER_URL=$MEETING_URL,GOOGLE_MAPS_API_KEY=$MAPS_API_KEY,VITE_GOOGLE_MAPS_API_KEY=$MAPS_API_KEY,GEMINI_API_KEY=$GEMINI_API_KEY,GEMINI_MODEL=gemini-2.5-flash-lite,JWT_SECRET=$JWT_SECRET" `
     --quiet
 if ($LASTEXITCODE -ne 0) { Write-Err "Patient Portal deployment failed!"; exit 1 }
@@ -231,7 +231,7 @@ if (-not $SkipBuild) {
     docker build -f Dockerfile.unified `
         --build-arg VITE_API_URL="" --build-arg VITE_AUTH_URL="" `
         --build-arg VITE_APP_NAME="Izara Doctor Portal (Dev)" `
-        --build-arg VITE_APP_VERSION="1.5.1" --build-arg VITE_APP_ENV=production `
+        --build-arg VITE_APP_VERSION="1.5.2" --build-arg VITE_APP_ENV=production `
         --build-arg VITE_USE_POSTGRESQL=true --build-arg VITE_MEETING_SERVER_URL=$MEETING_URL `
         -t $IMG_DOCTOR .
     if ($LASTEXITCODE -ne 0) { Write-Err "Build failed!"; Pop-Location; exit 1 }
@@ -243,8 +243,8 @@ if (-not $SkipBuild) {
 Write-Step "Deploying Doctor Portal ($SVC_DOCTOR)..."
 gcloud run deploy $SVC_DOCTOR `
     --image=$IMG_DOCTOR --region=$REGION --platform=managed `
-    --allow-unauthenticated --port=8080 --memory=2Gi --cpu=2 `
-    --min-instances=0 --max-instances=10 --timeout=300 `
+    --allow-unauthenticated --port=8080 --memory=1Gi --cpu=1 `
+    --min-instances=0 --max-instances=3 --timeout=300 `
     --set-env-vars="NODE_ENV=production,DEMO_MODE=false,DATABASE_URL=$DATABASE_URL,DB_HOST=$PG_HOST,DB_PORT=5432,DB_NAME=$DB_NAME,DB_USER=$DB_USER,DB_PASSWORD=$DB_PASSWORD,DB_SSL=false,USE_POSTGRESQL=true,VITE_USE_POSTGRESQL=true,USE_GCS=false,VITE_USE_GCS=false,GCS_API_URL=http://localhost:3012,MEETING_SERVER_URL=$MEETING_URL,VITE_MEETING_SERVER_URL=$MEETING_URL,GEMINI_API_KEY=$GEMINI_API_KEY,GEMINI_MODEL=gemini-2.5-flash-lite,JWT_SECRET=$JWT_SECRET,JITSI_DOMAIN=meet.jit.si,GOOGLE_SPEECH_API_KEY=" `
     --execution-environment=gen2 --cpu-boost --quiet
 if ($LASTEXITCODE -ne 0) { Write-Err "Doctor Portal deployment failed!"; exit 1 }
@@ -263,7 +263,7 @@ Write-OK "CORS updated"
 # DEPLOYMENT SUMMARY
 # ============================================================================
 Write-Host "`n═══════════════════════════════════════════════════════════════" -ForegroundColor Green
-Write-Host "  DEPLOYMENT COMPLETE — Izara Telemedicine v1.5.1 Dev-Testing" -ForegroundColor Green
+Write-Host "  DEPLOYMENT COMPLETE — Izara Telemedicine v1.5.2 Dev-Testing" -ForegroundColor Green
 Write-Host "═══════════════════════════════════════════════════════════════" -ForegroundColor Green
 Write-Host ""
 Write-Host "  🖥️  PostgreSQL VM:   $PG_HOST`:5432 (GCE: $VM_NAME)" -ForegroundColor White

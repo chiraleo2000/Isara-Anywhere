@@ -107,14 +107,14 @@ $LOCAL_DOCTOR = "http://localhost:3010"
 $LOCAL_MEETING = "http://localhost:3020"
 
 # Cloud URLs (production)
-$CLOUD_PATIENT = "https://izara-patient-portal-hvht4obouq-as.a.run.app"
-$CLOUD_DOCTOR = "https://izara-doctor-portal-hvht4obouq-as.a.run.app"
-$CLOUD_MEETING = "https://izara-jitsi-meeting-portal-hvht4obouq-as.a.run.app"
+$CLOUD_PATIENT = "https://izara-patient-portal-724889190329.asia-southeast1.run.app"
+$CLOUD_DOCTOR = "https://izara-doctor-portal-724889190329.asia-southeast1.run.app"
+$CLOUD_MEETING = "https://izara-jitsi-meeting-portal-724889190329.asia-southeast1.run.app"
 
 # Cloud Dev-Testing URLs (isolated dev environment)
-$CLOUD_DEV_PATIENT = "https://izara-patient-portal-dev-testing-hvht4obouq-as.a.run.app"
-$CLOUD_DEV_DOCTOR = "https://izara-doctor-portal-dev-testing-hvht4obouq-as.a.run.app"
-$CLOUD_DEV_MEETING = "https://izara-meeting-server-dev-testing-hvht4obouq-as.a.run.app"
+$CLOUD_DEV_PATIENT = "https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app"
+$CLOUD_DEV_DOCTOR = "https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app"
+$CLOUD_DEV_MEETING = "https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app"
 
 # ============================================================================
 # HELPER FUNCTIONS

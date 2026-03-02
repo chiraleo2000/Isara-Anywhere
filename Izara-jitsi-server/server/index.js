@@ -1,8 +1,8 @@
 /**
  * Izara Jitsi Meeting Server — Phase 1 Complete
  * 
- * Version: 1.5.1
- * Updated: 2026-02-22
+ * Version: 1.5.3
+ * Updated: 2026-03-02
  * 
  * Main API server for:
  * - Meeting room management (Jitsi Meet - FREE)
@@ -151,8 +151,11 @@ const ALLOWED_ORIGINS = process.env.CORS_ORIGINS?.split(',') || [
 ];
 if (isProduction) {
   ALLOWED_ORIGINS.push(
-    'https://izara-patient-portal-hvht4obouq-as.a.run.app',
-    'https://izara-doctor-portal-hvht4obouq-as.a.run.app'
+    'https://izara-patient-portal-724889190329.asia-southeast1.run.app',
+    'https://izara-doctor-portal-724889190329.asia-southeast1.run.app',
+    'https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app',
+    'https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app',
+    'https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app'
   );
 }
 app.use(cors({
@@ -230,7 +233,7 @@ app.get('/health', (req, res) => {
   res.json({
     status: 'ok',
     service: 'izara-jitsi-server',
-    version: '1.5.1',
+    version: '1.5.3',
     timestamp: new Date().toISOString(),
     database: dbAvailable ? 'connected' : 'disconnected',
     features: {
@@ -247,7 +250,7 @@ app.get('/api/health', (req, res) => {
   res.json({
     status: dbAvailable ? 'healthy' : 'degraded',
     service: 'izara-jitsi-server',
-    version: '1.5.1',
+    version: '1.5.3',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     jitsiDomain: JITSI_DOMAIN,
