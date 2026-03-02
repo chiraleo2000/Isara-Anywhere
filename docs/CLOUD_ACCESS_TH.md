@@ -8,11 +8,15 @@ Service	URL	Status
 - Patient Portal	https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app	healthy
 - Doctor Portal	https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app	healthy
 
-Demo users (สำหรับทดสอบ)
+Demos users (สำหรับทดสอบ)
 
-- Patient: demo.test@gmail.com  / P@ssw0rd
-- Doctor: doctor.test@izara.com / IzaraDoctor@2024
-- Admin: admin.test@izara.com  / IzaraAdmin@2024
+| Role | Email | Password |
+| ---- | ----- | -------- |
+| Patient 1 | `demo.test@gmail.com` | `P@ssw0rd` |
+| Patient 2 | `Somchai.Mankong@gmail.com` | `P@ssw0rd` |
+| Patient 3 | `Anan.Khayanrian@gmail.com` | `P@ssw0rd` |
+| Doctor | `doctor.test@izara.com` | `IzaraDoctor@2024` |
+| Admin | `admin.test@izara.com` | `IzaraAdmin@2024` |
 
 วิธีการใช้งานด่วน
 
