@@ -1,10 +1,10 @@
 # Izara Telemedicine Platform - Technical Documentation
 
-> **Version:** 1.5.1 (Updated February 22, 2026)  
-> **Status:** Phase 1 Complete + Phase 2 In Progress (v1.5.1)  
+> **Version:** 1.5.4 (Updated March 8, 2026)  
+> **Status:** Phase 1 Complete — All Tests Passing (v1.5.4)  
 > **Database:** PostgreSQL 18 + pgvector  
 > **Stack:** PostgreSQL / Express / React / Jitsi / Gemini AI / Google Cloud  
-> **Tests:** 311 Unit Tests (Vitest) + 808 E2E Tests (Playwright) = 1,119 total across Local + Cloud-Dev
+> **Tests:** 1,419 Unit Tests (Vitest) + 1,191 E2E Tests (Playwright) = **2,610 total — 100% Pass Rate**
 
 ---
 
@@ -37,14 +37,6 @@ Isara-Anywhere/
 │   ├── server/                     # Express Backend API (Port 3010)
 │   └── Dockerfile.unified          # Production Container Config
 ├── Izara-jitsi-server/             # 📹 Video Meeting & Transcription (Port 3020)
-├── Isara-mobile/                   # 📱 Mobile App (Expo SDK 52 + React Native)
-│   ├── app/                        # Expo Router screens & tabs
-│   ├── src/stores/                 # Zustand stores (authStore, syncStore)
-│   ├── src/services/               # Sync engine coordinator
-│   └── packages/                   # Monorepo shared packages
-│       ├── api-client/             # Typed API client (Patient + Doctor)
-│       ├── shared/src/db/          # SQLite schema, localDb, offlineQueue
-│       └── ui/                     # Shared UI components
 ├── specs/                          # 📑 Specification Documents
 │   ├── SPEC_KIT_PHASE1.md          # Phase 1 combined requirements
 │   └── SPEC_KIT_PHASE2.md          # Phase 2 mobile + sync requirements
@@ -57,16 +49,15 @@ Isara-Anywhere/
 │   ├── cloud-db-tool.cjs           # Database Operations Tool
 │   ├── database/                   # SQL Init Scripts
 │   └── deprecated/                 # Old scripts (archived)
-├── tests/                          # 🧪 Testing (1,119 total tests)
-│   ├── unit/                       # ⭐ Vitest unit tests (311 tests, 10 suites)
-│   │   ├── doctor-portal/          # Drug DB, config tests
-│   │   ├── patient-portal/         # PHR, API service tests
-│   │   ├── mobile/                 # Utils, API client, sync tests
-│   │   ├── meeting-server/         # Jitsi, CDS rule tests
-│   │   ├── security/               # OWASP, password policy tests
-│   │   └── database/               # Schema, FSM, RBAC tests
-│   └── e2e/                        # Playwright E2E tests (808 tests, 10 specs)
-│       ├── specs/                  # 10 Playwright spec files (01-10)
+├── tests/                          # 🧪 Testing (2,610 total tests)
+│   ├── unit/                       # ⭐ Vitest unit tests (1,419 tests, 46 files)
+│   │   ├── doctor-portal/          # 20 test files: auth, API, EMR, CDS, storage
+│   │   ├── patient-portal/         # 15 test files: routes, PHR, AI, PDPA, auth
+│   │   ├── meeting-server/         # 5 test files: Jitsi, AI summary, sockets
+│   │   ├── security/               # 2 test files: OWASP, CORS, rate limiting
+│   │   └── database/               # 4 test files: schema, seed, validation
+│   └── e2e/                        # Playwright E2E tests (1,191 tests, 24 specs)
+│       ├── specs/                  # 24 Playwright spec files (01-24)
 │       └── lib/                    # Shared test config & helpers
 └── docker-compose.yml              # Local Orchestration Config
 ```
@@ -159,14 +150,13 @@ The platform uses a **Hybrid Cloud-Native Architecture**:
 | Layer | Technology | Version |
 | ------- | ------------ | --------- |
 | **Frontend** | React, TypeScript, Tailwind CSS, Vite | React 18, Vite 7 |
-| **Mobile** | Expo, React Native, NativeWind | Expo 52, RN 0.76 |
 | **Backend** | Node.js, Express.js | Node 22, Express 4 |
 | **Database** | PostgreSQL with pgvector | PostgreSQL 18 |
 | **Hosting** | Docker, Google Cloud Run | Latest |
-| **AI** | Google Gemini | 2.5 Flash |
+| **AI** | Google Gemini | 2.5 Flash Lite |
 | **Video** | Jitsi Meet (meet.jit.si - FREE) | Latest |
 | **Maps** | Google Maps Platform | v3 |
-| **Testing** | Playwright, Vitest | Playwright 1.58, Vitest 2.1 |
+| **Testing** | Playwright, Vitest | Playwright 1.40, Vitest 2.1 |
 
 ### 2.3 Visualization
 
@@ -412,46 +402,115 @@ services:
 
 ## 7. Testing
 
-### 7.1 Test Summary (February 22, 2026)
+### 7.1 Test Summary (March 8, 2026)
 
-| Layer | Framework | Suites | Tests | Duration |
+| Layer | Framework | Files / Specs | Tests | Duration |
 | --- | --- | --- | --- | --- |
-| **Unit Tests** | Vitest 2.1.9 | 10 | 311 | ~1s |
-| **E2E — Local Desktop** | Playwright 1.58 | 10 | 808 | ~35 min |
-| **E2E — Cloud-Dev Desktop** | Playwright 1.58 | 10 | 808 | ~18 min |
-| **E2E — Mobile-Local** | Playwright 1.58 | 1 (spec 10) | 85 | ~25s |
-| **E2E — Mobile-Cloud-Dev** | Playwright 1.58 | 1 (spec 10) | 85 | ~30s |
-| **TOTAL** | | **10 unit + 10×5 E2E** | **1,119** | **100% Pass** |
+| **Unit Tests** | Vitest 2.1.9 | 46 files | 1,419 | ~4.3s |
+| **E2E — Local Desktop** | Playwright 1.40 | 24 specs | 1,191 | ~5.9 min |
+| **TOTAL** | | **46 unit + 24 E2E** | **2,610** | **100% Pass** |
 
-### 7.1.1 Unit Test Suites (tests/unit/)
+### 7.1.1 Unit Test Suites (tests/unit/) — 46 Files
 
-| Suite | Tests | Coverage |
-| --- | --- | --- |
-| doctor-portal/drugDatabase | 25 | Drug data integrity, search, interactions |
-| doctor-portal/config | 25 | GCS bucket names/URLs, feature flags, WebSocket |
-| patient-portal/sharedPHRTypes | 28 | PHR factory, living will, doctor view transforms |
-| patient-portal/api-service | 30 | Endpoint registry, query params, auth headers |
-| mobile/shared-utils | 32 | Thai date/currency formatters, ID/phone validators |
-| mobile/api-client | 26 | Error normalization, token refresh, URL construction |
-| mobile/sync-engine | 31 | Offline queue, conflict resolution, delta sync |
-| meeting-server/jitsi-meeting | 31 | Transcript chunking (incl. Thai), CDS rules, rooms |
-| security/security-validation | 38 | Password policy (12-char), JWT, CORS, OWASP headers |
-| database/schema-validation | 45 | Table registry, appointment FSM, RBAC, PDPA |
+#### Doctor Portal (20 files)
 
-### 7.2 E2E Test Specs (10 Total)
+| File | Coverage |
+| --- | --- |
+| adminService | Admin CRUD, doctor approval, user management |
+| apiEndpoints | 33 route definitions, response formats, request validation |
+| appointmentReschedule | Reschedule logic, time slot validation |
+| appointmentService | Time slot conflicts, date validation, queue, business hours 8-18, Jitsi links |
+| auditLogService | Audit log creation, formats, PDPA compliance events |
+| authServer | JWT generation, password validation (12+ chars), email, reset tokens, RBAC |
+| config | GCS bucket names/URLs, feature flags, WebSocket config |
+| drugDatabase | Drug data integrity, search, interactions |
+| emr-clinical | EMR SOAP note validation, clinical data structures |
+| emrService | EMR creation, update, doctor signature, AI summary integration |
+| gcsApiServer | Bucket whitelist (5 authorized), path sanitization, upload size, MIME detection |
+| geminiService | SOAP/CDS/patient summary prompts, response parsing |
+| labOrders | Lab order creation, status flow, result recording |
+| labTestDatabase | Lab test reference data, normal ranges |
+| mainApiServer | 33 routes, dashboard stats, meeting management, AI service |
+| meetingTimeService | Meeting duration calculation, scheduling conflicts |
+| owaspMiddleware | Security headers (7), CORS, input sanitization, SQL/XSS injection detection |
+| postgresDataService | Connection config, query builders, table sanitization, data transforms |
+| prescriptions | Prescription creation, CDS drug interaction checks |
+| storageServices | GCS bucket config (5 buckets), URL construction, storage paths, base64 |
+
+#### Patient Portal (15 files)
+
+| File | Coverage |
+| --- | --- |
+| aiRoute | Chat retention (60 days), memory types, summary truncation, Thai prompt |
+| api-service | Endpoint registry, query params, auth headers |
+| appointmentsRoute | Appointment validation, status flow (10 statuses), notification triggers |
+| auth-context | Auth context provider, session management |
+| authMiddleware | Bearer token extraction, patient ID derivation, session expiry, user roles |
+| authRoute | Registration validation, session tokens (128-char), bcrypt hashing |
+| contentRoute | 4 categories, content types, demo content, category filter, Thai titles |
+| notificationService | Push notification handling, token management |
+| notificationsRoute | Default settings (7 toggles), unread filtering/counting, ownership check |
+| owasp-middleware | OWASP Top 10 middleware, security headers, input validation |
+| pdpaRoute | Consent types (3), status derivation, living will versioning/rollback |
+| phrRoute | PHR transform (DB→API), vital signs, medications, allergies, Thai text |
+| services-logic | Business logic utilities, data formatting |
+| sharedPHRTypes | PHR factory, living will, doctor view transforms |
+| videoMeetingRoute | Jitsi config, room name generation (SHA-256), URL construction, SOAP parsing |
+
+#### Meeting Server (5 files)
+
+| File | Coverage |
+| --- | --- |
+| aiSummary | SOAP/CDS/pre-consultation prompts, Gemini config, man-in-the-loop |
+| jitsi-meeting | Transcript chunking (incl. Thai), CDS rules, room management |
+| meeting-ai-features | AI feature integration, transcription analysis |
+| meetingRoutes | Server config, CORS whitelist, JWT validation, meeting status flow |
+| socketEvents | 7 event types, room management, chat message format, invite validation |
+
+#### Security (2 files)
+
+| File | Coverage |
+| --- | --- |
+| corsAndRateLimiting | CORS whitelist (11 ports + Cloud Run), rate limits, SQL/XSS detection |
+| security-validation | Password policy (12-char), JWT, CORS, OWASP headers |
+
+#### Database (4 files)
+
+| File | Coverage |
+| --- | --- |
+| data-validation | Data integrity checks, referential constraints |
+| embeddedPg | Embedded PostgreSQL test utilities |
+| schema-validation | Table registry, appointment FSM, RBAC, PDPA compliance |
+| schemaAndSeed | Core tables (20+), naming conventions, seed users (5), connection config |
+
+### 7.2 E2E Test Specs (24 Total)
 
 | # | Spec | Tests | Coverage |
 | --- | --- | --- | --- |
-| 01 | Auth, Health & Multi-User | ~82 | Health checks, 5-user auth, RBAC, registration |
-| 02 | Appointment Lifecycle | ~92 | Create, confirm, cancel, reschedule, cross-portal sync |
-| 03 | Health Records & EMR | ~95 | PHR, vitals, EMR SOAP, prescriptions, lab orders |
-| 04 | Video Meeting & Transcription | ~87 | Jitsi, transcription, AI SOAP, multi-browser |
-| 05 | Content Sync & Approval | ~82 | Content CRUD, admin approval, real-time sync |
-| 06 | AI Features & CDS | ~72 | AI chat, CDS drug checks, summarization |
-| 07 | Multi-User Concurrent | ~60 | 4-browser concurrent flows, stress testing |
-| 08 | Phase 2 AI-HIS | ~72 | CTM, geriatric screening, SOS, nursing dashboard |
-| 09 | User Accounts Demo & Pages | ~91 | All 5 demo accounts, password reset, all pages |
-| 10 | Mobile Viewport & Data Sync | ~85 | Mobile responsive, data streaming, multi-device |
+| 01 | User Accounts, Demo & Pages | ~50 | All 5 demo accounts, password reset, all pages |
+| 02 | Auth, Health & Multi-User | ~82 | Health checks, 5-user auth, RBAC, registration |
+| 03 | Appointment Lifecycle | ~92 | Create, confirm, cancel, reschedule, cross-portal sync |
+| 04 | Health Records & EMR | ~95 | PHR, vitals, EMR SOAP, prescriptions, lab orders |
+| 05 | Video Meeting & Transcription | ~81 | Jitsi, transcription, AI SOAP, multi-browser |
+| 06 | Content Sync & Approval | ~82 | Content CRUD, admin approval, real-time sync |
+| 07 | AI Features & CDS | ~72 | AI chat, CDS drug checks, summarization |
+| 08 | Multi-User Concurrent | ~60 | 4-browser concurrent flows, stress testing |
+| 09 | Phase 2 AI-HIS | ~72 | CTM, geriatric screening, SOS, nursing dashboard |
+| 10 | Lab, Imaging & Map Features | ~42 | Lab orders, imaging, healthcare map |
+| 11 | Doctor Portal Workflows | ~44 | Doctor-specific clinical workflows |
+| 12 | Patient Portal Workflows | ~42 | Patient-specific portal workflows |
+| 13 | Multi-User Appointment | ~36 | Cross-user appointment workflows |
+| 14 | Admin Management Workflows | ~40 | Admin panel, doctor approval, content management |
+| 15 | PHR-EMR Data Flow | ~46 | Cross-portal PHR/EMR data synchronization |
+| 16 | Medical Content Workflows | ~38 | Content publishing, categorization, search |
+| 17 | Notification & Settings | ~36 | Notification triggers, user settings |
+| 18 | Appointment Pipeline E2E | ~44 | Full appointment pipeline from booking to completion |
+| 19 | PHR Cross-Portal Sync | ~42 | PHR data consistency across portals |
+| 20 | AI Pipeline Man-in-Loop | ~44 | AI validation with doctor approval workflow |
+| 21 | Content Rejection Recovery | ~36 | Content rejection, revision, re-approval flow |
+| 22 | Notification Triggers | ~38 | Event-driven notification verification |
+| 23 | Mixed Simultaneous Workflows | ~40 | Concurrent multi-feature workflows |
+| 24 | Registration Approval E2E | ~39 | Full registration to approval pipeline |
 
 ### 7.3 Demo User Accounts
 
@@ -460,8 +519,8 @@ services:
 | Patient 1 (Demo) | `demo.test@gmail.com` | P@ssw0rd | Patient |
 | Patient 2 (Somchai) | `Somchai.Mankong@gmail.com` | P@ssw0rd | Patient |
 | Patient 3 (Anan) | `Anan.Khayanrian@gmail.com` | P@ssw0rd | Patient |
-| Doctor | `doctor.test@izara.com` | IzaraDoctor@2024 | Doctor |
-| Admin | `admin.test@izara.com` | IzaraAdmin@2024 | Doctor |
+| Doctor (Dr. Test Good) | `doctor.test@izara.com` | IzaraDoctor@2024 | Doctor |
+| Admin (Dr. Admin Kind) | `admin.test@izara.com` | IzaraAdmin@2024 | Doctor |
 
 ### 7.4 Playwright Projects
 
@@ -470,32 +529,27 @@ services:
 | Local | 1920×1080 | localhost:3005/3010/3020 | Configurable |
 | Cloud | 1920×1080 | Cloud Run production | Configurable |
 | Cloud-Dev | 1920×1080 | Cloud Run dev-testing | true |
-| Mobile-Local | 393×851 (Pixel 7) | localhost:3005/3010 | Configurable |
-| Mobile-Cloud-Dev | 393×851 (Pixel 7) | Cloud Run dev-testing | true |
 
 ### 7.5 Run Tests
 
 ```powershell
-# ── Unit Tests (311 tests, < 2 seconds) ──
+# ── Unit Tests (1,419 tests, ~4.3 seconds) ──
 cd tests/unit
-npx vitest run              # All 311 unit tests
+npx vitest run              # All 1,419 unit tests
 npx vitest run --coverage    # With coverage report
 npx vitest watch             # Watch mode
 
-# ── E2E Tests (808 tests, requires Docker running) ──
+# ── E2E Tests (1,191 tests, requires Docker running) ──
 cd tests/e2e
 
-# Run ALL Local tests (800+ tests)
-$env:HEADLESS="1"; npx playwright test --project=Local --workers=2
+# Run ALL Local tests (1,191 tests)
+$env:CI="true"; npx playwright test --project=Local --workers=6
 
 # Run ALL Cloud-Dev tests
 $env:TEST_ENV="cloud-dev"; npx playwright test --project="Cloud-Dev" --workers=2
 
-# Run Mobile viewport tests
-$env:HEADLESS="1"; npx playwright test --project="Mobile-Local"
-
 # Run specific spec
-npx playwright test "09-user-accounts" --project=Local
+npx playwright test "09-phase2" --project=Local
 
 # View HTML Report
 npx playwright show-report
@@ -507,18 +561,17 @@ npx playwright show-report
 
 ### Phase 2: Intelligence & Optimization (In Progress)
 
-- [x] **Mobile App Architecture**: Expo 52 + React Native monorepo with Turborepo
 - [x] **Security Hardening**: JWT sign/verify consistency, OWASP headers, unified 12-char passwords, CORS production tightening, credential path security
-- [x] **Unit Test Layer**: 311 Vitest tests across 10 suites — pure logic, no server needed
-- [x] **E2E Test Expansion**: 808 tests across 10 Playwright specs
-- [x] **Mobile Viewport Testing**: Playwright simulation (Pixel 7, iPhone 13, iPad)
+- [x] **Comprehensive Unit Test Layer**: 1,419 Vitest tests across 46 files — pure logic, no server needed
+- [x] **E2E Test Expansion**: 1,191 tests across 24 Playwright specs covering all workflows
 - [x] **Phase 2 AI-HIS Tables**: CTM, Geriatric Screening, SOS, Follow-up, Nursing
 - [x] **Spec Kits**: Phase 1 + Phase 2 combined specification documents
-- [x] **Mobile Offline-First Sync**: SQLite schema (9 tables), offline queue repository, Zustand sync store, sync engine coordinator
+- [x] **Docker Local Dev**: 5-service Docker Compose stack with health checks
+- [x] **Test Cleanup**: Removed obsolete mobile tests, reorganized test structure
 - [ ] **Advanced RAG**: Full knowledge_base vector search for clinical decision support
 - [ ] **IoMT Integration**: Wearable device sync for vitals
 - [ ] **Payment Gateway**: Stripe/Omise for consultation fees
-- [ ] **Native Mobile Release**: App Store / Play Store submission
+- [ ] **Mobile App**: React Native / Expo mobile client
 
 ### Phase 3: Scaling
 
@@ -551,4 +604,4 @@ npx playwright show-report
 
 ---
 
-### Last Updated: February 22, 2026
+### Last Updated: March 8, 2026

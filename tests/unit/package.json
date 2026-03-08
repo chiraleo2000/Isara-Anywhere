@@ -10,11 +10,10 @@
     "test:coverage": "vitest run --coverage",
     "test:doctor": "vitest run --config vitest.config.ts --dir doctor-portal",
     "test:patient": "vitest run --config vitest.config.ts --dir patient-portal",
-    "test:mobile": "vitest run --config vitest.config.ts --dir mobile",
     "test:meeting": "vitest run --config vitest.config.ts --dir meeting-server",
     "test:security": "vitest run --config vitest.config.ts --dir security",
     "test:database": "vitest run --config vitest.config.ts --dir database",
-    "test:sync": "vitest run --config vitest.config.ts --dir mobile"
+    "test:integration": "vitest run --config vitest.config.ts --dir integration"
   },
   "devDependencies": {
     "vitest": "^2.1.0",

@@ -1,8 +1,8 @@
 # 📊 IZARA Telemedicine Platform - Presentation Materials
 
-> **Version:** 1.5.1 | **Updated:** February 22, 2026  
-> **Status:** Phase 1 Complete | Phase 2 In Progress (v1.5.1)  
-> **Tests:** 311 Unit Tests (Vitest) + 808 E2E Tests (Playwright) = 1,119 total × 5 Playwright Projects
+> **Version:** 1.5.4 | **Updated:** March 8, 2026  
+> **Status:** Phase 1 Complete — All Tests Passing (v1.5.4)  
+> **Tests:** 1,419 Unit Tests (Vitest) + 1,191 E2E Tests (Playwright) = **2,610 total — 100% Pass Rate**
 
 ---
 
@@ -18,7 +18,7 @@ This document covers:
 3. User Management & RBAC
 4. Core Workflows
 5. DevOps & Deployment
-6. **Testing** (1,119 tests: 311 unit + 808 E2E, 10 specs, 18 coverage areas, mobile viewport)
+6. **Testing** (2,610 tests: 1,419 unit across 46 files + 1,191 E2E across 24 specs)
 
 ---
 
@@ -55,7 +55,7 @@ Presentations/
 ├── README.md                     # This file
 ├── database/
 │   └── izara-complete-schema-v4.dbml  # Database schema (DBML)
-├── diagrams/                     # Mermaid workflow diagrams (.mmd)
+├── diagrams/                     # 12 Mermaid workflow diagrams (.mmd)
 │   ├── 01-system-architecture.mmd
 │   ├── 02-patient-features.mmd
 │   ├── 03-doctor-features.mmd
@@ -68,9 +68,10 @@ Presentations/
 │   ├── 10-video-meeting-flow.mmd
 │   ├── 11-phr-management.mmd
 │   └── 12-prescription-workflow.mmd
-└── html-diagrams/                # 🌐 Interactive HTML Diagrams
-    ├── index.html                # Start here to view all diagrams
-    └── *.html                    # Individual diagram files
+└── html-diagrams/                # 🌐 24 Interactive HTML Diagrams
+    ├── index.html                # Start here — gallery of all diagrams
+    ├── 01–12 *.html              # Core diagrams (from .mmd sources)
+    └── 13–24 *.html              # Extended workflow diagrams
 ```
 
 ---
@@ -94,6 +95,16 @@ View **[database/izara-complete-schema-v4.dbml](database/izara-complete-schema-v
 
 ```powershell
 .\generate-diagrams.ps1
+```
+
+### Run All Tests
+
+```powershell
+# Unit tests (1,419 tests, ~4.3s)
+cd tests/unit && npx vitest run
+
+# E2E tests (1,191 tests, ~5.9 min, requires Docker)
+cd tests/e2e && $env:CI="true"; npx playwright test --project=Local
 ```
 
 ---
@@ -139,4 +150,4 @@ View **[database/izara-complete-schema-v4.dbml](database/izara-complete-schema-v
 
 ---
 
-### Last Updated: February 22, 2026
+### Last Updated: March 8, 2026

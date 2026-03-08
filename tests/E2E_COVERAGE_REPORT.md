@@ -1,13 +1,13 @@
-# E2E Test Coverage Report — v1.5.3
+# E2E Test Coverage Report — v1.5.4
 
-**Generated:** 2025-03-01  
-**Framework:** Playwright (TypeScript)  
-**Total Spec Files:** 10  
-**Total Lines of Test Code:** ~8,400+  
-**Estimated Total `test()` Calls:** ~807  
+**Generated:** 2026-03-08  
+**Framework:** Playwright 1.40 (TypeScript)  
+**Total Spec Files:** 24  
+**Total Tests:** ~1,191  
 **User Accounts Used:** 5 (patient1, patient2, patient3, doctor, admin)  
-**Parallel Workers:** 4 (configurable via PW_WORKERS env)  
-**Full Suite Duration:** ~10 minutes
+**Parallel Workers:** 6 (configurable via PW_WORKERS env)  
+**Full Suite Duration:** ~5.9 minutes  
+**Pass Rate:** 100%
 
 ---
 

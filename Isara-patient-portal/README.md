@@ -1,6 +1,6 @@
 # 🏥 Izara Patient Portal
 
-![Version](https://img.shields.io/badge/version-1.5.1-blue.svg)
+![Version](https://img.shields.io/badge/version-1.5.4-blue.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.2-blue.svg)
 ![React](https://img.shields.io/badge/React-18-61dafb.svg)
 ![Node.js](https://img.shields.io/badge/Node.js-22+-green.svg)

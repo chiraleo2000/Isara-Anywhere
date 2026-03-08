@@ -2,8 +2,8 @@
 
 ## Presentation Script & Guide
 
-> **Version:** 1.5.1 | **Date:** February 2026  
-> **Status:** Phase 1 Complete + Phase 2 In Progress (v1.5.1)  
+> **Version:** 1.5.4 | **Date:** March 2026  
+> **Status:** Phase 1 Complete — All Tests Passing (v1.5.4)  
 > **Duration:** 30-45 minutes  
 > **Audience:** Stakeholders, Technical Team, Medical Staff
 
@@ -103,10 +103,10 @@
 | **Backend** | Node.js 22, Express.js |
 | **Database** | PostgreSQL 18 + pgvector |
 | **Hosting** | Docker, Google Cloud Run |
-| **AI** | Google Gemini 2.5 Flash |
+| **AI** | Google Gemini 2.5 Flash Lite |
 | **Video** | Jitsi Meet (Self-Hosted) |
 | **Maps** | Google Maps Platform |
-| **Testing** | Playwright E2E + Vitest Unit |
+| **Testing** | Playwright E2E (1,191 tests) + Vitest Unit (1,419 tests) |
 
 ---
 
@@ -340,7 +340,7 @@ users (unified)
 - 🔒 **OWASP Headers**: Helmet.js (CSP, XSS, HSTS, X-Frame)
 - 🔒 **Credentials**: Service account keys stored in `credentials/` (not public/)
 - 🔒 **Audit Logging**: Complete trail in audit_logs
-- 🔒 **Testing**: 1,119 tests (311 unit + 808 E2E) — 100% pass rate
+- 🔒 **Testing**: 2,610 tests (1,419 unit + 1,191 E2E) — 100% pass rate
 
 ---
 
@@ -393,4 +393,4 @@ users (unified)
 
 ---
 
-### Last Updated: February 22, 2026
+### Last Updated: March 8, 2026

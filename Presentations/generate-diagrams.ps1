@@ -118,14 +118,41 @@ $indexContent += @"
 
     <div class="dbml-section">
         <h2>💾 Database Schema</h2>
-        <p>The system database schema is defined in DBML format.</p>
-        <p><strong>File:</strong> <code>database/izara-complete-schema-v3.dbml</code></p>
-        <p>Use <a href="https://dbdiagram.io" target="_blank">dbdiagram.io</a> or the VS Code DBML extension to visualize this file.</p>
+        <p>The complete database schema is defined in DBML format with 20+ tables across auth, patient, doctor, clinical, AI, and audit domains.</p>
+        <p><strong>File:</strong> <code>database/izara-complete-schema-v4.dbml</code></p>
+        <p>Visualize with <a href="https://dbdiagram.io" target="_blank">dbdiagram.io</a> or the VS Code DBML extension.</p>
     </div>
 </body>
 </html>
 "@
 
+# Also add cards for any existing HTML files not generated from .mmd sources
+$generatedNames = $files | ForEach-Object { $_.BaseName }
+$extraHtmlFiles = Get-ChildItem -Path $outputDir -Filter "*.html" | 
+    Where-Object { $_.BaseName -ne "index" -and $_.BaseName -notin $generatedNames } | 
+    Sort-Object Name
+
+if ($extraHtmlFiles.Count -gt 0) {
+    # Insert extra diagram cards before the closing </div> of the grid
+    $extraCards = ""
+    foreach ($extraFile in $extraHtmlFiles) {
+        $extraCards += @"
+        <div class="card">
+            <a href="$($extraFile.Name)">
+                <h3>$($extraFile.BaseName)</h3>
+                <p>Extended workflow diagram</p>
+            </a>
+        </div>
+"@
+    }
+    # Insert before the grid closing tag
+    $indexContent = $indexContent -replace "</div>\s*<div class=`"dbml-section`"", "$extraCards    </div>`n`n    <div class=`"dbml-section`""
+}
+
 $indexContent | Out-File -FilePath (Join-Path $outputDir "index.html") -Encoding UTF8
 
-Write-Host "✅ Generated $($files.Count) HTML diagrams in $outputDir"
+Write-Host "✅ Generated $($files.Count) HTML diagrams from .mmd sources"
+if ($extraHtmlFiles.Count -gt 0) {
+    Write-Host "📎 Also indexed $($extraHtmlFiles.Count) additional HTML diagrams"
+}
+Write-Host "📁 Output: $outputDir"

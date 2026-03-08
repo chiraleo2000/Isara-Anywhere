@@ -5,87 +5,220 @@
     <title>Izara Telemedicine - System Diagrams</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; max-width: 1200px; margin: 0 auto; padding: 40px; background: #f0f2f5; }
-        h1 { color: #1a1a1a; text-align: center; margin-bottom: 40px; }
+        h1 { color: #1a1a1a; text-align: center; margin-bottom: 10px; }
+        .subtitle { text-align: center; color: #666; margin-bottom: 40px; font-size: 0.95em; }
+        .section-title { color: #333; margin: 30px 0 15px; padding-bottom: 8px; border-bottom: 2px solid #2196F3; }
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
         .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: transform 0.2s; }
         .card:hover { transform: translateY(-5px); box-shadow: 0 5px 15px rgba(0,0,0,0.15); }
         .card a { text-decoration: none; color: inherit; display: block; height: 100%; }
-        .card h3 { margin: 0 0 10px 0; color: #2196F3; }
-        .card p { margin: 0; color: #666; font-size: 0.9em; }
-        .dbml-section { margin-top: 40px; background: #fff; padding: 25px; border-radius: 10px; }
+        .card h3 { margin: 0 0 8px 0; color: #2196F3; font-size: 1.05em; }
+        .card p { margin: 0; color: #666; font-size: 0.9em; line-height: 1.4; }
+        .card .badge { display: inline-block; background: #E3F2FD; color: #1976D2; padding: 2px 8px; border-radius: 4px; font-size: 0.75em; margin-top: 8px; }
+        .dbml-section { margin-top: 40px; background: #fff; padding: 25px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
         code { background: #eee; padding: 2px 5px; border-radius: 4px; }
+        .stats { text-align: center; margin-bottom: 30px; }
+        .stats span { display: inline-block; background: #fff; padding: 8px 16px; margin: 4px; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); font-size: 0.9em; }
     </style>
 </head>
 <body>
-    <h1>🏥 Izara Telemedicine - Architecture Visualizations</h1>
-    
-    <div class="grid">        <div class="card">
+    <h1>🏥 Izara Telemedicine — Architecture Visualizations</h1>
+    <p class="subtitle">Version 1.5.4 &bull; March 2026 &bull; 24 Interactive Diagrams</p>
+
+    <div class="stats">
+        <span>📱 Patient Portal :3005</span>
+        <span>💻 Doctor Portal :3010</span>
+        <span>📹 Meeting Server :3020</span>
+        <span>🐘 PostgreSQL :5433</span>
+        <span>🧪 2,610 Tests — 100% Pass</span>
+    </div>
+
+    <h2 class="section-title">🏗️ Architecture & Features</h2>
+    <div class="grid">
+        <div class="card">
             <a href="01-system-architecture.html">
-                <h3>01-system-architecture</h3>
-                <p>View workflow diagram</p>
+                <h3>🏗️ System Architecture</h3>
+                <p>High-level overview: Docker containers, data layer, AI services, and external integrations</p>
+                <span class="badge">Flowchart</span>
             </a>
-        </div>        <div class="card">
+        </div>
+        <div class="card">
             <a href="02-patient-features.html">
-                <h3>02-patient-features</h3>
-                <p>View workflow diagram</p>
+                <h3>📱 Patient Portal Features</h3>
+                <p>Appointments, PHR, AI Health Assistant, medication tracking, living will, healthcare map</p>
+                <span class="badge">Flowchart</span>
             </a>
-        </div>        <div class="card">
+        </div>
+        <div class="card">
             <a href="03-doctor-features.html">
-                <h3>03-doctor-features</h3>
-                <p>View workflow diagram</p>
+                <h3>💻 Doctor Portal Features</h3>
+                <p>EMR, e-prescribing, lab orders, video consultation, AI clinical copilot, schedule management</p>
+                <span class="badge">Flowchart</span>
             </a>
-        </div>        <div class="card">
+        </div>
+    </div>
+
+    <h2 class="section-title">🔄 Clinical Workflows</h2>
+    <div class="grid">
+        <div class="card">
             <a href="04-appointment-workflow.html">
-                <h3>04-appointment-workflow</h3>
-                <p>View workflow diagram</p>
+                <h3>📅 Appointment Workflow</h3>
+                <p>Patient booking → AI triage → doctor confirmation → Jitsi link generation → consultation</p>
+                <span class="badge">Sequence</span>
             </a>
-        </div>        <div class="card">
-            <a href="05-database-schema.html">
-                <h3>05-database-schema</h3>
-                <p>View workflow diagram</p>
+        </div>
+        <div class="card">
+            <a href="05-consultation-workflow.html">
+                <h3>🩺 Consultation Workflow</h3>
+                <p>Pre-meeting setup → Jitsi video → examination → diagnosis → treatment → completion</p>
+                <span class="badge">Flowchart</span>
             </a>
-        </div>        <div class="card">
+        </div>
+        <div class="card">
             <a href="06-emr-workflow.html">
-                <h3>06-emr-workflow</h3>
-                <p>View workflow diagram</p>
+                <h3>📋 EMR Documentation</h3>
+                <p>SOAP notes with AI-assisted transcription, clinical orders, and CDS man-in-the-loop</p>
+                <span class="badge">Flowchart</span>
             </a>
-        </div>        <div class="card">
-            <a href="07-ai-integration.html">
-                <h3>07-ai-integration</h3>
-                <p>View workflow diagram</p>
+        </div>
+        <div class="card">
+            <a href="07-prescribing-workflow.html">
+                <h3>💊 Prescribing Workflow</h3>
+                <p>Medication search → drug-drug/allergy safety checks → dosage → doctor sign-off → pharmacy</p>
+                <span class="badge">Flowchart</span>
             </a>
-        </div>        <div class="card">
-            <a href="08-security-rbac.html">
-                <h3>08-security-rbac</h3>
-                <p>View workflow diagram</p>
-            </a>
-        </div>        <div class="card">
-            <a href="09-deployment-architecture.html">
-                <h3>09-deployment-architecture</h3>
-                <p>View workflow diagram</p>
-            </a>
-        </div>        <div class="card">
+        </div>
+        <div class="card">
             <a href="10-video-meeting-flow.html">
-                <h3>10-video-meeting-flow</h3>
-                <p>View workflow diagram</p>
+                <h3>📹 Video Meeting Flow</h3>
+                <p>Jitsi WebRTC setup → real-time transcription → AI SOAP summary → post-meeting records</p>
+                <span class="badge">Sequence</span>
             </a>
-        </div>        <div class="card">
-            <a href="11-phr-management.html">
-                <h3>11-phr-management</h3>
-                <p>View workflow diagram</p>
-            </a>
-        </div>        <div class="card">
+        </div>
+        <div class="card">
             <a href="12-prescription-workflow.html">
-                <h3>12-prescription-workflow</h3>
-                <p>View workflow diagram</p>
+                <h3>⚠️ Prescription + CDS</h3>
+                <p>Full prescription lifecycle with Clinical Decision Support alerts and doctor review</p>
+                <span class="badge">Flowchart</span>
             </a>
-        </div>    </div>
+        </div>
+        <div class="card">
+            <a href="12-lab-imaging-workflow.html">
+                <h3>🧪 Lab & Imaging Orders</h3>
+                <p>Lab test / imaging order creation, clinical indication, cost estimate, notification</p>
+                <span class="badge">Flowchart</span>
+            </a>
+        </div>
+    </div>
+
+    <h2 class="section-title">📋 Data & Records</h2>
+    <div class="grid">
+        <div class="card">
+            <a href="05-database-schema.html">
+                <h3>🗄️ Database Schema</h3>
+                <p>PostgreSQL 18 ER diagram — users, PHR, appointments, EMR, prescriptions, AI tables</p>
+                <span class="badge">ER Diagram</span>
+            </a>
+        </div>
+        <div class="card">
+            <a href="11-phr-management.html">
+                <h3>📋 PHR Management</h3>
+                <p>Personal Health Records: vitals, medications, allergies, conditions, living will + AI features</p>
+                <span class="badge">Flowchart</span>
+            </a>
+        </div>
+        <div class="card">
+            <a href="14-phr-workflow.html">
+                <h3>📂 PHR Workflow</h3>
+                <p>Access → view records → manage → share → save to GCS → export</p>
+                <span class="badge">Flowchart</span>
+            </a>
+        </div>
+        <div class="card">
+            <a href="08-content-workflow.html">
+                <h3>📚 Content Workflow</h3>
+                <p>Create → upload images to GCS → admin review → publish → notify users → manage/archive</p>
+                <span class="badge">Flowchart</span>
+            </a>
+        </div>
+    </div>
+
+    <h2 class="section-title">🤖 AI & Integrations</h2>
+    <div class="grid">
+        <div class="card">
+            <a href="07-ai-integration.html">
+                <h3>🤖 AI Integration</h3>
+                <p>Gemini 2.5 Flash: patient AI, doctor AI, meeting AI — with man-in-the-loop safety</p>
+                <span class="badge">Flowchart</span>
+            </a>
+        </div>
+        <div class="card">
+            <a href="11-google-services.html">
+                <h3>🔗 Google Services</h3>
+                <p>Jitsi Meet, Google Maps, Gemini AI, Cloud Storage — all external service integrations</p>
+                <span class="badge">Flowchart</span>
+            </a>
+        </div>
+        <div class="card">
+            <a href="15-healthcare-map-workflow.html">
+                <h3>🗺️ Healthcare Map</h3>
+                <p>Google Maps: location permission → search → filter → results → details → book appointment</p>
+                <span class="badge">Flowchart</span>
+            </a>
+        </div>
+    </div>
+
+    <h2 class="section-title">🔐 Security & Deployment</h2>
+    <div class="grid">
+        <div class="card">
+            <a href="08-security-rbac.html">
+                <h3>🔐 Security & RBAC</h3>
+                <p>Authentication flow, 4 user roles, patient/doctor/admin permissions, PDPA compliance</p>
+                <span class="badge">Flowchart</span>
+            </a>
+        </div>
+        <div class="card">
+            <a href="13-auth-workflow.html">
+                <h3>🔑 Auth Workflow</h3>
+                <p>Email validation → password check → session creation → PostgreSQL storage → dashboard</p>
+                <span class="badge">Flowchart</span>
+            </a>
+        </div>
+        <div class="card">
+            <a href="09-deployment-architecture.html">
+                <h3>🐳 Deployment Architecture</h3>
+                <p>Local Docker → Unified CLI → GCP Cloud Run → CI/CD pipeline</p>
+                <span class="badge">Flowchart</span>
+            </a>
+        </div>
+        <div class="card">
+            <a href="10-gcp-services.html">
+                <h3>☁️ GCP Services</h3>
+                <p>Cloud Run, Cloud Storage (5 buckets), IAM, Cloud Build, Cloud Armor</p>
+                <span class="badge">Flowchart</span>
+            </a>
+        </div>
+        <div class="card">
+            <a href="09-gcs-bucket-architecture.html">
+                <h3>📦 GCS Bucket Architecture</h3>
+                <p>5 storage buckets: documents, images, recordings, profiles, metadata</p>
+                <span class="badge">Flowchart</span>
+            </a>
+        </div>
+        <div class="card">
+            <a href="16-data-sync-workflow.html">
+                <h3>🔄 Data Flow Architecture</h3>
+                <p>Client portals → REST API → PostgreSQL + GCS data layer</p>
+                <span class="badge">Flowchart</span>
+            </a>
+        </div>
+    </div>
 
     <div class="dbml-section">
-        <h2>💾 Database Schema</h2>
-        <p>The system database schema is defined in DBML format.</p>
-        <p><strong>File:</strong> <code>database/izara-complete-schema-v3.dbml</code></p>
-        <p>Use <a href="https://dbdiagram.io" target="_blank">dbdiagram.io</a> or the VS Code DBML extension to visualize this file.</p>
+        <h2>💾 Database Schema (DBML)</h2>
+        <p>The complete database schema is defined in DBML format with 20+ tables across auth, patient, doctor, clinical, AI, and audit domains.</p>
+        <p><strong>File:</strong> <code>../database/izara-complete-schema-v4.dbml</code></p>
+        <p>Visualize with <a href="https://dbdiagram.io" target="_blank">dbdiagram.io</a> or the VS Code DBML extension.</p>
     </div>
 </body>
 </html>

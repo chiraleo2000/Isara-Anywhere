@@ -1,15 +1,14 @@
 # 🏥 Izara Telemedicine Platform
 
-![Version](https://img.shields.io/badge/version-1.5.3-blue.svg)
+![Version](https://img.shields.io/badge/version-1.5.4-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
-![Platform](https://img.shields.io/badge/platform-web%20%7C%20mobile-lightgrey.svg)
+![Platform](https://img.shields.io/badge/platform-web-lightgrey.svg)
 ![Node](https://img.shields.io/badge/node-%3E%3D22.0.0-brightgreen.svg)
-![Database](https://img.shields.io/badge/database-PostgreSQL%2016-blue.svg)
+![Database](https://img.shields.io/badge/database-PostgreSQL%2018-blue.svg)
 ![Docker](https://img.shields.io/badge/docker-ready-blue.svg)
-![Tests](https://img.shields.io/badge/Unit%20tests-409%20passing-brightgreen.svg)
-![Tests](https://img.shields.io/badge/E2E%20tests-808%20passing-brightgreen.svg)
+![Tests](https://img.shields.io/badge/Unit%20tests-1%2C419%20passing-brightgreen.svg)
+![Tests](https://img.shields.io/badge/E2E%20tests-1%2C191%20passing-brightgreen.svg)
 ![Cloud Run](https://img.shields.io/badge/Cloud%20Run-deployed-blue.svg)
-![Mobile](https://img.shields.io/badge/mobile-Expo%20%2B%20React%20Native-blueviolet.svg)
 ![Security](https://img.shields.io/badge/security-OWASP%20hardened-green.svg)
 
 ## A comprehensive telemedicine platform built for Thailand's healthcare system
@@ -44,7 +43,7 @@ The platform consists of three main services:
 | PostgreSQL | localhost:5433 |
 | pgAdmin | <http://localhost:5050> |
 
-### Cloud Environment — Production (v1.5.3) (Google Cloud Run)
+### Cloud Environment — Production (v1.5.4) (Google Cloud Run)
 
 | Service | URL |
 | ------- | --- |
@@ -52,109 +51,93 @@ The platform consists of three main services:
 | Doctor Portal | <https://izara-doctor-portal-724889190329.asia-southeast1.run.app> |
 | Meeting Server | <https://izara-jitsi-meeting-portal-724889190329.asia-southeast1.run.app> |
 
-### Mobile App (Expo + React Native)
-
-| Config | Value |
-| ------ | ----- |
-| Framework | Expo SDK 52 + React Native 0.76 |
-| Package | `isara-mobile` (monorepo with Turborepo) |
-| Local Storage | expo-sqlite (9 tables: user_profile, appointments, vital_signs, medications, medication_logs, phr_cache, notifications, sync_queue, sync_metadata) |
-| Sync Engine | Offline-first with conflict resolution (keep-local / keep-server / merge) |
-| State | Zustand 5.0 (authStore + syncStore) |
-| Patient Tabs | Dashboard, Appointments, Health Records, AI Chat, Profile |
-| Doctor Tabs | Dashboard, Queue, Schedule, Patients, Profile |
-| Run | `cd Isara-mobile && npx expo start` |
-
 ---
 
 ## 🧪 Testing
 
-### Test Architecture (v1.5.3)
+### Test Architecture (v1.5.4)
 
-#### Unit Tests (Vitest — 409 tests)
-- **15 test suites** in `tests/unit/` — pure logic, no server required
-- **Coverage areas**: Drug database, config, PHR types, API service, mobile utils, API client, sync engine, Jitsi meeting, security validation, database schema
-- **Framework**: Vitest 2.1.9, runs in < 2 seconds
+#### Unit Tests (Vitest — 1,419 tests)
+- **46 test files** in `tests/unit/` — pure logic, no server required
+- **Coverage areas**: Doctor portal (20 files), Patient portal (15 files), Meeting server (5 files), Security (2 files), Database (4 files)
+- **Framework**: Vitest 2.1.9, runs in ~4.3 seconds
 - **Run**: `cd tests/unit && npx vitest run`
 
-#### E2E Tests (Playwright — 808 tests)
-- **10 E2E spec files** (01-10): comprehensive workflow, API, UI, and mobile viewport testing
-- **808 total tests** across 10 spec files
+#### E2E Tests (Playwright — 1,191 tests)
+- **24 E2E spec files** (01-24): comprehensive workflow, API, and UI testing
+- **1,191 total tests** across 24 spec files
 - **5 simultaneous demo user accounts** (patient1, patient2, patient3, doctor, admin)
-- **5 Playwright projects**: Local, Cloud, Cloud-Dev, Mobile-Local, Mobile-Cloud-Dev
-- **Mobile viewport tests**: Pixel 7 (393×851), iPhone 13 (390×844), iPhone SE (375×667), iPad Mini (768×1024)
+- **3 Playwright projects**: Local, Cloud, Cloud-Dev
 - **0 skipped tests** — every test must pass
 - **Serial + parallel execution** for workflow integrity
 
-#### Combined: 1,217 tests (409 unit + 808 E2E)
+#### Combined: 2,610 tests (1,419 unit + 1,191 E2E)
 
 ### E2E Test Specs
 
 | Spec | Name | Tests | Coverage |
 | ---- | ---- | ----- | -------- |
-| 01 | Auth, Health & Multi-User | ~82 | Health checks, 5-user auth, registration, RBAC |
-| 02 | Appointment Lifecycle | ~92 | Create, confirm, cancel, reschedule, cross-portal sync |
-| 03 | Health Records & EMR | ~95 | PHR, vitals, EMR SOAP, prescriptions, lab orders, living will |
-| 04 | Video Meeting & Transcription | ~87 | Jitsi meeting, transcription, AI SOAP, multi-browser |
-| 05 | Content Sync & Approval | ~82 | Content CRUD, admin approval, real-time sync verification |
-| 06 | AI Features & CDS | ~72 | AI chat, CDS drug checks, summarization, doctor AI tools |
-| 07 | Multi-User Concurrent | ~60 | 4-browser concurrent flows, stress testing, cross-portal |
-| 08 | Phase 2 AI-HIS | ~72 | CTM assessment, geriatric screening (8 tools), SOS, follow-up |
-| 09 | User Accounts Demo & Pages | ~91 | All 5 demo accounts display, password reset, all portal pages |
-| 10 | Mobile Viewport & Data Sync | ~85 | Mobile responsive, data streaming, multi-device viewports |
+| 01 | User Accounts, Demo & Pages | ~50 | All 5 demo accounts, password reset, all pages |
+| 02 | Auth, Health & Multi-User | ~82 | Health checks, 5-user auth, registration, RBAC |
+| 03 | Appointment Lifecycle | ~92 | Create, confirm, cancel, reschedule, cross-portal sync |
+| 04 | Health Records & EMR | ~95 | PHR, vitals, EMR SOAP, prescriptions, lab orders, living will |
+| 05 | Video Meeting & Transcription | ~81 | Jitsi meeting, transcription, AI SOAP, multi-browser |
+| 06 | Content Sync & Approval | ~82 | Content CRUD, admin approval, real-time sync verification |
+| 07 | AI Features & CDS | ~72 | AI chat, CDS drug checks, summarization, doctor AI tools |
+| 08 | Multi-User Concurrent | ~60 | 4-browser concurrent flows, stress testing, cross-portal |
+| 09 | Phase 2 AI-HIS | ~72 | CTM assessment, geriatric screening, SOS, follow-up |
+| 10 | Lab, Imaging & Map Features | ~42 | Lab orders, imaging, healthcare map |
+| 11 | Doctor Portal Workflows | ~44 | Doctor-specific clinical workflows |
+| 12 | Patient Portal Workflows | ~42 | Patient-specific portal workflows |
+| 13 | Multi-User Appointment | ~36 | Cross-user appointment workflows |
+| 14 | Admin Management Workflows | ~40 | Admin panel, doctor approval, content management |
+| 15 | PHR-EMR Data Flow | ~46 | Cross-portal PHR/EMR data synchronization |
+| 16 | Medical Content Workflows | ~38 | Content publishing, categorization, search |
+| 17 | Notification & Settings | ~36 | Notification triggers, user settings |
+| 18 | Appointment Pipeline E2E | ~44 | Full appointment pipeline from booking to completion |
+| 19 | PHR Cross-Portal Sync | ~42 | PHR data consistency across portals |
+| 20 | AI Pipeline Man-in-Loop | ~44 | AI validation with doctor approval workflow |
+| 21 | Content Rejection Recovery | ~36 | Content rejection, revision, re-approval flow |
+| 22 | Notification Triggers | ~38 | Event-driven notification verification |
+| 23 | Mixed Simultaneous Workflows | ~40 | Concurrent multi-feature workflows |
+| 24 | Registration Approval E2E | ~39 | Full registration to approval pipeline |
 
 ### Run Tests
 
 ```powershell
-# ── Unit Tests (311 tests, < 2 seconds) ──
+# ── Unit Tests (1,419 tests, ~4.3 seconds) ──
 cd tests/unit
-npx vitest run              # Run all 311 unit tests
+npx vitest run              # Run all 1,419 unit tests
 npx vitest run --coverage    # With coverage report
 npx vitest watch             # Watch mode during development
 
-# ── E2E Tests (808 tests, requires Docker services running) ──
+# ── E2E Tests (1,191 tests, requires Docker services running) ──
 cd tests/e2e
 
-# Run ALL Local tests (headless)
-$env:HEADLESS="1"; npx playwright test --project=Local --workers=2
+# Run ALL Local tests
+$env:CI="true"; npx playwright test --project=Local --workers=6
 
 # Run ALL Cloud-Dev tests
 $env:TEST_ENV="cloud-dev"; npx playwright test --project="Cloud-Dev" --workers=2
 
-# Run Mobile viewport tests (local)
-$env:HEADLESS="1"; npx playwright test --project="Mobile-Local"
-
-# Run Mobile viewport tests (cloud-dev)
-$env:TEST_ENV="cloud-dev"; npx playwright test --project="Mobile-Cloud-Dev"
-
-# Run specific spec (headed, visible browser)
-npx playwright test "09-user-accounts" --project=Local
+# Run specific spec
+npx playwright test "09-phase2" --project=Local
 
 # View HTML Report
 npx playwright show-report
 ```
 
-### Unit Test Suites (tests/unit/)
+### Unit Test Suites (tests/unit/) — 46 Files
 
-| Suite | Tests | Coverage Area |
+| Category | Files | Coverage Area |
 | ----- | ----- | ------------- |
-| doctor-portal/drugDatabase | 25 | Drug data integrity, search, interaction checking |
-| doctor-portal/config | 25 | GCS buckets, feature flags, WebSocket URLs |
-| patient-portal/sharedPHRTypes | 28 | PHR factory, living will, doctor view transforms |
-| patient-portal/api-service | 30 | Endpoint registry, query params, auth headers |
-| mobile/shared-utils | 32 | Thai date/currency formatters, validators |
-| mobile/api-client | 26 | Error normalization, token refresh, URL construction |
-| mobile/sync-engine | 31 | Offline queue, conflict resolution, delta sync |
-| meeting-server/jitsi-meeting | 31 | Transcript chunking, CDS rules, room names |
-| security/security-validation | 38 | Password policy, JWT, CORS, rate limiting, OWASP |
-| database/schema-validation | 45 | Table registry, appointment FSM, RBAC, PDPA |
-| doctor-portal/labOrders | 18 | Lab order CRUD, validation, result upload, imaging |
-| doctor-portal/adminService | 22 | Admin getAllUsers SQL fix, doctor approval flow |
-| doctor-portal/prescriptions | 16 | Prescription validation, SQL builder, patient query |
-| doctor-portal/apiEndpoints | 25 | Route config, response format, error handling |
-| database/embeddedPg | 17 | Embedded PG config, connection validation, migrations |
+| doctor-portal | 20 | Auth, API routes, EMR, prescriptions, GCS, Gemini AI, OWASP, storage, appointments |
+| patient-portal | 15 | Auth, routes, PHR, AI, content, PDPA, notifications, video meeting |
+| meeting-server | 5 | Jitsi meeting, AI summary, socket events, meeting routes |
+| security | 2 | CORS, rate limiting, OWASP headers, SQL/XSS injection detection |
+| database | 4 | Schema validation, seed data, embedded PG, data integrity |
 
-### Test Coverage — 18 Sections
+### Test Coverage — 17 Sections
 
 | Section | Coverage Area | Process Documents |
 | ------- | ------------- | ----------------- |
@@ -173,9 +156,8 @@ npx playwright show-report
 | M | Password Reset Flow | Forgot password, reset token validation |
 | N | All Pages Navigation (Patient) | 15 pages return 200 |
 | O | All Pages Navigation (Doctor) | 21 pages return 200 |
-| P | Mobile Viewport (Android/iOS) | Pixel 7, iPhone 13, iPhone SE, iPad Mini |
-| Q | Data Streaming & Sync | PHR, appointments, content streaming across users |
-| R | Phase 2 AI-HIS | CTM, Geriatric Screening, SOS, Nursing Dashboard |
+| P | Data Streaming & Sync | PHR, appointments, content streaming across users |
+| Q | Phase 2 AI-HIS | CTM, Geriatric Screening, SOS, Nursing Dashboard |
 
 ### Test Credentials
 
@@ -234,7 +216,7 @@ npx playwright show-report
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────────┐
-│                     IZARA TELEMEDICINE v1.5.3                               │
+│                     IZARA TELEMEDICINE v1.5.4                               │
 ├──────────────────────────────────────────────────────────────────────────┤
 │   ┌─────────────────┐  ┌─────────────────┐  ┌────────────────────────┐   │
 │   │  Patient Portal │  │  Doctor Portal  │  │  Meeting Server        │   │
@@ -364,7 +346,7 @@ cd Izara-jitsi-server
 gcloud builds submit --config=cloudbuild.yaml
 ```
 
-### Cloud URLs (Production — v1.5.3)
+### Cloud URLs (Production — v1.5.4)
 
 | Service | URL |
 | ------- | --- |
@@ -428,7 +410,7 @@ Isara-Anywhere/
 
 ---
 
-## 🔒 Security (v1.5.3 Hardened)
+## 🔒 Security (v1.5.4 Hardened)
 
 - **Authentication**: bcrypt password hashing (10 rounds), JWT + session tokens
 - **JWT Secrets**: Consistent `JWT_SECRET_FINAL` usage across all verify calls (sign/verify mismatch fixed)

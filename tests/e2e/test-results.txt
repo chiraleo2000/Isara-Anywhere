@@ -1,4 +1,0 @@
-Error: Project(s) "Local" not found. Available projects: ""
-    at filterProjects (C:\Users\chira\AppData\Local\npm-cache\_npx\e41f203b7505f1fb\node_modules\playwright\lib\runner\projectUtils.js:80:11)
-    at runTests (C:\Users\chira\AppData\Local\npm-cache\_npx\e41f203b7505f1fb\node_modules\playwright\lib\program.js:208:42)
-    at async i.<anonymous> (C:\Users\chira\AppData\Local\npm-cache\_npx\e41f203b7505f1fb\node_modules\playwright\lib\program.js:70:7)

@@ -17,7 +17,7 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     include: ['**/*.test.ts'],
-    exclude: ['node_modules', 'mobile/**'],
+    exclude: ['node_modules'],
     testTimeout: 30_000,
     pool: 'threads',
     poolOptions: {
