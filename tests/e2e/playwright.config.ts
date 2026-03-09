@@ -2,7 +2,7 @@
  * ═══════════════════════════════════════════════════════════════════════
  * IZARA TELEMEDICINE — PLAYWRIGHT E2E CONFIG v15.0.0
  * ═══════════════════════════════════════════════════════════════════════
- * 29 spec files (01-29) | ~1400 tests | 3 projects: Local, Cloud, Cloud-Dev
+ * 30 spec files (01-30) | ~1450 tests | 3 projects: Local, Cloud, Cloud-Dev
  * Updated: March 9, 2026
  *
  * Suite:
@@ -40,8 +40,8 @@ import { defineConfig, devices } from '@playwright/test';
 
 const isCloud = process.env.TEST_ENV === 'cloud';
 const isCI = process.env.CI === 'true';
-// Headed mode: fewer workers to avoid browser launch timeouts
-const parallelWorkers = parseInt(process.env.PW_WORKERS || (isCI ? '6' : '3'), 10);
+// Workers: 8 for headless CI, 6 for headed local (run 5-8 specs in parallel)
+const parallelWorkers = parseInt(process.env.PW_WORKERS || (isCI ? '8' : '6'), 10);
 
 const SPEC_FILES = [
   '**/01-user-accounts-demo-pages.spec.ts',
@@ -71,8 +71,11 @@ const SPEC_FILES = [
   '**/25-register-login-doctor.spec.ts',
   '**/26-register-login-patient.spec.ts',
   '**/27-lab-data-doctor-to-patient.spec.ts',
-  '**/28-all-pages-data-verification.spec.ts',
+  '**/28a-patient-pages-verification.spec.ts',
+  '**/28b-doctor-pages-verification.spec.ts',
+  '**/28c-api-health-verification.spec.ts',
   '**/29-chat-ai-summary-cloud.spec.ts',
+  '**/30-appointment-meeting-ai-pipeline.spec.ts',
 ];
 
 // Cloud: essential specs + new critical specs (register, lab, pages, chat/summary)
@@ -83,8 +86,11 @@ const CLOUD_SPEC_FILES = [
   '**/25-register-login-doctor.spec.ts',
   '**/26-register-login-patient.spec.ts',
   '**/27-lab-data-doctor-to-patient.spec.ts',
-  '**/28-all-pages-data-verification.spec.ts',
+  '**/28a-patient-pages-verification.spec.ts',
+  '**/28b-doctor-pages-verification.spec.ts',
+  '**/28c-api-health-verification.spec.ts',
   '**/29-chat-ai-summary-cloud.spec.ts',
+  '**/30-appointment-meeting-ai-pipeline.spec.ts',
 ];
 
 export default defineConfig({

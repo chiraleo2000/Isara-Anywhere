@@ -205,7 +205,7 @@ export const ENDPOINTS = {
     analyzeDocument: '/api/ai/analyze-document',
     analyze: '/api/ai/analyze-document',
     emrSummary: '/api/ai/emr-summary',
-    patientInstruction: '/api/ai/patient-instruction',
+    patientInstruction: '/api/ai/patient-instruction-sheet',
     meetingSummary: '/api/ai/meeting-summary',
     validate: '/api/ai/validate',
     knowledge: '/api/ai/knowledge',

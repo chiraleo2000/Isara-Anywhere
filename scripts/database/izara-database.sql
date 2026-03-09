@@ -125,6 +125,8 @@ CREATE TABLE users (
     -- Admin fields
     admin_privileges JSONB,
     is_admin BOOLEAN DEFAULT false,
+    role_updated_at TIMESTAMP WITH TIME ZONE,
+    role_updated_by VARCHAR(50),
     -- Settings
     preferences JSONB DEFAULT '{"language": "th", "theme": "light", "notifications": true}'::jsonb,
     notification_settings JSONB DEFAULT '{"appointments": true, "messages": true, "healthReminders": true, "promotions": false, "email": true, "push": true, "sms": false}'::jsonb,

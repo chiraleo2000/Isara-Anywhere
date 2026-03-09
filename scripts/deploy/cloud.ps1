@@ -1,6 +1,6 @@
 #!/usr/bin/env pwsh
 # ============================================================================
-# IZARA TELEMEDICINE — Cloud Run Deployment Script v4.0.0
+# IZARA TELEMEDICINE — Cloud Run Deployment Script v4.1.0
 # ============================================================================
 #
 # Deploys all 5 services to Google Cloud Run with "-dev-testing" suffix:
@@ -167,6 +167,25 @@ if (-not $OnlyApps) {
 if ($OnlyPgAdmin) { exit 0 }
 
 Write-OK "PostgreSQL host: $PG_HOST (GCE VM)"
+
+# ============================================================================
+# STEP 2b: DATABASE MIGRATIONS (idempotent — safe to re-run)
+# ============================================================================
+Write-Step "Running database migrations on cloud PostgreSQL..."
+$env:PGPASSWORD = $DB_PASSWORD
+$migrationSql = @"
+ALTER TABLE users ADD COLUMN IF NOT EXISTS role_updated_at TIMESTAMP WITH TIME ZONE;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS role_updated_by VARCHAR(50);
+"@
+$migrationSql | psql -h $PG_HOST -U $DB_USER -d $DB_NAME -v ON_ERROR_STOP=1 2>$null
+if ($LASTEXITCODE -eq 0) {
+    Write-OK "Database migrations applied successfully"
+} else {
+    Write-Warn "psql not available locally — migrations will be applied via SSH"
+    gcloud compute ssh $VM_NAME --zone=$VM_ZONE --command="sudo -u postgres psql -d $DB_NAME -c `"ALTER TABLE users ADD COLUMN IF NOT EXISTS role_updated_at TIMESTAMP WITH TIME ZONE; ALTER TABLE users ADD COLUMN IF NOT EXISTS role_updated_by VARCHAR(50);`"" 2>$null
+    if ($LASTEXITCODE -eq 0) { Write-OK "Database migrations applied via SSH" }
+    else { Write-Warn "Could not run migration — columns may need manual addition" }
+}
 
 # ============================================================================
 # STEP 3: MEETING SERVER

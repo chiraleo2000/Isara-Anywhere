@@ -30,6 +30,7 @@ const USERS = {
 };
 
 export const AUTH_CACHE_PATH = path.join(__dirname, '.auth-cache.json');
+export const STORAGE_STATE_DIR = path.join(__dirname, '.auth-states');
 
 export interface CachedAuth {
   timestamp: number;
@@ -84,14 +85,63 @@ async function globalSetup(_config: FullConfig) {
       },
     };
 
-    // Ensure directory exists
+    // Ensure directories exist
     const dir = path.dirname(AUTH_CACHE_PATH);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    if (!fs.existsSync(STORAGE_STATE_DIR)) fs.mkdirSync(STORAGE_STATE_DIR, { recursive: true });
     fs.writeFileSync(AUTH_CACHE_PATH, JSON.stringify(cache, null, 2));
+
+    // ── Write Playwright storageState files per role ───────────────────
+    // These let specs use test.use({ storageState }) so pages start
+    // pre-authenticated with ZERO login navigation.
+    for (const [role, u] of Object.entries(cache.users)) {
+      const isDoctorPortal = role === 'doctor' || role === 'admin';
+      const origin = isDoctorPortal ? DOCTOR_URL : PATIENT_URL;
+      const now = Date.now();
+
+      const localStorageEntries: { name: string; value: string }[] = [];
+      if (isDoctorPortal) {
+        localStorageEntries.push(
+          { name: 'token', value: u.token },
+          { name: 'izara_current_user', value: JSON.stringify({
+            id: u.id, email: u.email, name: u.name, displayName: u.name, role: u.role,
+            doctorId: u.id, medicalLicenseNumber: 'TEST-LIC-001',
+            isActive: true, emailVerified: true,
+            isAdmin: role === 'admin',
+            adminPrivileges: role === 'admin'
+              ? { manageDoctors: true, manageAppointments: true, viewAllRecords: true, manageContent: true, systemSettings: true }
+              : undefined,
+            preferences: { theme: 'light', language: 'th', notifications: { email: true, push: true, sms: false } },
+          }) },
+          { name: 'izara_session_expiry', value: (now + 3600000).toString() },
+          { name: 'izara_last_activity', value: now.toString() },
+        );
+      } else {
+        localStorageEntries.push(
+          { name: 'auth_token', value: u.token },
+          { name: 'izara_user', value: JSON.stringify({ id: u.id, email: u.email, name: u.name, role: u.role }) },
+          { name: 'izara_patient_last_activity', value: now.toString() },
+        );
+      }
+      // Generic keys for components that read them directly
+      localStorageEntries.push(
+        { name: 'izara_auth_token', value: u.token },
+        { name: 'user', value: JSON.stringify({ email: u.email, name: u.name, id: u.id, role: u.role, token: u.token }) },
+      );
+
+      const storageState = {
+        cookies: [],
+        origins: [{ origin, localStorage: localStorageEntries }],
+      };
+      fs.writeFileSync(
+        path.join(STORAGE_STATE_DIR, `${role}.json`),
+        JSON.stringify(storageState, null, 2),
+      );
+    }
 
     const ok = (t: string) => t ? '✅' : '❌';
     console.log(`   ${ok(p1)} patient1 | ${ok(p2)} patient2 | ${ok(p3)} patient3 | ${ok(doc)} doctor | ${ok(adm)} admin`);
-    console.log(`   Done in ${Date.now() - t0}ms — tokens cached to .auth-cache.json\n`);
+    console.log(`   Done in ${Date.now() - t0}ms — tokens + storageState cached\n`);
   } finally {
     await ctx.dispose();
   }

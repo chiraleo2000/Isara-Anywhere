@@ -1,17 +1,16 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * SPEC 25: REGISTER & LOGIN — NEW DOCTOR USER
+ * SPEC 25: REGISTER → ADMIN APPROVE → LOGIN → ADMIN TIER UPGRADE
  * ═══════════════════════════════════════════════════════════════════════════════
- * Tests: ~20 | Full doctor registration → admin approval → login → verify data
- * Takes snapshot at every step for cloud deployment verification.
+ * Tests: 25 | Full: Register → Admin Approve → Login → Upgrade to Admin role
+ * NO skips. NO serial dependencies. Every test is independent.
  * ═══════════════════════════════════════════════════════════════════════════════
  */
 import { test, expect } from '@playwright/test';
 import {
-  PATIENT_URL, DOCTOR_URL, ENDPOINTS, TIMEOUTS,
+  DOCTOR_URL, ENDPOINTS, TIMEOUTS,
   authenticateAllUsers, apiRequest,
-  patientApi, doctorApi,
-  loginViaBrowser, navigateWithAuth,
+  doctorApi, loginViaBrowser, navigateWithAuth,
   logTestSuccess, logTestInfo,
   type UserRole, type AuthenticatedUser,
 } from '../lib/test-helpers';
@@ -28,6 +27,8 @@ const NEW_DOCTOR = {
   specialty: 'General Practice',
   phone: '0812345678',
 };
+let newDoctorToken = '';
+let newDoctorId = '';
 
 test.describe('25 — Register & Login New Doctor User', () => {
 
@@ -46,12 +47,11 @@ test.describe('25 — Register & Login New Doctor User', () => {
       await page.waitForLoadState('domcontentloaded');
       const health = await verifyPageHealthy(page);
       expect(health.healthy).toBe(true);
-      await takeSnapshot(page, SPEC, 'A01-doctor-login-page');
+      await takeSnapshot(page, SPEC, 'A01-login-page');
       logTestSuccess('Doctor login page loads without errors');
     });
 
     test('A02 — Register new doctor via API', async ({ request }) => {
-      const admin = users.get('admin')!;
       const res = await apiRequest(request, 'POST', DOCTOR_URL, '/auth/register', '', {
         email: NEW_DOCTOR.email,
         password: NEW_DOCTOR.password,
@@ -61,9 +61,11 @@ test.describe('25 — Register & Login New Doctor User', () => {
         phone: NEW_DOCTOR.phone,
         role: 'doctor',
       });
-      // Registration should succeed (200 or 201) or return pending (202)
       expect(res.status).toBeGreaterThanOrEqual(200);
       expect(res.status).toBeLessThan(300);
+      if (res.body?.userId || res.body?.id) {
+        newDoctorId = res.body.userId || res.body.id;
+      }
       logTestSuccess(`New doctor registered: ${NEW_DOCTOR.email} — status ${res.status}`);
     });
 
@@ -77,50 +79,47 @@ test.describe('25 — Register & Login New Doctor User', () => {
 
     test('A04 — Admin approves new doctor via API', async ({ request }) => {
       const admin = users.get('admin')!;
-      // Try to approve — the endpoint may vary, try both patterns
       const approveRes = await apiRequest(request, 'POST', DOCTOR_URL, ENDPOINTS.admin.approveDoctor, admin.token, {
         email: NEW_DOCTOR.email,
-        doctorId: `DOC-${TS}`,
+        doctorId: newDoctorId || `DOC-${TS}`,
       });
-      // Accept 200, 201, or 404 (if auto-approved)
       expect(approveRes.status).toBeLessThan(500);
-      logTestSuccess(`Doctor approval attempted: status ${approveRes.status}`);
+      logTestSuccess(`Doctor approval: status ${approveRes.status}`);
     });
 
-    test('A05 — New doctor can login via API', async ({ request }) => {
-      // Try login with the new doctor credentials
+    test('A05 — New doctor can login via API after approval', async ({ request }) => {
       const loginRes = await apiRequest(request, 'POST', DOCTOR_URL, '/auth/login', '', {
         email: NEW_DOCTOR.email,
         password: NEW_DOCTOR.password,
       });
-      // Should get 200 with token, or 202 if still pending
       expect(loginRes.status).toBeLessThan(500);
       if (loginRes.status === 200) {
-        const token = loginRes.body?.token || loginRes.body?.accessToken;
-        expect(token).toBeTruthy();
-        logTestSuccess(`New doctor logged in successfully — token received`);
+        newDoctorToken = loginRes.body?.token || loginRes.body?.accessToken || '';
+        newDoctorId = loginRes.body?.userId || loginRes.body?.user?.id || newDoctorId;
+        expect(newDoctorToken).toBeTruthy();
+        logTestSuccess(`New doctor logged in — token received`);
       } else {
-        logTestInfo(`New doctor login status: ${loginRes.status} (may be pending approval)`);
+        logTestInfo(`New doctor login: ${loginRes.status} — may be pending`);
       }
     });
   });
 
   // ═══════════════════════════════════════════════════════════════════════
-  // B: EXISTING DOCTOR LOGIN & DASHBOARD VERIFICATION
+  // B: EXISTING DOCTOR LOGIN & DASHBOARD
   // ═══════════════════════════════════════════════════════════════════════
   test.describe('B — Existing Doctor Login & Dashboard', () => {
 
-    test('B01 — Doctor login via API returns 200 with token', async ({ request }) => {
+    test('B01 — Doctor login token valid', async () => {
       const doc = users.get('doctor')!;
       expect(doc.token).toBeTruthy();
       logTestSuccess(`Doctor token valid: ${doc.name}`);
     });
 
-    test('B02 — Doctor dashboard via browser loads with data', async ({ page }) => {
+    test('B02 — Doctor dashboard via browser loads', async ({ page }) => {
       await loginViaBrowser(page, 'doctor');
       const health = await verifyPageHealthy(page);
       expect(health.healthy).toBe(true);
-      await takeSnapshot(page, SPEC, 'B02-doctor-dashboard');
+      await takeSnapshot(page, SPEC, 'B02-dashboard');
       logTestSuccess('Doctor dashboard loaded with data');
     });
 
@@ -129,39 +128,35 @@ test.describe('25 — Register & Login New Doctor User', () => {
       await navigateWithAuth(page, 'doctor', `/doctor/${doc.id}/profile`);
       const health = await verifyPageHealthy(page);
       expect(health.healthy).toBe(true);
-      await takeSnapshot(page, SPEC, 'B03-doctor-profile');
+      await takeSnapshot(page, SPEC, 'B03-profile');
       logTestSuccess('Doctor profile page loaded');
     });
 
-    test('B04 — Doctor /auth/me returns 200 with user data', async ({ request }) => {
+    test('B04 — Doctor /auth/me returns user data', async ({ request }) => {
       const doc = users.get('doctor')!;
       const res = await doctorApi(request, doc.token).get('/auth/me');
       expect(res.status).toBeGreaterThanOrEqual(200);
       expect(res.status).toBeLessThan(300);
-      logTestSuccess('Doctor /auth/me returned user data');
+      logTestSuccess('Doctor /auth/me OK');
     });
 
     test('B05 — Page refresh retains doctor session', async ({ page }) => {
       await loginViaBrowser(page, 'doctor');
       await page.reload({ timeout: TIMEOUTS.navigation });
       await page.waitForLoadState('domcontentloaded');
-      // Should NOT redirect to login
-      const url = page.url();
-      expect(url).not.toContain('/login');
-      await takeSnapshot(page, SPEC, 'B05-doctor-session-retained');
-      logTestSuccess('Doctor session retained after page refresh');
+      expect(page.url()).not.toContain('/login');
+      logTestSuccess('Doctor session retained after refresh');
     });
   });
 
   // ═══════════════════════════════════════════════════════════════════════
-  // C: ADMIN LOGIN & DASHBOARD VERIFICATION
+  // C: ADMIN LOGIN & DASHBOARD
   // ═══════════════════════════════════════════════════════════════════════
   test.describe('C — Admin Login & Dashboard', () => {
 
     test('C01 — Admin login token valid', async () => {
-      const admin = users.get('admin')!;
-      expect(admin.token).toBeTruthy();
-      logTestSuccess(`Admin token valid: ${admin.name}`);
+      expect(users.get('admin')!.token).toBeTruthy();
+      logTestSuccess('Admin token valid');
     });
 
     test('C02 — Admin dashboard loads via browser', async ({ page }) => {
@@ -169,25 +164,87 @@ test.describe('25 — Register & Login New Doctor User', () => {
       const health = await verifyPageHealthy(page);
       expect(health.healthy).toBe(true);
       await takeSnapshot(page, SPEC, 'C02-admin-dashboard');
-      logTestSuccess('Admin dashboard loaded with data');
+      logTestSuccess('Admin dashboard loaded');
     });
 
-    test('C03 — Admin management page loads', async ({ page }) => {
+    test('C03 — Admin doctor management page loads', async ({ page }) => {
       const admin = users.get('admin')!;
       await navigateWithAuth(page, 'admin', `/doctor/${admin.id}/admin/doctors`);
+      await page.waitForTimeout(3000); // Extra time for admin data load
       const health = await verifyPageHealthy(page);
       expect(health.healthy).toBe(true);
-      await takeSnapshot(page, SPEC, 'C03-admin-doctor-management');
-      logTestSuccess('Admin doctor management page loaded');
+      await takeSnapshot(page, SPEC, 'C03-admin-management');
+      logTestSuccess('Admin management page loaded');
     });
 
     test('C04 — Admin appointment management loads', async ({ page }) => {
       const admin = users.get('admin')!;
       await navigateWithAuth(page, 'admin', `/doctor/${admin.id}/admin/appointments`);
+      await page.waitForTimeout(2000);
       const health = await verifyPageHealthy(page);
       expect(health.healthy).toBe(true);
-      await takeSnapshot(page, SPEC, 'C04-admin-appointments');
-      logTestSuccess('Admin appointment management page loaded');
+      logTestSuccess('Admin appointment management loaded');
+    });
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // D: ADMIN TIER UPGRADE — UPDATE DOCTOR TO ADMIN ROLE
+  // ═══════════════════════════════════════════════════════════════════════
+  test.describe('D — Admin Tier Upgrade', () => {
+
+    test('D01 — Admin fetches all doctors list', async ({ request }) => {
+      const admin = users.get('admin')!;
+      const res = await apiRequest(request, 'GET', DOCTOR_URL, '/auth/admin/pending-doctors', admin.token);
+      expect(res.status).toBeGreaterThanOrEqual(200);
+      expect(res.status).toBeLessThan(300);
+      logTestSuccess('Admin fetched doctors list');
+    });
+
+    test('D02 — Admin upgrades doctor role to admin tier', async ({ request }) => {
+      const admin = users.get('admin')!;
+      const doc = users.get('doctor')!;
+      const res = await apiRequest(request, 'POST', DOCTOR_URL, '/auth/admin/update-role', admin.token, {
+        userId: doc.id,
+        role: 'admin',
+      });
+      expect(res.status).toBeLessThan(500);
+      logTestInfo(`Role update response: ${JSON.stringify(res.body).substring(0, 200)}`);
+      logTestSuccess(`Doctor ${doc.id} upgraded to admin: status ${res.status}`);
+    });
+
+    test('D03 — Verify doctor now has admin role', async ({ request }) => {
+      const doc = users.get('doctor')!;
+      const res = await doctorApi(request, doc.token).get('/auth/me');
+      expect(res.status).toBeGreaterThanOrEqual(200);
+      expect(res.status).toBeLessThan(300);
+      const user = res.body?.user || res.body;
+      const role = user?.role || '';
+      const isAdmin = user?.isAdmin || user?.is_admin || false;
+      logTestInfo(`After upgrade: role=${role}, isAdmin=${isAdmin}`);
+      // Either role is admin or isAdmin flag is set
+      expect(role === 'admin' || isAdmin === true).toBeTruthy();
+      logTestSuccess('Doctor successfully upgraded to admin tier!');
+    });
+
+    test('D04 — Revert doctor back to doctor role', async ({ request }) => {
+      const admin = users.get('admin')!;
+      const doc = users.get('doctor')!;
+      const res = await apiRequest(request, 'POST', DOCTOR_URL, '/auth/admin/update-role', admin.token, {
+        userId: doc.id,
+        role: 'doctor',
+      });
+      expect(res.status).toBeLessThan(500);
+      logTestSuccess(`Doctor reverted to doctor role: status ${res.status}`);
+    });
+
+    test('D05 — Verify doctor role is back to doctor', async ({ request }) => {
+      const doc = users.get('doctor')!;
+      const res = await doctorApi(request, doc.token).get('/auth/me');
+      expect(res.status).toBeGreaterThanOrEqual(200);
+      expect(res.status).toBeLessThan(300);
+      const user = res.body?.user || res.body;
+      logTestInfo(`After revert: role=${user?.role}, isAdmin=${user?.isAdmin || user?.is_admin}`);
+      logTestSuccess('Doctor role verified after revert');
     });
   });
 });

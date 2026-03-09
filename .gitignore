@@ -36,6 +36,9 @@ coverage/
 *.lcov
 tests/e2e/test-results/
 tests/e2e/playwright-report/
+tests/e2e/.auth-cache.json
+tests/e2e/.auth-states/
+tests/e2e/cloud-test-snapshots/
 
 # Editor directories and files
 .vscode/

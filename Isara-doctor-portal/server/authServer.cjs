@@ -1485,11 +1485,11 @@ app.post('/auth/admin/update-role', async (req, res) => {
 
     const user = userResult.rows[0];
 
-    // Update user role
+    // Update user role (use updated_at for compatibility; role_updated_at/by are optional)
     await pgPool.query(
-      `UPDATE users SET role = $1, is_admin = $2, role_updated_at = NOW(), role_updated_by = $3, updated_at = NOW()
-       WHERE id = $4`,
-      [role, isAdmin, adminId || 'admin', userId]
+      `UPDATE users SET role = $1, is_admin = $2, updated_at = NOW()
+       WHERE id = $3`,
+      [role, isAdmin, userId]
     );
 
     console.log(`🔄 [Admin] Role updated for ${user.email}: ${role} (via /auth/admin/update-role) - PostgreSQL`);

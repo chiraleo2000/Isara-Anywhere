@@ -94,34 +94,38 @@ export async function verifyPageHealthy(page: Page, timeout = 10000): Promise<{ 
     // networkidle timeout is acceptable — some pages have persistent connections
   }
 
-  // Check for error indicators in the page
-  const errorTexts = await page.evaluate(() => {
-    const issues: string[] = [];
-    const body = document.body?.innerText || '';
-    const lower = body.toLowerCase();
+  // Check for error indicators in the page (wrapped in try-catch for page lifecycle safety)
+  try {
+    const errorTexts = await page.evaluate(() => {
+      const issues: string[] = [];
+      const body = document.body?.innerText || '';
+      const lower = body.toLowerCase();
 
-    // Check for common error patterns
-    if (lower.includes('failed to fetch') || lower.includes('network error')) {
-      issues.push('Network/fetch error visible on page');
-    }
-    if (lower.includes('500 internal server') || lower.includes('502 bad gateway') || lower.includes('503 service')) {
-      issues.push('Server error visible on page');
-    }
-
-    // Check for stuck loading ONLY if it's the primary content
-    const mainContent = document.querySelector('main, [role="main"], .main-content, #root > div');
-    if (mainContent) {
-      const mainText = mainContent.textContent?.trim() || '';
-      // Only flag if the ENTIRE main content is just a loading indicator
-      if (mainText.length < 50 && (/^(loading|กำลังโหลด|\.\.\.)\s*$/i.test(mainText))) {
-        issues.push('Page appears stuck on loading state');
+      // Check for common error patterns
+      if (lower.includes('failed to fetch') || lower.includes('network error')) {
+        issues.push('Network/fetch error visible on page');
       }
-    }
+      if (lower.includes('500 internal server') || lower.includes('502 bad gateway') || lower.includes('503 service')) {
+        issues.push('Server error visible on page');
+      }
 
-    return issues;
-  });
+      // Check for stuck loading ONLY if it's the primary content
+      const mainContent = document.querySelector('main, [role="main"], .main-content, #root > div');
+      if (mainContent) {
+        const mainText = mainContent.textContent?.trim() || '';
+        // Only flag if the ENTIRE main content is just a loading indicator
+        if (mainText.length < 50 && (/^(loading|กำลังโหลด|\.\.\.)\s*$/i.test(mainText))) {
+          issues.push('Page appears stuck on loading state');
+        }
+      }
 
-  issues.push(...errorTexts);
+      return issues;
+    });
+
+    issues.push(...errorTexts);
+  } catch {
+    // page.evaluate can fail if page/context was closed — not an actual health issue
+  }
 
   return { healthy: issues.length === 0, issues };
 }

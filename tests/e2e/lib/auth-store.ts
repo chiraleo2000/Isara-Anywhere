@@ -23,6 +23,12 @@ export interface AuthenticatedUser {
 }
 
 const AUTH_CACHE_PATH = path.join(__dirname, '..', '.auth-cache.json');
+const STORAGE_STATE_DIR = path.join(__dirname, '..', '.auth-states');
+
+/** Get the path to a storageState JSON file for a given role (written by global-setup). */
+export function getStorageStatePath(role: UserRole): string {
+  return path.join(STORAGE_STATE_DIR, `${role}.json`);
+}
 
 let _cached: Map<UserRole, AuthenticatedUser> | null = null;
 

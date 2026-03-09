@@ -14,7 +14,10 @@ import {
   getAuthToken, getDoctorAuthToken, authHeaders,
   logTestSuccess, logTestWarning,
 } from './test-config';
-import { loadCachedUsers, getCachedUser } from './auth-store';
+import { loadCachedUsers, getCachedUser, getStorageStatePath } from './auth-store';
+
+// Re-export for specs that need storageState paths
+export { getStorageStatePath } from './auth-store';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -127,56 +130,58 @@ export async function closeMultiUserSession(session: MultiUserSession): Promise<
 }
 
 /**
- * Login a user via browser — FAST path injects the cached JWT into
- * localStorage so there is NO form-fill / submit / redirect wait.
- * Falls back to UI login only if the cache is unavailable.
+ * Inject auth tokens into a page via addInitScript — runs BEFORE page JS.
+ * This means the React app sees the auth tokens immediately on first load.
+ * NO navigation to /login needed. Call this ONCE per page, then navigate.
+ */
+async function injectAuth(page: Page, role: UserRole): Promise<void> {
+  const user = getCachedUser(role);
+  const isDoctor = role === 'doctor' || role === 'admin';
+
+  await page.addInitScript(({ token, email, name, id, userRole, isDoctorPortal }) => {
+    const now = Date.now();
+    if (isDoctorPortal) {
+      localStorage.setItem('token', token);
+      localStorage.setItem('izara_current_user', JSON.stringify({
+        id, email, name, displayName: name, role: userRole,
+        doctorId: id, medicalLicenseNumber: 'TEST-LIC-001',
+        isActive: true, emailVerified: true,
+        isAdmin: userRole === 'admin',
+        adminPrivileges: userRole === 'admin'
+          ? { manageDoctors: true, manageAppointments: true, viewAllRecords: true, manageContent: true, systemSettings: true }
+          : undefined,
+        preferences: { theme: 'light', language: 'th', notifications: { email: true, push: true, sms: false } },
+      }));
+      localStorage.setItem('izara_session_expiry', (now + 3600000).toString());
+      localStorage.setItem('izara_last_activity', now.toString());
+    } else {
+      localStorage.setItem('auth_token', token);
+      localStorage.setItem('izara_user', JSON.stringify({ id, email, name, role: userRole }));
+      localStorage.setItem('izara_patient_last_activity', now.toString());
+    }
+    localStorage.setItem('izara_auth_token', token);
+    localStorage.setItem('user', JSON.stringify({ email, name, id, role: userRole, token }));
+  }, { token: user.token, email: user.email, name: user.name, id: user.id, userRole: role, isDoctorPortal: isDoctor });
+}
+
+/**
+ * Login a user via browser — ONE navigation directly to dashboard.
+ * Uses addInitScript to inject auth before page JS runs.
+ * NO /login detour, NO form fill, NO wasted time.
  */
 export async function loginViaBrowser(
   page: Page,
   role: UserRole,
   retries = 2,
 ): Promise<void> {
-  const creds = CREDENTIALS[role];
   const isDoctor = role === 'doctor' || role === 'admin';
   const portalUrl = isDoctor ? DOCTOR_URL : PATIENT_URL;
 
-  // ── Fast path: inject token directly ────────────────────────────────
+  // ── Fast path: inject token via addInitScript + direct navigation ───
   try {
     const user = getCachedUser(role);
     if (user.token) {
-      // Navigate to portal root first (needed to set localStorage on the correct origin)
-      await page.goto(`${portalUrl}/login`, { timeout: TIMEOUTS.navigation, waitUntil: 'domcontentloaded' });
-
-      // Inject auth into localStorage — must match EXACTLY what each portal reads:
-      //   Doctor portal (authServices.ts): token, izara_current_user, izara_session_expiry, izara_last_activity
-      //   Patient portal (AuthContext.tsx): auth_token, izara_user, izara_patient_last_activity
-      await page.evaluate(({ token, email, name, id, userRole, isDoctorPortal }) => {
-        const now = Date.now();
-        if (isDoctorPortal) {
-          localStorage.setItem('token', token);
-          localStorage.setItem('izara_current_user', JSON.stringify({
-            id, email, name, displayName: name, role: userRole,
-            doctorId: id, medicalLicenseNumber: 'TEST-LIC-001',
-            isActive: true, emailVerified: true,
-            isAdmin: userRole === 'admin',
-            adminPrivileges: userRole === 'admin'
-              ? { manageDoctors: true, manageAppointments: true, viewAllRecords: true, manageContent: true, systemSettings: true }
-              : undefined,
-            preferences: { theme: 'light', language: 'th', notifications: { email: true, push: true, sms: false } },
-          }));
-          localStorage.setItem('izara_session_expiry', (now + 3600000).toString());
-          localStorage.setItem('izara_last_activity', now.toString());
-        } else {
-          localStorage.setItem('auth_token', token);
-          localStorage.setItem('izara_user', JSON.stringify({ id, email, name, role: userRole }));
-          localStorage.setItem('izara_patient_last_activity', now.toString());
-        }
-        // Generic keys for components that read them directly
-        localStorage.setItem('izara_auth_token', token);
-        localStorage.setItem('user', JSON.stringify({ email, name, id, role: userRole, token }));
-      }, { token: user.token, email: user.email, name: user.name, id: user.id, userRole: role, isDoctorPortal: isDoctor });
-
-      // Navigate to dashboard — already "logged in" via localStorage
+      await injectAuth(page, role);
       const dashPath = isDoctor ? `${portalUrl}/doctor/${user.id}/dashboard` : `${portalUrl}/dashboard`;
       await page.goto(dashPath, { timeout: TIMEOUTS.navigation, waitUntil: 'domcontentloaded' });
       return;
@@ -185,10 +190,11 @@ export async function loginViaBrowser(
     // Cache unavailable — fall through to UI login
   }
 
-  // ── Fallback: UI login ──────────────────────────────────────────────
+  // ── Fallback: UI login (only if global-setup didn't run) ────────────
+  const creds = CREDENTIALS[role];
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
-      await page.goto(`${portalUrl}/login`, { timeout: TIMEOUTS.navigation });
+      await page.goto(`${isDoctor ? DOCTOR_URL : PATIENT_URL}/login`, { timeout: TIMEOUTS.navigation });
       await page.fill('input[type="email"]', creds.email);
       await page.fill('input[type="password"]', creds.password);
       await page.click('button[type="submit"]');
@@ -205,15 +211,7 @@ export async function loginViaBrowser(
 
 /**
  * Navigate to ANY page in a portal with authentication already injected.
- * Unlike loginViaBrowser (which always ends at dashboard), this lands on the
- * exact `targetPath` you request.
- *
- * @param page       Playwright Page fixture
- * @param role       UserRole to authenticate as
- * @param targetPath The portal-relative path, e.g. '/appointments' for patient
- *                   or '/doctor/DOC-TEST-001/schedule' for doctor.
- *                   For doctor portal, pass the **full** sub-path including
- *                   `/doctor/{userId}/...`; this helper prepends the portal base.
+ * ONE navigation directly to the target page — no /login detour.
  */
 export async function navigateWithAuth(
   page: Page,
@@ -223,43 +221,9 @@ export async function navigateWithAuth(
   const isDoctor = role === 'doctor' || role === 'admin';
   const portalUrl = isDoctor ? DOCTOR_URL : PATIENT_URL;
 
-  const user = getCachedUser(role);
-  // Navigate to login page to set localStorage on the correct origin
-  await page.goto(`${portalUrl}/login`, {
-    timeout: TIMEOUTS.navigation,
-    waitUntil: 'domcontentloaded',
-  });
+  await injectAuth(page, role);
 
-  // Inject auth into localStorage — keys must match each portal exactly
-  await page.evaluate(
-    ({ token, email, name, id, userRole, isDoctorPortal }) => {
-      const now = Date.now();
-      if (isDoctorPortal) {
-        localStorage.setItem('token', token);
-        localStorage.setItem('izara_current_user', JSON.stringify({
-          id, email, name, displayName: name, role: userRole,
-          doctorId: id, medicalLicenseNumber: 'TEST-LIC-001',
-          isActive: true, emailVerified: true,
-          isAdmin: userRole === 'admin',
-          adminPrivileges: userRole === 'admin'
-            ? { manageDoctors: true, manageAppointments: true, viewAllRecords: true, manageContent: true, systemSettings: true }
-            : undefined,
-          preferences: { theme: 'light', language: 'th', notifications: { email: true, push: true, sms: false } },
-        }));
-        localStorage.setItem('izara_session_expiry', (now + 3600000).toString());
-        localStorage.setItem('izara_last_activity', now.toString());
-      } else {
-        localStorage.setItem('auth_token', token);
-        localStorage.setItem('izara_user', JSON.stringify({ id, email, name, role: userRole }));
-        localStorage.setItem('izara_patient_last_activity', now.toString());
-      }
-      localStorage.setItem('izara_auth_token', token);
-      localStorage.setItem('user', JSON.stringify({ email, name, id, role: userRole, token }));
-    },
-    { token: user.token, email: user.email, name: user.name, id: user.id, userRole: role, isDoctorPortal: isDoctor },
-  );
-
-  // Navigate to the requested page
+  // Navigate directly to the requested page — auth is already injected
   await page.goto(`${portalUrl}${targetPath}`, {
     timeout: TIMEOUTS.navigation,
     waitUntil: 'domcontentloaded',
