@@ -1,9 +1,9 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════
- * IZARA TELEMEDICINE — PLAYWRIGHT E2E CONFIG v14.0.0
+ * IZARA TELEMEDICINE — PLAYWRIGHT E2E CONFIG v15.0.0
  * ═══════════════════════════════════════════════════════════════════════
- * 24 spec files (01-24) | ~1200 tests | 3 projects: Local, Cloud, Cloud-Dev
- * Updated: March 2, 2026
+ * 29 spec files (01-29) | ~1400 tests | 3 projects: Local, Cloud, Cloud-Dev
+ * Updated: March 9, 2026
  *
  * Suite:
  *   01: User Accounts Demo, Password Reset & All Pages (91 tests)
@@ -68,13 +68,23 @@ const SPEC_FILES = [
   '**/22-notification-triggers.spec.ts',
   '**/23-mixed-simultaneous-workflows.spec.ts',
   '**/24-registration-approval-e2e.spec.ts',
+  '**/25-register-login-doctor.spec.ts',
+  '**/26-register-login-patient.spec.ts',
+  '**/27-lab-data-doctor-to-patient.spec.ts',
+  '**/28-all-pages-data-verification.spec.ts',
+  '**/29-chat-ai-summary-cloud.spec.ts',
 ];
 
-// Cloud: only essential specs to reduce cost
+// Cloud: essential specs + new critical specs (register, lab, pages, chat/summary)
 const CLOUD_SPEC_FILES = [
   '**/01-user-accounts-demo-pages.spec.ts',
   '**/02-auth-health-multiuser.spec.ts',
   '**/10-lab-imaging-map-features.spec.ts',
+  '**/25-register-login-doctor.spec.ts',
+  '**/26-register-login-patient.spec.ts',
+  '**/27-lab-data-doctor-to-patient.spec.ts',
+  '**/28-all-pages-data-verification.spec.ts',
+  '**/29-chat-ai-summary-cloud.spec.ts',
 ];
 
 export default defineConfig({
@@ -121,7 +131,15 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
         baseURL: 'https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app',
         viewport: { width: 1920, height: 1080 },
-        headless: false,            // ALWAYS show browser for Cloud too
+        headless: false,
+        screenshot: 'on',               // Capture EVERY action for cloud verification
+        video: 'on',                     // Full video recording
+        trace: 'on',                     // Full trace for debugging
+        launchOptions: {
+          args: ['--start-maximized', '--disable-gpu', '--no-sandbox'],
+          slowMo: 500,                   // 500ms between actions for snapshots
+          timeout: 120_000,
+        },
       },
       testMatch: CLOUD_SPEC_FILES,
     },

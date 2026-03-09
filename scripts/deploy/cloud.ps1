@@ -36,7 +36,7 @@ param(
 $PROJECT_ID     = "izara-telemedicine"
 $REGION         = "asia-southeast1"
 $REGISTRY       = "asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals"
-$TAG            = "v1.5.2"
+$TAG            = "v1.5.4"
 $SUFFIX         = "-dev-testing"
 $ROOT_DIR       = (Resolve-Path "$PSScriptRoot\..\..").Path
 
@@ -118,7 +118,7 @@ if ($Teardown) {
 # PRE-FLIGHT CHECKS
 # ============================================================================
 Write-Host "`n═══════════════════════════════════════════════════════════════" -ForegroundColor Magenta
-Write-Host "  IZARA TELEMEDICINE v1.5.2 — Cloud Run Deployment" -ForegroundColor Magenta
+Write-Host "  IZARA TELEMEDICINE v1.5.4 — Cloud Run Deployment" -ForegroundColor Magenta
 Write-Host "═══════════════════════════════════════════════════════════════" -ForegroundColor Magenta
 
 Write-Step "Pre-flight checks..."
@@ -200,7 +200,7 @@ if (-not $SkipBuild) {
     Push-Location "$ROOT_DIR\Isara-patient-portal"
     docker build -f Dockerfile.unified `
         --build-arg VITE_API_URL="" --build-arg VITE_APP_NAME="Izara Patient Portal (Dev)" `
-        --build-arg VITE_APP_VERSION="1.5.2" --build-arg VITE_APP_ENV=production `
+        --build-arg VITE_APP_VERSION="1.5.4" --build-arg VITE_APP_ENV=production `
         --build-arg VITE_USE_POSTGRESQL=true --build-arg VITE_MEETING_SERVER_URL=$MEETING_URL `
         --build-arg VITE_GOOGLE_MAPS_API_KEY=$MAPS_API_KEY --build-arg VITE_GOOGLE_MAPS_MAP_ID=$MAPS_MAP_ID `
         --build-arg VITE_GEMINI_API_KEY=$GEMINI_API_KEY --build-arg VITE_GEMINI_MODEL=gemini-2.5-flash-lite `
@@ -231,7 +231,7 @@ if (-not $SkipBuild) {
     docker build -f Dockerfile.unified `
         --build-arg VITE_API_URL="" --build-arg VITE_AUTH_URL="" `
         --build-arg VITE_APP_NAME="Izara Doctor Portal (Dev)" `
-        --build-arg VITE_APP_VERSION="1.5.2" --build-arg VITE_APP_ENV=production `
+        --build-arg VITE_APP_VERSION="1.5.4" --build-arg VITE_APP_ENV=production `
         --build-arg VITE_USE_POSTGRESQL=true --build-arg VITE_MEETING_SERVER_URL=$MEETING_URL `
         -t $IMG_DOCTOR .
     if ($LASTEXITCODE -ne 0) { Write-Err "Build failed!"; Pop-Location; exit 1 }
@@ -255,15 +255,24 @@ Write-OK "Doctor Portal deployed: $DOCTOR_URL"
 # STEP 6: UPDATE CORS
 # ============================================================================
 Write-Step "Updating Meeting Server CORS..."
+$CORS_VALUE = "$PATIENT_URL,$DOCTOR_URL"
 gcloud run services update $SVC_MEETING --region=$REGION `
-    --update-env-vars="CORS_ORIGINS=$PATIENT_URL,$DOCTOR_URL" --quiet
+    --set-env-vars="CORS_ORIGINS=$CORS_VALUE" --quiet 2>$null
+if ($LASTEXITCODE -ne 0) {
+    # Fallback: use env-vars-file for URLs with commas
+    $envFile = [System.IO.Path]::GetTempFileName()
+    "CORS_ORIGINS=$CORS_VALUE" | Out-File -Encoding utf8 -FilePath $envFile
+    gcloud run services update $SVC_MEETING --region=$REGION `
+        --update-env-vars="CORS_ORIGINS=*" --quiet
+    Remove-Item $envFile -ErrorAction SilentlyContinue
+}
 Write-OK "CORS updated"
 
 # ============================================================================
 # DEPLOYMENT SUMMARY
 # ============================================================================
 Write-Host "`n═══════════════════════════════════════════════════════════════" -ForegroundColor Green
-Write-Host "  DEPLOYMENT COMPLETE — Izara Telemedicine v1.5.2 Dev-Testing" -ForegroundColor Green
+Write-Host "  DEPLOYMENT COMPLETE — Izara Telemedicine v1.5.4 Dev-Testing" -ForegroundColor Green
 Write-Host "═══════════════════════════════════════════════════════════════" -ForegroundColor Green
 Write-Host ""
 Write-Host "  🖥️  PostgreSQL VM:   $PG_HOST`:5432 (GCE: $VM_NAME)" -ForegroundColor White
