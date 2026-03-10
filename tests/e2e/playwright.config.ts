@@ -40,8 +40,8 @@ import { defineConfig, devices } from '@playwright/test';
 
 const isCloud = process.env.TEST_ENV === 'cloud';
 const isCI = process.env.CI === 'true';
-// Workers: 8 for headless CI, 6 for headed local (run 5-8 specs in parallel)
-const parallelWorkers = parseInt(process.env.PW_WORKERS || (isCI ? '8' : '6'), 10);
+// Workers: 8 for CI, 8 for local headless (fast parallel, zero browser popups)
+const parallelWorkers = parseInt(process.env.PW_WORKERS || '8', 10);
 
 const SPEC_FILES = [
   '**/01-user-accounts-demo-pages.spec.ts',
@@ -108,7 +108,7 @@ export default defineConfig({
     ['json', { outputFile: './test-results/results.json' }],
   ],
   use: {
-    headless: isCI,               // HEADED by default! Only headless in CI
+    headless: true,                // Headless for fast parallel testing (zero popups)
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
     trace: 'on-first-retry',
@@ -127,7 +127,7 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
         baseURL: 'http://localhost:3005',
         viewport: { width: 1920, height: 1080 },
-        headless: false,            // ALWAYS show browser for Local
+        headless: true,             // Headless for fast parallel (use PW_HEADED=1 to show browser)
       },
       testMatch: SPEC_FILES,
     },
@@ -137,7 +137,7 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
         baseURL: 'https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app',
         viewport: { width: 1920, height: 1080 },
-        headless: false,
+        headless: true,
         screenshot: 'on',               // Capture EVERY action for cloud verification
         video: 'on',                     // Full video recording
         trace: 'on',                     // Full trace for debugging
@@ -155,7 +155,7 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
         baseURL: 'https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app',
         viewport: { width: 1920, height: 1080 },
-        headless: false,
+        headless: true,
       },
       testMatch: SPEC_FILES,
     },

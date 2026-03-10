@@ -1,26 +1,761 @@
-═══════════════════════════════════════════════════════════════
-  IZARA TELEMEDICINE v1.5.4 — E2E TEST RESULTS
-  Date: 2026-03-10 00:33:45
-═══════════════════════════════════════════════════════════════
 
-LOCAL (32 specs, 8 workers, headless):
-  PASS: 1317 | FAIL: 0 | FLAKY: 0 | SKIP: 0
-  Duration: 9.2 minutes
+≡ƒöÉ GLOBAL SETUP ΓÇö Authenticating all 5 users via API (ONE time)...
+   Γ£à patient1 | Γ£à patient2 | Γ£à patient3 | Γ£à doctor | Γ£à admin
+   Done in 606ms ΓÇö tokens + storageState cached
 
-CLOUD (11 specs, 8 workers, headless):
-  PASS: 378 | FAIL: 0 | FLAKY: 0 | SKIP: 0
-  Duration: 7.1 minutes
 
-TOTAL: 1695 PASS, 0 FAIL, 0 FLAKY, 0 SKIP
+Running 372 tests using 8 workers
 
-Cloud Services (v1.5.4):
-  Patient: https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app
-  Doctor:  https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app
-  Meeting: https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app
+Γä╣∩╕Å  All 5 users authenticated for user account tests
+Γä╣∩╕Å  All 5 users authenticated for user account tests
+Γä╣∩╕Å  All 5 users authenticated for user account tests
+Γä╣∩╕Å  All 5 users authenticated for user account tests
+Γä╣∩╕Å  All 5 users authenticated for user account tests
+Γä╣∩╕Å  All 5 users authenticated for user account tests
+Γ£à patient1: Demo Test Patient (demo.test@gmail.com) ΓÇö token OK
+Γ£à patient2: Somchai Mankong (Somchai.Mankong@gmail.com) ΓÇö token OK
+Γ£à patient3: Anan Khayanrian (Anan.Khayanrian@gmail.com) ΓÇö token OK
+Γ£à doctor: Dr. Test Good (doctor.test@izara.com) ΓÇö token OK
+Γ£à admin: Dr. Admin Kind (admin.test@izara.com) ΓÇö token OK
+Γä╣∩╕Å  All 5 users authenticated for user account tests
+Γä╣∩╕Å  All 5 users authenticated for user account tests
+  Γ£ô    2 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:44:9 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ A ΓÇö Demo User Accounts Display ΓÇ║ A01 ΓÇö All 5 demo accounts authenticated successfully (10ms)
+Γ£à Patient reset-password page loads
+Γ£à ICD-10 codes
+Γ£à Patient1 profile: Demo Test Patient ΓÇö demo.test@gmail.com
+Γ£à Notification preferences ΓåÆ 200
+  Γ£ô    4 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:572:9 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ G ΓÇö Cross-Portal Data Integrity ΓÇ║ G05 ΓÇö ICD-10 codes accessible (192ms)
+  Γ£ô    1 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:146:9 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ B ΓÇö Password Reset Flow ΓÇ║ B01 ΓÇö Patient portal reset-password page loads (226ms)
+Γ£à Medical content tags ΓåÆ 200
+  Γ£ô    7 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:490:9 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ F ΓÇö Settings & Notification Preferences ΓÇ║ F03 ΓÇö Patient notification preferences endpoint (209ms)
+  Γ£ô    9 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:54:9 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ A ΓÇö Demo User Accounts Display ΓÇ║ A02 ΓÇö Patient1 (Demo Test) profile loaded (222ms)
+Γ£à Doctor reset-password page loads
+Γ£à Patient2 profile: Somchai Mankong ΓÇö Somchai.Mankong@gmail.com
+Γ£à Mark all read ΓåÆ 404
+  Γ£ô   10 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:577:9 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ G ΓÇö Cross-Portal Data Integrity ΓÇ║ G06 ΓÇö Content tags: medical (101ms)
+Γ£à Clinical content tags ΓåÆ 200
+  Γ£ô   13 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:61:9 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ A ΓÇö Demo User Accounts Display ΓÇ║ A03 ΓÇö Patient2 (Somchai) profile loaded (146ms)
+Γ£à Content available in both portals
+  Γ£ô   12 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:497:9 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ F ΓÇö Settings & Notification Preferences ΓÇ║ F04 ΓÇö Mark all notifications read (146ms)
+  Γ£ô   14 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:583:9 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ G ΓÇö Cross-Portal Data Integrity ΓÇ║ G07 ΓÇö Content tags: clinical (107ms)
+Γ£à Patient3 profile: Anan Khayanrian ΓÇö Anan.Khayanrian@gmail.com
+  Γ£ô   11 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:152:9 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ B ΓÇö Password Reset Flow ΓÇ║ B02 ΓÇö Doctor portal reset-password page loads (291ms)
+Γ£à Patient forgot-password returns 404
+Γ£à Doctor consultants list
+  Γ£ô    8 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:400:9 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ E ΓÇö User Data Sync & Streaming Across Portals ΓÇ║ E06 ΓÇö Medical content synced across portals (522ms)
+Γ£à Sync status ΓåÆ 200
+  Γ£ô   15 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:68:9 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ A ΓÇö Demo User Accounts Display ΓÇ║ A04 ΓÇö Patient3 (Anan) profile loaded (145ms)
+  Γ£ô   16 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:504:9 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ F ΓÇö Settings & Notification Preferences ΓÇ║ F05 ΓÇö Doctor consultants list (172ms)
+  Γ£ô   18 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:158:9 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ B ΓÇö Password Reset Flow ΓÇ║ B03 ΓÇö Patient portal forgot-password API exists (114ms)
+Γ£à Clinical resources accessible
+  Γ£ô   17 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:589:9 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ G ΓÇö Cross-Portal Data Integrity ΓÇ║ G08 ΓÇö Sync status endpoint (Phase 2) (199ms)
+Γ£à Doctor forgot-password returns 404
+Γ£à Pending doctors ΓåÆ 200
+Γ£à Doctor profile: Dr. Test Good ΓÇö doctor.test@izara.com
+  Γ£ô   19 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:412:9 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ E ΓÇö User Data Sync & Streaming Across Portals ΓÇ║ E07 ΓÇö Clinical resources synced (130ms)
+Γ£à Device tokens ΓåÆ 200
+  Γ£ô   22 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:168:9 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ B ΓÇö Password Reset Flow ΓÇ║ B04 ΓÇö Doctor portal forgot-password API exists (129ms)
+  Γ£ô   21 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:510:9 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ F ΓÇö Settings & Notification Preferences ΓÇ║ F06 ΓÇö Admin can view pending doctors (148ms)
+  Γ£ô   20 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:75:9 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ A ΓÇö Demo User Accounts Display ΓÇ║ A05 ΓÇö Doctor profile loaded (208ms)
+Γ£à Reset with invalid token correctly rejected
+  Γ£ô   23 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:596:9 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ G ΓÇö Cross-Portal Data Integrity ΓÇ║ G09 ΓÇö Device tokens endpoint (Phase 2) (159ms)
+Γ£à Admin stats ΓåÆ 200
+Γ£à Admin profile: Dr. Admin Kind ΓÇö admin.test@izara.com
+Γ£à Doctor appointments list
+  Γ£ô   25 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:177:9 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ B ΓÇö Password Reset Flow ΓÇ║ B05 ΓÇö Reset with invalid token is rejected (115ms)
+Γ£à Biometric status ΓåÆ 200
+  Γ£ô   26 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:517:9 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ F ΓÇö Settings & Notification Preferences ΓÇ║ F07 ΓÇö Admin stats endpoint (109ms)
+Γ£à Doctor reset with invalid token correctly rejected
+  Γ£ô   27 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:82:9 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ A ΓÇö Demo User Accounts Display ΓÇ║ A06 ΓÇö Admin profile loaded (128ms)
+Γ£à Patient1 and Patient2 are distinct accounts
+Γ£à Specialties metadata
+  Γ£ô   28 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:603:9 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ G ΓÇö Cross-Portal Data Integrity ΓÇ║ G10 ΓÇö Biometric status endpoint (Phase 2) (123ms)
+  Γ£ô   24 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:418:9 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ E ΓÇö User Data Sync & Streaming Across Portals ΓÇ║ E08 ΓÇö Appointments visible to doctor (246ms)
+  Γ£ô   31 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:89:9 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ A ΓÇö Demo User Accounts Display ΓÇ║ A07 ΓÇö Patient1 has distinct data from Patient2 (23ms)
+Γ£à Patient2 and Patient3 are distinct accounts
+  Γ£ô   29 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:186:9 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ B ΓÇö Password Reset Flow ΓÇ║ B06 ΓÇö Doctor reset with invalid token is rejected (106ms)
+  Γ£ô   30 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:524:9 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ F ΓÇö Settings & Notification Preferences ΓÇ║ F08 ΓÇö Metadata: specialties (105ms)
+  Γ£ô   34 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:97:9 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ A ΓÇö Demo User Accounts Display ΓÇ║ A08 ΓÇö Patient2 has distinct data from Patient3 (28ms)
+Γ£à Doctor and Admin are distinct accounts
+Γ£à Patient1 notifications
+  Γ£ô   37 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:105:9 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ A ΓÇö Demo User Accounts Display ΓÇ║ A09 ΓÇö Doctor and Admin are distinct accounts (1ms)
+Γ£à All 5 tokens are unique
+  Γ£ô   38 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:113:9 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ A ΓÇö Demo User Accounts Display ΓÇ║ A10 ΓÇö All tokens are unique per user (2ms)
+Γ£à Lab tests metadata
+Γ£à Patient portal healthy
+  Γ£ô   36 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:529:9 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ F ΓÇö Settings & Notification Preferences ΓÇ║ F09 ΓÇö Metadata: lab tests catalog (86ms)
+  Γ£ô   32 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:424:9 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ E ΓÇö User Data Sync & Streaming Across Portals ΓÇ║ E09 ΓÇö Notifications accessible for patient1 (150ms)
+  Γ£ô   33 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:33:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ A ΓÇö Service Health Checks ΓÇ║ A01 ΓÇö Patient portal API health (102ms)
+Γ£à All 3 patient tokens accepted by patient portal
+Γ£à Medications metadata
+Γ£à Patient1 timeline
+Γ£à Patient DB healthy
+  Γ£ô   40 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:534:9 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ F ΓÇö Settings & Notification Preferences ΓÇ║ F10 ΓÇö Metadata: medications catalog (105ms)
+  Γ£ô   39 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:122:9 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ A ΓÇö Demo User Accounts Display ΓÇ║ A11 ΓÇö Patient portal accepts all 3 patient tokens (210ms)
+  Γ£ô   41 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:430:9 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ E ΓÇö User Data Sync & Streaming Across Portals ΓÇ║ E10 ΓÇö Timeline data accessible (127ms)
+  Γ£ô   42 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:39:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ A ΓÇö Service Health Checks ΓÇ║ A02 ΓÇö Patient portal DB health (136ms)
+Γ£à Patient token on doctor portal ΓÇö correctly rejected
+Γ£à Treatment results ΓåÆ 200
+Γ£à Doctor portal healthy
+  Γ£ô   43 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:545:9 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ G ΓÇö Cross-Portal Data Integrity ΓÇ║ G01 ΓÇö Patient token rejected by doctor portal protected routes (92ms)
+Γ£à Doctor + Admin tokens accepted by doctor portal
+Γ£à Doctor token valid on doctor portal
+  Γ£ô   45 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:436:9 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ E ΓÇö User Data Sync & Streaming Across Portals ΓÇ║ E11 ΓÇö Treatment results accessible (134ms)
+  Γ£ô   46 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:47:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ A ΓÇö Service Health Checks ΓÇ║ A03 ΓÇö Doctor portal API health (127ms)
+  Γ£ô   47 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:552:9 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ G ΓÇö Cross-Portal Data Integrity ΓÇ║ G02 ΓÇö Doctor token works on doctor portal (95ms)
+  Γ£ô   44 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:131:9 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ A ΓÇö Demo User Accounts Display ΓÇ║ A12 ΓÇö Doctor portal accepts doctor and admin tokens (189ms)
+Γ£à Doctor DB healthy
+Γ£à Doctor EMR list
+  Γ£ô   49 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:53:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ A ΓÇö Service Health Checks ΓÇ║ A04 ΓÇö Doctor portal DB health (230ms)
+  Γ£ô   48 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:444:9 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ E ΓÇö User Data Sync & Streaming Across Portals ΓÇ║ E12 ΓÇö Doctor EMR list accessible (270ms)
+Γ£à Doctor token valid
+Γ£à Doctor prescriptions
+  Γ£ô   53 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:450:9 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ E ΓÇö User Data Sync & Streaming Across Portals ΓÇ║ E13 ΓÇö Doctor prescriptions accessible (284ms)
+  Γ£ô   51 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:121:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ B ΓÇö Multi-User Authentication ΓÇ║ B05 ΓÇö Doctor token validates (308ms)
+Γ£à Admin token valid
+Γ£à Doctor lab orders
+  Γ£ô   55 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:128:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ B ΓÇö Multi-User Authentication ΓÇ║ B06 ΓÇö Admin token validates (243ms)
+  Γ£ô   54 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:456:9 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ E ΓÇö User Data Sync & Streaming Across Portals ΓÇ║ E14 ΓÇö Doctor lab orders accessible (315ms)
+Γ£à Meeting server healthy
+Γ£à Meeting server accessible
+Γ£à Queue ΓåÆ 200
+Γ£à Invalid password correctly rejected
+  Γ£ô   52 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:59:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ A ΓÇö Service Health Checks ΓÇ║ A05 ΓÇö Meeting server health (1.4s)
+  Γ£ô   50 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:559:9 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ G ΓÇö Cross-Portal Data Integrity ΓÇ║ G03 ΓÇö Meeting server health from all portals (1.8s)
+  Γ£ô   57 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:462:9 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ E ΓÇö User Data Sync & Streaming Across Portals ΓÇ║ E15 ΓÇö Queue data accessible (282ms)
+  Γ£ô   56 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:135:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ B ΓÇö Multi-User Authentication ΓÇ║ B07 ΓÇö Invalid password rejected (409ms)
+Γ£à Appointment pool ΓåÆ 200
+Γ£à Patient1 settings ΓåÆ 200
+Γ£à Non-existent user correctly rejected
+Γ£à All 3 services healthy in parallel
+  Γ£ô   59 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:565:9 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ G ΓÇö Cross-Portal Data Integrity ΓÇ║ G04 ΓÇö Appointment pool accessible (271ms)
+  Γ£ô   60 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:476:9 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ F ΓÇö Settings & Notification Preferences ΓÇ║ F01 ΓÇö Patient1 settings accessible (280ms)
+  Γ£ô   61 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:144:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ B ΓÇö Multi-User Authentication ΓÇ║ B08 ΓÇö Non-existent user rejected (296ms)
+  Γ£ô   58 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:65:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ A ΓÇö Service Health Checks ΓÇ║ A06 ΓÇö All 3 services parallel health check (446ms)
+Γ£à Patient2 settings ΓåÆ 200
+  Γ£ô   63 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:153:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ B ΓÇö Multi-User Authentication ΓÇ║ B09 ΓÇö Missing email rejected (226ms)
+Γ£à Duplicate email registration handled
+  Γ£ô   62 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:483:9 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ F ΓÇö Settings & Notification Preferences ΓÇ║ F02 ΓÇö Patient2 settings accessible (230ms)
+  Γ£ô   65 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:77:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ A ΓÇö Service Health Checks ΓÇ║ A07 ΓÇö Patient portal login page loads (236ms)
+  Γ£ô   64 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:225:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ C ΓÇö Registration Flows ΓÇ║ C02 ΓÇö Patient registration rejects duplicate email (309ms)
+  Γ£ô   66 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:161:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ B ΓÇö Multi-User Authentication ΓÇ║ B10 ΓÇö Missing password rejected (238ms)
+Γ£à Doctor patients
+Γ£à Invalid token ΓÇö correctly rejected
+  Γ£ô   67 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:82:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ A ΓÇö Service Health Checks ΓÇ║ A08 ΓÇö Doctor portal login page loads (332ms)
+Γ£à 5/5 users authenticated
+  Γ£ô   71 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:92:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ B ΓÇö Multi-User Authentication ΓÇ║ B01 ΓÇö All 5 users authenticated in beforeAll (15ms)
+  Γ£ô   69 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:240:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ C ΓÇö Registration Flows ΓÇ║ C03 ΓÇö Patient registration rejects weak password (240ms)
+  Γ£ô   68 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:349:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ D ΓÇö Role-Based Access Control ΓÇ║ D04 ΓÇö Doctor can access patient list (216ms)
+Γ£à Patient1 token valid
+  Γ£ô   70 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:169:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ B ΓÇö Multi-User Authentication ΓÇ║ B11 ΓÇö Invalid token rejected on protected endpoint (225ms)
+Γ£à Empty token ΓÇö correctly rejected
+  Γ£ô   72 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:100:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ B ΓÇö Multi-User Authentication ΓÇ║ B02 ΓÇö Patient1 token validates (212ms)
+  Γ£ô   73 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:253:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ C ΓÇö Registration Flows ΓÇ║ C04 ΓÇö Doctor registration endpoint exists (280ms)
+  Γ£ô   75 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:174:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ B ΓÇö Multi-User Authentication ΓÇ║ B12 ΓÇö Empty token rejected (293ms)
+Γ£à Patient2 token check
+Γ£à Doctor appointments
+  Γ£ô   76 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:107:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ B ΓÇö Multi-User Authentication ΓÇ║ B03 ΓÇö Patient2 token validates (261ms)
+  Γ£ô   77 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:261:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ C ΓÇö Registration Flows ΓÇ║ C05 ΓÇö Doctor registration rejects duplicate email (222ms)
+  Γ£ô   78 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:179:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ B ΓÇö Multi-User Authentication ΓÇ║ B13 ΓÇö Patient token cannot access doctor portal protected endpoints (183ms)
+Γ£à Patient3 token check
+  Γ£ô   79 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:114:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ B ΓÇö Multi-User Authentication ΓÇ║ B04 ΓÇö Patient3 token validates (278ms)
+  Γ£ô   81 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:186:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ B ΓÇö Multi-User Authentication ΓÇ║ B14 ΓÇö Doctor token cannot access admin-only endpoints (non-admin) (256ms)
+  Γ£ô   80 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:274:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ C ΓÇö Registration Flows ΓÇ║ C06 ΓÇö Registration rejects missing required fields (272ms)
+  Γ£ô   74 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:356:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ D ΓÇö Role-Based Access Control ΓÇ║ D05 ΓÇö Doctor can access appointments (1.1s)
+Γ£à Patient login page loaded ΓÇö forgot-password elements: 0
+  Γ£ô   83 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:282:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ C ΓÇö Registration Flows ΓÇ║ C07 ΓÇö Registration rejects invalid email format (334ms)
+Γ£à Patients authenticated in parallel
+  Γ£ô   85 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:363:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ D ΓÇö Role-Based Access Control ΓÇ║ D06 ΓÇö Admin can access admin stats (174ms)
+Γ£à Admin doctor management
+  Γ£ô   86 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:290:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ C ΓÇö Registration Flows ΓÇ║ C08 ΓÇö Password reset endpoint exists or returns expected status (373ms)
+  Γ£ô   82 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:193:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ B ΓÇö Multi-User Authentication ΓÇ║ B15 ΓÇö All 3 patients can authenticate in parallel (1.0s)
+  Γ£ô   87 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:369:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ D ΓÇö Role-Based Access Control ΓÇ║ D07 ΓÇö Admin can access doctor management (289ms)
+  Γ£ô   89 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:216:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ C ΓÇö Registration Flows ΓÇ║ C01 ΓÇö Patient registration endpoint exists (225ms)
+  Γ£ô   88 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:299:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ C ΓÇö Registration Flows ΓÇ║ C09 ΓÇö Doctor portal accepts registration with license (314ms)
+Γ£à Admin can access pending doctors
+  Γ£ô   35 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:195:9 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ B ΓÇö Password Reset Flow ΓÇ║ B07 ΓÇö Patient portal login page has forgot-password link (2.6s)
+  Γ£ô   92 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:316:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ C ΓÇö Registration Flows ΓÇ║ C10 ΓÇö Admin can view pending doctors (228ms)
+  Γ£ô   91 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:632:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ F ΓÇö Metadata & Reference Data ΓÇ║ F06 ΓÇö Clinical resource tags available (172ms)
+Γ£à Patient profile endpoint accessible
+  Γ£ô   94 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:328:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ D ΓÇö Role-Based Access Control ΓÇ║ D01 ΓÇö Patient can access own profile (200ms)
+  Γ£ô   95 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:638:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ F ΓÇö Metadata & Reference Data ΓÇ║ F07 ΓÇö Doctors list available (282ms)
+  Γ£ô   90 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:376:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ D ΓÇö Role-Based Access Control ΓÇ║ D08 ΓÇö Doctor can access medical content (782ms)
+  Γ£ô   97 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:644:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ F ΓÇö Metadata & Reference Data ΓÇ║ F08 ΓÇö Medical consultants list available (268ms)
+  Γ£ô   98 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:382:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ D ΓÇö Role-Based Access Control ΓÇ║ D09 ΓÇö Patient can access medical content library (read-only) (245ms)
+Γ£à Patient appointments
+Γä╣∩╕Å  All metadata loaded in 367ms
+Γ£à Metadata endpoints accessible
+  Γ£ô  100 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:388:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ D ΓÇö Role-Based Access Control ΓÇ║ D10 ΓÇö All roles can access metadata endpoints in parallel (891ms)
+  Γ£ô   99 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:650:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ F ΓÇö Metadata & Reference Data ΓÇ║ F09 ΓÇö All metadata loads in parallel (performance) (1.1s)
+  Γ£ô   96 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:335:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ D ΓÇö Role-Based Access Control ΓÇ║ D02 ΓÇö Patient can access own appointments (1.9s)
+Γ£à Patient login page checked
+Γ£à Patient PHR
+  Γ£ô  102 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:666:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ F ΓÇö Metadata & Reference Data ΓÇ║ F10 ΓÇö Video meeting config available (352ms)
+  Γ£ô  103 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:342:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ D ΓÇö Role-Based Access Control ΓÇ║ D03 ΓÇö Patient can access own PHR (272ms)
+  Γ£ô  104 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:677:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ G ΓÇö Extended Auth & Security ΓÇ║ G01 ΓÇö Password change endpoint available (209ms)
+Γ£à Doctor Test UI visible ΓåÆ https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app/doctor/DOC-TEST-001/test-ui
+  Γ£ô  105 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:728:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ H ΓÇö Doctor Search & Dashboard ΓÇ║ H03 ΓÇö Doctor search by name (290ms)
+  Γ£ô  106 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:686:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ G ΓÇö Extended Auth & Security ΓÇ║ G02 ΓÇö Account lockout after repeated failed logins (814ms)
+  Γ£ô  107 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:734:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ H ΓÇö Doctor Search & Dashboard ΓÇ║ H04 ΓÇö Doctor schedule endpoint (296ms)
+  Γ£ô  108 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:694:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ G ΓÇö Extended Auth & Security ΓÇ║ G03 ΓÇö Password reset token verify endpoint (243ms)
+  Γ£ô   84 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:499:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ E ΓÇö Multi-User Browser Login ΓÇ║ E06 ΓÇö Patient portal login page has required form fields (3.1s)
+  Γ£ô  109 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:740:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ H ΓÇö Doctor Search & Dashboard ΓÇ║ H05 ΓÇö Doctor available time slots (199ms)
+  Γ£ô  110 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:699:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ G ΓÇö Extended Auth & Security ΓÇ║ G04 ΓÇö Session validates with correct token (189ms)
+  Γ£ô  112 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:747:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ H ΓÇö Doctor Search & Dashboard ΓÇ║ H06 ΓÇö Doctor reviews endpoint (181ms)
+  Γ£ô  113 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:705:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ G ΓÇö Extended Auth & Security ΓÇ║ G05 ΓÇö Expired/malformed JWT rejected (283ms)
+Γ£à Patient Admin GCS page visible in browser ΓåÆ https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app/admin/gcs
+  Γ£ô  114 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:753:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ H ΓÇö Doctor Search & Dashboard ΓÇ║ H07 ΓÇö User settings CRUD (324ms)
+  Γ£ô  115 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:716:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ H ΓÇö Doctor Search & Dashboard ΓÇ║ H01 ΓÇö Patient dashboard stats (329ms)
+  Γ£ô    5 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:337:11 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ D ΓÇö Doctor Portal All Pages Load (Browser) ΓÇ║ D12 ΓÇö Doctor Test UI page opens in browser (/doctor/DOC-TEST-001/test-ui) (5.0s)
+  Γ£ô  116 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:763:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ H ΓÇö Doctor Search & Dashboard ΓÇ║ H08 ΓÇö Notification preferences CRUD (528ms)
+  Γ£ô  117 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:722:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ H ΓÇö Doctor Search & Dashboard ΓÇ║ H02 ΓÇö Doctor search by specialty (546ms)
+  Γ£ô  119 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:773:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ H ΓÇö Doctor Search & Dashboard ΓÇ║ H09 ΓÇö Profile update with Thai name (489ms)
+Γ£à Doctor login credential OK
+  Γ£ô  121 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:781:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ H ΓÇö Doctor Search & Dashboard ΓÇ║ H10 ΓÇö Admin can list all users (657ms)
+  Γ£ô  120 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:833:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ I: Cloud Credential & Connection Error Handling ΓÇ║ I03 ΓÇö Doctor login returns credential via auth paths (669ms)
+Γ£à Empty creds rejected: 400
+  Γ£ô  122 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:787:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ H ΓÇö Doctor Search & Dashboard ΓÇ║ H11 ΓÇö Admin analytics endpoint (405ms)
+  Γ£ô  123 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:857:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ I: Cloud Credential & Connection Error Handling ΓÇ║ I04 ΓÇö Empty credentials rejected gracefully (386ms)
+Γ£à Wrong password rejected: 401
+  Γ£ô    6 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:264:11 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ C ΓÇö Patient Portal All Pages Load (Browser) ΓÇ║ C17 ΓÇö Patient Admin GCS page opens in browser (/admin/gcs) (5.9s)
+  Γ£ô  124 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:793:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ H ΓÇö Doctor Search & Dashboard ΓÇ║ H12 ΓÇö Admin dashboard stats endpoint (206ms)
+Γ£à Admin Admin Dashboard visible ΓåÆ https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app/doctor/ADMIN-TEST-001/dashboard
+Γ£à All 5 demo accounts have valid tokens
+  Γ£ô  127 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:805:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ I: Cloud Credential & Connection Error Handling ΓÇ║ I01 ΓÇö All 5 demo accounts must have valid tokens (87ms)
+  Γ£ô  125 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:871:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ I: Cloud Credential & Connection Error Handling ΓÇ║ I05 ΓÇö Invalid password returns auth error, not crash (332ms)
+Γ£à Health check: 200
+Γ£à Patient login returns proper credential
+Γ£à Patient Appointments List page visible in browser ΓåÆ https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app/appointments
+  Γ£ô  129 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:885:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ I: Cloud Credential & Connection Error Handling ΓÇ║ I06 ΓÇö Cloud health endpoint reachable before auth (352ms)
+  Γ£ô  128 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:816:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ I: Cloud Credential & Connection Error Handling ΓÇ║ I02 ΓÇö Patient login returns credential structure (456ms)
+Γ£à Fake token rejected: 401
+  Γ£ô  130 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:897:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ I: Cloud Credential & Connection Error Handling ΓÇ║ I07 ΓÇö Token-protected endpoint rejects expired/fake token (261ms)
+Γ£à Lab order created: LAB-1773114583017
+Γ£à Concurrent auth returned 3 unique tokens
+  Γ£ô  131 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:46:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ A ΓÇö Doctor Lab Order CRUD ΓÇ║ A01 ΓÇö Create lab order returns 200/201 (307ms)
+Γ£à Lab orders retrieved for patient
+  Γ£ô  132 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:904:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ I: Cloud Credential & Connection Error Handling ΓÇ║ I08 ΓÇö Concurrent auth does not cause token collision (724ms)
+  Γ£ô  133 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:62:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ A ΓÇö Doctor Lab Order CRUD ΓÇ║ A02 ΓÇö Get all lab orders for patient (341ms)
+Γ£à Post-auth health check: 200
+Γ£à Single lab order retrieved
+  Γ£ô  134 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:916:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ I: Cloud Credential & Connection Error Handling ΓÇ║ I09 ΓÇö Auth retry on transient network errors (335ms)
+  Γ£ô  135 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:70:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ A ΓÇö Doctor Lab Order CRUD ΓÇ║ A03 ΓÇö Get single lab order by ID (354ms)
+Γ£à Meeting server health: 200
+Γ£à Lab order results updated
+  Γ£ô  136 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:925:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ I: Cloud Credential & Connection Error Handling ΓÇ║ I10 ΓÇö Meeting server credential-less health check (186ms)
+  Γ£ô  118 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:354:11 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ D ΓÇö Doctor Portal All Pages Load (Browser) ΓÇ║ D13 ΓÇö Admin Admin Dashboard page opens in browser (/doctor/ADMIN-TEST-001/dashboard) (5.1s)
+  Γ£ô  137 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:83:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ A ΓÇö Doctor Lab Order CRUD ΓÇ║ A04 ΓÇö Update lab order results (174ms)
+Γ£à Lab order document uploaded
+Γ£à Imaging order created: IMG-1773114585465
+  Γ£ô  139 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:99:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ A ΓÇö Doctor Lab Order CRUD ΓÇ║ A05 ΓÇö Upload document to lab order (266ms)
+Γ£à Lab order without patientId handled
+  Γ£ô  140 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:180:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ B ΓÇö Doctor Imaging Order CRUD ΓÇ║ B01 ΓÇö Create imaging order (187ms)
+Γ£à Imaging orders retrieved for patient
+  Γ£ô  141 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:116:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ A ΓÇö Doctor Lab Order CRUD ΓÇ║ A06 ΓÇö Lab order with missing patient ID accepts gracefully (323ms)
+Γ£à Lab order with empty tests handled
+  Γ£ô  142 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:195:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ B ΓÇö Doctor Imaging Order CRUD ΓÇ║ B02 ΓÇö Get imaging orders for patient (282ms)
+Γ£à Imaging order results updated
+  Γ£ô  143 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:126:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ A ΓÇö Doctor Lab Order CRUD ΓÇ║ A07 ΓÇö Lab order with empty tests accepts gracefully (394ms)
+Γ£à Unauthorized lab order access rejected
+  Γ£ô  144 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:203:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ B ΓÇö Doctor Imaging Order CRUD ΓÇ║ B03 ΓÇö Update imaging order results (362ms)
+  Γ£ô  145 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:137:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ A ΓÇö Doctor Lab Order CRUD ΓÇ║ A08 ΓÇö Unauthorized access to lab orders (331ms)
+Γ£à CT scan order created
+Γ£à STAT lab order created
+  Γ£ô    3 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:264:11 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ C ΓÇö Patient Portal All Pages Load (Browser) ΓÇ║ C05 ΓÇö Patient Appointments List page opens in browser (/appointments) (8.1s)
+  Γ£ô  146 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:221:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ B ΓÇö Doctor Imaging Order CRUD ΓÇ║ B04 ΓÇö Create CT scan order (344ms)
+Γ£à Admin Admin Doctor Management visible ΓåÆ https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app/doctor/ADMIN-TEST-001/doctor-management
+Γ£à MRI order created
+  Γ£ô  147 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:146:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ A ΓÇö Doctor Lab Order CRUD ΓÇ║ A09 ΓÇö Lab order supports STAT priority (315ms)
+Γ£à Multiple lab orders for same patient created
+  Γ£ô  149 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:234:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ B ΓÇö Doctor Imaging Order CRUD ΓÇ║ B05 ΓÇö Create MRI order (536ms)
+Γ£à Ultrasound order created
+  Γ£ô  150 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:158:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ A ΓÇö Doctor Lab Order CRUD ΓÇ║ A10 ΓÇö Multiple lab orders for same patient (474ms)
+  Γ£ô  151 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:247:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ B ΓÇö Doctor Imaging Order CRUD ΓÇ║ B06 ΓÇö Create ultrasound order (214ms)
+Γ£à Imaging without patientId handled
+Γ£à Imaging orders created for 3 patients sequentially
+  Γ£ô  153 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:260:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ B ΓÇö Doctor Imaging Order CRUD ΓÇ║ B07 ΓÇö Imaging without patient ID accepts gracefully (188ms)
+Γ£à Unauthorized imaging access rejected
+  Γ£ô  152 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:280:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ B ΓÇö Doctor Imaging Order CRUD ΓÇ║ B09 ΓÇö Multiple imaging orders across patients (306ms)
+Γ£à Empty imaging list for non-existent patient
+  Γ£ô  154 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:271:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ B ΓÇö Doctor Imaging Order CRUD ΓÇ║ B08 ΓÇö Unauthorized imaging access (159ms)
+  Γ£ô  138 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:354:11 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ D ΓÇö Doctor Portal All Pages Load (Browser) ΓÇ║ D14 ΓÇö Admin Admin Doctor Management page opens in browser (/doctor/ADMIN-TEST-001/doctor-management) (4.5s)
+  Γ£ô  155 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:292:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ B ΓÇö Doctor Imaging Order CRUD ΓÇ║ B10 ΓÇö Get imaging for non-existent patient returns empty (164ms)
+Γ£à Unauthenticated lab access rejected
+Γ£à Patient retrieved lab orders
+Γ£à Patient1 login page accessed
+  Γ£ô  156 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:354:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ C ΓÇö Patient Views Lab & Imaging Orders ΓÇ║ C07 ΓÇö Unauthenticated patient lab access rejected (215ms)
+  Γ£ô  158 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:307:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ C ΓÇö Patient Views Lab & Imaging Orders ΓÇ║ C01 ΓÇö Patient can view own lab orders (247ms)
+Γ£à Unauthenticated imaging access rejected
+Γ£à Patient retrieved imaging orders
+  Γ£ô  159 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:363:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ C ΓÇö Patient Views Lab & Imaging Orders ΓÇ║ C08 ΓÇö Unauthenticated imaging access rejected (182ms)
+Γ£à 3 patients fetched lab orders in parallel
+  Γ£ô  160 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:315:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ C ΓÇö Patient Views Lab & Imaging Orders ΓÇ║ C02 ΓÇö Patient can view own imaging orders (201ms)
+Γ£à Patient 2 retrieved lab orders
+  Γ£ô  161 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:372:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ C ΓÇö Patient Views Lab & Imaging Orders ΓÇ║ C09 ΓÇö All 3 patients parallel lab order fetch (477ms)
+  Γ£ô  162 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:323:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ C ΓÇö Patient Views Lab & Imaging Orders ΓÇ║ C03 ΓÇö Patient 2 can view lab orders (291ms)
+Γ£à 3 patients fetched imaging orders in parallel
+Γ£à Patient 3 retrieved lab orders
+  Γ£ô  163 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:383:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ C ΓÇö Patient Views Lab & Imaging Orders ΓÇ║ C10 ΓÇö All 3 patients parallel imaging fetch (371ms)
+  Γ£ô  164 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:330:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ C ΓÇö Patient Views Lab & Imaging Orders ΓÇ║ C04 ΓÇö Patient 3 can view lab orders (307ms)
+Γ£à Doctor created lab order for Patient 1
+Γ£à Lab orders count field present
+  Γ£ô  165 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:401:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ D ΓÇö Doctor-Patient Cross-User Lab Flow ΓÇ║ D01 ΓÇö Doctor creates lab order for patient 1 (169ms)
+  Γ£ô  166 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:337:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ C ΓÇö Patient Views Lab & Imaging Orders ΓÇ║ C05 ΓÇö Patient lab orders response has count (225ms)
+Γ£à Doctor created lab order for Patient 2
+Γ£à Imaging orders count field present
+  Γ£ô  167 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:412:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ D ΓÇö Doctor-Patient Cross-User Lab Flow ΓÇ║ D02 ΓÇö Doctor creates lab for patient 2 (145ms)
+Γ£à Doctor created lab order for Patient 3
+  Γ£ô  168 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:346:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ C ΓÇö Patient Views Lab & Imaging Orders ΓÇ║ C06 ΓÇö Patient imaging orders response has count (218ms)
+  Γ£ô  101 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:409:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ E ΓÇö Multi-User Browser Login ΓÇ║ E01 ΓÇö Patient1 login via browser (8.4s)
+  Γ£ô  169 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:422:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ D ΓÇö Doctor-Patient Cross-User Lab Flow ΓÇ║ D03 ΓÇö Doctor creates lab for patient 3 (154ms)
+Γ£à Patient 2 sees 0 lab orders
+Γ£à Patient 1 sees 0 lab orders
+  Γ£ô  170 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:439:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ D ΓÇö Doctor-Patient Cross-User Lab Flow ΓÇ║ D05 ΓÇö Patient 2 sees lab orders (207ms)
+  Γ£ô  172 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:432:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ D ΓÇö Doctor-Patient Cross-User Lab Flow ΓÇ║ D04 ΓÇö Patient 1 sees lab orders (210ms)
+Γ£à Patient 3 sees 0 lab orders
+Γ£à Inactive doctor filter works
+Γ£à Admin Admin Appointment Management visible ΓåÆ https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app/doctor/ADMIN-TEST-001/appointment-management
+  Γ£ô  173 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:446:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ D ΓÇö Doctor-Patient Cross-User Lab Flow ΓÇ║ D06 ΓÇö Patient 3 sees lab orders (436ms)
+Γ£à Patient sees 0 imaging orders after doctor creates
+  Γ£ô  174 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:523:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ E ΓÇö Admin Doctor Management ΓÇ║ E03 ΓÇö Admin filter inactive doctors (558ms)
+Γ£à Pending doctor filter works
+  Γ£ô  175 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:453:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ D ΓÇö Doctor-Patient Cross-User Lab Flow ΓÇ║ D07 ΓÇö Doctor creates imaging ΓåÆ Patient sees it (437ms)
+Γ£à Doctor and patient accessed lab orders simultaneously
+  Γ£ô  176 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:530:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ E ΓÇö Admin Doctor Management ΓÇ║ E04 ΓÇö Admin filter pending doctors (205ms)
+Γ£à Admin sees 35 total users
+  Γ£ô  177 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:467:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ D ΓÇö Doctor-Patient Cross-User Lab Flow ΓÇ║ D08 ΓÇö Doctor and patient concurrent access (278ms)
+  Γ£ô  178 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:537:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ E ΓÇö Admin Doctor Management ΓÇ║ E05 ΓÇö Admin can view all users (248ms)
+Γ£à 5 users passed health check concurrently
+Γ£à Doctor admin access checked
+Γ£à Patient Book Appointment page visible in browser ΓåÆ https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app/appointments/book
+  Γ£ô  180 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:546:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ E ΓÇö Admin Doctor Management ΓÇ║ E06 ΓÇö Non-admin cannot access admin users (243ms)
+  Γ£ô  179 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:479:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ D ΓÇö Doctor-Patient Cross-User Lab Flow ΓÇ║ D09 ΓÇö 5 users concurrent health check (524ms)
+Γ£à Admin stats endpoint checked
+Γ£à Prescription created via PostgreSQL
+  Γ£ô  181 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:554:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ E ΓÇö Admin Doctor Management ΓÇ║ E07 ΓÇö Admin stats endpoint (167ms)
+Γ£à Pending doctors legacy endpoint checked
+  Γ£ô  182 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:490:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ D ΓÇö Doctor-Patient Cross-User Lab Flow ΓÇ║ D10 ΓÇö Doctor prescriptions endpoint also works (205ms)
+Γ£à Admin sees 25 doctor accounts
+  Γ£ô  183 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:561:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ E ΓÇö Admin Doctor Management ΓÇ║ E08 ΓÇö Pending doctors list (legacy endpoint) (227ms)
+Γ£à Doctor profile retrieved
+  Γ£ô  184 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:506:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ E ΓÇö Admin Doctor Management ΓÇ║ E01 ΓÇö Admin can fetch all doctor accounts (209ms)
+Γ£à Active doctor filter works
+  Γ£ô  185 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:568:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ E ΓÇö Admin Doctor Management ΓÇ║ E09 ΓÇö Doctor sees own profile (219ms)
+  Γ£ô  157 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:354:11 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ D ΓÇö Doctor Portal All Pages Load (Browser) ΓÇ║ D15 ΓÇö Admin Admin Appointment Management page opens in browser (/doctor/ADMIN-TEST-001/appointment-management) (6.1s)
+Γ£à Admin and doctor parallel access works
+  Γ£ô  186 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:516:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ E ΓÇö Admin Doctor Management ΓÇ║ E02 ΓÇö Admin filter active doctors (183ms)
+  Γ£ô  187 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:575:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ E ΓÇö Admin Doctor Management ΓÇ║ E10 ΓÇö Admin and doctor parallel admin checks (255ms)
+Γ£à Map page loads
+Γ£à Health records page loads
+  Γ£ô  189 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:593:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ F ΓÇö Map Page & Healthcare Facilities ΓÇ║ F01 ΓÇö Map page loads (200 status) (206ms)
+  Γ£ô  148 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:264:11 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ C ΓÇö Patient Portal All Pages Load (Browser) ΓÇ║ C06 ΓÇö Patient Book Appointment page opens in browser (/appointments/book) (9.3s)
+Γ£à Map page checked
+  Γ£ô  190 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:677:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ F ΓÇö Map Page & Healthcare Facilities ΓÇ║ F09 ΓÇö Health records page loads (216ms)
+  Γ£ô  191 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:603:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ F ΓÇö Map Page & Healthcare Facilities ΓÇ║ F02 ΓÇö Map page HTML contains MapPage component (186ms)
+Γ£à All 5 critical patient pages loaded in parallel
+Γ£à Patient 1 map access
+  Γ£ô  193 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:686:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ F ΓÇö Map Page & Healthcare Facilities ΓÇ║ F10 ΓÇö All critical pages load in parallel (248ms)
+  Γ£ô  194 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:613:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ F ΓÇö Map Page & Healthcare Facilities ΓÇ║ F03 ΓÇö Patient 1 map page access (170ms)
+Γ£à 5 users concurrent health check passed
+Γ£à Patient 2 map access
+  Γ£ô  196 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:622:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ F ΓÇö Map Page & Healthcare Facilities ΓÇ║ F04 ΓÇö Patient 2 map page access (238ms)
+  Γ£ô  195 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:709:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ G ΓÇö Multi-User Concurrent Access ΓÇ║ G01 ΓÇö 5 users health check concurrent (452ms)
+Γ£à Patient 3 map access
+Γ£à 4 users fetched profiles concurrently
+  Γ£ô  197 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:631:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ F ΓÇö Map Page & Healthcare Facilities ΓÇ║ F05 ΓÇö Patient 3 map page access (211ms)
+  Γ£ô  198 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:720:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ G ΓÇö Multi-User Concurrent Access ΓÇ║ G02 ΓÇö 3 patients + 1 doctor concurrent profile (258ms)
+Γ£à JS bundle with map code loads
+Γ£à Doctor write + 3 patients read concurrently
+  Γ£ô  200 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:732:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ G ΓÇö Multi-User Concurrent Access ΓÇ║ G03 ΓÇö Doctor writes + patients read simultaneously (262ms)
+Γ£à Admin + doctor concurrent portal access
+  Γ£ô  199 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:640:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ F ΓÇö Map Page & Healthcare Facilities ΓÇ║ F06 ΓÇö Map-related JS bundle loads (467ms)
+Γ£à 3 patients accessed map in parallel
+  Γ£ô  201 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:748:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ G ΓÇö Multi-User Concurrent Access ΓÇ║ G04 ΓÇö Multiple doctors accessing admin endpoint (185ms)
+Γ£à Concurrent DB health checks passed
+  Γ£ô  202 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:654:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ F ΓÇö Map Page & Healthcare Facilities ΓÇ║ F07 ΓÇö 3 patients access map page in parallel (215ms)
+Γ£à Dashboard page loads
+  Γ£ô  203 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:760:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ G ΓÇö Multi-User Concurrent Access ΓÇ║ G05 ΓÇö All users DB health concurrent (249ms)
+  Γ£ô  204 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:668:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ F ΓÇö Map Page & Healthcare Facilities ΓÇ║ F08 ΓÇö Dashboard page loads (171ms)
+Γ£à 5 patient API pages loaded in parallel
+Γ£à Patient PHR (Health Records) page visible in browser ΓåÆ https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app/phr
+Γ£à 5 doctor API pages loaded in parallel
+  Γ£ô  205 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:770:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ G ΓÇö Multi-User Concurrent Access ΓÇ║ G06 ΓÇö Patient pages parallel load (5 pages) (376ms)
+Γä╣∩╕Å  All 5 users authenticated for doctor registration tests
+  Γ£ô  206 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:780:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ G ΓÇö Multi-User Concurrent Access ΓÇ║ G07 ΓÇö Doctor pages parallel load (5 pages) (508ms)
+Γ£à 5/5 rapid lab orders created
+  Γ£ô  208 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:790:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ G ΓÇö Multi-User Concurrent Access ΓÇ║ G08 ΓÇö Rapid sequential lab order creation (460ms)
+Γ£à Cross-portal concurrent: doctor + 3 patients
+  Γ£ô  209 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:805:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ G ΓÇö Multi-User Concurrent Access ΓÇ║ G09 ΓÇö Cross-portal concurrent: doctor + 3 patients (337ms)
+  Γ£ô  192 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:264:11 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ C ΓÇö Patient Portal All Pages Load (Browser) ΓÇ║ C07 ΓÇö Patient PHR (Health Records) page opens in browser (/phr) (4.1s)
+Γ£à All 5 users parallel authenticated requests passed
+  Γ£ô  210 [Cloud] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:819:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.3 Features ΓÇ║ G ΓÇö Multi-User Concurrent Access ΓÇ║ G10 ΓÇö All 5 users parallel authenticated requests (439ms)
+Γä╣∩╕Å  All 5 users authenticated for doctor registration tests
+Γ£à Doctor approval: status 400
+  Γ£ô  212 [Cloud] ΓÇ║ specs\25-register-login-doctor.spec.ts:78:9 ΓÇ║ 25 ΓÇö Register & Login New Doctor User ΓÇ║ A ΓÇö Doctor Registration ΓÇ║ A04 ΓÇö Admin approves new doctor via API (154ms)
+Γä╣∩╕Å  New doctor login: 401 ΓÇö may be pending
+  Γ£ô  213 [Cloud] ΓÇ║ specs\25-register-login-doctor.spec.ts:88:9 ΓÇ║ 25 ΓÇö Register & Login New Doctor User ΓÇ║ A ΓÇö Doctor Registration ΓÇ║ A05 ΓÇö New doctor can login via API after approval (166ms)
+Γ£à Doctor token valid: Dr. Test Good
+  Γ£ô  214 [Cloud] ΓÇ║ specs\25-register-login-doctor.spec.ts:110:9 ΓÇ║ 25 ΓÇö Register & Login New Doctor User ΓÇ║ B ΓÇö Existing Doctor Login & Dashboard ΓÇ║ B01 ΓÇö Doctor login token valid (4ms)
+Γä╣∩╕Å  All 5 users authenticated for doctor registration tests
+Γ£à Doctor login page loads without errors
+Γ£à Doctor login page loaded ΓÇö forgot-password elements: 1
+Γ£à Doctor dashboard loaded with data
+  Γ£ô  207 [Cloud] ΓÇ║ specs\25-register-login-doctor.spec.ts:45:9 ΓÇ║ 25 ΓÇö Register & Login New Doctor User ΓÇ║ A ΓÇö Doctor Registration ΓÇ║ A01 ΓÇö Doctor portal login page loads (5.7s)
+Γ£à New doctor registered: test.doctor.1773114601340@izara.com ΓÇö status 200
+  Γ£ô  216 [Cloud] ΓÇ║ specs\25-register-login-doctor.spec.ts:54:9 ΓÇ║ 25 ΓÇö Register & Login New Doctor User ΓÇ║ A ΓÇö Doctor Registration ΓÇ║ A02 ΓÇö Register new doctor via API (395ms)
+Γ£à Admin fetched pending doctors list
+  Γ£ô   93 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:204:9 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ B ΓÇö Password Reset Flow ΓÇ║ B08 ΓÇö Doctor portal login page has forgot-password link (38.8s)
+  Γ£ô  217 [Cloud] ΓÇ║ specs\25-register-login-doctor.spec.ts:71:9 ΓÇ║ 25 ΓÇö Register & Login New Doctor User ΓÇ║ A ΓÇö Doctor Registration ΓÇ║ A03 ΓÇö Admin can see pending doctors list (271ms)
+Γä╣∩╕Å  All 5 users authenticated for doctor registration tests
+  Γ£ô  111 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:510:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ E ΓÇö Multi-User Browser Login ΓÇ║ E07 ΓÇö Doctor portal login page has required form fields (34.2s)
+  Γ£ô  215 [Cloud] ΓÇ║ specs\25-register-login-doctor.spec.ts:116:9 ΓÇ║ 25 ΓÇö Register & Login New Doctor User ΓÇ║ B ΓÇö Existing Doctor Login & Dashboard ΓÇ║ B02 ΓÇö Doctor dashboard via browser loads (8.3s)
+Γ£à Doctor Login page visible in browser
+  Γ£ô  126 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:321:11 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ D ΓÇö Doctor Portal All Pages Load (Browser) ΓÇ║ D01 ΓÇö Doctor Login page opens in browser (/login) (35.0s)
+Γ£à Doctor logged in via browser
+Γ£à Registration link found
+Γ£à Patient Login page visible in browser
+Γ£à Doctor Reset Password page visible in browser
+Γ£à Patient AI Doctor page visible in browser ΓåÆ https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app/ai-doctor
+Γ£à Admin Admin Patient Management visible ΓåÆ https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app/doctor/ADMIN-TEST-001/patients
+Γ£à Doctor session retained after refresh
+Γ£à Doctor profile page loaded
+  Γ£ô  220 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:517:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ E ΓÇö Multi-User Browser Login ΓÇ║ E08 ΓÇö Patient portal has registration link (21.1s)
+  Γ£ô  218 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:249:11 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ C ΓÇö Patient Portal All Pages Load (Browser) ΓÇ║ C01 ΓÇö Patient Login page opens in browser (/login) (22.1s)
+  Γ£ô  171 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:424:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ E ΓÇö Multi-User Browser Login ΓÇ║ E02 ΓÇö Doctor login via browser (39.7s)
+  Γ£ô  222 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:321:11 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ D ΓÇö Doctor Portal All Pages Load (Browser) ΓÇ║ D02 ΓÇö Doctor Reset Password page opens in browser (/reset-password) (18.5s)
+Γ£à Doctor Dashboard visible ΓåÆ https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app/doctor/DOC-TEST-001/dashboard
+  Γ£ô  221 [Cloud] ΓÇ║ specs\25-register-login-doctor.spec.ts:124:9 ΓÇ║ 25 ΓÇö Register & Login New Doctor User ΓÇ║ B ΓÇö Existing Doctor Login & Dashboard ΓÇ║ B03 ΓÇö Doctor profile page loads (26.1s)
+Γ£à Doctor /auth/me OK
+  Γ£ô  227 [Cloud] ΓÇ║ specs\25-register-login-doctor.spec.ts:133:9 ΓÇ║ 25 ΓÇö Register & Login New Doctor User ΓÇ║ B ΓÇö Existing Doctor Login & Dashboard ΓÇ║ B04 ΓÇö Doctor /auth/me returns user data (389ms)
+Γä╣∩╕Å  All 5 users authenticated for doctor registration tests
+  Γ£ô  219 [Cloud] ΓÇ║ specs\25-register-login-doctor.spec.ts:140:9 ΓÇ║ 25 ΓÇö Register & Login New Doctor User ΓÇ║ B ΓÇö Existing Doctor Login & Dashboard ΓÇ║ B05 ΓÇö Page refresh retains doctor session (26.8s)
+Γ£à Admin token valid
+  Γ£ô  229 [Cloud] ΓÇ║ specs\25-register-login-doctor.spec.ts:154:9 ΓÇ║ 25 ΓÇö Register & Login New Doctor User ΓÇ║ C ΓÇö Admin Login & Dashboard ΓÇ║ C01 ΓÇö Admin login token valid (19ms)
+  Γ£ô  211 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:264:11 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ C ΓÇö Patient Portal All Pages Load (Browser) ΓÇ║ C08 ΓÇö Patient AI Doctor page opens in browser (/ai-doctor) (40.3s)
+  Γ£ô  226 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:337:11 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ D ΓÇö Doctor Portal All Pages Load (Browser) ΓÇ║ D03 ΓÇö Doctor Dashboard page opens in browser (/doctor/DOC-TEST-001/dashboard) (6.2s)
+Γ£à Doctor Schedule visible ΓåÆ https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app/doctor/DOC-TEST-001/schedule
+Γ£à Forgot password link found
+Γ£à Patient Register page visible in browser
+Γ£à Patient Health Library page visible in browser ΓåÆ https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app/health-library
+Γ£à Admin dashboard loaded
+Γ£à Admin management page loaded
+  Γ£ô  188 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:354:11 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ D ΓÇö Doctor Portal All Pages Load (Browser) ΓÇ║ D16 ΓÇö Admin Admin Patient Management page opens in browser (/doctor/ADMIN-TEST-001/patients) (49.0s)
+Γ£à Admin logged in via browser
+Γ£à Admin Admin Schedule visible ΓåÆ https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app/doctor/ADMIN-TEST-001/schedule
+  Γ£ô  223 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:524:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ E ΓÇö Multi-User Browser Login ΓÇ║ E09 ΓÇö Patient portal has forgot password link (26.2s)
+  Γ£ô  224 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:249:11 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ C ΓÇö Patient Portal All Pages Load (Browser) ΓÇ║ C02 ΓÇö Patient Register page opens in browser (/register) (25.5s)
+  Γ£ô  232 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:337:11 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ D ΓÇö Doctor Portal All Pages Load (Browser) ΓÇ║ D04 ΓÇö Doctor Schedule page opens in browser (/doctor/DOC-TEST-001/schedule) (17.5s)
+  Γ£ô  228 [Cloud] ΓÇ║ specs\25-register-login-doctor.spec.ts:167:9 ΓÇ║ 25 ΓÇö Register & Login New Doctor User ΓÇ║ C ΓÇö Admin Login & Dashboard ΓÇ║ C03 ΓÇö Admin doctor management page loads (20.9s)
+Γ£à Patient Reset Password page visible in browser
+  Γ£ô  233 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:354:11 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ D ΓÇö Doctor Portal All Pages Load (Browser) ΓÇ║ D17 ΓÇö Admin Admin Schedule page opens in browser (/doctor/ADMIN-TEST-001/schedule) (6.0s)
+Γ£à Empty form submission checked
+Γ£à Doctor Patient Management visible ΓåÆ https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app/doctor/DOC-TEST-001/patients
+  Γ£ô  225 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:439:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ E ΓÇö Multi-User Browser Login ΓÇ║ E03 ΓÇö Admin login via browser (26.2s)
+Γ£à Admin appointment management loaded
+  Γ£ô  231 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:264:11 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ C ΓÇö Patient Portal All Pages Load (Browser) ΓÇ║ C09 ΓÇö Patient Health Library page opens in browser (/health-library) (19.5s)
+  Γ£ô  230 [Cloud] ΓÇ║ specs\25-register-login-doctor.spec.ts:159:9 ΓÇ║ 25 ΓÇö Register & Login New Doctor User ΓÇ║ C ΓÇö Admin Login & Dashboard ΓÇ║ C02 ΓÇö Admin dashboard loads via browser (22.1s)
+Γä╣∩╕Å  All 5 users authenticated for doctor registration tests
+  Γ£ô  235 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:249:11 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ C ΓÇö Patient Portal All Pages Load (Browser) ΓÇ║ C03 ΓÇö Patient Reset Password page opens in browser (/reset-password) (6.3s)
+Γä╣∩╕Å  Role update response: {"success":true,"message":"Role has been updated to admin","user":{"id":"DOC-TEST-001","email":"doctor.test@izara.com","name":"Dr. Test Good","role":"admin","isAdmin":true}}
+Γ£à Doctor DOC-TEST-001 upgraded to admin: status 200
+  Γ£ô  241 [Cloud] ΓÇ║ specs\25-register-login-doctor.spec.ts:199:9 ΓÇ║ 25 ΓÇö Register & Login New Doctor User ΓÇ║ D ΓÇö Admin Tier Upgrade ΓÇ║ D02 ΓÇö Admin upgrades doctor role to admin tier (653ms)
+Γä╣∩╕Å  After upgrade: role=admin, isAdmin=true
+Γ£à Doctor successfully upgraded to admin tier!
+  Γ£ô  243 [Cloud] ΓÇ║ specs\25-register-login-doctor.spec.ts:211:9 ΓÇ║ 25 ΓÇö Register & Login New Doctor User ΓÇ║ D ΓÇö Admin Tier Upgrade ΓÇ║ D03 ΓÇö Verify doctor now has admin role (730ms)
+Γ£à Doctor reverted to doctor role: status 200
+Γ£à Patient Profile page visible in browser ΓåÆ https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app/profile
+  Γ£ô  244 [Cloud] ΓÇ║ specs\25-register-login-doctor.spec.ts:224:9 ΓÇ║ 25 ΓÇö Register & Login New Doctor User ΓÇ║ D ΓÇö Admin Tier Upgrade ΓÇ║ D04 ΓÇö Revert doctor back to doctor role (562ms)
+Γä╣∩╕Å  All 5 users authenticated for doctor registration tests
+Γä╣∩╕Å  After revert: role=doctor, isAdmin=false
+Γ£à Doctor role verified after revert
+  Γ£ô  237 [Cloud] ΓÇ║ specs\25-register-login-doctor.spec.ts:177:9 ΓÇ║ 25 ΓÇö Register & Login New Doctor User ΓÇ║ C ΓÇö Admin Login & Dashboard ΓÇ║ C04 ΓÇö Admin appointment management loads (10.4s)
+Γ£à Admin fetched doctors list
+  Γ£ô  245 [Cloud] ΓÇ║ specs\25-register-login-doctor.spec.ts:235:9 ΓÇ║ 25 ΓÇö Register & Login New Doctor User ΓÇ║ D ΓÇö Admin Tier Upgrade ΓÇ║ D05 ΓÇö Verify doctor role is back to doctor (525ms)
+  Γ£ô  234 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:531:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ E ΓÇö Multi-User Browser Login ΓÇ║ E10 ΓÇö Empty form submission prevented (11.7s)
+  Γ£ô  236 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:337:11 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ D ΓÇö Doctor Portal All Pages Load (Browser) ΓÇ║ D05 ΓÇö Doctor Patient Management page opens in browser (/doctor/DOC-TEST-001/patients) (10.5s)
+  Γ£ô  246 [Cloud] ΓÇ║ specs\25-register-login-doctor.spec.ts:192:9 ΓÇ║ 25 ΓÇö Register & Login New Doctor User ΓÇ║ D ΓÇö Admin Tier Upgrade ΓÇ║ D01 ΓÇö Admin fetches all doctors list (614ms)
+Γä╣∩╕Å  All 5 users authenticated for patient registration tests
+Γä╣∩╕Å  All 5 users authenticated for patient registration tests
+Γ£à Patient1 token valid: Demo Test Patient
+  Γ£ô  250 [Cloud] ΓÇ║ specs\26-register-login-patient.spec.ts:92:9 ΓÇ║ 26 ΓÇö Register & Login New Patient User ΓÇ║ B ΓÇö Existing Patient Login & Page Navigation ΓÇ║ B01 ΓÇö Patient1 login via API returns token (18ms)
+  Γ£ô  240 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:264:11 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ C ΓÇö Patient Portal All Pages Load (Browser) ΓÇ║ C10 ΓÇö Patient Profile page opens in browser (/profile) (6.8s)
+Γ£à Patient login page loads without errors
+Γ£à Patient Settings page visible in browser ΓåÆ https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app/settings
+  Γ£ô  248 [Cloud] ΓÇ║ specs\26-register-login-patient.spec.ts:44:9 ΓÇ║ 26 ΓÇö Register & Login New Patient User ΓÇ║ A ΓÇö Patient Registration ΓÇ║ A01 ΓÇö Patient portal login page loads (6.8s)
+Γ£à 3 users login pages accessed simultaneously
+  Γ£ô  252 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:264:11 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ C ΓÇö Patient Portal All Pages Load (Browser) ΓÇ║ C11 ΓÇö Patient Settings page opens in browser (/settings) (5.8s)
+Γ£à Admin Admin Medical Content visible ΓåÆ https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app/doctor/ADMIN-TEST-001/medical-content
+  Γ£ô  239 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:454:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ E ΓÇö Multi-User Browser Login ΓÇ║ E04 ΓÇö 3 users login simultaneously (patient + doctor + admin) (18.2s)
+  Γ£ô  238 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:354:11 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ D ΓÇö Doctor Portal All Pages Load (Browser) ΓÇ║ D18 ΓÇö Admin Admin Medical Content page opens in browser (/doctor/ADMIN-TEST-001/medical-content) (24.5s)
+Γ£à Patient1 PHR accessible
+  Γ£ô  256 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:370:9 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ E ΓÇö User Data Sync & Streaming Across Portals ΓÇ║ E01 ΓÇö Patient1 PHR data accessible (411ms)
+Γ£à Patient2 PHR accessible
+  Γ£ô  257 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:376:9 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ E ΓÇö User Data Sync & Streaming Across Portals ΓÇ║ E02 ΓÇö Patient2 PHR data accessible (192ms)
+Γ£à Patient3 PHR accessible
+  Γ£ô  258 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:382:9 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ E ΓÇö User Data Sync & Streaming Across Portals ΓÇ║ E03 ΓÇö Patient3 PHR data accessible (234ms)
+Γ£à Doctor patients list
+  Γ£ô  259 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:388:9 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ E ΓÇö User Data Sync & Streaming Across Portals ΓÇ║ E04 ΓÇö Doctor can list all patients (260ms)
+Γ£à Admin patients list
+  Γ£ô  260 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:394:9 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ E ΓÇö User Data Sync & Streaming Across Portals ΓÇ║ E05 ΓÇö Admin can list all patients (295ms)
+Γä╣∩╕Å  All 5 users authenticated for patient registration tests
+Γ£à Patient Dashboard page visible in browser ΓåÆ https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app/
+Γ£à Doctor Medical Consultants visible ΓåÆ https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app/doctor/DOC-TEST-001/medical-consultants
+Γ£à Patient register page loads without errors
+Γ£à Patient dashboard loaded
+  Γ£ô  253 [Cloud] ΓÇ║ specs\26-register-login-patient.spec.ts:53:9 ΓÇ║ 26 ΓÇö Register & Login New Patient User ΓÇ║ A ΓÇö Patient Registration ΓÇ║ A02 ΓÇö Patient register page loads (16.1s)
+Γ£à New patient registered: test.patient.1773114677620@gmail.com ΓÇö status 200
+  Γ£ô  262 [Cloud] ΓÇ║ specs\26-register-login-patient.spec.ts:62:9 ΓÇ║ 26 ΓÇö Register & Login New Patient User ΓÇ║ A ΓÇö Patient Registration ΓÇ║ A03 ΓÇö Register new patient via API (826ms)
+  Γ£ô  242 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:264:11 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ C ΓÇö Patient Portal All Pages Load (Browser) ΓÇ║ C04 ΓÇö Patient Dashboard page opens in browser (/) (30.2s)
+Γä╣∩╕Å  All 5 users authenticated for patient registration tests
+Γ£à New patient logged in ΓÇö token received
+  Γ£ô  263 [Cloud] ΓÇ║ specs\26-register-login-patient.spec.ts:75:9 ΓÇ║ 26 ΓÇö Register & Login New Patient User ΓÇ║ A ΓÇö Patient Registration ΓÇ║ A04 ΓÇö New patient can login via API (764ms)
+Γä╣∩╕Å  All 5 users authenticated for patient registration tests
+  Γ£ô  249 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:337:11 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ D ΓÇö Doctor Portal All Pages Load (Browser) ΓÇ║ D06 ΓÇö Doctor Medical Consultants page opens in browser (/doctor/DOC-TEST-001/medical-consultants) (26.4s)
+  Γ£ô  251 [Cloud] ΓÇ║ specs\26-register-login-patient.spec.ts:98:9 ΓÇ║ 26 ΓÇö Register & Login New Patient User ΓÇ║ B ΓÇö Existing Patient Login & Page Navigation ΓÇ║ B02 ΓÇö Patient dashboard loads via browser with data (25.1s)
+Γ£à PDPA page loaded
+Γ£à Health library page loaded
+  Γ£ô  264 [Cloud] ΓÇ║ specs\26-register-login-patient.spec.ts:154:9 ΓÇ║ 26 ΓÇö Register & Login New Patient User ΓÇ║ B ΓÇö Existing Patient Login & Page Navigation ΓÇ║ B09 ΓÇö PDPA page loads (3.9s)
+Γ£à Patient PDPA Consent page visible in browser ΓåÆ https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app/pdpa
+  Γ£ô  254 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:264:11 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ C ΓÇö Patient Portal All Pages Load (Browser) ΓÇ║ C12 ΓÇö Patient PDPA Consent page opens in browser (/pdpa) (24.4s)
+Γ£à Living Will page loaded
+Γ£à Invalid login handling checked
+  Γ£ô  268 [Cloud] ΓÇ║ specs\26-register-login-patient.spec.ts:162:9 ΓÇ║ 26 ΓÇö Register & Login New Patient User ΓÇ║ B ΓÇö Existing Patient Login & Page Navigation ΓÇ║ B10 ΓÇö Living Will page loads (4.2s)
+  Γ£ô  261 [Cloud] ΓÇ║ specs\26-register-login-patient.spec.ts:122:9 ΓÇ║ 26 ΓÇö Register & Login New Patient User ΓÇ║ B ΓÇö Existing Patient Login & Page Navigation ΓÇ║ B05 ΓÇö Health Library page loads with content (12.9s)
+Γ£à Patient Living Will page visible in browser ΓåÆ https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app/living-will
+  Γ£ô  255 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:484:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ E ΓÇö Multi-User Browser Login ΓÇ║ E05 ΓÇö Invalid login shows error message (20.7s)
+Γä╣∩╕Å  All 5 users authenticated for patient registration tests
+Γ£à Health endpoint: 200
+Γ£à PHR page loaded
+  Γ£ô  269 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:264:11 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ C ΓÇö Patient Portal All Pages Load (Browser) ΓÇ║ C13 ΓÇö Patient Living Will page opens in browser (/living-will) (6.2s)
+  Γ£ô  272 [Cloud] ΓÇ║ specs\26-register-login-patient.spec.ts:243:9 ΓÇ║ 26 ΓÇö Register & Login New Patient User ΓÇ║ D ΓÇö API Verification ΓÇ║ D01 ΓÇö GET /api/health returns 200 (336ms)
+Γ£à Appointments endpoint: 200
+  Γ£ô  271 [Cloud] ΓÇ║ specs\26-register-login-patient.spec.ts:130:9 ΓÇ║ 26 ΓÇö Register & Login New Patient User ΓÇ║ B ΓÇö Existing Patient Login & Page Navigation ΓÇ║ B06 ΓÇö PHR (Health Records) page loads (4.7s)
+  Γ£ô  274 [Cloud] ΓÇ║ specs\26-register-login-patient.spec.ts:250:9 ΓÇ║ 26 ΓÇö Register & Login New Patient User ΓÇ║ D ΓÇö API Verification ΓÇ║ D02 ΓÇö GET /api/appointments returns 200 (938ms)
+Γ£à Medical content endpoint: 200
+Γ£à 3 patients logged in simultaneously
+  Γ£ô  276 [Cloud] ΓÇ║ specs\26-register-login-patient.spec.ts:257:9 ΓÇ║ 26 ΓÇö Register & Login New Patient User ΓÇ║ D ΓÇö API Verification ΓÇ║ D03 ΓÇö GET /api/medical-content returns 200 (412ms)
+Γ£à PHR endpoint: 200
+  Γ£ô  277 [Cloud] ΓÇ║ specs\26-register-login-patient.spec.ts:264:9 ΓÇ║ 26 ΓÇö Register & Login New Patient User ΓÇ║ D ΓÇö API Verification ΓÇ║ D04 ΓÇö GET /api/phr returns 200 (287ms)
+Γä╣∩╕Å  All 5 users authenticated for patient registration tests
+Γ£à Profile endpoint: 200
+  Γ£ô  278 [Cloud] ΓÇ║ specs\26-register-login-patient.spec.ts:271:9 ΓÇ║ 26 ΓÇö Register & Login New Patient User ΓÇ║ D ΓÇö API Verification ΓÇ║ D05 ΓÇö GET /api/users/profile returns 200 (214ms)
+Γä╣∩╕Å  All 5 users authenticated for lab/imaging data sync tests
+Γ£à Doctor Doctors List visible ΓåÆ https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app/doctor/DOC-TEST-001/doctors
+Γ£à Timeline page loaded
+  Γ£ô  275 [Cloud] ΓÇ║ specs\26-register-login-patient.spec.ts:138:9 ΓÇ║ 26 ΓÇö Register & Login New Patient User ΓÇ║ B ΓÇö Existing Patient Login & Page Navigation ΓÇ║ B07 ΓÇö Timeline page loads (3.7s)
+  Γ£ô  266 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:337:11 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ D ΓÇö Doctor Portal All Pages Load (Browser) ΓÇ║ D07 ΓÇö Doctor Doctors List page opens in browser (/doctor/DOC-TEST-001/doctors) (18.2s)
+  Γ£ô  247 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:542:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ E ΓÇö Multi-User Browser Login ΓÇ║ E11 ΓÇö All 3 patients login to patient portal simultaneously (44.8s)
+Γ£à Session isolation verified
+  Γ£ô  282 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:571:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ E ΓÇö Multi-User Browser Login ΓÇ║ E12 ΓÇö Session isolation ΓÇö different users see own data (831ms)
+  Γ£ô  283 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:599:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ F ΓÇö Metadata & Reference Data ΓÇ║ F01 ΓÇö Specialties metadata available (276ms)
+Γ£à Map page loaded
+  Γ£ô  284 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:608:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ F ΓÇö Metadata & Reference Data ΓÇ║ F02 ΓÇö Lab test catalog available (402ms)
+  Γ£ô  285 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:614:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ F ΓÇö Metadata & Reference Data ΓÇ║ F03 ΓÇö ICD-10 codes available (222ms)
+Γ£à Doctor Medical Content visible ΓåÆ https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app/doctor/DOC-TEST-001/medical-content
+  Γ£ô  286 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:620:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ F ΓÇö Metadata & Reference Data ΓÇ║ F04 ΓÇö Medications database available (382ms)
+  Γ£ô  287 [Cloud] ΓÇ║ specs\02-auth-health-multiuser.spec.ts:626:9 ΓÇ║ 02 ΓÇö System Health & Multi-User Authentication ΓÇ║ F ΓÇö Metadata & Reference Data ΓÇ║ F05 ΓÇö Medical content tags available (186ms)
+Γä╣∩╕Å  All 5 users authenticated for lab/imaging data sync tests
+Γ£à Lab orders list: status 200
+Γ£à Dashboard data retained after refresh
+  Γ£ô  288 [Cloud] ΓÇ║ specs\27-lab-data-doctor-to-patient.spec.ts:65:9 ΓÇ║ 27 ΓÇö Lab & Imaging Data: Doctor Sends ΓåÆ Patient Sees ΓåÆ Refresh ΓÇ║ A ΓÇö Doctor Creates Lab Order ΓÇ║ A04 ΓÇö Doctor can view lab orders list (236ms)
+  Γ£ô  281 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:337:11 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ D ΓÇö Doctor Portal All Pages Load (Browser) ΓÇ║ D08 ΓÇö Doctor Medical Content page opens in browser (/doctor/DOC-TEST-001/medical-content) (7.8s)
+  Γ£ô  280 [Cloud] ΓÇ║ specs\26-register-login-patient.spec.ts:146:9 ΓÇ║ 26 ΓÇö Register & Login New Patient User ΓÇ║ B ΓÇö Existing Patient Login & Page Navigation ΓÇ║ B08 ΓÇö Map page loads (7.8s)
+Γä╣∩╕Å  All 5 users authenticated for lab/imaging data sync tests
+Γ£à Doctor imaging orders for patient: status 200
+Γ£à Doctor lab orders page loaded in browser
+  Γ£ô  291 [Cloud] ΓÇ║ specs\27-lab-data-doctor-to-patient.spec.ts:103:9 ΓÇ║ 27 ΓÇö Lab & Imaging Data: Doctor Sends ΓåÆ Patient Sees ΓåÆ Refresh ΓÇ║ B ΓÇö Doctor Creates Imaging Order ΓÇ║ B02 ΓÇö Doctor can view imaging orders for patient (239ms)
+Γ£à Patient lab orders fetched: status 200
+  Γ£ô  292 [Cloud] ΓÇ║ specs\27-lab-data-doctor-to-patient.spec.ts:117:9 ΓÇ║ 27 ΓÇö Lab & Imaging Data: Doctor Sends ΓåÆ Patient Sees ΓåÆ Refresh ΓÇ║ C ΓÇö Patient Sees Lab & Imaging Data ΓÇ║ C01 ΓÇö Patient can fetch lab orders via API (386ms)
+  Γ£ô  265 [Cloud] ΓÇ║ specs\26-register-login-patient.spec.ts:192:9 ΓÇ║ 26 ΓÇö Register & Login New Patient User ΓÇ║ C ΓÇö Page Refresh Retains Data ΓÇ║ C01 ΓÇö Dashboard retains data after refresh (27.5s)
+Γ£à Doctor Health Meeting visible ΓåÆ https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app/doctor/DOC-TEST-001/health-meeting
+  Γ£ô  289 [Cloud] ΓÇ║ specs\27-lab-data-doctor-to-patient.spec.ts:72:9 ΓÇ║ 27 ΓÇö Lab & Imaging Data: Doctor Sends ΓåÆ Patient Sees ΓåÆ Refresh ΓÇ║ A ΓÇö Doctor Creates Lab Order ΓÇ║ A05 ΓÇö Doctor lab orders page loads in browser (4.2s)
+Γ£à Imaging order created: status 200
+  Γ£ô  295 [Cloud] ΓÇ║ specs\27-lab-data-doctor-to-patient.spec.ts:87:9 ΓÇ║ 27 ΓÇö Lab & Imaging Data: Doctor Sends ΓåÆ Patient Sees ΓåÆ Refresh ΓÇ║ B ΓÇö Doctor Creates Imaging Order ΓÇ║ B01 ΓÇö Doctor creates imaging order for patient via API (306ms)
+Γä╣∩╕Å  All 5 users authenticated for lab/imaging data sync tests
+Γ£à Patient imaging orders: status 200
+Γ£à Patient PHR page loaded
+  Γ£ô  296 [Cloud] ΓÇ║ specs\27-lab-data-doctor-to-patient.spec.ts:132:9 ΓÇ║ 27 ΓÇö Lab & Imaging Data: Doctor Sends ΓåÆ Patient Sees ΓåÆ Refresh ΓÇ║ C ΓÇö Patient Sees Lab & Imaging Data ΓÇ║ C03 ΓÇö Patient imaging orders fetch returns 200 (369ms)
+  Γ£ô  290 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:337:11 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ D ΓÇö Doctor Portal All Pages Load (Browser) ΓÇ║ D09 ΓÇö Doctor Health Meeting page opens in browser (/doctor/DOC-TEST-001/health-meeting) (4.6s)
+  Γ£ô  293 [Cloud] ΓÇ║ specs\27-lab-data-doctor-to-patient.spec.ts:124:9 ΓÇ║ 27 ΓÇö Lab & Imaging Data: Doctor Sends ΓåÆ Patient Sees ΓåÆ Refresh ΓÇ║ C ΓÇö Patient Sees Lab & Imaging Data ΓÇ║ C02 ΓÇö Patient PHR page loads with lab data (3.5s)
+Γä╣∩╕Å  All 5 users authenticated for lab/imaging data sync tests
+Γ£à Lab orders still available on re-fetch
+  Γ£ô  299 [Cloud] ΓÇ║ specs\27-lab-data-doctor-to-patient.spec.ts:164:9 ΓÇ║ 27 ΓÇö Lab & Imaging Data: Doctor Sends ΓåÆ Patient Sees ΓåÆ Refresh ΓÇ║ D ΓÇö Refresh Retains Lab & Imaging Data ΓÇ║ D02 ΓÇö Patient API lab orders still available after delay (1.3s)
+Γ£à Patient Timeline page visible in browser ΓåÆ https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app/timeline
+Γ£à Profile page loaded
+Γ£à Doctor dashboard retained after refresh
+  Γ£ô  273 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:264:11 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ C ΓÇö Patient Portal All Pages Load (Browser) ΓÇ║ C14 ΓÇö Patient Timeline page opens in browser (/timeline) (27.3s)
+  Γ£ô  270 [Cloud] ΓÇ║ specs\26-register-login-patient.spec.ts:170:9 ΓÇ║ 26 ΓÇö Register & Login New Patient User ΓÇ║ B ΓÇö Existing Patient Login & Page Navigation ΓÇ║ B11 ΓÇö Profile page loads (31.7s)
+  Γ£ô  300 [Cloud] ΓÇ║ specs\27-lab-data-doctor-to-patient.spec.ts:172:9 ΓÇ║ 27 ΓÇö Lab & Imaging Data: Doctor Sends ΓåÆ Patient Sees ΓåÆ Refresh ΓÇ║ D ΓÇö Refresh Retains Lab & Imaging Data ΓÇ║ D03 ΓÇö Doctor dashboard retains data after refresh (7.1s)
+Γ£à Cross-portal data consistent
+  Γ£ô  303 [Cloud] ΓÇ║ specs\27-lab-data-doctor-to-patient.spec.ts:187:9 ΓÇ║ 27 ΓÇö Lab & Imaging Data: Doctor Sends ΓåÆ Patient Sees ΓåÆ Refresh ΓÇ║ E ΓÇö Cross-Portal Data Consistency ΓÇ║ E01 ΓÇö Doctor and patient see consistent patient list (281ms)
+Γä╣∩╕Å  All 5 users authenticated for lab/imaging data sync tests
+Γ£à Treatment results: status 200
+  Γ£ô  304 [Cloud] ΓÇ║ specs\27-lab-data-doctor-to-patient.spec.ts:196:9 ΓÇ║ 27 ΓÇö Lab & Imaging Data: Doctor Sends ΓåÆ Patient Sees ΓåÆ Refresh ΓÇ║ E ΓÇö Cross-Portal Data Consistency ΓÇ║ E02 ΓÇö Treatment results endpoint returns 200 (186ms)
+Γ£à Imaging data visible in both portals
+  Γ£ô  305 [Cloud] ΓÇ║ specs\27-lab-data-doctor-to-patient.spec.ts:203:9 ΓÇ║ 27 ΓÇö Lab & Imaging Data: Doctor Sends ΓåÆ Patient Sees ΓåÆ Refresh ΓÇ║ E ΓÇö Cross-Portal Data Consistency ΓÇ║ E03 ΓÇö Imaging data visible in both portals (257ms)
+Γ£à Appointments retained after refresh
+Γ£à Doctor patient management page loaded
+  Γ£ô  279 [Cloud] ΓÇ║ specs\27-lab-data-doctor-to-patient.spec.ts:35:9 ΓÇ║ 27 ΓÇö Lab & Imaging Data: Doctor Sends ΓåÆ Patient Sees ΓåÆ Refresh ΓÇ║ A ΓÇö Doctor Creates Lab Order ΓÇ║ A01 ΓÇö Doctor patient management page loads (32.2s)
+Γ£à Patients list fetched: status 200
+  Γ£ô  307 [Cloud] ΓÇ║ specs\27-lab-data-doctor-to-patient.spec.ts:44:9 ΓÇ║ 27 ΓÇö Lab & Imaging Data: Doctor Sends ΓåÆ Patient Sees ΓåÆ Refresh ΓÇ║ A ΓÇö Doctor Creates Lab Order ΓÇ║ A02 ΓÇö Doctor can fetch patient list via API (178ms)
+Γ£à Lab order created: status 200, id=LAB-1773114754950
+  Γ£ô  308 [Cloud] ΓÇ║ specs\27-lab-data-doctor-to-patient.spec.ts:51:9 ΓÇ║ 27 ΓÇö Lab & Imaging Data: Doctor Sends ΓåÆ Patient Sees ΓåÆ Refresh ΓÇ║ A ΓÇö Doctor Creates Lab Order ΓÇ║ A03 ΓÇö Doctor creates lab order for patient via API (163ms)
+Γ£à Appointments page loaded
+Γ£à Patient Dashboard page loaded OK
+Γ£à Patient Map page visible in browser ΓåÆ https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app/map
+Γ£à Patient dashboard shows health data
+  Γ£ô  294 [Cloud] ΓÇ║ specs\26-register-login-patient.spec.ts:204:9 ΓÇ║ 26 ΓÇö Register & Login New Patient User ΓÇ║ C ΓÇö Page Refresh Retains Data ΓÇ║ C02 ΓÇö Appointments retained after refresh (30.1s)
+  Γ£ô  306 [Cloud] ΓÇ║ specs\28a-patient-pages-verification.spec.ts:29:7 ΓÇ║ 28A ΓÇö Patient Portal Pages ΓÇ║ A01 ΓÇö Patient Dashboard loads with data (18.3s)
+  Γ£ô  297 [Cloud] ΓÇ║ specs\27-lab-data-doctor-to-patient.spec.ts:139:9 ΓÇ║ 27 ΓÇö Lab & Imaging Data: Doctor Sends ΓåÆ Patient Sees ΓåÆ Refresh ΓÇ║ C ΓÇö Patient Sees Lab & Imaging Data ΓÇ║ C04 ΓÇö Patient dashboard shows health data (30.3s)
+  Γ£ô  301 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:264:11 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ C ΓÇö Patient Portal All Pages Load (Browser) ΓÇ║ C15 ΓÇö Patient Map page opens in browser (/map) (21.5s)
+Γ£à PHR retained after refresh
+  Γ£ô  267 [Cloud] ΓÇ║ specs\26-register-login-patient.spec.ts:106:9 ΓÇ║ 26 ΓÇö Register & Login New Patient User ΓÇ║ B ΓÇö Existing Patient Login & Page Navigation ΓÇ║ B03 ΓÇö Appointments page loads with data (1.1m)
+  Γ£ô  310 [Cloud] ΓÇ║ specs\26-register-login-patient.spec.ts:215:9 ΓÇ║ 26 ΓÇö Register & Login New Patient User ΓÇ║ C ΓÇö Page Refresh Retains Data ΓÇ║ C03 ΓÇö PHR retained after refresh (4.5s)
+Γ£à PHR lab data retained after refresh
+Γ£à Patient GCS Status page visible in browser ΓåÆ https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app/gcs-status
+Γ£à AI Doctor page loaded
+  Γ£ô  312 [Cloud] ΓÇ║ specs\27-lab-data-doctor-to-patient.spec.ts:153:9 ΓÇ║ 27 ΓÇö Lab & Imaging Data: Doctor Sends ΓåÆ Patient Sees ΓåÆ Refresh ΓÇ║ D ΓÇö Refresh Retains Lab & Imaging Data ΓÇ║ D01 ΓÇö Patient PHR retains lab data after refresh (4.6s)
+Γä╣∩╕Å  Auth OK for health checks
+Γ£à Patient portal health: 200
+  Γ£ô  316 [Cloud] ΓÇ║ specs\28c-api-health-verification.spec.ts:26:7 ΓÇ║ 28C ΓÇö API Health Checks ΓÇ║ C01 ΓÇö Patient Portal health returns 200 (375ms)
+Γä╣∩╕Å  Auth OK for health checks
+Γ£à Doctor portal health: 200
+Γ£à Settings page loaded
+  Γ£ô  317 [Cloud] ΓÇ║ specs\28c-api-health-verification.spec.ts:33:7 ΓÇ║ 28C ΓÇö API Health Checks ΓÇ║ C02 ΓÇö Doctor Portal health returns 200 (173ms)
+  Γ£ô  313 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:264:11 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ C ΓÇö Patient Portal All Pages Load (Browser) ΓÇ║ C16 ΓÇö Patient GCS Status page opens in browser (/gcs-status) (5.1s)
+Γä╣∩╕Å  Auth OK for health checks
+  Γ£ô  314 [Cloud] ΓÇ║ specs\26-register-login-patient.spec.ts:114:9 ΓÇ║ 26 ΓÇö Register & Login New Patient User ΓÇ║ B ΓÇö Existing Patient Login & Page Navigation ΓÇ║ B04 ΓÇö AI Doctor page loads (3.9s)
+Γä╣∩╕Å  Auth OK for health checks
+Γä╣∩╕Å  Auth OK for health checks
+Γ£à Meeting server health: 200
+Γ£à Medical content API OK
+  Γ£ô  318 [Cloud] ΓÇ║ specs\28c-api-health-verification.spec.ts:40:7 ΓÇ║ 28C ΓÇö API Health Checks ΓÇ║ C03 ΓÇö Meeting Server health returns 200 (281ms)
+Γä╣∩╕Å  Auth OK for health checks
+  Γ£ô  320 [Cloud] ΓÇ║ specs\28c-api-health-verification.spec.ts:54:7 ΓÇ║ 28C ΓÇö API Health Checks ΓÇ║ C05 ΓÇö Patient medical content API returns 200 (328ms)
+Γä╣∩╕Å  Auth OK for health checks
+Γ£à PHR API OK
+Γ£à Doctor patients API OK
+  Γ£ô  321 [Cloud] ΓÇ║ specs\28c-api-health-verification.spec.ts:61:7 ΓÇ║ 28C ΓÇö API Health Checks ΓÇ║ C06 ΓÇö Patient PHR API returns 200 (185ms)
+Γä╣∩╕Å  Auth OK for health checks
+  Γ£ô  302 [Cloud] ΓÇ║ specs\26-register-login-patient.spec.ts:178:9 ΓÇ║ 26 ΓÇö Register & Login New Patient User ΓÇ║ B ΓÇö Existing Patient Login & Page Navigation ΓÇ║ B12 ΓÇö Settings page loads (29.9s)
+Γ£à Appointments API OK
+  Γ£ô  322 [Cloud] ΓÇ║ specs\28c-api-health-verification.spec.ts:68:7 ΓÇ║ 28C ΓÇö API Health Checks ΓÇ║ C07 ΓÇö Doctor patients API returns 200 (175ms)
+Γ£à Doctor lab orders API OK
+  Γ£ô  323 [Cloud] ΓÇ║ specs\28c-api-health-verification.spec.ts:75:7 ΓÇ║ 28C ΓÇö API Health Checks ΓÇ║ C08 ΓÇö Doctor lab orders API returns 200 (314ms)
+  Γ£ô  319 [Cloud] ΓÇ║ specs\28c-api-health-verification.spec.ts:47:7 ΓÇ║ 28C ΓÇö API Health Checks ΓÇ║ C04 ΓÇö Patient appointments API returns 200 (1.3s)
+Γ£à AI validations returned
+Γ£à Meeting summary generated for b1e90558-1142-4fdb-a425-e85e34736eda
+  Γ£ô  326 [Cloud] ΓÇ║ specs\29-chat-ai-summary-cloud.spec.ts:113:7 ΓÇ║ 29 ΓÇö AI Chat, Summary & CDS (Cloud) ΓÇ║ C02 ΓÇö AI validations log accessible (169ms)
+  Γ£ô  325 [Cloud] ΓÇ║ specs\29-chat-ai-summary-cloud.spec.ts:62:7 ΓÇ║ 29 ΓÇö AI Chat, Summary & CDS (Cloud) ΓÇ║ B01 ΓÇö Meeting create + transcript + generate summary (1 Gemini call) (445ms)
+Γ£à CDS check completed
+Γ£à AI validate completed
+  Γ£ô  329 [Cloud] ΓÇ║ specs\29-chat-ai-summary-cloud.spec.ts:97:7 ΓÇ║ 29 ΓÇö AI Chat, Summary & CDS (Cloud) ΓÇ║ C01 ΓÇö CDS drug interaction check (1 Gemini call) (190ms)
+  Γ£ô  327 [Cloud] ΓÇ║ specs\29-chat-ai-summary-cloud.spec.ts:151:7 ΓÇ║ 29 ΓÇö AI Chat, Summary & CDS (Cloud) ΓÇ║ E01 ΓÇö AI validate endpoint works (286ms)
+Γ£à Meeting server health OK
+Γ£à Doctor portal health OK
+  Γ£ô  331 [Cloud] ΓÇ║ specs\29-chat-ai-summary-cloud.spec.ts:166:7 ΓÇ║ 29 ΓÇö AI Chat, Summary & CDS (Cloud) ΓÇ║ E02 ΓÇö Meeting server health OK (153ms)
+Γä╣∩╕Å  All users authenticated for full pipeline
+  Γ£ô  330 [Cloud] ΓÇ║ specs\29-chat-ai-summary-cloud.spec.ts:173:7 ΓÇ║ 29 ΓÇö AI Chat, Summary & CDS (Cloud) ΓÇ║ E03 ΓÇö Doctor portal health OK (155ms)
+Γä╣∩╕Å  All users authenticated for full pipeline
+Γ£à Appointment created: APT-1773114778577-TWJ3G5
+  Γ£ô  332 [Cloud] ΓÇ║ specs\30-appointment-meeting-ai-pipeline.spec.ts:48:7 ΓÇ║ 30 ΓÇö Full Appointment ΓåÆ Meeting ΓåÆ AI ΓåÆ Patient Pipeline ΓÇ║ A01 ΓÇö Patient creates a telemedicine appointment (184ms)
+Γ£à Doctor can see appointments queue
+Γ£à Patient has 1293 appointments
+  Γ£ô  333 [Cloud] ΓÇ║ specs\30-appointment-meeting-ai-pipeline.spec.ts:67:7 ΓÇ║ 30 ΓÇö Full Appointment ΓåÆ Meeting ΓåÆ AI ΓåÆ Patient Pipeline ΓÇ║ A03 ΓÇö Doctor sees the appointment in queue (579ms)
+ΓÜá∩╕Å  No explicit confirm endpoint ΓÇö appointment may auto-confirm
+  Γ£ô  334 [Cloud] ΓÇ║ specs\30-appointment-meeting-ai-pipeline.spec.ts:57:7 ΓÇ║ 30 ΓÇö Full Appointment ΓåÆ Meeting ΓåÆ AI ΓåÆ Patient Pipeline ΓÇ║ A02 ΓÇö Patient can see the appointment in list (1.1s)
+  Γ£ô  335 [Cloud] ΓÇ║ specs\30-appointment-meeting-ai-pipeline.spec.ts:74:7 ΓÇ║ 30 ΓÇö Full Appointment ΓåÆ Meeting ΓåÆ AI ΓåÆ Patient Pipeline ΓÇ║ A04 ΓÇö Doctor confirms/approves the appointment (379ms)
+Γä╣∩╕Å  All users authenticated for full pipeline
+Γä╣∩╕Å  All users authenticated for full pipeline
+Γ£à Meeting created: 978a3887-0147-4570-934b-c5f13712d8e3
+Γ£à STT config available
+  Γ£ô  337 [Cloud] ΓÇ║ specs\30-appointment-meeting-ai-pipeline.spec.ts:135:7 ΓÇ║ 30 ΓÇö Full Appointment ΓåÆ Meeting ΓåÆ AI ΓåÆ Patient Pipeline ΓÇ║ B03 ΓÇö Meeting STT config available (161ms)
+  Γ£ô  336 [Cloud] ΓÇ║ specs\30-appointment-meeting-ai-pipeline.spec.ts:114:7 ΓÇ║ 30 ΓÇö Full Appointment ΓåÆ Meeting ΓåÆ AI ΓåÆ Patient Pipeline ΓÇ║ B01 ΓÇö Meeting room created for appointment (170ms)
+Γ£à Transcription submitted successfully
+Γ£à Meeting server healthy
+  Γ£ô  338 [Cloud] ΓÇ║ specs\30-appointment-meeting-ai-pipeline.spec.ts:142:7 ΓÇ║ 30 ΓÇö Full Appointment ΓåÆ Meeting ΓåÆ AI ΓåÆ Patient Pipeline ΓÇ║ B04 ΓÇö Transcription submitted for meeting (198ms)
+Γä╣∩╕Å  All users authenticated for full pipeline
+  Γ£ô  339 [Cloud] ΓÇ║ specs\30-appointment-meeting-ai-pipeline.spec.ts:128:7 ΓÇ║ 30 ΓÇö Full Appointment ΓåÆ Meeting ΓåÆ AI ΓåÆ Patient Pipeline ΓÇ║ B02 ΓÇö Meeting health check (186ms)
+Γä╣∩╕Å  All users authenticated for full pipeline
+Γ£à Meeting summary generated: 163 chars
+Γ£à AI chat responded with 2494 chars
+  Γ£ô  340 [Cloud] ΓÇ║ specs\30-appointment-meeting-ai-pipeline.spec.ts:163:7 ΓÇ║ 30 ΓÇö Full Appointment ΓåÆ Meeting ΓåÆ AI ΓåÆ Patient Pipeline ΓÇ║ C01 ΓÇö AI generates meeting summary from transcript (247ms)
+  Γ£ô  324 [Cloud] ΓÇ║ specs\29-chat-ai-summary-cloud.spec.ts:36:7 ΓÇ║ 29 ΓÇö AI Chat, Summary & CDS (Cloud) ΓÇ║ A01 ΓÇö AI chat responds to health question (1 Gemini call) (4.2s)
+Γ£à Health library retained after refresh
+Γ£à Patient instruction sheet generated
+  Γ£ô  328 [Cloud] ΓÇ║ specs\29-chat-ai-summary-cloud.spec.ts:124:7 ΓÇ║ 29 ΓÇö AI Chat, Summary & CDS (Cloud) ΓÇ║ D01 ΓÇö Patient instruction sheet generates (5.6s)
+Γä╣∩╕Å  All users authenticated for full pipeline
+Γ£à Patient lab orders accessible
+Γ£à AI Doctor page loaded
+Γ£à Pre-consultation summary for pipeline patient generated
+  Γ£ô  344 [Cloud] ΓÇ║ specs\30-appointment-meeting-ai-pipeline.spec.ts:234:7 ΓÇ║ 30 ΓÇö Full Appointment ΓåÆ Meeting ΓåÆ AI ΓåÆ Patient Pipeline ΓÇ║ D02 ΓÇö Patient can see lab orders (394ms)
+Γ£à Patient imaging orders accessible
+  Γ£ô  341 [Cloud] ΓÇ║ specs\30-appointment-meeting-ai-pipeline.spec.ts:203:7 ΓÇ║ 30 ΓÇö Full Appointment ΓåÆ Meeting ΓåÆ AI ΓåÆ Patient Pipeline ΓÇ║ C03 ΓÇö Pre-consultation summary generates for patient (3.4s)
+Γ£à Patient can access PHR
+  Γ£ô  345 [Cloud] ΓÇ║ specs\30-appointment-meeting-ai-pipeline.spec.ts:241:7 ΓÇ║ 30 ΓÇö Full Appointment ΓåÆ Meeting ΓåÆ AI ΓåÆ Patient Pipeline ΓÇ║ D03 ΓÇö Patient can see imaging orders (285ms)
+Γä╣∩╕Å  All users authenticated for full pipeline
+  Γ£ô  346 [Cloud] ΓÇ║ specs\30-appointment-meeting-ai-pipeline.spec.ts:227:7 ΓÇ║ 30 ΓÇö Full Appointment ΓåÆ Meeting ΓåÆ AI ΓåÆ Patient Pipeline ΓÇ║ D01 ΓÇö Patient can access their health records (263ms)
+Γ£à Patient timeline accessible
+  Γ£ô  347 [Cloud] ΓÇ║ specs\30-appointment-meeting-ai-pipeline.spec.ts:248:7 ΓÇ║ 30 ΓÇö Full Appointment ΓåÆ Meeting ΓåÆ AI ΓåÆ Patient Pipeline ΓÇ║ D04 ΓÇö Patient timeline shows activity (188ms)
+  Γ£ô  343 [Cloud] ΓÇ║ specs\29-chat-ai-summary-cloud.spec.ts:50:7 ΓÇ║ 29 ΓÇö AI Chat, Summary & CDS (Cloud) ΓÇ║ A02 ΓÇö AI Doctor page loads in browser (3.8s)
+Γ£à Doctor can access patient EMR
+  Γ£ô  315 [Cloud] ΓÇ║ specs\26-register-login-patient.spec.ts:226:9 ΓÇ║ 26 ΓÇö Register & Login New Patient User ΓÇ║ C ΓÇö Page Refresh Retains Data ΓÇ║ C04 ΓÇö Health library retained after refresh (12.0s)
+  Γ£ô  348 [Cloud] ΓÇ║ specs\30-appointment-meeting-ai-pipeline.spec.ts:255:7 ΓÇ║ 30 ΓÇö Full Appointment ΓåÆ Meeting ΓåÆ AI ΓåÆ Patient Pipeline ΓÇ║ D05 ΓÇö Doctor can access EMR for patient (199ms)
+Γ£à Doctor Clinical Resources visible ΓåÆ https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app/doctor/DOC-TEST-001/clinical-resources
+Γ£à Patient instruction sheet generated: 3026 chars
+  Γ£ô  342 [Cloud] ΓÇ║ specs\30-appointment-meeting-ai-pipeline.spec.ts:176:7 ΓÇ║ 30 ΓÇö Full Appointment ΓåÆ Meeting ΓåÆ AI ΓåÆ Patient Pipeline ΓÇ║ C02 ΓÇö AI generates patient instruction sheet (5.5s)
+  Γ£ô  298 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:337:11 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ D ΓÇö Doctor Portal All Pages Load (Browser) ΓÇ║ D10 ΓÇö Doctor Clinical Resources page opens in browser (/doctor/DOC-TEST-001/clinical-resources) (49.2s)
+Γ£à Doctor Doctor Profile visible ΓåÆ https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app/doctor/DOC-TEST-001/profile
+Γ£à Doctor login page loaded
+  Γ£ô  349 [Cloud] ΓÇ║ specs\01-user-accounts-demo-pages.spec.ts:337:11 ΓÇ║ 01 ΓÇö User Accounts Demo, Password Reset & Pages ΓÇ║ D ΓÇö Doctor Portal All Pages Load (Browser) ΓÇ║ D11 ΓÇö Doctor Doctor Profile page opens in browser (/doctor/DOC-TEST-001/profile) (3.6s)
+  Γ£ô  309 [Cloud] ΓÇ║ specs\28b-doctor-pages-verification.spec.ts:28:7 ΓÇ║ 28B ΓÇö Doctor Portal Pages ΓÇ║ B01 ΓÇö Doctor Login page loads (36.6s)
+Γ£à Patient Appointments page loaded OK
+Γ£à Doctor dashboard loaded
+  Γ£ô  350 [Cloud] ΓÇ║ specs\28b-doctor-pages-verification.spec.ts:41:9 ΓÇ║ 28B ΓÇö Doctor Portal Pages ΓÇ║ Doctor pages ΓÇ║ B02 ΓÇö Doctor Dashboard loads with data (10.3s)
+Γ£à Doctor Schedule page loaded OK
+  Γ£ô  351 [Cloud] ΓÇ║ specs\28b-doctor-pages-verification.spec.ts:50:9 ΓÇ║ 28B ΓÇö Doctor Portal Pages ΓÇ║ Doctor pages ΓÇ║ B03 ΓÇö Doctor Schedule page loads (4.1s)
+Γ£à Doctor Patient Management loaded OK
+  Γ£ô  311 [Cloud] ΓÇ║ specs\28a-patient-pages-verification.spec.ts:37:7 ΓÇ║ 28A ΓÇö Patient Portal Pages ΓÇ║ A02 ΓÇö Patient Appointments page loads (40.8s)
+  Γ£ô  352 [Cloud] ΓÇ║ specs\28b-doctor-pages-verification.spec.ts:57:9 ΓÇ║ 28B ΓÇö Doctor Portal Pages ΓÇ║ Doctor pages ΓÇ║ B04 ΓÇö Doctor Patient Management page loads (2.6s)
+Γ£à Doctor Health Meeting page loaded OK
+Γ£à Patient AI Doctor page loaded OK
+  Γ£ô  353 [Cloud] ΓÇ║ specs\28a-patient-pages-verification.spec.ts:45:7 ΓÇ║ 28A ΓÇö Patient Portal Pages ΓÇ║ A03 ΓÇö Patient AI Doctor page loads (4.1s)
+  Γ£ô  354 [Cloud] ΓÇ║ specs\28b-doctor-pages-verification.spec.ts:64:9 ΓÇ║ 28B ΓÇö Doctor Portal Pages ΓÇ║ Doctor pages ΓÇ║ B05 ΓÇö Doctor Health Meeting page loads (3.9s)
+Γ£à Doctor AI Studio page loaded OK
+Γ£à Patient Health Library loaded OK
+  Γ£ô  356 [Cloud] ΓÇ║ specs\28b-doctor-pages-verification.spec.ts:71:9 ΓÇ║ 28B ΓÇö Doctor Portal Pages ΓÇ║ Doctor pages ΓÇ║ B06 ΓÇö Doctor AI Studio page loads (2.5s)
+Γ£à Doctor Medical Content page loaded OK
+  Γ£ô  355 [Cloud] ΓÇ║ specs\28a-patient-pages-verification.spec.ts:53:7 ΓÇ║ 28A ΓÇö Patient Portal Pages ΓÇ║ A04 ΓÇö Patient Health Library page loads (3.7s)
+  Γ£ô  357 [Cloud] ΓÇ║ specs\28b-doctor-pages-verification.spec.ts:79:9 ΓÇ║ 28B ΓÇö Doctor Portal Pages ΓÇ║ Doctor pages ΓÇ║ B07 ΓÇö Doctor Medical Content page loads (2.4s)
+Γ£à Patient PHR page loaded OK
+Γ£à Doctor Clinical Resources page loaded OK
+  Γ£ô  358 [Cloud] ΓÇ║ specs\28a-patient-pages-verification.spec.ts:60:7 ΓÇ║ 28A ΓÇö Patient Portal Pages ΓÇ║ A05 ΓÇö Patient PHR page loads (2.7s)
+  Γ£ô  359 [Cloud] ΓÇ║ specs\28b-doctor-pages-verification.spec.ts:87:9 ΓÇ║ 28B ΓÇö Doctor Portal Pages ΓÇ║ Doctor pages ΓÇ║ B08 ΓÇö Doctor Clinical Resources page loads (4.3s)
+Γ£à Patient Timeline page loaded OK
+Γ£à Doctor Medical Consultants page loaded OK
+  Γ£ô  360 [Cloud] ΓÇ║ specs\28a-patient-pages-verification.spec.ts:67:7 ΓÇ║ 28A ΓÇö Patient Portal Pages ΓÇ║ A06 ΓÇö Patient Timeline page loads (2.9s)
+  Γ£ô  361 [Cloud] ΓÇ║ specs\28b-doctor-pages-verification.spec.ts:95:9 ΓÇ║ 28B ΓÇö Doctor Portal Pages ΓÇ║ Doctor pages ΓÇ║ B09 ΓÇö Doctor Medical Consultants page loads (2.7s)
+Γ£à Doctor Profile page loaded OK
+  Γ£ô  363 [Cloud] ΓÇ║ specs\28b-doctor-pages-verification.spec.ts:102:9 ΓÇ║ 28B ΓÇö Doctor Portal Pages ΓÇ║ Doctor pages ΓÇ║ B10 ΓÇö Doctor Profile page loads (2.8s)
+Γ£à Patient Map page loaded OK
+  Γ£ô  362 [Cloud] ΓÇ║ specs\28a-patient-pages-verification.spec.ts:74:7 ΓÇ║ 28A ΓÇö Patient Portal Pages ΓÇ║ A07 ΓÇö Patient Map page loads (6.1s)
+Γ£à Admin Doctors Management page loaded OK
+Γ£à Patient PDPA page loaded OK
+  Γ£ô  365 [Cloud] ΓÇ║ specs\28a-patient-pages-verification.spec.ts:81:7 ΓÇ║ 28A ΓÇö Patient Portal Pages ΓÇ║ A08 ΓÇö Patient PDPA page loads (2.0s)
+  Γ£ô  364 [Cloud] ΓÇ║ specs\28b-doctor-pages-verification.spec.ts:114:9 ΓÇ║ 28B ΓÇö Doctor Portal Pages ΓÇ║ Admin pages ΓÇ║ B11 ΓÇö Admin Doctors Management page loads (5.6s)
+Γ£à Patient Living Will page loaded OK
+  Γ£ô  366 [Cloud] ΓÇ║ specs\28a-patient-pages-verification.spec.ts:88:7 ΓÇ║ 28A ΓÇö Patient Portal Pages ΓÇ║ A09 ΓÇö Patient Living Will page loads (2.1s)
+Γ£à Patient Profile page loaded OK
+  Γ£ô  368 [Cloud] ΓÇ║ specs\28a-patient-pages-verification.spec.ts:95:7 ΓÇ║ 28A ΓÇö Patient Portal Pages ΓÇ║ A10 ΓÇö Patient Profile page loads (2.1s)
+Γ£à Admin Doctors Directory page loaded OK
+Γ£à Patient Settings page loaded OK
+  Γ£ô  369 [Cloud] ΓÇ║ specs\28a-patient-pages-verification.spec.ts:102:7 ΓÇ║ 28A ΓÇö Patient Portal Pages ΓÇ║ A11 ΓÇö Patient Settings page loads (2.3s)
+  Γ£ô  367 [Cloud] ΓÇ║ specs\28b-doctor-pages-verification.spec.ts:123:9 ΓÇ║ 28B ΓÇö Doctor Portal Pages ΓÇ║ Admin pages ΓÇ║ B12 ΓÇö Admin Doctors Directory page loads (6.4s)
+Γ£à Patient login page loaded
+Γ£à Admin Appointment Pool page loaded OK
+  Γ£ô  370 [Cloud] ΓÇ║ specs\28a-patient-pages-verification.spec.ts:109:7 ΓÇ║ 28A ΓÇö Patient Portal Pages ΓÇ║ A12 ΓÇö Patient login page accessible (4.5s)
+  Γ£ô  371 [Cloud] ΓÇ║ specs\28b-doctor-pages-verification.spec.ts:132:9 ΓÇ║ 28B ΓÇö Doctor Portal Pages ΓÇ║ Admin pages ΓÇ║ B13 ΓÇö Admin Appointment Pool page loads (5.5s)
+Γ£à Patient register page loaded
+  Γ£ô  372 [Cloud] ΓÇ║ specs\28a-patient-pages-verification.spec.ts:117:7 ΓÇ║ 28A ΓÇö Patient Portal Pages ΓÇ║ A13 ΓÇö Patient register page accessible (3.5s)
 
-Auth Optimization:
-  - storageState: pages start pre-authenticated (specs 28a, 28b)
-  - addInitScript: injects localStorage BEFORE page JS (all specs)
-  - ONE navigation per test (no /login detour)
-  - Global-setup authenticates 5 users via API once (~290ms)
-═══════════════════════════════════════════════════════════════
+  372 passed (4.9m)
