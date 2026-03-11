@@ -10,8 +10,8 @@
  */
 import { test, expect } from '@playwright/test';
 import {
-  PATIENT_URL, DOCTOR_URL,
-  ENDPOINTS, TIMEOUTS,
+  DOCTOR_URL,
+  ENDPOINTS,
   authenticateAllUsers, apiRequest,
   patientApi, doctorApi,
   navigateWithAuth,
@@ -21,6 +21,11 @@ import {
 } from '../lib/test-helpers';
 
 let users: Map<UserRole, AuthenticatedUser>;
+function getUser(role: UserRole): AuthenticatedUser {
+  const u = users.get(role);
+  if (!u) throw new Error(`User ${role} not loaded`);
+  return u;
+}
 const DOC_ID = 'DOC-TEST-001';
 const ADMIN_ID = 'ADMIN-TEST-001';
 
@@ -52,13 +57,13 @@ test.describe('16 — Medical Content & Clinical Resources', () => {
     });
 
     test('A03 — Medical content API: list articles', async ({ request }) => {
-      const u = users.get('doctor')!;
+      const u = getUser('doctor');
       const res = await doctorApi(request, u.token).get(ENDPOINTS.medicalContent);
       assertOk(res, 'Medical content list');
     });
 
     test('A04 — Medical content API: create article', async ({ request }) => {
-      const u = users.get('doctor')!;
+      const u = getUser('doctor');
       const res = await doctorApi(request, u.token).post(ENDPOINTS.medicalContent, {
         title: 'ทดสอบ: การดูแลสุขภาพเบื้องต้น',
         titleEn: 'Test: Basic Health Care',
@@ -73,14 +78,14 @@ test.describe('16 — Medical Content & Clinical Resources', () => {
     });
 
     test('A05 — Content tags available for categorization', async ({ request }) => {
-      const u = users.get('doctor')!;
+      const u = getUser('doctor');
       const res = await apiRequest(request, 'GET', DOCTOR_URL, ENDPOINTS.contentTags.medical, u.token);
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`Medical tags → ${res.status}`);
     });
 
     test('A06 — Medical content visible after creation', async ({ request }) => {
-      const u = users.get('doctor')!;
+      const u = getUser('doctor');
       const res = await doctorApi(request, u.token).get(ENDPOINTS.medicalContent);
       assertOk(res, 'Medical content list after creation');
     });
@@ -93,7 +98,7 @@ test.describe('16 — Medical Content & Clinical Resources', () => {
     });
 
     test('A08 — Admin can see all content including drafts', async ({ request }) => {
-      const u = users.get('admin')!;
+      const u = getUser('admin');
       const res = await doctorApi(request, u.token).get(ENDPOINTS.medicalContent);
       assertOk(res, 'Admin medical content list');
     });
@@ -106,7 +111,7 @@ test.describe('16 — Medical Content & Clinical Resources', () => {
     });
 
     test('A10 — Patient content API returns published articles', async ({ request }) => {
-      const u = users.get('patient1')!;
+      const u = getUser('patient1');
       const res = await patientApi(request, u.token).get(ENDPOINTS.contentMedical);
       expect(res.status).toBe(200);
       logTestSuccess(`Patient content → ${res.status}`);
@@ -126,13 +131,13 @@ test.describe('16 — Medical Content & Clinical Resources', () => {
     });
 
     test('B02 — Clinical resources API returns data', async ({ request }) => {
-      const u = users.get('doctor')!;
+      const u = getUser('doctor');
       const res = await doctorApi(request, u.token).get(ENDPOINTS.contentClinical);
       assertOk(res, 'Clinical resources API');
     });
 
     test('B03 — Clinical resources create endpoint', async ({ request }) => {
-      const u = users.get('doctor')!;
+      const u = getUser('doctor');
       const res = await doctorApi(request, u.token).post(ENDPOINTS.contentClinical, {
         title: 'ทดสอบ: แนวทางการรักษา',
         titleEn: 'Test: Treatment Guidelines',
@@ -147,7 +152,7 @@ test.describe('16 — Medical Content & Clinical Resources', () => {
     });
 
     test('B04 — Clinical tags available', async ({ request }) => {
-      const u = users.get('doctor')!;
+      const u = getUser('doctor');
       const res = await apiRequest(request, 'GET', DOCTOR_URL, ENDPOINTS.contentTags.clinical, u.token);
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`Clinical tags → ${res.status}`);
@@ -161,13 +166,13 @@ test.describe('16 — Medical Content & Clinical Resources', () => {
     });
 
     test('B06 — Admin clinical resources API', async ({ request }) => {
-      const u = users.get('admin')!;
+      const u = getUser('admin');
       const res = await doctorApi(request, u.token).get(ENDPOINTS.contentClinical);
       assertOk(res, 'Admin clinical resources');
     });
 
     test('B07 — Clinical resources visible after creation', async ({ request }) => {
-      const u = users.get('doctor')!;
+      const u = getUser('doctor');
       const res = await doctorApi(request, u.token).get(ENDPOINTS.contentClinical);
       assertOk(res, 'Clinical content after creation');
     });
@@ -176,7 +181,7 @@ test.describe('16 — Medical Content & Clinical Resources', () => {
       await navigateWithAuth(page, 'doctor', `/doctor/${DOC_ID}/clinical-resources`);
       await page.waitForTimeout(2000);
       const content = await page.locator('body').textContent();
-      expect(content!.length).toBeGreaterThan(0);
+      expect((content ?? '').length).toBeGreaterThan(0);
       logTestSuccess('Clinical resources has content');
     });
 
@@ -189,7 +194,7 @@ test.describe('16 — Medical Content & Clinical Resources', () => {
     });
 
     test('B10 — Admin can approve clinical resources', async ({ request }) => {
-      const u = users.get('admin')!;
+      const u = getUser('admin');
       const res = await doctorApi(request, u.token).get(ENDPOINTS.contentClinical);
       assertOk(res, 'Admin clinical resources for approval');
     });
@@ -208,7 +213,7 @@ test.describe('16 — Medical Content & Clinical Resources', () => {
     });
 
     test('C02 — Consultants API list', async ({ request }) => {
-      const u = users.get('doctor')!;
+      const u = getUser('doctor');
       const res = await doctorApi(request, u.token).get(ENDPOINTS.consultants);
       assertOk(res, 'Consultants list');
     });
@@ -221,7 +226,7 @@ test.describe('16 — Medical Content & Clinical Resources', () => {
     });
 
     test('C04 — Admin can create consultant', async ({ request }) => {
-      const u = users.get('admin')!;
+      const u = getUser('admin');
       const res = await doctorApi(request, u.token).post(ENDPOINTS.consultants, {
         name: 'ผศ.นพ. ทดสอบ ที่ปรึกษา',
         nameEn: 'Asst. Prof. Test Consultant',
@@ -236,7 +241,7 @@ test.describe('16 — Medical Content & Clinical Resources', () => {
     });
 
     test('C05 — Consultants list updated after create', async ({ request }) => {
-      const u = users.get('admin')!;
+      const u = getUser('admin');
       const res = await doctorApi(request, u.token).get(ENDPOINTS.consultants);
       assertOk(res, 'Consultants after creation');
     });
@@ -250,7 +255,7 @@ test.describe('16 — Medical Content & Clinical Resources', () => {
     });
 
     test('C07 — Specialties for consultant filtering', async ({ request }) => {
-      const u = users.get('doctor')!;
+      const u = getUser('doctor');
       const res = await apiRequest(request, 'GET', DOCTOR_URL, ENDPOINTS.metadata.specialties, u.token);
       assertOk(res, 'Specialties for filtering');
     });
@@ -260,12 +265,12 @@ test.describe('16 — Medical Content & Clinical Resources', () => {
       await page.waitForTimeout(2000);
       expect(page.url()).toContain('/doctors');
       const body = await page.locator('body').textContent();
-      expect(body!.length).toBeGreaterThan(0);
+      expect((body ?? '').length).toBeGreaterThan(0);
       logTestSuccess('Doctors list page shows content');
     });
 
     test('C09 — Doctors API returns registered doctors', async ({ request }) => {
-      const u = users.get('doctor')!;
+      const u = getUser('doctor');
       const res = await doctorApi(request, u.token).get(ENDPOINTS.doctors);
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`Doctors API → ${res.status}`);
@@ -288,7 +293,7 @@ test.describe('16 — Medical Content & Clinical Resources', () => {
       await navigateWithAuth(page, 'patient1', '/health-library');
       await page.waitForTimeout(2000);
       const body = await page.locator('body').textContent();
-      expect(body!.length).toBeGreaterThan(0);
+      expect((body ?? '').length).toBeGreaterThan(0);
       logTestSuccess('Patient health library has content');
     });
 
@@ -300,15 +305,15 @@ test.describe('16 — Medical Content & Clinical Resources', () => {
     });
 
     test('D03 — Patient content API returns published articles', async ({ request }) => {
-      const u = users.get('patient1')!;
+      const u = getUser('patient1');
       const res = await patientApi(request, u.token).get(ENDPOINTS.contentMedical);
       expect(res.status).toBe(200);
       logTestSuccess(`Patient medical content → ${res.status}`);
     });
 
     test('D04 — Doctor content synced with patient portal', async ({ request }) => {
-      const doc = users.get('doctor')!;
-      const pat = users.get('patient1')!;
+      const doc = getUser('doctor');
+      const pat = getUser('patient1');
       const docRes = await doctorApi(request, doc.token).get(ENDPOINTS.medicalContent);
       const patRes = await patientApi(request, pat.token).get(ENDPOINTS.contentMedical);
       expect(docRes.status).toBeLessThan(600);
@@ -317,7 +322,7 @@ test.describe('16 — Medical Content & Clinical Resources', () => {
     });
 
     test('D05 — Clinical resources only visible to doctors', async ({ request }) => {
-      const doc = users.get('doctor')!;
+      const doc = getUser('doctor');
       const res = await doctorApi(request, doc.token).get(ENDPOINTS.contentClinical);
       assertOk(res, 'Clinical resources for doctors');
     });
@@ -330,7 +335,7 @@ test.describe('16 — Medical Content & Clinical Resources', () => {
     });
 
     test('D07 — AI knowledge base accessible', async ({ request }) => {
-      const u = users.get('doctor')!;
+      const u = getUser('doctor');
       const res = await apiRequest(request, 'GET', 'http://localhost:3020', '/api/ai/knowledge', u.token);
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`AI knowledge base → ${res.status}`);
@@ -352,8 +357,8 @@ test.describe('16 — Medical Content & Clinical Resources', () => {
     });
 
     test('D10 — All portals health endpoints operational', async ({ request }) => {
-      const doc = users.get('doctor')!;
-      const pat = users.get('patient1')!;
+      const doc = getUser('doctor');
+      const pat = getUser('patient1');
       const docHealth = await doctorApi(request, doc.token).get(ENDPOINTS.health);
       const patHealth = await patientApi(request, pat.token).get(ENDPOINTS.health);
       expect(docHealth.status).toBe(200);

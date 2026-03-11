@@ -16,8 +16,8 @@
  */
 import { test, expect } from '@playwright/test';
 import {
-  PATIENT_URL, DOCTOR_URL, MEETING_SERVER_URL,
-  ENDPOINTS, TIMEOUTS, CREDENTIALS,
+  DOCTOR_URL,
+  ENDPOINTS,
   authenticateAllUsers,
   patientApi, doctorApi, meetingApi, apiRequest,
   generateAppointmentData,
@@ -26,6 +26,11 @@ import {
 } from '../lib/test-helpers';
 
 let users: Map<UserRole, AuthenticatedUser>;
+function getUser(role: UserRole): AuthenticatedUser {
+  const u = users.get(role);
+  if (!u) throw new Error(`User ${role} not loaded`);
+  return u;
+}
 const SPEC = '30-full-pipeline';
 
 // Shared state across the pipeline tests
@@ -46,7 +51,7 @@ test.describe('30 — Full Appointment → Meeting → AI → Patient Pipeline',
   // ═══════════════════════════════════════════════════════════════════════
 
   test('A01 — Patient creates a telemedicine appointment', async ({ request }) => {
-    const p1 = users.get('patient1')!;
+    const p1 = getUser('patient1');
     const aptData = generateAppointmentData('Demo Test Patient');
     const res = await patientApi(request, p1.token).post(ENDPOINTS.appointments, aptData);
     expect(res.status).toBeLessThan(600);
@@ -55,7 +60,7 @@ test.describe('30 — Full Appointment → Meeting → AI → Patient Pipeline',
   });
 
   test('A02 — Patient can see the appointment in list', async ({ request }) => {
-    const p1 = users.get('patient1')!;
+    const p1 = getUser('patient1');
     const res = await patientApi(request, p1.token).get(ENDPOINTS.appointments);
     expect(res.status).toBeLessThan(600);
     const list = res.body?.appointments || res.body?.data || res.body || [];
@@ -65,14 +70,14 @@ test.describe('30 — Full Appointment → Meeting → AI → Patient Pipeline',
   });
 
   test('A03 — Doctor sees the appointment in queue', async ({ request }) => {
-    const doc = users.get('doctor')!;
+    const doc = getUser('doctor');
     const res = await doctorApi(request, doc.token).get(ENDPOINTS.appointments);
     expect(res.status).toBeLessThan(600);
     logTestSuccess('Doctor can see appointments queue');
   });
 
   test('A04 — Doctor confirms/approves the appointment', async ({ request }) => {
-    const doc = users.get('doctor')!;
+    const doc = getUser('doctor');
     // Try multiple confirmation endpoints
     let confirmed = false;
     for (const path of [
@@ -112,7 +117,7 @@ test.describe('30 — Full Appointment → Meeting → AI → Patient Pipeline',
   // ═══════════════════════════════════════════════════════════════════════
 
   test('B01 — Meeting room created for appointment', async ({ request }) => {
-    const doc = users.get('doctor')!;
+    const doc = getUser('doctor');
     const res = await meetingApi(request, doc.token).post(ENDPOINTS.meetings.create, {
       appointmentId: appointmentId || `APT-PIPE-${Date.now()}`,
       patientId: 'PATIENT-DEMO',
@@ -126,21 +131,21 @@ test.describe('30 — Full Appointment → Meeting → AI → Patient Pipeline',
   });
 
   test('B02 — Meeting health check', async ({ request }) => {
-    const doc = users.get('doctor')!;
+    const doc = getUser('doctor');
     const res = await meetingApi(request, doc.token).get(ENDPOINTS.meetings.health);
     expect(res.status).toBeLessThan(600);
     logTestSuccess('Meeting server healthy');
   });
 
   test('B03 — Meeting STT config available', async ({ request }) => {
-    const doc = users.get('doctor')!;
+    const doc = getUser('doctor');
     const res = await meetingApi(request, doc.token).get(ENDPOINTS.meetings.sttConfig);
     expect(res.status).toBeLessThan(600);
     logTestSuccess('STT config available');
   });
 
   test('B04 — Transcription submitted for meeting', async ({ request }) => {
-    const doc = users.get('doctor')!;
+    const doc = getUser('doctor');
     const mid = meetingId || `MTG-PIPE-${Date.now()}`;
     // Endpoint accepts one transcript segment at a time with flat fields
     const res = await meetingApi(request, doc.token).post(`/api/meetings/${mid}/transcript`, {
@@ -161,7 +166,7 @@ test.describe('30 — Full Appointment → Meeting → AI → Patient Pipeline',
   // ═══════════════════════════════════════════════════════════════════════
 
   test('C01 — AI generates meeting summary from transcript', async ({ request }) => {
-    const doc = users.get('doctor')!;
+    const doc = getUser('doctor');
     const mid = meetingId || `MTG-PIPE-${Date.now()}`;
     const res = await meetingApi(request, doc.token).post(`/api/meetings/${mid}/generate-summary`, {
       language: 'th',
@@ -174,7 +179,7 @@ test.describe('30 — Full Appointment → Meeting → AI → Patient Pipeline',
   });
 
   test('C02 — AI generates patient instruction sheet', async ({ request }) => {
-    const doc = users.get('doctor')!;
+    const doc = getUser('doctor');
     const res = await meetingApi(request, doc.token).post(ENDPOINTS.ai.patientInstruction, {
       meetingId: meetingId || `MTG-PI-${Date.now()}`,
       patientId: 'PATIENT-DEMO',
@@ -201,7 +206,7 @@ test.describe('30 — Full Appointment → Meeting → AI → Patient Pipeline',
   });
 
   test('C03 — Pre-consultation summary generates for patient', async ({ request }) => {
-    const doc = users.get('doctor')!;
+    const doc = getUser('doctor');
     const res = await meetingApi(request, doc.token).post(ENDPOINTS.ai.preSummary, {
       patientId: 'PATIENT-DEMO',
       appointmentId: appointmentId || `APT-PRE-${Date.now()}`,
@@ -225,35 +230,35 @@ test.describe('30 — Full Appointment → Meeting → AI → Patient Pipeline',
   // ═══════════════════════════════════════════════════════════════════════
 
   test('D01 — Patient can access their health records', async ({ request }) => {
-    const p1 = users.get('patient1')!;
+    const p1 = getUser('patient1');
     const res = await patientApi(request, p1.token).get(ENDPOINTS.phr);
     expect(res.status).toBeLessThan(600);
     logTestSuccess('Patient can access PHR');
   });
 
   test('D02 — Patient can see lab orders', async ({ request }) => {
-    const p1 = users.get('patient1')!;
+    const p1 = getUser('patient1');
     const res = await patientApi(request, p1.token).get(ENDPOINTS.healthRecords.patientLabOrders);
     expect(res.status).toBeLessThan(600);
     logTestSuccess('Patient lab orders accessible');
   });
 
   test('D03 — Patient can see imaging orders', async ({ request }) => {
-    const p1 = users.get('patient1')!;
+    const p1 = getUser('patient1');
     const res = await patientApi(request, p1.token).get(ENDPOINTS.healthRecords.patientImagingOrders);
     expect(res.status).toBeLessThan(600);
     logTestSuccess('Patient imaging orders accessible');
   });
 
   test('D04 — Patient timeline shows activity', async ({ request }) => {
-    const p1 = users.get('patient1')!;
+    const p1 = getUser('patient1');
     const res = await patientApi(request, p1.token).get(ENDPOINTS.timeline);
     expect(res.status).toBeLessThan(600);
     logTestSuccess('Patient timeline accessible');
   });
 
   test('D05 — Doctor can access EMR for patient', async ({ request }) => {
-    const doc = users.get('doctor')!;
+    const doc = getUser('doctor');
     // EMR route is /api/patients/:patientId/emr on doctor portal
     const res = await doctorApi(request, doc.token).get('/api/patients/PATIENT-DEMO/emr');
     expect(res.status).toBeLessThan(600);

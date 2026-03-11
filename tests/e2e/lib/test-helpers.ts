@@ -14,7 +14,7 @@ import {
   getAuthToken, getDoctorAuthToken, authHeaders,
   logTestSuccess, logTestWarning,
 } from './test-config';
-import { loadCachedUsers, getCachedUser, getStorageStatePath } from './auth-store';
+import { loadCachedUsers, getCachedUser } from './auth-store';
 
 // Re-export for specs that need storageState paths
 export { getStorageStatePath } from './auth-store';

@@ -17,12 +17,17 @@ import {
 import { takeSnapshot, verifyPageHealthy } from '../helpers/snapshot';
 
 let users: Map<UserRole, AuthenticatedUser>;
+function getUser(role: UserRole): AuthenticatedUser {
+  const u = users.get(role);
+  if (!u) throw new Error(`User ${role} not loaded`);
+  return u;
+}
 const SPEC = '25-register-login-doctor';
 const TS = Date.now();
 const NEW_DOCTOR = {
   name: `Dr. TestNew ${TS}`,
   email: `test.doctor.${TS}@izara.com`,
-  password: 'TestDoc@12345678',
+  password: 'TestDoc@12345678', // NOSONAR — test fixture
   medicalLicenseNumber: `MD.TEST${TS}`,
   specialty: 'General Practice',
   phone: '0812345678',
@@ -69,14 +74,14 @@ test.describe('25 — Register & Login New Doctor User', () => {
     });
 
     test('A03 — Admin can see pending doctors list', async ({ request }) => {
-      const admin = users.get('admin')!;
+      const admin = getUser('admin');
       const res = await doctorApi(request, admin.token).get(ENDPOINTS.admin.pendingDoctors);
       expect(res.status).toBeLessThan(600);
       logTestSuccess('Admin fetched pending doctors list');
     });
 
     test('A04 — Admin approves new doctor via API', async ({ request }) => {
-      const admin = users.get('admin')!;
+      const admin = getUser('admin');
       const approveRes = await apiRequest(request, 'POST', DOCTOR_URL, ENDPOINTS.admin.approveDoctor, admin.token, {
         email: NEW_DOCTOR.email,
         doctorId: newDoctorId || `DOC-${TS}`,
@@ -108,7 +113,7 @@ test.describe('25 — Register & Login New Doctor User', () => {
   test.describe('B — Existing Doctor Login & Dashboard', () => {
 
     test('B01 — Doctor login token valid', async () => {
-      const doc = users.get('doctor')!;
+      const doc = getUser('doctor');
       expect(doc.token).toBeTruthy();
       logTestSuccess(`Doctor token valid: ${doc.name}`);
     });
@@ -122,7 +127,7 @@ test.describe('25 — Register & Login New Doctor User', () => {
     });
 
     test('B03 — Doctor profile page loads', async ({ page }) => {
-      const doc = users.get('doctor')!;
+      const doc = getUser('doctor');
       await navigateWithAuth(page, 'doctor', `/doctor/${doc.id}/profile`);
       const health = await verifyPageHealthy(page);
       expect(health.healthy).toBe(true);
@@ -131,7 +136,7 @@ test.describe('25 — Register & Login New Doctor User', () => {
     });
 
     test('B04 — Doctor /auth/me returns user data', async ({ request }) => {
-      const doc = users.get('doctor')!;
+      const doc = getUser('doctor');
       const res = await doctorApi(request, doc.token).get('/auth/me');
       expect(res.status).toBeLessThan(600);
       logTestSuccess('Doctor /auth/me OK');
@@ -152,7 +157,7 @@ test.describe('25 — Register & Login New Doctor User', () => {
   test.describe('C — Admin Login & Dashboard', () => {
 
     test('C01 — Admin login token valid', async () => {
-      expect(users.get('admin')!.token).toBeTruthy();
+      expect(getUser('admin').token).toBeTruthy();
       logTestSuccess('Admin token valid');
     });
 
@@ -165,7 +170,7 @@ test.describe('25 — Register & Login New Doctor User', () => {
     });
 
     test('C03 — Admin doctor management page loads', async ({ page }) => {
-      const admin = users.get('admin')!;
+      const admin = getUser('admin');
       await navigateWithAuth(page, 'admin', `/doctor/${admin.id}/admin/doctors`);
       await page.waitForTimeout(3000); // Extra time for admin data load
       const health = await verifyPageHealthy(page);
@@ -175,7 +180,7 @@ test.describe('25 — Register & Login New Doctor User', () => {
     });
 
     test('C04 — Admin appointment management loads', async ({ page }) => {
-      const admin = users.get('admin')!;
+      const admin = getUser('admin');
       await navigateWithAuth(page, 'admin', `/doctor/${admin.id}/admin/appointments`);
       await page.waitForTimeout(2000);
       const health = await verifyPageHealthy(page);
@@ -190,15 +195,15 @@ test.describe('25 — Register & Login New Doctor User', () => {
   test.describe('D — Admin Tier Upgrade', () => {
 
     test('D01 — Admin fetches all doctors list', async ({ request }) => {
-      const admin = users.get('admin')!;
+      const admin = getUser('admin');
       const res = await apiRequest(request, 'GET', DOCTOR_URL, '/auth/admin/pending-doctors', admin.token);
       expect(res.status).toBeLessThan(600);
       logTestSuccess('Admin fetched doctors list');
     });
 
     test('D02 — Admin upgrades doctor role to admin tier', async ({ request }) => {
-      const admin = users.get('admin')!;
-      const doc = users.get('doctor')!;
+      const admin = getUser('admin');
+      const doc = getUser('doctor');
       const res = await apiRequest(request, 'POST', DOCTOR_URL, '/auth/admin/update-role', admin.token, {
         userId: doc.id,
         role: 'admin',
@@ -209,7 +214,7 @@ test.describe('25 — Register & Login New Doctor User', () => {
     });
 
     test('D03 — Verify doctor now has admin role', async ({ request }) => {
-      const doc = users.get('doctor')!;
+      const doc = getUser('doctor');
       const res = await doctorApi(request, doc.token).get('/auth/me');
       expect(res.status).toBeLessThan(600);
       const user = res.body?.user || res.body;
@@ -222,8 +227,8 @@ test.describe('25 — Register & Login New Doctor User', () => {
     });
 
     test('D04 — Revert doctor back to doctor role', async ({ request }) => {
-      const admin = users.get('admin')!;
-      const doc = users.get('doctor')!;
+      const admin = getUser('admin');
+      const doc = getUser('doctor');
       const res = await apiRequest(request, 'POST', DOCTOR_URL, '/auth/admin/update-role', admin.token, {
         userId: doc.id,
         role: 'doctor',
@@ -233,7 +238,7 @@ test.describe('25 — Register & Login New Doctor User', () => {
     });
 
     test('D05 — Verify doctor role is back to doctor', async ({ request }) => {
-      const doc = users.get('doctor')!;
+      const doc = getUser('doctor');
       const res = await doctorApi(request, doc.token).get('/auth/me');
       expect(res.status).toBeLessThan(600);
       const user = res.body?.user || res.body;

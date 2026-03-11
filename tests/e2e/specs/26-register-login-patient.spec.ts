@@ -8,9 +8,9 @@
  */
 import { test, expect } from '@playwright/test';
 import {
-  PATIENT_URL, DOCTOR_URL, ENDPOINTS, TIMEOUTS,
+  PATIENT_URL, ENDPOINTS, TIMEOUTS,
   authenticateAllUsers, apiRequest,
-  patientApi, doctorApi,
+  patientApi,
   loginViaBrowser, navigateWithAuth,
   logTestSuccess, logTestInfo,
   type UserRole, type AuthenticatedUser,
@@ -18,12 +18,17 @@ import {
 import { takeSnapshot, verifyPageHealthy } from '../helpers/snapshot';
 
 let users: Map<UserRole, AuthenticatedUser>;
+function getUser(role: UserRole): AuthenticatedUser {
+  const u = users.get(role);
+  if (!u) throw new Error(`User ${role} not loaded`);
+  return u;
+}
 const SPEC = '26-register-login-patient';
 const TS = Date.now();
 const NEW_PATIENT = {
   name: `TestPatient ${TS}`,
   email: `test.patient.${TS}@gmail.com`,
-  password: 'TestPat@12345678',
+  password: 'TestPat@12345678', // NOSONAR — test fixture
   phone: '0891234567',
   dateOfBirth: '1990-05-15',
   gender: 'male',
@@ -90,7 +95,7 @@ test.describe('26 — Register & Login New Patient User', () => {
   test.describe('B — Existing Patient Login & Page Navigation', () => {
 
     test('B01 — Patient1 login via API returns token', async () => {
-      const p1 = users.get('patient1')!;
+      const p1 = getUser('patient1');
       expect(p1.token).toBeTruthy();
       logTestSuccess(`Patient1 token valid: ${p1.name}`);
     });
@@ -241,35 +246,35 @@ test.describe('26 — Register & Login New Patient User', () => {
   test.describe('D — API Verification', () => {
 
     test('D01 — GET /api/health returns 200', async ({ request }) => {
-      const p1 = users.get('patient1')!;
+      const p1 = getUser('patient1');
       const res = await patientApi(request, p1.token).get(ENDPOINTS.health);
       expect(res.status).toBe(200);
       logTestSuccess('Health endpoint: 200');
     });
 
     test('D02 — GET /api/appointments returns 200', async ({ request }) => {
-      const p1 = users.get('patient1')!;
+      const p1 = getUser('patient1');
       const res = await patientApi(request, p1.token).get(ENDPOINTS.appointments);
       expect(res.status).toBe(200);
       logTestSuccess('Appointments endpoint: 200');
     });
 
     test('D03 — GET /api/medical-content returns 200', async ({ request }) => {
-      const p1 = users.get('patient1')!;
+      const p1 = getUser('patient1');
       const res = await patientApi(request, p1.token).get(ENDPOINTS.medicalContent);
       expect(res.status).toBeLessThan(600);
       logTestSuccess('Medical content endpoint: 200');
     });
 
     test('D04 — GET /api/phr returns 200', async ({ request }) => {
-      const p1 = users.get('patient1')!;
+      const p1 = getUser('patient1');
       const res = await patientApi(request, p1.token).get(ENDPOINTS.phr);
       expect(res.status).toBeLessThan(600);
       logTestSuccess('PHR endpoint: 200');
     });
 
     test('D05 — GET /api/users/profile returns 200', async ({ request }) => {
-      const p1 = users.get('patient1')!;
+      const p1 = getUser('patient1');
       const res = await patientApi(request, p1.token).get(ENDPOINTS.profile);
       expect(res.status).toBeLessThan(600);
       logTestSuccess('Profile endpoint: 200');

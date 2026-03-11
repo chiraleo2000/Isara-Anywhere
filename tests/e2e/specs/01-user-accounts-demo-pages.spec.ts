@@ -21,13 +21,18 @@ import {
   ENDPOINTS, TIMEOUTS,
   authenticateAllUsers, apiRequest,
   patientApi, doctorApi, meetingApi,
-  loginViaBrowser, navigateWithAuth,
+  navigateWithAuth,
   assertOk, assertUnauthorized,
   logTestSuccess, logTestInfo,
   type UserRole, type AuthenticatedUser,
 } from '../lib/test-helpers';
 
 let users: Map<UserRole, AuthenticatedUser>;
+function getUser(role: UserRole): AuthenticatedUser {
+  const u = users.get(role);
+  if (!u) throw new Error(`User ${role} not loaded`);
+  return u;
+}
 
 test.describe('01 — User Accounts Demo, Password Reset & Pages', () => {
 
@@ -45,66 +50,66 @@ test.describe('01 — User Accounts Demo, Password Reset & Pages', () => {
       expect(users.size).toBe(5);
       const roles: UserRole[] = ['patient1', 'patient2', 'patient3', 'doctor', 'admin'];
       for (const role of roles) {
-        const user = users.get(role)!;
+        const user = getUser(role);
         expect(user.token).toBeTruthy();
         logTestSuccess(`${role}: ${user.name} (${user.email}) — token OK`);
       }
     });
 
     test('A02 — Patient1 (Demo Test) profile loaded', async ({ request }) => {
-      const u = users.get('patient1')!;
+      const u = getUser('patient1');
       const res = await patientApi(request, u.token).get(ENDPOINTS.profile);
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`Patient1 profile: ${u.name} — ${u.email}`);
     });
 
     test('A03 — Patient2 (Somchai) profile loaded', async ({ request }) => {
-      const u = users.get('patient2')!;
+      const u = getUser('patient2');
       const res = await patientApi(request, u.token).get(ENDPOINTS.profile);
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`Patient2 profile: ${u.name} — ${u.email}`);
     });
 
     test('A04 — Patient3 (Anan) profile loaded', async ({ request }) => {
-      const u = users.get('patient3')!;
+      const u = getUser('patient3');
       const res = await patientApi(request, u.token).get(ENDPOINTS.profile);
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`Patient3 profile: ${u.name} — ${u.email}`);
     });
 
     test('A05 — Doctor profile loaded', async ({ request }) => {
-      const u = users.get('doctor')!;
+      const u = getUser('doctor');
       const res = await doctorApi(request, u.token).get('/auth/me');
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`Doctor profile: ${u.name} — ${u.email}`);
     });
 
     test('A06 — Admin profile loaded', async ({ request }) => {
-      const u = users.get('admin')!;
+      const u = getUser('admin');
       const res = await doctorApi(request, u.token).get('/auth/me');
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`Admin profile: ${u.name} — ${u.email}`);
     });
 
     test('A07 — Patient1 has distinct data from Patient2', async ({ request }) => {
-      const p1 = users.get('patient1')!;
-      const p2 = users.get('patient2')!;
+      const p1 = getUser('patient1');
+      const p2 = getUser('patient2');
       expect(p1.id).not.toBe(p2.id);
       expect(p1.email).not.toBe(p2.email);
       logTestSuccess('Patient1 and Patient2 are distinct accounts');
     });
 
     test('A08 — Patient2 has distinct data from Patient3', async ({ request }) => {
-      const p2 = users.get('patient2')!;
-      const p3 = users.get('patient3')!;
+      const p2 = getUser('patient2');
+      const p3 = getUser('patient3');
       expect(p2.id).not.toBe(p3.id);
       expect(p2.email).not.toBe(p3.email);
       logTestSuccess('Patient2 and Patient3 are distinct accounts');
     });
 
     test('A09 — Doctor and Admin are distinct accounts', async () => {
-      const doc = users.get('doctor')!;
-      const adm = users.get('admin')!;
+      const doc = getUser('doctor');
+      const adm = getUser('admin');
       expect(doc.id).not.toBe(adm.id);
       expect(doc.email).not.toBe(adm.email);
       logTestSuccess('Doctor and Admin are distinct accounts');
@@ -121,7 +126,7 @@ test.describe('01 — User Accounts Demo, Password Reset & Pages', () => {
 
     test('A11 — Patient portal accepts all 3 patient tokens', async ({ request }) => {
       for (const role of ['patient1', 'patient2', 'patient3'] as UserRole[]) {
-        const u = users.get(role)!;
+        const u = getUser(role);
         const res = await patientApi(request, u.token).get(ENDPOINTS.health);
         expect(res.status).toBeLessThan(600);
       }
@@ -130,7 +135,7 @@ test.describe('01 — User Accounts Demo, Password Reset & Pages', () => {
 
     test('A12 — Doctor portal accepts doctor and admin tokens', async ({ request }) => {
       for (const role of ['doctor', 'admin'] as UserRole[]) {
-        const u = users.get(role)!;
+        const u = getUser(role);
         const res = await doctorApi(request, u.token).get(ENDPOINTS.health);
         expect(res.status).toBeLessThan(600);
       }
@@ -176,7 +181,7 @@ test.describe('01 — User Accounts Demo, Password Reset & Pages', () => {
 
     test('B05 — Reset with invalid token is rejected', async ({ request }) => {
       const res = await request.post(`${PATIENT_URL}/api/auth/reset-password`, {
-        data: { token: 'invalid-token-123', password: 'NewPass@1234' },
+        data: { token: 'invalid-token-123', password: 'NewPass@1234' }, // NOSONAR — test fixture
         headers: { 'Content-Type': 'application/json' },
       });
       expect(res.status()).toBeGreaterThanOrEqual(400);
@@ -185,7 +190,7 @@ test.describe('01 — User Accounts Demo, Password Reset & Pages', () => {
 
     test('B06 — Doctor reset with invalid token is rejected', async ({ request }) => {
       const res = await request.post(`${DOCTOR_URL}/auth/reset-password`, {
-        data: { token: 'invalid-token-456', password: 'NewPass@1234' },
+        data: { token: 'invalid-token-456', password: 'NewPass@1234' }, // NOSONAR — test fixture
         headers: { 'Content-Type': 'application/json' },
       });
       expect(res.status()).toBeGreaterThanOrEqual(400);
@@ -368,38 +373,38 @@ test.describe('01 — User Accounts Demo, Password Reset & Pages', () => {
   test.describe('E — User Data Sync & Streaming Across Portals', () => {
 
     test('E01 — Patient1 PHR data accessible', async ({ request }) => {
-      const u = users.get('patient1')!;
+      const u = getUser('patient1');
       const res = await patientApi(request, u.token).get(ENDPOINTS.phr);
       assertOk(res, 'Patient1 PHR accessible');
     });
 
     test('E02 — Patient2 PHR data accessible', async ({ request }) => {
-      const u = users.get('patient2')!;
+      const u = getUser('patient2');
       const res = await patientApi(request, u.token).get(ENDPOINTS.phr);
       assertOk(res, 'Patient2 PHR accessible');
     });
 
     test('E03 — Patient3 PHR data accessible', async ({ request }) => {
-      const u = users.get('patient3')!;
+      const u = getUser('patient3');
       const res = await patientApi(request, u.token).get(ENDPOINTS.phr);
       assertOk(res, 'Patient3 PHR accessible');
     });
 
     test('E04 — Doctor can list all patients', async ({ request }) => {
-      const u = users.get('doctor')!;
+      const u = getUser('doctor');
       const res = await doctorApi(request, u.token).get(ENDPOINTS.patients);
       assertOk(res, 'Doctor patients list');
     });
 
     test('E05 — Admin can list all patients', async ({ request }) => {
-      const u = users.get('admin')!;
+      const u = getUser('admin');
       const res = await doctorApi(request, u.token).get(ENDPOINTS.patients);
       assertOk(res, 'Admin patients list');
     });
 
     test('E06 — Medical content synced across portals', async ({ request }) => {
-      const doc = users.get('doctor')!;
-      const p1 = users.get('patient1')!;
+      const doc = getUser('doctor');
+      const p1 = getUser('patient1');
       // Doctor reads content
       const docRes = await doctorApi(request, doc.token).get(ENDPOINTS.medicalContent);
       // Patient reads content
@@ -410,31 +415,31 @@ test.describe('01 — User Accounts Demo, Password Reset & Pages', () => {
     });
 
     test('E07 — Clinical resources synced', async ({ request }) => {
-      const doc = users.get('doctor')!;
+      const doc = getUser('doctor');
       const res = await doctorApi(request, doc.token).get(ENDPOINTS.contentClinical);
       assertOk(res, 'Clinical resources accessible');
     });
 
     test('E08 — Appointments visible to doctor', async ({ request }) => {
-      const doc = users.get('doctor')!;
+      const doc = getUser('doctor');
       const res = await doctorApi(request, doc.token).get(ENDPOINTS.appointments);
       assertOk(res, 'Doctor appointments list');
     });
 
     test('E09 — Notifications accessible for patient1', async ({ request }) => {
-      const u = users.get('patient1')!;
+      const u = getUser('patient1');
       const res = await patientApi(request, u.token).get(ENDPOINTS.notifications.list);
       assertOk(res, 'Patient1 notifications');
     });
 
     test('E10 — Timeline data accessible', async ({ request }) => {
-      const u = users.get('patient1')!;
+      const u = getUser('patient1');
       const res = await patientApi(request, u.token).get(ENDPOINTS.timeline);
       assertOk(res, 'Patient1 timeline');
     });
 
     test('E11 — Treatment results accessible', async ({ request }) => {
-      const u = users.get('patient1')!;
+      const u = getUser('patient1');
       const res = await patientApi(request, u.token).get(ENDPOINTS.treatmentResults);
       // May return 200 or 404 if no results — both OK
       expect(res.status).toBeLessThan(600);
@@ -442,25 +447,25 @@ test.describe('01 — User Accounts Demo, Password Reset & Pages', () => {
     });
 
     test('E12 — Doctor EMR list accessible', async ({ request }) => {
-      const u = users.get('doctor')!;
+      const u = getUser('doctor');
       const res = await doctorApi(request, u.token).get(ENDPOINTS.emr);
       assertOk(res, 'Doctor EMR list');
     });
 
     test('E13 — Doctor prescriptions accessible', async ({ request }) => {
-      const u = users.get('doctor')!;
+      const u = getUser('doctor');
       const res = await doctorApi(request, u.token).get(ENDPOINTS.prescriptions);
       assertOk(res, 'Doctor prescriptions');
     });
 
     test('E14 — Doctor lab orders accessible', async ({ request }) => {
-      const u = users.get('doctor')!;
+      const u = getUser('doctor');
       const res = await doctorApi(request, u.token).get(ENDPOINTS.labOrders);
       assertOk(res, 'Doctor lab orders');
     });
 
     test('E15 — Queue data accessible', async ({ request }) => {
-      const u = users.get('doctor')!;
+      const u = getUser('doctor');
       const res = await doctorApi(request, u.token).get(ENDPOINTS.queue);
       // Queue may return empty array — that's OK
       expect(res.status).toBeLessThan(600);
@@ -474,65 +479,65 @@ test.describe('01 — User Accounts Demo, Password Reset & Pages', () => {
   test.describe('F — Settings & Notification Preferences', () => {
 
     test('F01 — Patient1 settings accessible', async ({ request }) => {
-      const u = users.get('patient1')!;
+      const u = getUser('patient1');
       const res = await patientApi(request, u.token).get(ENDPOINTS.settings.get);
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`Patient1 settings → ${res.status}`);
     });
 
     test('F02 — Patient2 settings accessible', async ({ request }) => {
-      const u = users.get('patient2')!;
+      const u = getUser('patient2');
       const res = await patientApi(request, u.token).get(ENDPOINTS.settings.get);
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`Patient2 settings → ${res.status}`);
     });
 
     test('F03 — Patient notification preferences endpoint', async ({ request }) => {
-      const u = users.get('patient1')!;
+      const u = getUser('patient1');
       const res = await patientApi(request, u.token).get(ENDPOINTS.settings.notifications);
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`Notification preferences → ${res.status}`);
     });
 
     test('F04 — Mark all notifications read', async ({ request }) => {
-      const u = users.get('patient1')!;
+      const u = getUser('patient1');
       const res = await patientApi(request, u.token).post(ENDPOINTS.notifications.markAllRead);
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`Mark all read → ${res.status}`);
     });
 
     test('F05 — Doctor consultants list', async ({ request }) => {
-      const u = users.get('doctor')!;
+      const u = getUser('doctor');
       const res = await doctorApi(request, u.token).get(ENDPOINTS.consultants);
       assertOk(res, 'Doctor consultants list');
     });
 
     test('F06 — Admin can view pending doctors', async ({ request }) => {
-      const u = users.get('admin')!;
+      const u = getUser('admin');
       const res = await doctorApi(request, u.token).get(ENDPOINTS.admin.pendingDoctors);
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`Pending doctors → ${res.status}`);
     });
 
     test('F07 — Admin stats endpoint', async ({ request }) => {
-      const u = users.get('admin')!;
+      const u = getUser('admin');
       const res = await doctorApi(request, u.token).get(ENDPOINTS.admin.stats);
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`Admin stats → ${res.status}`);
     });
 
     test('F08 — Metadata: specialties', async ({ request }) => {
-      const res = await apiRequest(request, 'GET', DOCTOR_URL, ENDPOINTS.metadata.specialties, users.get('doctor')!.token);
+      const res = await apiRequest(request, 'GET', DOCTOR_URL, ENDPOINTS.metadata.specialties, getUser('doctor').token);
       assertOk(res, 'Specialties metadata');
     });
 
     test('F09 — Metadata: lab tests catalog', async ({ request }) => {
-      const res = await apiRequest(request, 'GET', DOCTOR_URL, ENDPOINTS.metadata.labTests, users.get('doctor')!.token);
+      const res = await apiRequest(request, 'GET', DOCTOR_URL, ENDPOINTS.metadata.labTests, getUser('doctor').token);
       assertOk(res, 'Lab tests metadata');
     });
 
     test('F10 — Metadata: medications catalog', async ({ request }) => {
-      const res = await apiRequest(request, 'GET', DOCTOR_URL, ENDPOINTS.metadata.medications, users.get('doctor')!.token);
+      const res = await apiRequest(request, 'GET', DOCTOR_URL, ENDPOINTS.metadata.medications, getUser('doctor').token);
       assertOk(res, 'Medications metadata');
     });
   });
@@ -543,65 +548,65 @@ test.describe('01 — User Accounts Demo, Password Reset & Pages', () => {
   test.describe('G — Cross-Portal Data Integrity', () => {
 
     test('G01 — Patient token rejected by doctor portal protected routes', async ({ request }) => {
-      const u = users.get('patient1')!;
+      const u = getUser('patient1');
       const res = await doctorApi(request, u.token).get(ENDPOINTS.patients);
       // Should be 401 or 403 (not 200)
       assertUnauthorized(res, 'Patient token on doctor portal');
     });
 
     test('G02 — Doctor token works on doctor portal', async ({ request }) => {
-      const u = users.get('doctor')!;
+      const u = getUser('doctor');
       const res = await doctorApi(request, u.token).get(ENDPOINTS.health);
       expect(res.status).toBeLessThan(600);
       logTestSuccess('Doctor token valid on doctor portal');
     });
 
     test('G03 — Meeting server health from all portals', async ({ request }) => {
-      const res = await meetingApi(request, users.get('doctor')!.token).get(ENDPOINTS.meetings.health);
+      const res = await meetingApi(request, getUser('doctor').token).get(ENDPOINTS.meetings.health);
       expect(res.status).toBeLessThan(600);
       logTestSuccess('Meeting server accessible');
     });
 
     test('G04 — Appointment pool accessible', async ({ request }) => {
-      const u = users.get('admin')!;
+      const u = getUser('admin');
       const res = await doctorApi(request, u.token).get(ENDPOINTS.appointmentPool);
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`Appointment pool → ${res.status}`);
     });
 
     test('G05 — ICD-10 codes accessible', async ({ request }) => {
-      const res = await apiRequest(request, 'GET', DOCTOR_URL, ENDPOINTS.metadata.icd10, users.get('doctor')!.token);
+      const res = await apiRequest(request, 'GET', DOCTOR_URL, ENDPOINTS.metadata.icd10, getUser('doctor').token);
       assertOk(res, 'ICD-10 codes');
     });
 
     test('G06 — Content tags: medical', async ({ request }) => {
-      const res = await apiRequest(request, 'GET', DOCTOR_URL, ENDPOINTS.contentTags.medical, users.get('doctor')!.token);
+      const res = await apiRequest(request, 'GET', DOCTOR_URL, ENDPOINTS.contentTags.medical, getUser('doctor').token);
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`Medical content tags → ${res.status}`);
     });
 
     test('G07 — Content tags: clinical', async ({ request }) => {
-      const res = await apiRequest(request, 'GET', DOCTOR_URL, ENDPOINTS.contentTags.clinical, users.get('doctor')!.token);
+      const res = await apiRequest(request, 'GET', DOCTOR_URL, ENDPOINTS.contentTags.clinical, getUser('doctor').token);
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`Clinical content tags → ${res.status}`);
     });
 
     test('G08 — Sync status endpoint (Phase 2)', async ({ request }) => {
-      const u = users.get('patient1')!;
+      const u = getUser('patient1');
       const res = await patientApi(request, u.token).get(ENDPOINTS.sync.status);
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`Sync status → ${res.status}`);
     });
 
     test('G09 — Device tokens endpoint (Phase 2)', async ({ request }) => {
-      const u = users.get('patient1')!;
+      const u = getUser('patient1');
       const res = await patientApi(request, u.token).get(ENDPOINTS.deviceTokens);
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`Device tokens → ${res.status}`);
     });
 
     test('G10 — Biometric status endpoint (Phase 2)', async ({ request }) => {
-      const u = users.get('patient1')!;
+      const u = getUser('patient1');
       const res = await patientApi(request, u.token).get(ENDPOINTS.biometric.status);
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`Biometric status → ${res.status}`);

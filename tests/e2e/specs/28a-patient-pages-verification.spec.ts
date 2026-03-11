@@ -13,7 +13,7 @@ import { test, expect } from '@playwright/test';
 import {
   PATIENT_URL, TIMEOUTS,
   getStorageStatePath,
-  logTestSuccess, logTestInfo,
+  logTestSuccess,
 } from '../lib/test-helpers';
 import { takeSnapshot, verifyPageHealthy } from '../helpers/snapshot';
 

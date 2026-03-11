@@ -11,8 +11,7 @@
  */
 import { test, expect } from '@playwright/test';
 import {
-  PATIENT_URL, DOCTOR_URL,
-  ENDPOINTS, TIMEOUTS,
+  ENDPOINTS,
   authenticateAllUsers, apiRequest,
   patientApi, doctorApi,
   navigateWithAuth,
@@ -22,6 +21,11 @@ import {
 } from '../lib/test-helpers';
 
 let users: Map<UserRole, AuthenticatedUser>;
+function getUser(role: UserRole): AuthenticatedUser {
+  const u = users.get(role);
+  if (!u) throw new Error(`User ${role} not loaded`);
+  return u;
+}
 
 test.describe('17 — Notification, Settings & Living Will', () => {
 
@@ -36,32 +40,32 @@ test.describe('17 — Notification, Settings & Living Will', () => {
   test.describe('A — Notification Workflows', () => {
 
     test('A01 — Patient1 notifications API accessible', async ({ request }) => {
-      const u = users.get('patient1')!;
+      const u = getUser('patient1');
       const res = await patientApi(request, u.token).get(ENDPOINTS.notifications.list);
       assertOk(res, 'Patient1 notifications');
     });
 
     test('A02 — Patient2 notifications accessible', async ({ request }) => {
-      const u = users.get('patient2')!;
+      const u = getUser('patient2');
       const res = await patientApi(request, u.token).get(ENDPOINTS.notifications.list);
       assertOk(res, 'Patient2 notifications');
     });
 
     test('A03 — Patient3 notifications accessible', async ({ request }) => {
-      const u = users.get('patient3')!;
+      const u = getUser('patient3');
       const res = await patientApi(request, u.token).get(ENDPOINTS.notifications.list);
       assertOk(res, 'Patient3 notifications');
     });
 
     test('A04 — Mark all notifications read', async ({ request }) => {
-      const u = users.get('patient1')!;
+      const u = getUser('patient1');
       const res = await patientApi(request, u.token).post(ENDPOINTS.notifications.markAllRead);
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`Mark all read → ${res.status}`);
     });
 
     test('A05 — Notification preferences endpoint', async ({ request }) => {
-      const u = users.get('patient1')!;
+      const u = getUser('patient1');
       const res = await patientApi(request, u.token).get(ENDPOINTS.settings.notifications);
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`Notification preferences → ${res.status}`);
@@ -76,7 +80,7 @@ test.describe('17 — Notification, Settings & Living Will', () => {
     });
 
     test('A07 — Doctor portal has notifications', async ({ request }) => {
-      const u = users.get('doctor')!;
+      const u = getUser('doctor');
       // Doctor portal may have different notification endpoint
       const res = await doctorApi(request, u.token).get('/api/notifications');
       expect(res.status).toBeLessThan(600);
@@ -84,21 +88,21 @@ test.describe('17 — Notification, Settings & Living Will', () => {
     });
 
     test('A08 — Device tokens endpoint exists', async ({ request }) => {
-      const u = users.get('patient1')!;
+      const u = getUser('patient1');
       const res = await patientApi(request, u.token).get(ENDPOINTS.deviceTokens);
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`Device tokens → ${res.status}`);
     });
 
     test('A09 — Patient2 mark all read', async ({ request }) => {
-      const u = users.get('patient2')!;
+      const u = getUser('patient2');
       const res = await patientApi(request, u.token).post(ENDPOINTS.notifications.markAllRead);
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`Patient2 mark all read → ${res.status}`);
     });
 
     test('A10 — Notifications after mark all read', async ({ request }) => {
-      const u = users.get('patient1')!;
+      const u = getUser('patient1');
       const res = await patientApi(request, u.token).get(ENDPOINTS.notifications.list);
       assertOk(res, 'Notifications after mark read');
     });
@@ -120,19 +124,19 @@ test.describe('17 — Notification, Settings & Living Will', () => {
       await navigateWithAuth(page, 'patient1', '/settings');
       await page.waitForTimeout(2000);
       const content = await page.locator('body').textContent();
-      expect(content!.length).toBeGreaterThan(0);
+      expect((content ?? '').length).toBeGreaterThan(0);
       logTestSuccess('Settings page has preference content');
     });
 
     test('B03 — Settings API returns current settings', async ({ request }) => {
-      const u = users.get('patient1')!;
+      const u = getUser('patient1');
       const res = await patientApi(request, u.token).get(ENDPOINTS.settings.get);
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`Settings GET → ${res.status}`);
     });
 
     test('B04 — Settings notification preferences accessible', async ({ request }) => {
-      const u = users.get('patient1')!;
+      const u = getUser('patient1');
       const res = await patientApi(request, u.token).get(ENDPOINTS.settings.notifications);
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`Settings notifications → ${res.status}`);
@@ -146,7 +150,7 @@ test.describe('17 — Notification, Settings & Living Will', () => {
     });
 
     test('B06 — Patient3 settings accessible', async ({ request }) => {
-      const u = users.get('patient3')!;
+      const u = getUser('patient3');
       const res = await patientApi(request, u.token).get(ENDPOINTS.settings.get);
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`Patient3 settings → ${res.status}`);
@@ -157,26 +161,26 @@ test.describe('17 — Notification, Settings & Living Will', () => {
       await page.waitForTimeout(2000);
       expect(page.url()).toContain('/profile');
       const content = await page.locator('body').textContent();
-      expect(content!.length).toBeGreaterThan(0);
+      expect((content ?? '').length).toBeGreaterThan(0);
       logTestSuccess('Profile page has user data');
     });
 
     test('B08 — Profile API returns user data', async ({ request }) => {
-      const u = users.get('patient1')!;
+      const u = getUser('patient1');
       const res = await patientApi(request, u.token).get(ENDPOINTS.profile);
       expect(res.status).toBeLessThan(600);
       logTestSuccess('Profile API OK');
     });
 
     test('B09 — Biometric status endpoint', async ({ request }) => {
-      const u = users.get('patient1')!;
+      const u = getUser('patient1');
       const res = await patientApi(request, u.token).get(ENDPOINTS.biometric.status);
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`Biometric status → ${res.status}`);
     });
 
     test('B10 — Settings role endpoint', async ({ request }) => {
-      const u = users.get('patient1')!;
+      const u = getUser('patient1');
       const res = await patientApi(request, u.token).get(ENDPOINTS.settings.role);
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`Settings role → ${res.status}`);
@@ -199,7 +203,7 @@ test.describe('17 — Notification, Settings & Living Will', () => {
       await navigateWithAuth(page, 'patient1', '/pdpa');
       await page.waitForTimeout(2000);
       const content = await page.locator('body').textContent();
-      expect(content!.length).toBeGreaterThan(0);
+      expect((content ?? '').length).toBeGreaterThan(0);
       logTestSuccess('PDPA page has consent content');
     });
 
@@ -214,12 +218,12 @@ test.describe('17 — Notification, Settings & Living Will', () => {
       await navigateWithAuth(page, 'patient1', '/living-will');
       await page.waitForTimeout(2000);
       const content = await page.locator('body').textContent();
-      expect(content!.length).toBeGreaterThan(0);
+      expect((content ?? '').length).toBeGreaterThan(0);
       logTestSuccess('Living Will page has content');
     });
 
     test('C05 — Living Will API endpoint accessible', async ({ request }) => {
-      const u = users.get('patient1')!;
+      const u = getUser('patient1');
       const res = await patientApi(request, u.token).get(ENDPOINTS.healthRecords.livingWill);
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`Living Will API → ${res.status}`);
@@ -247,7 +251,7 @@ test.describe('17 — Notification, Settings & Living Will', () => {
     });
 
     test('C09 — Living Will PHR data accessible', async ({ request }) => {
-      const u = users.get('patient1')!;
+      const u = getUser('patient1');
       const res = await patientApi(request, u.token).get(ENDPOINTS.phr);
       assertOk(res, 'PHR (includes living will data)');
     });
@@ -255,7 +259,7 @@ test.describe('17 — Notification, Settings & Living Will', () => {
     test('C10 — All 3 patients have distinct PDPA access', async ({ request }) => {
       const results: number[] = [];
       for (const role of ['patient1', 'patient2', 'patient3'] as UserRole[]) {
-        const u = users.get(role)!;
+        const u = getUser(role);
         const res = await patientApi(request, u.token).get(ENDPOINTS.phr);
         results.push(res.status);
       }
@@ -272,20 +276,20 @@ test.describe('17 — Notification, Settings & Living Will', () => {
   test.describe('D — Cross-Portal Data & Notification Sync', () => {
 
     test('D01 — Sync status endpoint', async ({ request }) => {
-      const u = users.get('patient1')!;
+      const u = getUser('patient1');
       const res = await patientApi(request, u.token).get(ENDPOINTS.sync.status);
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`Sync status → ${res.status}`);
     });
 
     test('D02 — Patient health data accessible across portals', async ({ request }) => {
-      const doc = users.get('doctor')!;
+      const doc = getUser('doctor');
       const docPat = await doctorApi(request, doc.token).get(ENDPOINTS.patients);
       assertOk(docPat, 'Doctor sees patient data');
     });
 
     test('D03 — Doctor can view patient PHR from doctor portal', async ({ request }) => {
-      const doc = users.get('doctor')!;
+      const doc = getUser('doctor');
       const res = await doctorApi(request, doc.token).get(ENDPOINTS.patients);
       if (res.status === 200 && Array.isArray(res.body) && res.body.length > 0) {
         logTestSuccess(`Doctor sees ${res.body.length} patients with PHR data`);
@@ -295,50 +299,50 @@ test.describe('17 — Notification, Settings & Living Will', () => {
     });
 
     test('D04 — Patient portal health endpoint', async ({ request }) => {
-      const u = users.get('patient1')!;
+      const u = getUser('patient1');
       const res = await patientApi(request, u.token).get(ENDPOINTS.health);
       expect(res.status).toBeLessThan(600);
       logTestSuccess('Patient portal healthy');
     });
 
     test('D05 — Doctor portal health endpoint', async ({ request }) => {
-      const u = users.get('doctor')!;
+      const u = getUser('doctor');
       const res = await doctorApi(request, u.token).get(ENDPOINTS.health);
       expect(res.status).toBeLessThan(600);
       logTestSuccess('Doctor portal healthy');
     });
 
     test('D06 — Meeting server health endpoint', async ({ request }) => {
-      const u = users.get('doctor')!;
+      const u = getUser('doctor');
       const res = await apiRequest(request, 'GET', 'http://localhost:3020', '/api/health', u.token);
       expect(res.status).toBe(200);
       logTestSuccess('Meeting server healthy');
     });
 
     test('D07 — Patient connections endpoint', async ({ request }) => {
-      const u = users.get('patient1')!;
+      const u = getUser('patient1');
       const res = await patientApi(request, u.token).get(ENDPOINTS.connections);
       expect(res.status).toBe(200);
       logTestSuccess(`Connections → ${res.status}`);
     });
 
     test('D08 — Settings onboarding endpoint', async ({ request }) => {
-      const u = users.get('patient1')!;
+      const u = getUser('patient1');
       const res = await patientApi(request, u.token).get(ENDPOINTS.settings.onboarding);
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`Onboarding → ${res.status}`);
     });
 
     test('D09 — Database health from patient portal', async ({ request }) => {
-      const u = users.get('patient1')!;
+      const u = getUser('patient1');
       const res = await patientApi(request, u.token).get(ENDPOINTS.healthDb);
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`DB health → ${res.status}`);
     });
 
     test('D10 — All three portals simultaneous health check', async ({ request }) => {
-      const pat = users.get('patient1')!;
-      const doc = users.get('doctor')!;
+      const pat = getUser('patient1');
+      const doc = getUser('doctor');
       const [patRes, docRes, meetRes] = await Promise.all([
         patientApi(request, pat.token).get(ENDPOINTS.health),
         doctorApi(request, doc.token).get(ENDPOINTS.health),

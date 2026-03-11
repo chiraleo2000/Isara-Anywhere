@@ -25,6 +25,11 @@ import {
 } from '../lib/test-helpers';
 
 let users: Map<UserRole, AuthenticatedUser>;
+function getUser(role: UserRole): AuthenticatedUser {
+  const u = users.get(role);
+  if (!u) throw new Error(`User ${role} not loaded`);
+  return u;
+}
 
 test.describe('06 — Content Sync & Approval ★★★', () => {
 
@@ -41,7 +46,7 @@ test.describe('06 — Content Sync & Approval ★★★', () => {
     let contentId = 'no-dependency';
 
     test('A01 — Doctor creates medical content (draft)', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const data = generateMedicalContent();
       const res = await doctorApi(request, token).post(ENDPOINTS.contentMedical, data);
       contentId = res.body?.id || res.body?.data?.id || '';
@@ -51,20 +56,20 @@ test.describe('06 — Content Sync & Approval ★★★', () => {
 
     test('A02 — Doctor reads own draft content', async ({ request }) => {
       // contentId dependency — runs with fallback
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).get(`${ENDPOINTS.contentMedical}/${contentId}`);
       expect(res.status).toBeLessThan(600);
     });
 
     test('A03 — Doctor lists all medical content', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).get(ENDPOINTS.contentMedical);
       expect(res.status).toBeLessThan(600);
     });
 
     test('A04 — Doctor updates own content', async ({ request }) => {
       // contentId dependency — runs with fallback
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).put(`${ENDPOINTS.contentMedical}/${contentId}`, {
         title: `Updated: โรคเบาหวาน — ${Date.now()}`,
         content: '<p>เนื้อหาที่แก้ไขแล้ว — Updated content for approval test</p>',
@@ -74,14 +79,14 @@ test.describe('06 — Content Sync & Approval ★★★', () => {
 
     test('A05 — Doctor submits content for approval', async ({ request }) => {
       // contentId dependency — runs with fallback
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).post(`${ENDPOINTS.contentMedical}/${contentId}/submit`, {});
       expect(res.status).toBeLessThan(600);
       logTestSuccess('Content submitted for approval');
     });
 
     test('A06 — Content with Thai bilingual text', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).post(ENDPOINTS.contentMedical, {
         title: `ความดันโลหิตสูง (Hypertension) — Test ${Date.now()}`,
         content: '<h2>ความดันโลหิตสูงคืออะไร</h2><p>ความดันโลหิตสูง หรือ Hypertension คือภาวะที่ความดันโลหิต ≥140/90 mmHg</p>',
@@ -93,7 +98,7 @@ test.describe('06 — Content Sync & Approval ★★★', () => {
     });
 
     test('A07 — Doctor creates multiple articles', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const articles = [
         { title: `โรคหืด (Asthma) — ${Date.now()}`, category: 'Pulmonology', tags: ['asthma'], content: '<p>content</p>' },
         { title: `โรคไต (CKD) — ${Date.now()}`, category: 'Nephrology', tags: ['ckd'], content: '<p>content</p>' },
@@ -107,7 +112,7 @@ test.describe('06 — Content Sync & Approval ★★★', () => {
     });
 
     test('A08 — Doctor deletes own draft', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const createRes = await doctorApi(request, token).post(ENDPOINTS.contentMedical, {
         title: `Delete test — ${Date.now()}`,
         content: '<p>To be deleted</p>',
@@ -121,7 +126,7 @@ test.describe('06 — Content Sync & Approval ★★★', () => {
     });
 
     test('A09 — Draft content NOT visible to patients', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const res = await patientApi(request, token).get(ENDPOINTS.contentMedical);
       if (res.status === 200) {
         const content = Array.isArray(res.body) ? res.body : res.body?.data || [];
@@ -134,20 +139,20 @@ test.describe('06 — Content Sync & Approval ★★★', () => {
 
     test('A10 — Content view count increments', async ({ request }) => {
       // contentId dependency — runs with fallback
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const res = await patientApi(request, token).post(`${ENDPOINTS.contentMedical}/${contentId}/view`, {});
       expect(res.status).toBeLessThan(600);
     });
 
     test('A11 — Content like toggle works', async ({ request }) => {
       // contentId dependency — runs with fallback
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const res = await patientApi(request, token).post(`${ENDPOINTS.contentMedical}/${contentId}/like`, {});
       expect(res.status).toBeLessThan(600);
     });
 
     test('A12 — Medical content tags endpoint', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).get(ENDPOINTS.contentTags.medical);
       expect(res.status).toBeLessThan(600);
     });
@@ -160,7 +165,7 @@ test.describe('06 — Content Sync & Approval ★★★', () => {
     let resourceId = 'no-dependency';
 
     test('B01 — Doctor creates clinical resource (draft)', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const data = generateClinicalResource();
       const res = await doctorApi(request, token).post(ENDPOINTS.contentClinical, data);
       resourceId = res.body?.id || res.body?.data?.id || '';
@@ -170,26 +175,26 @@ test.describe('06 — Content Sync & Approval ★★★', () => {
 
     test('B02 — Doctor reads own clinical resource', async ({ request }) => {
       // resourceId dependency — runs with fallback
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).get(`${ENDPOINTS.contentClinical}/${resourceId}`);
       expect(res.status).toBeLessThan(600);
     });
 
     test('B03 — Doctor lists clinical resources', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).get(ENDPOINTS.contentClinical);
       expect(res.status).toBeLessThan(600);
     });
 
     test('B04 — Doctor submits resource for approval', async ({ request }) => {
       // resourceId dependency — runs with fallback
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).post(`${ENDPOINTS.contentClinical}/${resourceId}/submit`, {});
       expect(res.status).toBeLessThan(600);
     });
 
     test('B05 — Clinical resource ALWAYS requires admin approval', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).post(ENDPOINTS.contentClinical, {
         ...generateClinicalResource(),
         status: 'published', // Should NOT auto-publish
@@ -203,7 +208,7 @@ test.describe('06 — Content Sync & Approval ★★★', () => {
 
     test('B06 — Editing published content triggers re-approval', async ({ request }) => {
       // resourceId dependency — runs with fallback
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).put(`${ENDPOINTS.contentClinical}/${resourceId}`, {
         content: '<p>Updated clinical guideline — triggers re-approval</p>',
       });
@@ -211,7 +216,7 @@ test.describe('06 — Content Sync & Approval ★★★', () => {
     });
 
     test('B07 — Doctor deletes own clinical resource', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const createRes = await doctorApi(request, token).post(ENDPOINTS.contentClinical, {
         title: `Delete test resource — ${Date.now()}`,
         content: '<p>To be deleted</p>',
@@ -225,13 +230,13 @@ test.describe('06 — Content Sync & Approval ★★★', () => {
     });
 
     test('B08 — Clinical resource tags endpoint', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).get(ENDPOINTS.contentTags.clinical);
       expect(res.status).toBeLessThan(600);
     });
 
     test('B09 — Create clinical tag', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).post(ENDPOINTS.contentTags.clinical, {
         name: `test-tag-${Date.now()}`,
         category: 'Guidelines',
@@ -240,7 +245,7 @@ test.describe('06 — Content Sync & Approval ★★★', () => {
     });
 
     test('B10 — Patients cannot access clinical resources', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const res = await patientApi(request, token).get(ENDPOINTS.contentClinical);
       expect(res.status).toBeLessThan(600);
       // If 200, should only return published items or empty
@@ -255,7 +260,7 @@ test.describe('06 — Content Sync & Approval ★★★', () => {
     let pendingContentTitle: string;
 
     test('C01 — Admin sees pending medical content', async ({ request }) => {
-      const token = users.get('admin')!.token;
+      const token = getUser('admin').token;
       const res = await doctorApi(request, token).get(`${ENDPOINTS.contentMedical}/pending`);
       expect(res.status).toBeLessThan(600);
       if (res.status === 200) {
@@ -265,14 +270,14 @@ test.describe('06 — Content Sync & Approval ★★★', () => {
     });
 
     test('C02 — Admin sees pending clinical resources', async ({ request }) => {
-      const token = users.get('admin')!.token;
+      const token = getUser('admin').token;
       const res = await doctorApi(request, token).get(`${ENDPOINTS.contentClinical}/pending`);
       expect(res.status).toBeLessThan(600);
     });
 
     test('C03 — Doctor creates content → Admin sees in pending', async ({ request }) => {
-      const doctorToken = users.get('doctor')!.token;
-      const adminToken = users.get('admin')!.token;
+      const doctorToken = getUser('doctor').token;
+      const adminToken = getUser('admin').token;
 
       pendingContentTitle = `Approval test article — ${Date.now()}`;
       const createRes = await doctorApi(request, doctorToken).post(ENDPOINTS.contentMedical, {
@@ -296,7 +301,7 @@ test.describe('06 — Content Sync & Approval ★★★', () => {
 
     test('C04 — Admin approves medical content', async ({ request }) => {
       // pendingContentId dependency — runs with fallback
-      const token = users.get('admin')!.token;
+      const token = getUser('admin').token;
       const res = await doctorApi(request, token).post(`${ENDPOINTS.contentMedical}/${pendingContentId}/review`, {
         action: 'approve',
         comment: 'Content reviewed and approved for publication',
@@ -306,7 +311,7 @@ test.describe('06 — Content Sync & Approval ★★★', () => {
     });
 
     test('C05 — Admin direct publish endpoint', async ({ request }) => {
-      const token = users.get('admin')!.token;
+      const token = getUser('admin').token;
       const createRes = await doctorApi(request, token).post(ENDPOINTS.contentMedical, {
         title: `Admin direct publish — ${Date.now()}`,
         content: '<p>Directly published by admin</p>',
@@ -320,8 +325,8 @@ test.describe('06 — Content Sync & Approval ★★★', () => {
     });
 
     test('C06 — Admin rejects medical content with reason', async ({ request }) => {
-      const doctorToken = users.get('doctor')!.token;
-      const adminToken = users.get('admin')!.token;
+      const doctorToken = getUser('doctor').token;
+      const adminToken = getUser('admin').token;
 
       const createRes = await doctorApi(request, doctorToken).post(ENDPOINTS.contentMedical, {
         title: `Reject test — ${Date.now()}`,
@@ -341,8 +346,8 @@ test.describe('06 — Content Sync & Approval ★★★', () => {
     });
 
     test('C07 — Admin approves clinical resource', async ({ request }) => {
-      const doctorToken = users.get('doctor')!.token;
-      const adminToken = users.get('admin')!.token;
+      const doctorToken = getUser('doctor').token;
+      const adminToken = getUser('admin').token;
 
       const createRes = await doctorApi(request, doctorToken).post(ENDPOINTS.contentClinical, {
         ...generateClinicalResource(),
@@ -361,14 +366,14 @@ test.describe('06 — Content Sync & Approval ★★★', () => {
 
     test('C08 — Admin archives published content', async ({ request }) => {
       // pendingContentId dependency — runs with fallback
-      const token = users.get('admin')!.token;
+      const token = getUser('admin').token;
       const res = await doctorApi(request, token).post(`${ENDPOINTS.contentMedical}/${pendingContentId}/archive`, {});
       expect(res.status).toBeLessThan(600);
     });
 
     test('C09 — Content approval lifecycle helper', async ({ request }) => {
-      const doctorToken = users.get('doctor')!.token;
-      const adminToken = users.get('admin')!.token;
+      const doctorToken = getUser('doctor').token;
+      const adminToken = getUser('admin').token;
       const result = await contentApprovalLifecycle(request, doctorToken, adminToken);
       expect(result.contentId).toBeTruthy();
       expect(result.title).toBeTruthy();
@@ -376,7 +381,7 @@ test.describe('06 — Content Sync & Approval ★★★', () => {
     });
 
     test('C10 — Non-admin cannot approve content', async ({ request }) => {
-      const doctorToken = users.get('doctor')!.token;
+      const doctorToken = getUser('doctor').token;
       const createRes = await doctorApi(request, doctorToken).post(ENDPOINTS.contentMedical, {
         title: `Non-admin approve test — ${Date.now()}`,
         content: '<p>test</p>',
@@ -399,9 +404,9 @@ test.describe('06 — Content Sync & Approval ★★★', () => {
   // ═══════════════════════════════════════════════════════════════════════════
   test.describe('D — ★★★ Content Sync: Approve → Refresh → Visible ★★★', () => {
     test('D01 — Doctor creates content → Admin approves → Patient sees on refresh (API)', async ({ request }) => {
-      const doctorToken = users.get('doctor')!.token;
-      const adminToken = users.get('admin')!.token;
-      const patientToken = users.get('patient1')!.token;
+      const doctorToken = getUser('doctor').token;
+      const adminToken = getUser('admin').token;
+      const patientToken = getUser('patient1').token;
 
       // 1) Doctor creates content
       const uniqueTitle = `SYNC-TEST-API-${Date.now()}`;
@@ -439,8 +444,8 @@ test.describe('06 — Content Sync & Approval ★★★', () => {
     });
 
     test('D02 — ★★★ BROWSER: Content visible to patient with ONE refresh ★★★', async ({ browser, request }) => {
-      const doctorToken = users.get('doctor')!.token;
-      const adminToken = users.get('admin')!.token;
+      const doctorToken = getUser('doctor').token;
+      const adminToken = getUser('admin').token;
 
       // 1) Open patient browser and navigate to content library FIRST
       const patientCtx = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
@@ -483,7 +488,7 @@ test.describe('06 — Content Sync & Approval ★★★', () => {
 
       // If not visible by text search, try API check to confirm data is available
       if (!contentVisible) {
-        const apiCheck = await patientApi(request, users.get('patient1')!.token).get(ENDPOINTS.contentMedical);
+        const apiCheck = await patientApi(request, getUser('patient1').token).get(ENDPOINTS.contentMedical);
         logTestInfo(`API content accessible: ${apiCheck.status === 200}`);
       }
 
@@ -493,8 +498,8 @@ test.describe('06 — Content Sync & Approval ★★★', () => {
 
     test('D03 — ★★★ MULTI-BROWSER: Doctor creates → Admin approves → Patient1, Patient2, Patient3 all refresh and see ★★★', async ({ browser, request }) => {
       test.setTimeout(120_000);
-      const doctorToken = users.get('doctor')!.token;
-      const adminToken = users.get('admin')!.token;
+      const doctorToken = getUser('doctor').token;
+      const adminToken = getUser('admin').token;
 
       // Open 3 patient browsers
       const contexts = await Promise.all([
@@ -568,8 +573,8 @@ test.describe('06 — Content Sync & Approval ★★★', () => {
     });
 
     test('D04 — ★★★ Clinical resource: Doctor creates → Admin approves → Other doctors see on refresh ★★★', async ({ browser, request }) => {
-      const doctorToken = users.get('doctor')!.token;
-      const adminToken = users.get('admin')!.token;
+      const doctorToken = getUser('doctor').token;
+      const adminToken = getUser('admin').token;
 
       // Open another doctor/admin browser
       const ctx = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
@@ -605,8 +610,8 @@ test.describe('06 — Content Sync & Approval ★★★', () => {
     });
 
     test('D05 — Content sync verification via API after approval', async ({ request }) => {
-      const doctorToken = users.get('doctor')!.token;
-      const adminToken = users.get('admin')!.token;
+      const doctorToken = getUser('doctor').token;
+      const adminToken = getUser('admin').token;
 
       // Create → Submit → Approve (full lifecycle)
       await contentApprovalLifecycle(request, doctorToken, adminToken);
@@ -614,7 +619,7 @@ test.describe('06 — Content Sync & Approval ★★★', () => {
       // All 3 patients can see it immediately via API
       const results = await Promise.all(
         (['patient1', 'patient2', 'patient3'] as UserRole[]).map(role =>
-          patientApi(request, users.get(role)!.token).get(ENDPOINTS.contentMedical),
+          patientApi(request, getUser(role).token).get(ENDPOINTS.contentMedical),
         ),
       );
       results.forEach((r, i) => {
@@ -624,7 +629,7 @@ test.describe('06 — Content Sync & Approval ★★★', () => {
     });
 
     test('D06 — Draft content NOT visible to patients even with refresh', async ({ browser, request }) => {
-      const doctorToken = users.get('doctor')!.token;
+      const doctorToken = getUser('doctor').token;
 
       // Create draft (do NOT submit for approval)
       const uniqueTitle = `DRAFT-ONLY-${Date.now()}`;
@@ -650,9 +655,9 @@ test.describe('06 — Content Sync & Approval ★★★', () => {
     });
 
     test('D07 — Rejected content NOT visible to patients', async ({ request }) => {
-      const doctorToken = users.get('doctor')!.token;
-      const adminToken = users.get('admin')!.token;
-      const patientToken = users.get('patient1')!.token;
+      const doctorToken = getUser('doctor').token;
+      const adminToken = getUser('admin').token;
+      const patientToken = getUser('patient1').token;
 
       // Create → Submit → Reject
       const createRes = await doctorApi(request, doctorToken).post(ENDPOINTS.contentMedical, {
@@ -679,8 +684,8 @@ test.describe('06 — Content Sync & Approval ★★★', () => {
     });
 
     test('D08 — Content update after publish requires re-approval', async ({ request }) => {
-      const doctorToken = users.get('doctor')!.token;
-      const adminToken = users.get('admin')!.token;
+      const doctorToken = getUser('doctor').token;
+      const adminToken = getUser('admin').token;
 
       // Full lifecycle
       const { contentId } = await contentApprovalLifecycle(request, doctorToken, adminToken);
@@ -696,7 +701,7 @@ test.describe('06 — Content Sync & Approval ★★★', () => {
     });
 
     test('D09 — Concurrent content creation by multiple doctors', async ({ request }) => {
-      const doctorToken = users.get('doctor')!.token;
+      const doctorToken = getUser('doctor').token;
 
       const results = await Promise.all(
         Array.from({ length: 5 }, (_, i) =>
@@ -712,7 +717,7 @@ test.describe('06 — Content Sync & Approval ★★★', () => {
     });
 
     test('D10 — Content sync performance under multiple refreshes', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const start = Date.now();
       // Simulate 5 rapid refreshes (API calls)
       await Promise.all(
@@ -865,7 +870,7 @@ test.describe('06 — Content Sync & Approval ★★★', () => {
     let consultantId = 'no-dependency';
 
     test('F01 — Admin creates consultant', async ({ request }) => {
-      const token = users.get('admin')!.token;
+      const token = getUser('admin').token;
       const res = await doctorApi(request, token).post(ENDPOINTS.consultants, {
         name: 'ศ.นพ. ทดสอบ ผู้เชี่ยวชาญ',
         specialty: 'Cardiology',
@@ -881,21 +886,21 @@ test.describe('06 — Content Sync & Approval ★★★', () => {
     });
 
     test('F02 — Doctor lists all consultants', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).get(ENDPOINTS.consultants);
       expect(res.status).toBeLessThan(600);
     });
 
     test('F03 — Doctor views consultant detail', async ({ request }) => {
       // consultantId dependency — runs with fallback
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).get(`${ENDPOINTS.consultants}/${consultantId}`);
       expect(res.status).toBeLessThan(600);
     });
 
     test('F04 — Doctor rates consultant', async ({ request }) => {
       // consultantId dependency — runs with fallback
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).post(`${ENDPOINTS.consultants}/${consultantId}/review`, {
         rating: 5,
         comment: 'Excellent specialist, very helpful.',
@@ -905,7 +910,7 @@ test.describe('06 — Content Sync & Approval ★★★', () => {
 
     test('F05 — Admin toggles consultant availability', async ({ request }) => {
       // consultantId dependency — runs with fallback
-      const token = users.get('admin')!.token;
+      const token = getUser('admin').token;
       const res = await doctorApi(request, token).post(`${ENDPOINTS.consultants}/${consultantId}/availability`, {
         available: false,
       });
@@ -914,7 +919,7 @@ test.describe('06 — Content Sync & Approval ★★★', () => {
 
     test('F06 — Admin updates consultant', async ({ request }) => {
       // consultantId dependency — runs with fallback
-      const token = users.get('admin')!.token;
+      const token = getUser('admin').token;
       const res = await doctorApi(request, token).put(`${ENDPOINTS.consultants}/${consultantId}`, {
         hospital: 'รพ.จุฬาลงกรณ์',
         experience: '25 years',
@@ -923,7 +928,7 @@ test.describe('06 — Content Sync & Approval ★★★', () => {
     });
 
     test('F07 — Specialties list for consultants', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).get('/api/consultants/specialties/list');
       expect(res.status).toBeLessThan(600);
     });
@@ -944,20 +949,20 @@ test.describe('06 — Content Sync & Approval ★★★', () => {
   // ═══════════════════════════════════════════════════════════════════════════
   test.describe('G — Admin Management', () => {
     test('G01 — Admin views pending doctor approvals', async ({ request }) => {
-      const token = users.get('admin')!.token;
+      const token = getUser('admin').token;
       const res = await doctorApi(request, token).get(ENDPOINTS.admin.pendingDoctors);
       expect(res.status).toBeLessThan(600);
     });
 
     test('G02 — Admin can view doctor list', async ({ request }) => {
-      const token = users.get('admin')!.token;
+      const token = getUser('admin').token;
       const res = await doctorApi(request, token).get(ENDPOINTS.doctors);
       expect(res.status).toBeLessThan(600);
       logTestSuccess('Admin doctor list');
     });
 
     test('G03 — Admin stats endpoint', async ({ request }) => {
-      const token = users.get('admin')!.token;
+      const token = getUser('admin').token;
       const res = await doctorApi(request, token).get(ENDPOINTS.admin.stats);
       expect(res.status).toBeLessThan(600);
     });
@@ -1090,27 +1095,27 @@ test.describe('06 — Content Sync & Approval ★★★', () => {
   // ═══════════════════════════════════════════════════════════════════════════
   test.describe('I — Content Extended & Admin Management', () => {
     test('I01 — Featured articles endpoint', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const res = await patientApi(request, token).get('/api/content/medical/featured');
       expect(res.status).toBeLessThan(600);
     });
 
     test('I02 — Content share count', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const id = 'no-dependency';
       const res = await patientApi(request, token).post(`/api/content/medical/${id}/share`, {});
       expect(res.status).toBeLessThan(600);
     });
 
     test('I03 — Content audit log', async ({ request }) => {
-      const token = users.get('admin')!.token;
+      const token = getUser('admin').token;
       const id = 'no-dependency';
       const res = await doctorApi(request, token).get(`/api/content/medical/${id}/audit-log`);
       expect(res.status).toBeLessThan(600);
     });
 
     test('I04 — Content comments', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const id = 'no-dependency';
       const res = await doctorApi(request, token).post(`/api/content/medical/${id}/comments`, {
         text: 'Excellent resource - E2E test',
@@ -1119,26 +1124,26 @@ test.describe('06 — Content Sync & Approval ★★★', () => {
     });
 
     test('I05 — Content search by category', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const res = await patientApi(request, token).get('/api/content/medical?category=general');
       expect(res.status).toBeLessThan(600);
     });
 
     test('I06 — Content search by tag', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const res = await patientApi(request, token).get('/api/content/medical?tag=health');
       expect(res.status).toBeLessThan(600);
     });
 
     test('I07 — Admin delete consultant', async ({ request }) => {
-      const token = users.get('admin')!.token;
+      const token = getUser('admin').token;
       const id = 'no-dependency';
       const res = await doctorApi(request, token).delete(`/api/consultants/${id}`);
       expect(res.status).toBeLessThan(600);
     });
 
     test('I08 — Consultant duplicate email rejection', async ({ request }) => {
-      const token = users.get('admin')!.token;
+      const token = getUser('admin').token;
       // Try creating consultant with known email
       const res = await doctorApi(request, token).post(ENDPOINTS.consultants, {
         name: 'Duplicate Test', email: CREDENTIALS.doctor.email, specialty: 'General',
@@ -1147,25 +1152,25 @@ test.describe('06 — Content Sync & Approval ★★★', () => {
     });
 
     test('I09 — Admin user management', async ({ request }) => {
-      const token = users.get('admin')!.token;
+      const token = getUser('admin').token;
       const res = await doctorApi(request, token).get('/api/admin/users');
       expect(res.status).toBeLessThan(600);
     });
 
     test('I10 — Admin stats endpoint', async ({ request }) => {
-      const token = users.get('admin')!.token;
+      const token = getUser('admin').token;
       const res = await doctorApi(request, token).get(ENDPOINTS.admin.stats);
       expect(res.status).toBeLessThan(600);
     });
 
     test('I11 — Google Maps nearby endpoint', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const res = await patientApi(request, token).get('/api/google/maps/nearby?lat=13.7563&lng=100.5018&type=hospital');
       expect(res.status).toBeLessThan(600);
     });
 
     test('I12 — Google Maps geocode endpoint', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const res = await patientApi(request, token).get('/api/google/maps/geocode?address=Bangkok');
       expect(res.status).toBeLessThan(600);
     });

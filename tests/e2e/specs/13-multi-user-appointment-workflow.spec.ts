@@ -10,7 +10,7 @@
 import { test, expect } from '@playwright/test';
 import {
   PATIENT_URL, DOCTOR_URL,
-  ENDPOINTS, TIMEOUTS,
+  ENDPOINTS,
   authenticateAllUsers, apiRequest,
   patientApi, doctorApi, meetingApi,
   navigateWithAuth,
@@ -21,6 +21,11 @@ import {
 } from '../lib/test-helpers';
 
 let users: Map<UserRole, AuthenticatedUser>;
+function getUser(role: UserRole): AuthenticatedUser {
+  const u = users.get(role);
+  if (!u) throw new Error(`User ${role} not loaded`);
+  return u;
+}
 const DOC_ID = 'DOC-TEST-001';
 const ADMIN_ID = 'ADMIN-TEST-001';
 
@@ -41,12 +46,12 @@ test.describe('13 — Multi-User Appointment & Meeting Workflow', () => {
       await page.waitForTimeout(2000);
       expect(page.url()).toContain('/appointments');
       const body = await page.locator('body').textContent();
-      expect(body!.length).toBeGreaterThan(0);
+      expect((body ?? '').length).toBeGreaterThan(0);
       logTestSuccess('Patient1 booking page visible');
     });
 
     test('A02 — Patient1 appointment list accessible', async ({ request }) => {
-      const u = users.get('patient1')!;
+      const u = getUser('patient1');
       const res = await patientApi(request, u.token).get(ENDPOINTS.appointments);
       expect(res.status).toBeLessThan(600);
       const data = res.body;
@@ -68,14 +73,14 @@ test.describe('13 — Multi-User Appointment & Meeting Workflow', () => {
     });
 
     test('A05 — Doctors API returns available doctors', async ({ request }) => {
-      const u = users.get('patient1')!;
+      const u = getUser('patient1');
       const res = await patientApi(request, u.token).get(ENDPOINTS.doctors);
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`Available doctors → ${res.status}`);
     });
 
     test('A06 — Appointment booking API: create request', async ({ request }) => {
-      const u = users.get('patient1')!;
+      const u = getUser('patient1');
       const appointmentData = generateAppointmentData('Demo Test Patient');
       const res = await patientApi(request, u.token).post(ENDPOINTS.appointments, appointmentData);
       expect(res.status).toBeLessThan(600);
@@ -83,14 +88,14 @@ test.describe('13 — Multi-User Appointment & Meeting Workflow', () => {
     });
 
     test('A07 — Patient2 appointment list accessible', async ({ request }) => {
-      const u = users.get('patient2')!;
+      const u = getUser('patient2');
       const res = await patientApi(request, u.token).get(ENDPOINTS.appointments);
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`Patient2 appointments → ${res.status}`);
     });
 
     test('A08 — Patient3 appointment list accessible', async ({ request }) => {
-      const u = users.get('patient3')!;
+      const u = getUser('patient3');
       const res = await patientApi(request, u.token).get(ENDPOINTS.appointments);
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`Patient3 appointments → ${res.status}`);
@@ -100,12 +105,12 @@ test.describe('13 — Multi-User Appointment & Meeting Workflow', () => {
       await navigateWithAuth(page, 'patient1', '/appointments');
       await page.waitForTimeout(2000);
       const body = await page.locator('body').textContent();
-      expect(body!.length).toBeGreaterThan(20);
+      expect((body ?? '').length).toBeGreaterThan(20);
       logTestSuccess('Patient appointments list shows content');
     });
 
     test('A10 — Patient can view AI symptom triage info', async ({ request }) => {
-      const u = users.get('patient1')!;
+      const u = getUser('patient1');
       // AI chat endpoint for symptom checking
       const res = await apiRequest(request, 'POST', PATIENT_URL, '/api/ai/chat', u.token, {
         message: 'I have a headache',
@@ -129,14 +134,14 @@ test.describe('13 — Multi-User Appointment & Meeting Workflow', () => {
     });
 
     test('B02 — Doctor appointments API returns list', async ({ request }) => {
-      const u = users.get('doctor')!;
+      const u = getUser('doctor');
       const res = await doctorApi(request, u.token).get(ENDPOINTS.appointments);
       assertOk(res, 'Doctor appointments API');
       logTestSuccess(`Doctor has ${Array.isArray(res.body) ? res.body.length : 'N/A'} appointments`);
     });
 
     test('B03 — Doctor can view appointment details', async ({ request }) => {
-      const u = users.get('doctor')!;
+      const u = getUser('doctor');
       const res = await doctorApi(request, u.token).get(ENDPOINTS.appointments);
       if (res.status === 200 && Array.isArray(res.body) && res.body.length > 0) {
         const apt = res.body[0];
@@ -148,14 +153,14 @@ test.describe('13 — Multi-User Appointment & Meeting Workflow', () => {
     });
 
     test('B04 — Doctor queue API returns data', async ({ request }) => {
-      const u = users.get('doctor')!;
+      const u = getUser('doctor');
       const res = await doctorApi(request, u.token).get(ENDPOINTS.queue);
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`Queue → ${res.status}`);
     });
 
     test('B05 — Admin sees appointment pool', async ({ request }) => {
-      const u = users.get('admin')!;
+      const u = getUser('admin');
       const res = await doctorApi(request, u.token).get(ENDPOINTS.appointmentPool);
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`Appointment pool → ${res.status}`);
@@ -165,7 +170,7 @@ test.describe('13 — Multi-User Appointment & Meeting Workflow', () => {
       await navigateWithAuth(page, 'admin', `/doctor/${ADMIN_ID}/appointment-management`);
       await page.waitForTimeout(2000);
       const body = await page.locator('body').textContent();
-      expect(body!.length).toBeGreaterThan(0);
+      expect((body ?? '').length).toBeGreaterThan(0);
       logTestSuccess('Admin appointment management loaded');
     });
 
@@ -184,7 +189,7 @@ test.describe('13 — Multi-User Appointment & Meeting Workflow', () => {
     });
 
     test('B09 — PATCH appointment status endpoint exists', async ({ request }) => {
-      const u = users.get('doctor')!;
+      const u = getUser('doctor');
       const res = await doctorApi(request, u.token).get(ENDPOINTS.appointments);
       if (res.status === 200 && Array.isArray(res.body) && res.body.length > 0) {
         const aptId = res.body[0].id;
@@ -200,7 +205,7 @@ test.describe('13 — Multi-User Appointment & Meeting Workflow', () => {
     });
 
     test('B10 — Meeting server accessible from doctor portal', async ({ request }) => {
-      const u = users.get('doctor')!;
+      const u = getUser('doctor');
       const res = await meetingApi(request, u.token).get(ENDPOINTS.meetings.health);
       expect(res.status).toBeLessThan(600);
       logTestSuccess('Meeting server accessible');
@@ -213,21 +218,21 @@ test.describe('13 — Multi-User Appointment & Meeting Workflow', () => {
   test.describe('C — Meeting Execution', () => {
 
     test('C01 — Meeting server health OK', async ({ request }) => {
-      const u = users.get('doctor')!;
+      const u = getUser('doctor');
       const res = await meetingApi(request, u.token).get(ENDPOINTS.meetings.health);
       expect(res.status).toBeLessThan(600);
       logTestSuccess('Meeting server healthy');
     });
 
     test('C02 — Meeting config accessible', async ({ request }) => {
-      const u = users.get('doctor')!;
+      const u = getUser('doctor');
       const res = await meetingApi(request, u.token).get(ENDPOINTS.meetings.config);
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`Meeting config → ${res.status}`);
     });
 
     test('C03 — Meeting create API functional', async ({ request }) => {
-      const u = users.get('doctor')!;
+      const u = getUser('doctor');
       const res = await meetingApi(request, u.token).post(ENDPOINTS.meetings.create, {
         title: 'Test Meeting',
         participants: ['doctor', 'patient'],
@@ -237,21 +242,21 @@ test.describe('13 — Multi-User Appointment & Meeting Workflow', () => {
     });
 
     test('C04 — Meeting list accessible', async ({ request }) => {
-      const u = users.get('doctor')!;
+      const u = getUser('doctor');
       const res = await meetingApi(request, u.token).get(ENDPOINTS.meetings.list);
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`Meeting list → ${res.status}`);
     });
 
     test('C05 — Transcription endpoint accessible', async ({ request }) => {
-      const u = users.get('doctor')!;
+      const u = getUser('doctor');
       const res = await meetingApi(request, u.token).get(ENDPOINTS.meetings.transcription);
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`Transcription → ${res.status}`);
     });
 
     test('C06 — STT config accessible', async ({ request }) => {
-      const u = users.get('doctor')!;
+      const u = getUser('doctor');
       const res = await meetingApi(request, u.token).get(ENDPOINTS.meetings.sttConfig);
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`STT config → ${res.status}`);
@@ -261,12 +266,12 @@ test.describe('13 — Multi-User Appointment & Meeting Workflow', () => {
       await navigateWithAuth(page, 'doctor', `/doctor/${DOC_ID}/health-meeting`);
       await page.waitForTimeout(2000);
       const content = await page.locator('body').textContent();
-      expect(content!.length).toBeGreaterThan(0);
+      expect((content ?? '').length).toBeGreaterThan(0);
       logTestSuccess('Health meeting page has queue content');
     });
 
     test('C08 — AI meeting summary endpoint accessible', async ({ request }) => {
-      const u = users.get('doctor')!;
+      const u = getUser('doctor');
       const res = await meetingApi(request, u.token).post('/api/ai/meeting-summary', {
         transcript: 'Test transcript',
         meetingId: 'test-meeting',
@@ -276,7 +281,7 @@ test.describe('13 — Multi-User Appointment & Meeting Workflow', () => {
     });
 
     test('C09 — Video meeting config endpoint', async ({ request }) => {
-      const u = users.get('doctor')!;
+      const u = getUser('doctor');
       const res = await meetingApi(request, u.token).get(ENDPOINTS.videoMeeting.config);
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`Video meeting config → ${res.status}`);
@@ -286,7 +291,7 @@ test.describe('13 — Multi-User Appointment & Meeting Workflow', () => {
       await navigateWithAuth(page, 'patient1', '/appointments');
       await page.waitForTimeout(2000);
       const body = await page.locator('body').textContent();
-      expect(body!.length).toBeGreaterThan(20);
+      expect((body ?? '').length).toBeGreaterThan(20);
       logTestSuccess('Patient appointments page shows meeting info');
     });
   });
@@ -297,38 +302,38 @@ test.describe('13 — Multi-User Appointment & Meeting Workflow', () => {
   test.describe('D — Post-Meeting EMR & Results', () => {
 
     test('D01 — Doctor EMR list accessible', async ({ request }) => {
-      const u = users.get('doctor')!;
+      const u = getUser('doctor');
       const res = await doctorApi(request, u.token).get(ENDPOINTS.emr);
       assertOk(res, 'EMR list');
     });
 
     test('D02 — Doctor prescriptions list accessible', async ({ request }) => {
-      const u = users.get('doctor')!;
+      const u = getUser('doctor');
       const res = await doctorApi(request, u.token).get(ENDPOINTS.prescriptions);
       assertOk(res, 'Prescriptions list');
     });
 
     test('D03 — Doctor lab orders list accessible', async ({ request }) => {
-      const u = users.get('doctor')!;
+      const u = getUser('doctor');
       const res = await doctorApi(request, u.token).get(ENDPOINTS.labOrders);
       assertOk(res, 'Lab orders list');
     });
 
     test('D04 — Patient treatment results accessible', async ({ request }) => {
-      const u = users.get('patient1')!;
+      const u = getUser('patient1');
       const res = await patientApi(request, u.token).get(ENDPOINTS.treatmentResults);
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`Treatment results → ${res.status}`);
     });
 
     test('D05 — Patient timeline shows health events', async ({ request }) => {
-      const u = users.get('patient1')!;
+      const u = getUser('patient1');
       const res = await patientApi(request, u.token).get(ENDPOINTS.timeline);
       assertOk(res, 'Patient timeline');
     });
 
     test('D06 — AI EMR summary endpoint accessible', async ({ request }) => {
-      const u = users.get('doctor')!;
+      const u = getUser('doctor');
       const res = await meetingApi(request, u.token).post('/api/ai/emr-summary', {
         emrData: { diagnosis: 'Test', treatment: 'Test treatment' },
       });
@@ -337,7 +342,7 @@ test.describe('13 — Multi-User Appointment & Meeting Workflow', () => {
     });
 
     test('D07 — AI patient instruction endpoint', async ({ request }) => {
-      const u = users.get('doctor')!;
+      const u = getUser('doctor');
       const res = await meetingApi(request, u.token).post('/api/ai/patient-instruction', {
         diagnosis: 'Test diagnosis',
         medications: [],
@@ -347,13 +352,13 @@ test.describe('13 — Multi-User Appointment & Meeting Workflow', () => {
     });
 
     test('D08 — ICD-10 codes for diagnosis', async ({ request }) => {
-      const u = users.get('doctor')!;
+      const u = getUser('doctor');
       const res = await apiRequest(request, 'GET', DOCTOR_URL, ENDPOINTS.metadata.icd10, u.token);
       assertOk(res, 'ICD-10 codes');
     });
 
     test('D09 — Medications catalog for prescribing', async ({ request }) => {
-      const u = users.get('doctor')!;
+      const u = getUser('doctor');
       const res = await apiRequest(request, 'GET', DOCTOR_URL, ENDPOINTS.metadata.medications, u.token);
       assertOk(res, 'Medications catalog');
     });
@@ -363,7 +368,7 @@ test.describe('13 — Multi-User Appointment & Meeting Workflow', () => {
       await page.waitForTimeout(2000);
       expect(page.url()).toContain('/timeline');
       const body = await page.locator('body').textContent();
-      expect(body!.length).toBeGreaterThan(20);
+      expect((body ?? '').length).toBeGreaterThan(20);
       logTestSuccess('Patient timeline visible');
     });
   });

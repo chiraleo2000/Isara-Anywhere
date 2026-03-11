@@ -7,8 +7,8 @@
  * ═══════════════════════════════════════════════════════════════════════
  */
 import { Page } from '@playwright/test';
-import * as fs from 'fs';
-import * as path from 'path';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 
 const SNAPSHOT_DIR = path.join(__dirname, '..', 'cloud-test-snapshots');
 
@@ -43,8 +43,8 @@ export async function takeSnapshot(
     // Wait for rendering
     await page.waitForTimeout(500);
 
-    const safeName = `${specName}--${stepName}`.replace(/[^a-zA-Z0-9_-]/g, '_');
-    const specDir = path.join(SNAPSHOT_DIR, specName.replace(/[^a-zA-Z0-9_-]/g, '_'));
+    const safeName = `${specName}--${stepName}`.replaceAll(/[^a-zA-Z0-9_-]/g, '_');
+    const specDir = path.join(SNAPSHOT_DIR, specName.replaceAll(/[^a-zA-Z0-9_-]/g, '_'));
     if (!fs.existsSync(specDir)) fs.mkdirSync(specDir, { recursive: true });
 
     const fileName = `${safeName}--${Date.now()}.png`;

@@ -278,7 +278,7 @@ io.on('connection', (socket) => {
       return;
     }
     const session = await pgValidateSession(token);
-    if (session && session.user_id) {
+    if (session?.user_id) {
       socket.join(`user-${session.user_id}`);
       console.log(`User ${session.user_id} authenticated on socket ${socket.id}`);
     }
@@ -938,7 +938,7 @@ app.post('/auth/login',
 app.post('/auth/logout', async (req, res) => {
   try {
     const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+    const token = authHeader?.split(' ')[1];
 
     if (!pgPool) {
       console.error('[AUTH] PostgreSQL connection not available for logout');
@@ -1939,7 +1939,7 @@ app.post('/admin/reject-doctor', async (req, res) => {
 app.get('/auth/verify', async (req, res) => {
   try {
     const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+    const token = authHeader?.split(' ')[1];
 
     if (!token) {
       return res.status(401).json({ error: 'No token provided' });
@@ -2022,7 +2022,7 @@ app.use('/api/storage', async (req, res) => {
 app.get('/api/profile', async (req, res) => {
   try {
     const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+    const token = authHeader?.split(' ')[1];
     
     if (!token) {
       return res.status(401).json({ error: 'Authentication required' });
@@ -2068,7 +2068,7 @@ app.get('/api/profile', async (req, res) => {
 const profileUpdateHandler = async (req, res) => {
   try {
     const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+    const token = authHeader?.split(' ')[1];
     
     if (!token) {
       return res.status(401).json({ error: 'Authentication required' });
@@ -2151,7 +2151,7 @@ app.put('/api/auth/profile', profileUpdateHandler);
 const getProfileHandler = async (req, res) => {
   try {
     const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+    const token = authHeader?.split(' ')[1];
     if (!token) {
       return res.status(401).json({ error: 'Authentication required' });
     }
@@ -2198,7 +2198,7 @@ app.get('/api/auth/profile', getProfileHandler);
 app.get('/auth/me', async (req, res) => {
   try {
     const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+    const token = authHeader?.split(' ')[1];
     if (!token) {
       return res.status(401).json({ error: 'Authentication required' });
     }
@@ -2243,7 +2243,7 @@ app.get('/auth/me', async (req, res) => {
 app.post('/api/profile/avatar', async (req, res) => {
   try {
     const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+    const token = authHeader?.split(' ')[1];
     
     if (!token) {
       return res.status(401).json({ error: 'Authentication required' });
@@ -2288,7 +2288,7 @@ app.post('/api/profile/avatar', async (req, res) => {
 app.post('/api/users/avatar', async (req, res) => {
   try {
     const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+    const token = authHeader?.split(' ')[1];
     
     if (!token) {
       return res.status(401).json({ error: 'Authentication required' });

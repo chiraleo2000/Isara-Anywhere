@@ -7,8 +7,8 @@
  * This means ZERO login API calls during the actual test run.
  * ═══════════════════════════════════════════════════════════════════════════════
  */
-import * as fs from 'fs';
-import * as path from 'path';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 import type { CachedAuth } from '../global-setup';
 
 export type UserRole = 'patient1' | 'patient2' | 'patient3' | 'doctor' | 'admin';

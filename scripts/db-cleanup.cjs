@@ -3,9 +3,10 @@
  */
 const { Pool } = require('pg');
 
+const DB_PASSWORD = process.env.PGPASSWORD || 'IzaraDb2024';
 const LOCAL_CONFIG = {
   host: 'localhost', port: 5433, user: 'postgres',
-  password: 'IzaraDb2024', database: 'izara_phase1',
+  password: DB_PASSWORD, database: 'izara_phase1',
 };
 
 async function run() {

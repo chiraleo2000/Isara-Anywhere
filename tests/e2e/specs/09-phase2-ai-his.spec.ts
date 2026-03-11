@@ -23,6 +23,11 @@ import {
 } from '../lib/test-helpers';
 
 let users: Map<UserRole, AuthenticatedUser>;
+function getUser(role: UserRole): AuthenticatedUser {
+  const u = users.get(role);
+  if (!u) throw new Error(`User ${role} not loaded`);
+  return u;
+}
 
 test.describe('09 — Phase 2: AI-Based HIS Features', () => {
 
@@ -39,11 +44,11 @@ test.describe('09 — Phase 2: AI-Based HIS Features', () => {
     let ctmId = 'no-dependency';
 
     test('A01 — Doctor creates CTM assessment (ธาตุเจ้าเรือน)', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const data = generateCTMAssessment();
       const res = await doctorApi(request, token).post(ENDPOINTS.phase2.ctmAssessment, {
         ...data,
-        patientId: users.get('patient1')!.id,
+        patientId: getUser('patient1').id,
       });
       ctmId = res.body?.id || res.body?.data?.id || '';
       expect(res.status).toBeLessThan(600);
@@ -64,10 +69,10 @@ test.describe('09 — Phase 2: AI-Based HIS Features', () => {
     });
 
     test('A04 — CTM herbal prescription', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).post(ENDPOINTS.phase2.ctmAssessment, {
         ...generateCTMAssessment(),
-        patientId: users.get('patient1')!.id,
+        patientId: getUser('patient1').id,
         herbalPrescription: {
           formula: 'ยาหอมเทพจิตร',
           ingredients: ['กานพลู', 'จันทน์เทศ', 'อบเชย', 'ดีปลี'],
@@ -80,26 +85,26 @@ test.describe('09 — Phase 2: AI-Based HIS Features', () => {
     });
 
     test('A05 — Read CTM assessment', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).get(`${ENDPOINTS.phase2.ctmAssessment}/${ctmId}`);
       expect(res.status).toBeLessThan(600);
     });
 
     test('A06 — List CTM assessments for patient', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).get(
-        `${ENDPOINTS.phase2.ctmAssessment}?patientId=${users.get('patient1')!.id}`,
+        `${ENDPOINTS.phase2.ctmAssessment}?patientId=${getUser('patient1').id}`,
       );
       expect(res.status).toBeLessThan(600);
     });
 
     test('A07 — CTM assessment for multiple patients', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const results = await Promise.all(
         (['patient1', 'patient2', 'patient3'] as UserRole[]).map(role =>
           doctorApi(request, token).post(ENDPOINTS.phase2.ctmAssessment, {
             ...generateCTMAssessment(),
-            patientId: users.get(role)!.id,
+            patientId: getUser(role).id,
           }),
         ),
       );
@@ -108,18 +113,18 @@ test.describe('09 — Phase 2: AI-Based HIS Features', () => {
     });
 
     test('A08 — Patient cannot create CTM assessment', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const res = await patientApi(request, token).post(ENDPOINTS.phase2.ctmAssessment, {
         ...generateCTMAssessment(),
-        patientId: users.get('patient1')!.id,
+        patientId: getUser('patient1').id,
       });
       expect(res.status).toBeLessThan(600);
     });
 
     test('A09 — CTM with AI recommendation', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).post(`${ENDPOINTS.phase2.ctmAssessment}/ai-recommend`, {
-        patientId: users.get('patient1')!.id,
+        patientId: getUser('patient1').id,
         symptoms: ['ปวดท้อง', 'ท้องอืด', 'คลื่นไส้'],
         dhatu: 'วาตะ',
       });
@@ -146,11 +151,11 @@ test.describe('09 — Phase 2: AI-Based HIS Features', () => {
     let screeningId: string;
 
     test('B01 — Create geriatric screening (all 8 tools)', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const data = generateGeriatricScreening();
       const res = await doctorApi(request, token).post(ENDPOINTS.phase2.geriatricScreening, {
         ...data,
-        patientId: users.get('patient1')!.id,
+        patientId: getUser('patient1').id,
       });
       screeningId = res.body?.id || res.body?.data?.id || '';
       expect(res.status).toBeLessThan(600);
@@ -213,9 +218,9 @@ test.describe('09 — Phase 2: AI-Based HIS Features', () => {
     });
 
     test('B10 — List geriatric screenings for patient', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).get(
-        `${ENDPOINTS.phase2.geriatricScreening}?patientId=${users.get('patient1')!.id}`,
+        `${ENDPOINTS.phase2.geriatricScreening}?patientId=${getUser('patient1').id}`,
       );
       expect(res.status).toBeLessThan(600);
     });
@@ -228,7 +233,7 @@ test.describe('09 — Phase 2: AI-Based HIS Features', () => {
     let sosId = 'no-dependency';
 
     test('C01 — Patient triggers SOS alert', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const data = generateSOSAlert();
       const res = await patientApi(request, token).post(ENDPOINTS.phase2.sosAlert, data);
       sosId = res.body?.id || res.body?.data?.id || '';
@@ -244,13 +249,13 @@ test.describe('09 — Phase 2: AI-Based HIS Features', () => {
     });
 
     test('C03 — Doctor receives SOS notification', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).get(`${ENDPOINTS.phase2.sosAlert}/active`);
       expect(res.status).toBeLessThan(600);
     });
 
     test('C04 — Doctor acknowledges SOS', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).post(`${ENDPOINTS.phase2.sosAlert}/${sosId}/acknowledge`, {
         action: 'responding',
         estimatedArrival: '15 minutes',
@@ -259,7 +264,7 @@ test.describe('09 — Phase 2: AI-Based HIS Features', () => {
     });
 
     test('C05 — SOS alert cancel', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const createRes = await patientApi(request, token).post(ENDPOINTS.phase2.sosAlert, generateSOSAlert());
       const cancelId = createRes.body?.id || createRes.body?.data?.id || '';
       if (cancelId) {
@@ -271,7 +276,7 @@ test.describe('09 — Phase 2: AI-Based HIS Features', () => {
     });
 
     test('C06 — SOS sends to emergency contacts', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const res = await patientApi(request, token).post(ENDPOINTS.phase2.sosAlert, {
         ...generateSOSAlert(),
         notifyContacts: true,
@@ -283,7 +288,7 @@ test.describe('09 — Phase 2: AI-Based HIS Features', () => {
     });
 
     test('C07 — SOS history list', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const res = await patientApi(request, token).get(ENDPOINTS.phase2.sosAlert);
       expect(res.status).toBeLessThan(600);
     });
@@ -291,7 +296,7 @@ test.describe('09 — Phase 2: AI-Based HIS Features', () => {
     test('C08 — SOS from multiple patients simultaneously', async ({ request }) => {
       const results = await Promise.all(
         (['patient1', 'patient2', 'patient3'] as UserRole[]).map(role =>
-          patientApi(request, users.get(role)!.token).post(ENDPOINTS.phase2.sosAlert, generateSOSAlert()),
+          patientApi(request, getUser(role).token).post(ENDPOINTS.phase2.sosAlert, generateSOSAlert()),
         ),
       );
       results.forEach(r => expect(r.status).toBeLessThan(600));
@@ -305,11 +310,11 @@ test.describe('09 — Phase 2: AI-Based HIS Features', () => {
     let followUpId = 'no-dependency';
 
     test('D01 — Doctor creates follow-up schedule', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const data = generateFollowUpSchedule();
       const res = await doctorApi(request, token).post(ENDPOINTS.phase2.followUp, {
         ...data,
-        patientId: users.get('patient1')!.id,
+        patientId: getUser('patient1').id,
       });
       followUpId = res.body?.id || res.body?.data?.id || '';
       expect(res.status).toBeLessThan(600);
@@ -323,13 +328,13 @@ test.describe('09 — Phase 2: AI-Based HIS Features', () => {
     });
 
     test('D03 — Patient views follow-up schedule', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const res = await patientApi(request, token).get(ENDPOINTS.phase2.followUp);
       expect(res.status).toBeLessThan(600);
     });
 
     test('D04 — Patient completes follow-up task', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const res = await patientApi(request, token).post(`${ENDPOINTS.phase2.followUp}/${followUpId}/complete`, {
         taskId: 'task-1',
         completedAt: new Date().toISOString(),
@@ -339,26 +344,26 @@ test.describe('09 — Phase 2: AI-Based HIS Features', () => {
     });
 
     test('D05 — Doctor monitors follow-up compliance', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).get(
-        `${ENDPOINTS.phase2.followUp}?patientId=${users.get('patient1')!.id}&status=active`,
+        `${ENDPOINTS.phase2.followUp}?patientId=${getUser('patient1').id}&status=active`,
       );
       expect(res.status).toBeLessThan(600);
     });
 
     test('D06 — Follow-up reminder notification', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const res = await patientApi(request, token).get(`${ENDPOINTS.phase2.followUp}/reminders`);
       expect(res.status).toBeLessThan(600);
     });
 
     test('D07 — Follow-up for all 3 patients', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const results = await Promise.all(
         (['patient1', 'patient2', 'patient3'] as UserRole[]).map(role =>
           doctorApi(request, token).post(ENDPOINTS.phase2.followUp, {
             ...generateFollowUpSchedule(),
-            patientId: users.get(role)!.id,
+            patientId: getUser(role).id,
           }),
         ),
       );
@@ -366,7 +371,7 @@ test.describe('09 — Phase 2: AI-Based HIS Features', () => {
     });
 
     test('D08 — Follow-up completion rate report', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).get(`${ENDPOINTS.phase2.followUp}/report`);
       expect(res.status).toBeLessThan(600);
     });
@@ -377,7 +382,7 @@ test.describe('09 — Phase 2: AI-Based HIS Features', () => {
   // ═══════════════════════════════════════════════════════════════════════════
   test.describe('E — Device Tokens & Biometric Auth', () => {
     test('E01 — Register device token (push notifications)', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const res = await patientApi(request, token).post(ENDPOINTS.phase2.deviceTokens, {
         token: `fcm-test-token-${Date.now()}`,
         platform: 'android',
@@ -387,13 +392,13 @@ test.describe('09 — Phase 2: AI-Based HIS Features', () => {
     });
 
     test('E02 — List device tokens for user', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const res = await patientApi(request, token).get(ENDPOINTS.phase2.deviceTokens);
       expect(res.status).toBeLessThan(600);
     });
 
     test('E03 — Register biometric credential', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const res = await patientApi(request, token).post(ENDPOINTS.phase2.biometric.register, {
         type: 'fingerprint',
         credential: 'test-biometric-credential',
@@ -403,7 +408,7 @@ test.describe('09 — Phase 2: AI-Based HIS Features', () => {
     });
 
     test('E04 — Verify biometric credential', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const res = await patientApi(request, token).post(ENDPOINTS.phase2.biometric.verify, {
         type: 'fingerprint',
         credential: 'test-biometric-credential',
@@ -412,13 +417,13 @@ test.describe('09 — Phase 2: AI-Based HIS Features', () => {
     });
 
     test('E05 — Biometric status check', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const res = await patientApi(request, token).get(ENDPOINTS.phase2.biometric.status);
       expect(res.status).toBeLessThan(600);
     });
 
     test('E06 — Multiple device tokens per user', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const results = await Promise.all(
         ['android', 'ios', 'web'].map(platform =>
           patientApi(request, token).post(ENDPOINTS.phase2.deviceTokens, {
@@ -432,7 +437,7 @@ test.describe('09 — Phase 2: AI-Based HIS Features', () => {
     });
 
     test('E07 — Delete device token', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const res = await patientApi(request, token).delete(`${ENDPOINTS.phase2.deviceTokens}/test-device-001`);
       expect(res.status).toBeLessThan(600);
     });
@@ -440,7 +445,7 @@ test.describe('09 — Phase 2: AI-Based HIS Features', () => {
     test('E08 — Device token for all 3 patients', async ({ request }) => {
       const results = await Promise.all(
         (['patient1', 'patient2', 'patient3'] as UserRole[]).map(role =>
-          patientApi(request, users.get(role)!.token).post(ENDPOINTS.phase2.deviceTokens, {
+          patientApi(request, getUser(role).token).post(ENDPOINTS.phase2.deviceTokens, {
             token: `fcm-${role}-${Date.now()}`,
             platform: 'android',
             deviceId: `device-${role}`,
@@ -456,7 +461,7 @@ test.describe('09 — Phase 2: AI-Based HIS Features', () => {
   // ═══════════════════════════════════════════════════════════════════════════
   test.describe('F — Offline Sync & Settings', () => {
     test('F01 — Push offline data', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const res = await patientApi(request, token).post(ENDPOINTS.phase2.sync.push, {
         data: [
           { type: 'vitals', payload: { bp: '120/80', hr: 72 }, timestamp: new Date().toISOString() },
@@ -469,7 +474,7 @@ test.describe('09 — Phase 2: AI-Based HIS Features', () => {
     });
 
     test('F02 — Pull sync data', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const res = await patientApi(request, token).post(ENDPOINTS.phase2.sync.pull, {
         lastSyncAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
         types: ['vitals', 'medications', 'appointments'],
@@ -478,25 +483,25 @@ test.describe('09 — Phase 2: AI-Based HIS Features', () => {
     });
 
     test('F03 — Sync conflict detection', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const res = await patientApi(request, token).get(ENDPOINTS.phase2.sync.conflicts);
       expect(res.status).toBeLessThan(600);
     });
 
     test('F04 — Sync status endpoint', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const res = await patientApi(request, token).get(ENDPOINTS.phase2.sync.status);
       expect(res.status).toBeLessThan(600);
     });
 
     test('F05 — Get user settings', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const res = await patientApi(request, token).get(ENDPOINTS.settings.general);
       expect(res.status).toBeLessThan(600);
     });
 
     test('F06 — Update user settings', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const res = await patientApi(request, token).put(ENDPOINTS.settings.general, {
         language: 'th',
         theme: 'dark',
@@ -507,7 +512,7 @@ test.describe('09 — Phase 2: AI-Based HIS Features', () => {
     });
 
     test('F07 — Role-specific settings', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).get(ENDPOINTS.settings.role);
       expect(res.status).toBeLessThan(600);
     });
@@ -528,15 +533,15 @@ test.describe('09 — Phase 2: AI-Based HIS Features', () => {
   // ═══════════════════════════════════════════════════════════════════════════
   test.describe('G — Nursing Dashboard & Predictive Analytics', () => {
     test('G01 — Nursing dashboard endpoint', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).get(ENDPOINTS.phase2.nursingDashboard);
       expect(res.status).toBeLessThan(600);
     });
 
     test('G02 — Nursing round data entry', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).post(`${ENDPOINTS.phase2.nursingDashboard}/round`, {
-        patientId: users.get('patient1')!.id,
+        patientId: getUser('patient1').id,
         vitals: { bp: '130/85', hr: 78, temp: 36.8, spo2: 98 },
         notes: 'ผู้ป่วยรู้สึกตัว พูดคุยได้',
         painScore: 3,
@@ -548,15 +553,15 @@ test.describe('09 — Phase 2: AI-Based HIS Features', () => {
     });
 
     test('G03 — Nursing task management', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).get(`${ENDPOINTS.phase2.nursingDashboard}/tasks`);
       expect(res.status).toBeLessThan(600);
     });
 
     test('G04 — Predictive analytics — readmission risk', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).post(ENDPOINTS.phase2.predictiveAnalytics, {
-        patientId: users.get('patient1')!.id,
+        patientId: getUser('patient1').id,
         model: 'readmission_risk',
         timeframe: '30_days',
       });
@@ -564,9 +569,9 @@ test.describe('09 — Phase 2: AI-Based HIS Features', () => {
     });
 
     test('G05 — Predictive analytics — fall risk', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).post(ENDPOINTS.phase2.predictiveAnalytics, {
-        patientId: users.get('patient1')!.id,
+        patientId: getUser('patient1').id,
         model: 'fall_risk',
         factors: ['age_over_65', 'previous_falls', 'medications'],
       });
@@ -574,9 +579,9 @@ test.describe('09 — Phase 2: AI-Based HIS Features', () => {
     });
 
     test('G06 — Predictive analytics — disease progression', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).post(ENDPOINTS.phase2.predictiveAnalytics, {
-        patientId: users.get('patient1')!.id,
+        patientId: getUser('patient1').id,
         model: 'disease_progression',
         condition: 'diabetes_type2',
         currentMetrics: { hba1c: 7.2, fbs: 130, bmi: 28 },
@@ -597,11 +602,11 @@ test.describe('09 — Phase 2: AI-Based HIS Features', () => {
     });
 
     test('G08 — Multiple predictive queries concurrently', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const results = await Promise.all(
         (['patient1', 'patient2', 'patient3'] as UserRole[]).map(role =>
           doctorApi(request, token).post(ENDPOINTS.phase2.predictiveAnalytics, {
-            patientId: users.get(role)!.id,
+            patientId: getUser(role).id,
             model: 'readmission_risk',
           }),
         ),
@@ -615,7 +620,7 @@ test.describe('09 — Phase 2: AI-Based HIS Features', () => {
   // ═══════════════════════════════════════════════════════════════════════════
   test.describe('H — Phase 2 Extended Features & Validation', () => {
     test('H01 — Care team member update', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const id = 'no-dependency';
       const res = await doctorApi(request, token).put(`/api/care-team/${id}`, {
         role: 'Primary Nurse', notes: 'Updated via E2E test',
@@ -624,27 +629,27 @@ test.describe('09 — Phase 2: AI-Based HIS Features', () => {
     });
 
     test('H02 — Care team member delete', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const id = 'no-dependency';
       const res = await doctorApi(request, token).delete(`/api/care-team/${id}`);
       expect(res.status).toBeLessThan(600);
     });
 
     test('H03 — Health screening history', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const res = await patientApi(request, token).get('/api/health-screening/history');
       expect(res.status).toBeLessThan(600);
     });
 
     test('H04 — Health screening detail', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const id = 'no-dependency';
       const res = await patientApi(request, token).get(`/api/health-screening/${id}`);
       expect(res.status).toBeLessThan(600);
     });
 
     test('H05 — SOS alert update', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const id = 'no-dependency';
       const res = await patientApi(request, token).put(`/api/sos/${id}`, {
         status: 'resolved', notes: 'Resolved via E2E',
@@ -653,50 +658,50 @@ test.describe('09 — Phase 2: AI-Based HIS Features', () => {
     });
 
     test('H06 — Follow-up reminder list', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).get('/api/follow-ups');
       expect(res.status).toBeLessThan(600);
     });
 
     test('H07 — Follow-up complete', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const id = 'no-dependency';
       const res = await doctorApi(request, token).put(`/api/follow-ups/${id}/complete`, {});
       expect(res.status).toBeLessThan(600);
     });
 
     test('H08 — HIS integration patient lookup', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).get(ENDPOINTS.phase2.hisPatientLookup + '?hn=HN001');
       expect(res.status).toBeLessThan(600);
     });
 
     test('H09 — HIS integration lab results', async ({ request }) => {
-      const token = users.get('doctor')!.token;
-      const res = await doctorApi(request, token).get(ENDPOINTS.phase2.hisLabResults + '?patientId=' + (users.get('patient1')!.userId || 'test'));
+      const token = getUser('doctor').token;
+      const res = await doctorApi(request, token).get(ENDPOINTS.phase2.hisLabResults + '?patientId=' + (getUser('patient1').id || 'test'));
       expect(res.status).toBeLessThan(600);
     });
 
     test('H10 — Predictive analytics with invalid model', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).post(ENDPOINTS.phase2.predictiveAnalytics, {
-        patientId: users.get('patient1')!.id,
+        patientId: getUser('patient1').id,
         model: 'nonexistent_model',
       });
       expect(res.status).toBeLessThan(600);
     });
 
     test('H11 — Smart scheduling suggestion', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).post(ENDPOINTS.phase2.smartScheduling, {
-        patientId: users.get('patient1')!.userId,
+        patientId: getUser('patient1').id,
         preferredDate: new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
       });
       expect(res.status).toBeLessThan(600);
     });
 
     test('H12 — Nursing workflow dashboard', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).get(ENDPOINTS.phase2.nursingWorkflow);
       expect(res.status).toBeLessThan(600);
     });

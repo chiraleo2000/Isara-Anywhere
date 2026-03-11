@@ -9,17 +9,21 @@
  */
 import { test, expect } from '@playwright/test';
 import {
-  PATIENT_URL, DOCTOR_URL, MEETING_SERVER_URL,
-  ENDPOINTS, TIMEOUTS, CREDENTIALS,
+  ENDPOINTS,
   authenticateAllUsers,
-  patientApi, doctorApi, meetingApi,
-  apiRequest, navigateWithAuth,
-  logTestSuccess, logTestInfo, logTestWarning,
+  doctorApi, meetingApi,
+  navigateWithAuth,
+  logTestSuccess,
   type UserRole, type AuthenticatedUser,
 } from '../lib/test-helpers';
 import { takeSnapshot, verifyPageHealthy } from '../helpers/snapshot';
 
 let users: Map<UserRole, AuthenticatedUser>;
+function getUser(role: UserRole): AuthenticatedUser {
+  const u = users.get(role);
+  if (!u) throw new Error(`User ${role} not loaded`);
+  return u;
+}
 const SPEC = '29-ai-chat-summary';
 
 test.describe('29 — AI Chat, Summary & CDS (Cloud)', () => {
@@ -34,7 +38,7 @@ test.describe('29 — AI Chat, Summary & CDS (Cloud)', () => {
   // ═══════════════════════════════════════════════════════════════════════
 
   test('A01 — AI chat responds to health question (1 Gemini call)', async ({ request }) => {
-    const doc = users.get('doctor')!;
+    const doc = getUser('doctor');
     const res = await doctorApi(request, doc.token).post(ENDPOINTS.ai.chat, {
       message: 'What are the common symptoms of type 2 diabetes?',
       sessionId: `test-chat-${Date.now()}`,
@@ -61,7 +65,7 @@ test.describe('29 — AI Chat, Summary & CDS (Cloud)', () => {
 
   test('B01 — Meeting create + transcript + generate summary (1 Gemini call)', async ({ request }) => {
     test.slow();
-    const doc = users.get('doctor')!;
+    const doc = getUser('doctor');
 
     const createRes = await meetingApi(request, doc.token).post(ENDPOINTS.meetings.create, {
       patientId: 'PATIENT-DEMO',
@@ -95,7 +99,7 @@ test.describe('29 — AI Chat, Summary & CDS (Cloud)', () => {
   // ═══════════════════════════════════════════════════════════════════════
 
   test('C01 — CDS drug interaction check (1 Gemini call)', async ({ request }) => {
-    const doc = users.get('doctor')!;
+    const doc = getUser('doctor');
     const res = await meetingApi(request, doc.token).post(ENDPOINTS.cds.check, {
       patientId: 'PATIENT-DEMO',
       medications: [
@@ -111,7 +115,7 @@ test.describe('29 — AI Chat, Summary & CDS (Cloud)', () => {
   });
 
   test('C02 — AI validations log accessible', async ({ request }) => {
-    const doc = users.get('doctor')!;
+    const doc = getUser('doctor');
     const res = await meetingApi(request, doc.token).get(ENDPOINTS.ai.validations);
     expect(res.status).toBeLessThan(600);
     logTestSuccess('AI validations returned');
@@ -122,7 +126,7 @@ test.describe('29 — AI Chat, Summary & CDS (Cloud)', () => {
   // ═══════════════════════════════════════════════════════════════════════
 
   test('D01 — Patient instruction sheet generates', async ({ request }) => {
-    const doc = users.get('doctor')!;
+    const doc = getUser('doctor');
     const res = await meetingApi(request, doc.token).post(ENDPOINTS.ai.patientInstruction, {
       meetingId: `test-meeting-pi-${Date.now()}`,
       patientId: 'PATIENT-DEMO',
@@ -149,7 +153,7 @@ test.describe('29 — AI Chat, Summary & CDS (Cloud)', () => {
   // ═══════════════════════════════════════════════════════════════════════
 
   test('E01 — AI validate endpoint works', async ({ request }) => {
-    const doc = users.get('doctor')!;
+    const doc = getUser('doctor');
     const res = await meetingApi(request, doc.token).post(ENDPOINTS.ai.validate, {
       type: 'prescription',
       data: {
@@ -164,14 +168,14 @@ test.describe('29 — AI Chat, Summary & CDS (Cloud)', () => {
   });
 
   test('E02 — Meeting server health OK', async ({ request }) => {
-    const doc = users.get('doctor')!;
+    const doc = getUser('doctor');
     const res = await meetingApi(request, doc.token).get('/health');
     expect(res.status).toBe(200);
     logTestSuccess('Meeting server health OK');
   });
 
   test('E03 — Doctor portal health OK', async ({ request }) => {
-    const doc = users.get('doctor')!;
+    const doc = getUser('doctor');
     const res = await doctorApi(request, doc.token).get('/health');
     expect(res.status).toBe(200);
     logTestSuccess('Doctor portal health OK');

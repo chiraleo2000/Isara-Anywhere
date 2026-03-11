@@ -17,6 +17,11 @@ import {
 
 test.describe('28C — API Health Checks', () => {
   let users: Map<UserRole, AuthenticatedUser>;
+function getUser(role: UserRole): AuthenticatedUser {
+  const u = users.get(role);
+  if (!u) throw new Error(`User ${role} not loaded`);
+  return u;
+}
 
   test.beforeAll(async ({ request }) => {
     users = await authenticateAllUsers(request);
@@ -24,56 +29,56 @@ test.describe('28C — API Health Checks', () => {
   });
 
   test('C01 — Patient Portal health returns 200', async ({ request }) => {
-    const p1 = users.get('patient1')!;
+    const p1 = getUser('patient1');
     const res = await patientApi(request, p1.token).get(ENDPOINTS.health);
     expect(res.status).toBeLessThan(600);
     logTestSuccess('Patient portal health: 200');
   });
 
   test('C02 — Doctor Portal health returns 200', async ({ request }) => {
-    const doc = users.get('doctor')!;
+    const doc = getUser('doctor');
     const res = await doctorApi(request, doc.token).get('/health');
     expect(res.status).toBe(200);
     logTestSuccess('Doctor portal health: 200');
   });
 
   test('C03 — Meeting Server health returns 200', async ({ request }) => {
-    const doc = users.get('doctor')!;
+    const doc = getUser('doctor');
     const res = await meetingApi(request, doc.token).get(ENDPOINTS.meetings.health);
     expect(res.status).toBe(200);
     logTestSuccess('Meeting server health: 200');
   });
 
   test('C04 — Patient appointments API returns 200', async ({ request }) => {
-    const p1 = users.get('patient1')!;
+    const p1 = getUser('patient1');
     const res = await patientApi(request, p1.token).get(ENDPOINTS.appointments);
     expect(res.status).toBeLessThan(600);
     logTestSuccess('Appointments API OK');
   });
 
   test('C05 — Patient medical content API returns 200', async ({ request }) => {
-    const p1 = users.get('patient1')!;
+    const p1 = getUser('patient1');
     const res = await patientApi(request, p1.token).get(ENDPOINTS.medicalContent);
     expect(res.status).toBeLessThan(600);
     logTestSuccess('Medical content API OK');
   });
 
   test('C06 — Patient PHR API returns 200', async ({ request }) => {
-    const p1 = users.get('patient1')!;
+    const p1 = getUser('patient1');
     const res = await patientApi(request, p1.token).get(ENDPOINTS.phr);
     expect(res.status).toBeLessThan(600);
     logTestSuccess('PHR API OK');
   });
 
   test('C07 — Doctor patients API returns 200', async ({ request }) => {
-    const doc = users.get('doctor')!;
+    const doc = getUser('doctor');
     const res = await doctorApi(request, doc.token).get(ENDPOINTS.patients);
     expect(res.status).toBeLessThan(600);
     logTestSuccess('Doctor patients API OK');
   });
 
   test('C08 — Doctor lab orders API returns 200', async ({ request }) => {
-    const doc = users.get('doctor')!;
+    const doc = getUser('doctor');
     const res = await doctorApi(request, doc.token).get(ENDPOINTS.labOrders);
     expect(res.status).toBeLessThan(600);
     logTestSuccess('Doctor lab orders API OK');

@@ -20,6 +20,11 @@ import {
 } from '../lib/test-helpers';
 
 let users: Map<UserRole, AuthenticatedUser>;
+function getUser(role: UserRole): AuthenticatedUser {
+  const u = users.get(role);
+  if (!u) throw new Error(`User ${role} not loaded`);
+  return u;
+}
 let meetingId = 'no-dependency';
 let appointmentId = 'no-dependency';
 
@@ -44,7 +49,7 @@ test.describe('05 — Video Meeting, Transcription & AI Summary', () => {
     });
 
     test('A02 — Video meeting config available', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).get(ENDPOINTS.videoMeeting.config);
       expect(res.status).toBeLessThan(600);
       if (res.status === 200) {
@@ -53,9 +58,9 @@ test.describe('05 — Video Meeting, Transcription & AI Summary', () => {
     });
 
     test('A03 — Doctor creates video meeting from doctor portal', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       // First create an appointment
-      const patientToken = users.get('patient1')!.token;
+      const patientToken = getUser('patient1').token;
       const aptRes = await patientApi(request, patientToken).post(ENDPOINTS.appointments, {
         ...generateAppointmentData(),
         reason: `Meeting test ${Date.now()}`,
@@ -74,7 +79,7 @@ test.describe('05 — Video Meeting, Transcription & AI Summary', () => {
     });
 
     test('A04 — Meeting server creates meeting', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await meetingApi(request, token).post(ENDPOINTS.meetings.create, {
         appointmentId: `server-test-${Date.now()}`,
         patientId: CREDENTIALS.patient1.id,
@@ -84,7 +89,7 @@ test.describe('05 — Video Meeting, Transcription & AI Summary', () => {
     });
 
     test('A05 — Meeting creates unique URLs for each role', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).post(ENDPOINTS.videoMeeting.create, {
         appointmentId: `url-unique-${Date.now()}`,
         patientId: CREDENTIALS.patient1.id,
@@ -103,7 +108,7 @@ test.describe('05 — Video Meeting, Transcription & AI Summary', () => {
     });
 
     test('A06 — Meeting without appointment ID fails', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).post(ENDPOINTS.videoMeeting.create, {
         patientId: CREDENTIALS.patient1.id,
         doctorId: CREDENTIALS.doctor.id,
@@ -129,7 +134,7 @@ test.describe('05 — Video Meeting, Transcription & AI Summary', () => {
     });
 
     test('A10 — Create meeting for multi-patient scenario', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const results = await Promise.all([
         doctorApi(request, token).post(ENDPOINTS.videoMeeting.create, {
           appointmentId: `multi-p1-${Date.now()}`, patientId: CREDENTIALS.patient1.id, doctorId: CREDENTIALS.doctor.id,
@@ -148,14 +153,14 @@ test.describe('05 — Video Meeting, Transcription & AI Summary', () => {
   test.describe('B — Meeting Join & Lobby', () => {
     test('B01 — Patient can get meeting link', async ({ request }) => {
       // appointmentId dependency — runs with fallback
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const res = await patientApi(request, token).get(`${ENDPOINTS.appointments}/${appointmentId}/meeting-link`);
       expect(res.status).toBeLessThan(600);
     });
 
     test('B02 — Doctor joins meeting as host', async ({ request }) => {
       // meetingId dependency — runs with fallback
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).post(`/api/video-meeting/${meetingId}/join`, {
         role: 'host',
         userId: CREDENTIALS.doctor.id,
@@ -165,7 +170,7 @@ test.describe('05 — Video Meeting, Transcription & AI Summary', () => {
 
     test('B03 — Patient joins meeting (lobby)', async ({ request }) => {
       // meetingId dependency — runs with fallback
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const res = await patientApi(request, token).post(`/api/video-meeting/${meetingId}/join`, {
         role: 'participant',
         userId: CREDENTIALS.patient1.id,
@@ -175,7 +180,7 @@ test.describe('05 — Video Meeting, Transcription & AI Summary', () => {
 
     test('B04 — Guest invite creation', async ({ request }) => {
       // meetingId dependency — runs with fallback
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).post(`/api/video-meeting/${meetingId}/invite`, {
         name: 'นายสมชาย ญาติผู้ป่วย',
         email: 'relative@example.com',
@@ -191,7 +196,7 @@ test.describe('05 — Video Meeting, Transcription & AI Summary', () => {
     });
 
     test('B06 — Invalid meeting ID returns 404', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).post('/api/video-meeting/FAKE-MEETING-99999/join', {
         role: 'host',
       });
@@ -249,7 +254,7 @@ test.describe('05 — Video Meeting, Transcription & AI Summary', () => {
   test.describe('C — Transcription Lifecycle', () => {
     test('C01 — Doctor starts transcription', async ({ request }) => {
       // meetingId dependency — runs with fallback
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await meetingApi(request, token).post(`/api/meetings/${meetingId}/start-transcription`, {
         language: 'th-TH',
         doctorId: CREDENTIALS.doctor.id,
@@ -260,14 +265,14 @@ test.describe('05 — Video Meeting, Transcription & AI Summary', () => {
 
     test('C02 — Transcription can be paused', async ({ request }) => {
       // meetingId dependency — runs with fallback
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await meetingApi(request, token).post(`/api/meetings/${meetingId}/pause-transcription`, {});
       expect(res.status).toBeLessThan(600);
     });
 
     test('C03 — Transcription can be resumed (start again)', async ({ request }) => {
       // meetingId dependency — runs with fallback
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await meetingApi(request, token).post(`/api/meetings/${meetingId}/start-transcription`, {
         language: 'th-TH',
       });
@@ -276,7 +281,7 @@ test.describe('05 — Video Meeting, Transcription & AI Summary', () => {
 
     test('C04 — Switch transcription language (TH ↔ EN)', async ({ request }) => {
       // meetingId dependency — runs with fallback
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await meetingApi(request, token).post(`/api/meetings/${meetingId}/start-transcription`, {
         language: 'en-US',
       });
@@ -285,7 +290,7 @@ test.describe('05 — Video Meeting, Transcription & AI Summary', () => {
 
     test('C05 — Doctor stops transcription', async ({ request }) => {
       // meetingId dependency — runs with fallback
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await meetingApi(request, token).post(`/api/meetings/${meetingId}/stop-transcription`, {});
       expect(res.status).toBeLessThan(600);
       logTestSuccess('Transcription stopped');
@@ -293,7 +298,7 @@ test.describe('05 — Video Meeting, Transcription & AI Summary', () => {
 
     test('C06 — Get transcript for meeting', async ({ request }) => {
       // meetingId dependency — runs with fallback
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await meetingApi(request, token).get(`/api/meetings/${meetingId}/transcript`);
       expect(res.status).toBeLessThan(600);
       if (res.status === 200) {
@@ -302,7 +307,7 @@ test.describe('05 — Video Meeting, Transcription & AI Summary', () => {
     });
 
     test('C07 — Transcription for non-existent meeting fails', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await meetingApi(request, token).post('/api/meetings/FAKE-MEET/start-transcription', {
         language: 'th-TH',
       });
@@ -311,7 +316,7 @@ test.describe('05 — Video Meeting, Transcription & AI Summary', () => {
 
     test('C08 — Transcript includes speaker labels', async ({ request }) => {
       // meetingId dependency — runs with fallback
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await meetingApi(request, token).get(`/api/meetings/${meetingId}/transcript`);
       if (res.status === 200) {
         const transcript = res.body?.data || res.body;
@@ -322,7 +327,7 @@ test.describe('05 — Video Meeting, Transcription & AI Summary', () => {
 
     test('C09 — Upload meeting recording', async ({ request }) => {
       // meetingId dependency — runs with fallback
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).post(`/api/video-meeting/${meetingId}/upload-recording`, {
         fileName: 'test-recording.webm',
         fileSize: 1024000,
@@ -333,7 +338,7 @@ test.describe('05 — Video Meeting, Transcription & AI Summary', () => {
 
     test('C10 — Get meeting files list', async ({ request }) => {
       // meetingId dependency — runs with fallback
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).get(`/api/video-meeting/${meetingId}/files`);
       expect(res.status).toBeLessThan(600);
     });
@@ -345,7 +350,7 @@ test.describe('05 — Video Meeting, Transcription & AI Summary', () => {
   test.describe('D — AI Meeting Summary & SOAP', () => {
     test('D01 — Generate AI meeting summary (Gemini)', async ({ request }) => {
       // meetingId dependency — runs with fallback
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await meetingApi(request, token).post(`/api/meetings/${meetingId}/generate-summary`, {
         type: 'SOAP',
         language: 'th',
@@ -355,7 +360,7 @@ test.describe('05 — Video Meeting, Transcription & AI Summary', () => {
     });
 
     test('D02 — AI generates SOAP from transcript', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).post(ENDPOINTS.ai.meetingSummary, {
         meetingId: meetingId || 'test',
         transcript: 'หมอ: อาการเป็นอย่างไรบ้างครับ\nผู้ป่วย: ปวดหัวมา 3 วันแล้วครับ มีไข้ด้วย\nหมอ: กินยาอะไรมาบ้างครับ\nผู้ป่วย: ยังไม่ได้กินยาอะไรเลยครับ',
@@ -366,7 +371,7 @@ test.describe('05 — Video Meeting, Transcription & AI Summary', () => {
     });
 
     test('D03 — AI summary includes SOAP sections', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).post(ENDPOINTS.ai.meetingSummary, {
         transcript: 'Doctor: What brings you in today?\nPatient: I have had a headache for 3 days with low fever.',
         format: 'SOAP',
@@ -378,7 +383,7 @@ test.describe('05 — Video Meeting, Transcription & AI Summary', () => {
     });
 
     test('D04 — AI EMR summary endpoint', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).post(ENDPOINTS.ai.emrSummary, {
         patientId: CREDENTIALS.patient1.id,
         meetingId: meetingId || 'test',
@@ -388,13 +393,13 @@ test.describe('05 — Video Meeting, Transcription & AI Summary', () => {
 
     test('D05 — CDS recommendations after meeting', async ({ request }) => {
       // meetingId dependency — runs with fallback
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await meetingApi(request, token).get(`/api/meetings/${meetingId}/recommendations`);
       expect(res.status).toBeLessThan(600);
     });
 
     test('D06 — AI patient instruction sheet generation', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).post(ENDPOINTS.ai.patientInstruction, {
         patientId: CREDENTIALS.patient1.id,
         diagnosis: 'Tension headache with low-grade fever',
@@ -406,7 +411,7 @@ test.describe('05 — Video Meeting, Transcription & AI Summary', () => {
     });
 
     test('D07 — AI summary for long meeting (30-min sections)', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const longTranscript = Array.from({ length: 50 }, (_, i) =>
         `[${i}:00] Doctor: คำถามที่ ${i + 1}\n[${i}:15] Patient: คำตอบ ${i + 1}`,
       ).join('\n');
@@ -419,7 +424,7 @@ test.describe('05 — Video Meeting, Transcription & AI Summary', () => {
     });
 
     test('D08 — Man-in-the-loop validation endpoint', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).post(ENDPOINTS.ai.validate, {
         type: 'meeting_summary',
         contentId: meetingId || 'test',
@@ -431,13 +436,13 @@ test.describe('05 — Video Meeting, Transcription & AI Summary', () => {
     });
 
     test('D09 — AI validations log accessible', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).get(ENDPOINTS.ai.validations);
       expect(res.status).toBeLessThan(600);
     });
 
     test('D10 — Meeting summary + EMR creation pipeline', async ({ request }) => {
-      const doctorToken = users.get('doctor')!.token;
+      const doctorToken = getUser('doctor').token;
       // 1) Generate AI summary
       await doctorApi(request, doctorToken).post(ENDPOINTS.ai.meetingSummary, {
         transcript: 'หมอ: อาการเป็นอย่างไร\nผู้ป่วย: ไอเรื้อรัง 2 สัปดาห์ มีเสมหะขาว',
@@ -465,7 +470,7 @@ test.describe('05 — Video Meeting, Transcription & AI Summary', () => {
   test.describe('E — Meeting End & Post-Meeting', () => {
     test('E01 — Doctor ends meeting', async ({ request }) => {
       // meetingId dependency — runs with fallback
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).post(`/api/video-meeting/${meetingId}/end`, {
         endedBy: CREDENTIALS.doctor.id,
         duration: 1800,
@@ -475,7 +480,7 @@ test.describe('05 — Video Meeting, Transcription & AI Summary', () => {
 
     test('E02 — Post-meeting AI processing triggered', async ({ request }) => {
       // meetingId dependency — runs with fallback
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).post(ENDPOINTS.ai.meetingSummary, {
         meetingId,
         processPostMeeting: true,
@@ -485,14 +490,14 @@ test.describe('05 — Video Meeting, Transcription & AI Summary', () => {
 
     test('E03 — Meeting recording accessible', async ({ request }) => {
       // meetingId dependency — runs with fallback
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).get(`/api/video-meeting/${meetingId}/files`);
       expect(res.status).toBeLessThan(600);
     });
 
     test('E04 — Transcribe audio endpoint', async ({ request }) => {
       // meetingId dependency — runs with fallback
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).post(`/api/video-meeting/${meetingId}/transcribe-audio`, {
         audioUrl: 'test-audio.webm',
         language: 'th-TH',
@@ -501,7 +506,7 @@ test.describe('05 — Video Meeting, Transcription & AI Summary', () => {
     });
 
     test('E05 — CDS alerts after meeting analysis', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).post(ENDPOINTS.cds.check, {
         patientId: CREDENTIALS.patient1.id,
         diagnosis: ['Chronic cough'],
@@ -511,13 +516,13 @@ test.describe('05 — Video Meeting, Transcription & AI Summary', () => {
     });
 
     test('E06 — CDS alerts log', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).get(ENDPOINTS.cds.alerts);
       expect(res.status).toBeLessThan(600);
     });
 
     test('E07 — Patient instruction sheet after meeting', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).post('/api/ai/patient-instruction-sheet', {
         patientId: CREDENTIALS.patient1.id,
         emrId: 'test-emr',
@@ -527,7 +532,7 @@ test.describe('05 — Video Meeting, Transcription & AI Summary', () => {
     });
 
     test('E08 — Patient can view instruction sheet PDF', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const res = await patientApi(request, token).get(
         `/api/patients/${CREDENTIALS.patient1.id}/instruction-sheets/latest/pdf`,
       );
@@ -699,7 +704,7 @@ test.describe('05 — Video Meeting, Transcription & AI Summary', () => {
   // ═══════════════════════════════════════════════════════════════════════════
   test.describe('G — Edge Cases & Performance', () => {
     test('G01 — Meeting creation under load (3 parallel)', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const results = await Promise.all([
         doctorApi(request, token).post(ENDPOINTS.videoMeeting.create, {
           appointmentId: `load-1-${Date.now()}`, patientId: CREDENTIALS.patient1.id, doctorId: CREDENTIALS.doctor.id,
@@ -715,7 +720,7 @@ test.describe('05 — Video Meeting, Transcription & AI Summary', () => {
     });
 
     test('G02 — AI summary with empty transcript', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).post(ENDPOINTS.ai.meetingSummary, {
         transcript: '',
         format: 'SOAP',
@@ -724,7 +729,7 @@ test.describe('05 — Video Meeting, Transcription & AI Summary', () => {
     });
 
     test('G03 — AI summary with Thai-English mixed transcript', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).post(ENDPOINTS.ai.meetingSummary, {
         transcript: 'หมอ: Chief complaint อะไรครับ\nผู้ป่วย: ปวดหัว migraine มา 3 weeks ทานยา NSAIDs แล้วไม่ดีขึ้น',
         format: 'SOAP',
@@ -733,7 +738,7 @@ test.describe('05 — Video Meeting, Transcription & AI Summary', () => {
     });
 
     test('G04 — Meeting server handles concurrent requests', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const start = Date.now();
       await Promise.all([
         meetingApi(request, token).get(ENDPOINTS.meetings.health),
@@ -748,7 +753,7 @@ test.describe('05 — Video Meeting, Transcription & AI Summary', () => {
     });
 
     test('G05 — CDS check with complex medication list', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).post(ENDPOINTS.cds.check, {
         patientId: CREDENTIALS.patient1.id,
         medications: ['Warfarin', 'Aspirin', 'Metformin', 'Amlodipine', 'Atorvastatin', 'Omeprazole'],
@@ -771,14 +776,14 @@ test.describe('05 — Video Meeting, Transcription & AI Summary', () => {
     });
 
     test('G07 — AI knowledge base accessible', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).get(ENDPOINTS.ai.knowledge);
       expect(res.status).toBeLessThan(600);
     });
 
     test('G08 — AI chat with medical question', async ({ request }) => {
       try {
-        const token = users.get('doctor')!.token;
+        const token = getUser('doctor').token;
         const res = await doctorApi(request, token).post(ENDPOINTS.ai.chat, {
           message: 'ผู้ป่วย DM type 2 ที่ HbA1c 9% ควรปรับยาอย่างไร',
           context: 'clinical',
@@ -792,7 +797,7 @@ test.describe('05 — Video Meeting, Transcription & AI Summary', () => {
 
     test('G09 — AI document analysis endpoint', async ({ request }) => {
       try {
-        const token = users.get('doctor')!.token;
+        const token = getUser('doctor').token;
         const res = await doctorApi(request, token).post(ENDPOINTS.ai.analyzeDocument, {
           documentType: 'lab_result',
           content: 'CBC: WBC 12,000, Hb 10.5, Plt 250,000',
@@ -805,7 +810,7 @@ test.describe('05 — Video Meeting, Transcription & AI Summary', () => {
 
     test('G10 — End-to-end meeting performance', async ({ request }) => {
       const start = Date.now();
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       // Simulate full meeting API pipeline
       await Promise.all([
         doctorApi(request, token).post(ENDPOINTS.videoMeeting.create, {
@@ -831,28 +836,28 @@ test.describe('05 — Video Meeting, Transcription & AI Summary', () => {
   // ═══════════════════════════════════════════════════════════════════════════
   test.describe('H — Meeting Server Extended APIs', () => {
     test('H01 — Meeting status check', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const mId = meetingId || 'no-dependency';
       const res = await meetingApi(request, token).get(`/api/meetings/${mId}/status`);
       expect(res.status).toBeLessThan(600);
     });
 
     test('H02 — Meeting participants list', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const mId = meetingId || 'no-dependency';
       const res = await meetingApi(request, token).get(`/api/meetings/${mId}/participants`);
       expect(res.status).toBeLessThan(600);
     });
 
     test('H03 — Transcript sections (30-min segments)', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const mId = meetingId || 'no-dependency';
       const res = await meetingApi(request, token).get(`/api/meetings/${mId}/transcript/sections`);
       expect(res.status).toBeLessThan(600);
     });
 
     test('H04 — Meeting chat send', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const mId = meetingId || 'no-dependency';
       const res = await meetingApi(request, token).post(`/api/meetings/${mId}/chat`, {
         message: 'E2E test chat message', sender: CREDENTIALS.doctor.name,
@@ -861,21 +866,21 @@ test.describe('05 — Video Meeting, Transcription & AI Summary', () => {
     });
 
     test('H05 — Get meeting chat messages', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const mId = meetingId || 'no-dependency';
       const res = await meetingApi(request, token).get(`/api/meetings/${mId}/chats`);
       expect(res.status).toBeLessThan(600);
     });
 
     test('H06 — Get saved meeting summary', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const mId = meetingId || 'no-dependency';
       const res = await meetingApi(request, token).get(`/api/meetings/${mId}/summary`);
       expect(res.status).toBeLessThan(600);
     });
 
     test('H07 — Patient instruction sheet generation', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await meetingApi(request, token).post('/api/ai/patient-instruction-sheet', {
         meetingId: meetingId || 'no-dependency',
         patientId: CREDENTIALS.patient1.id,
@@ -885,7 +890,7 @@ test.describe('05 — Video Meeting, Transcription & AI Summary', () => {
     });
 
     test('H08 — Upload meeting recording endpoint', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const aptId = meetingId || 'no-dependency';
       const res = await doctorApi(request, token).post(`/api/video-meeting/${aptId}/upload-recording`, {
         recordingUrl: 'https://test.com/recording.mp4',
@@ -895,20 +900,20 @@ test.describe('05 — Video Meeting, Transcription & AI Summary', () => {
     });
 
     test('H09 — Get meeting files', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const aptId = meetingId || 'no-dependency';
       const res = await doctorApi(request, token).get(`/api/video-meeting/${aptId}/files`);
       expect(res.status).toBeLessThan(600);
     });
 
     test('H10 — Meeting history by doctor', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).get(`/api/video-meeting/history/${CREDENTIALS.doctor.id}`);
       expect(res.status).toBeLessThan(600);
     });
 
     test('H11 — Generate summary from doctor portal', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).post('/api/ai/generate-summary', {
         appointmentId: meetingId || 'no-dependency',
         transcript: 'Patient reports headache and mild fever for 2 days.',
@@ -918,7 +923,7 @@ test.describe('05 — Video Meeting, Transcription & AI Summary', () => {
     });
 
     test('H12 — Process embeddings', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const mId = meetingId || 'no-dependency';
       const res = await meetingApi(request, token).post(`/api/meetings/${mId}/process-embeddings`, {});
       expect(res.status).toBeLessThan(600);
@@ -937,7 +942,7 @@ test.describe('05 — Video Meeting, Transcription & AI Summary', () => {
     });
 
     test('H14 — Transcribe audio endpoint (graceful without credentials)', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const mId = meetingId || 'no-dependency';
       const res = await meetingApi(request, token).post(`/api/meetings/${mId}/transcribe-audio`, {
         language: 'th-TH',
@@ -953,7 +958,7 @@ test.describe('05 — Video Meeting, Transcription & AI Summary', () => {
     });
 
     test('H15 — Enhanced AI summary endpoint', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const mId = meetingId || 'no-dependency';
       const res = await meetingApi(request, token).post(`/api/meetings/${mId}/enhanced-summary`, {
         format: 'structured',

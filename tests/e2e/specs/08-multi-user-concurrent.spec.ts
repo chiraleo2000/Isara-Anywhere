@@ -26,6 +26,11 @@ import {
 } from '../lib/test-helpers';
 
 let users: Map<UserRole, AuthenticatedUser>;
+function getUser(role: UserRole): AuthenticatedUser {
+  const u = users.get(role);
+  if (!u) throw new Error(`User ${role} not loaded`);
+  return u;
+}
 
 test.describe('08 — Multi-User Concurrent Scenarios', () => {
 
@@ -74,8 +79,8 @@ test.describe('08 — Multi-User Concurrent Scenarios', () => {
         ]);
 
         // Patient1 books appointment via API
-        const patientToken = users.get('patient1')!.token;
-        const doctorToken = users.get('doctor')!.token;
+        const patientToken = getUser('patient1').token;
+        const doctorToken = getUser('doctor').token;
         const aptData = generateAppointmentData();
         const createRes = await patientApi(request, patientToken).post(ENDPOINTS.appointments, aptData);
         const aptId = createRes.body?.id || createRes.body?.data?.id || '';
@@ -144,7 +149,7 @@ test.describe('08 — Multi-User Concurrent Scenarios', () => {
       const patients: UserRole[] = ['patient1', 'patient2', 'patient3'];
       const results = await Promise.all(
         patients.map(role =>
-          patientApi(request, users.get(role)!.token).post(ENDPOINTS.appointments, {
+          patientApi(request, getUser(role).token).post(ENDPOINTS.appointments, {
             ...generateAppointmentData(),
             reason: `Simultaneous booking from ${role} — ${Date.now()}`,
           }),
@@ -158,7 +163,7 @@ test.describe('08 — Multi-User Concurrent Scenarios', () => {
     });
 
     test('A04 — Doctor confirms multiple appointments in sequence', async ({ request }) => {
-      const doctorToken = users.get('doctor')!.token;
+      const doctorToken = getUser('doctor').token;
       // List appointments
       const listRes = await doctorApi(request, doctorToken).get(ENDPOINTS.appointments);
       if (listRes.status === 200) {
@@ -175,8 +180,8 @@ test.describe('08 — Multi-User Concurrent Scenarios', () => {
 
     test('A05 — Patient sees appointment status change on refresh', async ({ browser, request }) => {
       test.setTimeout(120000);
-      const patientToken = users.get('patient1')!.token;
-      const doctorToken = users.get('doctor')!.token;
+      const patientToken = getUser('patient1').token;
+      const doctorToken = getUser('doctor').token;
 
       let ctx;
       try {
@@ -243,8 +248,8 @@ test.describe('08 — Multi-User Concurrent Scenarios', () => {
     });
 
     test('A07 — Full lifecycle via API: create → confirm → meeting link', async ({ request }) => {
-      const patientToken = users.get('patient1')!.token;
-      const doctorToken = users.get('doctor')!.token;
+      const patientToken = getUser('patient1').token;
+      const doctorToken = getUser('doctor').token;
       const result = await appointmentLifecycle(request, patientToken, doctorToken);
       expect(result.appointmentId).toBeTruthy();
       logTestSuccess(`Full lifecycle: ${result.appointmentId}`);
@@ -253,12 +258,12 @@ test.describe('08 — Multi-User Concurrent Scenarios', () => {
     test('A08 — Appointment race condition: 2 patients book same slot', async ({ request }) => {
       const sameTime = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
       const results = await Promise.all([
-        patientApi(request, users.get('patient1')!.token).post(ENDPOINTS.appointments, {
+        patientApi(request, getUser('patient1').token).post(ENDPOINTS.appointments, {
           ...generateAppointmentData(),
           dateTime: sameTime,
           reason: 'Race condition test — patient1',
         }),
-        patientApi(request, users.get('patient2')!.token).post(ENDPOINTS.appointments, {
+        patientApi(request, getUser('patient2').token).post(ENDPOINTS.appointments, {
           ...generateAppointmentData(),
           dateTime: sameTime,
           reason: 'Race condition test — patient2',
@@ -269,8 +274,8 @@ test.describe('08 — Multi-User Concurrent Scenarios', () => {
     });
 
     test('A09 — Admin assigns appointment to doctor', async ({ request }) => {
-      const adminToken = users.get('admin')!.token;
-      const patientToken = users.get('patient1')!.token;
+      const adminToken = getUser('admin').token;
+      const patientToken = getUser('patient1').token;
 
       // Patient creates
       const aptRes = await patientApi(request, patientToken).post(ENDPOINTS.appointments, generateAppointmentData());
@@ -279,7 +284,7 @@ test.describe('08 — Multi-User Concurrent Scenarios', () => {
       // Admin assigns to doctor
       if (aptId) {
         const assignRes = await doctorApi(request, adminToken).put(`${ENDPOINTS.appointments}/${aptId}`, {
-          doctorId: users.get('doctor')!.id,
+          doctorId: getUser('doctor').id,
           status: 'confirmed',
         });
         expect(assignRes.status).toBeLessThan(600);
@@ -287,7 +292,7 @@ test.describe('08 — Multi-User Concurrent Scenarios', () => {
     });
 
     test('A10 — Appointment list loads under 3 seconds', async ({ request }) => {
-      const tokens = [users.get('patient1')!.token, users.get('doctor')!.token, users.get('admin')!.token];
+      const tokens = [getUser('patient1').token, getUser('doctor').token, getUser('admin').token];
       for (const token of tokens) {
         const start = Date.now();
         await patientApi(request, token).get(ENDPOINTS.appointments);
@@ -303,8 +308,8 @@ test.describe('08 — Multi-User Concurrent Scenarios', () => {
   // ═══════════════════════════════════════════════════════════════════════════
   test.describe('B — Content Flow: Doctor → Admin → All Patients See', () => {
     test('B01 — ★ Full flow: doctor creates → admin approves → 3 patients see (API)', async ({ request }) => {
-      const doctorToken = users.get('doctor')!.token;
-      const adminToken = users.get('admin')!.token;
+      const doctorToken = getUser('doctor').token;
+      const adminToken = getUser('admin').token;
 
       // Complete lifecycle
       const { title } = await contentApprovalLifecycle(request, doctorToken, adminToken);
@@ -312,7 +317,7 @@ test.describe('08 — Multi-User Concurrent Scenarios', () => {
       // All 3 patients fetch content
       const results = await Promise.all(
         (['patient1', 'patient2', 'patient3'] as UserRole[]).map(role =>
-          patientApi(request, users.get(role)!.token).get(ENDPOINTS.contentMedical),
+          patientApi(request, getUser(role).token).get(ENDPOINTS.contentMedical),
         ),
       );
       results.forEach((r, i) => {
@@ -351,8 +356,8 @@ test.describe('08 — Multi-User Concurrent Scenarios', () => {
       await Promise.all(roles.map((r, i) => screenshot(pages[i], `26-B02-${r}-before`)));
 
       // Doctor creates + admin approves via API
-      const doctorToken = users.get('doctor')!.token;
-      const adminToken = users.get('admin')!.token;
+      const doctorToken = getUser('doctor').token;
+      const adminToken = getUser('admin').token;
       const { title } = await contentApprovalLifecycle(request, doctorToken, adminToken);
 
       // All 4 windows refresh
@@ -366,8 +371,8 @@ test.describe('08 — Multi-User Concurrent Scenarios', () => {
     });
 
     test('B03 — Rejected content: patients should NOT see after refresh', async ({ browser, request }) => {
-      const doctorToken = users.get('doctor')!.token;
-      const adminToken = users.get('admin')!.token;
+      const doctorToken = getUser('doctor').token;
+      const adminToken = getUser('admin').token;
 
       // Create → submit → REJECT
       const createRes = await doctorApi(request, doctorToken).post(ENDPOINTS.contentMedical, {
@@ -400,8 +405,8 @@ test.describe('08 — Multi-User Concurrent Scenarios', () => {
     });
 
     test('B04 — Multiple content items created and approved in batch', async ({ request }) => {
-      const doctorToken = users.get('doctor')!.token;
-      const adminToken = users.get('admin')!.token;
+      const doctorToken = getUser('doctor').token;
+      const adminToken = getUser('admin').token;
 
       // Create 3 articles
       const articles = await Promise.all(
@@ -442,8 +447,8 @@ test.describe('08 — Multi-User Concurrent Scenarios', () => {
       await page.waitForTimeout(2000);
 
       // Doctor creates + admin approves while patient is browsing
-      const doctorToken = users.get('doctor')!.token;
-      const adminToken = users.get('admin')!.token;
+      const doctorToken = getUser('doctor').token;
+      const adminToken = getUser('admin').token;
       await contentApprovalLifecycle(request, doctorToken, adminToken);
 
       // Patient refreshes
@@ -455,8 +460,8 @@ test.describe('08 — Multi-User Concurrent Scenarios', () => {
     });
 
     test('B06 — Content tags synced across portals', async ({ request }) => {
-      const doctorToken = users.get('doctor')!.token;
-      const patientToken = users.get('patient1')!.token;
+      const doctorToken = getUser('doctor').token;
+      const patientToken = getUser('patient1').token;
 
       const [doctorTags, patientTags] = await Promise.all([
         doctorApi(request, doctorToken).get(ENDPOINTS.contentTags.medical),
@@ -472,7 +477,7 @@ test.describe('08 — Multi-User Concurrent Scenarios', () => {
       const start = Date.now();
       const results = await Promise.all(
         roles.map(role => {
-          const token = users.get(role)!.token;
+          const token = getUser(role).token;
           const api = ['patient1', 'patient2', 'patient3'].includes(role)
             ? patientApi(request, token)
             : doctorApi(request, token);
@@ -485,15 +490,15 @@ test.describe('08 — Multi-User Concurrent Scenarios', () => {
     });
 
     test('B08 — Content visible across different patient accounts', async ({ request }) => {
-      const doctorToken = users.get('doctor')!.token;
-      const adminToken = users.get('admin')!.token;
+      const doctorToken = getUser('doctor').token;
+      const adminToken = getUser('admin').token;
 
       await contentApprovalLifecycle(request, doctorToken, adminToken);
 
       // All 3 patients should see same content
       const results = await Promise.all(
         (['patient1', 'patient2', 'patient3'] as UserRole[]).map(role =>
-          patientApi(request, users.get(role)!.token).get(ENDPOINTS.contentMedical),
+          patientApi(request, getUser(role).token).get(ENDPOINTS.contentMedical),
         ),
       );
       const counts = results.map(r => {
@@ -515,8 +520,8 @@ test.describe('08 — Multi-User Concurrent Scenarios', () => {
   // ═══════════════════════════════════════════════════════════════════════════
   test.describe('C — Health Records Cross-Portal', () => {
     test('C01 — Patient updates PHR → Doctor sees in record viewer', async ({ request }) => {
-      const patientToken = users.get('patient1')!.token;
-      const doctorToken = users.get('doctor')!.token;
+      const patientToken = getUser('patient1').token;
+      const doctorToken = getUser('doctor').token;
 
       // Patient updates PHR
       await patientApi(request, patientToken).put(ENDPOINTS.healthRecords.phr, {
@@ -529,19 +534,19 @@ test.describe('08 — Multi-User Concurrent Scenarios', () => {
 
       // Doctor reads patient's PHR
       const readRes = await doctorApi(request, doctorToken).get(
-        `${ENDPOINTS.healthRecords.phr}?patientId=${users.get('patient1')!.id}`,
+        `${ENDPOINTS.healthRecords.phr}?patientId=${getUser('patient1').id}`,
       );
       expect(readRes.status).toBeLessThan(600);
       logTestSuccess('PHR update visible to doctor');
     });
 
     test('C02 — Doctor creates EMR → Patient sees in health timeline', async ({ request }) => {
-      const doctorToken = users.get('doctor')!.token;
-      const patientToken = users.get('patient1')!.token;
+      const doctorToken = getUser('doctor').token;
+      const patientToken = getUser('patient1').token;
 
       // Doctor creates EMR
       await doctorApi(request, doctorToken).post(ENDPOINTS.healthRecords.emr, {
-        patientId: users.get('patient1')!.id,
+        patientId: getUser('patient1').id,
         type: 'SOAP',
         subjective: 'ปวดหัวมา 2 วัน',
         objective: 'BP 130/85, HR 78',
@@ -586,15 +591,15 @@ test.describe('08 — Multi-User Concurrent Scenarios', () => {
     test('C04 — 3 patients access their PHR simultaneously', async ({ request }) => {
       const results = await Promise.all(
         (['patient1', 'patient2', 'patient3'] as UserRole[]).map(role =>
-          patientApi(request, users.get(role)!.token).get(ENDPOINTS.healthRecords.phr),
+          patientApi(request, getUser(role).token).get(ENDPOINTS.healthRecords.phr),
         ),
       );
       results.forEach(r => expect(r.status).toBeLessThan(600));
     });
 
     test('C05 — Patient data isolation: patient1 cannot see patient2 records', async ({ request }) => {
-      const patient1Token = users.get('patient1')!.token;
-      const patient2Id = users.get('patient2')!.id;
+      const patient1Token = getUser('patient1').token;
+      const patient2Id = getUser('patient2').id;
 
       // Try to access patient2's records with patient1's token
       const res = await patientApi(request, patient1Token).get(
@@ -609,11 +614,11 @@ test.describe('08 — Multi-User Concurrent Scenarios', () => {
     });
 
     test('C06 — Prescription created by doctor → patient sees in records', async ({ request }) => {
-      const doctorToken = users.get('doctor')!.token;
-      const patientToken = users.get('patient1')!.token;
+      const doctorToken = getUser('doctor').token;
+      const patientToken = getUser('patient1').token;
 
       await doctorApi(request, doctorToken).post(ENDPOINTS.healthRecords.prescriptions, {
-        patientId: users.get('patient1')!.id,
+        patientId: getUser('patient1').id,
         medications: [
           { name: 'Amoxicillin', dosage: '500mg', frequency: 'TID', duration: '7 days' },
           { name: 'Omeprazole', dosage: '20mg', frequency: 'OD', duration: '14 days' },
@@ -626,7 +631,7 @@ test.describe('08 — Multi-User Concurrent Scenarios', () => {
     });
 
     test('C07 — Vitals recorded → appears in health timeline', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const vitalRes = await patientApi(request, token).post(ENDPOINTS.healthRecords.vitals, {
         bloodPressure: { systolic: 128, diastolic: 82 },
         heartRate: 72,
@@ -641,18 +646,18 @@ test.describe('08 — Multi-User Concurrent Scenarios', () => {
     });
 
     test('C08 — Living will access: patient shares → doctor views', async ({ request }) => {
-      const patientToken = users.get('patient1')!.token;
-      const doctorToken = users.get('doctor')!.token;
+      const patientToken = getUser('patient1').token;
+      const doctorToken = getUser('doctor').token;
 
       // Patient creates/shares living will
       await patientApi(request, patientToken).post(ENDPOINTS.healthRecords.livingWill, {
         content: 'Living will test document',
-        sharedWith: [users.get('doctor')!.id],
+        sharedWith: [getUser('doctor').id],
       });
 
       // Doctor views shared living will
       const doctorLW = await doctorApi(request, doctorToken).get(
-        `${ENDPOINTS.healthRecords.livingWill}?patientId=${users.get('patient1')!.id}`,
+        `${ENDPOINTS.healthRecords.livingWill}?patientId=${getUser('patient1').id}`,
       );
       expect(doctorLW.status).toBeLessThan(600);
     });
@@ -663,17 +668,17 @@ test.describe('08 — Multi-User Concurrent Scenarios', () => {
   // ═══════════════════════════════════════════════════════════════════════════
   test.describe('D — Meeting Multi-User', () => {
     test('D01 — Meeting server health check', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await meetingApi(request, token).get('/health');
       expect(res.status).toBe(200);
     });
 
     test('D02 — Doctor creates meeting → Patient sees meeting link', async ({ request }) => {
-      const doctorToken = users.get('doctor')!.token;
-      const patientToken = users.get('patient1')!.token;
+      const doctorToken = getUser('doctor').token;
+      const patientToken = getUser('patient1').token;
 
       const meetRes = await meetingApi(request, doctorToken).post(ENDPOINTS.meetings.create, {
-        patientId: users.get('patient1')!.id,
+        patientId: getUser('patient1').id,
         appointmentId: 'test-apt-meeting',
         scheduledAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
       });
@@ -723,19 +728,19 @@ test.describe('08 — Multi-User Concurrent Scenarios', () => {
     });
 
     test('D04 — Meeting config endpoint', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await meetingApi(request, token).get(ENDPOINTS.meetings.config);
       expect(res.status).toBeLessThan(600);
     });
 
     test('D05 — Meeting list for doctor', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await meetingApi(request, token).get(ENDPOINTS.meetings.list);
       expect(res.status).toBeLessThan(600);
     });
 
     test('D06 — Meeting transcription start', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await meetingApi(request, token).post(ENDPOINTS.meetings.transcription, {
         meetingId: 'test-meet-001',
         action: 'start',
@@ -745,7 +750,7 @@ test.describe('08 — Multi-User Concurrent Scenarios', () => {
     });
 
     test('D07 — Guest invite to meeting', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await meetingApi(request, token).post(ENDPOINTS.meetings.invite, {
         meetingId: 'test-meet-001',
         email: 'family.member@example.com',
@@ -756,11 +761,11 @@ test.describe('08 — Multi-User Concurrent Scenarios', () => {
     });
 
     test('D08 — Multiple meetings can exist simultaneously', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const results = await Promise.all(
         Array.from({ length: 3 }, (_, i) =>
           meetingApi(request, token).post(ENDPOINTS.meetings.create, {
-            patientId: users.get(`patient${i + 1}` as UserRole)!.id,
+            patientId: getUser(`patient${i + 1}` as UserRole).id,
             appointmentId: `apt-multi-${i}-${Date.now()}`,
           }),
         ),
@@ -795,14 +800,14 @@ test.describe('08 — Multi-User Concurrent Scenarios', () => {
     });
 
     test('E03 — Doctor queue management', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).get(ENDPOINTS.queue);
       expect(res.status).toBeLessThan(600);
     });
 
     test('E04 — Queue updates visible across portals', async ({ request }) => {
-      const doctorToken = users.get('doctor')!.token;
-      const patientToken = users.get('patient1')!.token;
+      const doctorToken = getUser('doctor').token;
+      const patientToken = getUser('patient1').token;
 
       // Doctor checks queue
       const doctorQueue = await doctorApi(request, doctorToken).get(ENDPOINTS.queue);
@@ -814,8 +819,8 @@ test.describe('08 — Multi-User Concurrent Scenarios', () => {
     });
 
     test('E05 — Dashboard stats consistent across views', async ({ request }) => {
-      const doctorToken = users.get('doctor')!.token;
-      const adminToken = users.get('admin')!.token;
+      const doctorToken = getUser('doctor').token;
+      const adminToken = getUser('admin').token;
 
       const [doctorStats, adminStats] = await Promise.all([
         doctorApi(request, doctorToken).get(ENDPOINTS.admin.stats),
@@ -861,7 +866,7 @@ test.describe('08 — Multi-User Concurrent Scenarios', () => {
     test('E08 — Notification badge updates across portals', async ({ request }) => {
       const results = await Promise.all(
         (['patient1', 'doctor', 'admin'] as UserRole[]).map(role => {
-          const token = users.get(role)!.token;
+          const token = getUser(role).token;
           const api = role === 'patient1' ? patientApi(request, token) : doctorApi(request, token);
           return api.get(`${ENDPOINTS.notifications.list}/count`);
         }),
@@ -877,16 +882,16 @@ test.describe('08 — Multi-User Concurrent Scenarios', () => {
     test('F01 — 10 concurrent API calls mixed endpoints', async ({ request }) => {
       const start = Date.now();
       const results = await Promise.all([
-        patientApi(request, users.get('patient1')!.token).get(ENDPOINTS.appointments),
-        patientApi(request, users.get('patient1')!.token).get(ENDPOINTS.healthRecords.phr),
-        patientApi(request, users.get('patient2')!.token).get(ENDPOINTS.appointments),
-        patientApi(request, users.get('patient2')!.token).get(ENDPOINTS.notifications.list),
-        patientApi(request, users.get('patient3')!.token).get(ENDPOINTS.contentMedical),
-        doctorApi(request, users.get('doctor')!.token).get(ENDPOINTS.appointments),
-        doctorApi(request, users.get('doctor')!.token).get(ENDPOINTS.patients),
-        doctorApi(request, users.get('admin')!.token).get(ENDPOINTS.admin.stats),
-        doctorApi(request, users.get('admin')!.token).get(ENDPOINTS.doctors),
-        meetingApi(request, users.get('doctor')!.token).get('/health'),
+        patientApi(request, getUser('patient1').token).get(ENDPOINTS.appointments),
+        patientApi(request, getUser('patient1').token).get(ENDPOINTS.healthRecords.phr),
+        patientApi(request, getUser('patient2').token).get(ENDPOINTS.appointments),
+        patientApi(request, getUser('patient2').token).get(ENDPOINTS.notifications.list),
+        patientApi(request, getUser('patient3').token).get(ENDPOINTS.contentMedical),
+        doctorApi(request, getUser('doctor').token).get(ENDPOINTS.appointments),
+        doctorApi(request, getUser('doctor').token).get(ENDPOINTS.patients),
+        doctorApi(request, getUser('admin').token).get(ENDPOINTS.admin.stats),
+        doctorApi(request, getUser('admin').token).get(ENDPOINTS.doctors),
+        meetingApi(request, getUser('doctor').token).get('/health'),
       ]);
       const elapsed = Date.now() - start;
       results.forEach(r => expect(r.status).toBe(200));
@@ -923,13 +928,13 @@ test.describe('08 — Multi-User Concurrent Scenarios', () => {
 
     test('F04 — Cross-portal token reuse prevented', async ({ request }) => {
       // Patient token on doctor portal
-      const patientToken = users.get('patient1')!.token;
+      const patientToken = getUser('patient1').token;
       const res = await doctorApi(request, patientToken).get(ENDPOINTS.patients);
       expect(res.status).toBeLessThan(600);
     });
 
     test('F05 — Large payload handling', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const largeContent = 'A'.repeat(50000);
       const res = await doctorApi(request, token).post(ENDPOINTS.contentMedical, {
         title: `Large content test ${Date.now()}`,
@@ -940,7 +945,7 @@ test.describe('08 — Multi-User Concurrent Scenarios', () => {
     });
 
     test('F06 — API response time benchmark (all main endpoints)', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const endpoints = [
         { name: 'appointments', path: ENDPOINTS.appointments },
         { name: 'patients', path: ENDPOINTS.patients },
@@ -972,7 +977,7 @@ test.describe('08 — Multi-User Concurrent Scenarios', () => {
 
       // Should still be logged in
       const bodyText = await page.locator('body').textContent().catch(() => '');
-      const isLoggedIn = !bodyText?.includes('Login') || bodyText?.includes('Dashboard') || bodyText?.length! > 100;
+      const isLoggedIn = !bodyText?.includes('Login') || bodyText?.includes('Dashboard') || (bodyText?.length ?? 0) > 100;
       logTestInfo(`Still logged in after navigation: ${isLoggedIn}`);
       await ctx.close();
     });
@@ -982,7 +987,7 @@ test.describe('08 — Multi-User Concurrent Scenarios', () => {
       const calls = Array.from({ length: 20 }, (_, i) => {
         const roles: UserRole[] = ['patient1', 'patient2', 'patient3', 'doctor', 'admin'];
         const role = roles[i % 5];
-        const token = users.get(role)!.token;
+        const token = getUser(role).token;
         const isPatient = ['patient1', 'patient2', 'patient3'].includes(role);
         return isPatient
           ? patientApi(request, token).get(ENDPOINTS.appointments)
@@ -1002,25 +1007,25 @@ test.describe('08 — Multi-User Concurrent Scenarios', () => {
   // ═══════════════════════════════════════════════════════════════════════════
   test.describe('G — Queue Management & Cross-Portal Notifications', () => {
     test('G01 — Doctor queue list', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).get('/api/queue');
       expect(res.status).toBeLessThan(600);
     });
 
     test('G02 — Doctor call next in queue', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).post('/api/queue/call-next', {});
       expect(res.status).toBeLessThan(600);
     });
 
     test('G03 — Doctor skip queue patient', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).post('/api/queue/skip', { reason: 'Patient not ready' });
       expect(res.status).toBeLessThan(600);
     });
 
     test('G04 — Patient notification after EMR signature', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const res = await patientApi(request, token).get(ENDPOINTS.notifications.list);
       expect(res.status).toBeLessThan(600);
       if (res.status === 200) {
@@ -1031,19 +1036,19 @@ test.describe('08 — Multi-User Concurrent Scenarios', () => {
     });
 
     test('G05 — Doctor notification list', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).get('/api/notifications');
       expect(res.status).toBeLessThan(600);
     });
 
     test('G06 — Mark all notifications read', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const res = await patientApi(request, token).put(ENDPOINTS.notifications.markAllRead, {});
       expect(res.status).toBeLessThan(600);
     });
 
     test('G07 — User preferences persistence after concurrent updates', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       // Update preferences
       const updateRes = await patientApi(request, token).put(ENDPOINTS.settings.update, {
         language: 'th', theme: 'dark',
@@ -1055,8 +1060,8 @@ test.describe('08 — Multi-User Concurrent Scenarios', () => {
     });
 
     test('G08 — Doctor and patient notifications do not leak across roles', async ({ request }) => {
-      const patientToken = users.get('patient1')!.token;
-      const doctorToken = users.get('doctor')!.token;
+      const patientToken = getUser('patient1').token;
+      const doctorToken = getUser('doctor').token;
       const [pRes, dRes] = await Promise.all([
         patientApi(request, patientToken).get(ENDPOINTS.notifications.list),
         doctorApi(request, doctorToken).get('/api/notifications'),
@@ -1076,20 +1081,20 @@ test.describe('08 — Multi-User Concurrent Scenarios', () => {
 
     test('G09 — Concurrent profile updates from different patients', async ({ request }) => {
       const results = await Promise.all([
-        patientApi(request, users.get('patient1')!.token).put(ENDPOINTS.settings.update, { theme: 'light' }),
-        patientApi(request, users.get('patient2')!.token).put(ENDPOINTS.settings.update, { theme: 'dark' }),
-        patientApi(request, users.get('patient3')!.token).put(ENDPOINTS.settings.update, { theme: 'light' }),
+        patientApi(request, getUser('patient1').token).put(ENDPOINTS.settings.update, { theme: 'light' }),
+        patientApi(request, getUser('patient2').token).put(ENDPOINTS.settings.update, { theme: 'dark' }),
+        patientApi(request, getUser('patient3').token).put(ENDPOINTS.settings.update, { theme: 'light' }),
       ]);
       results.forEach(r => expect(r.status).toBeLessThan(600));
     });
 
     test('G10 — Cross-portal data consistency after sync', async ({ request }) => {
-      const patientToken = users.get('patient1')!.token;
-      const doctorToken = users.get('doctor')!.token;
+      const patientToken = getUser('patient1').token;
+      const doctorToken = getUser('doctor').token;
       // Patient profile from patient portal
       const pRes = await patientApi(request, patientToken).get(ENDPOINTS.profile);
       // Same patient profile from doctor portal
-      const dRes = await doctorApi(request, doctorToken).get(`/api/patients/${users.get('patient1')!.id}`);
+      const dRes = await doctorApi(request, doctorToken).get(`/api/patients/${getUser('patient1').id}`);
       expect(pRes.status).toBeLessThan(600);
       expect(dRes.status).toBeLessThan(600);
     });

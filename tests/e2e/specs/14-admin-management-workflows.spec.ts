@@ -11,10 +11,10 @@
  */
 import { test, expect } from '@playwright/test';
 import {
-  PATIENT_URL, DOCTOR_URL,
-  ENDPOINTS, TIMEOUTS,
+  DOCTOR_URL,
+  ENDPOINTS,
   authenticateAllUsers, apiRequest,
-  patientApi, doctorApi,
+  doctorApi,
   navigateWithAuth,
   assertOk,
   logTestSuccess, logTestInfo,
@@ -22,6 +22,11 @@ import {
 } from '../lib/test-helpers';
 
 let users: Map<UserRole, AuthenticatedUser>;
+function getUser(role: UserRole): AuthenticatedUser {
+  const u = users.get(role);
+  if (!u) throw new Error(`User ${role} not loaded`);
+  return u;
+}
 const ADMIN_ID = 'ADMIN-TEST-001';
 const DOC_ID = 'DOC-TEST-001';
 
@@ -42,7 +47,7 @@ test.describe('14 — Admin Management Workflows', () => {
       await page.waitForTimeout(2000);
       expect(page.url()).toContain('/doctor-management');
       const body = await page.locator('body').textContent();
-      expect(body!.length).toBeGreaterThan(0);
+      expect((body ?? '').length).toBeGreaterThan(0);
       logTestSuccess('Admin doctor management page visible');
     });
 
@@ -51,26 +56,26 @@ test.describe('14 — Admin Management Workflows', () => {
       await page.waitForTimeout(2000);
       const content = await page.locator('body').textContent();
       // Should show some doctor names or table
-      expect(content!.length).toBeGreaterThan(100);
+      expect((content ?? '').length).toBeGreaterThan(100);
       logTestSuccess('Doctor management shows doctor data');
     });
 
     test('A03 — Pending doctors API accessible', async ({ request }) => {
-      const u = users.get('admin')!;
+      const u = getUser('admin');
       const res = await doctorApi(request, u.token).get(ENDPOINTS.admin.pendingDoctors);
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`Pending doctors → ${res.status}`);
     });
 
     test('A04 — Admin stats API returns data', async ({ request }) => {
-      const u = users.get('admin')!;
+      const u = getUser('admin');
       const res = await doctorApi(request, u.token).get(ENDPOINTS.admin.stats);
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`Admin stats → ${res.status}`);
     });
 
     test('A05 — All doctors list API accessible', async ({ request }) => {
-      const u = users.get('admin')!;
+      const u = getUser('admin');
       const res = await doctorApi(request, u.token).get(ENDPOINTS.doctors);
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`All doctors → ${res.status}`);
@@ -93,7 +98,7 @@ test.describe('14 — Admin Management Workflows', () => {
     });
 
     test('A08 — Approve doctor API endpoint exists', async ({ request }) => {
-      const u = users.get('admin')!;
+      const u = getUser('admin');
       // Just check the endpoint responds (don't actually approve)
       const res = await apiRequest(request, 'POST', DOCTOR_URL, ENDPOINTS.admin.approveDoctor, u.token, {
         doctorId: 'non-existent-id',
@@ -104,7 +109,7 @@ test.describe('14 — Admin Management Workflows', () => {
     });
 
     test('A09 — Reject doctor API endpoint exists', async ({ request }) => {
-      const u = users.get('admin')!;
+      const u = getUser('admin');
       const res = await apiRequest(request, 'POST', DOCTOR_URL, ENDPOINTS.admin.rejectDoctor, u.token, {
         doctorId: 'non-existent-id',
         reason: 'Test rejection',
@@ -132,7 +137,7 @@ test.describe('14 — Admin Management Workflows', () => {
       await navigateWithAuth(page, 'admin', `/doctor/${ADMIN_ID}/appointment-management`);
       await page.waitForTimeout(2000);
       const body = await page.locator('body').textContent();
-      expect(body!.length).toBeGreaterThan(0);
+      expect((body ?? '').length).toBeGreaterThan(0);
       logTestSuccess('Admin appointment management visible');
     });
 
@@ -140,32 +145,32 @@ test.describe('14 — Admin Management Workflows', () => {
       await navigateWithAuth(page, 'admin', `/doctor/${ADMIN_ID}/appointment-management`);
       await page.waitForTimeout(2000);
       const content = await page.locator('body').textContent();
-      expect(content!.length).toBeGreaterThan(100);
+      expect((content ?? '').length).toBeGreaterThan(100);
       logTestSuccess('Appointment management has content');
     });
 
     test('B03 — Admin can view all appointments', async ({ request }) => {
-      const u = users.get('admin')!;
+      const u = getUser('admin');
       const res = await doctorApi(request, u.token).get(ENDPOINTS.appointments);
       assertOk(res, 'Admin appointments list');
     });
 
     test('B04 — Appointment pool accessible from admin', async ({ request }) => {
-      const u = users.get('admin')!;
+      const u = getUser('admin');
       const res = await doctorApi(request, u.token).get(ENDPOINTS.appointmentPool);
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`Appointment pool → ${res.status}`);
     });
 
     test('B05 — Admin queue management accessible', async ({ request }) => {
-      const u = users.get('admin')!;
+      const u = getUser('admin');
       const res = await doctorApi(request, u.token).get(ENDPOINTS.queue);
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`Queue → ${res.status}`);
     });
 
     test('B06 — Admin can view patient list', async ({ request }) => {
-      const u = users.get('admin')!;
+      const u = getUser('admin');
       const res = await doctorApi(request, u.token).get(ENDPOINTS.patients);
       assertOk(res, 'Admin patients list');
     });
@@ -194,7 +199,7 @@ test.describe('14 — Admin Management Workflows', () => {
     });
 
     test('B10 — Specialties metadata for assignment', async ({ request }) => {
-      const u = users.get('admin')!;
+      const u = getUser('admin');
       const res = await apiRequest(request, 'GET', DOCTOR_URL, ENDPOINTS.metadata.specialties, u.token);
       assertOk(res, 'Specialties for appointment assignment');
     });
@@ -213,13 +218,13 @@ test.describe('14 — Admin Management Workflows', () => {
     });
 
     test('C02 — Medical content API returns articles', async ({ request }) => {
-      const u = users.get('admin')!;
+      const u = getUser('admin');
       const res = await doctorApi(request, u.token).get(ENDPOINTS.medicalContent);
       assertOk(res, 'Medical content API');
     });
 
     test('C03 — Clinical resources API accessible', async ({ request }) => {
-      const u = users.get('admin')!;
+      const u = getUser('admin');
       const res = await doctorApi(request, u.token).get(ENDPOINTS.contentClinical);
       assertOk(res, 'Clinical resources API');
     });
@@ -232,14 +237,14 @@ test.describe('14 — Admin Management Workflows', () => {
     });
 
     test('C05 — Content tags API for categorization', async ({ request }) => {
-      const u = users.get('admin')!;
+      const u = getUser('admin');
       const res = await apiRequest(request, 'GET', DOCTOR_URL, ENDPOINTS.contentTags.medical, u.token);
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`Medical tags → ${res.status}`);
     });
 
     test('C06 — Clinical tags API for categorization', async ({ request }) => {
-      const u = users.get('admin')!;
+      const u = getUser('admin');
       const res = await apiRequest(request, 'GET', DOCTOR_URL, ENDPOINTS.contentTags.clinical, u.token);
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`Clinical tags → ${res.status}`);
@@ -253,7 +258,7 @@ test.describe('14 — Admin Management Workflows', () => {
     });
 
     test('C08 — Consultants API accessible from admin', async ({ request }) => {
-      const u = users.get('admin')!;
+      const u = getUser('admin');
       const res = await doctorApi(request, u.token).get(ENDPOINTS.consultants);
       assertOk(res, 'Admin consultants API');
     });
@@ -293,32 +298,32 @@ test.describe('14 — Admin Management Workflows', () => {
     });
 
     test('D03 — Admin auth/me returns admin data', async ({ request }) => {
-      const u = users.get('admin')!;
+      const u = getUser('admin');
       const res = await doctorApi(request, u.token).get('/auth/me');
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`Admin auth/me → ${res.status}`);
     });
 
     test('D04 — Admin can access EMR data', async ({ request }) => {
-      const u = users.get('admin')!;
+      const u = getUser('admin');
       const res = await doctorApi(request, u.token).get(ENDPOINTS.emr);
       assertOk(res, 'Admin EMR access');
     });
 
     test('D05 — Admin can access prescriptions', async ({ request }) => {
-      const u = users.get('admin')!;
+      const u = getUser('admin');
       const res = await doctorApi(request, u.token).get(ENDPOINTS.prescriptions);
       assertOk(res, 'Admin prescriptions');
     });
 
     test('D06 — Admin can access lab orders', async ({ request }) => {
-      const u = users.get('admin')!;
+      const u = getUser('admin');
       const res = await doctorApi(request, u.token).get(ENDPOINTS.labOrders);
       assertOk(res, 'Admin lab orders');
     });
 
     test('D07 — Patient token on admin API returns response', async ({ request }) => {
-      const u = users.get('patient1')!;
+      const u = getUser('patient1');
       const res = await doctorApi(request, u.token).get(ENDPOINTS.admin.pendingDoctors);
       // Backend currently doesn't enforce admin-only on this endpoint
       // Validate it returns a parseable response (200 or 401/403)
@@ -327,13 +332,13 @@ test.describe('14 — Admin Management Workflows', () => {
     });
 
     test('D08 — Admin can access health record endpoints', async ({ request }) => {
-      const u = users.get('admin')!;
+      const u = getUser('admin');
       const res = await doctorApi(request, u.token).get(ENDPOINTS.patients);
       assertOk(res, 'Admin health records access');
     });
 
     test('D09 — Meeting server accessible from admin', async ({ request }) => {
-      const u = users.get('admin')!;
+      const u = getUser('admin');
       const res = await apiRequest(request, 'GET', 'http://localhost:3020', '/api/health', u.token);
       expect(res.status).toBe(200);
       logTestSuccess('Meeting server accessible from admin');

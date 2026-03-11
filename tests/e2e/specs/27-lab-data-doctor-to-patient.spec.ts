@@ -8,7 +8,7 @@
  */
 import { test, expect } from '@playwright/test';
 import {
-  DOCTOR_URL, PATIENT_URL, ENDPOINTS, TIMEOUTS,
+  DOCTOR_URL, ENDPOINTS, TIMEOUTS,
   authenticateAllUsers, apiRequest,
   patientApi, doctorApi,
   loginViaBrowser, navigateWithAuth,
@@ -18,6 +18,11 @@ import {
 import { takeSnapshot, verifyPageHealthy } from '../helpers/snapshot';
 
 let users: Map<UserRole, AuthenticatedUser>;
+function getUser(role: UserRole): AuthenticatedUser {
+  const u = users.get(role);
+  if (!u) throw new Error(`User ${role} not loaded`);
+  return u;
+}
 const SPEC = '27-lab-imaging-data';
 
 test.describe('27 — Lab & Imaging Data: Doctor Sends → Patient Sees → Refresh', () => {
@@ -33,7 +38,7 @@ test.describe('27 — Lab & Imaging Data: Doctor Sends → Patient Sees → Refr
   test.describe('A — Doctor Creates Lab Order', () => {
 
     test('A01 — Doctor patient management page loads', async ({ page }) => {
-      const doc = users.get('doctor')!;
+      const doc = getUser('doctor');
       await navigateWithAuth(page, 'doctor', `/doctor/${doc.id}/patients`);
       const health = await verifyPageHealthy(page);
       expect(health.healthy).toBe(true);
@@ -42,15 +47,15 @@ test.describe('27 — Lab & Imaging Data: Doctor Sends → Patient Sees → Refr
     });
 
     test('A02 — Doctor can fetch patient list via API', async ({ request }) => {
-      const doc = users.get('doctor')!;
+      const doc = getUser('doctor');
       const res = await doctorApi(request, doc.token).get(ENDPOINTS.patients);
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`Patients list fetched: status ${res.status}`);
     });
 
     test('A03 — Doctor creates lab order for patient via API', async ({ request }) => {
-      const doc = users.get('doctor')!;
-      const p1 = users.get('patient1')!;
+      const doc = getUser('doctor');
+      const p1 = getUser('patient1');
       const res = await doctorApi(request, doc.token).post(ENDPOINTS.labOrders, {
         patientId: p1.id,
         doctorId: doc.id,
@@ -63,14 +68,14 @@ test.describe('27 — Lab & Imaging Data: Doctor Sends → Patient Sees → Refr
     });
 
     test('A04 — Doctor can view lab orders list', async ({ request }) => {
-      const doc = users.get('doctor')!;
+      const doc = getUser('doctor');
       const res = await doctorApi(request, doc.token).get(ENDPOINTS.labOrders);
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`Lab orders list: status ${res.status}`);
     });
 
     test('A05 — Doctor lab orders page loads in browser', async ({ page }) => {
-      const doc = users.get('doctor')!;
+      const doc = getUser('doctor');
       await navigateWithAuth(page, 'doctor', `/doctor/${doc.id}/patients`);
       const health = await verifyPageHealthy(page);
       expect(health.healthy).toBe(true);
@@ -85,8 +90,8 @@ test.describe('27 — Lab & Imaging Data: Doctor Sends → Patient Sees → Refr
   test.describe('B — Doctor Creates Imaging Order', () => {
 
     test('B01 — Doctor creates imaging order for patient via API', async ({ request }) => {
-      const doc = users.get('doctor')!;
-      const p1 = users.get('patient1')!;
+      const doc = getUser('doctor');
+      const p1 = getUser('patient1');
       const res = await apiRequest(request, 'POST', DOCTOR_URL, '/api/imaging-orders', doc.token, {
         patientId: p1.id,
         doctorId: doc.id,
@@ -101,8 +106,8 @@ test.describe('27 — Lab & Imaging Data: Doctor Sends → Patient Sees → Refr
     });
 
     test('B02 — Doctor can view imaging orders for patient', async ({ request }) => {
-      const doc = users.get('doctor')!;
-      const p1 = users.get('patient1')!;
+      const doc = getUser('doctor');
+      const p1 = getUser('patient1');
       const res = await apiRequest(request, 'GET', DOCTOR_URL, `/api/imaging-orders/patient/${p1.id}`, doc.token);
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`Doctor imaging orders for patient: status ${res.status}`);
@@ -115,7 +120,7 @@ test.describe('27 — Lab & Imaging Data: Doctor Sends → Patient Sees → Refr
   test.describe('C — Patient Sees Lab & Imaging Data', () => {
 
     test('C01 — Patient can fetch lab orders via API', async ({ request }) => {
-      const p1 = users.get('patient1')!;
+      const p1 = getUser('patient1');
       const res = await patientApi(request, p1.token).get('/api/phr/lab-orders');
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`Patient lab orders fetched: status ${res.status}`);
@@ -130,7 +135,7 @@ test.describe('27 — Lab & Imaging Data: Doctor Sends → Patient Sees → Refr
     });
 
     test('C03 — Patient imaging orders fetch returns 200', async ({ request }) => {
-      const p1 = users.get('patient1')!;
+      const p1 = getUser('patient1');
       const res = await patientApi(request, p1.token).get('/api/phr/imaging-orders');
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`Patient imaging orders: status ${res.status}`);
@@ -163,7 +168,7 @@ test.describe('27 — Lab & Imaging Data: Doctor Sends → Patient Sees → Refr
 
     test('D02 — Patient API lab orders still available after delay', async ({ request }) => {
       await new Promise(r => setTimeout(r, 1000));
-      const p1 = users.get('patient1')!;
+      const p1 = getUser('patient1');
       const res = await patientApi(request, p1.token).get('/api/phr/lab-orders');
       expect(res.status).toBeLessThan(600);
       logTestSuccess('Lab orders still available on re-fetch');
@@ -185,24 +190,24 @@ test.describe('27 — Lab & Imaging Data: Doctor Sends → Patient Sees → Refr
   test.describe('E — Cross-Portal Data Consistency', () => {
 
     test('E01 — Doctor and patient see consistent patient list', async ({ request }) => {
-      const doc = users.get('doctor')!;
-      const p1 = users.get('patient1')!;
-      const docRes = await doctorApi(request, doc.token).get(ENDPOINTS.patients);
+      const doc = getUser('doctor');
+      const p1 = getUser('patient1');
+      await doctorApi(request, doc.token).get(ENDPOINTS.patients);
       const patRes = await patientApi(request, p1.token).get(ENDPOINTS.health);
       expect(patRes.status).toBeLessThan(600);
       logTestSuccess('Cross-portal data consistent');
     });
 
     test('E02 — Treatment results endpoint returns 200', async ({ request }) => {
-      const p1 = users.get('patient1')!;
+      const p1 = getUser('patient1');
       const res = await patientApi(request, p1.token).get(ENDPOINTS.treatmentResults);
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`Treatment results: status ${res.status}`);
     });
 
     test('E03 — Imaging data visible in both portals', async ({ request }) => {
-      const doc = users.get('doctor')!;
-      const p1 = users.get('patient1')!;
+      const doc = getUser('doctor');
+      const p1 = getUser('patient1');
 
       // Doctor sees imaging orders
       const docRes = await apiRequest(request, 'GET', DOCTOR_URL, `/api/imaging-orders/patient/${p1.id}`, doc.token);

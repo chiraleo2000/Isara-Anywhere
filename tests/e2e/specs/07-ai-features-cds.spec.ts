@@ -10,7 +10,7 @@
  */
 import { test, expect } from '@playwright/test';
 import {
-  PATIENT_URL, DOCTOR_URL, ENDPOINTS, TIMEOUTS,
+  PATIENT_URL, DOCTOR_URL, ENDPOINTS,
   authenticateAllUsers, apiRequest,
   patientApi, doctorApi,
   logTestSuccess, logTestInfo,
@@ -18,6 +18,11 @@ import {
 } from '../lib/test-helpers';
 
 let users: Map<UserRole, AuthenticatedUser>;
+function getUser(role: UserRole): AuthenticatedUser {
+  const u = users.get(role);
+  if (!u) throw new Error(`User ${role} not loaded`);
+  return u;
+}
 
 test.describe('07 — AI Features & Clinical Decision Support', () => {
 
@@ -31,7 +36,7 @@ test.describe('07 — AI Features & Clinical Decision Support', () => {
   // ═══════════════════════════════════════════════════════════════════════════
   test.describe('A — AI Chat', () => {
     test('A01 — Patient AI chat responds (1 Gemini call)', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const res = await patientApi(request, token).post(ENDPOINTS.ai.chat, {
         message: 'What are the symptoms of type 2 diabetes?',
         language: 'en',
@@ -42,14 +47,14 @@ test.describe('07 — AI Features & Clinical Decision Support', () => {
     });
 
     test('A02 — AI chat history retrieval', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const res = await patientApi(request, token).get(ENDPOINTS.ai.chat);
       expect(res.status).toBeLessThan(600);
       logTestSuccess('AI chat history returned');
     });
 
     test('A03 — AI chat empty message returns 400', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const res = await patientApi(request, token).post(ENDPOINTS.ai.chat, {
         message: '',
         language: 'en',
@@ -65,7 +70,7 @@ test.describe('07 — AI Features & Clinical Decision Support', () => {
     });
 
     test('A05 — AI chat XSS prevention', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const res = await patientApi(request, token).post(ENDPOINTS.ai.chat, {
         message: '<script>alert("xss")</script>',
         language: 'en',
@@ -83,9 +88,9 @@ test.describe('07 — AI Features & Clinical Decision Support', () => {
   // ═══════════════════════════════════════════════════════════════════════════
   test.describe('B — Clinical Decision Support', () => {
     test('B01 — CDS drug interaction check (1 Gemini call)', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).post(ENDPOINTS.ai.cdsCheck, {
-        patientId: users.get('patient1')!.id,
+        patientId: getUser('patient1').id,
         medications: ['Warfarin', 'Aspirin'],
         conditions: ['Atrial Fibrillation'],
         checkType: 'drug-interaction',
@@ -96,25 +101,25 @@ test.describe('07 — AI Features & Clinical Decision Support', () => {
     });
 
     test('B02 — CDS alerts list returns 200', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).get(ENDPOINTS.ai.cdsAlerts);
       expect(res.status).toBeLessThan(600);
     });
 
     test('B03 — CDS alerts for specific patient', async ({ request }) => {
-      const token = users.get('doctor')!.token;
-      const res = await doctorApi(request, token).get(`${ENDPOINTS.ai.cdsAlerts}?patientId=${users.get('patient1')!.id}`);
+      const token = getUser('doctor').token;
+      const res = await doctorApi(request, token).get(`${ENDPOINTS.ai.cdsAlerts}?patientId=${getUser('patient1').id}`);
       expect(res.status).toBeLessThan(600);
     });
 
     test('B04 — CDS logs returns 200', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).get(ENDPOINTS.ai.cdsLogs);
       expect(res.status).toBeLessThan(600);
     });
 
     test('B05 — CDS check with missing fields returns 400', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).post(ENDPOINTS.ai.cdsCheck, {});
       expect(res.status).toBeLessThan(600);
     });
@@ -132,9 +137,9 @@ test.describe('07 — AI Features & Clinical Decision Support', () => {
   // ═══════════════════════════════════════════════════════════════════════════
   test.describe('C — AI Summarization', () => {
     test('C01 — AI EMR summary generates (1 Gemini call)', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).post(ENDPOINTS.ai.emrSummary, {
-        patientId: users.get('patient1')!.id,
+        patientId: getUser('patient1').id,
         emrData: {
           diagnoses: ['R51 - Headache'],
           medications: [{ name: 'Paracetamol', dosage: '500mg q6h' }],
@@ -147,21 +152,21 @@ test.describe('07 — AI Features & Clinical Decision Support', () => {
     });
 
     test('C02 — AI validations list returns 200', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).get(ENDPOINTS.ai.validations);
       expect(res.status).toBeLessThan(600);
     });
 
     test('C03 — AI patient summary endpoint exists', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).post(ENDPOINTS.ai.patientSummary, {
-        patientId: users.get('patient1')!.id,
+        patientId: getUser('patient1').id,
       });
       expect(res.status).toBeLessThan(600);
     });
 
     test('C04 — AI summarize performance < 30s', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const start = Date.now();
       const res = await doctorApi(request, token).post(ENDPOINTS.ai.summarize, {
         text: 'Brief note: Patient well, BP 120/80, continue medications.',
@@ -173,7 +178,7 @@ test.describe('07 — AI Features & Clinical Decision Support', () => {
     });
 
     test('C05 — AI knowledge base query', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).post(ENDPOINTS.ai.knowledgeBase, {
         query: 'diabetes treatment guidelines',
       });
@@ -186,19 +191,19 @@ test.describe('07 — AI Features & Clinical Decision Support', () => {
   // ═══════════════════════════════════════════════════════════════════════════
   test.describe('D — Notifications', () => {
     test('D01 — Patient gets notifications', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const res = await patientApi(request, token).get(ENDPOINTS.notifications.list);
       expect(res.status).toBeLessThan(600);
     });
 
     test('D02 — Doctor gets notifications', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).get(ENDPOINTS.notifications.list);
       expect(res.status).toBeLessThan(600);
     });
 
     test('D03 — Mark notification as read', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const listRes = await patientApi(request, token).get(ENDPOINTS.notifications.list);
       expect(listRes.status).toBeLessThan(600);
       const notifications = Array.isArray(listRes.body) ? listRes.body : listRes.body?.data || listRes.body?.notifications || [];
@@ -211,13 +216,13 @@ test.describe('07 — AI Features & Clinical Decision Support', () => {
     });
 
     test('D04 — Mark all notifications as read', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const res = await patientApi(request, token).put(ENDPOINTS.notifications.markAllRead, {});
       expect(res.status).toBeLessThan(600);
     });
 
     test('D05 — Notification count', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const res = await patientApi(request, token).get(`${ENDPOINTS.notifications.list}/count`);
       expect(res.status).toBeLessThan(600);
     });
@@ -225,20 +230,20 @@ test.describe('07 — AI Features & Clinical Decision Support', () => {
     test('D06 — 3 patients poll notifications concurrently', async ({ request }) => {
       const results = await Promise.all(
         (['patient1', 'patient2', 'patient3'] as UserRole[]).map(role =>
-          patientApi(request, users.get(role)!.token).get(ENDPOINTS.notifications.list),
+          patientApi(request, getUser(role).token).get(ENDPOINTS.notifications.list),
         ),
       );
       results.forEach(r => expect(r.status).toBeLessThan(600));
     });
 
     test('D07 — Get notification preferences', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const res = await patientApi(request, token).get(ENDPOINTS.settings.notifications);
       expect(res.status).toBeLessThan(600);
     });
 
     test('D08 — Update notification preferences', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const res = await patientApi(request, token).put(ENDPOINTS.settings.notifications, {
         email: true, push: true, sms: false,
       });
@@ -251,19 +256,19 @@ test.describe('07 — AI Features & Clinical Decision Support', () => {
   // ═══════════════════════════════════════════════════════════════════════════
   test.describe('E — AI Extended Endpoints', () => {
     test('E01 — AI status endpoint', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const res = await patientApi(request, token).get('/api/ai/status');
       expect(res.status).toBeLessThan(600);
     });
 
     test('E02 — AI chat memory list', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const res = await patientApi(request, token).get('/api/ai/chat/memory');
       expect(res.status).toBeLessThan(600);
     });
 
     test('E03 — Delete notification', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const listRes = await patientApi(request, token).get(ENDPOINTS.notifications.list);
       let notifId = 'no-dependency';
       if (listRes.status === 200) {
@@ -275,7 +280,7 @@ test.describe('07 — AI Features & Clinical Decision Support', () => {
     });
 
     test('E04 — Update notification preferences', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const res = await patientApi(request, token).put('/api/notifications/preferences', {
         email: true, push: true, sms: false, appointment_reminders: true,
       });
@@ -289,8 +294,8 @@ test.describe('07 — AI Features & Clinical Decision Support', () => {
   test.describe('F — Multi-User Parallel', () => {
     test('F01 — Doctor + Admin parallel API access', async ({ request }) => {
       const [docRes, adminRes] = await Promise.all([
-        doctorApi(request, users.get('doctor')!.token).get(ENDPOINTS.ai.cdsAlerts),
-        doctorApi(request, users.get('admin')!.token).get(ENDPOINTS.ai.cdsLogs),
+        doctorApi(request, getUser('doctor').token).get(ENDPOINTS.ai.cdsAlerts),
+        doctorApi(request, getUser('admin').token).get(ENDPOINTS.ai.cdsLogs),
       ]);
       expect(docRes.status).toBeLessThan(600);
       expect(adminRes.status).toBeLessThan(600);
@@ -299,7 +304,7 @@ test.describe('07 — AI Features & Clinical Decision Support', () => {
     test('F02 — 3 patients parallel notification fetch', async ({ request }) => {
       const results = await Promise.all(
         (['patient1', 'patient2', 'patient3'] as UserRole[]).map(role =>
-          patientApi(request, users.get(role)!.token).get(ENDPOINTS.notifications.list),
+          patientApi(request, getUser(role).token).get(ENDPOINTS.notifications.list),
         ),
       );
       results.forEach(r => expect(r.status).toBeLessThan(600));

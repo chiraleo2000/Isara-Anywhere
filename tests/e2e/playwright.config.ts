@@ -41,7 +41,7 @@ import { defineConfig, devices } from '@playwright/test';
 const isCloud = process.env.TEST_ENV === 'cloud';
 const isCI = process.env.CI === 'true';
 // Workers: 8 for CI, 8 for local headless (fast parallel, zero browser popups)
-const parallelWorkers = parseInt(process.env.PW_WORKERS || '8', 10);
+const parallelWorkers = Number.parseInt(process.env.PW_WORKERS || '8', 10);
 
 const SPEC_FILES = [
   '**/01-user-accounts-demo-pages.spec.ts',
@@ -78,11 +78,16 @@ const SPEC_FILES = [
   '**/30-appointment-meeting-ai-pipeline.spec.ts',
 ];
 
-// Cloud: essential specs + new critical specs (register, lab, pages, chat/summary)
+// Cloud: full workflow coverage — register, approve, admin, EMR/PHR, lab, appointments, meetings, AI
 const CLOUD_SPEC_FILES = [
   '**/01-user-accounts-demo-pages.spec.ts',
   '**/02-auth-health-multiuser.spec.ts',
+  '**/03-appointment-lifecycle.spec.ts',
+  '**/04-health-records-emr.spec.ts',
   '**/10-lab-imaging-map-features.spec.ts',
+  '**/14-admin-management-workflows.spec.ts',
+  '**/15-phr-emr-data-flow.spec.ts',
+  '**/24-registration-approval-e2e.spec.ts',
   '**/25-register-login-doctor.spec.ts',
   '**/26-register-login-patient.spec.ts',
   '**/27-lab-data-doctor-to-patient.spec.ts',

@@ -23,6 +23,11 @@ import {
 
 let users: Map<UserRole, AuthenticatedUser>;
 let sharedAppointmentId: string;
+function getUser(role: UserRole): AuthenticatedUser {
+  const u = users.get(role);
+  if (!u) throw new Error(`User ${role} not loaded`);
+  return u;
+}
 
 test.describe('03 — Appointment Full Lifecycle', () => {
 
@@ -40,7 +45,7 @@ test.describe('03 — Appointment Full Lifecycle', () => {
   // ═══════════════════════════════════════════════════════════════════════════
   test.describe('A — Patient Books Appointment', () => {
     test('A01 — Patient1 creates a telemedicine appointment', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const res = await patientApi(request, token).post(ENDPOINTS.appointments, generateAppointmentData('Demo Test Patient'));
       expect(res.status).toBeLessThan(600);
       if (res.body?.id || res.body?.data?.id || res.body?.appointmentId) {
@@ -50,7 +55,7 @@ test.describe('03 — Appointment Full Lifecycle', () => {
     });
 
     test('A02 — Patient2 creates a different appointment', async ({ request }) => {
-      const token = users.get('patient2')!.token;
+      const token = getUser('patient2').token;
       const data = generateAppointmentData('Somchai Mankong');
       data.reason = `Follow-up diabetes check ${Date.now()}`;
       data.symptoms = 'Blood sugar fluctuation';
@@ -60,7 +65,7 @@ test.describe('03 — Appointment Full Lifecycle', () => {
     });
 
     test('A03 — Patient3 creates an appointment with different specialty', async ({ request }) => {
-      const token = users.get('patient3')!.token;
+      const token = getUser('patient3').token;
       const data = generateAppointmentData('Anan Khayanrian');
       data.specialty = 'Internal Medicine';
       data.reason = `Annual health checkup ${Date.now()}`;
@@ -72,7 +77,7 @@ test.describe('03 — Appointment Full Lifecycle', () => {
     test('A04 — All 3 patients book appointments in parallel', async ({ request }) => {
       const results = await Promise.all(
         (['patient1', 'patient2', 'patient3'] as UserRole[]).map(role => {
-          const token = users.get(role)!.token;
+          const token = getUser(role).token;
           return patientApi(request, token).post(ENDPOINTS.appointments, {
             ...generateAppointmentData(CREDENTIALS[role].name),
             reason: `Parallel booking test — ${role} — ${Date.now()}`,
@@ -86,7 +91,7 @@ test.describe('03 — Appointment Full Lifecycle', () => {
     });
 
     test('A05 — Appointment includes required fields in response', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const res = await patientApi(request, token).post(ENDPOINTS.appointments, generateAppointmentData());
       if (res.status >= 200 && res.status < 300) {
         const apt = res.body?.data || res.body;
@@ -96,7 +101,7 @@ test.describe('03 — Appointment Full Lifecycle', () => {
     });
 
     test('A06 — Patient can list own appointments', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const res = await patientApi(request, token).get(ENDPOINTS.appointments);
       expect(res.status).toBeLessThan(600);
       logTestSuccess('Patient1 appointment list');
@@ -108,13 +113,13 @@ test.describe('03 — Appointment Full Lifecycle', () => {
     });
 
     test('A07 — Missing required fields returns error', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const res = await patientApi(request, token).post(ENDPOINTS.appointments, { reason: 'No other fields' });
       expect(res.status).toBeLessThan(600);
     });
 
     test('A08 — Past date appointment rejected', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const data = generateAppointmentData();
       data.date = '2020-01-01';
       const res = await patientApi(request, token).post(ENDPOINTS.appointments, data);
@@ -122,7 +127,7 @@ test.describe('03 — Appointment Full Lifecycle', () => {
     });
 
     test('A09 — Appointment with symptoms triggers AI urgency', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const data = generateAppointmentData();
       data.symptoms = 'เจ็บหน้าอก หายใจลำบาก ใจสั่น (chest pain, difficulty breathing)';
       const res = await patientApi(request, token).post(ENDPOINTS.appointments, data);
@@ -131,19 +136,19 @@ test.describe('03 — Appointment Full Lifecycle', () => {
 
     test('A10 — Patient1 can get appointment by ID', async ({ request }) => {
       const aptId = sharedAppointmentId || 'no-dependency';
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const res = await patientApi(request, token).get(`${ENDPOINTS.appointments}/${aptId}`);
       expect(res.status).toBeLessThan(600);
     });
 
     test('A11 — Appointment pool endpoint accessible (walk-in queue)', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).get(ENDPOINTS.appointmentPool);
       expect(res.status).toBeLessThan(600);
     });
 
     test('A12 — Queue management endpoint accessible', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).get(ENDPOINTS.queue);
       expect(res.status).toBeLessThan(600);
     });
@@ -154,14 +159,14 @@ test.describe('03 — Appointment Full Lifecycle', () => {
   // ═══════════════════════════════════════════════════════════════════════════
   test.describe('B — Doctor Views & Confirms', () => {
     test('B01 — Doctor can list all appointments', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).get(ENDPOINTS.appointments);
       expect(res.status).toBeLessThan(600);
       logTestSuccess('Doctor appointment list');
     });
 
     test('B02 — Doctor sees patient appointments in schedule', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).get(ENDPOINTS.appointments);
       const list = Array.isArray(res.body) ? res.body : res.body?.data || [];
       logTestInfo(`Doctor sees ${list.length} appointments`);
@@ -170,7 +175,7 @@ test.describe('03 — Appointment Full Lifecycle', () => {
 
     test('B03 — Doctor confirms appointment (PATCH)', async ({ request }) => {
       const aptId = sharedAppointmentId || 'no-dependency';
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).patch(
         `${ENDPOINTS.appointments}/${aptId}/confirm`,
         { status: 'confirmed', confirmedDate: new Date().toISOString() },
@@ -181,7 +186,7 @@ test.describe('03 — Appointment Full Lifecycle', () => {
 
     test('B04 — Doctor confirms appointment (PUT fallback)', async ({ request }) => {
       const aptId = sharedAppointmentId || 'no-dependency';
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).put(
         `${ENDPOINTS.appointments}/${aptId}`,
         { status: 'confirmed' },
@@ -190,7 +195,7 @@ test.describe('03 — Appointment Full Lifecycle', () => {
     });
 
     test('B05 — Admin can view all appointments', async ({ request }) => {
-      const token = users.get('admin')!.token;
+      const token = getUser('admin').token;
       const res = await doctorApi(request, token).get(ENDPOINTS.appointments);
       expect(res.status).toBeLessThan(600);
       logTestSuccess('Admin appointment list');
@@ -198,7 +203,7 @@ test.describe('03 — Appointment Full Lifecycle', () => {
 
     test('B06 — Admin can assign doctor to appointment', async ({ request }) => {
       const aptId = sharedAppointmentId || 'no-dependency';
-      const token = users.get('admin')!.token;
+      const token = getUser('admin').token;
       const res = await doctorApi(request, token).put(
         `${ENDPOINTS.appointments}/${aptId}`,
         { doctorId: CREDENTIALS.doctor.id, status: 'confirmed' },
@@ -207,14 +212,14 @@ test.describe('03 — Appointment Full Lifecycle', () => {
     });
 
     test('B07 — Patient sees confirmed status after doctor confirms', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const res = await patientApi(request, token).get(ENDPOINTS.appointments);
       expect(res.status).toBeLessThan(600);
       logTestSuccess('Patient sees appointments after confirmation');
     });
 
     test('B08 — Doctor generates pre-consultation AI summary', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).post(ENDPOINTS.ai.preSummary, {
         patientId: CREDENTIALS.patient1.id,
         appointmentId: sharedAppointmentId || 'test',
@@ -224,7 +229,7 @@ test.describe('03 — Appointment Full Lifecycle', () => {
 
     test('B09 — Meeting links created when appointment confirmed', async ({ request }) => {
       const aptId = sharedAppointmentId || 'no-dependency';
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const res = await patientApi(request, token).get(
         `${ENDPOINTS.appointments}/${aptId}/meeting-link`,
       );
@@ -233,8 +238,8 @@ test.describe('03 — Appointment Full Lifecycle', () => {
     });
 
     test('B10 — Full appointment lifecycle helper succeeds', async ({ request }) => {
-      const patientToken = users.get('patient1')!.token;
-      const doctorToken = users.get('doctor')!.token;
+      const patientToken = getUser('patient1').token;
+      const doctorToken = getUser('doctor').token;
       const result = await appointmentLifecycle(request, patientToken, doctorToken);
       expect(result.appointmentId).toBeTruthy();
       logTestSuccess(`Full lifecycle appointment: ${result.appointmentId}`);
@@ -248,7 +253,7 @@ test.describe('03 — Appointment Full Lifecycle', () => {
     let cancelTestId: string;
 
     test('C01 — Create appointment for cancellation test', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const res = await patientApi(request, token).post(ENDPOINTS.appointments, {
         ...generateAppointmentData(),
         reason: `Cancel test ${Date.now()}`,
@@ -259,7 +264,7 @@ test.describe('03 — Appointment Full Lifecycle', () => {
 
     test('C02 — Patient cancels own appointment', async ({ request }) => {
       const cId = cancelTestId || 'no-dependency';
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const res = await patientApi(request, token).put(
         `${ENDPOINTS.appointments}/${cId}/cancel`,
         { reason: 'Patient requested cancellation' },
@@ -268,14 +273,14 @@ test.describe('03 — Appointment Full Lifecycle', () => {
     });
 
     test('C03 — Cancelled appointment reflects in patient list', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const res = await patientApi(request, token).get(ENDPOINTS.appointments);
       expect(res.status).toBeLessThan(600);
       logTestSuccess('Appointment list after cancel');
     });
 
     test('C04 — Create appointment for reschedule test', async ({ request }) => {
-      const token = users.get('patient2')!.token;
+      const token = getUser('patient2').token;
       const res = await patientApi(request, token).post(ENDPOINTS.appointments, {
         ...generateAppointmentData('Somchai Mankong'),
         reason: `Reschedule test ${Date.now()}`,
@@ -286,7 +291,7 @@ test.describe('03 — Appointment Full Lifecycle', () => {
 
     test('C05 — Patient reschedules appointment', async ({ request }) => {
       const cId = cancelTestId || 'no-dependency';
-      const token = users.get('patient2')!.token;
+      const token = getUser('patient2').token;
       const newDate = new Date(Date.now() + 86400000 * 7).toISOString().split('T')[0];
       const res = await patientApi(request, token).put(
         `${ENDPOINTS.appointments}/${cId}/reschedule`,
@@ -296,7 +301,7 @@ test.describe('03 — Appointment Full Lifecycle', () => {
     });
 
     test('C06 — Doctor cancels appointment', async ({ request }) => {
-      const patientToken = users.get('patient1')!.token;
+      const patientToken = getUser('patient1').token;
       const createRes = await patientApi(request, patientToken).post(ENDPOINTS.appointments, {
         ...generateAppointmentData(),
         reason: `Doctor cancel test ${Date.now()}`,
@@ -304,7 +309,7 @@ test.describe('03 — Appointment Full Lifecycle', () => {
       const aptId = createRes.body?.id || createRes.body?.data?.id || createRes.body?.appointmentId || '';
       if (!aptId) return;
 
-      const doctorToken = users.get('doctor')!.token;
+      const doctorToken = getUser('doctor').token;
       const res = await doctorApi(request, doctorToken).put(
         `${ENDPOINTS.appointments}/${aptId}/cancel`,
         { reason: 'Doctor unavailable' },
@@ -313,14 +318,14 @@ test.describe('03 — Appointment Full Lifecycle', () => {
     });
 
     test('C07 — Cancelled appointment triggers notification', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const res = await patientApi(request, token).get(ENDPOINTS.notifications.list);
       expect(res.status).toBeLessThan(600);
     });
 
     test('C08 — Cannot cancel already cancelled appointment', async ({ request }) => {
       const cId = cancelTestId || 'no-dependency';
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const res = await patientApi(request, token).put(
         `${ENDPOINTS.appointments}/${cId}/cancel`,
         { reason: 'Double cancel test' },
@@ -329,8 +334,8 @@ test.describe('03 — Appointment Full Lifecycle', () => {
     });
 
     test('C09 — Concurrent cancel from patient and doctor handled gracefully', async ({ request }) => {
-      const patientToken = users.get('patient1')!.token;
-      const doctorToken = users.get('doctor')!.token;
+      const patientToken = getUser('patient1').token;
+      const doctorToken = getUser('doctor').token;
       const createRes = await patientApi(request, patientToken).post(ENDPOINTS.appointments, {
         ...generateAppointmentData(),
         reason: `Concurrent cancel test ${Date.now()}`,
@@ -348,7 +353,7 @@ test.describe('03 — Appointment Full Lifecycle', () => {
     });
 
     test('C10 — Appointment status history maintained', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const res = await patientApi(request, token).get(ENDPOINTS.appointments);
       expect(res.status).toBeLessThan(600);
       logTestSuccess('Appointment history');
@@ -362,7 +367,7 @@ test.describe('03 — Appointment Full Lifecycle', () => {
     let testMeetingId: string;
 
     test('D01 — Doctor creates video meeting', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).post(ENDPOINTS.videoMeeting.create, {
         appointmentId: sharedAppointmentId || 'test-apt',
         patientId: CREDENTIALS.patient1.id,
@@ -374,7 +379,7 @@ test.describe('03 — Appointment Full Lifecycle', () => {
     });
 
     test('D02 — Meeting server creates meeting', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await meetingApi(request, token).post(ENDPOINTS.meetings.create, {
         appointmentId: sharedAppointmentId || 'test-apt',
         patientId: CREDENTIALS.patient1.id,
@@ -385,7 +390,7 @@ test.describe('03 — Appointment Full Lifecycle', () => {
     });
 
     test('D03 — Video meeting config endpoint available', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).get(ENDPOINTS.videoMeeting.config);
       expect(res.status).toBeLessThan(600);
     });
@@ -398,7 +403,7 @@ test.describe('03 — Appointment Full Lifecycle', () => {
 
     test('D05 — Patient can invite guest to meeting', async ({ request }) => {
       const aptId = sharedAppointmentId || 'no-dependency';
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const res = await patientApi(request, token).post(
         `${ENDPOINTS.appointments}/${aptId}/invite-guest`,
         { guestName: 'ญาติผู้ป่วย', guestEmail: 'relative@test.com' },
@@ -408,7 +413,7 @@ test.describe('03 — Appointment Full Lifecycle', () => {
 
     test('D06 — Doctor can invite specialist to meeting', async ({ request }) => {
       const mId = testMeetingId || 'no-dependency';
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).post(
         `/api/video-meeting/${mId}/invite`,
         { name: 'Specialist Dr. Smith', email: 'specialist@test.com', role: 'consultant' },
@@ -417,7 +422,7 @@ test.describe('03 — Appointment Full Lifecycle', () => {
     });
 
     test('D07 — Meeting generates 3 unique URLs (doctor, patient, guest)', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).post(ENDPOINTS.videoMeeting.create, {
         appointmentId: `url-test-${Date.now()}`,
         patientId: CREDENTIALS.patient1.id,
@@ -438,7 +443,7 @@ test.describe('03 — Appointment Full Lifecycle', () => {
     });
 
     test('D09 — Video meeting config returns Jitsi settings', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await meetingApi(request, token).get(ENDPOINTS.videoMeeting.config);
       if (res.status === 200) {
         const config = res.body?.data || res.body;
@@ -461,13 +466,13 @@ test.describe('03 — Appointment Full Lifecycle', () => {
   // ═══════════════════════════════════════════════════════════════════════════
   test.describe('E — Appointment Notifications', () => {
     test('E01 — Patient notifications endpoint accessible', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const res = await patientApi(request, token).get(ENDPOINTS.notifications.list);
       expect(res.status).toBeLessThan(600);
     });
 
     test('E02 — Doctor notifications accessible', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).get(`/api/notifications/doctor/${CREDENTIALS.doctor.id}`);
       expect(res.status).toBeLessThan(600);
     });
@@ -475,14 +480,14 @@ test.describe('03 — Appointment Full Lifecycle', () => {
     test('E03 — All 3 patients can check notifications in parallel', async ({ request }) => {
       const results = await Promise.all(
         (['patient1', 'patient2', 'patient3'] as UserRole[]).map(role =>
-          patientApi(request, users.get(role)!.token).get(ENDPOINTS.notifications.list),
+          patientApi(request, getUser(role).token).get(ENDPOINTS.notifications.list),
         ),
       );
       results.forEach(r => expect(r.status).toBeLessThan(600));
     });
 
     test('E04 — Mark notification as read', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const listRes = await patientApi(request, token).get(ENDPOINTS.notifications.list);
       if (listRes.status === 200) {
         const notifications = Array.isArray(listRes.body) ? listRes.body : listRes.body?.data || [];
@@ -495,13 +500,13 @@ test.describe('03 — Appointment Full Lifecycle', () => {
     });
 
     test('E05 — Doctor mark all notifications as read', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).put(`/api/notifications/doctor/${CREDENTIALS.doctor.id}/read-all`);
       expect(res.status).toBeLessThan(600);
     });
 
     test('E06 — Create doctor notification', async ({ request }) => {
-      const token = users.get('admin')!.token;
+      const token = getUser('admin').token;
       const res = await doctorApi(request, token).post('/api/notifications/doctor', {
         doctorId: CREDENTIALS.doctor.id,
         type: 'appointment_request',
@@ -531,7 +536,7 @@ test.describe('03 — Appointment Full Lifecycle', () => {
     });
 
     test('E08 — Appointment reminder scheduling works', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const res = await patientApi(request, token).get(ENDPOINTS.appointments);
       // Just verify the system has scheduled appointments with dates
       expect(res.status).toBeLessThan(600);
@@ -540,7 +545,7 @@ test.describe('03 — Appointment Full Lifecycle', () => {
 
     test('E09 — Notification for cancelled appointment', async ({ request }) => {
       // Create → Cancel → Check notifications
-      const patientToken = users.get('patient1')!.token;
+      const patientToken = getUser('patient1').token;
       const createRes = await patientApi(request, patientToken).post(ENDPOINTS.appointments, {
         ...generateAppointmentData(),
         reason: `Notification cancel test ${Date.now()}`,
@@ -555,7 +560,7 @@ test.describe('03 — Appointment Full Lifecycle', () => {
     });
 
     test('E10 — Notification polling works (30-second interval simulation)', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const start = Date.now();
       const [r1, r2, r3] = await Promise.all([
         patientApi(request, token).get(ENDPOINTS.notifications.list),
@@ -695,8 +700,8 @@ test.describe('03 — Appointment Full Lifecycle', () => {
   // ═══════════════════════════════════════════════════════════════════════════
   test.describe('G — Cross-Portal Sync', () => {
     test('G01 — Patient creates → Doctor sees (API verification)', async ({ request }) => {
-      const patientToken = users.get('patient1')!.token;
-      const doctorToken = users.get('doctor')!.token;
+      const patientToken = getUser('patient1').token;
+      const doctorToken = getUser('doctor').token;
 
       // Patient creates
       const createRes = await patientApi(request, patientToken).post(ENDPOINTS.appointments, {
@@ -712,8 +717,8 @@ test.describe('03 — Appointment Full Lifecycle', () => {
     });
 
     test('G02 — Doctor confirms → Patient sees confirmed', async ({ request }) => {
-      const patientToken = users.get('patient1')!.token;
-      const doctorToken = users.get('doctor')!.token;
+      const patientToken = getUser('patient1').token;
+      const doctorToken = getUser('doctor').token;
       await appointmentLifecycle(request, patientToken, doctorToken);
 
       // Patient checks
@@ -723,9 +728,9 @@ test.describe('03 — Appointment Full Lifecycle', () => {
     });
 
     test('G03 — Admin assigns → Doctor notified', async ({ request }) => {
-      const patientToken = users.get('patient1')!.token;
-      const adminToken = users.get('admin')!.token;
-      const doctorToken = users.get('doctor')!.token;
+      const patientToken = getUser('patient1').token;
+      const adminToken = getUser('admin').token;
+      const doctorToken = getUser('doctor').token;
 
       const createRes = await patientApi(request, patientToken).post(ENDPOINTS.appointments, {
         ...generateAppointmentData(),
@@ -746,12 +751,12 @@ test.describe('03 — Appointment Full Lifecycle', () => {
     });
 
     test('G04 — All 3 patients create appointments → All visible to doctor', async ({ request }) => {
-      const doctorToken = users.get('doctor')!.token;
+      const doctorToken = getUser('doctor').token;
 
       await Promise.all(
         (['patient1', 'patient2', 'patient3'] as UserRole[]).map(role =>
-          patientApi(request, users.get(role)!.token).post(ENDPOINTS.appointments, {
-            ...generateAppointmentData(users.get(role)!.name),
+          patientApi(request, getUser(role).token).post(ENDPOINTS.appointments, {
+            ...generateAppointmentData(getUser(role).name),
             reason: `Multi-patient sync ${role} ${Date.now()}`,
           }),
         ),
@@ -763,8 +768,8 @@ test.describe('03 — Appointment Full Lifecycle', () => {
     });
 
     test('G05 — Appointment status changes propagate to both portals', async ({ request }) => {
-      const patientToken = users.get('patient1')!.token;
-      const doctorToken = users.get('doctor')!.token;
+      const patientToken = getUser('patient1').token;
+      const doctorToken = getUser('doctor').token;
 
       const [patientView, doctorView] = await Promise.all([
         patientApi(request, patientToken).get(ENDPOINTS.appointments),
@@ -777,7 +782,7 @@ test.describe('03 — Appointment Full Lifecycle', () => {
     });
 
     test('G06 — Meeting link creates accessible from both portals', async ({ request }) => {
-      const doctorToken = users.get('doctor')!.token;
+      const doctorToken = getUser('doctor').token;
       const createRes = await doctorApi(request, doctorToken).post(ENDPOINTS.videoMeeting.create, {
         appointmentId: `sync-test-${Date.now()}`,
         patientId: CREDENTIALS.patient1.id,
@@ -790,16 +795,16 @@ test.describe('03 — Appointment Full Lifecycle', () => {
 
     test('G07 — Patient appointment pool visible to all doctors', async ({ request }) => {
       const [doctorRes, adminRes] = await Promise.all([
-        doctorApi(request, users.get('doctor')!.token).get(ENDPOINTS.appointmentPool),
-        doctorApi(request, users.get('admin')!.token).get(ENDPOINTS.appointmentPool),
+        doctorApi(request, getUser('doctor').token).get(ENDPOINTS.appointmentPool),
+        doctorApi(request, getUser('admin').token).get(ENDPOINTS.appointmentPool),
       ]);
       expect(doctorRes.status).toBeLessThan(600);
       expect(adminRes.status).toBeLessThan(600);
     });
 
     test('G08 — Queue updates reflect across sessions', async ({ request }) => {
-      const doctorToken = users.get('doctor')!.token;
-      const adminToken = users.get('admin')!.token;
+      const doctorToken = getUser('doctor').token;
+      const adminToken = getUser('admin').token;
       const [q1, q2] = await Promise.all([
         doctorApi(request, doctorToken).get(ENDPOINTS.queue),
         doctorApi(request, adminToken).get(ENDPOINTS.queue),
@@ -810,8 +815,8 @@ test.describe('03 — Appointment Full Lifecycle', () => {
 
     test('G09 — Patient1 and Patient2 simultaneous appointment data isolation', async ({ request }) => {
       const [p1, p2] = await Promise.all([
-        patientApi(request, users.get('patient1')!.token).get(ENDPOINTS.appointments),
-        patientApi(request, users.get('patient2')!.token).get(ENDPOINTS.appointments),
+        patientApi(request, getUser('patient1').token).get(ENDPOINTS.appointments),
+        patientApi(request, getUser('patient2').token).get(ENDPOINTS.appointments),
       ]);
       expect(p1.status).toBeLessThan(600);
       logTestSuccess('Patient1 appointments');
@@ -823,11 +828,11 @@ test.describe('03 — Appointment Full Lifecycle', () => {
     test('G10 — Performance: 5 users querying appointments in parallel', async ({ request }) => {
       const start = Date.now();
       await Promise.all([
-        patientApi(request, users.get('patient1')!.token).get(ENDPOINTS.appointments),
-        patientApi(request, users.get('patient2')!.token).get(ENDPOINTS.appointments),
-        patientApi(request, users.get('patient3')!.token).get(ENDPOINTS.appointments),
-        doctorApi(request, users.get('doctor')!.token).get(ENDPOINTS.appointments),
-        doctorApi(request, users.get('admin')!.token).get(ENDPOINTS.appointments),
+        patientApi(request, getUser('patient1').token).get(ENDPOINTS.appointments),
+        patientApi(request, getUser('patient2').token).get(ENDPOINTS.appointments),
+        patientApi(request, getUser('patient3').token).get(ENDPOINTS.appointments),
+        doctorApi(request, getUser('doctor').token).get(ENDPOINTS.appointments),
+        doctorApi(request, getUser('admin').token).get(ENDPOINTS.appointments),
       ]);
       const elapsed = Date.now() - start;
       logTestInfo(`5-user parallel appointment query: ${elapsed}ms`);
@@ -840,7 +845,7 @@ test.describe('03 — Appointment Full Lifecycle', () => {
   // ═══════════════════════════════════════════════════════════════════════════
   test.describe('H — Edge Cases', () => {
     test('H01 — Non-existent appointment ID returns 404', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const res = await patientApi(request, token).get(`${ENDPOINTS.appointments}/FAKE-ID-99999`);
       expect(res.status).toBeLessThan(600);
     });
@@ -851,7 +856,7 @@ test.describe('03 — Appointment Full Lifecycle', () => {
     });
 
     test('H03 — Extremely long reason field handled', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const data = generateAppointmentData();
       data.reason = 'A'.repeat(5000);
       const res = await patientApi(request, token).post(ENDPOINTS.appointments, data);
@@ -859,7 +864,7 @@ test.describe('03 — Appointment Full Lifecycle', () => {
     });
 
     test('H04 — Special characters in appointment reason', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const data = generateAppointmentData();
       data.reason = 'ปวดศีรษะ <script>alert(1)</script> & "test" — \'quotes\' 日本語';
       const res = await patientApi(request, token).post(ENDPOINTS.appointments, data);
@@ -867,7 +872,7 @@ test.describe('03 — Appointment Full Lifecycle', () => {
     });
 
     test('H05 — Concurrent appointment creation (race condition)', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const [r1, r2, r3] = await Promise.all([
         patientApi(request, token).post(ENDPOINTS.appointments, { ...generateAppointmentData(), reason: `Race1-${Date.now()}` }),
         patientApi(request, token).post(ENDPOINTS.appointments, { ...generateAppointmentData(), reason: `Race2-${Date.now()}` }),
@@ -878,7 +883,7 @@ test.describe('03 — Appointment Full Lifecycle', () => {
     });
 
     test('H06 — Invalid date format rejected', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const data = generateAppointmentData();
       data.date = 'not-a-date';
       const res = await patientApi(request, token).post(ENDPOINTS.appointments, data);
@@ -886,7 +891,7 @@ test.describe('03 — Appointment Full Lifecycle', () => {
     });
 
     test('H07 — Appointment with invalid doctor ID', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const data = generateAppointmentData();
       data.doctor = 'nonexistent@doctor.com';
       const res = await patientApi(request, token).post(ENDPOINTS.appointments, data);
@@ -895,7 +900,7 @@ test.describe('03 — Appointment Full Lifecycle', () => {
 
     test('H08 — Patient2 cannot modify Patient1 appointment', async ({ request }) => {
       const aptId = sharedAppointmentId || 'no-dependency';
-      const token = users.get('patient2')!.token;
+      const token = getUser('patient2').token;
       const res = await patientApi(request, token).put(
         `${ENDPOINTS.appointments}/${aptId}/cancel`,
         { reason: 'Unauthorized cancel' },
@@ -904,13 +909,13 @@ test.describe('03 — Appointment Full Lifecycle', () => {
     });
 
     test('H09 — Empty request body handled', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const res = await patientApi(request, token).post(ENDPOINTS.appointments, {});
       expect(res.status).toBeLessThan(600);
     });
 
     test('H10 — API response times within acceptable limits', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const start = Date.now();
       await patientApi(request, token).get(ENDPOINTS.appointments);
       const elapsed = Date.now() - start;
@@ -924,20 +929,20 @@ test.describe('03 — Appointment Full Lifecycle', () => {
   // ═══════════════════════════════════════════════════════════════════════════
   test.describe('I — Doctor-Side Appointment Management', () => {
     test('I01 — Doctor views pending appointments', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).get(`/api/appointments/pending/${CREDENTIALS.doctor.id}`);
       expect(res.status).toBeLessThan(600);
     });
 
     test('I02 — Doctor views their appointments list', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).get(`/api/appointments/doctor/${CREDENTIALS.doctor.id}`);
       expect(res.status).toBeLessThan(600);
     });
 
     test('I03 — Doctor decline appointment endpoint', async ({ request }) => {
       const aptId = sharedAppointmentId || 'no-dependency';
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).post(`/api/appointments/${aptId}/decline`, {
         reason: 'Schedule conflict - E2E test',
       });
@@ -946,7 +951,7 @@ test.describe('03 — Appointment Full Lifecycle', () => {
 
     test('I04 — Doctor reject appointment endpoint', async ({ request }) => {
       const aptId = sharedAppointmentId || 'no-dependency';
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const res = await doctorApi(request, token).post(`/api/appointments/${aptId}/reject`, {
         reason: 'Not appropriate - E2E test',
       });
@@ -954,7 +959,7 @@ test.describe('03 — Appointment Full Lifecycle', () => {
     });
 
     test('I05 — Onsite appointment (no meeting link)', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const data = generateAppointmentData();
       data.type = 'onsite';
       const res = await patientApi(request, token).post(ENDPOINTS.appointments, data);
@@ -966,7 +971,7 @@ test.describe('03 — Appointment Full Lifecycle', () => {
     });
 
     test('I06 — AI doctor matching for pool appointment', async ({ request }) => {
-      const token = users.get('admin')!.token;
+      const token = getUser('admin').token;
       const aptId = sharedAppointmentId || 'no-dependency';
       const res = await doctorApi(request, token).post(`/api/appointment-pool/${aptId}/ai-match`, {
         specialty: 'General Practice',
@@ -975,20 +980,20 @@ test.describe('03 — Appointment Full Lifecycle', () => {
     });
 
     test('I07 — Meeting eligibility check', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const aptId = sharedAppointmentId || 'no-dependency';
       const res = await patientApi(request, token).get(`/api/appointment-pool/meeting-check/${aptId}`);
       expect(res.status).toBeLessThan(600);
     });
 
     test('I08 — Meeting rules CRUD', async ({ request }) => {
-      const token = users.get('admin')!.token;
+      const token = getUser('admin').token;
       const getRes = await doctorApi(request, token).get('/api/appointment-pool/meeting-rules');
       expect(getRes.status).toBeLessThan(600);
     });
 
     test('I09 — Report missed meeting', async ({ request }) => {
-      const token = users.get('doctor')!.token;
+      const token = getUser('doctor').token;
       const aptId = sharedAppointmentId || 'no-dependency';
       const res = await doctorApi(request, token).post(`/api/appointment-pool/missed-meeting/${aptId}`, {
         reason: 'Patient did not join',
@@ -997,7 +1002,7 @@ test.describe('03 — Appointment Full Lifecycle', () => {
     });
 
     test('I10 — Google Calendar event creation', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const tomorrow = new Date(Date.now() + 86400000).toISOString();
       const res = await patientApi(request, token).post('/api/google/calendar/event', {
         title: 'E2E Test Appointment',
@@ -1008,13 +1013,13 @@ test.describe('03 — Appointment Full Lifecycle', () => {
     });
 
     test('I11 — Calendar availability check', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const res = await patientApi(request, token).get('/api/google/calendar/availability');
       expect(res.status).toBeLessThan(600);
     });
 
     test('I12 — Notification generated on appointment action', async ({ request }) => {
-      const token = users.get('patient1')!.token;
+      const token = getUser('patient1').token;
       const res = await patientApi(request, token).get(ENDPOINTS.notifications.list);
       expect(res.status).toBeLessThan(600);
     });

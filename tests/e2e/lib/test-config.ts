@@ -75,11 +75,12 @@ export const CREDENTIALS = {
 // =============================================================================
 // REGISTRATION DATA
 // =============================================================================
+const TEST_REG_PASSWORD = process.env.E2E_TEST_PASSWORD || 'Test@12345678';
 export const REGISTRATION_DATA = {
   newPatient: {
     name: 'ทดสอบ ผู้ป่วยใหม่',
     email: `test.patient.${Date.now()}@gmail.com`,
-    password: 'Test@12345678',
+    password: TEST_REG_PASSWORD,
     phone: '0891234567',
     dateOfBirth: '1990-05-15',
     gender: 'male',
@@ -87,7 +88,7 @@ export const REGISTRATION_DATA = {
   newDoctor: {
     name: 'นพ. ทดสอบ แพทย์ใหม่',
     email: `test.doctor.${Date.now()}@izara.com`,
-    password: 'Test@12345678',
+    password: TEST_REG_PASSWORD,
     medicalLicenseNumber: `MD.TEST${Date.now()}`,
     specialty: 'General Practice',
     phone: '0812345678',

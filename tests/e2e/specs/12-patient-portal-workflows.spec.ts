@@ -12,17 +12,22 @@
  */
 import { test, expect } from '@playwright/test';
 import {
-  PATIENT_URL, DOCTOR_URL,
+  PATIENT_URL,
   ENDPOINTS, TIMEOUTS,
-  authenticateAllUsers, apiRequest,
-  patientApi, doctorApi,
-  loginViaBrowser, navigateWithAuth,
+  authenticateAllUsers,
+  patientApi,
+  navigateWithAuth,
   assertOk,
   logTestSuccess, logTestInfo,
   type UserRole, type AuthenticatedUser,
 } from '../lib/test-helpers';
 
 let users: Map<UserRole, AuthenticatedUser>;
+function getUser(role: UserRole): AuthenticatedUser {
+  const u = users.get(role);
+  if (!u) throw new Error(`User ${role} not loaded`);
+  return u;
+}
 
 test.describe('12 — Patient Portal Workflow Tests', () => {
 
@@ -40,7 +45,7 @@ test.describe('12 — Patient Portal Workflow Tests', () => {
       await navigateWithAuth(page, 'patient1', '/');
       await page.waitForTimeout(2000);
       const body = await page.locator('body').textContent();
-      expect(body!.length).toBeGreaterThan(0);
+      expect((body ?? '').length).toBeGreaterThan(0);
       expect(page.url()).not.toContain('/login');
       logTestSuccess('Patient1 dashboard loaded');
     });
@@ -70,39 +75,39 @@ test.describe('12 — Patient Portal Workflow Tests', () => {
     });
 
     test('A05 — Dashboard profile API loads', async ({ request }) => {
-      const u = users.get('patient1')!;
+      const u = getUser('patient1');
       const res = await patientApi(request, u.token).get(ENDPOINTS.profile);
       expect(res.status).toBeLessThan(600);
       logTestSuccess('Patient profile API OK');
     });
 
     test('A06 — Dashboard appointments API loads', async ({ request }) => {
-      const u = users.get('patient1')!;
+      const u = getUser('patient1');
       const res = await patientApi(request, u.token).get(ENDPOINTS.appointments);
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`Patient appointments → ${res.status}`);
     });
 
     test('A07 — Dashboard PHR summary accessible', async ({ request }) => {
-      const u = users.get('patient1')!;
+      const u = getUser('patient1');
       const res = await patientApi(request, u.token).get(ENDPOINTS.phr);
       assertOk(res, 'Patient PHR summary');
     });
 
     test('A08 — Dashboard notifications accessible', async ({ request }) => {
-      const u = users.get('patient1')!;
+      const u = getUser('patient1');
       const res = await patientApi(request, u.token).get(ENDPOINTS.notifications.list);
       assertOk(res, 'Patient notifications');
     });
 
     test('A09 — Dashboard timeline accessible', async ({ request }) => {
-      const u = users.get('patient1')!;
+      const u = getUser('patient1');
       const res = await patientApi(request, u.token).get(ENDPOINTS.timeline);
       assertOk(res, 'Patient timeline');
     });
 
     test('A10 — Dashboard treatment results accessible', async ({ request }) => {
-      const u = users.get('patient1')!;
+      const u = getUser('patient1');
       const res = await patientApi(request, u.token).get(ENDPOINTS.treatmentResults);
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`Treatment results → ${res.status}`);
@@ -132,19 +137,19 @@ test.describe('12 — Patient Portal Workflow Tests', () => {
       await navigateWithAuth(page, 'patient1', '/appointments/book');
       await page.waitForTimeout(2000);
       const content = await page.locator('body').textContent();
-      expect(content!.length).toBeGreaterThan(0);
+      expect((content ?? '').length).toBeGreaterThan(0);
       logTestSuccess('Book appointment page has content');
     });
 
     test('B04 — Doctors list API returns doctors for booking', async ({ request }) => {
-      const u = users.get('patient1')!;
+      const u = getUser('patient1');
       const res = await patientApi(request, u.token).get(ENDPOINTS.doctors);
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`Doctors for booking → ${res.status}`);
     });
 
     test('B05 — Specialties available for filtering', async ({ request }) => {
-      const u = users.get('patient1')!;
+      const u = getUser('patient1');
       const res = await patientApi(request, u.token).get('/api/metadata/specialties');
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`Specialties → ${res.status}`);
@@ -165,7 +170,7 @@ test.describe('12 — Patient Portal Workflow Tests', () => {
     });
 
     test('B08 — Appointment booking API endpoint exists', async ({ request }) => {
-      const u = users.get('patient1')!;
+      const u = getUser('patient1');
       // Test that the booking endpoint exists (don't actually book)
       const res = await patientApi(request, u.token).get(ENDPOINTS.appointments);
       expect(res.status).toBeLessThan(600);
@@ -176,7 +181,7 @@ test.describe('12 — Patient Portal Workflow Tests', () => {
       await navigateWithAuth(page, 'patient1', '/appointments');
       await page.waitForTimeout(2000);
       const body = await page.locator('body').textContent();
-      expect(body!.length).toBeGreaterThan(20);
+      expect((body ?? '').length).toBeGreaterThan(20);
       logTestSuccess('Appointments page has appointment content');
     });
 
@@ -210,13 +215,13 @@ test.describe('12 — Patient Portal Workflow Tests', () => {
     });
 
     test('C03 — PHR API returns health data', async ({ request }) => {
-      const u = users.get('patient1')!;
+      const u = getUser('patient1');
       const res = await patientApi(request, u.token).get(ENDPOINTS.phr);
       assertOk(res, 'PHR API data');
     });
 
     test('C04 — PHR vitals endpoint accessible', async ({ request }) => {
-      const u = users.get('patient1')!;
+      const u = getUser('patient1');
       const res = await patientApi(request, u.token).get(ENDPOINTS.healthRecords.vitals);
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`PHR vitals → ${res.status}`);
@@ -232,21 +237,21 @@ test.describe('12 — Patient Portal Workflow Tests', () => {
     });
 
     test('C06 — PHR living will endpoint accessible', async ({ request }) => {
-      const u = users.get('patient1')!;
+      const u = getUser('patient1');
       const res = await patientApi(request, u.token).get(ENDPOINTS.healthRecords.livingWill);
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`Living will → ${res.status}`);
     });
 
     test('C07 — Patient lab orders accessible', async ({ request }) => {
-      const u = users.get('patient1')!;
+      const u = getUser('patient1');
       const res = await patientApi(request, u.token).get(ENDPOINTS.healthRecords.patientLabOrders);
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`Patient lab orders → ${res.status}`);
     });
 
     test('C08 — Patient imaging orders accessible', async ({ request }) => {
-      const u = users.get('patient1')!;
+      const u = getUser('patient1');
       const res = await patientApi(request, u.token).get(ENDPOINTS.healthRecords.patientImagingOrders);
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`Patient imaging orders → ${res.status}`);
@@ -256,14 +261,14 @@ test.describe('12 — Patient Portal Workflow Tests', () => {
       await navigateWithAuth(page, 'patient3', '/phr');
       await page.waitForTimeout(2000);
       const body = await page.locator('body').textContent();
-      expect(body!.length).toBeGreaterThan(0);
+      expect((body ?? '').length).toBeGreaterThan(0);
       logTestSuccess('PHR loaded for Patient3');
     });
 
     test('C10 — All 3 patients have distinct PHR data', async ({ request }) => {
       const results: number[] = [];
       for (const role of ['patient1', 'patient2', 'patient3'] as UserRole[]) {
-        const u = users.get(role)!;
+        const u = getUser(role);
         const res = await patientApi(request, u.token).get(ENDPOINTS.phr);
         results.push(res.status);
       }
@@ -291,7 +296,7 @@ test.describe('12 — Patient Portal Workflow Tests', () => {
       await navigateWithAuth(page, 'patient1', '/ai-doctor');
       await page.waitForTimeout(2000);
       const content = await page.locator('body').textContent();
-      expect(content!.length).toBeGreaterThan(0);
+      expect((content ?? '').length).toBeGreaterThan(0);
       logTestSuccess('AI Doctor has chat content');
     });
 
@@ -303,7 +308,7 @@ test.describe('12 — Patient Portal Workflow Tests', () => {
     });
 
     test('D04 — Health Library API returns content', async ({ request }) => {
-      const u = users.get('patient1')!;
+      const u = getUser('patient1');
       const res = await patientApi(request, u.token).get(ENDPOINTS.contentMedical);
       expect(res.status).toBe(200);
       logTestSuccess(`Health library API → ${res.status}`);
@@ -320,7 +325,7 @@ test.describe('12 — Patient Portal Workflow Tests', () => {
       await navigateWithAuth(page, 'patient1', '/map');
       await page.waitForTimeout(2000);
       const body = await page.locator('body').textContent();
-      expect(body!.length).toBeGreaterThan(20);
+      expect((body ?? '').length).toBeGreaterThan(20);
       logTestSuccess('Map page has content');
     });
 
@@ -332,7 +337,7 @@ test.describe('12 — Patient Portal Workflow Tests', () => {
     });
 
     test('D08 — Timeline API returns data', async ({ request }) => {
-      const u = users.get('patient1')!;
+      const u = getUser('patient1');
       const res = await patientApi(request, u.token).get(ENDPOINTS.timeline);
       assertOk(res, 'Timeline API');
     });
@@ -343,7 +348,7 @@ test.describe('12 — Patient Portal Workflow Tests', () => {
         waitUntil: 'domcontentloaded',
       });
       const body = await page.locator('body').textContent();
-      expect(body!.length).toBeGreaterThan(10);
+      expect((body ?? '').length).toBeGreaterThan(10);
       logTestSuccess('GCS status page loaded');
     });
 
@@ -378,7 +383,7 @@ test.describe('12 — Patient Portal Workflow Tests', () => {
       await navigateWithAuth(page, 'patient1', '/living-will');
       await page.waitForTimeout(2000);
       const content = await page.locator('body').textContent();
-      expect(content!.length).toBeGreaterThan(0);
+      expect((content ?? '').length).toBeGreaterThan(0);
       logTestSuccess('Living Will page has content');
     });
 
@@ -393,7 +398,7 @@ test.describe('12 — Patient Portal Workflow Tests', () => {
       await navigateWithAuth(page, 'patient1', '/profile');
       await page.waitForTimeout(2000);
       const content = await page.locator('body').textContent();
-      expect(content!.length).toBeGreaterThan(0);
+      expect((content ?? '').length).toBeGreaterThan(0);
       logTestSuccess('Profile page has user content');
     });
 
@@ -405,14 +410,14 @@ test.describe('12 — Patient Portal Workflow Tests', () => {
     });
 
     test('E07 — Settings API accessible', async ({ request }) => {
-      const u = users.get('patient1')!;
+      const u = getUser('patient1');
       const res = await patientApi(request, u.token).get(ENDPOINTS.settings.get);
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`Settings API → ${res.status}`);
     });
 
     test('E08 — Settings notification preferences', async ({ request }) => {
-      const u = users.get('patient1')!;
+      const u = getUser('patient1');
       const res = await patientApi(request, u.token).get(ENDPOINTS.settings.notifications);
       expect(res.status).toBeLessThan(600);
       logTestSuccess(`Notification prefs → ${res.status}`);
