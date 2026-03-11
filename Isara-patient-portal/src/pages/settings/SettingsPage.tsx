@@ -56,25 +56,25 @@ function getModalClasses(darkMode: boolean) {
 const PASSWORD_LABELS = {
   th: {
     title: 'เปลี่ยนรหัสผ่าน',
-    currentPassword: 'รหัสผ่านปัจจุบัน',
-    newPassword: 'รหัสผ่านใหม่',
-    confirmPassword: 'ยืนยันรหัสผ่านใหม่',
+    currentPassLabel: 'รหัสผ่านปัจจุบัน',
+    newPassLabel: 'รหัสผ่านใหม่',
+    confirmPassLabel: 'ยืนยันรหัสผ่านใหม่',
     save: 'บันทึก',
     cancel: 'ยกเลิก',
-    passwordMismatch: 'รหัสผ่านไม่ตรงกัน',
-    passwordTooShort: 'รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร',
+    passMismatch: 'รหัสผ่านไม่ตรงกัน',
+    passTooShort: 'รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร',
     successMessage: 'เปลี่ยนรหัสผ่านสำเร็จ!',
     errorMessage: 'เกิดข้อผิดพลาด กรุณาลองใหม่',
   },
   en: {
     title: 'Change Password',
-    currentPassword: 'Current Password',
-    newPassword: 'New Password',
-    confirmPassword: 'Confirm New Password',
+    currentPassLabel: 'Current Password',
+    newPassLabel: 'New Password',
+    confirmPassLabel: 'Confirm New Password',
     save: 'Save',
     cancel: 'Cancel',
-    passwordMismatch: 'Passwords do not match',
-    passwordTooShort: 'Password must be at least 8 characters',
+    passMismatch: 'Passwords do not match',
+    passTooShort: 'Password must be at least 8 characters',
     successMessage: 'Password changed successfully!',
     errorMessage: 'An error occurred. Please try again',
   },
@@ -130,7 +130,7 @@ const SETTINGS_LABELS = {
     darkModeLabel: 'โหมดมืด',
     darkModeDesc: 'เปลี่ยนเป็นธีมสีเข้ม',
     security: 'ความปลอดภัย',
-    changePassword: 'เปลี่ยนรหัสผ่าน',
+    changePassLabel: 'เปลี่ยนรหัสผ่าน',
     logout: 'ออกจากระบบ',
     version: 'Izara Patient Portal v1.0.0',
     comingSoon: 'เร็วๆ นี้',
@@ -153,7 +153,7 @@ const SETTINGS_LABELS = {
     darkModeLabel: 'Dark Mode',
     darkModeDesc: 'Switch to dark theme',
     security: 'Security',
-    changePassword: 'Change Password',
+    changePassLabel: 'Change Password',
     logout: 'Logout',
     version: 'Izara Patient Portal v1.0.0',
     comingSoon: 'Coming soon',
@@ -236,12 +236,12 @@ function PasswordChangeModal({
     setError('');
 
     if (newPassword !== confirmPassword) {
-      setError(labels.passwordMismatch);
+      setError(labels.passMismatch);
       return;
     }
 
     if (newPassword.length < 8) {
-      setError(labels.passwordTooShort);
+      setError(labels.passTooShort);
       return;
     }
 
@@ -307,7 +307,7 @@ function PasswordChangeModal({
 
               <PasswordField
                 id="settings-current-password"
-                label={labels.currentPassword}
+                label={labels.currentPassLabel}
                 value={currentPassword}
                 onChange={setCurrentPassword}
                 show={showCurrentPassword}
@@ -318,7 +318,7 @@ function PasswordChangeModal({
 
               <PasswordField
                 id="settings-new-password"
-                label={labels.newPassword}
+                label={labels.newPassLabel}
                 value={newPassword}
                 onChange={setNewPassword}
                 show={showNewPassword}
@@ -329,7 +329,7 @@ function PasswordChangeModal({
 
               <PasswordField
                 id="settings-confirm-password"
-                label={labels.confirmPassword}
+                label={labels.confirmPassLabel}
                 value={confirmPassword}
                 onChange={setConfirmPassword}
                 show={showConfirmPassword}
@@ -711,7 +711,7 @@ export default function SettingsPage() {
         <div className={`divide-y ${dividerClass}`}>
           <LinkItem
             icon={<Lock className="w-5 h-5 text-gray-400" />}
-            label={labels.changePassword}
+            label={labels.changePassLabel}
             onClick={() => setShowPasswordModal(true)}
             darkMode={darkMode}
           />

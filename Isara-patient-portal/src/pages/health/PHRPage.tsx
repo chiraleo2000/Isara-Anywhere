@@ -1235,6 +1235,147 @@ function ProfileTab({
   );
 }
 
+// ============ Lab & Imaging Tab - Helpers ============
+function getLabResultStatusClass(status: string): string {
+  if (status === 'normal') return 'bg-green-100 text-green-800';
+  if (status === 'critical') return 'bg-red-100 text-red-800';
+  return 'bg-yellow-100 text-yellow-800';
+}
+
+function getLabStatusColor(status: string): string {
+  const colors: Record<string, string> = {
+    completed: 'bg-green-100 text-green-800',
+    processing: 'bg-blue-100 text-blue-800',
+    ordered: 'bg-yellow-100 text-yellow-800',
+    collected: 'bg-purple-100 text-purple-800',
+    cancelled: 'bg-red-100 text-red-800',
+    scheduled: 'bg-indigo-100 text-indigo-800',
+  };
+  return colors[status] || 'bg-gray-100 text-gray-800';
+}
+
+function getLabStatusLabel(status: string, language: string): string {
+  if (language === 'th') {
+    const thLabels: Record<string, string> = {
+      completed: 'เสร็จสิ้น', processing: 'กำลังตรวจ', ordered: 'สั่งแล้ว',
+      collected: 'เก็บตัวอย่างแล้ว', cancelled: 'ยกเลิก', scheduled: 'นัดหมายแล้ว',
+    };
+    return thLabels[status] || status;
+  }
+  return status.charAt(0).toUpperCase() + status.slice(1);
+}
+
+function LabPriorityBadge({ priority }: Readonly<{ priority: string }>) {
+  if (priority === 'stat') return <span className="ml-2 px-2 py-0.5 text-xs font-bold bg-red-600 text-white rounded">STAT</span>;
+  if (priority === 'urgent') return <span className="ml-2 px-2 py-0.5 text-xs font-bold bg-orange-500 text-white rounded">URGENT</span>;
+  return null;
+}
+
+function formatLabDate(d: string | Date, language: string): string {
+  if (!d) return '-';
+  return new Date(d).toLocaleDateString(language === 'th' ? 'th-TH' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+// ============ Order Detail View ============
+function OrderDetailView({ order, onBack, isDark, language }: Readonly<{
+  order: Record<string, any>;
+  onBack: () => void;
+  isDark: boolean;
+  language: string;
+}>) {
+  const cardClass = isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200';
+  const textClass = isDark ? 'text-gray-200' : 'text-gray-800';
+  const subTextClass = isDark ? 'text-gray-400' : 'text-gray-500';
+  const isLab = !!order.test_name;
+
+  return (
+    <div>
+      <button onClick={onBack} className="mb-4 flex items-center gap-1 text-emerald-600 hover:underline">
+        <X className="w-4 h-4" /> {language === 'th' ? 'กลับ' : 'Back'}
+      </button>
+      <div className={`p-6 rounded-xl border ${cardClass}`}>
+        <h3 className={`text-xl font-bold mb-2 ${textClass}`}>
+          {isLab ? (order.test_name || 'Lab Test') : (order.imaging_type?.toUpperCase() + ' - ' + order.body_part)}
+          <LabPriorityBadge priority={order.priority} />
+        </h3>
+        <div className={`grid grid-cols-2 gap-4 mt-4 ${subTextClass}`}>
+          <div><span className="font-medium">{language === 'th' ? 'แพทย์' : 'Doctor'}:</span> {order.doctor_name || '-'}</div>
+          <div><span className="font-medium">{language === 'th' ? 'วันที่สั่ง' : 'Order Date'}:</span> {formatLabDate(order.order_date, language)}</div>
+          <div><span className="font-medium">{language === 'th' ? 'สถานะ' : 'Status'}:</span> <span className={`px-2 py-0.5 rounded text-xs ${getLabStatusColor(order.status)}`}>{getLabStatusLabel(order.status, language)}</span></div>
+          {order.instructions && <div className="col-span-2"><span className="font-medium">{language === 'th' ? 'คำสั่ง' : 'Instructions'}:</span> {order.instructions}</div>}
+        </div>
+        {isLab && order.results && (
+          <LabResultsTable results={order.results} testName={order.test_name} isDark={isDark} language={language} />
+        )}
+        {!isLab && order.result && (
+          <ImagingResultView result={order.result} language={language} cardClass={cardClass} textClass={textClass} />
+        )}
+      </div>
+    </div>
+  );
+}
+
+function LabResultsTable({ results, testName, isDark, language }: Readonly<{
+  results: any;
+  testName: string;
+  isDark: boolean;
+  language: string;
+}>) {
+  const textClass = isDark ? 'text-gray-200' : 'text-gray-800';
+  const rows = Array.isArray(results) ? results : [results];
+  return (
+    <div className="mt-6">
+      <h4 className={`text-lg font-semibold mb-3 ${textClass}`}>{language === 'th' ? 'ผลตรวจ' : 'Results'}</h4>
+      <div className={`border rounded-lg overflow-hidden ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+        <table className="w-full text-sm">
+          <thead className={isDark ? 'bg-gray-700' : 'bg-gray-50'}>
+            <tr>
+              <th className="px-4 py-2 text-left">{language === 'th' ? 'รายการ' : 'Test'}</th>
+              <th className="px-4 py-2 text-left">{language === 'th' ? 'ผล' : 'Value'}</th>
+              <th className="px-4 py-2 text-left">{language === 'th' ? 'หน่วย' : 'Unit'}</th>
+              <th className="px-4 py-2 text-left">{language === 'th' ? 'ค่าปกติ' : 'Normal'}</th>
+              <th className="px-4 py-2 text-left">{language === 'th' ? 'สถานะ' : 'Status'}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r: any) => (
+              <tr key={r.testName || r.test_name || `result-${r.value}`} className={isDark ? 'border-t border-gray-700' : 'border-t border-gray-200'}>
+                <td className="px-4 py-2">{r.testName || r.test_name || testName}</td>
+                <td className="px-4 py-2 font-medium">{r.value ?? '-'}</td>
+                <td className="px-4 py-2">{r.unit || '-'}</td>
+                <td className="px-4 py-2">{r.normalRange || r.normal_range || '-'}</td>
+                <td className="px-4 py-2">
+                  <span className={`px-2 py-0.5 rounded text-xs ${getLabResultStatusClass(r.status)}`}>
+                    {r.status || '-'}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function ImagingResultView({ result, language, cardClass, textClass }: Readonly<{
+  result: any;
+  language: string;
+  cardClass: string;
+  textClass: string;
+}>) {
+  return (
+    <div className="mt-6">
+      <h4 className={`text-lg font-semibold mb-3 ${textClass}`}>{language === 'th' ? 'ผลการตรวจ' : 'Findings'}</h4>
+      <div className={`p-4 rounded-lg border ${cardClass}`}>
+        <p><span className="font-medium">{language === 'th' ? 'ผลอ่าน' : 'Findings'}:</span> {result.findings || '-'}</p>
+        <p className="mt-2"><span className="font-medium">{language === 'th' ? 'สรุป' : 'Impression'}:</span> {result.impression || '-'}</p>
+        {result.radiologist_name && <p className="mt-2 text-sm">{language === 'th' ? 'รังสีแพทย์' : 'Radiologist'}: {result.radiologist_name}</p>}
+      </div>
+    </div>
+  );
+}
+
 // ============ Lab & Imaging Tab ============
 function LabImagingTab() {
   const { user } = useAuth();
@@ -1243,7 +1384,7 @@ function LabImagingTab() {
   const [labOrders, setLabOrders] = useState<any[]>([]);
   const [imagingOrders, setImagingOrders] = useState<any[]>([]);
   const [loadingLab, setLoadingLab] = useState(true);
-  const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<Record<string, any> | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -1273,40 +1414,6 @@ function LabImagingTab() {
     }
   };
 
-  const statusColor = (status: string) => {
-    const colors: Record<string, string> = {
-      completed: 'bg-green-100 text-green-800',
-      processing: 'bg-blue-100 text-blue-800',
-      ordered: 'bg-yellow-100 text-yellow-800',
-      collected: 'bg-purple-100 text-purple-800',
-      cancelled: 'bg-red-100 text-red-800',
-      scheduled: 'bg-indigo-100 text-indigo-800',
-    };
-    return colors[status] || 'bg-gray-100 text-gray-800';
-  };
-
-  const statusLabel = (status: string) => {
-    if (language === 'th') {
-      const thLabels: Record<string, string> = {
-        completed: 'เสร็จสิ้น', processing: 'กำลังตรวจ', ordered: 'สั่งแล้ว',
-        collected: 'เก็บตัวอย่างแล้ว', cancelled: 'ยกเลิก', scheduled: 'นัดหมายแล้ว',
-      };
-      return thLabels[status] || status;
-    }
-    return status.charAt(0).toUpperCase() + status.slice(1);
-  };
-
-  const priorityBadge = (priority: string) => {
-    if (priority === 'stat') return <span className="ml-2 px-2 py-0.5 text-xs font-bold bg-red-600 text-white rounded">STAT</span>;
-    if (priority === 'urgent') return <span className="ml-2 px-2 py-0.5 text-xs font-bold bg-orange-500 text-white rounded">URGENT</span>;
-    return null;
-  };
-
-  const formatDate = (d: string | Date) => {
-    if (!d) return '-';
-    return new Date(d).toLocaleDateString(language === 'th' ? 'th-TH' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-  };
-
   if (loadingLab) {
     return <div className="flex items-center justify-center h-32"><div className="animate-spin w-6 h-6 border-4 border-emerald-600 border-t-transparent rounded-full" /></div>;
   }
@@ -1315,73 +1422,8 @@ function LabImagingTab() {
   const textClass = isDark ? 'text-gray-200' : 'text-gray-800';
   const subTextClass = isDark ? 'text-gray-400' : 'text-gray-500';
 
-  // Detail view for a selected order
   if (selectedOrder) {
-    const isLab = !!selectedOrder.test_name;
-    return (
-      <div>
-        <button onClick={() => setSelectedOrder(null)} className="mb-4 flex items-center gap-1 text-emerald-600 hover:underline">
-          <X className="w-4 h-4" /> {language === 'th' ? 'กลับ' : 'Back'}
-        </button>
-        <div className={`p-6 rounded-xl border ${cardClass}`}>
-          <h3 className={`text-xl font-bold mb-2 ${textClass}`}>
-            {isLab ? (selectedOrder.test_name || 'Lab Test') : (selectedOrder.imaging_type?.toUpperCase() + ' - ' + selectedOrder.body_part)}
-            {priorityBadge(selectedOrder.priority)}
-          </h3>
-          <div className={`grid grid-cols-2 gap-4 mt-4 ${subTextClass}`}>
-            <div><span className="font-medium">{language === 'th' ? 'แพทย์' : 'Doctor'}:</span> {selectedOrder.doctor_name || '-'}</div>
-            <div><span className="font-medium">{language === 'th' ? 'วันที่สั่ง' : 'Order Date'}:</span> {formatDate(selectedOrder.order_date)}</div>
-            <div><span className="font-medium">{language === 'th' ? 'สถานะ' : 'Status'}:</span> <span className={`px-2 py-0.5 rounded text-xs ${statusColor(selectedOrder.status)}`}>{statusLabel(selectedOrder.status)}</span></div>
-            {selectedOrder.instructions && <div className="col-span-2"><span className="font-medium">{language === 'th' ? 'คำสั่ง' : 'Instructions'}:</span> {selectedOrder.instructions}</div>}
-          </div>
-          {/* Lab results */}
-          {isLab && selectedOrder.results && (
-            <div className="mt-6">
-              <h4 className={`text-lg font-semibold mb-3 ${textClass}`}>{language === 'th' ? 'ผลตรวจ' : 'Results'}</h4>
-              <div className={`border rounded-lg overflow-hidden ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
-                <table className="w-full text-sm">
-                  <thead className={isDark ? 'bg-gray-700' : 'bg-gray-50'}>
-                    <tr>
-                      <th className="px-4 py-2 text-left">{language === 'th' ? 'รายการ' : 'Test'}</th>
-                      <th className="px-4 py-2 text-left">{language === 'th' ? 'ผล' : 'Value'}</th>
-                      <th className="px-4 py-2 text-left">{language === 'th' ? 'หน่วย' : 'Unit'}</th>
-                      <th className="px-4 py-2 text-left">{language === 'th' ? 'ค่าปกติ' : 'Normal'}</th>
-                      <th className="px-4 py-2 text-left">{language === 'th' ? 'สถานะ' : 'Status'}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(Array.isArray(selectedOrder.results) ? selectedOrder.results : [selectedOrder.results]).map((r: any, i: number) => (
-                      <tr key={i} className={isDark ? 'border-t border-gray-700' : 'border-t border-gray-200'}>
-                        <td className="px-4 py-2">{r.testName || r.test_name || selectedOrder.test_name}</td>
-                        <td className="px-4 py-2 font-medium">{r.value ?? '-'}</td>
-                        <td className="px-4 py-2">{r.unit || '-'}</td>
-                        <td className="px-4 py-2">{r.normalRange || r.normal_range || '-'}</td>
-                        <td className="px-4 py-2">
-                          <span className={`px-2 py-0.5 rounded text-xs ${r.status === 'normal' ? 'bg-green-100 text-green-800' : r.status === 'critical' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                            {r.status || '-'}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-          {/* Imaging results */}
-          {!isLab && selectedOrder.result && (
-            <div className="mt-6">
-              <h4 className={`text-lg font-semibold mb-3 ${textClass}`}>{language === 'th' ? 'ผลการตรวจ' : 'Findings'}</h4>
-              <div className={`p-4 rounded-lg border ${cardClass}`}>
-                <p><span className="font-medium">{language === 'th' ? 'ผลอ่าน' : 'Findings'}:</span> {selectedOrder.result.findings || '-'}</p>
-                <p className="mt-2"><span className="font-medium">{language === 'th' ? 'สรุป' : 'Impression'}:</span> {selectedOrder.result.impression || '-'}</p>
-                {selectedOrder.result.radiologist_name && <p className="mt-2 text-sm">{language === 'th' ? 'รังสีแพทย์' : 'Radiologist'}: {selectedOrder.result.radiologist_name}</p>}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    );
+    return <OrderDetailView order={selectedOrder} onBack={() => setSelectedOrder(null)} isDark={isDark} language={language} />;
   }
 
   return (
@@ -1408,13 +1450,13 @@ function LabImagingTab() {
                 <div className="flex items-center justify-between">
                   <div>
                     <span className={`font-medium ${textClass}`}>{order.test_name || 'Lab Test'}</span>
-                    {priorityBadge(order.priority)}
+                    <LabPriorityBadge priority={order.priority} />
                   </div>
-                  <span className={`px-2 py-0.5 rounded text-xs ${statusColor(order.status)}`}>{statusLabel(order.status)}</span>
+                  <span className={`px-2 py-0.5 rounded text-xs ${getLabStatusColor(order.status)}`}>{getLabStatusLabel(order.status, language)}</span>
                 </div>
                 <div className={`flex gap-4 mt-1 text-sm ${subTextClass}`}>
                   <span>{language === 'th' ? 'แพทย์' : 'Dr.'}: {order.doctor_name || '-'}</span>
-                  <span>{formatDate(order.order_date)}</span>
+                  <span>{formatLabDate(order.order_date, language)}</span>
                 </div>
               </button>
             ))}
@@ -1444,13 +1486,13 @@ function LabImagingTab() {
                 <div className="flex items-center justify-between">
                   <div>
                     <span className={`font-medium ${textClass}`}>{order.imaging_type?.toUpperCase()} - {order.body_part}</span>
-                    {priorityBadge(order.priority)}
+                    <LabPriorityBadge priority={order.priority} />
                   </div>
-                  <span className={`px-2 py-0.5 rounded text-xs ${statusColor(order.status)}`}>{statusLabel(order.status)}</span>
+                  <span className={`px-2 py-0.5 rounded text-xs ${getLabStatusColor(order.status)}`}>{getLabStatusLabel(order.status, language)}</span>
                 </div>
                 <div className={`flex gap-4 mt-1 text-sm ${subTextClass}`}>
                   <span>{language === 'th' ? 'แพทย์' : 'Dr.'}: {order.doctor_name || '-'}</span>
-                  <span>{formatDate(order.order_date)}</span>
+                  <span>{formatLabDate(order.order_date, language)}</span>
                 </div>
               </button>
             ))}

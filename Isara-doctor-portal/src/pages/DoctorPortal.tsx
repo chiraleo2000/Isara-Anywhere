@@ -252,6 +252,7 @@ const DoctorPortal: React.FC = () => {
               id: selectedPatient.id,
               email: selectedPatient.contact?.email || '',
               name: selectedPatient.demographics?.name || 'Patient',
+              displayName: selectedPatient.demographics?.name || 'Patient',
               role: 'doctor',
               doctorId: user.id,
               medicalLicenseNumber: user.medicalLicenseNumber || '',

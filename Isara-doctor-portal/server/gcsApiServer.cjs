@@ -396,7 +396,7 @@ app.post('/api/storage/write', async (req, res) => {
 app.post('/api/storage/upload', upload.single('file'), async (req, res) => {
   try {
     // Handle JSON body with base64 data (for API tests)
-    if (!req.file && req.body && req.body.data) {
+    if (!req.file && req.body?.data) {
       const { fileName, data, contentType, folder } = req.body;
       const fileId = `${folder || 'uploads'}/${Date.now()}_${fileName || 'file.bin'}`;
       const fileUrl = `https://storage.izara.health/${fileId}`;
@@ -745,7 +745,7 @@ app.get('/api/content/medical', async (req, res) => {
     const { role, status } = req.query;
     const data = await readGcsJson(BUCKETS.metadata, 'medical-content/articles.json');
 
-    if (!data || !data.articles) {
+    if (!data?.articles) {
       return res.json({ articles: [], lastUpdated: new Date().toISOString() });
     }
 
@@ -769,7 +769,7 @@ app.get('/api/content/medical', async (req, res) => {
 app.get('/api/content/medical/pending', async (req, res) => {
   try {
     const data = await readGcsJson(BUCKETS.metadata, 'medical-content/articles.json');
-    if (!data || !data.articles) {
+    if (!data?.articles) {
       return res.json({ articles: [], count: 0 });
     }
     const pendingArticles = data.articles.filter(a => a.status === 'pending');
@@ -786,7 +786,7 @@ app.get('/api/content/medical/:id', async (req, res) => {
     const { id } = req.params;
     const data = await readGcsJson(BUCKETS.metadata, 'medical-content/articles.json');
 
-    if (!data || !data.articles) {
+    if (!data?.articles) {
       return res.status(404).json({ error: 'Article not found' });
     }
 
@@ -865,7 +865,7 @@ app.put('/api/content/medical/:id', async (req, res) => {
     const { userId, userName, changeNote, ...updates } = req.body;
 
     const data = await readGcsJson(BUCKETS.metadata, 'medical-content/articles.json');
-    if (!data || !data.articles) {
+    if (!data?.articles) {
       return res.status(404).json({ error: 'Article not found' });
     }
 
@@ -922,7 +922,7 @@ app.delete('/api/content/medical/:id', async (req, res) => {
     const { id } = req.params;
 
     const data = await readGcsJson(BUCKETS.metadata, 'medical-content/articles.json');
-    if (!data || !data.articles) {
+    if (!data?.articles) {
       return res.status(404).json({ error: 'Article not found' });
     }
 
@@ -956,7 +956,7 @@ app.post('/api/content/medical/:id/review', async (req, res) => {
     }
 
     const data = await readGcsJson(BUCKETS.metadata, 'medical-content/articles.json');
-    if (!data || !data.articles) {
+    if (!data?.articles) {
       return res.status(404).json({ error: 'Article not found' });
     }
 
@@ -1027,7 +1027,7 @@ app.get('/api/content/clinical', async (req, res) => {
     const { isAdmin, status, myContent, userId } = req.query;
     const data = await readGcsJson(BUCKETS.metadata, 'clinical-resources/resources.json');
 
-    if (!data || !data.resources) {
+    if (!data?.resources) {
       return res.json({ resources: [], pendingCount: 0, lastUpdated: new Date().toISOString() });
     }
 
@@ -1062,7 +1062,7 @@ app.get('/api/content/clinical/pending', async (req, res) => {
   try {
     const data = await readGcsJson(BUCKETS.metadata, 'clinical-resources/resources.json');
 
-    if (!data || !data.resources) {
+    if (!data?.resources) {
       return res.json({ resources: [], count: 0 });
     }
 
@@ -1081,7 +1081,7 @@ app.get('/api/content/clinical/:id', async (req, res) => {
     const { id } = req.params;
     const data = await readGcsJson(BUCKETS.metadata, 'clinical-resources/resources.json');
 
-    if (!data || !data.resources) {
+    if (!data?.resources) {
       return res.status(404).json({ error: 'Resource not found' });
     }
 
@@ -1160,7 +1160,7 @@ app.put('/api/content/clinical/:id', async (req, res) => {
     const { userId, userName, changeNote, ...updates } = req.body;
 
     const data = await readGcsJson(BUCKETS.metadata, 'clinical-resources/resources.json');
-    if (!data || !data.resources) {
+    if (!data?.resources) {
       return res.status(404).json({ error: 'Resource not found' });
     }
 
@@ -1228,7 +1228,7 @@ app.delete('/api/content/clinical/:id', async (req, res) => {
     const { userId } = req.query;
 
     const data = await readGcsJson(BUCKETS.metadata, 'clinical-resources/resources.json');
-    if (!data || !data.resources) {
+    if (!data?.resources) {
       return res.status(404).json({ error: 'Resource not found' });
     }
 
@@ -1273,7 +1273,7 @@ app.post('/api/content/clinical/:id/review', async (req, res) => {
     }
 
     const data = await readGcsJson(BUCKETS.metadata, 'clinical-resources/resources.json');
-    if (!data || !data.resources) {
+    if (!data?.resources) {
       return res.status(404).json({ error: 'Resource not found' });
     }
 
@@ -1343,7 +1343,7 @@ app.get('/api/consultants', async (req, res) => {
     const { specialty, available, search } = req.query;
     const data = await readGcsJson(BUCKETS.metadata, 'consultants/consultants.json');
 
-    if (!data || !data.consultants) {
+    if (!data?.consultants) {
       return res.json({ consultants: [], lastUpdated: new Date().toISOString() });
     }
 
@@ -1378,7 +1378,7 @@ app.get('/api/consultants', async (req, res) => {
 app.get('/api/consultants/specialties/list', async (req, res) => {
   try {
     const data = await readGcsJson(BUCKETS.metadata, 'consultants/specialties.json');
-    if (!data || !data.specialties) {
+    if (!data?.specialties) {
       return res.json({ specialties: ['Cardiology','Neurology','Oncology','Orthopedics','Dermatology','Gastroenterology','Pulmonology','Endocrinology','Rheumatology','Nephrology','Urology','Ophthalmology','ENT','Psychiatry','Pediatrics','Gynecology','General Surgery','Plastic Surgery','Internal Medicine'] });
     }
     res.json({ specialties: data.specialties });
@@ -1389,7 +1389,7 @@ app.get('/api/consultants/specialties/list', async (req, res) => {
 app.get('/api/consultants/specialties', async (req, res) => {
   try {
     const data = await readGcsJson(BUCKETS.metadata, 'consultants/specialties.json');
-    if (!data || !data.specialties) {
+    if (!data?.specialties) {
       return res.json({ specialties: ['Cardiology','Neurology','Oncology','Orthopedics','Dermatology','Gastroenterology','Pulmonology','Endocrinology','Nephrology','Urology','Pediatrics','Psychiatry','Ophthalmology','ENT','Plastic Surgery','Internal Medicine'] });
     }
     res.json({ specialties: data.specialties });
@@ -1404,7 +1404,7 @@ app.get('/api/consultants/:id', async (req, res) => {
     const { id } = req.params;
     const data = await readGcsJson(BUCKETS.metadata, 'consultants/consultants.json');
 
-    if (!data || !data.consultants) {
+    if (!data?.consultants) {
       return res.status(404).json({ error: 'Consultant not found' });
     }
 
@@ -1492,7 +1492,7 @@ app.put('/api/consultants/:id', async (req, res) => {
     }
 
     const data = await readGcsJson(BUCKETS.metadata, 'consultants/consultants.json');
-    if (!data || !data.consultants) {
+    if (!data?.consultants) {
       return res.status(404).json({ error: 'Consultant not found' });
     }
 
@@ -1534,7 +1534,7 @@ app.delete('/api/consultants/:id', async (req, res) => {
     }
 
     const data = await readGcsJson(BUCKETS.metadata, 'consultants/consultants.json');
-    if (!data || !data.consultants) {
+    if (!data?.consultants) {
       return res.status(404).json({ error: 'Consultant not found' });
     }
 
@@ -1569,7 +1569,7 @@ app.post('/api/consultants/:id/availability', async (req, res) => {
     }
 
     const data = await readGcsJson(BUCKETS.metadata, 'consultants/consultants.json');
-    if (!data || !data.consultants) {
+    if (!data?.consultants) {
       return res.status(404).json({ error: 'Consultant not found' });
     }
 
@@ -1610,7 +1610,7 @@ app.post('/api/consultants/:id/review', async (req, res) => {
     }
 
     const data = await readGcsJson(BUCKETS.metadata, 'consultants/consultants.json');
-    if (!data || !data.consultants) {
+    if (!data?.consultants) {
       return res.status(404).json({ error: 'Consultant not found' });
     }
 
@@ -1678,7 +1678,7 @@ app.get('/api/content/tags/:type', async (req, res) => {
 
     const data = await readGcsJson(BUCKETS.metadata, filePath);
 
-    if (!data || !data.tags) {
+    if (!data?.tags) {
       return res.json({ tags: [] });
     }
 
@@ -1758,7 +1758,7 @@ app.post('/api/content/:type/:id/comments', async (req, res) => {
     const itemKey = type === 'medical' ? 'articles' : 'resources';
 
     const data = await readGcsJson(BUCKETS.metadata, filePath);
-    if (!data || !data[itemKey]) {
+    if (!data?.[itemKey]) {
       return res.status(404).json({ error: 'Content not found' });
     }
 
@@ -1803,7 +1803,7 @@ app.post('/api/patients/:patientId/health-logs', async (req, res) => {
     const { patientId } = req.params;
     const healthLogEntry = req.body;
 
-    if (!healthLogEntry || !healthLogEntry.emrId) {
+    if (!healthLogEntry?.emrId) {
       return res.status(400).json({ error: 'Missing required health log data' });
     }
 
@@ -2018,7 +2018,7 @@ app.post('/api/emr', async (req, res) => {
   try {
     const emrData = req.body;
 
-    if (!emrData || !emrData.id) {
+    if (!emrData?.id) {
       return res.status(400).json({ error: 'EMR data with id is required' });
     }
 
@@ -2515,7 +2515,7 @@ app.put('/api/notifications/:notificationId/read', async (req, res) => {
     const notificationPath = `doctors/${doctorId}/notifications.json`;
     let data = await readGcsJson(BUCKETS.doctor, notificationPath);
 
-    if (data && data.notifications) {
+    if (data?.notifications) {
       data.notifications = data.notifications.map(n =>
         n.id === notificationId ? { ...n, isRead: true, readAt: new Date().toISOString() } : n
       );
@@ -2538,7 +2538,7 @@ app.put('/api/notifications/doctor/:doctorId/read-all', async (req, res) => {
     const notificationPath = `doctors/${doctorId}/notifications.json`;
     let data = await readGcsJson(BUCKETS.doctor, notificationPath);
 
-    if (data && data.notifications) {
+    if (data?.notifications) {
       const now = new Date().toISOString();
       data.notifications = data.notifications.map(n => ({ ...n, isRead: true, readAt: now }));
       data.lastUpdated = now;

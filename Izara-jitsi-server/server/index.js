@@ -188,7 +188,7 @@ app.use((req, res, next) => {
 
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
+  const token = authHeader?.split(' ')[1];
   
   if (!token) {
     return res.status(401).json({ error: 'Authentication required' });
@@ -206,7 +206,7 @@ const authenticateToken = (req, res, next) => {
 // Optional auth — tries to authenticate but doesn't block
 const optionalAuth = (req, res, next) => {
   const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
+  const token = authHeader?.split(' ')[1];
   if (token) {
     try {
       req.user = jwt.verify(token, JWT_SECRET);
@@ -1910,7 +1910,7 @@ ${diarizedTranscript}
     let structuredSummary = null;
     try {
       // Remove markdown code block if present
-      const jsonMatch = summaryText.match(/\{[\s\S]*\}/);
+      const jsonMatch = /\{[\s\S]*\}/.exec(summaryText);
       if (jsonMatch) {
         structuredSummary = JSON.parse(jsonMatch[0]);
       }
@@ -1997,7 +1997,7 @@ io.on('connection', (socket) => {
       );
       
       const session = activeTranscriptions.get(meetingId);
-      if (session && session.isActive && !session.isPaused) {
+      if (session?.isActive && !session.isPaused) {
         session.transcripts.push({ speaker_id: speakerId, speaker_role: speakerRole, speaker_name: speakerName, content, language: language || 'th', timestamp: new Date() });
       }
       

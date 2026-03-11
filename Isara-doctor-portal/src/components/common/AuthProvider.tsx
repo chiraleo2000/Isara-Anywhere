@@ -1,7 +1,7 @@
 /**
  * Authentication Provider - Manages auth state with React Router
  */
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, ReactNode } from 'react';
 import { useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { User, UserPreferences } from '../../types';
 import { authService } from '../../services/authServices';
@@ -47,94 +47,88 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  useEffect(() => {
-    checkAuth();
-  }, []);
-
-  const checkAuth = async () => {
-    setLoading(true);
-    try {
-      const currentUser = authService.getCurrentUser();
-      const token = authService.getToken();
-
-      if (currentUser && token) {
-        // Verify session with server and sync admin privileges
-        try {
-          const response = await fetch('/auth/verify', {
-            headers: { 'Authorization': `Bearer ${token}` }
-          });
-          
-          if (response.ok) {
-            const data = await response.json();
-            if (data.valid && data.user) {
-              // Sync admin privileges from server (in case they changed)
-              const syncedUser = {
-                ...currentUser,
-                isAdmin: data.user.isAdmin || false,
-                adminPrivileges: data.user.adminPrivileges || undefined,
-              };
-              
-              // Update localStorage with synced data
-              localStorage.setItem('izara_current_user', JSON.stringify(syncedUser));
-              setUser(syncedUser);
-              
-              console.log('✅ Session restored and synced:', syncedUser.email);
-              if (syncedUser.isAdmin) {
-                console.log('👑 Admin privileges active:', JSON.stringify(syncedUser.adminPrivileges));
-              }
-            } else {
-              // Session invalid on server
-              console.log('⚠️ Session invalid on server, logging out');
-              authService.logout();
-              setUser(null);
-              navigate('/login', { replace: true });
-              return;
-            }
-          } else {
-            // Server verification failed, use cached user
-            console.log('⚠️ Could not verify session, using cached user');
-            setUser(currentUser);
-          }
-        } catch (verifyError) {
-          // Network error, use cached user
-          console.warn('⚠️ Session verification failed, using cached user:', verifyError);
-          setUser(currentUser);
-        }
-        
-        // Redirect to appropriate dashboard if on login page
-        if (location.pathname === '/login' || location.pathname === '/') {
-          // Admin and doctor both use the doctor portal
-          const basePath = (currentUser.role === 'doctor' || currentUser.role === 'admin') ? '/doctor' : '/patient';
-          navigate(`${basePath}/${currentUser.id}/dashboard`, { replace: true });
-        }
-      } else {
-        setUser(null);
-        // Redirect to login if not on public routes
-        if (!location.pathname.startsWith('/login')) {
-          navigate('/login', { replace: true });
-        }
-      }
-    } catch (error) {
-      console.error('Auth check error:', error);
-      setUser(null);
-    } finally {
-      setLoading(false);
+  const redirectToDashboard = useCallback((currentUser: User) => {
+    if (location.pathname === '/login' || location.pathname === '/') {
+      const basePath = (currentUser.role === 'doctor' || currentUser.role === 'admin') ? '/doctor' : '/patient';
+      navigate(`${basePath}/${currentUser.id}/dashboard`, { replace: true });
     }
-  };
+  }, [location.pathname, navigate]);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const verifySessionWithServer = useCallback(async (token: string, currentUser: User): Promise<User | null> => {
+    try {
+      const response = await fetch('/auth/verify', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (!response.ok) {
+        console.log('⚠️ Could not verify session, using cached user');
+        return currentUser;
+      }
+
+      const data = await response.json();
+      if (!data.valid || !data.user) {
+        console.log('⚠️ Session invalid on server, logging out');
+        authService.logout();
+        navigate('/login', { replace: true });
+        return null;
+      }
+
+      const syncedUser = {
+        ...currentUser,
+        isAdmin: data.user.isAdmin || false,
+        adminPrivileges: data.user.adminPrivileges || undefined,
+      };
+      localStorage.setItem('izara_current_user', JSON.stringify(syncedUser));
+      console.log('✅ Session restored and synced:', syncedUser.email);
+      if (syncedUser.isAdmin) {
+        console.log('👑 Admin privileges active:', JSON.stringify(syncedUser.adminPrivileges));
+      }
+      return syncedUser;
+    } catch (verifyError) {
+      console.warn('⚠️ Session verification failed, using cached user:', verifyError);
+      return currentUser;
+    }
+  }, [navigate]);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      setLoading(true);
+      try {
+        const currentUser = authService.getCurrentUser();
+        const token = authService.getToken();
+
+        if (!currentUser || !token) {
+          setUser(null);
+          if (!location.pathname.startsWith('/login')) {
+            navigate('/login', { replace: true });
+          }
+          return;
+        }
+
+        const verifiedUser = await verifySessionWithServer(token, currentUser);
+        setUser(verifiedUser ?? null);
+        if (verifiedUser) {
+          redirectToDashboard(verifiedUser);
+        }
+      } catch (error) {
+        console.error('Auth check error:', error);
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    checkAuth();
+  }, [verifySessionWithServer, redirectToDashboard, location.pathname, navigate]);
+
+  const login = useCallback(async (email: string, password: string): Promise<boolean> => {
     try {
       setLoading(true);
       const result = await authService.login({ email, password });
       
       if (result.user) {
         setUser(result.user);
-        
-        // Navigate to appropriate portal based on role
-        // Admin and doctor both use the doctor portal
         const basePath = (result.user.role === 'doctor' || result.user.role === 'admin') ? '/doctor' : '/patient';
         navigate(`${basePath}/${result.user.id}/dashboard`, { replace: true });
-        
         return true;
       }
       return false;
@@ -144,9 +138,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [navigate]);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     try {
       await authService.logout();
       setUser(null);
@@ -154,9 +148,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (error) {
       console.error('Logout error:', error);
     }
-  };
+  }, [navigate]);
 
-  const refreshUser = async () => {
+  const refreshUser = useCallback(async () => {
     try {
       const currentUser = authService.getCurrentUser();
       if (currentUser) {
@@ -165,29 +159,29 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (error) {
       console.error('Refresh user error:', error);
     }
-  };
+  }, []);
 
-  const updateUser = (updates: Partial<User>) => {
-    if (user) {
-      const updatedUser = { ...user, ...updates };
-      setUser(updatedUser);
-      // Also update localStorage
+  const updateUser = useCallback((updates: Partial<User>) => {
+    setUser(prev => {
+      if (!prev) return prev;
+      const updatedUser = { ...prev, ...updates };
       localStorage.setItem('izara_user', JSON.stringify(updatedUser));
-    }
-  };
+      return updatedUser;
+    });
+  }, []);
+
+  const contextValue = useMemo(() => ({
+    user,
+    loading,
+    login,
+    logout,
+    isAuthenticated: !!user,
+    refreshUser,
+    updateUser,
+  }), [user, loading, login, logout, refreshUser, updateUser]);
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        loading,
-        login,
-        logout,
-        isAuthenticated: !!user,
-        refreshUser,
-        updateUser,
-      }}
-    >
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );

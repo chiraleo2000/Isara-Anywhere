@@ -1,6 +1,6 @@
 /**
- * Mock Data Service - GCS Only
- * Centralized service for loading data from Google Cloud Storage buckets
+ * Clinical Data Service - GCS Only
+ * Centralized service for loading clinical data from Google Cloud Storage buckets
  * All data is stored in and retrieved from GCS - NO local storage fallback
  *
  * Data source mapping:

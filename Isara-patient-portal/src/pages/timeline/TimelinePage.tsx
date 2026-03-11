@@ -37,56 +37,15 @@ export default function TimelinePage() {
       if (Array.isArray(data)) {
         setEvents(data);
       } else {
-        setEvents(getMockEvents());
+        setEvents([]);
       }
     } catch (e) {
       console.error('Failed to load timeline:', e);
-      setEvents(getMockEvents());
+      setEvents([]);
     } finally {
       setLoading(false);
     }
   };
-
-  const getMockEvents = (): TimelineEvent[] => [
-    {
-      id: '1',
-      type: 'appointment',
-      title: 'ตรวจสุขภาพประจำปี',
-      description: 'ตรวจสุขภาพทั่วไป ผลปกติ',
-      date: '2024-01-15',
-      provider: 'นพ.สมชาย ใจดี',
-    },
-    {
-      id: '2',
-      type: 'lab',
-      title: 'ผลตรวจเลือด CBC',
-      description: 'Complete Blood Count',
-      date: '2024-01-15',
-      details: { hemoglobin: '14.2 g/dL', wbc: '7,500 /μL' },
-    },
-    {
-      id: '3',
-      type: 'medication',
-      title: 'รับยา Vitamin D',
-      description: 'วิตามินดี 1000 IU ทานวันละ 1 เม็ด',
-      date: '2024-01-10',
-    },
-    {
-      id: '4',
-      type: 'diagnosis',
-      title: 'วินิจฉัย: ภาวะขาดวิตามินดี',
-      description: 'Vitamin D Deficiency',
-      date: '2024-01-10',
-      provider: 'นพ.สมชาย ใจดี',
-    },
-    {
-      id: '5',
-      type: 'procedure',
-      title: 'ฉีดวัคซีนไข้หวัดใหญ่',
-      description: 'Influenza vaccine 2024',
-      date: '2023-11-20',
-    },
-  ];
 
   const getEventIcon = (type: string) => {
     switch (type) {

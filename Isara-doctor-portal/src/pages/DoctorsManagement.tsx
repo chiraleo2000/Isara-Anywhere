@@ -41,113 +41,8 @@ interface Doctor {
 }
 
 // ============================================================================
-// MOCK DATA
+// REFERENCE DATA
 // ============================================================================
-
-const mockDoctors: Doctor[] = [
-  {
-    id: 'doc-001',
-    name: 'Dr. Apirak Chaiyasit',
-    specialty: 'General Practice',
-    department: 'Primary Care',
-    hospital: 'Izara Health Center',
-    phone: '+66-2-xxx-1111',
-    email: 'apirak.c@izara.health',
-    photo: 'https://i.pravatar.cc/150?img=68',
-    licenseNumber: 'TH-12345',
-    status: 'active',
-    joinDate: '2023-01-15',
-    languages: ['Thai', 'English'],
-    experience: 8,
-    patientsHandled: 1250,
-    isVerified: true,
-  },
-  {
-    id: 'doc-002',
-    name: 'Dr. Malee Srisombat',
-    specialty: 'Internal Medicine',
-    department: 'Internal Medicine',
-    hospital: 'Izara Health Center',
-    phone: '+66-2-xxx-2222',
-    email: 'malee.s@izara.health',
-    photo: 'https://i.pravatar.cc/150?img=45',
-    licenseNumber: 'TH-23456',
-    status: 'active',
-    joinDate: '2022-06-20',
-    languages: ['Thai', 'English', 'Chinese'],
-    experience: 12,
-    patientsHandled: 2100,
-    isVerified: true,
-  },
-  {
-    id: 'doc-003',
-    name: 'Dr. Thanakorn Wongprasert',
-    specialty: 'Pediatrics',
-    department: 'Pediatrics',
-    hospital: 'Izara Health Center',
-    phone: '+66-2-xxx-3333',
-    email: 'thanakorn.w@izara.health',
-    photo: 'https://i.pravatar.cc/150?img=52',
-    licenseNumber: 'TH-34567',
-    status: 'on-leave',
-    joinDate: '2021-03-10',
-    languages: ['Thai', 'English'],
-    experience: 15,
-    patientsHandled: 3400,
-    isVerified: true,
-  },
-  {
-    id: 'doc-004',
-    name: 'Dr. Siriwan Tangsri',
-    specialty: 'Family Medicine',
-    department: 'Family Care',
-    hospital: 'Izara Health Center',
-    phone: '+66-2-xxx-4444',
-    email: 'siriwan.t@izara.health',
-    photo: 'https://i.pravatar.cc/150?img=39',
-    licenseNumber: 'TH-45678',
-    status: 'active',
-    joinDate: '2024-02-01',
-    languages: ['Thai', 'English'],
-    experience: 5,
-    patientsHandled: 450,
-    isVerified: true,
-  },
-  {
-    id: 'doc-005',
-    name: 'Dr. Pattarapong Meesuk',
-    specialty: 'Emergency Medicine',
-    department: 'Emergency',
-    hospital: 'Izara Health Center',
-    phone: '+66-2-xxx-5555',
-    email: 'pattarapong.m@izara.health',
-    photo: 'https://i.pravatar.cc/150?img=59',
-    licenseNumber: 'TH-56789',
-    status: 'inactive',
-    joinDate: '2020-08-15',
-    languages: ['Thai', 'English'],
-    experience: 10,
-    patientsHandled: 5600,
-    isVerified: false,
-  },
-  {
-    id: 'doc-006',
-    name: 'Dr. Kanya Rattanaporn',
-    specialty: 'Obstetrics & Gynecology',
-    department: 'OB-GYN',
-    hospital: 'Izara Health Center',
-    phone: '+66-2-xxx-6666',
-    email: 'kanya.r@izara.health',
-    photo: 'https://i.pravatar.cc/150?img=12',
-    licenseNumber: 'TH-67890',
-    status: 'active',
-    joinDate: '2024-03-12',
-    languages: ['Thai', 'English'],
-    experience: 9,
-    patientsHandled: 1900,
-    isVerified: true,
-  },
-];
 
 const departments = [
   'All Departments',
@@ -210,7 +105,8 @@ const DoctorsManagement: React.FC = () => {
   };
   const label = (key: keyof typeof labels) => labels[key][language] || labels[key].en;
 
-  const [doctors, setDoctors] = useState<Doctor[]>(mockDoctors);
+  const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDepartment, setSelectedDepartment] = useState('All Departments');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive' | 'on-leave'>('all');
@@ -267,8 +163,9 @@ const DoctorsManagement: React.FC = () => {
           setDoctors(approvedOnly);
         }
       } catch (err) {
-        console.error('Failed to load doctors from GCS, using mock data', err);
-        setDoctors(mockDoctors);
+        console.error('Failed to load doctors from API', err);
+      } finally {
+        setIsLoading(false);
       }
     })();
   }, []);
@@ -607,7 +504,13 @@ const DoctorsManagement: React.FC = () => {
         </div>
       </div>
 
-      {filteredDoctors.length === 0 && (
+      {isLoading && (
+        <div className="text-center py-12 bg-white rounded-xl shadow-lg mt-4">
+          <p className="text-gray-600">{label('loading')}</p>
+        </div>
+      )}
+
+      {!isLoading && filteredDoctors.length === 0 && (
         <div className="text-center py-12 bg-white rounded-xl shadow-lg mt-4">
           <UserGroupIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900">No doctors found</h3>

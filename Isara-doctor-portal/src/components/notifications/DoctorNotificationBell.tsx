@@ -78,6 +78,79 @@ const CloseIcon: React.FC<{ className?: string }> = ({ className }) => (
 // API Base URL - Empty string for relative paths in production (Cloud Run)
 const API_BASE = import.meta.env.VITE_API_URL || '';
 
+// Extracted sub-component to reduce complexity and fix nested ternary
+const NotificationList: React.FC<{
+  notifications: Notification[];
+  language: string;
+  onNotificationClick: (n: Notification) => void;
+  getNotificationIcon: (type: NotificationType) => React.ReactNode;
+  formatTimeAgo: (dateStr: string) => string;
+}> = ({ notifications, language, onNotificationClick, getNotificationIcon, formatTimeAgo }) => {
+  if (notifications.length === 0) {
+    return (
+      <div className="p-8 text-center text-gray-500">
+        <BellIcon className="w-12 h-12 mx-auto mb-2 opacity-30" />
+        <p>{language === 'th' ? 'ไม่มีการแจ้งเตือน' : 'No notifications'}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="divide-y divide-gray-100">
+      {notifications.slice(0, 10).map((notification) => {
+        const readClass = notification.isRead ? '' : 'bg-emerald-50/50';
+        const fontClass = notification.isRead ? 'font-medium' : 'font-semibold';
+        return (
+          <button
+            type="button"
+            key={notification.id}
+            onClick={() => onNotificationClick(notification)}
+            className={`p-4 hover:bg-gray-50 transition-colors cursor-pointer w-full text-left ${readClass}`}
+          >
+            <div className="flex gap-3">
+              <div className="flex-shrink-0 mt-1">
+                <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+                  {getNotificationIcon(notification.type)}
+                </div>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-start justify-between gap-2">
+                  <h4 className={`text-sm ${fontClass} text-gray-800 line-clamp-1`}>
+                    {notification.title}
+                  </h4>
+                  {!notification.isRead && (
+                    <span className="flex-shrink-0 w-2 h-2 bg-emerald-500 rounded-full mt-1.5"></span>
+                  )}
+                </div>
+                <p className="text-sm text-gray-600 mt-0.5 line-clamp-2">
+                  {notification.message}
+                </p>
+                <div className="flex items-center gap-3 mt-2">
+                  <span className="text-xs text-gray-400">
+                    {formatTimeAgo(notification.createdAt)}
+                  </span>
+                  {notification.data?.meetingLink && (
+                    <a
+                      href={notification.data.meetingLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+                    >
+                      <VideoIcon className="w-3 h-3" />
+                      {language === 'th' ? 'เริ่มประชุม' : 'Start Meeting'}
+                    </a>
+                  )}
+                </div>
+              </div>
+            </div>
+          </button>
+        );
+      })}
+    </div>
+  );
+};
+
 interface DoctorNotificationBellProps {
   className?: string;
   onNavigate?: (view: string, data?: any) => void;
@@ -213,19 +286,25 @@ export const DoctorNotificationBell: React.FC<DoctorNotificationBellProps> = ({
     const diffHours = Math.floor(diffMins / 60);
     const diffDays = Math.floor(diffHours / 24);
 
-    if (language === 'th') {
-      if (diffMins < 1) return 'เมื่อสักครู่';
-      if (diffMins < 60) return `${diffMins} นาทีที่แล้ว`;
-      if (diffHours < 24) return `${diffHours} ชั่วโมงที่แล้ว`;
-      if (diffDays < 7) return `${diffDays} วันที่แล้ว`;
-      return date.toLocaleDateString('th-TH');
-    } else {
-      if (diffMins < 1) return 'Just now';
-      if (diffMins < 60) return `${diffMins} min ago`;
-      if (diffHours < 24) return `${diffHours} hr ago`;
-      if (diffDays < 7) return `${diffDays} days ago`;
-      return date.toLocaleDateString('en-US');
-    }
+    return language === 'th'
+      ? formatTimeAgoTh(diffMins, diffHours, diffDays, date)
+      : formatTimeAgoEn(diffMins, diffHours, diffDays, date);
+  };
+
+  const formatTimeAgoTh = (diffMins: number, diffHours: number, diffDays: number, date: Date) => {
+    if (diffMins < 1) return 'เมื่อสักครู่';
+    if (diffMins < 60) return `${diffMins} นาทีที่แล้ว`;
+    if (diffHours < 24) return `${diffHours} ชั่วโมงที่แล้ว`;
+    if (diffDays < 7) return `${diffDays} วันที่แล้ว`;
+    return date.toLocaleDateString('th-TH');
+  };
+
+  const formatTimeAgoEn = (diffMins: number, diffHours: number, diffDays: number, date: Date) => {
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} min ago`;
+    if (diffHours < 24) return `${diffHours} hr ago`;
+    if (diffDays < 7) return `${diffDays} days ago`;
+    return date.toLocaleDateString('en-US');
   };
 
   return (
@@ -271,66 +350,14 @@ export const DoctorNotificationBell: React.FC<DoctorNotificationBellProps> = ({
                 <div className="animate-spin w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full mx-auto"></div>
                 <p className="text-sm text-gray-500 mt-2">{t('common.loading')}</p>
               </div>
-            ) : notifications.length === 0 ? (
-              <div className="p-8 text-center text-gray-500">
-                <BellIcon className="w-12 h-12 mx-auto mb-2 opacity-30" />
-                <p>{language === 'th' ? 'ไม่มีการแจ้งเตือน' : 'No notifications'}</p>
-              </div>
             ) : (
-              <div className="divide-y divide-gray-100">
-                {notifications.slice(0, 10).map((notification) => (
-                  <div
-                    key={notification.id}
-                    onClick={() => handleNotificationClick(notification)}
-                    className={`p-4 hover:bg-gray-50 transition-colors cursor-pointer ${
-                      !notification.isRead ? 'bg-emerald-50/50' : ''
-                    }`}
-                  >
-                    <div className="flex gap-3">
-                      {/* Icon */}
-                      <div className="flex-shrink-0 mt-1">
-                        <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
-                          {getNotificationIcon(notification.type)}
-                        </div>
-                      </div>
-
-                      {/* Content */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-2">
-                          <h4 className={`text-sm ${!notification.isRead ? 'font-semibold' : 'font-medium'} text-gray-800 line-clamp-1`}>
-                            {notification.title}
-                          </h4>
-                          {!notification.isRead && (
-                            <span className="flex-shrink-0 w-2 h-2 bg-emerald-500 rounded-full mt-1.5"></span>
-                          )}
-                        </div>
-                        <p className="text-sm text-gray-600 mt-0.5 line-clamp-2">
-                          {notification.message}
-                        </p>
-                        <div className="flex items-center gap-3 mt-2">
-                          <span className="text-xs text-gray-400">
-                            {formatTimeAgo(notification.createdAt)}
-                          </span>
-                          
-                          {/* Action buttons */}
-                          {notification.data?.meetingLink && (
-                            <a
-                              href={notification.data.meetingLink}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              onClick={(e) => e.stopPropagation()}
-                              className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
-                            >
-                              <VideoIcon className="w-3 h-3" />
-                              {language === 'th' ? 'เริ่มประชุม' : 'Start Meeting'}
-                            </a>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <NotificationList
+                notifications={notifications}
+                language={language}
+                onNotificationClick={handleNotificationClick}
+                getNotificationIcon={getNotificationIcon}
+                formatTimeAgo={formatTimeAgo}
+              />
             )}
           </div>
 

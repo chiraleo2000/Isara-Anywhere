@@ -64,7 +64,7 @@ self.addEventListener('fetch', (event) => {
   }
 
   // Network-first strategy for HTML pages
-  if (request.headers.get('accept').includes('text/html')) {
+  if (request.headers.get('accept')?.includes('text/html')) {
     event.respondWith(
       fetch(request)
         .then((response) => {
@@ -91,7 +91,7 @@ self.addEventListener('fetch', (event) => {
 
         return fetch(request).then((response) => {
           // Don't cache non-successful responses
-          if (response && response.status === 200 && response.type !== 'error') {
+          if (response?.status === 200 && response.type !== 'error') {
             const responseClone = response.clone();
             caches.open(RUNTIME_CACHE).then((cache) => {
               cache.put(request, responseClone);
@@ -106,17 +106,20 @@ self.addEventListener('fetch', (event) => {
 
 // Handle messages from clients
 self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'SKIP_WAITING') {
+  // Verify message origin — only accept messages from same origin
+  if (event.origin && event.origin !== self.location.origin) return;
+
+  if (event.data?.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
 
-  if (event.data && event.data.type === 'CLEAR_CACHE') {
+  if (event.data?.type === 'CLEAR_CACHE') {
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cacheName) => caches.delete(cacheName))
       );
     }).then(() => {
-      event.ports[0].postMessage({ type: 'CACHE_CLEARED' });
+      event.ports?.[0]?.postMessage({ type: 'CACHE_CLEARED' });
     });
   }
 });

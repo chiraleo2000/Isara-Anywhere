@@ -714,7 +714,7 @@ const AppointmentService = {
    * Create a new appointment
    */
   async createAppointment(data) {
-    const appointmentId = data.id || `APT-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
+    const appointmentId = data.id || `APT-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
     const result = await pool.query(
       `INSERT INTO appointments (
         id, patient_id, doctor_id, 

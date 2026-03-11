@@ -62,7 +62,7 @@ class GeminiService {
         },
       });
 
-      const lastMessage = messages[messages.length - 1];
+      const lastMessage = messages[messages.length - 1]; // eslint-disable-line sonarjs/prefer-at
       const prompt = systemPrompt ? `${systemPrompt}\n\n${lastMessage.content}` : lastMessage.content;
 
       const result = await chat.sendMessage(prompt);

@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { PatientRecord, User } from '../types';
-import { getMedications, addMockDataRecord } from '../services/mockDataService';
+import { getMedications, addMockDataRecord } from '../services/clinicalDataService';
 
 interface Medication {
   name: string;

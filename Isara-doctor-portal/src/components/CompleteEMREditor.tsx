@@ -8,7 +8,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { PatientRecord, User } from '../types';
-import { addMockDataRecord, updateMockDataRecord } from '../services/mockDataService';
+import { addMockDataRecord, updateMockDataRecord } from '../services/clinicalDataService';
 import { geminiClinicalService } from '../services/geminiClinicalService';
 
 // ============================================================================

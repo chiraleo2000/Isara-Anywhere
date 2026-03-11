@@ -361,7 +361,7 @@ async function writeToGCS(bucket, path, data) {
     if (path.includes('notifications')) {
       const parts = path.split('/');
       const userId = parts[1];
-      if (data && data.items && data.items.length > 0) {
+      if (data?.items?.length > 0) {
         const lastItem = data.items[data.items.length - 1];
         await PostgresDataService.NotificationService.createNotification({
           user_id: userId,
@@ -589,7 +589,7 @@ const JWT_ISSUER = process.env.JWT_ISSUER || 'izara-telemedicine';
 
 function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
+  const token = authHeader?.split(' ')[1];
 
   if (!token) {
     return res.status(401).json({ error: 'No token provided' });
@@ -1557,7 +1557,7 @@ app.post('/api/meetings/create', authenticateToken, async (req, res) => {
     
     console.log(`[MEETING] Creating meeting for appointment ${appointmentId}`);
     
-    const meetingId = `Izara-${appointmentId || Date.now()}-${Math.random().toString(36).substr(2, 8)}`;
+    const meetingId = `Izara-${appointmentId || Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
     const meetingLink = `https://meet.jit.si/${meetingId}`;
     
     res.json({
@@ -1889,7 +1889,7 @@ app.post('/api/notifications/emr-signed', authenticateToken, async (req, res) =>
 app.post('/api/prescriptions', authenticateToken, async (req, res) => {
   try {
     const prescriptionData = req.body;
-    const prescriptionId = `rx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const prescriptionId = `rx_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
 
     console.log('[RX] Creating prescription via PostgreSQL');
 
@@ -2078,7 +2078,7 @@ app.put('/api/lab-orders/:labOrderId/results', authenticateToken, async (req, re
     const resultPayload = {
       results: results || [],
       documents: (documents || []).map(doc => ({
-        id: `doc_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+        id: `doc_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
         name: doc.name,
         type: doc.type,
         data: doc.data, // base64 encoded
@@ -2158,7 +2158,7 @@ app.post('/api/lab-orders/:labOrderId/documents', authenticateToken, async (req,
     const currentDocs = currentResults.documents || [];
     
     const newDoc = {
-      id: `doc_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+      id: `doc_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
       name, type, data, size,
       uploadedAt: new Date().toISOString(),
       uploadedBy: req.user?.id
@@ -2187,7 +2187,7 @@ app.post('/api/imaging-orders', authenticateToken, async (req, res) => {
     const data = req.body;
     console.log('[IMAGING] Creating imaging order via PostgreSQL');
 
-    if (!DB_AVAILABLE || !PostgresDataService || !PostgresDataService.ImagingOrderService) {
+    if (!DB_AVAILABLE || !PostgresDataService?.ImagingOrderService) {
       return res.status(503).json({ error: 'Imaging service unavailable' });
     }
 
@@ -2220,7 +2220,7 @@ app.post('/api/imaging-orders', authenticateToken, async (req, res) => {
 app.get('/api/imaging-orders/patient/:patientId', authenticateToken, async (req, res) => {
   try {
     const { patientId } = req.params;
-    if (!DB_AVAILABLE || !PostgresDataService || !PostgresDataService.ImagingOrderService) {
+    if (!DB_AVAILABLE || !PostgresDataService?.ImagingOrderService) {
       return res.json({ imagingOrders: [] });
     }
     const orders = await PostgresDataService.ImagingOrderService.getPatientImagingOrders(patientId);
@@ -2237,14 +2237,14 @@ app.put('/api/imaging-orders/:orderId/results', authenticateToken, async (req, r
     const { results, documents, notes } = req.body;
     console.log(`[IMAGING] Uploading results for order: ${orderId}`);
 
-    if (!DB_AVAILABLE || !PostgresDataService || !PostgresDataService.ImagingOrderService) {
+    if (!DB_AVAILABLE || !PostgresDataService?.ImagingOrderService) {
       return res.status(503).json({ error: 'Database unavailable' });
     }
 
     const resultPayload = {
       findings: results || [],
       documents: (documents || []).map(doc => ({
-        id: `img_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+        id: `img_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
         name: doc.name,
         type: doc.type,
         data: doc.data,
@@ -2335,7 +2335,7 @@ ${patientContext}`;
     }
 
     // Generate session ID if not provided
-    const chatSessionId = sessionId || `chat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const chatSessionId = sessionId || `chat_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
 
     res.json({
       success: true,
@@ -2549,7 +2549,7 @@ ${patientConditions.map(c => `- ${c.conditionThai || c.condition}`).join('\n') |
     const recommendations = await callGeminiForSummary(cdsPrompt, 4096);
 
     // Log CDS query for audit
-    const cdsLogId = `cds_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const cdsLogId = `cds_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
 
     res.json({
       success: true,
@@ -2633,7 +2633,7 @@ app.post('/api/ai/patient-instructions', authenticateToken, async (req, res) => 
     const instructionSheet = await callGeminiForSummary(instructionPrompt, 4096);
 
     // Generate instruction ID
-    const instructionId = `pi_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const instructionId = `pi_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
 
     res.json({
       success: true,
@@ -2668,7 +2668,7 @@ app.post('/api/patient-instructions', authenticateToken, async (req, res) => {
     }
 
     // Generate instruction ID
-    const instructionId = `pi_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const instructionId = `pi_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
 
     // Build instruction content
     const instructionSheet = {
@@ -2713,7 +2713,7 @@ app.post('/api/ai/validation', authenticateToken, async (req, res) => {
 
     // Log the validation to PostgreSQL
     const validationRecord = {
-      id: `val-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      id: `val-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
       type, // 'summary', 'documents', 'cds'
       patientId: patientId || null,
       doctorId,
@@ -3019,9 +3019,9 @@ app.get('/api/ai/knowledge', authenticateToken, async (req, res) => {
     // Build knowledge query prompt
     const knowledgePrompt = `คุณเป็นผู้ช่วยแพทย์ที่มีความรู้ทางการแพทย์ กรุณาตอบคำถามต่อไปนี้:
 
-คำถาม: ${query}
-${topic ? `หัวข้อ: ${topic}` : ''}
-${category ? `หมวดหมู่: ${category}` : ''}
+คำถาม: ${String(query)}
+${topic ? `หัวข้อ: ${String(topic)}` : ''}
+${category ? `หมวดหมู่: ${String(category)}` : ''}
 
 กรุณาตอบโดย:
 1. ใช้ข้อมูลทางการแพทย์ที่ถูกต้องและเป็นปัจจุบัน (2024-2025)
@@ -3334,7 +3334,7 @@ app.get('/api/schedule/:doctorId', authenticateToken, async (req, res) => {
 app.get('/api/appointments', authenticateToken, async (req, res) => {
   try {
     const { doctorId, status, startDate, endDate } = req.query;
-    console.log('📋 Fetching appointments from PostgreSQL...', doctorId ? `for doctor: ${doctorId}` : '');
+    console.log('📋 Fetching appointments from PostgreSQL...', doctorId ? `for doctor: ${String(doctorId)}` : '');
     
     let appointments;
     if (doctorId) {
@@ -3558,7 +3558,7 @@ async function transcribeWithSpeechToText(audioBase64, encoding = 'WEBM_OPUS', l
       let allWords = [];
       
       results.forEach(result => {
-        if (result.alternatives && result.alternatives[0]) {
+        if (result.alternatives?.[0]) {
           const alt = result.alternatives[0];
           fullTranscript += (fullTranscript ? ' ' : '') + alt.transcript;
           if (alt.confidence) {
@@ -3784,7 +3784,7 @@ app.post('/api/video-meeting/create', authenticateToken, async (req, res) => {
       console.log(`[Video Meeting] Could not save to PostgreSQL (FK constraint?):`, dbError.message);
     }
     
-    const meetingId = dbMeeting?.id || `meeting_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const meetingId = dbMeeting?.id || `meeting_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
     
     // Also keep in-memory for real-time transcript accumulation
     const meeting = {
@@ -3964,7 +3964,7 @@ app.post('/api/video-meeting/:appointmentId/transcribe-audio', authenticateToken
       languageCode || 'th-TH'
     );
     
-    if (result.transcript && result.transcript.trim()) {
+    if (result.transcript?.trim()) {
       const entry = {
         id: `trans-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`,
         participantId: 'meeting-audio',
@@ -5100,7 +5100,7 @@ async function sendPatientNotification(patientId, notification) {
     };
 
     const newNotification = {
-      id: `NOTIF-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
+      id: `NOTIF-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
       ...notification,
       isRead: false,
       createdAt: new Date().toISOString()
@@ -6226,7 +6226,7 @@ app.get('/api/consultants', async (req, res) => {
     // Use PostgreSQL directly
     let consultants = [];
     try {
-      if (DB_AVAILABLE && PostgresDataService && PostgresDataService.ConsultantService) {
+      if (DB_AVAILABLE && PostgresDataService?.ConsultantService) {
         if (specialty) {
           consultants = await PostgresDataService.ConsultantService.getAvailableConsultants(specialty);
         } else {
@@ -6315,7 +6315,7 @@ async function getConsultantSpecialties() {
   // Try to get unique specialties from DB
   let specialties = defaultSpecialties;
   try {
-    if (DB_AVAILABLE && PostgresDataService && PostgresDataService.pool) {
+    if (DB_AVAILABLE && PostgresDataService?.pool) {
       const { pool } = PostgresDataService;
       const result = await pool.query(`
         SELECT DISTINCT specialty, specialty_thai FROM medical_consultants 
@@ -6375,7 +6375,7 @@ app.post('/api/consultants', authenticateToken, async (req, res) => {
       });
     }
     
-    if (!PostgresDataService || !PostgresDataService.ConsultantService) {
+    if (!PostgresDataService?.ConsultantService) {
       return res.status(503).json({ 
         error: 'Consultant service unavailable', 
         code: 'SERVICE_UNAVAILABLE' 
@@ -6759,8 +6759,8 @@ app.get('/api/admin/users', authenticateToken, async (req, res) => {
     if (search) {
       const searchLower = search.toLowerCase();
       users = users.filter(u => 
-        (u.name && u.name.toLowerCase().includes(searchLower)) ||
-        (u.email && u.email.toLowerCase().includes(searchLower))
+        u.name?.toLowerCase().includes(searchLower) ||
+        u.email?.toLowerCase().includes(searchLower)
       );
     }
     
@@ -7196,7 +7196,7 @@ async function logAuditAccess(auditEntry) {
 
     existingLog.entries.push({
       ...auditEntry,
-      id: `audit_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      id: `audit_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
       timestamp: new Date().toISOString()
     });
 

@@ -40,13 +40,8 @@ export const StatCard: React.FC<StatCardProps> = ({
     red: 'from-red-500 to-red-600',
   };
 
-  return (
-    <div
-      onClick={onClick}
-      className={`relative bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden transition-all hover:shadow-md ${
-        onClick ? 'cursor-pointer' : ''
-      }`}
-    >
+  const cardContent = (
+    <>
       {/* Gradient bar */}
       <div className={`h-2 bg-gradient-to-r ${colorClasses[color]}`} />
 
@@ -78,6 +73,24 @@ export const StatCard: React.FC<StatCardProps> = ({
           </div>
         </div>
       </div>
+    </>
+  );
+
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        className="relative bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden transition-all hover:shadow-md cursor-pointer w-full text-left"
+      >
+        {cardContent}
+      </button>
+    );
+  }
+
+  return (
+    <div className="relative bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden transition-all hover:shadow-md">
+      {cardContent}
     </div>
   );
 };
@@ -182,13 +195,18 @@ export const Alert: React.FC<AlertProps> = ({ type, title, message, onClose, act
 };
 
 // ============================================================================
+// SHARED TYPES
+// ============================================================================
+type ComponentSize = 'sm' | 'md' | 'lg';
+
+// ============================================================================
 // BADGE
 // ============================================================================
 
 interface BadgeProps {
   children: ReactNode;
   variant?: 'default' | 'success' | 'warning' | 'error' | 'info';
-  size?: 'sm' | 'md' | 'lg';
+  size?: ComponentSize;
 }
 
 export const Badge: React.FC<BadgeProps> = ({ children, variant = 'default', size = 'md' }) => {
@@ -218,7 +236,7 @@ export const Badge: React.FC<BadgeProps> = ({ children, variant = 'default', siz
 // ============================================================================
 
 interface LoadingProps {
-  size?: 'sm' | 'md' | 'lg';
+  size?: ComponentSize;
   text?: string;
 }
 
@@ -277,7 +295,7 @@ interface ProgressBarProps {
   value: number;
   max?: number;
   color?: 'blue' | 'green' | 'purple' | 'orange' | 'red';
-  size?: 'sm' | 'md' | 'lg';
+  size?: ComponentSize;
   showLabel?: boolean;
 }
 
@@ -334,26 +352,31 @@ interface TooltipProps {
 export const Tooltip: React.FC<TooltipProps> = ({ content, children, position = 'top' }) => {
   const [isVisible, setIsVisible] = React.useState(false);
 
+  const positionClasses: Record<string, string> = {
+    top: 'bottom-full left-1/2 -translate-x-1/2 mb-2',
+    bottom: 'top-full left-1/2 -translate-x-1/2 mt-2',
+    left: 'right-full top-1/2 -translate-y-1/2 mr-2',
+    right: 'left-full top-1/2 -translate-y-1/2 ml-2',
+  };
+
   return (
-    <div
+    // Tooltip wrapper - hover/focus behavior for showing tooltip content
+    <span // NOSONAR - tooltip wrapper requires mouse/focus handlers
       className="relative inline-block"
       onMouseEnter={() => setIsVisible(true)}
       onMouseLeave={() => setIsVisible(false)}
+      onFocus={() => setIsVisible(true)}
+      onBlur={() => setIsVisible(false)}
     >
       {children}
       {isVisible && (
         <div
-          className={`absolute z-50 px-2 py-1 text-xs text-white bg-gray-900 rounded shadow-lg whitespace-nowrap ${
-            position === 'top' ? 'bottom-full left-1/2 -translate-x-1/2 mb-2' :
-            position === 'bottom' ? 'top-full left-1/2 -translate-x-1/2 mt-2' :
-            position === 'left' ? 'right-full top-1/2 -translate-y-1/2 mr-2' :
-            'left-full top-1/2 -translate-y-1/2 ml-2'
-          }`}
+          className={`absolute z-50 px-2 py-1 text-xs text-white bg-gray-900 rounded shadow-lg whitespace-nowrap ${positionClasses[position] || positionClasses.top}`}
         >
           {content}
         </div>
       )}
-    </div>
+    </span>
   );
 };
 
@@ -365,7 +388,7 @@ interface ButtonProps {
   children: ReactNode;
   onClick?: () => void;
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
-  size?: 'sm' | 'md' | 'lg';
+  size?: ComponentSize;
   disabled?: boolean;
   loading?: boolean;
   icon?: ReactNode;

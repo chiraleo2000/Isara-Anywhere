@@ -127,8 +127,8 @@ export const MedicalContent: React.FC<MedicalContentProps> = ({ className = '' }
       } else {
         setError('ไม่สามารถโหลดเนื้อหาได้ กรุณาลองใหม่อีกครั้ง');
       }
-      // Fallback to sample data for demo
-      setArticles(getSampleArticles());
+      // Fallback to empty list on error
+      setArticles([]);
     } finally {
       setLoading(false);
     }
@@ -246,96 +246,6 @@ export const MedicalContent: React.FC<MedicalContentProps> = ({ className = '' }
       day: 'numeric',
     });
   };
-
-  // Sample data fallback
-  const getSampleArticles = (): MedicalArticle[] => [
-    {
-      id: 'sample-1',
-      title: 'วิธีดูแลสุขภาพหัวใจให้แข็งแรง',
-      titleTh: 'วิธีดูแลสุขภาพหัวใจให้แข็งแรง',
-      summary: 'เคล็ดลับง่ายๆ ที่ช่วยให้หัวใจของคุณแข็งแรงและทำงานได้ดีตลอดชีวิต รวมถึงการออกกำลังกายและอาหารที่เหมาะสม',
-      summaryTh: 'เคล็ดลับง่ายๆ ที่ช่วยให้หัวใจของคุณแข็งแรง',
-      content: '# วิธีดูแลสุขภาพหัวใจให้แข็งแรง\n\nหัวใจเป็นอวัยวะสำคัญที่ต้องดูแลเป็นพิเศษ...',
-      category: 'general-health',
-      tags: [],
-      type: 'article',
-      isFeatured: true,
-      readTimeMinutes: 5,
-      views: 1250,
-      likes: 45,
-      createdByName: 'นพ.สมชาย ใจดี',
-      createdAt: new Date().toISOString(),
-    },
-    {
-      id: 'sample-2',
-      title: 'เข้าใจโรคเบาหวานและวิธีป้องกัน',
-      titleTh: 'เข้าใจโรคเบาหวานและวิธีป้องกัน',
-      summary: 'ทุกสิ่งที่คุณต้องรู้เกี่ยวกับโรคเบาหวาน สาเหตุ อาการ และวิธีป้องกัน',
-      summaryTh: 'ทุกสิ่งที่คุณต้องรู้เกี่ยวกับโรคเบาหวาน',
-      content: '# เข้าใจโรคเบาหวาน\n\nโรคเบาหวานเป็นโรคเรื้อรังที่ต้องดูแลอย่างต่อเนื่อง...',
-      category: 'chronic-disease',
-      tags: [],
-      type: 'article',
-      isFeatured: true,
-      readTimeMinutes: 8,
-      views: 980,
-      likes: 32,
-      createdByName: 'พญ.วิภา สุขใจ',
-      createdAt: new Date().toISOString(),
-    },
-    {
-      id: 'sample-3',
-      title: 'จัดการความเครียดอย่างไรให้ได้ผล',
-      titleTh: 'จัดการความเครียดอย่างไรให้ได้ผล',
-      summary: 'เทคนิคการจัดการความเครียดที่ได้รับการพิสูจน์แล้วว่าได้ผลจริง',
-      summaryTh: 'เทคนิคการจัดการความเครียด',
-      content: '# จัดการความเครียด\n\nความเครียดเป็นส่วนหนึ่งของชีวิตประจำวัน...',
-      category: 'mental-health',
-      tags: [],
-      type: 'article',
-      isFeatured: true,
-      readTimeMinutes: 6,
-      views: 2100,
-      likes: 78,
-      createdByName: 'นพ.ธนพล จิตสงบ',
-      createdAt: new Date().toISOString(),
-    },
-    {
-      id: 'sample-4',
-      title: 'อาหารที่ช่วยเสริมภูมิคุ้มกัน',
-      titleTh: 'อาหารที่ช่วยเสริมภูมิคุ้มกัน',
-      summary: 'รายการอาหารที่ช่วยเสริมสร้างระบบภูมิคุ้มกันให้แข็งแรง',
-      summaryTh: 'อาหารเสริมภูมิคุ้มกัน',
-      content: '# อาหารเสริมภูมิคุ้มกัน\n\nระบบภูมิคุ้มกันเป็นกำแพงป้องกันร่างกาย...',
-      category: 'nutrition',
-      tags: [],
-      type: 'article',
-      isFeatured: false,
-      readTimeMinutes: 4,
-      views: 1800,
-      likes: 56,
-      createdByName: 'ดร.นิตยา อาหารดี',
-      createdAt: new Date().toISOString(),
-    },
-    {
-      id: 'sample-5',
-      title: 'วิดีโอ: ท่าบริหาร 10 นาที',
-      titleTh: 'วิดีโอ: ท่าบริหาร 10 นาที',
-      summary: 'ท่าบริหารร่างกายง่ายๆ ที่ทำได้ทุกวัน ใช้เวลาเพียง 10 นาที',
-      summaryTh: 'ท่าบริหาร 10 นาที',
-      content: '# ท่าบริหาร 10 นาที\n\nการออกกำลังกายไม่จำเป็นต้องใช้เวลามาก...',
-      category: 'exercise',
-      tags: [],
-      type: 'video',
-      videoUrl: 'https://www.youtube.com/watch?v=example',
-      isFeatured: true,
-      readTimeMinutes: 10,
-      views: 5600,
-      likes: 234,
-      createdByName: 'Coach สมศักดิ์',
-      createdAt: new Date().toISOString(),
-    },
-  ];
 
   const handleOpenArticle = (article: MedicalArticle) => {
     setSelectedArticle(article);

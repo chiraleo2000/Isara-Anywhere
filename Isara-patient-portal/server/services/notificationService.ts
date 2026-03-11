@@ -438,7 +438,7 @@ const EMAIL_TEMPLATES = {
 };
 
 class NotificationService {
-  private adminEmail: string;
+  private readonly adminEmail: string;
 
   constructor() {
     this.adminEmail = process.env.ADMIN_EMAIL || 'admin.test@izara.com';

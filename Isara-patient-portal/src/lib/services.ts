@@ -211,7 +211,7 @@ export const healthLogsService = {
 
 // Lab Orders Service - View lab results ordered by doctors
 export const labOrderService = {
-  getOrders: (patientId: string) =>
+  getOrders: (_patientId: string) =>
     api.get<{ labOrders: any[] }>(`/api/phr/lab-orders`),
   getOrderById: (orderId: string) =>
     api.get<{ labOrder: any }>(`/api/phr/lab-orders/${orderId}`),
@@ -221,7 +221,7 @@ export const labOrderService = {
 
 // Imaging Orders Service - View imaging results ordered by doctors
 export const imagingOrderService = {
-  getOrders: (patientId: string) =>
+  getOrders: (_patientId: string) =>
     api.get<{ imagingOrders: any[] }>(`/api/phr/imaging-orders`),
   getOrderById: (orderId: string) =>
     api.get<{ imagingOrder: any }>(`/api/phr/imaging-orders/${orderId}`),

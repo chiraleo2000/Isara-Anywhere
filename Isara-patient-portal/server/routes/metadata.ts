@@ -7,6 +7,7 @@ const router = Router();
 // Helper function to read JSON from GCS
 async function readJSON(bucket: string, filePath: string): Promise<any> {
   try {
+    if (!storage) throw new Error('GCS storage not initialized');
     const file = storage.bucket(bucket).file(filePath);
     const [contents] = await file.download();
     return JSON.parse(contents.toString());

@@ -278,10 +278,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
               {/* NAME (Registration only) */}
               {!isLogin && (
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label htmlFor="reg-name" className="block text-sm font-semibold text-gray-700 mb-2">
                     Full Name <span className="text-red-500">*</span>
                   </label>
                   <input
+                    id="reg-name"
                     type="text"
                     required
                     value={formData.name}
@@ -294,10 +295,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
 
               {/* EMAIL */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label htmlFor="login-email" className="block text-sm font-semibold text-gray-700 mb-2">
                   Email Address <span className="text-red-500">*</span>
                 </label>
                 <input
+                  id="login-email"
                   type="email"
                   required
                   value={formData.email}
@@ -310,10 +312,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
               {/* MEDICAL LICENSE (Registration only) */}
               {!isLogin && (
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label htmlFor="reg-license" className="block text-sm font-semibold text-gray-700 mb-2">
                     Medical License Number <span className="text-red-500">*</span>
                   </label>
                   <input
+                    id="reg-license"
                     type="text"
                     required
                     value={formData.medicalLicenseNumber}
@@ -328,10 +331,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
               {!isLogin && (
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    <label htmlFor="reg-phone" className="block text-sm font-semibold text-gray-700 mb-2">
                       Phone Number
                     </label>
                     <input
+                      id="reg-phone"
                       type="tel"
                       value={formData.phone}
                       onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
@@ -340,10 +344,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    <label htmlFor="reg-dob" className="block text-sm font-semibold text-gray-700 mb-2">
                       Date of Birth
                     </label>
                     <input
+                      id="reg-dob"
                       type="date"
                       value={formData.dateOfBirth}
                       onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
@@ -355,11 +360,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
 
               {/* PASSWORD */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label htmlFor="login-password" className="block text-sm font-semibold text-gray-700 mb-2">
                   Password <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <input
+                    id="login-password"
                     type={showPassword ? 'text' : 'password'}
                     required
                     value={formData.password}
@@ -394,11 +400,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
               {/* CONFIRM PASSWORD (Registration only) */}
               {!isLogin && (
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label htmlFor="reg-confirm-password" className="block text-sm font-semibold text-gray-700 mb-2">
                     Confirm Password <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                     <input
+                      id="reg-confirm-password"
                       type={showConfirmPassword ? 'text' : 'password'}
                       required
                       value={formData.confirmPassword}
@@ -537,9 +544,11 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
 
             {showMenu && (
               <>
-                <div
-                  className="fixed inset-0 z-40"
+                <button
+                  type="button"
+                  className="fixed inset-0 z-40 cursor-default bg-transparent border-none p-0"
                   onClick={() => setShowMenu(false)}
+                  aria-label="Close menu"
                 />
                 <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-lg py-2 z-50 border border-gray-200">
                   <div className="px-4 py-3 border-b border-gray-200">
@@ -633,7 +642,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({ currentPage, onNavigat
           <div className="flex items-center justify-between">
             <span className="font-medium">System Status:</span>
             <span className="text-green-600 font-semibold flex items-center">
-              <span className="w-2 h-2 bg-green-500 rounded-full mr-1 animate-pulse"></span>
+              <span className="w-2 h-2 bg-green-500 rounded-full mr-1 animate-pulse" />
               Online
             </span>
           </div>

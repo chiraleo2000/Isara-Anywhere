@@ -516,7 +516,7 @@ function isAccountLocked(email) {
   const key = email.toLowerCase();
   const entry = loginAttempts.get(key);
 
-  if (!entry || !entry.lockedUntil) return { locked: false };
+  if (!entry?.lockedUntil) return { locked: false };
 
   if (Date.now() > entry.lockedUntil) {
     loginAttempts.delete(key);
@@ -536,7 +536,7 @@ function isAccountLocked(email) {
 function validateSession(fetchFromGCS, BUCKETS) {
   return async (req, res, next) => {
     const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (!authHeader?.startsWith('Bearer ')) {
       return res.status(401).json({
         error: 'Authorization required',
         code: 'NO_TOKEN'
