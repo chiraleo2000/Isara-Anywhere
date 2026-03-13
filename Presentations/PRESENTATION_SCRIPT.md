@@ -2,8 +2,8 @@
 
 ## Presentation Script & Guide
 
-> **Version:** 1.6.0 | **Date:** March 2026  
-> **Status:** Phase 1 Complete + Code Quality Hardened — All Tests Passing (v1.6.0)  
+> **Version:** 1.5.6 | **Date:** March 2026
+> **Status:** Phase 1 Complete + Code Quality Hardened — All Tests Passing (v1.5.6)
 > **Duration:** 30-45 minutes  
 > **Audience:** Stakeholders, Technical Team, Medical Staff
 

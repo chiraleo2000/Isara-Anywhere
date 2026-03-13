@@ -1,4 +1,4 @@
-# Cloud Build configuration for Izara Doctor Portal v1.6.0
+# Cloud Build configuration for Izara Doctor Portal v1.5.6
 # Builds unified Docker image and deploys to Cloud Run
 # PostgreSQL runs on GCE VM (NOT Cloud SQL, NOT embedded PG)
 
@@ -10,7 +10,7 @@ steps:
       - "-f"
       - "Dockerfile.unified"
       - "-t"
-      - "asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-doctor-portal:v1.6.0"
+      - "asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-doctor-portal:v1.5.6"
       - "-t"
       - "asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-doctor-portal:latest"
       - "--build-arg"
@@ -34,7 +34,7 @@ steps:
       - "run"
       - "deploy"
       - "izara-doctor-portal-dev-testing"
-      - "--image=asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-doctor-portal:v1.6.0"
+      - "--image=asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-doctor-portal:v1.5.6"
       - "--region=asia-southeast1"
       - "--platform=managed"
       - "--allow-unauthenticated"
@@ -51,7 +51,7 @@ steps:
 
 # Store images in Artifact Registry
 images:
-  - "asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-doctor-portal:v1.6.0"
+  - "asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-doctor-portal:v1.5.6"
   - "asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-doctor-portal:latest"
 
 # Build timeout (20 minutes)

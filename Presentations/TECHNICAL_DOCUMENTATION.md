@@ -1,7 +1,7 @@
 # Izara Telemedicine Platform - Technical Documentation
 
-> **Version:** 1.6.0 (Updated March 13, 2026)  
-> **Status:** Phase 1 Complete + Code Quality Hardened — All Tests Passing (v1.6.0)  
+> **Version:** 1.5.6 (Updated March 14, 2026)
+> **Status:** Phase 1 Complete + Code Quality Hardened — All Tests Passing (v1.5.6)
 > **Database:** PostgreSQL 18 + pgvector  
 > **Stack:** PostgreSQL / Express / React / Jitsi / Gemini AI / Google Cloud  
 > **Tests:** 1,419 Unit Tests (Vitest) + 1,191 E2E Tests (Playwright) = **2,610 total — 100% Pass Rate**  

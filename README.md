@@ -1,12 +1,12 @@
 # 🏥 Izara Telemedicine Platform
 
-![Version](https://img.shields.io/badge/version-1.6.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.5.6-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Platform](https://img.shields.io/badge/platform-web-lightgrey.svg)
 ![Node](https://img.shields.io/badge/node-%3E%3D22.0.0-brightgreen.svg)
 ![Database](https://img.shields.io/badge/database-PostgreSQL%2018-blue.svg)
 ![Docker](https://img.shields.io/badge/docker-ready-blue.svg)
-![Tests](https://img.shields.io/badge/Unit%20tests-1%2C419%20passing-brightgreen.svg)
+![Tests](https://img.shields.io/badge/Unit%20tests-1%2C814%20passing-brightgreen.svg)
 ![Tests](https://img.shields.io/badge/E2E%20tests-1%2C191%20passing-brightgreen.svg)
 ![Cloud Run](https://img.shields.io/badge/Cloud%20Run-deployed-blue.svg)
 ![Security](https://img.shields.io/badge/security-SonarQube%20clean-green.svg)
@@ -44,7 +44,7 @@ The platform consists of three main services:
 | PostgreSQL | localhost:5433 |
 | pgAdmin | <http://localhost:5050> |
 
-### Cloud Environment — Production (v1.6.0) (Google Cloud Run)
+### Cloud Environment — Production (v1.5.6) (Google Cloud Run)
 
 | Service | URL |
 | ------- | --- |
@@ -56,12 +56,12 @@ The platform consists of three main services:
 
 ## 🧪 Testing
 
-### Test Architecture (v1.6.0)
+### Test Architecture (v1.5.6)
 
-#### Unit Tests (Vitest — 1,419 tests)
-- **46 test files** in `tests/unit/` — pure logic, no server required
+#### Unit Tests (Vitest — 1,814 tests)
+- **58 test files** in `tests/unit/` — pure logic, no server required
 - **Coverage areas**: Doctor portal (20 files), Patient portal (15 files), Meeting server (5 files), Security (2 files), Database (4 files)
-- **Framework**: Vitest 2.1.9, runs in ~4.3 seconds
+- **Framework**: Vitest 2.1.9, runs in ~3.8 seconds
 - **Run**: `cd tests/unit && npx vitest run`
 
 #### E2E Tests (Playwright — 1,191 tests)
@@ -72,7 +72,7 @@ The platform consists of three main services:
 - **0 skipped tests** — every test must pass
 - **Serial + parallel execution** for workflow integrity
 
-#### Combined: 2,610 tests (1,419 unit + 1,191 E2E)
+#### Combined: 3,005 tests (1,814 unit + 1,191 E2E)
 
 ### E2E Test Specs
 
@@ -106,9 +106,9 @@ The platform consists of three main services:
 ### Run Tests
 
 ```powershell
-# ── Unit Tests (1,419 tests, ~4.3 seconds) ──
+# ── Unit Tests (1,814 tests, ~3.8 seconds) ──
 cd tests/unit
-npx vitest run              # Run all 1,419 unit tests
+npx vitest run              # Run all 1,814 unit tests
 npx vitest run --coverage    # With coverage report
 npx vitest watch             # Watch mode during development
 
@@ -217,7 +217,7 @@ npx playwright show-report
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────────┐
-│                     IZARA TELEMEDICINE v1.6.0                               │
+│                     IZARA TELEMEDICINE v1.5.6                               │
 ├──────────────────────────────────────────────────────────────────────────┤
 │   ┌─────────────────┐  ┌─────────────────┐  ┌────────────────────────┐   │
 │   │  Patient Portal │  │  Doctor Portal  │  │  Meeting Server        │   │
@@ -347,7 +347,7 @@ cd Izara-jitsi-server
 gcloud builds submit --config=cloudbuild.yaml
 ```
 
-### Cloud URLs (Production — v1.6.0)
+### Cloud URLs (Production — v1.5.6)
 
 | Service | URL |
 | ------- | --- |
@@ -385,7 +385,7 @@ Isara-Anywhere/
 ├── Izara-jitsi-server/       # Meeting server with transcription
 │   └── server/               # Express + Socket.IO
 ├── tests/
-│   ├── unit/                 # Vitest unit tests (1,419 tests, 46 files)
+│   ├── unit/                 # Vitest unit tests (1,814 tests, 58 files)
 │   └── e2e/                  # Playwright E2E tests (1,191 tests, 24 specs)
 ├── specs/                    # Specification documents
 ├── Processes/                # Workflow documentation (13 docs)
@@ -410,7 +410,7 @@ Isara-Anywhere/
 
 ---
 
-## 🔒 Security (v1.6.0 — SonarQube Clean)
+## 🔒 Security (v1.5.6 — SonarQube Clean)
 
 - **Authentication**: bcrypt password hashing (10 rounds), JWT + session tokens
 - **JWT Secrets**: Consistent `JWT_SECRET_FINAL` usage across all verify calls (sign/verify mismatch fixed)
@@ -433,16 +433,23 @@ Isara-Anywhere/
 
 ## 📋 Changelog
 
-### v1.6.0 (March 13, 2026)
+### v1.5.6 (March 14, 2026)
+
+- **SonarQube S6551 Fix**: Created `errMsg()` utility — replaced 109 unsafe inline error ternaries across 8 server files
+- **SonarQube S3776 Fix**: Reduced cognitive complexity in auth.ts, video-meeting.ts, postgresDataService.ts by extracting helper functions
+- **Unit Tests Expanded**: 1,814 tests across 58 files (up from 1,419/46) — all passing
+- **API Endpoints**: 38/38 GET endpoints + 4/4 write operations verified returning 200 OK
+- **Cloud Deployment**: All 3 Cloud Run services deployed v1.5.6 — health checks passing
+
+### v1.5.5 (March 13, 2026)
 
 - **TypeScript Strict Safety**: All server-side catch blocks use `error: unknown` with proper type narrowing (eliminated ~250 `error: any` patterns)
 - **SonarQube Clean**: Fixed S6551 (unsafe string interpolation), S4325 (unnecessary assertions), non-null assertions
 - **Codebase Restructuring**: Patient portal pages flattened from nested subfolders, server routes merged into 17 consolidated modules
 - **Error Handling**: Proper `instanceof Error` type guards throughout; named error variables (`dbError`, `aiError`, `insertError`) for clarity
 - **AuthenticatedRequest Interface**: Strongly-typed with explicit `patientId`, `userId`, and union role type
-- **API Testing**: 31/31 GET endpoints + 5/5 write operations verified returning 200 OK
 - **Docker Deployment**: All 5 services (patient-portal, doctor-portal, meeting-server, postgres, pgadmin) healthy
-- **Cloud Deployment**: All 3 Cloud Run services (patient-portal, doctor-portal, meeting-server) deployed v1.6.0 — health checks passing
+- **Cloud Deployment**: All 3 Cloud Run services deployed — health checks passing
 - **PostgreSQL 18**: Updated all documentation to reflect actual database version
 
 ### v1.5.4 (March 8, 2026)

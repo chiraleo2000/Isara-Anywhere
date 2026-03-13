@@ -1,6 +1,6 @@
 # 🏥 Izara Doctor Portal
 
-![Version](https://img.shields.io/badge/version-1.5.4-blue.svg)
+![Version](https://img.shields.io/badge/version-1.5.6-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![React](https://img.shields.io/badge/React-18-61dafb.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178c6.svg)
@@ -173,4 +173,4 @@ MIT License
 
 ---
 
-**Izara Doctor Portal v1.4.7** — AI-powered clinical workflows for Thailand's healthcare 🏥
+**Izara Doctor Portal v1.5.6** — AI-powered clinical workflows for Thailand's healthcare 🏥
