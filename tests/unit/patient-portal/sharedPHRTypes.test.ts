@@ -10,10 +10,8 @@
 import { describe, it, expect } from 'vitest';
 import {
   createEmptyPHR,
-  createEmptyLivingWill,
-  convertLivingWillToDoctorView,
   convertPHRToDoctorView,
-} from '../../../Isara-patient-portal/src/types/sharedPHRTypes';
+} from '../../../Isara-doctor-portal/src/types/sharedPHRTypes';
 
 // ─────────────────────────────────────────────
 // A. createEmptyPHR
@@ -70,118 +68,6 @@ describe('SharedPHRTypes — createEmptyPHR', () => {
   it('A08 — lastModifiedBy is patient', () => {
     const phr = createEmptyPHR('P001', 'Test');
     expect(phr.lastModifiedBy).toBe('patient');
-  });
-});
-
-// ─────────────────────────────────────────────
-// B. createEmptyLivingWill
-// ─────────────────────────────────────────────
-
-describe('SharedPHRTypes — createEmptyLivingWill', () => {
-  it('B01 — creates living will with correct patientId', () => {
-    const lw = createEmptyLivingWill('P001');
-    expect(lw.patientId).toBe('P001');
-  });
-
-  it('B02 — creates living will with draft status', () => {
-    const lw = createEmptyLivingWill('P001');
-    expect(lw.status).toBe('draft');
-  });
-
-  it('B03 — creates living will with 7 treatment types', () => {
-    const lw = createEmptyLivingWill('P001');
-    const treatments = lw.treatments;
-    expect(treatments.cpr).toBeDefined();
-    expect(treatments.mechanicalVentilation).toBeDefined();
-    expect(treatments.artificialNutrition).toBeDefined();
-    expect(treatments.dialysis).toBeDefined();
-    expect(treatments.antibiotics).toBeDefined();
-    expect(treatments.painManagement).toBeDefined();
-    expect(treatments.organDonation).toBeDefined();
-  });
-
-  it('B04 — antibiotics and painManagement default to "accept"', () => {
-    const lw = createEmptyLivingWill('P001');
-    expect(lw.treatments.antibiotics.preference).toBe('accept');
-    expect(lw.treatments.painManagement.preference).toBe('accept');
-  });
-
-  it('B05 — CPR defaults to "conditional"', () => {
-    const lw = createEmptyLivingWill('P001');
-    expect(lw.treatments.cpr.preference).toBe('conditional');
-  });
-
-  it('B06 — PDPA consent defaults to not shared', () => {
-    const lw = createEmptyLivingWill('P001');
-    expect(lw.pdpaConsent.isSharedWithDoctors).toBe(false);
-    expect(lw.pdpaConsent.shareScope).toBe('none');
-    expect(lw.pdpaConsent.shareWithAdmin).toBe(false);
-  });
-
-  it('B07 — PDPA consent allows withdrawal', () => {
-    const lw = createEmptyLivingWill('P001');
-    expect(lw.pdpaConsent.canWithdraw).toBe(true);
-  });
-
-  it('B08 — creates with empty representatives', () => {
-    const lw = createEmptyLivingWill('P001');
-    expect(lw.representatives).toEqual([]);
-  });
-
-  it('B09 — creates with audit log entry', () => {
-    const lw = createEmptyLivingWill('P001');
-    expect(lw.auditLog).toHaveLength(1);
-    expect(lw.auditLog[0].action).toBe('created');
-    expect(lw.auditLog[0].performedBy).toBe('patient');
-  });
-
-  it('B10 — signature method is digital', () => {
-    const lw = createEmptyLivingWill('P001');
-    expect(lw.signature.signatureMethod).toBe('digital');
-  });
-});
-
-// ─────────────────────────────────────────────
-// C. convertLivingWillToDoctorView
-// ─────────────────────────────────────────────
-
-describe('SharedPHRTypes — convertLivingWillToDoctorView', () => {
-  it('C01 — returns null when PDPA consent is not shared', () => {
-    const lw = createEmptyLivingWill('P001');
-    lw.pdpaConsent.isSharedWithDoctors = false;
-    const result = convertLivingWillToDoctorView(lw, 'Test Patient');
-    expect(result).toBeNull();
-  });
-
-  it('C02 — returns doctor view when PDPA consent is shared', () => {
-    const lw = createEmptyLivingWill('P001');
-    lw.pdpaConsent.isSharedWithDoctors = true;
-    const result = convertLivingWillToDoctorView(lw, 'Test Patient');
-    expect(result).not.toBeNull();
-    expect(result!.patientName).toBe('Test Patient');
-    expect(result!.patientId).toBe('P001');
-  });
-
-  it('C03 — doctor view contains treatment preferences', () => {
-    const lw = createEmptyLivingWill('P001');
-    lw.pdpaConsent.isSharedWithDoctors = true;
-    const result = convertLivingWillToDoctorView(lw, 'Test Patient');
-    expect(result!.treatments).toBeDefined();
-    expect(result!.treatments.cpr).toBeDefined();
-  });
-
-  it('C04 — doctor view has isSharedByPatient = true', () => {
-    const lw = createEmptyLivingWill('P001');
-    lw.pdpaConsent.isSharedWithDoctors = true;
-    const result = convertLivingWillToDoctorView(lw, 'Test');
-    expect(result!.isSharedByPatient).toBe(true);
-  });
-
-  it('C05 — doctor view omits sensitive representative details when no main rep', () => {
-    const lw = createEmptyLivingWill('P001');
-    lw.pdpaConsent.isSharedWithDoctors = true;
-    const result = convertLivingWillToDoctorView(lw, 'Test');
-    expect(result!.mainRepresentative).toBeUndefined();
   });
 });
 

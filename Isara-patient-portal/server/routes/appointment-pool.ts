@@ -18,6 +18,7 @@
 import { Router, Request, Response } from 'express';
 import { storage, GCS_BUCKETS } from '../index';
 import { authMiddleware } from '../middleware/auth';
+import { errMsg } from '../utils';
 
 const router = Router();
 
@@ -105,7 +106,7 @@ async function readJSON(bucket: string, filePath: string): Promise<any> {
     if (error && typeof error === 'object' && 'code' in error && (error as { code: number }).code === 404) {
       return null;
     }
-    console.error('[APPOINTMENT-POOL] readJSON error:', (error instanceof Error ? error.message : String(error)));
+    console.error('[APPOINTMENT-POOL] readJSON error:', errMsg(error));
     return null;
   }
 }
@@ -243,7 +244,7 @@ router.get('/', authMiddleware, async (req: Request, res: Response) => {
     res.json(poolItems);
   } catch (error: unknown) {
     console.error('Get pool error:', error);
-    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
+    res.status(500).json({ error: errMsg(error) });
   }
 });
 
@@ -324,7 +325,7 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
     });
   } catch (error: unknown) {
     console.error('Add to pool error:', error);
-    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
+    res.status(500).json({ error: errMsg(error) });
   }
 });
 
@@ -381,7 +382,7 @@ router.post('/:poolId/claim', authMiddleware, async (req: Request, res: Response
     });
   } catch (error: unknown) {
     console.error('Claim pool error:', error);
-    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
+    res.status(500).json({ error: errMsg(error) });
   }
 });
 
@@ -449,7 +450,7 @@ router.post('/:poolId/admin-assign', authMiddleware, async (req: Request, res: R
     });
   } catch (error: unknown) {
     console.error('Admin assign error:', error);
-    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
+    res.status(500).json({ error: errMsg(error) });
   }
 });
 
@@ -508,7 +509,7 @@ router.post('/:poolId/approve', authMiddleware, async (req: Request, res: Respon
     });
   } catch (error: unknown) {
     console.error('Approve assignment error:', error);
-    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
+    res.status(500).json({ error: errMsg(error) });
   }
 });
 
@@ -573,7 +574,7 @@ router.post('/:poolId/ai-match', authMiddleware, async (req: Request, res: Respo
     });
   } catch (error: unknown) {
     console.error('AI match error:', error);
-    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
+    res.status(500).json({ error: errMsg(error) });
   }
 });
 
@@ -607,7 +608,7 @@ router.get('/meeting-check/:appointmentId', authMiddleware, async (req: Request,
     });
   } catch (error: unknown) {
     console.error('Meeting check error:', error);
-    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
+    res.status(500).json({ error: errMsg(error) });
   }
 });
 
@@ -712,7 +713,7 @@ router.post('/missed-meeting/:appointmentId', authMiddleware, async (req: Reques
     });
   } catch (error: unknown) {
     console.error('Missed meeting error:', error);
-    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
+    res.status(500).json({ error: errMsg(error) });
   }
 });
 
@@ -773,7 +774,7 @@ router.put('/meeting-rules', authMiddleware, async (req: Request, res: Response)
     res.json({ success: true, rules: newRules });
   } catch (error: unknown) {
     console.error('Update meeting rules error:', error);
-    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
+    res.status(500).json({ error: errMsg(error) });
   }
 });
 

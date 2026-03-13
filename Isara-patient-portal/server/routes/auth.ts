@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import node_crypto from 'node:crypto';
 import postgresDataService from '../services/postgresDataService';
+import { errMsg } from '../utils';
 
 const { pool } = postgresDataService;
 const router = Router();
@@ -108,6 +109,26 @@ function validateRegistrationInput(body: Record<string, unknown>): ValidationErr
   return null;
 }
 
+// Helper: Parse comma/semicolon separated list input
+function parseList(str: string | undefined): string[] {
+  if (!str) return [];
+  return str.split(/[,;]/).map(s => s.trim()).filter(Boolean);
+}
+
+// Helper: Check if user email already exists, returns userId or null
+async function findExistingUserByEmail(emailLower: string): Promise<string | null> {
+  try {
+    const existingUser = await pool.query(
+      'SELECT id FROM users WHERE LOWER(email) = LOWER($1)',
+      [emailLower]
+    );
+    return existingUser.rows.length > 0 ? existingUser.rows[0].id : null;
+  } catch (dbError) {
+    console.error('DB check error:', dbError);
+    return null; // Continue with registration attempt
+  }
+}
+
 // ============================================================================
 // REGISTER NEW USER
 // ============================================================================
@@ -127,25 +148,15 @@ router.post('/register', async (req: Request, res: Response) => {
 
     const emailLower = email.toLowerCase().trim();
 
-    // Check if email already exists
-    try {
-      const existingUser = await pool.query(
-        'SELECT id FROM users WHERE LOWER(email) = LOWER($1)',
-        [emailLower]
-      );
-
-      if (existingUser.rows.length > 0) {
-        // Return success with existing user info for testing
-        return res.json({ 
-          success: true,
-          message: 'User already exists',
-          userId: existingUser.rows[0].id,
-          alreadyExists: true
-        });
-      }
-    } catch (dbError) {
-      console.error('DB check error:', dbError);
-      // Continue with registration attempt
+    // Check if email already exists using extracted helper
+    const existingUserId = await findExistingUserByEmail(emailLower);
+    if (existingUserId) {
+      return res.json({ 
+        success: true,
+        message: 'User already exists',
+        userId: existingUserId,
+        alreadyExists: true
+      });
     }
 
     // Generate IDs and hash password
@@ -156,12 +167,6 @@ router.post('/register', async (req: Request, res: Response) => {
     const patientId = uniqueId; // Same as userId for FK constraint compatibility
     const passwordHash = await hashPassword(password);
     const now = new Date();
-
-    // Parse list inputs
-    const parseList = (str: string | undefined): string[] => {
-      if (!str) return [];
-      return str.split(/[,;]/).map(s => s.trim()).filter(Boolean);
-    };
 
     // Insert user into PostgreSQL
     // Note: id and patient_id are the same to satisfy FK constraints
@@ -240,7 +245,7 @@ router.post('/register', async (req: Request, res: Response) => {
     console.error('[AUTH] Registration error:', error);
     
     // Handle duplicate user errors gracefully
-    if ((error instanceof Error ? error.message : String(error))?.includes('duplicate') || (error && typeof error === 'object' && 'code' in error && (error as { code: string }).code === '23505')) {
+    if (errMsg(error)?.includes('duplicate') || (error && typeof error === 'object' && 'code' in error && (error as { code: string }).code === '23505')) {
       return res.json({ 
         success: true,
         message: 'User already exists',
@@ -252,7 +257,7 @@ router.post('/register', async (req: Request, res: Response) => {
     res.status(500).json({ 
       success: false,
       error: 'Registration failed',
-      message: (error instanceof Error ? error.message : String(error))
+      message: errMsg(error)
     });
   }
 });
@@ -353,7 +358,7 @@ router.post('/login', async (req: Request, res: Response) => {
     });
   } catch (error: unknown) {
     console.error('[AUTH] Login error:', error);
-    res.status(500).json({ error: 'Login failed: ' + (error instanceof Error ? error.message : String(error)) });
+    res.status(500).json({ error: 'Login failed: ' + errMsg(error) });
   }
 });
 
@@ -521,7 +526,7 @@ router.put('/profile', async (req: Request, res: Response) => {
     });
   } catch (error: unknown) {
     console.error('[AUTH] Profile update error:', error);
-    res.status(500).json({ error: 'Profile update failed: ' + (error instanceof Error ? error.message : String(error)) });
+    res.status(500).json({ error: 'Profile update failed: ' + errMsg(error) });
   }
 });
 
@@ -821,7 +826,7 @@ router.get('/check-user/:email', async (req: Request, res: Response) => {
     });
   } catch (error: unknown) {
     console.error('[AUTH DEBUG] Error:', error);
-    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
+    res.status(500).json({ error: errMsg(error) });
   }
 });
 
@@ -873,7 +878,7 @@ router.post('/avatar', async (req: Request, res: Response) => {
     });
   } catch (error: unknown) {
     console.error('[AUTH] Avatar update error:', error);
-    res.status(500).json({ error: 'Failed to update avatar: ' + (error instanceof Error ? error.message : String(error)) });
+    res.status(500).json({ error: 'Failed to update avatar: ' + errMsg(error) });
   }
 });
 
@@ -921,7 +926,7 @@ router.post('/profile/image', async (req: Request, res: Response) => {
     });
   } catch (error: unknown) {
     console.error('[AUTH] Profile image update error:', error);
-    res.status(500).json({ error: 'Failed to update profile image: ' + (error instanceof Error ? error.message : String(error)) });
+    res.status(500).json({ error: 'Failed to update profile image: ' + errMsg(error) });
   }
 });
 

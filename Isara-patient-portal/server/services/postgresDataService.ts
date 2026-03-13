@@ -8,6 +8,7 @@
  */
 
 import pg from 'pg';
+import { errMsg } from '../utils';
 import bcrypt from 'bcryptjs';
 import crypto from 'node:crypto';
 
@@ -624,60 +625,67 @@ export const PHRService = {
    */
   async upsertPHR(patientId: string, data: Partial<PHR>): Promise<PHR> {
     const existing = await this.getPHR(patientId);
+    return existing
+      ? this._updatePHR(patientId, data)
+      : this._insertPHR(patientId, data);
+  },
 
-    if (existing) {
+  /** Update existing PHR record */
+  async _updatePHR(patientId: string, data: Partial<PHR>): Promise<PHR> {
+    const toJson = (val: unknown) => val === undefined ? null : JSON.stringify(val);
+    const result = await pool.query(
+      `UPDATE phr SET
+        allergies = COALESCE($2::jsonb, allergies),
+        chronic_conditions = COALESCE($3::jsonb, chronic_conditions),
+        medications = COALESCE($4::jsonb, medications),
+        lifestyle = COALESCE($5::jsonb, lifestyle),
+        demographics = COALESCE($6::jsonb, demographics),
+        updated_at = NOW()
+       WHERE patient_id = $1
+       RETURNING *`,
+      [
+        patientId,
+        toJson(data.allergies),
+        toJson(data.chronic_conditions),
+        toJson(data.medications),
+        toJson(data.lifestyle),
+        toJson(data.demographics)
+      ]
+    );
+    return result.rows[0];
+  },
+
+  /** Insert new PHR record, returns in-memory fallback on FK constraint failure */
+  async _insertPHR(patientId: string, data: Partial<PHR>): Promise<PHR> {
+    try {
       const result = await pool.query(
-        `UPDATE phr SET
-          allergies = COALESCE($2::jsonb, allergies),
-          chronic_conditions = COALESCE($3::jsonb, chronic_conditions),
-          medications = COALESCE($4::jsonb, medications),
-          lifestyle = COALESCE($5::jsonb, lifestyle),
-          demographics = COALESCE($6::jsonb, demographics),
-          updated_at = NOW()
-         WHERE patient_id = $1
+        `INSERT INTO phr (id, patient_id, allergies, chronic_conditions, medications, lifestyle, demographics)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
          RETURNING *`,
         [
+          `phr_${patientId}`,
           patientId,
-          data.allergies === undefined ? null : JSON.stringify(data.allergies),
-          data.chronic_conditions === undefined ? null : JSON.stringify(data.chronic_conditions),
-          data.medications === undefined ? null : JSON.stringify(data.medications),
-          data.lifestyle === undefined ? null : JSON.stringify(data.lifestyle),
-          data.demographics === undefined ? null : JSON.stringify(data.demographics)
+          JSON.stringify(data.allergies || []),
+          JSON.stringify(data.chronic_conditions || []),
+          JSON.stringify(data.medications || []),
+          JSON.stringify(data.lifestyle || {}),
+          JSON.stringify(data.demographics || {})
         ]
       );
       return result.rows[0];
-    } else {
-      try {
-        const result = await pool.query(
-          `INSERT INTO phr (id, patient_id, allergies, chronic_conditions, medications, lifestyle, demographics)
-           VALUES ($1, $2, $3, $4, $5, $6, $7)
-           RETURNING *`,
-          [
-            `phr_${patientId}`,
-            patientId,
-            JSON.stringify(data.allergies || []),
-            JSON.stringify(data.chronic_conditions || []),
-            JSON.stringify(data.medications || []),
-            JSON.stringify(data.lifestyle || {}),
-            JSON.stringify(data.demographics || {})
-          ]
-        );
-        return result.rows[0];
-      } catch (insertError: unknown) {
-        // FK constraint violation — patient may not exist in users table, return in-memory PHR
-        console.warn('[PHR] Insert failed (FK constraint?), returning in-memory PHR:', insertError instanceof Error ? insertError.message : insertError);
-        return {
-          id: `phr_${patientId}`,
-          patient_id: patientId,
-          allergies: data.allergies || [],
-          chronic_conditions: data.chronic_conditions || [],
-          medications: data.medications || [],
-          lifestyle: data.lifestyle || {},
-          demographics: data.demographics || {},
-          created_at: new Date(),
-          updated_at: new Date(),
-        } as any;
-      }
+    } catch (insertError: unknown) {
+      console.warn('[PHR] Insert failed (FK constraint?), returning in-memory PHR:', errMsg(insertError));
+      return {
+        id: `phr_${patientId}`,
+        patient_id: patientId,
+        allergies: data.allergies || [],
+        chronic_conditions: data.chronic_conditions || [],
+        medications: data.medications || [],
+        lifestyle: data.lifestyle || {},
+        demographics: data.demographics || {},
+        created_at: new Date(),
+        updated_at: new Date(),
+      } as any;
     }
   },
 

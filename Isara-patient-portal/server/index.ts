@@ -93,6 +93,7 @@ const storage: Storage | null = USE_GCS ? initializeStorage() : null;
 export { storage, GCS_BUCKETS, USE_POSTGRESQL, USE_GCS };
 
 // Import OWASP Security Middleware
+import { errMsg } from './utils';
 import {
   securityHeaders,
   rateLimit,
@@ -259,7 +260,7 @@ app.get('/api/health/gcs', async (_req: Request, res: Response) => {
             name,
             bucket: bucketName,
             connected: false,
-            error: (error instanceof Error ? error.message : String(error)),
+            error: errMsg(error),
           };
         }
       })
@@ -295,7 +296,7 @@ app.get('/api/health/db', async (req: Request, res: Response) => {
       connected: true
     });
   } catch (error: unknown) {
-    console.error('[DB] Health check failed:', (error instanceof Error ? error.message : String(error)));
+    console.error('[DB] Health check failed:', errMsg(error));
     res.status(503).json({
       status: 'unhealthy',
       timestamp: new Date().toISOString(),
@@ -341,7 +342,7 @@ app.get('/api/consultants', async (req: Request, res: Response) => {
         bio: c.bio
       }));
     } catch (dbError: unknown) {
-      console.log('[CONSULTANTS] DB error, using demo data:', (dbError instanceof Error ? dbError.message : String(dbError)));
+      console.log('[CONSULTANTS] DB error, using demo data:', errMsg(dbError));
     }
     
     // Fallback to demo data if no DB results
@@ -448,7 +449,7 @@ app.get('/api/health-records/instructions/:appointmentId', async (req: Request, 
     });
   } catch (error: unknown) {
     console.error('[HEALTH-RECORDS] Instructions error:', error);
-    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
+    res.status(500).json({ error: errMsg(error) });
   }
 });
 
@@ -543,7 +544,7 @@ app.get('/api/health-records/treatment-results', async (req: Request, res: Respo
     });
   } catch (error: unknown) {
     console.error('[HEALTH-RECORDS] Treatment results error:', error);
-    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
+    res.status(500).json({ error: errMsg(error) });
   }
 });
 
@@ -590,7 +591,7 @@ app.get('/api/prescriptions', authMiddleware, async (req: Request, res: Response
     res.json({ success: true, prescriptions: result.rows });
   } catch (error: unknown) {
     console.error('[PRESCRIPTIONS] Error:', error);
-    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)), prescriptions: [] });
+    res.status(500).json({ error: errMsg(error), prescriptions: [] });
   }
 });
 
@@ -602,7 +603,7 @@ app.get('/api/prescriptions/:id', authMiddleware, async (req: Request, res: Resp
     res.json({ success: true, prescription: result.rows[0] });
   } catch (error: unknown) {
     console.error('[PRESCRIPTIONS] Error:', error);
-    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
+    res.status(500).json({ error: errMsg(error) });
   }
 });
 
@@ -1026,7 +1027,7 @@ app.get('/api/emr/my', authMiddleware, async (req: Request, res: Response) => {
         emrs: result.rows
       });
     } catch (dbError: unknown) {
-      console.error('[EMR] DB error:', (dbError instanceof Error ? dbError.message : String(dbError)));
+      console.error('[EMR] DB error:', errMsg(dbError));
       res.status(500).json({
         success: false,
         emrs: [],

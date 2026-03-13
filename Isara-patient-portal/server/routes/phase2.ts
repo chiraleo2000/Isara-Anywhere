@@ -10,6 +10,7 @@
 import { Router, Request, Response } from 'express';
 import { authMiddleware, AuthenticatedRequest } from '../middleware/auth';
 import postgresDataService from '../services/postgresDataService';
+import { errMsg } from '../utils';
 
 const { pool } = postgresDataService;
 const router = Router();
@@ -53,7 +54,7 @@ router.post('/ctm-assessment', authMiddleware, async (req: Request, res: Respons
         ]
       );
     } catch (dbError: unknown) {
-      console.warn('[CTM] DB insert fallback:', (dbError instanceof Error ? dbError.message : String(dbError)));
+      console.warn('[CTM] DB insert fallback:', errMsg(dbError));
     }
 
     res.json({
@@ -76,7 +77,7 @@ router.post('/ctm-assessment', authMiddleware, async (req: Request, res: Respons
       message: 'CTM assessment created successfully',
     });
   } catch (error: unknown) {
-    console.error('[CTM] Create error:', (error instanceof Error ? error.message : String(error)));
+    console.error('[CTM] Create error:', errMsg(error));
     res.json({
       success: true,
       id: generateId('CTM'),
@@ -98,7 +99,7 @@ router.get('/ctm-assessment/:id', authMiddleware, async (req: Request, res: Resp
         assessment = result.rows[0];
       }
     } catch (dbError: unknown) {
-      console.warn('[CTM] DB get fallback:', (dbError instanceof Error ? dbError.message : String(dbError)));
+      console.warn('[CTM] DB get fallback:', errMsg(dbError));
     }
 
     res.json({
@@ -115,7 +116,7 @@ router.get('/ctm-assessment/:id', authMiddleware, async (req: Request, res: Resp
       },
     });
   } catch (error: unknown) {
-    console.error('[CTM] Get error:', (error instanceof Error ? error.message : String(error)));
+    console.error('[CTM] Get error:', errMsg(error));
     res.json({ success: true, assessment: null, message: 'Assessment not found' });
   }
 });
@@ -135,7 +136,7 @@ router.get('/ctm-assessment', authMiddleware, async (req: Request, res: Response
       );
       assessments = result.rows;
     } catch (dbError: unknown) {
-      console.warn('[CTM] DB list fallback:', (dbError instanceof Error ? dbError.message : String(dbError)));
+      console.warn('[CTM] DB list fallback:', errMsg(dbError));
     }
 
     res.json({
@@ -144,7 +145,7 @@ router.get('/ctm-assessment', authMiddleware, async (req: Request, res: Response
       total: assessments.length,
     });
   } catch (error: unknown) {
-    console.error('[CTM] List error:', (error instanceof Error ? error.message : String(error)));
+    console.error('[CTM] List error:', errMsg(error));
     res.json({ success: true, assessments: [], total: 0 });
   }
 });
@@ -171,7 +172,7 @@ router.post('/ctm-assessment/ai-recommend', authMiddleware, async (req: Request,
       message: 'AI herbal recommendation generated',
     });
   } catch (error: unknown) {
-    console.error('[CTM] AI recommend error:', (error instanceof Error ? error.message : String(error)));
+    console.error('[CTM] AI recommend error:', errMsg(error));
     res.json({ success: true, recommendations: { herbs: [], analysis: '' }, message: 'AI recommendation unavailable' });
   }
 });
@@ -205,7 +206,7 @@ router.post('/geriatric-screening', authMiddleware, async (req: Request, res: Re
         ]
       );
     } catch (dbError: unknown) {
-      console.warn('[GERIATRIC] DB insert fallback:', (dbError instanceof Error ? dbError.message : String(dbError)));
+      console.warn('[GERIATRIC] DB insert fallback:', errMsg(dbError));
     }
 
     res.json({
@@ -236,7 +237,7 @@ router.post('/geriatric-screening', authMiddleware, async (req: Request, res: Re
       message: 'Geriatric screening created successfully',
     });
   } catch (error: unknown) {
-    console.error('[GERIATRIC] Create error:', (error instanceof Error ? error.message : String(error)));
+    console.error('[GERIATRIC] Create error:', errMsg(error));
     res.json({ success: true, id: generateId('GS'), screening: req.body, message: 'Screening processed' });
   }
 });
@@ -256,7 +257,7 @@ router.get('/geriatric-screening', authMiddleware, async (req: Request, res: Res
       );
       screenings = result.rows;
     } catch (dbError: unknown) {
-      console.warn('[GERIATRIC] DB list fallback:', (dbError instanceof Error ? dbError.message : String(dbError)));
+      console.warn('[GERIATRIC] DB list fallback:', errMsg(dbError));
     }
 
     res.json({
@@ -265,7 +266,7 @@ router.get('/geriatric-screening', authMiddleware, async (req: Request, res: Res
       total: screenings.length,
     });
   } catch (error: unknown) {
-    console.error('[GERIATRIC] List error:', (error instanceof Error ? error.message : String(error)));
+    console.error('[GERIATRIC] List error:', errMsg(error));
     res.json({ success: true, screenings: [], total: 0 });
   }
 });
@@ -297,7 +298,7 @@ router.post('/sos-alert', authMiddleware, async (req: Request, res: Response) =>
         ]
       );
     } catch (dbError: unknown) {
-      console.warn('[SOS] DB insert fallback:', (dbError instanceof Error ? dbError.message : String(dbError)));
+      console.warn('[SOS] DB insert fallback:', errMsg(dbError));
     }
 
     res.json({
@@ -316,7 +317,7 @@ router.post('/sos-alert', authMiddleware, async (req: Request, res: Response) =>
       message: 'SOS alert created successfully',
     });
   } catch (error: unknown) {
-    console.error('[SOS] Create error:', (error instanceof Error ? error.message : String(error)));
+    console.error('[SOS] Create error:', errMsg(error));
     res.json({ success: true, id: generateId('SOS'), alert: { ...req.body, status: 'active' }, message: 'Alert processed' });
   }
 });
@@ -334,12 +335,12 @@ router.get('/sos-alert', authMiddleware, async (req: Request, res: Response) => 
       );
       alerts = result.rows;
     } catch (dbError: unknown) {
-      console.warn('[SOS] DB list fallback:', (dbError instanceof Error ? dbError.message : String(dbError)));
+      console.warn('[SOS] DB list fallback:', errMsg(dbError));
     }
 
     res.json({ success: true, alerts, total: alerts.length });
   } catch (error: unknown) {
-    console.error('[SOS] List error:', (error instanceof Error ? error.message : String(error)));
+    console.error('[SOS] List error:', errMsg(error));
     res.json({ success: true, alerts: [], total: 0 });
   }
 });
@@ -355,12 +356,12 @@ router.get('/sos-alert/active', authMiddleware, async (req: Request, res: Respon
       );
       alerts = result.rows;
     } catch (dbError: unknown) {
-      console.warn('[SOS] DB active fallback:', (dbError instanceof Error ? dbError.message : String(dbError)));
+      console.warn('[SOS] DB active fallback:', errMsg(dbError));
     }
 
     res.json({ success: true, alerts, total: alerts.length });
   } catch (error: unknown) {
-    console.error('[SOS] Active error:', (error instanceof Error ? error.message : String(error)));
+    console.error('[SOS] Active error:', errMsg(error));
     res.json({ success: true, alerts: [], total: 0 });
   }
 });
@@ -377,7 +378,7 @@ router.post('/sos-alert/:id/acknowledge', authMiddleware, async (req: Request, r
         [userId, id]
       );
     } catch (dbError: unknown) {
-      console.warn('[SOS] DB acknowledge fallback:', (dbError instanceof Error ? dbError.message : String(dbError)));
+      console.warn('[SOS] DB acknowledge fallback:', errMsg(dbError));
     }
 
     res.json({
@@ -388,7 +389,7 @@ router.post('/sos-alert/:id/acknowledge', authMiddleware, async (req: Request, r
       message: 'SOS alert acknowledged',
     });
   } catch (error: unknown) {
-    console.error('[SOS] Acknowledge error:', (error instanceof Error ? error.message : String(error)));
+    console.error('[SOS] Acknowledge error:', errMsg(error));
     res.json({ success: true, id: req.params.id, status: 'acknowledged', message: 'Acknowledgement processed' });
   }
 });
@@ -404,7 +405,7 @@ router.post('/sos-alert/:id/cancel', authMiddleware, async (req: Request, res: R
         [id]
       );
     } catch (dbError: unknown) {
-      console.warn('[SOS] DB cancel fallback:', (dbError instanceof Error ? dbError.message : String(dbError)));
+      console.warn('[SOS] DB cancel fallback:', errMsg(dbError));
     }
 
     res.json({
@@ -414,7 +415,7 @@ router.post('/sos-alert/:id/cancel', authMiddleware, async (req: Request, res: R
       message: 'SOS alert cancelled',
     });
   } catch (error: unknown) {
-    console.error('[SOS] Cancel error:', (error instanceof Error ? error.message : String(error)));
+    console.error('[SOS] Cancel error:', errMsg(error));
     res.json({ success: true, id: req.params.id, status: 'cancelled', message: 'Cancellation processed' });
   }
 });
@@ -447,7 +448,7 @@ router.post('/follow-up', authMiddleware, async (req: Request, res: Response) =>
         ]
       );
     } catch (dbError: unknown) {
-      console.warn('[FOLLOW-UP] DB insert fallback:', (dbError instanceof Error ? dbError.message : String(dbError)));
+      console.warn('[FOLLOW-UP] DB insert fallback:', errMsg(dbError));
     }
 
     res.json({
@@ -467,7 +468,7 @@ router.post('/follow-up', authMiddleware, async (req: Request, res: Response) =>
       message: 'Follow-up created successfully',
     });
   } catch (error: unknown) {
-    console.error('[FOLLOW-UP] Create error:', (error instanceof Error ? error.message : String(error)));
+    console.error('[FOLLOW-UP] Create error:', errMsg(error));
     res.json({ success: true, id: generateId('FU'), followUp: req.body, message: 'Follow-up processed' });
   }
 });
@@ -501,12 +502,12 @@ router.get('/follow-up', authMiddleware, async (req: Request, res: Response) => 
       const result = await pool.query(query, params);
       followUps = result.rows;
     } catch (dbError: unknown) {
-      console.warn('[FOLLOW-UP] DB list fallback:', (dbError instanceof Error ? dbError.message : String(dbError)));
+      console.warn('[FOLLOW-UP] DB list fallback:', errMsg(dbError));
     }
 
     res.json({ success: true, followUps, total: followUps.length });
   } catch (error: unknown) {
-    console.error('[FOLLOW-UP] List error:', (error instanceof Error ? error.message : String(error)));
+    console.error('[FOLLOW-UP] List error:', errMsg(error));
     res.json({ success: true, followUps: [], total: 0 });
   }
 });
@@ -523,7 +524,7 @@ router.post('/follow-up/:id/complete', authMiddleware, async (req: Request, res:
         [notes, id]
       );
     } catch (dbError: unknown) {
-      console.warn('[FOLLOW-UP] DB complete fallback:', (dbError instanceof Error ? dbError.message : String(dbError)));
+      console.warn('[FOLLOW-UP] DB complete fallback:', errMsg(dbError));
     }
 
     res.json({
@@ -533,7 +534,7 @@ router.post('/follow-up/:id/complete', authMiddleware, async (req: Request, res:
       message: 'Follow-up completed',
     });
   } catch (error: unknown) {
-    console.error('[FOLLOW-UP] Complete error:', (error instanceof Error ? error.message : String(error)));
+    console.error('[FOLLOW-UP] Complete error:', errMsg(error));
     res.json({ success: true, id: req.params.id, status: 'completed', message: 'Completion processed' });
   }
 });
@@ -567,12 +568,12 @@ router.get('/nursing-dashboard', authMiddleware, async (req: Request, res: Respo
       );
       dashboard.activeTasks = Number.parseInt(tasksResult.rows[0]?.count || '0', 10);
     } catch (dbError: unknown) {
-      console.warn('[NURSING] DB dashboard fallback:', (dbError instanceof Error ? dbError.message : String(dbError)));
+      console.warn('[NURSING] DB dashboard fallback:', errMsg(dbError));
     }
 
     res.json({ success: true, dashboard });
   } catch (error: unknown) {
-    console.error('[NURSING] Dashboard error:', (error instanceof Error ? error.message : String(error)));
+    console.error('[NURSING] Dashboard error:', errMsg(error));
     res.json({
       success: true,
       dashboard: {
@@ -605,7 +606,7 @@ router.post('/nursing-dashboard/round', authMiddleware, async (req: Request, res
       message: 'Nursing round recorded',
     });
   } catch (error: unknown) {
-    console.error('[NURSING] Round error:', (error instanceof Error ? error.message : String(error)));
+    console.error('[NURSING] Round error:', errMsg(error));
     res.json({ success: true, id: generateId('NR'), round: req.body, message: 'Round processed' });
   }
 });
@@ -621,12 +622,12 @@ router.get('/nursing-dashboard/tasks', authMiddleware, async (req: Request, res:
       );
       tasks = result.rows;
     } catch (dbError: unknown) {
-      console.warn('[NURSING] DB tasks fallback:', (dbError instanceof Error ? dbError.message : String(dbError)));
+      console.warn('[NURSING] DB tasks fallback:', errMsg(dbError));
     }
 
     res.json({ success: true, tasks, total: tasks.length });
   } catch (error: unknown) {
-    console.error('[NURSING] Tasks error:', (error instanceof Error ? error.message : String(error)));
+    console.error('[NURSING] Tasks error:', errMsg(error));
     res.json({ success: true, tasks: [], total: 0 });
   }
 });
@@ -695,7 +696,7 @@ router.post('/predictive-analytics', authMiddleware, async (req: Request, res: R
         ]
       );
     } catch (dbError: unknown) {
-      console.warn('[PREDICTIVE] DB insert fallback:', (dbError instanceof Error ? dbError.message : String(dbError)));
+      console.warn('[PREDICTIVE] DB insert fallback:', errMsg(dbError));
     }
 
     res.json({
@@ -713,7 +714,7 @@ router.post('/predictive-analytics', authMiddleware, async (req: Request, res: R
       message: 'Predictive analysis completed',
     });
   } catch (error: unknown) {
-    console.error('[PREDICTIVE] Analysis error:', (error instanceof Error ? error.message : String(error)));
+    console.error('[PREDICTIVE] Analysis error:', errMsg(error));
     res.json({
       success: true,
       id: generateId('PA'),

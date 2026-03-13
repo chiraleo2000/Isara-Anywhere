@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { storage, GCS_BUCKETS } from '../index';
 import { authMiddleware } from '../middleware/auth';
+import { errMsg } from '../utils';
 
 const router = Router();
 
@@ -28,7 +29,7 @@ router.get('/medications', authMiddleware, async (_req: Request, res: Response) 
     res.json(medications);
   } catch (error: unknown) {
     // Always return empty array on any GCS error
-    console.warn('Get medications - GCS error, returning empty:', (error instanceof Error ? error.message : String(error)));
+    console.warn('Get medications - GCS error, returning empty:', errMsg(error));
     return res.json([]);
   }
 });
@@ -68,7 +69,7 @@ router.get('/drug-interactions', authMiddleware, async (_req: Request, res: Resp
     res.json(interactions);
   } catch (error: unknown) {
     // Always return empty array on any GCS error
-    console.warn('Get drug interactions - GCS error, returning empty:', (error instanceof Error ? error.message : String(error)));
+    console.warn('Get drug interactions - GCS error, returning empty:', errMsg(error));
     return res.json([]);
   }
 });
@@ -82,7 +83,7 @@ router.get('/lab-tests', authMiddleware, async (_req: Request, res: Response) =>
     res.json(labTests);
   } catch (error: unknown) {
     // Always return empty array on any GCS error
-    console.warn('Get lab tests - GCS error, returning empty:', (error instanceof Error ? error.message : String(error)));
+    console.warn('Get lab tests - GCS error, returning empty:', errMsg(error));
     return res.json([]);
   }
 });
@@ -96,7 +97,7 @@ router.get('/reference-ranges', authMiddleware, async (_req: Request, res: Respo
     res.json(ranges);
   } catch (error: unknown) {
     // Always return empty object on any GCS error
-    console.warn('Get reference ranges - GCS error, returning empty:', (error instanceof Error ? error.message : String(error)));
+    console.warn('Get reference ranges - GCS error, returning empty:', errMsg(error));
     return res.json({});
   }
 });
@@ -110,7 +111,7 @@ router.get('/icd10-codes', authMiddleware, async (_req: Request, res: Response) 
     res.json(codes);
   } catch (error: unknown) {
     // Always return empty array on any GCS error
-    console.warn('Get ICD-10 codes - GCS error, returning empty:', (error instanceof Error ? error.message : String(error)));
+    console.warn('Get ICD-10 codes - GCS error, returning empty:', errMsg(error));
     return res.json([]);
   }
 });
@@ -148,7 +149,7 @@ router.get('/specialties', authMiddleware, async (_req: Request, res: Response) 
     res.json(specialties);
   } catch (error: unknown) {
     // Always return default specialties on any GCS error (not found, auth, network, etc.)
-    console.warn('Get specialties - GCS error, returning defaults:', (error instanceof Error ? error.message : String(error)));
+    console.warn('Get specialties - GCS error, returning defaults:', errMsg(error));
     return res.json([
       { id: 'internal', name: 'อายุรกรรม', nameEn: 'Internal Medicine' },
       { id: 'cardiology', name: 'โรคหัวใจ', nameEn: 'Cardiology' },
@@ -171,7 +172,7 @@ router.get('/health-tips', authMiddleware, async (_req: Request, res: Response) 
     res.json(tips);
   } catch (error: unknown) {
     // Always return default health tips on any error (GCS null, not found, auth, network, etc.)
-    console.warn('Get health tips - returning defaults:', (error instanceof Error ? error.message : String(error)));
+    console.warn('Get health tips - returning defaults:', errMsg(error));
     return res.json([
       {
         id: 'tip_001',
@@ -218,11 +219,11 @@ router.get('/medical-content', authMiddleware, async (_req: Request, res: Respon
       : [];
     res.json(published);
   } catch (error: unknown) {
-    if ((error instanceof Error ? error.message : String(error)).includes('not found')) {
+    if (errMsg(error).includes('not found')) {
       return res.json([]);
     }
     console.error('Get medical content error:', error);
-    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
+    res.status(500).json({ error: errMsg(error) });
   }
 });
 
@@ -242,7 +243,7 @@ router.get('/symptoms', authMiddleware, async (_req: Request, res: Response) => 
       { id: 'dizziness', name: 'Dizziness', nameTh: '\u0e27\u0e34\u0e07\u0e40\u0e27\u0e35\u0e22\u0e19' }
     ]);
   } catch (error: unknown) {
-    console.warn('[METADATA] Symptoms fallback:', (error instanceof Error ? error.message : String(error)));
+    console.warn('[METADATA] Symptoms fallback:', errMsg(error));
     res.json([]);
   }
 });
@@ -254,7 +255,7 @@ router.get('/medicines', authMiddleware, async (_req: Request, res: Response) =>
     const medications = data.medications || data || [];
     res.json(medications);
   } catch (error: unknown) {
-    console.warn('[METADATA] Medicines fallback:', (error instanceof Error ? error.message : String(error)));
+    console.warn('[METADATA] Medicines fallback:', errMsg(error));
     res.json([]);
   }
 });
@@ -266,7 +267,7 @@ router.get('/icd10', authMiddleware, async (_req: Request, res: Response) => {
     const codes = data.codes || data || [];
     res.json(codes);
   } catch (error: unknown) {
-    console.warn('[METADATA] ICD10 fallback:', (error instanceof Error ? error.message : String(error)));
+    console.warn('[METADATA] ICD10 fallback:', errMsg(error));
     res.json([]);
   }
 });

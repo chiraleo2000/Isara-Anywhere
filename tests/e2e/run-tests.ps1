@@ -59,7 +59,7 @@ $UnitDir = Join-Path (Split-Path -Parent $ScriptDir) "unit"
 
 $LOCAL_PATIENT = "http://localhost:3005"
 $LOCAL_DOCTOR = "http://localhost:3010"
-$LOCAL_MEETING = "http://localhost:3020"  # Used for meeting server health checks
+$LOCAL_MEETING = "http://localhost:3020" #noqa PSUseDeclaredVarsMoreThanAssignments
 
 $CLOUD_PATIENT = "https://izara-patient-portal-724889190329.asia-southeast1.run.app"
 $CLOUD_DOCTOR = "https://izara-doctor-portal-724889190329.asia-southeast1.run.app"
@@ -128,8 +128,8 @@ function Write-Err { param($msg) Write-Host "  [XX] $msg" -ForegroundColor Red }
 function Test-ServiceHealth {
     param([string]$Url, [string]$Name)
     try {
-        [void]($response = Invoke-RestMethod -Uri "$Url/api/health" -Method GET -TimeoutSec 10)
-        Write-Success "$Name health OK"
+        $response = Invoke-RestMethod -Uri "$Url/api/health" -Method GET -TimeoutSec 10
+        Write-Success "$Name health OK ($($response.status))"
         return $true
     } catch {
         Write-Err "$Name connection failed"

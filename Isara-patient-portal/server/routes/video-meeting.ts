@@ -29,6 +29,7 @@ import { Router, Request, Response } from 'express';
 import crypto from 'node:crypto';
 import dotenv from 'dotenv';
 import { MeetingService } from '../services/postgresDataService';
+import { errMsg } from '../utils';
 
 // Load environment variables
 dotenv.config();
@@ -257,11 +258,11 @@ async function callGeminiAI(prompt: string, maxTokens: number = 2048): Promise<s
     
     return text;
   } catch (error: unknown) {
-    if ((error instanceof Error ? error.message : String(error))?.startsWith('AI_')) {
+    if (errMsg(error)?.startsWith('AI_')) {
       throw error; // Re-throw our custom errors
     }
-    console.error('Gemini API error:', (error instanceof Error ? error.message : String(error)));
-    throw new Error(`AI_API_ERROR: ${(error instanceof Error ? error.message : String(error))}`);
+    console.error('Gemini API error:', errMsg(error));
+    throw new Error(`AI_API_ERROR: ${errMsg(error)}`);
   }
 }
 
@@ -453,6 +454,35 @@ async function processAudioTranscription(
   console.log(`✅ Transcription complete: ${transcriptionResult.transcript.length} characters`);
 }
 
+/** Try to generate AI meeting summary, returns null on failure */
+async function tryGenerateSummary(
+  transcriptData: TranscriptEntry[],
+  patientInfo?: any
+): Promise<MeetingSummary | null> {
+  console.log('📝 Generating meeting summary using Gemini AI...');
+  try {
+    return await generateMeetingSummary(transcriptData, patientInfo);
+  } catch (aiError: unknown) {
+    console.warn('⚠️ AI summary generation failed (meeting still ends):', errMsg(aiError));
+    return null;
+  }
+}
+
+/** Try to generate AI doctor recommendations, returns null on failure */
+async function tryGenerateRecommendations(
+  transcriptData: TranscriptEntry[],
+  summary: MeetingSummary | null,
+  patientInfo?: any
+): Promise<DoctorRecommendation | null> {
+  console.log('💡 Generating doctor recommendations using Gemini AI...');
+  try {
+    return await generateDoctorRecommendations(transcriptData, summary, patientInfo);
+  } catch (aiError: unknown) {
+    console.warn('⚠️ AI recommendations generation failed (meeting still ends):', errMsg(aiError));
+    return null;
+  }
+}
+
 /** Generate AI summary and recommendations for completed meeting */
 async function generatePostMeetingContent(
   transcriptData: TranscriptEntry[],
@@ -463,28 +493,19 @@ async function generatePostMeetingContent(
 ): Promise<{ summary: MeetingSummary | null; recommendations: DoctorRecommendation | null }> {
   let summary: MeetingSummary | null = null;
   let recommendations: DoctorRecommendation | null = null;
+  const hasTranscript = transcriptData.length > 0;
 
-  if (genSummary && transcriptData.length > 0) {
-    console.log('📝 Generating meeting summary using Gemini AI...');
-    try {
-      summary = await generateMeetingSummary(transcriptData, patientInfo);
-      if (memMeeting) {
-        memMeeting.summary = summary || undefined;
-      }
-    } catch (aiError: unknown) {
-      console.warn('⚠️ AI summary generation failed (meeting still ends):', aiError instanceof Error ? aiError.message : aiError);
+  if (genSummary && hasTranscript) {
+    summary = await tryGenerateSummary(transcriptData, patientInfo);
+    if (memMeeting && summary) {
+      memMeeting.summary = summary;
     }
   }
 
-  if (genRecommendations && transcriptData.length > 0) {
-    console.log('💡 Generating doctor recommendations using Gemini AI...');
-    try {
-      recommendations = await generateDoctorRecommendations(transcriptData, summary, patientInfo);
-      if (memMeeting) {
-        memMeeting.doctorRecommendations = recommendations || undefined;
-      }
-    } catch (aiError: unknown) {
-      console.warn('⚠️ AI recommendations generation failed (meeting still ends):', aiError instanceof Error ? aiError.message : aiError);
+  if (genRecommendations && hasTranscript) {
+    recommendations = await tryGenerateRecommendations(transcriptData, summary, patientInfo);
+    if (memMeeting && recommendations) {
+      memMeeting.doctorRecommendations = recommendations;
     }
   }
 
@@ -614,7 +635,7 @@ router.post('/create', async (req: Request, res: Response) => {
         }
       });
     } catch (dbError: unknown) {
-      console.warn('⚠️ Meeting DB insert failed (FK constraint?), using in-memory:', (dbError instanceof Error ? dbError.message : String(dbError)));
+      console.warn('⚠️ Meeting DB insert failed (FK constraint?), using in-memory:', errMsg(dbError));
       meeting = {
         id: `meet-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
         appointment_id: appointmentId,

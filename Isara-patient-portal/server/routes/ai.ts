@@ -5,6 +5,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import dotenv from 'dotenv';
 import postgresDataService from '../services/postgresDataService';
+import { errMsg } from '../utils';
 
 const { pool } = postgresDataService;
 
@@ -359,7 +360,7 @@ function initializeAI(): boolean {
     console.log('[AI] ✅ GoogleGenerativeAI initialized successfully');
     return true;
   } catch (error: unknown) {
-    console.error('[AI] ❌ Failed to initialize GoogleGenerativeAI:', (error instanceof Error ? error.message : String(error)));
+    console.error('[AI] ❌ Failed to initialize GoogleGenerativeAI:', errMsg(error));
     return false;
   }
 }
@@ -388,7 +389,7 @@ function getModel(config: AIConfig): GenerativeModel | null {
     
     return genAI.getGenerativeModel(modelConfig);
   } catch (error: unknown) {
-    console.error('[AI] Failed to get model:', (error instanceof Error ? error.message : String(error)));
+    console.error('[AI] Failed to get model:', errMsg(error));
     return null;
   }
 }
@@ -483,11 +484,11 @@ router.post('/chat', authMiddleware, async (req: Request, res: Response) => {
     
   } catch (error: unknown) {
     const duration = Date.now() - startTime;
-    console.error(`[AI Chat] ❌ Error after ${duration}ms:`, (error instanceof Error ? error.message : String(error)));
+    console.error(`[AI Chat] ❌ Error after ${duration}ms:`, errMsg(error));
     
     // Return user-friendly error message
     res.status(500).json({ 
-      error: (error instanceof Error ? error.message : String(error)),
+      error: errMsg(error),
       reply: 'ขออภัย เกิดข้อผิดพลาดในการประมวลผล กรุณาลองใหม่อีกครั้ง หากปัญหายังคงอยู่ กรุณาติดต่อเจ้าหน้าที่'
     });
   }
@@ -503,7 +504,7 @@ router.get('/history', authMiddleware, async (req: Request, res: Response) => {
     const sessions = await ChatHistoryService.getSessions(userId);
     return res.json({ sessions });
   } catch (error: unknown) {
-    console.error('[AI History] Error:', (error instanceof Error ? error.message : String(error)));
+    console.error('[AI History] Error:', errMsg(error));
     res.json({ sessions: [] });
   }
 });
@@ -536,7 +537,7 @@ router.get('/chat/history', authMiddleware, async (req: Request, res: Response) 
     const history = await ChatHistoryService.getHistory(userId, sessionId, 100);
     res.json({ history, sessionId, retention_days: CHAT_RETENTION_DAYS });
   } catch (error: unknown) {
-    console.error('[AI Chat History] Error:', (error instanceof Error ? error.message : String(error)));
+    console.error('[AI Chat History] Error:', errMsg(error));
     res.status(500).json({ error: 'Failed to fetch chat history' });
   }
 });
@@ -560,7 +561,7 @@ router.post('/chat/clear', authMiddleware, async (req: Request, res: Response) =
 
     res.json({ success: true, message: 'Chat history cleared' });
   } catch (error: unknown) {
-    console.error('[AI Chat Clear] Error:', (error instanceof Error ? error.message : String(error)));
+    console.error('[AI Chat Clear] Error:', errMsg(error));
     res.status(500).json({ error: 'Failed to clear chat history' });
   }
 });
@@ -584,7 +585,7 @@ router.delete('/chat/history', authMiddleware, async (req: Request, res: Respons
 
     res.json({ success: true, message: 'Chat history cleared' });
   } catch (error: unknown) {
-    console.error('[AI Chat History] Error:', (error instanceof Error ? error.message : String(error)));
+    console.error('[AI Chat History] Error:', errMsg(error));
     res.status(500).json({ error: 'Failed to clear chat history' });
   }
 });
@@ -605,7 +606,7 @@ router.get('/chat/memory', authMiddleware, async (req: Request, res: Response) =
     const memories = await ChatMemoryService.getRelevantMemories(userId, limit);
     res.json({ memories, count: memories.length });
   } catch (error: unknown) {
-    console.error('[AI Memory] Error fetching memories:', (error instanceof Error ? error.message : String(error)));
+    console.error('[AI Memory] Error fetching memories:', errMsg(error));
     res.status(500).json({ error: 'Failed to fetch memories' });
   }
 });
@@ -631,7 +632,7 @@ router.post('/chat/memory', authMiddleware, async (req: Request, res: Response) 
     const id = await ChatMemoryService.saveMemory(userId, memoryType, content, title);
     res.json({ success: true, id });
   } catch (error: unknown) {
-    console.error('[AI Memory] Error saving memory:', (error instanceof Error ? error.message : String(error)));
+    console.error('[AI Memory] Error saving memory:', errMsg(error));
     res.status(500).json({ error: 'Failed to save memory' });
   }
 });
@@ -652,7 +653,7 @@ router.post('/chat/memory/summarize', authMiddleware, async (req: Request, res: 
     await ChatMemoryService.summarizeSession(userId, sessionId);
     res.json({ success: true, message: 'Session summarized into long-term memory' });
   } catch (error: unknown) {
-    console.error('[AI Memory] Error summarizing session:', (error instanceof Error ? error.message : String(error)));
+    console.error('[AI Memory] Error summarizing session:', errMsg(error));
     res.status(500).json({ error: 'Failed to summarize session' });
   }
 });
@@ -676,7 +677,7 @@ router.delete('/chat/memory/:memoryId', authMiddleware, async (req: Request, res
     );
     res.json({ success: true, message: 'Memory deleted' });
   } catch (error: unknown) {
-    console.error('[AI Memory] Error deleting memory:', (error instanceof Error ? error.message : String(error)));
+    console.error('[AI Memory] Error deleting memory:', errMsg(error));
     res.status(500).json({ error: 'Failed to delete memory' });
   }
 });
@@ -750,8 +751,8 @@ ${symptoms}
     res.json(analysis);
     
   } catch (error: unknown) {
-    console.error('[AI Symptom] ❌ Error:', (error instanceof Error ? error.message : String(error)));
-    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
+    console.error('[AI Symptom] ❌ Error:', errMsg(error));
+    res.status(500).json({ error: errMsg(error) });
   }
 });
 
@@ -827,8 +828,8 @@ ${JSON.stringify(patientData, null, 2)}
     res.json(assessment);
     
   } catch (error: unknown) {
-    console.error('[AI Risk] ❌ Error:', (error instanceof Error ? error.message : String(error)));
-    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
+    console.error('[AI Risk] ❌ Error:', errMsg(error));
+    res.status(500).json({ error: errMsg(error) });
   }
 });
 
@@ -857,8 +858,8 @@ router.post('/health-info', authMiddleware, async (req: Request, res: Response) 
     res.json({ info: text });
     
   } catch (error: unknown) {
-    console.error('[AI Info] Error:', (error instanceof Error ? error.message : String(error)));
-    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
+    console.error('[AI Info] Error:', errMsg(error));
+    res.status(500).json({ error: errMsg(error) });
   }
 });
 
@@ -977,10 +978,10 @@ ${context?.medicalHistory ? `ประวัติการแพทย์: ${co
     
   } catch (error: unknown) {
     const duration = Date.now() - startTime;
-    console.error(`[AI Analysis] ❌ Error after ${duration}ms:`, (error instanceof Error ? error.message : String(error)));
+    console.error(`[AI Analysis] ❌ Error after ${duration}ms:`, errMsg(error));
     
     res.status(500).json({ 
-      error: (error instanceof Error ? error.message : String(error)),
+      error: errMsg(error),
       triageLevel: 'Routine',
       reasoning: 'เกิดข้อผิดพลาดในการวิเคราะห์ กรุณาลองใหม่',
       selfCareRecommendations: ['พักผ่อนให้เพียงพอ'],
@@ -1062,10 +1063,10 @@ router.post('/symptom-suggest', authMiddleware, async (req: Request, res: Respon
     
   } catch (error: unknown) {
     const duration = Date.now() - startTime;
-    console.error(`[AI Suggest] ❌ Error after ${duration}ms:`, (error instanceof Error ? error.message : String(error)));
+    console.error(`[AI Suggest] ❌ Error after ${duration}ms:`, errMsg(error));
     
     res.status(500).json({ 
-      error: (error instanceof Error ? error.message : String(error)),
+      error: errMsg(error),
       suggestions: ['กรุณาอธิบายอาการให้ละเอียด']
     });
   }
@@ -1108,8 +1109,8 @@ router.post('/validate', async (req: Request, res: Response) => {
       validation: validationResult
     });
   } catch (error: unknown) {
-    console.error('[AI Validate] Error:', (error instanceof Error ? error.message : String(error)));
-    res.status(500).json({ success: false, error: (error instanceof Error ? error.message : String(error)) });
+    console.error('[AI Validate] Error:', errMsg(error));
+    res.status(500).json({ success: false, error: errMsg(error) });
   }
 });
 
