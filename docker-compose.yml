@@ -127,6 +127,9 @@ services:
       VITE_USE_GCS: "false"
       GOOGLE_APPLICATION_CREDENTIALS: /app/credentials/service-account.json
 
+      # JWT Secret (shared across all portals)
+      JWT_SECRET: ${JWT_SECRET:-izara-jwt-secret-key-phase1-2026}
+
       # Meeting Server URL
       MEETING_SERVER_URL: http://meeting-server:3020
       VITE_MEETING_SERVER_URL: http://localhost:3020
@@ -196,6 +199,9 @@ services:
       VITE_USE_GCS: "false"
       GOOGLE_APPLICATION_CREDENTIALS: /app/credentials/service-account.json
 
+      # JWT Secret (shared across all portals)
+      JWT_SECRET: ${JWT_SECRET:-izara-jwt-secret-key-phase1-2026}
+
       # GCS API URL (internal)
       GCS_API_URL: http://localhost:3010
 
@@ -245,6 +251,9 @@ services:
 
       # Jitsi Configuration - loaded from .env.docker
       JITSI_DOMAIN: ${JITSI_DOMAIN}
+
+      # JWT Secret (must match portals)
+      JWT_SECRET: ${JWT_SECRET:-izara-jwt-secret-key-phase1-2026}
 
       # Gemini AI Configuration - loaded from .env.docker
       GEMINI_API_KEY: ${GEMINI_API_KEY}

@@ -51,7 +51,7 @@ router.get('/maps/config', authMiddleware, async (_req: Request, res: Response) 
         : 'Maps API key not configured. Some features may be limited.',
       timestamp: new Date().toISOString()
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[MAPS] Config error:', error);
     res.json({
       configured: false,
@@ -108,9 +108,9 @@ router.post('/calendar/event', authMiddleware, async (req: Request, res: Respons
       addToCalendarUrl: calendarUrl,
       message: 'Event data created. User can add to their calendar via the provided URL.',
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[CALENDAR] Create event error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
   }
 });
 
@@ -171,9 +171,9 @@ router.get('/calendar/availability', authMiddleware, async (req: Request, res: R
       slots,
       timezone: 'Asia/Bangkok',
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[CALENDAR] Get availability error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
   }
 });
 
@@ -229,9 +229,9 @@ router.post('/meet/create', authMiddleware, async (req: Request, res: Response) 
       meeting: meetingDetails,
       addToCalendarUrl: calendarUrl,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[MEET] Create meeting error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
   }
 });
 
@@ -250,9 +250,9 @@ router.get('/meet/:appointmentId', authMiddleware, async (req: Request, res: Res
         en: 'Click the link to start the meeting',
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[MEET] Get meeting error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
   }
 });
 
@@ -288,7 +288,11 @@ router.get('/places/nearby', async (req: Request, res: Response) => {
     }
 
     // Call Google Places API
-    const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=${radius}&type=${type}&key=${MAPS_API_KEY}&language=th`;
+    const latStr = String(lat);
+    const lngStr = String(lng);
+    const radiusStr = String(radius);
+    const typeStr = String(type);
+    const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${latStr},${lngStr}&radius=${radiusStr}&type=${typeStr}&key=${MAPS_API_KEY}&language=th`;
 
     const response = await fetch(url);
     const data: any = await response.json();
@@ -303,7 +307,7 @@ router.get('/places/nearby', async (req: Request, res: Response) => {
             id: 'demo_hospital_001',
             name: 'Demo Hospital',
             address: 'Bangkok, Thailand',
-            location: { lat: Number.parseFloat(lat as string), lng: Number.parseFloat(lng as string) },
+            location: { lat: Number.parseFloat(latStr), lng: Number.parseFloat(lngStr) },
             rating: 4.5,
             totalRatings: 100,
             isOpen: true,
@@ -335,7 +339,7 @@ router.get('/places/nearby', async (req: Request, res: Response) => {
     }));
 
     res.json({ success: true, places });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[PLACES] Nearby error:', error);
     // Return demo data on error
     res.json({
@@ -368,6 +372,11 @@ router.get('/maps/nearby', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'lat and lng are required' });
     }
 
+    const latStr = String(lat);
+    const lngStr = String(lng);
+    const radiusStr = String(radius);
+    const typeStr = String(type);
+
     if (!MAPS_API_KEY) {
       // Return demo data when API key not configured, not 500
       return res.json({
@@ -377,7 +386,7 @@ router.get('/maps/nearby', async (req: Request, res: Response) => {
             id: 'demo_hospital_001',
             name: 'Bumrungrad International Hospital',
             address: '33 Soi Sukhumvit 3, Bangkok',
-            location: { lat: Number.parseFloat(lat as string) + 0.01, lng: Number.parseFloat(lng as string) + 0.005 },
+            location: { lat: Number.parseFloat(latStr) + 0.01, lng: Number.parseFloat(lngStr) + 0.005 },
             rating: 4.7,
             totalRatings: 2500,
             isOpen: true,
@@ -387,21 +396,21 @@ router.get('/maps/nearby', async (req: Request, res: Response) => {
             id: 'demo_clinic_001',
             name: 'Bangkok Health Clinic',
             address: '55 Sukhumvit Rd, Bangkok',
-            location: { lat: Number.parseFloat(lat as string) - 0.008, lng: Number.parseFloat(lng as string) + 0.01 },
+            location: { lat: Number.parseFloat(latStr) - 0.008, lng: Number.parseFloat(lngStr) + 0.01 },
             rating: 4.3,
             totalRatings: 450,
             isOpen: true,
             types: ['clinic'],
           },
         ],
-        center: { lat: Number.parseFloat(lat as string), lng: Number.parseFloat(lng as string) },
-        radius: Number.parseInt(radius as string, 10),
+        center: { lat: Number.parseFloat(latStr), lng: Number.parseFloat(lngStr) },
+        radius: Number.parseInt(radiusStr, 10),
         demoMode: true,
       });
     }
 
     // Call Google Places API
-    const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=${radius}&type=${type}&key=${MAPS_API_KEY}&language=th`;
+    const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${latStr},${lngStr}&radius=${radiusStr}&type=${typeStr}&key=${MAPS_API_KEY}&language=th`;
 
     const response = await fetch(url);
     const data: any = await response.json();
@@ -435,9 +444,9 @@ router.get('/maps/nearby', async (req: Request, res: Response) => {
       center: { lat: Number.parseFloat(lat as string), lng: Number.parseFloat(lng as string) },
       radius: Number.parseInt(radius as string, 10),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[MAPS] Nearby search error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
   }
 });
 
@@ -482,9 +491,9 @@ router.get('/maps/place/:placeId', async (req: Request, res: Response) => {
         })),
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[MAPS] Place details error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
   }
 });
 
@@ -501,15 +510,15 @@ router.get('/maps/photo', async (req: Request, res: Response) => {
       return res.status(500).json({ error: 'Maps API not configured' });
     }
 
-    const photoUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=${maxWidth}&photo_reference=${reference}&key=${MAPS_API_KEY}`;
+    const photoUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=${String(maxWidth)}&photo_reference=${String(reference)}&key=${MAPS_API_KEY}`;
 
     res.json({
       success: true,
       url: photoUrl,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[MAPS] Photo error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
   }
 });
 
@@ -542,9 +551,9 @@ router.get('/maps/geocode', async (req: Request, res: Response) => {
       formattedAddress: result.formatted_address,
       placeId: result.place_id,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[MAPS] Geocode error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
   }
 });
 
@@ -561,7 +570,8 @@ router.get('/maps/directions', async (req: Request, res: Response) => {
       return res.status(500).json({ error: 'Maps API not configured' });
     }
 
-    const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${encodeURIComponent(origin as string)}&destination=${encodeURIComponent(destination as string)}&mode=${mode}&key=${MAPS_API_KEY}&language=th`;
+    const modeStr = String(mode);
+    const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${encodeURIComponent(origin as string)}&destination=${encodeURIComponent(destination as string)}&mode=${modeStr}&key=${MAPS_API_KEY}&language=th`;
 
     const response = await fetch(url);
     const data: any = await response.json();
@@ -587,11 +597,11 @@ router.get('/maps/directions', async (req: Request, res: Response) => {
         })),
         polyline: route.overview_polyline.points,
       },
-      googleMapsUrl: `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin as string)}&destination=${encodeURIComponent(destination as string)}&travelmode=${mode}`,
+      googleMapsUrl: `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin as string)}&destination=${encodeURIComponent(destination as string)}&travelmode=${modeStr}`,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[MAPS] Directions error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
   }
 });
 

@@ -1,49 +1,76 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════
- * IZARA TELEMEDICINE — PLAYWRIGHT E2E CONFIG v15.0.0
+ * IZARA TELEMEDICINE — PLAYWRIGHT E2E CONFIG v16.0.0
  * ═══════════════════════════════════════════════════════════════════════
- * 30 spec files (01-30) | ~1450 tests | 3 projects: Local, Cloud, Cloud-Dev
- * Updated: March 9, 2026
+ * Reorganized: March 13, 2026
  *
- * Suite:
- *   01: User Accounts Demo, Password Reset & All Pages (91 tests)
- *   02: System Health & Multi-User Auth (82 tests)
- *   03: Appointment Full Lifecycle (92 tests)
- *   04: Health Records & EMR (95 tests)
- *   05: Video Meeting & Transcription (91 tests)
- *   06: Content Sync & Approval (82 tests)
- *   07: AI Features & CDS (72 tests)
- *   08: Multi-User Concurrent — 5 browser windows (60 tests)
- *   09: Phase 2 AI-HIS — CTM, Geriatric, SOS (72 tests)
- *   10: Lab Orders, Imaging Orders, Map & v1.5.2 Features (80 tests)
- *   11: Doctor Portal Workflows — Browser (50 tests)
- *   12: Patient Portal Workflows — Browser (50 tests)
- *   13: Multi-User Appointment & Meeting (40 tests)
- *   14: Admin Management Workflows (40 tests)
- *   15: PHR/EMR Data Flow (40 tests)
- *   16: Medical Content & Clinical Resources (40 tests)
- *   17: Notification, Settings & Living Will (40 tests)
- *   18: Appointment Pipeline E2E (10 tests)
- *   19: PHR Cross-Portal Sync (12 tests)
- *   20: AI Pipeline Man-in-Loop (10 tests)
- *   21: Content Rejection Recovery (12 tests)
- *   22: Notification Triggers (12 tests)
- *   23: Mixed Simultaneous Workflows (10 tests)
- *   24: Registration Approval Metadata (10 tests)
+ * KEY CHANGES (v16):
+ * - ALL runs are HEADED (no headless) — UI always visible
+ * - Local (Docker): full 20-spec suite, parallel for speed
+ * - Cloud: essential 12-spec suite, serial sequential workflow,
+ *   single auth flow (global-setup caches 5 tokens ONCE)
+ * - Removed 10 redundant specs absorbed into parent specs
+ * - Cloud-Dev: same as Local but against dev cloud URLs
  *
- * Parallel strategy:
- * - All specs run with fullyParallel=true across workers
- * - Spec 08 (multi-user concurrent) requires serial execution
+ * ── REMOVED SPECS (absorbed into parent specs) ─────────────────────
+ *   18-appointment-pipeline  → absorbed by 03 appointment-lifecycle
+ *   19-phr-cross-portal-sync → absorbed by 04 + 15 health-records
+ *   20-ai-pipeline-man-in-loop → absorbed by 07 ai-features
+ *   21-content-rejection-recovery → absorbed by 06 content-sync
+ *   22-notification-triggers → absorbed by 17 notification-settings
+ *   23-mixed-simultaneous-workflows → absorbed by 08 multi-user
+ *   28a/28b page verification → absorbed by 01 user-accounts
+ *   28c api-health → absorbed by 02 auth-health
+ *
+ * ── LOCAL (20 specs, ~1200 tests) ──────────────────────────────────
+ *   01: User Accounts, Pages & Navigation            (91 tests)
+ *   02: System Health & Multi-User Auth               (82 tests)
+ *   03: Appointment Full Lifecycle                    (92 tests)
+ *   04: Health Records & EMR                          (95 tests)
+ *   05: Video Meeting & Transcription                 (91 tests)
+ *   06: Content Sync & Approval                       (82 tests)
+ *   07: AI Features & CDS                             (72 tests)
+ *   08: Multi-User Concurrent — 5 browsers            (60 tests)
+ *   09: Phase 2 AI-HIS — CTM, Geriatric, SOS          (72 tests)
+ *   10: Lab Orders, Imaging, Map Features             (80 tests)
+ *   11: Doctor Portal Workflows                       (50 tests)
+ *   12: Patient Portal Workflows                      (50 tests)
+ *   13: Multi-User Appointment & Meeting              (40 tests)
+ *   14: Admin Management Workflows                    (40 tests)
+ *   15: PHR/EMR Data Flow                             (40 tests)
+ *   16: Medical Content & Clinical Resources          (40 tests)
+ *   17: Notification, Settings & Living Will          (40 tests)
+ *   24: Registration Approval Metadata                (10 tests)
+ *   25: Register + Login Doctor                       (24 tests)
+ *   26: Register + Login Patient                      (25 tests)
+ *
+ * ── CLOUD (12 specs, serial one-go workflow) ───────────────────────
+ *   Step 1: 02 Health & Auth (API health + auth validation)
+ *   Step 2: 25 Register Doctor → 26 Register Patient → 24 Approval
+ *   Step 3: 01 All Pages Navigation (patient + doctor)
+ *   Step 4: 03 Appointment Full Lifecycle
+ *   Step 5: 04 Health Records & EMR
+ *   Step 6: 10 Lab & Imaging Orders
+ *   Step 7: 06 Content Sync & Approval
+ *   Step 8: 07 AI Features & CDS
+ *   Step 9: 14 Admin Management
+ *   Step 10: 30 Full Pipeline (Appointment→Meeting→AI→EMR→Patient)
+ *
+ * Auth strategy:
+ *   - global-setup.ts logs in ALL 5 users via API ONCE
+ *   - Tokens cached to .auth-cache.json + storageState per role
+ *   - Specs read cache — ZERO re-authentication
+ *   - Only specs 25+26 test login UI explicitly (coverage)
  * ═══════════════════════════════════════════════════════════════════════
  */
 import { defineConfig, devices } from '@playwright/test';
 
 const isCloud = process.env.TEST_ENV === 'cloud';
-const isCI = process.env.CI === 'true';
-// Workers: 8 for CI, 8 for local headless (fast parallel, zero browser popups)
-const parallelWorkers = Number.parseInt(process.env.PW_WORKERS || '8', 10);
+const isCloudDev = process.env.TEST_ENV === 'cloud-dev';
+const parallelWorkers = Number.parseInt(process.env.PW_WORKERS || '4', 10);
 
-const SPEC_FILES = [
+// ── LOCAL: Full 20-spec coverage (parallel, headed) ─────────────────
+const LOCAL_SPECS = [
   '**/01-user-accounts-demo-pages.spec.ts',
   '**/02-auth-health-multiuser.spec.ts',
   '**/03-appointment-lifecycle.spec.ts',
@@ -61,51 +88,39 @@ const SPEC_FILES = [
   '**/15-phr-emr-data-flow.spec.ts',
   '**/16-medical-content-workflows.spec.ts',
   '**/17-notification-settings-workflows.spec.ts',
-  '**/18-appointment-pipeline-e2e.spec.ts',
-  '**/19-phr-cross-portal-sync.spec.ts',
-  '**/20-ai-pipeline-man-in-loop.spec.ts',
-  '**/21-content-rejection-recovery.spec.ts',
-  '**/22-notification-triggers.spec.ts',
-  '**/23-mixed-simultaneous-workflows.spec.ts',
   '**/24-registration-approval-e2e.spec.ts',
   '**/25-register-login-doctor.spec.ts',
   '**/26-register-login-patient.spec.ts',
-  '**/27-lab-data-doctor-to-patient.spec.ts',
-  '**/28a-patient-pages-verification.spec.ts',
-  '**/28b-doctor-pages-verification.spec.ts',
-  '**/28c-api-health-verification.spec.ts',
-  '**/29-chat-ai-summary-cloud.spec.ts',
-  '**/30-appointment-meeting-ai-pipeline.spec.ts',
 ];
 
-// Cloud: full workflow coverage — register, approve, admin, EMR/PHR, lab, appointments, meetings, AI
-const CLOUD_SPEC_FILES = [
-  '**/01-user-accounts-demo-pages.spec.ts',
+// ── CLOUD: Essential 12-spec one-go workflow (serial, headed) ───────
+// Ordered as a user-journey: health → register → pages → workflows → pipeline
+const CLOUD_SPECS = [
   '**/02-auth-health-multiuser.spec.ts',
+  '**/25-register-login-doctor.spec.ts',
+  '**/26-register-login-patient.spec.ts',
+  '**/24-registration-approval-e2e.spec.ts',
+  '**/01-user-accounts-demo-pages.spec.ts',
   '**/03-appointment-lifecycle.spec.ts',
   '**/04-health-records-emr.spec.ts',
   '**/10-lab-imaging-map-features.spec.ts',
+  '**/06-content-sync-approval.spec.ts',
+  '**/07-ai-features-cds.spec.ts',
   '**/14-admin-management-workflows.spec.ts',
-  '**/15-phr-emr-data-flow.spec.ts',
-  '**/24-registration-approval-e2e.spec.ts',
-  '**/25-register-login-doctor.spec.ts',
-  '**/26-register-login-patient.spec.ts',
-  '**/27-lab-data-doctor-to-patient.spec.ts',
-  '**/28a-patient-pages-verification.spec.ts',
-  '**/28b-doctor-pages-verification.spec.ts',
-  '**/28c-api-health-verification.spec.ts',
-  '**/29-chat-ai-summary-cloud.spec.ts',
   '**/30-appointment-meeting-ai-pipeline.spec.ts',
 ];
+
+// ── Shared browser launch args ──────────────────────────────────────
+const LAUNCH_ARGS = ['--start-maximized', '--disable-gpu', '--no-sandbox'];
 
 export default defineConfig({
   globalSetup: './global-setup.ts',
   testDir: './specs',
-  fullyParallel: true,            // PARALLEL — each spec's tests run concurrently
+  fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  retries: isCloud ? 1 : 0,       // 1 retry on cloud for transient network issues
-  workers: parallelWorkers,       // Multiple workers for speed (default 4)
-  timeout: 180_000,               // 3 min per test
+  retries: isCloud || isCloudDev ? 1 : 0,
+  workers: isCloud ? 1 : parallelWorkers,  // Cloud: serial (1 worker) | Local: parallel
+  timeout: 180_000,
   expect: { timeout: 30_000 },
   reporter: [
     ['html', { open: 'never' }],
@@ -113,13 +128,13 @@ export default defineConfig({
     ['json', { outputFile: './test-results/results.json' }],
   ],
   use: {
-    headless: true,                // Headless for fast parallel testing (zero popups)
+    headless: false,              // ALWAYS HEADED — UI visible on every run
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
     trace: 'on-first-retry',
     launchOptions: {
-      args: ['--start-maximized', '--disable-gpu', '--no-sandbox'],
-      timeout: 120_000,   // 2 min to launch browser (avoid timeout on multi-context)
+      args: LAUNCH_ARGS,
+      timeout: 120_000,
     },
     actionTimeout: 30_000,
     navigationTimeout: 60_000,
@@ -132,9 +147,9 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
         baseURL: 'http://localhost:3005',
         viewport: { width: 1920, height: 1080 },
-        headless: true,             // Headless for fast parallel (use PW_HEADED=1 to show browser)
+        headless: false,
       },
-      testMatch: SPEC_FILES,
+      testMatch: LOCAL_SPECS,
     },
     {
       name: 'Cloud',
@@ -142,17 +157,17 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
         baseURL: 'https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app',
         viewport: { width: 1920, height: 1080 },
-        headless: true,
-        screenshot: 'on',               // Capture EVERY action for cloud verification
-        video: 'on',                     // Full video recording
-        trace: 'on',                     // Full trace for debugging
+        headless: false,
+        screenshot: 'on',
+        video: 'on',
+        trace: 'on',
         launchOptions: {
-          args: ['--start-maximized', '--disable-gpu', '--no-sandbox'],
-          slowMo: 500,                   // 500ms between actions for snapshots
+          args: LAUNCH_ARGS,
+          slowMo: 300,              // Slight delay for cloud network + snapshot visibility
           timeout: 120_000,
         },
       },
-      testMatch: CLOUD_SPEC_FILES,
+      testMatch: CLOUD_SPECS,
     },
     {
       name: 'Cloud-Dev',
@@ -160,9 +175,9 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
         baseURL: 'https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app',
         viewport: { width: 1920, height: 1080 },
-        headless: true,
+        headless: false,
       },
-      testMatch: SPEC_FILES,
+      testMatch: LOCAL_SPECS,       // Cloud-Dev runs full suite like Local
     },
   ],
 });

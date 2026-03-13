@@ -1,10 +1,11 @@
 # Izara Telemedicine Platform - Technical Documentation
 
-> **Version:** 1.5.4 (Updated March 8, 2026)  
-> **Status:** Phase 1 Complete — All Tests Passing (v1.5.4)  
+> **Version:** 1.6.0 (Updated March 13, 2026)  
+> **Status:** Phase 1 Complete + Code Quality Hardened — All Tests Passing (v1.6.0)  
 > **Database:** PostgreSQL 18 + pgvector  
 > **Stack:** PostgreSQL / Express / React / Jitsi / Gemini AI / Google Cloud  
-> **Tests:** 1,419 Unit Tests (Vitest) + 1,191 E2E Tests (Playwright) = **2,610 total — 100% Pass Rate**
+> **Tests:** 1,419 Unit Tests (Vitest) + 1,191 E2E Tests (Playwright) = **2,610 total — 100% Pass Rate**  
+> **Code Quality:** SonarQube clean — zero `error: any`, strict TypeScript safety, 31/31 API endpoints verified
 
 ---
 
@@ -30,7 +31,16 @@ Isara-Anywhere/
 ├── credentials/                    # GCP Service Account Keys (gitignored)
 ├── Isara-patient-portal/           # 📱 Patient Front-end Application
 │   ├── src/                        # React Source Code
+│   │   ├── pages/                  # 17 page components (flat structure)
+│   │   ├── components/             # Reusable UI components
+│   │   ├── hooks/                  # Custom React hooks
+│   │   ├── services/               # API service layer
+│   │   └── types/                  # TypeScript type definitions
 │   ├── server/                     # Express Backend API (Port 3005)
+│   │   ├── index.ts                # Main server entry point
+│   │   ├── routes/                 # 17 merged route modules
+│   │   ├── middleware/             # Auth & security middleware
+│   │   └── services/               # PostgresDataService
 │   └── Dockerfile.unified          # Production Container Config
 ├── Isara-doctor-portal/            # 💻 Doctor Clinical Application
 │   ├── src/                        # React Source Code
@@ -48,7 +58,7 @@ Isara-Anywhere/
 │   ├── izara-cli.ps1               # ⭐ Unified Deployment CLI
 │   ├── cloud-db-tool.cjs           # Database Operations Tool
 │   ├── database/                   # SQL Init Scripts
-│   └── deprecated/                 # Old scripts (archived)
+│   └── deploy/                     # Cloud deployment scripts
 ├── tests/                          # 🧪 Testing (2,610 total tests)
 │   ├── unit/                       # ⭐ Vitest unit tests (1,419 tests, 46 files)
 │   │   ├── doctor-portal/          # 20 test files: auth, API, EMR, CDS, storage
@@ -88,11 +98,11 @@ Isara-Anywhere/
 
 | Service | URL |
 | --------- | ----- |
-| Patient Portal | `https://izara-patient-portal-724889190329.asia-southeast1.run.app` |
-| Doctor Portal | `https://izara-doctor-portal-724889190329.asia-southeast1.run.app` |
-| Meeting Server | `https://izara-jitsi-meeting-portal-724889190329.asia-southeast1.run.app` |
-| pgAdmin | `https://izara-pgadmin-724889190329.asia-southeast1.run.app` |
-| Cloud SQL | 34.143.228.135:5432 |
+| Patient Portal | `https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app` |
+| Doctor Portal | `https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app` |
+| Meeting Server | `https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app` |
+| pgAdmin | `https://izara-pgadmin-dev-testing-724889190329.asia-southeast1.run.app` |
+| PostgreSQL VM | 35.240.157.230:5432 |
 
 ---
 
@@ -402,7 +412,7 @@ services:
 
 ## 7. Testing
 
-### 7.1 Test Summary (March 8, 2026)
+### 7.1 Test Summary (March 13, 2026)
 
 | Layer | Framework | Files / Specs | Tests | Duration |
 | --- | --- | --- | --- | --- |
@@ -568,6 +578,11 @@ npx playwright show-report
 - [x] **Spec Kits**: Phase 1 + Phase 2 combined specification documents
 - [x] **Docker Local Dev**: 5-service Docker Compose stack with health checks
 - [x] **Test Cleanup**: Removed obsolete mobile tests, reorganized test structure
+- [x] **TypeScript Strict Safety**: Eliminated ~250 `error: any` patterns — all server catch blocks use `error: unknown` with `instanceof Error` type guards
+- [x] **SonarQube Compliance**: Fixed S6551 (unsafe string interpolation), S4325 (unnecessary assertions), non-null assertions across codebase
+- [x] **Codebase Restructuring**: Patient portal pages flattened, server routes merged into 17 consolidated modules, 19 empty folders removed
+- [x] **API Verification**: 31/31 GET endpoints + 5/5 write operations returning 200 OK with proper data
+- [x] **AuthenticatedRequest Interface**: Strongly-typed with explicit fields and union role type
 - [ ] **Advanced RAG**: Full knowledge_base vector search for clinical decision support
 - [ ] **IoMT Integration**: Wearable device sync for vitals
 - [ ] **Payment Gateway**: Stripe/Omise for consultation fees
@@ -604,4 +619,4 @@ npx playwright show-report
 
 ---
 
-### Last Updated: March 8, 2026
+### Last Updated: March 13, 2026

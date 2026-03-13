@@ -7,13 +7,14 @@
  */
 
 import { Router, Request, Response } from 'express';
-import postgresDataService, { UserSettingsService, PushSubscriptionService } from '../services/postgresDataService';
+import postgresDataService, { UserSettingsService, PushSubscriptionService, SyncService } from '../services/postgresDataService';
 
 const { pool } = postgresDataService;
 const router = Router();
 
 // Helper: Get user from session token
-async function getUserFromToken(token: string): Promise<any | null> {
+interface SessionUser { id: string; patient_id: string; email: string; name: string; role: string }
+async function getUserFromToken(token: string): Promise<SessionUser | null> {
   if (!token) return null;
   const result = await pool.query(
     `SELECT u.id, u.patient_id, u.email, u.name, u.role
@@ -54,7 +55,7 @@ router.get('/', async (req: Request, res: Response) => {
         }
       }
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[SETTINGS] Fetch error:', error);
     res.status(500).json({ error: 'Failed to fetch settings' });
   }
@@ -98,7 +99,7 @@ router.put('/', async (req: Request, res: Response) => {
 
     console.log(`[SETTINGS] Updated settings for user ${user.id}`);
     res.json({ success: true, settings, push: pushPrefs });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[SETTINGS] Update error:', error);
     res.status(500).json({ error: 'Failed to update settings' });
   }
@@ -127,7 +128,7 @@ router.get('/notifications', async (req: Request, res: Response) => {
     }, {});
 
     res.json({ success: true, preferences: grouped, raw: result.rows });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[SETTINGS] Notification prefs error:', error);
     res.status(500).json({ error: 'Failed to fetch notification preferences' });
   }
@@ -158,7 +159,7 @@ router.put('/notifications', async (req: Request, res: Response) => {
     );
 
     res.json({ success: true, preference: { channel, category, enabled } });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[SETTINGS] Update notification pref error:', error);
     res.status(500).json({ error: 'Failed to update notification preference' });
   }
@@ -183,7 +184,7 @@ router.put('/role', async (req: Request, res: Response) => {
     
     console.log(`[SETTINGS] User ${user.id} switched to role: ${role}`);
     res.json({ success: true, activeRole: role });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[SETTINGS] Role switch error:', error);
     res.status(500).json({ error: 'Failed to switch role' });
   }
@@ -202,10 +203,142 @@ router.post('/onboarding', async (req: Request, res: Response) => {
     await UserSettingsService.update(user.id, { onboarding_completed: true });
     
     res.json({ success: true, message: 'Onboarding completed' });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[SETTINGS] Onboarding error:', error);
     res.status(500).json({ error: 'Failed to complete onboarding' });
   }
 });
 
 export default router;
+
+// ============================================================================
+// OFFLINE SYNC ROUTES (Mobile offline-first architecture)
+// Merged from sync.ts — mounted at /api/sync
+// ============================================================================
+export const syncRouter = Router();
+
+// PUSH SYNC ITEMS (client → server) - POST /api/sync/push
+syncRouter.post('/push', async (req: Request, res: Response) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    const user = await getUserFromToken(token || '');
+    if (!user) return res.status(401).json({ error: 'Unauthorized' });
+
+    const { items } = req.body;
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ error: 'items array is required' });
+    }
+
+    for (const item of items) {
+      if (!item.entityType || !item.entityId || !item.operation || !item.payload || !item.clientTimestamp) {
+        return res.status(400).json({ error: 'Each item must have entityType, entityId, operation, payload, and clientTimestamp' });
+      }
+    }
+
+    const results = await SyncService.push(user.id, items);
+    
+    console.log(`[SYNC] Pushed ${items.length} items for user ${user.id}`);
+    res.json({ 
+      success: true, 
+      synced: results.length,
+      serverTimestamp: new Date().toISOString(),
+      items: results.map((r: any) => ({ id: r.id, entityType: r.entity_type, entityId: r.entity_id, status: r.sync_status }))
+    });
+  } catch (error: unknown) {
+    console.error('[SYNC] Push error:', error);
+    res.status(500).json({ error: 'Failed to sync items' });
+  }
+});
+
+// PULL SYNC ITEMS (server → client) - GET /api/sync/pull?since=<ISO timestamp>
+syncRouter.get('/pull', async (req: Request, res: Response) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    const user = await getUserFromToken(token || '');
+    if (!user) return res.status(401).json({ error: 'Unauthorized' });
+
+    const since = req.query.since as string || new Date(0).toISOString();
+    const items = await SyncService.pull(user.id, since);
+    
+    res.json({
+      success: true,
+      items,
+      serverTimestamp: new Date().toISOString(),
+      hasMore: false
+    });
+  } catch (error: unknown) {
+    console.error('[SYNC] Pull error:', error);
+    res.status(500).json({ error: 'Failed to pull sync items' });
+  }
+});
+
+// GET CONFLICTS - GET /api/sync/conflicts
+syncRouter.get('/conflicts', async (req: Request, res: Response) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    const user = await getUserFromToken(token || '');
+    if (!user) return res.status(401).json({ error: 'Unauthorized' });
+
+    const conflicts = await SyncService.getConflicts(user.id);
+    res.json({ success: true, conflicts });
+  } catch (error: unknown) {
+    console.error('[SYNC] Conflicts error:', error);
+    res.status(500).json({ error: 'Failed to fetch conflicts' });
+  }
+});
+
+// RESOLVE CONFLICT - PUT /api/sync/conflicts/:id
+syncRouter.put('/conflicts/:id', async (req: Request, res: Response) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    const user = await getUserFromToken(token || '');
+    if (!user) return res.status(401).json({ error: 'Unauthorized' });
+
+    const { resolution } = req.body;
+    if (!resolution) {
+      return res.status(400).json({ error: 'resolution object is required' });
+    }
+
+    const result = await SyncService.resolveConflict(req.params.id, resolution);
+    if (!result) {
+      return res.status(404).json({ error: 'Conflict not found' });
+    }
+
+    res.json({ success: true, resolved: result });
+  } catch (error: unknown) {
+    console.error('[SYNC] Resolve error:', error);
+    res.status(500).json({ error: 'Failed to resolve conflict' });
+  }
+});
+
+// GET SYNC STATUS - GET /api/sync/status
+syncRouter.get('/status', async (req: Request, res: Response) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    const user = await getUserFromToken(token || '');
+    if (!user) return res.status(401).json({ error: 'Unauthorized' });
+
+    const result = await pool.query(
+      `SELECT sync_status, COUNT(*) as count FROM sync_queue WHERE user_id = $1 GROUP BY sync_status`,
+      [user.id]
+    );
+
+    const lastSync = await pool.query(
+      'SELECT MAX(server_timestamp) as last_sync FROM sync_queue WHERE user_id = $1',
+      [user.id]
+    );
+
+    res.json({
+      success: true,
+      status: result.rows.reduce((acc: any, row: any) => {
+        acc[row.sync_status] = Number.parseInt(row.count);
+        return acc;
+      }, {}),
+      lastSync: lastSync.rows[0]?.last_sync || null,
+      serverTimestamp: new Date().toISOString()
+    });
+  } catch (error: unknown) {
+    console.error('[SYNC] Status error:', error);
+    res.status(500).json({ error: 'Failed to get sync status' });
+  }
+});

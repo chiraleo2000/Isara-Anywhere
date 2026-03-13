@@ -222,9 +222,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
                   setSuccess('');
                 }}
                 className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all duration-200 ${
-                  !isLogin
-                    ? 'bg-white text-emerald-600 shadow-md transform scale-105'
-                    : 'text-gray-600 hover:text-gray-900'
+                  isLogin
+                    ? 'text-gray-600 hover:text-gray-900'
+                    : 'bg-white text-emerald-600 shadow-md transform scale-105'
                 }`}
               >
                 Register
@@ -642,7 +642,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({ currentPage, onNavigat
           <div className="flex items-center justify-between">
             <span className="font-medium">System Status:</span>
             <span className="text-green-600 font-semibold flex items-center">
-              <span className="w-2 h-2 bg-green-500 rounded-full mr-1 animate-pulse" />
+              <span className="w-2 h-2 bg-green-500 rounded-full mr-1 animate-pulse" />{' '}
               Online
             </span>
           </div>

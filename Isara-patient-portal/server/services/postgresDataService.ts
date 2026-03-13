@@ -126,6 +126,17 @@ async function runMigrations() {
       END $$;
     `);
 
+    // Ensure notification_settings column exists on users table
+    await pool.query(`
+      DO $$
+      BEGIN
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS notification_settings JSONB
+          DEFAULT '{"appointments": true, "messages": true, "healthReminders": true, "promotions": false, "email": true, "push": true, "sms": false}'::jsonb;
+      EXCEPTION WHEN OTHERS THEN
+        NULL;
+      END $$;
+    `);
+
     // ========================================================================
     // Phase 2 Migrations - Mobile App Support
     // ========================================================================
@@ -652,9 +663,9 @@ export const PHRService = {
           ]
         );
         return result.rows[0];
-      } catch (insertError: any) {
+      } catch (insertError: unknown) {
         // FK constraint violation — patient may not exist in users table, return in-memory PHR
-        console.warn('[PHR] Insert failed (FK constraint?), returning in-memory PHR:', insertError.message);
+        console.warn('[PHR] Insert failed (FK constraint?), returning in-memory PHR:', insertError instanceof Error ? insertError.message : insertError);
         return {
           id: `phr_${patientId}`,
           patient_id: patientId,

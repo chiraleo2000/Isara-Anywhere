@@ -3,23 +3,23 @@ import { useLayoutEffect } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { SettingsProvider } from './contexts/SettingsContext';
 
-import LoginPage from './pages/auth/LoginPage';
-import RegisterPage from './pages/auth/RegisterPage';
-import ResetPasswordPage from './pages/auth/ResetPasswordPage';
-import DashboardPage from './pages/dashboard/DashboardPage';
-import MainLayout from './components/layout/MainLayout';
-import { AppointmentListPage, BookAppointmentPage, AppointmentDetailPage } from './pages/appointments/AppointmentPages';
-import PHRPage from './pages/health/PHRPage';
-import AIDoctorPage from './pages/health/AIDoctorPage';
-import MedicalContentLibrary from './pages/health/MedicalContentLibrary';
-import ProfilePage from './pages/profile/ProfilePage';
-import SettingsPage from './pages/settings/SettingsPage';
-import PDPAPage from './pages/pdpa/PDPAPage';
-import LivingWillPage from './pages/pdpa/LivingWillPage';
-import TimelinePage from './pages/timeline/TimelinePage';
-import MapPage from './pages/map/MapPage';
-import GCSStatusPage from './pages/admin/GCSStatusPage';
-import PatientMeetingRoom from './pages/meeting/PatientMeetingRoom';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
+import DashboardPage from './pages/DashboardPage';
+import MainLayout from './components/MainLayout';
+import { AppointmentListPage, BookAppointmentPage, AppointmentDetailPage } from './pages/AppointmentPages';
+import PHRPage from './pages/PHRPage';
+import AIDoctorPage from './pages/AIDoctorPage';
+import MedicalContentLibrary from './pages/MedicalContentLibrary';
+import ProfilePage from './pages/ProfilePage';
+import SettingsPage from './pages/SettingsPage';
+import PDPAPage from './pages/PDPAPage';
+import LivingWillPage from './pages/LivingWillPage';
+import TimelinePage from './pages/TimelinePage';
+import MapPage from './pages/MapPage';
+import GCSStatusPage from './pages/GCSStatusPage';
+import PatientMeetingRoom from './pages/PatientMeetingRoom';
 
 // Enhanced Scroll to top on route change - uses useLayoutEffect for immediate scroll
 function ScrollToTop() {

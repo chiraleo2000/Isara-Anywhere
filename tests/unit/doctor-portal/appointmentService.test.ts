@@ -17,10 +17,10 @@ interface TimeSlot {
 
 function hasTimeOverlap(slot1: TimeSlot, slot2: TimeSlot): boolean {
   if (slot1.date !== slot2.date || slot1.doctorId !== slot2.doctorId) return false;
-  const s1Start = parseInt(slot1.startTime.replace(':', ''));
-  const s1End = parseInt(slot1.endTime.replace(':', ''));
-  const s2Start = parseInt(slot2.startTime.replace(':', ''));
-  const s2End = parseInt(slot2.endTime.replace(':', ''));
+  const s1Start = Number.parseInt(slot1.startTime.replace(':', ''), 10);
+  const s1End = Number.parseInt(slot1.endTime.replace(':', ''), 10);
+  const s2Start = Number.parseInt(slot2.startTime.replace(':', ''), 10);
+  const s2End = Number.parseInt(slot2.endTime.replace(':', ''), 10);
   return s1Start < s2End && s2Start < s1End;
 }
 
@@ -104,7 +104,8 @@ describe('Doctor Portal — Appointment Service', () => {
     });
 
     it('B02 — today is valid', () => {
-      const today = new Date().toISOString().split('T')[0];
+      const now = new Date();
+      const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
       expect(isFutureDate(today)).toBe(true);
     });
 
@@ -212,10 +213,9 @@ describe('Doctor Portal — Appointment Service', () => {
 
     it('G05 — generates unique links for same appointment', () => {
       const link1 = generateJitsiMeetingLink('APT-001');
-      // Small delay to ensure different timestamp
-      const link2 = generateJitsiMeetingLink('APT-001');
-      // Links may differ due to timestamp
+      const link1b = generateJitsiMeetingLink('APT-001');
       expect(link1).toContain('izara-APT-001');
+      expect(link1b).toContain('izara-APT-001');
     });
   });
 
@@ -223,7 +223,7 @@ describe('Doctor Portal — Appointment Service', () => {
     it('H01 — pool appointment transitions correctly', () => {
       const poolStatuses = ['pending', 'in_pool', 'awaiting_doctor_response', 'confirmed'];
       expect(poolStatuses[0]).toBe('pending');
-      expect(poolStatuses[poolStatuses.length - 1]).toBe('confirmed');
+      expect(poolStatuses.at(-1)).toBe('confirmed');
     });
 
     it('H02 — pool assignment data structure', () => {

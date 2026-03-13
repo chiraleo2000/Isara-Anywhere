@@ -1,6 +1,6 @@
 {
   "name": "isara-anywhere",
-  "version": "1.5.4",
+  "version": "1.6.0",
   "description": "Izara Telemedicine Platform - Patient and Doctor Portals",
   "main": "index.js",
   "scripts": {
@@ -18,5 +18,8 @@
     "node-fetch": "^2.7.0",
     "pg": "^8.17.2",
     "socket.io-client": "^4.8.3"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58.2"
   }
 }

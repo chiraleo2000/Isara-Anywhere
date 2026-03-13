@@ -1394,9 +1394,10 @@ function LabImagingTab() {
   }, [user]);
 
   const loadLabOrders = async () => {
+    if (!user) return;
     try {
-      const res = await labOrderService.getOrders(user!.id);
-      setLabOrders((res as any)?.labOrders || []);
+      const res = await labOrderService.getOrders(user.id);
+      setLabOrders(res?.labOrders || []);
     } catch (e) {
       console.error('Failed to load lab orders', e);
       setLabOrders([]);
@@ -1406,9 +1407,10 @@ function LabImagingTab() {
   };
 
   const loadImagingOrders = async () => {
+    if (!user) return;
     try {
-      const res = await imagingOrderService.getOrders(user!.id);
-      setImagingOrders((res as any)?.imagingOrders || []);
+      const res = await imagingOrderService.getOrders(user.id);
+      setImagingOrders(res?.imagingOrders || []);
     } catch {
       setImagingOrders([]);
     }
@@ -1578,10 +1580,11 @@ function PHRPage() {
   }, [phr, user, vitals]);
 
   const loadData = async () => {
+    if (!user) return;
     try {
       const [phrData, vitalsData] = await Promise.all([
-        phrService.get(user!.id).catch(() => null),
-        phrService.getVitals(user!.id).catch(() => []),
+        phrService.get(user.id).catch(() => null),
+        phrService.getVitals(user.id).catch(() => []),
       ]);
       setPhr(phrData);
       // Sort vitals by date, newest first
@@ -1724,7 +1727,7 @@ function PHRPage() {
       await phrService.update(user.id, {
         ...phr,
         lifestyle: {
-          diet: lifestyleData.diet as LifestyleData['diet'],
+          diet: lifestyleData.diet,
           dietType: lifestyleData.diet as LifestyleData['dietType'],
           exerciseFrequency: lifestyleData.exercise as LifestyleData['exerciseFrequency'],
           exercise: lifestyleData.exercise,

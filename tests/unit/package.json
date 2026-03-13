@@ -1,23 +1,36 @@
 {
   "name": "isara-unit-tests",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
-  "description": "Izara Telemedicine Unit & Integration Tests — isolated from project source",
+  "description": "Izara Telemedicine Unit & Integration Tests — isolated from project source, grouped by domain",
   "type": "module",
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
-    "test:doctor": "vitest run --config vitest.config.ts --dir doctor-portal",
-    "test:patient": "vitest run --config vitest.config.ts --dir patient-portal",
-    "test:meeting": "vitest run --config vitest.config.ts --dir meeting-server",
-    "test:security": "vitest run --config vitest.config.ts --dir security",
-    "test:database": "vitest run --config vitest.config.ts --dir database",
-    "test:integration": "vitest run --config vitest.config.ts --dir integration"
+
+    "test:auth": "cross-env TEST_GROUP=auth vitest run",
+    "test:appointments": "cross-env TEST_GROUP=appointments vitest run",
+    "test:clinical": "cross-env TEST_GROUP=clinical vitest run",
+    "test:content": "cross-env TEST_GROUP=content vitest run",
+    "test:meeting": "cross-env TEST_GROUP=meeting vitest run",
+    "test:ai": "cross-env TEST_GROUP=ai vitest run",
+    "test:api": "cross-env TEST_GROUP=api vitest run",
+    "test:notifications": "cross-env TEST_GROUP=notifications vitest run",
+    "test:security": "cross-env TEST_GROUP=security vitest run",
+    "test:workflows": "cross-env TEST_GROUP=workflows vitest run",
+    "test:database": "cross-env TEST_GROUP=database vitest run",
+
+    "test:doctor": "vitest run --dir doctor-portal",
+    "test:patient": "vitest run --dir patient-portal",
+    "test:meeting-server": "vitest run --dir meeting-server"
   },
   "devDependencies": {
     "vitest": "^2.1.0",
     "@vitest/coverage-v8": "^2.1.0",
+    "@vitest/ui": "^2.1.0",
+    "cross-env": "^7.0.3",
     "typescript": "^5.3.3"
   }
 }

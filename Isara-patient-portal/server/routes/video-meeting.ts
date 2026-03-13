@@ -256,12 +256,12 @@ async function callGeminiAI(prompt: string, maxTokens: number = 2048): Promise<s
     }
     
     return text;
-  } catch (error: any) {
-    if (error.message?.startsWith('AI_')) {
+  } catch (error: unknown) {
+    if ((error instanceof Error ? error.message : String(error))?.startsWith('AI_')) {
       throw error; // Re-throw our custom errors
     }
-    console.error('Gemini API error:', error.message);
-    throw new Error(`AI_API_ERROR: ${error.message}`);
+    console.error('Gemini API error:', (error instanceof Error ? error.message : String(error)));
+    throw new Error(`AI_API_ERROR: ${(error instanceof Error ? error.message : String(error))}`);
   }
 }
 
@@ -319,7 +319,7 @@ Return ONLY the JSON object, no markdown or additional text.`;
   
   try {
     // Try to parse JSON from response
-    const jsonMatch = result.match(/\{[\s\S]*\}/);
+    const jsonMatch = /\{[\s\S]*\}/.exec(result);
     if (jsonMatch) {
       const parsed = JSON.parse(jsonMatch[0]);
       return {
@@ -390,7 +390,7 @@ IMPORTANT: These are suggestions for the doctor to consider, not final diagnoses
   const result = await callGeminiAI(prompt, 4096);
   
   try {
-    const jsonMatch = result.match(/\{[\s\S]*\}/);
+    const jsonMatch = /\{[\s\S]*\}/.exec(result);
     if (jsonMatch) {
       const parsed = JSON.parse(jsonMatch[0]);
       return {
@@ -471,8 +471,8 @@ async function generatePostMeetingContent(
       if (memMeeting) {
         memMeeting.summary = summary || undefined;
       }
-    } catch (aiError: any) {
-      console.warn('⚠️ AI summary generation failed (meeting still ends):', aiError.message);
+    } catch (aiError: unknown) {
+      console.warn('⚠️ AI summary generation failed (meeting still ends):', aiError instanceof Error ? aiError.message : aiError);
     }
   }
 
@@ -483,8 +483,8 @@ async function generatePostMeetingContent(
       if (memMeeting) {
         memMeeting.doctorRecommendations = recommendations || undefined;
       }
-    } catch (aiError: any) {
-      console.warn('⚠️ AI recommendations generation failed (meeting still ends):', aiError.message);
+    } catch (aiError: unknown) {
+      console.warn('⚠️ AI recommendations generation failed (meeting still ends):', aiError instanceof Error ? aiError.message : aiError);
     }
   }
 
@@ -546,7 +546,7 @@ router.post('/create', async (req: Request, res: Response) => {
     try {
       existingMeeting = await MeetingService.getActiveMeeting(appointmentId);
     } catch (error_: unknown) {
-      console.warn('⚠️ Meeting lookup failed:', error_ instanceof Error ? error_.message : String(error_));
+      console.warn('⚠️ Meeting lookup failed:', error_ instanceof Error ? error_.message : JSON.stringify(error_));
     }
     
     if (existingMeeting) {
@@ -613,8 +613,8 @@ router.post('/create', async (req: Request, res: Response) => {
           jitsiDomain: JITSI_DOMAIN
         }
       });
-    } catch (dbError: any) {
-      console.warn('⚠️ Meeting DB insert failed (FK constraint?), using in-memory:', dbError.message);
+    } catch (dbError: unknown) {
+      console.warn('⚠️ Meeting DB insert failed (FK constraint?), using in-memory:', (dbError instanceof Error ? dbError.message : String(dbError)));
       meeting = {
         id: `meet-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
         appointment_id: appointmentId,
@@ -775,7 +775,7 @@ router.get('/:appointmentId', async (req: Request, res: Response) => {
         const meetingServerUrl = process.env.MEETING_SERVER_URL || process.env.VITE_MEETING_SERVER_URL || 'http://meeting-server:3020';
         const msRes = await fetch(`${meetingServerUrl}/api/meetings?appointmentId=${appointmentId}`);
         if (msRes.ok) {
-          const msData = await msRes.json() as any;
+          const msData: any = await msRes.json();
           const found = Array.isArray(msData.meetings) ? msData.meetings.find((m: any) => m.appointment_id === appointmentId || m.appointmentId === appointmentId) : null;
           if (found) {
             return res.json({
@@ -984,7 +984,7 @@ router.post('/:appointmentId/transcribe-audio', async (req: Request, res: Respon
       languageCode || 'th-TH'
     );
     
-    if (result.transcript && result.transcript.trim()) {
+    if (result.transcript?.trim()) {
       const entry: TranscriptEntry = {
         id: `trans-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`,
         participantId: participantId || 'meeting-audio',

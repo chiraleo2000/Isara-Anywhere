@@ -1,6 +1,6 @@
 # 🏥 Izara Telemedicine Platform
 
-![Version](https://img.shields.io/badge/version-1.5.4-blue.svg)
+![Version](https://img.shields.io/badge/version-1.6.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Platform](https://img.shields.io/badge/platform-web-lightgrey.svg)
 ![Node](https://img.shields.io/badge/node-%3E%3D22.0.0-brightgreen.svg)
@@ -9,7 +9,8 @@
 ![Tests](https://img.shields.io/badge/Unit%20tests-1%2C419%20passing-brightgreen.svg)
 ![Tests](https://img.shields.io/badge/E2E%20tests-1%2C191%20passing-brightgreen.svg)
 ![Cloud Run](https://img.shields.io/badge/Cloud%20Run-deployed-blue.svg)
-![Security](https://img.shields.io/badge/security-OWASP%20hardened-green.svg)
+![Security](https://img.shields.io/badge/security-SonarQube%20clean-green.svg)
+![TypeScript](https://img.shields.io/badge/TypeScript-strict%20safe-blue.svg)
 
 ## A comprehensive telemedicine platform built for Thailand's healthcare system
 
@@ -43,19 +44,19 @@ The platform consists of three main services:
 | PostgreSQL | localhost:5433 |
 | pgAdmin | <http://localhost:5050> |
 
-### Cloud Environment — Production (v1.5.4) (Google Cloud Run)
+### Cloud Environment — Production (v1.6.0) (Google Cloud Run)
 
 | Service | URL |
 | ------- | --- |
-| Patient Portal | <https://izara-patient-portal-724889190329.asia-southeast1.run.app> |
-| Doctor Portal | <https://izara-doctor-portal-724889190329.asia-southeast1.run.app> |
-| Meeting Server | <https://izara-jitsi-meeting-portal-724889190329.asia-southeast1.run.app> |
+| Patient Portal | <https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app> |
+| Doctor Portal | <https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app> |
+| Meeting Server | <https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app> |
 
 ---
 
 ## 🧪 Testing
 
-### Test Architecture (v1.5.4)
+### Test Architecture (v1.6.0)
 
 #### Unit Tests (Vitest — 1,419 tests)
 - **46 test files** in `tests/unit/` — pure logic, no server required
@@ -216,7 +217,7 @@ npx playwright show-report
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────────┐
-│                     IZARA TELEMEDICINE v1.5.4                               │
+│                     IZARA TELEMEDICINE v1.6.0                               │
 ├──────────────────────────────────────────────────────────────────────────┤
 │   ┌─────────────────┐  ┌─────────────────┐  ┌────────────────────────┐   │
 │   │  Patient Portal │  │  Doctor Portal  │  │  Meeting Server        │   │
@@ -227,7 +228,7 @@ npx playwright show-report
 │            └────────────────────┼─────────────────────┘                   │
 │                                 ▼                                         │
 │   ┌───────────────────────────────────────────────────────────────────┐  │
-│   │         PostgreSQL 16 + pgvector (Primary Database)               │  │
+│   │         PostgreSQL 18 + pgvector (Primary Database)               │  │
 │   │         Local: Docker port 5433 | Cloud: Embedded PG in Cloud Run│  │
 │   └───────────────────────────────────────────────────────────────────┘  │
 │                                                                           │
@@ -250,7 +251,7 @@ npx playwright show-report
 | ----- | ---------- | ------- |
 | Frontend | React 18, TypeScript, Vite 7, Tailwind CSS | UI |
 | Backend | Node.js 22, Express.js | API servers |
-| Database | PostgreSQL 16 + pgvector | Primary data store |
+| Database | PostgreSQL 18 + pgvector | Primary data store |
 | Auth | bcrypt + JWT (doctor) / Session tokens (patient) | Authentication |
 | Realtime | Socket.io | WebSocket |
 | AI | Google Gemini | Chat, CDS, summaries |
@@ -346,13 +347,13 @@ cd Izara-jitsi-server
 gcloud builds submit --config=cloudbuild.yaml
 ```
 
-### Cloud URLs (Production — v1.5.4)
+### Cloud URLs (Production — v1.6.0)
 
 | Service | URL |
 | ------- | --- |
-| Patient Portal | <https://izara-patient-portal-724889190329.asia-southeast1.run.app> |
-| Doctor Portal | <https://izara-doctor-portal-724889190329.asia-southeast1.run.app> |
-| Meeting Server | <https://izara-jitsi-meeting-portal-724889190329.asia-southeast1.run.app> |
+| Patient Portal | <https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app> |
+| Doctor Portal | <https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app> |
+| Meeting Server | <https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app> |
 
 ### No Dev Environment
 
@@ -365,33 +366,32 @@ Dev testing removed to reduce Cloud Run costs. Test locally via Docker, then dep
 ```text
 Isara-Anywhere/
 ├── Isara-patient-portal/     # Patient-facing application
-│   ├── src/                  # React components & pages
-│   ├── server/               # Express.js backend + routes
-│   └── doc/                  # Portal documentation
+│   ├── src/                  # React components & pages (flat structure)
+│   │   ├── pages/            # 17 page components (flattened from subfolders)
+│   │   ├── components/       # Reusable UI components
+│   │   ├── hooks/            # Custom React hooks
+│   │   ├── services/         # API service layer
+│   │   └── types/            # TypeScript type definitions
+│   ├── server/               # Express.js backend (unified)
+│   │   ├── index.ts          # Main server entry point
+│   │   ├── routes/           # 17 merged route modules
+│   │   ├── middleware/       # Auth, security middleware
+│   │   └── services/         # PostgreSQL data service
+│   └── Dockerfile.unified    # Production container
 ├── Isara-doctor-portal/      # Doctor/Admin application
 │   ├── src/                  # React components & pages
 │   ├── server/               # Express.js backend servers
-│   └── doc/                  # Portal documentation
+│   └── Dockerfile.unified    # Production container
 ├── Izara-jitsi-server/       # Meeting server with transcription
-│   ├── server/               # Express + Socket.IO
-│   └── client/               # Transcription components
-├── Isara-mobile/             # Mobile app (Expo + React Native)
-│   ├── app/                  # Expo Router screens
-│   ├── src/                  # Stores (auth, sync) & services (syncEngine)
-│   └── packages/             # Shared packages (api-client, ui, shared)
-│       └── shared/src/db/    # SQLite schema, localDb, offlineQueue
+│   └── server/               # Express + Socket.IO
 ├── tests/
-│   ├── unit/                 # Vitest unit tests (409 tests, 15 suites)
-│   └── e2e/                  # Playwright E2E tests (808 tests, 10 specs)
-│       ├── specs/            # 10 test spec files (01-10)
-│       └── lib/              # Shared test config & helpers
+│   ├── unit/                 # Vitest unit tests (1,419 tests, 46 files)
+│   └── e2e/                  # Playwright E2E tests (1,191 tests, 24 specs)
 ├── specs/                    # Specification documents
-│   ├── SPEC_KIT_PHASE1.md    # Phase 1 combined requirements
-│   └── SPEC_KIT_PHASE2.md    # Phase 2 mobile + sync requirements
 ├── Processes/                # Workflow documentation (13 docs)
 ├── Presentations/            # Project presentations & diagrams
 ├── scripts/                  # Utility & deployment scripts
-└── docker-compose.yml        # Docker orchestration
+└── docker-compose.yml        # Docker orchestration (5 services)
 ```
 
 ---
@@ -401,16 +401,16 @@ Isara-Anywhere/
 | Document | Description |
 | -------- | ----------- |
 | [Spec Kit — Phase 1](specs/SPEC_KIT_PHASE1.md) | Combined Phase 1 requirements & feature matrix |
-| [Spec Kit — Phase 2](specs/SPEC_KIT_PHASE2.md) | Mobile app specifications, SQLite sync, security |
-| [Patient Portal Doc](Isara-patient-portal/doc/) | Patient portal architecture, features & APIs |
-| [Doctor Portal Doc](Isara-doctor-portal/doc/) | Doctor portal architecture, features & APIs |
+| [Spec Kit — Full](specs/SPEC_KIT.md) | Complete specification kit |
+| [Phase 2 MVP](Phase2/PHASE2_MVP_COMPREHENSIVE.md) | Phase 2 MVP comprehensive plan |
 | [Workflow Processes](Processes/) | 13 workflow & process documents |
 | [Presentations](Presentations/) | Technical diagrams & project presentations |
+| [Technical Documentation](Presentations/TECHNICAL_DOCUMENTATION.md) | Main technical reference |
 | [E2E Coverage Report](tests/E2E_COVERAGE_REPORT.md) | Per-spec E2E test coverage analysis |
 
 ---
 
-## 🔒 Security (v1.5.4 Hardened)
+## 🔒 Security (v1.6.0 — SonarQube Clean)
 
 - **Authentication**: bcrypt password hashing (10 rounds), JWT + session tokens
 - **JWT Secrets**: Consistent `JWT_SECRET_FINAL` usage across all verify calls (sign/verify mismatch fixed)
@@ -419,6 +419,8 @@ Isara-Anywhere/
 - **Rate Limiting**: 10 login attempts per 15 minutes
 - **OWASP Security Headers**: Helmet.js (CSP, XSS protection, HSTS, X-Frame, X-Content-Type)
 - **Body Limits**: 10KB JSON payload limit to prevent DoS
+- **TypeScript Strict Safety**: Zero `error: any` in server code — all catch blocks use `error: unknown` with proper type narrowing
+- **SonarQube Compliance**: No S6551 (unsafe string interpolation), no S4325 (unnecessary type assertions), no non-null assertions in frontend
 - **Error Handling**: Global error handlers with sanitized error messages (no stack traces in production)
 - **IDOR Protection**: User-scoped data access enforcement
 - **Input Validation**: XSS prevention, SQL injection protection
@@ -426,6 +428,28 @@ Isara-Anywhere/
 - **Service Account Paths**: Credentials stored in `credentials/` directory (not in public/)
 - **PDPA Compliance**: Thailand's data protection standards
 - **Man-in-the-Loop AI**: Doctor validates all AI outputs before delivery
+
+---
+
+## 📋 Changelog
+
+### v1.6.0 (March 13, 2026)
+
+- **TypeScript Strict Safety**: All server-side catch blocks use `error: unknown` with proper type narrowing (eliminated ~250 `error: any` patterns)
+- **SonarQube Clean**: Fixed S6551 (unsafe string interpolation), S4325 (unnecessary assertions), non-null assertions
+- **Codebase Restructuring**: Patient portal pages flattened from nested subfolders, server routes merged into 17 consolidated modules
+- **Error Handling**: Proper `instanceof Error` type guards throughout; named error variables (`dbError`, `aiError`, `insertError`) for clarity
+- **AuthenticatedRequest Interface**: Strongly-typed with explicit `patientId`, `userId`, and union role type
+- **API Testing**: 31/31 GET endpoints + 5/5 write operations verified returning 200 OK
+- **Docker Deployment**: All 5 services (patient-portal, doctor-portal, meeting-server, postgres, pgadmin) healthy
+- **Cloud Deployment**: All 3 Cloud Run services (patient-portal, doctor-portal, meeting-server) deployed v1.6.0 — health checks passing
+- **PostgreSQL 18**: Updated all documentation to reflect actual database version
+
+### v1.5.4 (March 8, 2026)
+
+- Security hardening: JWT sign/verify consistency, OWASP headers, unified password policies
+- Comprehensive test layer: 1,419 unit + 1,191 E2E = 2,610 tests at 100% pass rate
+- Phase 2 AI-HIS tables and endpoints
 
 ---
 

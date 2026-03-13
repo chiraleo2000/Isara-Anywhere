@@ -25,11 +25,12 @@ export const HealthStudio: React.FC<HealthStudioProps> = ({ className = '' }) =>
   }, [user]);
 
   const loadData = async () => {
+    if (!user) return;
     try {
       const [vitalsData, phrData, appointmentsData] = await Promise.all([
-        phrService.getVitals(user!.id).catch(() => []),
-        phrService.get(user!.id).catch(() => null),
-        appointmentService.getByPatient(user!.patientId || user!.id).catch(() => []),
+        phrService.getVitals(user.id).catch(() => []),
+        phrService.get(user.id).catch(() => null),
+        appointmentService.getByPatient(user.patientId || user.id).catch(() => []),
       ]);
 
       // Get latest vitals (sorted newest first)

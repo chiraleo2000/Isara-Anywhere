@@ -236,11 +236,11 @@ router.post('/register', async (req: Request, res: Response) => {
       },
       token: sessionToken,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[AUTH] Registration error:', error);
     
     // Handle duplicate user errors gracefully
-    if (error.message?.includes('duplicate') || error.code === '23505') {
+    if ((error instanceof Error ? error.message : String(error))?.includes('duplicate') || (error && typeof error === 'object' && 'code' in error && (error as { code: string }).code === '23505')) {
       return res.json({ 
         success: true,
         message: 'User already exists',
@@ -252,7 +252,7 @@ router.post('/register', async (req: Request, res: Response) => {
     res.status(500).json({ 
       success: false,
       error: 'Registration failed',
-      message: error.message
+      message: (error instanceof Error ? error.message : String(error))
     });
   }
 });
@@ -351,9 +351,9 @@ router.post('/login', async (req: Request, res: Response) => {
       },
       token: sessionToken,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[AUTH] Login error:', error);
-    res.status(500).json({ error: 'Login failed: ' + error.message });
+    res.status(500).json({ error: 'Login failed: ' + (error instanceof Error ? error.message : String(error)) });
   }
 });
 
@@ -387,7 +387,7 @@ router.post('/validate', async (req: Request, res: Response) => {
       userId: session.user_id,
       patientId: session.patient_id 
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[AUTH] Validation error:', error);
     res.status(500).json({ valid: false, error: 'Validation failed' });
   }
@@ -409,7 +409,7 @@ router.post('/logout', async (req: Request, res: Response) => {
 
     console.log('[AUTH] Logout successful');
     res.json({ success: true });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[AUTH] Logout error:', error);
     res.status(500).json({ error: 'Logout failed' });
   }
@@ -455,7 +455,7 @@ router.get('/me', async (req: Request, res: Response) => {
         role: user.role,
       }
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[AUTH] Get user error:', error);
     res.status(401).json({ error: 'Unauthorized' });
   }
@@ -519,9 +519,9 @@ router.put('/profile', async (req: Request, res: Response) => {
         role: user.role,
       }
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[AUTH] Profile update error:', error);
-    res.status(500).json({ error: 'Profile update failed: ' + error.message });
+    res.status(500).json({ error: 'Profile update failed: ' + (error instanceof Error ? error.message : String(error)) });
   }
 });
 
@@ -584,7 +584,7 @@ router.post('/change-password', async (req: Request, res: Response) => {
       success: true, 
       message: 'Password changed successfully' 
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[AUTH] Change password error:', error);
     res.status(500).json({ error: 'Failed to change password' });
   }
@@ -660,7 +660,7 @@ router.post('/request-password-reset', async (req: Request, res: Response) => {
       message: 'Password reset link sent to your email. Please check your inbox.',
       devToken: isDevelopment ? resetToken : undefined
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[PASSWORD_RESET] Error:', error);
     res.status(500).json({ error: 'Failed to process password reset request' });
   }
@@ -703,7 +703,7 @@ router.get('/verify-reset-token/:token', async (req: Request, res: Response) => 
       valid: true, 
       email: resetData.email 
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[VERIFY_TOKEN] Error:', error);
     res.status(500).json({ valid: false, error: 'Failed to verify token' });
   }
@@ -775,7 +775,7 @@ router.post('/reset-password', async (req: Request, res: Response) => {
       success: true, 
       message: 'Password has been reset successfully. You can now login with your new password.' 
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[RESET_PASSWORD] Error:', error);
     res.status(500).json({ error: 'Failed to reset password' });
   }
@@ -819,9 +819,9 @@ router.get('/check-user/:email', async (req: Request, res: Response) => {
       createdAt: user.created_at,
       lastLogin: user.last_login
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[AUTH DEBUG] Error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
   }
 });
 
@@ -871,9 +871,9 @@ router.post('/avatar', async (req: Request, res: Response) => {
       avatarUrl: updateResult.rows[0].avatar_url,
       message: 'Avatar updated successfully'
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[AUTH] Avatar update error:', error);
-    res.status(500).json({ error: 'Failed to update avatar: ' + error.message });
+    res.status(500).json({ error: 'Failed to update avatar: ' + (error instanceof Error ? error.message : String(error)) });
   }
 });
 
@@ -919,9 +919,9 @@ router.post('/profile/image', async (req: Request, res: Response) => {
       avatarUrl: updateResult.rows[0].avatar_url,
       message: 'Profile image updated successfully'
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[AUTH] Profile image update error:', error);
-    res.status(500).json({ error: 'Failed to update profile image: ' + error.message });
+    res.status(500).json({ error: 'Failed to update profile image: ' + (error instanceof Error ? error.message : String(error)) });
   }
 });
 
@@ -963,7 +963,7 @@ router.get('/', async (req: Request, res: Response) => {
       gender: user.gender,
       role: user.role,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[AUTH] Get profile error:', error);
     res.status(500).json({ error: 'Failed to get profile' });
   }
@@ -1056,7 +1056,7 @@ router.post('/refresh', async (req: Request, res: Response) => {
         role: tokenRow.role,
       }
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[AUTH] Token refresh error:', error);
     res.status(500).json({ error: 'Token refresh failed' });
   }

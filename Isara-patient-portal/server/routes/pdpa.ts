@@ -73,7 +73,7 @@ router.get('/status', authMiddleware, async (req: Request, res: Response) => {
       lastUpdated: consents[0]?.updated_at || null,
       patientId
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[PDPA] Get status error:', error);
     // Fallback to demo response
     // @ts-ignore
@@ -109,7 +109,7 @@ router.get('/consents', authMiddleware, async (req: Request, res: Response) => {
     }));
 
     res.json(consents);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[PDPA] Get consents error:', error);
     res.json([]);
   }
@@ -133,7 +133,7 @@ router.get('/audit', authMiddleware, async (req: Request, res: Response) => {
     );
 
     res.json(result.rows);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[PDPA] Get audit error:', error);
     res.json([]);
   }
@@ -170,7 +170,7 @@ router.post('/living-will/share', authMiddleware, async (req: Request, res: Resp
     ).catch(() => {});
 
     res.json({ success: true, shared: true, patientId, doctorId });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[PDPA] Share living will error:', error);
     res.status(500).json({ error: 'Failed to share living will' });
   }
@@ -242,7 +242,7 @@ router.post('/consent', authMiddleware, async (req: Request, res: Response) => {
       consents: { dataProcessing, marketing, research },
       grantedAt: now.toISOString()
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[PDPA] Grant consent error:', error);
     // Fallback to demo response
     // @ts-ignore
@@ -298,7 +298,7 @@ router.delete('/consent', authMiddleware, async (req: Request, res: Response) =>
       message: 'All consents revoked',
       revokedAt: now.toISOString()
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[PDPA] Revoke all consents error:', error);
     // Fallback to demo response
     return res.json({
@@ -344,7 +344,7 @@ router.get('/consents/:patientId', authMiddleware, async (req: Request, res: Res
     }));
 
     res.json({ consents });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[PDPA] Get consents error:', error);
     res.json({ consents: [] });
   }
@@ -391,7 +391,7 @@ router.put('/consents/:patientId/:consentId', authMiddleware, async (req: Reques
     );
 
     res.json({ success: true, consent: { id: consentId, granted, updatedAt: now.toISOString() } });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[PDPA] Update consent error:', error);
     res.status(500).json({ error: 'Failed to update consent' });
   }
@@ -431,7 +431,7 @@ router.post('/consents/:patientId', authMiddleware, async (req: Request, res: Re
       grantedAt: now.toISOString(),
       createdAt: now.toISOString()
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[PDPA] Grant consent error:', error);
     res.status(500).json({ error: 'Failed to grant consent' });
   }
@@ -466,7 +466,7 @@ router.put('/consents/:patientId/:consentId/revoke', authMiddleware, async (req:
     );
 
     res.json({ success: true, consent: result.rows[0] });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[PDPA] Revoke consent error:', error);
     res.status(500).json({ error: 'Failed to revoke consent' });
   }
@@ -506,7 +506,7 @@ router.post('/verify', authMiddleware, async (req: Request, res: Response) => {
     }
 
     res.json({ hasConsent: true, consent });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[PDPA] Verify consent error:', error);
     res.json({ hasConsent: false, reason: 'Verification failed' });
   }
@@ -523,7 +523,7 @@ router.get('/audit/:patientId', authMiddleware, async (req: Request, res: Respon
     );
 
     res.json(result.rows);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[PDPA] Get audit logs error:', error);
     res.json([]);
   }
@@ -546,7 +546,7 @@ router.get('/living-will/:patientId', authMiddleware, async (req: Request, res: 
     }
 
     res.json(livingWill);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[PDPA] Get living will error:', error);
     res.json(null);
   }
@@ -563,7 +563,7 @@ router.get('/living-will/:patientId/versions', authMiddleware, async (req: Reque
     );
 
     res.json(result.rows);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[PDPA] Get living will versions error:', error);
     res.json([]);
   }
@@ -584,7 +584,7 @@ router.get('/living-will/:patientId/versions/:versionId', authMiddleware, async 
     }
 
     res.json(result.rows[0]);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[PDPA] Get living will version error:', error);
     res.status(500).json({ error: 'Failed to get version' });
   }
@@ -645,7 +645,7 @@ router.post('/living-will/:patientId/rollback/:versionId', authMiddleware, async
     );
 
     res.json({ success: true, message: 'Living will restored successfully' });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[PDPA] Rollback living will error:', error);
     res.status(500).json({ error: 'Failed to rollback' });
   }
@@ -733,7 +733,7 @@ router.post('/living-will/:patientId', authMiddleware, async (req: Request, res:
 
       return res.json(result.rows[0]);
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[PDPA] Save living will error:', error);
     res.status(500).json({ error: 'Failed to save living will' });
   }
@@ -758,7 +758,7 @@ router.post('/living-will/:patientId/signature', authMiddleware, async (req: Req
     );
 
     res.json({ success: true, message: 'Signature saved' });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[PDPA] Upload signature error:', error);
     res.status(500).json({ error: 'Failed to save signature' });
   }
@@ -789,7 +789,7 @@ router.get('/doctor-consents/:patientId', authMiddleware, async (req: Request, r
     }));
 
     res.json(consents);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[PDPA] Get doctor consents error:', error);
     res.json([]);
   }

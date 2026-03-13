@@ -78,7 +78,7 @@ test.describe('28B — Doctor Portal Pages', () => {
 
     test('B07 — Doctor Medical Content page loads', async ({ page }) => {
       test.slow();
-      await page.goto(`${DOCTOR_URL}/doctor/${DOC_ID}/content`, { timeout: TIMEOUTS.navigation, waitUntil: 'domcontentloaded' });
+      await page.goto(`${DOCTOR_URL}/doctor/${DOC_ID}/medical-content`, { timeout: TIMEOUTS.navigation, waitUntil: 'domcontentloaded' });
       const health = await verifyPageHealthy(page);
       expect(health.healthy).toBe(true);
       logTestSuccess('Doctor Medical Content page loaded OK');
@@ -86,14 +86,14 @@ test.describe('28B — Doctor Portal Pages', () => {
 
     test('B08 — Doctor Clinical Resources page loads', async ({ page }) => {
       test.slow();
-      await page.goto(`${DOCTOR_URL}/doctor/${DOC_ID}/resources`, { timeout: TIMEOUTS.navigation, waitUntil: 'domcontentloaded' });
+      await page.goto(`${DOCTOR_URL}/doctor/${DOC_ID}/clinical-resources`, { timeout: TIMEOUTS.navigation, waitUntil: 'domcontentloaded' });
       const health = await verifyPageHealthy(page);
       expect(health.healthy).toBe(true);
       logTestSuccess('Doctor Clinical Resources page loaded OK');
     });
 
     test('B09 — Doctor Medical Consultants page loads', async ({ page }) => {
-      await page.goto(`${DOCTOR_URL}/doctor/${DOC_ID}/consultants`, { timeout: TIMEOUTS.navigation, waitUntil: 'domcontentloaded' });
+      await page.goto(`${DOCTOR_URL}/doctor/${DOC_ID}/medical-consultants`, { timeout: TIMEOUTS.navigation, waitUntil: 'domcontentloaded' });
       const health = await verifyPageHealthy(page);
       expect(health.healthy).toBe(true);
       logTestSuccess('Doctor Medical Consultants page loaded OK');
@@ -113,7 +113,7 @@ test.describe('28B — Doctor Portal Pages', () => {
 
     test('B11 — Admin Doctors Management page loads', async ({ page }) => {
       test.slow();
-      await page.goto(`${DOCTOR_URL}/doctor/${ADMIN_ID}/admin/doctors`, { timeout: TIMEOUTS.navigation, waitUntil: 'domcontentloaded' });
+      await page.goto(`${DOCTOR_URL}/doctor/${ADMIN_ID}/doctor-management`, { timeout: TIMEOUTS.navigation, waitUntil: 'domcontentloaded' });
       await page.waitForTimeout(2000);
       const health = await verifyPageHealthy(page);
       expect(health.healthy).toBe(true);
@@ -122,7 +122,7 @@ test.describe('28B — Doctor Portal Pages', () => {
 
     test('B12 — Admin Doctors Directory page loads', async ({ page }) => {
       test.slow();
-      await page.goto(`${DOCTOR_URL}/doctor/${ADMIN_ID}/admin/directory`, { timeout: TIMEOUTS.navigation, waitUntil: 'domcontentloaded' });
+      await page.goto(`${DOCTOR_URL}/doctor/${ADMIN_ID}/doctors`, { timeout: TIMEOUTS.navigation, waitUntil: 'domcontentloaded' });
       await page.waitForTimeout(3000);
       const health = await verifyPageHealthy(page);
       expect(health.healthy).toBe(true);
@@ -131,7 +131,7 @@ test.describe('28B — Doctor Portal Pages', () => {
 
     test('B13 — Admin Appointment Pool page loads', async ({ page }) => {
       test.slow();
-      await page.goto(`${DOCTOR_URL}/doctor/${ADMIN_ID}/admin/pool`, { timeout: TIMEOUTS.navigation, waitUntil: 'domcontentloaded' });
+      await page.goto(`${DOCTOR_URL}/doctor/${ADMIN_ID}/appointment-management`, { timeout: TIMEOUTS.navigation, waitUntil: 'domcontentloaded' });
       await page.waitForTimeout(2000);
       const health = await verifyPageHealthy(page);
       expect(health.healthy).toBe(true);

@@ -22,16 +22,13 @@ import gcsRoutes from './routes/gcs';
 import googleServicesRoutes from './routes/google-services';
 import contentRoutes from './routes/content';
 import videoMeetingRoutes from './routes/video-meeting';
-import notificationRoutes from './routes/notifications';
+import notificationRoutes, { deviceTokenRouter as deviceTokenRoutes } from './routes/notifications';
 // Phase 2 routes
-import deviceTokenRoutes from './routes/device-tokens';
-import biometricRoutes from './routes/biometric';
-import syncRoutes from './routes/sync';
-import apiConnectionRoutes from './routes/api-connections';
-import settingsRoutes from './routes/settings';
+import { biometricRouter as biometricRoutes, apiConnectionRouter as apiConnectionRoutes } from './routes/mobile-services';
+import settingsRoutes, { syncRouter as syncRoutes } from './routes/settings';
 import phase2Routes from './routes/phase2';
 import mapRoutes from './routes/map';
-import { authMiddleware } from './middleware/auth';
+import { authMiddleware, AuthenticatedRequest } from './middleware/auth';
 import postgresDataService from './services/postgresDataService';
 
 const { pool } = postgresDataService;
@@ -103,7 +100,7 @@ import {
   requestLogger,
   secureErrorHandler,
   getClientIP
-} from './security/owasp-middleware';
+} from './middleware/owasp-middleware';
 
 // A02 - Allowed origins for CORS
 // Always include localhost for local Docker (NODE_ENV=production) + CORS_ORIGINS env override
@@ -256,13 +253,13 @@ app.get('/api/health/gcs', async (_req: Request, res: Response) => {
             bucket: bucketName,
             connected: exists,
           };
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.warn(`[GCS] Bucket check failed for ${name}:`, error);
           return {
             name,
             bucket: bucketName,
             connected: false,
-            error: error.message,
+            error: (error instanceof Error ? error.message : String(error)),
           };
         }
       })
@@ -275,7 +272,7 @@ app.get('/api/health/gcs', async (_req: Request, res: Response) => {
       timestamp: new Date().toISOString(),
       buckets: bucketStatus,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[GCS] Health check failed:', error);
     res.status(500).json({
       status: 'unhealthy',
@@ -297,8 +294,8 @@ app.get('/api/health/db', async (req: Request, res: Response) => {
       database: 'PostgreSQL',
       connected: true
     });
-  } catch (error: any) {
-    console.error('[DB] Health check failed:', error.message);
+  } catch (error: unknown) {
+    console.error('[DB] Health check failed:', (error instanceof Error ? error.message : String(error)));
     res.status(503).json({
       status: 'unhealthy',
       timestamp: new Date().toISOString(),
@@ -343,8 +340,8 @@ app.get('/api/consultants', async (req: Request, res: Response) => {
         languages: c.languages || ['Thai'],
         bio: c.bio
       }));
-    } catch (dbError: any) {
-      console.log('[CONSULTANTS] DB error, using demo data:', dbError.message);
+    } catch (dbError: unknown) {
+      console.log('[CONSULTANTS] DB error, using demo data:', (dbError instanceof Error ? dbError.message : String(dbError)));
     }
     
     // Fallback to demo data if no DB results
@@ -383,7 +380,7 @@ app.get('/api/consultants', async (req: Request, res: Response) => {
       total: consultants.length,
       message: 'Consultants retrieved successfully'
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[CONSULTANTS] Error:', error);
     res.status(500).json({
       success: false,
@@ -419,7 +416,7 @@ app.get('/api/consultants/specialties', async (req: Request, res: Response) => {
       specialties: defaultSpecialties,
       total: defaultSpecialties.length
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[CONSULTANTS] Specialties error:', error);
     res.json({
       success: true,
@@ -449,9 +446,9 @@ app.get('/api/health-records/instructions/:appointmentId', async (req: Request, 
         generatedAt: new Date().toISOString()
       }
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[HEALTH-RECORDS] Instructions error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
   }
 });
 
@@ -460,8 +457,8 @@ app.get('/api/health-records/instructions/:appointmentId', async (req: Request, 
 // ============================================================================
 app.get('/api/dashboard/stats', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user?.id || (req as any).user?.patientId || (req as any).patientId;
-    console.log(`[DASHBOARD] Getting stats for patient: ${userId}`);
+    const userId = (req as AuthenticatedRequest).user?.id || (req as AuthenticatedRequest).user?.patientId || (req as AuthenticatedRequest).patientId;
+    console.log(`[DASHBOARD] Getting stats for patient: ${String(userId)}`);
     
     if (!userId) {
       // Return default stats instead of 401 for unauthenticated edge case
@@ -522,7 +519,7 @@ app.get('/api/dashboard/stats', authMiddleware, async (req: Request, res: Respon
         latestVitals: vitals
       }
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[DASHBOARD] Stats error:', error);
     res.status(500).json({
       success: false,
@@ -544,9 +541,9 @@ app.get('/api/health-records/treatment-results', async (req: Request, res: Respo
       results: [],
       message: 'No treatment results found'
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[HEALTH-RECORDS] Treatment results error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
   }
 });
 
@@ -582,8 +579,8 @@ app.use('/api/map', mapRoutes);
 // ============================================================================
 app.get('/api/prescriptions', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user?.userId || (req as any).user?.id;
-    console.log(`[PRESCRIPTIONS] Fetching for patient: ${userId}`);
+    const userId = (req as AuthenticatedRequest).user?.userId || (req as AuthenticatedRequest).user?.id;
+    console.log(`[PRESCRIPTIONS] Fetching for patient: ${String(userId)}`);
     const result = await pool.query(
       `SELECT p.*, d.name as doctor_name FROM prescriptions p 
        LEFT JOIN users d ON p.doctor_id = d.id  
@@ -591,9 +588,9 @@ app.get('/api/prescriptions', authMiddleware, async (req: Request, res: Response
       [userId]
     );
     res.json({ success: true, prescriptions: result.rows });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[PRESCRIPTIONS] Error:', error);
-    res.status(500).json({ error: error.message, prescriptions: [] });
+    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)), prescriptions: [] });
   }
 });
 
@@ -603,9 +600,9 @@ app.get('/api/prescriptions/:id', authMiddleware, async (req: Request, res: Resp
     const result = await pool.query('SELECT * FROM prescriptions WHERE id = $1', [id]);
     if (result.rows.length === 0) return res.status(404).json({ error: 'Prescription not found' });
     res.json({ success: true, prescription: result.rows[0] });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[PRESCRIPTIONS] Error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
   }
 });
 
@@ -614,8 +611,8 @@ app.get('/api/prescriptions/:id', authMiddleware, async (req: Request, res: Resp
 // ============================================================================
 app.get('/api/health-records', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user?.id || (req as any).user?.patientId;
-    console.log(`[HEALTH-RECORDS] Getting all health records for patient: ${userId}`);
+    const userId = (req as AuthenticatedRequest).user?.id || (req as AuthenticatedRequest).user?.patientId;
+    console.log(`[HEALTH-RECORDS] Getting all health records for patient: ${String(userId)}`);
     
     // Return health records from PostgreSQL
     res.json({
@@ -624,7 +621,7 @@ app.get('/api/health-records', authMiddleware, async (req: Request, res: Respons
       patientId: userId,
       message: 'Health records retrieved successfully'
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[HEALTH-RECORDS] Error:', error);
     res.status(500).json({
       success: false,
@@ -670,7 +667,7 @@ app.post('/api/storage/upload', (req: Request, res: Response) => {
       url: `https://i.pravatar.cc/150?u=${Date.now()}`,
       message: 'Upload processed'
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[STORAGE] Upload error:', error);
     res.status(500).json({
       success: false,
@@ -688,10 +685,10 @@ app.use('/auth', authRoutes);         // /auth/login for tests
 // ============================================================================
 app.put('/api/profile', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user?.id || (req as any).user?.patientId;
+    const userId = (req as AuthenticatedRequest).user?.id || (req as AuthenticatedRequest).user?.patientId;
     const { name, avatarUrl } = req.body;
     
-    console.log(`[PROFILE] Update request for user: ${userId}`);
+    console.log(`[PROFILE] Update request for user: ${String(userId)}`);
     
     // Update in PostgreSQL (fallback to demo response on failure)
     await postgresDataService.pool.query(`
@@ -708,7 +705,7 @@ app.put('/api/profile', authMiddleware, async (req: Request, res: Response) => {
       userId,
       avatarUrl
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[PROFILE] Update error:', error);
     res.status(500).json({ success: false, error: 'Profile update failed' });
   }
@@ -719,8 +716,8 @@ app.put('/api/profile', authMiddleware, async (req: Request, res: Response) => {
 // ============================================================================
 app.get('/api/profile', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user?.id || (req as any).user?.patientId;
-    console.log(`[PROFILE] Get profile for user: ${userId}`);
+    const userId = (req as AuthenticatedRequest).user?.id || (req as AuthenticatedRequest).user?.patientId;
+    console.log(`[PROFILE] Get profile for user: ${String(userId)}`);
     
     // Get profile from PostgreSQL
     const result = await postgresDataService.pool.query(`
@@ -740,10 +737,10 @@ app.get('/api/profile', authMiddleware, async (req: Request, res: Response) => {
       profile: {
         id: userId,
         name: 'User',
-        email: (req as any).user?.email || 'unknown@example.com'
+        email: (req as AuthenticatedRequest).user?.email || 'unknown@example.com'
       }
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[PROFILE] Get error:', error);
     res.json({ success: true, profile: {} });
   }
@@ -754,8 +751,8 @@ app.get('/api/profile', authMiddleware, async (req: Request, res: Response) => {
 // ============================================================================
 app.get('/api/users/profile', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user?.id || (req as any).user?.patientId;
-    console.log(`[USERS/PROFILE] Get profile for user: ${userId}`);
+    const userId = (req as AuthenticatedRequest).user?.id || (req as AuthenticatedRequest).user?.patientId;
+    console.log(`[USERS/PROFILE] Get profile for user: ${String(userId)}`);
     
     // Get profile from PostgreSQL
     const result = await postgresDataService.pool.query(`
@@ -775,10 +772,10 @@ app.get('/api/users/profile', authMiddleware, async (req: Request, res: Response
       profile: {
         id: userId,
         name: 'User',
-        email: (req as any).user?.email || 'unknown@example.com'
+        email: (req as AuthenticatedRequest).user?.email || 'unknown@example.com'
       }
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[USERS/PROFILE] Get error:', error);
     res.json({ success: true, profile: {} });
   }
@@ -826,7 +823,7 @@ app.get('/api/medical-content', async (req: Request, res: Response) => {
       content: demoContent,
       total: demoContent.length
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[MEDICAL-CONTENT] Error:', error);
     res.json({ success: true, content: [], total: 0 });
   }
@@ -837,8 +834,8 @@ app.get('/api/medical-content', async (req: Request, res: Response) => {
 // ============================================================================
 app.get('/api/timeline', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user?.id || (req as any).user?.patientId;
-    console.log(`[TIMELINE] Fetching health timeline for: ${userId}`);
+    const userId = (req as AuthenticatedRequest).user?.id || (req as AuthenticatedRequest).user?.patientId;
+    console.log(`[TIMELINE] Fetching health timeline for: ${String(userId)}`);
     
     // Return demo timeline events
     const demoTimeline = [
@@ -880,7 +877,7 @@ app.get('/api/timeline', authMiddleware, async (req: Request, res: Response) => 
       total: demoTimeline.length,
       patientId: userId
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[TIMELINE] Error:', error);
     res.json({ success: true, timeline: [], total: 0 });
   }
@@ -902,8 +899,8 @@ app.get('/api/storage/health', (req: Request, res: Response) => {
 // ============================================================================
 app.post('/api/profile/image', authMiddleware, (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user?.id || (req as any).user?.userId;
-    console.log(`[PROFILE] Image upload request from user: ${userId}`);
+    const userId = (req as AuthenticatedRequest).user?.id || (req as AuthenticatedRequest).user?.userId;
+    console.log(`[PROFILE] Image upload request from user: ${String(userId)}`);
     
     // Accept the request and return success
     // In a real implementation, this would handle multipart/form-data
@@ -911,9 +908,9 @@ app.post('/api/profile/image', authMiddleware, (req: Request, res: Response) => 
       success: true,
       message: 'Image upload endpoint accepted request',
       userId,
-      imageUrl: `https://storage.izara.care/avatars/${userId || 'default'}.png`
+      imageUrl: `https://storage.izara.care/avatars/${String(userId || 'default')}.png`
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[PROFILE] Image upload error:', error);
     res.status(500).json({ 
       success: false, 
@@ -927,17 +924,17 @@ app.post('/api/profile/image', authMiddleware, (req: Request, res: Response) => 
 // ============================================================================
 app.post('/api/profile/avatar', authMiddleware, (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user?.id || (req as any).user?.userId;
+    const userId = (req as AuthenticatedRequest).user?.id || (req as AuthenticatedRequest).user?.userId;
     const { avatarUrl } = req.body;
-    console.log(`[PROFILE] Avatar update request from user: ${userId}`);
+    console.log(`[PROFILE] Avatar update request from user: ${String(userId)}`);
     
     res.json({
       success: true,
       message: 'Avatar updated successfully',
       userId,
-      avatarUrl: avatarUrl || `https://storage.izara.care/avatars/${userId || 'default'}.png`
+      avatarUrl: avatarUrl || `https://storage.izara.care/avatars/${String(userId || 'default')}.png`
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[PROFILE] Avatar update error:', error);
     res.status(500).json({ 
       success: false, 
@@ -952,10 +949,10 @@ app.post('/api/profile/avatar', authMiddleware, (req: Request, res: Response) =>
 app.get('/api/emr/patient/:patientId', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { patientId } = req.params;
-    const authenticatedUserId = (req as any).user?.id || (req as any).user?.patientId;
+    const authenticatedUserId = (req as AuthenticatedRequest).user?.id || (req as AuthenticatedRequest).user?.patientId;
     
     // SECURITY: IDOR protection - patients can only access their own EMR
-    const userRole = (req as any).user?.role;
+    const userRole = (req as AuthenticatedRequest).user?.role;
     if (userRole === 'patient' && patientId !== authenticatedUserId) {
       return res.status(403).json({
         success: false,
@@ -988,7 +985,7 @@ app.get('/api/emr/patient/:patientId', authMiddleware, async (req: Request, res:
         emrs: []
       });
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[EMR] Get EMR history error:', error);
     res.status(500).json({
       success: false,
@@ -1001,7 +998,7 @@ app.get('/api/emr/patient/:patientId', authMiddleware, async (req: Request, res:
 // EMR history for authenticated patient
 app.get('/api/emr/my', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const patientId = (req as any).patientId;
+    const patientId = (req as AuthenticatedRequest).patientId;
     console.log(`[EMR] Getting MY EMR history for patient: ${patientId}`);
     
     if (!patientId) {
@@ -1028,15 +1025,15 @@ app.get('/api/emr/my', authMiddleware, async (req: Request, res: Response) => {
         success: true,
         emrs: result.rows
       });
-    } catch (dbError: any) {
-      console.error('[EMR] DB error:', dbError.message);
+    } catch (dbError: unknown) {
+      console.error('[EMR] DB error:', (dbError instanceof Error ? dbError.message : String(dbError)));
       res.status(500).json({
         success: false,
         emrs: [],
         error: 'EMR data currently unavailable'
       });
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[EMR] Get MY EMR error:', error);
     res.status(500).json({
       success: false,

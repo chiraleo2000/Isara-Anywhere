@@ -11,24 +11,24 @@ import { patientDataService } from '../services/patientDataService';
 // Components
 import { ResponsiveLayout } from '../components/common/ResponsiveLayout';
 import DoctorDashboard from './DoctorDashboard';
-import PatientManagement from './PatientManagement';
-import CompleteSchedule from './CompleteSchedule';
+import PatientManagement from './patients/PatientManagement';
+import CompleteSchedule from './schedule/CompleteSchedule';
 import CompleteEMREditor from '../components/CompleteEMREditor';
 import CompletePrescribing from '../components/CompletePrescribing';
 import CompleteLabOrders from '../components/CompleteLabOrders';
 import GeminiAIStudio from './GeminiAIStudio';
-import VirtualMeeting from './VirtualMeeting';
+import VirtualMeeting from './meetings/VirtualMeeting';
 import { PatientRecordViewer } from '../components/PatientRecordViewer';
-import ClinicalResources from './ClinicalResources';
+import ClinicalResources from './content/ClinicalResources';
 import TestHarness from '../components/TestHarness';
 // New Pages
-import MedicalConsultants from './MedicalConsultants';
-import DoctorsManagement from './DoctorsManagement';
-import MedicalContent from './MedicalContent';
-import HealthMeeting from './HealthMeeting';
-import MeetingRoom from './MeetingRoom';
-import AdminDoctorManagement from './AdminDoctorManagement';
-import AdminAppointmentManagement from './AdminAppointmentManagement';
+import MedicalConsultants from './content/MedicalConsultants';
+import DoctorsManagement from './content/DoctorsManagement';
+import MedicalContent from './content/MedicalContent';
+import HealthMeeting from './meetings/HealthMeeting';
+import MeetingRoom from './meetings/MeetingRoom';
+import AdminDoctorManagement from './admin/AdminDoctorManagement';
+import AdminAppointmentManagement from './admin/AdminAppointmentManagement';
 import DoctorProfilePage from './DoctorProfilePage';
 // DoctorAvailabilitySettings removed as per requirements
 
@@ -193,7 +193,20 @@ const DoctorPortal: React.FC = () => {
         <Route path="profile" element={<DoctorProfilePage onBack={() => navigate(`/doctor/${userId}/dashboard`)} />} />
         <Route path="test-ui" element={<TestHarness doctor={user} patients={patients} />} />
 
-        <Route path="*" element={<Navigate to="dashboard" replace />} />
+        {/* Short aliases for convenience */}
+        <Route path="content" element={<Navigate to={`/doctor/${userId}/medical-content`} replace />} />
+        <Route path="resources" element={<Navigate to={`/doctor/${userId}/clinical-resources`} replace />} />
+        <Route path="consultants" element={<Navigate to={`/doctor/${userId}/medical-consultants`} replace />} />
+        <Route path="ai-studio" element={<Navigate to={`/doctor/${userId}/dashboard`} replace />} />
+
+        {/* Admin short aliases */}
+        <Route path="admin/doctors" element={<Navigate to={`/doctor/${userId}/doctor-management`} replace />} />
+        <Route path="admin/directory" element={<Navigate to={`/doctor/${userId}/doctors`} replace />} />
+        <Route path="admin/pool" element={<Navigate to={`/doctor/${userId}/appointment-management`} replace />} />
+        <Route path="admin/appointments" element={<Navigate to={`/doctor/${userId}/appointment-management`} replace />} />
+
+        {/* Catch-all: use ABSOLUTE path to prevent infinite /dashboard append loop */}
+        <Route path="*" element={<Navigate to={`/doctor/${userId}/dashboard`} replace />} />
       </Routes>
 
       {/* Modals */}

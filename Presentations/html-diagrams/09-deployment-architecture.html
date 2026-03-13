@@ -17,9 +17,9 @@
 </head>
 <body>
     <div class="nav">
-        <a href="index.html">🔙 Back to Index</a>
+        <a href="index.html">Back to Index</a>
         <span>|</span>
-        <a href="javascript:location.reload()">🔄 Refresh</a>
+        <a href="javascript:location.reload()">Refresh</a>
     </div>
     <div class="container">
         <h1>09-deployment-architecture</h1>
@@ -43,8 +43,16 @@ flowchart TB
         L2["📱 Patient Portal<br/>localhost:3005"]
         L3["💻 Doctor Portal<br/>localhost:3010"]
         L4["📹 Meeting Server<br/>localhost:3020"]
-        L5["🗄️ PostgreSQL 16<br/>localhost:5433"]
+        L5["🗄️ PostgreSQL 18<br/>localhost:5433"]
         L6["🔧 pgAdmin 4<br/>localhost:5050"]
+    end
+
+    subgraph MOBILE_DEV["📱 MOBILE DEVELOPMENT"]
+        direction LR
+        MD1["📲 Expo 52 Dev Server<br/>localhost:8081"]
+        MD2["🤖 Android Studio<br/>Emulator"]
+        MD3["🍎 iOS Simulator<br/>Xcode"]
+        MD4["🧪 Playwright Mobile<br/>Viewport Testing"]
     end
 
     subgraph CLI["⚡ UNIFIED CLI (izara-cli.ps1)"]
@@ -71,7 +79,7 @@ flowchart TB
             S5["🔬 izara-imaging-results"]
         end
         subgraph DATABASE["🗄️ Cloud SQL"]
-            DB1[("🐘 PostgreSQL 16<br/>+ pgvector")]
+            DB1[("🐘 PostgreSQL 18<br/>+ pgvector")]
         end
     end
 
@@ -90,6 +98,15 @@ flowchart TB
     L1 --> L5
     L1 --> L6
 
+    %% Mobile Development Flow
+    MD1 --> L2
+    MD1 --> L3
+    MD1 --> L4
+    MD2 -.-> MD1
+    MD3 -.-> MD1
+    MD4 -.-> L2
+    MD4 -.-> L3
+
     %% CI/CD Flow
     CI1 --> CI2 --> CI3
     CI3 --> CLOUDRUN
@@ -103,6 +120,7 @@ flowchart TB
     CR3 --> STORAGE
 
     classDef localStyle fill:#E3F2FD,stroke:#1976D2,stroke-width:2px,color:#0D47A1
+    classDef mobileStyle fill:#FFF3E0,stroke:#FF9800,stroke-width:2px,color:#E65100
     classDef cliStyle fill:#FFF8E1,stroke:#FFA000,stroke-width:2px,color:#E65100
     classDef cloudrunStyle fill:#E8F5E9,stroke:#388E3C,stroke-width:2px,color:#1B5E20
     classDef storageStyle fill:#F3E5F5,stroke:#7B1FA2,stroke-width:2px,color:#4A148C
@@ -110,6 +128,7 @@ flowchart TB
     classDef cicdStyle fill:#E0F7FA,stroke:#00ACC1,stroke-width:2px,color:#006064
 
     class L1,L2,L3,L4,L5,L6 localStyle
+    class MD1,MD2,MD3,MD4 mobileStyle
     class C1,C2,C3,C4,C5 cliStyle
     class CR1,CR2,CR3 cloudrunStyle
     class S1,S2,S3,S4,S5 storageStyle

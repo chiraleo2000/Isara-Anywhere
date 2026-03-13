@@ -36,13 +36,13 @@ router.get('/status', async (_req: Request, res: Response) => {
         error: 'Bucket not accessible'
       });
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('GCS status check error:', error);
     res.status(500).json({
       status: 'error',
       connected: false,
       timestamp: new Date().toISOString(),
-      error: error.message
+      error: (error instanceof Error ? error.message : String(error))
     });
   }
 });
@@ -70,9 +70,9 @@ router.get('/signed-url/download', async (req: Request, res: Response) => {
       expires: Date.now() + 15 * 60 * 1000,
     });
     res.json({ url, expiresIn: 900 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error generating download URL:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
   }
 });
 
@@ -96,9 +96,9 @@ router.get('/signed-url/upload', async (req: Request, res: Response) => {
       contentType: (contentType as string) || 'application/octet-stream',
     });
     res.json({ url, expiresIn: 900 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error generating upload URL:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
   }
 });
 
@@ -122,9 +122,9 @@ router.get('/read', async (req: Request, res: Response) => {
     const [contents] = await file.download();
     const data = JSON.parse(contents.toString());
     res.json(data);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error reading file:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
   }
 });
 
@@ -147,9 +147,9 @@ router.post('/write', async (req: Request, res: Response) => {
       metadata: { cacheControl: 'no-cache' },
     });
     res.json({ success: true, path: filePath });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error writing file:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
   }
 });
 
@@ -168,9 +168,9 @@ router.delete('/delete', async (req: Request, res: Response) => {
     const file = storage.bucket(bucketName as string).file(filePath as string);
     await file.delete();
     res.json({ success: true });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error deleting file:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
   }
 });
 
@@ -196,9 +196,9 @@ router.get('/list', async (req: Request, res: Response) => {
       updated: file.metadata.updated,
     }));
     res.json({ files: fileList });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error listing files:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
   }
 });
 
@@ -217,9 +217,9 @@ router.get('/exists', async (req: Request, res: Response) => {
     const file = storage.bucket(bucketName as string).file(filePath as string);
     const [exists] = await file.exists();
     res.json({ exists });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error checking file:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
   }
 });
 

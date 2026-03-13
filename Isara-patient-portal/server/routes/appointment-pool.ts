@@ -101,11 +101,11 @@ async function readJSON(bucket: string, filePath: string): Promise<any> {
     const file = storage.bucket(bucket).file(filePath);
     const [contents] = await file.download();
     return JSON.parse(contents.toString());
-  } catch (error: any) {
-    if (error.code === 404) {
+  } catch (error: unknown) {
+    if (error && typeof error === 'object' && 'code' in error && (error as { code: number }).code === 404) {
       return null;
     }
-    console.error('[APPOINTMENT-POOL] readJSON error:', error.message);
+    console.error('[APPOINTMENT-POOL] readJSON error:', (error instanceof Error ? error.message : String(error)));
     return null;
   }
 }
@@ -241,9 +241,9 @@ router.get('/', authMiddleware, async (req: Request, res: Response) => {
     });
 
     res.json(poolItems);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Get pool error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
   }
 });
 
@@ -322,9 +322,9 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
       poolItem,
       message: 'Appointment added to pool successfully'
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Add to pool error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
   }
 });
 
@@ -379,9 +379,9 @@ router.post('/:poolId/claim', authMiddleware, async (req: Request, res: Response
       poolItem,
       message: 'Appointment claimed successfully'
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Claim pool error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
   }
 });
 
@@ -447,9 +447,9 @@ router.post('/:poolId/admin-assign', authMiddleware, async (req: Request, res: R
         ? 'Assignment pending approval' 
         : 'Appointment assigned successfully'
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Admin assign error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
   }
 });
 
@@ -506,9 +506,9 @@ router.post('/:poolId/approve', authMiddleware, async (req: Request, res: Respon
       poolItem,
       message: 'Assignment approved successfully'
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Approve assignment error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
   }
 });
 
@@ -571,9 +571,9 @@ router.post('/:poolId/ai-match', authMiddleware, async (req: Request, res: Respo
       matchedDoctor: bestMatch,
       message: 'AI matching completed. Doctor can confirm or appointment remains in pool.'
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('AI match error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
   }
 });
 
@@ -605,9 +605,9 @@ router.get('/meeting-check/:appointmentId', authMiddleware, async (req: Request,
       ...meetingCheck,
       rules: DEFAULT_MEETING_RULES
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Meeting check error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
   }
 });
 
@@ -710,9 +710,9 @@ router.post('/missed-meeting/:appointmentId', authMiddleware, async (req: Reques
       message: 'Meeting marked as missed. Auto-rescheduled to next week pending admin approval.',
       rescheduled: true
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Missed meeting error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
   }
 });
 
@@ -757,7 +757,7 @@ router.get('/meeting-rules', authMiddleware, async (req: Request, res: Response)
   try {
     const rules = await readJSON(GCS_BUCKETS.METADATA, 'meeting-rules.json') || DEFAULT_MEETING_RULES;
     res.json(rules);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Get meeting rules error:', error);
     res.json(DEFAULT_MEETING_RULES);
   }
@@ -771,9 +771,9 @@ router.put('/meeting-rules', authMiddleware, async (req: Request, res: Response)
     const newRules = { ...DEFAULT_MEETING_RULES, ...req.body };
     await writeJSON(GCS_BUCKETS.METADATA, 'meeting-rules.json', newRules);
     res.json({ success: true, rules: newRules });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Update meeting rules error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
   }
 });
 

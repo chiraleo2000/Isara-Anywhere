@@ -55,13 +55,15 @@ export const StatCard: React.FC<StatCardProps> = ({
             )}
             {trend && (
               <div className="flex items-center mt-2">
-                <span
-                  className={`inline-flex items-center text-sm font-medium ${
-                    trend.direction === 'up' ? 'text-green-600' : 'text-red-600'
-                  }`}
-                >
-                  {trend.direction === 'up' ? '↑' : '↓'} {Math.abs(trend.value)}%
-                </span>
+                {(() => {
+                  const trendColor = trend.direction === 'up' ? 'text-green-600' : 'text-red-600';
+                  const trendArrow = trend.direction === 'up' ? '↑' : '↓';
+                  return (
+                    <span className={`inline-flex items-center text-sm font-medium ${trendColor}`}>
+                      {trendArrow} {Math.abs(trend.value)}%
+                    </span>
+                  );
+                })()}
                 {trend.label && (
                   <span className="text-xs text-gray-500 ml-2">{trend.label}</span>
                 )}
@@ -361,7 +363,7 @@ export const Tooltip: React.FC<TooltipProps> = ({ content, children, position = 
 
   return (
     // Tooltip wrapper - hover/focus behavior for showing tooltip content
-    <span // NOSONAR - tooltip wrapper requires mouse/focus handlers
+    <span // eslint-disable-line jsx-a11y/no-static-element-interactions, jsx-a11y/no-noninteractive-tabindex
       className="relative inline-block"
       onMouseEnter={() => setIsVisible(true)}
       onMouseLeave={() => setIsVisible(false)}

@@ -669,10 +669,25 @@ app.post('/api/meetings/:id/end', optionalAuth, async (req, res) => {
     
     // 6. Clean up in-memory data
     activeTranscriptions.delete(meetingId);
-    activeMeetings.delete(meetingId);
+    // Mark meeting as completed in-memory (keep for results lookup)
+    const memMeeting = activeMeetings.get(meetingId);
+    if (memMeeting) {
+      memMeeting.status = 'completed';
+      memMeeting.endedAt = new Date().toISOString();
+    }
     
     // 7. Notify all participants
     io.to(meetingId).emit('meeting-status', { meetingId, status: 'ended', timestamp: new Date().toISOString() });
+    
+    // 7b. Emit meeting-ended-results with transcript + summary for doctor portal (Teams-like)
+    io.to(meetingId).emit('meeting-ended-results', {
+      meetingId,
+      appointmentId: meeting?.appointment_id,
+      transcript: { available: !!fullTranscript, text: fullTranscript || '' },
+      chatMessages: chatMessages.map(c => ({ sender: c.senderName, role: c.senderRole, message: c.message, timestamp: c.timestamp })),
+      status: 'completed',
+      timestamp: new Date().toISOString(),
+    });
     
     // 8. Trigger AI summary in background if transcript exists
     let aiSummary = null;
@@ -743,6 +758,16 @@ ${chatContext}
         }
         
         console.log(`[End Meeting] AI summary generated for meeting ${meetingId}`);
+        
+        // Push AI summary to doctor portal via Socket.IO (Teams-like notification)
+        io.to(meetingId).emit('meeting-summary-ready', {
+          meetingId,
+          appointmentId: meeting?.appointment_id,
+          summary: aiSummary,
+          validationId,
+          requiresValidation: true,
+          timestamp: new Date().toISOString(),
+        });
       } catch (error_) {
         console.error('[End Meeting] AI summary generation failed:', error_.message);
       }
@@ -1958,6 +1983,176 @@ ${diarizedTranscript}
 });
 
 // ============================================================================
+// MEETING RESULTS — Teams-like Recording Results for Doctor Portal
+// ============================================================================
+
+// GET /api/meetings/:id/results — Combined transcript + summary + chat + metadata
+// Used by doctor portal to show complete meeting results (like MS Teams recording)
+app.get('/api/meetings/:id/results', optionalAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // 1. Fetch meeting record with doctor/patient names
+    let meeting = null;
+    try {
+      const result = await safeQuery(
+        `SELECT mr.*,
+                u_pat.name_thai as patient_name_thai, u_pat.email as patient_email,
+                u_doc.name_thai as doctor_name_thai, u_doc.email as doctor_email,
+                a.symptoms, a.notes as appointment_notes, a.type as appointment_type
+         FROM meeting_records mr
+         LEFT JOIN users u_pat ON mr.patient_id = u_pat.id
+         LEFT JOIN users u_doc ON mr.doctor_id = u_doc.id
+         LEFT JOIN appointments a ON mr.appointment_id = a.id
+         WHERE mr.id::text = $1 OR mr.appointment_id = $1`, [id]
+      );
+      if (result.rows.length > 0) {
+        meeting = result.rows[0];
+      }
+    } catch (e) {
+      console.warn('[Meeting Results] DB lookup skipped:', e.message);
+    }
+
+    // Fallback to in-memory activeMeetings if DB lookup returned nothing
+    if (!meeting) {
+      const mem = activeMeetings.get(id);
+      if (mem) {
+        meeting = {
+          id: mem.meetingId, appointment_id: mem.appointmentId,
+          doctor_id: mem.doctorId, patient_id: mem.patientId,
+          room_name: mem.roomName, status: mem.status || 'completed',
+          created_at: mem.createdAt, ended_at: mem.endedAt || null,
+        };
+      }
+    }
+
+    if (!meeting) {
+      return res.status(404).json({ success: false, error: 'Meeting not found' });
+    }
+
+    // 2. Fetch individual transcript segments (timeline view)
+    let transcriptSegments = [];
+    try {
+      const transcriptsResult = await safeQuery(
+        `SELECT speaker_id, speaker_role, speaker_name, content, language, confidence, created_at
+         FROM meeting_transcripts WHERE meeting_record_id::text = $1 ORDER BY created_at ASC`,
+        [meeting.id]
+      );
+      transcriptSegments = transcriptsResult.rows;
+    } catch (e) {
+      console.warn('[Meeting Results] Transcript fetch skipped:', e.message);
+    }
+
+    // 3. Fetch chat messages from DB or memory
+    let chatMessages = [];
+    try {
+      const chatResult = await safeQuery(
+        `SELECT sender_id, sender_role, sender_name, message, created_at
+         FROM meeting_chats WHERE meeting_record_id::text = $1 ORDER BY created_at ASC`,
+        [meeting.id]
+      );
+      chatMessages = chatResult.rows;
+    } catch (e) {
+      // Fallback to in-memory chat
+      chatMessages = (meetingChats.get(meeting.id) || []).map(c => ({
+        sender_id: c.senderId, sender_role: c.senderRole,
+        sender_name: c.senderName, message: c.message, created_at: c.timestamp
+      }));
+    }
+
+    // 4. Build response matching Teams recording-like structure
+    res.json({
+      success: true,
+      meeting: {
+        id: meeting.id,
+        appointmentId: meeting.appointment_id,
+        status: meeting.status,
+        startedAt: meeting.started_at || meeting.created_at,
+        endedAt: meeting.ended_at,
+        durationMinutes: meeting.duration_minutes ? Math.round(meeting.duration_minutes) : null,
+        doctor: { name: meeting.doctor_name_thai, email: meeting.doctor_email, id: meeting.doctor_id },
+        patient: { name: meeting.patient_name_thai, email: meeting.patient_email, id: meeting.patient_id },
+        appointmentType: meeting.appointment_type,
+      },
+      transcript: {
+        fullText: meeting.transcript || '',
+        segments: transcriptSegments.map(s => ({
+          speaker: s.speaker_name || 'Unknown',
+          role: s.speaker_role,
+          content: s.content,
+          timestamp: s.created_at,
+          confidence: s.confidence,
+          language: s.language,
+        })),
+        totalSegments: transcriptSegments.length,
+      },
+      summary: {
+        text: meeting.ai_summary || null,
+        recommendations: meeting.ai_recommendations ? JSON.parse(meeting.ai_recommendations) : null,
+        sectionSummaries: meeting.section_summaries ? JSON.parse(meeting.section_summaries) : null,
+        requiresValidation: true,
+        validatedAt: meeting.validated_at || null,
+      },
+      chat: {
+        messages: chatMessages.map(c => ({
+          sender: c.sender_name, role: c.sender_role,
+          message: c.message, timestamp: c.created_at,
+        })),
+        totalMessages: chatMessages.length,
+      },
+    });
+  } catch (error) {
+    console.error('[Meeting Results] Error:', error);
+    res.status(500).json({ error: 'Failed to fetch meeting results' });
+  }
+});
+
+// POST /api/meetings/:id/auto-record — Auto-start transcription when doctor joins
+app.post('/api/meetings/:id/auto-record', optionalAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { doctorId, doctorName, autoTranscribe = true } = req.body;
+
+    // Start transcription session automatically
+    if (!activeTranscriptions.has(id)) {
+      activeTranscriptions.set(id, {
+        meetingId: id,
+        isActive: autoTranscribe,
+        isPaused: false,
+        startedAt: new Date(),
+        transcripts: [],
+        autoStarted: true,
+      });
+    }
+
+    // Update meeting record to mark recording started
+    try {
+      await safeQuery(
+        `UPDATE meeting_records SET 
+           recording_started_at = COALESCE(recording_started_at, NOW()),
+           auto_transcribe = true
+         WHERE id::text = $1 OR appointment_id = $1`,
+        [id]
+      );
+    } catch (e) {
+      console.warn('[Auto Record] DB update skipped:', e.message);
+    }
+
+    // Notify participants that recording/transcription has started
+    io.to(id).emit('recording-started', {
+      meetingId: id, startedBy: doctorName || 'Doctor',
+      autoTranscribe, timestamp: new Date().toISOString(),
+    });
+
+    console.log(`[Auto Record] Auto-transcription started for meeting ${id} by ${doctorName}`);
+    res.json({ success: true, message: 'Auto-recording started', meetingId: id, autoTranscribe });
+  } catch (error) {
+    console.error('[Auto Record] Error:', error);
+    res.status(500).json({ error: 'Failed to start auto-recording' });
+  }
+});
+
+// ============================================================================
 // SOCKET.IO FOR REAL-TIME COMMUNICATION
 // ============================================================================
 
@@ -2129,6 +2324,6 @@ const startServer = async () => {
   }
 };
 
-startServer();
+await startServer();
 
 export default app;

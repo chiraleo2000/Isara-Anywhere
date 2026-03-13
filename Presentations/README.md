@@ -1,8 +1,9 @@
 # 📊 IZARA Telemedicine Platform - Presentation Materials
 
-> **Version:** 1.5.4 | **Updated:** March 8, 2026  
-> **Status:** Phase 1 Complete — All Tests Passing (v1.5.4)  
-> **Tests:** 1,419 Unit Tests (Vitest) + 1,191 E2E Tests (Playwright) = **2,610 total — 100% Pass Rate**
+> **Version:** 1.6.0 | **Updated:** March 13, 2026  
+> **Status:** Phase 1 Complete + Code Quality Hardened — All Tests Passing (v1.6.0)  
+> **Tests:** 1,419 Unit Tests (Vitest) + 1,191 E2E Tests (Playwright) = **2,610 total — 100% Pass Rate**  
+> **Code Quality:** SonarQube clean — zero `error: any`, strict TypeScript safety
 
 ---
 
@@ -38,11 +39,11 @@ This document covers:
 
 | Service | URL |
 | --------- | ----- |
-| Patient Portal | <https://izara-patient-portal-724889190329.asia-southeast1.run.app> |
-| Doctor Portal | <https://izara-doctor-portal-724889190329.asia-southeast1.run.app> |
-| Meeting Server | <https://izara-jitsi-meeting-portal-724889190329.asia-southeast1.run.app> |
-| pgAdmin | <https://izara-pgadmin-724889190329.asia-southeast1.run.app> |
-| Cloud SQL | 34.143.228.135:5432 |
+| Patient Portal | <https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app> |
+| Doctor Portal | <https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app> |
+| Meeting Server | <https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app> |
+| pgAdmin | <https://izara-pgadmin-dev-testing-724889190329.asia-southeast1.run.app> |
+| PostgreSQL VM | 35.240.157.230:5432 |
 
 ---
 
@@ -146,8 +147,8 @@ cd tests/e2e && $env:CI="true"; npx playwright test --project=Local
 | --------- | ------- | ------- |
 | Patient Portal | <http://localhost:3005> | <https://izara-patient-portal-*.run.app> |
 | Doctor Portal | <http://localhost:3010> | <https://izara-doctor-portal-*.run.app> |
-| PostgreSQL | localhost:5433 | Cloud SQL |
+| PostgreSQL | localhost:5433 | GCE VM (35.240.157.230) |
 
 ---
 
-### Last Updated: March 8, 2026
+### Last Updated: March 13, 2026

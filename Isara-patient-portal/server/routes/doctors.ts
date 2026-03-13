@@ -19,9 +19,9 @@ router.get('/', authMiddleware, async (_req: Request, res: Response) => {
     
     console.log(`[DOCTORS] Found ${doctors.length} doctors`);
     res.json(doctors);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[DOCTORS] Get doctors error:', error);
-    res.status(500).json({ error: 'Failed to fetch doctors', details: error.message });
+    res.status(500).json({ error: 'Failed to fetch doctors', details: (error instanceof Error ? error.message : String(error)) });
   }
 });
 
@@ -38,9 +38,9 @@ router.get('/:doctorId', authMiddleware, async (req: Request, res: Response) => 
     }
     
     res.json(doctor);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[DOCTORS] Get doctor error:', error);
-    res.status(500).json({ error: 'Failed to fetch doctor', details: error.message });
+    res.status(500).json({ error: 'Failed to fetch doctor', details: (error instanceof Error ? error.message : String(error)) });
   }
 });
 
@@ -68,7 +68,7 @@ router.get('/:doctorId/schedule', authMiddleware, async (req: Request, res: Resp
     }));
     
     res.json(schedule);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[DOCTORS] Get schedule error:', error);
     // Return empty array if no schedule
     res.json([]);
@@ -81,7 +81,7 @@ router.get('/:doctorId/slots', authMiddleware, async (req: Request, res: Respons
     const { doctorId } = req.params;
     const { date } = req.query;
     
-    console.log(`[DOCTORS] Fetching slots for doctor: ${doctorId}, date: ${date}`);
+    console.log(`[DOCTORS] Fetching slots for doctor: ${doctorId}, date: ${String(date)}`);
     
     if (!date) {
       return res.status(400).json({ error: 'Date parameter is required' });
@@ -130,9 +130,9 @@ router.get('/:doctorId/slots', authMiddleware, async (req: Request, res: Respons
     }
     
     res.json({ slots, date, doctorId });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[DOCTORS] Get slots error:', error);
-    res.status(500).json({ error: 'Failed to fetch slots', details: error.message });
+    res.status(500).json({ error: 'Failed to fetch slots', details: (error instanceof Error ? error.message : String(error)) });
   }
 });
 
@@ -146,9 +146,9 @@ router.get('/search/specialty/:specialty', authMiddleware, async (req: Request, 
     
     console.log(`[DOCTORS] Found ${filtered.length} doctors with specialty: ${specialty}`);
     res.json(filtered);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[DOCTORS] Search doctors error:', error);
-    res.status(500).json({ error: 'Failed to search doctors', details: error.message });
+    res.status(500).json({ error: 'Failed to search doctors', details: (error instanceof Error ? error.message : String(error)) });
   }
 });
 
@@ -182,9 +182,9 @@ router.get('/search/name/:name', authMiddleware, async (req: Request, res: Respo
     }));
     
     res.json(doctors);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[DOCTORS] Search by name error:', error);
-    res.status(500).json({ error: 'Failed to search doctors', details: error.message });
+    res.status(500).json({ error: 'Failed to search doctors', details: (error instanceof Error ? error.message : String(error)) });
   }
 });
 
@@ -214,7 +214,7 @@ router.get('/:doctorId/reviews', authMiddleware, async (req: Request, res: Respo
     }));
     
     res.json(reviews);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[DOCTORS] Get reviews error:', error);
     res.json([]); // Return empty array on error
   }

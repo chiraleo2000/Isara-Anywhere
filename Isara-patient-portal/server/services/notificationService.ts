@@ -72,7 +72,7 @@ async function readJSON(bucket: string, filePath: string): Promise<any> {
     const file = storage.bucket(bucket).file(filePath);
     const [contents] = await file.download();
     return JSON.parse(contents.toString());
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error.code === 404) {
       return null;
     }

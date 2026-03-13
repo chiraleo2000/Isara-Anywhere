@@ -177,7 +177,7 @@ router.get('/medical', async (req: Request, res: Response) => {
   try {
     const { category, limit } = req.query;
     const limitNum = Number.parseInt(limit as string, 10) || 50;
-    console.log(`[CONTENT] Getting medical content, category: ${category || 'all'}`);
+    console.log(`[CONTENT] Getting medical content, category: ${String(category || 'all')}`);
 
     // Check if we should use demo mode
     const useDemo = DEMO_MODE || !(await checkDbConnection());
@@ -247,7 +247,7 @@ router.get('/medical', async (req: Request, res: Response) => {
       total: articles.length,
       lastUpdated: new Date().toISOString()
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[CONTENT] Get medical content error:', error);
     // Fallback to demo content on error
     console.log('[CONTENT] Fallback to DEMO content after error');
@@ -304,7 +304,7 @@ router.get('/medical/:id', async (req: Request, res: Response) => {
     };
 
     res.json({ article });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[CONTENT] Get article error:', error);
     res.status(500).json({ error: 'Failed to fetch article' });
   }
@@ -334,7 +334,7 @@ router.post('/medical/:id/view', async (req: Request, res: Response) => {
       success: true,
       views: result.rows[0].view_count 
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[CONTENT] Track view error:', error);
     res.json({ success: false });
   }
@@ -351,7 +351,7 @@ router.post('/medical/:id/view', async (req: Request, res: Response) => {
 const clinicalResourcesHandler = async (req: Request, res: Response) => {
   try {
     const { category } = req.query;
-    console.log(`[CONTENT] Getting clinical resources, category: ${category || 'all'}`);
+    console.log(`[CONTENT] Getting clinical resources, category: ${String(category || 'all')}`);
 
     // Check if we should use demo mode
     const useDemo = DEMO_MODE || !(await checkDbConnection());
@@ -413,7 +413,7 @@ const clinicalResourcesHandler = async (req: Request, res: Response) => {
       categories: [],
       lastUpdated: new Date().toISOString()
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[CONTENT] Get clinical resources error:', error);
     // Fallback to demo content on error
     console.log('[CONTENT] Fallback to DEMO clinical resources after error');
@@ -466,7 +466,7 @@ router.get('/health-tips', async (_req: Request, res: Response) => {
       tips,
       lastUpdated: new Date().toISOString()
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[CONTENT] Get health tips error:', error);
     res.status(500).json({ tips: [] });
   }
@@ -507,7 +507,7 @@ router.get('/health-education', async (_req: Request, res: Response) => {
       articles,
       lastUpdated: new Date().toISOString()
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[CONTENT] Get health education error:', error);
     res.status(500).json({ articles: [] });
   }
@@ -547,7 +547,7 @@ router.get('/tags/:type', async (req: Request, res: Response) => {
       tags: defaultTags,
       lastUpdated: new Date().toISOString()
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[CONTENT] Get tags error:', error);
     res.status(500).json({ tags: [] });
   }
@@ -575,7 +575,7 @@ router.get('/categories', async (_req: Request, res: Response) => {
     ];
 
     res.json({ categories });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[CONTENT] Get categories error:', error);
     res.status(500).json({ categories: [] });
   }
@@ -605,7 +605,7 @@ router.get('/search', async (req: Request, res: Response) => {
     }
     
     res.json({ results, query: q, total: results.length });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[CONTENT] Search error:', error);
     res.json({ results: [], query: req.query.q, total: 0 });
   }

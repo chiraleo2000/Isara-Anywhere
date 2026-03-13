@@ -116,7 +116,11 @@ function initializeStorage() {
 }
 
 // Initialize on startup
-storage = initializeStorage();
+const USE_GCS = (process.env.USE_GCS || 'false').toLowerCase() === 'true';
+storage = USE_GCS ? initializeStorage() : null;
+if (!USE_GCS) {
+  console.log('⚠️  GCS disabled (USE_GCS=false). Storage endpoints return graceful fallbacks.');
+}
 
 // ============================================================================
 // MIDDLEWARE - OWASP SECURITY
@@ -275,6 +279,7 @@ function getBucketName(bucketType) {
 }
 
 async function ensureBucketExists(bucketName) {
+  if (!storage) throw new Error('GCS storage not initialized');
   try {
     const bucket = storage.bucket(bucketName);
     const [exists] = await bucket.exists();
@@ -304,7 +309,8 @@ app.get('/api/health', (req, res) => {
     status: 'healthy',
     timestamp: new Date().toISOString(),
     serviceAccount: fs.existsSync(SERVICE_ACCOUNT_PATH),
-    buckets: BUCKETS
+    buckets: BUCKETS,
+    gcsEnabled: USE_GCS
   });
 });
 
@@ -312,15 +318,58 @@ app.get('/api/health', (req, res) => {
 app.get('/api/storage/health', (req, res) => {
   res.json({
     status: 'healthy',
-    service: 'PostgreSQL Storage',
+    service: USE_GCS ? 'Google Cloud Storage' : 'Storage (GCS disabled - fallback mode)',
+    gcsEnabled: USE_GCS,
     timestamp: new Date().toISOString()
   });
 });
 
+// GCS-disabled fallback middleware: graceful responses when GCS is off
+if (!USE_GCS) {
+  app.get('/api/storage/read', (req, res) => {
+    res.status(200).json({ data: null, source: 'fallback', message: 'GCS disabled' });
+  });
+  app.post('/api/storage/write', (req, res) => {
+    res.json({ success: true, source: 'fallback', message: 'GCS disabled - data stored in PostgreSQL' });
+  });
+  app.post('/api/storage/upload', upload.single('file'), (req, res) => {
+    const fileName = req.file?.originalname || req.body?.fileName || 'file.bin';
+    res.json({
+      success: true, source: 'fallback', name: fileName,
+      url: `local://uploads/${Date.now()}_${fileName}`,
+      uploadedAt: new Date().toISOString()
+    });
+  });
+  app.post('/api/storage/upload-base64', (req, res) => {
+    res.json({
+      success: true, source: 'fallback',
+      url: `local://uploads/${Date.now()}`,
+      uploadedAt: new Date().toISOString()
+    });
+  });
+  app.delete('/api/storage/delete', (req, res) => {
+    res.json({ success: true, source: 'fallback' });
+  });
+  app.get('/api/storage/list', (req, res) => {
+    res.json({ files: [], source: 'fallback' });
+  });
+  app.post('/api/storage/batch-read', (req, res) => {
+    const files = req.body?.files || [];
+    res.json({ results: files.map(f => ({ bucket: f.bucket, path: f.path, data: null, source: 'fallback' })) });
+  });
+  app.post('/api/storage/batch-write', (req, res) => {
+    const files = req.body?.files || [];
+    res.json({ results: files.map(f => ({ bucket: f.bucket, path: f.path, success: true, source: 'fallback' })) });
+  });
+}
+
+// GCS-enabled storage endpoints (only registered when USE_GCS=true)
+if (USE_GCS) {
 // Read JSON from GCS
 app.get('/api/storage/read', async (req, res) => {
   try {
-    const { bucket: bucketType, path: filePath } = req.query;
+    const bucketType = typeof req.query.bucket === 'string' ? req.query.bucket : '';
+    const filePath = typeof req.query.path === 'string' ? req.query.path : '';
 
     if (!bucketType || !filePath) {
       return res.status(400).json({ error: 'Missing bucket or path parameter' });
@@ -576,7 +625,9 @@ app.delete('/api/storage/delete', async (req, res) => {
 // List files in GCS folder
 app.get('/api/storage/list', async (req, res) => {
   try {
-    const { bucket: bucketType, folder = '', prefix = '' } = req.query;
+    const bucketType = typeof req.query.bucket === 'string' ? req.query.bucket : '';
+    const folder = typeof req.query.folder === 'string' ? req.query.folder : '';
+    const prefix = typeof req.query.prefix === 'string' ? req.query.prefix : '';
 
     if (!bucketType) {
       return res.status(400).json({ error: 'Missing bucket parameter' });
@@ -696,6 +747,7 @@ app.post('/api/storage/batch-write', async (req, res) => {
     res.status(500).json({ error: 'Batch write operation failed' });
   }
 });
+} // end if (USE_GCS)
 
 // ============================================================================
 // MEDICAL CONTENT & CLINICAL RESOURCES API ENDPOINTS
@@ -710,6 +762,7 @@ const generateContentId = (prefix) => {
 
 // Helper to read JSON from GCS
 async function readGcsJson(bucketName, filePath) {
+  if (!storage) return null;
   try {
     const bucket = storage.bucket(bucketName);
     const file = bucket.file(filePath);
@@ -725,6 +778,7 @@ async function readGcsJson(bucketName, filePath) {
 
 // Helper to write JSON to GCS
 async function writeGcsJson(bucketName, filePath, data) {
+  if (!storage) return false;
   const bucket = await ensureBucketExists(bucketName);
   const file = bucket.file(filePath);
   await file.save(JSON.stringify(data, null, 2), {

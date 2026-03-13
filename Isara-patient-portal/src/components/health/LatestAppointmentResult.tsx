@@ -94,14 +94,14 @@ export const LatestAppointmentResult: React.FC<LatestAppointmentResultProps> = (
       )}
 
       {/* Prescription */}
-      {appointment.prescription && (appointment.prescription as any).medications && (appointment.prescription as any).medications.length > 0 && (
+      {appointment.prescription?.medications && appointment.prescription.medications.length > 0 && (
         <div className="bg-white rounded-xl p-4 border border-gray-200">
           <h5 className="font-medium text-gray-800 flex items-center gap-2 mb-3">
             <Pill className="w-5 h-5 text-green-600" />
             ยาที่สั่ง
           </h5>
           <div className="space-y-2">
-            {((appointment.prescription as any).medications || []).map((item: any, index: number) => (
+            {(appointment.prescription.medications || []).map((item: any, index: number) => (
               <div key={item.name || item.drugName || `med-${index}`} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
                 <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
                   <Pill className="w-4 h-4 text-green-600" />
@@ -122,14 +122,14 @@ export const LatestAppointmentResult: React.FC<LatestAppointmentResultProps> = (
       )}
 
       {/* Follow-up */}
-      {(appointment as any).followUpDate && (
+      {appointment.result?.followUpDate && (
         <div className="bg-yellow-50 rounded-xl p-4 border border-yellow-200">
           <h5 className="font-medium text-yellow-800 flex items-center gap-2 mb-2">
             <AlertCircle className="w-5 h-5" />
             นัดติดตามผล
           </h5>
           <p className="text-yellow-700">
-            วันที่ {formatDate((appointment as any).followUpDate)}
+            วันที่ {formatDate(appointment.result.followUpDate)}
           </p>
           <a
             href="/appointments"

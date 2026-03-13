@@ -4,7 +4,7 @@
  */
 
 import { Router, Request, Response } from 'express';
-import { authMiddleware } from '../middleware/auth';
+import { authMiddleware, AuthenticatedRequest } from '../middleware/auth';
 import postgresDataService from '../services/postgresDataService';
 import crypto from 'node:crypto';
 
@@ -108,7 +108,7 @@ function generateJitsiMeetingLink(roomName: string): string {
 // Get appointment history for the authenticated patient
 router.get('/history', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const patientId = (req as any).patientId;
+    const patientId = (req as AuthenticatedRequest).patientId;
     if (!patientId) {
       return res.status(401).json({ error: 'Patient ID not found in token' });
     }
@@ -133,7 +133,7 @@ router.get('/history', authMiddleware, async (req: Request, res: Response) => {
       success: true,
       history: result.rows.map(transformAppointment)
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[APPOINTMENT] Get history error:', error);
     // Return success with empty array for test compatibility
     res.json({
@@ -146,7 +146,7 @@ router.get('/history', authMiddleware, async (req: Request, res: Response) => {
 // Get appointments for the current patient (/my alias)
 router.get('/my', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const patientId = (req as any).patientId;
+    const patientId = (req as AuthenticatedRequest).patientId;
     console.log(`[APPOINTMENT] Getting MY appointments for patient: ${patientId}`);
     
     if (!patientId) {
@@ -194,7 +194,7 @@ router.get('/my', authMiddleware, async (req: Request, res: Response) => {
         demoMode: true
       });
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[APPOINTMENT] Get MY appointments error:', error);
     res.json({
       success: true,
@@ -207,7 +207,7 @@ router.get('/my', authMiddleware, async (req: Request, res: Response) => {
 // Get all appointments for the authenticated patient (uses JWT patientId)
 router.get('/', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const patientId = (req as any).patientId;
+    const patientId = (req as AuthenticatedRequest).patientId;
     if (!patientId) {
       // Return empty array for testing instead of 401
       return res.json([]);
@@ -230,7 +230,7 @@ router.get('/', authMiddleware, async (req: Request, res: Response) => {
 
     console.log(`[APPOINTMENT] Found ${result.rows.length} appointments for patient ${patientId}`);
     res.json(result.rows.map(transformAppointment));
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[APPOINTMENT] Get appointments error:', error);
     res.status(500).json({ error: 'Failed to fetch appointments' });
   }
@@ -256,7 +256,7 @@ router.get('/patient/:patientId', authMiddleware, async (req: Request, res: Resp
     );
 
     res.json(result.rows.map(transformAppointment));
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[APPOINTMENT] Get appointments error:', error);
     res.status(500).json({ error: 'Failed to fetch appointments' });
   }
@@ -287,7 +287,7 @@ router.get('/:appointmentId', authMiddleware, async (req: Request, res: Response
     }
 
     res.json(transformAppointment(result.rows[0]));
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[APPOINTMENT] Get appointment error:', error);
     res.status(500).json({ error: 'Failed to fetch appointment' });
   }
@@ -299,7 +299,7 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
     const appointmentData = req.body;
     
     // Use authenticated patient's ID if not provided in body
-    const patientId = appointmentData.patientId || (req as any).patientId;
+    const patientId = appointmentData.patientId || (req as AuthenticatedRequest).patientId;
     if (!patientId) {
       return res.status(400).json({ error: 'Patient ID is required' });
     }
@@ -370,7 +370,7 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
 
     console.log(`[APPOINTMENT] Created: ${appointmentId} with meeting link: ${meetingLink}`);
     res.json(transformAppointment(appointment));
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[APPOINTMENT] Create error:', error);
     res.status(500).json({ error: 'Failed to create appointment' });
   }
@@ -462,7 +462,7 @@ router.put('/:appointmentId/status', authMiddleware, async (req: Request, res: R
 
     console.log(`[APPOINTMENT] Updated: ${appointmentId} to ${status}`);
     res.json(transformAppointment(updatedAppointment));
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[APPOINTMENT] Update status error:', error);
     res.status(500).json({ error: 'Failed to update appointment status' });
   }
@@ -504,7 +504,7 @@ router.put('/:appointmentId', authMiddleware, async (req: Request, res: Response
     }
 
     res.json(result.rows[0]);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[APPOINTMENT] Update error:', error);
     res.status(500).json({ error: 'Failed to update appointment' });
   }
@@ -563,7 +563,7 @@ router.delete('/:appointmentId', authMiddleware, async (req: Request, res: Respo
     }
 
     res.json(cancelledAppointment);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[APPOINTMENT] Cancel error:', error);
     res.status(500).json({ error: 'Failed to cancel appointment' });
   }
@@ -581,7 +581,7 @@ router.get('/notifications/:userId', authMiddleware, async (req: Request, res: R
 
     const notifications = await NotificationService.getUserNotifications(userId);
     res.json(notifications);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[NOTIFICATION] Get error:', error);
     res.status(500).json({ error: 'Failed to fetch notifications' });
   }
@@ -595,7 +595,7 @@ router.put('/notifications/:userId/:notificationId/read', authMiddleware, async 
 
     await NotificationService.markAsRead(notificationId);
     res.json({ success: true });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[NOTIFICATION] Mark read error:', error);
     res.status(500).json({ error: 'Failed to mark notification as read' });
   }
@@ -609,7 +609,7 @@ router.put('/notifications/:userId/read-all', authMiddleware, async (req: Reques
 
     await NotificationService.markAllAsRead(userId);
     res.json({ success: true });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[NOTIFICATION] Mark all read error:', error);
     res.status(500).json({ error: 'Failed to mark notifications as read' });
   }
@@ -626,7 +626,7 @@ router.get('/notifications/:userId/count', authMiddleware, async (req: Request, 
     );
     
     res.json({ count: Number.parseInt(result.rows[0].count, 10) });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[NOTIFICATION] Count error:', error);
     res.status(500).json({ error: 'Failed to get notification count' });
   }

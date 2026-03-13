@@ -1,19 +1,26 @@
 {
   "name": "isara-e2e-tests",
-  "version": "10.0.0",
-  "description": "Izara Telemedicine E2E Tests — 8 specs (20-27), ~530 tests, 5 users, multi-browser content sync",
+  "version": "16.0.0",
+  "description": "Izara Telemedicine E2E Tests — 20 local specs, 12 cloud specs, all headed (UI visible)",
   "scripts": {
     "test": "npx playwright test --project=Local --headed",
-    "test:auth": "npx playwright test --project=Local --headed -g '20 —'",
-    "test:appointments": "npx playwright test --project=Local --headed -g '21 —'",
-    "test:health": "npx playwright test --project=Local --headed -g '22 —'",
-    "test:meeting": "npx playwright test --project=Local --headed -g '23 —'",
-    "test:content-sync": "npx playwright test --project=Local --headed -g '24 —'",
-    "test:ai": "npx playwright test --project=Local --headed -g '25 —'",
-    "test:multi-user": "npx playwright test --project=Local --headed -g '26 —'",
-    "test:phase2": "npx playwright test --project=Local --headed -g '27 —'",
-    "cloud": "cross-env TEST_ENV=cloud npx playwright test --project=Cloud --headed",
-    "cloud-dev": "cross-env TEST_ENV=cloud-dev npx playwright test --project=Cloud-Dev --headed",
+    "test:cloud": "cross-env TEST_ENV=cloud npx playwright test --project=Cloud --headed",
+    "test:cloud-dev": "cross-env TEST_ENV=cloud-dev npx playwright test --project=Cloud-Dev --headed",
+
+    "test:smoke": "npx playwright test --project=Local --headed -g '02 —'",
+    "test:auth": "npx playwright test --project=Local --headed specs/24-registration-approval-e2e.spec.ts specs/25-register-login-doctor.spec.ts specs/26-register-login-patient.spec.ts",
+    "test:pages": "npx playwright test --project=Local --headed specs/01-user-accounts-demo-pages.spec.ts",
+    "test:appointments": "npx playwright test --project=Local --headed specs/03-appointment-lifecycle.spec.ts",
+    "test:health": "npx playwright test --project=Local --headed specs/04-health-records-emr.spec.ts",
+    "test:meeting": "npx playwright test --project=Local --headed specs/05-video-meeting-transcription.spec.ts",
+    "test:content": "npx playwright test --project=Local --headed specs/06-content-sync-approval.spec.ts",
+    "test:ai": "npx playwright test --project=Local --headed specs/07-ai-features-cds.spec.ts",
+    "test:multi-user": "npx playwright test --project=Local --headed --workers=1 specs/08-multi-user-concurrent.spec.ts",
+    "test:lab": "npx playwright test --project=Local --headed specs/10-lab-imaging-map-features.spec.ts",
+    "test:admin": "npx playwright test --project=Local --headed specs/14-admin-management-workflows.spec.ts",
+    "test:pipeline": "npx playwright test --project=Local --headed --workers=1 specs/30-appointment-meeting-ai-pipeline.spec.ts",
+    "test:phase2": "npx playwright test --project=Local --headed specs/09-phase2-ai-his.spec.ts",
+
     "report": "npx playwright show-report"
   },
   "devDependencies": {

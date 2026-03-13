@@ -6,7 +6,7 @@
  */
 
 import { Router, Request, Response } from 'express';
-import { authMiddleware } from '../middleware/auth';
+import { authMiddleware, AuthenticatedRequest } from '../middleware/auth';
 import postgresDataService from '../services/postgresDataService';
 
 const { PHRService, LivingWillService } = postgresDataService;
@@ -81,9 +81,9 @@ router.get('/patient/:patientId', authMiddleware, async (req: Request, res: Resp
       });
     }
     return res.json(transformPHR(phr));
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[PHR] Get PHR error:', error);
-    return res.status(500).json({ error: 'Failed to get PHR', message: error.message });
+    return res.status(500).json({ error: 'Failed to get PHR', message: (error instanceof Error ? error.message : String(error)) });
   }
 });
 
@@ -115,7 +115,7 @@ router.get('/lab-orders', authMiddleware, async (req: Request, res: Response) =>
       [patientId]
     );
     res.json({ labOrders: result.rows, count: result.rows.length });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[PHR] Get lab orders error:', error);
     // Return empty array instead of error for graceful frontend handling
     res.json({ labOrders: [], count: 0 });
@@ -153,7 +153,7 @@ router.get('/lab-orders/:orderId', authMiddleware, async (req: Request, res: Res
       return res.status(404).json({ error: 'Lab order not found' });
     }
     res.json(result.rows[0]);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[PHR] Get lab order detail error:', error);
     return res.status(500).json({ error: 'Failed to get lab order' });
   }
@@ -186,7 +186,7 @@ router.get('/imaging-orders', authMiddleware, async (req: Request, res: Response
       [patientId]
     );
     res.json({ imagingOrders: result.rows, count: result.rows.length });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[PHR] Get imaging orders error:', error);
     res.json({ imagingOrders: [], count: 0 });
   }
@@ -217,7 +217,7 @@ router.get('/imaging-orders/:orderId', authMiddleware, async (req: Request, res:
     );
     if (result.rows.length === 0) return res.status(404).json({ error: 'Imaging order not found' });
     res.json(result.rows[0]);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[PHR] Get imaging order detail error:', error);
     return res.status(500).json({ error: 'Failed to get imaging order' });
   }
@@ -245,9 +245,9 @@ router.get('/:patientId', authMiddleware, async (req: Request, res: Response) =>
       });
     }
     return res.json(transformPHR(phr));
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[PHR] Get PHR error:', error);
-    return res.status(500).json({ error: 'Failed to get PHR', message: error.message });
+    return res.status(500).json({ error: 'Failed to get PHR', message: (error instanceof Error ? error.message : String(error)) });
   }
 });
 
@@ -260,9 +260,9 @@ router.put('/:patientId', authMiddleware, async (req: Request, res: Response) =>
 
     const updatedPHR = await PHRService.upsertPHR(patientId, phrData);
     res.json(updatedPHR);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[PHR] Update PHR error:', error);
-    res.status(500).json({ error: 'Failed to update PHR', message: error.message });
+    res.status(500).json({ error: 'Failed to update PHR', message: (error instanceof Error ? error.message : String(error)) });
   }
 });
 
@@ -310,9 +310,9 @@ router.put('/profile/:id', authMiddleware, async (req: Request, res: Response) =
       userId: id,
       ...profileData
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[PHR] Profile update error:', error);
-    res.status(500).json({ error: 'Failed to update profile', message: error.message });
+    res.status(500).json({ error: 'Failed to update profile', message: (error instanceof Error ? error.message : String(error)) });
   }
 });
 
@@ -369,7 +369,7 @@ router.get('/:patientId/vitals', authMiddleware, async (req: Request, res: Respo
     }));
     
     return res.json(transformedVitals);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[PHR] Get vitals error:', error);
     res.status(500).json({ error: 'Failed to fetch vital signs' });
   }
@@ -399,7 +399,7 @@ router.post('/:patientId/vitals', authMiddleware, async (req: Request, res: Resp
 
     const newVital = await PHRService.addVitalSigns(patientId, dbVitalData);
     res.json(newVital);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[PHR] Add vitals error:', error);
     res.status(500).json({ error: 'Failed to add vital signs' });
   }
@@ -417,7 +417,7 @@ router.get('/:patientId/medications', authMiddleware, async (req: Request, res: 
 
     const phr = await PHRService.getPHR(patientId);
     res.json(phr?.medications || []);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[PHR] Get medications error:', error);
     res.status(500).json({ error: 'Failed to fetch medications' });
   }
@@ -443,7 +443,7 @@ router.post('/:patientId/medications', authMiddleware, async (req: Request, res:
     
     await PHRService.upsertPHR(patientId, { medications });
     res.json(newMedication);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[PHR] Add medication error:', error);
     res.status(500).json({ error: 'Failed to add medication' });
   }
@@ -461,7 +461,7 @@ router.get('/:patientId/allergies', authMiddleware, async (req: Request, res: Re
 
     const phr = await PHRService.getPHR(patientId);
     res.json(phr?.allergies || []);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[PHR] Get allergies error:', error);
     res.status(500).json({ error: 'Failed to fetch allergies' });
   }
@@ -487,7 +487,7 @@ router.post('/:patientId/allergies', authMiddleware, async (req: Request, res: R
     
     await PHRService.upsertPHR(patientId, { allergies });
     res.json(newAllergy);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[PHR] Add allergy error:', error);
     res.status(500).json({ error: 'Failed to add allergy' });
   }
@@ -543,7 +543,7 @@ router.get('/:patientId/health-logs', authMiddleware, async (req: Request, res: 
       limit: limitNum,
       lastUpdated: new Date().toISOString()
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[PHR] Get health logs error:', error);
     res.status(500).json({ error: 'Failed to fetch health logs' });
   }
@@ -571,7 +571,7 @@ router.get('/:patientId/health-logs/:entryId', authMiddleware, async (req: Reque
     }
 
     res.json(result.rows[0]);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[PHR] Get health log entry error:', error);
     res.status(500).json({ error: 'Failed to fetch health log entry' });
   }
@@ -586,7 +586,8 @@ router.get('/:patientId/timeline', authMiddleware, async (req: Request, res: Res
   try {
     const { patientId } = req.params;
     const { type } = req.query;
-    console.log(`[PHR] Getting timeline for patient: ${patientId}, type: ${type || 'all'}`);
+    const typeStr = typeof type === 'string' ? type : 'all';
+    console.log(`[PHR] Getting timeline for patient: ${patientId}, type: ${typeStr}`);
 
     const timeline: any[] = [];
 
@@ -699,7 +700,7 @@ router.get('/:patientId/timeline', authMiddleware, async (req: Request, res: Res
     timeline.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
     res.json(timeline);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[PHR] Get timeline error:', error);
     res.status(500).json({ error: 'Failed to fetch timeline' });
   }
@@ -713,14 +714,14 @@ router.get('/:patientId/timeline', authMiddleware, async (req: Request, res: Res
 router.get('/:patientId/living-will', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { patientId } = req.params;
-    const requesterId = (req as any).patientId || (req as any).userId || (req as any).user?.patientId || (req as any).user?.patient_id || (req as any).user?.id;
-    const requesterRole = (req as any).user?.role;
+    const requesterId = (req as AuthenticatedRequest).patientId || (req as AuthenticatedRequest).userId || (req as AuthenticatedRequest).user?.patientId || (req as AuthenticatedRequest).user?.patient_id || (req as AuthenticatedRequest).user?.id;
+    const requesterRole = (req as AuthenticatedRequest).user?.role;
     console.log(`[PHR] Getting Living Will for patient: ${patientId}`);
 
     let livingWill;
     try {
       livingWill = await LivingWillService.getLivingWill(patientId);
-    } catch (dbError: any) {
+    } catch (dbError: unknown) {
       // Table might not exist yet
       if (dbError.code === '42P01') {
         return res.json(null);
@@ -751,7 +752,7 @@ router.get('/:patientId/living-will', authMiddleware, async (req: Request, res: 
     }
 
     return res.status(403).json({ error: 'Access denied' });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[PHR] Get Living Will error:', error);
     res.status(500).json({ error: 'Failed to fetch Living Will' });
   }
@@ -761,7 +762,7 @@ router.get('/:patientId/living-will', authMiddleware, async (req: Request, res: 
 router.post('/:patientId/living-will', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { patientId } = req.params;
-    const requesterId = (req as any).patientId || (req as any).userId || (req as any).user?.patientId || (req as any).user?.patient_id || (req as any).user?.id;
+    const requesterId = (req as AuthenticatedRequest).patientId || (req as AuthenticatedRequest).userId || (req as AuthenticatedRequest).user?.patientId || (req as AuthenticatedRequest).user?.patient_id || (req as AuthenticatedRequest).user?.id;
 
     // Only patient can create their own Living Will
     if (requesterId !== patientId) {
@@ -780,9 +781,9 @@ router.post('/:patientId/living-will', authMiddleware, async (req: Request, res:
     });
 
     res.status(201).json(result || { success: true, patientId, message: 'Living will created' });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[PHR] Create Living Will error:', error);
-    res.status(201).json({ success: true, patientId: req.params.patientId, message: 'Living will service pending', error: error.message });
+    res.status(201).json({ success: true, patientId: req.params.patientId, message: 'Living will service pending', error: (error instanceof Error ? error.message : String(error)) });
   }
 });
 
@@ -790,7 +791,7 @@ router.post('/:patientId/living-will', authMiddleware, async (req: Request, res:
 router.put('/:patientId/living-will', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { patientId } = req.params;
-    const requesterId = (req as any).patientId || (req as any).userId || (req as any).user?.patientId || (req as any).user?.patient_id || (req as any).user?.id;
+    const requesterId = (req as AuthenticatedRequest).patientId || (req as AuthenticatedRequest).userId || (req as AuthenticatedRequest).user?.patientId || (req as AuthenticatedRequest).user?.patient_id || (req as AuthenticatedRequest).user?.id;
 
     if (requesterId !== patientId) {
       return res.status(403).json({ error: 'Only patient can update their Living Will' });
@@ -808,10 +809,10 @@ router.put('/:patientId/living-will', authMiddleware, async (req: Request, res: 
     });
 
     res.json(result || { success: true, patientId, message: 'Living will updated' });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[PHR] Update Living Will error:', error);
     // Return success with fallback if DB operation fails (table missing, constraint, etc.)
-    res.json({ success: true, patientId: req.params.patientId, message: 'Living will service pending', error: error.message });
+    res.json({ success: true, patientId: req.params.patientId, message: 'Living will service pending', error: (error instanceof Error ? error.message : String(error)) });
   }
 });
 
@@ -819,7 +820,7 @@ router.put('/:patientId/living-will', authMiddleware, async (req: Request, res: 
 router.put('/:patientId/living-will/share', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { patientId } = req.params;
-    const requesterId = (req as any).patientId || (req as any).userId || (req as any).user?.patientId || (req as any).user?.patient_id || (req as any).user?.id;
+    const requesterId = (req as AuthenticatedRequest).patientId || (req as AuthenticatedRequest).userId || (req as AuthenticatedRequest).user?.patientId || (req as AuthenticatedRequest).user?.patient_id || (req as AuthenticatedRequest).user?.id;
 
     if (requesterId !== patientId) {
       return res.status(403).json({ error: 'Only patient can change sharing settings' });
@@ -842,7 +843,7 @@ router.put('/:patientId/living-will/share', authMiddleware, async (req: Request,
         ? 'Living Will is now shared with medical staff' 
         : 'Living Will is now private',
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[PHR] Update Living Will sharing error:', error);
     res.status(500).json({ error: 'Failed to update sharing settings' });
   }
@@ -852,7 +853,7 @@ router.put('/:patientId/living-will/share', authMiddleware, async (req: Request,
 router.delete('/:patientId/living-will', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { patientId } = req.params;
-    const requesterId = (req as any).user?.patientId || (req as any).user?.id;
+    const requesterId = (req as AuthenticatedRequest).user?.patientId || (req as AuthenticatedRequest).user?.id;
 
     if (requesterId !== patientId) {
       return res.status(403).json({ error: 'Only patient can revoke their Living Will' });
@@ -872,7 +873,7 @@ router.delete('/:patientId/living-will', authMiddleware, async (req: Request, re
       success: true,
       message: 'Living Will has been revoked. A new one can be created.',
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[PHR] Revoke Living Will error:', error);
     res.status(500).json({ error: 'Failed to revoke Living Will' });
   }
@@ -886,7 +887,7 @@ router.delete('/:patientId/living-will', authMiddleware, async (req: Request, re
 router.post('/profile/:userId/avatar', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
-    const requesterId = (req as any).user?.patientId || (req as any).user?.id;
+    const requesterId = (req as AuthenticatedRequest).user?.patientId || (req as AuthenticatedRequest).user?.id;
     
     // Allow user to update their own avatar
     if (requesterId !== userId && !userId.startsWith('PATIENT-')) {
@@ -925,7 +926,7 @@ router.post('/profile/:userId/avatar', authMiddleware, async (req: Request, res:
       userId
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[PHR] Avatar upload error:', error);
     res.status(500).json({ error: 'Failed to upload avatar' });
   }
@@ -959,7 +960,7 @@ router.get('/profile/:userId/avatar', authMiddleware, async (req: Request, res: 
       message: 'No custom avatar set'
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[PHR] Get avatar error:', error);
     res.status(500).json({ error: 'Failed to get avatar' });
   }
@@ -997,9 +998,9 @@ router.get('/', authMiddleware, async (req: Request, res: Response) => {
       });
     }
     return res.json(phr);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[PHR] Get PHR error:', error);
-    return res.status(500).json({ error: 'Failed to get PHR', message: error.message });
+    return res.status(500).json({ error: 'Failed to get PHR', message: (error instanceof Error ? error.message : String(error)) });
   }
 });
 
@@ -1033,9 +1034,9 @@ router.post('/vitals', authMiddleware, async (req: Request, res: Response) => {
 
     const newVital = await PHRService.addVitalSigns(patientId, dbVitalData);
     res.json({ success: true, ...newVital });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[PHR] Add vitals error:', error);
-    return res.status(500).json({ error: 'Failed to add vital signs', message: error.message });
+    return res.status(500).json({ error: 'Failed to add vital signs', message: (error instanceof Error ? error.message : String(error)) });
   }
 });
 
@@ -1065,9 +1066,9 @@ router.post('/medications', authMiddleware, async (req: Request, res: Response) 
     
     await PHRService.upsertPHR(patientId, { medications });
     res.json(newMedication);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[PHR] Add medication error:', error);
-    return res.status(500).json({ error: 'Failed to add medication', message: error.message });
+    return res.status(500).json({ error: 'Failed to add medication', message: (error instanceof Error ? error.message : String(error)) });
   }
 });
 
@@ -1097,9 +1098,9 @@ router.post('/allergies', authMiddleware, async (req: Request, res: Response) =>
     
     await PHRService.upsertPHR(patientId, { allergies });
     res.json(newAllergy);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[PHR] Add allergy error:', error);
-    return res.status(500).json({ error: 'Failed to add allergy', message: error.message });
+    return res.status(500).json({ error: 'Failed to add allergy', message: (error instanceof Error ? error.message : String(error)) });
   }
 });
 

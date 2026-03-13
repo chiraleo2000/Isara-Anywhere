@@ -171,7 +171,7 @@ test.describe('25 — Register & Login New Doctor User', () => {
 
     test('C03 — Admin doctor management page loads', async ({ page }) => {
       const admin = getUser('admin');
-      await navigateWithAuth(page, 'admin', `/doctor/${admin.id}/admin/doctors`);
+      await navigateWithAuth(page, 'admin', `/doctor/${admin.id}/doctor-management`);
       await page.waitForTimeout(3000); // Extra time for admin data load
       const health = await verifyPageHealthy(page);
       expect(health.healthy).toBe(true);
@@ -181,7 +181,7 @@ test.describe('25 — Register & Login New Doctor User', () => {
 
     test('C04 — Admin appointment management loads', async ({ page }) => {
       const admin = getUser('admin');
-      await navigateWithAuth(page, 'admin', `/doctor/${admin.id}/admin/appointments`);
+      await navigateWithAuth(page, 'admin', `/doctor/${admin.id}/appointment-management`);
       await page.waitForTimeout(2000);
       const health = await verifyPageHealthy(page);
       expect(health.healthy).toBe(true);

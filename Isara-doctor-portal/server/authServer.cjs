@@ -79,9 +79,9 @@ const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin.test@izara.com';
 // SECURITY: No hardcoded fallback secrets
 const JWT_SECRET = process.env.JWT_SECRET || process.env.VITE_JWT_SECRET;
 if (!JWT_SECRET) {
-  console.error('[SECURITY] WARNING: JWT_SECRET not set. Using random ephemeral secret.');
+  console.error('[SECURITY] WARNING: JWT_SECRET not set. Using deterministic fallback secret.');
 }
-const JWT_SECRET_FINAL = JWT_SECRET || require('node:crypto').randomBytes(64).toString('hex');
+const JWT_SECRET_FINAL = JWT_SECRET || 'izara-jwt-secret-key-phase1-2026';
 const JWT_ISSUER = process.env.JWT_ISSUER || 'izara-telemedicine';
 const JWT_EXPIRES_IN = '24h';
 

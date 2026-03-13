@@ -1,22 +1,138 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════
- * IZARA TELEMEDICINE — UNIT TEST CONFIGURATION v1.5.2
+ * IZARA TELEMEDICINE — UNIT TEST CONFIGURATION v2.0.0
  * ═══════════════════════════════════════════════════════════════════════
  * All unit tests live here in tests/unit/ — completely isolated from
  * project source. Tests validate pure logic, data transforms, and
  * security functions without requiring running servers.
  *
- * Parallel execution: Vitest uses thread pool (default) for max speed.
+ * Groups:
+ *   auth        — Login, registration, JWT, middleware (doctor + patient)
+ *   appointments— Booking, reschedule, queue, appointment workflows
+ *   clinical    — EMR, PHR, prescriptions, lab orders, drug database
+ *   content     — Medical content, clinical resources, consultants
+ *   meeting     — Jitsi, transcription, AI summary, socket events
+ *   ai          — Gemini AI, CDS, chat routes
+ *   api         — API endpoints, server config, data services
+ *   notifications— Notification service, routes, workflows
+ *   security    — OWASP middleware, CORS, rate limiting, audit logs
+ *   database    — Schema validation, seed data, embedded PG
+ *
+ * Run all:         npm test
+ * Run group:       npm run test:auth
+ * Run with UI:     npm run test:ui
  * ═══════════════════════════════════════════════════════════════════════
  */
 import { defineConfig } from 'vitest/config';
 import path from 'node:path';
 
+// ── File lists per logical group ────────────────────────────────────────
+const GROUP_AUTH = [
+  'doctor-portal/authServer.test.ts',
+  'doctor-portal/config.test.ts',
+  'patient-portal/authRoute.test.ts',
+  'patient-portal/authMiddleware.test.ts',
+  'patient-portal/auth-context.test.ts',
+];
+const GROUP_APPOINTMENTS = [
+  'doctor-portal/appointmentService.test.ts',
+  'doctor-portal/appointmentReschedule.test.ts',
+  'doctor-portal/queueManagementWorkflow.test.ts',
+  'patient-portal/appointmentsRoute.test.ts',
+  'patient-portal/appointmentWorkflow.test.ts',
+];
+const GROUP_CLINICAL = [
+  'doctor-portal/emrService.test.ts',
+  'doctor-portal/emr-clinical.test.ts',
+  'doctor-portal/healthRecordsEmrWorkflow.test.ts',
+  'doctor-portal/prescriptions.test.ts',
+  'doctor-portal/labOrders.test.ts',
+  'doctor-portal/labTestDatabase.test.ts',
+  'doctor-portal/drugDatabase.test.ts',
+  'patient-portal/phrRoute.test.ts',
+  'patient-portal/sharedPHRTypes.test.ts',
+  'patient-portal/livingWillWorkflow.test.ts',
+  'patient-portal/pdpaRoute.test.ts',
+  'patient-portal/pdpaWorkflow.test.ts',
+];
+const GROUP_CONTENT = [
+  'doctor-portal/medicalContentWorkflow.test.ts',
+  'doctor-portal/medicalConsultants.test.ts',
+  'patient-portal/contentRoute.test.ts',
+];
+const GROUP_MEETING = [
+  'meeting-server/jitsi-meeting.test.ts',
+  'meeting-server/meetingRoutes.test.ts',
+  'meeting-server/socketEvents.test.ts',
+  'meeting-server/videoMeetingWorkflow.test.ts',
+  'meeting-server/aiSummary.test.ts',
+  'meeting-server/meeting-ai-features.test.ts',
+  'doctor-portal/meetingTimeService.test.ts',
+  'patient-portal/videoMeetingRoute.test.ts',
+];
+const GROUP_AI = [
+  'doctor-portal/geminiService.test.ts',
+  'patient-portal/aiRoute.test.ts',
+];
+const GROUP_API = [
+  'doctor-portal/apiEndpoints.test.ts',
+  'doctor-portal/mainApiServer.test.ts',
+  'doctor-portal/postgresDataService.test.ts',
+  'doctor-portal/storageServices.test.ts',
+  'doctor-portal/gcsApiServer.test.ts',
+  'patient-portal/api-service.test.ts',
+  'patient-portal/services-logic.test.ts',
+];
+const GROUP_NOTIFICATIONS = [
+  'patient-portal/notificationService.test.ts',
+  'patient-portal/notificationsRoute.test.ts',
+  'patient-portal/notificationWorkflow.test.ts',
+];
+const GROUP_SECURITY = [
+  'doctor-portal/owaspMiddleware.test.ts',
+  'doctor-portal/auditLogService.test.ts',
+  'patient-portal/owasp-middleware.test.ts',
+  'security/corsAndRateLimiting.test.ts',
+  'security/security-validation.test.ts',
+];
+const GROUP_PATIENT_WORKFLOWS = [
+  'patient-portal/dashboardWorkflow.test.ts',
+  'patient-portal/dataSyncWorkflow.test.ts',
+  'patient-portal/userManagementWorkflow.test.ts',
+];
+const GROUP_DATABASE = [
+  'database/data-validation.test.ts',
+  'database/embeddedPg.test.ts',
+  'database/schema-validation.test.ts',
+  'database/schemaAndSeed.test.ts',
+];
+
+// Build include list from TEST_GROUP env var (or run all)
+function getIncludePatterns(): string[] {
+  const group = process.env.TEST_GROUP;
+  if (!group) return ['**/*.test.ts'];
+
+  const map: Record<string, string[]> = {
+    auth: GROUP_AUTH,
+    appointments: GROUP_APPOINTMENTS,
+    clinical: GROUP_CLINICAL,
+    content: GROUP_CONTENT,
+    meeting: GROUP_MEETING,
+    ai: GROUP_AI,
+    api: GROUP_API,
+    notifications: GROUP_NOTIFICATIONS,
+    security: GROUP_SECURITY,
+    workflows: GROUP_PATIENT_WORKFLOWS,
+    database: GROUP_DATABASE,
+  };
+  return map[group] || ['**/*.test.ts'];
+}
+
 export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
-    include: ['**/*.test.ts'],
+    include: getIncludePatterns(),
     exclude: ['**/node_modules/**'],
     testTimeout: 30_000,
     pool: 'threads',

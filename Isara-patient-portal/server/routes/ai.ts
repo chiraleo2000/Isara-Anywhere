@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { GoogleGenerativeAI, GenerativeModel, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
-import { authMiddleware } from '../middleware/auth';
+import { authMiddleware, AuthenticatedRequest } from '../middleware/auth';
 import path from 'node:path';
 import fs from 'node:fs';
 import dotenv from 'dotenv';
@@ -228,7 +228,7 @@ let GEMINI_API_KEY: string | null = process.env.VITE_GEMINI_API_KEY || process.e
 let GEMINI_MODEL: string = process.env.VITE_GEMINI_MODEL || process.env.GEMINI_MODEL || 'gemini-2.5-flash-lite';
 
 // If not found in process.env, try to parse .env file (local development fallback)
-if (!GEMINI_API_KEY || !GEMINI_API_KEY.startsWith('AIza')) {
+if (!GEMINI_API_KEY?.startsWith('AIza')) {
   const envPath = path.resolve(process.cwd(), '.env');
   
   if (fs.existsSync(envPath)) {
@@ -345,7 +345,7 @@ function initializeAI(): boolean {
   initialized = true;
   
   // Use our parsed API key from module-level parsing
-  if (!GEMINI_API_KEY || !GEMINI_API_KEY.startsWith('AIza')) {
+  if (!GEMINI_API_KEY?.startsWith('AIza')) {
     console.error('[AI] ❌ Invalid or missing Gemini API key');
     console.error('[AI] Please check your .env file has: GEMINI_API_KEY=AIzaSy...');
     console.error('[AI] Current value:', GEMINI_API_KEY ? `${GEMINI_API_KEY.substring(0, 10)}...` : 'null');
@@ -358,8 +358,8 @@ function initializeAI(): boolean {
     genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
     console.log('[AI] ✅ GoogleGenerativeAI initialized successfully');
     return true;
-  } catch (error: any) {
-    console.error('[AI] ❌ Failed to initialize GoogleGenerativeAI:', error.message);
+  } catch (error: unknown) {
+    console.error('[AI] ❌ Failed to initialize GoogleGenerativeAI:', (error instanceof Error ? error.message : String(error)));
     return false;
   }
 }
@@ -387,8 +387,8 @@ function getModel(config: AIConfig): GenerativeModel | null {
     };
     
     return genAI.getGenerativeModel(modelConfig);
-  } catch (error: any) {
-    console.error('[AI] Failed to get model:', error.message);
+  } catch (error: unknown) {
+    console.error('[AI] Failed to get model:', (error instanceof Error ? error.message : String(error)));
     return null;
   }
 }
@@ -445,7 +445,7 @@ router.post('/chat', authMiddleware, async (req: Request, res: Response) => {
   
   try {
     const { message, conversationHistory, sessionId } = req.body;
-    const userId = (req as any).user?.id || 'anonymous';
+    const userId = (req as AuthenticatedRequest).user?.id || 'anonymous';
     const chatSessionId = sessionId || `session_${userId}_${Date.now()}`;
 
     if (!message || typeof message !== 'string') {
@@ -481,13 +481,13 @@ router.post('/chat', authMiddleware, async (req: Request, res: Response) => {
 
     res.json({ reply: text, sessionId: chatSessionId });
     
-  } catch (error: any) {
+  } catch (error: unknown) {
     const duration = Date.now() - startTime;
-    console.error(`[AI Chat] ❌ Error after ${duration}ms:`, error.message);
+    console.error(`[AI Chat] ❌ Error after ${duration}ms:`, (error instanceof Error ? error.message : String(error)));
     
     // Return user-friendly error message
     res.status(500).json({ 
-      error: error.message,
+      error: (error instanceof Error ? error.message : String(error)),
       reply: 'ขออภัย เกิดข้อผิดพลาดในการประมวลผล กรุณาลองใหม่อีกครั้ง หากปัญหายังคงอยู่ กรุณาติดต่อเจ้าหน้าที่'
     });
   }
@@ -496,14 +496,14 @@ router.post('/chat', authMiddleware, async (req: Request, res: Response) => {
 // GET /api/ai/history - Alias for /chat/history (convenience route)
 router.get('/history', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user?.id;
+    const userId = (req as AuthenticatedRequest).user?.id;
     if (!userId) {
       return res.status(401).json({ error: 'User not authenticated' });
     }
     const sessions = await ChatHistoryService.getSessions(userId);
     return res.json({ sessions });
-  } catch (error: any) {
-    console.error('[AI History] Error:', error.message);
+  } catch (error: unknown) {
+    console.error('[AI History] Error:', (error instanceof Error ? error.message : String(error)));
     res.json({ sessions: [] });
   }
 });
@@ -511,7 +511,7 @@ router.get('/history', authMiddleware, async (req: Request, res: Response) => {
 // Get chat history from PostgreSQL (with 2-month retention)
 router.get('/chat/history', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user?.id;
+    const userId = (req as AuthenticatedRequest).user?.id;
     const sessionId = req.query.sessionId as string;
 
     if (!userId) {
@@ -535,8 +535,8 @@ router.get('/chat/history', authMiddleware, async (req: Request, res: Response) 
 
     const history = await ChatHistoryService.getHistory(userId, sessionId, 100);
     res.json({ history, sessionId, retention_days: CHAT_RETENTION_DAYS });
-  } catch (error: any) {
-    console.error('[AI Chat History] Error:', error.message);
+  } catch (error: unknown) {
+    console.error('[AI Chat History] Error:', (error instanceof Error ? error.message : String(error)));
     res.status(500).json({ error: 'Failed to fetch chat history' });
   }
 });
@@ -544,7 +544,7 @@ router.get('/chat/history', authMiddleware, async (req: Request, res: Response) 
 // Clear chat history (POST method for easier client calls)
 router.post('/chat/clear', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user?.id;
+    const userId = (req as AuthenticatedRequest).user?.id;
     const { sessionId } = req.body;
 
     if (!userId) {
@@ -559,8 +559,8 @@ router.post('/chat/clear', authMiddleware, async (req: Request, res: Response) =
     }
 
     res.json({ success: true, message: 'Chat history cleared' });
-  } catch (error: any) {
-    console.error('[AI Chat Clear] Error:', error.message);
+  } catch (error: unknown) {
+    console.error('[AI Chat Clear] Error:', (error instanceof Error ? error.message : String(error)));
     res.status(500).json({ error: 'Failed to clear chat history' });
   }
 });
@@ -568,7 +568,7 @@ router.post('/chat/clear', authMiddleware, async (req: Request, res: Response) =
 // Clear chat history (DELETE method)
 router.delete('/chat/history', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user?.id;
+    const userId = (req as AuthenticatedRequest).user?.id;
     const { sessionId } = req.body;
 
     if (!userId) {
@@ -583,8 +583,8 @@ router.delete('/chat/history', authMiddleware, async (req: Request, res: Respons
     }
 
     res.json({ success: true, message: 'Chat history cleared' });
-  } catch (error: any) {
-    console.error('[AI Chat History] Error:', error.message);
+  } catch (error: unknown) {
+    console.error('[AI Chat History] Error:', (error instanceof Error ? error.message : String(error)));
     res.status(500).json({ error: 'Failed to clear chat history' });
   }
 });
@@ -596,7 +596,7 @@ router.delete('/chat/history', authMiddleware, async (req: Request, res: Respons
 // Get user's long-term memories
 router.get('/chat/memory', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user?.id;
+    const userId = (req as AuthenticatedRequest).user?.id;
     if (!userId) {
       return res.status(401).json({ error: 'User not authenticated' });
     }
@@ -604,8 +604,8 @@ router.get('/chat/memory', authMiddleware, async (req: Request, res: Response) =
     const limit = Math.min(Number.parseInt(req.query.limit as string) || 20, 50);
     const memories = await ChatMemoryService.getRelevantMemories(userId, limit);
     res.json({ memories, count: memories.length });
-  } catch (error: any) {
-    console.error('[AI Memory] Error fetching memories:', error.message);
+  } catch (error: unknown) {
+    console.error('[AI Memory] Error fetching memories:', (error instanceof Error ? error.message : String(error)));
     res.status(500).json({ error: 'Failed to fetch memories' });
   }
 });
@@ -613,7 +613,7 @@ router.get('/chat/memory', authMiddleware, async (req: Request, res: Response) =
 // Save a new memory manually
 router.post('/chat/memory', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user?.id;
+    const userId = (req as AuthenticatedRequest).user?.id;
     if (!userId) {
       return res.status(401).json({ error: 'User not authenticated' });
     }
@@ -630,8 +630,8 @@ router.post('/chat/memory', authMiddleware, async (req: Request, res: Response) 
 
     const id = await ChatMemoryService.saveMemory(userId, memoryType, content, title);
     res.json({ success: true, id });
-  } catch (error: any) {
-    console.error('[AI Memory] Error saving memory:', error.message);
+  } catch (error: unknown) {
+    console.error('[AI Memory] Error saving memory:', (error instanceof Error ? error.message : String(error)));
     res.status(500).json({ error: 'Failed to save memory' });
   }
 });
@@ -639,7 +639,7 @@ router.post('/chat/memory', authMiddleware, async (req: Request, res: Response) 
 // Summarize a chat session into long-term memory
 router.post('/chat/memory/summarize', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user?.id;
+    const userId = (req as AuthenticatedRequest).user?.id;
     if (!userId) {
       return res.status(401).json({ error: 'User not authenticated' });
     }
@@ -651,8 +651,8 @@ router.post('/chat/memory/summarize', authMiddleware, async (req: Request, res: 
 
     await ChatMemoryService.summarizeSession(userId, sessionId);
     res.json({ success: true, message: 'Session summarized into long-term memory' });
-  } catch (error: any) {
-    console.error('[AI Memory] Error summarizing session:', error.message);
+  } catch (error: unknown) {
+    console.error('[AI Memory] Error summarizing session:', (error instanceof Error ? error.message : String(error)));
     res.status(500).json({ error: 'Failed to summarize session' });
   }
 });
@@ -660,7 +660,7 @@ router.post('/chat/memory/summarize', authMiddleware, async (req: Request, res: 
 // Delete a specific memory
 router.delete('/chat/memory/:memoryId', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user?.id;
+    const userId = (req as AuthenticatedRequest).user?.id;
     if (!userId) {
       return res.status(401).json({ error: 'User not authenticated' });
     }
@@ -675,8 +675,8 @@ router.delete('/chat/memory/:memoryId', authMiddleware, async (req: Request, res
       [memoryId, userId]
     );
     res.json({ success: true, message: 'Memory deleted' });
-  } catch (error: any) {
-    console.error('[AI Memory] Error deleting memory:', error.message);
+  } catch (error: unknown) {
+    console.error('[AI Memory] Error deleting memory:', (error instanceof Error ? error.message : String(error)));
     res.status(500).json({ error: 'Failed to delete memory' });
   }
 });
@@ -749,9 +749,9 @@ ${symptoms}
 
     res.json(analysis);
     
-  } catch (error: any) {
-    console.error('[AI Symptom] ❌ Error:', error.message);
-    res.status(500).json({ error: error.message });
+  } catch (error: unknown) {
+    console.error('[AI Symptom] ❌ Error:', (error instanceof Error ? error.message : String(error)));
+    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
   }
 });
 
@@ -826,9 +826,9 @@ ${JSON.stringify(patientData, null, 2)}
 
     res.json(assessment);
     
-  } catch (error: any) {
-    console.error('[AI Risk] ❌ Error:', error.message);
-    res.status(500).json({ error: error.message });
+  } catch (error: unknown) {
+    console.error('[AI Risk] ❌ Error:', (error instanceof Error ? error.message : String(error)));
+    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
   }
 });
 
@@ -856,9 +856,9 @@ router.post('/health-info', authMiddleware, async (req: Request, res: Response) 
 
     res.json({ info: text });
     
-  } catch (error: any) {
-    console.error('[AI Info] Error:', error.message);
-    res.status(500).json({ error: error.message });
+  } catch (error: unknown) {
+    console.error('[AI Info] Error:', (error instanceof Error ? error.message : String(error)));
+    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
   }
 });
 
@@ -975,12 +975,12 @@ ${context?.medicalHistory ? `ประวัติการแพทย์: ${co
       });
     }
     
-  } catch (error: any) {
+  } catch (error: unknown) {
     const duration = Date.now() - startTime;
-    console.error(`[AI Analysis] ❌ Error after ${duration}ms:`, error.message);
+    console.error(`[AI Analysis] ❌ Error after ${duration}ms:`, (error instanceof Error ? error.message : String(error)));
     
     res.status(500).json({ 
-      error: error.message,
+      error: (error instanceof Error ? error.message : String(error)),
       triageLevel: 'Routine',
       reasoning: 'เกิดข้อผิดพลาดในการวิเคราะห์ กรุณาลองใหม่',
       selfCareRecommendations: ['พักผ่อนให้เพียงพอ'],
@@ -1060,12 +1060,12 @@ router.post('/symptom-suggest', authMiddleware, async (req: Request, res: Respon
       });
     }
     
-  } catch (error: any) {
+  } catch (error: unknown) {
     const duration = Date.now() - startTime;
-    console.error(`[AI Suggest] ❌ Error after ${duration}ms:`, error.message);
+    console.error(`[AI Suggest] ❌ Error after ${duration}ms:`, (error instanceof Error ? error.message : String(error)));
     
     res.status(500).json({ 
-      error: error.message,
+      error: (error instanceof Error ? error.message : String(error)),
       suggestions: ['กรุณาอธิบายอาการให้ละเอียด']
     });
   }
@@ -1107,9 +1107,9 @@ router.post('/validate', async (req: Request, res: Response) => {
       message: 'AI content validated successfully',
       validation: validationResult
     });
-  } catch (error: any) {
-    console.error('[AI Validate] Error:', error.message);
-    res.status(500).json({ success: false, error: error.message });
+  } catch (error: unknown) {
+    console.error('[AI Validate] Error:', (error instanceof Error ? error.message : String(error)));
+    res.status(500).json({ success: false, error: (error instanceof Error ? error.message : String(error)) });
   }
 });
 

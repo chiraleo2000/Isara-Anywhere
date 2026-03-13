@@ -160,17 +160,79 @@ function getCacheKey(lat: number, lng: number, radiusKm: number): string {
   return `${rlat},${rlng},${radiusKm}`;
 }
 
+/** Dedup and filter parsed Overpass elements into NearbyFacility[] */
+function deduplicateFacilities(
+  elements: OverpassElement[], userLat: number, userLng: number, lang: string, radiusKm: number,
+): NearbyFacility[] {
+  const seen = new Set<string>();
+  const facilities: NearbyFacility[] = [];
+
+  for (const el of elements) {
+    if (!el.tags || (!el.tags.amenity && !el.tags.healthcare && !el.tags.shop)) continue;
+    const f = parseElement(el, userLat, userLng, lang);
+    if (!f) continue;
+    const dedupKey = `${f.name.toLowerCase()}-${f.type}`;
+    if (seen.has(dedupKey)) continue;
+    seen.add(dedupKey);
+    if (f.distance <= radiusKm) {
+      facilities.push(f);
+    }
+  }
+
+  facilities.sort((a, b) => a.distance - b.distance);
+  return facilities;
+}
+
+/** Evict stale cache entries when the map grows too large */
+function evictStaleCache(): void {
+  if (cache.size <= 100) return;
+  const now = Date.now();
+  for (const [k, v] of cache.entries()) {
+    if (now - v.timestamp > CACHE_TTL) cache.delete(k);
+  }
+}
+
+/** Build Overpass QL to search healthcare POIs */
+function buildOverpassQuery(lat: number, lng: number, radiusKm: number): string {
+  const radiusMeters = Math.round(radiusKm * 1000);
+  return `
+[out:json][timeout:25];
+(
+  node["amenity"="hospital"](around:${radiusMeters},${lat},${lng});
+  way["amenity"="hospital"](around:${radiusMeters},${lat},${lng});
+  relation["amenity"="hospital"](around:${radiusMeters},${lat},${lng});
+  node["amenity"="clinic"](around:${radiusMeters},${lat},${lng});
+  way["amenity"="clinic"](around:${radiusMeters},${lat},${lng});
+  node["amenity"="doctors"](around:${radiusMeters},${lat},${lng});
+  way["amenity"="doctors"](around:${radiusMeters},${lat},${lng});
+  node["amenity"="dentist"](around:${radiusMeters},${lat},${lng});
+  way["amenity"="dentist"](around:${radiusMeters},${lat},${lng});
+  node["amenity"="pharmacy"](around:${radiusMeters},${lat},${lng});
+  way["amenity"="pharmacy"](around:${radiusMeters},${lat},${lng});
+  node["shop"="chemist"](around:${radiusMeters},${lat},${lng});
+  way["shop"="chemist"](around:${radiusMeters},${lat},${lng});
+  node["healthcare"](around:${radiusMeters},${lat},${lng});
+  way["healthcare"](around:${radiusMeters},${lat},${lng});
+  node["amenity"="nursing_home"](around:${radiusMeters},${lat},${lng});
+  way["amenity"="nursing_home"](around:${radiusMeters},${lat},${lng});
+);
+out center body;
+>;
+out skel qt;
+`.trim();
+}
+
 // ============================================================================
 // GET /api/map/nearby?lat=&lng=&radius=&lang=
 // ============================================================================
 router.get('/nearby', async (req: Request, res: Response) => {
   try {
-    const lat = parseFloat(req.query.lat as string);
-    const lng = parseFloat(req.query.lng as string);
-    const radiusKm = Math.min(parseFloat(req.query.radius as string) || 5, 50);
+    const lat = Number.parseFloat(req.query.lat as string);
+    const lng = Number.parseFloat(req.query.lng as string);
+    const radiusKm = Math.min(Number.parseFloat(req.query.radius as string) || 5, 50);
     const lang = (req.query.lang as string) || 'th';
 
-    if (isNaN(lat) || isNaN(lng)) {
+    if (Number.isNaN(lat) || Number.isNaN(lng)) {
       return res.status(400).json({ error: 'Missing or invalid lat/lng parameters' });
     }
 
@@ -180,56 +242,15 @@ router.get('/nearby', async (req: Request, res: Response) => {
     if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
       console.log(`[MAP] Cache hit for ${cacheKey} — ${cached.data.length} facilities`);
       return res.json({
-        facilities: cached.data,
-        total: cached.data.length,
-        source: 'cache',
-        center: { lat, lng },
-        radiusKm,
-        timestamp: new Date().toISOString(),
+        facilities: cached.data, total: cached.data.length, source: 'cache',
+        center: { lat, lng }, radiusKm, timestamp: new Date().toISOString(),
       });
     }
 
     console.log(`[MAP] Searching nearby: lat=${lat}, lng=${lng}, radius=${radiusKm}km`);
 
-    // Build Overpass QL query — search all healthcare-related amenities
-    const radiusMeters = Math.round(radiusKm * 1000);
-    const overpassQuery = `
-[out:json][timeout:25];
-(
-  // Hospitals
-  node["amenity"="hospital"](around:${radiusMeters},${lat},${lng});
-  way["amenity"="hospital"](around:${radiusMeters},${lat},${lng});
-  relation["amenity"="hospital"](around:${radiusMeters},${lat},${lng});
-
-  // Clinics & Doctors
-  node["amenity"="clinic"](around:${radiusMeters},${lat},${lng});
-  way["amenity"="clinic"](around:${radiusMeters},${lat},${lng});
-  node["amenity"="doctors"](around:${radiusMeters},${lat},${lng});
-  way["amenity"="doctors"](around:${radiusMeters},${lat},${lng});
-  node["amenity"="dentist"](around:${radiusMeters},${lat},${lng});
-  way["amenity"="dentist"](around:${radiusMeters},${lat},${lng});
-
-  // Pharmacies
-  node["amenity"="pharmacy"](around:${radiusMeters},${lat},${lng});
-  way["amenity"="pharmacy"](around:${radiusMeters},${lat},${lng});
-  node["shop"="chemist"](around:${radiusMeters},${lat},${lng});
-  way["shop"="chemist"](around:${radiusMeters},${lat},${lng});
-
-  // Generic healthcare
-  node["healthcare"](around:${radiusMeters},${lat},${lng});
-  way["healthcare"](around:${radiusMeters},${lat},${lng});
-
-  // Social/Health facilities
-  node["amenity"="nursing_home"](around:${radiusMeters},${lat},${lng});
-  way["amenity"="nursing_home"](around:${radiusMeters},${lat},${lng});
-);
-out center body;
->;
-out skel qt;
-`.trim();
-
+    const overpassQuery = buildOverpassQuery(lat, lng, radiusKm);
     const overpassUrl = 'https://overpass-api.de/api/interpreter';
-
     const response = await fetch(overpassUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -241,31 +262,11 @@ out skel qt;
       throw new Error(`Overpass API returned ${response.status}: ${response.statusText}`);
     }
 
-    const data = await response.json();
+    const data: { elements?: OverpassElement[] } = await response.json();
     const elements: OverpassElement[] = data.elements || [];
-
     console.log(`[MAP] Overpass returned ${elements.length} raw elements`);
 
-    // Parse and deduplicate
-    const seen = new Set<string>();
-    const facilities: NearbyFacility[] = [];
-
-    for (const el of elements) {
-      if (!el.tags || (!el.tags.amenity && !el.tags.healthcare && !el.tags.shop)) continue;
-      const f = parseElement(el, lat, lng, lang);
-      if (!f) continue;
-      // Deduplicate by name+type within 200m
-      const dedupKey = `${f.name.toLowerCase()}-${f.type}`;
-      if (seen.has(dedupKey)) continue;
-      seen.add(dedupKey);
-      // Only include if within the requested radius
-      if (f.distance <= radiusKm) {
-        facilities.push(f);
-      }
-    }
-
-    // Sort by distance (nearest first)
-    facilities.sort((a, b) => a.distance - b.distance);
+    const facilities = deduplicateFacilities(elements, lat, lng, lang, radiusKm);
 
     console.log(`[MAP] Found ${facilities.length} unique facilities within ${radiusKm}km`);
     const byType = {
@@ -274,34 +275,19 @@ out skel qt;
       pharmacy: facilities.filter(f => f.type === 'pharmacy').length,
       health_center: facilities.filter(f => f.type === 'health_center').length,
     };
-    console.log(`[MAP] Breakdown: ${JSON.stringify(byType)}`);
 
-    // Cache the result
     cache.set(cacheKey, { data: facilities, timestamp: Date.now() });
-    // Cleanup old cache entries
-    if (cache.size > 100) {
-      const now = Date.now();
-      for (const [k, v] of cache.entries()) {
-        if (now - v.timestamp > CACHE_TTL) cache.delete(k);
-      }
-    }
+    evictStaleCache();
 
     res.json({
-      facilities,
-      total: facilities.length,
-      byType,
-      source: 'overpass',
-      center: { lat, lng },
-      radiusKm,
-      timestamp: new Date().toISOString(),
+      facilities, total: facilities.length, byType, source: 'overpass',
+      center: { lat, lng }, radiusKm, timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
-    console.error('[MAP] Nearby search error:', error.message);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[MAP] Nearby search error:', message);
     res.status(500).json({
-      error: 'Failed to search nearby facilities',
-      message: error.message,
-      facilities: [],
-      total: 0,
+      error: 'Failed to search nearby facilities', message, facilities: [], total: 0,
     });
   }
 });
