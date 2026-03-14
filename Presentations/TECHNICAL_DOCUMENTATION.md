@@ -4,7 +4,7 @@
 > **Status:** Phase 1 Complete + SonarQube S6551/S6698 Fixed — All Tests Passing (v1.5.7)
 > **Database:** PostgreSQL 18 + pgvector  
 > **Stack:** PostgreSQL / Express / React / Jitsi / Gemini AI / Google Cloud  
-> **Tests:** 1,419 Unit Tests (Vitest) + 1,191 E2E Tests (Playwright) = **2,610 total — 100% Pass Rate**  
+> **Tests:** 2,013 Unit Tests (Vitest) + 1,124 E2E Tests (Playwright) = **3,137 total — 100% Pass Rate**  
 > **Code Quality:** SonarQube clean — zero `error: any`, strict TypeScript safety, 31/31 API endpoints verified
 
 ---
@@ -59,15 +59,15 @@ Isara-Anywhere/
 │   ├── cloud-db-tool.cjs           # Database Operations Tool
 │   ├── database/                   # SQL Init Scripts
 │   └── deploy/                     # Cloud deployment scripts
-├── tests/                          # 🧪 Testing (2,610 total tests)
-│   ├── unit/                       # ⭐ Vitest unit tests (1,419 tests, 46 files)
-│   │   ├── doctor-portal/          # 20 test files: auth, API, EMR, CDS, storage
-│   │   ├── patient-portal/         # 15 test files: routes, PHR, AI, PDPA, auth
-│   │   ├── meeting-server/         # 5 test files: Jitsi, AI summary, sockets
+├── tests/                          # 🧪 Testing (3,137 total tests)
+│   ├── unit/                       # ⭐ Vitest unit tests (2,013 tests, 58 files)
+│   │   ├── doctor-portal/          # 24 test files: auth, API, EMR, CDS, storage, workflows
+│   │   ├── patient-portal/         # 22 test files: routes, PHR, AI, PDPA, auth, workflows
+│   │   ├── meeting-server/         # 6 test files: Jitsi, AI summary, sockets, workflows
 │   │   ├── security/               # 2 test files: OWASP, CORS, rate limiting
 │   │   └── database/               # 4 test files: schema, seed, validation
-│   └── e2e/                        # Playwright E2E tests (1,191 tests, 24 specs)
-│       ├── specs/                  # 24 Playwright spec files (01-24)
+│   └── e2e/                        # Playwright E2E tests (1,124 tests, 32 specs)
+│       ├── specs/                  # 32 Playwright spec files (01-30)
 │       └── lib/                    # Shared test config & helpers
 └── docker-compose.yml              # Local Orchestration Config
 ```
@@ -412,17 +412,17 @@ services:
 
 ## 7. Testing
 
-### 7.1 Test Summary (March 13, 2026)
+### 7.1 Test Summary (March 14, 2026)
 
 | Layer | Framework | Files / Specs | Tests | Duration |
 | --- | --- | --- | --- | --- |
-| **Unit Tests** | Vitest 2.1.9 | 46 files | 1,419 | ~4.3s |
-| **E2E — Local Desktop** | Playwright 1.40 | 24 specs | 1,191 | ~5.9 min |
-| **TOTAL** | | **46 unit + 24 E2E** | **2,610** | **100% Pass** |
+| **Unit Tests** | Vitest 2.1.9 | 58 files | 2,013 | ~4.3s |
+| **E2E — Local Desktop** | Playwright 1.40 | 32 specs | 1,124 | ~4.2 min |
+| **TOTAL** | | **58 unit + 32 E2E** | **3,137** | **100% Pass** |
 
-### 7.1.1 Unit Test Suites (tests/unit/) — 46 Files
+### 7.1.1 Unit Test Suites (tests/unit/) — 58 Files
 
-#### Doctor Portal (20 files)
+#### Doctor Portal (24 files)
 
 | File | Coverage |
 | --- | --- |
@@ -447,7 +447,7 @@ services:
 | prescriptions | Prescription creation, CDS drug interaction checks |
 | storageServices | GCS bucket config (5 buckets), URL construction, storage paths, base64 |
 
-#### Patient Portal (15 files)
+#### Patient Portal (22 files)
 
 | File | Coverage |
 | --- | --- |
@@ -466,8 +466,15 @@ services:
 | services-logic | Business logic utilities, data formatting |
 | sharedPHRTypes | PHR factory, living will, doctor view transforms |
 | videoMeetingRoute | Jitsi config, room name generation (SHA-256), URL construction, SOAP parsing |
+| appointmentWorkflow | Appointment lifecycle chains, booking, cancellation, cross-workflow |
+| dashboardWorkflow | Patient/doctor dashboard loading, stats, quick actions |
+| dataSyncWorkflow | Offline-to-sync chains, retry logic, error recovery |
+| livingWillWorkflow | Living will lifecycle, draft→activate→share→revoke |
+| notificationWorkflow | Notification lifecycle, channels, preferences, read/unread |
+| pdpaWorkflow | PDPA consent lifecycle, access grant, audit trail, revocation |
+| userManagementWorkflow | Registration→login→session chains, password reset, RBAC |
 
-#### Meeting Server (5 files)
+#### Meeting Server (6 files)
 
 | File | Coverage |
 | --- | --- |
@@ -476,6 +483,7 @@ services:
 | meeting-ai-features | AI feature integration, transcription analysis |
 | meetingRoutes | Server config, CORS whitelist, JWT validation, meeting status flow |
 | socketEvents | 7 event types, room management, chat message format, invite validation |
+| videoMeetingWorkflow | Meeting lifecycle chains, lobby control, multi-party, no-show handling |
 
 #### Security (2 files)
 
@@ -493,7 +501,7 @@ services:
 | schema-validation | Table registry, appointment FSM, RBAC, PDPA compliance |
 | schemaAndSeed | Core tables (20+), naming conventions, seed users (5), connection config |
 
-### 7.2 E2E Test Specs (24 Total)
+### 7.2 E2E Test Specs (32 Total)
 
 | # | Spec | Tests | Coverage |
 | --- | --- | --- | --- |
@@ -521,6 +529,14 @@ services:
 | 22 | Notification Triggers | ~38 | Event-driven notification verification |
 | 23 | Mixed Simultaneous Workflows | ~40 | Concurrent multi-feature workflows |
 | 24 | Registration Approval E2E | ~39 | Full registration to approval pipeline |
+| 25 | Register & Login Doctor | ~20 | Doctor registration, login, page navigation |
+| 26 | Register & Login Patient | ~24 | Patient registration, login, page refresh |
+| 27 | Lab Data Doctor-to-Patient | ~18 | Lab data flow from doctor to patient portal |
+| 28a | Patient Pages Verification | ~15 | All patient portal pages load correctly |
+| 28b | Doctor Pages Verification | ~15 | All doctor portal pages load correctly |
+| 28c | API Health Verification | ~12 | All API health endpoints return 200 |
+| 29 | Chat AI Summary Cloud | ~10 | AI chat and summary on cloud |
+| 30 | Appointment Meeting AI Pipeline | ~12 | Full appointment → meeting → AI pipeline |
 
 ### 7.3 Demo User Accounts
 
@@ -543,16 +559,16 @@ services:
 ### 7.5 Run Tests
 
 ```powershell
-# ── Unit Tests (1,419 tests, ~4.3 seconds) ──
+# ── Unit Tests (2,013 tests, ~4.3 seconds) ──
 cd tests/unit
-npx vitest run              # All 1,419 unit tests
+npx vitest run              # All 2,013 unit tests
 npx vitest run --coverage    # With coverage report
 npx vitest watch             # Watch mode
 
-# ── E2E Tests (1,191 tests, requires Docker running) ──
+# ── E2E Tests (1,124 tests, requires Docker running) ──
 cd tests/e2e
 
-# Run ALL Local tests (1,191 tests)
+# Run ALL Local tests (1,124 tests)
 $env:CI="true"; npx playwright test --project=Local --workers=6
 
 # Run ALL Cloud-Dev tests
@@ -572,8 +588,8 @@ npx playwright show-report
 ### Phase 2: Intelligence & Optimization (In Progress)
 
 - [x] **Security Hardening**: JWT sign/verify consistency, OWASP headers, unified 12-char passwords, CORS production tightening, credential path security
-- [x] **Comprehensive Unit Test Layer**: 1,419 Vitest tests across 46 files — pure logic, no server needed
-- [x] **E2E Test Expansion**: 1,191 tests across 24 Playwright specs covering all workflows
+- [x] **Comprehensive Unit Test Layer**: 2,013 Vitest tests across 58 files — pure logic, no server needed
+- [x] **E2E Test Expansion**: 1,124 tests across 32 Playwright specs covering all workflows
 - [x] **Phase 2 AI-HIS Tables**: CTM, Geriatric Screening, SOS, Follow-up, Nursing
 - [x] **Spec Kits**: Phase 1 + Phase 2 combined specification documents
 - [x] **Docker Local Dev**: 5-service Docker Compose stack with health checks

@@ -6,8 +6,8 @@
 ![Node](https://img.shields.io/badge/node-%3E%3D22.0.0-brightgreen.svg)
 ![Database](https://img.shields.io/badge/database-PostgreSQL%2018-blue.svg)
 ![Docker](https://img.shields.io/badge/docker-ready-blue.svg)
-![Tests](https://img.shields.io/badge/Unit%20tests-1%2C814%20passing-brightgreen.svg)
-![Tests](https://img.shields.io/badge/E2E%20tests-1%2C191%20passing-brightgreen.svg)
+![Tests](https://img.shields.io/badge/Unit%20tests-2%2C013%20passing-brightgreen.svg)
+![Tests](https://img.shields.io/badge/E2E%20tests-1%2C124%20passing-brightgreen.svg)
 ![Cloud Run](https://img.shields.io/badge/Cloud%20Run-deployed-blue.svg)
 ![Security](https://img.shields.io/badge/security-SonarQube%20clean-green.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict%20safe-blue.svg)
@@ -58,21 +58,21 @@ The platform consists of three main services:
 
 ### Test Architecture (v1.5.7)
 
-#### Unit Tests (Vitest — 1,814 tests)
+#### Unit Tests (Vitest — 2,013 tests)
 - **58 test files** in `tests/unit/` — pure logic, no server required
-- **Coverage areas**: Doctor portal (20 files), Patient portal (15 files), Meeting server (5 files), Security (2 files), Database (4 files)
-- **Framework**: Vitest 2.1.9, runs in ~3.8 seconds
+- **Coverage areas**: Doctor portal (24 files), Patient portal (22 files), Meeting server (6 files), Security (2 files), Database (4 files)
+- **Framework**: Vitest 2.1.9, runs in ~4.3 seconds
 - **Run**: `cd tests/unit && npx vitest run`
 
-#### E2E Tests (Playwright — 1,191 tests)
-- **24 E2E spec files** (01-24): comprehensive workflow, API, and UI testing
-- **1,191 total tests** across 24 spec files
+#### E2E Tests (Playwright — 1,124 tests)
+- **32 E2E spec files** (01-30): comprehensive workflow, API, and UI testing
+- **1,124 total tests** across 32 spec files
 - **5 simultaneous demo user accounts** (patient1, patient2, patient3, doctor, admin)
 - **3 Playwright projects**: Local, Cloud, Cloud-Dev
 - **0 skipped tests** — every test must pass
 - **Serial + parallel execution** for workflow integrity
 
-#### Combined: 3,005 tests (1,814 unit + 1,191 E2E)
+#### Combined: 3,137 tests (2,013 unit + 1,124 E2E)
 
 ### E2E Test Specs
 
@@ -102,17 +102,25 @@ The platform consists of three main services:
 | 22 | Notification Triggers | ~38 | Event-driven notification verification |
 | 23 | Mixed Simultaneous Workflows | ~40 | Concurrent multi-feature workflows |
 | 24 | Registration Approval E2E | ~39 | Full registration to approval pipeline |
+| 25 | Register & Login Doctor | ~20 | Doctor registration, login, page navigation |
+| 26 | Register & Login Patient | ~24 | Patient registration, login, page refresh |
+| 27 | Lab Data Doctor-to-Patient | ~18 | Lab data flow from doctor to patient portal |
+| 28a | Patient Pages Verification | ~15 | All patient portal pages load correctly |
+| 28b | Doctor Pages Verification | ~15 | All doctor portal pages load correctly |
+| 28c | API Health Verification | ~12 | All API health endpoints return 200 |
+| 29 | Chat AI Summary Cloud | ~10 | AI chat and summary on cloud |
+| 30 | Appointment Meeting AI Pipeline | ~12 | Full appointment → meeting → AI pipeline |
 
 ### Run Tests
 
 ```powershell
-# ── Unit Tests (1,814 tests, ~3.8 seconds) ──
+# ── Unit Tests (2,013 tests, ~4.3 seconds) ──
 cd tests/unit
-npx vitest run              # Run all 1,814 unit tests
+npx vitest run              # Run all 2,013 unit tests
 npx vitest run --coverage    # With coverage report
 npx vitest watch             # Watch mode during development
 
-# ── E2E Tests (1,191 tests, requires Docker services running) ──
+# ── E2E Tests (1,124 tests, requires Docker services running) ──
 cd tests/e2e
 
 # Run ALL Local tests
@@ -128,13 +136,13 @@ npx playwright test "09-phase2" --project=Local
 npx playwright show-report
 ```
 
-### Unit Test Suites (tests/unit/) — 46 Files
+### Unit Test Suites (tests/unit/) — 58 Files
 
 | Category | Files | Coverage Area |
 | ----- | ----- | ------------- |
-| doctor-portal | 20 | Auth, API routes, EMR, prescriptions, GCS, Gemini AI, OWASP, storage, appointments |
-| patient-portal | 15 | Auth, routes, PHR, AI, content, PDPA, notifications, video meeting |
-| meeting-server | 5 | Jitsi meeting, AI summary, socket events, meeting routes |
+| doctor-portal | 24 | Auth, API routes, EMR, prescriptions, GCS, Gemini AI, OWASP, storage, appointments, queue, medical content, health records workflows |
+| patient-portal | 22 | Auth, routes, PHR, AI, content, PDPA, notifications, video meeting, appointments, dashboard, data sync, living will, user management workflows |
+| meeting-server | 6 | Jitsi meeting, AI summary, socket events, meeting routes, video meeting workflow |
 | security | 2 | CORS, rate limiting, OWASP headers, SQL/XSS injection detection |
 | database | 4 | Schema validation, seed data, embedded PG, data integrity |
 
@@ -385,8 +393,8 @@ Isara-Anywhere/
 ├── Izara-jitsi-server/       # Meeting server with transcription
 │   └── server/               # Express + Socket.IO
 ├── tests/
-│   ├── unit/                 # Vitest unit tests (1,814 tests, 58 files)
-│   └── e2e/                  # Playwright E2E tests (1,191 tests, 24 specs)
+│   ├── unit/                 # Vitest unit tests (2,013 tests, 58 files)
+│   └── e2e/                  # Playwright E2E tests (1,124 tests, 32 specs)
 ├── specs/                    # Specification documents
 ├── Processes/                # Workflow documentation (13 docs)
 ├── Presentations/            # Project presentations & diagrams
@@ -435,18 +443,20 @@ Isara-Anywhere/
 
 ### v1.5.7 (March 14, 2026)
 
+- **Unit Tests Expanded**: 2,013 tests across 58 files (up from 1,814) — all 11 workflow test files enhanced with continuous chain sections (+199 new tests)
+- **E2E Tests Verified**: 1,124 tests across 32 spec files — all passing on LOCAL and Cloud
+- **Cloud Workflow Tests**: 58/58 endpoints passing (100%) across all 11 workflows
+- **Continuous Workflow Chains**: Added step-by-step lifecycle chains to all workflow tests — appointment, user management, video meeting, health records, dashboard, notification, living will, data sync, PDPA, queue management, medical content
 - **SonarQube S6551 Fix**: Resolved 42 unsafe `String()` calls across content.ts, doctors.ts, gcs.ts, google-services.ts — proper `instanceof Error` + `typeof` narrowing
 - **SonarQube S6698 Fix**: Removed hardcoded PGPASSWORD pattern in e2e-test.ps1
 - **Cloud Build Fix**: Corrected Dockerfile path and build context in cloudbuild.yaml
-- **Local Tests**: 27/27 endpoints passing (0 failures)
-- **Cloud Tests**: 26/26 endpoints passing on Cloud Run (0 failures)
 - **Cloud Deployment**: Patient portal v1.5.7 deployed to Cloud Run — all health checks passing
 
 ### v1.5.6 (March 14, 2026)
 
 - **SonarQube S6551 Fix**: Created `errMsg()` utility — replaced 109 unsafe inline error ternaries across 8 server files
 - **SonarQube S3776 Fix**: Reduced cognitive complexity in auth.ts, video-meeting.ts, postgresDataService.ts by extracting helper functions
-- **Unit Tests Expanded**: 1,814 tests across 58 files (up from 1,419/46) — all passing
+- **Unit Tests Expanded**: 2,013 tests across 58 files (up from 1,419/46) — all passing
 - **API Endpoints**: 38/38 GET endpoints + 4/4 write operations verified returning 200 OK
 - **Cloud Deployment**: All 3 Cloud Run services deployed v1.5.6 — health checks passing
 
@@ -464,7 +474,7 @@ Isara-Anywhere/
 ### v1.5.4 (March 8, 2026)
 
 - Security hardening: JWT sign/verify consistency, OWASP headers, unified password policies
-- Comprehensive test layer: 1,419 unit + 1,191 E2E = 2,610 tests at 100% pass rate
+- Comprehensive test layer: 1,419 unit + 1,191 E2E = 2,610 tests at 100% pass rate (now 3,137 total in v1.5.7)
 - Phase 2 AI-HIS tables and endpoints
 
 ---

@@ -106,7 +106,7 @@
 | **AI** | Google Gemini 2.5 Flash Lite |
 | **Video** | Jitsi Meet (Self-Hosted) |
 | **Maps** | Google Maps Platform |
-| **Testing** | Playwright E2E (1,191 tests) + Vitest Unit (1,419 tests) |
+| **Testing** | Playwright E2E (1,124 tests) + Vitest Unit (2,013 tests) |
 
 ---
 
@@ -342,7 +342,7 @@ users (unified)
 - 🔒 **SonarQube Clean**: No S6551, S4325, or non-null assertion warnings
 - 🔒 **Credentials**: Service account keys stored in `credentials/` (not public/)
 - 🔒 **Audit Logging**: Complete trail in audit_logs
-- 🔒 **Testing**: 2,610 tests (1,419 unit + 1,191 E2E) — 100% pass rate
+- 🔒 **Testing**: 3,137 tests (2,013 unit + 1,124 E2E) — 100% pass rate
 
 ---
 

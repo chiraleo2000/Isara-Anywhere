@@ -2,7 +2,7 @@
 
 > **Version:** 1.5.7 | **Updated:** March 14, 2026
 > **Status:** Phase 1 Complete + SonarQube S6551/S6698 Fixed — All Tests Passing (v1.5.7)
-> **Tests:** 1,419 Unit Tests (Vitest) + 1,191 E2E Tests (Playwright) = **2,610 total — 100% Pass Rate**  
+> **Tests:** 2,013 Unit Tests (Vitest) + 1,124 E2E Tests (Playwright) = **3,137 total — 100% Pass Rate**  
 > **Code Quality:** SonarQube clean — zero `error: any`, strict TypeScript safety
 
 ---
@@ -19,7 +19,7 @@ This document covers:
 3. User Management & RBAC
 4. Core Workflows
 5. DevOps & Deployment
-6. **Testing** (2,610 tests: 1,419 unit across 46 files + 1,191 E2E across 24 specs)
+6. **Testing** (3,137 tests: 2,013 unit across 58 files + 1,124 E2E across 32 specs)
 
 ---
 
@@ -101,10 +101,10 @@ View **[database/izara-complete-schema-v4.dbml](database/izara-complete-schema-v
 ### Run All Tests
 
 ```powershell
-# Unit tests (1,419 tests, ~4.3s)
+# Unit tests (2,013 tests, ~4.3s)
 cd tests/unit && npx vitest run
 
-# E2E tests (1,191 tests, ~5.9 min, requires Docker)
+# E2E tests (1,124 tests, ~4.2 min, requires Docker)
 cd tests/e2e && $env:CI="true"; npx playwright test --project=Local
 ```
 
