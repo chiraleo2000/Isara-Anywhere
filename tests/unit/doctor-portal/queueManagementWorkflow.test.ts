@@ -203,4 +203,126 @@ describe('Queue Management Workflow (Process: 06_Queue_Management_Page.md)', () 
     });
     it('G02 — empty queue returns 0', () => expect(calculateAvgWaitTime([])).toBe(0));
   });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // H — CONTINUOUS WORKFLOW: Check-in → Wait → Call → Consult → Complete
+  // ═══════════════════════════════════════════════════════════════════════════
+  describe('H — Queue Lifecycle Chain', () => {
+    const queue: QueueEntry[] = [];
+    const today = '2026-06-15';
+
+    it('H01 — Step 1: Patient 1 checks in (urgent)', () => {
+      queue.push({
+        id: 'Q-001',
+        queueNumber: 1,
+        patientId: 'P-001',
+        patientName: 'อนันต์',
+        appointmentId: 'APT-001',
+        doctorId: 'DOC-001',
+        status: 'waiting',
+        priority: 'urgent',
+        checkedInAt: `${today}T08:00:00Z`,
+        estimatedWaitMinutes: calculateEstimatedWait(0),
+      });
+      expect(queue).toHaveLength(1);
+    });
+
+    it('H02 — Step 2: Patient 2 checks in (normal)', () => {
+      queue.push({
+        id: 'Q-002',
+        queueNumber: 2,
+        patientId: 'P-002',
+        patientName: 'สมชาย',
+        appointmentId: 'APT-002',
+        doctorId: 'DOC-001',
+        status: 'waiting',
+        priority: 'normal',
+        checkedInAt: `${today}T08:05:00Z`,
+        estimatedWaitMinutes: calculateEstimatedWait(1),
+      });
+      expect(queue).toHaveLength(2);
+    });
+
+    it('H03 — Step 3: Patient 3 checks in (high)', () => {
+      queue.push({
+        id: 'Q-003',
+        queueNumber: 3,
+        patientId: 'P-003',
+        patientName: 'วิไล',
+        appointmentId: 'APT-003',
+        doctorId: 'DOC-001',
+        status: 'waiting',
+        priority: 'high',
+        checkedInAt: `${today}T08:10:00Z`,
+        estimatedWaitMinutes: calculateEstimatedWait(2),
+      });
+      expect(queue).toHaveLength(3);
+    });
+
+    it('H04 — Step 4: Sorted queue puts urgent first', () => {
+      const sorted = sortQueue(queue);
+      expect(sorted[0].priority).toBe('urgent');
+      expect(sorted[0].patientName).toBe('อนันต์');
+    });
+
+    it('H05 — Step 5: Waiting count = 3', () => {
+      expect(getWaitingCount(queue)).toBe(3);
+    });
+
+    it('H06 — Step 6: Next in queue is urgent patient', () => {
+      const next = getNextInQueue(queue);
+      expect(next?.priority).toBe('urgent');
+    });
+
+    it('H07 — Step 7: Call urgent patient', () => {
+      expect(canTransition('waiting', 'called')).toBe(true);
+      queue[0].status = 'called';
+      queue[0].calledAt = `${today}T08:15:00Z`;
+      expect(queue[0].status).toBe('called');
+    });
+
+    it('H08 — Step 8: Start consultation', () => {
+      expect(canTransition('called', 'in_consultation')).toBe(true);
+      queue[0].status = 'in_consultation';
+      expect(queue[0].status).toBe('in_consultation');
+    });
+
+    it('H09 — Step 9: Queue stats mid-workflow', () => {
+      const stats = getQueueStats(queue);
+      expect(stats.waiting).toBe(2);
+      expect(stats.inConsultation).toBe(1);
+    });
+
+    it('H10 — Step 10: Complete consultation', () => {
+      expect(canTransition('in_consultation', 'completed')).toBe(true);
+      queue[0].status = 'completed';
+      queue[0].completedAt = `${today}T08:30:00Z`;
+      expect(queue[0].status).toBe('completed');
+    });
+
+    it('H11 — Step 11: Call next (high priority)', () => {
+      const next = getNextInQueue(queue);
+      expect(next?.priority).toBe('high');
+      next!.status = 'called';
+      next!.calledAt = `${today}T08:31:00Z`;
+    });
+
+    it('H12 — Step 12: Skip normal patient (no-show)', () => {
+      const normalPatient = queue.find(q => q.priority === 'normal' && q.status === 'waiting');
+      expect(canTransition('waiting', 'no_show')).toBe(true);
+      normalPatient!.status = 'no_show';
+      expect(normalPatient!.status).toBe('no_show');
+    });
+
+    it('H13 — Step 13: Generate queue number', () => {
+      const qNum = generateQueueNumber(today, 4);
+      expect(qNum).toMatch(/^Q\d{6}-\d+$/);
+    });
+
+    it('H14 — Final: Queue fully processed', () => {
+      const stats = getQueueStats(queue);
+      expect(stats.waiting).toBe(0);
+      expect(stats.completed).toBe(1);
+    });
+  });
 });

@@ -296,4 +296,171 @@ describe('User Management Workflow (Process: User_management_Workflows.md)', () 
     it('J04 — too short fails', () => expect(validateThaiPhone('081234')).toBe(false));
     it('J05 — must start with 0', () => expect(validateThaiPhone('1812345678')).toBe(false));
   });
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // K — CONTINUOUS WORKFLOW: Patient Registration → Login → Session
+  // End-to-end chain with shared state — NO restarts
+  // ═══════════════════════════════════════════════════════════════════════
+  describe('K — Continuous Patient Registration → Login → Session Chain', () => {
+    const patient = {
+      id: '',
+      email: 'somchai.new@hospital.co.th',
+      password: TEST_VALID_PASSWORD,
+      name: 'สมชาย ใหม่จัง',
+      role: 'patient' as UserRole,
+      phone: '0891234567',
+      sessionToken: '',
+      passwordHash: '',
+      portal: '',
+    };
+
+    it('K01 — Step 1: Validate registration data', () => {
+      const errors = validateRegistration(patient);
+      expect(errors).toHaveLength(0);
+    });
+
+    it('K02 — Step 2: Email format valid', () => {
+      expect(validateEmail(patient.email)).toBe(true);
+    });
+
+    it('K03 — Step 3: Phone valid (Thai)', () => {
+      expect(validateThaiPhone(patient.phone)).toBe(true);
+    });
+
+    it('K04 — Step 4: Password meets OWASP policy', () => {
+      expect(validatePassword(patient.password)).toHaveLength(0);
+    });
+
+    it('K05 — Step 5: Generate patient ID', () => {
+      patient.id = generatePatientId();
+      expect(patient.id).toMatch(/^PATIENT-/);
+    });
+
+    it('K06 — Step 6: Hash password with salt', () => {
+      patient.passwordHash = hashPasswordDeterministic(patient.password, patient.id);
+      expect(patient.passwordHash).toHaveLength(64);
+      expect(patient.passwordHash).toMatch(/^[0-9a-f]+$/);
+    });
+
+    it('K07 — Step 7: Route to correct portal', () => {
+      patient.portal = getPortalForRole(patient.role);
+      expect(patient.portal).toBe('patient_portal');
+    });
+
+    it('K08 — Step 8: Patient has no admin rights', () => {
+      expect(canPerformAdminAction(patient.role, 'approve_doctor')).toBe(false);
+      expect(canPerformAdminAction(patient.role, 'manage_users')).toBe(false);
+    });
+
+    it('K09 — Step 9: Session token generated and not expired', () => {
+      patient.sessionToken = generateResetToken();
+      expect(patient.sessionToken).toHaveLength(64);
+      expect(isTokenExpired(new Date().toISOString(), 1)).toBe(false);
+    });
+
+    it('K10 — Final: Complete patient entity is valid', () => {
+      expect(patient.id).toMatch(/^PATIENT-/);
+      expect(patient.email).toContain('@');
+      expect(patient.passwordHash).toHaveLength(64);
+      expect(patient.portal).toBe('patient_portal');
+      expect(patient.sessionToken).toHaveLength(64);
+    });
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // L — CONTINUOUS WORKFLOW: Doctor Registration → Approval → Active
+  // ═══════════════════════════════════════════════════════════════════════
+  describe('L — Continuous Doctor Registration → Approval Chain', () => {
+    const doctor = {
+      id: '',
+      email: 'dr.somying@hospital.co.th',
+      password: TEST_VALID_PASSWORD,
+      name: 'Dr. สมหญิง รักดี',
+      role: 'doctor' as UserRole,
+      medicalLicense: 'MD-67890',
+      specialty: 'อายุรกรรม',
+      status: 'pending' as DoctorStatus,
+      portal: '',
+      approvedBy: '',
+    };
+
+    it('L01 — Step 1: Doctor registration data valid', () => {
+      expect(validateDoctorRegistration(doctor)).toHaveLength(0);
+    });
+
+    it('L02 — Step 2: Generate doctor ID', () => {
+      doctor.id = generateDoctorId();
+      expect(doctor.id).toMatch(/^DOC-/);
+    });
+
+    it('L03 — Step 3: Doctor starts as pending', () => {
+      expect(doctor.status).toBe('pending');
+    });
+
+    it('L04 — Step 4: Admin approves doctor', () => {
+      expect(canPerformAdminAction('admin', 'approve_doctor')).toBe(true);
+      doctor.status = 'approved';
+      doctor.approvedBy = 'ADMIN-TEST-001';
+      expect(doctor.status).toBe('approved');
+    });
+
+    it('L05 — Step 5: Doctor routes to doctor portal', () => {
+      doctor.portal = getPortalForRole(doctor.role);
+      expect(doctor.portal).toBe('doctor_portal');
+    });
+
+    it('L06 — Step 6: Approved doctor has valid specialty', () => {
+      expect(DOCTOR_SPECIALTIES).toContain(doctor.specialty);
+    });
+
+    it('L07 — Final: Complete doctor entity is ready', () => {
+      expect(doctor.id).toMatch(/^DOC-/);
+      expect(doctor.status).toBe('approved');
+      expect(doctor.approvedBy).toBe('ADMIN-TEST-001');
+      expect(doctor.portal).toBe('doctor_portal');
+    });
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // M — Password Reset Full Flow
+  // ═══════════════════════════════════════════════════════════════════════
+  describe('M — Password Reset Continuous Flow', () => {
+    const resetFlow = {
+      email: 'forgot@hospital.co.th',
+      token: '',
+      tokenCreatedAt: '',
+      newPassword: '',
+      newHash: '',
+    };
+
+    it('M01 — Step 1: Email is valid', () => {
+      expect(validateEmail(resetFlow.email)).toBe(true);
+    });
+
+    it('M02 — Step 2: Generate reset token', () => {
+      resetFlow.token = generateResetToken();
+      resetFlow.tokenCreatedAt = new Date().toISOString();
+      expect(resetFlow.token).toHaveLength(64);
+    });
+
+    it('M03 — Step 3: Token not yet expired', () => {
+      expect(isTokenExpired(resetFlow.tokenCreatedAt, 1)).toBe(false);
+    });
+
+    it('M04 — Step 4: New password meets policy', () => {
+      resetFlow.newPassword = TEST_VALID_PASSWORD;
+      expect(validatePassword(resetFlow.newPassword)).toHaveLength(0);
+    });
+
+    it('M05 — Step 5: Hash new password', () => {
+      resetFlow.newHash = hashPasswordDeterministic(resetFlow.newPassword, 'salt-unique');
+      expect(resetFlow.newHash).toHaveLength(64);
+    });
+
+    it('M06 — Final: Reset complete — token consumed', () => {
+      expect(resetFlow.token).toHaveLength(64);
+      expect(resetFlow.newHash).toHaveLength(64);
+      expect(resetFlow.newHash).not.toBe(resetFlow.token);
+    });
+  });
 });

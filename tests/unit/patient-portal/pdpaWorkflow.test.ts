@@ -227,4 +227,90 @@ describe('PDPA Privacy & Consent Workflow (Process: 10_PDPA_Page.md)', () => {
       expect(md?.enabled).toBe(true);
     });
   });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // H — CONTINUOUS WORKFLOW: Consent Setup → Doctor Access → Audit Trail
+  // ═══════════════════════════════════════════════════════════════════════════
+  describe('H — PDPA Consent Lifecycle Chain', () => {
+    let consents: ConsentSetting[] = [];
+    const accessList: DoctorAccess[] = [];
+    const auditLog: AuditEntry[] = [];
+
+    it('H01 — Step 1: Initialize default consents', () => {
+      consents = getDefaultConsents();
+      expect(consents).toHaveLength(6);
+    });
+
+    it('H02 — Step 2: Medical data enabled by default', () => {
+      expect(isConsentEnabled(consents, 'medical_data')).toBe(true);
+    });
+
+    it('H03 — Step 3: Living will disabled by default', () => {
+      expect(isConsentEnabled(consents, 'living_will')).toBe(false);
+    });
+
+    it('H04 — Step 4: Patient enables living will sharing', () => {
+      const lw = consents.find(c => c.type === 'living_will');
+      if (lw) lw.enabled = true;
+      expect(isConsentEnabled(consents, 'living_will')).toBe(true);
+    });
+
+    it('H05 — Step 5: Audit consent update', () => {
+      auditLog.push(generateAuditEntry('PATIENT-001', 'update_consent', 'living_will', 'PATIENT-001', 'patient'));
+      expect(auditLog).toHaveLength(1);
+      expect(auditLog[0].action).toBe('update_consent');
+    });
+
+    it('H06 — Step 6: Grant doctor access', () => {
+      accessList.push({
+        doctorId: 'DOC-001',
+        doctorName: 'Dr. วิชัย',
+        accessLevel: 'full',
+        grantedAt: new Date().toISOString(),
+      });
+      expect(accessList).toHaveLength(1);
+    });
+
+    it('H07 — Step 7: Audit access grant', () => {
+      auditLog.push(generateAuditEntry('PATIENT-001', 'grant', 'DOC-001', 'PATIENT-001', 'patient'));
+      expect(auditLog).toHaveLength(2);
+    });
+
+    it('H08 — Step 8: Doctor can access', () => {
+      expect(canDoctorAccess(accessList[0])).toBe(true);
+    });
+
+    it('H09 — Step 9: Doctor views EMR → audit', () => {
+      auditLog.push(generateAuditEntry('PATIENT-001', 'view', 'emr-123', 'DOC-001', 'doctor'));
+      expect(auditLog).toHaveLength(3);
+    });
+
+    it('H10 — Step 10: Patient revokes doctor access', () => {
+      accessList[0].accessLevel = 'revoked';
+      expect(canDoctorAccess(accessList[0])).toBe(false);
+    });
+
+    it('H11 — Step 11: Audit revocation', () => {
+      auditLog.push(generateAuditEntry('PATIENT-001', 'revoke', 'DOC-001', 'PATIENT-001', 'patient'));
+      expect(auditLog).toHaveLength(4);
+    });
+
+    it('H12 — Step 12: Active access list now empty', () => {
+      expect(getActiveAccessDoctors(accessList)).toHaveLength(0);
+    });
+
+    it('H13 — Step 13: Filter audit by grant actions', () => {
+      const grants = filterAuditByAction(auditLog, 'grant');
+      expect(grants).toHaveLength(1);
+    });
+
+    it('H14 — Final: Complete audit trail', () => {
+      expect(auditLog).toHaveLength(4);
+      const actions = auditLog.map(e => e.action);
+      expect(actions).toContain('update_consent');
+      expect(actions).toContain('grant');
+      expect(actions).toContain('view');
+      expect(actions).toContain('revoke');
+    });
+  });
 });

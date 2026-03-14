@@ -293,4 +293,225 @@ describe('Health Records & EMR Workflow (Process: Health_Records_Processes.md)',
       expect(ids.size).toBe(20);
     });
   });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // J — CONTINUOUS WORKFLOW: SOAP → EMR → Review → Finalize → Deliver
+  // Full EMR lifecycle with shared state — NO restarts
+  // ═══════════════════════════════════════════════════════════════════════════
+  describe('J — Continuous EMR Lifecycle Chain', () => {
+    const emr: EmrRecord = {
+      id: generateEmrId(),
+      patientId: 'PATIENT-DEMO',
+      doctorId: 'DOC-TEST-001',
+      appointmentId: 'APT-CHAIN-001',
+      soapNote: { subjective: '', objective: '', assessment: '', plan: '' },
+      diagnoses: [],
+      prescriptions: [],
+      vitalSigns: [],
+      status: 'draft',
+      aiGenerated: false,
+      createdAt: new Date().toISOString(),
+    };
+
+    it('J01 — Step 1: EMR created as draft', () => {
+      expect(emr.status).toBe('draft');
+      expect(emr.id).toMatch(/^EMR-/);
+    });
+
+    it('J02 — Step 2: Doctor fills SOAP subjective (patient symptoms)', () => {
+      emr.soapNote.subjective = 'ผู้ป่วยมาด้วยอาการปวดหัว 2 วัน มีไข้ต่ำ';
+      expect(emr.soapNote.subjective.length).toBeGreaterThan(0);
+    });
+
+    it('J03 — Step 3: Doctor fills SOAP objective (exam findings)', () => {
+      emr.soapNote.objective = 'อุณหภูมิ 37.8°C, BP 120/80, อัตราการเต้นหัวใจ 82 bpm';
+      expect(emr.soapNote.objective.length).toBeGreaterThan(0);
+    });
+
+    it('J04 — Step 4: Doctor fills SOAP assessment', () => {
+      emr.soapNote.assessment = 'สงสัย Upper Respiratory Infection';
+      expect(emr.soapNote.assessment.length).toBeGreaterThan(0);
+    });
+
+    it('J05 — Step 5: Doctor fills SOAP plan', () => {
+      emr.soapNote.plan = 'ให้ยา Paracetamol 500mg ทุก 6 ชม. พักผ่อน ดื่มน้ำเยอะ นัดตรวจซ้ำ 5 วัน';
+      expect(emr.soapNote.plan.length).toBeGreaterThan(0);
+    });
+
+    it('J06 — Step 6: Full SOAP note validates', () => {
+      const errors = validateSoapNote(emr.soapNote);
+      expect(errors).toHaveLength(0);
+    });
+
+    it('J07 — Step 7: Add diagnoses', () => {
+      emr.diagnoses = ['J06.9 - Upper Respiratory Infection', 'R50.9 - Fever, unspecified'];
+      expect(emr.diagnoses).toHaveLength(2);
+    });
+
+    it('J08 — Step 8: Add prescription', () => {
+      const rx: Prescription = {
+        medication: 'Paracetamol 500mg',
+        dosage: '1 เม็ด',
+        frequency: 'ทุก 6 ชั่วโมง',
+        duration: '5 วัน',
+        notes: 'รับประทานหลังอาหาร',
+      };
+      expect(validatePrescription(rx)).toHaveLength(0);
+      emr.prescriptions = [rx];
+    });
+
+    it('J09 — Step 9: EMR is now complete', () => {
+      expect(isCompleteEmr(emr)).toBe(true);
+    });
+
+    it('J10 — Step 10: Submit for review → pending_review', () => {
+      expect(canTransitionEmr(emr.status, 'pending_review')).toBe(true);
+      emr.status = 'pending_review';
+      // status updated
+      expect(emr.status).toBe('pending_review');
+    });
+
+    it('J11 — Step 11: Doctor finalizes own EMR', () => {
+      expect(canDoctorFinalize(emr, 'DOC-TEST-001')).toBe(true);
+      expect(canTransitionEmr(emr.status, 'finalized')).toBe(true);
+      emr.status = 'finalized';
+      expect(emr.status).toBe('finalized');
+    });
+
+    it('J12 — Step 12: Deliver to patient', () => {
+      expect(canTransitionEmr(emr.status, 'delivered')).toBe(true);
+      emr.status = 'delivered';
+      expect(emr.status).toBe('delivered');
+    });
+
+    it('J13 — Step 13: Delivered is terminal', () => {
+      expect(canTransitionEmr('delivered', 'draft')).toBe(false);
+      expect(canTransitionEmr('delivered', 'pending_review')).toBe(false);
+    });
+
+    it('J14 — Final: Complete EMR entity verified', () => {
+      expect(emr.id).toMatch(/^EMR-/);
+      expect(emr.patientId).toBe('PATIENT-DEMO');
+      expect(emr.doctorId).toBe('DOC-TEST-001');
+      expect(emr.status).toBe('delivered');
+      expect(emr.diagnoses).toHaveLength(2);
+      expect(emr.prescriptions).toHaveLength(1);
+      expect(emr.soapNote.subjective).toContain('ปวดหัว');
+    });
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // K — CROSS-WORKFLOW: Vital Signs → BMI → EMR Integration
+  // ═══════════════════════════════════════════════════════════════════════════
+  describe('K — Vital Signs → BMI → EMR Integration Chain', () => {
+    const vitals = {
+      weight: 70,
+      height: 170,
+      bmi: 0,
+      bmiCategory: '',
+      bmiCategoryTh: '',
+      bloodPressureOk: false,
+      heartRateOk: false,
+      tempOk: false,
+    };
+
+    it('K01 — Step 1: Weight in normal range', () => {
+      expect(isVitalInRange('weight', vitals.weight)).toBe(true);
+    });
+
+    it('K02 — Step 2: Height in normal range', () => {
+      expect(isVitalInRange('height', vitals.height)).toBe(true);
+    });
+
+    it('K03 — Step 3: Calculate BMI', () => {
+      vitals.bmi = calculateBmi(vitals.weight, vitals.height);
+      expect(vitals.bmi).toBeCloseTo(24.2, 1);
+    });
+
+    it('K04 — Step 4: Get BMI category', () => {
+      vitals.bmiCategory = getBmiCategory(vitals.bmi);
+      expect(vitals.bmiCategory).toBe('normal');
+    });
+
+    it('K05 — Step 5: Get Thai BMI category', () => {
+      vitals.bmiCategoryTh = getBmiCategoryTh(vitals.bmi);
+      expect(vitals.bmiCategoryTh).toBeTruthy();
+    });
+
+    it('K06 — Step 6: Check blood pressure range', () => {
+      vitals.bloodPressureOk = isVitalInRange('blood_pressure', 120);
+      expect(vitals.bloodPressureOk).toBe(true);
+    });
+
+    it('K07 — Step 7: Check heart rate range', () => {
+      vitals.heartRateOk = isVitalInRange('heart_rate', 72);
+      expect(vitals.heartRateOk).toBe(true);
+    });
+
+    it('K08 — Step 8: Check temperature range', () => {
+      vitals.tempOk = isVitalInRange('temperature', 36.5);
+      expect(vitals.tempOk).toBe(true);
+    });
+
+    it('K09 — Final: All vitals assessed for EMR', () => {
+      expect(vitals.bmi).toBeGreaterThan(0);
+      expect(vitals.bmiCategory).toBe('normal');
+      expect(vitals.bloodPressureOk).toBe(true);
+      expect(vitals.heartRateOk).toBe(true);
+      expect(vitals.tempOk).toBe(true);
+    });
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // L — TIMELINE AGGREGATION: Events from Multiple Sources
+  // ═══════════════════════════════════════════════════════════════════════════
+  describe('L — Timeline Aggregation Chain', () => {
+    const timeline: TimelineEvent[] = [];
+
+    it('L01 — Step 1: Add appointment event', () => {
+      timeline.push({ id: 'TL-001', date: '2026-06-01', type: 'appointment', title: 'นัดพบแพทย์', description: 'นัดพบแพทย์ทั่วไป' });
+      expect(timeline).toHaveLength(1);
+    });
+
+    it('L02 — Step 2: Add vital signs event', () => {
+      timeline.push({ id: 'TL-002', date: '2026-06-01', type: 'vital_signs', title: 'บันทึก Vital Signs', description: 'บันทึก vital signs ก่อนพบแพทย์' });
+      expect(timeline).toHaveLength(2);
+    });
+
+    it('L03 — Step 3: Add meeting event', () => {
+      timeline.push({ id: 'TL-003', date: '2026-06-01', type: 'emr', title: 'ปรึกษาแพทย์', description: 'ปรึกษาแพทย์ผ่าน Video Call 28 นาที' });
+      expect(timeline).toHaveLength(3);
+    });
+
+    it('L04 — Step 4: Add EMR event', () => {
+      timeline.push({ id: 'TL-004', date: '2026-06-01', type: 'emr', title: 'เวชระเบียน', description: 'แพทย์สร้างบันทึกเวชระเบียน' });
+      expect(timeline).toHaveLength(4);
+    });
+
+    it('L05 — Step 5: Add prescription event', () => {
+      timeline.push({ id: 'TL-005', date: '2026-06-02', type: 'prescription', title: 'สั่งยา', description: 'Paracetamol 500mg ทุก 6 ชม.' });
+      expect(timeline).toHaveLength(5);
+    });
+
+    it('L06 — Step 6: Add lab order event', () => {
+      timeline.push({ id: 'TL-006', date: '2026-06-03', type: 'lab', title: 'ส่งตรวจ Lab', description: 'สั่งตรวจ CBC, CRP' });
+      expect(timeline).toHaveLength(6);
+    });
+
+    it('L07 — Step 7: Sort timeline by date', () => {
+      const sorted = sortTimelineByDate(timeline);
+      const dates = sorted.map(e => e.date);
+      expect(dates).toContain('2026-06-01');
+      expect(dates).toContain('2026-06-03');
+    });
+
+    it('L08 — Final: Complete patient timeline', () => {
+      expect(timeline).toHaveLength(6);
+      const types = timeline.map(e => e.type);
+      expect(types).toContain('appointment');
+      expect(types).toContain('emr');
+      expect(types).toContain('prescription');
+      expect(types).toContain('lab');
+    });
+  });
 });

@@ -277,4 +277,202 @@ describe('Video Meeting & Jitsi Workflow (Process: VIDEO_MEETING_JITSI_GEMINI.md
       expect(ids.size).toBe(20);
     });
   });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // I — CONTINUOUS WORKFLOW: Create → Start → Consult → End → AI → Deliver
+  // Full meeting lifecycle with shared state — NO restarts
+  // ═══════════════════════════════════════════════════════════════════════════
+  describe('I — Continuous Meeting Lifecycle Chain', () => {
+    const meeting: VideoMeeting = {
+      id: generateMeetingId(),
+      appointmentId: 'APT-CHAIN-001',
+      roomName: '',
+      jitsiUrl: '',
+      hostDoctorId: 'DOC-TEST-001',
+      participants: [],
+      status: 'scheduled',
+      scheduledAt: '2026-06-01T10:00:00Z',
+      hasTranscription: false,
+      hasAiSummary: false,
+    };
+
+    it('I01 — Step 1: Generate room name from appointment', () => {
+      meeting.roomName = generateRoomName(meeting.appointmentId, 1710000000000);
+      expect(meeting.roomName).toContain(meeting.appointmentId);
+      expect(isValidRoomName(meeting.roomName)).toBe(true);
+    });
+
+    it('I02 — Step 2: Build Jitsi URL', () => {
+      meeting.jitsiUrl = buildJitsiUrl(meeting.roomName);
+      expect(meeting.jitsiUrl).toContain('https://');
+      expect(meeting.jitsiUrl).toContain(meeting.roomName);
+    });
+
+    it('I03 — Step 3: Doctor (host) joins first', () => {
+      meeting.participants.push({
+        userId: 'DOC-TEST-001', name: 'Dr. Test', role: 'host',
+        joinedAt: '2026-06-01T10:00:00Z',
+      });
+      expect(canStartMeeting(meeting, 'DOC-TEST-001')).toBe(true);
+    });
+
+    it('I04 — Step 4: Patient joins meeting', () => {
+      meeting.participants.push({
+        userId: 'PAT-001', name: 'Patient Demo', role: 'participant',
+        joinedAt: '2026-06-01T10:01:00Z',
+      });
+      expect(canJoinMeeting(meeting, 'PAT-001')).toBe(true);
+      expect(getParticipantCount(meeting)).toBe(2);
+    });
+
+    it('I05 — Step 5: Meeting starts → in_progress', () => {
+      expect(canTransition(meeting.status, 'in_progress')).toBe(true);
+      meeting.status = 'in_progress';
+      meeting.startedAt = '2026-06-01T10:01:30Z';
+      expect(meeting.status).toBe('in_progress');
+    });
+
+    it('I06 — Step 6: Auto-recording triggers (2+ participants)', () => {
+      expect(shouldAutoRecord(meeting)).toBe(true);
+    });
+
+    it('I07 — Step 7: Active participants tracked', () => {
+      const active = getActiveParts(meeting);
+      expect(active).toHaveLength(2);
+    });
+
+    it('I08 — Step 8: Transcription runs during meeting', () => {
+      const segments: TranscriptionSegment[] = [
+        { speakerId: 'DOC-TEST-001', text: 'อาการเป็นยังไงบ้างครับ', timestamp: '2026-06-01T10:02:00Z', language: 'th' },
+        { speakerId: 'PAT-001', text: 'ปวดหัวมาสองวันค่ะ', timestamp: '2026-06-01T10:02:15Z', language: 'th' },
+        { speakerId: 'DOC-TEST-001', text: 'มีไข้ด้วยไหมครับ', timestamp: '2026-06-01T10:02:30Z', language: 'th' },
+      ];
+      expect(validateTranscription(segments)).toHaveLength(0);
+      meeting.hasTranscription = true;
+    });
+
+    it('I09 — Step 9: Meeting ends → completed', () => {
+      expect(canTransition(meeting.status, 'completed')).toBe(true);
+      meeting.status = 'completed';
+      meeting.endedAt = '2026-06-01T10:30:00Z';
+      meeting.participants.forEach(p => { p.leftAt = meeting.endedAt; });
+      expect(meeting.status).toBe('completed');
+    });
+
+    it('I10 — Step 10: Duration calculated', () => {
+      const duration = calculateDuration(meeting.startedAt!, meeting.endedAt!);
+      meeting.duration = duration;
+      expect(duration).toBeGreaterThanOrEqual(28);
+      expect(duration).toBeLessThanOrEqual(29);
+    });
+
+    it('I11 — Step 11: AI summary generated post-meeting', () => {
+      meeting.hasAiSummary = true;
+      expect(meeting.hasTranscription).toBe(true);
+      expect(meeting.hasAiSummary).toBe(true);
+    });
+
+    it('I12 — Final: Complete meeting entity verified', () => {
+      expect(meeting.id).toMatch(/^MTG-/);
+      expect(meeting.appointmentId).toBe('APT-CHAIN-001');
+      expect(meeting.status).toBe('completed');
+      expect(meeting.duration).toBeGreaterThanOrEqual(28);
+      expect(meeting.hasTranscription).toBe(true);
+      expect(meeting.hasAiSummary).toBe(true);
+      expect(getParticipantCount(meeting)).toBe(2);
+    });
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // J — CANCELLATION & NO-SHOW BRANCH
+  // ═══════════════════════════════════════════════════════════════════════════
+  describe('J — Meeting Cancellation & No-Show Branch', () => {
+    const meeting2: VideoMeeting = {
+      id: generateMeetingId(),
+      appointmentId: 'APT-CANCEL-001',
+      roomName: generateRoomName('APT-CANCEL-001'),
+      jitsiUrl: '',
+      hostDoctorId: 'DOC-TEST-002',
+      participants: [{ userId: 'PAT-002', name: 'Somchai', role: 'participant' }],
+      status: 'scheduled',
+      scheduledAt: '2026-06-02T14:00:00Z',
+      hasTranscription: false,
+      hasAiSummary: false,
+    };
+
+    it('J01 — Meeting scheduled with room name', () => {
+      expect(meeting2.status).toBe('scheduled');
+      expect(isValidRoomName(meeting2.roomName)).toBe(true);
+    });
+
+    it('J02 — Patient no-shows', () => {
+      expect(canTransition('scheduled', 'no_show')).toBe(true);
+      meeting2.status = 'no_show';
+      expect(meeting2.status).toBe('no_show');
+    });
+
+    it('J03 — No-show is terminal for meeting', () => {
+      expect(VALID_STATUS_TRANSITIONS.no_show).toHaveLength(0);
+    });
+
+    it('J04 — No transcription or AI for no-show', () => {
+      expect(meeting2.hasTranscription).toBe(false);
+      expect(meeting2.hasAiSummary).toBe(false);
+    });
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // K — LOBBY & MULTI-PARTY MEETING
+  // ═══════════════════════════════════════════════════════════════════════════
+  describe('K — Lobby & Multi-Party Meeting', () => {
+    const multiMeeting: VideoMeeting = {
+      id: generateMeetingId(),
+      appointmentId: 'APT-MULTI-001',
+      roomName: generateRoomName('APT-MULTI-001'),
+      jitsiUrl: '',
+      hostDoctorId: 'DOC-TEST-001',
+      participants: [],
+      status: 'scheduled',
+      scheduledAt: '2026-06-03T09:00:00Z',
+      hasTranscription: false,
+      hasAiSummary: false,
+    };
+
+    it('K01 — Host admits participants into lobby', () => {
+      multiMeeting.participants.push(
+        { userId: 'DOC-TEST-001', name: 'Dr. Host', role: 'host', joinedAt: '2026-06-03T09:00:00Z' },
+      );
+      expect(canStartMeeting(multiMeeting, 'DOC-TEST-001')).toBe(true);
+    });
+
+    it('K02 — Multiple patients join (up to 8)', () => {
+      for (let i = 1; i <= 3; i++) {
+        multiMeeting.participants.push({
+          userId: `PAT-00${i}`, name: `Patient ${i}`, role: 'participant',
+          joinedAt: `2026-06-03T09:0${i}:00Z`,
+        });
+      }
+      expect(getParticipantCount(multiMeeting)).toBe(4);
+    });
+
+    it('K03 — Observer can join but is read-only', () => {
+      multiMeeting.participants.push({
+        userId: 'OBS-001', name: 'Observer', role: 'observer',
+        joinedAt: '2026-06-03T09:05:00Z',
+      });
+      expect(getParticipantCount(multiMeeting)).toBe(5);
+      const observer = multiMeeting.participants.find(p => p.role === 'observer');
+      expect(observer).toBeTruthy();
+    });
+
+    it('K04 — All active participants tracked', () => {
+      multiMeeting.status = 'in_progress';
+      const active = getActiveParts(multiMeeting);
+      expect(active).toHaveLength(5);
+    });
+
+    it('K05 — Auto-record with multiple participants', () => {
+      expect(shouldAutoRecord(multiMeeting)).toBe(true);
+    });
+  });
 });

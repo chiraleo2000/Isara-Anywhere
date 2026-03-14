@@ -281,4 +281,101 @@ describe('Notification System Workflow (Process: Notification_Workflows.md)', ()
       expect(ids.size).toBe(20);
     });
   });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // I — CONTINUOUS WORKFLOW: Notification Creation → Delivery → Read
+  // ═══════════════════════════════════════════════════════════════════════════
+  describe('I — Notification Lifecycle Chain', () => {
+    const notifications: Notification[] = [];
+    const prefs: NotificationPreferences = {
+      userId: 'PATIENT-001',
+      appointments: true,
+      meetings: true,
+      emr: true,
+      system: true,
+      marketing: false,
+      channels: { inApp: true, email: true, push: true, sms: false },
+    };
+
+    it('I01 — Step 1: Create appointment confirmed notification', () => {
+      const notif: Notification = {
+        id: generateNotificationId(),
+        userId: 'PATIENT-001',
+        type: 'appointment_confirmed',
+        title: 'Appointment Confirmed',
+        titleTh: 'ยืนยันนัดหมาย',
+        message: 'Your appointment on June 15 at 09:00 is confirmed.',
+        messageTh: 'นัดหมายวันที่ 15 มิ.ย. เวลา 09:00 ได้รับการยืนยัน',
+        channels: ['in_app', 'email'],
+        read: false,
+        priority: 'medium',
+        createdAt: '2026-06-14T10:00:00Z',
+      };
+      notifications.push(notif);
+      expect(notifications).toHaveLength(1);
+    });
+
+    it('I02 — Step 2: Priority derived from type', () => {
+      const priority = getNotificationPriority('appointment_confirmed');
+      expect(priority).toBeTruthy();
+    });
+
+    it('I03 — Step 3: Should send in-app channel per prefs', () => {
+      expect(shouldSendChannel('appointment_confirmed', 'in_app', prefs)).toBe(true);
+    });
+
+    it('I04 — Step 4: Should NOT send SMS (disabled)', () => {
+      expect(shouldSendChannel('appointment_confirmed', 'sms', prefs)).toBe(false);
+    });
+
+    it('I05 — Step 5: Create EMR notification', () => {
+      notifications.push({
+        id: generateNotificationId(),
+        userId: 'PATIENT-001',
+        type: 'emr_available',
+        title: 'EMR Available',
+        titleTh: 'เวชระเบียนพร้อม',
+        message: 'Your medical record is ready.',
+        messageTh: 'เวชระเบียนของคุณพร้อมแล้ว',
+        channels: ['in_app'],
+        read: false,
+        priority: 'high',
+        createdAt: '2026-06-14T11:00:00Z',
+      });
+      expect(notifications).toHaveLength(2);
+    });
+
+    it('I06 — Step 6: Unread count = 2', () => {
+      expect(getUnreadCount(notifications)).toBe(2);
+    });
+
+    it('I07 — Step 7: Mark first notification as read', () => {
+      notifications[0] = markAsRead(notifications[0]);
+      expect(notifications[0].read).toBe(true);
+    });
+
+    it('I08 — Step 8: Unread count drops to 1', () => {
+      expect(getUnreadCount(notifications)).toBe(1);
+    });
+
+    it('I09 — Step 9: Filter by appointment types', () => {
+      const aptNotifs = filterByType(notifications, APPOINTMENT_TYPES);
+      expect(aptNotifs).toHaveLength(1);
+    });
+
+    it('I10 — Step 10: Sort by date descending', () => {
+      const sorted = sortByDate(notifications, 'desc');
+      expect(sorted[0].type).toBe('emr_available');
+    });
+
+    it('I11 — Step 11: Mark all as read', () => {
+      const allRead = markAllAsRead(notifications);
+      expect(getUnreadCount(allRead)).toBe(0);
+    });
+
+    it('I12 — Final: Thai labels verified', () => {
+      expect(getThaiTypeLabel('appointment_confirmed')).toBe('ยืนยันนัดหมาย');
+      expect(getThaiTypeLabel('emr_available')).toBe('เวชระเบียนพร้อม');
+    });
+  });
 });

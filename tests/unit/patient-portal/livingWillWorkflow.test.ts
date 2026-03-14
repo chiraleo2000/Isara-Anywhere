@@ -327,4 +327,101 @@ describe('Living Will Workflow (Process: Living_Will_Processes.md)', () => {
       })).toBe(50);
     });
   });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // H — CONTINUOUS WORKFLOW: Draft → Fill → Validate → Activate → Share
+  // ═══════════════════════════════════════════════════════════════════════════
+  describe('H — Living Will Lifecycle Chain', () => {
+    const lw: LivingWillData = {
+      patientId: 'PATIENT-001',
+      status: 'draft',
+      sharingPreference: 'private',
+      treatmentPreferences: {
+        cpr: true,
+        ventilator: false,
+        feedingTube: false,
+        dialysis: true,
+        bloodTransfusion: true,
+        antibiotics: true,
+        painManagement: 'full',
+        organDonation: true,
+      },
+    };
+    let completion = 0;
+
+    it('H01 — Step 1: Start draft with treatment prefs', () => {
+      expect(lw.status).toBe('draft');
+      completion = calculateCompletionPercentage(lw);
+      expect(completion).toBeGreaterThan(0);
+    });
+
+    it('H02 — Step 2: Generate ID', () => {
+      lw.id = generateLivingWillId(lw.patientId);
+      expect(lw.id).toContain('PATIENT-001');
+    });
+
+    it('H03 — Step 3: Add healthcare proxy', () => {
+      lw.healthcareProxy = {
+        name: 'สมศรี มั่นคง',
+        relationship: 'คู่สมรส',
+        phone: '0812345678',
+      };
+      const proxyErrors = validateHealthcareProxy(lw.healthcareProxy);
+      expect(proxyErrors).toHaveLength(0);
+    });
+
+    it('H04 — Step 4: Completion increases', () => {
+      const newCompletion = calculateCompletionPercentage(lw);
+      expect(newCompletion).toBeGreaterThan(completion);
+      completion = newCompletion;
+    });
+
+    it('H05 — Step 5: Add digital signature', () => {
+      lw.digitalSignature = 'base64-signature-data';
+      expect(lw.digitalSignature).toBeTruthy();
+    });
+
+    it('H06 — Step 6: Set sharing preference', () => {
+      lw.sharingPreference = 'shared_with_doctors';
+      expect(lw.sharingPreference).toBe('shared_with_doctors');
+    });
+
+    it('H07 — Step 7: 100% complete', () => {
+      completion = calculateCompletionPercentage(lw);
+      expect(completion).toBe(100);
+    });
+
+    it('H08 — Step 8: Validate passes', () => {
+      const errors = validateLivingWill(lw);
+      expect(errors).toHaveLength(0);
+    });
+
+    it('H09 — Step 9: Activate', () => {
+      lw.status = 'active';
+      expect(lw.status).toBe('active');
+    });
+
+    it('H10 — Step 10: Doctor can access (shared, has history)', () => {
+      expect(canDoctorAccessLivingWill(lw, true)).toBe(true);
+    });
+
+    it('H11 — Step 11: Doctor without history cannot access', () => {
+      expect(canDoctorAccessLivingWill(lw, false)).toBe(false);
+    });
+
+    it('H12 — Step 12: Patient can modify own active will', () => {
+      expect(canPatientModify(lw, lw.patientId)).toBe(true);
+    });
+
+    it('H13 — Step 13: Display labels work', () => {
+      const display = formatLivingWillForDisplay(lw, 'th');
+      expect(display.title).toBeTruthy();
+      expect(display.statusLabel).toBeTruthy();
+    });
+
+    it('H14 — Final: Revoke living will', () => {
+      lw.status = 'revoked';
+      expect(canPatientModify(lw, lw.patientId)).toBe(false);
+    });
+  });
 });

@@ -240,4 +240,107 @@ describe('Dashboard & Stats Workflow (Process: 04_Dashboard_Page.md)', () => {
       expect(validateDashboardStats({ upcomingAppointments: 0, totalAppointments: 0, unreadNotifications: 0 })).toBe(true);
     });
   });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // H — CONTINUOUS WORKFLOW: Patient Login → Dashboard Load → Actions
+  // ═══════════════════════════════════════════════════════════════════════════
+  describe('H — Patient Dashboard Continuous Workflow', () => {
+    const appointments: AppointmentSummary[] = [
+      { id: 'APT-001', patientName: 'สมชาย', doctorName: 'Dr. วิชัย', date: '2026-06-15', time: '09:00', status: 'confirmed', type: 'telemedicine' },
+      { id: 'APT-002', patientName: 'สมชาย', doctorName: 'Dr. วิชัย', date: '2026-06-10', time: '14:00', status: 'completed', type: 'telemedicine' },
+      { id: 'APT-003', patientName: 'สมชาย', doctorName: 'Dr. สมศรี', date: '2026-06-20', time: '10:30', status: 'confirmed', type: 'telemedicine' },
+      { id: 'APT-004', patientName: 'สมชาย', doctorName: 'Dr. วิชัย', date: '2026-05-01', time: '11:00', status: 'completed', type: 'telemedicine' },
+    ];
+    let upcoming: AppointmentSummary[] = [];
+    let completionRate = 0;
+    let quickActions: QuickAction[] = [];
+    let greeting = '';
+
+    it('H01 — Step 1: Generate Thai greeting', () => {
+      greeting = formatGreeting('สมชาย', 'th');
+      expect(greeting).toContain('สมชาย');
+    });
+
+    it('H02 — Step 2: Get upcoming appointments', () => {
+      upcoming = getUpcomingAppointments(appointments);
+      expect(upcoming.length).toBeGreaterThan(0);
+      for (const a of upcoming) expect(a.status).toBe('confirmed');
+    });
+
+    it('H03 — Step 3: Calculate completion rate', () => {
+      completionRate = calculateCompletionRate(appointments);
+      expect(completionRate).toBeGreaterThan(0);
+      expect(completionRate).toBeLessThanOrEqual(100);
+    });
+
+    it('H04 — Step 4: Get patient quick actions', () => {
+      quickActions = getQuickActionsForRole('patient', 'patient');
+      expect(quickActions.length).toBeGreaterThan(0);
+    });
+
+    it('H05 — Step 5: Quick actions have Thai labels', () => {
+      for (const qa of quickActions) {
+        expect(qa.labelTh).toBeTruthy();
+      }
+    });
+
+    it('H06 — Step 6: Validate stats for display', () => {
+      const stats: Partial<PatientDashboardStats> = {
+        upcomingAppointments: upcoming.length,
+        totalAppointments: appointments.length,
+        unreadNotifications: 2,
+      };
+      expect(validateDashboardStats(stats)).toBe(true);
+    });
+
+    it('H07 — Step 7: Routes valid for patient portal', () => {
+      const routes = getRoutesForPortal('patient');
+      for (const qa of quickActions) {
+        expect(isValidRoute('patient', qa.route)).toBe(true);
+      }
+      expect(routes.length).toBeGreaterThan(0);
+    });
+
+    it('H08 — Final: Dashboard fully loaded', () => {
+      expect(greeting).toBeTruthy();
+      expect(upcoming.length).toBeGreaterThan(0);
+      expect(completionRate).toBeGreaterThan(0);
+      expect(quickActions.length).toBeGreaterThan(0);
+    });
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // I — CONTINUOUS WORKFLOW: Doctor Dashboard → Queue Overview → Actions
+  // ═══════════════════════════════════════════════════════════════════════════
+  describe('I — Doctor Dashboard Continuous Workflow', () => {
+    let greeting = '';
+    let quickActions: QuickAction[] = [];
+
+    it('I01 — Step 1: Generate doctor greeting', () => {
+      greeting = formatGreeting('Dr. วิชัย', 'th');
+      expect(greeting).toContain('วิชัย');
+    });
+
+    it('I02 — Step 2: Get doctor quick actions', () => {
+      quickActions = getQuickActionsForRole('doctor', 'doctor');
+      expect(quickActions.length).toBeGreaterThan(0);
+    });
+
+    it('I03 — Step 3: Doctor actions have routes', () => {
+      for (const qa of quickActions) {
+        expect(isValidRoute('doctor', qa.route)).toBe(true);
+      }
+    });
+
+    it('I04 — Step 4: Doctor routes separate from patient', () => {
+      const doctorRoutes = getRoutesForPortal('doctor');
+      const patientRoutes = getRoutesForPortal('patient');
+      expect(doctorRoutes).not.toEqual(patientRoutes);
+    });
+
+    it('I05 — Final: Doctor dashboard ready', () => {
+      expect(greeting).toBeTruthy();
+      expect(quickActions.length).toBeGreaterThan(0);
+    });
+  });
 });

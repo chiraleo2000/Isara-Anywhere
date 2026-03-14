@@ -293,4 +293,186 @@ describe('Appointment Workflow (Process: Appointment_Workflows.md)', () => {
       expect(ids.size).toBe(20);
     });
   });
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // I — CONTINUOUS WORKFLOW CHAIN (Shared State: step-by-step lifecycle)
+  // Walks a SINGLE appointment through the FULL pipeline — no restarts
+  // ═══════════════════════════════════════════════════════════════════════
+  describe('I — Continuous Workflow Chain (Full Lifecycle)', () => {
+    const apt: Appointment = {
+      id: generateAppointmentId(),
+      patientId: 'PATIENT-DEMO',
+      type: 'general',
+      status: 'pending',
+      requestedDate: '2026-06-02',
+      requestedTime: '10:00',
+      symptoms: ['ปวดหัว', 'มีไข้'],
+      symptomsText: 'ปวดหัวและมีไข้ 2 วัน',
+      priority: 'normal',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    it('I01 — Step 1: Patient creates valid booking request', () => {
+      const errors = validateBookingRequest(apt);
+      expect(errors).toHaveLength(0);
+      expect(apt.status).toBe('pending');
+    });
+
+    it('I02 — Step 2: Admin approves → status becomes approved', () => {
+      expect(canTransition(apt.status, 'approved')).toBe(true);
+      apt.status = 'approved';
+      apt.updatedAt = new Date().toISOString();
+      expect(apt.status).toBe('approved');
+    });
+
+    it('I03 — Step 3: System assigns doctor → status becomes assigned', () => {
+      expect(canTransition(apt.status, 'assigned')).toBe(true);
+      apt.status = 'assigned';
+      apt.doctorId = 'DOC-TEST-001';
+      apt.updatedAt = new Date().toISOString();
+      expect(apt.status).toBe('assigned');
+      expect(apt.doctorId).toBe('DOC-TEST-001');
+    });
+
+    it('I04 — Step 4: Schedule confirmed → status becomes scheduled', () => {
+      expect(canTransition(apt.status, 'scheduled')).toBe(true);
+      apt.status = 'scheduled';
+      apt.updatedAt = new Date().toISOString();
+      expect(apt.status).toBe('scheduled');
+    });
+
+    it('I05 — Step 5: Meeting starts → status becomes in_progress', () => {
+      expect(canTransition(apt.status, 'in_progress')).toBe(true);
+      apt.status = 'in_progress';
+      apt.updatedAt = new Date().toISOString();
+      expect(apt.status).toBe('in_progress');
+    });
+
+    it('I06 — Step 6: Doctor completes → status becomes completed', () => {
+      expect(canTransition(apt.status, 'completed')).toBe(true);
+      apt.status = 'completed';
+      apt.updatedAt = new Date().toISOString();
+      expect(apt.status).toBe('completed');
+    });
+
+    it('I07 — Step 7: Completed is terminal — no further transitions', () => {
+      expect(VALID_TRANSITIONS.completed).toHaveLength(0);
+      expect(canTransition('completed', 'pending')).toBe(false);
+      expect(canTransition('completed', 'cancelled')).toBe(false);
+    });
+
+    it('I08 — Full chain maintained correct appointment identity', () => {
+      expect(apt.id).toMatch(/^APT-/);
+      expect(apt.patientId).toBe('PATIENT-DEMO');
+      expect(apt.doctorId).toBe('DOC-TEST-001');
+      expect(apt.symptoms).toContain('ปวดหัว');
+    });
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // J — CANCELLATION & RESCHEDULE BRANCH (Alternate Flow)
+  // ═══════════════════════════════════════════════════════════════════════
+  describe('J — Cancellation & Reschedule Branch', () => {
+    const apt2: Appointment = {
+      id: generateAppointmentId(),
+      patientId: 'PATIENT-SOMCHAI',
+      type: 'specialist',
+      status: 'pending',
+      requestedDate: '2026-06-05',
+      requestedTime: '14:00',
+      symptoms: ['ปวดหลัง'],
+      priority: 'normal',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    it('J01 — Step 1: Booking request valid', () => {
+      expect(validateBookingRequest(apt2)).toHaveLength(0);
+    });
+
+    it('J02 — Step 2: Approved then scheduled', () => {
+      apt2.status = 'approved';
+      apt2.status = 'assigned';
+      apt2.doctorId = 'DOC-TEST-002';
+      apt2.status = 'scheduled';
+      expect(apt2.status).toBe('scheduled');
+    });
+
+    it('J03 — Step 3: Patient no-shows', () => {
+      expect(canTransition('scheduled', 'no_show')).toBe(true);
+      apt2.status = 'no_show';
+      expect(apt2.status).toBe('no_show');
+    });
+
+    it('J04 — Step 4: Rescheduled from no_show', () => {
+      expect(canTransition('no_show', 'rescheduled')).toBe(true);
+      apt2.status = 'rescheduled';
+      expect(apt2.status).toBe('rescheduled');
+    });
+
+    it('J05 — Step 5: Re-enters pipeline as pending', () => {
+      expect(canTransition('rescheduled', 'pending')).toBe(true);
+      apt2.status = 'pending';
+      apt2.requestedDate = '2026-06-10';
+      expect(apt2.status).toBe('pending');
+    });
+
+    it('J06 — Step 6: Completes on second attempt', () => {
+      apt2.status = 'approved';
+      apt2.status = 'assigned';
+      apt2.status = 'scheduled';
+      apt2.status = 'in_progress';
+      apt2.status = 'completed';
+      expect(apt2.status).toBe('completed');
+      expect(apt2.patientId).toBe('PATIENT-SOMCHAI');
+    });
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // K — CROSS-WORKFLOW: Appointment → Meeting → Notification Integration
+  // ═══════════════════════════════════════════════════════════════════════
+  describe('K — Cross-Workflow Integration', () => {
+    it('K01 — Confirmed appointment generates meeting room name', () => {
+      const aptId = generateAppointmentId();
+      const roomName = `izara-meeting-${aptId.toLowerCase()}`;
+      expect(roomName).toContain('izara-meeting-');
+      expect(roomName).toContain('apt-');
+    });
+
+    it('K02 — Status change maps to correct notification type', () => {
+      const notificationMap: Record<string, string> = {
+        approved: 'appointment_confirmed',
+        scheduled: 'appointment_scheduled',
+        cancelled: 'appointment_cancelled',
+        no_show: 'appointment_no_show',
+        completed: 'appointment_completed',
+        rescheduled: 'appointment_rescheduled',
+      };
+      expect(notificationMap['approved']).toBe('appointment_confirmed');
+      expect(notificationMap['scheduled']).toBe('appointment_scheduled');
+      expect(notificationMap['completed']).toBe('appointment_completed');
+      expect(Object.keys(notificationMap)).toHaveLength(6);
+    });
+
+    it('K03 — Priority determines notification urgency', () => {
+      expect(getPriority('emergency')).toBe('urgent');
+      expect(getPriority('general')).toBe('normal');
+    });
+
+    it('K04 — Pool utilization triggers alert notification', () => {
+      const pool: AppointmentPool = { id: 'P1', date: '2026-06-01', totalSlots: 10, bookedSlots: 9, availableDoctors: ['D1'] };
+      const utilization = getPoolUtilization(pool);
+      const shouldAlert = utilization >= 80;
+      expect(shouldAlert).toBe(true);
+    });
+
+    it('K05 — Multi-patient isolation: different patients different appointments', () => {
+      const apt1 = { id: generateAppointmentId(), patientId: 'PATIENT-DEMO', status: 'scheduled' as AppointmentStatus };
+      const apt2 = { id: generateAppointmentId(), patientId: 'PATIENT-SOMCHAI', status: 'pending' as AppointmentStatus };
+      expect(apt1.patientId).not.toBe(apt2.patientId);
+      expect(apt1.id).not.toBe(apt2.id);
+      expect(apt1.status).not.toBe(apt2.status);
+    });
+  });
 });

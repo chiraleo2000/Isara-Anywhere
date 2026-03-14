@@ -246,4 +246,118 @@ describe('Medical Content Workflow (Process: Medicine_Content_Processes.md)', ()
     it('G03 — mixed text contains Thai', () => expect(isThaiText('โรค Heart')).toBe(true));
     it('G04 — empty text has no Thai', () => expect(isThaiText('')).toBe(false));
   });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // H — CONTINUOUS WORKFLOW: Draft → Submit → Review → Approve → Publish
+  // ═══════════════════════════════════════════════════════════════════════════
+  describe('H — Content Publishing Lifecycle Chain', () => {
+    const content: MedicalContent = {
+      id: generateContentId('content'),
+      titleTh: 'การดูแลสุขภาพหัวใจ',
+      titleEn: 'Heart Health Care Guide',
+      contentTh: 'บทความเกี่ยวกับการดูแลสุขภาพหัวใจสำหรับผู้สูงอายุ โดยแพทย์ผู้เชี่ยวชาญ',
+      contentEn: 'Article about heart health for elderly patients.',
+      type: 'article',
+      category: 'general_health',
+      status: 'draft',
+      authorId: 'DOC-001',
+      authorRole: 'doctor',
+      tags: ['heart', 'elderly', 'cardiology'],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    it('H01 — Step 1: Content created as draft', () => {
+      expect(content.status).toBe('draft');
+      expect(content.id).toMatch(/^MC-/);
+    });
+
+    it('H02 — Step 2: Title is Thai', () => {
+      expect(isThaiText(content.titleTh)).toBe(true);
+    });
+
+    it('H03 — Step 3: Validate content', () => {
+      const errors = validateContent(content);
+      expect(errors).toHaveLength(0);
+    });
+
+    it('H04 — Step 4: Author can submit own content', () => {
+      expect(canPerformContentAction('doctor', 'submit', content.authorId, 'DOC-001')).toBe(true);
+    });
+
+    it('H05 — Step 5: Submit for review', () => {
+      const next = getNextStatus('draft', 'submit');
+      expect(next).toBe('pending');
+      content.status = next!;
+    });
+
+    it('H06 — Step 6: Admin can approve', () => {
+      expect(canPerformContentAction('admin', 'approve', content.authorId, 'ADMIN-001')).toBe(true);
+    });
+
+    it('H07 — Step 7: Approve content', () => {
+      const next = getNextStatus('pending', 'approve');
+      expect(next).toBe('published');
+      content.status = next!;
+    });
+
+    it('H08 — Step 8: Content is now published', () => {
+      expect(content.status).toBe('published');
+    });
+
+    it('H09 — Step 9: Shows in category filter', () => {
+      const results = filterByCategory([content], 'general_health');
+      expect(results).toHaveLength(1);
+    });
+
+    it('H10 — Step 10: Searchable by Thai title', () => {
+      expect(searchContent([content], 'สุขภาพหัวใจ')).toHaveLength(1);
+    });
+
+    it('H11 — Step 11: Searchable by English title', () => {
+      expect(searchContent([content], 'heart health')).toHaveLength(1);
+    });
+
+    it('H12 — Final: Published content verified', () => {
+      expect(content.status).toBe('published');
+      expect(content.authorId).toBe('DOC-001');
+      expect(content.tags).toContain('heart');
+    });
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // I — REJECTION & EDIT CYCLE CHAIN
+  // ═══════════════════════════════════════════════════════════════════════════
+  describe('I — Rejection & Edit Cycle Chain', () => {
+    let status: ContentStatus = 'draft';
+
+    it('I01 — Step 1: Submit draft', () => {
+      status = getNextStatus(status, 'submit')!;
+      expect(status).toBe('pending');
+    });
+
+    it('I02 — Step 2: Reviewer rejects', () => {
+      status = getNextStatus(status, 'reject')!;
+      expect(status).toBe('rejected');
+    });
+
+    it('I03 — Step 3: Author edits rejected content', () => {
+      status = getNextStatus(status, 'edit')!;
+      expect(status).toBe('draft');
+    });
+
+    it('I04 — Step 4: Resubmit after edit', () => {
+      status = getNextStatus(status, 'submit')!;
+      expect(status).toBe('pending');
+    });
+
+    it('I05 — Step 5: Approved on second review', () => {
+      status = getNextStatus(status, 'approve')!;
+      expect(status).toBe('published');
+    });
+
+    it('I06 — Final: Full review cycle complete', () => {
+      expect(status).toBe('published');
+    });
+  });
 });
