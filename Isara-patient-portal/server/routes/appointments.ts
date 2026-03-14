@@ -399,16 +399,16 @@ router.put('/:appointmentId/status', authMiddleware, async (req: Request, res: R
       finalMeetingLink = generateJitsiMeetingLink(jitsiRoomName);
     }
 
-    // Update in PostgreSQL
+    // Update in PostgreSQL - cast $2 to varchar to avoid type inference conflict in CASE
     const result = await pool.query(
       `UPDATE appointments SET
-        status = $2,
+        status = $2::varchar,
         confirmed_date = COALESCE($3, confirmed_date),
         confirmed_time = COALESCE($4, confirmed_time),
         meet_link = COALESCE($5, meet_link),
         jitsi_room_name = COALESCE($6, jitsi_room_name),
-        confirmed_at = CASE WHEN $2 = 'confirmed' THEN NOW() ELSE confirmed_at END,
-        cancelled_at = CASE WHEN $2 = 'cancelled' THEN NOW() ELSE cancelled_at END,
+        confirmed_at = CASE WHEN $2::varchar = 'confirmed' THEN NOW() ELSE confirmed_at END,
+        cancelled_at = CASE WHEN $2::varchar = 'cancelled' THEN NOW() ELSE cancelled_at END,
         updated_at = NOW()
        WHERE id = $1
        RETURNING *`,

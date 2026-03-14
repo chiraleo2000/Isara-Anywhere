@@ -1061,10 +1061,10 @@ const ContentService = {
   async updateContentStatus(contentId, status, approvedBy) {
     const result = await pool.query(
       `UPDATE medical_content SET
-        status = $2,
+        status = $2::varchar,
         approved_by = $3,
-        approved_at = CASE WHEN $2 = 'published' THEN NOW() ELSE NULL END,
-        published_at = CASE WHEN $2 = 'published' THEN NOW() ELSE NULL END,
+        approved_at = CASE WHEN $2::varchar = 'published' THEN NOW() ELSE NULL END,
+        published_at = CASE WHEN $2::varchar = 'published' THEN NOW() ELSE NULL END,
         updated_at = NOW()
        WHERE id = $1
        RETURNING *`,

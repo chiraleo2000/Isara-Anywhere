@@ -5908,10 +5908,10 @@ app.post('/api/content/clinical/:id/review', authenticateToken, async (req, res)
     const { pool } = PostgresDataService;
     const result = await pool.query(
       `UPDATE clinical_resources SET
-        status = $2,
+        status = $2::varchar,
         approved_by = $3,
-        approved_at = CASE WHEN $2 = 'published' THEN NOW() ELSE NULL END,
-        rejection_reason = CASE WHEN $2 = 'rejected' THEN $4 ELSE NULL END,
+        approved_at = CASE WHEN $2::varchar = 'published' THEN NOW() ELSE NULL END,
+        rejection_reason = CASE WHEN $2::varchar = 'rejected' THEN $4 ELSE NULL END,
         updated_at = NOW()
        WHERE id = $1
        RETURNING *`,

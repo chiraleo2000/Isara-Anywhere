@@ -403,7 +403,11 @@ router.post('/validate', async (req: Request, res: Response) => {
 // ============================================================================
 router.post('/logout', async (req: Request, res: Response) => {
   try {
-    const { token } = req.body;
+    // Accept token from body or Authorization header
+    const bodyToken = req.body?.token;
+    const authHeader = req.headers.authorization;
+    const headerToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
+    const token = bodyToken || headerToken;
 
     if (!token) {
       return res.status(400).json({ error: 'Token is required' });
