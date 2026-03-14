@@ -177,7 +177,7 @@ router.get('/medical', async (req: Request, res: Response) => {
   try {
     const { category, limit } = req.query;
     const limitNum = Number.parseInt(limit as string, 10) || 50;
-    console.log(`[CONTENT] Getting medical content, category: ${String(category || 'all')}`);
+    console.log(`[CONTENT] Getting medical content, category: ${typeof category === 'string' ? category : 'all'}`);
 
     // Check if we should use demo mode
     const useDemo = DEMO_MODE || !(await checkDbConnection());
@@ -351,7 +351,7 @@ router.post('/medical/:id/view', async (req: Request, res: Response) => {
 const clinicalResourcesHandler = async (req: Request, res: Response) => {
   try {
     const { category } = req.query;
-    console.log(`[CONTENT] Getting clinical resources, category: ${String(category || 'all')}`);
+    console.log(`[CONTENT] Getting clinical resources, category: ${typeof category === 'string' ? category : 'all'}`);
 
     // Check if we should use demo mode
     const useDemo = DEMO_MODE || !(await checkDbConnection());

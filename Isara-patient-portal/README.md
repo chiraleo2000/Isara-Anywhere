@@ -1,6 +1,6 @@
 # 🏥 Izara Patient Portal
 
-![Version](https://img.shields.io/badge/version-1.5.6-blue.svg)
+![Version](https://img.shields.io/badge/version-1.5.7-blue.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.2-blue.svg)
 ![React](https://img.shields.io/badge/React-18-61dafb.svg)
 ![Node.js](https://img.shields.io/badge/Node.js-22+-green.svg)
@@ -167,4 +167,4 @@ MIT License
 
 ---
 
-**Izara Patient Portal v1.5.6** — Empowering patients with AI-driven healthcare access 🏥
+**Izara Patient Portal v1.5.7** — Empowering patients with AI-driven healthcare access 🏥

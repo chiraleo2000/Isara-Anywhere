@@ -110,7 +110,7 @@ router.post('/calendar/event', authMiddleware, async (req: Request, res: Respons
     });
   } catch (error: unknown) {
     console.error('[CALENDAR] Create event error:', error);
-    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
+    res.status(500).json({ error: (error instanceof Error ? error.message : 'Unknown error') });
   }
 });
 
@@ -173,7 +173,7 @@ router.get('/calendar/availability', authMiddleware, async (req: Request, res: R
     });
   } catch (error: unknown) {
     console.error('[CALENDAR] Get availability error:', error);
-    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
+    res.status(500).json({ error: (error instanceof Error ? error.message : 'Unknown error') });
   }
 });
 
@@ -231,7 +231,7 @@ router.post('/meet/create', authMiddleware, async (req: Request, res: Response) 
     });
   } catch (error: unknown) {
     console.error('[MEET] Create meeting error:', error);
-    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
+    res.status(500).json({ error: (error instanceof Error ? error.message : 'Unknown error') });
   }
 });
 
@@ -252,7 +252,7 @@ router.get('/meet/:appointmentId', authMiddleware, async (req: Request, res: Res
     });
   } catch (error: unknown) {
     console.error('[MEET] Get meeting error:', error);
-    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
+    res.status(500).json({ error: (error instanceof Error ? error.message : 'Unknown error') });
   }
 });
 
@@ -288,10 +288,10 @@ router.get('/places/nearby', async (req: Request, res: Response) => {
     }
 
     // Call Google Places API
-    const latStr = String(lat);
-    const lngStr = String(lng);
-    const radiusStr = String(radius);
-    const typeStr = String(type);
+    const latStr = lat as string;
+    const lngStr = lng as string;
+    const radiusStr = typeof radius === 'string' ? radius : '5000';
+    const typeStr = typeof type === 'string' ? type : 'hospital';
     const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${latStr},${lngStr}&radius=${radiusStr}&type=${typeStr}&key=${MAPS_API_KEY}&language=th`;
 
     const response = await fetch(url);
@@ -372,10 +372,10 @@ router.get('/maps/nearby', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'lat and lng are required' });
     }
 
-    const latStr = String(lat);
-    const lngStr = String(lng);
-    const radiusStr = String(radius);
-    const typeStr = String(type);
+    const latStr = lat as string;
+    const lngStr = lng as string;
+    const radiusStr = typeof radius === 'string' ? radius : '15000';
+    const typeStr = typeof type === 'string' ? type : 'hospital';
 
     if (!MAPS_API_KEY) {
       // Return demo data when API key not configured, not 500
@@ -446,7 +446,7 @@ router.get('/maps/nearby', async (req: Request, res: Response) => {
     });
   } catch (error: unknown) {
     console.error('[MAPS] Nearby search error:', error);
-    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
+    res.status(500).json({ error: (error instanceof Error ? error.message : 'Unknown error') });
   }
 });
 
@@ -493,7 +493,7 @@ router.get('/maps/place/:placeId', async (req: Request, res: Response) => {
     });
   } catch (error: unknown) {
     console.error('[MAPS] Place details error:', error);
-    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
+    res.status(500).json({ error: (error instanceof Error ? error.message : 'Unknown error') });
   }
 });
 
@@ -510,7 +510,7 @@ router.get('/maps/photo', async (req: Request, res: Response) => {
       return res.status(500).json({ error: 'Maps API not configured' });
     }
 
-    const photoUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=${String(maxWidth)}&photo_reference=${String(reference)}&key=${MAPS_API_KEY}`;
+    const photoUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=${typeof maxWidth === 'string' ? maxWidth : '400'}&photo_reference=${reference as string}&key=${MAPS_API_KEY}`;
 
     res.json({
       success: true,
@@ -518,7 +518,7 @@ router.get('/maps/photo', async (req: Request, res: Response) => {
     });
   } catch (error: unknown) {
     console.error('[MAPS] Photo error:', error);
-    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
+    res.status(500).json({ error: (error instanceof Error ? error.message : 'Unknown error') });
   }
 });
 
@@ -553,7 +553,7 @@ router.get('/maps/geocode', async (req: Request, res: Response) => {
     });
   } catch (error: unknown) {
     console.error('[MAPS] Geocode error:', error);
-    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
+    res.status(500).json({ error: (error instanceof Error ? error.message : 'Unknown error') });
   }
 });
 
@@ -570,7 +570,7 @@ router.get('/maps/directions', async (req: Request, res: Response) => {
       return res.status(500).json({ error: 'Maps API not configured' });
     }
 
-    const modeStr = String(mode);
+    const modeStr = typeof mode === 'string' ? mode : 'driving';
     const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${encodeURIComponent(origin as string)}&destination=${encodeURIComponent(destination as string)}&mode=${modeStr}&key=${MAPS_API_KEY}&language=th`;
 
     const response = await fetch(url);
@@ -601,7 +601,7 @@ router.get('/maps/directions', async (req: Request, res: Response) => {
     });
   } catch (error: unknown) {
     console.error('[MAPS] Directions error:', error);
-    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
+    res.status(500).json({ error: (error instanceof Error ? error.message : 'Unknown error') });
   }
 });
 

@@ -38,11 +38,12 @@ router.get('/status', async (_req: Request, res: Response) => {
     }
   } catch (error: unknown) {
     console.error('GCS status check error:', error);
+    const errMsg = error instanceof Error ? error.message : 'Unknown error';
     res.status(500).json({
       status: 'error',
       connected: false,
       timestamp: new Date().toISOString(),
-      error: (error instanceof Error ? error.message : String(error))
+      error: errMsg
     });
   }
 });
@@ -72,7 +73,7 @@ router.get('/signed-url/download', async (req: Request, res: Response) => {
     res.json({ url, expiresIn: 900 });
   } catch (error: unknown) {
     console.error('Error generating download URL:', error);
-    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
+    res.status(500).json({ error: (error instanceof Error ? error.message : 'Unknown error') });
   }
 });
 
@@ -98,7 +99,7 @@ router.get('/signed-url/upload', async (req: Request, res: Response) => {
     res.json({ url, expiresIn: 900 });
   } catch (error: unknown) {
     console.error('Error generating upload URL:', error);
-    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
+    res.status(500).json({ error: (error instanceof Error ? error.message : 'Unknown error') });
   }
 });
 
@@ -124,7 +125,7 @@ router.get('/read', async (req: Request, res: Response) => {
     res.json(data);
   } catch (error: unknown) {
     console.error('Error reading file:', error);
-    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
+    res.status(500).json({ error: (error instanceof Error ? error.message : 'Unknown error') });
   }
 });
 
@@ -149,7 +150,7 @@ router.post('/write', async (req: Request, res: Response) => {
     res.json({ success: true, path: filePath });
   } catch (error: unknown) {
     console.error('Error writing file:', error);
-    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
+    res.status(500).json({ error: (error instanceof Error ? error.message : 'Unknown error') });
   }
 });
 
@@ -170,7 +171,7 @@ router.delete('/delete', async (req: Request, res: Response) => {
     res.json({ success: true });
   } catch (error: unknown) {
     console.error('Error deleting file:', error);
-    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
+    res.status(500).json({ error: (error instanceof Error ? error.message : 'Unknown error') });
   }
 });
 
@@ -198,7 +199,7 @@ router.get('/list', async (req: Request, res: Response) => {
     res.json({ files: fileList });
   } catch (error: unknown) {
     console.error('Error listing files:', error);
-    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
+    res.status(500).json({ error: (error instanceof Error ? error.message : 'Unknown error') });
   }
 });
 
@@ -219,7 +220,7 @@ router.get('/exists', async (req: Request, res: Response) => {
     res.json({ exists });
   } catch (error: unknown) {
     console.error('Error checking file:', error);
-    res.status(500).json({ error: (error instanceof Error ? error.message : String(error)) });
+    res.status(500).json({ error: (error instanceof Error ? error.message : 'Unknown error') });
   }
 });
 

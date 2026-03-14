@@ -1,6 +1,6 @@
 # 🏥 Izara Telemedicine Platform
 
-![Version](https://img.shields.io/badge/version-1.5.6-blue.svg)
+![Version](https://img.shields.io/badge/version-1.5.7-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Platform](https://img.shields.io/badge/platform-web-lightgrey.svg)
 ![Node](https://img.shields.io/badge/node-%3E%3D22.0.0-brightgreen.svg)
@@ -44,7 +44,7 @@ The platform consists of three main services:
 | PostgreSQL | localhost:5433 |
 | pgAdmin | <http://localhost:5050> |
 
-### Cloud Environment — Production (v1.5.6) (Google Cloud Run)
+### Cloud Environment — Production (v1.5.7) (Google Cloud Run)
 
 | Service | URL |
 | ------- | --- |
@@ -56,7 +56,7 @@ The platform consists of three main services:
 
 ## 🧪 Testing
 
-### Test Architecture (v1.5.6)
+### Test Architecture (v1.5.7)
 
 #### Unit Tests (Vitest — 1,814 tests)
 - **58 test files** in `tests/unit/` — pure logic, no server required
@@ -217,7 +217,7 @@ npx playwright show-report
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────────┐
-│                     IZARA TELEMEDICINE v1.5.6                               │
+│                     IZARA TELEMEDICINE v1.5.7                               │
 ├──────────────────────────────────────────────────────────────────────────┤
 │   ┌─────────────────┐  ┌─────────────────┐  ┌────────────────────────┐   │
 │   │  Patient Portal │  │  Doctor Portal  │  │  Meeting Server        │   │
@@ -347,7 +347,7 @@ cd Izara-jitsi-server
 gcloud builds submit --config=cloudbuild.yaml
 ```
 
-### Cloud URLs (Production — v1.5.6)
+### Cloud URLs (Production — v1.5.7)
 
 | Service | URL |
 | ------- | --- |
@@ -410,7 +410,7 @@ Isara-Anywhere/
 
 ---
 
-## 🔒 Security (v1.5.6 — SonarQube Clean)
+## 🔒 Security (v1.5.7 — SonarQube Clean)
 
 - **Authentication**: bcrypt password hashing (10 rounds), JWT + session tokens
 - **JWT Secrets**: Consistent `JWT_SECRET_FINAL` usage across all verify calls (sign/verify mismatch fixed)
@@ -432,6 +432,15 @@ Isara-Anywhere/
 ---
 
 ## 📋 Changelog
+
+### v1.5.7 (March 14, 2026)
+
+- **SonarQube S6551 Fix**: Resolved 42 unsafe `String()` calls across content.ts, doctors.ts, gcs.ts, google-services.ts — proper `instanceof Error` + `typeof` narrowing
+- **SonarQube S6698 Fix**: Removed hardcoded PGPASSWORD pattern in e2e-test.ps1
+- **Cloud Build Fix**: Corrected Dockerfile path and build context in cloudbuild.yaml
+- **Local Tests**: 27/27 endpoints passing (0 failures)
+- **Cloud Tests**: 26/26 endpoints passing on Cloud Run (0 failures)
+- **Cloud Deployment**: Patient portal v1.5.7 deployed to Cloud Run — all health checks passing
 
 ### v1.5.6 (March 14, 2026)
 

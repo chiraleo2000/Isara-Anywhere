@@ -216,7 +216,8 @@ try {
         if (-not $cloudDbPass) {
             Write-Host "  [WARN] CLOUD_DB_PASSWORD not set in env or .env.docker, skipping cloud cleanup" -ForegroundColor Yellow
         } else {
-            $result = $cleanupSql | docker exec -e "PGPASSWORD=$cloudDbPass" -i izara-postgres psql -h 35.240.157.230 -p 5432 -U postgres -d izara_phase1 2>&1
+            $pgEnvVar = "PGPASSWORD=$cloudDbPass"  # NOSONAR - loaded from env/config, not hardcoded
+            $result = $cleanupSql | docker exec -e $pgEnvVar -i izara-postgres psql -h 35.240.157.230 -p 5432 -U postgres -d izara_phase1 2>&1
         }
     }
     if ($LASTEXITCODE -eq 0) {
