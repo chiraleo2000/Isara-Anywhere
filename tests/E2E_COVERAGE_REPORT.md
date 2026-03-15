@@ -1,12 +1,13 @@
 # E2E Test Coverage Report — v1.5.7
 
-**Generated:** 2026-03-14  
+**Generated:** 2026-03-15  
 **Framework:** Playwright 1.40 (TypeScript)  
-**Total Spec Files:** 32  
-**Total Tests:** ~1,124  
+**Total Spec Files:** 32 E2E + 1 Cloud UI Screenshot  
+**Total Tests:** ~1,124 E2E + 39 Cloud UI = ~1,163  
+**Cloud UI Screenshots:** 26 full-page (14 Patient + 12 Doctor) + 13 API health = 39 tests  
 **User Accounts Used:** 5 (patient1, patient2, patient3, doctor, admin)  
 **Parallel Workers:** 6 (configurable via PW_WORKERS env)  
-**Full Suite Duration:** ~4.2 minutes  
+**Full Suite Duration:** ~4.2 min (E2E) + ~2.5 min (Cloud UI)  
 **Pass Rate:** 100%
 
 ---

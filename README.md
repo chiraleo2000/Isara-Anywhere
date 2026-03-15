@@ -8,6 +8,7 @@
 ![Docker](https://img.shields.io/badge/docker-ready-blue.svg)
 ![Tests](https://img.shields.io/badge/Unit%20tests-2%2C013%20passing-brightgreen.svg)
 ![Tests](https://img.shields.io/badge/E2E%20tests-1%2C124%20passing-brightgreen.svg)
+![Cloud UI](https://img.shields.io/badge/Cloud%20UI-39%20screenshots%20passing-brightgreen.svg)
 ![Cloud Run](https://img.shields.io/badge/Cloud%20Run-deployed-blue.svg)
 ![Security](https://img.shields.io/badge/security-SonarQube%20clean-green.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict%20safe-blue.svg)
@@ -72,7 +73,14 @@ The platform consists of three main services:
 - **0 skipped tests** — every test must pass
 - **Serial + parallel execution** for workflow integrity
 
-#### Combined: 3,137 tests (2,013 unit + 1,124 E2E)
+#### Cloud UI Screenshot Tests (Playwright — 39 tests)
+- **26 full-page screenshots** — 14 Patient Portal + 12 Doctor Portal pages on Cloud Run
+- **13 Cloud API health checks** — all return HTTP 200
+- **1920×1080 viewport** with 3-second settle time for quality image capture
+- Screenshots saved to `screenshots/cloud/`
+- **Run**: `npx playwright test tests/cloud-ui-screenshots.ui-test.ts --config=playwright.config.ts`
+
+#### Combined: 3,176 tests (2,013 unit + 1,124 E2E + 39 Cloud UI)
 
 ### E2E Test Specs
 
@@ -394,7 +402,10 @@ Isara-Anywhere/
 │   └── server/               # Express + Socket.IO
 ├── tests/
 │   ├── unit/                 # Vitest unit tests (2,013 tests, 58 files)
-│   └── e2e/                  # Playwright E2E tests (1,124 tests, 32 specs)
+│   ├── e2e/                  # Playwright E2E tests (1,124 tests, 32 specs)
+│   └── cloud-ui-screenshots.ui-test.ts  # Cloud UI screenshot tests (39 tests)
+├── screenshots/
+│   └── cloud/               # 26 Cloud Run page screenshots (1920×1080)
 ├── specs/                    # Specification documents
 ├── Processes/                # Workflow documentation (13 docs)
 ├── Presentations/            # Project presentations & diagrams
@@ -443,6 +454,7 @@ Isara-Anywhere/
 
 ### v1.5.7 (March 15, 2026)
 
+- **Cloud UI Screenshot Tests**: NEW — 39 tests capturing 26 full-page screenshots (14 Patient + 12 Doctor pages) on Cloud Run with 1920×1080 viewport + 13 Cloud API health checks
 - **Unit Tests Expanded**: 2,013 tests across 58 files (up from 1,814) — all 11 workflow test files enhanced with continuous chain sections (+199 new tests)
 - **E2E Tests Verified**: 1,124 Local + 667 Cloud tests — all passing on LOCAL and Cloud (100% pass rate)
 - **Cloud Workflow Tests**: 58/58 endpoints passing (100%) across all 11 workflows

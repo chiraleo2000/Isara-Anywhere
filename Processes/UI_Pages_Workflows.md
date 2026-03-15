@@ -1009,6 +1009,60 @@ Find nearby hospitals, clinics, and pharmacies.
 **Access:** Patient  
 **Component:** `SettingsPage.tsx`
 
+---
+
+## 📸 Cloud UI Screenshot Verification (v1.5.7)
+
+All pages verified on **Cloud Run** with full-page screenshots captured at **1920×1080** viewport.
+
+**Test File:** `tests/cloud-ui-screenshots.ui-test.ts`  
+**Screenshots:** `screenshots/cloud/` (26 PNG files)  
+**Result:** 39/39 ALL PASSED — 0 errors on any page
+
+### Patient Portal Cloud Screenshots (14 pages)
+
+| ID | Page | Screenshot File |
+| --- | ---- | --------------- |
+| CP01 | Login | `patient-01-login.png` |
+| CP02 | Register | `patient-02-register.png` |
+| CP03 | Dashboard | `patient-03-dashboard.png` |
+| CP04 | Appointments | `patient-04-appointments.png` |
+| CP05 | Book Appointment | `patient-05-book-appointment.png` |
+| CP06 | PHR Health Records | `patient-06-phr.png` |
+| CP07 | AI Doctor | `patient-07-ai-doctor.png` |
+| CP08 | Health Library | `patient-08-health-library.png` |
+| CP09 | Timeline | `patient-09-timeline.png` |
+| CP10 | Map | `patient-10-map.png` |
+| CP11 | PDPA Privacy | `patient-11-pdpa.png` |
+| CP12 | Living Will | `patient-12-living-will.png` |
+| CP13 | Profile | `patient-13-profile.png` |
+| CP14 | Settings | `patient-14-settings.png` |
+
+### Doctor Portal Cloud Screenshots (12 pages)
+
+| ID | Page | Screenshot File |
+| --- | ---- | --------------- |
+| CD01 | Login | `doctor-01-login.png` |
+| CD02 | Dashboard | `doctor-02-dashboard.png` |
+| CD03 | Schedule | `doctor-03-schedule.png` |
+| CD04 | Patients | `doctor-04-patients.png` |
+| CD05 | Medical Consultants | `doctor-05-consultants.png` |
+| CD06 | Doctors Directory | `doctor-06-doctors.png` |
+| CD07 | Medical Content | `doctor-07-medical-content.png` |
+| CD08 | Health Meeting | `doctor-08-health-meeting.png` |
+| CD09 | Clinical Resources | `doctor-09-clinical-resources.png` |
+| CD10 | Profile | `doctor-10-profile.png` |
+| CD11 | Doctor Management | `doctor-11-doctor-management.png` |
+| CD12 | Appointment Management | `doctor-12-appointment-management.png` |
+
+### Cloud API Health Checks (13 endpoints)
+
+| ID | Endpoint | Status |
+| --- | -------- | ------ |
+| CAPI01–03 | Patient / Doctor / Meeting `/api/health` | 200 OK |
+| CAPI04–06 | Patient appointments / notifications / PHR | 200 OK |
+| CAPI07–13 | Doctor appointments / consultants / content / clinical / notifications / stats / doctors | 200 OK |
+
 ### Purpose (18)
 
 Account and notification preferences.
