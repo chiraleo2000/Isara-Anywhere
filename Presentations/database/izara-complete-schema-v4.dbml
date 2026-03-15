@@ -2,9 +2,9 @@
 // IZARA TELEMEDICINE - UNIFIED DATABASE SCHEMA (v5.0)
 // =============================================================================
 // Based on: scripts/database/izara-database.sql v5.2.0
-// Updated: 2026-02-21
+// Updated: 2026-03-15
 // Author: Izara Development Team
-// Version: v1.5.0 — Phase 1 Complete + Phase 2 In Progress
+// Version: v1.5.7 — Phase 1 Complete + Phase 2 In Progress
 // 
 // Database: PostgreSQL 18 with pgvector extension
 // Deployment: Docker Container (local) / Cloud SQL (production)
@@ -13,7 +13,7 @@
 Project Izara_Telemedicine {
   database_type: 'PostgreSQL'
   Note: '''
-    Complete schema for Izara Telemedicine Platform v1.5.0
+    Complete schema for Izara Telemedicine Platform v1.5.7
     
     ## Architecture
     - PostgreSQL 18 with pgvector for AI embeddings

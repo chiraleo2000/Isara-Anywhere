@@ -2,8 +2,8 @@
 
 Complete user management documentation for the Izara Telemedicine platform, covering authentication, registration, role management, and security.
 
-**Version:** 3.2.0  
-**Last Updated:** February 4, 2026  
+**Version:** 1.5.7  
+**Last Updated:** March 15, 2026  
 **Status:** ✅ PostgreSQL Implementation Complete
 
 ---

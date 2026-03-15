@@ -441,16 +441,17 @@ Isara-Anywhere/
 
 ## 📋 Changelog
 
-### v1.5.7 (March 14, 2026)
+### v1.5.7 (March 15, 2026)
 
 - **Unit Tests Expanded**: 2,013 tests across 58 files (up from 1,814) — all 11 workflow test files enhanced with continuous chain sections (+199 new tests)
-- **E2E Tests Verified**: 1,124 tests across 32 spec files — all passing on LOCAL and Cloud
+- **E2E Tests Verified**: 1,124 Local + 667 Cloud tests — all passing on LOCAL and Cloud (100% pass rate)
 - **Cloud Workflow Tests**: 58/58 endpoints passing (100%) across all 11 workflows
 - **Continuous Workflow Chains**: Added step-by-step lifecycle chains to all workflow tests — appointment, user management, video meeting, health records, dashboard, notification, living will, data sync, PDPA, queue management, medical content
 - **SonarQube S6551 Fix**: Resolved 42 unsafe `String()` calls across content.ts, doctors.ts, gcs.ts, google-services.ts — proper `instanceof Error` + `typeof` narrowing
 - **SonarQube S6698 Fix**: Removed hardcoded PGPASSWORD pattern in e2e-test.ps1
 - **Cloud Build Fix**: Corrected Dockerfile path and build context in cloudbuild.yaml
-- **Cloud Deployment**: Patient portal v1.5.7 deployed to Cloud Run — all health checks passing
+- **Cloud Deployment**: All 3 services deployed to Cloud Run — health checks passing, 667 Cloud E2E tests verified
+- **Documentation Updated**: All process docs, workflows, database schema updated to v1.5.7
 
 ### v1.5.6 (March 14, 2026)
 

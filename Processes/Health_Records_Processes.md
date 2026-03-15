@@ -2,8 +2,8 @@
 
 This document details the full health record workflow for Izara Telemedicine, including all user roles, notification logic, error handling, and business rules for PHR (Personal Health Record) and EMR (Electronic Medical Record). It covers data integration, access, and the relationship between appointment outcomes, EMR, and lab results.
 
-**Version:** 3.1.0  
-**Last Updated:** February 4, 2026  
+**Version:** 1.5.7  
+**Last Updated:** March 15, 2026  
 **Status:** ✅ PostgreSQL Implementation Complete
 
 ---

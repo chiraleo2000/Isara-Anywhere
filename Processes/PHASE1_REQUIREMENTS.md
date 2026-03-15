@@ -1,8 +1,8 @@
 # Izara Telemedicine - Phase 1 Requirements
 
-**Version:** 1.5.2  
-**Last Updated:** March 2026  
-**Status:** ✅ Phase 1 Complete — Web Platform (v1.5.2)
+**Version:** 1.5.7  
+**Last Updated:** March 15, 2026  
+**Status:** ✅ Phase 1 Complete — Web Platform (v1.5.7)
 
 ---
 

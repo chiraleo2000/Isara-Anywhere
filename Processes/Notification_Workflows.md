@@ -1,7 +1,7 @@
 # Notification Workflows / ขั้นตอนการแจ้งเตือน
 
-**Version:** 3.1.0  
-**Last Updated:** February 4, 2026  
+**Version:** 1.5.7  
+**Last Updated:** March 15, 2026  
 **Status:** ✅ PostgreSQL Implementation Complete
 
 ---
