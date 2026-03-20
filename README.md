@@ -1,6 +1,6 @@
 # 🏥 Izara Telemedicine Platform
 
-![Version](https://img.shields.io/badge/version-1.5.7-blue.svg)
+![Version](https://img.shields.io/badge/version-1.5.8-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Platform](https://img.shields.io/badge/platform-web-lightgrey.svg)
 ![Node](https://img.shields.io/badge/node-%3E%3D22.0.0-brightgreen.svg)
@@ -8,7 +8,7 @@
 ![Docker](https://img.shields.io/badge/docker-ready-blue.svg)
 ![Tests](https://img.shields.io/badge/Unit%20tests-2%2C013%20passing-brightgreen.svg)
 ![Tests](https://img.shields.io/badge/E2E%20tests-1%2C124%20passing-brightgreen.svg)
-![Cloud UI](https://img.shields.io/badge/Cloud%20UI-39%20screenshots%20passing-brightgreen.svg)
+![Cloud UI](https://img.shields.io/badge/Cloud%20tests-177%20passing-brightgreen.svg)
 ![Cloud Run](https://img.shields.io/badge/Cloud%20Run-deployed-blue.svg)
 ![Security](https://img.shields.io/badge/security-SonarQube%20clean-green.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict%20safe-blue.svg)
@@ -45,7 +45,7 @@ The platform consists of three main services:
 | PostgreSQL | localhost:5433 |
 | pgAdmin | <http://localhost:5050> |
 
-### Cloud Environment — Production (v1.5.7) (Google Cloud Run)
+### Cloud Environment — Production (v1.5.8) (Google Cloud Run)
 
 | Service | URL |
 | ------- | --- |
@@ -57,7 +57,7 @@ The platform consists of three main services:
 
 ## 🧪 Testing
 
-### Test Architecture (v1.5.7)
+### Test Architecture (v1.5.8)
 
 #### Unit Tests (Vitest — 2,013 tests)
 - **58 test files** in `tests/unit/` — pure logic, no server required
@@ -73,14 +73,18 @@ The platform consists of three main services:
 - **0 skipped tests** — every test must pass
 - **Serial + parallel execution** for workflow integrity
 
-#### Cloud UI Screenshot Tests (Playwright — 39 tests)
-- **26 full-page screenshots** — 14 Patient Portal + 12 Doctor Portal pages on Cloud Run
-- **13 Cloud API health checks** — all return HTTP 200
-- **1920×1080 viewport** with 3-second settle time for quality image capture
-- Screenshots saved to `screenshots/cloud/`
-- **Run**: `npx playwright test tests/cloud-ui-screenshots.ui-test.ts --config=playwright.config.ts`
+#### Cloud Tests (Playwright — 177 tests)
+- **5 cloud test files** in `tests/*.ui-test.ts` — runs against Cloud Run services
+- **cloud-ui-screenshots**: 39 tests (14 patient + 12 doctor + 13 API health)
+- **cloud-workflow-multiuser**: 42 tests (8 workflow sections: User Mgmt, Appointments, Health Records, Content, Notifications, Living Will, Medical Consultants, AI)
+- **meeting-multi-user**: 27 tests (multi-browser: admin + doctor + patient meeting flows)
+- **workflow-screenshots**: 25 tests (complete appointment lifecycle screenshots)
+- **ui-pages**: 44 tests (all patient + doctor portal page verification)
+- **3 parallel workers**, `fullyParallel: true`, 120s timeouts
+- **96 screenshots** saved to `screenshots/` (cloud, cloud-workflows, meeting, workflow)
+- **Run**: `npx playwright test --reporter=line --workers=3`
 
-#### Combined: 3,176 tests (2,013 unit + 1,124 E2E + 39 Cloud UI)
+#### Combined: 3,314 tests (2,013 unit + 1,124 local E2E + 177 cloud)
 
 ### E2E Test Specs
 
@@ -142,6 +146,14 @@ npx playwright test "09-phase2" --project=Local
 
 # View HTML Report
 npx playwright show-report
+
+# ── Cloud Tests (177 tests, runs against Cloud Run) ──
+npx playwright test --reporter=line --workers=3          # All 177 cloud tests
+npx playwright test tests/cloud-ui-screenshots.ui-test.ts  # 39 screenshots
+npx playwright test tests/cloud-workflow-multiuser.ui-test.ts  # 42 workflows
+npx playwright test tests/meeting-multi-user.ui-test.ts    # 27 meeting
+npx playwright test tests/workflow-screenshots.ui-test.ts  # 25 workflow screens
+npx playwright test tests/ui-pages.ui-test.ts              # 44 page checks
 ```
 
 ### Unit Test Suites (tests/unit/) — 58 Files
@@ -233,7 +245,7 @@ npx playwright show-report
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────────┐
-│                     IZARA TELEMEDICINE v1.5.7                               │
+│                     IZARA TELEMEDICINE v1.5.8                               │
 ├──────────────────────────────────────────────────────────────────────────┤
 │   ┌─────────────────┐  ┌─────────────────┐  ┌────────────────────────┐   │
 │   │  Patient Portal │  │  Doctor Portal  │  │  Meeting Server        │   │
@@ -244,8 +256,8 @@ npx playwright show-report
 │            └────────────────────┼─────────────────────┘                   │
 │                                 ▼                                         │
 │   ┌───────────────────────────────────────────────────────────────────┐  │
-│   │         PostgreSQL 18 + pgvector (Primary Database)               │  │
-│   │         Local: Docker port 5433 | Cloud: Embedded PG in Cloud Run│  │
+│   │       PostgreSQL 18 + pgvector (42 tables, Primary Database)      │  │
+│   │       Local: Docker port 5433 | Cloud: VM 35.240.157.230:5432    │  │
 │   └───────────────────────────────────────────────────────────────────┘  │
 │                                                                           │
 │   ┌─────────────────────────────────────────────────────────────────┐    │
@@ -363,7 +375,7 @@ cd Izara-jitsi-server
 gcloud builds submit --config=cloudbuild.yaml
 ```
 
-### Cloud URLs (Production — v1.5.7)
+### Cloud URLs (Production — v1.5.8)
 
 | Service | URL |
 | ------- | --- |
@@ -405,7 +417,31 @@ Isara-Anywhere/
 │   ├── e2e/                  # Playwright E2E tests (1,124 tests, 32 specs)
 │   └── cloud-ui-screenshots.ui-test.ts  # Cloud UI screenshot tests (39 tests)
 ├── screenshots/
-│   └── cloud/               # 26 Cloud Run page screenshots (1920×1080)
+│   ├── cloud/               # Cloud UI page screenshots organized by portal
+│   │   ├── patient/         # Patient portal page captures
+│   │   ├── doctor/          # Doctor portal page captures
+│   │   └── api/             # API health check captures
+│   ├── cloud-workflows/     # Multi-user workflow screenshots
+│   │   ├── auth/            # Authentication workflows
+│   │   ├── appointments/    # Appointment booking workflows
+│   │   ├── doctor-queue/    # Doctor queue management
+│   │   ├── video-meeting/   # Video consultation captures
+│   │   ├── emr/             # EMR documentation workflows
+│   │   ├── prescriptions/   # Prescription workflows
+│   │   ├── admin/           # Admin panel workflows
+│   │   └── content/         # Content management workflows
+│   ├── meeting/             # Meeting multi-user workflows
+│   │   ├── setup/           # Meeting setup & lobby
+│   │   ├── video/           # Active video session
+│   │   ├── transcript/      # Real-time transcription
+│   │   ├── ai-summary/      # AI SOAP summary
+│   │   └── documentation/   # Post-meeting documentation
+│   └── workflow/            # General workflow screenshots
+│       ├── patient-flow/    # Patient journey flows
+│       ├── doctor-flow/     # Doctor workflow flows
+│       ├── phr/             # PHR management captures
+│       ├── living-will/     # Living will workflows
+│       └── notifications/   # Notification workflows
 ├── specs/                    # Specification documents
 ├── Processes/                # Workflow documentation (13 docs)
 ├── Presentations/            # Project presentations & diagrams
@@ -429,7 +465,7 @@ Isara-Anywhere/
 
 ---
 
-## 🔒 Security (v1.5.7 — SonarQube Clean)
+## 🔒 Security (v1.5.8 — SonarQube Clean)
 
 - **Authentication**: bcrypt password hashing (10 rounds), JWT + session tokens
 - **JWT Secrets**: Consistent `JWT_SECRET_FINAL` usage across all verify calls (sign/verify mismatch fixed)
@@ -452,6 +488,15 @@ Isara-Anywhere/
 
 ## 📋 Changelog
 
+### v1.5.8 (March 16, 2026)
+
+- **SonarQube Full Clean**: Fixed all 26 remaining issues (S3776, S2004, S6853, S6582, S1128, S2068, S1854) across MeetingRoom.tsx, PatientMeetingRoom.tsx, cloud-workflow-multiuser, meeting-multi-user, workflow-screenshots
+- **Screenshot Restructuring**: All 4 test files now organize screenshots into per-workflow subdirectories (22 subdirectories total)
+- **Cognitive Complexity**: Extracted module-level helper functions from MeetingRoom.tsx (6 utilities) and PatientMeetingRoom.tsx (4 utilities) to reduce component complexity
+- **Cloud Tests**: 133/133 passing across 4 test suites — cloud-ui-screenshots (39), cloud-workflow-multiuser (42), meeting-multi-user (27), workflow-screenshots (25)
+- **Accessibility**: Added aria-labels to interactive video meeting controls (mic, camera, leave buttons)
+- **Version Bump**: All packages updated to v1.5.8
+
 ### v1.5.7 (March 15, 2026)
 
 - **Cloud UI Screenshot Tests**: NEW — 39 tests capturing 26 full-page screenshots (14 Patient + 12 Doctor pages) on Cloud Run with 1920×1080 viewport + 13 Cloud API health checks
@@ -463,7 +508,7 @@ Isara-Anywhere/
 - **SonarQube S6698 Fix**: Removed hardcoded PGPASSWORD pattern in e2e-test.ps1
 - **Cloud Build Fix**: Corrected Dockerfile path and build context in cloudbuild.yaml
 - **Cloud Deployment**: All 3 services deployed to Cloud Run — health checks passing, 667 Cloud E2E tests verified
-- **Documentation Updated**: All process docs, workflows, database schema updated to v1.5.7
+- **Documentation Updated**: All process docs, workflows, database schema updated to v1.5.8
 
 ### v1.5.6 (March 14, 2026)
 
@@ -487,7 +532,7 @@ Isara-Anywhere/
 ### v1.5.4 (March 8, 2026)
 
 - Security hardening: JWT sign/verify consistency, OWASP headers, unified password policies
-- Comprehensive test layer: 1,419 unit + 1,191 E2E = 2,610 tests at 100% pass rate (now 3,137 total in v1.5.7)
+- Comprehensive test layer: 1,419 unit + 1,191 E2E = 2,610 tests at 100% pass rate (now 3,137 total in v1.5.8)
 - Phase 2 AI-HIS tables and endpoints
 
 ---

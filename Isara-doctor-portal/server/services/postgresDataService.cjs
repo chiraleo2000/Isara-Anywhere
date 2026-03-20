@@ -1675,9 +1675,18 @@ const AdminService = {
       `UPDATE users 
        SET approval_status = 'approved',
            is_approved = true,
+           is_active = true,
+           approved_by = $2,
+           approved_at = NOW(),
            updated_at = NOW()
        WHERE id = $1
        RETURNING *`,
+      [doctorId, adminId || 'admin']
+    );
+
+    // Also mark the doctor as available in the doctors table
+    await pool.query(
+      `UPDATE doctors SET is_available = true, updated_at = NOW() WHERE id = $1`,
       [doctorId]
     );
 
@@ -1692,6 +1701,7 @@ const AdminService = {
       `UPDATE users 
        SET approval_status = 'rejected',
            is_approved = false,
+           is_active = false,
            updated_at = NOW()
        WHERE id = $1
        RETURNING *`,

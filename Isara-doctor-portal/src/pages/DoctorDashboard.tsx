@@ -585,56 +585,6 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
     }
   };
 
-  // Direct Jitsi Meeting Launch - Opens Jitsi in new tab for immediate video consultation
-  const handleStartJitsiMeeting = () => {
-    const JITSI_DOMAIN = 'meet.jit.si';
-    const timestamp = Date.now().toString(36);
-    const randomPart = Math.random().toString(36).substring(2, 8);
-    const patientId = selectedPatientId || 'direct';
-    const roomName = `Izara-Med-${patientId.substring(0, 8)}-${timestamp}-${randomPart}`;
-    
-    // Doctor configuration with moderator privileges
-    const doctorConfig = new URLSearchParams({
-      'config.prejoinPageEnabled': 'true',
-      'config.startWithAudioMuted': 'false',
-      'config.startWithVideoMuted': 'false',
-      'config.enableClosePage': 'true',
-      'config.disableDeepLinking': 'true',
-      'config.defaultLanguage': 'th',
-      'config.enableLobby': 'true',
-      'config.requireDisplayName': 'true',
-      'config.fileRecordingsEnabled': 'true',
-      'config.localRecording.enabled': 'true',
-      'userInfo.displayName': doctor.name || 'Doctor',
-      'userInfo.email': doctor.email || '',
-      'interfaceConfig.TOOLBAR_BUTTONS': JSON.stringify([
-        'microphone', 'camera', 'desktop', 'chat', 'raisehand',
-        'participants-pane', 'tileview', 'hangup', 'settings', 'recording',
-        'security', 'invite'
-      ]),
-      'interfaceConfig.APP_NAME': 'Izara Telemedicine',
-    });
-    
-    const jitsiUrl = `https://${JITSI_DOMAIN}/${roomName}#${doctorConfig.toString()}`;
-    
-    console.log('🎥 Starting Jitsi Meeting:', {
-      roomName,
-      patientId,
-      doctorName: doctor.name,
-    });
-    
-    // Open Jitsi in new tab
-    window.open(jitsiUrl, '_blank', 'noopener,noreferrer');
-    
-    // Copy meeting link to clipboard for sharing
-    const patientLink = `https://${JITSI_DOMAIN}/${roomName}`;
-    navigator.clipboard.writeText(patientLink).then(() => {
-      alert(`🎥 Meeting started!\n\nRoom: ${roomName}\n\n📋 Patient meeting link copied to clipboard:\n${patientLink}\n\nShare this link with your patient to join the consultation.`);
-    }).catch(() => {
-      alert(`🎥 Meeting started!\n\nRoom: ${roomName}\n\nPatient link: ${patientLink}`);
-    });
-  };
-
   const handleStudioAction = (action: StudioModal) => {
     // Navigate to Patients page with category filter for health logs history
     // This allows doctors to view patient health records by category
@@ -1900,10 +1850,10 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
                       {` - ${personFilterViewLabel[personFilter]} View`}
                     </p>
                     <button
-                      onClick={() => handleStartJitsiMeeting()}
+                      onClick={() => navigate(`/doctor/${doctor.id}/health-meeting`)}
                       data-testid="start-video-call"
                       className="px-5 py-2.5 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 transition-colors shadow-md flex items-center gap-2 mx-auto"
-                      title="Open Jitsi Meet video consultation"
+                      title="Go to Meeting Room"
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />

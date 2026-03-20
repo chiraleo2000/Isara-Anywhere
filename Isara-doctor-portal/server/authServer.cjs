@@ -72,6 +72,7 @@ process.stdout.write(`[AUTH-SERVER] App created, port=${PORT}\n`);
 
 const GCS_API_URL = process.env.GCS_API_URL || 'http://localhost:3012';
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin.test@izara.com';
+const isProduction = process.env.NODE_ENV === 'production';
 
 // ============================================================================
 // JWT CONFIGURATION - MUST match mainApiServer.cjs
@@ -84,6 +85,34 @@ if (!JWT_SECRET) {
 const JWT_SECRET_FINAL = JWT_SECRET || 'izara-jwt-secret-key-phase1-2026';
 const JWT_ISSUER = process.env.JWT_ISSUER || 'izara-telemedicine';
 const JWT_EXPIRES_IN = '24h';
+
+/**
+ * Authentication middleware - verify JWT token and attach user to request
+ */
+function authenticateToken(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader?.split(' ')[1];
+  if (!token) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET_FINAL);
+    req.user = decoded;
+    next();
+  } catch (error) {
+    return res.status(403).json({ error: 'Invalid or expired token' });
+  }
+}
+
+/**
+ * Admin authorization middleware - checks user has admin role
+ */
+function requireAdmin(req, res, next) {
+  if (!req.user || (req.user.role !== 'admin' && !req.user.isAdmin)) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  next();
+}
 
 /**
  * Generate JWT token for authenticated user
@@ -144,7 +173,7 @@ try {
       port: dbConfig.port || Number.parseInt(process.env.DB_PORT || '5433', 10),
       database: dbConfig.database || process.env.DB_NAME || 'izara_phase1',
       user: dbConfig.user || process.env.DB_USER || 'postgres',
-      password: dbConfig.password || process.env.DB_PASSWORD || 'IzaraDb2024',
+      password: dbConfig.password || process.env.DB_PASSWORD || '',
       max: 20,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 10000,
@@ -387,7 +416,7 @@ async function pgFindUserByEmail(email) {
     );
     const user = result.rows[0] || null;
     if (user) {
-      console.log('[PG-AUTH] Found user:', user.email, 'role:', user.role, 'hash prefix:', user.passwordHash?.substring(0, 20));
+      console.log('[PG-AUTH] Found user:', user.email, 'role:', user.role);
     } else {
       console.log('[PG-AUTH] User not found');
     }
@@ -404,6 +433,13 @@ async function pgCreateSession(userId, email, role, ip, userAgent, deviceId) {
     const token = crypto.randomBytes(32).toString('hex');
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
     
+    // Invalidate all previous active sessions for this user to prevent cross-device contamination
+    await pgPool.query(
+      `UPDATE sessions SET expires_at = NOW(), logged_out_at = NOW()
+       WHERE user_id = $1 AND expires_at > NOW() AND logged_out_at IS NULL`,
+      [userId]
+    );
+
     const result = await pgPool.query(
       `INSERT INTO sessions (id, user_id, token, expires_at, ip_address, user_agent)
        VALUES ($1, $2, $3, $4, $5, $6)
@@ -434,7 +470,7 @@ async function pgValidateSession(token) {
        FROM sessions s
        JOIN users u ON s.user_id = u.id
        LEFT JOIN doctor_profiles dp ON dp.doctor_id = u.id
-       WHERE s.token = $1 AND s.expires_at > NOW()`,
+       WHERE s.token = $1 AND s.expires_at > NOW() AND s.logged_out_at IS NULL AND s.logged_out_at IS NULL`,
       [token]
     );
     return result.rows[0] || null;
@@ -1031,11 +1067,13 @@ app.post('/auth/request-password-reset',
       console.error('Failed to send password reset email:', emailError);
     }
 
-    // Log for development
+    // Log for development (no sensitive data in production)
     console.log(`\n📧 PASSWORD RESET REQUEST`);
     console.log(`   Email: ${email}`);
-    console.log(`   Token: ${resetToken}`);
-    console.log(`   Reset Link: http://localhost:3010/reset-password?token=${resetToken}`);
+    if (!isProduction) {
+      console.log(`   Token: ${resetToken}`);
+      console.log(`   Reset Link: http://localhost:3010/reset-password?token=${resetToken}`);
+    }
     console.log(`   Expires: ${expiresAt}\n`);
 
     securityAuditLog({
@@ -1182,7 +1220,7 @@ app.post('/auth/send-email', async (req, res) => {
     res.json({ success: true, message: 'Email sent successfully' });
   } catch (error) {
     console.error('Email send error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -1191,7 +1229,7 @@ app.post('/auth/send-email', async (req, res) => {
 // ============================================================================
 
 // Get all doctor users for admin management - PostgreSQL implementation
-app.get('/admin/pending-doctors', async (req, res) => {
+app.get('/admin/pending-doctors', authenticateToken, requireAdmin, async (req, res) => {
   try {
     // Check PostgreSQL availability
     if (!pgPool) {
@@ -1259,12 +1297,12 @@ app.get('/admin/pending-doctors', async (req, res) => {
     });
   } catch (error) {
     console.error('Get doctor users error:', error);
-    res.status(500).json({ error: error.message, doctors: [], history: [] });
+    res.status(500).json({ error: 'Internal server error', doctors: [], history: [] });
   }
 });
 
 // Auth-prefixed admin endpoint for frontend compatibility - PostgreSQL implementation
-app.get('/auth/admin/pending-doctors', async (req, res) => {
+app.get('/auth/admin/pending-doctors', authenticateToken, requireAdmin, async (req, res) => {
   try {
     // Check PostgreSQL availability
     if (!pgPool) {
@@ -1334,12 +1372,12 @@ app.get('/auth/admin/pending-doctors', async (req, res) => {
     });
   } catch (error) {
     console.error('Get doctor users error:', error);
-    res.status(500).json({ error: error.message, doctors: [], history: [] });
+    res.status(500).json({ error: 'Internal server error', doctors: [], history: [] });
   }
 });
 
 // Auth-prefixed admin approve endpoint - PostgreSQL implementation
-app.post('/auth/admin/approve-doctor', async (req, res) => {
+app.post('/auth/admin/approve-doctor', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { userId, adminId } = req.body;
 
@@ -1396,12 +1434,12 @@ app.post('/auth/admin/approve-doctor', async (req, res) => {
     });
   } catch (error) {
     console.error('Admin approve doctor error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 // Auth-prefixed admin reject endpoint - PostgreSQL implementation
-app.post('/auth/admin/reject-doctor', async (req, res) => {
+app.post('/auth/admin/reject-doctor', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { userId, reason, adminId } = req.body;
 
@@ -1453,12 +1491,12 @@ app.post('/auth/admin/reject-doctor', async (req, res) => {
     });
   } catch (error) {
     console.error('Admin reject doctor error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 // Auth-prefixed admin update role endpoint - PostgreSQL implementation
-app.post('/auth/admin/update-role', async (req, res) => {
+app.post('/auth/admin/update-role', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { userId, adminId, role } = req.body;
     // Explicitly derive isAdmin from role to ensure consistency
@@ -1507,7 +1545,7 @@ app.post('/auth/admin/update-role', async (req, res) => {
     });
   } catch (error) {
     console.error('Admin update role error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -1601,7 +1639,7 @@ app.post('/admin/update-doctor-status', async (req, res) => {
     });
   } catch (error) {
     console.error('Admin update doctor status error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -1668,12 +1706,12 @@ app.post('/admin/remove-admin', async (req, res) => {
     });
   } catch (error) {
     console.error('Admin remove error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 // Get pending approvals (Admin only) - PostgreSQL implementation
-app.get('/auth/pending-approvals', async (req, res) => {
+app.get('/auth/pending-approvals', authenticateToken, requireAdmin, async (req, res) => {
   try {
     // Check PostgreSQL availability
     if (!pgPool) {
@@ -1703,12 +1741,12 @@ app.get('/auth/pending-approvals', async (req, res) => {
     res.json({ success: true, pendingApprovals });
   } catch (error) {
     console.error('Get pending approvals error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 // Approve doctor registration (Admin only) - PostgreSQL implementation
-app.post('/auth/approve-doctor', async (req, res) => {
+app.post('/auth/approve-doctor', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { userId, adminId } = req.body;
 
@@ -1770,12 +1808,12 @@ app.post('/auth/approve-doctor', async (req, res) => {
     });
   } catch (error) {
     console.error('Approve doctor error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 // Reject doctor registration (Admin only) - PostgreSQL implementation
-app.post('/auth/reject-doctor', async (req, res) => {
+app.post('/auth/reject-doctor', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { userId, reason, adminId } = req.body;
 
@@ -1831,12 +1869,12 @@ app.post('/auth/reject-doctor', async (req, res) => {
     });
   } catch (error) {
     console.error('Reject doctor error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 // Admin routes aliases - PostgreSQL implementation
-app.post('/admin/approve-doctor', async (req, res) => {
+app.post('/admin/approve-doctor', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { userId, adminId } = req.body;
 
@@ -1886,11 +1924,11 @@ app.post('/admin/approve-doctor', async (req, res) => {
     });
   } catch (error) {
     console.error('Admin approve doctor error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-app.post('/admin/reject-doctor', async (req, res) => {
+app.post('/admin/reject-doctor', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { userId, reason, adminId } = req.body;
 
@@ -1931,7 +1969,7 @@ app.post('/admin/reject-doctor', async (req, res) => {
     });
   } catch (error) {
     console.error('Admin reject doctor error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -1953,32 +1991,77 @@ app.get('/auth/verify', async (req, res) => {
       });
     }
 
-    // PostgreSQL session verification
+    // Try PostgreSQL session verification first (opaque session tokens)
     const sessionData = await pgValidateSession(token);
     
-    if (!sessionData) {
-      return res.status(401).json({ error: 'Invalid or expired session' });
+    if (sessionData) {
+      return res.json({
+        valid: true,
+        user: sanitizeUser({
+          id: sessionData.user_id,
+          email: sessionData.email,
+          name: sessionData.name,
+          nameThai: sessionData.name_thai,
+          role: sessionData.role,
+          doctorId: sessionData.doctor_id,
+          isAdmin: sessionData.is_admin,
+          adminPrivileges: sessionData.admin_privileges,
+          specialty: sessionData.specialty,
+          hospitalName: sessionData.hospital_name
+        }),
+        session: {
+          id: sessionData.id,
+          expiresAt: sessionData.expires_at
+        }
+      });
     }
     
-    return res.json({
-      valid: true,
-      user: sanitizeUser({
-        id: sessionData.user_id,
-        email: sessionData.email,
-        name: sessionData.name,
-        nameThai: sessionData.name_thai,
-        role: sessionData.role,
-        doctorId: sessionData.doctor_id,
-        isAdmin: sessionData.is_admin,
-        adminPrivileges: sessionData.admin_privileges,
-        specialty: sessionData.specialty,
-        hospitalName: sessionData.hospital_name
-      }),
-      session: {
-        id: sessionData.id,
-        expiresAt: sessionData.expires_at
+    // Fallback: Try JWT verification (login returns JWT as primary token)
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET_FINAL, {
+        issuer: JWT_ISSUER,
+        algorithms: ['HS256']
+      });
+      
+      // JWT is valid — fetch user from DB for latest data
+      const userId = decoded.userId || decoded.id;
+      const userResult = await pgPool.query(
+        `SELECT u.id, u.email, u.name, u.name_thai, u.role, u.doctor_id, u.is_admin,
+                u.admin_privileges, u.specialty, dp.hospital_name
+         FROM users u
+         LEFT JOIN doctor_profiles dp ON dp.doctor_id = u.id
+         WHERE u.id = $1`,
+        [userId]
+      );
+      
+      if (userResult.rows.length === 0) {
+        return res.status(401).json({ error: 'User not found' });
       }
-    });
+      
+      const user = userResult.rows[0];
+      return res.json({
+        valid: true,
+        user: sanitizeUser({
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          nameThai: user.name_thai,
+          role: user.role,
+          doctorId: user.doctor_id,
+          isAdmin: user.is_admin,
+          adminPrivileges: user.admin_privileges,
+          specialty: user.specialty,
+          hospitalName: user.hospital_name
+        }),
+        session: {
+          id: 'jwt-session',
+          expiresAt: new Date(decoded.exp * 1000).toISOString()
+        }
+      });
+    } catch (jwtError) {
+      // Both session and JWT verification failed
+      return res.status(401).json({ error: 'Invalid or expired session' });
+    }
   } catch (error) {
     console.error('Verify error:', error);
     res.status(500).json({ error: 'Session verification failed. Please try again.' });
@@ -2379,7 +2462,7 @@ if (process.env.NODE_ENV !== 'production') {
         passwordHashPrefix: user.password_hash?.substring(0, 10) + '...'
       });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: 'Internal server error' });
     }
   });
 }

@@ -248,7 +248,7 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
       // CRITICAL CHECK: Verify user has proper ID (but allow admin even without ID)
       if (!doctor.id && !doctor.email && !isAdmin) {
         console.error('❌ CRITICAL: Doctor has no ID or email! User session may be invalid.');
-        setErrorMessage('⚠️ Your user session is invalid. Please log out and log back in.');
+        setErrorMessage('Your user session is invalid. Please log out and log back in.');
         setLoading(false);
         return;
       }
@@ -803,7 +803,7 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
     const appointmentDate = appointment.appointmentDate || appointment.date;
     const appointmentTime = appointment.appointmentTime || appointment.time || '10:00';
 
-    const subject = `✅ Appointment Confirmed - ${appointmentDate} at ${appointmentTime}`;
+    const subject = `Appointment Confirmed - ${appointmentDate} at ${appointmentTime}`;
 
     // Use patient-specific URL if available, otherwise use generic meetLink
     const patientMeetingLink = meetingDetails.patientUrl || meetingDetails.meetLink;
@@ -813,23 +813,23 @@ Dear ${appointment.patientName || 'Patient'},
 
 Your appointment has been confirmed by Dr. ${doctor.name || 'Doctor'}.
 
-📅 APPOINTMENT DETAILS:
+APPOINTMENT DETAILS:
 ━━━━━━━━━━━━━━━━━━━━━━
 Date: ${appointmentDate}
 Time: ${appointmentTime}
 Doctor: Dr. ${doctor.name}
 Type: Telehealth Video Consultation
 
-🎥 YOUR MEETING LINK (Jitsi Meet):
+YOUR MEETING LINK (Jitsi Meet):
 ━━━━━━━━━━━━━━━━━━━━━━
 ${patientMeetingLink}
 
-⚠️ IMPORTANT: The doctor will start the meeting first. Please wait to be admitted.
+IMPORTANT: The doctor will start the meeting first. Please wait to be admitted.
 
 Please click the link above at the scheduled time to join the video consultation.
 No account needed - works directly in your browser!
 
-📋 PREPARATION:
+PREPARATION:
 ━━━━━━━━━━━━━━━━━━━━━━
 • Ensure you have a stable internet connection
 • Test your camera and microphone before the appointment
@@ -837,7 +837,7 @@ No account needed - works directly in your browser!
 • Be in a quiet, private location
 • Allow browser access to camera/microphone when prompted
 
-${confirmNotes ? `📝 DOCTOR'S NOTES:\n${confirmNotes}\n` : ''}
+${confirmNotes ? `DOCTOR'S NOTES:\n${confirmNotes}\n` : ''}
 
 If you need to reschedule or cancel, please contact us at least 24 hours in advance.
 
@@ -911,7 +911,7 @@ Izara Telehealth Team
 
       // Step 3: Create Google Calendar link - use doctor URL for calendar
       const calendarTitle = `Telehealth: ${selectedAppointment.patientName || 'Patient'} - Dr. ${doctor.name}`;
-      const calendarDescription = `Video consultation via Izara Telehealth (Jitsi Meet)\n\n🎥 DOCTOR LINK (Click to join as HOST):\n${meetingDetails.doctorUrl}\n\n👤 Patient Link:\n${meetingDetails.patientUrl}\n\n📝 Reason: ${selectedAppointment.reason || 'General Consultation'}${confirmNotes ? '\n\nDoctor Notes: ' + confirmNotes : ''}`;
+      const calendarDescription = `Video consultation via Izara Telehealth (Jitsi Meet)\n\nDOCTOR LINK (Click to join as HOST):\n${meetingDetails.doctorUrl}\n\nPatient Link:\n${meetingDetails.patientUrl}\n\nReason: ${selectedAppointment.reason || 'General Consultation'}${confirmNotes ? '\n\nDoctor Notes: ' + confirmNotes : ''}`;
 
       const formatDateForCalendar = (date: Date) => date.toISOString().replaceAll('-', '').replaceAll(':', '').replace('.000', '');
       const googleCalendarUrl = `https://calendar.google.com/calendar/event?action=TEMPLATE&text=${encodeURIComponent(calendarTitle)}&details=${encodeURIComponent(calendarDescription)}&dates=${formatDateForCalendar(startDateTime)}/${formatDateForCalendar(endDateTime)}&location=${encodeURIComponent(meetingDetails.doctorUrl)}`;
@@ -1059,7 +1059,7 @@ Izara Telehealth Team
       console.log('✅ Data reloaded');
 
       // NOW show success message with both URLs
-      alert(`✅ Appointment Confirmed with Jitsi Meet!\n\n🎥 YOUR LINK (HOST):\n${meetingDetails.doctorUrl?.substring(0, 60)}...\n\n👤 PATIENT LINK:\n${meetingDetails.patientUrl?.substring(0, 60)}...\n\n📅 The appointment appears in Scheduled Meetings tab!\n📧 Confirmation email prepared for patient.\n\nClick OK to add to Google Calendar.`);
+      alert(`Appointment Confirmed with Jitsi Meet!\n\nYOUR LINK (HOST):\n${meetingDetails.doctorUrl?.substring(0, 60)}...\n\nPATIENT LINK:\n${meetingDetails.patientUrl?.substring(0, 60)}...\n\nThe appointment appears in Scheduled Meetings tab!\nConfirmation email prepared for patient.\n\nClick OK to add to Google Calendar.`);
 
       // Open Google Calendar link for easy adding
       window.open(googleCalendarUrl, '_blank');
@@ -1078,24 +1078,24 @@ Izara Telehealth Team
     const appointmentDate = appointment.appointmentDate || appointment.date;
     const appointmentTime = appointment.appointmentTime || appointment.time || '10:00';
 
-    const subject = `❌ Appointment Request Declined - ${appointmentDate}`;
+    const subject = `Appointment Request Declined - ${appointmentDate}`;
 
     const body = `
 Dear ${appointment.patientName || 'Patient'},
 
 We regret to inform you that your appointment request has been declined.
 
-📅 ORIGINAL REQUEST:
+ORIGINAL REQUEST:
 ━━━━━━━━━━━━━━━━━━━━━━
 Date: ${appointmentDate}
 Time: ${appointmentTime}
 Reason for Visit: ${appointment.reason || 'General consultation'}
 
-❌ DECLINE REASON:
+DECLINE REASON:
 ━━━━━━━━━━━━━━━━━━━━━━
 ${reason}
 
-📋 NEXT STEPS:
+NEXT STEPS:
 ━━━━━━━━━━━━━━━━━━━━━━
 • You may request a new appointment with a different date/time
 • Contact our support team if you have any questions
@@ -1175,7 +1175,7 @@ Izara Telehealth Team
       {!doctor.id && (
         <div className="mb-6 bg-red-50 border-2 border-red-500 rounded-xl p-6">
           <div className="flex items-start gap-3">
-            <div className="text-4xl">⚠️</div>
+            <div className="text-4xl">!</div>
             <div className="flex-1">
               <h3 className="text-xl font-bold text-red-900 mb-2">
                 Session Error: User ID Missing
@@ -1185,7 +1185,7 @@ Izara Telehealth Team
                 This usually happens after a system update.
               </p>
               <p className="text-red-800 font-semibold mb-4">
-                🔄 <strong>Required Action:</strong> Please LOG OUT and LOG BACK IN to refresh your session.
+                <strong>Required Action:</strong> Please LOG OUT and LOG BACK IN to refresh your session.
               </p>
               <div className="bg-white border border-red-300 rounded-lg p-4">
                 <p className="text-sm text-gray-700">
@@ -1324,7 +1324,7 @@ Izara Telehealth Team
           <div className="space-y-4">
             {pendingQueue.length === 0 ? (
               <div className="text-center py-12 text-gray-500">
-                <div className="text-6xl mb-4">✅</div>
+                <div className="text-6xl mb-4"></div>
                 <div className="text-lg font-medium">No appointments awaiting confirmation</div>
                 <p className="text-sm text-gray-400 mt-2">
                   New patient appointment requests will appear here for you to review and confirm
@@ -1341,7 +1341,7 @@ Izara Telehealth Team
                       {/* Patient Info Header */}
                       <div className="flex items-center gap-3 mb-3">
                         <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                          <span className="text-2xl">👤</span>
+                          <span className="text-2xl"></span>
                         </div>
                         <div>
                           <h3 className="text-lg font-bold text-gray-900">{request.patientName}</h3>
@@ -1378,7 +1378,7 @@ Izara Telehealth Team
                           )}
                         </div>
                         <div className="bg-purple-50 p-3 rounded-lg">
-                          <div className="font-semibold text-purple-900">🏥 Reason / Symptoms</div>
+                          <div className="font-semibold text-purple-900">Reason / Symptoms</div>
                           <div className="text-purple-700 mt-1 text-sm">
                             {request.reason || 'General consultation'}
                           </div>
@@ -1504,7 +1504,7 @@ Izara Telehealth Team
           <div className="space-y-4">
             {allAppointments.filter((a: any) => a.status === 'confirmed').length === 0 ? (
               <div className="text-center py-12 text-gray-500">
-                <div className="text-6xl mb-4">📅</div>
+                <div className="text-6xl mb-4"></div>
                 <p>No confirmed meetings yet. Confirm appointments from Patient Queue.</p>
               </div>
             ) : (
@@ -1522,7 +1522,7 @@ Izara Telehealth Team
                         📋 {apt.reason || apt.symptoms || 'General Consultation'}
                       </p>
                       {apt.jitsiRoomName && (
-                        <p className="text-xs text-blue-400 mt-1">🔗 Room: {apt.jitsiRoomName}</p>
+                        <p className="text-xs text-blue-400 mt-1">Room: {apt.jitsiRoomName}</p>
                       )}
                     </div>
                     <div className="flex flex-col gap-2">
@@ -1549,7 +1549,7 @@ Izara Telehealth Team
                       >
                         📋 Meeting Results
                       </button>
-                      <span className="text-xs text-green-500 text-center">✅ Confirmed</span>
+                      <span className="text-xs text-green-500 text-center">Confirmed</span>
                     </div>
                   </div>
                 </div>
@@ -1695,7 +1695,7 @@ Izara Telehealth Team
 
           {allAppointments.length === 0 && (
             <div className="text-center py-12 text-gray-500">
-              <div className="text-6xl mb-4">📋</div>
+              <div className="text-6xl mb-4"></div>
               <div className="text-lg">No appointments found</div>
             </div>
           )}
@@ -1862,7 +1862,7 @@ Izara Telehealth Team
 
             {/* Patient's Requested Date/Time */}
             <div className="bg-blue-50 rounded-lg p-4 mb-4">
-              <h4 className="font-medium text-blue-700 mb-2">📅 Patient's Requested Schedule</h4>
+              <h4 className="font-medium text-blue-700 mb-2">Patient's Requested Schedule</h4>
               <div className="text-sm text-blue-900">
                 <p>Date: {selectedAppointment.requestedDate?.split('T')[0] || selectedAppointment.appointmentDate || selectedAppointment.date || 'Flexible'}</p>
                 <p>Time: {selectedAppointment.preferredTime || selectedAppointment.appointmentTime || selectedAppointment.time || 'Flexible'}</p>
@@ -1874,7 +1874,7 @@ Izara Telehealth Team
 
             {/* Confirm Date/Time Selection */}
             <div className="space-y-4 mb-4">
-              <h4 className="font-medium text-gray-700">📆 Confirm Date & Time</h4>
+              <h4 className="font-medium text-gray-700">Confirm Date & Time</h4>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="confirm-date" className="block text-sm font-medium text-gray-700 mb-1">Date *</label>

@@ -52,16 +52,28 @@ flowchart TB
             S4["🧪 izara-lab-results"]
             S5["🔬 izara-imaging-results"]
         end
-        subgraph DATABASE["🗄️ Cloud SQL"]
-            DB1[("🐘 PostgreSQL 18<br/>+ pgvector")]
+        subgraph DATABASE["🗄️ Cloud SQL VM"]
+            DB1[("🐘 PostgreSQL 18<br/>+ pgvector<br/>35.240.157.230:5432")]
+        end
+        subgraph PGADMIN["🔧 pgAdmin"]
+            PA1["pgAdmin 4<br/>Cloud Run Service"]
         end
     end
 
     subgraph CICD["🔄 CI/CD PIPELINE"]
         direction LR
-        CI1["📝 Cloud Build"]
-        CI2["🐳 Container Registry"]
-        CI3["🚀 Deploy to Cloud Run"]
+        CI1["📝 Cloud Build<br/>cloudbuild.yaml"]
+        CI2["🐳 Artifact Registry<br/>asia-southeast1-docker"]
+        CI3["🚀 Deploy to Cloud Run<br/>v1.5.8"]
+    end
+
+    subgraph TESTING["🧪 TESTING (177 Cloud Tests)"]
+        direction LR
+        T1["📸 UI Screenshots: 39"]
+        T2["🔄 Multi-User Workflows: 42"]
+        T3["📹 Meeting Tests: 27"]
+        T4["📋 Workflow Screenshots: 25"]
+        T5["📄 UI Pages: 44"]
     end
 
     %% Local Development Flow
@@ -92,6 +104,10 @@ flowchart TB
     CR1 --> STORAGE
     CR2 --> STORAGE
     CR3 --> STORAGE
+    PA1 --> DB1
+
+    %% Testing connects to Cloud Run
+    TESTING -.-> CLOUDRUN
 
     classDef localStyle fill:#E3F2FD,stroke:#1976D2,stroke-width:2px,color:#0D47A1
     classDef mobileStyle fill:#FFF3E0,stroke:#FF9800,stroke-width:2px,color:#E65100

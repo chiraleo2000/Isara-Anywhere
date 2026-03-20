@@ -15,61 +15,82 @@ sequenceDiagram
     participant P as 🧑‍🤝‍🧑 Patient
     participant PP as 📱 Patient Portal
     participant MS as 📹 Meeting Server
+    participant WS as 🔌 Socket.IO
     participant JITSI as 🎥 Jitsi Meet
-    participant STT as 🎤 Speech-to-Text
+    participant WSA as 🎤 Web Speech API
     participant AI as 🤖 Gemini AI
     participant DP as 💻 Doctor Portal
     participant D as 👨‍⚕️ Doctor
     participant DB as 🗄️ Database
 
+    rect rgb(255, 243, 224)
+        Note over P,D: 📋 CONSENT & AGREEMENT
+        D->>DP: Start consultation
+        DP->>MS: Create meeting room
+        MS-->>DP: Room ID + invite link
+        D->>DP: Share invite to patient
+        DP->>DB: Store meeting record
+        P->>PP: Click invite / Join Meeting
+        PP->>PP: Show consent agreement
+        P->>PP: Accept recording consent
+    end
+
     rect rgb(224, 247, 250)
-        Note over P,D: 📅 PRE-MEETING SETUP
-        P->>PP: Click "Join Meeting"
-        D->>DP: Click "Start Consultation"
+        Note over P,D: 🚪 LOBBY & AUTHENTICATION
         PP->>MS: Request JWT token
-        DP->>MS: Request JWT token
         MS-->>PP: JWT for patient
-        MS-->>DP: JWT for doctor
+        PP->>WS: Connect Socket.IO
+        PP->>JITSI: Join room (JWT) → Lobby
+        WS->>DP: Patient waiting in lobby
+        D->>DP: Admit / Reject patient
+        DP->>WS: Lobby response (admit)
+        WS->>PP: Lobby admitted
     end
 
     rect rgb(232, 245, 233)
         Note over PP,JITSI: 🎥 VIDEO CONNECTION
-        PP->>JITSI: Connect (JWT)
-        DP->>JITSI: Connect (JWT)
+        PP->>JITSI: Enter room (admitted)
+        DP->>JITSI: Already in room
         JITSI-->>PP: Room joined
-        JITSI-->>DP: Room joined
         JITSI->>JITSI: WebRTC P2P established
+        PP->>PP: Camera + Mic active
+        DP->>DP: Camera + Mic active
     end
 
     rect rgb(255, 248, 225)
-        Note over JITSI,AI: 🎤 REAL-TIME TRANSCRIPTION
-        loop Every audio chunk
-            JITSI->>MS: Audio stream
-            MS->>STT: Process audio
-            STT-->>MS: Text transcript
-            MS->>DP: Live transcript update
+        Note over PP,AI: 🎤 REAL-TIME TRANSCRIPTION (Browser)
+        D->>DP: Enable transcription
+        loop Continuous speech recognition
+            DP->>WSA: Start Web Speech API
+            WSA-->>DP: Speech → Text (interim)
+            WSA-->>DP: Speech → Text (final)
+            DP->>WS: Send transcript segment
+            WS->>MS: Broadcast transcript
             MS->>DB: Store transcript segment
+            WS->>PP: Live transcript update
         end
     end
 
     rect rgb(243, 229, 245)
         Note over D,AI: 🤖 AI SUMMARY GENERATION
         D->>DP: End consultation
-        DP->>MS: Request summary
+        DP->>MS: Request AI summary
         MS->>DB: Get full transcript
         DB-->>MS: Transcript data
-        MS->>AI: Generate clinical summary
-        AI-->>MS: SOAP suggestions
-        MS-->>DP: AI summary + suggestions
+        MS->>AI: Generate SOAP summary (Gemini 2.5 Flash)
+        AI-->>MS: SOAP suggestions + clinical notes
+        MS-->>DP: AI summary response
+        DP->>D: Display SOAP suggestions
     end
 
     rect rgb(227, 242, 253)
-        Note over D,DB: 📋 DOCUMENTATION
+        Note over D,DB: 📋 EMR DOCUMENTATION
         D->>DP: Review & edit SOAP notes
-        D->>DP: Add prescriptions
+        D->>DP: Add prescriptions + lab orders
         D->>DP: Digital signature
-        DP->>DB: Save encounter record
+        DP->>DB: Save encounter record (EMR)
         DP->>DB: Save prescriptions
+        DP->>DB: Save lab/imaging orders
         DB->>PP: Notify patient
         PP->>P: "Records available" notification
     end

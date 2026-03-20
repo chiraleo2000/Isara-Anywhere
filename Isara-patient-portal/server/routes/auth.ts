@@ -68,15 +68,13 @@ async function hashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, salt);
 }
 
-// Helper: Verify password (supports bcrypt and legacy base64)
+// Helper: Verify password (bcrypt only - legacy base64 removed for security)
 async function verifyPassword(password: string, hash: string): Promise<boolean> {
   if (hash.startsWith('$2')) {
-    // bcrypt hash
     return bcrypt.compare(password, hash);
   }
-  // Legacy base64 fallback
-  const base64Hash = Buffer.from(password).toString('base64');
-  return hash === base64Hash;
+  // Legacy base64 hashes are no longer supported - user must reset password
+  return false;
 }
 
 // ============================================================================
@@ -312,10 +310,17 @@ router.post('/login', async (req: Request, res: Response) => {
 
     console.log(`[AUTH] Password verified for: ${emailLower}`);
 
-    // Create session
+    // Create session - invalidate old sessions first to prevent cross-device contamination
     const sessionToken = generateSessionToken();
     const now = new Date();
     const expiresAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // 7 days
+
+    // Invalidate all previous active sessions for this user
+    await pool.query(
+      `UPDATE sessions SET expires_at = NOW(), logged_out_at = NOW()
+       WHERE user_id = $1 AND expires_at > NOW() AND logged_out_at IS NULL`,
+      [user.id]
+    );
 
     await pool.query(
       `INSERT INTO sessions (id, user_id, token, ip_address, user_agent, expires_at, created_at)
@@ -654,16 +659,20 @@ router.post('/request-password-reset', async (req: Request, res: Response) => {
     const baseUrl = process.env.APP_URL || 'http://localhost:3005';
     const resetLink = `${baseUrl}/reset-password?token=${resetToken}`;
 
-    console.log(`\n📧 PASSWORD RESET REQUEST`);
-    console.log(`   Email: ${emailLower}`);
-    console.log(`   User: ${user.name}`);
-    console.log(`   Token: ${resetToken}`);
-    console.log(`   Reset Link: ${resetLink}`);
-    console.log(`   Expires: ${expiresAt.toISOString()}\n`);
+    // Log reset request (without sensitive token details)
+    const isDevelopment = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test';
+    if (isDevelopment) {
+      console.log(`\n📧 PASSWORD RESET REQUEST`);
+      console.log(`   Email: ${emailLower}`);
+      console.log(`   User: ${user.name}`);
+      console.log(`   Token: ${resetToken}`);
+      console.log(`   Reset Link: ${resetLink}`);
+      console.log(`   Expires: ${expiresAt.toISOString()}\n`);
+    } else {
+      console.log(`📧 Password reset requested for: ${emailLower}`);
+    }
 
     // In production, send email here
-    // For development, return token
-    const isDevelopment = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test';
     res.json({ 
       success: true, 
       message: 'Password reset link sent to your email. Please check your inbox.',

@@ -1,8 +1,8 @@
 /**
  * Izara Jitsi Meeting Server — Phase 1 Complete
  * 
- * Version: 1.5.3
- * Updated: 2026-03-02
+ * Version: 1.5.9
+ * Updated: 2026-03-20
  * 
  * Main API server for:
  * - Meeting room management (Jitsi Meet - FREE)
@@ -19,6 +19,18 @@
  * - PostgreSQL persistence + in-memory fallback
  * - Socket.IO real-time events
  * 
+ * v1.5.9 Changes:
+ * - Removed dead code (handleStartJitsiMeeting)
+ * - Meeting UI improvements: simplified icons, consent logic fix
+ * - Test optimization: cached login tokens
+ *
+ * v1.6.1 Changes:
+ * - SECURITY: Changed optionalAuth → authenticateToken on meeting create alias, end, lobby admit/reject, AI validate
+ * - SECURITY: Added auth to GET /api/meetings listing route
+ * - SECURITY: Added XSS sanitization on chat messages
+ * - SECURITY: Replaced error.message with generic messages in 500 responses
+ * - Fixed version consistency across health endpoints
+ *
  * v1.4.8-dev Changes:
  * - Fixed JWT_SECRET alignment across all services
  * - Added optionalAuth to /api/meeting/create (security fix)
@@ -109,6 +121,13 @@ async function safeQuery(text, params = []) {
     throw new Error('Database temporarily unavailable');
   }
   return pool.query(text, params);
+}
+
+// Helper: sanitize HTML to prevent XSS in chat/text content
+function sanitizeHtml(str) {
+  if (typeof str !== 'string') return '';
+  return str.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;').replaceAll("'", '&#x27;');
 }
 
 // Initialize Gemini AI
@@ -224,6 +243,8 @@ const activeTranscriptions = new Map();
 const meetingChats = new Map();
 const meetingInvites = new Map();
 const aiValidations = new Map();
+const meetingConsents = new Map();   // meetingId -> Map<participantId, consent>
+const meetingLobbies = new Map();    // meetingId -> Map<participantId, lobbyEntry>
 
 // ============================================================================
 // HEALTH CHECK ROUTES
@@ -233,7 +254,7 @@ app.get('/health', (req, res) => {
   res.json({
     status: 'ok',
     service: 'izara-jitsi-server',
-    version: '1.5.3',
+    version: '1.5.9',
     timestamp: new Date().toISOString(),
     database: dbAvailable ? 'connected' : 'disconnected',
     features: {
@@ -241,7 +262,10 @@ app.get('/health', (req, res) => {
       transcription: 'web-speech-api',
       ai: !!genAI,
       chat: true,
-      guestInvites: true
+      guestInvites: true,
+      lobby: true,
+      consent: true,
+      shareLinks: true
     }
   });
 });
@@ -250,7 +274,7 @@ app.get('/api/health', (req, res) => {
   res.json({
     status: dbAvailable ? 'healthy' : 'degraded',
     service: 'izara-jitsi-server',
-    version: '1.5.3',
+    version: '1.5.9',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     jitsiDomain: JITSI_DOMAIN,
@@ -298,8 +322,8 @@ app.get('/api/config', (req, res) => {
   });
 });
 
-// GET /api/meetings - List all meetings (must be before /:id)
-app.get('/api/meetings', async (req, res) => {
+// GET /api/meetings - List all meetings (must be before /:id) — requires auth
+app.get('/api/meetings', authenticateToken, async (req, res) => {
   try {
     const result = await pool.query(
       'SELECT * FROM meeting_records ORDER BY created_at DESC LIMIT 50'
@@ -419,8 +443,8 @@ app.post('/api/meetings/create', authenticateToken, async (req, res) => {
   }
 });
 
-// Alias: /api/meeting/create (alternative endpoint — with optional auth for security)
-app.post('/api/meeting/create', optionalAuth, async (req, res) => {
+// Alias: /api/meeting/create (alternative endpoint — requires auth)
+app.post('/api/meeting/create', authenticateToken, async (req, res) => {
   try {
     const { appointmentId, patientId, doctorId, patientName, doctorName, title, scheduledTime, guestInvites } = req.body;
     
@@ -574,6 +598,237 @@ app.get('/api/meetings/:id/participants', async (req, res) => {
 });
 
 // ============================================================================
+// MEDIA STATUS & ROOM MANAGEMENT (Teams-like)
+// ============================================================================
+
+// In-memory store for participant media status
+const participantMediaStatus = new Map();
+
+// Report media device status (pre-join check)
+app.post('/api/meetings/:id/media-status', optionalAuth, (req, res) => {
+  const { id } = req.params;
+  const { userId, userName, role, camera, microphone, cameraLabel, microphoneLabel } = req.body;
+  
+  if (!userId || !role) {
+    return res.status(400).json({ success: false, error: 'userId and role required' });
+  }
+
+  let roomMedia = participantMediaStatus.get(id);
+  if (!roomMedia) {
+    roomMedia = new Map();
+    participantMediaStatus.set(id, roomMedia);
+  }
+  
+  roomMedia.set(userId, {
+    userId, userName: userName || 'Unknown', role,
+    camera: camera || 'unknown', microphone: microphone || 'unknown',
+    cameraLabel: cameraLabel || '', microphoneLabel: microphoneLabel || '',
+    lastUpdated: new Date().toISOString(),
+  });
+
+  // Broadcast to room via Socket.IO
+  io.to(id).emit('participant-media-update', {
+    userId, userName, role, camera, microphone, timestamp: new Date().toISOString(),
+  });
+
+  res.json({ success: true, message: 'Media status updated' });
+});
+
+// Get all participants' media status for a meeting
+app.get('/api/meetings/:id/media-status', (req, res) => {
+  const { id } = req.params;
+  const roomMedia = participantMediaStatus.get(id);
+  const statuses = roomMedia ? Array.from(roomMedia.values()) : [];
+  res.json({ success: true, participants: statuses, total: statuses.length });
+});
+
+// Room capacity and readiness check
+app.get('/api/meetings/:id/room-check', async (req, res) => {
+  const { id } = req.params;
+  let roomStatus = { exists: false, status: 'unknown', participantCount: 0, capacity: 10 };
+  
+  try {
+    const result = await pool.query(
+      `SELECT id, status, started_at FROM meeting_records WHERE id::text = $1 OR appointment_id = $1`,
+      [id]
+    );
+    if (result.rows.length > 0) {
+      roomStatus.exists = true;
+      roomStatus.status = result.rows[0].status;
+    }
+  } catch { /* fallback */ }
+  
+  try {
+    const room = io.sockets.adapter.rooms.get(id);
+    roomStatus.participantCount = room ? room.size : 0;
+  } catch { /* ignore */ }
+  
+  const roomMedia = participantMediaStatus.get(id);
+  const mediaStatuses = roomMedia ? Array.from(roomMedia.values()) : [];
+  
+  res.json({
+    success: true,
+    room: roomStatus,
+    mediaStatuses,
+    isReady: roomStatus.exists && roomStatus.participantCount < roomStatus.capacity,
+  });
+});
+
+// ============================================================================
+// MEETING CONSENT / AGREEMENT
+// ============================================================================
+
+// Submit consent before joining
+app.post('/api/meetings/:id/consent', optionalAuth, (req, res) => {
+  const { id } = req.params;
+  const { participantId, participantName, role, consentRecording, consentTranscript, consentDataSharing } = req.body;
+
+  if (!participantId || !role) {
+    return res.status(400).json({ success: false, error: 'participantId and role required' });
+  }
+
+  let roomConsents = meetingConsents.get(id);
+  if (!roomConsents) {
+    roomConsents = new Map();
+    meetingConsents.set(id, roomConsents);
+  }
+
+  const consent = {
+    participantId, participantName: participantName || 'Unknown', role,
+    consentRecording: !!consentRecording,
+    consentTranscript: !!consentTranscript,
+    consentDataSharing: !!consentDataSharing,
+    agreedAt: new Date().toISOString(),
+  };
+  roomConsents.set(participantId, consent);
+
+  io.to(id).emit('consent-update', { meetingId: id, consent });
+
+  res.json({ success: true, consent });
+});
+
+// Get all consents for a meeting
+app.get('/api/meetings/:id/consents', optionalAuth, (req, res) => {
+  const { id } = req.params;
+  const roomConsents = meetingConsents.get(id);
+  const consents = roomConsents ? Array.from(roomConsents.values()) : [];
+  res.json({ success: true, consents, total: consents.length });
+});
+
+// ============================================================================
+// WAITING ROOM / LOBBY MANAGEMENT
+// ============================================================================
+
+// Participant requests to join (enters lobby)
+app.post('/api/meetings/:id/lobby/join', optionalAuth, (req, res) => {
+  const { id } = req.params;
+  const { participantId, participantName, role, email } = req.body;
+
+  if (!participantId || !participantName) {
+    return res.status(400).json({ success: false, error: 'participantId and participantName required' });
+  }
+
+  // Doctors (hosts) bypass lobby
+  if (role === 'doctor' || role === 'admin') {
+    return res.json({ success: true, status: 'admitted', message: 'Host bypasses lobby' });
+  }
+
+  let lobby = meetingLobbies.get(id);
+  if (!lobby) {
+    lobby = new Map();
+    meetingLobbies.set(id, lobby);
+  }
+
+  const entry = {
+    participantId, participantName, role: role || 'guest',
+    email: email || null,
+    status: 'waiting',
+    joinedAt: new Date().toISOString(),
+  };
+  lobby.set(participantId, entry);
+
+  // Notify doctor (host)
+  io.to(id).emit('lobby-update', { meetingId: id, action: 'join', participant: entry });
+
+  res.json({ success: true, status: 'waiting', message: 'Waiting for host approval' });
+});
+
+// Get lobby participants
+app.get('/api/meetings/:id/lobby', optionalAuth, (req, res) => {
+  const { id } = req.params;
+  const lobby = meetingLobbies.get(id);
+  const participants = lobby ? Array.from(lobby.values()).filter(p => p.status === 'waiting') : [];
+  res.json({ success: true, participants, total: participants.length });
+});
+
+// Doctor admits participant from lobby
+app.post('/api/meetings/:id/lobby/admit', authenticateToken, (req, res) => {
+  const { id } = req.params;
+  const { participantId, admittedBy } = req.body;
+
+  const lobby = meetingLobbies.get(id);
+  if (!lobby?.has(participantId)) {
+    return res.status(404).json({ success: false, error: 'Participant not in lobby' });
+  }
+
+  const entry = lobby.get(participantId);
+  entry.status = 'admitted';
+  entry.admittedBy = admittedBy;
+  entry.admittedAt = new Date().toISOString();
+
+  io.to(id).emit('lobby-update', { meetingId: id, action: 'admit', participant: entry });
+
+  res.json({ success: true, participant: entry });
+});
+
+// Doctor rejects participant from lobby
+app.post('/api/meetings/:id/lobby/reject', authenticateToken, (req, res) => {
+  const { id } = req.params;
+  const { participantId, rejectedBy, reason } = req.body;
+
+  const lobby = meetingLobbies.get(id);
+  if (!lobby?.has(participantId)) {
+    return res.status(404).json({ success: false, error: 'Participant not in lobby' });
+  }
+
+  const entry = lobby.get(participantId);
+  entry.status = 'rejected';
+  entry.rejectedBy = rejectedBy;
+  entry.reason = reason || '';
+  entry.rejectedAt = new Date().toISOString();
+
+  io.to(id).emit('lobby-update', { meetingId: id, action: 'reject', participant: entry });
+
+  res.json({ success: true, participant: entry });
+});
+
+// Generate shareable invite link for patient to share with others
+app.post('/api/meetings/:id/share-link', optionalAuth, (req, res) => {
+  const { id } = req.params;
+  const { sharedBy, sharedByName, recipientName, recipientEmail } = req.body;
+
+  const token = uuidv4();
+  const invite = {
+    id: token, meetingId: id,
+    name: recipientName || 'Guest',
+    email: recipientEmail || '',
+    role: 'guest',
+    sharedBy, sharedByName,
+    invitedAt: new Date().toISOString(),
+    status: 'pending',
+  };
+
+  if (!meetingInvites.has(id)) meetingInvites.set(id, []);
+  meetingInvites.get(id).push(invite);
+
+  // Build invite URL (guest joins via patient portal with token)
+  const baseUrl = process.env.PATIENT_PORTAL_URL || `${req.protocol}://${req.get('host')}`;
+  const inviteLink = `${baseUrl}/meeting/${id}?invite=${token}&name=${encodeURIComponent(recipientName || 'Guest')}`;
+
+  res.json({ success: true, invite, inviteLink });
+});
+
+// ============================================================================
 // END MEETING (Phase 2 — triggers AI summary pipeline)
 // ============================================================================
 
@@ -583,7 +838,7 @@ function getNoSummaryReason(genAI, fullTranscript) {
   return 'Generation skipped';
 }
 
-app.post('/api/meetings/:id/end', optionalAuth, async (req, res) => {
+app.post('/api/meetings/:id/end', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     const { generateSummary = true } = req.body;
@@ -1126,12 +1381,16 @@ app.post('/api/meetings/:id/chat', optionalAuth, async (req, res) => {
     
     if (!message) return res.status(400).json({ error: 'Message is required' });
     
+    // Sanitize chat message to prevent XSS
+    const sanitizedMessage = sanitizeHtml(message);
+    const sanitizedSenderName = sanitizeHtml(senderName || req.user?.name || 'Unknown');
+    
     const chatMessage = {
       id: uuidv4(), meetingId: id,
       senderId: senderId || req.user?.id || 'anonymous',
-      senderName: senderName || req.user?.name || 'Unknown',
+      senderName: sanitizedSenderName,
       senderRole: senderRole || req.user?.role || 'participant',
-      message, type, timestamp: new Date().toISOString()
+      message: sanitizedMessage, type, timestamp: new Date().toISOString()
     };
     
     if (!meetingChats.has(id)) meetingChats.set(id, []);
@@ -1517,7 +1776,7 @@ app.get('/api/meetings/:id/summary', optionalAuth, async (req, res) => {
 // ============================================================================
 
 // Pre-consultation Summary
-app.post('/api/ai/pre-consultation-summary', optionalAuth, async (req, res) => {
+app.post('/api/ai/pre-consultation-summary', authenticateToken, async (req, res) => {
   try {
     const { patientId, appointmentId } = req.body;
     
@@ -1565,7 +1824,7 @@ EMR ล่าสุด: ${JSON.stringify(patientData.recentEMR?.map(e => ({ asse
 });
 
 // Patient Instruction Sheet
-app.post('/api/ai/patient-instruction-sheet', optionalAuth, async (req, res) => {
+app.post('/api/ai/patient-instruction-sheet', authenticateToken, async (req, res) => {
   try {
     const { meetingId, summary, patientName, diagnosis, medications, followUp } = req.body;
     
@@ -1603,7 +1862,7 @@ app.post('/api/ai/patient-instruction-sheet', optionalAuth, async (req, res) => 
 });
 
 // Document Analysis
-app.post('/api/ai/document-analysis', optionalAuth, async (req, res) => {
+app.post('/api/ai/document-analysis', authenticateToken, async (req, res) => {
   try {
     const { document, documentType = 'lab-result', patientId } = req.body;
     
@@ -1631,7 +1890,7 @@ app.post('/api/ai/document-analysis', optionalAuth, async (req, res) => {
 });
 
 // CDS Check
-app.post('/api/ai/cds-check', optionalAuth, async (req, res) => {
+app.post('/api/ai/cds-check', authenticateToken, async (req, res) => {
   try {
     const { patientId, medications, diagnosis, allergies } = req.body;
     const alerts = [];
@@ -1661,7 +1920,7 @@ app.post('/api/ai/cds-check', optionalAuth, async (req, res) => {
 // AI VALIDATION (MAN-IN-THE-LOOP)
 // ============================================================================
 
-app.get('/api/ai/validations', optionalAuth, async (req, res) => {
+app.get('/api/ai/validations', authenticateToken, async (req, res) => {
   try {
     const validations = Array.from(aiValidations.values())
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
@@ -1680,7 +1939,7 @@ app.get('/api/ai/validations', optionalAuth, async (req, res) => {
   }
 });
 
-app.post('/api/ai/validate', optionalAuth, async (req, res) => {
+app.post('/api/ai/validate', authenticateToken, async (req, res) => {
   try {
     const { validationId, type, content, action, doctorId, patientId, reason } = req.body;
     
@@ -1743,7 +2002,7 @@ app.get('/api/meetings/stt/config', (req, res) => {
 });
 
 // POST /api/meetings/:id/transcribe-audio — Full audio file transcription via Google STT
-app.post('/api/meetings/:id/transcribe-audio', optionalAuth, async (req, res) => {
+app.post('/api/meetings/:id/transcribe-audio', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     const { audioBase64, audioUrl, language = 'th-TH', enableDiarization = true } = req.body;
@@ -2217,7 +2476,74 @@ io.on('connection', (socket) => {
     const { meetingId, status } = data;
     io.to(meetingId).emit('meeting-status', { meetingId, status, timestamp: new Date().toISOString() });
   });
+
+  socket.on('media-update', (data) => {
+    const { meetingId, userId, userName, role, camera, microphone } = data;
+    if (meetingId) {
+      let roomMedia = participantMediaStatus.get(meetingId);
+      if (!roomMedia) { roomMedia = new Map(); participantMediaStatus.set(meetingId, roomMedia); }
+      roomMedia.set(userId || socket.id, {
+        userId: userId || socket.id, userName, role, camera, microphone,
+        lastUpdated: new Date().toISOString(),
+      });
+      io.to(meetingId).emit('participant-media-update', {
+        userId: userId || socket.id, userName, role, camera, microphone,
+        timestamp: new Date().toISOString(),
+      });
+    }
+  });
   
+  socket.on('lobby-request', (data) => {
+    const { meetingId, participantId, participantName, role, email } = data;
+    if (!meetingId || !participantId) return;
+    
+    // Hosts (doctor/admin) bypass lobby
+    if (role === 'doctor' || role === 'admin') {
+      socket.emit('lobby-response', { meetingId, participantId, status: 'admitted' });
+      return;
+    }
+    
+    let lobby = meetingLobbies.get(meetingId);
+    if (!lobby) { lobby = new Map(); meetingLobbies.set(meetingId, lobby); }
+    
+    const entry = {
+      participantId, participantName, role: role || 'guest',
+      email: email || null, status: 'waiting',
+      socketId: socket.id, joinedAt: new Date().toISOString(),
+    };
+    lobby.set(participantId, entry);
+    
+    // Notify room (doctor will see this)
+    io.to(meetingId).emit('lobby-update', { meetingId, action: 'join', participant: entry });
+    socket.emit('lobby-response', { meetingId, participantId, status: 'waiting' });
+  });
+  
+  socket.on('lobby-admit', (data) => {
+    const { meetingId, participantId, admittedBy } = data;
+    const lobby = meetingLobbies.get(meetingId);
+    if (!lobby?.has(participantId)) return;
+    
+    const entry = lobby.get(participantId);
+    entry.status = 'admitted';
+    entry.admittedBy = admittedBy;
+    entry.admittedAt = new Date().toISOString();
+    
+    io.to(meetingId).emit('lobby-update', { meetingId, action: 'admit', participant: entry });
+  });
+  
+  socket.on('lobby-reject', (data) => {
+    const { meetingId, participantId, rejectedBy } = data;
+    const lobby = meetingLobbies.get(meetingId);
+    if (!lobby?.has(participantId)) return;
+    
+    const entry = lobby.get(participantId);
+    entry.status = 'rejected';
+    entry.rejectedBy = rejectedBy;
+    entry.rejectedAt = new Date().toISOString();
+    
+    io.to(meetingId).emit('lobby-update', { meetingId, action: 'reject', participant: entry });
+  });
+
   socket.on('disconnect', () => {
     if (socket.meetingId) {
       socket.to(socket.meetingId).emit('participant-left', { socketId: socket.id, timestamp: new Date().toISOString() });
@@ -2316,7 +2642,7 @@ const startServer = async () => {
           meetingChats.delete(key);
         }
       }
-      console.log(`[CLEANUP] Maps: transcriptions=${activeTranscriptions.size}, chats=${meetingChats.size}, invites=${meetingInvites.size}`);
+      console.log(`[CLEANUP] Maps: transcriptions=${activeTranscriptions.size}, chats=${meetingChats.size}, invites=${meetingInvites.size}, mediaStatus=${participantMediaStatus.size}, consents=${meetingConsents.size}, lobbies=${meetingLobbies.size}`);
     }, 30 * 60 * 1000);
   } catch (error) {
     console.error('❌ Failed to start server:', error);

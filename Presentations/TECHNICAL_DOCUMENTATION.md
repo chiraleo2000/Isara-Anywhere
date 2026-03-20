@@ -1,10 +1,10 @@
 # Izara Telemedicine Platform - Technical Documentation
 
-> **Version:** 1.5.7 (Updated March 15, 2026)
-> **Status:** Phase 1 Complete + SonarQube S6551/S6698 Fixed — All Tests Passing (v1.5.7)
-> **Database:** PostgreSQL 18 + pgvector  
+> **Version:** 1.5.8 (Updated March 19, 2026)
+> **Status:** Phase 1 Complete + SonarQube Clean — All Tests Passing (v1.5.8)
+> **Database:** PostgreSQL 18 + pgvector (42 tables)  
 > **Stack:** PostgreSQL / Express / React / Jitsi / Gemini AI / Google Cloud  
-> **Tests:** 2,013 Unit Tests (Vitest) + 1,124 E2E Tests (Playwright) = **3,137 total — 100% Pass Rate**  
+> **Tests:** 2,013 Unit Tests (Vitest) + 1,124 E2E Local (Playwright) + 177 Cloud Tests (Playwright) = **3,314 total — 100% Pass Rate**  
 > **Code Quality:** SonarQube clean — zero `error: any`, strict TypeScript safety, 31/31 API endpoints verified
 
 ---
@@ -166,7 +166,7 @@ The platform uses a **Hybrid Cloud-Native Architecture**:
 | **AI** | Google Gemini | 2.5 Flash Lite |
 | **Video** | Jitsi Meet (meet.jit.si - FREE) | Latest |
 | **Maps** | Google Maps Platform | v3 |
-| **Testing** | Playwright, Vitest | Playwright 1.40, Vitest 2.1 |
+| **Testing** | Playwright, Vitest | Playwright 1.58, Vitest 2.1 |
 
 ### 2.3 Visualization
 
@@ -208,28 +208,33 @@ The system uses a robust **PostgreSQL Relational Database** with:
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────┐
-│                          DATABASE SCHEMA                                 │
+│                   DATABASE SCHEMA (42 tables)                            │
 ├─────────────────────┬─────────────────────┬─────────────────────────────┤
 │  AUTH TABLES        │  PATIENT TABLES     │  DOCTOR TABLES              │
 │  ├─ users           │  ├─ patient_profiles│  ├─ doctor_profiles         │
 │  ├─ sessions        │  ├─ phr             │  ├─ doctors                 │
 │  └─ password_resets │  ├─ vital_signs     │  ├─ doctor_schedules        │
-│                     │  ├─ living_wills    │  ├─ doctor_reviews          │
-│                     │  └─ patient_consents│  └─ consultants             │
+│                     │  ├─ living_wills    │  └─ doctor_reviews          │
+│                     │  ├─ living_will_ver │                             │
+│                     │  └─ patient_consents│                             │
 ├─────────────────────┼─────────────────────┼─────────────────────────────┤
 │  APPOINTMENT        │  CLINICAL           │  CONTENT                    │
 │  ├─ appointments    │  ├─ emr             │  ├─ medical_content         │
 │  ├─ meeting_records │  ├─ prescriptions   │  ├─ clinical_resources      │
-│  └─ meeting_transcripts  └─ lab_orders    │  ├─ icd10_codes             │
-│                     │                     │  └─ drugs                   │
+│  └─ meeting_transcr │  └─ lab_orders      │  ├─ icd10_codes             │
+│                     │                     │  ├─ drugs                   │
+│                     │                     │  └─ consultants             │
 ├─────────────────────┼─────────────────────┼─────────────────────────────┤
-│  AI TABLES          │  AUDIT              │                             │
-│  ├─ notifications   │  └─ audit_logs      │                             │
-│  ├─ knowledge_base  │                     │                             │
-│  ├─ ai_chat_history │                     │                             │
-│  ├─ ai_document_analysis                  │                             │
-│  ├─ cds_logs        │                     │                             │
-│  └─ ai_validations  │                     │                             │
+│  AI TABLES          │  AUDIT              │  PHASE 2 (Mobile)           │
+│  ├─ knowledge_base  │  ├─ audit_logs      │  ├─ device_tokens           │
+│  ├─ ai_chat_history │  └─ cds_logs        │  ├─ biometric_credentials   │
+│  ├─ ai_chat_memory  │                     │  ├─ refresh_tokens          │
+│  ├─ transcript_embed│  NOTIFICATIONS      │  ├─ push_subscriptions      │
+│  ├─ ai_document_ana │  └─ notifications   │  ├─ notification_prefs      │
+│  └─ ai_validations  │                     │  ├─ user_api_connections    │
+│                     │                     │  ├─ api_connection_audit    │
+│                     │                     │  ├─ sync_queue              │
+│                     │                     │  └─ user_settings           │
 └─────────────────────┴─────────────────────┴─────────────────────────────┘
 ```
 
@@ -266,6 +271,17 @@ emr (
   subjective, objective, assessment, plan,  -- SOAP format (JSONB)
   ai_summary, ai_summary_approved,          -- AI assistance
   patient_instructions, doctor_signature    -- Instructions
+)
+```
+
+#### PHR (Personal Health Records)
+
+```sql
+phr (
+  id, patient_id,                           -- Ownership
+  medications, allergies, chronic_conditions,-- Clinical (JSONB)
+  family_history, surgical_history,         -- History (JSONB)
+  updated_at                                -- Timestamp
 )
 ```
 
@@ -412,13 +428,24 @@ services:
 
 ## 7. Testing
 
-### 7.1 Test Summary (March 14, 2026)
+### 7.1 Test Summary (March 19, 2026)
 
 | Layer | Framework | Files / Specs | Tests | Duration |
 | --- | --- | --- | --- | --- |
 | **Unit Tests** | Vitest 2.1.9 | 58 files | 2,013 | ~4.3s |
-| **E2E — Local Desktop** | Playwright 1.40 | 32 specs | 1,124 | ~4.2 min |
-| **TOTAL** | | **58 unit + 32 E2E** | **3,137** | **100% Pass** |
+| **E2E — Local Desktop** | Playwright 1.58 | 32 specs | 1,124 | ~4.2 min |
+| **Cloud Tests** | Playwright 1.58 | 5 specs | 177 | ~5.0 min |
+| **TOTAL** | | **58 unit + 32 local + 5 cloud** | **3,314** | **100% Pass** |
+
+### 7.1.0 Cloud Test Suites (tests/*.ui-test.ts) — 177 Tests
+
+| Test File | Tests | Coverage |
+| --- | --- | --- |
+| cloud-ui-screenshots | 39 | 14 patient pages + 12 doctor pages + 13 API health checks |
+| cloud-workflow-multiuser | 42 | 8 workflow sections: User Mgmt, Appointments, Health Records, Content, Notifications, Living Will, Medical Consultants, AI Features |
+| meeting-multi-user | 27 | Multi-user meeting flows: login, appointment, consent, lobby, transcription, post-meeting |
+| workflow-screenshots | 25 | Complete appointment lifecycle: auth, booking, video meeting, health records |
+| ui-pages | 44 | All patient + doctor portal page load verification |
 
 ### 7.1.1 Unit Test Suites (tests/unit/) — 58 Files
 
@@ -579,6 +606,17 @@ npx playwright test "09-phase2" --project=Local
 
 # View HTML Report
 npx playwright show-report
+
+# ── Cloud Tests (177 tests, runs against Cloud Run) ──
+# Run ALL cloud tests (3 parallel workers)
+npx playwright test --reporter=line --workers=3
+
+# Run individual cloud test suites
+npx playwright test tests/cloud-ui-screenshots.ui-test.ts       # 39 tests
+npx playwright test tests/cloud-workflow-multiuser.ui-test.ts    # 42 tests
+npx playwright test tests/meeting-multi-user.ui-test.ts          # 27 tests
+npx playwright test tests/workflow-screenshots.ui-test.ts        # 25 tests
+npx playwright test tests/ui-pages.ui-test.ts                    # 44 tests
 ```
 
 ---
@@ -598,6 +636,9 @@ npx playwright show-report
 - [x] **SonarQube Compliance**: Fixed S6551 (unsafe string interpolation), S4325 (unnecessary assertions), non-null assertions across codebase
 - [x] **Codebase Restructuring**: Patient portal pages flattened, server routes merged into 17 consolidated modules, 19 empty folders removed
 - [x] **API Verification**: 31/31 GET endpoints + 5/5 write operations returning 200 OK with proper data
+- [x] **Cloud Test Suite**: 177 Playwright cloud tests across 5 test files — all passing on Google Cloud Run (v1.5.8)
+- [x] **Auth Fix & JWT Verification**: Doctor portal `/auth/verify` JWT fallback, patient auth injection across all test files
+- [x] **Parallel Test Execution**: Cloud tests run with 3 workers, `fullyParallel: true`, 120s timeouts
 - [x] **AuthenticatedRequest Interface**: Strongly-typed with explicit fields and union role type
 - [ ] **Advanced RAG**: Full knowledge_base vector search for clinical decision support
 - [ ] **IoMT Integration**: Wearable device sync for vitals

@@ -2,8 +2,8 @@
 
 ## Presentation Script & Guide
 
-> **Version:** 1.5.7 | **Date:** March 2026
-> **Status:** Phase 1 Complete + SonarQube S6551/S6698 Fixed — All Tests Passing (v1.5.7)
+> **Version:** 1.5.8 | **Date:** March 2026
+> **Status:** Phase 1 Complete + SonarQube Clean — All Tests Passing (v1.5.8)
 > **Duration:** 30-45 minutes  
 > **Audience:** Stakeholders, Technical Team, Medical Staff
 
@@ -106,7 +106,7 @@
 | **AI** | Google Gemini 2.5 Flash Lite |
 | **Video** | Jitsi Meet (Self-Hosted) |
 | **Maps** | Google Maps Platform |
-| **Testing** | Playwright E2E (1,124 tests) + Vitest Unit (2,013 tests) |
+| **Testing** | Playwright E2E (1,124 local + 177 cloud) + Vitest Unit (2,013) = 3,314 |
 
 ---
 
@@ -252,7 +252,7 @@
 
 **Schema Reference:** `database/izara-complete-schema-v4.dbml`
 
-**Table Groups:**
+**42 Tables across Phase 1 + Phase 2:**
 
 | Group | Tables |
 | ------- | -------- |
@@ -262,8 +262,9 @@
 | **Appointments** | appointments, meeting_records, meeting_transcripts |
 | **Clinical** | emr, prescriptions, lab_orders |
 | **Content** | medical_content, clinical_resources, icd10_codes, drugs |
-| **AI** | knowledge_base, ai_chat_history, cds_logs, ai_validations |
-| **Audit** | audit_logs |
+| **AI** | knowledge_base, ai_chat_history, ai_chat_memory, transcript_embeddings, ai_document_analysis, cds_logs, ai_validations |
+| **Audit** | audit_logs, notifications |
+| **Phase 2** | device_tokens, biometric_credentials, refresh_tokens, push_subscriptions, notification_preferences, user_api_connections, api_connection_audit, sync_queue, user_settings |
 
 ---
 
@@ -342,7 +343,7 @@ users (unified)
 - 🔒 **SonarQube Clean**: No S6551, S4325, or non-null assertion warnings
 - 🔒 **Credentials**: Service account keys stored in `credentials/` (not public/)
 - 🔒 **Audit Logging**: Complete trail in audit_logs
-- 🔒 **Testing**: 3,137 tests (2,013 unit + 1,124 E2E) — 100% pass rate
+- 🔒 **Testing**: 3,314 tests (2,013 unit + 1,124 local E2E + 177 cloud) — 100% pass rate
 
 ---
 
@@ -395,4 +396,4 @@ users (unified)
 
 ---
 
-### Last Updated: March 13, 2026
+### Last Updated: March 19, 2026

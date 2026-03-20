@@ -18,6 +18,15 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../components/common/AuthProvider';
+import { getToken } from '../../services/authServices';
+
+// Helper: get auth headers for meeting server API calls
+function getAuthHeaders(): Record<string, string> {
+  const token = getToken();
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  return headers;
+}
 
 // ============================================================================
 // TYPES
@@ -41,11 +50,27 @@ interface ChatMessage {
   timestamp: string;
 }
 
+interface MediaDeviceStatus {
+  camera: 'checking' | 'granted' | 'denied' | 'unavailable';
+  microphone: 'checking' | 'granted' | 'denied' | 'unavailable';
+  cameraLabel: string;
+  microphoneLabel: string;
+}
+
 interface MeetingState {
-  status: 'loading' | 'ready' | 'in_progress' | 'ended';
+  status: 'loading' | 'agreement' | 'pre_join' | 'ready' | 'in_progress' | 'ended';
   isTranscribing: boolean;
   isPaused: boolean;
   transcriptLanguage: 'th-TH' | 'en-US';
+}
+
+interface LobbyParticipant {
+  participantId: string;
+  participantName: string;
+  role: string;
+  email?: string;
+  status: 'waiting' | 'admitted' | 'rejected';
+  joinedAt: string;
 }
 
 // ============================================================================
@@ -62,10 +87,121 @@ const MEETING_SERVER_URL = (() => {
 })();
 
 // ============================================================================
+// PURE UTILITY FUNCTIONS (module-level to reduce component complexity)
+// ============================================================================
+
+function formatDuration(seconds: number): string {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  return h > 0
+    ? `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+    : `${m}:${String(s).padStart(2, '0')}`;
+}
+
+function getSpeakerBadgeClass(role: string): string {
+  if (role === 'doctor') return 'bg-blue-900 text-blue-300';
+  if (role === 'patient') return 'bg-green-900 text-green-300';
+  return 'bg-gray-600 text-gray-300';
+}
+
+function getSpeakerEmoji(role: string): string {
+  if (role === 'doctor') return 'Dr.';
+  if (role === 'patient') return 'Pt.';
+  return '';
+}
+
+function getUserInitials(name: string): string {
+  return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() || 'DR';
+}
+
+function getMediaStatusIcon(status: string): string {
+  switch (status) {
+    case 'granted': return 'OK';
+    case 'denied': return 'X';
+    case 'unavailable': return '!';
+    default: return '...';
+  }
+}
+
+function getMediaStatusText(status: string): string {
+  switch (status) {
+    case 'granted': return 'พร้อมใช้งาน';
+    case 'denied': return 'ถูกปฏิเสธ - กรุณาอนุญาตในเบราว์เซอร์';
+    case 'unavailable': return 'ไม่พบอุปกรณ์';
+    default: return 'กำลังตรวจสอบ...';
+  }
+}
+
+/** Process a single final speech recognition result into a TranscriptSegment */
+function buildTranscriptSegment(
+  result: any,
+  speakerName: string,
+  language: string,
+): TranscriptSegment | null {
+  if (!result.isFinal) return null;
+  const content = result[0].transcript.trim();
+  if (!content) return null;
+  return {
+    id: `seg-${Date.now()}`,
+    speakerRole: 'doctor',
+    speakerName,
+    content,
+    language: language === 'th-TH' ? 'th' : 'en',
+    timestamp: new Date().toISOString(),
+  };
+}
+
+/** Persist a transcript segment via Socket.IO and REST */
+function sendTranscriptSegment(
+  segment: TranscriptSegment,
+  confidence: number,
+  opts: { socketRef: any; appointmentId: string; userId: string; speakerName: string },
+): void {
+  const payload = {
+    meetingId: opts.appointmentId,
+    speakerId: opts.userId,
+    speakerRole: 'doctor',
+    speakerName: opts.speakerName,
+    content: segment.content,
+    language: segment.language,
+    confidence,
+  };
+  if (opts.socketRef.current?.connected) {
+    opts.socketRef.current.emit('transcript-segment', payload);
+  }
+  fetch(`${MEETING_SERVER_URL}/api/meetings/${opts.appointmentId}/transcript`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(payload),
+  }).catch(err => console.warn('[Transcript] REST save failed:', err.message));
+}
+
+/** Handle speech recognition error — returns an error message for UI or null */
+function handleRecognitionError(
+  event: any,
+  recognition: any,
+  isActive: boolean,
+  isPaused: boolean,
+): string | null {
+  console.warn('[Speech] Error:', event.error);
+  if (event.error === 'not-allowed') {
+    return 'Microphone access denied for transcription';
+  }
+  if ((event.error === 'network' || event.error === 'aborted') && isActive && !isPaused) {
+    setTimeout(() => {
+      try { recognition.start(); } catch { /* ignore */ }
+    }, 1000);
+  }
+  return null;
+}
+
+// ============================================================================
 // COMPONENT
 // ============================================================================
 
-const MeetingRoom: React.FC = () => {
+// NOSONAR - Large React component with multiple render sections; further decomposition would split tightly-coupled state
+const MeetingRoom: React.FC = () => { // NOSONAR
   const { appointmentId } = useParams<{ appointmentId: string }>();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -75,6 +211,7 @@ const MeetingRoom: React.FC = () => {
   const jitsiApiRef = useRef<any>(null);
   const recognitionRef = useRef<any>(null);
   const socketRef = useRef<any>(null);
+  const roomNameRef = useRef<string>('');
 
   // State
   const [meetingState, setMeetingState] = useState<MeetingState>({
@@ -83,11 +220,20 @@ const MeetingRoom: React.FC = () => {
     isPaused: false,
     transcriptLanguage: 'th-TH',
   });
+  const [mediaStatus, setMediaStatus] = useState<MediaDeviceStatus>({
+    camera: 'checking', microphone: 'checking',
+    cameraLabel: '', microphoneLabel: '',
+  });
+  const [cameraOn, setCameraOn] = useState(true);
+  const [micOn, setMicOn] = useState(true);
+  const previewStreamRef = useRef<MediaStream | null>(null);
+  const previewVideoRef = useRef<HTMLVideoElement>(null);
   const [transcripts, setTranscripts] = useState<TranscriptSegment[]>([]);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [aiSummary, setAiSummary] = useState<string | null>(null);
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
+  const [summaryValidationStatus, setSummaryValidationStatus] = useState<'pending' | 'approved' | 'rejected' | null>(null);
   const meetingInfoRef = useRef<any>(null);
   const [showPanel, setShowPanel] = useState<'transcript' | 'chat' | 'summary' | null>('transcript');
   const [error, setError] = useState<string | null>(null);
@@ -95,6 +241,21 @@ const MeetingRoom: React.FC = () => {
   const [meetingDuration, setMeetingDuration] = useState(0);
   const [guestEmail, setGuestEmail] = useState('');
   const [guestName, setGuestName] = useState('');
+
+  // Agreement / Consent
+  const [consentRecording, setConsentRecording] = useState(false);
+  const [consentTranscript, setConsentTranscript] = useState(false);
+  const [consentDataSharing, setConsentDataSharing] = useState(false);
+
+  // Lobby / Waiting Room
+  const [lobbyParticipants, setLobbyParticipants] = useState<LobbyParticipant[]>([]);
+  const [showLobby, setShowLobby] = useState(false);
+
+  // Recording
+  const [isRecording, setIsRecording] = useState(false);
+
+  // Post-meeting tab
+  const [endedTab, setEndedTab] = useState<'summary' | 'transcript' | 'actions'>('summary');
 
   const transcriptEndRef = useRef<HTMLDivElement>(null);
   const durationTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -108,6 +269,63 @@ const MeetingRoom: React.FC = () => {
     durationTimerRef.current = setInterval(() => {
       setMeetingDuration(Math.floor((Date.now() - start) / 1000));
     }, 1000);
+  }, []);
+
+  // ============================================================================
+  // MEDIA DEVICE CHECK (Teams-like pre-join)
+  // ============================================================================
+
+  const checkMediaDevices = useCallback(async () => {
+    const status: MediaDeviceStatus = {
+      camera: 'checking', microphone: 'checking',
+      cameraLabel: '', microphoneLabel: '',
+    };
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      const videoTrack = stream.getVideoTracks()[0];
+      const audioTrack = stream.getAudioTracks()[0];
+      status.camera = videoTrack ? 'granted' : 'unavailable';
+      status.microphone = audioTrack ? 'granted' : 'unavailable';
+      status.cameraLabel = videoTrack?.label || 'Camera';
+      status.microphoneLabel = audioTrack?.label || 'Microphone';
+      previewStreamRef.current = stream;
+      if (previewVideoRef.current) {
+        previewVideoRef.current.srcObject = stream;
+      }
+    } catch (err: any) {
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        status.camera = 'denied';
+        status.microphone = 'denied';
+      } else {
+        status.camera = 'unavailable';
+        status.microphone = 'unavailable';
+      }
+    }
+    setMediaStatus(status);
+    return status;
+  }, []);
+
+  const stopPreviewStream = useCallback(() => {
+    if (previewStreamRef.current) {
+      previewStreamRef.current.getTracks().forEach(t => t.stop());
+      previewStreamRef.current = null;
+    }
+  }, []);
+
+  const togglePreviewCamera = useCallback(() => {
+    if (previewStreamRef.current) {
+      const videoTrack = previewStreamRef.current.getVideoTracks()[0];
+      if (videoTrack) videoTrack.enabled = !videoTrack.enabled;
+    }
+    setCameraOn(prev => !prev);
+  }, []);
+
+  const togglePreviewMic = useCallback(() => {
+    if (previewStreamRef.current) {
+      const audioTrack = previewStreamRef.current.getAudioTracks()[0];
+      if (audioTrack) audioTrack.enabled = !audioTrack.enabled;
+    }
+    setMicOn(prev => !prev);
   }, []);
 
   // ============================================================================
@@ -153,136 +371,82 @@ const MeetingRoom: React.FC = () => {
     participantsRef.current = [...participantsRef.current, data.displayName || 'Unknown'];
   }, []);
 
-  useEffect(() => {
-    const connectSocket = async () => {
+  // Lobby update handler (extracted to reduce nesting depth — S2004)
+  const handleLobbyUpdate = useCallback((data: any) => {
+    if (data.action === 'join') {
+      setLobbyParticipants(prev => {
+        if (prev.some(p => p.participantId === data.participant.participantId)) return prev;
+        return [...prev, data.participant];
+      });
+      setShowLobby(true);
+    } else if (data.action === 'admit' || data.action === 'reject') {
+      setLobbyParticipants(prev =>
+        prev.filter(p => p.participantId !== data.participant.participantId)
+      );
+    }
+  }, []);
+
+  // Socket connection (extracted to reduce cognitive complexity — S3776)
+  const connectSocket = useCallback(async () => {
+    try {
+      const { io } = await import('socket.io-client');
+      const socket = io(MEETING_SERVER_URL, {
+        transports: ['websocket', 'polling'],
+        autoConnect: true,
+      });
+
+      socket.on('connect', () => {
+        console.log('[Socket] Connected to meeting server');
+        socket.emit('join-meeting', {
+          meetingId: appointmentId,
+          userName: user?.displayName || user?.name || 'Doctor',
+          role: 'doctor',
+        });
+      });
+
+      socket.on('transcript-update', handleTranscriptUpdate);
+      socket.on('chat-message', handleChatMessage);
+      socket.on('lobby-update', handleLobbyUpdate);
+      socket.on('meeting-status', (data: any) => {
+        console.log('[Socket] Meeting status:', data.status);
+      });
+
+      socketRef.current = socket;
+    } catch {
+      console.warn('[MeetingRoom] Socket.IO connection skipped (meeting server may be unavailable)');
+    }
+  }, [appointmentId, user, handleTranscriptUpdate, handleChatMessage, handleLobbyUpdate]);
+
+  // Meeting initializer (extracted to reduce cognitive complexity — S3776)
+  const initMeeting = useCallback(async () => {
+    try {
+      let roomName = `izara-${appointmentId?.substring(0, 12) || 'quick'}-${Date.now().toString(36)}`;
+
       try {
-        const { io } = await import('socket.io-client');
-        const socket = io(MEETING_SERVER_URL, {
-          transports: ['websocket', 'polling'],
-          autoConnect: true,
-        });
-
-        socket.on('connect', () => {
-          console.log('[Socket] Connected to meeting server');
-          socket.emit('join-meeting', {
-            meetingId: appointmentId,
-            userName: user?.displayName || user?.name || 'Doctor',
-            role: 'doctor',
-          });
-        });
-
-        socket.on('transcript-update', handleTranscriptUpdate);
-        socket.on('chat-message', handleChatMessage);
-
-        socket.on('meeting-status', (data: any) => {
-          console.log('[Socket] Meeting status:', data.status);
-        });
-
-        socketRef.current = socket;
-      } catch {
-        console.warn('[MeetingRoom] Socket.IO connection skipped (meeting server may be unavailable)');
-      }
-    };
-
-    const initMeeting = async () => {
-      try {
-        // 1. Fetch meeting info from meeting server
-        let roomName = `izara-${appointmentId?.substring(0, 12) || 'quick'}-${Date.now().toString(36)}`;
-
-        try {
-          const res = await fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}`);
-          if (res.ok) {
-            const data = await res.json();
-            if (data.meeting) {
-              meetingInfoRef.current = data.meeting;
-              roomName = data.meeting.room_name || roomName;
-            }
+        const res = await fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.meeting) {
+            meetingInfoRef.current = data.meeting;
+            roomName = data.meeting.room_name || roomName;
           }
-        } catch {
-          console.log('[MeetingRoom] No existing meeting record, creating new room');
         }
-
-        // 2. Load Jitsi External API
-        await loadJitsiScript();
-
-        // 3. Initialize Jitsi
-        if (jitsiContainerRef.current && (globalThis as any).JitsiMeetExternalAPI) {
-          const api = new (globalThis as any).JitsiMeetExternalAPI(JITSI_DOMAIN, {
-            roomName,
-            parentNode: jitsiContainerRef.current,
-            width: '100%',
-            height: '100%',
-            configOverwrite: {
-              prejoinPageEnabled: true,
-              startWithAudioMuted: false,
-              startWithVideoMuted: false,
-              enableClosePage: false,
-              disableDeepLinking: true,
-              defaultLanguage: 'th',
-              requireDisplayName: true,
-              enableLobbyChat: true,
-              fileRecordingsEnabled: false,
-              'localRecording.enabled': true,
-              toolbarButtons: [
-                'microphone', 'camera', 'desktop', 'chat',
-                'raisehand', 'participants-pane', 'tileview',
-                'hangup', 'settings', 'select-background',
-                'toggle-camera', 'fullscreen',
-              ],
-              disableThirdPartyRequests: true,
-              enableWelcomePage: false,
-              enableInsecureRoomNameWarning: false,
-              hideConferenceSubject: false,
-              subject: `Izara Consultation - ${appointmentId?.substring(0, 8) || 'Meeting'}`,
-            },
-            interfaceConfigOverwrite: {
-              APP_NAME: 'Izara Telemedicine',
-              SHOW_PROMOTIONAL_CLOSE_PAGE: false,
-              SHOW_JITSI_WATERMARK: false,
-              SHOW_WATERMARK_FOR_GUESTS: false,
-              SHOW_BRAND_WATERMARK: false,
-              DEFAULT_REMOTE_DISPLAY_NAME: 'ผู้เข้าร่วม',
-              DEFAULT_LOCAL_DISPLAY_NAME: user?.displayName || user?.name || 'แพทย์',
-              TOOLBAR_ALWAYS_VISIBLE: true,
-              DISABLE_JOIN_LEAVE_NOTIFICATIONS: false,
-            },
-            userInfo: {
-              displayName: user?.displayName || user?.name || 'Doctor',
-              email: user?.email || '',
-            },
-          });
-
-          jitsiApiRef.current = api;
-
-          // Simple Jitsi event handlers (local to avoid excessive nesting)
-          const handleReadyToClose = () => handleMeetingEnd();
-          const handleParticipantLeft = (data: any) => {
-            console.log('[Jitsi] Participant left:', data);
-          };
-          const handleChatUpdated = (data: any) => {
-            if (data.isOpen) setShowPanel('chat');
-          };
-
-          // Event listeners
-          api.on('readyToClose', handleReadyToClose);
-          api.on('videoConferenceJoined', handleConferenceJoined);
-          api.on('participantJoined', handleParticipantJoined);
-          api.on('participantLeft', handleParticipantLeft);
-          api.on('chatUpdated', handleChatUpdated);
-
-          setMeetingState(prev => ({ ...prev, status: 'ready' }));
-        }
-
-        // 4. Connect Socket.IO
-        await connectSocket();
-
-      } catch (err: any) {
-        console.error('[MeetingRoom] Init error:', err);
-        setError(err.message || 'Failed to initialize meeting');
-        setMeetingState(prev => ({ ...prev, status: 'ready' }));
+      } catch {
+        console.log('[MeetingRoom] No existing meeting record, creating new room');
       }
-    };
 
+      roomNameRef.current = roomName;
+      await checkMediaDevices();
+      setMeetingState(prev => ({ ...prev, status: 'agreement' }));
+      await connectSocket();
+    } catch (err: any) {
+      console.error('[MeetingRoom] Init error:', err);
+      setError(err.message || 'Failed to initialize meeting');
+      setMeetingState(prev => ({ ...prev, status: 'pre_join' }));
+    }
+  }, [appointmentId, checkMediaDevices, connectSocket]);
+
+  useEffect(() => {
     if (appointmentId) {
       initMeeting();
     }
@@ -301,22 +465,97 @@ const MeetingRoom: React.FC = () => {
       if (durationTimerRef.current) {
         clearInterval(durationTimerRef.current);
       }
+      stopPreviewStream();
     };
-  }, [appointmentId, user, loadJitsiScript, startDurationTimer, handleTranscriptUpdate, handleChatMessage, handleConferenceJoined, handleParticipantJoined]);
+  }, [appointmentId, initMeeting, stopPreviewStream]);
+
+  // ============================================================================
+  // JOIN MEETING (from pre-join screen → launch Jitsi)
+  // ============================================================================
+
+  const joinMeeting = useCallback(async () => {
+    stopPreviewStream();
+    try {
+      await loadJitsiScript();
+      if (jitsiContainerRef.current && (globalThis as any).JitsiMeetExternalAPI) {
+        const roomName = roomNameRef.current;
+        const api = new (globalThis as any).JitsiMeetExternalAPI(JITSI_DOMAIN, {
+          roomName,
+          parentNode: jitsiContainerRef.current,
+          width: '100%',
+          height: '100%',
+          configOverwrite: {
+            prejoinPageEnabled: false,
+            startWithAudioMuted: !micOn,
+            startWithVideoMuted: !cameraOn,
+            enableClosePage: false,
+            disableDeepLinking: true,
+            defaultLanguage: 'th',
+            requireDisplayName: true,
+            enableLobbyChat: true,
+            fileRecordingsEnabled: false,
+            'localRecording.enabled': true,
+            toolbarButtons: [
+              'microphone', 'camera', 'desktop', 'chat',
+              'raisehand', 'participants-pane', 'tileview',
+              'hangup', 'settings', 'select-background',
+              'toggle-camera', 'fullscreen',
+            ],
+            disableThirdPartyRequests: true,
+            enableWelcomePage: false,
+            enableInsecureRoomNameWarning: false,
+            hideConferenceSubject: false,
+            subject: `Izara Consultation - ${appointmentId?.substring(0, 8) || 'Meeting'}`,
+          },
+          interfaceConfigOverwrite: {
+            APP_NAME: 'Izara Telemedicine',
+            SHOW_PROMOTIONAL_CLOSE_PAGE: false,
+            SHOW_JITSI_WATERMARK: false,
+            SHOW_WATERMARK_FOR_GUESTS: false,
+            SHOW_BRAND_WATERMARK: false,
+            DEFAULT_REMOTE_DISPLAY_NAME: 'ผู้เข้าร่วม',
+            DEFAULT_LOCAL_DISPLAY_NAME: user?.displayName || user?.name || 'แพทย์',
+            TOOLBAR_ALWAYS_VISIBLE: true,
+            DISABLE_JOIN_LEAVE_NOTIFICATIONS: false,
+          },
+          userInfo: {
+            displayName: user?.displayName || user?.name || 'Doctor',
+            email: user?.email || '',
+          },
+        });
+
+        jitsiApiRef.current = api;
+
+        const handleReadyToClose = () => {
+          // End meeting: stop transcription, navigate back
+          setMeetingState(prev => ({ ...prev, status: 'ended' }));
+          if (durationTimerRef.current) clearInterval(durationTimerRef.current);
+        };
+        const handleParticipantLeft = (data: any) => {
+          console.log('[Jitsi] Participant left:', data);
+        };
+        const handleChatUpdated = (data: any) => {
+          if (data.isOpen) setShowPanel('chat');
+        };
+
+        api.on('readyToClose', handleReadyToClose);
+        api.on('videoConferenceJoined', handleConferenceJoined);
+        api.on('participantJoined', handleParticipantJoined);
+        api.on('participantLeft', handleParticipantLeft);
+        api.on('chatUpdated', handleChatUpdated);
+
+        setMeetingState(prev => ({ ...prev, status: 'ready' }));
+      }
+    } catch (err: any) {
+      console.error('[MeetingRoom] Join error:', err);
+      setError(err.message || 'Failed to join meeting');
+    }
+  }, [stopPreviewStream, loadJitsiScript, micOn, cameraOn, appointmentId, user, handleConferenceJoined, handleParticipantJoined]);
 
   // Auto-scroll transcript
   useEffect(() => {
     transcriptEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [transcripts]);
-
-  const formatDuration = (seconds: number) => {
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    const s = seconds % 60;
-    return h > 0
-      ? `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
-      : `${m}:${String(s).padStart(2, '0')}`;
-  };
 
   // ============================================================================
   // WEB SPEECH API TRANSCRIPTION
@@ -329,6 +568,7 @@ const MeetingRoom: React.FC = () => {
       return;
     }
 
+    const speakerName = user?.displayName || user?.name || 'Doctor';
     const recognition = new SpeechRecognition();
     recognition.continuous = true;
     recognition.interimResults = true;
@@ -337,69 +577,22 @@ const MeetingRoom: React.FC = () => {
 
     recognition.onresult = (event: any) => {
       for (let i = event.resultIndex; i < event.results.length; i++) {
-        const result = event.results[i];
-        if (result.isFinal) {
-          const content = result[0].transcript.trim();
-          if (content) {
-            const segment: TranscriptSegment = {
-              id: `seg-${Date.now()}`,
-              speakerRole: 'doctor',
-              speakerName: user?.displayName || user?.name || 'Doctor',
-              content,
-              language: meetingState.transcriptLanguage === 'th-TH' ? 'th' : 'en',
-              timestamp: new Date().toISOString(),
-            };
-
-            setTranscripts(prev => [...prev, segment]);
-
-            // Send to meeting server via Socket.IO
-            if (socketRef.current?.connected) {
-              socketRef.current.emit('transcript-segment', {
-                meetingId: appointmentId,
-                speakerId: user?.id,
-                speakerRole: 'doctor',
-                speakerName: user?.displayName || user?.name || 'Doctor',
-                content,
-                language: segment.language,
-                confidence: result[0].confidence,
-              });
-            }
-
-            // Also persist via REST API
-            fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/transcript`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                speakerId: user?.id,
-                speakerRole: 'doctor',
-                speakerName: user?.displayName || user?.name || 'Doctor',
-                content,
-                language: segment.language,
-                confidence: result[0].confidence,
-              }),
-            }).catch(err => console.warn('[Transcript] REST save failed:', err.message));
-          }
+        const segment = buildTranscriptSegment(event.results[i], speakerName, meetingState.transcriptLanguage);
+        if (segment) {
+          setTranscripts(prev => [...prev, segment]);
+          sendTranscriptSegment(segment, event.results[i][0].confidence, {
+            socketRef, appointmentId: appointmentId || '', userId: user?.id || '', speakerName,
+          });
         }
       }
     };
 
     recognition.onerror = (event: any) => {
-      console.warn('[Speech] Error:', event.error);
-      if (event.error === 'not-allowed') {
-        setError('Microphone access denied for transcription');
-      }
-      // Auto-restart on network errors
-      if (event.error === 'network' || event.error === 'aborted') {
-        setTimeout(() => {
-          if (meetingState.isTranscribing && !meetingState.isPaused) {
-            try { recognition.start(); } catch { /* ignore */ }
-          }
-        }, 1000);
-      }
+      const errMsg = handleRecognitionError(event, recognition, meetingState.isTranscribing, meetingState.isPaused);
+      if (errMsg) setError(errMsg);
     };
 
     recognition.onend = () => {
-      // Restart if still supposed to be transcribing
       if (meetingState.isTranscribing && !meetingState.isPaused) {
         try { recognition.start(); } catch { /* ignore */ }
       }
@@ -410,10 +603,9 @@ const MeetingRoom: React.FC = () => {
 
     setMeetingState(prev => ({ ...prev, isTranscribing: true, isPaused: false }));
 
-    // Notify meeting server
     fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/start-transcription`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders(),
       body: JSON.stringify({ language: meetingState.transcriptLanguage }),
     }).catch(() => { /* silent */ });
 
@@ -427,7 +619,7 @@ const MeetingRoom: React.FC = () => {
 
     fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/pause-transcription`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders(),
     }).catch(() => { /* silent */ });
   }, [appointmentId]);
 
@@ -439,7 +631,7 @@ const MeetingRoom: React.FC = () => {
 
     fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/pause-transcription`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders(),
     }).catch(() => { /* silent */ });
   }, [appointmentId]);
 
@@ -452,7 +644,7 @@ const MeetingRoom: React.FC = () => {
 
     fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/stop-transcription`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders(),
     }).catch(() => { /* silent */ });
   }, [appointmentId]);
 
@@ -498,10 +690,31 @@ const MeetingRoom: React.FC = () => {
     // Also via REST
     fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/chat`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders(),
       body: JSON.stringify(msg),
     }).catch(() => { /* silent */ });
   }, [chatInput, appointmentId, user]);
+
+  // ============================================================================
+  // RECORDING TOGGLE (Doctor as Host)
+  // ============================================================================
+
+  const toggleRecording = useCallback(async () => {
+    const newState = !isRecording;
+    setIsRecording(newState);
+    try {
+      await fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/auto-record`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ recording: newState, recordedBy: user?.id }),
+      });
+    } catch { /* silent */ }
+
+    // Auto-start transcript when recording starts
+    if (newState && !meetingState.isTranscribing) {
+      startTranscription();
+    }
+  }, [isRecording, appointmentId, user, meetingState.isTranscribing, startTranscription]);
 
   // ============================================================================
   // GUEST INVITE
@@ -513,7 +726,7 @@ const MeetingRoom: React.FC = () => {
     try {
       const res = await fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/invite`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ name: guestName, email: guestEmail, role: 'guest' }),
       });
       if (res.ok) {
@@ -535,7 +748,7 @@ const MeetingRoom: React.FC = () => {
     try {
       const res = await fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/generate-summary`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
       });
       if (res.ok) {
         const data = await res.json();
@@ -551,6 +764,56 @@ const MeetingRoom: React.FC = () => {
     }
   }, [appointmentId]);
 
+  // Man-in-the-Loop: Approve AI summary and save to EMR
+  const handleApproveSummary = useCallback(async () => {
+    try {
+      const res = await fetch(`${MEETING_SERVER_URL}/api/ai/validate`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          meetingId: appointmentId,
+          summaryType: 'soap',
+          content: aiSummary,
+          approved: true,
+          reviewedBy: user?.id || 'doctor',
+          reviewerName: user?.displayName || user?.name || 'Doctor',
+        }),
+      });
+      if (res.ok) {
+        setSummaryValidationStatus('approved');
+      } else {
+        setError('Failed to save validation');
+      }
+    } catch {
+      setError('Failed to validate summary');
+    }
+  }, [appointmentId, aiSummary, user]);
+
+  // Man-in-the-Loop: Reject AI summary
+  const handleRejectSummary = useCallback(async () => {
+    try {
+      const res = await fetch(`${MEETING_SERVER_URL}/api/ai/validate`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          meetingId: appointmentId,
+          summaryType: 'soap',
+          content: aiSummary,
+          approved: false,
+          reviewedBy: user?.id || 'doctor',
+          reviewerName: user?.displayName || user?.name || 'Doctor',
+        }),
+      });
+      if (res.ok) {
+        setSummaryValidationStatus('rejected');
+      } else {
+        setError('Failed to save rejection');
+      }
+    } catch {
+      setError('Failed to reject summary');
+    }
+  }, [appointmentId, aiSummary, user]);
+
   // ============================================================================
   // MEETING END
   // ============================================================================
@@ -561,6 +824,16 @@ const MeetingRoom: React.FC = () => {
       stopTranscription();
     }
 
+    // Stop recording
+    if (isRecording) {
+      setIsRecording(false);
+      fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/auto-record`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ recording: false, recordedBy: user?.id }),
+      }).catch(() => { /* silent */ });
+    }
+
     // Stop duration timer
     if (durationTimerRef.current) {
       clearInterval(durationTimerRef.current);
@@ -568,12 +841,81 @@ const MeetingRoom: React.FC = () => {
 
     setMeetingState(prev => ({ ...prev, status: 'ended' }));
 
+    // End meeting on server
+    fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/end`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ endedBy: user?.id || 'doctor' }),
+    }).catch(() => { /* silent */ });
+
     // Process embeddings
     fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/process-embeddings`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders(),
     }).catch(() => { /* silent */ });
-  }, [appointmentId, meetingState.isTranscribing, stopTranscription]);
+  }, [appointmentId, meetingState.isTranscribing, stopTranscription, user]);
+
+  // ============================================================================
+  // AGREEMENT / CONSENT
+  // ============================================================================
+
+  const handleAgreeAndContinue = useCallback(async () => {
+    // Submit consent to server
+    try {
+      await fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/consent`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          participantId: user?.id || 'unknown',
+          participantName: user?.displayName || user?.name || 'Doctor',
+          role: 'doctor',
+          consentRecording, consentTranscript, consentDataSharing,
+        }),
+      });
+    } catch { /* silent */ }
+
+    setMeetingState(prev => ({ ...prev, status: 'pre_join' }));
+  }, [appointmentId, user, consentRecording, consentTranscript, consentDataSharing]);
+
+  // ============================================================================
+  // LOBBY MANAGEMENT (Doctor as Host)
+  // ============================================================================
+
+  const admitFromLobby = useCallback(async (participantId: string) => {
+    try {
+      await fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/lobby/admit`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ participantId, admittedBy: user?.id }),
+      });
+    } catch { /* silent */ }
+
+    if (socketRef.current?.connected) {
+      socketRef.current.emit('lobby-admit', {
+        meetingId: appointmentId, participantId, admittedBy: user?.id,
+      });
+    }
+
+    setLobbyParticipants(prev => prev.filter(p => p.participantId !== participantId));
+  }, [appointmentId, user]);
+
+  const rejectFromLobby = useCallback(async (participantId: string) => {
+    try {
+      await fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/lobby/reject`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ participantId, rejectedBy: user?.id }),
+      });
+    } catch { /* silent */ }
+
+    if (socketRef.current?.connected) {
+      socketRef.current.emit('lobby-reject', {
+        meetingId: appointmentId, participantId, rejectedBy: user?.id,
+      });
+    }
+
+    setLobbyParticipants(prev => prev.filter(p => p.participantId !== participantId));
+  }, [appointmentId, user]);
 
   const goBack = useCallback(() => {
     const userId = user?.id;
@@ -583,18 +925,6 @@ const MeetingRoom: React.FC = () => {
   // ============================================================================
   // RENDER
   // ============================================================================
-
-  const getSpeakerBadgeClass = (role: string): string => {
-    if (role === 'doctor') return 'bg-blue-900 text-blue-300';
-    if (role === 'patient') return 'bg-green-900 text-green-300';
-    return 'bg-gray-600 text-gray-300';
-  };
-
-  const getSpeakerEmoji = (role: string): string => {
-    if (role === 'doctor') return '👨‍⚕️';
-    if (role === 'patient') return '🧑';
-    return '👥';
-  };
 
   const renderTranscriptButtons = () => {
     if (meetingState.isTranscribing) {
@@ -640,74 +970,265 @@ const MeetingRoom: React.FC = () => {
 
   return (
     <div className="h-screen flex flex-col bg-gray-900 text-white">
-      {/* Top Bar */}
-      <div className="flex items-center justify-between px-4 py-2 bg-gray-800 border-b border-gray-700">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={goBack}
-            className="text-gray-400 hover:text-white transition"
-            title="Back to Health Meeting"
-          >
-            ← กลับ
-          </button>
-          <div className="h-4 w-px bg-gray-600" />
-          <span className="text-blue-400 font-medium">🎥 Izara Meeting</span>
-          <span className="text-gray-400 text-sm">
-            {appointmentId?.substring(0, 8)}
-          </span>
-        </div>
 
+      {/* ================================================================== */}
+      {/* MEETING AGREEMENT SCREEN */}
+      {/* ================================================================== */}
+      {meetingState.status === 'agreement' && (
+        <div className="flex-1 flex flex-col items-center justify-center bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900" data-testid="meeting-agreement">
+          <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-6 py-4">
+            <div className="flex items-center gap-2">
+              <span className="text-xl font-bold text-blue-400">Izara Meeting</span>
+            </div>
+            <button onClick={goBack} className="text-gray-400 hover:text-white text-sm transition">← กลับ</button>
+          </div>
+
+          <div className="max-w-lg w-full px-8">
+            <div className="bg-gray-800/80 rounded-2xl p-8 border border-gray-700 shadow-2xl">
+              <div className="text-center mb-6">
+                <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-blue-600/20 flex items-center justify-center"><svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg></div>
+                <h1 className="text-2xl font-bold mb-2">ข้อตกลงก่อนเข้าประชุม</h1>
+                <p className="text-gray-400 text-sm">กรุณายอมรับข้อตกลงก่อนเข้าร่วมการประชุมทางการแพทย์</p>
+              </div>
+
+              <div className="space-y-4 mb-6">
+                <label className="flex items-start gap-3 cursor-pointer group" data-testid="consent-recording" aria-label="ยินยอมการบันทึกวิดีโอ">
+                  <input type="checkbox" checked={consentRecording} onChange={e => setConsentRecording(e.target.checked)}
+                    className="mt-1 w-5 h-5 rounded border-gray-600 text-blue-600 focus:ring-blue-500" />
+                  <div>
+                    <span className="font-medium group-hover:text-blue-300 transition">ยินยอมการบันทึกวิดีโอ</span>
+                    <p className="text-xs text-gray-400 mt-1">การประชุมอาจถูกบันทึกเพื่อวัตถุประสงค์ทางการแพทย์</p>
+                  </div>
+                </label>
+
+                <label className="flex items-start gap-3 cursor-pointer group" data-testid="consent-transcript" aria-label="ยินยอมการถอดเสียง">
+                  <input type="checkbox" checked={consentTranscript} onChange={e => setConsentTranscript(e.target.checked)}
+                    className="mt-1 w-5 h-5 rounded border-gray-600 text-blue-600 focus:ring-blue-500" />
+                  <div>
+                    <span className="font-medium group-hover:text-blue-300 transition">ยินยอมการถอดเสียง (Transcript)</span>
+                    <p className="text-xs text-gray-400 mt-1">บทสนทนาจะถูกถอดเสียงเป็นข้อความเพื่อบันทึกประวัติการรักษา</p>
+                  </div>
+                </label>
+
+                <label className="flex items-start gap-3 cursor-pointer group" data-testid="consent-data-sharing" aria-label="ยินยอมการแบ่งปันข้อมูล">
+                  <input type="checkbox" checked={consentDataSharing} onChange={e => setConsentDataSharing(e.target.checked)}
+                    className="mt-1 w-5 h-5 rounded border-gray-600 text-blue-600 focus:ring-blue-500" />
+                  <div>
+                    <span className="font-medium group-hover:text-blue-300 transition">ยินยอมการแบ่งปันข้อมูล</span>
+                    <p className="text-xs text-gray-400 mt-1">ข้อมูลประชุมจะถูกจัดเก็บในระบบ EMR อย่างปลอดภัย ตาม PDPA</p>
+                  </div>
+                </label>
+              </div>
+
+              <div className="bg-gray-700/50 rounded-lg p-3 mb-6 text-xs text-gray-300">
+                <p className="font-medium text-yellow-400 mb-1">หมายเหตุ</p>
+                <p>ข้อมูลทั้งหมดจะถูกเข้ารหัสและจัดเก็บตามมาตรฐาน PDPA และกฎหมายคุ้มครองข้อมูลส่วนบุคคล ท่านสามารถเพิกถอนความยินยอมได้ทุกเมื่อ</p>
+              </div>
+
+              <button
+                onClick={handleAgreeAndContinue}
+                disabled={!consentRecording || !consentTranscript || !consentDataSharing}
+                className="w-full py-4 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed rounded-xl text-lg font-bold transition-all shadow-lg"
+                data-testid="agree-continue-btn"
+              >
+                ยอมรับและดำเนินการต่อ
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================================================================== */}
+      {/* PRE-JOIN SCREEN (Teams-like) */}
+      {/* ================================================================== */}
+      {meetingState.status === 'pre_join' && (
+        <div className="flex-1 flex flex-col items-center justify-center bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900" data-testid="pre-join-screen">
+          {/* Header */}
+          <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-6 py-4">
+            <div className="flex items-center gap-2">
+              <span className="text-xl font-bold text-blue-400">Izara Meeting</span>
+            </div>
+            <button onClick={goBack} className="text-gray-400 hover:text-white text-sm transition">
+              ← กลับ
+            </button>
+          </div>
+
+          <div className="flex flex-col lg:flex-row items-center gap-12 max-w-5xl w-full px-8">
+            {/* Video Preview / Avatar */}
+            <div className="flex-1 flex flex-col items-center gap-4">
+              <div className="relative w-80 h-56 bg-gray-800 rounded-2xl overflow-hidden border-2 border-gray-600 shadow-2xl">
+                {cameraOn && mediaStatus.camera === 'granted' ? (
+                  <video ref={previewVideoRef} autoPlay muted playsInline className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-blue-900 to-purple-900">
+                    <div className="w-24 h-24 rounded-full bg-blue-500 flex items-center justify-center text-3xl font-bold text-white shadow-lg mb-3">
+                      {getUserInitials(user?.displayName || user?.name || 'Doctor')}
+                    </div>
+                    <span className="text-lg font-medium text-white">{user?.displayName || user?.name || 'Doctor'}</span>
+                    <span className="text-sm text-blue-200 mt-1">แพทย์</span>
+                  </div>
+                )}
+                {/* Camera off overlay indicator */}
+                {!cameraOn && (
+                  <div className="absolute bottom-3 left-3 bg-red-600/80 rounded-full px-2 py-1 text-xs flex items-center gap-1">
+                    Camera Off
+                  </div>
+                )}
+              </div>
+
+              {/* Media Controls */}
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={togglePreviewMic}
+                  className={`w-14 h-14 rounded-full flex items-center justify-center text-xl transition-all shadow-lg ${
+                    micOn && mediaStatus.microphone === 'granted'
+                      ? 'bg-gray-600 hover:bg-gray-500 text-white'
+                      : 'bg-red-600 hover:bg-red-500 text-white'
+                  }`}
+                  title={micOn ? 'ปิดไมค์' : 'เปิดไมค์'}
+                >
+                  {micOn && mediaStatus.microphone === 'granted' ? 'Mic' : 'Mute'}
+                </button>
+                <button
+                  onClick={togglePreviewCamera}
+                  className={`w-14 h-14 rounded-full flex items-center justify-center text-xl transition-all shadow-lg ${
+                    cameraOn && mediaStatus.camera === 'granted'
+                      ? 'bg-gray-600 hover:bg-gray-500 text-white'
+                      : 'bg-red-600 hover:bg-red-500 text-white'
+                  }`}
+                  title={cameraOn ? 'ปิดกล้อง' : 'เปิดกล้อง'}
+                >
+                  {cameraOn && mediaStatus.camera === 'granted' ? 'Cam' : 'Off'}
+                </button>
+              </div>
+            </div>
+
+            {/* Meeting Info & Device Status */}
+            <div className="flex-1 flex flex-col items-center lg:items-start gap-6 max-w-sm">
+              <div>
+                <h1 className="text-2xl font-bold mb-2">เข้าร่วมการประชุม</h1>
+                <p className="text-gray-400 text-sm">
+                  Izara Consultation — {appointmentId?.substring(0, 8)}
+                </p>
+              </div>
+
+              {/* Participant Info */}
+              <div className="w-full bg-gray-800/60 rounded-xl p-4 border border-gray-700">
+                <h3 className="text-sm font-semibold text-gray-300 mb-3">ข้อมูลผู้เข้าร่วม</h3>
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center text-lg font-bold shadow">
+                    {getUserInitials(user?.displayName || user?.name || 'Doctor')}
+                  </div>
+                  <div>
+                    <div className="font-medium">{user?.displayName || user?.name || 'Doctor'}</div>
+                    <div className="text-sm text-blue-400">แพทย์ผู้ดูแล</div>
+                    <div className="text-xs text-gray-500">{user?.email || ''}</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Device Status */}
+              <div className="w-full bg-gray-800/60 rounded-xl p-4 border border-gray-700" data-testid="device-status">
+                <h3 className="text-sm font-semibold text-gray-300 mb-3">สถานะอุปกรณ์</h3>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm flex items-center gap-2">
+                      ไมโครโฟน
+                    </span>
+                    <span className="text-xs">
+                      {getMediaStatusIcon(mediaStatus.microphone)} {getMediaStatusText(mediaStatus.microphone)}
+                    </span>
+                  </div>
+                  {mediaStatus.microphoneLabel && (
+                    <div className="text-xs text-gray-500 pl-6">{mediaStatus.microphoneLabel}</div>
+                  )}
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm flex items-center gap-2">
+                      กล้อง
+                    </span>
+                    <span className="text-xs">
+                      {getMediaStatusIcon(mediaStatus.camera)} {getMediaStatusText(mediaStatus.camera)}
+                    </span>
+                  </div>
+                  {mediaStatus.cameraLabel && (
+                    <div className="text-xs text-gray-500 pl-6">{mediaStatus.cameraLabel}</div>
+                  )}
+                </div>
+              </div>
+
+              {/* Join Button */}
+              <button
+                onClick={joinMeeting}
+                className="w-full py-4 bg-blue-600 hover:bg-blue-700 rounded-xl text-lg font-bold transition-all shadow-lg hover:shadow-blue-600/30"
+                data-testid="join-meeting-btn"
+              >
+                เข้าร่วมการประชุม
+              </button>
+
+              {(mediaStatus.camera === 'denied' || mediaStatus.microphone === 'denied') && (
+                <div className="w-full bg-yellow-900/30 border border-yellow-700/50 rounded-lg p-3 text-yellow-300 text-xs">
+                  กรุณาอนุญาตการเข้าถึงกล้องและไมโครโฟนในเบราว์เซอร์เพื่อใช้งานวิดีโอคอล
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================================================================== */}
+      {/* MAIN MEETING UI (after joining) — Teams-like layout */}
+      {/* ================================================================== */}
+      {meetingState.status !== 'pre_join' && (
+      <>
+      {/* Compact Top Bar */}
+      <div className="flex items-center justify-between px-4 py-1.5 bg-[#1b1b1b] border-b border-gray-800">
         <div className="flex items-center gap-3">
-          {/* Duration */}
+          <span className="text-blue-400 font-semibold text-sm">Izara Meeting</span>
+          <span className="text-gray-500 text-xs">{appointmentId?.substring(0, 8)}</span>
           {meetingState.status === 'in_progress' && (
-            <span className="text-green-400 font-mono text-sm">
-              🔴 {formatDuration(meetingDuration)}
+            <span className="flex items-center gap-1.5 text-sm">
+              <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+              <span className="text-gray-300 font-mono">{formatDuration(meetingDuration)}</span>
             </span>
           )}
-
-          {/* Transcript Controls */}
-          <div className="flex items-center gap-1 bg-gray-700 rounded-lg px-2 py-1">
-            {renderTranscriptButtons()}
-            <button
-              onClick={toggleLanguage}
-              className="px-2 py-1 bg-gray-600 hover:bg-gray-500 rounded text-xs transition"
-              title="Toggle Language"
-            >
-              {meetingState.transcriptLanguage === 'th-TH' ? '🇹🇭 ไทย' : '🇬🇧 EN'}
-            </button>
-          </div>
-
-          {/* Panel Toggles */}
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => setShowPanel(showPanel === 'transcript' ? null : 'transcript')}
-              className={`px-2 py-1 rounded text-sm transition ${showPanel === 'transcript' ? 'bg-blue-600' : 'bg-gray-700 hover:bg-gray-600'}`}
-            >
-              📝 Transcript
-            </button>
-            <button
-              onClick={() => setShowPanel(showPanel === 'chat' ? null : 'chat')}
-              className={`px-2 py-1 rounded text-sm transition ${showPanel === 'chat' ? 'bg-blue-600' : 'bg-gray-700 hover:bg-gray-600'}`}
-            >
-              💬 Chat
-            </button>
-            <button
-              onClick={() => setShowPanel(showPanel === 'summary' ? null : 'summary')}
-              className={`px-2 py-1 rounded text-sm transition ${showPanel === 'summary' ? 'bg-blue-600' : 'bg-gray-700 hover:bg-gray-600'}`}
-            >
-              🤖 AI Summary
-            </button>
-          </div>
-
-          {/* End Meeting */}
-          {meetingState.status === 'in_progress' && (
-            <button
-              onClick={handleMeetingEnd}
-              className="px-3 py-1 bg-red-600 hover:bg-red-700 rounded text-sm font-medium transition"
-            >
-              สิ้นสุดการประชุม
-            </button>
+          {isRecording && (
+            <span className="flex items-center gap-1 bg-red-600/20 border border-red-600/50 rounded-full px-2 py-0.5 text-xs text-red-400">
+              <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></span>
+              <span>REC</span>
+            </span>
           )}
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowPanel(showPanel === 'transcript' ? null : 'transcript')}
+            className={`px-2.5 py-1 rounded text-xs transition ${showPanel === 'transcript' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:bg-gray-700'}`}
+          >
+            Transcript
+          </button>
+          <button
+            onClick={() => setShowPanel(showPanel === 'chat' ? null : 'chat')}
+            className={`px-2.5 py-1 rounded text-xs transition ${showPanel === 'chat' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:bg-gray-700'}`}
+          >
+            Chat
+          </button>
+          <button
+            onClick={() => setShowPanel(showPanel === 'summary' ? null : 'summary')}
+            className={`px-2.5 py-1 rounded text-xs transition ${showPanel === 'summary' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:bg-gray-700'}`}
+          >
+            AI
+          </button>
+          <button
+            onClick={() => setShowLobby(!showLobby)}
+            className={`px-2.5 py-1 rounded text-xs transition relative ${showLobby ? 'bg-purple-600 text-white' : 'text-gray-400 hover:bg-gray-700'}`}
+            data-testid="lobby-toggle-btn"
+          >
+            Lobby
+            {lobbyParticipants.length > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center animate-pulse">
+                {lobbyParticipants.length}
+              </span>
+            )}
+          </button>
         </div>
       </div>
 
@@ -722,40 +1243,218 @@ const MeetingRoom: React.FC = () => {
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
         {/* Jitsi Container */}
-        <div className={`flex-1 ${showPanel ? '' : 'w-full'}`}>
+        <div className={`flex-1 flex flex-col ${showPanel ? '' : 'w-full'}`}>
           {meetingState.status === 'ended' ? (
-            <div className="h-full flex flex-col items-center justify-center bg-gray-800 gap-6">
-              <div className="text-6xl">🎥</div>
-              <h2 className="text-2xl font-bold">การประชุมสิ้นสุดแล้ว</h2>
-              <p className="text-gray-400">ระยะเวลา: {formatDuration(meetingDuration)}</p>
-              <p className="text-gray-400">Transcript segments: {transcripts.length}</p>
-              <div className="flex gap-3">
-                <button
-                  onClick={generateAISummary}
-                  disabled={isGeneratingSummary}
-                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 rounded-lg font-medium transition"
-                >
-                  {isGeneratingSummary ? '⏳ กำลังสร้างสรุป...' : '🤖 สร้างสรุป AI (SOAP Format)'}
-                </button>
-                <button
-                  onClick={goBack}
-                  className="px-6 py-3 bg-gray-600 hover:bg-gray-500 rounded-lg font-medium transition"
-                >
-                  กลับหน้า Health Meeting
+            /* ============================================================ */
+            /* POST-MEETING SCREEN — Teams-like with tabs & actions         */
+            /* ============================================================ */
+            <div className="h-full flex flex-col bg-[#1b1b1b]">
+              {/* Post-meeting header */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800">
+                <div>
+                  <h2 className="text-xl font-bold text-white">การประชุมสิ้นสุดแล้ว</h2>
+                  <p className="text-gray-400 text-sm mt-1">
+                    ระยะเวลา {formatDuration(meetingDuration)} • Transcript {transcripts.length} segments
+                  </p>
+                </div>
+                <button onClick={goBack} className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm transition">
+                  ← กลับหน้า Schedule
                 </button>
               </div>
-              {aiSummary && (
-                <div className="mt-4 max-w-2xl bg-gray-700 rounded-lg p-4 text-left">
-                  <h3 className="text-lg font-bold mb-2 text-blue-400">🤖 AI SOAP Summary</h3>
-                  <div className="whitespace-pre-wrap text-sm text-gray-200">{aiSummary}</div>
-                  <div className="mt-3 p-2 bg-yellow-900/30 rounded text-yellow-400 text-xs">
-                    ⚠️ กรุณาตรวจสอบสรุปก่อนบันทึกลง EMR (Man-in-the-Loop)
+
+              {/* Tabs */}
+              <div className="flex border-b border-gray-800 px-6">
+                {(['summary', 'transcript', 'actions'] as const).map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setEndedTab(tab)}
+                    className={`px-4 py-3 text-sm font-medium transition border-b-2 ${
+                      endedTab === tab
+                        ? 'border-blue-500 text-blue-400'
+                        : 'border-transparent text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    {{ summary: 'AI Summary & EMR', transcript: 'Full Transcript', actions: 'Next Steps' }[tab]}
+                  </button>
+                ))}
+              </div>
+
+              {/* Tab Content */}
+              <div className="flex-1 overflow-y-auto p-6">
+                {endedTab === 'summary' && (
+                  <div className="max-w-3xl mx-auto space-y-4">
+                    {aiSummary ? (
+                      <>
+                        <div className="bg-gray-800 rounded-xl p-5 border border-gray-700">
+                          <h3 className="text-lg font-bold text-blue-400 mb-3">AI SOAP Summary</h3>
+                          <div className="whitespace-pre-wrap text-sm text-gray-200 leading-relaxed">{aiSummary}</div>
+                        </div>
+                        <div className="p-3 bg-yellow-900/20 border border-yellow-700/40 rounded-lg text-yellow-400 text-xs">
+                          ⚠ Man-in-the-Loop: กรุณาตรวจสอบสรุป AI ก่อนบันทึกลง EMR (requiresValidation: true)
+                        </div>
+                        {summaryValidationStatus === 'approved' && (
+                          <div className="p-3 bg-green-900/20 border border-green-700/40 rounded-lg text-green-400 text-sm">
+                            อนุมัติแล้ว — บันทึกลง EMR สำเร็จ
+                          </div>
+                        )}
+                        {summaryValidationStatus === 'rejected' && (
+                          <div className="p-3 bg-red-900/20 border border-red-700/40 rounded-lg text-red-400 text-sm">
+                            ปฏิเสธแล้ว — สรุปนี้จะไม่ถูกบันทึก
+                          </div>
+                        )}
+                        <div className="flex gap-3">
+                          <button onClick={handleApproveSummary} disabled={summaryValidationStatus === 'approved'}
+                            className="flex-1 px-4 py-3 bg-green-600 hover:bg-green-700 disabled:bg-green-900/50 disabled:text-green-700 rounded-lg text-sm font-medium transition">
+                            อนุมัติ & บันทึกลง EMR
+                          </button>
+                          <button onClick={handleRejectSummary} disabled={summaryValidationStatus === 'rejected'}
+                            className="flex-1 px-4 py-3 bg-red-600 hover:bg-red-700 disabled:bg-red-900/50 disabled:text-red-700 rounded-lg text-sm font-medium transition">
+                            ปฏิเสธสรุป
+                          </button>
+                          <button onClick={generateAISummary} disabled={isGeneratingSummary}
+                            className="px-4 py-3 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 rounded-lg text-sm transition">
+                            สร้างใหม่
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="text-center py-12">
+                        <div className="text-5xl mb-4"></div>
+                        <h3 className="text-xl font-bold mb-2">สร้างสรุป AI จากการประชุม</h3>
+                        <p className="text-gray-400 text-sm mb-6">
+                          AI จะวิเคราะห์ transcript และ chat เพื่อสร้างสรุป SOAP Format พร้อม speaker diarization
+                        </p>
+                        <button onClick={generateAISummary} disabled={isGeneratingSummary || transcripts.length === 0}
+                          className="px-8 py-4 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-500 rounded-xl text-lg font-bold transition shadow-lg">
+                          {isGeneratingSummary ? 'กำลังวิเคราะห์ transcript...' : 'Generate AI SOAP Summary'}
+                        </button>
+                        {transcripts.length === 0 && (
+                          <p className="text-xs text-gray-600 mt-3">ต้องมี transcript ก่อนจึงจะสร้างสรุปได้</p>
+                        )}
+                      </div>
+                    )}
                   </div>
+                )}
+
+                {endedTab === 'transcript' && (
+                  <div className="max-w-3xl mx-auto space-y-2">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-bold">Full Transcript ({transcripts.length} segments)</h3>
+                      <span className="text-xs text-gray-500">Language: {meetingState.transcriptLanguage}</span>
+                    </div>
+                    {transcripts.length === 0 ? (
+                      <div className="text-center py-12 text-gray-500">
+                        <p className="text-4xl mb-2"></p>
+                        <p>ไม่มี transcript สำหรับการประชุมนี้</p>
+                      </div>
+                    ) : (
+                      transcripts.map((seg) => (
+                        <div key={seg.id} className="bg-gray-800/60 rounded-lg p-3 hover:bg-gray-800/80 transition">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${getSpeakerBadgeClass(seg.speakerRole)}`}>
+                              {getSpeakerEmoji(seg.speakerRole)} {seg.speakerName}
+                            </span>
+                            <span className="text-gray-500 text-xs">
+                              {new Date(seg.timestamp).toLocaleTimeString('th-TH')}
+                            </span>
+                          </div>
+                          <p className="text-gray-200 text-sm leading-relaxed">{seg.content}</p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+
+                {endedTab === 'actions' && (
+                  <div className="max-w-3xl mx-auto">
+                    <h3 className="text-lg font-bold mb-6">ขั้นตอนถัดไป — Post-Consultation Actions</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <button onClick={() => navigate(`/doctor/${user?.id}/emr`)}
+                        className="flex items-start gap-4 p-5 bg-gray-800 border border-gray-700 rounded-xl hover:border-blue-500/50 hover:bg-gray-800/80 transition text-left group">
+                        <span className="text-3xl"></span>
+                        <div>
+                          <h4 className="font-bold group-hover:text-blue-400 transition">เขียน EMR Report</h4>
+                          <p className="text-xs text-gray-400 mt-1">บันทึก SOAP, diagnosis, assessment จากสรุป AI</p>
+                        </div>
+                      </button>
+                      <button onClick={() => navigate(`/doctor/${user?.id}/prescriptions`)}
+                        className="flex items-start gap-4 p-5 bg-gray-800 border border-gray-700 rounded-xl hover:border-green-500/50 hover:bg-gray-800/80 transition text-left group">
+                        <span className="text-3xl"></span>
+                        <div>
+                          <h4 className="font-bold group-hover:text-green-400 transition">สั่งยา (Prescriptions)</h4>
+                          <p className="text-xs text-gray-400 mt-1">สั่งยาจากข้อมูลการปรึกษา + CDS alerts</p>
+                        </div>
+                      </button>
+                      <button onClick={() => navigate(`/doctor/${user?.id}/lab-orders`)}
+                        className="flex items-start gap-4 p-5 bg-gray-800 border border-gray-700 rounded-xl hover:border-purple-500/50 hover:bg-gray-800/80 transition text-left group">
+                        <span className="text-3xl"></span>
+                        <div>
+                          <h4 className="font-bold group-hover:text-purple-400 transition">สั่งตรวจ Lab</h4>
+                          <p className="text-xs text-gray-400 mt-1">สั่งตรวจเลือด, X-ray, MRI ตามผลวินิจฉัย</p>
+                        </div>
+                      </button>
+                      <button onClick={() => navigate(`/doctor/${user?.id}/health-meeting`)}
+                        className="flex items-start gap-4 p-5 bg-gray-800 border border-gray-700 rounded-xl hover:border-orange-500/50 hover:bg-gray-800/80 transition text-left group">
+                        <span className="text-3xl"></span>
+                        <div>
+                          <h4 className="font-bold group-hover:text-orange-400 transition">นัดหมายครั้งถัดไป</h4>
+                          <p className="text-xs text-gray-400 mt-1">สร้างนัดหมาย Follow-up หรือส่งต่อแพทย์เฉพาะทาง</p>
+                        </div>
+                      </button>
+                    </div>
+                    <div className="mt-6 p-4 bg-gray-800/50 border border-gray-700 rounded-xl">
+                      <h4 className="font-medium text-sm mb-3">Meeting Documents</h4>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex items-center justify-between py-2 border-b border-gray-700/50">
+                          <span className="text-gray-300">Transcript ({transcripts.length} segments)</span>
+                          <button onClick={() => setEndedTab('transcript')} className="text-blue-400 hover:text-blue-300 text-xs">ดู →</button>
+                        </div>
+                        <div className="flex items-center justify-between py-2 border-b border-gray-700/50">
+                          <span className="text-gray-300">AI Summary (SOAP)</span>
+                          <button onClick={() => setEndedTab('summary')} className="text-blue-400 hover:text-blue-300 text-xs">
+                            {aiSummary ? 'ดู →' : 'สร้าง →'}
+                          </button>
+                        </div>
+                        <div className="flex items-center justify-between py-2">
+                          <span className="text-gray-300">Chat Messages ({chatMessages.length})</span>
+                          <span className="text-gray-500 text-xs">บันทึกแล้ว</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col flex-1">
+              <div ref={jitsiContainerRef} className="w-full flex-1" />
+              {/* Teams-like Bottom Control Bar */}
+              {meetingState.status === 'in_progress' && (
+                <div className="flex items-center justify-center gap-2 py-2 bg-[#1b1b1b] border-t border-gray-800">
+                  {/* Transcript Controls */}
+                  <div className="flex items-center gap-1 bg-gray-800 rounded-full px-3 py-1">
+                    {renderTranscriptButtons()}
+                    <button onClick={toggleLanguage}
+                      className="px-2 py-1 text-gray-400 hover:text-white hover:bg-gray-700 rounded text-xs transition"
+                      title="Toggle Language">
+                      {meetingState.transcriptLanguage === 'th-TH' ? 'TH' : 'EN'}
+                    </button>
+                  </div>
+                  {/* Recording Toggle */}
+                  <button onClick={toggleRecording}
+                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+                      isRecording ? 'bg-red-600 hover:bg-red-700 ring-2 ring-red-400/50 animate-pulse' : 'bg-gray-700 hover:bg-gray-600'
+                    }`} title={isRecording ? 'Stop Recording' : 'Start Recording'}>
+                    {isRecording ? '⏹' : '⏺'}
+                  </button>
+                  {/* End Meeting */}
+                  <button onClick={handleMeetingEnd}
+                    className="px-5 py-2 bg-red-600 hover:bg-red-700 rounded-full text-sm font-medium transition shadow-lg">
+                    สิ้นสุด
+                  </button>
                 </div>
               )}
             </div>
-          ) : (
-            <div ref={jitsiContainerRef} className="w-full h-full" />
           )}
         </div>
 
@@ -766,9 +1465,9 @@ const MeetingRoom: React.FC = () => {
             <div className="flex items-center justify-between p-3 border-b border-gray-700">
               <h3 className="font-medium text-sm">
                 {{
-                  transcript: '📝 Real-time Transcript',
-                  chat: '💬 Meeting Chat',
-                  summary: '🤖 AI Summary',
+                  transcript: 'Real-time Transcript',
+                  chat: 'Meeting Chat',
+                  summary: 'AI Summary',
                 }[showPanel]}
               </h3>
               <button onClick={() => setShowPanel(null)} className="text-gray-400 hover:text-white">✕</button>
@@ -780,7 +1479,7 @@ const MeetingRoom: React.FC = () => {
                 <div className="space-y-2">
                   {transcripts.length === 0 ? (
                     <div className="text-gray-500 text-center py-8">
-                      <p className="text-4xl mb-2">🎤</p>
+                      <p className="text-4xl mb-2"></p>
                       <p>คลิก "▶ เริ่ม Transcript" เพื่อเริ่มถอดเสียง</p>
                       <p className="text-xs mt-2">ใช้ Web Speech API (ฟรี)</p>
                     </div>
@@ -821,7 +1520,7 @@ const MeetingRoom: React.FC = () => {
                 <div className="space-y-2">
                   {chatMessages.length === 0 ? (
                     <div className="text-gray-500 text-center py-8">
-                      <p className="text-4xl mb-2">💬</p>
+                      <p className="text-4xl mb-2"></p>
                       <p>ยังไม่มีข้อความ</p>
                     </div>
                   ) : (
@@ -850,40 +1549,52 @@ const MeetingRoom: React.FC = () => {
                         {aiSummary}
                       </div>
                       <div className="p-2 bg-yellow-900/30 rounded text-yellow-400 text-xs">
-                        ⚠️ ต้องให้แพทย์ตรวจสอบก่อนบันทึก (requiresValidation: true)
+                        ต้องให้แพทย์ตรวจสอบก่อนบันทึก (requiresValidation: true)
                       </div>
+                      {summaryValidationStatus === 'approved' && (
+                        <div className="p-2 bg-green-900/30 rounded text-green-400 text-xs">
+                          อนุมัติแล้ว — บันทึกลง EMR เรียบร้อย
+                        </div>
+                      )}
+                      {summaryValidationStatus === 'rejected' && (
+                        <div className="p-2 bg-red-900/30 rounded text-red-400 text-xs">
+                          ปฏิเสธแล้ว — สรุปนี้จะไม่ถูกบันทึก
+                        </div>
+                      )}
                       <div className="flex gap-2">
                         <button
-                          onClick={() => alert('Approved and saved to EMR')}
-                          className="flex-1 px-3 py-2 bg-green-600 hover:bg-green-700 rounded text-sm transition"
+                          onClick={handleApproveSummary}
+                          disabled={summaryValidationStatus === 'approved'}
+                          className="flex-1 px-3 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-900 rounded text-sm transition"
                         >
-                          ✅ อนุมัติ
+                          อนุมัติ
                         </button>
                         <button
-                          onClick={() => alert('Summary rejected')}
-                          className="flex-1 px-3 py-2 bg-red-600 hover:bg-red-700 rounded text-sm transition"
+                          onClick={handleRejectSummary}
+                          disabled={summaryValidationStatus === 'rejected'}
+                          className="flex-1 px-3 py-2 bg-red-600 hover:bg-red-700 disabled:bg-red-900 rounded text-sm transition"
                         >
-                          ❌ ปฏิเสธ
+                          ปฏิเสธ
                         </button>
                         <button
                           onClick={generateAISummary}
                           disabled={isGeneratingSummary}
                           className="px-3 py-2 bg-gray-600 hover:bg-gray-500 disabled:bg-gray-700 rounded text-sm transition"
                         >
-                          🔄
+                          ↻
                         </button>
                       </div>
                     </div>
                   ) : (
                     <div className="text-gray-500 text-center py-8">
-                      <p className="text-4xl mb-2">🤖</p>
+                      <p className="text-4xl mb-2"></p>
                       <p>ยังไม่มี AI Summary</p>
                       <button
                         onClick={generateAISummary}
                         disabled={isGeneratingSummary || transcripts.length === 0}
                         className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 rounded text-sm transition"
                       >
-                        {isGeneratingSummary ? '⏳ กำลังสร้าง...' : '🤖 สร้างสรุป SOAP'}
+                        {isGeneratingSummary ? 'กำลังสร้าง...' : 'สร้างสรุป SOAP'}
                       </button>
                       {transcripts.length === 0 && (
                         <p className="text-xs text-gray-600 mt-2">ต้องมี transcript ก่อนจึงจะสร้างสรุปได้</p>
@@ -916,7 +1627,7 @@ const MeetingRoom: React.FC = () => {
 
                 {/* Guest Invite Section */}
                 <div className="mt-3 pt-3 border-t border-gray-700">
-                  <p className="text-xs text-gray-400 mb-2">👥 เชิญผู้เข้าร่วม</p>
+                  <p className="text-xs text-gray-400 mb-2">เชิญผู้เข้าร่วม</p>
                   <div className="flex flex-col gap-1">
                     <input
                       type="text"
@@ -947,7 +1658,58 @@ const MeetingRoom: React.FC = () => {
             )}
           </div>
         )}
+
+        {/* Lobby / Waiting Room Panel (Doctor as Host) */}
+        {showLobby && (
+          <div className="w-80 bg-gray-800 border-l border-gray-700 flex flex-col" data-testid="lobby-panel">
+            <div className="flex items-center justify-between p-3 border-b border-gray-700">
+              <h3 className="font-medium text-sm">Waiting Room ({lobbyParticipants.length})</h3>
+              <button onClick={() => setShowLobby(false)} className="text-gray-400 hover:text-white">✕</button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-3 space-y-2">
+              {lobbyParticipants.length === 0 ? (
+                <div className="text-gray-500 text-center py-8">
+                  <p className="text-4xl mb-2"></p>
+                  <p className="text-sm">ไม่มีผู้รอเข้าร่วม</p>
+                  <p className="text-xs mt-1 text-gray-600">ผู้เข้าร่วมใหม่จะปรากฏที่นี่</p>
+                </div>
+              ) : (
+                lobbyParticipants.map((p) => (
+                  <div key={p.participantId} className="bg-gray-700/50 rounded-lg p-3 border border-gray-600">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center text-sm font-bold">
+                        {p.participantName.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex-1">
+                        <div className="font-medium text-sm">{p.participantName}</div>
+                        <div className="text-xs text-gray-400">{p.role} • {p.email || 'ไม่มีอีเมล'}</div>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => admitFromLobby(p.participantId)}
+                        className="flex-1 px-2 py-1.5 bg-green-600 hover:bg-green-700 rounded text-xs font-medium transition"
+                        data-testid="admit-btn"
+                      >
+                        อนุญาต
+                      </button>
+                      <button
+                        onClick={() => rejectFromLobby(p.participantId)}
+                        className="flex-1 px-2 py-1.5 bg-red-600 hover:bg-red-700 rounded text-xs font-medium transition"
+                        data-testid="reject-btn"
+                      >
+                        ปฏิเสธ
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
       </div>
+      </>
+      )}
     </div>
   );
 };

@@ -82,13 +82,26 @@ async function loginViaAPI(
 }
 
 async function setupPatientAuth(page: Page): Promise<void> {
-  const token = await loginViaAPI(page, PATIENT_URL, PATIENT_CREDS);
+  // Login via API to get token + user data
+  const response = await page.request.post(`${PATIENT_URL}/api/auth/login`, {
+    data: PATIENT_CREDS,
+    headers: { 'Content-Type': 'application/json' },
+  });
+  expect(response.status(), `Login to ${PATIENT_URL} failed`).toBe(200);
+  const data = await response.json();
+  const token = data.token || data.accessToken;
+  const userData = data.user || { email: PATIENT_CREDS.email, name: 'Test Patient' };
+  expect(token, 'No token in login response').toBeTruthy();
+
   // Navigate to patient portal and inject auth into localStorage
   await page.goto(PATIENT_URL, { waitUntil: 'domcontentloaded' });
-  await page.evaluate((t) => {
+  await page.evaluate(({ t, userData }) => {
     localStorage.setItem('token', t);
     localStorage.setItem('auth_token', t);
-  }, token);
+    localStorage.setItem('izara_user', JSON.stringify(userData));
+    localStorage.setItem('izara_patient_last_activity', Date.now().toString());
+  }, { t: token, userData });
+  await page.reload({ waitUntil: 'domcontentloaded' });
 }
 
 async function setupDoctorAuth(page: Page): Promise<string> {
@@ -420,7 +433,9 @@ test.describe('API Data Verification — Status 200', () => {
   });
 
   test('API14 — Meetings list 200', async ({ request }) => {
-    const r = await request.get('http://localhost:3020/api/meetings', {});
+    const r = await request.get('http://localhost:3020/api/meetings', {
+      headers: { Authorization: `Bearer ${doctorToken}` },
+    });
     expect(r.status()).toBe(200);
   });
 
@@ -428,7 +443,7 @@ test.describe('API Data Verification — Status 200', () => {
     // Test that the auto-record endpoint responds (even without valid meeting ID)
     const r = await request.post('http://localhost:3020/api/meetings/test-id/auto-record', {
       data: { doctorId: 'test', doctorName: 'Test', autoTranscribe: true },
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${doctorToken}` },
     });
     // Should get 200 (creates in-memory) or 500 — but NOT 404
     expect([200, 500]).toContain(r.status());

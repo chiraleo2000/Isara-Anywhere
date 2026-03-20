@@ -1,6 +1,6 @@
 # Video Meeting Implementation - Jitsi Meet + Device Speech-to-Text + Gemini AI
 
-**Version:** 1.5.7  
+**Version:** 1.5.8  
 **Last Updated:** March 15, 2026  
 **Status:** ✅ Phase 1 — Comprehensive Meeting Workflow (Microsoft Teams-Like Experience)
 

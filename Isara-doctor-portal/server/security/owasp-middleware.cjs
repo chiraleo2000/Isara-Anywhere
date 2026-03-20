@@ -111,7 +111,7 @@ function securityHeaders() {
     // Content Security Policy
     res.setHeader('Content-Security-Policy',
       "default-src 'self'; " +
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://maps.googleapis.com; " +
+      "script-src 'self' 'unsafe-inline' https://apis.google.com https://maps.googleapis.com https://meet.jit.si; " +
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
       "font-src 'self' https://fonts.gstatic.com; " +
       "img-src 'self' data: https: blob:; " +
@@ -256,7 +256,10 @@ function hashData(data, salt = crypto.randomBytes(16).toString('hex')) {
 /**
  * Encrypt sensitive data
  */
-function encryptData(data, key = process.env.ENCRYPTION_KEY || crypto.randomBytes(32).toString('hex')) {
+function encryptData(data, key = process.env.ENCRYPTION_KEY) {
+  if (!key) {
+    throw new Error('ENCRYPTION_KEY environment variable is required for encryption');
+  }
   const iv = crypto.randomBytes(16);
   const keyBuffer = Buffer.from(key.slice(0, 32).padEnd(32, '0'));
   const cipher = crypto.createCipheriv('aes-256-gcm', keyBuffer, iv);
@@ -276,8 +279,11 @@ function encryptData(data, key = process.env.ENCRYPTION_KEY || crypto.randomByte
 /**
  * Decrypt sensitive data
  */
-function decryptData(encryptedObj, key = process.env.ENCRYPTION_KEY || '') {
+function decryptData(encryptedObj, key = process.env.ENCRYPTION_KEY) {
   try {
+    if (!key) {
+      throw new Error('ENCRYPTION_KEY environment variable is required for decryption');
+    }
     const keyBuffer = Buffer.from(key.slice(0, 32).padEnd(32, '0'));
     const decipher = crypto.createDecipheriv(
       'aes-256-gcm',
@@ -409,8 +415,8 @@ const rateLimitStore = new Map();
 
 function rateLimit(options = {}) {
   const {
-    windowMs = 1 * 60 * 1000, // 1 minute window (reduced for testing)
-    maxRequests = 10000, // High limit for testing
+    windowMs = 1 * 60 * 1000, // 1 minute window
+    maxRequests = 200, // 200 requests per minute per IP
     keyGenerator = (req) => getClientIP(req),
     handler = (req, res) => res.status(429).json({
       error: 'Too many requests',
@@ -489,9 +495,9 @@ function trackLoginAttempt(email, success) {
   entry.count++;
   entry.lastAttempt = Date.now();
 
-  // Lock account after 100 failed attempts (increased for testing - was 5)
-  if (entry.count >= 100) {
-    entry.lockedUntil = Date.now() + 1 * 60 * 1000; // 1 minute (reduced for testing - was 30 min)
+  // Lock account after 10 failed attempts
+  if (entry.count >= 10) {
+    entry.lockedUntil = Date.now() + 15 * 60 * 1000; // 15 minute lockout
     loginAttempts.set(key, entry);
 
     securityAuditLog({
@@ -602,7 +608,11 @@ function validateSession(fetchFromGCS, BUCKETS) {
 /**
  * Request integrity verification using HMAC
  */
-function verifyRequestIntegrity(secret = process.env.HMAC_SECRET || 'default-secret') {
+function verifyRequestIntegrity(secret = process.env.HMAC_SECRET) {
+  if (!secret) {
+    console.warn('[OWASP] HMAC_SECRET not set — request integrity verification disabled');
+    return (req, res, next) => next();
+  }
   return (req, res, next) => {
     const signature = req.headers['x-signature'];
     const timestamp = req.headers['x-timestamp'];
@@ -934,7 +944,15 @@ function validateCSRFToken(sessionId, token) {
     return false;
   }
 
-  return stored.token === token;
+  // Use timing-safe comparison to prevent timing attacks
+  try {
+    const storedBuf = Buffer.from(stored.token, 'utf8');
+    const tokenBuf = Buffer.from(token, 'utf8');
+    if (storedBuf.length !== tokenBuf.length) return false;
+    return crypto.timingSafeEqual(storedBuf, tokenBuf);
+  } catch {
+    return false;
+  }
 }
 
 // ============================================================================

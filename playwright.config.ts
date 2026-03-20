@@ -3,9 +3,10 @@ import { defineConfig, devices } from '@playwright/test';
 export default defineConfig({
   testDir: './tests',
   testMatch: '**/*.ui-test.ts',
-  timeout: 60000,
+  timeout: 120000,
   retries: 0,
-  workers: 1,
+  fullyParallel: true,
+  workers: 3,
   use: {
     ...devices['Desktop Chrome'],
     headless: false,
@@ -14,6 +15,13 @@ export default defineConfig({
     trace: 'off',
     actionTimeout: 15000,
     navigationTimeout: 20000,
+    permissions: ['camera', 'microphone', 'notifications'],
+    launchOptions: {
+      args: [
+        '--use-fake-ui-for-media-stream',
+        '--use-fake-device-for-media-stream',
+      ],
+    },
   },
   projects: [
     {

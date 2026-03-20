@@ -127,7 +127,7 @@ export function securityHeaders() {
   return (req: Request, res: Response, next: NextFunction) => {
     res.setHeader('Content-Security-Policy', 
       "default-src 'self' https:; " +
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://maps.googleapis.com https://accounts.google.com; " +
+      "script-src 'self' 'unsafe-inline' https://apis.google.com https://maps.googleapis.com https://accounts.google.com https://meet.jit.si; " +
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
       "font-src 'self' https://fonts.gstatic.com; " +
       "img-src 'self' data: https: blob:; " +
@@ -312,7 +312,7 @@ const cleanupTimer = setInterval(() => {
 export function rateLimit(options: RateLimitOptions = {}) {
   const {
     windowMs = 1 * 60 * 1000, // 1 minute window (reduced for testing)
-    maxRequests = 10000, // High limit for testing
+    maxRequests = 200,
     keyGenerator = (req) => getClientIP(req),
     handler = (req, res) => res.status(429).json({
       error: 'Too many requests',
@@ -362,8 +362,8 @@ export function trackLoginAttempt(email: string, success: boolean) {
   let entry = loginAttempts.get(key) || { count: 0 };
   entry.count++;
   
-  if (entry.count >= 100) { // Increased from 5 for testing
-    entry.lockedUntil = Date.now() + 1 * 60 * 1000; // 1 minute lockout (reduced for testing)
+  if (entry.count >= 10) {
+    entry.lockedUntil = Date.now() + 15 * 60 * 1000; // 15 minute lockout
     securityAuditLog({
       event: 'ACCOUNT_LOCKED',
       severity: 'WARN',

@@ -524,7 +524,7 @@ export const AuthService = {
       `SELECT s.*, u.*
        FROM sessions s
        JOIN users u ON s.user_id = u.id
-       WHERE s.token = $1 AND s.expires_at > NOW()`,
+       WHERE s.token = $1 AND s.expires_at > NOW() AND s.logged_out_at IS NULL AND s.logged_out_at IS NULL`,
       [token]
     );
 
@@ -1254,7 +1254,7 @@ export const MeetingService = {
   async startMeeting(meetingId: string) {
     const result = await pool.query(
       `UPDATE meeting_records 
-       SET status = 'active', started_at = NOW(), updated_at = NOW()
+       SET status = 'active', started_at = NOW()
        WHERE id = $1 RETURNING *`,
       [meetingId]
     );
@@ -1290,7 +1290,7 @@ export const MeetingService = {
     const result = await pool.query(
       `UPDATE meeting_records 
        SET meeting_config = $2, status = CASE WHEN status = 'waiting' THEN 'active' ELSE status END, 
-           started_at = COALESCE(started_at, NOW()), updated_at = NOW()
+           started_at = COALESCE(started_at, NOW())
        WHERE id = $1 RETURNING *`,
       [meetingId, JSON.stringify(config)]
     );
@@ -1308,7 +1308,7 @@ export const MeetingService = {
 
     const result = await pool.query(
       `UPDATE meeting_records 
-       SET transcript = $2, updated_at = NOW()
+       SET transcript = $2
        WHERE id = $1 RETURNING *`,
       [meetingId, transcriptValue]
     );
@@ -1325,7 +1325,7 @@ export const MeetingService = {
     recordingUrl?: string;
     duration?: number;
   }) {
-    const updates: string[] = ['status = $2', 'ended_at = NOW()', 'updated_at = NOW()'];
+    const updates: string[] = ['status = $2', 'ended_at = NOW()'];
     const params: unknown[] = [meetingId, 'ended'];
     let paramIndex = 3;
 

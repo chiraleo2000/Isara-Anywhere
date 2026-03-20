@@ -17,9 +17,9 @@
 </head>
 <body>
     <div class="nav">
-        <a href="index.html">Back to Index</a>
+        <a href="index.html">🔙 Back to Index</a>
         <span>|</span>
-        <a href="javascript:location.reload()">Refresh</a>
+        <a href="javascript:location.reload()">🔄 Refresh</a>
     </div>
     <div class="container">
         <h1>03-doctor-features</h1>
@@ -57,9 +57,11 @@ flowchart TB
         
         subgraph CONSULT["📹 Consultation"]
             C1["🎥 Jitsi Video Call"]
-            C2["🎤 AI Transcription"]
+            C2["🎤 Web Speech API<br/>Transcription"]
             C3["📝 Real-time Notes"]
             C4["👥 Multi-participant"]
+            C5["🚪 Lobby Management<br/>(Admit/Reject)"]
+            C6["🔗 Patient Invite<br/>Link Sharing"]
         end
         
         subgraph EMR["🩺 EMR System"]

@@ -1,30 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Izara Diagram: 09-deployment-architecture</title>
-    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
-    <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5; }
-        .container { max-width: 100%; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        h1 { color: #2c3e50; text-align: center; border-bottom: 2px solid #eee; padding-bottom: 15px; }
-        .mermaid { display: flex; justify-content: center; margin-top: 20px; }
-        .nav { margin-bottom: 20px; text-align: center; }
-        .nav a { margin: 0 10px; color: #3498db; text-decoration: none; font-weight: bold; }
-        .nav a:hover { text-decoration: underline; }
-    </style>
-</head>
-<body>
-    <div class="nav">
-        <a href="index.html">Back to Index</a>
-        <span>|</span>
-        <a href="javascript:location.reload()">Refresh</a>
-    </div>
-    <div class="container">
-        <h1>09-deployment-architecture</h1>
-        <div class="mermaid">
-            %%{init: {
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Izara Diagram: 09-deployment-architecture</title><script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script><style>body{font-family:'Segoe UI',Tahoma,sans-serif;margin:0;padding:20px;background:#f5f5f5}.container{max-width:100%;margin:0 auto;background:#fff;padding:20px;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,.1)}h1{color:#2c3e50;text-align:center;border-bottom:2px solid #eee;padding-bottom:15px}.mermaid{display:flex;justify-content:center;margin-top:20px}.nav{margin-bottom:20px;text-align:center}.nav a{margin:0 10px;color:#3498db;text-decoration:none;font-weight:700}</style></head><body><div class="nav"><a href="index.html">Back to Index</a> | <a href="javascript:location.reload()">Refresh</a></div><div class="container"><h1>09-deployment-architecture</h1><div class="mermaid">%%{init: {
   'theme': 'base',
   'themeVariables': {
     'primaryColor': '#ECEFF1',
@@ -78,16 +52,28 @@ flowchart TB
             S4["🧪 izara-lab-results"]
             S5["🔬 izara-imaging-results"]
         end
-        subgraph DATABASE["🗄️ Cloud SQL"]
-            DB1[("🐘 PostgreSQL 18<br/>+ pgvector")]
+        subgraph DATABASE["🗄️ Cloud SQL VM"]
+            DB1[("🐘 PostgreSQL 18<br/>+ pgvector<br/>35.240.157.230:5432")]
+        end
+        subgraph PGADMIN["🔧 pgAdmin"]
+            PA1["pgAdmin 4<br/>Cloud Run Service"]
         end
     end
 
     subgraph CICD["🔄 CI/CD PIPELINE"]
         direction LR
-        CI1["📝 Cloud Build"]
-        CI2["🐳 Container Registry"]
-        CI3["🚀 Deploy to Cloud Run"]
+        CI1["📝 Cloud Build<br/>cloudbuild.yaml"]
+        CI2["🐳 Artifact Registry<br/>asia-southeast1-docker"]
+        CI3["🚀 Deploy to Cloud Run<br/>v1.5.8"]
+    end
+
+    subgraph TESTING["🧪 TESTING (177 Cloud Tests)"]
+        direction LR
+        T1["📸 UI Screenshots: 39"]
+        T2["🔄 Multi-User Workflows: 42"]
+        T3["📹 Meeting Tests: 27"]
+        T4["📋 Workflow Screenshots: 25"]
+        T5["📄 UI Pages: 44"]
     end
 
     %% Local Development Flow
@@ -118,6 +104,10 @@ flowchart TB
     CR1 --> STORAGE
     CR2 --> STORAGE
     CR3 --> STORAGE
+    PA1 --> DB1
+
+    %% Testing connects to Cloud Run
+    TESTING -.-> CLOUDRUN
 
     classDef localStyle fill:#E3F2FD,stroke:#1976D2,stroke-width:2px,color:#0D47A1
     classDef mobileStyle fill:#FFF3E0,stroke:#FF9800,stroke-width:2px,color:#E65100
@@ -134,21 +124,4 @@ flowchart TB
     class S1,S2,S3,S4,S5 storageStyle
     class DB1 dbStyle
     class CI1,CI2,CI3 cicdStyle
-
-        </div>
-    </div>
-    <script>
-        mermaid.initialize({ 
-            startOnLoad: true, 
-            theme: 'base',
-            securityLevel: 'loose',
-            themeVariables: {
-                primaryColor: '#E3F2FD',
-                secondaryColor: '#E8F5E9',
-                tertiaryColor: '#FFF3E0',
-                fontSize: '16px'
-            }
-        });
-    </script>
-</body>
-</html>
+</div></div><script>mermaid.initialize({startOnLoad:true,theme:'base',securityLevel:'loose',themeVariables:{primaryColor:'#E3F2FD',secondaryColor:'#E8F5E9',tertiaryColor:'#FFF3E0',fontSize:'16px'}});</script></body></html>

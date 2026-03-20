@@ -34,9 +34,10 @@ flowchart TB
 
     subgraph MEETING_AI["📹 VIDEO MEETING AI"]
         direction TB
-        M1["🎤 Speech-to-Text<br/>(Real-time)"]
-        M2["📝 Live Transcription"]
+        M1["🎤 Web Speech API<br/>(Browser-based STT)"]
+        M2["📝 Live Transcription<br/>(Socket.IO Broadcast)"]
         M3["🌐 Multi-language Support"]
+        M4["🧠 SOAP Summary<br/>(Gemini Post-Meeting)"]
     end
 
     subgraph SAFETY["⚠️ SAFETY MEASURES"]
@@ -68,6 +69,7 @@ flowchart TB
 
     M1 --> M2
     M2 --> D1
+    M2 --> M4
 
     D1 --> D2 --> D3
     D3 --> S1

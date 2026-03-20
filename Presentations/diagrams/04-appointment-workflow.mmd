@@ -49,15 +49,20 @@ sequenceDiagram
 
     rect rgb(224, 247, 250)
         Note over P,MS: 📹 VIDEO CONSULTATION
-        P->>PP: Join meeting (at scheduled time)
-        D->>DP: Join meeting
-        PP->>MS: Request room (JWT auth)
-        DP->>MS: Request room (JWT auth)
-        MS-->>PP: Jitsi room URL
-        MS-->>DP: Jitsi room URL
-        P->>MS: Connect to video call
-        D->>MS: Connect to video call
-        MS->>MS: Real-time transcription
+        D->>DP: Start consultation
+        DP->>MS: Create meeting room
+        MS-->>DP: Room ID + invite link
+        D->>DP: Share invite to patient
+        P->>PP: Click invite link
+        PP->>PP: Show consent agreement
+        P->>PP: Accept recording consent
+        PP->>MS: Join meeting → Lobby
+        MS->>DP: Patient in lobby
+        D->>DP: Admit patient
+        MS->>PP: Lobby admitted
+        PP->>MS: Join video (Jitsi WebRTC)
+        D->>DP: Enable transcription (Web Speech API)
+        MS->>MS: Real-time transcript via Socket.IO
     end
 
     rect rgb(243, 229, 245)

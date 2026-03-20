@@ -240,6 +240,14 @@ router.get('/', authMiddleware, async (req: Request, res: Response) => {
 router.get('/patient/:patientId', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { patientId } = req.params;
+    const authPatientId = (req as AuthenticatedRequest).patientId;
+    const userRole = (req as AuthenticatedRequest).user?.role;
+    
+    // IDOR check: patients can only access their own appointments, doctors/admins can access any
+    if (userRole === 'patient' && patientId !== authPatientId) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+    
     console.log(`[APPOINTMENT] Getting appointments for patient: ${patientId}`);
 
     const result = await pool.query(
@@ -266,6 +274,8 @@ router.get('/patient/:patientId', authMiddleware, async (req: Request, res: Resp
 router.get('/:appointmentId', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { appointmentId } = req.params;
+    const authPatientId = (req as AuthenticatedRequest).patientId;
+    const userRole = (req as AuthenticatedRequest).user?.role;
     console.log(`[APPOINTMENT] Getting appointment: ${appointmentId}`);
 
     const result = await pool.query(
@@ -286,7 +296,13 @@ router.get('/:appointmentId', authMiddleware, async (req: Request, res: Response
       return res.status(404).json({ error: 'Appointment not found' });
     }
 
-    res.json(transformAppointment(result.rows[0]));
+    // IDOR check: patients can only access their own appointments
+    const appointment = result.rows[0];
+    if (userRole === 'patient' && appointment.patient_id !== authPatientId) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    res.json(transformAppointment(appointment));
   } catch (error: unknown) {
     console.error('[APPOINTMENT] Get appointment error:', error);
     res.status(500).json({ error: 'Failed to fetch appointment' });
@@ -306,7 +322,7 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
     
     console.log('[APPOINTMENT] Creating new appointment for patient:', patientId);
 
-    const appointmentId = `APT-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+    const appointmentId = `APT-${Date.now()}-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
     const now = new Date();
 
     // Determine initial status
@@ -333,7 +349,7 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
       [
         appointmentId,
         patientId,  // Use authenticated patient ID
-        appointmentData.doctorId || null,
+        (appointmentData.doctorId && appointmentData.doctorId !== 'unassigned') ? appointmentData.doctorId : null,
         appointmentData.preferredDate || appointmentData.requestedDate,
         appointmentData.preferredTime || appointmentData.requestedTime,
         appointmentData.appointmentType || appointmentData.type || 'Telehealth',

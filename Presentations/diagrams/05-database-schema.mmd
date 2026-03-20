@@ -11,54 +11,55 @@
 }}%%
 
 erDiagram
-    %% AUTH & USER MANAGEMENT
-    users ||--o{ user_sessions : has
-    users ||--o{ password_history : has
+    %% AUTH & USER MANAGEMENT (matches izara-database.sql)
+    users ||--o{ sessions : has
+    users ||--o{ password_resets : requests
     users ||--o| patient_profiles : has
     users ||--o| doctor_profiles : has
+    users ||--o{ audit_logs : generates
 
     %% PATIENT DOMAIN
-    patient_profiles ||--o{ personal_health_records : owns
-    personal_health_records ||--o{ vital_signs : contains
-    personal_health_records ||--o{ allergies : contains
-    personal_health_records ||--o{ medications : contains
-    personal_health_records ||--o{ chronic_conditions : contains
-    personal_health_records ||--o| living_wills : has
+    users ||--o| phr : owns
+    phr ||--o{ vital_signs : contains
+    users ||--o{ living_wills : has
+    living_wills ||--o{ living_will_versions : versioned
+    users ||--o{ patient_consents : grants
 
     %% DOCTOR DOMAIN
-    doctor_profiles ||--o{ doctor_qualifications : has
+    users ||--o| doctors : listed_as
     doctor_profiles ||--o{ doctor_schedules : has
-    doctor_profiles ||--o{ doctor_availability : has
+    doctor_profiles ||--o{ doctor_reviews : receives
 
-    %% APPOINTMENTS
-    patient_profiles ||--o{ appointments : books
-    doctor_profiles ||--o{ appointments : handles
-    appointments ||--|| appointment_details : has
-    appointments ||--o{ appointment_attachments : has
+    %% APPOINTMENTS & MEETINGS
+    users ||--o{ appointments : books
+    appointments ||--o| meeting_records : has
+    meeting_records ||--o{ meeting_transcripts : has
+    meeting_transcripts ||--o{ transcript_embeddings : vectorized
 
-    %% CLINICAL
-    appointments ||--o| medical_encounters : results_in
-    medical_encounters ||--o{ encounter_documents : has
-    medical_encounters ||--o{ prescriptions : includes
-    prescriptions ||--o{ prescription_medications : contains
-    medical_encounters ||--o{ lab_orders : includes
-    lab_orders ||--o{ lab_results : has
-    medical_encounters ||--o{ imaging_orders : includes
-    imaging_orders ||--o{ imaging_results : has
-
-    %% VIDEO MEETINGS
-    appointments ||--o| video_meetings : has
-    video_meetings ||--o{ meeting_transcripts : has
-    video_meetings ||--o{ meeting_recordings : has
-
-    %% AI & ANALYTICS
-    users ||--o{ ai_chat_history : has
-    patient_profiles ||--o{ symptom_assessments : takes
-    users ||--o{ ai_chat_memory : remembers
+    %% CLINICAL (EMR + Prescriptions + Lab)
+    appointments ||--o| emr : results_in
+    emr ||--o{ prescriptions : includes
+    emr ||--o{ lab_orders : includes
+    emr ||--o{ cds_logs : triggers
 
     %% CONTENT MANAGEMENT
-    articles ||--o{ article_categories : belongs_to
-    consultants ||--o{ consultant_specialties : has
+    users ||--o{ medical_content : publishes
+    users ||--o{ clinical_resources : manages
+    consultants ||--o{ appointments : referred_by
+
+    %% REFERENCE DATA
+    icd10_codes }o--o{ emr : classifies
+    drugs }o--o{ prescriptions : references
+
+    %% AI & KNOWLEDGE
+    users ||--o{ ai_chat_history : chats
+    users ||--o{ ai_chat_memory : remembers
+    users ||--o{ ai_document_analysis : requests
+    knowledge_base ||--o{ ai_chat_history : supports
+    users ||--o{ ai_validations : validates
+
+    %% NOTIFICATIONS
+    users ||--o{ notifications : receives
 
     %% PHASE 2: MOBILE & MULTI-API
     users ||--o{ device_tokens : registers
@@ -71,59 +72,170 @@ erDiagram
     users ||--o{ sync_queue : queues
     users ||--o| user_settings : configures
 
-    %% SCHEMA SUMMARY
+    %% TABLE DEFINITIONS (42 tables — matching izara-database.sql)
     users {
-        uuid id PK
+        varchar id PK
         varchar email UK
         varchar password_hash
-        user_role role
+        varchar role "patient|doctor|admin"
+        varchar name
+        varchar name_thai
         boolean is_active
+        varchar approval_status
+        timestamp created_at
+    }
+
+    sessions {
+        varchar id PK
+        varchar user_id FK
+        varchar token UK
+        timestamp expires_at
         timestamp created_at
     }
 
     patient_profiles {
-        uuid id PK
-        uuid user_id FK
-        varchar thai_id UK
-        varchar first_name
-        varchar last_name
+        varchar id PK
+        varchar user_id FK
+        varchar thai_national_id
         date date_of_birth
+        varchar blood_type
+        varchar allergies
     }
 
     doctor_profiles {
-        uuid id PK
-        uuid user_id FK
+        varchar id PK
+        varchar user_id FK
         varchar license_number UK
         varchar specialty
         varchar hospital
-        approval_status status
+        varchar qualification
+    }
+
+    phr {
+        varchar id PK
+        varchar patient_id FK
+        jsonb medications
+        jsonb allergies
+        jsonb chronic_conditions
+        jsonb family_history
+        timestamp updated_at
+    }
+
+    vital_signs {
+        varchar id PK
+        varchar patient_id FK
+        numeric blood_pressure_systolic
+        numeric blood_pressure_diastolic
+        numeric heart_rate
+        numeric temperature
+        timestamp recorded_at
     }
 
     appointments {
-        uuid id PK
-        uuid patient_id FK
-        uuid doctor_id FK
-        timestamp scheduled_time
-        appointment_status status
-        varchar channel
+        varchar id PK
+        varchar patient_id FK
+        varchar doctor_id FK
+        varchar confirmed_date
+        varchar confirmed_time
+        varchar status "10 statuses"
+        varchar urgency_level
+        jsonb symptoms
+        varchar jitsi_room_name
     }
 
-    medical_encounters {
-        uuid id PK
-        uuid appointment_id FK
-        text subjective
-        text objective
-        text assessment
-        text plan
-        uuid signed_by FK
+    emr {
+        varchar id PK
+        varchar appointment_id FK
+        varchar patient_id FK
+        varchar doctor_id FK
+        jsonb subjective
+        jsonb objective
+        jsonb assessment
+        jsonb plan
+        text ai_summary
+        boolean ai_summary_approved
+        varchar doctor_signature
     }
 
     prescriptions {
-        uuid id PK
-        uuid encounter_id FK
-        uuid prescribed_by FK
-        prescription_status status
+        varchar id PK
+        varchar emr_id FK
+        varchar patient_id FK
+        varchar doctor_id FK
+        varchar drug_name
+        varchar dosage
+        varchar status
         timestamp created_at
+    }
+
+    lab_orders {
+        varchar id PK
+        varchar appointment_id FK
+        varchar patient_id FK
+        varchar doctor_id FK
+        varchar test_name
+        varchar status
+        jsonb results
+    }
+
+    meeting_records {
+        varchar id PK
+        varchar appointment_id FK
+        varchar doctor_id FK
+        varchar room_name
+        varchar status
+        timestamp started_at
+        timestamp ended_at
+    }
+
+    meeting_transcripts {
+        varchar id PK
+        varchar meeting_id FK
+        varchar speaker
+        text content
+        timestamp timestamp_ms
+    }
+
+    notifications {
+        varchar id PK
+        varchar user_id FK
+        varchar type
+        varchar title
+        text message
+        boolean is_read
+        timestamp created_at
+    }
+
+    audit_logs {
+        varchar id PK
+        varchar user_id FK
+        varchar action
+        varchar resource_type
+        varchar resource_id
+        jsonb details
+        timestamp created_at
+    }
+
+    knowledge_base {
+        varchar id PK
+        varchar title
+        text content
+        vector embedding "pgvector 768"
+        varchar category
+    }
+
+    icd10_codes {
+        varchar code PK
+        varchar description
+        varchar category
+    }
+
+    drugs {
+        varchar id PK
+        varchar name
+        varchar generic_name
+        varchar dosage_form
+        varchar strength
     }
 
     device_tokens {

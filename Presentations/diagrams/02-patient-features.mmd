@@ -27,7 +27,9 @@ flowchart TB
             B2["👨‍⚕️ Doctor Selection"]
             B3["📆 Slot Booking"]
             B4["✅ Confirmation"]
-            B5["📹 Video Call<br/>(Jitsi)"]
+            B5["� Recording Consent"]
+            B6["🚪 Meeting Lobby"]
+            B7["�📹 Video Call<br/>(Jitsi)"]
         end
         
         subgraph PHR["📋 Health Records"]
@@ -58,7 +60,7 @@ flowchart TB
     end
 
     A1 --> B1
-    B1 --> B2 --> B3 --> B4 --> B5
+    B1 --> B2 --> B3 --> B4 --> B5 --> B6 --> B7
     A1 --> C1
     C1 --> C2
     C1 --> C3
@@ -76,7 +78,7 @@ flowchart TB
     classDef notifyStyle fill:#E0F7FA,stroke:#0097A7,stroke-width:2px,color:#006064
 
     class A1,A2,A3 authStyle
-    class B1,B2,B3,B4,B5 apptStyle
+    class B1,B2,B3,B4,B5,B6,B7 apptStyle
     class C1,C2,C3,C4,C5 phrStyle
     class D1,D2,D3 aiStyle
     class E1,E2,E3 contentStyle

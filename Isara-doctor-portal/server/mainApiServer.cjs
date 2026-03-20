@@ -765,7 +765,7 @@ app.get('/api/dashboard/:doctorId', authenticateToken, async (req, res) => {
     });
   } catch (error) {
     console.error('Dashboard error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -773,7 +773,7 @@ app.get('/api/dashboard/:doctorId', authenticateToken, async (req, res) => {
 // DOCTORS MANAGEMENT - PostgreSQL Only
 // ============================================================================
 
-app.get('/api/doctors', async (req, res) => {
+app.get('/api/doctors', authenticateToken, async (req, res) => {
   try {
     console.log('[DOCTORS] Fetching all doctors from PostgreSQL');
     const { pool } = PostgresDataService;
@@ -787,7 +787,7 @@ app.get('/api/doctors', async (req, res) => {
     res.json({ doctors: result.rows || [] });
   } catch (error) {
     console.error('Doctors fetch error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Failed to fetch doctors' });
   }
 });
 
@@ -1165,7 +1165,7 @@ app.get('/api/patients', authenticateToken, async (req, res) => {
     res.json({ patients: patients || [] });
   } catch (error) {
     console.error('Patients fetch error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -1201,7 +1201,7 @@ app.get('/api/patients/:patientId', authenticateToken, async (req, res) => {
     });
   } catch (error) {
     console.error('Patient fetch error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -1284,7 +1284,7 @@ app.get('/api/emr/patient/:patientId', authenticateToken, async (req, res) => {
     res.json({ emrs: emrs || [] });
   } catch (error) {
     console.error('EMR fetch error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -1329,7 +1329,7 @@ app.post('/api/emr/:emrId/sign', authenticateToken, async (req, res) => {
     res.json({ success: true, emr: signedEmr });
   } catch (error) {
     console.error('EMR signing error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -1464,7 +1464,7 @@ app.post('/api/ai/summarize', authenticateToken, async (req, res) => {
     });
   } catch (error) {
     console.error('AI Summarize error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -1491,7 +1491,7 @@ app.post('/api/ai/emr-summary', authenticateToken, async (req, res) => {
     });
   } catch (error) {
     console.error('AI EMR summary error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -1521,7 +1521,7 @@ app.post('/api/ai/analyze-lab', authenticateToken, async (req, res) => {
     });
   } catch (error) {
     console.error('AI lab analysis error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -1571,7 +1571,7 @@ app.post('/api/meetings/create', authenticateToken, async (req, res) => {
     });
   } catch (error) {
     console.error('Meeting creation error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -1637,7 +1637,7 @@ app.post('/api/patients/:patientId/health-logs', authenticateToken, async (req, 
     });
   } catch (error) {
     console.error('Add health log error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -1676,7 +1676,7 @@ app.get('/api/patients/:patientId/health-logs', authenticateToken, async (req, r
     });
   } catch (error) {
     console.error('Get health logs error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -1765,7 +1765,7 @@ app.get('/api/patients/:patientId/living-will', authenticateToken, async (req, r
     res.json(doctorView);
   } catch (error) {
     console.error('Get Living Will error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -1875,7 +1875,7 @@ app.post('/api/notifications/emr-signed', authenticateToken, async (req, res) =>
     });
   } catch (error) {
     console.error('EMR notification error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -1913,7 +1913,7 @@ app.post('/api/prescriptions', authenticateToken, async (req, res) => {
     res.json({ success: true, prescription });
   } catch (error) {
     console.error('Prescription creation error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -1964,7 +1964,7 @@ app.get('/api/prescriptions/patient/:patientId', authenticateToken, async (req, 
     res.json({ prescriptions: prescriptions || [] });
   } catch (error) {
     console.error('Prescription fetch error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -2001,7 +2001,7 @@ app.post('/api/lab-orders', authenticateToken, async (req, res) => {
     res.json({ success: true, labOrder });
   } catch (error) {
     console.error('Lab order creation error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -2055,7 +2055,7 @@ app.get('/api/lab-orders/patient/:patientId', authenticateToken, async (req, res
     res.json({ labOrders: labOrders || [] });
   } catch (error) {
     console.error('Lab order fetch error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -2103,7 +2103,7 @@ app.put('/api/lab-orders/:labOrderId/results', authenticateToken, async (req, re
     res.json({ success: true, labOrder: updated });
   } catch (error) {
     console.error('Lab results update error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -2128,7 +2128,7 @@ app.get('/api/lab-orders/:labOrderId', authenticateToken, async (req, res) => {
     res.json({ labOrder: result.rows[0] });
   } catch (error) {
     console.error('Lab order get error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -2171,7 +2171,7 @@ app.post('/api/lab-orders/:labOrderId/documents', authenticateToken, async (req,
     res.json({ success: true, document: newDoc });
   } catch (error) {
     console.error('Lab document upload error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -2210,7 +2210,7 @@ app.post('/api/imaging-orders', authenticateToken, async (req, res) => {
     res.json({ success: true, imagingOrder: order });
   } catch (error) {
     console.error('Imaging order creation error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -2262,7 +2262,7 @@ app.put('/api/imaging-orders/:orderId/results', authenticateToken, async (req, r
     res.json({ success: true, imagingOrder: updated });
   } catch (error) {
     console.error('Imaging results update error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -3239,7 +3239,7 @@ app.get('/api/queue/doctor/:doctorId', authenticateToken, async (req, res) => {
     res.json({ queue: doctorQueue });
   } catch (error) {
     console.error('Queue fetch error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -3272,7 +3272,7 @@ app.post('/api/queue/call-next', authenticateToken, async (req, res) => {
     res.json({ success: true, patient: nextPatient });
   } catch (error) {
     console.error('Call next error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -3299,7 +3299,7 @@ app.post('/api/queue/skip', authenticateToken, async (req, res) => {
     res.json({ success: true });
   } catch (error) {
     console.error('Skip patient error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -3370,7 +3370,7 @@ app.get('/api/appointments/:appointmentId', authenticateToken, async (req, res) 
     });
   } catch (error) {
     console.error('Appointment fetch error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -4485,7 +4485,7 @@ app.get('/api/appointments/pending/:doctorId', authenticateToken, async (req, re
     res.json({ appointments: pendingAppointments });
   } catch (error) {
     console.error('❌ Pending appointments fetch error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -4778,7 +4778,7 @@ app.post('/api/appointment-pool/:poolId/claim', authenticateToken, async (req, r
     });
   } catch (error) {
     console.error('❌ Claim pool error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -4837,7 +4837,7 @@ app.post('/api/appointment-pool/:poolId/admin-assign', authenticateToken, async 
     });
   } catch (error) {
     console.error('❌ Admin assign error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -4934,7 +4934,7 @@ app.put('/api/appointments/:appointmentId/status', authenticateToken, async (req
     });
   } catch (error) {
     console.error('❌ Appointment status update error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -5149,7 +5149,7 @@ app.get('/api/phr/patient/:patientId/vitals/history', authenticateToken, async (
     res.json({ success: true, vitals, count: vitals.length });
   } catch (error) {
     console.error('❌ Vitals history error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -5182,7 +5182,7 @@ app.get('/api/prescriptions/pending/count/:doctorId', authenticateToken, async (
     res.json({ success: true, count });
   } catch (error) {
     console.error('❌ Pending prescriptions count error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -5208,7 +5208,7 @@ app.get('/api/prescriptions/pending/:doctorId', authenticateToken, async (req, r
     res.json({ success: true, prescriptions: result.rows });
   } catch (error) {
     console.error('❌ Pending prescriptions fetch error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -5236,7 +5236,7 @@ app.get('/api/notifications', authenticateToken, async (req, res) => {
     });
   } catch (error) {
     console.error('❌ Notifications fetch error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -5249,7 +5249,7 @@ app.get('/api/notifications/count', authenticateToken, async (req, res) => {
     res.json({ success: true, count, unreadCount: count });
   } catch (error) {
     console.error('❌ Notification count error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -5271,7 +5271,7 @@ app.post('/api/notifications', authenticateToken, async (req, res) => {
     res.json({ success: true, notification });
   } catch (error) {
     console.error('❌ Create notification error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -5344,7 +5344,7 @@ app.put('/api/notifications/:id/read', authenticateToken, async (req, res) => {
     res.json({ success: true });
   } catch (error) {
     console.error('❌ Mark notification read error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -5373,7 +5373,7 @@ app.get('/api/medical-content', async (req, res) => {
     res.json({ success: true, articles: filteredContent, count: filteredContent.length });
   } catch (error) {
     console.error('❌ Medical content fetch error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -5398,7 +5398,7 @@ app.post('/api/medical-content', authenticateToken, async (req, res) => {
     res.json({ success: true, article: newArticle });
   } catch (error) {
     console.error('❌ Create medical content error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -5411,7 +5411,7 @@ app.get('/api/medical-content/pending', authenticateToken, async (req, res) => {
     res.json({ success: true, articles: pendingArticles || [], count: pendingArticles?.length || 0 });
   } catch (error) {
     console.error('❌ Pending content fetch error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -5428,7 +5428,7 @@ app.put('/api/medical-content/:contentId/approve', authenticateToken, async (req
     res.json({ success: true, article: result });
   } catch (error) {
     console.error('❌ Approve content error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -5468,7 +5468,7 @@ app.put('/api/medical-content/:contentId/reject', authenticateToken, async (req,
     res.json({ success: true, article: articles[articleIndex] });
   } catch (error) {
     console.error('❌ Reject content error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -5539,7 +5539,7 @@ app.get('/api/content/medical/pending', authenticateToken, async (req, res) => {
     res.json(articles);
   } catch (error) {
     console.error('❌ [Content API] Error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -5558,7 +5558,7 @@ app.get('/api/content/medical/:id', async (req, res) => {
     res.json(article);
   } catch (error) {
     console.error('❌ [Content API] Error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -5582,7 +5582,7 @@ app.post('/api/content/medical', authenticateToken, async (req, res) => {
     res.status(201).json({ success: true, article });
   } catch (error) {
     console.error('❌ [Content API] Error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -5619,7 +5619,7 @@ app.put('/api/content/medical/:id', authenticateToken, async (req, res) => {
     res.json({ success: true, article: result.rows[0] });
   } catch (error) {
     console.error('❌ [Content API] Error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -5641,7 +5641,7 @@ app.delete('/api/content/medical/:id', authenticateToken, async (req, res) => {
     res.json({ success: true, message: 'Article archived' });
   } catch (error) {
     console.error('❌ [Content API] Error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -5663,7 +5663,7 @@ app.post('/api/content/medical/:id/review', authenticateToken, async (req, res) 
     res.json({ success: true, article: result });
   } catch (error) {
     console.error('❌ [Content API] Error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -5778,7 +5778,7 @@ app.get('/api/content/clinical/pending', authenticateToken, async (req, res) => 
     res.json(resources || []);
   } catch (error) {
     console.error('❌ [Content API] Error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -5797,7 +5797,7 @@ app.get('/api/content/clinical/:id', async (req, res) => {
     res.json(resource);
   } catch (error) {
     console.error('❌ [Content API] Error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -5833,7 +5833,7 @@ app.post('/api/content/clinical', authenticateToken, async (req, res) => {
     res.status(201).json({ success: true, resource: result.rows[0] });
   } catch (error) {
     console.error('❌ [Content API] Error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -5870,7 +5870,7 @@ app.put('/api/content/clinical/:id', authenticateToken, async (req, res) => {
     res.json({ success: true, resource: result.rows[0] });
   } catch (error) {
     console.error('❌ [Content API] Error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -5892,7 +5892,7 @@ app.delete('/api/content/clinical/:id', authenticateToken, async (req, res) => {
     res.json({ success: true, message: 'Resource archived' });
   } catch (error) {
     console.error('❌ [Content API] Error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -5925,7 +5925,7 @@ app.post('/api/content/clinical/:id/review', authenticateToken, async (req, res)
     res.json({ success: true, resource: result.rows[0] });
   } catch (error) {
     console.error('❌ [Content API] Error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -5967,7 +5967,7 @@ app.get('/api/clinical-resources', authenticateToken, async (req, res) => {
     res.json({ success: true, resources: filteredResources, count: filteredResources.length });
   } catch (error) {
     console.error('❌ Clinical resources fetch error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -6004,7 +6004,7 @@ app.post('/api/clinical-resources', authenticateToken, async (req, res) => {
     res.json({ success: true, resource: result.rows[0] });
   } catch (error) {
     console.error('❌ Create clinical resource error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -6021,7 +6021,7 @@ app.put('/api/clinical-resources/:resourceId/approve', authenticateToken, async 
     res.json({ success: true, resource: result });
   } catch (error) {
     console.error('❌ Approve resource error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -6242,7 +6242,7 @@ app.get('/api/consultants/specialties/list', async (req, res) => {
     res.json({ success: true, specialties });
   } catch (error) {
     console.error('❌ Specialties fetch error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -6274,7 +6274,7 @@ app.post('/api/consultants', authenticateToken, async (req, res) => {
     res.json({ success: true, consultant: newConsultant });
   } catch (error) {
     console.error('❌ Create consultant error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -6301,7 +6301,7 @@ app.get('/api/admin/pending-doctors', authenticateToken, async (req, res) => {
     res.json({ success: true, pendingDoctors, count: pendingDoctors.length });
   } catch (error) {
     console.error('❌ Pending doctors fetch error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -6346,7 +6346,7 @@ app.put('/api/admin/doctors/:doctorId/approve', authenticateToken, async (req, r
     res.json({ success: true, doctor: doctors[doctorIndex] });
   } catch (error) {
     console.error('❌ Approve doctor error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -6385,7 +6385,7 @@ app.put('/api/admin/doctors/:doctorId/reject', authenticateToken, async (req, re
     res.json({ success: true, doctor: doctors[doctorIndex] });
   } catch (error) {
     console.error('❌ Reject doctor error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -6424,7 +6424,7 @@ app.post('/api/admin/approve-doctor', authenticateToken, async (req, res) => {
     res.json({ success: true, message: 'Doctor approved successfully', doctor: doctors[doctorIndex] });
   } catch (error) {
     console.error('❌ Approve doctor error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -6461,7 +6461,7 @@ app.post('/api/admin/reject-doctor', authenticateToken, async (req, res) => {
     res.json({ success: true, message: 'Doctor rejected successfully', doctor: doctors[doctorIndex] });
   } catch (error) {
     console.error('❌ Reject doctor error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -6504,7 +6504,7 @@ app.post('/api/admin/update-role', authenticateToken, async (req, res) => {
     res.json({ success: true, message: `User role updated to ${newRole}`, user: users[userIndex] });
   } catch (error) {
     console.error('❌ Update role error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -6547,7 +6547,7 @@ app.post('/api/admin/remove-admin', authenticateToken, async (req, res) => {
     res.json({ success: true, message: 'Action completed', user: users[userIndex] });
   } catch (error) {
     console.error('❌ Remove admin error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -6608,7 +6608,7 @@ app.put('/api/admin/users/:userId/role', authenticateToken, async (req, res) => 
     });
   } catch (error) {
     console.error('❌ Update role error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -6650,7 +6650,7 @@ app.get('/api/admin/users', authenticateToken, async (req, res) => {
     res.json({ success: true, users, count: users.length });
   } catch (error) {
     console.error('❌ Admin users fetch error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -6684,7 +6684,7 @@ app.get('/api/admin/users/:userId/privileges', authenticateToken, async (req, re
     });
   } catch (error) {
     console.error('❌ Get privileges error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -6721,7 +6721,7 @@ app.put('/api/admin/users/:userId/privileges', authenticateToken, async (req, re
     res.json({ success: true, privileges: userProfile.adminPrivileges });
   } catch (error) {
     console.error('❌ Update privileges error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -6840,7 +6840,7 @@ app.get('/api/users', authenticateToken, async (req, res) => {
     res.json({ success: true, users, count: users.length });
   } catch (error) {
     console.error('❌ Users fetch error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
