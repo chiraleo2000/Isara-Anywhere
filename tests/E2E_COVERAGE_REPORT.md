@@ -1,4 +1,4 @@
-# E2E Test Coverage Report — v1.5.8
+# E2E Test Coverage Report — v1.5.9
 
 **Generated:** 2026-03-19  
 **Framework:** Playwright 1.58.2 (TypeScript)  

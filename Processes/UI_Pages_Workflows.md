@@ -1011,7 +1011,7 @@ Find nearby hospitals, clinics, and pharmacies.
 
 ---
 
-## 📸 Cloud UI Screenshot Verification (v1.5.8)
+## 📸 Cloud UI Screenshot Verification (v1.5.9)
 
 All pages verified on **Cloud Run** with full-page screenshots captured at **1920×1080** viewport.
 

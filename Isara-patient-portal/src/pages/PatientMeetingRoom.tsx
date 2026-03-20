@@ -316,6 +316,13 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
         });
 
         jitsiApiRef.current = api;
+
+        // Ensure Jitsi iframe has camera/microphone permissions
+        const iframe = jitsiContainerRef.current?.querySelector('iframe');
+        if (iframe) {
+          iframe.setAttribute('allow', 'camera *; microphone *; display-capture *; autoplay *; clipboard-write *; encrypted-media *');
+        }
+
         api.on('readyToClose', () => {
           setStatus('ended');
           if (durationTimerRef.current) clearInterval(durationTimerRef.current);
@@ -427,49 +434,58 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
           <div className="flex flex-col lg:flex-row items-center gap-12 max-w-5xl w-full px-8">
             {/* Video Preview / Avatar */}
             <div className="flex-1 flex flex-col items-center gap-4">
-              <div className="relative w-80 h-56 bg-gray-800 rounded-2xl overflow-hidden border-2 border-gray-600 shadow-2xl">
+              <div className="relative w-[480px] h-[320px] bg-gray-800 rounded-2xl overflow-hidden border-2 border-gray-600 shadow-2xl">
                 {cameraOn && mediaStatus.camera === 'granted' ? (
-                  <video ref={previewVideoRef} autoPlay muted playsInline className="w-full h-full object-cover" />
+                  <video ref={previewVideoRef} autoPlay muted playsInline className="w-full h-full object-cover" style={{ transform: 'scaleX(-1)' }} />
                 ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-emerald-900 to-teal-900">
-                    <div className="w-24 h-24 rounded-full bg-emerald-500 flex items-center justify-center text-3xl font-bold text-white shadow-lg mb-3">
+                  <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900">
+                    <div className="w-28 h-28 rounded-full bg-emerald-500 flex items-center justify-center text-4xl font-bold text-white shadow-lg mb-3">
                       {getUserInitials(patientName)}
                     </div>
                     <span className="text-lg font-medium text-white">{patientName}</span>
-                    <span className="text-sm text-emerald-200 mt-1">ผู้ป่วย</span>
-                  </div>
-                )}
-                {!cameraOn && (
-                  <div className="absolute bottom-3 left-3 bg-red-600/80 rounded-full px-2 py-1 text-xs flex items-center gap-1">
-                    Camera Off
+                    <span className="text-sm text-emerald-300 mt-1">ผู้ป่วย</span>
                   </div>
                 )}
               </div>
 
-              {/* Media Controls */}
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={togglePreviewMic}
-                  className={`w-14 h-14 rounded-full flex items-center justify-center text-xl transition-all shadow-lg ${
-                    micOn && mediaStatus.microphone === 'granted'
-                      ? 'bg-gray-600 hover:bg-gray-500 text-white'
-                      : 'bg-red-600 hover:bg-red-500 text-white'
-                  }`}
-                  title={micOn ? 'ปิดไมค์' : 'เปิดไมค์'}
-                >
-                  {micOn && mediaStatus.microphone === 'granted' ? 'Mic' : 'Mute'}
-                </button>
-                <button
-                  onClick={togglePreviewCamera}
-                  className={`w-14 h-14 rounded-full flex items-center justify-center text-xl transition-all shadow-lg ${
-                    cameraOn && mediaStatus.camera === 'granted'
-                      ? 'bg-gray-600 hover:bg-gray-500 text-white'
-                      : 'bg-red-600 hover:bg-red-500 text-white'
-                  }`}
-                  title={cameraOn ? 'ปิดกล้อง' : 'เปิดกล้อง'}
-                >
-                  {cameraOn && mediaStatus.camera === 'granted' ? 'Cam' : 'Off'}
-                </button>
+              {/* Zoom-style Media Controls */}
+              <div className="flex items-center gap-3">
+                <div className="flex flex-col items-center">
+                  <button
+                    onClick={togglePreviewMic}
+                    className={`w-12 h-12 rounded-full flex items-center justify-center transition-all shadow-lg ${
+                      micOn && mediaStatus.microphone === 'granted'
+                        ? 'bg-gray-600 hover:bg-gray-500 text-white'
+                        : 'bg-red-600 hover:bg-red-500 text-white'
+                    }`}
+                    title={micOn ? 'ปิดไมค์' : 'เปิดไมค์'}
+                  >
+                    {micOn && mediaStatus.microphone === 'granted' ? (
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4M12 15a3 3 0 003-3V5a3 3 0 00-6 0v7a3 3 0 003 3z" /></svg>
+                    ) : (
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4M12 15a3 3 0 003-3V5a3 3 0 00-6 0v7a3 3 0 003 3z" /><line x1="3" y1="3" x2="21" y2="21" stroke="currentColor" strokeWidth={2} strokeLinecap="round" /></svg>
+                    )}
+                  </button>
+                  <span className="text-xs text-gray-400 mt-1">{micOn ? 'ไมค์เปิด' : 'ปิดเสียง'}</span>
+                </div>
+                <div className="flex flex-col items-center">
+                  <button
+                    onClick={togglePreviewCamera}
+                    className={`w-12 h-12 rounded-full flex items-center justify-center transition-all shadow-lg ${
+                      cameraOn && mediaStatus.camera === 'granted'
+                        ? 'bg-gray-600 hover:bg-gray-500 text-white'
+                        : 'bg-red-600 hover:bg-red-500 text-white'
+                    }`}
+                    title={cameraOn ? 'ปิดกล้อง' : 'เปิดกล้อง'}
+                  >
+                    {cameraOn && mediaStatus.camera === 'granted' ? (
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                    ) : (
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /><line x1="3" y1="3" x2="21" y2="21" stroke="currentColor" strokeWidth={2} strokeLinecap="round" /></svg>
+                    )}
+                  </button>
+                  <span className="text-xs text-gray-400 mt-1">{cameraOn ? 'กล้องเปิด' : 'ปิดกล้อง'}</span>
+                </div>
               </div>
             </div>
 

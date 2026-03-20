@@ -526,6 +526,12 @@ const MeetingRoom: React.FC = () => { // NOSONAR
 
         jitsiApiRef.current = api;
 
+        // Ensure Jitsi iframe has camera/microphone permissions
+        const iframe = jitsiContainerRef.current?.querySelector('iframe');
+        if (iframe) {
+          iframe.setAttribute('allow', 'camera *; microphone *; display-capture *; autoplay *; clipboard-write *; encrypted-media *');
+        }
+
         const handleReadyToClose = () => {
           // End meeting: stop transcription, navigate back
           setMeetingState(prev => ({ ...prev, status: 'ended' }));
@@ -1056,50 +1062,58 @@ const MeetingRoom: React.FC = () => { // NOSONAR
           <div className="flex flex-col lg:flex-row items-center gap-12 max-w-5xl w-full px-8">
             {/* Video Preview / Avatar */}
             <div className="flex-1 flex flex-col items-center gap-4">
-              <div className="relative w-80 h-56 bg-gray-800 rounded-2xl overflow-hidden border-2 border-gray-600 shadow-2xl">
+              <div className="relative w-[480px] h-[320px] bg-gray-800 rounded-2xl overflow-hidden border-2 border-gray-600 shadow-2xl">
                 {cameraOn && mediaStatus.camera === 'granted' ? (
-                  <video ref={previewVideoRef} autoPlay muted playsInline className="w-full h-full object-cover" />
+                  <video ref={previewVideoRef} autoPlay muted playsInline className="w-full h-full object-cover mirror" style={{ transform: 'scaleX(-1)' }} />
                 ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-blue-900 to-purple-900">
-                    <div className="w-24 h-24 rounded-full bg-blue-500 flex items-center justify-center text-3xl font-bold text-white shadow-lg mb-3">
+                  <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900">
+                    <div className="w-28 h-28 rounded-full bg-blue-500 flex items-center justify-center text-4xl font-bold text-white shadow-lg mb-3">
                       {getUserInitials(user?.displayName || user?.name || 'Doctor')}
                     </div>
                     <span className="text-lg font-medium text-white">{user?.displayName || user?.name || 'Doctor'}</span>
-                    <span className="text-sm text-blue-200 mt-1">แพทย์</span>
-                  </div>
-                )}
-                {/* Camera off overlay indicator */}
-                {!cameraOn && (
-                  <div className="absolute bottom-3 left-3 bg-red-600/80 rounded-full px-2 py-1 text-xs flex items-center gap-1">
-                    Camera Off
+                    <span className="text-sm text-blue-300 mt-1">แพทย์</span>
                   </div>
                 )}
               </div>
 
-              {/* Media Controls */}
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={togglePreviewMic}
-                  className={`w-14 h-14 rounded-full flex items-center justify-center text-xl transition-all shadow-lg ${
-                    micOn && mediaStatus.microphone === 'granted'
-                      ? 'bg-gray-600 hover:bg-gray-500 text-white'
-                      : 'bg-red-600 hover:bg-red-500 text-white'
-                  }`}
-                  title={micOn ? 'ปิดไมค์' : 'เปิดไมค์'}
-                >
-                  {micOn && mediaStatus.microphone === 'granted' ? 'Mic' : 'Mute'}
-                </button>
-                <button
-                  onClick={togglePreviewCamera}
-                  className={`w-14 h-14 rounded-full flex items-center justify-center text-xl transition-all shadow-lg ${
-                    cameraOn && mediaStatus.camera === 'granted'
-                      ? 'bg-gray-600 hover:bg-gray-500 text-white'
-                      : 'bg-red-600 hover:bg-red-500 text-white'
-                  }`}
-                  title={cameraOn ? 'ปิดกล้อง' : 'เปิดกล้อง'}
-                >
-                  {cameraOn && mediaStatus.camera === 'granted' ? 'Cam' : 'Off'}
-                </button>
+              {/* Zoom-style Media Controls Bar */}
+              <div className="flex items-center gap-3">
+                <div className="flex flex-col items-center">
+                  <button
+                    onClick={togglePreviewMic}
+                    className={`w-12 h-12 rounded-full flex items-center justify-center transition-all shadow-lg ${
+                      micOn && mediaStatus.microphone === 'granted'
+                        ? 'bg-gray-600 hover:bg-gray-500 text-white'
+                        : 'bg-red-600 hover:bg-red-500 text-white'
+                    }`}
+                    title={micOn ? 'ปิดไมค์' : 'เปิดไมค์'}
+                  >
+                    {micOn && mediaStatus.microphone === 'granted' ? (
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4M12 15a3 3 0 003-3V5a3 3 0 00-6 0v7a3 3 0 003 3z" /></svg>
+                    ) : (
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4M12 15a3 3 0 003-3V5a3 3 0 00-6 0v7a3 3 0 003 3z" /><line x1="3" y1="3" x2="21" y2="21" stroke="currentColor" strokeWidth={2} strokeLinecap="round" /></svg>
+                    )}
+                  </button>
+                  <span className="text-xs text-gray-400 mt-1">{micOn ? 'ไมค์เปิด' : 'ปิดเสียง'}</span>
+                </div>
+                <div className="flex flex-col items-center">
+                  <button
+                    onClick={togglePreviewCamera}
+                    className={`w-12 h-12 rounded-full flex items-center justify-center transition-all shadow-lg ${
+                      cameraOn && mediaStatus.camera === 'granted'
+                        ? 'bg-gray-600 hover:bg-gray-500 text-white'
+                        : 'bg-red-600 hover:bg-red-500 text-white'
+                    }`}
+                    title={cameraOn ? 'ปิดกล้อง' : 'เปิดกล้อง'}
+                  >
+                    {cameraOn && mediaStatus.camera === 'granted' ? (
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                    ) : (
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /><line x1="3" y1="3" x2="21" y2="21" stroke="currentColor" strokeWidth={2} strokeLinecap="round" /></svg>
+                    )}
+                  </button>
+                  <span className="text-xs text-gray-400 mt-1">{cameraOn ? 'กล้องเปิด' : 'ปิดกล้อง'}</span>
+                </div>
               </div>
             </div>
 
@@ -1428,29 +1442,33 @@ const MeetingRoom: React.FC = () => { // NOSONAR
           ) : (
             <div className="flex flex-col flex-1">
               <div ref={jitsiContainerRef} className="w-full flex-1" />
-              {/* Teams-like Bottom Control Bar */}
+              {/* Zoom-style Bottom Control Bar */}
               {meetingState.status === 'in_progress' && (
-                <div className="flex items-center justify-center gap-2 py-2 bg-[#1b1b1b] border-t border-gray-800">
+                <div className="flex items-center justify-center gap-3 py-2.5 bg-[#1b1b1b] border-t border-gray-800">
                   {/* Transcript Controls */}
-                  <div className="flex items-center gap-1 bg-gray-800 rounded-full px-3 py-1">
+                  <div className="flex items-center gap-1.5 bg-gray-800/80 rounded-full px-4 py-1.5">
                     {renderTranscriptButtons()}
                     <button onClick={toggleLanguage}
-                      className="px-2 py-1 text-gray-400 hover:text-white hover:bg-gray-700 rounded text-xs transition"
+                      className="px-2 py-1 text-gray-400 hover:text-white hover:bg-gray-700 rounded text-xs transition font-mono"
                       title="Toggle Language">
                       {meetingState.transcriptLanguage === 'th-TH' ? 'TH' : 'EN'}
                     </button>
                   </div>
                   {/* Recording Toggle */}
-                  <button onClick={toggleRecording}
-                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
-                      isRecording ? 'bg-red-600 hover:bg-red-700 ring-2 ring-red-400/50 animate-pulse' : 'bg-gray-700 hover:bg-gray-600'
-                    }`} title={isRecording ? 'Stop Recording' : 'Start Recording'}>
-                    {isRecording ? '⏹' : '⏺'}
-                  </button>
+                  <div className="flex flex-col items-center">
+                    <button onClick={toggleRecording}
+                      className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+                        isRecording ? 'bg-red-600 hover:bg-red-700 ring-2 ring-red-400/50 animate-pulse' : 'bg-gray-700 hover:bg-gray-600'
+                      }`} title={isRecording ? 'Stop Recording' : 'Start Recording'}>
+                      <svg className="w-5 h-5" fill={isRecording ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6" strokeWidth={2} /></svg>
+                    </button>
+                    <span className="text-[10px] text-gray-500 mt-0.5">{isRecording ? 'REC' : 'บันทึก'}</span>
+                  </div>
                   {/* End Meeting */}
                   <button onClick={handleMeetingEnd}
-                    className="px-5 py-2 bg-red-600 hover:bg-red-700 rounded-full text-sm font-medium transition shadow-lg">
-                    สิ้นสุด
+                    className="px-6 py-2.5 bg-red-600 hover:bg-red-700 rounded-full text-sm font-bold transition shadow-lg flex items-center gap-2">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 8l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M5 3a2 2 0 00-2 2v1c0 8.284 6.716 15 15 15h1a2 2 0 002-2v-3.28a1 1 0 00-.684-.948l-4.493-1.498a1 1 0 00-1.21.502l-1.13 2.257a11.042 11.042 0 01-5.516-5.517l2.257-1.128a1 1 0 00.502-1.21L9.228 3.683A1 1 0 008.279 3H5z" /></svg>
+                    สิ้นสุดการประชุม
                   </button>
                 </div>
               )}

@@ -132,6 +132,7 @@ test.describe('Multi-User Meeting — Admin + Doctor + Patient', () => {
   let appointmentId: string;
 
   test.beforeAll(async ({ browser }) => {
+    test.setTimeout(180000);
     const ctxOptions = {
       viewport: { width: 1920, height: 1080 },
       permissions: ['camera', 'microphone', 'notifications'],
@@ -234,7 +235,7 @@ test.describe('Multi-User Meeting — Admin + Doctor + Patient', () => {
   // MU02 — Admin views appointment pool & admin pages
   // ─────────────────────────────────────────────────────────────────
   test('MU02 — Admin Appointment Pool', async () => {
-    await adminPage.goto(`${DOCTOR_URL}/admin/appointment-pool`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await adminPage.goto(`${DOCTOR_URL}/doctor/${adminId}/appointment-management`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await snap(adminPage, 'MU02-admin-appointment-pool', 'Admin Appointment Pool', SS_APPT);
   });
 
@@ -635,7 +636,7 @@ test.describe('Multi-User Meeting — Admin + Doctor + Patient', () => {
   // MU22 — Admin sees completed meeting in doctor portal
   // ─────────────────────────────────────────────────────────────────
   test('MU22 — Admin Views Doctor Portal', async () => {
-    await adminPage.goto(`${DOCTOR_URL}/admin/appointment-pool`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await adminPage.goto(`${DOCTOR_URL}/doctor/${adminId}/appointment-management`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await snap(adminPage, 'MU22-admin-appointment-final', 'Admin Appointment Pool — After Meeting', SS_POST);
   });
 

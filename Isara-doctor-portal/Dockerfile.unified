@@ -193,6 +193,8 @@ RUN printf '%s\n' \
 '    add_header X-Frame-Options "SAMEORIGIN" always;' \
 '    add_header X-Content-Type-Options "nosniff" always;' \
 '    add_header X-XSS-Protection "1; mode=block" always;' \
+'    add_header Permissions-Policy "camera=(self https://meet.jit.si), microphone=(self https://meet.jit.si), geolocation=(self)" always;' \
+'    add_header Content-Security-Policy "default-src '"'"'self'"'"' https:; script-src '"'"'self'"'"' '"'"'unsafe-inline'"'"' '"'"'unsafe-eval'"'"' https://meet.jit.si https://8x8.vc https://accounts.google.com; style-src '"'"'self'"'"' '"'"'unsafe-inline'"'"' https://fonts.googleapis.com; font-src '"'"'self'"'"' https://fonts.gstatic.com; img-src '"'"'self'"'"' data: blob: https:; connect-src '"'"'self'"'"' http://localhost:* ws://localhost:* wss://localhost:* https://*.googleapis.com https://*.run.app wss://*.run.app wss://meet.jit.si; frame-src '"'"'self'"'"' https://meet.jit.si https://8x8.vc https://accounts.google.com; media-src '"'"'self'"'"' blob: https: mediastream:; worker-src '"'"'self'"'"' blob:;" always;' \
 '    location /health {' \
 '        access_log off;' \
 '        return 200 '"'"'{"status":"healthy","service":"izara-unified"}'"'"';' \
@@ -321,6 +323,8 @@ printf '%s\n' \
 '  GCS_BUCKET_METADATA: "${VITE_GCS_BUCKET_METADATA}",' \
 '  GEMINI_API_KEY: "${VITE_GEMINI_API_KEY}",' \
 '  GEMINI_MODEL: "${VITE_GEMINI_MODEL}",' \
+'  MEETING_SERVER_URL: "${VITE_MEETING_SERVER_URL}",' \
+'  JITSI_DOMAIN: "${JITSI_DOMAIN}",' \
 '  PDPA_ENABLED: "${VITE_PDPA_ENABLED}",' \
 '  CONSENT_REQUIRED: "${VITE_CONSENT_REQUIRED}"' \
 '};' > /usr/share/nginx/html/env-config.template.js && \

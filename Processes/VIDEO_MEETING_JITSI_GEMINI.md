@@ -1,7 +1,7 @@
 # Video Meeting Implementation - Jitsi Meet + Device Speech-to-Text + Gemini AI
 
 **Version:** 1.5.8  
-**Last Updated:** March 15, 2026  
+**Last Updated:** March 20, 2026  
 **Status:** ✅ Phase 1 — Comprehensive Meeting Workflow (Microsoft Teams-Like Experience)
 
 > This document is the core Phase 1 deliverable describing the complete meeting workflow:
@@ -857,6 +857,9 @@ const response = await fetch('/api/video-meeting/APT-2025-001/summarize', {
 8. **Man-in-the-Loop**: All AI outputs require doctor validation before patient delivery
 9. **Guest Lobby Control**: Non-registered users cannot enter meeting without HOST approval
 10. **Chat Privacy**: Meeting chat messages are private to the consultation and stored securely
+11. **Permissions-Policy**: `camera=(self "https://meet.jit.si")`, `microphone=(self "https://meet.jit.si")` — scoped to Jitsi iframe only (v1.5.9 fix)
+12. **CSP for Video**: `frame-src meet.jit.si 8x8.vc`, `media-src mediastream:`, `worker-src blob:`, `connect-src *.run.app wss://*.run.app`
+13. **Iframe Allow Attribute**: Explicit `allow="camera *; microphone *; display-capture *; autoplay *; clipboard-write *; encrypted-media *"` on Jitsi iframe
 
 ## Testing
 

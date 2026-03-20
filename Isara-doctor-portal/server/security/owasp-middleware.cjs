@@ -110,13 +110,15 @@ function securityHeaders() {
   return (req, res, next) => {
     // Content Security Policy
     res.setHeader('Content-Security-Policy',
-      "default-src 'self'; " +
-      "script-src 'self' 'unsafe-inline' https://apis.google.com https://maps.googleapis.com https://meet.jit.si; " +
+      "default-src 'self' https:; " +
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://maps.googleapis.com https://meet.jit.si https://8x8.vc; " +
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
       "font-src 'self' https://fonts.gstatic.com; " +
       "img-src 'self' data: https: blob:; " +
-      "connect-src 'self' http://localhost:* https://*.googleapis.com wss://*; " +
-      "frame-src 'self' https://meet.google.com https://calendar.google.com;"
+      "connect-src 'self' http://localhost:* ws://localhost:* wss://localhost:* https://*.googleapis.com https://*.run.app wss://*.run.app wss://meet.jit.si; " +
+      "frame-src 'self' https://meet.jit.si https://8x8.vc https://meet.google.com https://calendar.google.com; " +
+      "media-src 'self' blob: https: mediastream:; " +
+      "worker-src 'self' blob:;"
     );
 
     // Prevent clickjacking
@@ -133,7 +135,7 @@ function securityHeaders() {
 
     // Permissions Policy
     res.setHeader('Permissions-Policy',
-      'camera=(self), microphone=(self), geolocation=(self), payment=()'
+      'camera=(self "https://meet.jit.si"), microphone=(self "https://meet.jit.si"), geolocation=(self), payment=()'
     );
 
     // HSTS (for production)

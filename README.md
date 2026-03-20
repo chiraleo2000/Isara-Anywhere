@@ -1,6 +1,6 @@
 # 🏥 Izara Telemedicine Platform
 
-![Version](https://img.shields.io/badge/version-1.5.8-blue.svg)
+![Version](https://img.shields.io/badge/version-1.5.9-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Platform](https://img.shields.io/badge/platform-web-lightgrey.svg)
 ![Node](https://img.shields.io/badge/node-%3E%3D22.0.0-brightgreen.svg)
@@ -45,7 +45,7 @@ The platform consists of three main services:
 | PostgreSQL | localhost:5433 |
 | pgAdmin | <http://localhost:5050> |
 
-### Cloud Environment — Production (v1.5.8) (Google Cloud Run)
+### Cloud Environment — Production (v1.5.9) (Google Cloud Run)
 
 | Service | URL |
 | ------- | --- |
@@ -57,7 +57,7 @@ The platform consists of three main services:
 
 ## 🧪 Testing
 
-### Test Architecture (v1.5.8)
+### Test Architecture (v1.5.9)
 
 #### Unit Tests (Vitest — 2,013 tests)
 - **58 test files** in `tests/unit/` — pure logic, no server required
@@ -245,7 +245,7 @@ npx playwright test tests/ui-pages.ui-test.ts              # 44 page checks
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────────┐
-│                     IZARA TELEMEDICINE v1.5.8                               │
+│                     IZARA TELEMEDICINE v1.5.9                               │
 ├──────────────────────────────────────────────────────────────────────────┤
 │   ┌─────────────────┐  ┌─────────────────┐  ┌────────────────────────┐   │
 │   │  Patient Portal │  │  Doctor Portal  │  │  Meeting Server        │   │
@@ -375,7 +375,7 @@ cd Izara-jitsi-server
 gcloud builds submit --config=cloudbuild.yaml
 ```
 
-### Cloud URLs (Production — v1.5.8)
+### Cloud URLs (Production — v1.5.9)
 
 | Service | URL |
 | ------- | --- |
@@ -465,7 +465,7 @@ Isara-Anywhere/
 
 ---
 
-## 🔒 Security (v1.5.8 — SonarQube Clean)
+## 🔒 Security (v1.5.9 — SonarQube Clean)
 
 - **Authentication**: bcrypt password hashing (10 rounds), JWT + session tokens
 - **JWT Secrets**: Consistent `JWT_SECRET_FINAL` usage across all verify calls (sign/verify mismatch fixed)
@@ -473,6 +473,8 @@ Isara-Anywhere/
 - **Session Management**: Secure token-based sessions (24hr expiry)
 - **Rate Limiting**: 10 login attempts per 15 minutes
 - **OWASP Security Headers**: Helmet.js (CSP, XSS protection, HSTS, X-Frame, X-Content-Type)
+- **Permissions-Policy**: `camera=(self "https://meet.jit.si")`, `microphone=(self "https://meet.jit.si")` — scoped to Jitsi iframe only
+- **CSP Media Integration**: `frame-src meet.jit.si 8x8.vc`, `media-src mediastream:`, `worker-src blob:` for secure video conferencing
 - **Body Limits**: 10KB JSON payload limit to prevent DoS
 - **TypeScript Strict Safety**: Zero `error: any` in server code — all catch blocks use `error: unknown` with proper type narrowing
 - **SonarQube Compliance**: No S6551 (unsafe string interpolation), no S4325 (unnecessary type assertions), no non-null assertions in frontend
@@ -488,12 +490,22 @@ Isara-Anywhere/
 
 ## 📋 Changelog
 
+### v1.5.9 (March 20, 2026)
+
+- **Camera/Microphone Fix**: Fixed `Permissions-Policy: camera=(), microphone=()` that completely blocked camera/mic access in Cloud Run and Docker deployments — updated across 5 server files (mainApiServer.cjs, owasp-middleware.cjs, owasp-middleware.ts, nginx.conf, Dockerfile.unified)
+- **CSP Headers Updated**: Added `frame-src meet.jit.si 8x8.vc`, `connect-src *.run.app wss://*.run.app`, `media-src mediastream:`, `worker-src blob:` across 4 locations for secure Jitsi video conferencing
+- **Jitsi iframe Allow Attribute**: Explicit `allow="camera *; microphone *; display-capture *; autoplay *; clipboard-write *; encrypted-media *"` in both MeetingRoom.tsx and PatientMeetingRoom.tsx
+- **Zoom-like UX**: SVG icons for mic/camera/phone/record controls, 480×320 camera preview with mirror effect, Thai labels (ไมค์เปิด/กล้องเปิด), larger pre-join layout
+- **env-config.template.js**: Added MEETING_SERVER_URL and JITSI_DOMAIN environment variables for Docker/Cloud Run
+- **Cloud Tests**: 177/177 passing across 5 test suites — cloud-ui-screenshots (39), cloud-workflow-multiuser (42), meeting-multi-user (27), workflow-screenshots (25), ui-pages (44)
+- **Cloud Deployment**: All 3 services deployed to Cloud Run v1.5.9 with updated CORS
+
 ### v1.5.8 (March 16, 2026)
 
 - **SonarQube Full Clean**: Fixed all 26 remaining issues (S3776, S2004, S6853, S6582, S1128, S2068, S1854) across MeetingRoom.tsx, PatientMeetingRoom.tsx, cloud-workflow-multiuser, meeting-multi-user, workflow-screenshots
 - **Screenshot Restructuring**: All 4 test files now organize screenshots into per-workflow subdirectories (22 subdirectories total)
 - **Cognitive Complexity**: Extracted module-level helper functions from MeetingRoom.tsx (6 utilities) and PatientMeetingRoom.tsx (4 utilities) to reduce component complexity
-- **Cloud Tests**: 133/133 passing across 4 test suites — cloud-ui-screenshots (39), cloud-workflow-multiuser (42), meeting-multi-user (27), workflow-screenshots (25)
+- **Cloud Tests**: 177/177 passing across 5 test suites — cloud-ui-screenshots (39), cloud-workflow-multiuser (42), meeting-multi-user (27), workflow-screenshots (25), ui-pages (44)
 - **Accessibility**: Added aria-labels to interactive video meeting controls (mic, camera, leave buttons)
 - **Version Bump**: All packages updated to v1.5.8
 
@@ -532,7 +544,7 @@ Isara-Anywhere/
 ### v1.5.4 (March 8, 2026)
 
 - Security hardening: JWT sign/verify consistency, OWASP headers, unified password policies
-- Comprehensive test layer: 1,419 unit + 1,191 E2E = 2,610 tests at 100% pass rate (now 3,137 total in v1.5.8)
+- Comprehensive test layer: 1,419 unit + 1,191 E2E = 2,610 tests at 100% pass rate (now 3,314 total in v1.5.9)
 - Phase 2 AI-HIS tables and endpoints
 
 ---
