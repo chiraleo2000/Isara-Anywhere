@@ -1396,7 +1396,16 @@ app.post('/api/meetings/:id/chat', optionalAuth, async (req, res) => {
     if (!meetingChats.has(id)) meetingChats.set(id, []);
     meetingChats.get(id).push(chatMessage);
     
-    // Persist chat to DB (meeting_transcripts with type=chat)
+    // Persist chat to DB (meeting_chats table + meeting_transcripts for legacy)
+    try {
+      await safeQuery(
+        `INSERT INTO meeting_chats (meeting_record_id, sender_id, sender_role, sender_name, message, type, created_at)
+         VALUES ($1::uuid, $2, $3, $4, $5, $6, NOW())`,
+        [id, chatMessage.senderId, chatMessage.senderRole, chatMessage.senderName, sanitizedMessage, type]
+      );
+    } catch (e) {
+      console.warn('[Chat] meeting_chats persist skipped:', e.message);
+    }
     try {
       await safeQuery(
         `INSERT INTO meeting_transcripts (
@@ -1977,6 +1986,284 @@ app.post('/api/ai/validate', authenticateToken, async (req, res) => {
     });
   } catch (error) {
     res.json({ success: true, message: 'Validation processed', status: 'processed' });
+  }
+});
+
+// ============================================================================
+// MEETING-LEVEL VALIDATION (Man-in-the-Loop per Meeting)
+// ============================================================================
+
+// POST /api/meetings/:id/validate — Doctor validates AI summary for a specific meeting
+app.post('/api/meetings/:id/validate', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { action, editedSummary, reason, doctorId } = req.body;
+
+    if (!['approve', 'edit', 'reject', 'regenerate'].includes(action)) {
+      return res.status(400).json({ success: false, error: 'Invalid action. Must be: approve, edit, reject, regenerate' });
+    }
+
+    let validationStatus;
+    let summaryToStore = null;
+
+    if (action === 'approve') {
+      validationStatus = 'approved';
+    } else if (action === 'edit') {
+      validationStatus = 'edited';
+      summaryToStore = editedSummary;
+    } else if (action === 'reject') {
+      validationStatus = 'rejected';
+    } else {
+      validationStatus = 'pending_regeneration';
+    }
+
+    // Update meeting record in DB
+    try {
+      if (action === 'edit' && summaryToStore) {
+        await safeQuery(
+          `UPDATE meeting_records 
+           SET doctor_validation_status = $2, validated_at = NOW(), 
+               validated_by = $3, validation_reason = $4, ai_summary = $5,
+               ready_for_patient = $6
+           WHERE id::text = $1 OR appointment_id = $1`,
+          [id, validationStatus, doctorId || req.user?.id, reason || '', summaryToStore, validationStatus === 'edited']
+        );
+      } else {
+        await safeQuery(
+          `UPDATE meeting_records 
+           SET doctor_validation_status = $2, validated_at = NOW(), 
+               validated_by = $3, validation_reason = $4,
+               ready_for_patient = $5
+           WHERE id::text = $1 OR appointment_id = $1`,
+          [id, validationStatus, doctorId || req.user?.id, reason || '', validationStatus === 'approved']
+        );
+      }
+    } catch (e) {
+      console.warn('[Meeting Validate] DB update skipped:', e.message);
+    }
+
+    // Also update in-memory validation records
+    for (const [vId, val] of aiValidations.entries()) {
+      if (val.meetingId === id) {
+        val.status = validationStatus;
+        val.reviewedBy = doctorId || req.user?.id;
+        val.reviewedAt = new Date().toISOString();
+        val.reason = reason;
+      }
+    }
+
+    // Persist to ai_validations table
+    try {
+      const validationId = uuidv4();
+      await safeQuery(
+        `INSERT INTO ai_validations (id, type, content_snapshot, decision, doctor_id, meeting_id, validated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, NOW()) ON CONFLICT DO NOTHING`,
+        [validationId, 'meeting-summary', summaryToStore || '', validationStatus, doctorId || req.user?.id, id]
+      );
+    } catch (e) {
+      console.warn('[Meeting Validate] Validation persist skipped:', e.message);
+    }
+
+    // Notify via Socket.IO
+    io.to(id).emit('meeting-validation-update', {
+      meetingId: id, action, status: validationStatus,
+      timestamp: new Date().toISOString()
+    });
+
+    console.log(`[Meeting Validate] Meeting ${id}: ${action} by ${doctorId || req.user?.id}`);
+
+    const actionMessages = {
+      approve: 'สรุปได้รับการอนุมัติ — พร้อมส่งให้ผู้ป่วย',
+      edit: 'สรุปแก้ไขแล้ว — พร้อมส่งให้ผู้ป่วย',
+      reject: 'สรุปถูกปฏิเสธ — ไม่ส่งให้ผู้ป่วย',
+      regenerate: 'กำลังสร้างสรุปใหม่...',
+    };
+
+    res.json({
+      success: true,
+      meetingId: id,
+      action,
+      validationStatus,
+      readyForPatient: validationStatus === 'approved' || validationStatus === 'edited',
+      message: actionMessages[action] || 'ดำเนินการแล้ว'
+    });
+  } catch (error) {
+    console.error('[Meeting Validate] Error:', error);
+    res.status(500).json({ error: 'Failed to validate meeting summary' });
+  }
+});
+
+// DELETE /api/meetings/:id — Cancel a meeting room
+app.delete('/api/meetings/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Update status in DB
+    try {
+      await safeQuery(
+        `UPDATE meeting_records SET status = 'cancelled', ended_at = NOW()
+         WHERE id::text = $1 OR appointment_id = $1`,
+        [id]
+      );
+    } catch (e) {
+      console.warn('[Meeting Cancel] DB update skipped:', e.message);
+    }
+
+    // Clean up in-memory data
+    activeMeetings.delete(id);
+    activeTranscriptions.delete(id);
+    meetingChats.delete(id);
+    meetingLobbies.delete(id);
+    meetingInvites.delete(id);
+    meetingConsents.delete(id);
+
+    // Notify all participants
+    io.to(id).emit('meeting-cancelled', {
+      meetingId: id, reason: req.body?.reason || 'Meeting cancelled by host',
+      timestamp: new Date().toISOString()
+    });
+
+    console.log(`[Meeting Cancel] Meeting ${id} cancelled`);
+    res.json({ success: true, meetingId: id, message: 'Meeting cancelled' });
+  } catch (error) {
+    console.error('[Meeting Cancel] Error:', error);
+    res.status(500).json({ error: 'Failed to cancel meeting' });
+  }
+});
+
+// POST /api/meetings/:id/patient-instruction — Generate patient instruction sheet for a specific meeting
+app.post('/api/meetings/:id/patient-instruction', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!genAI) {
+      return res.json({ success: true, instructions: 'AI service not configured', source: 'fallback' });
+    }
+
+    // Fetch meeting + summary from DB
+    let meeting = null;
+    let aiSummary = '';
+    try {
+      const result = await safeQuery(
+        `SELECT mr.*, u_pat.name_thai as patient_name_thai
+         FROM meeting_records mr
+         LEFT JOIN users u_pat ON mr.patient_id = u_pat.id
+         WHERE mr.id::text = $1 OR mr.appointment_id = $1`, [id]
+      );
+      if (result.rows.length > 0) {
+        meeting = result.rows[0];
+        aiSummary = meeting.ai_summary || '';
+      }
+    } catch (e) {
+      console.warn('[Patient Instruction] DB lookup skipped:', e.message);
+    }
+
+    if (!aiSummary) {
+      return res.json({
+        success: true, instructions: 'ไม่มีสรุปการปรึกษาสำหรับสร้างคำแนะนำ',
+        source: 'empty', requiresValidation: false
+      });
+    }
+
+    const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
+    const prompt = `สร้างเอกสารคำแนะนำสำหรับผู้ป่วย จากสรุปการปรึกษาแพทย์ (ภาษาไทย อ่านง่าย):
+
+สรุปการปรึกษา:
+${aiSummary}
+
+ชื่อผู้ป่วย: ${meeting?.patient_name_thai || 'ไม่ระบุ'}
+
+กรุณาสร้างเอกสารในรูปแบบ:
+## 📋 สรุปผลการปรึกษา
+- การวินิจฉัย
+- ยาที่ได้รับ (ชื่อ, ขนาด, วิธีใช้)
+
+## 💊 การปฏิบัติตัว
+- สิ่งที่ต้องทำ
+- สิ่งที่ห้ามทำ
+
+## ⚠️ อาการเตือนที่ต้องมาพบแพทย์ทันที
+- รายการอาการ
+
+## 📅 นัดติดตาม
+- วันเวลานัดครั้งถัดไป
+
+⚠️ เอกสารนี้ต้องให้แพทย์ตรวจสอบก่อนส่งให้ผู้ป่วย`;
+
+    const result = await model.generateContent(prompt);
+    const instructions = result.response.text();
+
+    const validationId = uuidv4();
+    aiValidations.set(validationId, {
+      id: validationId, meetingId: id, type: 'patient-instruction-sheet',
+      content: instructions, status: 'pending_review', createdAt: new Date().toISOString()
+    });
+
+    // Save to meeting record
+    try {
+      await safeQuery(
+        `UPDATE meeting_records SET patient_instructions = $2, instruction_validation_id = $3
+         WHERE id::text = $1 OR appointment_id = $1`,
+        [id, instructions, validationId]
+      );
+    } catch (e) {
+      console.warn('[Patient Instruction] DB save skipped:', e.message);
+    }
+
+    console.log(`[Patient Instruction] Generated for meeting ${id}`);
+    res.json({
+      success: true, instructions, validationId,
+      meetingId: id, requiresValidation: true, source: 'gemini',
+      message: 'กรุณาให้แพทย์ตรวจสอบก่อนส่งให้ผู้ป่วย'
+    });
+  } catch (error) {
+    console.error('[Patient Instruction] Error:', error);
+    res.status(500).json({ error: 'Failed to generate patient instruction sheet' });
+  }
+});
+
+// GET /api/meetings/:id/consultation-result — Patient fetches approved consultation result
+app.get('/api/meetings/:id/consultation-result', optionalAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    let meeting = null;
+    try {
+      const result = await safeQuery(
+        `SELECT mr.ai_summary, mr.patient_instructions, mr.doctor_validation_status,
+                mr.validated_at, mr.ready_for_patient, mr.appointment_id,
+                u_doc.name_thai as doctor_name, u_pat.name_thai as patient_name
+         FROM meeting_records mr
+         LEFT JOIN users u_doc ON mr.doctor_id = u_doc.id
+         LEFT JOIN users u_pat ON mr.patient_id = u_pat.id
+         WHERE (mr.id::text = $1 OR mr.appointment_id = $1)
+           AND mr.ready_for_patient = true`, [id]
+      );
+      if (result.rows.length > 0) meeting = result.rows[0];
+    } catch (e) {
+      console.warn('[Consultation Result] DB lookup skipped:', e.message);
+    }
+
+    if (!meeting) {
+      return res.json({
+        success: true, available: false,
+        message: 'ผลการปรึกษายังไม่พร้อม — รอแพทย์ตรวจสอบ'
+      });
+    }
+
+    res.json({
+      success: true, available: true,
+      appointmentId: meeting.appointment_id,
+      doctorName: meeting.doctor_name,
+      patientName: meeting.patient_name,
+      summary: meeting.ai_summary,
+      instructions: meeting.patient_instructions,
+      validationStatus: meeting.doctor_validation_status,
+      validatedAt: meeting.validated_at,
+    });
+  } catch (error) {
+    console.error('[Consultation Result] Error:', error);
+    res.status(500).json({ error: 'Failed to fetch consultation result' });
   }
 });
 
@@ -2591,6 +2878,35 @@ const startServer = async () => {
             created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
           )
         `);
+        await pool.query(`
+          CREATE TABLE IF NOT EXISTS meeting_chats (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            meeting_record_id UUID REFERENCES meeting_records(id) ON DELETE CASCADE,
+            sender_id VARCHAR(50),
+            sender_role VARCHAR(30),
+            sender_name VARCHAR(255),
+            message TEXT,
+            type VARCHAR(20) DEFAULT 'text',
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+          )
+        `);
+        // Add meeting validation and patient instruction columns
+        const newColumns = [
+          ['meeting_records', 'doctor_validation_status', 'VARCHAR(30) DEFAULT \'pending_review\''],
+          ['meeting_records', 'validated_at', 'TIMESTAMP WITH TIME ZONE'],
+          ['meeting_records', 'validated_by', 'VARCHAR(50)'],
+          ['meeting_records', 'validation_reason', 'TEXT'],
+          ['meeting_records', 'ready_for_patient', 'BOOLEAN DEFAULT FALSE'],
+          ['meeting_records', 'patient_instructions', 'TEXT'],
+          ['meeting_records', 'instruction_validation_id', 'VARCHAR(50)'],
+          ['meeting_records', 'recording_started_at', 'TIMESTAMP WITH TIME ZONE'],
+          ['meeting_records', 'auto_transcribe', 'BOOLEAN DEFAULT FALSE'],
+        ];
+        for (const [table, col, colType] of newColumns) {
+          try {
+            await pool.query(`ALTER TABLE ${table} ADD COLUMN IF NOT EXISTS ${col} ${colType}`);
+          } catch (e) { /* column may already exist */ }
+        }
         console.log('✅ Meeting support tables verified');
       } catch (error_) {
         console.warn('⚠️ Table creation warning:', error_.message);

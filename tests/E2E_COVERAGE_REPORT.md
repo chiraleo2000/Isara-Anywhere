@@ -5,6 +5,7 @@
 **Total Spec Files:** 32 E2E + 1 Cloud UI Screenshot  
 **Total Tests:** ~1,124 E2E + 39 Cloud UI = ~1,163  
 **Cloud UI Screenshots:** 26 full-page (14 Patient + 12 Doctor) + 13 API health = 39 tests  
+**Local UI Screenshots:** 25 full-page PNGs (14 Patient + 11 Doctor) + 16 API = 44 tests  
 **User Accounts Used:** 5 (patient1, patient2, patient3, doctor, admin)  
 **Parallel Workers:** 6 (configurable via PW_WORKERS env)  
 **Full Suite Duration:** ~4.2 min (E2E) + ~2.5 min (Cloud UI)  
@@ -529,6 +530,58 @@ The mobile app appears to be in **early development** with basic navigation scaf
 - Or the standalone apps are planned for later
   
 The shared packages (`@izara/api-client`, `@izara/shared`, `@izara/ui`) have `src/index.ts` files but their content scope was not examined.
+
+---
+
+## Part 3B: Local UI Page Test Screenshots (ui-pages.ui-test.ts)
+
+**44 tests** — All portal pages verified with headed Playwright browser + **25 full-page PNG screenshots**
+
+### Patient Portal Screenshots (14)
+
+| ID | Page | Screenshot File |
+| -- | ---- | --------------- |
+| P01 | Dashboard | `patient-portal/P01-dashboard.png` |
+| P02 | Appointments | `patient-portal/P02-appointments.png` |
+| P03 | Book Appointment | `patient-portal/P03-book-appointment.png` |
+| P04 | PHR (Health Records) | `patient-portal/P04-phr.png` |
+| P05 | AI Doctor | `patient-portal/P05-ai-doctor.png` |
+| P06 | Health Library | `patient-portal/P06-health-library.png` |
+| P07 | Timeline | `patient-portal/P07-timeline.png` |
+| P08 | Healthcare Map | `patient-portal/P08-map.png` |
+| P09 | PDPA Consent | `patient-portal/P09-pdpa.png` |
+| P10 | Living Will | `patient-portal/P10-living-will.png` |
+| P11 | Profile | `patient-portal/P11-profile.png` |
+| P12 | Settings | `patient-portal/P12-settings.png` |
+| P13 | Login (public) | `public-pages/P13-login.png` |
+| P14 | Register (public) | `public-pages/P14-register.png` |
+
+### Doctor Portal Screenshots (11)
+
+| ID | Page | Screenshot File |
+| -- | ---- | --------------- |
+| D01 | Dashboard | `doctor-portal/D01-dashboard.png` |
+| D02 | Schedule | `doctor-portal/D02-schedule.png` |
+| D03 | Patients | `doctor-portal/D03-patients.png` |
+| D04 | Medical Consultants | `doctor-portal/D04-medical-consultants.png` |
+| D05 | Doctors Directory | `doctor-portal/D05-doctors-directory.png` |
+| D06 | Medical Content | `doctor-portal/D06-medical-content.png` |
+| D07 | Health Meeting Queue | `doctor-portal/D07-health-meeting.png` |
+| D08 | Clinical Resources | `doctor-portal/D08-clinical-resources.png` |
+| D09 | Profile | `doctor-portal/D09-profile.png` |
+| D10 | Doctor Management (Admin) | `doctor-portal/D10-doctor-management.png` |
+| D11 | Appointment Management (Admin) | `doctor-portal/D11-appointment-management.png` |
+
+### API Data Verification (16 tests, no screenshots)
+
+| ID | Test | Endpoint |
+| -- | ---- | -------- |
+| API01-06 | Patient health, appointments, notifications, PHR | Patient Portal APIs |
+| API07-14 | Doctor appointments, consultants, content, resources, notifications, stats, doctors, meetings | Doctor Portal APIs |
+| API14b-14c | Meeting auto-record, meeting results | Meeting Server APIs |
+| API15-16 | Unauthenticated access returns 401 | Security verification |
+
+All screenshots saved to `screenshots/ui-pages/` (1280×720 viewport, full-page capture).
 
 ---
 

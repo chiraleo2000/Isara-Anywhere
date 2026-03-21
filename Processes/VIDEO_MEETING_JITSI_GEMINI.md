@@ -1,6 +1,6 @@
 # Video Meeting Implementation - Jitsi Meet + Device Speech-to-Text + Gemini AI
 
-**Version:** 1.5.8  
+**Version:** 1.5.9  
 **Last Updated:** March 20, 2026  
 **Status:** ✅ Phase 1 — Comprehensive Meeting Workflow (Microsoft Teams-Like Experience)
 
@@ -403,6 +403,55 @@ Response:
 - Doctor can **Approve** or **Reject** each guest
 - Approved guests join the meeting
 - Rejected guests receive error message
+
+### Meeting Server Validation & Delivery Endpoints (v1.5.9)
+
+| Endpoint | Method | Description |
+| ---------- | -------- | ------------- |
+| `/api/meetings/:id/validate` | POST | Doctor validates AI summary (approve/edit/reject/regenerate) |
+| `/api/meetings/:id` | DELETE | Delete meeting record |
+| `/api/meetings/:id/patient-instruction` | POST | Generate patient instruction sheet from approved summary |
+| `/api/meetings/:id/consultation-result` | GET | Patient polls for approved consultation results |
+
+#### Validate Meeting Summary (Doctor → Man-in-the-Loop)
+
+```http
+POST /api/meetings/:id/validate
+Authorization: Bearer <doctor-token>
+Content-Type: application/json
+
+{
+  "action": "approve",           // approve | edit | reject | regenerate
+  "editedSummary": "...",        // Only for action=edit
+  "rejectionReason": "..."       // Only for action=reject
+}
+
+Response:
+{
+  "success": true,
+  "status": "approved",
+  "patientInstruction": "..."    // Auto-generated on approve
+}
+```
+
+#### Get Consultation Result (Patient Polling)
+
+```http
+GET /api/meetings/:id/consultation-result
+Authorization: Bearer <patient-token>
+
+Response (when approved):
+{
+  "success": true,
+  "hasResult": true,
+  "consultationResult": {
+    "summary": "AI-validated SOAP summary...",
+    "patientInstruction": "Patient care instructions...",
+    "status": "approved",
+    "approvedAt": "2026-03-20T10:00:00Z"
+  }
+}
+```
 
 ## 30-Minute Sectioned Summaries
 

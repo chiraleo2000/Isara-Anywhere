@@ -134,6 +134,15 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
   const [showInvite, setShowInvite] = useState(false);
   const [lobbyStatus, setLobbyStatus] = useState<'none' | 'waiting' | 'admitted' | 'rejected'>('none');
 
+  // Consultation result (shown after meeting ends and doctor approves)
+  const [consultationResult, setConsultationResult] = useState<{
+    available: boolean;
+    summary?: string;
+    instructions?: string;
+    doctorName?: string;
+    validatedAt?: string;
+  } | null>(null);
+
   // Helper functions
   const patientName = user?.name || (user as any)?.displayName || 'Patient';
 
@@ -168,6 +177,18 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
     }
     setMicOn(prev => !prev);
   };
+
+  // Poll for consultation result after meeting ends
+  const pollConsultationResult = useCallback(async () => {
+    try {
+      const r = await fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/consultation-result`);
+      const data = await r.json();
+      if (data.success) setConsultationResult(data);
+      if (data.success && !data.available) {
+        setTimeout(pollConsultationResult, 10000);
+      }
+    } catch { /* retry later */ }
+  }, [appointmentId]);
 
   // Lobby update handler (extracted to reduce nesting — S3776)
   const handleLobbyUpdate = useCallback((data: any) => {
@@ -326,6 +347,8 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
         api.on('readyToClose', () => {
           setStatus('ended');
           if (durationTimerRef.current) clearInterval(durationTimerRef.current);
+          // Fetch consultation result after meeting ends
+          setTimeout(pollConsultationResult, 3000);
         });
         api.on('videoConferenceJoined', () => {
           setStatus('in_meeting');
@@ -636,15 +659,48 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
 
       <div className="flex-1 flex overflow-hidden">
         {status === 'ended' ? (
-          <div className="flex-1 flex flex-col items-center justify-center bg-[#1b1b1b] gap-6">
+          <div className="flex-1 flex flex-col items-center justify-center bg-[#1b1b1b] gap-6 overflow-y-auto py-8">
             <div className="w-20 h-20 rounded-full bg-emerald-600/20 flex items-center justify-center"><svg className="w-10 h-10 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg></div>
             <h2 className="text-2xl font-bold">การประชุมสิ้นสุดแล้ว</h2>
             <p className="text-gray-400">ระยะเวลา: {fmt(meetingDuration)}</p>
-            <div className="max-w-md w-full bg-gray-800/60 rounded-xl p-5 border border-gray-700 text-sm text-gray-300 space-y-3">
-              <p>แพทย์กำลังสร้างสรุปจากการประชุม</p>
-              <p>ผลการตรวจ ใบสั่งยา และนัดหมายถัดไปจะแจ้งเตือนผ่านแอป</p>
-              <p>ท่านสามารถดูผล EMR ได้ที่หน้า "ประวัติสุขภาพ"</p>
-            </div>
+
+            {consultationResult?.available ? (
+              <div className="max-w-2xl w-full space-y-4 px-4">
+                {/* Doctor info */}
+                <div className="bg-emerald-900/30 border border-emerald-700/50 rounded-xl p-4 text-sm">
+                  <p className="text-emerald-300 font-medium">ผลการปรึกษาจาก {consultationResult.doctorName || 'แพทย์'}</p>
+                  {consultationResult.validatedAt && (
+                    <p className="text-gray-500 text-xs mt-1">อนุมัติเมื่อ: {new Date(consultationResult.validatedAt).toLocaleString('th-TH')}</p>
+                  )}
+                </div>
+
+                {/* AI Summary */}
+                {consultationResult.summary && (
+                  <div className="bg-gray-800/60 rounded-xl p-5 border border-gray-700">
+                    <h3 className="text-sm font-semibold text-emerald-400 mb-3">สรุปการปรึกษา</h3>
+                    <div className="whitespace-pre-wrap text-sm text-gray-300 leading-relaxed">{consultationResult.summary}</div>
+                  </div>
+                )}
+
+                {/* Patient Instructions */}
+                {consultationResult.instructions && (
+                  <div className="bg-blue-900/20 rounded-xl p-5 border border-blue-700/50">
+                    <h3 className="text-sm font-semibold text-blue-400 mb-3">คำแนะนำสำหรับผู้ป่วย</h3>
+                    <div className="whitespace-pre-wrap text-sm text-gray-300 leading-relaxed">{consultationResult.instructions}</div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="max-w-md w-full bg-gray-800/60 rounded-xl p-5 border border-gray-700 text-sm text-gray-300 space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-emerald-400"></div>
+                  <p>แพทย์กำลังสร้างสรุปจากการประชุม</p>
+                </div>
+                <p>ผลการตรวจ ใบสั่งยา และนัดหมายถัดไปจะแจ้งเตือนผ่านแอป</p>
+                <p>ท่านสามารถดูผล EMR ได้ที่หน้า "ประวัติสุขภาพ"</p>
+              </div>
+            )}
+
             <button
               onClick={() => navigate('/appointments')}
               className="px-8 py-3 bg-emerald-600 hover:bg-emerald-700 rounded-xl font-medium transition shadow-lg"

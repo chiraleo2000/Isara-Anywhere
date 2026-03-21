@@ -1,6 +1,6 @@
 # Clinical Resources & Medical Library Workflows
 
-**Version:** 1.5.8  
+**Version:** 1.5.9  
 **Last Updated:** March 15, 2026  
 **Status:** ✅ PostgreSQL Implementation
 

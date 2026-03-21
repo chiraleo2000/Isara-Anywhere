@@ -81,7 +81,7 @@ The platform consists of three main services:
 - **workflow-screenshots**: 25 tests (complete appointment lifecycle screenshots)
 - **ui-pages**: 44 tests (all patient + doctor portal page verification)
 - **3 parallel workers**, `fullyParallel: true`, 120s timeouts
-- **96 screenshots** saved to `screenshots/` (cloud, cloud-workflows, meeting, workflow)
+- **121 screenshots** saved to `screenshots/` (cloud, cloud-workflows, meeting, workflow, ui-pages)
 - **Run**: `npx playwright test --reporter=line --workers=3`
 
 #### Combined: 3,314 tests (2,013 unit + 1,124 local E2E + 177 cloud)
@@ -436,12 +436,16 @@ Isara-Anywhere/
 │   │   ├── transcript/      # Real-time transcription
 │   │   ├── ai-summary/      # AI SOAP summary
 │   │   └── documentation/   # Post-meeting documentation
-│   └── workflow/            # General workflow screenshots
-│       ├── patient-flow/    # Patient journey flows
-│       ├── doctor-flow/     # Doctor workflow flows
-│       ├── phr/             # PHR management captures
-│       ├── living-will/     # Living will workflows
-│       └── notifications/   # Notification workflows
+│   ├── workflow/            # General workflow screenshots
+│   │   ├── patient-flow/    # Patient journey flows
+│   │   ├── doctor-flow/     # Doctor workflow flows
+│   │   ├── phr/             # PHR management captures
+│   │   ├── living-will/     # Living will workflows
+│   │   └── notifications/   # Notification workflows
+│   └── ui-pages/            # Local Docker UI page screenshots (25 PNGs)
+│       ├── patient-portal/  # P01-P12: Dashboard, Appointments, PHR, AI Doctor, etc.
+│       ├── doctor-portal/   # D01-D11: Dashboard, Schedule, Patients, Content, etc.
+│       └── public-pages/    # P13-P14, D12: Login & Register pages
 ├── specs/                    # Specification documents
 ├── Processes/                # Workflow documentation (13 docs)
 ├── Presentations/            # Project presentations & diagrams
@@ -492,22 +496,28 @@ Isara-Anywhere/
 
 ### v1.5.9 (March 20, 2026)
 
+- **Meeting System E2E Fix**: Complete end-to-end meeting pipeline — doctor validates AI summary (approve/edit/reject/regenerate), patient instructions auto-generated, consultation results delivered to patient portal with real-time polling
+- **Meeting Server Backend**: 4 new endpoints (`/validate`, `/delete`, `/patient-instruction`, `/consultation-result`), 9 new DB columns + `meeting_chats` table for chat persistence
+- **Doctor MeetingResults UI**: Full validation interface with approve/edit/reject/regenerate buttons, patient instruction generation, EMR navigation integration
+- **Patient Consultation Results**: `PatientMeetingRoom.tsx` polls for approved results every 10s, displays AI summary + patient instructions on meeting end
+- **UI Page Screenshots**: 25 full-page PNG screenshots captured via Playwright headed mode across all patient portal (14), doctor portal (11), and public (2) pages — saved to `screenshots/ui-pages/`
 - **Camera/Microphone Fix**: Fixed `Permissions-Policy: camera=(), microphone=()` that completely blocked camera/mic access in Cloud Run and Docker deployments — updated across 5 server files (mainApiServer.cjs, owasp-middleware.cjs, owasp-middleware.ts, nginx.conf, Dockerfile.unified)
 - **CSP Headers Updated**: Added `frame-src meet.jit.si 8x8.vc`, `connect-src *.run.app wss://*.run.app`, `media-src mediastream:`, `worker-src blob:` across 4 locations for secure Jitsi video conferencing
 - **Jitsi iframe Allow Attribute**: Explicit `allow="camera *; microphone *; display-capture *; autoplay *; clipboard-write *; encrypted-media *"` in both MeetingRoom.tsx and PatientMeetingRoom.tsx
 - **Zoom-like UX**: SVG icons for mic/camera/phone/record controls, 480×320 camera preview with mirror effect, Thai labels (ไมค์เปิด/กล้องเปิด), larger pre-join layout
 - **env-config.template.js**: Added MEETING_SERVER_URL and JITSI_DOMAIN environment variables for Docker/Cloud Run
 - **Cloud Tests**: 177/177 passing across 5 test suites — cloud-ui-screenshots (39), cloud-workflow-multiuser (42), meeting-multi-user (27), workflow-screenshots (25), ui-pages (44)
+- **Local UI Tests**: 44/44 passing — all portal pages verified with headed browser screenshots
 - **Cloud Deployment**: All 3 services deployed to Cloud Run v1.5.9 with updated CORS
 
-### v1.5.8 (March 16, 2026)
+### v1.5.9 (March 16, 2026)
 
 - **SonarQube Full Clean**: Fixed all 26 remaining issues (S3776, S2004, S6853, S6582, S1128, S2068, S1854) across MeetingRoom.tsx, PatientMeetingRoom.tsx, cloud-workflow-multiuser, meeting-multi-user, workflow-screenshots
 - **Screenshot Restructuring**: All 4 test files now organize screenshots into per-workflow subdirectories (22 subdirectories total)
 - **Cognitive Complexity**: Extracted module-level helper functions from MeetingRoom.tsx (6 utilities) and PatientMeetingRoom.tsx (4 utilities) to reduce component complexity
 - **Cloud Tests**: 177/177 passing across 5 test suites — cloud-ui-screenshots (39), cloud-workflow-multiuser (42), meeting-multi-user (27), workflow-screenshots (25), ui-pages (44)
 - **Accessibility**: Added aria-labels to interactive video meeting controls (mic, camera, leave buttons)
-- **Version Bump**: All packages updated to v1.5.8
+- **Version Bump**: All packages updated to v1.5.9
 
 ### v1.5.7 (March 15, 2026)
 
@@ -520,7 +530,7 @@ Isara-Anywhere/
 - **SonarQube S6698 Fix**: Removed hardcoded PGPASSWORD pattern in e2e-test.ps1
 - **Cloud Build Fix**: Corrected Dockerfile path and build context in cloudbuild.yaml
 - **Cloud Deployment**: All 3 services deployed to Cloud Run — health checks passing, 667 Cloud E2E tests verified
-- **Documentation Updated**: All process docs, workflows, database schema updated to v1.5.8
+- **Documentation Updated**: All process docs, workflows, database schema updated to v1.5.9
 
 ### v1.5.6 (March 14, 2026)
 

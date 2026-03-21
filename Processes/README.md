@@ -1,6 +1,6 @@
 # 📄 Izara Telemedicine — Workflows & Processes
 
-**Version:** 1.5.8  
+**Version:** 1.5.9  
 **Focus:** Web Application Only (Patient Portal + Doctor Portal + Meeting Server)
 
 ---

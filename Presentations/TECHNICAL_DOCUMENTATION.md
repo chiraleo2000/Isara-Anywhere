@@ -1,6 +1,6 @@
 # Izara Telemedicine Platform - Technical Documentation
 
-> **Version:** 1.5.8 (Updated March 19, 2026)
+> **Version:** 1.5.9 (Updated March 19, 2026)
 > **Status:** Phase 1 Complete + SonarQube Clean — All Tests Passing (v1.5.9)
 > **Database:** PostgreSQL 18 + pgvector (42 tables)  
 > **Stack:** PostgreSQL / Express / React / Jitsi / Gemini AI / Google Cloud  

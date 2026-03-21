@@ -613,7 +613,7 @@ const MeetingRoom: React.FC = () => { // NOSONAR
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify({ language: meetingState.transcriptLanguage }),
-    }).catch(() => { /* silent */ });
+    }).catch(err => console.warn('[Transcription] Start failed:', err.message));
 
   }, [appointmentId, meetingState.transcriptLanguage, meetingState.isTranscribing, meetingState.isPaused, user]);
 
@@ -626,7 +626,7 @@ const MeetingRoom: React.FC = () => { // NOSONAR
     fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/pause-transcription`, {
       method: 'POST',
       headers: getAuthHeaders(),
-    }).catch(() => { /* silent */ });
+    }).catch(err => console.warn('[Transcription] Pause failed:', err.message));
   }, [appointmentId]);
 
   const resumeTranscription = useCallback(() => {
@@ -638,7 +638,7 @@ const MeetingRoom: React.FC = () => { // NOSONAR
     fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/pause-transcription`, {
       method: 'POST',
       headers: getAuthHeaders(),
-    }).catch(() => { /* silent */ });
+    }).catch(err => console.warn('[Transcription] Resume failed:', err.message));
   }, [appointmentId]);
 
   const stopTranscription = useCallback(() => {
@@ -651,7 +651,7 @@ const MeetingRoom: React.FC = () => { // NOSONAR
     fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/stop-transcription`, {
       method: 'POST',
       headers: getAuthHeaders(),
-    }).catch(() => { /* silent */ });
+    }).catch(err => console.warn('[Transcription] Stop failed:', err.message));
   }, [appointmentId]);
 
   const toggleLanguage = useCallback(() => {
@@ -698,7 +698,7 @@ const MeetingRoom: React.FC = () => { // NOSONAR
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify(msg),
-    }).catch(() => { /* silent */ });
+    }).catch(err => console.warn('[Chat] Send failed:', err.message));
   }, [chatInput, appointmentId, user]);
 
   // ============================================================================
@@ -773,16 +773,12 @@ const MeetingRoom: React.FC = () => { // NOSONAR
   // Man-in-the-Loop: Approve AI summary and save to EMR
   const handleApproveSummary = useCallback(async () => {
     try {
-      const res = await fetch(`${MEETING_SERVER_URL}/api/ai/validate`, {
+      const res = await fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/validate`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({
-          meetingId: appointmentId,
-          summaryType: 'soap',
-          content: aiSummary,
-          approved: true,
-          reviewedBy: user?.id || 'doctor',
-          reviewerName: user?.displayName || user?.name || 'Doctor',
+          action: 'approve',
+          doctorId: user?.id || 'doctor',
         }),
       });
       if (res.ok) {
@@ -793,21 +789,17 @@ const MeetingRoom: React.FC = () => { // NOSONAR
     } catch {
       setError('Failed to validate summary');
     }
-  }, [appointmentId, aiSummary, user]);
+  }, [appointmentId, user]);
 
   // Man-in-the-Loop: Reject AI summary
   const handleRejectSummary = useCallback(async () => {
     try {
-      const res = await fetch(`${MEETING_SERVER_URL}/api/ai/validate`, {
+      const res = await fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/validate`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({
-          meetingId: appointmentId,
-          summaryType: 'soap',
-          content: aiSummary,
-          approved: false,
-          reviewedBy: user?.id || 'doctor',
-          reviewerName: user?.displayName || user?.name || 'Doctor',
+          action: 'reject',
+          doctorId: user?.id || 'doctor',
         }),
       });
       if (res.ok) {
@@ -818,7 +810,7 @@ const MeetingRoom: React.FC = () => { // NOSONAR
     } catch {
       setError('Failed to reject summary');
     }
-  }, [appointmentId, aiSummary, user]);
+  }, [appointmentId, user]);
 
   // ============================================================================
   // MEETING END
@@ -837,7 +829,7 @@ const MeetingRoom: React.FC = () => { // NOSONAR
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({ recording: false, recordedBy: user?.id }),
-      }).catch(() => { /* silent */ });
+      }).catch(err => console.warn('[MeetingEnd] Stop recording failed:', err.message));
     }
 
     // Stop duration timer
@@ -847,19 +839,27 @@ const MeetingRoom: React.FC = () => { // NOSONAR
 
     setMeetingState(prev => ({ ...prev, status: 'ended' }));
 
-    // End meeting on server
+    // End meeting on server (triggers AI summary pipeline)
     fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/end`, {
       method: 'POST',
       headers: getAuthHeaders(),
-      body: JSON.stringify({ endedBy: user?.id || 'doctor' }),
-    }).catch(() => { /* silent */ });
+      body: JSON.stringify({ endedBy: user?.id || 'doctor', generateSummary: true }),
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.summary) {
+        setAiSummary(data.summary);
+        setShowPanel('summary');
+      }
+    })
+    .catch(err => console.warn('[MeetingEnd] End meeting failed:', err.message));
 
-    // Process embeddings
+    // Process embeddings in background
     fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/process-embeddings`, {
       method: 'POST',
       headers: getAuthHeaders(),
-    }).catch(() => { /* silent */ });
-  }, [appointmentId, meetingState.isTranscribing, stopTranscription, user]);
+    }).catch(err => console.warn('[MeetingEnd] Process embeddings failed:', err.message));
+  }, [appointmentId, meetingState.isTranscribing, stopTranscription, user, isRecording]);
 
   // ============================================================================
   // AGREEMENT / CONSENT

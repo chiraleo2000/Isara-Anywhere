@@ -1984,6 +1984,7 @@ Izara Telehealth Team
           meetingId={meetingResultsId}
           appointmentId={meetingResultsId}
           onClose={() => { setShowMeetingResults(false); setMeetingResultsId(''); }}
+          onNavigateToEMR={(aptId) => { setShowMeetingResults(false); navigate(`/emr/${aptId}`); }}
         />
       )}
     </div>

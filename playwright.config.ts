@@ -11,7 +11,7 @@ export default defineConfig({
     ...devices['Desktop Chrome'],
     headless: false,
     viewport: { width: 1280, height: 720 },
-    screenshot: 'only-on-failure',
+    screenshot: 'on',
     trace: 'off',
     actionTimeout: 15000,
     navigationTimeout: 20000,
