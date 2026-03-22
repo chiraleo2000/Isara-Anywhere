@@ -42,9 +42,10 @@ function loadJitsiScript(): Promise<void> {
   });
 }
 
-/** Fetch the room name from the meeting server */
-async function fetchRoomName(appointmentId: string): Promise<string> {
+/** Fetch the room name from the meeting server, with appointment API fallback */
+async function fetchRoomName(appointmentId: string, authToken?: string | null): Promise<string> {
   const fallback = `izara-${appointmentId.substring(0, 12)}-meeting`;
+  // Try 1: Meeting server lookup (returns room_name if meeting was registered)
   try {
     const res = await fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}`);
     if (res.ok) {
@@ -52,7 +53,20 @@ async function fetchRoomName(appointmentId: string): Promise<string> {
       if (data.meeting?.room_name) return data.meeting.room_name;
     }
   } catch {
-    console.log('[PatientMeeting] Using default room name');
+    console.log('[PatientMeeting] Meeting server unavailable, trying appointment API');
+  }
+  // Try 2: Patient portal appointment API (returns jitsiRoomName set by doctor)
+  try {
+    const headers: Record<string, string> = {};
+    if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+    const aptRes = await fetch(`/api/appointments/${appointmentId}`, { headers });
+    if (aptRes.ok) {
+      const aptData = await aptRes.json();
+      const roomName = aptData.jitsiRoomName || aptData.jitsi_room_name || aptData.meetCode;
+      if (roomName) return roomName;
+    }
+  } catch {
+    console.log('[PatientMeeting] Appointment API unavailable, using fallback');
   }
   return fallback;
 }
@@ -99,7 +113,7 @@ async function probeMediaDevices(): Promise<{ status: MediaDeviceStatus; stream:
 // NOSONAR - Large React component with meeting lifecycle states; further decomposition would split tightly-coupled state
 const PatientMeetingRoom: React.FC = () => { // NOSONAR
   const { appointmentId } = useParams<{ appointmentId: string }>();
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const navigate = useNavigate();
 
   const jitsiContainerRef = useRef<HTMLDivElement>(null);
@@ -231,7 +245,7 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
 
     const init = async () => {
       try {
-        const roomName = await fetchRoomName(appointmentId || 'room');
+        const roomName = await fetchRoomName(appointmentId || 'room', token);
         roomNameRef.current = roomName;
         await checkMediaDevices();
         await connectPatientSocket(appendTranscript);

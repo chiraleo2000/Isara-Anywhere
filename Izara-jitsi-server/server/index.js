@@ -370,10 +370,11 @@ app.get('/api/meetings/active', async (req, res) => {
 // Create new meeting room (primary endpoint — requires auth)
 app.post('/api/meetings/create', authenticateToken, async (req, res) => {
   try {
-    const { appointmentId, patientId, doctorId, patientName, doctorName, scheduledTime, guestInvites } = req.body;
+    const { appointmentId, patientId, doctorId, patientName, doctorName, scheduledTime, guestInvites, roomName: providedRoomName } = req.body;
     
     const meetingId = uuidv4();
-    const roomName = `izara-${appointmentId?.substring(0, 12) || meetingId.substring(0, 8)}-${Date.now().toString(36)}`;
+    // Use the doctor-provided room name if available (ensures patient joins the same room)
+    const roomName = providedRoomName || `izara-${appointmentId?.substring(0, 12) || meetingId.substring(0, 8)}-${Date.now().toString(36)}`;
     
     // Jitsi URL parameters
     const params = new URLSearchParams();

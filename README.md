@@ -8,7 +8,7 @@
 ![Docker](https://img.shields.io/badge/docker-ready-blue.svg)
 ![Tests](https://img.shields.io/badge/Unit%20tests-2%2C013%20passing-brightgreen.svg)
 ![Tests](https://img.shields.io/badge/E2E%20tests-1%2C124%20passing-brightgreen.svg)
-![Cloud UI](https://img.shields.io/badge/Cloud%20tests-177%20passing-brightgreen.svg)
+![Cloud UI](https://img.shields.io/badge/UI%20tests-96%20passing-brightgreen.svg)
 ![Cloud Run](https://img.shields.io/badge/Cloud%20Run-deployed-blue.svg)
 ![Security](https://img.shields.io/badge/security-SonarQube%20clean-green.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict%20safe-blue.svg)
@@ -73,18 +73,18 @@ The platform consists of three main services:
 - **0 skipped tests** — every test must pass
 - **Serial + parallel execution** for workflow integrity
 
-#### Cloud Tests (Playwright — 177 tests)
-- **5 cloud test files** in `tests/*.ui-test.ts` — runs against Cloud Run services
+#### UI Tests (Playwright — 96 local + 81 cloud = 177 headed tests)
+- **5 test files** in `tests/*.ui-test.ts` — local Docker & Cloud Run targets
+- **meeting-multi-user**: 27 tests (multi-browser: admin + doctor + patient meeting flows)
+- **workflow-screenshots**: 25 tests (complete appointment lifecycle with screenshots)
+- **ui-pages**: 44 tests (all patient + doctor portal pages + 16 API verifications)
 - **cloud-ui-screenshots**: 39 tests (14 patient + 12 doctor + 13 API health)
 - **cloud-workflow-multiuser**: 42 tests (8 workflow sections: User Mgmt, Appointments, Health Records, Content, Notifications, Living Will, Medical Consultants, AI)
-- **meeting-multi-user**: 27 tests (multi-browser: admin + doctor + patient meeting flows)
-- **workflow-screenshots**: 25 tests (complete appointment lifecycle screenshots)
-- **ui-pages**: 44 tests (all patient + doctor portal page verification)
-- **3 parallel workers**, `fullyParallel: true`, 120s timeouts
-- **121 screenshots** saved to `screenshots/` (cloud, cloud-workflows, meeting, workflow, ui-pages)
-- **Run**: `npx playwright test --reporter=line --workers=3`
+- **Headed mode** (1 worker, `slowMo: 300`, 1920×1080 viewport)
+- **122 screenshots** saved to `screenshots/` (cloud, cloud-workflows, meeting, workflow, ui-pages)
+- **Run**: `npx playwright test --headed --reporter=list`
 
-#### Combined: 3,314 tests (2,013 unit + 1,124 local E2E + 177 cloud)
+#### Combined: 3,233 tests (2,013 unit + 1,124 local E2E + 96 local UI)
 
 ### E2E Test Specs
 
@@ -147,13 +147,15 @@ npx playwright test "09-phase2" --project=Local
 # View HTML Report
 npx playwright show-report
 
-# ── Cloud Tests (177 tests, runs against Cloud Run) ──
-npx playwright test --reporter=line --workers=3          # All 177 cloud tests
-npx playwright test tests/cloud-ui-screenshots.ui-test.ts  # 39 screenshots
-npx playwright test tests/cloud-workflow-multiuser.ui-test.ts  # 42 workflows
+# ── UI Tests (96 local tests, headed browser with screenshots) ──
+npx playwright test --headed --reporter=list              # All 96 local UI tests
 npx playwright test tests/meeting-multi-user.ui-test.ts    # 27 meeting
 npx playwright test tests/workflow-screenshots.ui-test.ts  # 25 workflow screens
 npx playwright test tests/ui-pages.ui-test.ts              # 44 page checks
+
+# ── Cloud Tests (81 tests, runs against Cloud Run) ──
+npx playwright test tests/cloud-ui-screenshots.ui-test.ts  # 39 screenshots
+npx playwright test tests/cloud-workflow-multiuser.ui-test.ts  # 42 workflows
 ```
 
 ### Unit Test Suites (tests/unit/) — 58 Files

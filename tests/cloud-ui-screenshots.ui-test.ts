@@ -29,6 +29,21 @@ const SS_API     = path.join(SS_ROOT, 'api-health');
 const CLOUD_DELAY = 3000;
 
 // ── HELPER: Wait for page fully loaded + extra settle time ──────────
+async function sleep(ms: number) { return new Promise(r => setTimeout(r, ms)); }
+
+async function safeGoto(page: Page, url: string, options?: { waitUntil?: 'domcontentloaded' | 'load' | 'networkidle'; timeout?: number }, retries = 3) {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      await page.goto(url, options);
+      return;
+    } catch (err) {
+      if (attempt === retries) throw err;
+      console.log(`  \u23f3 safeGoto retry ${attempt}/${retries} for ${url}: ${(err as Error).message?.slice(0, 60)}`);
+      await sleep(3000 * attempt);
+    }
+  }
+}
+
 async function waitAndCapture(page: Page, label: string, filename: string, dir: string = SS_ROOT): Promise<void> {
   await page.waitForLoadState('domcontentloaded', { timeout: 30000 });
   try {
@@ -142,7 +157,7 @@ async function setupPatientAuth(page: Page): Promise<void> {
       userData = altData.user || {};
     }
   }
-  await page.goto(CLOUD_PATIENT, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await safeGoto(page,CLOUD_PATIENT, { waitUntil: 'domcontentloaded', timeout: 30000 });
   // Inject FULL patient auth — must set izara_user + auth_token + activity timestamp
   await page.evaluate(({ t, user, email }) => {
     const now = Date.now();
@@ -173,7 +188,7 @@ async function setupDoctorAuth(page: Page): Promise<string> {
   });
   const data = await response.json();
   const userId = data.user?.id || 'DOC-TEST-001';
-  await page.goto(CLOUD_DOCTOR, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await safeGoto(page,CLOUD_DOCTOR, { waitUntil: 'domcontentloaded', timeout: 30000 });
   // Inject full doctor auth (same pattern as multi-user test)
   await page.evaluate(({ token, userId }) => {
     const now = Date.now();
@@ -220,7 +235,7 @@ test.describe('Cloud Patient Portal — All Pages Screenshot', () => {
     if (!browser) throw new Error('Browser not available');
     const ctx = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
     const fresh = await ctx.newPage();
-    await fresh.goto(`${CLOUD_PATIENT}/login`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(fresh,`${CLOUD_PATIENT}/login`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await waitAndCapture(fresh, 'Patient Login', 'patient-01-login', SS_PATIENT);
     await ctx.close();
   });
@@ -230,68 +245,68 @@ test.describe('Cloud Patient Portal — All Pages Screenshot', () => {
     if (!browser) throw new Error('Browser not available');
     const ctx = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
     const fresh = await ctx.newPage();
-    await fresh.goto(`${CLOUD_PATIENT}/register`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(fresh,`${CLOUD_PATIENT}/register`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await waitAndCapture(fresh, 'Patient Register', 'patient-02-register', SS_PATIENT);
     await ctx.close();
   });
 
   test('CP03 — Dashboard', async () => {
-    await patientPage.goto(`${CLOUD_PATIENT}/`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(patientPage,`${CLOUD_PATIENT}/`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await waitAndCapture(patientPage, 'Dashboard', 'patient-03-dashboard', SS_PATIENT);
   });
 
   test('CP04 — Appointments', async () => {
-    await patientPage.goto(`${CLOUD_PATIENT}/appointments`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(patientPage,`${CLOUD_PATIENT}/appointments`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await waitAndCapture(patientPage, 'Appointments', 'patient-04-appointments', SS_PATIENT);
   });
 
   test('CP05 — Book Appointment', async () => {
-    await patientPage.goto(`${CLOUD_PATIENT}/appointments/book`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(patientPage,`${CLOUD_PATIENT}/appointments/book`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await waitAndCapture(patientPage, 'Book Appointment', 'patient-05-book-appointment', SS_PATIENT);
   });
 
   test('CP06 — PHR Health Records', async () => {
-    await patientPage.goto(`${CLOUD_PATIENT}/phr`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(patientPage,`${CLOUD_PATIENT}/phr`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await waitAndCapture(patientPage, 'PHR', 'patient-06-phr', SS_PATIENT);
   });
 
   test('CP07 — AI Doctor', async () => {
-    await patientPage.goto(`${CLOUD_PATIENT}/ai-doctor`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(patientPage,`${CLOUD_PATIENT}/ai-doctor`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await waitAndCapture(patientPage, 'AI Doctor', 'patient-07-ai-doctor', SS_PATIENT);
   });
 
   test('CP08 — Health Library', async () => {
-    await patientPage.goto(`${CLOUD_PATIENT}/health-library`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(patientPage,`${CLOUD_PATIENT}/health-library`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await waitAndCapture(patientPage, 'Health Library', 'patient-08-health-library', SS_PATIENT);
   });
 
   test('CP09 — Timeline', async () => {
-    await patientPage.goto(`${CLOUD_PATIENT}/timeline`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(patientPage,`${CLOUD_PATIENT}/timeline`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await waitAndCapture(patientPage, 'Timeline', 'patient-09-timeline', SS_PATIENT);
   });
 
   test('CP10 — Map', async () => {
-    await patientPage.goto(`${CLOUD_PATIENT}/map`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(patientPage,`${CLOUD_PATIENT}/map`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await waitAndCapture(patientPage, 'Map', 'patient-10-map', SS_PATIENT);
   });
 
   test('CP11 — PDPA Privacy', async () => {
-    await patientPage.goto(`${CLOUD_PATIENT}/pdpa`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(patientPage,`${CLOUD_PATIENT}/pdpa`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await waitAndCapture(patientPage, 'PDPA', 'patient-11-pdpa', SS_PATIENT);
   });
 
   test('CP12 — Living Will', async () => {
-    await patientPage.goto(`${CLOUD_PATIENT}/living-will`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(patientPage,`${CLOUD_PATIENT}/living-will`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await waitAndCapture(patientPage, 'Living Will', 'patient-12-living-will', SS_PATIENT);
   });
 
   test('CP13 — Profile', async () => {
-    await patientPage.goto(`${CLOUD_PATIENT}/profile`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(patientPage,`${CLOUD_PATIENT}/profile`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await waitAndCapture(patientPage, 'Profile', 'patient-13-profile', SS_PATIENT);
   });
 
   test('CP14 — Settings', async () => {
-    await patientPage.goto(`${CLOUD_PATIENT}/settings`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(patientPage,`${CLOUD_PATIENT}/settings`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await waitAndCapture(patientPage, 'Settings', 'patient-14-settings', SS_PATIENT);
   });
 });
@@ -321,63 +336,63 @@ test.describe('Cloud Doctor Portal — All Pages Screenshot', () => {
     if (!browser) throw new Error('Browser not available');
     const ctx = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
     const fresh = await ctx.newPage();
-    await fresh.goto(`${CLOUD_DOCTOR}/login`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(fresh,`${CLOUD_DOCTOR}/login`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await waitAndCapture(fresh, 'Doctor Login', 'doctor-01-login', SS_DOCTOR);
     await ctx.close();
   });
 
   test('CD02 — Dashboard', async () => {
-    await doctorPage.goto(`${CLOUD_DOCTOR}/doctor/${userId}/dashboard`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(doctorPage,`${CLOUD_DOCTOR}/doctor/${userId}/dashboard`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await waitAndCapture(doctorPage, 'Dashboard', 'doctor-02-dashboard', SS_DOCTOR);
   });
 
   test('CD03 — Schedule', async () => {
-    await doctorPage.goto(`${CLOUD_DOCTOR}/doctor/${userId}/schedule`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(doctorPage,`${CLOUD_DOCTOR}/doctor/${userId}/schedule`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await waitAndCapture(doctorPage, 'Schedule', 'doctor-03-schedule', SS_DOCTOR);
   });
 
   test('CD04 — Patients', async () => {
-    await doctorPage.goto(`${CLOUD_DOCTOR}/doctor/${userId}/patients`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(doctorPage,`${CLOUD_DOCTOR}/doctor/${userId}/patients`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await waitAndCapture(doctorPage, 'Patients', 'doctor-04-patients', SS_DOCTOR);
   });
 
   test('CD05 — Medical Consultants', async () => {
-    await doctorPage.goto(`${CLOUD_DOCTOR}/doctor/${userId}/medical-consultants`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(doctorPage,`${CLOUD_DOCTOR}/doctor/${userId}/medical-consultants`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await waitAndCapture(doctorPage, 'Medical Consultants', 'doctor-05-consultants', SS_DOCTOR);
   });
 
   test('CD06 — Doctors Directory', async () => {
-    await doctorPage.goto(`${CLOUD_DOCTOR}/doctor/${userId}/doctors`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(doctorPage,`${CLOUD_DOCTOR}/doctor/${userId}/doctors`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await waitAndCapture(doctorPage, 'Doctors', 'doctor-06-doctors', SS_DOCTOR);
   });
 
   test('CD07 — Medical Content', async () => {
-    await doctorPage.goto(`${CLOUD_DOCTOR}/doctor/${userId}/medical-content`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(doctorPage,`${CLOUD_DOCTOR}/doctor/${userId}/medical-content`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await waitAndCapture(doctorPage, 'Medical Content', 'doctor-07-medical-content', SS_DOCTOR);
   });
 
   test('CD08 — Health Meeting / Queue', async () => {
-    await doctorPage.goto(`${CLOUD_DOCTOR}/doctor/${userId}/health-meeting`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(doctorPage,`${CLOUD_DOCTOR}/doctor/${userId}/health-meeting`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await waitAndCapture(doctorPage, 'Health Meeting', 'doctor-08-health-meeting', SS_DOCTOR);
   });
 
   test('CD09 — Clinical Resources', async () => {
-    await doctorPage.goto(`${CLOUD_DOCTOR}/doctor/${userId}/clinical-resources`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(doctorPage,`${CLOUD_DOCTOR}/doctor/${userId}/clinical-resources`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await waitAndCapture(doctorPage, 'Clinical Resources', 'doctor-09-clinical-resources', SS_DOCTOR);
   });
 
   test('CD10 — Profile', async () => {
-    await doctorPage.goto(`${CLOUD_DOCTOR}/doctor/${userId}/profile`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(doctorPage,`${CLOUD_DOCTOR}/doctor/${userId}/profile`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await waitAndCapture(doctorPage, 'Doctor Profile', 'doctor-10-profile', SS_DOCTOR);
   });
 
   test('CD11 — Admin: Doctor Management', async () => {
-    await doctorPage.goto(`${CLOUD_DOCTOR}/doctor/${userId}/doctor-management`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(doctorPage,`${CLOUD_DOCTOR}/doctor/${userId}/doctor-management`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await waitAndCapture(doctorPage, 'Doctor Management', 'doctor-11-doctor-management', SS_DOCTOR);
   });
 
   test('CD12 — Admin: Appointment Management', async () => {
-    await doctorPage.goto(`${CLOUD_DOCTOR}/doctor/${userId}/appointment-management`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(doctorPage,`${CLOUD_DOCTOR}/doctor/${userId}/appointment-management`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await waitAndCapture(doctorPage, 'Appointment Management', 'doctor-12-appointment-management', SS_DOCTOR);
   });
 });

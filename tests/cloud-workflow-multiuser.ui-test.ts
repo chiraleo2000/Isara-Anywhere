@@ -74,30 +74,72 @@ async function snap(page: Page, filename: string, label: string, dir: string = S
   }
 }
 
-async function apiPost(page: Page, url: string, data: Record<string, unknown>, token?: string) {
+async function sleep(ms: number) { return new Promise(r => setTimeout(r, ms)); }
+
+async function apiPost(page: Page, url: string, data: Record<string, unknown>, token?: string, retries = 3) {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (token) headers['Authorization'] = `Bearer ${token}`;
-  const r = await page.request.post(url, { data, headers });
-  return { status: r.status(), body: await r.json().catch(() => ({})) };
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const r = await page.request.post(url, { data, headers });
+      return { status: r.status(), body: await r.json().catch(() => ({})) };
+    } catch (err) {
+      if (attempt === retries) throw err;
+      console.log(`  ⏳ apiPost retry ${attempt}/${retries} for ${url}: ${(err as Error).message?.slice(0, 60)}`);
+      await sleep(3000 * attempt);
+    }
+  }
+  throw new Error('unreachable');
 }
 
-async function apiGet(page: Page, url: string, token?: string) {
+async function apiGet(page: Page, url: string, token?: string, retries = 3) {
   const headers: Record<string, string> = {};
   if (token) headers['Authorization'] = `Bearer ${token}`;
-  const r = await page.request.get(url, { headers });
-  return { status: r.status(), body: await r.json().catch(() => ({})) };
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const r = await page.request.get(url, { headers });
+      return { status: r.status(), body: await r.json().catch(() => ({})) };
+    } catch (err) {
+      if (attempt === retries) throw err;
+      console.log(`  ⏳ apiGet retry ${attempt}/${retries} for ${url}: ${(err as Error).message?.slice(0, 60)}`);
+      await sleep(3000 * attempt);
+    }
+  }
+  throw new Error('unreachable');
 }
 
-async function apiPut(page: Page, url: string, data: Record<string, unknown>, token?: string) {
+async function apiPut(page: Page, url: string, data: Record<string, unknown>, token?: string, retries = 3) {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (token) headers['Authorization'] = `Bearer ${token}`;
-  const r = await page.request.put(url, { data, headers });
-  return { status: r.status(), body: await r.json().catch(() => ({})) };
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const r = await page.request.put(url, { data, headers });
+      return { status: r.status(), body: await r.json().catch(() => ({})) };
+    } catch (err) {
+      if (attempt === retries) throw err;
+      console.log(`  ⏳ apiPut retry ${attempt}/${retries} for ${url}: ${(err as Error).message?.slice(0, 60)}`);
+      await sleep(3000 * attempt);
+    }
+  }
+  throw new Error('unreachable');
+}
+
+async function safeGoto(page: Page, url: string, options?: { waitUntil?: 'domcontentloaded' | 'load' | 'networkidle'; timeout?: number }, retries = 3) {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      await page.goto(url, options);
+      return;
+    } catch (err) {
+      if (attempt === retries) throw err;
+      console.log(`  ⏳ safeGoto retry ${attempt}/${retries} for ${url}: ${(err as Error).message?.slice(0, 60)}`);
+      await sleep(3000 * attempt);
+    }
+  }
 }
 
 /** Inject doctor auth into localStorage (full pattern) */
 async function injectDoctorAuth(page: Page, token: string, userId: string, email: string, isAdmin = false): Promise<void> {
-  await page.goto(DOCTOR_URL, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await safeGoto(page,DOCTOR_URL, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await page.evaluate(({ token, userId, email, isAdmin }) => {
     const now = Date.now();
     localStorage.setItem('token', token);
@@ -153,7 +195,7 @@ async function registerPatient(page: Page): Promise<{ token: string; email: stri
 
 /** Inject patient auth into localStorage (FULL pattern — izara_user + auth_token + activity) */
 async function injectPatientAuth(page: Page, token: string, email: string, user?: Record<string, unknown>): Promise<void> {
-  await page.goto(PATIENT_URL, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await safeGoto(page,PATIENT_URL, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await page.evaluate(({ token, email, user }) => {
     const now = Date.now();
     const userObj = user && Object.keys(user).length > 0 ? user : {
@@ -201,13 +243,13 @@ test.describe('Cloud Workflow — User Management', () => {
     expect(token).toBeTruthy();
     console.log(`  ✅ Registered patient: ${email}`);
     // Screenshot the registration page
-    await page.goto(`${PATIENT_URL}/register`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(page,`${PATIENT_URL}/register`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await snap(page, 'WC01-patient-register', 'Patient Registration', SS_USER_MGMT);
   });
 
   test('WC02 — Patient Login + Dashboard', async () => {
     await injectPatientAuth(page, freshToken, freshEmail, freshUser);
-    await page.goto(`${PATIENT_URL}/dashboard`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(page,`${PATIENT_URL}/dashboard`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await snap(page, 'WC02-patient-dashboard', 'Patient Dashboard', SS_USER_MGMT);
     const bodyText = await page.textContent('body') || '';
     // Dashboard should render something (appointments, cards, etc.)
@@ -217,7 +259,7 @@ test.describe('Cloud Workflow — User Management', () => {
   test('WC03 — Doctor Login + Dashboard', async () => {
     const { token, userId } = await cachedLoginDoctor(page, DOCTOR_EMAIL, DOCTOR_PASSWORD);
     await injectDoctorAuth(page, token, userId, DOCTOR_EMAIL, false);
-    await page.goto(`${DOCTOR_URL}/doctor/${userId}/dashboard`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(page,`${DOCTOR_URL}/doctor/${userId}/dashboard`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await snap(page, 'WC03-doctor-dashboard', 'Doctor Dashboard', SS_USER_MGMT);
     const bodyText = await page.textContent('body') || '';
     expect(bodyText.length).toBeGreaterThan(100);
@@ -226,13 +268,13 @@ test.describe('Cloud Workflow — User Management', () => {
   test('WC04 — Admin Login + Dashboard', async () => {
     const { token, userId } = await cachedLoginDoctor(page, ADMIN_EMAIL, ADMIN_PASSWORD);
     await injectDoctorAuth(page, token, userId, ADMIN_EMAIL, true);
-    await page.goto(`${DOCTOR_URL}/doctor/${userId}/dashboard`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(page,`${DOCTOR_URL}/doctor/${userId}/dashboard`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await snap(page, 'WC04-admin-dashboard', 'Admin Dashboard', SS_USER_MGMT);
   });
 
   test('WC05 — Admin Doctor Management page', async () => {
     const { userId } = await cachedLoginDoctor(page, ADMIN_EMAIL, ADMIN_PASSWORD);
-    await page.goto(`${DOCTOR_URL}/doctor/${userId}/doctor-management`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(page,`${DOCTOR_URL}/doctor/${userId}/doctor-management`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await snap(page, 'WC05-admin-doctor-mgmt', 'Admin Doctor Management', SS_USER_MGMT);
   });
 
@@ -294,7 +336,7 @@ test.describe('Cloud Workflow — Appointment Lifecycle', () => {
   });
 
   test('WC07 — Patient: Book appointment page', async () => {
-    await patientPage.goto(`${PATIENT_URL}/appointments`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(patientPage,`${PATIENT_URL}/appointments`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await snap(patientPage, 'WC07-patient-appointments', 'Patient Appointments', SS_APPOINTMENT);
   });
 
@@ -310,12 +352,12 @@ test.describe('Cloud Workflow — Appointment Lifecycle', () => {
     appointmentId = res.body.appointment?.id || res.body.id || 'unknown';
     console.log(`  ✅ Appointment created: ${appointmentId}`);
     // Reload appointments page to see new entry
-    await patientPage.goto(`${PATIENT_URL}/appointments`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(patientPage,`${PATIENT_URL}/appointments`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await snap(patientPage, 'WC08-appointment-created', 'Appointment Created', SS_APPOINTMENT);
   });
 
   test('WC09 — Doctor: See appointment in queue', async () => {
-    await doctorPage.goto(`${DOCTOR_URL}/doctor/${doctorId}/appointment-management`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(doctorPage,`${DOCTOR_URL}/doctor/${doctorId}/appointment-management`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await snap(doctorPage, 'WC09-doctor-queue', 'Doctor Appointment Queue', SS_APPOINTMENT);
   });
 
@@ -343,17 +385,17 @@ test.describe('Cloud Workflow — Appointment Lifecycle', () => {
   });
 
   test('WC12 — Patient: Reload and see confirmed status', async () => {
-    await patientPage.goto(`${PATIENT_URL}/appointments`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(patientPage,`${PATIENT_URL}/appointments`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await snap(patientPage, 'WC12-appointment-confirmed', 'Patient Sees Confirmed', SS_APPOINTMENT);
   });
 
   test('WC13 — Doctor: Schedule page view', async () => {
-    await doctorPage.goto(`${DOCTOR_URL}/doctor/${doctorId}/schedule`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(doctorPage,`${DOCTOR_URL}/doctor/${doctorId}/schedule`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await snap(doctorPage, 'WC13-doctor-schedule', 'Doctor Schedule', SS_APPOINTMENT);
   });
 
   test('WC14 — Meeting: Health meeting queue', async () => {
-    await doctorPage.goto(`${DOCTOR_URL}/doctor/${doctorId}/health-meeting`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(doctorPage,`${DOCTOR_URL}/doctor/${doctorId}/health-meeting`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await snap(doctorPage, 'WC14-health-meeting-queue', 'Health Meeting Queue', SS_APPOINTMENT);
   });
 });
@@ -405,7 +447,7 @@ test.describe('Cloud Workflow — Health Records', () => {
   });
 
   test('WC15 — Patient: PHR page', async () => {
-    await patientPage.goto(`${PATIENT_URL}/phr`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(patientPage,`${PATIENT_URL}/phr`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await snap(patientPage, 'WC15-patient-phr', 'Patient PHR', SS_HEALTH_RECORDS);
   });
 
@@ -421,12 +463,12 @@ test.describe('Cloud Workflow — Health Records', () => {
   });
 
   test('WC17 — Patient: View updated PHR', async () => {
-    await patientPage.goto(`${PATIENT_URL}/phr`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(patientPage,`${PATIENT_URL}/phr`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await snap(patientPage, 'WC17-patient-phr-updated', 'PHR Updated', SS_HEALTH_RECORDS);
   });
 
   test('WC18 — Doctor: View patient list', async () => {
-    await doctorPage.goto(`${DOCTOR_URL}/doctor/${doctorId}/patients`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(doctorPage,`${DOCTOR_URL}/doctor/${doctorId}/patients`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await snap(doctorPage, 'WC18-doctor-patients', 'Doctor Patients List', SS_HEALTH_RECORDS);
   });
 
@@ -438,7 +480,7 @@ test.describe('Cloud Workflow — Health Records', () => {
   });
 
   test('WC20 — Patient: Timeline page', async () => {
-    await patientPage.goto(`${PATIENT_URL}/timeline`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(patientPage,`${PATIENT_URL}/timeline`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await snap(patientPage, 'WC20-patient-timeline', 'Patient Timeline', SS_HEALTH_RECORDS);
   });
 });
@@ -495,12 +537,12 @@ test.describe('Cloud Workflow — Content Management', () => {
   });
 
   test('WC21 — Doctor: Medical Content page', async () => {
-    await doctorPage.goto(`${DOCTOR_URL}/doctor/${doctorId}/medical-content`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(doctorPage,`${DOCTOR_URL}/doctor/${doctorId}/medical-content`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await snap(doctorPage, 'WC21-doctor-medical-content', 'Doctor Medical Content', SS_CONTENT_MGMT);
   });
 
   test('WC22 — Doctor: Clinical Resources page', async () => {
-    await doctorPage.goto(`${DOCTOR_URL}/doctor/${doctorId}/clinical-resources`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(doctorPage,`${DOCTOR_URL}/doctor/${doctorId}/clinical-resources`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await snap(doctorPage, 'WC22-doctor-clinical-resources', 'Doctor Clinical Resources', SS_CONTENT_MGMT);
   });
 
@@ -519,12 +561,12 @@ test.describe('Cloud Workflow — Content Management', () => {
   });
 
   test('WC24 — Admin: View content for approval', async () => {
-    await adminPage.goto(`${DOCTOR_URL}/doctor/${adminId}/medical-content`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(adminPage,`${DOCTOR_URL}/doctor/${adminId}/medical-content`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await snap(adminPage, 'WC24-admin-content-review', 'Admin Content Review', SS_CONTENT_MGMT);
   });
 
   test('WC25 — Patient: Browse Medical Content Library', async () => {
-    await patientPage.goto(`${PATIENT_URL}/medical-content`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(patientPage,`${PATIENT_URL}/medical-content`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await snap(patientPage, 'WC25-patient-content-library', 'Patient Content Library', SS_CONTENT_MGMT);
   });
 
@@ -589,12 +631,12 @@ test.describe('Cloud Workflow — Notifications', () => {
   });
 
   test('WC29 — Patient: Settings page (notification preferences)', async () => {
-    await patientPage.goto(`${PATIENT_URL}/settings`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(patientPage,`${PATIENT_URL}/settings`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await snap(patientPage, 'WC29-patient-settings', 'Patient Settings', SS_NOTIFICATION);
   });
 
   test('WC30 — Doctor: Profile page (notification settings)', async () => {
-    await doctorPage.goto(`${DOCTOR_URL}/doctor/${doctorId}/profile`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(doctorPage,`${DOCTOR_URL}/doctor/${doctorId}/profile`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await snap(doctorPage, 'WC30-doctor-profile', 'Doctor Profile', SS_NOTIFICATION);
   });
 });
@@ -643,12 +685,12 @@ test.describe('Cloud Workflow — Living Will', () => {
   });
 
   test('WC31 — Patient: Living Will page', async () => {
-    await patientPage.goto(`${PATIENT_URL}/living-will`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(patientPage,`${PATIENT_URL}/living-will`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await snap(patientPage, 'WC31-patient-living-will', 'Patient Living Will', SS_LIVING_WILL);
   });
 
   test('WC32 — Patient: PDPA Privacy page', async () => {
-    await patientPage.goto(`${PATIENT_URL}/pdpa`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(patientPage,`${PATIENT_URL}/pdpa`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await snap(patientPage, 'WC32-patient-pdpa', 'Patient PDPA Privacy', SS_LIVING_WILL);
   });
 
@@ -702,12 +744,12 @@ test.describe('Cloud Workflow — Medical Consultants', () => {
   test.afterAll(async () => { await doctorPage?.context().close(); });
 
   test('WC35 — Doctor: Medical Consultants page', async () => {
-    await doctorPage.goto(`${DOCTOR_URL}/doctor/${doctorId}/medical-consultants`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(doctorPage,`${DOCTOR_URL}/doctor/${doctorId}/medical-consultants`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await snap(doctorPage, 'WC35-doctor-consultants', 'Doctor Consultants', SS_CONSULTANT);
   });
 
   test('WC36 — Doctor: Doctors Directory page', async () => {
-    await doctorPage.goto(`${DOCTOR_URL}/doctor/${doctorId}/doctors`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(doctorPage,`${DOCTOR_URL}/doctor/${doctorId}/doctors`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await snap(doctorPage, 'WC36-doctor-directory', 'Doctors Directory', SS_CONSULTANT);
   });
 
@@ -766,17 +808,17 @@ test.describe('Cloud Workflow — AI Features', () => {
   });
 
   test('WC39 — Patient: AI Doctor page', async () => {
-    await patientPage.goto(`${PATIENT_URL}/ai-doctor`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(patientPage,`${PATIENT_URL}/ai-doctor`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await snap(patientPage, 'WC39-patient-ai-doctor', 'Patient AI Doctor', SS_AI_FEATURES);
   });
 
   test('WC40 — Patient: Health Library page', async () => {
-    await patientPage.goto(`${PATIENT_URL}/health-library`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(patientPage,`${PATIENT_URL}/health-library`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await snap(patientPage, 'WC40-patient-health-library', 'Patient Health Library', SS_AI_FEATURES);
   });
 
   test('WC41 — Patient: Map page', async () => {
-    await patientPage.goto(`${PATIENT_URL}/map`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(patientPage,`${PATIENT_URL}/map`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await snap(patientPage, 'WC41-patient-map', 'Patient Map', SS_AI_FEATURES);
   });
 

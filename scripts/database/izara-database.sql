@@ -423,6 +423,17 @@ CREATE TABLE meeting_records (
     ai_summary TEXT,
     ai_recommendations TEXT,
     section_summaries JSONB,
+    -- Doctor validation & patient delivery
+    doctor_validation_status VARCHAR(30) DEFAULT 'pending_review',
+    validated_at TIMESTAMP WITH TIME ZONE,
+    validated_by VARCHAR(50),
+    validation_reason TEXT,
+    ready_for_patient BOOLEAN DEFAULT FALSE,
+    patient_instructions TEXT,
+    instruction_validation_id VARCHAR(50),
+    -- Recording & transcription
+    recording_started_at TIMESTAMP WITH TIME ZONE,
+    auto_transcribe BOOLEAN DEFAULT FALSE,
     -- Timing
     duration_minutes INTEGER,
     started_at TIMESTAMP WITH TIME ZONE,

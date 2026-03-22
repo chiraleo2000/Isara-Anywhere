@@ -49,18 +49,51 @@ async function snap(page: Page, filename: string, label: string, dir: string = S
   }
 }
 
-async function apiPost(page: Page, url: string, data: Record<string, unknown>, token?: string) {
+async function sleep(ms: number) { return new Promise(r => setTimeout(r, ms)); }
+
+async function apiPost(page: Page, url: string, data: Record<string, unknown>, token?: string, retries = 3) {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (token) headers['Authorization'] = `Bearer ${token}`;
-  const r = await page.request.post(url, { data, headers });
-  return { status: r.status(), body: await r.json().catch(() => ({})) };
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const r = await page.request.post(url, { data, headers });
+      return { status: r.status(), body: await r.json().catch(() => ({})) };
+    } catch (err) {
+      if (attempt === retries) throw err;
+      console.log(`  ⏳ apiPost retry ${attempt}/${retries} for ${url}: ${(err as Error).message?.slice(0, 60)}`);
+      await sleep(3000 * attempt);
+    }
+  }
+  throw new Error('unreachable');
 }
 
-async function apiGet(page: Page, url: string, token?: string) {
+async function apiGet(page: Page, url: string, token?: string, retries = 3) {
   const headers: Record<string, string> = {};
   if (token) headers['Authorization'] = `Bearer ${token}`;
-  const r = await page.request.get(url, { headers });
-  return { status: r.status(), body: await r.json().catch(() => ({})) };
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const r = await page.request.get(url, { headers });
+      return { status: r.status(), body: await r.json().catch(() => ({})) };
+    } catch (err) {
+      if (attempt === retries) throw err;
+      console.log(`  ⏳ apiGet retry ${attempt}/${retries} for ${url}: ${(err as Error).message?.slice(0, 60)}`);
+      await sleep(3000 * attempt);
+    }
+  }
+  throw new Error('unreachable');
+}
+
+async function safeGoto(page: Page, url: string, options?: { waitUntil?: 'domcontentloaded' | 'load' | 'networkidle'; timeout?: number }, retries = 3) {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      await page.goto(url, options);
+      return;
+    } catch (err) {
+      if (attempt === retries) throw err;
+      console.log(`  ⏳ safeGoto retry ${attempt}/${retries} for ${url}: ${(err as Error).message?.slice(0, 60)}`);
+      await sleep(3000 * attempt);
+    }
+  }
 }
 
 /** Inject doctor/admin auth into localStorage for Doctor Portal */
@@ -165,7 +198,7 @@ test.describe('Multi-User Meeting — Admin + Doctor + Patient', () => {
     expect(adminToken).toBeTruthy();
 
     // Inject admin auth into doctor portal
-    await adminPage.goto(DOCTOR_URL, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(adminPage,DOCTOR_URL, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await injectDoctorAuth(adminPage, adminToken, {
       id: adminId, email: ADMIN_EMAIL, name: 'Admin Test',
       role: 'admin', isAdmin: true,
@@ -186,7 +219,7 @@ test.describe('Multi-User Meeting — Admin + Doctor + Patient', () => {
     doctorName  = doctorLoginR.body.user?.name || 'Dr. Test';
     expect(doctorToken).toBeTruthy();
 
-    await doctorPage.goto(DOCTOR_URL, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(doctorPage,DOCTOR_URL, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await injectDoctorAuth(doctorPage, doctorToken, {
       id: doctorId, email: DOCTOR_EMAIL, name: doctorName,
       role: 'doctor', isAdmin: true,
@@ -216,7 +249,7 @@ test.describe('Multi-User Meeting — Admin + Doctor + Patient', () => {
     expect(patientToken).toBeTruthy();
 
     // Inject patient auth
-    await patientPage.goto(PATIENT_URL, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(patientPage,PATIENT_URL, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await patientPage.evaluate(({ token, userData }) => {
       localStorage.setItem('token', token);
       localStorage.setItem('auth_token', token);
@@ -235,7 +268,7 @@ test.describe('Multi-User Meeting — Admin + Doctor + Patient', () => {
   // MU02 — Admin views appointment pool & admin pages
   // ─────────────────────────────────────────────────────────────────
   test('MU02 — Admin Appointment Pool', async () => {
-    await adminPage.goto(`${DOCTOR_URL}/doctor/${adminId}/appointment-management`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(adminPage,`${DOCTOR_URL}/doctor/${adminId}/appointment-management`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await snap(adminPage, 'MU02-admin-appointment-pool', 'Admin Appointment Pool', SS_APPT);
   });
 
@@ -297,7 +330,7 @@ test.describe('Multi-User Meeting — Admin + Doctor + Patient', () => {
   // MU05 — Doctor sees Agreement / Consent Screen
   // ─────────────────────────────────────────────────────────────────
   test('MU05 — Doctor Agreement Screen', async () => {
-    await doctorPage.goto(`${DOCTOR_URL}/doctor/${doctorId}/meeting/${appointmentId}`, {
+    await safeGoto(doctorPage,`${DOCTOR_URL}/doctor/${doctorId}/meeting/${appointmentId}`, {
       waitUntil: 'domcontentloaded', timeout: 30000,
     });
     // Wait for agreement screen
@@ -334,7 +367,7 @@ test.describe('Multi-User Meeting — Admin + Doctor + Patient', () => {
   // MU07 — Patient sees Agreement Screen
   // ─────────────────────────────────────────────────────────────────
   test('MU07 — Patient Agreement Screen', async () => {
-    await patientPage.goto(`${PATIENT_URL}/meeting/${appointmentId}`, {
+    await safeGoto(patientPage,`${PATIENT_URL}/meeting/${appointmentId}`, {
       waitUntil: 'domcontentloaded', timeout: 30000,
     });
     await patientPage.waitForSelector('[data-testid="meeting-agreement"]', { timeout: 15000 }).catch(() => {});
@@ -349,7 +382,7 @@ test.describe('Multi-User Meeting — Admin + Doctor + Patient', () => {
       // Re-navigate if page lost context
       if (patientPage.isClosed()) {
         patientPage = await patientCtx.newPage();
-        await patientPage.goto(`${PATIENT_URL}/meeting/${appointmentId}`, {
+        await safeGoto(patientPage,`${PATIENT_URL}/meeting/${appointmentId}`, {
           waitUntil: 'domcontentloaded', timeout: 30000,
         });
         await patientPage.waitForSelector('[data-testid="meeting-agreement"]', { timeout: 15000 }).catch(() => {});
@@ -384,7 +417,7 @@ test.describe('Multi-User Meeting — Admin + Doctor + Patient', () => {
     try {
       if (patientPage.isClosed()) {
         patientPage = await patientCtx.newPage();
-        await patientPage.goto(`${PATIENT_URL}/meeting/${appointmentId}`, {
+        await safeGoto(patientPage,`${PATIENT_URL}/meeting/${appointmentId}`, {
           waitUntil: 'domcontentloaded', timeout: 30000,
         });
       }
@@ -636,7 +669,7 @@ test.describe('Multi-User Meeting — Admin + Doctor + Patient', () => {
   // MU22 — Admin sees completed meeting in doctor portal
   // ─────────────────────────────────────────────────────────────────
   test('MU22 — Admin Views Doctor Portal', async () => {
-    await adminPage.goto(`${DOCTOR_URL}/doctor/${adminId}/appointment-management`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(adminPage,`${DOCTOR_URL}/doctor/${adminId}/appointment-management`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await snap(adminPage, 'MU22-admin-appointment-final', 'Admin Appointment Pool — After Meeting', SS_POST);
   });
 
@@ -644,7 +677,7 @@ test.describe('Multi-User Meeting — Admin + Doctor + Patient', () => {
   // MU23 — Doctor views health meeting page (post-meeting)
   // ─────────────────────────────────────────────────────────────────
   test('MU23 — Doctor Post-Meeting Dashboard', async () => {
-    await doctorPage.goto(`${DOCTOR_URL}/doctor/${doctorId}/health-meeting`, {
+    await safeGoto(doctorPage,`${DOCTOR_URL}/doctor/${doctorId}/health-meeting`, {
       waitUntil: 'domcontentloaded', timeout: 30000,
     });
     await snap(doctorPage, 'MU23-doctor-post-meeting', 'Doctor Health Meeting — Post Meeting', SS_POST);
@@ -656,8 +689,8 @@ test.describe('Multi-User Meeting — Admin + Doctor + Patient', () => {
   test('MU24 — Patient Post-Meeting Appointments', async () => {
     try {
       if (patientPage.isClosed()) patientPage = await patientCtx.newPage();
-      await patientPage.goto(`${PATIENT_URL}/appointments`, { waitUntil: 'domcontentloaded', timeout: 30000 });
-    } catch { patientPage = await patientCtx.newPage(); await patientPage.goto(`${PATIENT_URL}/appointments`, { waitUntil: 'domcontentloaded', timeout: 30000 }); }
+      await safeGoto(patientPage,`${PATIENT_URL}/appointments`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    } catch { patientPage = await patientCtx.newPage(); await safeGoto(patientPage,`${PATIENT_URL}/appointments`, { waitUntil: 'domcontentloaded', timeout: 30000 }); }
     await snap(patientPage, 'MU24-patient-post-meeting', 'Patient Appointments — Post Meeting', SS_POST);
   });
 

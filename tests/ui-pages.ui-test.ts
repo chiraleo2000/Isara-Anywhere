@@ -22,6 +22,21 @@ const SS_PUBLIC = path.join(SS_ROOT, 'public-pages');
 [SS_ROOT, SS_PATIENT, SS_DOCTOR, SS_PUBLIC].forEach(d => fs.mkdirSync(d, { recursive: true }));
 
 /** Screenshot helper: waits for page settle then captures full-page PNG */
+async function sleep(ms: number) { return new Promise(r => setTimeout(r, ms)); }
+
+async function safeGoto(page: Page, url: string, options?: { waitUntil?: 'domcontentloaded' | 'load' | 'networkidle'; timeout?: number }, retries = 3) {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      await page.goto(url, options);
+      return;
+    } catch (err) {
+      if (attempt === retries) throw err;
+      console.log(`  \u23f3 safeGoto retry ${attempt}/${retries} for ${url}: ${(err as Error).message?.slice(0, 60)}`);
+      await sleep(3000 * attempt);
+    }
+  }
+}
+
 async function snap(page: Page, filename: string, label: string, dir: string = SS_ROOT): Promise<void> {
   await page.waitForTimeout(1500);
   const fp = path.join(dir, `${filename}.png`);
@@ -111,7 +126,7 @@ async function setupPatientAuth(page: Page): Promise<void> {
   expect(token, 'No token in login response').toBeTruthy();
 
   // Navigate to patient portal and inject auth into localStorage
-  await page.goto(PATIENT_URL, { waitUntil: 'domcontentloaded' });
+  await safeGoto(page,PATIENT_URL, { waitUntil: 'domcontentloaded' });
   await page.evaluate(({ t, userData }) => {
     localStorage.setItem('token', t);
     localStorage.setItem('auth_token', t);
@@ -133,7 +148,7 @@ async function setupDoctorAuth(page: Page): Promise<string> {
   const userId = user.id || 'DOC-TEST-001';
 
   // Navigate and inject full auth state
-  await page.goto(DOCTOR_URL, { waitUntil: 'domcontentloaded' });
+  await safeGoto(page,DOCTOR_URL, { waitUntil: 'domcontentloaded' });
   await page.evaluate(({ token, user }) => {
     const now = Date.now();
     localStorage.setItem('token', token);
@@ -179,7 +194,7 @@ test.describe('Patient Portal — All Pages Load', () => {
   });
 
   test('P01 — Dashboard loads with data', async () => {
-    await patientPage.goto(`${PATIENT_URL}/`, { waitUntil: 'domcontentloaded' });
+    await safeGoto(patientPage,`${PATIENT_URL}/`, { waitUntil: 'domcontentloaded' });
     await verifyPageLoaded(patientPage, 'Dashboard');
     const content = await patientPage.textContent('body');
     expect((content ?? '').length).toBeGreaterThan(100);
@@ -187,67 +202,67 @@ test.describe('Patient Portal — All Pages Load', () => {
   });
 
   test('P02 — Appointments page loads', async () => {
-    await patientPage.goto(`${PATIENT_URL}/appointments`, { waitUntil: 'domcontentloaded' });
+    await safeGoto(patientPage,`${PATIENT_URL}/appointments`, { waitUntil: 'domcontentloaded' });
     await verifyPageLoaded(patientPage, 'Appointments');
     await snap(patientPage, 'P02-appointments', 'Patient Appointments', SS_PATIENT);
   });
 
   test('P03 — Book Appointment page loads', async () => {
-    await patientPage.goto(`${PATIENT_URL}/appointments/book`, { waitUntil: 'domcontentloaded' });
+    await safeGoto(patientPage,`${PATIENT_URL}/appointments/book`, { waitUntil: 'domcontentloaded' });
     await verifyPageLoaded(patientPage, 'Book Appointment');
     await snap(patientPage, 'P03-book-appointment', 'Book Appointment', SS_PATIENT);
   });
 
   test('P04 — PHR (Personal Health Records) loads', async () => {
-    await patientPage.goto(`${PATIENT_URL}/phr`, { waitUntil: 'domcontentloaded' });
+    await safeGoto(patientPage,`${PATIENT_URL}/phr`, { waitUntil: 'domcontentloaded' });
     await verifyPageLoaded(patientPage, 'PHR');
     await snap(patientPage, 'P04-phr', 'Patient Health Records', SS_PATIENT);
   });
 
   test('P05 — AI Doctor page loads', async () => {
-    await patientPage.goto(`${PATIENT_URL}/ai-doctor`, { waitUntil: 'domcontentloaded' });
+    await safeGoto(patientPage,`${PATIENT_URL}/ai-doctor`, { waitUntil: 'domcontentloaded' });
     await verifyPageLoaded(patientPage, 'AI Doctor');
     await snap(patientPage, 'P05-ai-doctor', 'AI Doctor', SS_PATIENT);
   });
 
   test('P06 — Health Library loads', async () => {
-    await patientPage.goto(`${PATIENT_URL}/health-library`, { waitUntil: 'domcontentloaded' });
+    await safeGoto(patientPage,`${PATIENT_URL}/health-library`, { waitUntil: 'domcontentloaded' });
     await verifyPageLoaded(patientPage, 'Health Library');
     await snap(patientPage, 'P06-health-library', 'Health Library', SS_PATIENT);
   });
 
   test('P07 — Timeline page loads', async () => {
-    await patientPage.goto(`${PATIENT_URL}/timeline`, { waitUntil: 'domcontentloaded' });
+    await safeGoto(patientPage,`${PATIENT_URL}/timeline`, { waitUntil: 'domcontentloaded' });
     await verifyPageLoaded(patientPage, 'Timeline');
     await snap(patientPage, 'P07-timeline', 'Timeline', SS_PATIENT);
   });
 
   test('P08 — Map page loads', async () => {
-    await patientPage.goto(`${PATIENT_URL}/map`, { waitUntil: 'domcontentloaded' });
+    await safeGoto(patientPage,`${PATIENT_URL}/map`, { waitUntil: 'domcontentloaded' });
     await verifyPageLoaded(patientPage, 'Map');
     await snap(patientPage, 'P08-map', 'Healthcare Map', SS_PATIENT);
   });
 
   test('P09 — PDPA page loads', async () => {
-    await patientPage.goto(`${PATIENT_URL}/pdpa`, { waitUntil: 'domcontentloaded' });
+    await safeGoto(patientPage,`${PATIENT_URL}/pdpa`, { waitUntil: 'domcontentloaded' });
     await verifyPageLoaded(patientPage, 'PDPA');
     await snap(patientPage, 'P09-pdpa', 'PDPA Consent', SS_PATIENT);
   });
 
   test('P10 — Living Will page loads', async () => {
-    await patientPage.goto(`${PATIENT_URL}/living-will`, { waitUntil: 'domcontentloaded' });
+    await safeGoto(patientPage,`${PATIENT_URL}/living-will`, { waitUntil: 'domcontentloaded' });
     await verifyPageLoaded(patientPage, 'Living Will');
     await snap(patientPage, 'P10-living-will', 'Living Will', SS_PATIENT);
   });
 
   test('P11 — Profile page loads', async () => {
-    await patientPage.goto(`${PATIENT_URL}/profile`, { waitUntil: 'domcontentloaded' });
+    await safeGoto(patientPage,`${PATIENT_URL}/profile`, { waitUntil: 'domcontentloaded' });
     await verifyPageLoaded(patientPage, 'Profile');
     await snap(patientPage, 'P11-profile', 'Patient Profile', SS_PATIENT);
   });
 
   test('P12 — Settings page loads', async () => {
-    await patientPage.goto(`${PATIENT_URL}/settings`, { waitUntil: 'domcontentloaded' });
+    await safeGoto(patientPage,`${PATIENT_URL}/settings`, { waitUntil: 'domcontentloaded' });
     await verifyPageLoaded(patientPage, 'Settings');
     await snap(patientPage, 'P12-settings', 'Patient Settings', SS_PATIENT);
   });
@@ -257,7 +272,7 @@ test.describe('Patient Portal — All Pages Load', () => {
     const browser = patientPage.context().browser();
     const ctx = await browser.newContext();
     const fresh = await ctx.newPage();
-    await fresh.goto(`${PATIENT_URL}/login`, { waitUntil: 'domcontentloaded' });
+    await safeGoto(fresh,`${PATIENT_URL}/login`, { waitUntil: 'domcontentloaded' });
     await verifyPageLoaded(fresh, 'Login');
     await snap(fresh, 'P13-login', 'Patient Login', SS_PUBLIC);
     await ctx.close();
@@ -267,7 +282,7 @@ test.describe('Patient Portal — All Pages Load', () => {
     const browser = patientPage.context().browser();
     const ctx = await browser.newContext();
     const fresh = await ctx.newPage();
-    await fresh.goto(`${PATIENT_URL}/register`, { waitUntil: 'domcontentloaded' });
+    await safeGoto(fresh,`${PATIENT_URL}/register`, { waitUntil: 'domcontentloaded' });
     await verifyPageLoaded(fresh, 'Register');
     await snap(fresh, 'P14-register', 'Patient Register', SS_PUBLIC);
     await ctx.close();
@@ -294,7 +309,7 @@ test.describe('Doctor Portal — All Pages Load', () => {
   });
 
   test('D01 — Dashboard loads with data', async () => {
-    await doctorPage.goto(`${DOCTOR_URL}/doctor/${userId}/dashboard`, { waitUntil: 'domcontentloaded' });
+    await safeGoto(doctorPage,`${DOCTOR_URL}/doctor/${userId}/dashboard`, { waitUntil: 'domcontentloaded' });
     await verifyPageLoaded(doctorPage, 'Dashboard');
     const content = await doctorPage.textContent('body');
     expect((content ?? '').length).toBeGreaterThan(100);
@@ -302,19 +317,19 @@ test.describe('Doctor Portal — All Pages Load', () => {
   });
 
   test('D02 — Schedule page loads', async () => {
-    await doctorPage.goto(`${DOCTOR_URL}/doctor/${userId}/schedule`, { waitUntil: 'domcontentloaded' });
+    await safeGoto(doctorPage,`${DOCTOR_URL}/doctor/${userId}/schedule`, { waitUntil: 'domcontentloaded' });
     await verifyPageLoaded(doctorPage, 'Schedule');
     await snap(doctorPage, 'D02-schedule', 'Doctor Schedule', SS_DOCTOR);
   });
 
   test('D03 — Patients page loads', async () => {
-    await doctorPage.goto(`${DOCTOR_URL}/doctor/${userId}/patients`, { waitUntil: 'domcontentloaded' });
+    await safeGoto(doctorPage,`${DOCTOR_URL}/doctor/${userId}/patients`, { waitUntil: 'domcontentloaded' });
     await verifyPageLoaded(doctorPage, 'Patients');
     await snap(doctorPage, 'D03-patients', 'Patient List', SS_DOCTOR);
   });
 
   test('D04 — Medical Consultants page loads', async () => {
-    await doctorPage.goto(`${DOCTOR_URL}/doctor/${userId}/medical-consultants`, { waitUntil: 'networkidle' });
+    await safeGoto(doctorPage,`${DOCTOR_URL}/doctor/${userId}/medical-consultants`, { waitUntil: 'networkidle' });
     await doctorPage.waitForTimeout(2000);
     await snap(doctorPage, 'D04-medical-consultants', 'Medical Consultants', SS_DOCTOR);
     // Soft check — page may render empty if no consultants data exists
@@ -323,43 +338,43 @@ test.describe('Doctor Portal — All Pages Load', () => {
   });
 
   test('D05 — Doctors Directory page loads', async () => {
-    await doctorPage.goto(`${DOCTOR_URL}/doctor/${userId}/doctors`, { waitUntil: 'domcontentloaded' });
+    await safeGoto(doctorPage,`${DOCTOR_URL}/doctor/${userId}/doctors`, { waitUntil: 'domcontentloaded' });
     await verifyPageLoaded(doctorPage, 'Doctors Directory');
     await snap(doctorPage, 'D05-doctors-directory', 'Doctors Directory', SS_DOCTOR);
   });
 
   test('D06 — Medical Content page loads', async () => {
-    await doctorPage.goto(`${DOCTOR_URL}/doctor/${userId}/medical-content`, { waitUntil: 'domcontentloaded' });
+    await safeGoto(doctorPage,`${DOCTOR_URL}/doctor/${userId}/medical-content`, { waitUntil: 'domcontentloaded' });
     await verifyPageLoaded(doctorPage, 'Medical Content');
     await snap(doctorPage, 'D06-medical-content', 'Medical Content', SS_DOCTOR);
   });
 
   test('D07 — Health Meeting / Queue page loads', async () => {
-    await doctorPage.goto(`${DOCTOR_URL}/doctor/${userId}/health-meeting`, { waitUntil: 'domcontentloaded' });
+    await safeGoto(doctorPage,`${DOCTOR_URL}/doctor/${userId}/health-meeting`, { waitUntil: 'domcontentloaded' });
     await verifyPageLoaded(doctorPage, 'Health Meeting');
     await snap(doctorPage, 'D07-health-meeting', 'Health Meeting Queue', SS_DOCTOR);
   });
 
   test('D08 — Clinical Resources page loads', async () => {
-    await doctorPage.goto(`${DOCTOR_URL}/doctor/${userId}/clinical-resources`, { waitUntil: 'domcontentloaded' });
+    await safeGoto(doctorPage,`${DOCTOR_URL}/doctor/${userId}/clinical-resources`, { waitUntil: 'domcontentloaded' });
     await verifyPageLoaded(doctorPage, 'Clinical Resources');
     await snap(doctorPage, 'D08-clinical-resources', 'Clinical Resources', SS_DOCTOR);
   });
 
   test('D09 — Profile page loads', async () => {
-    await doctorPage.goto(`${DOCTOR_URL}/doctor/${userId}/profile`, { waitUntil: 'domcontentloaded' });
+    await safeGoto(doctorPage,`${DOCTOR_URL}/doctor/${userId}/profile`, { waitUntil: 'domcontentloaded' });
     await verifyPageLoaded(doctorPage, 'Doctor Profile');
     await snap(doctorPage, 'D09-profile', 'Doctor Profile', SS_DOCTOR);
   });
 
   test('D10 — Admin: Doctor Management page loads', async () => {
-    await doctorPage.goto(`${DOCTOR_URL}/doctor/${userId}/doctor-management`, { waitUntil: 'domcontentloaded' });
+    await safeGoto(doctorPage,`${DOCTOR_URL}/doctor/${userId}/doctor-management`, { waitUntil: 'domcontentloaded' });
     await verifyPageLoaded(doctorPage, 'Doctor Management');
     await snap(doctorPage, 'D10-doctor-management', 'Doctor Management Admin', SS_DOCTOR);
   });
 
   test('D11 — Admin: Appointment Management page loads', async () => {
-    await doctorPage.goto(`${DOCTOR_URL}/doctor/${userId}/appointment-management`, { waitUntil: 'domcontentloaded' });
+    await safeGoto(doctorPage,`${DOCTOR_URL}/doctor/${userId}/appointment-management`, { waitUntil: 'domcontentloaded' });
     await verifyPageLoaded(doctorPage, 'Appointment Management');
     await snap(doctorPage, 'D11-appointment-management', 'Appointment Management Admin', SS_DOCTOR);
   });
@@ -368,7 +383,7 @@ test.describe('Doctor Portal — All Pages Load', () => {
     const browser = doctorPage.context().browser();
     const ctx = await browser.newContext();
     const fresh = await ctx.newPage();
-    await fresh.goto(`${DOCTOR_URL}/login`, { waitUntil: 'domcontentloaded' });
+    await safeGoto(fresh,`${DOCTOR_URL}/login`, { waitUntil: 'domcontentloaded' });
     await verifyPageLoaded(fresh, 'Doctor Login');
     await snap(fresh, 'D12-login', 'Doctor Login', SS_PUBLIC);
     await ctx.close();

@@ -41,18 +41,51 @@ async function snap(page: Page, filename: string, label: string, dir: string = S
 }
 
 // ── API helper (uses Playwright request context) ────────────────────
-async function apiPost(page: Page, url: string, data: Record<string, unknown>, token?: string) {
+async function sleep(ms: number) { return new Promise(r => setTimeout(r, ms)); }
+
+async function apiPost(page: Page, url: string, data: Record<string, unknown>, token?: string, retries = 3) {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (token) headers['Authorization'] = `Bearer ${token}`;
-  const r = await page.request.post(url, { data, headers });
-  return { status: r.status(), body: await r.json().catch(() => ({})) };
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const r = await page.request.post(url, { data, headers });
+      return { status: r.status(), body: await r.json().catch(() => ({})) };
+    } catch (err) {
+      if (attempt === retries) throw err;
+      console.log(`  ⏳ apiPost retry ${attempt}/${retries} for ${url}: ${(err as Error).message?.slice(0, 60)}`);
+      await sleep(3000 * attempt);
+    }
+  }
+  throw new Error('unreachable');
 }
 
-async function apiGet(page: Page, url: string, token?: string) {
+async function apiGet(page: Page, url: string, token?: string, retries = 3) {
   const headers: Record<string, string> = {};
   if (token) headers['Authorization'] = `Bearer ${token}`;
-  const r = await page.request.get(url, { headers });
-  return { status: r.status(), body: await r.json().catch(() => ({})) };
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const r = await page.request.get(url, { headers });
+      return { status: r.status(), body: await r.json().catch(() => ({})) };
+    } catch (err) {
+      if (attempt === retries) throw err;
+      console.log(`  ⏳ apiGet retry ${attempt}/${retries} for ${url}: ${(err as Error).message?.slice(0, 60)}`);
+      await sleep(3000 * attempt);
+    }
+  }
+  throw new Error('unreachable');
+}
+
+async function safeGoto(page: Page, url: string, options?: { waitUntil?: 'domcontentloaded' | 'load' | 'networkidle'; timeout?: number }, retries = 3) {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      await page.goto(url, options);
+      return;
+    } catch (err) {
+      if (attempt === retries) throw err;
+      console.log(`  ⏳ safeGoto retry ${attempt}/${retries} for ${url}: ${(err as Error).message?.slice(0, 60)}`);
+      await sleep(3000 * attempt);
+    }
+  }
 }
 
 // ── Helper: inject FULL doctor auth state into browser ──────────────
@@ -116,7 +149,7 @@ test.describe('Complete Appointment Workflow — UI Screenshots', () => {
   // WF01 — Patient Login Page (unauthenticated view)
   // ─────────────────────────────────────────────────────────────────
   test('WF01 — Patient Login Page', async () => {
-    await patientPage.goto(`${PATIENT_URL}/login`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(patientPage,`${PATIENT_URL}/login`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await snap(patientPage, 'WF01-patient-login-page', 'Patient Login Page', SS_AUTH);
   });
 
@@ -146,7 +179,7 @@ test.describe('Complete Appointment Workflow — UI Screenshots', () => {
     expect(patientToken).toBeTruthy();
 
     // Now fill the login form in the UI for the screenshot
-    await patientPage.goto(`${PATIENT_URL}/login`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(patientPage,`${PATIENT_URL}/login`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await patientPage.waitForTimeout(1500);
     await patientPage.fill('#login-email', patientEmail);
     await patientPage.fill('#login-password', patientPass);
@@ -165,7 +198,7 @@ test.describe('Complete Appointment Workflow — UI Screenshots', () => {
         localStorage.setItem('izara_user', JSON.stringify(userData));
         localStorage.setItem('izara_patient_last_activity', Date.now().toString());
       }, { t: patientToken, userData: patientUserData });
-      await patientPage.goto(PATIENT_URL, { waitUntil: 'domcontentloaded', timeout: 30000 });
+      await safeGoto(patientPage,PATIENT_URL, { waitUntil: 'domcontentloaded', timeout: 30000 });
     } else {
       // UI login succeeded — the session from API login is now invalidated.
       // Grab the fresh token from localStorage (set by the UI login).
@@ -179,7 +212,7 @@ test.describe('Complete Appointment Workflow — UI Screenshots', () => {
   // WF03 — Patient Dashboard
   // ─────────────────────────────────────────────────────────────────
   test('WF03 — Patient Dashboard', async () => {
-    await patientPage.goto(`${PATIENT_URL}/`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(patientPage,`${PATIENT_URL}/`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await snap(patientPage, 'WF03-patient-dashboard', 'Patient Dashboard', SS_AUTH);
   });
 
@@ -187,7 +220,7 @@ test.describe('Complete Appointment Workflow — UI Screenshots', () => {
   // WF04 — Patient Appointments List (before booking)
   // ─────────────────────────────────────────────────────────────────
   test('WF04 — Patient Appointments (Empty)', async () => {
-    await patientPage.goto(`${PATIENT_URL}/appointments`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(patientPage,`${PATIENT_URL}/appointments`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await snap(patientPage, 'WF04-patient-appointments-empty', 'Appointments (Empty)', SS_APPT);
   });
 
@@ -195,7 +228,7 @@ test.describe('Complete Appointment Workflow — UI Screenshots', () => {
   // WF05 — Patient Book Appointment Page
   // ─────────────────────────────────────────────────────────────────
   test('WF05 — Book Appointment Form', async () => {
-    await patientPage.goto(`${PATIENT_URL}/appointments/book`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(patientPage,`${PATIENT_URL}/appointments/book`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await snap(patientPage, 'WF05-book-appointment-step1', 'Book Appointment - Symptoms Step', SS_APPT);
   });
 
@@ -224,7 +257,7 @@ test.describe('Complete Appointment Workflow — UI Screenshots', () => {
     expect(appointmentId).toBeTruthy();
 
     // Now navigate to appointments and see the new one
-    await patientPage.goto(`${PATIENT_URL}/appointments`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(patientPage,`${PATIENT_URL}/appointments`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await snap(patientPage, 'WF06-appointment-created', 'Appointment Created - In List', SS_APPT);
   });
 
@@ -232,7 +265,7 @@ test.describe('Complete Appointment Workflow — UI Screenshots', () => {
   // WF07 — Patient Appointment Detail
   // ─────────────────────────────────────────────────────────────────
   test('WF07 — Patient Appointment Detail', async () => {
-    await patientPage.goto(`${PATIENT_URL}/appointments/${appointmentId}`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(patientPage,`${PATIENT_URL}/appointments/${appointmentId}`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await snap(patientPage, 'WF07-appointment-detail-pending', 'Appointment Detail (Pending)', SS_APPT);
   });
 
@@ -240,7 +273,7 @@ test.describe('Complete Appointment Workflow — UI Screenshots', () => {
   // WF08 — Doctor Login Page
   // ─────────────────────────────────────────────────────────────────
   test('WF08 — Doctor Login Page', async () => {
-    await doctorPage.goto(`${DOCTOR_URL}/login`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(doctorPage,`${DOCTOR_URL}/login`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await snap(doctorPage, 'WF08-doctor-login-page', 'Doctor Login Page', SS_AUTH);
   });
 
@@ -259,10 +292,10 @@ test.describe('Complete Appointment Workflow — UI Screenshots', () => {
     doctorUser = loginR.body.user || {};
 
     // Inject FULL auth state into browser (doctor portal requires all 4 keys)
-    await doctorPage.goto(DOCTOR_URL, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(doctorPage,DOCTOR_URL, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await injectDoctorAuth(doctorPage, doctorToken, doctorUser);
 
-    await doctorPage.goto(`${DOCTOR_URL}/doctor/${doctorId}/dashboard`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(doctorPage,`${DOCTOR_URL}/doctor/${doctorId}/dashboard`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await snap(doctorPage, 'WF09-doctor-dashboard', 'Doctor Dashboard', SS_AUTH);
   });
 
@@ -270,7 +303,7 @@ test.describe('Complete Appointment Workflow — UI Screenshots', () => {
   // WF10 — Doctor Appointment Management (sees unassigned appointment)
   // ─────────────────────────────────────────────────────────────────
   test('WF10 — Doctor Appointment Management', async () => {
-    await doctorPage.goto(`${DOCTOR_URL}/doctor/${doctorId}/appointment-management`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(doctorPage,`${DOCTOR_URL}/doctor/${doctorId}/appointment-management`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await snap(doctorPage, 'WF10-appointment-management-pool', 'Appointment Management - Pool', SS_APPT);
   });
 
@@ -294,7 +327,7 @@ test.describe('Complete Appointment Workflow — UI Screenshots', () => {
     }, doctorToken);
 
     // Reload appointment management to show confirmed state
-    await doctorPage.goto(`${DOCTOR_URL}/doctor/${doctorId}/appointment-management`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(doctorPage,`${DOCTOR_URL}/doctor/${doctorId}/appointment-management`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await snap(doctorPage, 'WF11-appointment-confirmed', 'Appointment Confirmed by Doctor', SS_APPT);
   });
 
@@ -302,7 +335,7 @@ test.describe('Complete Appointment Workflow — UI Screenshots', () => {
   // WF12 — Doctor Health Meeting Queue (shows confirmed appointment)
   // ─────────────────────────────────────────────────────────────────
   test('WF12 — Doctor Health Meeting Queue', async () => {
-    await doctorPage.goto(`${DOCTOR_URL}/doctor/${doctorId}/health-meeting`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(doctorPage,`${DOCTOR_URL}/doctor/${doctorId}/health-meeting`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await snap(doctorPage, 'WF12-health-meeting-queue', 'Health Meeting Queue', SS_APPT);
   });
 
@@ -310,7 +343,7 @@ test.describe('Complete Appointment Workflow — UI Screenshots', () => {
   // WF12b — Doctor Notification Bell
   // ─────────────────────────────────────────────────────────────────
   test('WF12b — Doctor Notifications', async () => {
-    await doctorPage.goto(`${DOCTOR_URL}/doctor/${doctorId}/dashboard`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(doctorPage,`${DOCTOR_URL}/doctor/${doctorId}/dashboard`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await doctorPage.waitForTimeout(2000);
 
     // Try to click the notification bell to open dropdown
@@ -326,7 +359,7 @@ test.describe('Complete Appointment Workflow — UI Screenshots', () => {
   // WF13 — Patient Sees Confirmed Appointment + Notification
   // ─────────────────────────────────────────────────────────────────
   test('WF13 — Patient Appointment Confirmed + Notification', async () => {
-    await patientPage.goto(`${PATIENT_URL}/appointments`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(patientPage,`${PATIENT_URL}/appointments`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await snap(patientPage, 'WF13-patient-appointment-confirmed', 'Patient - Appointment Confirmed', SS_APPT);
 
     // Try to click patient notification bell
@@ -341,7 +374,7 @@ test.describe('Complete Appointment Workflow — UI Screenshots', () => {
     }
 
     // Also show the detail page
-    await patientPage.goto(`${PATIENT_URL}/appointments/${appointmentId}`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(patientPage,`${PATIENT_URL}/appointments/${appointmentId}`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await snap(patientPage, 'WF13c-patient-appointment-detail-confirmed', 'Appointment Detail - Confirmed', SS_APPT);
   });
 
@@ -363,7 +396,7 @@ test.describe('Complete Appointment Workflow — UI Screenshots', () => {
     }, doctorToken);
 
     // Navigate to meeting room — now shows Agreement screen first
-    await doctorPage.goto(`${DOCTOR_URL}/doctor/${doctorId}/meeting/${appointmentId}`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(doctorPage,`${DOCTOR_URL}/doctor/${doctorId}/meeting/${appointmentId}`, { waitUntil: 'domcontentloaded', timeout: 30000 });
 
     // 1. Capture Agreement / Consent screen
     await doctorPage.waitForSelector('[data-testid="meeting-agreement"]', { timeout: 15000 }).catch(() => {});
@@ -394,7 +427,7 @@ test.describe('Complete Appointment Workflow — UI Screenshots', () => {
       role: 'patient', email: patientEmail,
     }, patientToken);
 
-    await patientPage.goto(`${PATIENT_URL}/meeting/${appointmentId}`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(patientPage,`${PATIENT_URL}/meeting/${appointmentId}`, { waitUntil: 'domcontentloaded', timeout: 30000 });
 
     // 1. Capture Agreement screen
     await patientPage.waitForSelector('[data-testid="meeting-agreement"]', { timeout: 15000 }).catch(() => {});
@@ -451,7 +484,7 @@ test.describe('Complete Appointment Workflow — UI Screenshots', () => {
     expect(endR.status).toBe(200);
 
     // Navigate to doctor dashboard to show AI summary arrived
-    await doctorPage.goto(`${DOCTOR_URL}/doctor/${doctorId}/health-meeting`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(doctorPage,`${DOCTOR_URL}/doctor/${doctorId}/health-meeting`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await snap(doctorPage, 'WF16-meeting-ended-ai-summary', 'Meeting Ended - AI Summary Generated', SS_MEETING);
   });
 
@@ -486,7 +519,7 @@ test.describe('Complete Appointment Workflow — UI Screenshots', () => {
     }
 
     // Navigate to patients page to show EMR is visible
-    await doctorPage.goto(`${DOCTOR_URL}/doctor/${doctorId}/patients`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(doctorPage,`${DOCTOR_URL}/doctor/${doctorId}/patients`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await snap(doctorPage, 'WF17-doctor-patients-emr', 'Doctor Patients - EMR Created', SS_POST);
   });
 
@@ -494,7 +527,7 @@ test.describe('Complete Appointment Workflow — UI Screenshots', () => {
   // WF18 — Doctor Schedule (appointment completed)
   // ─────────────────────────────────────────────────────────────────
   test('WF18 — Doctor Schedule', async () => {
-    await doctorPage.goto(`${DOCTOR_URL}/doctor/${doctorId}/schedule`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(doctorPage,`${DOCTOR_URL}/doctor/${doctorId}/schedule`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await snap(doctorPage, 'WF18-doctor-schedule', 'Doctor Schedule - Completed Appointment', SS_POST);
   });
 
@@ -502,7 +535,7 @@ test.describe('Complete Appointment Workflow — UI Screenshots', () => {
   // WF18b — Doctor Profile Page
   // ─────────────────────────────────────────────────────────────────
   test('WF18b — Doctor Profile', async () => {
-    await doctorPage.goto(`${DOCTOR_URL}/doctor/${doctorId}/profile`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(doctorPage,`${DOCTOR_URL}/doctor/${doctorId}/profile`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await snap(doctorPage, 'WF18b-doctor-profile', 'Doctor Profile Page', SS_POST);
   });
 
@@ -510,7 +543,7 @@ test.describe('Complete Appointment Workflow — UI Screenshots', () => {
   // WF18c — Doctor Clinical Resources
   // ─────────────────────────────────────────────────────────────────
   test('WF18c — Doctor Clinical Resources', async () => {
-    await doctorPage.goto(`${DOCTOR_URL}/doctor/${doctorId}/clinical-resources`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(doctorPage,`${DOCTOR_URL}/doctor/${doctorId}/clinical-resources`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await snap(doctorPage, 'WF18c-doctor-clinical-resources', 'Doctor Clinical Resources', SS_POST);
   });
 
@@ -518,11 +551,11 @@ test.describe('Complete Appointment Workflow — UI Screenshots', () => {
   // WF19 — Patient Appointments (Completed)
   // ─────────────────────────────────────────────────────────────────
   test('WF19 — Patient Appointment Completed', async () => {
-    await patientPage.goto(`${PATIENT_URL}/appointments`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(patientPage,`${PATIENT_URL}/appointments`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await snap(patientPage, 'WF19-patient-appointments-completed', 'Patient Appointments - Completed', SS_RECORDS);
 
     // Appointment detail
-    await patientPage.goto(`${PATIENT_URL}/appointments/${appointmentId}`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(patientPage,`${PATIENT_URL}/appointments/${appointmentId}`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await snap(patientPage, 'WF19b-appointment-detail-completed', 'Appointment Detail - Completed', SS_RECORDS);
   });
 
@@ -530,7 +563,7 @@ test.describe('Complete Appointment Workflow — UI Screenshots', () => {
   // WF20 — Patient PHR (Health Records from Doctor)
   // ─────────────────────────────────────────────────────────────────
   test('WF20 — Patient Health Records (PHR)', async () => {
-    await patientPage.goto(`${PATIENT_URL}/phr`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(patientPage,`${PATIENT_URL}/phr`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await snap(patientPage, 'WF20-patient-phr', 'Patient Health Records (PHR)', SS_RECORDS);
   });
 
@@ -538,7 +571,7 @@ test.describe('Complete Appointment Workflow — UI Screenshots', () => {
   // WF21 — Patient Timeline
   // ─────────────────────────────────────────────────────────────────
   test('WF21 — Patient Timeline', async () => {
-    await patientPage.goto(`${PATIENT_URL}/timeline`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(patientPage,`${PATIENT_URL}/timeline`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await snap(patientPage, 'WF21-patient-timeline', 'Patient Timeline', SS_RECORDS);
   });
 
@@ -546,7 +579,7 @@ test.describe('Complete Appointment Workflow — UI Screenshots', () => {
   // WF22 — Patient AI Doctor
   // ─────────────────────────────────────────────────────────────────
   test('WF22 — Patient AI Doctor', async () => {
-    await patientPage.goto(`${PATIENT_URL}/ai-doctor`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await safeGoto(patientPage,`${PATIENT_URL}/ai-doctor`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await snap(patientPage, 'WF22-patient-ai-doctor', 'Patient AI Doctor', SS_RECORDS);
   });
 });

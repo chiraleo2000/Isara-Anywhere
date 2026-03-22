@@ -1,15 +1,19 @@
 # E2E Test Coverage Report — v1.5.9
 
-**Generated:** 2026-03-19  
+**Generated:** 2026-03-22  
 **Framework:** Playwright 1.58.2 (TypeScript)  
-**Total Spec Files:** 32 E2E + 1 Cloud UI Screenshot  
-**Total Tests:** ~1,124 E2E + 39 Cloud UI = ~1,163  
+**Total Spec Files:** 32 E2E + 5 UI Test Files  
+**Total Tests:** ~1,124 E2E + 96 Local UI + 81 Cloud UI = ~1,301  
 **Cloud UI Screenshots:** 26 full-page (14 Patient + 12 Doctor) + 13 API health = 39 tests  
-**Local UI Screenshots:** 25 full-page PNGs (14 Patient + 11 Doctor) + 16 API = 44 tests  
+**Local UI Screenshots:** 122 PNGs across meeting, workflow, ui-pages directories  
+**Meeting Multi-User:** 27 tests (admin + doctor + patient, 3 browsers)  
+**Workflow Screenshots:** 25 tests (WF01–WF22, full appointment lifecycle)  
+**UI Page Verification:** 44 tests (P01–P14, D01–D12, API01–API16)  
 **User Accounts Used:** 5 (patient1, patient2, patient3, doctor, admin)  
-**Parallel Workers:** 6 (configurable via PW_WORKERS env)  
-**Full Suite Duration:** ~4.2 min (E2E) + ~2.5 min (Cloud UI)  
-**Pass Rate:** 100%
+**Headed Mode:** 1 worker, slowMo 300, 1920×1080 viewport  
+**Full Suite Duration:** ~4.2 min (E2E) + ~6.1 min (Local UI, headed)  
+**Pass Rate:** 100%  
+**Code Quality:** SonarQube — 0 issues (Cognitive Complexity refactored)
 
 ---
 

@@ -36,6 +36,15 @@ import {
 } from '../../assets/NewSvgIcons';
 import MeetingResults from './MeetingResults';
 
+// Meeting server URL for registering meetings (same pattern as MeetingRoom.tsx)
+const MEETING_SERVER_URL = (() => {
+  if (globalThis.window !== undefined) {
+    const env = (globalThis as any).ENV;
+    if (env?.MEETING_SERVER_URL) return env.MEETING_SERVER_URL;
+  }
+  return import.meta.env?.VITE_MEETING_SERVER_URL || 'http://localhost:3020';
+})();
+
 // ============================================================================
 // ADMIN INTERFACES
 // ============================================================================
@@ -1034,6 +1043,35 @@ Izara Telehealth Team
       // Meeting link data is already included in the appointment - no separate write needed
       // PostgreSQL stores all data in one place
       console.log('✅ Meeting link included in appointment data');
+
+      // Step 5b: Register meeting with the meeting server (so patient can look up room name)
+      // Non-blocking: appointment confirmation succeeds even if meeting server is unreachable
+      try {
+        const meetingToken = localStorage.getItem('token');
+        const meetingServerRes = await fetch(`${MEETING_SERVER_URL}/api/meetings/create`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${meetingToken || ''}`
+          },
+          body: JSON.stringify({
+            appointmentId: selectedAppointment.id,
+            patientId: selectedAppointment.patientId || selectedAppointment.patient_id,
+            doctorId: doctorIdentifier,
+            patientName: selectedAppointment.patientName || selectedAppointment.patient_name,
+            doctorName: doctor.name,
+            scheduledTime: `${appointmentDate}T${appointmentTime}`,
+            roomName: meetingDetails.meetCode, // Use the same room name as the generated Jitsi URLs
+          }),
+        });
+        if (meetingServerRes.ok) {
+          console.log('✅ Meeting registered with meeting server');
+        } else {
+          console.warn('⚠️ Meeting server registration returned:', meetingServerRes.status);
+        }
+      } catch (meetErr) {
+        console.warn('⚠️ Meeting server registration failed (non-blocking):', meetErr);
+      }
 
       // All meeting data is already saved in the appointment record above
       // No need for separate writeToGCS calls - PostgreSQL handles everything
