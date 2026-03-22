@@ -2,8 +2,8 @@
 
 **Generated:** 2026-03-22  
 **Framework:** Playwright 1.58.2 (TypeScript)  
-**Total Spec Files:** 32 E2E + 5 UI Test Files  
-**Total Tests:** ~1,124 E2E + 96 Local UI + 81 Cloud UI = ~1,301  
+**Total Spec Files:** 33 E2E + 5 UI Test Files  
+**Total Tests:** ~1,149 E2E + 96 Local UI + 81 Cloud UI = ~1,326  
 **Cloud UI Screenshots:** 26 full-page (14 Patient + 12 Doctor) + 13 API health = 39 tests  
 **Local UI Screenshots:** 122 PNGs across meeting, workflow, ui-pages directories  
 **Meeting Multi-User:** 27 tests (admin + doctor + patient, 3 browsers)  
@@ -280,6 +280,34 @@
 - Offline sync & settings: push/pull data, conflict detection, sync status, get/update settings, role-specific settings, browser settings page
 - Nursing dashboard & predictive analytics: nursing dashboard, round data entry, task management, predictive analytics (readmission risk, fall risk, disease progression), browser nursing dashboard, concurrent queries
 - Phase 2 extended: care team CRUD, health screening history/detail, SOS update, follow-up complete, HIS patient lookup, HIS lab results, predictive with invalid model, smart scheduling, nursing workflow
+
+---
+
+### 31-meeting-recording-pipeline.spec.ts (~25 tests)
+
+**Sections:** A–E (5 `describe` blocks)
+
+| Section | Name | Tests | IDs |
+| --------- | ------ | ------- | ----- |
+| A | Appointment Setup for Recording | 5 | A01–A05 |
+| B | Recording Controls | 5 | B01–B05 |
+| C | Meeting End & AI Summary | 5 | C01–C05 |
+| D | Man-in-the-Loop Validation | 5 | D01–D05 |
+| E | Multi-User UI Verification | 5 | E01–E05 |
+
+**User Accounts:** patient1, doctor, admin
+
+**Features Tested:**
+
+- Appointment creation and doctor confirmation for recording pipeline
+- MediaRecorder recording start/stop via meeting room controls
+- save-recording endpoint: base64 audio → Google Cloud STT with speaker diarization
+- stop-recording endpoint: server stop event + socket notification
+- Meeting end triggers AI SOAP summary generation from recording transcript
+- Doctor reviews AI-generated SOAP summary (approve/edit/reject/regenerate)
+- Patient receives approved consultation results
+- Multi-user browser verification of recording controls and results
+- Full pipeline: appointment → recording → transcription → AI summary → doctor validation → patient delivery
 
 ---
 
@@ -593,10 +621,10 @@ All screenshots saved to `screenshots/ui-pages/` (1280×720 viewport, full-page 
 
 | Metric | Value |
 | -------- | ------- |
-| Total spec files | 8 |
-| Total lines of test code | ~7,563 |
-| Total describe blocks | 74 |
-| Total estimated test() calls | ~807 |
+| Total spec files | 9 |
+| Total lines of test code | ~8,100 |
+| Total describe blocks | 79 |
+| Total estimated test() calls | ~832 |
 | User accounts used | 5 (patient1, patient2, patient3, doctor, admin) |
 | Services tested | 3 (Patient Portal, Doctor Portal, Meeting Server) |
 | Patient Portal pages fully covered | 8 of 15 (53%) |

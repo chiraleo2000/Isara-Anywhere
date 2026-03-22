@@ -242,6 +242,7 @@ const SummaryTab: React.FC<{
       <ValidationBanner requiresValidation={summary.requiresValidation} validatedAt={summary.validatedAt} validationStatus={validationStatus} />
       {isEditing ? (
         <textarea className="w-full h-64 border border-gray-300 rounded-lg p-3 text-sm font-mono resize-y focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+          aria-label="แก้ไขสรุป AI" placeholder="แก้ไขสรุป AI ที่นี่..."
           value={editedSummary} onChange={(e) => onEditedSummaryChange(e.target.value)} />
       ) : (
         <div className="prose prose-sm max-w-none">
@@ -432,8 +433,8 @@ const MeetingResults: React.FC<MeetingResultsProps> = ({ meetingId, appointmentI
               {meeting.endedAt ? new Date(meeting.endedAt).toLocaleDateString('th-TH') : ''}
             </p>
           </div>
-          <button onClick={onClose} className="text-white/80 hover:text-white p-2">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <button onClick={onClose} className="text-white/80 hover:text-white p-2" title="ปิดผลการประชุม" aria-label="ปิดผลการประชุม">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>

@@ -473,7 +473,7 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
             <div className="flex-1 flex flex-col items-center gap-4">
               <div className="relative w-[480px] h-[320px] bg-gray-800 rounded-2xl overflow-hidden border-2 border-gray-600 shadow-2xl">
                 {cameraOn && mediaStatus.camera === 'granted' ? (
-                  <video ref={previewVideoRef} autoPlay muted playsInline className="w-full h-full object-cover" style={{ transform: 'scaleX(-1)' }} />
+                  <video ref={previewVideoRef} autoPlay muted playsInline className="w-full h-full object-cover [transform:scaleX(-1)]" />
                 ) : (
                   <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900">
                     <div className="w-28 h-28 rounded-full bg-emerald-500 flex items-center justify-center text-4xl font-bold text-white shadow-lg mb-3">
@@ -582,10 +582,10 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
                 {showInvite && (
                   <div className="space-y-2">
                     <input type="text" value={inviteName} onChange={e => setInviteName(e.target.value)}
-                      placeholder="ชื่อผู้เข้าร่วม" data-testid="invite-name-input"
+                      placeholder="ชื่อผู้เข้าร่วม" aria-label="ชื่อผู้เข้าร่วม" data-testid="invite-name-input"
                       className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm focus:outline-none focus:border-emerald-500" />
                     <input type="email" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)}
-                      placeholder="อีเมล (ถ้ามี)" data-testid="invite-email-input"
+                      placeholder="อีเมล (ถ้ามี)" aria-label="อีเมลผู้เข้าร่วม" data-testid="invite-email-input"
                       className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm focus:outline-none focus:border-emerald-500" />
                     <button onClick={shareInviteLink} disabled={!inviteName}
                       className="w-full py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 rounded-lg text-sm font-medium transition"
@@ -596,7 +596,7 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
                       <div className="bg-gray-700/50 rounded-lg p-2 text-xs" data-testid="invite-link-display">
                         <p className="text-gray-400 mb-1">ลิงก์เชิญ:</p>
                         <div className="flex gap-1">
-                          <input type="text" readOnly value={inviteLink}
+                          <input type="text" readOnly value={inviteLink} aria-label="ลิงก์เชิญเข้าร่วม"
                             className="flex-1 bg-gray-800 border border-gray-600 rounded px-2 py-1 text-xs text-emerald-300" />
                           <button onClick={copyInviteLink}
                             className="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 rounded text-xs">

@@ -7,7 +7,7 @@
 ![Database](https://img.shields.io/badge/database-PostgreSQL%2018-blue.svg)
 ![Docker](https://img.shields.io/badge/docker-ready-blue.svg)
 ![Tests](https://img.shields.io/badge/Unit%20tests-2%2C013%20passing-brightgreen.svg)
-![Tests](https://img.shields.io/badge/E2E%20tests-1%2C124%20passing-brightgreen.svg)
+![Tests](https://img.shields.io/badge/E2E%20tests-1%2C149%20passing-brightgreen.svg)
 ![Cloud UI](https://img.shields.io/badge/UI%20tests-96%20passing-brightgreen.svg)
 ![Cloud Run](https://img.shields.io/badge/Cloud%20Run-deployed-blue.svg)
 ![Security](https://img.shields.io/badge/security-SonarQube%20clean-green.svg)
@@ -66,8 +66,8 @@ The platform consists of three main services:
 - **Run**: `cd tests/unit && npx vitest run`
 
 #### E2E Tests (Playwright — 1,124 tests)
-- **32 E2E spec files** (01-30): comprehensive workflow, API, and UI testing
-- **1,124 total tests** across 32 spec files
+- **33 E2E spec files** (01-31): comprehensive workflow, API, and UI testing
+- **1,149 total tests** across 33 spec files
 - **5 simultaneous demo user accounts** (patient1, patient2, patient3, doctor, admin)
 - **3 Playwright projects**: Local, Cloud, Cloud-Dev
 - **0 skipped tests** — every test must pass
@@ -84,7 +84,7 @@ The platform consists of three main services:
 - **122 screenshots** saved to `screenshots/` (cloud, cloud-workflows, meeting, workflow, ui-pages)
 - **Run**: `npx playwright test --headed --reporter=list`
 
-#### Combined: 3,233 tests (2,013 unit + 1,124 local E2E + 96 local UI)
+#### Combined: 3,258 tests (2,013 unit + 1,149 local E2E + 96 local UI)
 
 ### E2E Test Specs
 
@@ -122,6 +122,7 @@ The platform consists of three main services:
 | 28c | API Health Verification | ~12 | All API health endpoints return 200 |
 | 29 | Chat AI Summary Cloud | ~10 | AI chat and summary on cloud |
 | 30 | Appointment Meeting AI Pipeline | ~12 | Full appointment → meeting → AI pipeline |
+| 31 | Meeting Recording Pipeline | ~25 | MediaRecorder, save-recording, AI SOAP, man-in-the-loop, multi-user |
 
 ### Run Tests
 
@@ -416,7 +417,7 @@ Isara-Anywhere/
 │   └── server/               # Express + Socket.IO
 ├── tests/
 │   ├── unit/                 # Vitest unit tests (2,013 tests, 58 files)
-│   ├── e2e/                  # Playwright E2E tests (1,124 tests, 32 specs)
+│   ├── e2e/                  # Playwright E2E tests (1,149 tests, 33 specs)
 │   └── cloud-ui-screenshots.ui-test.ts  # Cloud UI screenshot tests (39 tests)
 ├── screenshots/
 │   ├── cloud/               # Cloud UI page screenshots organized by portal
@@ -495,6 +496,16 @@ Isara-Anywhere/
 ---
 
 ## 📋 Changelog
+
+### v1.5.9 (March 22, 2026)
+
+- **Meeting Recording Pipeline**: MediaRecorder API captures real audio during video consultations → base64 encoding → server-side Google Cloud Speech-to-Text with speaker diarization → AI SOAP summary generation
+- **Recording Server Endpoints**: 2 new endpoints — `POST /api/meetings/:id/save-recording` (audio → STT → DB), `POST /api/meetings/:id/stop-recording` (stop + socket event)
+- **Accessibility Fixes (axe/SonarQube)**: aria-labels on MeetingResults.tsx (textarea, close button, SVG), PatientMeetingRoom.tsx (invite inputs), MeetingRoom.tsx (chat input); inline styles → Tailwind CSS (`[transform:scaleX(-1)]`); html-diagrams/index.html (viewport meta, CSS class, `rel="noopener noreferrer"`)
+- **Nesting Depth Refactor**: Extracted `saveRecordingBlob` useCallback helper in MeetingRoom.tsx — both `toggleRecording` and `handleMeetingEnd` use shared helper, eliminating 4+ level nesting warnings
+- **E2E Test: Recording Pipeline** (Spec 31): New `31-meeting-recording-pipeline.spec.ts` — 25 tests in 5 sections (A: Appointment Setup, B: Recording Controls, C: Meeting End & AI Summary, D: Man-in-the-Loop Validation, E: Multi-User UI)
+- **UI Test Screenshots**: 52/52 passing (27 meeting-multi-user + 25 workflow-screenshots) — 122 total screenshots across 5 categories (cloud: 26, cloud-workflows: 28, meeting: 12, ui-pages: 26, workflow: 30)
+- **Unit Tests**: 2,013/2,013 passing across 58 files (meeting-server: 6 files/195 tests, doctor-portal: 24 files/830 tests)
 
 ### v1.5.9 (March 20, 2026)
 

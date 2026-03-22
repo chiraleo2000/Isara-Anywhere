@@ -253,6 +253,26 @@ const MeetingRoom: React.FC = () => { // NOSONAR
 
   // Recording
   const [isRecording, setIsRecording] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recordingChunksRef = useRef<Blob[]>([]);
+  const recordingStreamRef = useRef<MediaStream | null>(null);
+
+  // Helper: save recording blob to server
+  const saveRecordingBlob = useCallback((chunks: Blob[], duration: number) => {
+    const blob = new Blob(chunks, { type: 'audio/webm' });
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64 = (reader.result as string).split(',')[1];
+      if (base64) {
+        fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/save-recording`, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ audioBase64: base64, mimeType: 'audio/webm', durationMs: duration, triggerTranscription: true }),
+        }).catch(err => console.warn('[Recording] Save failed:', err.message));
+      }
+    };
+    reader.readAsDataURL(blob);
+  }, [appointmentId]);
 
   // Post-meeting tab
   const [endedTab, setEndedTab] = useState<'summary' | 'transcript' | 'actions'>('summary');
@@ -708,19 +728,56 @@ const MeetingRoom: React.FC = () => { // NOSONAR
   const toggleRecording = useCallback(async () => {
     const newState = !isRecording;
     setIsRecording(newState);
-    try {
-      await fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/auto-record`, {
+
+    if (newState) {
+      // Start recording — capture audio via MediaRecorder
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        recordingStreamRef.current = stream;
+        recordingChunksRef.current = [];
+        const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
+        recorder.ondataavailable = (e) => {
+          if (e.data.size > 0) recordingChunksRef.current.push(e.data);
+        };
+        recorder.start(1000); // Collect chunks every second
+        mediaRecorderRef.current = recorder;
+      } catch (err) {
+        console.warn('[Recording] MediaRecorder not available, using server-side only:', (err as Error).message);
+      }
+
+      // Notify server
+      fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/auto-record`, {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify({ recording: newState, recordedBy: user?.id }),
-      });
-    } catch { /* silent */ }
+        body: JSON.stringify({ recording: true, recordedBy: user?.id, doctorName: user?.displayName || user?.name }),
+      }).catch(() => { /* silent */ });
 
-    // Auto-start transcript when recording starts
-    if (newState && !meetingState.isTranscribing) {
-      startTranscription();
+      // Auto-start transcript when recording starts
+      if (!meetingState.isTranscribing) {
+        startTranscription();
+      }
+    } else {
+      // Stop recording — save captured audio
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        mediaRecorderRef.current.stop();
+        mediaRecorderRef.current.onstop = () => {
+          saveRecordingBlob(recordingChunksRef.current, meetingDuration * 1000);
+        };
+      }
+
+      // Clean up stream
+      if (recordingStreamRef.current) {
+        recordingStreamRef.current.getTracks().forEach(track => track.stop());
+        recordingStreamRef.current = null;
+      }
+
+      // Notify server
+      fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/stop-recording`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+      }).catch(() => { /* silent */ });
     }
-  }, [isRecording, appointmentId, user, meetingState.isTranscribing, startTranscription]);
+  }, [isRecording, appointmentId, user, meetingState.isTranscribing, startTranscription, meetingDuration]);
 
   // ============================================================================
   // GUEST INVITE
@@ -822,13 +879,26 @@ const MeetingRoom: React.FC = () => { // NOSONAR
       stopTranscription();
     }
 
-    // Stop recording
+    // Stop recording and save audio blob
     if (isRecording) {
       setIsRecording(false);
-      fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/auto-record`, {
+
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        mediaRecorderRef.current.stop();
+        mediaRecorderRef.current.onstop = () => {
+          saveRecordingBlob(recordingChunksRef.current, meetingDuration * 1000);
+        };
+      }
+
+      // Clean up recording stream
+      if (recordingStreamRef.current) {
+        recordingStreamRef.current.getTracks().forEach(track => track.stop());
+        recordingStreamRef.current = null;
+      }
+
+      fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/stop-recording`, {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify({ recording: false, recordedBy: user?.id }),
       }).catch(err => console.warn('[MeetingEnd] Stop recording failed:', err.message));
     }
 
@@ -859,7 +929,7 @@ const MeetingRoom: React.FC = () => { // NOSONAR
       method: 'POST',
       headers: getAuthHeaders(),
     }).catch(err => console.warn('[MeetingEnd] Process embeddings failed:', err.message));
-  }, [appointmentId, meetingState.isTranscribing, stopTranscription, user, isRecording]);
+  }, [appointmentId, meetingState.isTranscribing, stopTranscription, user, isRecording, meetingDuration]);
 
   // ============================================================================
   // AGREEMENT / CONSENT
@@ -1064,7 +1134,7 @@ const MeetingRoom: React.FC = () => { // NOSONAR
             <div className="flex-1 flex flex-col items-center gap-4">
               <div className="relative w-[480px] h-[320px] bg-gray-800 rounded-2xl overflow-hidden border-2 border-gray-600 shadow-2xl">
                 {cameraOn && mediaStatus.camera === 'granted' ? (
-                  <video ref={previewVideoRef} autoPlay muted playsInline className="w-full h-full object-cover mirror" style={{ transform: 'scaleX(-1)' }} />
+                  <video ref={previewVideoRef} autoPlay muted playsInline className="w-full h-full object-cover mirror [transform:scaleX(-1)]" />
                 ) : (
                   <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900">
                     <div className="w-28 h-28 rounded-full bg-blue-500 flex items-center justify-center text-4xl font-bold text-white shadow-lg mb-3">
@@ -1633,6 +1703,7 @@ const MeetingRoom: React.FC = () => { // NOSONAR
                     onChange={(e) => setChatInput(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && sendChatMessage()}
                     placeholder="พิมพ์ข้อความ..."
+                    aria-label="พิมพ์ข้อความแชท"
                     className="flex-1 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
                   />
                   <button

@@ -2699,6 +2699,160 @@ app.post('/api/meetings/:id/auto-record', optionalAuth, async (req, res) => {
   }
 });
 
+// POST /api/meetings/:id/save-recording — Save recording blob and trigger transcription
+app.post('/api/meetings/:id/save-recording', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { audioBase64, mimeType = 'audio/webm', durationMs, triggerTranscription = true } = req.body;
+
+    if (!audioBase64) {
+      return res.status(400).json({ error: 'audioBase64 is required' });
+    }
+
+    // Validate base64 size (max 50MB)
+    const sizeBytes = Math.ceil(audioBase64.length * 3 / 4);
+    if (sizeBytes > 50 * 1024 * 1024) {
+      return res.status(413).json({ error: 'Recording too large (max 50MB)' });
+    }
+
+    // Store recording metadata in DB
+    const recordingId = uuidv4();
+    try {
+      await safeQuery(
+        `UPDATE meeting_records SET 
+           recording_blob = $1,
+           recording_mime_type = $2,
+           recording_duration_ms = $3,
+           recording_saved_at = NOW(),
+           status = CASE WHEN status = 'in_progress' THEN 'completed' ELSE status END
+         WHERE id::text = $4 OR appointment_id = $4`,
+        [audioBase64, mimeType, durationMs || 0, id]
+      );
+    } catch (dbErr) {
+      // If recording_blob column doesn't exist, store in-memory
+      console.warn('[Save Recording] DB column may not exist, storing in memory:', dbErr.message);
+      const meeting = activeMeetings.get(id);
+      if (meeting) {
+        meeting.recordingBlob = audioBase64;
+        meeting.recordingMimeType = mimeType;
+        meeting.recordingDurationMs = durationMs;
+        meeting.recordingSavedAt = new Date().toISOString();
+      }
+    }
+
+    console.log(`[Save Recording] Recording saved for meeting ${id} (${(sizeBytes / 1024).toFixed(1)} KB)`);
+
+    // Trigger post-meeting transcription with speaker diarization if requested
+    let transcriptionResult = null;
+    if (triggerTranscription) {
+      try {
+        const hasCredentials = !!process.env.GOOGLE_APPLICATION_CREDENTIALS || !!process.env.GOOGLE_SPEECH_API_KEY;
+        if (hasCredentials) {
+          // Use Google Cloud STT with speaker diarization
+          const { SpeechClient } = await import('@google-cloud/speech');
+          const speechClient = new SpeechClient();
+          
+          const audioBytes = Buffer.from(audioBase64, 'base64');
+          const [response] = await speechClient.recognize({
+            audio: { content: audioBytes.toString('base64') },
+            config: {
+              encoding: 'WEBM_OPUS',
+              sampleRateHertz: 48000,
+              languageCode: 'th-TH',
+              enableAutomaticPunctuation: true,
+              enableSpeakerDiarization: true,
+              diarizationSpeakerCount: 2,
+              model: 'latest_long',
+              useEnhanced: true,
+            },
+          });
+
+          const segments = [];
+          for (const result of (response.results || [])) {
+            const alt = result.alternatives?.[0];
+            if (!alt?.transcript) continue;
+            const speakerTag = alt.words?.[0]?.speakerTag || 1;
+            segments.push({
+              content: alt.transcript.trim(),
+              confidence: alt.confidence || 0,
+              speakerTag,
+              speakerRole: speakerTag === 1 ? 'doctor' : 'patient',
+            });
+          }
+
+          // Store transcript segments in DB
+          for (const seg of segments) {
+            await safeQuery(
+              `INSERT INTO meeting_transcripts (meeting_record_id, speaker_role, speaker_name, content, language, confidence, created_at)
+               VALUES ($1::uuid, $2, $3, $4, $5, $6, NOW())`,
+              [id, seg.speakerRole, seg.speakerRole === 'doctor' ? 'แพทย์' : 'ผู้ป่วย', seg.content, 'th-TH', seg.confidence]
+            );
+          }
+
+          transcriptionResult = {
+            mode: 'google-cloud-stt',
+            segments: segments.length,
+            diarization: true,
+          };
+          console.log(`[Save Recording] Post-recording transcription completed: ${segments.length} segments`);
+        } else {
+          transcriptionResult = { mode: 'web-speech-api', configured: false, message: 'Cloud STT not configured — use Web Speech API transcript from live session' };
+        }
+      } catch (transcErr) {
+        console.warn('[Save Recording] Post-recording transcription skipped:', transcErr.message);
+        transcriptionResult = { mode: 'skipped', error: transcErr.message };
+      }
+    }
+
+    // Notify participants
+    io.to(id).emit('recording-saved', {
+      meetingId: id, recordingId, durationMs, transcription: transcriptionResult,
+      timestamp: new Date().toISOString(),
+    });
+
+    res.json({
+      success: true,
+      recordingId,
+      meetingId: id,
+      sizeBytes,
+      transcription: transcriptionResult,
+      message: 'Recording saved successfully',
+    });
+  } catch (error) {
+    console.error('[Save Recording] Error:', error);
+    res.status(500).json({ error: 'Failed to save recording' });
+  }
+});
+
+// POST /api/meetings/:id/stop-recording — Stop recording and trigger summary generation
+app.post('/api/meetings/:id/stop-recording', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Mark recording as stopped in DB
+    try {
+      await safeQuery(
+        `UPDATE meeting_records SET recording_stopped_at = NOW() WHERE id::text = $1 OR appointment_id = $1`,
+        [id]
+      );
+    } catch (e) {
+      console.warn('[Stop Recording] DB update skipped:', e.message);
+    }
+
+    // Notify participants
+    io.to(id).emit('recording-stopped', {
+      meetingId: id,
+      timestamp: new Date().toISOString(),
+    });
+
+    console.log(`[Stop Recording] Recording stopped for meeting ${id}`);
+    res.json({ success: true, meetingId: id, message: 'Recording stopped' });
+  } catch (error) {
+    console.error('[Stop Recording] Error:', error);
+    res.status(500).json({ error: 'Failed to stop recording' });
+  }
+});
+
 // ============================================================================
 // SOCKET.IO FOR REAL-TIME COMMUNICATION
 // ============================================================================
