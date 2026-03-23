@@ -264,8 +264,10 @@ services:
 
       # CORS — allow both portals + mobile dev server
       CORS_ORIGINS: http://localhost:3005,http://localhost:3010,http://127.0.0.1:3005,http://127.0.0.1:3010
+      RECORDINGS_DIR: /app/recordings
     volumes:
       - ./credentials/service-account.json:/app/credentials/service-account.json:ro
+      - meeting_recordings:/app/recordings
     ports:
       - "3020:3020"
     depends_on:
@@ -288,6 +290,8 @@ volumes:
   postgres_data:
     driver: local
   pgadmin_data:
+    driver: local
+  meeting_recordings:
     driver: local
 
 networks:

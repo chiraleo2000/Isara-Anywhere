@@ -1,4 +1,4 @@
-import { Router, Request, Response } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import bcrypt from 'bcryptjs';
 import node_crypto from 'node:crypto';
 import postgresDataService from '../services/postgresDataService';
@@ -6,6 +6,32 @@ import { errMsg } from '../utils';
 
 const { pool } = postgresDataService;
 const router = Router();
+
+// ============================================================================
+// AUTH RATE LIMITING (in-memory, per-IP — stricter for auth endpoints)
+// ============================================================================
+const authRateLimits = new Map<string, { count: number; start: number }>();
+
+function authRateLimit(maxRequests: number, windowMs: number) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    const ip = req.ip || req.socket.remoteAddress || 'unknown';
+    const now = Date.now();
+    let entry = authRateLimits.get(ip);
+    if (!entry || now - entry.start > windowMs) {
+      entry = { count: 1, start: now };
+      authRateLimits.set(ip, entry);
+    } else {
+      entry.count++;
+    }
+    if (entry.count > maxRequests) {
+      return res.status(429).json({ error: 'Too many attempts. Please try again later.' });
+    }
+    next();
+  };
+}
+
+// Auth endpoints: max 10 per minute per IP
+const authLimiter = authRateLimit(10, 60000);
 
 // ============================================================================
 // PRODUCTION MODE - PostgreSQL ONLY (No Demo Mode)
@@ -130,7 +156,7 @@ async function findExistingUserByEmail(emailLower: string): Promise<string | nul
 // ============================================================================
 // REGISTER NEW USER
 // ============================================================================
-router.post('/register', async (req: Request, res: Response) => {
+router.post('/register', authLimiter, async (req: Request, res: Response) => {
   try {
     const { 
       name, email, password, phone, dateOfBirth, gender,
@@ -263,7 +289,7 @@ router.post('/register', async (req: Request, res: Response) => {
 // ============================================================================
 // LOGIN - PRODUCTION MODE (PostgreSQL Only)
 // ============================================================================
-router.post('/login', async (req: Request, res: Response) => {
+router.post('/login', authLimiter, async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
     const emailLower = email?.toLowerCase().trim();

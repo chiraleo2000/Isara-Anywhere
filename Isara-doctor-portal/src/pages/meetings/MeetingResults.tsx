@@ -13,10 +13,14 @@ interface MeetingResultsProps {
   appointmentId?: string;
   onClose: () => void;
   onNavigateToEMR?: (appointmentId: string) => void;
+  onNavigateToPrescription?: (appointmentId: string, patientId: string) => void;
+  onNavigateToLabOrder?: (appointmentId: string, patientId: string) => void;
+  onNavigateToNewAppointment?: (patientId: string) => void;
 }
 
 interface TranscriptSegment {
   speaker: string;
+  displayLabel?: string;
   role: string;
   content: string;
   timestamp: string;
@@ -41,6 +45,7 @@ interface MeetingResultsData {
     doctor: { name: string; email: string; id: string };
     patient: { name: string; email: string; id: string };
     appointmentType: string;
+    recordingUrl?: string;
   };
   transcript: {
     fullText: string;
@@ -118,14 +123,24 @@ const ValidationBanner: React.FC<{
 
 /* ── Transcript tab ───────────────────────────────────────────── */
 const TranscriptTab: React.FC<{ transcript: MeetingResultsData['transcript'] }> = ({ transcript }) => {
+  const getRoleColor = (role: string) => {
+    if (role === 'doctor') return 'bg-emerald-500';
+    if (role === 'patient') return 'bg-blue-500';
+    return 'bg-gray-400';
+  };
+  const getRoleIcon = (role: string) => {
+    if (role === 'doctor') return '👨‍⚕️';
+    if (role === 'patient') return '🧑';
+    return '👥';
+  };
   if (transcript.segments.length > 0) {
     return (
       <div className="space-y-3">
         {transcript.segments.map((seg) => (
           <div key={`${seg.timestamp}-${seg.speaker}`} className={`flex gap-3 ${seg.role === 'doctor' ? '' : 'flex-row-reverse'}`}>
             <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold
-              ${seg.role === 'doctor' ? 'bg-emerald-500' : 'bg-blue-500'}`}>
-              {seg.role === 'doctor' ? 'Dr' : 'Pt'}
+              ${getRoleColor(seg.role)}`}>
+              {getRoleIcon(seg.role)}
             </div>
             <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 shadow-sm
               ${seg.role === 'doctor'
@@ -133,7 +148,7 @@ const TranscriptTab: React.FC<{ transcript: MeetingResultsData['transcript'] }> 
                 : 'bg-blue-50 border border-blue-100'
               }`}>
               <p className="text-xs text-gray-500 mb-1">
-                {seg.speaker} • {formatTime(seg.timestamp)}
+                {seg.displayLabel || seg.speaker} • {formatTime(seg.timestamp)}
               </p>
               <p className="text-gray-800 text-sm">{seg.content}</p>
             </div>
@@ -298,7 +313,7 @@ const SummaryTab: React.FC<{
   );
 };
 
-const MeetingResults: React.FC<MeetingResultsProps> = ({ meetingId, appointmentId, onClose, onNavigateToEMR }) => {
+const MeetingResults: React.FC<MeetingResultsProps> = ({ meetingId, appointmentId, onClose, onNavigateToEMR, onNavigateToPrescription, onNavigateToLabOrder, onNavigateToNewAppointment }) => {
   const [results, setResults] = useState<MeetingResultsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -488,6 +503,17 @@ const MeetingResults: React.FC<MeetingResultsProps> = ({ meetingId, appointmentI
           {activeTab === 'chat' && <ChatTab messages={chat.messages} />}
         </div>
 
+        {/* Recording Playback */}
+        {meeting?.recordingUrl && (
+          <div className="border-t px-5 py-3 bg-gray-50 flex items-center gap-3">
+            <span className="text-sm text-gray-600">🎙️ บันทึกการประชุม:</span>
+            {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+            <audio controls preload="none" className="h-8 flex-1">
+              <source src={`${MEETING_SERVER_URL}${meeting.recordingUrl}`} type="audio/webm" />
+            </audio>
+          </div>
+        )}
+
         {/* Footer */}
         <div className="border-t p-4 bg-gray-50 rounded-b-2xl flex items-center justify-between">
           <p className="text-xs text-gray-400">
@@ -495,13 +521,37 @@ const MeetingResults: React.FC<MeetingResultsProps> = ({ meetingId, appointmentI
             Status: {meeting.status}
             {validationStatus && ` • Validation: ${validationStatus}`}
           </p>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             {onNavigateToEMR && meeting.appointmentId && (
               <button
                 onClick={() => onNavigateToEMR(meeting.appointmentId)}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
               >
                 📋 เปิด EMR
+              </button>
+            )}
+            {onNavigateToPrescription && meeting.appointmentId && meeting.patient?.id && (
+              <button
+                onClick={() => onNavigateToPrescription(meeting.appointmentId, meeting.patient.id)}
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm"
+              >
+                💊 สั่งยา
+              </button>
+            )}
+            {onNavigateToLabOrder && meeting.appointmentId && meeting.patient?.id && (
+              <button
+                onClick={() => onNavigateToLabOrder(meeting.appointmentId, meeting.patient.id)}
+                className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm"
+              >
+                🧪 สั่ง Lab
+              </button>
+            )}
+            {onNavigateToNewAppointment && meeting.patient?.id && (
+              <button
+                onClick={() => onNavigateToNewAppointment(meeting.patient.id)}
+                className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors text-sm"
+              >
+                📅 นัดหมายใหม่
               </button>
             )}
             <button onClick={onClose} className="px-5 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">

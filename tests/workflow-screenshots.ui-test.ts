@@ -36,7 +36,7 @@ async function snap(page: Page, filename: string, label: string, dir: string = S
   try { await page.waitForLoadState('networkidle', { timeout: 12000 }); } catch { /* polling pages */ }
   await page.waitForTimeout(waitMs);
   const fp = path.join(dir, `${filename}.png`);
-  await page.screenshot({ path: fp, fullPage: true });
+  await page.screenshot({ path: fp, fullPage: false });
   console.log(`  📸 [${label}] → ${fp}`);
 }
 
@@ -134,8 +134,8 @@ test.describe('Complete Appointment Workflow — UI Screenshots', () => {
   let appointmentId: string;
 
   test.beforeAll(async ({ browser }) => {
-    patientCtx = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
-    doctorCtx  = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
+    patientCtx = await browser.newContext({ viewport: { width: 1280, height: 720 } });
+    doctorCtx  = await browser.newContext({ viewport: { width: 1280, height: 720 } });
     patientPage = await patientCtx.newPage();
     doctorPage  = await doctorCtx.newPage();
   });

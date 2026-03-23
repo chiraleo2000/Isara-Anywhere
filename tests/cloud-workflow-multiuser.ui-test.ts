@@ -67,7 +67,7 @@ async function snap(page: Page, filename: string, label: string, dir: string = S
     await page.waitForLoadState('domcontentloaded', { timeout: 30000 });
     try { await page.waitForLoadState('networkidle', { timeout: 10000 }); } catch { /* ok */ }
     await page.waitForTimeout(waitMs);
-    await page.screenshot({ path: path.join(dir, `${filename}.png`), fullPage: true });
+    await page.screenshot({ path: path.join(dir, `${filename}.png`), fullPage: false });
     console.log(`  📸 [${label}] → ${filename}.png`);
   } catch (err) {
     console.log(`  ⚠️ [${label}] Screenshot skipped: ${(err as Error).message?.slice(0, 80)}`);
@@ -230,7 +230,7 @@ test.describe('Cloud Workflow — User Management', () => {
   let freshUser: Record<string, unknown> = {};
 
   test.beforeAll(async ({ browser }) => {
-    const ctx = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 720 } });
     page = await ctx.newPage();
   });
   test.afterAll(async () => { await page?.context().close(); });
@@ -307,8 +307,8 @@ test.describe('Cloud Workflow — Appointment Lifecycle', () => {
 
   test.beforeAll(async ({ browser }) => {
     // Two browser contexts: Patient + Doctor simultaneously
-    const patientCtx = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
-    const doctorCtx = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
+    const patientCtx = await browser.newContext({ viewport: { width: 1280, height: 720 } });
+    const doctorCtx = await browser.newContext({ viewport: { width: 1280, height: 720 } });
     patientPage = await patientCtx.newPage();
     doctorPage = await doctorCtx.newPage();
 
@@ -419,8 +419,8 @@ test.describe('Cloud Workflow — Health Records', () => {
   let doctorId: string;
 
   test.beforeAll(async ({ browser }) => {
-    const patientCtx = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
-    const doctorCtx = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
+    const patientCtx = await browser.newContext({ viewport: { width: 1280, height: 720 } });
+    const doctorCtx = await browser.newContext({ viewport: { width: 1280, height: 720 } });
     patientPage = await patientCtx.newPage();
     doctorPage = await doctorCtx.newPage();
 
@@ -506,9 +506,9 @@ test.describe('Cloud Workflow — Content Management', () => {
   let patientUser: Record<string, unknown> = {};
 
   test.beforeAll(async ({ browser }) => {
-    const doctorCtx = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
-    const adminCtx = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
-    const patientCtx = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
+    const doctorCtx = await browser.newContext({ viewport: { width: 1280, height: 720 } });
+    const adminCtx = await browser.newContext({ viewport: { width: 1280, height: 720 } });
+    const patientCtx = await browser.newContext({ viewport: { width: 1280, height: 720 } });
     doctorPage = await doctorCtx.newPage();
     adminPage = await adminCtx.newPage();
     patientPage = await patientCtx.newPage();
@@ -595,8 +595,8 @@ test.describe('Cloud Workflow — Notifications', () => {
   let doctorId: string;
 
   test.beforeAll(async ({ browser }) => {
-    const patientCtx = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
-    const doctorCtx = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
+    const patientCtx = await browser.newContext({ viewport: { width: 1280, height: 720 } });
+    const doctorCtx = await browser.newContext({ viewport: { width: 1280, height: 720 } });
     patientPage = await patientCtx.newPage();
     doctorPage = await doctorCtx.newPage();
 
@@ -660,8 +660,8 @@ test.describe('Cloud Workflow — Living Will', () => {
   let doctorId: string;
 
   test.beforeAll(async ({ browser }) => {
-    const patientCtx = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
-    const doctorCtx = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
+    const patientCtx = await browser.newContext({ viewport: { width: 1280, height: 720 } });
+    const doctorCtx = await browser.newContext({ viewport: { width: 1280, height: 720 } });
     patientPage = await patientCtx.newPage();
     doctorPage = await doctorCtx.newPage();
 
@@ -734,7 +734,7 @@ test.describe('Cloud Workflow — Medical Consultants', () => {
   let doctorId: string;
 
   test.beforeAll(async ({ browser }) => {
-    const ctx = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 720 } });
     doctorPage = await ctx.newPage();
     const data = await cachedLoginDoctor(doctorPage, DOCTOR_EMAIL, DOCTOR_PASSWORD);
     doctorToken = data.token; doctorId = data.userId;
@@ -784,8 +784,8 @@ test.describe('Cloud Workflow — AI Features', () => {
   let doctorId: string;
 
   test.beforeAll(async ({ browser }) => {
-    const patientCtx = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
-    const doctorCtx = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
+    const patientCtx = await browser.newContext({ viewport: { width: 1280, height: 720 } });
+    const doctorCtx = await browser.newContext({ viewport: { width: 1280, height: 720 } });
     patientPage = await patientCtx.newPage();
     doctorPage = await doctorCtx.newPage();
 

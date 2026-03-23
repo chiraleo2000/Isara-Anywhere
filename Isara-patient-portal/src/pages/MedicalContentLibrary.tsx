@@ -375,7 +375,7 @@ function ArticleModalBody({ article, isDark, language }: Readonly<{
       )}
 
       <div className={`prose max-w-none ${proseCls}`}>
-        <div dangerouslySetInnerHTML={{ __html: mainContent.replaceAll('\n', '<br />') }} />
+        <div dangerouslySetInnerHTML={{ __html: mainContent.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('\n', '<br />') }} />
       </div>
     </div>
   );
@@ -406,7 +406,7 @@ function ArticleViewModal({ article, isDark, language, onClose }: Readonly<{
               {getCategoryDisplayName(catInfo, language)}
             </span>
           </div>
-          <button onClick={onClose} className={`p-2 rounded-full ${closeBtnCls}`}>
+          <button onClick={onClose} className={`p-2 rounded-full ${closeBtnCls}`} aria-label="Close article">
             <XMarkIcon className="w-5 h-5" />
           </button>
         </div>
@@ -580,6 +580,7 @@ const MedicalContentLibrary: React.FC = () => {
 
           {/* Category Filter */}
           <select
+            aria-label="Filter by category"
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
             className={`px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent ${selectCls}`}
@@ -594,6 +595,7 @@ const MedicalContentLibrary: React.FC = () => {
 
           {/* Type Filter */}
           <select
+            aria-label="Filter by type"
             value={selectedType}
             onChange={(e) => setSelectedType(e.target.value)}
             className={`px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent ${selectCls}`}

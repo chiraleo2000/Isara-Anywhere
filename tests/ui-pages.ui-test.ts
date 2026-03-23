@@ -40,7 +40,7 @@ async function safeGoto(page: Page, url: string, options?: { waitUntil?: 'domcon
 async function snap(page: Page, filename: string, label: string, dir: string = SS_ROOT): Promise<void> {
   await page.waitForTimeout(1500);
   const fp = path.join(dir, `${filename}.png`);
-  await page.screenshot({ path: fp, fullPage: true });
+  await page.screenshot({ path: fp, fullPage: false });
   console.log(`  📸 [${label}] → ${fp}`);
 }
 

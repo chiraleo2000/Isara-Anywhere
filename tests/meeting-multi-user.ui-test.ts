@@ -42,7 +42,7 @@ async function snap(page: Page, filename: string, label: string, dir: string = S
     try { await page.waitForLoadState('networkidle', { timeout: 10000 }); } catch { /* ok */ }
     await page.waitForTimeout(waitMs);
     const fp = path.join(dir, `${filename}.png`);
-    await page.screenshot({ path: fp, fullPage: true });
+    await page.screenshot({ path: fp, fullPage: false });
     console.log(`  📸 [${label}] → ${fp}`);
   } catch (err) {
     console.log(`  ⚠️ [${label}] Screenshot skipped: ${(err as Error).message?.slice(0, 80)}`);
@@ -167,7 +167,7 @@ test.describe('Multi-User Meeting — Admin + Doctor + Patient', () => {
   test.beforeAll(async ({ browser }) => {
     test.setTimeout(180000);
     const ctxOptions = {
-      viewport: { width: 1920, height: 1080 },
+      viewport: { width: 1280, height: 720 },
       permissions: ['camera', 'microphone', 'notifications'],
     };
     adminCtx   = await browser.newContext(ctxOptions);

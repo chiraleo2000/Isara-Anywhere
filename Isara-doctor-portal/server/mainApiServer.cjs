@@ -141,6 +141,30 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Rate Limiting (in-memory, per-IP)
+const mainApiRateLimits = new Map();
+app.use((req, res, next) => {
+  const ip = req.ip || req.socket.remoteAddress || 'unknown';
+  const now = Date.now();
+  let entry = mainApiRateLimits.get(ip);
+  if (!entry || now - entry.start > 60000) {
+    entry = { count: 1, start: now };
+    mainApiRateLimits.set(ip, entry);
+  } else {
+    entry.count++;
+  }
+  if (entry.count > 200) {
+    return res.status(429).json({ error: 'Too many requests. Please try again later.' });
+  }
+  next();
+});
+setInterval(() => {
+  const cutoff = Date.now() - 120000;
+  for (const [ip, entry] of mainApiRateLimits) {
+    if (entry.start < cutoff) mainApiRateLimits.delete(ip);
+  }
+}, 300000);
+
 // OWASP Security Headers
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -579,9 +603,9 @@ const jwt = require('jsonwebtoken');
 // JWT Configuration - SECURITY: No hardcoded fallback secrets
 const JWT_SECRET = process.env.JWT_SECRET || process.env.VITE_JWT_SECRET;
 if (!JWT_SECRET) {
-  console.error('[SECURITY] WARNING: JWT_SECRET environment variable is not set. Using deterministic fallback.');
+  console.error('[SECURITY] CRITICAL: JWT_SECRET environment variable is not set.');
 }
-const JWT_SECRET_FINAL = JWT_SECRET || 'izara-jwt-secret-key-phase1-2026';
+const JWT_SECRET_FINAL = JWT_SECRET || require('node:crypto').randomBytes(32).toString('hex');
 const JWT_ISSUER = process.env.JWT_ISSUER || 'izara-telemedicine';
 
 function authenticateToken(req, res, next) {

@@ -86,7 +86,7 @@ async function waitAndCapture(page: Page, label: string, filename: string, dir: 
   // Capture screenshot
   await page.screenshot({
     path: path.join(dir, `${filename}.png`),
-    fullPage: true,
+    fullPage: false,
   });
 }
 
@@ -221,7 +221,7 @@ test.describe('Cloud Patient Portal — All Pages Screenshot', () => {
   let patientPage: Page;
 
   test.beforeAll(async ({ browser }) => {
-    const context = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
+    const context = await browser.newContext({ viewport: { width: 1280, height: 720 } });
     patientPage = await context.newPage();
     await setupPatientAuth(patientPage);
   });
@@ -233,7 +233,7 @@ test.describe('Cloud Patient Portal — All Pages Screenshot', () => {
   test('CP01 — Login Page', async () => {
     const browser = patientPage.context().browser();
     if (!browser) throw new Error('Browser not available');
-    const ctx = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 720 } });
     const fresh = await ctx.newPage();
     await safeGoto(fresh,`${CLOUD_PATIENT}/login`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await waitAndCapture(fresh, 'Patient Login', 'patient-01-login', SS_PATIENT);
@@ -243,7 +243,7 @@ test.describe('Cloud Patient Portal — All Pages Screenshot', () => {
   test('CP02 — Register Page', async () => {
     const browser = patientPage.context().browser();
     if (!browser) throw new Error('Browser not available');
-    const ctx = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 720 } });
     const fresh = await ctx.newPage();
     await safeGoto(fresh,`${CLOUD_PATIENT}/register`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await waitAndCapture(fresh, 'Patient Register', 'patient-02-register', SS_PATIENT);
@@ -322,7 +322,7 @@ test.describe('Cloud Doctor Portal — All Pages Screenshot', () => {
   let userId: string;
 
   test.beforeAll(async ({ browser }) => {
-    const context = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
+    const context = await browser.newContext({ viewport: { width: 1280, height: 720 } });
     doctorPage = await context.newPage();
     userId = await setupDoctorAuth(doctorPage);
   });
@@ -334,7 +334,7 @@ test.describe('Cloud Doctor Portal — All Pages Screenshot', () => {
   test('CD01 — Login Page', async () => {
     const browser = doctorPage.context().browser();
     if (!browser) throw new Error('Browser not available');
-    const ctx = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 720 } });
     const fresh = await ctx.newPage();
     await safeGoto(fresh,`${CLOUD_DOCTOR}/login`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await waitAndCapture(fresh, 'Doctor Login', 'doctor-01-login', SS_DOCTOR);

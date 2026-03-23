@@ -430,7 +430,7 @@ app.get('/api/consultants/specialties', async (req: Request, res: Response) => {
 // ============================================================================
 // HEALTH RECORDS - PATIENT INSTRUCTIONS
 // ============================================================================
-app.get('/api/health-records/instructions/:appointmentId', async (req: Request, res: Response) => {
+app.get('/api/health-records/instructions/:appointmentId', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { appointmentId } = req.params;
     console.log(`[HEALTH-RECORDS] Getting instructions for appointment: ${appointmentId}`);
@@ -533,7 +533,7 @@ app.get('/api/dashboard/stats', authMiddleware, async (req: Request, res: Respon
 // ============================================================================
 // HEALTH RECORDS - TREATMENT RESULTS
 // ============================================================================
-app.get('/api/health-records/treatment-results', async (req: Request, res: Response) => {
+app.get('/api/health-records/treatment-results', authMiddleware, async (req: Request, res: Response) => {
   try {
     console.log('[HEALTH-RECORDS] Getting treatment results');
     
@@ -635,7 +635,7 @@ app.get('/api/health-records', authMiddleware, async (req: Request, res: Respons
 // ============================================================================
 // STORAGE UPLOAD ENDPOINT (for avatar and file uploads)
 // ============================================================================
-app.post('/api/storage/upload', (req: Request, res: Response) => {
+app.post('/api/storage/upload', authMiddleware, (req: Request, res: Response) => {
   try {
     const { url, avatarUrl, imageUrl, base64Data } = req.body;
     const finalUrl = url || avatarUrl || imageUrl;

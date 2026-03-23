@@ -724,7 +724,7 @@ router.get('/:patientId/living-will', authMiddleware, async (req: Request, res: 
       livingWill = await LivingWillService.getLivingWill(patientId);
     } catch (dbError: unknown) {
       // Table might not exist yet
-      if (dbError.code === '42P01') {
+      if (dbError instanceof Error && (dbError as Error & { code?: string }).code === '42P01') {
         return res.json(null);
       }
       throw dbError;

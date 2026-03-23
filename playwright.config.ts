@@ -10,7 +10,7 @@ export default defineConfig({
   use: {
     ...devices['Desktop Chrome'],
     headless: false,
-    viewport: { width: 1920, height: 1080 },
+    viewport: { width: 1280, height: 720 },
     screenshot: 'on',
     trace: 'off',
     actionTimeout: 30000,
@@ -29,6 +29,13 @@ export default defineConfig({
     {
       name: 'UI-Verification',
       use: { browserName: 'chromium' },
+    },
+    {
+      name: 'UI-Local',
+      use: {
+        browserName: 'chromium',
+        baseURL: 'http://localhost:3005',
+      },
     },
   ],
 });

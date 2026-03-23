@@ -42,6 +42,8 @@ import express from 'express';
 import cors from 'cors';
 import crypto from 'node:crypto';
 import http from 'node:http';
+import fs from 'node:fs';
+import path from 'node:path';
 import { Server as SocketServer } from 'socket.io';
 import dotenv from 'dotenv';
 import pg from 'pg';
@@ -66,6 +68,12 @@ const JWT_SECRET = process.env.JWT_SECRET || (() => {
 })();
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash-lite';
+
+// Recording storage directory (container filesystem)
+const RECORDINGS_DIR = process.env.RECORDINGS_DIR || (
+  process.env.NODE_ENV === 'production' ? '/tmp/recordings' : path.resolve('recordings')
+);
+try { fs.mkdirSync(RECORDINGS_DIR, { recursive: true }); } catch { /* ignore */ }
 
 // Database Configuration - parse DATABASE_URL if available
 let dbConfig = {};
@@ -128,6 +136,14 @@ function sanitizeHtml(str) {
   if (typeof str !== 'string') return '';
   return str.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;').replaceAll("'", '&#x27;');
+}
+
+// Helper: format speaker label with role emoji for diarization display
+function formatSpeakerLabel(role, name) {
+  let prefix = '👥';
+  if (role === 'doctor') prefix = '👨‍⚕️';
+  else if (role === 'patient') prefix = '🧑';
+  return `${prefix} ${name || role}`;
 }
 
 // Initialize Gemini AI
@@ -235,6 +251,40 @@ const optionalAuth = (req, res, next) => {
 };
 
 // ============================================================================
+// RATE LIMITING (in-memory, per-IP)
+// ============================================================================
+const rateLimitStore = new Map();
+
+function rateLimit(maxRequests = 100, windowMs = 60000) {
+  return (req, res, next) => {
+    const ip = req.ip || req.socket.remoteAddress;
+    const now = Date.now();
+    let entry = rateLimitStore.get(ip);
+    if (!entry || now - entry.start > windowMs) {
+      entry = { count: 1, start: now };
+      rateLimitStore.set(ip, entry);
+    } else {
+      entry.count++;
+    }
+    if (entry.count > maxRequests) {
+      return res.status(429).json({ error: 'Too many requests. Please try again later.' });
+    }
+    next();
+  };
+}
+
+// Apply general rate limit to all routes
+app.use(rateLimit(200, 60000));
+
+// Clean up rate limit store every 5 minutes
+setInterval(() => {
+  const cutoff = Date.now() - 120000;
+  for (const [ip, entry] of rateLimitStore) {
+    if (entry.start < cutoff) rateLimitStore.delete(ip);
+  }
+}, 300000);
+
+// ============================================================================
 // IN-MEMORY STORAGE
 // ============================================================================
 
@@ -265,7 +315,9 @@ app.get('/health', (req, res) => {
       guestInvites: true,
       lobby: true,
       consent: true,
-      shareLinks: true
+      shareLinks: true,
+      recording: true,
+      recordingStorage: 'filesystem'
     }
   });
 });
@@ -1158,6 +1210,12 @@ app.post('/api/meetings/:id/transcript', authenticateToken, async (req, res) => 
     if (!transcriptContent) {
       return res.status(400).json({ error: 'Transcript content is required' });
     }
+
+    // Ensure speaker metadata is always populated
+    const resolvedRole = speakerRole || (req.user?.role === 'doctor' ? 'doctor' : 'patient');
+    const resolvedName = speakerName || req.user?.name || (resolvedRole === 'doctor' ? 'แพทย์' : 'ผู้ป่วย');
+    const resolvedId = speakerId || req.user?.id || null;
+    const displayLabel = formatSpeakerLabel(resolvedRole, resolvedName);
     
     let transcript = null;
     
@@ -1170,7 +1228,7 @@ app.post('/api/meetings/:id/transcript', authenticateToken, async (req, res) => 
         SELECT $1::uuid, mr.appointment_id, $2, $3, $4, $5, $6, $7, $8, $9, NOW()
         FROM meeting_records mr WHERE mr.id::text = $1
         RETURNING *`,
-        [id, speakerId, speakerRole, speakerName, transcriptContent, language || 'th', confidence, startTime, endTime]
+        [id, resolvedId, resolvedRole, resolvedName, transcriptContent, language || 'th', confidence, startTime, endTime]
       );
       transcript = result.rows[0] || null;
     } catch (error_) {
@@ -1180,7 +1238,7 @@ app.post('/api/meetings/:id/transcript', authenticateToken, async (req, res) => 
     if (!transcript) {
       transcript = {
         id: uuidv4(), meeting_record_id: id,
-        speaker_id: speakerId, speaker_role: speakerRole, speaker_name: speakerName,
+        speaker_id: resolvedId, speaker_role: resolvedRole, speaker_name: resolvedName,
         content: transcriptContent, language: language || 'th', confidence,
         created_at: new Date()
       };
@@ -1191,8 +1249,9 @@ app.post('/api/meetings/:id/transcript', authenticateToken, async (req, res) => 
       session.transcripts.push({ ...transcript, timestamp: new Date() });
     }
     
-    io.to(id).emit('transcript-update', transcript);
-    res.json({ success: true, transcript });
+    // Emit enriched transcript with speaker display label
+    io.to(id).emit('transcript-update', { ...transcript, displayLabel });
+    res.json({ success: true, transcript: { ...transcript, displayLabel } });
     
   } catch (error) {
     console.error('[Transcript] Add error:', error);
@@ -2620,11 +2679,13 @@ app.get('/api/meetings/:id/results', optionalAuth, async (req, res) => {
         doctor: { name: meeting.doctor_name_thai, email: meeting.doctor_email, id: meeting.doctor_id },
         patient: { name: meeting.patient_name_thai, email: meeting.patient_email, id: meeting.patient_id },
         appointmentType: meeting.appointment_type,
+        recordingUrl: meeting.recording_url || null,
       },
       transcript: {
         fullText: meeting.transcript || '',
         segments: transcriptSegments.map(s => ({
           speaker: s.speaker_name || 'Unknown',
+          displayLabel: formatSpeakerLabel(s.speaker_role, s.speaker_name),
           role: s.speaker_role,
           content: s.content,
           timestamp: s.created_at,
@@ -2699,7 +2760,7 @@ app.post('/api/meetings/:id/auto-record', optionalAuth, async (req, res) => {
   }
 });
 
-// POST /api/meetings/:id/save-recording — Save recording blob and trigger transcription
+// POST /api/meetings/:id/save-recording — Save recording blob to filesystem and trigger transcription
 app.post('/api/meetings/:id/save-recording', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
@@ -2715,27 +2776,37 @@ app.post('/api/meetings/:id/save-recording', authenticateToken, async (req, res)
       return res.status(413).json({ error: 'Recording too large (max 50MB)' });
     }
 
-    // Store recording metadata in DB
+    // Save recording file to disk
     const recordingId = uuidv4();
+    const ext = mimeType.includes('webm') ? 'webm' : 'ogg';
+    const filename = `${id}-${recordingId}.${ext}`;
+    const filepath = path.join(RECORDINGS_DIR, filename);
+    const recordingUrl = `/api/recordings/${id}/${filename}`;
+
+    try {
+      const buffer = Buffer.from(audioBase64, 'base64');
+      fs.writeFileSync(filepath, buffer);
+      console.log(`[Save Recording] File saved: ${filepath} (${(sizeBytes / 1024).toFixed(1)} KB)`);
+    } catch (fsErr) {
+      console.error('[Save Recording] File write failed:', fsErr.message);
+    }
+
+    // Update recording_url in database
     try {
       await safeQuery(
         `UPDATE meeting_records SET 
-           recording_blob = $1,
-           recording_mime_type = $2,
-           recording_duration_ms = $3,
-           recording_saved_at = NOW(),
+           recording_url = $1,
+           recording_started_at = COALESCE(recording_started_at, NOW()),
            status = CASE WHEN status = 'in_progress' THEN 'completed' ELSE status END
-         WHERE id::text = $4 OR appointment_id = $4`,
-        [audioBase64, mimeType, durationMs || 0, id]
+         WHERE id::text = $2 OR appointment_id = $2`,
+        [recordingUrl, id]
       );
     } catch (dbErr) {
-      // If recording_blob column doesn't exist, store in-memory
-      console.warn('[Save Recording] DB column may not exist, storing in memory:', dbErr.message);
+      console.warn('[Save Recording] DB update skipped:', dbErr.message);
+      // Store in-memory as fallback
       const meeting = activeMeetings.get(id);
       if (meeting) {
-        meeting.recordingBlob = audioBase64;
-        meeting.recordingMimeType = mimeType;
-        meeting.recordingDurationMs = durationMs;
+        meeting.recordingUrl = recordingUrl;
         meeting.recordingSavedAt = new Date().toISOString();
       }
     }
@@ -2851,6 +2922,31 @@ app.post('/api/meetings/:id/stop-recording', authenticateToken, async (req, res)
     console.error('[Stop Recording] Error:', error);
     res.status(500).json({ error: 'Failed to stop recording' });
   }
+});
+
+// ============================================================================
+// RECORDING FILE PLAYBACK (Doctor-only)
+// ============================================================================
+
+// GET /api/recordings/:meetingId/:filename — Serve recording file
+app.get('/api/recordings/:meetingId/:filename', authenticateToken, (req, res) => {
+  const { meetingId, filename } = req.params;
+  // Sanitize filename to prevent path traversal
+  const safeFilename = path.basename(filename);
+  if (!safeFilename.startsWith(meetingId)) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+  const filepath = path.join(RECORDINGS_DIR, safeFilename);
+  if (!fs.existsSync(filepath)) {
+    return res.status(404).json({ error: 'Recording not found' });
+  }
+  const ext = path.extname(safeFilename);
+  let contentType = 'application/octet-stream';
+  if (ext === '.webm') contentType = 'audio/webm';
+  else if (ext === '.ogg') contentType = 'audio/ogg';
+  res.setHeader('Content-Type', contentType);
+  res.setHeader('Content-Disposition', `inline; filename="${safeFilename}"`);
+  fs.createReadStream(filepath).pipe(res);
 });
 
 // ============================================================================

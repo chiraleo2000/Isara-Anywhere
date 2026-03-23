@@ -80,9 +80,10 @@ const isProduction = process.env.NODE_ENV === 'production';
 // SECURITY: No hardcoded fallback secrets
 const JWT_SECRET = process.env.JWT_SECRET || process.env.VITE_JWT_SECRET;
 if (!JWT_SECRET) {
-  console.error('[SECURITY] WARNING: JWT_SECRET not set. Using deterministic fallback secret.');
+  console.error('[SECURITY] CRITICAL: JWT_SECRET not set in environment. Server may not function correctly.');
+  console.error('[SECURITY] Set JWT_SECRET environment variable before starting.');
 }
-const JWT_SECRET_FINAL = JWT_SECRET || 'izara-jwt-secret-key-phase1-2026';
+const JWT_SECRET_FINAL = JWT_SECRET || crypto.randomBytes(32).toString('hex');
 const JWT_ISSUER = process.env.JWT_ISSUER || 'izara-telemedicine';
 const JWT_EXPIRES_IN = '24h';
 
@@ -2438,7 +2439,8 @@ if (process.env.NODE_ENV !== 'production') {
       }
 
       const result = await pgPool.query(
-        `SELECT u.id, u.email, u.role, u.is_active, u.is_approved, u.approval_status, u.password_hash
+        `SELECT u.id, u.email, u.role, u.is_active, u.is_approved, u.approval_status,
+                (u.password_hash IS NOT NULL) AS has_password
          FROM users u
          WHERE LOWER(u.email) = LOWER($1)`,
         [email]
@@ -2458,8 +2460,7 @@ if (process.env.NODE_ENV !== 'production') {
         isActive: user.is_active,
         isApproved: user.is_approved,
         approvalStatus: user.approval_status,
-        hasPassword: !!user.password_hash,
-        passwordHashPrefix: user.password_hash?.substring(0, 10) + '...'
+        hasPassword: user.has_password
       });
     } catch (error) {
       res.status(500).json({ error: 'Internal server error' });

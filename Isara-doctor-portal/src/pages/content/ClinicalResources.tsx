@@ -95,19 +95,40 @@ const getCategoryIcon = (categoryId: string) => {
   }
 };
 
+// Escape HTML special characters to prevent XSS
+const escapeHtml = (str: string): string => {
+  if (!str) return '';
+  return str.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;').replaceAll("'", '&#x27;');
+};
+
+// Validate URL - only allow http/https protocols
+const sanitizeUrl = (url: string): string => {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol === 'http:' || parsed.protocol === 'https:') return parsed.href;
+  } catch { /* invalid URL */ }
+  return '#';
+};
+
 // Render content with inline images support
 // Format: [image:URL:description] will be rendered as <img>
 const renderContentWithImages = (content: string) => {
   if (!content) return '';
 
-  // Replace [image:URL:description] with actual img tags
+  // Replace [image:URL:description] with actual img tags (sanitized)
   const imagePattern = /\[image:([^\]:]+):([^\]]*)\]/g;
-  let processedContent = content.replaceAll(imagePattern, (match, url, description) => {
-    return `<figure class="my-6"><img src="${url}" alt="${description}" class="w-full max-w-2xl mx-auto rounded-lg shadow-md" loading="lazy" /><figcaption class="text-center text-sm text-gray-500 mt-2">${description || ''}</figcaption></figure>`;
+  let processedContent = content.replaceAll(imagePattern, (_match, url, description) => {
+    const safeUrl = sanitizeUrl(url);
+    const safeDesc = escapeHtml(description);
+    return `<figure class="my-6"><img src="${safeUrl}" alt="${safeDesc}" class="w-full max-w-2xl mx-auto rounded-lg shadow-md" loading="lazy" /><figcaption class="text-center text-sm text-gray-500 mt-2">${safeDesc}</figcaption></figure>`;
   });
 
-  // Also replace newlines with <br/>
-  processedContent = processedContent.replaceAll('\n', '<br/>');
+  const figurePattern = /(<figure[^>]*>.*?<\/figure>)/gs;
+  const parts = processedContent.split(figurePattern);
+  processedContent = parts.map(part =>
+    figurePattern.test(part) ? part : escapeHtml(part).replaceAll('\n', '<br/>')
+  ).join('');
 
   return processedContent;
 };
@@ -596,8 +617,7 @@ export const ClinicalResources: React.FC = () => {
       {/* Resource Content - Thai as Primary */}
       <div className="prose prose-lg max-w-none">
         <div
-          className="text-gray-800 leading-relaxed"
-          style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+          className="text-gray-800 leading-relaxed font-sans"
           dangerouslySetInnerHTML={{ __html: renderContentWithImages(resource.contentTh || resource.content) }}
         />
       </div>
@@ -703,6 +723,7 @@ export const ClinicalResources: React.FC = () => {
             </svg>
           </div>
           <select
+            aria-label="Filter by status"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as ContentStatus | 'all')}
             className={`px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 ${themeClasses.selectInput}`}
@@ -838,6 +859,7 @@ export const ClinicalResources: React.FC = () => {
                   resetForm();
                 }}
                 className="p-2 hover:bg-gray-100 rounded-lg"
+                aria-label="Close modal"
               >
                 <XMarkIcon className="w-5 h-5" />
               </button>
@@ -1008,6 +1030,7 @@ export const ClinicalResources: React.FC = () => {
                 </div>
                 <div className="flex gap-2">
                   <select
+                    aria-label="Select tag"
                     onChange={(e) => {
                       if (e.target.value && !formData.tags.includes(e.target.value)) {
                         setFormData((prev) => ({ ...prev, tags: [...prev.tags, e.target.value] }));
@@ -1177,7 +1200,7 @@ export const ClinicalResources: React.FC = () => {
           <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
             <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
               <h2 className="text-xl font-bold text-gray-900">Pending Approvals ({pendingCount})</h2>
-              <button onClick={() => setShowPendingList(false)} className="p-2 hover:bg-gray-100 rounded-lg">
+              <button onClick={() => setShowPendingList(false)} className="p-2 hover:bg-gray-100 rounded-lg" aria-label="Close pending list">
                 <XMarkIcon className="w-5 h-5" />
               </button>
             </div>
@@ -1222,7 +1245,7 @@ export const ClinicalResources: React.FC = () => {
           <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
             <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
               <h2 className="text-xl font-bold text-gray-900">Version History</h2>
-              <button onClick={() => setShowHistoryModal(false)} className="p-2 hover:bg-gray-100 rounded-lg">
+              <button onClick={() => setShowHistoryModal(false)} className="p-2 hover:bg-gray-100 rounded-lg" aria-label="Close history">
                 <XMarkIcon className="w-5 h-5" />
               </button>
             </div>

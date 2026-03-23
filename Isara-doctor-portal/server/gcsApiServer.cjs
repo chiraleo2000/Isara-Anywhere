@@ -300,6 +300,38 @@ async function ensureBucketExists(bucketName) {
 }
 
 // ============================================================================
+// JWT AUTHENTICATION MIDDLEWARE
+// ============================================================================
+const jwt = require('jsonwebtoken');
+
+const GCS_JWT_SECRET = process.env.JWT_SECRET || process.env.VITE_JWT_SECRET;
+if (!GCS_JWT_SECRET) {
+  console.error('[GCS-API][SECURITY] CRITICAL: JWT_SECRET environment variable is not set.');
+}
+const GCS_JWT_SECRET_FINAL = GCS_JWT_SECRET || require('node:crypto').randomBytes(32).toString('hex');
+
+function authenticateToken(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader?.split(' ')[1];
+  if (!token) {
+    return res.status(401).json({ error: 'No token provided' });
+  }
+  try {
+    const decoded = jwt.verify(token, GCS_JWT_SECRET_FINAL, {
+      algorithms: ['HS256']
+    });
+    req.user = {
+      id: decoded.userId || decoded.id || decoded.sub,
+      email: decoded.email,
+      role: decoded.role || 'doctor'
+    };
+    next();
+  } catch (error) {
+    return res.status(401).json({ error: 'Authentication failed' });
+  }
+}
+
+// ============================================================================
 // API ENDPOINTS
 // ============================================================================
 
@@ -326,13 +358,13 @@ app.get('/api/storage/health', (req, res) => {
 
 // GCS-disabled fallback middleware: graceful responses when GCS is off
 if (!USE_GCS) {
-  app.get('/api/storage/read', (req, res) => {
+  app.get('/api/storage/read', authenticateToken, (req, res) => {
     res.status(200).json({ data: null, source: 'fallback', message: 'GCS disabled' });
   });
-  app.post('/api/storage/write', (req, res) => {
+  app.post('/api/storage/write', authenticateToken, (req, res) => {
     res.json({ success: true, source: 'fallback', message: 'GCS disabled - data stored in PostgreSQL' });
   });
-  app.post('/api/storage/upload', upload.single('file'), (req, res) => {
+  app.post('/api/storage/upload', authenticateToken, upload.single('file'), (req, res) => {
     const fileName = req.file?.originalname || req.body?.fileName || 'file.bin';
     res.json({
       success: true, source: 'fallback', name: fileName,
@@ -340,24 +372,24 @@ if (!USE_GCS) {
       uploadedAt: new Date().toISOString()
     });
   });
-  app.post('/api/storage/upload-base64', (req, res) => {
+  app.post('/api/storage/upload-base64', authenticateToken, (req, res) => {
     res.json({
       success: true, source: 'fallback',
       url: `local://uploads/${Date.now()}`,
       uploadedAt: new Date().toISOString()
     });
   });
-  app.delete('/api/storage/delete', (req, res) => {
+  app.delete('/api/storage/delete', authenticateToken, (req, res) => {
     res.json({ success: true, source: 'fallback' });
   });
-  app.get('/api/storage/list', (req, res) => {
+  app.get('/api/storage/list', authenticateToken, (req, res) => {
     res.json({ files: [], source: 'fallback' });
   });
-  app.post('/api/storage/batch-read', (req, res) => {
+  app.post('/api/storage/batch-read', authenticateToken, (req, res) => {
     const files = req.body?.files || [];
     res.json({ results: files.map(f => ({ bucket: f.bucket, path: f.path, data: null, source: 'fallback' })) });
   });
-  app.post('/api/storage/batch-write', (req, res) => {
+  app.post('/api/storage/batch-write', authenticateToken, (req, res) => {
     const files = req.body?.files || [];
     res.json({ results: files.map(f => ({ bucket: f.bucket, path: f.path, success: true, source: 'fallback' })) });
   });
@@ -366,7 +398,7 @@ if (!USE_GCS) {
 // GCS-enabled storage endpoints (only registered when USE_GCS=true)
 if (USE_GCS) {
 // Read JSON from GCS
-app.get('/api/storage/read', async (req, res) => {
+app.get('/api/storage/read', authenticateToken, async (req, res) => {
   try {
     const bucketType = typeof req.query.bucket === 'string' ? req.query.bucket : '';
     const filePath = typeof req.query.path === 'string' ? req.query.path : '';
@@ -396,7 +428,7 @@ app.get('/api/storage/read', async (req, res) => {
 });
 
 // Write JSON to GCS
-app.post('/api/storage/write', async (req, res) => {
+app.post('/api/storage/write', authenticateToken, async (req, res) => {
   try {
     const { bucket: bucketType, path: filePath, data, makePublic = true } = req.body;
 
@@ -442,7 +474,7 @@ app.post('/api/storage/write', async (req, res) => {
 });
 
 // Upload file to GCS (multipart)
-app.post('/api/storage/upload', upload.single('file'), async (req, res) => {
+app.post('/api/storage/upload', authenticateToken, upload.single('file'), async (req, res) => {
   try {
     // Handle JSON body with base64 data (for API tests)
     if (!req.file && req.body?.data) {
@@ -517,7 +549,7 @@ app.post('/api/storage/upload', upload.single('file'), async (req, res) => {
 });
 
 // Upload base64-encoded binary file to GCS (for video/audio recordings)
-app.post('/api/storage/upload-base64', async (req, res) => {
+app.post('/api/storage/upload-base64', authenticateToken, async (req, res) => {
   try {
     const { bucket: bucketType, path: filePath, base64Data, contentType, makePublic = false, metadata = {} } = req.body;
 
@@ -595,7 +627,7 @@ app.post('/api/storage/upload-base64', async (req, res) => {
 });
 
 // Delete from GCS
-app.delete('/api/storage/delete', async (req, res) => {
+app.delete('/api/storage/delete', authenticateToken, async (req, res) => {
   try {
     const { bucket: bucketType, path: filePath } = req.body;
 
@@ -623,7 +655,7 @@ app.delete('/api/storage/delete', async (req, res) => {
 });
 
 // List files in GCS folder
-app.get('/api/storage/list', async (req, res) => {
+app.get('/api/storage/list', authenticateToken, async (req, res) => {
   try {
     const bucketType = typeof req.query.bucket === 'string' ? req.query.bucket : '';
     const folder = typeof req.query.folder === 'string' ? req.query.folder : '';
@@ -660,7 +692,7 @@ app.get('/api/storage/list', async (req, res) => {
 });
 
 // Batch read multiple files
-app.post('/api/storage/batch-read', async (req, res) => {
+app.post('/api/storage/batch-read', authenticateToken, async (req, res) => {
   try {
     const { files } = req.body; // Array of { bucket, path }
 
@@ -697,7 +729,7 @@ app.post('/api/storage/batch-read', async (req, res) => {
 });
 
 // Batch write multiple files
-app.post('/api/storage/batch-write', async (req, res) => {
+app.post('/api/storage/batch-write', authenticateToken, async (req, res) => {
   try {
     const { files } = req.body; // Array of { bucket, path, data }
 
@@ -791,7 +823,9 @@ async function writeGcsJson(bucketName, filePath, data) {
 
 // ============================================================================
 // MEDICAL CONTENT ENDPOINTS (Doctor CRUD, Patient Read-Only)
+// Require JWT authentication for all content and data endpoints
 // ============================================================================
+app.use('/api/content', authenticateToken);
 
 // GET all medical content (published for patients, all for doctors)
 app.get('/api/content/medical', async (req, res) => {
@@ -1922,7 +1956,10 @@ app.get('/api/patients/:patientId/health-logs', async (req, res) => {
 
 // ============================================================================
 // EMR NOTIFICATION ENDPOINT (Notify patient when EMR is signed)
+// Require JWT authentication for notification and appointment endpoints
 // ============================================================================
+app.use('/api/notifications', authenticateToken);
+app.use('/api/appointments', authenticateToken);
 
 // POST notify patient that EMR is ready
 app.post('/api/notifications/emr-signed', async (req, res) => {

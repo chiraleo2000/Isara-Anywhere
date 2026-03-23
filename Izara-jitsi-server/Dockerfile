@@ -12,8 +12,9 @@ RUN npm ci --omit=dev && npm cache clean --force
 # Copy application
 COPY . .
 
-# Create non-root user
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+# Create non-root user and recordings directory
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup \
+    && mkdir -p /app/recordings && chown appuser:appgroup /app/recordings
 USER appuser
 
 # Expose port

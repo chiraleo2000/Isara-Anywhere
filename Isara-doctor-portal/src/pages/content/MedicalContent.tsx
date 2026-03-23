@@ -88,19 +88,42 @@ const statusOptions: { value: ContentStatus; label: string; color: string }[] = 
 // HELPER FUNCTIONS (module scope - S2004)
 // ============================================================================
 
+// Escape HTML special characters to prevent XSS
+const escapeHtml = (str: string): string => {
+  if (!str) return '';
+  return str.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;').replaceAll("'", '&#x27;');
+};
+
+// Validate URL - only allow http/https protocols
+const sanitizeUrl = (url: string): string => {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol === 'http:' || parsed.protocol === 'https:') return parsed.href;
+  } catch { /* invalid URL */ }
+  return '#';
+};
+
 // Render content with inline images support
 // Format: [image:URL:description] will be rendered as <img>
 const renderContentWithImages = (content: string) => {
   if (!content) return '';
 
-  // Replace [image:URL:description] with actual img tags
+  // Replace [image:URL:description] with actual img tags (sanitized)
   const imagePattern = /\[image:([^\]:]+):([^\]]*)\]/g;
-  let processedContent = content.replaceAll(imagePattern, (match, url, description) => {
-    return `<figure class="my-6"><img src="${url}" alt="${description}" class="w-full max-w-2xl mx-auto rounded-lg shadow-md" loading="lazy" /><figcaption class="text-center text-sm text-gray-500 mt-2">${description || ''}</figcaption></figure>`;
+  let processedContent = content.replaceAll(imagePattern, (_match, url, description) => {
+    const safeUrl = sanitizeUrl(url);
+    const safeDesc = escapeHtml(description);
+    return `<figure class="my-6"><img src="${safeUrl}" alt="${safeDesc}" class="w-full max-w-2xl mx-auto rounded-lg shadow-md" loading="lazy" /><figcaption class="text-center text-sm text-gray-500 mt-2">${safeDesc}</figcaption></figure>`;
   });
 
-  // Also replace newlines with <br/>
-  processedContent = processedContent.replaceAll('\n', '<br/>');
+  // Escape remaining HTML in text content (preserve our figure tags)
+  // Split by our generated figure tags, escape text parts, rejoin
+  const figurePattern = /(<figure[^>]*>.*?<\/figure>)/gs;
+  const parts = processedContent.split(figurePattern);
+  processedContent = parts.map(part =>
+    figurePattern.test(part) ? part : escapeHtml(part).replaceAll('\n', '<br/>')
+  ).join('');
 
   return processedContent;
 };
@@ -633,6 +656,7 @@ const MedicalContent: React.FC = () => {
             />
           </div>
           <select
+            aria-label="Filter by category"
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
             className={`px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 ${themeClasses.selectInput}`}
@@ -645,6 +669,7 @@ const MedicalContent: React.FC = () => {
             ))}
           </select>
           <select
+            aria-label="Filter by content type"
             value={selectedType}
             onChange={(e) => setSelectedType(e.target.value)}
             className={`px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 ${themeClasses.selectInput}`}
@@ -656,6 +681,7 @@ const MedicalContent: React.FC = () => {
             ))}
           </select>
           <select
+            aria-label="Filter by status"
             value={selectedStatus}
             onChange={(e) => setSelectedStatus(e.target.value as ContentStatus | 'all')}
             className={`px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 ${themeClasses.selectInput}`}
@@ -848,6 +874,7 @@ const MedicalContent: React.FC = () => {
                   resetForm();
                 }}
                 className="p-2 hover:bg-gray-100 rounded-lg"
+                aria-label="Close modal"
               >
                 <XMarkIcon className="w-5 h-5" />
               </button>
@@ -1171,6 +1198,7 @@ const MedicalContent: React.FC = () => {
                   setSelectedArticle(null);
                 }}
                 className="p-2 hover:bg-gray-100 rounded-lg"
+                aria-label="Close article view"
               >
                 <XMarkIcon className="w-5 h-5" />
               </button>
@@ -1294,6 +1322,7 @@ const MedicalContent: React.FC = () => {
                   setSelectedArticle(null);
                 }}
                 className="p-2 hover:bg-gray-100 rounded-lg"
+                aria-label="Close history"
               >
                 <XMarkIcon className="w-5 h-5" />
               </button>
@@ -1403,6 +1432,7 @@ const MedicalContent: React.FC = () => {
                     setRejectionReason('');
                   }}
                   className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
+                  aria-label="Close approval modal"
                 >
                   <XMarkIcon className="w-5 h-5" />
                 </button>
@@ -1506,6 +1536,7 @@ const MedicalContent: React.FC = () => {
                 <button
                   onClick={() => setShowPendingList(false)}
                   className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
+                  aria-label="Close pending list"
                 >
                   <XMarkIcon className="w-5 h-5" />
                 </button>
