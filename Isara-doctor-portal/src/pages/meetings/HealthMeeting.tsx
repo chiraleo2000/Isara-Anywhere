@@ -1291,7 +1291,7 @@ Izara Telehealth Team
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <span className="text-green-700 flex-1">{successMessage}</span>
-          <button onClick={() => setSuccessMessage(null)} className="text-green-500 hover:text-green-700">&times;</button>
+          <button onClick={() => setSuccessMessage(null)} aria-label="ปิดข้อความ" title="ปิด" className="text-green-500 hover:text-green-700">&times;</button>
         </div>
       )}
       {Boolean(errorMessage) && (
@@ -2023,6 +2023,18 @@ Izara Telehealth Team
           appointmentId={meetingResultsId}
           onClose={() => { setShowMeetingResults(false); setMeetingResultsId(''); }}
           onNavigateToEMR={(aptId) => { setShowMeetingResults(false); navigate(`/emr/${aptId}`); }}
+          onNavigateToPrescription={(aptId, patientId) => {
+            setShowMeetingResults(false);
+            navigate(`/prescriptions/new?appointmentId=${encodeURIComponent(aptId)}&patientId=${encodeURIComponent(patientId)}`);
+          }}
+          onNavigateToLabOrder={(aptId, patientId) => {
+            setShowMeetingResults(false);
+            navigate(`/lab-orders/new?appointmentId=${encodeURIComponent(aptId)}&patientId=${encodeURIComponent(patientId)}`);
+          }}
+          onNavigateToNewAppointment={(patientId) => {
+            setShowMeetingResults(false);
+            navigate(`/appointments/new?patientId=${encodeURIComponent(patientId)}`);
+          }}
         />
       )}
     </div>

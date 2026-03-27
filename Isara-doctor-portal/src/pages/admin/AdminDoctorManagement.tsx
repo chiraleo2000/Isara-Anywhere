@@ -93,7 +93,7 @@ const DoctorDetailsModal: React.FC<DoctorDetailsModalProps> = ({
     <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
       <div className="p-6 border-b border-gray-200 flex items-center justify-between">
         <h2 className="text-xl font-bold text-gray-900">Doctor Details</h2>
-        <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+        <button onClick={onClose} className="text-gray-400 hover:text-gray-600" aria-label="ปิด" title="ปิด">
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
@@ -1035,7 +1035,7 @@ const AdminDoctorManagement: React.FC = () => {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <span className="text-green-700">{successMessage}</span>
-          <button onClick={() => setSuccessMessage(null)} className="ml-auto text-green-500 hover:text-green-700">
+          <button onClick={() => setSuccessMessage(null)} className="ml-auto text-green-500 hover:text-green-700" aria-label="ปิดข้อความสำเร็จ" title="ปิดข้อความสำเร็จ">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -1049,7 +1049,7 @@ const AdminDoctorManagement: React.FC = () => {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <span className="text-red-700">{error}</span>
-          <button onClick={() => setError(null)} className="ml-auto text-red-500 hover:text-red-700">
+          <button onClick={() => setError(null)} className="ml-auto text-red-500 hover:text-red-700" aria-label="ปิดข้อผิดพลาด" title="ปิดข้อผิดพลาด">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>

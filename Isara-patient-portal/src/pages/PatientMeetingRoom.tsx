@@ -667,7 +667,7 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
       {error && (
         <div className="bg-red-900/50 px-4 py-2 text-sm text-red-300">
           {error}
-          <button onClick={() => setError(null)} className="ml-2 text-red-400">✕</button>
+          <button onClick={() => setError(null)} aria-label="ปิดข้อผิดพลาด" title="ปิด" className="ml-2 text-red-400">✕</button>
         </div>
       )}
 
@@ -730,7 +730,7 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
           <div className="w-80 bg-gray-800 border-l border-gray-700 flex flex-col">
             <div className="p-3 border-b border-gray-700 flex justify-between">
               <h3 className="font-medium text-sm">e Transcript</h3>
-              <button onClick={() => setShowTranscript(false)} className="text-gray-400 hover:text-white">✕</button>
+              <button onClick={() => setShowTranscript(false)} aria-label="ปิดถอดเสียง" title="ปิด" className="text-gray-400 hover:text-white">✕</button>
             </div>
             <div className="flex-1 overflow-y-auto p-3 space-y-2">
               {transcripts.length === 0 ? (

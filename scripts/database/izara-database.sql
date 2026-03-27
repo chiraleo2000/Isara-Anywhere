@@ -431,8 +431,13 @@ CREATE TABLE meeting_records (
     ready_for_patient BOOLEAN DEFAULT FALSE,
     patient_instructions TEXT,
     instruction_validation_id VARCHAR(50),
-    -- Recording & transcription
+    -- Recording & transcription (stored as BYTEA in PostgreSQL VM)
+    recording_data BYTEA,
+    recording_filename TEXT,
+    recording_mimetype TEXT DEFAULT 'audio/webm',
+    recording_size_bytes INTEGER,
     recording_started_at TIMESTAMP WITH TIME ZONE,
+    recording_stopped_at TIMESTAMP WITH TIME ZONE,
     auto_transcribe BOOLEAN DEFAULT FALSE,
     -- Timing
     duration_minutes INTEGER,

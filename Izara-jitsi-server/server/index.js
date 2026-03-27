@@ -1,8 +1,8 @@
 /**
  * Izara Jitsi Meeting Server — Phase 1 Complete
  * 
- * Version: 1.5.9
- * Updated: 2026-03-20
+ * Version: 1.5.10
+ * Updated: 2026-03-24
  * 
  * Main API server for:
  * - Meeting room management (Jitsi Meet - FREE)
@@ -69,11 +69,35 @@ const JWT_SECRET = process.env.JWT_SECRET || (() => {
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash-lite';
 
-// Recording storage directory (container filesystem)
+// Recording storage — primary: PostgreSQL BYTEA (GCE VM), fallback: local filesystem
 const RECORDINGS_DIR = process.env.RECORDINGS_DIR || (
   process.env.NODE_ENV === 'production' ? '/tmp/recordings' : path.resolve('recordings')
 );
 try { fs.mkdirSync(RECORDINGS_DIR, { recursive: true }); } catch { /* ignore */ }
+
+// Helper: create Google Cloud Speech-to-Text client with GCP_SERVICE_ACCOUNT_KEY support
+async function createSpeechClient() {
+  const { SpeechClient } = await import('@google-cloud/speech');
+  if (process.env.GCP_SERVICE_ACCOUNT_KEY) {
+    try {
+      const keyJson = Buffer.from(process.env.GCP_SERVICE_ACCOUNT_KEY, 'base64').toString('utf8');
+      const credentials = JSON.parse(keyJson);
+      return new SpeechClient({
+        credentials: { client_email: credentials.client_email, private_key: credentials.private_key },
+        projectId: credentials.project_id,
+      });
+    } catch (err) {
+      console.error('[STT] Failed to parse GCP_SERVICE_ACCOUNT_KEY:', err.message);
+    }
+  }
+  // Fallback: GOOGLE_APPLICATION_CREDENTIALS file or default credentials
+  return new SpeechClient();
+}
+
+// Check if STT credentials are available
+function hasSttCredentials() {
+  return !!(process.env.GCP_SERVICE_ACCOUNT_KEY || process.env.GOOGLE_APPLICATION_CREDENTIALS || process.env.GOOGLE_SPEECH_API_KEY);
+}
 
 // Database Configuration - parse DATABASE_URL if available
 let dbConfig = {};
@@ -2760,7 +2784,7 @@ app.post('/api/meetings/:id/auto-record', optionalAuth, async (req, res) => {
   }
 });
 
-// POST /api/meetings/:id/save-recording — Save recording blob to filesystem and trigger transcription
+// POST /api/meetings/:id/save-recording — Save recording to PostgreSQL BYTEA and trigger transcription
 app.post('/api/meetings/:id/save-recording', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
@@ -2776,56 +2800,61 @@ app.post('/api/meetings/:id/save-recording', authenticateToken, async (req, res)
       return res.status(413).json({ error: 'Recording too large (max 50MB)' });
     }
 
-    // Save recording file to disk
+    const buffer = Buffer.from(audioBase64, 'base64');
     const recordingId = uuidv4();
     const ext = mimeType.includes('webm') ? 'webm' : 'ogg';
     const filename = `${id}-${recordingId}.${ext}`;
-    const filepath = path.join(RECORDINGS_DIR, filename);
-    const recordingUrl = `/api/recordings/${id}/${filename}`;
+    const recordingUrl = `/api/recordings/${id}`;
 
-    try {
-      const buffer = Buffer.from(audioBase64, 'base64');
-      fs.writeFileSync(filepath, buffer);
-      console.log(`[Save Recording] File saved: ${filepath} (${(sizeBytes / 1024).toFixed(1)} KB)`);
-    } catch (fsErr) {
-      console.error('[Save Recording] File write failed:', fsErr.message);
-    }
-
-    // Update recording_url in database
+    // Primary: Store recording as BYTEA in PostgreSQL (GCE VM persistent storage)
+    let storedInDb = false;
     try {
       await safeQuery(
         `UPDATE meeting_records SET 
-           recording_url = $1,
+           recording_data = $1,
+           recording_filename = $2,
+           recording_mimetype = $3,
+           recording_size_bytes = $4,
+           recording_url = $5,
            recording_started_at = COALESCE(recording_started_at, NOW()),
            status = CASE WHEN status = 'in_progress' THEN 'completed' ELSE status END
-         WHERE id::text = $2 OR appointment_id = $2`,
-        [recordingUrl, id]
+         WHERE id::text = $6 OR appointment_id = $6`,
+        [buffer, filename, mimeType, sizeBytes, recordingUrl, id]
       );
+      storedInDb = true;
+      console.log(`[Save Recording] Stored in PostgreSQL BYTEA: ${filename} (${(sizeBytes / 1024).toFixed(1)} KB)`);
     } catch (dbErr) {
-      console.warn('[Save Recording] DB update skipped:', dbErr.message);
-      // Store in-memory as fallback
-      const meeting = activeMeetings.get(id);
-      if (meeting) {
-        meeting.recordingUrl = recordingUrl;
-        meeting.recordingSavedAt = new Date().toISOString();
+      console.warn('[Save Recording] PostgreSQL BYTEA write failed:', dbErr.message);
+      // Fallback: save to local filesystem
+      try {
+        const filepath = path.join(RECORDINGS_DIR, filename);
+        fs.writeFileSync(filepath, buffer);
+        await safeQuery(
+          `UPDATE meeting_records SET 
+             recording_url = $1, recording_filename = $2, recording_mimetype = $3, recording_size_bytes = $4,
+             recording_started_at = COALESCE(recording_started_at, NOW()),
+             status = CASE WHEN status = 'in_progress' THEN 'completed' ELSE status END
+           WHERE id::text = $5 OR appointment_id = $5`,
+          [`/api/recordings/${id}/${filename}`, filename, mimeType, sizeBytes, id]
+        );
+        console.log(`[Save Recording] Fallback: saved to filesystem ${filepath}`);
+      } catch (fsErr) {
+        console.error('[Save Recording] File write also failed:', fsErr.message);
       }
     }
 
-    console.log(`[Save Recording] Recording saved for meeting ${id} (${(sizeBytes / 1024).toFixed(1)} KB)`);
+    console.log(`[Save Recording] Recording saved for meeting ${id} (${(sizeBytes / 1024).toFixed(1)} KB, db=${storedInDb})`);
 
     // Trigger post-meeting transcription with speaker diarization if requested
     let transcriptionResult = null;
     if (triggerTranscription) {
       try {
-        const hasCredentials = !!process.env.GOOGLE_APPLICATION_CREDENTIALS || !!process.env.GOOGLE_SPEECH_API_KEY;
-        if (hasCredentials) {
+        if (hasSttCredentials()) {
           // Use Google Cloud STT with speaker diarization
-          const { SpeechClient } = await import('@google-cloud/speech');
-          const speechClient = new SpeechClient();
+          const speechClient = await createSpeechClient();
           
-          const audioBytes = Buffer.from(audioBase64, 'base64');
           const [response] = await speechClient.recognize({
-            audio: { content: audioBytes.toString('base64') },
+            audio: { content: audioBase64 },
             config: {
               encoding: 'WEBM_OPUS',
               sampleRateHertz: 48000,
@@ -2878,6 +2907,7 @@ app.post('/api/meetings/:id/save-recording', authenticateToken, async (req, res)
     // Notify participants
     io.to(id).emit('recording-saved', {
       meetingId: id, recordingId, durationMs, transcription: transcriptionResult,
+      storedIn: storedInDb ? 'postgresql' : 'filesystem',
       timestamp: new Date().toISOString(),
     });
 
@@ -2886,6 +2916,7 @@ app.post('/api/meetings/:id/save-recording', authenticateToken, async (req, res)
       recordingId,
       meetingId: id,
       sizeBytes,
+      storedIn: storedInDb ? 'postgresql' : 'filesystem',
       transcription: transcriptionResult,
       message: 'Recording saved successfully',
     });
@@ -2928,7 +2959,30 @@ app.post('/api/meetings/:id/stop-recording', authenticateToken, async (req, res)
 // RECORDING FILE PLAYBACK (Doctor-only)
 // ============================================================================
 
-// GET /api/recordings/:meetingId/:filename — Serve recording file
+// GET /api/recordings/:meetingId — Serve recording from PostgreSQL BYTEA
+app.get('/api/recordings/:meetingId', authenticateToken, async (req, res) => {
+  const { meetingId } = req.params;
+  try {
+    const result = await safeQuery(
+      `SELECT recording_data, recording_filename, recording_mimetype, recording_size_bytes 
+       FROM meeting_records WHERE (id::text = $1 OR appointment_id = $1) AND recording_data IS NOT NULL
+       ORDER BY created_at DESC LIMIT 1`,
+      [meetingId]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Recording not found' });
+    }
+    const { recording_data, recording_filename, recording_mimetype } = result.rows[0];
+    res.setHeader('Content-Type', recording_mimetype || 'audio/webm');
+    res.setHeader('Content-Disposition', `inline; filename="${recording_filename || 'recording.webm'}"`);
+    res.send(recording_data);
+  } catch (err) {
+    console.error('[Recordings] DB read error:', err.message);
+    res.status(500).json({ error: 'Failed to retrieve recording' });
+  }
+});
+
+// GET /api/recordings/:meetingId/:filename — Serve recording file (filesystem fallback)
 app.get('/api/recordings/:meetingId/:filename', authenticateToken, (req, res) => {
   const { meetingId, filename } = req.params;
   // Sanitize filename to prevent path traversal

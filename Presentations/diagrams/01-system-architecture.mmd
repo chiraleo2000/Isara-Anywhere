@@ -49,13 +49,8 @@ flowchart TB
 
     subgraph AI_SERVICES["🤖 AI SERVICES"]
         direction LR
-        GEMINI["🧠 Gemini 2.5 Flash<br/>Health Assistant<br/>Transcript Summary<br/>SOAP Generation"]
-        WSA["🎤 Web Speech API<br/>Browser-based STT<br/>Real-time Transcription"]
-    end
-
-    subgraph REALTIME["🔌 REAL-TIME"]
-        direction LR
-        SOCKETIO["⚡ Socket.IO<br/>Lobby Management<br/>Live Transcripts<br/>Meeting Events"]
+        GEMINI["🧠 Gemini 2.5 Flash<br/>Health Assistant<br/>Transcript Summary"]
+        STT["🎤 Speech-to-Text<br/>Real-time Transcription"]
     end
 
     subgraph EXTERNAL["🔗 EXTERNAL SERVICES"]
@@ -94,13 +89,8 @@ flowchart TB
     %% Backend to AI
     PP_BE -.-> GEMINI
     DP_BE -.-> GEMINI
-    DP_FE -.-> WSA
+    MS -.-> STT
     MS -.-> GEMINI
-
-    %% Real-time connections
-    PP_FE -.-> SOCKETIO
-    DP_FE -.-> SOCKETIO
-    SOCKETIO -.-> MS
 
     %% Backend to External
     PP_BE -.-> MAPS

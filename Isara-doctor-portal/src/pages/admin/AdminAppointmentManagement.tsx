@@ -515,7 +515,7 @@ const AdminAppointmentManagement: React.FC = () => {
         {error && (
           <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
             {error}
-            <button onClick={() => setError(null)} className="ml-2 text-red-500 hover:text-red-700">×</button>
+            <button onClick={() => setError(null)} aria-label="ปิดข้อผิดพลาด" title="ปิด" className="ml-2 text-red-500 hover:text-red-700">×</button>
           </div>
         )}
         {successMessage && (

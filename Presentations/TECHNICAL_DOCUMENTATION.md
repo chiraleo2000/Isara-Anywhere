@@ -1,10 +1,10 @@
 # Izara Telemedicine Platform - Technical Documentation
 
-> **Version:** 1.5.9 (Updated March 19, 2026)
-> **Status:** Phase 1 Complete + SonarQube Clean — All Tests Passing (v1.5.9)
+> **Version:** 1.5.10 (Updated March 27, 2026)
+> **Status:** Phase 1 Complete + SonarQube Clean — All Tests Passing (v1.5.10)
 > **Database:** PostgreSQL 18 + pgvector (42 tables)  
 > **Stack:** PostgreSQL / Express / React / Jitsi / Gemini AI / Google Cloud  
-> **Tests:** 2,013 Unit Tests (Vitest) + 1,124 E2E Local (Playwright) + 177 Cloud Tests (Playwright) = **3,314 total — 100% Pass Rate**  
+> **Tests:** 2,013 Unit Tests (Vitest) + 1,124 E2E Local (Playwright) + 215 Cloud Tests (Playwright) = **3,352 total — 100% Pass Rate**  
 > **Code Quality:** SonarQube clean — zero `error: any`, strict TypeScript safety, 31/31 API endpoints verified
 
 ---
@@ -78,7 +78,7 @@ Isara-Anywhere/
 | --------- | ------ | ------------- | ------------ |
 | **Patient Portal** | 3005 | Telehealth booking, PHR, Health Assistant | React + Express |
 | **Doctor Portal** | 3010 | EMR, Prescribing, Tele-consultation | React + Express |
-| **Meeting Server** | 3020 | Jitsi Meet, Recording, AI Transcription | Node.js + Jitsi |
+| **Meeting Server** | 3020 | Jitsi Meet, Recording (BYTEA), AI Transcription (Cloud STT) | Node.js + Jitsi |
 | **PostgreSQL** | 5433 | Primary relational database | PostgreSQL 18 |
 | **pgAdmin** | 5050 | Database management UI | pgAdmin 4 |
 
@@ -428,16 +428,16 @@ services:
 
 ## 7. Testing
 
-### 7.1 Test Summary (March 19, 2026)
+### 7.1 Test Summary (March 27, 2026)
 
 | Layer | Framework | Files / Specs | Tests | Duration |
 | --- | --- | --- | --- | --- |
 | **Unit Tests** | Vitest 2.1.9 | 58 files | 2,013 | ~4.3s |
 | **E2E — Local Desktop** | Playwright 1.58 | 32 specs | 1,124 | ~4.2 min |
-| **Cloud Tests** | Playwright 1.58 | 5 specs | 177 | ~5.0 min |
-| **TOTAL** | | **58 unit + 32 local + 5 cloud** | **3,314** | **100% Pass** |
+| **Cloud Tests** | Playwright 1.58 | 10 specs | 215 | ~8.0 min |
+| **TOTAL** | | **58 unit + 32 local + 10 cloud** | **3,352** | **100% Pass** |
 
-### 7.1.0 Cloud Test Suites (tests/*.ui-test.ts) — 177 Tests
+### 7.1.0 Cloud Test Suites (tests/*.ui-test.ts) — 215 Tests
 
 | Test File | Tests | Coverage |
 | --- | --- | --- |
@@ -446,6 +446,12 @@ services:
 | meeting-multi-user | 27 | Multi-user meeting flows: login, appointment, consent, lobby, transcription, post-meeting |
 | workflow-screenshots | 25 | Complete appointment lifecycle: auth, booking, video meeting, health records |
 | ui-pages | 44 | All patient + doctor portal page load verification |
+| admin-workflows | 8 | Admin dashboard, user management, schedules, appointments, clinical resources, content, notifications, living will |
+| admin-register-doctor | 6 | Register patient/doctor, admin approve, promote to admin, verify admin access |
+| meeting-screenshots | 8 | Doctor/patient meeting room screenshots, consent, pre-join |
+| meeting-recording | 5 | Recording save/retrieve via PostgreSQL BYTEA storage |
+| post-meeting-actions | 5 | Post-meeting AI summary, EMR creation, prescription |
+| phr-ai-features | 6 | PHR vitals, AI doctor chat, health library |
 
 ### 7.1.1 Unit Test Suites (tests/unit/) — 58 Files
 
@@ -607,7 +613,7 @@ npx playwright test "09-phase2" --project=Local
 # View HTML Report
 npx playwright show-report
 
-# ── Cloud Tests (177 tests, runs against Cloud Run) ──
+# — Cloud Tests (215 tests, runs against Cloud Run) ——
 # Run ALL cloud tests (3 parallel workers)
 npx playwright test --reporter=line --workers=3
 
@@ -617,6 +623,12 @@ npx playwright test tests/cloud-workflow-multiuser.ui-test.ts    # 42 tests
 npx playwright test tests/meeting-multi-user.ui-test.ts          # 27 tests
 npx playwright test tests/workflow-screenshots.ui-test.ts        # 25 tests
 npx playwright test tests/ui-pages.ui-test.ts                    # 44 tests
+npx playwright test tests/admin-workflows.ui-test.ts             # 8 tests
+npx playwright test tests/admin-register-doctor.ui-test.ts       # 6 tests
+npx playwright test tests/meeting-screenshots.ui-test.ts         # 8 tests
+npx playwright test tests/meeting-recording.ui-test.ts           # 5 tests
+npx playwright test tests/post-meeting-actions.ui-test.ts        # 5 tests
+npx playwright test tests/phr-ai-features.ui-test.ts             # 6 tests
 ```
 
 ---
@@ -636,10 +648,14 @@ npx playwright test tests/ui-pages.ui-test.ts                    # 44 tests
 - [x] **SonarQube Compliance**: Fixed S6551 (unsafe string interpolation), S4325 (unnecessary assertions), non-null assertions across codebase
 - [x] **Codebase Restructuring**: Patient portal pages flattened, server routes merged into 17 consolidated modules, 19 empty folders removed
 - [x] **API Verification**: 31/31 GET endpoints + 5/5 write operations returning 200 OK with proper data
-- [x] **Cloud Test Suite**: 177 Playwright cloud tests across 5 test files — all passing on Google Cloud Run (v1.5.9)
+- [x] **Cloud Test Suite**: 215 Playwright cloud tests across 10 test files — all passing on Google Cloud Run (v1.5.10)
 - [x] **Auth Fix & JWT Verification**: Doctor portal `/auth/verify` JWT fallback, patient auth injection across all test files
 - [x] **Parallel Test Execution**: Cloud tests run with 3 workers, `fullyParallel: true`, 120s timeouts
 - [x] **AuthenticatedRequest Interface**: Strongly-typed with explicit fields and union role type
+- [x] **PostgreSQL BYTEA Recording Storage**: Meeting recordings stored as BYTEA in PostgreSQL, served via `/api/recordings/:meetingId` (v1.5.10)
+- [x] **Cloud STT Credential Wiring**: `GCP_SERVICE_ACCOUNT_KEY` base64 decode for Google Cloud Speech-to-Text in Cloud Run (v1.5.10)
+- [x] **Admin Register-Doctor Test**: 6-test E2E flow covering patient/doctor registration, admin approval, privilege promotion (v1.5.10)
+- [x] **Accessibility (axe) Compliance**: 16 icon-only buttons fixed with `aria-label` + `title` across 9 files (v1.5.10)
 - [ ] **Advanced RAG**: Full knowledge_base vector search for clinical decision support
 - [ ] **IoMT Integration**: Wearable device sync for vitals
 - [ ] **Payment Gateway**: Stripe/Omise for consultation fees

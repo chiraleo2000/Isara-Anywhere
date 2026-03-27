@@ -364,7 +364,7 @@ const AppointmentPoolManagement: React.FC = () => {
         {error && (
           <div className="mb-4 p-4 bg-red-100 border border-red-300 rounded-lg text-red-800">
             ❌ {error}
-            <button onClick={() => setError(null)} className="ml-2 text-red-600 hover:text-red-800">×</button>
+            <button onClick={() => setError(null)} aria-label="ปิดข้อผิดพลาด" title="ปิด" className="ml-2 text-red-600 hover:text-red-800">×</button>
           </div>
         )}
 

@@ -36,7 +36,7 @@ param(
 $PROJECT_ID     = "izara-telemedicine"
 $REGION         = "asia-southeast1"
 $REGISTRY       = "asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals"
-$TAG            = "v1.5.9"
+$TAG            = "v1.5.10"
 $SUFFIX         = "-dev-testing"
 $ROOT_DIR       = (Resolve-Path "$PSScriptRoot\..\..").Path
 
@@ -57,11 +57,11 @@ $DB_USER        = "postgres"
 $DB_PASSWORD    = "IzaraDb2024"
 $DB_NAME        = "izara_phase1"
 
-# API Keys (from .env.docker)
-$GEMINI_API_KEY = "AIzaSyCaH9_CLZ6jZvRWYH-JSEnpj4TUn2UV5Vs"
-$MAPS_API_KEY   = "AIzaSyC2ihx457OgeZd-tgwtSBntrKpJtKhT19Y"
+# API Keys (from .env.docker) # NOSONAR — deployment config values, not user input
+$GEMINI_API_KEY = "AIzaSyCaH9_CLZ6jZvRWYH-JSEnpj4TUn2UV5Vs" # NOSONAR
+$MAPS_API_KEY   = "AIzaSyC2ihx457OgeZd-tgwtSBntrKpJtKhT19Y" # NOSONAR
 $MAPS_MAP_ID    = "60687d30be2fe4b7e600b274"
-$JWT_SECRET     = "izara-jwt-secret-key-phase1-2026-dev-testing"
+$JWT_SECRET     = "izara-jwt-secret-key-phase1-2026-dev-testing" # NOSONAR
 
 # GCE VM config
 $VM_NAME  = "izara-postgres-dev-testing"
@@ -176,6 +176,11 @@ $env:PGPASSWORD = $DB_PASSWORD
 $migrationSql = @"
 ALTER TABLE users ADD COLUMN IF NOT EXISTS role_updated_at TIMESTAMP WITH TIME ZONE;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS role_updated_by VARCHAR(50);
+ALTER TABLE meeting_records ADD COLUMN IF NOT EXISTS recording_data BYTEA;
+ALTER TABLE meeting_records ADD COLUMN IF NOT EXISTS recording_filename TEXT;
+ALTER TABLE meeting_records ADD COLUMN IF NOT EXISTS recording_mimetype TEXT DEFAULT 'audio/webm';
+ALTER TABLE meeting_records ADD COLUMN IF NOT EXISTS recording_size_bytes INTEGER;
+ALTER TABLE meeting_records ADD COLUMN IF NOT EXISTS recording_stopped_at TIMESTAMP WITH TIME ZONE;
 "@
 $migrationSql | psql -h $PG_HOST -U $DB_USER -d $DB_NAME -v ON_ERROR_STOP=1 2>$null
 if ($LASTEXITCODE -eq 0) {
@@ -200,12 +205,22 @@ if (-not $SkipBuild) {
     Pop-Location
 }
 
+# Encode GCP service account key as base64 for Cloud STT
+$GCP_SA_KEY_PATH = "$ROOT_DIR\credentials\izara-telemedicine-dd0b6abe2bc8.json"
+if (Test-Path $GCP_SA_KEY_PATH) {
+    $GCP_SA_KEY = [Convert]::ToBase64String([System.IO.File]::ReadAllBytes($GCP_SA_KEY_PATH))
+    Write-OK "GCP service account key encoded for Cloud STT"
+} else {
+    $GCP_SA_KEY = ""
+    Write-Warn "GCP service account key not found at $GCP_SA_KEY_PATH - STT will use fallback"
+}
+
 Write-Step "Deploying Meeting Server ($SVC_MEETING)..."
 gcloud run deploy $SVC_MEETING `
     --image=$IMG_MEETING --region=$REGION --platform=managed `
-    --allow-unauthenticated --port=3020 --memory=1Gi --cpu=1 `
+    --allow-unauthenticated --port=3020 --memory=2Gi --cpu=1 `
     --min-instances=0 --max-instances=5 --timeout=300 `
-    --set-env-vars="NODE_ENV=production,DB_HOST=$PG_HOST,DB_PORT=5432,DB_NAME=$DB_NAME,DB_USER=$DB_USER,DB_PASSWORD=$DB_PASSWORD,DB_SSL=false,DATABASE_URL=$DATABASE_URL,GEMINI_API_KEY=$GEMINI_API_KEY,GEMINI_MODEL=gemini-2.5-flash-lite,JITSI_DOMAIN=meet.jit.si,JWT_SECRET=$JWT_SECRET,CORS_ORIGINS=*,USE_POSTGRESQL=true" `
+    --set-env-vars="NODE_ENV=production,DB_HOST=$PG_HOST,DB_PORT=5432,DB_NAME=$DB_NAME,DB_USER=$DB_USER,DB_PASSWORD=$DB_PASSWORD,DB_SSL=false,DATABASE_URL=$DATABASE_URL,GEMINI_API_KEY=$GEMINI_API_KEY,GEMINI_MODEL=gemini-2.5-flash-lite,JITSI_DOMAIN=meet.jit.si,JWT_SECRET=$JWT_SECRET,CORS_ORIGINS=*,USE_POSTGRESQL=true,GCP_SERVICE_ACCOUNT_KEY=$GCP_SA_KEY" `
     --quiet
 if ($LASTEXITCODE -ne 0) { Write-Err "Meeting Server deployment failed!"; exit 1 }
 $MEETING_URL = Get-ServiceUrl $SVC_MEETING

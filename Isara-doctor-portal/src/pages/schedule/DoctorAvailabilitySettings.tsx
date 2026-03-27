@@ -373,7 +373,7 @@ const DoctorAvailabilitySettings: React.FC = () => {
         {error && (
           <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
             {error}
-            <button onClick={() => setError(null)} className="ml-2 text-red-500">×</button>
+            <button onClick={() => setError(null)} aria-label="ปิดข้อผิดพลาด" title="ปิด" className="ml-2 text-red-500">×</button>
           </div>
         )}
         {successMessage && (
@@ -690,6 +690,7 @@ const DoctorAvailabilitySettings: React.FC = () => {
                           type="time"
                           value={approvalData.time}
                           onChange={(e) => setApprovalData({ ...approvalData, time: e.target.value })}
+                          aria-label="เวลานัดหมาย" title="เวลานัดหมาย"
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
                         />
                       </div>

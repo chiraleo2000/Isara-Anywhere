@@ -807,7 +807,7 @@ export function BookAppointmentPage() {
     <div className="max-w-4xl mx-auto pb-8">
       {/* Header */}
       <div className="flex items-center gap-4 mb-6">
-        <button onClick={() => step > 1 ? setStep(step - 1) : navigate('/appointments')} className="p-2 hover:bg-gray-100 rounded-lg">
+        <button onClick={() => step > 1 ? setStep(step - 1) : navigate('/appointments')} aria-label="ย้อนกลับ" title="ย้อนกลับ" className="p-2 hover:bg-gray-100 rounded-lg">
           <ChevronLeft className="w-6 h-6" />
         </button>
         <div>

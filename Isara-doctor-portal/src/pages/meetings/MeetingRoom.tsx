@@ -1320,7 +1320,7 @@ const MeetingRoom: React.FC = () => { // NOSONAR
       {error && (
         <div className="bg-red-900/50 border-b border-red-700 px-4 py-2 text-sm text-red-300 flex justify-between">
           <span>{error}</span>
-          <button onClick={() => setError(null)} className="text-red-400 hover:text-white">✕</button>
+          <button onClick={() => setError(null)} aria-label="ปิดข้อผิดพลาด" title="ปิด" className="text-red-400 hover:text-white">✕</button>
         </div>
       )}
 
@@ -1558,7 +1558,7 @@ const MeetingRoom: React.FC = () => { // NOSONAR
                   summary: 'AI Summary',
                 }[showPanel]}
               </h3>
-              <button onClick={() => setShowPanel(null)} className="text-gray-400 hover:text-white">✕</button>
+              <button onClick={() => setShowPanel(null)} aria-label="ปิดแผง" title="ปิด" className="text-gray-400 hover:text-white">✕</button>
             </div>
 
             {/* Panel Content */}
@@ -1753,7 +1753,7 @@ const MeetingRoom: React.FC = () => { // NOSONAR
           <div className="w-80 bg-gray-800 border-l border-gray-700 flex flex-col" data-testid="lobby-panel">
             <div className="flex items-center justify-between p-3 border-b border-gray-700">
               <h3 className="font-medium text-sm">Waiting Room ({lobbyParticipants.length})</h3>
-              <button onClick={() => setShowLobby(false)} className="text-gray-400 hover:text-white">✕</button>
+              <button onClick={() => setShowLobby(false)} aria-label="ปิดห้องรอ" title="ปิด" className="text-gray-400 hover:text-white">✕</button>
             </div>
             <div className="flex-1 overflow-y-auto p-3 space-y-2">
               {lobbyParticipants.length === 0 ? (

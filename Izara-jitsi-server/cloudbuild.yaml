@@ -12,7 +12,7 @@ steps:
       - '-t'
       - 'asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-jitsi-meeting:latest'
       - '-t'
-      - 'asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-jitsi-meeting:v1.5.6'
+      - 'asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-jitsi-meeting:v1.5.10'
       - '.'
 
   # Push image to Artifact Registry
@@ -33,7 +33,7 @@ steps:
       - '--platform=managed'
       - '--allow-unauthenticated'
       - '--port=3020'
-      - '--memory=1Gi'
+      - '--memory=2Gi'
       - '--cpu=1'
       - '--min-instances=0'
       - '--max-instances=2'
