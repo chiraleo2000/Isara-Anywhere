@@ -104,14 +104,14 @@ const GuestMeetingJoin: React.FC = () => {
         width: '100%',
         height: '100%',
         userInfo: { displayName: guestName },
-        configOverrides: {
+        configOverwrite: {
           startWithAudioMuted: true,
           startWithVideoMuted: false,
           prejoinPageEnabled: false,
           disableDeepLinking: true,
           toolbarButtons: ['microphone', 'camera', 'chat', 'raisehand', 'tileview', 'hangup'],
         },
-        interfaceConfigOverrides: {
+        interfaceConfigOverwrite: {
           DISABLE_JOIN_LEAVE_NOTIFICATIONS: false,
           MOBILE_APP_PROMO: false,
         },

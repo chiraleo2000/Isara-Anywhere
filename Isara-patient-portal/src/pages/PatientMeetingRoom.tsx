@@ -723,7 +723,24 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
             </button>
           </div>
         ) : (
-          <div ref={jitsiContainerRef} className={`${showTranscript ? 'flex-1' : 'w-full'} h-full`} />
+          <div className="relative flex-1 h-full">
+            <div ref={jitsiContainerRef} className={`${showTranscript ? 'flex-1' : 'w-full'} h-full`} />
+            {lobbyStatus === 'rejected' && (
+              <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-red-900/80 backdrop-blur-sm">
+                <div className="text-center space-y-4">
+                  <div className="text-5xl">🚫</div>
+                  <h2 className="text-xl font-bold text-white">คุณถูกปฏิเสธการเข้าร่วมประชุม</h2>
+                  <p className="text-red-200 text-sm">แพทย์ปฏิเสธคำขอเข้าร่วมประชุมของคุณ</p>
+                  <button
+                    onClick={() => navigate('/appointments')}
+                    className="mt-4 px-6 py-2.5 bg-white text-red-900 font-medium rounded-lg hover:bg-gray-100 transition"
+                  >
+                    ← กลับหน้านัดหมาย
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         )}
 
         {showTranscript && (

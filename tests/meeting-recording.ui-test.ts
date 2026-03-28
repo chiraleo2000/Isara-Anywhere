@@ -157,9 +157,11 @@ test.describe('Meeting Recording Workflow — UI Screenshots', () => {
     await doctorPage.goto(`${DOCTOR_URL}/doctor/${doctorUserId}/health-meeting`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await injectDoctorAuth(doctorPage, doctorToken, doctorUser);
     await doctorPage.reload();
-    await doctorPage.waitForTimeout(3000octorPage, doctorToken, doctorUser);
+    await doctorPage.waitForTimeout(3000);
+    await injectDoctorAuth(doctorPage, doctorToken, doctorUser);
     await doctorPage.reload();
-    await doctorPage.waitForTimeout(3000octorPage, doctorToken, doctorUser);
+    await doctorPage.waitForTimeout(3000);
+    await injectDoctorAuth(doctorPage, doctorToken, doctorUser);
     await doctorPage.reload();
     await doctorPage.waitForTimeout(3000);
     await snap(doctorPage, 'MR08-meeting-history', 'Meeting History');

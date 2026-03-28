@@ -655,7 +655,7 @@ const MeetingRoom: React.FC = () => { // NOSONAR
       try { recognitionRef.current.start(); } catch { /* ignore */ }
     }
 
-    fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/pause-transcription`, {
+    fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/resume-transcription`, {
       method: 'POST',
       headers: getAuthHeaders(),
     }).catch(err => console.warn('[Transcription] Resume failed:', err.message));

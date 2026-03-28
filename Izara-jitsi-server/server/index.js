@@ -1243,6 +1243,29 @@ app.post('/api/meetings/:id/pause-transcription', authenticateToken, async (req,
   }
 });
 
+// Resume transcription (dedicated endpoint — avoids toggle race conditions)
+app.post('/api/meetings/:id/resume-transcription', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const session = activeTranscriptions.get(id);
+    if (session) {
+      session.isPaused = false;
+      io.to(id).emit('meeting-status', { meetingId: id, status: 'transcribing' });
+    }
+
+    console.log(`[Transcription] Resumed for meeting ${id}`);
+    res.json({
+      success: true,
+      message: 'Transcription resumed',
+      isPaused: false
+    });
+
+  } catch (error) {
+    console.error('[Transcription] Resume error:', error);
+    res.status(500).json({ error: 'Failed to resume transcription' });
+  }
+});
+
 // Add transcript segment
 app.post('/api/meetings/:id/transcript', authenticateToken, async (req, res) => {
   try {
