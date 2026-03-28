@@ -117,9 +117,9 @@ function getUserInitials(name: string): string {
 
 function getMediaStatusIcon(status: string): string {
   switch (status) {
-    case 'granted': return 'OK';
-    case 'denied': return 'X';
-    case 'unavailable': return '!';
+    case 'granted': return '✓';
+    case 'denied': return '✗';
+    case 'unavailable': return '○';
     default: return '...';
   }
 }
@@ -127,8 +127,8 @@ function getMediaStatusIcon(status: string): string {
 function getMediaStatusText(status: string): string {
   switch (status) {
     case 'granted': return 'พร้อมใช้งาน';
-    case 'denied': return 'ถูกปฏิเสธ - กรุณาอนุญาตในเบราว์เซอร์';
-    case 'unavailable': return 'ไม่พบอุปกรณ์';
+    case 'denied': return 'ถูกปฏิเสธ — กรุณาอนุญาตในเบราว์เซอร์';
+    case 'unavailable': return 'ไม่พบอุปกรณ์ — เข้าร่วมได้โดยไม่ต้องใช้';
     default: return 'กำลังตรวจสอบ...';
   }
 }

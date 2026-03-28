@@ -20,6 +20,7 @@ import { SettingsProvider } from './hooks/useSettings';
 import LoginPage from './pages/auth/LoginPage';
 import ResetPasswordPage from './pages/auth/ResetPasswordPage';
 import DoctorPortal from './pages/DoctorPortal';
+import GuestMeetingJoin from './pages/meetings/GuestMeetingJoin';
 
 // Loading component
 const LoadingScreen: React.FC = () => (
@@ -45,6 +46,7 @@ const App: React.FC = () => {
             {/* Public routes */}
             <Route path="/login" element={<LoginPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
+            <Route path="/guest-join/:meetingId" element={<GuestMeetingJoin />} />
             
             {/* Protected doctor routes - accessible by doctors and admins */}
             <Route

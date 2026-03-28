@@ -20,6 +20,7 @@ import TimelinePage from './pages/TimelinePage';
 import MapPage from './pages/MapPage';
 import GCSStatusPage from './pages/GCSStatusPage';
 import PatientMeetingRoom from './pages/PatientMeetingRoom';
+import GuestMeetingJoin from './pages/GuestMeetingJoin';
 
 // Enhanced Scroll to top on route change - uses useLayoutEffect for immediate scroll
 function ScrollToTop() {
@@ -85,6 +86,9 @@ function AppRoutes() {
       
       {/* GCS Status page - accessible without login for testing */}
       <Route path="/gcs-status" element={<GCSStatusPage />} />
+      
+      {/* Guest meeting join - public, no auth required */}
+      <Route path="/guest-join/:meetingId" element={<GuestMeetingJoin />} />
       
       <Route path="/" element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
         <Route index element={<DashboardPage />} />

@@ -71,9 +71,18 @@ This document describes the video meeting implementation using:
 
 - **Patient can invite**: relatives, friends (via Patient Portal sharing)
 - **Doctor can invite**: other doctors, admin, specialists (token-based)
-- **Non-registered users**: receive link → create display name from BLANK → enter LOBBY
-- Doctor as HOST approves/rejects each participant from lobby
+- **Non-registered users**: receive guest join page → enter name only → enter LOBBY
+- **Guest Join Pages** (public, no login required):
+  - Patient Portal: `/guest-join/:meetingId`
+  - Doctor Portal: `/guest-join/:meetingId`
+- Doctor as HOST approves/rejects each participant from lobby (like Microsoft Teams)
+- Admin joins as regular lobby participant — doctor must approve
 - Up to 8 participants per meeting recommended
+- **Backend lobby API**:
+  - `POST /api/meetings/:id/lobby/join` — guest joins (name only, auto-generated participantId)
+  - `GET /api/meetings/:id/lobby/status/:participantId` — guest polls own status
+  - `POST /api/meetings/:id/lobby/admit` — doctor admits (auth required)
+  - `POST /api/meetings/:id/lobby/reject` — doctor rejects (auth required)
 
 ### 8. AI-Powered EMR Generation with Man-in-the-Loop
 

@@ -799,10 +799,12 @@ app.get('/api/meetings/:id/consents', optionalAuth, (req, res) => {
 // Participant requests to join (enters lobby)
 app.post('/api/meetings/:id/lobby/join', optionalAuth, (req, res) => {
   const { id } = req.params;
-  const { participantId, participantName, role, email } = req.body;
+  const { participantName, role, email } = req.body;
+  // Auto-generate participantId if not provided (for guests)
+  const participantId = req.body.participantId || `guest-${uuidv4().substring(0, 8)}`;
 
-  if (!participantId || !participantName) {
-    return res.status(400).json({ success: false, error: 'participantId and participantName required' });
+  if (!participantName) {
+    return res.status(400).json({ success: false, error: 'participantName is required' });
   }
 
   // Doctors (hosts) bypass lobby
@@ -827,7 +829,7 @@ app.post('/api/meetings/:id/lobby/join', optionalAuth, (req, res) => {
   // Notify doctor (host)
   io.to(id).emit('lobby-update', { meetingId: id, action: 'join', participant: entry });
 
-  res.json({ success: true, status: 'waiting', message: 'Waiting for host approval' });
+  res.json({ success: true, status: 'waiting', participantId, message: 'Waiting for host approval' });
 });
 
 // Get lobby participants
@@ -836,6 +838,17 @@ app.get('/api/meetings/:id/lobby', optionalAuth, (req, res) => {
   const lobby = meetingLobbies.get(id);
   const participants = lobby ? Array.from(lobby.values()).filter(p => p.status === 'waiting') : [];
   res.json({ success: true, participants, total: participants.length });
+});
+
+// Guest checks their own lobby status (no auth required)
+app.get('/api/meetings/:id/lobby/status/:participantId', (req, res) => {
+  const { id, participantId } = req.params;
+  const lobby = meetingLobbies.get(id);
+  if (!lobby?.has(participantId)) {
+    return res.json({ success: true, status: 'not_found' });
+  }
+  const entry = lobby.get(participantId);
+  res.json({ success: true, status: entry.status, participant: entry });
 });
 
 // Doctor admits participant from lobby

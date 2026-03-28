@@ -69,9 +69,13 @@ test.describe('Meeting Recording Workflow — UI Screenshots', () => {
   let doctorPage: Page;
   let doctorToken: string;
   let doctorUser: Record<string, unknown>;
+  let doctorUserId: string; // userId for SPA route: /doctor/:userId/...
 
   test.beforeAll(async ({ browser }) => {
-    doctorCtx = await browser.newContext({ viewport: { width: 1280, height: 720 } });
+    doctorCtx = await browser.newContext({
+      viewport: { width: 1280, height: 720 },
+      permissions: ['camera', 'microphone'],
+    });
     doctorPage = await doctorCtx.newPage();
   });
 
@@ -92,6 +96,7 @@ test.describe('Meeting Recording Workflow — UI Screenshots', () => {
       doctorToken = 'demo-token';
       doctorUser = { id: 'demo-doctor', email: 'doctor.test@izara.com', name: 'Dr. Demo' };
     }
+    doctorUserId = (doctorUser.id as string) || 'demo-doctor';
 
     await doctorPage.goto(`${DOCTOR_URL}/login`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await snap(doctorPage, 'MR01-doctor-login', 'Doctor Login Page');
@@ -103,7 +108,7 @@ test.describe('Meeting Recording Workflow — UI Screenshots', () => {
     expect(healthR.status).toBe(200);
     console.log('  ✅ Meeting server health:', JSON.stringify(healthR.body.features || {}));
 
-    await doctorPage.goto(`${DOCTOR_URL}`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await doctorPage.goto(`${DOCTOR_URL}/doctor/${doctorUserId}/dashboard`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await injectDoctorAuth(doctorPage, doctorToken, doctorUser);
     await doctorPage.reload();
     await snap(doctorPage, 'MR02-doctor-dashboard', 'Doctor Dashboard');
@@ -111,8 +116,7 @@ test.describe('Meeting Recording Workflow — UI Screenshots', () => {
 
   // ── MR03 — Navigate to Meeting/Appointment Area ─────────────────
   test('MR03 — Navigate to Appointments', async () => {
-    // Try to navigate to appointments page
-    await doctorPage.goto(`${DOCTOR_URL}/appointments`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await doctorPage.goto(`${DOCTOR_URL}/doctor/${doctorUserId}/schedule`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await injectDoctorAuth(doctorPage, doctorToken, doctorUser);
     await doctorPage.reload();
     await snap(doctorPage, 'MR03-appointments-list', 'Appointments List');
@@ -120,19 +124,20 @@ test.describe('Meeting Recording Workflow — UI Screenshots', () => {
 
   // ── MR04 — Meeting Room UI (Recording Controls) ─────────────────
   test('MR04 — Meeting Room Recording Controls', async () => {
-    // Navigate to a meeting room or health-meeting page
-    await doctorPage.goto(`${DOCTOR_URL}/health-meeting`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await doctorPage.goto(`${DOCTOR_URL}/doctor/${doctorUserId}/health-meeting`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await injectDoctorAuth(doctorPage, doctorToken, doctorUser);
     await doctorPage.reload();
+    await doctorPage.waitForTimeout(3000);
     await snap(doctorPage, 'MR04-meeting-room-controls', 'Meeting Room - Recording Controls');
   });
 
   // ── MR05 — Transcript with Speaker Diarization ──────────────────
   test('MR05 — Transcript Diarization UI', async () => {
-    // Navigate to meeting results page or any meeting with transcript
-    await doctorPage.goto(`${DOCTOR_URL}/health-meeting`, { waitUntil: 'domcontentloaded', timeout: 30000 });
-    await injectDoctorAuth(doctorPage, doctorToken, doctorUser);
-    await doctorPage.reload();
+    // Already on health-meeting page from MR04; click Results tab if available
+    try {
+      const resultsTab = doctorPage.locator('button:has-text("ผลประชุม"), button:has-text("Results"), [data-testid="results-tab"]');
+      if (await resultsTab.count() > 0) await resultsTab.first().click({ timeout: 5000 });
+    } catch { /* stay on current view */ }
     await sleep(2000);
     await snap(doctorPage, 'MR05-transcript-diarization', 'Transcript Speaker Diarization');
   });
@@ -149,9 +154,14 @@ test.describe('Meeting Recording Workflow — UI Screenshots', () => {
 
   // ── MR08 — Meeting History ──────────────────────────────────────
   test('MR08 — Meeting History', async () => {
-    await doctorPage.goto(`${DOCTOR_URL}/health-meeting`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await doctorPage.goto(`${DOCTOR_URL}/doctor/${doctorUserId}/health-meeting`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await injectDoctorAuth(doctorPage, doctorToken, doctorUser);
     await doctorPage.reload();
+    await doctorPage.waitForTimeout(3000octorPage, doctorToken, doctorUser);
+    await doctorPage.reload();
+    await doctorPage.waitForTimeout(3000octorPage, doctorToken, doctorUser);
+    await doctorPage.reload();
+    await doctorPage.waitForTimeout(3000);
     await snap(doctorPage, 'MR08-meeting-history', 'Meeting History');
   });
 });

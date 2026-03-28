@@ -85,11 +85,11 @@ function getUserInitials(name: string): string {
 }
 
 function getMediaStatusIcon(s: string): string {
-  switch (s) { case 'granted': return 'OK'; case 'denied': return 'X'; case 'unavailable': return '!'; default: return '...'; }
+  switch (s) { case 'granted': return '✓'; case 'denied': return '✗'; case 'unavailable': return '○'; default: return '...'; }
 }
 
 function getMediaStatusText(s: string): string {
-  switch (s) { case 'granted': return 'พร้อมใช้งาน'; case 'denied': return 'ถูกปฏิเสธ'; case 'unavailable': return 'ไม่พบอุปกรณ์'; default: return 'กำลังตรวจสอบ...'; }
+  switch (s) { case 'granted': return 'พร้อมใช้งาน'; case 'denied': return 'ถูกปฏิเสธ'; case 'unavailable': return 'ไม่พบอุปกรณ์ — เข้าร่วมได้โดยไม่ต้องใช้'; default: return 'กำลังตรวจสอบ...'; }
 }
 
 async function probeMediaDevices(): Promise<{ status: MediaDeviceStatus; stream: MediaStream | null }> {

@@ -245,7 +245,34 @@ When your appointment is confirmed and the meeting time arrives:
 
 ---
 
-### 2.5 Personal Health Records (PHR) — ประวัติสุขภาพ
+### 2.5 Guest Join & Lobby — Microsoft Teams Style
+
+Patients can invite **family, friends, or external participants** to join the video meeting. Guests **do not need an account** — they only enter their name and wait for doctor approval.
+
+**How Guests Join:**
+
+1. **Receive invite link** from patient, e.g. `https://patient-portal/guest-join/meeting-id`
+2. **Enter your name** on the Guest Join page (no login, no email required)
+3. **Click "ขอเข้าร่วม" (Request to Join)** — the doctor is notified immediately
+4. **Wait for approval** — a waiting screen with timer is displayed
+5. **Enter the meeting** — once the doctor clicks "Admit", the Jitsi video call opens
+
+**For the Doctor (Host):**
+
+- The **Waiting Room** panel shows all pending lobby participants
+- Click **✓ Admit** or **✗ Reject** for each person
+- Admin users also join through the lobby — doctor must approve
+
+**Guest Join Pages (Public, No Login Required):**
+
+| Portal | URL |
+|--------|-----|
+| Patient Portal | `/guest-join/:meetingId` |
+| Doctor Portal | `/guest-join/:meetingId` |
+
+---
+
+### 2.6 Personal Health Records (PHR) — ประวัติสุขภาพ
 
 Your PHR is a comprehensive view of your health data, organized in tabs.
 
@@ -290,7 +317,7 @@ Your PHR is a comprehensive view of your health data, organized in tabs.
 
 ---
 
-### 2.6 Health Timeline — ไทม์ไลน์สุขภาพ
+### 2.7 Health Timeline — ไทม์ไลน์สุขภาพ
 
 A chronological view of all your medical events.
 
@@ -317,7 +344,7 @@ A chronological view of all your medical events.
 
 ---
 
-### 2.7 AI Doctor Consultation — ปรึกษา AI
+### 2.8 AI Doctor Consultation — ปรึกษา AI
 
 Chat with an AI-powered health assistant for general health advice.
 
@@ -343,7 +370,7 @@ Chat with an AI-powered health assistant for general health advice.
 
 ---
 
-### 2.8 Health Library — ห้องสมุดสุขภาพ
+### 2.9 Health Library — ห้องสมุดสุขภาพ
 
 Browse medical education articles published by doctors.
 
@@ -362,7 +389,7 @@ Browse medical education articles published by doctors.
 
 ---
 
-### 2.9 Nearby Healthcare Map — แผนที่สถานพยาบาล
+### 2.10 Nearby Healthcare Map — แผนที่สถานพยาบาล
 
 Find nearby hospitals, clinics, and pharmacies on an interactive map.
 
@@ -389,7 +416,7 @@ Find nearby hospitals, clinics, and pharmacies on an interactive map.
 
 ---
 
-### 2.10 Living Will — หนังสือแสดงเจตนา
+### 2.11 Living Will — หนังสือแสดงเจตนา
 
 Create and manage your advance healthcare directive (Living Will) with a guided 4-step wizard.
 
@@ -426,7 +453,7 @@ Create and manage your advance healthcare directive (Living Will) with a guided 
 
 ---
 
-### 2.11 PDPA Consent — ความยินยอม PDPA
+### 2.12 PDPA Consent — ความยินยอม PDPA
 
 Manage your data privacy consent under Thailand's Personal Data Protection Act.
 
@@ -453,7 +480,7 @@ You can individually enable/disable sharing of:
 
 ---
 
-### 2.12 Profile & Settings — โปรไฟล์และการตั้งค่า
+### 2.13 Profile & Settings — โปรไฟล์และการตั้งค่า
 
 **Profile:**
 - View and edit your personal information
@@ -582,10 +609,13 @@ When patients book appointments, they appear in your queue.
 
 ![Doctor Pre-Join (Multi-User)](../screenshots/meeting/pre-join-invite/MU06-doctor-pre-join.png)
 
-**Step 3: Start Meeting as HOST**
+**Step 3: Start Meeting as HOST (Microsoft Teams Style)**
 - Click **"เริ่มการประชุม" (Start Meeting)**
 - You join as the HOST/moderator
-- Approve patients and guests from the lobby
+- **Waiting Room (Lobby)** panel shows all pending participants
+  - Click **✓ Admit** or **✗ Reject** for each person
+  - Guest users join via `/guest-join/:meetingId` with name only (no account needed)
+  - Admin users also join through the lobby — you must approve them
 
 **Step 4: During the Meeting**
 - **Video/Audio Controls:** Toggle camera and microphone
