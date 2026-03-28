@@ -244,13 +244,13 @@ const DoctorPortal: React.FC = () => {
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden">
             <div className="flex items-center justify-between p-4 border-b">
               <h2 className="text-xl font-bold text-purple-600">Gemini AI Studio</h2>
-              <button onClick={() => setShowAIStudio(false)} className="text-gray-400 hover:text-gray-600 p-2">
+              <button onClick={() => setShowAIStudio(false)} className="text-gray-400 hover:text-gray-600 p-2" title="ปิด AI Studio" aria-label="ปิด AI Studio">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
-            <div className="overflow-y-auto" style={{ maxHeight: 'calc(90vh - 80px)' }}>
+            <div className="overflow-y-auto max-h-[calc(90vh-80px)]">
               <GeminiAIStudio />
             </div>
           </div>

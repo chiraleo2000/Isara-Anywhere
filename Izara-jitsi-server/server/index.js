@@ -799,16 +799,22 @@ app.get('/api/meetings/:id/consents', optionalAuth, (req, res) => {
 // Participant requests to join (enters lobby)
 app.post('/api/meetings/:id/lobby/join', optionalAuth, (req, res) => {
   const { id } = req.params;
-  const { participantName, role, email } = req.body;
+  const { email } = req.body;
   // Auto-generate participantId if not provided (for guests)
   const participantId = req.body.participantId || `guest-${uuidv4().substring(0, 8)}`;
 
-  if (!participantName) {
+  // Sanitize participantName: strip HTML tags, trim, limit to 100 chars
+  const rawName = req.body.participantName;
+  if (!rawName || typeof rawName !== 'string' || !rawName.trim()) {
     return res.status(400).json({ success: false, error: 'participantName is required' });
   }
+  const participantName = rawName.replace(/<[^>]*>/g, '').trim().substring(0, 100);
 
-  // Doctors (hosts) bypass lobby
-  if (role === 'doctor' || role === 'admin') {
+  // Determine role from authenticated token only — never trust client-supplied role
+  const authenticatedRole = req.user?.role;
+
+  // Only authenticated doctors/admins bypass lobby
+  if (req.user && (authenticatedRole === 'doctor' || authenticatedRole === 'admin')) {
     return res.json({ success: true, status: 'admitted', message: 'Host bypasses lobby' });
   }
 
@@ -819,7 +825,7 @@ app.post('/api/meetings/:id/lobby/join', optionalAuth, (req, res) => {
   }
 
   const entry = {
-    participantId, participantName, role: role || 'guest',
+    participantId, participantName, role: authenticatedRole || 'guest',
     email: email || null,
     status: 'waiting',
     joinedAt: new Date().toISOString(),

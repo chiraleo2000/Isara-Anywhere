@@ -130,7 +130,7 @@ const GuestMeetingJoin: React.FC = () => {
       const res = await fetch(`${MEETING_SERVER_URL}/api/meetings/${meetingId}/lobby/join`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ participantName: guestName.trim(), role: 'guest' }),
+        body: JSON.stringify({ participantName: guestName.trim() }),
       });
       const data = await res.json();
       if (data.success) {
