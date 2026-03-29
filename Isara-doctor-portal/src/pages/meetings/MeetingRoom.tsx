@@ -441,18 +441,47 @@ const MeetingRoom: React.FC = () => { // NOSONAR
   const initMeeting = useCallback(async () => {
     try {
       let roomName = `izara-${appointmentId?.substring(0, 12) || 'quick'}-${Date.now().toString(36)}`;
+      let meetingFound = false;
 
       try {
-        const res = await fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}`);
+        const res = await fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}`, {
+          headers: getAuthHeaders(),
+        });
         if (res.ok) {
           const data = await res.json();
           if (data.meeting) {
             meetingInfoRef.current = data.meeting;
             roomName = data.meeting.room_name || roomName;
+            meetingFound = true;
           }
         }
       } catch {
-        console.log('[MeetingRoom] No existing meeting record, creating new room');
+        console.log('[MeetingRoom] Meeting server unavailable, using generated room name');
+      }
+
+      // If no meeting record exists, create one so the patient can resolve the same room
+      if (!meetingFound) {
+        try {
+          const createRes = await fetch(`${MEETING_SERVER_URL}/api/meetings/create`, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({
+              appointmentId,
+              doctorId: user?.id,
+              doctorName: user?.displayName || user?.name || 'Doctor',
+              roomName,
+            }),
+          });
+          if (createRes.ok) {
+            const createData = await createRes.json();
+            if (createData.meeting) {
+              meetingInfoRef.current = createData.meeting;
+              roomName = createData.roomName || roomName;
+            }
+          }
+        } catch {
+          console.warn('[MeetingRoom] Could not create meeting record, patient may need to retry');
+        }
       }
 
       roomNameRef.current = roomName;
@@ -464,7 +493,7 @@ const MeetingRoom: React.FC = () => { // NOSONAR
       setError(err.message || 'Failed to initialize meeting');
       setMeetingState(prev => ({ ...prev, status: 'pre_join' }));
     }
-  }, [appointmentId, checkMediaDevices, connectSocket]);
+  }, [appointmentId, user, checkMediaDevices, connectSocket]);
 
   useEffect(() => {
     if (appointmentId) {
@@ -992,6 +1021,13 @@ const MeetingRoom: React.FC = () => { // NOSONAR
 
     setLobbyParticipants(prev => prev.filter(p => p.participantId !== participantId));
   }, [appointmentId, user]);
+
+  const admitAllFromLobby = useCallback(async () => {
+    const participants = [...lobbyParticipants];
+    for (const p of participants) {
+      await admitFromLobby(p.participantId);
+    }
+  }, [lobbyParticipants, admitFromLobby]);
 
   const goBack = useCallback(() => {
     const userId = user?.id;
@@ -1753,7 +1789,18 @@ const MeetingRoom: React.FC = () => { // NOSONAR
           <div className="w-80 bg-gray-800 border-l border-gray-700 flex flex-col" data-testid="lobby-panel">
             <div className="flex items-center justify-between p-3 border-b border-gray-700">
               <h3 className="font-medium text-sm">Waiting Room ({lobbyParticipants.length})</h3>
-              <button onClick={() => setShowLobby(false)} aria-label="ปิดห้องรอ" title="ปิด" className="text-gray-400 hover:text-white">✕</button>
+              <div className="flex items-center gap-2">
+                {lobbyParticipants.length > 1 && (
+                  <button
+                    onClick={admitAllFromLobby}
+                    className="px-2 py-1 bg-green-600 hover:bg-green-700 rounded text-xs font-medium transition"
+                    data-testid="admit-all-btn"
+                  >
+                    อนุญาตทั้งหมด
+                  </button>
+                )}
+                <button onClick={() => setShowLobby(false)} aria-label="ปิดห้องรอ" title="ปิด" className="text-gray-400 hover:text-white">✕</button>
+              </div>
             </div>
             <div className="flex-1 overflow-y-auto p-3 space-y-2">
               {lobbyParticipants.length === 0 ? (

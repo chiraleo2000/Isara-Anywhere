@@ -813,6 +813,7 @@ const VirtualMeeting: React.FC<VirtualMeetingProps> = ({
             isMicOn ? 'bg-red-600 animate-pulse' : 'bg-gray-700 hover:bg-gray-600'
           }`}
           title={isMicOn ? 'ปิดไมค์' : 'เปิดไมค์'}
+          aria-label={isMicOn ? 'ปิดไมค์' : 'เปิดไมค์'}
         >
           <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
             {isMicOn ? (
@@ -828,6 +829,8 @@ const VirtualMeeting: React.FC<VirtualMeetingProps> = ({
           className={`p-3 rounded-full transition-all ${
             isVideoOn ? 'bg-gray-700 hover:bg-gray-600' : 'bg-red-600 hover:bg-red-700'
           }`}
+          title={isVideoOn ? 'ปิดกล้อง' : 'เปิดกล้อง'}
+          aria-label={isVideoOn ? 'ปิดกล้อง' : 'เปิดกล้อง'}
         >
           <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
             <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
@@ -839,6 +842,8 @@ const VirtualMeeting: React.FC<VirtualMeetingProps> = ({
           className={`px-4 py-2 rounded-lg font-medium transition-all ${
             inputMode === 'voice' ? 'bg-red-600' : 'bg-blue-600'
           }`}
+          title={inputMode === 'voice' ? 'สลับเป็นโหมดข้อความ' : 'สลับเป็นโหมดเสียง'}
+          aria-label={inputMode === 'voice' ? 'สลับเป็นโหมดข้อความ' : 'สลับเป็นโหมดเสียง'}
         >
           {inputMode === 'voice' ? '🎤 โหมดเสียง' : '⌨️ โหมดข้อความ'}
         </button>
@@ -846,6 +851,8 @@ const VirtualMeeting: React.FC<VirtualMeetingProps> = ({
         <button
           onClick={handleEndMeeting}
           className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg font-semibold"
+          title="จบการปรึกษา"
+          aria-label="จบการปรึกษา"
         >
           จบการปรึกษา
         </button>
@@ -871,6 +878,8 @@ const VirtualMeeting: React.FC<VirtualMeetingProps> = ({
             onClick={handleSendMessage}
             disabled={!inputMessage.trim() || isAITyping}
             className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:bg-gray-300"
+            title="ส่งข้อความ"
+            aria-label="ส่งข้อความ"
           >
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
               <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
@@ -884,6 +893,8 @@ const VirtualMeeting: React.FC<VirtualMeetingProps> = ({
             className={`w-20 h-20 rounded-full flex items-center justify-center transition-all shadow-lg ${
               isMicOn ? 'bg-red-600 animate-pulse' : 'bg-gray-400'
             }`}
+            title={isMicOn ? 'หยุดฟังเสียง' : 'เริ่มพูด'}
+            aria-label={isMicOn ? 'หยุดฟังเสียง' : 'เริ่มพูด'}
           >
             <svg className="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 20 20">
               <path d="M7 4a3 3 0 016 0v6a3 3 0 11-6 0V4z M5.5 9.643a.75.75 0 00-1.5 0V10c0 3.06 2.29 5.585 5.25 5.954V17.5h-1.5a.75.75 0 000 1.5h4.5a.75.75 0 000-1.5h-1.5v-1.546A6.001 6.001 0 0016 10v-.357a.75.75 0 00-1.5 0V10a4.5 4.5 0 01-9 0v-.357z" />
@@ -996,8 +1007,8 @@ const VirtualMeeting: React.FC<VirtualMeetingProps> = ({
                 <div className="bg-gray-100 rounded-2xl px-4 py-3">
                   <div className="flex space-x-2">
                     <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:0.2s]"></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:0.4s]"></div>
                   </div>
                 </div>
               </div>

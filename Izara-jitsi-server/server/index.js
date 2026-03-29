@@ -808,7 +808,7 @@ app.post('/api/meetings/:id/lobby/join', optionalAuth, (req, res) => {
   if (!rawName || typeof rawName !== 'string' || !rawName.trim()) {
     return res.status(400).json({ success: false, error: 'participantName is required' });
   }
-  const participantName = rawName.replace(/<[^>]*>/g, '').trim().substring(0, 100);
+  const participantName = rawName.replaceAll(/<[^>]*>/g, '').trim().substring(0, 100);
 
   // Determine role from authenticated token only — never trust client-supplied role
   const authenticatedRole = req.user?.role;
@@ -896,6 +896,30 @@ app.post('/api/meetings/:id/lobby/reject', authenticateToken, (req, res) => {
   io.to(id).emit('lobby-update', { meetingId: id, action: 'reject', participant: entry });
 
   res.json({ success: true, participant: entry });
+});
+
+// Doctor admits ALL waiting participants from lobby
+app.post('/api/meetings/:id/lobby/admit-all', authenticateToken, (req, res) => {
+  const { id } = req.params;
+  const { admittedBy } = req.body;
+
+  const lobby = meetingLobbies.get(id);
+  if (!lobby) {
+    return res.json({ success: true, admitted: [], total: 0 });
+  }
+
+  const admitted = [];
+  for (const [, entry] of lobby) {
+    if (entry.status === 'waiting') {
+      entry.status = 'admitted';
+      entry.admittedBy = admittedBy;
+      entry.admittedAt = new Date().toISOString();
+      admitted.push(entry);
+      io.to(id).emit('lobby-update', { meetingId: id, action: 'admit', participant: entry });
+    }
+  }
+
+  res.json({ success: true, admitted, total: admitted.length });
 });
 
 // Generate shareable invite link for patient to share with others

@@ -4,7 +4,7 @@
 
 > คู่มือฉบับสมบูรณ์สำหรับผู้ป่วย แพทย์ และผู้ดูแลระบบ
 > Complete User Guide for Patients, Doctors, and Administrators
-> ทดสอบอัตโนมัติ 2,013 รายการ + UI ทดสอบบนคลาวด์ 101 รายการ ผ่าน 100%
+> ทดสอบอัตโนมัติ 2,013 รายการ + UI ทดสอบ 516 รายการ (351 ผ่าน, 50 ข้าม, 638 ภาพ) จาก 14 ไฟล์ทดสอบ
 
 ---
 
@@ -784,6 +784,569 @@ Review articles/resources submitted by doctors:
 
 ---
 
+## 5. Telemedicine Consultation Workflow — กระบวนการให้คำปรึกษาทางไกล
+
+### 5.1 End-to-End Lifecycle — ภาพรวมกระบวนการ
+
+The complete consultation lifecycle has 6 phases:
+
+```
+📝 Patient Books → ⏳ Pending → 👨‍⚕️ Doctor Reviews → ✅ Confirmed → 📹 Meeting → ✔️ Completed
+```
+
+**Phase 1 — Booking & Approval:**
+1. Patient books appointment (symptoms + preferred time + doctor selection or auto-match)
+2. AI analyzes symptoms → urgency level + specialty suggestion
+3. Two approval paths: **Path A** (doctor confirms directly) or **Path B** (admin assigns → doctor confirms)
+4. On confirmation: Jitsi meeting URLs auto-generated, patient notified with link
+
+**Phase 2 — Pre-Meeting Preparation:**
+5. Patient optionally invites relatives/friends (no account needed)
+6. Doctor optionally invites specialists/other doctors (token-based invite)
+7. AI generates Pre-Consultation Summary from patient's PHR + EMR history
+
+**Phase 3 — Meeting Execution** (see [Section 7](#7-video-meeting-system--jitsi--ระบบวิดีโอประชุม))
+
+**Phase 4 — Post-Meeting AI Processing** (see [Section 8](#8-ai-features--gemini--ฟีเจอร์-ai) and [Section 9](#9-meeting-recording--transcription--ระบบบันทึกและถอดเสียง))
+
+**Phase 5 — Doctor Review & EMR Documentation:**
+8. AI summary appears in Doctor Portal → Health Meeting page
+9. Doctor validates: [✅ Approve] [✏️ Edit] [🔄 Regenerate] [❌ Reject]
+10. EMR editor opens with AI-prefilled SOAP tabs (S/O/A/P)
+11. Doctor signs EMR → AI generates Patient Instruction Sheet
+12. Optional: E-prescribing + lab orders
+
+**Phase 6 — Patient Delivery:**
+13. Patient receives: diagnosis, treatment plan, medications, instruction sheet (PDF), follow-up schedule, warning signs
+14. Patient does NOT receive: internal notes, raw AI outputs, CDS alerts
+15. Visible in: Dashboard (latest result), Timeline (history entry), PHR (health logs)
+16. Appointment status → **completed**
+
+![Appointments List](../screenshots/workflow/appointment-lifecycle/WF04-patient-appointments-empty.png)
+![Appointment Confirmed](../screenshots/cloud-workflows/appointment-lifecycle/WC12-appointment-confirmed.png)
+
+> 📌 **Tip:** ผู้ป่วยจะได้รับลิงก์การประชุมทันทีเมื่อแพทย์ยืนยันนัดหมาย — ส่งทั้งอีเมลและแจ้งเตือนในแอป
+
+---
+
+### 5.2 Appointment Status Flow — สถานะการนัดหมาย
+
+| Status | Thai | Color | Description |
+|--------|------|-------|-------------|
+| **Pending** | รอดำเนินการ | 🟡 Yellow | Request sent, awaiting doctor review |
+| **Finding Doctor** | กำลังจัดหาแพทย์ | 🟠 Orange | Admin searching for available doctor |
+| **Assigned** | มอบหมายแล้ว | 🔵 Blue | Admin assigned a doctor |
+| **Confirmed** | ยืนยันแล้ว | 🟢 Green | Doctor confirmed — meeting link ready |
+| **In Progress** | กำลังดำเนินการ | 🔴 Red | Video consultation in progress |
+| **Completed** | เสร็จสิ้น | ⚪ Gray | Consultation done — view summary/EMR |
+| **Cancelled** | ยกเลิก | ⬛ Black | Cancelled by patient, doctor, or admin |
+
+---
+
+## 6. Doctor Onboarding Workflow — กระบวนการลงทะเบียนแพทย์ใหม่
+
+### 6.1 Doctor Registration — การลงทะเบียนแพทย์
+
+New doctors must register and wait for admin approval before accessing the system.
+
+**Steps:**
+1. Open Doctor Portal → click **"Register"**
+2. Fill in: Name, Email, Phone, Medical License Number, Specialty, Password
+3. Submit → see **"Pending Approval"** message
+4. Doctor **cannot log in** until admin approves
+
+![Doctor Registration](../screenshots/admin-registration/AR03-doctor-register.png)
+
+> ⚠️ **Note:** แพทย์ใหม่จะไม่สามารถเข้าสู่ระบบได้จนกว่าผู้ดูแลระบบจะอนุมัติ
+
+---
+
+### 6.2 Admin Approval Process — กระบวนการอนุมัติ
+
+1. Admin navigates to **"จัดการแพทย์" (Doctor Management)** page
+2. Views **Pending** tab (badge shows count of waiting doctors)
+3. Reviews doctor details: name, email, license, specialty, registration date
+4. Clicks **"Approve"** → doctor account activated → notification email sent
+5. Or clicks **"Reject"** → enters rejection reason → doctor notified
+
+![Admin Approval](../screenshots/admin-registration/AR04-admin-approve-doctor.png)
+![Doctor Management](../screenshots/cloud-workflows/user-management/WC05-admin-doctor-mgmt.png)
+
+---
+
+### 6.3 Doctor Approval States — สถานะการอนุมัติ
+
+| State | Can Login? | is_active | is_approved |
+|-------|-----------|-----------|-------------|
+| **Pending** | ❌ | false | false |
+| **Approved** | ✅ | true | true |
+| **Rejected** | ❌ | false | false |
+
+> 📌 **Tip:** Admins can also promote approved doctors to admin role or demote admins back to doctor
+
+---
+
+## 7. Video Meeting System & Jitsi — ระบบวิดีโอประชุม
+
+### 7.1 Meeting Participants & Roles — ผู้เข้าร่วมประชุม
+
+| Role | How They Join | Lobby? |
+|------|--------------|--------|
+| **Doctor (HOST)** | "Join Meeting" from Scheduled tab | No (moderator) |
+| **Patient** | Meeting link from appointments page | Yes (waits for doctor) |
+| **Patient's Relatives** | Shared link from patient | Yes (create name + lobby) |
+| **Other Doctors/Admin** | Token-based invite from doctor | Yes (lobby) |
+| **External Guests** | Direct link (no account needed) | Yes (create name + lobby) |
+
+---
+
+### 7.2 Doctor (HOST) Meeting Flow — การเข้าประชุมของแพทย์
+
+1. Open **"ตารางประชุม" (Scheduled Meetings)** → click **"🎥 เข้าร่วมประชุม" (Join Meeting)**
+2. Pre-join screen: camera/mic preview (both ON by default)
+3. Enter room as HOST/Moderator — the meeting room is created and synchronized so the patient sees the same room
+4. **Host Controls:** Lobby admission (individual or **"อนุญาตทั้งหมด" Admit All**), kick, mute all, start/stop recording, invite guests
+
+![Doctor Pre-Join](../screenshots/workflow/video-meeting/WF14b-doctor-pre-join.png)
+
+---
+
+### 7.3 Patient Meeting Flow — การเข้าประชุมของผู้ป่วย
+
+1. See meeting link in **"นัดหมายของฉัน" (My Appointments)** page
+2. Accept 3-consent agreement (video recording, transcription, PDPA)
+3. Pre-join screen: test camera/mic
+4. Click **"เข้าร่วม" (Join)** → enter Lobby → wait for doctor
+5. Doctor approves → enters meeting room
+
+![Patient Agreement](../screenshots/workflow/video-meeting/WF15a-patient-agreement.png)
+
+> 🔒 **Security:** ผู้ป่วยต้องยอมรับข้อตกลง 3 ข้อก่อนเข้าร่วมประชุม (การบันทึกวิดีโอ, ถอดเสียง, PDPA)
+
+---
+
+### 7.4 Guest Join Flow — การเข้าร่วมแบบผู้เยี่ยม (ไม่ต้องสร้างบัญชี)
+
+1. Receive invite link (email or shared by patient/doctor)
+2. Click link → Guest Join page (`/guest-join/:meetingId`)
+3. Enter display name and **email address** (no login required)
+4. Click **"ขอเข้าร่วม" (Request to Join)** → enter Lobby
+5. Doctor approves → enters meeting
+6. If rejected: red screen with **"แพทย์ไม่อนุญาตให้เข้าร่วม" (Doctor denied access)**
+
+> ⏱️ **Lobby Timeout:** After 5 minutes waiting in the lobby without doctor approval, a yellow warning banner appears: *"คุณรออยู่ใน Lobby นานกว่า 5 นาที"* with a **"กลับหน้าแรก" (Return Home)** button. The guest may continue waiting or return to the home page.
+
+---
+
+### 7.5 During Meeting Features — ฟีเจอร์ระหว่างประชุม
+
+- 📹 Video/audio for all participants (camera/mic ON by default, toggleable)
+- 💬 Text chat (always available, all messages captured)
+- 📱 Screen sharing for medical images
+- 🎙️ Transcript streaming (doctor-controlled — see [Section 9](#9-meeting-recording--transcription--ระบบบันทึกและถอดเสียง))
+- Up to 8 participants recommended
+
+![Meeting Controls](../screenshots/meeting-recording/MR04-meeting-room-controls.png)
+
+---
+
+### 7.6 Meeting End — จบการประชุม
+
+1. Doctor clicks **"วางสาย" (Hang Up)**
+2. All participants disconnected
+3. AI processing begins automatically (see [Section 8](#8-ai-features--gemini--ฟีเจอร์-ai))
+
+![Meeting Ended](../screenshots/workflow/video-meeting/WF16-meeting-ended-ai-summary.png)
+
+---
+
+## 8. AI Features & Gemini — ฟีเจอร์ AI
+
+### 8.1 Post-Meeting AI Pipeline — AI สรุปหลังประชุม (อัตโนมัติ)
+
+After a meeting ends, the AI pipeline runs automatically:
+- **Input:** Full transcript + all chat messages + video metadata + patient PHR/EMR
+- **Output:** SOAP summary (Thai), CDS recommendations, Patient Instruction Sheet draft
+- For meetings > 30 min: split into 30-minute sections with separate summaries
+- All outputs marked `requiresValidation: true` — doctor must approve
+
+---
+
+### 8.2 AI SOAP Summary — สรุป SOAP
+
+The AI generates a structured Thai-language SOAP note:
+
+- 🎯 อาการสำคัญ (Chief Complaint)
+- 📝 อาการที่พบ (Presenting Symptoms)
+- 🔍 การสืบค้น/ตรวจเพิ่มเติม (Investigation)
+- 📋 การประเมินเบื้องต้น (Assessment)
+- 💊 คำแนะนำการรักษา (Treatment Recommendations)
+- 📅 นัดติดตาม (Follow-up Schedule)
+- 🚩 อาการเตือน (Red Flags)
+- 🏠 คำแนะนำไลฟ์สไตล์ (Lifestyle Recommendations)
+
+![AI SOAP Summary](../screenshots/meeting-recording/MR06-ai-summary-soap.png)
+
+---
+
+### 8.3 Doctor Validation (Man-in-the-Loop) — แพทย์ตรวจสอบ
+
+Doctor reviews AI output with 4 actions:
+
+| Action | Description |
+|--------|-------------|
+| ✅ **Approve** | Accept → locks EMR → sends to patient |
+| ✏️ **Edit** | Modify sections before approval |
+| 🔄 **Regenerate** | AI regenerates with refined context |
+| ❌ **Reject** | Discard AI → write manually |
+
+![Post-Meeting Actions](../screenshots/meeting-recording/MR07-post-meeting-actions.png)
+
+> 🔒 **Security:** ผู้ป่วยจะไม่ได้รับผลสรุป AI โดยตรง — แพทย์ต้องตรวจสอบและอนุมัติทุกครั้ง
+
+---
+
+### 8.4 Patient Instruction Sheet — ใบคำแนะนำผู้ป่วย
+
+Auto-generated after doctor approves AI summary:
+
+- วินิจฉัย (Diagnosis in simple Thai)
+- ยาที่ได้รับ (Medications with dosage)
+- การปฏิบัติตัว (Self-care instructions)
+- อาการเตือน (Warning signs to watch for)
+- นัดติดตาม (Follow-up schedule)
+
+Doctor validates before sending → patient downloads as PDF.
+
+---
+
+### 8.5 Clinical Decision Support (CDS) — ระบบสนับสนุนการตัดสินใจ
+
+| Feature | Description |
+|---------|-------------|
+| Differential Diagnosis | AI suggests possible diagnoses |
+| Lab Tests | Suggested lab tests and imaging |
+| Drug Interactions | Drug interaction alerts |
+| Dosage Alerts | Dosage/allergy contraindication checks |
+| Guidelines | Clinical guideline references (2024-2025) |
+
+---
+
+### 8.6 AI Doctor (Patient Portal) — หมอ AI
+
+- Chat with Gemini AI for general health advice
+- References your PHR data for personalized answers
+- Multi-turn conversation, save/browse sessions
+- NOT a medical diagnosis — always consult a real doctor
+
+![AI Doctor](../screenshots/cloud/patient-portal/patient-07-ai-doctor.png)
+
+---
+
+### 8.7 Gemini AI Studio (Doctor Portal) — AI Studio สำหรับแพทย์
+
+Doctors access advanced AI tools:
+- Diagnosis / differential diagnosis
+- Treatment plan generation
+- Document analysis (PDF lab reports, images)
+- Patient history summary
+
+---
+
+### 8.8 Cost — ต้นทุน
+
+| Service | Cost |
+|---------|------|
+| Jitsi Meet | **$0** (FREE) |
+| Web Speech API | **$0** (FREE) |
+| Gemini AI | ~$0.001/1K tokens |
+| **Total per 15-min consultation** | **~$0.01-0.05** |
+
+---
+
+## 9. Meeting Recording & Transcription — ระบบบันทึกและถอดเสียง
+
+### 9.1 Recording — การบันทึก
+
+- Browser-based local recording (Jitsi built-in, FREE)
+- Doctor (HOST) starts/stops recording
+- Format: WebM, max 200MB
+- Recording uploaded to storage after meeting ends
+
+---
+
+### 9.2 Real-Time Transcription — การถอดเสียงแบบเรียลไทม์
+
+Doctor controls transcription during the meeting:
+
+1. Doctor clicks **"▶ Start Transcription"**
+2. Web Speech API begins listening (FREE, browser-based)
+3. Real-time transcript appears in bottom panel
+4. Speaker labels: 👨‍⚕️ Doctor / 🧑 Patient / 👥 Guest
+5. Interim text shown with yellow pulsing background
+6. Doctor can **⏸ Pause** / **▶ Resume** / **⏹ Stop** anytime
+7. Language toggle: Thai (th-TH) ↔ English (en-US)
+8. Transcript segments saved to database continuously
+
+![Transcript Diarization](../screenshots/meeting-recording/MR05-transcript-diarization.png)
+
+> 📌 **Note:** เฉพาะแพทย์ (HOST) เท่านั้นที่ควบคุมการถอดเสียงและการบันทึก — ผู้ป่วยไม่สามารถเริ่ม/หยุดได้
+
+---
+
+### 9.3 Post-Meeting Processing — การประมวลผลหลังประชุม
+
+1. Full transcript compiled from all segments
+2. All chat messages merged with transcript
+3. Combined input sent to Gemini AI for SOAP summary generation
+4. For long meetings (>30 min): 30-minute sectioned summaries
+
+![Meeting History](../screenshots/meeting-recording/MR08-meeting-history.png)
+
+---
+
+## 10. Notifications — ระบบแจ้งเตือน
+
+### 10.1 Notification Channels — ช่องทางแจ้งเตือน
+
+| Channel | Description |
+|---------|-------------|
+| **In-App** | 🔔 Bell icon in header — dropdown list |
+| **Email** | Thai-language email with action details |
+| **Push** | Browser push notifications (real-time) |
+
+---
+
+### 10.2 Notification Types — ประเภทการแจ้งเตือน
+
+| Category | Events |
+|----------|--------|
+| **Appointments** | Requested, confirmed (+ meeting link), declined, cancelled, assigned, rescheduled, reminders (24h, 1h) |
+| **Video Meeting** | Link ready, link failed, meeting started, reminder (15 min) |
+| **Medical Records** | EMR signed, EMR ready for review, prescription ready, lab results ready |
+| **System** | Account verified, password reset, system maintenance |
+
+---
+
+### 10.3 Automatic Reminder Schedule — ตารางแจ้งเตือนอัตโนมัติ
+
+| Timing | Channel | Thai Message |
+|--------|---------|-------------|
+| 24 hours before | Email + In-App | พรุ่งนี้คุณมีนัดพบแพทย์ |
+| 1 hour before | Push + In-App | อีก 1 ชั่วโมง ถึงเวลานัดหมาย |
+| 15 min before | Push + In-App | เตรียมพร้อม! ลิงก์ประชุมพร้อมแล้ว |
+| Real-time | Push | แพทย์เริ่มห้องประชุมแล้ว คลิกเข้าร่วม |
+
+> 📌 **Tip:** ตั้งค่าการแจ้งเตือนได้ที่ Settings → Notifications — เปิด/ปิดได้ตามประเภทและช่องทาง
+
+---
+
+## 11. Content & Resource Management — การจัดการเนื้อหา
+
+### 11.1 Medical Content (Health Library) — คลังความรู้สุขภาพ
+
+| Role | Can Do |
+|------|--------|
+| **Patient** | Read published articles only |
+| **Doctor** | Create, edit, delete own articles, publish (direct or via approval) |
+| **Admin** | Full CRUD + approve/reject submissions + audit log |
+
+**Content Lifecycle:**
+```
+📝 Draft → 📤 Pending → 👑 Admin Reviews → ✅ Published (visible in Health Library)
+                                          → ❌ Rejected → Doctor revises → resubmit
+```
+
+![Patient Health Library](../screenshots/cloud/patient-portal/patient-08-health-library.png)
+
+---
+
+### 11.2 Doctor: Create Article — แพทย์: สร้างบทความ
+
+1. Click **"สร้างบทความ" (Create Article)**
+2. Enter: Title (Thai required), Content (Thai required), Category, Tags
+3. Choose: **Save as Draft** or **Submit for Approval**
+4. If submitted → enters Admin approval queue
+
+![Doctor Medical Content](../screenshots/cloud-workflows/content-management/WC21-doctor-medical-content.png)
+
+---
+
+### 11.3 Clinical Resources (Doctor-Only) — ทรัพยากรทางคลินิก
+
+| Role | Can Do |
+|------|--------|
+| **Doctor** | Create, edit own, submit for approval |
+| **Admin** | Approve/reject, view all including pending |
+| **Patient** | ❌ No access |
+
+**Categories:** Diagnosis Guidelines, Treatment Protocols, Pharmacology, Radiology, Laboratory, Pathology, Emergency Medicine, Nursing Guidelines, Research Papers, Case Studies
+
+**Resource Types:** guideline, protocol, research, template, reference
+
+![Clinical Resources](../screenshots/cloud/doctor-portal/doctor-09-clinical-resources.png)
+
+> 🔒 **Note:** Clinical resources ALWAYS require admin approval before being published
+
+---
+
+## 12. Security & PDPA — ความปลอดภัยและ PDPA
+
+### 12.1 PDPA Consent Management — การจัดการความยินยอม PDPA
+
+Navigate to **"PDPA & หนังสือแสดงเจตนา"** → **"PDPA"** tab:
+
+- Toggle ON/OFF per data type: Demographics, Medical History, Medications, Allergies, Lab Results, Prescriptions, Vital Signs, PHR, EMR, Living Will
+- Set different sharing per doctor
+- Revoke consent at any time
+
+![PDPA Consent](../screenshots/cloud/patient-portal/patient-11-pdpa.png)
+
+---
+
+### 12.2 Living Will — พินัยกรรมชีวิต
+
+Navigate to **"PDPA & หนังสือแสดงเจตนา"** → **"พินัยกรรมชีวิต"** tab:
+
+**4-step wizard:**
+1. **Step 1:** Primary Proxy (name, relationship, contact)
+2. **Step 2:** Alternate Proxy (optional)
+3. **Step 3:** Treatment Preferences (CPR, ventilator, tube feeding, dialysis, antibiotics, pain management, organ donation)
+4. **Step 4:** Digital Signature + toggle doctor sharing
+
+**Sharing Options:**
+- 🔒 Keep Private — only you can see
+- 🌐 Share with authorized doctors — doctors with treatment history or admins
+
+**Status:** Draft → Active (signed) → Revoked
+
+![Living Will](../screenshots/cloud-workflows/living-will/WC31-patient-living-will.png)
+
+---
+
+### 12.3 Security Features — ความปลอดภัย
+
+| Feature | Detail |
+|---------|--------|
+| Password Hashing | bcrypt (all portals) |
+| Account Lockout | 5 failed attempts → locked 30 minutes |
+| Rate Limiting | Login: 10/15min, Password Reset: 5/hr, API: 500/15min |
+| Session Security | 64-char crypto token, IP binding, user-agent tracking |
+| JWT Authentication | Cross-service JWT with role verification |
+| Man-in-the-Loop | Doctor validates ALL AI outputs before patient delivery |
+| Audit Logging | All access to Living Will + PHR + EMR logged |
+| OWASP Headers | Helmet.js (CSP, XSS protection, HSTS, X-Frame) |
+| TypeScript Safety | Zero `error: any` — strict type narrowing |
+| SonarQube | Clean — no security vulnerabilities |
+
+---
+
+### 12.4 Role-Based Access Control (RBAC) — การควบคุมสิทธิ์
+
+| Role | Portal | Access |
+|------|--------|--------|
+| **Patient** | Patient Portal | Own data only — PHR, appointments, AI, health library |
+| **Doctor** | Doctor Portal | Treated patients' data (per PDPA), EMR, prescriptions |
+| **Admin** | Doctor Portal + Admin | System-wide — doctor management, content approval, all appointments |
+
+> 🔒 ผู้ป่วยไม่สามารถเข้า Doctor Portal ได้ — API ตอบ 401 ทุกครั้ง
+
+---
+
+## 13. Troubleshooting & FAQ — คำถามที่พบบ่อย
+
+### 13.1 Login Issues — ปัญหาการเข้าสู่ระบบ
+
+| Problem | Solution |
+|---------|----------|
+| Cannot log in as doctor | Check if your account has been approved by admin ([Section 6](#6-doctor-onboarding-workflow--กระบวนการลงทะเบียนแพทย์ใหม่)) |
+| Account locked | Wait 30 minutes after 5 failed login attempts |
+| Session expired | Re-login — sessions expire after 30 minutes |
+| Forgot password | Use "Forgot Password" link → reset via email (link expires in 15 min) |
+
+---
+
+### 13.2 Appointment Issues — ปัญหาการนัดหมาย
+
+| Problem | Solution |
+|---------|----------|
+| No meeting link | Meeting link is generated when doctor confirms — check appointment status |
+| Meeting link failed | Fallback notification sent — contact admin |
+| Can't book appointment | Ensure profile is complete — fill symptoms and select date/time |
+| Doctor declined | Appointment returns to pool — admin will re-assign another doctor |
+
+---
+
+### 13.3 Video Meeting Issues — ปัญหาการประชุมวิดีโอ
+
+| Problem | Solution |
+|---------|----------|
+| Camera/mic not working | Allow browser permissions — test on pre-join screen |
+| Stuck in lobby | Doctor must be in the meeting to admit you — wait for doctor |
+| Guest can't join | Ensure correct invite link and enter a display name |
+| Video quality poor | Check internet speed — reduce camera resolution if needed |
+
+---
+
+### 13.4 AI & Summary Issues — ปัญหา AI
+
+| Problem | Solution |
+|---------|----------|
+| AI summary not generated | Requires transcript + chat data — ensure transcription was started during meeting |
+| Summary in wrong language | Doctor can toggle Thai ↔ English during transcription |
+| AI Doctor not responding | Check internet connection — Gemini API must be reachable |
+
+---
+
+### 13.5 Notification Issues — ปัญหาการแจ้งเตือน
+
+| Problem | Solution |
+|---------|----------|
+| Not receiving notifications | Check Settings → Notifications — ensure toggle is ON |
+| No email received | Check spam folder — verify registered email is correct |
+| Push notifications blocked | Allow browser notifications in browser settings |
+
+---
+
+## Appendix — ภาคผนวก
+
+### Platform Architecture — สถาปัตยกรรมระบบ
+
+| Service | Technology | Port |
+|---------|-----------|------|
+| **Patient Portal** | React + TypeScript + Vite | 3005 |
+| **Doctor Portal** | React + TypeScript + Vite | 3010 |
+| **Meeting Server** | Express + Socket.IO | 3020 |
+| **Database** | PostgreSQL 18 + pgvector | 5433 |
+
+**External Services:**
+- Jitsi Meet — Video Conferencing (FREE)
+- Google Gemini AI — Chat, CDS, SOAP Summaries
+- Web Speech API — FREE Live Transcription
+- Google Maps — Healthcare Facilities Map
+- Google Cloud Run — Container Hosting (Production)
+
+### Test Coverage — ความครอบคลุมการทดสอบ
+
+| Category | Tests | Files |
+|----------|-------|-------|
+| Unit Tests (Vitest) | 2,013 | 58 |
+| E2E Tests (Playwright) | 1,149 | 33 |
+| UI Tests (Playwright) | 516 | 14 |
+| **Total** | **3,678** | **105** |
+
+**Test Run Results (March 29, 2026):**
+- Unit: 2,013 passed (100%)
+- E2E: 1,149 passed (100%)
+- UI: 351 passed, 50 skipped, 9 failed (pre-existing infra), 106 did not run
+- **638 screenshots** captured across all portal pages and workflows
+
+---
+
+*User Guide Version 1.5.10 • 2,013 Unit Tests + 1,149 E2E Tests + 516 UI Tests from 105 test files • 638 screenshots*
+
+---
+
 ### 4.5 Schedule & User Management — จัดตาราง & จัดการผู้ใช้
 
 **Additional Admin features:**
@@ -872,12 +1435,13 @@ Patient (Patient Portal)  ─→  Meeting Server (Socket.IO)  ←─  Doctor (Do
 ### 7.3 Lobby System — Microsoft Teams Style
 
 ```
-Guest/Patient enters link → Enter name → Wait in Lobby → Doctor admits/rejects → Enter/Exit room
+Guest/Patient enters link → Enter name + email → Wait in Lobby → Doctor admits/rejects → Enter/Exit room
 ```
 
 **For Doctors:**
-- See list of waiting participants (name, type: patient/guest/admin)
+- See list of waiting participants (name, email, type: patient/guest/admin)
 - ✓ **Admit** — Participant enters meeting immediately
+- ✓ **Admit All (อนุญาตทั้งหมด)** — Admit all waiting participants at once
 - ✗ **Reject** — Participant sees red screen in Thai + exit button
 
 ### 7.4 Guest Join — No Account Required
@@ -885,9 +1449,10 @@ Guest/Patient enters link → Enter name → Wait in Lobby → Doctor admits/rej
 Patients can send `/guest-join/:meetingId` link to family/caregivers:
 
 1. Open link → Guest Join page shows meeting name
-2. Enter name (no login, no email)
+2. Enter name and **email address** (no login required)
 3. Test camera/mic → click Join → enter Lobby
-4. When admitted → enter Jitsi room with settings:
+4. ⏱️ After **5 minutes** waiting — yellow warning banner appears with "กลับหน้าแรก" (Return Home) button
+5. When admitted → enter Jitsi room with settings:
    - Skip secondary lobby for pre-approved participants
    - Default muted on entry
    - Recording buttons hidden for guests
@@ -1118,4 +1683,4 @@ Thailand's Personal Data Protection Act compliance:
 
 **© 2026 IZARA Telemedicine Platform — All Rights Reserved**
 
-*This user guide covers v1.5.10 with 2,013 verified unit tests across 58 test suites + 101 cloud UI tests — all passing 100%.*
+*This user guide covers v1.5.10 with 2,013 unit tests + 1,149 E2E + 516 UI tests (638 screenshots) from 105 test files.*

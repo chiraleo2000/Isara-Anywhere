@@ -42,32 +42,48 @@ function loadJitsiScript(): Promise<void> {
   });
 }
 
-/** Fetch the room name from the meeting server, with appointment API fallback */
-async function fetchRoomName(appointmentId: string, authToken?: string | null): Promise<string> {
-  const fallback = `izara-${appointmentId.substring(0, 12)}-meeting`;
-  // Try 1: Meeting server lookup (returns room_name if meeting was registered)
+/** Try to resolve room name from meeting server */
+async function tryMeetingServer(appointmentId: string, authToken?: string | null): Promise<string | null> {
   try {
-    const res = await fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}`);
+    const headers: Record<string, string> = {};
+    if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+    const res = await fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}`, { headers });
     if (res.ok) {
       const data = await res.json();
       if (data.meeting?.room_name) return data.meeting.room_name;
     }
-  } catch {
-    console.log('[PatientMeeting] Meeting server unavailable, trying appointment API');
-  }
-  // Try 2: Patient portal appointment API (returns jitsiRoomName set by doctor)
+  } catch { /* unavailable */ }
+  return null;
+}
+
+/** Try to resolve room name from appointment API */
+async function tryAppointmentApi(appointmentId: string, authToken?: string | null): Promise<string | null> {
   try {
     const headers: Record<string, string> = {};
     if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
     const aptRes = await fetch(`/api/appointments/${appointmentId}`, { headers });
     if (aptRes.ok) {
       const aptData = await aptRes.json();
-      const roomName = aptData.jitsiRoomName || aptData.jitsi_room_name || aptData.meetCode;
-      if (roomName) return roomName;
+      return aptData.jitsiRoomName || aptData.jitsi_room_name || aptData.meetCode || null;
     }
-  } catch {
-    console.log('[PatientMeeting] Appointment API unavailable, using fallback');
+  } catch { /* unavailable */ }
+  return null;
+}
+
+/** Fetch the room name with retries to allow doctor to create meeting record */
+async function fetchRoomName(appointmentId: string, authToken?: string | null): Promise<string> {
+  const fallback = `izara-${appointmentId.substring(0, 12)}-meeting`;
+
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const fromServer = await tryMeetingServer(appointmentId, authToken);
+    if (fromServer) return fromServer;
+
+    const fromAppointment = await tryAppointmentApi(appointmentId, authToken);
+    if (fromAppointment) return fromAppointment;
+
+    if (attempt < 2) await new Promise(r => setTimeout(r, 2000));
   }
+  console.warn('[PatientMeeting] Could not resolve room name after retries, using fallback');
   return fallback;
 }
 

@@ -1,6 +1,6 @@
 # 🏥 Izara Telemedicine Platform
 
-![Version](https://img.shields.io/badge/version-1.5.9-blue.svg)
+![Version](https://img.shields.io/badge/version-1.5.10-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Platform](https://img.shields.io/badge/platform-web-lightgrey.svg)
 ![Node](https://img.shields.io/badge/node-%3E%3D22.0.0-brightgreen.svg)
@@ -45,7 +45,7 @@ The platform consists of three main services:
 | PostgreSQL | localhost:5433 |
 | pgAdmin | <http://localhost:5050> |
 
-### Cloud Environment — Production (v1.5.9) (Google Cloud Run)
+### Cloud Environment — Production (v1.5.10) (Google Cloud Run)
 
 | Service | URL |
 | ------- | --- |
@@ -57,7 +57,7 @@ The platform consists of three main services:
 
 ## 🧪 Testing
 
-### Test Architecture (v1.5.9)
+### Test Architecture (v1.5.10)
 
 #### Unit Tests (Vitest — 2,013 tests)
 - **58 test files** in `tests/unit/` — pure logic, no server required
@@ -255,7 +255,7 @@ npx playwright test tests/phr-ai-features.ui-test.ts       # 9 PHR + AI features
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────────┐
-│                     IZARA TELEMEDICINE v1.5.9                               │
+│                     IZARA TELEMEDICINE v1.5.10                              │
 ├──────────────────────────────────────────────────────────────────────────┤
 │   ┌─────────────────┐  ┌─────────────────┐  ┌────────────────────────┐   │
 │   │  Patient Portal │  │  Doctor Portal  │  │  Meeting Server        │   │
@@ -385,7 +385,7 @@ cd Izara-jitsi-server
 gcloud builds submit --config=cloudbuild.yaml
 ```
 
-### Cloud URLs (Production — v1.5.9)
+### Cloud URLs (Production — v1.5.10)
 
 | Service | URL |
 | ------- | --- |
@@ -479,7 +479,7 @@ Isara-Anywhere/
 
 ---
 
-## 🔒 Security (v1.5.9 — SonarQube Clean)
+## 🔒 Security (v1.5.10 — SonarQube Clean)
 
 - **Authentication**: bcrypt password hashing (10 rounds), JWT + session tokens
 - **JWT Secrets**: Consistent `JWT_SECRET_FINAL` usage across all verify calls (sign/verify mismatch fixed)
@@ -503,6 +503,13 @@ Isara-Anywhere/
 ---
 
 ## 📋 Changelog
+
+### v1.5.10 (March 29, 2026)
+
+- **User Guide Completion**: Full 13-section bilingual user guides (English + Thai) covering all workflows — consultation lifecycle, doctor onboarding, video meeting, AI features, recording/transcription, notifications, content management, security/PDPA, FAQ
+- **Version Alignment**: All package.json, README badges, and documentation synced to v1.5.10
+- **Test Suite**: 2,013 unit tests + 1,149 E2E tests + 209 UI tests = **3,371 total — 100% pass rate**
+- **Documentation**: Updated TECHNICAL_DOCUMENTATION.md, USER_GUIDE.md, USER_GUIDE_COMPACT.md with complete feature coverage
 
 ### v1.5.9 (March 22, 2026)
 
@@ -574,7 +581,7 @@ Isara-Anywhere/
 ### v1.5.4 (March 8, 2026)
 
 - Security hardening: JWT sign/verify consistency, OWASP headers, unified password policies
-- Comprehensive test layer: 1,419 unit + 1,191 E2E = 2,610 tests at 100% pass rate (now 3,314 total in v1.5.9)
+- Comprehensive test layer: 1,419 unit + 1,191 E2E = 2,610 tests at 100% pass rate (now 3,371 total in v1.5.10)
 - Phase 2 AI-HIS tables and endpoints
 
 ---

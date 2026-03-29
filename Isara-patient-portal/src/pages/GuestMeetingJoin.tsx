@@ -22,6 +22,7 @@ type GuestStatus = 'form' | 'joining' | 'waiting' | 'admitted' | 'rejected' | 'e
 const GuestMeetingJoin: React.FC = () => {
   const { meetingId } = useParams<{ meetingId: string }>();
   const [guestName, setGuestName] = useState('');
+  const [guestEmail, setGuestEmail] = useState('');
   const [status, setStatus] = useState<GuestStatus>('form');
   const [participantId, setParticipantId] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
@@ -130,7 +131,7 @@ const GuestMeetingJoin: React.FC = () => {
       const res = await fetch(`${MEETING_SERVER_URL}/api/meetings/${meetingId}/lobby/join`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ participantName: guestName.trim() }),
+        body: JSON.stringify({ participantName: guestName.trim(), email: guestEmail.trim() || undefined }),
       });
       const data = await res.json();
       if (data.success) {
@@ -204,6 +205,20 @@ const GuestMeetingJoin: React.FC = () => {
                 onKeyDown={e => e.key === 'Enter' && handleJoinLobby()}
               />
             </div>
+            <div>
+              <label htmlFor="guest-email" className="block text-sm font-medium text-gray-700 mb-1">อีเมล (Email) — ไม่บังคับ</label>
+              <input
+                id="guest-email"
+                type="email"
+                value={guestEmail}
+                onChange={e => setGuestEmail(e.target.value)}
+                placeholder="your@email.com"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                data-testid="guest-email-input"
+                maxLength={200}
+                onKeyDown={e => e.key === 'Enter' && handleJoinLobby()}
+              />
+            </div>
             <button
               onClick={handleJoinLobby}
               disabled={!guestName.trim()}
@@ -235,6 +250,19 @@ const GuestMeetingJoin: React.FC = () => {
             <h2 className="text-xl font-semibold text-gray-800 mb-2">รอการอนุมัติ</h2>
             <p className="text-gray-500 mb-1">Waiting for host to approve...</p>
             <p className="text-sm text-gray-400 font-mono">{formatWait(waitSeconds)}</p>
+            {waitSeconds >= 300 && (
+              <div className="mt-3 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                <p className="text-sm text-yellow-700">
+                  รอมาแล้ว 5 นาที — แพทย์อาจยังไม่ได้เริ่มการประชุม
+                </p>
+                <button
+                  onClick={() => setStatus('form')}
+                  className="mt-2 text-xs text-blue-600 hover:underline"
+                >
+                  กลับหน้าแรก
+                </button>
+              </div>
+            )}
             <div className="mt-4 bg-blue-50 rounded-lg p-3">
               <p className="text-sm text-blue-700">
                 <span className="font-semibold">{guestName}</span> — กำลังรอแพทย์อนุมัติเข้าห้องประชุม

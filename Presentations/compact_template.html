@@ -18,8 +18,13 @@
     column-count: 2;
     column-gap: 8mm;
     column-rule: 1px solid #e0e0e0;
-    orphans: 3;
-    widows: 3;
+    /* orphans/widows: supported in Chromium/WebKit print but not Firefox */
+  }
+  @supports (orphans: 3) {
+    body {
+      orphans: 3;
+      widows: 3;
+    }
   }
 
   h1 {

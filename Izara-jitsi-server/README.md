@@ -1,6 +1,6 @@
 # 🎥 Izara Meeting Server
 
-![Version](https://img.shields.io/badge/version-1.5.7-blue.svg)
+![Version](https://img.shields.io/badge/version-1.5.10-blue.svg)
 ![Node.js](https://img.shields.io/badge/Node.js-22+-green.svg)
 ![Socket.IO](https://img.shields.io/badge/Socket.IO-4.x-black.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
