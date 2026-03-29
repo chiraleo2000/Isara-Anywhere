@@ -363,7 +363,6 @@ test.describe('Complete Appointment Workflow — UI Screenshots', () => {
   // ─────────────────────────────────────────────────────────────────
   test('WF12 — Doctor Health Meeting Queue', async () => {
     test.skip(!serviceAvailable, 'Services unreachable');
-    test.skip(!serviceAvailable, 'Services unreachable');
     await safeGoto(doctorPage,`${DOCTOR_URL}/doctor/${doctorId}/health-meeting`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await snap(doctorPage, 'WF12-health-meeting-queue', 'Health Meeting Queue', SS_APPT);
   });
@@ -372,7 +371,6 @@ test.describe('Complete Appointment Workflow — UI Screenshots', () => {
   // WF12b — Doctor Notification Bell
   // ─────────────────────────────────────────────────────────────────
   test('WF12b — Doctor Notifications', async () => {
-    test.skip(!serviceAvailable, 'Services unreachable');
     test.skip(!serviceAvailable, 'Services unreachable');
     await safeGoto(doctorPage,`${DOCTOR_URL}/doctor/${doctorId}/dashboard`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await doctorPage.waitForTimeout(2000);
@@ -390,7 +388,6 @@ test.describe('Complete Appointment Workflow — UI Screenshots', () => {
   // WF13 — Patient Sees Confirmed Appointment + Notification
   // ─────────────────────────────────────────────────────────────────
   test('WF13 — Patient Appointment Confirmed + Notification', async () => {
-    test.skip(!serviceAvailable, 'Services unreachable');
     test.skip(!serviceAvailable, 'Services unreachable');
     await safeGoto(patientPage,`${PATIENT_URL}/appointments`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await snap(patientPage, 'WF13-patient-appointment-confirmed', 'Patient - Appointment Confirmed', SS_APPT);
@@ -415,7 +412,6 @@ test.describe('Complete Appointment Workflow — UI Screenshots', () => {
   // WF14 — Create Video Meeting (API) + Doctor Agreement + Pre-Join
   // ─────────────────────────────────────────────────────────────────
   test('WF14 — Doctor Video Meeting Room', async () => {
-    test.skip(!serviceAvailable, 'Services unreachable');
     test.skip(!serviceAvailable, 'Services unreachable');
     // Create meeting via API
     await apiPost(doctorPage, `${DOCTOR_URL}/api/video-meeting/create`, {
@@ -457,7 +453,6 @@ test.describe('Complete Appointment Workflow — UI Screenshots', () => {
   // ─────────────────────────────────────────────────────────────────
   test('WF15 — Patient Video Meeting Room', async () => {
     test.skip(!serviceAvailable, 'Services unreachable');
-    test.skip(!serviceAvailable, 'Services unreachable');
     // Patient join via API
     await apiPost(patientPage, `${PATIENT_URL}/api/video-meeting/${appointmentId}/join`, {
       participantId: patientId, participantName: 'UI Test Patient',
@@ -490,7 +485,6 @@ test.describe('Complete Appointment Workflow — UI Screenshots', () => {
   //         Then show Doctor Dashboard / Health Meeting with summary
   // ─────────────────────────────────────────────────────────────────
   test('WF16 — AI Summary Generated', async () => {
-    test.skip(!serviceAvailable, 'Services unreachable');
     test.skip(!serviceAvailable, 'Services unreachable');
     // Send transcript entries
     const entries = [
@@ -532,7 +526,6 @@ test.describe('Complete Appointment Workflow — UI Screenshots', () => {
   // ─────────────────────────────────────────────────────────────────
   test('WF17 — Doctor EMR Created', async () => {
     test.skip(!serviceAvailable, 'Services unreachable');
-    test.skip(!serviceAvailable, 'Services unreachable');
     // Create EMR via API
     const emrR = await apiPost(doctorPage, `${DOCTOR_URL}/api/emr`, {
       appointmentId, patientId, doctorId,
@@ -568,7 +561,6 @@ test.describe('Complete Appointment Workflow — UI Screenshots', () => {
   // WF18 — Doctor Schedule (appointment completed)
   // ─────────────────────────────────────────────────────────────────
   test('WF18 — Doctor Schedule', async () => {
-    test.skip(!serviceAvailable, 'Services unreachable');
     test.skip(!serviceAvailable, 'Services unreachable');
     await safeGoto(doctorPage,`${DOCTOR_URL}/doctor/${doctorId}/schedule`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await snap(doctorPage, 'WF18-doctor-schedule', 'Doctor Schedule - Completed Appointment', SS_POST);

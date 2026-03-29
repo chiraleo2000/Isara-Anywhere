@@ -62,12 +62,18 @@ test.describe('Admin Workflows — UI Screenshots', () => {
   let page: Page;
   let token: string;
   let user: Record<string, unknown>;
+  let serviceAvailable = false;
 
   test.beforeAll(async ({ browser }) => {
     ctx = await browser.newContext({ viewport: { width: 1280, height: 720 } });
     page = await ctx.newPage();
 
-    const loginR = await apiPost(page, `${DOCTOR_URL}/auth/api/login`, {
+    try {
+      const probe = await page.request.get(`${DOCTOR_URL}/health`, { timeout: 15000 });
+      if (probe.status() !== 200) return;
+    } catch { return; }
+
+    const loginR = await apiPost(page, `${DOCTOR_URL}/api/auth/login`, {
       email: 'doctor.test@izara.com',
       password: process.env.IZARA_DOCTOR_PASSWORD || 'IzaraDoctor@2024',
     });
@@ -79,6 +85,7 @@ test.describe('Admin Workflows — UI Screenshots', () => {
       token = 'demo-token';
       user = { id: 'demo-doctor', email: 'doctor.test@izara.com', name: 'Dr. Demo' };
     }
+    serviceAvailable = true;
   });
 
   test.afterAll(async () => { await ctx?.close(); });
@@ -93,48 +100,56 @@ test.describe('Admin Workflows — UI Screenshots', () => {
 
   // ── AD01 — Admin Dashboard ──────────────────────────────────────
   test('AD01 — Admin Dashboard', async () => {
+    test.skip(!serviceAvailable, 'Service unreachable');
     await authAndGo('/dashboard');
     await snap(page, 'AD01-admin-dashboard', 'Admin Dashboard');
   });
 
   // ── AD02 — User Management ─────────────────────────────────────
   test('AD02 — User Management', async () => {
+    test.skip(!serviceAvailable, 'Service unreachable');
     await authAndGo('/admin/doctors');
     await snap(page, 'AD02-user-management', 'User Management');
   });
 
   // ── AD03 — Doctor Schedule Management ──────────────────────────
   test('AD03 — Doctor Schedules', async () => {
+    test.skip(!serviceAvailable, 'Service unreachable');
     await authAndGo('/doctor-schedule');
     await snap(page, 'AD03-doctor-schedules', 'Doctor Schedules');
   });
 
   // ── AD04 — Appointment Management (Admin) ─────────────────────
   test('AD04 — Appointment Management', async () => {
+    test.skip(!serviceAvailable, 'Service unreachable');
     await authAndGo('/appointments');
     await snap(page, 'AD04-appointment-management', 'Appointment Management');
   });
 
   // ── AD05 — Clinical Resources ──────────────────────────────────
   test('AD05 — Clinical Resources', async () => {
+    test.skip(!serviceAvailable, 'Service unreachable');
     await authAndGo('/clinical-resources');
     await snap(page, 'AD05-clinical-resources', 'Clinical Resources');
   });
 
   // ── AD06 — Medical Content Management ──────────────────────────
   test('AD06 — Medical Content', async () => {
+    test.skip(!serviceAvailable, 'Service unreachable');
     await authAndGo('/medical-content');
     await snap(page, 'AD06-medical-content', 'Medical Content');
   });
 
   // ── AD07 — Notifications Management ────────────────────────────
   test('AD07 — Notifications', async () => {
+    test.skip(!serviceAvailable, 'Service unreachable');
     await authAndGo('/notifications');
     await snap(page, 'AD07-notifications', 'Notifications');
   });
 
   // ── AD08 — Living Will Management ──────────────────────────────
   test('AD08 — Living Will', async () => {
+    test.skip(!serviceAvailable, 'Service unreachable');
     await authAndGo('/patients');
     await snap(page, 'AD08-living-will', 'Living Will Management');
   });

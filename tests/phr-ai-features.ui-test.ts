@@ -115,7 +115,7 @@ test.describe('PHR Timeline & AI Features — UI Screenshots', () => {
     }
 
     // Doctor login
-    const docR = await apiPost(doctorPage, `${DOCTOR_URL}/auth/api/login`, {
+    const docR = await apiPost(doctorPage, `${DOCTOR_URL}/api/auth/login`, {
       email: 'doctor.test@izara.com',
       password: process.env.IZARA_DOCTOR_PASSWORD || 'IzaraDoctor@2024',
     });

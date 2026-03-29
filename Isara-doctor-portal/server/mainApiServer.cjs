@@ -603,6 +603,10 @@ const jwt = require('jsonwebtoken');
 // JWT Configuration - SECURITY: No hardcoded fallback secrets
 const JWT_SECRET = process.env.JWT_SECRET || process.env.VITE_JWT_SECRET;
 if (!JWT_SECRET) {
+  if (process.env.NODE_ENV === 'production') {
+    console.error('[SECURITY] FATAL: JWT_SECRET not set in production. Exiting.');
+    process.exit(1);
+  }
   console.error('[SECURITY] CRITICAL: JWT_SECRET environment variable is not set.');
 }
 const JWT_SECRET_FINAL = JWT_SECRET || require('node:crypto').randomBytes(32).toString('hex');

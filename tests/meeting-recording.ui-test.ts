@@ -78,6 +78,7 @@ test.describe('Meeting Recording Workflow — UI Screenshots', () => {
   let doctorToken: string;
   let doctorUser: Record<string, unknown>;
   let doctorUserId: string; // userId for SPA route: /doctor/:userId/...
+  let serviceAvailable = false;
 
   test.beforeAll(async ({ browser }) => {
     doctorCtx = await browser.newContext({
@@ -85,13 +86,21 @@ test.describe('Meeting Recording Workflow — UI Screenshots', () => {
       permissions: ['camera', 'microphone'],
     });
     doctorPage = await doctorCtx.newPage();
+
+    try {
+      const probe = await doctorPage.request.get(`${DOCTOR_URL}/health`, { timeout: 15000 });
+      if (probe.status() !== 200) return;
+    } catch { return; }
+
+    serviceAvailable = true;
   });
 
   test.afterAll(async () => { await doctorCtx?.close(); });
 
   // ── MR01 — Doctor Login & Auth ──────────────────────────────────
   test('MR01 — Doctor Login for Meeting', async () => {
-    const loginR = await apiPost(doctorPage, `${DOCTOR_URL}/auth/api/login`, {
+    test.skip(!serviceAvailable, 'Service unreachable');
+    const loginR = await apiPost(doctorPage, `${DOCTOR_URL}/api/auth/login`, {
       email: 'doctor.test@izara.com',
       password: process.env.IZARA_DOCTOR_PASSWORD || 'IzaraDoctor@2024',
     });
@@ -112,6 +121,7 @@ test.describe('Meeting Recording Workflow — UI Screenshots', () => {
 
   // ── MR02 — Meeting Server Health Check ──────────────────────────
   test('MR02 — Meeting Server Health', async () => {
+    test.skip(!serviceAvailable, 'Service unreachable');
     const healthR = await apiGet(doctorPage, `${MEETING_URL}/api/health`);
     if (healthR.status !== 200) { test.skip(true, `Meeting server returned ${healthR.status}`); return; }
     console.log('  ✅ Meeting server health:', JSON.stringify(healthR.body.features || {}));
@@ -124,6 +134,7 @@ test.describe('Meeting Recording Workflow — UI Screenshots', () => {
 
   // ── MR03 — Navigate to Meeting/Appointment Area ─────────────────
   test('MR03 — Navigate to Appointments', async () => {
+    test.skip(!serviceAvailable, 'Service unreachable');
     await doctorPage.goto(`${DOCTOR_URL}/doctor/${doctorUserId}/schedule`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await injectDoctorAuth(doctorPage, doctorToken, doctorUser);
     await doctorPage.reload();
@@ -132,6 +143,7 @@ test.describe('Meeting Recording Workflow — UI Screenshots', () => {
 
   // ── MR04 — Meeting Room UI (Recording Controls) ─────────────────
   test('MR04 — Meeting Room Recording Controls', async () => {
+    test.skip(!serviceAvailable, 'Service unreachable');
     await doctorPage.goto(`${DOCTOR_URL}/doctor/${doctorUserId}/health-meeting`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await injectDoctorAuth(doctorPage, doctorToken, doctorUser);
     await doctorPage.reload();
@@ -141,6 +153,7 @@ test.describe('Meeting Recording Workflow — UI Screenshots', () => {
 
   // ── MR05 — Transcript with Speaker Diarization ──────────────────
   test('MR05 — Transcript Diarization UI', async () => {
+    test.skip(!serviceAvailable, 'Service unreachable');
     // Already on health-meeting page from MR04; click Results tab if available
     try {
       const resultsTab = doctorPage.locator('button:has-text("ผลประชุม"), button:has-text("Results"), [data-testid="results-tab"]');
@@ -152,16 +165,19 @@ test.describe('Meeting Recording Workflow — UI Screenshots', () => {
 
   // ── MR06 — AI Summary SOAP Format ──────────────────────────────
   test('MR06 — AI Summary Display', async () => {
+    test.skip(!serviceAvailable, 'Service unreachable');
     await snap(doctorPage, 'MR06-ai-summary-soap', 'AI Summary SOAP Format');
   });
 
   // ── MR07 — Post-Meeting Actions ─────────────────────────────────
   test('MR07 — Post-Meeting Action Buttons', async () => {
+    test.skip(!serviceAvailable, 'Service unreachable');
     await snap(doctorPage, 'MR07-post-meeting-actions', 'Post-Meeting Action Buttons');
   });
 
   // ── MR08 — Meeting History ──────────────────────────────────────
   test('MR08 — Meeting History', async () => {
+    test.skip(!serviceAvailable, 'Service unreachable');
     await doctorPage.goto(`${DOCTOR_URL}/doctor/${doctorUserId}/health-meeting`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await injectDoctorAuth(doctorPage, doctorToken, doctorUser);
     await doctorPage.reload();

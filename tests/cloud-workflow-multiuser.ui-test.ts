@@ -382,14 +382,13 @@ test.describe('Cloud Workflow — Appointment Lifecycle', () => {
       console.log('  ⚠️ Skipping — no appointment ID');
       return;
     }
-    const res = await apiPut(doctorPage, `${DOCTOR_URL}/api/appointments/${appointmentId}`, {
+    const res = await apiPost(doctorPage, `${DOCTOR_URL}/api/appointments/${appointmentId}/confirm`, {
       status: 'confirmed',
       doctorId,
       confirmedDate: new Date(Date.now() + 86400000).toISOString().split('T')[0],
       confirmedTime: '10:00',
     }, doctorToken);
-    // Accept various success codes
-    expect([200, 201, 400, 404]).toContain(res.status);
+    expect([200, 201]).toContain(res.status);
     console.log(`  ✅ Appointment confirm: ${res.status}`);
   });
 
@@ -467,7 +466,7 @@ test.describe('Cloud Workflow — Health Records', () => {
       oxygenSaturation: 98, respiratoryRate: 16,
       recordedAt: new Date().toISOString(),
     }, patientToken);
-    expect([200, 201, 400, 404]).toContain(res.status);
+    expect([200, 201]).toContain(res.status);
     console.log(`  ✅ Vitals update: ${res.status}`);
   });
 
@@ -483,8 +482,8 @@ test.describe('Cloud Workflow — Health Records', () => {
 
   test('WC19 — Doctor: Access PHR via API', async () => {
     // Doctor retrieves patient PHR data
-    const res = await apiGet(doctorPage, `${DOCTOR_URL}/api/phr/${patientId}`, doctorToken);
-    expect([200, 404]).toContain(res.status);
+    const res = await apiGet(doctorPage, `${DOCTOR_URL}/api/phr/patient/${patientId}`, doctorToken);
+    expect([200]).toContain(res.status);
     console.log(`  ✅ Doctor PHR access: ${res.status}`);
   });
 
@@ -717,14 +716,13 @@ test.describe('Cloud Workflow — Living Will', () => {
       },
       pdpaConsent: { isSharedWithDoctors: true, shareScope: 'all' },
     }, patientToken);
-    // Accept various codes (may not have the route, 404 is acceptable)
-    expect([200, 201, 400, 404]).toContain(res.status);
+    expect([200, 201]).toContain(res.status);
     console.log(`  ✅ Living Will created: ${res.status}`);
   });
 
   test('WC34 — Doctor: Check living will access via API', async () => {
     const res = await apiGet(doctorPage, `${DOCTOR_URL}/api/patients/${patientId}/living-will`, doctorToken);
-    expect([200, 404]).toContain(res.status);
+    expect([200]).toContain(res.status);
     console.log(`  ✅ Doctor living will access: ${res.status}`);
   });
 });

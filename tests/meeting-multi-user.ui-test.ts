@@ -587,19 +587,19 @@ test.describe('Multi-User Meeting — Admin + Doctor + Patient', () => {
       speakerId: doctorId, speakerRole: 'doctor', speakerName: doctorName,
       content: 'สวัสดีครับ วันนี้มีอาการอย่างไรบ้างครับ', language: 'th', confidence: 0.95,
     }, doctorToken);
-    expect([200, 403]).toContain(t1.status);
+    expect([200]).toContain(t1.status);
 
     const t2 = await apiPost(doctorPage, `${MEETING_URL}/api/meetings/${appointmentId}/transcript`, {
       speakerId: patientId, speakerRole: 'patient', speakerName: 'MU Test Patient',
       content: 'มีอาการปวดหัวและเวียนศีรษะมา 3 วันค่ะ', language: 'th', confidence: 0.9,
     }, doctorToken);
-    expect([200, 403]).toContain(t2.status);
+    expect([200]).toContain(t2.status);
 
     const t3 = await apiPost(doctorPage, `${MEETING_URL}/api/meetings/${appointmentId}/transcript`, {
       speakerId: doctorId, speakerRole: 'doctor', speakerName: doctorName,
       content: 'มีไข้ด้วยไหมครับ วัดอุณหภูมิได้เท่าไร', language: 'th', confidence: 0.92,
     }, doctorToken);
-    expect([200, 403]).toContain(t3.status);
+    expect([200]).toContain(t3.status);
 
     // Retrieve transcript (optionalAuth — always works)
     const getT = await apiGet(doctorPage, `${MEETING_URL}/api/meetings/${appointmentId}/transcript`, doctorToken);
@@ -621,15 +621,15 @@ test.describe('Multi-User Meeting — Admin + Doctor + Patient', () => {
   // MU17 — Media status API
   // ─────────────────────────────────────────────────────────────────
   test('MU17 — Media Status Report + Retrieve', async () => {
-    // Report media status
+    // Report media status — server expects userId + role
     const mediaR = await apiPost(doctorPage, `${MEETING_URL}/api/meetings/${appointmentId}/media-status`, {
-      participantId: doctorId,
-      participantName: doctorName,
+      userId: doctorId,
+      userName: doctorName,
+      role: 'doctor',
       camera: true,
       microphone: true,
     }, doctorToken);
-    // 200 = accepted, 400 = payload schema differs on server
-    expect([200, 400]).toContain(mediaR.status);
+    expect([200]).toContain(mediaR.status);
 
     // Retrieve
     const getM = await apiGet(doctorPage, `${MEETING_URL}/api/meetings/${appointmentId}/media-status`, doctorToken);
@@ -662,7 +662,6 @@ test.describe('Multi-User Meeting — Admin + Doctor + Patient', () => {
   // ─────────────────────────────────────────────────────────────────
   test('MU19 — Meeting Results Full Data', async () => {
     const resR = await apiGet(doctorPage, `${MEETING_URL}/api/meetings/${appointmentId}/results`, doctorToken);
-    // 200 = full data, 404 = endpoint not deployed yet
     expect([200, 404]).toContain(resR.status);
     if (resR.status === 200) {
       expect(resR.body.success).toBe(true);
@@ -677,7 +676,6 @@ test.describe('Multi-User Meeting — Admin + Doctor + Patient', () => {
   // ─────────────────────────────────────────────────────────────────
   test('MU20 — Meeting Summary Accessible', async () => {
     const sumR = await apiGet(doctorPage, `${MEETING_URL}/api/meetings/${appointmentId}/summary`, doctorToken);
-    // 200 = summary available, 404 = not found / not generated
     expect([200, 404]).toContain(sumR.status);
     if (sumR.status === 200) {
       expect(sumR.body.success).toBe(true);
@@ -689,8 +687,7 @@ test.describe('Multi-User Meeting — Admin + Doctor + Patient', () => {
   // ─────────────────────────────────────────────────────────────────
   test('MU21 — Meeting History', async () => {
     const histR = await apiGet(doctorPage, `${MEETING_URL}/api/meetings/history/${doctorId}`, doctorToken);
-    // 200 = history available, 404 = endpoint not available
-    expect([200, 404]).toContain(histR.status);
+    expect([200]).toContain(histR.status);
     if (histR.status === 200) {
       expect(histR.body.success).toBe(true);
     }
@@ -734,8 +731,7 @@ test.describe('Multi-User Meeting — Admin + Doctor + Patient', () => {
       participantName: doctorName,
       role: 'doctor',
     }, doctorToken);
-    // 200 = admitted, 400/404 = meeting already ended
-    expect([200, 400, 404]).toContain(hostR.status);
+    expect([200]).toContain(hostR.status);
     if (hostR.status === 200) {
       expect(hostR.body.status).toBeTruthy();
     }

@@ -132,7 +132,7 @@ test.describe('Guest Lobby & Host Approval — UI Screenshots', () => {
   // ── MG02 — Doctor Login ─────────────────────────────────────────
   test('MG02 — Doctor Login & Auth', async () => {
     test.skip(!serviceAvailable, 'Meeting server unreachable');
-    const loginR = await apiPost(doctorPage, `${DOCTOR_URL}/auth/api/login`, {
+    const loginR = await apiPost(doctorPage, `${DOCTOR_URL}/api/auth/login`, {
       email: DOCTOR_EMAIL,
       password: DOCTOR_PASSWORD,
     });

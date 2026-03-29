@@ -62,9 +62,17 @@ const { Pool } = pg;
 const PORT = process.env.PORT || 3020;
 const JITSI_DOMAIN = process.env.JITSI_DOMAIN || 'meet.jit.si';
 // SECURITY: No hardcoded fallback secrets
-const JWT_SECRET = process.env.JWT_SECRET || (() => {
-  console.error('[SECURITY] WARNING: JWT_SECRET not set. Using random ephemeral secret.');
-  return crypto.randomBytes(64).toString('hex');
+const JWT_SECRET = (() => {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    if (process.env.NODE_ENV === 'production') {
+      console.error('[SECURITY] FATAL: JWT_SECRET not set in production. Exiting.');
+      process.exit(1);
+    }
+    console.warn('[SECURITY] WARNING: JWT_SECRET not set. Using random ephemeral secret (dev only).');
+    return crypto.randomBytes(64).toString('hex');
+  }
+  return secret;
 })();
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash-lite';
@@ -232,6 +240,18 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json({ limit: '10mb' }));
+
+// Security headers
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  if (isProduction) {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  }
+  next();
+});
 
 // Mobile-specific headers middleware (Phase 2)
 app.use((req, res, next) => {
@@ -516,6 +536,15 @@ app.post('/api/meetings/create', authenticateToken, async (req, res) => {
     
   } catch (error) {
     console.error('[Meeting] Create error:', error);
+    if (error.code === '23503') {
+      return res.status(400).json({ error: 'Referenced record not found', detail: error.detail });
+    }
+    if (error.code === '23503') {
+      return res.status(400).json({ error: 'Referenced record not found', detail: error.detail });
+    }
+    if (error.code === '23503') {
+      return res.status(400).json({ error: 'Referenced record not found', detail: error.detail });
+    }
     res.status(500).json({ error: 'Failed to create meeting' });
   }
 });
@@ -1173,7 +1202,7 @@ ${chatContext}
 // MEETING HISTORY (Phase 2)
 // ============================================================================
 
-app.get('/api/meetings/history/:doctorId', optionalAuth, async (req, res) => {
+app.get('/api/meetings/history/:doctorId', authenticateToken, async (req, res) => {
   try {
     const { doctorId } = req.params;
     const limit = Number.parseInt(req.query.limit || '20', 10);
@@ -1429,7 +1458,7 @@ app.post('/api/meetings/:id/stop-transcription', authenticateToken, async (req, 
 });
 
 // Get meeting transcript
-app.get('/api/meetings/:id/transcript', optionalAuth, async (req, res) => {
+app.get('/api/meetings/:id/transcript', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     let rows = [];
@@ -1467,7 +1496,7 @@ app.get('/api/meetings/:id/transcript', optionalAuth, async (req, res) => {
 });
 
 // Get transcript sections (30-minute splits)
-app.get('/api/meetings/:id/transcript/sections', optionalAuth, async (req, res) => {
+app.get('/api/meetings/:id/transcript/sections', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     const sectionMinutes = Number.parseInt(req.query.minutes || '30', 10);
@@ -1578,7 +1607,7 @@ app.post('/api/meetings/:id/chat', optionalAuth, async (req, res) => {
   }
 });
 
-app.get('/api/meetings/:id/chats', optionalAuth, async (req, res) => {
+app.get('/api/meetings/:id/chats', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     const messages = meetingChats.get(id) || [];
@@ -1901,7 +1930,7 @@ app.post('/api/meetings/:id/process-embeddings', authenticateToken, async (req, 
 });
 
 // Get AI summary
-app.get('/api/meetings/:id/summary', optionalAuth, async (req, res) => {
+app.get('/api/meetings/:id/summary', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     let summary = null, recommendations = null, sections = null;
@@ -2373,7 +2402,7 @@ ${aiSummary}
 });
 
 // GET /api/meetings/:id/consultation-result — Patient fetches approved consultation result
-app.get('/api/meetings/:id/consultation-result', optionalAuth, async (req, res) => {
+app.get('/api/meetings/:id/consultation-result', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -2546,7 +2575,7 @@ app.post('/api/meetings/:id/transcribe-audio', authenticateToken, async (req, re
 });
 
 // POST /api/meetings/:id/enhanced-summary — Enhanced Gemini summary with diarized speaker context
-app.post('/api/meetings/:id/enhanced-summary', optionalAuth, async (req, res) => {
+app.post('/api/meetings/:id/enhanced-summary', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     const { format = 'structured' } = req.body;
@@ -2684,7 +2713,7 @@ ${diarizedTranscript}
 
 // GET /api/meetings/:id/results — Combined transcript + summary + chat + metadata
 // Used by doctor portal to show complete meeting results (like MS Teams recording)
-app.get('/api/meetings/:id/results', optionalAuth, async (req, res) => {
+app.get('/api/meetings/:id/results', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
 

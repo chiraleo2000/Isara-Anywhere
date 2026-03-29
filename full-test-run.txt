@@ -1,0 +1,273 @@
+
+Running 258 tests using 1 worker
+
+[1A[2K[1/258] [UI-Verification] ΓÇ║ tests\admin-register-doctor.ui-test.ts:154:7 ΓÇ║ Admin Register & Promote Doctor Workflow ΓÇ║ AR01 ΓÇö Register new patient via Patient Portal API
+[1A[2K[UI-Verification] ΓÇ║ tests\admin-register-doctor.ui-test.ts:154:7 ΓÇ║ Admin Register & Promote Doctor Workflow ΓÇ║ AR01 ΓÇö Register new patient via Patient Portal API
+
+≡ƒö╣ AR01: Registering new patient: ar.patient.1774803000902@test.com
+
+[1A[2K  Γ£à Patient registration: status=200
+
+[1A[2K  ≡ƒô╕ [Patient Registration] ΓåÆ AR01-patient-register.png
+
+[1A[2K[2/258] [UI-Verification] ΓÇ║ tests\admin-register-doctor.ui-test.ts:175:7 ΓÇ║ Admin Register & Promote Doctor Workflow ΓÇ║ AR02 ΓÇö Login new patient and verify token
+[1A[2K[UI-Verification] ΓÇ║ tests\admin-register-doctor.ui-test.ts:175:7 ΓÇ║ Admin Register & Promote Doctor Workflow ΓÇ║ AR02 ΓÇö Login new patient and verify token
+
+≡ƒö╣ AR02: Logging in as new patient: ar.patient.1774803000902@test.com
+
+[1A[2K  Γ£à Patient logged in: id=PATIENT-1774803002934-A6117559
+
+[1A[2K  ≡ƒô╕ [Patient Dashboard] ΓåÆ AR02-patient-dashboard.png
+
+[1A[2K[3/258] [UI-Verification] ΓÇ║ tests\admin-register-doctor.ui-test.ts:209:7 ΓÇ║ Admin Register & Promote Doctor Workflow ΓÇ║ AR03 ΓÇö Register new doctor (pending approval)
+[1A[2K[UI-Verification] ΓÇ║ tests\admin-register-doctor.ui-test.ts:209:7 ΓÇ║ Admin Register & Promote Doctor Workflow ΓÇ║ AR03 ΓÇö Register new doctor (pending approval)
+
+≡ƒö╣ AR03: Registering new doctor: ar.doctor.1774803000902@test.com
+
+[1A[2K  Γ£à Doctor registered (pending): id=DOC-1774803013185-0BZ98A, status=pending
+
+[1A[2K  ≡ƒô╕ [Doctor Registration] ΓåÆ AR03-doctor-register.png
+
+[1A[2K[4/258] [UI-Verification] ΓÇ║ tests\admin-register-doctor.ui-test.ts:237:7 ΓÇ║ Admin Register & Promote Doctor Workflow ΓÇ║ AR04 ΓÇö Admin approves new doctor
+[1A[2K[UI-Verification] ΓÇ║ tests\admin-register-doctor.ui-test.ts:237:7 ΓÇ║ Admin Register & Promote Doctor Workflow ΓÇ║ AR04 ΓÇö Admin approves new doctor
+
+≡ƒö╣ AR04: Admin approving doctor: ar.doctor.1774803000902@test.com
+
+[1A[2K  Γ£à Admin logged in: id=ADMIN-TEST-001
+
+[1A[2K  Approve response: status=200, body={"success":true,"message":"Doctor approved successfully","doctor":{"id":"DOC-1774803013185-0BZ98A","email":"ar.doctor.1774803000902@test.com","password_hash":"$2a$10$FpyWUJ9oNSNemTfEDJfK..HfeaIiDGr24z
+
+[1A[2K  Γ£à Doctor approved: DOC-1774803013185-0BZ98A
+
+[1A[2K  ≡ƒô╕ [Admin Approve Doctor] ΓåÆ AR04-admin-approve-doctor.png
+
+[1A[2K[5/258] [UI-Verification] ΓÇ║ tests\admin-register-doctor.ui-test.ts:281:7 ΓÇ║ Admin Register & Promote Doctor Workflow ΓÇ║ AR05 ΓÇö Admin sets privilege: promote doctor to admin
+[1A[2K[UI-Verification] ΓÇ║ tests\admin-register-doctor.ui-test.ts:281:7 ΓÇ║ Admin Register & Promote Doctor Workflow ΓÇ║ AR05 ΓÇö Admin sets privilege: promote doctor to admin
+
+≡ƒö╣ AR05: Promoting doctor to admin: DOC-1774803013185-0BZ98A
+
+[1A[2K  Role update response: status=200, body={"success":true,"message":"User role updated to admin","user":{"id":"DOC-1774803013185-0BZ98A","email":"ar.doctor.1774803000902@test.com","password_hash":"$2a$10$FpyWUJ9oNSNemTfEDJfK..HfeaIiDGr24zQtyB
+
+[1A[2K  Γ£à Doctor promoted to admin: DOC-1774803013185-0BZ98A
+
+[1A[2K  ≡ƒô╕ [Admin Promote Doctor] ΓåÆ AR05-admin-promote-doctor.png
+
+[1A[2K[6/258] [UI-Verification] ΓÇ║ tests\admin-register-doctor.ui-test.ts:321:7 ΓÇ║ Admin Register & Promote Doctor Workflow ΓÇ║ AR06 ΓÇö New admin (promoted doctor) login and verify access
+[1A[2K[UI-Verification] ΓÇ║ tests\admin-register-doctor.ui-test.ts:321:7 ΓÇ║ Admin Register & Promote Doctor Workflow ΓÇ║ AR06 ΓÇö New admin (promoted doctor) login and verify access
+
+≡ƒö╣ AR06: Logging in as promoted admin: ar.doctor.1774803000902@test.com
+
+[1A[2K  Γ£à Promoted admin logged in: id=DOC-1774803013185-0BZ98A
+
+[1A[2K  Login response ΓÇö isAdmin: true, role: admin, adminPrivileges: {}
+
+[1A[2K  ≡ƒô╕ [New Admin Access Verification] ΓåÆ AR06-new-admin-access.png
+
+[1A[2K  ≡ƒôì Current URL: https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app/admin/doctors
+
+[1A[2K  Γ£à Promoted admin has full admin access
+
+[1A[2K[7/258] [UI-Verification] ΓÇ║ tests\admin-workflows.ui-test.ts:102:7 ΓÇ║ Admin Workflows ΓÇö UI Screenshots ΓÇ║ AD01 ΓÇö Admin Dashboard
+[1A[2K[UI-Verification] ΓÇ║ tests\admin-workflows.ui-test.ts:102:7 ΓÇ║ Admin Workflows ΓÇö UI Screenshots ΓÇ║ AD01 ΓÇö Admin Dashboard
+  ≡ƒô╕ [Admin Dashboard] ΓåÆ C:\Users\chira\Documents\Isara-telemed\Isara-Anywhere\screenshots\admin-workflows\AD01-admin-dashboard.png
+
+[1A[2K[8/258] [UI-Verification] ΓÇ║ tests\admin-workflows.ui-test.ts:109:7 ΓÇ║ Admin Workflows ΓÇö UI Screenshots ΓÇ║ AD02 ΓÇö User Management
+[1A[2K[UI-Verification] ΓÇ║ tests\admin-workflows.ui-test.ts:109:7 ΓÇ║ Admin Workflows ΓÇö UI Screenshots ΓÇ║ AD02 ΓÇö User Management
+  ≡ƒô╕ [User Management] ΓåÆ C:\Users\chira\Documents\Isara-telemed\Isara-Anywhere\screenshots\admin-workflows\AD02-user-management.png
+
+[1A[2K[9/258] [UI-Verification] ΓÇ║ tests\admin-workflows.ui-test.ts:116:7 ΓÇ║ Admin Workflows ΓÇö UI Screenshots ΓÇ║ AD03 ΓÇö Doctor Schedules
+[1A[2K[UI-Verification] ΓÇ║ tests\admin-workflows.ui-test.ts:116:7 ΓÇ║ Admin Workflows ΓÇö UI Screenshots ΓÇ║ AD03 ΓÇö Doctor Schedules
+  ≡ƒô╕ [Doctor Schedules] ΓåÆ C:\Users\chira\Documents\Isara-telemed\Isara-Anywhere\screenshots\admin-workflows\AD03-doctor-schedules.png
+
+[1A[2K[10/258] [UI-Verification] ΓÇ║ tests\admin-workflows.ui-test.ts:123:7 ΓÇ║ Admin Workflows ΓÇö UI Screenshots ΓÇ║ AD04 ΓÇö Appointment Management
+[1A[2K[UI-Verification] ΓÇ║ tests\admin-workflows.ui-test.ts:123:7 ΓÇ║ Admin Workflows ΓÇö UI Screenshots ΓÇ║ AD04 ΓÇö Appointment Management
+  ≡ƒô╕ [Appointment Management] ΓåÆ C:\Users\chira\Documents\Isara-telemed\Isara-Anywhere\screenshots\admin-workflows\AD04-appointment-management.png
+
+[1A[2K[11/258] [UI-Verification] ΓÇ║ tests\admin-workflows.ui-test.ts:130:7 ΓÇ║ Admin Workflows ΓÇö UI Screenshots ΓÇ║ AD05 ΓÇö Clinical Resources
+[1A[2K[UI-Verification] ΓÇ║ tests\admin-workflows.ui-test.ts:130:7 ΓÇ║ Admin Workflows ΓÇö UI Screenshots ΓÇ║ AD05 ΓÇö Clinical Resources
+  ≡ƒô╕ [Clinical Resources] ΓåÆ C:\Users\chira\Documents\Isara-telemed\Isara-Anywhere\screenshots\admin-workflows\AD05-clinical-resources.png
+
+[1A[2K[12/258] [UI-Verification] ΓÇ║ tests\admin-workflows.ui-test.ts:137:7 ΓÇ║ Admin Workflows ΓÇö UI Screenshots ΓÇ║ AD06 ΓÇö Medical Content
+[1A[2K[UI-Verification] ΓÇ║ tests\admin-workflows.ui-test.ts:137:7 ΓÇ║ Admin Workflows ΓÇö UI Screenshots ΓÇ║ AD06 ΓÇö Medical Content
+  ≡ƒô╕ [Medical Content] ΓåÆ C:\Users\chira\Documents\Isara-telemed\Isara-Anywhere\screenshots\admin-workflows\AD06-medical-content.png
+
+[1A[2K[13/258] [UI-Verification] ΓÇ║ tests\admin-workflows.ui-test.ts:144:7 ΓÇ║ Admin Workflows ΓÇö UI Screenshots ΓÇ║ AD07 ΓÇö Notifications
+[1A[2K[UI-Verification] ΓÇ║ tests\admin-workflows.ui-test.ts:144:7 ΓÇ║ Admin Workflows ΓÇö UI Screenshots ΓÇ║ AD07 ΓÇö Notifications
+  ≡ƒô╕ [Notifications] ΓåÆ C:\Users\chira\Documents\Isara-telemed\Isara-Anywhere\screenshots\admin-workflows\AD07-notifications.png
+
+[1A[2K[14/258] [UI-Verification] ΓÇ║ tests\admin-workflows.ui-test.ts:151:7 ΓÇ║ Admin Workflows ΓÇö UI Screenshots ΓÇ║ AD08 ΓÇö Living Will
+[1A[2K[UI-Verification] ΓÇ║ tests\admin-workflows.ui-test.ts:151:7 ΓÇ║ Admin Workflows ΓÇö UI Screenshots ΓÇ║ AD08 ΓÇö Living Will
+  ≡ƒô╕ [Living Will Management] ΓåÆ C:\Users\chira\Documents\Isara-telemed\Isara-Anywhere\screenshots\admin-workflows\AD08-living-will.png
+
+[1A[2K[15/258] [UI-Verification] ΓÇ║ tests\appointment-meeting-url.ui-test.ts:64:7 ΓÇ║ Appointment ΓåÆ Meeting URL Flow ΓÇ║ 1 ΓÇö Meeting server health check
+[1A[2K[UI-Verification] ΓÇ║ tests\appointment-meeting-url.ui-test.ts:64:7 ΓÇ║ Appointment ΓåÆ Meeting URL Flow ΓÇ║ 1 ΓÇö Meeting server health check
+  Γ£à Meeting server is healthy
+
+[1A[2K[16/258] [UI-Verification] ΓÇ║ tests\appointment-meeting-url.ui-test.ts:83:7 ΓÇ║ Appointment ΓåÆ Meeting URL Flow ΓÇ║ 2 ΓÇö Create meeting via API and verify room name returned
+[1A[2K[UI-Verification] ΓÇ║ tests\appointment-meeting-url.ui-test.ts:83:7 ΓÇ║ Appointment ΓåÆ Meeting URL Flow ΓÇ║ 2 ΓÇö Create meeting via API and verify room name returned
+  ΓÜá∩╕Å Create meeting returned 500, skipping (endpoint not deployed)
+
+[1A[2K[17/258] [UI-Verification] ΓÇ║ tests\appointment-meeting-url.ui-test.ts:123:7 ΓÇ║ Appointment ΓåÆ Meeting URL Flow ΓÇ║ 3 ΓÇö Doctor and patient resolve same room name
+[1A[2K[UI-Verification] ΓÇ║ tests\appointment-meeting-url.ui-test.ts:123:7 ΓÇ║ Appointment ΓåÆ Meeting URL Flow ΓÇ║ 3 ΓÇö Doctor and patient resolve same room name
+  ΓÜá∩╕Å Create meeting not available, skipping
+
+[1A[2K[18/258] [UI-Verification] ΓÇ║ tests\appointment-meeting-url.ui-test.ts:157:7 ΓÇ║ Appointment ΓåÆ Meeting URL Flow ΓÇ║ 4 ΓÇö Guest joins lobby and doctor sees them
+[1A[2K[UI-Verification] ΓÇ║ tests\appointment-meeting-url.ui-test.ts:157:7 ΓÇ║ Appointment ΓåÆ Meeting URL Flow ΓÇ║ 4 ΓÇö Guest joins lobby and doctor sees them
+  ΓÜá∩╕Å Create meeting not available, skipping
+
+[1A[2K[19/258] [UI-Verification] ΓÇ║ tests\appointment-meeting-url.ui-test.ts:214:7 ΓÇ║ Appointment ΓåÆ Meeting URL Flow ΓÇ║ 5 ΓÇö Admit-all endpoint admits multiple guests
+[1A[2K[UI-Verification] ΓÇ║ tests\appointment-meeting-url.ui-test.ts:214:7 ΓÇ║ Appointment ΓåÆ Meeting URL Flow ΓÇ║ 5 ΓÇö Admit-all endpoint admits multiple guests
+  ΓÜá∩╕Å Create meeting not available, skipping
+
+[1A[2K[20/258] [UI-Verification] ΓÇ║ tests\appointment-meeting-url.ui-test.ts:266:7 ΓÇ║ Appointment ΓåÆ Meeting URL Flow ΓÇ║ 6 ΓÇö Doctor meeting page loads agreement screen
+[1A[2K[UI-Verification] ΓÇ║ tests\appointment-meeting-url.ui-test.ts:266:7 ΓÇ║ Appointment ΓåÆ Meeting URL Flow ΓÇ║ 6 ΓÇö Doctor meeting page loads agreement screen
+  ΓÜá∩╕Å Meeting page did not load meeting content (may need deployment), skipping
+
+[1A[2K[21/258] [UI-Verification] ΓÇ║ tests\appointment-meeting-url.ui-test.ts:308:7 ΓÇ║ Appointment ΓåÆ Meeting URL Flow ΓÇ║ 7 ΓÇö Patient meeting page loads and resolves room
+[1A[2K[UI-Verification] ΓÇ║ tests\appointment-meeting-url.ui-test.ts:308:7 ΓÇ║ Appointment ΓåÆ Meeting URL Flow ΓÇ║ 7 ΓÇö Patient meeting page loads and resolves room
+  ≡ƒô╕ [Patient Meeting Page] ΓåÆ C:\Users\chira\Documents\Isara-telemed\Isara-Anywhere\screenshots\meeting\patient-meeting-page.png
+
+[1A[2K  Γ£à Patient meeting page loaded
+
+[1A[2K[22/258] [UI-Verification] ΓÇ║ tests\appointment-meeting-url.ui-test.ts:338:7 ΓÇ║ Appointment ΓåÆ Meeting URL Flow ΓÇ║ 8 ΓÇö Guest join page renders form and email field
+[1A[2K[UI-Verification] ΓÇ║ tests\appointment-meeting-url.ui-test.ts:338:7 ΓÇ║ Appointment ΓåÆ Meeting URL Flow ΓÇ║ 8 ΓÇö Guest join page renders form and email field
+  ΓÜá∩╕Å Guest join form not rendered (page may differ), skipping
+
+[1A[2K[23/258] [UI-Verification] ΓÇ║ tests\cloud-ui-screenshots.ui-test.ts:241:7 ΓÇ║ Cloud Patient Portal ΓÇö All Pages Screenshot ΓÇ║ CP01 ΓÇö Login Page
+[1A[2K[24/258] [UI-Verification] ΓÇ║ tests\cloud-ui-screenshots.ui-test.ts:252:7 ΓÇ║ Cloud Patient Portal ΓÇö All Pages Screenshot ΓÇ║ CP02 ΓÇö Register Page
+[1A[2K[25/258] [UI-Verification] ΓÇ║ tests\cloud-ui-screenshots.ui-test.ts:263:7 ΓÇ║ Cloud Patient Portal ΓÇö All Pages Screenshot ΓÇ║ CP03 ΓÇö Dashboard
+[1A[2K[26/258] [UI-Verification] ΓÇ║ tests\cloud-ui-screenshots.ui-test.ts:269:7 ΓÇ║ Cloud Patient Portal ΓÇö All Pages Screenshot ΓÇ║ CP04 ΓÇö Appointments
+[1A[2K[27/258] [UI-Verification] ΓÇ║ tests\cloud-ui-screenshots.ui-test.ts:275:7 ΓÇ║ Cloud Patient Portal ΓÇö All Pages Screenshot ΓÇ║ CP05 ΓÇö Book Appointment
+[1A[2K[28/258] [UI-Verification] ΓÇ║ tests\cloud-ui-screenshots.ui-test.ts:281:7 ΓÇ║ Cloud Patient Portal ΓÇö All Pages Screenshot ΓÇ║ CP06 ΓÇö PHR Health Records
+[1A[2K[29/258] [UI-Verification] ΓÇ║ tests\cloud-ui-screenshots.ui-test.ts:287:7 ΓÇ║ Cloud Patient Portal ΓÇö All Pages Screenshot ΓÇ║ CP07 ΓÇö AI Doctor
+[1A[2K[30/258] [UI-Verification] ΓÇ║ tests\cloud-ui-screenshots.ui-test.ts:293:7 ΓÇ║ Cloud Patient Portal ΓÇö All Pages Screenshot ΓÇ║ CP08 ΓÇö Health Library
+[1A[2K[31/258] [UI-Verification] ΓÇ║ tests\cloud-ui-screenshots.ui-test.ts:299:7 ΓÇ║ Cloud Patient Portal ΓÇö All Pages Screenshot ΓÇ║ CP09 ΓÇö Timeline
+[1A[2K[32/258] [UI-Verification] ΓÇ║ tests\cloud-ui-screenshots.ui-test.ts:305:7 ΓÇ║ Cloud Patient Portal ΓÇö All Pages Screenshot ΓÇ║ CP10 ΓÇö Map
+[1A[2K[33/258] [UI-Verification] ΓÇ║ tests\cloud-ui-screenshots.ui-test.ts:311:7 ΓÇ║ Cloud Patient Portal ΓÇö All Pages Screenshot ΓÇ║ CP11 ΓÇö PDPA Privacy
+[1A[2K[34/258] [UI-Verification] ΓÇ║ tests\cloud-ui-screenshots.ui-test.ts:317:7 ΓÇ║ Cloud Patient Portal ΓÇö All Pages Screenshot ΓÇ║ CP12 ΓÇö Living Will
+[1A[2K[35/258] [UI-Verification] ΓÇ║ tests\cloud-ui-screenshots.ui-test.ts:323:7 ΓÇ║ Cloud Patient Portal ΓÇö All Pages Screenshot ΓÇ║ CP13 ΓÇö Profile
+[1A[2K[36/258] [UI-Verification] ΓÇ║ tests\cloud-ui-screenshots.ui-test.ts:329:7 ΓÇ║ Cloud Patient Portal ΓÇö All Pages Screenshot ΓÇ║ CP14 ΓÇö Settings
+[1A[2K[37/258] [UI-Verification] ΓÇ║ tests\cloud-ui-screenshots.ui-test.ts:364:7 ΓÇ║ Cloud Doctor Portal ΓÇö All Pages Screenshot ΓÇ║ CD01 ΓÇö Login Page
+[1A[2K[38/258] [UI-Verification] ΓÇ║ tests\cloud-ui-screenshots.ui-test.ts:375:7 ΓÇ║ Cloud Doctor Portal ΓÇö All Pages Screenshot ΓÇ║ CD02 ΓÇö Dashboard
+[1A[2K[39/258] [UI-Verification] ΓÇ║ tests\cloud-ui-screenshots.ui-test.ts:381:7 ΓÇ║ Cloud Doctor Portal ΓÇö All Pages Screenshot ΓÇ║ CD03 ΓÇö Schedule
+[1A[2K[40/258] [UI-Verification] ΓÇ║ tests\cloud-ui-screenshots.ui-test.ts:387:7 ΓÇ║ Cloud Doctor Portal ΓÇö All Pages Screenshot ΓÇ║ CD04 ΓÇö Patients
+[1A[2K[41/258] [UI-Verification] ΓÇ║ tests\cloud-ui-screenshots.ui-test.ts:393:7 ΓÇ║ Cloud Doctor Portal ΓÇö All Pages Screenshot ΓÇ║ CD05 ΓÇö Medical Consultants
+[1A[2K[42/258] [UI-Verification] ΓÇ║ tests\cloud-ui-screenshots.ui-test.ts:399:7 ΓÇ║ Cloud Doctor Portal ΓÇö All Pages Screenshot ΓÇ║ CD06 ΓÇö Doctors Directory
+[1A[2K[43/258] [UI-Verification] ΓÇ║ tests\cloud-ui-screenshots.ui-test.ts:405:7 ΓÇ║ Cloud Doctor Portal ΓÇö All Pages Screenshot ΓÇ║ CD07 ΓÇö Medical Content
+[1A[2K[44/258] [UI-Verification] ΓÇ║ tests\cloud-ui-screenshots.ui-test.ts:411:7 ΓÇ║ Cloud Doctor Portal ΓÇö All Pages Screenshot ΓÇ║ CD08 ΓÇö Health Meeting / Queue
+[1A[2K[45/258] [UI-Verification] ΓÇ║ tests\cloud-ui-screenshots.ui-test.ts:417:7 ΓÇ║ Cloud Doctor Portal ΓÇö All Pages Screenshot ΓÇ║ CD09 ΓÇö Clinical Resources
+[1A[2K[46/258] [UI-Verification] ΓÇ║ tests\cloud-ui-screenshots.ui-test.ts:423:7 ΓÇ║ Cloud Doctor Portal ΓÇö All Pages Screenshot ΓÇ║ CD10 ΓÇö Profile
+[1A[2K[47/258] [UI-Verification] ΓÇ║ tests\cloud-ui-screenshots.ui-test.ts:429:7 ΓÇ║ Cloud Doctor Portal ΓÇö All Pages Screenshot ΓÇ║ CD11 ΓÇö Admin: Doctor Management
+[1A[2K[48/258] [UI-Verification] ΓÇ║ tests\cloud-ui-screenshots.ui-test.ts:435:7 ΓÇ║ Cloud Doctor Portal ΓÇö All Pages Screenshot ΓÇ║ CD12 ΓÇö Admin: Appointment Management
+[1A[2K[49/258] [UI-Verification] ΓÇ║ tests\cloud-ui-screenshots.ui-test.ts:476:7 ΓÇ║ Cloud API Health ΓÇö Status 200 ΓÇ║ CAPI01 ΓÇö Patient /api/health
+[1A[2K[50/258] [UI-Verification] ΓÇ║ tests\cloud-ui-screenshots.ui-test.ts:481:7 ΓÇ║ Cloud API Health ΓÇö Status 200 ΓÇ║ CAPI02 ΓÇö Doctor /api/health
+[1A[2K[51/258] [UI-Verification] ΓÇ║ tests\cloud-ui-screenshots.ui-test.ts:486:7 ΓÇ║ Cloud API Health ΓÇö Status 200 ΓÇ║ CAPI03 ΓÇö Meeting /api/health
+[1A[2K[52/258] [UI-Verification] ΓÇ║ tests\cloud-ui-screenshots.ui-test.ts:491:7 ΓÇ║ Cloud API Health ΓÇö Status 200 ΓÇ║ CAPI04 ΓÇö Patient appointments
+[1A[2K[53/258] [UI-Verification] ΓÇ║ tests\cloud-ui-screenshots.ui-test.ts:498:7 ΓÇ║ Cloud API Health ΓÇö Status 200 ΓÇ║ CAPI05 ΓÇö Patient notifications
+[1A[2K[54/258] [UI-Verification] ΓÇ║ tests\cloud-ui-screenshots.ui-test.ts:505:7 ΓÇ║ Cloud API Health ΓÇö Status 200 ΓÇ║ CAPI06 ΓÇö Patient PHR
+[1A[2K[55/258] [UI-Verification] ΓÇ║ tests\cloud-ui-screenshots.ui-test.ts:512:7 ΓÇ║ Cloud API Health ΓÇö Status 200 ΓÇ║ CAPI07 ΓÇö Doctor appointments
+[1A[2K[56/258] [UI-Verification] ΓÇ║ tests\cloud-ui-screenshots.ui-test.ts:519:7 ΓÇ║ Cloud API Health ΓÇö Status 200 ΓÇ║ CAPI08 ΓÇö Doctor consultants
+[1A[2K[57/258] [UI-Verification] ΓÇ║ tests\cloud-ui-screenshots.ui-test.ts:526:7 ΓÇ║ Cloud API Health ΓÇö Status 200 ΓÇ║ CAPI09 ΓÇö Medical content
+[1A[2K[58/258] [UI-Verification] ΓÇ║ tests\cloud-ui-screenshots.ui-test.ts:533:7 ΓÇ║ Cloud API Health ΓÇö Status 200 ΓÇ║ CAPI10 ΓÇö Clinical resources
+[1A[2K[59/258] [UI-Verification] ΓÇ║ tests\cloud-ui-screenshots.ui-test.ts:540:7 ΓÇ║ Cloud API Health ΓÇö Status 200 ΓÇ║ CAPI11 ΓÇö Doctor notifications
+[1A[2K[60/258] [UI-Verification] ΓÇ║ tests\cloud-ui-screenshots.ui-test.ts:547:7 ΓÇ║ Cloud API Health ΓÇö Status 200 ΓÇ║ CAPI12 ΓÇö Dashboard stats
+[1A[2K[61/258] [UI-Verification] ΓÇ║ tests\cloud-ui-screenshots.ui-test.ts:554:7 ΓÇ║ Cloud API Health ΓÇö Status 200 ΓÇ║ CAPI13 ΓÇö Doctors list
+[1A[2K[62/258] [UI-Verification] ΓÇ║ tests\cloud-workflow-multiuser.ui-test.ts:247:7 ΓÇ║ Cloud Workflow ΓÇö User Management ΓÇ║ WC01 ΓÇö Patient Registration (fresh account)
+[1A[2K[UI-Verification] ΓÇ║ tests\cloud-workflow-multiuser.ui-test.ts:247:7 ΓÇ║ Cloud Workflow ΓÇö User Management ΓÇ║ WC01 ΓÇö Patient Registration (fresh account)
+  Γ£à Registered patient: wf.patient.1774803217366@test.com
+
+[1A[2K  ≡ƒô╕ [Patient Registration] ΓåÆ WC01-patient-register.png
+
+[1A[2K[63/258] [UI-Verification] ΓÇ║ tests\cloud-workflow-multiuser.ui-test.ts:259:7 ΓÇ║ Cloud Workflow ΓÇö User Management ΓÇ║ WC02 ΓÇö Patient Login + Dashboard
+[1A[2K[UI-Verification] ΓÇ║ tests\cloud-workflow-multiuser.ui-test.ts:259:7 ΓÇ║ Cloud Workflow ΓÇö User Management ΓÇ║ WC02 ΓÇö Patient Login + Dashboard
+  ≡ƒô╕ [Patient Dashboard] ΓåÆ WC02-patient-dashboard.png
+
+[1A[2K[64/258] [UI-Verification] ΓÇ║ tests\cloud-workflow-multiuser.ui-test.ts:268:7 ΓÇ║ Cloud Workflow ΓÇö User Management ΓÇ║ WC03 ΓÇö Doctor Login + Dashboard
+[1A[2K[UI-Verification] ΓÇ║ tests\cloud-workflow-multiuser.ui-test.ts:268:7 ΓÇ║ Cloud Workflow ΓÇö User Management ΓÇ║ WC03 ΓÇö Doctor Login + Dashboard
+  ≡ƒô╕ [Doctor Dashboard] ΓåÆ WC03-doctor-dashboard.png
+
+[1A[2K[65/258] [UI-Verification] ΓÇ║ tests\cloud-workflow-multiuser.ui-test.ts:277:7 ΓÇ║ Cloud Workflow ΓÇö User Management ΓÇ║ WC04 ΓÇö Admin Login + Dashboard
+[1A[2K[UI-Verification] ΓÇ║ tests\cloud-workflow-multiuser.ui-test.ts:277:7 ΓÇ║ Cloud Workflow ΓÇö User Management ΓÇ║ WC04 ΓÇö Admin Login + Dashboard
+  ≡ƒô╕ [Admin Dashboard] ΓåÆ WC04-admin-dashboard.png
+
+[1A[2K[66/258] [UI-Verification] ΓÇ║ tests\cloud-workflow-multiuser.ui-test.ts:284:7 ΓÇ║ Cloud Workflow ΓÇö User Management ΓÇ║ WC05 ΓÇö Admin Doctor Management page
+[1A[2K[UI-Verification] ΓÇ║ tests\cloud-workflow-multiuser.ui-test.ts:284:7 ΓÇ║ Cloud Workflow ΓÇö User Management ΓÇ║ WC05 ΓÇö Admin Doctor Management page
+  ΓÖ╗∩╕Å Reusing cached token for admin.test@izara.com
+
+[1A[2K  ≡ƒô╕ [Admin Doctor Management] ΓåÆ WC05-admin-doctor-mgmt.png
+
+[1A[2K[67/258] [UI-Verification] ΓÇ║ tests\cloud-workflow-multiuser.ui-test.ts:290:7 ΓÇ║ Cloud Workflow ΓÇö User Management ΓÇ║ WC06 ΓÇö Role-based access: Patient cannot access Doctor portal
+[1A[2K[UI-Verification] ΓÇ║ tests\cloud-workflow-multiuser.ui-test.ts:290:7 ΓÇ║ Cloud Workflow ΓÇö User Management ΓÇ║ WC06 ΓÇö Role-based access: Patient cannot access Doctor portal
+  Γ£à Role check: patientΓåÆdoctor API = 401
+
+[1A[2K[68/258] [UI-Verification] ΓÇ║ tests\cloud-workflow-multiuser.ui-test.ts:347:7 ΓÇ║ Cloud Workflow ΓÇö Appointment Lifecycle ΓÇ║ WC07 ΓÇö Patient: Book appointment page
+[1A[2K[UI-Verification] ΓÇ║ tests\cloud-workflow-multiuser.ui-test.ts:347:7 ΓÇ║ Cloud Workflow ΓÇö Appointment Lifecycle ΓÇ║ WC07 ΓÇö Patient: Book appointment page
+  ΓÖ╗∩╕Å Reusing cached token for doctor.test@izara.com
+
+[1A[2K  ≡ƒô╕ [Patient Appointments] ΓåÆ WC07-patient-appointments.png
+
+[1A[2K[69/258] [UI-Verification] ΓÇ║ tests\cloud-workflow-multiuser.ui-test.ts:352:7 ΓÇ║ Cloud Workflow ΓÇö Appointment Lifecycle ΓÇ║ WC08 ΓÇö Patient: Create appointment via API
+[1A[2K[UI-Verification] ΓÇ║ tests\cloud-workflow-multiuser.ui-test.ts:352:7 ΓÇ║ Cloud Workflow ΓÇö Appointment Lifecycle ΓÇ║ WC08 ΓÇö Patient: Create appointment via API
+  Γ£à Appointment created: APT-1774803261657-D6F71B32
+
+[1A[2K  ≡ƒô╕ [Appointment Created] ΓåÆ WC08-appointment-created.png
+
+[1A[2K[70/258] [UI-Verification] ΓÇ║ tests\cloud-workflow-multiuser.ui-test.ts:368:7 ΓÇ║ Cloud Workflow ΓÇö Appointment Lifecycle ΓÇ║ WC09 ΓÇö Doctor: See appointment in queue
+[1A[2K[UI-Verification] ΓÇ║ tests\cloud-workflow-multiuser.ui-test.ts:368:7 ΓÇ║ Cloud Workflow ΓÇö Appointment Lifecycle ΓÇ║ WC09 ΓÇö Doctor: See appointment in queue
+  ≡ƒô╕ [Doctor Appointment Queue] ΓåÆ WC09-doctor-queue.png
+
+[1A[2K[71/258] [UI-Verification] ΓÇ║ tests\cloud-workflow-multiuser.ui-test.ts:373:7 ΓÇ║ Cloud Workflow ΓÇö Appointment Lifecycle ΓÇ║ WC10 ΓÇö Doctor: View appointment list via API
+[1A[2K[UI-Verification] ΓÇ║ tests\cloud-workflow-multiuser.ui-test.ts:373:7 ΓÇ║ Cloud Workflow ΓÇö Appointment Lifecycle ΓÇ║ WC10 ΓÇö Doctor: View appointment list via API
+  Γ£à Doctor sees 207 appointments
+
+[1A[2K[72/258] [UI-Verification] ΓÇ║ tests\cloud-workflow-multiuser.ui-test.ts:380:7 ΓÇ║ Cloud Workflow ΓÇö Appointment Lifecycle ΓÇ║ WC11 ΓÇö Doctor: Confirm appointment via API
+[1A[2K[UI-Verification] ΓÇ║ tests\cloud-workflow-multiuser.ui-test.ts:380:7 ΓÇ║ Cloud Workflow ΓÇö Appointment Lifecycle ΓÇ║ WC11 ΓÇö Doctor: Confirm appointment via API
+  Γ£à Appointment confirm: 200
+
+[1A[2K[73/258] [UI-Verification] ΓÇ║ tests\cloud-workflow-multiuser.ui-test.ts:395:7 ΓÇ║ Cloud Workflow ΓÇö Appointment Lifecycle ΓÇ║ WC12 ΓÇö Patient: Reload and see confirmed status
+[1A[2K[UI-Verification] ΓÇ║ tests\cloud-workflow-multiuser.ui-test.ts:395:7 ΓÇ║ Cloud Workflow ΓÇö Appointment Lifecycle ΓÇ║ WC12 ΓÇö Patient: Reload and see confirmed status
+  ≡ƒô╕ [Patient Sees Confirmed] ΓåÆ WC12-appointment-confirmed.png
+
+[1A[2K[74/258] [UI-Verification] ΓÇ║ tests\cloud-workflow-multiuser.ui-test.ts:400:7 ΓÇ║ Cloud Workflow ΓÇö Appointment Lifecycle ΓÇ║ WC13 ΓÇö Doctor: Schedule page view
+[1A[2K[UI-Verification] ΓÇ║ tests\cloud-workflow-multiuser.ui-test.ts:400:7 ΓÇ║ Cloud Workflow ΓÇö Appointment Lifecycle ΓÇ║ WC13 ΓÇö Doctor: Schedule page view
+  ≡ƒô╕ [Doctor Schedule] ΓåÆ WC13-doctor-schedule.png
+
+[1A[2K[75/258] [UI-Verification] ΓÇ║ tests\cloud-workflow-multiuser.ui-test.ts:405:7 ΓÇ║ Cloud Workflow ΓÇö Appointment Lifecycle ΓÇ║ WC14 ΓÇö Meeting: Health meeting queue
+[1A[2K[UI-Verification] ΓÇ║ tests\cloud-workflow-multiuser.ui-test.ts:405:7 ΓÇ║ Cloud Workflow ΓÇö Appointment Lifecycle ΓÇ║ WC14 ΓÇö Meeting: Health meeting queue
+  ≡ƒô╕ [Health Meeting Queue] ΓåÆ WC14-health-meeting-queue.png
+
+[1A[2K[76/258] [UI-Verification] ΓÇ║ tests\cloud-workflow-multiuser.ui-test.ts:457:7 ΓÇ║ Cloud Workflow ΓÇö Health Records ΓÇ║ WC15 ΓÇö Patient: PHR page
+[1A[2K[UI-Verification] ΓÇ║ tests\cloud-workflow-multiuser.ui-test.ts:457:7 ΓÇ║ Cloud Workflow ΓÇö Health Records ΓÇ║ WC15 ΓÇö Patient: PHR page
+  ΓÖ╗∩╕Å Reusing cached token for doctor.test@izara.com
+
+[1A[2K  ≡ƒô╕ [Patient PHR] ΓåÆ WC15-patient-phr.png
+
+[1A[2K[77/258] [UI-Verification] ΓÇ║ tests\cloud-workflow-multiuser.ui-test.ts:462:7 ΓÇ║ Cloud Workflow ΓÇö Health Records ΓÇ║ WC16 ΓÇö Patient: Update PHR vitals via API
+[1A[2K[UI-Verification] ΓÇ║ tests\cloud-workflow-multiuser.ui-test.ts:462:7 ΓÇ║ Cloud Workflow ΓÇö Health Records ΓÇ║ WC16 ΓÇö Patient: Update PHR vitals via API
+  Γ£à Vitals update: 200
+
+[1A[2K[78/258] [UI-Verification] ΓÇ║ tests\cloud-workflow-multiuser.ui-test.ts:473:7 ΓÇ║ Cloud Workflow ΓÇö Health Records ΓÇ║ WC17 ΓÇö Patient: View updated PHR
+[1A[2K[UI-Verification] ΓÇ║ tests\cloud-workflow-multiuser.ui-test.ts:473:7 ΓÇ║ Cloud Workflow ΓÇö Health Records ΓÇ║ WC17 ΓÇö Patient: View updated PHR
+  ≡ƒô╕ [PHR Updated] ΓåÆ WC17-patient-phr-updated.png
+
+[1A[2K[79/258] [UI-Verification] ΓÇ║ tests\cloud-workflow-multiuser.ui-test.ts:478:7 ΓÇ║ Cloud Workflow ΓÇö Health Records ΓÇ║ WC18 ΓÇö Doctor: View patient list
+[1A[2K[UI-Verification] ΓÇ║ tests\cloud-workflow-multiuser.ui-test.ts:478:7 ΓÇ║ Cloud Workflow ΓÇö Health Records ΓÇ║ WC18 ΓÇö Doctor: View patient list
+  ≡ƒô╕ [Doctor Patients List] ΓåÆ WC18-doctor-patients.png
+
+[1A[2K[80/258] [UI-Verification] ΓÇ║ tests\cloud-workflow-multiuser.ui-test.ts:483:7 ΓÇ║ Cloud Workflow ΓÇö Health Records ΓÇ║ WC19 ΓÇö Doctor: Access PHR via API
+[1A[2K[UI-Verification] ΓÇ║ tests\cloud-workflow-multiuser.ui-test.ts:483:7 ΓÇ║ Cloud Workflow ΓÇö Health Records ΓÇ║ WC19 ΓÇö Doctor: Access PHR via API
+  Γ£à Doctor PHR access: 200
+
+[1A[2K[81/258] [UI-Verification] ΓÇ║ tests\cloud-workflow-multiuser.ui-test.ts:490:7 ΓÇ║ Cloud Workflow ΓÇö Health Records ΓÇ║ WC20 ΓÇö Patient: Timeline page
+[1A[2K[UI-Verification] ΓÇ║ tests\cloud-workflow-multiuser.ui-test.ts:490:7 ΓÇ║ Cloud Workflow ΓÇö Health Records ΓÇ║ WC20 ΓÇö Patient: Timeline page
+  ≡ƒô╕ [Patient Timeline] ΓåÆ WC20-patient-timeline.png
+
+[1A[2K[82/258] [UI-Verification] ΓÇ║ tests\cloud-workflow-multiuser.ui-test.ts:547:7 ΓÇ║ Cloud Workflow ΓÇö Content Management ΓÇ║ WC21 ΓÇö Doctor: Medical Content page
+[1A[2K[UI-Verification] ΓÇ║ tests\cloud-workflow-multiuser.ui-test.ts:547:7 ΓÇ║ Cloud Workflow ΓÇö Content Management ΓÇ║ WC21 ΓÇö Doctor: Medical Content page
+  ΓÖ╗∩╕Å Reusing cached token for doctor.test@izara.com
+
+[1A[2K  ΓÖ╗∩╕Å Reusing cached token for admin.test@izara.com
+
+[1A[2K  ≡ƒô╕ [Doctor Medical Content] ΓåÆ WC21-doctor-medical-content.png
+
+[1A[2K[83/258] [UI-Verification] ΓÇ║ tests\cloud-workflow-multiuser.ui-test.ts:552:7 ΓÇ║ Cloud Workflow ΓÇö Content Management ΓÇ║ WC22 ΓÇö Doctor: Clinical Resources page

@@ -286,13 +286,11 @@ test.describe('Cloud Patient Portal — All Pages Screenshot', () => {
 
   test('CP07 — AI Doctor', async () => {
     test.skip(!patientServiceAvailable, 'Services unreachable');
-    test.skip(!patientServiceAvailable, 'Services unreachable');
     await safeGoto(patientPage,`${CLOUD_PATIENT}/ai-doctor`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await waitAndCapture(patientPage, 'AI Doctor', 'patient-07-ai-doctor', SS_PATIENT);
   });
 
   test('CP08 — Health Library', async () => {
-    test.skip(!patientServiceAvailable, 'Services unreachable');
     test.skip(!patientServiceAvailable, 'Services unreachable');
     await safeGoto(patientPage,`${CLOUD_PATIENT}/health-library`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await waitAndCapture(patientPage, 'Health Library', 'patient-08-health-library', SS_PATIENT);
@@ -300,13 +298,11 @@ test.describe('Cloud Patient Portal — All Pages Screenshot', () => {
 
   test('CP09 — Timeline', async () => {
     test.skip(!patientServiceAvailable, 'Services unreachable');
-    test.skip(!patientServiceAvailable, 'Services unreachable');
     await safeGoto(patientPage,`${CLOUD_PATIENT}/timeline`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await waitAndCapture(patientPage, 'Timeline', 'patient-09-timeline', SS_PATIENT);
   });
 
   test('CP10 — Map', async () => {
-    test.skip(!patientServiceAvailable, 'Services unreachable');
     test.skip(!patientServiceAvailable, 'Services unreachable');
     await safeGoto(patientPage,`${CLOUD_PATIENT}/map`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await waitAndCapture(patientPage, 'Map', 'patient-10-map', SS_PATIENT);
@@ -314,13 +310,11 @@ test.describe('Cloud Patient Portal — All Pages Screenshot', () => {
 
   test('CP11 — PDPA Privacy', async () => {
     test.skip(!patientServiceAvailable, 'Services unreachable');
-    test.skip(!patientServiceAvailable, 'Services unreachable');
     await safeGoto(patientPage,`${CLOUD_PATIENT}/pdpa`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await waitAndCapture(patientPage, 'PDPA', 'patient-11-pdpa', SS_PATIENT);
   });
 
   test('CP12 — Living Will', async () => {
-    test.skip(!patientServiceAvailable, 'Services unreachable');
     test.skip(!patientServiceAvailable, 'Services unreachable');
     await safeGoto(patientPage,`${CLOUD_PATIENT}/living-will`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await waitAndCapture(patientPage, 'Living Will', 'patient-12-living-will', SS_PATIENT);
@@ -328,13 +322,11 @@ test.describe('Cloud Patient Portal — All Pages Screenshot', () => {
 
   test('CP13 — Profile', async () => {
     test.skip(!patientServiceAvailable, 'Services unreachable');
-    test.skip(!patientServiceAvailable, 'Services unreachable');
     await safeGoto(patientPage,`${CLOUD_PATIENT}/profile`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await waitAndCapture(patientPage, 'Profile', 'patient-13-profile', SS_PATIENT);
   });
 
   test('CP14 — Settings', async () => {
-    test.skip(!patientServiceAvailable, 'Services unreachable');
     test.skip(!patientServiceAvailable, 'Services unreachable');
     await safeGoto(patientPage,`${CLOUD_PATIENT}/settings`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await waitAndCapture(patientPage, 'Settings', 'patient-14-settings', SS_PATIENT);

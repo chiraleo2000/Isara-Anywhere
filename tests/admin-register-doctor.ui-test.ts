@@ -236,7 +236,6 @@ test.describe('Admin Register & Promote Doctor Workflow', () => {
   // ── AR04: Admin approves new doctor ─────────────────────────────
   test('AR04 — Admin approves new doctor', async () => {
     test.skip(!serviceAvailable, 'Services unreachable');
-    test.skip(!serviceAvailable, 'Services unreachable');
     console.log(`\n🔹 AR04: Admin approving doctor: ${NEW_DOCTOR_EMAIL}`);
 
     // Login as admin
@@ -281,7 +280,6 @@ test.describe('Admin Register & Promote Doctor Workflow', () => {
   // ── AR05: Admin promotes new doctor to admin ────────────────────
   test('AR05 — Admin sets privilege: promote doctor to admin', async () => {
     test.skip(!serviceAvailable, 'Services unreachable');
-    test.skip(!serviceAvailable, 'Services unreachable');
     console.log(`\n🔹 AR05: Promoting doctor to admin: ${doctorUserId || NEW_DOCTOR_EMAIL}`);
 
     // If still no doctorUserId, login as the newly approved doctor
@@ -321,7 +319,6 @@ test.describe('Admin Register & Promote Doctor Workflow', () => {
 
   // ── AR06: New admin (former doctor) logs in and verifies ────────
   test('AR06 — New admin (promoted doctor) login and verify access', async () => {
-    test.skip(!serviceAvailable, 'Services unreachable');
     test.skip(!serviceAvailable, 'Services unreachable');
     console.log(`\n🔹 AR06: Logging in as promoted admin: ${NEW_DOCTOR_EMAIL}`);
 
