@@ -1023,11 +1023,31 @@ const MeetingRoom: React.FC = () => { // NOSONAR
   }, [appointmentId, user]);
 
   const admitAllFromLobby = useCallback(async () => {
-    const participants = [...lobbyParticipants];
-    for (const p of participants) {
-      await admitFromLobby(p.participantId);
+    try {
+      await fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/lobby/admit-all`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ admittedBy: user?.id }),
+      });
+    } catch {
+      // Fallback: admit individually if batch endpoint fails
+      const participants = [...lobbyParticipants];
+      for (const p of participants) {
+        await admitFromLobby(p.participantId);
+      }
+      return;
     }
-  }, [lobbyParticipants, admitFromLobby]);
+
+    if (socketRef.current?.connected) {
+      for (const p of lobbyParticipants) {
+        socketRef.current.emit('lobby-admit', {
+          meetingId: appointmentId, participantId: p.participantId, admittedBy: user?.id,
+        });
+      }
+    }
+
+    setLobbyParticipants([]);
+  }, [lobbyParticipants, admitFromLobby, appointmentId, user]);
 
   const goBack = useCallback(() => {
     const userId = user?.id;

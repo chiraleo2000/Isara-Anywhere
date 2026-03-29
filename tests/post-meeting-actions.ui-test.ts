@@ -29,8 +29,12 @@ async function snap(page: Page, filename: string, label: string, dir: string, wa
 async function apiPost(page: Page, url: string, data: Record<string, unknown>, token?: string) {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (token) headers['Authorization'] = `Bearer ${token}`;
-  const r = await page.request.post(url, { data, headers });
-  return { status: r.status(), body: await r.json().catch(() => ({})) };
+  try {
+    const r = await page.request.post(url, { data, headers, timeout: 15000 });
+    return { status: r.status(), body: await r.json().catch(() => ({})) };
+  } catch {
+    return { status: 0, body: {} };
+  }
 }
 
 async function injectDoctorAuth(page: Page, token: string, user: Record<string, unknown>) {

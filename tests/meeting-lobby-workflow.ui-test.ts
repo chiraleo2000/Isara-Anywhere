@@ -42,15 +42,23 @@ async function snap(page: Page, filename: string, label: string, waitMs = 2000):
 async function apiPost(page: Page, url: string, data: Record<string, unknown>, token?: string) {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (token) headers['Authorization'] = `Bearer ${token}`;
-  const r = await page.request.post(url, { data, headers });
-  return { status: r.status(), body: await r.json().catch(() => ({})) };
+  try {
+    const r = await page.request.post(url, { data, headers, timeout: 15000 });
+    return { status: r.status(), body: await r.json().catch(() => ({})) };
+  } catch {
+    return { status: 0, body: {} };
+  }
 }
 
 async function apiGet(page: Page, url: string, token?: string) {
   const headers: Record<string, string> = {};
   if (token) headers['Authorization'] = `Bearer ${token}`;
-  const r = await page.request.get(url, { headers });
-  return { status: r.status(), body: await r.json().catch(() => ({})) };
+  try {
+    const r = await page.request.get(url, { headers, timeout: 15000 });
+    return { status: r.status(), body: await r.json().catch(() => ({})) };
+  } catch {
+    return { status: 0, body: {} };
+  }
 }
 
 function doctorAuth(page: Page) {

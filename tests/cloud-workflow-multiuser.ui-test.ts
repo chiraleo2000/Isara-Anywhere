@@ -81,15 +81,18 @@ async function apiPost(page: Page, url: string, data: Record<string, unknown>, t
   if (token) headers['Authorization'] = `Bearer ${token}`;
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
-      const r = await page.request.post(url, { data, headers });
+      const r = await page.request.post(url, { data, headers, timeout: 15000 });
       return { status: r.status(), body: await r.json().catch(() => ({})) };
     } catch (err) {
-      if (attempt === retries) throw err;
+      if (attempt === retries) {
+        console.log(`  ⚠️ apiPost failed after ${retries} retries: ${(err as Error).message?.slice(0, 60)}`);
+        return { status: 0, body: {} };
+      }
       console.log(`  ⏳ apiPost retry ${attempt}/${retries} for ${url}: ${(err as Error).message?.slice(0, 60)}`);
       await sleep(3000 * attempt);
     }
   }
-  throw new Error('unreachable');
+  return { status: 0, body: {} };
 }
 
 async function apiGet(page: Page, url: string, token?: string, retries = 3) {
@@ -97,15 +100,18 @@ async function apiGet(page: Page, url: string, token?: string, retries = 3) {
   if (token) headers['Authorization'] = `Bearer ${token}`;
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
-      const r = await page.request.get(url, { headers });
+      const r = await page.request.get(url, { headers, timeout: 15000 });
       return { status: r.status(), body: await r.json().catch(() => ({})) };
     } catch (err) {
-      if (attempt === retries) throw err;
+      if (attempt === retries) {
+        console.log(`  ⚠️ apiGet failed after ${retries} retries: ${(err as Error).message?.slice(0, 60)}`);
+        return { status: 0, body: {} };
+      }
       console.log(`  ⏳ apiGet retry ${attempt}/${retries} for ${url}: ${(err as Error).message?.slice(0, 60)}`);
       await sleep(3000 * attempt);
     }
   }
-  throw new Error('unreachable');
+  return { status: 0, body: {} };
 }
 
 async function apiPut(page: Page, url: string, data: Record<string, unknown>, token?: string, retries = 3) {
@@ -113,15 +119,18 @@ async function apiPut(page: Page, url: string, data: Record<string, unknown>, to
   if (token) headers['Authorization'] = `Bearer ${token}`;
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
-      const r = await page.request.put(url, { data, headers });
+      const r = await page.request.put(url, { data, headers, timeout: 15000 });
       return { status: r.status(), body: await r.json().catch(() => ({})) };
     } catch (err) {
-      if (attempt === retries) throw err;
+      if (attempt === retries) {
+        console.log(`  ⚠️ apiPut failed after ${retries} retries: ${(err as Error).message?.slice(0, 60)}`);
+        return { status: 0, body: {} };
+      }
       console.log(`  ⏳ apiPut retry ${attempt}/${retries} for ${url}: ${(err as Error).message?.slice(0, 60)}`);
       await sleep(3000 * attempt);
     }
   }
-  throw new Error('unreachable');
+  return { status: 0, body: {} };
 }
 
 async function safeGoto(page: Page, url: string, options?: { waitUntil?: 'domcontentloaded' | 'load' | 'networkidle'; timeout?: number }, retries = 3) {

@@ -326,6 +326,34 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
 
   const joinMeeting = async () => {
     stopPreviewStream();
+
+    // Request lobby access from meeting server (doctor must approve)
+    try {
+      const lobbyRes = await fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/lobby/join`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          participantName: patientName,
+          participantId: user?.id,
+          email: user?.email || '',
+          role: 'patient',
+        }),
+      });
+      if (lobbyRes.ok) {
+        const lobbyData = await lobbyRes.json();
+        if (lobbyData.status === 'admitted') {
+          setLobbyStatus('admitted');
+        } else {
+          setLobbyStatus('waiting');
+        }
+      }
+    } catch {
+      // If lobby endpoint unavailable, proceed directly (backward compatible)
+    }
+
     try {
       await loadJitsiScript();
       if (jitsiContainerRef.current && (globalThis as any).JitsiMeetExternalAPI) {

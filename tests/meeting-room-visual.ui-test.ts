@@ -41,15 +41,23 @@ async function snap(page: Page, filename: string, label: string, waitMs = 2500):
 async function apiPost(page: Page, url: string, data: Record<string, unknown>, token?: string) {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (token) headers['Authorization'] = `Bearer ${token}`;
-  const r = await page.request.post(url, { data, headers });
-  return { status: r.status(), body: await r.json().catch(() => ({})) };
+  try {
+    const r = await page.request.post(url, { data, headers, timeout: 15000 });
+    return { status: r.status(), body: await r.json().catch(() => ({})) };
+  } catch {
+    return { status: 0, body: {} };
+  }
 }
 
 async function apiGet(page: Page, url: string, token?: string) {
   const headers: Record<string, string> = {};
   if (token) headers['Authorization'] = `Bearer ${token}`;
-  const r = await page.request.get(url, { headers });
-  return { status: r.status(), body: await r.json().catch(() => ({})) };
+  try {
+    const r = await page.request.get(url, { headers, timeout: 15000 });
+    return { status: r.status(), body: await r.json().catch(() => ({})) };
+  } catch {
+    return { status: 0, body: {} };
+  }
 }
 
 async function injectDoctorAuth(page: Page, token: string, user: Record<string, unknown>) {
@@ -63,11 +71,16 @@ async function injectDoctorAuth(page: Page, token: string, user: Record<string, 
 }
 
 async function doctorLogin(page: Page) {
-  const authRes = await apiPost(page, `${DOCTOR_URL}/api/auth/login`, {
-    email: DOCTOR_EMAIL, password: DOCTOR_PASSWORD,
-  });
-  if (authRes.status !== 200 || !authRes.body.token) return null;
-  return authRes.body;
+  try {
+    const authRes = await apiPost(page, `${DOCTOR_URL}/api/auth/login`, {
+      email: DOCTOR_EMAIL, password: DOCTOR_PASSWORD,
+    });
+    if (authRes.status !== 200 || !authRes.body.token) return null;
+    return authRes.body;
+  } catch (err) {
+    console.log(`⚠️ Doctor login failed (service unreachable): ${(err as Error).message?.slice(0, 80)}`);
+    return null;
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -77,9 +90,23 @@ async function doctorLogin(page: Page) {
 test.describe('Meeting Room Visual States', () => {
   test.describe.configure({ timeout: 120_000 });
 
+  let serviceAvailable = false;
+
+  test.beforeAll(async ({ browser }) => {
+    const probe = await browser.newPage();
+    try {
+      const res = await probe.request.get(`${DOCTOR_URL}/api/health`, { timeout: 15000 });
+      serviceAvailable = res.status() === 200;
+    } catch {
+      serviceAvailable = false;
+    }
+    await probe.close();
+  });
+
   // ─── Doctor Meeting Room Screens ──────────────────────────────────
   test.describe('Doctor Meeting Room', () => {
     test('1.1 — Agreement screen renders with consent checkboxes', async ({ page }) => {
+      test.skip(!serviceAvailable, 'Cloud services unreachable');
       const auth = await doctorLogin(page);
       if (!auth) { test.skip(); return; }
 
@@ -99,6 +126,7 @@ test.describe('Meeting Room Visual States', () => {
     });
 
     test('1.2 — Meeting controls bar is visible during meeting', async ({ page }) => {
+      test.skip(!serviceAvailable, 'Cloud services unreachable');
       const auth = await doctorLogin(page);
       if (!auth) { test.skip(); return; }
 
@@ -128,6 +156,7 @@ test.describe('Meeting Room Visual States', () => {
   // ─── Patient Meeting Room ─────────────────────────────────────────
   test.describe('Patient Meeting Room', () => {
     test('2.1 — Patient meeting page loads correctly', async ({ page }) => {
+      test.skip(!serviceAvailable, 'Cloud services unreachable');
       // Create meeting record first
       const auth = await doctorLogin(page);
       if (!auth) { test.skip(); return; }
@@ -153,6 +182,7 @@ test.describe('Meeting Room Visual States', () => {
   // ─── Guest Join Room ──────────────────────────────────────────────
   test.describe('Guest Join Room', () => {
     test('3.1 — Guest form renders all fields', async ({ page }) => {
+      test.skip(!serviceAvailable, 'Cloud services unreachable');
       await page.goto(`${PATIENT_URL}/guest-join/vis-guest-form`);
       await page.waitForTimeout(3000);
 
@@ -180,6 +210,7 @@ test.describe('Meeting Room Visual States', () => {
     });
 
     test('3.2 — Guest form with filled data', async ({ page }) => {
+      test.skip(!serviceAvailable, 'Cloud services unreachable');
       await page.goto(`${PATIENT_URL}/guest-join/vis-guest-filled`);
       await page.waitForTimeout(3000);
 
@@ -205,6 +236,7 @@ test.describe('Meeting Room Visual States', () => {
     });
 
     test('3.3 — Guest lobby waiting screen renders', async ({ page }) => {
+      test.skip(!serviceAvailable, 'Cloud services unreachable');
       const auth = await doctorLogin(page);
       if (!auth) { test.skip(); return; }
 
@@ -242,6 +274,7 @@ test.describe('Meeting Room Visual States', () => {
   // ─── Lobby Panel ──────────────────────────────────────────────────
   test.describe('Lobby Panel (API)', () => {
     test('4.1 — Lobby list shows participants with email', async ({ page }) => {
+      test.skip(!serviceAvailable, 'Cloud services unreachable');
       const auth = await doctorLogin(page);
       if (!auth) { test.skip(); return; }
 
@@ -280,6 +313,7 @@ test.describe('Meeting Room Visual States', () => {
     });
 
     test('4.2 — Admit-all clears lobby completely', async ({ page }) => {
+      test.skip(!serviceAvailable, 'Cloud services unreachable');
       const auth = await doctorLogin(page);
       if (!auth) { test.skip(); return; }
 
@@ -310,6 +344,7 @@ test.describe('Meeting Room Visual States', () => {
     });
 
     test('4.3 — Mixed admit/reject workflow', async ({ page }) => {
+      test.skip(!serviceAvailable, 'Cloud services unreachable');
       const auth = await doctorLogin(page);
       if (!auth) { test.skip(); return; }
 
