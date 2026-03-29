@@ -39,15 +39,10 @@ $guides = @{
         title = 'IZARA Telemedicine User Guide'
         base  = 'IZARA_User_Guide'
     }
-    compact = @{
-        src   = Join-Path $workspace 'Presentations\USER_GUIDE_COMPACT.md'
-        title = 'IZARA Telemedicine User Guide (Compact)'
-        base  = 'IZARA_User_Guide_Compact'
-    }
 }
 
 # Determine which guides to process
-$selectedGuides = if ($Guide -eq 'all') { @('full', 'compact') } else { @($Guide) }
+$selectedGuides = @('full')
 $selectedFormats = if ($Format -eq 'all') { @('pdf', 'docx') } else { @($Format) }
 
 $generated = @()
