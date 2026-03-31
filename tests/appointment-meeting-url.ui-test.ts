@@ -17,9 +17,9 @@ import { test, expect, Page } from '@playwright/test';
 import * as path from 'node:path';
 import * as fs from 'node:fs';
 
-const PATIENT_URL = 'https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app';
-const DOCTOR_URL  = 'https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app';
-const MEETING_URL = 'https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app';
+const PATIENT_URL = process.env.PATIENT_PORTAL_URL || 'http://localhost:3005';
+const DOCTOR_URL  = process.env.DOCTOR_PORTAL_URL  || 'http://localhost:3010';
+const MEETING_URL = process.env.MEETING_SERVER_URL  || 'http://localhost:3020';
 
 const DOCTOR_EMAIL    = 'doctor.test@izara.com';
 const DOCTOR_PASSWORD = process.env.IZARA_DOCTOR_PASSWORD || 'IzaraDoctor@2024';
@@ -335,19 +335,16 @@ test.describe('Appointment → Meeting URL Flow', () => {
     console.log('  ✅ Patient meeting page loaded');
   });
 
-  test('8 — Guest join page renders form and email field', async ({ page }) => {
+  test('8 — Guest join page renders form (name only)', async ({ page }) => {
     await page.goto(`${PATIENT_URL}/guest-join/test-guest-ui`);
     await page.waitForTimeout(3000);
 
     const nameInput = page.locator('[data-testid="guest-name-input"]');
-    const emailInput = page.locator('[data-testid="guest-email-input"]');
     const joinBtn = page.locator('[data-testid="guest-join-btn"]');
 
     const hasName = await nameInput.isVisible().catch(() => false);
-    const hasEmail = await emailInput.isVisible().catch(() => false);
     const hasBtn = await joinBtn.isVisible().catch(() => false);
 
-    // Guest form may not have email field on undeployed cloud version
     if (!hasName && !hasBtn) {
       console.log('  ⚠️ Guest join form not rendered (page may differ), skipping');
       test.skip();
@@ -355,13 +352,13 @@ test.describe('Appointment → Meeting URL Flow', () => {
     }
     expect(hasName).toBe(true);
     expect(hasBtn).toBe(true);
-    if (hasEmail) {
-      expect(hasEmail).toBe(true);
-    } else {
-      console.log('  ⚠️ Email field not deployed yet — skipping email assertion');
-    }
 
-    await snap(page, 'guest-join-form-email', 'Guest Join Form with Email');
-    console.log(`  ✅ Guest join form renders with name${hasEmail ? ' + email' : ''} fields`);
+    // Email field should NOT exist (removed - guest needs name only)
+    const emailInput = page.locator('[data-testid="guest-email-input"]');
+    const hasEmail = await emailInput.isVisible().catch(() => false);
+    expect(hasEmail).toBe(false);
+
+    await snap(page, 'guest-join-form-name-only', 'Guest Join Form (Name Only)');
+    console.log(`  ✅ Guest join form renders with name field only (no email)`);
   });
 });

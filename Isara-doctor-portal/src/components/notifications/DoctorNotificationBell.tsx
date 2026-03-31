@@ -106,6 +106,7 @@ const NotificationList: React.FC<{
             key={notification.id}
             onClick={() => onNotificationClick(notification)}
             className={`p-4 hover:bg-gray-50 transition-colors cursor-pointer w-full text-left ${readClass}`}
+            aria-label={`Notification: ${notification.title}`}
           >
             <div className="flex gap-3">
               <div className="flex-shrink-0 mt-1">
@@ -130,16 +131,10 @@ const NotificationList: React.FC<{
                     {formatTimeAgo(notification.createdAt)}
                   </span>
                   {notification.data?.meetingLink && (
-                    <a
-                      href={notification.data.meetingLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
-                    >
+                    <span className="text-xs text-blue-600 font-medium flex items-center gap-1">
                       <VideoIcon className="w-3 h-3" />
                       {language === 'th' ? 'เริ่มประชุม' : 'Start Meeting'}
-                    </a>
+                    </span>
                   )}
                 </div>
               </div>

@@ -113,7 +113,7 @@ async function globalSetup(_config: FullConfig) {
               : undefined,
             preferences: { theme: 'light', language: 'th', notifications: { email: true, push: true, sms: false } },
           }) },
-          { name: 'izara_session_expiry', value: (now + 3600000).toString() },
+          { name: 'izara_session_expiry', value: (now + 7200000).toString() }, // 2 hours
           { name: 'izara_last_activity', value: now.toString() },
         );
       } else {

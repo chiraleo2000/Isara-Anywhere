@@ -89,7 +89,8 @@ if (!JWT_SECRET) {
 }
 const JWT_SECRET_FINAL = JWT_SECRET || crypto.randomBytes(32).toString('hex');
 const JWT_ISSUER = process.env.JWT_ISSUER || 'izara-telemedicine';
-const JWT_EXPIRES_IN = '24h';
+const JWT_EXPIRES_IN = '3h';
+const REFRESH_TOKEN_EXPIRES_DAYS = 30;
 
 /**
  * Authentication middleware - verify JWT token and attach user to request
@@ -436,7 +437,7 @@ async function pgCreateSession(userId, email, role, ip, userAgent, deviceId) {
   if (!pgPool) return null;
   try {
     const token = crypto.randomBytes(32).toString('hex');
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    const expiresAt = new Date(Date.now() + 3 * 60 * 60 * 1000); // 3 hours (matches JWT_EXPIRES_IN)
     
     // Invalidate all previous active sessions for this user to prevent cross-device contamination
     await pgPool.query(
@@ -927,7 +928,25 @@ app.post('/auth/login',
       
       // Generate JWT token for API authentication
       const jwtToken = generateJWT(user);
-      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+      const expiresAt = new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString(); // 3 hours
+
+      // Generate refresh token (30-day expiry, stored as SHA-256 hash)
+      const refreshTokenRaw = crypto.randomBytes(64).toString('hex');
+      const refreshTokenHash = crypto.createHash('sha256').update(refreshTokenRaw).digest('hex');
+      const refreshTokenExpires = new Date(Date.now() + REFRESH_TOKEN_EXPIRES_DAYS * 24 * 60 * 60 * 1000);
+      const refreshTokenId = `RT-${crypto.randomUUID().substring(0, 12)}`;
+
+      try {
+        await pgPool.query(
+          `INSERT INTO refresh_tokens (id, user_id, token_hash, device_id, expires_at, ip_address, user_agent)
+           VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+          [refreshTokenId, user.id, refreshTokenHash, deviceId || null,
+           refreshTokenExpires, clientIP, (clientUserAgent || req.headers['user-agent'] || '').substring(0, 500)]
+        );
+      } catch (rtErr) {
+        console.error('[AUTH] Failed to store refresh token:', rtErr.message);
+        // Non-fatal — login still succeeds without refresh token
+      }
       
       // Track successful login
       trackLoginAttempt(email, true);
@@ -945,6 +964,7 @@ app.post('/auth/login',
       return res.json({
         success: true,
         token: jwtToken, // JWT token for API authentication
+        refreshToken: refreshTokenRaw, // Refresh token for silent renewal
         sessionToken: sessionResult.token, // Session token for session management
         user: sanitizeUser({
           id: user.id,
@@ -959,7 +979,8 @@ app.post('/auth/login',
           hospitalName: user.hospital_name || user.hospitalName,
           medicalLicenseNumber: user.medical_license || user.medicalLicenseNumber
         }),
-        expiresAt: expiresAt
+        expiresAt: expiresAt,
+        expiresIn: 10800 // 3 hours in seconds
       });
 
   } catch (error) {
@@ -990,7 +1011,30 @@ app.post('/auth/logout', async (req, res) => {
     }
 
     if (token) {
+      // Decode JWT to get userId for revoking refresh tokens
+      let userId = null;
+      try {
+        const decoded = jwt.verify(token, JWT_SECRET_FINAL);
+        userId = decoded.userId;
+      } catch (_) {
+        // Token may be expired — try decode without verification
+        try {
+          const decoded = jwt.decode(token);
+          userId = decoded?.userId;
+        } catch (_e) { /* ignore */ }
+      }
+
       await pgInvalidateSession(token);
+
+      // Revoke all refresh tokens for this user
+      if (userId) {
+        await pgPool.query(
+          `UPDATE refresh_tokens SET is_revoked = true, revoked_at = NOW()
+           WHERE user_id = $1 AND is_revoked = false`,
+          [userId]
+        );
+      }
+
       securityAuditLog({
         event: 'LOGOUT_SUCCESS',
         severity: 'INFO',
@@ -1004,6 +1048,137 @@ app.post('/auth/logout', async (req, res) => {
   } catch (error) {
     console.error('Logout error:', error);
     res.status(500).json({ error: 'Logout failed' });
+  }
+});
+
+// ============================================================================
+// TOKEN REFRESH - Refresh JWT using refresh token (rotation)
+// ============================================================================
+app.post('/auth/refresh',
+  rateLimit({
+    windowMs: 1 * 60 * 1000, // 1 minute
+    maxRequests: 30, // 30 refresh requests per minute per IP
+    keyGenerator: (req) => getClientIP(req)
+  }),
+  async (req, res) => {
+  try {
+    const { refreshToken, deviceId } = req.body;
+
+    if (!refreshToken) {
+      return res.status(400).json({ error: 'Refresh token is required', code: 'MISSING_REFRESH_TOKEN' });
+    }
+
+    if (!pgPool) {
+      return res.status(503).json({ error: 'Database unavailable', code: 'DATABASE_UNAVAILABLE' });
+    }
+
+    // Hash the incoming token to compare with stored hash
+    const tokenHash = crypto.createHash('sha256').update(refreshToken).digest('hex');
+
+    // Find valid (non-revoked, non-expired) refresh token + user data
+    const tokenResult = await pgPool.query(
+      `SELECT rt.*, u.id as user_id, u.email, u.name, u.name_thai, u.role,
+              u.doctor_id, u.is_admin, u.is_active, u.admin_privileges,
+              u.specialty, u.medical_license_number
+       FROM refresh_tokens rt
+       JOIN users u ON rt.user_id = u.id
+       WHERE rt.token_hash = $1 AND rt.is_revoked = false AND rt.expires_at > NOW()`,
+      [tokenHash]
+    );
+
+    if (tokenResult.rows.length === 0) {
+      securityAuditLog({
+        event: 'TOKEN_REFRESH_INVALID',
+        severity: 'WARN',
+        ip: getClientIP(req)
+      });
+      return res.status(401).json({ error: 'Invalid or expired refresh token', code: 'INVALID_REFRESH_TOKEN' });
+    }
+
+    const tokenRow = tokenResult.rows[0];
+
+    // Check if user account is still active
+    if (!tokenRow.is_active) {
+      return res.status(401).json({ error: 'Account is deactivated', code: 'ACCOUNT_DEACTIVATED' });
+    }
+
+    // === Token Rotation: revoke old, issue new ===
+    const newRefreshTokenRaw = crypto.randomBytes(64).toString('hex');
+    const newRefreshHash = crypto.createHash('sha256').update(newRefreshTokenRaw).digest('hex');
+    const newTokenId = `RT-${crypto.randomUUID().substring(0, 12)}`;
+    const newExpiresAt = new Date(Date.now() + REFRESH_TOKEN_EXPIRES_DAYS * 24 * 60 * 60 * 1000);
+
+    // Revoke old refresh token
+    await pgPool.query(
+      `UPDATE refresh_tokens SET is_revoked = true, revoked_at = NOW(), replaced_by = $2 WHERE id = $1`,
+      [tokenRow.id, newTokenId]
+    );
+
+    // Insert new refresh token
+    await pgPool.query(
+      `INSERT INTO refresh_tokens (id, user_id, token_hash, device_id, expires_at, ip_address, user_agent)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [newTokenId, tokenRow.user_id, newRefreshHash, deviceId || tokenRow.device_id,
+       newExpiresAt, getClientIP(req), (req.headers['user-agent'] || '').substring(0, 500)]
+    );
+
+    // Generate new JWT
+    const newJwt = generateJWT({
+      id: tokenRow.user_id,
+      email: tokenRow.email,
+      role: tokenRow.role,
+      name: tokenRow.name,
+      doctor_id: tokenRow.doctor_id,
+      is_admin: tokenRow.is_admin
+    });
+
+    // Create new session
+    const sessionResult = await pgCreateSession(
+      tokenRow.user_id, tokenRow.email, tokenRow.role,
+      getClientIP(req), req.headers['user-agent'], deviceId
+    );
+
+    const expiresAt = new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString();
+
+    console.log(`[AUTH] Token refreshed for user: ${tokenRow.email}`);
+
+    securityAuditLog({
+      event: 'TOKEN_REFRESH_SUCCESS',
+      severity: 'INFO',
+      userId: tokenRow.user_id,
+      email: tokenRow.email,
+      ip: getClientIP(req)
+    });
+
+    res.json({
+      success: true,
+      token: newJwt,
+      refreshToken: newRefreshTokenRaw,
+      sessionToken: sessionResult?.token || null,
+      expiresAt,
+      expiresIn: 10800, // 3 hours in seconds
+      user: sanitizeUser({
+        id: tokenRow.user_id,
+        email: tokenRow.email,
+        name: tokenRow.name,
+        nameThai: tokenRow.name_thai,
+        role: tokenRow.role,
+        doctorId: tokenRow.doctor_id,
+        isAdmin: tokenRow.is_admin,
+        adminPrivileges: tokenRow.admin_privileges,
+        specialty: tokenRow.specialty,
+        medicalLicenseNumber: tokenRow.medical_license_number
+      })
+    });
+  } catch (error) {
+    console.error('[AUTH] Token refresh error:', error);
+    securityAuditLog({
+      event: 'TOKEN_REFRESH_ERROR',
+      severity: 'HIGH',
+      error: error.message,
+      ip: getClientIP(req)
+    });
+    res.status(500).json({ error: 'Token refresh failed', code: 'REFRESH_ERROR' });
   }
 });
 

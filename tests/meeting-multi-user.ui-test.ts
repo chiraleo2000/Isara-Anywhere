@@ -16,16 +16,16 @@ import { test, expect, Page, BrowserContext } from '@playwright/test';
 import * as path from 'node:path';
 import * as fs from 'node:fs';
 
-// ── Cloud Run URLs ──────────────────────────────────────────────────
-const PATIENT_URL = 'https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app';
-const DOCTOR_URL  = 'https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app';
-const MEETING_URL = 'https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app';
+// ── URLs — Use env vars for cloud, default to localhost for local testing ──
+const PATIENT_URL = process.env.PATIENT_PORTAL_URL || 'http://localhost:3005';
+const DOCTOR_URL  = process.env.DOCTOR_PORTAL_URL  || 'http://localhost:3010';
+const MEETING_URL = process.env.MEETING_SERVER_URL  || 'http://localhost:3020';
 
 // ── Credentials ─────────────────────────────────────────────────────
 const DOCTOR_EMAIL    = 'doctor.test@izara.com';
-const DOCTOR_PASSWORD = process.env.IZARA_DOCTOR_PASSWORD || 'IzaraDoctor@2024';
+const DOCTOR_PASSWORD = process.env.IZARA_DOCTOR_PASSWORD ?? '';
 const ADMIN_EMAIL     = 'admin.test@izara.com';
-const ADMIN_PASSWORD  = process.env.IZARA_ADMIN_PASSWORD || 'IzaraAdmin@2024';
+const ADMIN_PASSWORD  = process.env.IZARA_ADMIN_PASSWORD ?? '';
 
 // ── Screenshot output ───────────────────────────────────────────────
 const SS_ROOT = path.join(__dirname, '..', 'screenshots', 'meeting');

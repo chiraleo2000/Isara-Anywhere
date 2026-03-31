@@ -362,6 +362,7 @@ const MeetingResults: React.FC<MeetingResultsProps> = ({ meetingId, appointmentI
       }
     } catch (err) {
       console.error('Regenerate failed:', err);
+      setError(err instanceof Error ? err.message : 'Failed to regenerate summary');
     } finally {
       setActionLoading(null);
     }
@@ -384,6 +385,7 @@ const MeetingResults: React.FC<MeetingResultsProps> = ({ meetingId, appointmentI
       }
     } catch (err) {
       console.error(`Validation ${action} failed:`, err);
+      setError(`Failed to ${action} summary: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
       setActionLoading(null);
     }

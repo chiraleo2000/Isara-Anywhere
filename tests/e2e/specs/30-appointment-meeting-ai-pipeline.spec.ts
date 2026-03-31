@@ -40,6 +40,7 @@ let meetingSummaryText: string;
 let patientInstructionText: string;
 
 test.describe('30 — Full Appointment → Meeting → AI → Patient Pipeline', () => {
+  test.describe.configure({ mode: 'serial' });
 
   test.beforeAll(async ({ request }) => {
     users = await authenticateAllUsers(request);
@@ -54,15 +55,16 @@ test.describe('30 — Full Appointment → Meeting → AI → Patient Pipeline',
     const p1 = getUser('patient1');
     const aptData = generateAppointmentData('Demo Test Patient');
     const res = await patientApi(request, p1.token).post(ENDPOINTS.appointments, aptData);
-    expect(res.status).toBeLessThan(600);
-    appointmentId = res.body?.id || res.body?.appointmentId || res.body?.data?.id || `APT-TEST-${Date.now()}`;
+    expect(res.status).toBeLessThan(300);
+    appointmentId = res.body?.id || res.body?.appointmentId || res.body?.data?.id;
+    expect(appointmentId, 'Appointment creation must return an ID').toBeTruthy();
     logTestSuccess(`Appointment created: ${appointmentId}`);
   });
 
   test('A02 — Patient can see the appointment in list', async ({ request }) => {
     const p1 = getUser('patient1');
     const res = await patientApi(request, p1.token).get(ENDPOINTS.appointments);
-    expect(res.status).toBeLessThan(600);
+    expect(res.status).toBeLessThan(300);
     const list = res.body?.appointments || res.body?.data || res.body || [];
     const found = Array.isArray(list) && list.length > 0;
     expect(found).toBe(true);
@@ -72,7 +74,7 @@ test.describe('30 — Full Appointment → Meeting → AI → Patient Pipeline',
   test('A03 — Doctor sees the appointment in queue', async ({ request }) => {
     const doc = getUser('doctor');
     const res = await doctorApi(request, doc.token).get(ENDPOINTS.appointments);
-    expect(res.status).toBeLessThan(600);
+    expect(res.status).toBeLessThan(300);
     logTestSuccess('Doctor can see appointments queue');
   });
 
@@ -125,30 +127,31 @@ test.describe('30 — Full Appointment → Meeting → AI → Patient Pipeline',
       type: 'telemedicine',
       subject: 'Follow-up consultation for headache',
     });
-    expect(res.status).toBeLessThan(600);
-    meetingId = res.body?.meetingId || res.body?.id || res.body?.data?.meetingId || `MTG-PIPE-${Date.now()}`;
+    expect(res.status).toBeLessThan(300);
+    meetingId = res.body?.meetingId || res.body?.id || res.body?.data?.meetingId;
+    expect(meetingId, 'Meeting creation must return a meetingId').toBeTruthy();
     logTestSuccess(`Meeting created: ${meetingId}`);
   });
 
   test('B02 — Meeting health check', async ({ request }) => {
     const doc = getUser('doctor');
     const res = await meetingApi(request, doc.token).get(ENDPOINTS.meetings.health);
-    expect(res.status).toBeLessThan(600);
+    expect(res.status).toBeLessThan(300);
     logTestSuccess('Meeting server healthy');
   });
 
   test('B03 — Meeting STT config available', async ({ request }) => {
     const doc = getUser('doctor');
     const res = await meetingApi(request, doc.token).get(ENDPOINTS.meetings.sttConfig);
-    expect(res.status).toBeLessThan(600);
+    expect(res.status).toBeLessThan(300);
     logTestSuccess('STT config available');
   });
 
   test('B04 — Transcription submitted for meeting', async ({ request }) => {
     const doc = getUser('doctor');
-    const mid = meetingId || `MTG-PIPE-${Date.now()}`;
+    expect(meetingId, 'meetingId must exist from B01').toBeTruthy();
     // Endpoint accepts one transcript segment at a time with flat fields
-    const res = await meetingApi(request, doc.token).post(`/api/meetings/${mid}/transcript`, {
+    const res = await meetingApi(request, doc.token).post(`/api/meetings/${meetingId}/transcript`, {
       speakerId: 'DOC-TEST-001',
       speakerRole: 'doctor',
       speakerName: 'Dr. Test',
@@ -157,7 +160,7 @@ test.describe('30 — Full Appointment → Meeting → AI → Patient Pipeline',
       confidence: 0.95,
     });
     // Transcription may return 200 or 201
-    expect(res.status).toBeLessThan(600);
+    expect(res.status).toBeLessThan(300);
     logTestSuccess('Transcription submitted successfully');
   });
 
@@ -167,11 +170,11 @@ test.describe('30 — Full Appointment → Meeting → AI → Patient Pipeline',
 
   test('C01 — AI generates meeting summary from transcript', async ({ request }) => {
     const doc = getUser('doctor');
-    const mid = meetingId || `MTG-PIPE-${Date.now()}`;
-    const res = await meetingApi(request, doc.token).post(`/api/meetings/${mid}/generate-summary`, {
+    expect(meetingId, 'meetingId must exist from B01').toBeTruthy();
+    const res = await meetingApi(request, doc.token).post(`/api/meetings/${meetingId}/generate-summary`, {
       language: 'th',
     });
-    expect(res.status).toBeLessThan(600);
+    expect(res.status).toBeLessThan(300);
     expect(res.body).toBeTruthy();
     meetingSummaryText = typeof res.body === 'string' ? res.body : JSON.stringify(res.body);
     expect(meetingSummaryText.length).toBeGreaterThan(10);
@@ -181,7 +184,7 @@ test.describe('30 — Full Appointment → Meeting → AI → Patient Pipeline',
   test('C02 — AI generates patient instruction sheet', async ({ request }) => {
     const doc = getUser('doctor');
     const res = await meetingApi(request, doc.token).post(ENDPOINTS.ai.patientInstruction, {
-      meetingId: meetingId || `MTG-PI-${Date.now()}`,
+      meetingId,
       patientId: 'PATIENT-DEMO',
       doctorId: 'DOC-TEST-001',
       diagnosis: 'Tension headache with low-grade fever (R51, R50.9)',
@@ -198,7 +201,7 @@ test.describe('30 — Full Appointment → Meeting → AI → Patient Pipeline',
       followUp: 'นัดติดตามอาการ 1 สัปดาห์',
       language: 'th',
     });
-    expect(res.status).toBeLessThan(600);
+    expect(res.status).toBeLessThan(300);
     expect(res.body).toBeTruthy();
     patientInstructionText = typeof res.body === 'string' ? res.body : JSON.stringify(res.body);
     expect(patientInstructionText.length).toBeGreaterThan(10);
@@ -209,7 +212,7 @@ test.describe('30 — Full Appointment → Meeting → AI → Patient Pipeline',
     const doc = getUser('doctor');
     const res = await meetingApi(request, doc.token).post(ENDPOINTS.ai.preSummary, {
       patientId: 'PATIENT-DEMO',
-      appointmentId: appointmentId || `APT-PRE-${Date.now()}`,
+      appointmentId,
       patientData: {
         name: 'Demo Test Patient',
         age: 35,
@@ -220,7 +223,7 @@ test.describe('30 — Full Appointment → Meeting → AI → Patient Pipeline',
         recentDiagnoses: ['R51 - Headache', 'R50.9 - Fever, unspecified'],
       },
     });
-    expect(res.status).toBeLessThan(600);
+    expect(res.status).toBeLessThan(300);
     expect(res.body).toBeTruthy();
     logTestSuccess('Pre-consultation summary for pipeline patient generated');
   });
@@ -232,28 +235,28 @@ test.describe('30 — Full Appointment → Meeting → AI → Patient Pipeline',
   test('D01 — Patient can access their health records', async ({ request }) => {
     const p1 = getUser('patient1');
     const res = await patientApi(request, p1.token).get(ENDPOINTS.phr);
-    expect(res.status).toBeLessThan(600);
+    expect(res.status).toBeLessThan(300);
     logTestSuccess('Patient can access PHR');
   });
 
   test('D02 — Patient can see lab orders', async ({ request }) => {
     const p1 = getUser('patient1');
     const res = await patientApi(request, p1.token).get(ENDPOINTS.healthRecords.patientLabOrders);
-    expect(res.status).toBeLessThan(600);
+    expect(res.status).toBeLessThan(300);
     logTestSuccess('Patient lab orders accessible');
   });
 
   test('D03 — Patient can see imaging orders', async ({ request }) => {
     const p1 = getUser('patient1');
     const res = await patientApi(request, p1.token).get(ENDPOINTS.healthRecords.patientImagingOrders);
-    expect(res.status).toBeLessThan(600);
+    expect(res.status).toBeLessThan(300);
     logTestSuccess('Patient imaging orders accessible');
   });
 
   test('D04 — Patient timeline shows activity', async ({ request }) => {
     const p1 = getUser('patient1');
     const res = await patientApi(request, p1.token).get(ENDPOINTS.timeline);
-    expect(res.status).toBeLessThan(600);
+    expect(res.status).toBeLessThan(300);
     logTestSuccess('Patient timeline accessible');
   });
 
@@ -261,7 +264,7 @@ test.describe('30 — Full Appointment → Meeting → AI → Patient Pipeline',
     const doc = getUser('doctor');
     // EMR route is /api/patients/:patientId/emr on doctor portal
     const res = await doctorApi(request, doc.token).get('/api/patients/PATIENT-DEMO/emr');
-    expect(res.status).toBeLessThan(600);
+    expect(res.status).toBeLessThan(300);
     logTestSuccess('Doctor can access patient EMR');
   });
 });

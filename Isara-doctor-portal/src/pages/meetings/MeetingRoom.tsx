@@ -170,6 +170,10 @@ function sendTranscriptSegment(
   if (opts.socketRef.current?.connected) {
     opts.socketRef.current.emit('transcript-segment', payload);
   }
+  if (!opts.appointmentId) {
+    console.warn('[Transcript] No appointmentId — skipping REST save');
+    return;
+  }
   fetch(`${MEETING_SERVER_URL}/api/meetings/${opts.appointmentId}/transcript`, {
     method: 'POST',
     headers: getAuthHeaders(),
@@ -239,8 +243,8 @@ const MeetingRoom: React.FC = () => { // NOSONAR
   const [error, setError] = useState<string | null>(null);
   const participantsRef = useRef<string[]>([]);
   const [meetingDuration, setMeetingDuration] = useState(0);
-  const [guestEmail, setGuestEmail] = useState('');
   const [guestName, setGuestName] = useState('');
+  const [guestLinkCopied, setGuestLinkCopied] = useState(false);
 
   // Agreement / Consent
   const [consentRecording, setConsentRecording] = useState(false);
@@ -320,6 +324,9 @@ const MeetingRoom: React.FC = () => { // NOSONAR
         status.camera = 'unavailable';
         status.microphone = 'unavailable';
       }
+      // Sync toggle states when permission denied or devices unavailable
+      setCameraOn(false);
+      setMicOn(false);
     }
     setMediaStatus(status);
     return status;
@@ -813,23 +820,19 @@ const MeetingRoom: React.FC = () => { // NOSONAR
   // ============================================================================
 
   const inviteGuest = useCallback(async () => {
-    if (!guestName || !guestEmail) return;
-
+    if (!guestName) return;
+    const guestUrl = `${globalThis.location.origin}/guest-join/${appointmentId}`;
     try {
-      const res = await fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/invite`, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify({ name: guestName, email: guestEmail, role: 'guest' }),
-      });
-      if (res.ok) {
-        setGuestName('');
-        setGuestEmail('');
-        alert(`Guest invite sent to ${guestEmail}`);
-      }
+      await navigator.clipboard.writeText(guestUrl);
+      setGuestLinkCopied(true);
+      setGuestName('');
+      setTimeout(() => setGuestLinkCopied(false), 3000);
     } catch {
-      console.warn('[Invite] Failed to send');
+      // Fallback: prompt with URL
+      globalThis.prompt('Copy this link to send to guest:', guestUrl);
+      setGuestName('');
     }
-  }, [appointmentId, guestName, guestEmail]);
+  }, [appointmentId, guestName]);
 
   // ============================================================================
   // AI SUMMARY
@@ -1772,32 +1775,26 @@ const MeetingRoom: React.FC = () => { // NOSONAR
 
                 {/* Guest Invite Section */}
                 <div className="mt-3 pt-3 border-t border-gray-700">
-                  <p className="text-xs text-gray-400 mb-2">เชิญผู้เข้าร่วม</p>
-                  <div className="flex flex-col gap-1">
+                  <p className="text-xs text-gray-400 mb-2">เชิญผู้เข้าร่วม (Copy Link)</p>
+                  <div className="flex gap-1">
                     <input
                       type="text"
                       value={guestName}
                       onChange={(e) => setGuestName(e.target.value)}
-                      placeholder="ชื่อ"
-                      className="bg-gray-700 border border-gray-600 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-500"
+                      placeholder="ชื่อแขก"
+                      className="flex-1 bg-gray-700 border border-gray-600 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-500"
                     />
-                    <div className="flex gap-1">
-                      <input
-                        type="email"
-                        value={guestEmail}
-                        onChange={(e) => setGuestEmail(e.target.value)}
-                        placeholder="Email"
-                        className="flex-1 bg-gray-700 border border-gray-600 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-500"
-                      />
-                      <button
-                        onClick={inviteGuest}
-                        disabled={!guestName || !guestEmail}
-                        className="px-2 py-1 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 rounded text-xs transition"
-                      >
-                        เชิญ
-                      </button>
-                    </div>
+                    <button
+                      onClick={inviteGuest}
+                      disabled={!guestName}
+                      className="px-2 py-1 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 rounded text-xs transition whitespace-nowrap"
+                    >
+                      {guestLinkCopied ? '✓ Copied!' : '📋 Copy Link'}
+                    </button>
                   </div>
+                  {guestLinkCopied && (
+                    <p className="text-xs text-green-400 mt-1">✓ Guest link copied! Send it to the guest.</p>
+                  )}
                 </div>
               </div>
             )}

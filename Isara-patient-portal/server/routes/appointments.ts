@@ -13,6 +13,57 @@ const { pool } = postgresDataService;
 
 const router = Router();
 
+/** Notify doctor/admin about a new appointment and broadcast via Socket.IO */
+async function broadcastNewAppointment(app: Express.Application, appointment: Record<string, unknown>) {
+  const io = app.get('io');
+  const doctorId = appointment.doctor_id as string | null;
+
+  if (doctorId) {
+    await NotificationService.createNotification({
+      userId: doctorId,
+      type: 'appointment_requested',
+      title: 'New Appointment Request',
+      titleThai: 'มีนัดหมายใหม่',
+      message: 'Patient has requested an appointment',
+      messageThai: 'ผู้ป่วยขอนัดหมาย',
+      data: { appointmentId: appointment.id }
+    });
+    if (io) {
+      io.to(`doctor-${doctorId}`).emit('appointment-created', {
+        appointmentId: appointment.id, status: appointment.status
+      });
+    }
+  } else {
+    const admins = await pool.query(
+      "SELECT id FROM users WHERE role = 'admin' AND is_active = true"
+    );
+    for (const admin of admins.rows) {
+      await NotificationService.createNotification({
+        userId: admin.id,
+        type: 'appointment_requested',
+        title: 'New Unassigned Appointment',
+        titleThai: 'นัดหมายใหม่รอมอบหมาย',
+        message: 'A new appointment is waiting to be assigned to a doctor',
+        messageThai: 'มีนัดหมายใหม่รอมอบหมายแพทย์',
+        data: { appointmentId: appointment.id }
+      });
+    }
+    if (io) {
+      io.to('admin-notifications').emit('pool-updated', {
+        appointmentId: appointment.id, status: appointment.status
+      });
+    }
+  }
+
+  if (io) {
+    io.emit('appointment-created', {
+      appointmentId: appointment.id,
+      doctorId,
+      status: appointment.status
+    });
+  }
+}
+
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
@@ -150,19 +201,10 @@ router.get('/my', authMiddleware, async (req: Request, res: Response) => {
     console.log(`[APPOINTMENT] Getting MY appointments for patient: ${patientId}`);
     
     if (!patientId) {
-      // Return demo data for testing
-      return res.json({
-        success: true,
-        appointments: [
-          {
-            id: 'DEMO-APPT-001',
-            patient_id: 'demo_patient',
-            status: 'confirmed',
-            doctor_name: 'Dr. Demo',
-            requested_date: new Date().toISOString()
-          }
-        ],
-        demoMode: true
+      return res.status(401).json({
+        success: false,
+        error: 'Authentication required',
+        appointments: []
       });
     }
 
@@ -187,19 +229,18 @@ router.get('/my', authMiddleware, async (req: Request, res: Response) => {
       });
     } catch (dbError) {
       console.error('[APPOINTMENT] DB error:', dbError);
-      // Return demo data on error
-      res.json({
-        success: true,
-        appointments: [],
-        demoMode: true
+      res.status(500).json({
+        success: false,
+        error: 'Database error fetching appointments',
+        appointments: []
       });
     }
   } catch (error: unknown) {
     console.error('[APPOINTMENT] Get MY appointments error:', error);
-    res.json({
-      success: true,
-      appointments: [],
-      demoMode: true
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch appointments',
+      appointments: []
     });
   }
 });
@@ -367,19 +408,9 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
 
     const appointment = result.rows[0];
 
-    // Create notification for doctor/admin
+    // Create notification for doctor/admin + Socket.IO broadcast
     try {
-      if (appointment.doctor_id) {
-        await NotificationService.createNotification({
-          userId: appointment.doctor_id,
-          type: 'appointment_requested',
-          title: 'New Appointment Request',
-          titleThai: 'มีนัดหมายใหม่',
-          message: `Patient has requested an appointment`,
-          messageThai: `ผู้ป่วยขอนัดหมาย`,
-          data: { appointmentId: appointment.id }
-        });
-      }
+      await broadcastNewAppointment(req.app, appointment);
     } catch (notifError) {
       console.error('[APPOINTMENT] Notification error:', notifError);
     }
@@ -474,6 +505,16 @@ router.put('/:appointmentId/status', authMiddleware, async (req: Request, res: R
       }
     } catch (notifError) {
       console.error('[APPOINTMENT] Notification error:', notifError);
+    }
+
+    // Emit Socket.IO real-time update
+    const io = req.app.get('io');
+    if (io) {
+      const payload = { appointmentId, status, appointment: transformAppointment(updatedAppointment) };
+      io.to(`patient-${updatedAppointment.patient_id}`).emit('appointment:updated', payload);
+      if (updatedAppointment.doctor_id) {
+        io.to(`doctor-${updatedAppointment.doctor_id}`).emit('appointment:updated', payload);
+      }
     }
 
     console.log(`[APPOINTMENT] Updated: ${appointmentId} to ${status}`);

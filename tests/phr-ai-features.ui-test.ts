@@ -12,8 +12,8 @@ import { test, Page, BrowserContext } from '@playwright/test';
 import * as path from 'node:path';
 import * as fs from 'node:fs';
 
-const PATIENT_URL = 'https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app';
-const DOCTOR_URL = 'https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app';
+const PATIENT_URL = process.env.PATIENT_PORTAL_URL || 'http://localhost:3005';
+const DOCTOR_URL  = process.env.DOCTOR_PORTAL_URL  || 'http://localhost:3010';
 
 const SS_PHR = path.join(__dirname, '..', 'screenshots', 'phr-timeline');
 const SS_AI = path.join(__dirname, '..', 'screenshots', 'ai-features');
@@ -137,19 +137,19 @@ test.describe('PHR Timeline & AI Features — UI Screenshots', () => {
     await doctorCtx?.close();
   });
 
-  // Helpers: inject auth on login page first, then navigate to target
+  // Helpers: inject auth directly, then navigate to target (no login page visit)
   async function patientGo(target: string) {
-    await patientPage.goto(`${PATIENT_URL}/login`, { waitUntil: 'domcontentloaded', timeout: 30000 });
-    await injectPatientAuth(patientPage, patientToken, patientUser);
     await patientPage.goto(`${PATIENT_URL}${target}`, { waitUntil: 'domcontentloaded', timeout: 30000 });
-    await patientPage.waitForTimeout(1500);
+    await injectPatientAuth(patientPage, patientToken, patientUser);
+    await patientPage.reload({ waitUntil: 'domcontentloaded', timeout: 30000 });
+    await patientPage.waitForTimeout(1000);
   }
 
   async function doctorGo(target: string) {
-    await doctorPage.goto(`${DOCTOR_URL}/login`, { waitUntil: 'domcontentloaded', timeout: 30000 });
-    await injectDoctorAuth(doctorPage, doctorToken, doctorUser);
     await doctorPage.goto(`${DOCTOR_URL}${target}`, { waitUntil: 'domcontentloaded', timeout: 30000 });
-    await doctorPage.waitForTimeout(1500);
+    await injectDoctorAuth(doctorPage, doctorToken, doctorUser);
+    await doctorPage.reload({ waitUntil: 'domcontentloaded', timeout: 30000 });
+    await doctorPage.waitForTimeout(1000);
   }
 
   // ── PHR01 — Patient Dashboard ──────────────────────────────────

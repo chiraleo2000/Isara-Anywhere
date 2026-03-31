@@ -7,7 +7,7 @@
  * ═══════════════════════════════════════════════════════════════════════════════
  */
 
-import { expect, Page, Browser, BrowserContext, APIRequestContext } from '@playwright/test';
+import { expect, Page, Browser, BrowserContext, APIRequestContext, chromium, firefox } from '@playwright/test';
 import {
   PATIENT_URL, DOCTOR_URL, MEETING_SERVER_URL,
   CREDENTIALS, ENDPOINTS, TIMEOUTS, IS_CLOUD,
@@ -18,6 +18,26 @@ import { loadCachedUsers, getCachedUser } from './auth-store';
 
 // Re-export for specs that need storageState paths
 export { getStorageStatePath } from './auth-store';
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// BROWSER-ROLE MAPPING: Patient=Chrome, Doctor=Edge, Admin=Firefox
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/** Get the correct browser type for a given user role */
+export function getBrowserForRole(role: UserRole): { browserType: typeof chromium | typeof firefox; channel?: string } {
+  switch (role) {
+    case 'patient1':
+    case 'patient2':
+    case 'patient3':
+      return { browserType: chromium, channel: 'chrome' };
+    case 'doctor':
+      return { browserType: chromium, channel: 'msedge' };
+    case 'admin':
+      return { browserType: firefox };
+    default:
+      return { browserType: chromium };
+  }
+}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -152,7 +172,7 @@ async function injectAuth(page: Page, role: UserRole): Promise<void> {
           : undefined,
         preferences: { theme: 'light', language: 'th', notifications: { email: true, push: true, sms: false } },
       }));
-      localStorage.setItem('izara_session_expiry', (now + 3600000).toString());
+      localStorage.setItem('izara_session_expiry', (now + 7200000).toString()); // 2 hours
       localStorage.setItem('izara_last_activity', now.toString());
     } else {
       localStorage.setItem('auth_token', token);
@@ -231,10 +251,136 @@ export async function navigateWithAuth(
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// ROLE-SPECIFIC BROWSER LAUNCHER
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/** Browser cache: reuse the same browser instance per type across tests */
+const _roleBrowserCache = new Map<string, Browser>();
+
+/**
+ * Launch the correct browser for a user role and create a new authenticated page.
+ *   Patient → Chrome | Doctor → Edge | Admin → Firefox
+ *
+ * Returns { browser, context, page } — caller must close context when done.
+ * The browser is cached and reused (closed automatically on process exit).
+ */
+export async function createRoleBrowser(
+  role: UserRole,
+  options?: { viewport?: { width: number; height: number } },
+): Promise<{ browser: Browser; context: BrowserContext; page: Page }> {
+  const { browserType, channel } = getBrowserForRole(role);
+  const cacheKey = channel || browserType.name();
+
+  let browser = _roleBrowserCache.get(cacheKey);
+  if (!browser?.isConnected()) {
+    browser = await browserType.launch({
+      headless: false,
+      channel,
+      args: ['--start-maximized', '--disable-gpu', '--no-sandbox'],
+    });
+    _roleBrowserCache.set(cacheKey, browser);
+  }
+
+  const context = await browser.newContext({
+    viewport: options?.viewport ?? { width: 1920, height: 1080 },
+  });
+  const page = await context.newPage();
+  return { browser, context, page };
+}
+
+/**
+ * Create a role-specific page with auth already injected.
+ * Convenience wrapper: launches the correct browser, injects auth, navigates.
+ */
+export async function createAuthenticatedRolePage(
+  role: UserRole,
+  targetPath?: string,
+): Promise<{ browser: Browser; context: BrowserContext; page: Page }> {
+  const result = await createRoleBrowser(role);
+  const isDoctor = role === 'doctor' || role === 'admin';
+  const portalUrl = isDoctor ? DOCTOR_URL : PATIENT_URL;
+
+  // Inject auth tokens into the page
+  const user = getCachedUser(role);
+  if (user.token) {
+    await result.page.addInitScript(({ token, email, name, id, userRole, isDoctorPortal }) => {
+      const now = Date.now();
+      if (isDoctorPortal) {
+        localStorage.setItem('token', token);
+        localStorage.setItem('izara_current_user', JSON.stringify({
+          id, email, name, displayName: name, role: userRole,
+          doctorId: id, medicalLicenseNumber: 'TEST-LIC-001',
+          isActive: true, emailVerified: true,
+          isAdmin: userRole === 'admin',
+          adminPrivileges: userRole === 'admin'
+            ? { manageDoctors: true, manageAppointments: true, viewAllRecords: true, manageContent: true, systemSettings: true }
+            : undefined,
+          preferences: { theme: 'light', language: 'th', notifications: { email: true, push: true, sms: false } },
+        }));
+        localStorage.setItem('izara_session_expiry', (now + 7200000).toString()); // 2 hours
+        localStorage.setItem('izara_last_activity', now.toString());
+      } else {
+        localStorage.setItem('auth_token', token);
+        localStorage.setItem('izara_user', JSON.stringify({ id, email, name, role: userRole }));
+        localStorage.setItem('izara_patient_last_activity', now.toString());
+      }
+      localStorage.setItem('izara_auth_token', token);
+      localStorage.setItem('user', JSON.stringify({ email, name, id, role: userRole, token }));
+    }, { token: user.token, email: user.email, name: user.name, id: user.id, userRole: role, isDoctorPortal: isDoctor });
+  }
+
+  if (targetPath) {
+    await result.page.goto(`${portalUrl}${targetPath}`, {
+      timeout: TIMEOUTS.navigation,
+      waitUntil: 'domcontentloaded',
+    });
+  }
+
+  return result;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // API REQUEST HELPERS
 // ═══════════════════════════════════════════════════════════════════════════════
 
-/** Make authenticated API request with retry for transient network errors */
+/** Dispatch a single HTTP call (extracted to keep apiRequest complexity low) */
+async function dispatchHttp(
+  request: APIRequestContext,
+  method: string,
+  url: string,
+  headers: Record<string, string>,
+  timeout: number,
+  data?: any,
+) {
+  const opts = { headers, timeout } as any;
+  if (data !== undefined) opts.data = data;
+
+  const methodMap: Record<string, (u: string, o: any) => Promise<any>> = {
+    GET: (u, o) => request.get(u, o),
+    POST: (u, o) => request.post(u, o),
+    PUT: (u, o) => request.put(u, o),
+    PATCH: (u, o) => request.patch(u, o),
+    DELETE: (u, o) => request.delete(u, o),
+  };
+  return methodMap[method](url, opts);
+}
+
+/** Delay helper for retry backoff */
+function retryDelay(attempt: number): Promise<void> {
+  return new Promise(r => setTimeout(r, 2000 * (attempt + 1)));
+}
+
+/** Make authenticated API request with automatic retry on 429 / transient errors */
+/** Check if an error message indicates a transient network issue */
+function isTransientError(msg: string): boolean {
+  return /ECONNRESET|ENOTFOUND|ETIMEDOUT|Timeout/.test(msg);
+}
+
+/** Parse response body as JSON, falling back to text */
+async function parseResponseBody(res: any): Promise<any> {
+  try { return await res.json(); } catch { return await res.text().catch(() => ''); }
+}
+
 export async function apiRequest(
   request: APIRequestContext,
   method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
@@ -246,44 +392,25 @@ export async function apiRequest(
   const url = `${baseUrl}${path}`;
   const headers = authHeaders(token);
   const timeout = TIMEOUTS.api;
-  const maxRetries = IS_CLOUD ? 2 : 1;
+  const maxRetries = IS_CLOUD ? 3 : 2;
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
-      let res: any;
-      switch (method) {
-        case 'GET':
-          res = await request.get(url, { headers, timeout });
-          break;
-        case 'POST':
-          res = await request.post(url, { headers, data, timeout });
-          break;
-        case 'PUT':
-          res = await request.put(url, { headers, data, timeout });
-          break;
-        case 'PATCH':
-          res = await request.patch(url, { headers, data, timeout });
-          break;
-        case 'DELETE':
-          res = await request.delete(url, { headers, timeout });
-          break;
-      }
+      const res = await dispatchHttp(request, method, url, headers, timeout, data);
+      const body = await parseResponseBody(res);
 
-      let body: any;
-      try {
-        body = await res.json();
-      } catch {
-        body = await res.text().catch(() => '');
+      if (res.status() === 429 && attempt < maxRetries) {
+        console.log(`⏳ 429 on ${method} ${path} — retry ${attempt + 1}`);
+        await retryDelay(attempt);
+        continue;
       }
       return { status: res.status(), body };
     } catch (err) {
       const msg = err instanceof Error ? err.message : '';
-      const isTransient = msg.includes('ECONNRESET') || msg.includes('ENOTFOUND') || msg.includes('ETIMEDOUT') || msg.includes('Timeout');
-      if (attempt < maxRetries && isTransient) {
-        await new Promise(r => setTimeout(r, 2000 * (attempt + 1)));
+      if (attempt < maxRetries && isTransientError(msg)) {
+        await retryDelay(attempt);
         continue;
       }
-      // Return a synthetic error response instead of throwing
       return { status: 503, body: { error: msg || 'Network error' } };
     }
   }

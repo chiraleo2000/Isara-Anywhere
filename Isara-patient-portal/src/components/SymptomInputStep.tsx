@@ -325,6 +325,7 @@ function VoiceInputTab({
             <div className="flex items-center gap-4 p-4 bg-indigo-50 rounded-xl max-w-sm mx-auto">
               <button
                 onClick={togglePlayback}
+                aria-label={isPlaying ? 'หยุดเล่น' : 'เล่นเสียง'}
                 className="w-14 h-14 bg-indigo-600 rounded-full flex items-center justify-center text-white hover:bg-indigo-700"
               >
                 {isPlaying ? <Pause className="w-7 h-7" /> : <Play className="w-7 h-7 ml-1" />}
@@ -342,6 +343,7 @@ function VoiceInputTab({
               </div>
               <button
                 onClick={deleteRecording}
+                aria-label="ลบเสียงบันทึก"
                 className="p-2 text-red-500 hover:bg-red-50 rounded-lg"
               >
                 <Trash2 className="w-5 h-5" />
@@ -426,6 +428,7 @@ function ImageInputTab({
         accept="image/*"
         multiple
         onChange={(e) => handleImageUpload(e.target.files)}
+        aria-label="เลือกรูปภาพ"
         className="hidden"
       />
       <input
@@ -434,6 +437,7 @@ function ImageInputTab({
         accept="image/*"
         capture="environment"
         onChange={(e) => handleImageUpload(e.target.files)}
+        aria-label="ถ่ายรูป"
         className="hidden"
       />
 
@@ -452,6 +456,7 @@ function ImageInputTab({
                 <button
                   type="button"
                   onClick={() => removeImage(index)}
+                  aria-label="ลบรูปภาพ"
                   className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
                 >
                   <X className="w-4 h-4" />
@@ -569,6 +574,7 @@ function MedicalInfoSection({ form, setForm }: MedicalInfoSectionProps) {
               <select
                 value={form.symptomDurationUnit}
                 onChange={(e) => setForm((prev: any) => ({ ...prev, symptomDurationUnit: e.target.value }))}
+                aria-label="หน่วยเวลา"
                 className="flex-1 p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500"
               >
                 <option value="hours">ชั่วโมง</option>

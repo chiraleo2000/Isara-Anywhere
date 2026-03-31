@@ -300,32 +300,39 @@ const MedicalContent: React.FC = () => {
 
   const handleCreate = async () => {
     try {
+      const headers = { ...getAuthHeaders(), 'Content-Type': 'application/json' };
       const response = await fetch(`${API_BASE}/api/content/medical`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           ...formData,
           userId: user?.id || 'unknown',
           userName: user?.name || user?.email || 'Unknown',
         }),
       });
-      if (!response.ok) throw new Error('Failed to create article');
-      const newArticle = await response.json();
-      setContent((prev) => [...prev, newArticle]);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Failed to create article (${response.status})`);
+      }
+      const result = await response.json();
+      // Backend returns { success: true, article: {...} }
+      const article = result.article || result;
+      setContent((prev) => [...prev, article]);
       setShowCreateModal(false);
       resetForm();
     } catch (err) {
       console.error('Error creating article:', err);
-      alert('Failed to create article');
+      setError(err instanceof Error ? err.message : 'Failed to create article');
     }
   };
 
   const handleUpdate = async () => {
     if (!selectedArticle) return;
     try {
+      const headers = { ...getAuthHeaders(), 'Content-Type': 'application/json' };
       const response = await fetch(`${API_BASE}/api/content/medical/${selectedArticle.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           ...formData,
           userId: user?.id || 'unknown',
@@ -333,22 +340,29 @@ const MedicalContent: React.FC = () => {
           changeNote: changeNote || 'Updated',
         }),
       });
-      if (!response.ok) throw new Error('Failed to update article');
-      const updatedArticle = await response.json();
-      setContent((prev) => prev.map((a) => (a.id === updatedArticle.id ? updatedArticle : a)));
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Failed to update article (${response.status})`);
+      }
+      const result = await response.json();
+      // Backend returns { success: true, article: {...} }
+      const article = result.article || result;
+      setContent((prev) => prev.map((a) => (a.id === article.id ? article : a)));
       setShowEditModal(false);
       resetForm();
     } catch (err) {
       console.error('Error updating article:', err);
-      alert('Failed to update article');
+      setError(err instanceof Error ? err.message : 'Failed to update article');
     }
   };
 
   const handleDelete = async () => {
     if (!selectedArticle) return;
     try {
+      const headers = getAuthHeaders();
       const response = await fetch(`${API_BASE}/api/content/medical/${selectedArticle.id}`, {
         method: 'DELETE',
+        headers,
       });
       if (!response.ok) throw new Error('Failed to delete article');
       setContent((prev) => prev.filter((a) => a.id !== selectedArticle.id));
@@ -367,7 +381,8 @@ const MedicalContent: React.FC = () => {
   const fetchPendingApprovals = useCallback(async () => {
     if (!isAdmin) return;
     try {
-      const response = await fetch(`${API_BASE}/api/content/medical/pending`);
+      const headers = getAuthHeaders();
+      const response = await fetch(`${API_BASE}/api/content/medical/pending`, { headers });
       if (!response.ok) throw new Error('Failed to fetch pending');
       const data = await response.json();
       setPendingArticles(data.articles || []);
@@ -379,9 +394,10 @@ const MedicalContent: React.FC = () => {
 
   const handleSubmitForApproval = async (article: MedicalContentArticle) => {
     try {
+      const headers = { ...getAuthHeaders(), 'Content-Type': 'application/json' };
       const response = await fetch(`${API_BASE}/api/content/medical/${article.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           status: 'pending',
           userId: user?.id || 'unknown',
@@ -390,10 +406,11 @@ const MedicalContent: React.FC = () => {
         }),
       });
       if (!response.ok) throw new Error('Failed to submit for approval');
-      const updatedArticle = await response.json();
-      setContent((prev) => prev.map((a) => (a.id === updatedArticle.id ? updatedArticle : a)));
+      const result = await response.json();
+      const updatedArt = result.article || result;
+      setContent((prev) => prev.map((a) => (a.id === updatedArt.id ? updatedArt : a)));
       if (selectedArticle?.id === article.id) {
-        setSelectedArticle(updatedArticle);
+        setSelectedArticle(updatedArt);
       }
       alert('Article submitted for approval successfully!');
     } catch (err) {
@@ -405,9 +422,10 @@ const MedicalContent: React.FC = () => {
   const handleApprovalAction = async (action: 'approve' | 'reject') => {
     if (!selectedArticle) return;
     try {
+      const headers = { ...getAuthHeaders(), 'Content-Type': 'application/json' };
       const response = await fetch(`${API_BASE}/api/content/medical/${selectedArticle.id}/review`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           action,
           userId: user?.id,

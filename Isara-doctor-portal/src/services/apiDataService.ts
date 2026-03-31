@@ -67,9 +67,10 @@ export async function fetchDashboardData(doctorId: string): Promise<DashboardDat
 // PATIENTS
 // ============================================================================
 
-export async function fetchAllPatients(): Promise<any[]> {
-  console.log('[API] Fetching all patients from PostgreSQL...');
-  const result = await fetchAPI<{ patients: any[] }>('/api/patients');
+export async function fetchAllPatients(doctorId?: string): Promise<any[]> {
+  console.log('[API] Fetching patients from PostgreSQL...');
+  const endpoint = doctorId ? `/api/patients?doctorId=${encodeURIComponent(doctorId)}` : '/api/patients';
+  const result = await fetchAPI<{ patients: any[] }>(endpoint);
   return result.patients || [];
 }
 

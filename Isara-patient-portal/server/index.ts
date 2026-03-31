@@ -5,6 +5,8 @@ import { Storage } from '@google-cloud/storage';
 import path from 'node:path';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { createServer } from 'node:http';
+import { Server as SocketServer } from 'socket.io';
 
 // ES Module __dirname equivalent
 const __filename = fileURLToPath(import.meta.url);
@@ -28,12 +30,14 @@ import { biometricRouter as biometricRoutes, apiConnectionRouter as apiConnectio
 import settingsRoutes, { syncRouter as syncRoutes } from './routes/settings';
 import phase2Routes from './routes/phase2';
 import mapRoutes from './routes/map';
+import { startPgNotifyListener } from './pgNotifyListener';
 import { authMiddleware, AuthenticatedRequest } from './middleware/auth';
 import postgresDataService from './services/postgresDataService';
 
 const { pool } = postgresDataService;
 
 const app: Express = express();
+const httpServer = createServer(app);
 const PORT = process.env.PORT || 3004;
 
 const GCS_BUCKETS = {
@@ -125,6 +129,44 @@ if (process.env.NODE_ENV === 'production') {
 // Regex pattern for Cloud Run dynamic URLs (both old hvht4obouq and new 724889190329 formats)
 const CLOUD_RUN_PATTERN = /^https:\/\/izara-[a-z0-9-]+(-hvht4obouq-as\.a\.run\.app|-724889190329\.asia-southeast1\.run\.app)$/;
 
+// ============================================================================
+// SOCKET.IO — Real-time appointment notifications
+// ============================================================================
+const io = new SocketServer(httpServer, {
+  cors: {
+    origin: (origin, callback) => {
+      if (!origin || ALLOWED_ORIGINS.includes(origin) || CLOUD_RUN_PATTERN.test(origin || '')) {
+        callback(null, true);
+      } else {
+        callback(null, false);
+      }
+    },
+    credentials: true
+  },
+  path: '/ws'
+});
+
+io.on('connection', (socket) => {
+  console.log(`🔌 Patient Portal WebSocket connected: ${socket.id}`);
+  socket.on('join-admin-room', () => {
+    socket.join('admin-notifications');
+  });
+  socket.on('join-doctor-room', (doctorId: string) => {
+    if (doctorId) socket.join(`doctor-${doctorId}`);
+  });
+  socket.on('join-patient-room', (patientId: string) => {
+    if (patientId) socket.join(`patient-${patientId}`);
+  });
+  socket.on('join-queue-room', (doctorId: string) => {
+    if (doctorId) socket.join(`queue-${doctorId}`);
+  });
+  socket.on('disconnect', () => {
+    console.log(`🔌 Patient Portal WebSocket disconnected: ${socket.id}`);
+  });
+});
+
+app.set('io', io);
+
 // OWASP Security Middleware
 
 // A02 - Security Headers
@@ -157,8 +199,11 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID', 'X-Platform', 'X-Device-ID', 'X-App-Version'],
 }));
 
-// A07 - Rate Limiting
-const rateLimitMax = Number.parseInt(process.env.RATE_LIMIT_MAX || '0') || (process.env.NODE_ENV === 'production' ? 2000 : 10000);
+// A07 - Rate Limiting (production only — unlimited in dev/test)
+const isRateLimitProd = process.env.NODE_ENV === 'production';
+const rateLimitMax = isRateLimitProd
+  ? (Number.parseInt(process.env.RATE_LIMIT_MAX || '0') || 2000)
+  : 999999;
 app.use(rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute window
   maxRequests: rateLimitMax,
@@ -476,12 +521,12 @@ app.get('/api/dashboard/stats', authMiddleware, async (req: Request, res: Respon
       const upcomingAppts = await pool.query(
         `SELECT COUNT(*) as count FROM appointments 
          WHERE patient_id = $1 
-         AND status IN ('pending', 'confirmed', 'scheduled')
-         AND appointment_date >= CURRENT_DATE`,
+         AND status IN ('pending', 'confirmed', 'scheduled', 'in_pool', 'awaiting_doctor_response')
+         AND COALESCE(confirmed_date, scheduled_date, requested_date, appointment_date) >= CURRENT_DATE`,
         [userId]
       );
       upcomingCount = Number.parseInt(upcomingAppts.rows[0]?.count || 0, 10);
-    } catch (e) { console.warn('[DASHBOARD] appointments query fallback:', e); }
+    } catch (e) { console.warn('[DASHBOARD] appointments query fallback:', (e as Error).message); }
     
     try {
       const activeMeds = await pool.query(
@@ -545,6 +590,51 @@ app.get('/api/health-records/treatment-results', authMiddleware, async (req: Req
   } catch (error: unknown) {
     console.error('[HEALTH-RECORDS] Treatment results error:', error);
     res.status(500).json({ error: errMsg(error) });
+  }
+});
+
+// ============================================================================
+// LAB RESULTS - Patient can view their lab results
+// ============================================================================
+app.get('/api/lab-results', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as AuthenticatedRequest).user?.id || (req as AuthenticatedRequest).user?.patientId || (req as AuthenticatedRequest).patientId;
+    console.log(`[LAB] Getting lab results for patient: ${String(userId)}`);
+    
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    
+    const result = await pool.query(
+      `SELECT lo.*, 
+              d.name as doctor_name, d.name_thai as doctor_name_thai
+       FROM lab_orders lo
+       LEFT JOIN users d ON lo.doctor_id = d.id
+       WHERE lo.patient_id = $1
+       ORDER BY lo.created_at DESC`,
+      [userId]
+    );
+    
+    res.json({
+      success: true,
+      labResults: result.rows.map((row: any) => ({
+        id: row.id,
+        testName: row.test_name || row.test_type,
+        testType: row.test_type,
+        status: row.status,
+        results: row.results,
+        resultUrl: row.result_url,
+        notes: row.notes,
+        doctorName: row.doctor_name_thai || row.doctor_name,
+        orderedDate: row.created_at,
+        completedDate: row.completed_at || row.updated_at,
+        priority: row.priority
+      })),
+      count: result.rows.length
+    });
+  } catch (error: unknown) {
+    console.error('[LAB] Lab results error:', error);
+    res.json({ success: true, labResults: [], count: 0 });
   }
 });
 
@@ -967,7 +1057,7 @@ app.get('/api/emr/patient/:patientId', authMiddleware, async (req: Request, res:
       const result = await pool.query(
         `SELECT e.*, 
                 u.name as doctor_name, u.name_thai as doctor_name_thai
-         FROM emr_records e
+         FROM emr e
          LEFT JOIN users u ON e.doctor_id = u.id
          WHERE e.patient_id = $1
          ORDER BY e.created_at DESC`,
@@ -1011,11 +1101,11 @@ app.get('/api/emr/my', authMiddleware, async (req: Request, res: Response) => {
     }
     
     try {
-      // Query emr_records table (schema managed by migrations, not runtime DDL)
+      // Query emr table (main EMR records written by doctor portal)
       const result = await pool.query(
         `SELECT e.*, 
                 u.name as doctor_name, u.name_thai as doctor_name_thai
-         FROM emr_records e
+         FROM emr e
          LEFT JOIN users u ON e.doctor_id = u.id
          WHERE e.patient_id = $1
          ORDER BY e.created_at DESC`,
@@ -1114,17 +1204,21 @@ try {
     console.error('⚠️  Warning: Some GCS buckets are not accessible. Server will start but some features may not work.');
   }
 
-  app.listen(PORT, () => {
+  httpServer.listen(PORT, () => {
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     console.log(`🚀 Izara Patient Portal API Server v1.5.0`);
     console.log(`🛡️  OWASP Top 10:2025 Security Enabled`);
     console.log(`📡 Server running on http://localhost:${PORT}`);
+    console.log(`🔌 WebSocket: ws://localhost:${PORT}/ws`);
     console.log(`🏥 Health check: http://localhost:${PORT}/health`);
     console.log(`🎥 Video Meeting: Jitsi Meet (FREE)`);
     console.log(`🎤 Transcription: Web Speech API (FREE)`);
     console.log(`🤖 AI Assistant: Gemini 2.5 Flash Lite (FREE)`);
     console.log(`📊 Database: PostgreSQL + pgvector`);
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+
+    // Start PG LISTEN/NOTIFY for cross-service sync
+    startPgNotifyListener(pool, io);
   });
 
   // ============================================================================

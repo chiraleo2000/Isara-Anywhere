@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { User } from '../types';
 import * as authService from '../services/simpleAuth';
 
-// Inactivity timeout: 15 minutes
+// Inactivity timeout: 3 hours
 const INACTIVITY_CHECK_INTERVAL = 60 * 1000; // Check every minute
 
 export function useAuth() {

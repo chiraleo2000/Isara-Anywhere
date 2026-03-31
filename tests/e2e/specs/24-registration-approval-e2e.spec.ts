@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { PATIENT_URL, DOCTOR_URL, ENDPOINTS, authenticateAllUsers, apiRequest, loginViaBrowser, logTestSuccess, type UserRole, type AuthenticatedUser } from '../lib/test-helpers';
+import { PATIENT_URL, DOCTOR_URL, ENDPOINTS, authenticateAllUsers, apiRequest, loginViaBrowser, logTestSuccess, createRoleBrowser, type UserRole, type AuthenticatedUser } from '../lib/test-helpers';
 let users: Map<UserRole, AuthenticatedUser>;
 function getUser(role: UserRole): AuthenticatedUser {
   const u = users.get(role);
@@ -24,10 +24,10 @@ test.describe('24 - Registration Approval Metadata', () => {
     test('C04 - Medications', async ({ request }) => { const doc = getUser('doctor'); const res = await apiRequest(request, 'GET', DOCTOR_URL, ENDPOINTS.metadata.medications, doc.token); expect(res.status).toBeLessThan(600); logTestSuccess('Medications -> ' + res.status); });
   });
   test.describe('D - Browser Login Pages', () => {
-    test('D01 - Patient login page', async ({ browser }) => { const ctx = await browser.newContext(); const page = await ctx.newPage(); await page.goto(PATIENT_URL + '/login', { waitUntil: 'domcontentloaded', timeout: 30000 }); expect(page.url()).toContain('/login'); logTestSuccess('Patient login page'); await ctx.close(); });
-    test('D02 - Doctor login page', async ({ browser }) => { const ctx = await browser.newContext(); const page = await ctx.newPage(); await page.goto(DOCTOR_URL + '/login', { waitUntil: 'domcontentloaded', timeout: 30000 }); expect(page.url()).toContain('/login'); logTestSuccess('Doctor login page'); await ctx.close(); });
-    test('D03 - Patient dashboard', async ({ browser }) => { const ctx = await browser.newContext(); const page = await ctx.newPage(); await loginViaBrowser(page, 'patient1'); expect(page.url()).not.toContain('/login'); logTestSuccess('Patient dashboard OK'); await ctx.close(); });
-    test('D04 - Doctor dashboard', async ({ browser }) => { const ctx = await browser.newContext(); const page = await ctx.newPage(); await loginViaBrowser(page, 'doctor'); expect(page.url()).not.toContain('/login'); logTestSuccess('Doctor dashboard OK'); await ctx.close(); });
+    test('D01 - Patient login page', async () => { const { context: ctx, page } = await createRoleBrowser('patient1'); await page.goto(PATIENT_URL + '/login', { waitUntil: 'domcontentloaded', timeout: 30000 }); expect(page.url()).toContain('/login'); logTestSuccess('Patient login page'); await ctx.close(); });
+    test('D02 - Doctor login page', async () => { const { context: ctx, page } = await createRoleBrowser('doctor'); await page.goto(DOCTOR_URL + '/login', { waitUntil: 'domcontentloaded', timeout: 30000 }); expect(page.url()).toContain('/login'); logTestSuccess('Doctor login page'); await ctx.close(); });
+    test('D03 - Patient dashboard', async () => { const { context: ctx, page } = await createRoleBrowser('patient1'); await loginViaBrowser(page, 'patient1'); expect(page.url()).not.toContain('/login'); logTestSuccess('Patient dashboard OK'); await ctx.close(); });
+    test('D04 - Doctor dashboard', async () => { const { context: ctx, page } = await createRoleBrowser('doctor'); await loginViaBrowser(page, 'doctor'); expect(page.url()).not.toContain('/login'); logTestSuccess('Doctor dashboard OK'); await ctx.close(); });
   });
   test.describe('E - User Profiles', () => {
     test('E01 - Patient profile', async ({ request }) => { const pt = getUser('patient1'); const res = await apiRequest(request, 'GET', PATIENT_URL, '/api/auth/me', pt.token); expect(res.status).toBeLessThan(600); logTestSuccess('Patient profile -> ' + res.status); });

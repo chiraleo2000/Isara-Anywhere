@@ -756,7 +756,7 @@ export const AppointmentService = {
              u.name as doctor_name, u.name_thai as doctor_name_thai, u.avatar_url as doctor_avatar,
              dp.specialty, dp.hospital_name
       FROM appointments a
-      JOIN users u ON a.doctor_id = u.id
+      LEFT JOIN users u ON a.doctor_id = u.id
       LEFT JOIN doctor_profiles dp ON dp.doctor_id = u.id
       WHERE a.patient_id = $1
     `;
@@ -789,11 +789,11 @@ export const AppointmentService = {
     const params: (string | undefined)[] = [doctorId];
 
     if (date) {
-      query += ' AND DATE(a.scheduled_date) = $2';
+      query += ' AND DATE(COALESCE(a.confirmed_date, a.requested_date, a.appointment_date)) = $2';
       params.push(date);
     }
 
-    query += ' ORDER BY a.scheduled_date ASC, a.scheduled_time ASC';
+    query += ' ORDER BY COALESCE(a.confirmed_date, a.requested_date, a.appointment_date) ASC, COALESCE(a.confirmed_time, a.requested_time, a.appointment_time) ASC';
 
     const result = await pool.query(query, params);
     return result.rows;
@@ -805,7 +805,7 @@ export const AppointmentService = {
   async createAppointment(data: Partial<Appointment>): Promise<Appointment> {
     const result = await pool.query(
       `INSERT INTO appointments (
-        id, patient_id, doctor_id, scheduled_date, scheduled_time,
+        id, patient_id, doctor_id, requested_date, requested_time,
         duration_minutes, type, status, reason, symptoms, chief_complaint, notes
       )
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
@@ -814,8 +814,8 @@ export const AppointmentService = {
         `APT-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
         data.patient_id,
         data.doctor_id,
-        data.scheduled_date,
-        data.scheduled_time,
+        data.scheduled_date || data.requested_date,
+        data.scheduled_time || data.requested_time,
         data.duration_minutes || 30,
         data.type || 'telemedicine',
         data.status || 'pending',

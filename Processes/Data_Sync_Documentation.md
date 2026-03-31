@@ -1,8 +1,8 @@
 # Izara Telemedicine - Data Architecture & Sync Documentation
 
-**Version:** 1.5.9  
-**Last Updated:** March 15, 2026  
-**Status:** ✅ PostgreSQL Implementation Complete + Meeting Server
+**Version:** 1.6.0  
+**Last Updated:** July 10, 2026  
+**Status:** ✅ PostgreSQL Implementation Complete + Meeting Server + Cross-Portal Fixes
 
 ---
 
@@ -448,3 +448,33 @@ npx playwright test --debug
 
 Documentation generated for Izara Telemedicine Platform v3.0.0
 Phase 1: AI-Assisted Consultation with Man-in-the-Loop Validation
+
+---
+
+## 📝 Changelog — v1.6.0 (July 2026)
+
+### Bug Fixes Applied
+
+| # | Issue | Files Changed | Fix |
+|---|-------|---------------|-----|
+| 1 | Appointment queries used non-existent `scheduled_date`/`scheduled_time` columns | `postgresDataService.ts`, `appointments.ts` | Use `COALESCE(confirmed_date, requested_date, appointment_date)`; remove demo data fallback |
+| 2 | Session timeout too short (15 min) | `AuthContext.tsx`, `auth.ts`, `authServices.ts`, `config.ts`, `useAuth.ts` | Changed to 3-hour inactivity timeout across all portals |
+| 3 | Medical content library: "Failed to create article" | `MedicalContent.tsx` | Unwrap `result.article \|\| result` from backend response; add auth headers to all fetch calls |
+| 4 | Lab result upload sends no patient notification | `mainApiServer.cjs` | Added `createNotification()` call with type `lab_results` after lab upload |
+| 5 | Dashboard shows all patients (privacy violation) | `apiDataService.ts`, `DoctorDashboard.tsx`, `mainApiServer.cjs` | Filter patients by `doctorId` via appointment relationship; added 30s auto-refresh |
+| 6 | Meeting room camera/mic toggle desync | `PatientMeetingRoom.tsx`, `MeetingRoom.tsx` | Set `cameraOn`/`micOn` to false when permission denied |
+| 7 | AI summary silently skips when Gemini unconfigured | `index.js` (meeting server) | Emit `meeting-summary-ready` socket event with error message |
+| 8 | Consultant page freezes on add/update | `MedicalConsultants.tsx` | Unwrap `result.consultant \|\| result` from backend response |
+| 9 | Specialties query references wrong table | `mainApiServer.cjs` | Changed `medical_consultants` → `consultants` |
+| 10 | Meeting transcript POST with undefined appointmentId | `MeetingRoom.tsx` | Guard against undefined `appointmentId` before REST save |
+| 11 | Validation errors silently logged | `MeetingResults.tsx` | Added user-facing `setError()` for regenerate and validation failures |
+
+### Multi-Browser Playwright Configuration
+
+| Project | Browser | Role | Base URL |
+|---------|---------|------|----------|
+| `Patient-Chrome` | Chrome | Patient | `http://localhost:3005` |
+| `Doctor-Edge` | Microsoft Edge | Doctor | `http://localhost:3010` |
+| `Admin-Firefox` | Firefox | Admin | `http://localhost:3010` |
+
+New test spec: `tests/e2e/specs/32-cross-portal-sync.spec.ts` — validates all 11 fixes above.

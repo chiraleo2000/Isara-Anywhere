@@ -40,11 +40,11 @@ const RATE_LIMITS: Record<string, RateLimitConfig> = {
 
 function sanitizeInput(input: string): string {
   let clean = input;
-  clean = clean.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
-  clean = clean.replace(/<[^>]*>/g, '');
-  clean = clean.replace(/javascript:/gi, '');
-  clean = clean.replace(/on\w+=/gi, '');
-  clean = clean.replace(/eval\s*\(/gi, '');
+  clean = clean.replaceAll(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+  clean = clean.replaceAll(/<[^>]*>/g, '');
+  clean = clean.replaceAll(/javascript:/gi, '');
+  clean = clean.replaceAll(/on\w+=/gi, '');
+  clean = clean.replaceAll(/eval\s*\(/gi, '');
   return clean.trim();
 }
 
@@ -243,5 +243,182 @@ describe('Security — CORS & Rate Limiting', () => {
     it('F05 — CSP', () => {
       expect(REQUIRED_HEADERS).toContain('Content-Security-Policy');
     });
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+// G. Sequential Middleware Pipeline (Step-by-Step)
+// ═══════════════════════════════════════════════════════════════════════
+// Simulates a full request flowing through CORS → Rate Limit → Sanitize → Validate → Accept/Reject
+
+class InlineRateLimiter {
+  private readonly store = new Map<string, { count: number; resetAt: number }>();
+  constructor(private readonly maxReqs: number, private readonly windowMs: number) {}
+
+  attempt(key: string): boolean {
+    const now = Date.now();
+    const entry = this.store.get(key);
+    if (!entry || now >= entry.resetAt) {
+      this.store.set(key, { count: 1, resetAt: now + this.windowMs });
+      return true;
+    }
+    if (entry.count >= this.maxReqs) return false;
+    entry.count++;
+    return true;
+  }
+}
+
+interface PipelineResult {
+  allowed: boolean;
+  stage: 'cors' | 'rate-limit' | 'sanitize' | 'validate' | 'accepted';
+  reason?: string;
+  sanitizedBody?: string;
+}
+
+function processRequest(origin: string, ip: string, body: string, limiter: InlineRateLimiter): PipelineResult {
+  // Stage 1: CORS
+  if (!isAllowedOrigin(origin)) {
+    return { allowed: false, stage: 'cors', reason: `Origin rejected: ${origin}` };
+  }
+
+  // Stage 2: Rate Limit
+  if (!limiter.attempt(ip)) {
+    return { allowed: false, stage: 'rate-limit', reason: `Rate limit exceeded for ${ip}` };
+  }
+
+  // Stage 3: Sanitize
+  const sanitized = sanitizeInput(body);
+
+  // Stage 4: Validate (SQL + XSS)
+  if (detectSQLInjection(body)) {
+    return { allowed: false, stage: 'validate', reason: 'SQL injection detected' };
+  }
+  if (detectXSS(body)) {
+    return { allowed: false, stage: 'validate', reason: 'XSS detected' };
+  }
+
+  return { allowed: true, stage: 'accepted', sanitizedBody: sanitized };
+}
+
+describe('Security — Sequential Middleware Pipeline (8 Steps)', () => {
+  const limiter = new InlineRateLimiter(3, 900000);
+
+  // Shared state
+  let lastResult: PipelineResult;
+
+  // Step 1: Legitimate request passes all stages
+  it('Step 1 — Legitimate request passes full pipeline', () => {
+    lastResult = processRequest(
+      'http://localhost:3005',
+      '192.168.1.10',
+      'ผู้ป่วยปวดหัว 3 วัน',
+      limiter,
+    );
+    expect(lastResult.allowed).toBe(true);
+    expect(lastResult.stage).toBe('accepted');
+    expect(lastResult.sanitizedBody).toBe('ผู้ป่วยปวดหัว 3 วัน');
+  });
+
+  // Step 2: Cloud Run origin also passes
+  it('Step 2 — Cloud Run origin passes CORS check', () => {
+    lastResult = processRequest(
+      'https://izara-patient-portal-724889190329.asia-southeast1.run.app',
+      '10.0.0.1',
+      'BP 120/80 mmHg',
+      limiter,
+    );
+    expect(lastResult.allowed).toBe(true);
+    expect(lastResult.stage).toBe('accepted');
+  });
+
+  // Step 3: Unknown origin rejected at CORS stage
+  it('Step 3 — Unknown origin rejected at CORS stage', () => {
+    lastResult = processRequest(
+      'https://evil.com',
+      '1.2.3.4',
+      'normal text',
+      limiter,
+    );
+    expect(lastResult.allowed).toBe(false);
+    expect(lastResult.stage).toBe('cors');
+    expect(lastResult.reason).toContain('evil.com');
+  });
+
+  // Step 4: SQL injection rejected at validation stage
+  it('Step 4 — SQL injection rejected at validation stage', () => {
+    lastResult = processRequest(
+      'http://localhost:3005',
+      '192.168.1.20',
+      "Robert'; DROP TABLE users; --",
+      limiter,
+    );
+    expect(lastResult.allowed).toBe(false);
+    expect(lastResult.stage).toBe('validate');
+    expect(lastResult.reason).toContain('SQL injection');
+  });
+
+  // Step 5: XSS rejected at validation stage
+  it('Step 5 — XSS attempt rejected at validation stage', () => {
+    lastResult = processRequest(
+      'http://localhost:3010',
+      '192.168.1.30',
+      '<script>alert("xss")</script>',
+      limiter,
+    );
+    expect(lastResult.allowed).toBe(false);
+    expect(lastResult.stage).toBe('validate');
+    expect(lastResult.reason).toContain('XSS');
+  });
+
+  // Step 6: Rate limit triggered after N requests from same IP
+  it('Step 6 — Rate limit blocks 4th request from same IP', () => {
+    const strictLimiter = new InlineRateLimiter(3, 900000);
+
+    // First 3 pass
+    for (let i = 0; i < 3; i++) {
+      const r = processRequest('http://localhost:3005', '10.10.10.10', `request ${i}`, strictLimiter);
+      expect(r.allowed).toBe(true);
+    }
+
+    // 4th blocked
+    lastResult = processRequest('http://localhost:3005', '10.10.10.10', 'blocked request', strictLimiter);
+    expect(lastResult.allowed).toBe(false);
+    expect(lastResult.stage).toBe('rate-limit');
+    expect(lastResult.reason).toContain('Rate limit');
+  });
+
+  // Step 7: Sanitization strips dangerous content but preserves medical text
+  it('Step 7 — Sanitization preserves medical text, strips tags', () => {
+    // HTML tags removed
+    const withTags = sanitizeInput('<b>Important</b> <i>note</i>');
+    expect(withTags).toBe('Important note');
+
+    // Thai medical text preserved
+    const thai = sanitizeInput('อุณหภูมิ 37.5°C ความดัน 120/80');
+    expect(thai).toBe('อุณหภูมิ 37.5°C ความดัน 120/80');
+
+    // Script content stripped (but text preserved)
+    const withScript = sanitizeInput('<script>steal()</script>Med notes');
+    expect(withScript).not.toContain('<script');
+    expect(withScript).toContain('Med notes');
+  });
+
+  // Step 8: Security headers are all defined
+  it('Step 8 — All 7 security headers are defined', () => {
+    expect(REQUIRED_HEADERS).toHaveLength(7);
+
+    const expectedHeaders = [
+      'X-Content-Type-Options',
+      'X-Frame-Options',
+      'X-XSS-Protection',
+      'Strict-Transport-Security',
+      'Content-Security-Policy',
+      'Referrer-Policy',
+      'Permissions-Policy',
+    ];
+
+    for (const header of expectedHeaders) {
+      expect(REQUIRED_HEADERS, `Missing header: ${header}`).toContain(header);
+    }
   });
 });

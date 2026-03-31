@@ -46,7 +46,7 @@ const poolConfig = {
   port: dbConfig.port || Number.parseInt(process.env.DB_PORT || (useEmbeddedPG ? '5432' : '5433'), 10),
   database: dbConfig.database || process.env.DB_NAME || 'izara_phase1',
   user: dbConfig.user || process.env.DB_USER || 'postgres',
-  password: dbConfig.password || process.env.DB_PASSWORD || 'IzaraDb2024',
+  password: dbConfig.password || process.env.DB_PASSWORD || '',
   max: 20,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: isProduction ? 30000 : 5000,
@@ -571,6 +571,7 @@ const AppointmentService = {
    */
   async getDoctorAppointments(doctorId, date) {
     // Match doctor_id whether it's a users.id or a doctors.id
+    // Also include unassigned (NULL doctor_id) appointments so admin/doctor can see them in the pending queue
     let query = `
       SELECT a.*, 
              u.name as patient_name, u.name_thai as patient_name_thai,
@@ -580,6 +581,7 @@ const AppointmentService = {
       WHERE (
         a.doctor_id = $1
         OR a.doctor_id IN (SELECT doctor_id FROM doctor_profiles WHERE doctor_id = $1)
+        OR a.doctor_id IS NULL
       )
     `;
     const params = [doctorId];
@@ -1035,9 +1037,9 @@ const ContentService = {
     const result = await pool.query(
       `INSERT INTO medical_content (
         id, title_thai, title_english, content_thai, content_english,
-        category, tags, author_id, status, image_url
+        category, tags, author_id, author_name, status, image_url
       )
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
        RETURNING *`,
       [
         `MC-${Date.now()}`,
@@ -1048,6 +1050,7 @@ const ContentService = {
         data.category,
         JSON.stringify(data.tags || []),
         data.author_id,
+        data.author_name || null,
         data.status || 'draft',
         data.image_url || data.thumbnail || null
       ]

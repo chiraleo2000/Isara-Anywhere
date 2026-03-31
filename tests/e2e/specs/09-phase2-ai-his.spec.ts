@@ -16,7 +16,7 @@ import {
   authenticateAllUsers,
   patientApi, doctorApi,
   logTestSuccess, logTestInfo,
-  loginViaBrowser, screenshot,
+  loginViaBrowser, screenshot, createRoleBrowser,
   generateGeriatricScreening, generateCTMAssessment,
   generateSOSAlert, generateFollowUpSchedule,
   type UserRole, type AuthenticatedUser,
@@ -131,9 +131,8 @@ test.describe('09 — Phase 2: AI-Based HIS Features', () => {
       expect(res.status).toBeLessThan(600);
     });
 
-    test('A10 — CTM page loads in doctor portal (browser)', async ({ browser }) => {
-      const ctx = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
-      const page = await ctx.newPage();
+    test('A10 — CTM page loads in doctor portal (browser)', async () => {
+      const { context: ctx, page } = await createRoleBrowser('doctor', { viewport: { width: 1920, height: 1080 } });
       await loginViaBrowser(page, 'doctor');
       await page.goto(`${DOCTOR_URL}/ctm`, { timeout: TIMEOUTS.navigation }).catch(() =>
         page.goto(`${DOCTOR_URL}/patient-records`, { timeout: TIMEOUTS.navigation }),
@@ -517,9 +516,8 @@ test.describe('09 — Phase 2: AI-Based HIS Features', () => {
       expect(res.status).toBeLessThan(600);
     });
 
-    test('F08 — Settings persist across sessions (browser)', async ({ browser }) => {
-      const ctx = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
-      const page = await ctx.newPage();
+    test('F08 — Settings persist across sessions (browser)', async () => {
+      const { context: ctx, page } = await createRoleBrowser('patient1', { viewport: { width: 1920, height: 1080 } });
       await loginViaBrowser(page, 'patient1');
       await page.goto(`${PATIENT_URL}/settings`, { timeout: TIMEOUTS.navigation });
       await page.waitForTimeout(2000);
@@ -589,9 +587,8 @@ test.describe('09 — Phase 2: AI-Based HIS Features', () => {
       expect(res.status).toBeLessThan(600);
     });
 
-    test('G07 — Nursing dashboard page (browser)', async ({ browser }) => {
-      const ctx = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
-      const page = await ctx.newPage();
+    test('G07 — Nursing dashboard page (browser)', async () => {
+      const { context: ctx, page } = await createRoleBrowser('doctor', { viewport: { width: 1920, height: 1080 } });
       await loginViaBrowser(page, 'doctor');
       await page.goto(`${DOCTOR_URL}/nursing`, { timeout: TIMEOUTS.navigation }).catch(() =>
         page.goto(`${DOCTOR_URL}/dashboard`, { timeout: TIMEOUTS.navigation }),

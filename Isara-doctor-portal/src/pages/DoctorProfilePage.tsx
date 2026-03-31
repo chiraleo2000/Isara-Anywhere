@@ -212,7 +212,7 @@ function PasswordChangeModal({
       <div className="w-full max-w-md bg-white rounded-2xl shadow-xl">
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
           <h2 className="text-lg font-semibold text-gray-800">เปลี่ยนรหัสผ่าน</h2>
-          <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-100">
+          <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-100" aria-label="Close password dialog">
             <XIcon className="w-5 h-5 text-gray-500" />
           </button>
         </div>
@@ -398,6 +398,7 @@ export default function DoctorProfilePage({ onBack }: DoctorProfilePageProps) {
             <button
               onClick={onBack}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              aria-label="Go back"
             >
               <ArrowLeftIcon className="w-5 h-5" />
             </button>
@@ -482,6 +483,7 @@ export default function DoctorProfilePage({ onBack }: DoctorProfilePageProps) {
                 accept="image/jpeg,image/png,image/webp"
                 onChange={handleAvatarUpload}
                 className="hidden"
+                aria-label="Upload profile photo"
               />
             </div>
             <div className="text-white">

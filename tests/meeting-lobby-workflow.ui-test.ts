@@ -120,15 +120,14 @@ test.describe('Meeting Lobby Workflow', () => {
       await expect(btn).toBeEnabled();
     });
 
-    test('1.4 — Email field accepts valid email', async ({ page }) => {
+    test('1.4 — Email field should not exist (removed)', async ({ page }) => {
       await page.goto(`${PATIENT_URL}/guest-join/lobby-wf-test`);
       await page.waitForTimeout(3000);
 
       const emailInput = page.locator('[data-testid="guest-email-input"]');
       const hasEmail = await emailInput.isVisible().catch(() => false);
-      if (!hasEmail) { console.log('  ⚠️ Email input not deployed, skipping'); test.skip(); return; }
-      await emailInput.fill('user@example.com');
-      await expect(emailInput).toHaveValue('user@example.com');
+      expect(hasEmail).toBe(false);
+      console.log('  \u2705 Email field correctly removed from guest join form');
     });
   });
 
@@ -393,7 +392,7 @@ test.describe('Meeting Lobby Workflow', () => {
       await page.goto(`${PATIENT_URL}/guest-join/${meetingId}`);
       await page.waitForTimeout(3000);
 
-      // Fill name and email — skip if testids not found
+      // Fill name — skip if testids not found
       const nameInput = page.locator('[data-testid="guest-name-input"]');
       const hasName = await nameInput.isVisible().catch(() => false);
       if (!hasName) {
@@ -402,9 +401,6 @@ test.describe('Meeting Lobby Workflow', () => {
         return;
       }
       await nameInput.fill('UI Test Guest');
-      const emailInput = page.locator('[data-testid="guest-email-input"]');
-      const hasEmail = await emailInput.isVisible().catch(() => false);
-      if (hasEmail) await emailInput.fill('ui@test.com');
       await snap(page, 'lobby-wf-filled', 'Form Filled');
 
       // Click join

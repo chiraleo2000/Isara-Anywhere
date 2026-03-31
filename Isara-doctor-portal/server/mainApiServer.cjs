@@ -141,29 +141,35 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Rate Limiting (in-memory, per-IP)
-const mainApiRateLimits = new Map();
-app.use((req, res, next) => {
-  const ip = req.ip || req.socket.remoteAddress || 'unknown';
-  const now = Date.now();
-  let entry = mainApiRateLimits.get(ip);
-  if (!entry || now - entry.start > 60000) {
-    entry = { count: 1, start: now };
-    mainApiRateLimits.set(ip, entry);
-  } else {
-    entry.count++;
-  }
-  if (entry.count > 200) {
-    return res.status(429).json({ error: 'Too many requests. Please try again later.' });
-  }
-  next();
-});
-setInterval(() => {
-  const cutoff = Date.now() - 120000;
-  for (const [ip, entry] of mainApiRateLimits) {
-    if (entry.start < cutoff) mainApiRateLimits.delete(ip);
-  }
-}, 300000);
+// Rate Limiting (in-memory, per-IP) — disabled in dev/test
+const isMainApiProd = process.env.NODE_ENV === 'production';
+const mainApiRateLimitMax = Number.parseInt(process.env.RATE_LIMIT_MAX || '0') || 5000;
+if (isMainApiProd) {
+  const mainApiRateLimits = new Map();
+  app.use((req, res, next) => {
+    const ip = req.ip || req.socket.remoteAddress || 'unknown';
+    const now = Date.now();
+    let entry = mainApiRateLimits.get(ip);
+    if (!entry || now - entry.start > 60000) {
+      entry = { count: 1, start: now };
+      mainApiRateLimits.set(ip, entry);
+    } else {
+      entry.count++;
+    }
+    if (entry.count > mainApiRateLimitMax) {
+      return res.status(429).json({ error: 'Too many requests. Please try again later.' });
+    }
+    next();
+  });
+  setInterval(() => {
+    const cutoff = Date.now() - 120000;
+    for (const [ip, entry] of mainApiRateLimits) {
+      if (entry.start < cutoff) mainApiRateLimits.delete(ip);
+    }
+  }, 300000);
+} else {
+  console.log('[MAIN-API] Rate limiting DISABLED in dev/test mode');
+}
 
 // OWASP Security Headers
 app.use((req, res, next) => {
@@ -211,12 +217,19 @@ const io = new Server(server, {
   path: '/ws'
 });
 
+const { SOCKET_EVENTS } = require('./socketEvents.cjs');
+
 io.on('connection', (socket) => {
   console.log(`🔌 WebSocket client connected: ${socket.id}`);
 
   socket.on('join-doctor-room', (doctorId) => {
     socket.join(`doctor-${doctorId}`);
     console.log(`Doctor ${doctorId} joined their room`);
+  });
+
+  socket.on('join-patient-room', (patientId) => {
+    socket.join(`patient-${patientId}`);
+    console.log(`Patient ${patientId} joined their room`);
   });
 
   socket.on('join-queue-room', (doctorId) => {
@@ -228,6 +241,29 @@ io.on('connection', (socket) => {
     console.log(`🔌 WebSocket client disconnected: ${socket.id}`);
   });
 });
+
+/**
+ * Emit a Socket.IO event to relevant rooms.
+ * @param {string} event - Event name from SOCKET_EVENTS
+ * @param {object} data  - Payload
+ * @param {object} opts  - { doctorId?, patientId?, broadcast? }
+ */
+function emitDataChange(event, data, opts = {}) {
+  try {
+    if (opts.doctorId) {
+      io.to(`doctor-${opts.doctorId}`).emit(event, data);
+      io.to(`queue-${opts.doctorId}`).emit(event, data);
+    }
+    if (opts.patientId) {
+      io.to(`patient-${opts.patientId}`).emit(event, data);
+    }
+    if (opts.broadcast) {
+      io.emit(event, data);
+    }
+  } catch (err) {
+    console.error(`[WS] Failed to emit ${event}:`, err.message);
+  }
+}
 
 // Export io for use in routes
 app.set('io', io);
@@ -1017,7 +1053,7 @@ const authProfileHandler = async (req, res) => {
       success: true,
       message: 'Profile updated successfully',
       profile: {
-        id: userId || 'demo_user_001',
+        id: userId,
         avatarUrl: avatarUrl || `https://i.pravatar.cc/150?u=${userId}`,
         displayName: displayName || name || 'User',
         ...req.body,
@@ -1188,6 +1224,20 @@ app.post('/api/auth/change-password', authenticateToken, async (req, res) => {
 
 app.get('/api/patients', authenticateToken, async (req, res) => {
   try {
+    const doctorId = req.query.doctorId;
+    if (doctorId && typeof doctorId === 'string') {
+      console.log(`[PATIENTS] Fetching patients for doctor ${doctorId} from PostgreSQL`);
+      // Only return patients who have appointments with this doctor
+      const result = await PostgresDataService.pool.query(
+        `SELECT DISTINCT u.id, u.name, u.name_thai, u.email, u.phone, u.avatar_url, u.patient_id, u.date_of_birth, u.gender, u.blood_type, u.created_at
+         FROM users u
+         INNER JOIN appointments a ON a.patient_id = u.id
+         WHERE a.doctor_id = $1 AND u.role = 'patient'
+         ORDER BY u.name ASC`,
+        [doctorId]
+      );
+      return res.json({ patients: result.rows || [] });
+    }
     console.log('[PATIENTS] Fetching all patients from PostgreSQL');
     const patients = await PostgresDataService.PatientService.getAllPatients();
     res.json({ patients: patients || [] });
@@ -1284,6 +1334,10 @@ app.post('/api/emr', authenticateToken, async (req, res) => {
         plan: emrData.plan || { treatment: emrData.treatmentPlan },
         ai_summary: emrData.aiSummary,
         status: emrData.status || 'draft'
+      });
+
+      emitDataChange(SOCKET_EVENTS.EMR_UPDATED, { emr }, {
+        doctorId: emrData.doctorId || req.user?.id, patientId: emrData.patientId
       });
 
       res.json({ success: true, emr });
@@ -1938,6 +1992,11 @@ app.post('/api/prescriptions', authenticateToken, async (req, res) => {
       resourceId: prescription.id
     });
 
+    emitDataChange(SOCKET_EVENTS.PRESCRIPTION_CREATED, { prescription }, {
+      doctorId: prescriptionData.doctorId || prescriptionData.doctor_id || req.user?.id,
+      patientId: prescriptionData.patientId || prescriptionData.patient_id
+    });
+
     res.json({ success: true, prescription });
   } catch (error) {
     console.error('Prescription creation error:', error);
@@ -2024,6 +2083,11 @@ app.post('/api/lab-orders', authenticateToken, async (req, res) => {
       action: 'CREATE_LAB_ORDER',
       patientId: labOrderData.patientId || labOrderData.patient_id,
       resourceId: labOrder.id
+    });
+
+    emitDataChange(SOCKET_EVENTS.LAB_ORDER_CREATED, { labOrder }, {
+      doctorId: labOrderData.doctorId || labOrderData.doctor_id || req.user?.id,
+      patientId: labOrderData.patientId || labOrderData.patient_id
     });
 
     res.json({ success: true, labOrder });
@@ -2119,6 +2183,24 @@ app.put('/api/lab-orders/:labOrderId/results', authenticateToken, async (req, re
     const updated = await PostgresDataService.LabOrderService.updateLabResults(labOrderId, resultPayload);
     if (!updated) {
       return res.status(404).json({ error: 'Lab order not found' });
+    }
+
+    // Create notification for the patient about lab results
+    try {
+      const patientId = updated.patient_id;
+      if (patientId) {
+        await PostgresDataService.NotificationService.createNotification({
+          user_id: patientId,
+          type: 'lab_results',
+          title: 'ผลตรวจพร้อมแล้ว / Lab Results Ready',
+          message: `ผลตรวจของคุณพร้อมให้ดูแล้ว Your lab results for order ${labOrderId} are now available.`,
+          data: JSON.stringify({ labOrderId, completedAt: resultPayload.completedAt }),
+          read: false,
+        });
+        console.log(`[LAB] Notification sent to patient ${patientId} for lab order ${labOrderId}`);
+      }
+    } catch (notifError) {
+      console.error('[LAB] Failed to send notification:', notifError);
     }
 
     // Log audit
@@ -2820,7 +2902,7 @@ app.post('/api/ai/pre-consultation-summary', authenticateToken, async (req, res)
 
       // Get PHR data
       const phrResult = await pool.query(`
-        SELECT * FROM phr_records WHERE patient_id = $1 ORDER BY updated_at DESC LIMIT 1
+        SELECT * FROM phr WHERE patient_id = $1 ORDER BY updated_at DESC LIMIT 1
       `, [patientId]);
       
       if (phrResult.rows.length > 0) {
@@ -2837,7 +2919,7 @@ app.post('/api/ai/pre-consultation-summary', authenticateToken, async (req, res)
 
       // Get EMR records
       const emrResult = await pool.query(`
-        SELECT * FROM emr_records 
+        SELECT * FROM emr 
         WHERE patient_id = $1 
         ORDER BY created_at DESC LIMIT 3
       `, [patientId]);
@@ -3294,8 +3376,7 @@ app.post('/api/queue/call-next', authenticateToken, async (req, res) => {
     await writeToGCS(BUCKETS.doctor, 'queue/queue.json', queue);
 
     // Emit WebSocket event
-    const io = req.app.get('io');
-    io.to(`queue-${doctorId}`).emit('queue-updated', { queue });
+    emitDataChange(SOCKET_EVENTS.QUEUE_UPDATED, { queue }, { doctorId });
 
     res.json({ success: true, patient: nextPatient });
   } catch (error) {
@@ -3321,8 +3402,7 @@ app.post('/api/queue/skip', authenticateToken, async (req, res) => {
     await writeToGCS(BUCKETS.doctor, 'queue/queue.json', queue);
 
     // Emit WebSocket event
-    const io = req.app.get('io');
-    io.to(`queue-${queue[patientIndex].doctorId}`).emit('queue-updated', { queue });
+    emitDataChange(SOCKET_EVENTS.QUEUE_UPDATED, { queue }, { doctorId: queue[patientIndex].doctorId });
 
     res.json({ success: true });
   } catch (error) {
@@ -4549,10 +4629,9 @@ app.patch('/api/appointments/:appointmentId', authenticateToken, async (req, res
     const updated = await PostgresDataService.AppointmentService.updateAppointment(appointmentId, updates);
     
     // Emit real-time update
-    if (io) {
-      io.to(`patient-${appointment.patient_id}`).emit('appointment-updated', { appointmentId, status });
-      io.to(`doctor-${doctorId}`).emit('appointment-updated', { appointmentId, status });
-    }
+    emitDataChange(SOCKET_EVENTS.APPOINTMENT_UPDATED, { appointmentId, status, appointment: updated || { ...appointment, ...updates } }, {
+      doctorId, patientId: appointment.patient_id
+    });
 
     res.json({ success: true, appointment: updated || { ...appointment, ...updates } });
   } catch (error) {
@@ -4678,6 +4757,31 @@ app.post('/api/appointments/:appointmentId/confirm', authenticateToken, async (r
       console.warn('Failed to send confirmation email:', emailError.message);
     }
     
+    // Create notification for the patient about the confirmed appointment
+    try {
+      const patientId = appointment.patient_id;
+      if (patientId) {
+        const appointmentDateFormatted2 = confirmedDate || appointment.scheduled_date || '';
+        const appointmentTimeFormatted2 = confirmedTime || appointment.scheduled_time || '';
+        const doctorName2 = appointment.doctor_name_thai || appointment.doctor_name || 'แพทย์';
+        await PostgresDataService.NotificationService.createNotification({
+          userId: patientId,
+          type: 'appointment_confirmed',
+          title: 'นัดหมายได้รับการยืนยัน',
+          message: `นัดหมายของคุณได้รับการยืนยันจาก ${doctorName2} วันที่ ${appointmentDateFormatted2} เวลา ${appointmentTimeFormatted2}`,
+          data: JSON.stringify({ appointmentId, meetingLink, confirmedDate, confirmedTime }),
+          priority: 'high'
+        });
+        console.log(`🔔 Notification created for patient ${patientId}`);
+      }
+    } catch (notifError) {
+      console.warn('Failed to create confirmation notification:', notifError.message);
+    }
+    
+    emitDataChange(SOCKET_EVENTS.APPOINTMENT_UPDATED, { appointmentId, status: 'confirmed', appointment: updatedAppointment, meetingLink }, {
+      doctorId, patientId: appointment.patient_id
+    });
+
     res.json({ success: true, appointment: updatedAppointment, meetingLink });
   } catch (error) {
     console.error('❌ Appointment confirmation error:', error);
@@ -4725,6 +4829,10 @@ app.post('/api/appointments/:appointmentId/decline', authenticateToken, async (r
       console.warn('Failed to send admin notification:', emailError);
     }
     
+    emitDataChange(SOCKET_EVENTS.APPOINTMENT_UPDATED, { appointmentId, status: 'declined_by_doctor', appointment: result.rows[0] }, {
+      doctorId, patientId: result.rows[0]?.patient_id
+    });
+
     res.json({ success: true, appointment: result.rows[0] });
   } catch (error) {
     console.error('❌ Appointment decline error:', error);
@@ -4951,8 +5059,9 @@ app.put('/api/appointments/:appointmentId/status', authenticateToken, async (req
     }
 
     // Emit WebSocket event
-    const io = req.app.get('io');
-    if (io) io.emit('appointment-updated', { appointmentId, status });
+    emitDataChange(SOCKET_EVENTS.APPOINTMENT_UPDATED, { appointmentId, status, appointment }, {
+      doctorId: appointment.doctor_id, patientId: appointment.patient_id
+    });
 
     console.log(`✅ Appointment ${appointmentId} updated to status: ${status}`);
     res.json({
@@ -5296,6 +5405,10 @@ app.post('/api/notifications', authenticateToken, async (req, res) => {
       data
     });
     
+    emitDataChange(SOCKET_EVENTS.NOTIFICATION_CREATED, { notification }, {
+      patientId: recipientId, doctorId: recipientId
+    });
+
     res.json({ success: true, notification });
   } catch (error) {
     console.error('❌ Create notification error:', error);
@@ -5603,6 +5716,7 @@ app.post('/api/content/medical', authenticateToken, async (req, res) => {
       category: data.category,
       tags: data.tags,
       author_id: req.user?.id || data.authorId,
+      author_name: req.user?.name || data.authorName || null,
       status: data.status || 'draft',
       image_url: data.thumbnail || data.imageUrl || null
     });
@@ -5839,9 +5953,9 @@ app.post('/api/content/clinical', authenticateToken, async (req, res) => {
     const result = await pool.query(
       `INSERT INTO clinical_resources (
         id, title_english, title_thai, content_english, content_thai,
-        category, specialty, guideline_year, source, tags, status
+        category, specialty, guideline_year, source, tags, status, author_id, author_name
       )
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
        RETURNING *`,
       [
         `CR-${Date.now()}`,
@@ -5854,7 +5968,9 @@ app.post('/api/content/clinical', authenticateToken, async (req, res) => {
         data.guidelineYear || new Date().getFullYear(),
         data.source || '',
         JSON.stringify(data.tags || []),
-        data.status || 'pending'
+        data.status || 'pending',
+        req.user?.id || data.authorId || null,
+        req.user?.name || data.authorName || null
       ]
     );
     
@@ -6229,7 +6345,7 @@ async function getConsultantSpecialties() {
     if (DB_AVAILABLE && PostgresDataService?.pool) {
       const { pool } = PostgresDataService;
       const result = await pool.query(`
-        SELECT DISTINCT specialty, specialty_thai FROM medical_consultants 
+        SELECT DISTINCT specialty, specialty_thai FROM consultants 
         WHERE specialty IS NOT NULL
         ORDER BY specialty
       `);
@@ -6302,6 +6418,82 @@ app.post('/api/consultants', authenticateToken, async (req, res) => {
     res.json({ success: true, consultant: newConsultant });
   } catch (error) {
     console.error('❌ Create consultant error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.put('/api/consultants/:consultantId', authenticateToken, async (req, res) => {
+  try {
+    const { consultantId } = req.params;
+    const data = req.body;
+    console.log(`📝 Updating consultant: ${consultantId}`);
+    
+    if (!DB_AVAILABLE) {
+      return res.status(503).json({ error: 'Database unavailable', code: 'DATABASE_UNAVAILABLE' });
+    }
+    
+    const { pool } = PostgresDataService;
+    const result = await pool.query(
+      `UPDATE consultants SET
+        name = COALESCE($2, name),
+        specialty = COALESCE($3, specialty),
+        hospital = COALESCE($4, hospital),
+        email = COALESCE($5, email),
+        phone = COALESCE($6, phone),
+        languages = COALESCE($7, languages),
+        experience_years = COALESCE($8, experience_years),
+        bio = COALESCE($9, bio),
+        is_available = COALESCE($10, is_available),
+        updated_at = NOW()
+       WHERE id = $1
+       RETURNING *`,
+      [
+        consultantId,
+        data.name || null,
+        data.specialty || null,
+        data.hospital || null,
+        data.email || null,
+        data.phone || null,
+        data.languages ? JSON.stringify(data.languages) : null,
+        data.experience_years || data.experience || null,
+        data.bio || null,
+        data.available === undefined ? null : data.available
+      ]
+    );
+    
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'Consultant not found' });
+    }
+    
+    res.json({ success: true, consultant: result.rows[0] });
+  } catch (error) {
+    console.error('❌ Update consultant error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.delete('/api/consultants/:consultantId', authenticateToken, async (req, res) => {
+  try {
+    const { consultantId } = req.params;
+    console.log(`🗑️ Deleting consultant: ${consultantId}`);
+    
+    if (!DB_AVAILABLE) {
+      return res.status(503).json({ error: 'Database unavailable', code: 'DATABASE_UNAVAILABLE' });
+    }
+    
+    const { pool } = PostgresDataService;
+    const result = await pool.query(
+      'DELETE FROM consultants WHERE id = $1 RETURNING *',
+      [consultantId]
+    );
+    
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'Consultant not found' });
+    }
+    
+    res.json({ success: true, message: 'Consultant deleted' });
+  } catch (error) {
+    console.error('❌ Delete consultant error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -7609,6 +7801,8 @@ async function startServer() {
   console.log('🏥 IZARA DOCTOR PORTAL - MAIN API SERVER v1.5.0');
   console.log('═══════════════════════════════════════════════════════════════\n');
 
+  const { startPgNotifyListener } = require('./pgNotifyListener.cjs');
+
   // Start listening immediately for faster startup
   server.listen(PORT, '0.0.0.0', () => {
     console.log('═══════════════════════════════════════════════════════════════');
@@ -7632,6 +7826,11 @@ async function startServer() {
     console.log('   POST /api/ai/clinical-copilot   - Clinical decision support');
     console.log('\n🔌 WebSocket: ws://localhost:' + PORT + '/ws');
     console.log('\n═══════════════════════════════════════════════════════════════\n');
+
+    // Start PG LISTEN/NOTIFY for cross-service sync
+    if (pgPool) {
+      startPgNotifyListener(pgPool, io);
+    }
   });
 
   // Verify GCS connection in the background (non-blocking)

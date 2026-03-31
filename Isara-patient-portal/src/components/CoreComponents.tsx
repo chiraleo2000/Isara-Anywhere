@@ -408,9 +408,9 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
           <div className="flex justify-start">
             <div className="bg-gray-100 rounded-2xl px-4 py-3">
               <div className="flex gap-2">
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
+                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:150ms]" />
+                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:300ms]" />
               </div>
             </div>
           </div>
@@ -422,6 +422,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         <div className="flex items-center gap-2">
           <button
             type="button"
+            aria-label="แนบไฟล์"
             className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
           >
             <Paperclip className="w-5 h-5" />
@@ -437,6 +438,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
           />
           <button
             type="button"
+            aria-label="บันทึกเสียง"
             className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
           >
             <Mic className="w-5 h-5" />
@@ -444,6 +446,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
           <button
             type="submit"
             disabled={!input.trim() || loading}
+            aria-label="ส่งข้อความ"
             className="p-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Send className="w-5 h-5" />
@@ -786,7 +789,7 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
       <div className="w-full bg-gray-200 rounded-full h-2">
         <div
           className={`h-2 rounded-full transition-all duration-300 ${colors[color]}`}
-          style={{ width: `${percentage}%` }}
+          style={{ width: `${Math.min(100, Math.max(0, percentage))}%` }}
         />
       </div>
     </div>
@@ -828,6 +831,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
         <button
           type="button"
           onClick={() => onChange('')}
+          aria-label="ล้างคำค้นหา"
           className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
         >
           <X className="w-5 h-5" />

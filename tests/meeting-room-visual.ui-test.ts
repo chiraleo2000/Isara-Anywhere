@@ -15,9 +15,9 @@ import { test, expect, Page } from '@playwright/test';
 import * as path from 'node:path';
 import * as fs from 'node:fs';
 
-const PATIENT_URL = 'https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app';
-const DOCTOR_URL  = 'https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app';
-const MEETING_URL = 'https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app';
+const PATIENT_URL = process.env.PATIENT_PORTAL_URL || 'http://localhost:3005';
+const DOCTOR_URL  = process.env.DOCTOR_PORTAL_URL  || 'http://localhost:3010';
+const MEETING_URL = process.env.MEETING_SERVER_URL  || 'http://localhost:3020';
 
 const DOCTOR_EMAIL    = 'doctor.test@izara.com';
 const DOCTOR_PASSWORD = process.env.IZARA_DOCTOR_PASSWORD || 'IzaraDoctor@2024';
@@ -197,14 +197,11 @@ test.describe('Meeting Room Visual States', () => {
       await expect(nameInput).toBeVisible();
       await expect(joinBtn).toBeVisible();
 
-      // Email field is a new addition — may not be on cloud yet
+      // Email field should NOT exist (removed — guest needs name only)
       const emailInput = page.locator('[data-testid="guest-email-input"]');
       const hasEmail = await emailInput.isVisible().catch(() => false);
-      if (hasEmail) {
-        console.log('  ✅ Guest form with name + email + button');
-      } else {
-        console.log('  ✅ Guest form with name + button (email not deployed yet)');
-      }
+      expect(hasEmail).toBe(false);
+      console.log('  ✅ Guest form with name + button (no email)');
       await expect(joinBtn).toBeDisabled();
       await snap(page, 'guest-form-empty', 'Guest Form Empty');
     });
@@ -221,12 +218,6 @@ test.describe('Meeting Room Visual States', () => {
       }
 
       await nameInput.fill('คุณสมชาย');
-
-      // Email field may not be deployed yet
-      const emailInput = page.locator('[data-testid="guest-email-input"]');
-      if (await emailInput.isVisible().catch(() => false)) {
-        await emailInput.fill('somchai@example.com');
-      }
 
       const joinBtn = page.locator('[data-testid="guest-join-btn"]');
       await expect(joinBtn).toBeEnabled();
