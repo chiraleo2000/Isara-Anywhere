@@ -459,6 +459,7 @@ export const CompleteEMREditor: React.FC<CompletEMREditorProps> = ({
             <button
               onClick={onClose}
               className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
+              aria-label="Close EMR editor"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -801,6 +802,7 @@ export const CompleteEMREditor: React.FC<CompletEMREditorProps> = ({
                           onChange={(e) => updateDiagnosis(index, 'type', e.target.value)}
                           className="px-2 py-1 text-xs border border-gray-300 rounded"
                           disabled={formData.status === 'finalized'}
+                          aria-label="Diagnosis type"
                         >
                           <option value="primary">Primary</option>
                           <option value="secondary">Secondary</option>
@@ -811,6 +813,7 @@ export const CompleteEMREditor: React.FC<CompletEMREditorProps> = ({
                           onChange={(e) => updateDiagnosis(index, 'status', e.target.value)}
                           className="px-2 py-1 text-xs border border-gray-300 rounded"
                           disabled={formData.status === 'finalized'}
+                          aria-label="Diagnosis status"
                         >
                           <option value="active">Active</option>
                           <option value="resolved">Resolved</option>

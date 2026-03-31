@@ -49,21 +49,25 @@ function validateLabOrderInput(data: LabOrderData): { valid: boolean; errors: st
   return { valid: errors.length === 0, errors };
 }
 
+function validateSingleDocument(doc: { name?: string; type?: string; data?: string; size?: number }): string[] {
+  const errors: string[] = [];
+  if (!doc.name) errors.push('Document name is required');
+  if (!doc.type) errors.push('Document type is required');
+  if (!doc.data) errors.push('Document data (base64) is required');
+  if (doc.data && !/^[A-Za-z0-9+/=]+$/.test(doc.data.replace(/^data:[^;]+;base64,/, ''))) {
+    errors.push('Invalid base64 data format');
+  }
+  if (doc.size && doc.size > 10 * 1024 * 1024) {
+    errors.push('Document exceeds 10MB size limit');
+  }
+  return errors;
+}
+
 function validateLabResultUpload(data: Partial<LabResultData>): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
   if (data.documents) {
     for (const doc of data.documents) {
-      if (!doc.name) errors.push('Document name is required');
-      if (!doc.type) errors.push('Document type is required');
-      if (!doc.data) errors.push('Document data (base64) is required');
-      // Validate base64 format
-      if (doc.data && !/^[A-Za-z0-9+/=]+$/.test(doc.data.replace(/^data:[^;]+;base64,/, ''))) {
-        errors.push('Invalid base64 data format');
-      }
-      // Check size limit (10MB)
-      if (doc.size && doc.size > 10 * 1024 * 1024) {
-        errors.push('Document exceeds 10MB size limit');
-      }
+      errors.push(...validateSingleDocument(doc));
     }
   }
   return { valid: errors.length === 0, errors };

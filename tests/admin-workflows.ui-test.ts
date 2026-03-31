@@ -11,7 +11,7 @@ import { test, Page, BrowserContext } from '@playwright/test';
 import * as path from 'node:path';
 import * as fs from 'node:fs';
 
-const DOCTOR_URL = 'https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app';
+const DOCTOR_URL = process.env.DOCTOR_PORTAL_URL || 'http://localhost:3010';
 
 const SS_DIR = path.join(__dirname, '..', 'screenshots', 'admin-workflows');
 fs.mkdirSync(SS_DIR, { recursive: true });
@@ -90,12 +90,12 @@ test.describe('Admin Workflows — UI Screenshots', () => {
 
   test.afterAll(async () => { await ctx?.close(); });
 
-  // Helper: inject auth on login page first, then navigate to target
+  // Helper: inject auth directly, then navigate to target (no login page visit)
   async function authAndGo(target: string) {
-    await page.goto(`${DOCTOR_URL}/login`, { waitUntil: 'domcontentloaded', timeout: 30000 });
-    await injectDoctorAuth(page, token, user);
     await page.goto(`${DOCTOR_URL}${target}`, { waitUntil: 'domcontentloaded', timeout: 30000 });
-    await page.waitForTimeout(1500);
+    await injectDoctorAuth(page, token, user);
+    await page.reload({ waitUntil: 'domcontentloaded', timeout: 30000 });
+    await page.waitForTimeout(1000);
   }
 
   // ── AD01 — Admin Dashboard ──────────────────────────────────────

@@ -188,6 +188,10 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
     if (stream) {
       previewStreamRef.current = stream;
       if (previewVideoRef.current) previewVideoRef.current.srcObject = stream;
+    } else {
+      // Permission denied or devices unavailable — sync toggle states
+      if (ms.camera === 'denied' || ms.camera === 'unavailable') setCameraOn(false);
+      if (ms.microphone === 'denied' || ms.microphone === 'unavailable') setMicOn(false);
     }
     setMediaStatus(ms);
   };

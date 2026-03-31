@@ -4,7 +4,7 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, ReactNode } from 'react';
 import { useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { User, UserPreferences } from '../../types';
-import { authService } from '../../services/authServices';
+import { authService, initTokenRefreshTimer } from '../../services/authServices';
 
 // Default user preferences
 const DEFAULT_PREFERENCES: UserPreferences = {
@@ -108,6 +108,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const verifiedUser = await verifySessionWithServer(token, currentUser);
         setUser(verifiedUser ?? null);
         if (verifiedUser) {
+          // Restart token refresh timer from stored JWT
+          initTokenRefreshTimer();
           redirectToDashboard(verifiedUser);
         }
       } catch (error) {

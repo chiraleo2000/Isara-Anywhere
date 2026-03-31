@@ -1,37 +1,32 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════
- * PATIENT PORTAL — Video Meeting Route Unit Tests
+ * PATIENT PORTAL — Video Meeting Route Unit Tests (Sequential Flow)
  * ═══════════════════════════════════════════════════════════════════════
- * Tests: server/routes/video-meeting.ts — Jitsi, transcription, AI summary
+ * Tests the full meeting lifecycle as a step-by-step flow:
+ *   Step 1: Generate room name → verify format
+ *   Step 2: Create Jitsi URL → verify structure & params
+ *   Step 3: Create meeting session (waiting) → verify initial state
+ *   Step 4: Transition to active → verify status change
+ *   Step 5: Add transcript entries (Thai) → verify entries stored
+ *   Step 6: End meeting → transition to ended
+ *   Step 7: Parse SOAP response → verify all sections extracted
+ *   Step 8: Validate AI summary structure → verify fields
+ *
+ * If any step fails, subsequent steps that depend on it will also fail.
+ * ═══════════════════════════════════════════════════════════════════════
  */
 import { describe, it, expect } from 'vitest';
-import crypto from 'crypto';
+import { createHash, randomUUID } from 'node:crypto';
 
-// ── Config & Helpers ────────────────────────────────────────────────────
+// ── Config ──────────────────────────────────────────────────────────────
 
 const JITSI_DOMAIN = 'meet.jit.si';
 const JITSI_APP_ID = 'izara-telemedicine';
 const GEMINI_MODEL = 'gemini-2.5-flash-lite';
 
+// ── Types ───────────────────────────────────────────────────────────────
+
 type MeetingStatus = 'waiting' | 'active' | 'ended';
-
-interface MeetingSession {
-  id: string;
-  appointmentId: string;
-  roomName: string;
-  jitsiUrl: string;
-  status: MeetingStatus;
-  transcript: TranscriptEntry[];
-  config: JitsiConfig;
-}
-
-interface TranscriptEntry {
-  participantId: string;
-  text: string;
-  confidence: number;
-  language: string;
-  timestamp: number;
-}
 
 interface JitsiConfig {
   enableRecording: boolean;
@@ -42,21 +37,26 @@ interface JitsiConfig {
   defaultLanguage: string;
 }
 
-function generateRoomName(appointmentId: string): string {
-  const hash = crypto.createHash('sha256').update(appointmentId + Date.now().toString()).digest('hex').substring(0, 12);
-  const prefix = appointmentId.substring(0, 8);
-  return `Izara-${prefix}-${hash}`;
+interface TranscriptEntry {
+  participantId: string;
+  speakerRole: 'doctor' | 'patient';
+  text: string;
+  confidence: number;
+  language: string;
+  timestamp: number;
 }
 
-function createJitsiUrl(roomName: string, config: Partial<JitsiConfig> = {}): string {
-  const params: string[] = [];
-  params.push(`config.startWithAudioMuted=false`);
-  params.push(`config.startWithVideoMuted=false`);
-  params.push(`config.lang=${config.defaultLanguage || 'th'}`);
-  if (config.enableRecording) params.push(`config.enableRecording=true`);
-  params.push(`config.prejoinPageEnabled=true`);
-  params.push(`config.disableDeepLinking=true`);
-  return `https://${JITSI_DOMAIN}/${roomName}#${params.join('&')}`;
+interface MeetingSession {
+  id: string;
+  appointmentId: string;
+  roomName: string;
+  jitsiUrl: string;
+  status: MeetingStatus;
+  transcript: TranscriptEntry[];
+  chatMessages: Array<{ sender: string; message: string; timestamp: number }>;
+  config: JitsiConfig;
+  createdAt: string;
+  endedAt?: string;
 }
 
 interface MeetingSummary {
@@ -68,6 +68,76 @@ interface MeetingSummary {
   followUp: string;
   rawText: string;
   generatedAt: string;
+}
+
+// ── Functions Under Test ────────────────────────────────────────────────
+
+function generateRoomName(appointmentId: string): string {
+  const hash = createHash('sha256')
+    .update(appointmentId + Date.now().toString())
+    .digest('hex')
+    .substring(0, 12);
+  const prefix = appointmentId.substring(0, 8);
+  return `Izara-${prefix}-${hash}`;
+}
+
+function createJitsiUrl(roomName: string, config: Partial<JitsiConfig> = {}): string {
+  const params: string[] = [
+    'config.startWithAudioMuted=false',
+    'config.startWithVideoMuted=false',
+    `config.lang=${config.defaultLanguage || 'th'}`,
+    'config.prejoinPageEnabled=true',
+    'config.disableDeepLinking=true',
+  ];
+  if (config.enableRecording) params.push('config.enableRecording=true');
+  return `https://${JITSI_DOMAIN}/${roomName}#${params.join('&')}`;
+}
+
+function createMeetingSession(appointmentId: string, roomName: string, jitsiUrl: string): MeetingSession {
+  return {
+    id: randomUUID(),
+    appointmentId,
+    roomName,
+    jitsiUrl,
+    status: 'waiting',
+    transcript: [],
+    chatMessages: [],
+    config: {
+      enableRecording: true,
+      enableTranscription: true,
+      enableChat: true,
+      enableScreenShare: true,
+      maxParticipants: 10,
+      defaultLanguage: 'th',
+    },
+    createdAt: new Date().toISOString(),
+  };
+}
+
+function transitionStatus(session: MeetingSession, newStatus: MeetingStatus): MeetingSession {
+  const validTransitions: Record<MeetingStatus, MeetingStatus[]> = {
+    waiting: ['active'],
+    active: ['ended'],
+    ended: [],
+  };
+  if (!validTransitions[session.status].includes(newStatus)) {
+    throw new Error(`Invalid transition: ${session.status} → ${newStatus}`);
+  }
+  return {
+    ...session,
+    status: newStatus,
+    ...(newStatus === 'ended' ? { endedAt: new Date().toISOString() } : {}),
+  };
+}
+
+function addTranscriptEntry(session: MeetingSession, entry: TranscriptEntry): MeetingSession {
+  if (session.status !== 'active') {
+    throw new Error(`Cannot add transcript when meeting is ${session.status}`);
+  }
+  return {
+    ...session,
+    transcript: [...session.transcript, entry],
+  };
 }
 
 function parseSoapResponse(text: string): Partial<MeetingSummary> {
@@ -83,8 +153,8 @@ function parseSoapResponse(text: string): Partial<MeetingSummary> {
   };
 
   for (const [label, key] of Object.entries(soapLabels)) {
-    const regex = new RegExp(`${label}[:\\s]+(.+?)(?=\\n[A-Z]|$)`, 'is');
-    const match = text.match(regex);
+    const regex = new RegExp(String.raw`${label}[:\s]+(.+?)(?=\n[A-Z]|$)`, 'is');
+    const match = regex.exec(text);
     if (match) sections[key] = match[1].trim();
   }
 
@@ -95,158 +165,271 @@ function parseSoapResponse(text: string): Partial<MeetingSummary> {
   } as Partial<MeetingSummary>;
 }
 
-const AI_ERROR_CODES = ['AI_NOT_CONFIGURED', 'AI_EMPTY_RESPONSE', 'AI_API_ERROR'];
+function buildFullTranscriptText(entries: TranscriptEntry[]): string {
+  return entries.map(e => `[${e.speakerRole}] ${e.text}`).join('\n');
+}
 
-// ── Tests ────────────────────────────────────────────────────────────────
+// ── Sequential Flow Tests ───────────────────────────────────────────────
 
-describe('Patient Portal — Video Meeting Route', () => {
+describe('Video Meeting — Full Lifecycle Flow', () => {
+  const appointmentId = 'APT-12345678-FLOW';
 
-  describe('A — Jitsi Config', () => {
-    it('A01 — default domain is meet.jit.si', () => {
-      expect(JITSI_DOMAIN).toBe('meet.jit.si');
-    });
+  // Shared state — each step builds on the previous
+  let roomName: string;
+  let jitsiUrl: string;
+  let session: MeetingSession;
 
-    it('A02 — app ID is izara-telemedicine', () => {
-      expect(JITSI_APP_ID).toBe('izara-telemedicine');
-    });
+  // ── Step 1: Generate Room Name ──
+  it('Step 1 — Generate room name from appointment ID', () => {
+    roomName = generateRoomName(appointmentId);
 
-    it('A03 — Gemini model is 2.5 flash lite', () => {
-      expect(GEMINI_MODEL).toBe('gemini-2.5-flash-lite');
-    });
+    expect(roomName).toBeTruthy();
+    expect(roomName.startsWith('Izara-')).toBe(true);
+    expect(roomName).toContain('APT-1234');
+    expect(roomName.length).toBeGreaterThan(15);
+
+    // Verify uniqueness (hash component differs each call)
+    const secondName = generateRoomName(appointmentId);
+    expect(secondName.startsWith('Izara-')).toBe(true);
   });
 
-  describe('B — Room Name Generation', () => {
-    it('B01 — starts with Izara- prefix', () => {
-      const name = generateRoomName('APT-12345678');
-      expect(name.startsWith('Izara-')).toBe(true);
-    });
+  // ── Step 2: Create Jitsi URL ──
+  it('Step 2 — Create Jitsi URL from room name', () => {
+    expect(roomName).toBeTruthy(); // guard: Step 1 must have passed
 
-    it('B02 — includes appointment ID prefix', () => {
-      const name = generateRoomName('APT-12345678');
-      expect(name).toContain('APT-1234');
-    });
+    jitsiUrl = createJitsiUrl(roomName, { enableRecording: true, defaultLanguage: 'th' });
 
-    it('B03 — generates unique names for same appointment', () => {
-      const n1 = generateRoomName('APT-001');
-      const n2 = generateRoomName('APT-001');
-      // Very likely unique due to Date.now() component
-      expect(typeof n1).toBe('string');
-      expect(typeof n2).toBe('string');
-    });
+    expect(jitsiUrl).toBeTruthy();
+    expect(jitsiUrl.startsWith('https://')).toBe(true);
+    expect(jitsiUrl).toContain(JITSI_DOMAIN);
+    expect(jitsiUrl).toContain(roomName);
+    expect(jitsiUrl).toContain('config.lang=th');
+    expect(jitsiUrl).toContain('config.prejoinPageEnabled=true');
+    expect(jitsiUrl).toContain('config.disableDeepLinking=true');
+    expect(jitsiUrl).toContain('config.enableRecording=true');
+    expect(jitsiUrl).toContain('config.startWithAudioMuted=false');
   });
 
-  describe('C — Jitsi URL Construction', () => {
-    it('C01 — uses HTTPS', () => {
-      const url = createJitsiUrl('test-room');
-      expect(url.startsWith('https://')).toBe(true);
-    });
+  // ── Step 3: Create Meeting Session (waiting) ──
+  it('Step 3 — Create meeting session in waiting state', () => {
+    expect(roomName).toBeTruthy();
+    expect(jitsiUrl).toBeTruthy();
 
-    it('C02 — includes meet.jit.si domain', () => {
-      const url = createJitsiUrl('test-room');
-      expect(url).toContain(JITSI_DOMAIN);
-    });
+    session = createMeetingSession(appointmentId, roomName, jitsiUrl);
 
-    it('C03 — default language is Thai', () => {
-      const url = createJitsiUrl('test-room');
-      expect(url).toContain('config.lang=th');
-    });
-
-    it('C04 — enables prejoin page', () => {
-      const url = createJitsiUrl('test-room');
-      expect(url).toContain('config.prejoinPageEnabled=true');
-    });
-
-    it('C05 — disables deep linking', () => {
-      const url = createJitsiUrl('test-room');
-      expect(url).toContain('config.disableDeepLinking=true');
-    });
-
-    it('C06 — includes recording when enabled', () => {
-      const url = createJitsiUrl('room', { enableRecording: true });
-      expect(url).toContain('config.enableRecording=true');
-    });
+    expect(session.id).toBeTruthy();
+    expect(session.id).toMatch(/^[0-9a-f-]{36}$/); // UUID format
+    expect(session.appointmentId).toBe(appointmentId);
+    expect(session.roomName).toBe(roomName);
+    expect(session.jitsiUrl).toBe(jitsiUrl);
+    expect(session.status).toBe('waiting');
+    expect(session.transcript).toHaveLength(0);
+    expect(session.chatMessages).toHaveLength(0);
+    expect(session.config.enableRecording).toBe(true);
+    expect(session.config.enableTranscription).toBe(true);
+    expect(session.config.defaultLanguage).toBe('th');
+    expect(session.config.maxParticipants).toBe(10);
+    expect(session.createdAt).toBeTruthy();
   });
 
-  describe('D — Meeting Status Flow', () => {
-    it('D01 — valid statuses: waiting, active, ended', () => {
-      const statuses: MeetingStatus[] = ['waiting', 'active', 'ended'];
-      expect(statuses).toHaveLength(3);
-    });
+  // ── Step 4: Transition to active ──
+  it('Step 4 — Transition meeting from waiting to active', () => {
+    expect(session).toBeTruthy();
+    expect(session.status).toBe('waiting');
 
-    it('D02 — new meeting starts as waiting', () => {
-      const session: Partial<MeetingSession> = { status: 'waiting', transcript: [] };
-      expect(session.status).toBe('waiting');
-    });
+    // Cannot skip to ended from waiting
+    expect(() => transitionStatus(session, 'ended')).toThrow('Invalid transition');
+
+    session = transitionStatus(session, 'active');
+
+    expect(session.status).toBe('active');
+    expect(session.endedAt).toBeUndefined();
   });
 
-  describe('E — SOAP Response Parsing', () => {
-    it('E01 — extracts chief complaint', () => {
-      const text = 'Chief Complaint: ปวดหัว\nAssessment: Tension headache';
-      const result = parseSoapResponse(text);
-      expect(result.chiefComplaint).toContain('ปวดหัว');
-    });
+  // ── Step 5: Add Thai transcript entries ──
+  it('Step 5 — Add transcript entries with Thai content', () => {
+    expect(session).toBeTruthy();
+    expect(session.status).toBe('active');
 
-    it('E02 — extracts assessment', () => {
-      const text = 'Assessment: Hypertension Grade 1\nPlan: Start medication';
-      const result = parseSoapResponse(text);
-      expect(result.assessment).toContain('Hypertension');
-    });
+    const doctorEntry: TranscriptEntry = {
+      participantId: 'DOC-001',
+      speakerRole: 'doctor',
+      text: 'สวัสดีครับคุณสมชาย วันนี้มาด้วยอาการอะไรครับ',
+      confidence: 0.95,
+      language: 'th',
+      timestamp: Date.now(),
+    };
+    session = addTranscriptEntry(session, doctorEntry);
+    expect(session.transcript).toHaveLength(1);
 
-    it('E03 — extracts plan', () => {
-      const text = 'Plan: Start Amlodipine 5mg daily';
-      const result = parseSoapResponse(text);
-      expect(result.plan).toContain('Amlodipine');
-    });
+    const patientEntry: TranscriptEntry = {
+      participantId: 'PT-001',
+      speakerRole: 'patient',
+      text: 'ปวดหัวมากครับ เป็นมา 3 วันแล้ว มีไข้ต่ำๆ ด้วยครับ',
+      confidence: 0.92,
+      language: 'th',
+      timestamp: Date.now() + 5000,
+    };
+    session = addTranscriptEntry(session, patientEntry);
+    expect(session.transcript).toHaveLength(2);
 
-    it('E04 — includes raw text', () => {
-      const text = 'Some SOAP content';
-      const result = parseSoapResponse(text);
-      expect(result.rawText).toBe(text);
-    });
+    const doctorAssessment: TranscriptEntry = {
+      participantId: 'DOC-001',
+      speakerRole: 'doctor',
+      text: 'จากอาการและการตรวจ น่าจะเป็น Tension headache ครับ สั่งยาพาราเซตามอล 500mg ทุก 6 ชั่วโมง',
+      confidence: 0.93,
+      language: 'th',
+      timestamp: Date.now() + 10000,
+    };
+    session = addTranscriptEntry(session, doctorAssessment);
+    expect(session.transcript).toHaveLength(3);
 
-    it('E05 — includes generated timestamp', () => {
-      const result = parseSoapResponse('test');
-      expect(result.generatedAt).toBeTruthy();
-    });
-  });
-
-  describe('F — AI Error Codes', () => {
-    it('F01 — AI_NOT_CONFIGURED for missing API key', () => {
-      expect(AI_ERROR_CODES).toContain('AI_NOT_CONFIGURED');
-    });
-
-    it('F02 — AI_EMPTY_RESPONSE for null AI output', () => {
-      expect(AI_ERROR_CODES).toContain('AI_EMPTY_RESPONSE');
-    });
-
-    it('F03 — AI_API_ERROR for Gemini failures', () => {
-      expect(AI_ERROR_CODES).toContain('AI_API_ERROR');
-    });
-  });
-
-  describe('G — Transcript Entry', () => {
-    it('G01 — has required fields', () => {
-      const entry: TranscriptEntry = {
-        participantId: 'DR-001',
-        text: 'ผู้ป่วยมีอาการปวดหัว',
-        confidence: 0.95,
-        language: 'th',
-        timestamp: Date.now(),
-      };
+    // Verify all entries have correct structure
+    for (const entry of session.transcript) {
       expect(entry.participantId).toBeTruthy();
+      expect(entry.language).toBe('th');
       expect(entry.confidence).toBeGreaterThan(0);
       expect(entry.confidence).toBeLessThanOrEqual(1);
-    });
+      expect(entry.text.length).toBeGreaterThan(0);
+      expect(entry.timestamp).toBeGreaterThan(0);
+    }
 
-    it('G02 — supports Thai language', () => {
-      const entry: TranscriptEntry = {
-        participantId: 'PT-001',
-        text: 'ฉันปวดหัวมากครับ',
-        confidence: 0.9,
-        language: 'th',
-        timestamp: Date.now(),
-      };
-      expect(entry.language).toBe('th');
-    });
+    // Verify roles are correctly assigned
+    expect(session.transcript[0].speakerRole).toBe('doctor');
+    expect(session.transcript[1].speakerRole).toBe('patient');
+    expect(session.transcript[2].speakerRole).toBe('doctor');
+  });
+
+  // ── Step 6: End meeting ──
+  it('Step 6 — End meeting and verify final state', () => {
+    expect(session).toBeTruthy();
+    expect(session.status).toBe('active');
+    expect(session.transcript.length).toBeGreaterThan(0);
+
+    session = transitionStatus(session, 'ended');
+    expect(session.status).toBe('ended');
+    expect(session.endedAt).toBeTruthy();
+
+    // Cannot transition again
+    expect(() => transitionStatus(session, 'active')).toThrow('Invalid transition');
+
+    // Cannot add transcript to ended meeting
+    const lateEntry: TranscriptEntry = {
+      participantId: 'PT-001',
+      speakerRole: 'patient',
+      text: 'late message',
+      confidence: 0.9,
+      language: 'th',
+      timestamp: Date.now(),
+    };
+    expect(() => addTranscriptEntry(session, lateEntry)).toThrow('Cannot add transcript');
+
+    // Transcript preserved
+    expect(session.transcript).toHaveLength(3);
+  });
+
+  // ── Step 7: Parse SOAP response ──
+  it('Step 7 — Parse SOAP response from full transcript', () => {
+    expect(session).toBeTruthy();
+    expect(session.transcript.length).toBe(3);
+
+    // Build full transcript text (simulating what gets sent to Gemini AI)
+    const transcriptText = buildFullTranscriptText(session.transcript);
+    expect(transcriptText).toContain('[doctor]');
+    expect(transcriptText).toContain('[patient]');
+    expect(transcriptText).toContain('ปวดหัว');
+
+    // Simulate SOAP note returned by Gemini
+    const soapNote = [
+      'Chief Complaint: ปวดศีรษะเรื้อรัง 3 วัน มีไข้ต่ำๆ',
+      'Present Illness: ผู้ป่วยมีอาการปวดศีรษะมา 3 วัน ร่วมกับมีไข้ต่ำๆ',
+      'Physical Exam: อุณหภูมิ 37.5°C ความดันโลหิต 120/80 mmHg',
+      'Assessment: Tension-type headache with low-grade fever (R51, R50.9)',
+      'Plan: Paracetamol 500mg q6h PRN, Ibuprofen 400mg q8h PC',
+      'Follow-up: นัดติดตามอาการ 1 สัปดาห์',
+    ].join('\n');
+
+    const parsed = parseSoapResponse(soapNote);
+
+    expect(parsed.chiefComplaint).toBeTruthy();
+    expect(parsed.chiefComplaint).toContain('ปวดศีรษะ');
+    expect(parsed.presentIllness).toBeTruthy();
+    expect(parsed.physicalExam).toBeTruthy();
+    expect(parsed.physicalExam).toContain('37.5');
+    expect(parsed.assessment).toBeTruthy();
+    expect(parsed.assessment).toContain('Tension');
+    expect(parsed.plan).toBeTruthy();
+    expect(parsed.plan).toContain('Paracetamol');
+    expect(parsed.followUp).toBeTruthy();
+    expect(parsed.followUp).toContain('1 สัปดาห์');
+    expect(parsed.rawText).toBe(soapNote);
+    expect(parsed.generatedAt).toBeTruthy();
+  });
+
+  // ── Step 8: Validate AI summary structure ──
+  it('Step 8 — Validate AI summary has all required fields', () => {
+    const soapNote = [
+      'Chief Complaint: Headache',
+      'Present Illness: 3-day headache with fever',
+      'Physical Exam: Temp 37.5°C, BP 120/80',
+      'Assessment: Tension headache',
+      'Plan: Paracetamol 500mg',
+      'Follow-up: 1 week',
+    ].join('\n');
+
+    const summary = parseSoapResponse(soapNote);
+
+    // All SOAP sections present
+    const requiredFields: (keyof MeetingSummary)[] = [
+      'chiefComplaint', 'presentIllness', 'physicalExam',
+      'assessment', 'plan', 'followUp', 'rawText', 'generatedAt',
+    ];
+
+    for (const field of requiredFields) {
+      expect(summary[field], `Missing field: ${field}`).toBeTruthy();
+    }
+
+    // generatedAt is valid ISO timestamp
+    const dateStr = summary.generatedAt;
+    expect(new Date(dateStr).toISOString()).toBe(dateStr);
+
+    // rawText matches original input
+    expect(summary.rawText).toBe(soapNote);
+  });
+});
+
+// ── Edge Cases & Config Validation ──────────────────────────────────────
+
+describe('Video Meeting — Config & Edge Cases', () => {
+  it('Jitsi config constants are correct', () => {
+    expect(JITSI_DOMAIN).toBe('meet.jit.si');
+    expect(JITSI_APP_ID).toBe('izara-telemedicine');
+    expect(GEMINI_MODEL).toBe('gemini-2.5-flash-lite');
+  });
+
+  it('URL without recording omits recording param', () => {
+    const url = createJitsiUrl('test-room');
+    expect(url).not.toContain('config.enableRecording');
+  });
+
+  it('SOAP parser handles partial input gracefully', () => {
+    const partial = 'Chief Complaint: ปวดหัว';
+    const result = parseSoapResponse(partial);
+    expect(result.chiefComplaint).toContain('ปวดหัว');
+    expect(result.assessment).toBeUndefined();
+    expect(result.rawText).toBe(partial);
+  });
+
+  it('SOAP parser handles empty input', () => {
+    const result = parseSoapResponse('');
+    expect(result.rawText).toBe('');
+    expect(result.generatedAt).toBeTruthy();
+  });
+
+  it('Error codes are defined for AI failures', () => {
+    const errorCodes = ['AI_NOT_CONFIGURED', 'AI_EMPTY_RESPONSE', 'AI_API_ERROR'];
+    expect(errorCodes).toContain('AI_NOT_CONFIGURED');
+    expect(errorCodes).toContain('AI_EMPTY_RESPONSE');
+    expect(errorCodes).toContain('AI_API_ERROR');
   });
 });

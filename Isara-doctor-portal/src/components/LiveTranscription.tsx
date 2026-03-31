@@ -383,6 +383,7 @@ const LiveTranscription: React.FC<LiveTranscriptionProps> = ({
                 value={selectedLanguage}
                 onChange={(e) => setSelectedLanguage(e.target.value as 'th' | 'en')}
                 className="text-sm bg-blue-500 border border-blue-400 rounded px-2 py-1 text-white"
+                aria-label="Select transcription language"
               >
                 <option value="th">🇹🇭 ไทย</option>
                 <option value="en">🇺🇸 English</option>

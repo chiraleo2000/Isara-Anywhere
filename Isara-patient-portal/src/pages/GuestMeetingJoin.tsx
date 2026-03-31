@@ -22,7 +22,6 @@ type GuestStatus = 'form' | 'joining' | 'waiting' | 'admitted' | 'rejected' | 'e
 const GuestMeetingJoin: React.FC = () => {
   const { meetingId } = useParams<{ meetingId: string }>();
   const [guestName, setGuestName] = useState('');
-  const [guestEmail, setGuestEmail] = useState('');
   const [status, setStatus] = useState<GuestStatus>('form');
   const [participantId, setParticipantId] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
@@ -131,7 +130,7 @@ const GuestMeetingJoin: React.FC = () => {
       const res = await fetch(`${MEETING_SERVER_URL}/api/meetings/${meetingId}/lobby/join`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ participantName: guestName.trim(), email: guestEmail.trim() || undefined }),
+        body: JSON.stringify({ participantName: guestName.trim() }),
       });
       const data = await res.json();
       if (data.success) {
@@ -202,20 +201,6 @@ const GuestMeetingJoin: React.FC = () => {
                 data-testid="guest-name-input"
                 maxLength={100}
                 autoFocus
-                onKeyDown={e => e.key === 'Enter' && handleJoinLobby()}
-              />
-            </div>
-            <div>
-              <label htmlFor="guest-email" className="block text-sm font-medium text-gray-700 mb-1">อีเมล (Email) — ไม่บังคับ</label>
-              <input
-                id="guest-email"
-                type="email"
-                value={guestEmail}
-                onChange={e => setGuestEmail(e.target.value)}
-                placeholder="your@email.com"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                data-testid="guest-email-input"
-                maxLength={200}
                 onKeyDown={e => e.key === 'Enter' && handleJoinLobby()}
               />
             </div>

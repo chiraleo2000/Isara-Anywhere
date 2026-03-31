@@ -317,8 +317,13 @@ function rateLimit(maxRequests = 100, windowMs = 60000) {
   };
 }
 
-// Apply general rate limit to all routes
-app.use(rateLimit(200, 60000));
+// Apply general rate limit to all routes (production only — unlimited in dev/test)
+const meetingRateLimitMax = Number.parseInt(process.env.RATE_LIMIT_MAX || '0') || 200;
+if (isProduction) {
+  app.use(rateLimit(meetingRateLimitMax, 60000));
+} else {
+  console.log('[MEETING] Rate limiting DISABLED in dev/test mode');
+}
 
 // Clean up rate limit store every 5 minutes
 setInterval(() => {
@@ -1097,7 +1102,8 @@ app.post('/api/meetings/:id/end', authenticateToken, async (req, res) => {
     let aiSummary = null;
     let validationId = null;
     
-    if (generateSummary && genAI && fullTranscript && fullTranscript.length > 20) {
+    if (generateSummary && fullTranscript && fullTranscript.length > 20) {
+      if (genAI) {
       try {
         const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
         
@@ -1174,6 +1180,17 @@ ${chatContext}
         });
       } catch (error_) {
         console.error('[End Meeting] AI summary generation failed:', error_.message);
+      }
+      } else {
+        console.warn('[End Meeting] AI summary skipped — GEMINI_API_KEY not configured');
+        io.to(meetingId).emit('meeting-summary-ready', {
+          meetingId,
+          appointmentId: meeting?.appointment_id,
+          summary: null,
+          error: 'AI not configured — set GEMINI_API_KEY to enable auto-summary',
+          requiresValidation: false,
+          timestamp: new Date().toISOString(),
+        });
       }
     }
     

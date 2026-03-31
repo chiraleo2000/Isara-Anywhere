@@ -36,8 +36,8 @@ interface RegisterInput {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-// Inactivity timeout: 15 minutes
-const INACTIVITY_TIMEOUT = 15 * 60 * 1000;
+// Inactivity timeout: 3 hours
+const INACTIVITY_TIMEOUT = 3 * 60 * 60 * 1000;
 const INACTIVITY_CHECK_INTERVAL = 60 * 1000; // Check every minute
 
 // Device fingerprinting for session isolation

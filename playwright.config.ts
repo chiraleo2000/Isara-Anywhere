@@ -8,7 +8,6 @@ export default defineConfig({
   fullyParallel: false,
   workers: 1,
   use: {
-    ...devices['Desktop Chrome'],
     headless: false,
     viewport: { width: 1280, height: 720 },
     screenshot: 'on',
@@ -19,13 +18,49 @@ export default defineConfig({
     launchOptions: {
       slowMo: 300,
       args: [
-        '--use-fake-ui-for-media-stream',
-        '--use-fake-device-for-media-stream',
         '--start-maximized',
+        '--auto-accept-camera-and-microphone-capture',
       ],
     },
   },
   projects: [
+    // ── PATIENT: Chrome ──────────────────────────────────────────
+    {
+      name: 'Patient-Chrome',
+      use: {
+        ...devices['Desktop Chrome'],
+        browserName: 'chromium',
+        channel: 'chrome',
+        baseURL: 'http://localhost:3005',
+      },
+    },
+    // ── DOCTOR: Edge ─────────────────────────────────────────────
+    {
+      name: 'Doctor-Edge',
+      use: {
+        ...devices['Desktop Edge'],
+        browserName: 'chromium',
+        channel: 'msedge',
+        baseURL: 'http://localhost:3010',
+      },
+    },
+    // ── ADMIN: Firefox ───────────────────────────────────────────
+    {
+      name: 'Admin-Firefox',
+      use: {
+        ...devices['Desktop Firefox'],
+        browserName: 'firefox',
+        baseURL: 'http://localhost:3010',
+        launchOptions: {
+          firefoxUserPrefs: {
+            'media.navigator.permission.disabled': true,
+            'permissions.default.microphone': 1,
+            'permissions.default.camera': 1,
+          },
+        },
+      },
+    },
+    // ── ALL BROWSERS (legacy compatibility) ──────────────────────
     {
       name: 'UI-Verification',
       use: { browserName: 'chromium' },

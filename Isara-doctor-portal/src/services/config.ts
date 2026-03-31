@@ -108,7 +108,7 @@ export const config = {
 
   // Security Settings
   security: {
-    sessionTimeout: Number.parseInt(import.meta.env.VITE_SESSION_TIMEOUT || '1800000', 10), // 30 minutes
+    sessionTimeout: Number.parseInt(import.meta.env.VITE_SESSION_TIMEOUT || '10800000', 10), // 3 hours
     mfaEnabled: import.meta.env.VITE_MFA_ENABLED === 'true',
     encryptionEnabled: import.meta.env.VITE_ENCRYPTION_ENABLED === 'true',
   },

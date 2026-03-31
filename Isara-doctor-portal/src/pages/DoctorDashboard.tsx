@@ -298,12 +298,13 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
   const [isLoadingAI, setIsLoadingAI] = useState(false);
   const [aiValidationStatus, setAiValidationStatus] = useState<'pending' | 'approved' | 'rejected'>('pending');
 
-  // Load dashboard data ONCE on mount - no auto-refresh interval
-  // Auto-refresh was causing unnecessary API calls and potential data inconsistencies
-  // Data will refresh when user navigates back to the page
+  // Load dashboard data on mount and auto-refresh every 30 seconds
   useEffect(() => {
     loadDashboardData();
-    // NO interval - data refreshes on navigation or manual action only
+    const refreshInterval = setInterval(() => {
+      loadDashboardData();
+    }, 30_000); // Refresh every 30 seconds
+    return () => clearInterval(refreshInterval);
   }, [doctor.id]);
 
   // Load patient clinical data when patient is selected
@@ -321,7 +322,7 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
       // Fetch from PostgreSQL via API - NO GCS!
       const [dashboardData, loadedPatients, allAppointments] = await Promise.all([
         fetchDashboardData(doctor.id),
-        fetchAllPatients(),
+        fetchAllPatients(doctor.id),  // Filter by doctor - only show assigned patients
         fetchAllAppointments(doctor.id)  // Filter by doctor on server side
       ]);
 
@@ -1393,6 +1394,7 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
             <button
               onClick={() => setStudioModal(null)}
               className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
+              aria-label="Close modal"
             >
               <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1700,9 +1702,9 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
           <div className="flex justify-start">
             <div className="bg-gray-100 p-2 rounded-lg rounded-bl-none">
               <div className="flex space-x-1">
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
+                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:150ms]" />
+                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:300ms]" />
               </div>
             </div>
           </div>
@@ -1841,7 +1843,7 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
               </div>
 
               {/* Video Meeting Area */}
-              <div className={`p-4 ${tc('bg-gradient-to-br from-blue-900/50 to-indigo-900/50', 'bg-gradient-to-br from-blue-50 to-indigo-50')}`} style={{ minHeight: '180px' }}>
+              <div className={`p-4 ${tc('bg-gradient-to-br from-blue-900/50 to-indigo-900/50', 'bg-gradient-to-br from-blue-50 to-indigo-50')} min-h-[180px]`}>
                 <div className="flex items-center justify-center h-full">
                   <div className="text-center">
                     <VideoCameraIcon className={`w-12 h-12 mx-auto mb-2 ${tc('text-gray-500', 'text-gray-400')}`} />
@@ -2139,6 +2141,7 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
                   onClick={handleSendChatMessage}
                   disabled={!chatInput.trim() || isChatLoading}
                   className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  aria-label="Send message"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />

@@ -47,6 +47,8 @@ services:
       - ./scripts/database/izara-database.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
       - ./scripts/database/migrations/v2.0.0-phase2-tables.sql:/docker-entrypoint-initdb.d/02-phase2.sql:ro
       - ./scripts/database/migrations/v2.1.0-phase2-ai-his.sql:/docker-entrypoint-initdb.d/03-phase2-ai-his.sql:ro
+      - ./scripts/database/v2.2.0-notify-triggers.sql:/docker-entrypoint-initdb.d/04-notify-triggers.sql:ro
+      - ./scripts/database/seed-dev-data.sql:/docker-entrypoint-initdb.d/05-seed-dev.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d izara_phase1"]
       interval: 10s
@@ -106,6 +108,9 @@ services:
       # Server Configuration
       NODE_ENV: production
       PORT: 3005
+
+      # Rate limit — very high for local dev/testing
+      RATE_LIMIT_MAX: "999999"
 
       # DEMO MODE - Disabled for local Docker (use real PostgreSQL)
       DEMO_MODE: "false"
@@ -179,6 +184,9 @@ services:
       AUTH_PORT: 3010
       GCS_API_PORT: 3010
 
+      # Rate limit — very high for local dev/testing
+      RATE_LIMIT_MAX: "999999"
+
       # DEMO MODE - Disabled for local Docker (use real PostgreSQL)
       DEMO_MODE: "false"
 
@@ -240,6 +248,9 @@ services:
       # Server Configuration
       NODE_ENV: production
       PORT: 3020
+
+      # Rate limit — very high for local dev/testing
+      RATE_LIMIT_MAX: "999999"
 
       # Database Configuration - Docker internal network
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-izara_phase1}

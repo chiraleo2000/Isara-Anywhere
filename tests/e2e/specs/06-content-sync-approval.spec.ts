@@ -20,7 +20,8 @@ import {
   logTestSuccess, logTestInfo,
   generateMedicalContent, generateClinicalResource,
   contentApprovalLifecycle,
-  loginViaBrowser, screenshot,
+  screenshot,
+  createAuthenticatedRolePage,
   type UserRole, type AuthenticatedUser,
 } from '../lib/test-helpers';
 
@@ -443,14 +444,12 @@ test.describe('06 — Content Sync & Approval ★★★', () => {
       logTestSuccess('Content sync API flow complete');
     });
 
-    test('D02 — ★★★ BROWSER: Content visible to patient with ONE refresh ★★★', async ({ browser, request }) => {
+    test('D02 — ★★★ BROWSER: Content visible to patient with ONE refresh ★★★', async ({ request }) => {
       const doctorToken = getUser('doctor').token;
       const adminToken = getUser('admin').token;
 
       // 1) Open patient browser and navigate to content library FIRST
-      const patientCtx = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
-      const patientPage = await patientCtx.newPage();
-      await loginViaBrowser(patientPage, 'patient1');
+      const { context: patientCtx, page: patientPage } = await createAuthenticatedRolePage('patient1');
       await patientPage.goto(`${PATIENT_URL}/health-library`, { timeout: TIMEOUTS.navigation }).catch(() =>
         patientPage.goto(`${PATIENT_URL}/`, { timeout: TIMEOUTS.navigation }),
       );
@@ -496,34 +495,17 @@ test.describe('06 — Content Sync & Approval ★★★', () => {
       logTestSuccess('Browser content sync test complete');
     });
 
-    test('D03 — ★★★ MULTI-BROWSER: Doctor creates → Admin approves → Patient1, Patient2, Patient3 all refresh and see ★★★', async ({ browser, request }) => {
+    test('D03 — ★★★ MULTI-BROWSER: Doctor creates → Admin approves → Patient1, Patient2, Patient3 all refresh and see ★★★', async ({ request }) => {
       test.setTimeout(120_000);
       const doctorToken = getUser('doctor').token;
       const adminToken = getUser('admin').token;
 
-      // Open 3 patient browsers
-      const contexts = await Promise.all([
-        browser.newContext({ viewport: { width: 1280, height: 720 } }),
-        browser.newContext({ viewport: { width: 1280, height: 720 } }),
-        browser.newContext({ viewport: { width: 1280, height: 720 } }),
-      ]);
-      const pages = await Promise.all(contexts.map(c => c.newPage()));
-
-      // Login all 3 patients to content library (with fallback for timeout)
-      await Promise.all([
-        loginViaBrowser(pages[0], 'patient1').catch(() => {
-          logTestInfo('Patient1 login timed out, navigating directly');
-          return pages[0].goto(`${PATIENT_URL}/`, { timeout: TIMEOUTS.navigation }).catch(() => {});
-        }),
-        loginViaBrowser(pages[1], 'patient2').catch(() => {
-          logTestInfo('Patient2 login timed out, navigating directly');
-          return pages[1].goto(`${PATIENT_URL}/`, { timeout: TIMEOUTS.navigation }).catch(() => {});
-        }),
-        loginViaBrowser(pages[2], 'patient3').catch(() => {
-          logTestInfo('Patient3 login timed out, navigating directly');
-          return pages[2].goto(`${PATIENT_URL}/`, { timeout: TIMEOUTS.navigation }).catch(() => {});
-        }),
-      ]);
+      // Open 3 patient browsers with per-role browser selection
+      const p1 = await createAuthenticatedRolePage('patient1');
+      const p2 = await createAuthenticatedRolePage('patient2');
+      const p3 = await createAuthenticatedRolePage('patient3');
+      const contexts = [p1.context, p2.context, p3.context];
+      const pages = [p1.page, p2.page, p3.page];
 
       // Navigate all to health library
       await Promise.all(pages.map(p =>
@@ -572,14 +554,12 @@ test.describe('06 — Content Sync & Approval ★★★', () => {
       await Promise.all(contexts.map(c => c.close()));
     });
 
-    test('D04 — ★★★ Clinical resource: Doctor creates → Admin approves → Other doctors see on refresh ★★★', async ({ browser, request }) => {
+    test('D04 — ★★★ Clinical resource: Doctor creates → Admin approves → Other doctors see on refresh ★★★', async ({ request }) => {
       const doctorToken = getUser('doctor').token;
       const adminToken = getUser('admin').token;
 
       // Open another doctor/admin browser
-      const ctx = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
-      const adminPage = await ctx.newPage();
-      await loginViaBrowser(adminPage, 'admin');
+      const { context: ctx, page: adminPage } = await createAuthenticatedRolePage('admin');
       await adminPage.goto(`${DOCTOR_URL}/clinical-resources`, { timeout: TIMEOUTS.navigation }).catch(() =>
         adminPage.goto(`${DOCTOR_URL}/`, { timeout: TIMEOUTS.navigation }),
       );
@@ -628,7 +608,7 @@ test.describe('06 — Content Sync & Approval ★★★', () => {
       logTestSuccess('All 3 patients can access content after approval');
     });
 
-    test('D06 — Draft content NOT visible to patients even with refresh', async ({ browser, request }) => {
+    test('D06 — Draft content NOT visible to patients even with refresh', async ({ request }) => {
       const doctorToken = getUser('doctor').token;
 
       // Create draft (do NOT submit for approval)
@@ -640,9 +620,7 @@ test.describe('06 — Content Sync & Approval ★★★', () => {
       });
 
       // Patient opens library and refreshes
-      const ctx = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
-      const page = await ctx.newPage();
-      await loginViaBrowser(page, 'patient1');
+      const { context: ctx, page } = await createAuthenticatedRolePage('patient1');
       await page.goto(`${PATIENT_URL}/health-library`, { timeout: TIMEOUTS.navigation }).catch(() =>
         page.goto(`${PATIENT_URL}/`, { timeout: TIMEOUTS.navigation }),
       );
@@ -735,10 +713,8 @@ test.describe('06 — Content Sync & Approval ★★★', () => {
   // E: MEDICAL CONTENT LIBRARY UI (8 tests)
   // ═══════════════════════════════════════════════════════════════════════════
   test.describe('E — Medical Content Library UI', () => {
-    test('E01 — Patient portal health library page loads', async ({ browser }) => {
-      const ctx = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
-      const page = await ctx.newPage();
-      await loginViaBrowser(page, 'patient1');
+    test('E01 — Patient portal health library page loads', async () => {
+      const { context: ctx, page } = await createAuthenticatedRolePage('patient1');
       await page.goto(`${PATIENT_URL}/health-library`, { timeout: TIMEOUTS.navigation }).catch(() =>
         page.goto(`${PATIENT_URL}/`, { timeout: TIMEOUTS.navigation }),
       );
@@ -748,31 +724,22 @@ test.describe('06 — Content Sync & Approval ★★★', () => {
       await ctx.close();
     });
 
-    test('E02 — Doctor portal medical content page loads', async ({ browser }) => {
-      const ctx = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
-      const page = await ctx.newPage();
-      await loginViaBrowser(page, 'doctor');
-      await page.goto(`${DOCTOR_URL}/medical-content`, { timeout: TIMEOUTS.navigation });
+    test('E02 — Doctor portal medical content page loads', async () => {
+      const { context: ctx, page } = await createAuthenticatedRolePage('doctor', '/medical-content');
       await page.waitForTimeout(2000);
       await screenshot(page, '24-E02-medical-content');
       await ctx.close();
     });
 
-    test('E03 — Doctor portal clinical resources page loads', async ({ browser }) => {
-      const ctx = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
-      const page = await ctx.newPage();
-      await loginViaBrowser(page, 'doctor');
-      await page.goto(`${DOCTOR_URL}/clinical-resources`, { timeout: TIMEOUTS.navigation });
+    test('E03 — Doctor portal clinical resources page loads', async () => {
+      const { context: ctx, page } = await createAuthenticatedRolePage('doctor', '/clinical-resources');
       await page.waitForTimeout(2000);
       await screenshot(page, '24-E03-clinical-resources');
       await ctx.close();
     });
 
-    test('E04 — Admin approval badge count visible', async ({ browser }) => {
-      const ctx = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
-      const page = await ctx.newPage();
-      await loginViaBrowser(page, 'admin');
-      await page.goto(`${DOCTOR_URL}/medical-content`, { timeout: TIMEOUTS.navigation });
+    test('E04 — Admin approval badge count visible', async () => {
+      const { context: ctx, page } = await createAuthenticatedRolePage('admin', '/medical-content');
       await page.waitForTimeout(2000);
       // Look for pending badge
       const badge = page.locator('.badge, .pending-count, [data-pending]');
@@ -783,11 +750,8 @@ test.describe('06 — Content Sync & Approval ★★★', () => {
       await ctx.close();
     });
 
-    test('E05 — Content filter by category works', async ({ browser }) => {
-      const ctx = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
-      const page = await ctx.newPage();
-      await loginViaBrowser(page, 'doctor');
-      await page.goto(`${DOCTOR_URL}/medical-content`, { timeout: TIMEOUTS.navigation });
+    test('E05 — Content filter by category works', async () => {
+      const { context: ctx, page } = await createAuthenticatedRolePage('doctor', '/medical-content');
       await page.waitForTimeout(2000);
       // Look for filter/category controls
       const filter = page.locator('select, [role="combobox"], input[placeholder*="search"], input[placeholder*="ค้นหา"]');
@@ -797,11 +761,8 @@ test.describe('06 — Content Sync & Approval ★★★', () => {
       await ctx.close();
     });
 
-    test('E06 — "My Content" toggle works for doctor', async ({ browser }) => {
-      const ctx = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
-      const page = await ctx.newPage();
-      await loginViaBrowser(page, 'doctor');
-      await page.goto(`${DOCTOR_URL}/medical-content`, { timeout: TIMEOUTS.navigation });
+    test('E06 — "My Content" toggle works for doctor', async () => {
+      const { context: ctx, page } = await createAuthenticatedRolePage('doctor', '/medical-content');
       await page.waitForTimeout(2000);
       // Look for toggle button
       const toggle = page.locator('button:has-text("My Content"), button:has-text("บทความของฉัน"), input[type="checkbox"]');
@@ -813,10 +774,8 @@ test.describe('06 — Content Sync & Approval ★★★', () => {
       await ctx.close();
     });
 
-    test('E07 — Patient health library shows published articles', async ({ browser }) => {
-      const ctx = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
-      const page = await ctx.newPage();
-      await loginViaBrowser(page, 'patient1');
+    test('E07 — Patient health library shows published articles', async () => {
+      const { context: ctx, page } = await createAuthenticatedRolePage('patient1');
       await page.goto(`${PATIENT_URL}/health-library`, { timeout: TIMEOUTS.navigation }).catch(() =>
         page.goto(`${PATIENT_URL}/`, { timeout: TIMEOUTS.navigation }),
       );
@@ -829,25 +788,13 @@ test.describe('06 — Content Sync & Approval ★★★', () => {
       await ctx.close();
     });
 
-    test('E08 — Doctor + Patient both view content simultaneously', async ({ browser }) => {
-      const [ctx1, ctx2] = await Promise.all([
-        browser.newContext({ viewport: { width: 1280, height: 720 } }),
-        browser.newContext({ viewport: { width: 1280, height: 720 } }),
-      ]);
+    test('E08 — Doctor + Patient both view content simultaneously', async () => {
+      const { context: ctx1, page: doctorPage } = await createAuthenticatedRolePage('doctor', '/medical-content');
+      const { context: ctx2, page: patientPage } = await createAuthenticatedRolePage('patient1');
       try {
-        const [doctorPage, patientPage] = await Promise.all([ctx1.newPage(), ctx2.newPage()]);
-
-        await Promise.all([
-          loginViaBrowser(doctorPage, 'doctor'),
-          loginViaBrowser(patientPage, 'patient1'),
-        ]);
-
-        await Promise.all([
-          doctorPage.goto(`${DOCTOR_URL}/medical-content`, { timeout: TIMEOUTS.navigation }),
-          patientPage.goto(`${PATIENT_URL}/health-library`, { timeout: TIMEOUTS.navigation }).catch(() =>
-            patientPage.goto(`${PATIENT_URL}/`, { timeout: TIMEOUTS.navigation }),
-          ),
-        ]);
+        await patientPage.goto(`${PATIENT_URL}/health-library`, { timeout: TIMEOUTS.navigation }).catch(() =>
+          patientPage.goto(`${PATIENT_URL}/`, { timeout: TIMEOUTS.navigation }),
+        );
         await Promise.all([doctorPage.waitForTimeout(2000), patientPage.waitForTimeout(2000)]);
 
         await Promise.all([
@@ -933,11 +880,8 @@ test.describe('06 — Content Sync & Approval ★★★', () => {
       expect(res.status).toBeLessThan(600);
     });
 
-    test('F08 — Medical Consultants page loads (browser)', async ({ browser }) => {
-      const ctx = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
-      const page = await ctx.newPage();
-      await loginViaBrowser(page, 'doctor');
-      await page.goto(`${DOCTOR_URL}/consultants`, { timeout: TIMEOUTS.navigation });
+    test('F08 — Medical Consultants page loads (browser)', async () => {
+      const { context: ctx, page } = await createAuthenticatedRolePage('doctor', '/consultants');
       await page.waitForTimeout(2000);
       await screenshot(page, '24-F08-consultants');
       await ctx.close();
@@ -967,10 +911,8 @@ test.describe('06 — Content Sync & Approval ★★★', () => {
       expect(res.status).toBeLessThan(600);
     });
 
-    test('G04 — Admin manage doctors page (browser)', async ({ browser }) => {
-      const ctx = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
-      const page = await ctx.newPage();
-      await loginViaBrowser(page, 'admin');
+    test('G04 — Admin manage doctors page (browser)', async () => {
+      const { context: ctx, page } = await createAuthenticatedRolePage('admin');
       await page.goto(`${DOCTOR_URL}/admin/doctors`, { timeout: TIMEOUTS.navigation }).catch(() =>
         page.goto(`${DOCTOR_URL}/dashboard`, { timeout: TIMEOUTS.navigation }),
       );
@@ -979,10 +921,8 @@ test.describe('06 — Content Sync & Approval ★★★', () => {
       await ctx.close();
     });
 
-    test('G05 — Admin pending doctors page (browser)', async ({ browser }) => {
-      const ctx = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
-      const page = await ctx.newPage();
-      await loginViaBrowser(page, 'admin');
+    test('G05 — Admin pending doctors page (browser)', async () => {
+      const { context: ctx, page } = await createAuthenticatedRolePage('admin');
       await page.goto(`${DOCTOR_URL}/admin/pending-doctors`, { timeout: TIMEOUTS.navigation }).catch(() =>
         page.goto(`${DOCTOR_URL}/dashboard`, { timeout: TIMEOUTS.navigation }),
       );
@@ -991,11 +931,8 @@ test.describe('06 — Content Sync & Approval ★★★', () => {
       await ctx.close();
     });
 
-    test('G06 — Admin dashboard shows stats', async ({ browser }) => {
-      const ctx = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
-      const page = await ctx.newPage();
-      await loginViaBrowser(page, 'admin');
-      await page.goto(`${DOCTOR_URL}/dashboard`, { timeout: TIMEOUTS.navigation });
+    test('G06 — Admin dashboard shows stats', async () => {
+      const { context: ctx, page } = await createAuthenticatedRolePage('admin', '/dashboard');
       await page.waitForTimeout(2000);
       await screenshot(page, '24-G06-admin-dashboard');
       await ctx.close();
@@ -1006,10 +943,8 @@ test.describe('06 — Content Sync & Approval ★★★', () => {
   // H: CROSS-CUTTING UI FEATURES (6 tests)
   // ═══════════════════════════════════════════════════════════════════════════
   test.describe('H — Cross-Cutting UI', () => {
-    test('H01 — Dark mode toggle works on patient portal', async ({ browser }) => {
-      const ctx = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
-      const page = await ctx.newPage();
-      await loginViaBrowser(page, 'patient1');
+    test('H01 — Dark mode toggle works on patient portal', async () => {
+      const { context: ctx, page } = await createAuthenticatedRolePage('patient1');
       await page.goto(`${PATIENT_URL}/settings`, { timeout: TIMEOUTS.navigation }).catch(() =>
         page.goto(`${PATIENT_URL}/`, { timeout: TIMEOUTS.navigation }),
       );
@@ -1026,22 +961,16 @@ test.describe('06 — Content Sync & Approval ★★★', () => {
       await ctx.close();
     });
 
-    test('H02 — Settings page loads', async ({ browser }) => {
-      const ctx = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
-      const page = await ctx.newPage();
-      await loginViaBrowser(page, 'patient1');
-      await page.goto(`${PATIENT_URL}/settings`, { timeout: TIMEOUTS.navigation });
+    test('H02 — Settings page loads', async () => {
+      const { context: ctx, page } = await createAuthenticatedRolePage('patient1', '/settings');
       await page.waitForTimeout(2000);
       await screenshot(page, '24-H02-settings');
       await ctx.close();
     });
 
-    test('H03 — AI Consultation page loads', async ({ browser }) => {
-      const ctx = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
+    test('H03 — AI Consultation page loads', async () => {
+      const { context: ctx, page } = await createAuthenticatedRolePage('patient1', '/ai-chat');
       try {
-        const page = await ctx.newPage();
-        await loginViaBrowser(page, 'patient1');
-        await page.goto(`${PATIENT_URL}/ai-chat`, { timeout: TIMEOUTS.navigation });
         await page.waitForTimeout(2000);
         await screenshot(page, '24-H03-ai-chat');
       } catch (err) {
@@ -1051,20 +980,15 @@ test.describe('06 — Content Sync & Approval ★★★', () => {
       }
     });
 
-    test('H04 — Map page loads', async ({ browser }) => {
-      const ctx = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
-      const page = await ctx.newPage();
-      await loginViaBrowser(page, 'patient1');
-      await page.goto(`${PATIENT_URL}/map`, { timeout: TIMEOUTS.navigation });
+    test('H04 — Map page loads', async () => {
+      const { context: ctx, page } = await createAuthenticatedRolePage('patient1', '/map');
       await page.waitForTimeout(2000);
       await screenshot(page, '24-H04-map');
       await ctx.close();
     });
 
-    test('H05 — Patient profile page loads', async ({ browser }) => {
-      const ctx = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
-      const page = await ctx.newPage();
-      await loginViaBrowser(page, 'patient1');
+    test('H05 — Patient profile page loads', async () => {
+      const { context: ctx, page } = await createAuthenticatedRolePage('patient1');
       await page.goto(`${PATIENT_URL}/profile`, { timeout: TIMEOUTS.navigation }).catch(() =>
         page.goto(`${PATIENT_URL}/settings`, { timeout: TIMEOUTS.navigation }),
       );
@@ -1073,13 +997,10 @@ test.describe('06 — Content Sync & Approval ★★★', () => {
       await ctx.close();
     });
 
-    test('H06 — All patient portal pages load without JS errors', async ({ browser }) => {
-      const ctx = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
-      const page = await ctx.newPage();
+    test('H06 — All patient portal pages load without JS errors', async () => {
+      const { context: ctx, page } = await createAuthenticatedRolePage('patient1');
       const errors: string[] = [];
       page.on('console', msg => { if (msg.type() === 'error' && !msg.text().includes('favicon')) errors.push(msg.text()); });
-
-      await loginViaBrowser(page, 'patient1');
       const routes = ['/', '/appointments', '/phr', '/health-timeline', '/settings'];
       for (const route of routes) {
         await page.goto(`${PATIENT_URL}${route}`, { timeout: TIMEOUTS.navigation }).catch(() => {});

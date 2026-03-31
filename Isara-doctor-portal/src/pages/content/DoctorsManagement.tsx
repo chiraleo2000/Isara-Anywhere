@@ -171,8 +171,6 @@ const DoctorsManagement: React.FC = () => {
   }, []);
 
   const filteredDoctors = doctors.filter((doctor) => {
-    // Only approved doctors should ever appear on this page
-    if (doctor.approvalStatus === 'pending' || doctor.approvalStatus === 'rejected') return false;
     const matchesSearch =
       doctor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       doctor.specialty.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -528,6 +526,7 @@ const DoctorsManagement: React.FC = () => {
                 <button
                   onClick={() => setShowAddModal(false)}
                   className="p-2 hover:bg-gray-100 rounded-lg"
+                  aria-label="Close add doctor modal"
                 >
                   <XMarkIcon className="w-5 h-5" />
                 </button>

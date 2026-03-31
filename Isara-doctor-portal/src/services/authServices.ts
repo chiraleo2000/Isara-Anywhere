@@ -23,15 +23,17 @@ import config from './config';
 const STORAGE_KEYS = {
   CURRENT_USER: 'izara_current_user',
   AUTH_TOKEN: 'token',
+  REFRESH_TOKEN: 'izara_refresh_token',
   SESSION_EXPIRY: 'izara_session_expiry',
   DEVICE_ID: 'izara_device_id',
   LAST_ACTIVITY: 'izara_last_activity',
 } as const;
 
 const SESSION_TIMEOUT = config.security.sessionTimeout;
-const INACTIVITY_TIMEOUT = 15 * 60 * 1000; // 15 minutes inactivity timeout
+const INACTIVITY_TIMEOUT = 3 * 60 * 60 * 1000; // 3 hours inactivity timeout
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOCKOUT_DURATION = 15 * 60 * 1000; // 15 minutes
+const TOKEN_REFRESH_RATIO = 0.8; // Refresh at 80% of remaining lifetime
 
 // ============================================================================
 // DEVICE/SESSION FINGERPRINTING
@@ -82,6 +84,21 @@ function getDeviceId(): string {
  */
 function updateLastActivity(): void {
   localStorage.setItem(STORAGE_KEYS.LAST_ACTIVITY, Date.now().toString());
+}
+
+/**
+ * Decode JWT payload without cryptographic verification (client-side)
+ * Used to read the `exp` claim for scheduling token refresh
+ */
+function decodeJwtPayload(token: string): { exp?: number; userId?: string; email?: string } | null {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    const payload = atob(parts[1].replaceAll('-', '+').replaceAll('_', '/'));
+    return JSON.parse(payload);
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -452,6 +469,12 @@ export class AuthService {
       // Save session locally
       this.saveLocalSession(user, authToken);
 
+      // Store refresh token and start auto-refresh timer
+      if (result.refreshToken) {
+        localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, result.refreshToken);
+      }
+      this.startTokenRefreshTimer(authToken);
+
       // Log successful login
       await this.logLoginAttempt(user.id, true, emailKey, 'login');
 
@@ -479,8 +502,25 @@ export class AuthService {
    */
   async logout(): Promise<void> {
     console.log('👋 Logging out...');
+    this.stopTokenRefreshTimer();
+
+    // Call server to revoke refresh tokens
+    const token = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
+    if (token) {
+      try {
+        const authUrl = config.api.authUrl || `${config.api.baseUrl || ''}/auth`;
+        await fetch(`${authUrl}/logout`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        });
+      } catch (e) {
+        console.warn('Server logout call failed:', e);
+      }
+    }
+
     localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
     localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
+    localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
     localStorage.removeItem(STORAGE_KEYS.SESSION_EXPIRY);
     console.log('✅ Session cleared');
   }
@@ -536,6 +576,8 @@ export class AuthService {
     if (user && token) {
       this.saveLocalSession(user, token);
       updateLastActivity();
+      // Restart refresh timer with recalculated remaining time
+      this.startTokenRefreshTimer(token);
     }
   }
 
@@ -622,6 +664,91 @@ export class AuthService {
 
     // Save to GCS
     return saveUser(userCredential);
+  }
+
+  // ============================================================================
+  // PRIVATE HELPERS
+  // ============================================================================
+  // TOKEN REFRESH
+  // ============================================================================
+
+  private refreshTimerId: ReturnType<typeof setTimeout> | null = null;
+
+  /**
+   * Start (or restart) the auto-refresh timer based on the JWT `exp` claim.
+   * Fires at 80% of the remaining lifetime so the user never sees an expired token.
+   */
+  startTokenRefreshTimer(jwtToken: string): void {
+    this.stopTokenRefreshTimer();
+
+    const payload = decodeJwtPayload(jwtToken);
+    if (!payload?.exp) return;
+
+    const expiresAtMs = payload.exp * 1000;
+    const remainingMs = expiresAtMs - Date.now();
+    if (remainingMs <= 0) return;
+
+    const delayMs = Math.max(remainingMs * TOKEN_REFRESH_RATIO, 5000); // at least 5 s
+    console.log(`⏱️ Token refresh scheduled in ${Math.round(delayMs / 1000)}s`);
+
+    this.refreshTimerId = setTimeout(() => this.performTokenRefresh(), delayMs);
+  }
+
+  stopTokenRefreshTimer(): void {
+    if (this.refreshTimerId) {
+      clearTimeout(this.refreshTimerId);
+      this.refreshTimerId = null;
+    }
+  }
+
+  /**
+   * Silently refresh the JWT using the stored refresh token.
+   */
+  private async performTokenRefresh(): Promise<void> {
+    const refreshToken = localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
+    const deviceId = localStorage.getItem(STORAGE_KEYS.DEVICE_ID);
+    if (!refreshToken) {
+      console.warn('⚠️ No refresh token available — session will expire');
+      return;
+    }
+
+    try {
+      const authUrl = config.api.authUrl || `${config.api.baseUrl || ''}/auth`;
+      const res = await fetch(`${authUrl}/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken, deviceId }),
+      });
+
+      if (!res.ok) {
+        console.warn('⚠️ Token refresh failed — forcing logout');
+        await this.logout();
+        globalThis.location.href = '/login';
+        return;
+      }
+
+      const data = await res.json();
+
+      // Persist new tokens & session
+      localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, data.token);
+      if (data.refreshToken) {
+        localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, data.refreshToken);
+      }
+      if (data.user) {
+        localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(data.user));
+      }
+      const expiry = Date.now() + (data.expiresIn ? data.expiresIn * 1000 : SESSION_TIMEOUT);
+      localStorage.setItem(STORAGE_KEYS.SESSION_EXPIRY, expiry.toString());
+      updateLastActivity();
+
+      console.log('🔄 Token refreshed silently');
+
+      // Schedule the next refresh
+      this.startTokenRefreshTimer(data.token);
+    } catch (err) {
+      console.error('Token refresh network error:', err);
+      // Will retry on next user interaction via refreshSession()
+    }
   }
 
   // ============================================================================
@@ -726,6 +853,17 @@ export const getToken = () => authService.getToken();
 export const getAuthHeaders = () => authService.getAuthHeaders();
 export const refreshSession = () => authService.refreshSession();
 export const checkInactivityTimeout = () => authService.checkInactivityTimeout();
+
+/**
+ * Initialize the token refresh timer from a stored JWT.
+ * Call once on app startup (e.g. in App.tsx or AuthProvider mount).
+ */
+export function initTokenRefreshTimer(): void {
+  const token = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
+  if (token) {
+    authService.startTokenRefreshTimer(token);
+  }
+}
 
 // Export device functions for session management
 export { getDeviceId, updateLastActivity, isInactive };

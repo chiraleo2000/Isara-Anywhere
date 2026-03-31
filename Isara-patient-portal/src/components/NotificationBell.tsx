@@ -176,6 +176,7 @@ export function NotificationBell({ className = '' }: Readonly<NotificationBellPr
                     onClick={() => handleMarkAsRead(notification.id)}
                     className={`p-4 hover:bg-gray-50 transition-colors cursor-pointer w-full text-left ${notification.isRead ? '' : 'bg-emerald-50/50'
                       }`}
+                    aria-label={`Notification: ${notification.title}`}
                   >
                     <div className="flex gap-3">
                       {/* Icon */}
@@ -203,39 +204,23 @@ export function NotificationBell({ className = '' }: Readonly<NotificationBellPr
                             {formatTimeAgo(notification.createdAt)}
                           </span>
 
-                          {/* Action buttons */}
+                          {/* Action indicators */}
                           {notification.appointmentId && (
-                            <Link
-                              to={`/appointments/${notification.appointmentId}`}
-                              onClick={(e) => e.stopPropagation()}
-                              className="text-xs text-emerald-600 hover:text-emerald-700 font-medium flex items-center gap-1"
-                            >
+                            <span className="text-xs text-emerald-600 font-medium flex items-center gap-1">
                               ดูรายละเอียด <ChevronRight className="w-3 h-3" />
-                            </Link>
+                            </span>
                           )}
 
                           {notification.meetingLink && (
-                            <a
-                              href={notification.meetingLink}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              onClick={(e) => e.stopPropagation()}
-                              className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
-                            >
+                            <span className="text-xs text-blue-600 font-medium flex items-center gap-1">
                               <Video className="w-3 h-3" /> เข้าประชุม
-                            </a>
+                            </span>
                           )}
 
                           {notification.calendarUrl && (
-                            <a
-                              href={notification.calendarUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              onClick={(e) => e.stopPropagation()}
-                              className="text-xs text-purple-600 hover:text-purple-700 font-medium flex items-center gap-1"
-                            >
+                            <span className="text-xs text-purple-600 font-medium flex items-center gap-1">
                               <Calendar className="w-3 h-3" /> ปฏิทิน
-                            </a>
+                            </span>
                           )}
                         </div>
                       </div>

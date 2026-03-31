@@ -296,6 +296,7 @@ const TestHarness: React.FC<TestHarnessProps> = ({ doctor, patients: initialPati
               value={selectedPatientId || ''}
               onChange={(e) => setSelectedPatientId(e.target.value)}
               className="p-2 rounded bg-white text-gray-800 min-w-64"
+              aria-label="เลือกผู้ป่วย"
             >
               {patients.map((p) => (
                 <option key={p.id} value={p.id}>

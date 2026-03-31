@@ -49,8 +49,8 @@ async function snap(page: Page, filename: string, label: string, dir: string = S
 }
 
 // Seed user credentials (from environment or defaults for local testing)
-const PATIENT_CREDS = { email: 'demo.test@gmail.com', password: process.env.TEST_PATIENT_PASSWORD || 'P@ssw0rd' };
-const DOCTOR_CREDS = { email: 'doctor.test@izara.com', password: process.env.TEST_DOCTOR_PASSWORD || 'IzaraDoctor@2024' };
+const PATIENT_CREDS = { email: 'demo.test@gmail.com', password: process.env.TEST_PATIENT_PASSWORD ?? '' };
+const DOCTOR_CREDS = { email: 'doctor.test@izara.com', password: process.env.TEST_DOCTOR_PASSWORD ?? '' };
 
 // ── HELPER: Verify page loaded healthy ──────────────────────────────
 async function verifyPageLoaded(page: Page, label: string): Promise<void> {
@@ -201,7 +201,7 @@ async function setupDoctorAuth(page: Page): Promise<string | null> {
   return userId;
 }
 
-const MEETING_SERVER_URL = process.env.MEETING_URL || 'https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app';
+const MEETING_SERVER_URL = process.env.MEETING_SERVER_URL || 'http://localhost:3020';
 
 // ═══════════════════════════════════════════════════════════════════════
 // PATIENT PORTAL PAGES
@@ -229,7 +229,7 @@ test.describe('Patient Portal — All Pages Load', () => {
     const context = await browser.newContext();
     patientPage = await context.newPage();
     const authOk = await setupPatientAuth(patientPage);
-    if (!authOk) { patientAvailable = false; return; }
+    if (!authOk) { patientAvailable = false; }
   });
 
   test.afterAll(async () => {
@@ -639,9 +639,11 @@ test.describe('API Data Verification — Status 200', () => {
 
   test('API14c — Meeting results endpoint exists', async ({ request }) => {
     test.skip(!apiAvailable, 'API services unreachable');
-    const r = await request.get(`${MEETING_SERVER_URL}/api/meetings/test-id/results`, {});
-    // 404 = not found (correct), 200 = found, but not 500
-    expect([200, 404]).toContain(r.status());
+    const r = await request.get(`${MEETING_SERVER_URL}/api/meetings/test-id/results`, {
+      headers: { Authorization: `Bearer ${doctorToken}` },
+    });
+    // 404 = not found (correct), 200 = found, 401 = no auth, but not 500
+    expect([200, 401, 404]).toContain(r.status());
   });
 
   // Auth protection

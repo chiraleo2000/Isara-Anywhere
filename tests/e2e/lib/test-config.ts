@@ -142,12 +142,12 @@ export function logTestWarning(msg: string) { console.log(`⚠️  ${msg}`); }
 // =============================================================================
 
 export const TIMEOUTS = {
-  short: 5_000,
-  medium: 15_000,
-  long: 30_000,
+  short: 3_000,
+  medium: 10_000,
+  long: 20_000,
   cloud: 60_000,
-  navigation: 60_000,
-  api: IS_CLOUD ? 30_000 : 15_000,
+  navigation: IS_CLOUD ? 60_000 : 20_000,
+  api: IS_CLOUD ? 30_000 : 10_000,
 };
 
 // =============================================================================

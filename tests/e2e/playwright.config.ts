@@ -67,7 +67,7 @@ import { defineConfig, devices } from '@playwright/test';
 
 const isCloud = process.env.TEST_ENV === 'cloud';
 const isCloudDev = process.env.TEST_ENV === 'cloud-dev';
-const parallelWorkers = Number.parseInt(process.env.PW_WORKERS || '4', 10);
+const parallelWorkers = Number.parseInt(process.env.PW_WORKERS || '2', 10);
 
 // ── LOCAL: Full 20-spec coverage (parallel, headed) ─────────────────
 const LOCAL_SPECS = [
@@ -92,6 +92,10 @@ const LOCAL_SPECS = [
   '**/25-register-login-doctor.spec.ts',
   '**/26-register-login-patient.spec.ts',
 ];
+
+// Browser-role mapping is handled INSIDE tests via getBrowserForRole():
+//   Patient → Chrome, Doctor → Edge, Admin → Firefox
+// The Playwright project runs ALL specs once; tests open the right browser per role.
 
 // ── CLOUD: Essential 12-spec one-go workflow (serial, headed) ───────
 // Ordered as a user-journey: health → register → pages → workflows → pipeline
@@ -120,31 +124,35 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: isCloud || isCloudDev ? 1 : 0,
   workers: isCloud ? 1 : parallelWorkers,  // Cloud: serial (1 worker) | Local: parallel
-  timeout: 180_000,
-  expect: { timeout: 30_000 },
+  timeout: isCloud ? 180_000 : 60_000,    // Local: 60s per test | Cloud: 180s
+  expect: { timeout: isCloud ? 30_000 : 15_000 },
   reporter: [
     ['html', { open: 'never' }],
     ['list'],
     ['json', { outputFile: './test-results/results.json' }],
   ],
   use: {
-    headless: false,              // ALWAYS HEADED — UI visible on every run
-    screenshot: 'only-on-failure',
-    video: 'retain-on-failure',
+    headless: false,              // UI always visible for full visual testing
+    screenshot: 'on',             // Screenshot every test for visual proof
+    video: 'retain-on-failure',   // Video on failures for debugging
     trace: 'on-first-retry',
     launchOptions: {
       args: LAUNCH_ARGS,
-      timeout: 120_000,
+      timeout: 60_000,
     },
-    actionTimeout: 30_000,
-    navigationTimeout: 60_000,
+    actionTimeout: 15_000,
+    navigationTimeout: 30_000,
   },
   outputDir: './test-results',
   projects: [
+    // ── LOCAL: Chrome default, all 20 specs run ONCE ──────────────
+    // Tests use getBrowserForRole() for multi-browser within a test:
+    //   Patient → Chrome, Doctor → Edge, Admin → Firefox
     {
       name: 'Local',
       use: {
         ...devices['Desktop Chrome'],
+        channel: 'chrome',
         baseURL: 'http://localhost:3005',
         viewport: { width: 1920, height: 1080 },
         headless: false,

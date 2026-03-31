@@ -30,8 +30,12 @@ function authRateLimit(maxRequests: number, windowMs: number) {
   };
 }
 
-// Auth endpoints: max 10 per minute per IP
-const authLimiter = authRateLimit(10, 60000);
+// Auth endpoints: rate limited in production only — unlimited in dev/test
+const isProduction = process.env.NODE_ENV === 'production';
+const authRateLimitMax = Number.parseInt(process.env.RATE_LIMIT_MAX || '0') || 10;
+const authLimiter = isProduction
+  ? authRateLimit(authRateLimitMax, 60000)
+  : (_req: Request, _res: Response, next: NextFunction) => next();
 
 // ============================================================================
 // PRODUCTION MODE - PostgreSQL ONLY (No Demo Mode)
@@ -1075,7 +1079,7 @@ router.post('/refresh', async (req: Request, res: Response) => {
     
     // Create new session token (access token)
     const sessionToken = generateSessionToken();
-    const sessionExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes for mobile
+    const sessionExpires = new Date(Date.now() + 3 * 60 * 60 * 1000); // 3 hours
     
     await pool.query(
       `INSERT INTO sessions (id, user_id, token, ip_address, user_agent, expires_at, created_at)
@@ -1090,7 +1094,7 @@ router.post('/refresh', async (req: Request, res: Response) => {
       success: true,
       token: sessionToken,
       refreshToken: newRefreshToken,
-      expiresIn: 900, // 15 minutes in seconds
+      expiresIn: 10800, // 3 hours in seconds
       user: {
         id: tokenRow.user_id,
         patientId: tokenRow.patient_id || tokenRow.user_id,

@@ -115,6 +115,7 @@ const MiniCalendar: React.FC = () => {
         <button
           onClick={prevMonth}
           className="p-1 hover:bg-emerald-100 rounded transition-colors"
+          aria-label="Previous month"
         >
           <svg className="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -126,6 +127,7 @@ const MiniCalendar: React.FC = () => {
         <button
           onClick={nextMonth}
           className="p-1 hover:bg-emerald-100 rounded transition-colors"
+          aria-label="Next month"
         >
           <svg className="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />

@@ -11,7 +11,7 @@ import { test, Page, BrowserContext } from '@playwright/test';
 import * as path from 'node:path';
 import * as fs from 'node:fs';
 
-const DOCTOR_URL = 'https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app';
+const DOCTOR_URL = process.env.DOCTOR_PORTAL_URL || 'http://localhost:3010';
 
 const SS_EMR = path.join(__dirname, '..', 'screenshots', 'emr-prescriptions');
 const SS_LAB = path.join(__dirname, '..', 'screenshots', 'lab-orders');
@@ -91,12 +91,12 @@ test.describe('Post-Meeting Actions — EMR & Prescriptions & Labs', () => {
 
   test.afterAll(async () => { await doctorCtx?.close(); });
 
-  // Helper: inject auth on login page first, then navigate to target
+  // Helper: inject auth directly, then navigate to target (no login page visit)
   async function authAndGo(target: string) {
-    await doctorPage.goto(`${DOCTOR_URL}/login`, { waitUntil: 'domcontentloaded', timeout: 30000 });
-    await injectDoctorAuth(doctorPage, doctorToken, doctorUser);
     await doctorPage.goto(`${DOCTOR_URL}${target}`, { waitUntil: 'domcontentloaded', timeout: 30000 });
-    await doctorPage.waitForTimeout(1500);
+    await injectDoctorAuth(doctorPage, doctorToken, doctorUser);
+    await doctorPage.reload({ waitUntil: 'domcontentloaded', timeout: 30000 });
+    await doctorPage.waitForTimeout(1000);
   }
 
   // ── EMR01 — EMR Page ────────────────────────────────────────────

@@ -147,6 +147,7 @@ const StarRating: React.FC<{
             onMouseEnter={() => interactive && setHoverRating(star)}
             onMouseLeave={() => interactive && setHoverRating(0)}
             onClick={() => interactive && onRate?.(star)}
+            aria-label={`Rate ${star} star${star > 1 ? 's' : ''}`}
           >
             <StarIcon
               className={`${sizeClasses[size]} ${filled ? 'text-yellow-400' : 'text-gray-300'}`}
@@ -453,8 +454,9 @@ const MedicalConsultants: React.FC = () => {
         throw new Error(errData.error || 'Failed to add consultant');
       }
 
-      const newConsultant = await response.json();
-      setConsultants(prev => [...prev, newConsultant]);
+      const result = await response.json();
+      const addedConsultant = result.consultant || result;
+      setConsultants(prev => [...prev, addedConsultant]);
       setShowAddModal(false);
       resetForm();
     } catch (err) {
@@ -485,9 +487,10 @@ const MedicalConsultants: React.FC = () => {
 
       if (!response.ok) throw new Error('Failed to update consultant');
 
-      const updatedConsultant = await response.json();
+      const result = await response.json();
+      const updated = result.consultant || result;
       setConsultants(prev =>
-        prev.map(c => (c.id === updatedConsultant.id ? updatedConsultant : c))
+        prev.map(c => (c.id === updated.id ? updated : c))
       );
       setShowEditModal(false);
       setSelectedConsultant(null);
@@ -790,6 +793,7 @@ const MedicalConsultants: React.FC = () => {
                     resetForm();
                   }}
                   className="p-2 hover:bg-gray-100 rounded-lg"
+                  aria-label="Close consultant form"
                 >
                   <XMarkIcon className="w-5 h-5" />
                 </button>
@@ -967,6 +971,7 @@ const MedicalConsultants: React.FC = () => {
                     setSelectedConsultant(null);
                   }}
                   className="p-2 hover:bg-gray-100 rounded-lg"
+                  aria-label="Close consultant details"
                 >
                   <XMarkIcon className="w-5 h-5" />
                 </button>
@@ -1085,6 +1090,7 @@ const MedicalConsultants: React.FC = () => {
                     setRatingData({ rating: 0, comment: '' });
                   }}
                   className="p-2 hover:bg-gray-100 rounded-lg"
+                  aria-label="Close rating form"
                 >
                   <XMarkIcon className="w-5 h-5" />
                 </button>
