@@ -1,0 +1,296 @@
+
+Running 130 tests using 2 workers
+
+  Γ£ô    2 [Local] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:731:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ D ΓÇö Meeting Multi-User ΓÇ║ D05 ΓÇö Meeting list for doctor (23ms)
+  Γ£ô    3 [Local] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:737:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ D ΓÇö Meeting Multi-User ΓÇ║ D06 ΓÇö Meeting transcription start (7ms)
+  Γ£ô    4 [Local] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:747:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ D ΓÇö Meeting Multi-User ΓÇ║ D07 ΓÇö Guest invite to meeting (6ms)
+  Γ£ô    5 [Local] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:758:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ D ΓÇö Meeting Multi-User ΓÇ║ D08 ΓÇö Multiple meetings can exist simultaneously (20ms)
+  Γ£ô    6 [Local] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:777:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ E ΓÇö Queue & Dashboard ΓÇ║ E01 ΓÇö Doctor dashboard loads (6.5s)
+  Γ£ô    7 [Local] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:787:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ E ΓÇö Queue & Dashboard ΓÇ║ E02 ΓÇö Patient dashboard loads (36.3s)
+  Γ£ô    8 [Local] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:797:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ E ΓÇö Queue & Dashboard ΓÇ║ E03 ΓÇö Doctor queue management (56ms)
+  Γ£ô    9 [Local] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:803:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ E ΓÇö Queue & Dashboard ΓÇ║ E04 ΓÇö Queue updates visible across portals (58ms)
+  Γ£ô   10 [Local] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:816:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ E ΓÇö Queue & Dashboard ΓÇ║ E05 ΓÇö Dashboard stats consistent across views (63ms)
+ΓÜá∩╕Å A01 browser interaction error (tolerated): page.screenshot: Timeout 30000ms exceeded.
+Call log:
+  - taking page screenshot
+  - waiting for fonts to load...
+  - fonts loaded
+
+    at screenshot (C:\Users\chira\Documents\Isara-telemed\Isara-Anywhere\tests\e2e\lib\test-helpers.ts:283:14)
+    at C:\Users\chira\Documents\Isara-telemed\Isara-Anywhere\tests\e2e\specs\07-multi-user-concurrent.spec.ts:73:21 {
+  name: 'TimeoutError',
+  Symbol(step): {
+    location: {
+      file: 'C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\tests\\e2e\\lib\\test-helpers.ts',
+      line: 283,
+      column: 14,
+      function: 'screenshot'
+    },
+    category: 'pw:api',
+    title: 'Screenshot',
+    apiName: 'page.screenshot',
+    params: {
+      path: 'test-results/screenshots/26-A01-patient-appt-before.png',
+      fullPage: true,
+      timeout: 30000,
+      mask: undefined,
+      type: 'png'
+    },
+    group: undefined,
+    stepId: 'pw:api@107',
+    boxedStack: undefined,
+    steps: [],
+    attachmentIndices: [],
+    info: TestStepInfoImpl {
+      annotations: [],
+      _testInfo: [TestInfoImpl],
+      _stepId: 'pw:api@107',
+      _title: 'Screenshot',
+      _parentStep: undefined,
+      skip: [Function (anonymous)]
+    },
+    complete: [Function: complete],
+    endWallTime: 1772383381382,
+    error: {
+      message: 'TimeoutError: page.screenshot: Timeout 30000ms exceeded.\n' +
+        'Call log:\n' +
+        '\x1B[2m  - taking page screenshot\x1B[22m\n' +
+        '\x1B[2m  - waiting for fonts to load...\x1B[22m\n' +
+        '\x1B[2m  - fonts loaded\x1B[22m\n',
+      stack: 'TimeoutError: page.screenshot: Timeout 30000ms exceeded.\n' +
+        'Call log:\n' +
+        '\x1B[2m  - taking page screenshot\x1B[22m\n' +
+        '\x1B[2m  - waiting for fonts to load...\x1B[22m\n' +
+        '\x1B[2m  - fonts loaded\x1B[22m\n' +
+        '\n' +
+        '    at screenshot (C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\tests\\e2e\\lib\\test-helpers.ts:283:14)\n' +
+        '    at C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\tests\\e2e\\specs\\07-multi-user-concurrent.spec.ts:73:21',
+      cause: undefined
+    }
+  }
+}
+  Γ£ô    1 [Local] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:42:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ A ΓÇö Appointment Flow: 4 Windows Simultaneously ΓÇ║ A01 ΓÇö Patient1 books ΓåÆ Doctor sees in schedule ΓåÆ Doctor confirms ΓåÆ Patient1 sees confirmed (1.2m)
+Γ£à 3 dashboards open simultaneously
+  Γ£ô   11 [Local] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:828:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ E ΓÇö Queue & Dashboard ΓÇ║ E06 ΓÇö Doctor + Admin + Patient dashboards open simultaneously (37.3s)
+  Γ£ô   13 [Local] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:849:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ E ΓÇö Queue & Dashboard ΓÇ║ E07 ΓÇö Doctor schedule page (5.2s)
+  Γ£ô   14 [Local] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:861:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ E ΓÇö Queue & Dashboard ΓÇ║ E08 ΓÇö Notification badge updates across portals (27ms)
+Γä╣∩╕Å  10 concurrent mixed calls: 70ms
+  Γ£ô   15 [Local] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:877:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ F ΓÇö Stress & Edge Cases ΓÇ║ F01 ΓÇö 10 concurrent API calls mixed endpoints (79ms)
+Γ£à All 5 users logged in simultaneously across 5 browser windows
+  Γ£ô   12 [Local] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:112:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ A ΓÇö Appointment Flow: 4 Windows Simultaneously ΓÇ║ A02 ΓÇö All 5 users logged in simultaneously (38.7s)
+Γä╣∩╕Å  patient1 booking: 200
+Γä╣∩╕Å  patient2 booking: 200
+Γä╣∩╕Å  patient3 booking: 200
+Γ£à 3 concurrent appointment bookings
+  Γ£ô   17 [Local] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:144:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ A ΓÇö Appointment Flow: 4 Windows Simultaneously ΓÇ║ A03 ΓÇö 3 patients book appointments simultaneously (25ms)
+  Γ£ô   18 [Local] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:161:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ A ΓÇö Appointment Flow: 4 Windows Simultaneously ΓÇ║ A04 ΓÇö Doctor confirms multiple appointments in sequence (51ms)
+  Γ£ô   16 [Local] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:896:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ F ΓÇö Stress & Edge Cases ΓÇ║ F02 ΓÇö Rapid page refreshes (5x in sequence) (34.6s)
+  Γ£ô   20 [Local] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:912:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ F ΓÇö Stress & Edge Cases ΓÇ║ F03 ΓÇö Token expiry handling across portals (11ms)
+  Γ£ô   21 [Local] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:924:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ F ΓÇö Stress & Edge Cases ΓÇ║ F04 ΓÇö Cross-portal token reuse prevented (8ms)
+  Γ£ô   22 [Local] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:931:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ F ΓÇö Stress & Edge Cases ΓÇ║ F05 ΓÇö Large payload handling (15ms)
+Γä╣∩╕Å  appointments: 52ms
+Γä╣∩╕Å  patients: 6ms
+Γä╣∩╕Å  doctors: 5ms
+Γä╣∩╕Å  content: 5ms
+Γä╣∩╕Å  notifications: 5ms
+  Γ£ô   23 [Local] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:942:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ F ΓÇö Stress & Edge Cases ΓÇ║ F06 ΓÇö API response time benchmark (all main endpoints) (78ms)
+Γä╣∩╕Å  Still logged in after navigation: true
+  Γ£ô   24 [Local] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:961:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ F ΓÇö Stress & Edge Cases ΓÇ║ F07 ΓÇö Session persistence after navigation (37.3s)
+Γä╣∩╕Å  20 concurrent calls: 530ms, failures: 0
+  Γ£ô   25 [Local] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:980:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ F ΓÇö Stress & Edge Cases ΓÇ║ F08 ΓÇö All portals accessible concurrently under load (534ms)
+  Γ£ô   26 [Local] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:1004:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ G ΓÇö Queue Management & Cross-Portal Notifications ΓÇ║ G01 ΓÇö Doctor queue list (8ms)
+  Γ£ô   27 [Local] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:1010:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ G ΓÇö Queue Management & Cross-Portal Notifications ΓÇ║ G02 ΓÇö Doctor call next in queue (8ms)
+  Γ£ô   28 [Local] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:1016:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ G ΓÇö Queue Management & Cross-Portal Notifications ΓÇ║ G03 ΓÇö Doctor skip queue patient (9ms)
+Γä╣∩╕Å  Patient1 notifications: 0
+  Γ£ô   29 [Local] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:1022:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ G ΓÇö Queue Management & Cross-Portal Notifications ΓÇ║ G04 ΓÇö Patient notification after EMR signature (9ms)
+  Γ£ô   30 [Local] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:1033:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ G ΓÇö Queue Management & Cross-Portal Notifications ΓÇ║ G05 ΓÇö Doctor notification list (9ms)
+  Γ£ô   31 [Local] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:1039:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ G ΓÇö Queue Management & Cross-Portal Notifications ΓÇ║ G06 ΓÇö Mark all notifications read (6ms)
+  Γ£ô   32 [Local] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:1045:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ G ΓÇö Queue Management & Cross-Portal Notifications ΓÇ║ G07 ΓÇö User preferences persistence after concurrent updates (17ms)
+Γä╣∩╕Å  Notification overlap check: 0 shared IDs
+  Γ£ô   33 [Local] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:1057:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ G ΓÇö Queue Management & Cross-Portal Notifications ΓÇ║ G08 ΓÇö Doctor and patient notifications do not leak across roles (9ms)
+  Γ£ô   34 [Local] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:1077:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ G ΓÇö Queue Management & Cross-Portal Notifications ΓÇ║ G09 ΓÇö Concurrent profile updates from different patients (18ms)
+  Γ£ô   35 [Local] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:1086:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ G ΓÇö Queue Management & Cross-Portal Notifications ΓÇ║ G10 ΓÇö Cross-portal data consistency after sync (45ms)
+Γ£à Lab order created: LAB-1772383470098
+  Γ£ô   36 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:45:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ A ΓÇö Doctor Lab Order CRUD ΓÇ║ A01 ΓÇö Create lab order returns 200/201 (17ms)
+Γ£à Lab orders retrieved for patient
+  Γ£ô   37 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:61:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ A ΓÇö Doctor Lab Order CRUD ΓÇ║ A02 ΓÇö Get all lab orders for patient (10ms)
+Γ£à Single lab order retrieved
+  Γ£ô   38 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:69:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ A ΓÇö Doctor Lab Order CRUD ΓÇ║ A03 ΓÇö Get single lab order by ID (8ms)
+Γ£à Lab order results updated
+  Γ£ô   39 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:77:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ A ΓÇö Doctor Lab Order CRUD ΓÇ║ A04 ΓÇö Update lab order results (11ms)
+Γ£à Lab order document uploaded
+  Γ£ô   40 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:88:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ A ΓÇö Doctor Lab Order CRUD ΓÇ║ A05 ΓÇö Upload document to lab order (12ms)
+Γ£à Lab order without patientId handled
+  Γ£ô   41 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:100:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ A ΓÇö Doctor Lab Order CRUD ΓÇ║ A06 ΓÇö Lab order with missing patient ID accepts gracefully (20ms)
+Γ£à Lab order with empty tests handled
+  Γ£ô   42 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:110:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ A ΓÇö Doctor Lab Order CRUD ΓÇ║ A07 ΓÇö Lab order with empty tests accepts gracefully (11ms)
+Γ£à Unauthorized lab order access rejected
+  Γ£ô   43 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:121:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ A ΓÇö Doctor Lab Order CRUD ΓÇ║ A08 ΓÇö Unauthorized access to lab orders (7ms)
+Γ£à STAT lab order created
+  Γ£ô   44 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:130:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ A ΓÇö Doctor Lab Order CRUD ΓÇ║ A09 ΓÇö Lab order supports STAT priority (13ms)
+Γ£à Multiple lab orders for same patient created
+  Γ£ô   45 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:142:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ A ΓÇö Doctor Lab Order CRUD ΓÇ║ A10 ΓÇö Multiple lab orders for same patient (24ms)
+Γ£à Imaging order created: 
+  Γ£ô   46 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:164:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ B ΓÇö Doctor Imaging Order CRUD ΓÇ║ B01 ΓÇö Create imaging order (17ms)
+Γ£à Imaging orders retrieved for patient
+  Γ£ô   47 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:179:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ B ΓÇö Doctor Imaging Order CRUD ΓÇ║ B02 ΓÇö Get imaging orders for patient (8ms)
+  -   48 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:187:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ B ΓÇö Doctor Imaging Order CRUD ΓÇ║ B03 ΓÇö Update imaging order results
+Γ£à CT scan order created
+  Γ£ô   49 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:199:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ B ΓÇö Doctor Imaging Order CRUD ΓÇ║ B04 ΓÇö Create CT scan order (9ms)
+Γ£à MRI order created
+  Γ£ô   50 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:212:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ B ΓÇö Doctor Imaging Order CRUD ΓÇ║ B05 ΓÇö Create MRI order (12ms)
+Γ£à Ultrasound order created
+  Γ£ô   51 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:225:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ B ΓÇö Doctor Imaging Order CRUD ΓÇ║ B06 ΓÇö Create ultrasound order (12ms)
+Γ£à Imaging without patientId handled
+  Γ£ô   52 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:238:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ B ΓÇö Doctor Imaging Order CRUD ΓÇ║ B07 ΓÇö Imaging without patient ID accepts gracefully (11ms)
+Γ£à Unauthorized imaging access rejected
+  Γ£ô   53 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:249:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ B ΓÇö Doctor Imaging Order CRUD ΓÇ║ B08 ΓÇö Unauthorized imaging access (5ms)
+Γ£à Parallel imaging orders created for 3 patients
+  Γ£ô   54 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:258:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ B ΓÇö Doctor Imaging Order CRUD ΓÇ║ B09 ΓÇö Multiple imaging orders across patients (16ms)
+Γ£à Empty imaging list for non-existent patient
+  Γ£ô   55 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:270:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ B ΓÇö Doctor Imaging Order CRUD ΓÇ║ B10 ΓÇö Get imaging for non-existent patient returns empty (7ms)
+Γ£à Patient retrieved lab orders
+  Γ£ô   56 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:285:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ C ΓÇö Patient Views Lab & Imaging Orders ΓÇ║ C01 ΓÇö Patient can view own lab orders (11ms)
+Γ£à Patient retrieved imaging orders
+  Γ£ô   57 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:293:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ C ΓÇö Patient Views Lab & Imaging Orders ΓÇ║ C02 ΓÇö Patient can view own imaging orders (8ms)
+Γ£à Patient 2 retrieved lab orders
+  Γ£ô   58 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:301:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ C ΓÇö Patient Views Lab & Imaging Orders ΓÇ║ C03 ΓÇö Patient 2 can view lab orders (8ms)
+Γ£à Patient 3 retrieved lab orders
+  Γ£ô   59 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:308:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ C ΓÇö Patient Views Lab & Imaging Orders ΓÇ║ C04 ΓÇö Patient 3 can view lab orders (8ms)
+Γ£à Lab orders count field present
+  Γ£ô   60 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:315:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ C ΓÇö Patient Views Lab & Imaging Orders ΓÇ║ C05 ΓÇö Patient lab orders response has count (9ms)
+Γ£à Imaging orders count field present
+  Γ£ô   61 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:324:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ C ΓÇö Patient Views Lab & Imaging Orders ΓÇ║ C06 ΓÇö Patient imaging orders response has count (8ms)
+Γ£à Unauthenticated lab access rejected
+  Γ£ô   62 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:332:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ C ΓÇö Patient Views Lab & Imaging Orders ΓÇ║ C07 ΓÇö Unauthenticated patient lab access rejected (4ms)
+Γ£à Unauthenticated imaging access rejected
+  Γ£ô   63 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:341:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ C ΓÇö Patient Views Lab & Imaging Orders ΓÇ║ C08 ΓÇö Unauthenticated imaging access rejected (5ms)
+Γ£à 3 patients fetched lab orders in parallel
+  Γ£ô   64 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:350:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ C ΓÇö Patient Views Lab & Imaging Orders ΓÇ║ C09 ΓÇö All 3 patients parallel lab order fetch (22ms)
+Γ£à 3 patients fetched imaging orders in parallel
+  Γ£ô   65 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:361:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ C ΓÇö Patient Views Lab & Imaging Orders ΓÇ║ C10 ΓÇö All 3 patients parallel imaging fetch (22ms)
+Γ£à Doctor created lab order for Patient 1
+  Γ£ô   66 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:379:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ D ΓÇö Doctor-Patient Cross-User Lab Flow ΓÇ║ D01 ΓÇö Doctor creates lab order for patient 1 (12ms)
+Γ£à Doctor created lab order for Patient 2
+  Γ£ô   67 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:390:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ D ΓÇö Doctor-Patient Cross-User Lab Flow ΓÇ║ D02 ΓÇö Doctor creates lab for patient 2 (12ms)
+Γ£à Doctor created lab order for Patient 3
+  Γ£ô   68 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:400:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ D ΓÇö Doctor-Patient Cross-User Lab Flow ΓÇ║ D03 ΓÇö Doctor creates lab for patient 3 (9ms)
+Γ£à Patient 1 sees 0 lab orders
+  Γ£ô   69 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:410:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ D ΓÇö Doctor-Patient Cross-User Lab Flow ΓÇ║ D04 ΓÇö Patient 1 sees lab orders (16ms)
+Γ£à Patient 2 sees 0 lab orders
+  Γ£ô   70 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:417:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ D ΓÇö Doctor-Patient Cross-User Lab Flow ΓÇ║ D05 ΓÇö Patient 2 sees lab orders (15ms)
+Γ£à Patient 3 sees 0 lab orders
+  Γ£ô   71 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:424:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ D ΓÇö Doctor-Patient Cross-User Lab Flow ΓÇ║ D06 ΓÇö Patient 3 sees lab orders (10ms)
+Γ£à Patient sees 0 imaging orders after doctor creates
+  Γ£ô   72 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:431:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ D ΓÇö Doctor-Patient Cross-User Lab Flow ΓÇ║ D07 ΓÇö Doctor creates imaging ΓåÆ Patient sees it (17ms)
+Γ£à Doctor and patient accessed lab orders simultaneously
+  Γ£ô   73 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:445:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ D ΓÇö Doctor-Patient Cross-User Lab Flow ΓÇ║ D08 ΓÇö Doctor and patient concurrent access (12ms)
+Γ£à 5 users passed health check concurrently
+  Γ£ô   74 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:457:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ D ΓÇö Doctor-Patient Cross-User Lab Flow ΓÇ║ D09 ΓÇö 5 users concurrent health check (11ms)
+Γ£à Prescription created via PostgreSQL
+  Γ£ô   75 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:468:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ D ΓÇö Doctor-Patient Cross-User Lab Flow ΓÇ║ D10 ΓÇö Doctor prescriptions endpoint also works (13ms)
+Γ£à Admin sees 9 doctor accounts
+  Γ£ô   76 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:484:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ E ΓÇö Admin Doctor Management ΓÇ║ E01 ΓÇö Admin can fetch all doctor accounts (11ms)
+Γ£à Active doctor filter works
+  Γ£ô   77 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:494:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ E ΓÇö Admin Doctor Management ΓÇ║ E02 ΓÇö Admin filter active doctors (9ms)
+Γ£à Inactive doctor filter works
+  Γ£ô   78 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:501:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ E ΓÇö Admin Doctor Management ΓÇ║ E03 ΓÇö Admin filter inactive doctors (8ms)
+Γ£à Pending doctor filter works
+  Γ£ô   79 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:508:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ E ΓÇö Admin Doctor Management ΓÇ║ E04 ΓÇö Admin filter pending doctors (9ms)
+Γ£à Admin sees 13 total users
+  Γ£ô   80 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:515:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ E ΓÇö Admin Doctor Management ΓÇ║ E05 ΓÇö Admin can view all users (9ms)
+Γ£à Doctor admin access checked
+  Γ£ô   81 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:524:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ E ΓÇö Admin Doctor Management ΓÇ║ E06 ΓÇö Non-admin cannot access admin users (8ms)
+Γ£à Admin stats endpoint checked
+  Γ£ô   82 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:532:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ E ΓÇö Admin Doctor Management ΓÇ║ E07 ΓÇö Admin stats endpoint (8ms)
+Γ£à Pending doctors legacy endpoint checked
+  Γ£ô   83 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:539:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ E ΓÇö Admin Doctor Management ΓÇ║ E08 ΓÇö Pending doctors list (legacy endpoint) (7ms)
+Γ£à Doctor profile retrieved
+  Γ£ô   84 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:546:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ E ΓÇö Admin Doctor Management ΓÇ║ E09 ΓÇö Doctor sees own profile (6ms)
+Γ£à Admin and doctor parallel access works
+  Γ£ô   85 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:553:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ E ΓÇö Admin Doctor Management ΓÇ║ E10 ΓÇö Admin and doctor parallel admin checks (9ms)
+Γ£à Map page loads
+  Γ£ô   86 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:571:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ F ΓÇö Map Page & Healthcare Facilities ΓÇ║ F01 ΓÇö Map page loads (200 status) (6ms)
+Γ£à Map page returns valid HTML
+  Γ£ô   87 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:581:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ F ΓÇö Map Page & Healthcare Facilities ΓÇ║ F02 ΓÇö Map page HTML contains MapPage component (8ms)
+Γ£à Patient 1 map access
+  Γ£ô   88 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:590:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ F ΓÇö Map Page & Healthcare Facilities ΓÇ║ F03 ΓÇö Patient 1 map page access (7ms)
+Γ£à Patient 2 map access
+  Γ£ô   89 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:599:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ F ΓÇö Map Page & Healthcare Facilities ΓÇ║ F04 ΓÇö Patient 2 map page access (5ms)
+Γ£à Patient 3 map access
+  Γ£ô   90 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:608:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ F ΓÇö Map Page & Healthcare Facilities ΓÇ║ F05 ΓÇö Patient 3 map page access (5ms)
+Γ£à JS bundle with map code loads
+  Γ£ô   91 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:617:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ F ΓÇö Map Page & Healthcare Facilities ΓÇ║ F06 ΓÇö Map-related JS bundle loads (13ms)
+Γ£à 3 patients accessed map in parallel
+  Γ£ô   92 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:631:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ F ΓÇö Map Page & Healthcare Facilities ΓÇ║ F07 ΓÇö 3 patients access map page in parallel (8ms)
+Γ£à Dashboard page loads
+  Γ£ô   93 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:645:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ F ΓÇö Map Page & Healthcare Facilities ΓÇ║ F08 ΓÇö Dashboard page loads (5ms)
+Γ£à Health records page loads
+  Γ£ô   94 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:654:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ F ΓÇö Map Page & Healthcare Facilities ΓÇ║ F09 ΓÇö Health records page loads (6ms)
+Γ£à All 5 critical patient pages loaded in parallel
+  Γ£ô   95 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:663:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ F ΓÇö Map Page & Healthcare Facilities ΓÇ║ F10 ΓÇö All critical pages load in parallel (14ms)
+Γ£à 5 users concurrent health check passed
+  Γ£ô   96 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:686:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ G ΓÇö Multi-User Concurrent Access ΓÇ║ G01 ΓÇö 5 users health check concurrent (10ms)
+Γ£à 4 users fetched profiles concurrently
+  Γ£ô   97 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:697:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ G ΓÇö Multi-User Concurrent Access ΓÇ║ G02 ΓÇö 3 patients + 1 doctor concurrent profile (18ms)
+Γ£à Doctor write + 3 patients read concurrently
+  Γ£ô   98 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:709:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ G ΓÇö Multi-User Concurrent Access ΓÇ║ G03 ΓÇö Doctor writes + patients read simultaneously (13ms)
+Γ£à Admin + doctor concurrent portal access
+  Γ£ô   99 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:725:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ G ΓÇö Multi-User Concurrent Access ΓÇ║ G04 ΓÇö Multiple doctors accessing admin endpoint (10ms)
+Γ£à Concurrent DB health checks passed
+  Γ£ô  100 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:737:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ G ΓÇö Multi-User Concurrent Access ΓÇ║ G05 ΓÇö All users DB health concurrent (17ms)
+Γ£à 5 patient API pages loaded in parallel
+  Γ£ô  101 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:747:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ G ΓÇö Multi-User Concurrent Access ΓÇ║ G06 ΓÇö Patient pages parallel load (5 pages) (21ms)
+Γ£à 5 doctor API pages loaded in parallel
+  Γ£ô  102 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:757:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ G ΓÇö Multi-User Concurrent Access ΓÇ║ G07 ΓÇö Doctor pages parallel load (5 pages) (26ms)
+Γ£à 5/5 rapid lab orders created
+  Γ£ô  103 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:767:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ G ΓÇö Multi-User Concurrent Access ΓÇ║ G08 ΓÇö Rapid sequential lab order creation (48ms)
+Γ£à Cross-portal concurrent: doctor + 3 patients
+  Γ£ô  104 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:782:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ G ΓÇö Multi-User Concurrent Access ΓÇ║ G09 ΓÇö Cross-portal concurrent: doctor + 3 patients (21ms)
+Γ£à All 5 users parallel authenticated requests passed
+  Γ£ô  105 [Local] ΓÇ║ specs\10-lab-imaging-map-features.spec.ts:796:9 ΓÇ║ 10 ΓÇö Lab Orders, Imaging, Map & v1.5.2 Features ΓÇ║ G ΓÇö Multi-User Concurrent Access ΓÇ║ G10 ΓÇö All 5 users parallel authenticated requests (21ms)
+Γ£à Status change visible after refresh
+  Γ£ô   19 [Local] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:177:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ A ΓÇö Appointment Flow: 4 Windows Simultaneously ΓÇ║ A05 ΓÇö Patient sees appointment status change on refresh (1.6m)
+Γ£à Doctor + Admin view same schedule
+  Γ£ô  106 [Local] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:215:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ A ΓÇö Appointment Flow: 4 Windows Simultaneously ΓÇ║ A06 ΓÇö Doctor + Admin both view appointments simultaneously (4.5s)
+Γ£à Full lifecycle: APT-1772383521180-U7XAUE
+  Γ£ô  107 [Local] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:245:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ A ΓÇö Appointment Flow: 4 Windows Simultaneously ΓÇ║ A07 ΓÇö Full lifecycle via API: create ΓåÆ confirm ΓåÆ meeting link (130ms)
+  Γ£ô  108 [Local] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:253:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ A ΓÇö Appointment Flow: 4 Windows Simultaneously ΓÇ║ A08 ΓÇö Appointment race condition: 2 patients book same slot (19ms)
+  Γ£ô  109 [Local] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:271:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ A ΓÇö Appointment Flow: 4 Windows Simultaneously ΓÇ║ A09 ΓÇö Admin assigns appointment to doctor (19ms)
+Γä╣∩╕Å  Appointment list: 56ms
+Γä╣∩╕Å  Appointment list: 5ms
+Γä╣∩╕Å  Appointment list: 4ms
+  Γ£ô  110 [Local] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:289:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ A ΓÇö Appointment Flow: 4 Windows Simultaneously ΓÇ║ A10 ΓÇö Appointment list loads under 3 seconds (69ms)
+Γ£à Content "α╣éα╕úα╕äα╣Çα╕Üα╕▓α╕½α╕ºα╕▓α╕Ö: α╕äα╕ºα╕▓α╕íα╕úα╕╣α╣ëα╣Çα╕Üα╕╖α╣ëα╕¡α╕çα╕òα╣ëα╕Ö ΓÇö Test 1772383521074" accessible to all patients
+  Γ£ô  111 [Local] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:305:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ B ΓÇö Content Flow: Doctor ΓåÆ Admin ΓåÆ All Patients See ΓÇ║ B01 ΓÇö Γÿà Full flow: doctor creates ΓåÆ admin approves ΓåÆ 3 patients see (API) (24ms)
+Γ£à Content "α╣éα╕úα╕äα╣Çα╕Üα╕▓α╕½α╕ºα╕▓α╕Ö: α╕äα╕ºα╕▓α╕íα╕úα╕╣α╣ëα╣Çα╕Üα╕╖α╣ëα╕¡α╕çα╕òα╣ëα╕Ö ΓÇö Test 1772383555076" ΓÇö 4-window sync test
+  Γ£ô  112 [Local] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:324:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ B ΓÇö Content Flow: Doctor ΓåÆ Admin ΓåÆ All Patients See ΓÇ║ B02 ΓÇö Γÿà Full flow with 4 browser windows: doctor + admin + 2 patients (38.3s)
+Γ£à Rejected content not visible to patients
+  Γ£ô  113 [Local] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:368:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ B ΓÇö Content Flow: Doctor ΓåÆ Admin ΓåÆ All Patients See ΓÇ║ B03 ΓÇö Rejected content: patients should NOT see after refresh (34.4s)
+Γ£à 0 articles batch-approved
+  Γ£ô  114 [Local] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:402:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ B ΓÇö Content Flow: Doctor ΓåÆ Admin ΓåÆ All Patients See ΓÇ║ B04 ΓÇö Multiple content items created and approved in batch (32ms)
+Γ£à Content appeared during active browsing
+  Γ£ô  115 [Local] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:435:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ B ΓÇö Content Flow: Doctor ΓåÆ Admin ΓåÆ All Patients See ΓÇ║ B05 ΓÇö Doctor creates content while patient is actively browsing library (36.3s)
+  Γ£ô  116 [Local] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:457:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ B ΓÇö Content Flow: Doctor ΓåÆ Admin ΓåÆ All Patients See ΓÇ║ B06 ΓÇö Content tags synced across portals (12ms)
+Γä╣∩╕Å  5-user concurrent content fetch: 24ms
+  Γ£ô  117 [Local] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:470:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ B ΓÇö Content Flow: Doctor ΓåÆ Admin ΓåÆ All Patients See ΓÇ║ B07 ΓÇö 5 users polling content endpoint concurrently (29ms)
+  Γ£ô  118 [Local] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:487:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ B ΓÇö Content Flow: Doctor ΓåÆ Admin ΓåÆ All Patients See ΓÇ║ B08 ΓÇö Content visible across different patient accounts (36ms)
+Γ£à PHR update visible to doctor
+  Γ£ô  119 [Local] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:517:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ C ΓÇö Health Records Cross-Portal ΓÇ║ C01 ΓÇö Patient updates PHR ΓåÆ Doctor sees in record viewer (8ms)
+  Γ£ô  120 [Local] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:538:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ C ΓÇö Health Records Cross-Portal ΓÇ║ C02 ΓÇö Doctor creates EMR ΓåÆ Patient sees in health timeline (15ms)
+Γ£à Doctor + Patient view records simultaneously
+  Γ£ô  121 [Local] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:558:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ C ΓÇö Health Records Cross-Portal ΓÇ║ C03 ΓÇö Doctor and patient both view same record simultaneously (33.4s)
+  Γ£ô  122 [Local] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:586:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ C ΓÇö Health Records Cross-Portal ΓÇ║ C04 ΓÇö 3 patients access their PHR simultaneously (27ms)
+ΓÜá∩╕Å  Returned 200 ΓÇö verify data isolation in response
+  Γ£ô  123 [Local] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:595:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ C ΓÇö Health Records Cross-Portal ΓÇ║ C05 ΓÇö Patient data isolation: patient1 cannot see patient2 records (12ms)
+  Γ£ô  124 [Local] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:611:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ C ΓÇö Health Records Cross-Portal ΓÇ║ C06 ΓÇö Prescription created by doctor ΓåÆ patient sees in records (27ms)
+  Γ£ô  125 [Local] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:628:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ C ΓÇö Health Records Cross-Portal ΓÇ║ C07 ΓÇö Vitals recorded ΓåÆ appears in health timeline (20ms)
+  Γ£ô  126 [Local] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:643:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ C ΓÇö Health Records Cross-Portal ΓÇ║ C08 ΓÇö Living will access: patient shares ΓåÆ doctor views (10ms)
+  Γ£ô  127 [Local] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:665:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ D ΓÇö Meeting Multi-User ΓÇ║ D01 ΓÇö Meeting server health check (12ms)
+  Γ£ô  128 [Local] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:671:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ D ΓÇö Meeting Multi-User ΓÇ║ D02 ΓÇö Doctor creates meeting ΓåÆ Patient sees meeting link (23ms)
+Γ£à Doctor + Patient meeting pages open
+  Γ£ô  129 [Local] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:689:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ D ΓÇö Meeting Multi-User ΓÇ║ D03 ΓÇö Doctor and patient join meeting simultaneously (browser) (45.0s)
+  Γ£ô  130 [Local] ΓÇ║ specs\07-multi-user-concurrent.spec.ts:725:9 ΓÇ║ 07 ΓÇö Multi-User Concurrent Scenarios ΓÇ║ D ΓÇö Meeting Multi-User ΓÇ║ D04 ΓÇö Meeting config endpoint (30ms)
+
+  1 skipped
+  129 passed (6.7m)
