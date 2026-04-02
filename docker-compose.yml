@@ -117,12 +117,12 @@ services:
 
       # Database Configuration - Docker internal network
       # NOTE: URL-encode special characters in POSTGRES_PASSWORD for DATABASE_URL
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-izara_phase1}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-IzaraDb2024}@postgres:5432/${POSTGRES_DB:-izara_phase1}
       DB_HOST: postgres
       DB_PORT: 5432
       DB_NAME: izara_phase1
       DB_USER: postgres
-      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-IzaraDb2024}
       DB_SSL: "false"
       USE_POSTGRESQL: "true"
       VITE_USE_POSTGRESQL: "true"
@@ -192,12 +192,12 @@ services:
 
       # Database Configuration - Docker internal network
       # NOTE: URL-encode special characters in POSTGRES_PASSWORD for DATABASE_URL
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-izara_phase1}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-IzaraDb2024}@postgres:5432/${POSTGRES_DB:-izara_phase1}
       DB_HOST: postgres
       DB_PORT: 5432
       DB_NAME: izara_phase1
       DB_USER: postgres
-      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-IzaraDb2024}
       DB_SSL: "false"
       USE_POSTGRESQL: "true"
       VITE_USE_POSTGRESQL: "true"
@@ -253,12 +253,12 @@ services:
       RATE_LIMIT_MAX: "999999"
 
       # Database Configuration - Docker internal network
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-izara_phase1}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-IzaraDb2024}@postgres:5432/${POSTGRES_DB:-izara_phase1}
       DB_HOST: postgres
       DB_PORT: 5432
       DB_NAME: ${POSTGRES_DB:-izara_phase1}
       DB_USER: ${POSTGRES_USER:-postgres}
-      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-IzaraDb2024}
 
       # Jitsi Configuration - loaded from .env.docker
       JITSI_DOMAIN: ${JITSI_DOMAIN}

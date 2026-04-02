@@ -76,11 +76,21 @@ const JWT_SECRET = (() => {
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash-lite';
 
-// Recording storage — primary: PostgreSQL BYTEA (GCE VM), fallback: local filesystem
+// Recording storage — primary: filesystem (Docker volume), metadata in PostgreSQL
 const RECORDINGS_DIR = process.env.RECORDINGS_DIR || (
   process.env.NODE_ENV === 'production' ? '/tmp/recordings' : path.resolve('recordings')
 );
 try { fs.mkdirSync(RECORDINGS_DIR, { recursive: true }); } catch { /* ignore */ }
+
+/** Get MIME type from file extension */
+function getMimeType(filename) {
+  const ext = path.extname(filename).toLowerCase();
+  if (ext === '.webm') return 'audio/webm';
+  if (ext === '.mp4') return 'video/mp4';
+  if (ext === '.ogg') return 'audio/ogg';
+  if (ext === '.wav') return 'audio/wav';
+  return 'application/octet-stream';
+}
 
 // Helper: create Google Cloud Speech-to-Text client with GCP_SERVICE_ACCOUNT_KEY support
 async function createSpeechClient() {
@@ -125,11 +135,11 @@ if (process.env.DATABASE_URL) {
 
 const isProduction = process.env.NODE_ENV === 'production';
 const pool = new Pool({
-  host: dbConfig.host || process.env.DB_HOST || 'localhost',
-  port: dbConfig.port || Number.parseInt(process.env.DB_PORT || '5433', 10),
+  host: dbConfig.host || process.env.DB_HOST || 'postgres',
+  port: dbConfig.port || Number.parseInt(process.env.DB_PORT || '5432', 10),
   database: dbConfig.database || process.env.DB_NAME || 'izara_phase1',
   user: dbConfig.user || process.env.DB_USER || 'postgres',
-  password: dbConfig.password || process.env.DB_PASSWORD || '',
+  password: dbConfig.password || process.env.DB_PASSWORD || 'IzaraDb2024',
   max: isProduction ? 30 : 20,
   min: isProduction ? 5 : 2,
   idleTimeoutMillis: 30000,
@@ -3518,7 +3528,7 @@ app.post('/api/meetings/:id/auto-record', optionalAuth, async (req, res) => {
   }
 });
 
-// POST /api/meetings/:id/save-recording — Save recording to PostgreSQL BYTEA and trigger transcription
+// POST /api/meetings/:id/save-recording — Save recording to filesystem (primary) + DB metadata
 app.post('/api/meetings/:id/save-recording', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
@@ -3536,48 +3546,53 @@ app.post('/api/meetings/:id/save-recording', authenticateToken, async (req, res)
 
     const buffer = Buffer.from(audioBase64, 'base64');
     const recordingId = uuidv4();
-    const ext = mimeType.includes('webm') ? 'webm' : 'ogg';
+    let ext = 'ogg';
+    if (mimeType.includes('webm')) ext = 'webm';
+    else if (mimeType.includes('mp4')) ext = 'mp4';
     const filename = `${id}-${recordingId}.${ext}`;
-    const recordingUrl = `/api/recordings/${id}`;
+    const recordingUrl = `/api/recordings/${id}/${filename}`;
 
-    // Primary: Store recording as BYTEA in PostgreSQL (GCE VM persistent storage)
-    let storedInDb = false;
+    // Primary: Store recording on filesystem (Docker volume)
+    let storedOnDisk = false;
     try {
-      await safeQuery(
-        `UPDATE meeting_records SET 
-           recording_data = $1,
-           recording_filename = $2,
-           recording_mimetype = $3,
-           recording_size_bytes = $4,
-           recording_url = $5,
-           recording_started_at = COALESCE(recording_started_at, NOW()),
-           status = CASE WHEN status = 'in_progress' THEN 'completed' ELSE status END
-         WHERE id::text = $6 OR appointment_id = $6`,
-        [buffer, filename, mimeType, sizeBytes, recordingUrl, id]
-      );
-      storedInDb = true;
-      console.log(`[Save Recording] Stored in PostgreSQL BYTEA: ${filename} (${(sizeBytes / 1024).toFixed(1)} KB)`);
-    } catch (dbErr) {
-      console.warn('[Save Recording] PostgreSQL BYTEA write failed:', dbErr.message);
-      // Fallback: save to local filesystem
+      const meetingDir = path.join(RECORDINGS_DIR, id);
+      fs.mkdirSync(meetingDir, { recursive: true });
+      const filepath = path.join(meetingDir, filename);
+      fs.writeFileSync(filepath, buffer);
+      storedOnDisk = true;
+      console.log(`[Save Recording] Saved to filesystem: ${filepath} (${(sizeBytes / 1024).toFixed(1)} KB)`);
+    } catch (fsErr) {
+      console.error('[Save Recording] Filesystem write failed:', fsErr.message);
+      // Try flat directory as fallback
       try {
         const filepath = path.join(RECORDINGS_DIR, filename);
         fs.writeFileSync(filepath, buffer);
-        await safeQuery(
-          `UPDATE meeting_records SET 
-             recording_url = $1, recording_filename = $2, recording_mimetype = $3, recording_size_bytes = $4,
-             recording_started_at = COALESCE(recording_started_at, NOW()),
-             status = CASE WHEN status = 'in_progress' THEN 'completed' ELSE status END
-           WHERE id::text = $5 OR appointment_id = $5`,
-          [`/api/recordings/${id}/${filename}`, filename, mimeType, sizeBytes, id]
-        );
-        console.log(`[Save Recording] Fallback: saved to filesystem ${filepath}`);
-      } catch (fsErr) {
-        console.error('[Save Recording] File write also failed:', fsErr.message);
+        storedOnDisk = true;
+        console.log(`[Save Recording] Saved to flat directory: ${filepath}`);
+      } catch (error_) {
+        console.error('[Save Recording] All filesystem writes failed:', error_.message);
       }
     }
 
-    console.log(`[Save Recording] Recording saved for meeting ${id} (${(sizeBytes / 1024).toFixed(1)} KB, db=${storedInDb})`);
+    // Store metadata in PostgreSQL (no BYTEA — just metadata)
+    try {
+      await safeQuery(
+        `UPDATE meeting_records SET 
+           recording_url = $1,
+           recording_filename = $2,
+           recording_mimetype = $3,
+           recording_size_bytes = $4,
+           recording_started_at = COALESCE(recording_started_at, NOW()),
+           status = CASE WHEN status = 'in_progress' THEN 'completed' ELSE status END
+         WHERE id::text = $5 OR appointment_id = $5`,
+        [recordingUrl, filename, mimeType, sizeBytes, id]
+      );
+      console.log(`[Save Recording] DB metadata updated for meeting ${id}`);
+    } catch (dbErr) {
+      console.warn('[Save Recording] DB metadata update failed:', dbErr.message);
+    }
+
+    console.log(`[Save Recording] Recording saved for meeting ${id} (${(sizeBytes / 1024).toFixed(1)} KB, disk=${storedOnDisk})`);
 
     // Trigger post-meeting transcription with speaker diarization if requested
     let transcriptionResult = null;
@@ -3641,7 +3656,7 @@ app.post('/api/meetings/:id/save-recording', authenticateToken, async (req, res)
     // Notify participants
     io.to(id).emit('recording-saved', {
       meetingId: id, recordingId, durationMs, transcription: transcriptionResult,
-      storedIn: storedInDb ? 'postgresql' : 'filesystem',
+      storedIn: storedOnDisk ? 'filesystem' : 'failed',
       timestamp: new Date().toISOString(),
     });
 
@@ -3650,7 +3665,8 @@ app.post('/api/meetings/:id/save-recording', authenticateToken, async (req, res)
       recordingId,
       meetingId: id,
       sizeBytes,
-      storedIn: storedInDb ? 'postgresql' : 'filesystem',
+      storedIn: storedOnDisk ? 'filesystem' : 'failed',
+      recordingUrl,
       transcription: transcriptionResult,
       message: 'Recording saved successfully',
     });
@@ -3690,51 +3706,292 @@ app.post('/api/meetings/:id/stop-recording', authenticateToken, async (req, res)
 });
 
 // ============================================================================
-// RECORDING FILE PLAYBACK (Doctor-only)
+// RECORDING FILE PLAYBACK, LISTING & SHARING
 // ============================================================================
 
-// GET /api/recordings/:meetingId — Serve recording from PostgreSQL BYTEA
-app.get('/api/recordings/:meetingId', authenticateToken, async (req, res) => {
-  const { meetingId } = req.params;
+// GET /api/recordings — List all recordings (authenticated)
+app.get('/api/recordings', authenticateToken, async (req, res) => {
   try {
-    const result = await safeQuery(
-      `SELECT recording_data, recording_filename, recording_mimetype, recording_size_bytes 
-       FROM meeting_records WHERE (id::text = $1 OR appointment_id = $1) AND recording_data IS NOT NULL
-       ORDER BY created_at DESC LIMIT 1`,
-      [meetingId]
-    );
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Recording not found' });
+    const recordings = [];
+
+    // Get recordings from DB metadata
+    if (dbAvailable) {
+      try {
+        const result = await safeQuery(
+          `SELECT mr.id, mr.appointment_id, mr.recording_filename, mr.recording_mimetype, 
+                  mr.recording_size_bytes, mr.recording_url, mr.recording_started_at,
+                  mr.created_at, mr.status, mr.doctor_id, mr.patient_id
+           FROM meeting_records mr
+           WHERE mr.recording_filename IS NOT NULL
+           ORDER BY mr.created_at DESC
+           LIMIT 100`
+        );
+        for (const row of result.rows) {
+          recordings.push({
+            meetingId: row.appointment_id || row.id,
+            filename: row.recording_filename,
+            mimeType: row.recording_mimetype,
+            sizeBytes: row.recording_size_bytes,
+            url: row.recording_url,
+            recordedAt: row.recording_started_at || row.created_at,
+            status: row.status,
+            doctorId: row.doctor_id,
+            patientId: row.patient_id,
+          });
+        }
+      } catch (dbErr) {
+        console.warn('[Recordings] DB listing failed:', dbErr.message);
+      }
     }
-    const { recording_data, recording_filename, recording_mimetype } = result.rows[0];
-    res.setHeader('Content-Type', recording_mimetype || 'audio/webm');
-    res.setHeader('Content-Disposition', `inline; filename="${recording_filename || 'recording.webm'}"`);
-    res.send(recording_data);
-  } catch (err) {
-    console.error('[Recordings] DB read error:', err.message);
-    res.status(500).json({ error: 'Failed to retrieve recording' });
+
+    // Also scan filesystem for recordings not in DB
+    try {
+      const entries = fs.readdirSync(RECORDINGS_DIR, { withFileTypes: true });
+      for (const entry of entries) {
+        if (entry.isDirectory()) {
+          const meetingId = entry.name;
+          const meetingDir = path.join(RECORDINGS_DIR, meetingId);
+          const files = fs.readdirSync(meetingDir);
+          for (const file of files) {
+            if (!recordings.some(r => r.filename === file)) {
+              const stat = fs.statSync(path.join(meetingDir, file));
+              recordings.push({
+                meetingId,
+                filename: file,
+                mimeType: getMimeType(file),
+                sizeBytes: stat.size,
+                url: `/api/recordings/${meetingId}/${file}`,
+                recordedAt: stat.mtime.toISOString(),
+                source: 'filesystem',
+              });
+            }
+          }
+        } else if (entry.isFile()) {
+          const file = entry.name;
+          if (!recordings.some(r => r.filename === file)) {
+            const stat = fs.statSync(path.join(RECORDINGS_DIR, file));
+            const meetingId = file.split('-')[0] || 'unknown';
+            recordings.push({
+              meetingId,
+              filename: file,
+              mimeType: getMimeType(file),
+              sizeBytes: stat.size,
+              url: `/api/recordings/${meetingId}/${file}`,
+              recordedAt: stat.mtime.toISOString(),
+              source: 'filesystem',
+            });
+          }
+        }
+      }
+    } catch (fsErr) {
+      console.warn('[Recordings] Filesystem scan failed:', fsErr.message);
+    }
+
+    res.json({
+      recordings,
+      total: recordings.length,
+      storageDir: RECORDINGS_DIR,
+    });
+  } catch (error) {
+    console.error('[Recordings] List error:', error);
+    res.status(500).json({ error: 'Failed to list recordings' });
   }
 });
 
-// GET /api/recordings/:meetingId/:filename — Serve recording file (filesystem fallback)
+// GET /api/recordings/:meetingId — List recordings for a specific meeting
+app.get('/api/recordings/:meetingId', authenticateToken, async (req, res) => {
+  const { meetingId } = req.params;
+  try {
+    const recordings = [];
+
+    // Check meeting-specific subdirectory first
+    const meetingDir = path.join(RECORDINGS_DIR, meetingId);
+    if (fs.existsSync(meetingDir) && fs.statSync(meetingDir).isDirectory()) {
+      const files = fs.readdirSync(meetingDir);
+      for (const file of files) {
+        const stat = fs.statSync(path.join(meetingDir, file));
+        const ext = path.extname(file).toLowerCase();
+        let contentType = 'application/octet-stream';
+        if (ext === '.webm') contentType = 'audio/webm';
+        else if (ext === '.ogg') contentType = 'audio/ogg';
+        else if (ext === '.mp4') contentType = 'video/mp4';
+        recordings.push({
+          filename: file,
+          mimeType: contentType,
+          sizeBytes: stat.size,
+          url: `/api/recordings/${meetingId}/${file}`,
+          recordedAt: stat.mtime.toISOString(),
+        });
+      }
+    }
+
+    // Check flat directory for legacy recordings
+    try {
+      const allFiles = fs.readdirSync(RECORDINGS_DIR);
+      for (const file of allFiles) {
+        if (file.startsWith(meetingId) && !fs.statSync(path.join(RECORDINGS_DIR, file)).isDirectory()) {
+          const stat = fs.statSync(path.join(RECORDINGS_DIR, file));
+          recordings.push({
+            filename: file,
+            mimeType: getMimeType(file),
+            sizeBytes: stat.size,
+            url: `/api/recordings/${meetingId}/${file}`,
+            recordedAt: stat.mtime.toISOString(),
+            legacy: true,
+          });
+        }
+      }
+    } catch { /* no flat files */ }
+
+    if (recordings.length === 0) {
+      return res.status(404).json({ error: 'No recordings found for this meeting' });
+    }
+
+    res.json({ meetingId, recordings, total: recordings.length });
+  } catch (err) {
+    console.error('[Recordings] List by meeting error:', err.message);
+    res.status(500).json({ error: 'Failed to list recordings' });
+  }
+});
+
+// GET /api/recordings/:meetingId/:filename — Serve recording file from filesystem
 app.get('/api/recordings/:meetingId/:filename', authenticateToken, (req, res) => {
   const { meetingId, filename } = req.params;
   // Sanitize filename to prevent path traversal
   const safeFilename = path.basename(filename);
-  if (!safeFilename.startsWith(meetingId)) {
-    return res.status(403).json({ error: 'Access denied' });
-  }
-  const filepath = path.join(RECORDINGS_DIR, safeFilename);
+
+  // Check meeting subdirectory first, then flat directory
+  let filepath = path.join(RECORDINGS_DIR, meetingId, safeFilename);
   if (!fs.existsSync(filepath)) {
-    return res.status(404).json({ error: 'Recording not found' });
+    filepath = path.join(RECORDINGS_DIR, safeFilename);
+    if (!fs.existsSync(filepath) || !safeFilename.startsWith(meetingId)) {
+      return res.status(404).json({ error: 'Recording not found' });
+    }
   }
-  const ext = path.extname(safeFilename);
+
+  const ext = path.extname(safeFilename).toLowerCase();
   let contentType = 'application/octet-stream';
   if (ext === '.webm') contentType = 'audio/webm';
   else if (ext === '.ogg') contentType = 'audio/ogg';
+  else if (ext === '.mp4') contentType = 'video/mp4';
+  else if (ext === '.wav') contentType = 'audio/wav';
+
+  const stat = fs.statSync(filepath);
   res.setHeader('Content-Type', contentType);
+  res.setHeader('Content-Length', stat.size);
   res.setHeader('Content-Disposition', `inline; filename="${safeFilename}"`);
-  fs.createReadStream(filepath).pipe(res);
+  res.setHeader('Accept-Ranges', 'bytes');
+
+  // Support range requests for audio/video seeking
+  const range = req.headers.range;
+  if (range) {
+    const parts = range.replace(/bytes=/, '').split('-');
+    const start = Number.parseInt(parts[0], 10);
+    const end = parts[1] ? Number.parseInt(parts[1], 10) : stat.size - 1;
+    const chunkSize = end - start + 1;
+    res.status(206);
+    res.setHeader('Content-Range', `bytes ${start}-${end}/${stat.size}`);
+    res.setHeader('Content-Length', chunkSize);
+    fs.createReadStream(filepath, { start, end }).pipe(res);
+  } else {
+    fs.createReadStream(filepath).pipe(res);
+  }
+});
+
+// POST /api/recordings/:meetingId/share — Generate a time-limited share link for a recording
+app.post('/api/recordings/:meetingId/share', authenticateToken, async (req, res) => {
+  try {
+    const { meetingId } = req.params;
+    const { filename, expiresInHours = 24 } = req.body;
+
+    // Verify recording exists
+    const safeFilename = filename ? path.basename(filename) : null;
+    let recordingExists = false;
+    let targetFile = null;
+
+    if (safeFilename) {
+      const subPath = path.join(RECORDINGS_DIR, meetingId, safeFilename);
+      const flatPath = path.join(RECORDINGS_DIR, safeFilename);
+      if (fs.existsSync(subPath) || fs.existsSync(flatPath)) {
+        recordingExists = true;
+        targetFile = safeFilename;
+      }
+    } else {
+      // Find the most recent recording for this meeting
+      const meetingDir = path.join(RECORDINGS_DIR, meetingId);
+      if (fs.existsSync(meetingDir) && fs.statSync(meetingDir).isDirectory()) {
+        const files = fs.readdirSync(meetingDir).sort().reverse();
+        if (files.length > 0) { recordingExists = true; targetFile = files[0]; }
+      }
+    }
+
+    if (!recordingExists || !targetFile) {
+      return res.status(404).json({ error: 'Recording not found' });
+    }
+
+    // Generate a share token (JWT with limited scope)
+    const shareToken = jwt.sign(
+      { meetingId, filename: targetFile, type: 'recording-share' },
+      JWT_SECRET,
+      { expiresIn: `${Math.min(expiresInHours, 168)}h` } // Max 7 days
+    );
+
+    const shareUrl = `/api/recordings/shared/${shareToken}`;
+
+    res.json({
+      success: true,
+      shareUrl,
+      shareToken,
+      meetingId,
+      filename: targetFile,
+      expiresIn: `${expiresInHours} hours`,
+    });
+  } catch (error) {
+    console.error('[Recordings] Share error:', error);
+    res.status(500).json({ error: 'Failed to create share link' });
+  }
+});
+
+// GET /api/recordings/shared/:token — Access a shared recording (no auth required, token-validated)
+app.get('/api/recordings/shared/:token', (req, res) => {
+  try {
+    const { token } = req.params;
+    const decoded = jwt.verify(token, JWT_SECRET);
+
+    if (decoded.type !== 'recording-share') {
+      return res.status(403).json({ error: 'Invalid share token' });
+    }
+
+    const { meetingId, filename: tokenFilename } = decoded;
+    const safeFilename = path.basename(tokenFilename);
+
+    // Look in meeting subdirectory first, then flat
+    let filepath = path.join(RECORDINGS_DIR, meetingId, safeFilename);
+    if (!fs.existsSync(filepath)) {
+      filepath = path.join(RECORDINGS_DIR, safeFilename);
+      if (!fs.existsSync(filepath)) {
+        return res.status(404).json({ error: 'Recording no longer available' });
+      }
+    }
+
+    const ext = path.extname(safeFilename).toLowerCase();
+    let contentType = 'application/octet-stream';
+    if (ext === '.webm') contentType = 'audio/webm';
+    else if (ext === '.ogg') contentType = 'audio/ogg';
+    else if (ext === '.mp4') contentType = 'video/mp4';
+
+    const stat = fs.statSync(filepath);
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Length', stat.size);
+    res.setHeader('Content-Disposition', `inline; filename="${safeFilename}"`);
+    fs.createReadStream(filepath).pipe(res);
+  } catch (err) {
+    if (err.name === 'TokenExpiredError') {
+      return res.status(410).json({ error: 'Share link has expired' });
+    }
+    console.error('[Recordings] Shared access error:', err.message);
+    res.status(403).json({ error: 'Invalid or expired share link' });
+  }
 });
 
 // ============================================================================
@@ -4013,6 +4270,7 @@ const startServer = async () => {
 ║  Database:   ${dbAvailable ? '✅ Connected' : '⚠️ Memory-only'}                              ║
 ║  PG Notify:  ${dbAvailable ? '✅ Listening' : '⚠️ Disabled'}                              ║
 ║  Features:   Transcription, Chat, Invites, CDS             ║
+║  Recordings: Filesystem (${RECORDINGS_DIR})             ║
 ║  Transcript: Web Speech API (FREE)                         ║
 ║  End Point:  POST /api/meetings/:id/end (triggers AI)      ║
 ╚════════════════════════════════════════════════════════════╝
