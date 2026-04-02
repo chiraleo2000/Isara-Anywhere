@@ -624,6 +624,7 @@ const DoctorsManagement: React.FC = () => {
                 <h2 className="text-xl font-bold text-gray-900">Add New Doctor</h2>
                 <button
                   onClick={() => setShowAddModal(false)}
+                  title="Close"
                   className="p-2 hover:bg-gray-100 rounded-lg"
                 >
                   <XMarkIcon className="w-5 h-5" />

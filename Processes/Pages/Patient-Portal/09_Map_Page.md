@@ -1,17 +1,19 @@
 # 🗺️ Patient Portal — Map Page (Nearby Healthcare)
 
-**Route:** `/map`  
-**Component:** `src/pages/map/MapPage.tsx`  
-**Access:** 🔒 Authenticated patients  
+**Route:** `/map`
+**Component:** `src/pages/map/MapPage.tsx`
+**Access:** 🔒 Authenticated patients
 **Thai Title:** สถานพยาบาลใกล้เคียง / Nearby Healthcare
 
 ---
+
 
 ## 1. Purpose
 
 Interactive Google Maps-based healthcare facility finder showing hospitals, clinics, pharmacies, and health centers near the patient's current location.
 
 ---
+
 
 ## 2. Page Layout
 
@@ -58,6 +60,7 @@ Interactive Google Maps-based healthcare facility finder showing hospitals, clin
 
 ---
 
+
 ## 3. Facility Types
 
 | Type | Marker Color | Icon | Thai Name |
@@ -67,9 +70,12 @@ Interactive Google Maps-based healthcare facility finder showing hospitals, clin
 | Pharmacy | 🟢 Green | 💊 | ร้านขายยา |
 | Health Center | 🟣 Purple | 🏢 | ศูนย์สุขภาพ |
 
+
 ---
 
+
 ## 4. Features & Actions
+
 
 ### 4.1 Geolocation
 
@@ -81,6 +87,8 @@ Interactive Google Maps-based healthcare facility finder showing hospitals, clin
 | Accuracy indicator | Badge showing GPS quality |
 | Error handling | Banner when location access denied |
 
+
+
 ### 4.2 Map Controls
 
 | Control | Description |
@@ -91,6 +99,8 @@ Interactive Google Maps-based healthcare facility finder showing hospitals, clin
 | Auto-zoom | Map zooms to fit selected range |
 | Search | Filter facility list by name/address |
 
+
+
 ### 4.3 Map Interactions
 
 | Interaction | Result |
@@ -99,7 +109,9 @@ Interactive Google Maps-based healthcare facility finder showing hospitals, clin
 | Navigate button | Opens Google Maps directions |
 | Click facility in list | Centers map on facility |
 
+
 ---
+
 
 ## 5. Facility Information
 
@@ -115,9 +127,12 @@ Each facility displays:
 | Rating | Star rating (if available) |
 | Navigate | Google Maps directions link |
 
+
 ---
 
+
 ## 6. Workflows
+
 
 ### Workflow 1: Find Nearby Facilities
 
@@ -131,6 +146,7 @@ Step 6: Range circle drawn at default 5km radius
 Step 7: Facility list populated sorted by distance
 ```
 
+
 ### Workflow 2: Filter by Type
 
 ```text
@@ -139,6 +155,7 @@ Step 2: Only hospital markers remain on map
 Step 3: Facility list filters to show only hospitals
 Step 4: Click again to deselect / show all
 ```
+
 
 ### Workflow 3: Change Range
 
@@ -150,6 +167,7 @@ Step 4: More/fewer facilities shown based on range
 Step 5: Facility list updates
 ```
 
+
 ### Workflow 4: Navigate to Facility
 
 ```text
@@ -158,6 +176,7 @@ Step 2: Info window opens with details
 Step 3: Click "นำทาง" (Navigate) button
 Step 4: Google Maps opens with directions from current location
 ```
+
 
 ### Workflow 5: Search Facilities
 
@@ -169,6 +188,7 @@ Step 3: Matching facilities highlighted
 
 ---
 
+
 ## 7. MiniMapWidget (Sidebar Component)
 
 ```text
@@ -179,11 +199,15 @@ Step 3: Matching facilities highlighted
 └─────────────────────┘
 ```
 
+
 - Compact widget in sidebar showing 4 facility type icons
+
 - Gradient background, dark mode support
+
 - Clicking navigates to full Map page (`/map`)
 
 ---
+
 
 ## 8. Technical Details
 
@@ -196,7 +220,9 @@ Step 3: Matching facilities highlighted
 | Distance Calculation | Haversine formula |
 | Marker Clustering | For dense areas |
 
+
 ---
+
 
 ## 9. Connections to Other Pages
 
@@ -205,14 +231,59 @@ Step 3: Matching facilities highlighted
 | Sidebar MiniMapWidget | → | Navigates to full Map page |
 | Dashboard | → | Via sidebar navigation |
 
+
 ---
+
 
 ## 10. AI Agent Improvement Opportunities
 
+
 - **Smart recommendations**: AI suggest nearest facility based on patient's condition
+
 - **Wait time predictions**: AI estimate current wait times at facilities
+
 - **Specialty matching**: AI find facilities with specific specialists nearby
+
 - **Emergency routing**: AI optimize route to nearest ER
+
 - **Facility reviews**: AI summarize patient reviews/ratings
+
 - **Operating hours**: AI-enhanced real-time open/closed status
+
 - **Insurance matching**: AI filter by patient's insurance coverage
+
+---
+
+
+## PostgreSQL Database Integration
+
+
+### Tables Used
+| Table | Operation | Description |
+| ----- | --------- | ----------- |
+| *(none)* | — | No database tables used — Google Maps integration only |
+
+
+
+### API Endpoints
+| Endpoint | Method | DB Operation |
+| -------- | ------ | ------------ |
+| *(none)* | — | Client-side Google Maps API calls only |
+
+
+
+### Note
+
+- This page uses **Google Maps JavaScript API** exclusively
+
+- No backend database queries required
+
+
+### Deployment
+
+- **Local Docker:** izara-postgres container (localhost:5433 external / 5432 internal) → database: izara_phase1
+
+- **Production:** GCE VM at 35.240.157.230:5432 → database: izara_phase1 (asia-southeast1)
+
+- **Service deployed via:** Cloud Run (gen2, CPU Boost) + Cloud Build CI/CD
+

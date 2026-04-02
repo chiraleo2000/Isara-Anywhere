@@ -375,3 +375,31 @@ Patient Delivery
 - **Instruction personalization**: AI tailor instruction sheets to patient literacy level
 - **Multi-section summaries**: AI handle meetings > 30 min with sectioned SOAP notes
 - **Confidence visualization**: AI show per-field confidence scores for pre-filled content
+
+---
+
+## 10. PostgreSQL Database Integration
+
+### Tables Used
+| Table | Operation | Description |
+| ----- | --------- | ----------- |
+| emr | INSERT/UPDATE | SOAP notes stored as JSONB (subjective, objective, assessment, plan) |
+| ai_validations | INSERT/SELECT | AI validation results for EMR content |
+| prescriptions | INSERT | Prescriptions linked to EMR |
+| lab_orders | INSERT | Lab orders linked to EMR |
+
+### API Endpoints
+| Endpoint | Method | DB Operation |
+| -------- | ------ | ------------ |
+| POST /api/emr | POST | INSERT INTO emr (SOAP JSONB) |
+| PUT /api/emr/:id | PUT | UPDATE emr SET soap_data WHERE id |
+| POST /api/ai/validate | POST | AI Gemini validates EMR → INSERT ai_validations |
+
+### AI Integration
+- **Gemini 2.5 Flash Lite:** Generates SOAP draft from meeting transcript
+- **Man-in-the-Loop:** Doctor reviews and approves AI-generated content before saving
+
+### Deployment
+- **Local Docker:** izara-postgres container (localhost:5433 external / 5432 internal) → database: izara_phase1
+- **Production:** GCE VM at 35.240.157.230:5432 → database: izara_phase1 (asia-southeast1)
+- **Service deployed via:** Cloud Run (gen2, CPU Boost) + Cloud Build CI/CD

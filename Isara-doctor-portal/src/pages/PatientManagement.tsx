@@ -95,6 +95,7 @@ const ConsentDialog: React.FC<ConsentDialogProps> = ({
             <h2 className="text-xl font-bold text-gray-900">PDPA Consent Status</h2>
             <button
               onClick={onClose}
+              title="Close"
               className="text-gray-400 hover:text-gray-600"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -265,7 +266,7 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, doctor, onClick, onS
 // ============================================================================
 
 // i18n labels for Patient Management page
-const labels = {
+const _labels = {
   pageTitle: { en: 'Patient Management', th: 'การจัดการผู้ป่วย' },
   searchPatients: { en: 'Search patients...', th: 'ค้นหาผู้ป่วย...' },
   filters: { en: 'Filters', th: 'ตัวกรอง' },

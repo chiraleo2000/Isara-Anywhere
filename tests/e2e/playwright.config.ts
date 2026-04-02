@@ -91,6 +91,7 @@ const LOCAL_SPECS = [
   '**/24-registration-approval-e2e.spec.ts',
   '**/25-register-login-doctor.spec.ts',
   '**/26-register-login-patient.spec.ts',
+  '**/99-unified-single-login.spec.ts',
 ];
 
 // Browser-role mapping is handled INSIDE tests via getBrowserForRole():

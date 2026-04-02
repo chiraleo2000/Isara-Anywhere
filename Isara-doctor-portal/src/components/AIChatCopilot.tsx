@@ -160,6 +160,7 @@ const AIChatCopilot: React.FC<AIChatCopilotProps> = ({
           <button 
             onClick={onToggleMinimize}
             className="p-1 hover:bg-white/20 rounded transition-colors"
+            aria-label="ย่อ"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -290,9 +291,9 @@ const AIChatCopilot: React.FC<AIChatCopilotProps> = ({
         {isLoading && (
           <div className="flex items-center gap-2 text-gray-500">
             <div className="flex gap-1">
-              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:0ms]"></div>
+              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:150ms]"></div>
+              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:300ms]"></div>
             </div>
             <span className="text-sm">AI is thinking...</span>
           </div>
@@ -328,6 +329,7 @@ const AIChatCopilot: React.FC<AIChatCopilotProps> = ({
             onClick={handleSendMessage}
             disabled={!inputValue.trim() || isLoading || !isInitialized}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            aria-label="ส่ง"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />

@@ -8,6 +8,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSettings } from '../../contexts/SettingsContext';
+import { useRealtimeSync } from '../../lib/useRealtimeSync';
 
 // In production, use relative URLs (proxied by nginx)
 // In development, use relative URLs (proxied by vite) 
@@ -406,7 +407,7 @@ function ArticleViewModal({ article, isDark, language, onClose }: Readonly<{
               {getCategoryDisplayName(catInfo, language)}
             </span>
           </div>
-          <button onClick={onClose} className={`p-2 rounded-full ${closeBtnCls}`}>
+          <button onClick={onClose} className={`p-2 rounded-full ${closeBtnCls}`} title="Close">
             <XMarkIcon className="w-5 h-5" />
           </button>
         </div>
@@ -487,6 +488,9 @@ const MedicalContentLibrary: React.FC = () => {
   useEffect(() => {
     fetchContent();
   }, [fetchContent]);
+
+  // Real-time sync: auto-refresh library when content is published
+  useRealtimeSync({ onContentPublished: fetchContent });
 
   const filteredContent = useMemo(
     () => filterContent(content, searchTerm, selectedCategory, selectedType),
@@ -583,6 +587,7 @@ const MedicalContentLibrary: React.FC = () => {
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
             className={`px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent ${selectCls}`}
+            title="Category filter"
           >
             <option value="all">{LABELS.allCategories[lang]}</option>
             {CATEGORIES.map((cat) => (
@@ -597,6 +602,7 @@ const MedicalContentLibrary: React.FC = () => {
             value={selectedType}
             onChange={(e) => setSelectedType(e.target.value)}
             className={`px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent ${selectCls}`}
+            title="Content type filter"
           >
             {CONTENT_TYPES.map((type) => (
               <option key={type.value} value={type.value}>

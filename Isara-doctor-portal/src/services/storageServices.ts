@@ -665,6 +665,8 @@ export class AppointmentStorageService {
 
 // ============================================================================
 // MOCK DATA SERVICE - GCS ONLY
+// @deprecated Data should come from PostgreSQL API endpoints, not GCS buckets.
+// This service mixes stale GCS data with live PostgreSQL data.
 // ============================================================================
 export class MockDataService {
   private static instance: MockDataService;
@@ -684,7 +686,9 @@ export class MockDataService {
 
   private constructor() { }
 
+  /** @deprecated Use PostgreSQL API instead. */
   static getInstance(): MockDataService {
+    console.warn('⚠️ MockDataService.getInstance() is deprecated — data should come from PostgreSQL API endpoints');
     if (!MockDataService.instance) {
       MockDataService.instance = new MockDataService();
     }
@@ -699,8 +703,10 @@ export class MockDataService {
 
   /**
    * Get doctors from GCS (izara-doctors-data bucket)
+   * @deprecated Use PostgreSQL API /api/consultants instead
    */
   async getDoctors(): Promise<Doctor[]> {
+    console.warn('⚠️ MockDataService.getDoctors() is deprecated — use /api/consultants endpoint');
     if (this.cache.doctors && this.isCacheValid('doctors')) {
       return this.cache.doctors;
     }
@@ -721,8 +727,10 @@ export class MockDataService {
 
   /**
    * Get appointments from GCS (izara-appointments bucket)
+   * @deprecated Use PostgreSQL API /api/appointments instead
    */
   async getAppointments(): Promise<Appointment[]> {
+    console.warn('⚠️ MockDataService.getAppointments() is deprecated — use /api/appointments endpoint');
     if (this.cache.appointments && this.isCacheValid('appointments')) {
       return this.parseAppointments(this.cache.appointments);
     }

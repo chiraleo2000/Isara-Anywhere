@@ -1,10 +1,22 @@
 {
   "name": "isara-anywhere",
-  "version": "1.5.11",
+  "version": "1.6.0",
   "description": "Izara Telemedicine Platform - Patient and Doctor Portals",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "cd tests/unit && npm test",
+    "test:unit": "cd tests/unit && npm test",
+    "test:unit:watch": "cd tests/unit && npm run test:watch",
+    "test:unit:coverage": "cd tests/unit && npm run test:coverage",
+    "test:unit:auth": "cd tests/unit && npm run test:auth",
+    "test:unit:appointments": "cd tests/unit && npm run test:appointments",
+    "test:unit:clinical": "cd tests/unit && npm run test:clinical",
+    "test:unit:meeting": "cd tests/unit && npm run test:meeting",
+    "test:unit:ai": "cd tests/unit && npm run test:ai",
+    "test:unit:security": "cd tests/unit && npm run test:security",
+    "test:unit:api": "cd tests/unit && npm run test:api",
+    "test:unit:notifications": "cd tests/unit && npm run test:notifications",
+    "test:e2e": "npx playwright test",
     "seed": "node scripts/seedAllData.cjs",
     "seed:all": "node scripts/seedAllData.cjs"
   },
@@ -20,6 +32,7 @@
     "socket.io-client": "^4.8.3"
   },
   "devDependencies": {
-    "@playwright/test": "^1.58.2"
+    "@playwright/test": "^1.58.2",
+    "@types/node": "^25.5.0"
   }
 }

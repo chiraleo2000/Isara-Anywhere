@@ -715,7 +715,7 @@ const MeetingRoom: React.FC = () => {
       {error && (
         <div className="bg-red-900/50 border-b border-red-700 px-4 py-2 text-sm text-red-300 flex justify-between">
           <span>{error}</span>
-          <button onClick={() => setError(null)} className="text-red-400 hover:text-white">✕</button>
+          <button onClick={() => setError(null)} className="text-red-400 hover:text-white" aria-label="ปิดข้อผิดพลาด" title="ปิด">✕</button>
         </div>
       )}
 
@@ -771,7 +771,7 @@ const MeetingRoom: React.FC = () => {
                   summary: '🤖 AI Summary',
                 }[showPanel]}
               </h3>
-              <button onClick={() => setShowPanel(null)} className="text-gray-400 hover:text-white">✕</button>
+              <button onClick={() => setShowPanel(null)} className="text-gray-400 hover:text-white" aria-label="ปิด" title="ปิด">✕</button>
             </div>
 
             {/* Panel Content */}

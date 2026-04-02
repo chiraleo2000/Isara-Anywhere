@@ -1,10 +1,11 @@
 # Izara Telemedicine - สถาปัตยกรรมข้อมูลและเอกสาร Sync
 
-**เวอร์ชัน:** 3.1.0  
-**อัปเดตล่าสุด:** 26 มกราคม 2569  
+**เวอร์ชัน:** 3.1.0
+**อัปเดตล่าสุด:** 26 มกราคม 2569
 **สถานะ:** ✅ PostgreSQL ใช้งานเสร็จสมบูรณ์ + Meeting Server
 
 ---
+
 
 ## 📋 ภาพรวม
 
@@ -12,7 +13,9 @@ Izara Telemedicine ใช้ PostgreSQL เป็นฐานข้อมูล�
 
 ---
 
+
 ## 🗄️ การตั้งค่าฐานข้อมูล
+
 
 ### บริการ Docker
 
@@ -24,6 +27,8 @@ Izara Telemedicine ใช้ PostgreSQL เป็นฐานข้อมูล�
 | Meeting Server | izara-meeting-server | 3020 | Jitsi transcription + AI summary |
 | pgAdmin | izara-pgadmin | 5050 | จัดการฐานข้อมูล |
 
+
+
 ### รายละเอียดการเชื่อมต่อ
 
 ```text
@@ -34,11 +39,14 @@ Password: YOUR_TEST_PASSWORD
 Database: izara_phase1
 ```
 
+
 ### Extension ฐานข้อมูล
+
 
 - **pgvector** - สำหรับเก็บ AI embedding และค้นหาความคล้ายคลึง
 
 ---
+
 
 ## 📊 สถาปัตยกรรมข้อมูล
 
@@ -100,7 +108,9 @@ Database: izara_phase1
 
 ---
 
+
 ## 📋 โครงสร้างตาราง
+
 
 ### 1. ตาราง users
 
@@ -117,28 +127,29 @@ CREATE TABLE users (
     date_of_birth DATE,
     gender VARCHAR(20),
     national_id VARCHAR(20),
-    
+
     -- ฟิลด์เฉพาะแพทย์
     doctor_id VARCHAR(50),
     medical_license_number VARCHAR(50),
     specialty VARCHAR(100),
     hospital_name VARCHAR(255),
-    
+
     -- ฟิลด์เฉพาะผู้ป่วย
     patient_id VARCHAR(50),
-    
+
     -- สถานะ
     is_active BOOLEAN DEFAULT true,
     is_verified BOOLEAN DEFAULT false,
     is_approved BOOLEAN DEFAULT false,
     approval_status VARCHAR(20) DEFAULT 'pending',
-    
+
     -- Timestamps
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     last_login TIMESTAMP WITH TIME ZONE
 );
 ```
+
 
 ### 2. ตาราง appointments
 
@@ -147,28 +158,29 @@ CREATE TABLE appointments (
     id VARCHAR(50) PRIMARY KEY,
     patient_id VARCHAR(50) REFERENCES users(id),
     doctor_id VARCHAR(50) REFERENCES users(id),
-    
+
     -- ข้อมูลนัดหมาย
     scheduled_date DATE NOT NULL,
     scheduled_time TIME NOT NULL,
     duration_minutes INTEGER DEFAULT 30,
     appointment_type VARCHAR(50) NOT NULL,
-    
+
     -- สถานะ
     status VARCHAR(20) DEFAULT 'pending',
     chief_complaint TEXT,
     notes TEXT,
-    
+
     -- ข้อมูลประชุม
     meeting_link TEXT,
     meeting_room_id VARCHAR(100),
-    
+
     -- Timestamps
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     confirmed_at TIMESTAMP WITH TIME ZONE,
     completed_at TIMESTAMP WITH TIME ZONE
 );
 ```
+
 
 ### 3. ตาราง emr
 
@@ -178,28 +190,29 @@ CREATE TABLE emr (
     appointment_id VARCHAR(50) REFERENCES appointments(id),
     patient_id VARCHAR(50) REFERENCES users(id),
     doctor_id VARCHAR(50) REFERENCES users(id),
-    
+
     -- รูปแบบ SOAP
     subjective TEXT,      -- S: อาการสำคัญ, ประวัติปัจจุบัน
     objective TEXT,       -- O: การตรวจร่างกาย, สัญญาณชีพ
     assessment TEXT,      -- A: การวินิจฉัย
     plan TEXT,            -- P: แผนการรักษา
-    
+
     -- สรุป AI
     ai_summary TEXT,
     ai_validated BOOLEAN DEFAULT false,
     validated_by VARCHAR(50),
     validated_at TIMESTAMP WITH TIME ZONE,
-    
+
     -- สถานะ
     status VARCHAR(20) DEFAULT 'draft',
     signed_at TIMESTAMP WITH TIME ZONE,
-    
+
     -- Timestamps
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 ```
+
 
 ### 4. ตาราง meeting_transcripts
 
@@ -208,7 +221,7 @@ CREATE TABLE meeting_transcripts (
     id VARCHAR(50) PRIMARY KEY,
     appointment_id VARCHAR(50) REFERENCES appointments(id),
     meeting_room_id VARCHAR(100),
-    
+
     -- เนื้อหา Transcript
     segment_number INTEGER,
     start_time TIMESTAMP WITH TIME ZONE,
@@ -217,11 +230,12 @@ CREATE TABLE meeting_transcripts (
     text TEXT NOT NULL,
     language VARCHAR(10) DEFAULT 'th',
     confidence DECIMAL(3,2),
-    
+
     -- Timestamps
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 ```
+
 
 ### 5. ตาราง knowledge_base (สำหรับ RAG)
 
@@ -232,14 +246,14 @@ CREATE TABLE knowledge_base (
     content TEXT NOT NULL,
     category VARCHAR(100),
     source VARCHAR(255),
-    
+
     -- Vector embedding (pgvector)
     embedding vector(768),
-    
+
     -- Metadata
     tags TEXT[],
     language VARCHAR(10) DEFAULT 'th',
-    
+
     -- Timestamps
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
@@ -251,7 +265,9 @@ CREATE INDEX ON knowledge_base USING ivfflat (embedding vector_cosine_ops);
 
 ---
 
+
 ## 🔄 การไหลของข้อมูล
+
 
 ### 1. ขั้นตอนการลงทะเบียน
 
@@ -281,6 +297,7 @@ CREATE INDEX ON knowledge_base USING ivfflat (embedding vector_cosine_ops);
 └─────────────────────────────────────────────────────────────┘
 ```
 
+
 ### 2. ขั้นตอนการนัดหมาย
 
 ```text
@@ -309,6 +326,7 @@ CREATE INDEX ON knowledge_base USING ivfflat (embedding vector_cosine_ops);
 │                                                              │
 └─────────────────────────────────────────────────────────────┘
 ```
+
 
 ### 3. ขั้นตอนการประชุมและ AI
 
@@ -359,7 +377,9 @@ CREATE INDEX ON knowledge_base USING ivfflat (embedding vector_cosine_ops);
 
 ---
 
+
 ## 🔍 การค้นหา AI (RAG)
+
 
 ### ขั้นตอนการค้นหาความรู้
 
@@ -390,7 +410,9 @@ CREATE INDEX ON knowledge_base USING ivfflat (embedding vector_cosine_ops);
 
 ---
 
+
 ## 🛡️ ความปลอดภัยข้อมูล
+
 
 ### การเข้ารหัส
 
@@ -400,6 +422,8 @@ CREATE INDEX ON knowledge_base USING ivfflat (embedding vector_cosine_ops);
 | Session Token | Crypto random hex |
 | การสื่อสาร | HTTPS/TLS |
 
+
+
 ### การควบคุมการเข้าถึง
 
 | บทบาท | ข้อมูลที่เข้าถึงได้ |
@@ -407,6 +431,8 @@ CREATE INDEX ON knowledge_base USING ivfflat (embedding vector_cosine_ops);
 | ผู้ป่วย | ข้อมูลของตนเองเท่านั้น |
 | แพทย์ | ผู้ป่วยที่ได้รับมอบหมาย |
 | ผู้ดูแลระบบ | ข้อมูลทั้งหมด |
+
+
 
 ### การบันทึกตรวจสอบ
 
@@ -427,17 +453,22 @@ CREATE TABLE audit_logs (
 
 ---
 
+
 ## 📁 การ Backup และ Recovery
+
 
 ### Backup อัตโนมัติ
 
 ```bash
+
 # Backup รายวัน
 pg_dump -h localhost -p 5433 -U postgres izara_phase1 > backup_$(date +%Y%m%d).sql
+
 
 # Restore
 psql -h localhost -p 5433 -U postgres izara_phase1 < backup_20260204.sql
 ```
+
 
 ### Docker Volume
 
@@ -449,6 +480,7 @@ volumes:
 
 ---
 
+
 ## สรุป
 
 | ส่วนประกอบ | เทคโนโลยี | วัตถุประสงค์ |
@@ -457,6 +489,7 @@ volumes:
 | Vector Search | pgvector | AI knowledge search |
 | Session | PostgreSQL sessions | การยืนยันตัวตน |
 | Backup | pg_dump | การสำรองข้อมูล |
+
 
 ---
 

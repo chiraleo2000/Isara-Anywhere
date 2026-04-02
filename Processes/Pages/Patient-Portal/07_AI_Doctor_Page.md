@@ -1,8 +1,8 @@
 # 🤖 Patient Portal — AI Doctor Page
 
-**Route:** `/ai-doctor`  
-**Component:** `src/pages/health/AIDoctorPage.tsx`  
-**Access:** 🔒 Authenticated patients  
+**Route:** `/ai-doctor`
+**Component:** `src/pages/health/AIDoctorPage.tsx`
+**Access:** 🔒 Authenticated patients
 **Thai Title:** AI สุขภาพ / AI Health Assistant
 
 ---
@@ -164,9 +164,44 @@ Responses typically include:
 ## 8. AI Agent Improvement Opportunities
 
 - **Context-aware**: AI reads patient's PHR for personalized advice
+
 - **Image analysis**: AI analyze skin conditions, rashes from photos
+
 - **Medication queries**: AI check specific drug interactions for patient's medications
+
 - **Follow-up prompts**: AI proactively ask clarifying questions
+
 - **Escalation**: AI recommend booking appointment when symptoms are concerning
+
 - **Multilingual**: AI handle conversations in multiple languages simultaneously
+
 - **Voice input**: AI accept voice questions with speech-to-text
+
+---
+
+## 9. PostgreSQL Database Integration
+
+### Tables Used
+
+| Table | Operation | Description |
+| ----- | --------- | ----------- |
+| ai_chat_history | SELECT/INSERT | Patient AI health chat conversation logs |
+| knowledge_base | SELECT | RAG retrieval for medical knowledge responses |
+
+### API Endpoints
+
+| Endpoint | Method | DB Operation |
+| -------- | ------ | ------------ |
+| POST /api/ai/health-chat | POST | SELECT knowledge_base (RAG); INSERT ai_chat_history |
+
+### AI Engine
+
+- **Model:** Gemini 2.5 Flash Lite (Google AI)
+
+### Deployment
+
+- **Local Docker:** izara-postgres container (localhost:5433 external / 5432 internal) → database: izara_phase1
+
+- **Production:** GCE VM at 35.240.157.230:5432 → database: izara_phase1 (asia-southeast1)
+
+- **Service deployed via:** Cloud Run (gen2, CPU Boost) + Cloud Build CI/CD

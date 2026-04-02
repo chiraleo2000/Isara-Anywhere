@@ -139,6 +139,11 @@ const AIClinicalAssistant: React.FC<AIClinicalAssistantProps> = ({
   // Pre-consultation summary
   const [preSummary, setPreSummary] = useState<PreConsultationSummary | null>(null);
   const [isSummaryLoading, setIsSummaryLoading] = useState(false);
+  // Structured AI pre-consultation (from meeting server)
+  const [aiStructured, setAiStructured] = useState<{
+    highlights?: string[]; currentSymptoms?: string; recommendedQuestions?: string[];
+    risks?: { risk: string; severity: string }[]; medications?: string[]; allergies?: string[];
+  } | null>(null);
   
   // Document analysis
   const [documents, setDocuments] = useState<AIDocumentAnalysis[]>([]);
@@ -171,14 +176,26 @@ const AIClinicalAssistant: React.FC<AIClinicalAssistantProps> = ({
 
   // Load pre-consultation summary when patient changes
   useEffect(() => {
+    const MEETING_SERVER = import.meta.env.VITE_MEETING_SERVER_URL || 'http://localhost:3020';
     const loadPreSummary = async () => {
       if (!patientId) return;
       
       setIsSummaryLoading(true);
       try {
+        // Fetch from postgresService (existing rich display)
         const result = await postgresService.getPreConsultationSummary(patientId, appointmentId);
         if (result.success && result.data) {
           setPreSummary(result.data);
+        }
+        // Also fetch structured AI from meeting server
+        const aiRes = await fetch(`${MEETING_SERVER}/api/ai/pre-consultation-summary`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ patientId, appointmentId }),
+        });
+        const aiData = await aiRes.json();
+        if (aiData.success && aiData.structured) {
+          setAiStructured(aiData.structured);
         }
       } catch (err) {
         console.error('Failed to load pre-consultation summary:', err);
@@ -448,6 +465,7 @@ const AIClinicalAssistant: React.FC<AIClinicalAssistantProps> = ({
                   onClick={handleSendMessage}
                   disabled={isLoading || !inputValue.trim()}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  aria-label="ส่งข้อความ"
                 >
                   <SendIcon />
                 </button>
@@ -564,7 +582,45 @@ const AIClinicalAssistant: React.FC<AIClinicalAssistantProps> = ({
                 )}
               </div>
             )}
-            {!isSummaryLoading && !preSummary && (
+
+            {/* AI Structured Pre-Consultation (from meeting server) */}
+            {!isSummaryLoading && aiStructured && (
+              <div className={`space-y-3 ${preSummary ? 'mt-4 pt-4 border-t border-gray-200' : ''}`}>
+                <h3 className="font-semibold text-indigo-800">🤖 AI Pre-consultation Analysis</h3>
+                {aiStructured.currentSymptoms && (
+                  <div className="bg-orange-50 rounded-lg p-3">
+                    <span className="font-semibold text-sm text-orange-800">อาการปัจจุบัน:</span>
+                    <p className="text-sm mt-1">{aiStructured.currentSymptoms}</p>
+                  </div>
+                )}
+                {aiStructured.highlights && aiStructured.highlights.length > 0 && (
+                  <div className="bg-blue-50 rounded-lg p-3">
+                    <span className="font-semibold text-sm text-blue-800">ประเด็นสำคัญ:</span>
+                    <ul className="list-disc list-inside text-sm mt-1">{aiStructured.highlights.map((h) => <li key={h}>{h}</li>)}</ul>
+                  </div>
+                )}
+                {aiStructured.risks && aiStructured.risks.length > 0 && (
+                  <div className="bg-red-50 rounded-lg p-3">
+                    <span className="font-semibold text-sm text-red-800">🚩 ความเสี่ยง:</span>
+                    <ul className="list-disc list-inside text-sm mt-1 text-red-700">
+                      {aiStructured.risks.map((r) => (
+                        <li key={r.risk}>{r.risk} <span className={`text-xs px-1 rounded ${r.severity === 'high' ? 'bg-red-200' : 'bg-yellow-200'}`}>{r.severity}</span></li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {aiStructured.recommendedQuestions && aiStructured.recommendedQuestions.length > 0 && (
+                  <div className="bg-indigo-50 rounded-lg p-3">
+                    <span className="font-semibold text-sm text-indigo-800">💡 คำถามแนะนำ:</span>
+                    <ol className="list-decimal list-inside text-sm mt-1 text-indigo-700">
+                      {aiStructured.recommendedQuestions.map((q) => <li key={q.slice(0, 30)}>{q}</li>)}
+                    </ol>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {!isSummaryLoading && !preSummary && !aiStructured && (
               <div className="text-center text-gray-500 py-8">
                 <p>ไม่พบข้อมูลผู้ป่วย</p>
                 <p className="text-sm">เลือกผู้ป่วยเพื่อดูสรุปก่อนพบแพทย์</p>
@@ -584,6 +640,7 @@ const AIClinicalAssistant: React.FC<AIClinicalAssistantProps> = ({
                 accept=".pdf,.jpg,.jpeg,.png"
                 onChange={handleDocumentUpload}
                 className="hidden"
+                aria-label="อัปโหลดเอกสาร"
               />
               <button
                 onClick={() => fileInputRef.current?.click()}

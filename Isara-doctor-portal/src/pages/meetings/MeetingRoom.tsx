@@ -28,6 +28,41 @@ function getAuthHeaders(): Record<string, string> {
   return headers;
 }
 
+/** Resolve room name from appointment API (fallback when meeting server has no record) */
+async function resolveRoomFromAppointment(appointmentId: string | undefined, fallback: string): Promise<string> {
+  try {
+    const aptRes = await fetch(`/api/appointments/${appointmentId}`, { headers: getAuthHeaders() });
+    if (!aptRes.ok) return fallback;
+    const aptData = await aptRes.json();
+    const aptRoomName = aptData.jitsiRoomName || aptData.jitsi_room_name;
+    if (aptRoomName) return aptRoomName;
+    const meetUrl = aptData.doctorMeetingUrl || aptData.doctor_meeting_url;
+    if (meetUrl) {
+      try {
+        const parts = new URL(meetUrl).pathname.split('/').filter(Boolean);
+        const extracted = parts.length > 0 ? parts[parts.length - 1] : undefined;
+        if (extracted) return extracted;
+      } catch { /* URL parse failed */ }
+    }
+  } catch { /* API unavailable */ }
+  return fallback;
+}
+
+/** Create meeting record on meeting server so patient can resolve the same room */
+async function createMeetingRecord(appointmentId: string | undefined, user: any, roomName: string): Promise<Record<string, unknown> | null> {
+  try {
+    const res = await fetch(`${MEETING_SERVER_URL}/api/meetings/create`, {
+      method: 'POST', headers: getAuthHeaders(),
+      body: JSON.stringify({ appointmentId, doctorId: user?.id, doctorName: user?.displayName || user?.name || 'Doctor', roomName }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      return data.meeting || null;
+    }
+  } catch { /* best effort */ }
+  return null;
+}
+
 // ============================================================================
 // TYPES
 // ============================================================================
@@ -450,6 +485,7 @@ const MeetingRoom: React.FC = () => { // NOSONAR
       let roomName = `izara-${appointmentId?.substring(0, 12) || 'quick'}-${Date.now().toString(36)}`;
       let meetingFound = false;
 
+      // 1. Try meeting server for existing meeting record
       try {
         const res = await fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}`, {
           headers: getAuthHeaders(),
@@ -463,32 +499,18 @@ const MeetingRoom: React.FC = () => { // NOSONAR
           }
         }
       } catch {
-        console.log('[MeetingRoom] Meeting server unavailable, using generated room name');
+        console.log('[MeetingRoom] Meeting server unavailable, trying appointment API');
       }
 
-      // If no meeting record exists, create one so the patient can resolve the same room
+      // 2. Fallback: fetch room name from appointment record (set during confirmation)
       if (!meetingFound) {
-        try {
-          const createRes = await fetch(`${MEETING_SERVER_URL}/api/meetings/create`, {
-            method: 'POST',
-            headers: getAuthHeaders(),
-            body: JSON.stringify({
-              appointmentId,
-              doctorId: user?.id,
-              doctorName: user?.displayName || user?.name || 'Doctor',
-              roomName,
-            }),
-          });
-          if (createRes.ok) {
-            const createData = await createRes.json();
-            if (createData.meeting) {
-              meetingInfoRef.current = createData.meeting;
-              roomName = createData.roomName || roomName;
-            }
-          }
-        } catch {
-          console.warn('[MeetingRoom] Could not create meeting record, patient may need to retry');
-        }
+        roomName = await resolveRoomFromAppointment(appointmentId, roomName);
+      }
+
+      // 3. Create meeting record on meeting server so patient can resolve the same room
+      if (!meetingFound) {
+        const created = await createMeetingRecord(appointmentId, user, roomName);
+        if (created) meetingInfoRef.current = created;
       }
 
       roomNameRef.current = roomName;
@@ -549,6 +571,7 @@ const MeetingRoom: React.FC = () => { // NOSONAR
             defaultLanguage: 'th',
             requireDisplayName: true,
             enableLobbyChat: true,
+            lobbyModeEnabled: true,
             fileRecordingsEnabled: false,
             'localRecording.enabled': true,
             toolbarButtons: [
@@ -821,14 +844,31 @@ const MeetingRoom: React.FC = () => { // NOSONAR
 
   const inviteGuest = useCallback(async () => {
     if (!guestName) return;
-    const guestUrl = `${globalThis.location.origin}/guest-join/${appointmentId}`;
     try {
-      await navigator.clipboard.writeText(guestUrl);
-      setGuestLinkCopied(true);
-      setGuestName('');
-      setTimeout(() => setGuestLinkCopied(false), 3000);
+      // Generate JWT-based secure guest invite
+      const res = await fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/guest-invite`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ guestName: guestName.trim(), guestType: 'family' }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const guestUrl = data.guestLink || `${globalThis.location.origin}/guest/join/${encodeURIComponent(data.token)}`;
+        await navigator.clipboard.writeText(guestUrl);
+        setGuestLinkCopied(true);
+        setGuestName('');
+        setTimeout(() => setGuestLinkCopied(false), 3000);
+      } else {
+        // Fallback to simple link
+        const guestUrl = `${globalThis.location.origin}/guest-join/${appointmentId}`;
+        await navigator.clipboard.writeText(guestUrl);
+        setGuestLinkCopied(true);
+        setGuestName('');
+        setTimeout(() => setGuestLinkCopied(false), 3000);
+      }
     } catch {
       // Fallback: prompt with URL
+      const guestUrl = `${globalThis.location.origin}/guest-join/${appointmentId}`;
       globalThis.prompt('Copy this link to send to guest:', guestUrl);
       setGuestName('');
     }
@@ -937,6 +977,11 @@ const MeetingRoom: React.FC = () => { // NOSONAR
     // Stop duration timer
     if (durationTimerRef.current) {
       clearInterval(durationTimerRef.current);
+    }
+
+    // Hang up Jitsi for all participants (doctor as host)
+    if (jitsiApiRef.current) {
+      try { jitsiApiRef.current.executeCommand('hangup'); } catch { /* ignore */ }
     }
 
     setMeetingState(prev => ({ ...prev, status: 'ended' }));
@@ -1051,6 +1096,31 @@ const MeetingRoom: React.FC = () => { // NOSONAR
 
     setLobbyParticipants([]);
   }, [lobbyParticipants, admitFromLobby, appointmentId, user]);
+
+  // Lobby polling fallback (in case socket events are missed)
+  useEffect(() => {
+    if (meetingState.status !== 'ready' && meetingState.status !== 'in_progress') return;
+    const mergeLobby = (prev: LobbyParticipant[], waiting: LobbyParticipant[]) => {
+      const existingIds = new Set(prev.map(p => p.participantId));
+      const newOnes = waiting.filter(p => !existingIds.has(p.participantId));
+      return newOnes.length > 0 ? [...prev, ...newOnes] : prev;
+    };
+    const pollLobby = async () => {
+      try {
+        const res = await fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/lobby`, {
+          headers: getAuthHeaders(),
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        const waiting = (data.lobby || []).filter((p: any) => p.status === 'waiting');
+        if (waiting.length > 0) {
+          setLobbyParticipants(prev => mergeLobby(prev, waiting));
+        }
+      } catch { /* silent */ }
+    };
+    const timer = setInterval(pollLobby, 10000);
+    return () => clearInterval(timer);
+  }, [appointmentId, meetingState.status]);
 
   const goBack = useCallback(() => {
     const userId = user?.id;

@@ -1,1041 +1,969 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Appointment } from '../../types';
-import { doctorAIService } from '../../services/enhancedMeetingService';
-import { recordingStorage } from '../../services/storageServices';
+/**
+ * VirtualMeeting.tsx — Time-Check Gated Jitsi Meeting Room
+ *
+ * Similar to MeetingRoom.tsx but with a meeting-time-window check before
+ * entering the consent/pre-join/Jitsi flow. Used for scheduled appointments
+ * where the doctor must only join within the appointment window.
+ *
+ * Flow: time_check → consent → pre_join → ready → in_progress → ended
+ */
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../components/common/AuthProvider';
+import { getToken } from '../../services/authServices';
 import meetingTimeService, { MeetingTimeCheck } from '../../services/meetingTimeService';
-import { meetingService } from '../../services/apiServices';
-import LiveTranscription, { TranscriptEntry } from '../../components/LiveTranscription';
 
-interface VirtualMeetingProps {
-  appointment: Appointment;
-  onClose: () => void;
-  onMeetingEnd: (appointmentId: string, results: any) => void;
-  onMissedMeeting?: (appointmentId: string) => void;
+function getAuthHeaders(): Record<string, string> {
+  const token = getToken();
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  return headers;
 }
 
-interface Message {
-  role: 'user' | 'assistant';
+interface TranscriptSegment {
+  id: string;
+  speakerRole: string;
+  speakerName: string;
   content: string;
-  timestamp: Date;
+  language: string;
+  timestamp: string;
+  isFinal: boolean;
+  confidence?: number;
+  startTimeSeconds?: number;
 }
 
-const VirtualMeeting: React.FC<VirtualMeetingProps> = ({
-  appointment,
-  onClose,
-  onMeetingEnd,
-  onMissedMeeting
-}) => {
-  const [meetingState, setMeetingState] = useState<'time_check' | 'consent' | 'meeting' | 'ended'>('time_check');
-  const [meetingTimeCheck, setMeetingTimeCheck] = useState<MeetingTimeCheck | null>(null);
-  const [consentGiven, setConsentGiven] = useState(false);
-  const [meetingStarted, setMeetingStarted] = useState(false);
-  const [meetingDuration, setMeetingDuration] = useState(0);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [inputMessage, setInputMessage] = useState('');
-  const [isAITyping, setIsAITyping] = useState(false);
-  const [inputMode, setInputMode] = useState<'text' | 'voice'>('text');
-  const [isMicOn, setIsMicOn] = useState(false);
-  const [isVideoOn, setIsVideoOn] = useState(true);
-  const [isRecording, setIsRecording] = useState(false);
-  const [interimTranscript, setInterimTranscript] = useState('');
-  const [recordingStatus, setRecordingStatus] = useState<string>('');
-  // Live Transcription state (Phase 1 - Requirement 3.2)
-  const [isLiveTranscriptActive, setIsLiveTranscriptActive] = useState(false);
-  const liveTranscriptsRef = useRef<TranscriptEntry[]>([]);
-  
-  const startTimeRef = useRef<number>(Date.now());
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const mediaStreamRef = useRef<MediaStream | null>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const recordedChunksRef = useRef<Blob[]>([]);
+interface ChatMessage {
+  id: string;
+  senderId: string;
+  senderName: string;
+  senderRole: string;
+  message: string;
+  timestamp: string;
+}
 
-  // Check meeting time window on mount and periodically
-  useEffect(() => {
-    const checkTimeWindow = async () => {
-      await meetingTimeService.loadRules();
-      const check = meetingTimeService.checkMeetingWindow(
-        appointment.scheduledDate || appointment.date || new Date().toISOString(),
-        appointment.scheduledTime || appointment.time || '09:00'
-      );
-      setMeetingTimeCheck(check);
-      
-      if (check.canJoin) {
-        setMeetingState('consent');
-      } else if (check.isLate) {
-        // Meeting window has passed - trigger missed meeting handler
-        if (onMissedMeeting) {
-          onMissedMeeting(appointment.id);
+interface LobbyParticipant {
+  participantId: string;
+  participantName: string;
+  role: string;
+  status: 'waiting' | 'admitted' | 'rejected';
+  joinedAt: string;
+}
+
+type MeetingStatus = 'time_check' | 'consent' | 'pre_join' | 'ready' | 'in_progress' | 'ended';
+
+const JITSI_DOMAIN = 'meet.jit.si';
+const MEETING_SERVER_URL = (() => {
+  if (globalThis.window !== undefined) {
+    const env = (globalThis as any).ENV;
+    if (env?.MEETING_SERVER_URL) return env.MEETING_SERVER_URL;
+  }
+  return import.meta.env?.VITE_MEETING_SERVER_URL || 'http://localhost:3020';
+})();
+
+function formatDuration(seconds: number): string {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  return h > 0
+    ? `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+    : `${m}:${String(s).padStart(2, '0')}`;
+}
+
+/** Replace interim from a speaker with a final segment */
+function replaceFinalTranscript(prev: TranscriptSegment[], segment: TranscriptSegment): TranscriptSegment[] {
+  return [...prev.filter(s => !(s.speakerRole === segment.speakerRole && !s.isFinal)), segment];
+}
+
+/** Update or append an interim segment for a given speaker */
+function upsertInterimTranscript(prev: TranscriptSegment[], segment: TranscriptSegment): TranscriptSegment[] {
+  const idx = prev.findIndex(s => s.speakerRole === segment.speakerRole && !s.isFinal);
+  if (idx >= 0) { const u = [...prev]; u[idx] = segment; return u; }
+  return [...prev, segment];
+}
+
+function speakerColorClass(role: string): string {
+  if (role === 'doctor') return 'text-blue-400';
+  if (role === 'patient') return 'text-green-400';
+  return 'text-purple-400';
+}
+
+function speakerLabel(role: string): string {
+  if (role === 'doctor') return '👨\u200D⚕️';
+  if (role === 'patient') return '🧑';
+  return '👥';
+}
+
+// NOSONAR - Large React component with tightly-coupled meeting state
+const VirtualMeeting: React.FC = () => { // NOSONAR
+  const { appointmentId } = useParams<{ appointmentId: string }>();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  // Refs
+  const jitsiContainerRef = useRef<HTMLDivElement>(null);
+  const jitsiApiRef = useRef<any>(null);
+  const socketRef = useRef<any>(null);
+  const roomNameRef = useRef<string>('');
+  const meetingInfoRef = useRef<any>(null);
+  const durationTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const previewVideoRef = useRef<HTMLVideoElement>(null);
+  const previewStreamRef = useRef<MediaStream | null>(null);
+
+  // State
+  const [status, setStatus] = useState<MeetingStatus>('time_check');
+  const [meetingTimeCheck, setMeetingTimeCheck] = useState<MeetingTimeCheck | null>(null);
+  const [appointmentData, setAppointmentData] = useState<any>(null);
+  const [cameraOn, setCameraOn] = useState(true);
+  const [micOn, setMicOn] = useState(true);
+  const [meetingDuration, setMeetingDuration] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+
+  // Consent
+  const [consentRecording, setConsentRecording] = useState(false);
+  const [consentTranscript, setConsentTranscript] = useState(false);
+
+  // Lobby
+  const [lobbyParticipants, setLobbyParticipants] = useState<LobbyParticipant[]>([]);
+
+  // Transcript + Chat
+  const [transcripts, setTranscripts] = useState<TranscriptSegment[]>([]);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatInput, setChatInput] = useState('');
+  const [showPanel, setShowPanel] = useState<'transcript' | 'chat' | 'lobby' | null>('transcript');
+  const [aiSummary, setAiSummary] = useState<string | null>(null);
+
+  // Transcription
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const [transcriptLanguage, setTranscriptLanguage] = useState<'th-TH' | 'en-US'>('th-TH');
+  const recognitionRef = useRef<any>(null);
+  const transcriptionStartRef = useRef<number>(0);
+  const transcriptEndRef = useRef<HTMLDivElement>(null);
+
+  // ============================================================================
+  // TIME CHECK — Fetch appointment and validate time window
+  // ============================================================================
+
+  const initMeeting = useCallback(async () => {
+    try {
+      let roomName = `izara-${appointmentId?.substring(0, 12) || 'quick'}-${Date.now().toString(36)}`;
+      let meetingFound = false;
+
+      // Try meeting server
+      try {
+        const res = await fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}`, { headers: getAuthHeaders() });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.meeting) {
+            meetingInfoRef.current = data.meeting;
+            roomName = data.meeting.room_name || roomName;
+            meetingFound = true;
+          }
         }
+      } catch { /* silent */ }
+
+      // Create meeting record if none exists
+      if (!meetingFound) {
+        try {
+          const createRes = await fetch(`${MEETING_SERVER_URL}/api/meetings/create`, {
+            method: 'POST', headers: getAuthHeaders(),
+            body: JSON.stringify({ appointmentId, doctorId: user?.id, doctorName: user?.displayName || user?.name || 'Doctor', roomName }),
+          });
+          if (createRes.ok) {
+            const createData = await createRes.json();
+            if (createData.meeting) meetingInfoRef.current = createData.meeting;
+          }
+        } catch { /* silent */ }
+      }
+
+      roomNameRef.current = roomName;
+    } catch (err: any) {
+      setError(err.message || 'Failed to initialize meeting');
+    }
+  }, [appointmentId, user]);
+
+  const handleLobbyUpdate = useCallback((data: any) => {
+    if (data.action === 'join') {
+      setLobbyParticipants(prev => {
+        if (prev.some(p => p.participantId === data.participantId)) return prev;
+        return [...prev, { participantId: data.participantId, participantName: data.participantName, role: data.role || 'guest', status: 'waiting' as const, joinedAt: new Date().toISOString() }];
+      });
+    } else if (data.action === 'leave' || data.action === 'admitted') {
+      setLobbyParticipants(prev => prev.filter(p => p.participantId !== data.participantId));
+    }
+  }, []);
+
+  const handleTranscriptUpdate = useCallback((data: any) => {
+    const isFinal = data.isFinal !== false;
+    const segment: TranscriptSegment = {
+      id: data.id || `seg-${Date.now()}`,
+      speakerRole: data.speakerRole,
+      speakerName: data.speakerName,
+      content: data.content,
+      language: data.language || 'th',
+      timestamp: data.timestamp || new Date().toISOString(),
+      isFinal,
+      confidence: data.confidence,
+      startTimeSeconds: data.startTimeSeconds,
+    };
+    setTranscripts(prev => {
+      if (isFinal) return replaceFinalTranscript(prev, segment);
+      return upsertInterimTranscript(prev, segment);
+    });
+  }, []);
+
+  const handleChatMessage = useCallback((data: any) => {
+    setChatMessages(prev => [...prev, { id: data.id || `chat-${Date.now()}`, senderId: data.senderId, senderName: data.senderName, senderRole: data.senderRole, message: data.message, timestamp: data.timestamp || new Date().toISOString() }]);
+  }, []);
+
+  const handleTranscriptStopped = useCallback(() => {
+    setIsTranscribing(false);
+    setIsPaused(false);
+    setTranscripts(prev => prev.filter(s => s.isFinal));
+  }, []);
+
+  const connectSocket = useCallback(async () => {
+    try {
+      const { io } = await import('socket.io-client');
+      const socket = io(MEETING_SERVER_URL, {
+        query: { meetingId: appointmentId, userId: user?.id, role: 'doctor', userName: user?.displayName || user?.name || 'Doctor' },
+        transports: ['websocket', 'polling'],
+      });
+
+      socket.on('connect', () => console.log('[VirtualMeeting] Socket connected'));
+      socket.on('lobby-update', handleLobbyUpdate);
+      socket.on('transcript-update', handleTranscriptUpdate);
+      socket.on('chat-message', handleChatMessage);
+
+      socket.on('meeting-ended-results', (data: any) => {
+        if (data.summary) setAiSummary(data.summary);
+      });
+
+      socket.on('transcript-stopped', handleTranscriptStopped);
+
+      socketRef.current = socket;
+    } catch (err) {
+      console.warn('[VirtualMeeting] Socket connection failed:', err);
+    }
+  }, [appointmentId, user]);
+
+  // Auto-scroll transcript panel to bottom on new segments
+  useEffect(() => {
+    transcriptEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [transcripts]);
+
+  useEffect(() => {
+    if (status !== 'time_check') return;
+
+    const checkTimeWindow = async () => {
+      // Fetch appointment details
+      let apt = appointmentData;
+      if (!apt) {
+        try {
+          const res = await fetch(`/api/appointments/${appointmentId}`, { headers: getAuthHeaders() });
+          if (res.ok) {
+            apt = await res.json();
+            setAppointmentData(apt);
+          }
+        } catch { /* will use defaults */ }
+      }
+
+      await meetingTimeService.loadRules();
+      const scheduledDate = apt?.scheduledDate || apt?.date || new Date().toISOString();
+      const scheduledTime = apt?.scheduledTime || apt?.time || '09:00';
+      const check = meetingTimeService.checkMeetingWindow(scheduledDate, scheduledTime);
+      setMeetingTimeCheck(check);
+
+      if (check.canJoin) {
+        setStatus('consent');
+        await initMeeting();
+        await connectSocket();
       }
     };
 
     checkTimeWindow();
-    
-    // Re-check every minute if not yet in window
-    const interval = setInterval(() => {
-      if (meetingState === 'time_check') {
-        checkTimeWindow();
-      }
-    }, 60000);
-
+    const interval = setInterval(checkTimeWindow, 60000);
     return () => clearInterval(interval);
-  }, [appointment.id, appointment.scheduledDate, appointment.date, appointment.scheduledTime, appointment.time, meetingState, onMissedMeeting]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [appointmentId, status]);
 
-  // Auto-scroll to latest message
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, interimTranscript]);
+  // ============================================================================
+  // PRE-JOIN — camera/mic preview
+  // ============================================================================
 
-  // Duration timer
-  useEffect(() => {
-    if (meetingStarted) {
-      const interval = setInterval(() => {
-        setMeetingDuration(Math.floor((Date.now() - startTimeRef.current) / 1000));
-      }, 1000);
-      return () => clearInterval(interval);
+  const stopPreviewStream = useCallback(() => {
+    if (previewStreamRef.current) {
+      previewStreamRef.current.getTracks().forEach(t => t.stop());
+      previewStreamRef.current = null;
     }
-  }, [meetingStarted]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      stopAllMedia();
-      doctorAIService.reset();
-    };
   }, []);
 
-  const stopAllMedia = () => {
-    if (mediaStreamRef.current) {
-      mediaStreamRef.current.getTracks().forEach(track => track.stop());
-    }
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-      mediaRecorderRef.current.stop();
-    }
-    doctorAIService.stopSpeechRecognition();
-    doctorAIService.stopSpeaking();
-  };
-
-  const startUserVideo = async () => {
+  const startPreviewStream = useCallback(async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: true, 
-        audio: true 
-      });
-      mediaStreamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
-      setIsVideoOn(true);
-      return stream;
-    } catch (error) {
-      console.error('Error accessing camera:', error);
-      setIsVideoOn(false);
-      alert('ไม่สามารถเข้าถึงกล้องได้ กรุณาอนุญาตการใช้งานกล้องและไมโครโฟน');
-      return null;
-    }
-  };
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      previewStreamRef.current = stream;
+      if (previewVideoRef.current) previewVideoRef.current.srcObject = stream;
+    } catch { /* silent */ }
+  }, []);
 
-  const formatBytes = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
-  };
+  useEffect(() => {
+    if (status === 'pre_join') startPreviewStream();
+    return () => { if (status !== 'pre_join') stopPreviewStream(); };
+  }, [status, startPreviewStream, stopPreviewStream]);
 
-  const startRecording = (stream: MediaStream) => {
+  // ============================================================================
+  // JITSI LAUNCH
+  // ============================================================================
+
+  const loadJitsiScript = useCallback((): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      if ((globalThis as any).JitsiMeetExternalAPI) { resolve(); return; }
+      const existing = document.querySelector('script[src*="external_api"]');
+      if (existing) { existing.addEventListener('load', () => resolve()); return; }
+      const script = document.createElement('script');
+      script.src = `https://${JITSI_DOMAIN}/external_api.js`;
+      script.async = true;
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error('Failed to load Jitsi'));
+      document.head.appendChild(script);
+    });
+  }, []);
+
+  const joinMeeting = useCallback(async () => {
+    stopPreviewStream();
     try {
-      const options = { mimeType: 'video/webm;codecs=vp9,opus' };
-      mediaRecorderRef.current = new MediaRecorder(stream, options);
-      recordedChunksRef.current = [];
+      await loadJitsiScript();
+      if (!jitsiContainerRef.current || !(globalThis as any).JitsiMeetExternalAPI) return;
 
-      mediaRecorderRef.current.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          recordedChunksRef.current.push(event.data);
-          const totalSize = recordedChunksRef.current.reduce((sum, blob) => sum + blob.size, 0);
-          setRecordingStatus(`Recording: ${formatBytes(totalSize)}`);
-        }
-      };
-
-      mediaRecorderRef.current.onstop = async () => {
-        console.log('🎥 Recording stopped, preparing to upload...');
-        await uploadRecordingToCloud();
-      };
-
-      mediaRecorderRef.current.start(1000);
-      setIsRecording(true);
-      setRecordingStatus('Recording started...');
-      console.log('🎥 Recording started');
-    } catch (error) {
-      console.error('Error starting recording:', error);
-      setRecordingStatus('Recording failed to start');
-    }
-  };
-
-  const uploadRecordingToCloud = async () => {
-    try {
-      if (recordedChunksRef.current.length === 0) {
-        console.warn('No recording data to upload');
-        return null;
-      }
-
-      setRecordingStatus('Uploading recording to cloud...');
-      const recordingBlob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
-      const recordingFile = new File(
-        [recordingBlob], 
-        `consultation_${appointment.id}_${Date.now()}.webm`,
-        { type: 'video/webm' }
-      );
-
-      console.log(`📤 Uploading ${formatBytes(recordingBlob.size)} to cloud...`);
-
-      // Upload recording to user-specific folder
-      const uploadedFile = await recordingStorage.uploadRecording(
-        recordingFile,
-        appointment.id,
-        appointment.user.id,
-        {
-          doctorId: appointment.doctor?.id,
-          patientName: appointment.user.name,
-          symptoms: appointment.symptoms.join(', '),
-          duration: meetingDuration
-        }
-      );
-
-      console.log('✅ Recording uploaded to cloud:', uploadedFile.url);
-      
-      // Generate and upload transcription
-      setRecordingStatus('Generating transcription...');
-      const transcription = await generateTranscription();
-      
-      if (transcription) {
-        await recordingStorage.uploadTranscription(
-          transcription,
-          appointment.id,
-          appointment.user.id
-        );
-        console.log('✅ Transcription uploaded to cloud');
-      }
-
-      setRecordingStatus('Recording uploaded successfully');
-      return uploadedFile.url;
-    } catch (error) {
-      console.error('❌ Error uploading recording:', error);
-      setRecordingStatus('Upload failed, saved locally');
-      
-      const recordingBlob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
-      return URL.createObjectURL(recordingBlob);
-    }
-  };
-
-  // Add this new function for transcription
-  const generateTranscription = async () => {
-    try {
-      const conversationHistory = doctorAIService.getConversationHistory();
-      
-      const transcription = {
-        appointmentId: appointment.id,
-        patientId: appointment.user.id,
-        doctorId: appointment.doctor?.id,
-        startTime: new Date(startTimeRef.current).toISOString(),
-        endTime: new Date().toISOString(),
-        duration: Math.floor((Date.now() - startTimeRef.current) / 1000),
-        messages: conversationHistory.map(msg => ({
-          role: msg.role,
-          speaker: msg.speakerName || (msg.role === 'user' ? appointment.user.name : appointment.doctor?.name),
-          content: msg.content,
-          timestamp: msg.timestamp.toISOString(),
-        })),
-        metadata: {
-          symptoms: appointment.symptoms,
-          totalMessages: conversationHistory.length,
-          inputMode: inputMode,
-          generatedAt: new Date().toISOString()
-        }
-      };
-
-      return transcription;
-    } catch (error) {
-      console.error('Error generating transcription:', error);
-      return null;
-    }
-  };
-
-  const handleStartMeeting = async () => {
-    if (!consentGiven) {
-      alert('กรุณายอมรับข้อตกลงการบันทึกก่อนเริ่มการประชุม');
-      return;
-    }
-
-    setMeetingState('meeting');
-    setMeetingStarted(true);
-    startTimeRef.current = Date.now();
-    
-    const stream = await startUserVideo();
-    if (!stream) {
-      alert('ไม่สามารถเริ่มการประชุมได้ กรุณาอนุญาตการใช้กล้องและไมโครโฟน');
-      setMeetingState('consent');
-      return;
-    }
-
-    startRecording(stream);
-    
-    try {
-      const greeting = await doctorAIService.startConsultation(
-        appointment.doctor?.id || 'doc1',
-        {
-          name: appointment.user.name,
-          symptoms: appointment.symptoms,
-          age: appointment.user.dateOfBirth ? 
-            Math.floor((Date.now() - new Date(appointment.user.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : 
-            undefined
+      const api = new (globalThis as any).JitsiMeetExternalAPI(JITSI_DOMAIN, {
+        roomName: roomNameRef.current,
+        parentNode: jitsiContainerRef.current,
+        width: '100%', height: '100%',
+        configOverwrite: {
+          prejoinPageEnabled: false,
+          startWithAudioMuted: !micOn,
+          startWithVideoMuted: !cameraOn,
+          enableClosePage: false,
+          disableDeepLinking: true,
+          defaultLanguage: 'th',
+          requireDisplayName: true,
+          enableLobbyChat: true,
+          lobbyModeEnabled: true,
+          toolbarButtons: ['microphone', 'camera', 'desktop', 'chat', 'raisehand', 'participants-pane', 'tileview', 'hangup', 'settings', 'select-background', 'toggle-camera', 'fullscreen'],
+          disableThirdPartyRequests: true,
+          enableWelcomePage: false,
+          hideConferenceSubject: false,
+          subject: `Izara Consultation — ${appointmentId?.substring(0, 8) || 'Meeting'}`,
         },
-        appointment.id
-      );
-      
-      const greetingMessage: Message = {
-        role: 'assistant',
-        content: greeting,
-        timestamp: new Date()
-      };
-      
-      setMessages([greetingMessage]);
-      
-      if (inputMode === 'voice') {
-        doctorAIService.speakText(greeting);
+        interfaceConfigOverwrite: {
+          APP_NAME: 'Izara Telemedicine',
+          SHOW_PROMOTIONAL_CLOSE_PAGE: false,
+          SHOW_JITSI_WATERMARK: false,
+          SHOW_WATERMARK_FOR_GUESTS: false,
+          SHOW_BRAND_WATERMARK: false,
+          DEFAULT_REMOTE_DISPLAY_NAME: 'ผู้เข้าร่วม',
+          DEFAULT_LOCAL_DISPLAY_NAME: user?.displayName || user?.name || 'แพทย์',
+          TOOLBAR_ALWAYS_VISIBLE: true,
+        },
+        userInfo: {
+          displayName: user?.displayName || user?.name || 'Doctor',
+          email: user?.email || '',
+        },
+      });
+
+      jitsiApiRef.current = api;
+
+      // Ensure iframe permissions
+      const iframe = jitsiContainerRef.current.querySelector('iframe');
+      if (iframe) {
+        iframe.setAttribute('allow', 'camera *; microphone *; display-capture *; autoplay *; clipboard-write *; encrypted-media *');
       }
-    } catch (error: any) {
-      console.error('Error initializing AI Doctor:', error);
-      const errorMessage: Message = {
-        role: 'assistant',
-        content: `สวัสดีครับคุณ${appointment.user.name} ยินดีต้อนรับสู่การปรึกษาทางไกล วันนี้มีอาการอะไรรบกวนครับ?\n\n(หมายเหตุ: ${error.message})`,
-        timestamp: new Date()
-      };
-      setMessages([errorMessage]);
+
+      api.on('readyToClose', () => setStatus('ended'));
+      api.on('videoConferenceJoined', () => {
+        setStatus('in_progress');
+        const start = Date.now();
+        durationTimerRef.current = setInterval(() => setMeetingDuration(Math.floor((Date.now() - start) / 1000)), 1000);
+        if (socketRef.current?.connected) {
+          socketRef.current.emit('join-meeting', { meetingId: appointmentId, userId: user?.id, role: 'doctor', userName: user?.displayName || user?.name || 'Doctor' });
+        }
+      });
+
+      setStatus('ready');
+    } catch (err: any) {
+      setError(err.message || 'Failed to join meeting');
     }
-  };
+  }, [stopPreviewStream, loadJitsiScript, micOn, cameraOn, appointmentId, user]);
 
-  const handleSendMessage = async () => {
-    if (!inputMessage.trim() || isAITyping) return;
+  // ============================================================================
+  // TRANSCRIPTION (Web Speech API)
+  // ============================================================================
 
-    const userMessage: Message = {
-      role: 'user',
-      content: inputMessage,
-      timestamp: new Date()
+  const startTranscription = useCallback(() => {
+    const SpeechRecognition = (globalThis as any).SpeechRecognition || (globalThis as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) { setError('Speech recognition not supported'); return; }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = transcriptLanguage;
+    transcriptionStartRef.current = transcriptionStartRef.current || Date.now();
+
+    recognition.onresult = (event: any) => {
+      const startSecs = Math.floor((Date.now() - transcriptionStartRef.current) / 1000);
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const result = event.results[i];
+        const content = result[0].transcript.trim();
+        if (!content) continue;
+
+        const lang = transcriptLanguage === 'th-TH' ? 'th' : 'en';
+        const speakerName = user?.displayName || user?.name || 'Doctor';
+
+        if (result.isFinal) {
+          const segment: TranscriptSegment = {
+            id: `seg-${Date.now()}-${i}`, speakerRole: 'doctor', speakerName,
+            content, language: lang, timestamp: new Date().toISOString(),
+            isFinal: true, confidence: result[0].confidence, startTimeSeconds: startSecs,
+          };
+          // Replace any interim from doctor, append final
+          setTranscripts(prev => replaceFinalTranscript(prev, segment));
+          if (socketRef.current?.connected) {
+            socketRef.current.emit('transcript-segment', {
+              meetingId: appointmentId, speakerId: user?.id, speakerRole: 'doctor',
+              speakerName, content, language: lang, confidence: result[0].confidence,
+              isFinal: true, startTimeSeconds: startSecs,
+            });
+          }
+          // Persist final segment to server
+          fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/transcript-segment`, {
+            method: 'POST', headers: getAuthHeaders(),
+            body: JSON.stringify({ speakerId: user?.id, speakerRole: 'doctor', speakerName, content, language: lang, confidence: result[0].confidence, is_final: true, start_time_seconds: startSecs }),
+          }).catch(() => {});
+        } else {
+          // Interim: update in-place, socket only (no DB)
+          const interimSeg: TranscriptSegment = {
+            id: `interim-${i}`, speakerRole: 'doctor', speakerName,
+            content, language: lang, timestamp: new Date().toISOString(),
+            isFinal: false, startTimeSeconds: startSecs,
+          };
+          setTranscripts(prev => upsertInterimTranscript(prev, interimSeg));
+          if (socketRef.current?.connected) {
+            socketRef.current.emit('transcript-segment', {
+              meetingId: appointmentId, speakerId: user?.id, speakerRole: 'doctor',
+              speakerName, content, language: lang, isFinal: false, startTimeSeconds: startSecs,
+            });
+          }
+        }
+      }
     };
 
-    setMessages(prev => [...prev, userMessage]);
-    setInputMessage('');
-    setIsAITyping(true);
-
-    try {
-      const aiResponse = await doctorAIService.sendMessage(inputMessage);
-      
-      const aiMessage: Message = {
-        role: 'assistant',
-        content: aiResponse,
-        timestamp: new Date()
-      };
-      
-      setMessages(prev => [...prev, aiMessage]);
-      
-      if (inputMode === 'voice') {
-        doctorAIService.speakText(aiResponse);
+    recognition.onerror = (event: any) => {
+      if (event.error === 'not-allowed') setError('Microphone access denied for transcription');
+      if ((event.error === 'network' || event.error === 'aborted') && isTranscribing && !isPaused) {
+        setTimeout(() => { try { recognition.start(); } catch { /* ignore */ } }, 1000);
       }
-    } catch (error: any) {
-      console.error('AI Doctor error:', error);
-      const errorMessage: Message = {
-        role: 'assistant',
-        content: error.message || 'ขอโทษครับ เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง',
-        timestamp: new Date()
-      };
-      setMessages(prev => [...prev, errorMessage]);
-      
-      if (inputMode === 'voice') {
-        doctorAIService.speakText(errorMessage.content);
-      }
-    } finally {
-      setIsAITyping(false);
-    }
-  };
-
-  const handleFinalTranscript = async (transcript: string) => {
-    setInterimTranscript('');
-
-    if (!transcript.trim()) return;
-
-    const userMessage: Message = {
-      role: 'user',
-      content: transcript,
-      timestamp: new Date()
     };
 
-    setMessages(prev => [...prev, userMessage]);
-    setIsAITyping(true);
-
-    try {
-      const aiResponse = await doctorAIService.sendMessage(transcript);
-
-      const aiMessage: Message = {
-        role: 'assistant',
-        content: aiResponse,
-        timestamp: new Date()
-      };
-
-      setMessages(prev => [...prev, aiMessage]);
-      doctorAIService.speakText(aiResponse);
-    } catch (error: any) {
-      console.error('AI Doctor error:', error);
-      const errorMessage: Message = {
-        role: 'assistant',
-        content: error.message || 'ขอโทษครับ เกิดข้อผิดพลาด กรุณาพูดใหม่อีกครั้ง',
-        timestamp: new Date()
-      };
-      setMessages(prev => [...prev, errorMessage]);
-      doctorAIService.speakText(errorMessage.content);
-    } finally {
-      setIsAITyping(false);
-    }
-  };
-
-  const handleInterimTranscript = (transcript: string) => {
-    setInterimTranscript(transcript);
-  };
-
-  const onSpeechResult = (transcript: string, isFinal: boolean) =>
-    isFinal ? handleFinalTranscript(transcript) : handleInterimTranscript(transcript);
-
-  const toggleInputMode = () => {
-    const newMode = inputMode === 'text' ? 'voice' : 'text';
-    setInputMode(newMode);
-    
-    if (newMode === 'voice') {
-      const success = doctorAIService.startSpeechRecognition(onSpeechResult);
-      if (success) {
-        setIsMicOn(true);
-      } else {
-        alert('เบราว์เซอร์ของคุณไม่รองรับการรับรู้เสียง กรุณาใช้ Google Chrome');
-        setInputMode('text');
+    recognition.onend = () => {
+      if (isTranscribing && !isPaused) {
+        setTimeout(() => { try { recognition.start(); } catch { /* ignore */ } }, 500);
       }
-    } else {
-      doctorAIService.stopSpeechRecognition();
-      doctorAIService.stopSpeaking();
-      setIsMicOn(false);
-      setInterimTranscript('');
-    }
-  };
-
-  const toggleMic = () => {
-    if (isMicOn) {
-      doctorAIService.stopSpeechRecognition();
-      setIsMicOn(false);
-      setInterimTranscript('');
-    } else {
-      const success = doctorAIService.startSpeechRecognition(onSpeechResult);
-      setIsMicOn(success);
-    }
-  };
-  
-  const toggleVideo = () => {
-    if (isVideoOn) {
-      if (mediaStreamRef.current) {
-        mediaStreamRef.current.getVideoTracks().forEach(track => track.stop());
-      }
-      setIsVideoOn(false);
-    } else {
-      startUserVideo();
-    }
-  };
-
-  const saveMeetingToCloud = async (results: any) => {
-    try {
-      const doctorId = appointment.user?.doctorId || appointment.user?.id || 'unknown-doctor';
-      const doctorName = appointment.doctor?.name || appointment.user?.name || 'Doctor';
-
-      const savedData = await meetingService.saveMeetingResults(
-        appointment.id,
-        results,
-        doctorId,
-        doctorName
-      );
-      console.log('☁️ Meeting results saved to GCS:', savedData);
-
-      if (savedData.storage) {
-        results.recordingUrl = savedData.storage.files?.video || null;
-      }
-    } catch (saveError) {
-      console.warn('⚠️ Could not save to cloud (will use local only):', saveError);
-    }
-  };
-
-  const buildFallbackResults = () => {
-    const actualDuration = doctorAIService.getDuration();
-    const conversationHistory = doctorAIService.getConversationHistory();
-
-    return {
-      summary: {
-        chiefComplaint: appointment.symptoms.join(', '),
-        presentingSymptoms: appointment.symptoms,
-        preliminaryAssessment: 'การปรึกษาทางไกลเสร็จสมบูรณ์ กรุณาติดตามผลกับแพทย์',
-        recommendations: ['พักผ่อนให้เพียงพอ', 'ดื่มน้ำมากๆ', 'หากอาการไม่ดีขึ้น ภายใน 3-5 วันให้พบแพทย์'],
-        prescriptions: [],
-        followUp: 'ติดตามอาการใน 3-5 วัน',
-        redFlags: ['ไข้สูงเกิน 39°C', 'หายใจลำบาก', 'อาการแย่ลงอย่างรวดเร็ว'],
-        lifestyleAdvice: ['รับประทานอาหารที่มีประโยชน์', 'ออกกำลังกายสม่ำเสมอ'],
-        needsFollowUp: false,
-        followUpDate: null
-      },
-      duration: actualDuration,
-      messages: conversationHistory,
-      doctor: appointment.doctor,
-      conversationComplete: conversationHistory.length > 1,
-      timestamp: new Date().toISOString()
     };
-  };
 
-  const handleEndMeeting = async () => {
-    if (!confirm('คุณต้องการจบการปรึกษาใช่หรือไม่?')) return;
+    recognitionRef.current = recognition;
+    recognition.start();
+    setIsTranscribing(true);
+    setIsPaused(false);
 
-    console.log('📊 Ending meeting, conversation has', messages.length, 'messages');
+    fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/start-transcription`, {
+      method: 'POST', headers: getAuthHeaders(),
+      body: JSON.stringify({ language: transcriptLanguage, startedBy: user?.id }),
+    }).catch(() => {});
+  }, [transcriptLanguage, appointmentId, user, isTranscribing, isPaused]);
 
-    setMeetingState('ended');
-    setRecordingStatus('Processing meeting data...');
+  const pauseTranscription = useCallback(() => {
+    if (recognitionRef.current) try { recognitionRef.current.stop(); } catch { /* ignore */ }
+    setIsPaused(true);
+    fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/pause-transcription`, {
+      method: 'POST', headers: getAuthHeaders(),
+    }).catch(() => {});
+  }, [appointmentId]);
 
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-      mediaRecorderRef.current.stop();
-    }
+  const resumeTranscription = useCallback(() => {
+    if (recognitionRef.current) try { recognitionRef.current.start(); } catch { /* ignore */ }
+    setIsPaused(false);
+    fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/resume-transcription`, {
+      method: 'POST', headers: getAuthHeaders(),
+    }).catch(() => {});
+  }, [appointmentId]);
 
-    stopAllMedia();
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
+  const stopTranscription = useCallback(async () => {
+    if (recognitionRef.current) try { recognitionRef.current.stop(); } catch { /* ignore */ }
+    recognitionRef.current = null;
+    setIsTranscribing(false);
+    setIsPaused(false);
+    // Remove interim segments locally
+    setTranscripts(prev => prev.filter(s => s.isFinal));
     try {
-      setRecordingStatus('Generating AI consultation report...');
+      await fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/stop-transcription`, {
+        method: 'POST', headers: getAuthHeaders(),
+        body: JSON.stringify({ stoppedBy: user?.id }),
+      });
+    } catch { /* best effort */ }
+  }, [appointmentId, user]);
 
-      const actualDuration = doctorAIService.getDuration();
-      const conversationHistory = doctorAIService.getConversationHistory();
-      const report = await doctorAIService.generateConsultationReport();
+  /** Switch transcription language without losing existing transcripts */
+  const switchTranscriptionLanguage = useCallback((newLang: 'th-TH' | 'en-US') => {
+    setTranscriptLanguage(newLang);
+    if (!isTranscribing || !recognitionRef.current) return;
+    // Stop current recognition, recreate with new lang
+    try { recognitionRef.current.stop(); } catch { /* ignore */ }
+    recognitionRef.current.lang = newLang;
+    // onend handler will auto-restart since isTranscribing && !isPaused
+  }, [isTranscribing, isPaused]);
 
-      const results = {
-        summary: report,
-        duration: actualDuration,
-        messages: conversationHistory,
-        doctor: doctorAIService.getDoctor(),
-        recordingUrl: null,
-        conversationComplete: conversationHistory.length > 1,
-        timestamp: new Date().toISOString()
-      };
+  // ============================================================================
+  // CHAT
+  // ============================================================================
 
-      setRecordingStatus('Saving meeting summary to cloud...');
-      await saveMeetingToCloud(results);
+  const sendChat = useCallback(() => {
+    const message = chatInput.trim();
+    if (!message) return;
+    const payload = { meetingId: appointmentId, senderId: user?.id, senderName: user?.displayName || user?.name || 'Doctor', senderRole: 'doctor', message };
+    if (socketRef.current?.connected) socketRef.current.emit('chat-message', payload);
+    fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/chat`, {
+      method: 'POST', headers: getAuthHeaders(), body: JSON.stringify(payload),
+    }).catch(() => {});
+    setChatInput('');
+  }, [chatInput, appointmentId, user]);
 
-      setRecordingStatus('Meeting ended successfully');
-      onMeetingEnd(appointment.id, results);
+  // ============================================================================
+  // LOBBY
+  // ============================================================================
 
-    } catch (error) {
-      console.error('❌ Error generating report:', error);
+  const admitFromLobby = useCallback(async (participantId: string) => {
+    try { await fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/lobby/admit`, { method: 'POST', headers: getAuthHeaders(), body: JSON.stringify({ participantId, admittedBy: user?.id }) }); } catch { /* silent */ }
+    if (socketRef.current?.connected) socketRef.current.emit('lobby-admit', { meetingId: appointmentId, participantId, admittedBy: user?.id });
+    setLobbyParticipants(prev => prev.filter(p => p.participantId !== participantId));
+  }, [appointmentId, user]);
 
-      const results = buildFallbackResults();
-      await saveMeetingToCloud(results);
-      onMeetingEnd(appointment.id, results);
+  const rejectFromLobby = useCallback(async (participantId: string) => {
+    try { await fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/lobby/reject`, { method: 'POST', headers: getAuthHeaders(), body: JSON.stringify({ participantId, rejectedBy: user?.id }) }); } catch { /* silent */ }
+    if (socketRef.current?.connected) socketRef.current.emit('lobby-reject', { meetingId: appointmentId, participantId, rejectedBy: user?.id });
+    setLobbyParticipants(prev => prev.filter(p => p.participantId !== participantId));
+  }, [appointmentId, user]);
+
+  const admitAllFromLobby = useCallback(async () => {
+    try {
+      await fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/lobby/admit-all`, { method: 'POST', headers: getAuthHeaders(), body: JSON.stringify({ admittedBy: user?.id }) });
+    } catch {
+      for (const p of lobbyParticipants) await admitFromLobby(p.participantId);
+      return;
     }
+    if (socketRef.current?.connected) {
+      for (const p of lobbyParticipants) socketRef.current.emit('lobby-admit', { meetingId: appointmentId, participantId: p.participantId, admittedBy: user?.id });
+    }
+    setLobbyParticipants([]);
+  }, [lobbyParticipants, admitFromLobby, appointmentId, user]);
+
+  // Lobby polling fallback
+  useEffect(() => {
+    if (status !== 'ready' && status !== 'in_progress') return;
+    const mergeLobby = (prev: LobbyParticipant[], waiting: LobbyParticipant[]) => {
+      const existingIds = new Set(prev.map(p => p.participantId));
+      const newOnes = waiting.filter(p => !existingIds.has(p.participantId));
+      return newOnes.length > 0 ? [...prev, ...newOnes] : prev;
+    };
+    const poll = async () => {
+      try {
+        const res = await fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/lobby`, { headers: getAuthHeaders() });
+        if (!res.ok) return;
+        const data = await res.json();
+        const waiting = (data.lobby || []).filter((p: any) => p.status === 'waiting');
+        if (waiting.length > 0) setLobbyParticipants(prev => mergeLobby(prev, waiting));
+      } catch { /* silent */ }
+    };
+    const timer = setInterval(poll, 10000);
+    return () => clearInterval(timer);
+  }, [appointmentId, status]);
+
+  // ============================================================================
+  // END MEETING
+  // ============================================================================
+
+  const handleMeetingEnd = useCallback(() => {
+    if (isTranscribing) stopTranscription();
+    if (durationTimerRef.current) clearInterval(durationTimerRef.current);
+    if (jitsiApiRef.current) try { jitsiApiRef.current.executeCommand('hangup'); } catch { /* ignore */ }
+    setStatus('ended');
+
+    fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/end`, {
+      method: 'POST', headers: getAuthHeaders(),
+      body: JSON.stringify({ endedBy: user?.id || 'doctor', generateSummary: true }),
+    }).then(res => res.json()).then(data => {
+      if (data.summary) setAiSummary(data.summary);
+    }).catch(() => {});
+  }, [appointmentId, isTranscribing, stopTranscription, user]);
+
+  // ============================================================================
+  // CLEANUP
+  // ============================================================================
+
+  useEffect(() => {
+    return () => {
+      if (jitsiApiRef.current) try { jitsiApiRef.current.dispose(); } catch { /* ignore */ }
+      if (socketRef.current) try { socketRef.current.disconnect(); } catch { /* ignore */ }
+      if (recognitionRef.current) try { recognitionRef.current.stop(); } catch { /* ignore */ }
+      if (durationTimerRef.current) clearInterval(durationTimerRef.current);
+      stopPreviewStream();
+    };
+  }, [stopPreviewStream]);
+
+  const goBack = useCallback(() => {
+    navigate(`/doctor/${user?.id}/health-meeting`);
+  }, [navigate, user]);
+
+  const getTimeCheckTitle = () => {
+    if (meetingTimeCheck?.isEarly) return 'ยังไม่ถึงเวลานัด';
+    if (meetingTimeCheck?.isLate) return 'เลยเวลานัดหมายแล้ว';
+    return 'กำลังตรวจสอบเวลา...';
   };
 
-  const formatDuration = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
+  // ============================================================================
+  // RENDER — TIME CHECK
+  // ============================================================================
 
-  // Time check screen - shows when user tries to join outside meeting window
-  const renderTimeCheckScreen = () => {
+  if (status === 'time_check') {
     const rules = meetingTimeService.getRules();
-
     return (
-      <div className="fixed inset-0 bg-gray-900 z-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
         <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full p-8">
           <div className="text-center mb-6">
-            <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 ${
-              meetingTimeCheck?.isEarly ? 'bg-yellow-100' : 'bg-red-100'
-            }`}>
-              {meetingTimeCheck?.isEarly ? (
-                <svg className="w-10 h-10 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd"/>
-                </svg>
-              ) : (
-                <svg className="w-10 h-10 text-red-600" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd"/>
-                </svg>
-              )}
+            <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 ${meetingTimeCheck?.isEarly ? 'bg-yellow-100' : 'bg-red-100'}`}>
+              <span className="text-4xl">{meetingTimeCheck?.isEarly ? '⏳' : '⚠️'}</span>
             </div>
-            
             <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              {meetingTimeCheck?.isEarly ? '⏰ ยังไม่ถึงเวลานัด' : '⏰ เลยเวลานัดหมายแล้ว'}
+              {getTimeCheckTitle()}
             </h2>
-            
-            <p className="text-gray-600">
-              {meetingTimeCheck?.reason}
-            </p>
+            <p className="text-gray-600">{meetingTimeCheck?.reason || 'กรุณารอสักครู่...'}</p>
           </div>
 
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-            <h3 className="font-semibold text-blue-900 mb-2">📋 กฎการเข้าประชุม</h3>
+            <h3 className="font-semibold text-blue-900 mb-2">กฎการเข้าประชุม</h3>
             <ul className="text-sm text-blue-800 space-y-1">
               <li>• สามารถเข้าได้ <strong>{rules.allowJoinBefore} นาที</strong> ก่อนเวลานัด</li>
               <li>• สามารถเข้าได้หลังเวลานัดภายใน <strong>{rules.allowJoinAfter} นาที</strong></li>
-              <li>• หากเลยเวลา ระบบจะเลื่อนนัดไปสัปดาห์หน้าอัตโนมัติ</li>
             </ul>
           </div>
 
-          {meetingTimeCheck?.windowStart && meetingTimeCheck?.windowEnd && (
-            <div className="bg-gray-50 rounded-lg p-4 mb-6 text-center">
-              <p className="text-sm text-gray-600 mb-1">หน้าต่างเวลาเข้าประชุม</p>
-              <p className="text-lg font-semibold text-gray-900">
-                {meetingTimeCheck.windowStart.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}
-                {' - '}
-                {meetingTimeCheck.windowEnd.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}
-              </p>
-            </div>
-          )}
-
-          {meetingTimeCheck?.isEarly && meetingTimeCheck?.minutesUntilStart != null ? (
+          {meetingTimeCheck?.isEarly && meetingTimeCheck.minutesUntilStart != null && (
             <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 mb-6 text-center">
               <p className="text-sm text-emerald-600 mb-1">เวลาที่เหลือก่อนเริ่ม</p>
-              <p className="text-3xl font-bold text-emerald-600">
-                {meetingTimeCheck.minutesUntilStart} นาที
-              </p>
-            </div>
-          ) : null}
-
-          {meetingTimeCheck?.isLate && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-              <p className="text-red-800 text-sm">
-                <strong>⚠️ การนัดหมายนี้เลยเวลาแล้ว</strong><br/>
-                ระบบจะดำเนินการเลื่อนนัดไปสัปดาห์หน้าอัตโนมัติ 
-                หรือติดต่อ Admin เพื่อขอจัดการนัดหมายใหม่
-              </p>
+              <p className="text-3xl font-bold text-emerald-600">{meetingTimeCheck.minutesUntilStart} นาที</p>
             </div>
           )}
 
           <div className="flex gap-4">
-            <button
-              onClick={onClose}
-              className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-colors"
-            >
+            <button onClick={goBack} className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50">
               กลับ
             </button>
-            
             {meetingTimeCheck?.isEarly && (
               <button
-                onClick={() => {
-                  const check = meetingTimeService.checkMeetingWindow(
-                    appointment.scheduledDate || appointment.date || new Date().toISOString(),
-                    appointment.scheduledTime || appointment.time || '09:00'
-                  );
+                onClick={async () => {
+                  await meetingTimeService.loadRules();
+                  const apt = appointmentData;
+                  const scheduledDate = apt?.scheduledDate || apt?.date || new Date().toISOString();
+                  const scheduledTime = apt?.scheduledTime || apt?.time || '09:00';
+                  const check = meetingTimeService.checkMeetingWindow(scheduledDate, scheduledTime);
                   setMeetingTimeCheck(check);
                   if (check.canJoin) {
-                    setMeetingState('consent');
+                    setStatus('consent');
+                    await initMeeting();
+                    await connectSocket();
                   }
                 }}
-                className="flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
+                className="flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg"
               >
-                🔄 ตรวจสอบเวลาอีกครั้ง
+                🔄 ตรวจสอบอีกครั้ง
               </button>
             )}
           </div>
         </div>
       </div>
     );
-  };
+  }
 
-  const renderConsentScreen = () => {
+  // ============================================================================
+  // RENDER — CONSENT
+  // ============================================================================
+
+  if (status === 'consent') {
+    const allConsented = consentRecording && consentTranscript;
     return (
-      <div className="fixed inset-0 bg-gray-900 z-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
         <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full p-8">
           <div className="text-center mb-6">
-            <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-10 h-10 text-red-600" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd"/>
-              </svg>
-            </div>
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">
-              🎥 ข้อตกลงการบันทึกการประชุม
-            </h2>
-            <p className="text-gray-600">
-              Virtual Consultation Recording Consent
-            </p>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">ข้อตกลงก่อนเข้าห้องประชุม</h2>
+            <p className="text-gray-600">กรุณายอมรับข้อตกลงเพื่อดำเนินการต่อ</p>
           </div>
 
-          <div className="bg-yellow-50 border-2 border-yellow-400 rounded-lg p-6 mb-6">
-            <h3 className="font-bold text-yellow-900 text-lg mb-3 flex items-center">
-              <span className="text-2xl mr-2">⚠️</span>{' '}
-              ประกาศสำคัญ
-            </h3>
-            <ul className="space-y-3 text-gray-700">
-              <li className="flex items-start">
-                <span className="text-red-600 mr-2 text-xl">•</span>
-                <span><strong>การประชุมนี้จะถูกบันทึกทั้งหมด</strong> รวมถึงวิดีโอ เสียง และข้อความ</span>
-              </li>
-              <li className="flex items-start">
-                <span className="text-red-600 mr-2 text-xl">•</span>
-                <span>การบันทึกจะถูก<strong>อัปโหลดไปยัง Cloud Storage</strong> ทันทีเมื่อเริ่มการประชุม</span>
-              </li>
-              <li className="flex items-start">
-                <span className="text-red-600 mr-2 text-xl">•</span>
-                <span>ข้อมูลทั้งหมดจะถูกใช้สำหรับ<strong>การวิเคราะห์โดย AI</strong> เพื่อสร้างรายงานการรักษา</span>
-              </li>
-              <li className="flex items-start">
-                <span className="text-red-600 mr-2 text-xl">•</span>
-                <span>การบันทึกจะถูก<strong>เก็บรักษาอย่างปลอดภัย</strong>ตามมาตรฐาน HIPAA และ PDPA</span>
-              </li>
-              <li className="flex items-start">
-                <span className="text-red-600 mr-2 text-xl">•</span>
-                <span>คุณสามารถ<strong>ดาวน์โหลดการบันทึก</strong>ได้หลังจบการประชุม</span>
-              </li>
-            </ul>
-          </div>
-
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-            <p className="text-sm text-blue-800">
-              <strong>ℹ️ หมายเหตุ:</strong> การบันทึกนี้เป็นส่วนหนึ่งของบริการ Telemedicine 
-              และจะช่วยให้แพทย์สามารถทบทวนการรักษาได้อย่างถูกต้องและครบถ้วน
-            </p>
-          </div>
-
-          <div className="mb-6">
-            <label className="flex items-start p-4 border-2 border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
-              <input
-                type="checkbox"
-                checked={consentGiven}
-                onChange={(e) => setConsentGiven(e.target.checked)}
-                className="mt-1 h-5 w-5 text-emerald-600 rounded focus:ring-2 focus:ring-emerald-500"
-                aria-label="ฉันยอมรับและเข้าใจข้อตกลง"
-              />
-              <span className="ml-3 text-gray-800">
-                <strong className="block text-lg mb-1">ฉันยอมรับและเข้าใจข้อตกลง</strong>
-                <span className="text-sm text-gray-600">
-                  ฉันยินยอมให้บันทึกการประชุมทางไกลครั้งนี้ รวมถึงการใช้ข้อมูลเพื่อวัตถุประสงค์ทางการแพทย์
-                  และการวิเคราะห์โดย AI ตามที่ระบุไว้ข้างต้น
-                </span>
-              </span>
+          <div className="space-y-3 mb-6">
+            <label className="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+              <input type="checkbox" checked={consentRecording} onChange={e => setConsentRecording(e.target.checked)} className="mt-1 h-5 w-5 text-emerald-600 rounded" />
+              <span className="ml-3 text-sm">ยินยอมให้บันทึกการประชุม (เสียง/วิดีโอ) เพื่อประกอบเวชระเบียน</span>
+            </label>
+            <label className="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+              <input type="checkbox" checked={consentTranscript} onChange={e => setConsentTranscript(e.target.checked)} className="mt-1 h-5 w-5 text-emerald-600 rounded" />
+              <span className="ml-3 text-sm">ยินยอมให้ถอดความ (Transcription) และวิเคราะห์ด้วย AI เพื่อสรุปผลการรักษา</span>
             </label>
           </div>
 
           <div className="flex gap-4">
-            <button
-              onClick={onClose}
-              className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-colors"
-            >
+            <button onClick={goBack} className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50">
               ยกเลิก
             </button>
             <button
-              onClick={handleStartMeeting}
-              disabled={!consentGiven}
-              className={`flex-1 px-6 py-3 font-bold rounded-lg transition-all ${
-                consentGiven
-                  ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg hover:shadow-xl'
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              }`}
+              onClick={() => {
+                fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/consent`, {
+                  method: 'POST', headers: getAuthHeaders(),
+                  body: JSON.stringify({ participantId: user?.id, participantName: user?.displayName || user?.name || 'Doctor', role: 'doctor', consentRecording, consentTranscript }),
+                }).catch(() => {});
+                setStatus('pre_join');
+              }}
+              disabled={!allConsented}
+              className={`flex-1 px-6 py-3 font-bold rounded-lg ${allConsented ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
             >
-              {consentGiven ? '✅ เริ่มการประชุม' : '⏳ กรุณายอมรับข้อตกลง'}
+              ดำเนินการต่อ
             </button>
           </div>
-
-          <p className="text-xs text-gray-500 text-center mt-4">
-            🔒 ข้อมูลของคุณได้รับการปกป้องด้วยการเข้ารหัส End-to-End Encryption
-          </p>
         </div>
       </div>
     );
-  };
+  }
 
-  const renderEndedScreen = () => {
+  // ============================================================================
+  // RENDER — PRE-JOIN
+  // ============================================================================
+
+  if (status === 'pre_join') {
     return (
-      <div className="fixed inset-0 bg-gray-900 z-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-8 text-center">
-          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <svg className="w-10 h-10 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
-            </svg>
-          </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            การปรึกษาเสร็จสิ้น
-          </h2>
-          <p className="text-gray-600 mb-6">
-            ขอบคุณที่ใช้บริการ Izara Anywhere
-          </p>
-          
-          {recordingStatus ? (
-            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm text-blue-800">{recordingStatus}</p>
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
+        <div className="bg-gray-800 rounded-xl shadow-2xl max-w-3xl w-full p-8">
+          <h2 className="text-xl font-bold text-white text-center mb-6">ตรวจสอบอุปกรณ์ก่อนเข้าร่วม</h2>
+
+          <div className="flex gap-6 mb-6">
+            <div className="flex-1 bg-gray-700 rounded-lg aspect-video overflow-hidden relative">
+              {cameraOn ? (
+                <video ref={previewVideoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <span className="text-4xl text-gray-400">📷</span>
+                </div>
+              )}
             </div>
-          ) : null}
 
-          <div className="bg-gray-50 rounded-lg p-4 mb-6">
-            <p className="text-sm text-gray-600 mb-2">ระยะเวลา</p>
-            <p className="text-3xl font-bold text-emerald-600">{formatDuration(meetingDuration)}</p>
+            <div className="w-48 space-y-4">
+              <button onClick={() => setCameraOn(!cameraOn)} className={`w-full py-3 rounded-lg font-medium ${cameraOn ? 'bg-green-600 text-white' : 'bg-gray-600 text-gray-300'}`}>
+                {cameraOn ? '📹 กล้องเปิด' : '📹 กล้องปิด'}
+              </button>
+              <button onClick={() => setMicOn(!micOn)} className={`w-full py-3 rounded-lg font-medium ${micOn ? 'bg-green-600 text-white' : 'bg-gray-600 text-gray-300'}`}>
+                {micOn ? '🎤 ไมค์เปิด' : '🎤 ไมค์ปิด'}
+              </button>
+            </div>
           </div>
 
-          <button
-            onClick={onClose}
-            className="w-full px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg transition-colors"
-          >
-            ดูผลการรักษา
+          {error && <p className="text-red-400 text-sm text-center mb-4">{error}</p>}
+
+          <div className="flex gap-4">
+            <button onClick={goBack} className="flex-1 px-6 py-3 border border-gray-600 text-gray-300 font-semibold rounded-lg hover:bg-gray-700">
+              ยกเลิก
+            </button>
+            <button onClick={joinMeeting} className="flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg">
+              เข้าร่วมประชุม
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ============================================================================
+  // RENDER — ENDED
+  // ============================================================================
+
+  if (status === 'ended') {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
+        <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full p-8 text-center">
+          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <span className="text-4xl">✅</span>
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">การปรึกษาเสร็จสิ้น</h2>
+          <p className="text-gray-600 mb-4">ระยะเวลา: {formatDuration(meetingDuration)}</p>
+
+          {aiSummary && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 text-left">
+              <h3 className="font-semibold text-blue-900 mb-2">สรุปผลการปรึกษา (AI)</h3>
+              <p className="text-sm text-gray-700 whitespace-pre-wrap">{aiSummary}</p>
+            </div>
+          )}
+
+          <button onClick={goBack} className="w-full px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg">
+            กลับหน้าการนัดหมาย
           </button>
         </div>
       </div>
     );
-  };
+  }
 
-  if (meetingState === 'time_check') return renderTimeCheckScreen();
-  if (meetingState === 'consent') return renderConsentScreen();
-  if (meetingState === 'ended') return renderEndedScreen();
-
-  const renderMeetingHeader = () => (
-    <div className="bg-gray-800 text-white px-6 py-3 flex justify-between items-center">
-      <div className="flex items-center space-x-4">
-        {isRecording && (
-          <div className="flex items-center space-x-2 bg-red-600 px-3 py-1 rounded-full animate-pulse">
-            <div className="w-3 h-3 bg-white rounded-full"></div>
-            <span className="text-sm font-semibold">REC</span>
-          </div>
-        )}
-        <span className="text-sm text-gray-300">{formatDuration(meetingDuration)}</span>
-        {recordingStatus ? (
-          <span className="text-xs text-gray-400">{recordingStatus}</span>
-        ) : null}
-      </div>
-
-      <div className="flex items-center space-x-2">
-        <button
-          onClick={toggleMic}
-          className={`p-3 rounded-full transition-all ${
-            isMicOn ? 'bg-red-600 animate-pulse' : 'bg-gray-700 hover:bg-gray-600'
-          }`}
-          title={isMicOn ? 'ปิดไมค์' : 'เปิดไมค์'}
-          aria-label={isMicOn ? 'ปิดไมค์' : 'เปิดไมค์'}
-        >
-          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-            {isMicOn ? (
-              <path d="M7 4a3 3 0 016 0v6a3 3 0 11-6 0V4z M5.5 9.643a.75.75 0 00-1.5 0V10c0 3.06 2.29 5.585 5.25 5.954V17.5h-1.5a.75.75 0 000 1.5h4.5a.75.75 0 000-1.5h-1.5v-1.546A6.001 6.001 0 0016 10v-.357a.75.75 0 00-1.5 0V10a4.5 4.5 0 01-9 0v-.357z" />
-            ) : (
-              <path d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-14-14zM10 5a3 3 0 013 3v1.293l-3.707-3.707A2.993 2.993 0 0110 5z" />
-            )}
-          </svg>
-        </button>
-
-        <button
-          onClick={toggleVideo}
-          className={`p-3 rounded-full transition-all ${
-            isVideoOn ? 'bg-gray-700 hover:bg-gray-600' : 'bg-red-600 hover:bg-red-700'
-          }`}
-          title={isVideoOn ? 'ปิดกล้อง' : 'เปิดกล้อง'}
-          aria-label={isVideoOn ? 'ปิดกล้อง' : 'เปิดกล้อง'}
-        >
-          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
-          </svg>
-        </button>
-
-        <button
-          onClick={toggleInputMode}
-          className={`px-4 py-2 rounded-lg font-medium transition-all ${
-            inputMode === 'voice' ? 'bg-red-600' : 'bg-blue-600'
-          }`}
-          title={inputMode === 'voice' ? 'สลับเป็นโหมดข้อความ' : 'สลับเป็นโหมดเสียง'}
-          aria-label={inputMode === 'voice' ? 'สลับเป็นโหมดข้อความ' : 'สลับเป็นโหมดเสียง'}
-        >
-          {inputMode === 'voice' ? '🎤 โหมดเสียง' : '⌨️ โหมดข้อความ'}
-        </button>
-
-        <button
-          onClick={handleEndMeeting}
-          className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg font-semibold"
-          title="จบการปรึกษา"
-          aria-label="จบการปรึกษา"
-        >
-          จบการปรึกษา
-        </button>
-      </div>
-    </div>
-  );
-
-  const renderInputArea = () => (
-    <div className="border-t p-4 bg-gray-50">
-      {inputMode === 'text' ? (
-        <div className="flex space-x-2">
-          <input
-            type="text"
-            value={inputMessage}
-            onChange={(e) => setInputMessage(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-            placeholder="พิมพ์ข้อความถึงแพทย์..."
-            aria-label="พิมพ์ข้อความถึงแพทย์"
-            disabled={isAITyping}
-            className="flex-1 px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
-          />
-          <button
-            onClick={handleSendMessage}
-            disabled={!inputMessage.trim() || isAITyping}
-            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:bg-gray-300"
-            title="ส่งข้อความ"
-            aria-label="ส่งข้อความ"
-          >
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
-            </svg>
-          </button>
-        </div>
-      ) : (
-        <div className="text-center py-4">
-          <button
-            onClick={toggleMic}
-            className={`w-20 h-20 rounded-full flex items-center justify-center transition-all shadow-lg ${
-              isMicOn ? 'bg-red-600 animate-pulse' : 'bg-gray-400'
-            }`}
-            title={isMicOn ? 'หยุดฟังเสียง' : 'เริ่มพูด'}
-            aria-label={isMicOn ? 'หยุดฟังเสียง' : 'เริ่มพูด'}
-          >
-            <svg className="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M7 4a3 3 0 016 0v6a3 3 0 11-6 0V4z M5.5 9.643a.75.75 0 00-1.5 0V10c0 3.06 2.29 5.585 5.25 5.954V17.5h-1.5a.75.75 0 000 1.5h4.5a.75.75 0 000-1.5h-1.5v-1.546A6.001 6.001 0 0016 10v-.357a.75.75 0 00-1.5 0V10a4.5 4.5 0 01-9 0v-.357z" />
-            </svg>
-          </button>
-          <p className="text-sm font-medium text-gray-700 mt-3">
-            {isMicOn ? '🎤 กำลังฟังเสียงคุณ...' : 'กดเพื่อเริ่มพูด'}
-          </p>
-        </div>
-      )}
-    </div>
-  );
+  // ============================================================================
+  // RENDER — IN MEETING (ready / in_progress)
+  // ============================================================================
 
   return (
-    <div className="fixed inset-0 bg-gray-900 z-50 flex flex-col">
-      {renderMeetingHeader()}
-
-      <div className="flex-1 flex overflow-hidden">
-        <div className="w-2/3 bg-gray-900 flex flex-col p-4 space-y-4">
-          <div className="flex-1 bg-gradient-to-br from-blue-900 to-indigo-900 rounded-xl flex items-center justify-center relative">
-            <div className="text-center">
-              <img
-                src={appointment.doctor?.avatarUrl}
-                alt={appointment.doctor?.name}
-                className="w-32 h-32 rounded-full mx-auto mb-4 shadow-2xl border-4 border-white"
-              />
-              <p className="text-white text-xl font-semibold">{appointment.doctor?.name}</p>
-              <p className="text-blue-300 text-sm">{appointment.doctor?.specialty}</p>
-              <p className="text-blue-400 text-xs mt-2">🤖 Powered by Gemini AI</p>
-            </div>
-            {isAITyping && (
-              <div className="absolute bottom-4 right-4 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm">
-                กำลังพิมพ์...
-              </div>
-            )}
-          </div>
-
-          <div className="flex-1 bg-gray-800 rounded-xl relative overflow-hidden">
-            {isVideoOn ? (
-              <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                muted
-                aria-label="User video feed"
-                className="w-full h-full object-cover rounded-xl"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center">
-                <div className="text-center">
-                  <div className="w-24 h-24 bg-gray-600 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <span className="text-3xl text-white">{appointment.user.name.charAt(0)}</span>
-                  </div>
-                  <p className="text-white text-lg">{appointment.user.name}</p>
-                </div>
-              </div>
-            )}
-            <div className="absolute top-4 left-4 bg-black bg-opacity-50 text-white px-3 py-1 rounded text-sm">
-              คุณ {isMicOn && <span className="text-red-400 ml-2">🔴 ON AIR</span>}
-            </div>
-          </div>
+    <div className="min-h-screen bg-gray-900 flex flex-col">
+      {/* Top bar */}
+      <div className="bg-gray-800 text-white px-4 py-2 flex justify-between items-center border-b border-gray-700 shrink-0">
+        <div className="flex items-center gap-3">
+          <span className="font-semibold text-sm">Izara Virtual Meeting</span>
+          {status === 'in_progress' && (
+            <span className="text-xs bg-green-600 px-2 py-0.5 rounded-full">{formatDuration(meetingDuration)}</span>
+          )}
+          {lobbyParticipants.length > 0 && (
+            <button onClick={() => setShowPanel('lobby')} className="bg-yellow-600 hover:bg-yellow-700 text-white text-xs px-2 py-1 rounded-full">
+              🔔 Lobby ({lobbyParticipants.length})
+            </button>
+          )}
         </div>
+        <div className="flex items-center gap-2">
+          {/* Transcription controls */}
+          {isTranscribing ? (
+            <div className="flex items-center gap-1">
+              <span className="text-xs text-green-400 animate-pulse mr-1">● REC</span>
+              {isPaused ? (
+                <button onClick={resumeTranscription} className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-2 py-1 rounded">▶ Resume</button>
+              ) : (
+                <button onClick={pauseTranscription} className="bg-yellow-600 hover:bg-yellow-700 text-white text-xs px-2 py-1 rounded">⏸ Pause</button>
+              )}
+              <button onClick={stopTranscription} className="bg-red-600 hover:bg-red-700 text-white text-xs px-2 py-1 rounded">⏹ Stop</button>
+              <select title="Transcription language" value={transcriptLanguage} onChange={e => switchTranscriptionLanguage(e.target.value as 'th-TH' | 'en-US')} className="bg-gray-700 text-white text-xs rounded px-1 py-1">
+                <option value="th-TH">ไทย</option>
+                <option value="en-US">English</option>
+              </select>
+            </div>
+          ) : (
+            <button onClick={startTranscription} className="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1.5 rounded-lg">
+              🎙 เริ่มถอดความ
+            </button>
+          )}
 
-        <div className="w-1/3 bg-white flex flex-col">
-          <div className="bg-gray-50 border-b px-6 py-4">
-            <h3 className="font-bold text-gray-800">💬 บันทึกการสนทนา</h3>
-            <p className="text-sm text-gray-500">ผู้ป่วย: {appointment.user.name}</p>
-            {inputMode === 'voice' && isMicOn && (
-              <div className="mt-2 flex items-center space-x-2 bg-red-100 px-3 py-1 rounded-full">
-                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                <span className="text-xs text-red-700 font-semibold">LISTENING</span>
-              </div>
-            )}
-          </div>
-
-          <div className="flex-1 overflow-y-auto p-6 space-y-4">
-            {messages.map((msg) => (
-              <div key={`${msg.role}-${msg.timestamp.getTime()}`} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className="flex items-start space-x-2 max-w-[85%]">
-                  {msg.role === 'assistant' && (
-                    <img src={appointment.doctor?.avatarUrl} alt="Doctor" className="w-8 h-8 rounded-full" />
-                  )}
-                  <div>
-                    <div className={`rounded-2xl px-4 py-3 ${
-                      msg.role === 'user' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-800'
-                    }`}>
-                      <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                    </div>
-                    <p className={`text-xs mt-1 ${msg.role === 'user' ? 'text-right' : ''} text-gray-500`}>
-                      {msg.timestamp.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}
-                    </p>
-                  </div>
-                  {msg.role === 'user' && (
-                    <img src={appointment.user.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(appointment.user.email || appointment.user.id)}`} alt="User" className="w-8 h-8 rounded-full" />
-                  )}
-                </div>
-              </div>
-            ))}
-            
-            {interimTranscript ? (
-              <div className="flex justify-end">
-                <div className="bg-blue-400 text-white px-4 py-3 rounded-2xl opacity-70 max-w-[85%]">
-                  <p className="text-sm italic">{interimTranscript}...</p>
-                </div>
-              </div>
-            ) : null}
-            
-            {isAITyping && (
-              <div className="flex justify-start">
-                <div className="bg-gray-100 rounded-2xl px-4 py-3">
-                  <div className="flex space-x-2">
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:0.2s]"></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:0.4s]"></div>
-                  </div>
-                </div>
-              </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
-
-          {renderInputArea()}
+          <button onClick={() => setShowPanel(showPanel === 'transcript' ? null : 'transcript')} className={`text-xs px-3 py-1.5 rounded-lg ${showPanel === 'transcript' ? 'bg-blue-600' : 'bg-gray-700 hover:bg-gray-600'}`}>
+            📝 Transcript
+          </button>
+          <button onClick={() => setShowPanel(showPanel === 'chat' ? null : 'chat')} className={`text-xs px-3 py-1.5 rounded-lg ${showPanel === 'chat' ? 'bg-blue-600' : 'bg-gray-700 hover:bg-gray-600'}`}>
+            💬 Chat
+          </button>
+          <button onClick={handleMeetingEnd} className="bg-red-600 hover:bg-red-700 text-white text-xs px-3 py-1.5 rounded-lg font-semibold">
+            จบการประชุม
+          </button>
         </div>
       </div>
-      
-      {/* Live Transcription Component - Microsoft Teams Style (Phase 1 - Req 3.2) */}
-      {meetingState === 'meeting' && (
-        <LiveTranscription
-          isActive={isLiveTranscriptActive}
-          onToggle={() => setIsLiveTranscriptActive(!isLiveTranscriptActive)}
-          speakerName={appointment.doctor?.name || 'แพทย์'}
-          speakerRole="doctor"
-          language="th"
-          appointmentId={appointment.id}
-          autoSave={true}
-          onTranscriptUpdate={(entries) => { liveTranscriptsRef.current = entries; }}
-          onNewEntry={(entry) => {
-            console.log('📝 New transcript entry:', entry.content.substring(0, 50));
-          }}
-        />
-      )}
+
+      {/* Main content */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Jitsi container */}
+        <div className="flex-1" ref={jitsiContainerRef} />
+
+        {/* Side panel */}
+        {showPanel && (
+          <div className="w-80 bg-gray-800 border-l border-gray-700 flex flex-col">
+            {showPanel === 'lobby' && (
+              <div className="flex-1 overflow-y-auto p-3">
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="text-white font-medium text-sm">Waiting Room ({lobbyParticipants.length})</h3>
+                  {lobbyParticipants.length > 1 && (
+                    <button onClick={admitAllFromLobby} className="text-xs bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded">Admit All</button>
+                  )}
+                </div>
+                {lobbyParticipants.length === 0 ? (
+                  <p className="text-gray-400 text-sm">ไม่มีผู้รอเข้าร่วม</p>
+                ) : (
+                  lobbyParticipants.map(p => (
+                    <div key={p.participantId} className="bg-gray-700/50 rounded-lg p-3 border border-gray-600">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center text-sm font-bold">
+                          {p.participantName.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="flex-1">
+                          <div className="font-medium text-sm">{p.participantName}</div>
+                          <div className="text-xs text-gray-400">{p.role}</div>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button onClick={() => admitFromLobby(p.participantId)} className="flex-1 px-2 py-1.5 bg-green-600 hover:bg-green-700 rounded text-xs font-medium transition">
+                          อนุญาต
+                        </button>
+                        <button onClick={() => rejectFromLobby(p.participantId)} className="flex-1 px-2 py-1.5 bg-red-600 hover:bg-red-700 rounded text-xs font-medium transition">
+                          ปฏิเสธ
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+
+            {showPanel === 'transcript' && (
+              <div className="flex-1 overflow-y-auto p-3">
+                <h3 className="text-white font-medium text-sm mb-3">Transcript ({transcripts.filter(s => s.isFinal).length})</h3>
+                {transcripts.length === 0 ? (
+                  <p className="text-gray-400 text-sm">ยังไม่มีการถอดความ — กดปุ่ม &quot;เริ่มถอดความ&quot; เพื่อเริ่ม</p>
+                ) : (
+                  transcripts.map(seg => (
+                    <div key={seg.id} className={`mb-2 rounded p-2 ${seg.isFinal ? 'bg-gray-700' : 'bg-yellow-900/40 animate-pulse'}`}>
+                      <div className="flex justify-between">
+                        <span className={`text-xs font-medium ${speakerColorClass(seg.speakerRole)}`}>
+                          {speakerLabel(seg.speakerRole)} {seg.speakerName}
+                        </span>
+                        <span className="text-xs text-gray-500">{new Date(seg.timestamp).toLocaleTimeString('th-TH')}</span>
+                      </div>
+                      <p className="text-gray-200 text-sm mt-1">{seg.content}</p>
+                      {seg.isFinal && seg.confidence != null && seg.confidence < 0.7 && (
+                        <span className="text-xs text-yellow-500 mt-0.5 inline-block">⚠ Low confidence</span>
+                      )}
+                    </div>
+                  ))
+                )}
+                <div ref={transcriptEndRef} />
+              </div>
+            )}
+
+            {showPanel === 'chat' && (
+              <div className="flex-1 flex flex-col">
+                <div className="flex-1 overflow-y-auto p-3">
+                  <h3 className="text-white font-medium text-sm mb-3">Chat ({chatMessages.length})</h3>
+                  {chatMessages.map(msg => (
+                    <div key={msg.id} className="mb-2">
+                      <span className="text-xs text-blue-400 font-medium">{msg.senderName}</span>
+                      <p className="text-gray-200 text-sm">{msg.message}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="p-2 border-t border-gray-700 flex gap-2">
+                  <input
+                    value={chatInput}
+                    onChange={e => setChatInput(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && sendChat()}
+                    placeholder="พิมพ์ข้อความ..."
+                    className="flex-1 bg-gray-700 text-white text-sm rounded px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                  <button onClick={sendChat} className="bg-blue-600 hover:bg-blue-700 text-white px-3 rounded text-sm">ส่ง</button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

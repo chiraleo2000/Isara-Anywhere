@@ -135,6 +135,20 @@ export const pdpaService = {
     api.post<any>(`/api/pdpa/living-will/${userId}/rollback/${versionId}`, {}),
   uploadSignature: (userId: string, signatureData: string) => 
     api.post<{ signatureUrl: string }>(`/api/pdpa/living-will/${userId}/signature`, { signatureData }),
+  // Per-doctor living will sharing
+  shareLivingWill: (patientId: string, doctorId: string) =>
+    api.post<{ success: boolean; message: string; doctorId: string; doctorName: string }>(`/api/phr/${patientId}/living-will/share`, { doctor_id: doctorId }),
+  revokeLivingWillShare: (patientId: string, doctorId: string) =>
+    api.delete<{ success: boolean; message: string }>(`/api/phr/${patientId}/living-will/share/${doctorId}`),
+  getLivingWillShares: (patientId: string) =>
+    api.get<Array<{ doctor_id: string; doctor_name: string; granted_at: string; email: string }>>(`/api/phr/${patientId}/living-will/shares`),
+  // Per-doctor medical_record_access (PDPA access control)
+  getDoctorAccess: () => api.get<any[]>('/api/pdpa/doctor-access'),
+  grantDoctorAccess: (doctorId: string) => api.post<any>('/api/pdpa/doctor-access', { doctor_id: doctorId }),
+  revokeDoctorAccess: (doctorId: string) => api.delete<any>(`/api/pdpa/doctor-access/${doctorId}`),
+  getPendingRequests: () => api.get<any[]>('/api/pdpa/pending-requests'),
+  respondToRequest: (notificationId: string, doctorId: string, action: 'grant' | 'deny') =>
+    api.post<any>('/api/pdpa/consent-request/respond', { notification_id: notificationId, doctor_id: doctorId, action }),
 };
 
 export const aiService = {
@@ -322,7 +336,16 @@ export const googleService = {
 // Notification Service
 export interface Notification {
   id: string;
-  type: 'appointment_confirmed' | 'appointment_declined' | 'appointment_cancelled' | 'appointment_assigned' | 'emr_ready' | 'appointment_completed' | 'system';
+  type:
+    | 'appointment_confirmed'
+    | 'appointment_declined'
+    | 'appointment_cancelled'
+    | 'appointment_assigned'
+    | 'emr_ready'
+    | 'appointment_completed'
+    | 'lab_results'
+    | 'lab_results_ready'
+    | 'system';
   title: string;
   message: string;
   appointmentId?: string;

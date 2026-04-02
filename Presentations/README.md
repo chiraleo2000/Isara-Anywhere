@@ -2,14 +2,15 @@
 
 > **Version:** 1.5.10 | **Updated:** March 27, 2026
 > **Status:** Phase 1 Complete + SonarQube Clean — All Tests Passing (v1.5.10)
-> **Tests:** 2,013 Unit (Vitest) + 1,124 Local E2E (Playwright) + 215 Cloud Tests (Playwright) = **3,352 total — 100% Pass Rate**  
+> **Tests:** 2,013 Unit (Vitest) + 1,124 Local E2E (Playwright) + 215 Cloud Tests (Playwright) = **3,352 total — 100% Pass Rate**
 > **Code Quality:** SonarQube clean — zero `error: any`, strict TypeScript safety
 
 ---
 
+
 ## 📘 Documentation
 
-The primary technical reference is located at:  
+The primary technical reference is located at:
 **[TECHNICAL_DOCUMENTATION.md](TECHNICAL_DOCUMENTATION.md)**
 
 This document covers:
@@ -23,7 +24,9 @@ This document covers:
 
 ---
 
+
 ## 🌐 Live URLs
+
 
 ### Local Environment (Docker)
 
@@ -35,6 +38,8 @@ This document covers:
 | PostgreSQL | localhost:5433 |
 | pgAdmin | <http://localhost:5050> |
 
+
+
 ### Cloud Environment (Google Cloud Run)
 
 | Service | URL |
@@ -45,7 +50,9 @@ This document covers:
 | pgAdmin | <https://izara-pgadmin-dev-testing-724889190329.asia-southeast1.run.app> |
 | PostgreSQL VM | 35.240.157.230:5432 |
 
+
 ---
+
 
 ## 📁 Folder Structure
 
@@ -77,20 +84,25 @@ Presentations/
 
 ---
 
+
 ## 🛠️ Quick Usage
+
 
 ### View Diagrams
 
 Open **[html-diagrams/index.html](html-diagrams/index.html)** in your browser.
 
+
 ### Technical Overview
 
 Read **[TECHNICAL_DOCUMENTATION.md](TECHNICAL_DOCUMENTATION.md)**
 
+
 ### Database Schema
 
-View **[database/izara-complete-schema-v4.dbml](database/izara-complete-schema-v4.dbml)**  
-(Visualize with [dbdiagram.io](https://dbdiagram.io) or VS Code DBML extension)
+View **[database/izara-complete-schema-v4.dbml](database/izara-complete-schema-v4.dbml)**
+(Visualize with [dbdiagram.io](<https://dbdiagram.io)> or VS Code DBML extension)
+
 
 ### Regenerate HTML Diagrams
 
@@ -98,17 +110,21 @@ View **[database/izara-complete-schema-v4.dbml](database/izara-complete-schema-v
 .\generate-diagrams.ps1
 ```
 
+
 ### Run All Tests
 
 ```powershell
+
 # Unit tests (2,013 tests, ~4.3s)
 cd tests/unit && npx vitest run
+
 
 # E2E tests (1,124 tests, ~4.2 min, requires Docker)
 cd tests/e2e && $env:CI="true"; npx playwright test --project=Local
 ```
 
 ---
+
 
 ## 🎯 Key Diagrams
 
@@ -127,7 +143,9 @@ cd tests/e2e && $env:CI="true"; npx playwright test --project=Local
 | 11 | PHR Management | Personal health records |
 | 12 | Prescription Workflow | E-prescribe with CDS |
 
+
 ---
+
 
 ## 📋 Test Credentials (5 Demo Accounts)
 
@@ -139,7 +157,9 @@ cd tests/e2e && $env:CI="true"; npx playwright test --project=Local
 | Doctor | `doctor.test@izara.com` | IzaraDoctor@2024 | Doctor |
 | Admin | `admin.test@izara.com` | IzaraAdmin@2024 | Doctor |
 
+
 ---
+
 
 ## 🔗 Service URLs
 
@@ -149,6 +169,8 @@ cd tests/e2e && $env:CI="true"; npx playwright test --project=Local
 | Doctor Portal | <http://localhost:3010> | <https://izara-doctor-portal-*.run.app> |
 | PostgreSQL | localhost:5433 | GCE VM (35.240.157.230) |
 
+
 ---
+
 
 ### Last Updated: March 27, 2026

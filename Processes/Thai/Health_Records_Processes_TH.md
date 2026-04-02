@@ -2,11 +2,12 @@
 
 เอกสารนี้อธิบายขั้นตอนการจัดการประวัติสุขภาพสำหรับ Izara Telemedicine รวมถึงบทบาทผู้ใช้ทั้งหมด ตรรกะการแจ้งเตือน การจัดการข้อผิดพลาด และกฎธุรกิจสำหรับ PHR (Personal Health Record) และ EMR (Electronic Medical Record)
 
-**เวอร์ชัน:** 3.0.0  
-**อัปเดตล่าสุด:** 21 มกราคม 2569  
+**เวอร์ชัน:** 3.0.0
+**อัปเดตล่าสุด:** 21 มกราคม 2569
 **สถานะ:** ✅ PostgreSQL ใช้งานเสร็จสมบูรณ์
 
 ---
+
 
 ## สรุปการรวม AI ใน Phase 1
 
@@ -17,36 +18,51 @@
 | **คำแนะนำผู้ป่วย** | AI สร้างเอกสารสรุปที่เข้าใจง่ายสำหรับผู้ป่วย | ✅ |
 | **วิเคราะห์เอกสาร** | AI วิเคราะห์ PDF และผลแล็บที่อัปโหลด | ✅ |
 
+
 ---
+
 
 ## 1. การเข้าสู่ระบบและยืนยันตัวตน
 
+
 ### ผู้ป่วย
 
+
 - เข้าสู่ระบบผ่านพอร์ทัลผู้ป่วย (`LoginPage.tsx`) โดยใช้บัญชีผู้ป่วยของตนเอง (patientId)
+
 - เข้าถึงแดชบอร์ด การจองนัดหมาย บันทึกสุขภาพ
+
 - **ข้อมูลประจำตัว**: ตาราง `users` ใน PostgreSQL พร้อมรหัสผ่านที่เข้ารหัส bcrypt
+
 
 ### แพทย์/ผู้ดูแลระบบ
 
+
 - เข้าสู่ระบบผ่านพอร์ทัลแพทย์ (`DoctorDashboard.tsx`) โดยใช้บัญชีแพทย์ของตนเอง (doctorId)
+
 - เข้าถึงประวัติผู้ป่วย EMR ใบสั่งยา และ AI ช่วยเหลือ
+
 - **ข้อมูลประจำตัว**: ตาราง `users` ใน PostgreSQL พร้อมรหัสผ่านที่เข้ารหัส bcrypt
 
 ---
 
+
 ## 2. การสร้างประวัติสุขภาพและแหล่งข้อมูล
+
 
 ### 2.1 ข้อมูล PHR ที่ผู้ป่วยกรอกเอง
 
-**หน้า PHR พอร์ทัลผู้ป่วย (`PHRPage.tsx`)**
+
+## หน้า PHR พอร์ทัลผู้ป่วย (`PHRPage.tsx`)
 
 - ผู้ป่วยกรอกสัญญาณชีพ ยาที่ใช้ ภูมิแพ้ และโรคเรื้อรัง
+
 - ข้อมูลบันทึกลงตาราง PostgreSQL ทันที
+
 - ข้อมูลพร้อมให้แพทย์ที่ได้รับอนุญาตดูได้ทันที
 
-**ประเภทข้อมูล PHR ที่รองรับ:**
 
+## ประเภทข้อมูล PHR ที่รองรับ:
 | ประเภท | คำอธิบาย | หน่วย |
 | ------ | -------- | ---- |
 | สัญญาณชีพ | ความดัน, ชีพจร, อุณหภูมิ, น้ำหนัก, ออกซิเจน, น้ำตาล | ตามมาตรฐาน |
@@ -57,14 +73,16 @@
 | ประวัติครอบครัว | โรคในครอบครัว | - |
 | เอกสารทางการแพทย์ | ไฟล์ที่อัปโหลด | - |
 
+
+
 ### 2.2 ข้อมูล EMR ระหว่างนัดหมาย
 
 แพทย์ (เข้าสู่ระบบเป็น doctorId) ทำ EMR ใน `CompleteEMREditor.tsx` สำหรับผู้ป่วย (patientId):
 
 **รูปแบบ EMR:** มาตรฐานกระทรวงสาธารณสุข - OPD Card
 
-**แท็บ EMR (ป้ายภาษาไทย):**
 
+## แท็บ EMR (ป้ายภาษาไทย):
 | แท็บ | ชื่อ | คำอธิบาย |
 | --- | --- | -------- |
 | S | ประวัติ | อาการสำคัญ, ประวัติปัจจุบัน |
@@ -73,15 +91,20 @@
 | P | แผนการรักษา | แผนการรักษา |
 | AI | สรุป AI | Gemini สรุปสำหรับผู้ป่วย |
 
-**EMR ประกอบด้วย:**
+
+
+## EMR ประกอบด้วย:
 
 - บันทึกด้วยตนเอง (รายละเอียดทางคลินิกของแพทย์)
+
 - ข้อมูลจาก Transcript การประชุม
+
 - Draft ที่สร้างโดย AI
+
 - ผลแล็บที่เกี่ยวข้อง (ถ้ามี)
 
-**ประเภทการพบแพทย์:**
 
+## ประเภทการพบแพทย์:
 | ประเภท (ไทย) | ประเภท (อังกฤษ) |
 | ----------- | -------------- |
 | ตรวจทั่วไป | General |
@@ -89,17 +112,24 @@
 | ฉุกเฉิน | Emergency |
 | หัตถการ | Procedure |
 
+
 แพทย์ตรวจสอบและอนุมัติส่วนสรุปสำหรับการแชร์กับผู้ป่วย
+
 
 ### 2.3 การรวมผลแล็บ
 
+
 - ถ้ามีการสั่งตรวจแล็บ ผลจะถูกอัปโหลด/กรอกใน `CompleteLabOrders.tsx`
+
 - ผลแล็บเชื่อมกับนัดหมายและ EMR ที่เกี่ยวข้อง
+
 - สรุป EMR สำหรับผู้ป่วยรวมผลแล็บที่เกี่ยวข้อง
 
 ---
 
+
 ## 3. โครงสร้างข้อมูลใน PostgreSQL
+
 
 ### 3.1 ตาราง PHR
 
@@ -107,22 +137,22 @@
 CREATE TABLE phr (
     id VARCHAR(50) PRIMARY KEY,
     patient_id VARCHAR(50) REFERENCES users(id),
-    
+
     -- ข้อมูลพื้นฐาน
     blood_type VARCHAR(5),
     height_cm DECIMAL(5,2),
     weight_kg DECIMAL(5,2),
-    
+
     -- ประวัติ
     allergies JSONB DEFAULT '[]',
     chronic_conditions JSONB DEFAULT '[]',
     current_medications JSONB DEFAULT '[]',
     surgical_history JSONB DEFAULT '[]',
     family_history JSONB DEFAULT '[]',
-    
+
     -- ผู้ติดต่อฉุกเฉิน
     emergency_contact JSONB,
-    
+
     -- Timestamps
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -130,13 +160,14 @@ CREATE TABLE phr (
 );
 ```
 
+
 ### 3.2 ตารางสัญญาณชีพ
 
 ```sql
 CREATE TABLE vital_signs (
     id VARCHAR(50) PRIMARY KEY,
     patient_id VARCHAR(50) REFERENCES users(id),
-    
+
     -- ค่าสัญญาณชีพ
     blood_pressure_systolic INTEGER,
     blood_pressure_diastolic INTEGER,
@@ -145,16 +176,17 @@ CREATE TABLE vital_signs (
     weight DECIMAL(5,2),
     oxygen_saturation INTEGER,
     blood_glucose DECIMAL(5,1),
-    
+
     -- Metadata
     recorded_by VARCHAR(50),
     source VARCHAR(50) DEFAULT 'patient_entry',
     notes TEXT,
-    
+
     -- Timestamps
     recorded_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 ```
+
 
 ### 3.3 ตาราง EMR
 
@@ -164,31 +196,31 @@ CREATE TABLE emr (
     appointment_id VARCHAR(50) REFERENCES appointments(id),
     patient_id VARCHAR(50) REFERENCES users(id),
     doctor_id VARCHAR(50) REFERENCES users(id),
-    
+
     -- รูปแบบ SOAP
     subjective TEXT,
     objective TEXT,
     assessment TEXT,
     plan TEXT,
-    
+
     -- ข้อมูลเพิ่มเติม
     encounter_type VARCHAR(50),
     icd10_codes JSONB DEFAULT '[]',
-    
+
     -- สรุป AI
     ai_summary TEXT,
     ai_patient_instructions TEXT,
     ai_validated BOOLEAN DEFAULT false,
     validated_by VARCHAR(50),
     validated_at TIMESTAMP WITH TIME ZONE,
-    
+
     -- ลายเซ็น
     signed_by VARCHAR(50),
     signed_at TIMESTAMP WITH TIME ZONE,
-    
+
     -- สถานะ
     status VARCHAR(20) DEFAULT 'draft',
-    
+
     -- Timestamps
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
@@ -197,12 +229,14 @@ CREATE TABLE emr (
 
 ---
 
+
 ## 4. พอร์ทัลผู้ป่วย: การเข้าถึงประวัติสุขภาพ
+
 
 ### 4.1 หน้า PHR ("ประวัติสุขภาพส่วนบุคคล")
 
-**แท็บ:**
 
+## แท็บ:
 | แท็บ | คำอธิบาย |
 | --- | -------- |
 | ภาพรวม | ข้อมูลผู้ป่วย, สรุปสัญญาณชีพล่าสุด |
@@ -212,6 +246,8 @@ CREATE TABLE emr (
 | โรคประจำตัว | รายการโรคเรื้อรัง |
 | เอกสาร | เอกสารที่อัปโหลด |
 | พินัยกรรมชีวิต | Living Will (ถ้ามี) |
+
+
 
 ### 4.2 การดูสรุปหลังพบแพทย์
 
@@ -249,14 +285,16 @@ CREATE TABLE emr (
 
 ---
 
+
 ## 5. พอร์ทัลแพทย์: การเข้าถึงประวัติสุขภาพ
+
 
 ### 5.1 การดูประวัติผู้ป่วย
 
 **คอมโพเนนต์:** `PatientRecordViewer.tsx`
 
-**แท็บ:**
 
+## แท็บ:
 | แท็บ | คำอธิบาย |
 | --- | -------- |
 | ข้อมูลผู้ป่วย | ข้อมูลพื้นฐาน, PHR |
@@ -266,6 +304,8 @@ CREATE TABLE emr (
 | ใบสั่งยา | ประวัติใบสั่งยา |
 | เอกสาร | ไฟล์ที่อัปโหลด |
 | พินัยกรรมชีวิต | Living Will (ถ้าแชร์) |
+
+
 
 ### 5.2 การสร้าง EMR
 
@@ -310,6 +350,7 @@ CREATE TABLE emr (
 └─────────────────────────────────────────────────────────────────┘
 ```
 
+
 ### 5.3 Man-in-the-Loop การอนุมัติ AI
 
 ```text
@@ -345,7 +386,9 @@ CREATE TABLE emr (
 
 ---
 
+
 ## 6. ความปลอดภัยและการเข้าถึงข้อมูล
+
 
 ### 6.1 การควบคุมการเข้าถึง
 
@@ -355,29 +398,38 @@ CREATE TABLE emr (
 | แพทย์ | ดูผู้ป่วยที่มอบหมาย | สร้าง/แก้ไข/ลงนาม | สร้าง | สร้าง/ดู |
 | ผู้ดูแลระบบ | ดูทั้งหมด | ดูทั้งหมด | ดูทั้งหมด | ดูทั้งหมด |
 
+
+
 ### 6.2 การบันทึกตรวจสอบ
 
 ทุกการเข้าถึงข้อมูลถูกบันทึก:
 
 ```sql
 INSERT INTO audit_logs (
-    user_id, action, table_name, record_id, 
+    user_id, action, table_name, record_id,
     ip_address, created_at
 ) VALUES (
     $1, 'VIEW_EMR', 'emr', $2, $3, NOW()
 );
 ```
 
+
 ### 6.3 PDPA Compliance
 
+
 - ข้อมูลส่วนบุคคลเข้ารหัสเมื่อจำเป็น
+
 - ผู้ป่วยควบคุมการแชร์ข้อมูล
+
 - บันทึกการเข้าถึงทั้งหมด
+
 - สิทธิ์ลบข้อมูล (Right to be Forgotten)
 
 ---
 
+
 ## 7. การแจ้งเตือน
+
 
 ### 7.1 แจ้งเตือนผู้ป่วย
 
@@ -388,6 +440,8 @@ INSERT INTO audit_logs (
 | ผลแล็บพร้อม | "ผลตรวจแล็บพร้อมแล้ว" |
 | นัดหมายใกล้ถึง | "นัดหมายของคุณจะเริ่มในอีก 1 ชั่วโมง" |
 
+
+
 ### 7.2 แจ้งเตือนแพทย์
 
 | เหตุการณ์ | ข้อความ |
@@ -396,9 +450,12 @@ INSERT INTO audit_logs (
 | ผลแล็บพร้อม | "ผลแล็บสำหรับ [ผู้ป่วย] พร้อมแล้ว" |
 | EMR ที่ยังไม่ลงนาม | "มี EMR ที่ยังไม่ลงนาม" |
 
+
 ---
 
+
 ## 8. API Endpoints
+
 
 ### 8.1 PHR APIs
 
@@ -408,6 +465,8 @@ INSERT INTO audit_logs (
 | PUT | `/api/phr/:patientId` | อัปเดต PHR |
 | POST | `/api/phr/:patientId/vital-signs` | เพิ่มสัญญาณชีพ |
 | GET | `/api/phr/:patientId/vital-signs` | ดูประวัติสัญญาณชีพ |
+
+
 
 ### 8.2 EMR APIs
 
@@ -419,7 +478,9 @@ INSERT INTO audit_logs (
 | POST | `/api/emr/:appointmentId/sign` | ลงนาม EMR |
 | POST | `/api/emr/:appointmentId/validate-ai` | อนุมัติเนื้อหา AI |
 
+
 ---
+
 
 ## สรุป
 

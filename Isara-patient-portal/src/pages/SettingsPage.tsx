@@ -197,6 +197,7 @@ function PasswordField({ id, label, value, onChange, show, onToggleShow, inputCl
           type="button"
           onClick={onToggleShow}
           className="absolute right-3 top-1/2 -translate-y-1/2"
+          title={show ? 'Hide password' : 'Show password'}
         >
           {show ? <EyeOff className="w-4 h-4 text-gray-400" /> : <Eye className="w-4 h-4 text-gray-400" />}
         </button>
@@ -287,7 +288,7 @@ function PasswordChangeModal({
           <h2 className={`text-lg font-semibold ${cls.titleText}`}>
             {labels.title}
           </h2>
-          <button onClick={onClose} className={cls.closeBtnFull}>
+          <button onClick={onClose} className={cls.closeBtnFull} title="Close">
             <X className={`w-5 h-5 ${cls.closeIcon}`} />
           </button>
         </div>
@@ -468,7 +469,7 @@ function ProfileImageModal({
           <h2 className={`text-lg font-semibold ${cls.titleText}`}>
             {labels.title}
           </h2>
-          <button onClick={onClose} className={cls.closeBtnFull}>
+          <button onClick={onClose} className={cls.closeBtnFull} title="Close">
             <X className={`w-5 h-5 ${cls.closeIcon}`} />
           </button>
         </div>
@@ -506,6 +507,7 @@ function ProfileImageModal({
                 accept="image/*"
                 onChange={handleFileSelect}
                 className="hidden"
+                title="Upload profile image"
               />
 
               <div className="flex flex-col gap-2">
@@ -690,6 +692,7 @@ export default function SettingsPage() {
               value={language}
               onChange={(e) => setLanguage(e.target.value as 'en' | 'th')}
               className={`px-4 py-2 border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent ${selectCls}`}
+              title="Language"
             >
               <option value="th">ไทย</option>
               <option value="en">English</option>
@@ -790,8 +793,11 @@ function ToggleItem({
         </div>
       </div>
       <button
+        type="button"
         onClick={() => onChange(!checked)}
         className={`w-12 h-6 rounded-full transition-colors ${getToggleBg()}`}
+        aria-label={label}
+        title={label}
       >
         <div className={`w-5 h-5 bg-white rounded-full shadow transform transition-transform ${checked ? 'translate-x-6' : 'translate-x-0.5'}`} />
       </button>

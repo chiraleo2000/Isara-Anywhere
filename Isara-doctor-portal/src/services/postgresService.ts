@@ -12,15 +12,6 @@
  * - izara-meta-data (Reference data, AI knowledge)
  */
 
-// Configuration
-const DB_CONFIG = {
-  host: import.meta.env.VITE_DB_HOST || 'localhost',
-  port: Number.parseInt(import.meta.env.VITE_DB_PORT || '5432', 10),
-  database: import.meta.env.VITE_DB_NAME || 'izara_phase1',
-  user: import.meta.env.VITE_DB_USER || 'postgres',
-  password: import.meta.env.VITE_DB_PASSWORD || '',
-};
-
 // API Base URL (backend handles actual DB connection)
 const API_BASE = import.meta.env.VITE_API_URL || '';
 

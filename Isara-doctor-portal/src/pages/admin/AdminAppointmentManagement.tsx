@@ -11,16 +11,11 @@ import { useAuth } from '../../components/common/AuthProvider';
 import { useNavigate } from 'react-router-dom';
 import { useSettings } from '../../hooks/useSettings';
 // PostgreSQL-backed API service - NO GCS!
-import { fetchAllAppointments, fetchAllDoctors } from '../../services/apiDataService';
+import { fetchAllAppointments, fetchAllDoctors, aiSpecialtyMatch, fetchDoctorsBySpecialty, adminAssignAppointment } from '../../services/apiDataService';
+import type { AiMatchResult } from '../../services/apiDataService';
 import { AppointmentStatus } from '../../types';
 import appointmentService from '../../services/appointmentService';
 
-interface Patient {
-  id: string;
-  name: string;
-  email: string;
-  phone?: string;
-}
 
 interface Doctor {
   id: string;
@@ -59,27 +54,6 @@ interface AppointmentRequest {
   assignmentMethod?: 'patient_selected' | 'ai_matched' | 'doctor_claimed' | 'admin_assigned';
 }
 
-interface PoolItem {
-  id: string;
-  appointmentId: string;
-  patientId: string;
-  patientName: string;
-  patientEmail: string;
-  requiredSpecialty: string;
-  matchedSpecialties: string[];
-  symptoms: string[];
-  symptomDescription?: string;
-  urgency: 'normal' | 'urgent' | 'emergency';
-  preferredDates: string[];
-  preferredTimeSlot: 'morning' | 'afternoon' | 'evening';
-  poolReason: string;
-  poolStatus: 'pending' | 'ai_matched' | 'doctor_claimed' | 'admin_assigned' | 'admin_pending_approval' | 'confirmed' | 'expired';
-  adminApprovalRequired: boolean;
-  adminApproved?: boolean;
-  missedCount: number;
-  createdAt: string;
-}
-
 const AdminAppointmentManagement: React.FC = () => {
   const { language } = useSettings();
   
@@ -109,7 +83,7 @@ const AdminAppointmentManagement: React.FC = () => {
     high: { en: 'High', th: 'สูง' },
     emergency: { en: 'Emergency', th: 'ฉุกเฉิน' },
   };
-  const label = (key: keyof typeof labels) => labels[key][language] || labels[key].en;
+  const _label = (key: keyof typeof labels) => labels[key][language] || labels[key].en;
 
   const { user, isAuthenticated, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -129,6 +103,11 @@ const AdminAppointmentManagement: React.FC = () => {
     time: '',
     notes: ''
   });
+
+  // AI Specialty Matching state
+  const [aiResults, setAiResults] = useState<Record<string, AiMatchResult>>({});
+  const [aiLoading, setAiLoading] = useState<Record<string, boolean>>({});
+  const [matchedDoctors, setMatchedDoctors] = useState<Record<string, Doctor[]>>({});
 
 
   // Check if user is admin
@@ -304,8 +283,78 @@ const AdminAppointmentManagement: React.FC = () => {
     }
   };
 
-  // Auto-assign appointment based on specialty and availability
-  const handleAutoAssign = async (request: AppointmentRequest) => {
+  // AI Specialty Match — call Gemini via server
+  const handleAiMatch = async (request: AppointmentRequest) => {
+    try {
+      setAiLoading(prev => ({ ...prev, [request.id]: true }));
+      setError(null);
+
+      const symptomsText = [
+        request.reason,
+        ...(request.symptoms || [])
+      ].filter(Boolean).join(' ');
+
+      const urgencyMap: Record<string, 'routine' | 'urgent' | 'emergency'> = {
+        low: 'routine', medium: 'routine', high: 'urgent', emergency: 'emergency'
+      };
+
+      const result = await aiSpecialtyMatch({
+        appointmentId: request.id,
+        symptoms: symptomsText,
+        urgency: urgencyMap[request.urgency] || 'routine',
+      });
+
+      setAiResults(prev => ({ ...prev, [request.id]: result }));
+
+      // Auto-fetch doctors for the suggested specialty
+      if (result.specialty && !result.error) {
+        try {
+          const docs = await fetchDoctorsBySpecialty(result.specialty, true);
+          setMatchedDoctors(prev => ({ ...prev, [request.id]: docs.map((d: any) => ({ id: d.id, name: d.name || d.name_thai, email: d.email, specialty: d.specialty })) }));
+        } catch {
+          setMatchedDoctors(prev => ({ ...prev, [request.id]: [] }));
+        }
+      }
+    } catch (err) {
+      console.error('[AI Match] Error:', err);
+      setAiResults(prev => ({
+        ...prev,
+        [request.id]: { specialty: null, confidence: 0, reasoning: null, secondary_specialty: null, model: '', error: 'AI unavailable' }
+      }));
+    } finally {
+      setAiLoading(prev => ({ ...prev, [request.id]: false }));
+    }
+  };
+
+  // Assign from AI result card
+  const handleAssignFromAi = async (appointmentId: string, doctorId: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const result = await adminAssignAppointment(appointmentId, doctorId);
+      if (!result.success) throw new Error(result.message || 'Failed to assign');
+      setSuccessMessage('Appointment assigned successfully!');
+      // Clear AI state for this appointment
+      setAiResults(prev => { const n = { ...prev }; delete n[appointmentId]; return n; });
+      setMatchedDoctors(prev => { const n = { ...prev }; delete n[appointmentId]; return n; });
+      fetchAppointmentRequests();
+      setTimeout(() => setSuccessMessage(null), 4000);
+    } catch (err) {
+      console.error('[Admin Assign] Error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to assign appointment');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Dismiss AI result
+  const handleDismissAiResult = (appointmentId: string) => {
+    setAiResults(prev => { const n = { ...prev }; delete n[appointmentId]; return n; });
+    setMatchedDoctors(prev => { const n = { ...prev }; delete n[appointmentId]; return n; });
+  };
+
+  // Legacy keyword-based auto-assign (kept as fallback)
+  const _handleAutoAssign = async (request: AppointmentRequest) => {
     try {
       setLoading(true);
       setError(null);
@@ -356,25 +405,20 @@ const AdminAppointmentManagement: React.FC = () => {
       console.log(`📊 Found ${matchingDoctors.length} matching doctors`);
 
       if (matchingDoctors.length === 0) {
-        // No matching doctors - keep in admin pool for manual assignment
         setError('No matching doctors found. Please assign manually.');
         setSelectedRequest(request);
         setShowAssignModal(true);
         return;
       }
 
-      // Sort by availability (doctors with available slots first)
-      // For now, we'll randomly pick one from matching doctors
       const randomIndex = Math.floor(Math.random() * matchingDoctors.length);
       const selectedDoctor = matchingDoctors[randomIndex];
 
-      // Get next available date/time (default to requested date or tomorrow)
       const requestedDate = new Date(request.requestedDate);
       const assignDate = requestedDate > new Date()
         ? requestedDate.toISOString().split('T')[0]
         : new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
-      // Parse preferred time or default to morning
       const getTimeFromPreference = (pref?: string): string => {
         if (!pref) return '10:00';
         if (pref.includes('morning') || pref.includes('เช้า')) return '10:00';
@@ -385,9 +429,6 @@ const AdminAppointmentManagement: React.FC = () => {
       const assignTime = getTimeFromPreference(request.preferredTime);
 
       const assignedDateTime = `${assignDate}T${assignTime}:00`;
-
-      console.log(`🎯 Auto-assigning to: ${selectedDoctor.name} (${selectedDoctor.specialty})`);
-      console.log(`📅 Date: ${assignDate}, Time: ${assignTime}`);
 
       const result = await appointmentService.updateAppointment(request.id, {
         doctorId: selectedDoctor.id,
@@ -441,16 +482,16 @@ const AdminAppointmentManagement: React.FC = () => {
 
     for (const request of pendingRequests) {
       try {
-        await handleAutoAssign(request);
+        await handleAiMatch(request);
         successCount++;
       } catch (err) {
-        console.error(`Failed to auto-assign ${request.id}:`, err);
+        console.error(`Failed to AI-match ${request.id}:`, err);
         failCount++;
       }
     }
 
     setLoading(false);
-    setSuccessMessage(`Auto-assignment complete: ${successCount} assigned, ${failCount} failed`);
+    setSuccessMessage(`AI matching complete: ${successCount} analyzed, ${failCount} failed. Review results below.`);
     setTimeout(() => setSuccessMessage(null), 5000);
   };
 
@@ -515,7 +556,7 @@ const AdminAppointmentManagement: React.FC = () => {
         {error && (
           <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
             {error}
-            <button onClick={() => setError(null)} aria-label="ปิดข้อผิดพลาด" title="ปิด" className="ml-2 text-red-500 hover:text-red-700">×</button>
+            <button onClick={() => setError(null)} className="ml-2 text-red-500 hover:text-red-700" aria-label="ปิดข้อผิดพลาด" title="ปิด">×</button>
           </div>
         )}
         {successMessage && (
@@ -674,12 +715,16 @@ const AdminAppointmentManagement: React.FC = () => {
                       {request.status === 'pending' && (
                         <div className="flex flex-wrap gap-2">
                           <button
-                            onClick={() => handleAutoAssign(request)}
-                            disabled={loading}
+                            onClick={() => handleAiMatch(request)}
+                            disabled={!!aiLoading[request.id]}
                             className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm disabled:opacity-50 flex items-center gap-1"
-                            title="Auto-assign based on symptoms and specialty"
+                            title="AI-powered specialty matching via Gemini"
                           >
-                            🤖 Auto
+                            {aiLoading[request.id] ? (
+                              <><span className="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span> Analyzing...</>
+                            ) : (
+                              '🤖 AI Match'
+                            )}
                           </button>
                           <button
                             onClick={() => {
@@ -702,6 +747,92 @@ const AdminAppointmentManagement: React.FC = () => {
                         </div>
                       )}
                     </div>
+
+                    {/* AI Specialty Match Result Card */}
+                    {aiResults[request.id] && (
+                      <div className="mt-3 border border-purple-200 bg-purple-50 rounded-lg p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="text-sm font-semibold text-purple-900 flex items-center gap-1">
+                            🤖 AI Specialty Match
+                          </h4>
+                          <button
+                            onClick={() => handleDismissAiResult(request.id)}
+                            className="text-gray-400 hover:text-gray-600 text-lg leading-none"
+                            title="Dismiss"
+                          >
+                            ✕
+                          </button>
+                        </div>
+
+                        {aiResults[request.id].error ? (
+                          <p className="text-sm text-red-600">{aiResults[request.id].error}</p>
+                        ) : (
+                          <>
+                            <div className="flex flex-wrap items-center gap-2 mb-2">
+                              <span className="text-sm font-medium text-gray-900">
+                                Suggested: <strong>{aiResults[request.id].specialty}</strong>
+                              </span>
+                              {(() => {
+                                const conf = aiResults[request.id].confidence ?? 0;
+                                let badgeClass = 'bg-red-100 text-red-800';
+                                if (conf >= 0.7) badgeClass = 'bg-green-100 text-green-800';
+                                else if (conf >= 0.5) badgeClass = 'bg-yellow-100 text-yellow-800';
+                                return (
+                                  <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${badgeClass}`}>
+                                    Confidence: {Math.round(conf * 100)}%
+                                  </span>
+                                );
+                              })()}
+                              {aiResults[request.id].secondary_specialty && (
+                                <span className="text-xs text-gray-500">
+                                  Secondary: {aiResults[request.id].secondary_specialty}
+                                </span>
+                              )}
+                            </div>
+
+                            {(aiResults[request.id].confidence ?? 0) < 0.5 && (
+                              <div className="mb-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-800">
+                                ⚠️ Low confidence — manual review recommended
+                              </div>
+                            )}
+
+                            {aiResults[request.id].reasoning && (
+                              <p className="text-sm text-gray-700 mb-3 italic">
+                                &ldquo;{aiResults[request.id].reasoning}&rdquo;
+                              </p>
+                            )}
+
+                            {/* Available doctors for the matched specialty */}
+                            {(matchedDoctors[request.id]?.length ?? 0) > 0 ? (
+                              <div>
+                                <p className="text-xs font-medium text-gray-600 mb-1">
+                                  Doctors available in &ldquo;{aiResults[request.id].specialty}&rdquo; ({matchedDoctors[request.id].length}):
+                                </p>
+                                <div className="space-y-1">
+                                  {matchedDoctors[request.id].map(doc => (
+                                    <div key={doc.id} className="flex items-center justify-between bg-white rounded px-3 py-2 border border-gray-200">
+                                      <span className="text-sm text-gray-900">
+                                        Dr. {doc.name}
+                                        {doc.specialty && <span className="text-gray-500 ml-1">({doc.specialty})</span>}
+                                      </span>
+                                      <button
+                                        onClick={() => handleAssignFromAi(request.id, doc.id)}
+                                        disabled={loading}
+                                        className="px-3 py-1 bg-emerald-600 text-white rounded text-xs hover:bg-emerald-700 disabled:opacity-50"
+                                      >
+                                        Assign
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            ) : (
+                              <p className="text-xs text-gray-500">No doctors currently available for this specialty.</p>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

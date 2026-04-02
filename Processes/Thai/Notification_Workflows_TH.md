@@ -1,12 +1,14 @@
 # ขั้นตอนการแจ้งเตือน / Notification Workflows
 
-**เวอร์ชัน:** 3.0.0  
-**อัปเดตล่าสุด:** 21 มกราคม 2569  
+**เวอร์ชัน:** 3.0.0
+**อัปเดตล่าสุด:** 21 มกราคม 2569
 **สถานะ:** ✅ PostgreSQL ใช้งานเสร็จสมบูรณ์
 
 ---
 
+
 ## 1. ภาพรวมระบบแจ้งเตือน
+
 
 ### 1.1 ช่องทางการแจ้งเตือน
 
@@ -16,6 +18,8 @@
 | Email | อีเมล | การแจ้งเตือนผ่านอีเมล Gmail API |
 | Push | Push Notification | การแจ้งเตือน Browser/Mobile |
 | SMS | SMS | การแจ้งเตือน SMS (ฟีเจอร์อนาคต) |
+
+
 
 ### 1.2 ประเภทการแจ้งเตือน
 
@@ -55,7 +59,9 @@
 
 ---
 
+
 ## 2. โครงสร้างข้อมูลการแจ้งเตือน
+
 
 ### 2.1 ตาราง notifications
 
@@ -63,29 +69,29 @@
 CREATE TABLE notifications (
     id VARCHAR(50) PRIMARY KEY,
     user_id VARCHAR(50) REFERENCES users(id),
-    
+
     -- ข้อมูลการแจ้งเตือน
     type VARCHAR(50) NOT NULL,
     title VARCHAR(255) NOT NULL,
     title_thai VARCHAR(255),
     message TEXT NOT NULL,
     message_thai TEXT,
-    
+
     -- ข้อมูลเพิ่มเติม
     data JSONB DEFAULT '{}',
     link TEXT,
     icon VARCHAR(50),
     priority VARCHAR(20) DEFAULT 'normal',
-    
+
     -- สถานะ
     is_read BOOLEAN DEFAULT false,
     read_at TIMESTAMP WITH TIME ZONE,
-    
+
     -- ช่องทาง
     channels TEXT[] DEFAULT ARRAY['in_app'],
     email_sent BOOLEAN DEFAULT false,
     push_sent BOOLEAN DEFAULT false,
-    
+
     -- Timestamps
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     expires_at TIMESTAMP WITH TIME ZONE
@@ -98,6 +104,7 @@ CREATE INDEX idx_notifications_is_read ON notifications(is_read);
 CREATE INDEX idx_notifications_created_at ON notifications(created_at DESC);
 ```
 
+
 ### 2.2 Interface TypeScript
 
 ```typescript
@@ -105,13 +112,13 @@ interface Notification {
   id: string;
   userId: string;
   type: NotificationType;
-  
+
   // เนื้อหา
   title: string;
   titleThai?: string;
   message: string;
   messageThai?: string;
-  
+
   // ข้อมูลเพิ่มเติม
   data?: {
     appointmentId?: string;
@@ -123,22 +130,22 @@ interface Notification {
   link?: string;
   icon?: string;
   priority: 'low' | 'normal' | 'high' | 'urgent';
-  
+
   // สถานะ
   isRead: boolean;
   readAt?: string;
-  
+
   // ช่องทาง
   channels: ('in_app' | 'email' | 'push' | 'sms')[];
   emailSent: boolean;
   pushSent: boolean;
-  
+
   // Timestamps
   createdAt: string;
   expiresAt?: string;
 }
 
-type NotificationType = 
+type NotificationType =
   | 'appointment_requested'
   | 'appointment_confirmed'
   | 'appointment_declined'
@@ -158,7 +165,9 @@ type NotificationType =
 
 ---
 
+
 ## 3. ขั้นตอนการแจ้งเตือนหลัก
+
 
 ### 3.1 การยืนยันนัดหมาย
 
@@ -210,6 +219,7 @@ type NotificationType =
 └─────────────────────────────────────────────────────────────────┘
 ```
 
+
 ### 3.2 การแจ้งเตือนก่อนนัดหมาย
 
 ```text
@@ -243,6 +253,7 @@ type NotificationType =
 │                                                                  │
 └─────────────────────────────────────────────────────────────────┘
 ```
+
 
 ### 3.3 การแจ้งเตือนแพทย์เริ่มประชุม
 
@@ -279,6 +290,7 @@ type NotificationType =
 │                                                                  │
 └─────────────────────────────────────────────────────────────────┘
 ```
+
 
 ### 3.4 การแจ้งเตือน EMR พร้อม
 
@@ -324,6 +336,7 @@ type NotificationType =
 └─────────────────────────────────────────────────────────────────┘
 ```
 
+
 ### 3.5 การแจ้งเตือน AI รอตรวจสอบ (สำหรับแพทย์)
 
 ```text
@@ -356,7 +369,9 @@ type NotificationType =
 
 ---
 
+
 ## 4. UI Components
+
 
 ### 4.1 พอร์ทัลผู้ป่วย
 
@@ -367,6 +382,8 @@ type NotificationType =
 | NotificationPage | /notifications | ประวัติการแจ้งเตือน |
 | ToastNotification | Global | แจ้งเตือนแบบ popup |
 
+
+
 ### 4.2 พอร์ทัลแพทย์
 
 | Component | ตำแหน่ง | ชื่อภาษาไทย |
@@ -375,6 +392,8 @@ type NotificationType =
 | AppointmentAlert | Dashboard | นัดหมายรอดำเนินการ |
 | PatientRequestBadge | Queue | คำขอนัดหมายใหม่ |
 | AIReviewBadge | Sidebar | เอกสารรอตรวจสอบ |
+
+
 
 ### 4.3 Toast Notification
 
@@ -387,6 +406,7 @@ type NotificationType =
 │  [ปิด]              [ดูรายละเอียด]       │
 └─────────────────────────────────────────┘
 ```
+
 
 ### 4.4 Notification Bell
 
@@ -416,7 +436,9 @@ type NotificationType =
 
 ---
 
+
 ## 5. API Endpoints
+
 
 ### 5.1 Notification APIs
 
@@ -429,6 +451,8 @@ type NotificationType =
 | DELETE | `/api/notifications/:id` | ลบการแจ้งเตือน |
 | GET | `/api/notifications/settings` | ดูการตั้งค่า |
 | PUT | `/api/notifications/settings` | อัปเดตการตั้งค่า |
+
+
 
 ### 5.2 การตั้งค่าการแจ้งเตือน
 
@@ -455,7 +479,9 @@ interface NotificationSettings {
 
 ---
 
+
 ## 6. Email Templates
+
 
 ### 6.1 การยืนยันนัดหมาย
 
@@ -474,8 +500,10 @@ Subject: ✅ นัดหมายได้รับการยืนยัน 
 🔗 ลิงก์เข้าประชุม (สำหรับนัดหมายออนไลน์):
 [MEETING_LINK]
 
-💡 หมายเหตุ: 
+💡 หมายเหตุ:
+
 - คุณสามารถเข้าร่วมได้ 15 นาทีก่อนเวลานัด
+
 - กรุณารอให้แพทย์เริ่มห้องประชุมก่อน
 
 [➕ เพิ่มในปฏิทิน] [📋 ดูนัดหมาย]
@@ -483,6 +511,7 @@ Subject: ✅ นัดหมายได้รับการยืนยัน 
 ---
 ทีมงาน Izara Telemedicine
 ```
+
 
 ### 6.2 แพทย์เริ่มประชุม
 
@@ -496,8 +525,10 @@ Subject: 📹 แพทย์รอคุณในห้องประชุม
 🔗 เข้าร่วมประชุม:
 [MEETING_LINK]
 
-💡 หมายเหตุ: 
+💡 หมายเหตุ:
+
 - ตรวจสอบให้แน่ใจว่ากล้องและไมโครโฟนทำงานปกติ
+
 - คุณจะเข้าสู่ห้องรอก่อน แพทย์จะอนุมัติให้เข้าร่วม
 
 [เข้าร่วมประชุม]
@@ -505,6 +536,7 @@ Subject: 📹 แพทย์รอคุณในห้องประชุม
 ---
 ทีมงาน Izara Telemedicine
 ```
+
 
 ### 6.3 สรุปการพบแพทย์พร้อม
 
@@ -535,7 +567,9 @@ Subject: 📋 สรุปการพบแพทย์ - [วันที่]
 
 ---
 
+
 ## 7. การจัดการ Real-time Notifications
+
 
 ### 7.1 WebSocket Connection
 
@@ -549,16 +583,17 @@ const socket = io('wss://api.izara.com/notifications', {
 socket.on('notification', (notification) => {
   // แสดง Toast
   showToast(notification);
-  
+
   // อัปเดต Badge
   updateNotificationCount();
-  
+
   // เล่นเสียง (ถ้าเปิดใช้งาน)
   if (settings.inApp.sound) {
     playNotificationSound();
   }
 });
 ```
+
 
 ### 7.2 การแสดง Toast
 
@@ -579,6 +614,7 @@ function showToast(notification: Notification) {
 
 ---
 
+
 ## สรุป
 
 | ฟีเจอร์ | สถานะ | คำอธิบาย |
@@ -588,6 +624,7 @@ function showToast(notification: Notification) {
 | Real-time Updates | ✅ | WebSocket |
 | Toast Notifications | ✅ | แจ้งเตือนแบบ popup |
 | Notification Settings | ✅ | ผู้ใช้ปรับแต่งได้ |
+
 
 ---
 

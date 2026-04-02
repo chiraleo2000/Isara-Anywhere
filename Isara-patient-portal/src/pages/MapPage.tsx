@@ -16,6 +16,8 @@
  *  - One-tap Google Maps navigation
  *  - Phone number links
  */
+/// <reference types="google.maps" />
+
 import { useState, useEffect, useRef, useCallback, type ReactNode } from 'react';
 import { useSettings } from '../contexts/SettingsContext';
 import {
@@ -24,6 +26,9 @@ import {
   Target, AlertTriangle, Sliders, ChevronDown, ChevronUp,
   Phone, Clock,
 } from 'lucide-react';
+
+type MapGlobal = typeof globalThis & { google?: typeof google; L?: any };
+const mapGlobal = globalThis as MapGlobal;
 
 const MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
 
@@ -92,12 +97,17 @@ const iconMap: Record<string, typeof Building2> = { hospital: Building2, clinic:
 /* ------------------------------------------------------------------ */
 let mapsLoadPromise: Promise<void> | null = null;
 function loadGoogleMapsScript(apiKey: string, lang: string): Promise<void> {
-  if (globalThis.google?.maps?.places) return Promise.resolve();
+  if (mapGlobal.google?.maps?.places) return Promise.resolve();
   if (mapsLoadPromise !== null) return mapsLoadPromise;
   mapsLoadPromise = new Promise((resolve, reject) => {
     const existing = document.querySelector('script[src*="maps.googleapis.com"]');
     if (existing) {
-      const timer = setInterval(() => { if (globalThis.google?.maps?.places) { clearInterval(timer); resolve(); } }, 100);
+      const timer = setInterval(() => {
+        if (mapGlobal.google?.maps?.places) {
+          clearInterval(timer);
+          resolve();
+        }
+      }, 100);
       setTimeout(() => { clearInterval(timer); reject(new Error('timeout')); }, 15000);
       return;
     }
@@ -105,7 +115,12 @@ function loadGoogleMapsScript(apiKey: string, lang: string): Promise<void> {
     s.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&language=${lang || 'th'}`;
     s.async = true;
     s.onload = () => {
-      const timer = setInterval(() => { if (globalThis.google?.maps?.places) { clearInterval(timer); resolve(); } }, 50);
+      const timer = setInterval(() => {
+        if (mapGlobal.google?.maps?.places) {
+          clearInterval(timer);
+          resolve();
+        }
+      }, 50);
       setTimeout(() => { clearInterval(timer); resolve(); }, 5000);
     };
     s.onerror = () => { mapsLoadPromise = null; reject(new Error('Maps script failed')); };
@@ -119,7 +134,7 @@ function loadGoogleMapsScript(apiKey: string, lang: string): Promise<void> {
 /* ------------------------------------------------------------------ */
 let leafletLoaded = false;
 function loadLeaflet(): Promise<void> {
-  if (leafletLoaded || (globalThis as any).L) { leafletLoaded = true; return Promise.resolve(); }
+  if (leafletLoaded || mapGlobal.L) { leafletLoaded = true; return Promise.resolve(); }
   return new Promise((resolve, reject) => {
     const css = document.createElement('link');
     css.rel = 'stylesheet';
@@ -358,19 +373,22 @@ function FacilityCard({
   const openLabel = language === 'th' ? '● เปิด' : '● Open';
   const closedLabel = language === 'th' ? '○ ปิด' : '○ Closed';
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`w-full text-left p-3 cursor-pointer transition-all border-b ${tc.cardBorder} ${
+    <div
+      className={`w-full p-3 transition-all border-b ${tc.cardBorder} ${
         selected ? 'border-l-4 border-emerald-500 bg-emerald-50/50 dark:bg-emerald-900/20' : ''
       } ${tc.cardBg}`}
     >
       <div className="flex items-start gap-3">
-        <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${colors[f.type]}`}>
-          <Icon className="w-4 h-4" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex justify-between gap-2">
+        <button
+          type="button"
+          onClick={onClick}
+          className="flex flex-1 items-start gap-3 min-w-0 text-left"
+        >
+          <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${colors[f.type]}`}>
+            <Icon className="w-4 h-4" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex justify-between gap-2">
             <div>
               <h3 className={`font-medium text-sm leading-tight ${tc.nameText}`}>{f.name}</h3>
               <span className={`inline-block px-1.5 py-0.5 text-xs rounded mt-0.5 ${colors[f.type]}`}>
@@ -396,9 +414,9 @@ function FacilityCard({
               </div>
             )}
             {f.phone && (
-              <a href={`tel:${f.phone}`} onClick={(e) => e.stopPropagation()} className="flex items-center gap-1 text-xs text-blue-500 hover:underline">
+              <span className="flex items-center gap-1 text-xs text-blue-500">
                 <Phone className="w-3 h-3" /> {f.phone}
-              </a>
+              </span>
             )}
             {f.openingHours && (
               <span className="flex items-center gap-1 text-xs text-gray-400">
@@ -406,17 +424,18 @@ function FacilityCard({
               </span>
             )}
           </div>
-        </div>
+          </div>
+        </button>
         <button
           type="button"
-          onClick={(e) => { e.stopPropagation(); onNavigate(); }}
+          onClick={onNavigate}
           className="p-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 shrink-0 shadow-sm"
           title={language === 'th' ? 'นำทาง' : 'Navigate'}
         >
           <Navigation className="w-4 h-4" />
         </button>
       </div>
-    </button>
+    </div>
   );
 }
 
@@ -503,7 +522,7 @@ function MapViewArea({
               <div className="flex items-center gap-2 border-t pt-1 mt-1"><div className="w-2.5 h-2.5 bg-blue-500 rounded-full ring-2 ring-blue-200" /><span>{lbl.yourLocation}</span></div>
             </div>
           </div>
-          <button onClick={onCenter} className="absolute bottom-4 right-4 bg-white dark:bg-gray-700 rounded-full p-3 shadow-lg hover:bg-gray-50 dark:hover:bg-gray-600 z-10">
+          <button onClick={onCenter} className="absolute bottom-4 right-4 bg-white dark:bg-gray-700 rounded-full p-3 shadow-lg hover:bg-gray-50 dark:hover:bg-gray-600 z-10" title={lbl.yourLocation}>
             <User className="w-5 h-5 text-blue-600 dark:text-blue-400" />
           </button>
         </>

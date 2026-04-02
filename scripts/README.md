@@ -1,19 +1,24 @@
 # Izara Telemedicine - Scripts & Tooling
 
+
 ## Quick Start
 
 ```powershell
+
 # 1. Deploy locally
 .\scripts\deploy\local.ps1
 
+
 # 2. Seed database
 node scripts/database/db-tool.cjs --all
+
 
 # 3. Check status
 .\scripts\izara-cli.ps1 status
 ```
 
 ---
+
 
 ## Directory Structure
 
@@ -49,7 +54,9 @@ scripts/
 
 ---
 
+
 ## Unified CLI: izara-cli.ps1
+
 
 ### Deployment
 
@@ -58,6 +65,7 @@ scripts/
 .\scripts\izara-cli.ps1 deploy cloud          # Cloud Run
 .\scripts\izara-cli.ps1 deploy local -Fresh   # Fresh install (wipe data)
 ```
+
 
 ### Database
 
@@ -68,6 +76,7 @@ scripts/
 .\scripts\izara-cli.ps1 db -DbAction backup   # Create backup
 .\scripts\izara-cli.ps1 db -DbAction reset    # Reset (caution!)
 ```
+
 
 ### Health & Maintenance
 
@@ -81,30 +90,36 @@ scripts/
 
 ---
 
+
 ## Database Tool: db-tool.cjs
 
 The unified database tool replaces 4 previous scripts. Targets: `local` (default), `cloud`, `dev-cloud`.
 
 ```powershell
+
 # Schema & data operations
 node scripts/database/db-tool.cjs --fix                           # Fix schema
 node scripts/database/db-tool.cjs --seed                          # Seed demo data
 node scripts/database/db-tool.cjs --verify                        # Verify data
 node scripts/database/db-tool.cjs --all                           # Fix + seed + verify
 
+
 # Migrations
 node scripts/database/db-tool.cjs --migrate-phase2                # Phase 2 tables
 node scripts/database/db-tool.cjs --migrate-ai                    # AI tables
+
 
 # Data transfer (prod -> local/dev)
 node scripts/database/db-tool.cjs --export                        # Export from prod
 node scripts/database/db-tool.cjs --import-local                  # Import into local
 node scripts/database/db-tool.cjs --import-dev                    # Import into dev cloud
 
+
 # Target a specific environment
 node scripts/database/db-tool.cjs --target local --fix            # Local DB
 node scripts/database/db-tool.cjs --target cloud --all            # Cloud DB
 node scripts/database/db-tool.cjs --target dev-cloud --verify     # Dev cloud DB
+
 
 # Query & help
 node scripts/database/db-tool.cjs --query                         # DB summary
@@ -113,7 +128,9 @@ node scripts/database/db-tool.cjs --help                          # Show all com
 
 ---
 
+
 ## Deploy Scripts
+
 
 ### Local Docker
 
@@ -124,6 +141,7 @@ node scripts/database/db-tool.cjs --help                          # Show all com
 .\scripts\deploy\local.ps1 -Down              # Stop all containers
 .\scripts\deploy\local.ps1 -Logs              # Follow container logs
 ```
+
 
 ### Cloud Run (Dev-Testing)
 
@@ -137,6 +155,7 @@ node scripts/database/db-tool.cjs --help                          # Show all com
 
 ---
 
+
 ## Service URLs
 
 | Service | Local | Cloud Dev-Testing |
@@ -147,18 +166,23 @@ node scripts/database/db-tool.cjs --help                          # Show all com
 | PostgreSQL | localhost:5433 | 35.240.162.227:5432 (GCE VM) |
 | pgAdmin | <http://localhost:5050> | Cloud Run (auto-assigned) |
 
+
 ---
+
 
 ## Cloud Build
 
 All cloud builds use repo root as build context:
 
 ```powershell
+
 # PostgreSQL image
 gcloud builds submit --config=scripts/docker/cloudbuild-postgres.yaml .
 
+
 # pgAdmin image
 gcloud builds submit --config=scripts/docker/cloudbuild-pgadmin.yaml .
+
 
 # Meeting server (from Izara-jitsi-server/)
 cd Izara-jitsi-server
@@ -166,6 +190,7 @@ gcloud builds submit --config=../scripts/docker/cloudbuild-meeting-server.yaml .
 ```
 
 ---
+
 
 ## Files Consolidated in v3.0.0
 
@@ -178,7 +203,9 @@ gcloud builds submit --config=../scripts/docker/cloudbuild-meeting-server.yaml .
 | `cloud-run/init-scripts/` (duplicate SQL) | Removed (uses `database/izara-database.sql`) |
 | `cloud-run/migrate-dev-phase2.ps1` | `database/db-tool.cjs --migrate-phase2` |
 
+
 ---
+
 
 ## Test Suites
 
@@ -193,8 +220,12 @@ gcloud builds submit --config=../scripts/docker/cloudbuild-meeting-server.yaml .
 
 ---
 
+
 ## Version History
 
+
 - **v3.0.0** (2026-02): Major reorganization - consolidated 12+ scripts into 3 (db-tool, local deploy, cloud deploy)
+
 - **v2.0.0** (2026-02-04): Added izara-cli.ps1, streamlined structure
+
 - **v1.0.0** (2026-01-29): Initial reorganization, shared config, security improvements

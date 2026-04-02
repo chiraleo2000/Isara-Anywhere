@@ -60,13 +60,13 @@ export const CREDENTIALS = {
   },
   doctor: {
     email: process.env.TEST_DOCTOR_EMAIL || 'doctor.test@izara.com',
-    password: process.env.TEST_DOCTOR_PASSWORD || 'IzaraDoctor@2024',
+    password: process.env.TEST_DOCTOR_PASSWORD ?? '',
     id: 'DOC-TEST-001',
     name: 'Dr. Test Good',
   },
   admin: {
     email: process.env.TEST_ADMIN_EMAIL || 'admin.test@izara.com',
-    password: process.env.TEST_ADMIN_PASSWORD || 'IzaraAdmin@2024',
+    password: process.env.TEST_ADMIN_PASSWORD ?? '',
     id: 'ADMIN-TEST-001',
     name: 'Dr. Admin Kind',
   },
@@ -75,7 +75,7 @@ export const CREDENTIALS = {
 // =============================================================================
 // REGISTRATION DATA
 // =============================================================================
-const TEST_REG_PASSWORD = process.env.E2E_TEST_PASSWORD || 'Test@12345678';
+const TEST_REG_PASSWORD = process.env.E2E_TEST_PASSWORD ?? '';
 export const REGISTRATION_DATA = {
   newPatient: {
     name: 'ทดสอบ ผู้ป่วยใหม่',

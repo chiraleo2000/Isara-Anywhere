@@ -356,21 +356,47 @@ export const MedicalContent: React.FC<MedicalContentProps> = ({ className = '' }
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
           <div className="prose prose-emerald max-w-none">
             {/* Parse and render markdown-like content */}
-            {(selectedArticle.contentTh || selectedArticle.content).split('\n').map((paragraph, idx) => {
-              const key = `${selectedArticle.id}-p-${idx}`;
-              if (paragraph.startsWith('# ')) {
-                return <h1 key={key} className="text-2xl font-bold text-gray-800 mb-4">{paragraph.slice(2)}</h1>;
-              } else if (paragraph.startsWith('## ')) {
-                return <h2 key={key} className="text-xl font-bold text-gray-800 mb-3 mt-6">{paragraph.slice(3)}</h2>;
-              } else if (paragraph.startsWith('### ')) {
-                return <h3 key={key} className="text-lg font-bold text-gray-800 mb-2 mt-4">{paragraph.slice(4)}</h3>;
-              } else if (paragraph.startsWith('- ')) {
-                return <li key={key} className="text-gray-700 ml-4">{paragraph.slice(2)}</li>;
-              } else if (paragraph.trim()) {
-                return <p key={key} className="text-gray-700 leading-relaxed mb-4">{paragraph}</p>;
-              }
-              return null;
-            })}
+            {(() => {
+              const elements: React.ReactElement[] = [];
+              let pendingListItems: { key: string; text: string }[] = [];
+              const lines = (selectedArticle.contentTh || selectedArticle.content).split('\n');
+              
+              const flushList = (ulKey: string) => {
+                if (pendingListItems.length > 0) {
+                  elements.push(
+                    <ul key={ulKey} className="list-disc ml-6 mb-4">
+                      {pendingListItems.map(item => (
+                        <li key={item.key} className="text-gray-700">{item.text}</li>
+                      ))}
+                    </ul>
+                  );
+                  pendingListItems = [];
+                }
+              };
+
+              lines.forEach((paragraph, idx) => {
+                const key = `${selectedArticle.id}-p-${idx}`;
+                if (paragraph.startsWith('# ')) {
+                  flushList(`${selectedArticle.id}-ul-${elements.length}`);
+                  elements.push(<h1 key={key} className="text-2xl font-bold text-gray-800 mb-4">{paragraph.slice(2)}</h1>);
+                } else if (paragraph.startsWith('## ')) {
+                  flushList(`${selectedArticle.id}-ul-${elements.length}`);
+                  elements.push(<h2 key={key} className="text-xl font-bold text-gray-800 mb-3 mt-6">{paragraph.slice(3)}</h2>);
+                } else if (paragraph.startsWith('### ')) {
+                  flushList(`${selectedArticle.id}-ul-${elements.length}`);
+                  elements.push(<h3 key={key} className="text-lg font-bold text-gray-800 mb-2 mt-4">{paragraph.slice(4)}</h3>);
+                } else if (paragraph.startsWith('- ')) {
+                  pendingListItems.push({ key, text: paragraph.slice(2) });
+                } else if (paragraph.trim()) {
+                  flushList(`${selectedArticle.id}-ul-${elements.length}`);
+                  elements.push(<p key={key} className="text-gray-700 leading-relaxed mb-4">{paragraph}</p>);
+                }
+              });
+              
+              flushList(`${selectedArticle.id}-ul-${elements.length}`);
+              
+              return elements;
+            })()}
           </div>
         </div>
 

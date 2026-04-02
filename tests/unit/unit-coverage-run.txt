@@ -1,0 +1,12 @@
+
+      Coverage enabled with v8
+ Test Files  58 passed (58)
+      Tests  2018 passed (2018)
+ % Coverage report from v8
+File               | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+=============================== Coverage summary ===============================
+Statements   : 99.8% ( 14522/14551 )
+Branches     : 97.15% ( 3964/4080 )
+Functions    : 99.74% ( 389/390 )
+Lines        : 99.8% ( 14522/14551 )
+

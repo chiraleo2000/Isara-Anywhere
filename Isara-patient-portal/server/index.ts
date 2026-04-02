@@ -24,9 +24,7 @@ import gcsRoutes from './routes/gcs';
 import googleServicesRoutes from './routes/google-services';
 import contentRoutes from './routes/content';
 import videoMeetingRoutes from './routes/video-meeting';
-import notificationRoutes, { deviceTokenRouter as deviceTokenRoutes } from './routes/notifications';
-// Phase 2 routes
-import { biometricRouter as biometricRoutes, apiConnectionRouter as apiConnectionRoutes } from './routes/mobile-services';
+import notificationRoutes from './routes/notifications';
 import settingsRoutes, { syncRouter as syncRoutes } from './routes/settings';
 import phase2Routes from './routes/phase2';
 import mapRoutes from './routes/map';
@@ -110,7 +108,7 @@ import {
 // A02 - Allowed origins for CORS
 // Always include localhost for local Docker (NODE_ENV=production) + CORS_ORIGINS env override
 const ALLOWED_ORIGINS: string[] = [
-  'http://localhost:3005', 'http://localhost:3004', 'http://localhost:3010', 'http://localhost:8081',
+  'http://localhost:3005', 'http://localhost:3004', 'http://localhost:3010',
   'http://127.0.0.1:3005', 'http://0.0.0.0:3005',
   ...(process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',').map(s => s.trim()) : []),
 ];
@@ -239,7 +237,7 @@ app.get('/health', async (_req: Request, res: Response) => {
       status: 'healthy',
       timestamp: new Date().toISOString(),
       service: 'Izara Patient Portal API',
-      version: '1.5.0',
+      version: '1.6.0',
       security: 'OWASP Top 10:2025 Compliant'
     });
   } catch {
@@ -247,7 +245,7 @@ app.get('/health', async (_req: Request, res: Response) => {
       status: 'unhealthy',
       timestamp: new Date().toISOString(),
       service: 'Izara Patient Portal API',
-      version: '1.5.0'
+      version: '1.6.0'
     });
   }
 });
@@ -258,7 +256,7 @@ app.get('/api/health', (_req: Request, res: Response) => {
     status: 'healthy',
     timestamp: new Date().toISOString(),
     service: 'Izara Patient Portal API',
-    version: '1.5.0',
+    version: '1.6.0',
     security: 'OWASP Top 10:2025 Compliant',
     features: {
       videoMeeting: 'Jitsi Meet (FREE)',
@@ -359,32 +357,30 @@ app.get('/api/consultants', async (req: Request, res: Response) => {
   try {
     console.log('[CONSULTANTS] Getting list of available consultants (PUBLIC)');
     
-    // Try PostgreSQL first
+    // Try PostgreSQL first - use the actual `consultants` table
     let consultants: any[] = [];
     try {
       const result = await pool.query(`
-        SELECT mc.*, u.name as user_name, u.avatar_url 
-        FROM medical_consultants mc
-        LEFT JOIN users u ON mc.user_id = u.id
-        WHERE mc.is_available = true
-        ORDER BY mc.rating DESC NULLS LAST
+        SELECT id, name, specialty, hospital, phone, email,
+               is_available, rating, languages, experience_years, bio,
+               avatar_url, created_at
+        FROM consultants
+        WHERE is_available = true
+        ORDER BY rating DESC NULLS LAST, name ASC
       `);
       consultants = result.rows.map(c => ({
         id: c.id,
-        name: c.name || c.user_name,
-        nameThai: c.name_thai,
+        name: c.name,
         specialty: c.specialty,
-        specialtyThai: c.specialty_thai,
-        hospital: c.hospital,
-        hospitalThai: c.hospital_thai,
-        phone: c.phone,
-        email: c.email,
+        hospital: c.hospital || '',
+        phone: c.phone || '',
+        email: c.email || '',
         avatarUrl: c.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${c.id}`,
         rating: c.rating || 4.5,
         available: c.is_available ?? true,
         experience: c.experience_years || 0,
         languages: c.languages || ['Thai'],
-        bio: c.bio
+        bio: c.bio || ''
       }));
     } catch (dbError: unknown) {
       console.log('[CONSULTANTS] DB error, using demo data:', errMsg(dbError));
@@ -638,6 +634,60 @@ app.get('/api/lab-results', authMiddleware, async (req: Request, res: Response) 
   }
 });
 
+// GET /api/patients/:patientId/lab-results - Patient views own results (spec endpoint)
+app.get('/api/patients/:patientId/lab-results', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as AuthenticatedRequest).user?.id || (req as AuthenticatedRequest).patientId;
+    const { patientId } = req.params;
+
+    // Authorization: patients can only see their own results
+    if (userId !== patientId) {
+      return res.status(403).json({ error: 'Forbidden: Cannot access other patient records' });
+    }
+
+    const result = await pool.query(
+      `SELECT lo.*, d.name as doctor_name, d.name_thai as doctor_name_thai
+       FROM lab_orders lo LEFT JOIN users d ON lo.doctor_id = d.id
+       WHERE lo.patient_id = $1 ORDER BY lo.created_at DESC`,
+      [patientId]
+    );
+
+    res.json({ success: true, labResults: result.rows, count: result.rows.length });
+  } catch (error: unknown) {
+    console.error('[LAB] Patient lab results error:', error);
+    res.json({ success: true, labResults: [], count: 0 });
+  }
+});
+
+// GET /api/patients/:patientId/lab-results/:id - Single result detail
+app.get('/api/patients/:patientId/lab-results/:id', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as AuthenticatedRequest).user?.id || (req as AuthenticatedRequest).patientId;
+    const { patientId, id } = req.params;
+
+    // Authorization: patients can only see their own results
+    if (userId !== patientId) {
+      return res.status(403).json({ error: 'Forbidden: Cannot access other patient records' });
+    }
+
+    const result = await pool.query(
+      `SELECT lo.*, d.name as doctor_name, d.name_thai as doctor_name_thai
+       FROM lab_orders lo LEFT JOIN users d ON lo.doctor_id = d.id
+       WHERE lo.id = $1 AND lo.patient_id = $2`,
+      [id, patientId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Lab result not found' });
+    }
+
+    res.json({ success: true, labResult: result.rows[0] });
+  } catch (error: unknown) {
+    console.error('[LAB] Lab result detail error:', error);
+    res.status(500).json({ error: 'Failed to get lab result' });
+  }
+});
+
 app.use('/api/auth', authRoutes);
 app.use('/api/phr', phrRoutes);
 app.use('/api/appointments', appointmentRoutes);
@@ -652,11 +702,7 @@ app.use('/api/content', contentRoutes);
 app.use('/api/video-meeting', videoMeetingRoutes);
 app.use('/api/notifications', notificationRoutes);
 
-// Phase 2 routes - Mobile app support
-app.use('/api/device-tokens', deviceTokenRoutes);
-app.use('/api/biometric', biometricRoutes);
 app.use('/api/sync', syncRoutes);
-app.use('/api/connections', apiConnectionRoutes);
 app.use('/api/settings', settingsRoutes);
 
 // Phase 2 AI-HIS feature routes
@@ -1206,7 +1252,7 @@ try {
 
   httpServer.listen(PORT, () => {
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log(`🚀 Izara Patient Portal API Server v1.5.0`);
+    console.log(`🚀 Izara Patient Portal API Server v1.6.0`);
     console.log(`🛡️  OWASP Top 10:2025 Security Enabled`);
     console.log(`📡 Server running on http://localhost:${PORT}`);
     console.log(`🔌 WebSocket: ws://localhost:${PORT}/ws`);

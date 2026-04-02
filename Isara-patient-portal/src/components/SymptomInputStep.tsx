@@ -435,7 +435,6 @@ function ImageInputTab({
         ref={cameraInputRef}
         type="file"
         accept="image/*"
-        capture="environment"
         onChange={(e) => handleImageUpload(e.target.files)}
         aria-label="ถ่ายรูป"
         className="hidden"

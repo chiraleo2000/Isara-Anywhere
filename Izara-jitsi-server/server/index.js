@@ -1,7 +1,7 @@
 /**
  * Izara Jitsi Meeting Server — Phase 1 Complete
  * 
- * Version: 1.5.10
+ * Version: 1.6.0
  * Updated: 2026-03-24
  * 
  * Main API server for:
@@ -40,7 +40,6 @@
 
 import express from 'express';
 import cors from 'cors';
-import crypto from 'node:crypto';
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -69,8 +68,8 @@ const JWT_SECRET = (() => {
       console.error('[SECURITY] FATAL: JWT_SECRET not set in production. Exiting.');
       process.exit(1);
     }
-    console.warn('[SECURITY] WARNING: JWT_SECRET not set. Using random ephemeral secret (dev only).');
-    return crypto.randomBytes(64).toString('hex');
+    console.warn('[SECURITY] WARNING: JWT_SECRET not set. Using shared dev fallback.');
+    return 'izara-jwt-secret-key-phase1-2026';
   }
   return secret;
 })();
@@ -188,6 +187,144 @@ if (GEMINI_API_KEY) {
 }
 
 // ============================================================================
+// AI PIPELINE HELPERS — reusable across endpoints
+// ============================================================================
+
+/** Parse JSON from Gemini response, stripping markdown fences if present */
+function parseGeminiJSON(text) {
+  try {
+    const jsonMatch = /\{[\s\S]*\}/.exec(text);
+    if (jsonMatch) return JSON.parse(jsonMatch[0]);
+  } catch { /* fallback */ }
+  return null;
+}
+
+/** Generate structured JSON SOAP summary from transcript + context */
+async function generateStructuredSOAP(transcript, chatContext, meeting, patientContext) {
+  if (!genAI || !transcript || transcript.length < 20) return null;
+  const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
+
+  const phrInfo = patientContext?.phr || {};
+  const medsStr = phrInfo.medications ? JSON.stringify(phrInfo.medications) : 'ไม่ระบุ';
+  const allergiesStr = phrInfo.allergies ? JSON.stringify(phrInfo.allergies) : 'ไม่ระบุ';
+
+  const prompt = `คุณคือผู้ช่วยแพทย์ AI วิเคราะห์บทสนทนาระหว่างแพทย์กับผู้ป่วยจากระบบ Telemedicine
+
+บทสนทนา (แยกผู้พูด):
+${transcript}
+${chatContext || ''}
+
+ชื่อผู้ป่วย: ${meeting?.patient_name_thai || 'ไม่ระบุ'}
+ชื่อแพทย์: ${meeting?.doctor_name_thai || 'ไม่ระบุ'}
+ยาปัจจุบัน: ${medsStr}
+แพ้ยา: ${allergiesStr}
+
+กรุณาวิเคราะห์และสรุปเป็น JSON ดังนี้:
+{
+  "chiefComplaint": "อาการหลักที่ผู้ป่วยมาพบแพทย์",
+  "soap": {
+    "subjective": "อาการที่ผู้ป่วยบอก",
+    "objective": "สิ่งที่แพทย์ตรวจพบ",
+    "assessment": "การวินิจฉัยเบื้องต้น",
+    "plan": "แผนการรักษา"
+  },
+  "redFlags": ["อาการเตือนที่ต้องมาพบแพทย์ทันที"],
+  "followUpDate": "กำหนดการนัดตรวจครั้งถัดไป",
+  "lifestyle": "คำแนะนำการดูแลตนเอง",
+  "emrFields": {
+    "icd10Suggestions": ["รหัส ICD-10 ที่แนะนำ"],
+    "medications": ["ยาที่สั่ง"],
+    "labOrders": ["การตรวจทางห้องปฏิบัติการ"]
+  },
+  "requiresValidation": true
+}
+⚠️ นี่คือสรุปเบื้องต้นจาก AI ต้องให้แพทย์ตรวจสอบก่อนใช้งาน
+ตอบเป็น JSON เท่านั้น ไม่ต้องมี markdown code block`;
+
+  const result = await model.generateContent(prompt);
+  return parseGeminiJSON(result.response.text());
+}
+
+/** Generate CDS recommendations via Gemini */
+async function generateCDSRecommendations(soapJson, patientContext) {
+  if (!genAI || !soapJson) return null;
+  const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
+
+  const phr = patientContext?.phr || {};
+  const prompt = `คุณคือระบบ Clinical Decision Support (CDS) สำหรับแพทย์
+
+ผลสรุป SOAP:
+${JSON.stringify(soapJson.soap || soapJson, null, 2)}
+
+ยาปัจจุบันของผู้ป่วย: ${JSON.stringify(phr.medications || [])}
+แพ้ยา: ${JSON.stringify(phr.allergies || [])}
+โรคเรื้อรัง: ${JSON.stringify(phr.chronic_conditions || [])}
+
+กรุณาวิเคราะห์และตอบเป็น JSON:
+{
+  "differentialDiagnosis": [{"condition": "ชื่อโรค", "likelihood": "high/medium/low", "reasoning": "เหตุผล"}],
+  "suggestedTests": [{"test": "ชื่อการตรวจ", "reason": "เหตุผลที่แนะนำ", "priority": "urgent/routine"}],
+  "drugInteractions": [{"drug1": "ยา1", "drug2": "ยา2", "severity": "high/medium/low", "description": "ผลกระทบ"}],
+  "guidelineRefs": [{"guideline": "ชื่อแนวปฏิบัติ", "relevance": "ความเกี่ยวข้อง"}]
+}
+ตอบเป็น JSON เท่านั้น ไม่ต้องมี markdown code block`;
+
+  const result = await model.generateContent(prompt);
+  return parseGeminiJSON(result.response.text());
+}
+
+/** Generate per-section Gemini summaries for long meetings */
+async function generateSectionSummaries(transcriptRows) {
+  if (!genAI || !transcriptRows || transcriptRows.length === 0) return null;
+  const lastRow = transcriptRows[transcriptRows.length - 1];
+  const lastSecs = lastRow.start_time_seconds || 0;
+  if (lastSecs <= 1800) return null; // < 30 min, skip
+
+  const sectionDuration = 1800;
+  const buckets = [];
+  let currentBucket = [];
+  let currentIdx = 0;
+
+  for (const row of transcriptRows) {
+    const rowSecs = row.start_time_seconds || 0;
+    const expectedBucket = Math.floor(rowSecs / sectionDuration);
+    if (expectedBucket > currentIdx && currentBucket.length > 0) {
+      buckets.push({ index: currentIdx, start: currentIdx * sectionDuration, rows: currentBucket });
+      currentBucket = [];
+      currentIdx = expectedBucket;
+    }
+    currentBucket.push(row);
+  }
+  if (currentBucket.length > 0) {
+    buckets.push({ index: currentIdx, start: currentIdx * sectionDuration, rows: currentBucket });
+  }
+
+  const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
+  const sections = [];
+  for (const bucket of buckets) {
+    const sectionText = bucket.rows.map(r => {
+      const role = r.speaker_role === 'doctor' ? 'แพทย์' : 'ผู้ป่วย';
+      return `${role}: ${r.content}`;
+    }).join('\n');
+    const endSecs = bucket.rows.at(-1).start_time_seconds || (bucket.start + sectionDuration);
+    try {
+      const prompt = `สรุปช่วงที่ ${bucket.index + 1} ของการปรึกษาแพทย์ (นาทีที่ ${Math.round(bucket.start / 60)}-${Math.round(endSecs / 60)}):\n${sectionText}\n\nสรุปสั้นๆ 2-3 ประโยคภาษาไทย:`;
+      const result = await model.generateContent(prompt);
+      sections.push({
+        section: bucket.index + 1, summary: result.response.text(),
+        start_seconds: bucket.start, end_seconds: endSecs,
+      });
+    } catch (e) {
+      sections.push({
+        section: bucket.index + 1, summary: sectionText.slice(0, 500),
+        start_seconds: bucket.start, end_seconds: endSecs, error: e.message,
+      });
+    }
+  }
+  return sections;
+}
+
+// ============================================================================
 // EXPRESS APP SETUP
 // ============================================================================
 
@@ -210,10 +347,9 @@ const io = new SocketServer(server, {
   }
 });
 
-// CORS - support both web portals and mobile apps
+// CORS - support web portals
 const ALLOWED_ORIGINS = process.env.CORS_ORIGINS?.split(',') || [
   'http://localhost:3005', 'http://localhost:3010',
-  'http://localhost:8081', // Expo dev
   'http://127.0.0.1:3005', 'http://127.0.0.1:3010',
 ];
 if (isProduction) {
@@ -227,7 +363,7 @@ if (isProduction) {
 }
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (mobile apps, curl, internal)
+    // Allow requests with no origin (curl, internal)
     if (!origin || ALLOWED_ORIGINS.includes(origin)) {
       callback(null, true);
     } else if (isProduction) {
@@ -250,14 +386,6 @@ app.use((req, res, next) => {
   if (isProduction) {
     res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
   }
-  next();
-});
-
-// Mobile-specific headers middleware (Phase 2)
-app.use((req, res, next) => {
-  req.platform = req.headers['x-platform'] || 'web';
-  req.deviceId = req.headers['x-device-id'] || null;
-  req.appVersion = req.headers['x-app-version'] || null;
   next();
 });
 
@@ -353,7 +481,7 @@ app.get('/health', (req, res) => {
   res.json({
     status: 'ok',
     service: 'izara-jitsi-server',
-    version: '1.5.9',
+    version: '1.6.0',
     timestamp: new Date().toISOString(),
     database: dbAvailable ? 'connected' : 'disconnected',
     features: {
@@ -375,7 +503,7 @@ app.get('/api/health', (req, res) => {
   res.json({
     status: dbAvailable ? 'healthy' : 'degraded',
     service: 'izara-jitsi-server',
-    version: '1.5.9',
+    version: '1.6.0',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     jitsiDomain: JITSI_DOMAIN,
@@ -983,6 +1111,142 @@ app.post('/api/meetings/:id/share-link', optionalAuth, (req, res) => {
 });
 
 // ============================================================================
+// GUEST TOKEN INVITE (JWT-based, 24hr expiry)
+// ============================================================================
+
+// Generate a JWT-based guest invite token
+app.post('/api/meetings/:id/guest-invite', authenticateToken, async (req, res) => {
+  const { id } = req.params;
+  const { guestName, guestEmail, guestType = 'family' } = req.body;
+
+  if (!guestName || typeof guestName !== 'string' || guestName.trim().length === 0) {
+    return res.status(400).json({ error: 'Guest name is required' });
+  }
+
+  const sanitizedName = guestName.trim().substring(0, 100);
+  const sanitizedEmail = (guestEmail || '').trim().substring(0, 255);
+
+  const token = jwt.sign(
+    { meetingId: id, guestName: sanitizedName, guestEmail: sanitizedEmail, guestType, type: 'guest-invite' },
+    JWT_SECRET,
+    { expiresIn: '24h' }
+  );
+
+  // Store invite in memory + DB
+  const invite = {
+    id: uuidv4(),
+    meetingId: id,
+    token,
+    name: sanitizedName,
+    email: sanitizedEmail,
+    guestType,
+    invitedBy: req.user?.id || req.user?.userId || 'unknown',
+    invitedAt: new Date().toISOString(),
+    expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    status: 'pending',
+  };
+
+  if (!meetingInvites.has(id)) meetingInvites.set(id, []);
+  meetingInvites.get(id).push(invite);
+
+  // Persist to DB (best-effort)
+  try {
+    await safeQuery(
+      `INSERT INTO meeting_invites (id, meeting_id, token, guest_name, guest_email, guest_type, invited_by, expires_at, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       ON CONFLICT DO NOTHING`,
+      [invite.id, id, token, sanitizedName, sanitizedEmail, guestType, invite.invitedBy, invite.expiresAt, 'pending']
+    );
+  } catch { /* best effort */ }
+
+  const baseUrl = process.env.PATIENT_PORTAL_URL || `${req.protocol}://${req.get('host')}`;
+  const guestLink = `${baseUrl}/guest/join/${encodeURIComponent(token)}`;
+
+  res.json({ success: true, invite, token, guestLink });
+});
+
+// Validate a guest invite token (used by GuestMeetingJoin page)
+app.get('/api/guest/meeting/:token', (req, res) => {
+  const { token } = req.params;
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    if (decoded.type !== 'guest-invite') {
+      return res.status(400).json({ error: 'Invalid token type' });
+    }
+
+    // Check meeting exists and is active
+    const meeting = meetings.get(decoded.meetingId);
+    if (meeting?.status === 'completed') {
+      return res.status(410).json({ error: 'Meeting has ended' });
+    }
+
+    res.json({
+      success: true,
+      meetingId: decoded.meetingId,
+      guestName: decoded.guestName,
+      guestType: decoded.guestType,
+      roomName: meeting?.room_name || null,
+    });
+  } catch (err) {
+    if (err.name === 'TokenExpiredError') {
+      return res.status(410).json({ error: 'Invite link has expired' });
+    }
+    return res.status(400).json({ error: 'Invalid invite token' });
+  }
+});
+
+// Token-based lobby join (guest joins via JWT token)
+app.post('/api/guest/meeting/:token/join', (req, res) => {
+  const { token } = req.params;
+  const { displayName } = req.body;
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    if (decoded.type !== 'guest-invite') {
+      return res.status(400).json({ error: 'Invalid token type' });
+    }
+
+    const meetingId = decoded.meetingId;
+    const guestName = displayName || decoded.guestName || 'Guest';
+    const participantId = `guest-${uuidv4().substring(0, 8)}`;
+
+    // Add to lobby
+    let lobby = meetingLobbies.get(meetingId);
+    if (!lobby) { lobby = new Map(); meetingLobbies.set(meetingId, lobby); }
+    const entry = {
+      participantId,
+      participantName: guestName.substring(0, 100),
+      role: decoded.guestType || 'guest',
+      email: decoded.guestEmail || '',
+      status: 'waiting',
+      joinedAt: new Date().toISOString(),
+    };
+    lobby.set(participantId, entry);
+
+    // Notify doctor via socket
+    io.to(meetingId).emit('lobby-update', {
+      meetingId, action: 'join',
+      participantId: entry.participantId,
+      participantName: entry.participantName,
+      role: entry.role,
+    });
+
+    res.json({
+      success: true,
+      participantId: entry.participantId,
+      meetingId,
+      status: 'waiting',
+    });
+  } catch (err) {
+    if (err.name === 'TokenExpiredError') {
+      return res.status(410).json({ error: 'Invite link has expired' });
+    }
+    return res.status(400).json({ error: 'Invalid invite token' });
+  }
+});
+
+// ============================================================================
 // END MEETING (Phase 2 — triggers AI summary pipeline)
 // ============================================================================
 
@@ -1098,23 +1362,38 @@ app.post('/api/meetings/:id/end', authenticateToken, async (req, res) => {
       timestamp: new Date().toISOString(),
     });
     
-    // 8. Trigger AI summary in background if transcript exists
+    // 8. Trigger full AI pipeline in background if transcript exists
     let aiSummary = null;
+    let structuredSoap = null;
+    let cdsResult = null;
+    let sectionSums = null;
+    let emrDraftId = null;
     let validationId = null;
     
     if (generateSummary && fullTranscript && fullTranscript.length > 20) {
       if (genAI) {
       try {
+        // --- STEP A: Fetch patient context for CDS ---
+        let patientContext = {};
+        if (meeting?.patient_id) {
+          try {
+            const phrRes = await safeQuery(
+              'SELECT medications, allergies, chronic_conditions, vital_signs_history FROM phr WHERE user_id = $1',
+              [meeting.patient_id]
+            );
+            if (phrRes?.rows?.[0]) patientContext.phr = phrRes.rows[0];
+          } catch { /* skip */ }
+        }
+
+        // --- STEP B: Text SOAP (for display) ---
         const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
-        
-        // Include chat messages in the context
         const chatLines = chatMessages.map(c => `[${c.senderRole}] ${c.senderName}: ${c.message}`).join('\n');
         let chatContext = '';
         if (chatMessages.length > 0) {
           chatContext = `\n\nข้อความแชทระหว่างการประชุม:\n${chatLines}`;
         }
-        
-        const prompt = `คุณคือผู้ช่วยแพทย์ที่เชี่ยวชาญในการสรุปการปรึกษาทางการแพทย์
+
+        const textPrompt = `คุณคือผู้ช่วยแพทย์ที่เชี่ยวชาญในการสรุปการปรึกษาทางการแพทย์
 
 บทสนทนาจากการพบแพทย์:
 ${fullTranscript}
@@ -1145,44 +1424,132 @@ ${chatContext}
 
 ---
 ⚠️ สำคัญ: นี่คือสรุปเบื้องต้นที่ต้องให้แพทย์ตรวจสอบก่อนใช้งาน (requiresValidation: true)`;
-        
-        const result = await model.generateContent(prompt);
-        aiSummary = result.response.text();
+
+        const textResult = await model.generateContent(textPrompt);
+        aiSummary = textResult.response.text();
+
+        // --- STEP C: Structured JSON SOAP (for EMR pre-fill) ---
+        try {
+          structuredSoap = await generateStructuredSOAP(fullTranscript, chatContext, meeting, patientContext);
+          console.log(`[End Meeting] Structured SOAP generated for meeting ${meetingId}`);
+        } catch (e) {
+          console.warn('[End Meeting] Structured SOAP failed:', e.message);
+        }
+
+        // --- STEP D: CDS recommendations ---
+        if (structuredSoap) {
+          try {
+            cdsResult = await generateCDSRecommendations(structuredSoap, patientContext);
+            console.log(`[End Meeting] CDS generated for meeting ${meetingId}`);
+          } catch (e) {
+            console.warn('[End Meeting] CDS failed:', e.message);
+          }
+        }
+
+        // --- STEP E: Per-section summaries (long meetings only) ---
+        try {
+          const transcriptRows = await safeQuery(
+            `SELECT content, speaker_role, speaker_name, start_time_seconds FROM meeting_transcripts
+             WHERE meeting_record_id::text = $1 ORDER BY created_at ASC`, [meetingId]
+          );
+          if (transcriptRows?.rows) {
+            sectionSums = await generateSectionSummaries(transcriptRows.rows);
+          }
+        } catch (e) {
+          console.warn('[End Meeting] Section summaries skipped:', e.message);
+        }
+
+        // --- STEP F: Auto-create draft EMR ---
+        if (structuredSoap && meeting?.appointment_id && meeting?.patient_id) {
+          try {
+            emrDraftId = `EMR-DRAFT-${Date.now()}`;
+            const soap = structuredSoap.soap || {};
+            const emrFieldsJson = structuredSoap.emrFields || {};
+            await safeQuery(
+              `INSERT INTO emr (id, appointment_id, patient_id, doctor_id, type, status,
+                subjective, objective, assessment, plan,
+                ai_summary, ai_summary_approved, created_at, updated_at)
+               VALUES ($1, $2, $3, $4, 'meeting_soap_note', 'draft',
+                $5, $6, $7, $8,
+                $9, false, NOW(), NOW())
+               ON CONFLICT (id) DO NOTHING`,
+              [
+                emrDraftId,
+                meeting.appointment_id,
+                meeting.patient_id,
+                meeting.doctor_id,
+                JSON.stringify(typeof soap.subjective === 'string' ? { text: soap.subjective } : soap.subjective || {}),
+                JSON.stringify(typeof soap.objective === 'string' ? { text: soap.objective } : soap.objective || {}),
+                JSON.stringify(typeof soap.assessment === 'string' ? { text: soap.assessment, icd10: emrFieldsJson.icd10Suggestions || [] } : soap.assessment || {}),
+                JSON.stringify(typeof soap.plan === 'string' ? { text: soap.plan, medications: emrFieldsJson.medications || [], labOrders: emrFieldsJson.labOrders || [] } : soap.plan || {}),
+                aiSummary
+              ]
+            );
+            console.log(`[End Meeting] Draft EMR ${emrDraftId} created for meeting ${meetingId}`);
+          } catch (e) {
+            console.warn('[End Meeting] EMR draft creation failed:', e.message);
+            emrDraftId = null;
+          }
+        }
         
         validationId = uuidv4();
         aiValidations.set(validationId, {
           id: validationId, meetingId, type: 'meeting-summary',
-          content: aiSummary, status: 'pending_review',
-          createdAt: new Date().toISOString()
+          content: aiSummary, structured: structuredSoap,
+          status: 'pending_review', createdAt: new Date().toISOString()
         });
         
-        // Save to DB
+        // Save all results to DB in one update
         try {
           await safeQuery(
-            `UPDATE meeting_records SET ai_summary = $2, ai_recommendations = $3
+            `UPDATE meeting_records SET 
+               ai_summary = $2, ai_recommendations = $3,
+               ai_summary_structured = $4, cds_recommendations = $5,
+               section_summaries = $6, emr_draft_id = $7
              WHERE id::text = $1 OR appointment_id = $1`,
-            [meetingId, aiSummary, JSON.stringify({ validationId, requiresValidation: true })]
+            [
+              meetingId, aiSummary,
+              JSON.stringify({ validationId, requiresValidation: true }),
+              structuredSoap ? JSON.stringify(structuredSoap) : null,
+              cdsResult ? JSON.stringify(cdsResult) : null,
+              sectionSums ? JSON.stringify(sectionSums) : null,
+              emrDraftId
+            ]
           );
         } catch (e) {
-          console.warn('[End Meeting] AI summary DB save skipped:', e.message);
+          console.warn('[End Meeting] AI results DB save skipped:', e.message);
         }
         
-        console.log(`[End Meeting] AI summary generated for meeting ${meetingId}`);
+        console.log(`[End Meeting] Full AI pipeline completed for meeting ${meetingId}`);
         
-        // Push AI summary to doctor portal via Socket.IO (Teams-like notification)
+        // Push full results to doctor portal via Socket.IO
         io.to(meetingId).emit('meeting-summary-ready', {
           meetingId,
           appointmentId: meeting?.appointment_id,
           summary: aiSummary,
+          structured: structuredSoap,
+          cds: cdsResult,
+          sectionSummaries: sectionSums,
+          emrDraftId,
           validationId,
           requiresValidation: true,
           timestamp: new Date().toISOString(),
         });
+
+        // Notify EMR draft ready
+        if (emrDraftId) {
+          io.to(meetingId).emit('emr-draft-ready', {
+            meetingId,
+            appointmentId: meeting?.appointment_id,
+            emrDraftId,
+            timestamp: new Date().toISOString(),
+          });
+        }
       } catch (error_) {
-        console.error('[End Meeting] AI summary generation failed:', error_.message);
+        console.error('[End Meeting] AI pipeline failed:', error_.message);
       }
       } else {
-        console.warn('[End Meeting] AI summary skipped — GEMINI_API_KEY not configured');
+        console.warn('[End Meeting] AI pipeline skipped — GEMINI_API_KEY not configured');
         io.to(meetingId).emit('meeting-summary-ready', {
           meetingId,
           appointmentId: meeting?.appointment_id,
@@ -1204,7 +1571,10 @@ ${chatContext}
         available: true,
         validationId,
         requiresValidation: true,
-        summary: aiSummary
+        summary: aiSummary,
+        structured: structuredSoap,
+        cds: cdsResult,
+        emrDraftId,
       } : { available: false, reason: getNoSummaryReason(genAI, fullTranscript) },
       message: 'Meeting ended successfully'
     });
@@ -1336,7 +1706,58 @@ app.post('/api/meetings/:id/resume-transcription', authenticateToken, async (req
   }
 });
 
-// Add transcript segment
+// Add transcript segment (new dedicated endpoint — only persists final segments)
+app.post('/api/meetings/:id/transcript-segment', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { speakerId, speakerRole, speakerName, content, language, confidence, is_final, start_time_seconds } = req.body;
+    if (!content) return res.status(400).json({ error: 'Content is required' });
+
+    const isFinal = is_final !== false;
+    const resolvedRole = speakerRole || (req.user?.role === 'doctor' ? 'doctor' : 'patient');
+    const resolvedName = speakerName || req.user?.name || (resolvedRole === 'doctor' ? 'แพทย์' : 'ผู้ป่วย');
+    const resolvedId = speakerId || req.user?.id || null;
+
+    let saved = false;
+    if (isFinal) {
+      try {
+        await pool.query(
+          `INSERT INTO meeting_transcripts (
+            meeting_record_id, appointment_id, speaker_id, speaker_role, speaker_name,
+            content, language, confidence, start_time_seconds, is_final, created_at
+          )
+          SELECT $1::uuid, mr.appointment_id, $2, $3, $4, $5, $6, $7, $8, true, NOW()
+          FROM meeting_records mr WHERE mr.id::text = $1`,
+          [id, resolvedId, resolvedRole, resolvedName, content, language || 'th', confidence, start_time_seconds]
+        );
+        saved = true;
+      } catch (error_) {
+        console.log('[Transcript-Segment] DB insert skipped:', error_.message);
+      }
+
+      // Track in active session
+      const session = activeTranscriptions.get(id);
+      if (session?.isActive && !session.isPaused) {
+        session.transcripts.push({ speaker_id: resolvedId, speaker_role: resolvedRole, speaker_name: resolvedName, content, language: language || 'th', confidence, start_time_seconds, timestamp: new Date() });
+      }
+    }
+
+    // Broadcast to all room participants (both interim and final)
+    io.to(id).emit('transcript-update', {
+      id: `seg-${Date.now()}`, speakerId: resolvedId, speakerRole: resolvedRole,
+      speakerName: resolvedName, content, language: language || 'th',
+      confidence, isFinal, startTimeSeconds: start_time_seconds,
+      timestamp: new Date().toISOString(),
+    });
+
+    res.json({ success: true, saved });
+  } catch (error) {
+    console.error('[Transcript-Segment] Error:', error);
+    res.status(500).json({ error: 'Failed to process transcript segment' });
+  }
+});
+
+// Add transcript segment (legacy endpoint — persists all segments)
 app.post('/api/meetings/:id/transcript', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
@@ -1402,34 +1823,83 @@ app.post('/api/meetings/:id/stop-transcription', authenticateToken, async (req, 
     const session = activeTranscriptions.get(id);
     let fullTranscript = '';
     let totalSegments = 0;
+    let durationSeconds = 0;
     
     if (session) {
       session.isActive = false;
       session.isPaused = false;
       session.endedAt = new Date();
+      durationSeconds = Math.floor((session.endedAt - session.startedAt) / 1000);
       fullTranscript = session.transcripts
         .map(t => `[${t.speaker_role}] ${t.speaker_name || 'Unknown'}: ${t.content}`)
         .join('\n');
       totalSegments = session.transcripts.length;
     }
     
+    let dbRows = [];
     try {
       const transcriptsResult = await pool.query(
         `SELECT * FROM meeting_transcripts WHERE meeting_record_id::text = $1 ORDER BY created_at ASC`, [id]
       );
       if (transcriptsResult.rows.length > 0) {
-        fullTranscript = transcriptsResult.rows
+        dbRows = transcriptsResult.rows;
+        fullTranscript = dbRows
           .map(t => `[${t.speaker_role}] ${t.speaker_name}: ${t.content}`)
           .join('\n');
-        totalSegments = transcriptsResult.rows.length;
+        totalSegments = dbRows.length;
       }
       await pool.query(`UPDATE meeting_records SET transcript = $1 WHERE id::text = $2`, [fullTranscript, id]);
+
+      // Generate section_summaries for long meetings (>30 minutes)
+      if (dbRows.length > 0) {
+        const lastSecs = dbRows[dbRows.length - 1].start_time_seconds || 0;
+        if (lastSecs > 1800) {
+          const sectionDuration = 1800; // 30 minutes
+          const sections = [];
+          let sectionIdx = 0;
+          let sectionSegments = [];
+          let sectionStart = 0;
+
+          for (const row of dbRows) {
+            const rowSecs = row.start_time_seconds || 0;
+            const expectedSection = Math.floor(rowSecs / sectionDuration);
+            if (expectedSection > sectionIdx && sectionSegments.length > 0) {
+              sections.push({
+                section: sectionIdx + 1,
+                start_seconds: sectionStart,
+                end_seconds: sectionStart + sectionDuration,
+                text: sectionSegments.map(s => `[${s.speaker_role}] ${s.speaker_name}: ${s.content}`).join('\n'),
+              });
+              sectionSegments = [];
+              sectionStart = expectedSection * sectionDuration;
+              sectionIdx = expectedSection;
+            }
+            sectionSegments.push(row);
+          }
+          // Push last section
+          if (sectionSegments.length > 0) {
+            sections.push({
+              section: sectionIdx + 1,
+              start_seconds: sectionStart,
+              end_seconds: lastSecs,
+              text: sectionSegments.map(s => `[${s.speaker_role}] ${s.speaker_name}: ${s.content}`).join('\n'),
+            });
+          }
+
+          await pool.query(
+            `UPDATE meeting_records SET section_summaries = $1::jsonb WHERE id::text = $2`,
+            [JSON.stringify(sections), id]
+          );
+          console.log(`[Transcription] Generated ${sections.length} sections for meeting ${id}`);
+        }
+      }
     } catch (error_) {
       console.log('[Transcription] DB update skipped:', error_.message);
     }
     
     io.to(id).emit('meeting-status', { meetingId: id, status: 'transcription_stopped' });
-    console.log(`[Transcription] Stopped for meeting ${id}, ${totalSegments} segments`);
+    io.to(id).emit('transcript-stopped', { meetingId: id, totalSegments, durationSeconds });
+    console.log(`[Transcription] Stopped for meeting ${id}, ${totalSegments} segments, ${durationSeconds}s`);
     
     // Auto-trigger transcript embedding processing in background
     if (totalSegments > 0) {
@@ -1466,7 +1936,7 @@ app.post('/api/meetings/:id/stop-transcription', authenticateToken, async (req, 
       });
     }
     
-    res.json({ success: true, message: 'Transcription stopped', totalSegments, fullTranscript });
+    res.json({ success: true, message: 'Transcription stopped', totalSegments, durationSeconds, fullTranscript });
     
   } catch (error) {
     console.error('[Transcription] Stop error:', error);
@@ -1994,31 +2464,84 @@ app.post('/api/ai/pre-consultation-summary', authenticateToken, async (req, res)
     
     let patientData = {};
     try {
-      const [userRes, phrRes, aptsRes, emrRes] = await Promise.all([
-        pool.query('SELECT * FROM users WHERE id = $1', [patientId]),
-        pool.query('SELECT * FROM phr WHERE user_id = $1', [patientId]),
-        pool.query('SELECT * FROM appointments WHERE patient_id = $1 ORDER BY created_at DESC LIMIT 5', [patientId]),
-        pool.query('SELECT * FROM emr WHERE patient_id = $1 ORDER BY created_at DESC LIMIT 3', [patientId])
-      ]);
+      const queries = [
+        pool.query('SELECT id, name, name_thai, email, date_of_birth, gender FROM users WHERE id = $1', [patientId]),
+        pool.query('SELECT medications, allergies, chronic_conditions, vital_signs_history, blood_type FROM phr WHERE user_id = $1', [patientId]),
+        pool.query('SELECT reason, symptoms, ai_triage, scheduled_date, type FROM appointments WHERE patient_id = $1 ORDER BY created_at DESC LIMIT 5', [patientId]),
+        pool.query('SELECT assessment, plan, subjective, objective, created_at FROM emr WHERE patient_id = $1 ORDER BY created_at DESC LIMIT 3', [patientId])
+      ];
+      // Also fetch current appointment's symptoms/triage if appointmentId provided
+      if (appointmentId) {
+        queries.push(pool.query('SELECT reason, symptoms, ai_triage, type, notes FROM appointments WHERE id = $1', [appointmentId]));
+      }
+      const results = await Promise.all(queries);
       patientData = {
-        user: userRes.rows[0] || {}, phr: phrRes.rows[0] || {},
-        recentAppointments: aptsRes.rows, recentEMR: emrRes.rows
+        user: results[0].rows[0] || {}, phr: results[1].rows[0] || {},
+        recentAppointments: results[2].rows, recentEMR: results[3].rows,
+        currentAppointment: results[4]?.rows[0] || null,
       };
     } catch (error_) {
       console.log('[Pre-consult] DB lookup skipped:', error_.message);
     }
     
+    const phr = patientData.phr || {};
+    const currentApt = patientData.currentAppointment;
+    let vitals = [];
+    if (phr.vital_signs_history) {
+      vitals = Array.isArray(phr.vital_signs_history) ? phr.vital_signs_history.slice(0, 3) : phr.vital_signs_history;
+    }
     const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
-    const prompt = `สรุปข้อมูลผู้ป่วยก่อนการปรึกษา:
+    const prompt = `คุณคือผู้ช่วยแพทย์ AI เตรียมข้อมูลก่อนการปรึกษาผู้ป่วย
+
+ข้อมูลผู้ป่วย:
 ชื่อ: ${patientData.user?.name_thai || patientData.user?.name || 'ไม่ระบุ'}
-ประวัติสุขภาพ: ${JSON.stringify(patientData.phr || {})}
-การนัดหมายล่าสุด: ${JSON.stringify(patientData.recentAppointments?.map(a => ({ reason: a.reason, date: a.scheduled_date })) || [])}
-EMR ล่าสุด: ${JSON.stringify(patientData.recentEMR?.map(e => ({ assessment: e.assessment, plan: e.plan })) || [])}
-กรุณาสรุปข้อมูลสำคัญเพื่อเตรียมการปรึกษา`;
+เพศ: ${patientData.user?.gender || 'ไม่ระบุ'}
+วันเกิด: ${patientData.user?.date_of_birth || 'ไม่ระบุ'}
+กรุ๊ปเลือด: ${phr.blood_type || 'ไม่ระบุ'}
+
+อาการวันนี้: ${currentApt ? JSON.stringify({ reason: currentApt.reason, symptoms: currentApt.symptoms, ai_triage: currentApt.ai_triage, type: currentApt.type }) : 'ไม่มีข้อมูลนัดหมายวันนี้'}
+
+ยาปัจจุบัน: ${JSON.stringify(phr.medications || [])}
+แพ้ยา: ${JSON.stringify(phr.allergies || [])}
+โรคเรื้อรัง: ${JSON.stringify(phr.chronic_conditions || [])}
+ค่าชีพจรล่าสุด: ${JSON.stringify(vitals)}
+
+ประวัติการนัดหมาย: ${JSON.stringify(patientData.recentAppointments?.map(a => ({ reason: a.reason, date: a.scheduled_date, symptoms: a.symptoms })) || [])}
+EMR ล่าสุด: ${JSON.stringify(patientData.recentEMR?.map(e => ({ assessment: e.assessment, plan: e.plan, date: e.created_at })) || [])}
+
+กรุณาสรุปเป็น JSON:
+{
+  "highlights": ["ข้อมูลสำคัญที่แพทย์ควรรู้ก่อนเริ่มปรึกษา"],
+  "currentSymptoms": "สรุปอาการที่ผู้ป่วยแจ้ง",
+  "recommendedQuestions": ["คำถามที่แพทย์ควรถามผู้ป่วย"],
+  "risks": [{"risk": "ปัจจัยเสี่ยง", "severity": "high/medium/low", "note": "หมายเหตุ"}],
+  "medications": [{"name": "ชื่อยา", "note": "หมายเหตุ"}],
+  "allergies": ["รายการแพ้"],
+  "relevantHistory": "ประวัติที่เกี่ยวข้อง"
+}
+ตอบเป็น JSON เท่านั้น ไม่ต้องมี markdown code block`;
     
     const result = await model.generateContent(prompt);
+    const responseText = result.response.text();
+    const structured = parseGeminiJSON(responseText);
+    
+    // Store in meeting_records if we have appointmentId
+    if (appointmentId && structured) {
+      try {
+        await safeQuery(
+          `UPDATE meeting_records SET pre_consultation_summary = $2
+           WHERE appointment_id = $1`,
+          [appointmentId, JSON.stringify(structured)]
+        );
+      } catch (e) {
+        console.warn('[Pre-consult] DB store skipped:', e.message);
+      }
+    }
+    
     res.json({
-      success: true, summary: result.response.text(),
+      success: true,
+      summary: responseText,
+      structured: structured || null,
       patientId, appointmentId, source: 'gemini', requiresValidation: true
     });
     
@@ -2094,30 +2617,64 @@ app.post('/api/ai/document-analysis', authenticateToken, async (req, res) => {
   }
 });
 
-// CDS Check
+// CDS Check — Real Gemini-powered Clinical Decision Support
 app.post('/api/ai/cds-check', authenticateToken, async (req, res) => {
   try {
-    const { patientId, medications, diagnosis, allergies } = req.body;
-    const alerts = [];
-    
-    if (medications && medications.length > 1) {
-      alerts.push({
-        type: 'info', category: 'drug-interaction',
-        message: `${medications.length} medications prescribed — please verify drug interactions`,
-        severity: 'low'
-      });
+    const { patientId, medications, diagnosis, allergies, soapData, meetingId } = req.body;
+
+    // Fetch patient context if patientId provided
+    let patientContext = {};
+    if (patientId) {
+      try {
+        const phrRes = await pool.query(
+          'SELECT medications, allergies, chronic_conditions FROM phr WHERE user_id = $1', [patientId]
+        );
+        if (phrRes.rows[0]) patientContext.phr = phrRes.rows[0];
+      } catch { /* skip */ }
     }
-    if (allergies && allergies.length > 0 && medications) {
-      alerts.push({
-        type: 'warning', category: 'allergy-check',
-        message: `Patient has ${allergies.length} known allergies — verify against prescribed medications`,
-        severity: 'medium'
-      });
+
+    const cds = await generateCDSRecommendations(
+      soapData || { soap: { assessment: diagnosis || '' } },
+      {
+        phr: {
+          medications: medications || patientContext.phr?.medications || [],
+          allergies: allergies || patientContext.phr?.allergies || [],
+          chronic_conditions: patientContext.phr?.chronic_conditions || [],
+        }
+      }
+    );
+
+    if (!cds) {
+      // Fallback static alerts when Gemini unavailable
+      const alerts = [];
+      if (medications && medications.length > 1) {
+        alerts.push({ type: 'info', category: 'drug-interaction', message: `${medications.length} medications — verify drug interactions`, severity: 'low' });
+      }
+      if (allergies && allergies.length > 0) {
+        alerts.push({ type: 'warning', category: 'allergy-check', message: `${allergies.length} known allergies — verify against prescribed medications`, severity: 'medium' });
+      }
+      return res.json({ success: true, alerts, totalAlerts: alerts.length, patientId, checkedAt: new Date().toISOString(), source: 'fallback' });
     }
-    
-    res.json({ success: true, alerts, totalAlerts: alerts.length, patientId, checkedAt: new Date().toISOString() });
+
+    // Store if meetingId provided
+    if (meetingId) {
+      try {
+        await safeQuery(
+          `UPDATE meeting_records SET cds_recommendations = $2 WHERE id::text = $1 OR appointment_id = $1`,
+          [meetingId, JSON.stringify(cds)]
+        );
+      } catch (e) {
+        console.warn('[CDS] DB store skipped:', e.message);
+      }
+    }
+
+    res.json({
+      success: true, cds, patientId, checkedAt: new Date().toISOString(), source: 'gemini',
+      totalAlerts: (cds.drugInteractions?.length || 0) + (cds.differentialDiagnosis?.length || 0)
+    });
   } catch (error) {
-    res.json({ success: true, alerts: [], totalAlerts: 0 });
+    console.error('[CDS] Error:', error);
+    res.json({ success: true, cds: null, alerts: [], totalAlerts: 0, source: 'error' });
   }
 });
 
@@ -2258,6 +2815,66 @@ app.post('/api/meetings/:id/validate', authenticateToken, async (req, res) => {
       );
     } catch (e) {
       console.warn('[Meeting Validate] Validation persist skipped:', e.message);
+    }
+
+    // Create EMR record when approved or edited (ready for patient)
+    if (validationStatus === 'approved' || validationStatus === 'edited') {
+      try {
+        const meetingResult = await safeQuery(
+          'SELECT appointment_id, patient_id, ai_summary FROM meeting_records WHERE id::text = $1 OR appointment_id = $1 LIMIT 1',
+          [id]
+        );
+        if (meetingResult?.rows?.length > 0) {
+          const meeting = meetingResult.rows[0];
+          const summaryContent = summaryToStore || meeting.ai_summary || '';
+          await safeQuery(
+            `INSERT INTO emr (id, appointment_id, patient_id, doctor_id, summary, type, created_at, updated_at)
+             VALUES ($1, $2, $3, $4, $5, 'meeting_soap_note', NOW(), NOW())
+             ON CONFLICT (id) DO NOTHING`,
+            [
+              `EMR-SOAP-${Date.now()}`,
+              meeting.appointment_id,
+              meeting.patient_id,
+              doctorId || req.user?.id,
+              summaryContent
+            ]
+          );
+          console.log(`[Meeting Validate] EMR record created for meeting ${id}`);
+          
+          // Notify patient portal of new EMR
+          io.to(`patient-${meeting.patient_id}`).emit('emr:created', {
+            appointmentId: meeting.appointment_id,
+            patientId: meeting.patient_id,
+            timestamp: new Date().toISOString()
+          });
+
+          // Auto-generate patient instructions on approval
+          if (genAI) {
+            try {
+              const structuredData = meeting.ai_summary_structured ? JSON.parse(meeting.ai_summary_structured) : null;
+              const instrModel = genAI.getGenerativeModel({ model: GEMINI_MODEL });
+              const instrPrompt = `สร้างเอกสารคำแนะนำสำหรับผู้ป่วย (ภาษาไทย ง่ายต่อการเข้าใจ):
+สรุปการรักษา: ${summaryContent.slice(0, 1500)}
+ยาที่สั่ง: ${JSON.stringify(structuredData?.emrFields?.medications || [])}
+อาการเตือน: ${JSON.stringify(structuredData?.redFlags || [])}
+นัดติดตาม: ${structuredData?.followUpDate || 'ไม่ระบุ'}
+
+กรุณาเขียนคำแนะนำที่ผู้ป่วยเข้าใจง่าย รวมถึง: วิธีรับประทานยา, อาการที่ต้องมาพบแพทย์ทันที, การดูแลตนเอง`;
+              const instrResult = await instrModel.generateContent(instrPrompt);
+              const instructions = instrResult.response.text();
+              await safeQuery(
+                `UPDATE meeting_records SET patient_instructions = $2 WHERE id::text = $1 OR appointment_id = $1`,
+                [id, instructions]
+              );
+              console.log(`[Meeting Validate] Patient instructions auto-generated for ${id}`);
+            } catch (instrErr) {
+              console.warn('[Meeting Validate] Patient instructions generation skipped:', instrErr.message);
+            }
+          }
+        }
+      } catch (emrErr) {
+        console.error('[Meeting Validate] EMR creation failed:', emrErr.message);
+      }
     }
 
     // Notify via Socket.IO
@@ -2832,9 +3449,14 @@ app.get('/api/meetings/:id/results', authenticateToken, async (req, res) => {
       },
       summary: {
         text: meeting.ai_summary || null,
+        structured: meeting.ai_summary_structured ? JSON.parse(meeting.ai_summary_structured) : null,
         recommendations: meeting.ai_recommendations ? JSON.parse(meeting.ai_recommendations) : null,
         sectionSummaries: meeting.section_summaries ? JSON.parse(meeting.section_summaries) : null,
+        cds: meeting.cds_recommendations ? JSON.parse(meeting.cds_recommendations) : null,
+        emrDraftId: meeting.emr_draft_id || null,
+        preConsultation: meeting.pre_consultation_summary ? JSON.parse(meeting.pre_consultation_summary) : null,
         requiresValidation: true,
+        validationStatus: meeting.doctor_validation_status || 'pending_review',
         validatedAt: meeting.validated_at || null,
       },
       chat: {
@@ -3146,22 +3768,33 @@ io.on('connection', (socket) => {
   });
   
   socket.on('transcript-segment', async (data) => {
-    const { meetingId, speakerId, speakerRole, speakerName, content, language, confidence } = data;
+    const { meetingId, speakerId, speakerRole, speakerName, content, language, confidence, isFinal, startTimeSeconds } = data;
+    const isSegmentFinal = isFinal !== false;
     try {
-      await pool.query(
-        `INSERT INTO meeting_transcripts (meeting_record_id, speaker_id, speaker_role, speaker_name, content, language, confidence)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-        [meetingId, speakerId, speakerRole, speakerName, content, language || 'th', confidence]
-      );
-      
-      const session = activeTranscriptions.get(meetingId);
-      if (session?.isActive && !session.isPaused) {
-        session.transcripts.push({ speaker_id: speakerId, speaker_role: speakerRole, speaker_name: speakerName, content, language: language || 'th', timestamp: new Date() });
+      // Only persist final segments to database
+      if (isSegmentFinal) {
+        await pool.query(
+          `INSERT INTO meeting_transcripts (meeting_record_id, speaker_id, speaker_role, speaker_name, content, language, confidence, start_time_seconds, is_final)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, true)`,
+          [meetingId, speakerId, speakerRole, speakerName, content, language || 'th', confidence, startTimeSeconds]
+        );
+        
+        const session = activeTranscriptions.get(meetingId);
+        if (session?.isActive && !session.isPaused) {
+          session.transcripts.push({ speaker_id: speakerId, speaker_role: speakerRole, speaker_name: speakerName, content, language: language || 'th', start_time_seconds: startTimeSeconds, timestamp: new Date() });
+        }
       }
       
-      io.to(meetingId).emit('transcript-update', { speakerId, speakerRole, speakerName, content, timestamp: new Date() });
+      // Broadcast to all room participants (both interim and final)
+      io.to(meetingId).emit('transcript-update', {
+        speakerId, speakerRole, speakerName, content, language,
+        isFinal: isSegmentFinal, startTimeSeconds,
+        timestamp: new Date().toISOString(),
+      });
     } catch (error) {
-      console.error('[Socket] Transcript save error:', error);
+      console.error('[Socket] Transcript segment error:', error);
+      // Still broadcast even if DB save failed
+      io.to(meetingId).emit('transcript-update', { speakerId, speakerRole, speakerName, content, isFinal: isSegmentFinal, timestamp: new Date().toISOString() });
     }
   });
   
@@ -3282,6 +3915,14 @@ const startServer = async () => {
             created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
           )
         `);
+        // Add columns for JWT guest invite flow (idempotent)
+        await pool.query(`ALTER TABLE meeting_invites ADD COLUMN IF NOT EXISTS meeting_id VARCHAR(100)`).catch(() => {});
+        await pool.query(`ALTER TABLE meeting_invites ADD COLUMN IF NOT EXISTS token TEXT`).catch(() => {});
+        await pool.query(`ALTER TABLE meeting_invites ADD COLUMN IF NOT EXISTS guest_name VARCHAR(255)`).catch(() => {});
+        await pool.query(`ALTER TABLE meeting_invites ADD COLUMN IF NOT EXISTS guest_email VARCHAR(255)`).catch(() => {});
+        await pool.query(`ALTER TABLE meeting_invites ADD COLUMN IF NOT EXISTS guest_type VARCHAR(50) DEFAULT 'family'`).catch(() => {});
+        await pool.query(`ALTER TABLE meeting_invites ADD COLUMN IF NOT EXISTS invited_by VARCHAR(100)`).catch(() => {});
+        await pool.query(`ALTER TABLE meeting_invites ADD COLUMN IF NOT EXISTS expires_at TIMESTAMP WITH TIME ZONE`).catch(() => {});
         await pool.query(`
           CREATE TABLE IF NOT EXISTS ai_validations (
             id VARCHAR(50) PRIMARY KEY,
@@ -3318,6 +3959,11 @@ const startServer = async () => {
           ['meeting_records', 'instruction_validation_id', 'VARCHAR(50)'],
           ['meeting_records', 'recording_started_at', 'TIMESTAMP WITH TIME ZONE'],
           ['meeting_records', 'auto_transcribe', 'BOOLEAN DEFAULT FALSE'],
+          ['meeting_records', 'section_summaries', 'JSONB'],
+          ['meeting_records', 'pre_consultation_summary', 'JSONB'],
+          ['meeting_records', 'ai_summary_structured', 'JSONB'],
+          ['meeting_records', 'cds_recommendations', 'JSONB'],
+          ['meeting_records', 'emr_draft_id', 'VARCHAR(50)'],
         ];
         for (const [table, col, colType] of newColumns) {
           try {
@@ -3346,15 +3992,26 @@ const startServer = async () => {
       }, 15000); // Retry every 15 seconds
     }
     
+    // Start PG LISTEN/NOTIFY listener for cross-portal real-time sync
+    if (dbAvailable) {
+      try {
+        const { startPgNotifyListener } = await import('./pgNotifyListener.js');
+        await startPgNotifyListener(pool, io);
+      } catch (err) {
+        console.warn('⚠️ PG NOTIFY listener failed to start:', err.message);
+      }
+    }
+
     server.listen(PORT, () => {
       console.log(`
 ╔════════════════════════════════════════════════════════════╗
-║     🎥 Izara Jitsi Meeting Server v1.5.1                        ║
+║     🎥 Izara Jitsi Meeting Server v1.6.0                        ║
 ╠════════════════════════════════════════════════════════════╣
 ║  Port:       ${PORT}                                          ║
 ║  Jitsi:      ${JITSI_DOMAIN}                               ║
 ║  AI:         ${genAI ? 'Gemini Ready (' + GEMINI_MODEL + ')' : 'Not configured'}                  ║
 ║  Database:   ${dbAvailable ? '✅ Connected' : '⚠️ Memory-only'}                              ║
+║  PG Notify:  ${dbAvailable ? '✅ Listening' : '⚠️ Disabled'}                              ║
 ║  Features:   Transcription, Chat, Invites, CDS             ║
 ║  Transcript: Web Speech API (FREE)                         ║
 ║  End Point:  POST /api/meetings/:id/end (triggers AI)      ║

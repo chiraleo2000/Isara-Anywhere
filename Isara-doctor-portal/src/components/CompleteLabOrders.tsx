@@ -5,12 +5,270 @@
 
 import React, { useState, useEffect } from 'react';
 import { PatientRecord, User } from '../types';
-import { getLabTests, getPatientLabOrders, addMockDataRecord } from '../services/clinicalDataService';
+import { getLabTests, getPatientLabOrders } from '../services/clinicalDataService';
 
 interface LabTest {
   code: string;
   name: string;
   category: string;
+}
+
+interface ResultEntry {
+  testCode: string;
+  testName: string;
+  value: string;
+  unit: string;
+  normalRangeLow: string;
+  normalRangeHigh: string;
+  flag: 'NORMAL' | 'HIGH' | 'LOW' | 'CRITICAL';
+  notes: string;
+}
+
+// Auto-calculate flag based on value vs normal range
+function calculateFlag(value: string, low: string, high: string): ResultEntry['flag'] {
+  const v = Number.parseFloat(value);
+  const lo = Number.parseFloat(low);
+  const hi = Number.parseFloat(high);
+  if (Number.isNaN(v) || Number.isNaN(lo) || Number.isNaN(hi)) return 'NORMAL';
+  if (v > hi * 1.5 || v < lo * 0.5) return 'CRITICAL';
+  if (v > hi) return 'HIGH';
+  if (v < lo) return 'LOW';
+  return 'NORMAL';
+}
+
+function getFlagEmoji(flag: string): string {
+  switch (flag) {
+    case 'CRITICAL': return '🚨';
+    case 'HIGH': return '🔴';
+    case 'LOW': return '🔵';
+    default: return '✅';
+  }
+}
+
+// Default units and normal ranges for common tests
+const TEST_DEFAULTS: Record<string, { unit: string; low: string; high: string }> = {
+  CBC: { unit: 'x10^9/L', low: '4.5', high: '11.0' },
+  HbA1c: { unit: '%', low: '4.0', high: '6.5' },
+  Lipid: { unit: 'mg/dL', low: '0', high: '200' },
+  CMP: { unit: 'mg/dL', low: '70', high: '100' },
+  TSH: { unit: 'mIU/L', low: '0.4', high: '4.0' },
+  BUN: { unit: 'mg/dL', low: '7', high: '20' },
+  Creatinine: { unit: 'mg/dL', low: '0.6', high: '1.2' },
+  ALT: { unit: 'U/L', low: '7', high: '56' },
+  AST: { unit: 'U/L', low: '10', high: '40' },
+  FBS: { unit: 'mg/dL', low: '70', high: '100' },
+};
+
+/** Inline result entry form for an uncompleted lab order */
+function ResultEntryForm({
+  order,
+  onResultsSubmitted,
+}: Readonly<{
+  order: any;
+  onResultsSubmitted: () => Promise<void>;
+}>) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [entries, setEntries] = useState<ResultEntry[]>([]);
+
+  // Initialize entries from the ordered tests
+  const initEntries = () => {
+    const tests = Array.isArray(order.tests) ? order.tests : [];
+    setEntries(
+      tests.map((t: any) => {
+        const code = t.code || t.testCode || '';
+        const defaults = TEST_DEFAULTS[code] || { unit: '', low: '', high: '' };
+        return {
+          testCode: code,
+          testName: t.name || t.testName || code,
+          value: '',
+          unit: defaults.unit,
+          normalRangeLow: defaults.low,
+          normalRangeHigh: defaults.high,
+          flag: 'NORMAL' as const,
+          notes: '',
+        };
+      })
+    );
+  };
+
+  const updateEntry = (idx: number, field: keyof ResultEntry, val: string) => {
+    setEntries(prev => {
+      const next = [...prev];
+      next[idx] = { ...next[idx], [field]: val };
+      // Auto-calculate flag when value or range changes
+      if (field === 'value' || field === 'normalRangeLow' || field === 'normalRangeHigh') {
+        const e = next[idx];
+        next[idx].flag = calculateFlag(
+          field === 'value' ? val : e.value,
+          field === 'normalRangeLow' ? val : e.normalRangeLow,
+          field === 'normalRangeHigh' ? val : e.normalRangeHigh,
+        );
+      }
+      return next;
+    });
+  };
+
+  const handleSubmit = async () => {
+    // Validate — at least one result value entered
+    const filled = entries.filter(e => e.value.trim() !== '');
+    if (filled.length === 0) {
+      alert('Please enter at least one test result');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+      const results = filled.map(e => ({
+        testCode: e.testCode,
+        testName: e.testName,
+        value: Number.parseFloat(e.value) || e.value,
+        unit: e.unit,
+        normalRange: { low: Number.parseFloat(e.normalRangeLow) || 0, high: Number.parseFloat(e.normalRangeHigh) || 0 },
+        flag: e.flag,
+        notes: e.notes,
+      }));
+
+      const response = await fetch(`/api/lab-orders/${order.id}/results`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ results }),
+      });
+
+      if (!response.ok) throw new Error('Failed to save results');
+      alert('✅ Lab results saved and patient notified!');
+      setIsEditing(false);
+      await onResultsSubmitted();
+    } catch (error) {
+      console.error('Result submission error:', error);
+      alert('❌ Failed to save results. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (!isEditing) {
+    return (
+      <button
+        onClick={() => {
+          initEntries();
+          setIsEditing(true);
+        }}
+        className="mt-2 w-full px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-medium text-sm"
+      >
+        Enter Results
+      </button>
+    );
+  }
+
+  return (
+    <div className="mt-3 p-4 bg-emerald-50 border border-emerald-200 rounded-lg">
+      <div className="flex items-center justify-between mb-3">
+        <h4 className="text-sm font-bold text-emerald-800">Enter Lab Results</h4>
+        <button onClick={() => setIsEditing(false)} className="text-gray-400 hover:text-gray-600 text-xs">
+          Cancel
+        </button>
+      </div>
+
+      <div className="space-y-3">
+        {entries.map((entry, idx) => (
+          <div key={entry.testCode} className="p-3 bg-white rounded border border-gray-200">
+            <div className="font-medium text-sm text-gray-800 mb-2">
+              {entry.testName} ({entry.testCode})
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              <div>
+                <label htmlFor={`val-${entry.testCode}`} className="block text-xs text-gray-500 mb-0.5">Value *</label>
+                <input
+                  id={`val-${entry.testCode}`}
+                  type="number"
+                  step="any"
+                  value={entry.value}
+                  onChange={e => updateEntry(idx, 'value', e.target.value)}
+                  className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                  placeholder="e.g., 7.2"
+                />
+              </div>
+              <div>
+                <label htmlFor={`unit-${entry.testCode}`} className="block text-xs text-gray-500 mb-0.5">Unit</label>
+                <input
+                  id={`unit-${entry.testCode}`}
+                  type="text"
+                  value={entry.unit}
+                  onChange={e => updateEntry(idx, 'unit', e.target.value)}
+                  className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                  placeholder="e.g., mg/dL"
+                />
+              </div>
+              <div>
+                <label htmlFor={`lo-${entry.testCode}`} className="block text-xs text-gray-500 mb-0.5">Normal Low</label>
+                <input
+                  id={`lo-${entry.testCode}`}
+                  type="number"
+                  step="any"
+                  value={entry.normalRangeLow}
+                  onChange={e => updateEntry(idx, 'normalRangeLow', e.target.value)}
+                  className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                  placeholder="Low"
+                />
+              </div>
+              <div>
+                <label htmlFor={`hi-${entry.testCode}`} className="block text-xs text-gray-500 mb-0.5">Normal High</label>
+                <input
+                  id={`hi-${entry.testCode}`}
+                  type="number"
+                  step="any"
+                  value={entry.normalRangeHigh}
+                  onChange={e => updateEntry(idx, 'normalRangeHigh', e.target.value)}
+                  className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                  placeholder="High"
+                />
+              </div>
+            </div>
+            <div className="flex items-center gap-3 mt-2">
+              <div className="flex items-center gap-1">
+                <label htmlFor={`flag-${entry.testCode}`} className="text-xs text-gray-500">Flag:</label>
+                <select
+                  id={`flag-${entry.testCode}`}
+                  value={entry.flag}
+                  onChange={e => updateEntry(idx, 'flag', e.target.value)}
+                  className="px-2 py-0.5 border border-gray-300 rounded text-xs"
+                >
+                  <option value="NORMAL">✅ Normal</option>
+                  <option value="HIGH">🔴 High</option>
+                  <option value="LOW">🔵 Low</option>
+                  <option value="CRITICAL">🚨 Critical</option>
+                </select>
+              </div>
+              <div className="flex-1">
+                <input
+                  type="text"
+                  value={entry.notes}
+                  onChange={e => updateEntry(idx, 'notes', e.target.value)}
+                  className="w-full px-2 py-0.5 border border-gray-300 rounded text-xs"
+                  placeholder="Notes (optional)"
+                  aria-label={`Notes for ${entry.testName}`}
+                />
+              </div>
+              <span className="text-lg" title={entry.flag}>{getFlagEmoji(entry.flag)}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <button
+        onClick={handleSubmit}
+        disabled={submitting}
+        className="mt-4 w-full px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {submitting ? 'Saving & Generating AI Analysis...' : 'Submit Results & Notify Patient'}
+      </button>
+    </div>
+  );
 }
 
 interface CompleteLabOrdersProps {
@@ -83,7 +341,7 @@ export const CompleteLabOrders: React.FC<CompleteLabOrdersProps> = ({
     setSelectedTests([...selectedTests, ...newTests]);
   };
 
-  const handleOrderLabs = () => {
+  const handleOrderLabs = async () => {
     if (!patient) {
       alert('Please select a patient first');
       return;
@@ -108,8 +366,22 @@ export const CompleteLabOrders: React.FC<CompleteLabOrdersProps> = ({
       createdAt: new Date().toISOString(),
     };
 
-    addMockDataRecord('lab-orders.json', labOrder);
-    alert('✅ Lab order placed successfully!');
+    try {
+      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+      const response = await fetch('/api/lab-orders', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify(labOrder),
+      });
+      if (!response.ok) throw new Error('Failed to create lab order');
+      alert('✅ Lab order placed successfully!');
+    } catch (error) {
+      console.error('Lab order error:', error);
+      alert('❌ Failed to place lab order. Please try again.');
+    }
     setSelectedTests([]);
     setClinicalIndication('');
     setView('results');
@@ -306,59 +578,93 @@ export const CompleteLabOrders: React.FC<CompleteLabOrdersProps> = ({
                         Order #{order.id}
                       </div>
                       <div className="text-sm text-gray-600">
-                        Ordered: {new Date(order.orderDate).toLocaleDateString()} • Dr. {order.doctorName}
+                        Ordered: {new Date(order.orderDate || order.ordered_date).toLocaleDateString()} • Dr. {order.doctorName || order.doctor_name}
                       </div>
                     </div>
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${(() => {
-                      if (order.status === 'completed') return 'bg-green-100 text-green-700';
-                      if (order.status === 'in_progress') return 'bg-blue-100 text-blue-700';
-                      return 'bg-yellow-100 text-yellow-700';
-                    })()}`}>
-                      {order.status}
-                    </span>
+                    <div className="flex items-center space-x-2">
+                      {order.priority && order.priority !== 'routine' && (
+                        <span className={`px-2 py-0.5 rounded text-xs font-bold ${
+                          order.priority === 'stat' ? 'bg-red-600 text-white' : 'bg-orange-100 text-orange-700'
+                        }`}>
+                          {order.priority.toUpperCase()}
+                        </span>
+                      )}
+                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${(() => {
+                        if (order.status === 'completed') return 'bg-green-100 text-green-700';
+                        if (order.status === 'in_progress') return 'bg-blue-100 text-blue-700';
+                        return 'bg-yellow-100 text-yellow-700';
+                      })()}`}>
+                        {order.status}
+                      </span>
+                    </div>
                   </div>
 
                   <div className="mb-3">
                     <div className="text-sm font-medium text-gray-700">Tests Ordered:</div>
                     <div className="text-sm text-gray-600">
-                      {order.tests.map((t: any) => t.name || t.code).join(', ')}
+                      {(Array.isArray(order.tests) ? order.tests : []).map((t: any) => t.name || t.code).join(', ')}
                     </div>
                   </div>
 
-                  {order.results && order.results.length > 0 && (
+                  {/* Completed: Show results */}
+                  {order.status === 'completed' && order.results && (
                     <div className="mt-3 p-3 bg-gray-50 rounded">
                       <div className="text-sm font-medium text-gray-700 mb-2">Results:</div>
                       <div className="space-y-1">
-                        {order.results.map((result: any, i: number) => (
-                          <div key={`result-${result.testName}-${i}`} className="flex items-center justify-between text-sm">
+                        {(Array.isArray(order.results) ? order.results : (order.results?.results || [])).map((result: any, i: number) => (
+                          <div key={`result-${result.testName || result.testCode}-${i}`} className="flex items-center justify-between text-sm">
                             <span className="text-gray-700">{result.testName}:</span>
                             <div className="flex items-center space-x-2">
                               <span className={`font-medium ${(() => {
-                                if (result.flag === 'high' || result.flag === 'low') return 'text-red-600';
-                                if (result.flag === 'critical') return 'text-red-700 font-bold';
+                                const flag = (result.flag || '').toUpperCase();
+                                if (flag === 'CRITICAL') return 'text-red-700 font-bold';
+                                if (flag === 'HIGH' || flag === 'LOW') return 'text-red-600';
                                 return 'text-gray-900';
                               })()}`}>
                                 {result.value} {result.unit}
                               </span>
-                              <span className="text-gray-500 text-xs">
-                                ({result.normalRange})
-                              </span>
+                              {result.normalRange && (
+                                <span className="text-gray-500 text-xs">
+                                  ({typeof result.normalRange === 'object'
+                                    ? `${result.normalRange.low}-${result.normalRange.high}`
+                                    : result.normalRange})
+                                </span>
+                              )}
                               {result.flag && (
-                                <span className="px-2 py-0.5 bg-red-100 text-red-700 rounded text-xs font-medium">
-                                  {result.flag.toUpperCase()}
+                                <span className={`px-2 py-0.5 rounded text-xs font-medium ${(() => {
+                                  const flag = result.flag.toUpperCase();
+                                  if (flag === 'CRITICAL') return 'bg-red-600 text-white';
+                                  if (flag === 'HIGH') return 'bg-red-100 text-red-700';
+                                  if (flag === 'LOW') return 'bg-blue-100 text-blue-700';
+                                  return 'bg-green-100 text-green-700';
+                                })()}`}>
+                                  {getFlagEmoji(result.flag.toUpperCase())} {result.flag.toUpperCase()}
                                 </span>
                               )}
                             </div>
                           </div>
                         ))}
                       </div>
+                      {order.ai_analysis && (
+                        <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded">
+                          <div className="text-sm font-medium text-blue-800 mb-1">🤖 AI Analysis:</div>
+                          <div className="text-sm text-blue-700 whitespace-pre-line">{order.ai_analysis}</div>
+                        </div>
+                      )}
                     </div>
                   )}
 
-                  {!order.results && (
-                    <div className="text-sm text-gray-500 italic">
-                      Results pending...
-                    </div>
+                  {/* Not completed: Show result entry form */}
+                  {order.status !== 'completed' && (
+                    <ResultEntryForm
+                      order={order}
+                      onResultsSubmitted={async () => {
+                        if (patient) {
+                          const orders = await getPatientLabOrders(patient.id);
+                          setPastOrders(orders);
+                        }
+                      }}
+                    />
                   )}
                 </div>
               ))}

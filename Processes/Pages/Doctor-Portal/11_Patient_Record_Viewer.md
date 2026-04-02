@@ -1,8 +1,8 @@
 # 📁 Doctor Portal — Patient Record Viewer (PHR/EMR/EHR)
 
-**Component:** `src/components/PatientRecordViewer.tsx`  
-**Type:** Modal (launched from DoctorPortal)  
-**Access:** 🔒 Doctor / Admin (PDPA consent required)  
+**Component:** `src/components/PatientRecordViewer.tsx`
+**Type:** Modal (launched from DoctorPortal)
+**Access:** 🔒 Doctor / Admin (PDPA consent required)
 **Thai Title:** ประวัติผู้ป่วย / Patient Record
 
 ---
@@ -93,7 +93,9 @@ Comprehensive patient record viewer with 3 tabs (PHR, EMR, EHR) including Living
 ## 4. EMR Tab (Electronic Medical Record)
 
 - Timeline of encounters with encounter type and date
+
 - Expandable cards showing SOAP details
+
 - Linked prescriptions and lab orders
 
 ---
@@ -101,6 +103,7 @@ Comprehensive patient record viewer with 3 tabs (PHR, EMR, EHR) including Living
 ## 5. EHR Tab (Electronic Health Record)
 
 - Comprehensive timeline including EMR + lab results + imaging
+
 - Cross-provider data aggregation
 
 ---
@@ -120,6 +123,44 @@ Comprehensive patient record viewer with 3 tabs (PHR, EMR, EHR) including Living
 ## 7. AI Agent Improvement Opportunities
 
 - **Smart summarization**: AI generate concise patient summaries
+
 - **Risk scoring**: AI calculate comprehensive risk scores from all data
+
 - **Trend visualization**: AI-generated charts of key metrics over time
+
 - **Cross-reference**: AI link related findings across PHR/EMR/EHR
+
+---
+
+## PostgreSQL Database Integration
+
+### Tables Used
+
+| Table | Operation | Description |
+| ----- | --------- | ----------- |
+| phr | SELECT | Personal Health Records (read-only) |
+| vital_signs | SELECT | Vital sign history (read-only) |
+| emr | SELECT | EMR records (read-only) |
+| prescriptions | SELECT | Prescription history (read-only) |
+| lab_orders | SELECT | Lab order results (read-only) |
+| living_wills | SELECT | Living will documents (read-only) |
+| patient_consents | SELECT | PDPA consent status (read-only) |
+
+### API Endpoints
+
+| Endpoint | Method | DB Operation |
+| -------- | ------ | ------------ |
+| GET /api/patients/:id/phr | GET | SELECT phr, vital_signs WHERE patient_id |
+| GET /api/patients/:id/emr | GET | SELECT emr, prescriptions, lab_orders WHERE patient_id |
+
+### Note
+
+- **Read-only aggregated view** — no INSERT/UPDATE operations from this page
+
+### Deployment
+
+- **Local Docker:** izara-postgres container (localhost:5433 external / 5432 internal) → database: izara_phase1
+
+- **Production:** GCE VM at 35.240.157.230:5432 → database: izara_phase1 (asia-southeast1)
+
+- **Service deployed via:** Cloud Run (gen2, CPU Boost) + Cloud Build CI/CD

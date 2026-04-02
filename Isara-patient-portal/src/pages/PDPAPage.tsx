@@ -27,6 +27,7 @@ interface DoctorConsent {
   hospitalName?: string;
   dataTypes: string[];
   purpose?: string;
+  granted?: boolean;
   status: 'granted' | 'revoked' | 'expired';
   grantedAt: string;
   expiresAt?: string;
@@ -263,9 +264,16 @@ interface DoctorsTabProps {
   language: string;
   cls: PdpaClasses;
   formatDate: (dateStr: string) => string;
+  // Per-doctor access control
+  doctorAccessList: DoctorConsent[];
+  pendingRequests: any[];
+  onRevokeDoctorAccess: (doctorId: string) => void;
+  onGrantDoctorAccess: () => void;
+  onRespondToRequest: (notificationId: string, doctorId: string, action: 'grant' | 'deny') => void;
+  onDownloadConsentHistory: () => void;
 }
 
-function DoctorsTab({ consents, saving, handleToggleConsent, labels, language, cls, formatDate }: Readonly<DoctorsTabProps>) {
+function DoctorsTab({ consents, saving, handleToggleConsent, labels, language, cls, formatDate, doctorAccessList, pendingRequests, onRevokeDoctorAccess, onGrantDoctorAccess, onRespondToRequest, onDownloadConsentHistory }: Readonly<DoctorsTabProps>) {
   const dataSharingConsent = consents.find(c => c.id === 'data_sharing');
 
   return (
@@ -408,6 +416,116 @@ function DoctorsTab({ consents, saving, handleToggleConsent, labels, language, c
           </div>
         </div>
       </div>
+
+      {/* ── Pending Consent Requests ── */}
+      {pendingRequests.length > 0 && (
+        <div className={`rounded-2xl border overflow-hidden ${cls.cardBg}`}>
+          <div className="px-6 py-4 border-b bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/30 dark:to-yellow-900/30">
+            <h3 className={`font-bold flex items-center gap-2 ${cls.heading}`}>
+              <AlertCircle className="w-5 h-5 text-amber-500" />
+              {tl(language, 'คำขอเข้าถึงข้อมูล', 'Pending Access Requests')}
+              <span className="ml-2 px-2 py-0.5 bg-amber-500 text-white text-xs rounded-full">{pendingRequests.length}</span>
+            </h3>
+          </div>
+          <div className="divide-y divide-gray-100 dark:divide-gray-700">
+            {pendingRequests.map((req: any) => {
+              const data = typeof req.data === 'string' ? JSON.parse(req.data) : req.data;
+              return (
+                <div key={req.id} className="p-4 flex items-center justify-between gap-4">
+                  <div className="flex-1">
+                    <p className={`font-medium ${cls.heading}`}>
+                      {data?.doctor_name || tl(language, 'แพทย์', 'Doctor')}
+                    </p>
+                    <p className={`text-sm ${cls.subtitle}`}>
+                      {req.message_thai && language === 'th' ? req.message_thai : req.message}
+                    </p>
+                    <p className={`text-xs mt-1 ${cls.mutedText}`}>{formatDate(req.created_at)}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => onRespondToRequest(req.id, data?.doctor_id, 'grant')}
+                      className="px-4 py-2 bg-emerald-600 text-white text-sm rounded-lg hover:bg-emerald-700 transition-colors"
+                    >
+                      {tl(language, 'อนุญาต', 'Grant')}
+                    </button>
+                    <button
+                      onClick={() => onRespondToRequest(req.id, data?.doctor_id, 'deny')}
+                      className="px-4 py-2 bg-red-500 text-white text-sm rounded-lg hover:bg-red-600 transition-colors"
+                    >
+                      {tl(language, 'ปฏิเสธ', 'Deny')}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ── Per-Doctor Access List ── */}
+      <div className={`rounded-2xl border overflow-hidden ${cls.cardBg}`}>
+        <div className={`px-6 py-4 border-b flex items-center justify-between ${cls.sharingHeader}`}>
+          <h3 className={`font-bold flex items-center gap-2 ${cls.heading}`}>
+            <Shield className={`w-5 h-5 ${cls.blueIcon}`} />
+            {tl(language, 'แพทย์ที่ได้รับสิทธิ์เข้าถึงเวชระเบียน', 'Doctors with Medical Record Access')}
+          </h3>
+          <button
+            onClick={onGrantDoctorAccess}
+            className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-1"
+          >
+            <span>+</span> {tl(language, 'ให้สิทธิ์แพทย์', 'Grant Access')}
+          </button>
+        </div>
+        {doctorAccessList.length === 0 ? (
+          <div className="p-8 text-center">
+            <Users className={`w-10 h-10 mx-auto mb-2 ${cls.mutedText}`} />
+            <p className={cls.mutedText}>{tl(language, 'ยังไม่มีแพทย์ที่ได้รับสิทธิ์เข้าถึง', 'No doctors have been granted access yet')}</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-gray-100 dark:divide-gray-700">
+            {doctorAccessList.map((dc) => (
+              <div key={dc.id} className="p-4 flex items-center justify-between gap-4">
+                <div className="flex-1">
+                  <p className={`font-medium ${cls.heading}`}>{dc.doctorName}</p>
+                  {dc.doctorSpecialty && <p className={`text-sm ${cls.subtitle}`}>{dc.doctorSpecialty}</p>}
+                  <p className={`text-xs mt-1 ${cls.mutedText}`}>
+                    {tl(language, 'อนุญาตเมื่อ: ', 'Granted: ')}{formatDate(dc.grantedAt)}
+                  </p>
+                  {dc.status === 'revoked' && dc.revokedAt && (
+                    <p className="text-xs text-red-500">
+                      {tl(language, 'เพิกถอนเมื่อ: ', 'Revoked: ')}{formatDate(dc.revokedAt)}
+                    </p>
+                  )}
+                </div>
+                {dc.status === 'granted' && dc.granted && (
+                  <button
+                    onClick={() => onRevokeDoctorAccess(dc.doctorId)}
+                    className="px-4 py-2 bg-red-100 text-red-700 text-sm rounded-lg hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50 transition-colors"
+                  >
+                    {tl(language, 'เพิกถอน', 'Revoke')}
+                  </button>
+                )}
+                {dc.status === 'revoked' && (
+                  <span className="px-3 py-1 bg-gray-100 text-gray-500 text-xs rounded-full dark:bg-gray-700 dark:text-gray-400">
+                    {tl(language, 'เพิกถอนแล้ว', 'Revoked')}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* ── Download Consent History ── */}
+      <div className="flex justify-end">
+        <button
+          onClick={onDownloadConsentHistory}
+          className="flex items-center gap-2 px-4 py-2 border rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+        >
+          <FileText className="w-4 h-4" />
+          {tl(language, 'ดาวน์โหลดประวัติการยินยอม', 'Download Consent History')}
+        </button>
+      </div>
     </div>
   );
 }
@@ -521,6 +639,9 @@ export default function PDPAPage() {
   const [auditLog, setAuditLog] = useState<AuditLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
+  // Per-doctor access control state
+  const [doctorAccessList, setDoctorAccessList] = useState<DoctorConsent[]>([]);
+  const [pendingRequests, setPendingRequests] = useState<any[]>([]);
 
   // Grant consent modal state
   const [showGrantModal, setShowGrantModal] = useState(false);
@@ -543,11 +664,13 @@ export default function PDPAPage() {
       const patientId = user.patientId || user.id;
 
       // Load all data in parallel
-      const [consentsData, doctorConsentsData, auditData, doctorsData] = await Promise.all([
-        pdpaService.getConsents(patientId).catch(() => ({ consents: [] })),
-        pdpaService.getDoctorConsents(patientId).catch(() => []),
-        pdpaService.getAuditLog(patientId).catch(() => []),
-        doctorService.getAll().catch(() => []),
+      const [consentsData, doctorConsentsData, auditData, doctorsData, doctorAccessData, pendingRequestsData] = await Promise.all([
+        pdpaService.getConsents(patientId).catch((err: unknown) => { console.error('[PDPA] Consents fetch failed:', err); return { consents: [] }; }),
+        pdpaService.getDoctorConsents(patientId).catch((err: unknown) => { console.error('[PDPA] Doctor consents fetch failed:', err); return []; }),
+        pdpaService.getAuditLog(patientId).catch((err: unknown) => { console.error('[PDPA] Audit log fetch failed:', err); return []; }),
+        doctorService.getAll().catch((err: unknown) => { console.error('[PDPA] Doctors fetch failed:', err); return []; }),
+        pdpaService.getDoctorAccess().catch((err: unknown) => { console.error('[PDPA] Doctor access fetch failed:', err); return []; }),
+        pdpaService.getPendingRequests().catch((err: unknown) => { console.error('[PDPA] Pending requests fetch failed:', err); return []; }),
       ]);
 
       if (consentsData?.consents) {
@@ -559,6 +682,8 @@ export default function PDPAPage() {
       setDoctorConsents(doctorConsentsData || []);
       setAuditLog(auditData || []);
       setDoctors(doctorsData || []);
+      setDoctorAccessList(doctorAccessData || []);
+      setPendingRequests(pendingRequestsData || []);
     } catch (e) {
       console.error('Failed to load data:', e);
       setConsents(getDefaultConsents());
@@ -711,8 +836,79 @@ export default function PDPAPage() {
     );
   };
 
+  // Per-doctor access: revoke medical_record_access
+  const handleRevokeDoctorAccess = async (doctorId: string) => {
+    if (!user?.id || !confirm(tl(language, 'ต้องการเพิกถอนสิทธิ์เข้าถึงเวชระเบียนของแพทย์ท่านนี้หรือไม่?', 'Revoke this doctor\'s medical record access?'))) return;
+    try {
+      await pdpaService.revokeDoctorAccess(doctorId);
+      const updated = await pdpaService.getDoctorAccess();
+      setDoctorAccessList(updated || []);
+    } catch (e) {
+      console.error('Failed to revoke doctor access:', e);
+      alert(labels.error[language]);
+    }
+  };
+
+  // Per-doctor access: grant medical_record_access via modal
+  const handleGrantDoctorAccessModal = () => {
+    setShowGrantModal(true);
+  };
+
+  // Per-doctor access: grant to selected doctor from modal
+  const handleGrantDoctorAccessConfirm = async (doctorId: string) => {
+    if (!user?.id) return;
+    try {
+      await pdpaService.grantDoctorAccess(doctorId);
+      const updated = await pdpaService.getDoctorAccess();
+      setDoctorAccessList(updated || []);
+      setShowGrantModal(false);
+      setSelectedDoctor(null);
+    } catch (e) {
+      console.error('Failed to grant doctor access:', e);
+      alert(labels.error[language]);
+    }
+  };
+
+  // Respond to consent request (from pending requests)
+  const handleRespondToRequest = async (notificationId: string, doctorId: string, action: 'grant' | 'deny') => {
+    if (!user?.id) return;
+    try {
+      await pdpaService.respondToRequest(notificationId, doctorId, action);
+      // Refresh both lists
+      const [updatedAccess, updatedRequests] = await Promise.all([
+        pdpaService.getDoctorAccess().catch(() => []),
+        pdpaService.getPendingRequests().catch(() => []),
+      ]);
+      setDoctorAccessList(updatedAccess || []);
+      setPendingRequests(updatedRequests || []);
+    } catch (e) {
+      console.error('Failed to respond to consent request:', e);
+      alert(labels.error[language]);
+    }
+  };
+
+  // Download consent history as printable page
+  const handleDownloadConsentHistory = async () => {
+    if (!user?.id) return;
+    try {
+      const patientId = user.patientId || user.id;
+      const auditData = await pdpaService.getAuditLog(patientId);
+      const entries = auditData || [];
+      const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>PDPA Consent History</title>
+        <style>body{font-family:sans-serif;padding:2rem}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:8px;text-align:left}th{background:#f5f5f5}h1{color:#333}</style></head>
+        <body><h1>PDPA Consent History — ${user.name || patientId}</h1><p>Generated: ${new Date().toLocaleString('th-TH')}</p>
+        <table><thead><tr><th>Date</th><th>Action</th><th>Details</th></tr></thead><tbody>
+        ${entries.map((e: any) => `<tr><td>${new Date(e.created_at).toLocaleString('th-TH')}</td><td>${e.action}</td><td>${typeof e.details === 'string' ? e.details : JSON.stringify(e.details || {})}</td></tr>`).join('')}
+        </tbody></table></body></html>`;
+      const w = window.open('', '_blank');
+      if (w) { w.document.write(html); w.document.close(); w.print(); }
+    } catch (e) {
+      console.error('Failed to download consent history:', e);
+    }
+  };
+
   // Log unused variables for linter satisfaction (these will be used when modal is fully implemented)
-  console.debug('Grant modal state:', { showGrantModal, grantingConsent, doctorConsents, filteredDoctors, handleGrantDoctorConsent, handleRevokeConsent, toggleDataType });
+  console.debug('Grant modal state:', { showGrantModal, grantingConsent, doctorConsents, filteredDoctors, handleGrantDoctorConsent, handleRevokeConsent, toggleDataType, handleGrantDoctorAccessConfirm });
 
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString(language === 'th' ? 'th-TH' : 'en-US', {
@@ -814,6 +1010,12 @@ export default function PDPAPage() {
           language={language}
           cls={cls}
           formatDate={formatDate}
+          doctorAccessList={doctorAccessList}
+          pendingRequests={pendingRequests}
+          onRevokeDoctorAccess={handleRevokeDoctorAccess}
+          onGrantDoctorAccess={handleGrantDoctorAccessModal}
+          onRespondToRequest={handleRespondToRequest}
+          onDownloadConsentHistory={handleDownloadConsentHistory}
         />
       )}
 

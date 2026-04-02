@@ -2,6 +2,7 @@
 
 This folder contains JSON startup data files for initializing the Izara Telemedicine database.
 
+
 ## Files
 
 | File | Description |
@@ -11,7 +12,10 @@ This folder contains JSON startup data files for initializing the Izara Telemedi
 | [doctors.json](doctors.json) | Doctor profiles and consultant information |
 | [medical_content.json](medical_content.json) | Medical articles and clinical resources |
 
+
+
 ## Test Credentials
+
 
 ### Patients
 
@@ -21,11 +25,15 @@ This folder contains JSON startup data files for initializing the Izara Telemedi
 | <Somchai.Mankong@gmail.com> | YOUR_TEST_PASSWORD | นายสมชาย มั่นคง |
 | <Anan.Khayanrian@gmail.com> | YOUR_TEST_PASSWORD | นายอนันต์ ขยันเรียน |
 
+
+
 ### Doctors
 
 | Email | Password | Name |
 | --- | --- | --- |
 | <doctor.test@izara.com> | YOUR_TEST_DOCTOR_PASSWORD | นายแพทย์ ทดสอบ ระบบ |
+
+
 
 ### Admins
 
@@ -33,29 +41,38 @@ This folder contains JSON startup data files for initializing the Izara Telemedi
 | --- | --- | --- |
 | <admin.test@izara.com> | YOUR_TEST_ADMIN_PASSWORD | ผู้ดูแลระบบ ทดสอบ |
 
+
+
 ## Usage
+
 
 ### Using Seeder Script
 
 ```bash
+
 # Seed PostgreSQL Docker database
 node scripts/seeder.cjs
+
 
 # Verify data only
 node scripts/seeder.cjs --verify
 ```
 
+
 ### Using SQL Directly
 
 ```bash
+
 # PostgreSQL Docker container
 docker exec -i izara-postgres psql -U postgres -d izara_phase1 < scripts/database/izara-database.sql
+
 
 # PowerShell
 Get-Content scripts\database\izara-database.sql | docker exec -i izara-postgres psql -U postgres -d izara_phase1
 ```
 
 > **Note:** NO Cloud SQL is used. PostgreSQL runs as a Docker service alongside the portals.
+
 
 ## Encoding
 

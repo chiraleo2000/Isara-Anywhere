@@ -1,8 +1,8 @@
 # 👥 Doctor Portal — Patient Management Page
 
-**Route:** `/patients`, `/patients/:id`  
-**Component:** `src/pages/PatientManagement.tsx`  
-**Access:** 🔒 Doctor / Admin  
+**Route:** `/patients`, `/patients/:id`
+**Component:** `src/pages/PatientManagement.tsx`
+**Access:** 🔒 Doctor / Admin
 **Thai Title:** การจัดการผู้ป่วย / Patient Management
 
 ---
@@ -137,6 +137,40 @@ Step 5: Patient receives notification to grant/deny
 ## 7. AI Agent Improvement Opportunities
 
 - **Risk stratification**: AI auto-classify patient risk levels
+
 - **Smart search**: AI understand natural language patient queries
+
 - **Patient matching**: AI suggest patients needing follow-up
+
 - **Consent automation**: AI manage consent expiry and renewals
+
+---
+
+## PostgreSQL Database Integration
+
+### Tables Used
+
+| Table | Operation | Description |
+| ----- | --------- | ----------- |
+| users | SELECT | Patient list (role='patient') |
+| patient_profiles | SELECT | Patient demographic details |
+| phr | SELECT | Personal Health Records |
+| vital_signs | SELECT | Latest vital sign measurements |
+| emr | SELECT | Electronic Medical Records history |
+| prescriptions | SELECT | Active and past prescriptions |
+| lab_orders | SELECT | Lab test orders and results |
+
+### API Endpoints
+
+| Endpoint | Method | DB Operation |
+| -------- | ------ | ------------ |
+| GET /api/patients | GET | SELECT users JOIN patient_profiles WHERE role='patient' |
+| GET /api/patients/:id | GET | SELECT users, patient_profiles, phr, vital_signs, emr, prescriptions, lab_orders WHERE patient_id |
+
+### Deployment
+
+- **Local Docker:** izara-postgres container (localhost:5433 external / 5432 internal) → database: izara_phase1
+
+- **Production:** GCE VM at 35.240.157.230:5432 → database: izara_phase1 (asia-southeast1)
+
+- **Service deployed via:** Cloud Run (gen2, CPU Boost) + Cloud Build CI/CD

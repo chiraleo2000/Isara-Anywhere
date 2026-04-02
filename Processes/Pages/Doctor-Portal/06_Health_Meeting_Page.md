@@ -1,18 +1,20 @@
 # 🎥 Doctor Portal — Health Meeting Page
 
-**Route:** `/health-meeting`  
-**Component:** `src/pages/HealthMeeting.tsx`  
-**Access:** 🔒 Doctor / Admin  
-**Thai Title:** การประชุมสุขภาพ / Health Meeting  
+**Route:** `/health-meeting`
+**Component:** `src/pages/HealthMeeting.tsx`
+**Access:** 🔒 Doctor / Admin
+**Thai Title:** การประชุมสุขภาพ / Health Meeting
 **Version:** v1.4.7
 
 ---
+
 
 ## 1. Purpose
 
 Manage patient queue, confirm appointments with meeting links, and launch Jitsi video consultations. Admin-specific features include viewing all appointments and assigning from the pool.
 
 ---
+
 
 ## 2. Page Layout
 
@@ -30,6 +32,7 @@ Manage patient queue, confirm appointments with meeting links, and launch Jitsi 
 ```
 
 ---
+
 
 ## 3. Tab: Patient Queue (คิวผู้ป่วย)
 
@@ -60,6 +63,7 @@ Manage patient queue, confirm appointments with meeting links, and launch Jitsi 
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
+
 ### Queue Statuses
 
 | Status | Thai | Description |
@@ -69,7 +73,9 @@ Manage patient queue, confirm appointments with meeting links, and launch Jitsi 
 | awaiting_doctor_response | รอแพทย์ตอบรับ | Assigned, waiting confirmation |
 | assigned | มอบหมายแล้ว | Admin assigned to doctor |
 
+
 ---
+
 
 ## 4. Tab: Scheduled Meetings (ประชุม)
 
@@ -92,6 +98,7 @@ Manage patient queue, confirm appointments with meeting links, and launch Jitsi 
 ```
 
 ---
+
 
 ### 4a. Tab: Meeting Results (📊 ผลประชุม)
 
@@ -126,6 +133,7 @@ Displays completed meetings with AI-generated SOAP summaries awaiting doctor val
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
+
 #### Meeting Result Card Details
 
 | Field | Description |
@@ -140,7 +148,9 @@ Displays completed meetings with AI-generated SOAP summaries awaiting doctor val
 | Chat Messages | Count of text chat messages captured during meeting |
 | Validation Status | 🟡 Pending / ✅ Approved / ✏️ Edited / ❌ Rejected |
 
+
 ---
+
 
 ### 4b. Multi-Party Meeting Invitations
 
@@ -158,7 +168,7 @@ Doctors can invite additional participants to create Microsoft Teams-like multi-
 │                                                              │
 │  👥 Patient Guest Invites (relatives/friends):               │
 │  Patient can share Guest URL with up to 3 guests             │
-│  ├── Guest URL: https://meet.jit.si/izara-xxxx?guest=1      │
+│  ├── Guest URL: <https://meet.jit.si/izara-xxxx?guest=1>      │
 │  └── 📋 Copy Guest URL                                      │
 │                                                              │
 │  ⚠️ Non-registered users:                                    │
@@ -170,6 +180,7 @@ Doctors can invite additional participants to create Microsoft Teams-like multi-
 └──────────────────────────────────────────────────────────────┘
 ```
 
+
 #### Participant Roles
 
 | Role | Icon | Capabilities | URL Type |
@@ -180,7 +191,9 @@ Doctors can invite additional participants to create Microsoft Teams-like multi-
 | Invited Doctor | 👨‍⚕️ | Video/audio, chat, clinical notes access | Doctor URL |
 | Admin | 🔧 | Video/audio, chat, meeting management | Admin URL |
 
+
 ---
+
 
 ### 4c. Man-in-the-Loop Validation Actions
 
@@ -212,6 +225,7 @@ All AI-generated meeting summaries require doctor validation before reaching the
 └──────────────────────────────────────────────────────────────┘
 ```
 
+
 #### Validation Status Flow
 
 ```text
@@ -230,6 +244,7 @@ Doctor Reviews Summary
 ```
 
 ---
+
 
 ## 5. Appointment Confirmation Flow
 
@@ -254,6 +269,7 @@ Doctor Reviews Summary
 
 ---
 
+
 ## 6. Jitsi Meeting URL Generation
 
 When doctor confirms an appointment:
@@ -263,6 +279,8 @@ When doctor confirms an appointment:
 | Doctor URL | Moderator access with lobby control | Doctor |
 | Patient URL | Guest access, enters lobby | Patient |
 | Guest URL | Guest access for invitees | Relatives/consultants |
+
+
 
 ### Jitsi Configuration
 
@@ -276,9 +294,12 @@ When doctor confirms an appointment:
 | Recording | Enabled |
 | Chat | Always available |
 
+
 ---
 
+
 ## 7. Workflows
+
 
 ### Workflow 1: Confirm Pending Appointment
 
@@ -294,6 +315,7 @@ Step 8: Confirmation email sent to patient
 Step 9: Appointment moves to Meetings tab
 ```
 
+
 ### Workflow 2: Start Video Meeting
 
 ```text
@@ -304,6 +326,7 @@ Step 4: Doctor waits for patient to join lobby
 Step 5: Doctor admits patient from lobby
 Step 6: Consultation begins with live transcription
 ```
+
 
 ### Workflow 3: Admin — Assign from Pool
 
@@ -316,6 +339,7 @@ Step 5: Doctor receives notification
 Step 6: Appointment status: awaiting_doctor_response
 ```
 
+
 ### Workflow 4: Queue Management
 
 ```text
@@ -325,6 +349,7 @@ Step 3: Or click "ข้าม" (Skip) → Skip reason modal
 Step 4: Patient skipped with reason logged
 Step 5: Next patient in queue called
 ```
+
 
 ### Workflow 5: Review Meeting Results (Man-in-the-Loop)
 
@@ -343,6 +368,7 @@ Step 7: POST /api/meetings/:id/validate → Updates validation status
 Step 8: Approved content available in EMR Editor pre-filled
 ```
 
+
 ### Workflow 6: Invite Multi-Party Participants
 
 ```text
@@ -356,6 +382,7 @@ Step 7: All guests enter lobby on meeting day
 Step 8: Doctor (HOST) approves/rejects each lobby participant
 Step 9: Admitted participants join multi-party video meeting
 ```
+
 
 ### Workflow 7: Post-Meeting → EMR Editor Flow
 
@@ -377,6 +404,7 @@ Step 9: Data appears in Patient Dashboard + Timeline + Health History
 
 ---
 
+
 ## 8. API Endpoints
 
 | Method | Endpoint | Purpose |
@@ -396,7 +424,9 @@ Step 9: Data appears in Patient Dashboard + Timeline + Health History
 | GET | `/api/meetings/pending-validation` | List meetings awaiting validation |
 | POST | `/api/meetings/:id/patient-instruction` | Generate Patient Instruction Sheet |
 
+
 ---
+
 
 ## 9. Meeting Technology Stack
 
@@ -409,16 +439,68 @@ Step 9: Data appears in Patient Dashboard + Timeline + Health History
 | Database | PostgreSQL (izara_phase1) | Self-hosted |
 | Chat | Jitsi built-in + Socket.IO capture | FREE |
 
+
 ---
+
 
 ## 10. AI Agent Improvement Opportunities
 
+
 - **Smart queue prioritization**: AI dynamically reprioritize based on clinical urgency
+
 - **Auto-confirmation**: AI auto-confirm standard follow-ups
+
 - **Meeting preparation**: AI prepare room with patient context
+
 - **Wait time notifications**: AI notify patients of estimated wait
+
 - **No-show detection**: AI identify and handle potential no-shows
+
 - **Multi-party scheduling**: AI coordinate availability across multiple doctors
+
 - **Post-meeting auto-routing**: AI auto-route validated summaries to EMR Editor
+
 - **Summary quality scoring**: AI self-assess confidence and flag low-confidence sections
+
 - **Patient instruction personalization**: AI tailor instruction sheets to patient literacy level
+
+---
+
+
+## PostgreSQL Database Integration
+
+
+### Tables Used
+| Table | Operation | Description |
+| ----- | --------- | ----------- |
+| appointments | SELECT/UPDATE | Meeting-linked appointment status management |
+| meeting_records | INSERT/UPDATE | Create and update meeting session records |
+| meeting_transcripts | INSERT | Store real-time meeting transcripts |
+| transcriptions_embeddings | INSERT | Vector embeddings for transcript semantic search |
+| emr | INSERT/UPDATE | Auto-generate EMR from meeting summary |
+| ai_validations | INSERT | AI validation results for meeting summaries |
+
+
+
+### API Endpoints
+| Endpoint | Method | DB Operation |
+| -------- | ------ | ------------ |
+| POST /api/meetings/start | POST | INSERT meeting_records; UPDATE appointments SET status |
+| POST /api/meetings/:id/end | POST | UPDATE meeting_records SET ended_at; trigger AI summary |
+| POST /api/meetings/:id/transcript | POST | INSERT meeting_transcripts; INSERT transcriptions_embeddings |
+
+
+
+### Real-time Events
+
+- **NOTIFY:** meeting_changes channel → Socket.IO meeting events
+
+
+### Deployment
+
+- **Local Docker:** izara-postgres container (localhost:5433 external / 5432 internal) → database: izara_phase1
+
+- **Production:** GCE VM at 35.240.157.230:5432 → database: izara_phase1 (asia-southeast1)
+
+- **Service deployed via:** Cloud Run (gen2, CPU Boost) + Cloud Build CI/CD
+

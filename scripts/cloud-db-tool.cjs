@@ -40,7 +40,7 @@ const args = parseArgs();
 const dbPassword = process.env.DB_PASSWORD || process.env.CLOUD_DB_PASSWORD;
 if (!dbPassword) {
     console.error('❌ ERROR: DB_PASSWORD environment variable is required.');
-    console.error('   Set it using: $env:DB_PASSWORD="your_password"');
+    console.error('   Set it using: $env:DB_PASSWORD=<your_password>');
     process.exit(1);
 }
 
@@ -691,9 +691,9 @@ async function verifyData(client) {
     console.log('\n   Password verification:');
     const usersWithPwd = await client.query('SELECT email, role, password_hash FROM users');
     for (const user of usersWithPwd.rows) {
-        let testPwd = 'P@ssw0rd';
-        if (user.role === 'doctor') testPwd = 'IzaraDoctor@2024';
-        if (user.role === 'admin') testPwd = 'IzaraAdmin@2024';
+        let testPwd = process.env.TEST_PATIENT_PASSWORD || '';
+        if (user.role === 'doctor') testPwd = process.env.IZARA_DOCTOR_PASSWORD || '';
+        if (user.role === 'admin') testPwd = process.env.IZARA_ADMIN_PASSWORD || '';
 
         const valid = await bcrypt.compare(testPwd, user.password_hash);
         console.log(`      ${user.email} (${user.role}): ${valid ? '✅' : '❌'}`);

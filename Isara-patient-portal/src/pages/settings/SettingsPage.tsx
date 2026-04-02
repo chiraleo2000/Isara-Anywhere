@@ -56,12 +56,12 @@ function getModalClasses(darkMode: boolean) {
 const PASSWORD_LABELS = {
   th: {
     title: 'เปลี่ยนรหัสผ่าน',
-    currentPassword: 'รหัสผ่านปัจจุบัน',
-    newPassword: 'รหัสผ่านใหม่',
-    confirmPassword: 'ยืนยันรหัสผ่านใหม่',
+    currentPassword: 'รหัสผ่านปัจจุบัน', // NOSONAR
+    newPassword: 'รหัสผ่านใหม่', // NOSONAR
+    confirmPassword: 'ยืนยันรหัสผ่านใหม่', // NOSONAR
     save: 'บันทึก',
     cancel: 'ยกเลิก',
-    passwordMismatch: 'รหัสผ่านไม่ตรงกัน',
+    passwordMismatch: 'รหัสผ่านไม่ตรงกัน', // NOSONAR
     passwordTooShort: 'รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร',
     successMessage: 'เปลี่ยนรหัสผ่านสำเร็จ!',
     errorMessage: 'เกิดข้อผิดพลาด กรุณาลองใหม่',
@@ -130,7 +130,7 @@ const SETTINGS_LABELS = {
     darkModeLabel: 'โหมดมืด',
     darkModeDesc: 'เปลี่ยนเป็นธีมสีเข้ม',
     security: 'ความปลอดภัย',
-    changePassword: 'เปลี่ยนรหัสผ่าน',
+    changePassword: 'เปลี่ยนรหัสผ่าน', // NOSONAR
     logout: 'ออกจากระบบ',
     version: 'Izara Patient Portal v1.0.0',
     comingSoon: 'เร็วๆ นี้',
@@ -197,6 +197,8 @@ function PasswordField({ id, label, value, onChange, show, onToggleShow, inputCl
           type="button"
           onClick={onToggleShow}
           className="absolute right-3 top-1/2 -translate-y-1/2"
+          aria-label={show ? 'Hide password' : 'Show password'}
+          title={show ? 'Hide password' : 'Show password'}
         >
           {show ? <EyeOff className="w-4 h-4 text-gray-400" /> : <Eye className="w-4 h-4 text-gray-400" />}
         </button>
@@ -287,7 +289,7 @@ function PasswordChangeModal({
           <h2 className={`text-lg font-semibold ${cls.titleText}`}>
             {labels.title}
           </h2>
-          <button onClick={onClose} className={cls.closeBtnFull}>
+          <button onClick={onClose} className={cls.closeBtnFull} aria-label="Close" title="Close">
             <X className={`w-5 h-5 ${cls.closeIcon}`} />
           </button>
         </div>
@@ -468,7 +470,7 @@ function ProfileImageModal({
           <h2 className={`text-lg font-semibold ${cls.titleText}`}>
             {labels.title}
           </h2>
-          <button onClick={onClose} className={cls.closeBtnFull}>
+          <button onClick={onClose} className={cls.closeBtnFull} aria-label="Close" title="Close">
             <X className={`w-5 h-5 ${cls.closeIcon}`} />
           </button>
         </div>
@@ -506,6 +508,7 @@ function ProfileImageModal({
                 accept="image/*"
                 onChange={handleFileSelect}
                 className="hidden"
+                aria-label="Select profile image"
               />
 
               <div className="flex flex-col gap-2">
@@ -690,6 +693,8 @@ export default function SettingsPage() {
               value={language}
               onChange={(e) => setLanguage(e.target.value as 'en' | 'th')}
               className={`px-4 py-2 border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent ${selectCls}`}
+              aria-label="Select language"
+              title="Select language"
             >
               <option value="th">ไทย</option>
               <option value="en">English</option>
@@ -792,6 +797,10 @@ function ToggleItem({
       <button
         onClick={() => onChange(!checked)}
         className={`w-12 h-6 rounded-full transition-colors ${getToggleBg()}`}
+        aria-label={label}
+        title={label}
+        role="switch"
+        aria-checked={checked}
       >
         <div className={`w-5 h-5 bg-white rounded-full shadow transform transition-transform ${checked ? 'translate-x-6' : 'translate-x-0.5'}`} />
       </button>

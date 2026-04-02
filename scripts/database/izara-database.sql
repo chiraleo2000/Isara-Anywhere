@@ -392,7 +392,13 @@ CREATE TABLE appointments (
     meet_link TEXT,
     meeting_link TEXT,
     jitsi_room_name VARCHAR(255),
+    doctor_meeting_url TEXT,
+    patient_meeting_url TEXT,
+    guest_meeting_url TEXT,
     invitees JSONB DEFAULT '[]'::jsonb,
+    -- Confirmation tracking
+    confirmed_by VARCHAR(50),
+    confirmed_by_email VARCHAR(255),
     -- Timestamps
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,

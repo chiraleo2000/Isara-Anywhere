@@ -360,6 +360,7 @@ function LivingWillHeader({ isDark, language, hasExisting, currentVersion, onBac
   <div className="flex items-center gap-4 mb-6">
     <button
       onClick={onBack}
+      title={language === 'th' ? 'กลับ' : 'Back'}
       className={`p-2 rounded-xl transition-colors ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
     >
       <ChevronLeft className={`w-6 h-6 ${isDark ? 'text-gray-300' : ''}`} />
@@ -784,6 +785,7 @@ function StepMedicalPreferences({ form, setForm, togglePreference, onBack, onNex
         </div>
         <button
           onClick={() => togglePreference('organDonation')}
+          title={form.preferences.organDonation ? 'ปิดการบริจาคอวัยวะ' : 'เปิดการบริจาคอวัยวะ'}
           className={`relative w-14 h-7 rounded-full transition-colors ${form.preferences.organDonation ? 'bg-emerald-500' : 'bg-gray-300'
             }`}
         >
@@ -1035,6 +1037,7 @@ function StepShareDoctors({ form, sharedDoctors, onShowDoctorModal, removeDoctor
               </div>
               <button
                 onClick={() => removeDoctorFromShare(doctor.id)}
+                title="ลบแพทย์"
                 className="text-red-600 hover:bg-red-50 p-2 rounded-lg"
               >
                 <X className="w-5 h-5" />
@@ -1134,6 +1137,7 @@ function DoctorSelectionModal({ searchQuery, setSearchQuery, filteredDoctors, sh
         <h2 className="text-lg font-bold text-gray-800">เลือกแพทย์</h2>
         <button
           onClick={onClose}
+          title="ปิด"
           className="p-2 hover:bg-gray-100 rounded-lg"
         >
           <X className="w-5 h-5" />
@@ -1148,6 +1152,7 @@ function DoctorSelectionModal({ searchQuery, setSearchQuery, filteredDoctors, sh
             value={searchQuery}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
             placeholder="ค้นหาแพทย์..."
+            aria-label="ค้นหาแพทย์"
             className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl"
           />
         </div>
@@ -1208,6 +1213,7 @@ function VersionHistoryModal({ currentVersion, versions, formatDateTime, onRollb
         </div>
         <button
           onClick={onClose}
+          title="ปิด"
           className="p-2 hover:bg-gray-100 rounded-lg"
         >
           <X className="w-5 h-5" />
@@ -1296,6 +1302,7 @@ function VersionPreviewModal({ selectedVersion, formatDateTime, onRollback, roll
         </div>
         <button
           onClick={onClose}
+          title="ปิด"
           className="p-2 hover:bg-gray-100 rounded-lg"
         >
           <X className="w-5 h-5" />

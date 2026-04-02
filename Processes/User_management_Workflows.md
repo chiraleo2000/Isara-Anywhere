@@ -2,11 +2,12 @@
 
 Complete user management documentation for the Izara Telemedicine platform, covering authentication, registration, role management, and security.
 
-**Version:** 1.5.9  
-**Last Updated:** March 15, 2026  
-**Status:** ✅ PostgreSQL Implementation Complete
+**Version:** 1.6.0
+**Last Updated:** March 31, 2026
+**Status:** ✅ PostgreSQL Implementation Complete + Full DB Schema
 
 ---
+
 
 ## 📋 Table of Contents
 
@@ -22,6 +23,7 @@ Complete user management documentation for the Izara Telemedicine platform, cove
 
 ---
 
+
 ## 1. System Overview
 
 Izara Telemedicine uses a unified PostgreSQL database with two separate portals:
@@ -31,6 +33,8 @@ Izara Telemedicine uses a unified PostgreSQL database with two separate portals:
 | **Patient Portal** | `localhost:3005` | Patients | 3005 |
 | **Doctor Portal** | `localhost:3010` | Doctors, Admins | 3010 |
 
+
+
 ### Docker Services
 
 | Service | Container Name | Port | Purpose |
@@ -39,6 +43,8 @@ Izara Telemedicine uses a unified PostgreSQL database with two separate portals:
 | Patient Portal | izara-patient-portal | 3005 | Patient frontend + backend |
 | Doctor Portal | izara-doctor-portal | 3010 | Doctor frontend + backend |
 | pgAdmin | izara-pgadmin | 5050 | Database administration |
+
+
 
 ### Portal Comparison
 
@@ -50,11 +56,14 @@ Izara Telemedicine uses a unified PostgreSQL database with two separate portals:
 | Session Duration | Session-based | Session-based |
 | Storage | PostgreSQL `users` table | PostgreSQL `users` table |
 
+
 ---
+
 
 ## 2. Database Schema
 
 All user data is stored in the PostgreSQL database `izara_phase1`.
+
 
 ### 2.1 Users Table
 
@@ -73,16 +82,16 @@ CREATE TABLE users (
     date_of_birth DATE,
     gender VARCHAR(20),
     national_id VARCHAR(20),
-    
+
     -- Doctor-specific fields
     doctor_id VARCHAR(50),
     medical_license_number VARCHAR(50),
     specialty VARCHAR(100),
     hospital_name VARCHAR(255),
-    
+
     -- Patient-specific fields
     patient_id VARCHAR(50),
-    
+
     -- Status fields
     is_active BOOLEAN DEFAULT true,
     is_verified BOOLEAN DEFAULT false,
@@ -92,25 +101,26 @@ CREATE TABLE users (
     approved_by VARCHAR(50),
     rejected_at TIMESTAMP WITH TIME ZONE,
     rejected_by VARCHAR(50),
-    
+
     -- Admin fields
     admin_privileges JSONB,
     is_admin BOOLEAN DEFAULT false,
-    
+
     -- Settings
     preferences JSONB DEFAULT '{"language": "th", "theme": "light"}'::jsonb,
     notification_settings JSONB,
-    
+
     -- Timestamps
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     last_login TIMESTAMP WITH TIME ZONE,
-    
+
     -- Security
     login_attempts INTEGER DEFAULT 0,
     locked_until TIMESTAMP WITH TIME ZONE
 );
 ```
+
 
 ### 2.2 Sessions Table
 
@@ -127,6 +137,7 @@ CREATE TABLE sessions (
 );
 ```
 
+
 ### 2.3 Password Reset Tokens
 
 ```sql
@@ -141,6 +152,7 @@ CREATE TABLE password_resets (
 );
 ```
 
+
 ### 2.4 Patient Profiles Table
 
 ```sql
@@ -154,6 +166,7 @@ CREATE TABLE patient_profiles (
 );
 ```
 
+
 ### 2.5 User ID Formats
 
 | Role | ID Format | Example |
@@ -162,9 +175,12 @@ CREATE TABLE patient_profiles (
 | Doctor | `DOC-{TIMESTAMP}-{RANDOM}` | `DOC-1706123456-XYZ789` |
 | Admin | `DOC-DEMO-001` or `DOC-{...}` | `DOC-DEMO-001` |
 
+
 ---
 
+
 ## 3. API Endpoints
+
 
 ### 3.1 Patient Portal Authentication (`/api/auth/*`)
 
@@ -175,6 +191,8 @@ CREATE TABLE patient_profiles (
 | POST | `/api/auth/logout` | End session | Authenticated |
 | POST | `/api/auth/validate` | Validate session token | Authenticated |
 | GET | `/api/auth/me` | Get current user profile | Authenticated |
+
+
 
 ### 3.2 Doctor Portal Authentication (`/auth/*`)
 
@@ -187,6 +205,8 @@ CREATE TABLE patient_profiles (
 | POST | `/auth/request-password-reset` | Request password reset | Public |
 | POST | `/auth/reset-password` | Reset password with token | Public |
 
+
+
 ### 3.3 Admin Management (`/admin/*`)
 
 | Method | Endpoint | Description | Access |
@@ -196,9 +216,12 @@ CREATE TABLE patient_profiles (
 | POST | `/admin/reject-doctor` | Reject doctor registration | Admin |
 | POST | `/admin/update-role` | Change user role (doctor↔admin) | Admin |
 
+
 ---
 
+
 ## 4. User Workflows
+
 
 ### 4.1 Patient Registration Flow
 
@@ -240,6 +263,7 @@ CREATE TABLE patient_profiles (
 │                                                                  │
 └─────────────────────────────────────────────────────────────────┘
 ```
+
 
 ### 4.2 Doctor Registration Flow
 
@@ -286,6 +310,7 @@ CREATE TABLE patient_profiles (
 └─────────────────────────────────────────────────────────────────┘
 ```
 
+
 ### 4.2.1 Patient vs Doctor Registration Comparison
 
 | Feature | Patient Registration | Doctor Registration |
@@ -300,6 +325,8 @@ CREATE TABLE patient_profiles (
 | **Initial Status** | `is_active: true`, `is_approved: true` | `is_active: false`, `is_approved: false` |
 | **Approval Required** | ❌ No | ✅ Yes - Admin must approve |
 | **Auto-Login** | ✅ Yes - Logged in after registration | ❌ No - Must wait for approval |
+
+
 
 ### 4.2.2 Doctor Registration States
 
@@ -328,6 +355,7 @@ CREATE TABLE patient_profiles (
 │                                                                  │
 └─────────────────────────────────────────────────────────────────┘
 ```
+
 
 ### 4.3 Login Flow
 
@@ -358,6 +386,7 @@ CREATE TABLE patient_profiles (
 │                                                                  │
 └─────────────────────────────────────────────────────────────────┘
 ```
+
 
 ### 4.4 Admin: Approve Doctor
 
@@ -397,10 +426,11 @@ CREATE TABLE patient_profiles (
 └─────────────────────────────────────────────────────────────────┘
 ```
 
+
 ### 4.4.1 Doctor Management Page (Admin Only)
 
-**Route:** `/admin/doctors` or "จัดการแพทย์" in sidebar  
-**Component:** `AdminDoctorManagement.tsx`  
+**Route:** `/admin/doctors` or "จัดการแพทย์" in sidebar
+**Component:** `AdminDoctorManagement.tsx`
 **Access:** Admin users only (role = 'admin' or is_admin = true)
 
 ```text
@@ -456,6 +486,7 @@ CREATE TABLE patient_profiles (
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
+
 #### Doctor Management Page Features
 
 | Feature | Description |
@@ -468,6 +499,8 @@ CREATE TABLE patient_profiles (
 | **Reject Button** | Reject with reason - doctor cannot login |
 | **View Details** | Full profile, documents, registration info |
 | **Role Management** | Promote doctor to admin or demote admin to doctor |
+
+
 
 ### 4.5 Admin: Reject Doctor
 
@@ -497,6 +530,7 @@ CREATE TABLE patient_profiles (
 │                                                                  │
 └─────────────────────────────────────────────────────────────────┘
 ```
+
 
 ### 4.6 Password Reset Flow
 
@@ -542,7 +576,9 @@ CREATE TABLE patient_profiles (
 
 ---
 
+
 ## 5. Security Features
+
 
 ### 5.1 Rate Limiting
 
@@ -552,23 +588,29 @@ CREATE TABLE patient_profiles (
 | Password Reset | 5 requests | 1 hour | Return 429 error |
 | General API | 500 requests | 15 minutes | Return 429 error |
 
+
+
 ### 5.2 Account Lockout
 
 After 5 failed login attempts:
 
+
 - Account is locked for 30 minutes
+
 - `locked_until` timestamp is set
+
 - Security event is logged
 
 ```sql
-UPDATE users 
+UPDATE users
 SET login_attempts = login_attempts + 1,
-    locked_until = CASE 
+    locked_until = CASE
       WHEN login_attempts >= 4 THEN NOW() + INTERVAL '30 minutes'
-      ELSE locked_until 
+      ELSE locked_until
     END
 WHERE email = $1;
 ```
+
 
 ### 5.3 Password Security
 
@@ -578,16 +620,24 @@ WHERE email = $1;
 | Salt Rounds | 10 |
 | Min Length | 6 chars (patient) / 8 chars (doctor) |
 
+
+
 ### 5.4 Session Security
 
+
 - **Token Format**: 64-character cryptographic random hex string
+
 - **IP Binding**: Sessions track client IP address
+
 - **User-Agent**: Sessions track browser information
+
 - **Invalidation**: Sessions marked with `logged_out_at` on logout
 
 ---
 
+
 ## 6. Role-Based Access Control
+
 
 ### 6.1 Patient Portal Access
 
@@ -598,6 +648,8 @@ WHERE email = $1;
 | View Health Records | ✅ (own only) |
 | AI Health Chat | ✅ |
 | Cancel Appointments | ✅ (own only) |
+
+
 
 ### 6.2 Doctor Portal Access
 
@@ -615,6 +667,8 @@ WHERE email = $1;
 | Assign Roles | ❌ | ✅ |
 | View Analytics | ❌ | ✅ |
 
+
+
 ### 6.3 Admin Privileges (JSONB)
 
 ```json
@@ -629,6 +683,7 @@ WHERE email = $1;
 }
 ```
 
+
 ### 6.4 Checking Admin Status
 
 ```typescript
@@ -641,7 +696,9 @@ const canManageDoctors = user.admin_privileges?.canManageDoctors || user.is_admi
 
 ---
 
+
 ## 7. Test Accounts
+
 
 ### 7.1 Pre-seeded Accounts
 
@@ -653,12 +710,16 @@ const canManageDoctors = user.admin_privileges?.canManageDoctors || user.is_admi
 | Patient Portal | `Somchai.Mankong@gmail.com` | `P@ssw0rd` | Patient |
 | Patient Portal | `Anan.Khayanrian@gmail.com` | `P@ssw0rd` | Patient |
 
+
+
 ### 7.2 Seeding Data
 
 ```powershell
+
 # Seed database with test data
 cd scripts/database
 node seed-database.cjs
+
 
 # Or use cloud-db-tool
 cd scripts
@@ -667,7 +728,9 @@ node cloud-db-tool.cjs seed
 
 ---
 
+
 ## 8. Frontend Components
+
 
 ### 8.1 Patient Portal Components
 
@@ -676,6 +739,8 @@ node cloud-db-tool.cjs seed
 | `LoginPage` | `/pages/auth/LoginPage.tsx` | Patient login |
 | `RegisterPage` | `/pages/auth/RegisterPage.tsx` | Patient registration |
 | `AuthContext` | `/contexts/AuthContext.tsx` | Auth state management |
+
+
 
 ### 8.2 Doctor Portal Components
 
@@ -686,7 +751,9 @@ node cloud-db-tool.cjs seed
 | `AuthProvider` | `/components/common/AuthProvider.tsx` | Auth state management |
 | `AdminDoctorManagement` | `/pages/AdminDoctorManagement.tsx` | Admin: manage doctors |
 
+
 ---
+
 
 ## 9. Error Codes
 
@@ -702,7 +769,9 @@ node cloud-db-tool.cjs seed
 | `RATE_LIMIT_EXCEEDED` | 429 | Too many requests |
 | `LOGIN_ERROR` | 500 | Server error during login |
 
+
 ---
+
 
 ## Summary
 
@@ -718,6 +787,121 @@ node cloud-db-tool.cjs seed
 | Reset Password | Any | Both | Password updated |
 | Logout | Any | Both | Session invalidated |
 
+
 ---
 
 This document reflects the current PostgreSQL-based implementation of Izara Telemedicine (Phase 1 Complete).
+
+---
+
+
+## 10. PostgreSQL Database Architecture for User Management
+
+
+### Database Tables
+
+| Table | Purpose | Key Columns |
+| ----- | ------- | ----------- |
+| **users** | Unified user table (all roles) | id, email, password_hash (bcrypt via pgcrypto), role (patient/doctor/admin), name, name_thai, phone, date_of_birth, national_id, doctor_id, patient_id, is_active, is_verified, is_approved, approval_status (pending/approved/rejected), preferences (JSONB), notification_settings (JSONB), login_attempts, locked_until |
+| **sessions** | JWT session tracking | id, user_id, token, ip_address, user_agent, expires_at, logged_out_at |
+| **password_resets** | Password reset tokens | id, user_id, token (hashed), expires_at (1 hour), used (boolean), used_at |
+| **device_tokens** | Push notification devices | id, user_id, device_token, platform (web/ios/android), device_name, is_active |
+| **biometric_credentials** | Biometric auth (Phase 2) | id, user_id, credential_type, public_key, device_id, is_active |
+| **refresh_tokens** | JWT refresh rotation (Phase 2) | id, user_id, token_hash, device_id, expires_at, is_revoked |
+| **patient_profiles** | Patient-specific data | patient_id, demographics (JSONB), emergency_contact (JSONB), insurance_info (JSONB) |
+| **doctor_profiles** | Doctor-specific data | doctor_id, specialty, sub_specialties (JSONB), qualifications, experience_years, hospital_name, department, languages (JSONB), rating, consultation_fee, is_available, schedule (JSONB) |
+| **audit_logs** | All user actions tracked | id, user_id, action, entity_type='user', details (JSONB), ip_address, user_agent |
+
+
+
+### Authentication Data Flow
+
+```text
+Patient Portal (port 3005)                 Doctor Portal (port 3010)
+┌──────────────────────────┐              ┌──────────────────────────┐
+│ LoginPage.tsx            │              │ DoctorLoginPage.tsx       │
+│ POST /api/auth/login     │              │ POST /api/auth/login      │
+└──────────┬───────────────┘              └──────────┬───────────────┘
+           │                                         │
+           └─────────────────┬───────────────────────┘
+                             ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│  PostgreSQL - izara_phase1                                           │
+│                                                                      │
+│  Login:                                                              │
+│  SELECT * FROM users WHERE email = $1                               │
+│  → Verify: password_hash = crypt($password, password_hash)          │
+│  → Check: is_active = true, approval_status = 'approved'            │
+│  → Check: login_attempts < 5 AND locked_until < NOW()               │
+│  INSERT INTO sessions (user_id, token, ip_address, user_agent,      │
+│    expires_at) VALUES ($1, $jwt, $ip, $ua, NOW() + '24h')          │
+│  INSERT INTO audit_logs (action='login', user_id=$1)                │
+│                                                                      │
+│  Register (Patient):                                                 │
+│  INSERT INTO users (email, password_hash, role='patient', name,     │
+│    is_active=true, is_approved=true, approval_status='approved')     │
+│  INSERT INTO patient_profiles (patient_id=$newId)                   │
+│                                                                      │
+│  Register (Doctor):                                                  │
+│  INSERT INTO users (email, password_hash, role='doctor', name,      │
+│    is_active=false, is_approved=false, approval_status='pending')    │
+│  INSERT INTO doctor_profiles (doctor_id=$newId, specialty=$1)       │
+│  → Admin approval required before first login                        │
+│                                                                      │
+│  Admin approves doctor:                                              │
+│  UPDATE users SET is_active=true, is_approved=true,                 │
+│    approval_status='approved' WHERE id=$doctorId                     │
+│  INSERT INTO audit_logs (action='approve_doctor')                    │
+│                                                                      │
+│  Logout:                                                             │
+│  UPDATE sessions SET logged_out_at=NOW() WHERE token=$jwt           │
+│                                                                      │
+│  Password Reset:                                                     │
+│  INSERT INTO password_resets (user_id, token, expires_at=NOW()+'1h')│
+│  → Email sent with reset link                                        │
+│  UPDATE users SET password_hash=crypt($newPwd, gen_salt('bf'))      │
+│    WHERE id=$userId                                                  │
+│  UPDATE password_resets SET used=true, used_at=NOW()                │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+
+### Deployment Architecture
+
+| Environment | Service | Auth Scope | Database |
+| ----------- | ------- | ---------- | -------- |
+| Local Docker | Patient Portal (3005) | Patient registration + login | izara-postgres:5432 |
+| Local Docker | Doctor Portal (3010) | Doctor/admin login + user mgmt | izara-postgres:5432 |
+| Production | Patient Portal (Cloud Run) | Same | 35.240.157.230:5432 |
+| Production | Doctor Portal (Cloud Run) | Same | 35.240.157.230:5432 |
+
+
+
+### Security Features in PostgreSQL
+
+| Feature | Implementation |
+| ------- | -------------- |
+| Password hashing | pgcrypto: crypt() + gen_salt('bf') |
+| Session management | JWT stored in sessions table, 24h expiry |
+| Account lockout | login_attempts counter, locked_until timestamp |
+| Audit trail | Every auth action logged to audit_logs |
+| PDPA compliance | patient_consents table for data consent |
+
+
+
+### Scenario Coverage
+
+| # | Scenario | Actor | DB Tables |
+| - | -------- | ----- | --------- |
+| 1 | Patient registers | Patient | users, patient_profiles, audit_logs |
+| 2 | Doctor registers | Doctor | users, doctor_profiles, audit_logs |
+| 3 | Admin approves doctor | Admin | users, audit_logs |
+| 4 | Admin rejects doctor | Admin | users, audit_logs |
+| 5 | Patient login | Patient | users, sessions, audit_logs |
+| 6 | Doctor login | Doctor | users (check approval), sessions, audit_logs |
+| 7 | Password reset request | Any | password_resets |
+| 8 | Password reset complete | Any | users, password_resets, audit_logs |
+| 9 | Logout | Any | sessions (logged_out_at) |
+| 10 | Grant admin role | Admin | users (role='admin'), audit_logs |
+| 11 | Account lockout | System | users (login_attempts, locked_until) |
+

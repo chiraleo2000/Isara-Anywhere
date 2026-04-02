@@ -28,9 +28,9 @@ export const HealthStudio: React.FC<HealthStudioProps> = ({ className = '' }) =>
     if (!user) return;
     try {
       const [vitalsData, phrData, appointmentsData] = await Promise.all([
-        phrService.getVitals(user.id).catch(() => []),
-        phrService.get(user.id).catch(() => null),
-        appointmentService.getByPatient(user.patientId || user.id).catch(() => []),
+        phrService.getVitals(user.id).catch((err: unknown) => { console.error('[HealthStudio] Vitals fetch failed:', err); return []; }),
+        phrService.get(user.id).catch((err: unknown) => { console.error('[HealthStudio] PHR fetch failed:', err); return null; }),
+        appointmentService.getByPatient(user.patientId || user.id).catch((err: unknown) => { console.error('[HealthStudio] Appointments fetch failed:', err); return []; }),
       ]);
 
       // Get latest vitals (sorted newest first)

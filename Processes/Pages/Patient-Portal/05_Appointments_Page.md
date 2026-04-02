@@ -1,9 +1,9 @@
 # 📅 Patient Portal — Appointments Page
 
-**Version:** v1.4.7  
-**Route:** `/appointments`, `/book-appointment`, `/appointments/:id`  
-**Component:** `src/pages/appointments/AppointmentPages.tsx`  
-**Access:** 🔒 Authenticated patients  
+**Version:** v1.4.7
+**Route:** `/appointments`, `/book-appointment`, `/appointments/:id`
+**Component:** `src/pages/appointments/AppointmentPages.tsx`
+**Access:** 🔒 Authenticated patients
 **Thai Title:** นัดหมายของฉัน / ขอนัดหมายแพทย์ / รายละเอียดนัดหมาย
 
 ---
@@ -69,9 +69,13 @@ Complete appointment management: view existing appointments, book new ones with 
 ### Features
 
 - Filter tabs (pending, all, confirmed, completed)
+
 - Sort by newest/oldest
+
 - Symptom preview on each card
+
 - Meeting link with copy + join buttons for confirmed telehealth
+
 - Click card → navigate to detail page
 
 ---
@@ -238,7 +242,7 @@ Complete appointment management: view existing appointments, book new ones with 
 │                                                                     │
 │  ┌── Meeting Link Section (confirmed telehealth only) ──────┐     │
 │  │  📹 ลิงก์การประชุม:                                        │     │
-│  │  https://meet.jit.si/isara-{roomId}                       │     │
+│  │  <https://meet.jit.si/isara-{roomId}>                       │     │
 │  │  [📋 คัดลอก] [📹 เข้าร่วม] [👥 แชร์]                      │     │
 │  │                                                           │     │
 │  │  ⏰ ห้องประชุมจะเปิดก่อนเวลานัด 10 นาที                    │     │
@@ -293,7 +297,7 @@ Step 2:  Appointment card shows:
          - [📹 เข้าร่วมประชุม] (Join Meeting)
          - [👥 เชิญญาติ/เพื่อน] (Invite Relatives/Friends)
 Step 3:  Patient clicks "เข้าร่วมประชุม" → Opens Jitsi Meet in new tab
-Step 4:  Jitsi URL format: https://meet.jit.si/{roomName}#{config}
+Step 4:  Jitsi URL format: <https://meet.jit.si/{roomName}#{config}>
 Step 5:  Patient enters LOBBY (ห้องรอ) automatically
          - Shows: "กรุณารอแพทย์อนุมัติเข้าห้องประชุม..."
          - Patient sees own video preview
@@ -444,8 +448,44 @@ Step 6: Notification sent to doctor
 ## 9. AI Agent Improvement Opportunities
 
 - **Smart symptom interview**: AI conversational symptom gathering
+
 - **Auto-schedule optimization**: AI find optimal time based on urgency + doctor availability
+
 - **Waiting time prediction**: AI estimate wait time for each doctor
+
 - **Follow-up booking**: AI auto-suggest follow-up appointments after consultation
+
 - **Multilingual symptom input**: AI translate symptoms from any language
+
 - **Image diagnosis**: AI preliminary analysis of uploaded medical images
+
+---
+
+## PostgreSQL Database Integration
+
+### Tables Used
+
+| Table | Operation | Description |
+| ----- | --------- | ----------- |
+| appointments | CRUD | Create, view, update, cancel appointments |
+| users | SELECT | Available doctors list (role = 'doctor') |
+| doctor_schedules | SELECT | Available time slots for booking |
+
+### API Endpoints
+
+| Endpoint | Method | DB Operation |
+| -------- | ------ | ------------ |
+| /api/appointments | GET | SELECT appointments WHERE patient_id = current |
+| /api/appointments | POST | INSERT appointments, SELECT doctor_schedules (available slots) |
+
+### Real-time Events
+
+- **NOTIFY:** appointment_changes → Socket.IO appointment status updates
+
+### Deployment
+
+- **Local Docker:** izara-postgres container (localhost:5433 external / 5432 internal) → database: izara_phase1
+
+- **Production:** GCE VM at 35.240.157.230:5432 → database: izara_phase1 (asia-southeast1)
+
+- **Service deployed via:** Cloud Run (gen2, CPU Boost) + Cloud Build CI/CD

@@ -110,7 +110,7 @@ const renderContentWithImages = (content: string) => {
 // ============================================================================
 
 // i18n labels for Medical Content page
-const labels = {
+const _labels = {
   pageTitle: { en: 'Medical Content', th: 'เนื้อหาทางการแพทย์' },
   healthLibrary: { en: 'Health Knowledge Library', th: 'ห้องสมุดความรู้สุขภาพ' },
   searchContent: { en: 'Search articles, videos, guides...', th: 'ค้นหาบทความ วิดีโอ คู่มือ...' },
@@ -629,10 +629,12 @@ const MedicalContent: React.FC = () => {
               placeholder="Search articles, guides, videos..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              aria-label="ค้นหาเนื้อหาทางการแพทย์"
               className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${themeClasses.searchInput}`}
             />
           </div>
           <select
+            aria-label="Filter by category"
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
             className={`px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 ${themeClasses.selectInput}`}
@@ -645,6 +647,7 @@ const MedicalContent: React.FC = () => {
             ))}
           </select>
           <select
+            aria-label="Filter by type"
             value={selectedType}
             onChange={(e) => setSelectedType(e.target.value)}
             className={`px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 ${themeClasses.selectInput}`}
@@ -656,6 +659,7 @@ const MedicalContent: React.FC = () => {
             ))}
           </select>
           <select
+            aria-label="Filter by status"
             value={selectedStatus}
             onChange={(e) => setSelectedStatus(e.target.value as ContentStatus | 'all')}
             className={`px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 ${themeClasses.selectInput}`}
@@ -848,6 +852,7 @@ const MedicalContent: React.FC = () => {
                   resetForm();
                 }}
                 className="p-2 hover:bg-gray-100 rounded-lg"
+                aria-label="Close"
               >
                 <XMarkIcon className="w-5 h-5" />
               </button>
@@ -1086,6 +1091,7 @@ const MedicalContent: React.FC = () => {
                     value={newTag}
                     onChange={(e) => setNewTag(e.target.value)}
                     placeholder="Or create new tag..."
+                    aria-label="Create new tag"
                     className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
                   />
                   <button
@@ -1171,6 +1177,7 @@ const MedicalContent: React.FC = () => {
                   setSelectedArticle(null);
                 }}
                 className="p-2 hover:bg-gray-100 rounded-lg"
+                aria-label="Close"
               >
                 <XMarkIcon className="w-5 h-5" />
               </button>
@@ -1294,6 +1301,7 @@ const MedicalContent: React.FC = () => {
                   setSelectedArticle(null);
                 }}
                 className="p-2 hover:bg-gray-100 rounded-lg"
+                aria-label="Close"
               >
                 <XMarkIcon className="w-5 h-5" />
               </button>
@@ -1403,6 +1411,7 @@ const MedicalContent: React.FC = () => {
                     setRejectionReason('');
                   }}
                   className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
+                  aria-label="Close"
                 >
                   <XMarkIcon className="w-5 h-5" />
                 </button>
@@ -1506,6 +1515,7 @@ const MedicalContent: React.FC = () => {
                 <button
                   onClick={() => setShowPendingList(false)}
                   className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
+                  aria-label="Close"
                 >
                   <XMarkIcon className="w-5 h-5" />
                 </button>

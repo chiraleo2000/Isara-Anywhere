@@ -31,12 +31,6 @@ const CalendarIcon: React.FC<{ className?: string }> = ({ className }) => (
   </svg>
 );
 
-const SaveIcon: React.FC<{ className?: string }> = ({ className }) => (
-  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-  </svg>
-);
-
 const EditIcon: React.FC<{ className?: string }> = ({ className }) => (
   <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -212,7 +206,7 @@ function PasswordChangeModal({
       <div className="w-full max-w-md bg-white rounded-2xl shadow-xl">
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
           <h2 className="text-lg font-semibold text-gray-800">เปลี่ยนรหัสผ่าน</h2>
-          <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-100" aria-label="Close password dialog">
+          <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-100" aria-label="ปิดหน้าต่างเปลี่ยนรหัสผ่าน" title="ปิด">
             <XIcon className="w-5 h-5 text-gray-500" />
           </button>
         </div>

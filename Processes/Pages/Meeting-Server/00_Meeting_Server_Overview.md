@@ -2,21 +2,23 @@
 
 > **Version:** v1.4.7 · **Updated:** 2026-02-10
 
-**Port:** `localhost:3020`  
-**Component:** `Izara-jitsi-server/`  
-**Runtime:** Node.js 22 + Express + Socket.IO  
-**AI Engine:** Gemini 2.5 Flash Lite (API)  
-**Video:** Jitsi Meet (meet.jit.si)  
-**Transcription:** Web Speech API (browser-native, FREE)  
-**Database:** PostgreSQL (izara_phase1) with pgvector  
-**Docker Service:** `izara-meeting-server`  
+**Port:** `localhost:3020`
+**Component:** `Izara-jitsi-server/`
+**Runtime:** Node.js 22 + Express + Socket.IO
+**AI Engine:** Gemini 2.5 Flash Lite (API)
+**Video:** Jitsi Meet (meet.jit.si)
+**Transcription:** Web Speech API (browser-native, FREE)
+**Database:** PostgreSQL (izara_phase1) with pgvector
+**Docker Service:** `izara-meeting-server`
 **Thai Title:** เซิร์ฟเวอร์ประชุมออนไลน์ / Meeting Server
 
 ---
 
+
 ## 1. Purpose
 
 The Meeting Server (Port 3020) is the **central backend for all meeting operations** in the Isara telemedicine platform. It orchestrates the complete video consultation lifecycle from creation through AI-powered post-meeting analysis and delivery.
+
 
 ### Core Responsibilities
 
@@ -33,7 +35,9 @@ The Meeting Server (Port 3020) is the **central backend for all meeting operatio
 | **Guest Invite Token Management** | Create and validate one-time guest invite tokens for 3rd-party participants |
 | **Meeting Record Storage** | Persist all results in PostgreSQL (meeting_records, meeting_transcripts, meeting_chat_messages, EMR tables) |
 
+
 ---
+
 
 ## 2. Architecture
 
@@ -60,6 +64,7 @@ The Meeting Server (Port 3020) is the **central backend for all meeting operatio
 │  Fallback: In-memory storage when DB unavailable                              │
 └───────────────────────────────────────────────────────────────────────────────┘
 ```
+
 
 ### Data Flow
 
@@ -95,7 +100,9 @@ The Meeting Server (Port 3020) is the **central backend for all meeting operatio
 
 ---
 
+
 ## 3. REST API Endpoints
+
 
 ### Health Check
 
@@ -103,6 +110,8 @@ The Meeting Server (Port 3020) is the **central backend for all meeting operatio
 | ------ | -------- | ------- |
 | GET | `/api/health` | Server health + DB status |
 | GET | `/api/test` | Simple connection test |
+
+
 
 ### Meeting Management
 
@@ -112,6 +121,8 @@ The Meeting Server (Port 3020) is the **central backend for all meeting operatio
 | GET | `/api/meetings/:meetingId` | Get meeting details including URLs, status, participants |
 | PUT | `/api/meetings/:meetingId` | Update meeting (status, duration, ended_at) |
 | GET | `/api/meetings` | List meetings (by doctor/patient, with filters) |
+
+
 
 ### Transcription Control (HOST only)
 
@@ -124,11 +135,15 @@ The Meeting Server (Port 3020) is the **central backend for all meeting operatio
 | GET | `/api/meetings/:id/transcript` | Any | Get full compiled transcript (all segments joined) |
 | GET | `/api/meetings/:id/transcript/sections` | Any | Get 30-minute sectioned transcript summaries for long meetings |
 
+
+
 ### Chat Messages
 
 | Method | Endpoint | Purpose |
 | ------ | -------- | ------- |
 | GET | `/api/meetings/:id/chats` | Get all chat messages with timestamps and sender attribution |
+
+
 
 ### AI Summary & Recommendations
 
@@ -138,6 +153,8 @@ The Meeting Server (Port 3020) is the **central backend for all meeting operatio
 | GET | `/api/meetings/:id/summary` | Get stored SOAP summary |
 | GET | `/api/meetings/:id/recommendations` | Get CDS (Clinical Decision Support) recommendations |
 
+
+
 ### AI Services
 
 | Method | Endpoint | Purpose |
@@ -146,18 +163,26 @@ The Meeting Server (Port 3020) is the **central backend for all meeting operatio
 | POST | `/api/ai/patient-instruction-sheet` | Generate patient-facing instruction sheet after consultation |
 | POST | `/api/ai/document-analysis` | Analyze uploaded medical documents using Gemini |
 
+
 ---
+
 
 ## 4. JWT Authentication
 
+
 - All API endpoints (except `/api/health` and `/api/test`) require JWT token
+
 - Token passed via `Authorization: Bearer <token>` header
+
 - Secret: `JWT_SECRET` environment variable
+
 - Validates user identity for all meeting operations
 
 ---
 
+
 ## 5. Database Schema
+
 
 ### `meeting_records` Table
 
@@ -182,6 +207,8 @@ The Meeting Server (Port 3020) is the **central backend for all meeting operatio
 | created_at | TIMESTAMP | Record creation |
 | updated_at | TIMESTAMP | Last update |
 
+
+
 ### `meeting_transcripts` Table
 
 Stores individual transcript segments received via Socket.IO during the meeting.
@@ -198,6 +225,8 @@ Stores individual transcript segments received via Socket.IO during the meeting.
 | end_time_seconds | FLOAT | Segment end time (seconds from meeting start) |
 | created_at | TIMESTAMP | Segment creation |
 
+
+
 ### `meeting_chat_messages` Table *(New)*
 
 Captures all in-meeting chat messages for inclusion in the AI summary pipeline.
@@ -212,6 +241,8 @@ Captures all in-meeting chat messages for inclusion in the AI summary pipeline.
 | message | TEXT | Chat message content |
 | timestamp | TIMESTAMP | When the message was sent |
 
+
+
 ### Related EMR Tables
 
 | Table | Purpose |
@@ -220,11 +251,14 @@ Captures all in-meeting chat messages for inclusion in the AI summary pipeline.
 | `emr_soap_notes` | Doctor-approved SOAP notes derived from AI summary |
 | `emr_cds_recommendations` | Clinical Decision Support recommendations |
 
+
 ---
+
 
 ## 6. WebSocket Events (Socket.IO)
 
 Socket.IO provides the real-time communication layer for live transcription, chat, and meeting status updates.
+
 
 ### Client → Server
 
@@ -234,6 +268,8 @@ Socket.IO provides the real-time communication layer for live transcription, cha
 | `leave-meeting` | `{ meetingId, userId }` | User leaves meeting room |
 | `transcript-segment` | `{ meetingId, text, speakerId, role, lang, startTime, endTime }` | New transcription segment from Web Speech API |
 | `chat-message` | `{ meetingId, senderId, senderName, senderRole, message }` | Chat message sent during meeting |
+
+
 
 ### Server → Client (Broadcast to room)
 
@@ -245,6 +281,8 @@ Socket.IO provides the real-time communication layer for live transcription, cha
 | `participant-joined` | `{ userId, role, displayName }` | Participant joined the meeting |
 | `participant-left` | `{ userId, role }` | Participant left the meeting |
 | `meeting-ended` | `{ meetingId, duration }` | Meeting ended — triggers post-meeting pipeline |
+
+
 
 ### Connection Flow
 
@@ -261,9 +299,11 @@ Socket.IO provides the real-time communication layer for live transcription, cha
 
 ---
 
+
 ## 7. Post-Meeting AI Pipeline
 
 The AI pipeline is triggered after the meeting ends (via `POST /api/meetings/:id/generate-summary`). It uses **Gemini 2.5 Flash Lite** to process the complete meeting data.
+
 
 ### Pipeline Input
 
@@ -282,6 +322,7 @@ The AI pipeline is triggered after the meeting ends (via `POST /api/meetings/:id
 └─────────────────────────────────────────────────────┘
 ```
 
+
 ### Pipeline Outputs
 
 | # | Output | Storage | Description |
@@ -291,27 +332,42 @@ The AI pipeline is triggered after the meeting ends (via `POST /api/meetings/:id
 | 3 | **CDS Recommendations** | `meeting_records.ai_recommendations` | Clinical Decision Support — drug interactions, guideline alerts, follow-up suggestions |
 | 4 | **Patient Instruction Sheet** | Returned via `/api/ai/patient-instruction-sheet` | Patient-friendly instructions in Thai — what to do, medications, warning signs |
 
+
+
 ### SOAP Summary Format (Thai)
 
 ```text
 Gemini Prompt Context:
+
 - Role: Medical AI assistant for Thai telemedicine
+
 - Input: Transcript + Chat messages + Patient PHR
+
 - Output language: Thai (with English medical terms where appropriate)
 
 Format:
+
 - อาการสำคัญ (Chief Complaint / S - Subjective): ...
+
 - อาการที่พบ (Presenting Symptoms / O - Objective): ...
+
 - การประเมินเบื้องต้น (Preliminary Assessment / A - Assessment): ...
+
 - แผนการรักษา (Treatment Plan / P - Plan): ...
+
 - คำแนะนำ (Recommendations): ...
+
 - ใบสั่งยา (Prescriptions): ...
+
 - นัดติดตาม (Follow-up): ...
+
 - อาการที่ต้องเฝ้าระวัง (Red Flags): ...
+
 - คำแนะนำด้านไลฟ์สไตล์ (Lifestyle Recommendations): ...
 
 requiresValidation: true → Doctor MUST approve before use (Man-in-the-Loop)
 ```
+
 
 ### 30-Minute Sectioned Summaries
 
@@ -337,20 +393,27 @@ For meetings longer than 30 minutes, the AI automatically divides the transcript
 ]
 ```
 
+
 ### CDS Recommendations
 
 Generated alongside the SOAP summary, CDS provides:
 
+
 - **Drug interaction alerts** — cross-referenced with patient's current medications
+
 - **Clinical guideline references** — relevant Thai/international guidelines
+
 - **Follow-up suggestions** — recommended follow-up timeline and tests
+
 - **Red flag warnings** — urgent findings that require immediate action
+
 
 ### Pre-Consultation Summary
 
 `POST /api/ai/pre-consultation-summary` — Called **before** the meeting starts to give the doctor a quick overview of the patient's PHR, recent visits, and relevant history.
 
 ---
+
 
 ## 8. Complete Meeting Lifecycle
 
@@ -449,12 +512,14 @@ The meeting server manages 10 distinct phases from creation through delivery:
 
 ---
 
+
 ## 9. Jitsi Meet Configuration
+
 
 ### URL Construction
 
 ```text
-Base URL: JITSI_SERVER_URL (default: https://meet.jit.si)
+Base URL: JITSI_SERVER_URL (default: <https://meet.jit.si)>
 Room: izara-{meetingId}
 Config params:
   - config.prejoinConfig.enabled=true
@@ -466,6 +531,7 @@ Config params:
   - config.recording.enabled=true
 ```
 
+
 ### Role-Based Access
 
 | Role | Access | Lobby |
@@ -474,9 +540,12 @@ Config params:
 | Patient | Participant | Enters lobby, doctor admits |
 | Guest | Participant | Enters lobby, doctor admits |
 
+
 ---
 
+
 ## 10. Client Components
+
 
 ### LiveTranscriptionService (Singleton)
 
@@ -488,6 +557,8 @@ Config params:
 | Features | Start, stop, pause, resume, switch language |
 | Transport | Socket.IO emits `transcript-segment` |
 | Retry | Auto-restart on speech error with exponential backoff |
+
+
 
 ### MeetingTranscription (React UI)
 
@@ -501,7 +572,9 @@ Config params:
 | Export | Download transcript as .txt |
 | Status indicator | Green (listening), Yellow (paused), Red (error) |
 
+
 ---
+
 
 ## 11. In-Memory Fallback
 
@@ -515,11 +588,15 @@ inMemoryStore = {
 }
 ```
 
+
 - ⚠️ Data lost on server restart
+
 - Logs warning: "Database unavailable, using in-memory storage"
+
 - All API endpoints still functional
 
 ---
+
 
 ## 12. Docker Configuration
 
@@ -530,9 +607,11 @@ inMemoryStore = {
 | Base Image | node:22-slim |
 | Port | 3020 (host) → 3020 (container) |
 | User | Non-root (node) |
-| Healthcheck | `curl -f http://localhost:3020/api/health` |
+| Healthcheck | `curl -f <http://localhost:3020/api/health`> |
 | Interval | 30s |
 | Depends On | PostgreSQL, Jitsi Meet |
+
+
 
 ### docker-compose.yml snippet
 
@@ -551,12 +630,12 @@ izara-meeting-server:
     - DB_NAME=izara_phase1
     - GEMINI_API_KEY=${GEMINI_API_KEY}
     - JWT_SECRET=${JWT_SECRET}
-    - JITSI_SERVER_URL=https://meet.jit.si
+    - JITSI_SERVER_URL=<https://meet.jit.si>
   depends_on:
     postgres:
       condition: service_healthy
   healthcheck:
-    test: ["CMD", "curl", "-f", "http://localhost:3020/api/health"]
+    test: ["CMD", "curl", "-f", "<http://localhost:3020/api/health">]
     interval: 30s
     timeout: 10s
     retries: 3
@@ -564,7 +643,9 @@ izara-meeting-server:
 
 ---
 
+
 ## 13. Environment Variables
+
 
 ### Application
 
@@ -573,6 +654,8 @@ izara-meeting-server:
 | PORT | 3020 | Server port |
 | NODE_ENV | development | Environment |
 | CORS_ORIGIN | * | Allowed origins |
+
+
 
 ### Database
 
@@ -584,6 +667,8 @@ izara-meeting-server:
 | DB_USER | postgres | DB username |
 | DB_PASSWORD | postgres | DB password |
 
+
+
 ### Jitsi
 
 | Variable | Default | Description |
@@ -592,6 +677,8 @@ izara-meeting-server:
 | JITSI_APP_ID | — | App ID for auth |
 | JITSI_APP_SECRET | — | App secret |
 
+
+
 ### AI / Speech
 
 | Variable | Default | Description |
@@ -599,13 +686,17 @@ izara-meeting-server:
 | GEMINI_API_KEY | — | Google Gemini API key |
 | GOOGLE_APPLICATION_CREDENTIALS | — | Service account path |
 
+
+
 ### Authentication
 
 | Variable | Default | Description |
 | -------- | ------- | ----------- |
 | JWT_SECRET | — | JWT signing secret |
 
+
 ---
+
 
 ## 14. Cross-System Integration
 
@@ -623,7 +714,9 @@ Patient Portal ←→ Meeting Server ←→ Doctor Portal
 
 ---
 
+
 ## 15. Testing Scenarios
+
 
 ### Unit Tests
 
@@ -637,6 +730,8 @@ Patient Portal ←→ Meeting Server ←→ Doctor Portal
 | AI Summary Generation | Mock Gemini response, verify SOAP parsing |
 | Section Summaries | Verify 30-min sectioning logic for long transcripts |
 
+
+
 ### Integration Tests
 
 | Test | Description |
@@ -647,6 +742,8 @@ Patient Portal ←→ Meeting Server ←→ Doctor Portal
 | Gemini API Integration | End-to-end AI pipeline with real/mock Gemini responses |
 | Guest Invite Flow | Token generation → guest joins → lobby approval → participation |
 | In-Memory Fallback | Verify server works when PostgreSQL is unavailable |
+
+
 
 ### E2E / Manual Test Scenarios
 
@@ -663,19 +760,78 @@ Patient Portal ←→ Meeting Server ←→ Doctor Portal
 | 9 | **Pre-consultation summary** | Call before meeting with patient PHR | Doctor receives patient context summary |
 | 10 | **Concurrent meetings** | Multiple meetings running simultaneously | Each meeting isolated, no data leakage |
 
+
 ---
+
 
 ## 16. AI Agent Improvement Opportunities
 
+
 - **Speaker diarization**: AI improve speaker identification accuracy
+
 - **Real-time medical NER**: AI extract medical entities during conversation
+
 - **Multi-language support**: Add more languages beyond Thai/English
+
 - **Auto-coding**: AI auto-assign ICD-10 codes from transcript
+
 - **Quality scoring**: AI rate consultation quality metrics
+
 - **Sentiment tracking**: AI monitor patient satisfaction in real-time
+
 - **Follow-up extraction**: AI automatically identify action items
+
 - **Integration with wearables**: Real-time vital data overlay during meeting
 
 ---
 
 Document version: v1.4.7 — Last updated: 2026-02-10
+
+---
+
+## PostgreSQL Database Integration
+
+### Tables Used
+| Table | Operation | Description |
+| ----- | --------- | ----------- |
+| meeting_records | INSERT / SELECT / UPDATE | Meeting session metadata, lifecycle (start, end, duration) |
+| meeting_transcripts | INSERT / SELECT | Real-time transcription segments from Web Speech API |
+| transcriptions_embeddings | INSERT / SELECT | Vector embeddings for transcript semantic search |
+| appointments | SELECT / UPDATE | Linked appointment status transitions during meeting |
+| emr | INSERT / UPDATE | AI-generated SOAP notes from meeting summary |
+| ai_validations | INSERT / SELECT | AI validation results for generated EMR content |
+| ai_chat_history | INSERT / SELECT | Gemini AI conversation logs during meeting |
+| ai_chat_memory | INSERT / SELECT | AI conversation context and memory |
+
+
+### API Endpoints
+| Endpoint | Method | DB Operation |
+| -------- | ------ | ------------ |
+| /api/meetings/start | POST | INSERT meeting_records, UPDATE appointments |
+| /api/meetings/:id/end | POST | UPDATE meeting_records, INSERT emr (AI SOAP) |
+| /api/meetings/:id/transcript | POST | INSERT meeting_transcripts, INSERT transcriptions_embeddings |
+| /api/meetings/:id/summary | POST | SELECT transcriptions_embeddings, INSERT ai_chat_history |
+| /api/meetings/:id/validate | POST | INSERT ai_validations |
+
+
+### Backend Details
+
+- **Runtime:** Express.js ESM (index.js) + Socket.IO
+
+- **Port:** 3020
+
+- **pgNotifyListener:** Bridges PostgreSQL LISTEN/NOTIFY → Socket.IO events
+
+- **Jitsi Meet:** SaaS (FREE tier) for video/audio
+
+- **Web Speech API:** Browser-based speech-to-text (FREE)
+
+- **AI:** Gemini 2.5 Flash Lite for meeting summary generation
+
+### Deployment
+
+- **Local Docker:** izara-postgres container (localhost:5433 external / 5432 internal) → database: izara_phase1
+
+- **Production:** GCE VM at 35.240.157.230:5432 → database: izara_phase1 (asia-southeast1)
+
+- **Service deployed via:** Cloud Run (gen2, CPU Boost) + Cloud Build CI/CD

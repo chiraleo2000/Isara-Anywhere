@@ -1,7 +1,7 @@
 # Clinical Resources & Medical Library Workflows
 
-**Version:** 1.5.9  
-**Last Updated:** March 15, 2026  
+**Version:** 1.6.0
+**Last Updated:** March 31, 2026
 **Status:** ✅ PostgreSQL Implementation
 
 ---
@@ -23,8 +23,11 @@ The Clinical Resources page provides access to medical guidelines, research pape
 ## Thai-First Content Policy
 
 - **Primary Language**: Thai (ภาษาไทย) is now required for all content
+
 - **Secondary Language**: English is optional
+
 - **Form Fields**: Thai fields appear first and are marked required (*)
+
 - **Display**: Thai content is shown as primary in all views
 
 ### Image Support
@@ -35,7 +38,7 @@ Content now supports inline images:
 [image:URL:description]
 ```
 
-Example: `[image:https://example.com/diagram.jpg:แผนภาพการรักษา]`
+Example: `[image:<https://example.com/diagram.jpg:แผนภาพการรักษา>]`
 
 ---
 
@@ -44,16 +47,23 @@ Example: `[image:https://example.com/diagram.jpg:แผนภาพการร�
 ### Admin Users
 
 - **APPROVE/REJECT**: Review pending content submissions
+
 - **READ**: View all resources regardless of status
+
 - **COMMENT**: Provide feedback on submissions
+
 - **VIEW PENDING**: See pending approval queue with count badge
 
 ### Doctor Users
 
 - **CREATE**: Create new clinical resources
+
 - **READ**: View published resources and own drafts
+
 - **UPDATE**: Edit own resources (triggers re-approval if published)
+
 - **DELETE**: Delete own resources
+
 - **SUBMIT**: Submit drafts for admin approval
 
 ## Data Model
@@ -63,7 +73,7 @@ Example: `[image:https://example.com/diagram.jpg:แผนภาพการร�
 ```typescript
 interface ClinicalResourceItem {
   id: string;                        // Unique identifier (CR-xxx)
-  
+
   // Bilingual Content (Thai Primary)
   titleTh: string;                   // Thai title - REQUIRED
   title?: string;                    // English title (optional)
@@ -71,21 +81,21 @@ interface ClinicalResourceItem {
   description?: string;              // English description (optional)
   contentTh: string;                 // Thai content - REQUIRED (supports [image:URL:desc])
   content?: string;                  // English content (optional)
-  
+
   // Classification
   category: ClinicalResourcesCategoryId;  // Fixed category
   tags: string[];                    // Dynamic tags
   resourceType: 'guideline' | 'protocol' | 'research' | 'template' | 'reference';
   source?: string;                   // Content source
   references?: string[];             // Reference list
-  
+
   // Status & Workflow
   status: 'draft' | 'pending' | 'published' | 'rejected' | 'archived';
   version: number;                   // Version number
   history: ContentVersion[];         // Version history
   comments: ContentComment[];        // Admin feedback
   rejectionReason?: string;          // If rejected
-  
+
   // Audit Trail
   createdBy: string;                 // Creator ID
   createdByName: string;             // Creator name
@@ -199,6 +209,110 @@ interface ClinicalResourceItem {
 4. Current version highlighted
 ```
 
+---
+
+## PostgreSQL Database Architecture
+
+### Database Tables for Clinical Resources
+
+| Table | Purpose | Key Columns |
+| ----- | ------- | ----------- |
+| **clinical_resources** | Main content storage | id, title_thai, title_english, content_thai, content_english, category, specialty, guideline_year, source, tags (JSONB), status (pending/approved), image_url, author_id, author_name, approved_by, approved_at |
+| **knowledge_base** | RAG-indexed content for AI search | id, title, content, source, category, guideline_year, language, embedding (vector), is_active |
+| **ai_chat_history** | Doctor AI queries about clinical resources | user_id, session_id, role, content, context (JSONB), embedding (vector) |
+| **audit_logs** | All create/update/approve/reject actions | user_id, action, entity_type='clinical_resource', entity_id, details (JSONB) |
+| **users** | Author and reviewer identity | id, name, name_thai, role (doctor/admin) |
+
+### Data Flow: Create → Approve → AI Index
+
+```text
+Doctor creates resource
+  → INSERT INTO clinical_resources (status='draft' or 'pending')
+  → INSERT INTO audit_logs (action='create')
+
+Admin reviews resource
+  → UPDATE clinical_resources SET status='approved', approved_by=$1, approved_at=NOW()
+  → INSERT INTO audit_logs (action='approve')
+
+Published content indexed for AI
+  → INSERT INTO knowledge_base (title, content, embedding=vector_from_gemini)
+  → AI Chat can now reference this resource via vector similarity search
+
+Doctor queries AI about clinical guideline
+  → SELECT FROM knowledge_base WHERE is_active=true ORDER BY embedding <-> $query LIMIT 5
+  → INSERT INTO ai_chat_history (role='user', content=$query)
+  → Gemini generates response with knowledge_base context
+  → INSERT INTO ai_chat_history (role='assistant', content=$response)
+```
+
+### Cross-Service Data Flow
+
+```text
+┌──────────────────────────────────────────────────────────────────┐
+│                 CLINICAL RESOURCES DATA FLOW                      │
+├──────────────────────────────────────────────────────────────────┤
+│                                                                   │
+│  DOCTOR PORTAL (port 3010)                                        │
+│  ├── POST /api/content/clinical → INSERT clinical_resources       │
+│  ├── PUT /api/content/clinical/:id → UPDATE clinical_resources    │
+│  ├── POST /api/content/clinical/:id/review → UPDATE status        │
+│  ├── POST /api/ai/chat → query knowledge_base via embeddings     │
+│  └── Approval triggers: INSERT knowledge_base (AI indexing)       │
+│                                                                   │
+│  PATIENT PORTAL (port 3005)                                       │
+│  ├── GET /api/content/clinical-resources → SELECT published only  │
+│  └── Read-only access to approved clinical content                │
+│                                                                   │
+│  MEETING SERVER (port 3020)                                       │
+│  ├── POST /api/ai/cds-check → queries knowledge_base for CDS     │
+│  └── Clinical resources inform AI recommendations during meeting  │
+│                                                                   │
+│  ALL → PostgreSQL izara_phase1                                    │
+│  ├── Local: izara-postgres:5432 (Docker)                          │
+│  └── Cloud: 35.240.157.230:5432 (GCE VM)                         │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+### Deployment Architecture
+
+| Environment | Service | URL | Database |
+| ----------- | ------- | --- | -------- |
+| Local Docker | Doctor Portal | localhost:3010 | izara-postgres:5432 |
+| Local Docker | Patient Portal | localhost:3005 | izara-postgres:5432 |
+| Production | Doctor Portal | Cloud Run (asia-southeast1) | 35.240.157.230:5432 |
+| Production | Patient Portal | Cloud Run (asia-southeast1) | 35.240.157.230:5432 |
+
+### pgvector Integration for RAG
+
+Clinical resources are embedded into vectors using Google Gemini for semantic search:
+
+```sql
+-- Insert resource with vector embedding
+INSERT INTO knowledge_base (title, content, source, category, guideline_year, language, embedding, is_active)
+VALUES ($1, $2, 'clinical_resource', $3, $4, 'th', $5::vector, true);
+
+-- AI search by semantic similarity
+SELECT title, content, source, category
+FROM knowledge_base
+WHERE is_active = true AND category = $1
+ORDER BY embedding <-> $2::vector
+LIMIT 5;
+```
+
+### Scenario Coverage
+
+| # | Scenario | Actor | Status Flow | DB Tables |
+| - | -------- | ----- | ----------- | --------- |
+| 1 | Create draft | Doctor | → draft | clinical_resources, audit_logs |
+| 2 | Submit for approval | Doctor | draft → pending | clinical_resources, audit_logs |
+| 3 | Admin approves | Admin | pending → approved | clinical_resources, knowledge_base, audit_logs |
+| 4 | Admin rejects | Admin | pending → rejected | clinical_resources, audit_logs |
+| 5 | Edit published | Doctor | approved → pending | clinical_resources, audit_logs |
+| 6 | AI chat queries resource | Doctor | — (read) | knowledge_base, ai_chat_history |
+| 7 | Patient views resource | Patient | — (read) | clinical_resources |
+| 8 | CDS references guideline | Meeting Server | — (read) | knowledge_base |
+| 9 | Delete resource | Doctor (owner) | any → deleted | clinical_resources, knowledge_base, audit_logs |
+
 ### 7. Filter and Search
 
 ```text
@@ -223,6 +337,7 @@ interface ClinicalResourceItem {
 Data is persisted in GCS bucket: `izara-meta-data`
 
 - Resources: `clinical-resources/resources.json`
+
 - Tags: `clinical-resources/tags.json`
 
 ## Error Handling

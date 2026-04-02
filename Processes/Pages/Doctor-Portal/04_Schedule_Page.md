@@ -1,8 +1,8 @@
 # 📅 Doctor Portal — Schedule Page
 
-**Route:** `/schedule`  
-**Component:** `src/pages/CompleteSchedule.tsx`  
-**Access:** 🔒 Doctor / Admin  
+**Route:** `/schedule`
+**Component:** `src/pages/CompleteSchedule.tsx`
+**Access:** 🔒 Doctor / Admin
 **Thai Title:** ตารางนัดหมาย / Schedule
 
 ---
@@ -80,6 +80,40 @@ Step 5: Click "Join Meeting" → Opens Jitsi in new tab
 ## 6. AI Agent Improvement Opportunities
 
 - **Smart scheduling**: AI optimize appointment spacing
+
 - **No-show prediction**: AI predict likelihood of patient no-shows
+
 - **Buffer management**: AI suggest break times based on appointment complexity
+
 - **Calendar sync**: AI sync with external calendars (Google, Apple)
+
+---
+
+## PostgreSQL Database Integration
+
+### Tables Used
+
+| Table | Operation | Description |
+| ----- | --------- | ----------- |
+| doctor_schedules | SELECT/INSERT/UPDATE/DELETE | CRUD time slots for doctor availability |
+| appointments | SELECT | View scheduled appointments in calendar |
+
+### API Endpoints
+
+| Endpoint | Method | DB Operation |
+| -------- | ------ | ------------ |
+| GET /api/schedules | GET | SELECT doctor_schedules WHERE doctor_id |
+| PUT /api/schedules | PUT | INSERT/UPDATE/DELETE doctor_schedules |
+| GET /api/appointments | GET | SELECT appointments WHERE doctor_id |
+
+### Real-time Events
+
+- **NOTIFY:** schedule_changes channel → Socket.IO schedule:updated event
+
+### Deployment
+
+- **Local Docker:** izara-postgres container (localhost:5433 external / 5432 internal) → database: izara_phase1
+
+- **Production:** GCE VM at 35.240.157.230:5432 → database: izara_phase1 (asia-southeast1)
+
+- **Service deployed via:** Cloud Run (gen2, CPU Boost) + Cloud Build CI/CD

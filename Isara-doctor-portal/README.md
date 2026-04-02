@@ -1,15 +1,16 @@
 # 🏥 Izara Doctor Portal
 
-![Version](https://img.shields.io/badge/version-1.5.10-blue.svg)
-![License](https://img.shields.io/badge/license-MIT-green.svg)
-![React](https://img.shields.io/badge/React-18-61dafb.svg)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178c6.svg)
-![Node.js](https://img.shields.io/badge/Node.js-22+-green.svg)
-![Database](https://img.shields.io/badge/database-PostgreSQL%2018-blue.svg)
+![Version](<https://img.shields.io/badge/version-1.5.10-blue.svg)>
+![License](<https://img.shields.io/badge/license-MIT-green.svg)>
+![React](<https://img.shields.io/badge/React-18-61dafb.svg)>
+![TypeScript](<https://img.shields.io/badge/TypeScript-5.x-3178c6.svg)>
+![Node.js](<https://img.shields.io/badge/Node.js-22+-green.svg)>
+![Database](<https://img.shields.io/badge/database-PostgreSQL%2018-blue.svg)>
 
 > AI-powered telemedicine platform for healthcare providers — clinical workflows, EMR/EHR management, video consultations, e-prescribing, and administrative tools.
 
 ---
+
 
 ## 🏗 Architecture
 
@@ -34,7 +35,9 @@
 
 ---
 
+
 ## ✨ Features
+
 
 ### For Doctors 👨‍⚕️
 
@@ -50,6 +53,8 @@
 | 📅 Schedule Management | Calendar views, availability settings |
 | 📋 Patient Instructions | Auto-generated post-visit care sheets |
 
+
+
 ### For Administrators 🔧
 
 | Feature | Description |
@@ -61,17 +66,23 @@
 | 🏥 Consultant Directory | Specialist management for referrals |
 | ⚙️ System Configuration | Specialties, appointment pools |
 
+
 ---
 
+
 ## 🚀 Quick Start
+
 
 ### With Docker (Recommended)
 
 ```bash
+
 # From the root Isara-Anywhere directory
 docker compose up -d --build
-# Doctor Portal: http://localhost:3010
+
+# Doctor Portal: <http://localhost:3010>
 ```
+
 
 ### Local Development
 
@@ -82,6 +93,7 @@ cp .env.example .env   # Edit with your API keys
 npm run dev             # Starts both frontend + backend
 ```
 
+
 ### Test Credentials
 
 | Role | Email | Password |
@@ -89,7 +101,9 @@ npm run dev             # Starts both frontend + backend
 | Doctor | `doctor.test@izara.com` | `IzaraDoctor@2024` |
 | Admin | `admin.test@izara.com` | `IzaraAdmin@2024` |
 
+
 ---
+
 
 ## 📁 Project Structure
 
@@ -127,6 +141,7 @@ Isara-doctor-portal/
 
 ---
 
+
 ## 📡 API Endpoints
 
 | Area | Key Endpoints |
@@ -143,29 +158,39 @@ Isara-doctor-portal/
 | Notifications | `GET /api/notifications`, `POST /api/notifications` |
 | Admin | `GET /api/admin/stats`, `GET /api/admin/doctors/pending` |
 
+
 ---
+
 
 ## ⚙️ Environment Configuration
 
 | Variable | Purpose |
 | ---------- | --------- |
-| `VITE_API_URL` | Backend API URL (default: `http://localhost:3010`) |
+| `VITE_API_URL` | Backend API URL (default: `<http://localhost:3010`)> |
 | `VITE_MEETING_SERVER_URL` | Jitsi meeting server URL |
 | `GEMINI_API_KEY` | Google Gemini AI API key |
 | `DATABASE_URL` | PostgreSQL connection string |
 | `JWT_SECRET` | JWT signing secret |
 
+
 ---
+
 
 ## 🔒 Security
 
+
 - **OWASP Top 10:2025** compliant middleware
+
 - **bcrypt** password hashing + **JWT** tokens
+
 - **Role-based access** (Doctor, Admin, Staff)
+
 - **Helmet.js** security headers
+
 - **Man-in-the-Loop AI** — doctor validates all AI outputs
 
 ---
+
 
 ## 📄 License
 

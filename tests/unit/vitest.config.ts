@@ -40,6 +40,8 @@ const GROUP_APPOINTMENTS = [
   'doctor-portal/queueManagementWorkflow.test.ts',
   'patient-portal/appointmentsRoute.test.ts',
   'patient-portal/appointmentWorkflow.test.ts',
+  'patient-portal/bookAppointment.test.ts',
+  'patient-portal/appointmentDetail.test.ts',
 ];
 const GROUP_CLINICAL = [
   'doctor-portal/emrService.test.ts',
@@ -67,6 +69,8 @@ const GROUP_MEETING = [
   'meeting-server/videoMeetingWorkflow.test.ts',
   'meeting-server/aiSummary.test.ts',
   'meeting-server/meeting-ai-features.test.ts',
+  'meeting-server/lobbyFlow.test.ts',
+  'meeting-server/transcriptionFlow.test.ts',
   'doctor-portal/meetingTimeService.test.ts',
   'patient-portal/videoMeetingRoute.test.ts',
 ];
@@ -99,12 +103,26 @@ const GROUP_PATIENT_WORKFLOWS = [
   'patient-portal/dashboardWorkflow.test.ts',
   'patient-portal/dataSyncWorkflow.test.ts',
   'patient-portal/userManagementWorkflow.test.ts',
+  'patient-portal/timelinePage.test.ts',
+  'patient-portal/settingsPage.test.ts',
+  'patient-portal/mapPage.test.ts',
 ];
 const GROUP_DATABASE = [
   'database/data-validation.test.ts',
   'database/embeddedPg.test.ts',
   'database/schema-validation.test.ts',
   'database/schemaAndSeed.test.ts',
+];
+const GROUP_ADMIN = [
+  'doctor-portal/scheduleManagement.test.ts',
+  'doctor-portal/patientDetailView.test.ts',
+  'doctor-portal/clinicalResources.test.ts',
+  'doctor-portal/adminDoctorManagement.test.ts',
+  'doctor-portal/adminAppointmentManagement.test.ts',
+];
+const GROUP_CROSS_PORTAL = [
+  'cross-portal/dataSyncValidation.test.ts',
+  'cross-portal/jwtCrossService.test.ts',
 ];
 
 // Build include list from TEST_GROUP env var (or run all)
@@ -124,6 +142,8 @@ function getIncludePatterns(): string[] {
     security: GROUP_SECURITY,
     workflows: GROUP_PATIENT_WORKFLOWS,
     database: GROUP_DATABASE,
+    admin: GROUP_ADMIN,
+    'cross-portal': GROUP_CROSS_PORTAL,
   };
   return map[group] || ['**/*.test.ts'];
 }
@@ -144,8 +164,17 @@ export default defineConfig({
     },
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'text-summary', 'json-summary'],
+      reporter: ['text', 'text-summary', 'json-summary', 'html'],
       reportsDirectory: './coverage',
+      include: [
+        '../../Isara-doctor-portal/server/**/*.{ts,js,cjs,mjs}',
+        '../../Isara-doctor-portal/src/services/**/*.{ts,tsx}',
+        '../../Isara-patient-portal/server/**/*.{ts,js,cjs,mjs}',
+        '../../Isara-patient-portal/src/services/**/*.{ts,tsx}',
+        '../../Izara-jitsi-server/server/**/*.{ts,js,cjs,mjs}',
+      ],
+      exclude: ['**/node_modules/**', '**/dist/**', '**/*.test.*', '**/*.spec.*'],
+      all: true,
     },
   },
   resolve: {

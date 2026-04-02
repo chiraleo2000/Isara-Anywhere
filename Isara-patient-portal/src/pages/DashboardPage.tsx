@@ -155,7 +155,10 @@ export default function DashboardPage() {
     if (!user) return;
     try {
       const patientId = user.patientId || user.id;
-      const appts = await appointmentService.getByPatient(patientId).catch(() => []);
+      const appts = await appointmentService.getByPatient(patientId).catch((err: unknown) => {
+        console.error('[Dashboard] Failed to fetch appointments:', err);
+        return [];
+      });
       // Filter upcoming non-cancelled appointments
       const upcoming = appts
         .filter((a: Appointment) => {

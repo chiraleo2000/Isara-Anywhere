@@ -1,8 +1,8 @@
 # 💊 Doctor Portal — E-Prescribing
 
-**Component:** `src/components/CompletePrescribing.tsx`  
-**Type:** Modal (launched from DoctorPortal)  
-**Access:** 🔒 Doctor / Admin  
+**Component:** `src/components/CompletePrescribing.tsx`
+**Type:** Modal (launched from DoctorPortal)
+**Access:** 🔒 Doctor / Admin
 **Thai Title:** ระบบสั่งยาอิเล็กทรอนิกส์ / E-Prescribing
 
 ---
@@ -120,7 +120,46 @@ Step 12: Patient notified of new prescription
 ## 7. AI Agent Improvement Opportunities
 
 - **AI dose calculation**: Adjust doses based on renal/hepatic function
+
 - **Smart drug selection**: AI suggest drugs based on diagnosis
+
 - **Formulary integration**: AI check insurance formulary coverage
+
 - **Adherence prediction**: AI predict medication adherence likelihood
+
 - **Alternative suggestions**: AI suggest equally effective lower-cost alternatives
+
+---
+
+## PostgreSQL Database Integration
+
+### Tables Used
+
+| Table | Operation | Description |
+| ----- | --------- | ----------- |
+| prescriptions | INSERT | Create new prescriptions linked to EMR |
+| drugs | SELECT | CDS check: interactions, contraindications, dosage limits |
+| cds_logs | INSERT | Clinical Decision Support audit trail |
+| emr | SELECT/UPDATE | Link prescription to EMR record |
+
+### API Endpoints
+
+| Endpoint | Method | DB Operation |
+| -------- | ------ | ------------ |
+| POST /api/prescriptions | POST | INSERT prescriptions; SELECT drugs for CDS check; INSERT cds_logs |
+
+### Clinical Decision Support (CDS)
+
+- **Drug Interaction Check:** SELECT FROM drugs WHERE interactions overlap with patient's current medications
+
+- **Contraindication Check:** Cross-reference patient allergies and conditions
+
+- **Dosage Validation:** Verify dosage within safe range for patient profile
+
+### Deployment
+
+- **Local Docker:** izara-postgres container (localhost:5433 external / 5432 internal) → database: izara_phase1
+
+- **Production:** GCE VM at 35.240.157.230:5432 → database: izara_phase1 (asia-southeast1)
+
+- **Service deployed via:** Cloud Run (gen2, CPU Boost) + Cloud Build CI/CD

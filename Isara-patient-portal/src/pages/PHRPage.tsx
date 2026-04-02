@@ -848,7 +848,7 @@ function AllergiesTab({
               {saving ? <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" /> : <Save className="w-4 h-4" />}
               {labels.save[language]}
             </button>
-            <button onClick={() => { setShowAddAllergy(false); setNewAllergy(''); }} className={`px-4 py-2 rounded-lg ${isDark ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}>
+            <button onClick={() => { setShowAddAllergy(false); setNewAllergy(''); }} className={`px-4 py-2 rounded-lg ${isDark ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`} aria-label="Cancel">
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -947,7 +947,7 @@ function PersonalInfoSection({
               {profileData.chronicConditions.map((condition) => (
                 <span key={condition} className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm flex items-center gap-1">
                   {condition}
-                  <button onClick={() => removeChronicCondition(condition)} className="hover:text-red-600">
+                  <button onClick={() => removeChronicCondition(condition)} className="hover:text-red-600" aria-label={`Remove ${condition}`}>
                     <X className="w-3 h-3" />
                   </button>
                 </span>
@@ -963,7 +963,7 @@ function PersonalInfoSection({
                 className="flex-1 p-2 border rounded-lg"
                 placeholder="เพิ่มโรคประจำตัว"
               />
-              <button onClick={addChronicCondition} className="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600">
+              <button onClick={addChronicCondition} className="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600" aria-label="Add chronic condition">
                 <Plus className="w-4 h-4" />
               </button>
             </div>
@@ -1581,8 +1581,8 @@ function PHRPage() {
     if (!user) return;
     try {
       const [phrData, vitalsData] = await Promise.all([
-        phrService.get(user.id).catch(() => null),
-        phrService.getVitals(user.id).catch(() => []),
+        phrService.get(user.id).catch((err: unknown) => { console.error('[PHRPage] PHR fetch failed:', err); return null; }),
+        phrService.getVitals(user.id).catch((err: unknown) => { console.error('[PHRPage] Vitals fetch failed:', err); return []; }),
       ]);
       setPhr(phrData);
       // Sort vitals by date, newest first

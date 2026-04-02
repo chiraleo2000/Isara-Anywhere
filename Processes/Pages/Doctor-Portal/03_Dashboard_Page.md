@@ -1,9 +1,9 @@
 # 📊 Doctor Portal — Dashboard Page
 
-**Route:** `/dashboard`  
-**Component:** `src/pages/DoctorDashboard.tsx`  
-**Access:** 🔒 Doctor / Admin  
-**Thai Title:** แดชบอร์ดแพทย์ / Doctor Dashboard  
+**Route:** `/dashboard`
+**Component:** `src/pages/DoctorDashboard.tsx`
+**Access:** 🔒 Doctor / Admin
+**Thai Title:** แดชบอร์ดแพทย์ / Doctor Dashboard
 **Version:** v1.4.7
 
 ---
@@ -78,9 +78,13 @@ Central clinical hub with 3-column layout: Health Data (patient info), Health Me
 ### Patient Card Features
 
 - Name, age, gender
+
 - Status badge (pending, confirmed, in_progress)
+
 - Urgency level
+
 - Chief complaint preview
+
 - Click → loads patient in Column 2
 
 ---
@@ -126,7 +130,9 @@ Central clinical hub with 3-column layout: Health Data (patient info), Health Me
 #### Sub-tab: Prescribe
 
 - Quick prescription form with current medications displayed
+
 - Drug search, dosage, frequency, duration
+
 - Safety checks (allergy, interaction)
 
 #### Sub-tab: History
@@ -136,6 +142,7 @@ Central clinical hub with 3-column layout: Health Data (patient info), Health Me
 ### Tab: Refer
 
 - Referral workflow to specialists
+
 - Referral form with reason, urgency, notes
 
 ---
@@ -300,10 +307,45 @@ Step 7: Signs EMR → Patient notified
 ## 10. AI Agent Improvement Opportunities
 
 - **Smart patient prioritization**: AI sort queue by clinical urgency
+
 - **Auto-documentation**: AI draft full SOAP note from meeting transcript
+
 - **Decision support alerts**: AI surface critical drug interactions proactively
+
 - **Workflow optimization**: AI suggest optimal patient order for the day
+
 - **Real-time clinical copilot**: AI provide suggestions during consultation
+
 - **Pending action aggregation**: AI prioritize validation queue by urgency
+
 - **Pre-consultation insights**: AI surface relevant lab results and trends before meeting
+
 - **Meeting readiness check**: AI verify all prerequisites before meeting start
+
+---
+
+## PostgreSQL Database Integration
+
+### Tables Used
+
+| Table | Operation | Description |
+| ----- | --------- | ----------- |
+| appointments | SELECT | Today's appointments for logged-in doctor |
+| users | SELECT | Patient count and basic info |
+| notifications | SELECT | Unread notification count |
+| emr | SELECT | Recent EMR entries for quick access |
+
+### API Endpoints
+
+| Endpoint | Method | DB Operation |
+| -------- | ------ | ------------ |
+| GET /api/dashboard/stats | GET | SELECT COUNT from appointments, users, notifications |
+| GET /api/appointments/today | GET | SELECT appointments WHERE date = TODAY AND doctor_id |
+
+### Deployment
+
+- **Local Docker:** izara-postgres container (localhost:5433 external / 5432 internal) → database: izara_phase1
+
+- **Production:** GCE VM at 35.240.157.230:5432 → database: izara_phase1 (asia-southeast1)
+
+- **Service deployed via:** Cloud Run (gen2, CPU Boost) + Cloud Build CI/CD

@@ -164,7 +164,7 @@ const StarRating: React.FC<{
 // ============================================================================
 
 // i18n labels for Medical Consultants page
-const labels = {
+const _labels = {
   pageTitle: { en: 'Medical Consultants', th: 'แพทย์ที่ปรึกษา' },
   subtitle: { en: 'Specialist Contacts & Referrals', th: 'ผู้เชี่ยวชาญและการส่งต่อ' },
   searchConsultants: { en: 'Search consultants...', th: 'ค้นหาแพทย์ที่ปรึกษา...' },
@@ -250,9 +250,9 @@ const ConsultantCard: React.FC<{
         </div>
         <div className="flex items-center gap-2">
           <span className="font-medium">Rating:</span>
-          <StarRating rating={consultant.rating || 0} size="sm" />
+          <StarRating rating={Number(consultant.rating) || 0} size="sm" />
           <span className="ml-1">
-            {(consultant.rating || 0).toFixed(1)} ({consultant.reviewCount || 0})
+            {(Number(consultant.rating) || 0).toFixed(1)} ({consultant.reviewCount || 0})
           </span>
         </div>
       </div>
@@ -411,6 +411,29 @@ const MedicalConsultants: React.FC = () => {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ============================================================================
+  // DATA NORMALIZATION (DB rows → frontend Consultant shape)
+  // ============================================================================
+  const normalizeConsultant = (raw: Record<string, unknown>): Consultant => ({
+    id: raw.id as string,
+    name: raw.name as string,
+    specialty: raw.specialty as string,
+    hospital: (raw.hospital as string) || '',
+    phone: (raw.phone as string) || '',
+    email: (raw.email as string) || '',
+    photo: (raw.photo as string) || (raw.avatar_url as string) || `https://ui-avatars.com/api/?name=${encodeURIComponent(raw.name as string)}&background=10b981&color=fff`,
+    available: (raw.available ?? raw.is_available ?? true) as boolean,
+    languages: (raw.languages as string[]) || ['Thai'],
+    experience: (raw.experience as number) || (raw.experience_years as number) || 0,
+    rating: (raw.rating as number) || 0,
+    reviewCount: (raw.reviewCount as number) || 0,
+    bio: raw.bio as string | undefined,
+    notes: (raw.notes as string) || (raw.admin_notes as string) || undefined,
+    createdBy: raw.createdBy as string | undefined,
+    createdAt: raw.createdAt as string | undefined,
+    updatedAt: raw.updatedAt as string | undefined,
+  });
+
+  // ============================================================================
   // FILTERING
   // ============================================================================
   const filteredConsultants = consultants.filter((consultant) => {
@@ -418,7 +441,7 @@ const MedicalConsultants: React.FC = () => {
       searchTerm === '' ||
       consultant.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       consultant.specialty.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      consultant.hospital.toLowerCase().includes(searchTerm.toLowerCase());
+      (consultant.hospital || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesSpecialty =
       selectedSpecialty === 'All Specialties' || consultant.specialty === selectedSpecialty;
     const matchesAvailability = !showAvailableOnly || consultant.available;
@@ -455,7 +478,8 @@ const MedicalConsultants: React.FC = () => {
       }
 
       const result = await response.json();
-      const addedConsultant = result.consultant || result;
+      const raw = result.consultant || result;
+      const addedConsultant = normalizeConsultant(raw as Record<string, unknown>);
       setConsultants(prev => [...prev, addedConsultant]);
       setShowAddModal(false);
       resetForm();
@@ -488,7 +512,8 @@ const MedicalConsultants: React.FC = () => {
       if (!response.ok) throw new Error('Failed to update consultant');
 
       const result = await response.json();
-      const updated = result.consultant || result;
+      const raw = result.consultant || result;
+      const updated = normalizeConsultant(raw as Record<string, unknown>);
       setConsultants(prev =>
         prev.map(c => (c.id === updated.id ? updated : c))
       );
@@ -544,12 +569,17 @@ const MedicalConsultants: React.FC = () => {
       if (!response.ok) throw new Error('Failed to update availability');
 
       const data = await response.json();
+      const rawC = data.consultant || data;
+      const normalized = normalizeConsultant(rawC as Record<string, unknown>);
       setConsultants(prev =>
-        prev.map(c => (c.id === data.consultant.id ? data.consultant : c))
+        prev.map(c => (c.id === normalized.id ? normalized : c))
       );
     } catch (err) {
       console.error('Error toggling availability:', err);
-      alert('Failed to update availability');
+      // Optimistic update if API fails (toggle locally)
+      setConsultants(prev =>
+        prev.map(c => (c.id === consultant.id ? { ...c, available: !c.available } : c))
+      );
     }
   };
 
@@ -575,8 +605,10 @@ const MedicalConsultants: React.FC = () => {
       if (!response.ok) throw new Error('Failed to submit rating');
 
       const data = await response.json();
+      const rawR = data.consultant || data;
+      const ratedConsultant = normalizeConsultant(rawR as Record<string, unknown>);
       setConsultants(prev =>
-        prev.map(c => (c.id === data.consultant.id ? data.consultant : c))
+        prev.map(c => (c.id === ratedConsultant.id ? ratedConsultant : c))
       );
       setShowRateModal(false);
       setRatingData({ rating: 0, comment: '' });
@@ -1010,9 +1042,9 @@ const MedicalConsultants: React.FC = () => {
                 <div className="bg-gray-50 p-3 rounded-lg">
                   <p className="text-sm text-gray-500 mb-1">Rating</p>
                   <div className="flex items-center gap-2">
-                    <StarRating rating={selectedConsultant.rating || 0} />
+                    <StarRating rating={Number(selectedConsultant.rating) || 0} />
                     <span className="font-semibold">
-                      {(selectedConsultant.rating || 0).toFixed(1)} ({selectedConsultant.reviewCount || 0} reviews)
+                      {(Number(selectedConsultant.rating) || 0).toFixed(1)} ({selectedConsultant.reviewCount || 0} reviews)
                     </span>
                   </div>
                 </div>

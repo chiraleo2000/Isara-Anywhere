@@ -31,8 +31,8 @@ const STORAGE_KEYS = {
 
 const SESSION_TIMEOUT = config.security.sessionTimeout;
 const INACTIVITY_TIMEOUT = 3 * 60 * 60 * 1000; // 3 hours inactivity timeout
-const MAX_LOGIN_ATTEMPTS = 5;
-const LOCKOUT_DURATION = 15 * 60 * 1000; // 15 minutes
+const _MAX_LOGIN_ATTEMPTS = 5;
+const _LOCKOUT_DURATION = 15 * 60 * 1000; // 15 minutes
 const TOKEN_REFRESH_RATIO = 0.8; // Refresh at 80% of remaining lifetime
 
 // ============================================================================
@@ -438,6 +438,7 @@ export class AuthService {
       // Auth server returns: id, email, role, doctorId, medicalLicenseNumber, isActive, 
       // emailVerified, name, phone, dateOfBirth, avatarUrl, specialty, preferences, isAdmin, adminPrivileges
       const user: User = {
+        displayName: authUser.name || 'Doctor',
         id: authUser.id,
         email: authUser.email,
         name: authUser.name || 'Doctor',
@@ -762,6 +763,7 @@ export class AuthService {
       : 'doctor';
     
     return {
+      displayName: credential.name || 'Doctor',
       id: credential.id,
       email: credential.email,
       name: credential.name || 'Doctor',

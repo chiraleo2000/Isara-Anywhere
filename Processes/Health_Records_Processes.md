@@ -2,9 +2,9 @@
 
 This document details the full health record workflow for Izara Telemedicine, including all user roles, notification logic, error handling, and business rules for PHR (Personal Health Record) and EMR (Electronic Medical Record). It covers data integration, access, and the relationship between appointment outcomes, EMR, and lab results.
 
-**Version:** 1.5.9  
-**Last Updated:** March 15, 2026  
-**Status:** ✅ PostgreSQL Implementation Complete
+**Version:** 1.6.0
+**Last Updated:** March 31, 2026
+**Status:** ✅ PostgreSQL Implementation Complete + Full DB Schema
 
 ---
 
@@ -62,26 +62,33 @@ This document details the full health record workflow for Izara Telemedicine, in
 ### 1.2 During Appointment (EMR Data)
 
 - Doctor (logged in as doctorId) completes and signs EMR in `CompleteEMREditor.tsx` for the specific patient (patientId)
+
 - **EMR Format:** Single Thai Health Ministry Standard - OPD Card (มาตรฐานกระทรวงสาธารณสุข)
+
 - **EMR Tabs (Thai labels):**
   - ประวัติ (S) - Subjective: Chief complaint, history of present illness
   - ตรวจร่างกาย (O) - Objective: Vital signs, physical examination
   - การวินิจฉัย (A) - Assessment: Diagnosis with ICD-10 codes
   - การรักษา (P) - Plan: Treatment plan, prescriptions, follow-up
   - สรุป AI - AI Summary: Gemini-generated summary for patient
+
 - EMR includes:
   - Manual notes (doctor's clinical details)
   - AI-generated summary (Gemini)
   - Meeting transcript (if telemedicine)
   - Diagnosis and treatment plan
   - Linked lab results (if available)
+
 - **Encounter Types:** ตรวจทั่วไป (General), นัดติดตาม (Follow-up), ฉุกเฉิน (Emergency), หัตถการ (Procedure)
+
 - Doctor reviews and approves the summary section for patient sharing; only the summary for the correct patientId is shared
 
 ### 1.3 Lab Results Integration
 
 - If lab tests are ordered, results are uploaded/entered in `CompleteLabOrders.tsx` by the doctor (doctorId) for the correct appointment and patient (patientId)
+
 - Lab results are linked to the relevant appointment and EMR (appointmentId, patientId)
+
 - EMR summary for patient includes relevant lab findings, only for that patient
 
 ---
@@ -282,17 +289,25 @@ This document details the full health record workflow for Izara Telemedicine, in
 #### Tabs
 
 - **Overview**: Patient demographics, recent vitals summary
+
 - **Vitals**: Full vital signs history with charts, add new vitals
+
 - **Medications**: Current medications list, add/edit medications
+
 - **Allergies**: Allergy list with severity, add allergies
+
 - **Profile**: Personal health profile, chronic conditions
 
 #### API Endpoints
 
 - `GET /api/phr/{patientId}` - Get PHR data
+
 - `PUT /api/phr/{patientId}` - Update PHR data
+
 - `GET /api/phr/{patientId}/vitals` - Get vital signs history
+
 - `POST /api/phr/{patientId}/vitals` - Add new vital signs
+
 - `GET /api/phr/{patientId}/health-logs` - Get EMR summaries from doctors
 
 ### 3.2 Health Studio (`HealthStudio.tsx`)
@@ -300,7 +315,9 @@ This document details the full health record workflow for Izara Telemedicine, in
 #### Tabs (2)
 
 - **Health Overview**: Quick stats, recent appointments
+
 - **Treatment Results**: EMR summaries from doctors
+
 - **Health Content**: Educational content based on conditions
 
 ### 3.3 Data Flow (Patient)
@@ -329,14 +346,19 @@ Patient enters vital signs → POST /api/phr/{patientId}/vitals
   - Current medications
   - Lifestyle data
   - Wearable device data (if connected)
+
 - **EMR (Electronic Medical Record)**: Doctor's clinical notes
+
 - **EHR (Electronic Health Record)**: Timeline of all health events
 
 #### API Endpoints (Doctor Portal)
 
 - `GET /api/phr/{patientId}` - Get patient PHR data
+
 - `GET /api/phr/{patientId}/vitals` - Get patient vital signs history
+
 - `GET /api/patients/{patientId}` - Get patient profile
+
 - `patientRecordService.getPHR(patientId)` - Aggregated PHR data
 
 ### 4.2 Data Mapping (Patient → Doctor)
@@ -544,23 +566,23 @@ When doctor signs EMR or creates prescription, patient receives:
 
 ## 8. Error Handling & Edge Cases
 
-- **Unsigned EMR:**  
+- **Unsigned EMR:**
 
   Not visible to patient; doctor receives reminder to sign.
 
-- **Lab Results Pending:**  
+- **Lab Results Pending:**
 
   EMR summary is updated when lab results are finalized and signed by doctor, for the correct patient.
 
-- **Data Sync Failure:**  
+- **Data Sync Failure:**
 
   Health logs may be missing or outdated in patient or doctor portal.
 
-- **PHR Not Found:**  
+- **PHR Not Found:**
 
   Doctor portal displays "No PHR data available" message.
 
-- **Vital Signs Array Empty:**  
+- **Vital Signs Array Empty:**
 
   Doctor sees empty vitals section with appropriate message.
 
@@ -621,6 +643,7 @@ Both portals now use a shared type definition for PHR data to ensure consistency
 ### File Locations
 
 - Patient Portal: `src/types/sharedPHRTypes.ts`
+
 - Doctor Portal: `src/types/sharedPHRTypes.ts`
 
 #### Key Types
@@ -694,12 +717,170 @@ interface SharedPHRRecord {
 8. Search for patient and open record
 9. Verify vital signs match patient-entered values
 10. Verify medication appears in list
-11. Verify allergy is displayed
+
+---
+
+## 13. PostgreSQL Database Architecture for Health Records
+
+### Database Tables
+
+| Table | Purpose | Key Columns |
+| ----- | ------- | ----------- |
+| **phr** | Personal Health Records (aggregated) | id, patient_id, demographics (JSONB), vital_signs_history (JSONB), allergies (JSONB), chronic_conditions (JSONB), medications (JSONB), vaccinations (JSONB), lifestyle (JSONB), family_history (JSONB), blood_type, height_cm, weight_kg, bmi |
+| **vital_signs** | Individual measurements | id (UUID), patient_id, blood_pressure_systolic/diastolic, heart_rate, temperature, respiratory_rate, oxygen_saturation, blood_glucose, weight, height, measured_at, source |
+| **emr** | Electronic Medical Records (SOAP) | id, appointment_id, patient_id, doctor_id, subjective/objective/assessment/plan (JSONB), ai_summary, ai_summary_approved, patient_instructions, status (draft/signed), doctor_signature, signed_at |
+| **prescriptions** | E-Prescribing | id, emr_id, appointment_id, patient_id, doctor_id, medications (JSONB), pharmacy_instructions, cds_warnings (JSONB), status |
+| **lab_orders** | Laboratory test orders | id, emr_id, appointment_id, patient_id, doctor_id, tests (JSONB), priority, results (JSONB), ai_analysis, status |
+| **ai_validations** | Man-in-the-Loop records | id, type, patient_id, doctor_id, decision, content_snapshot (JSONB), validated_at |
+| **patient_instructions** | AI-generated instruction sheets | id, appointment_id, patient_id, doctor_id, content (JSONB), validation_status |
+| **patient_consents** | PDPA consent management | id, patient_id, consent_type, granted, doctor_id, data_types (JSONB), status |
+
+### PHR Data Flow (Patient → DB → Doctor)
+
+```text
+Patient Portal (port 3005)                     Doctor Portal (port 3010)
+┌──────────────────────────┐                   ┌──────────────────────────┐
+│ PHRPage.tsx              │                   │ PatientDetailPage.tsx     │
+│ POST /api/phr            │                   │ GET /api/patients/:id/phr│
+│ POST /api/vital-signs    │                   │ GET /api/emr/:patientId  │
+└──────────┬───────────────┘                   └──────────┬───────────────┘
+           │                                              │
+           ▼                                              ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│                    PostgreSQL - izara_phase1                          │
+│                                                                      │
+│  Patient writes PHR:                                                 │
+│  UPDATE phr SET vital_signs_history = $1, allergies = $2,           │
+│    chronic_conditions = $3, medications = $4                         │
+│  WHERE patient_id = $5                                               │
+│                                                                      │
+│  Patient records vital signs:                                        │
+│  INSERT INTO vital_signs (patient_id, blood_pressure_systolic,      │
+│    blood_pressure_diastolic, heart_rate, temperature, measured_at)   │
+│  VALUES ($1, $2, $3, $4, $5, NOW())                                 │
+│                                                                      │
+│  Doctor reads patient history:                                       │
+│  SELECT * FROM phr WHERE patient_id = $1                            │
+│  SELECT * FROM vital_signs WHERE patient_id = $1                    │
+│    ORDER BY measured_at DESC                                         │
+│  SELECT * FROM emr WHERE patient_id = $1                            │
+│    ORDER BY created_at DESC                                          │
+│                                                                      │
+│  LISTEN/NOTIFY: phr changes trigger notify_phr_change               │
+│  → Socket.IO emits phr:updated to doctor-room                       │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+### EMR Creation Flow (Meeting → AI → Doctor Validation → DB)
+
+```text
+Meeting Server (port 3020)          Doctor Portal (port 3010)
+┌─────────────────────┐            ┌──────────────────────────────┐
+│ Transcript capture   │            │ Man-in-the-Loop Validation   │
+│ → meeting_transcripts│            │ Doctor reviews AI-generated  │
+│ → ai_summary via     │            │ SOAP EMR draft               │
+│   Gemini 2.5 Flash   │            │                              │
+└────────┬────────────┘            │ [✓ Approve] [✏️ Edit] [✗]   │
+         │                         └──────────┬───────────────────┘
+         ▼                                    ▼
+┌──────────────────────────────────────────────────────────────────┐
+│  INSERT INTO emr (appointment_id, patient_id, doctor_id,        │
+│    subjective, objective, assessment, plan, ai_summary,          │
+│    ai_summary_approved, status)                                  │
+│  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, true, 'signed')       │
+│                                                                  │
+│  INSERT INTO ai_validations (type='emr', patient_id, doctor_id, │
+│    decision='approved', content_snapshot=$json)                   │
+│                                                                  │
+│  LISTEN/NOTIFY: emr INSERT triggers notify_emr_change            │
+│  → Socket.IO emits emr:updated to patient-room & doctor-room    │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+### Prescription & Lab Order Data Flow
+
+```text
+Doctor creates prescription after EMR
+┌──────────────────────────────────────────────────────────────────┐
+│  INSERT INTO prescriptions (emr_id, appointment_id, patient_id, │
+│    doctor_id, medications=$json, cds_warnings=$warnings)         │
+│                                                                  │
+│  CDS check performed:                                            │
+│  SELECT contraindications FROM drugs WHERE generic_name = $1     │
+│  → If interaction found: INSERT INTO cds_logs                    │
+│  → WARNING displayed to doctor before prescribing                │
+│                                                                  │
+│  LISTEN/NOTIFY: prescription INSERT triggers notify_prescription │
+│  → Socket.IO emits prescription:updated                          │
+└──────────────────────────────────────────────────────────────────┘
+
+Doctor orders lab tests
+┌──────────────────────────────────────────────────────────────────┐
+│  INSERT INTO lab_orders (emr_id, appointment_id, patient_id,    │
+│    doctor_id, tests=$json, priority, status='ordered')           │
+│                                                                  │
+│  When results uploaded:                                          │
+│  UPDATE lab_orders SET results=$json, ai_analysis=$analysis,    │
+│    status='completed' WHERE id = $1                              │
+│                                                                  │
+│  LISTEN/NOTIFY: lab_orders UPDATE triggers notify_lab_order      │
+│  → Socket.IO emits lab-order:updated                             │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+### Deployment Architecture
+
+| Environment | Service | Health Records Access | Database |
+| ----------- | ------- | -------------------- | -------- |
+| Local Docker | Patient Portal (3005) | PHR read/write, vital signs, view EMR/prescriptions | izara-postgres:5432 |
+| Local Docker | Doctor Portal (3010) | Full EMR CRUD, prescriptions, lab orders, view PHR | izara-postgres:5432 |
+| Local Docker | Meeting Server (3020) | EMR draft generation via AI, transcript storage | izara-postgres:5432 |
+| Production | All Cloud Run services | Same access patterns | 35.240.157.230:5432 |
+
+### API Endpoints with DB Operations
+
+| Portal | Endpoint | Method | DB Operation |
+| ------ | -------- | ------ | ------------ |
+| Patient | `/api/phr` | GET | SELECT FROM phr WHERE patient_id=$1 |
+| Patient | `/api/phr` | POST/PUT | UPSERT phr SET ... WHERE patient_id=$1 |
+| Patient | `/api/vital-signs` | POST | INSERT INTO vital_signs |
+| Patient | `/api/vital-signs` | GET | SELECT FROM vital_signs WHERE patient_id=$1 |
+| Patient | `/api/health-records/emr` | GET | SELECT FROM emr WHERE patient_id=$1 |
+| Patient | `/api/prescriptions` | GET | SELECT FROM prescriptions WHERE patient_id=$1 |
+| Doctor | `/api/patients/:id/phr` | GET | SELECT FROM phr + vital_signs |
+| Doctor | `/api/emr` | GET/POST | SELECT/INSERT emr |
+| Doctor | `/api/emr/:id` | PUT | UPDATE emr SET ... WHERE id=$1 |
+| Doctor | `/api/prescriptions` | POST | INSERT INTO prescriptions + CDS check |
+| Doctor | `/api/lab-orders` | POST | INSERT INTO lab_orders |
+| Doctor | `/api/ai/validate` | POST | INSERT INTO ai_validations |
+| Meeting | `/api/meetings/:id/summary` | POST | INSERT INTO emr (AI draft) |
+| Meeting | `/api/transcripts` | POST | INSERT INTO meeting_transcripts |
+
+### Scenario Coverage
+
+| # | Scenario | Actor | DB Tables |
+| - | -------- | ----- | --------- |
+| 1 | Patient enters vital signs | Patient | vital_signs, phr |
+| 2 | Patient updates allergies/medications | Patient | phr |
+| 3 | Doctor views patient PHR | Doctor | phr, vital_signs |
+| 4 | AI generates EMR from meeting | Meeting Server | meeting_transcripts, emr |
+| 5 | Doctor validates AI EMR | Doctor | emr, ai_validations |
+| 6 | Doctor edits/signs EMR | Doctor | emr, audit_logs |
+| 7 | Doctor creates prescription | Doctor | prescriptions, drugs (CDS check), cds_logs |
+| 8 | Doctor orders lab test | Doctor | lab_orders |
+| 9 | Lab results uploaded | Doctor | lab_orders, ai_document_analysis |
+| 10 | AI generates patient instructions | Doctor | patient_instructions, ai_validations |
+| 11 | Patient views EMR summary | Patient | emr (read-only) |
+| 12 | Patient views prescription | Patient | prescriptions (read-only) |
+| 13 | PDPA consent granted/revoked | Patient | patient_consents, audit_logs |
+
+1. Verify allergy is displayed
 
 #### Run Test
 
 ```bash
 node scripts/phrDataSyncSeleniumTests.cjs
+
 # Or headless mode:
 node scripts/phrDataSyncSeleniumTests.cjs --headless
 ```
@@ -731,6 +912,7 @@ node scripts/phrDataSyncSeleniumTests.cjs --headless
 
 ```bash
 node scripts/lifestyleAndEMRSeleniumTests.cjs
+
 # Or headless mode:
 node scripts/lifestyleAndEMRSeleniumTests.cjs --headless
 ```
@@ -738,6 +920,7 @@ node scripts/lifestyleAndEMRSeleniumTests.cjs --headless
 #### Test Results Location
 
 - Screenshots: `scripts/test-screenshots/phr-sync/` and `scripts/test-screenshots/lifestyle-emr/`
+
 - Results JSON: `scripts/test-results/`
 
 ---

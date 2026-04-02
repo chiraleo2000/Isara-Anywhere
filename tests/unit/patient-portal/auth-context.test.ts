@@ -6,7 +6,7 @@
  * token management, login/register flows, session persistence.
  * ═══════════════════════════════════════════════════════════════════════
  */
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 
 // ─── Mock localStorage ──────────────────────────────────────────────
 const store: Record<string, string> = {};
@@ -17,6 +17,63 @@ const mockLocalStorage = {
   clear: () => { Object.keys(store).forEach(k => delete store[k]); },
 };
 
+function generateDeviceId(): string {
+  const ua = typeof navigator === 'undefined' ? 'test' : navigator.userAgent;
+  const lang = typeof navigator === 'undefined' ? 'en' : navigator.language;
+  const sw = globalThis.screen === undefined ? 1920 : globalThis.screen.width;
+  const sh = globalThis.screen === undefined ? 1080 : globalThis.screen.height;
+  const tz = typeof Intl === 'undefined' ? 'UTC' : Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const cores = typeof navigator === 'undefined' ? 4 : navigator.hardwareConcurrency;
+  const raw = `${ua}_${lang}_${sw}x${sh}_${tz}_${cores}`;
+  let hash = 0;
+  for (let i = 0; i < raw.length; i++) {
+    const char = raw.codePointAt(i) ?? 0;
+    hash = ((hash << 5) - hash) + char;
+    hash = Math.trunc(hash);
+  }
+  return `device_${Math.abs(hash).toString(36)}`;
+}
+
+function getDeviceId(): string {
+  let id = mockLocalStorage.getItem('izara_patient_device_id');
+  if (!id) {
+    id = generateDeviceId();
+    mockLocalStorage.setItem('izara_patient_device_id', id);
+  }
+  return id;
+}
+
+function getToken(): string | null {
+  return mockLocalStorage.getItem('auth_token');
+}
+
+function setToken(token: string): void {
+  mockLocalStorage.setItem('auth_token', token);
+}
+
+function clearAuth(): void {
+  mockLocalStorage.removeItem('auth_token');
+  mockLocalStorage.removeItem('izara_user');
+  mockLocalStorage.removeItem('izara_patient_last_activity');
+}
+
+const INACTIVITY_TIMEOUT = 15 * 60 * 1000; // 15 minutes
+const INACTIVITY_CHECK_INTERVAL = 60 * 1000; // 60 seconds
+
+function isSessionExpired(lastActivity: number): boolean {
+  return Date.now() - lastActivity > INACTIVITY_TIMEOUT;
+}
+
+function updateActivity(): number {
+  const now = Date.now();
+  mockLocalStorage.setItem('izara_patient_last_activity', now.toString());
+  return now;
+}
+
+function getApiUrl(path: string, baseUrl: string = ''): string {
+  return `${baseUrl}${path}`;
+}
+
 beforeEach(() => {
   mockLocalStorage.clear();
 });
@@ -25,31 +82,6 @@ beforeEach(() => {
 // A. Device ID Generation
 // ═══════════════════════════════════════════════════════════════════════
 describe('Auth — Device ID Generation', () => {
-  function generateDeviceId(): string {
-    const ua = typeof navigator !== 'undefined' ? navigator.userAgent : 'test';
-    const lang = typeof navigator !== 'undefined' ? navigator.language : 'en';
-    const sw = typeof globalThis.screen !== 'undefined' ? globalThis.screen.width : 1920;
-    const sh = typeof globalThis.screen !== 'undefined' ? globalThis.screen.height : 1080;
-    const tz = typeof Intl !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone : 'UTC';
-    const cores = typeof navigator !== 'undefined' ? navigator.hardwareConcurrency : 4;
-    const raw = `${ua}_${lang}_${sw}x${sh}_${tz}_${cores}`;
-    let hash = 0;
-    for (let i = 0; i < raw.length; i++) {
-      const char = raw.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
-      hash |= 0;
-    }
-    return `device_${Math.abs(hash).toString(36)}`;
-  }
-
-  function getDeviceId(): string {
-    let id = mockLocalStorage.getItem('izara_patient_device_id');
-    if (!id) {
-      id = generateDeviceId();
-      mockLocalStorage.setItem('izara_patient_device_id', id);
-    }
-    return id;
-  }
 
   it('A01 — generates a non-empty device ID', () => {
     const id = generateDeviceId();
@@ -86,19 +118,6 @@ describe('Auth — Device ID Generation', () => {
 // B. Token Management
 // ═══════════════════════════════════════════════════════════════════════
 describe('Auth — Token Management', () => {
-  function getToken(): string | null {
-    return mockLocalStorage.getItem('auth_token');
-  }
-
-  function setToken(token: string): void {
-    mockLocalStorage.setItem('auth_token', token);
-  }
-
-  function clearAuth(): void {
-    mockLocalStorage.removeItem('auth_token');
-    mockLocalStorage.removeItem('izara_user');
-    mockLocalStorage.removeItem('izara_patient_last_activity');
-  }
 
   it('B01 — getToken returns null when no token stored', () => {
     expect(getToken()).toBeNull();
@@ -135,18 +154,6 @@ describe('Auth — Token Management', () => {
 // C. Inactivity Timeout Logic
 // ═══════════════════════════════════════════════════════════════════════
 describe('Auth — Inactivity Timeout', () => {
-  const INACTIVITY_TIMEOUT = 15 * 60 * 1000; // 15 minutes
-  const INACTIVITY_CHECK_INTERVAL = 60 * 1000; // 60 seconds
-
-  function isSessionExpired(lastActivity: number): boolean {
-    return Date.now() - lastActivity > INACTIVITY_TIMEOUT;
-  }
-
-  function updateActivity(): number {
-    const now = Date.now();
-    mockLocalStorage.setItem('izara_patient_last_activity', now.toString());
-    return now;
-  }
 
   it('C01 — session is not expired within timeout', () => {
     expect(isSessionExpired(Date.now())).toBe(false);
@@ -235,9 +242,6 @@ describe('Auth — User Serialization', () => {
 // E. API URL Resolution
 // ═══════════════════════════════════════════════════════════════════════
 describe('Auth — API URL Resolution', () => {
-  function getApiUrl(path: string, baseUrl: string = ''): string {
-    return `${baseUrl}${path}`;
-  }
 
   it('E01 — builds correct login URL', () => {
     expect(getApiUrl('/api/auth/login')).toBe('/api/auth/login');
@@ -277,7 +281,7 @@ describe('Auth — Registration Data Validation', () => {
 
   function validateRegisterInput(input: RegisterInput): string[] {
     const errors: string[] = [];
-    if (!input.email || !input.email.includes('@')) errors.push('Invalid email');
+    if (!input.email?.includes('@')) errors.push('Invalid email');
     if (!input.password || input.password.length < 8) errors.push('Password too short');
     if (input.password !== input.confirmPassword) errors.push('Passwords do not match');
     if (!input.name || input.name.trim().length < 2) errors.push('Name required');

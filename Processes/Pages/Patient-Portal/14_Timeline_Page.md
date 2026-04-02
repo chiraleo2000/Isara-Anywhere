@@ -1,9 +1,9 @@
 # 📋 Patient Portal — Timeline Page
 
-**Version:** v1.4.7  
-**Route:** `/timeline`  
-**Component:** `src/pages/timeline/TimelinePage.tsx`  
-**Access:** 🔒 Authenticated patients  
+**Version:** v1.4.7
+**Route:** `/timeline`
+**Component:** `src/pages/timeline/TimelinePage.tsx`
+**Access:** 🔒 Authenticated patients
 **Thai Title:** ประวัติการรักษา / Complete Treatment History
 
 ---
@@ -242,7 +242,7 @@ When a telehealth consultation is completed, the timeline shows results in patie
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-**Patient Data Privacy in Timeline:**
+## Patient Data Privacy in Timeline
 
 | Visible to Patient | NOT Visible to Patient |
 | ------------------- | ---------------------- |
@@ -258,8 +258,45 @@ When a telehealth consultation is completed, the timeline shows results in patie
 ## 10. AI Agent Improvement Opportunities
 
 - **Smart summary**: AI generate overall health trajectory summary
+
 - **Trend analysis**: AI identify patterns in treatment history
+
 - **Predictive timeline**: AI forecast upcoming needed appointments/tests
+
 - **Export/Print**: AI format timeline for sharing with other providers
+
 - **Comparison view**: AI compare current vs past health metrics
+
 - **Event correlation**: AI link related events (diagnosis → medication → lab)
+
+---
+
+## PostgreSQL Database Integration
+
+### Tables Used
+
+| Table | Operation | Description |
+| ----- | --------- | ----------- |
+| appointments | SELECT | Appointment history for timeline events |
+| emr | SELECT | EMR records as timeline entries |
+| prescriptions | SELECT | Prescription events in timeline |
+| lab_orders | SELECT | Lab order events in timeline |
+| vital_signs | SELECT | Vital sign entries in timeline |
+
+### API Endpoints
+
+| Endpoint | Method | DB Operation |
+| -------- | ------ | ------------ |
+| GET /api/timeline | GET | SELECT appointments, emr, prescriptions, lab_orders, vital_signs WHERE patient_id ORDER BY date |
+
+### Note
+
+- **Aggregated read-only timeline** combining data from 5 tables sorted chronologically
+
+### Deployment
+
+- **Local Docker:** izara-postgres container (localhost:5433 external / 5432 internal) → database: izara_phase1
+
+- **Production:** GCE VM at 35.240.157.230:5432 → database: izara_phase1 (asia-southeast1)
+
+- **Service deployed via:** Cloud Run (gen2, CPU Boost) + Cloud Build CI/CD

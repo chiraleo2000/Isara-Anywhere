@@ -212,6 +212,7 @@ function TextInputTab({
             </div>
           </div>
           <textarea
+            aria-label="อธิบายอาการโดยละเอียด"
             value={form.symptomDescription}
             onChange={(e) => setForm((prev: any) => ({ ...prev, symptomDescription: e.target.value }))}
             placeholder="อธิบายอาการที่เป็นอย่างละเอียด เช่น:&#10;- อาการเริ่มต้นอย่างไร เมื่อไหร่&#10;- เป็นมากแค่ไหน ตรงไหนของร่างกาย&#10;- มีอะไรทำให้ดีขึ้นหรือแย่ลง&#10;- อาการร่วมอื่นๆ ที่มี"
@@ -343,6 +344,7 @@ function VoiceInputTab({
               <button
                 onClick={deleteRecording}
                 className="p-2 text-red-500 hover:bg-red-50 rounded-lg"
+                aria-label="ลบบันทึกเสียง" title="ลบบันทึกเสียง"
               >
                 <Trash2 className="w-5 h-5" />
               </button>
@@ -427,14 +429,16 @@ function ImageInputTab({
         multiple
         onChange={(e) => handleImageUpload(e.target.files)}
         className="hidden"
+        aria-label="เลือกไฟล์รูปภาพ"
       />
       <input
         ref={cameraInputRef}
         type="file"
         accept="image/*"
-        capture="environment"
+        {...{ capture: 'environment' }}
         onChange={(e) => handleImageUpload(e.target.files)}
         className="hidden"
+        aria-label="ถ่ายรูปอาการ"
       />
 
       {/* Image Preview Grid */}
@@ -453,6 +457,7 @@ function ImageInputTab({
                   type="button"
                   onClick={() => removeImage(index)}
                   className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
+                  aria-label="ลบรูปภาพ" title="ลบรูปภาพ"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -564,11 +569,13 @@ function MedicalInfoSection({ form, setForm }: MedicalInfoSectionProps) {
                 onChange={(e) => setForm((prev: any) => ({ ...prev, symptomDuration: e.target.value }))}
                 placeholder="จำนวน"
                 min="1"
+                aria-label="ระยะเวลาที่เป็น"
                 className="w-24 p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500"
               />
               <select
                 value={form.symptomDurationUnit}
                 onChange={(e) => setForm((prev: any) => ({ ...prev, symptomDurationUnit: e.target.value }))}
+                aria-label="หน่วยระยะเวลา"
                 className="flex-1 p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500"
               >
                 <option value="hours">ชั่วโมง</option>
@@ -613,6 +620,7 @@ function MedicalInfoSection({ form, setForm }: MedicalInfoSectionProps) {
                 type="checkbox"
                 checked={form.fever}
                 onChange={(e) => setForm((prev: any) => ({ ...prev, fever: e.target.checked }))}
+                aria-label="มีไข้"
                 className="w-5 h-5 rounded text-red-500"
               />
               <span>มีไข้</span>
@@ -630,6 +638,7 @@ function MedicalInfoSection({ form, setForm }: MedicalInfoSectionProps) {
                     setForm((prev: any) => ({ ...prev, feverTemp: value }));
                   }}
                   placeholder="อุณหภูมิ (°C)"
+                  aria-label="อุณหภูมิ (°C)"
                   className="w-28 p-2 border border-gray-200 rounded-lg text-sm"
                 />
                 <span className="text-sm text-gray-500">°C</span>
@@ -645,6 +654,7 @@ function MedicalInfoSection({ form, setForm }: MedicalInfoSectionProps) {
             ยาที่กำลังใช้อยู่
           </h4>
           <textarea
+            aria-label="ยาที่กำลังใช้อยู่"
             value={form.currentMedications}
             onChange={(e) => setForm((prev: any) => ({ ...prev, currentMedications: e.target.value }))}
             placeholder="ระบุยาที่กำลังใช้อยู่ (ถ้ามี) เช่น พาราเซตามอล 500 มก. วันละ 3 ครั้ง"
@@ -663,6 +673,7 @@ function MedicalInfoSection({ form, setForm }: MedicalInfoSectionProps) {
             value={form.allergies}
             onChange={(e) => setForm((prev: any) => ({ ...prev, allergies: e.target.value }))}
             placeholder="ระบุประวัติการแพ้ (ถ้ามี) เช่น แพ้ยาเพนิซิลิน, แพ้อาหารทะเล"
+            aria-label="ประวัติแพ้ยา/อาหาร"
             className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500"
           />
         </div>
@@ -674,6 +685,7 @@ function MedicalInfoSection({ form, setForm }: MedicalInfoSectionProps) {
             การรักษาที่เคยได้รับ
           </h4>
           <textarea
+            aria-label="การรักษาที่เคยได้รับ"
             value={form.previousTreatment}
             onChange={(e) => setForm((prev: any) => ({ ...prev, previousTreatment: e.target.value }))}
             placeholder="เคยรักษาอาการนี้มาก่อนหรือไม่ อย่างไร เช่น เคยไปพบแพทย์เมื่อ 1 สัปดาห์ก่อน ได้รับยาแก้ปวด"

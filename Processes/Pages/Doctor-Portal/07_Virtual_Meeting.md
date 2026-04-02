@@ -1,9 +1,9 @@
 # 📹 Doctor Portal — Virtual Meeting (Jitsi Video Consultation)
 
-**Component:** `src/pages/VirtualMeeting.tsx`  
-**Type:** Modal (launched from DoctorPortal)  
-**Access:** 🔒 Doctor / Admin  
-**Thai Title:** การประชุมออนไลน์ / Virtual Meeting  
+**Component:** `src/pages/VirtualMeeting.tsx`
+**Type:** Modal (launched from DoctorPortal)
+**Access:** 🔒 Doctor / Admin
+**Thai Title:** การประชุมออนไลน์ / Virtual Meeting
 **Version:** v1.4.7
 
 ---
@@ -374,11 +374,52 @@ Step 12: Full transcript compiled and stored
 ## 7. AI Agent Improvement Opportunities
 
 - **Auto-dictation**: AI transcribe doctor's verbal notes directly to EMR fields
+
 - **Real-time diagnosis support**: AI suggest differential diagnosis during conversation
+
 - **Auto-summary**: AI generate meeting summary in real-time as conversation progresses
+
 - **Sentiment analysis**: AI detect patient distress or confusion
+
 - **Follow-up extraction**: AI automatically identify follow-up items from conversation
+
 - **Speaker diarization enhancement**: AI improve speaker identification accuracy
+
 - **Multi-language real-time translation**: AI translate between Thai and English in real-time
+
 - **Clinical keyword highlighting**: AI highlight medical terms in transcript for quick review
+
 - **Automatic section markers**: AI detect topic changes and mark 30-min summary boundaries
+
+---
+
+## PostgreSQL Database Integration
+
+### Tables Used
+
+| Table | Operation | Description |
+| ----- | --------- | ----------- |
+| meeting_records | SELECT/UPDATE | Track meeting session state and duration |
+| meeting_transcripts | INSERT | Store transcript segments from Web Speech API |
+
+### API Endpoints
+
+| Endpoint | Method | DB Operation |
+| -------- | ------ | ------------ |
+| Meeting server endpoints (port 3020) | POST | INSERT meeting_transcripts via Socket.IO |
+
+### Integration
+
+- **Jitsi Meet:** iframe-based video conferencing
+
+- **Web Speech API:** Browser-native speech recognition
+
+- **Socket.IO:** Real-time transcript:segment event streaming
+
+### Deployment
+
+- **Local Docker:** izara-postgres container (localhost:5433 external / 5432 internal) → database: izara_phase1
+
+- **Production:** GCE VM at 35.240.157.230:5432 → database: izara_phase1 (asia-southeast1)
+
+- **Service deployed via:** Cloud Run (gen2, CPU Boost) + Cloud Build CI/CD

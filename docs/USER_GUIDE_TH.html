@@ -1,0 +1,1725 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<style>
+  @page {
+    margin: 2cm;
+    size: A4;
+  }
+  body {
+    font-family: 'Sarabun', 'Noto Sans Thai', 'TH Sarabun New', 'Tahoma', 'Segoe UI', sans-serif;
+    font-size: 11pt;
+    line-height: 1.6;
+    color: #333;
+    max-width: 100%;
+  }
+  h1 { font-size: 22pt; color: #1a5276; border-bottom: 3px solid #2e86c1; padding-bottom: 8px; page-break-after: avoid; }
+  h2 { font-size: 16pt; color: #1a5276; border-bottom: 2px solid #85c1e9; padding-bottom: 6px; margin-top: 28px; page-break-after: avoid; }
+  h3 { font-size: 13pt; color: #2874a6; margin-top: 20px; page-break-after: avoid; }
+  h4 { font-size: 11pt; color: #2e86c1; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; page-break-inside: avoid; }
+  th { background: #2e86c1; color: white; padding: 8px 12px; text-align: left; font-size: 10pt; }
+  td { border: 1px solid #ddd; padding: 6px 12px; font-size: 10pt; }
+  tr:nth-child(even) { background: #f8f9fa; }
+  code { background: #f4f4f4; padding: 2px 6px; border-radius: 3px; font-size: 10pt; font-family: 'Consolas', monospace; }
+  pre { background: #2d2d2d; color: #f8f8f2; padding: 12px; border-radius: 6px; overflow-x: auto; page-break-inside: avoid; }
+  pre code { background: none; color: inherit; padding: 0; }
+  blockquote { border-left: 4px solid #2e86c1; margin: 12px 0; padding: 8px 16px; background: #ebf5fb; font-size: 10pt; }
+  img { max-width: 100%; height: auto; border: 1px solid #ddd; border-radius: 4px; margin: 8px 0; page-break-inside: avoid; }
+  hr { border: none; border-top: 1px solid #ddd; margin: 20px 0; }
+  ul, ol { padding-left: 24px; }
+  li { margin: 4px 0; }
+  a { color: #2e86c1; text-decoration: none; }
+  .page-break { page-break-before: always; }
+</style>
+</head>
+<body>
+<h1>📖 IZARA Telemedicine — คู่มือการใช้งานฉบับสมบูรณ์</h1>
+
+<strong>เวอร์ชัน 1.6.0</strong> | <strong>อัปเดตล่าสุด: 1 เมษายน 2569</strong>
+
+<blockquote>คู่มือฉบับสมบูรณ์สำหรับผู้ป่วย แพทย์ และผู้ดูแลระบบ</blockquote>
+<blockquote>ทดสอบอัตโนมัติ 2,018 รายการ (Unit Tests) + ทดสอบ E2E 143 รายการผ่านทั้งหมด | ภาพถ่ายหน้าจอ 103 ภาพ</blockquote>
+
+<hr>
+
+<h2>📑 สารบัญ</h2>
+
+<li><a href="#1-เริ่มต้นการใช้งาน">เริ่มต้นการใช้งาน</a></li>
+<li><a href="#2-ระบบผู้ป่วย-patient-portal">ระบบผู้ป่วย (ผู้ป่วย Portal)</a></li>
+<li><a href="#3-ระบบแพทย์-doctor-portal">ระบบแพทย์ (แพทย์ Portal)</a></li>
+<li><a href="#4-ระบบผู้ดูแลระบบ">ระบบผู้ดูแลระบบ</a></li>
+<li><a href="#5-กระบวนการให้คำปรึกษาทางไกล">กระบวนการให้คำปรึกษาทางไกล</a></li>
+<li><a href="#6-กระบวนการลงทะเบียนแพทย์ใหม่">กระบวนการลงทะเบียนแพทย์ใหม่</a></li>
+<li><a href="#7-ระบบวิดีโอประชุม">ระบบวิดีโอประชุม</a></li>
+<li><a href="#8-ฟีเจอร์-ai-gemini">ฟีเจอร์ AI (Gemini)</a></li>
+<li><a href="#9-ระบบบันทึกและถอดเสียง">ระบบบันทึกและถอดเสียง</a></li>
+<li><a href="#10-ระบบแจ้งเตือน">ระบบแจ้งเตือน</a></li>
+<li><a href="#11-การจัดการเนื้อหา">การจัดการเนื้อหา</a></li>
+<li><a href="#12-ความปลอดภัยและ-pdpa">ความปลอดภัยและ PDPA</a></li>
+<li><a href="#13-คำถามที่พบบ่อย">คำถามที่พบบ่อย</a></li>
+
+<hr>
+
+<h2>1. เริ่มต้นการใช้งาน</h2>
+
+<h3>1.1 ภาพรวมระบบ</h3>
+
+<p>IZARA Telemedicine consists of 3 main systems:</p>
+
+<p>| System | URL | For |</p>
+<p>|--------|-----|-----|</p>
+<p>| <strong>ผู้ป่วย Portal</strong> | <code>patient-portal.run.app</code> | ผู้ป่วยs — book appointments, view PHR, consult AI |</p>
+<p>| <strong>แพทย์ Portal</strong> | <code>doctor-portal.run.app</code> | แพทย์s + ผู้ดูแลs — manage appointments, EMR, prescriptions |</p>
+<p>| <strong>Meeting Server</strong> | <code>meeting-server.run.app</code> | Jitsi video meeting + Socket.IO server |</p>
+
+<strong>Technology Stack:</strong> React + TypeScript, Node.js, PostgreSQL, Jitsi Meet, Gemini AI 2.5 Flash, Google Cloud Run
+
+<hr>
+
+<h3>1.2 การลงทะเบียนผู้ป่วย</h3>
+
+<p>New patients can self-register through the ผู้ป่วย Portal.</p>
+
+<strong>ขั้นตอน:</strong>
+<li>เปิด URL ของระบบผู้ป่วย</li>
+<li>คลิก <strong>"ลงทะเบียน" (Register)</strong></li>
+<li>Fill in: Full Name, Email, Password, Phone, Basic Health Profile</li>
+<li>คลิก <strong>"ลงทะเบียน" (Submit)</strong> → redirected to Dashboard immediately</li>
+
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/cloud/patient-portal/patient-02-register.png" alt="ผู้ป่วย Registration Page" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/cloud-workflows/user-management/WC01-patient-register.png" alt="Registration Success" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+
+<blockquote>📌 <strong>Tip:</strong> After registration, fill in your health profile (allergies, medications, chronic conditions) in the PHR section for better AI-assisted consultations.</blockquote>
+
+<hr>
+
+<h3>1.3 เข้าสู่ระบบผู้ป่วย</h3>
+
+<li>Open the ผู้ป่วย Portal</li>
+<li>กรอก <strong>อีเมล</strong> และ <strong>รหัสผ่าน</strong></li>
+<li>คลิก <strong>"เข้าสู่ระบบ" (Login)</strong> → redirected to Dashboard</li>
+
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/workflow/auth-login/WF01-patient-login-page.png" alt="ผู้ป่วย Login Page" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/workflow/auth-login/WF02-patient-login-filled.png" alt="ผู้ป่วย Login Filled" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+
+<blockquote>🔑 Sessions expire in 30 minutes. Re-login required after expiration.</blockquote>
+
+<hr>
+
+<h3>1.4 เข้าสู่ระบบแพทย์</h3>
+
+<p>แพทย์s and ผู้ดูแลs log in through the แพทย์ Portal.</p>
+
+<li>Open the แพทย์ Portal URL</li>
+<li>กรอก <strong>อีเมล</strong> และ <strong>รหัสผ่าน</strong></li>
+<li>คลิก <strong>"Sign In to Portal"</strong></li>
+
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/workflow/auth-login/WF08-doctor-login-page.png" alt="แพทย์ Login Page" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+
+<blockquote>⚠️ New doctors must be <strong>approved by an admin</strong> before they can log in. See <a href="#6-doctor-onboarding-workflow">Section 6</a>.</blockquote>
+
+<hr>
+
+<h3>1.5 รีเซ็ตรหัสผ่าน</h3>
+
+<li>คลิก <strong>"ลืมรหัสผ่าน?" (Forgot Password?)</strong> on the login page</li>
+<li>Enter your registered email</li>
+<li>System sends a password reset link → click it → set new password</li>
+
+<blockquote>📧 Reset link expires in 15 minutes.</blockquote>
+
+<hr>
+
+<h3>1.6 การควบคุมสิทธิ์ตามบทบาท (RBAC)</h3>
+
+<p>| บทบาท | Access |</p>
+<p>|------|--------|</p>
+<p>| <strong>ผู้ป่วย</strong> | Full ผู้ป่วย Portal — appointments, PHR, AI แพทย์ |</p>
+<p>| <strong>แพทย์</strong> | แพทย์ Portal — appointments, EMR, prescriptions, meetings |</p>
+<p>| <strong>ผู้ดูแล</strong> | แพทย์ Portal + ผู้ดูแล menu — doctor management, content approval |</p>
+
+<blockquote>🔒 ผู้ป่วยs cannot access the แพทย์ Portal (API returns 401). JWT + role verification on every request.</blockquote>
+
+<hr>
+
+<h2>2. ระบบผู้ป่วย (ผู้ป่วย Portal)</h2>
+
+<h3>2.1 หน้าหลัก (Dashboard)</h3>
+
+<p>The main page shows a comprehensive health overview:</p>
+
+<ul><li><strong>Quick การดำเนินการ:</strong> Book appointment, AI consultation, health records, health library</li></ul>
+<ul><li><strong>Health Studio:</strong> Vital signs overview (blood pressure, heart rate, BMI, treatments)</li></ul>
+<ul><li><strong>AI Health Insight:</strong> Personalized recommendations based on your PHR</li></ul>
+<ul><li><strong>Upcoming Appointments:</strong> Latest appointments with view-all button</li></ul>
+<ul><li><strong>Healthcare Map:</strong> Nearby facilities shown at the bottom</li></ul>
+<ul><li><strong>Notification Bell:</strong> Top-right corner</li></ul>
+
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/workflow/auth-login/WF03-patient-dashboard.png" alt="ผู้ป่วย Dashboard" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/cloud/patient-portal/patient-03-dashboard.png" alt="Dashboard on Cloud" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/cloud-workflows/user-management/WC02-patient-dashboard.png" alt="Dashboard Workflow" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+
+<hr>
+
+<h3>2.2 การนัดหมายแพทย์</h3>
+
+<h4>2.2.1 View Appointments</h4>
+
+<p>คลิก <strong>"นัดหมาย" (Appointments)</strong> in the sidebar.</p>
+
+<strong>สถานะ Filters:</strong>
+<ul><li><strong>Pending</strong> — Request sent, awaiting doctor review</li></ul>
+<ul><li><strong>All</strong> — All statuses</li></ul>
+<ul><li><strong>Confirmed</strong> — แพทย์ confirmed, meeting link ready</li></ul>
+<ul><li><strong>Completed</strong> — Consultation done, view summary/EMR</li></ul>
+
+<strong>Sort:</strong> By date (newest or oldest first)
+
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/workflow/appointment-lifecycle/WF04-patient-appointments-empty.png" alt="Appointments Page" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/cloud-workflows/appointment-lifecycle/WC07-patient-appointments.png" alt="Confirmed Appointments" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+
+<h4>2.2.2 Book New Appointment</h4>
+
+<p>คลิก <strong>"+ ขอนัดหมายใหม่" (Book New Appointment)</strong> for a 3-step booking process:</p>
+
+<strong>Step 1 — Symptoms (Voice/Image):</strong>
+<ul><li>Select main symptoms: headache, fever, cough, sore throat, nausea, etc.</li></ul>
+<ul><li>Describe symptoms in detail (text / voice recording / image attachment)</li></ul>
+<ul><li>AI auto-analyzes urgency level</li></ul>
+
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/workflow/appointment-lifecycle/WF05-book-appointment-step1.png" alt="Booking Step 1 — Symptoms" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/cloud/patient-portal/patient-05-book-appointment.png" alt="Booking on Cloud" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+
+<strong>Step 2 — Time + แพทย์:</strong>
+<ul><li>Select doctor or let AI auto-match by specialty</li></ul>
+<ul><li>Choose date/time (calendar) + type (online / in-person)</li></ul>
+<ul><li>Invite relatives/external participants via email (optional)</li></ul>
+
+<strong>Step 3 — Confirm:</strong>
+<ul><li>Review all details → click <strong>"ยืนยัน" (Confirm)</strong></li></ul>
+<ul><li>สถานะ becomes <strong>"Pending"</strong> → doctor receives notification immediately</li></ul>
+
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/workflow/appointment-lifecycle/WF06-appointment-created.png" alt="Appointment Created" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/cloud-workflows/appointment-lifecycle/WC08-appointment-created.png" alt="Created on Cloud" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+
+<h4>2.2.3 Appointment Details</h4>
+
+<p>คลิก an appointment card to view:</p>
+<ul><li>Current status (color + icon)</li></ul>
+<ul><li>แพทย์ photo, name</li></ul>
+<ul><li>Date, time, location</li></ul>
+<ul><li>Reported symptoms (tags)</li></ul>
+<ul><li><strong>"เข้าร่วมการประชุม" (Join Meeting)</strong> button (when confirmed)</li></ul>
+
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/workflow/appointment-lifecycle/WF07-appointment-detail-pending.png" alt="Detail — Pending" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/workflow/appointment-lifecycle/WF13c-patient-appointment-detail-confirmed.png" alt="Detail — Confirmed" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+
+<hr>
+
+<h3>2.3 วงจรสถานะการนัดหมาย</h3>
+
+<pre><code>
+<p>📝 ผู้ป่วย Books → ⏳ Pending → 👨‍⚕️ แพทย์ Reviews → ✅ Confirmed → 📹 Meeting → ✔️ Completed</p>
+</code></pre>
+
+<p>| สถานะ | ไทย | สี | รายละเอียด |</p>
+<p>|--------|------|-------|-------------|</p>
+<p>| <strong>Pending</strong> | รอดำเนินการ | 🟡 Yellow | Request sent, awaiting doctor review |</p>
+<p>| <strong>Finding แพทย์</strong> | กำลังจัดหาแพทย์ | 🟠 Orange | ผู้ดูแล matching a doctor |</p>
+<p>| <strong>Assigned</strong> | มอบหมายแล้ว | 🔵 Blue | ผู้ดูแล assigned to a doctor |</p>
+<p>| <strong>Confirmed</strong> | ยืนยันแล้ว | 🟢 Green | แพทย์ confirmed — meeting link ready |</p>
+<p>| <strong>In Progress</strong> | กำลังดำเนินการ | 🔴 Red | Video meeting active |</p>
+<p>| <strong>Completed</strong> | เสร็จสิ้น | ⚪ Gray | Consultation done, EMR available |</p>
+<p>| <strong>Cancelled</strong> | ยกเลิก | ⬛ Black | Cancelled by patient or doctor |</p>
+
+<p>When <strong>Confirmed</strong> → notification + video link + <strong>"Join Meeting"</strong> button</p>
+
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/workflow/appointment-lifecycle/WF13-patient-appointment-confirmed.png" alt="Appointment Confirmed" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/cloud-workflows/appointment-lifecycle/WC12-appointment-confirmed.png" alt="Confirmed on Cloud" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+
+<hr>
+
+<h3>2.4 เข้าร่วมวิดีโอคอล</h3>
+
+<strong>Step 1: Accept Agreement</strong> — 3 consent items:
+<ul><li>☑️ Video recording consent (for medical purposes)</li></ul>
+<ul><li>☑️ Transcription consent (for medical records)</li></ul>
+<ul><li>☑️ Data sharing consent (per PDPA)</li></ul>
+
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/workflow/video-meeting/WF15a-patient-agreement.png" alt="ผู้ป่วย Agreement" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+
+<strong>Step 2: Pre-Join Screen</strong> — Microsoft Teams style:
+<ul><li>Test camera/microphone (shows OK status)</li></ul>
+<ul><li>View participant info (doctor name, role)</li></ul>
+<ul><li>View invite link for family/caregivers</li></ul>
+
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/workflow/video-meeting/WF15b-patient-pre-join-invite.png" alt="Pre-Join Screen" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+
+<strong>Step 3: Enter Meeting Room</strong> — คลิก <strong>"เข้าร่วม" (Join)</strong> → enter Lobby, wait for doctor approval
+<ul><li>🎥 Camera ON/OFF</li></ul>
+<ul><li>🎤 Microphone ON/OFF</li></ul>
+<ul><li>💬 Text chat (Socket.IO)</li></ul>
+<ul><li>📱 Screen sharing</li></ul>
+<ul><li>⌛ Wait in Lobby with timer</li></ul>
+
+<strong>Step 4: Post-Meeting</strong> — AI auto-generates consultation summary → view in PHR + Timeline
+
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/workflow/video-meeting/WF16-meeting-ended-ai-summary.png" alt="AI Summary Post-Meeting" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+
+<hr>
+
+<h3>2.5 เชิญผู้เข้าร่วม (แบบ Microsoft Teams)</h3>
+
+<p>ผู้ป่วยs can invite <strong>family, friends, or external participants</strong> — guests <strong>do not need an account</strong>.</p>
+
+<strong>How Guests Join:</strong>
+
+<li><strong>Receive invite link</strong> from patient — URL: <code>/guest-join/:meetingId</code></li>
+<li><strong>Enter name</strong> on Guest Join page (no login, no email required)</li>
+<li><strong>คลิก "ขอเข้าร่วม" (Request to Join)</strong> → doctor notified instantly (Socket.IO)</li>
+<li><strong>Wait for approval</strong> — waiting screen with timer displayed</li>
+<li><strong>Enter meeting</strong> — when doctor clicks "Admit", Jitsi video call opens</li>
+<li><strong>If rejected</strong> — red screen: "แพทย์ไม่อนุญาตให้เข้าร่วม" + back button</li>
+
+<strong>For the แพทย์ (Host):</strong>
+<ul><li><strong>Waiting Room</strong> panel shows all pending participants</li></ul>
+<ul><li>คลิก <strong>"อนุญาต" (✓ Admit)</strong> or <strong>"ปฏิเสธ" (✗ Reject)</strong> per person</li></ul>
+<ul><li>ผู้ดูแล users also join through Lobby — แพทย์ต้องอนุมัติ</li></ul>
+
+<hr>
+
+<h3>2.6 ประวัติสุขภาพ (PHR)</h3>
+
+<p>คลิก <strong>"ประวัติสุขภาพ" (PHR)</strong> in the sidebar. 7 tabs:</p>
+
+<p>| แท็บ | ไทย | Content |</p>
+<p>|-----|------|---------|</p>
+<p>| <strong>Overview</strong> | ภาพรวม | Latest vitals, meds, allergies, chronic conditions |</p>
+<p>| <strong>Vital Signs</strong> | สัญญาณชีพ | Blood pressure, heart rate, temperature, weight, glucose, O₂ — trend graphs |</p>
+<p>| <strong>Medications</strong> | ยาที่ใช้ | Drug name, dosage, frequency, status (active/stopped) |</p>
+<p>| <strong>Allergies</strong> | การแพ้ | Allergens, type, severity, symptoms — auto-alerts on prescriptions |</p>
+<p>| <strong>Lab & Imaging</strong> | ผลแลป/ภาพถ่าย | Lab results, X-ray, CT, MRI — AI analysis available |</p>
+<p>| <strong>Profile</strong> | ข้อมูลส่วนตัว | Height, weight, blood type, DOB |</p>
+<p>| <strong>Lifestyle</strong> | วิถีชีวิต | Diet, exercise, sleep, smoking, alcohol — AI recommendations |</p>
+
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/cloud/patient-portal/patient-06-phr.png" alt="PHR Page" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/cloud-workflows/health-records/WC17-patient-phr-updated.png" alt="PHR Updated" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/cloud-workflows/health-records/WC15-patient-phr.png" alt="PHR Data" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+
+<strong>Adding Data:</strong> Select tab → click <strong>"เพิ่ม" (Add)</strong> → fill values → click <strong>"บันทึก" (Save)</strong>
+
+<strong>Lab Reports from แพทย์:</strong> When doctors order and record results, they appear in the Lab & Imaging tab automatically.
+
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/lab-orders/LAB03-lab-results.png" alt="Lab Results" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+
+<hr>
+
+<h3>2.7 ไทม์ไลน์สุขภาพ</h3>
+
+<p>คลิก <strong>"เส้นทางสุขภาพ" (Timeline)</strong> for chronological medical events:</p>
+
+<ul><li>📅 Appointment dates + status</li></ul>
+<ul><li>💊 Medication changes</li></ul>
+<ul><li>🔬 Lab results received</li></ul>
+<ul><li>📝 EMR entries from doctors</li></ul>
+<ul><li>🩺 Diagnosis records</li></ul>
+<ul><li>🏥 Video consultation summaries</li></ul>
+<ul><li>📋 PHR updates</li></ul>
+
+<strong>Filter:</strong> By event type + date range. คลิก cards to expand details.
+
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/cloud-workflows/health-records/WC20-patient-timeline.png" alt="Timeline" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/phr-timeline/PHR04-timeline.png" alt="Timeline PHR" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+
+<hr>
+
+<h3>2.8 ปรึกษาหมอ AI</h3>
+
+<p>แชทกับ Gemini AI สำหรับคำแนะนำสุขภาพทั่วไป:</p>
+
+<li>คลิก <strong>"ปรึกษา AI" (AI แพทย์)</strong> in the sidebar</li>
+<li>Type health questions (ไทย or English)</li>
+<li>AI responds with advice — multi-turn conversation supported</li>
+<li>AI references your PHR data for personalized answers</li>
+<li>Save sessions or browse past sessions</li>
+
+<strong>Example Questions:</strong>
+<ul><li>"ปวดหัวบ่อย ๆ ควรทำอย่างไร" (Frequent headaches — what should I do?)</li></ul>
+<ul><li>"ยา Paracetamol กินกับ Ibuprofen ได้ไหม" (Can I take Paracetamol with Ibuprofen?)</li></ul>
+<ul><li>"ค่า BMI เท่าไหร่ จากข้อมูลของฉัน" (What's my BMI from my data?)</li></ul>
+
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/cloud-workflows/ai-features/WC39-patient-ai-doctor.png" alt="AI แพทย์" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/cloud/patient-portal/patient-07-ai-doctor.png" alt="AI แพทย์ Cloud" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+
+<blockquote>⚠️ AI แพทย์ provides general health information only — <strong>not a medical diagnosis</strong>. Always consult a real doctor.</blockquote>
+
+<hr>
+
+<h3>2.9 คลังความรู้สุขภาพ</h3>
+
+<p>คลิก <strong>"คลังความรู้สุขภาพ" (Health Library)</strong> to read doctor-published articles:</p>
+
+<ul><li>Search by keyword or category (diseases, medications, wellness, prevention)</li></ul>
+<ul><li>ไทย-language content with images</li></ul>
+<ul><li>คลิก article for full detail view</li></ul>
+<ul><li>Shows author, publish date, category</li></ul>
+
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/cloud/patient-portal/patient-08-health-library.png" alt="Health Library" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/cloud-workflows/ai-features/WC40-patient-health-library.png" alt="Library Workflow" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/cloud-workflows/content-management/WC25-patient-content-library.png" alt="Content Library" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+
+<hr>
+
+<h3>2.10 แผนที่สถานพยาบาลใกล้เคียง</h3>
+
+<p>คลิก <strong>"แผนที่สถานพยาบาล" (Map)</strong> → allow GPS location.</p>
+
+<ul><li><strong>Interactive Map</strong> (Google Maps) — hospitals, clinics, pharmacies, health centers</li></ul>
+<ul><li><strong>Distance Filter:</strong> 1, 3, 5 (default), 10, 15, 20 km</li></ul>
+<ul><li><strong>Facility Info:</strong> Name, address, phone, distance, hours</li></ul>
+<ul><li><strong>Summary Count:</strong> Hospitals XX, Clinics XX, Pharmacies XX, Centers XX</li></ul>
+<ul><li><strong>Navigation:</strong> One-tap Google Maps navigation</li></ul>
+
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/cloud-workflows/ai-features/WC41-patient-map.png" alt="Healthcare Map" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/cloud/patient-portal/patient-10-map.png" alt="Map Cloud" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+
+<hr>
+
+<h3>2.11 พินัยกรรมชีวิต</h3>
+
+<p>คลิก <strong>"PDPA & หนังสือแสดงเจตนา"</strong> → <strong>"พินัยกรรมชีวิต" tab</strong></p>
+
+<p>4-step wizard for advance healthcare directives:</p>
+
+<p>| Step | Content |</p>
+<p>|------|---------|</p>
+<p>| <strong>1. Primary Proxy</strong> | Name, relationship, contact (phone, email, address) |</p>
+<p>| <strong>2. Alternate Proxy</strong> | Backup proxy if primary unavailable (optional) |</p>
+<p>| <strong>3. Treatment Preferences</strong> | CPR, ventilator, tube feeding, dialysis, antibiotics, pain management, organ donation |</p>
+<p>| <strong>4. Digital Signature</strong> | Digital signature + toggle doctor sharing |</p>
+
+<strong>Document สถานะ:</strong>
+<ul><li><strong>Draft</strong> — Created but not signed</li></ul>
+<ul><li><strong>Active</strong> — Signed, doctors can view (per PDPA consent)</li></ul>
+<ul><li><strong>Revoked</strong> — Document cancelled</li></ul>
+
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/cloud-workflows/living-will/WC31-patient-living-will.png" alt="Living Will" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/phr-timeline/PHR05-living-will.png" alt="Living Will PHR" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+
+<hr>
+
+<h3>2.12 ความยินยอม PDPA</h3>
+
+<p>คลิก <strong>"PDPA & หนังสือแสดงเจตนา"</strong> → <strong>"PDPA" tab</strong></p>
+
+<p>Manage data privacy consent under ไทยland's Personal Data Protection Act:</p>
+
+<p>| Data Type | รายละเอียด |</p>
+<p>|-----------|-------------|</p>
+<p>| Demographics | Name, age, address, phone |</p>
+<p>| Medical History | All treatment records |</p>
+<p>| Medications | Current and past medications |</p>
+<p>| Allergies | Drug and substance allergy history |</p>
+<p>| Lab Results | Laboratory test results |</p>
+<p>| Prescriptions | แพทย์ prescriptions |</p>
+<p>| Vital Signs | Blood pressure, heart rate, weight |</p>
+<p>| PHR | Personal health records |</p>
+<p>| EMR | Electronic medical records |</p>
+<p>| Living Will | Advance directive documents |</p>
+
+<ul><li>Toggle ON/OFF per data type</li></ul>
+<ul><li>Set different sharing per doctor</li></ul>
+<ul><li>Revoke consent at any time</li></ul>
+
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/cloud-workflows/living-will/WC32-patient-pdpa.png" alt="PDPA Consent" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/cloud/patient-portal/patient-11-pdpa.png" alt="PDPA Cloud" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+
+<hr>
+
+<h3>2.13 โปรไฟล์และการตั้งค่า</h3>
+
+<strong>Profile:</strong> Edit avatar, name, contact details, emergency contact, insurance info.
+
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/cloud/patient-portal/patient-13-profile.png" alt="Profile" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+
+<strong>Settings:</strong>
+<ul><li>🌐 <strong>Language:</strong> ไทย ↔ English (instant switch)</li></ul>
+<ul><li>🎨 <strong>Theme:</strong> Light / Dark</li></ul>
+<ul><li>🔔 <strong>Notifications:</strong> In-app / Email / Push — toggle per type</li></ul>
+<ul><li>🔒 <strong>Privacy:</strong> PDPA consent management</li></ul>
+<ul><li>📱 <strong>Devices:</strong> Manage active sessions</li></ul>
+
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/cloud-workflows/notifications/WC29-patient-settings.png" alt="Settings" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/cloud/patient-portal/patient-14-settings.png" alt="Settings Cloud" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+
+<hr>
+
+<h2>3. ระบบแพทย์ (แพทย์ Portal)</h2>
+
+<h3>3.1 แดชบอร์ดแพทย์</h3>
+
+<p>Overview of all key information on one page:</p>
+
+<strong>Summary Bar (6 cards):</strong>
+<p>| Metric | รายละเอียด |</p>
+<p>|--------|-------------|</p>
+<p>| Today's Appointments | Scheduled for today |</p>
+<p>| ผู้ป่วยs Seen | Total patients treated |</p>
+<p>| In Queue | ผู้ป่วยs currently waiting |</p>
+<p>| Pending Prescriptions | Uncompleted prescriptions |</p>
+<p>| Unread Messages | Unread notifications |</p>
+<p>| Avg Wait Time (min) | Average patient wait time |</p>
+
+<strong>3 Main Areas:</strong>
+<li><strong>Health Data</strong> — ผู้ป่วย queue and records</li>
+<li><strong>Health Meeting</strong> — Video consultation + patient/doctor/team views</li>
+<li><strong>Health Studio</strong> — Clinical tools (diagnosis, treatment plans, EMR, radiology, lab reports)</li>
+
+<strong>AI ผู้ป่วย Summary:</strong> Select a patient to view auto-generated AI history summary (status: awaiting review)
+
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/workflow/auth-login/WF09-doctor-dashboard.png" alt="แพทย์ Dashboard" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/cloud/doctor-portal/doctor-02-dashboard.png" alt="Dashboard Cloud" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/cloud-workflows/user-management/WC03-doctor-dashboard.png" alt="Dashboard Workflow" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+
+<hr>
+
+<h3>3.2 จัดการตารางเวลา</h3>
+
+<p>คลิก <strong>"ตารางนัดหมาย" (Schedule)</strong> in the sidebar.</p>
+
+<strong>ฟีเจอร์s:</strong>
+<ul><li>คลิก date/time slots to set <strong>Available</strong> or <strong>Unavailable</strong></li></ul>
+<ul><li>Set recurring patterns (daily / weekly / monthly)</li></ul>
+<ul><li>Switch views: Day / Week / Month</li></ul>
+<ul><li>View confirmed appointments on calendar</li></ul>
+<ul><li>สี-coded: online / in-person / holiday</li></ul>
+
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/cloud/doctor-portal/doctor-03-schedule.png" alt="Schedule" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/cloud-workflows/appointment-lifecycle/WC13-doctor-schedule.png" alt="Schedule Workflow" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+
+<hr>
+
+<h3>3.3 คิวนัดหมาย</h3>
+
+<p>คลิก <strong>"นัดหมาย & ประชุม" (Appointments & Meeting)</strong> in the sidebar.</p>
+
+<strong>Summary Bar:</strong>
+<ul><li><strong>Awaiting Confirmation</strong> — Count pending</li></ul>
+<ul><li><strong>Completed</strong> — Count finished</li></ul>
+
+<strong>ผู้ป่วย Queue:</strong>
+<ul><li>List of pending appointments</li></ul>
+<ul><li>คลิก <strong>"Refresh"</strong> to update</li></ul>
+<ul><li>View symptoms + AI urgency analysis</li></ul>
+<ul><li>คลิก <strong>"ยืนยัน" (Confirm)</strong> → auto-generates Jitsi link + notifies patient</li></ul>
+<ul><li>คลิก <strong>"ปฏิเสธ" (Decline)</strong> → enter reason + notify patient</li></ul>
+<ul><li><strong>Call Next ผู้ป่วย</strong> button for auto-queue advancement</li></ul>
+
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/workflow/appointment-lifecycle/WF12-health-meeting-queue.png" alt="Queue" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/cloud-workflows/appointment-lifecycle/WC14-health-meeting-queue.png" alt="Queue Cloud" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/workflow/appointment-lifecycle/WF10-appointment-management-pool.png" alt="Appointment Pool" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+
+<hr>
+
+<h3>3.4 การดำเนินการประชุมวิดีโอ</h3>
+
+<strong>Step 1:</strong> Accept meeting agreement (recording, transcription, PDPA)
+
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/workflow/video-meeting/WF14a-doctor-agreement.png" alt="แพทย์ Agreement" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+
+<strong>Step 2:</strong> Pre-join screen — test camera/mic, view participant status
+
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/workflow/video-meeting/WF14b-doctor-pre-join.png" alt="แพทย์ Pre-Join" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+
+<strong>Step 3:</strong> Join as <strong>HOST</strong> (moderator — highest privileges)
+
+<strong>Host ฟีเจอร์s:</strong>
+<ul><li>🔑 <strong>Lobby Control:</strong> Admit/reject patients, guests, admins from Waiting Room</li></ul>
+<ul><li>🎙️ <strong>Transcription:</strong> ▶️ Start → ⏸️ Pause → ⏯️ Resume → ⏹️ Stop</li></ul>
+<ul><li>🗣️ <strong>Speaker Diarization:</strong> Auto-identifies doctor/patient/guest speech</li></ul>
+<ul><li>🌐 <strong>Language Toggle:</strong> ไทย ↔ English transcription</li></ul>
+<ul><li>📹 <strong>Video Recording:</strong> Start/stop recording (200MB limit)</li></ul>
+<ul><li>💬 <strong>Chat:</strong> Send messages during meeting (Socket.IO)</li></ul>
+<ul><li>📱 <strong>Screen Sharing:</strong> Share documents/images via screen</li></ul>
+
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/meeting-recording/MR04-meeting-room-controls.png" alt="Meeting Room" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+
+<strong>Step 4:</strong> คลิก <strong>"วางสาย" (Hang Up)</strong> → การประมวลผล AI เริ่มต้นโดยอัตโนมัติ
+
+<hr>
+
+<h3>3.5 หลังการประชุม: สรุป AI และเวชระเบียน</h3>
+
+<p>After the meeting, Gemini AI auto-generates:</p>
+
+<p>| Output | Format |</p>
+<p>|--------|--------|</p>
+<p>| <strong>SOAP Summary</strong> | S (Subjective), O (Objective), A (Assessment), P (Plan) |</p>
+<p>| <strong>ผู้ป่วย Instructions</strong> | Easy-language care advice (ไทย + English) |</p>
+<p>| <strong>CDS</strong> | การแจ้งเตือนปฏิกิริยาระหว่างยา, dosage checks, allergy contraindications |</p>
+
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/meeting-recording/MR06-ai-summary-soap.png" alt="AI SOAP Summary" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+
+<strong>แพทย์ Validation (Man-in-the-Loop):</strong>
+
+<p>| การดำเนินการ | รายละเอียด |</p>
+<p>|--------|-------------|</p>
+<p>| ✅ <strong>Approve</strong> | Accept AI output as-is → lock EMR |</p>
+<p>| ✏️ <strong>Edit</strong> | Modify specific sections (S/O/A/P) before approval |</p>
+<p>| 🔄 <strong>Regenerate</strong> | Ask AI to regenerate with refined context |</p>
+<p>| ❌ <strong>Reject</strong> | Discard AI output → write manually |</p>
+
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/meeting-recording/MR07-post-meeting-actions.png" alt="Post-Meeting การดำเนินการs" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+
+<strong>After Approval:</strong>
+<ul><li>EMR locked + digitally signed</li></ul>
+<ul><li>ผู้ป่วย sees summary in PHR + Timeline immediately</li></ul>
+<ul><li>Notification sent to patient</li></ul>
+
+<hr>
+
+<h3>3.6 เวชระเบียนอิเล็กทรอนิกส์ (EMR)</h3>
+
+<p>Access from dashboard → <strong>"Medical Record (รายงานเวชระเบียน)"</strong></p>
+
+<strong>SOAP Format:</strong>
+<p>| Section | Content |</p>
+<p>|---------|---------|</p>
+<p>| <strong>S</strong> (Subjective) | ผู้ป่วย history — symptoms, duration, triggers |</p>
+<p>| <strong>O</strong> (Objective) | Physical exam — vital signs, lab results |</p>
+<p>| <strong>A</strong> (Assessment) | Diagnosis — ICD-10 code + description |</p>
+<p>| <strong>P</strong> (Plan) | Treatment plan — medications, follow-up, referral |</p>
+
+<strong>ฟีเจอร์s:</strong>
+<ul><li>Digital signature to lock → version history maintained</li></ul>
+<ul><li>Reference lab results, prescriptions, images</li></ul>
+<ul><li>AI auto-drafts from transcription</li></ul>
+<ul><li>Export as PDF</li></ul>
+
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/emr-prescriptions/EMR01-emr-page.png" alt="EMR Page" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+
+<hr>
+
+<h3>3.7 ใบสั่งยา</h3>
+
+<p>Access from dashboard → <strong>"Treatment Plan (แผนการรักษา / Prescribe)"</strong></p>
+
+<strong>ขั้นตอน:</strong>
+<li>Search drug name (autocomplete from ไทย drug database)</li>
+<li>Set dosage, frequency, duration, instructions</li>
+<li>AI auto-checks:</li>
+<p>   - ⚠️ Drug interactions</p>
+<p>   - ⚠️ PHR allergy records</p>
+<p>   - ⚠️ Inappropriate dosage</p>
+<li>Confirm → prescription appears in patient's PHR</li>
+
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/emr-prescriptions/RX01-prescriptions-page.png" alt="Prescriptions" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+
+<hr>
+
+<h3>3.8 คำสั่งตรวจแลป</h3>
+
+<p>Access from dashboard → <strong>"Laboratory Reports (รายงานทางห้องปฏิบัติการ)"</strong></p>
+
+<strong>ขั้นตอน:</strong>
+<li>Select tests from standardized list</li>
+<li>Set priority: <strong>Routine / Stat / Urgent</strong></li>
+<li>Add clinical notes</li>
+<li>Submit lab order → await lab results</li>
+<li>Record results → appears in patient's PHR automatically</li>
+<li>AI analyzes results and alerts on abnormal values</li>
+
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/lab-orders/LAB02-lab-order-create.png" alt="Create Lab Order" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/lab-orders/LAB03-lab-results.png" alt="Lab Results" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+
+<hr>
+
+<h3>3.9 จัดการผู้ป่วย</h3>
+
+<p>คลิก <strong>"ผู้ป่วย" (ผู้ป่วยs)</strong> to view treated patients.</p>
+
+<strong>ฟีเจอร์s:</strong>
+<ul><li>Search by name, email, or ID</li></ul>
+<ul><li>View demographics (per PDPA consent)</li></ul>
+<ul><li>View PHR: vital signs, medications, allergies, lab results</li></ul>
+<ul><li>View appointment history + past EMR records</li></ul>
+<ul><li>View prescriptions + lab orders</li></ul>
+<ul><li>View Living Will (if patient authorized)</li></ul>
+
+<strong>ผู้ป่วย Record Viewer:</strong> คลิก a patient name for full detail view.
+
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/cloud/doctor-portal/doctor-04-patients.png" alt="ผู้ป่วย Management" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/cloud-workflows/health-records/WC18-doctor-patients.png" alt="ผู้ป่วย List" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+
+<hr>
+
+<h3>3.10 สร้างเนื้อหาทางการแพทย์</h3>
+
+<p>คลิก <strong>"เนื้อหาทางการแพทย์" (Medical Content)</strong> to create health articles for the patient Health Library.</p>
+
+<strong>ขั้นตอน:</strong>
+<li>คลิก <strong>"สร้างบทความ" (Create Article)</strong></li>
+<li>Enter title, content (ไทย primary), category, tags</li>
+<li>Save as <strong>Draft</strong> or <strong>Submit for Approval</strong></li>
+<li>ผู้ดูแล reviews → Approve → published in Health Library</li>
+
+<strong>วงจรเนื้อหา:</strong>
+<pre><code>
+<p>📝 Draft → 📤 Submitted → 👑 ผู้ดูแล Reviews → ✅ Published</p>
+<p>                                            → ❌ Rejected (revise)</p>
+</code></pre>
+
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/cloud-workflows/content-management/WC21-doctor-medical-content.png" alt="Medical Content" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+
+<hr>
+
+<h3>3.11 ทรัพยากรทางคลินิก</h3>
+
+<p>คลิก <strong>"ทรัพยากรทางคลินิก" (Clinical Resources)</strong> to access:</p>
+
+<ul><li><strong>Clinical Practice Guidelines</strong> (แนวทางเวชปฏิบัติ)</li></ul>
+<ul><li><strong>Research Papers</strong> (งานวิจัยทางการแพทย์)</li></ul>
+<ul><li><strong>Treatment Protocols</strong> (โปรโตคอลการรักษา)</li></ul>
+<ul><li><strong>Reference Materials</strong> (คู่มืออ้างอิง)</li></ul>
+
+<strong>ฟีเจอร์s:</strong>
+<ul><li>Search with keywords (RAG + Gemini AI powered)</li></ul>
+<ul><li>Filter by type/category</li></ul>
+<ul><li>Rate (1-5 stars) with reviews</li></ul>
+<ul><li>Save favorites</li></ul>
+
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/cloud/doctor-portal/doctor-09-clinical-resources.png" alt="Clinical Resources" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/cloud-workflows/content-management/WC22-doctor-clinical-resources.png" alt="Resources Workflow" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+
+<hr>
+
+<h3>3.12 แพทย์ที่ปรึกษาและทำเนียบแพทย์</h3>
+
+<strong>Medical Consultants:</strong>
+<p>คลิก <strong>"แพทย์ที่ปรึกษา" (Medical Consultants)</strong> — specialist expert directory.</p>
+
+<ul><li>Name, specialty, hospital, email, phone</li></ul>
+<ul><li>Search by subspecialty</li></ul>
+<ul><li>View ratings and reviews from other doctors</li></ul>
+<ul><li>Rate (1-5 stars) with comments</li></ul>
+
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/cloud-workflows/medical-consultants/WC35-doctor-consultants.png" alt="Medical Consultants" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+
+<strong>แพทย์s Directory:</strong>
+<p>คลิก <strong>"ทำเนียบแพทย์" (แพทย์s Directory)</strong> — all system doctors.</p>
+
+<ul><li>Search by name/specialty</li></ul>
+<ul><li>View contact info and profiles</li></ul>
+
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/cloud-workflows/medical-consultants/WC36-doctor-directory.png" alt="แพทย์s Directory" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/cloud/doctor-portal/doctor-06-doctors-directory.png" alt="Directory Cloud" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+
+<hr>
+
+<h3>3.13 เครื่องมือ AI สำหรับแพทย์ (Gemini AI Studio)</h3>
+
+<p>Access from dashboard → purple AI button (bottom-right corner).</p>
+
+<p>| ฟีเจอร์ | รายละเอียด |</p>
+<p>|---------|-------------|</p>
+<p>| <strong>Diagnosis / Differential Diagnosis</strong> | AI analyzes symptoms → suggests differential diagnosis |</p>
+<p>| <strong>Treatment Plan</strong> | AI recommends treatment based on clinical guidelines |</p>
+<p>| <strong>Document Analysis</strong> | AI reads PDF lab reports, images → extracts data |</p>
+<p>| <strong>ผู้ป่วย History Summary</strong> | AI summarizes PHR + EMR before consultation |</p>
+<p>| <strong>CDS (Clinical Decision Support)</strong> | Checks drug interactions, dosage, contraindications |</p>
+
+<blockquote>🤖 Gemini AI Studio is a <strong>clinical decision support tool</strong> — not a diagnostician. แพทย์ verification required for all outputs.</blockquote>
+
+<hr>
+
+<h3>3.14 โปรไฟล์แพทย์</h3>
+
+<p>คลิก <strong>"โปรไฟล์" (Profile)</strong> to manage professional information:</p>
+
+<ul><li>Avatar, full name</li></ul>
+<ul><li>Medical license number</li></ul>
+<ul><li>Specialty (subspecialty)</li></ul>
+<ul><li>Hospital/clinic</li></ul>
+<ul><li>Phone, email</li></ul>
+<ul><li>Experience, qualifications</li></ul>
+
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/cloud/doctor-portal/doctor-10-profile.png" alt="แพทย์ Profile" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/cloud-workflows/notifications/WC30-doctor-profile.png" alt="Profile Workflow" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/workflow/post-meeting/WF18b-doctor-profile.png" alt="Profile Workflow 2" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+
+<hr>
+
+<h2>4. ระบบผู้ดูแลระบบ</h2>
+
+<p>ผู้ดูแล features are in the แพทย์ Portal for users with บทบาท <strong>ผู้ดูแลระบบ</strong>.</p>
+
+<h3>4.1 แดชบอร์ดผู้ดูแล</h3>
+
+<p>เหมือนแดชบอร์ดแพทย์ แต่มีเมนูเพิ่มเติมและภาพรวมทั้งระบบ:</p>
+<ul><li>จำนวนนัดหมายทั้งระบบ</li></ul>
+<ul><li>จำนวนแพทย์รอการอนุมัติ</li></ul>
+<ul><li>เนื้อหารอการตรวจสอบ</li></ul>
+<ul><li>สถิติการใช้งาน</li></ul>
+
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/cloud-workflows/user-management/WC04-admin-dashboard.png" alt="ผู้ดูแล Dashboard" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+
+<hr>
+
+<h3>4.2 อนุมัติและจัดการแพทย์</h3>
+
+<p>คลิก <strong>"จัดการแพทย์" (แพทย์ Management)</strong> สำหรับแพทย์ทุกคนพร้อมสถานะ</p>
+
+<strong>แท็บ:</strong>
+<p>| แท็บ | รายละเอียด |</p>
+<p>|-----|-------------|</p>
+<p>| All | แพทย์ทุกคนในระบบ |</p>
+<p>| Pending | ลงทะเบียนแล้ว รอตรวจสอบ |</p>
+<p>| Approved | แพทย์ที่ใช้งาน |</p>
+<p>| Rejected | ใบสมัครที่ถูกปฏิเสธ |</p>
+<p>| ผู้ดูแลs | ผู้ใช้ที่มีสิทธิ์ผู้ดูแล |</p>
+
+<strong>การดำเนินการ:</strong>
+<ul><li>✅ <strong>Approve</strong> — Activate doctor account → send notification</li></ul>
+<ul><li>❌ <strong>Reject</strong> — Decline with reason → send notification</li></ul>
+<ul><li>👑 <strong>Promote to ผู้ดูแล</strong> — Grant admin privileges</li></ul>
+<ul><li>🔒 <strong>Deactivate</strong> — Suspend account temporarily</li></ul>
+<ul><li>📋 <strong>View Details</strong> — Full profile view (license, experience, etc.)</li></ul>
+
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/cloud/doctor-portal/doctor-11-doctor-management.png" alt="แพทย์ Management" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/cloud-workflows/user-management/WC05-admin-doctor-mgmt.png" alt="Management Workflow" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+
+<hr>
+
+<h3>4.3 จัดการนัดหมายทั้งระบบ</h3>
+
+<p>คลิก <strong>"จัดการนัดหมาย" (Appointment Management)</strong> สำหรับดูภาพรวมทั้งระบบ</p>
+
+<strong>ฟีเจอร์s:</strong>
+<ul><li>View all statuses: pending, assigned, confirmed, completed, cancelled</li></ul>
+<ul><li><strong>Assign แพทย์:</strong> Select by specialty (AI-assisted recommendation)</li></ul>
+<ul><li><strong>Bulk Operations:</strong> Assign/cancel multiple appointments at once</li></ul>
+<ul><li><strong>Filter:</strong> By doctor, status, date, type</li></ul>
+<ul><li><strong>Search:</strong> By patient/doctor name or appointment ID</li></ul>
+
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/cloud/doctor-portal/doctor-12-appointment-management.png" alt="Appointment Management" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+
+<hr>
+
+<h3>4.4 อนุมัติเนื้อหา</h3>
+
+<p>ตรวจสอบบทความ/ทรัพยากรที่แพทย์ส่งมา:</p>
+
+<li>ดูเนื้อหาที่รอการอนุมัติ</li>
+<li>อ่านเนื้อหาทั้งหมด — ตรวจสอบความถูกต้อง</li>
+<li>คลิก <strong>"อนุมัติ" (Approve)</strong> → published in Health Library</li>
+<li>คลิก <strong>"ปฏิเสธ" (Reject)</strong> → return to doctor with comments</li>
+
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/cloud-workflows/content-management/WC24-admin-content-review.png" alt="Content Review" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+
+<hr>
+
+<h2>5. กระบวนการให้คำปรึกษาทางไกล</h2>
+
+<h3>5.1 ภาพรวมกระบวนการตั้งแต่ต้นจนจบ</h3>
+
+<p>กระบวนการให้คำปรึกษาทั้งหมดมี 6 ระยะ:</p>
+
+<pre><code>
+<p>📝 ผู้ป่วย Books → ⏳ Pending → 👨‍⚕️ แพทย์ Reviews → ✅ Confirmed → 📹 Meeting → ✔️ Completed</p>
+</code></pre>
+
+<strong>Phase 1 — Booking & Approval:</strong>
+<li>ผู้ป่วย books appointment (symptoms + preferred time + doctor selection or auto-match)</li>
+<li>AI analyzes symptoms → urgency level + specialty suggestion</li>
+<li>Two approval paths: <strong>Path A</strong> (doctor confirms directly) or <strong>Path B</strong> (admin assigns → doctor confirms)</li>
+<li>On confirmation: Jitsi meeting URLs auto-generated, patient notified with link</li>
+
+<strong>Phase 2 — Pre-Meeting Preparation:</strong>
+<li>ผู้ป่วย optionally invites relatives/friends (no account needed)</li>
+<li>แพทย์ optionally invites specialists/other doctors (token-based invite)</li>
+<li>AI generates Pre-Consultation Summary from patient's PHR + EMR history</li>
+
+<strong>Phase 3 — Meeting Execution</strong> (see <a href="#7-video-meeting-system--jitsi--ระบบวิดีโอประชุม">Section 7</a>)
+
+<strong>Phase 4 — Post-Meeting AI Processing</strong> (see <a href="#8-ai-features--gemini--ฟีเจอร์-ai">Section 8</a> and <a href="#9-meeting-recording--transcription--ระบบบันทึกและถอดเสียง">Section 9</a>)
+
+<strong>Phase 5 — แพทย์ Review & EMR Documentation:</strong>
+<li>AI summary appears in แพทย์ Portal → Health Meeting page</li>
+<li>แพทย์ validates: [✅ Approve] [✏️ Edit] [🔄 Regenerate] [❌ Reject]</li>
+<li>EMR editor opens with AI-prefilled SOAP tabs (S/O/A/P)</li>
+<li>แพทย์ signs EMR → AI generates ผู้ป่วย Instruction Sheet</li>
+<li>Optional: E-prescribing + lab orders</li>
+
+<strong>Phase 6 — ผู้ป่วย Delivery:</strong>
+<li>ผู้ป่วย receives: diagnosis, treatment plan, medications, instruction sheet (PDF), follow-up schedule, warning signs</li>
+<li>ผู้ป่วย does NOT receive: internal notes, raw AI outputs, CDS alerts</li>
+<li>Visible in: Dashboard (latest result), Timeline (history entry), PHR (health logs)</li>
+<li>Appointment status → <strong>completed</strong></li>
+
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/workflow/appointment-lifecycle/WF04-patient-appointments-empty.png" alt="Appointments List" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/cloud-workflows/appointment-lifecycle/WC12-appointment-confirmed.png" alt="Appointment Confirmed" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+
+<blockquote>📌 <strong>Tip:</strong> ผู้ป่วยจะได้รับลิงก์การประชุมทันทีเมื่อแพทย์ยืนยันนัดหมาย — ส่งทั้งอีเมลและแจ้งเตือนในแอป</blockquote>
+
+<hr>
+
+<h3>5.2 สถานะการนัดหมาย</h3>
+
+<p>| สถานะ | ไทย | สี | รายละเอียด |</p>
+<p>|--------|------|-------|-------------|</p>
+<p>| <strong>Pending</strong> | รอดำเนินการ | 🟡 Yellow | Request sent, awaiting doctor review |</p>
+<p>| <strong>Finding แพทย์</strong> | กำลังจัดหาแพทย์ | 🟠 Orange | ผู้ดูแล searching for available doctor |</p>
+<p>| <strong>Assigned</strong> | มอบหมายแล้ว | 🔵 Blue | ผู้ดูแล assigned a doctor |</p>
+<p>| <strong>Confirmed</strong> | ยืนยันแล้ว | 🟢 Green | แพทย์ confirmed — meeting link ready |</p>
+<p>| <strong>In Progress</strong> | กำลังดำเนินการ | 🔴 Red | Video consultation in progress |</p>
+<p>| <strong>Completed</strong> | เสร็จสิ้น | ⚪ Gray | Consultation done — view summary/EMR |</p>
+<p>| <strong>Cancelled</strong> | ยกเลิก | ⬛ Black | Cancelled by patient, doctor, or admin |</p>
+
+<hr>
+
+<h2>6. กระบวนการลงทะเบียนแพทย์ใหม่</h2>
+
+<h3>6.1 การลงทะเบียนแพทย์</h3>
+
+<p>แพทย์ใหม่ต้องลงทะเบียนและรอการอนุมัติจากผู้ดูแลก่อนเข้าใช้ระบบ</p>
+
+<strong>ขั้นตอน:</strong>
+<li>Open แพทย์ Portal → click <strong>"Register"</strong></li>
+<li>Fill in: Name, Email, Phone, Medical License Number, Specialty, Password</li>
+<li>Submit → see <strong>"Pending Approval"</strong> message</li>
+<li>แพทย์ <strong>cannot log in</strong> until admin approves</li>
+
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/admin-registration/AR03-doctor-register.png" alt="แพทย์ Registration" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+
+<blockquote>⚠️ <strong>Note:</strong> แพทย์ใหม่จะไม่สามารถเข้าสู่ระบบได้จนกว่าผู้ดูแลระบบจะอนุมัติ</blockquote>
+
+<hr>
+
+<h3>6.2 กระบวนการอนุมัติโดยผู้ดูแล</h3>
+
+<li>ผู้ดูแล navigates to <strong>"จัดการแพทย์" (แพทย์ Management)</strong> page</li>
+<li>Views <strong>Pending</strong> tab (badge shows count of waiting doctors)</li>
+<li>Reviews doctor details: name, email, license, specialty, registration date</li>
+<li>คลิกs <strong>"Approve"</strong> → doctor account activated → notification email sent</li>
+<li>Or clicks <strong>"Reject"</strong> → enters rejection reason → doctor notified</li>
+
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/admin-registration/AR04-admin-approve-doctor.png" alt="ผู้ดูแล Approval" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/cloud-workflows/user-management/WC05-admin-doctor-mgmt.png" alt="แพทย์ Management" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+
+<hr>
+
+<h3>6.3 สถานะการอนุมัติ</h3>
+
+<p>| สถานะ | เข้าสู่ระบบได้? | is_active | is_approved |</p>
+<p>|-------|-----------|-----------|-------------|</p>
+<p>| <strong>Pending</strong> | ❌ | false | false |</p>
+<p>| <strong>Approved</strong> | ✅ | true | true |</p>
+<p>| <strong>Rejected</strong> | ❌ | false | false |</p>
+
+<blockquote>📌 <strong>Tip:</strong> ผู้ดูแลs can also promote approved doctors to admin role or demote admins back to doctor</blockquote>
+
+<hr>
+
+<h2>7. ระบบวิดีโอประชุม</h2>
+
+<h3>7.1 ผู้เข้าร่วมประชุมและบทบาท</h3>
+
+<p>| บทบาท | วิธีเข้าร่วม | ล็อบบี้? |</p>
+<p>|------|--------------|--------|</p>
+<p>| <strong>แพทย์ (HOST)</strong> | "Join Meeting" from Scheduled tab | ไม่ (ผู้ดำเนินรายการ) |</p>
+<p>| <strong>ผู้ป่วย</strong> | Meeting link from appointments page | ใช่ (รอแพทย์) |</p>
+<p>| <strong>ผู้ป่วย's Relatives</strong> | Shared link from patient | ใช่ (สร้างชื่อ + ล็อบบี้) |</p>
+<p>| <strong>Other แพทย์s/ผู้ดูแล</strong> | Token-based invite from doctor | ใช่ (ล็อบบี้) |</p>
+<p>| <strong>External Guests</strong> | Direct link (no account needed) | ใช่ (สร้างชื่อ + ล็อบบี้) |</p>
+
+<hr>
+
+<h3>7.2 การเข้าประชุมของแพทย์ (HOST)</h3>
+
+<li>Open <strong>"ตารางประชุม" (Scheduled Meetings)</strong> → click <strong>"🎥 เข้าร่วมประชุม" (Join Meeting)</strong></li>
+<li>Pre-join screen: camera/mic preview (both ON by default)</li>
+<li>Enter room as HOST/Moderator — the meeting room is created and synchronized so the patient sees the same room</li>
+<li><strong>Host Controls:</strong> Lobby admission (individual or <strong>"อนุญาตทั้งหมด" Admit All</strong>), kick, mute all, start/stop recording, invite guests</li>
+
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/workflow/video-meeting/WF14b-doctor-pre-join.png" alt="แพทย์ Pre-Join" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+
+<hr>
+
+<h3>7.3 การเข้าประชุมของผู้ป่วย</h3>
+
+<li>See meeting link in <strong>"นัดหมายของฉัน" (My Appointments)</strong> page</li>
+<li>Accept 3-consent agreement (video recording, transcription, PDPA)</li>
+<li>Pre-join screen: test camera/mic</li>
+<li>คลิก <strong>"เข้าร่วม" (Join)</strong> → enter Lobby → wait for doctor</li>
+<li>แพทย์ approves → enters meeting room</li>
+
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/workflow/video-meeting/WF15a-patient-agreement.png" alt="ผู้ป่วย Agreement" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+
+<blockquote>🔒 <strong>Security:</strong> ผู้ป่วยต้องยอมรับข้อตกลง 3 ข้อก่อนเข้าร่วมประชุม (การบันทึกวิดีโอ, ถอดเสียง, PDPA)</blockquote>
+
+<hr>
+
+<h3>7.4 การเข้าร่วมแบบผู้เยี่ยม (ไม่ต้องสร้างบัญชี)</h3>
+
+<li>Receive invite link (email or shared by patient/doctor)</li>
+<li>คลิก link → Guest Join page (<code>/guest-join/:meetingId</code>)</li>
+<li>Enter display name and <strong>email address</strong> (no login required)</li>
+<li>คลิก <strong>"ขอเข้าร่วม" (Request to Join)</strong> → enter Lobby</li>
+<li>แพทย์ approves → enters meeting</li>
+<li>If rejected: red screen with <strong>"แพทย์ไม่อนุญาตให้เข้าร่วม" (แพทย์ denied access)</strong></li>
+
+<blockquote>⏱️ <strong>Lobby Timeout:</strong> After 5 minutes waiting in the lobby without doctor approval, a yellow warning banner appears: <em>"คุณรออยู่ใน Lobby นานกว่า 5 นาที"</em> with a <strong>"กลับหน้าแรก" (Return Home)</strong> button. The guest may continue waiting or return to the home page.</blockquote>
+
+<hr>
+
+<h3>7.5 ฟีเจอร์ระหว่างประชุม</h3>
+
+<ul><li>📹 วิดีโอ/เสียงสำหรับผู้เข้าร่วมทุกคน (กล้อง/ไมค์เปิดตามค่าเริ่มต้น สลับได้)</li></ul>
+<ul><li>💬 แชทข้อความ (ใช้งานได้ตลอด บันทึกข้อความทั้งหมด)</li></ul>
+<ul><li>📱 แชร์หน้าจอสำหรับภาพทางการแพทย์</li></ul>
+<ul><li>🎙️ Transcript streaming (doctor-controlled — see <a href="#9-meeting-recording--transcription--ระบบบันทึกและถอดเสียง">Section 9</a>)</li></ul>
+<ul><li>แนะนำผู้เข้าร่วมไม่เกิน 8 คน</li></ul>
+
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/meeting-recording/MR04-meeting-room-controls.png" alt="Meeting Controls" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+
+<hr>
+
+<h3>7.6 จบการประชุม</h3>
+
+<li>แพทย์ clicks <strong>"วางสาย" (Hang Up)</strong></li>
+<li>ผู้เข้าร่วมทุกคนจะถูกตัดการเชื่อมต่อ</li>
+<li>การประมวลผล AI เริ่มต้นโดยอัตโนมัติ (see <a href="#8-ai-features--gemini--ฟีเจอร์-ai">Section 8</a>)</li>
+
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/workflow/video-meeting/WF16-meeting-ended-ai-summary.png" alt="Meeting Ended" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+
+<hr>
+
+<h2>8. ฟีเจอร์ AI (Gemini)</h2>
+
+<h3>8.1 AI สรุปหลังประชุม (อัตโนมัติ)</h3>
+
+<p>หลังการประชุมสิ้นสุด ระบบ AI ทำงานโดยอัตโนมัติ:</p>
+<ul><li><strong>Input:</strong> Full transcript + all chat messages + video metadata + patient PHR/EMR</li></ul>
+<ul><li><strong>Output:</strong> SOAP summary (ไทย), CDS recommendations, ผู้ป่วย Instruction Sheet draft</li></ul>
+<ul><li>For meetings > 30 min: split into 30-minute sections with separate summaries</li></ul>
+<ul><li>ผลลัพธ์ทั้งหมดถูกระบุว่า <code>requiresValidation: true</code> — แพทย์ต้องอนุมัติ</li></ul>
+
+<hr>
+
+<h3>8.2 สรุป SOAP</h3>
+
+<p>The AI generates a structured ไทย-language SOAP note:</p>
+
+<ul><li>🎯 อาการสำคัญ (Chief Complaint)</li></ul>
+<ul><li>📝 อาการที่พบ (Presenting Symptoms)</li></ul>
+<ul><li>🔍 การสืบค้น/ตรวจเพิ่มเติม (Investigation)</li></ul>
+<ul><li>📋 การประเมินเบื้องต้น (Assessment)</li></ul>
+<ul><li>💊 คำแนะนำการรักษา (Treatment Recommendations)</li></ul>
+<ul><li>📅 นัดติดตาม (Follow-up Schedule)</li></ul>
+<ul><li>🚩 อาการเตือน (Red Flags)</li></ul>
+<ul><li>🏠 คำแนะนำไลฟ์สไตล์ (Lifestyle Recommendations)</li></ul>
+
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/meeting-recording/MR06-ai-summary-soap.png" alt="AI SOAP Summary" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+
+<hr>
+
+<h3>8.3 แพทย์ตรวจสอบ (Man-in-the-Loop)</h3>
+
+<p>แพทย์ reviews AI output with 4 actions:</p>
+
+<p>| การดำเนินการ | รายละเอียด |</p>
+<p>|--------|-------------|</p>
+<p>| ✅ <strong>Approve</strong> | ยอมรับ → ล็อค EMR → ส่งให้ผู้ป่วย |</p>
+<p>| ✏️ <strong>Edit</strong> | แก้ไขส่วนต่างๆ ก่อนอนุมัติ |</p>
+<p>| 🔄 <strong>Regenerate</strong> | AI สร้างใหม่ด้วยบริบทที่ปรับปรุง |</p>
+<p>| ❌ <strong>Reject</strong> | ยกเลิก AI → เขียนด้วยตนเอง |</p>
+
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/meeting-recording/MR07-post-meeting-actions.png" alt="Post-Meeting การดำเนินการs" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+
+<blockquote>🔒 <strong>Security:</strong> ผู้ป่วยจะไม่ได้รับผลสรุป AI โดยตรง — แพทย์ต้องตรวจสอบและอนุมัติทุกครั้ง</blockquote>
+
+<hr>
+
+<h3>8.4 ใบคำแนะนำผู้ป่วย</h3>
+
+<p>สร้างอัตโนมัติหลังแพทย์อนุมัติสรุป AI:</p>
+
+<ul><li>วินิจฉัย (Diagnosis in simple ไทย)</li></ul>
+<ul><li>ยาที่ได้รับ (Medications with dosage)</li></ul>
+<ul><li>การปฏิบัติตัว (Self-care instructions)</li></ul>
+<ul><li>อาการเตือน (Warning signs to watch for)</li></ul>
+<ul><li>นัดติดตาม (Follow-up schedule)</li></ul>
+
+<p>แพทย์ validates before sending → patient downloads as PDF.</p>
+
+<hr>
+
+<h3>8.5 ระบบสนับสนุนการตัดสินใจทางคลินิก (CDS)</h3>
+
+<p>| ฟีเจอร์ | รายละเอียด |</p>
+<p>|---------|-------------|</p>
+<p>| Differential Diagnosis | AI แนะนำการวินิจฉัยที่เป็นไปได้ |</p>
+<p>| Lab Tests | แนะนำการตรวจแลปและการถ่ายภาพ |</p>
+<p>| Drug Interactions | การแจ้งเตือนปฏิกิริยาระหว่างยา |</p>
+<p>| Dosage Alerts | ตรวจสอบขนาดยา/ข้อห้ามการแพ้ยา |</p>
+<p>| Guidelines | อ้างอิงแนวทางเวชปฏิบัติ (2024-2025) |</p>
+
+<hr>
+
+<h3>8.6 หมอ AI (ระบบผู้ป่วย)</h3>
+
+<ul><li>แชทกับ Gemini AI สำหรับคำแนะนำสุขภาพทั่วไป</li></ul>
+<ul><li>อ้างอิงข้อมูล PHR ของคุณสำหรับคำตอบเฉพาะบุคคล</li></ul>
+<ul><li>สนทนาหลายรอบ บันทึก/เรียกดูเซสชัน</li></ul>
+<ul><li>ไม่ใช่การวินิจฉัยทางการแพทย์ — ควรปรึกษาแพทย์จริงเสมอ</li></ul>
+
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/cloud/patient-portal/patient-07-ai-doctor.png" alt="AI แพทย์" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+
+<hr>
+
+<h3>8.7 AI Studio สำหรับแพทย์</h3>
+
+<p>แพทย์s access advanced AI tools:</p>
+<ul><li>การวินิจฉัย / การวินิจฉัยแยกโรค</li></ul>
+<ul><li>สร้างแผนการรักษา</li></ul>
+<ul><li>วิเคราะห์เอกสาร (รายงานแลป PDF, ภาพ)</li></ul>
+<ul><li>ผู้ป่วย history summary</li></ul>
+
+<hr>
+
+<h3>8.8 ต้นทุน</h3>
+
+<p>| บริการ | ต้นทุน |</p>
+<p>|---------|------|</p>
+<p>| Jitsi Meet | <strong>$0</strong> (FREE) |</p>
+<p>| Web Speech API | <strong>$0</strong> (FREE) |</p>
+<p>| Gemini AI | ~$0.001/1K tokens |</p>
+<p>| <strong>Total per 15-min consultation</strong> | <strong>~$0.01-0.05</strong> |</p>
+
+<hr>
+
+<h2>9. ระบบบันทึกและถอดเสียง</h2>
+
+<h3>9.1 การบันทึกวิดีโอ</h3>
+
+<ul><li>บันทึกในเบราว์เซอร์ (Jitsi ในตัว, ฟรี)</li></ul>
+<ul><li>แพทย์ (HOST) starts/stops recording</li></ul>
+<ul><li>รูปแบบ: WebM, สูงสุด 200MB</li></ul>
+<ul><li>อัพโหลดการบันทึกไปยังที่เก็บข้อมูลหลังประชุมสิ้นสุด</li></ul>
+
+<hr>
+
+<h3>9.2 การถอดเสียงแบบเรียลไทม์</h3>
+
+<p>แพทย์ controls transcription during the meeting:</p>
+
+<li>แพทย์ clicks <strong>"▶ Start Transcription"</strong></li>
+<li>Web Speech API begins listening (FREE, browser-based)</li>
+<li>เรียลไทม์ transcript appears in bottom panel</li>
+<li>Speaker labels: 👨‍⚕️ แพทย์ / 🧑 ผู้ป่วย / 👥 Guest</li>
+<li>Interim text shown with yellow pulsing background</li>
+<li>แพทย์ can <strong>⏸ Pause</strong> / <strong>▶ Resume</strong> / <strong>⏹ Stop</strong> anytime</li>
+<li>Language toggle: ไทย (th-TH) ↔ English (en-US)</li>
+<li>Transcript segments saved to database continuously</li>
+
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/meeting-recording/MR05-transcript-diarization.png" alt="Transcript Diarization" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+
+<blockquote>📌 <strong>Note:</strong> เฉพาะแพทย์ (HOST) เท่านั้นที่ควบคุมการถอดเสียงและการบันทึก — ผู้ป่วยไม่สามารถเริ่ม/หยุดได้</blockquote>
+
+<hr>
+
+<h3>9.3 การประมวลผลหลังประชุม</h3>
+
+<li>รวบรวมบทถอดเสียงจากทุกส่วน</li>
+<li>รวมข้อความแชททั้งหมดเข้ากับบทถอดเสียง</li>
+<li>ส่งข้อมูลรวมไปยัง Gemini AI เพื่อสร้างสรุป SOAP</li>
+<li>สำหรับประชุมยาว (>30 นาที): สรุปแยกเป็นช่วงละ 30 นาที</li>
+
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/meeting-recording/MR08-meeting-history.png" alt="Meeting History" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+
+<hr>
+
+<h2>10. ระบบแจ้งเตือน</h2>
+
+<h3>10.1 ช่องทางแจ้งเตือน</h3>
+
+<p>| ช่องทาง | รายละเอียด |</p>
+<p>|---------|-------------|</p>
+<p>| <strong>In-App</strong> | 🔔 ไอคอนกระดิ่งในส่วนหัว — รายการดร็อปดาวน์ |</p>
+<p>| <strong>Email</strong> | อีเมลภาษาไทยพร้อมรายละเอียดการดำเนินการ |</p>
+<p>| <strong>Push</strong> | การแจ้งเตือนเบราว์เซอร์ (เรียลไทม์) |</p>
+
+<hr>
+
+<h3>10.2 ประเภทการแจ้งเตือน</h3>
+
+<p>| หมวดหมู่ | เหตุการณ์ |</p>
+<p>|----------|--------|</p>
+<p>| <strong>นัดหมาย</strong> | ขอนัดหมาย, ยืนยัน (+ ลิงก์ประชุม), ปฏิเสธ, ยกเลิก, มอบหมาย, เลื่อนนัด, เตือนล่วงหน้า (24ชม., 1ชม.) |</p>
+<p>| <strong>วิดีโอประชุม</strong> | ลิงก์พร้อม, ลิงก์ล้มเหลว, ประชุมเริ่ม, เตือน (15 นาที) |</p>
+<p>| <strong>เวชระเบียน</strong> | EMR ลงนามแล้ว, EMR พร้อมตรวจสอบ, ใบสั่งยาพร้อม, ผลแลปพร้อม |</p>
+<p>| <strong>ระบบ</strong> | ยืนยันบัญชี, รีเซ็ตรหัสผ่าน, บำรุงรักษาระบบ |</p>
+
+<hr>
+
+<h3>10.3 ตารางแจ้งเตือนอัตโนมัติ</h3>
+
+<p>| เวลา | ช่องทาง | ข้อความ |</p>
+<p>|--------|---------|-------------|</p>
+<p>| 24 ชั่วโมงก่อน | Email + In-App | พรุ่งนี้คุณมีนัดพบแพทย์ |</p>
+<p>| 1 ชั่วโมงก่อน | Push + In-App | อีก 1 ชั่วโมง ถึงเวลานัดหมาย |</p>
+<p>| 15 นาทีก่อน | Push + In-App | เตรียมพร้อม! ลิงก์ประชุมพร้อมแล้ว |</p>
+<p>| เรียลไทม์ | Push | แพทย์เริ่มห้องประชุมแล้ว คลิกเข้าร่วม |</p>
+
+<blockquote>📌 <strong>Tip:</strong> ตั้งค่าการแจ้งเตือนได้ที่ ตั้งค่า → การแจ้งเตือน — เปิด/ปิดได้ตามประเภทและช่องทาง</blockquote>
+
+<hr>
+
+<h2>11. การจัดการเนื้อหา</h2>
+
+<h3>11.1 คลังความรู้สุขภาพ (Health Library)</h3>
+
+<p>| บทบาท | สิทธิ์ |</p>
+<p>|------|--------|</p>
+<p>| <strong>ผู้ป่วย</strong> | อ่านบทความที่เผยแพร่แล้วเท่านั้น |</p>
+<p>| <strong>แพทย์</strong> | สร้าง แก้ไข ลบบทความตัวเอง เผยแพร่ (โดยตรงหรือผ่านการอนุมัติ) |</p>
+<p>| <strong>ผู้ดูแล</strong> | CRUD ทั้งหมด + อนุมัติ/ปฏิเสธ + บันทึกตรวจสอบ |</p>
+
+<strong>วงจรเนื้อหา:</strong>
+<pre><code>
+<p>📝 ร่าง → 📤 รอตรวจสอบ → 👑 ผู้ดูแลตรวจสอบ → ✅ เผยแพร่ (แสดงในคลังความรู้)</p>
+<p>                                          → ❌ ปฏิเสธ → แพทย์แก้ไข → ส่งใหม่</p>
+</code></pre>
+
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/cloud/patient-portal/patient-08-health-library.png" alt="ผู้ป่วย Health Library" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+
+<hr>
+
+<h3>11.2 แพทย์: สร้างบทความ</h3>
+
+<li>คลิก <strong>"สร้างบทความ" (Create Article)</strong></li>
+<li>กรอก: หัวข้อ (ภาษาไทยบังคับ), เนื้อหา (ภาษาไทยบังคับ), หมวดหมู่, แท็ก</li>
+<li>เลือก: <strong>บันทึกเป็นร่าง</strong> หรือ <strong>ส่งเพื่อขออนุมัติ</strong></li>
+<li>หากส่งแล้ว → เข้าคิวรอการอนุมัติ</li>
+
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/cloud-workflows/content-management/WC21-doctor-medical-content.png" alt="แพทย์ Medical Content" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+
+<hr>
+
+<h3>11.3 Clinical Resources (แพทย์-Only) — ทรัพยากรทางคลินิก</h3>
+
+<p>| บทบาท | สิทธิ์ |</p>
+<p>|------|--------|</p>
+<p>| <strong>แพทย์</strong> | Create, edit own, submit for approval |</p>
+<p>| <strong>ผู้ดูแล</strong> | Approve/reject, view all including pending |</p>
+<p>| <strong>ผู้ป่วย</strong> | ❌ No access |</p>
+
+<strong>Categories:</strong> Diagnosis Guidelines, Treatment Protocols, Pharmacology, Radiology, Laboratory, Pathology, Emergency Medicine, Nursing Guidelines, Research Papers, Case Studies
+
+<strong>Resource Types:</strong> guideline, protocol, research, template, reference
+
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/cloud/doctor-portal/doctor-09-clinical-resources.png" alt="Clinical Resources" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+
+<blockquote>🔒 <strong>Note:</strong> Clinical resources ALWAYS require admin approval before being published</blockquote>
+
+<hr>
+
+<h2>12. ความปลอดภัยและ PDPA</h2>
+
+<h3>12.1 PDPA Consent Management — การจัดการความยินยอม PDPA</h3>
+
+<p>Navigate to <strong>"PDPA & หนังสือแสดงเจตนา"</strong> → <strong>"PDPA"</strong> tab:</p>
+
+<ul><li>Toggle ON/OFF per data type: Demographics, Medical History, Medications, Allergies, Lab Results, Prescriptions, Vital Signs, PHR, EMR, Living Will</li></ul>
+<ul><li>Set different sharing per doctor</li></ul>
+<ul><li>Revoke consent at any time</li></ul>
+
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/cloud/patient-portal/patient-11-pdpa.png" alt="PDPA Consent" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+
+<hr>
+
+<h3>12.2 Living Will — พินัยกรรมชีวิต</h3>
+
+<p>Navigate to <strong>"PDPA & หนังสือแสดงเจตนา"</strong> → <strong>"พินัยกรรมชีวิต"</strong> tab:</p>
+
+<strong>4-step wizard:</strong>
+<li><strong>Step 1:</strong> Primary Proxy (name, relationship, contact)</li>
+<li><strong>Step 2:</strong> Alternate Proxy (optional)</li>
+<li><strong>Step 3:</strong> Treatment Preferences (CPR, ventilator, tube feeding, dialysis, antibiotics, pain management, organ donation)</li>
+<li><strong>Step 4:</strong> Digital Signature + toggle doctor sharing</li>
+
+<strong>Sharing Options:</strong>
+<ul><li>🔒 Keep Private — only you can see</li></ul>
+<ul><li>🌐 Share with authorized doctors — doctors with treatment history or admins</li></ul>
+
+<strong>สถานะ:</strong> Draft → Active (signed) → Revoked
+
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/cloud-workflows/living-will/WC31-patient-living-will.png" alt="Living Will" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+
+<hr>
+
+<h3>12.3 Security ฟีเจอร์s — ความปลอดภัย</h3>
+
+<p>| ฟีเจอร์ | Detail |</p>
+<p>|---------|--------|</p>
+<p>| Password Hashing | bcrypt (all portals) |</p>
+<p>| Account Lockout | 5 failed attempts → locked 30 minutes |</p>
+<p>| Rate Limiting | Login: 10/15min, Password Reset: 5/hr, API: 500/15min |</p>
+<p>| Session Security | 64-char crypto token, IP binding, user-agent tracking |</p>
+<p>| JWT Authentication | Cross-service JWT with role verification |</p>
+<p>| Man-in-the-Loop | แพทย์ validates ALL AI outputs before patient delivery |</p>
+<p>| Audit Logging | All access to Living Will + PHR + EMR logged |</p>
+<p>| OWASP Headers | Helmet.js (CSP, XSS protection, HSTS, X-Frame) |</p>
+<p>| TypeScript Safety | Zero <code>error: any</code> — strict type narrowing |</p>
+<p>| SonarQube | Clean — no security vulnerabilities |</p>
+
+<hr>
+
+<h3>12.4 บทบาท-Based Access Control (RBAC) — การควบคุมสิทธิ์</h3>
+
+<p>| บทบาท | Portal | Access |</p>
+<p>|------|--------|--------|</p>
+<p>| <strong>ผู้ป่วย</strong> | ผู้ป่วย Portal | Own data only — PHR, appointments, AI, health library |</p>
+<p>| <strong>แพทย์</strong> | แพทย์ Portal | Treated patients' data (per PDPA), EMR, prescriptions |</p>
+<p>| <strong>ผู้ดูแล</strong> | แพทย์ Portal + ผู้ดูแล | System-wide — doctor management, content approval, all appointments |</p>
+
+<blockquote>🔒 ผู้ป่วยไม่สามารถเข้า แพทย์ Portal ได้ — API ตอบ 401 ทุกครั้ง</blockquote>
+
+<hr>
+
+<h2>13. คำถามที่พบบ่อย</h2>
+
+<h3>13.1 Login Issues — ปัญหาการเข้าสู่ระบบ</h3>
+
+<p>| Problem | Solution |</p>
+<p>|---------|----------|</p>
+<p>| Cannot log in as doctor | Check if your account has been approved by admin (<a href="#6-doctor-onboarding-workflow--กระบวนการลงทะเบียนแพทย์ใหม่">Section 6</a>) |</p>
+<p>| Account locked | Wait 30 minutes after 5 failed login attempts |</p>
+<p>| Session expired | Re-login — sessions expire after 30 minutes |</p>
+<p>| Forgot password | Use "Forgot Password" link → reset via email (link expires in 15 min) |</p>
+
+<hr>
+
+<h3>13.2 Appointment Issues — ปัญหาการนัดหมาย</h3>
+
+<p>| Problem | Solution |</p>
+<p>|---------|----------|</p>
+<p>| No meeting link | Meeting link is generated when doctor confirms — check appointment status |</p>
+<p>| Meeting link failed | Fallback notification sent — contact admin |</p>
+<p>| Can't book appointment | Ensure profile is complete — fill symptoms and select date/time |</p>
+<p>| แพทย์ declined | Appointment returns to pool — admin will re-assign another doctor |</p>
+
+<hr>
+
+<h3>13.3 Video Meeting Issues — ปัญหาการประชุมวิดีโอ</h3>
+
+<p>| Problem | Solution |</p>
+<p>|---------|----------|</p>
+<p>| Camera/mic not working | Allow browser permissions — test on pre-join screen |</p>
+<p>| Stuck in lobby | แพทย์ must be in the meeting to admit you — wait for doctor |</p>
+<p>| Guest can't join | Ensure correct invite link and enter a display name |</p>
+<p>| Video quality poor | Check internet speed — reduce camera resolution if needed |</p>
+
+<hr>
+
+<h3>13.4 AI & Summary Issues — ปัญหา AI</h3>
+
+<p>| Problem | Solution |</p>
+<p>|---------|----------|</p>
+<p>| AI summary not generated | Requires transcript + chat data — ensure transcription was started during meeting |</p>
+<p>| Summary in wrong language | แพทย์ can toggle ไทย ↔ English during transcription |</p>
+<p>| AI แพทย์ not responding | Check internet connection — Gemini API must be reachable |</p>
+
+<hr>
+
+<h3>13.5 Notification Issues — ปัญหาการแจ้งเตือน</h3>
+
+<p>| Problem | Solution |</p>
+<p>|---------|----------|</p>
+<p>| Not receiving notifications | Check Settings → Notifications — ensure toggle is ON |</p>
+<p>| No email received | Check spam folder — verify registered email is correct |</p>
+<p>| Push notifications blocked | Allow browser notifications in browser settings |</p>
+
+<hr>
+
+<h2>Appendix — ภาคผนวก</h2>
+
+<h3>Platform Architecture — สถาปัตยกรรมระบบ</h3>
+
+<p>| บริการ | Technology | Port |</p>
+<p>|---------|-----------|------|</p>
+<p>| <strong>ผู้ป่วย Portal</strong> | React + TypeScript + Vite | 3005 |</p>
+<p>| <strong>แพทย์ Portal</strong> | React + TypeScript + Vite | 3010 |</p>
+<p>| <strong>Meeting Server</strong> | Express + Socket.IO | 3020 |</p>
+<p>| <strong>Database</strong> | PostgreSQL 18 + pgvector | 5433 |</p>
+
+<strong>External บริการs:</strong>
+<ul><li>Jitsi Meet — Video Conferencing (FREE)</li></ul>
+<ul><li>Google Gemini AI — Chat, CDS, SOAP Summaries</li></ul>
+<ul><li>Web Speech API — FREE Live Transcription</li></ul>
+<ul><li>Google Maps — Healthcare Facilities Map</li></ul>
+<ul><li>Google Cloud Run — Container Hosting (Production)</li></ul>
+
+<h3>Test Coverage — ความครอบคลุมการทดสอบ</h3>
+
+<p>| หมวดหมู่ | Tests | Files |</p>
+<p>|----------|-------|-------|</p>
+<p>| Unit Tests (Vitest) | 2,013 | 58 |</p>
+<p>| E2E Tests (Playwright) | 1,149 | 33 |</p>
+<p>| UI Tests (Playwright) | 516 | 14 |</p>
+<p>| <strong>Total</strong> | <strong>3,678</strong> | <strong>105</strong> |</p>
+
+<strong>Test Run Results (March 29, 2026):</strong>
+<ul><li>Unit: 2,013 passed (100%)</li></ul>
+<ul><li>E2E: 1,149 passed (100%)</li></ul>
+<ul><li>UI: 351 passed, 50 skipped, 9 failed (pre-existing infra), 106 did not run</li></ul>
+<ul><li><strong>638 screenshots</strong> captured across all portal pages and workflows</li></ul>
+
+<hr>
+
+<em>User Guide Version 1.5.10 • 2,013 Unit Tests + 1,149 E2E Tests + 516 UI Tests from 105 test files • 638 screenshots</em>
+
+<hr>
+
+<h3>4.5 Schedule & User Management — จัดตาราง & จัดการผู้ใช้</h3>
+
+<strong>Additional ผู้ดูแล features:</strong>
+<ul><li>View all doctors' schedules — combined view</li></ul>
+<ul><li>Manage notification templates</li></ul>
+<ul><li>Review PDPA compliance reports</li></ul>
+<ul><li>View system usage statistics</li></ul>
+
+<hr>
+
+<h2>5. Telemedicine Consultation Workflow</h2>
+
+<h3>5.1 End-to-End Process Overview</h3>
+
+<pre><code>
+<p>ผู้ป่วย Books → ผู้ดูแล Assigns → แพทย์ Confirms → Accept Agreement → Video Meeting</p>
+<p>→ AI SOAP Summary → แพทย์ Validates → Sign EMR → ผู้ป่วย Views in PHR/Timeline</p>
+</code></pre>
+
+<h3>5.2 Detailed Step-by-Step</h3>
+
+<p>| Step | Actor | การดำเนินการ | Screenshot |</p>
+<p>|------|-------|--------|------------|</p>
+<p>| 1 | ผู้ป่วย | Book appointment (symptoms + date/time + invite guests) | <img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/workflow/appointment-lifecycle/WF06-appointment-created.png" alt="" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;"> |</p>
+<p>| 2 | ผู้ดูแล | Assign doctor (by specialty / AI recommendation) | <img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/cloud-workflows/appointment-lifecycle/WC09-doctor-queue.png" alt="" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;"> |</p>
+<p>| 3 | แพทย์ | Confirm appointment + set meeting time | <img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/workflow/appointment-lifecycle/WF11-appointment-confirmed.png" alt="" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;"> |</p>
+<p>| 4 | Both | Accept agreement (recording + PDPA) | <img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/workflow/video-meeting/WF14a-doctor-agreement.png" alt="" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;"> |</p>
+<p>| 5 | Both | Enter video meeting room (Jitsi) | <img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/workflow/video-meeting/WF14b-doctor-pre-join.png" alt="" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;"> |</p>
+<p>| 6 | แพทย์ | Conduct consultation + transcription + recording | <img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/meeting-recording/MR04-meeting-room-controls.png" alt="" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;"> |</p>
+<p>| 7 | AI | Generate SOAP summary + patient instructions + CDS | <img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/meeting-recording/MR06-ai-summary-soap.png" alt="" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;"> |</p>
+<p>| 8 | แพทย์ | Validate → approve/edit/regenerate/reject | <img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/meeting-recording/MR07-post-meeting-actions.png" alt="" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;"> |</p>
+<p>| 9 | แพทย์ | Prescribe medications + order labs (if needed) | <img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/emr-prescriptions/RX01-prescriptions-page.png" alt="" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;"> |</p>
+<p>| 10 | System | Send results to PHR/Timeline + notify patient | <img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/cloud-workflows/health-records/WC20-patient-timeline.png" alt="" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;"> |</p>
+
+<hr>
+
+<h2>6. แพทย์ Onboarding Workflow</h2>
+
+<h3>6.1 Registration Lifecycle</h3>
+
+<pre><code>
+<li>แพทย์ Registers → 2. สถานะ "Pending" → 3. ผู้ดูแล Reviews</li>
+<p>→ 4. Approve/Reject → 5. (Optional) Promote to ผู้ดูแล → 6. แพทย์ Can Login</p>
+</code></pre>
+
+<h3>6.2 Detailed Steps</h3>
+
+<p>| Step | การดำเนินการ | Details | Screenshot |</p>
+<p>|------|--------|---------|------------|</p>
+<p>| 1 | แพทย์ registers | Name, email, password, license number, specialty → status: <strong>pending</strong> | <img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/cloud-workflows/admin-register-doctor/AR03-doctor-register.png" alt="" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;"> |</p>
+<p>| 2 | System creates account | Account created but <strong>cannot login</strong> until approved | |</p>
+<p>| 3 | ผู้ดูแล reviews | แพทย์ Management → Pending tab → review credentials | |</p>
+<p>| 4 | ผู้ดูแล approves | คลิก "Approve" → status: <strong>approved</strong> → send notification | <img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/cloud-workflows/admin-register-doctor/AR04-admin-approve-doctor.png" alt="" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;"> |</p>
+<p>| 5 | Promote to admin | (Optional) คลิก "Promote to ผู้ดูแล" → grant admin privileges | <img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/cloud-workflows/admin-register-doctor/AR05-admin-promote-doctor.png" alt="" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;"> |</p>
+<p>| 6 | แพทย์ logs in | Login with registered email/password | <img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/cloud-workflows/admin-register-doctor/AR06-new-admin-access.png" alt="" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;"> |</p>
+
+<blockquote>⚠️ <strong>Security:</strong> Rejected or suspended doctors cannot log in. JWT is immediately revoked.</blockquote>
+
+<hr>
+
+<h2>7. Video Meeting System & Jitsi</h2>
+
+<h3>7.1 Meeting System Architecture</h3>
+
+<pre><code>
+<p>ผู้ป่วย (ผู้ป่วย Portal)  ─→  Meeting Server (Socket.IO)  ←─  แพทย์ (แพทย์ Portal)</p>
+<p>                                       ↕</p>
+<p>                                Jitsi Meet (WebRTC)</p>
+<p>                                       ↕</p>
+<p>                             Gemini AI (SOAP Summary)</p>
+</code></pre>
+
+<h3>7.2 Meeting Room ฟีเจอร์ Matrix</h3>
+
+<p>| ฟีเจอร์ | ผู้ป่วย | แพทย์ (Host) | Guest |</p>
+<p>|---------|---------|---------------|-------|</p>
+<p>| Video/Audio | ✅ | ✅ | ✅ |</p>
+<p>| Text Chat | ✅ | ✅ | ✅ |</p>
+<p>| Screen Sharing | ✅ | ✅ | ❌ |</p>
+<p>| Transcription | — | ✅ (controls) | — |</p>
+<p>| Video Recording | — | ✅ | — |</p>
+<p>| Lobby Control | — | ✅ | — |</p>
+<p>| Mute Others | — | ✅ | — |</p>
+<p>| End Meeting for All | — | ✅ | — |</p>
+
+<h3>7.3 Lobby System — Microsoft Teams Style</h3>
+
+<pre><code>
+<p>Guest/ผู้ป่วย enters link → Enter name + email → Wait in Lobby → แพทย์ admits/rejects → Enter/Exit room</p>
+</code></pre>
+
+<strong>For แพทย์s:</strong>
+<ul><li>See list of waiting participants (name, email, type: patient/guest/admin)</li></ul>
+<ul><li>✓ <strong>Admit</strong> — Participant enters meeting immediately</li></ul>
+<ul><li>✓ <strong>Admit All (อนุญาตทั้งหมด)</strong> — Admit all waiting participants at once</li></ul>
+<ul><li>✗ <strong>Reject</strong> — Participant sees red screen in ไทย + exit button</li></ul>
+
+<h3>7.4 Guest Join — No Account Required</h3>
+
+<p>ผู้ป่วยs can send <code>/guest-join/:meetingId</code> link to family/caregivers:</p>
+
+<li>Open link → Guest Join page shows meeting name</li>
+<li>Enter name and <strong>email address</strong> (no login required)</li>
+<li>Test camera/mic → click Join → enter Lobby</li>
+<li>⏱️ After <strong>5 minutes</strong> waiting — yellow warning banner appears with "กลับหน้าแรก" (Return Home) button</li>
+<li>When admitted → enter Jitsi room with settings:</li>
+<p>   - Skip secondary lobby for pre-approved participants</p>
+<p>   - Default muted on entry</p>
+<p>   - Recording buttons hidden for guests</p>
+
+<hr>
+
+<h2>8. AI ฟีเจอร์s & Gemini</h2>
+
+<h3>8.1 AI ฟีเจอร์ Overview</h3>
+
+<p>| ฟีเจอร์ | Portal | รายละเอียด |</p>
+<p>|---------|--------|-------------|</p>
+<p>| <strong>AI แพทย์ Chat</strong> | ผู้ป่วย | Multi-turn health Q&A with PHR context |</p>
+<p>| <strong>AI Triage</strong> | ผู้ป่วย | Auto-analyze symptom urgency during booking |</p>
+<p>| <strong>AI ผู้ป่วย Summary</strong> | แพทย์ | Pre-consultation PHR+EMR summary |</p>
+<p>| <strong>AI SOAP Summary</strong> | แพทย์ | Post-meeting SOAP note from transcription |</p>
+<p>| <strong>AI ผู้ป่วย Instructions</strong> | แพทย์ | Auto-generate patient care instructions |</p>
+<p>| <strong>AI CDS</strong> | แพทย์ | Drug interaction, dosage, allergy checks |</p>
+<p>| <strong>AI Document Analysis</strong> | แพทย์ | Extract data from PDF/images |</p>
+<p>| <strong>AI Diagnosis Assist</strong> | แพทย์ | Differential diagnosis suggestions |</p>
+
+<h3>8.2 Man-in-the-Loop Principle</h3>
+
+<p>All AI-generated medical outputs <strong>require doctor validation</strong> before being published to patients:</p>
+
+<pre><code>
+<p>AI generates → แพทย์ reviews → Approve / Edit / Regenerate / Reject → ผู้ป่วย receives</p>
+</code></pre>
+
+<ul><li>AI <strong>never</strong> auto-publishes diagnoses, prescriptions, or EMR</li></ul>
+<ul><li>All AI outputs are marked with "AI-generated, awaiting review" status</li></ul>
+<ul><li>Audit trail maintained for every AI interaction</li></ul>
+
+<hr>
+
+<h2>9. Meeting Recording & Transcription</h2>
+
+<h3>9.1 Video Recording</h3>
+
+<ul><li>Meeting video/audio recorded and stored in database (BYTEA format)</li></ul>
+<ul><li>Recordings linked to appointments</li></ul>
+<ul><li>แพทย์ can review recordings post-meeting</li></ul>
+<ul><li>Maximum recording size: 200MB</li></ul>
+
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/meeting-recording/MR04-meeting-room-controls.png" alt="Meeting Controls" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+
+<h3>9.2 Real-Time Transcription</h3>
+
+<ul><li>เรียลไทม์ speech-to-text using Web Speech API</li></ul>
+<ul><li><strong>Speaker diarization</strong> — identifies who is speaking (doctor/patient/guest)</li></ul>
+<ul><li>Supports ไทย and English with language toggle</li></ul>
+<ul><li>Transcript stored in PostgreSQL</li></ul>
+
+<img src="file:///C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/screenshots/meeting-recording/MR05-transcript-diarization.png" alt="Transcript & Diarization" style="max-width:100%;height:auto;border:1px solid #ddd;border-radius:4px;margin:8px 0;">
+
+<h3>9.3 Transcription Controls (แพทย์ Only)</h3>
+
+<p>| Control | การดำเนินการ |</p>
+<p>|---------|--------|</p>
+<p>| ▶️ <strong>Start</strong> | Begin transcription |</p>
+<p>| ⏸️ <strong>Pause</strong> | Temporarily pause |</p>
+<p>| ⏯️ <strong>Resume</strong> | Continue transcription |</p>
+<p>| ⏹️ <strong>Stop</strong> | End transcription |</p>
+
+<ul><li>Language toggle: ไทย ↔ English</li></ul>
+<ul><li>เรียลไทม์ display in meeting sidebar</li></ul>
+<ul><li>Transcript feeds into AI SOAP summary</li></ul>
+
+<hr>
+
+<h2>10. Notifications</h2>
+
+<h3>10.1 Notification Types</h3>
+
+<p>| Type | When Sent | Recipient |</p>
+<p>|------|-----------|-----------|</p>
+<p>| 📅 Appointment Requested | ผู้ป่วย books | แพทย์/ผู้ดูแล |</p>
+<p>| ✅ Appointment Confirmed | แพทย์ confirms | ผู้ป่วย |</p>
+<p>| ❌ Appointment Cancelled | Either party cancels | Both |</p>
+<p>| 📹 Meeting Ready | 15 นาทีก่อน meeting | ผู้ป่วย + แพทย์ |</p>
+<p>| 📹 Meeting Started | แพทย์ starts meeting | ผู้ป่วย |</p>
+<p>| 📄 EMR Ready | แพทย์ signs EMR | ผู้ป่วย |</p>
+<p>| 💊 Prescription Ready | แพทย์ creates Rx | ผู้ป่วย |</p>
+<p>| 🔬 Lab Results Ready | Results entered | ผู้ป่วย |</p>
+<p>| 👨‍⚕️ แพทย์ Approved | ผู้ดูแล approves | แพทย์ |</p>
+<p>| 📝 Content Submitted | แพทย์ submits article | ผู้ดูแล |</p>
+<p>| ⏰ Appointment Reminder | 24h & 1h before | ผู้ป่วย + แพทย์ |</p>
+<p>| 🚪 Lobby Request | Guest requests entry | แพทย์ |</p>
+
+<h3>10.2 Notification ช่องทางs</h3>
+
+<ul><li>🔔 <strong>In-App</strong> — notification bell with count badge</li></ul>
+<ul><li>📧 <strong>Email</strong> — Gmail API integration</li></ul>
+<ul><li>📱 <strong>Browser Push</strong> — if enabled in settings</li></ul>
+
+<hr>
+
+<h2>11. Content & Resource Management</h2>
+
+<h3>11.1 Content Lifecycle</h3>
+
+<pre><code>
+<p>📝 แพทย์ drafts → 📤 Submit for approval → 👑 ผู้ดูแล reviews → ✅ Published → 👤 ผู้ป่วย reads</p>
+<p>                                                             → ❌ Rejected → 📝 แพทย์ revises</p>
+</code></pre>
+
+<h3>11.2 Content Types</h3>
+
+<p>| Type | Creator | Audience | Approval |</p>
+<p>|------|---------|----------|----------|</p>
+<p>| <strong>Health Articles</strong> | แพทย์ | ผู้ป่วยs (Health Library) | ผู้ดูแล required |</p>
+<p>| <strong>Clinical Resources</strong> | แพทย์ | แพทย์s only | ผู้ดูแล required |</p>
+<p>| <strong>Medical Guidelines</strong> | แพทย์/ผู้ดูแล | แพทย์s only | ผู้ดูแล required |</p>
+<p>| <strong>Reference Materials</strong> | แพทย์ | แพทย์s only | ผู้ดูแล required |</p>
+
+<h3>11.3 Clinical Resources</h3>
+
+<ul><li>Searchable medical knowledge base for doctors</li></ul>
+<ul><li>RAG + Gemini AI-powered search</li></ul>
+<ul><li>Rating system (1-5 stars) with reviews</li></ul>
+<ul><li>Categories: guidelines, research, protocols, references</li></ul>
+
+<hr>
+
+<h2>12. Security & PDPA</h2>
+
+<h3>12.1 Security Measures</h3>
+
+<p>| Measure | Implementation |</p>
+<p>|---------|---------------|</p>
+<p>| <strong>JWT Authentication</strong> | Signed tokens with 30-min expiration |</p>
+<p>| <strong>RBAC</strong> | บทบาท-based access control (patient/doctor/admin) |</p>
+<p>| <strong>API Protection</strong> | JWT + role verification on every endpoint |</p>
+<p>| <strong>Password Hashing</strong> | bcrypt with salt rounds |</p>
+<p>| <strong>Input Validation</strong> | Server-side validation + SQL parameterization |</p>
+<p>| <strong>HTTPS</strong> | TLS encryption on all Cloud Run services |</p>
+<p>| <strong>Session Management</strong> | Secure cookies + automatic expiration |</p>
+<p>| <strong>CORS</strong> | Restricted cross-origin resource sharing |</p>
+
+<h3>12.2 PDPA Compliance</h3>
+
+<p>ไทยland's Personal Data Protection Act compliance:</p>
+
+<ul><li><strong>Consent Management:</strong> Granular per-data-type consent controls</li></ul>
+<ul><li><strong>Data Minimization:</strong> Only collect necessary health data</li></ul>
+<ul><li><strong>Right to Access:</strong> ผู้ป่วยs can view all their data</li></ul>
+<ul><li><strong>Right to Delete:</strong> ผู้ป่วยs can request data deletion</li></ul>
+<ul><li><strong>Right to Withdraw:</strong> Revoke consent at any time</li></ul>
+<ul><li><strong>Data Portability:</strong> Export health data as needed</li></ul>
+<ul><li><strong>Per-แพทย์ Controls:</strong> Different sharing settings per treating doctor</li></ul>
+
+<h3>12.3 Data Encryption & Storage</h3>
+
+<ul><li>All data stored in PostgreSQL with parameterized queries</li></ul>
+<ul><li>Passwords hashed with bcrypt</li></ul>
+<ul><li>JWT signed with shared secret across services</li></ul>
+<ul><li>Cloud Run services behind Google Cloud infrastructure</li></ul>
+<ul><li>Meeting recordings stored as encrypted BYTEA in database</li></ul>
+
+<hr>
+
+<h2>13. Troubleshooting & FAQ</h2>
+
+<strong>Q: I can't log in as a doctor.</strong>
+<blockquote>New doctor accounts require admin approval. Contact your admin. See <a href="#6-doctor-onboarding-workflow">Section 6</a>.</blockquote>
+
+<strong>Q: My appointment is still "Pending."</strong>
+<blockquote>Waiting for doctor review. You'll receive a notification when confirmed.</blockquote>
+
+<strong>Q: I can't join the video meeting.</strong>
+<blockquote>Make sure you: (1) accepted the meeting agreement, (2) allowed camera/mic access, (3) use Chrome, (4) meeting hasn't ended already.</blockquote>
+
+<strong>Q: Where can I see my lab results?</strong>
+<blockquote>Go to <strong>PHR → Lab & Imaging</strong> tab. Results appear there once your doctor enters them.</blockquote>
+
+<strong>Q: The map doesn't show facilities.</strong>
+<blockquote>Allow location access in browser. Try increasing the distance filter (10 or 20 km).</blockquote>
+
+<strong>Q: How do I change the language?</strong>
+<blockquote>Go to <strong>Settings → Language</strong> and toggle ไทย ↔ English.</blockquote>
+
+<strong>Q: AI แพทย์ chat isn't responding.</strong>
+<blockquote>The AI service may need a moment. Try refreshing and starting a new session.</blockquote>
+
+<strong>Q: How do I share health records with a doctor?</strong>
+<blockquote>Go to <strong>PDPA Consent</strong> and enable sharing for specific data types per doctor.</blockquote>
+
+<strong>Q: Guest can't enter the meeting.</strong>
+<blockquote>Guest must wait in the Lobby for doctor approval. แพทย์ needs to click "Admit" in the Waiting Room panel.</blockquote>
+
+<strong>Q: How do I invite family to my meeting?</strong>
+<blockquote>Copy the guest join link from the pre-join screen and share it. Guests only need a name — no account required.</blockquote>
+
+<strong>Q: Where is the AI SOAP summary?</strong>
+<blockquote>After doctor approves, it appears in your PHR and Timeline. You'll receive a notification.</blockquote>
+
+<strong>Q: Can I revoke my Living Will?</strong>
+<blockquote>Yes. Go to Living Will page → click "Revoke." The document will be immediately marked as revoked.</blockquote>
+
+<strong>Q: How do I see other doctors in the system?</strong>
+<blockquote>Go to <strong>แพทย์s Directory</strong> in the sidebar. You can search by name or specialty.</blockquote>
+
+<strong>Q: What is CDS (Clinical Decision Support)?</strong>
+<blockquote>AI automatically checks drug interactions, dosage, and allergy contraindications when prescribing. The doctor sees alerts before finalizing prescriptions.</blockquote>
+
+<strong>Q: How is my data protected?</strong>
+<blockquote>All data is encrypted in transit (HTTPS), passwords are hashed (bcrypt), and you control exactly what data is shared via PDPA consent settings.</blockquote>
+
+<strong>Q: Meeting recording failed or is too large.</strong>
+<blockquote>Maximum recording size is 200MB. For longer meetings, pause/resume recording strategically. The transcript is always available regardless of recording status.</blockquote>
+
+<strong>Q: แพทย์ใหม่ลงทะเบียนแล้วแต่เข้าสู่ระบบไม่ได้?</strong>
+<blockquote>ต้องรอผู้ดูแลระบบอนุมัติก่อน (ดูหัวข้อ 6 กระบวนการลงทะเบียนแพทย์ใหม่)</blockquote>
+
+<hr>
+
+<h2>Appendix: Platform Architecture</h2>
+
+<p>| Component | URL | Purpose |</p>
+<p>|-----------|-----|---------|</p>
+<p>| <strong>ผู้ป่วย Portal</strong> | <code>izara-patient-portal-dev-testing-*.run.app</code> | ผู้ป่วย-facing web application |</p>
+<p>| <strong>แพทย์ Portal</strong> | <code>izara-doctor-portal-dev-testing-*.run.app</code> | แพทย์ and ผู้ดูแล web application |</p>
+<p>| <strong>Meeting Server</strong> | <code>izara-meeting-server-dev-testing-*.run.app</code> | Jitsi video meeting management |</p>
+<p>| <strong>Database</strong> | PostgreSQL (Cloud SQL) | All data storage (PHR, EMR, appointments) |</p>
+<p>| <strong>AI Engine</strong> | Gemini 2.5 Flash | Medical AI features |</p>
+
+<hr>
+
+<strong>© 2026 IZARA Telemedicine Platform — All Rights Reserved</strong>
+
+<em>This user guide covers v1.5.10 with 2,013 unit tests + 1,149 E2E + 516 UI tests (638 screenshots) from 105 test files.</em>
+
+</body>
+</html>

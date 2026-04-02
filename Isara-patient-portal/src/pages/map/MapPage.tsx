@@ -16,6 +16,8 @@
  *  - One-tap Google Maps navigation
  *  - Phone number links
  */
+/// <reference types="google.maps" />
+
 import { useState, useEffect, useRef, useCallback, type ReactNode } from 'react';
 import { useSettings } from '../../contexts/SettingsContext';
 import {
@@ -24,6 +26,9 @@ import {
   Target, AlertTriangle, Sliders, ChevronDown, ChevronUp,
   Phone, Clock,
 } from 'lucide-react';
+
+type MapGlobal = typeof globalThis & { google?: typeof google; L?: any };
+const mapGlobal = globalThis as MapGlobal;
 
 const MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
 
@@ -68,8 +73,10 @@ const formatDist = (km: number, lang: string = 'th') => {
   return km < 1 ? `${Math.round(km * 1000)} ${smallUnit}` : `${km.toFixed(1)} ${largeUnit}`;
 };
 
-const getToggleClass = (isActive: boolean, isDarkMode: boolean, activeClass: string, darkClass: string, lightClass: string): string =>
-  isActive ? activeClass : isDarkMode ? darkClass : lightClass;
+const getToggleClass = (isActive: boolean, isDarkMode: boolean, activeClass: string, darkClass: string, lightClass: string): string => {
+  if (isActive) return activeClass;
+  return isDarkMode ? darkClass : lightClass;
+};
 
 const markerColors: Record<string, string> = { hospital: '#DC2626', clinic: '#2563EB', pharmacy: '#16A34A', health_center: '#9333EA' };
 const labelsTH: Record<string, string> = { hospital: 'โรงพยาบาล', clinic: 'คลินิก', pharmacy: 'ร้านยา', health_center: 'ศูนย์สุขภาพ' };
@@ -90,12 +97,17 @@ const iconMap: Record<string, typeof Building2> = { hospital: Building2, clinic:
 /* ------------------------------------------------------------------ */
 let mapsLoadPromise: Promise<void> | null = null;
 function loadGoogleMapsScript(apiKey: string, lang: string): Promise<void> {
-  if (globalThis.google?.maps?.places) return Promise.resolve();
+  if (mapGlobal.google?.maps?.places) return Promise.resolve();
   if (mapsLoadPromise) return mapsLoadPromise;
   mapsLoadPromise = new Promise((resolve, reject) => {
     const existing = document.querySelector('script[src*="maps.googleapis.com"]');
     if (existing) {
-      const timer = setInterval(() => { if (globalThis.google?.maps?.places) { clearInterval(timer); resolve(); } }, 100);
+      const timer = setInterval(() => {
+        if (mapGlobal.google?.maps?.places) {
+          clearInterval(timer);
+          resolve();
+        }
+      }, 100);
       setTimeout(() => { clearInterval(timer); reject(new Error('timeout')); }, 15000);
       return;
     }
@@ -103,7 +115,12 @@ function loadGoogleMapsScript(apiKey: string, lang: string): Promise<void> {
     s.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&language=${lang || 'th'}`;
     s.async = true;
     s.onload = () => {
-      const timer = setInterval(() => { if (globalThis.google?.maps?.places) { clearInterval(timer); resolve(); } }, 50);
+      const timer = setInterval(() => {
+        if (mapGlobal.google?.maps?.places) {
+          clearInterval(timer);
+          resolve();
+        }
+      }, 50);
       setTimeout(() => { clearInterval(timer); resolve(); }, 5000);
     };
     s.onerror = () => { mapsLoadPromise = null; reject(new Error('Maps script failed')); };
@@ -117,7 +134,7 @@ function loadGoogleMapsScript(apiKey: string, lang: string): Promise<void> {
 /* ------------------------------------------------------------------ */
 let leafletLoaded = false;
 function loadLeaflet(): Promise<void> {
-  if (leafletLoaded || (window as any).L) { leafletLoaded = true; return Promise.resolve(); }
+  if (leafletLoaded || mapGlobal.L) { leafletLoaded = true; return Promise.resolve(); }
   return new Promise((resolve, reject) => {
     const css = document.createElement('link');
     css.rel = 'stylesheet';
@@ -158,6 +175,34 @@ async function fetchNearbyFromServer(lat: number, lng: number, radiusKm: number,
 }
 
 /* ------------------------------------------------------------------ */
+/*  Map a Google Place result into a Facility                         */
+/* ------------------------------------------------------------------ */
+function mapPlaceToFacility(
+  p: google.maps.places.PlaceResult,
+  origin: { lat: number; lng: number },
+  facilityType: string,
+  radiusKm: number,
+  lang: string,
+): Facility | null {
+  const lat = p.geometry?.location?.lat() || 0;
+  const lng = p.geometry?.location?.lng() || 0;
+  const dist = calcDistance(origin.lat, origin.lng, lat, lng);
+  if (dist > radiusKm) return null;
+  return {
+    id: p.place_id || `gp-${Math.random()}`,
+    name: p.name || 'Unknown',
+    type: facilityType as Facility['type'],
+    address: p.vicinity || '',
+    rating: p.rating,
+    ratingCount: p.user_ratings_total,
+    isOpen: p.opening_hours?.open_now,
+    distance: dist,
+    distanceText: formatDist(dist, lang),
+    location: { lat, lng },
+  } as Facility;
+}
+
+/* ------------------------------------------------------------------ */
 /*  Google Places supplemental (adds ratings, open-now status)        */
 /* ------------------------------------------------------------------ */
 async function fetchFromGooglePlaces(
@@ -166,35 +211,16 @@ async function fetchFromGooglePlaces(
   radiusKm: number,
   lang: string,
 ): Promise<Facility[]> {
+  const mapResults = (results: google.maps.places.PlaceResult[], facilityType: string): Facility[] =>
+    results.map((p) => mapPlaceToFacility(p, loc, facilityType, radiusKm, lang)).filter((f): f is Facility => f !== null);
+
   const doSearch = (type: string, facilityType: string): Promise<Facility[]> =>
     new Promise((resolve) => {
       service.nearbySearch(
         { location: new google.maps.LatLng(loc.lat, loc.lng), rankBy: google.maps.places.RankBy.DISTANCE, type },
         (results, status) => {
-          if (status === google.maps.places.PlacesServiceStatus.OK && results) {
-            resolve(
-              results
-                .map((p) => {
-                  const lat = p.geometry?.location?.lat() || 0;
-                  const lng = p.geometry?.location?.lng() || 0;
-                  const dist = calcDistance(loc.lat, loc.lng, lat, lng);
-                  if (dist > radiusKm) return null;
-                  return {
-                    id: p.place_id || `gp-${Math.random()}`,
-                    name: p.name || 'Unknown',
-                    type: facilityType as Facility['type'],
-                    address: p.vicinity || '',
-                    rating: p.rating,
-                    ratingCount: p.user_ratings_total,
-                    isOpen: p.opening_hours?.open_now,
-                    distance: dist,
-                    distanceText: formatDist(dist, lang),
-                    location: { lat, lng },
-                  } as Facility;
-                })
-                .filter((f): f is Facility => f !== null),
-            );
-          } else resolve([]);
+          const ok = status === google.maps.places.PlacesServiceStatus.OK && results;
+          resolve(ok ? mapResults(results, facilityType) : []);
         },
       );
     });
@@ -215,29 +241,32 @@ async function fetchFromGooglePlaces(
 /* ------------------------------------------------------------------ */
 /*  Merge server + Google results                                      */
 /* ------------------------------------------------------------------ */
+function enrichExistingFacility(merged: Facility[], nameKey: string, gf: Facility): void {
+  const idx = merged.findIndex(
+    (sf) => sf.name.toLowerCase() === nameKey || calcDistance(sf.location.lat, sf.location.lng, gf.location.lat, gf.location.lng) < 0.1,
+  );
+  if (idx < 0) return;
+  if (gf.rating && !merged[idx].rating) merged[idx] = { ...merged[idx], rating: gf.rating, ratingCount: gf.ratingCount };
+  if (gf.isOpen !== undefined && merged[idx].isOpen === undefined) merged[idx] = { ...merged[idx], isOpen: gf.isOpen };
+}
+
 function mergeResults(serverData: Facility[], googleData: Facility[]): Facility[] {
   const merged = [...serverData];
   const nameSet = new Set(serverData.map((f) => f.name.toLowerCase()));
 
   for (const gf of googleData) {
     const nameKey = gf.name.toLowerCase();
-    const dup =
+    const isDuplicate =
       nameSet.has(nameKey) ||
       merged.some((sf) => calcDistance(sf.location.lat, sf.location.lng, gf.location.lat, gf.location.lng) < 0.1 && sf.type === gf.type);
 
-    if (!dup) {
-      merged.push(gf);
-      nameSet.add(nameKey);
-    } else {
-      // Enrich existing with Google data (ratings, open status)
-      const idx = merged.findIndex(
-        (sf) => sf.name.toLowerCase() === nameKey || calcDistance(sf.location.lat, sf.location.lng, gf.location.lat, gf.location.lng) < 0.1,
-      );
-      if (idx >= 0) {
-        if (gf.rating && !merged[idx].rating) merged[idx] = { ...merged[idx], rating: gf.rating, ratingCount: gf.ratingCount };
-        if (gf.isOpen !== undefined && merged[idx].isOpen === undefined) merged[idx] = { ...merged[idx], isOpen: gf.isOpen };
-      }
+    if (isDuplicate) {
+      enrichExistingFacility(merged, nameKey, gf);
+      continue;
     }
+
+    merged.push(gf);
+    nameSet.add(nameKey);
   }
   return merged;
 }
@@ -317,7 +346,8 @@ function filterFacilities(facilities: Facility[], filter: string, search: string
 /*  buildInfoContent — marker popup                                    */
 /* ------------------------------------------------------------------ */
 function buildInfoContent(f: Facility, navLabel: string): string {
-  const ratingHtml = f.rating ? `<p style="font-size:11px;">⭐ ${f.rating}${f.ratingCount ? ` (${f.ratingCount})` : ''}</p>` : '';
+  const ratingCountText = f.ratingCount ? ' (' + String(f.ratingCount) + ')' : '';
+  const ratingHtml = f.rating ? '<p style="font-size:11px;">⭐ ' + String(f.rating) + ratingCountText + '</p>' : '';
   const phoneHtml = f.phone ? `<p style="font-size:11px;">📞 <a href="tel:${f.phone}">${f.phone}</a></p>` : '';
   return `<div style="padding:8px;max-width:240px;">
     <b>${f.name}</b>
@@ -336,25 +366,30 @@ function buildInfoContent(f: Facility, navLabel: string): string {
 /* ------------------------------------------------------------------ */
 function FacilityCard({
   f, selected, language, tc, onClick, onNavigate,
-}: {
+}: Readonly<{
   f: Facility; selected: boolean; language: string;
   tc: ReturnType<typeof getMapThemeClasses>; onClick: () => void; onNavigate: () => void;
-}) {
+}>) {
   const Icon = iconMap[f.type] || Building2;
+  const openLabel = language === 'th' ? '● เปิด' : '● Open';
+  const closedLabel = language === 'th' ? '○ ปิด' : '○ Closed';
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`w-full text-left p-3 cursor-pointer transition-all border-b ${tc.cardBorder} ${
+    <div
+      className={`w-full p-3 transition-all border-b ${tc.cardBorder} ${
         selected ? 'border-l-4 border-emerald-500 bg-emerald-50/50 dark:bg-emerald-900/20' : ''
       } ${tc.cardBg}`}
     >
       <div className="flex items-start gap-3">
-        <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${colors[f.type]}`}>
-          <Icon className="w-4 h-4" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex justify-between gap-2">
+        <button
+          type="button"
+          onClick={onClick}
+          className="flex flex-1 items-start gap-3 min-w-0 text-left"
+        >
+          <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${colors[f.type]}`}>
+            <Icon className="w-4 h-4" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex justify-between gap-2">
             <div>
               <h3 className={`font-medium text-sm leading-tight ${tc.nameText}`}>{f.name}</h3>
               <span className={`inline-block px-1.5 py-0.5 text-xs rounded mt-0.5 ${colors[f.type]}`}>
@@ -365,7 +400,7 @@ function FacilityCard({
               <p className="text-sm font-bold text-emerald-600">{f.distanceText}</p>
               {f.isOpen !== undefined && (
                 <p className={`text-[10px] font-medium ${f.isOpen ? 'text-green-600' : 'text-red-500'}`}>
-                  {f.isOpen ? (language === 'th' ? '● เปิด' : '● Open') : (language === 'th' ? '○ ปิด' : '○ Closed')}
+                  {f.isOpen ? openLabel : closedLabel}
                 </p>
               )}
             </div>
@@ -380,9 +415,9 @@ function FacilityCard({
               </div>
             )}
             {f.phone && (
-              <a href={`tel:${f.phone}`} onClick={(e) => e.stopPropagation()} className="flex items-center gap-1 text-xs text-blue-500 hover:underline">
+              <span className="flex items-center gap-1 text-xs text-blue-500">
                 <Phone className="w-3 h-3" /> {f.phone}
-              </a>
+              </span>
             )}
             {f.openingHours && (
               <span className="flex items-center gap-1 text-xs text-gray-400">
@@ -390,17 +425,18 @@ function FacilityCard({
               </span>
             )}
           </div>
-        </div>
+          </div>
+        </button>
         <button
           type="button"
-          onClick={(e) => { e.stopPropagation(); onNavigate(); }}
+          onClick={onNavigate}
           className="p-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 shrink-0 shadow-sm"
           title={language === 'th' ? 'นำทาง' : 'Navigate'}
         >
           <Navigation className="w-4 h-4" />
         </button>
       </div>
-    </button>
+    </div>
   );
 }
 
@@ -409,11 +445,11 @@ function FacilityCard({
 /* ------------------------------------------------------------------ */
 function FacilityListContent({
   loading, facilities, filtered, selectedId, language, tc, focusFacility, navigateTo,
-}: {
+}: Readonly<{
   loading: boolean; facilities: readonly Facility[]; filtered: readonly Facility[];
   selectedId: string | null; language: string; tc: ReturnType<typeof getMapThemeClasses>;
   focusFacility: (f: Facility) => void; navigateTo: (f: Facility) => void;
-}) {
+}>) {
   if (loading && facilities.length === 0) {
     return <div className="flex items-center justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-emerald-600" /></div>;
   }
@@ -447,11 +483,11 @@ function FacilityListContent({
 /* ------------------------------------------------------------------ */
 function MapViewArea({
   error, mapReady, children, tc, lbl, labels, onCenter, onReload,
-}: {
+}: Readonly<{
   error: string | null; mapReady: boolean; children: ReactNode;
   tc: ReturnType<typeof getMapThemeClasses>; lbl: ReturnType<typeof getMapPageLabels>;
   labels: Record<string, string>; onCenter: () => void; onReload: () => void;
-}) {
+}>) {
   if (error) {
     return (
       <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-900">
@@ -487,7 +523,7 @@ function MapViewArea({
               <div className="flex items-center gap-2 border-t pt-1 mt-1"><div className="w-2.5 h-2.5 bg-blue-500 rounded-full ring-2 ring-blue-200" /><span>{lbl.yourLocation}</span></div>
             </div>
           </div>
-          <button onClick={onCenter} className="absolute bottom-4 right-4 bg-white dark:bg-gray-700 rounded-full p-3 shadow-lg hover:bg-gray-50 dark:hover:bg-gray-600 z-10">
+          <button onClick={onCenter} className="absolute bottom-4 right-4 bg-white dark:bg-gray-700 rounded-full p-3 shadow-lg hover:bg-gray-50 dark:hover:bg-gray-600 z-10" title={lbl.yourLocation}>
             <User className="w-5 h-5 text-blue-600 dark:text-blue-400" />
           </button>
         </>
@@ -514,6 +550,7 @@ export default function MapPage() {
   const markersRef = useRef<google.maps.Marker[]>([]);
   const infoWindowRef = useRef<google.maps.InfoWindow | null>(null);
   const userMarkerRef = useRef<google.maps.Marker | null>(null);
+  const pulseMarkerRef = useRef<google.maps.Marker | null>(null);
   const rangeCircleRef = useRef<google.maps.Circle | null>(null);
 
   const [search, setSearch] = useState('');
@@ -597,7 +634,7 @@ export default function MapPage() {
 
     // Leaflet
     if (leafletMap.current) {
-      const L = (window as any).L;
+      const L = mapGlobal.L;
       leafletMarkers.current.forEach((m: any) => m.remove());
       leafletMarkers.current = [];
       list.forEach((f) => {
@@ -628,9 +665,9 @@ export default function MapPage() {
       });
     }
     if (leafletMap.current) {
-      const L = (window as any).L;
-      if ((leafletMap.current as any)._rc) (leafletMap.current as any)._rc.remove();
-      (leafletMap.current as any)._rc = L.circle([loc.lat, loc.lng], {
+      const L = mapGlobal.L;
+      if (leafletMap.current._rc) leafletMap.current._rc.remove();
+      leafletMap.current._rc = L.circle([loc.lat, loc.lng], {
         radius: radiusKm * 1000, color: '#059669', fillColor: '#059669', fillOpacity: 0.06, weight: 2,
       }).addTo(leafletMap.current);
     }
@@ -651,7 +688,7 @@ export default function MapPage() {
       icon: { path: google.maps.SymbolPath.CIRCLE, scale: 12, fillColor: '#3B82F6', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 3 },
       zIndex: 1000,
     });
-    new google.maps.Marker({
+    pulseMarkerRef.current = new google.maps.Marker({
       position: loc, map,
       icon: { path: google.maps.SymbolPath.CIRCLE, scale: 24, fillColor: '#3B82F6', fillOpacity: 0.25, strokeWeight: 0 },
       zIndex: 999,
@@ -665,7 +702,7 @@ export default function MapPage() {
     if (!mapRef.current || leafletMap.current) return;
     try {
       await loadLeaflet();
-      const L = (window as any).L;
+      const L = mapGlobal.L;
       const zoomMap: Record<number, number> = { 1: 16, 3: 14, 5: 13, 10: 12, 15: 11, 20: 10 };
       const map = L.map(mapRef.current).setView([loc.lat, loc.lng], zoomMap[range] || 13);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {

@@ -5,7 +5,7 @@ import React, { useState, useEffect } from 'react';
 import { Routes, Route, useParams, useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '../components/common/AuthProvider';
 import { useSettings } from '../hooks/useSettings';
-import { PatientRecord, UserPreferences } from '../types';
+import { PatientRecord } from '../types';
 import { patientDataService } from '../services/patientDataService';
 
 // Components
@@ -29,14 +29,9 @@ import HealthMeeting from './meetings/HealthMeeting';
 import MeetingRoom from './meetings/MeetingRoom';
 import AdminDoctorManagement from './admin/AdminDoctorManagement';
 import AdminAppointmentManagement from './admin/AdminAppointmentManagement';
+import AppointmentPoolManagement from './admin/AppointmentPoolManagement';
 import DoctorProfilePage from './DoctorProfilePage';
 // DoctorAvailabilitySettings removed as per requirements
-
-const DEFAULT_PREFERENCES: UserPreferences = {
-  theme: 'light',
-  language: 'th',
-  notifications: { email: true, push: true, sms: false },
-};
 
 const DoctorPortal: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
@@ -90,6 +85,7 @@ const DoctorPortal: React.FC = () => {
     if (path.includes('/medical-content')) return 'medical-content';
     if (path.includes('/health-meeting')) return 'health-meeting';
     if (path.includes('/clinical-resources')) return 'clinical-resources';
+    if (path.includes('/appointment-pool')) return 'appointment-pool';
     if (path.includes('/doctor-management')) return 'doctor-management';
     if (path.includes('/appointment-management')) return 'appointment-management';
     if (path.includes('/profile')) return 'profile';
@@ -177,7 +173,9 @@ const DoctorPortal: React.FC = () => {
         <Route path="doctors" element={<DoctorsManagement />} />
         <Route path="medical-content" element={<MedicalContent />} />
         <Route path="health-meeting" element={<HealthMeeting doctor={user} />} />
+        <Route path="appointment-pool" element={<AppointmentPoolManagement />} />
         <Route path="meeting/:appointmentId" element={<MeetingRoom />} />
+        <Route path="virtual-meeting/:appointmentId" element={<VirtualMeeting />} />
 
         {/* Admin Only Routes */}
         {(user.isAdmin || user.role === 'admin') && (
@@ -202,7 +200,7 @@ const DoctorPortal: React.FC = () => {
         {/* Admin short aliases */}
         <Route path="admin/doctors" element={<Navigate to={`/doctor/${userId}/doctor-management`} replace />} />
         <Route path="admin/directory" element={<Navigate to={`/doctor/${userId}/doctors`} replace />} />
-        <Route path="admin/pool" element={<Navigate to={`/doctor/${userId}/appointment-management`} replace />} />
+        <Route path="admin/pool" element={<Navigate to={`/doctor/${userId}/appointment-pool`} replace />} />
         <Route path="admin/appointments" element={<Navigate to={`/doctor/${userId}/appointment-management`} replace />} />
 
         {/* Catch-all: use ABSOLUTE path to prevent infinite /dashboard append loop */}
@@ -258,34 +256,13 @@ const DoctorPortal: React.FC = () => {
       )}
 
       {showMeeting && selectedPatient && (
-        <VirtualMeeting
-          appointment={{
-            id: `APT-${Date.now()}`,
-            user: {
-              id: selectedPatient.id,
-              email: selectedPatient.contact?.email || '',
-              name: selectedPatient.demographics?.name || 'Patient',
-              displayName: selectedPatient.demographics?.name || 'Patient',
-              role: 'doctor',
-              doctorId: user.id,
-              medicalLicenseNumber: user.medicalLicenseNumber || '',
-              isActive: true,
-              emailVerified: true,
-              preferences: DEFAULT_PREFERENCES,
-            },
-            patientId: selectedPatient.id,
-            date: new Date(),
-            type: 'Telehealth' as any,
-            status: 'InProgress' as any,
-            symptoms: [],
-            notes: '',
-          }}
-          onClose={() => setShowMeeting(false)}
-          onMeetingEnd={async () => {
-            setShowMeeting(false);
-            await loadPatients();
-          }}
-        />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-lg p-6 max-w-md text-center">
+            <p className="text-gray-700 mb-4">กรุณาใช้หน้า Health Meeting เพื่อเริ่มการประชุมกับผู้ป่วย</p>
+            <button onClick={() => { setShowMeeting(false); navigate(`/doctor/${user.id}/health-meeting`); }} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">ไปหน้า Health Meeting</button>
+            <button onClick={() => setShowMeeting(false)} className="ml-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">ปิด</button>
+          </div>
+        </div>
       )}
 
       {showPatientRecord && selectedPatient && (
@@ -432,277 +409,6 @@ const PatientDetailView: React.FC<PatientDetailViewProps> = ({
             Start Consult
           </button>
         </div>
-      </div>
-    </div>
-  );
-};
-
-// Lab & Imaging Page Component
-interface LabImagingPageProps {
-  doctor: any;
-  patients: PatientRecord[];
-  selectedPatient: PatientRecord | null;
-  setSelectedPatient: (patient: PatientRecord | null) => void;
-  onOrderLab: () => void;
-}
-
-// Lab status badge class mapping (SonarQube S3358)
-const labStatusClasses: Record<string, string> = {
-  completed: 'bg-green-100 text-green-700',
-  in_progress: 'bg-blue-100 text-blue-700',
-};
-const getLabStatusClass = (status: string) => labStatusClasses[status] || 'bg-yellow-100 text-yellow-700';
-
-const LabImagingPage: React.FC<LabImagingPageProps> = ({
-  doctor,
-  patients,
-  selectedPatient,
-  setSelectedPatient,
-  onOrderLab,
-}) => {
-  const [labResults, setLabResults] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<'patients' | 'results' | 'orders'>('patients');
-
-  useEffect(() => {
-    if (selectedPatient) {
-      loadLabResults(selectedPatient.id);
-    }
-  }, [selectedPatient]);
-
-  const loadLabResults = async (patientId: string) => {
-    setLoading(true);
-    try {
-      const response = await fetch(`/api/storage/lab-orders/${patientId}`);
-      if (response.ok) {
-        const data = await response.json();
-        setLabResults(Array.isArray(data) ? data : []);
-      }
-    } catch (error) {
-      console.error('Error loading lab results:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="h-full flex flex-col bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">🧪 Lab & Imaging</h1>
-            <p className="text-sm text-gray-600 mt-1">View lab results and order new tests</p>
-          </div>
-          <button
-            onClick={onOrderLab}
-            disabled={!selectedPatient}
-            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            + New Lab Order
-          </button>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="bg-white border-b border-gray-200 px-6">
-        <div className="flex space-x-1">
-          <button
-            onClick={() => setActiveTab('patients')}
-            className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === 'patients'
-                ? 'border-purple-600 text-purple-600'
-                : 'border-transparent text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            👥 Select Patient
-          </button>
-          <button
-            onClick={() => setActiveTab('results')}
-            className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === 'results'
-                ? 'border-purple-600 text-purple-600'
-                : 'border-transparent text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            📋 Lab Results {selectedPatient ? `(${labResults.length})` : ''}
-          </button>
-          <button
-            onClick={() => setActiveTab('orders')}
-            className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === 'orders'
-                ? 'border-purple-600 text-purple-600'
-                : 'border-transparent text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            📝 Pending Orders
-          </button>
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto p-6">
-        {activeTab === 'patients' && (
-          <div className="max-w-4xl mx-auto">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Select a Patient to View Results</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {patients.map((patient) => (
-                <button
-                  key={patient.id}
-                  onClick={() => {
-                    setSelectedPatient(patient);
-                    setActiveTab('results');
-                  }}
-                  className={`p-4 text-left rounded-lg border-2 transition-all ${
-                    selectedPatient?.id === patient.id
-                      ? 'border-purple-500 bg-purple-50'
-                      : 'border-gray-200 bg-white hover:border-purple-300 hover:shadow'
-                  }`}
-                >
-                  <div className="flex items-center space-x-3">
-                    <img
-                      src={patient.demographics?.photo || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(patient.id)}`}
-                      alt={patient.demographics?.name}
-                      className="w-12 h-12 rounded-full object-cover"
-                    />
-                    <div>
-                      <h3 className="font-semibold text-gray-900">{patient.demographics?.name}</h3>
-                      <p className="text-sm text-gray-600">
-                        {patient.demographics?.age} ปี • {patient.demographics?.gender}
-                      </p>
-                      <p className="text-xs text-gray-500">ID: {patient.id}</p>
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'results' && (
-          <div className="max-w-4xl mx-auto">
-            {selectedPatient ? (
-              <>
-                <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-6">
-                  <div className="flex items-center space-x-3">
-                    <img
-                      src={selectedPatient.demographics?.photo || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(selectedPatient.id)}`}
-                      alt={selectedPatient.demographics?.name}
-                      className="w-12 h-12 rounded-full"
-                    />
-                    <div>
-                      <h3 className="font-semibold text-purple-900">{selectedPatient.demographics?.name}</h3>
-                      <p className="text-sm text-purple-700">
-                        {selectedPatient.demographics?.age} ปี • ID: {selectedPatient.id}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {(() => {
-                  if (loading) {
-                    return (
-                      <div className="text-center py-12">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
-                        <p className="text-gray-600 mt-2">Loading lab results...</p>
-                      </div>
-                    );
-                  }
-                  if (labResults.length > 0) {
-                    return (
-                  <div className="space-y-4">
-                    {labResults.map((lab) => (
-                      <div key={lab.id} className="bg-white rounded-lg border border-gray-200 p-4">
-                        <div className="flex items-start justify-between mb-3">
-                          <div>
-                            <h4 className="font-semibold text-gray-900">{lab.testCategory}</h4>
-                            <p className="text-sm text-gray-600">
-                              Ordered: {new Date(lab.orderDate).toLocaleDateString('th-TH')}
-                            </p>
-                          </div>
-                          <span className={`px-3 py-1 rounded-full text-sm font-medium ${getLabStatusClass(lab.status)}`}>
-                            {lab.status}
-                          </span>
-                        </div>
-                        
-                        <div className="overflow-x-auto">
-                          <table className="w-full text-sm">
-                            <thead className="bg-gray-50">
-                              <tr>
-                                <th className="text-left p-2">Test</th>
-                                <th className="text-left p-2">Result</th>
-                                <th className="text-left p-2">Reference</th>
-                                <th className="text-left p-2">Flag</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {lab.tests?.map((test: any, i: number) => (
-                                <tr key={`${lab.id}-${test.name || i}-${test.code || ''}`} className={test.abnormalFlag ? 'bg-red-50' : ''}>
-                                  <td className="p-2">{test.name}</td>
-                                  <td className="p-2 font-medium">{test.result} {test.unit}</td>
-                                  <td className="p-2 text-gray-500">{test.referenceRange}</td>
-                                  <td className="p-2">
-                                    {test.abnormalFlag && (
-                                      <span className="text-red-600 font-bold">{test.abnormalFlag}</span>
-                                    )}
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-
-                        {lab.interpretation && (
-                          <div className="mt-3 p-3 bg-gray-50 rounded">
-                            <p className="text-sm"><strong>Interpretation:</strong> {lab.interpretation}</p>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                    );
-                  }
-                  return (
-                  <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
-                    <div className="text-6xl mb-4">🧪</div>
-                    <h3 className="text-xl font-semibold text-gray-900 mb-2">No Lab Results</h3>
-                    <p className="text-gray-600 mb-4">No laboratory results found for this patient</p>
-                    <button
-                      onClick={onOrderLab}
-                      className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
-                    >
-                      Order Lab Tests
-                    </button>
-                  </div>
-                  );
-                })()}
-              </>
-            ) : (
-              <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
-                <div className="text-6xl mb-4">👤</div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">Select a Patient</h3>
-                <p className="text-gray-600">Choose a patient from the list to view their lab results</p>
-                <button
-                  onClick={() => setActiveTab('patients')}
-                  className="mt-4 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
-                >
-                  Select Patient
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-
-        {activeTab === 'orders' && (
-          <div className="max-w-4xl mx-auto">
-            <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
-              <div className="text-6xl mb-4">📝</div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Pending Lab Orders</h3>
-              <p className="text-gray-600 mb-4">View and manage pending laboratory orders</p>
-              <p className="text-sm text-gray-500">Coming soon...</p>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

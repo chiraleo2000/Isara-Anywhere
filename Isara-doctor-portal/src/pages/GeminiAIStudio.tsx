@@ -174,7 +174,7 @@ export const GeminiAIStudio: React.FC = () => {
 
         {/* Chat Tab */}
         {activeTab === 'chat' && (
-          <div className="flex flex-col" style={{ height: 'calc(100vh - 300px)' }}>
+          <div className="flex flex-col h-[calc(100vh-300px)]">
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-6 space-y-4">
               {messages.length === 0 ? (
@@ -229,6 +229,7 @@ export const GeminiAIStudio: React.FC = () => {
                   onChange={(e) => setInput(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
                   placeholder="พิมพ์คำถามทางการแพทย์..."
+                  aria-label="พิมพ์คำถามทางการแพทย์"
                   className="flex-1 px-4 py-3 border rounded-lg focus:ring-2 focus:ring-purple-500"
                   disabled={loading}
                 />

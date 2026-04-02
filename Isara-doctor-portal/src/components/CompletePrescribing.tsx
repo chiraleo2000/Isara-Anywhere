@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { PatientRecord, User } from '../types';
-import { getMedications, addMockDataRecord } from '../services/clinicalDataService';
+import { getMedications } from '../services/clinicalDataService';
 
 interface Medication {
   name: string;
@@ -187,7 +187,20 @@ export const CompletePrescribing: React.FC<CompletePrescribingProps> = ({
       validUntil: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
     };
 
-    addMockDataRecord('prescriptions.json', prescription);
+    try {
+      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+      const response = await fetch('/api/prescriptions', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify(prescription),
+      });
+      if (!response.ok) throw new Error('Failed to create prescription');
+    } catch (error) {
+      console.error('Prescription save error:', error);
+    }
 
     // Send to patient health logs
     const sentToPatient = await sendPrescriptionToPatientHealthLogs(prescription);
@@ -217,6 +230,7 @@ export const CompletePrescribing: React.FC<CompletePrescribingProps> = ({
           </div>
           <button
             onClick={onClose}
+            aria-label="ปิด"
             className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-white/50"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

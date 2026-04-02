@@ -825,6 +825,7 @@ const VirtualMeeting: React.FC<VirtualMeetingProps> = ({
 
         <button
           onClick={toggleVideo}
+          title={isVideoOn ? 'ปิดกล้อง' : 'เปิดกล้อง'}
           className={`p-3 rounded-full transition-all ${
             isVideoOn ? 'bg-gray-700 hover:bg-gray-600' : 'bg-red-600 hover:bg-red-700'
           }`}
@@ -870,6 +871,7 @@ const VirtualMeeting: React.FC<VirtualMeetingProps> = ({
           <button
             onClick={handleSendMessage}
             disabled={!inputMessage.trim() || isAITyping}
+            title="ส่งข้อความ"
             className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:bg-gray-300"
           >
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -881,6 +883,7 @@ const VirtualMeeting: React.FC<VirtualMeetingProps> = ({
         <div className="text-center py-4">
           <button
             onClick={toggleMic}
+            title={isMicOn ? 'ปิดไมค์' : 'เปิดไมค์'}
             className={`w-20 h-20 rounded-full flex items-center justify-center transition-all shadow-lg ${
               isMicOn ? 'bg-red-600 animate-pulse' : 'bg-gray-400'
             }`}
@@ -996,8 +999,8 @@ const VirtualMeeting: React.FC<VirtualMeetingProps> = ({
                 <div className="bg-gray-100 rounded-2xl px-4 py-3">
                   <div className="flex space-x-2">
                     <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:0.2s]"></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:0.4s]"></div>
                   </div>
                 </div>
               </div>

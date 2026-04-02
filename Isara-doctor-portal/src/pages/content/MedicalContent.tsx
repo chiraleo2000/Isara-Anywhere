@@ -14,6 +14,8 @@ import {
 } from '../../assets/NewSvgIcons';
 import { useAuth } from '../../components/common/AuthProvider';
 import { useSettings } from '../../hooks/useSettings';
+import { useRealtimeSync } from '../../services/useRealtimeSync';
+import { getAuthHeaders } from '../../services/authServices';
 import {
   type MedicalContentArticle,
   type ContentTag,
@@ -133,7 +135,7 @@ const renderContentWithImages = (content: string) => {
 // ============================================================================
 
 // i18n labels for Medical Content page
-const labels = {
+const _labels = {
   pageTitle: { en: 'Medical Content', th: 'เนื้อหาทางการแพทย์' },
   healthLibrary: { en: 'Health Knowledge Library', th: 'ห้องสมุดความรู้สุขภาพ' },
   searchContent: { en: 'Search articles, videos, guides...', th: 'ค้นหาบทความ วิดีโอ คู่มือ...' },
@@ -265,6 +267,12 @@ const MedicalContent: React.FC = () => {
     fetchContent();
     fetchTags();
   }, [fetchContent, fetchTags]);
+
+  // Real-time sync: refetch whenever any content changes
+  useRealtimeSync({
+    doctorId: user?.id,
+    onContentChange: fetchContent,
+  });
 
   // Fetch pending approvals for admin users
   useEffect(() => {
@@ -670,6 +678,7 @@ const MedicalContent: React.FC = () => {
               placeholder="Search articles, guides, videos..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              aria-label="ค้นหาเนื้อหาทางการแพทย์"
               className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${themeClasses.searchInput}`}
             />
           </div>
@@ -1131,6 +1140,7 @@ const MedicalContent: React.FC = () => {
                     value={newTag}
                     onChange={(e) => setNewTag(e.target.value)}
                     placeholder="Or create new tag..."
+                    aria-label="Create new tag"
                     className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
                   />
                   <button

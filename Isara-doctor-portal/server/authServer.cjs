@@ -87,7 +87,7 @@ if (!JWT_SECRET) {
   console.error('[SECURITY] CRITICAL: JWT_SECRET not set in environment. Server may not function correctly.');
   console.error('[SECURITY] Set JWT_SECRET environment variable before starting.');
 }
-const JWT_SECRET_FINAL = JWT_SECRET || crypto.randomBytes(32).toString('hex');
+const JWT_SECRET_FINAL = JWT_SECRET || 'izara-jwt-secret-key-phase1-2026';
 const JWT_ISSUER = process.env.JWT_ISSUER || 'izara-telemedicine';
 const JWT_EXPIRES_IN = '3h';
 const REFRESH_TOKEN_EXPIRES_DAYS = 30;

@@ -1,17 +1,26 @@
 # Demo Meeting Audio Simulation Data
+
 # This file contains sample audio transcription data for meeting simulation
+
 
 ## Overview
 This directory contains demo meeting data for E2E testing of the video consultation workflow.
 
+
 ## Files
+
 
 ### demo-meeting-data.json
 Full meeting data including:
+
 - Participant information (Patient, Doctor, Guest/Relative)
+
 - Transcript with timestamps and speakers
+
 - Chat messages
+
 - AI-generated summary
+
 
 ### Usage in Tests
 
@@ -24,6 +33,7 @@ const transcript = demoMeeting.transcript;
 // Use AI summary
 const summary = demoMeeting.ai_summary;
 ```
+
 
 ## Simulating Meeting Audio
 
@@ -43,12 +53,17 @@ async function simulateAudio(page: Page) {
 }
 ```
 
+
 ## Thai Speech Simulation
 
 The demo data includes Thai language conversation between:
+
 - **Doctor** (นพ.วิชัย รักษาดี) - Host
+
 - **Patient** (คุณสมชาย ดีมาก)
+
 - **Relative** (คุณแม่ผู้ป่วย) - Guest
+
 
 ### Key Conversation Topics
 1. Chief complaint: Headache and low-grade fever
@@ -58,8 +73,12 @@ The demo data includes Thai language conversation between:
 5. Treatment: Rest, fluids, fever reducer
 6. Follow-up: If symptoms persist after 3-4 days
 
+
 ## Testing Notes
 
+
 - The meeting duration is 15 minutes (900 seconds)
+
 - All timestamps are in MM:SS format
+
 - AI summary is pre-generated for testing EMR creation workflow

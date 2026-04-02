@@ -42,6 +42,16 @@ function loadJitsiScript(): Promise<void> {
   });
 }
 
+/** Extract room name from a Jitsi meeting URL */
+function extractRoomFromUrl(url?: string): string | null {
+  if (!url) return null;
+  try {
+    const parsed = new URL(url);
+    const room = parsed.pathname.replace(/^\//, '').split('/')[0];
+    return room || null;
+  } catch { return null; }
+}
+
 /** Try to resolve room name from meeting server */
 async function tryMeetingServer(appointmentId: string, authToken?: string | null): Promise<string | null> {
   try {
@@ -64,7 +74,9 @@ async function tryAppointmentApi(appointmentId: string, authToken?: string | nul
     const aptRes = await fetch(`/api/appointments/${appointmentId}`, { headers });
     if (aptRes.ok) {
       const aptData = await aptRes.json();
-      return aptData.jitsiRoomName || aptData.jitsi_room_name || aptData.meetCode || null;
+      return aptData.jitsiRoomName || aptData.jitsi_room_name || aptData.meetCode
+        || extractRoomFromUrl(aptData.patientMeetingUrl) || extractRoomFromUrl(aptData.doctorMeetingUrl)
+        || null;
     }
   } catch { /* unavailable */ }
   return null;

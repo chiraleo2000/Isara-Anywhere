@@ -795,4 +795,230 @@ router.get('/doctor-consents/:patientId', authMiddleware, async (req: Request, r
   }
 });
 
+// ============================================================================
+// DOCTOR ACCESS CONTROL — per-doctor medical_record_access consent
+// ============================================================================
+
+// GET /api/pdpa/doctor-access — list all medical_record_access consents for authenticated patient
+router.get('/doctor-access', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    // @ts-ignore - patientId added by authMiddleware
+    const patientId = req.patientId || req.userId;
+    if (!patientId) return res.status(401).json({ error: 'Not authenticated' });
+
+    console.log(`[PDPA] Getting doctor-access consents for patient: ${patientId}`);
+
+    const result = await pool.query(
+      `SELECT pc.*, u.name AS doctor_name_joined, u.specialty AS doctor_specialty
+       FROM patient_consents pc
+       LEFT JOIN users u ON pc.doctor_id = u.id
+       WHERE pc.patient_id = $1 AND pc.consent_type = 'medical_record_access'
+       ORDER BY pc.created_at DESC`,
+      [patientId]
+    );
+
+    const consents = result.rows.map((row: any) => ({
+      id: row.id,
+      patientId: row.patient_id,
+      doctorId: row.doctor_id,
+      doctorName: row.doctor_name_joined || row.doctor_name || 'Unknown',
+      doctorSpecialty: row.doctor_specialty || null,
+      dataTypes: row.data_types,
+      granted: row.granted,
+      status: row.status,
+      grantedAt: row.granted_at,
+      revokedAt: row.revoked_at,
+      expiresAt: row.expires_at,
+      createdAt: row.created_at,
+    }));
+
+    res.json(consents);
+  } catch (error: unknown) {
+    console.error('[PDPA] Get doctor-access error:', error);
+    res.json([]);
+  }
+});
+
+// POST /api/pdpa/doctor-access — grant medical_record_access to a specific doctor
+router.post('/doctor-access', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    // @ts-ignore - patientId added by authMiddleware
+    const patientId = req.patientId || req.userId;
+    if (!patientId) return res.status(401).json({ error: 'Not authenticated' });
+
+    const { doctor_id } = req.body;
+    if (!doctor_id) return res.status(400).json({ error: 'doctor_id is required' });
+
+    const now = new Date();
+    const consentId = `consent_mra_${patientId}_${doctor_id}`;
+
+    console.log(`[PDPA] Granting medical_record_access: patient=${patientId} → doctor=${doctor_id}`);
+
+    // Look up doctor name
+    const doctorResult = await pool.query('SELECT name FROM users WHERE id = $1', [doctor_id]);
+    const doctorName = doctorResult.rows[0]?.name || 'Unknown';
+
+    // Upsert — one row per (patient_id, doctor_id, consent_type)
+    const result = await pool.query(
+      `INSERT INTO patient_consents
+         (id, patient_id, doctor_id, doctor_name, consent_type, granted, status, data_types, granted_at, revoked_at, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, 'medical_record_access', true, 'granted', '["all"]'::jsonb, $5, NULL, $5, $5)
+       ON CONFLICT (patient_id, doctor_id, consent_type) WHERE doctor_id IS NOT NULL
+       DO UPDATE SET
+         granted = true,
+         status = 'granted',
+         granted_at = $5,
+         revoked_at = NULL,
+         updated_at = $5
+       RETURNING *`,
+      [consentId, patientId, doctor_id, doctorName, now]
+    );
+
+    // Audit log
+    await pool.query(
+      `INSERT INTO audit_logs (id, patient_id, action, details, created_at)
+       VALUES ($1, $2, 'MEDICAL_RECORD_ACCESS_GRANTED', $3, $4)`,
+      [`audit_${Date.now()}`, patientId, JSON.stringify({ doctorId: doctor_id, doctorName }), now]
+    ).catch(() => {});
+
+    res.json(result.rows[0]);
+  } catch (error: unknown) {
+    console.error('[PDPA] Grant doctor-access error:', error);
+    res.status(500).json({ error: 'Failed to grant access' });
+  }
+});
+
+// DELETE /api/pdpa/doctor-access/:doctorId — revoke medical_record_access (sets revoked_at, never deletes)
+router.delete('/doctor-access/:doctorId', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    // @ts-ignore - patientId added by authMiddleware
+    const patientId = req.patientId || req.userId;
+    if (!patientId) return res.status(401).json({ error: 'Not authenticated' });
+
+    const { doctorId } = req.params;
+    const now = new Date();
+
+    console.log(`[PDPA] Revoking medical_record_access: patient=${patientId}, doctor=${doctorId}`);
+
+    const result = await pool.query(
+      `UPDATE patient_consents
+       SET granted = false, status = 'revoked', revoked_at = $1, updated_at = $1
+       WHERE patient_id = $2 AND doctor_id = $3 AND consent_type = 'medical_record_access'
+       RETURNING *`,
+      [now, patientId, doctorId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Consent not found' });
+    }
+
+    // Audit log
+    await pool.query(
+      `INSERT INTO audit_logs (id, patient_id, action, details, created_at)
+       VALUES ($1, $2, 'MEDICAL_RECORD_ACCESS_REVOKED', $3, $4)`,
+      [`audit_${Date.now()}`, patientId, JSON.stringify({ doctorId }), now]
+    ).catch(() => {});
+
+    res.json({ success: true, consent: result.rows[0] });
+  } catch (error: unknown) {
+    console.error('[PDPA] Revoke doctor-access error:', error);
+    res.status(500).json({ error: 'Failed to revoke access' });
+  }
+});
+
+// GET /api/pdpa/pending-requests — list pending consent_request notifications for authenticated patient
+router.get('/pending-requests', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    // @ts-ignore - patientId added by authMiddleware
+    const patientId = req.patientId || req.userId;
+    if (!patientId) return res.status(401).json({ error: 'Not authenticated' });
+
+    console.log(`[PDPA] Getting pending consent requests for patient: ${patientId}`);
+
+    const result = await pool.query(
+      `SELECT * FROM notifications
+       WHERE user_id = $1 AND type = 'consent_request' AND read_at IS NULL
+       ORDER BY created_at DESC`,
+      [patientId]
+    );
+
+    res.json(result.rows);
+  } catch (error: unknown) {
+    console.error('[PDPA] Get pending requests error:', error);
+    res.json([]);
+  }
+});
+
+// POST /api/pdpa/consent-request/respond — patient grants or denies a doctor's consent request
+router.post('/consent-request/respond', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    // @ts-ignore - patientId added by authMiddleware
+    const patientId = req.patientId || req.userId;
+    if (!patientId) return res.status(401).json({ error: 'Not authenticated' });
+
+    const { notification_id, doctor_id, action } = req.body;
+    if (!notification_id || !doctor_id || !['grant', 'deny'].includes(action)) {
+      return res.status(400).json({ error: 'notification_id, doctor_id, and action (grant|deny) are required' });
+    }
+
+    const now = new Date();
+
+    // Verify the notification belongs to this patient
+    const notifResult = await pool.query(
+      `SELECT * FROM notifications WHERE id = $1 AND user_id = $2 AND type = 'consent_request'`,
+      [notification_id, patientId]
+    );
+    if (notifResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Notification not found' });
+    }
+
+    if (action === 'grant') {
+      // Look up doctor name
+      const doctorResult = await pool.query('SELECT name FROM users WHERE id = $1', [doctor_id]);
+      const doctorName = doctorResult.rows[0]?.name || 'Unknown';
+      const consentId = `consent_mra_${patientId}_${doctor_id}`;
+
+      // Upsert consent row
+      await pool.query(
+        `INSERT INTO patient_consents
+           (id, patient_id, doctor_id, doctor_name, consent_type, granted, status, data_types, granted_at, revoked_at, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, 'medical_record_access', true, 'granted', '["all"]'::jsonb, $5, NULL, $5, $5)
+         ON CONFLICT (patient_id, doctor_id, consent_type) WHERE doctor_id IS NOT NULL
+         DO UPDATE SET
+           granted = true,
+           status = 'granted',
+           granted_at = $5,
+           revoked_at = NULL,
+           updated_at = $5`,
+        [consentId, patientId, doctor_id, doctorName, now]
+      );
+
+      // Audit log
+      await pool.query(
+        `INSERT INTO audit_logs (id, patient_id, action, details, created_at)
+         VALUES ($1, $2, 'CONSENT_REQUEST_GRANTED', $3, $4)`,
+        [`audit_${Date.now()}`, patientId, JSON.stringify({ doctorId: doctor_id, doctorName, notificationId: notification_id }), now]
+      ).catch(() => {});
+    } else {
+      // Deny — audit log only, no consent row created
+      await pool.query(
+        `INSERT INTO audit_logs (id, patient_id, action, details, created_at)
+         VALUES ($1, $2, 'CONSENT_REQUEST_DENIED', $3, $4)`,
+        [`audit_${Date.now()}`, patientId, JSON.stringify({ doctorId: doctor_id, notificationId: notification_id }), now]
+      ).catch(() => {});
+    }
+
+    // Mark notification as read
+    await pool.query(
+      `UPDATE notifications SET read_at = $1 WHERE id = $2`,
+      [now, notification_id]
+    );
+
+    res.json({ success: true, action });
+  } catch (error: unknown) {
+    console.error('[PDPA] Respond to consent request error:', error);
+    res.status(500).json({ error: 'Failed to process consent request' });
+  }
+});
+
 export default router;

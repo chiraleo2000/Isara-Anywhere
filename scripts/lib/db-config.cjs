@@ -47,7 +47,7 @@ function getLocalConfig() {
         host: process.env.DB_HOST || 'localhost',
         port: Number.parseInt(process.env.DB_PORT || '5433'),
         user: process.env.DB_USER || 'postgres',
-        password: process.env.DB_PASSWORD || process.env.POSTGRES_PASSWORD || 'IzaraDb2024',
+        password: process.env.DB_PASSWORD || process.env.POSTGRES_PASSWORD || '',
         database: process.env.DB_NAME || 'izara_phase1',
         ssl: false,
         connectionTimeoutMillis: 10000,
@@ -65,7 +65,7 @@ function getCloudConfig() {
 
     if (!password) {
         console.error('❌ ERROR: DB_PASSWORD environment variable is required for cloud database connections.');
-        console.error('   Set it using: $env:DB_PASSWORD="your_password"');
+        console.error('   Set it using: $env:DB_PASSWORD=<your_password>');
         process.exit(1);
     }
 

@@ -28,7 +28,6 @@ import {
   clearCache,
   fetchDashboardData as fetchDoctorQueue
 } from '../services/apiDataService';
-import appointmentService from '../services/appointmentService';
 import {
   VideoCameraIcon,
   CalendarIcon,
@@ -127,7 +126,7 @@ type TabType = 'queue' | 'meetings' | 'all-appointments';
 // ============================================================================
 
 // i18n labels for Health Meeting page
-const labels = {
+const _labels = {
   pageTitle: { en: 'Health Meeting', th: 'การประชุมสุขภาพ' },
   patientQueue: { en: 'Patient Queue', th: 'คิวผู้ป่วย' },
   scheduledMeetings: { en: 'Scheduled Meetings', th: 'การประชุมที่กำหนด' },
@@ -407,7 +406,8 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
 
       console.log(`[Admin] Assigning appointment ${selectedPoolRequest.id} to doctor ${assignData.doctorId}`);
 
-      const result = await appointmentService.updateAppointment(selectedPoolRequest.id, {
+      const result = await saveAppointment({
+        id: selectedPoolRequest.id,
         doctorId: assignData.doctorId,
         assignedDoctorId: assignData.doctorId,
         adminAssignedDoctorId: assignData.doctorId,
@@ -424,8 +424,8 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
         assignedAt: new Date()
       } as any);
 
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to assign appointment');
+      if (!(result as any).success) {
+        throw new Error((result as any).error || 'Failed to assign appointment');
       }
 
       setSuccessMessage(`Appointment assigned to Dr. ${selectedDoctor?.name} successfully!`);
@@ -456,9 +456,17 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
 
       // Filter for pending appointments assigned to this doctor
       const pending = allAppointments.filter((apt: any) => {
-        const matchesDoctor = apt.doctorId === doctor.id ||
+        const matchesDoctorById = apt.doctorId === doctor.id ||
           apt.assignedDoctorId === doctor.id ||
           apt.adminAssignedDoctorId === doctor.id;
+        // CRITICAL: Also match by email for doctors without userId
+        const matchesDoctorByEmail = doctor.email && (
+          apt.doctorEmail === doctor.email ||
+          apt.assignedDoctorEmail === doctor.email ||
+          apt.doctorId === doctor.email ||
+          apt.assignedDoctorId === doctor.email
+        );
+        const matchesDoctor = matchesDoctorById || matchesDoctorByEmail;
         // Pending = needs doctor confirmation (assigned but not yet confirmed)
         const needsConfirmation = apt.status === 'pending' ||
           apt.status === 'awaiting_doctor_response' ||
@@ -1248,7 +1256,7 @@ Izara Telehealth Team
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <span className="text-green-700 flex-1">{successMessage}</span>
-          <button onClick={() => setSuccessMessage(null)} className="text-green-500 hover:text-green-700">&times;</button>
+          <button onClick={() => setSuccessMessage(null)} className="text-green-500 hover:text-green-700" aria-label="ปิดข้อความสำเร็จ" title="ปิด">&times;</button>
         </div>
       )}
       {Boolean(errorMessage) && (
@@ -1257,7 +1265,7 @@ Izara Telehealth Team
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <span className="text-red-700 flex-1">{errorMessage}</span>
-          <button onClick={() => setErrorMessage(null)} className="text-red-500 hover:text-red-700">&times;</button>
+          <button onClick={() => setErrorMessage(null)} className="text-red-500 hover:text-red-700" aria-label="ปิดข้อผิดพลาด" title="ปิด">&times;</button>
         </div>
       )}
 
@@ -1272,7 +1280,15 @@ Izara Telehealth Team
         >
           🏥 Patient Queue ({pendingQueue.length})
         </button>
-        {/* Removed Scheduled Meetings tab button */}
+        <button
+          onClick={() => setActiveTab('meetings')}
+          className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === 'meetings'
+              ? 'bg-blue-600 text-white'
+              : inactiveTabClass(isDark)
+            }`}
+        >
+          📅 Scheduled Meetings ({meetings.length})
+        </button>
 
         {/* Admin-only: All Appointments tab */}
         {isAdmin && (
@@ -1484,7 +1500,7 @@ Izara Telehealth Team
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
             <h2 className={`text-xl font-bold ${hmDarkText(isDark)} flex items-center gap-2`}>
               🎥 Scheduled Meetings<span className="text-sm font-normal text-gray-500 ml-2">
-                ({allAppointments.filter((a: any) => a.status === 'confirmed').length} confirmed)
+                ({meetings.length} confirmed)
               </span>
             </h2>
             <button
@@ -1497,41 +1513,41 @@ Izara Telehealth Team
 
           {/* Confirmed appointments with meeting links */}
           <div className="space-y-4">
-            {allAppointments.filter((a: any) => a.status === 'confirmed').length === 0 ? (
+            {meetings.length === 0 ? (
               <div className="text-center py-12 text-gray-500">
                 <div className="text-6xl mb-4">📅</div>
                 <p>No confirmed meetings yet. Confirm appointments from Patient Queue.</p>
               </div>
             ) : (
-              allAppointments.filter((a: any) => a.status === 'confirmed').map((apt: any) => (
-                <div key={apt.id} className={`${isDark ? 'bg-gray-700' : 'bg-gray-50'} rounded-lg p-4 border ${isDark ? 'border-gray-600' : 'border-gray-200'}`}>
+              meetings.map((meeting: ScheduledMeeting) => (
+                <div key={meeting.id} className={`${isDark ? 'bg-gray-700' : 'bg-gray-50'} rounded-lg p-4 border ${isDark ? 'border-gray-600' : 'border-gray-200'}`}>
                   <div className="flex items-start justify-between">
                     <div>
                       <h3 className={`font-bold ${hmDarkText(isDark)}`}>
-                        {apt.patientName || 'Unknown Patient'}
+                        {meeting.participants?.[0]?.name || 'Unknown Patient'}
                       </h3>
                       <p className={`text-sm ${hmDarkSubtext(isDark)}`}>
-                        📅 {apt.appointmentDate || apt.scheduledDate || 'N/A'} | ⏰ {apt.appointmentTime || apt.scheduledTime || 'N/A'}
+                        📅 {meeting.date || 'N/A'} | ⏰ {meeting.time || 'N/A'}
                       </p>
                       <p className={`text-sm ${hmDarkSubtext(isDark)} mt-1`}>
-                        📋 {apt.reason || apt.symptoms || 'General Consultation'}
+                        📋 {meeting.notes || 'General Consultation'}
                       </p>
-                      {apt.jitsiRoomName && (
-                        <p className="text-xs text-blue-400 mt-1">🔗 Room: {apt.jitsiRoomName}</p>
+                      {meeting.jitsiRoomName && (
+                        <p className="text-xs text-blue-400 mt-1">🔗 Room: {meeting.jitsiRoomName}</p>
                       )}
                     </div>
                     <div className="flex flex-col gap-2">
                       {/* Start Meeting In-App (with Transcript + AI) */}
                       <button
-                        onClick={() => navigate(`/doctor/${doctor.id}/meeting/${apt.id}`)}
+                        onClick={() => navigate(`/doctor/${doctor.id}/meeting/${meeting.id}`)}
                         className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-1"
                       >
                         🎥 Start Meeting (In-App)
                       </button>
                       {/* Open in External Tab */}
-                      {apt.doctorMeetingUrl && (
+                      {meeting.doctorMeetingUrl && (
                         <button
-                          onClick={() => window.open(apt.doctorMeetingUrl, '_blank')}
+                          onClick={() => window.open(meeting.doctorMeetingUrl, '_blank')}
                           className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-colors flex items-center gap-1"
                         >
                           🔗 Open Jitsi (New Tab)
@@ -1569,6 +1585,7 @@ Izara Telehealth Team
                   placeholder="Search patients..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
+                  aria-label="Search patients"
                   className="pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 w-64"
                 />
               </div>
@@ -1649,7 +1666,6 @@ Izara Telehealth Team
                         </span>
                       </td>
                       <td className="px-4 py-4">
-                        {(!apt.assignedDoctorId || apt.status === 'pending' || apt.status === 'in_pool') && (
                           <button
                             onClick={() => {
                               setSelectedPoolRequest(apt);
@@ -1663,9 +1679,8 @@ Izara Telehealth Team
                             }}
                             className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
                           >
-                            Assign
+                            {apt.assignedDoctorId ? 'Reassign' : 'Assign'}
                           </button>
-                        )}
                       </td>
                     </tr>
                   ))}

@@ -1,17 +1,19 @@
 # 📋 Doctor Portal — Clinical Resources Page
 
-**Route:** `/clinical-resources`  
-**Component:** `src/pages/ClinicalResources.tsx`  
-**Access:** 🔒 Doctor (create + edit own) / Admin (approve + full CRUD)  
+**Route:** `/clinical-resources`
+**Component:** `src/pages/ClinicalResources.tsx`
+**Access:** 🔒 Doctor (create + edit own) / Admin (approve + full CRUD)
 **Thai Title:** ทรัพยากรทางคลินิก / Clinical Resources
 
 ---
+
 
 ## 1. Purpose
 
 Medical guidelines, protocols, and research papers for healthcare professionals. Same approval workflow as Medical Content but targeted at clinical staff rather than patients. Integrated with AI RAG knowledge base.
 
 ---
+
 
 ## 2. Resource Types
 
@@ -23,7 +25,9 @@ Medical guidelines, protocols, and research papers for healthcare professionals.
 | template | แม่แบบ | Clinical templates |
 | reference | เอกสารอ้างอิง | Reference materials |
 
+
 ---
+
 
 ## 3. Categories (Fixed)
 
@@ -40,7 +44,9 @@ Medical guidelines, protocols, and research papers for healthcare professionals.
 | research | งานวิจัย | Research Papers |
 | case-studies | กรณีศึกษา | Case Studies |
 
+
 ---
+
 
 ## 4. AI Integration
 
@@ -50,7 +56,9 @@ Medical guidelines, protocols, and research papers for healthcare professionals.
 | AI Chat Assistant | Doctors query guidelines via chat |
 | Document Analysis | AI analyze uploaded PDF guidelines |
 
+
 ---
+
 
 ## 5. Content Workflow
 
@@ -59,6 +67,7 @@ Same as Medical Content: Draft → Submit → Pending → Approved/Rejected
 See [Clinical_Resources_&_Medical_Library_Workflows.md](../../Processes/Clinical_Resources_&_Medical_Library_Workflows.md).
 
 ---
+
 
 ## 6. API Endpoints
 
@@ -71,11 +80,52 @@ See [Clinical_Resources_&_Medical_Library_Workflows.md](../../Processes/Clinical
 | POST | `/api/content/clinical/:id/review` | Approve/reject |
 | GET | `/api/content/tags/clinical` | Get tags |
 
+
 ---
+
 
 ## 7. AI Agent Improvement Opportunities
 
+
 - **Guideline updates**: AI monitor and notify when guidelines are updated
+
 - **Evidence grading**: AI classify evidence levels automatically
+
 - **Quick reference**: AI generate quick-reference cards from full guidelines
+
 - **Conflict detection**: AI detect conflicting recommendations across guidelines
+
+---
+
+
+## PostgreSQL Database Integration
+
+
+### Tables Used
+
+| Table | Operation | Description |
+| ----- | --------- | ----------- |
+| clinical_resources | CRUD | Clinical guidelines and protocol management |
+| knowledge_base | INSERT / SELECT | RAG indexing for AI-powered clinical search |
+
+
+
+### API Endpoints
+
+| Endpoint | Method | DB Operation |
+| -------- | ------ | ------------ |
+| GET /api/content/clinical | GET | SELECT clinical_resources |
+| POST /api/content/clinical | POST | INSERT clinical_resources; INSERT knowledge_base |
+| PUT /api/content/clinical/:id | PUT | UPDATE clinical_resources WHERE id |
+| POST /api/content/clinical/:id/review | POST | UPDATE clinical_resources SET status WHERE id |
+
+
+
+### Deployment
+
+
+- **Local Docker:** izara-postgres container (localhost:5433 external / 5432 internal) → database: izara_phase1
+
+- **Production:** GCE VM at 35.240.157.230:5432 → database: izara_phase1 (asia-southeast1)
+
+- **Service deployed via:** Cloud Run (gen2, CPU Boost) + Cloud Build CI/CD

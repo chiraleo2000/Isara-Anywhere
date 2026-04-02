@@ -1,8 +1,8 @@
 # Medical Consultants Workflows
 
-**Version:** 1.5.9  
-**Last Updated:** March 15, 2026  
-**Status:** ✅ PostgreSQL Implementation
+**Version:** 1.6.0
+**Last Updated:** March 31, 2026
+**Status:** ✅ PostgreSQL Implementation + Full DB Schema
 
 ---
 
@@ -15,15 +15,21 @@ The Medical Consultants page allows doctors to find and manage specialist contac
 ### Admin Users
 
 - **CREATE**: Add new consultants with full profile details
+
 - **READ**: View all consultants and their reviews
+
 - **UPDATE**: Edit consultant information, toggle availability
+
 - **DELETE**: Remove consultants from the system
+
 - **VIEW NOTES**: See internal admin notes
 
 ### Doctor Users
 
 - **READ**: View published consultant profiles
+
 - **RATE**: Submit ratings and reviews for consultants
+
 - **CONTACT**: Email or call consultants directly
 
 ## Data Model
@@ -139,6 +145,7 @@ interface Consultant {
 Data is persisted in GCS bucket: `izara-meta-data`
 
 - Path: `consultants/consultants.json`
+
 - Specialties: `consultants/specialties.json`
 
 ## Error Handling
@@ -156,3 +163,84 @@ Data is persisted in GCS bucket: `izara-meta-data`
 2. **Admin Notes**: Private notes visible only to admin users
 3. **Review System**: Doctor reviews visible to all, aggregated into rating
 4. **Availability Control**: Only admins can toggle consultant availability
+
+---
+
+## PostgreSQL Database Architecture
+
+### Database Tables
+
+| Table | Purpose | Key Columns |
+| ----- | ------- | ----------- |
+| **consultants** | Specialist directory | id, name, specialty, email, phone, hospital, languages (JSONB), is_available (boolean), rating (decimal), reviews (JSONB), admin_notes (text), created_by, updated_by |
+| **doctor_reviews** | Doctor ratings for consultants | id, doctor_id, patient_id (null for consultant reviews), appointment_id (null), rating (1-5), comment |
+| **users** | Creator/modifier identity | id, name, role (admin/doctor) |
+| **audit_logs** | All CRUD operations tracked | id, user_id, action, entity_type='consultant', entity_id, details (JSONB) |
+
+### Data Flow: CRUD Operations
+
+```text
+Doctor Portal (port 3010) — mainApiServer.cjs
+┌──────────────────────────────────────────────────────────────────┐
+│                                                                  │
+│  Admin creates consultant:                                       │
+│  INSERT INTO consultants (name, specialty, email, phone,        │
+│    hospital, languages, is_available, admin_notes, created_by)   │
+│  VALUES ($1, $2, $3, $4, $5, $6::jsonb, true, $7, $userId)     │
+│  INSERT INTO audit_logs (action='create_consultant')             │
+│                                                                  │
+│  Admin toggles availability:                                     │
+│  UPDATE consultants SET is_available = NOT is_available          │
+│  WHERE id = $1                                                   │
+│                                                                  │
+│  Doctor rates consultant:                                        │
+│  INSERT INTO doctor_reviews (doctor_id, rating, comment)        │
+│  WHERE entity_type='consultant' AND entity_id=$consultantId     │
+│  UPDATE consultants SET rating = (SELECT AVG(rating)            │
+│    FROM doctor_reviews WHERE entity_id=$consultantId)            │
+│                                                                  │
+│  All read:                                                       │
+│  SELECT * FROM consultants WHERE is_available = true            │
+│    ORDER BY rating DESC                                          │
+│                                                                  │
+└──────────────────────────────────────────────────────────────────┘
+         │
+         ▼
+┌──────────────────────────────────────────────────────────────────┐
+│  PostgreSQL - izara_phase1                                       │
+│  Local: izara-postgres:5432 (Docker)                             │
+│  Production: 35.240.157.230:5432 (GCE VM)                       │
+│  Region: asia-southeast1                                         │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+### API Endpoints with DB Operations
+
+| Method | Endpoint | DB Operation |
+| ------ | -------- | ------------ |
+| GET | `/api/consultants` | SELECT FROM consultants ORDER BY rating DESC |
+| GET | `/api/consultants/:id` | SELECT FROM consultants WHERE id=$1 |
+| POST | `/api/consultants` | INSERT INTO consultants + audit_logs |
+| PUT | `/api/consultants/:id` | UPDATE consultants + audit_logs |
+| DELETE | `/api/consultants/:id` | DELETE FROM consultants + audit_logs |
+| POST | `/api/consultants/:id/availability` | UPDATE consultants SET is_available=NOT is_available |
+| POST | `/api/consultants/:id/review` | INSERT INTO doctor_reviews + UPDATE consultants (avg rating) |
+
+### Deployment
+
+| Environment | Service | Database |
+| ----------- | ------- | -------- |
+| Local Docker | Doctor Portal (3010) | izara-postgres:5432 |
+| Production | Doctor Portal (Cloud Run, asia-southeast1) | 35.240.157.230:5432 |
+
+### Scenario Coverage
+
+| # | Scenario | Actor | DB Tables |
+| - | -------- | ----- | --------- |
+| 1 | Add new consultant | Admin | consultants, audit_logs |
+| 2 | Edit consultant profile | Admin | consultants, audit_logs |
+| 3 | Toggle availability | Admin | consultants |
+| 4 | Delete consultant | Admin | consultants, audit_logs |
+| 5 | Rate consultant | Doctor | doctor_reviews, consultants |
+| 6 | View consultants list | Doctor | consultants (read) |
+| 7 | Filter by specialty | Doctor | consultants (read) |

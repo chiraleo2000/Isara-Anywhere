@@ -2,11 +2,12 @@
 
 เอกสารฉบับสมบูรณ์สำหรับการจัดการผู้ใช้งานในแพลตฟอร์ม Izara Telemedicine ครอบคลุมการยืนยันตัวตน การลงทะเบียน การจัดการบทบาท และความปลอดภัย
 
-**เวอร์ชัน:** 3.2.0  
-**อัปเดตล่าสุด:** 4 กุมภาพันธ์ 2569  
+**เวอร์ชัน:** 3.2.0
+**อัปเดตล่าสุด:** 4 กุมภาพันธ์ 2569
 **สถานะ:** ✅ ใช้งาน PostgreSQL เสร็จสมบูรณ์
 
 ---
+
 
 ## 📋 สารบัญ
 
@@ -22,6 +23,7 @@
 
 ---
 
+
 ## 1. ภาพรวมระบบ
 
 Izara Telemedicine ใช้ฐานข้อมูล PostgreSQL แบบรวมศูนย์ พร้อมพอร์ทัลแยก 2 ระบบ:
@@ -31,6 +33,8 @@ Izara Telemedicine ใช้ฐานข้อมูล PostgreSQL แบบร�
 | **พอร์ทัลผู้ป่วย** | `localhost:3005` | ผู้ป่วย | 3005 |
 | **พอร์ทัลแพทย์** | `localhost:3010` | แพทย์, ผู้ดูแลระบบ | 3010 |
 
+
+
 ### บริการ Docker
 
 | บริการ | ชื่อ Container | พอร์ต | วัตถุประสงค์ |
@@ -39,6 +43,8 @@ Izara Telemedicine ใช้ฐานข้อมูล PostgreSQL แบบร�
 | พอร์ทัลผู้ป่วย | izara-patient-portal | 3005 | Frontend + Backend ผู้ป่วย |
 | พอร์ทัลแพทย์ | izara-doctor-portal | 3010 | Frontend + Backend แพทย์ |
 | pgAdmin | izara-pgadmin | 5050 | จัดการฐานข้อมูล |
+
+
 
 ### การเปรียบเทียบพอร์ทัล
 
@@ -50,11 +56,14 @@ Izara Telemedicine ใช้ฐานข้อมูล PostgreSQL แบบร�
 | ระยะเวลา Session | ตาม Session | ตาม Session |
 | ที่เก็บข้อมูล | ตาราง `users` ใน PostgreSQL | ตาราง `users` ใน PostgreSQL |
 
+
 ---
+
 
 ## 2. โครงสร้างฐานข้อมูล
 
 ข้อมูลผู้ใช้ทั้งหมดจัดเก็บในฐานข้อมูล PostgreSQL `izara_phase1`
+
 
 ### 2.1 ตาราง Users
 
@@ -73,16 +82,16 @@ CREATE TABLE users (
     date_of_birth DATE,
     gender VARCHAR(20),
     national_id VARCHAR(20),
-    
+
     -- ฟิลด์เฉพาะแพทย์
     doctor_id VARCHAR(50),
     medical_license_number VARCHAR(50),
     specialty VARCHAR(100),
     hospital_name VARCHAR(255),
-    
+
     -- ฟิลด์เฉพาะผู้ป่วย
     patient_id VARCHAR(50),
-    
+
     -- ฟิลด์สถานะ
     is_active BOOLEAN DEFAULT true,
     is_verified BOOLEAN DEFAULT false,
@@ -92,25 +101,26 @@ CREATE TABLE users (
     approved_by VARCHAR(50),
     rejected_at TIMESTAMP WITH TIME ZONE,
     rejected_by VARCHAR(50),
-    
+
     -- ฟิลด์ผู้ดูแลระบบ
     admin_privileges JSONB,
     is_admin BOOLEAN DEFAULT false,
-    
+
     -- การตั้งค่า
     preferences JSONB DEFAULT '{"language": "th", "theme": "light"}'::jsonb,
     notification_settings JSONB,
-    
+
     -- Timestamps
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     last_login TIMESTAMP WITH TIME ZONE,
-    
+
     -- ความปลอดภัย
     login_attempts INTEGER DEFAULT 0,
     locked_until TIMESTAMP WITH TIME ZONE
 );
 ```
+
 
 ### 2.2 ตาราง Sessions
 
@@ -127,6 +137,7 @@ CREATE TABLE sessions (
 );
 ```
 
+
 ### 2.3 Token รีเซ็ตรหัสผ่าน
 
 ```sql
@@ -141,6 +152,7 @@ CREATE TABLE password_resets (
 );
 ```
 
+
 ### 2.4 ตาราง Patient Profiles
 
 ```sql
@@ -154,6 +166,7 @@ CREATE TABLE patient_profiles (
 );
 ```
 
+
 ### 2.5 รูปแบบ User ID
 
 | บทบาท | รูปแบบ ID | ตัวอย่าง |
@@ -162,9 +175,12 @@ CREATE TABLE patient_profiles (
 | แพทย์ | `DOC-{TIMESTAMP}-{RANDOM}` | `DOC-1706123456-XYZ789` |
 | ผู้ดูแลระบบ | `DOC-DEMO-001` หรือ `DOC-{...}` | `DOC-DEMO-001` |
 
+
 ---
 
+
 ## 3. API Endpoints
+
 
 ### 3.1 การยืนยันตัวตนพอร์ทัลผู้ป่วย (`/api/auth/*`)
 
@@ -175,6 +191,8 @@ CREATE TABLE patient_profiles (
 | POST | `/api/auth/logout` | ออกจากระบบ | ต้องยืนยันตัวตน |
 | POST | `/api/auth/validate` | ตรวจสอบ Session Token | ต้องยืนยันตัวตน |
 | GET | `/api/auth/me` | ดูโปรไฟล์ผู้ใช้ปัจจุบัน | ต้องยืนยันตัวตน |
+
+
 
 ### 3.2 การยืนยันตัวตนพอร์ทัลแพทย์ (`/auth/*`)
 
@@ -187,6 +205,8 @@ CREATE TABLE patient_profiles (
 | POST | `/auth/request-password-reset` | ขอรีเซ็ตรหัสผ่าน | สาธารณะ |
 | POST | `/auth/reset-password` | รีเซ็ตรหัสผ่านด้วย Token | สาธารณะ |
 
+
+
 ### 3.3 การจัดการผู้ดูแลระบบ (`/admin/*`)
 
 | Method | Endpoint | คำอธิบาย | การเข้าถึง |
@@ -196,9 +216,12 @@ CREATE TABLE patient_profiles (
 | POST | `/admin/reject-doctor` | ปฏิเสธการลงทะเบียนแพทย์ | ผู้ดูแลระบบ |
 | POST | `/admin/update-role` | เปลี่ยนบทบาทผู้ใช้ (แพทย์↔ผู้ดูแล) | ผู้ดูแลระบบ |
 
+
 ---
 
+
 ## 4. ขั้นตอนการทำงาน
+
 
 ### 4.1 ขั้นตอนการลงทะเบียนผู้ป่วย
 
@@ -240,6 +263,7 @@ CREATE TABLE patient_profiles (
 │                                                                  │
 └─────────────────────────────────────────────────────────────────┘
 ```
+
 
 ### 4.2 ขั้นตอนการลงทะเบียนแพทย์
 
@@ -286,6 +310,7 @@ CREATE TABLE patient_profiles (
 └─────────────────────────────────────────────────────────────────┘
 ```
 
+
 ### 4.2.1 การเปรียบเทียบการลงทะเบียนผู้ป่วย vs แพทย์
 
 | คุณสมบัติ | การลงทะเบียนผู้ป่วย | การลงทะเบียนแพทย์ |
@@ -300,6 +325,8 @@ CREATE TABLE patient_profiles (
 | **สถานะเริ่มต้น** | `is_active: true`, `is_approved: true` | `is_active: false`, `is_approved: false` |
 | **ต้องการการอนุมัติ** | ❌ ไม่ | ✅ ใช่ - ผู้ดูแลต้องอนุมัติ |
 | **เข้าสู่ระบบอัตโนมัติ** | ✅ ใช่ - เข้าสู่ระบบหลังลงทะเบียน | ❌ ไม่ - ต้องรอการอนุมัติ |
+
+
 
 ### 4.2.2 สถานะการอนุมัติแพทย์
 
@@ -330,6 +357,7 @@ CREATE TABLE patient_profiles (
 └─────────────────────────────────────────────────────────────────┘
 ```
 
+
 ### 4.3 ขั้นตอนการเข้าสู่ระบบ
 
 ```text
@@ -359,6 +387,7 @@ CREATE TABLE patient_profiles (
 │                                                                  │
 └─────────────────────────────────────────────────────────────────┘
 ```
+
 
 ### 4.4 ผู้ดูแลระบบ: อนุมัติแพทย์
 
@@ -398,10 +427,11 @@ CREATE TABLE patient_profiles (
 └─────────────────────────────────────────────────────────────────┘
 ```
 
+
 ### 4.4.1 หน้าจัดการแพทย์ (เฉพาะผู้ดูแลระบบ)
 
-**เส้นทาง:** `/admin/doctors` หรือ "จัดการแพทย์" ในเมนูด้านข้าง  
-**คอมโพเนนต์:** `AdminDoctorManagement.tsx`  
+**เส้นทาง:** `/admin/doctors` หรือ "จัดการแพทย์" ในเมนูด้านข้าง
+**คอมโพเนนต์:** `AdminDoctorManagement.tsx`
 **การเข้าถึง:** ผู้ดูแลระบบเท่านั้น (role = 'admin' หรือ is_admin = true)
 
 ```text
@@ -457,6 +487,7 @@ CREATE TABLE patient_profiles (
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
+
 #### ฟีเจอร์หน้าจัดการแพทย์
 
 | ฟีเจอร์ | คำอธิบาย |
@@ -469,6 +500,8 @@ CREATE TABLE patient_profiles (
 | **ปุ่มปฏิเสธ** | ปฏิเสธพร้อมเหตุผล - แพทย์ไม่สามารถเข้าสู่ระบบ |
 | **ดูรายละเอียด** | โปรไฟล์เต็ม, เอกสาร, ข้อมูลลงทะเบียน |
 | **จัดการบทบาท** | เลื่อนขั้นแพทย์เป็นผู้ดูแล หรือลดตำแหน่งผู้ดูแลเป็นแพทย์ |
+
+
 
 ### 4.5 ผู้ดูแลระบบ: ปฏิเสธแพทย์
 
@@ -498,6 +531,7 @@ CREATE TABLE patient_profiles (
 │                                                                  │
 └─────────────────────────────────────────────────────────────────┘
 ```
+
 
 ### 4.6 ขั้นตอนรีเซ็ตรหัสผ่าน
 
@@ -543,7 +577,9 @@ CREATE TABLE patient_profiles (
 
 ---
 
+
 ## 5. ความปลอดภัย
+
 
 ### 5.1 การจำกัดอัตราการเรียก (Rate Limiting)
 
@@ -553,23 +589,29 @@ CREATE TABLE patient_profiles (
 | รีเซ็ตรหัสผ่าน | 5 ครั้ง | 1 ชั่วโมง | ส่งคืน Error 429 |
 | API ทั่วไป | 500 ครั้ง | 15 นาที | ส่งคืน Error 429 |
 
+
+
 ### 5.2 การล็อคบัญชี
 
 หลังจากเข้าสู่ระบบผิดพลาด 5 ครั้ง:
 
+
 - บัญชีถูกล็อค 30 นาที
+
 - บันทึก timestamp `locked_until`
+
 - บันทึกเหตุการณ์ความปลอดภัย
 
 ```sql
-UPDATE users 
+UPDATE users
 SET login_attempts = login_attempts + 1,
-    locked_until = CASE 
+    locked_until = CASE
       WHEN login_attempts >= 4 THEN NOW() + INTERVAL '30 minutes'
-      ELSE locked_until 
+      ELSE locked_until
     END
 WHERE email = $1;
 ```
+
 
 ### 5.3 ความปลอดภัยรหัสผ่าน
 
@@ -579,16 +621,24 @@ WHERE email = $1;
 | Salt Rounds | 10 |
 | ความยาวขั้นต่ำ | 6 ตัว (ผู้ป่วย) / 8 ตัว (แพทย์) |
 
+
+
 ### 5.4 ความปลอดภัย Session
 
+
 - **รูปแบบ Token**: สตริง Hex แบบสุ่มทางเข้ารหัส 64 ตัวอักษร
+
 - **ผูก IP**: Session ติดตาม IP Address ของ Client
+
 - **User-Agent**: Session ติดตามข้อมูลเบราว์เซอร์
+
 - **การยกเลิก**: Session ถูกทำเครื่องหมาย `logged_out_at` เมื่อออกจากระบบ
 
 ---
 
+
 ## 6. การควบคุมสิทธิ์ตามบทบาท
+
 
 ### 6.1 สิทธิ์เข้าถึงพอร์ทัลผู้ป่วย
 
@@ -599,6 +649,8 @@ WHERE email = $1;
 | ดูประวัติสุขภาพ | ✅ (ของตนเองเท่านั้น) |
 | AI Chat สุขภาพ | ✅ |
 | ยกเลิกนัดหมาย | ✅ (ของตนเองเท่านั้น) |
+
+
 
 ### 6.2 สิทธิ์เข้าถึงพอร์ทัลแพทย์
 
@@ -616,6 +668,8 @@ WHERE email = $1;
 | กำหนดบทบาท | ❌ | ✅ |
 | ดูสถิติ | ❌ | ✅ |
 
+
+
 ### 6.3 สิทธิ์ผู้ดูแลระบบ (JSONB)
 
 ```json
@@ -630,6 +684,7 @@ WHERE email = $1;
 }
 ```
 
+
 ### 6.4 การตรวจสอบสถานะผู้ดูแลระบบ
 
 ```typescript
@@ -642,7 +697,9 @@ const canManageDoctors = user.admin_privileges?.canManageDoctors || user.is_admi
 
 ---
 
+
 ## 7. บัญชีทดสอบ
+
 
 ### 7.1 บัญชีที่ตั้งค่าไว้ล่วงหน้า
 
@@ -654,12 +711,16 @@ const canManageDoctors = user.admin_privileges?.canManageDoctors || user.is_admi
 | พอร์ทัลผู้ป่วย | `Somchai.Mankong@gmail.com` | `YOUR_TEST_PASSWORD` | ผู้ป่วย |
 | พอร์ทัลผู้ป่วย | `Anan.Khayanrian@gmail.com` | `YOUR_TEST_PASSWORD` | ผู้ป่วย |
 
+
+
 ### 7.2 การ Seed ข้อมูล
 
 ```powershell
+
 # Seed ข้อมูลทดสอบลงฐานข้อมูล
 cd scripts/database
 node seed-database.cjs
+
 
 # หรือใช้ cloud-db-tool
 cd scripts
@@ -668,7 +729,9 @@ node cloud-db-tool.cjs seed
 
 ---
 
+
 ## 8. คอมโพเนนต์ Frontend
+
 
 ### 8.1 คอมโพเนนต์พอร์ทัลผู้ป่วย
 
@@ -677,6 +740,8 @@ node cloud-db-tool.cjs seed
 | `LoginPage` | `/pages/auth/LoginPage.tsx` | เข้าสู่ระบบผู้ป่วย |
 | `RegisterPage` | `/pages/auth/RegisterPage.tsx` | ลงทะเบียนผู้ป่วย |
 | `AuthContext` | `/contexts/AuthContext.tsx` | จัดการสถานะการยืนยันตัวตน |
+
+
 
 ### 8.2 คอมโพเนนต์พอร์ทัลแพทย์
 
@@ -687,7 +752,9 @@ node cloud-db-tool.cjs seed
 | `AuthProvider` | `/components/common/AuthProvider.tsx` | จัดการสถานะการยืนยันตัวตน |
 | `AdminDoctorManagement` | `/pages/AdminDoctorManagement.tsx` | ผู้ดูแล: จัดการแพทย์ |
 
+
 ---
+
 
 ## 9. รหัสข้อผิดพลาด
 
@@ -703,7 +770,9 @@ node cloud-db-tool.cjs seed
 | `RATE_LIMIT_EXCEEDED` | 429 | คำขอมากเกินไป |
 | `LOGIN_ERROR` | 500 | เกิดข้อผิดพลาดของเซิร์ฟเวอร์ |
 
+
 ---
+
 
 ## สรุป
 
@@ -718,6 +787,7 @@ node cloud-db-tool.cjs seed
 | มอบสิทธิ์ผู้ดูแล | ผู้ดูแล | แพทย์ | role=admin, is_admin=true |
 | รีเซ็ตรหัสผ่าน | ใครก็ได้ | ทั้งสอง | อัปเดตรหัสผ่าน |
 | ออกจากระบบ | ใครก็ได้ | ทั้งสอง | ยกเลิก Session |
+
 
 ---
 

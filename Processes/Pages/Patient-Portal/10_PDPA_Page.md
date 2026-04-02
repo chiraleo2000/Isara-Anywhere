@@ -1,8 +1,8 @@
 # 🔒 Patient Portal — PDPA Page (Privacy & Consent Management)
 
-**Route:** `/pdpa`  
-**Component:** `src/pages/pdpa/PDPAPage.tsx`  
-**Access:** 🔒 Authenticated patients  
+**Route:** `/pdpa`
+**Component:** `src/pages/pdpa/PDPAPage.tsx`
+**Access:** 🔒 Authenticated patients
 **Thai Title:** การจัดการความเป็นส่วนตัว / Privacy & Consent Management
 
 ---
@@ -69,7 +69,9 @@ PDPA (Personal Data Protection Act) compliance management — patients control t
 ### Tab 2: การเข้าถึงของแพทย์ (Doctor Access)
 
 - Rendered via consent system and doctor search
+
 - Shows which doctors have access to patient's data
+
 - Manage individual doctor permissions
 
 ### Tab 3: ประวัติการเข้าถึง (Access History / Audit Log)
@@ -185,8 +187,40 @@ Step 6: Essential data consent remains (cannot be revoked)
 ## 8. AI Agent Improvement Opportunities
 
 - **Consent recommendations**: AI explain impact of each consent choice
+
 - **Privacy dashboard**: AI-generated privacy health score
+
 - **Anomaly detection**: AI flag unusual data access patterns
+
 - **Auto-notifications**: AI alert when new doctor accesses data
+
 - **Consent expiry**: AI manage time-limited consent periods
+
 - **PDPA compliance report**: AI generate downloadable compliance report
+
+---
+
+## PostgreSQL Database Integration
+
+### Tables Used
+
+| Table | Operation | Description |
+| ----- | --------- | ----------- |
+| patient_consents | SELECT/INSERT/UPDATE | PDPA consent records CRUD |
+| users | SELECT | User identity for consent association |
+
+### API Endpoints
+
+| Endpoint | Method | DB Operation |
+| -------- | ------ | ------------ |
+| GET /api/consents | GET | SELECT patient_consents WHERE patient_id |
+| POST /api/consents | POST | INSERT patient_consents |
+| PUT /api/consents/:id | PUT | UPDATE patient_consents WHERE id |
+
+### Deployment
+
+- **Local Docker:** izara-postgres container (localhost:5433 external / 5432 internal) → database: izara_phase1
+
+- **Production:** GCE VM at 35.240.157.230:5432 → database: izara_phase1 (asia-southeast1)
+
+- **Service deployed via:** Cloud Run (gen2, CPU Boost) + Cloud Build CI/CD

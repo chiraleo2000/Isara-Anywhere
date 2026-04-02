@@ -4,10 +4,11 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Bell, Check, Calendar, Video, FileText, AlertCircle, X, ChevronRight } from 'lucide-react';
+import { Bell, Check, Calendar, Video, FileText, AlertCircle, X, ChevronRight, FlaskConical } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { notificationService, Notification } from '../../lib/services';
 import { useAuth } from '../../contexts/AuthContext';
+import { useRealtimeSync } from '../../lib/useRealtimeSync';
 
 interface NotificationBellProps {
   readonly className?: string;
@@ -36,6 +37,13 @@ export function NotificationBell({ className = '' }: Readonly<NotificationBellPr
       setLoading(false);
     }
   }, [user?.id]);
+
+  // Real-time WebSocket: refresh immediately on new notifications or lab order updates
+  useRealtimeSync({
+    patientId: user?.id,
+    onNotification: loadNotifications,
+    onLabOrderChange: loadNotifications,
+  });
 
   // Initial load and polling
   useEffect(() => {
@@ -96,6 +104,9 @@ export function NotificationBell({ className = '' }: Readonly<NotificationBellPr
         return <X className="w-4 h-4 text-red-500" />;
       case 'emr_ready':
         return <FileText className="w-4 h-4 text-blue-500" />;
+      case 'lab_results':
+      case 'lab_results_ready':
+        return <FlaskConical className="w-4 h-4 text-teal-500" />;
       case 'appointment_completed':
         return <Calendar className="w-4 h-4 text-emerald-500" />;
       default:
@@ -170,8 +181,8 @@ export function NotificationBell({ className = '' }: Readonly<NotificationBellPr
             {!loading && notifications.length > 0 && (
               <div className="divide-y divide-gray-100">
                 {notifications.slice(0, 10).map((notification) => (
-                  <button
-                    type="button"
+                  // eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events
+                  <div
                     key={notification.id}
                     onClick={() => handleMarkAsRead(notification.id)}
                     className={`p-4 hover:bg-gray-50 transition-colors cursor-pointer w-full text-left ${notification.isRead ? '' : 'bg-emerald-50/50'
@@ -214,6 +225,16 @@ export function NotificationBell({ className = '' }: Readonly<NotificationBellPr
                             </Link>
                           )}
 
+                          {(notification.type === 'lab_results' || notification.type === 'lab_results_ready') && (
+                            <Link
+                              to="/health?tab=lab-imaging"
+                              onClick={(e) => { e.stopPropagation(); setIsOpen(false); }}
+                              className="text-xs text-teal-600 hover:text-teal-700 font-medium flex items-center gap-1"
+                            >
+                              <FlaskConical className="w-3 h-3" /> ดูผลแล็บ <ChevronRight className="w-3 h-3" />
+                            </Link>
+                          )}
+
                           {notification.meetingLink && (
                             <a
                               href={notification.meetingLink}
@@ -240,7 +261,7 @@ export function NotificationBell({ className = '' }: Readonly<NotificationBellPr
                         </div>
                       </div>
                     </div>
-                  </button>
+                  </div>
                 ))}
               </div>
             )}

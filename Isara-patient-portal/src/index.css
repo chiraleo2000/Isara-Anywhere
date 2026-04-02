@@ -2,6 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Progress bar fill — width is controlled via --progress-width CSS variable set in JS */
+.progress-fill {
+  width: var(--progress-width, 0%);
+}
+
 * {
   margin: 0;
   padding: 0;

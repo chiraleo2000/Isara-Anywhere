@@ -5,11 +5,11 @@
 const { Pool } = require('pg');
 
 const pool = new Pool({
-  host: '35.240.162.227',
-  port: 5432,
-  user: 'postgres',
-  password: 'IzaraDb2024',
-  database: 'izara_phase1',
+  host: process.env.DEV_DB_HOST || '35.240.162.227',
+  port: Number.parseInt(process.env.DEV_DB_PORT || '5432'),
+  user: process.env.DEV_DB_USER || 'postgres',
+  password: process.env.DEV_DB_PASSWORD || '',
+  database: process.env.DEV_DB_NAME || 'izara_phase1',
   ssl: false,
   connectionTimeoutMillis: 15000
 });
@@ -79,7 +79,7 @@ async function migrate() {
     ];
     for (const idx of indexes) {
       await client.query(idx);
-      const name = idx.match(/idx_\w+/)?.[0] || 'unknown';
+      const name = /idx_\w+/.exec(idx)?.[0] || 'unknown';
       console.log('   Created: ' + name);
     }
 

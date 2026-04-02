@@ -88,3 +88,48 @@ DROP TRIGGER IF EXISTS trg_doctor_schedules_notify ON doctor_schedules;
 CREATE TRIGGER trg_doctor_schedules_notify
   AFTER INSERT OR UPDATE OR DELETE ON doctor_schedules
   FOR EACH ROW EXECUTE FUNCTION notify_data_change();
+
+-- ============================================================================
+-- Content tables use author_id (not patient_id/doctor_id), so they need a
+-- separate trigger function that broadcasts to all connected clients.
+-- ============================================================================
+CREATE OR REPLACE FUNCTION notify_content_change()
+RETURNS trigger AS $$
+DECLARE
+  payload JSON;
+  record_id TEXT;
+  new_status TEXT;
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    record_id  := OLD.id::TEXT;
+    new_status := 'archived';
+  ELSE
+    record_id  := NEW.id::TEXT;
+    new_status := NEW.status::TEXT;
+  END IF;
+
+  payload := json_build_object(
+    'table',     TG_TABLE_NAME,
+    'operation', TG_OP,
+    'id',        record_id,
+    'status',    new_status,
+    'patient_id', '',
+    'doctor_id',  ''
+  );
+
+  PERFORM pg_notify('data_changes', payload::TEXT);
+  RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Medical Content
+DROP TRIGGER IF EXISTS trg_medical_content_notify ON medical_content;
+CREATE TRIGGER trg_medical_content_notify
+  AFTER INSERT OR UPDATE OR DELETE ON medical_content
+  FOR EACH ROW EXECUTE FUNCTION notify_content_change();
+
+-- Clinical Resources
+DROP TRIGGER IF EXISTS trg_clinical_resources_notify ON clinical_resources;
+CREATE TRIGGER trg_clinical_resources_notify
+  AFTER INSERT OR UPDATE OR DELETE ON clinical_resources
+  FOR EACH ROW EXECUTE FUNCTION notify_content_change();

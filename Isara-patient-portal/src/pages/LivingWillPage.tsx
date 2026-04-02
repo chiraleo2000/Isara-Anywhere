@@ -203,6 +203,13 @@ function saveCanvasSignature(
   setForm((prev) => ({ ...prev, digitalSignature: dataUrl }));
 }
 
+interface SharedDoctorEntry {
+  doctor_id: string;
+  doctor_name: string;
+  granted_at: string;
+  email: string;
+}
+
 interface LoadLivingWillOptions {
   userId: string | undefined;
   patientId: string | undefined;
@@ -212,26 +219,29 @@ interface LoadLivingWillOptions {
   setDoctors: (v: Doctor[]) => void;
   setVersions: (v: LivingWillVersion[]) => void;
   setLoading: (v: boolean) => void;
+  setSharedDoctorsList: (v: SharedDoctorEntry[]) => void;
 }
 
 async function loadLivingWillData(opts: LoadLivingWillOptions) {
-  const { userId, patientId, setForm, setHasExisting, setCurrentVersion, setDoctors, setVersions, setLoading } = opts;
+  const { userId, patientId, setForm, setHasExisting, setCurrentVersion, setDoctors, setVersions, setLoading, setSharedDoctorsList } = opts;
   if (!userId) {
     setLoading(false);
     return;
   }
   try {
     const pid = patientId || userId;
-    const [livingWillData, doctorsData, versionsData] = await Promise.all([
-      pdpaService.getLivingWill(pid).catch(() => null),
-      doctorService.getAll().catch(() => []),
-      pdpaService.getLivingWillVersions(pid).catch(() => []),
+    const [livingWillData, doctorsData, versionsData, sharesData] = await Promise.all([
+      pdpaService.getLivingWill(pid).catch((err: unknown) => { console.error('[LivingWill] Living will fetch failed:', err); return null; }),
+      doctorService.getAll().catch((err: unknown) => { console.error('[LivingWill] Doctors fetch failed:', err); return []; }),
+      pdpaService.getLivingWillVersions(pid).catch((err: unknown) => { console.error('[LivingWill] Versions fetch failed:', err); return []; }),
+      pdpaService.getLivingWillShares(pid).catch((err: unknown) => { console.error('[LivingWill] Shares fetch failed:', err); return []; }),
     ]);
     if (livingWillData) {
+      const shareIds = (sharesData || []).map((s: SharedDoctorEntry) => s.doctor_id);
       setForm(prev => ({
         ...prev,
         ...livingWillData,
-        sharedWith: livingWillData.sharedWith || [],
+        sharedWith: shareIds,
         witnessSignatures: livingWillData.witnessSignatures || [],
       }));
       setHasExisting(true);
@@ -239,6 +249,7 @@ async function loadLivingWillData(opts: LoadLivingWillOptions) {
     }
     setDoctors(doctorsData || []);
     setVersions(versionsData || []);
+    setSharedDoctorsList(sharesData || []);
   } catch (e) {
     console.error('Failed to load data:', e);
   } finally {
@@ -332,18 +343,39 @@ function toggleFormPreference(
   }
 }
 
-function addDoctorToShareList(
-  doctor: Doctor,
-  form: LivingWillData,
-  setForm: React.Dispatch<React.SetStateAction<LivingWillData>>,
-  setShowDoctorModal: (v: boolean) => void,
-) {
+async function addDoctorToShareList(opts: {
+  doctor: Doctor;
+  form: LivingWillData;
+  setForm: React.Dispatch<React.SetStateAction<LivingWillData>>;
+  setShowDoctorModal: (v: boolean) => void;
+  userId: string | undefined;
+  patientId: string | undefined;
+  setSharedDoctorsList: (v: SharedDoctorEntry[]) => void;
+  sharedDoctorsList: SharedDoctorEntry[];
+}) {
+  const { doctor, form, setForm, setShowDoctorModal, userId, patientId, setSharedDoctorsList, sharedDoctorsList } = opts;
   if ((form.sharedWith || []).includes(doctor.id)) return;
-  setForm((prev) => ({
-    ...prev,
-    sharedWith: [...(prev.sharedWith || []), doctor.id],
-  }));
-  setShowDoctorModal(false);
+  const pid = patientId || userId;
+  if (!pid) return;
+  try {
+    await pdpaService.shareLivingWill(pid, doctor.id);
+    setForm((prev) => ({
+      ...prev,
+      sharedWith: [...(prev.sharedWith || []), doctor.id],
+    }));
+    setSharedDoctorsList([
+      ...sharedDoctorsList,
+      { doctor_id: doctor.id, doctor_name: doctor.name, granted_at: new Date().toISOString(), email: '' },
+    ]);
+    setShowDoctorModal(false);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Failed to share';
+    if (msg.includes('409') || msg.includes('already shared')) {
+      alert('พินัยกรรมชีวิตถูกแชร์กับแพทย์ท่านนี้แล้ว');
+    } else {
+      alert('เกิดข้อผิดพลาดในการแชร์: ' + msg);
+    }
+  }
 }
 
 type CanvasHandler = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => void;
@@ -361,6 +393,7 @@ function LivingWillHeader({ isDark, language, hasExisting, currentVersion, onBac
     <button
       onClick={onBack}
       className={`p-2 rounded-xl transition-colors ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
+      aria-label="Go back"
     >
       <ChevronLeft className={`w-6 h-6 ${isDark ? 'text-gray-300' : ''}`} />
     </button>
@@ -786,6 +819,7 @@ function StepMedicalPreferences({ form, setForm, togglePreference, onBack, onNex
           onClick={() => togglePreference('organDonation')}
           className={`relative w-14 h-7 rounded-full transition-colors ${form.preferences.organDonation ? 'bg-emerald-500' : 'bg-gray-300'
             }`}
+          aria-label="Toggle organ donation preference"
         >
           <div
             className={`absolute top-0.5 w-6 h-6 bg-white rounded-full shadow-md transform transition-transform ${form.preferences.organDonation ? 'translate-x-7' : 'translate-x-0.5'
@@ -1036,6 +1070,7 @@ function StepShareDoctors({ form, sharedDoctors, onShowDoctorModal, removeDoctor
               <button
                 onClick={() => removeDoctorFromShare(doctor.id)}
                 className="text-red-600 hover:bg-red-50 p-2 rounded-lg"
+                aria-label={`Remove ${doctor.name}`}
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1135,6 +1170,7 @@ function DoctorSelectionModal({ searchQuery, setSearchQuery, filteredDoctors, sh
         <button
           onClick={onClose}
           className="p-2 hover:bg-gray-100 rounded-lg"
+          aria-label="Close doctor picker"
         >
           <X className="w-5 h-5" />
         </button>
@@ -1209,6 +1245,7 @@ function VersionHistoryModal({ currentVersion, versions, formatDateTime, onRollb
         <button
           onClick={onClose}
           className="p-2 hover:bg-gray-100 rounded-lg"
+          aria-label="Close version history"
         >
           <X className="w-5 h-5" />
         </button>
@@ -1297,6 +1334,7 @@ function VersionPreviewModal({ selectedVersion, formatDateTime, onRollback, roll
         <button
           onClick={onClose}
           className="p-2 hover:bg-gray-100 rounded-lg"
+          aria-label="Close version detail"
         >
           <X className="w-5 h-5" />
         </button>
@@ -1395,6 +1433,7 @@ export default function LivingWillPage() {
   const [showVersionPreview, setShowVersionPreview] = useState(false);
   const [rollingBack, setRollingBack] = useState(false);
   const [currentVersion, setCurrentVersion] = useState<number>(1);
+  const [sharedDoctorsList, setSharedDoctorsList] = useState<SharedDoctorEntry[]>([]);
 
   const [form, setForm] = useState<LivingWillData>({
     healthcareProxy: {
@@ -1432,6 +1471,7 @@ export default function LivingWillPage() {
       setDoctors,
       setVersions,
       setLoading,
+      setSharedDoctorsList,
     });
   };
 
@@ -1498,10 +1538,25 @@ export default function LivingWillPage() {
   };
 
   const addDoctorToShare = (doctor: Doctor) => {
-    addDoctorToShareList(doctor, form, setForm, setShowDoctorModal);
+    addDoctorToShareList({
+      doctor, form, setForm, setShowDoctorModal,
+      userId: user?.id, patientId: user?.patientId,
+      setSharedDoctorsList, sharedDoctorsList,
+    });
   };
 
-  const removeDoctorFromShare = (doctorId: string) => {
+  const removeDoctorFromShare = async (doctorId: string) => {
+    const pid = user?.patientId || user?.id;
+    if (pid) {
+      try {
+        await pdpaService.revokeLivingWillShare(pid, doctorId);
+      } catch (err) {
+        console.error('Failed to revoke share:', err);
+        alert('เกิดข้อผิดพลาดในการเพิกถอนการแชร์');
+        return;
+      }
+    }
+    setSharedDoctorsList(prev => prev.filter(s => s.doctor_id !== doctorId));
     setForm((prev) => ({
       ...prev,
       sharedWith: (prev.sharedWith || []).filter((id) => id !== doctorId),

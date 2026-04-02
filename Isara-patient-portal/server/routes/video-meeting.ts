@@ -1,5 +1,5 @@
 /**
- * Video Meeting Service using Jitsi Meet + Web Speech API + Gemini AI v1.4.7
+ * Video Meeting Service using Jitsi Meet + Web Speech API + Gemini AI v1.6.0
  * 
  * ZERO-COST TRANSCRIPTION SOLUTION:
  * - Jitsi Meet: FREE video conferencing (no licensing costs)
@@ -53,7 +53,7 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API
 const GEMINI_MODEL = process.env.GEMINI_MODEL || process.env.VITE_GEMINI_MODEL || 'gemini-2.5-flash-lite';
 
 // Log configuration at startup (without leaking API key)
-console.log('[Video Meeting] ===== Configuration v1.4.8 =====');
+console.log('[Video Meeting] ===== Configuration v1.6.0 =====');
 console.log('[Video Meeting] Jitsi Domain:', JITSI_DOMAIN);
 console.log('[Video Meeting] Transcription: Web Speech API (browser-native, FREE)');
 console.log('[Video Meeting] Gemini API Key:', GEMINI_API_KEY ? '✅ Configured' : '❌ NOT FOUND');
@@ -706,8 +706,8 @@ router.post('/create', async (req: Request, res: Response) => {
 router.get('/health', (req: Request, res: Response) => {
   res.json({
     status: 'healthy',
-    service: 'Jitsi Meet + Web Speech API + Gemini AI Video Meeting Service v1.4.7',
-    version: '1.4.7',
+    service: 'Jitsi Meet + Web Speech API + Gemini AI Video Meeting Service v1.6.0',
+    version: '1.6.0',
     timestamp: new Date().toISOString(),
     config: {
       jitsiDomain: JITSI_DOMAIN,

@@ -1,8 +1,8 @@
 # 🔐 Doctor Portal — Login Page
 
-**Route:** `/login`  
-**Component:** `src/pages/LoginPage.tsx`  
-**Access:** Public (unauthenticated users only)  
+**Route:** `/login`
+**Component:** `src/pages/LoginPage.tsx`
+**Access:** Public (unauthenticated users only)
 **Thai Title:** เข้าสู่ระบบ Izara Doctor Portal
 
 ---
@@ -155,6 +155,35 @@ Step 5: Click link → /reset-password?token=xxx
 ## 7. AI Agent Improvement Opportunities
 
 - **License verification**: AI auto-verify medical license numbers
+
 - **Specialty matching**: AI suggest specialty based on background
+
 - **Fraud detection**: AI detect suspicious registration patterns
+
 - **SSO integration**: AI-managed single sign-on with hospital systems
+
+---
+
+## PostgreSQL Database Integration
+
+### Tables Used
+
+| Table | Operation | Description |
+| ----- | --------- | ----------- |
+| users | SELECT | Query by email, verify password_hash via pgcrypto crypt() |
+| sessions | INSERT | Create session token on successful login |
+
+### API Endpoints
+
+| Endpoint | Method | DB Operation |
+| -------- | ------ | ------------ |
+| POST /api/auth/login | POST | SELECT users WHERE email, verify crypt(password, password_hash) |
+| POST /api/auth/register | POST | INSERT INTO users (doctor registration) |
+
+### Deployment
+
+- **Local Docker:** izara-postgres container (localhost:5433 external / 5432 internal) → database: izara_phase1
+
+- **Production:** GCE VM at 35.240.157.230:5432 → database: izara_phase1 (asia-southeast1)
+
+- **Service deployed via:** Cloud Run (gen2, CPU Boost) + Cloud Build CI/CD

@@ -1,16 +1,18 @@
 # 🏥 Izara: Your Doctor Anywhere — Phase 2 MVP Comprehensive Plan
 
-**Version:** 2.2.0  
-**Date:** February 19, 2026  
-**Codename:** AI Doctor Anywhere (หมอ AI ทุกที่)  
-**Platform:** React Native (Expo) — iOS & Android + Web Portal Enhancements  
+**Version:** 2.2.0
+**Date:** February 19, 2026
+**Codename:** AI Doctor Anywhere (หมอ AI ทุกที่)
+**Platform:** React Native (Expo) — iOS & Android + Web Portal Enhancements
 **Architecture:** AI-Based HIS + Unified Mobile App with Role Selection
 
 ---
 
+
 ## Executive Summary
 
 Phase 2 transforms Izara from a telemedicine platform (Phase 1) into a **complete AI-Based HIS (Health Information System)** that transcends traditional HIS. The application serves as a central hub for healthcare delivery — from community health centers (รพ.สต.) to franchise clinic networks, elderly care facilities, and hospital OPDs — powered by 4 foundational pillars:
+
 
 ### The 4 Pillars
 
@@ -19,7 +21,7 @@ Phase 2 transforms Izara from a telemedicine platform (Phase 1) into a **complet
    - **Vector Database:** pgvector for unstructured medical records enabling RAG (Retrieval-Augmented Generation) — AI answers from patient history with precision
    - Data must not just be "storable" but "machine-readable" and "AI-ready"
 
-2. **AI Integration Layers (The Intelligence)**  
+2. **AI Integration Layers (The Intelligence)**
    - **Medical Scribe (NLP):** Automatic conversion of doctor-patient conversations into structured Clinical Notes
    - **Predictive Analytics:** Readmission risk, complication forecasting, Early Warning Scores
    - **Clinical Decision Support (CDS):** Deep cross-reaction drug checking, allergy validation, treatment recommendations
@@ -34,6 +36,7 @@ Phase 2 transforms Izara from a telemedicine platform (Phase 1) into a **complet
    - **Immutable Audit Logs:** Blockchain-hashed access records for transparency
    - **Consent Management:** Granular e-Consent per data type, PDPA-compliant sharing
 
+
 ### Target User Groups
 
 | Group | Thai | Description |
@@ -43,6 +46,8 @@ Phase 2 transforms Izara from a telemedicine platform (Phase 1) into a **complet
 | **Elderly Care** | ศูนย์ดูแลผู้สูงอายุ | Retirement Homes / Home Care / Nursing facilities |
 | **Health Centers** | รพ.สต. | Sub-district Health Promoting Hospitals |
 | **Hospital OPD** | แผนกผู้ป่วยนอก | Outpatient departments at all hospital levels |
+
+
 
 ### Clinical Task Workflow (Task 1–5)
 
@@ -85,7 +90,9 @@ Task 5: Refer & Data Exchange
 
 ---
 
+
 ## 1. Clinical Task Workflow (Task 1–5)
+
 
 ### Task 1: Patient & Family — Data Input & AI History Taking
 
@@ -98,6 +105,8 @@ Task 5: Refer & Data Exchange
 | **e-Living Will** | Digital advance directives with electronic signatures | Existing |
 | **PDPA Consent** | Granular data sharing consent management | Existing |
 | **Patient Check-in** | Queue number display, self-check vital signs at screening | New |
+
+
 
 ### Task 2: Healthcare Team — AI Dashboard & Consultation
 
@@ -114,6 +123,8 @@ Task 5: Refer & Data Exchange
 | **Follow-up Tracking** | Recovery scoring, proactive monitoring, Care Team alerts for Home Care patients | New |
 | **Admin Network Dashboard** | Clinic network overview, service monitoring, resource allocation, referral tracking | New |
 
+
+
 ### Task 3: Investigation — Lab, Radiology, Pathology
 
 | Feature | Description | Status |
@@ -123,6 +134,8 @@ Task 5: Refer & Data Exchange
 | **Pathology Report** | Specimen details, gross/microscopic description, final diagnosis | New |
 | **Critical Value Alerts** | Auto-notify doctor when lab values exceed critical thresholds | New |
 | **AI Lab Analysis** | AI-assisted interpretation of lab results with trend analysis | Existing |
+
+
 
 ### Task 4: Treatment — Prescription & Order Entry
 
@@ -136,6 +149,8 @@ Task 5: Refer & Data Exchange
 | **Medication Reminders** | Push notification to patients for medication/herbal schedules | New |
 | **Automated Medical Record** | AI compiles treatment data into structured EMR for long-term storage | New |
 
+
+
 ### Task 5: Refer & Data Exchange
 
 | Feature | Description | Status |
@@ -145,9 +160,12 @@ Task 5: Refer & Data Exchange
 | **API Protocol (รพ.สต.)** | REST API for syncing with community health centers | New |
 | **SOS Emergency Call** | Real-time emergency alert from patient app to Nursing Dashboard | New |
 
+
 ---
 
+
 ## 2. Database Schema — Phase 2 Additions
+
 
 ### 2.1 New Tables for AI-Based HIS
 
@@ -387,6 +405,7 @@ CREATE INDEX IF NOT EXISTS idx_queue_status ON patient_queue(status);
 CREATE INDEX IF NOT EXISTS idx_daily_log_patient ON daily_health_logs(patient_id, log_date);
 ```
 
+
 ### 2.2 Mock Data — 10 Demo Cases
 
 | Case | Name | Type | CC / PI | Treatment |
@@ -402,9 +421,12 @@ CREATE INDEX IF NOT EXISTS idx_daily_log_patient ON daily_health_logs(patient_id
 | IZ-009 | นายเกษม เปรมปรีดิ์ | Anti-aging | Sarcopenia prevention | Supplements + exercise program |
 | IZ-010 | นางวิมล คนขยัน | Mental Health | เครียดสะสม ปวดท้ายทอย | Sleep tracking + counseling |
 
+
 ---
 
+
 ## 3. API Endpoints — Phase 2 New Routes
+
 
 ### 3.1 FHIR Observations (Wearable / Vital Signs)
 
@@ -415,6 +437,7 @@ GET    /api/v1/fhir/observations/:patientId/latest — Latest vitals
 DELETE /api/v1/fhir/observations/:id       — Delete observation
 ```
 
+
 ### 3.2 AI History Taking
 
 ```text
@@ -424,6 +447,7 @@ GET    /api/v1/ai/history-taking/:sessionId — Get session state
 POST   /api/v1/ai/history-taking/complete   — Complete & generate summary
 ```
 
+
 ### 3.3 Clinical Impressions
 
 ```text
@@ -431,6 +455,7 @@ POST   /api/v1/clinical-impressions         — Create AI clinical impression
 GET    /api/v1/clinical-impressions/:patientId — Get patient impressions
 PUT    /api/v1/clinical-impressions/:id/approve — Doctor approves
 ```
+
 
 ### 3.4 CTM (Thai Traditional Medicine)
 
@@ -444,6 +469,7 @@ GET    /api/v1/ctm/herbal-prescriptions/:patientId — Get prescriptions
 PUT    /api/v1/ctm/herbal-prescriptions/:id/approve — Approve prescription
 ```
 
+
 ### 3.5 Investigation Reports
 
 ```text
@@ -452,6 +478,7 @@ GET    /api/v1/investigations/:patientId     — Get patient investigations
 GET    /api/v1/investigations/:id/report     — Get specific report
 PUT    /api/v1/investigations/:id/finalize   — Finalize report
 ```
+
 
 ### 3.6 Referral
 
@@ -462,6 +489,7 @@ GET    /api/v1/referral/:id/pdf              — Generate PDF report
 POST   /api/v1/referral/:id/send             — Send to receiving facility
 ```
 
+
 ### 3.7 Emergency (SOS)
 
 ```text
@@ -470,6 +498,7 @@ GET    /api/v1/emergency/active              — Get active emergencies
 PUT    /api/v1/emergency/:id/acknowledge     — Nurse acknowledges
 PUT    /api/v1/emergency/:id/resolve         — Resolve emergency
 ```
+
 
 ### 3.8 Queue Management
 
@@ -481,6 +510,7 @@ PUT    /api/v1/queue/:id/complete            — Complete consultation
 GET    /api/v1/queue/analytics               — Queue analytics
 ```
 
+
 ### 3.9 Daily Health Logs
 
 ```text
@@ -488,6 +518,7 @@ POST   /api/v1/health-logs                   — Create daily log
 GET    /api/v1/health-logs/:patientId        — Get patient logs
 GET    /api/v1/health-logs/:patientId/trends  — Get trend analysis
 ```
+
 
 ### 3.10 Wearable Connections
 
@@ -498,6 +529,7 @@ POST   /api/v1/wearables/sync                — Manual sync trigger
 DELETE /api/v1/wearables/:id/disconnect       — Disconnect provider
 ```
 
+
 ### 3.11 Clinic Network
 
 ```text
@@ -507,6 +539,7 @@ GET    /api/v1/network/analytics              — Network analytics
 POST   /api/v1/network/clinics               — Add clinic (admin)
 ```
 
+
 ### 3.12 HIS Data Exchange (รพ.สต.)
 
 ```text
@@ -515,6 +548,7 @@ GET    /api/v1/hie/referral-package/:patientId — Get referral package
 POST   /api/v1/hie/receive                    — Receive data from HIS
 GET    /api/v1/hie/status                     — Exchange status
 ```
+
 
 ### 3.13 Geriatric Screening
 
@@ -528,6 +562,7 @@ POST   /api/v1/screening/cognitive             — Record cognitive screen (Mini
 POST   /api/v1/screening/nutritional           — Record MNA assessment
 ```
 
+
 ### 3.14 Follow-up Tracking
 
 ```text
@@ -537,6 +572,7 @@ PUT    /api/v1/follow-up/:id/record            — Record follow-up outcome
 GET    /api/v1/follow-up/:patientId/recovery   — Get recovery score trends
 POST   /api/v1/follow-up/:id/alert             — Trigger care team alert
 ```
+
 
 ### 3.15 Predictive Analytics
 
@@ -548,6 +584,7 @@ GET    /api/v1/analytics/adherence/:patientId        — Medication adherence %
 GET    /api/v1/analytics/element-balance/:patientId  — Thai element trend (CTM)
 POST   /api/v1/analytics/early-warning               — Compute Early Warning Score
 ```
+
 
 ### 3.16 Nursing Dashboard
 
@@ -562,7 +599,9 @@ PUT    /api/v1/nursing/alerts/:id/acknowledge   — Acknowledge alert
 
 ---
 
+
 ## 4. AI Prompt Engineering
+
 
 ### 4.1 General Medicine — AI History Taking
 
@@ -574,6 +613,7 @@ System Prompt: "คุณคือผู้ช่วยแพทย์แผน�
 และการวินิจฉัยแยกโรค (Differential Diagnosis)."
 ```
 
+
 ### 4.2 Thai Traditional Medicine (CTM)
 
 ```text
@@ -584,6 +624,7 @@ System Prompt: "คุณคือผู้เชี่ยวชาญการ�
 ```
 
 ---
+
 
 ## 5. Security & Compliance
 
@@ -598,9 +639,12 @@ System Prompt: "คุณคือผู้เชี่ยวชาญการ�
 | **Consent Microservice** | Separate service for e-Consent status (wearable, AI, sharing, refer) |
 | **PHI Encryption** | Radiology images, Lab results encrypted per-access by authorized RBAC role |
 
+
 ---
 
+
 ## 6. Detailed Feature Specifications
+
 
 ### 6.1 Executive Health Dashboard (Task 2 & 4)
 
@@ -633,12 +677,17 @@ The primary decision-making interface for doctors. Designed for rapid comprehens
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-**Key Interactions:**
+
+## Key Interactions:
 
 - **AI Clinical Insights:** Shows CC, PI, differential diagnosis, and สมุฏฐานวินิจฉัย (for CTM patients)
+
 - **Investigation Matrix:** Color-coded flags (🟢 normal, 🟡 borderline, 🔴 critical) — click to expand
+
 - **One-Click Order Entry:** Approve, modify, or refer with pre-populated AI suggestions
+
 - **Holistic View:** Self-entered data (diet, sleep, exercise) visible alongside clinical data
+
 
 ### 6.2 Nursing Dashboard (Elderly Care / Home Care)
 
@@ -652,6 +701,8 @@ Real-time monitoring interface for nursing teams managing multiple patients:
 | **MAR (Medication Administration Record)** | Checklist of scheduled medications/herbs with "Given" confirmation |
 | **SOS Receiver** | Red alert popup + sound when patient triggers emergency |
 | **Recovery Timeline** | Per-patient progress visualization post-treatment |
+
+
 
 ### 6.3 Geriatric Screening Module
 
@@ -668,6 +719,7 @@ Specialized assessment tools for elderly care facilities:
 | **Sarcopenia Risk** | SARC-F | Strength, Assistance walking, Rising from chair, Climbing, Falls |
 | **Pressure Ulcer Risk** | Braden Scale | Sensory perception, moisture, activity, mobility, nutrition, friction |
 
+
 ```text
 Geriatric Screening Workflow:
   Patient arrives → Nurse opens Screening Dashboard
@@ -677,6 +729,7 @@ Geriatric Screening Workflow:
     → Flags high-risk patients for doctor review (Task 2)
     → Results stored in EMR + shown on Health Timeline
 ```
+
 
 ### 6.4 Follow-up Tracking System
 
@@ -691,6 +744,8 @@ Post-treatment monitoring for chronic patients and Home Care:
 | **Scheduled Check-ins** | Push notifications for patient to report symptoms at set intervals |
 | **Thai Element Tracking** | For CTM patients — track ธาตุ changes over recovery period |
 
+
+
 ### 6.5 Predictive Health Analytics
 
 AI-powered long-term health risk analysis:
@@ -703,6 +758,8 @@ AI-powered long-term health risk analysis:
 | **Diabetic Complication** | HbA1c trend, glucose variability, foot exam | Complication risk score | Chronic disease management |
 | **Thai Element Imbalance** | Seasonal patterns, lifestyle data, symptom history | Element deviation forecast | CTM preventive care |
 | **Medication Adherence** | Refill patterns, self-reported compliance | Adherence % + risk flags | All chronic patients |
+
+
 
 ### 6.6 CTM Clinical Record System
 
@@ -743,6 +800,7 @@ Complete Thai Traditional Medicine recording interface:
 }
 ```
 
+
 ### 6.7 SOS Emergency System Architecture
 
 ```text
@@ -768,6 +826,7 @@ Complete Thai Traditional Medicine recording interface:
                                   │  (Task 5)            │
                                   └─────────────────────┘
 ```
+
 
 ### 6.8 HIS Data Exchange Protocol (รพ.สต.)
 
@@ -796,6 +855,7 @@ Complete Thai Traditional Medicine recording interface:
 └─────────────────────────────────────────────────────────┘
 ```
 
+
 ### 6.9 Admin Clinic Network Dashboard
 
 | Section | Description |
@@ -809,7 +869,9 @@ Complete Thai Traditional Medicine recording interface:
 | **Audit Monitor** | Real-time PDPA consent status across network, access log review |
 | **System Status** | AI processing health, API connectivity, wearable sync status per site |
 
+
 ---
+
 
 ## 7. Target User Groups
 
@@ -821,7 +883,9 @@ Complete Thai Traditional Medicine recording interface:
 | **Health Centers** | รพ.สต. | Sub-district Health Promoting Hospitals | HIS Integration, PHR sync, Referral |
 | **Hospital OPD** | แผนกผู้ป่วยนอก | Outpatient departments at all levels | Full EMR, Lab/Radiology/Pathology |
 
+
 ---
+
 
 ## 7. Test Coverage Requirements
 
@@ -835,9 +899,11 @@ The Phase 2 MVP requires additional test specs to cover:
 | 19-phase2-referral-emergency.spec.ts | ~65 | Referral workflow, SOS emergency, Queue management |
 | 20-phase2-network-hie-dashboard.spec.ts | ~70 | Clinic network, HIS data exchange, Admin dashboard |
 
+
 **Target: 1,932+ total tests** (1,572 existing + 360 new)
 
 ---
+
 
 ## 8. Technology Stack
 
@@ -856,3 +922,4 @@ The Phase 2 MVP requires additional test specs to cover:
 | Payments | Stripe + PromptPay (Thai QR) | Consultation fee payment |
 | Testing | Playwright (E2E), 1,900+ tests | Comprehensive test coverage |
 | Security | AES-256, TLS 1.3, OAuth 2.0, JWT | PDPA/HIPAA compliant encryption |
+

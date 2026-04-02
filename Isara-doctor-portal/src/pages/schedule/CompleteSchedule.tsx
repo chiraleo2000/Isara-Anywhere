@@ -14,7 +14,7 @@ interface CompleteScheduleProps {
 }
 
 // i18n labels for Complete Schedule page
-const labels = {
+const _labels = {
   pageTitle: { en: 'Schedule', th: 'ตารางนัดหมาย' },
   viewAndManage: { en: 'View and manage your appointments', th: 'ดูและจัดการการนัดหมายของคุณ' },
   day: { en: 'Day', th: 'วัน' },

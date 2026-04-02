@@ -102,7 +102,7 @@ export interface CopilotContext {
 class AIClinicalCopilot {
   private conversationHistory: CopilotMessage[] = [];
   private context: CopilotContext = {};
-  private isInitialized = false;
+  private _isInitialized = false;
   private readonly models: Map<string, GenerativeModel> = new Map();
 
   /**
@@ -132,7 +132,7 @@ class AIClinicalCopilot {
   /**
    * Get system instruction for a task
    */
-  private getSystemInstruction(taskType: keyof typeof COPILOT_CONFIGS): string {
+  private _getSystemInstruction(taskType: keyof typeof COPILOT_CONFIGS): string {
     return COPILOT_CONFIGS[taskType].systemInstruction;
   }
 
@@ -149,7 +149,7 @@ class AIClinicalCopilot {
   async initialize(context: CopilotContext): Promise<void> {
     this.context = context;
     this.conversationHistory = [];
-    this.isInitialized = true;
+    this._isInitialized = true;
 
     console.log('🤖 AI Clinical Copilot initialized with patient context');
   }
@@ -397,7 +397,7 @@ To enable AI-powered assistance:
   reset(): void {
     this.conversationHistory = [];
     this.context = {};
-    this.isInitialized = false;
+    this._isInitialized = false;
   }
 }
 

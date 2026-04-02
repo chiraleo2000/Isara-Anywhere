@@ -1,8 +1,8 @@
 # Izara Telemedicine - Data Architecture & Sync Documentation
 
-**Version:** 1.6.0  
-**Last Updated:** July 10, 2026  
-**Status:** ✅ PostgreSQL Implementation Complete + Meeting Server + Cross-Portal Fixes
+**Version:** 1.6.1
+**Last Updated:** March 31, 2026
+**Status:** ✅ PostgreSQL Implementation Complete + Meeting Server + Cross-Portal Fixes + Full Schema
 
 ---
 
@@ -37,6 +37,147 @@ Database: izara_phase1
 ### Database Extension
 
 - **pgvector** - For AI embedding storage and similarity search
+
+- **uuid-ossp** - UUID generation for primary keys
+
+- **pgcrypto** - Password hashing and encryption
+
+### Production Deployment (Google Cloud)
+
+```text
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    PRODUCTION DEPLOYMENT ARCHITECTURE                     │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  Google Cloud Run (asia-southeast1)                                      │
+│  ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐      │
+│  │ Patient Portal    │  │ Doctor Portal     │  │ Meeting Server   │      │
+│  │ 1 CPU / 1 GB      │  │ 1 CPU / 1 GB      │  │ 1 CPU / 2 GB     │      │
+│  │ 0-2 instances     │  │ 0-2 instances     │  │ 0-2 instances    │      │
+│  │ gen2 + CPU Boost  │  │ gen2 + CPU Boost  │  │ gen2 + CPU Boost │      │
+│  │ Timeout: 300s     │  │ Timeout: 300s     │  │ Timeout: 600s    │      │
+│  └────────┬─────────┘  └────────┬─────────┘  └────────┬────────┘      │
+│           └─────────────────────┼──────────────────────┘                │
+│                                 ▼                                        │
+│                    ┌──────────────────────┐                              │
+│                    │ PostgreSQL VM (GCE)  │                              │
+│                    │ 35.240.157.230:5432  │                              │
+│                    │ DB: izara_phase1     │                              │
+│                    │ NOT Cloud SQL        │                              │
+│                    │ pgvector + pgcrypto  │                              │
+│                    │ + uuid-ossp          │                              │
+│                    └──────────────────────┘                              │
+│                                                                          │
+│  Artifact Registry: asia-southeast1-docker.pkg.dev                       │
+│  ├── izara-patient-portal:v1.5.8                                         │
+│  ├── izara-doctor-portal:v1.5.8                                          │
+│  └── izara-jitsi-meeting:v1.5.10                                         │
+│                                                                          │
+│  Cloud Build: Automated CI/CD via cloudbuild.yaml per service            │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### Database Initialization Scripts
+
+| Order | Script | Purpose |
+| ----- | ------ | ------- |
+| 1 | `scripts/database/izara-database.sql` | Main schema (37+ tables, extensions, indexes) |
+| 2 | `scripts/database/migrations/v2.0.0-phase2-tables.sql` | Phase 2 enhancement tables |
+| 3 | `scripts/database/migrations/v2.1.0-phase2-ai-his.sql` | AI & HIS tables |
+| 4 | `scripts/database/v2.2.0-notify-triggers.sql` | LISTEN/NOTIFY triggers |
+| 5 | `scripts/database/seed-dev-data.sql` | Test data (7 seed users) |
+
+### Complete Table Inventory (37+ Tables)
+
+#### User Management (6 tables)
+
+| Table | Key Columns | Purpose |
+| ----- | ----------- | ------- |
+| **users** | id, email, password_hash, role, name, name_thai, phone, date_of_birth, national_id, doctor_id, patient_id, is_active, is_verified, is_approved, approval_status, preferences (JSONB), notification_settings (JSONB), login_attempts, locked_until | Unified user table for all roles |
+| **sessions** | id, user_id, token, ip_address, user_agent, expires_at, logged_out_at | JWT session tracking |
+| **password_resets** | id, user_id, token, expires_at, used, used_at | Password reset tokens |
+| **device_tokens** | id, user_id, device_token, platform, device_name, is_active | Push notification devices |
+| **biometric_credentials** | id, user_id, credential_type, public_key, device_id, is_active | Biometric auth (Phase 2) |
+| **refresh_tokens** | id, user_id, token_hash, device_id, expires_at, is_revoked | JWT refresh rotation (Phase 2) |
+
+#### Patient Data (7 tables)
+
+| Table | Key Columns | Purpose |
+| ----- | ----------- | ------- |
+| **patient_profiles** | patient_id, demographics (JSONB), emergency_contact (JSONB), insurance_info (JSONB) | Patient demographics |
+| **phr** | id, patient_id, demographics (JSONB), vital_signs_history (JSONB), allergies (JSONB), chronic_conditions (JSONB), medications (JSONB), vaccinations (JSONB), lifestyle (JSONB), family_history (JSONB), blood_type, height_cm, weight_kg, bmi | Personal Health Records |
+| **vital_signs** | id (UUID), patient_id, blood_pressure_systolic/diastolic, heart_rate, temperature, respiratory_rate, oxygen_saturation, blood_glucose, weight, height, measured_at, source | Individual vital measurements |
+| **living_wills** | id, patient_id, statement, treatments (JSONB), representatives (JSONB), signature (JSONB), pdpa_consent (JSONB), status, is_shared_with_doctors, version, audit_log (JSONB) | Advance directives |
+| **living_will_versions** | id, patient_id, version, data (JSONB), note | Version history |
+| **patient_consents** | id, patient_id, consent_type, granted, doctor_id, data_types (JSONB), status | PDPA consent management |
+| **push_subscriptions** | id, user_id, appointment_reminders, medication_reminders, quiet_hours_start/end | Push notification preferences |
+
+#### Doctor Management (5 tables)
+
+| Table | Key Columns | Purpose |
+| ----- | ----------- | ------- |
+| **doctor_profiles** | doctor_id, specialty, sub_specialties (JSONB), qualifications, experience_years, hospital_name, department, languages (JSONB), rating, consultation_fee, is_available, schedule (JSONB) | Extended doctor info |
+| **doctors** | id, name, name_thai, specialty, specialty_thai, hospital, avatar_url, rating, is_available | Patient-facing doctor listing |
+| **doctor_schedules** | id, doctor_id, day_of_week (0-6), start_time, end_time, slot_duration_minutes, is_available | Availability slots |
+| **doctor_reviews** | id, doctor_id, patient_id, appointment_id, rating (1-5), comment | Patient feedback |
+| **consultants** | id, name, specialty, email, phone, hospital, languages (JSONB), is_available, rating, reviews (JSONB), admin_notes | External specialist directory |
+
+#### Appointments & Meetings (4 tables)
+
+| Table | Key Columns | Purpose |
+| ----- | ----------- | ------- |
+| **appointments** | id, patient_id, doctor_id, requested_date/time, confirmed_date/time, appointment_type, status, urgency_level, symptoms (JSONB), ai_triage (JSONB), meet_link, jitsi_room_name, invitees (JSONB) | Consultation scheduling |
+| **meeting_records** | id (UUID), appointment_id, doctor_id, patient_id, room_name, jitsi_domain, status, meeting_config (JSONB), transcript, ai_summary, ai_recommendations, section_summaries (JSONB), doctor_validation_status, patient_instructions, recording_data (BYTEA), duration_minutes | Video sessions + AI |
+| **meeting_transcripts** | id (UUID), meeting_record_id, speaker_id, speaker_role, speaker_name, content, language, confidence, start_time_seconds, is_final | STT segments |
+| **ai_chat_history** | id, user_id, session_id, role, content, context (JSONB), embedding (vector) | Chat with AI embeddings |
+
+#### Clinical Data (5 tables)
+
+| Table | Key Columns | Purpose |
+| ----- | ----------- | ------- |
+| **emr** | id, appointment_id, patient_id, doctor_id, subjective/objective/assessment/plan (JSONB), ai_summary, ai_summary_approved, patient_instructions, doctor_signature, signed_at, status (draft/signed) | SOAP medical records |
+| **prescriptions** | id, emr_id, appointment_id, patient_id, doctor_id, medications (JSONB), pharmacy_instructions, cds_warnings (JSONB), status | E-prescribing |
+| **lab_orders** | id, emr_id, appointment_id, patient_id, doctor_id, tests (JSONB), priority, results (JSONB), ai_analysis, status | Lab test orders |
+| **transcriptions_embeddings** | meeting_record_id, chunk_text, speaker_role, start/end_time_seconds, embedding (vector), metadata (JSONB) | Vectorized transcript chunks |
+| **ai_chat_memory** | id, user_id, memory_type, title, content, source_session_id, embedding (vector), relevance_score, is_active | Long-term AI memory |
+
+#### Content & Knowledge (6 tables)
+
+| Table | Key Columns | Purpose |
+| ----- | ----------- | ------- |
+| **medical_content** | id, title_thai, title_english, content_thai, content_english, category, tags (JSONB), author_id, status (draft/published), image_url, view_count | Patient education |
+| **clinical_resources** | id, title_thai, title_english, content_thai, content_english, category, specialty, guideline_year, tags (JSONB), status (pending/approved), author_id, approved_by | Doctor reference |
+| **icd10_codes** | code (PK), description_english, description_thai, category, chapter | Diagnosis codes |
+| **drugs** | id, generic_name, brand_names (JSONB), drug_class, dosage_forms (JSONB), indications (JSONB), contraindications (JSONB), interactions (JSONB), pregnancy_category, renal_adjustment (JSONB) | Drug database |
+| **knowledge_base** | id, title, content, source, category, guideline_year, language, embedding (vector), is_active | RAG knowledge base |
+| **ai_document_analysis** | id, patient_id, doctor_id, document_type, filename, summary, key_findings (JSONB), abnormal_values (JSONB), validation_status | AI doc analysis |
+
+#### AI & Decision Support (3 tables)
+
+| Table | Key Columns | Purpose |
+| ----- | ----------- | ------- |
+| **cds_logs** | id, patient_id, doctor_id, appointment_id, recommendation_type, severity, title, description, guideline_source, doctor_decision (accepted/rejected/modified) | CDS audit trail |
+| **ai_validations** | id, type, patient_id, doctor_id, decision (approved/rejected), content_snapshot, validated_at | Man-in-the-Loop log |
+| **notifications** | id (UUID), user_id, type, title, title_thai, message, message_thai, data (JSONB), read_at | User notifications |
+
+#### Audit (1 table)
+
+| Table | Key Columns | Purpose |
+| ----- | ----------- | ------- |
+| **audit_logs** | id, user_id, patient_id, action, entity_type, entity_id, details (JSONB), old_value (JSONB), new_value (JSONB), ip_address, user_agent, performed_by | Compliance audit trail |
+
+### PostgreSQL LISTEN/NOTIFY Triggers
+
+| Trigger | Table | Events | Socket.IO Event |
+| ------- | ----- | ------ | --------------- |
+| notify_appointment_change | appointments | INSERT, UPDATE, DELETE | appointment:updated |
+| notify_emr_change | emr | INSERT, UPDATE | emr:updated |
+| notify_prescription_change | prescriptions | INSERT, UPDATE | prescription:updated |
+| notify_lab_order_change | lab_orders | INSERT, UPDATE | lab-order:updated |
+| notify_phr_change | phr | UPDATE | phr:updated |
+| notify_schedule_change | doctor_schedules | INSERT, UPDATE, DELETE | schedule:updated |
+| notify_notification_insert | notifications | INSERT | notification:new |
+| notify_meeting_change | meeting_records | INSERT, UPDATE | meeting:updated |
 
 ---
 
@@ -175,7 +316,7 @@ Patient Books Appointment
 │  UPDATE appointments SET                         │
 │    status = 'confirmed',                         │
 │    confirmed_date_time = NOW(),                  │
-│    meeting_link = 'https://meet.jit.si/...',    │
+│    meeting_link = '<https://meet.jit.si/...',>    │
 │    doctor_meeting_url = '...',                  │
 │    patient_meeting_url = '...'                  │
 │  WHERE id = $1                                   │
@@ -393,21 +534,27 @@ Doctor Completes EMR
 ### Playwright Tests (26 tests)
 
 - Patient Portal: 10 tests
+
 - Doctor Portal: 10 tests
+
 - Admin workflows: 6 tests
 
 ### Run Tests
 
 ```powershell
+
 # Complete test suite (Playwright)
 cd Isara-doctor-portal
 npx playwright test
 
+
 # Specific test file
 npx playwright test tests/doctor-portal.spec.ts
 
+
 # With UI mode
 npx playwright test --ui
+
 
 # Debug mode
 npx playwright test --debug
@@ -430,18 +577,27 @@ npx playwright test --debug
 ### Local Development
 
 - [ ] Docker containers running (postgres, patient-portal, doctor-portal, pgadmin)
+
 - [ ] Database seeded with `seed-local.sql`
+
 - [ ] Patient Portal accessible at <http://localhost:3005>
+
 - [ ] Doctor Portal accessible at <http://localhost:3010>
+
 - [ ] pgAdmin accessible at <http://localhost:5050>
 
 ### Production Deployment
 
 - [ ] Cloud Run services deployed
+
 - [ ] Cloud SQL PostgreSQL configured
+
 - [ ] Database seeded with `seed-cloud.sql`
+
 - [ ] Gemini API key configured
+
 - [ ] CORS and security headers configured
+
 - [ ] All Playwright tests pass
 
 ---
@@ -459,12 +615,12 @@ Phase 1: AI-Assisted Consultation with Man-in-the-Loop Validation
 | --- | ------- | --------------- | ----- |
 | 1 | Appointment queries used non-existent `scheduled_date`/`scheduled_time` columns | `postgresDataService.ts`, `appointments.ts` | Use `COALESCE(confirmed_date, requested_date, appointment_date)`; remove demo data fallback |
 | 2 | Session timeout too short (15 min) | `AuthContext.tsx`, `auth.ts`, `authServices.ts`, `config.ts`, `useAuth.ts` | Changed to 3-hour inactivity timeout across all portals |
-| 3 | Medical content library: "Failed to create article" | `MedicalContent.tsx` | Unwrap `result.article \|\| result` from backend response; add auth headers to all fetch calls |
+| 3 | Medical content library: "Failed to create article" | `MedicalContent.tsx` | Unwrap `result.article \| \| result` from backend response; add auth headers to all fetch calls |
 | 4 | Lab result upload sends no patient notification | `mainApiServer.cjs` | Added `createNotification()` call with type `lab_results` after lab upload |
 | 5 | Dashboard shows all patients (privacy violation) | `apiDataService.ts`, `DoctorDashboard.tsx`, `mainApiServer.cjs` | Filter patients by `doctorId` via appointment relationship; added 30s auto-refresh |
 | 6 | Meeting room camera/mic toggle desync | `PatientMeetingRoom.tsx`, `MeetingRoom.tsx` | Set `cameraOn`/`micOn` to false when permission denied |
 | 7 | AI summary silently skips when Gemini unconfigured | `index.js` (meeting server) | Emit `meeting-summary-ready` socket event with error message |
-| 8 | Consultant page freezes on add/update | `MedicalConsultants.tsx` | Unwrap `result.consultant \|\| result` from backend response |
+| 8 | Consultant page freezes on add/update | `MedicalConsultants.tsx` | Unwrap `result.consultant \| \| result` from backend response |
 | 9 | Specialties query references wrong table | `mainApiServer.cjs` | Changed `medical_consultants` → `consultants` |
 | 10 | Meeting transcript POST with undefined appointmentId | `MeetingRoom.tsx` | Guard against undefined `appointmentId` before REST save |
 | 11 | Validation errors silently logged | `MeetingResults.tsx` | Added user-facing `setError()` for regenerate and validation failures |
@@ -473,8 +629,8 @@ Phase 1: AI-Assisted Consultation with Man-in-the-Loop Validation
 
 | Project | Browser | Role | Base URL |
 | --------- | --------- | ------ | ---------- |
-| `Patient-Chrome` | Chrome | Patient | `http://localhost:3005` |
-| `Doctor-Edge` | Microsoft Edge | Doctor | `http://localhost:3010` |
-| `Admin-Firefox` | Firefox | Admin | `http://localhost:3010` |
+| `Patient-Chrome` | Chrome | Patient | `<http://localhost:3005`> |
+| `Doctor-Edge` | Microsoft Edge | Doctor | `<http://localhost:3010`> |
+| `Admin-Firefox` | Firefox | Admin | `<http://localhost:3010`> |
 
 New test spec: `tests/e2e/specs/32-cross-portal-sync.spec.ts` — validates all 11 fixes above.

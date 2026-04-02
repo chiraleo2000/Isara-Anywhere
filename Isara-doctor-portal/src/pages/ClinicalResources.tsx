@@ -117,7 +117,7 @@ const renderContentWithImages = (content: string) => {
 // ============================================================================
 
 // i18n labels for Clinical Resources page
-const labels = {
+const _labels = {
   pageTitle: { en: 'Clinical Resources', th: 'ทรัพยากรทางคลินิก' },
   subtitle: { en: 'Medical Guidelines, Research Papers & Study Materials', th: 'แนวทางการแพทย์ งานวิจัย และเอกสารการศึกษา' },
   searchResources: { en: 'Search resources...', th: 'ค้นหาทรัพยากร...' },
@@ -596,8 +596,7 @@ export const ClinicalResources: React.FC = () => {
       {/* Resource Content - Thai as Primary */}
       <div className="prose prose-lg max-w-none">
         <div
-          className="text-gray-800 leading-relaxed"
-          style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+          className="text-gray-800 leading-relaxed font-sans"
           dangerouslySetInnerHTML={{ __html: renderContentWithImages(resource.contentTh || resource.content) }}
         />
       </div>
@@ -691,6 +690,7 @@ export const ClinicalResources: React.FC = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search guidelines, topics, or keywords..."
+              aria-label="ค้นหาแนวทางเวชปฏิบัติ"
               className={`w-full px-4 py-2 pl-10 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent ${themeClasses.searchInput}`}
             />
             <svg
@@ -703,6 +703,7 @@ export const ClinicalResources: React.FC = () => {
             </svg>
           </div>
           <select
+            aria-label="Filter by status"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as ContentStatus | 'all')}
             className={`px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 ${themeClasses.selectInput}`}
@@ -838,6 +839,7 @@ export const ClinicalResources: React.FC = () => {
                   resetForm();
                 }}
                 className="p-2 hover:bg-gray-100 rounded-lg"
+                aria-label="Close"
               >
                 <XMarkIcon className="w-5 h-5" />
               </button>
@@ -1008,6 +1010,7 @@ export const ClinicalResources: React.FC = () => {
                 </div>
                 <div className="flex gap-2">
                   <select
+                    aria-label="Select tag"
                     onChange={(e) => {
                       if (e.target.value && !formData.tags.includes(e.target.value)) {
                         setFormData((prev) => ({ ...prev, tags: [...prev.tags, e.target.value] }));
@@ -1026,6 +1029,7 @@ export const ClinicalResources: React.FC = () => {
                     value={newTag}
                     onChange={(e) => setNewTag(e.target.value)}
                     placeholder="Or create new..."
+                    aria-label="Create new tag"
                     className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
                   />
                   <button
@@ -1056,6 +1060,7 @@ export const ClinicalResources: React.FC = () => {
                     value={newReference}
                     onChange={(e) => setNewReference(e.target.value)}
                     placeholder="Add a reference..."
+                    aria-label="Add a reference"
                     className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
                   />
                   <button
@@ -1177,7 +1182,7 @@ export const ClinicalResources: React.FC = () => {
           <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
             <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
               <h2 className="text-xl font-bold text-gray-900">Pending Approvals ({pendingCount})</h2>
-              <button onClick={() => setShowPendingList(false)} className="p-2 hover:bg-gray-100 rounded-lg">
+              <button onClick={() => setShowPendingList(false)} className="p-2 hover:bg-gray-100 rounded-lg" aria-label="ปิดรายการรออนุมัติ" title="ปิด">
                 <XMarkIcon className="w-5 h-5" />
               </button>
             </div>
@@ -1222,7 +1227,7 @@ export const ClinicalResources: React.FC = () => {
           <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
             <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
               <h2 className="text-xl font-bold text-gray-900">Version History</h2>
-              <button onClick={() => setShowHistoryModal(false)} className="p-2 hover:bg-gray-100 rounded-lg">
+              <button onClick={() => setShowHistoryModal(false)} className="p-2 hover:bg-gray-100 rounded-lg" aria-label="ปิดประวัติเวอร์ชัน" title="ปิด">
                 <XMarkIcon className="w-5 h-5" />
               </button>
             </div>

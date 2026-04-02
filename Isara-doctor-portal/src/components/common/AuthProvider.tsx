@@ -3,19 +3,8 @@
  */
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, ReactNode } from 'react';
 import { useNavigate, useLocation, Navigate } from 'react-router-dom';
-import { User, UserPreferences } from '../../types';
+import { User } from '../../types';
 import { authService, initTokenRefreshTimer } from '../../services/authServices';
-
-// Default user preferences
-const DEFAULT_PREFERENCES: UserPreferences = {
-  theme: 'light',
-  language: 'th',
-  notifications: {
-    email: true,
-    push: true,
-    sms: false,
-  },
-};
 
 interface AuthContextType {
   user: User | null;

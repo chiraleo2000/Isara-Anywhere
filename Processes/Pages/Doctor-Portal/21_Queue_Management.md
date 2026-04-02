@@ -1,17 +1,19 @@
 # 📋 Doctor Portal — Queue Management
 
-**Component:** `src/pages/QueueManagement.tsx`  
-**Type:** Component (embedded in Health Meeting)  
-**Access:** 🔒 Doctor / Admin  
+**Component:** `src/pages/QueueManagement.tsx`
+**Type:** Component (embedded in Health Meeting)
+**Access:** 🔒 Doctor / Admin
 **Thai Title:** จัดการคิว / Queue Management
 
 ---
+
 
 ## 1. Purpose
 
 Real-time patient queue for today's confirmed appointments with call/skip/complete functionality and wait time tracking.
 
 ---
+
 
 ## 2. Layout
 
@@ -41,6 +43,7 @@ Real-time patient queue for today's confirmed appointments with call/skip/comple
 
 ---
 
+
 ## 3. Queue States
 
 | State | Icon | Description |
@@ -50,7 +53,9 @@ Real-time patient queue for today's confirmed appointments with call/skip/comple
 | completed | ✅ | Consultation done |
 | skipped | ⏭️ | Skipped with reason |
 
+
 ---
+
 
 ## 4. Features
 
@@ -64,9 +69,12 @@ Real-time patient queue for today's confirmed appointments with call/skip/comple
 | **Polling** | Refreshes every 30 seconds |
 | **Wait estimate** | 15 min/patient calculation |
 
+
 ---
 
+
 ## 5. Workflows
+
 
 ### Workflow: Process Patient Queue
 
@@ -83,6 +91,7 @@ Step 8: Skip with reason if patient unavailable
 
 ---
 
+
 ## 6. API Endpoints
 
 | Method | Endpoint | Purpose |
@@ -90,11 +99,52 @@ Step 8: Skip with reason if patient unavailable
 | GET | `/api/appointments` | Today's confirmed appointments |
 | PATCH | `/api/appointments/:id` | Update appointment status |
 
+
 ---
+
 
 ## 7. AI Agent Improvement Opportunities
 
+
 - **Dynamic wait times**: AI calculate realistic per-patient estimates
+
 - **No-show prediction**: AI identify likely no-shows early
+
 - **Queue optimization**: AI suggest reordering based on urgency changes
+
 - **Patient notifications**: AI send wait time updates to patients
+
+---
+
+
+## PostgreSQL Database Integration
+
+
+### Tables Used
+| Table | Operation | Description |
+| ----- | --------- | ----------- |
+| appointments | SELECT | Today's appointment queue for doctor |
+| users | SELECT | Patient info in queue |
+
+
+
+### API Endpoints
+| Endpoint | Method | DB Operation |
+| -------- | ------ | ------------ |
+| GET /api/appointments/queue | GET | SELECT appointments WHERE date=TODAY AND doctor_id ORDER BY queue_position |
+
+
+
+### Real-time Events
+
+- **Socket.IO:** queue:updated room — broadcasts when queue changes
+
+
+### Deployment
+
+- **Local Docker:** izara-postgres container (localhost:5433 external / 5432 internal) → database: izara_phase1
+
+- **Production:** GCE VM at 35.240.157.230:5432 → database: izara_phase1 (asia-southeast1)
+
+- **Service deployed via:** Cloud Run (gen2, CPU Boost) + Cloud Build CI/CD
+

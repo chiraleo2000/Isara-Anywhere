@@ -164,6 +164,7 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({
             <button
               onClick={startRecording}
               className="w-20 h-20 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 text-white flex items-center justify-center hover:from-purple-600 hover:to-indigo-700 transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
+              aria-label="Start recording"
             >
               <Mic className="w-10 h-10" />
             </button>
@@ -174,12 +175,14 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({
               <button
                 onClick={pauseRecording}
                 className="w-14 h-14 rounded-full bg-yellow-500 text-white flex items-center justify-center hover:bg-yellow-600 transition-all shadow-md"
+                aria-label={isPaused ? 'Resume recording' : 'Pause recording'}
               >
                 {isPaused ? <Play className="w-6 h-6" /> : <Pause className="w-6 h-6" />}
               </button>
               <button
                 onClick={stopRecording}
                 className="w-20 h-20 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition-all shadow-lg animate-pulse"
+                aria-label="Stop recording"
               >
                 <Square className="w-8 h-8" />
               </button>
@@ -191,18 +194,21 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({
               <button
                 onClick={togglePlayback}
                 className="w-14 h-14 rounded-full bg-emerald-500 text-white flex items-center justify-center hover:bg-emerald-600 transition-all shadow-md"
+                aria-label={isPlaying ? 'Pause playback' : 'Play recording'}
               >
                 {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
               </button>
               <button
                 onClick={deleteRecording}
                 className="w-14 h-14 rounded-full bg-red-100 text-red-600 flex items-center justify-center hover:bg-red-200 transition-all"
+                aria-label="Delete recording"
               >
                 <Trash2 className="w-6 h-6" />
               </button>
               <button
                 onClick={startRecording}
                 className="w-14 h-14 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center hover:bg-purple-200 transition-all"
+                aria-label="Re-record"
               >
                 <Mic className="w-6 h-6" />
               </button>

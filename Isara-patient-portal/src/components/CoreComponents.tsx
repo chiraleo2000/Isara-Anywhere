@@ -258,7 +258,7 @@ export const Alert: React.FC<AlertProps> = ({ type, title, message, onClose }) =
           <p className="text-sm">{message}</p>
         </div>
         {onClose && (
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700" aria-label="ปิด" title="ปิด">
             ✕
           </button>
         )}
@@ -770,6 +770,13 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
   label,
 }) => {
   const percentage = Math.min(Math.max((value / max) * 100, 0), 100);
+  const barRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (barRef.current) {
+      barRef.current.style.setProperty('--progress-width', `${Math.min(100, Math.max(0, percentage))}%`);
+    }
+  }, [percentage]);
 
   const colors = {
     emerald: 'bg-emerald-600',
@@ -788,8 +795,8 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
       )}
       <div className="w-full bg-gray-200 rounded-full h-2">
         <div
-          className={`h-2 rounded-full transition-all duration-300 ${colors[color]}`}
-          style={{ width: `${Math.min(100, Math.max(0, percentage))}%` }}
+          ref={barRef}
+          className={`progress-fill h-2 rounded-full transition-all duration-300 ${colors[color]}`}
         />
       </div>
     </div>

@@ -53,8 +53,8 @@ export type AuditResource =
 
 class AuditLogService {
   private readonly logs: AuditLog[] = [];
-  private readonly pendingLogs: AuditLog[] = [];
-  private readonly flushInterval: NodeJS.Timeout | null = null;
+  private readonly _pendingLogs: AuditLog[] = [];
+  private readonly _flushInterval: NodeJS.Timeout | null = null;
 
   /**
    * Log an audit event

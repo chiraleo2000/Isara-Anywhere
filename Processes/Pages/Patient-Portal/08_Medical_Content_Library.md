@@ -1,17 +1,19 @@
 # 📚 Patient Portal — Medical Content Library
 
-**Route:** `/health-library`  
-**Component:** `src/pages/health/MedicalContentLibrary.tsx`  
-**Access:** 🔒 Authenticated patients  
+**Route:** `/health-library`
+**Component:** `src/pages/health/MedicalContentLibrary.tsx`
+**Access:** 🔒 Authenticated patients
 **Thai Title:** คลังความรู้สุขภาพ / Health Knowledge Library
 
 ---
+
 
 ## 1. Purpose
 
 Health education library providing medical articles, videos, guides, and infographics written by doctors and approved by admins. Read-only for patients.
 
 ---
+
 
 ## 2. Page Layout
 
@@ -43,6 +45,7 @@ Health education library providing medical articles, videos, guides, and infogra
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
+
 ### Article Detail View
 
 ```text
@@ -70,6 +73,7 @@ Health education library providing medical articles, videos, guides, and infogra
 
 ---
 
+
 ## 3. Content Categories
 
 | ID | Thai Name | English Name |
@@ -83,7 +87,9 @@ Health education library providing medical articles, videos, guides, and infogra
 | exercise | ออกกำลังกาย | Exercise |
 | preventive-care | การป้องกัน | Preventive Care |
 
+
 ---
+
 
 ## 4. Features & Actions
 
@@ -98,9 +104,12 @@ Health education library providing medical articles, videos, guides, and infogra
 | **Tag display** | Clickable tags for related content |
 | **Video player** | YouTube iframe or HTML5 native video |
 
+
 ---
 
+
 ## 5. Workflows
+
 
 ### Workflow 1: Browse Health Content
 
@@ -112,6 +121,7 @@ Step 4: Browse featured content and article grid
 Step 5: Use search bar or category pills to filter
 Step 6: Click article card to view full content
 ```
+
 
 ### Workflow 2: Read Article
 
@@ -127,6 +137,7 @@ Step 7: Click "Back" to return to list
 
 ---
 
+
 ## 6. API Endpoints
 
 | Method | Endpoint | Purpose |
@@ -135,7 +146,9 @@ Step 7: Click "Back" to return to list
 | GET | `/api/content/tags/medical` | Get content tags |
 | POST | `/api/content/medical/:id/view` | Track article view |
 
+
 ---
+
 
 ## 7. Content Types
 
@@ -146,7 +159,9 @@ Step 7: Click "Back" to return to list
 | guide | Step-by-step health guide | 📋 |
 | infographic | Visual health information | 📊 |
 
+
 ---
+
 
 ## 8. Connections to Other Pages
 
@@ -156,13 +171,50 @@ Step 7: Click "Back" to return to list
 | Doctor Portal Medical Content | ← | Doctors create content here |
 | Admin approval | ← | Only approved content visible |
 
+
 ---
+
 
 ## 9. AI Agent Improvement Opportunities
 
+
 - **Personalized recommendations**: AI suggest articles based on patient's conditions
+
 - **Content summarization**: AI provide quick summaries of long articles
+
 - **Translation**: AI translate articles for multilingual patients
+
 - **Accessibility**: AI read articles aloud for visually impaired
+
 - **Interactive content**: AI-powered quizzes about health topics
+
 - **Related content**: AI suggest related articles based on reading history
+
+---
+
+
+## PostgreSQL Database Integration
+
+
+### Tables Used
+| Table | Operation | Description |
+| ----- | --------- | ----------- |
+| medical_content | SELECT | Published health articles (WHERE status='published') |
+
+
+
+### API Endpoints
+| Endpoint | Method | DB Operation |
+| -------- | ------ | ------------ |
+| GET /api/content/articles | GET | SELECT medical_content WHERE status='published' |
+
+
+
+### Deployment
+
+- **Local Docker:** izara-postgres container (localhost:5433 external / 5432 internal) → database: izara_phase1
+
+- **Production:** GCE VM at 35.240.157.230:5432 → database: izara_phase1 (asia-southeast1)
+
+- **Service deployed via:** Cloud Run (gen2, CPU Boost) + Cloud Build CI/CD
+

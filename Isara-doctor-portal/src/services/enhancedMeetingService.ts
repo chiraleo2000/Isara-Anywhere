@@ -751,7 +751,7 @@ export class EnhancedMeetingService {
   private googleMeetService: any;
   private currentSession: LiveMeetingSession | null = null;
   private patientConnection: PatientConnectionState | null = null;
-  private copilotContext: CopilotContext | null = null;
+  private _copilotContext: CopilotContext | null = null;
   private initialized = false;
 
   /**
@@ -927,7 +927,7 @@ export class EnhancedMeetingService {
    * Initialize AI Copilot for the meeting
    */
   async initializeCopilot(context: CopilotContext): Promise<void> {
-    this.copilotContext = context;
+    this._copilotContext = context;
     await aiClinicalService.copilot.initialize(context);
     console.log('🤖 AI Copilot initialized for meeting');
   }
@@ -1020,7 +1020,7 @@ export class EnhancedMeetingService {
     // Reset session
     this.currentSession = null;
     this.patientConnection = null;
-    this.copilotContext = null;
+    this._copilotContext = null;
 
     return result;
   }

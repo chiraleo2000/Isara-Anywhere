@@ -24,12 +24,14 @@ type NotificationType =
   | 'emr_signed'
   | 'emr_ready_for_review';
 
+type RecipientRole = 'patient' | 'doctor' | 'admin';
+
 interface Notification {
   id: string;
   type: NotificationType;
   recipientId: string;
   recipientEmail: string;
-  recipientRole: 'patient' | 'doctor' | 'admin';
+  recipientRole: RecipientRole;
   title: string;
   message: string;
   data?: {
@@ -112,7 +114,7 @@ function getChannelsForType(
 // Recipient routing: who gets notified per event type
 function getRecipientsForType(
   type: NotificationType
-): ('patient' | 'doctor' | 'admin')[] {
+): RecipientRole[] {
   switch (type) {
     case 'appointment_requested':
       return ['doctor', 'admin'];
@@ -145,7 +147,7 @@ function createNotification(
   type: NotificationType,
   recipientId: string,
   recipientEmail: string,
-  recipientRole: 'patient' | 'doctor' | 'admin',
+  recipientRole: RecipientRole,
   title: string,
   message: string,
   data?: Notification['data']

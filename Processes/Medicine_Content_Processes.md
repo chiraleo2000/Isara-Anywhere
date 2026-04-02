@@ -1,8 +1,8 @@
 # 🩺 Medicine Content Processes
 
-**Version:** 1.5.9  
-**Last Updated:** March 15, 2026  
-**Status:** ✅ PostgreSQL Implementation  
+**Version:** 1.6.0
+**Last Updated:** March 31, 2026
+**Status:** ✅ PostgreSQL Implementation + Full DB Schema
 **Purpose:** Complete reference for medical content management workflows, data structures, cross-portal synchronization, and implementation guidelines for the Izara Telemedicine Platform.
 
 ---
@@ -30,8 +30,11 @@
 ### Thai-First Content Policy
 
 - **Primary Language**: Thai (ภาษาไทย) is now the default and required language
+
 - **Secondary Language**: English is optional for international accessibility
+
 - **Form UI**: Thai fields are displayed first and marked as required (*)
+
 - **Display Priority**: Thai content is shown as primary in all views
 
 ### Image Support in Content
@@ -45,7 +48,7 @@ Content now supports inline images using a simple markdown-like syntax:
 **Example**:
 
 ```text
-[image:https://storage.googleapis.com/izara-meta-data/images/heart-diagram.jpg:ภาพแสดงโครงสร้างของหัวใจ]
+[image:<https://storage.googleapis.com/izara-meta-data/images/heart-diagram.jpg:ภาพแสดงโครงสร้างของหัวใจ>]
 ```
 
 Images are rendered inline with proper styling and captions.
@@ -59,7 +62,9 @@ The medical content system consists of two main modules that serve different aud
 ### Medical Content (คลังความรู้สุขภาพ)
 
 - **Purpose**: Health education articles for patients
+
 - **Audience**: Patients (read-only), Doctors (CRUD), Admins (CRUD + Approve)
+
 - **Location**:
   - Doctor Portal: `MedicalContent.tsx` page
   - Patient Portal: `MedicalContentLibrary.tsx` → "คลังความรู้สุขภาพ" tab in Health Studio
@@ -67,7 +72,9 @@ The medical content system consists of two main modules that serve different aud
 ### Clinical Resources (แหล่งข้อมูลทางการแพทย์)
 
 - **Purpose**: Medical guidelines, protocols, and research for healthcare professionals
+
 - **Audience**: Doctors only (with admin approval workflow)
+
 - **Location**: Doctor Portal: `ClinicalResources.tsx` page
 
 ---
@@ -758,7 +765,7 @@ POST /api/content/medical
   "category": "chronic-disease",
   "tags": ["diabetes", "lifestyle", "management"],
   "type": "guide",
-  "thumbnail": "https://example.com/image.jpg",
+  "thumbnail": "<https://example.com/image.jpg",>
   "status": "draft"
 }
 
@@ -1009,9 +1016,9 @@ const getPatientVisibleContent = async (): Promise<MedicalContentArticle[]> => {
   const allContent = await fetchFromGCS('medical-content/articles.json');
 
   // Filter for patient visibility
-  return allContent.articles.filter(article => 
+  return allContent.articles.filter(article =>
     article.status === 'published'
-  ).sort((a, b) => 
+  ).sort((a, b) =>
     // Featured first, then by publish date
     (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0) ||
     new Date(b.publishedAt!).getTime() - new Date(a.publishedAt!).getTime()
@@ -1112,12 +1119,19 @@ openApprovalModal(article: MedicalContentArticle): void
 ### Testing Checklist
 
 - [ ] Doctor can create draft content
+
 - [ ] Doctor can submit content for approval
+
 - [ ] Admin sees pending approvals
+
 - [ ] Admin can approve/reject with feedback
+
 - [ ] Published content appears in Patient Portal
+
 - [ ] Rejected content returns to draft with feedback
+
 - [ ] Audit log captures all actions
+
 - [ ] Version history preserved on updates
 
 ---
@@ -1171,10 +1185,139 @@ openApprovalModal(article: MedicalContentArticle): void
 ### Key Contacts
 
 - **Platform Lead**: Platform team
+
 - **Technical Support**: Development team
+
 - **Content Policy**: Medical content review board
 
 ---
 
-*Document maintained by: Development Team*  
+*Document maintained by: Development Team*
 *For updates, submit a pull request or contact the platform lead.*
+
+---
+
+## 14. PostgreSQL Database Architecture
+
+### Database Tables for Medicine Content
+
+| Table | Purpose | Key Columns |
+| ----- | ------- | ----------- |
+| **medical_content** | Patient-facing health articles | id, title_thai, title_english, content_thai, content_english, category, tags (JSONB), author_id, author_name, status (draft/pending/published/rejected/archived), image_url, view_count |
+| **clinical_resources** | Doctor-facing guidelines | id, title_thai, title_english, content_thai, content_english, category, specialty, guideline_year, tags (JSONB), status (pending/approved), author_id, approved_by, approved_at |
+| **drugs** | Drug database for CDS | id, generic_name, brand_names (JSONB), drug_class, dosage_forms (JSONB), indications (JSONB), contraindications (JSONB), interactions (JSONB), pregnancy_category, renal_adjustment (JSONB) |
+| **icd10_codes** | Diagnosis codes reference | code (PK), description_english, description_thai, category, chapter |
+| **knowledge_base** | RAG-indexed content for AI | id, title, content, source, category, guideline_year, language, embedding (vector), is_active |
+| **audit_logs** | All content CRUD operations | id, user_id, action, entity_type, entity_id, details (JSONB) |
+
+### Content Lifecycle Data Flow
+
+```text
+Doctor Portal (port 3010)                        Patient Portal (port 3005)
+┌────────────────────────────┐                   ┌──────────────────────────┐
+│ Medical Content Manager    │                   │ Health Library Page       │
+│ (Doctor/Admin creates)     │                   │ (Patient reads)          │
+│                            │                   │                          │
+│ POST  /api/content/articles│                   │ GET /api/content/articles│
+│ PUT   /api/content/:id     │                   │   ?status=published      │
+│ POST  /api/content/:id/    │                   │ GET /api/content/:id     │
+│   review                   │                   │                          │
+└──────────┬─────────────────┘                   └──────────┬───────────────┘
+           │                                                │
+           ▼                                                ▼
+┌──────────────────────────────────────────────────────────────────────────┐
+│                    PostgreSQL - izara_phase1                              │
+│                                                                          │
+│  Doctor creates content (Thai-first):                                    │
+│  INSERT INTO medical_content (title_thai, content_thai, category,       │
+│    tags, author_id, status='draft')                                      │
+│  VALUES ($1, $2, $3, $4::jsonb, $userId, 'draft')                       │
+│                                                                          │
+│  Submit for review:                                                      │
+│  UPDATE medical_content SET status='pending' WHERE id=$1                │
+│                                                                          │
+│  Admin approves:                                                         │
+│  UPDATE medical_content SET status='published' WHERE id=$1              │
+│  INSERT INTO audit_logs (action='publish_content')                       │
+│                                                                          │
+│  Published content indexed for AI:                                       │
+│  INSERT INTO knowledge_base (title, content, category, embedding)       │
+│                                                                          │
+│  Patient reads published content:                                        │
+│  SELECT * FROM medical_content WHERE status='published'                 │
+│    AND category=$1 ORDER BY created_at DESC                              │
+│  UPDATE medical_content SET view_count = view_count + 1 WHERE id=$1     │
+│                                                                          │
+│  Drug information for CDS:                                               │
+│  SELECT * FROM drugs WHERE generic_name ILIKE $1                        │
+│  SELECT interactions FROM drugs WHERE id = ANY($drugIds)                │
+│                                                                          │
+│  ICD-10 codes for EMR:                                                   │
+│  SELECT * FROM icd10_codes WHERE description_english ILIKE $1           │
+│    OR description_thai ILIKE $1 OR code ILIKE $1                        │
+└──────────────────────────────────────────────────────────────────────────┘
+```
+
+### Cross-Portal Content Sync
+
+```text
+┌─────────────────────────────────────────────────────────────────────┐
+│                  MEDICINE CONTENT DATA FLOW                          │
+│                                                                     │
+│  DOCTOR PORTAL (port 3010) — Content Management                     │
+│  ├── Create: INSERT medical_content / clinical_resources            │
+│  ├── Review: UPDATE status (draft → pending → published)            │
+│  ├── Edit:   UPDATE content fields + audit_logs                     │
+│  └── Drug/ICD: Read-only SELECT from drugs, icd10_codes            │
+│                                                                     │
+│  PATIENT PORTAL (port 3005) — Content Consumption                   │
+│  ├── Browse: SELECT medical_content WHERE status='published'        │
+│  ├── Search: Full-text search on title_thai, content_thai           │
+│  └── View:   SELECT by id + increment view_count                   │
+│                                                                     │
+│  MEETING SERVER (port 3020) — AI Integration                        │
+│  ├── CDS:    SELECT FROM drugs + knowledge_base for drug checks     │
+│  └── RAG:    SELECT FROM knowledge_base ORDER BY embedding <-> $q   │
+│                                                                     │
+│  ALL → PostgreSQL izara_phase1                                      │
+│  ├── Local: izara-postgres:5432 (Docker, external 5433)             │
+│  └── Production: 35.240.157.230:5432 (GCE VM)                      │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Deployment Architecture
+
+| Environment | Service | Content Access | Database |
+| ----------- | ------- | -------------- | -------- |
+| Local Docker | Doctor Portal (3010) | Full CRUD + reviews | izara-postgres:5432 |
+| Local Docker | Patient Portal (3005) | Read published only | izara-postgres:5432 |
+| Local Docker | Meeting Server (3020) | Drug CDS + RAG queries | izara-postgres:5432 |
+| Production | All Cloud Run services | Same access per role | 35.240.157.230:5432 |
+
+### API Endpoints with DB Operations
+
+| Portal | Endpoint | Method | DB Operation |
+| ------ | -------- | ------ | ------------ |
+| Doctor | `/api/content/articles` | POST | INSERT INTO medical_content |
+| Doctor | `/api/content/articles/:id` | PUT | UPDATE medical_content |
+| Doctor | `/api/content/articles/:id/review` | POST | UPDATE medical_content SET status=$1 |
+| Doctor | `/api/content/clinical` | POST | INSERT INTO clinical_resources |
+| Doctor | `/api/content/clinical/:id/review` | POST | UPDATE clinical_resources SET status=$1 |
+| Patient | `/api/content/articles` | GET | SELECT FROM medical_content WHERE status='published' |
+| Patient | `/api/content/articles/:id` | GET | SELECT + UPDATE view_count |
+| Meeting | `/api/ai/cds-check` | POST | SELECT FROM drugs, knowledge_base |
+
+### Scenario Coverage
+
+| # | Scenario | Actor | DB Tables |
+| - | -------- | ----- | --------- |
+| 1 | Create health article | Doctor | medical_content, audit_logs |
+| 2 | Submit for review | Doctor | medical_content |
+| 3 | Approve/publish | Admin | medical_content, knowledge_base, audit_logs |
+| 4 | Reject article | Admin | medical_content, audit_logs |
+| 5 | Patient browses articles | Patient | medical_content (read) |
+| 6 | Create clinical resource | Doctor | clinical_resources, audit_logs |
+| 7 | AI queries drug interactions | Meeting Server | drugs, cds_logs |
+| 8 | AI RAG search | Doctor/Meeting | knowledge_base |
+| 9 | ICD-10 code lookup | Doctor | icd10_codes (read) |
+| 10 | Archive published content | Admin | medical_content, audit_logs |

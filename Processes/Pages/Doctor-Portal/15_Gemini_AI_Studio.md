@@ -1,18 +1,20 @@
 # 🤖 Doctor Portal — Gemini AI Studio
 
-**Component:** `src/pages/GeminiAIStudio.tsx`  
-**Type:** Modal (launched from FAB button on any page)  
-**Access:** 🔒 Doctor / Admin  
-**Thai Title:** ผู้ช่วยทางการแพทย์ด้วย AI / Gemini AI Studio  
+**Component:** `src/pages/GeminiAIStudio.tsx`
+**Type:** Modal (launched from FAB button on any page)
+**Access:** 🔒 Doctor / Admin
+**Thai Title:** ผู้ช่วยทางการแพทย์ด้วย AI / Gemini AI Studio
 **Version:** v1.4.7
 
 ---
+
 
 ## 1. Purpose
 
 AI-powered medical assistant and clinical calculators accessible from any page via floating action button. Uses Google Gemini 2.5 Flash Lite.
 
 ---
+
 
 ## 2. Layout
 
@@ -32,16 +34,23 @@ AI-powered medical assistant and clinical calculators accessible from any page v
 
 ---
 
+
 ## 3. Chat Tab
 
+
 - Medical Q&A with Gemini AI
+
 - Context-aware medical conversations
+
 - Persistent session history
+
 - Thai and English support
 
 ---
 
+
 ## 4. Calculators Tab
+
 
 ### BMI Calculator
 
@@ -50,6 +59,8 @@ AI-powered medical assistant and clinical calculators accessible from any page v
 | Weight (kg) | Patient weight |
 | Height (cm) | Patient height |
 | **Output** | BMI value + category (Underweight/Normal/Overweight/Obese) |
+
+
 
 ### eGFR Calculator (CKD-EPI Formula)
 
@@ -61,12 +72,17 @@ AI-powered medical assistant and clinical calculators accessible from any page v
 | Race | For CKD-EPI adjustment |
 | **Output** | eGFR value + CKD stage |
 
+
+
 ### Coming Soon
 
+
 - CHADS₂-VASc Score (stroke risk in AFib)
+
 - Framingham Risk Score (cardiovascular risk)
 
 ---
+
 
 ## 5. API Status Indicator
 
@@ -75,9 +91,12 @@ AI-powered medical assistant and clinical calculators accessible from any page v
 | Connected | 🟢 Green | Gemini API key configured and working |
 | Warning | 🟡 Yellow | API key missing (`VITE_GEMINI_API_KEY`) |
 
+
 ---
 
+
 ## 6. Workflows
+
 
 ### Workflow: Clinical AI Query
 
@@ -90,6 +109,7 @@ Step 5: AI response with medical context
 Step 6: Continue conversation as needed
 ```
 
+
 ### Workflow: Use Calculator
 
 ```text
@@ -99,6 +119,7 @@ Step 3: Enter patient values
 Step 4: Click Calculate
 Step 5: Results displayed with interpretation
 ```
+
 
 ### Workflow 3: AI Meeting Summary Generation
 
@@ -122,6 +143,7 @@ Step 9: Man-in-the-Loop: Approve / Edit / Regenerate / Reject
 Step 10: Approved summary → pre-fills EMR Editor
 ```
 
+
 ### Workflow 4: Clinical Decision Support (CDS) Alerts
 
 ```text
@@ -139,6 +161,7 @@ Step 3: AI generates real-time CDS alerts:
 Step 4: Alerts displayed in AI Clinical Copilot panel
 Step 5: Doctor can acknowledge, dismiss, or act on each alert
 ```
+
 
 ### Workflow 5: Patient Instruction Sheet Generation
 
@@ -159,9 +182,11 @@ Step 7: Patient accesses via Dashboard > Instruction Sheets
 
 ---
 
+
 ## 7. AI Meeting Data Integration
 
 Gemini AI Studio processes meeting data from multiple sources for comprehensive clinical intelligence.
+
 
 ### Data Sources for AI Processing
 
@@ -172,6 +197,8 @@ Gemini AI Studio processes meeting data from multiple sources for comprehensive 
 | Meeting Metadata | Jitsi External API | Duration, participants, recordings | Meeting Server (port 3020) |
 | Patient History | PostgreSQL (izara_phase1) | EMR, PHR, labs, vitals | Direct DB query |
 | Prescription Data | PostgreSQL | Current medications | Direct DB query |
+
+
 
 ### AI Processing Pipeline
 
@@ -202,6 +229,7 @@ Man-in-the-Loop Validation
 └──────────────────────────────────────────────────────────────┘
 ```
 
+
 ### AI Output Types
 
 | Output | Trigger | Input Data | Validation |
@@ -213,7 +241,9 @@ Man-in-the-Loop Validation
 | Patient Instruction Sheet | After EMR finalized | Finalized EMR data | Doctor validates before sending |
 | Clinical Calculator | On-demand | Patient vitals/labs | Immediate result, no validation needed |
 
+
 ---
+
 
 ## 8. API Endpoints
 
@@ -231,17 +261,70 @@ Man-in-the-Loop Validation
 | POST | `/api/ai/calculate/bmi` | BMI calculation |
 | POST | `/api/ai/calculate/egfr` | eGFR calculation |
 
+
 ---
+
 
 ## 9. AI Agent Improvement Opportunities
 
+
 - **More calculators**: Add CHADS₂-VASc, Framingham, APACHE II, Wells Score
+
 - **Calculator auto-fill**: AI pull patient data to pre-fill calculators
+
 - **Contextual suggestions**: AI suggest relevant calculators based on patient condition
+
 - **Drug dosing**: AI calculate weight-based and renal-adjusted drug doses
+
 - **Clinical decision trees**: AI-guided diagnostic pathways
+
 - **Meeting summary quality**: AI self-assess confidence per SOAP section
+
 - **Multi-language support**: AI generate summaries in both Thai and English
+
 - **Instruction readability**: AI adapt instruction sheet complexity to patient literacy
+
 - **Longitudinal analysis**: AI identify health trends across multiple meeting summaries
+
 - **Evidence linking**: AI cite clinical guidelines in CDS alerts
+
+---
+
+
+## PostgreSQL Database Integration
+
+
+### Tables Used
+| Table | Operation | Description |
+| ----- | --------- | ----------- |
+| ai_chat_history | SELECT/INSERT | AI conversation logs per session |
+| ai_chat_memory | SELECT/INSERT/UPDATE | Contextual memory per patient for continuity |
+| knowledge_base | SELECT | RAG retrieval for medical knowledge |
+| ai_document_analysis | INSERT/SELECT | Document analysis results (lab reports, images) |
+| emr | SELECT | EMR context for AI consultations |
+| transcriptions_embeddings | SELECT | Transcript embeddings for semantic search |
+
+
+
+### API Endpoints
+| Endpoint | Method | DB Operation |
+| -------- | ------ | ------------ |
+| POST /api/ai/chat | POST | SELECT knowledge_base (RAG); INSERT ai_chat_history; UPDATE ai_chat_memory |
+| POST /api/ai/document-analysis | POST | INSERT ai_document_analysis |
+| POST /api/ai/meeting-summary | POST | SELECT transcriptions_embeddings; INSERT ai_chat_history |
+
+
+
+### AI Engine
+
+- **Model:** Gemini 2.5 Flash Lite (Google AI)
+
+
+### Deployment
+
+- **Local Docker:** izara-postgres container (localhost:5433 external / 5432 internal) → database: izara_phase1
+
+- **Production:** GCE VM at 35.240.157.230:5432 → database: izara_phase1 (asia-southeast1)
+
+- **Service deployed via:** Cloud Run (gen2, CPU Boost) + Cloud Build CI/CD
+

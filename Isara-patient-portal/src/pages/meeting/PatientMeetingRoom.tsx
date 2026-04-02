@@ -71,6 +71,8 @@ const PatientMeetingRoom: React.FC = () => {
   const [showTranscript, setShowTranscript] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [meetingDuration, setMeetingDuration] = useState(0);
+  const [approvedSummary, setApprovedSummary] = useState<string | null>(null);
+  const [summaryLoading, setSummaryLoading] = useState(false);
   const durationTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -86,6 +88,27 @@ const PatientMeetingRoom: React.FC = () => {
     const handleClose = () => {
       setStatus('ended');
       if (durationTimerRef.current) clearInterval(durationTimerRef.current);
+      // Fetch approved summary after meeting ends
+      fetchApprovedSummary();
+    };
+
+    const fetchApprovedSummary = async () => {
+      if (!appointmentId) return;
+      setSummaryLoading(true);
+      try {
+        const res = await fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}`);
+        if (res.ok) {
+          const data = await res.json();
+          const meeting = data.meeting;
+          if (meeting?.ready_for_patient && meeting.ai_summary) {
+            setApprovedSummary(meeting.ai_summary);
+          }
+        }
+      } catch (err) {
+        console.error('[PatientMeeting] Failed to fetch summary:', err);
+      } finally {
+        setSummaryLoading(false);
+      }
     };
 
     const appendTranscript = (data: TranscriptSegment) => {
@@ -157,6 +180,12 @@ const PatientMeetingRoom: React.FC = () => {
             });
           });
           socket.on('transcript-update', appendTranscript);
+          socket.on('meeting-validation-update', (data: { meetingId: string; action: string; status: string }) => {
+            if (data.status === 'approved' || data.status === 'edited') {
+              // Re-fetch summary when doctor approves
+              fetchApprovedSummary();
+            }
+          });
           socketRef.current = socket;
         } catch {
           console.warn('[PatientMeeting] Socket.IO skipped');
@@ -208,7 +237,7 @@ const PatientMeetingRoom: React.FC = () => {
       {error && (
         <div className="bg-red-900/50 px-4 py-2 text-sm text-red-300">
           {error}
-          <button onClick={() => setError(null)} className="ml-2 text-red-400">✕</button>
+          <button onClick={() => setError(null)} className="ml-2 text-red-400" aria-label="ปิดข้อผิดพลาด" title="ปิด">✕</button>
         </div>
       )}
 
@@ -218,6 +247,28 @@ const PatientMeetingRoom: React.FC = () => {
             <div className="text-6xl">🎥</div>
             <h2 className="text-2xl font-bold">การประชุมสิ้นสุดแล้ว</h2>
             <p className="text-gray-400">ระยะเวลา: {fmt(meetingDuration)}</p>
+
+            {/* Approved Summary Section */}
+            {summaryLoading && (
+              <div className="w-full max-w-lg bg-gray-700/50 rounded-lg p-4 text-center">
+                <p className="text-gray-300 animate-pulse">กำลังโหลดสรุปผลการตรวจ...</p>
+              </div>
+            )}
+            {approvedSummary && (
+              <div className="w-full max-w-lg bg-gray-700/50 rounded-lg p-4">
+                <h3 className="text-lg font-semibold text-emerald-400 mb-2">📋 สรุปผลการตรวจ</h3>
+                <div className="text-gray-200 text-sm whitespace-pre-wrap leading-relaxed">
+                  {approvedSummary}
+                </div>
+                <p className="text-gray-500 text-xs mt-3">
+                  * สรุปนี้ผ่านการตรวจสอบโดยแพทย์แล้ว
+                </p>
+              </div>
+            )}
+            {!summaryLoading && !approvedSummary && (
+              <p className="text-gray-500 text-sm">สรุปผลการตรวจจะแสดงเมื่อแพทย์ตรวจสอบเสร็จสิ้น</p>
+            )}
+
             <button
               onClick={() => navigate('/appointments')}
               className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 rounded-lg font-medium"
@@ -233,7 +284,7 @@ const PatientMeetingRoom: React.FC = () => {
           <div className="w-80 bg-gray-800 border-l border-gray-700 flex flex-col">
             <div className="p-3 border-b border-gray-700 flex justify-between">
               <h3 className="font-medium text-sm">📝 Live Transcript</h3>
-              <button onClick={() => setShowTranscript(false)} className="text-gray-400 hover:text-white">✕</button>
+              <button onClick={() => setShowTranscript(false)} className="text-gray-400 hover:text-white" aria-label="ปิดถอดเสียง" title="ปิด">✕</button>
             </div>
             <div className="flex-1 overflow-y-auto p-3 space-y-2">
               {transcripts.length === 0 ? (

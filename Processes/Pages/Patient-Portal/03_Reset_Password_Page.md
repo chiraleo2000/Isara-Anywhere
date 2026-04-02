@@ -1,8 +1,8 @@
 # 🔑 Patient Portal — Reset Password Page
 
-**Route:** `/reset-password?token=xxx`  
-**Component:** `src/pages/auth/ResetPasswordPage.tsx`  
-**Access:** Public (via email link)  
+**Route:** `/reset-password?token=xxx`
+**Component:** `src/pages/auth/ResetPasswordPage.tsx`
+**Access:** Public (via email link)
 **Thai Title:** รีเซ็ตรหัสผ่าน
 
 ---
@@ -128,5 +128,33 @@ Step 10: Invalid token → Shows error → Link to login
 ## 7. AI Agent Improvement Opportunities
 
 - **Breach detection**: Check if new password appears in known breaches
+
 - **Password suggestions**: AI-generated secure password suggestions
+
 - **Activity verification**: Additional identity verification before reset
+
+---
+
+## PostgreSQL Database Integration
+
+### Tables Used
+
+| Table | Operation | Description |
+| ----- | --------- | ----------- |
+| users | SELECT/UPDATE | Look up user by email, update password_hash |
+| password_resets | INSERT/UPDATE | Create reset token, mark token as used |
+
+### API Endpoints
+
+| Endpoint | Method | DB Operation |
+| -------- | ------ | ------------ |
+| POST /api/auth/reset-request | POST | SELECT users WHERE email; INSERT password_resets |
+| POST /api/auth/reset-password | POST | SELECT password_resets WHERE token; UPDATE users SET password_hash; UPDATE password_resets SET used |
+
+### Deployment
+
+- **Local Docker:** izara-postgres container (localhost:5433 external / 5432 internal) → database: izara_phase1
+
+- **Production:** GCE VM at 35.240.157.230:5432 → database: izara_phase1 (asia-southeast1)
+
+- **Service deployed via:** Cloud Run (gen2, CPU Boost) + Cloud Build CI/CD

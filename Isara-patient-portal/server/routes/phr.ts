@@ -881,6 +881,160 @@ router.delete('/:patientId/living-will', authMiddleware, async (req: Request, re
 });
 
 // ============================================================================
+// LIVING WILL — PER-DOCTOR SHARING (patient_consents)
+// ============================================================================
+
+// Share living will with a specific doctor
+router.post('/:patientId/living-will/share', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const { patientId } = req.params;
+    const requesterId = (req as AuthenticatedRequest).patientId || (req as AuthenticatedRequest).userId || (req as AuthenticatedRequest).user?.patientId || (req as AuthenticatedRequest).user?.patient_id || (req as AuthenticatedRequest).user?.id;
+
+    if (requesterId !== patientId) {
+      return res.status(403).json({ error: 'Only patient can share their Living Will' });
+    }
+
+    const { doctor_id } = req.body;
+    if (!doctor_id) {
+      return res.status(400).json({ error: 'doctor_id is required' });
+    }
+
+    // Verify doctor exists
+    const doctorResult = await pool.query(
+      `SELECT id, name, name_thai FROM users WHERE id = $1 AND role = 'doctor'`,
+      [doctor_id]
+    );
+    if (doctorResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Doctor not found' });
+    }
+    const doctor = doctorResult.rows[0];
+
+    // Verify living will exists
+    const lwResult = await pool.query(
+      `SELECT id FROM living_wills WHERE patient_id = $1 AND status = 'active'`,
+      [patientId]
+    );
+    if (lwResult.rows.length === 0) {
+      return res.status(404).json({ error: 'No active Living Will found. Create one first.' });
+    }
+
+    // Check for existing active share (duplicate prevention)
+    const existingShare = await pool.query(
+      `SELECT id FROM patient_consents
+       WHERE patient_id = $1 AND doctor_id = $2
+         AND consent_type = 'living_will'
+         AND status = 'granted' AND revoked_at IS NULL`,
+      [patientId, doctor_id]
+    );
+    if (existingShare.rows.length > 0) {
+      return res.status(409).json({ error: 'Living Will is already shared with this doctor' });
+    }
+
+    // Insert share
+    const consentId = `pc_lw_${patientId}_${doctor_id}_${Date.now()}`;
+    await pool.query(
+      `INSERT INTO patient_consents
+         (id, patient_id, doctor_id, doctor_name, consent_type, granted, status, granted_at, data_types, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, 'living_will', true, 'granted', NOW(), '["living_will"]'::jsonb, NOW(), NOW())`,
+      [consentId, patientId, doctor_id, doctor.name_thai || doctor.name]
+    );
+
+    // Keep is_shared_with_doctors flag in sync
+    await pool.query(
+      `UPDATE living_wills SET is_shared_with_doctors = true, updated_at = NOW() WHERE patient_id = $1`,
+      [patientId]
+    );
+
+    console.log(`[PHR] Living Will shared: patient=${patientId} → doctor=${doctor_id}`);
+    res.status(201).json({
+      success: true,
+      message: 'Living Will shared with doctor',
+      doctorId: doctor_id,
+      doctorName: doctor.name_thai || doctor.name,
+    });
+  } catch (error: unknown) {
+    console.error('[PHR] Share Living Will error:', error);
+    res.status(500).json({ error: 'Failed to share Living Will' });
+  }
+});
+
+// Revoke living will share for a specific doctor
+router.delete('/:patientId/living-will/share/:doctorId', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const { patientId, doctorId } = req.params;
+    const requesterId = (req as AuthenticatedRequest).patientId || (req as AuthenticatedRequest).userId || (req as AuthenticatedRequest).user?.patientId || (req as AuthenticatedRequest).user?.patient_id || (req as AuthenticatedRequest).user?.id;
+
+    if (requesterId !== patientId) {
+      return res.status(403).json({ error: 'Only patient can revoke Living Will sharing' });
+    }
+
+    const result = await pool.query(
+      `UPDATE patient_consents
+       SET status = 'revoked', revoked_at = NOW(), revoke_reason = 'patient_revoked', updated_at = NOW()
+       WHERE patient_id = $1 AND doctor_id = $2
+         AND consent_type = 'living_will'
+         AND status = 'granted' AND revoked_at IS NULL`,
+      [patientId, doctorId]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'No active share found for this doctor' });
+    }
+
+    // Check if any active shares remain; if none, clear the flag
+    const remaining = await pool.query(
+      `SELECT id FROM patient_consents
+       WHERE patient_id = $1 AND consent_type = 'living_will'
+         AND status = 'granted' AND revoked_at IS NULL`,
+      [patientId]
+    );
+    if (remaining.rows.length === 0) {
+      await pool.query(
+        `UPDATE living_wills SET is_shared_with_doctors = false, updated_at = NOW() WHERE patient_id = $1`,
+        [patientId]
+      );
+    }
+
+    console.log(`[PHR] Living Will share revoked: patient=${patientId} ✕ doctor=${doctorId}`);
+    res.json({ success: true, message: 'Share revoked' });
+  } catch (error: unknown) {
+    console.error('[PHR] Revoke Living Will share error:', error);
+    res.status(500).json({ error: 'Failed to revoke share' });
+  }
+});
+
+// List all active living will shares for this patient
+router.get('/:patientId/living-will/shares', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const { patientId } = req.params;
+    const requesterId = (req as AuthenticatedRequest).patientId || (req as AuthenticatedRequest).userId || (req as AuthenticatedRequest).user?.patientId || (req as AuthenticatedRequest).user?.patient_id || (req as AuthenticatedRequest).user?.id;
+    const requesterRole = (req as AuthenticatedRequest).user?.role;
+
+    if (requesterId !== patientId && requesterRole !== 'admin') {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const result = await pool.query(
+      `SELECT pc.doctor_id, pc.doctor_name, pc.granted_at,
+              u.email, u.name AS doctor_name_en
+       FROM patient_consents pc
+       LEFT JOIN users u ON pc.doctor_id = u.id
+       WHERE pc.patient_id = $1
+         AND pc.consent_type = 'living_will'
+         AND pc.status = 'granted'
+         AND pc.revoked_at IS NULL
+       ORDER BY pc.granted_at DESC`,
+      [patientId]
+    );
+
+    res.json(result.rows);
+  } catch (error: unknown) {
+    console.error('[PHR] List Living Will shares error:', error);
+    res.status(500).json({ error: 'Failed to list shares' });
+  }
+});
+
+// ============================================================================
 // PROFILE AVATAR ROUTES
 // ============================================================================
 
@@ -943,7 +1097,10 @@ router.get('/profile/:userId/avatar', authMiddleware, async (req: Request, res: 
     const result = await pool.query(
       `SELECT avatar_url FROM user_profiles WHERE user_id = $1`,
       [userId]
-    ).catch(() => null);
+    ).catch(err => {
+      console.error('[PHR] Avatar query error:', err.message);
+      return null;
+    });
 
     if (result?.rows?.[0]?.avatar_url) {
       return res.json({

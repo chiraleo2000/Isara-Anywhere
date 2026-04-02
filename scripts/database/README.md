@@ -2,6 +2,7 @@
 
 All database-related files for the Izara Telemedicine platform.
 
+
 ## Files
 
 ```text
@@ -13,33 +14,41 @@ database/
     └── v2.0.0-phase2-tables.sql  # Phase 2 tables (living wills, AI, etc.)
 ```
 
+
 ## Usage
 
 ```powershell
+
 # All-in-one: fix schema + seed + verify
 node scripts/database/db-tool.cjs --all
+
 
 # Individual operations
 node scripts/database/db-tool.cjs --fix
 node scripts/database/db-tool.cjs --seed
 node scripts/database/db-tool.cjs --verify
 
+
 # Migrations
 node scripts/database/db-tool.cjs --migrate-phase2
 node scripts/database/db-tool.cjs --migrate-ai
 
+
 # Target specific environment (default: local)
 node scripts/database/db-tool.cjs --target cloud --all
 node scripts/database/db-tool.cjs --target dev-cloud --verify
+
 
 # Production data transfer
 node scripts/database/db-tool.cjs --export
 node scripts/database/db-tool.cjs --import-local
 node scripts/database/db-tool.cjs --import-dev
 
+
 # Help
 node scripts/database/db-tool.cjs --help
 ```
+
 
 ## Local Docker Init
 
@@ -56,6 +65,7 @@ Manual reload:
 Get-Content scripts\database\izara-database.sql | docker exec -i izara-postgres psql -U postgres -d izara_phase1
 ```
 
+
 ## Database Overview (24+ tables)
 
 | Category | Tables |
@@ -69,9 +79,15 @@ Get-Content scripts\database\izara-database.sql | docker exec -i izara-postgres 
 | AI/Knowledge | notifications, knowledge_base, ai_chat_history, ai_document_analysis, cds_logs, ai_validations |
 | Audit | audit_logs |
 
+
+
 ## Notes
 
+
 - Extensions required: uuid-ossp, pgcrypto, vector (pgvector)
+
 - `izara-database.sql` is idempotent (safe to re-run)
+
 - Always backup before running migrations in production
+
 - Medical content categories use hyphenated format: `general-health`, `nutrition`, `exercise`, etc.

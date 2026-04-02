@@ -1236,12 +1236,6 @@ function ProfileTab({
 }
 
 // ============ Lab & Imaging Tab - Helpers ============
-function getLabResultStatusClass(status: string): string {
-  if (status === 'normal') return 'bg-green-100 text-green-800';
-  if (status === 'critical') return 'bg-red-100 text-red-800';
-  return 'bg-yellow-100 text-yellow-800';
-}
-
 function getLabStatusColor(status: string): string {
   const colors: Record<string, string> = {
     completed: 'bg-green-100 text-green-800',
@@ -1307,6 +1301,16 @@ function OrderDetailView({ order, onBack, isDark, language }: Readonly<{
         {isLab && order.results && (
           <LabResultsTable results={order.results} testName={order.test_name} isDark={isDark} language={language} />
         )}
+        {isLab && order.ai_analysis && (
+          <div className={`mt-4 p-4 rounded-xl border ${isDark ? 'bg-teal-900/20 border-teal-700' : 'bg-teal-50 border-teal-200'}`}>
+            <h4 className={`text-sm font-semibold mb-2 flex items-center gap-2 ${isDark ? 'text-teal-300' : 'text-teal-800'}`}>
+              🤖 {language === 'th' ? 'วิเคราะห์โดย AI' : 'AI Analysis'}
+            </h4>
+            <p className={`text-sm whitespace-pre-line ${isDark ? 'text-teal-200' : 'text-teal-700'}`}>
+              {order.ai_analysis}
+            </p>
+          </div>
+        )}
         {!isLab && order.result && (
           <ImagingResultView result={order.result} language={language} cardClass={cardClass} textClass={textClass} />
         )}
@@ -1322,7 +1326,53 @@ function LabResultsTable({ results, testName, isDark, language }: Readonly<{
   language: string;
 }>) {
   const textClass = isDark ? 'text-gray-200' : 'text-gray-800';
-  const rows = Array.isArray(results) ? results : [results];
+  const rows = Array.isArray(results) ? results : (results?.results || [results]);
+
+  // Get flag from either 'flag' or 'status' field, normalize to uppercase
+  const getFlag = (r: any): string => {
+    const raw = (r.flag || r.status || '').toUpperCase();
+    if (['HIGH', 'LOW', 'CRITICAL', 'NORMAL'].includes(raw)) return raw;
+    if (raw === 'ABNORMAL') return 'HIGH';
+    return 'NORMAL';
+  };
+
+  const flagEmoji = (flag: string) => {
+    switch (flag) {
+      case 'CRITICAL': return '🚨';
+      case 'HIGH': return '🔴';
+      case 'LOW': return '🔵';
+      default: return '✅';
+    }
+  };
+
+  const flagLabel = (flag: string) => {
+    if (language === 'th') {
+      switch (flag) {
+        case 'CRITICAL': return 'วิกฤต';
+        case 'HIGH': return 'สูง';
+        case 'LOW': return 'ต่ำ';
+        default: return 'ปกติ';
+      }
+    }
+    return flag;
+  };
+
+  const flagClass = (flag: string) => {
+    switch (flag) {
+      case 'CRITICAL': return 'bg-red-600 text-white font-bold';
+      case 'HIGH': return 'bg-red-100 text-red-700';
+      case 'LOW': return 'bg-blue-100 text-blue-700';
+      default: return 'bg-green-100 text-green-700';
+    }
+  };
+
+  const formatRange = (r: any): string => {
+    if (r.normalRange && typeof r.normalRange === 'object') {
+      return `${r.normalRange.low}-${r.normalRange.high}`;
+    }
+    return r.normalRange || r.normal_range || r.referenceRange || '-';
+  };
+
   return (
     <div className="mt-6">
       <h4 className={`text-lg font-semibold mb-3 ${textClass}`}>{language === 'th' ? 'ผลตรวจ' : 'Results'}</h4>
@@ -1338,19 +1388,30 @@ function LabResultsTable({ results, testName, isDark, language }: Readonly<{
             </tr>
           </thead>
           <tbody>
-            {rows.map((r: any) => (
-              <tr key={r.testName || r.test_name || `result-${r.value}`} className={isDark ? 'border-t border-gray-700' : 'border-t border-gray-200'}>
-                <td className="px-4 py-2">{r.testName || r.test_name || testName}</td>
-                <td className="px-4 py-2 font-medium">{r.value ?? '-'}</td>
-                <td className="px-4 py-2">{r.unit || '-'}</td>
-                <td className="px-4 py-2">{r.normalRange || r.normal_range || '-'}</td>
-                <td className="px-4 py-2">
-                  <span className={`px-2 py-0.5 rounded text-xs ${getLabResultStatusClass(r.status)}`}>
-                    {r.status || '-'}
-                  </span>
-                </td>
-              </tr>
-            ))}
+            {rows.map((r: any) => {
+              const flag = getFlag(r);
+              const isCritical = flag === 'CRITICAL';
+              const criticalDark = 'bg-red-900/30 border-t border-red-700';
+              const criticalLight = 'bg-red-50 border-t border-red-200';
+              const normalDark = 'border-t border-gray-700';
+              const normalLight = 'border-t border-gray-200';
+              const criticalBg = isDark ? criticalDark : criticalLight;
+              const normalBg = isDark ? normalDark : normalLight;
+              const rowBg = isCritical ? criticalBg : normalBg;
+              return (
+                <tr key={r.testName || r.test_name || r.testCode || `result-${r.value}`} className={rowBg}>
+                  <td className={`px-4 py-2 ${isCritical ? 'font-bold' : ''}`}>{r.testName || r.test_name || testName}</td>
+                  <td className={`px-4 py-2 font-medium ${isCritical ? 'text-red-600 font-bold' : ''}`}>{r.value ?? '-'}</td>
+                  <td className="px-4 py-2">{r.unit || '-'}</td>
+                  <td className="px-4 py-2">{formatRange(r)}</td>
+                  <td className="px-4 py-2">
+                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs ${flagClass(flag)}`}>
+                      {flagEmoji(flag)} {flagLabel(flag)}
+                    </span>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

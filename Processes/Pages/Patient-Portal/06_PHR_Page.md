@@ -1,8 +1,8 @@
 # 💊 Patient Portal — PHR Page (Personal Health Records)
 
-**Route:** `/phr`  
-**Component:** `src/pages/health/PHRPage.tsx`  
-**Access:** 🔒 Authenticated patients  
+**Route:** `/phr`
+**Component:** `src/pages/health/PHRPage.tsx`
+**Access:** 🔒 Authenticated patients
 **Thai Title:** ระเบียนสุขภาพส่วนบุคคล
 
 ---
@@ -225,8 +225,45 @@ When PDPA consent is granted, doctors can see:
 ## 8. AI Agent Improvement Opportunities
 
 - **Smart vital interpretation**: AI analyze vital trends and alert on concerning patterns
+
 - **Medication interaction check**: AI cross-check all medications for interactions
+
 - **Auto-import**: AI extract vitals from wearable devices (Apple Health, Google Fit)
+
 - **Predictive health**: AI predict health risks from PHR trends
+
 - **Medication reminders**: AI generate personalized medication schedules
+
 - **Allergy severity classification**: AI categorize allergy severity automatically
+
+---
+
+## PostgreSQL Database Integration
+
+### Tables Used
+
+| Table | Operation | Description |
+| ----- | --------- | ----------- |
+| phr | UPSERT | Personal Health Records (allergies, conditions, medications) |
+| vital_signs | INSERT | Patient vital measurements (BP, HR, temp, weight) |
+| patient_profiles | SELECT / UPDATE | Patient demographic data linked to PHR |
+
+### API Endpoints
+
+| Endpoint | Method | DB Operation |
+| -------- | ------ | ------------ |
+| /api/phr | GET | SELECT phr WHERE patient_id = current |
+| /api/phr | POST | UPSERT phr |
+| /api/vital-signs | POST | INSERT vital_signs |
+
+### Real-time Events
+
+- **NOTIFY:** phr_changes → Socket.IO PHR update notifications
+
+### Deployment
+
+- **Local Docker:** izara-postgres container (localhost:5433 external / 5432 internal) → database: izara_phase1
+
+- **Production:** GCE VM at 35.240.157.230:5432 → database: izara_phase1 (asia-southeast1)
+
+- **Service deployed via:** Cloud Run (gen2, CPU Boost) + Cloud Build CI/CD

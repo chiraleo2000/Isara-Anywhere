@@ -231,6 +231,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
                   type="button"
                   onClick={() => setPreviewImage(image)}
                   className="p-2 bg-white rounded-full hover:bg-gray-100 transition-colors"
+                  aria-label="Preview image"
                 >
                   <ZoomIn className="w-5 h-5 text-gray-700" />
                 </button>
@@ -238,6 +239,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
                   type="button"
                   onClick={() => removeImage(image.id)}
                   className="p-2 bg-red-500 rounded-full hover:bg-red-600 transition-colors"
+                  aria-label="Remove image"
                 >
                   <X className="w-5 h-5 text-white" />
                 </button>
@@ -274,6 +276,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
             <button
               onClick={() => setPreviewImage(null)}
               className="absolute top-4 right-4 p-2 bg-white rounded-full hover:bg-gray-100 transition-colors"
+              aria-label="Close preview"
             >
               <X className="w-6 h-6 text-gray-700" />
             </button>

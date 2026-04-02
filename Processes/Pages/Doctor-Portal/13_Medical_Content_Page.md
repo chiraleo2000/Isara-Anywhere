@@ -1,8 +1,8 @@
 # 📚 Doctor Portal — Medical Content Page
 
-**Route:** `/medical-content`  
-**Component:** `src/pages/MedicalContent.tsx`  
-**Access:** 🔒 Doctor (create + edit own) / Admin (approve + full CRUD)  
+**Route:** `/medical-content`
+**Component:** `src/pages/MedicalContent.tsx`
+**Access:** 🔒 Doctor (create + edit own) / Admin (approve + full CRUD)
 **Thai Title:** เนื้อหาทางการแพทย์ / Medical Content
 
 ---
@@ -85,7 +85,39 @@ See [Medicine_Content_Processes.md](../../Processes/Medicine_Content_Processes.m
 ## 8. AI Agent Improvement Opportunities
 
 - **Content generation**: AI draft health articles from medical topics
+
 - **Translation**: AI auto-translate between Thai and English
+
 - **Quality scoring**: AI rate content readability and accuracy
+
 - **SEO optimization**: AI improve content discoverability
+
 - **Image generation**: AI create medical illustrations
+
+---
+
+## PostgreSQL Database Integration
+
+### Tables Used
+
+| Table | Operation | Description |
+| ----- | --------- | ----------- |
+| medical_content | SELECT/INSERT/UPDATE | Health articles CRUD with status workflow |
+| knowledge_base | INSERT/SELECT | AI indexing of content for RAG retrieval |
+
+### API Endpoints
+
+| Endpoint | Method | DB Operation |
+| -------- | ------ | ------------ |
+| GET /api/content/articles | GET | SELECT medical_content |
+| POST /api/content/articles | POST | INSERT medical_content; INSERT knowledge_base |
+| PUT /api/content/articles/:id | PUT | UPDATE medical_content WHERE id |
+| POST /api/content/:id/review | POST | UPDATE medical_content SET status WHERE id |
+
+### Deployment
+
+- **Local Docker:** izara-postgres container (localhost:5433 external / 5432 internal) → database: izara_phase1
+
+- **Production:** GCE VM at 35.240.157.230:5432 → database: izara_phase1 (asia-southeast1)
+
+- **Service deployed via:** Cloud Run (gen2, CPU Boost) + Cloud Build CI/CD

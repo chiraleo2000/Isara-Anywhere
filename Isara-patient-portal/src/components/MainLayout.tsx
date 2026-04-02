@@ -18,6 +18,7 @@ import {
   ChevronRight,
   BookOpen,
   MapPin,
+  Users,
 } from 'lucide-react';
 import MiniMapWidget from './MiniMapWidget';
 import { useState } from 'react';
@@ -52,13 +53,13 @@ function MiniCalendar() {
   return (
     <div className={`rounded-xl p-3 ${isDark ? 'bg-gradient-to-br from-emerald-900/50 to-teal-900/50' : 'bg-gradient-to-br from-emerald-50 to-teal-50'}`}>
       <div className="flex items-center justify-between mb-2">
-        <button onClick={prevMonth} className={`p-1 rounded ${isDark ? 'hover:bg-white/10' : 'hover:bg-white/50'}`}>
+        <button onClick={prevMonth} className={`p-1 rounded ${isDark ? 'hover:bg-white/10' : 'hover:bg-white/50'}`} aria-label="เดือนก่อนหน้า">
           <ChevronLeft className={`w-4 h-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`} />
         </button>
         <span className={`text-xs font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
           {monthNames[currentDate.getMonth()]} {year}
         </span>
-        <button onClick={nextMonth} className={`p-1 rounded ${isDark ? 'hover:bg-white/10' : 'hover:bg-white/50'}`}>
+        <button onClick={nextMonth} className={`p-1 rounded ${isDark ? 'hover:bg-white/10' : 'hover:bg-white/50'}`} aria-label="เดือนถัดไป">
           <ChevronRight className={`w-4 h-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`} />
         </button>
       </div>
@@ -149,6 +150,7 @@ export default function MainLayout() {
     { icon: FileText, label: t(language, 'ประวัติสุขภาพ', 'Health Records'), path: '/phr' },
     { icon: Activity, label: t(language, 'เส้นทางสุขภาพ', 'Health Timeline'), path: '/timeline' },
     { icon: MapPin, label: t(language, 'แผนที่สถานพยาบาล', 'Nearby Healthcare'), path: '/map' },
+    { icon: Users, label: t(language, 'ค้นหาแพทย์', 'Find Doctors'), path: '/find-doctors' },
     { icon: Shield, label: t(language, 'PDPA & หนังสือแสดงเจตนา', 'PDPA & Living Will'), path: '/pdpa' },
     { icon: Settings, label: t(language, 'ตั้งค่า', 'Settings'), path: '/settings' },
   ];
@@ -215,6 +217,8 @@ export default function MainLayout() {
               </Link>
               <button
                 onClick={handleLogout}
+                aria-label="ออกจากระบบ"
+                title="ออกจากระบบ"
                 className="flex items-center justify-center gap-2 px-3 py-2 text-sm text-red-600 bg-red-50 rounded-lg hover:bg-red-100 dark:bg-red-900/30 dark:hover:bg-red-900/50"
               >
                 <LogOut className="w-4 h-4" />
@@ -238,6 +242,8 @@ export default function MainLayout() {
           <div className="flex items-center justify-between">
             <button
               onClick={() => setSidebarOpen(true)}
+              aria-label="เปิดเมนู"
+              title="เปิดเมนู"
               className={`p-2 rounded-lg ${isDarkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-100'}`}
             >
               <Menu className="w-6 h-6" />

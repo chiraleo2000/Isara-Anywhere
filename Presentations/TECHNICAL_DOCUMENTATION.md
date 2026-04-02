@@ -2,12 +2,13 @@
 
 > **Version:** 1.5.10 (Updated March 27, 2026)
 > **Status:** Phase 1 Complete + SonarQube Clean — All Tests Passing (v1.5.10)
-> **Database:** PostgreSQL 18 + pgvector (42 tables)  
-> **Stack:** PostgreSQL / Express / React / Jitsi / Gemini AI / Google Cloud  
-> **Tests:** 2,013 Unit Tests (Vitest) + 1,124 E2E Local (Playwright) + 215 Cloud Tests (Playwright) = **3,352 total — 100% Pass Rate**  
+> **Database:** PostgreSQL 18 + pgvector (42 tables)
+> **Stack:** PostgreSQL / Express / React / Jitsi / Gemini AI / Google Cloud
+> **Tests:** 2,013 Unit Tests (Vitest) + 1,124 E2E Local (Playwright) + 215 Cloud Tests (Playwright) = **3,352 total — 100% Pass Rate**
 > **Code Quality:** SonarQube clean — zero `error: any`, strict TypeScript safety, 31/31 API endpoints verified
 
 ---
+
 
 ## 📑 Table of Contents
 
@@ -22,7 +23,9 @@
 
 ---
 
+
 ## 1. Project Overview
+
 
 ### 1.1 Project Structure
 
@@ -72,6 +75,7 @@ Isara-Anywhere/
 └── docker-compose.yml              # Local Orchestration Config
 ```
 
+
 ### 1.2 Core Services
 
 | Service | Port | Description | Technology |
@@ -82,31 +86,39 @@ Isara-Anywhere/
 | **PostgreSQL** | 5433 | Primary relational database | PostgreSQL 18 |
 | **pgAdmin** | 5050 | Database management UI | pgAdmin 4 |
 
+
+
 ### 1.3 Live URLs
+
 
 #### Local Environment (Docker)
 
 | Service | URL |
 | --------- | ----- |
-| Patient Portal | `http://localhost:3005` |
-| Doctor Portal | `http://localhost:3010` |
-| Meeting Server | `http://localhost:3020` |
+| Patient Portal | `<http://localhost:3005`> |
+| Doctor Portal | `<http://localhost:3010`> |
+| Meeting Server | `<http://localhost:3020`> |
 | PostgreSQL | localhost:5433 |
-| pgAdmin | `http://localhost:5050` |
+| pgAdmin | `<http://localhost:5050`> |
+
+
 
 #### Cloud Environment (Google Cloud Run)
 
 | Service | URL |
 | --------- | ----- |
-| Patient Portal | `https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app` |
-| Doctor Portal | `https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app` |
-| Meeting Server | `https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app` |
-| pgAdmin | `https://izara-pgadmin-dev-testing-724889190329.asia-southeast1.run.app` |
+| Patient Portal | `<https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app`> |
+| Doctor Portal | `<https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app`> |
+| Meeting Server | `<https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app`> |
+| pgAdmin | `<https://izara-pgadmin-dev-testing-724889190329.asia-southeast1.run.app`> |
 | PostgreSQL VM | 35.240.157.230:5432 |
+
 
 ---
 
+
 ## 2. System Architecture
+
 
 ### 2.1 High-Level Architecture
 
@@ -155,6 +167,7 @@ The platform uses a **Hybrid Cloud-Native Architecture**:
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
+
 ### 2.2 Technology Stack
 
 | Layer | Technology | Version |
@@ -167,6 +180,8 @@ The platform uses a **Hybrid Cloud-Native Architecture**:
 | **Video** | Jitsi Meet (meet.jit.si - FREE) | Latest |
 | **Maps** | Google Maps Platform | v3 |
 | **Testing** | Playwright, Vitest | Playwright 1.58, Vitest 2.1 |
+
+
 
 ### 2.3 Visualization
 
@@ -184,18 +199,26 @@ The platform uses a **Hybrid Cloud-Native Architecture**:
 | PHR Management | Personal health records | [View](html-diagrams/11-phr-management.html) |
 | Prescription Workflow | E-prescribing with CDS | [View](html-diagrams/12-prescription-workflow.html) |
 
+
 ---
 
+
 ## 3. Database Design
+
 
 ### 3.1 Schema Overview
 
 The system uses a robust **PostgreSQL Relational Database** with:
 
+
 - **Referential Integrity**: Foreign keys ensure data consistency
+
 - **JSONB**: Flexible storage for clinical data (symptoms, medications)
+
 - **pgvector**: AI embeddings for knowledge base RAG
+
 - **Audit Logging**: Complete trail for PDPA/HIPAA compliance
+
 
 ### 3.2 Schema Reference
 
@@ -203,6 +226,8 @@ The system uses a robust **PostgreSQL Relational Database** with:
 | ------ | --------- |
 | `database/izara-complete-schema-v4.dbml` | Visual schema (DBML format) |
 | `scripts/database/izara-database.sql` | SQL implementation (v5.1.0) |
+
+
 
 ### 3.3 Table Groups
 
@@ -238,7 +263,9 @@ The system uses a robust **PostgreSQL Relational Database** with:
 └─────────────────────┴─────────────────────┴─────────────────────────────┘
 ```
 
+
 ### 3.4 Key Tables Detail
+
 
 #### Users (Unified)
 
@@ -252,6 +279,7 @@ users (
 )
 ```
 
+
 #### Appointments
 
 ```sql
@@ -263,6 +291,7 @@ appointments (
 )
 ```
 
+
 #### EMR (SOAP Notes)
 
 ```sql
@@ -273,6 +302,7 @@ emr (
   patient_instructions, doctor_signature    -- Instructions
 )
 ```
+
 
 #### PHR (Personal Health Records)
 
@@ -287,7 +317,9 @@ phr (
 
 ---
 
+
 ## 4. User Management & RBAC
+
 
 ### 4.1 User Roles
 
@@ -297,6 +329,8 @@ phr (
 | **Doctor** | Elevated | View assigned patients, create EMR, prescribe (requires admin approval) |
 | **Admin** | System | Manage users, approve doctors, manage content |
 
+
+
 ### 4.2 Authentication Flow
 
 ```text
@@ -304,6 +338,7 @@ User Login → bcrypt Verify → Create Session → Store in DB → Return JWT
      ↓
 API Request → Validate JWT → Check Session in DB → Authorize → Process
 ```
+
 
 ### 4.3 Doctor Approval Workflow
 
@@ -316,7 +351,9 @@ API Request → Validate JWT → Check Session in DB → Authorize → Process
 
 ---
 
+
 ## 5. Core Workflows
+
 
 ### 5.1 Appointment Flow
 
@@ -351,6 +388,7 @@ Patient                     System                      Doctor
    │ <─────────────────────────                           │
 ```
 
+
 ### 5.2 EMR Documentation (SOAP)
 
 | Section | Content | AI Assistance |
@@ -359,6 +397,8 @@ Patient                     System                      Doctor
 | **O** - Objective | Vitals, PE findings, labs | Lab result analysis |
 | **A** - Assessment | Diagnosis (ICD-10) | Suggested diagnoses |
 | **P** - Plan | Treatment, prescriptions | Drug interaction check |
+
+
 
 ### 5.3 Prescribing with CDS
 
@@ -380,38 +420,48 @@ Create prescription
 
 ---
 
+
 ## 6. DevOps & Deployment
+
 
 ### 6.1 Unified CLI (izara-cli.ps1)
 
 ```powershell
+
 # Deploy locally
 .\scripts\izara-cli.ps1 deploy local
 
+
 # Deploy to cloud
 .\scripts\izara-cli.ps1 deploy cloud
+
 
 # Database operations
 .\scripts\izara-cli.ps1 db -DbAction seed
 .\scripts\izara-cli.ps1 db -DbAction verify
 .\scripts\izara-cli.ps1 db -DbAction backup
 
+
 # Health checks
 .\scripts\izara-cli.ps1 health local
 .\scripts\izara-cli.ps1 status
+
 
 # Cleanup
 .\scripts\izara-cli.ps1 clean -Full
 ```
 
+
 ### 6.2 Environment Configuration
 
 ```bash
+
 # .env.docker (gitignored)
 GEMINI_API_KEY=your_key
 GOOGLE_MAPS_API_KEY=your_key
 DB_PASSWORD=your_password
 ```
+
 
 ### 6.3 Docker Services
 
@@ -426,7 +476,9 @@ services:
 
 ---
 
+
 ## 7. Testing
+
 
 ### 7.1 Test Summary (March 27, 2026)
 
@@ -436,6 +488,8 @@ services:
 | **E2E — Local Desktop** | Playwright 1.58 | 32 specs | 1,124 | ~4.2 min |
 | **Cloud Tests** | Playwright 1.58 | 10 specs | 215 | ~8.0 min |
 | **TOTAL** | | **58 unit + 32 local + 10 cloud** | **3,352** | **100% Pass** |
+
+
 
 ### 7.1.0 Cloud Test Suites (tests/*.ui-test.ts) — 215 Tests
 
@@ -453,7 +507,10 @@ services:
 | post-meeting-actions | 5 | Post-meeting AI summary, EMR creation, prescription |
 | phr-ai-features | 6 | PHR vitals, AI doctor chat, health library |
 
+
+
 ### 7.1.1 Unit Test Suites (tests/unit/) — 58 Files
+
 
 #### Doctor Portal (24 files)
 
@@ -479,6 +536,8 @@ services:
 | postgresDataService | Connection config, query builders, table sanitization, data transforms |
 | prescriptions | Prescription creation, CDS drug interaction checks |
 | storageServices | GCS bucket config (5 buckets), URL construction, storage paths, base64 |
+
+
 
 #### Patient Portal (22 files)
 
@@ -507,6 +566,8 @@ services:
 | pdpaWorkflow | PDPA consent lifecycle, access grant, audit trail, revocation |
 | userManagementWorkflow | Registration→login→session chains, password reset, RBAC |
 
+
+
 #### Meeting Server (6 files)
 
 | File | Coverage |
@@ -518,12 +579,16 @@ services:
 | socketEvents | 7 event types, room management, chat message format, invite validation |
 | videoMeetingWorkflow | Meeting lifecycle chains, lobby control, multi-party, no-show handling |
 
+
+
 #### Security (2 files)
 
 | File | Coverage |
 | --- | --- |
 | corsAndRateLimiting | CORS whitelist (11 ports + Cloud Run), rate limits, SQL/XSS detection |
 | security-validation | Password policy (12-char), JWT, CORS, OWASP headers |
+
+
 
 #### Database (4 files)
 
@@ -533,6 +598,8 @@ services:
 | embeddedPg | Embedded PostgreSQL test utilities |
 | schema-validation | Table registry, appointment FSM, RBAC, PDPA compliance |
 | schemaAndSeed | Core tables (20+), naming conventions, seed users (5), connection config |
+
+
 
 ### 7.2 E2E Test Specs (32 Total)
 
@@ -571,6 +638,8 @@ services:
 | 29 | Chat AI Summary Cloud | ~10 | AI chat and summary on cloud |
 | 30 | Appointment Meeting AI Pipeline | ~12 | Full appointment → meeting → AI pipeline |
 
+
+
 ### 7.3 Demo User Accounts
 
 | Role | Email | Password | Portal |
@@ -581,6 +650,8 @@ services:
 | Doctor (Dr. Test Good) | `doctor.test@izara.com` | IzaraDoctor@2024 | Doctor |
 | Admin (Dr. Admin Kind) | `admin.test@izara.com` | IzaraAdmin@2024 | Doctor |
 
+
+
 ### 7.4 Playwright Projects
 
 | Project | Viewport | Target | Headless |
@@ -589,33 +660,44 @@ services:
 | Cloud | 1920×1080 | Cloud Run production | Configurable |
 | Cloud-Dev | 1920×1080 | Cloud Run dev-testing | true |
 
+
+
 ### 7.5 Run Tests
 
 ```powershell
+
 # ── Unit Tests (2,013 tests, ~4.3 seconds) ──
 cd tests/unit
 npx vitest run              # All 2,013 unit tests
 npx vitest run --coverage    # With coverage report
 npx vitest watch             # Watch mode
 
+
 # ── E2E Tests (1,124 tests, requires Docker running) ──
 cd tests/e2e
+
 
 # Run ALL Local tests (1,124 tests)
 $env:CI="true"; npx playwright test --project=Local --workers=6
 
+
 # Run ALL Cloud-Dev tests
 $env:TEST_ENV="cloud-dev"; npx playwright test --project="Cloud-Dev" --workers=2
+
 
 # Run specific spec
 npx playwright test "09-phase2" --project=Local
 
+
 # View HTML Report
 npx playwright show-report
 
+
 # — Cloud Tests (215 tests, runs against Cloud Run) ——
+
 # Run ALL cloud tests (3 parallel workers)
 npx playwright test --reporter=line --workers=3
+
 
 # Run individual cloud test suites
 npx playwright test tests/cloud-ui-screenshots.ui-test.ts       # 39 tests
@@ -633,43 +715,74 @@ npx playwright test tests/phr-ai-features.ui-test.ts             # 6 tests
 
 ---
 
+
 ## 8. Future Roadmap
+
 
 ### Phase 2: Intelligence & Optimization (In Progress)
 
+
 - [x] **Security Hardening**: JWT sign/verify consistency, OWASP headers, unified 12-char passwords, CORS production tightening, credential path security
+
 - [x] **Comprehensive Unit Test Layer**: 2,013 Vitest tests across 58 files — pure logic, no server needed
+
 - [x] **E2E Test Expansion**: 1,124 tests across 32 Playwright specs covering all workflows
+
 - [x] **Phase 2 AI-HIS Tables**: CTM, Geriatric Screening, SOS, Follow-up, Nursing
+
 - [x] **Spec Kits**: Phase 1 + Phase 2 combined specification documents
+
 - [x] **Docker Local Dev**: 5-service Docker Compose stack with health checks
+
 - [x] **Test Cleanup**: Removed obsolete mobile tests, reorganized test structure
+
 - [x] **TypeScript Strict Safety**: Eliminated ~250 `error: any` patterns — all server catch blocks use `error: unknown` with `instanceof Error` type guards
+
 - [x] **SonarQube Compliance**: Fixed S6551 (unsafe string interpolation), S4325 (unnecessary assertions), non-null assertions across codebase
+
 - [x] **Codebase Restructuring**: Patient portal pages flattened, server routes merged into 17 consolidated modules, 19 empty folders removed
+
 - [x] **API Verification**: 31/31 GET endpoints + 5/5 write operations returning 200 OK with proper data
+
 - [x] **Cloud Test Suite**: 215 Playwright cloud tests across 10 test files — all passing on Google Cloud Run (v1.5.10)
+
 - [x] **Auth Fix & JWT Verification**: Doctor portal `/auth/verify` JWT fallback, patient auth injection across all test files
+
 - [x] **Parallel Test Execution**: Cloud tests run with 3 workers, `fullyParallel: true`, 120s timeouts
+
 - [x] **AuthenticatedRequest Interface**: Strongly-typed with explicit fields and union role type
+
 - [x] **PostgreSQL BYTEA Recording Storage**: Meeting recordings stored as BYTEA in PostgreSQL, served via `/api/recordings/:meetingId` (v1.5.10)
+
 - [x] **Cloud STT Credential Wiring**: `GCP_SERVICE_ACCOUNT_KEY` base64 decode for Google Cloud Speech-to-Text in Cloud Run (v1.5.10)
+
 - [x] **Admin Register-Doctor Test**: 6-test E2E flow covering patient/doctor registration, admin approval, privilege promotion (v1.5.10)
+
 - [x] **Accessibility (axe) Compliance**: 16 icon-only buttons fixed with `aria-label` + `title` across 9 files (v1.5.10)
+
 - [ ] **Advanced RAG**: Full knowledge_base vector search for clinical decision support
+
 - [ ] **IoMT Integration**: Wearable device sync for vitals
+
 - [ ] **Payment Gateway**: Stripe/Omise for consultation fees
+
 - [ ] **Mobile App**: React Native / Expo mobile client
+
 
 ### Phase 3: Scaling
 
+
 - [ ] **Microservices Split**: Decouple Auth, Notifications, AI services
+
 - [ ] **Multi-Region**: GCS bucket replication, DB read replicas
+
 - [ ] **FHIR Compliance**: HL7 FHIR R4 for interoperability
 
 ---
 
+
 ## Quick Reference
+
 
 ### Test Credentials
 
@@ -681,6 +794,8 @@ npx playwright test tests/phr-ai-features.ui-test.ts             # 6 tests
 | Doctor | `doctor.test@izara.com` | IzaraDoctor@2024 |
 | Admin | `admin.test@izara.com` | IzaraAdmin@2024 |
 
+
+
 ### Key Files
 
 | File | Purpose |
@@ -690,6 +805,8 @@ npx playwright test tests/phr-ai-features.ui-test.ts             # 6 tests
 | `tests/e2e/run-tests.ps1` | Test runner |
 | `scripts/database/izara-database.sql` | DB schema (v5.1.0) |
 
+
 ---
+
 
 ### Last Updated: March 13, 2026

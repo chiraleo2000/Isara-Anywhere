@@ -1,13 +1,14 @@
 # 🎥 Izara Meeting Server
 
-![Version](https://img.shields.io/badge/version-1.5.10-blue.svg)
-![Node.js](https://img.shields.io/badge/Node.js-22+-green.svg)
-![Socket.IO](https://img.shields.io/badge/Socket.IO-4.x-black.svg)
-![License](https://img.shields.io/badge/license-MIT-green.svg)
+![Version](<https://img.shields.io/badge/version-1.5.10-blue.svg)>
+![Node.js](<https://img.shields.io/badge/Node.js-22+-green.svg)>
+![Socket.IO](<https://img.shields.io/badge/Socket.IO-4.x-black.svg)>
+![License](<https://img.shields.io/badge/license-MIT-green.svg)>
 
 > Central meeting server for Izara Telemedicine — Jitsi Meet video conferencing, real-time transcription, AI meeting summaries, and in-meeting chat.
 
 ---
+
 
 ## 🏗 Architecture
 
@@ -34,6 +35,7 @@
 
 ---
 
+
 ## ✨ Features
 
 | Feature | Description | Cost |
@@ -48,17 +50,23 @@
 | 📄 Document Analysis | AI analysis of uploaded medical documents | — |
 | ✅ Man-in-the-Loop | Doctor validates all AI outputs | — |
 
+
 ---
 
+
 ## 🚀 Quick Start
+
 
 ### With Docker (Recommended)
 
 ```bash
+
 # From the root Isara-Anywhere directory
 docker compose up -d --build
-# Meeting Server: http://localhost:3020
+
+# Meeting Server: <http://localhost:3020>
 ```
+
 
 ### Local Development
 
@@ -70,6 +78,7 @@ npm run dev
 ```
 
 ---
+
 
 ## 📁 Project Structure
 
@@ -86,6 +95,7 @@ Izara-jitsi-server/
 ```
 
 ---
+
 
 ## 📡 API Endpoints
 
@@ -105,6 +115,8 @@ Izara-jitsi-server/
 | `/api/meeting/:id/cds` | POST | Clinical decision support |
 | `/api/meeting/:id/analyze-document` | POST | AI document analysis |
 
+
+
 ### Socket.IO Events
 
 | Event | Direction | Description |
@@ -117,7 +129,9 @@ Izara-jitsi-server/
 | `chat-update` | Server → Client | Broadcast chat message |
 | `meeting-ended` | Server → Client | Meeting end notification |
 
+
 ---
+
 
 ## ⚙️ Configuration
 
@@ -130,7 +144,9 @@ Izara-jitsi-server/
 | `DATABASE_URL` | — | PostgreSQL connection string |
 | `JWT_SECRET` | — | JWT signing secret |
 
+
 ---
+
 
 ## 📄 License
 

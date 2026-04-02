@@ -1,28 +1,32 @@
 # 📋 Izara Telemedicine — Unified Specification Kit
 
-**Version:** 1.5.2  
-**Date:** March 1, 2026  
-**Status:** ✅ Phase 1 Complete — Web Platform  
+**Version:** 1.5.2
+**Date:** March 1, 2026
+**Status:** ✅ Phase 1 Complete — Web Platform
 **Focus:** Web Application Only (Patient Portal + Doctor Portal + Meeting Server)
 
 ---
+
 
 ## 1. Executive Summary
 
 Izara Telemedicine (อิสระ เทเลเมดิซิน) is a full-stack web-based telemedicine platform designed for Thailand's healthcare ecosystem. It provides video consultations, EMR/EHR management, e-prescribing, lab & imaging orders, AI-powered clinical assistance, and PDPA-compliant data handling.
 
+
 ### 1.1 Services
 
 | Service | Port | Stack | Users |
-|---------|------|-------|-------|
+| ---------|------|-------|------- |
 | **Patient Portal** | 3005 | React 18 + Vite + Express + PostgreSQL | Patients, Caregivers |
 | **Doctor Portal** | 3010 | React 18 + Vite + 3 Express servers + Nginx + PostgreSQL | Doctors, Admins |
 | **Meeting Server** | 3020 | Express + Socket.IO + Jitsi + Gemini AI | Video Consultations |
 
+
+
 ### 1.2 Key Metrics
 
 | Metric | Value |
-|--------|-------|
+| --------|------- |
 | Unit Tests | 409 (Vitest, 15 suites) |
 | E2E Tests | 808 (Playwright, 10 specs) |
 | Database Tables | 42 |
@@ -31,7 +35,9 @@ Izara Telemedicine (อิสระ เทเลเมดิซิน) is a full
 | API Endpoints | 100+ |
 | Languages | Thai (primary) + English |
 
+
 ---
+
 
 ## 2. System Architecture
 
@@ -65,6 +71,7 @@ Izara Telemedicine (อิสระ เทเลเมดิซิน) is a full
 └──────────────────────────────────────────────────────────────────────────┘
 ```
 
+
 ### 2.1 Doctor Portal Internal Architecture
 
 ```text
@@ -75,10 +82,11 @@ Client Request → Nginx (port 8080)
                     └── /*             → Static React build
 ```
 
+
 ### 2.2 Technology Stack
 
 | Layer | Technology | Cost |
-|-------|-----------|------|
+| -------|-----------|------ |
 | Frontend | React 18, TypeScript, Vite, Tailwind CSS | Free |
 | Backend | Node.js 22, Express.js | Free |
 | Database | PostgreSQL 16 + pgvector + pgcrypto | Free |
@@ -90,14 +98,17 @@ Client Request → Nginx (port 8080)
 | Cloud | Google Cloud Run (embedded PG) | Pay-per-use |
 | CI/CD | Google Cloud Build | Pay-per-use |
 
+
 ---
 
+
 ## 3. Complete Feature Matrix
+
 
 ### 3.1 Authentication & User Management
 
 | ID | Feature | Actor | Status |
-|----|---------|-------|--------|
+| ----|---------|-------|-------- |
 | AUTH-001 | Patient Registration (2-step form) | Patient | ✅ |
 | AUTH-002 | Patient Login (session token, 30m TTL) | Patient | ✅ |
 | AUTH-003 | Doctor Login (JWT, role: doctor/admin) | Doctor | ✅ |
@@ -107,10 +118,12 @@ Client Request → Nginx (port 8080)
 | AUTH-007 | Account Lockout (5 attempts → 15m lock) | All | ✅ |
 | AUTH-008 | Admin Doctor Approval workflow | Admin | ✅ Fixed v1.5.2 |
 
+
+
 ### 3.2 Appointments
 
 | ID | Feature | Actor | Status |
-|----|---------|-------|--------|
+| ----|---------|-------|-------- |
 | APPT-001 | Book Appointment (multi-step) | Patient | ✅ |
 | APPT-002 | AI Symptom Analysis (Gemini) | Patient | ✅ |
 | APPT-003 | Admin Assignment (manual/AI) | Admin | ✅ |
@@ -121,10 +134,12 @@ Client Request → Nginx (port 8080)
 | APPT-008 | Queue Management (call/skip/complete) | Doctor | ✅ |
 | APPT-009 | Meeting Link Generation (Jitsi) | System | ✅ |
 
+
+
 ### 3.3 Video Meeting & Transcription
 
 | ID | Feature | Actor | Status |
-|----|---------|-------|--------|
+| ----|---------|-------|-------- |
 | MEET-001 | Create Meeting Room (doctor as HOST) | Doctor | ✅ |
 | MEET-002 | Patient Join (lobby approval) | Patient | ✅ |
 | MEET-003 | Guest Invite (link-based) | Doctor | ✅ |
@@ -137,10 +152,12 @@ Client Request → Nginx (port 8080)
 | MEET-010 | Man-in-Loop AI Validation | Doctor | ✅ |
 | MEET-011 | In-Meeting Chat (Socket.IO) | All | ✅ |
 
+
+
 ### 3.4 Health Records
 
 | ID | Feature | Actor | Status |
-|----|---------|-------|--------|
+| ----|---------|-------|-------- |
 | PHR-001 | Vital Signs CRUD | Patient | ✅ |
 | PHR-002 | Medication Management | Patient | ✅ |
 | PHR-003 | Allergy Records | Patient | ✅ |
@@ -154,10 +171,12 @@ Client Request → Nginx (port 8080)
 | EMR-007 | Finalize EMR (digital signature, immutable) | Doctor | ✅ |
 | EMR-008 | Amend EMR (versioned) | Doctor | ✅ |
 
+
+
 ### 3.5 Living Will & PDPA
 
 | ID | Feature | Actor | Status |
-|----|---------|-------|--------|
+| ----|---------|-------|-------- |
 | LW-001 | Create Living Will (4-step wizard) | Patient | ✅ |
 | LW-002 | Healthcare Proxy Designation | Patient | ✅ |
 | LW-003 | PDPA-Controlled Sharing | Patient | ✅ |
@@ -166,10 +185,12 @@ Client Request → Nginx (port 8080)
 | PDPA-002 | Doctor Access Control | Patient | ✅ |
 | PDPA-003 | Audit Log (all data access) | System | ✅ |
 
+
+
 ### 3.6 Medical Content & Resources
 
 | ID | Feature | Actor | Status |
-|----|---------|-------|--------|
+| ----|---------|-------|-------- |
 | MC-001 | Create Content (draft/submit) | Doctor | ✅ |
 | MC-002 | Approval Workflow (admin) | Admin | ✅ |
 | MC-003 | Patient Library (search/filter) | Patient | ✅ |
@@ -177,20 +198,24 @@ Client Request → Nginx (port 8080)
 | CR-002 | RAG Knowledge Base (pgvector) | Doctor | ✅ |
 | MC-004 | Medical Consultant Directory | Doctor/Admin | ✅ |
 
+
+
 ### 3.7 AI Features
 
 | ID | Feature | Actor | Status |
-|----|---------|-------|--------|
+| ----|---------|-------|-------- |
 | AI-001 | AI Health Chat (Gemini) | Patient | ✅ |
 | AI-002 | Gemini AI Studio (FAB) | Doctor | ✅ |
 | AI-003 | Document Analysis (PDF) | Doctor | ✅ |
 | AI-004 | CDS Drug Interaction Check | System | ✅ |
 | AI-005 | Knowledge Base RAG Search | Doctor | ✅ |
 
+
+
 ### 3.8 Notifications & System
 
 | ID | Feature | Actor | Status |
-|----|---------|-------|--------|
+| ----|---------|-------|-------- |
 | NOTIF-001 | In-App Notification Bell | All | ✅ |
 | NOTIF-002 | Mark as Read | All | ✅ |
 | MAP-001 | Healthcare Map (1-20km range) | Patient | ✅ |
@@ -199,14 +224,17 @@ Client Request → Nginx (port 8080)
 | DASH-002 | Doctor Dashboard | Doctor | ✅ |
 | SET-001 | Patient Settings | Patient | ✅ |
 
+
 ---
 
+
 ## 4. Portal Pages
+
 
 ### 4.1 Patient Portal (15 pages)
 
 | # | Page | Route | Description |
-|---|------|-------|-------------|
+| ---|------|-------|------------- |
 | 01 | Login | `/login` | Email+password authentication |
 | 02 | Register | `/register` | 2-step registration (basic + health) |
 | 03 | Reset Password | `/reset-password` | Token-based password reset |
@@ -223,10 +251,12 @@ Client Request → Nginx (port 8080)
 | 14 | Timeline | `/timeline` | Chronological treatment history |
 | 15 | Notifications | Header bell | In-app notification panel |
 
+
+
 ### 4.2 Doctor Portal (21 pages)
 
 | # | Page | Route | Description |
-|---|------|-------|-------------|
+| ---|------|-------|------------- |
 | 01 | Login | `/login` | JWT authentication |
 | 02 | Reset Password | `/reset-password` | Token-based reset |
 | 03 | Dashboard | `/dashboard` | Today's schedule, stats, tasks |
@@ -249,9 +279,12 @@ Client Request → Nginx (port 8080)
 | 20 | Appointment Pool | `/pool` | Unassigned appointment claiming |
 | 21 | Queue Management | `/queue` | Today's patient queue |
 
+
 ---
 
+
 ## 5. Database Schema (42 tables)
+
 
 ### 5.1 Core Tables
 
@@ -317,6 +350,7 @@ SYNC & SETTINGS (4)
 └── user_api_connections      — External API connections
 ```
 
+
 ### 5.2 Key Relationships
 
 ```text
@@ -333,12 +367,14 @@ users ──┬── patient_profiles ──── phr ──── vital_signs
 
 ---
 
+
 ## 6. API Endpoints Summary
+
 
 ### 6.1 Patient Portal (localhost:3005) — 30+ endpoints
 
 | Category | Method | Endpoint | Auth |
-|----------|--------|----------|------|
+| ----------|--------|----------|------ |
 | Auth | POST | `/api/auth/login` | Public |
 | Auth | POST | `/api/auth/register` | Public |
 | Auth | POST | `/api/auth/logout` | Auth |
@@ -363,10 +399,12 @@ users ──┬── patient_profiles ──── phr ──── vital_signs
 | AI | POST | `/api/ai/chat` | Auth |
 | PDPA | GET/PUT | `/api/pdpa/consents` | Auth |
 
+
+
 ### 6.2 Doctor Portal (localhost:3010) — 50+ endpoints
 
 | Category | Method | Endpoint | Auth |
-|----------|--------|----------|------|
+| ----------|--------|----------|------ |
 | Auth | POST | `/auth/login` | Public |
 | Auth | POST | `/auth/register` | Public |
 | Appts | GET/PUT | `/api/appointments` | Auth |
@@ -393,10 +431,12 @@ users ──┬── patient_profiles ──── phr ──── vital_signs
 | Admin | GET | `/api/admin/users` | Admin |
 | Admin | POST | `/auth/admin/approve-doctor` | Admin |
 
+
+
 ### 6.3 Meeting Server (localhost:3020) — 15 endpoints
 
 | Category | Method | Endpoint | Auth |
-|----------|--------|----------|------|
+| ----------|--------|----------|------ |
 | Health | GET | `/api/health` | Public |
 | Meeting | POST | `/api/meetings/create` | Auth |
 | Meeting | GET | `/api/meetings/:id` | Auth |
@@ -411,9 +451,12 @@ users ──┬── patient_profiles ──── phr ──── vital_signs
 | AI | POST | `/api/ai/analyze-document` | Auth |
 | AI | GET | `/api/ai/knowledge` | Auth |
 
+
 ---
 
+
 ## 7. Workflows & Processes
+
 
 ### 7.1 Appointment Lifecycle
 
@@ -424,6 +467,7 @@ Patient Books → AI Symptom Analysis → Admin Assigns Doctor
     → Doctor Creates EMR + Prescriptions + Lab Orders
     → Patient Receives Instructions → Follow-up Scheduled
 ```
+
 
 ### 7.2 EMR & Clinical Workflow
 
@@ -437,6 +481,7 @@ Pre-Consultation: AI Summary (patient history + PHR)
     → Imaging Orders: Create + results upload
     → Finalize EMR: Digital signature → immutable record
 ```
+
 
 ### 7.3 Lab Order Flow (Fixed v1.5.2)
 
@@ -453,6 +498,7 @@ Doctor Creates Lab Order (POST /api/lab-orders)
         → Sees: test values, reference ranges, attached documents
 ```
 
+
 ### 7.4 Doctor Registration & Approval (Fixed v1.5.2)
 
 ```text
@@ -463,6 +509,7 @@ New Doctor Registers → is_active=false, approval_status="pending"
     → Admin Approves → is_active=true, approval_status="approved"
     → Doctor Can Login → JWT issued with role
 ```
+
 
 ### 7.5 Content Management
 
@@ -475,10 +522,11 @@ Doctor Creates Article (status: draft)
 
 ---
 
+
 ## 8. Security
 
 | Control | Implementation |
-|---------|---------------|
+| ---------|--------------- |
 | Password Hashing | bcrypt (10 rounds) |
 | Auth Tokens | JWT (doctor) + Session tokens (patient) |
 | Password Policy | 12+ chars, upper/lower/digit/special |
@@ -492,67 +540,85 @@ Doctor Creates Article (status: draft)
 | PDPA Compliance | Granular consent, audit trail, data portability |
 | AI Safety | Man-in-the-Loop: doctor validates all AI outputs |
 
+
 ---
 
+
 ## 9. Deployment
+
 
 ### 9.1 Local (Docker Compose)
 
 ```bash
 docker-compose up -d --build
-# Patient: http://localhost:3005
-# Doctor:  http://localhost:3010
-# Meeting: http://localhost:3020
-# pgAdmin: http://localhost:5050
+
+# Patient: <http://localhost:3005>
+
+# Doctor:  <http://localhost:3010>
+
+# Meeting: <http://localhost:3020>
+
+# pgAdmin: <http://localhost:5050>
+
 # PostgreSQL: localhost:5433
 ```
+
 
 ### 9.2 Production (Google Cloud Run — Embedded PG)
 
 Each Cloud Run service embeds PostgreSQL 16 directly in the container — **no separate Cloud SQL instance** — to minimize costs.
 
 ```bash
+
 # Deploy Patient Portal
 cd Isara-patient-portal && gcloud builds submit --config=cloudbuild.yaml
 
+
 # Deploy Doctor Portal
 cd Isara-doctor-portal && gcloud builds submit --config=cloudbuild.yaml
+
 
 # Deploy Meeting Server
 cd Izara-jitsi-server && gcloud builds submit --config=cloudbuild.yaml
 ```
 
 | Service | Production URL |
-|---------|---------------|
-| Patient Portal | https://izara-patient-portal-724889190329.asia-southeast1.run.app |
-| Doctor Portal | https://izara-doctor-portal-724889190329.asia-southeast1.run.app |
-| Meeting Server | https://izara-jitsi-meeting-portal-724889190329.asia-southeast1.run.app |
+| ---------|--------------- |
+| Patient Portal | <https://izara-patient-portal-724889190329.asia-southeast1.run.app> |
+| Doctor Portal | <https://izara-doctor-portal-724889190329.asia-southeast1.run.app> |
+| Meeting Server | <https://izara-jitsi-meeting-portal-724889190329.asia-southeast1.run.app> |
+
 
 ---
+
 
 ## 10. Testing
 
 | Type | Count | Framework | Command |
-|------|-------|-----------|---------|
+| ------|-------|-----------|--------- |
 | Unit | 409 | Vitest | `cd tests/unit && npx vitest run` |
 | E2E | 808 | Playwright | `cd tests/e2e && npx playwright test --project=Local` |
+
+
 
 ### Test Credentials
 
 | Role | Email | Password |
-|------|-------|----------|
+| ------|-------|---------- |
 | Patient 1 | demo.test@gmail.com | P@ssw0rd |
 | Patient 2 | Somchai.Mankong@gmail.com | P@ssw0rd |
 | Patient 3 | Anan.Khayanrian@gmail.com | P@ssw0rd |
 | Doctor | doctor.test@izara.com | IzaraDoctor@2024 |
 | Admin | admin.test@izara.com | IzaraAdmin@2024 |
 
+
 ---
+
 
 ## 11. v1.5.2 Changelog
 
 | Issue | Root Cause | Fix |
-|-------|-----------|-----|
+| -------|-----------|----- |
 | Lab upload broken | Endpoints used GCS mock returning empty arrays | Replaced with PostgreSQL LabOrderService |
 | Prescription endpoints broken | Same GCS mock issue | Replaced with PostgreSQL PrescriptionService |
 | "Failed to load doctor accounts" | Invalid SQL: `(is_active = ($n = 'active'))` | Fixed to use boolean `is_active` for active/inactive, `approval_status` for other states |
@@ -560,3 +626,4 @@ cd Izara-jitsi-server && gcloud builds submit --config=cloudbuild.yaml
 | No imaging orders | Feature not implemented | Added imaging_orders table + full CRUD endpoints |
 | Cloud SQL cost | External Cloud SQL at $50+/month | Embedded PostgreSQL 16 directly in Cloud Run containers |
 | Dev environment cost | Separate dev-testing Cloud Run services | Removed dev environment; test locally, deploy to production |
+

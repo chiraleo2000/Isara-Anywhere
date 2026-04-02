@@ -1,18 +1,20 @@
 # ✅ Doctor Portal — Admin Appointment Management
 
-**Route:** `/admin/appointments`  
-**Component:** `src/pages/AdminAppointmentManagement.tsx`  
-**Access:** 🔒 Admin only  
-**Thai Title:** จัดการนัดหมาย / Appointment Management  
+**Route:** `/admin/appointments`
+**Component:** `src/pages/AdminAppointmentManagement.tsx`
+**Access:** 🔒 Admin only
+**Thai Title:** จัดการนัดหมาย / Appointment Management
 **Version:** v1.4.7
 
 ---
+
 
 ## 1. Purpose
 
 Admin-only page for managing all appointment requests: auto-assign doctors using AI specialty matching, manually assign, or reject appointments.
 
 ---
+
 
 ## 2. Layout
 
@@ -39,7 +41,9 @@ Admin-only page for managing all appointment requests: auto-assign doctors using
 
 ---
 
+
 ## 3. AI Auto-Assign Logic
+
 
 ### Specialty Matching (11 categories)
 
@@ -57,7 +61,9 @@ Admin-only page for managing all appointment requests: auto-assign doctors using
 | ENT | หู, คอ, จมูก, ear, throat, nose |
 | Ophthalmology | ตา, สายตา, eye, vision |
 
+
 ---
+
 
 ## 4. Manual Assign Modal
 
@@ -76,7 +82,9 @@ Admin-only page for managing all appointment requests: auto-assign doctors using
 
 ---
 
+
 ## 5. Workflows
+
 
 ### Workflow 1: AI Auto-Assign
 
@@ -89,6 +97,7 @@ Step 5: PATCH /api/appointments/:id → assigned to matched doctor
 Step 6: Doctor notified of assignment
 ```
 
+
 ### Workflow 2: Batch Auto-Assign
 
 ```text
@@ -97,6 +106,7 @@ Step 2: AI processes all pending appointments in sequence
 Step 3: Each assigned to best-matching available doctor
 Step 4: Results summary shown
 ```
+
 
 ### Workflow 3: Manual Assign
 
@@ -109,6 +119,7 @@ Step 5: PATCH /api/appointments/:id → assigned
 Step 6: Doctor and patient notified
 ```
 
+
 ### Workflow 4: Reject
 
 ```text
@@ -118,6 +129,7 @@ Step 3: Admin enters rejection reason
 Step 4: PATCH /api/appointments/:id → rejected
 Step 5: Patient notified with reason
 ```
+
 
 ### Workflow 5: Pool Appointment → Doctor Assignment → Meeting Lifecycle
 
@@ -141,6 +153,7 @@ Step 16: Admin can track full lifecycle in "All" tab
 ```
 
 ---
+
 
 ## 6. Appointment Status Lifecycle
 
@@ -184,6 +197,7 @@ Appointment Lifecycle Flow:
        └── Patient receives results
 ```
 
+
 ### Status Tracking Table
 
 | Status | Thai | Phase | Admin Visible |
@@ -203,7 +217,9 @@ Appointment Lifecycle Flow:
 | cancelled | ยกเลิก | Cancelled | ✅ |
 | no_show | ไม่มา | No-show | ✅ |
 
+
 ---
+
 
 ## 7. AI Auto-Assign Specialty Matching Details
 
@@ -230,7 +246,9 @@ Step 7: Admin approves or overrides assignment
 | 60-84% | Review recommended | Moderate confidence, admin should review |
 | < 60% | Manual assignment | Low confidence, admin should assign manually |
 
+
 ---
+
 
 ## 8. API Endpoints
 
@@ -247,15 +265,64 @@ Step 7: Admin approves or overrides assignment
 | GET | `/api/doctors/availability` | Check doctor schedule availability |
 | GET | `/api/doctors/workload` | Get doctor workload for load balancing |
 
+
 ---
+
 
 ## 9. AI Agent Improvement Opportunities
 
+
 - **Smart load balancing**: AI distribute appointments evenly across doctors
+
 - **Priority scheduling**: AI factor in urgency for assignment order
+
 - **Availability optimization**: AI consider doctor schedules and workload
+
 - **Patient preferences**: AI match based on language, gender preferences
+
 - **Lifecycle analytics**: AI identify bottlenecks in appointment-to-completion flow
+
 - **No-show prediction**: AI predict and flag high-risk no-show appointments
+
 - **Auto-escalation**: AI escalate stalled appointments (e.g., awaiting_doctor_response > 24h)
+
 - **Meeting preparation alerts**: AI notify admin when meeting prerequisites not met
+
+---
+
+
+## PostgreSQL Database Integration
+
+
+### Tables Used
+| Table | Operation | Description |
+| ----- | --------- | ----------- |
+| appointments | SELECT/UPDATE | All appointment statuses, admin management |
+| users | SELECT | Patient and doctor info for assignment |
+| doctor_schedules | SELECT | Doctor availability for assignment matching |
+
+
+
+### API Endpoints
+| Endpoint | Method | DB Operation |
+| -------- | ------ | ------------ |
+| GET /api/appointments | GET | SELECT appointments with all statuses (admin view) |
+| PUT /api/appointments/:id/assign | PUT | UPDATE appointments SET doctor_id, status WHERE id |
+
+
+
+### Admin Operations
+
+- Admin assigns doctor to unassigned appointments
+
+- Admin can reassign or cancel appointments
+
+
+### Deployment
+
+- **Local Docker:** izara-postgres container (localhost:5433 external / 5432 internal) → database: izara_phase1
+
+- **Production:** GCE VM at 35.240.157.230:5432 → database: izara_phase1 (asia-southeast1)
+
+- **Service deployed via:** Cloud Run (gen2, CPU Boost) + Cloud Build CI/CD
+

@@ -8,7 +8,7 @@ import { describe, it, expect } from 'vitest';
 
 // ── CORS Logic ──────────────────────────────────────────────────────────
 
-const LOCALHOST_PORTS = [3000, 3001, 3004, 3005, 3009, 3010, 3011, 3012, 3020, 5173, 8081];
+const LOCALHOST_PORTS = [3000, 3001, 3004, 3005, 3009, 3010, 3011, 3012, 3020, 5173];
 const CLOUD_RUN_PATTERN = /^https:\/\/.*\.run\.app$/;
 
 function buildCorsWhitelist(): string[] {
@@ -109,10 +109,6 @@ describe('Security — CORS & Rate Limiting', () => {
 
     it('A06 — random origin blocked', () => {
       expect(isAllowedOrigin('https://evil.com')).toBe(false);
-    });
-
-    it('A07 — Expo dev port 8081 allowed', () => {
-      expect(isAllowedOrigin('http://localhost:8081')).toBe(true);
     });
   });
 

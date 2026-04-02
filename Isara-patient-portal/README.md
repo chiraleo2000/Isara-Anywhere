@@ -1,15 +1,16 @@
 # 🏥 Izara Patient Portal
 
-![Version](https://img.shields.io/badge/version-1.5.10-blue.svg)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.2-blue.svg)
-![React](https://img.shields.io/badge/React-18-61dafb.svg)
-![Node.js](https://img.shields.io/badge/Node.js-22+-green.svg)
-![Vite](https://img.shields.io/badge/Vite-7-646CFF.svg)
-![Database](https://img.shields.io/badge/database-PostgreSQL%2018-blue.svg)
+![Version](<https://img.shields.io/badge/version-1.5.10-blue.svg)>
+![TypeScript](<https://img.shields.io/badge/TypeScript-5.2-blue.svg)>
+![React](<https://img.shields.io/badge/React-18-61dafb.svg)>
+![Node.js](<https://img.shields.io/badge/Node.js-22+-green.svg)>
+![Vite](<https://img.shields.io/badge/Vite-7-646CFF.svg)>
+![Database](<https://img.shields.io/badge/database-PostgreSQL%2018-blue.svg)>
 
 > Patient-facing telemedicine application with AI-powered health assistance, appointment booking, personal health records (PHR), video consultations, and nearby healthcare facility finder.
 
 ---
+
 
 ## 🏗 Architecture
 
@@ -34,6 +35,7 @@
 
 ---
 
+
 ## ✨ Features
 
 | Feature | Description |
@@ -51,17 +53,23 @@
 | 🌐 Bilingual UI | Thai (primary) + English, all pages |
 | 🌙 Dark Mode | System-wide dark theme support |
 
+
 ---
 
+
 ## 🚀 Quick Start
+
 
 ### With Docker (Recommended)
 
 ```bash
+
 # From the root Isara-Anywhere directory
 docker compose up -d --build
-# Patient Portal: http://localhost:3005
+
+# Patient Portal: <http://localhost:3005>
 ```
+
 
 ### Local Development
 
@@ -72,6 +80,7 @@ cp .env.example .env   # Edit with your API keys
 npm run dev:all         # Frontend + Backend
 ```
 
+
 ### Test Credentials
 
 | Role | Email | Password |
@@ -80,7 +89,9 @@ npm run dev:all         # Frontend + Backend
 | Patient 2 | `Somchai.Mankong@gmail.com` | `P@ssw0rd` |
 | Patient 3 | `Anan.Khayanrian@gmail.com` | `P@ssw0rd` |
 
+
 ---
+
 
 ## 📁 Project Structure
 
@@ -122,6 +133,7 @@ Isara-patient-portal/
 
 ---
 
+
 ## 📡 API Endpoints
 
 | Area | Key Endpoints |
@@ -136,7 +148,9 @@ Isara-patient-portal/
 | Notifications | `GET /api/notifications/:userId`, `POST /api/notifications` |
 | PDPA | `GET /api/pdpa/consent/:userId`, `POST /api/pdpa/consent` |
 
+
 ---
+
 
 ## ⚙️ Environment Configuration
 
@@ -149,17 +163,25 @@ Isara-patient-portal/
 | `DATABASE_URL` | PostgreSQL connection string |
 | `PORT` | Server port (default: 3005) |
 
+
 ---
+
 
 ## 🔒 Security
 
+
 - **OWASP Top 10:2025** compliant middleware
+
 - **bcrypt** password hashing (10 rounds)
+
 - **Helmet.js** security headers (CSP, HSTS, XSS)
+
 - **Rate limiting** on authentication endpoints
+
 - **PDPA** consent management for Thailand compliance
 
 ---
+
 
 ## 📄 License
 

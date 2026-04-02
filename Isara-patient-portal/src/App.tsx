@@ -21,6 +21,7 @@ import MapPage from './pages/MapPage';
 import GCSStatusPage from './pages/GCSStatusPage';
 import PatientMeetingRoom from './pages/PatientMeetingRoom';
 import GuestMeetingJoin from './pages/GuestMeetingJoin';
+import FindDoctorsPage from './pages/FindDoctorsPage';
 
 // Enhanced Scroll to top on route change - uses useLayoutEffect for immediate scroll
 function ScrollToTop() {
@@ -89,6 +90,7 @@ function AppRoutes() {
       
       {/* Guest meeting join - public, no auth required */}
       <Route path="/guest-join/:meetingId" element={<GuestMeetingJoin />} />
+      <Route path="/guest/join/:token" element={<GuestMeetingJoin />} />
       
       <Route path="/" element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
         <Route index element={<DashboardPage />} />
@@ -105,6 +107,7 @@ function AppRoutes() {
         <Route path="living-will" element={<LivingWillPage />} />
         <Route path="timeline" element={<TimelinePage />} />
         <Route path="map" element={<MapPage />} />
+        <Route path="find-doctors" element={<FindDoctorsPage />} />
         <Route path="admin/gcs" element={<GCSStatusPage />} />
       </Route>
 

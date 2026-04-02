@@ -1,8 +1,8 @@
 # Notification Workflows / ขั้นตอนการแจ้งเตือน
 
-**Version:** 1.5.9  
-**Last Updated:** March 15, 2026  
-**Status:** ✅ PostgreSQL Implementation Complete
+**Version:** 1.6.0
+**Last Updated:** March 31, 2026
+**Status:** ✅ PostgreSQL Implementation Complete + Full DB Schema
 
 ---
 
@@ -58,15 +58,15 @@ flowchart TD
     P[ผู้ป่วยขอนัดหมาย] --> S{เลือกแพทย์?}
     S -->|เลือกแพทย์| D1[แจ้งเตือนแพทย์ที่เลือก]
     S -->|ไม่ระบุ| P1[เข้า Pool รอการจับคู่]
-    
+
     D1 --> D2{แพทย์ตอบรับ?}
     D2 -->|ยืนยัน| C1[สร้างลิงก์ประชุม Jitsi]
     D2 -->|ปฏิเสธ| P1
-    
+
     C1 --> N1[แจ้งเตือนผู้ป่วย + ลิงก์]
     C1 --> N2[เพิ่มใน Google Calendar]
     C1 --> N3[บันทึกในระบบ]
-    
+
     P1 --> A[Admin/ระบบจับคู่แพทย์]
     A --> A1[แจ้งเตือนแพทย์ใหม่]
     A1 --> D2
@@ -78,15 +78,15 @@ flowchart TD
 flowchart TD
     A[แพทย์ยืนยันนัดหมาย] --> B[สร้าง Jitsi Meet Link]
     B --> C{สร้างสำเร็จ?}
-    
+
     C -->|สำเร็จ| D[บันทึกลิงก์ในระบบ]
     D --> E[แจ้งเตือนผู้ป่วย]
     E --> F[แจ้งเตือนแพทย์]
-    
+
     C -->|ไม่สำเร็จ| G[แจ้งเตือน Fallback]
     G --> H[Admin ดำเนินการแก้ไข]
     H --> B
-    
+
     E --> I[ส่งอีเมลพร้อมลิงก์]
     E --> J[แจ้งเตือนในแอป]
     E --> K[เพิ่มใน Calendar]
@@ -196,8 +196,10 @@ Subject: ✅ นัดหมายได้รับการยืนยัน 
 🔗 ลิงก์เข้าประชุม (สำหรับนัดหมายออนไลน์):
 [MEETING_LINK]
 
-💡 หมายเหตุ: 
+💡 หมายเหตุ:
+
 - คุณสามารถเข้าร่วมได้ 15 นาทีก่อนเวลานัด
+
 - กรุณารอให้แพทย์เริ่มห้องประชุมก่อน
 
 [➕ เพิ่มในปฏิทิน] [📋 ดูนัดหมาย]
@@ -234,18 +236,22 @@ Subject: 🔗 ลิงก์ประชุมพร้อมแล้ว - น
 ### 6.1 ทำไมใช้ Jitsi Meet
 
 - ✅ ฟรี ไม่มีค่าใช้จ่าย
+
 - ✅ ไม่ต้องสมัครสมาชิก ไม่ต้องมี Google Account
+
 - ✅ เข้าได้ทันทีผ่าน Browser
+
 - ✅ รองรับการบันทึกวิดีโอ
+
 - ✅ มีความปลอดภัยสูง (E2E Encryption)
 
 ### 6.2 Meeting Link Format
 
 ```text
-https://meet.jit.si/Izara-{appointmentId}-{timestamp}-{random}
+<https://meet.jit.si/Izara-{appointmentId}-{timestamp}-{random}>
 
 ตัวอย่าง:
-https://meet.jit.si/Izara-apt12345-lxyz-abc123
+<https://meet.jit.si/Izara-apt12345-lxyz-abc123>
 ```
 
 ### 6.3 Meeting Configuration
@@ -276,6 +282,7 @@ const config = {
 ### 7.2 Polling Interval
 
 - In-App Notifications: Poll ทุก 30 วินาที
+
 - Real-time Events: WebSocket (future enhancement)
 
 ---
@@ -290,7 +297,7 @@ try {
 } catch (error) {
   // Log error but don't fail the main operation
   console.error('Notification failed:', error);
-  
+
   // Queue for retry
   await notificationQueue.add({
     ...data,
@@ -343,12 +350,19 @@ interface DoctorNotificationPreferences {
 ### 10.1 Notification Flow Tests (✅ Verified January 2025)
 
 - [x] ผู้ป่วยขอนัดหมาย → แพทย์ได้รับแจ้งเตือน
+
 - [x] แพทย์ยืนยัน → ผู้ป่วยได้รับลิงก์ประชุม
+
 - [x] แพทย์ปฏิเสธ → ผู้ป่วยได้รับแจ้ง + เข้า Pool
+
 - [x] EMR ลงนาม → ผู้ป่วยได้รับแจ้งเตือน
+
 - [x] ลิงก์ประชุม Jitsi สร้างสำเร็จ
+
 - [x] การแจ้งเตือนแสดงในระฆังถูกต้อง (NotificationBell)
+
 - [x] DoctorNotificationBell ใช้ API จริง (ไม่ใช้ mock data)
+
 - [x] E2E Tests ผ่าน 100% (jitsiMeetingTests, appointmentWorkflowTests, dualPortalMeetingTests)
 
 ### 10.2 Test Results Summary (January 2025)
@@ -481,10 +495,136 @@ Configuration:
 └── AI Summary: Gemini (gemini-2.5-flash-lite)
 
 Meeting Link Format:
-https://meet.jit.si/izara-{appointmentId}-{timestamp}-{random}
+<https://meet.jit.si/izara-{appointmentId}-{timestamp}-{random}>
 ```
 
 ---
 
 อัปเดตล่าสุด: January 2025
 เวอร์ชัน: 1.1.0 - Updated with verified test results
+
+---
+
+## PostgreSQL Database Architecture for Notifications
+
+### Database Tables
+
+| Table | Purpose | Key Columns |
+| ----- | ------- | ----------- |
+| **notifications** | All user notifications | id (UUID), user_id, type (varchar), title, title_thai, message, message_thai, data (JSONB), read_at (timestamp), created_at |
+| **device_tokens** | Push notification devices | id, user_id, device_token, platform (web/ios/android), device_name, is_active |
+| **push_subscriptions** | Notification preferences | id, user_id, appointment_reminders (boolean), medication_reminders (boolean), quiet_hours_start, quiet_hours_end |
+| **appointments** | Triggers appointment notifications | LISTEN/NOTIFY on INSERT, UPDATE, DELETE |
+| **emr** | Triggers EMR completion notifications | LISTEN/NOTIFY on INSERT, UPDATE |
+| **prescriptions** | Triggers prescription notifications | LISTEN/NOTIFY on INSERT, UPDATE |
+| **lab_orders** | Triggers lab result notifications | LISTEN/NOTIFY on INSERT, UPDATE |
+
+### Notification Data Flow
+
+```text
+┌──────────────────────────────────────────────────────────────────────────┐
+│                   NOTIFICATION SYSTEM ARCHITECTURE                        │
+│                                                                          │
+│  SOURCE EVENTS                       DELIVERY CHANNELS                   │
+│  ─────────────                       ──────────────────                  │
+│  PostgreSQL LISTEN/NOTIFY            ┌─────────────────────┐            │
+│  ├── notify_appointment_change ──────▶│ Socket.IO Server    │            │
+│  ├── notify_emr_change ──────────────▶│ (Real-time)         │            │
+│  ├── notify_prescription_change ─────▶│                     │            │
+│  ├── notify_lab_order_change ─────────▶│ Rooms:              │            │
+│  ├── notify_notification_insert ──────▶│ ├── admin-room      │            │
+│  └── notify_meeting_change ──────────▶│ ├── doctor-room     │            │
+│                                       │ ├── patient-room    │            │
+│                                       │ └── queue-room      │            │
+│                                       └─────────┬───────────┘            │
+│                                                 │                        │
+│                                    ┌────────────┼────────────┐          │
+│                                    ▼            ▼            ▼          │
+│                              ┌──────────┐ ┌──────────┐ ┌──────────┐    │
+│                              │ In-App   │ │ Push     │ │ Email    │    │
+│                              │ Badge    │ │ (Web API)│ │ (Gmail)  │    │
+│                              └──────────┘ └──────────┘ └──────────┘    │
+│                                                                          │
+│  PostgreSQL (izara_phase1)                                               │
+│  ├── INSERT INTO notifications (user_id, type, title, title_thai,       │
+│  │     message, message_thai, data)                                      │
+│  ├── LISTEN/NOTIFY triggers → pgNotifyListener → Socket.IO emit         │
+│  └── SELECT unread: WHERE user_id=$1 AND read_at IS NULL                │
+│                                                                          │
+│  Local:  izara-postgres:5432 (Docker)                                    │
+│  Cloud:  35.240.157.230:5432 (GCE VM)                                   │
+└──────────────────────────────────────────────────────────────────────────┘
+```
+
+### pgNotifyListener Bridge (PostgreSQL → Socket.IO)
+
+```text
+PostgreSQL LISTEN/NOTIFY                     Socket.IO Events
+┌────────────────────────────┐              ┌──────────────────────────────┐
+│ LISTEN appointment_changes │──────────────▶│ io.to('doctor-room').emit(  │
+│                            │              │   'appointment:updated', data)│
+│ LISTEN emr_changes         │──────────────▶│ io.to('patient-room').emit( │
+│                            │              │   'emr:updated', data)        │
+│ LISTEN notification_insert │──────────────▶│ io.to(userId).emit(         │
+│                            │              │   'notification:new', data)   │
+│ LISTEN meeting_changes     │──────────────▶│ io.to(roomName).emit(       │
+│                            │              │   'meeting:updated', data)    │
+└────────────────────────────┘              └──────────────────────────────┘
+```
+
+### Notification Creation SQL
+
+```sql
+-- Create notification when appointment is confirmed
+INSERT INTO notifications (id, user_id, type, title, title_thai,
+  message, message_thai, data)
+VALUES (
+  gen_random_uuid(), $patientId, 'appointment_confirmed',
+  'Appointment Confirmed', 'นัดหมายได้รับการยืนยัน',
+  'Your appointment has been confirmed', 'นัดหมายของคุณได้รับการยืนยันแล้ว',
+  jsonb_build_object('appointmentId', $aptId, 'meetingLink', $link)
+);
+
+-- Mark notification as read
+UPDATE notifications SET read_at = NOW() WHERE id = $1 AND user_id = $2;
+
+-- Get unread count
+SELECT COUNT(*) FROM notifications WHERE user_id = $1 AND read_at IS NULL;
+
+-- Get notification preferences
+SELECT * FROM push_subscriptions WHERE user_id = $1;
+```
+
+### API Endpoints with DB Operations
+
+| Portal | Endpoint | Method | DB Operation |
+| ------ | -------- | ------ | ------------ |
+| Patient | `/api/notifications` | GET | SELECT FROM notifications WHERE user_id=$1 |
+| Patient | `/api/notifications/:id/read` | PUT | UPDATE notifications SET read_at=NOW() |
+| Patient | `/api/notifications/preferences` | GET/PUT | SELECT/UPDATE push_subscriptions |
+| Doctor | `/api/notifications` | GET | SELECT FROM notifications WHERE user_id=$1 |
+| Doctor | `/api/notifications/:id/read` | PUT | UPDATE notifications SET read_at=NOW() |
+| All | Socket.IO `notification:new` | — | Triggered by LISTEN notification_insert |
+
+### Deployment
+
+| Environment | Service | Notification Role | Database |
+| ----------- | ------- | ----------------- | -------- |
+| Local Docker | Patient Portal (3005) | Receive patient notifications | izara-postgres:5432 |
+| Local Docker | Doctor Portal (3010) | Receive doctor/admin notifications | izara-postgres:5432 |
+| Local Docker | Meeting Server (3020) | Create meeting notifications | izara-postgres:5432 |
+| Production | All Cloud Run services | Same roles | 35.240.157.230:5432 |
+
+### Scenario Coverage
+
+| # | Scenario | Trigger | DB Tables |
+| - | -------- | ------- | --------- |
+| 1 | Patient books appointment | INSERT appointments | notifications, appointments |
+| 2 | Doctor confirms appointment | UPDATE appointments | notifications |
+| 3 | Appointment reminder (24h/1h) | Scheduled job | notifications |
+| 4 | EMR completed | INSERT emr | notifications |
+| 5 | Prescription created | INSERT prescriptions | notifications |
+| 6 | Lab results ready | UPDATE lab_orders | notifications |
+| 7 | Meeting starting | UPDATE meeting_records | notifications |
+| 8 | Patient reads notification | User action | notifications (read_at) |
+| 9 | Update push preferences | User action | push_subscriptions |

@@ -18,7 +18,7 @@ interface AppointmentData {
   notes?: string;
 }
 
-const VALID_TYPES = ['video_consultation', 'follow_up', 'urgent', 'general', 'specialist_referral'];
+const VALID_TYPES = new Set(['video_consultation', 'follow_up', 'urgent', 'general', 'specialist_referral']);
 const VALID_STATUSES = ['pending', 'in_pool', 'awaiting_doctor_response', 'confirmed', 'waiting', 'in_progress', 'completed', 'cancelled', 'declined', 'no_show'];
 
 function validateAppointment(data: AppointmentData): { valid: boolean; errors: string[] } {
@@ -27,7 +27,7 @@ function validateAppointment(data: AppointmentData): { valid: boolean; errors: s
   if (!data.doctorId) errors.push('Doctor ID required');
   if (!data.date) errors.push('Date required');
   if (!data.time) errors.push('Time required');
-  if (data.type && !VALID_TYPES.includes(data.type)) errors.push('Invalid appointment type');
+  if (data.type && !VALID_TYPES.has(data.type)) errors.push('Invalid appointment type');
 
   // Date must be in future
   if (data.date) {

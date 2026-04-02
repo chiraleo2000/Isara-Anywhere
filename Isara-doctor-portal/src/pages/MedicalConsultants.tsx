@@ -147,6 +147,7 @@ const StarRating: React.FC<{
             onMouseEnter={() => interactive && setHoverRating(star)}
             onMouseLeave={() => interactive && setHoverRating(0)}
             onClick={() => interactive && onRate?.(star)}
+            aria-label={`${star} star${star > 1 ? 's' : ''}`}
           >
             <StarIcon
               className={`${sizeClasses[size]} ${filled ? 'text-yellow-400' : 'text-gray-300'}`}
@@ -163,7 +164,7 @@ const StarRating: React.FC<{
 // ============================================================================
 
 // i18n labels for Medical Consultants page
-const labels = {
+const _labels = {
   pageTitle: { en: 'Medical Consultants', th: 'แพทย์ที่ปรึกษา' },
   subtitle: { en: 'Specialist Contacts & Referrals', th: 'ผู้เชี่ยวชาญและการส่งต่อ' },
   searchConsultants: { en: 'Search consultants...', th: 'ค้นหาแพทย์ที่ปรึกษา...' },
@@ -249,9 +250,9 @@ const ConsultantCard: React.FC<{
         </div>
         <div className="flex items-center gap-2">
           <span className="font-medium">Rating:</span>
-          <StarRating rating={consultant.rating || 0} size="sm" />
+          <StarRating rating={Number(consultant.rating) || 0} size="sm" />
           <span className="ml-1">
-            {(consultant.rating || 0).toFixed(1)} ({consultant.reviewCount || 0})
+            {(Number(consultant.rating) || 0).toFixed(1)} ({consultant.reviewCount || 0})
           </span>
         </div>
       </div>
@@ -315,11 +316,144 @@ const ConsultantCard: React.FC<{
   </div>
 );
 
+const ConsultantDetailModal: React.FC<Readonly<{
+  consultant: Consultant;
+  isAdmin: boolean;
+  onClose: () => void;
+}>> = ({ consultant, isAdmin, onClose }) => (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+      <div className="p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-bold text-gray-900">Consultant Details</h2>
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg" aria-label="Close">
+            <XMarkIcon className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="flex items-center gap-4 mb-6">
+          <img
+            src={consultant.photo}
+            alt={consultant.name}
+            className="w-20 h-20 rounded-full object-cover"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(consultant.name)}&background=10b981&color=fff`;
+            }}
+          />
+          <div>
+            <h3 className="text-xl font-bold text-gray-900">{consultant.name}</h3>
+            <p className="text-emerald-600 font-medium">{consultant.specialty}</p>
+            <p className="text-gray-500">{consultant.hospital}</p>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-gray-50 p-3 rounded-lg">
+              <p className="text-sm text-gray-500">Experience</p>
+              <p className="font-semibold">{consultant.experience} years</p>
+            </div>
+            <div className="bg-gray-50 p-3 rounded-lg">
+              <p className="text-sm text-gray-500">Availability</p>
+              <p className={`font-semibold ${consultant.available ? 'text-green-600' : 'text-gray-500'}`}>
+                {consultant.available ? 'Available' : 'Busy'}
+              </p>
+            </div>
+          </div>
+
+          <div className="bg-gray-50 p-3 rounded-lg">
+            <p className="text-sm text-gray-500 mb-1">Rating</p>
+            <div className="flex items-center gap-2">
+              <StarRating rating={Number(consultant.rating) || 0} />
+              <span className="font-semibold">
+                {(Number(consultant.rating) || 0).toFixed(1)} ({consultant.reviewCount || 0} reviews)
+              </span>
+            </div>
+          </div>
+
+          <div className="bg-gray-50 p-3 rounded-lg">
+            <p className="text-sm text-gray-500">Languages</p>
+            <p className="font-semibold">{consultant.languages?.join(', ') || 'N/A'}</p>
+          </div>
+
+          <div className="bg-gray-50 p-3 rounded-lg">
+            <p className="text-sm text-gray-500">Contact</p>
+            <p className="font-semibold">{consultant.email}</p>
+            <p className="text-gray-600">{consultant.phone || 'No phone'}</p>
+          </div>
+
+          {consultant.bio && (
+            <div className="bg-gray-50 p-3 rounded-lg">
+              <p className="text-sm text-gray-500">Bio</p>
+              <p className="text-gray-700">{consultant.bio}</p>
+            </div>
+          )}
+
+          {isAdmin && consultant.notes && (
+            <div className="bg-yellow-50 p-3 rounded-lg">
+              <p className="text-sm text-yellow-700 font-medium">Admin Notes</p>
+              <p className="text-gray-700">{consultant.notes}</p>
+            </div>
+          )}
+
+          {consultant.reviews && consultant.reviews.length > 0 && (
+            <div>
+              <p className="text-sm font-medium text-gray-700 mb-2">Recent Reviews</p>
+              <div className="space-y-2 max-h-40 overflow-y-auto">
+                {consultant.reviews.slice(-3).reverse().map((review) => (
+                  <div key={review.id} className="bg-gray-50 p-3 rounded-lg">
+                    <div className="flex items-center gap-2 mb-1">
+                      <StarRating rating={review.rating} size="sm" />
+                      <span className="text-sm text-gray-500">by {review.userName}</span>
+                    </div>
+                    {review.comment && (
+                      <p className="text-sm text-gray-600">{review.comment}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {isAdmin && consultant.updatedAt && (
+            <div className="text-xs text-gray-400 pt-4 border-t">
+              Last updated: {new Date(consultant.updatedAt).toLocaleString()}
+              {consultant.updatedByName && ` by ${consultant.updatedByName}`}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+const EmptyConsultantsState: React.FC<Readonly<{
+  hasConsultants: boolean;
+  isAdmin: boolean;
+  onAddFirst: () => void;
+}>> = ({ hasConsultants, isAdmin, onAddFirst }) => (
+  <div className="text-center py-12">
+    <UserGroupIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+    <h3 className="text-lg font-medium text-gray-900">No consultants found</h3>
+    <p className="text-gray-600">
+      {getNoResultsMessage(hasConsultants, isAdmin)}
+    </p>
+    {isAdmin && !hasConsultants && (
+      <button
+        onClick={onAddFirst}
+        className="mt-4 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"
+      >
+        Add First Consultant
+      </button>
+    )}
+  </div>
+);
+
 const MedicalConsultants: React.FC = () => {
   const { user } = useAuth();
   const { theme } = useSettings();
   const isDark = theme === 'dark';
-  const isAdmin = user?.email?.includes('admin') || user?.role === 'admin' || user?.isAdmin;
+  const isAdmin = user?.role === 'admin' || user?.isAdmin === true;
 
   // Data states
   const [consultants, setConsultants] = useState<Consultant[]>([]);
@@ -642,8 +776,33 @@ const MedicalConsultants: React.FC = () => {
   }
 
   // ============================================================================
+  // RENDER - ERROR STATE
+  // ============================================================================
+  if (error && consultants.length === 0) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="text-center max-w-md">
+          <div className="text-red-500 text-5xl mb-4">⚠️</div>
+          <h2 className={`text-xl font-bold mb-2 ${darkText(isDark)}`}>Failed to Load Consultants</h2>
+          <p className={`mb-4 ${darkSubtext(isDark)}`}>{error}</p>
+          <button
+            onClick={fetchConsultants}
+            className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ============================================================================
   // RENDER - MAIN
   // ============================================================================
+  const subtitle = isAdmin
+    ? 'Manage specialist contacts for patient referrals'
+    : 'Find specialists for patient referrals';
+
   return (
     <div className="p-6 max-w-7xl mx-auto">
       {/* Header */}
@@ -654,9 +813,7 @@ const MedicalConsultants: React.FC = () => {
             Medical Consultants
           </h1>
           <p className={`mt-1 ${darkSubtext(isDark)}`}>
-            {isAdmin 
-              ? 'Manage specialist contacts for patient referrals' 
-              : 'Find specialists for patient referrals'}
+            {subtitle}
           </p>
         </div>
         {isAdmin && (
@@ -751,24 +908,11 @@ const MedicalConsultants: React.FC = () => {
       </div>
 
       {filteredConsultants.length === 0 && (
-        <div className="text-center py-12">
-          <UserGroupIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900">No consultants found</h3>
-          <p className="text-gray-600">
-            {getNoResultsMessage(consultants.length > 0, isAdmin)}
-          </p>
-          {isAdmin && consultants.length === 0 && (
-            <button
-              onClick={() => {
-                resetForm();
-                setShowAddModal(true);
-              }}
-              className="mt-4 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"
-            >
-              Add First Consultant
-            </button>
-          )}
-        </div>
+        <EmptyConsultantsState
+          hasConsultants={consultants.length > 0}
+          isAdmin={isAdmin}
+          onAddFirst={() => { resetForm(); setShowAddModal(true); }}
+        />
       )}
 
       {/* ============================================================================ */}
@@ -790,6 +934,7 @@ const MedicalConsultants: React.FC = () => {
                     resetForm();
                   }}
                   className="p-2 hover:bg-gray-100 rounded-lg"
+                  aria-label="Close"
                 >
                   <XMarkIcon className="w-5 h-5" />
                 </button>
@@ -956,117 +1101,11 @@ const MedicalConsultants: React.FC = () => {
       {/* DETAIL MODAL */}
       {/* ============================================================================ */}
       {showDetailModal && selectedConsultant && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-gray-900">Consultant Details</h2>
-                <button
-                  onClick={() => {
-                    setShowDetailModal(false);
-                    setSelectedConsultant(null);
-                  }}
-                  className="p-2 hover:bg-gray-100 rounded-lg"
-                >
-                  <XMarkIcon className="w-5 h-5" />
-                </button>
-              </div>
-
-              <div className="flex items-center gap-4 mb-6">
-                <img
-                  src={selectedConsultant.photo}
-                  alt={selectedConsultant.name}
-                  className="w-20 h-20 rounded-full object-cover"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedConsultant.name)}&background=10b981&color=fff`;
-                  }}
-                />
-                <div>
-                  <h3 className="text-xl font-bold text-gray-900">{selectedConsultant.name}</h3>
-                  <p className="text-emerald-600 font-medium">{selectedConsultant.specialty}</p>
-                  <p className="text-gray-500">{selectedConsultant.hospital}</p>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-gray-50 p-3 rounded-lg">
-                    <p className="text-sm text-gray-500">Experience</p>
-                    <p className="font-semibold">{selectedConsultant.experience} years</p>
-                  </div>
-                  <div className="bg-gray-50 p-3 rounded-lg">
-                    <p className="text-sm text-gray-500">Availability</p>
-                    <p className={`font-semibold ${selectedConsultant.available ? 'text-green-600' : 'text-gray-500'}`}>
-                      {selectedConsultant.available ? 'Available' : 'Busy'}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="bg-gray-50 p-3 rounded-lg">
-                  <p className="text-sm text-gray-500 mb-1">Rating</p>
-                  <div className="flex items-center gap-2">
-                    <StarRating rating={selectedConsultant.rating || 0} />
-                    <span className="font-semibold">
-                      {(selectedConsultant.rating || 0).toFixed(1)} ({selectedConsultant.reviewCount || 0} reviews)
-                    </span>
-                  </div>
-                </div>
-
-                <div className="bg-gray-50 p-3 rounded-lg">
-                  <p className="text-sm text-gray-500">Languages</p>
-                  <p className="font-semibold">{selectedConsultant.languages?.join(', ') || 'N/A'}</p>
-                </div>
-
-                <div className="bg-gray-50 p-3 rounded-lg">
-                  <p className="text-sm text-gray-500">Contact</p>
-                  <p className="font-semibold">{selectedConsultant.email}</p>
-                  <p className="text-gray-600">{selectedConsultant.phone || 'No phone'}</p>
-                </div>
-
-                {selectedConsultant.bio && (
-                  <div className="bg-gray-50 p-3 rounded-lg">
-                    <p className="text-sm text-gray-500">Bio</p>
-                    <p className="text-gray-700">{selectedConsultant.bio}</p>
-                  </div>
-                )}
-
-                {isAdmin && selectedConsultant.notes && (
-                  <div className="bg-yellow-50 p-3 rounded-lg">
-                    <p className="text-sm text-yellow-700 font-medium">Admin Notes</p>
-                    <p className="text-gray-700">{selectedConsultant.notes}</p>
-                  </div>
-                )}
-
-                {/* Recent Reviews */}
-                {selectedConsultant.reviews && selectedConsultant.reviews.length > 0 && (
-                  <div>
-                    <p className="text-sm font-medium text-gray-700 mb-2">Recent Reviews</p>
-                    <div className="space-y-2 max-h-40 overflow-y-auto">
-                      {selectedConsultant.reviews.slice(-3).reverse().map((review) => (
-                        <div key={review.id} className="bg-gray-50 p-3 rounded-lg">
-                          <div className="flex items-center gap-2 mb-1">
-                            <StarRating rating={review.rating} size="sm" />
-                            <span className="text-sm text-gray-500">by {review.userName}</span>
-                          </div>
-                          {review.comment && (
-                            <p className="text-sm text-gray-600">{review.comment}</p>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {isAdmin && selectedConsultant.updatedAt && (
-                  <div className="text-xs text-gray-400 pt-4 border-t">
-                    Last updated: {new Date(selectedConsultant.updatedAt).toLocaleString()}
-                    {selectedConsultant.updatedByName && ` by ${selectedConsultant.updatedByName}`}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
+        <ConsultantDetailModal
+          consultant={selectedConsultant}
+          isAdmin={isAdmin}
+          onClose={() => { setShowDetailModal(false); setSelectedConsultant(null); }}
+        />
       )}
 
       {/* ============================================================================ */}
@@ -1085,6 +1124,7 @@ const MedicalConsultants: React.FC = () => {
                     setRatingData({ rating: 0, comment: '' });
                   }}
                   className="p-2 hover:bg-gray-100 rounded-lg"
+                  aria-label="Close"
                 >
                   <XMarkIcon className="w-5 h-5" />
                 </button>

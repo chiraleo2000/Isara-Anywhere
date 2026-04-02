@@ -1,25 +1,27 @@
 # E2E Test Coverage Report — v1.5.9
 
-**Generated:** 2026-03-22  
-**Framework:** Playwright 1.58.2 (TypeScript)  
-**Total Spec Files:** 33 E2E + 5 UI Test Files  
-**Total Tests:** ~1,149 E2E + 96 Local UI + 81 Cloud UI = ~1,326  
-**Cloud UI Screenshots:** 26 full-page (14 Patient + 12 Doctor) + 13 API health = 39 tests  
-**Local UI Screenshots:** 122 PNGs across meeting, workflow, ui-pages directories  
-**Meeting Multi-User:** 27 tests (admin + doctor + patient, 3 browsers)  
-**Workflow Screenshots:** 25 tests (WF01–WF22, full appointment lifecycle)  
-**UI Page Verification:** 44 tests (P01–P14, D01–D12, API01–API16)  
-**User Accounts Used:** 5 (patient1, patient2, patient3, doctor, admin)  
-**Headed Mode:** 1 worker, slowMo 300, 1920×1080 viewport  
-**Full Suite Duration:** ~4.2 min (E2E) + ~6.1 min (Local UI, headed)  
-**Pass Rate:** 100%  
+**Generated:** 2026-03-22
+**Framework:** Playwright 1.58.2 (TypeScript)
+**Total Spec Files:** 33 E2E + 5 UI Test Files
+**Total Tests:** ~1,149 E2E + 96 Local UI + 81 Cloud UI = ~1,326
+**Cloud UI Screenshots:** 26 full-page (14 Patient + 12 Doctor) + 13 API health = 39 tests
+**Local UI Screenshots:** 122 PNGs across meeting, workflow, ui-pages directories
+**Meeting Multi-User:** 27 tests (admin + doctor + patient, 3 browsers)
+**Workflow Screenshots:** 25 tests (WF01–WF22, full appointment lifecycle)
+**UI Page Verification:** 44 tests (P01–P14, D01–D12, API01–API16)
+**User Accounts Used:** 5 (patient1, patient2, patient3, doctor, admin)
+**Headed Mode:** 1 worker, slowMo 300, 1920×1080 viewport
+**Full Suite Duration:** ~4.2 min (E2E) + ~6.1 min (Local UI, headed)
+**Pass Rate:** 100%
 **Code Quality:** SonarQube — 0 issues (Cognitive Complexity refactored)
 
 ---
 
+
 ## Part 1: Per-Spec-File Breakdown
 
 ---
+
 
 ### 01-auth-health-multiuser.spec.ts (803 lines, ~82 tests)
 
@@ -36,26 +38,42 @@
 | G | Extended Auth & Security | 5 | G01–G05 |
 | H | Doctor Search & Dashboard | 12 | H01–H12 |
 
+
 **User Accounts:** ALL 5 (patient1, patient2, patient3, doctor, admin)
 
-**Features Tested:**
+
+## Features Tested:
 
 - Health endpoints for all 3 services (patient portal, doctor portal, meeting server)
+
 - 5-user simultaneous authentication with token validation
+
 - Invalid credentials, missing credentials, expired tokens
+
 - Patient + doctor registration flows
+
 - Duplicate email prevention, weak password rejection
+
 - Doctor license number registration
+
 - Admin pending doctor management
+
 - RBAC (role-based access control) checks
+
 - Browser login for all roles + simultaneous session + session isolation
+
 - Metadata APIs: specialties, lab tests, ICD-10, medications, content tags
+
 - Doctor search by specialty/name, doctor schedule/slots/reviews
+
 - Settings CRUD, notification preferences
+
 - Profile update with Thai language content
+
 - Admin user list, analytics, dashboard stats
 
 ---
+
 
 ### 02-appointment-lifecycle.spec.ts (1,018 lines, ~92 tests)
 
@@ -73,29 +91,48 @@
 | H | Edge Cases | 10 | H01–H10 |
 | I | Doctor-Side Appointment Management | 12 | I01–I12 |
 
+
 **User Accounts:** ALL 5
 
-**Features Tested:**
+
+## Features Tested:
 
 - Full appointment CRUD for 3 patients (including parallel booking)
+
 - AI urgency assessment from symptoms
+
 - Appointment pool/queue management
+
 - Doctor confirmation (PATCH/PUT) + admin assignment
+
 - Pre-consultation AI summary generation
+
 - Meeting link creation and management
+
 - Cancel + reschedule workflows
+
 - Notification delivery on status changes
+
 - Browser UI: patient appointments page, doctor schedule/dashboard, health meeting tabs, calendar view
+
 - Cross-portal synchronization (patient books → doctor sees)
+
 - Race conditions (same slot double-booking)
+
 - Doctor pending/decline/reject flows
+
 - Onsite appointment type
+
 - AI doctor matching
+
 - Meeting eligibility and meeting rules checks
+
 - Missed meeting handling
+
 - Google Calendar integration
 
 ---
+
 
 ### 03-health-records-emr.spec.ts (972 lines, ~95 tests)
 
@@ -114,23 +151,36 @@
 | I | PHR Extended Records | 7 | I01–I07 |
 | J | PDPA & Living Will Extended | 8 | J01–J08 |
 
+
 **User Accounts:** ALL 5
 
-**Features Tested:**
+
+## Features Tested:
 
 - PHR CRUD (all 3 patients, parallel, Thai content, unauthorized access, data isolation, response time)
+
 - Vitals history: record, read, multiple entries, abnormal values, doctor view, browser PHR page
+
 - EMR SOAP format: create, read, update, sign, AI-assisted, Thai OPD card, multi-patient, browser EMR editor, cross-portal view
+
 - Prescriptions: create, list, multiple medications, multiple patients
+
 - Lab orders: create, list, multiple tests
+
 - Living will: create, read, update, share with doctors, PDPA consent, digital signature, revoke
+
 - Health timeline and treatment results
+
 - Doctor patient record viewer (6 tabs: PHR/EMR/EHR/Lab/Documents/Living Will)
+
 - PHR extended: medications CRUD, allergies CRUD, lifestyle, emergency contacts
+
 - EMR encounter types, EMR validation, pending prescriptions
+
 - PDPA: consent status/grant/verify, audit log, living will versions/signature, doctor consents
 
 ---
+
 
 ### 04-video-meeting-transcription.spec.ts (917 lines, ~87 tests)
 
@@ -147,21 +197,32 @@
 | G | Edge Cases & Performance | 10 | G01–G10 |
 | H | Meeting Server Extended APIs | 12 | H01–H12 |
 
+
 **User Accounts:** ALL 5
 
-**Features Tested:**
+
+## Features Tested:
 
 - Meeting server health checks, video meeting configuration
+
 - Meeting creation: from doctor portal, from meeting server, unique URLs per role, multi-patient
+
 - Meeting join/lobby: patient get link, doctor host, patient participant, guest invite/join token, invalid meeting, unauthorized
+
 - Transcription: start, pause, resume, language switch (TH↔EN), stop, get transcript, speaker labels, recording upload, meeting files
+
 - AI summary: Gemini SOAP generation, from transcript, Thai + English, EMR summary, CDS recommendations, patient instruction sheet, long meeting sections, man-in-the-loop validation, full pipeline (meeting→AI→EMR)
+
 - Meeting end and post-meeting AI processing
+
 - Multi-browser simulation: doctor+patient, 3-way meeting, dashboard during meeting, multiple patients, meeting tabs, EMR editor after meeting, notifications, health timeline
+
 - Performance: parallel meeting creation, empty/mixed transcript, concurrent requests, complex CDS, knowledge base, AI chat, document analysis, end-to-end pipeline
+
 - Meeting server extended APIs: status, participants, transcript sections, chat send/get, saved summary, patient instruction sheet, upload recording, meeting files, meeting history, generate summary, process embeddings
 
 ---
+
 
 ### 05-content-sync-approval.spec.ts (1,174 lines, ~82 tests)
 
@@ -179,21 +240,32 @@
 | H | Cross-Cutting UI | 6 | H01–H06 |
 | I | Content Extended & Admin Management | 12 | I01–I12 |
 
+
 **User Accounts:** ALL 5
 
-**Features Tested:**
+
+## Features Tested:
 
 - Medical content CRUD: doctor create/read/list/update/submit/delete, Thai bilingual, multiple articles, draft visibility, view count, like, tags
+
 - Clinical resources CRUD: create/read/list/submit, admin approval required, re-approval on edit, delete, tags, patient access restriction
+
 - Admin approval workflow: pending lists, create→pending, approve, direct publish, reject with reason, clinical resource approval, archive, lifecycle helper
+
 - ★★★ CONTENT SYNC (critical path): API create→approve→patient sees; Browser content visible with ONE refresh; Multi-browser 3 patients all see; Clinical resource sync; Draft NOT visible; Rejected NOT visible; Update requires re-approval; Concurrent creation; Performance
+
 - Medical content library UI: patient health library, doctor medical content, doctor clinical resources, admin pending badge, category filter, my content toggle, published articles, simultaneous view
+
 - Consultant management: admin creates/updates/toggles availability/deletes, doctor lists/views/rates, specialties list, browser consultants page
+
 - Admin management: pending doctors, doctor list, stats, browser admin pages
+
 - Cross-cutting UI: dark mode, settings, AI consultation, map, profile, JS error check on all patient pages
+
 - Content extended: featured articles, share count, audit log, comments, search by category/tag, admin user management, Google Maps nearby/geocode
 
 ---
+
 
 ### 06-ai-features-cds.spec.ts (876 lines, ~72 tests)
 
@@ -210,20 +282,30 @@
 | G | Edge Cases & Performance | 6 | G01–G06 |
 | H | AI Extended APIs & Notification Management | 12 | H01–H12 |
 
+
 **User Accounts:** ALL 5
 
-**Features Tested:**
+
+## Features Tested:
 
 - AI chat patient portal: English, Thai, clinical context, conversation threading, history, multi-patient concurrent, harmful content refusal, browser AI chat page, message send via browser, empty message
+
 - CDS: drug interaction check, dosage validation, allergy alert, CDS alerts list/per patient, CDS logs, real-time prescription check, Thai medication names, man-in-the-loop acknowledge, concurrent multi-patient
+
 - AI summarization: pre-consultation, patient summary, EMR from transcript (SOAP), generic document, Thai, patient instruction sheet, meeting summary sections, man-in-the-loop validation, document analysis, knowledge base
+
 - Doctor AI features: medical scribe (voice→text), AI-assisted EMR completion, differential diagnosis, medication recommendation, doctor AI page browser, AI in patient record viewer, AI instruction sheet, parallel queries
+
 - AI meeting integration: transcript→SOAP, post-meeting CDS, speaker diarization, auto-save to EMR, critical findings, bilingual, empty/long transcript
+
 - Notifications: patient/doctor get/mark read/mark all/count, concurrent polling, notification preferences
+
 - Edge cases: unauthenticated AI, missing fields, XSS, performance <30s, multiple AI parallel, SQL injection
+
 - AI extended: symptom checker, risk assessment, health info query, AI service status, chat memory/clear history, CDS drug/allergy, knowledge search, lab analysis, notification management
 
 ---
+
 
 ### 07-multi-user-concurrent.spec.ts (1,098 lines, ~60 tests)
 
@@ -239,19 +321,28 @@
 | F | Stress & Edge Cases | 8 | F01–F08 |
 | G | Queue Management & Cross-Portal Notifications | 10 | G01–G10 |
 
+
 **User Accounts:** ALL 5
 
-**Features Tested:**
+
+## Features Tested:
 
 - 4-browser simultaneous appointment flow: patient books→doctor confirms→patient sees, 5 users simultaneously, 3 parallel bookings, doctor confirms multiple, status change on refresh, doctor+admin simultaneous, full lifecycle, race condition same slot, admin assigns
+
 - Content flow: full API flow (3 patients see), 4 browser windows, rejected content hidden, batch approve, live update during browsing, tags sync, 5-user concurrent poll, cross-account visibility
+
 - Health records cross-portal: PHR update→doctor sees, EMR→patient timeline, simultaneous record view, 3 patients PHR concurrent, data isolation, prescription→patient records, vitals→timeline, living will share→doctor view
+
 - Meeting multi-user: health check, create→patient sees link, simultaneous join browser, config, meeting list, transcription, guest invite, multiple simultaneous meetings
+
 - Queue & dashboard: doctor/patient/admin dashboards, queue management, cross-portal queue, stats consistency, 3 dashboards simultaneously, schedule, notification badges
+
 - Stress testing: 10 concurrent mixed API calls, 5x rapid page refresh, expired token, cross-portal token reuse, large payload (50KB), API response benchmarks, session persistence, 20 concurrent API calls
+
 - Queue management: queue list/call-next/skip, notifications after EMR, mark all read, preferences persistence, notification isolation, concurrent profile updates, cross-portal data consistency
 
 ---
+
 
 ### 08-phase2-ai-his.spec.ts (705 lines, ~72 tests)
 
@@ -268,20 +359,30 @@
 | G | Nursing Dashboard & Predictive Analytics | 8 | G01–G08 |
 | H | Phase 2 Extended Features & Validation | 12 | H01–H12 |
 
+
 **User Accounts:** ALL 5
 
-**Features Tested:**
+
+## Features Tested:
 
 - CTM Thai Traditional Medicine: ธาตุเจ้าเรือน (body element) assessment CRUD, ธาตุ classification, สมุฏฐาน analysis, herbal prescription, multi-patient, patient cannot create, AI recommendation, browser CTM page
+
 - Geriatric screening 8 tools: ADL, IADL, TUG, Mini-Cog, MNA, GDS-15, SARC-F, Braden Scale — create and list screenings
+
 - SOS emergency alert: patient trigger, GPS location, doctor notification, doctor acknowledge, patient cancel, emergency contacts, alert history, multi-patient alerts
+
 - Follow-up tracking: create schedule, scheduled activities, patient view & complete task, doctor monitor compliance, reminders, multi-patient, completion rate report
+
 - Device tokens & biometric auth: register FCM token, list tokens, biometric register/verify/status, multi-platform, delete token, multi-patient tokens
+
 - Offline sync & settings: push/pull data, conflict detection, sync status, get/update settings, role-specific settings, browser settings page
+
 - Nursing dashboard & predictive analytics: nursing dashboard, round data entry, task management, predictive analytics (readmission risk, fall risk, disease progression), browser nursing dashboard, concurrent queries
+
 - Phase 2 extended: care team CRUD, health screening history/detail, SOS update, follow-up complete, HIS patient lookup, HIS lab results, predictive with invalid model, smart scheduling, nursing workflow
 
 ---
+
 
 ### 31-meeting-recording-pipeline.spec.ts (~25 tests)
 
@@ -295,31 +396,47 @@
 | D | Man-in-the-Loop Validation | 5 | D01–D05 |
 | E | Multi-User UI Verification | 5 | E01–E05 |
 
+
 **User Accounts:** patient1, doctor, admin
 
-**Features Tested:**
+
+## Features Tested:
 
 - Appointment creation and doctor confirmation for recording pipeline
+
 - MediaRecorder recording start/stop via meeting room controls
+
 - save-recording endpoint: base64 audio → Google Cloud STT with speaker diarization
+
 - stop-recording endpoint: server stop event + socket notification
+
 - Meeting end triggers AI SOAP summary generation from recording transcript
+
 - Doctor reviews AI-generated SOAP summary (approve/edit/reject/regenerate)
+
 - Patient receives approved consultation results
+
 - Multi-user browser verification of recording controls and results
+
 - Full pipeline: appointment → recording → transcription → AI summary → doctor validation → patient delivery
 
 ---
 
+
 ## Part 2: Gap Analysis — Documented Pages vs. E2E Coverage
+
 
 ### Legend
 
+
 - ✅ **Covered** — Feature has dedicated tests or significant coverage in specs
+
 - ⚠️ **Partial** — Some aspects tested but significant gaps remain
+
 - ❌ **Not Covered** — No E2E tests found for this documented feature/page
 
 ---
+
 
 ### Patient Portal Pages (from Processes/Pages/Patient-Portal/)
 
@@ -340,6 +457,8 @@
 | 13 | Settings Page | ⚠️ Partial | Spec 01 tests settings CRUD + notification preferences via API. Spec 05-H navigates to settings. **No tests for dark/light mode toggle, language switch, about section UI** |
 | 14 | Timeline Page | ⚠️ Partial | Spec 03-F tests health timeline via API. **No dedicated browser UI tests for timeline visualization, filtering, date range selection** |
 | 15 | Notification System | ⚠️ Partial | Spec 06-F tests notification get/mark/count via API. Spec 07-E tests notification badges. **No tests for real-time WebSocket push, notification drawer UI, notification click navigation** |
+
+
 
 ### Doctor Portal Pages (from Processes/Pages/Doctor-Portal/)
 
@@ -367,13 +486,17 @@
 | 20 | Appointment Pool Management | ⚠️ Partial | Spec 02-A mentions appointment pool API. **Missing: pool tab UI (Pool/Awaiting Response/Claimed), claim button interaction, pool reason display** |
 | 21 | Queue Management | ⚠️ Partial | Spec 07-E,G tests queue API. **Missing: queue call/skip UI buttons, wait time display, priority badges, auto-polling indicator** |
 
+
 ---
 
+
 ### Summary of Critical Gaps
+
 
 #### Completely Missing (❌)
 
 1. **Password Reset Flow** — Both portals document a `/reset-password` page with token verification, password strength indicators, and success states. Zero E2E tests exist.
+
 
 #### Major Gaps (⚠️ with significant missing coverage)
 
@@ -387,28 +510,37 @@
 8. **Appointment Pool UI** — 3-tab pool interface, claim/respond interactions
 9. **Queue Management UI** — Call/skip buttons, real-time polling indicator, wait time estimates
 
+
 #### Pattern Observed
 
 Most gaps follow a consistent pattern: **API-level tests exist but browser UI interaction tests are missing**. The specs heavily test backend endpoints and data flow but have lighter coverage of:
 
+
 - Form interactions and validation states
+
 - UI-specific behaviors (dropdowns, modals, tabs, drag-drop)
+
 - Responsive/mobile layout behavior
+
 - Error state rendering (empty states, loading states, error banners)
+
 - Accessibility (keyboard navigation, ARIA labels, screen reader)
 
 ---
 
+
 ## Part 3: Isara-mobile/ Directory Structure & Analysis
+
 
 ### 3.1 Architecture Overview
 
-**Framework:** Expo SDK 52 + React Native 0.76.5  
-**Router:** Expo Router v4 (file-based routing)  
-**Styling:** NativeWind v4 (Tailwind for React Native)  
-**State:** Zustand v5  
-**Build Tool:** Turborepo (monorepo)  
+**Framework:** Expo SDK 52 + React Native 0.76.5
+**Router:** Expo Router v4 (file-based routing)
+**Styling:** NativeWind v4 (Tailwind for React Native)
+**State:** Zustand v5
+**Build Tool:** Turborepo (monorepo)
 **Package Manager:** npm with workspaces
+
 
 ### 3.2 Monorepo Structure
 
@@ -500,6 +632,7 @@ Isara-mobile/
     └── react-native-webview.d.ts
 ```
 
+
 ### 3.3 Key Dependencies
 
 | Category | Package | Version |
@@ -527,16 +660,20 @@ Isara-mobile/
 | **Navigation** | react-native-screens | ~4.4.0 |
 | **SVG** | react-native-svg | 15.8.0 |
 
+
+
 ### 3.4 Mobile App Screens (from route structure)
 
-**Patient Tabs (5):** Home, Appointments, Health, AI Chat, Profile  
-**Doctor Tabs (5):** Dashboard, Patients, Queue, Schedule, Profile  
-**Shared Screens:** Meeting room (`meeting/[id]`), Settings (index, connections, notifications, privacy)  
+**Patient Tabs (5):** Home, Appointments, Health, AI Chat, Profile
+**Doctor Tabs (5):** Dashboard, Patients, Queue, Schedule, Profile
+**Shared Screens:** Meeting room (`meeting/[id]`), Settings (index, connections, notifications, privacy)
 **Auth Screens:** Login, Register
+
 
 ### 3.5 Existing Tests
 
 **⚠️ ZERO test files exist in the mobile app.** No `.test.ts`, `.spec.ts`, or `__tests__/` directories were found anywhere in the Isara-mobile/ tree. Jest is configured as a devDependency with a `"test": "jest"` script, but no test files have been written.
+
 
 ### 3.6 Mobile vs. Web Feature Parity (Notable Differences)
 
@@ -556,18 +693,23 @@ Isara-mobile/
 | Lab Orders | Modal page | Not visible |
 | Nursing Dashboard | Planned (Phase 2) | Not visible |
 
+
 The mobile app appears to be in **early development** with basic navigation scaffolding and route groups established, but significantly fewer screens than the web portals. The `apps/doctor/` and `apps/patient/` standalone variants have minimal screens (just `index.tsx` in tabs), suggesting either:
 
+
 - The root `app/` is the primary development target
+
 - Or the standalone apps are planned for later
-  
+
 The shared packages (`@izara/api-client`, `@izara/shared`, `@izara/ui`) have `src/index.ts` files but their content scope was not examined.
 
 ---
 
+
 ## Part 3B: Local UI Page Test Screenshots (ui-pages.ui-test.ts)
 
 **44 tests** — All portal pages verified with headed Playwright browser + **25 full-page PNG screenshots**
+
 
 ### Patient Portal Screenshots (14)
 
@@ -588,6 +730,8 @@ The shared packages (`@izara/api-client`, `@izara/shared`, `@izara/ui`) have `sr
 | P13 | Login (public) | `public-pages/P13-login.png` |
 | P14 | Register (public) | `public-pages/P14-register.png` |
 
+
+
 ### Doctor Portal Screenshots (11)
 
 | ID | Page | Screenshot File |
@@ -604,6 +748,8 @@ The shared packages (`@izara/api-client`, `@izara/shared`, `@izara/ui`) have `sr
 | D10 | Doctor Management (Admin) | `doctor-portal/D10-doctor-management.png` |
 | D11 | Appointment Management (Admin) | `doctor-portal/D11-appointment-management.png` |
 
+
+
 ### API Data Verification (16 tests, no screenshots)
 
 | ID | Test | Endpoint |
@@ -613,9 +759,11 @@ The shared packages (`@izara/api-client`, `@izara/shared`, `@izara/ui`) have `sr
 | API14b-14c | Meeting auto-record, meeting results | Meeting Server APIs |
 | API15-16 | Unauthenticated access returns 401 | Security verification |
 
+
 All screenshots saved to `screenshots/ui-pages/` (1280×720 viewport, full-page capture).
 
 ---
+
 
 ## Part 4: Summary Statistics
 
@@ -634,6 +782,8 @@ All screenshots saved to `screenshots/ui-pages/` (1280×720 viewport, full-page 
 | Doctor Portal pages partially covered | 12 of 21 (57%) |
 | Doctor Portal pages not covered | 1 of 21 (5%) |
 
+
+
 ### Test Distribution by Feature Area
 
 | Area | Spec Files | ~Tests |
@@ -648,3 +798,4 @@ All screenshots saved to `screenshots/ui-pages/` (1280×720 viewport, full-page 
 | Phase 2 (HIS) | 08 | ~72 |
 | User Accounts & Demo Pages | 09 | ~91 |
 | Lab/Imaging/Map & v1.5.3 | 10 | ~70 |
+

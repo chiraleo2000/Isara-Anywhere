@@ -207,6 +207,7 @@ export default function ProfilePage() {
                 accept="image/jpeg,image/png,image/webp"
                 onChange={handleAvatarUpload}
                 className="hidden"
+                aria-label="อัปโหลดรูปโปรไฟล์"
               />
             </div>
             <div className="text-white">

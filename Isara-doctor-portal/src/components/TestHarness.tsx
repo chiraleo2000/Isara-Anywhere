@@ -156,23 +156,23 @@ const TestHarness: React.FC<TestHarnessProps> = ({ doctor, patients: initialPati
 
   const testLabResults = () => runTest('Load Lab Results', async () => {
     if (!selectedPatientId) throw new Error('No patient selected');
-    const data = await patientRecordService.getLabResults(selectedPatientId);
-    if (!data || data.length === 0) throw new Error('No lab results found');
-    return { count: data.length, sample: data[0] };
+    const ehr = await patientRecordService.getEHR(selectedPatientId);
+    if (!ehr || ehr.labGroups.length === 0) throw new Error('No lab results found');
+    return { count: ehr.labGroups.length, sample: ehr.labGroups[0] };
   });
 
   const testImagingResults = () => runTest('Load Imaging Results', async () => {
     if (!selectedPatientId) throw new Error('No patient selected');
-    const data = await patientRecordService.getImagingResults(selectedPatientId);
-    if (!data || data.length === 0) throw new Error('No imaging results found');
-    return { count: data.length, sample: data[0] };
+    const ehr = await patientRecordService.getEHR(selectedPatientId);
+    if (!ehr || ehr.externalRecords.length === 0) throw new Error('No imaging/external records found');
+    return { count: ehr.externalRecords.length, sample: ehr.externalRecords[0] };
   });
 
   const testEHRTimeline = () => runTest('Load EHR Timeline', async () => {
     if (!selectedPatientId) throw new Error('No patient selected');
-    const data = await patientRecordService.getEHRTimeline(selectedPatientId);
-    if (!data?.events?.length) throw new Error('No timeline events found');
-    return { count: data.events.length, sample: data.events[0] };
+    const ehr = await patientRecordService.getEHR(selectedPatientId);
+    if (!ehr) throw new Error('No EHR data found');
+    return { labGroups: ehr.labGroups.length, externalRecords: ehr.externalRecords.length };
   });
 
   const testGeminiAPI = () => runTest('Gemini API Connection', async () => {
@@ -573,7 +573,7 @@ const TestHarness: React.FC<TestHarnessProps> = ({ doctor, patients: initialPati
               <button
                 onClick={() => {
                   if (!selectedPatientId) { return; }
-                  previewData('labs', () => patientRecordService.getLabResults(selectedPatientId));
+                  previewData('labs', async () => { const ehr = await patientRecordService.getEHR(selectedPatientId); return ehr?.labGroups || []; });
                 }}
                 className="px-3 py-2 bg-indigo-100 text-indigo-700 rounded mb-4"
               >
@@ -622,7 +622,7 @@ const TestHarness: React.FC<TestHarnessProps> = ({ doctor, patients: initialPati
               <button
                 onClick={() => {
                   if (!selectedPatientId) { return; }
-                  previewData('imaging', () => patientRecordService.getImagingResults(selectedPatientId));
+                  previewData('imaging', async () => { const ehr = await patientRecordService.getEHR(selectedPatientId); return ehr?.externalRecords || []; });
                 }}
                 className="px-3 py-2 bg-indigo-100 text-indigo-700 rounded mb-4"
               >
@@ -719,7 +719,7 @@ const TestHarness: React.FC<TestHarnessProps> = ({ doctor, patients: initialPati
               <button
                 onClick={() => {
                   if (!selectedPatientId) { return; }
-                  previewData('timeline', () => patientRecordService.getEHRTimeline(selectedPatientId));
+                  previewData('timeline', async () => { const ehr = await patientRecordService.getEHR(selectedPatientId); return ehr ? [{ labGroups: ehr.labGroups, externalRecords: ehr.externalRecords }] : []; });
                 }}
                 className="px-3 py-2 bg-indigo-100 text-indigo-700 rounded mb-4"
               >

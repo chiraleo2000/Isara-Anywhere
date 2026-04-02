@@ -1,8 +1,8 @@
 # ⚙️ Patient Portal — Settings Page
 
-**Route:** `/settings`  
-**Component:** `src/pages/settings/SettingsPage.tsx`  
-**Access:** 🔒 Authenticated patients  
+**Route:** `/settings`
+**Component:** `src/pages/settings/SettingsPage.tsx`
+**Access:** 🔒 Authenticated patients
 **Thai Title:** ตั้งค่า / Settings
 
 ---
@@ -166,6 +166,35 @@ Step 3: UI updates in real-time
 ## 8. AI Agent Improvement Opportunities
 
 - **Smart notifications**: AI learn preferred notification timing
+
 - **Accessibility settings**: AI auto-adjust for user capabilities
+
 - **Data export**: AI generate complete data export (PDPA right)
+
 - **Account insights**: AI show account activity summary
+
+---
+
+## PostgreSQL Database Integration
+
+### Tables Used
+
+| Table | Operation | Description |
+| ----- | --------- | ----------- |
+| users | SELECT / UPDATE | Preferences (JSONB), notification_settings (JSONB) |
+| push_subscriptions | INSERT / SELECT / DELETE | Web push notification subscription endpoints |
+
+### API Endpoints
+
+| Endpoint | Method | DB Operation |
+| -------- | ------ | ------------ |
+| /api/settings | GET | SELECT users (preferences, notification_settings) |
+| /api/settings | PUT | UPDATE users (preferences, notification_settings) |
+
+### Deployment
+
+- **Local Docker:** izara-postgres container (localhost:5433 external / 5432 internal) → database: izara_phase1
+
+- **Production:** GCE VM at 35.240.157.230:5432 → database: izara_phase1 (asia-southeast1)
+
+- **Service deployed via:** Cloud Run (gen2, CPU Boost) + Cloud Build CI/CD

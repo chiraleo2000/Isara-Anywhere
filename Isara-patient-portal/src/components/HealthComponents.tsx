@@ -315,6 +315,7 @@ export const MedicationList: React.FC<MedicationListProps> = ({
                   <button
                     onClick={() => onEdit(medication)}
                     className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
+                    aria-label="แก้ไขยา" title="แก้ไขยา"
                   >
                     <Edit2 className="w-4 h-4" />
                   </button>
@@ -323,6 +324,7 @@ export const MedicationList: React.FC<MedicationListProps> = ({
                   <button
                     onClick={() => onDelete(medication.id)}
                     className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
+                    aria-label="ลบยา" title="ลบยา"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -434,6 +436,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                 <button
                   onClick={() => onDelete(document.id)}
                   className="px-3 py-2 text-sm bg-red-50 text-red-700 rounded-lg hover:bg-red-100"
+                  aria-label="ลบเอกสาร" title="ลบเอกสาร"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -513,6 +516,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         onChange={handleChange}
         className="hidden"
         disabled={loading}
+        aria-label="อัปโหลดไฟล์"
       />
 
       <Upload className="w-12 h-12 mx-auto mb-4 text-gray-400" />

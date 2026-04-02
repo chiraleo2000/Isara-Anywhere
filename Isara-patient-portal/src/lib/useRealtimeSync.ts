@@ -24,6 +24,8 @@ const EVENTS = {
   EMR_UPDATED: 'emr:updated',
   PHR_UPDATED: 'phr:updated',
   VITALS_CREATED: 'vitals:created',
+  CONTENT_UPDATED: 'content:updated',
+  CONTENT_PUBLISHED: 'content:published',
   DATA_CHANGED: 'data:changed',
 } as const;
 
@@ -42,6 +44,8 @@ export interface RealtimeSyncOptions {
   onEmrChange?: () => void;
   /** PHR / vitals updated */
   onHealthRecordChange?: () => void;
+  /** Fired when any medical content or clinical resource is published */
+  onContentPublished?: () => void;
   /** Catch-all */
   onDataChanged?: (payload: Record<string, unknown>) => void;
 }
@@ -61,7 +65,8 @@ export function useRealtimeSync(options: RealtimeSyncOptions) {
   }, []);
 
   useEffect(() => {
-    if (!options.patientId) return;
+    // Connect when we have a patientId OR when a content broadcast listener is registered
+    if (!options.patientId && !options.onContentPublished) return;
 
     const wsUrl = `${globalThis.location.protocol}//${globalThis.location.host}`;
     const socket = io(wsUrl, {
@@ -75,7 +80,9 @@ export function useRealtimeSync(options: RealtimeSyncOptions) {
 
     socket.on('connect', () => {
       setConnected(true);
-      socket.emit('join-patient-room', options.patientId);
+      if (options.patientId) {
+        socket.emit('join-patient-room', options.patientId);
+      }
     });
 
     socket.on('disconnect', () => setConnected(false));
@@ -92,6 +99,8 @@ export function useRealtimeSync(options: RealtimeSyncOptions) {
     bind(EVENTS.EMR_UPDATED, () => cbRef.current.onEmrChange);
     bind(EVENTS.PHR_UPDATED, () => cbRef.current.onHealthRecordChange);
     bind(EVENTS.VITALS_CREATED, () => cbRef.current.onHealthRecordChange);
+    bind(EVENTS.CONTENT_UPDATED, () => cbRef.current.onContentPublished);
+    bind(EVENTS.CONTENT_PUBLISHED, () => cbRef.current.onContentPublished);
 
     socket.on(EVENTS.DATA_CHANGED, (payload: Record<string, unknown>) => {
       cbRef.current.onDataChanged?.(payload);
@@ -102,7 +111,7 @@ export function useRealtimeSync(options: RealtimeSyncOptions) {
       socketRef.current = null;
       setConnected(false);
     };
-  }, [options.patientId]);
+  }, [options.patientId, options.onContentPublished]);
 
   return { connected, disconnect };
 }

@@ -453,6 +453,7 @@ export default function AIDoctorPage() {
               onClick={handleSend}
               disabled={!input.trim() || loading}
               className="px-4 py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              title={language === 'th' ? 'ส่งข้อความ' : 'Send message'}
             >
               <Send className="w-5 h-5" />
             </button>

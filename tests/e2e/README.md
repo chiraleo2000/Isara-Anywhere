@@ -1,8 +1,8 @@
 # Izara Telemedicine — E2E Test Suite
 
-> **Version:** 10.0.0 | **Updated:** February 19, 2026  
-> **Spec Files:** 8 (specs 20-27) | **Total Tests:** ~530  
-> **Users:** 5 simultaneous (patient1, patient2, patient3, doctor, admin)  
+> **Version:** 10.0.0 | **Updated:** February 19, 2026
+> **Spec Files:** 8 (specs 20-27) | **Total Tests:** ~530
+> **Users:** 5 simultaneous (patient1, patient2, patient3, doctor, admin)
 > **Environments:** Local, Cloud, Cloud-Dev
 
 ---
@@ -66,6 +66,7 @@ tests/e2e/
 | 26 | `26-multi-user-concurrent.spec.ts` | ~50 | A–F | 5 users in 5 browser windows simultaneously, concurrent appointment/content/meeting/queue flows |
 | 27 | `27-phase2-ai-his.spec.ts` | ~60 | A–G | CTM Thai medicine, geriatric screening (8 tools), SOS emergency, follow-up, biometric, offline sync, nursing dashboard |
 
+
 ### ★★★ Critical Test: Content Sync (Spec 24, Section D)
 
 When content is approved, patients see it with **one page refresh**:
@@ -80,12 +81,15 @@ When content is approved, patients see it with **one page refresh**:
 | D06 | Draft content NOT visible to patients |
 | D07 | Rejected content NOT visible to patients |
 
+
 ### Multi-User / Multi-Browser Tests
 
 Tests use Playwright's `browser.newContext()` to open **separate browser windows** per user:
 
 - **Spec 20 Section E**: 5 users logged in simultaneously in 5 browsers
+
 - **Spec 24 Section D**: Doctor + Admin + 3 patients in 5 browsers for content sync
+
 - **Spec 26**: All major workflows with 3-5 concurrent browser windows
 
 ---
@@ -107,6 +111,7 @@ Tests use Playwright's `browser.newContext()` to open **separate browser windows
 | `npm run cloud-dev` | All specs on Cloud-Dev |
 | `npm run report` | Open Playwright HTML report |
 
+
 ---
 
 ## Playwright Projects (3)
@@ -116,6 +121,7 @@ Tests use Playwright's `browser.newContext()` to open **separate browser windows
 | `Local` | localhost:3005 | Local Docker |
 | `Cloud` | Cloud Run | Production |
 | `Cloud-Dev` | Cloud-Dev | Dev/staging |
+
 
 ---
 
@@ -129,6 +135,7 @@ Tests use Playwright's `browser.newContext()` to open **separate browser windows
 | doctor | `doctor.test@izara.com` | Doctor Portal | DOC-TEST-001 |
 | admin | `admin.test@izara.com` | Doctor Portal | ADMIN-TEST-001 |
 
+
 ---
 
 ## Service URLs
@@ -141,6 +148,7 @@ Tests use Playwright's `browser.newContext()` to open **separate browser windows
 | Doctor Portal | <http://localhost:3010> |
 | Meeting Server | <http://localhost:3020> |
 
+
 ### Cloud (Google Cloud Run)
 
 | Service | URL |
@@ -149,6 +157,7 @@ Tests use Playwright's `browser.newContext()` to open **separate browser windows
 | Doctor Portal | <https://izara-doctor-portal-724889190329.asia-southeast1.run.app> |
 | Meeting Server | <https://izara-meeting-server-724889190329.asia-southeast1.run.app> |
 
+
 ### Cloud-Dev
 
 | Service | URL |
@@ -156,6 +165,7 @@ Tests use Playwright's `browser.newContext()` to open **separate browser windows
 | Patient Portal | <https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app> |
 | Doctor Portal | <https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app> |
 | Meeting Server | <https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app> |
+
 
 ---
 
@@ -180,6 +190,7 @@ Tests use Playwright's `browser.newContext()` to open **separate browser windows
 | `phase2` | ctmAssessment, geriatricScreening, sosAlert, followUp, nursingDashboard, predictiveAnalytics |
 | `device` | deviceTokens, biometric (register/verify/status), sync (push/pull/conflicts/status) |
 
+
 ### test-helpers.ts
 
 | Category | Exports |
@@ -191,6 +202,7 @@ Tests use Playwright's `browser.newContext()` to open **separate browser windows
 | **Data Generators** | `generateAppointmentData()`, `generatePHRVitals()`, `generateEMRData()`, `generatePrescriptionData()`, `generateLabOrder()`, `generateMedicalContent()`, `generateClinicalResource()`, `generateGeriatricScreening()`, `generateCTMAssessment()`, `generateSOSAlert()`, `generateFollowUpSchedule()` |
 | **Assertions** | `assertSuccess()`, `assertOk()`, `assertUnauthorized()`, `assertNoJSErrors()` |
 | **Workflows** | `waitForContentAfterRefresh()`, `appointmentLifecycle()`, `contentApprovalLifecycle()` |
+
 
 ---
 
@@ -228,7 +240,9 @@ Tests use Playwright's `browser.newContext()` to open **separate browser windows
 | Browser not found | `npx playwright install chromium` |
 | Content sync fails | Confirm admin approved the content and patient portal serves `/api/content/medical` |
 
+
 ```powershell
+
 # Debug a single test
 DEBUG=pw:api npx playwright test --project=Local --headed -g "D02"
 

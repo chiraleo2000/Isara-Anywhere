@@ -59,7 +59,7 @@ function hashPassword(password: string): string {
 }
 
 function verifyPasswordHash(password: string, storedHash: string): boolean {
-  if (!storedHash || !storedHash.includes(':')) return false;
+  if (!storedHash?.includes(':')) return false;
   const [salt, hash] = storedHash.split(':');
   if (!salt || !hash) return false;
   const verifyHash = crypto.pbkdf2Sync(password, salt, 600000, 64, 'sha512').toString('hex');

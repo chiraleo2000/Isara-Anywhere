@@ -1,8 +1,8 @@
 # 🏥 Patient Portal — Architecture & Navigation Overview
 
-**Version:** 3.2.0  
-**Last Updated:** February 10, 2026  
-**Portal URL:** `localhost:3005`  
+**Version:** 3.2.0
+**Last Updated:** February 10, 2026
+**Portal URL:** `localhost:3005`
 **Component:** `App.tsx` → `MainLayout.tsx`
 
 ---
@@ -75,7 +75,9 @@
 ### Mobile Layout
 
 - Sidebar hidden behind hamburger menu
+
 - Header: Hamburger · Logo · NotificationBell · Language · Avatar
+
 - Full-width content area
 
 ---
@@ -97,19 +99,25 @@
 ### MiniMapWidget
 
 - Compact healthcare facility types display (Hospital, Clinic, Pharmacy, Health Center)
+
 - Click → navigates to full Map page
 
 ### MiniCalendar
 
 - Monthly calendar with Thai/English month names
+
 - Buddhist/Gregorian year support
+
 - Today highlighted
+
 - Previous/next month navigation
 
 ### User Info
 
 - Avatar, name, email
+
 - Link to Profile page
+
 - Logout button
 
 ---
@@ -174,3 +182,66 @@ NotificationBell ──→ Appointment Detail / Meeting Join
 | Health Records | Manual data entry | AI extraction from uploaded documents |
 | Notifications | Simple list | AI-prioritized smart notifications |
 | Content | Manual browsing | AI-recommended content based on conditions |
+
+---
+
+## PostgreSQL Database Integration
+
+### Tables Used
+
+| Table | Operation | Description |
+| ----- | --------- | ----------- |
+| users | SELECT/INSERT/UPDATE | Patient user accounts |
+| sessions | INSERT/DELETE | Authentication session tokens |
+| patient_profiles | SELECT/INSERT/UPDATE | Patient demographic and health profile |
+| appointments | SELECT/INSERT/UPDATE | Appointment booking and management |
+| doctors | SELECT | Available doctor list |
+| doctor_schedules | SELECT | Doctor availability for booking |
+| phr | SELECT/INSERT/UPDATE | Personal Health Records |
+| vital_signs | SELECT/INSERT | Vital sign measurements |
+| emr | SELECT | Electronic Medical Records (read-only for patients) |
+| prescriptions | SELECT | Prescription history (read-only) |
+| lab_orders | SELECT | Lab results (read-only) |
+| ai_chat_history | SELECT/INSERT | AI health chat conversation logs |
+| knowledge_base | SELECT | Medical knowledge base for RAG |
+| medical_content | SELECT | Published health articles |
+| notifications | SELECT/UPDATE | Notification records |
+| push_subscriptions | SELECT/INSERT | Web push subscription endpoints |
+| patient_consents | SELECT/INSERT/UPDATE | PDPA consent management |
+| living_wills | SELECT/INSERT/UPDATE | Living will documents |
+| living_will_versions | SELECT/INSERT | Living will version history |
+| password_resets | INSERT/UPDATE | Password reset token management |
+
+### Backend Server
+
+- **Runtime:** Express.js TypeScript (index.ts, 16 route modules)
+
+- **Port:** 3005
+
+- **Database:** PostgreSQL izara_phase1
+
+### API Endpoints
+
+| Endpoint | Method | DB Operation |
+| -------- | ------ | ------------ |
+| /api/auth/* | POST | users, sessions CRUD |
+| /api/dashboard/* | GET | appointments, notifications, medical_content SELECT |
+| /api/appointments/* | GET/POST | appointments CRUD |
+| /api/phr/* | GET/POST | phr, vital_signs CRUD |
+| /api/vital-signs/* | POST | vital_signs INSERT |
+| /api/ai/health-chat | POST | ai_chat_history, knowledge_base |
+| /api/content/articles | GET | medical_content SELECT |
+| /api/consents/* | GET/POST/PUT | patient_consents CRUD |
+| /api/phr/:id/living-will | GET/POST/PUT | living_wills, living_will_versions CRUD |
+| /api/profile/* | GET/PUT | users, patient_profiles SELECT/UPDATE |
+| /api/settings/* | GET/PUT | users preferences JSONB UPDATE |
+| /api/timeline/* | GET | appointments, emr, prescriptions, lab_orders, vital_signs SELECT |
+| /api/notifications/* | GET/PUT | notifications SELECT/UPDATE |
+
+### Deployment
+
+- **Local Docker:** izara-postgres container (localhost:5433 external / 5432 internal) → database: izara_phase1
+
+- **Production:** GCE VM at 35.240.157.230:5432 → database: izara_phase1 (asia-southeast1)
+
+- **Service deployed via:** Cloud Run (gen2, CPU Boost) + Cloud Build CI/CD

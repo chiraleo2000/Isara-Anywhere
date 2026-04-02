@@ -1,26 +1,34 @@
 # 📄 Izara Telemedicine — Page-by-Page Documentation
 
-**Version:** 1.5.7  
-**Last Updated:** March 15, 2026  
-**Status:** ✅ Phase 1 Complete — Web Platform Documentation
+**Version:** 1.6.0
+**Last Updated:** March 31, 2026
+**Status:** ✅ Phase 1 Complete — Web Platform Documentation + Full DB Schema
 
 ---
+
 
 ## 📋 Overview
 
 This folder contains **comprehensive page-level documentation** for every page and major component across the Izara Telemedicine platform. Each document describes:
 
+
 - **Page purpose and layout** — what the page does, how it looks
+
 - **Features and actions** — every button, form, modal, tab
+
 - **Workflows and processes** — step-by-step user flows on that page
+
 - **API endpoints used** — backend calls made from the page
+
 - **Connections to other pages** — navigation and data flow
+
 - **AI agent improvement notes** — future automation opportunities
 
 > **🎯 Phase 1 Core Deliverable:** The meeting workflow documentation covers the complete end-to-end flow:
 > Appointment → Multi-Party Meeting (Microsoft Teams-like) → Transcript Streaming → AI Summary Pipeline → EMR → Patient Delivery
 
 ---
+
 
 ## 🎯 Meeting Workflow Page Navigation
 
@@ -64,6 +72,7 @@ APPOINTMENT BOOKING → MEETING → AI PROCESSING → EMR → PATIENT DELIVERY
 ```
 
 ---
+
 
 ## 🗂️ Folder Structure
 
@@ -119,6 +128,7 @@ Pages/
 
 ---
 
+
 ## 🌐 Portal URLs
 
 | Service | Local URL | Cloud URL |
@@ -127,7 +137,9 @@ Pages/
 | Doctor Portal | <http://localhost:3010> | <https://izara-doctor-portal-724889190329.asia-southeast1.run.app> |
 | Meeting Server | <http://localhost:3020> | <https://izara-jitsi-meeting-portal-724889190329.asia-southeast1.run.app> |
 
+
 ---
+
 
 ## 🔗 Cross-References
 
@@ -143,6 +155,36 @@ Pages/
 | `Medicine_Content_Processes.md` | Patient: 08, Doctor: 13, 14 | Medical knowledge |
 | `Medical_Consultants_Workflows.md` | Doctor: 12 | Specialist directory |
 | `Data_Sync_Documentation.md` | All pages (database architecture) | PostgreSQL storage |
+
+
+---
+
+
+## 🗄️ PostgreSQL Database Architecture
+
+All page documentation now includes a **PostgreSQL Database Integration** section mapping each page to its database tables, API endpoints, and deployment targets.
+
+| Component | Detail |
+| --------- | ------ |
+| **Database** | PostgreSQL 18 + pgvector (izara_phase1) |
+| **Extensions** | uuid-ossp, pgcrypto, pgvector |
+| **Tables** | 37+ across 8 groups (User Mgmt, Patient Data, Doctor Mgmt, Appointments, Clinical, Content, AI/CDS, Audit) |
+| **Local Docker** | izara-postgres:5432 (external 5433) via docker-compose.yml |
+| **Production** | GCE VM at 35.240.157.230:5432 (asia-southeast1, NOT Cloud SQL) |
+| **Real-time** | LISTEN/NOTIFY triggers → pgNotifyListener → Socket.IO rooms |
+| **AI** | Gemini 2.5 Flash Lite, pgvector embeddings for RAG |
+
+
+
+### Page-to-Database Coverage
+
+| Portal | Pages | Tables Referenced | Key Data Flows |
+| ------ | ----- | ----------------- | -------------- |
+| **Doctor Portal** | 22 pages | users, doctor_profiles, appointments, meeting_records, emr, prescriptions, lab_orders, ai_chat_history, medical_content, clinical_resources, consultants, drugs, cds_logs | Login → Dashboard → Schedule → Meeting → EMR → Prescribe → Lab Orders |
+| **Patient Portal** | 16 pages | users, patient_profiles, appointments, phr, vital_signs, living_wills, ai_chat_history, medical_content, notifications, patient_consents, push_subscriptions | Login → Register → Dashboard → Book Appointment → Join Meeting → View EMR/PHR |
+| **Meeting Server** | 1 page | meeting_records, meeting_transcripts, transcriptions_embeddings, appointments, emr, ai_validations, ai_chat_history, ai_chat_memory | Start Meeting → Transcribe → AI Summary → Man-in-the-Loop → EMR |
+
+
 
 ### 📋 Meeting Workflow Page Map
 
@@ -165,3 +207,4 @@ Pages/
 | 15 | Patient receives results | Patient/04_Dashboard, Patient/14_Timeline |
 | 16 | Patient downloads Instruction PDF | Patient/14_Timeline, Patient/05_Appointments |
 | 17 | Meeting notifications throughout | Patient/15_Notification_System |
+

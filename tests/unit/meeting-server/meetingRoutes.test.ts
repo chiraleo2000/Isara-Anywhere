@@ -5,7 +5,7 @@
  * Tests: Izara-jitsi-server/server/index.js — routes, config, auth
  */
 import { describe, it, expect } from 'vitest';
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 
 // ── Config & Constants ──────────────────────────────────────────────────
 
@@ -16,16 +16,15 @@ const DB_DEFAULT_PORT = 5433;
 const DB_NAME = 'izara_phase1';
 
 // CORS whitelist
-const ALLOWED_ORIGINS = [
+const ALLOWED_ORIGINS = new Set([
   'http://localhost:3000', 'http://localhost:3001', 'http://localhost:3005',
   'http://localhost:3009', 'http://localhost:3010', 'http://localhost:3011',
   'http://localhost:3012', 'http://localhost:3020', 'http://localhost:5173',
-  'http://localhost:8081', // Expo dev
-];
+]);
 
 function isOriginAllowed(origin: string, isDev: boolean): boolean {
   if (isDev) return true;
-  if (ALLOWED_ORIGINS.includes(origin)) return true;
+  if (ALLOWED_ORIGINS.has(origin)) return true;
   if (origin.endsWith('.run.app')) return true; // Cloud Run
   return false;
 }
@@ -131,15 +130,11 @@ describe('Meeting Server — Routes & Config', () => {
       expect(isOriginAllowed('https://isara-patient-portal-dev.run.app', false)).toBe(true);
     });
 
-    it('B04 — allows Expo dev port 8081', () => {
-      expect(isOriginAllowed('http://localhost:8081', false)).toBe(true);
-    });
-
-    it('B05 — rejects unknown origin in production', () => {
+    it('B04 — rejects unknown origin in production', () => {
       expect(isOriginAllowed('https://evil.com', false)).toBe(false);
     });
 
-    it('B06 — allows all origins in dev mode', () => {
+    it('B05 — allows all origins in dev mode', () => {
       expect(isOriginAllowed('https://anything.com', true)).toBe(true);
     });
   });

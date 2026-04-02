@@ -33,6 +33,8 @@ export interface RealtimeSyncOptions {
   onNotification?: () => void;
   /** Fired when schedule data changes */
   onScheduleChange?: () => void;
+  /** Fired when medical content or clinical resources are created/updated/published */
+  onContentChange?: () => void;
   /** Catch-all for any data_changes event */
   onDataChanged?: (payload: Record<string, unknown>) => void;
 }
@@ -91,6 +93,8 @@ export function useRealtimeSync(options: RealtimeSyncOptions) {
     bind(SOCKET_EVENTS.LAB_ORDER_UPDATED,   cbRef.current.onLabOrderChange,    () => cbRef.current.onLabOrderChange);
     bind(SOCKET_EVENTS.NOTIFICATION_CREATED, cbRef.current.onNotification,     () => cbRef.current.onNotification);
     bind(SOCKET_EVENTS.SCHEDULE_UPDATED,    cbRef.current.onScheduleChange,    () => cbRef.current.onScheduleChange);
+    bind(SOCKET_EVENTS.CONTENT_UPDATED,     cbRef.current.onContentChange,     () => cbRef.current.onContentChange);
+    bind(SOCKET_EVENTS.CONTENT_PUBLISHED,   cbRef.current.onContentChange,     () => cbRef.current.onContentChange);
 
     socket.on(SOCKET_EVENTS.DATA_CHANGED, (payload: Record<string, unknown>) => {
       cbRef.current.onDataChanged?.(payload);

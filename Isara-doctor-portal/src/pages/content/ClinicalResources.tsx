@@ -7,6 +7,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../components/common/AuthProvider';
 import { useSettings } from '../../hooks/useSettings';
+import { useRealtimeSync } from '../../services/useRealtimeSync';
 import {
   type ClinicalResourceItem,
   type ContentTag,
@@ -138,7 +139,7 @@ const renderContentWithImages = (content: string) => {
 // ============================================================================
 
 // i18n labels for Clinical Resources page
-const labels = {
+const _labels = {
   pageTitle: { en: 'Clinical Resources', th: 'ทรัพยากรทางคลินิก' },
   subtitle: { en: 'Medical Guidelines, Research Papers & Study Materials', th: 'แนวทางการแพทย์ งานวิจัย และเอกสารการศึกษา' },
   searchResources: { en: 'Search resources...', th: 'ค้นหาทรัพยากร...' },
@@ -291,6 +292,15 @@ export const ClinicalResources: React.FC = () => {
       fetchPendingApprovals();
     }
   }, [fetchResources, fetchTags, fetchPendingApprovals, isAdmin]);
+
+  // Real-time sync: refetch resources (and pending approvals for admin) on any content change
+  useRealtimeSync({
+    doctorId: user?.id,
+    onContentChange: () => {
+      fetchResources();
+      if (isAdmin) fetchPendingApprovals();
+    },
+  });
 
   // ============================================================================
   // FILTERING
@@ -711,6 +721,7 @@ export const ClinicalResources: React.FC = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search guidelines, topics, or keywords..."
+              aria-label="ค้นหาแนวทางเวชปฏิบัติ"
               className={`w-full px-4 py-2 pl-10 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent ${themeClasses.searchInput}`}
             />
             <svg
@@ -1049,6 +1060,7 @@ export const ClinicalResources: React.FC = () => {
                     value={newTag}
                     onChange={(e) => setNewTag(e.target.value)}
                     placeholder="Or create new..."
+                    aria-label="Create new tag"
                     className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
                   />
                   <button
@@ -1079,6 +1091,7 @@ export const ClinicalResources: React.FC = () => {
                     value={newReference}
                     onChange={(e) => setNewReference(e.target.value)}
                     placeholder="Add a reference..."
+                    aria-label="Add a reference"
                     className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
                   />
                   <button

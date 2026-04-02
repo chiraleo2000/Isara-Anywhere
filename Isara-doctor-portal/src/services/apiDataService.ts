@@ -393,6 +393,55 @@ export async function saveAllAppointments(appointments: any[]): Promise<{ succes
 }
 
 // ============================================================================
+// AI SPECIALTY MATCHING
+// ============================================================================
+
+export interface AiMatchResult {
+  specialty: string | null;
+  confidence: number;
+  reasoning: string | null;
+  secondary_specialty: string | null;
+  model: string;
+  error?: string;
+}
+
+export async function aiSpecialtyMatch(data: {
+  appointmentId: string;
+  symptoms: string;
+  patientAge?: number;
+  patientGender?: string;
+  urgency: 'routine' | 'urgent' | 'emergency';
+}): Promise<AiMatchResult> {
+  return fetchAPI<AiMatchResult>('/api/ai/specialty-match', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function fetchDoctorsBySpecialty(
+  specialty: string,
+  available = true,
+  date?: string,
+  time?: string
+): Promise<any[]> {
+  const params = new URLSearchParams({ specialty, available: String(available) });
+  if (date) params.set('date', date);
+  if (time) params.set('time', time);
+  const result = await fetchAPI<{ doctors: any[] }>(`/api/doctors/by-specialty?${params}`);
+  return result.doctors || [];
+}
+
+export async function adminAssignAppointment(
+  appointmentId: string,
+  doctorId: string
+): Promise<{ success: boolean; appointment: any; message: string }> {
+  return fetchAPI(`/api/appointments/${appointmentId}/assign`, {
+    method: 'PATCH',
+    body: JSON.stringify({ doctor_id: doctorId }),
+  });
+}
+
+// ============================================================================
 // PHASE 2: DEVICE TOKENS
 // ============================================================================
 

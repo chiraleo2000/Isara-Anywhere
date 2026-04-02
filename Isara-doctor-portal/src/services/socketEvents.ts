@@ -36,6 +36,10 @@ export const SOCKET_EVENTS = {
   // Doctor Schedule
   SCHEDULE_UPDATED: 'schedule:updated',
 
+  // Medical Content & Clinical Resources
+  CONTENT_UPDATED: 'content:updated',
+  CONTENT_PUBLISHED: 'content:published',
+
   // Cross-service sync (from PG LISTEN/NOTIFY)
   DATA_CHANGED: 'data:changed',
 } as const;

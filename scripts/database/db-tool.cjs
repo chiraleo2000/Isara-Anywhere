@@ -75,7 +75,7 @@ const DB_CONFIGS = {
         host: process.env.DB_HOST || 'localhost',
         port: Number.parseInt(process.env.DB_PORT || '5433'),
         user: process.env.DB_USER || 'postgres',
-        password: process.env.DB_PASSWORD || process.env.POSTGRES_PASSWORD || 'IzaraDb2024',
+        password: process.env.DB_PASSWORD || process.env.POSTGRES_PASSWORD || '',
         database: process.env.DB_NAME || 'izara_phase1',
         ssl: false,
         connectionTimeoutMillis: 10000,
@@ -95,7 +95,7 @@ const DB_CONFIGS = {
         host: process.env.DEV_DB_HOST || '35.240.162.227',
         port: Number.parseInt(process.env.DEV_DB_PORT || '5432'),
         user: 'postgres',
-        password: process.env.DEV_DB_PASSWORD || 'IzaraDb2024',
+        password: process.env.DEV_DB_PASSWORD || '',
         database: 'izara_phase1',
         ssl: false,
         connectionTimeoutMillis: 30000,
@@ -120,7 +120,7 @@ function createPool(target) {
     }
     if ((target || TARGET) !== 'local' && !config.password) {
         console.error('❌ DB_PASSWORD environment variable is required for non-local targets.');
-        console.error('   Set it: $env:DB_PASSWORD="your_password"');
+        console.error('   Set it: $env:DB_PASSWORD=<your_password>');
         process.exit(1);
     }
     return new Pool(config);

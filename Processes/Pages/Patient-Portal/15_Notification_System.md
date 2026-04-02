@@ -1,8 +1,8 @@
 # 🔔 Patient Portal — Notification System
 
-**Version:** v1.4.7  
-**Component:** `src/components/notifications/NotificationBell.tsx`  
-**Location:** Header (mobile + desktop)  
+**Version:** v1.4.7
+**Component:** `src/components/notifications/NotificationBell.tsx`
+**Location:** Header (mobile + desktop)
 **Access:** 🔒 Authenticated patients
 
 ---
@@ -291,11 +291,50 @@ Status changes that trigger notifications:
 ## 10. AI Agent Improvement Opportunities
 
 - **Priority sorting**: AI rank notifications by importance (meeting starting > results ready > general)
+
 - **Smart batching**: AI group related notifications (e.g., results + instruction sheet + follow-up)
+
 - **Push notifications**: AI determine when to use push vs in-app
+
 - **Predictive alerts**: AI notify before appointment (24h, 1h, 15min) — implemented in Phase 1
+
 - **Natural language summaries**: AI summarize notification clusters
+
 - **Action suggestions**: AI recommend next action based on notification
+
 - **Meeting prep reminders**: AI remind patient to prepare questions before telehealth meeting
+
 - **Result comprehension**: AI explain medical terms in notifications using patient-friendly language
+
 - **Follow-up compliance**: AI track if patient acknowledges results and follows up as scheduled
+
+---
+
+## PostgreSQL Database Integration
+
+### Tables Used
+
+| Table | Operation | Description |
+| ----- | --------- | ----------- |
+| notifications | SELECT / UPDATE | Unread notifications, mark as read |
+| push_subscriptions | SELECT | Web push subscription endpoints for delivery |
+
+### API Endpoints
+
+| Endpoint | Method | DB Operation |
+| -------- | ------ | ------------ |
+| /api/notifications | GET | SELECT notifications WHERE patient_id = current ORDER BY created_at DESC |
+| /api/notifications/:id/read | PUT | UPDATE notifications SET read = true |
+
+### Real-time Events
+
+- **Socket.IO:**
+otification:new → real-time push to connected clients
+
+### Deployment
+
+- **Local Docker:** izara-postgres container (localhost:5433 external / 5432 internal) → database: izara_phase1
+
+- **Production:** GCE VM at 35.240.157.230:5432 → database: izara_phase1 (asia-southeast1)
+
+- **Service deployed via:** Cloud Run (gen2, CPU Boost) + Cloud Build CI/CD

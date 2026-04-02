@@ -1,8 +1,8 @@
 # 📜 Patient Portal — Living Will Page
 
-**Route:** `/living-will`  
-**Component:** `src/pages/pdpa/LivingWillPage.tsx`  
-**Access:** 🔒 Authenticated patients  
+**Route:** `/living-will`
+**Component:** `src/pages/pdpa/LivingWillPage.tsx`
+**Access:** 🔒 Authenticated patients
 **Thai Title:** พินัยกรรมชีวิต / Living Will
 
 ---
@@ -258,8 +258,42 @@ When shared, the Living Will appears in the PatientRecordViewer's PHR tab showin
 ## 9. AI Agent Improvement Opportunities
 
 - **Guided creation**: AI walk patient through choices with explanations
+
 - **Legal compliance check**: AI verify document completeness
+
 - **Translation**: AI translate Living Will for multilingual families
+
 - **Reminder**: AI prompt periodic review of Living Will
+
 - **Template suggestions**: AI suggest common treatment preference combinations
+
 - **Family notification**: AI automated notification when Living Will is updated
+
+---
+
+## PostgreSQL Database Integration
+
+### Tables Used
+
+| Table | Operation | Description |
+| ----- | --------- | ----------- |
+| living_wills | CRUD | Living Will document management |
+| living_will_versions | INSERT / SELECT | Version history for Living Will changes |
+| patient_consents | SELECT / UPDATE | Consent records linked to Living Will sharing |
+
+### API Endpoints
+
+| Endpoint | Method | DB Operation |
+| -------- | ------ | ------------ |
+| /api/phr/:id/living-will | GET | SELECT living_wills, living_will_versions |
+| /api/phr/:id/living-will | POST | INSERT living_wills, INSERT living_will_versions |
+| /api/phr/:id/living-will | PUT | UPDATE living_wills, INSERT living_will_versions |
+| /api/phr/:id/living-will/share | PUT | UPDATE living_wills (share settings), UPDATE patient_consents |
+
+### Deployment
+
+- **Local Docker:** izara-postgres container (localhost:5433 external / 5432 internal) → database: izara_phase1
+
+- **Production:** GCE VM at 35.240.157.230:5432 → database: izara_phase1 (asia-southeast1)
+
+- **Service deployed via:** Cloud Run (gen2, CPU Boost) + Cloud Build CI/CD

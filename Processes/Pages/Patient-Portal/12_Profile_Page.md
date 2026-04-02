@@ -1,8 +1,8 @@
 # 👤 Patient Portal — Profile Page
 
-**Route:** `/profile`  
-**Component:** `src/pages/profile/ProfilePage.tsx`  
-**Access:** 🔒 Authenticated patients  
+**Route:** `/profile`
+**Component:** `src/pages/profile/ProfilePage.tsx`
+**Access:** 🔒 Authenticated patients
 **Thai Title:** โปรไฟล์
 
 ---
@@ -130,6 +130,35 @@ Step 6: Avatar updates in header and sidebar
 ## 8. AI Agent Improvement Opportunities
 
 - **Profile completeness**: AI score profile completion and suggest missing fields
+
 - **Smart address**: AI auto-complete Thai addresses
+
 - **Photo validation**: AI verify avatar is appropriate
+
 - **Emergency contact verification**: AI verify emergency contact phone is reachable
+
+---
+
+## PostgreSQL Database Integration
+
+### Tables Used
+
+| Table | Operation | Description |
+| ----- | --------- | ----------- |
+| users | SELECT / UPDATE | Patient account details |
+| patient_profiles | SELECT / UPDATE | Patient demographic and contact information |
+
+### API Endpoints
+
+| Endpoint | Method | DB Operation |
+| -------- | ------ | ------------ |
+| /api/profile | GET | SELECT users JOIN patient_profiles WHERE id = current |
+| /api/profile | PUT | UPDATE users, UPDATE patient_profiles |
+
+### Deployment
+
+- **Local Docker:** izara-postgres container (localhost:5433 external / 5432 internal) → database: izara_phase1
+
+- **Production:** GCE VM at 35.240.157.230:5432 → database: izara_phase1 (asia-southeast1)
+
+- **Service deployed via:** Cloud Run (gen2, CPU Boost) + Cloud Build CI/CD

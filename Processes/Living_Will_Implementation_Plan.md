@@ -1,8 +1,8 @@
 # 📋 Living Will Implementation Plan
 
-**Version:** 1.1  
-**Created:** December 12, 2025  
-**Status:** ✅ IMPLEMENTED
+**Version:** 1.2
+**Created:** December 12, 2025
+**Status:** ✅ IMPLEMENTED (PostgreSQL)
 
 ---
 
@@ -143,10 +143,15 @@ Key sections:
 Display existing Living Will with:
 
 - Status badge (Active/Revoked)
+
 - Statement display
+
 - Treatment preferences list
+
 - Representative contact
+
 - Share settings status
+
 - Edit/Revoke buttons
 
 ### 1.4. Add Living Will Tab to PHR Page
@@ -203,9 +208,13 @@ async checkLivingWillAccess(patientId: string, doctorId: string): Promise<boolea
 Display Living Will in patient record with:
 
 - Prominent alert if exists and shared
+
 - Treatment preferences (clear refused/allowed list)
+
 - Representative contact
+
 - Private indicator if not shared
+
 - No document indicator if none exists
 
 ### 2.4. Update Patient Record Viewer
@@ -319,34 +328,55 @@ Scenarios:
 ### Patient Portal
 
 - [ ] Add Living Will types to `sharedPHRTypes.ts`
+
 - [ ] Create `LivingWillForm.tsx` component
+
 - [ ] Create `LivingWillView.tsx` component
+
 - [ ] Create `LivingWillTab.tsx` wrapper component
+
 - [ ] Create `SignatureCanvas.tsx` component
+
 - [ ] Add Living Will tab to PHR page
+
 - [ ] Add API routes for Living Will CRUD
+
 - [ ] Add audit logging for Living Will actions
+
 - [ ] Add PDPA sharing controls
+
 - [ ] Write unit tests for Living Will APIs
+
 - [ ] Write E2E tests for patient workflows
 
 ### Doctor Portal
 
 - [ ] Add Living Will types to types file
+
 - [ ] Create `LivingWillCard.tsx` component
+
 - [ ] Update `PatientRecordViewer.tsx` with Living Will section
+
 - [ ] Update `patientRecordService.ts` with Living Will methods
+
 - [ ] Add API endpoint for fetching Living Will
+
 - [ ] Add access control logic (history check)
+
 - [ ] Add audit logging for Living Will access
+
 - [ ] Write unit tests for access control
+
 - [ ] Write E2E tests for doctor workflows
 
 ### Shared
 
 - [ ] Copy Living Will types to doctor portal
+
 - [ ] Update documentation
+
 - [ ] Create user guides
+
 - [ ] Test cross-portal workflow
 
 ---
@@ -365,10 +395,59 @@ Scenarios:
 ## 6. Dependencies
 
 - Both portals running
+
 - GCS access configured
+
 - Authentication working
+
 - PDPA consent system in place
 
 ---
 
 ### End of Implementation Plan
+
+---
+
+## 7. PostgreSQL Database Schema
+
+### Tables Used
+
+| Table | Purpose | Key Columns |
+| ----- | ------- | ----------- |
+| **living_wills** | Main living will document | id, patient_id, statement, treatments (JSONB), representatives (JSONB), signature (JSONB), pdpa_consent (JSONB), status (draft/finalized/revoked), is_shared_with_doctors, version |
+| **living_will_versions** | Immutable version history | id, patient_id, version, data (JSONB snapshot), note |
+| **patient_consents** | PDPA consent records | id, patient_id, consent_type, granted, doctor_id, data_types (JSONB) |
+| **audit_logs** | Access/modification tracking | id, user_id, patient_id, action, entity_type, entity_id, details (JSONB) |
+
+### Database Operations by Portal
+
+```text
+Patient Portal (port 3005) — phr.ts routes
+  POST   /api/phr/:id/living-will       → INSERT INTO living_wills
+  PUT    /api/phr/:id/living-will       → UPDATE living_wills + INSERT living_will_versions
+  PUT    /api/phr/:id/living-will/share → UPDATE living_wills (is_shared) + UPSERT patient_consents
+  GET    /api/phr/:id/living-will       → SELECT FROM living_wills WHERE patient_id=$1
+  DELETE /api/phr/:id/living-will       → UPDATE living_wills SET status='revoked'
+
+Doctor Portal (port 3010) — mainApiServer.cjs
+  GET    /api/patients/:id/living-will  → SELECT FROM living_wills
+                                           WHERE patient_id=$1 AND is_shared_with_doctors=true
+                                         + INSERT INTO audit_logs (action='view_living_will')
+```
+
+### Deployment
+
+| Environment | Database | Connection |
+| ----------- | -------- | ---------- |
+| Local Docker | izara-postgres container | postgres:5432 (internal), localhost:5433 (external) |
+| Production | GCE VM | 35.240.157.230:5432 (izara_phase1) |
+
+### Dependencies (Updated)
+
+- Both portals running with PostgreSQL connection
+
+- PostgreSQL extensions: uuid-ossp, pgcrypto
+
+- Authentication via sessions table
+
+- PDPA consent system via patient_consents table

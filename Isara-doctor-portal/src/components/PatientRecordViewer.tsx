@@ -1,66 +1,204 @@
 /**
  * Patient Record Viewer - PHR, EMR, EHR
- * Matches doctor-ui/Doctor-UI02.png, Doctor-UI03.png, Doctor-UI04.png
+ * Cross-portal: Doctor Portal reads PHR/EMR/EHR from Patient Portal PostgreSQL data.
+ * Per-tab lazy loading with session caching, PDPA-protected.
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { PatientRecord } from '../types';
 import {
   PHRData,
   EMRRecord,
-  EHRTimeline,
-  LabResult,
-  ImagingResult,
-  LivingWillForDoctorView,
+  EHRData,
+  LivingWillResponse,
+  VitalEntry,
   patientRecordService
 } from '../services/patientRecordService';
 
 interface PatientRecordViewerProps {
   patient: PatientRecord;
   onClose: () => void;
+  currentDoctorId?: string;
 }
 
 export const PatientRecordViewer: React.FC<PatientRecordViewerProps> = ({
   patient,
-  onClose
+  onClose,
+  currentDoctorId
 }) => {
   const [activeTab, setActiveTab] = useState<'phr' | 'emr' | 'ehr'>('phr');
-  const [phrData, setPhrData] = useState<PHRData | null>(null);
-  const [livingWill, setLivingWill] = useState<LivingWillForDoctorView | null>(null);
-  const [emrRecords, setEmrRecords] = useState<EMRRecord[]>([]);
-  const [ehrTimeline, setEhrTimeline] = useState<EHRTimeline | null>(null);
-  const [labResults, setLabResults] = useState<LabResult[]>([]);
-  const [imagingResults, setImagingResults] = useState<ImagingResult[]>([]);
-  const [loading, setLoading] = useState(true);
 
+  // PDPA consent gate state
+  const [consentStatus, setConsentStatus] = useState<'checking' | 'granted' | 'denied' | 'emergency'>('checking');
+  const [requestSent, setRequestSent] = useState(false);
+  const [emergencyAppointmentId, setEmergencyAppointmentId] = useState<string | null>(null);
+
+  // Per-tab data
+  const [phrData, setPhrData] = useState<PHRData | null>(null);
+  const [livingWillData, setLivingWillData] = useState<LivingWillResponse>(null);
+  const [emrRecords, setEmrRecords] = useState<EMRRecord[]>([]);
+  const [ehrData, setEhrData] = useState<EHRData | null>(null);
+
+  // Per-tab loading states
+  const [loadingPHR, setLoadingPHR] = useState(false);
+  const [loadingEMR, setLoadingEMR] = useState(false);
+  const [loadingEHR, setLoadingEHR] = useState(false);
+
+  // Track which tabs have been loaded
+  const [loadedTabs, setLoadedTabs] = useState<Set<string>>(new Set());
+
+  // Error state
+  const [error, setError] = useState<string | null>(null);
+
+  // Refs for scrolling
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  // Load tab data on first activation
+  const loadTabData = useCallback(async (tab: 'phr' | 'emr' | 'ehr') => {
+    if (loadedTabs.has(tab)) return;
+    setError(null);
+
+    try {
+      if (tab === 'phr') {
+        setLoadingPHR(true);
+        const [data, lwData] = await Promise.all([
+          patientRecordService.getPHR(patient.id),
+          patientRecordService.getLivingWill(patient.id),
+        ]);
+        setPhrData(data);
+        setLivingWillData(lwData);
+      } else if (tab === 'emr') {
+        setLoadingEMR(true);
+        const data = await patientRecordService.getEMRs(patient.id);
+        setEmrRecords(data);
+      } else if (tab === 'ehr') {
+        setLoadingEHR(true);
+        const data = await patientRecordService.getEHR(patient.id);
+        setEhrData(data);
+      }
+      setLoadedTabs(prev => new Set(prev).add(tab));
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to load data';
+      setError(msg);
+    } finally {
+      if (tab === 'phr') setLoadingPHR(false);
+      if (tab === 'emr') setLoadingEMR(false);
+      if (tab === 'ehr') setLoadingEHR(false);
+    }
+  }, [patient.id, loadedTabs]);
+
+  // PDPA consent check on mount
   useEffect(() => {
-    loadPatientData();
+    let cancelled = false;
+    const checkConsent = async () => {
+      try {
+        const result = await patientRecordService.checkPDPAConsent(patient.id);
+        if (cancelled) return;
+        if (result.hasConsent) {
+          if (result.isEmergencyBypass) {
+            setConsentStatus('emergency');
+            setEmergencyAppointmentId(result.appointmentId || null);
+          } else {
+            setConsentStatus('granted');
+          }
+        } else {
+          setConsentStatus('denied');
+        }
+      } catch {
+        if (!cancelled) setConsentStatus('denied');
+      }
+    };
+    checkConsent();
+    return () => { cancelled = true; };
   }, [patient.id]);
 
-  const loadPatientData = async () => {
-    setLoading(true);
-    try {
-      const [phr, lw, emrs, ehr, labs, imaging] = await Promise.all([
-        patientRecordService.getPHR(patient.id),
-        patientRecordService.getLivingWill(patient.id),
-        patientRecordService.getEMRs(patient.id),
-        patientRecordService.getEHRTimeline(patient.id),
-        patientRecordService.getLabResults(patient.id),
-        patientRecordService.getImagingResults(patient.id)
-      ]);
-
-      setPhrData(phr);
-      setLivingWill(lw);
-      setEmrRecords(emrs);
-      setEhrTimeline(ehr);
-      setLabResults(labs);
-      setImagingResults(imaging);
-    } catch (error) {
-      console.error('Error loading patient data:', error);
-    } finally {
-      setLoading(false);
+  // Load initial tab (PHR) — only if consent is granted/emergency
+  useEffect(() => {
+    if (consentStatus === 'granted' || consentStatus === 'emergency') {
+      loadTabData('phr');
     }
+    return () => { patientRecordService.clearCache(); };
+  }, [patient.id, consentStatus]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Load tab data when switching (only if consent granted)
+  useEffect(() => {
+    if (consentStatus === 'granted' || consentStatus === 'emergency') {
+      loadTabData(activeTab);
+    }
+  }, [activeTab, loadTabData, consentStatus]);
+
+  // Build timeline navigator dates from EMR + EHR
+  const timelineDates = buildTimelineDates(emrRecords, ehrData);
+
+  const scrollToDate = (dateKey: string) => {
+    const el = document.getElementById(`record-${dateKey}`);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
+
+  const isLoading = (activeTab === 'phr' && loadingPHR) ||
+                    (activeTab === 'emr' && loadingEMR) ||
+                    (activeTab === 'ehr' && loadingEHR);
+
+  // Handle request access
+  const handleRequestAccess = async () => {
+    const result = await patientRecordService.requestAccess(patient.id);
+    if (result.success) setRequestSent(true);
+  };
+
+  // ── PDPA Consent Gate ──
+  if (consentStatus === 'checking') {
+    return (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg p-8 text-center">
+          <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">Checking PDPA consent...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (consentStatus === 'denied') {
+    return (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg p-8">
+          <div className="text-center">
+            <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+              <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">PDPA Consent Required</h3>
+            <p className="text-gray-600 mb-1">
+              <strong>{patient.demographics?.name || patient.name || 'This patient'}</strong> has not granted you access to their medical records.
+            </p>
+            <p className="text-sm text-gray-500 mb-6">
+              Under PDPA (Personal Data Protection Act), patient consent is required before accessing health records.
+            </p>
+            {requestSent ? (
+              <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 mb-4">
+                <p className="text-emerald-700 font-medium">Access request sent</p>
+                <p className="text-sm text-emerald-600">The patient will be notified. You will gain access once they approve.</p>
+              </div>
+            ) : (
+              <button
+                onClick={handleRequestAccess}
+                className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium mb-3"
+              >
+                Request Access from Patient
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="w-full px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -68,90 +206,94 @@ export const PatientRecordViewer: React.FC<PatientRecordViewerProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
           <h2 className="text-2xl font-bold text-gray-900">
-            Patient Record - {patient.demographics.name}
+            Patient Record - {patient.demographics?.name || patient.name || 'Unknown'}
           </h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 p-2"
-          >
+          <button onClick={onClose} title="ปิด" aria-label="ปิด" className="text-gray-400 hover:text-gray-600 p-2">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
 
+        {/* Emergency Bypass Banner */}
+        {consentStatus === 'emergency' && (
+          <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 flex items-center gap-2">
+            <svg className="w-5 h-5 text-amber-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+            <span className="text-sm text-amber-800 font-medium">
+              Emergency Access — Active appointment {emergencyAppointmentId ? `(${emergencyAppointmentId})` : ''}. Access is logged and auditable.
+            </span>
+          </div>
+        )}
+
         {/* Top Tabs */}
         <div className="flex border-b border-gray-200 bg-gray-50">
-          <button
-            onClick={() => setActiveTab('phr')}
-            className={`px-6 py-3 font-medium transition-colors ${
-              activeTab === 'phr'
-                ? 'bg-yellow-50 text-emerald-600 border-b-2 border-emerald-600'
-                : 'text-gray-600 hover:bg-gray-100'
-            }`}
-          >
-            Personal Health Record
-          </button>
-          <button
-            onClick={() => setActiveTab('emr')}
-            className={`px-6 py-3 font-medium transition-colors ${
-              activeTab === 'emr'
-                ? 'bg-blue-50 text-blue-600 border-b-2 border-blue-600'
-                : 'text-gray-600 hover:bg-gray-100'
-            }`}
-          >
-            Electronic Medical Record
-          </button>
-          <button
-            onClick={() => setActiveTab('ehr')}
-            className={`px-6 py-3 font-medium transition-colors ${
-              activeTab === 'ehr'
-                ? 'bg-green-50 text-green-600 border-b-2 border-green-600'
-                : 'text-gray-600 hover:bg-gray-100'
-            }`}
-          >
-            Electronic Health Record
-          </button>
+          {[
+            { key: 'phr' as const, label: 'Personal Health Record', activeClass: 'bg-yellow-50 text-emerald-600 border-emerald-600' },
+            { key: 'emr' as const, label: 'Electronic Medical Record', activeClass: 'bg-blue-50 text-blue-600 border-blue-600' },
+            { key: 'ehr' as const, label: 'Electronic Health Record', activeClass: 'bg-green-50 text-green-600 border-green-600' },
+          ].map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`px-6 py-3 font-medium transition-colors ${
+                activeTab === tab.key
+                  ? `${tab.activeClass} border-b-2`
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
+
+        {/* Error banner */}
+        {error && (
+          <div className="bg-red-50 border-b border-red-200 px-4 py-2 text-sm text-red-700">
+            {error}
+          </div>
+        )}
 
         {/* Content Area */}
         <div className="flex-1 overflow-hidden flex">
-          {/* Left Sidebar */}
-          <div className="w-64 bg-white border-r border-gray-200 p-4">
-            <button className="w-full py-2 px-4 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors">
-              บันทึกประวัติ
-            </button>
-            <div className="mt-4 space-y-2">
-              {activeTab === 'emr' && emrRecords.length > 0 && (
-                <div className="text-sm">
-                  <p className="font-medium text-gray-700 mb-2">Timelines</p>
-                  {emrRecords.map((emr, idx) => (
+          {/* Left Sidebar — Timeline Navigator */}
+          <div className="w-56 bg-white border-r border-gray-200 p-3 overflow-y-auto">
+            <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Timeline</p>
+            {timelineDates.length > 0 ? (
+              timelineDates.map(({ year, months }) => (
+                <div key={year} className="mb-3">
+                  <p className="text-sm font-bold text-gray-800">{year}</p>
+                  {months.map(m => (
                     <button
-                      key={emr.id}
-                      className="w-full text-left p-2 hover:bg-blue-50 rounded border border-blue-200 mb-1"
+                      key={m.key}
+                      onClick={() => scrollToDate(m.key)}
+                      className="w-full text-left text-xs px-2 py-1 rounded hover:bg-blue-50 text-gray-600 hover:text-blue-700"
                     >
-                      <p className="text-xs text-gray-500">
-                        {new Date(emr.encounterDate).toLocaleDateString()}
-                      </p>
-                      <p className="text-sm text-gray-700">{emr.encounterType}</p>
+                      {m.label} <span className="text-gray-400">({m.count})</span>
                     </button>
                   ))}
                 </div>
-              )}
-            </div>
+              ))
+            ) : (
+              <p className="text-xs text-gray-400">ไม่มีข้อมูล</p>
+            )}
           </div>
 
           {/* Main Content */}
-          <div className="flex-1 overflow-y-auto p-6 bg-gray-50">
-            {loading ? (
-              <div className="flex items-center justify-center h-full">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
-              </div>
+          <div ref={contentRef} className="flex-1 overflow-y-auto p-6 bg-gray-50">
+            {isLoading ? (
+              <>
+                {activeTab === 'phr' && <PHRSkeleton />}
+                {activeTab === 'emr' && <EMRSkeleton />}
+                {activeTab === 'ehr' && <EHRSkeleton />}
+              </>
             ) : (
               <>
-                {activeTab === 'phr' && <PHRView phrData={phrData} patient={patient} livingWill={livingWill} />}
-                {activeTab === 'emr' && <EMRView emrRecords={emrRecords} />}
-                {activeTab === 'ehr' && <EHRView timeline={ehrTimeline} labs={labResults} imaging={imagingResults} />}
+                {activeTab === 'phr' && <PHRView phrData={phrData} livingWillResponse={livingWillData} />}
+                {activeTab === 'emr' && <EMRView emrRecords={emrRecords} currentDoctorId={currentDoctorId} />}
+                {activeTab === 'ehr' && <EHRView ehrData={ehrData} />}
               </>
             )}
           </div>
@@ -162,10 +304,51 @@ export const PatientRecordViewer: React.FC<PatientRecordViewerProps> = ({
 };
 
 // ============================================================================
-// LIVING WILL CARD COMPONENT
+// SKELETON LOADERS
 // ============================================================================
 
-const LivingWillCard: React.FC<{ livingWill: LivingWillForDoctorView | null }> = ({ livingWill }) => {
+const Pulse: React.FC<{ className?: string }> = ({ className = '' }) => (
+  <div className={`animate-pulse bg-gray-200 rounded ${className}`} />
+);
+
+const PHRSkeleton: React.FC = () => (
+  <div className="space-y-6">
+    <Pulse className="h-40 w-full" />
+    <Pulse className="h-8 w-48" />
+    <div className="grid grid-cols-3 gap-4">{[1,2,3].map(i => <Pulse key={i} className="h-24" />)}</div>
+    <Pulse className="h-32 w-full" />
+    <Pulse className="h-32 w-full" />
+    <Pulse className="h-24 w-full" />
+  </div>
+);
+
+const EMRSkeleton: React.FC = () => (
+  <div className="space-y-4">
+    {[1,2,3].map(i => (
+      <div key={i} className="bg-white rounded-lg shadow-sm p-6 space-y-3">
+        <Pulse className="h-5 w-2/3" />
+        <Pulse className="h-4 w-1/2" />
+        <Pulse className="h-3 w-full" />
+      </div>
+    ))}
+  </div>
+);
+
+const EHRSkeleton: React.FC = () => (
+  <div className="space-y-4">
+    <Pulse className="h-6 w-48" />
+    <div className="bg-white rounded-lg shadow-sm p-4 space-y-2">
+      <Pulse className="h-8 w-full" />
+      {[1,2,3,4,5].map(i => <Pulse key={i} className="h-6 w-full" />)}
+    </div>
+  </div>
+);
+
+// ============================================================================
+// LIVING WILL CARD
+// ============================================================================
+
+const LivingWillCard: React.FC<{ livingWillResponse: LivingWillResponse }> = ({ livingWillResponse }) => {
   const [expanded, setExpanded] = useState(false);
 
   const getPreferenceLabel = (pref: string) => {
@@ -177,20 +360,18 @@ const LivingWillCard: React.FC<{ livingWill: LivingWillForDoctorView | null }> =
     }
   };
 
-  const getTreatmentLabel = (key: string) => {
-    const labels: Record<string, string> = {
-      cpr: 'การปั๊มหัวใจ (CPR)',
-      mechanicalVentilation: 'เครื่องช่วยหายใจ',
-      artificialNutrition: 'การให้อาหารทางสาย',
-      dialysis: 'การฟอกไต',
-      antibiotics: 'ยาปฏิชีวนะ',
-      painManagement: 'การจัดการความเจ็บปวด',
-      organDonation: 'การบริจาคอวัยวะ',
-    };
-    return labels[key] || key;
+  const treatmentLabels: Record<string, string> = {
+    cpr: 'การปั๊มหัวใจ (CPR)',
+    mechanicalVentilation: 'เครื่องช่วยหายใจ',
+    artificialNutrition: 'การให้อาหารทางสาย',
+    dialysis: 'การฟอกไต',
+    antibiotics: 'ยาปฏิชีวนะ',
+    painManagement: 'การจัดการความเจ็บปวด',
+    organDonation: 'การบริจาคอวัยวะ',
   };
 
-  if (!livingWill) {
+  // State 1: No living will at all
+  if (!livingWillResponse) {
     return (
       <div className="bg-gray-50 rounded-lg shadow-sm p-6 mb-6 border border-gray-200">
         <div className="flex items-center gap-3">
@@ -201,12 +382,42 @@ const LivingWillCard: React.FC<{ livingWill: LivingWillForDoctorView | null }> =
           </div>
           <div>
             <h3 className="text-lg font-semibold text-gray-700">หนังสือแสดงเจตนา (Living Will)</h3>
-            <p className="text-sm text-gray-500">ผู้ป่วยยังไม่มีหนังสือแสดงเจตนา หรือยังไม่ได้อนุญาตให้แพทย์เข้าถึง</p>
+            <p className="text-sm text-gray-500">ผู้ป่วยยังไม่มีหนังสือแสดงเจตนา</p>
           </div>
         </div>
       </div>
     );
   }
+
+  // State 2: Living will exists but NOT shared with this doctor
+  if ('exists' in livingWillResponse && livingWillResponse.authorized === false) {
+    return (
+      <div className="bg-amber-50 rounded-lg shadow-sm p-6 mb-6 border-2 border-amber-300">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-amber-200 rounded-full flex items-center justify-center">
+            <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-amber-800">หนังสือแสดงเจตนา (Living Will)</h3>
+            <p className="text-sm text-amber-700">ผู้ป่วยยังไม่ได้แชร์หนังสือแสดงเจตนากับท่าน</p>
+            <p className="text-xs text-amber-600 mt-1">กรุณาขอให้ผู้ป่วยแชร์หนังสือแสดงเจตนาจากแอปผู้ป่วย</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // State 3: Authorized — show full card
+  const livingWill = livingWillResponse;
+
+  const quickItems: { key: string; label: string }[] = [
+    { key: 'cpr', label: 'CPR' },
+    { key: 'mechanicalVentilation', label: 'เครื่องช่วยหายใจ' },
+    { key: 'painManagement', label: 'ความเจ็บปวด' },
+    { key: 'organDonation', label: 'บริจาคอวัยวะ' },
+  ];
 
   return (
     <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg shadow-sm p-6 mb-6 border-2 border-purple-200">
@@ -241,54 +452,38 @@ const LivingWillCard: React.FC<{ livingWill: LivingWillForDoctorView | null }> =
         </button>
       </div>
 
-      {/* Quick Summary - Always visible */}
+      {/* Quick Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-        <div className="text-center p-2 bg-white rounded-lg">
-          <div className="text-xs text-gray-500">CPR</div>
-          <span className={`px-2 py-0.5 rounded text-xs font-medium ${getPreferenceLabel(livingWill.treatments.cpr.preference).color}`}>
-            {getPreferenceLabel(livingWill.treatments.cpr.preference).text}
-          </span>
-        </div>
-        <div className="text-center p-2 bg-white rounded-lg">
-          <div className="text-xs text-gray-500">เครื่องช่วยหายใจ</div>
-          <span className={`px-2 py-0.5 rounded text-xs font-medium ${getPreferenceLabel(livingWill.treatments.mechanicalVentilation.preference).color}`}>
-            {getPreferenceLabel(livingWill.treatments.mechanicalVentilation.preference).text}
-          </span>
-        </div>
-        <div className="text-center p-2 bg-white rounded-lg">
-          <div className="text-xs text-gray-500">ความเจ็บปวด</div>
-          <span className={`px-2 py-0.5 rounded text-xs font-medium ${getPreferenceLabel(livingWill.treatments.painManagement.preference).color}`}>
-            {getPreferenceLabel(livingWill.treatments.painManagement.preference).text}
-          </span>
-        </div>
-        <div className="text-center p-2 bg-white rounded-lg">
-          <div className="text-xs text-gray-500">บริจาคอวัยวะ</div>
-          <span className={`px-2 py-0.5 rounded text-xs font-medium ${getPreferenceLabel(livingWill.treatments.organDonation.preference).color}`}>
-            {getPreferenceLabel(livingWill.treatments.organDonation.preference).text}
-          </span>
-        </div>
+        {quickItems.map(item => {
+          const treatment = (livingWill.treatments as unknown as Record<string, { preference: string }>)?.[item.key];
+          if (!treatment) return null;
+          const pref = getPreferenceLabel(treatment.preference);
+          return (
+            <div key={item.key} className="text-center p-2 bg-white rounded-lg">
+              <div className="text-xs text-gray-500">{item.label}</div>
+              <span className={`px-2 py-0.5 rounded text-xs font-medium ${pref.color}`}>{pref.text}</span>
+            </div>
+          );
+        })}
       </div>
 
       {/* Expanded Details */}
       {expanded && (
         <div className="space-y-4 border-t border-purple-200 pt-4">
-          {/* All Treatment Preferences */}
           <div>
             <h4 className="text-sm font-semibold text-purple-800 mb-2">ความต้องการการรักษาทั้งหมด</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               {Object.entries(livingWill.treatments).map(([key, treatment]) => {
                 if (key === 'otherTreatments') return null;
-                const t = treatment as { treatmentType: string; preference: string; conditions?: string };
+                const t = treatment as { preference: string; conditions?: string };
                 return (
                   <div key={key} className="flex items-center justify-between p-2 bg-white rounded">
-                    <span className="text-sm text-gray-700">{getTreatmentLabel(key)}</span>
+                    <span className="text-sm text-gray-700">{treatmentLabels[key] || key}</span>
                     <div className="flex items-center gap-2">
                       <span className={`px-2 py-0.5 rounded text-xs font-medium ${getPreferenceLabel(t.preference).color}`}>
                         {getPreferenceLabel(t.preference).text}
                       </span>
-                      {t.conditions && (
-                        <span className="text-xs text-gray-500" title={t.conditions}>📝</span>
-                      )}
+                      {t.conditions && <span className="text-xs text-gray-500" title={t.conditions}>📝</span>}
                     </div>
                   </div>
                 );
@@ -296,23 +491,18 @@ const LivingWillCard: React.FC<{ livingWill: LivingWillForDoctorView | null }> =
             </div>
           </div>
 
-          {/* Personal Statement */}
           {livingWill.personalStatement && (
             <div>
               <h4 className="text-sm font-semibold text-purple-800 mb-1">คำแถลงส่วนตัว</h4>
               <p className="text-sm text-gray-700 bg-white p-3 rounded">{livingWill.personalStatement}</p>
             </div>
           )}
-
-          {/* Additional Instructions */}
           {livingWill.additionalInstructions && (
             <div>
               <h4 className="text-sm font-semibold text-purple-800 mb-1">คำสั่งเพิ่มเติม</h4>
               <p className="text-sm text-gray-700 bg-white p-3 rounded">{livingWill.additionalInstructions}</p>
             </div>
           )}
-
-          {/* Representative */}
           {livingWill.mainRepresentative && (
             <div>
               <h4 className="text-sm font-semibold text-purple-800 mb-1">ผู้แทนในการตัดสินใจ</h4>
@@ -325,8 +515,6 @@ const LivingWillCard: React.FC<{ livingWill: LivingWillForDoctorView | null }> =
               </div>
             </div>
           )}
-
-          {/* Metadata */}
           <div className="text-xs text-gray-500 flex justify-between pt-2 border-t border-purple-100">
             <span>มีผลตั้งแต่: {new Date(livingWill.effectiveDate).toLocaleDateString('th-TH')}</span>
             <span>อัปเดตล่าสุด: {new Date(livingWill.lastUpdated).toLocaleDateString('th-TH')}</span>
@@ -341,7 +529,29 @@ const LivingWillCard: React.FC<{ livingWill: LivingWillForDoctorView | null }> =
 // HELPER FUNCTIONS
 // ============================================================================
 
-function getExerciseLabel(exercise: string | undefined): string {
+function getTrendArrow(current: number | null, previous: number | null): string {
+  if (current == null || previous == null) return '';
+  if (current > previous) return ' ↑';
+  if (current < previous) return ' ↓';
+  return ' →';
+}
+
+function getArrowColorClass(arrow: string): string {
+  if (arrow.includes('↑')) return 'text-red-500';
+  if (arrow.includes('↓')) return 'text-blue-500';
+  return 'text-gray-400';
+}
+
+function getSeverityChipClass(severity: string): string {
+  switch (severity?.toLowerCase()) {
+    case 'high': case 'severe': return 'bg-red-100 text-red-700';
+    case 'medium': case 'moderate': return 'bg-orange-100 text-orange-700';
+    case 'low': case 'mild': return 'bg-green-100 text-green-700';
+    default: return 'bg-gray-100 text-gray-600';
+  }
+}
+
+function getExerciseLabel(exercise: string | null): string {
   const labels: Record<string, string> = {
     'none': 'ไม่ออกกำลังกาย',
     'light': 'เบา (1-2 วัน/สัปดาห์)',
@@ -352,187 +562,270 @@ function getExerciseLabel(exercise: string | undefined): string {
   return exercise ? (labels[exercise] || exercise) : 'ไม่ระบุ';
 }
 
-function getSmokingLabel(smoking: boolean | string | undefined): string {
-  if (smoking === true || smoking === 'current') return 'สูบอยู่';
-  if (smoking === 'former') return 'เคยสูบ (เลิกแล้ว)';
-  if (smoking === 'occasional') return 'สูบเป็นครั้งคราว';
-  if (smoking === false || smoking === 'never') return 'ไม่สูบ';
-  return 'ไม่ระบุ';
-}
-
-function getAlcoholLabel(alcohol: boolean | string | undefined): string {
-  if (alcohol === true) return 'ดื่ม';
-  if (alcohol === 'occasional') return 'ดื่มเป็นครั้งคราว';
-  if (alcohol === 'moderate') return 'ดื่มปานกลาง';
-  if (alcohol === 'frequent') return 'ดื่มบ่อย';
-  if (alcohol === 'former') return 'เคยดื่ม (เลิกแล้ว)';
-  if (alcohol === false || alcohol === 'never') return 'ไม่ดื่ม';
-  return 'ไม่ระบุ';
-}
-
-function getEventTypeClass(type: string): string {
-  const classes: Record<string, string> = {
-    'consultation': 'bg-blue-100 text-blue-700',
-    'lab': 'bg-purple-100 text-purple-700',
-    'prescription': 'bg-green-100 text-green-700',
+function getSmokingLabel(smoking: string | null): string {
+  if (!smoking) return 'ไม่ระบุ';
+  const labels: Record<string, string> = {
+    'current': 'สูบอยู่', 'occasional': 'สูบเป็นครั้งคราว',
+    'former': 'เคยสูบ (เลิกแล้ว)', 'never': 'ไม่สูบ', 'false': 'ไม่สูบ',
   };
-  return classes[type] || 'bg-gray-100 text-gray-700';
+  return labels[smoking] || smoking;
 }
 
-function getTestFlagClass(flag: string): string {
-  const classes: Record<string, string> = {
-    'critical': 'bg-red-100 text-red-700',
-    'high': 'bg-yellow-100 text-yellow-700',
+function getAlcoholLabel(alcohol: string | null): string {
+  if (!alcohol) return 'ไม่ระบุ';
+  const labels: Record<string, string> = {
+    'occasional': 'ดื่มเป็นครั้งคราว', 'moderate': 'ดื่มปานกลาง',
+    'frequent': 'ดื่มบ่อย', 'former': 'เคยดื่ม (เลิกแล้ว)', 'never': 'ไม่ดื่ม', 'false': 'ไม่ดื่ม',
   };
-  return classes[flag] || 'bg-blue-100 text-blue-700';
+  return labels[alcohol] || alcohol;
+}
+
+function getLabFlagClass(flag: string): string {
+  switch (flag?.toUpperCase()) {
+    case 'CRITICAL': return 'bg-red-600 text-white';
+    case 'HIGH': return 'bg-yellow-100 text-yellow-700';
+    case 'LOW': return 'bg-blue-100 text-blue-700';
+    case 'NORMAL': return 'bg-green-100 text-green-700';
+    default: return 'bg-gray-100 text-gray-600';
+  }
+}
+
+interface TimelineDateGroup {
+  year: number;
+  months: { key: string; label: string; count: number }[];
+}
+
+function buildTimelineDates(emrs: EMRRecord[], ehrData: EHRData | null): TimelineDateGroup[] {
+  const monthMap = new Map<string, number>();
+
+  const addDate = (dateStr: string) => {
+    const d = new Date(dateStr);
+    if (Number.isNaN(d.getTime())) return;
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    monthMap.set(key, (monthMap.get(key) || 0) + 1);
+  };
+
+  emrs.forEach(e => addDate(e.encounterDate));
+  ehrData?.labGroups?.forEach(g => addDate(g.completedDate || g.orderDate));
+
+  const sorted = [...monthMap.entries()].sort((a, b) => b[0].localeCompare(a[0]));
+  const yearMap = new Map<number, { key: string; label: string; count: number }[]>();
+
+  const monthNames = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+
+  for (const [key, count] of sorted) {
+    const [yearStr, monthStr] = key.split('-');
+    const year = Number.parseInt(yearStr, 10);
+    if (!yearMap.has(year)) yearMap.set(year, []);
+    const arr = yearMap.get(year);
+    if (arr) arr.push({ key, label: monthNames[Number.parseInt(monthStr, 10) - 1], count });
+  }
+
+  return [...yearMap.entries()].map(([year, months]) => ({ year, months }));
 }
 
 // ============================================================================
 // PHR VIEW
 // ============================================================================
 
-const PHRView: React.FC<{ phrData: PHRData | null; patient: PatientRecord; livingWill: LivingWillForDoctorView | null }> = ({ phrData, patient, livingWill }) => {
+const PHRView: React.FC<{ phrData: PHRData | null; livingWillResponse: LivingWillResponse }> = ({ phrData, livingWillResponse }) => {
   if (!phrData) {
     return (
-      <div className="space-y-6">
-        {/* Always show Living Will section even if PHR is empty */}
-        <LivingWillCard livingWill={livingWill} />
-        <div className="text-center text-gray-500">No PHR data available</div>
+      <div className="flex flex-col items-center justify-center h-64 text-gray-500">
+        <svg className="w-16 h-16 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        <p className="text-lg">ยังไม่มีข้อมูล Personal Health Record</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      {/* Living Will Card - Prominent at top */}
-      <LivingWillCard livingWill={livingWill} />
-      
-      {/* Patient Demographics */}
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <h3 className="text-lg font-bold text-gray-900 mb-4 border-b border-emerald-500 pb-2">
-          Patient demographics
-        </h3>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <span className="text-sm text-gray-600">Name :</span>
-            <p className="font-medium">{phrData.demographics.name}</p>
-          </div>
-          <div>
-            <span className="text-sm text-gray-600">Age :</span>
-            <p className="font-medium">{phrData.demographics.age} years</p>
-          </div>
-          <div>
-            <span className="text-sm text-gray-600">Sex :</span>
-            <p className="font-medium">{phrData.demographics.sex}</p>
-          </div>
-          <div>
-            <span className="text-sm text-gray-600">Weight :</span>
-            <p className="font-medium">{phrData.demographics.weight} kg</p>
-          </div>
-          <div>
-            <span className="text-sm text-gray-600">Height :</span>
-            <p className="font-medium">{phrData.demographics.height} cm</p>
-          </div>
-          <div>
-            <span className="text-sm text-gray-600">BMI :</span>
-            <p className="font-medium">{phrData.demographics.bmi}</p>
-          </div>
-        </div>
-      </div>
+      {/* 1. Living Will Card */}
+      <LivingWillCard livingWillResponse={livingWillResponse} />
 
-      {/* Data from EMR/EHR */}
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <h3 className="text-lg font-bold text-gray-900 mb-4 border-b border-emerald-500 pb-2">
-          Data from EMR / EHR
-        </h3>
-        <div className="space-y-3">
-          <div>
-            <span className="text-sm text-emerald-600">ประวัติการรักษา :</span>
-            <p className="text-gray-700">{phrData.chronicConditions.join(', ') || 'None'}</p>
-          </div>
-          <div>
-            <span className="text-sm text-emerald-600">ผลตรวจ :</span>
-            <p className="text-gray-700">Recent vitals recorded</p>
-          </div>
-          <div>
-            <span className="text-sm text-emerald-600">การวินิจฉัยโรค :</span>
-            <p className="text-gray-700">{phrData.chronicConditions.join(', ')}</p>
-          </div>
-          <div>
-            <span className="text-sm text-emerald-600">รายการยา :</span>
-            <p className="text-gray-700">{phrData.currentMedications.map(m => m.name).join(', ')}</p>
-          </div>
-        </div>
-      </div>
+      {/* 2. Vitals Summary */}
+      <VitalsSummarySection vitals={phrData.vitalsSummary} />
 
-      {/* Self-entered Data */}
-      <div className="bg-white rounded-lg shadow-sm p-6">
+      {/* 3. Current Medications */}
+      <section className="bg-white rounded-lg shadow-sm p-6">
         <h3 className="text-lg font-bold text-gray-900 mb-4 border-b border-emerald-500 pb-2">
-          Self-entered Data (ข้อมูลที่ผู้ป่วยกรอกเอง)
+          รายการยาปัจจุบัน (Current Medications)
         </h3>
-        <div className="space-y-3">
-          <div>
-            <span className="text-sm text-emerald-600">การกินอาหาร :</span>
-            <p className="text-gray-700">{phrData.lifestyle.diet || 'ไม่ระบุ'}</p>
-          </div>
-          <div>
-            <span className="text-sm text-emerald-600">การออกกำลังกาย :</span>
-            <p className="text-gray-700">{getExerciseLabel(phrData.lifestyle.exercise)}</p>
-          </div>
-          <div>
-            <span className="text-sm text-emerald-600">การนอน :</span>
-            <p className="text-gray-700">{phrData.lifestyle.sleep || 'ไม่ระบุ'}</p>
-          </div>
-          <div>
-            <span className="text-sm text-emerald-600">สูบบุหรี่/ดื่มแอลกอฮอล์ :</span>
-            <p className="text-gray-700">
-              สูบบุหรี่: {getSmokingLabel(phrData.lifestyle.smoking)}, ดื่มแอลกอฮอล์: {getAlcoholLabel(phrData.lifestyle.alcohol)}
-            </p>
-          </div>
-          <div>
-            <span className="text-sm text-emerald-600">การใช้อาหารเสริม :</span>
-            <p className="text-gray-700">{phrData.lifestyle.supplements || 'ไม่มี'}</p>
-          </div>
-          <div>
-            <span className="text-sm text-emerald-600">การรักษาอื่น :</span>
-            <p className="text-gray-700">{phrData.lifestyle.otherTreatments || 'ไม่มี'}</p>
-          </div>
-        </div>
-      </div>
+        {phrData.medications.length > 0 ? (
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="text-left p-2">ชื่อยา</th>
+                <th className="text-left p-2">ขนาด</th>
+                <th className="text-left p-2">ความถี่</th>
+                <th className="text-left p-2">สถานะ</th>
+              </tr>
+            </thead>
+            <tbody>
+              {phrData.medications.map((m) => (
+                <tr key={m.name} className="border-t">
+                  <td className="p-2 font-medium">{m.name}</td>
+                  <td className="p-2">{m.dosage || '-'}</td>
+                  <td className="p-2">{m.frequency || '-'}</td>
+                  <td className="p-2">
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                      m.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+                    }`}>
+                      {m.status === 'active' ? 'ใช้อยู่' : 'หยุดใช้'}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <p className="text-gray-400 text-sm">ไม่มีข้อมูลยา</p>
+        )}
+      </section>
 
-      {/* Wearable/Device Data */}
-      {phrData.wearableData && (
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <h3 className="text-lg font-bold text-gray-900 mb-4 border-b border-emerald-500 pb-2">
-            Wearable/Device Data
-          </h3>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <span className="text-sm text-emerald-600">ระดับน้ำตาลในเลือด :</span>
-              <p className="text-gray-700">{phrData.vitalSigns[0]?.bloodGlucose || 'N/A'} mg/dL</p>
-            </div>
-            <div>
-              <span className="text-sm text-emerald-600">ค่าความดันโลหิต :</span>
-              <p className="text-gray-700">
-                {phrData.vitalSigns[0]?.bloodPressure.systolic}/{phrData.vitalSigns[0]?.bloodPressure.diastolic} mmHg
-              </p>
-            </div>
-            <div>
-              <span className="text-sm text-emerald-600">อัตราการเดินของหัวใจ :</span>
-              <p className="text-gray-700">{phrData.wearableData.steps} steps</p>
-            </div>
-            <div>
-              <span className="text-sm text-emerald-600">จำนวนก้าวเดิน :</span>
-              <p className="text-gray-700">{phrData.wearableData.steps} steps</p>
-            </div>
-            <div>
-              <span className="text-sm text-emerald-600">คุณภาพการนอนหลับ :</span>
-              <p className="text-gray-700">{phrData.wearableData.sleepHours} hours</p>
-            </div>
+      {/* 4. Allergies */}
+      <section className="bg-white rounded-lg shadow-sm p-6">
+        <h3 className="text-lg font-bold text-gray-900 mb-4 border-b border-emerald-500 pb-2">
+          การแพ้ (Allergies)
+        </h3>
+        {phrData.allergies.length > 0 ? (
+          <div className="flex flex-wrap gap-2">
+            {phrData.allergies.map((a) => (
+              <div key={a.allergen} className="flex items-center gap-2 bg-white border rounded-lg px-3 py-2">
+                <span className="font-medium text-sm">{a.allergen}</span>
+                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getSeverityChipClass(a.severity)}`}>
+                  {a.severity}
+                </span>
+                {a.reaction && <span className="text-xs text-gray-500">({a.reaction})</span>}
+              </div>
+            ))}
           </div>
+        ) : (
+          <p className="text-gray-400 text-sm">ไม่มีข้อมูลการแพ้</p>
+        )}
+      </section>
+
+      {/* 5. Chronic Conditions */}
+      <section className="bg-white rounded-lg shadow-sm p-6">
+        <h3 className="text-lg font-bold text-gray-900 mb-4 border-b border-emerald-500 pb-2">
+          โรคประจำตัว (Chronic Conditions)
+        </h3>
+        {phrData.chronicConditions.length > 0 ? (
+          <div className="space-y-2">
+            {phrData.chronicConditions.map((c) => (
+              <div key={c.name} className="flex items-center justify-between bg-gray-50 rounded-lg px-4 py-2">
+                <span className="font-medium text-sm">{c.name}</span>
+                <div className="flex items-center gap-3">
+                  {c.diagnosedDate && (
+                    <span className="text-xs text-gray-500">
+                      วินิจฉัย: {new Date(c.diagnosedDate).toLocaleDateString('th-TH')}
+                    </span>
+                  )}
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                    c.status === 'active' || c.status === 'controlled' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'
+                  }`}>
+                    {c.status}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-gray-400 text-sm">ไม่มีข้อมูลโรคประจำตัว</p>
+        )}
+      </section>
+
+      {/* 6. Lifestyle Panel */}
+      <section className="bg-white rounded-lg shadow-sm p-6">
+        <h3 className="text-lg font-bold text-gray-900 mb-4 border-b border-emerald-500 pb-2">
+          ไลฟ์สไตล์ (Lifestyle)
+        </h3>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          {[
+            { label: 'การกินอาหาร', value: phrData.lifestyle.diet || 'ไม่ระบุ' },
+            { label: 'การออกกำลังกาย', value: getExerciseLabel(phrData.lifestyle.exercise) },
+            { label: 'การนอน', value: phrData.lifestyle.sleepHours ? `${phrData.lifestyle.sleepHours} ชม./วัน` : 'ไม่ระบุ' },
+            { label: 'สูบบุหรี่', value: getSmokingLabel(phrData.lifestyle.smoking) },
+            { label: 'ดื่มแอลกอฮอล์', value: getAlcoholLabel(phrData.lifestyle.alcohol) },
+          ].map(item => (
+            <div key={item.label} className="bg-gray-50 rounded-lg p-3">
+              <p className="text-xs text-emerald-600 font-medium mb-1">{item.label}</p>
+              <p className="text-sm text-gray-800">{item.value}</p>
+            </div>
+          ))}
         </div>
-      )}
+      </section>
     </div>
+  );
+};
+
+// ============================================================================
+// VITALS SUMMARY SECTION
+// ============================================================================
+
+const VitalsSummarySection: React.FC<{ vitals: VitalEntry[] }> = ({ vitals }) => {
+  if (!vitals || vitals.length === 0) {
+    return (
+      <section className="bg-white rounded-lg shadow-sm p-6">
+        <h3 className="text-lg font-bold text-gray-900 mb-4 border-b border-emerald-500 pb-2">
+          Vitals Summary
+        </h3>
+        <p className="text-gray-400 text-sm">ไม่มีข้อมูลสัญญาณชีพ</p>
+      </section>
+    );
+  }
+
+  // Group last 5 entries per vital type
+  const vitalTypes: { key: keyof VitalEntry; label: string; unit: string; format: (v: VitalEntry) => string | null }[] = [
+    { key: 'bloodPressureSystolic', label: 'ความดันโลหิต (BP)', unit: 'mmHg',
+      format: v => v.bloodPressureSystolic == null ? null : `${v.bloodPressureSystolic}/${v.bloodPressureDiastolic}` },
+    { key: 'heartRate', label: 'อัตราการเต้นหัวใจ (HR)', unit: 'bpm', format: v => v.heartRate == null ? null : String(v.heartRate) },
+    { key: 'temperature', label: 'อุณหภูมิ (Temp)', unit: '°C', format: v => v.temperature == null ? null : String(v.temperature) },
+    { key: 'weight', label: 'น้ำหนัก (Weight)', unit: 'kg', format: v => v.weight == null ? null : String(v.weight) },
+    { key: 'bloodGlucose', label: 'น้ำตาลในเลือด (BG)', unit: 'mg/dL', format: v => v.bloodGlucose == null ? null : String(v.bloodGlucose) },
+  ];
+
+  return (
+    <section className="bg-white rounded-lg shadow-sm p-6">
+      <h3 className="text-lg font-bold text-gray-900 mb-4 border-b border-emerald-500 pb-2">
+        Vitals Summary (ล่าสุด 5 ครั้ง)
+      </h3>
+      <div className="space-y-4">
+        {vitalTypes.map(vt => {
+          const entries = vitals
+            .filter(v => vt.format(v) !== null)
+            .slice(0, 5);
+          if (entries.length === 0) return null;
+          return (
+            <div key={vt.key as string}>
+              <p className="text-sm font-semibold text-gray-700 mb-1">{vt.label}</p>
+              <div className="flex gap-3 overflow-x-auto">
+                {entries.map((entry, idx) => {
+                  const prevEntry = entries[idx + 1];
+                  const currentVal = entry[vt.key] as number | null;
+                  const prevVal = prevEntry ? (prevEntry[vt.key] as number | null) : null;
+                  const arrow = getTrendArrow(currentVal, prevVal);
+                  return (
+                    <div key={entry.id} className="flex-shrink-0 bg-gray-50 rounded-lg px-3 py-2 text-center min-w-[100px]">
+                      <p className="text-sm font-bold text-gray-900">
+                        {vt.format(entry)}
+                        <span className={`ml-1 ${getArrowColorClass(arrow)}`}>
+                          {arrow}
+                        </span>
+                      </p>
+                      <p className="text-xs text-gray-400">{vt.unit}</p>
+                      <p className="text-xs text-gray-400">{new Date(entry.measuredAt).toLocaleDateString('th-TH')}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </section>
   );
 };
 
@@ -540,272 +833,245 @@ const PHRView: React.FC<{ phrData: PHRData | null; patient: PatientRecord; livin
 // EMR VIEW
 // ============================================================================
 
-const EMRView: React.FC<{ emrRecords: EMRRecord[] }> = ({ emrRecords }) => {
-  const [selectedEMR] = useState<EMRRecord | null>(
-    emrRecords.length > 0 ? emrRecords[0] : null
-  );
+const EMRView: React.FC<{ emrRecords: EMRRecord[]; currentDoctorId?: string }> = ({ emrRecords, currentDoctorId }) => {
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+
+  const toggleExpand = (id: string) => {
+    setExpandedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
 
   if (emrRecords.length === 0) {
-    return <div className="text-center text-gray-500">No EMR records available</div>;
+    return (
+      <div className="flex flex-col items-center justify-center h-64 text-gray-500">
+        <svg className="w-16 h-16 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        <p className="text-lg">ยังไม่มีข้อมูล Electronic Medical Record</p>
+      </div>
+    );
   }
 
-  const emr = selectedEMR || emrRecords[0];
+  const formatSOAPField = (field: Record<string, unknown> | string | null): string => {
+    if (!field) return '-';
+    if (typeof field === 'string') return field;
+    // JSONB objects — display key-value pairs
+    return Object.entries(field)
+      .filter(([, v]) => v != null && v !== '')
+      .map(([k, v]) => {
+        let val: string;
+        if (v !== null && typeof v === 'object') {
+          val = JSON.stringify(v);
+        } else if (typeof v === 'string') {
+          val = v;
+        } else if (typeof v === 'number' || typeof v === 'boolean') {
+          val = `${v}`;
+        } else {
+          val = '';
+        }
+        return `${k}: ${val}`;
+      })
+      .join('; ') || '-';
+  };
 
   return (
     <div className="space-y-4">
-      {/* Patient Demographics */}
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <h3 className="text-lg font-bold text-gray-900 mb-4 border-b border-blue-500 pb-2">
-          Patient demographics
-        </h3>
-        <div className="grid grid-cols-2 gap-2 text-sm">
-          <div>Name: _______________</div>
-          <div>Age: ___</div>
-          <div>Sex: ___</div>
-          <div>Weight: ___</div>
-          <div>Height: ___</div>
-          <div>BMI: ___</div>
-        </div>
-      </div>
+      {emrRecords.map(emr => {
+        const dateKey = new Date(emr.encounterDate).toISOString().slice(0, 7);
+        const isExpanded = expandedIds.has(emr.id);
+        return (
+          <div
+            key={emr.id}
+            id={`record-${dateKey}`}
+            className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden"
+          >
+            {/* Header — always visible */}
+            <button
+              onClick={() => toggleExpand(emr.id)}
+              className="w-full text-left px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+            >
+              <div className="flex items-center gap-4">
+                <div className="text-sm font-bold text-blue-700">
+                  {new Date(emr.encounterDate).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' })}
+                </div>
+                <div className="text-sm text-gray-700">
+                  {emr.doctorName}
+                </div>
+                <span className="px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-700">
+                  {emr.status}
+                </span>
+              </div>
+              <svg className={`w-5 h-5 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
 
-      {/* Date & Medical History */}
-      <div className="bg-blue-50 rounded-lg p-6">
-        <p className="text-sm mb-2"><strong>Date:</strong> {new Date(emr.encounterDate).toLocaleDateString()}</p>
+            {/* Expanded SOAP content */}
+            {isExpanded && (
+              <div className="px-6 pb-5 border-t border-gray-100 space-y-3">
+                {[
+                  { label: 'Subjective', data: emr.subjective },
+                  { label: 'Objective', data: emr.objective },
+                  { label: 'Assessment', data: emr.assessment },
+                  { label: 'Plan', data: emr.plan },
+                ].map(s => (
+                  <div key={s.label}>
+                    <p className="text-xs font-semibold text-gray-500 uppercase">{s.label}</p>
+                    <p className="text-sm text-gray-800 whitespace-pre-wrap">{formatSOAPField(s.data as Record<string, unknown> | string | null)}</p>
+                  </div>
+                ))}
 
-        <div className="mb-4">
-          <h4 className="font-bold text-orange-600 mb-2">Medical History</h4>
-          <div>
-            <span className="text-sm">CC :</span>
-            <p className="text-gray-700 ml-4">{emr.chiefComplaint}</p>
+                {/* Footer badges */}
+                <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-gray-100">
+                  {emr.prescriptionCount > 0 && (
+                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-green-50 text-green-700 text-xs">
+                      💊 Prescriptions: {emr.prescriptionCount}
+                    </span>
+                  )}
+                  {emr.labOrderCount > 0 && (
+                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-purple-50 text-purple-700 text-xs">
+                      🔬 Lab Orders: {emr.labOrderCount}
+                    </span>
+                  )}
+                  {emr.patientInstructions && (
+                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-blue-50 text-blue-700 text-xs">
+                      📄 Patient Instructions
+                    </span>
+                  )}
+                  {emr.aiGenerated && (
+                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-amber-50 text-amber-700 text-xs">
+                      🤖 Generated by AI {emr.aiApproved && emr.aiApprovedBy ? `+ Validated by ${emr.aiApprovedBy}` : '(pending validation)'}
+                    </span>
+                  )}
+                  {currentDoctorId && emr.doctorId === currentDoctorId && (
+                    <button className="ml-auto px-3 py-1 rounded bg-blue-600 text-white text-xs font-medium hover:bg-blue-700">
+                      Edit EMR
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
-          <div className="mt-2">
-            <span className="text-sm">PI :</span>
-            <p className="text-gray-700 ml-4">{emr.historyOfPresentIllness}</p>
-          </div>
-        </div>
-
-        <div className="mb-4">
-          <h4 className="font-bold text-orange-600 mb-2">Clinical Note</h4>
-          <div>
-            <span className="text-sm text-green-600">Vital sign :</span>
-            <p className="text-gray-700 ml-4">
-              BP {emr.physicalExamination.vitalSigns.bp}, HR {emr.physicalExamination.vitalSigns.hr},
-              RR {emr.physicalExamination.vitalSigns.rr}, Temp {emr.physicalExamination.vitalSigns.temp}
-            </p>
-          </div>
-          <div className="mt-2">
-            <span className="text-sm text-green-600">PE :</span>
-            <p className="text-gray-700 ml-4">{emr.physicalExamination.general}</p>
-          </div>
-        </div>
-
-        <div className="mb-4">
-          <h4 className="font-bold text-orange-600 mb-2">Investigation</h4>
-          <div>
-            <span className="text-sm text-green-600">LAB :</span>
-            <p className="text-gray-700 ml-4">{emr.labOrders.map(l => l.test).join(', ') || 'None'}</p>
-          </div>
-          <div className="mt-2">
-            <span className="text-sm text-green-600">X-ray :</span>
-            <p className="text-gray-700 ml-4">{emr.imagingOrders.map(i => i.modality).join(', ') || 'None'}</p>
-          </div>
-        </div>
-
-        <div className="mb-4">
-          <h4 className="font-bold text-orange-600 mb-2">Diagnosis :</h4>
-          <p className="text-gray-700 ml-4">{emr.diagnosis.map(d => `${d.code} - ${d.description}`).join('; ')}</p>
-        </div>
-
-        <div className="mb-4">
-          <h4 className="font-bold text-orange-600 mb-2">Treatment</h4>
-          <div>
-            <span className="text-sm text-green-600">Prescription :</span>
-            <p className="text-gray-700 ml-4">
-              {emr.prescriptions.map(p => `${p.medication} ${p.dosage} ${p.frequency}`).join('; ')}
-            </p>
-          </div>
-          <div className="mt-2">
-            <span className="text-sm text-green-600">Operation :</span>
-            <p className="text-gray-700 ml-4">None</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Last Visit & Summary */}
-      <div className="bg-white rounded-lg shadow-sm p-6 border border-red-300">
-        <h4 className="font-bold text-red-600 mb-2">Last visit :</h4>
-        <p className="text-gray-700">{new Date(emr.encounterDate).toLocaleString()}</p>
-      </div>
-
-      <div className="bg-white rounded-lg shadow-sm p-6 border border-purple-300">
-        <h4 className="font-bold text-purple-600 mb-2">Summary :</h4>
-        <p className="text-gray-700">{emr.assessment}</p>
-        <p className="text-gray-700 mt-2"><strong>Plan:</strong> {emr.plan}</p>
-      </div>
-
-      {emr.followUpDate && (
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <h4 className="font-bold text-green-600 mb-2">Last prescription :</h4>
-          <p className="text-gray-700">
-            Follow-up: {new Date(emr.followUpDate).toLocaleDateString()}
-          </p>
-        </div>
-      )}
+        );
+      })}
     </div>
   );
 };
 
 // ============================================================================
-// EHR VIEW (Timeline)
+// EHR VIEW
 // ============================================================================
 
-const EHRView: React.FC<{
-  timeline: EHRTimeline | null;
-  labs: LabResult[];
-  imaging: ImagingResult[];
-}> = ({ timeline, labs, imaging }) => {
-  const [ehrSubTab, setEhrSubTab] = useState<'internal' | 'external'>('internal');
+const EHRView: React.FC<{ ehrData: EHRData | null }> = ({ ehrData }) => {
+  if (!ehrData) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 text-gray-500">
+        <svg className="w-16 h-16 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        <p className="text-lg">ยังไม่มีข้อมูล Electronic Health Record</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      <h3 className="text-xl font-bold text-gray-900">Electronic Health Record</h3>
-
-      {/* EHR Sub-tabs */}
-      <div className="flex border-b border-gray-200">
-        <button
-          onClick={() => setEhrSubTab('internal')}
-          className={`px-4 py-2 font-medium text-sm transition-colors ${
-            ehrSubTab === 'internal'
-              ? 'text-green-600 border-b-2 border-green-600 bg-green-50'
-              : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-          }`}
-        >
-          <span className="flex items-center gap-2">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-            </svg>
-            Internal Records (EMR Data)
-          </span>
-        </button>
-        <button
-          onClick={() => setEhrSubTab('external')}
-          disabled
-          className={`px-4 py-2 font-medium text-sm transition-colors cursor-not-allowed opacity-60 ${
-            ehrSubTab === 'external'
-              ? 'text-purple-600 border-b-2 border-purple-600 bg-purple-50'
-              : 'text-gray-400 hover:text-gray-500'
-          }`}
-        >
-          <span className="flex items-center gap-2">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
-            </svg>
-            From Other Hospitals
-            <span className="bg-yellow-100 text-yellow-700 text-xs px-2 py-0.5 rounded-full font-normal">
-              Future Update!
-            </span>
-          </span>
-        </button>
-      </div>
-
-      {/* EHR Content based on sub-tab */}
-      {ehrSubTab === 'internal' ? (
-        <>
-          {(!timeline || timeline.events.length === 0) ? (
-            <div className="bg-gray-50 rounded-lg p-12 text-center">
-              <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              <h4 className="text-lg font-medium text-gray-700 mb-2">No EHR Data Available</h4>
-              <p className="text-gray-500">Patient health timeline will be populated from EMR records.</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {timeline.events.map((event) => (
-                <div key={event.id} className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-emerald-500">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3 mb-2">
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${getEventTypeClass(event.type)}`}>
-                          {event.type.toUpperCase()}
-                        </span>
-                        <p className="text-sm text-gray-500">
-                          {new Date(event.date).toLocaleDateString()}
-                        </p>
-                      </div>
-                      <h4 className="font-bold text-gray-900 mb-1">{event.title}</h4>
-                      <p className="text-sm text-gray-600 mb-2">{event.description}</p>
-                      <p className="text-sm text-gray-700">{event.summary}</p>
-                      <p className="text-xs text-gray-500 mt-2">
-                        Provider: {event.provider} | Facility: {event.facility}
-                      </p>
-                    </div>
+      {/* Lab Results Section */}
+      <section>
+        <h3 className="text-xl font-bold text-gray-900 mb-4">ผลตรวจทางห้องปฏิบัติการ (Lab Results)</h3>
+        {ehrData.labGroups.length > 0 ? (
+          ehrData.labGroups.map(group => {
+            const dateKey = new Date(group.completedDate || group.orderDate).toISOString().slice(0, 7);
+            return (
+              <div
+                key={group.id}
+                id={`record-${dateKey}`}
+                className="bg-white rounded-lg shadow-sm p-5 mb-4"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <p className="text-sm font-bold text-gray-800">
+                      {new Date(group.completedDate || group.orderDate).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' })}
+                    </p>
+                    <p className="text-xs text-gray-500">{group.doctorName}</p>
                   </div>
+                  {group.priority === 'urgent' && (
+                    <span className="px-2 py-0.5 rounded-full text-xs bg-red-100 text-red-700 font-medium">URGENT</span>
+                  )}
                 </div>
-              ))}
-            </div>
-          )}
-
-          {/* Lab Results */}
-          {labs.length > 0 && (
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <h4 className="font-bold text-gray-900 mb-4">Recent Lab Results</h4>
-              {labs.map((lab) => (
-                <div key={lab.id} className="mb-4">
-                  <p className="text-sm text-gray-600 mb-2">
-                    {new Date(lab.completedDate).toLocaleDateString()} - {lab.summary}
-                  </p>
-                  <table className="w-full text-sm">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="text-left p-2">Test</th>
-                        <th className="text-left p-2">Value</th>
-                        <th className="text-left p-2">Normal Range</th>
-                        <th className="text-left p-2">Flag</th>
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="text-left p-2">Test</th>
+                      <th className="text-left p-2">Value</th>
+                      <th className="text-left p-2">Unit</th>
+                      <th className="text-left p-2">Normal Range</th>
+                      <th className="text-left p-2">Flag</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {group.tests.map((test) => (
+                      <tr key={`${group.id}-${test.name}`} className="border-t">
+                        <td className="p-2">{test.name}</td>
+                        <td className="p-2 font-medium">{test.value}</td>
+                        <td className="p-2 text-gray-500">{test.unit}</td>
+                        <td className="p-2 text-gray-500">{test.normalRange}</td>
+                        <td className="p-2">
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getLabFlagClass(test.flag)}`}>
+                            {test.flag === 'CRITICAL' ? '🔴 ' : ''}{test.flag}
+                          </span>
+                        </td>
                       </tr>
-                    </thead>
-                    <tbody>
-                      {lab.tests.map((test, idx) => (
-                        <tr key={`test-${test.name}`} className="border-t">
-                          <td className="p-2">{test.name}</td>
-                          <td className="p-2">{test.value} {test.unit}</td>
-                          <td className="p-2">{test.normalRange}</td>
-                          <td className="p-2">
-                            {test.flag && (
-                              <span className={`px-2 py-1 rounded text-xs font-medium ${getTestFlagClass(test.flag)}`}>
-                                {test.flag.toUpperCase()}
-                              </span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                    ))}
+                  </tbody>
+                </table>
+                {group.aiAnalysis && (
+                  <div className="mt-3 bg-amber-50 rounded p-3 text-sm text-amber-800">
+                    <p className="text-xs font-semibold text-amber-600 mb-1">🤖 AI Analysis</p>
+                    {group.aiAnalysis}
+                  </div>
+                )}
+              </div>
+            );
+          })
+        ) : (
+          <p className="text-gray-400 text-sm">ยังไม่มีผลตรวจทางห้องปฏิบัติการ</p>
+        )}
+      </section>
+
+      {/* External Health Records Section */}
+      <section>
+        <h3 className="text-xl font-bold text-gray-900 mb-4">เอกสารทางการแพทย์จากภายนอก (External Records)</h3>
+        {ehrData.externalRecords.length > 0 ? (
+          <div className="space-y-2">
+            {ehrData.externalRecords.map(rec => (
+              <div key={rec.id} className="bg-white rounded-lg shadow-sm p-4 flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium">{rec.documentType}</p>
+                  <p className="text-xs text-gray-500">
+                    {new Date(rec.uploadedAt).toLocaleDateString('th-TH')} — {rec.uploadedBy}
+                  </p>
                 </div>
-              ))}
-            </div>
-          )}
-        </>
-      ) : (
-        /* External Records - Future Update */
-        <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-lg p-12 text-center border-2 border-dashed border-purple-200">
-          <svg className="w-20 h-20 text-purple-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
-          </svg>
-          <h4 className="text-xl font-bold text-purple-700 mb-2">Coming Soon!</h4>
-          <p className="text-purple-600 mb-4">External Hospital Records Integration</p>
-          <p className="text-gray-500 max-w-md mx-auto">
-            This feature will allow viewing medical records from other hospitals and healthcare facilities 
-            through health information exchange (HIE) integration.
-          </p>
-          <div className="mt-6 inline-flex items-center gap-2 bg-purple-100 text-purple-700 px-4 py-2 rounded-full text-sm">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            Feature Under Development
+                <a
+                  href={rec.viewUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-1 rounded bg-blue-600 text-white text-xs font-medium hover:bg-blue-700"
+                >
+                  View
+                </a>
+              </div>
+            ))}
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="bg-gray-50 rounded-lg p-8 text-center border border-dashed border-gray-300">
+            <p className="text-gray-400">ยังไม่มีเอกสารจากภายนอก</p>
+          </div>
+        )}
+      </section>
     </div>
   );
 };

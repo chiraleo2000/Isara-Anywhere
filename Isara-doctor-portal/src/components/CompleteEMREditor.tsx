@@ -8,8 +8,28 @@
 
 import React, { useState, useEffect } from 'react';
 import { PatientRecord, User } from '../types';
-import { addMockDataRecord, updateMockDataRecord } from '../services/clinicalDataService';
 import { geminiClinicalService } from '../services/geminiClinicalService';
+
+// Helper to save EMR via PostgreSQL API
+async function saveEMRToAPI(emr: any, isUpdate = false): Promise<boolean> {
+  try {
+    const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+    const url = isUpdate ? `/api/emr/${emr.id}` : '/api/emr';
+    const method = isUpdate ? 'PUT' : 'POST';
+    const response = await fetch(url, {
+      method,
+      headers: { 
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify(emr),
+    });
+    return response.ok;
+  } catch (error) {
+    console.error('EMR save error:', error);
+    return false;
+  }
+}
 
 // ============================================================================
 // INTERFACES
@@ -143,7 +163,7 @@ export const CompleteEMREditor: React.FC<CompletEMREditorProps> = ({
 
   const handleAutoSave = () => {
     setAutoSaveStatus('saving');
-    updateMockDataRecord('emrs.json', formData.id, formData);
+    saveEMRToAPI(formData, true);
     setTimeout(() => setAutoSaveStatus('saved'), 1000);
   };
 
@@ -153,11 +173,7 @@ export const CompleteEMREditor: React.FC<CompletEMREditorProps> = ({
       lastModified: new Date().toISOString(),
     };
 
-    if (existingEMR) {
-      updateMockDataRecord('emrs.json', formData.id, finalEMR);
-    } else {
-      addMockDataRecord('emrs.json', finalEMR);
-    }
+    saveEMRToAPI(finalEMR, !!existingEMR);
 
     onSave(finalEMR);
   };
@@ -317,19 +333,15 @@ export const CompleteEMREditor: React.FC<CompletEMREditorProps> = ({
 
       setFormData(finalizedEMR);
 
-      // Step 3: Save EMR to database
-      if (existingEMR) {
-        updateMockDataRecord('emrs.json', formData.id, finalizedEMR);
-      } else {
-        addMockDataRecord('emrs.json', finalizedEMR);
-      }
+      // Step 3: Save EMR to database via PostgreSQL API
+      await saveEMRToAPI(finalizedEMR, !!existingEMR);
 
       // Step 4: Send to Patient Health Logs
       const sentSuccess = await sendEMRToPatientHealthLogs(finalizedEMR);
 
       if (sentSuccess) {
         finalizedEMR.sentToPatientAt = new Date().toISOString();
-        updateMockDataRecord('emrs.json', formData.id, finalizedEMR);
+        await saveEMRToAPI(finalizedEMR, true);
       }
 
       // Step 5: Update appointment status to completed (if linked to appointment)
@@ -490,6 +502,16 @@ export const CompleteEMREditor: React.FC<CompletEMREditorProps> = ({
           </select>
         </div>
 
+        {/* AI Draft indicator */}
+        {existingEMR?.id?.startsWith('EMR-DRAFT-') && (
+          <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 border-b border-amber-200">
+            <span className="text-amber-600 text-lg">🤖</span>
+            <p className="text-sm text-amber-800">
+              <span className="font-semibold">AI Pre-filled Draft</span> — ข้อมูลนี้สร้างจาก AI จากบทสนทนาในการประชุม กรุณาตรวจสอบก่อน Sign
+            </p>
+          </div>
+        )}
+
         {/* Tabs - Thai OPD Card Format */}
         <div className="flex space-x-1 p-4 border-b border-gray-200">
           {[
@@ -598,6 +620,7 @@ export const CompleteEMREditor: React.FC<CompletEMREditorProps> = ({
                         }}
                         className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-emerald-500"
                         placeholder="No complaints"
+                        aria-label={`Review of Systems - ${system}`}
                         disabled={formData.status === 'finalized'}
                       />
                     </div>

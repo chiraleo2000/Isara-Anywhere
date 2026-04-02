@@ -54,8 +54,25 @@ interface MeetingResultsData {
   };
   summary: {
     text: string | null;
+    structured: {
+      chiefComplaint?: string;
+      soap?: { subjective?: string; objective?: string; assessment?: string; plan?: string };
+      redFlags?: string[];
+      followUpDate?: string;
+      lifestyle?: string;
+      emrFields?: { icd10Suggestions?: string[]; medications?: string[]; labOrders?: string[] };
+    } | null;
+    cds: {
+      differentialDiagnosis?: { condition: string; likelihood: string; reasoning: string }[];
+      suggestedTests?: { test: string; reason: string; priority: string }[];
+      drugInteractions?: { drug1: string; drug2: string; severity: string; description: string }[];
+      guidelineRefs?: { guideline: string; relevance: string }[];
+    } | null;
     recommendations: Record<string, unknown> | null;
+    sectionSummaries: { section: number; summary: string; start_seconds: number; end_seconds: number }[] | null;
+    emrDraftId: string | null;
     requiresValidation: boolean;
+    validationStatus: string | null;
     validatedAt: string | null;
   };
   chat: {
@@ -222,6 +239,113 @@ async function submitValidation(lookupId: string, action: string, editedSummary?
   return res.json();
 }
 
+/* ── Structured SOAP cards sub-component ──────────────────────── */
+const StructuredSOAPCards: React.FC<{ structured: NonNullable<MeetingResultsData['summary']['structured']> }> = ({ structured }) => (
+  <div className="space-y-3 mb-4">
+    {structured.soap && (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {[
+          { key: 'S', label: 'Subjective', icon: '🗣️', value: structured.soap.subjective, color: 'blue' },
+          { key: 'O', label: 'Objective', icon: '🔬', value: structured.soap.objective, color: 'emerald' },
+          { key: 'A', label: 'Assessment', icon: '📋', value: structured.soap.assessment, color: 'purple' },
+          { key: 'P', label: 'Plan', icon: '📝', value: structured.soap.plan, color: 'amber' },
+        ].map(({ key, label, icon, value, color }) => (
+          <div key={key} className={`border rounded-lg p-3 bg-${color}-50 border-${color}-200`}>
+            <h4 className={`font-bold text-sm text-${color}-800 mb-1`}>{icon} {key} — {label}</h4>
+            <p className="text-sm text-gray-700">{value || 'ไม่ระบุ'}</p>
+          </div>
+        ))}
+      </div>
+    )}
+    {structured.chiefComplaint && (
+      <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+        <span className="font-semibold text-sm">🎯 Chief Complaint:</span>
+        <span className="text-sm ml-1">{structured.chiefComplaint}</span>
+      </div>
+    )}
+    {structured.redFlags && structured.redFlags.length > 0 && (
+      <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+        <span className="font-semibold text-sm text-red-700">🚩 Red Flags:</span>
+        <ul className="list-disc list-inside text-sm text-red-700 mt-1">
+          {structured.redFlags.map((f) => <li key={f}>{f}</li>)}
+        </ul>
+      </div>
+    )}
+    {structured.emrFields && (
+      <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3 text-sm">
+        {structured.emrFields.icd10Suggestions?.length ? (
+          <p><span className="font-semibold">ICD-10:</span> {structured.emrFields.icd10Suggestions.join(', ')}</p>
+        ) : null}
+        {structured.emrFields.medications?.length ? (
+          <p className="mt-1"><span className="font-semibold">💊 ยาที่สั่ง:</span> {structured.emrFields.medications.join(', ')}</p>
+        ) : null}
+        {structured.emrFields.labOrders?.length ? (
+          <p className="mt-1"><span className="font-semibold">🔬 Lab:</span> {structured.emrFields.labOrders.join(', ')}</p>
+        ) : null}
+      </div>
+    )}
+    {structured.followUpDate && (
+      <p className="text-sm">📅 <span className="font-semibold">นัดติดตาม:</span> {structured.followUpDate}</p>
+    )}
+  </div>
+);
+
+/* ── CDS Recommendations sub-component ────────────────────────── */
+const CDSSection: React.FC<{ cds: NonNullable<MeetingResultsData['summary']['cds']> }> = ({ cds }) => (
+  <div className="mb-4 border border-yellow-200 rounded-lg overflow-hidden">
+    <div className="bg-yellow-50 px-3 py-2 border-b border-yellow-200">
+      <h4 className="font-bold text-sm text-yellow-800">🧪 Clinical Decision Support (CDS)</h4>
+    </div>
+    <div className="p-3 space-y-2 text-sm">
+      {cds.differentialDiagnosis?.length ? (
+        <div>
+          <span className="font-semibold">DD:</span>
+          <ul className="list-disc list-inside ml-2">
+            {cds.differentialDiagnosis.map((d) => (
+              <li key={d.condition}>{d.condition} <span className={`text-xs ${d.likelihood === 'high' ? 'text-red-600' : 'text-gray-500'}`}>({d.likelihood})</span></li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+      {cds.drugInteractions?.length ? (
+        <div className="text-red-700">
+          <span className="font-semibold">⚠️ Drug Interactions:</span>
+          <ul className="list-disc list-inside ml-2">
+            {cds.drugInteractions.map((d) => (
+              <li key={`${d.drug1}-${d.drug2}`}>{d.drug1} + {d.drug2}: {d.description} ({d.severity})</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+      {cds.suggestedTests?.length ? (
+        <div>
+          <span className="font-semibold">🔬 Suggested Tests:</span>
+          <ul className="list-disc list-inside ml-2">
+            {cds.suggestedTests.map((t) => (
+              <li key={t.test}>{t.test} — {t.reason} <span className={`text-xs ${t.priority === 'urgent' ? 'text-red-600 font-bold' : ''}`}>({t.priority})</span></li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+    </div>
+  </div>
+);
+
+/* ── Section Summaries sub-component ──────────────────────────── */
+const SectionSummariesPanel: React.FC<{ sections: NonNullable<MeetingResultsData['summary']['sectionSummaries']> }> = ({ sections }) => (
+  <div className="mb-4">
+    <h4 className="font-semibold text-sm text-gray-700 mb-2">📊 Section Summaries</h4>
+    <div className="space-y-1">
+      {sections.map((s) => (
+        <div key={s.section} className="bg-gray-50 rounded p-2 text-sm">
+          <span className="font-medium text-gray-600">ช่วงที่ {s.section} (นาทีที่ {Math.round(s.start_seconds / 60)}-{Math.round(s.end_seconds / 60)}):</span>
+          <span className="ml-1">{s.summary}</span>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
 /* ── Summary tab ──────────────────────────────────────────────── */
 const SummaryTab: React.FC<{
   summary: MeetingResultsData['summary'];
@@ -255,14 +379,32 @@ const SummaryTab: React.FC<{
   return (
     <div>
       <ValidationBanner requiresValidation={summary.requiresValidation} validatedAt={summary.validatedAt} validationStatus={validationStatus} />
+
+      {/* Structured SOAP Cards */}
+      {summary.structured && <StructuredSOAPCards structured={summary.structured} />}
+
+      {/* CDS Recommendations */}
+      {summary.cds && <CDSSection cds={summary.cds} />}
+
+      {/* Section Summaries (long meetings) */}
+      {summary.sectionSummaries && summary.sectionSummaries.length > 0 && (
+        <SectionSummariesPanel sections={summary.sectionSummaries} />
+      )}
+
+      {/* Raw Text SOAP (collapsible) */}
       {isEditing ? (
         <textarea className="w-full h-64 border border-gray-300 rounded-lg p-3 text-sm font-mono resize-y focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
           aria-label="แก้ไขสรุป AI" placeholder="แก้ไขสรุป AI ที่นี่..."
           value={editedSummary} onChange={(e) => onEditedSummaryChange(e.target.value)} />
       ) : (
-        <div className="prose prose-sm max-w-none">
-          <div className="whitespace-pre-wrap text-gray-800 leading-relaxed">{summary.text}</div>
-        </div>
+        <details className={summary.structured?.soap ? 'mt-2' : ''}>
+          <summary className="text-sm text-gray-500 cursor-pointer hover:text-gray-700">
+            {summary.structured?.soap ? '📄 ดูสรุปแบบข้อความดิบ' : '📄 สรุป AI'}
+          </summary>
+          <div className="prose prose-sm max-w-none mt-2">
+            <div className="whitespace-pre-wrap text-gray-800 leading-relaxed">{summary.text}</div>
+          </div>
+        </details>
       )}
 
       {!validationStatus && (
@@ -339,6 +481,7 @@ const MeetingResults: React.FC<MeetingResultsProps> = ({ meetingId, appointmentI
       if (data.success) {
         setResults(data);
         if (data.summary?.text) setEditedSummary(data.summary.text);
+        if (data.summary?.validationStatus) setValidationStatus(data.summary.validationStatus);
       }
       else throw new Error(data.error || 'Failed to load results');
     } catch (err) {
@@ -529,7 +672,7 @@ const MeetingResults: React.FC<MeetingResultsProps> = ({ meetingId, appointmentI
                 onClick={() => onNavigateToEMR(meeting.appointmentId)}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
               >
-                📋 เปิด EMR
+                📋 เปิด EMR {results?.summary?.emrDraftId && <span className="ml-1 bg-green-400 text-green-900 text-xs px-1.5 py-0.5 rounded-full">AI Draft</span>}
               </button>
             )}
             {onNavigateToPrescription && meeting.appointmentId && meeting.patient?.id && (

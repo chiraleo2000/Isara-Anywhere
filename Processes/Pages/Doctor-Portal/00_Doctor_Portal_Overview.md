@@ -1,8 +1,8 @@
 # 🏥 Doctor Portal — Architecture & Navigation Overview
 
-**Version:** 3.2.0  
-**Last Updated:** February 10, 2026  
-**Portal URL:** `localhost:3010`  
+**Version:** 3.2.0
+**Last Updated:** February 10, 2026
+**Portal URL:** `localhost:3010`
 **Component:** `DoctorPortal.tsx` (main router)
 
 ---
@@ -142,8 +142,11 @@ The DoctorPortal includes inline side panels:
 ## 7. AI FAB Button
 
 - Floating action button (bottom-right corner) on all pages
+
 - Click → Opens GeminiAIStudio modal
+
 - Provides AI chat + medical calculators from any page
+
 - Always accessible during clinical workflow
 
 ---
@@ -198,3 +201,77 @@ Admin Dashboard ──→ Doctor Management (approve/reject)
 | Prescribing | Manual with safety checks | AI auto-suggest based on diagnosis |
 | Scheduling | Manual calendar | AI optimize schedule based on patient needs |
 | Admin approval | Manual review | AI pre-screen registrations |
+
+---
+
+## PostgreSQL Database Integration
+
+### Tables Used
+
+| Table | Operation | Description |
+| ----- | --------- | ----------- |
+| users | SELECT/INSERT/UPDATE | User accounts (doctors, patients, admins) |
+| sessions | INSERT/DELETE | Authentication session tokens |
+| doctor_profiles | SELECT/UPDATE | Doctor-specific profile data |
+| patient_profiles | SELECT | Patient demographic information |
+| appointments | SELECT/INSERT/UPDATE | Appointment scheduling and management |
+| doctor_schedules | SELECT/INSERT/UPDATE/DELETE | Doctor availability time slots |
+| emr | SELECT/INSERT/UPDATE | Electronic Medical Records (SOAP JSONB) |
+| prescriptions | SELECT/INSERT | Medication prescriptions with CDS checks |
+| lab_orders | SELECT/INSERT/UPDATE | Laboratory test orders and results |
+| phr | SELECT | Personal Health Records |
+| vital_signs | SELECT | Patient vital sign measurements |
+| meeting_records | SELECT/INSERT/UPDATE | Health meeting session records |
+| meeting_transcripts | SELECT/INSERT | Real-time meeting transcripts |
+| transcriptions_embeddings | SELECT/INSERT | Vector embeddings for transcript search |
+| ai_validations | SELECT/INSERT | AI validation results for EMR/meetings |
+| ai_chat_history | SELECT/INSERT | AI chat conversation logs |
+| ai_chat_memory | SELECT/INSERT/UPDATE | AI contextual memory per patient |
+| ai_document_analysis | SELECT/INSERT | AI document analysis results |
+| knowledge_base | SELECT/INSERT | Medical knowledge base for RAG |
+| drugs | SELECT | Drug database for CDS |
+| cds_logs | INSERT | Clinical Decision Support audit logs |
+| notifications | SELECT/INSERT/UPDATE | User notification records |
+| push_subscriptions | SELECT/INSERT | Web push subscription endpoints |
+| medical_content | SELECT/INSERT/UPDATE | Health articles and educational content |
+| clinical_resources | SELECT/INSERT/UPDATE | Clinical guidelines and protocols |
+| consultants | SELECT/INSERT/UPDATE/DELETE | Medical consultant directory |
+| doctor_reviews | SELECT/INSERT | Doctor review submissions |
+| living_wills | SELECT | Living will documents |
+| patient_consents | SELECT | PDPA consent records |
+| password_resets | INSERT/UPDATE | Password reset token management |
+
+### Backend Server
+
+- **Runtime:** Express.js CommonJS (mainApiServer.cjs)
+
+- **Port:** 3010
+
+- **Database:** PostgreSQL izara_phase1
+
+### API Endpoints
+
+| Endpoint | Method | DB Operation |
+| -------- | ------ | ------------ |
+| /api/auth/* | POST | users, sessions CRUD |
+| /api/dashboard/* | GET | appointments, users, notifications, emr SELECT |
+| /api/appointments/* | GET/POST/PUT | appointments CRUD |
+| /api/schedules/* | GET/PUT | doctor_schedules CRUD |
+| /api/patients/* | GET | users, patient_profiles, phr, vital_signs SELECT |
+| /api/meetings/* | POST | meeting_records, meeting_transcripts CRUD |
+| /api/emr/* | POST/PUT | emr, ai_validations CRUD |
+| /api/prescriptions/* | POST | prescriptions, drugs, cds_logs INSERT |
+| /api/lab-orders/* | POST/PUT | lab_orders CRUD |
+| /api/ai/* | POST | ai_chat_history, knowledge_base, ai_document_analysis |
+| /api/consultants/* | GET/POST/PUT/DELETE | consultants, doctor_reviews CRUD |
+| /api/content/* | GET/POST/PUT | medical_content, clinical_resources, knowledge_base CRUD |
+| /api/profile/* | GET/PUT | users, doctor_profiles SELECT/UPDATE |
+| /api/admin/* | GET/PUT | users, doctor_profiles admin operations |
+
+### Deployment
+
+- **Local Docker:** izara-postgres container (localhost:5433 external / 5432 internal) → database: izara_phase1
+
+- **Production:** GCE VM at 35.240.157.230:5432 → database: izara_phase1 (asia-southeast1)
+
+- **Service deployed via:** Cloud Run (gen2, CPU Boost) + Cloud Build CI/CD

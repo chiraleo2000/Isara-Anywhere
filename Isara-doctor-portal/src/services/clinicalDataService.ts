@@ -45,9 +45,11 @@ function isCacheValid(key: string): boolean {
 
 /**
  * Load data from GCS bucket
- * @deprecated Use specific fetch functions from gcsDataService instead
+ * @deprecated Use specific fetch functions from gcsDataService instead.
+ * Data should ideally come from PostgreSQL API endpoints.
  */
 async function loadMockData<T>(fileName: string): Promise<T[]> {
+  console.warn(`⚠️ loadMockData('${fileName}') is deprecated — data should come from PostgreSQL API`);
   // Check cache first
   if (dataCache[fileName] && isCacheValid(fileName)) {
     console.log(`📦 Cache hit: ${fileName}`);

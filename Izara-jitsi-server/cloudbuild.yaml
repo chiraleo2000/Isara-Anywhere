@@ -12,7 +12,7 @@ steps:
       - '-t'
       - 'asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-jitsi-meeting:latest'
       - '-t'
-      - 'asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-jitsi-meeting:v1.5.10'
+      - 'asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-jitsi-meeting:v1.6.0'
       - '.'
 
   # Push image to Artifact Registry
@@ -45,7 +45,7 @@ steps:
 # Store images in Artifact Registry
 images:
   - 'asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-jitsi-meeting:latest'
-  - 'asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-jitsi-meeting:v1.5.6'
+  - 'asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-jitsi-meeting:v1.6.0'
 
 # Build timeout (10 minutes)
 timeout: '600s'

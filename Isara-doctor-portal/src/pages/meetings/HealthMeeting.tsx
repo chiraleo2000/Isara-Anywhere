@@ -235,6 +235,31 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
   const [showMeetingResults, setShowMeetingResults] = useState(false);
   const [meetingResultsId, setMeetingResultsId] = useState<string>('');
 
+  // Pre-consultation AI summary
+  const [preConsultData, setPreConsultData] = useState<Record<string, any>>({});
+  const [preConsultLoading, setPreConsultLoading] = useState<string | null>(null);
+
+  const handlePreConsultation = async (apt: any) => {
+    const aptId = apt.id;
+    setPreConsultLoading(aptId);
+    try {
+      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+      const resp = await fetch(`${MEETING_SERVER_URL}/api/ai/pre-consultation-summary`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ patientId: apt.patientId || apt.patient_id, appointmentId: aptId }),
+      });
+      const data = await resp.json();
+      if (data.success) {
+        setPreConsultData(prev => ({ ...prev, [aptId]: data.structured || data.summary }));
+      }
+    } catch (e) {
+      console.error('[HealthMeeting] Pre-consultation failed:', e);
+    } finally {
+      setPreConsultLoading(null);
+    }
+  };
+
   // Load all data on mount - ONLY ONCE, no auto-refresh interval
   // Auto-refresh was causing performance issues and unnecessary API calls
   // Data will refresh when user manually clicks Refresh or after confirming/declining appointments
@@ -1056,9 +1081,9 @@ Izara Telehealth Team
           },
           body: JSON.stringify({
             appointmentId: selectedAppointment.id,
-            patientId: selectedAppointment.patientId || selectedAppointment.patient_id,
+            patientId: selectedAppointment.patientId || (selectedAppointment as any).patient_id,
             doctorId: doctorIdentifier,
-            patientName: selectedAppointment.patientName || selectedAppointment.patient_name,
+            patientName: selectedAppointment.patientName || (selectedAppointment as any).patient_name,
             doctorName: doctor.name,
             scheduledTime: `${appointmentDate}T${appointmentTime}`,
             roomName: meetingDetails.meetCode, // Use the same room name as the generated Jitsi URLs
@@ -1300,7 +1325,7 @@ Izara Telehealth Team
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <span className="text-red-700 flex-1">{errorMessage}</span>
-          <button onClick={() => setErrorMessage(null)} className="text-red-500 hover:text-red-700">&times;</button>
+          <button onClick={() => setErrorMessage(null)} className="text-red-500 hover:text-red-700" aria-label="ปิดข้อผิดพลาด" title="ปิด">&times;</button>
         </div>
       )}
 
@@ -1571,6 +1596,13 @@ Izara Telehealth Team
                       >
                         🎥 Start Meeting (In-App)
                       </button>
+                      {/* Start Meeting with Time Check */}
+                      <button
+                        onClick={() => navigate(`/doctor/${doctor.id}/virtual-meeting/${apt.id}`)}
+                        className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-1"
+                      >
+                        ⏰ Start Meeting (Time Check)
+                      </button>
                       {/* Open in External Tab */}
                       {apt.doctorMeetingUrl && (
                         <button
@@ -1587,9 +1619,63 @@ Izara Telehealth Team
                       >
                         📋 Meeting Results
                       </button>
+                      {/* Pre-consultation AI Summary */}
+                      <button
+                        onClick={() => handlePreConsultation(apt)}
+                        disabled={preConsultLoading === apt.id}
+                        className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-sm transition-colors flex items-center gap-1 disabled:opacity-50"
+                      >
+                        {preConsultLoading === apt.id ? '⏳ กำลังสรุป...' : '🧠 AI Pre-consult'}
+                      </button>
                       <span className="text-xs text-green-500 text-center">Confirmed</span>
                     </div>
                   </div>
+                  {/* Pre-consultation summary display */}
+                  {preConsultData[apt.id] && (
+                    <div className={`mt-3 p-3 rounded-lg border ${isDark ? 'bg-amber-900/30 border-amber-700' : 'bg-amber-50 border-amber-200'}`}>
+                      <h4 className={`text-sm font-bold mb-2 ${isDark ? 'text-amber-300' : 'text-amber-800'}`}>🧠 Pre-Consultation Summary</h4>
+                      {typeof preConsultData[apt.id] === 'object' ? (
+                        <div className="space-y-2 text-sm">
+                          {preConsultData[apt.id].currentSymptoms && (
+                            <p><span className="font-semibold">อาการ:</span> {preConsultData[apt.id].currentSymptoms}</p>
+                          )}
+                          {preConsultData[apt.id].highlights?.length > 0 && (
+                            <div>
+                              <span className="font-semibold">ข้อมูลสำคัญ:</span>
+                              <ul className="list-disc list-inside ml-2">
+                                {preConsultData[apt.id].highlights.map((h: string) => <li key={h}>{h}</li>)}
+                              </ul>
+                            </div>
+                          )}
+                          {preConsultData[apt.id].risks?.length > 0 && (
+                            <div>
+                              <span className="font-semibold text-red-600">⚠️ ความเสี่ยง:</span>
+                              <ul className="list-disc list-inside ml-2">
+                                {preConsultData[apt.id].risks.map((r: any) => (
+                                  <li key={r.risk || String(r)} className={r.severity === 'high' ? 'text-red-600 font-semibold' : ''}>
+                                    {r.risk || r} {r.severity ? `(${r.severity})` : ''}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          {preConsultData[apt.id].recommendedQuestions?.length > 0 && (
+                            <div>
+                              <span className="font-semibold">คำถามแนะนำ:</span>
+                              <ul className="list-decimal list-inside ml-2">
+                                {preConsultData[apt.id].recommendedQuestions.map((q: string) => <li key={q}>{q}</li>)}
+                              </ul>
+                            </div>
+                          )}
+                          {preConsultData[apt.id].allergies?.length > 0 && (
+                            <p className="text-red-600"><span className="font-semibold">แพ้ยา:</span> {preConsultData[apt.id].allergies.join(', ')}</p>
+                          )}
+                        </div>
+                      ) : (
+                        <p className={`text-sm whitespace-pre-line ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{preConsultData[apt.id]}</p>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))
             )}
@@ -1619,6 +1705,7 @@ Izara Telehealth Team
                   placeholder="Search patients..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
+                  aria-label="Search patients"
                   className="pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 w-64"
                 />
               </div>

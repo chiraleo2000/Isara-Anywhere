@@ -1,6 +1,0 @@
-
-Running 27 tests using 1 worker
-
-[1A[2K[1/27] [UI-Verification] ΓÇ║ tests\meeting-multi-user.ui-test.ts:125:7 ΓÇ║ Meeting Server ΓÇö Health & Features ΓÇ║ meeting server is healthy with lobby + consent features
-[1A[2K[2/27] [UI-Verification] ΓÇ║ tests\meeting-multi-user.ui-test.ts:142:7 ΓÇ║ Meeting Server ΓÇö Health & Features ΓÇ║ meeting server API health check
-[1A[2K[3/27] [UI-Verification] ΓÇ║ tests\meeting-multi-user.ui-test.ts:212:7 ΓÇ║ Multi-User Meeting ΓÇö Admin + Doctor + Patient ΓÇ║ MU01 ΓÇö Three users login in parallel

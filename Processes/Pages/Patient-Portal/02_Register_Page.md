@@ -1,17 +1,19 @@
 # 📝 Patient Portal — Register Page
 
-**Route:** `/register`  
-**Component:** `src/pages/auth/RegisterPage.tsx`  
-**Access:** Public (unauthenticated users only)  
+**Route:** `/register`
+**Component:** `src/pages/auth/RegisterPage.tsx`
+**Access:** Public (unauthenticated users only)
 **Thai Title:** สมัครสมาชิก
 
 ---
+
 
 ## 1. Purpose
 
 New patient registration with a 2-step wizard: basic information and health information. Provides immediate access upon registration.
 
 ---
+
 
 ## 2. Page Layout
 
@@ -37,6 +39,7 @@ New patient registration with a 2-step wizard: basic information and health info
 
 ---
 
+
 ## 3. Step 1: Basic Information (ข้อมูลพื้นฐาน)
 
 | Field | Type | Required | Validation |
@@ -49,7 +52,9 @@ New patient registration with a 2-step wizard: basic information and health info
 | รหัสผ่าน (Password) | Password | ✅ | Min 6 characters |
 | ยืนยันรหัสผ่าน (Confirm) | Password | ✅ | Must match password |
 
+
 ---
+
 
 ## 4. Step 2: Health Information (ข้อมูลสุขภาพ)
 
@@ -66,9 +71,12 @@ New patient registration with a 2-step wizard: basic information and health info
 | ↳ เบอร์โทร (Contact Phone) | Tel | ❌ | — |
 | ↳ ความสัมพันธ์ (Relationship) | Text | ❌ | — |
 
+
 ---
 
+
 ## 5. Workflow
+
 
 ### Registration Flow
 
@@ -86,11 +94,14 @@ Step 9: Failure → Error message (e.g., "Email already registered")
 
 ---
 
+
 ## 6. API Endpoints
 
 | Method | Endpoint | Purpose |
 | ------ | -------- | ------- |
 | POST | `/api/auth/register` | Create new patient account |
+
+
 
 ### Request Payload
 
@@ -118,6 +129,7 @@ Step 9: Failure → Error message (e.g., "Email already registered")
 
 ---
 
+
 ## 7. Validation Rules
 
 | Rule | Details |
@@ -128,7 +140,9 @@ Step 9: Failure → Error message (e.g., "Email already registered")
 | Email format | Standard email validation |
 | Step 2 optional | Can skip health info entirely |
 
+
 ---
+
 
 ## 8. Connections to Other Pages
 
@@ -137,11 +151,47 @@ Step 9: Failure → Error message (e.g., "Email already registered")
 | Successful registration | → Dashboard (`/`) |
 | "Already have account" link | → Login Page (`/login`) |
 
+
 ---
+
 
 ## 9. AI Agent Improvement Opportunities
 
+
 - **Smart health profile**: AI pre-fill chronic conditions from description
+
 - **Medication auto-complete**: Drug database lookup during registration
+
 - **Health risk assessment**: AI initial risk screening from health data
+
 - **Document OCR**: Upload existing health card for auto-extraction
+
+---
+
+
+## PostgreSQL Database Integration
+
+
+### Tables Used
+| Table | Operation | Description |
+| ----- | --------- | ----------- |
+| users | INSERT | Create new user account (role='patient', immediate approval) |
+| patient_profiles | INSERT | Create patient profile with health information |
+
+
+
+### API Endpoints
+| Endpoint | Method | DB Operation |
+| -------- | ------ | ------------ |
+| POST /api/auth/register | POST | INSERT users (role='patient', status='approved'); INSERT patient_profiles |
+
+
+
+### Deployment
+
+- **Local Docker:** izara-postgres container (localhost:5433 external / 5432 internal) → database: izara_phase1
+
+- **Production:** GCE VM at 35.240.157.230:5432 → database: izara_phase1 (asia-southeast1)
+
+- **Service deployed via:** Cloud Run (gen2, CPU Boost) + Cloud Build CI/CD
+

@@ -1,7 +1,7 @@
 # 📋 Doctor Portal — Appointment Pool Management
 
-**Component:** `src/pages/AppointmentPoolManagement.tsx`  
-**Access:** 🔒 Doctor / Admin  
+**Component:** `src/pages/AppointmentPoolManagement.tsx`
+**Access:** 🔒 Doctor / Admin
 **Thai Title:** กลุ่มนัดหมายรอจัดสรร / Appointment Pool
 
 ---
@@ -90,5 +90,32 @@ Step 4: Or "Reject" → appointment returns to pool
 ## 7. AI Agent Improvement Opportunities
 
 - **Smart matching**: AI improve specialty matching accuracy
+
 - **Workload balancing**: AI distribute pool assignments evenly
+
 - **Predictive claiming**: AI suggest best-fit appointments for each doctor
+
+---
+
+## PostgreSQL Database Integration
+
+### Tables Used
+
+| Table | Operation | Description |
+| ----- | --------- | ----------- |
+| appointments | SELECT/UPDATE | Pool appointments (status='in_pool', unassigned) |
+
+### API Endpoints
+
+| Endpoint | Method | DB Operation |
+| -------- | ------ | ------------ |
+| GET /api/appointments/pool | GET | SELECT appointments WHERE status='in_pool' AND doctor_id IS NULL |
+| PUT /api/appointments/:id/assign | PUT | UPDATE appointments SET doctor_id, status WHERE id |
+
+### Deployment
+
+- **Local Docker:** izara-postgres container (localhost:5433 external / 5432 internal) → database: izara_phase1
+
+- **Production:** GCE VM at 35.240.157.230:5432 → database: izara_phase1 (asia-southeast1)
+
+- **Service deployed via:** Cloud Run (gen2, CPU Boost) + Cloud Build CI/CD

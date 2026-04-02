@@ -31,7 +31,9 @@ export type NotificationType =
   | 'meeting_link_failed'
   | 'meeting_reminder'
   | 'emr_signed'
-  | 'emr_ready_for_review';
+  | 'emr_ready_for_review'
+  | 'lab_results'
+  | 'lab_results_ready';
 
 export interface Notification {
   id: string;

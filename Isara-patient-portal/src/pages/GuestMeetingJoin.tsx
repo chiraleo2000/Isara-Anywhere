@@ -2,7 +2,10 @@
  * GuestMeetingJoin.tsx — Public guest join page for meetings
  * Allows external users (no account needed) to join a meeting via lobby.
  * Doctor (host) must approve before guest can enter the Jitsi room.
- * Route: /guest-join/:meetingId
+ * 
+ * Routes:
+ *   /guest-join/:meetingId     — Basic guest join (name form → lobby)
+ *   /guest/join/:token         — JWT-based invite join (auto-validated)
  */
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'react-router-dom';
@@ -17,12 +20,14 @@ const MEETING_SERVER_URL = (() => {
   return import.meta.env?.VITE_MEETING_SERVER_URL || 'http://localhost:3020';
 })();
 
-type GuestStatus = 'form' | 'joining' | 'waiting' | 'admitted' | 'rejected' | 'error';
+type GuestStatus = 'form' | 'joining' | 'waiting' | 'admitted' | 'rejected' | 'error' | 'validating';
 
 const GuestMeetingJoin: React.FC = () => {
-  const { meetingId } = useParams<{ meetingId: string }>();
+  const { meetingId: paramMeetingId, token } = useParams<{ meetingId?: string; token?: string }>();
+  const [meetingId, setMeetingId] = useState<string | undefined>(paramMeetingId);
   const [guestName, setGuestName] = useState('');
-  const [status, setStatus] = useState<GuestStatus>('form');
+  const [status, setStatus] = useState<GuestStatus>(token ? 'validating' : 'form');
+  const [tokenData, setTokenData] = useState<{ guestName: string; guestType: string; roomName: string | null } | null>(null);
   const [participantId, setParticipantId] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
   const [roomName, setRoomName] = useState('');
@@ -42,6 +47,32 @@ const GuestMeetingJoin: React.FC = () => {
       .then(d => setRoomName(d.meeting?.room_name || fallback))
       .catch(() => setRoomName(fallback));
   }, [meetingId]);
+
+  // JWT token validation flow
+  useEffect(() => {
+    if (!token || status !== 'validating') return;
+    const validate = async () => {
+      try {
+        const res = await fetch(`${MEETING_SERVER_URL}/api/guest/meeting/${encodeURIComponent(token)}`);
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({ error: 'Invalid invite link' }));
+          setErrorMsg(data.error || 'Invalid or expired invite link');
+          setStatus('error');
+          return;
+        }
+        const data = await res.json();
+        setMeetingId(data.meetingId);
+        setGuestName(data.guestName || '');
+        setTokenData({ guestName: data.guestName, guestType: data.guestType, roomName: data.roomName });
+        if (data.roomName) setRoomName(data.roomName);
+        setStatus('form');
+      } catch {
+        setErrorMsg('Cannot connect to meeting server');
+        setStatus('error');
+      }
+    };
+    validate();
+  }, [token, status]);
 
   // Socket.IO for real-time lobby updates
   useEffect(() => {
@@ -127,11 +158,22 @@ const GuestMeetingJoin: React.FC = () => {
     if (!guestName.trim() || !meetingId) return;
     setStatus('joining');
     try {
-      const res = await fetch(`${MEETING_SERVER_URL}/api/meetings/${meetingId}/lobby/join`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ participantName: guestName.trim() }),
-      });
+      let res: Response;
+      if (token) {
+        // Token-based join — uses JWT validation
+        res = await fetch(`${MEETING_SERVER_URL}/api/guest/meeting/${encodeURIComponent(token)}/join`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ displayName: guestName.trim() }),
+        });
+      } else {
+        // Basic join — direct lobby entry
+        res = await fetch(`${MEETING_SERVER_URL}/api/meetings/${meetingId}/lobby/join`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ participantName: guestName.trim() }),
+        });
+      }
       const data = await res.json();
       if (data.success) {
         setParticipantId(data.participantId);
@@ -144,7 +186,7 @@ const GuestMeetingJoin: React.FC = () => {
       setErrorMsg('Cannot connect to meeting server');
       setStatus('error');
     }
-  }, [guestName, meetingId]);
+  }, [guestName, meetingId, token]);
 
   const formatWait = (s: number) => {
     const m = Math.floor(s / 60);
@@ -152,10 +194,22 @@ const GuestMeetingJoin: React.FC = () => {
     return m > 0 ? `${m}:${sec.toString().padStart(2, '0')}` : `${sec}s`;
   };
 
-  if (!meetingId) {
+  if (!meetingId && !token) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <p className="text-red-500 text-lg">Invalid meeting link</p>
+      </div>
+    );
+  }
+
+  // Token validation in progress
+  if (status === 'validating') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4" />
+          <p className="text-gray-600">กำลังตรวจสอบลิงก์เชิญ...</p>
+        </div>
       </div>
     );
   }
@@ -189,6 +243,11 @@ const GuestMeetingJoin: React.FC = () => {
         {/* Form state */}
         {status === 'form' && (
           <div className="space-y-4">
+            {tokenData && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-sm text-green-700 text-center">
+                ✓ คุณได้รับเชิญเข้าร่วมประชุมในฐานะ <strong>{tokenData.guestType === 'family' ? 'ครอบครัว' : tokenData.guestType}</strong>
+              </div>
+            )}
             <div>
               <label htmlFor="guest-name" className="block text-sm font-medium text-gray-700 mb-1">ชื่อของคุณ (Your Name)</label>
               <input

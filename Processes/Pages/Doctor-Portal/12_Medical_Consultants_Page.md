@@ -1,8 +1,8 @@
 # 👨‍⚕️ Doctor Portal — Medical Consultants Page
 
-**Route:** `/consultants`  
-**Component:** `src/pages/MedicalConsultants.tsx`  
-**Access:** 🔒 Doctor (read + rate) / Admin (full CRUD)  
+**Route:** `/consultants`
+**Component:** `src/pages/MedicalConsultants.tsx`
+**Access:** 🔒 Doctor (read + rate) / Admin (full CRUD)
 **Thai Title:** แพทย์ที่ปรึกษา / Medical Consultants
 
 ---
@@ -72,5 +72,36 @@ See [Medical_Consultants_Workflows.md](../../Processes/Medical_Consultants_Workf
 ## 6. AI Agent Improvement Opportunities
 
 - **Smart matching**: AI match patient condition to best specialist
+
 - **Availability prediction**: AI predict consultant availability
+
 - **Referral letter generation**: AI draft referral letters
+
+---
+
+## PostgreSQL Database Integration
+
+### Tables Used
+
+| Table | Operation | Description |
+| ----- | --------- | ----------- |
+| consultants | SELECT/INSERT/UPDATE/DELETE | Medical consultant directory CRUD |
+| doctor_reviews | SELECT/INSERT | Doctor review submissions and ratings |
+
+### API Endpoints
+
+| Endpoint | Method | DB Operation |
+| -------- | ------ | ------------ |
+| GET /api/consultants | GET | SELECT consultants |
+| POST /api/consultants | POST | INSERT consultants |
+| PUT /api/consultants/:id | PUT | UPDATE consultants WHERE id |
+| DELETE /api/consultants/:id | DELETE | DELETE consultants WHERE id |
+| POST /api/consultants/:id/review | POST | INSERT doctor_reviews |
+
+### Deployment
+
+- **Local Docker:** izara-postgres container (localhost:5433 external / 5432 internal) → database: izara_phase1
+
+- **Production:** GCE VM at 35.240.157.230:5432 → database: izara_phase1 (asia-southeast1)
+
+- **Service deployed via:** Cloud Run (gen2, CPU Boost) + Cloud Build CI/CD

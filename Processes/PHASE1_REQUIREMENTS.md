@@ -1,8 +1,8 @@
 # Izara Telemedicine - Phase 1 Requirements
 
-**Version:** 1.5.9  
-**Last Updated:** March 15, 2026  
-**Status:** ✅ Phase 1 Complete — Web Platform (v1.5.9)
+**Version:** 1.6.0
+**Last Updated:** March 31, 2026
+**Status:** ✅ Phase 1 Complete — Web Platform (v1.6.0)
 
 ---
 
@@ -15,9 +15,13 @@ Phase 1 focuses on core telemedicine functionality with AI-assisted clinical wor
 **Verification Status:** All Phase 1 requirements verified working (January 22, 2026)
 
 - **Playwright Tests:** 1,287 tests (941 local + 311 cloud + 35 fetch-detection)
+
 - **Full Workflow:** Appointment → Meeting → AI Summary → EMR → Patient Access ✅
+
 - **PostgreSQL:** All data stored in PostgreSQL (NO GCS)
+
 - **FREE Transcription:** Web Speech API (browser-native, no API cost)
+
 - **FREE Video:** Jitsi Meet (meet.jit.si, no server cost)
 
 ---
@@ -111,54 +115,91 @@ Phase 1 focuses on core telemedicine functionality with AI-assisted clinical wor
 ### ✅ Completed (API Verified - January 21, 2026)
 
 - [x] PostgreSQL database setup with pgvector
+
 - [x] Video meeting with Jitsi (Doctor HOST, Patient Lobby)
+
 - [x] EMR documentation (Thai OPD Card SOAP format)
+
 - [x] AI Chat Assistant with knowledge base (RAG) - **Man-in-Loop Verified**
+
 - [x] AI Document Upload & Analysis API
+
 - [x] AI Pre-Consultation Summary API
+
 - [x] Clinical Decision Support (CDS) API - **Man-in-Loop Verified**
+
 - [x] Patient Instruction Generation API (Thai language)
+
 - [x] EMR Creation with SOAP data
+
 - [x] EMR Signing by Doctor
+
 - [x] Patient Notification on EMR Signed
+
 - [x] Patient Access to Health Logs (EMR records)
+
 - [x] **Man-in-the-Loop** - All AI outputs include `requiresValidation: true`
 
 ### 🚧 Remaining UI Work (Meeting Workflow)
 
 - [ ] **Multi-Party Meeting UI** — Patient invites relatives/friends, Doctor invites other doctors/admin
+
 - [ ] **Guest Self-Registration** — Non-registered users create display name from blank, enter lobby
+
 - [ ] **HOST Lobby Control** — Doctor approves/rejects each participant from lobby
+
 - [ ] **Transcript Streaming Control UI** — Doctor START/PAUSE/RESUME/STOP buttons
+
 - [ ] **Real-time Transcript Display** — Bottom panel with speaker labels (👨‍⚕️/🧑/👥), interim yellow pulsing
+
 - [ ] **Chat Integration During Meeting** — Text chat captured with timestamps for AI summary
+
 - [ ] **Post-Meeting AI Summary Display** — Results shown on Health Meeting page
+
 - [ ] **Man-in-the-Loop Validation UI** — [✅ Approve] [✏️ Edit] [🔄 Regenerate] [❌ Reject] buttons
+
 - [ ] **AI Summary → EMR Flow** — Auto-populate EMR SOAP tabs from AI summary
+
 - [ ] **Patient Instruction Sheet UI** — Generate, preview, doctor validates, then send to patient
+
 - [ ] **Patient Health History Display** — Patient receives results in Dashboard + Timeline + PHR
+
 - [ ] **PDF Download** — Patient downloads Instruction Sheet as PDF
 
 ### 📋 Testing Requirements (Meeting Workflow E2E)
 
 - [ ] **Local Docker Testing** — All 4 services (localhost:3005 + 3010 + 3020 + 5432)
+
 - [ ] **Cloud Testing** — All services on Cloud Run + CloudSQL
+
 - [ ] **Demo Meeting Test** — Simulated video/audio with transcript streaming
+
 - [ ] **4-User Meeting Test** — Doctor HOST + Patient + Patient Relative + Admin
+
 - [ ] **Guest Self-Registration Test** — Non-registered user creates name and enters lobby
+
 - [ ] **Transcript Streaming Test** — Start/Pause/Resume/Stop with Thai and English
+
 - [ ] **Chat Capture Test** — All messages captured with timestamps and attributed to senders
+
 - [ ] **AI Pipeline Test** — Transcript + Chats → Gemini → SOAP Summary
+
 - [ ] **30-Minute Section Test** — Long meetings split into 30-min section summaries
+
 - [ ] **Man-in-the-Loop Test** — Doctor approves/edits/rejects AI summary
+
 - [ ] **EMR Auto-Population Test** — AI summary populates SOAP tabs in EMR Editor
+
 - [ ] **Patient Delivery Test** — EMR data + Instruction Sheet delivered to Patient Portal
+
 - [ ] **Full E2E Test** — Complete flow: Book → Confirm → Meet → Transcript → AI → EMR → Patient
 
 ### 📋 Phase 2 Planned
 
 - [ ] Gemini Fine-Tuning infrastructure
+
 - [ ] Comprehensive AI Summarization (EMR+PHR+Labs+Uploads)
+
 - [ ] Investigation Reports Generation (AI-assisted)
 
 ---
@@ -172,12 +213,19 @@ Phase 1 focuses on core telemedicine functionality with AI-assisted clinical wor
 #### Components
 
 - Jitsi Meet integration (doctor as HOST/moderator)
+
 - EMR Editor with SOAP format (Thai OPD Card standard)
+
 - Patient lobby system (all participants wait for HOST)
+
 - Guest invite system (relatives, friends, specialists, admin)
+
 - **Web Speech API** for real-time transcript streaming (FREE)
+
 - **Chat integration** — all messages captured for AI processing
+
 - **Gemini AI** for post-meeting SOAP summary, CDS, patient instructions
+
 - **Man-in-the-Loop** — doctor validates before patient receives data
 
 #### Participant Types
@@ -274,7 +322,9 @@ PHASE 6: PATIENT DELIVERY
 #### Database Tables
 
 - `knowledge_base` - RAG entries (guidelines, protocols)
+
 - `ai_chat_history` - Conversation history per doctor
+
 - `cds_logs` - Clinical decision support logs
 
 ### 3.3 Man-in-the-Loop Validation (DR-05)
@@ -318,10 +368,15 @@ Status Flow:
 All validation decisions are logged with:
 
 - Doctor ID
+
 - Timestamp
+
 - Original AI content
+
 - Modified content (if edited)
+
 - Decision (approve/reject)
+
 - Rejection reason (if applicable)
 
 ### 3.4 Patient Instruction Sheet (DR-01)
@@ -391,8 +446,11 @@ All validation decisions are logged with:
 #### Guidelines Integrated
 
 - KDIGO 2024 (CKD Management)
+
 - ADA Standards of Care 2025 (Diabetes)
+
 - Thai Hypertension Society 2024
+
 - Thai DM Guidelines 2024
 
 #### Example CDS Alert
@@ -457,14 +515,19 @@ ai_validations         -- Man-in-the-loop audit log
 #### Speech-to-Text Strategy (PB-05)
 
 - Use Web Speech API (browser native)
+
 - Works on Chrome, Edge, Safari
+
 - Free, no API costs
+
 - Doctor/patient can dictate notes
 
 #### Future Fine-tuning (PB-04)
 
 - Collect interaction data
+
 - Prepare training dataset
+
 - Fine-tune Gemini for medical Thai
 
 ---
@@ -487,21 +550,29 @@ ai_validations         -- Man-in-the-loop audit log
 ### Sprint 1 (Complete): Core AI Features
 
 - [x] PostgreSQL setup with pgAdmin
+
 - [x] Video meeting with Jitsi
+
 - [x] EMR documentation (SOAP format)
+
 - [x] AI Chat Assistant panel
+
 - [x] Man-in-the-Loop validation UI
 
 ### Sprint 2 (Complete): Document & Instructions
 
 - [x] Patient Instruction Sheet generator
+
 - [x] AI Document/PDF analyzer
+
 - [x] PDF generation for instructions
 
 ### Sprint 3 (Complete): CDS & Polish
 
 - [x] Clinical Decision Support alerts
+
 - [x] Guideline knowledge base
+
 - [x] UI polish and testing
 
 ---
@@ -522,10 +593,107 @@ ai_validations         -- Man-in-the-loop audit log
 ## 📚 Related Documents
 
 - [UI_Pages_Workflows.md](UI_Pages_Workflows.md) - Detailed UI specifications
+
 - [Appointment_Workflows.md](Appointment_Workflows.md) - Appointment flow
+
 - [Health_Records_Processes.md](Health_Records_Processes.md) - EMR/PHR workflows
+
 - [VIDEO_MEETING_JITSI_GEMINI.md](VIDEO_MEETING_JITSI_GEMINI.md) - Meeting implementation
 
 ---
 
 ### End of Phase 1 Requirements v1.4.7 (January 2025)
+
+---
+
+## PostgreSQL Database & Deployment Architecture
+
+### Database Overview
+
+| Property | Value |
+| -------- | ----- |
+| Engine | PostgreSQL 18 + pgvector |
+| Database | izara_phase1 |
+| Extensions | uuid-ossp, pgcrypto, pgvector |
+| Tables | 37+ across 8 groups |
+| Local | izara-postgres Docker container (port 5433 ext / 5432 int) |
+| Production | GCE VM 35.240.157.230:5432 (NOT Cloud SQL) |
+| Region | asia-southeast1 |
+
+### Table Groups
+
+| Group | Tables | Count |
+| ----- | ------ | ----- |
+| User Management | users, sessions, password_resets, device_tokens, biometric_credentials, refresh_tokens | 6 |
+| Patient Data | patient_profiles, phr, vital_signs, living_wills, living_will_versions, patient_consents, push_subscriptions | 7 |
+| Doctor Management | doctor_profiles, doctors, doctor_schedules, doctor_reviews, consultants | 5 |
+| Appointments & Meetings | appointments, meeting_records, meeting_transcripts, ai_chat_history | 4 |
+| Clinical Data | emr, prescriptions, lab_orders, transcriptions_embeddings, ai_chat_memory | 5 |
+| Content & Knowledge | medical_content, clinical_resources, icd10_codes, drugs, knowledge_base, ai_document_analysis | 6 |
+| AI & Decision Support | cds_logs, ai_validations, notifications | 3 |
+| Audit | audit_logs | 1 |
+
+### Production Deployment Architecture
+
+```text
+┌──────────────────────────────────────────────────────────────────────┐
+│  Google Cloud Platform (asia-southeast1)                              │
+│                                                                      │
+│  Cloud Run Services (gen2, CPU Boost):                               │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────────┐  │
+│  │ Patient Portal   │  │ Doctor Portal    │  │ Meeting Server      │  │
+│  │ 1 CPU / 1 GB     │  │ 1 CPU / 1 GB     │  │ 1 CPU / 2 GB        │  │
+│  │ 0-2 instances    │  │ 0-2 instances    │  │ 0-2 instances       │  │
+│  │ Timeout: 300s    │  │ Timeout: 300s    │  │ Timeout: 600s       │  │
+│  └────────┬────────┘  └────────┬────────┘  └──────────┬──────────┘  │
+│           └─────────────────────┼──────────────────────┘             │
+│                                 ▼                                     │
+│                    ┌──────────────────────┐                           │
+│                    │ PostgreSQL VM (GCE)  │                           │
+│                    │ 35.240.157.230:5432  │                           │
+│                    │ DB: izara_phase1     │                           │
+│                    │ pgvector + pgcrypto  │                           │
+│                    └──────────────────────┘                           │
+│                                                                      │
+│  Artifact Registry (Docker images)                                   │
+│  Cloud Build (CI/CD per service via cloudbuild.yaml)                 │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+### Docker Compose (Local Development)
+
+| Service | Container | Port | Purpose |
+| ------- | --------- | ---- | ------- |
+| PostgreSQL | izara-postgres | 5433:5432 | Primary database |
+| pgAdmin | izara-pgadmin | 5050 | DB administration |
+| Patient Portal | izara-patient-portal | 3005 | Patient frontend + backend |
+| Doctor Portal | izara-doctor-portal | 3010 | Doctor frontend + backend |
+| Meeting Server | izara-meeting-server | 3020 | Jitsi transcription + AI |
+
+### Real-Time Communication
+
+| Pattern | Technology | Purpose |
+| ------- | ---------- | ------- |
+| PostgreSQL LISTEN/NOTIFY | PG triggers on 8 tables | DB change events |
+| pgNotifyListener | Custom bridge service | PG → Socket.IO relay |
+| Socket.IO rooms | admin-room, doctor-room, patient-room, queue-room | Targeted delivery |
+
+### Phase 1 Feature → Database Mapping
+
+| Feature | Primary Tables | AI Model |
+| ------- | -------------- | -------- |
+| Authentication | users, sessions | — |
+| Patient PHR | phr, vital_signs, patient_profiles | — |
+| Living Will | living_wills, living_will_versions, patient_consents | — |
+| Appointments | appointments, doctor_schedules | — |
+| Video Meeting | meeting_records, meeting_transcripts | Web Speech API |
+| AI Meeting Summary | meeting_records, transcriptions_embeddings | Gemini 2.5 Flash Lite |
+| EMR (SOAP) | emr, ai_validations | Gemini 2.5 Flash Lite |
+| Prescriptions + CDS | prescriptions, drugs, cds_logs | Gemini 2.5 Flash Lite |
+| Lab Orders | lab_orders, ai_document_analysis | Gemini 2.5 Flash Lite |
+| Patient Instructions | patient_instructions, ai_validations | Gemini 2.5 Flash Lite |
+| Medical Content | medical_content, knowledge_base | — |
+| Clinical Resources | clinical_resources, knowledge_base | Gemini (embeddings) |
+| AI Chat | ai_chat_history, ai_chat_memory, knowledge_base | Gemini 2.5 Flash Lite |
+| Consultants | consultants, doctor_reviews | — |
+| Notifications | notifications, device_tokens, push_subscriptions | — |

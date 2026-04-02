@@ -806,7 +806,7 @@ export function BookAppointmentPage() {
     <div className="max-w-4xl mx-auto pb-8">
       {/* Header */}
       <div className="flex items-center gap-4 mb-6">
-        <button onClick={() => step > 1 ? setStep(step - 1) : navigate('/appointments')} className="p-2 hover:bg-gray-100 rounded-lg">
+        <button onClick={() => step > 1 ? setStep(step - 1) : navigate('/appointments')} className="p-2 hover:bg-gray-100 rounded-lg" aria-label="Go back">
           <ChevronLeft className="w-6 h-6" />
         </button>
         <div>
@@ -1350,27 +1350,23 @@ export function AppointmentDetailPage() {
   };
 
   useEffect(() => {
-    if (id) loadAppointment();
+    if (id) {
+      void loadAppointment(id);
+    } else {
+      setLoading(false);
+    }
   }, [id]);
 
-  const loadAppointment = async () => {
+  const loadAppointment = async (appointmentId: string) => {
     try {
-      const data = await appointmentService.getById(id!);
+      const data = await appointmentService.getById(appointmentId);
       setAppointment(data);
 
-      // Load Meet link if telehealth appointment
+      // Use meeting link from appointment data (set during doctor confirmation)
       if (data.type === 'telehealth') {
-        try {
-          const meetInfo = await googleService.getMeetInfo(id!);
-          if (meetInfo.meetLink) {
-            setMeetLink(meetInfo.meetLink);
-          }
-        } catch (e) {
-          console.error('Failed to get Meet info:', e);
-          // Try to get from appointment data
-          if (data.meetingLink) {
-            setMeetLink(data.meetingLink);
-          }
+        const link = data.patientMeetingUrl || data.meetingLink;
+        if (link) {
+          setMeetLink(link);
         }
       }
     } catch (e) {

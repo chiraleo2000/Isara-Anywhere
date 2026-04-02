@@ -3,7 +3,7 @@
  * NO GCS - All data stored in PostgreSQL
  */
 
-import { Router, Request, Response } from 'express';
+import { Router, Request, Response, Application } from 'express';
 import { authMiddleware, AuthenticatedRequest } from '../middleware/auth';
 import postgresDataService from '../services/postgresDataService';
 import crypto from 'node:crypto';
@@ -14,7 +14,7 @@ const { pool } = postgresDataService;
 const router = Router();
 
 /** Notify doctor/admin about a new appointment and broadcast via Socket.IO */
-async function broadcastNewAppointment(app: Express.Application, appointment: Record<string, unknown>) {
+async function broadcastNewAppointment(app: Application, appointment: Record<string, unknown>) {
   const io = app.get('io');
   const doctorId = appointment.doctor_id as string | null;
 
@@ -94,9 +94,13 @@ function transformAppointment(row: any): any {
     symptomDescription: row.symptom_description,
     reason: row.symptom_description || row.reason,
     notes: row.notes,
-    meetingLink: row.meet_link || row.meeting_link,
+    meetingLink: row.patient_meeting_url || row.meet_link || row.meeting_link,
     jitsiRoomName: row.jitsi_room_name,
-    patientMeetingUrl: row.meet_link || row.meeting_link,
+    doctorMeetingUrl: row.doctor_meeting_url,
+    patientMeetingUrl: row.patient_meeting_url || row.meet_link || row.meeting_link,
+    guestMeetingUrl: row.guest_meeting_url,
+    confirmedBy: row.confirmed_by,
+    confirmedByEmail: row.confirmed_by_email,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     confirmedAt: row.confirmed_at,
@@ -352,12 +356,14 @@ router.get('/:appointmentId', authMiddleware, async (req: Request, res: Response
 
 // Create new appointment
 router.post('/', authMiddleware, async (req: Request, res: Response) => {
+  const client = await pool.connect();
   try {
     const appointmentData = req.body;
     
     // Use authenticated patient's ID if not provided in body
     const patientId = appointmentData.patientId || (req as AuthenticatedRequest).patientId;
     if (!patientId) {
+      client.release();
       return res.status(400).json({ error: 'Patient ID is required' });
     }
     
@@ -378,8 +384,11 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
     const jitsiRoomName = generateJitsiRoomName(appointmentId);
     const meetingLink = generateJitsiMeetingLink(jitsiRoomName);
 
+    // BEGIN transaction — appointment insert + notification must be atomic
+    await client.query('BEGIN');
+
     // Insert into PostgreSQL
-    const result = await pool.query(
+    const result = await client.query(
       `INSERT INTO appointments (
         id, patient_id, doctor_id, requested_date, requested_time,
         appointment_type, status, urgency_level, symptoms, symptom_description,
@@ -408,18 +417,32 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
 
     const appointment = result.rows[0];
 
-    // Create notification for doctor/admin + Socket.IO broadcast
+    await client.query('COMMIT');
+
+    // Broadcast notification OUTSIDE transaction — failure here should not roll back appointment
     try {
       await broadcastNewAppointment(req.app, appointment);
     } catch (notifError) {
-      console.error('[APPOINTMENT] Notification error:', notifError);
+      console.error(`[APPOINTMENT] ⚠️ Notification broadcast failed for ${appointmentId}:`, notifError);
+      // Retry once after 2 seconds
+      setTimeout(async () => {
+        try {
+          await broadcastNewAppointment(req.app, appointment);
+          console.log(`[APPOINTMENT] ✅ Notification retry succeeded for ${appointmentId}`);
+        } catch (retryErr) {
+          console.error(`[APPOINTMENT] 🔴 CRITICAL: Notification retry also failed for ${appointmentId}:`, retryErr);
+        }
+      }, 2000);
     }
 
     console.log(`[APPOINTMENT] Created: ${appointmentId} with meeting link: ${meetingLink}`);
     res.json(transformAppointment(appointment));
   } catch (error: unknown) {
+    await client.query('ROLLBACK').catch(() => {});
     console.error('[APPOINTMENT] Create error:', error);
     res.status(500).json({ error: 'Failed to create appointment' });
+  } finally {
+    client.release();
   }
 });
 

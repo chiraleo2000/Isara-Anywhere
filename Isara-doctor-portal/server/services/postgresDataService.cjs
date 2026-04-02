@@ -672,10 +672,18 @@ const AppointmentService = {
       fields.push(`doctor_id = $${paramIndex++}`);
       values.push(data.doctor_id);
     }
-    if (data.meeting_link !== undefined) {
-      // Update both meet_link and meeting_link columns
+    if (data.meeting_link !== undefined || data.meet_link !== undefined || data.meetingLink !== undefined) {
+      const link = data.meeting_link || data.meet_link || data.meetingLink;
       fields.push(`meeting_link = $${paramIndex}`, `meet_link = $${paramIndex++}`);
-      values.push(data.meeting_link);
+      values.push(link);
+    }
+    if (data.jitsi_room_name !== undefined || data.jitsiRoomName !== undefined) {
+      fields.push(`jitsi_room_name = $${paramIndex++}`);
+      values.push(data.jitsi_room_name || data.jitsiRoomName);
+    }
+    if (data.appointment_type !== undefined) {
+      fields.push(`appointment_type = $${paramIndex++}`);
+      values.push(data.appointment_type);
     }
     if (data.notes !== undefined) {
       fields.push(`notes = $${paramIndex++}`);
@@ -688,6 +696,32 @@ const AppointmentService = {
     if (data.scheduled_time !== undefined || data.confirmed_time !== undefined) {
       fields.push(`confirmed_time = $${paramIndex++}`);
       values.push(data.scheduled_time || data.confirmed_time);
+    }
+    // Meeting URL fields for doctor/patient/guest Jitsi links
+    if (data.doctor_meeting_url !== undefined) {
+      fields.push(`doctor_meeting_url = $${paramIndex++}`);
+      values.push(data.doctor_meeting_url);
+    }
+    if (data.patient_meeting_url !== undefined) {
+      fields.push(`patient_meeting_url = $${paramIndex++}`);
+      values.push(data.patient_meeting_url);
+    }
+    if (data.guest_meeting_url !== undefined) {
+      fields.push(`guest_meeting_url = $${paramIndex++}`);
+      values.push(data.guest_meeting_url);
+    }
+    // Confirmation tracking
+    if (data.confirmed_by !== undefined) {
+      fields.push(`confirmed_by = $${paramIndex++}`);
+      values.push(data.confirmed_by);
+    }
+    if (data.confirmed_by_email !== undefined) {
+      fields.push(`confirmed_by_email = $${paramIndex++}`);
+      values.push(data.confirmed_by_email);
+    }
+    if (data.confirmed_at !== undefined) {
+      fields.push(`confirmed_at = $${paramIndex++}`);
+      values.push(data.confirmed_at);
     }
 
     fields.push('updated_at = NOW()');
@@ -713,39 +747,49 @@ const AppointmentService = {
   },
 
   /**
-   * Create a new appointment
+   * Create a new appointment (wrapped in transaction)
    */
   async createAppointment(data) {
-    const appointmentId = data.id || `APT-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
-    const result = await pool.query(
-      `INSERT INTO appointments (
-        id, patient_id, doctor_id, 
-        requested_date, requested_time, confirmed_date, confirmed_time,
-        appointment_date, appointment_time,
-        appointment_type, reason, symptoms, notes, status,
-        meeting_link, created_at, updated_at
-      )
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, NOW(), NOW())
-       RETURNING *`,
-      [
-        appointmentId,
-        data.patientId || data.patient_id,
-        data.doctorId || data.doctor_id,
-        data.requestedDate || data.requested_date || data.dateTime?.split('T')[0] || null,
-        data.requestedTime || data.requested_time || data.dateTime?.split('T')[1]?.substring(0, 5) || null,
-        data.confirmedDate || data.confirmed_date || null,
-        data.confirmedTime || data.confirmed_time || null,
-        data.appointmentDate || data.appointment_date || data.dateTime?.split('T')[0] || null,
-        data.appointmentTime || data.appointment_time || data.dateTime?.split('T')[1]?.substring(0, 5) || null,
-        data.type || data.appointment_type || 'general',
-        data.reason || null,
-        data.symptoms || null,
-        data.notes || null,
-        data.status || 'pending',
-        data.meetingLink || data.meeting_link || null
-      ]
-    );
-    return result.rows[0];
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      const appointmentId = data.id || `APT-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+      const result = await client.query(
+        `INSERT INTO appointments (
+          id, patient_id, doctor_id, 
+          requested_date, requested_time, confirmed_date, confirmed_time,
+          appointment_date, appointment_time,
+          appointment_type, reason, symptoms, notes, status,
+          meeting_link, created_at, updated_at
+        )
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, NOW(), NOW())
+         RETURNING *`,
+        [
+          appointmentId,
+          data.patientId || data.patient_id,
+          data.doctorId || data.doctor_id,
+          data.requestedDate || data.requested_date || data.dateTime?.split('T')[0] || null,
+          data.requestedTime || data.requested_time || data.dateTime?.split('T')[1]?.substring(0, 5) || null,
+          data.confirmedDate || data.confirmed_date || null,
+          data.confirmedTime || data.confirmed_time || null,
+          data.appointmentDate || data.appointment_date || data.dateTime?.split('T')[0] || null,
+          data.appointmentTime || data.appointment_time || data.dateTime?.split('T')[1]?.substring(0, 5) || null,
+          data.type || data.appointment_type || 'general',
+          data.reason || null,
+          data.symptoms || null,
+          data.notes || null,
+          data.status || 'pending',
+          data.meetingLink || data.meeting_link || null
+        ]
+      );
+      await client.query('COMMIT');
+      return result.rows[0];
+    } catch (err) {
+      await client.query('ROLLBACK').catch(() => {});
+      throw err;
+    } finally {
+      client.release();
+    }
   },
 
   /**
@@ -959,42 +1003,53 @@ const LabOrderService = {
   },
 
   /**
-   * Create lab order
+   * Create lab order (wrapped in transaction)
    */
   async createLabOrder(data) {
-    const result = await pool.query(
-      `INSERT INTO lab_orders (
-        id, appointment_id, patient_id, doctor_id, tests,
-        notes, priority, ordered_date, status
-      )
-       VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), 'ordered')
-       RETURNING *`,
-      [
-        `LAB-${Date.now()}`,
-        data.appointment_id || null,
-        data.patient_id || null,
-        data.doctor_id,
-        JSON.stringify(data.tests || []),
-        data.notes || '',
-        data.priority || 'routine'
-      ]
-    );
-    return result.rows[0];
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      const result = await client.query(
+        `INSERT INTO lab_orders (
+          id, appointment_id, patient_id, doctor_id, tests,
+          notes, priority, ordered_date, status
+        )
+         VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), 'ordered')
+         RETURNING *`,
+        [
+          `LAB-${Date.now()}`,
+          data.appointment_id || null,
+          data.patient_id || null,
+          data.doctor_id,
+          JSON.stringify(data.tests || []),
+          data.notes || '',
+          data.priority || 'routine'
+        ]
+      );
+      await client.query('COMMIT');
+      return result.rows[0];
+    } catch (err) {
+      await client.query('ROLLBACK').catch(() => {});
+      throw err;
+    } finally {
+      client.release();
+    }
   },
 
   /**
    * Update lab order results
    */
-  async updateLabResults(labOrderId, results) {
+  async updateLabResults(labOrderId, results, aiAnalysis) {
     const result = await pool.query(
       `UPDATE lab_orders SET
         results = $2,
+        ai_analysis = $3,
         status = 'completed',
         result_date = NOW(),
         updated_at = NOW()
        WHERE id = $1
        RETURNING *`,
-      [labOrderId, JSON.stringify(results)]
+      [labOrderId, JSON.stringify(results), aiAnalysis || null]
     );
     return result.rows[0];
   },

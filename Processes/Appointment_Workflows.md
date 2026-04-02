@@ -2,7 +2,7 @@
 
 This document details the full appointment workflow for Izara Telemedicine, covering video consultations, EMR documentation, and AI-assisted post-consultation features. This is the **core Phase 1 deliverable** covering the complete end-to-end flow: Appointment → Approval → Meeting (Microsoft Teams-like) → AI Summary → EMR → Patient Delivery.
 
-**Last Updated:** March 20, 2026 (v1.5.9 - Camera/Mic Fix, Zoom UX, All Tests Passing, Cloud Verified)
+**Last Updated:** March 31, 2026 (v1.6.0 - PostgreSQL Database Architecture, Deployment Descriptions, Dataflow Coverage)
 
 ---
 
@@ -80,7 +80,7 @@ External guests who are **NOT registered** in the Izara system can join meetings
 | Doctor Advisor | Doctor | <professor@university.ac.th> |
 | Other | Both | <any.guest@anydomain.xyz> |
 
-**How External Guests Join:**
+## How External Guests Join
 
 1. Doctor/Patient creates invite → System generates secure token
 2. Guest receives invite URL (via email or shared link)
@@ -107,7 +107,9 @@ External guests who are **NOT registered** in the Izara system can join meetings
 ### Video Meeting Provider
 
 - **Jitsi Meet** (meet.jit.si) - FREE, no account required
+
 - Doctor acts as HOST with lobby/moderator controls
+
 - Patient joins via personalized URL
 
 ---
@@ -195,7 +197,8 @@ External guests who are **NOT registered** in the Izara system can join meetings
 
 - **Meeting Link Generation**:
   - Provider: Jitsi Meet (meet.jit.si)
-- Format: `https://meet.jit.si/Izara-{appointmentId}-{timestamp}-{random}`
+
+- Format: `<https://meet.jit.si/Izara-{appointmentId}-{timestamp}-{random}`>
   - No account required for patient or doctor
   - Link is clickable from both portals
 
@@ -226,6 +229,7 @@ External guests who are **NOT registered** in the Izara system can join meetings
 ## 5. Admin-Only: All Appointments Tab
 
 - **Purpose**: Overview of all appointments in the system
+
 - **Features**:
   - Search by patient name/email
   - Filter by status
@@ -278,7 +282,9 @@ External guests who are **NOT registered** in the Izara system can join meetings
 ### Guest Invite System (NEW)
 
 - **Patient Relatives**: Can be invited by doctor via email
+
 - **Doctor Consultants/Specialists**: Can be invited for second opinions
+
 - **Process**:
   1. Doctor clicks "Invite Guest" in meeting controls
   2. Enters guest email, name, and type (relative/consultant)
@@ -720,9 +726,9 @@ The meeting experience is designed to work like **Microsoft Teams** — the doct
 {
   "appointmentId": "APT-2025-001",
   "jitsiRoomName": "Izara-Med-APT-2025-abc123-xyz789",
-  "doctorUrl": "https://meet.jit.si/Izara-Med-APT-2025-abc123-xyz789#config...",
-  "patientUrl": "https://meet.jit.si/Izara-Med-APT-2025-abc123-xyz789#config...",
-  "guestUrl": "https://meet.jit.si/Izara-Med-APT-2025-abc123-xyz789#config...",
+  "doctorUrl": "<https://meet.jit.si/Izara-Med-APT-2025-abc123-xyz789#config...",>
+  "patientUrl": "<https://meet.jit.si/Izara-Med-APT-2025-abc123-xyz789#config...",>
+  "guestUrl": "<https://meet.jit.si/Izara-Med-APT-2025-abc123-xyz789#config...",>
   "provider": "jitsi",
   "status": "active",
   "scheduledDate": "2025-12-16",
@@ -825,7 +831,9 @@ For meetings longer than 30 minutes:
 ### Onsite Appointments
 
 - Patient arrives at clinic
+
 - Doctor refers to calendar and email for symptoms/details
+
 - No recording or transcription needed
 
 ---
@@ -870,24 +878,33 @@ For meetings longer than 30 minutes:
 
 ### 10.3 EMR Delivery to Patient
 
-**What gets sent to patient's health logs:**
+## What gets sent to patient's health logs
 
 - Chief complaint
+
 - Diagnosis (descriptions only, not internal notes)
+
 - Treatment plan
+
 - **Medications/Prescriptions** (drug names, dosages, instructions)
+
 - Follow-up date and instructions
+
 - AI Summary (patient-friendly version)
+
 - Doctor's signature timestamp
 
-**What does NOT get sent to patient:**
+## What does NOT get sent to patient
 
 - Internal doctor comments/notes
+
 - Raw clinical assessments
+
 - Drug interaction warnings marked as internal
+
 - Doctor-to-doctor communications
 
-**Delivery Flow:**
+## Delivery Flow
 
 1. EMR signed → POST to `/api/patients/{patientId}/health-logs`
 2. Data saved to GCS: `patients/{patientId}/health-logs.json`
@@ -898,7 +915,9 @@ For meetings longer than 30 minutes:
 ### 10.4 If EMR Not Signed
 
 - Patient cannot access EMR in health logs
+
 - Status: `awaiting signature`
+
 - Notification sent to doctor to complete signature
 
 ---
@@ -941,8 +960,11 @@ For meetings longer than 30 minutes:
 **Fix:** Made 3 relevant stats cards clickable with navigation to `/doctor/{userId}/health-meeting`:
 
 - "Today's Appointments" (blue card) → Clickable
+
 - "In Queue" (orange card) → Clickable
+
 - "Need Confirmation" (amber card) → Clickable
+
 - Added visual feedback: `cursor-pointer`, `hover:shadow-lg`, `hover:border-{color}-400`, and `transition-all` for better UX.
 
 ### 3. Scheduled Meetings Tab - Full Meeting Details (HealthMeeting.tsx)
@@ -951,10 +973,13 @@ For meetings longer than 30 minutes:
 **Fix:** Complete redesign of Scheduled Meetings display:
 
 - **Date/Time Section**: Prominent card with icons showing scheduled date, time, and duration
+
 - **Meeting Link Section**: Blue highlighted box with:
   - Full meeting link visible (clickable)
   - Copy button with confirmation alert
+
 - **Participants Section**: Enhanced with email addresses visible
+
 - **Action Buttons**: More prominent with icons:
   - "🎥 Join Now" - Large emerald button
   - "📅 Add to Calendar" - Blue button
@@ -967,21 +992,29 @@ For meetings longer than 30 minutes:
 **Fix:** Added special display for confirmed appointments:
 
 - **Green highlighted card** for confirmed appointments
+
 - **Date/Time Grid**: Clear display of scheduled date and time
+
 - **Meeting Link Section** (for telehealth):
   - Full meeting link visible
   - Copy button with Thai confirmation ("คัดลอกลิงก์แล้ว!")
+
 - **Quick Join Button**: "🎥 เข้าห้องประชุมเลย" - One-click to open meeting
+
 - Separate handling for pending vs confirmed status display
 
 ### 5. Data Sync Fix - Appointment Details (appointments.ts backend)
 
 **Problem:** Patient portal's `getById` only read from individual `details.json` files, missing updates from doctor confirmation.
-**Fix:**
+
+## Fix
 
 - Patient portal now checks `appointments.json` first (most up-to-date after confirmation)
+
 - Falls back to individual `details.json` if not found
+
 - Merges meeting link data from `meeting-link.json` if available
+
 - Doctor portal now saves full appointment details to BOTH `appointments.json` AND `appointments/{id}/details.json`
 
 ### 6. Doctor's Scheduled Meetings Not Showing (HealthMeeting.tsx) - 2025-12-11
@@ -1013,14 +1046,14 @@ doctorEmail: doctor.email,
 
 ```javascript
 const doctorAppointments = allAppointments.filter((apt: any) => {
-  return apt.doctorId === doctor.id || 
+  return apt.doctorId === doctor.id ||
          apt.assignedDoctorId === doctor.id ||
          apt.adminAssignedDoctorId === doctor.id ||
          apt.confirmedBy === doctor.id;  // Include appointments confirmed by this doctor
 });
 ```
 
-**Additional Fixes for Cache Issues (2025-12-11 Evening):**
+## Additional Fixes for Cache Issues (2025-12-11 Evening)
 
 1. **`gcsDataService.ts`**: Modified `fetchAllAppointments()` to accept options parameter for cache bypass
 2. **`HealthMeeting.tsx`**: All `fetchAllAppointments()` calls now use `{ cache: false }` option
@@ -1028,17 +1061,21 @@ const doctorAppointments = allAppointments.filter((apt: any) => {
 4. **Added verification step**: After saving, system verifies the appointment was actually updated
 5. **Added delays**: Small delays (300-500ms → 1000ms) after GCS writes to allow propagation
 
-**CRITICAL ROOT CAUSE FIX (2025-12-11 Late Evening):**
+## CRITICAL ROOT CAUSE FIX (2025-12-11 Late Evening)
+
 **THE REAL BUG #1:** The confirmation handler was using `saveAllAppointments()` which ONLY writes to `appointments.json` master list. It was NOT writing the individual appointment file at `appointments/{id}.json`. When the patient portal or other components tried to read the updated appointment details, they got stale data from the individual file!
 
 **Solution #1:** Changed from `saveAllAppointments()` to `saveAppointment()` which:
 
 - Writes to `appointments/{id}.json` (individual file)
+
 - ALSO updates `appointments.json` (master list)
+
 - Invalidates both caches
+
 - Ensures both portals read the same data
 
-**Code Change in HealthMeeting.tsx:**
+## Code Change in HealthMeeting.tsx
 
 ```javascript
 // OLD (broken): Only updated master list
@@ -1068,24 +1105,29 @@ const updatedAppointment = {
 };
 
 // Filter now checks BOTH identifier and email
-const matchesDoctorId = apt.doctorId === doctorIdentifier || 
+const matchesDoctorId = apt.doctorId === doctorIdentifier ||
                         apt.assignedDoctorId === doctorIdentifier ||
                         apt.confirmedBy === doctorIdentifier;
 
 const matchesDoctorEmail = doctor.email && (
-                           apt.doctorEmail === doctor.email || 
+                           apt.doctorEmail === doctor.email ||
                            apt.confirmedByEmail === doctor.email);
 
 return isRelevantStatus && (matchesDoctorId || matchesDoctorEmail || isAdminSeeingAll);
 ```
 
-**Impact:**
+## Impact
 
 - Doctors now see ALL appointments they confirm in their Scheduled Meetings tab **EVEN WITHOUT A userId**
+
 - Dashboard stats correctly count today's appointments
+
 - **Both portals now have synchronized appointment data** - reads from SAME GCS files
+
 - Cache issues resolved - data always fresh from GCS
+
 - Individual appointment files now stay in sync with master list
+
 - **Works for doctors with OR without userId in the system**
 
 ---
@@ -1112,8 +1154,11 @@ return isRelevantStatus && (matchesDoctorId || matchesDoctorEmail || isAdminSeei
 └─────────────────────────────────┘
 
 Alternative paths:
+
 - declined (Doctor declines) → Patient notified
+
 - cancelled (Patient cancels) → All notified
+
 ```
 
 ---
@@ -1131,8 +1176,11 @@ Alternative paths:
 ### Key Points
 
 - **Patient Queue**: Shows appointments from ALL dates (not just today)
+
 - **No separate "Patient Pool" tab** - merged into Patient Queue
+
 - Admin sees all appointments; Doctor sees only assigned appointments
+
 - Confirmation modal allows setting/changing date and time
 
 ---
@@ -1216,6 +1264,7 @@ Alternative paths:
 The appointment workflow is tested end-to-end using the Selenium test suite that runs both Patient and Doctor portals simultaneously:
 
 ```bash
+
 # Run full dual-portal meeting workflow test (local)
 node scripts/tests/e2e/dualPortalMeetingTests.cjs
 
@@ -1306,6 +1355,7 @@ Step 24: Verify: Patient can download Instruction Sheet PDF
 ### Generate Test Audio Files
 
 ```bash
+
 # Generate test audio files for transcription testing
 node scripts/generators/generateTestAudio.cjs
 ```
@@ -1313,7 +1363,9 @@ node scripts/generators/generateTestAudio.cjs
 This generates:
 
 - Thai medical consultation transcripts
+
 - SSML files for TTS API
+
 - Reference metadata for validation
 
 ---
@@ -1396,4 +1448,236 @@ This generates:
 
 **This workflow covers the COMPLETE appointment-to-delivery lifecycle including multi-party meetings, transcript streaming, AI summary pipeline, EMR documentation, and patient delivery — the core Phase 1 deliverable.**
 
-**Last Updated:** January 2025 (v1.4.7)
+**Last Updated:** March 31, 2026 (v1.6.0)
+
+---
+
+## 15. PostgreSQL Database Architecture
+
+### 15.1 Deployment Infrastructure
+
+```text
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    APPOINTMENT WORKFLOW — DEPLOYMENT                      │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  LOCAL (Docker Compose v1.5.6)                                           │
+│  ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐      │
+│  │ Patient Portal    │  │ Doctor Portal     │  │ Meeting Server   │      │
+│  │ localhost:3005    │  │ localhost:3010    │  │ localhost:3020   │      │
+│  └────────┬─────────┘  └────────┬─────────┘  └────────┬────────┘      │
+│           │                     │                      │                │
+│           └─────────────────────┼──────────────────────┘                │
+│                                 ▼                                        │
+│                    ┌──────────────────────┐                              │
+│                    │ PostgreSQL 18        │                              │
+│                    │ + pgvector           │                              │
+│                    │ izara-postgres:5433  │                              │
+│                    │ DB: izara_phase1     │                              │
+│                    └──────────────────────┘                              │
+│                                                                          │
+│  PRODUCTION (Google Cloud)                                               │
+│  ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐      │
+│  │ Patient Portal    │  │ Doctor Portal     │  │ Meeting Server   │      │
+│  │ Cloud Run         │  │ Cloud Run         │  │ Cloud Run        │      │
+│  │ 1CPU/1GB          │  │ 1CPU/1GB          │  │ 1CPU/2GB         │      │
+│  │ asia-southeast1   │  │ asia-southeast1   │  │ asia-southeast1  │      │
+│  └────────┬─────────┘  └────────┬─────────┘  └────────┬────────┘      │
+│           │                     │                      │                │
+│           └─────────────────────┼──────────────────────┘                │
+│                                 ▼                                        │
+│                    ┌──────────────────────┐                              │
+│                    │ PostgreSQL VM (GCE)  │                              │
+│                    │ 35.240.157.230:5432  │                              │
+│                    │ DB: izara_phase1     │                              │
+│                    │ pgvector + pgcrypto  │                              │
+│                    └──────────────────────┘                              │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### 15.2 Database Tables Used in Appointment Workflows
+
+| Table | Purpose in Appointment Flow | Key Columns |
+| ----- | --------------------------- | ----------- |
+| **appointments** | Core appointment records with full lifecycle | id, patient_id, doctor_id, requested_date/time, confirmed_date/time, status, meet_link, jitsi_room_name, urgency_level, symptoms (JSONB), ai_triage (JSONB), invitees (JSONB) |
+| **meeting_records** | Video consultation session tracking | id (UUID), appointment_id, doctor_id, patient_id, room_name, jitsi_domain, status, meeting_config (JSONB), transcript, ai_summary, ai_recommendations, section_summaries (JSONB), doctor_validation_status, patient_instructions |
+| **meeting_transcripts** | Speech-to-text segments from Web Speech API | id (UUID), meeting_record_id, speaker_id, speaker_role (doctor/patient/guest), content, language, confidence, start_time_seconds, is_final |
+| **emr** | Electronic Medical Records (SOAP format) | id, appointment_id, patient_id, doctor_id, subjective/objective/assessment/plan (JSONB), ai_summary, patient_instructions, doctor_signature, signed_at, status (draft/signed) |
+| **prescriptions** | E-prescriptions linked to EMR | id, emr_id, appointment_id, patient_id, medications (JSONB), cds_warnings (JSONB), status |
+| **lab_orders** | Laboratory test orders from consultation | id, emr_id, appointment_id, tests (JSONB), results (JSONB), ai_analysis, status |
+| **notifications** | In-app notifications for all participants | id (UUID), user_id, type, title/title_thai, message/message_thai, data (JSONB), read_at |
+| **cds_logs** | Clinical Decision Support audit trail | id, patient_id, doctor_id, recommendation_type, severity, title, guideline_source, doctor_decision |
+| **ai_validations** | Man-in-the-Loop validation records | id, type, patient_id, doctor_id, decision, content_snapshot, validated_at |
+| **transcriptions_embeddings** | Vectorized transcript chunks for AI search | meeting_record_id, chunk_text, speaker_role, embedding (vector) |
+| **users** | Patient & doctor identity resolution | id, email, name, name_thai, role, doctor_id, patient_id |
+| **audit_logs** | Compliance audit trail for all actions | user_id, patient_id, action, entity_type, details (JSONB) |
+
+### 15.3 Appointment Status State Machine in PostgreSQL
+
+```sql
+-- Appointment status transitions stored in appointments table
+-- Valid statuses: pending, in_pool, awaiting_doctor_response, assigned, confirmed, completed, cancelled, declined
+
+-- Patient creates request
+INSERT INTO appointments (id, patient_id, doctor_id, status, ...) VALUES ($1, $2, $3, 'pending', ...);
+-- OR: in_pool for system-assigned
+
+-- Admin assigns doctor
+UPDATE appointments SET doctor_id = $2, status = 'awaiting_doctor_response', updated_at = NOW() WHERE id = $1;
+
+-- Doctor confirms with meeting link
+UPDATE appointments SET status = 'confirmed', confirmed_date = $2, confirmed_time = $3,
+  meeting_link = $4, jitsi_room_name = $5, confirmed_at = NOW() WHERE id = $1;
+
+-- Meeting completed
+UPDATE appointments SET status = 'completed', completed_at = NOW() WHERE id = $1;
+
+-- Cancelled or declined
+UPDATE appointments SET status = 'cancelled', cancellation_reason = $2, cancelled_at = NOW() WHERE id = $1;
+```
+
+### 15.4 PostgreSQL LISTEN/NOTIFY for Real-Time Updates
+
+```sql
+-- Trigger on appointments table fires on INSERT/UPDATE/DELETE
+-- pgNotifyListener bridges PostgreSQL → Socket.IO
+CREATE OR REPLACE FUNCTION notify_appointment_change() RETURNS TRIGGER AS $$
+BEGIN
+  PERFORM pg_notify('db_changes', json_build_object(
+    'table', 'appointments',
+    'operation', TG_OP,
+    'id', COALESCE(NEW.id, OLD.id)
+  )::text);
+  RETURN COALESCE(NEW, OLD);
+END;
+$$ LANGUAGE plpgsql;
+```
+
+## Real-time flow
+
+```text
+PostgreSQL appointments table UPDATE
+  → pg_notify('db_changes', {...})
+  → pgNotifyListener.cjs / pgNotifyListener.ts catches event
+  → Socket.IO emits 'appointment:updated' to relevant rooms
+  → Patient Portal: updates appointment status in real-time
+  → Doctor Portal: updates Patient Queue / Scheduled Meetings
+```
+
+### 15.5 Cross-Service Data Flow
+
+```text
+┌─────────────────────────────────────────────────────────────────────────┐
+│                  APPOINTMENT DATA FLOW ACROSS SERVICES                   │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  PATIENT PORTAL (port 3005)                                              │
+│  ├── POST /api/appointments → INSERT INTO appointments (pending)         │
+│  ├── GET /api/appointments/my → SELECT FROM appointments WHERE patient   │
+│  ├── GET /api/doctors → SELECT FROM doctors (for selection)              │
+│  └── WebSocket: appointment:updated → real-time status changes           │
+│                                                                          │
+│  DOCTOR PORTAL (port 3010)                                               │
+│  ├── GET /api/dashboard/:id → SELECT FROM appointments + emr + stats     │
+│  ├── PUT /api/appointments/:id → UPDATE appointments (confirm/decline)   │
+│  ├── POST /api/meetings/create → INSERT INTO meeting_records             │
+│  ├── POST /api/emr → INSERT INTO emr (SOAP documentation)               │
+│  ├── POST /api/emr/:id/sign → UPDATE emr SET status='signed'            │
+│  ├── POST /api/prescriptions → INSERT INTO prescriptions                 │
+│  └── WebSocket: appointment:updated, emr:updated → real-time updates     │
+│                                                                          │
+│  MEETING SERVER (port 3020)                                              │
+│  ├── POST /api/meetings/create → INSERT INTO meeting_records             │
+│  ├── POST /api/meetings/:id/transcript → INSERT INTO meeting_transcripts │
+│  ├── POST /api/meetings/:id/generate-summary → Gemini AI → UPDATE       │
+│  ├── POST /api/meetings/:id/end → UPDATE meeting_records                 │
+│  └── WebSocket: transcript segments + meeting state changes               │
+│                                                                          │
+│  ALL SERVICES → SAME PostgreSQL (izara_phase1)                           │
+│  ├── Local: izara-postgres:5432 (Docker internal)                        │
+│  └── Cloud: 35.240.157.230:5432 (GCE VM)                                │
+│                                                                          │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### 15.6 Meeting AI Pipeline Database Flow
+
+```text
+Step 1: Meeting created → INSERT INTO meeting_records (status: 'scheduled')
+Step 2: Doctor starts → UPDATE meeting_records SET status='active', started_at=NOW()
+Step 3: Transcript streaming → INSERT INTO meeting_transcripts (each segment)
+Step 4: Chat messages → POST /api/meetings/:id/chat (stored in meeting record)
+Step 5: Meeting ends → UPDATE meeting_records SET status='completed', ended_at=NOW()
+Step 6: AI processes → POST /api/meetings/:id/generate-summary
+  → Gemini receives: transcript + chats + patient PHR context
+  → UPDATE meeting_records SET ai_summary=$1, ai_recommendations=$2, section_summaries=$3
+Step 7: Doctor validates → POST /api/meetings/:id/validate
+  → UPDATE meeting_records SET doctor_validation_status='approved', validated_at=NOW()
+Step 8: EMR created → INSERT INTO emr (pre-filled from AI summary)
+Step 9: EMR signed → UPDATE emr SET status='signed', doctor_signature=$1, signed_at=NOW()
+Step 10: Patient notified → INSERT INTO notifications (type: 'emr_signed')
+Step 11: Embeddings → INSERT INTO transcriptions_embeddings (vectorized chunks for future AI search)
+```
+
+---
+
+## 16. Appointment Scenario Coverage Matrix
+
+| # | Scenario | Patient Action | Doctor/Admin Action | Status Flow | DB Tables Affected |
+| - | -------- | -------------- | ------------------- | ----------- | ------------------ |
+| 1 | Normal booking (specific doctor) | Book with doctor selected | Doctor confirms | pending → confirmed | appointments, notifications |
+| 2 | Pool booking (system-assigned) | Book without doctor | Admin assigns → Doctor confirms | in_pool → awaiting_doctor_response → confirmed | appointments, notifications |
+| 3 | Admin direct confirm | Book appointment | Admin confirms directly | pending → confirmed | appointments, notifications |
+| 4 | Doctor declines | Book appointment | Doctor declines with reason | pending → declined | appointments, notifications |
+| 5 | Patient cancels | Cancel appointment | — | any → cancelled | appointments, notifications |
+| 6 | Meeting completed (telehealth) | Join meeting | Host meeting → EMR → Sign | confirmed → completed | appointments, meeting_records, meeting_transcripts, emr, prescriptions, lab_orders, notifications |
+| 7 | Meeting completed (onsite) | Visit clinic | Document EMR | confirmed → completed | appointments, emr, prescriptions |
+| 8 | AI triage with urgency | Describe symptoms | Review AI triage level | pending (with ai_triage JSONB) | appointments |
+| 9 | Multi-party meeting | Invite relatives | Invite specialists → Admit all | confirmed → completed | appointments, meeting_records |
+| 10 | Guest join (non-registered) | Share link externally | Admit from lobby | — | meeting_records |
+| 11 | Rescheduled appointment | — | Admin/Doctor reschedules | confirmed → confirmed (new date) | appointments, notifications |
+| 12 | E-Prescribing after meeting | — | Create prescription | — | prescriptions, cds_logs |
+| 13 | Lab order after meeting | — | Order lab tests | — | lab_orders |
+| 14 | AI pre-consultation summary | — | Review AI summary before meeting | — | phr, emr (read), ai_validations |
+| 15 | CDS drug interaction alert | — | Accept/reject/modify | — | cds_logs, prescriptions |
+| 16 | Patient instruction sheet | View instructions | Generate + validate | — | emr, ai_validations, notifications |
+
+---
+
+## 17. API Endpoints Summary (Appointment Workflow)
+
+### Patient Portal APIs
+
+| Method | Endpoint | Description | DB Operation |
+| ------ | -------- | ----------- | ------------ |
+| POST | `/api/appointments` | Create appointment request | INSERT appointments |
+| GET | `/api/appointments/my` | List patient's appointments | SELECT appointments WHERE patient_id |
+| GET | `/api/appointments/:id` | Get appointment details | SELECT appointments WHERE id |
+| PUT | `/api/appointments/:id/status` | Update status (cancel) | UPDATE appointments |
+| DELETE | `/api/appointments/:id` | Cancel appointment | UPDATE appointments SET status='cancelled' |
+| GET | `/api/doctors` | List available doctors | SELECT FROM doctors |
+| GET | `/api/doctors/:id/slots` | Get doctor's available slots | SELECT FROM doctor_schedules |
+
+### Doctor Portal APIs
+
+| Method | Endpoint | Description | DB Operation |
+| ------ | -------- | ----------- | ------------ |
+| GET | `/api/dashboard/:doctorId` | Dashboard with appointment stats | SELECT appointments + emr + stats |
+| PUT | `/api/appointments/:id` | Confirm/decline appointment | UPDATE appointments |
+| POST | `/api/meetings/create` | Create meeting session | INSERT meeting_records |
+| POST | `/api/emr` | Create EMR record | INSERT emr |
+| POST | `/api/emr/:id/sign` | Sign and finalize EMR | UPDATE emr SET status='signed' |
+| POST | `/api/prescriptions` | Create prescription | INSERT prescriptions |
+| POST | `/api/lab-orders` | Create lab order | INSERT lab_orders |
+| GET | `/api/ai/pre-summary/:patientId` | AI pre-consultation summary | SELECT phr, emr → Gemini AI |
+
+### Meeting Server APIs
+
+| Method | Endpoint | Description | DB Operation |
+| ------ | -------- | ----------- | ------------ |
+| POST | `/api/meetings/create` | Create meeting room | INSERT meeting_records |
+| POST | `/api/meetings/:id/start-transcription` | Start transcript | UPDATE meeting_records |
+| POST | `/api/meetings/:id/transcript` | Submit transcript segment | INSERT meeting_transcripts |
+| POST | `/api/meetings/:id/generate-summary` | AI summary generation | UPDATE meeting_records (ai_summary) |
+| POST | `/api/meetings/:id/validate` | Doctor validates AI output | UPDATE meeting_records, INSERT ai_validations |
+| POST | `/api/meetings/:id/end` | End meeting | UPDATE meeting_records SET status='completed' |
