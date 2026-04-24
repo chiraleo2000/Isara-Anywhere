@@ -67,7 +67,7 @@ test.describe('Group J — AI Doctor, Timeline, Map & Find Doctors', () => {
             { timeout: 15_000 },
           ),
         ]);
-        await patient.page.waitForTimeout(3_000);
+        await patient.page.waitForTimeout(500);
         if (apiResp.status === 'fulfilled') {
           console.log(`  ✅ J03: AI response received — ${apiResp.value.status()}`);
         } else {
@@ -77,14 +77,14 @@ test.describe('Group J — AI Doctor, Timeline, Map & Find Doctors', () => {
         // Try pressing Enter
         const chatInput = patient.page.locator('textarea, input[type="text"]').last();
         await chatInput.press('Enter');
-        await patient.page.waitForTimeout(3_000);
+        await patient.page.waitForTimeout(500);
         console.log('  ✅ J03: Submitted via Enter key');
       }
       await snap(patient.page, 'J03-ai-response', 'group-J');
     });
 
     await test.step('J04 — Verify AI response appeared', async () => {
-      await patient.page.waitForTimeout(3_000);
+      await patient.page.waitForTimeout(500);
       const body = await patient.page.locator('body').innerText();
       const hasResponse = body.length > 200; // AI response should add content
       await snap(patient.page, 'J04-response-check', 'group-J');
@@ -159,7 +159,7 @@ test.describe('Group J — AI Doctor, Timeline, Map & Find Doctors', () => {
       ).first();
       if (await searchInput.isVisible({ timeout: 5_000 }).catch(() => false)) {
         await searchInput.fill('โรงพยาบาล');
-        await patient.page.waitForTimeout(2_000);
+        await patient.page.waitForTimeout(500);
         await snap(patient.page, 'J09-map-search', 'group-J');
         console.log('  ✅ J09: Searched "โรงพยาบาล"');
       } else {
@@ -175,7 +175,7 @@ test.describe('Group J — AI Doctor, Timeline, Map & Find Doctors', () => {
       const resCount = await results.count();
       if (resCount > 0) {
         await results.first().click();
-        await patient.page.waitForTimeout(2_000);
+        await patient.page.waitForTimeout(500);
       }
       await snap(patient.page, 'J10-map-results', 'group-J');
       console.log(`  ✅ J10: Map results — ${resCount} items`);
@@ -211,7 +211,7 @@ test.describe('Group J — AI Doctor, Timeline, Map & Find Doctors', () => {
         const options = await specialtySelect.locator('option').allTextContents();
         if (options.length > 1) {
           await specialtySelect.selectOption({ index: 1 });
-          await patient.page.waitForTimeout(2_000);
+          await patient.page.waitForTimeout(500);
         }
       } else {
         // Try filter buttons
@@ -233,7 +233,7 @@ test.describe('Group J — AI Doctor, Timeline, Map & Find Doctors', () => {
       }).first();
       if (await doctorCard.isVisible({ timeout: 5_000 }).catch(() => false)) {
         await doctorCard.click();
-        await patient.page.waitForTimeout(2_000);
+        await patient.page.waitForTimeout(500);
         await snap(patient.page, 'J13-doctor-detail', 'group-J');
         console.log('  ✅ J13: Doctor card clicked');
       } else {

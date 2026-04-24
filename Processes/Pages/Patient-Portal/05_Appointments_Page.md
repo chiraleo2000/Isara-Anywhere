@@ -8,23 +8,30 @@
 
 ---
 
+
 ## 1. Purpose
 
 Complete appointment management: view existing appointments, book new ones with AI-assisted symptom analysis, and view appointment details with meeting links.
 
 ---
 
+
 ## 2. Three Sub-Pages
+
 
 ### 2.1 Appointment List (`/appointments`)
 
+
 ### 2.2 Book Appointment (`/book-appointment`)
+
 
 ### 2.3 Appointment Detail (`/appointments/:id`)
 
 ---
 
+
 ## 3. Appointment List Page
+
 
 ### Layout
 
@@ -52,6 +59,7 @@ Complete appointment management: view existing appointments, book new ones with 
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
+
 ### Status Badges
 
 | Status | Thai | Color | Description |
@@ -66,21 +74,29 @@ Complete appointment management: view existing appointments, book new ones with 
 | no_show | ไม่มา | Gray | Patient didn't attend |
 | rescheduled | เลื่อนนัด | Amber | Rescheduled to new time |
 
+
 ### Features
+
 
 - Filter tabs (pending, all, confirmed, completed)
 
+
 - Sort by newest/oldest
+
 
 - Symptom preview on each card
 
+
 - Meeting link with copy + join buttons for confirmed telehealth
+
 
 - Click card → navigate to detail page
 
 ---
 
+
 ## 4. Book Appointment Page (3-Step Wizard)
+
 
 ### Book Appointment Layout
 
@@ -99,6 +115,7 @@ Complete appointment management: view existing appointments, book new ones with 
 │  [← ย้อนกลับ]                                    [ถัดไป →]         │
 └─────────────────────────────────────────────────────────────────────┘
 ```
+
 
 ### Step 1: Symptoms (อาการ) — SymptomInputStep Component
 
@@ -142,6 +159,7 @@ Complete appointment management: view existing appointments, book new ones with 
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
+
 #### AI Symptom Analysis Features
 
 | Feature | Description |
@@ -152,6 +170,7 @@ Complete appointment management: view existing appointments, book new ones with 
 | **Warning Signs** | Red flags to watch for |
 | **Suggested Specialty** | AI-recommended doctor specialty |
 | **AI Description** | Improved symptom description suggestion |
+
 
 ### Step 2: Schedule + Doctor (กำหนดเวลา)
 
@@ -184,6 +203,7 @@ Complete appointment management: view existing appointments, book new ones with 
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
+
 ### Step 3: Confirm (ยืนยัน)
 
 ```text
@@ -206,7 +226,9 @@ Complete appointment management: view existing appointments, book new ones with 
 
 ---
 
+
 ## 5. Appointment Detail Page
+
 
 ### Appointment Detail Layout
 
@@ -263,7 +285,9 @@ Complete appointment management: view existing appointments, book new ones with 
 
 ---
 
+
 ## 6. Workflows
+
 
 ### Workflow 1: Book New Appointment
 
@@ -287,6 +311,7 @@ Step 16: If no doctor → POST /api/appointment-pool (pool assignment)
 Step 17: Success → Redirect to appointment list
 Step 18: Notification sent to doctor/admin
 ```
+
 
 ### Workflow 2: Join Video Meeting (Full Jitsi Lobby Flow)
 
@@ -316,6 +341,7 @@ Step 12: Doctor processes AI summary → validates → creates EMR
 Step 13: Patient receives notification: "แพทย์ส่งผลการตรวจ"
 ```
 
+
 ### Workflow 3: Share Meeting Link with Relatives/Friends (Guest Invite)
 
 ```text
@@ -336,6 +362,7 @@ Note: Guests do NOT need an Isara account.
       The meeting link is valid only for the scheduled appointment time.
       Maximum 5 guests per meeting.
 ```
+
 
 ### Workflow 4: Post-Meeting Results (What Patient Receives)
 
@@ -368,6 +395,7 @@ Step 6:  Appointment card status updates to 🔵 เสร็จสิ้น (Co
          with link: [ดูผลการรักษา] (View Results)
 ```
 
+
 ### Workflow 5: Cancel Appointment
 
 ```text
@@ -380,6 +408,7 @@ Step 6: Notification sent to doctor
 ```
 
 ---
+
 
 ## 7. API Endpoints
 
@@ -399,6 +428,7 @@ Step 6: Notification sent to doctor
 
 ---
 
+
 ## 8. Meeting Technology
 
 | Component | Detail |
@@ -414,6 +444,7 @@ Step 6: Notification sent to doctor
 | **Data Storage** | PostgreSQL |
 
 ---
+
 
 ## 9. Patient Data Privacy in Meetings
 
@@ -433,6 +464,7 @@ Step 6: Notification sent to doctor
 
 ---
 
+
 ## 8. Connections to Other Pages
 
 | From | Action | Destination |
@@ -445,23 +477,32 @@ Step 6: Notification sent to doctor
 
 ---
 
+
 ## 9. AI Agent Improvement Opportunities
+
 
 - **Smart symptom interview**: AI conversational symptom gathering
 
+
 - **Auto-schedule optimization**: AI find optimal time based on urgency + doctor availability
+
 
 - **Waiting time prediction**: AI estimate wait time for each doctor
 
+
 - **Follow-up booking**: AI auto-suggest follow-up appointments after consultation
 
+
 - **Multilingual symptom input**: AI translate symptoms from any language
+
 
 - **Image diagnosis**: AI preliminary analysis of uploaded medical images
 
 ---
 
+
 ## PostgreSQL Database Integration
+
 
 ### Tables Used
 
@@ -471,6 +512,7 @@ Step 6: Notification sent to doctor
 | users | SELECT | Available doctors list (role = 'doctor') |
 | doctor_schedules | SELECT | Available time slots for booking |
 
+
 ### API Endpoints
 
 | Endpoint | Method | DB Operation |
@@ -478,14 +520,20 @@ Step 6: Notification sent to doctor
 | /api/appointments | GET | SELECT appointments WHERE patient_id = current |
 | /api/appointments | POST | INSERT appointments, SELECT doctor_schedules (available slots) |
 
+
 ### Real-time Events
+
 
 - **NOTIFY:** appointment_changes → Socket.IO appointment status updates
 
+
 ### Deployment
+
 
 - **Local Docker:** izara-postgres container (localhost:5433 external / 5432 internal) → database: izara_phase1
 
+
 - **Production:** GCE VM at 35.240.157.230:5432 → database: izara_phase1 (asia-southeast1)
+
 
 - **Service deployed via:** Cloud Run (gen2, CPU Boost) + Cloud Build CI/CD

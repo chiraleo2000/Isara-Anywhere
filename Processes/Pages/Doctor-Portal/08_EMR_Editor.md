@@ -1,12 +1,13 @@
 # 📋 Doctor Portal — EMR Editor (Electronic Medical Record)
 
-**Component:** `src/components/CompleteEMREditor.tsx`  
-**Type:** Modal (launched from DoctorPortal)  
-**Access:** 🔒 Doctor / Admin  
-**Thai Title:** เวชระเบียนอิเล็กทรอนิกส์ / Electronic Medical Record  
+**Component:** `src/components/CompleteEMREditor.tsx`
+**Type:** Modal (launched from DoctorPortal)
+**Access:** 🔒 Doctor / Admin
+**Thai Title:** เวชระเบียนอิเล็กทรอนิกส์ / Electronic Medical Record
 **Version:** v1.4.7
 
 ---
+
 
 ## 1. Purpose
 
@@ -14,7 +15,9 @@ Create and edit Electronic Medical Records in Thai Ministry of Public Health OPD
 
 ---
 
+
 ## 2. EMR Template: OPD Card (Thailand Standard)
+
 
 ### SOAP Tabs
 
@@ -38,7 +41,9 @@ Create and edit Electronic Medical Records in Thai Ministry of Public Health OPD
 
 ---
 
+
 ## 3. Tab Details
+
 
 ### Tab S: ประวัติ (Subjective/History)
 
@@ -47,6 +52,7 @@ Create and edit Electronic Medical Records in Thai Ministry of Public Health OPD
 | Chief Complaint | อาการสำคัญ | Primary reason for visit |
 | History of Present Illness | ประวัติการเจ็บป่วยปัจจุบัน | Detailed symptom narrative |
 | Review of Systems | ระบบอวัยวะ | Systematic body system review |
+
 
 ### Tab O: ตรวจร่างกาย (Objective/Examination)
 
@@ -62,6 +68,7 @@ Create and edit Electronic Medical Records in Thai Ministry of Public Health OPD
 | BMI | ดัชนีมวลกาย | Auto-calculated |
 | Physical Examination | การตรวจร่างกาย | Free text |
 
+
 ### Tab A: การวินิจฉัย (Assessment/Diagnosis)
 
 | Field | Description |
@@ -70,6 +77,7 @@ Create and edit Electronic Medical Records in Thai Ministry of Public Health OPD
 | Primary/Secondary | Toggle for each diagnosis |
 | Status | Active / Resolved / Chronic |
 | Assessment notes | Clinical assessment narrative |
+
 
 ### Tab P: การรักษา (Plan/Treatment)
 
@@ -81,6 +89,7 @@ Create and edit Electronic Medical Records in Thai Ministry of Public Health OPD
 
 ---
 
+
 ## 4. Encounter Types
 
 | Type | Thai | Use Case |
@@ -91,6 +100,7 @@ Create and edit Electronic Medical Records in Thai Ministry of Public Health OPD
 | procedure | หัตถการ | Medical procedure |
 
 ---
+
 
 ## 5. Features
 
@@ -104,6 +114,7 @@ Create and edit Electronic Medical Records in Thai Ministry of Public Health OPD
 | **ICD-10 codes** | Diagnosis coding support |
 | **Status tracking** | Draft → Finalized → Amended |
 | **Patient instructions** | AI-generated patient-friendly summary |
+
 
 ### 5a. AI-Prefilled SOAP from Meeting Summary
 
@@ -148,6 +159,7 @@ When a meeting summary has been validated (Man-in-the-Loop approved), the EMR Ed
 └──────────────────────────────────────────────────────────────┘
 ```
 
+
 #### AI Pre-fill Data Sources
 
 | SOAP Tab | AI Source | Data Origin |
@@ -156,6 +168,7 @@ When a meeting summary has been validated (Man-in-the-Loop approved), the EMR Ed
 | O (Objective) | Doctor observations | Transcript segments tagged 👨‍⚕️ Doctor + vitals mentioned |
 | A (Assessment) | Clinical reasoning | AI analysis of symptoms + medical history |
 | P (Plan) | Treatment discussion | Transcript discussion of treatment + follow-up |
+
 
 ### 5b. Voice Dictation (Web Speech API)
 
@@ -187,6 +200,7 @@ Hands-free EMR input using browser-native speech recognition (FREE).
 └──────────────────────────────────────────────────────────────┘
 ```
 
+
 ### 5c. Patient Instruction Sheet Generation
 
 AI auto-generates a patient-friendly instruction sheet from the finalized EMR.
@@ -216,6 +230,7 @@ AI auto-generates a patient-friendly instruction sheet from the finalized EMR.
 └──────────────────────────────────────────────────────────────┘
 ```
 
+
 #### Patient Instruction Sheet Fields
 
 | Field | Thai | Source |
@@ -226,6 +241,7 @@ AI auto-generates a patient-friendly instruction sheet from the finalized EMR.
 | Red Flags | อาการที่ต้องมาพบแพทย์ | AI-extracted from clinical context |
 | Follow-up | นัดติดตาม | EMR Tab P |
 | Language | ภาษา | Written in patient-friendly Thai (Plain Language) |
+
 
 ### 5d. Sign & Finalize Flow
 
@@ -264,7 +280,9 @@ Step 9: Appointment marked as completed
 
 ---
 
+
 ## 6. Workflows
+
 
 ### Workflow 1: Create EMR After Consultation
 
@@ -288,6 +306,7 @@ Step 16: POST /api/notifications/emr-signed → Patient notified
 Step 17: PATCH /api/appointments/:id → Appointment marked completed
 ```
 
+
 ### Workflow 2: AI-Assisted EMR from Meeting Transcript
 
 ```text
@@ -300,6 +319,7 @@ Step 6: Final review and sign
 ```
 
 ---
+
 
 ## 7. API Endpoints
 
@@ -320,6 +340,7 @@ Step 6: Final review and sign
 | POST | `/api/emr/:id/voice-dictation` | Save voice dictation segment |
 
 ---
+
 
 ## 8. Meeting-to-EMR Data Flow
 
@@ -364,21 +385,33 @@ Patient Delivery
 
 ---
 
+
 ## 9. AI Agent Improvement Opportunities
 
+
 - **Auto-populate**: AI fill SOAP fields from meeting transcript automatically
+
 - **ICD-10 suggestion**: AI suggest diagnosis codes from clinical text
+
 - **Template library**: AI-curated EMR templates by specialty/condition
+
 - **Quality check**: AI verify EMR completeness before finalization
+
 - **Cross-reference**: AI link EMR findings with patient history automatically
+
 - **Smart dictation**: AI auto-correct medical terminology during voice input
+
 - **Instruction personalization**: AI tailor instruction sheets to patient literacy level
+
 - **Multi-section summaries**: AI handle meetings > 30 min with sectioned SOAP notes
+
 - **Confidence visualization**: AI show per-field confidence scores for pre-filled content
 
 ---
 
+
 ## 10. PostgreSQL Database Integration
+
 
 ### Tables Used
 | Table | Operation | Description |
@@ -388,6 +421,7 @@ Patient Delivery
 | prescriptions | INSERT | Prescriptions linked to EMR |
 | lab_orders | INSERT | Lab orders linked to EMR |
 
+
 ### API Endpoints
 | Endpoint | Method | DB Operation |
 | -------- | ------ | ------------ |
@@ -395,11 +429,18 @@ Patient Delivery
 | PUT /api/emr/:id | PUT | UPDATE emr SET soap_data WHERE id |
 | POST /api/ai/validate | POST | AI Gemini validates EMR → INSERT ai_validations |
 
+
 ### AI Integration
+
 - **Gemini 2.5 Flash Lite:** Generates SOAP draft from meeting transcript
+
 - **Man-in-the-Loop:** Doctor reviews and approves AI-generated content before saving
 
+
 ### Deployment
+
 - **Local Docker:** izara-postgres container (localhost:5433 external / 5432 internal) → database: izara_phase1
+
 - **Production:** GCE VM at 35.240.157.230:5432 → database: izara_phase1 (asia-southeast1)
+
 - **Service deployed via:** Cloud Run (gen2, CPU Boost) + Cloud Build CI/CD

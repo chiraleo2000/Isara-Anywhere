@@ -69,6 +69,7 @@
 | **แชทข้อความ** | เปิด | ใช้งานได้ตลอด |
 
 
+
 ผู้ใช้สามารถปิด/เปิดเสียงได้ตลอดเวลา
 
 
@@ -478,6 +479,7 @@ const guestPrivileges = {
 
 
 
+
 ### การเชิญแขก
 
 | Method | Endpoint | คำอธิบาย |
@@ -486,6 +488,7 @@ const guestPrivileges = {
 | GET | `/api/meetings/:meetingId/invites` | รายการการเชิญ |
 | DELETE | `/api/meetings/:meetingId/invite/:inviteId` | ยกเลิกการเชิญ |
 | GET | `/api/meetings/join/:token` | เข้าร่วมด้วย Token |
+
 
 
 
@@ -500,6 +503,7 @@ const guestPrivileges = {
 | POST | `/api/meetings/:meetingId/summary/regenerate` | สร้างสรุปใหม่ |
 
 
+
 ---
 
 
@@ -509,6 +513,7 @@ const guestPrivileges = {
 | ---- | ---- | -------------- |
 | ไทย | th-TH | ✅ รองรับ |
 | อังกฤษ | en-US | ✅ รองรับ |
+
 
 
 
@@ -541,6 +546,7 @@ recognition.onresult = (event) => {
 | สรุป AI | Gemini 2.5 Flash | ✅ |
 | Man-in-the-Loop | Custom UI | ✅ |
 | เชิญแขก | Token-based | ✅ |
+
 
 
 ---

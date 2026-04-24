@@ -1,6 +1,6 @@
 {
   "name": "izara-patient-portal",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -23,7 +23,6 @@
     "k8s:deploy": "kubectl apply -f k8s/"
   },
   "dependencies": {
-    "@google-cloud/storage": "^7.7.0",
     "@google/generative-ai": "^0.21.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/jsonwebtoken": "^9.0.10",
@@ -52,8 +51,8 @@
     "@types/react": "^18.2.43",
     "@types/react-dom": "^18.2.17",
     "@types/testing-library__jest-dom": "^5.14.9",
-    "@typescript-eslint/eslint-plugin": "^6.14.0",
-    "@typescript-eslint/parser": "^6.14.0",
+    "@typescript-eslint/eslint-plugin": "^8.58.2",
+    "@typescript-eslint/parser": "^8.58.2",
     "@vitejs/plugin-react": "^4.2.1",
     "autoprefixer": "^10.4.16",
     "concurrently": "^8.2.2",

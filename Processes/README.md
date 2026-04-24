@@ -7,6 +7,7 @@
 
 ---
 
+
 ## 📋 Table of Contents
 
 1. [System Architecture Overview](#1-system-architecture-overview)
@@ -26,7 +27,9 @@
 
 ---
 
+
 ## 1. System Architecture Overview
+
 
 ### 1.1 Architecture Diagram
 
@@ -69,6 +72,7 @@
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
+
 ### 1.2 Technology Stack
 
 | Layer | Technology | Purpose |
@@ -85,6 +89,7 @@
 | **Language** | Thai (primary) / English | Bilingual UI throughout |
 | **Compliance** | PDPA, HIPAA | Data privacy, audit trails |
 
+
 ### 1.3 Service Summary
 
 | Service | Container | Local Port | Cloud Port | Tech | Role |
@@ -97,7 +102,9 @@
 
 ---
 
+
 ## 2. Deployment Architecture
+
 
 ### 2.1 Local Development (Docker Compose v1.5.6)
 
@@ -136,6 +143,7 @@ All 5 services run via `docker-compose up --build`:
 └─────────────────────────────────────────────────────────────────┘
 ```
 
+
 ## Environment Configuration
 
 | Variable | Value | Purpose |
@@ -147,6 +155,7 @@ All 5 services run via `docker-compose up --build`:
 | `GEMINI_MODEL` | `gemini-2.5-flash-lite` | AI model selection |
 | `JITSI_DOMAIN` | `meet.jit.si` | Free Jitsi video |
 | `RATE_LIMIT_MAX` | `999999` | High limit for dev/testing |
+
 
 ### 2.2 Cloud Production (Google Cloud Platform)
 
@@ -193,6 +202,7 @@ All 5 services run via `docker-compose up --build`:
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
+
 ## Cloud Run Service URLs
 
 | Service | URL |
@@ -200,6 +210,7 @@ All 5 services run via `docker-compose up --build`:
 | Patient Portal | `<https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app`> |
 | Doctor Portal | `<https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app`> |
 | Meeting Server | `<https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app`> |
+
 
 ### 2.3 PostgreSQL Database VM (GCE)
 
@@ -218,6 +229,7 @@ The PostgreSQL database runs on a dedicated Google Compute Engine VM, shared by 
 | **Why NOT Embedded PG** | Persistence — Cloud Run containers are ephemeral; data would be lost on restart |
 | **Backup** | VM disk snapshots (automated) |
 
+
 ## Why a Dedicated Database VM
 
 1. **Shared State** — All three Cloud Run services (Patient Portal, Doctor Portal, Meeting Server) read/write to the same `izara_phase1` database, ensuring data consistency across portals
@@ -225,6 +237,7 @@ The PostgreSQL database runs on a dedicated Google Compute Engine VM, shared by 
 3. **Real-Time Sync** — PostgreSQL `NOTIFY/LISTEN` triggers push change events to all connected services via `pgNotifyListener`, enabling cross-portal real-time updates without polling
 4. **AI Embeddings** — The `pgvector` extension stores vector embeddings for RAG-based clinical search (knowledge base, transcript similarity)
 5. **Cost Efficiency** — A single GCE VM running PostgreSQL costs less than Cloud SQL while providing full control over extensions and configuration
+
 
 ### 2.4 Docker Build Architecture
 
@@ -238,7 +251,9 @@ Each portal uses a **unified Docker image** containing both frontend and backend
 
 ---
 
+
 ## 3. Database Architecture (PostgreSQL VM)
+
 
 ### 3.1 Configuration
 
@@ -249,6 +264,7 @@ Extensions: uuid-ossp, pgcrypto, vector
 Encoding: UTF-8, Locale: C
 Connection Pool: 30 max (production), 20 max (development)
 ```
+
 
 ### 3.2 Schema Migration Chain
 
@@ -279,7 +295,9 @@ The database is initialized via Docker entrypoint scripts (local) or manual migr
                              PHR records, doctor schedules
 ```
 
+
 ### 3.3 Database Tables — Complete Catalog (40+ Tables)
+
 
 #### 3.3.1 Core User & Authentication Tables
 
@@ -291,6 +309,7 @@ The database is initialized via Docker entrypoint scripts (local) or manual migr
 | `patient_profiles` | Patient demographics | patient_id → users, demographics (JSONB), emergency_contact (JSONB), insurance_info (JSONB) |
 | `doctor_profiles` | Doctor professional data | doctor_id → users, specialty, sub_specialties (JSONB), qualifications, experience_years, hospital_name, department, languages (JSONB), rating (DECIMAL), consultation_fee, is_available, schedule (JSONB) |
 | `doctor_schedules` | Weekly availability | doctor_id → users, day_of_week, start_time, end_time, slot_duration_minutes |
+
 
 #### 3.3.2 Clinical Tables
 
@@ -306,12 +325,14 @@ The database is initialized via Docker entrypoint scripts (local) or manual migr
 | `icd10_codes` | ICD-10 diagnosis codes | code, description, description_thai, category |
 | `patient_consents` | PDPA consent records | patient_id, consent_type, granted (BOOL), doctor_id, data_types (JSONB), status (pending/active), granted_at, expires_at, revoked_at |
 
+
 #### 3.3.3 Living Will Tables
 
 | Table | Purpose | Key Fields |
 | ------- | ---------| ----------- |
 | `living_wills` | Patient living will documents | patient_id, statement, treatments (JSONB), representatives (JSONB), signature (JSONB), pdpa_consent (JSONB), status (active/revoked), is_shared_with_doctors, version, decisions (JSONB), witness_info (JSONB), audit_log (JSONB) |
 | `living_will_versions` | Version history | patient_id, version (INT), data (JSONB), note (TEXT) |
+
 
 #### 3.3.4 Meeting & Transcription Tables
 
@@ -325,6 +346,7 @@ The database is initialized via Docker entrypoint scripts (local) or manual migr
 | `transcript_embeddings` | Vector chunks for search | meeting_id, chunk_text, embedding (vector), chunk_index |
 | `patient_instructions` | AI-generated post-visit instructions | appointment_id, patient_id, doctor_id, content (TEXT/Thai PDF), status, validated_by |
 
+
 #### 3.3.5 Content Tables
 
 | Table | Purpose | Key Fields |
@@ -332,6 +354,7 @@ The database is initialized via Docker entrypoint scripts (local) or manual migr
 | `medical_content` | Health education articles for patients | id (MC-xxx), title, title_thai, content (TEXT), category, status (draft/pending/published), author_id, approved_by, tags (JSONB), images (JSONB) |
 | `clinical_resources` | Clinical guidelines for doctors | id (CR-xxx), title, title_thai, content, category, resource_type, status (draft/pending/published), author_id, source, references (JSONB) |
 | `consultants` | Specialist directory | id (CONS-xxx), name, specialty, hospital, email, phone, is_available, rating, reviews (JSONB), admin_notes |
+
 
 #### 3.3.6 AI & Knowledge Tables
 
@@ -341,6 +364,7 @@ The database is initialized via Docker entrypoint scripts (local) or manual migr
 | `ai_document_analysis` | AI PDF/document analysis results | document_id, user_id, analysis_type, original_text, ai_analysis (JSONB) |
 | `knowledge_base` | RAG-indexed clinical knowledge | id, content, embedding (vector), source, category, metadata (JSONB) |
 | `cds_logs` | Clinical Decision Support logs | patient_id, doctor_id, alert_type, alert_content, action_taken |
+
 
 #### 3.3.7 Phase 2 — AI-HIS Tables (Deployed)
 
@@ -359,6 +383,7 @@ The database is initialized via Docker entrypoint scripts (local) or manual migr
 | `follow_ups` | Follow-up tracking | patient_id, doctor_id, appointment_id, follow_up_date, status (active/completed/overdue) |
 | `geriatric_screenings` | Elderly assessments | patient_id, screener_id, scores (JSONB), risk_level, recommendations (JSONB) |
 
+
 #### 3.3.8 Mobile & Integration Tables (Phase 2 — Deployed)
 
 | Table | Purpose | Key Fields |
@@ -371,6 +396,7 @@ The database is initialized via Docker entrypoint scripts (local) or manual migr
 | `user_api_connections` | Third-party APIs | user_id, service_type (google_fit/apple_health/pharmacy_api/lab_api/hospital_his/line_notify/thai_id), access_token_encrypted, connection_status |
 | `api_connection_audit` | API audit trail | connection_id, user_id, action, service_type, ip_address |
 
+
 #### 3.3.9 System Tables
 
 | Table | Purpose | Key Fields |
@@ -380,6 +406,7 @@ The database is initialized via Docker entrypoint scripts (local) or manual migr
 | `user_settings` | User preferences | user_id, theme (light/dark/system), language, font_size, biometric_enabled, auto_sync |
 | `health_timeline` | Chronological event log | patient_id, event_type, event_data (JSONB), timestamp |
 | `audit_logs` | Security audit trail | user_id, action, entity_type, entity_id, ip_address, details (JSONB) |
+
 
 ### 3.4 Real-Time Sync (PostgreSQL NOTIFY Triggers)
 
@@ -406,6 +433,7 @@ trg_doctor_schedules_notify  doctor_schedules   INSERT, UPDATE, DELETE
 Payload format: { "table", "operation", "id", "patient_id", "doctor_id" }
 ```
 
+
 ## How it works
 
 1. A service (e.g., Doctor Portal) writes data to PostgreSQL (e.g., confirms an appointment)
@@ -416,13 +444,16 @@ Payload format: { "table", "operation", "id", "patient_id", "doctor_id" }
 
 ---
 
+
 ## 4. Core Workflows
+
 
 ### 4.1 Appointment & Meeting Workflow (End-to-End)
 
 > **Full Documentation:** [Appointment_Workflows.md](Appointment_Workflows.md), [VIDEO_MEETING_JITSI_GEMINI.md](VIDEO_MEETING_JITSI_GEMINI.md)
 
 This is the **core Phase 1 deliverable** — the complete end-to-end flow from appointment booking to patient delivery.
+
 
 #### Overview
 
@@ -434,7 +465,9 @@ Patient Books ──→ AI Analysis ──→ Admin Assigns / Doctor Confirms �
     ──→ Patient Instruction Sheet (Thai PDF) ──→ Follow-up Scheduled
 ```
 
+
 #### Step-by-Step Scenarios
+
 
 ## Scenario 1: Patient Books Appointment
 
@@ -444,6 +477,7 @@ Patient Books ──→ AI Analysis ──→ Admin Assigns / Doctor Confirms �
 4. Appointment created in `appointments` table with status `requested`
 5. Notification sent to admin/assigned doctor
 
+
 ## Scenario 2: Admin Assigns Doctor (Unassigned Appointments)
 
 1. Admin sees unassigned appointments in Appointment Pool Management page
@@ -451,6 +485,7 @@ Patient Books ──→ AI Analysis ──→ Admin Assigns / Doctor Confirms �
 3. Manually assigns a doctor or uses AI-matching (specialty + availability)
 4. Appointment status changes to `assigned`
 5. Assigned doctor receives notification
+
 
 ## Scenario 3: Doctor Confirms Appointment
 
@@ -464,12 +499,14 @@ Patient Books ──→ AI Analysis ──→ Admin Assigns / Doctor Confirms �
 5. Meeting link stored in `appointments.jitsi_room_name`
 6. Patient receives notification with meeting link + calendar event
 
+
 ## Scenario 4: Pre-Meeting AI Preparation
 
 1. Doctor clicks "AI สรุปก่อนพบ" (AI Pre-Consultation Summary) on dashboard
 2. Gemini AI processes: patient PHR, previous EMRs, current medications, allergies, lab results, appointment symptoms
 3. Returns structured summary: patient history overview, risk factors, medication interactions, suggested questions
 4. CDS (Clinical Decision Support) alerts shown if applicable (e.g., "ปรับยา Metformin สำหรับ eGFR 38")
+
 
 ## Scenario 5: Multi-Party Video Meeting
 
@@ -484,6 +521,7 @@ Patient Books ──→ AI Analysis ──→ Admin Assigns / Doctor Confirms �
 6. **Text chat** always available — all messages captured with timestamps and sender attribution
 7. Up to 8 participants per meeting recommended
 
+
 ## Scenario 6: Real-Time Transcript Streaming
 
 1. **Doctor (HOST) controls transcript**: START → PAUSE → RESUME → STOP buttons
@@ -495,12 +533,14 @@ Patient Books ──→ AI Analysis ──→ Admin Assigns / Doctor Confirms �
 7. Transcript saved segment-by-segment to `meeting_transcripts` table
 8. Chat messages captured to `meeting_chats` table
 
+
 ## Scenario 7: Recording
 
 1. Doctor can start/stop video recording
 2. Recording consent dialog shown to all participants
 3. Recording stored as BYTEA in `meeting_records.recording_data` (primary)
 4. Filesystem fallback if PostgreSQL write fails
+
 
 ## Scenario 8: Post-Meeting AI Pipeline
 
@@ -513,6 +553,7 @@ Patient Books ──→ AI Analysis ──→ Admin Assigns / Doctor Confirms �
 4. Section summaries in `meeting_records.section_summaries` (JSONB)
 5. AI recommendations in `meeting_records.ai_recommendations` (JSONB)
 
+
 ## Scenario 9: Man-in-the-Loop Validation
 
 1. Doctor Portal shows AI-generated summary in Health Meeting results panel
@@ -521,6 +562,7 @@ Patient Books ──→ AI Analysis ──→ Admin Assigns / Doctor Confirms �
 4. Status: `pending` → `approved` / `rejected`
 5. Only doctor-approved content proceeds to EMR and patient delivery
 6. `meeting_records.doctor_validation_status` and `validated_at` updated
+
 
 ## Scenario 10: EMR Creation (AI-Prefilled)
 
@@ -537,12 +579,14 @@ Patient Books ──→ AI Analysis ──→ Admin Assigns / Doctor Confirms �
 6. Doctor signs digitally → EMR status becomes `signed`
 7. EMR stored in `emr` table
 
+
 ## Scenario 11: Prescriptions, Lab Orders, Imaging Orders
 
 1. From EMR Editor, doctor opens E-Prescribing → searches drugs → selects dosage/frequency/duration → drug interaction check → signs
 2. Lab Orders: selects test types → enters clinical indication → orders saved to `lab_orders`
 3. Imaging Orders: selects modality → enters clinical question → orders saved
 4. All orders linked to appointment_id and patient_id
+
 
 ## Scenario 12: Patient Instruction Sheet
 
@@ -552,6 +596,7 @@ Patient Books ──→ AI Analysis ──→ Admin Assigns / Doctor Confirms �
 4. Patient receives as PDF (Thai) via Patient Portal
 5. Stored in `patient_instructions` table
 
+
 ## Scenario 13: Patient Receives Results
 
 1. Patient logs into Patient Portal → Dashboard shows latest appointment result
@@ -559,6 +604,7 @@ Patient Books ──→ AI Analysis ──→ Admin Assigns / Doctor Confirms �
 3. PHR page updated with new vital signs, diagnosis, medications
 4. Notification received: "เวชระเบียนพร้อมดู" (EMR Ready)
 5. Patient Instruction Sheet available for download
+
 
 ## Scenario 14: Follow-up Scheduling
 
@@ -573,11 +619,13 @@ Patient Books ──→ AI Analysis ──→ Admin Assigns / Doctor Confirms �
 
 ---
 
+
 ### 4.2 User Management & Authentication
 
 > **Full Documentation:** [User_management_Workflows.md](User_management_Workflows.md)
 
 Handles all user lifecycle operations across both portals with role-based access control.
+
 
 #### Features & Functions
 
@@ -593,7 +641,9 @@ Handles all user lifecycle operations across both portals with role-based access
 | Biometric Auth | Fingerprint/face ID (Phase 2 tables deployed) | 📋 |
 | JWT Token Rotation | Refresh tokens with device tracking (Phase 2) | 📋 |
 
+
 #### Scenarios
+
 
 ## Patient Registration
 
@@ -603,6 +653,7 @@ Handles all user lifecycle operations across both portals with role-based access
 4. Immediate access granted (no admin approval required)
 5. Session token generated → stored in `sessions` table
 
+
 ## Doctor Registration
 
 1. Doctor navigates to `/login` → Registration tab → fills detailed form (name, specialty, license, hospital)
@@ -610,6 +661,7 @@ Handles all user lifecycle operations across both portals with role-based access
 3. `doctor_profiles` record created with specialty, qualifications, experience
 4. Admin receives notification of new doctor registration
 5. Doctor sees "Pending Approval" screen until admin approves
+
 
 ## Admin Approves/Rejects Doctor
 
@@ -619,12 +671,14 @@ Handles all user lifecycle operations across both portals with role-based access
 4. Rejects → `approval_status: rejected`, `rejected_at` timestamp
 5. Doctor receives notification of approval/rejection
 
+
 ## Login Flow
 
 1. User enters email + password → POST `/api/auth/login` (patient) or `/auth/login` (doctor)
 2. bcrypt compares password hash → checks `is_active`, `locked_until`, `is_approved`
 3. Session created: token, IP, user_agent, expiration
 4. Returns user profile with role → frontend routes based on role
+
 
 ## Password Reset
 
@@ -634,17 +688,23 @@ Handles all user lifecycle operations across both portals with role-based access
 4. User clicks link → enters new password → token validated → password updated
 5. Token marked as used → all active sessions invalidated
 
+
 ## Account Security
+
 
 - `login_attempts` incremented on each failed login
 
+
 - After threshold (e.g., 5 attempts) → `locked_until` set (e.g., 30 minutes)
 
+
 - Session timeout: configurable per portal
+
 
 - All sessions log IP and user_agent for audit
 
 **Database Tables Used:** `users`, `sessions`, `password_resets`, `patient_profiles`, `doctor_profiles`, `doctor_schedules`, `audit_logs`
+
 
 ## API Endpoints
 
@@ -669,11 +729,13 @@ Handles all user lifecycle operations across both portals with role-based access
 
 ---
 
+
 ### 4.3 Health Records (PHR + EMR)
 
 > **Full Documentation:** [Health_Records_Processes.md](Health_Records_Processes.md)
 
 Covers patient self-entered data (PHR), doctor clinical records (EMR), prescriptions, lab orders, and AI integration.
+
 
 #### Features & Functions
 
@@ -690,7 +752,9 @@ Covers patient self-entered data (PHR), doctor clinical records (EMR), prescript
 | Voice Dictation | Web Speech API for hands-free EMR entry | ✅ |
 | Document Analysis | AI analyzes uploaded PDFs and lab results | ✅ |
 
+
 #### Scenarios
+
 
 ## Patient Self-Entry (PHR)
 
@@ -702,6 +766,7 @@ Covers patient self-entered data (PHR), doctor clinical records (EMR), prescript
 6. **Lifestyle**: Smoking status, alcohol use, exercise frequency
 7. All data stored in `phr` table (JSONB fields) and `vital_signs` table (individual measurements)
 8. Data immediately available to authorized doctors
+
 
 ## EMR Creation During/After Appointment
 
@@ -716,6 +781,7 @@ Covers patient self-entered data (PHR), doctor clinical records (EMR), prescript
 9. Auto-save periodically during editing
 10. Digital signature → EMR status: `signed` → `signed_at` timestamp
 
+
 ## Prescriptions (E-Prescribing)
 
 1. Doctor opens CompletePrescribing modal → real-time drug search from `drugs` table
@@ -725,6 +791,7 @@ Covers patient self-entered data (PHR), doctor clinical records (EMR), prescript
 5. Doctor sets: dosage, frequency, duration, instructions (Thai), quantity
 6. Digital signature → prescription stored in `prescriptions` table
 7. Linked to appointment_id and patient_id
+
 
 ## Lab Orders & Results
 
@@ -739,11 +806,13 @@ Covers patient self-entered data (PHR), doctor clinical records (EMR), prescript
 
 ---
 
+
 ### 4.4 Video Meeting & AI Pipeline
 
 > **Full Documentation:** [VIDEO_MEETING_JITSI_GEMINI.md](VIDEO_MEETING_JITSI_GEMINI.md)
 
 Describes the Jitsi Meet integration, real-time transcription, and Gemini AI post-meeting processing.
+
 
 #### Features & Functions
 
@@ -762,6 +831,7 @@ Describes the Jitsi Meet integration, real-time transcription, and Gemini AI pos
 | Clinical Decision Support | Drug interaction & dose alerts | — | ✅ |
 | Man-in-the-Loop | Doctor approval before patient delivery | — | ✅ |
 
+
 #### Jitsi Room URL Generation
 
 Each confirmed appointment generates 3 distinct Jitsi URLs:
@@ -772,11 +842,15 @@ Each confirmed appointment generates 3 distinct Jitsi URLs:
 | Patient URL | Booked patient | Lobby entry, participant controls | Appointment-linked |
 | Guest URL | Invited guests | Lobby entry, name-only registration, no login required | Token-based |
 
+
 ## Guest Join Pages (Public, No Login)
+
 
 - Patient Portal: `/guest-join/:meetingId`
 
+
 - Doctor Portal: `/guest-join/:meetingId`
+
 
 #### Meeting Server Backend
 
@@ -799,6 +873,7 @@ The Meeting Server (port 3020) provides:
 | `/api/meetings/:id/ai-summary` | POST | Trigger AI processing | JWT |
 | `/api/meetings/:id/validate` | POST | Man-in-the-loop validate | JWT (doctor) |
 
+
 #### Socket.IO Events (Real-Time)
 
 | Event | Direction | Purpose |
@@ -818,11 +893,13 @@ The Meeting Server (port 3020) provides:
 
 ---
 
+
 ### 4.5 Medical Content & Clinical Resources
 
 > **Full Documentation:** [Medicine_Content_Processes.md](Medicine_Content_Processes.md), [Clinical_Resources_&_Medical_Library_Workflows.md](Clinical_Resources_&_Medical_Library_Workflows.md)
 
 Two content systems serving different audiences — health articles for patients and clinical guidelines for doctors.
+
 
 #### Medical Content (คลังความรู้สุขภาพ — Patient-Facing)
 
@@ -835,6 +912,7 @@ Two content systems serving different audiences — health articles for patients
 | **Image Support** | `[image:URL:description]` inline syntax |
 | **RAG Knowledge Base** | Articles indexed for AI search via pgvector embeddings |
 
+
 ## Approval Workflow
 
 1. Doctor creates article → status: `draft`
@@ -843,12 +921,15 @@ Two content systems serving different audiences — health articles for patients
 4. Published articles appear in Patient Portal Medical Content Library
 5. If doctor edits published article → status reverts to `pending` for re-approval
 
+
 ## Categories (10 Fixed)
 diagnosis, treatment, pharmacology, radiology, laboratory, pathology, emergency, nursing, research, case-studies
+
 
 #### Clinical Resources (แหล่งข้อมูลทางการแพทย์ — Doctor-Facing)
 
 Same approval workflow as Medical Content but for clinical guidelines, protocols, and research papers visible only to doctors. Indexed into RAG knowledge base for AI-powered search during consultations.
+
 
 ## API Endpoints
 
@@ -869,11 +950,13 @@ Same approval workflow as Medical Content but for clinical guidelines, protocols
 
 ---
 
+
 ### 4.6 Notification System
 
 > **Full Documentation:** [Notification_Workflows.md](Notification_Workflows.md)
 
 Manages all in-app, email, push, and system notifications across both portals.
+
 
 #### Notification Channels
 
@@ -884,51 +967,75 @@ Manages all in-app, email, push, and system notifications across both portals.
 | Push | Push Notification | Browser push via `push_subscriptions` | ✅ |
 | SMS | SMS | Future enhancement | 📋 |
 
+
 #### Notification Types (15+)
+
 
 ## Appointments (นัดหมาย)
 
+
 - `appointment_requested` — Patient submitted new appointment
+
 
 - `appointment_confirmed` — Doctor confirmed + meeting link
 
+
 - `appointment_declined` — Doctor declined, seeking another doctor
+
 
 - `appointment_cancelled` — Appointment cancelled
 
+
 - `appointment_assigned` — Admin assigned doctor
+
 
 - `appointment_rescheduled` — Appointment time changed
 
+
 - `appointment_reminder` — 24h and 1h before appointment
+
 
 ## Video Meeting (การประชุมออนไลน์)
 
+
 - `meeting_link_ready` — Jitsi meeting link generated
+
 
 - `meeting_link_failed` — Meeting link generation failed
 
+
 - `meeting_started` — Doctor started the meeting room
+
 
 - `meeting_reminder` — 15 minutes before meeting
 
+
 ## Medical Records (เวชระเบียน)
+
 
 - `emr_signed` — Doctor signed the EMR
 
+
 - `emr_ready_for_review` — AI summary ready for doctor validation
+
 
 - `prescription_ready` — Prescription available
 
+
 - `lab_results_ready` — Lab results ready for viewing
+
 
 ## System (ระบบ)
 
+
 - `account_verified` — Account verification complete
+
 
 - `password_reset` — Password reset requested
 
+
 - `system_maintenance` — Scheduled maintenance alert
+
 
 #### Real-Time Delivery
 
@@ -938,6 +1045,7 @@ Manages all in-app, email, push, and system notifications across both portals.
 4. **NotificationBell** component (header) polls every 30 seconds as fallback
 5. Unread count badge updates immediately
 
+
 #### User Preferences
 
 Users can configure notification preferences per channel and category via `notification_preferences` table and `push_subscriptions` table (quiet hours, language preference).
@@ -946,11 +1054,13 @@ Users can configure notification preferences per channel and category via `notif
 
 ---
 
+
 ### 4.7 Living Will & PDPA Compliance
 
 > **Full Documentation:** [Living_Will_Processes.md](Living_Will_Processes.md), [Living_Will_Implementation_Plan.md](Living_Will_Implementation_Plan.md)
 
 Enables patients to create legally-binding Living Will documents with PDPA-compliant sharing controls.
+
 
 #### Features & Functions
 
@@ -964,7 +1074,9 @@ Enables patients to create legally-binding Living Will documents with PDPA-compl
 | Audit Trail | All access and modifications logged | ✅ |
 | Doctor Portal View | LivingWillCard in PatientRecordViewer | ✅ |
 
+
 #### Scenarios
+
 
 ## Patient Creates Living Will
 
@@ -989,12 +1101,14 @@ Enables patients to create legally-binding Living Will documents with PDPA-compl
    - Optional witness signature
    - System records timestamp and IP
 
+
 ## Doctor Views Living Will
 
 1. Doctor opens Patient Record Viewer → PHR tab → Living Will card
 2. If `is_shared_with_doctors: true` → Full document visible (read-only)
 3. If `is_shared_with_doctors: false` → Card shows "Living Will exists (private)"
 4. Access logged in `living_wills.audit_log` (JSONB)
+
 
 ## Living Will Access Rules
 
@@ -1008,11 +1122,13 @@ Enables patients to create legally-binding Living Will documents with PDPA-compl
 
 ---
 
+
 ### 4.8 Medical Consultants
 
 > **Full Documentation:** [Medical_Consultants_Workflows.md](Medical_Consultants_Workflows.md)
 
 Specialist directory for patient referrals and inter-doctor consultation.
+
 
 #### Features & Functions
 
@@ -1026,6 +1142,7 @@ Specialist directory for patient referrals and inter-doctor consultation.
 | Contact Consultant | Doctor | Email (mailto:) or Call (tel:) links |
 | View Details | All | Full profile modal with reviews |
 | Filter by Specialty | All | Specialty dropdown filter |
+
 
 ## API Endpoints
 
@@ -1044,11 +1161,13 @@ Specialist directory for patient referrals and inter-doctor consultation.
 
 ---
 
+
 ### 4.9 Data Synchronization
 
 > **Full Documentation:** [Data_Sync_Documentation.md](Data_Sync_Documentation.md)
 
 Ensures consistent data across the three independent services via PostgreSQL as single source of truth.
+
 
 #### Sync Architecture
 
@@ -1080,6 +1199,7 @@ Ensures consistent data across the three independent services via PostgreSQL as 
         └─────────────────────┘
 ```
 
+
 ## Sync Patterns
 
 | Pattern | Mechanism | Latency |
@@ -1087,6 +1207,7 @@ Ensures consistent data across the three independent services via PostgreSQL as 
 | **Real-Time** | PostgreSQL NOTIFY → pgNotifyListener → Socket.IO | <100ms |
 | **Polling Fallback** | Frontend polls API every 30 seconds | 30s max |
 | **Offline Sync** (Phase 2) | `sync_queue` table with conflict resolution | On reconnect |
+
 
 ## Cross-Portal Data Flow Examples
 
@@ -1103,11 +1224,13 @@ Ensures consistent data across the three independent services via PostgreSQL as 
 
 ---
 
+
 ## 5. Patient Portal Pages (15 Pages)
 
 > **Full Page Documentation:** [Pages/Patient-Portal/](Pages/Patient-Portal/)
 > **Portal URL:** `localhost:3005`
 > **Technology:** React 18 + TypeScript + Vite + Tailwind CSS + Express.js backend
+
 
 ### Authentication Pages
 
@@ -1117,11 +1240,13 @@ Ensures consistent data across the three independent services via PostgreSQL as 
 | 2 | [Register](Pages/Patient-Portal/02_Register_Page.md) | `/register` | `RegisterPage.tsx` | 2-step wizard: personal information (name, name_thai, DOB, gender, phone) + credentials (email, password with strength meter). Immediate access upon registration. PDPA consent checkbox required. |
 | 3 | [Reset Password](Pages/Patient-Portal/03_Reset_Password_Page.md) | `/reset-password` | `ResetPasswordPage.tsx` | Enter email → receive reset link → enter new password with confirmation. Token validation and expiration handling. |
 
+
 ### Dashboard & Navigation
 
 | # | Page | Route | Component | Description |
 | --- | ------| ------- | -----------| ------------- |
 | 4 | [Dashboard](Pages/Patient-Portal/04_Dashboard_Page.md) | `/` | `DashboardPage.tsx` | Central patient hub with 2-column layout. Left (2/5): Quick actions (book appointment, AI chat, view records) + upcoming appointments with countdown. Right (3/5): Health Studio with recent health data, notifications, medical content recommendations. Latest appointment results shown prominently. |
+
 
 ### Clinical Pages
 
@@ -1131,6 +1256,7 @@ Ensures consistent data across the three independent services via PostgreSQL as 
 | 6 | [PHR (Health Records)](Pages/Patient-Portal/06_PHR_Page.md) | `/phr` | `PHRPage.tsx` | 5-tab health data management. **Overview**: Summary of all health data + charts. **Vitals**: Record/view blood pressure, heart rate, temperature, O2 sat, blood glucose (with fasting/random/post-meal type), weight/height/BMI. **Medications**: Current medication list with dosage, frequency. **Allergies**: Drug allergies with severity flags. **Profile**: Demographics, emergency contact, insurance, chronic conditions. Includes **Living Will** management sub-tab. |
 | 7 | [Timeline](Pages/Patient-Portal/14_Timeline_Page.md) | `/timeline` | `TimelinePage.tsx` | Chronological timeline of ALL medical events: appointments (with status), medications (start/change/stop), lab results (with flags), procedures, diagnoses. Filter by event type. Click any event → navigate to detail page. Prescription PDFs and Patient Instruction Sheets downloadable. |
 
+
 ### AI & Content Pages
 
 | # | Page | Route | Component | Description |
@@ -1138,12 +1264,14 @@ Ensures consistent data across the three independent services via PostgreSQL as 
 | 8 | [AI Doctor](Pages/Patient-Portal/07_AI_Doctor_Page.md) | `/ai-doctor` | `AIDoctorPage.tsx` | AI health assistant powered by Gemini 2.5 Flash Lite. Toggleable sidebar with saved chat sessions. Medical context-aware: uses patient PHR, medications, allergies for personalized responses. Symptom assessment, medication questions, health education. Thai-first with English support. Disclaimer: "AI is not a substitute for professional medical advice." |
 | 9 | [Medical Content Library](Pages/Patient-Portal/08_Medical_Content_Library.md) | `/health-library` | `MedicalContentLibrary.tsx` | Read-only library of published medical content in "คลังความรู้สุขภาพ" (Health Knowledge) tab in Health Studio. Search by title/tag, filter by category (10 categories). Content shown in Thai (primary) with optional English. Inline images supported. Links to related articles. |
 
+
 ### Health Management Pages
 
 | # | Page | Route | Component | Description |
 | --- | ------| ------- | -----------| ------------- |
 | 10 | [PDPA](Pages/Patient-Portal/10_PDPA_Page.md) | `/pdpa` | `PDPAPage.tsx` | Privacy & data consent management. View/revoke data sharing consents. PDPA policy display. Consent history with timestamps. Data access audit log showing who accessed patient data and when. |
 | 11 | [Living Will](Pages/Patient-Portal/11_Living_Will_Page.md) | `/living-will` | `LivingWillPage.tsx` | 4-step wizard for creating/editing Living Will (see workflow 4.7). View existing document with status badge (Active/Revoked). Share settings toggle. Version history. Edit/Revoke buttons. |
+
 
 ### System Pages
 
@@ -1156,11 +1284,13 @@ Ensures consistent data across the three independent services via PostgreSQL as 
 
 ---
 
+
 ## 6. Doctor Portal Pages (21 Pages)
 
 > **Full Page Documentation:** [Pages/Doctor-Portal/](Pages/Doctor-Portal/)
 > **Portal URL:** `localhost:3010`
 > **Technology:** React 18 + TypeScript + Vite + Tailwind CSS + Express.js (CJS) + Nginx
+
 
 ### Authentication Pages
 
@@ -1169,12 +1299,14 @@ Ensures consistent data across the three independent services via PostgreSQL as 
 | 1 | [Login](Pages/Doctor-Portal/01_Login_Page.md) | `/login` | `LoginPage.tsx` | Doctor/admin login with email + password. Registration tab for new doctor sign-up (requires admin approval). Thai-first UI. |
 | 2 | [Reset Password](Pages/Doctor-Portal/02_Reset_Password_Page.md) | `/reset-password` | `ResetPasswordPage.tsx` | Token-based password recovery identical to patient portal flow. |
 
+
 ### Dashboard & Schedule
 
 | # | Page | Route | Component | Description |
 | --- | ------| ------- | -----------| ------------- |
 | 3 | [Dashboard](Pages/Doctor-Portal/03_Dashboard_Page.md) | `/dashboard` | `DoctorDashboard.tsx` | Central clinical hub with 3-column layout: **Health Data** (patient stats, AI analysis), **Health Meeting** (today's appointments with AI pre-consultation buttons, CDS alerts), **Health Studio** (documents pending review, AI assistant). Shows: today's appointment count, pending tasks, completed consultations. Quick actions: start meeting, view patient record, AI pre-consultation summary. |
 | 4 | [Schedule](Pages/Doctor-Portal/04_Schedule_Page.md) | `/schedule` | `CompleteSchedule.tsx` | Day/week/month calendar views. Each appointment shows: patient name, time, status badge, specialty. Click → open appointment detail. "Join Meeting" button for confirmed appointments with Jitsi link. Color-coded by status. Drag-and-drop rescheduling. |
+
 
 ### Clinical Workflow Pages
 
@@ -1188,11 +1320,13 @@ Ensures consistent data across the three independent services via PostgreSQL as 
 | 10 | [Lab & Imaging Orders](Pages/Doctor-Portal/10_Lab_Orders.md) | Modal | `CompleteLabOrders.tsx` | **Lab Orders**: Categorized test menu, clinical indication field, urgency level. **Imaging Orders**: Modality selection (X-ray, CT, MRI, Ultrasound), clinical question, body part. **Results Entry**: Numeric values with normal ranges, automatic flag calculation (normal/high/low/critical). Result history with trend visualization. |
 | 11 | [Patient Record Viewer](Pages/Doctor-Portal/11_Patient_Record_Viewer.md) | Modal | `PatientRecordViewer.tsx` | Comprehensive patient viewer with tabs: **PHR** (vitals, medications, allergies, demographics, Living Will card), **EMR History** (all past records, SOAP view), **EHR** (combined health record). Timeline view of all events. Lab results with trend charts. Prescription history. |
 
+
 ### Patient Queue
 
 | # | Page | Route | Component | Description |
 | --- | ------| ------- | -----------| ------------- |
 | 12 | [Queue Management](Pages/Doctor-Portal/21_Queue_Management.md) | Embedded | `QueueManagement.tsx` | Real-time patient queue for today's confirmed appointments. Queue state: waiting → called → in-consultation → completed. Actions: call next patient, skip, complete. Wait time tracking with color-coded urgency. AI triage score display (from `patient_queue.ai_triage_score`). |
+
 
 ### Content Management Pages
 
@@ -1202,17 +1336,20 @@ Ensures consistent data across the three independent services via PostgreSQL as 
 | 14 | [Medical Content](Pages/Doctor-Portal/13_Medical_Content_Page.md) | `/medical-content` | `MedicalContent.tsx` | Health education content management. Create/edit articles with rich text editor. Thai-first: Thai fields required, English optional. Image upload/inline support. Category and tag management. Status workflow: draft → pending → published. Admin approval queue with pending count badge. |
 | 15 | [Clinical Resources](Pages/Doctor-Portal/14_Clinical_Resources_Page.md) | `/clinical-resources` | `ClinicalResources.tsx` | Clinical guidelines and protocols. Same CRUD and approval workflow as Medical Content. Resource types: guideline, protocol, research paper, case study. RAG-indexed for AI search. References and source citation support. |
 
+
 ### AI Tools
 
 | # | Page | Route | Component | Description |
 | --- | ------| ------- | -----------| ------------- |
 | 16 | [Gemini AI Studio](Pages/Doctor-Portal/15_Gemini_AI_Studio.md) | FAB Modal (all pages) | `GeminiAIStudio.tsx` | Floating action button (bottom-right) accessible from ANY page. **AI Chat**: Context-aware medical assistant powered by Gemini 2.5 Flash Lite. Uses patient data, EMR, clinical resources as context. **Medical Calculators**: BMI, eGFR (CKD-EPI), MELD Score, CHA₂DS₂-VASc, CURB-65, Wells Score, etc. Chat history saved per session. |
 
+
 ### Profile
 
 | # | Page | Route | Component | Description |
 | --- | ------| ------- | -----------| ------------- |
 | 17 | [Doctor Profile](Pages/Doctor-Portal/16_Doctor_Profile_Page.md) | `/profile` | `DoctorProfilePage.tsx` | Profile management: name, name_thai, specialty, sub-specialties, hospital, department, qualifications, experience years, consultation fee, bio, bio_thai, languages, avatar. Schedule management: weekly availability slots. |
+
 
 ### Admin-Only Pages
 
@@ -1224,6 +1361,7 @@ Ensures consistent data across the three independent services via PostgreSQL as 
 | 21 | [Appointment Pool](Pages/Doctor-Portal/20_Appointment_Pool_Management.md) | `/appointment-pool-management` | `AppointmentPoolManagement.tsx` | Unassigned appointment queue. Doctors view appointments matching their specialty. Actions: claim appointment, view patient summary. Flow: pending → AI-matched → claimed → admin-assigned. Prevents double-claiming with optimistic locking. | Doctor/Admin |
 
 ---
+
 
 ## 7. Meeting Server
 
@@ -1242,6 +1380,7 @@ Ensures consistent data across the three independent services via PostgreSQL as 
 | **Auth** | JWT (rotating secrets, exits if missing in production) |
 | **Healthcheck** | `/health` endpoint, 30s interval |
 
+
 ## Core Responsibilities
 
 1. **Meeting Lifecycle**: Create Jitsi rooms → manage lobby → start/end meetings
@@ -1254,7 +1393,9 @@ Ensures consistent data across the three independent services via PostgreSQL as 
 
 ---
 
+
 ## 8. Data Flow Diagrams
+
 
 ### 8.1 Appointment → Meeting → EMR Flow
 
@@ -1315,6 +1456,7 @@ Ensures consistent data across the three independent services via PostgreSQL as 
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
+
 ### 8.2 AI Summary Pipeline
 
 ```text
@@ -1362,6 +1504,7 @@ Ensures consistent data across the three independent services via PostgreSQL as 
 └─────────────────────────────────────────────────────────────────┘
 ```
 
+
 ### 8.3 Cross-Portal Data Sync
 
 ```text
@@ -1404,6 +1547,7 @@ Ensures consistent data across the three independent services via PostgreSQL as 
 └─────────────────────────────────────────────────────────────────┘
 ```
 
+
 ### 8.4 Notification Flow
 
 ```text
@@ -1444,6 +1588,7 @@ Ensures consistent data across the three independent services via PostgreSQL as 
 │  └── LINE Notify (Phase 2) — Thai messaging integration         │
 └─────────────────────────────────────────────────────────────────┘
 ```
+
 
 ### 8.5 Authentication Flow
 
@@ -1495,7 +1640,9 @@ Ensures consistent data across the three independent services via PostgreSQL as 
 
 ---
 
+
 ## 9. Security & Compliance
+
 
 ### 9.1 OWASP Security Measures
 
@@ -1512,6 +1659,7 @@ Ensures consistent data across the three independent services via PostgreSQL as 
 | **Secrets** | Google Cloud Secret Manager for production; `.env` files for local only |
 | **Audit Trail** | All data access logged in `audit_logs` table |
 
+
 ### 9.2 PDPA Compliance (Thai Personal Data Protection Act)
 
 | Requirement | Implementation |
@@ -1523,6 +1671,7 @@ Ensures consistent data across the three independent services via PostgreSQL as 
 | **Data Minimization** | Only necessary data collected per feature |
 | **Consent Tracking** | `patient_consents` table with granted_at, expires_at, revoked_at |
 | **Living Will** | PDPA-specific sharing controls with audit trail |
+
 
 ### 9.3 HIPAA Considerations
 
@@ -1536,7 +1685,9 @@ Ensures consistent data across the three independent services via PostgreSQL as 
 
 ---
 
+
 ## 10. Cross-Reference Matrix
+
 
 ### Workflow → Pages → Database Tables
 
@@ -1554,7 +1705,9 @@ Ensures consistent data across the three independent services via PostgreSQL as 
 
 ---
 
+
 ## 11. Test Credentials & Verification
+
 
 ### 11.1 Test User Accounts (from seed-dev-data.sql)
 
@@ -1568,6 +1721,7 @@ Ensures consistent data across the three independent services via PostgreSQL as 
 | Patient | PATIENT-SOMCHAI | <Somchai.Mankong@gmail.com> | P@ssw0rd | นายสมชาย มั่นคง | Patient Portal |
 | Patient | PATIENT-ANAN | <Anan.Khayanrian@gmail.com> | P@ssw0rd | นายอนันต์ ขยันเรียน | Patient Portal |
 
+
 ### 11.2 Doctor Profiles (Seeded)
 
 | Doctor | Specialty | Hospital | Rating | Fee |
@@ -1575,6 +1729,7 @@ Ensures consistent data across the three independent services via PostgreSQL as 
 | DOC-TEST-001 | Internal Medicine | Izara Test Hospital | 5.0 (10 reviews) | ฿300 |
 | DOC-SOMCHAI-001 | Cardiology | Bangkok General Hospital | 4.8 (125 reviews) | ฿500 |
 | DOC-SIRIPORN-001 | Endocrinology | Bumrungrad Hospital | 4.9 (200 reviews) | ฿800 |
+
 
 ### 11.3 Playwright Test Suite
 
@@ -1585,6 +1740,7 @@ Ensures consistent data across the three independent services via PostgreSQL as 
 | Fetch Detection | 35 | API endpoint validation |
 | **Total** | **1,287** | All passing ✅ |
 
+
 ### 11.4 Access URLs
 
 | Environment | Patient | Doctor | Meeting | pgAdmin |
@@ -1594,7 +1750,9 @@ Ensures consistent data across the three independent services via PostgreSQL as 
 
 ---
 
+
 ## 12. Document Index
+
 
 ### Core Workflow Documents (9)
 
@@ -1610,6 +1768,7 @@ Ensures consistent data across the three independent services via PostgreSQL as 
 | [Notification_Workflows.md](Notification_Workflows.md) | In-app, email, push notifications, preferences | 15+ event types, real-time via NOTIFY, polling fallback |
 | [Data_Sync_Documentation.md](Data_Sync_Documentation.md) | PostgreSQL sync, NOTIFY triggers, audit trail | 8 triggers, Socket.IO events, cross-portal sync |
 
+
 ### Living Will & PDPA Documents (2)
 
 | Document | Description |
@@ -1617,12 +1776,14 @@ Ensures consistent data across the three independent services via PostgreSQL as 
 | [Living_Will_Processes.md](Living_Will_Processes.md) | 4-step wizard, healthcare proxy, PDPA sharing controls, audit trail |
 | [Living_Will_Implementation_Plan.md](Living_Will_Implementation_Plan.md) | TypeScript interfaces, API design, database schema, component specs |
 
+
 ### UI & Requirements Documents (2)
 
 | Document | Description |
 | ---------- | ------------- |
 | [UI_Pages_Workflows.md](UI_Pages_Workflows.md) | Cross-page navigation flows and UI patterns |
 | [PHASE1_REQUIREMENTS.md](PHASE1_REQUIREMENTS.md) | Original Phase 1 stakeholder requirements (Dr. Isara + P. Beer) |
+
 
 ### Page-by-Page Documentation (37 Pages)
 
@@ -1632,6 +1793,7 @@ Ensures consistent data across the three independent services via PostgreSQL as 
 | [Pages/Doctor-Portal/](Pages/Doctor-Portal/) | 21 pages | Login, Reset Password, Dashboard, Schedule, Patient Mgmt, Health Meeting, Virtual Meeting, EMR Editor, Prescribing, Lab Orders, Patient Record Viewer, Consultants, Medical Content, Clinical Resources, AI Studio, Profile, Admin Appointments, Admin Doctors, Doctors Mgmt, Appointment Pool, Queue Mgmt |
 | [Pages/Meeting-Server/](Pages/Meeting-Server/) | 1 page | Meeting Server architecture, API endpoints, Socket.IO events, AI pipeline |
 
+
 ### Thai Translations (7)
 
 | Document | Description |
@@ -1640,32 +1802,47 @@ Ensures consistent data across the three independent services via PostgreSQL as 
 
 ---
 
+
 ## 🆕 Version History
+
 
 ### v1.5.9 (March 2026) — Current
 
+
 - All Phase 1 features verified and tested (1,287 Playwright tests)
+
 
 - PostgreSQL as sole data store (GCS disabled for live data)
 
+
 - Camera/Mic default ON fix
+
 
 - Zoom UX improvements
 
+
 - Cloud deployment verified on GCE VM database
+
 
 ### v1.5.6 (February 2026)
 
+
 - Docker Compose updated to 5 services
+
 
 - Meeting Server separated as independent service
 
+
 - Imaging Orders added (full CRUD)
+
 
 ### v1.5.2 (January 2026)
 
+
 - Lab Orders & Prescriptions migrated to PostgreSQL
 
+
 - Embedded PG for Cloud Run (later replaced by GCE VM)
+
 
 - Mobile docs archived (web-only scope)

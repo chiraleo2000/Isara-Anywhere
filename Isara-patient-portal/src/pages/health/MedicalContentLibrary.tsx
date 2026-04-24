@@ -201,6 +201,7 @@ function FeaturedCard({ article, language, onClick }: Readonly<ContentCardProps>
     <button
       type="button"
       onClick={onClick}
+      data-testid="content-item"
       className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl p-6 text-white text-left cursor-pointer hover:shadow-lg transition-shadow"
     >
       <div className="flex items-center gap-2 mb-3">
@@ -239,7 +240,8 @@ function ContentCard({ article, isDark, language, onClick }: Readonly<ContentCar
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow cursor-pointer text-left ${cardBg}`}
+      data-testid="content-item"
+      className={`content-item card rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow cursor-pointer text-left ${cardBg}`}
     >
       {/* Thumbnail */}
       <div className={`relative h-48 ${thumbGradient}`}>

@@ -9,107 +9,157 @@
 
 ---
 
+
 ## Overview
 
 This document describes the video meeting implementation using:
 
+
 - **Jitsi Meet** (FREE) for video conferencing with lobby control
+
 
 - **Device/Browser Speech-to-Text** (FREE) for real-time transcription during meeting
 
+
 - **Gemini 2.5 Flash AI** for EMR summary, pre-consultation summary, and patient instructions
+
 
 - **PostgreSQL** for storing transcripts, summaries, and meeting metadata
 
+
 ## Key Features
+
 
 ### 1. Doctor as Meeting HOST
 
+
 - **Only the Doctor can START the meeting** - Doctor acts as moderator/host
+
 
 - Doctor controls lobby admission, recording, and meeting settings
 
+
 - Doctor receives meeting link in appointment timetable/calendar
+
 
 ### 2. Lobby System for Guest Approval
 
+
 - **Patient waits in lobby** until Doctor joins and admits them
+
 
 - **Patient Relatives** can be invited via email and must be approved by Doctor
 
+
 - **Doctor Consultants/Specialists** can be invited and must be approved by Doctor
+
 
 - Lobby prevents unauthorized access to the consultation
 
+
 ### 3. Guest Invite System
+
 
 - **Token-based invites** generated for each guest
 
+
 - Invites sent via email with unique join links
+
 
 - Invite types: `patient_relative`, `doctor_consultant`, `family_member`
 
+
 - Doctor can revoke invites at any time
+
 
 ### 4. Media Controls (Default: ON)
 
+
 - **Camera**: Enabled by default (`startWithVideoMuted=false`)
+
 
 - **Microphone**: Enabled by default (`startWithAudioMuted=false`)
 
+
 - **Text Chat**: Always available for communication
+
 
 - Users can mute/unmute at any time
 
+
 ### 5. Real-Time Transcript Streaming (Phase 1 Feature — HOST Control)
+
 
 - **Device/Browser Web Speech API** (FREE - no Google Cloud cost)
 
+
 - **Doctor (HOST) controls**: START / PAUSE / RESUME / STOP transcript
+
 
 - Real-time transcript streaming via Socket.IO during the meeting
 
+
 - Speaker labels: 👨‍⚕️ Doctor / 🧑 Patient / 👥 Guest
+
 
 - Interim text shown with yellow pulsing background
 
+
 - Language switching: Thai (th-TH) ↔ English (en-US)
+
 
 - Transcript saved to PostgreSQL `meeting_transcripts` table continuously
 
+
 - **Requirement 3.2:** ระบบ transcript หลังบ้านใน meeting
+
 
 - **Requirement 3.5:** ใช้ Speech-to-Text บนอุปกรณ์ (ฟรี)
 
+
 ### 6. Chat Integration During Meeting
+
 
 - **Text chat available to ALL participants** (like Microsoft Teams)
 
+
 - All chat messages are **CAPTURED with timestamps and sender attribution**
+
 
 - Chat messages included in AI summary processing alongside transcript
 
+
 - Chat provides secondary communication channel during consultation
+
 
 - Doctor, patient, relatives, guests can all send chat messages
 
+
 ### 7. Multi-Party Meeting Support
+
 
 - **Patient can invite**: relatives, friends (via Patient Portal sharing)
 
+
 - **Doctor can invite**: other doctors, admin, specialists (token-based)
 
+
 - **Non-registered users**: receive guest join page → enter name only → enter LOBBY
+
 
 - **Guest Join Pages** (public, no login required):
   - Patient Portal: `/guest-join/:meetingId`
   - Doctor Portal: `/guest-join/:meetingId`
 
+
 - Doctor as HOST approves/rejects each participant from lobby (like Microsoft Teams)
+
 
 - Admin joins as regular lobby participant — doctor must approve
 
+
 - Up to 8 participants per meeting recommended
+
 
 - **Backend lobby API**:
   - `POST /api/meetings/:id/lobby/join` — guest joins (name only, auto-generated participantId)
@@ -117,33 +167,48 @@ This document describes the video meeting implementation using:
   - `POST /api/meetings/:id/lobby/admit` — doctor admits (auth required)
   - `POST /api/meetings/:id/lobby/reject` — doctor rejects (auth required)
 
+
 ### 8. AI-Powered EMR Generation with Man-in-the-Loop
+
 
 - **Gemini 2.5 Flash Lite** processes: transcript + chats + video metadata + patient PHR
 
+
 - Generates SOAP format EMR draft (Thai OPD Card standard)
+
 
 - **Doctor MUST validate** before patient receives any data (Man-in-the-Loop)
 
+
 - Actions: [✅ Approve] [✏️ Edit] [🔄 Regenerate] [❌ Reject]
+
 
 - **Requirement 2.5:** แพทย์ตรวจสอบก่อนส่งข้อมูลถึงคนไข้
 
+
 ### 9. Patient Instruction Sheet Auto-Generation
+
 
 - AI generates patient-friendly summary in simple Thai
 
+
 - Content: วินิจฉัย, ยาที่ได้รับ, การปฏิบัติตัว, อาการเตือน, นัดติดตาม
+
 
 - Doctor validates before sending to patient (Man-in-the-Loop)
 
+
 - Patient views and downloads PDF in Patient Portal → Health History
+
 
 - **Requirement 2.1:** สร้างเอกสารสรุปคำแนะนำให้ผู้ป่วย
 
+
 - **Requirement 4.5:** Patient Instruction Sheet อัตโนมัติ
 
+
 ### 10. Post-Meeting AI Pipeline (Automatic)
+
 
 - **INPUT to Gemini AI:**
   - ① Full transcript from streaming (with speaker labels and timestamps)
@@ -151,13 +216,16 @@ This document describes the video meeting implementation using:
   - ③ Video recording metadata (duration, participants)
   - ④ Patient's existing PHR/EMR context
 
+
 - **OUTPUT:**
   - SOAP summary (Thai) with 30-minute sections for long meetings
   - Clinical Decision Support recommendations
   - Patient Instruction Sheet draft
   - Red flags and follow-up schedule
 
+
 - All outputs marked `requiresValidation: true`
+
 
 ## Storage Architecture (PostgreSQL)
 
@@ -195,6 +263,7 @@ This document describes the video meeting implementation using:
 │                                                                       │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
+
 
 ## Workflow
 
@@ -338,6 +407,7 @@ This document describes the video meeting implementation using:
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
+
 ## Cost Analysis (Phase 1 — Optimized for FREE)
 
 | Component | Provider | Cost |
@@ -354,7 +424,9 @@ This document describes the video meeting implementation using:
 
 > **KEY CHANGE:** Transcription is now **FREE** using Web Speech API (browser-native) instead of Google Cloud Speech-to-Text. This dramatically reduces per-consultation cost.
 
+
 ## API Endpoints
+
 
 ### Patient Portal (`/api/video-meeting`)
 
@@ -370,6 +442,7 @@ This document describes the video meeting implementation using:
 | `/:appointmentId/summarize` | POST | Generate EMR summary + recommendations |
 | `/:appointmentId/recommendations` | POST | Generate doctor recommendations only |
 | `/health` | GET | Health check |
+
 
 ### Doctor Portal (`/api/video-meeting`)
 
@@ -388,6 +461,7 @@ This document describes the video meeting implementation using:
 | `/:appointmentId/recommendations` | POST | Generate doctor recommendations |
 | `/health` | GET | Health check |
 
+
 ### Guest Invite Endpoints (New)
 
 | Endpoint | Method | Description |
@@ -397,15 +471,21 @@ This document describes the video meeting implementation using:
 | `/:appointmentId/join-with-invite` | POST | Join using invite token |
 | `/:appointmentId/invites` | GET | List all invites for meeting |
 
+
 ## Guest Invite System
+
 
 ### Invite Types
 
+
 - **patient_relative**: Family members who can observe/support patient
+
 
 - **doctor_consultant**: Specialist doctors for second opinions
 
+
 - **family_member**: General family members
+
 
 ### Create Guest Invite
 
@@ -431,6 +511,7 @@ Response:
 }
 ```
 
+
 ### Join with Invite Token
 
 ```http
@@ -451,17 +532,24 @@ Response:
 }
 ```
 
+
 ### Lobby Behavior
+
 
 - All guests join via lobby first
 
+
 - Doctor (HOST) sees notification of waiting guests
+
 
 - Doctor can **Approve** or **Reject** each guest
 
+
 - Approved guests join the meeting
 
+
 - Rejected guests receive error message
+
 
 ### Meeting Server Validation & Delivery Endpoints (v1.5.9)
 
@@ -471,6 +559,7 @@ Response:
 | `/api/meetings/:id` | DELETE | Delete meeting record |
 | `/api/meetings/:id/patient-instruction` | POST | Generate patient instruction sheet from approved summary |
 | `/api/meetings/:id/consultation-result` | GET | Patient polls for approved consultation results |
+
 
 #### Validate Meeting Summary (Doctor → Man-in-the-Loop)
 
@@ -493,6 +582,7 @@ Response:
 }
 ```
 
+
 #### Get Consultation Result (Patient Polling)
 
 ```http
@@ -512,9 +602,11 @@ Response (when approved):
 }
 ```
 
+
 ## 30-Minute Sectioned Summaries
 
 For long consultations (>30 minutes), the system automatically creates sectioned summaries:
+
 
 ### Section Processing
 
@@ -543,6 +635,7 @@ function splitIntoSections(transcript, totalDuration) {
   return sections;
 }
 ```
+
 
 ### Section Summary Output
 
@@ -577,6 +670,7 @@ function splitIntoSections(transcript, totalDuration) {
 }
 ```
 
+
 ### Storage for Sectioned Summaries
 
 ```text
@@ -587,7 +681,9 @@ PostgreSQL meeting_records table:
 └── ai_recommendations (TEXT)     # CDS recommendations
 ```
 
+
 ## New Endpoints for Video Recording
+
 
 ### Upload Video Recording
 
@@ -613,6 +709,7 @@ Response:
   "storage": "postgresql"
 }
 ```
+
 
 ### Get Meeting Files
 
@@ -641,7 +738,9 @@ Response:
 }
 ```
 
+
 ## Web Speech API Integration (FREE — Browser-Native)
+
 
 ### Configuration
 
@@ -662,6 +761,7 @@ recognition.lang = 'th-TH';  // or 'en-US'
 recognition.continuous = true;
 recognition.interimResults = true;
 ```
+
 
 ### HOST Transcript Control Flow
 
@@ -687,31 +787,45 @@ POST /api/meetings/:id/stop-transcription
 // → Full transcript compiled from all segments
 ```
 
+
 ### Speaker Label Assignment
+
 
 - 👨‍⚕️ **Doctor**: Speaker detected from doctor's audio stream
 
+
 - 🧑 **Patient**: Speaker detected from patient's audio stream
+
 
 - 👥 **Guest**: Speaker detected from guest audio streams (by display name)
 
+
 - Timestamps: Each segment includes `start_time_seconds` and `end_time_seconds`
+
 
 - Language: Each segment tagged with detected language (th/en)
 
+
 ### Medical Speech Recognition Features
+
 
 - **Continuous Mode**: Uninterrupted transcription during consultation
 
+
 - **Interim Results**: Real-time display of partial recognition (pulsing yellow)
+
 
 - **Thai + English**: Primary Thai with English switching by HOST
 
+
 - **No Cost**: Browser-native API, zero API charges
+
 
 - **Browser Support**: Chrome, Edge, Safari (WebKit)
 
+
 ## Jitsi Meet Configuration
+
 
 ### URL Format for Doctor (HOST)
 
@@ -719,11 +833,13 @@ POST /api/meetings/:id/stop-transcription
 <https://meet.jit.si/Izara-{appointmentId}-{hash}#config.prejoinConfig.enabled=true&config.startWithVideoMuted=false&config.startWithAudioMuted=false&config.lobby.enabled=true&config.moderator=true&userInfo.displayName={doctorName}>
 ```
 
+
 ### URL Format for Patient (LOBBY)
 
 ```text
 <https://meet.jit.si/Izara-{appointmentId}-{hash}#config.prejoinConfig.enabled=true&config.startWithVideoMuted=false&config.startWithAudioMuted=false&userInfo.displayName={patientName}>
 ```
+
 
 ### URL Format for Guest (INVITE + LOBBY)
 
@@ -731,25 +847,36 @@ POST /api/meetings/:id/stop-transcription
 <https://meet.jit.si/Izara-{appointmentId}-{hash}?inviteToken={token}#config.prejoinConfig.enabled=true&config.startWithVideoMuted=false&config.startWithAudioMuted=false&userInfo.displayName={guestName}>
 ```
 
+
 ### Features Enabled
+
 
 - **Pre-join Page**: Allows users to test camera/mic before joining
 
+
 - **Lobby Mode**: All non-host participants wait for approval
+
 
 - **Google Login**: Users can sign in with Google account
 
+
 - **Anonymous Access**: Guests can join with invite token
+
 
 - **Screen Sharing**: For sharing medical images, reports
 
+
 - **Local Recording**: FREE recording stored locally
+
 
 - **End-to-End Encryption**: Secure communication
 
+
 - **Text Chat**: Always enabled for communication
 
+
 - **Default Media**: Camera ON, Microphone ON (can be muted by user)
+
 
 ### Room Naming Convention
 
@@ -758,7 +885,9 @@ POST /api/meetings/:id/stop-transcription
 // Example: Izara-APT12345-a7b3c9d1
 ```
 
+
 ## Gemini AI Integration
+
 
 ### Model Configuration
 
@@ -771,6 +900,7 @@ const GEMINI_CONFIG = {
 };
 ```
 
+
 ### Transcription
 
 ```typescript
@@ -782,6 +912,7 @@ POST /api/video-meeting/:appointmentId/transcribe-audio
   "mimeType": "audio/webm"
 }
 ```
+
 
 ### EMR Summary Generation
 
@@ -797,6 +928,7 @@ POST /api/video-meeting/:appointmentId/summarize
   }
 }
 ```
+
 
 ### Summary Output Format (Thai)
 
@@ -818,11 +950,14 @@ POST /api/video-meeting/:appointmentId/summarize
 }
 ```
 
+
 ## Environment Variables
+
 
 ### Required Variables
 
 ```env
+
 
 # Jitsi Meet Configuration (FREE)
 JITSI_DOMAIN=meet.jit.si
@@ -830,9 +965,12 @@ VITE_JITSI_DOMAIN=meet.jit.si
 VITE_JITSI_APP_ID=izara-telemedicine
 
 
+
 # Speech-to-Text: Web Speech API (FREE - browser-native, no API key needed)
 
+
 # No environment variable required for transcription
+
 
 
 # Gemini AI Configuration (for summary, CDS, patient instructions)
@@ -842,8 +980,10 @@ VITE_GEMINI_TEMPERATURE=0.3
 VITE_GEMINI_MAX_TOKENS=8192
 
 
+
 # PostgreSQL Database
 DATABASE_URL=postgresql://izara_user:password@localhost:5432/izara_phase1
+
 
 
 # Meeting Server
@@ -851,6 +991,7 @@ MEETING_SERVER_PORT=3020
 MEETING_SERVER_URL=<http://localhost:3020>
 
 ```
+
 
 ## Doctor Recommendations Output
 
@@ -879,17 +1020,21 @@ MEETING_SERVER_URL=<http://localhost:3020>
 }
 ```
 
+
 ## Docker Configuration
+
 
 ### Dockerfile.unified ARG
 
 ```dockerfile
+
 
 # Jitsi Meet Video Conferencing (FREE)
 ARG JITSI_DOMAIN=meet.jit.si
 ARG VITE_JITSI_DOMAIN=meet.jit.si
 ARG VITE_JITSI_APP_ID=izara-telemedicine
 ```
+
 
 ### docker-compose.yml
 
@@ -903,7 +1048,9 @@ services:
         VITE_JITSI_APP_ID: "izara-telemedicine"
 ```
 
+
 ## Usage Examples
+
 
 ### Creating a Meeting (Doctor)
 
@@ -928,6 +1075,7 @@ const response = await fetch('/api/video-meeting/create', {
 }
 ```
 
+
 ### Joining a Meeting (Patient)
 
 ```typescript
@@ -948,6 +1096,7 @@ const response = await fetch('/api/video-meeting/APT-2025-001/join', {
   "roomName": "Izara-APT2025-a7b3c9d1"
 }
 ```
+
 
 ### Generating EMR Summary
 
@@ -976,6 +1125,7 @@ const response = await fetch('/api/video-meeting/APT-2025-001/summarize', {
 }
 ```
 
+
 ## Security Considerations
 
 1. **Room Name Hashing**: Room names include secure hash to prevent guessing
@@ -992,7 +1142,9 @@ const response = await fetch('/api/video-meeting/APT-2025-001/summarize', {
 12. **CSP for Video**: `frame-src meet.jit.si 8x8.vc`, `media-src mediastream:`, `worker-src blob:`, `connect-src *.run.app wss://*.run.app`
 13. **Iframe Allow Attribute**: Explicit `allow="camera *; microphone *; display-capture *; autoplay *; clipboard-write *; encrypted-media *"` on Jitsi iframe
 
+
 ## Testing
+
 
 ### Test Environments
 
@@ -1001,40 +1153,52 @@ const response = await fetch('/api/video-meeting/APT-2025-001/summarize', {
 | **Local** | localhost:3005 | localhost:3010 | localhost:3020 | localhost:5432 |
 | **Cloud** | patient-portal-xxxxx.run.app | doctor-portal-xxxxx.run.app | meeting-server-xxxxx.run.app | CloudSQL |
 
+
 ### E2E Test Suite
 
 ```bash
 
+
 # Run dual-portal meeting workflow tests
 node scripts/tests/e2e/dualPortalMeetingTests.cjs
+
 
 
 # Run with headless browsers
 node scripts/tests/e2e/dualPortalMeetingTests.cjs --headless
 ```
 
+
 ### 4-User Meeting UI Test
 
 ```bash
 
+
 # Test with 4 visible browser windows (Doctor, Patient, Relative, Admin)
 node scripts/tests/fourUserMeetingUITest.cjs
+
 
 
 # Run against cloud deployments
 node scripts/tests/fourUserMeetingUITest.cjs --cloud
 
 
+
 # Test users:
+
 
 # - Doctor HOST: doctor.test@izara.com (IzaraDoctor@2024)
 
+
 # - Patient: demo.test@gmail.com (P@ssw0rd)
+
 
 # - Patient Relative: (no login - creates display name from blank)
 
+
 # - Admin: admin.test@izara.com (IzaraAdmin@2024)
 ```
+
 
 ### Comprehensive Meeting Test Scenarios
 
@@ -1057,6 +1221,7 @@ node scripts/tests/fourUserMeetingUITest.cjs --cloud
 | 15 | Patient Instruction Sheet generated | AI + doctor validation |
 | 16 | Patient receives results in Health History | Patient delivery pipeline |
 
+
 ### Demo Meeting Test Procedure (Local)
 
 ```text
@@ -1076,34 +1241,45 @@ node scripts/tests/fourUserMeetingUITest.cjs --cloud
 14. Doctor signs EMR → Patient sees results in Dashboard + Timeline
 ```
 
+
 ### Generate Test Audio
 
 ```bash
+
 
 # Generate test audio files for transcription testing
 node scripts/generators/generateTestAudio.cjs
 ```
 
+
 ### Test Files Generated
+
 
 - `thai-headache-consultation-transcript.txt` - Reference Thai transcript
 
+
 - `thai-fever-consultation-transcript.txt` - Reference Thai transcript
+
 
 - `english-general-consultation-transcript.txt` - Reference English transcript
 
+
 - `*-ssml.xml` - SSML for Google TTS API
 
+
 - `*-metadata.json` - Test metadata
+
 
 ### API Testing
 
 ```bash
 
+
 # Test meeting creation
 curl -X POST <http://localhost:3009/api/video-meeting/create> \
   -H "Content-Type: application/json" \
   -d '{"appointmentId": "APT-TEST-001", "doctorId": "DOC-001"}'
+
 
 
 # Test video upload
@@ -1112,17 +1288,21 @@ curl -X POST <http://localhost:3009/api/video-meeting/APT-TEST-001/upload-record
   -d '{"videoBase64": "<base64>", "doctorId": "DOC-001"}'
 
 
+
 # Test get meeting files
 curl <http://localhost:3009/api/video-meeting/APT-TEST-001/files?doctorId=DOC-001>
 ```
 
+
 ## Troubleshooting
+
 
 ### Meeting Won't Start
 
 1. Check browser permissions for camera/microphone
 2. Ensure HTTPS is enabled (required for WebRTC)
 3. Try a different browser (Chrome/Edge recommended)
+
 
 ### Transcription Not Working
 
@@ -1131,6 +1311,7 @@ curl <http://localhost:3009/api/video-meeting/APT-TEST-001/files?doctorId=DOC-00
 3. Ensure audio quality is sufficient
 4. Check API quota limits
 
+
 ### Video Upload Failed
 
 1. Check file size (max 200MB)
@@ -1138,11 +1319,13 @@ curl <http://localhost:3009/api/video-meeting/APT-TEST-001/files?doctorId=DOC-00
 3. Check GCS API server is running
 4. Verify bucket permissions
 
+
 ### Meeting Link Invalid
 
 1. Meetings expire 30 minutes after scheduled end time
 2. Check appointment status is not cancelled
 3. Verify appointmentId is correct
+
 
 ## Future Improvements (Phase 2)
 
@@ -1154,15 +1337,21 @@ curl <http://localhost:3009/api/video-meeting/APT-TEST-001/files?doctorId=DOC-00
 6. **Waiting Room UI**: Enhanced lobby with estimated wait time
 7. **AI Chat History**: Long-term AI knowledge base from meeting data (Requirement 3.3)
 
+
 ## References
+
 
 - [Jitsi Meet API](<https://jitsi.github.io/handbook/docs/dev-guide/dev-guide-iframe)>
 
+
 - [Web Speech API (MDN)](<https://developer.mozilla.org/en-US/docs/Web/API/Web_Speech_API)>
+
 
 - [Gemini AI API](<https://ai.google.dev/docs)>
 
+
 - [WebRTC Standards](<https://webrtc.org/)>
+
 
 - [Socket.IO Documentation](<https://socket.io/docs/v4/)>
 
@@ -1170,7 +1359,9 @@ curl <http://localhost:3009/api/video-meeting/APT-TEST-001/files?doctorId=DOC-00
 
 ---
 
+
 ## PostgreSQL Database Architecture for Video Meetings
+
 
 ### Database Tables
 
@@ -1184,6 +1375,7 @@ curl <http://localhost:3009/api/video-meeting/APT-TEST-001/files?doctorId=DOC-00
 | **ai_validations** | Man-in-the-Loop approvals | id, type ('meeting_summary'/'emr'), patient_id, doctor_id, decision, content_snapshot (JSONB) |
 | **ai_chat_history** | Meeting-context AI conversations | id, user_id, session_id, role, content, context (JSONB), embedding (vector) |
 | **ai_chat_memory** | Long-term AI knowledge from meetings | id, user_id, memory_type, title, content, source_session_id, embedding (vector), relevance_score, is_active |
+
 
 ### Complete Meeting Data Flow (End-to-End)
 
@@ -1275,6 +1467,7 @@ curl <http://localhost:3009/api/video-meeting/APT-TEST-001/files?doctorId=DOC-00
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
+
 ### PostgreSQL LISTEN/NOTIFY for Meetings
 
 ```sql
@@ -1298,6 +1491,7 @@ $$ LANGUAGE plpgsql;
 -- PostgreSQL LISTEN meeting_changes → io.to(roomName).emit('meeting:updated', data)
 ```
 
+
 ### Deployment Architecture
 
 | Environment | Service | Meeting Role | Database |
@@ -1307,6 +1501,7 @@ $$ LANGUAGE plpgsql;
 | Local Docker | Meeting Server (3020) | Jitsi control + transcript + AI pipeline | izara-postgres:5432 |
 | Production | All Cloud Run | Same roles, higher timeout (600s for meetings) | 35.240.157.230:5432 |
 | External | meet.jit.si | Jitsi SaaS (FREE, no server cost) | N/A |
+
 
 ### API Endpoints with DB Operations
 
@@ -1322,6 +1517,7 @@ $$ LANGUAGE plpgsql;
 | Patient | `/api/health-records/emr` | GET | SELECT emr WHERE status='signed' |
 | Meeting | Socket.IO `transcript:segment` | emit | INSERT meeting_transcripts |
 | Meeting | Socket.IO `meeting:updated` | emit | Triggered by PG NOTIFY |
+
 
 ### Scenario Coverage
 

@@ -2,21 +2,16 @@
  * Master Startup Script for Izara Doctor Portal
  *
  * Starts all required servers in the correct order:
- * 1. GCS API Server (port 3012) - Internal storage operations
- * 2. Auth Server (port 3011) - Authentication and storage proxy
- * 3. Main API Server (port 3009) - Clinical operations
+ * 1. Auth Server (port 3011) - Authentication
+ * 2. Main API Server (port 3009) - Clinical operations
+ *
+ * (GCS API Server removed — no GCS in this deployment.)
  */
 
 const { spawn } = require('node:child_process');
 const path = require('node:path');
 
 const servers = [
-  {
-    name: 'GCS API Server',
-    script: path.join(__dirname, 'gcsApiServer.cjs'),
-    port: 3012,
-    color: '\x1b[36m' // Cyan
-  },
   {
     name: 'Auth Server',
     script: path.join(__dirname, 'authServer.cjs'),

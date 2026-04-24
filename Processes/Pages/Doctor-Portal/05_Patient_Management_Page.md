@@ -7,11 +7,13 @@
 
 ---
 
+
 ## 1. Purpose
 
 View and manage patient list with search, filters, and PDPA consent management. Doctors see only their assigned patients; admins see all patients.
 
 ---
+
 
 ## 2. Page Layout
 
@@ -37,6 +39,7 @@ View and manage patient list with search, filters, and PDPA consent management. 
 
 ---
 
+
 ## 3. Features
 
 | Feature | Description |
@@ -51,6 +54,7 @@ View and manage patient list with search, filters, and PDPA consent management. 
 | **Category tabs** | Filter by health record category (from Health Studio) |
 | **Responsive grid** | 1-col mobile, 2-col tablet, 3-col desktop |
 
+
 ### Access Control
 
 | Role | Patient Visibility |
@@ -60,7 +64,9 @@ View and manage patient list with search, filters, and PDPA consent management. 
 
 ---
 
+
 ## 4. PDPA Consent Management
+
 
 ### Consent Badge Colors
 
@@ -69,6 +75,7 @@ View and manage patient list with search, filters, and PDPA consent management. 
 | 🟢 Green | Full consent | Patient shared all health data |
 | 🟡 Yellow | Partial | Some data types consented |
 | 🔴 Red | None | No consent given |
+
 
 ### Consent Dialog
 
@@ -90,7 +97,9 @@ View and manage patient list with search, filters, and PDPA consent management. 
 
 ---
 
+
 ## 5. Workflows
+
 
 ### Workflow 1: Search for Patient
 
@@ -102,6 +111,7 @@ Step 4: Apply additional filters (gender, risk, age, consent)
 Step 5: Click patient card → Opens PatientRecordViewer modal
 ```
 
+
 ### Workflow 2: View Patient Records
 
 ```text
@@ -110,6 +120,7 @@ Step 2: GET /api/patients/:id with PDPA consent check
 Step 3: PatientRecordViewer modal opens with PHR/EMR/EHR tabs
 Step 4: View patient data according to consent level
 ```
+
 
 ### Workflow 3: Request PDPA Consent
 
@@ -123,6 +134,7 @@ Step 5: Patient receives notification to grant/deny
 
 ---
 
+
 ## 6. API Endpoints
 
 | Method | Endpoint | Purpose |
@@ -134,19 +146,26 @@ Step 5: Patient receives notification to grant/deny
 
 ---
 
+
 ## 7. AI Agent Improvement Opportunities
+
 
 - **Risk stratification**: AI auto-classify patient risk levels
 
+
 - **Smart search**: AI understand natural language patient queries
 
+
 - **Patient matching**: AI suggest patients needing follow-up
+
 
 - **Consent automation**: AI manage consent expiry and renewals
 
 ---
 
+
 ## PostgreSQL Database Integration
+
 
 ### Tables Used
 
@@ -160,6 +179,7 @@ Step 5: Patient receives notification to grant/deny
 | prescriptions | SELECT | Active and past prescriptions |
 | lab_orders | SELECT | Lab test orders and results |
 
+
 ### API Endpoints
 
 | Endpoint | Method | DB Operation |
@@ -167,10 +187,14 @@ Step 5: Patient receives notification to grant/deny
 | GET /api/patients | GET | SELECT users JOIN patient_profiles WHERE role='patient' |
 | GET /api/patients/:id | GET | SELECT users, patient_profiles, phr, vital_signs, emr, prescriptions, lab_orders WHERE patient_id |
 
+
 ### Deployment
+
 
 - **Local Docker:** izara-postgres container (localhost:5433 external / 5432 internal) → database: izara_phase1
 
+
 - **Production:** GCE VM at 35.240.157.230:5432 → database: izara_phase1 (asia-southeast1)
+
 
 - **Service deployed via:** Cloud Run (gen2, CPU Boost) + Cloud Build CI/CD

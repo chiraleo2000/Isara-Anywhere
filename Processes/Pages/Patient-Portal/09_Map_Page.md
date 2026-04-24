@@ -71,6 +71,7 @@ Interactive Google Maps-based healthcare facility finder showing hospitals, clin
 | Health Center | 🟣 Purple | 🏢 | ศูนย์สุขภาพ |
 
 
+
 ---
 
 
@@ -89,6 +90,7 @@ Interactive Google Maps-based healthcare facility finder showing hospitals, clin
 
 
 
+
 ### 4.2 Map Controls
 
 | Control | Description |
@@ -101,6 +103,7 @@ Interactive Google Maps-based healthcare facility finder showing hospitals, clin
 
 
 
+
 ### 4.3 Map Interactions
 
 | Interaction | Result |
@@ -108,6 +111,7 @@ Interactive Google Maps-based healthcare facility finder showing hospitals, clin
 | Click marker | Opens info window with facility details |
 | Navigate button | Opens Google Maps directions |
 | Click facility in list | Centers map on facility |
+
 
 
 ---
@@ -126,6 +130,7 @@ Each facility displays:
 | Status | Open / Closed |
 | Rating | Star rating (if available) |
 | Navigate | Google Maps directions link |
+
 
 
 ---
@@ -221,6 +226,7 @@ Step 3: Matching facilities highlighted
 | Marker Clustering | For dense areas |
 
 
+
 ---
 
 
@@ -230,6 +236,7 @@ Step 3: Matching facilities highlighted
 | ------- | --------- | ----------- |
 | Sidebar MiniMapWidget | → | Navigates to full Map page |
 | Dashboard | → | Via sidebar navigation |
+
 
 
 ---
@@ -265,10 +272,12 @@ Step 3: Matching facilities highlighted
 
 
 
+
 ### API Endpoints
 | Endpoint | Method | DB Operation |
 | -------- | ------ | ------------ |
 | *(none)* | — | Client-side Google Maps API calls only |
+
 
 
 

@@ -102,12 +102,12 @@ async function startPgNotifyListener(pool, io) {
     client.on('error', (err) => {
       console.error('[PG_NOTIFY] Connection error — will retry:', err.message);
       // Release and retry after 5s
-      try { client.release(); } catch (_) { /* ignore */ }
+      try { client.release(); } catch (releaseErr) { console.debug('[PG_NOTIFY] release after connection error:', releaseErr.message); }
       setTimeout(() => startPgNotifyListener(pool, io), 5000);
     });
   } catch (err) {
     console.error('[PG_NOTIFY] Failed to subscribe — will retry:', err.message);
-    if (client) { try { client.release(); } catch (_) { /* ignore */ } }
+    if (client) { try { client.release(); } catch (releaseErr) { console.debug('[PG_NOTIFY] release after subscribe failure:', releaseErr.message); } }
     setTimeout(() => startPgNotifyListener(pool, io), 5000);
   }
 }

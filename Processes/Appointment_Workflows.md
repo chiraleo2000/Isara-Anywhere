@@ -30,6 +30,7 @@ This document details the full appointment workflow for Izara Telemedicine, cove
 | **EMR Auto-Population** | ✅ | AI pre-fills SOAP from meeting transcript + summary |
 | **Patient Health History** | ✅ | Relevant EMR parts sent to patient's Health History page |
 
+
 ### Test Credentials
 
 | Role | Email | Password | Portal |
@@ -39,6 +40,7 @@ This document details the full appointment workflow for Izara Telemedicine, cove
 | Patient | <Anan.Khayanrian@gmail.com> | P@ssw0rd | localhost:3005 |
 | Doctor | <doctor.test@izara.com> | IzaraDoctor@2024 | localhost:3010 |
 | Admin | <admin.test@izara.com> | IzaraAdmin@2024 | localhost:3010 |
+
 
 ---
 
@@ -59,6 +61,7 @@ This document details the full appointment workflow for Izara Telemedicine, cove
 | AI Summary | ✅ | Gemini AI with 30-min sections |
 | Doctor Portal Delivery | ✅ | Summary in reports |
 
+
 ### Test Users
 
 | Role | Email | Password | Portal |
@@ -67,6 +70,7 @@ This document details the full appointment workflow for Izara Telemedicine, cove
 | Patient | <demo.test@gmail.com> | P@ssw0rd | localhost:3005 |
 | Patient Relative (demo2) | <demo2.test@gmail.com> | P@ssw0rd | localhost:3005 |
 | Admin/Unit Test Doctor | <doctorunit.test@izara.com> | P@ssw0rd | localhost:3010 |
+
 
 ### External Guest Access (Non-Registered Users) ✅
 
@@ -79,6 +83,7 @@ External guests who are **NOT registered** in the Izara system can join meetings
 | Doctor Specialist | Doctor | <dr.cardio@privatehospital.co.th> |
 | Doctor Advisor | Doctor | <professor@university.ac.th> |
 | Other | Both | <any.guest@anydomain.xyz> |
+
 
 ## How External Guests Join
 
@@ -97,12 +102,14 @@ External guests who are **NOT registered** in the Izara system can join meetings
 | Patient Portal | <https://izara-patient-portal-724889190329.asia-southeast1.run.app> | v1.4.4 |
 | Doctor Portal | <https://izara-doctor-portal-724889190329.asia-southeast1.run.app> | v1.4.4 |
 
+
 ### Docker Images (v1.4.4)
 
 | Portal | Image |
 | -------- | ------- |
 | Patient Portal | `asia-southeast1-docker.pkg.dev/izara-telemedicine/isara-anywhere-portals/isara-patient-portal:1.4.4` |
 | Doctor Portal | `asia-southeast1-docker.pkg.dev/izara-telemedicine/isara-anywhere-portals/isara-doctor-portal:1.4.4` |
+
 
 ### Video Meeting Provider
 
@@ -428,6 +435,7 @@ The meeting experience is designed to work like **Microsoft Teams** — the doct
 | Patient Relative | `demo2.test@gmail.com` | P@ssw0rd | Patient Portal | Guest (lobby) |
 | Admin/2nd Doctor | `admin.test@izara.com` | IzaraAdmin@2024 | Doctor Portal | Participant (lobby) |
 | External Guest | (any email) | (none) | Direct link | Guest (create name + lobby) |
+
 
 ### Full Meeting Lifecycle (Step-by-Step)
 
@@ -1173,6 +1181,7 @@ Alternative paths:
 | Scheduled Meetings | All (Doctor/Admin) | CONFIRMED appointments with meeting links |
 | All Appointments | Admin only | Complete list with search/filter |
 
+
 ### Key Points
 
 - **Patient Queue**: Shows appointments from ALL dates (not just today)
@@ -1239,6 +1248,7 @@ Alternative paths:
 | Post-Meeting | Doctor | CompleteEMREditor.tsx | Write/sign EMR with AI assistance | emr, status: completed |
 | View EMR | Patient | PHRPage.tsx | View EMR in health logs (if signed) | emr, results |
 
+
 ---
 
 ## 16. E2E Testing — Comprehensive Meeting Workflow
@@ -1250,6 +1260,7 @@ Alternative paths:
 | **Local (Docker)** | localhost:3005 | localhost:3010 | localhost:3020 | localhost:5432 (izara_phase1) |
 | **Cloud (GCP)** | patient-portal-xxxxx.run.app | doctor-portal-xxxxx.run.app | meeting-server-xxxxx.run.app | CloudSQL (izara_phase1) |
 
+
 ### Test Credentials (Deployment)
 
 | Role | Email | Password | Portal |
@@ -1258,6 +1269,7 @@ Alternative paths:
 | Patient | `demo.test@gmail.com` | P@ssw0rd | Patient Portal |
 | Admin | `admin.test@izara.com` | IzaraAdmin@2024 | Doctor Portal |
 | External Guest | (no login required) | (none) | Direct meeting link |
+
 
 ### Dual Portal Testing
 
@@ -1321,6 +1333,7 @@ node scripts/tests/e2e/dualPortalMeetingTests.cjs --env=cloud
 | 37 | **Delivery** | Patient downloads Instruction Sheet (PDF) | Patient | PDF generation |
 | 38 | **Delivery** | Appointment status → completed | Both | Final status |
 
+
 ### Demo Meeting Test Procedure
 
 For testing on local environment with simulated video/audio:
@@ -1381,6 +1394,7 @@ This generates:
 | `/api/appointments/:id/meeting-link` | GET | Get patient meeting URL |
 | `/api/appointments/:id/invite-guest` | POST | Generate guest invite link |
 
+
 ### Video Meeting Endpoints (Doctor Portal - Port 3009)
 
 | Endpoint | Method | Description |
@@ -1393,6 +1407,7 @@ This generates:
 | `/api/video-meeting/:id/files` | GET | Get meeting files/recordings |
 | `/api/video-meeting/:id/invite` | POST | Send invite to other doctor/admin |
 | `/api/video-meeting/health` | GET | Health check |
+
 
 ### Transcript Streaming Endpoints (Meeting Server - Port 3020)
 
@@ -1407,6 +1422,7 @@ This generates:
 | `Socket.IO: transcript-segment` | WS | Real-time transcript segment broadcast |
 | `Socket.IO: chat-message` | WS | Real-time chat message broadcast |
 
+
 ### AI Processing Endpoints (Meeting Server - Port 3020)
 
 | Endpoint | Method | Description |
@@ -1418,6 +1434,7 @@ This generates:
 | `/api/ai/patient-instruction-sheet` | POST | Generate patient instruction sheet (Req 4.5) |
 | `/api/ai/document-analysis` | POST | Analyze uploaded PDF/lab results (Req 2.3) |
 
+
 ### EMR Endpoints (Doctor Portal - Port 3009)
 
 | Endpoint | Method | Description |
@@ -1428,6 +1445,7 @@ This generates:
 | `/api/emr/:id/sign` | POST | Sign and finalize EMR |
 | `/api/emr/:id/instruction-sheet` | GET | Get patient instruction sheet |
 
+
 ### Patient Delivery Endpoints (Patient Portal - Port 3005)
 
 | Endpoint | Method | Description |
@@ -1437,12 +1455,14 @@ This generates:
 | `/api/patients/:id/instruction-sheets` | GET | Get instruction sheets |
 | `/api/patients/:id/instruction-sheets/:id/pdf` | GET | Download instruction sheet PDF |
 
+
 ### Guest Meeting Endpoints (Public - No Auth Required)
 
 | Endpoint | Method | Description |
 | -------- | ------ | ----------- |
 | `/api/guest/meeting/:token` | GET | Validate guest meeting token |
 | `/api/guest/meeting/:token/join` | POST | Join meeting as guest (display name required) |
+
 
 ---
 
@@ -1511,6 +1531,7 @@ This generates:
 | **transcriptions_embeddings** | Vectorized transcript chunks for AI search | meeting_record_id, chunk_text, speaker_role, embedding (vector) |
 | **users** | Patient & doctor identity resolution | id, email, name, name_thai, role, doctor_id, patient_id |
 | **audit_logs** | Compliance audit trail for all actions | user_id, patient_id, action, entity_type, details (JSONB) |
+
 
 ### 15.3 Appointment Status State Machine in PostgreSQL
 
@@ -1642,6 +1663,7 @@ Step 11: Embeddings → INSERT INTO transcriptions_embeddings (vectorized chunks
 | 15 | CDS drug interaction alert | — | Accept/reject/modify | — | cds_logs, prescriptions |
 | 16 | Patient instruction sheet | View instructions | Generate + validate | — | emr, ai_validations, notifications |
 
+
 ---
 
 ## 17. API Endpoints Summary (Appointment Workflow)
@@ -1658,6 +1680,7 @@ Step 11: Embeddings → INSERT INTO transcriptions_embeddings (vectorized chunks
 | GET | `/api/doctors` | List available doctors | SELECT FROM doctors |
 | GET | `/api/doctors/:id/slots` | Get doctor's available slots | SELECT FROM doctor_schedules |
 
+
 ### Doctor Portal APIs
 
 | Method | Endpoint | Description | DB Operation |
@@ -1671,6 +1694,7 @@ Step 11: Embeddings → INSERT INTO transcriptions_embeddings (vectorized chunks
 | POST | `/api/lab-orders` | Create lab order | INSERT lab_orders |
 | GET | `/api/ai/pre-summary/:patientId` | AI pre-consultation summary | SELECT phr, emr → Gemini AI |
 
+
 ### Meeting Server APIs
 
 | Method | Endpoint | Description | DB Operation |
@@ -1681,3 +1705,4 @@ Step 11: Embeddings → INSERT INTO transcriptions_embeddings (vectorized chunks
 | POST | `/api/meetings/:id/generate-summary` | AI summary generation | UPDATE meeting_records (ai_summary) |
 | POST | `/api/meetings/:id/validate` | Doctor validates AI output | UPDATE meeting_records, INSERT ai_validations |
 | POST | `/api/meetings/:id/end` | End meeting | UPDATE meeting_records SET status='completed' |
+

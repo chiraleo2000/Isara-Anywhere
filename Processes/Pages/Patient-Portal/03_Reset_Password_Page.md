@@ -7,13 +7,16 @@
 
 ---
 
+
 ## 1. Purpose
 
 Allows patients to reset their password using a time-limited token received via email.
 
 ---
 
+
 ## 2. Page States
+
 
 ### State 1: Verifying Token
 
@@ -25,6 +28,7 @@ Allows patients to reset their password using a time-limited token received via 
 │                                        │
 └────────────────────────────────────────┘
 ```
+
 
 ### State 2: Invalid/Expired Token
 
@@ -38,6 +42,7 @@ Allows patients to reset their password using a time-limited token received via 
 │                                        │
 └────────────────────────────────────────┘
 ```
+
 
 ### State 3: Reset Form
 
@@ -63,6 +68,7 @@ Allows patients to reset their password using a time-limited token received via 
 └────────────────────────────────────────┘
 ```
 
+
 ### State 4: Success
 
 ```text
@@ -78,6 +84,7 @@ Allows patients to reset their password using a time-limited token received via 
 
 ---
 
+
 ## 3. Password Strength Indicators
 
 | Indicator | Requirement |
@@ -89,6 +96,7 @@ Allows patients to reset their password using a time-limited token received via 
 Visual progress bar shows strength level with color coding.
 
 ---
+
 
 ## 4. Workflow
 
@@ -107,6 +115,7 @@ Step 10: Invalid token → Shows error → Link to login
 
 ---
 
+
 ## 5. API Endpoints
 
 | Method | Endpoint | Purpose |
@@ -115,6 +124,7 @@ Step 10: Invalid token → Shows error → Link to login
 | POST | `/api/auth/reset-password` | Submit new password |
 
 ---
+
 
 ## 6. Connections to Other Pages
 
@@ -125,17 +135,23 @@ Step 10: Invalid token → Shows error → Link to login
 
 ---
 
+
 ## 7. AI Agent Improvement Opportunities
+
 
 - **Breach detection**: Check if new password appears in known breaches
 
+
 - **Password suggestions**: AI-generated secure password suggestions
+
 
 - **Activity verification**: Additional identity verification before reset
 
 ---
 
+
 ## PostgreSQL Database Integration
+
 
 ### Tables Used
 
@@ -144,6 +160,7 @@ Step 10: Invalid token → Shows error → Link to login
 | users | SELECT/UPDATE | Look up user by email, update password_hash |
 | password_resets | INSERT/UPDATE | Create reset token, mark token as used |
 
+
 ### API Endpoints
 
 | Endpoint | Method | DB Operation |
@@ -151,10 +168,14 @@ Step 10: Invalid token → Shows error → Link to login
 | POST /api/auth/reset-request | POST | SELECT users WHERE email; INSERT password_resets |
 | POST /api/auth/reset-password | POST | SELECT password_resets WHERE token; UPDATE users SET password_hash; UPDATE password_resets SET used |
 
+
 ### Deployment
+
 
 - **Local Docker:** izara-postgres container (localhost:5433 external / 5432 internal) → database: izara_phase1
 
+
 - **Production:** GCE VM at 35.240.157.230:5432 → database: izara_phase1 (asia-southeast1)
+
 
 - **Service deployed via:** Cloud Run (gen2, CPU Boost) + Cloud Build CI/CD

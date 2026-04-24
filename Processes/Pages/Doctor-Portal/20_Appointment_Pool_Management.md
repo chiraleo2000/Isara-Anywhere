@@ -6,11 +6,13 @@
 
 ---
 
+
 ## 1. Purpose
 
 Doctors view and claim unassigned appointments matching their specialty. Manages the pool of appointments where patients didn't select a specific doctor or the selected doctor was unavailable.
 
 ---
+
 
 ## 2. Pool Flow
 
@@ -30,6 +32,7 @@ Confirmed → confirmed
 
 ---
 
+
 ## 3. Tabs
 
 | Tab | Content | Description |
@@ -39,6 +42,7 @@ Confirmed → confirmed
 | Claimed | Doctor already claimed | Awaiting admin confirmation |
 
 ---
+
 
 ## 4. Pool Reasons
 
@@ -52,7 +56,9 @@ Confirmed → confirmed
 
 ---
 
+
 ## 5. Workflows
+
 
 ### Workflow 1: Claim from Pool
 
@@ -65,6 +71,7 @@ Step 5: Status: doctor_claimed
 Step 6: Awaits admin confirmation or direct confirmation
 ```
 
+
 ### Workflow 2: Respond to Patient Selection
 
 ```text
@@ -75,6 +82,7 @@ Step 4: Or "Reject" → appointment returns to pool
 ```
 
 ---
+
 
 ## 6. API Endpoints
 
@@ -87,23 +95,30 @@ Step 4: Or "Reject" → appointment returns to pool
 
 ---
 
+
 ## 7. AI Agent Improvement Opportunities
+
 
 - **Smart matching**: AI improve specialty matching accuracy
 
+
 - **Workload balancing**: AI distribute pool assignments evenly
+
 
 - **Predictive claiming**: AI suggest best-fit appointments for each doctor
 
 ---
 
+
 ## PostgreSQL Database Integration
+
 
 ### Tables Used
 
 | Table | Operation | Description |
 | ----- | --------- | ----------- |
 | appointments | SELECT/UPDATE | Pool appointments (status='in_pool', unassigned) |
+
 
 ### API Endpoints
 
@@ -112,10 +127,14 @@ Step 4: Or "Reject" → appointment returns to pool
 | GET /api/appointments/pool | GET | SELECT appointments WHERE status='in_pool' AND doctor_id IS NULL |
 | PUT /api/appointments/:id/assign | PUT | UPDATE appointments SET doctor_id, status WHERE id |
 
+
 ### Deployment
+
 
 - **Local Docker:** izara-postgres container (localhost:5433 external / 5432 internal) → database: izara_phase1
 
+
 - **Production:** GCE VM at 35.240.157.230:5432 → database: izara_phase1 (asia-southeast1)
+
 
 - **Service deployed via:** Cloud Run (gen2, CPU Boost) + Cloud Build CI/CD

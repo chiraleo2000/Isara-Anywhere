@@ -7,11 +7,13 @@
 
 ---
 
+
 ## 1. Purpose
 
 Authentication and registration entry point for doctors and administrators. Supports login, registration (with admin approval requirement), and password reset.
 
 ---
+
 
 ## 2. Page Layout
 
@@ -36,7 +38,9 @@ Authentication and registration entry point for doctors and administrators. Supp
 
 ---
 
+
 ## 3. View Modes
+
 
 ### 3.1 Login Form
 
@@ -44,6 +48,7 @@ Authentication and registration entry point for doctors and administrators. Supp
 | ----- | ---- | -------- | ------- |
 | Email | Text | ✅ | Email validation |
 | Password | Password | ✅ | Show/hide toggle, min 8 chars |
+
 
 ### 3.2 Registration Form
 
@@ -57,6 +62,7 @@ Authentication and registration entry point for doctors and administrators. Supp
 | สาขาเฉพาะทาง (Specialty) | Select | ✅ | 14 specialties |
 | รหัสผ่าน (Password) | Password | ✅ | Min 8 characters |
 | ยืนยันรหัสผ่าน (Confirm) | Password | ✅ | Must match |
+
 
 ### Specialties Available (14)
 
@@ -77,11 +83,13 @@ Authentication and registration entry point for doctors and administrators. Supp
 | วิสัญญีวิทยา | Anesthesiology |
 | เวชศาสตร์ฉุกเฉิน | Emergency Medicine |
 
+
 ### 3.3 Forgot Password
 
 | Field | Type | Required |
 | ----- | ---- | -------- |
 | Email | Text | ✅ |
+
 
 ### 3.4 Pending Approval Screen
 
@@ -89,7 +97,9 @@ Shown after registration — doctor must wait for admin approval.
 
 ---
 
+
 ## 4. Workflows
+
 
 ### Workflow 1: Doctor Login
 
@@ -103,6 +113,7 @@ Step 6: If approved → Redirect to /dashboard
 Step 7: If pending → Shows "Pending Approval" screen
 Step 8: If rejected → Error message
 ```
+
 
 ### Workflow 2: Doctor Registration
 
@@ -118,6 +129,7 @@ Step 8: Doctor receives email notification of decision
 Step 9: If approved → Can login normally
 ```
 
+
 ### Workflow 3: Password Reset
 
 ```text
@@ -130,6 +142,7 @@ Step 5: Click link → /reset-password?token=xxx
 
 ---
 
+
 ## 5. API Endpoints
 
 | Method | Endpoint | Purpose |
@@ -139,6 +152,7 @@ Step 5: Click link → /reset-password?token=xxx
 | POST | `/auth/request-password-reset` | Send password reset email |
 
 ---
+
 
 ## 6. Key Difference from Patient Login
 
@@ -152,19 +166,26 @@ Step 5: Click link → /reset-password?token=xxx
 
 ---
 
+
 ## 7. AI Agent Improvement Opportunities
+
 
 - **License verification**: AI auto-verify medical license numbers
 
+
 - **Specialty matching**: AI suggest specialty based on background
 
+
 - **Fraud detection**: AI detect suspicious registration patterns
+
 
 - **SSO integration**: AI-managed single sign-on with hospital systems
 
 ---
 
+
 ## PostgreSQL Database Integration
+
 
 ### Tables Used
 
@@ -173,6 +194,7 @@ Step 5: Click link → /reset-password?token=xxx
 | users | SELECT | Query by email, verify password_hash via pgcrypto crypt() |
 | sessions | INSERT | Create session token on successful login |
 
+
 ### API Endpoints
 
 | Endpoint | Method | DB Operation |
@@ -180,10 +202,14 @@ Step 5: Click link → /reset-password?token=xxx
 | POST /api/auth/login | POST | SELECT users WHERE email, verify crypt(password, password_hash) |
 | POST /api/auth/register | POST | INSERT INTO users (doctor registration) |
 
+
 ### Deployment
+
 
 - **Local Docker:** izara-postgres container (localhost:5433 external / 5432 internal) → database: izara_phase1
 
+
 - **Production:** GCE VM at 35.240.157.230:5432 → database: izara_phase1 (asia-southeast1)
+
 
 - **Service deployed via:** Cloud Run (gen2, CPU Boost) + Cloud Build CI/CD

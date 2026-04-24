@@ -24,6 +24,7 @@ Operational doctor directory for viewing doctor profiles, verification status, a
 | Verify Doctor | Admin only - verify credentials |
 | Toggle Status | Admin only - active/inactive toggle |
 
+
 ---
 
 ## 3. Department List
@@ -39,6 +40,7 @@ Operational doctor directory for viewing doctor profiles, verification status, a
 | Neurology | ระบบประสาท |
 | Emergency | เวชศาสตร์ฉุกเฉิน |
 
+
 ---
 
 ## 4. API Endpoints
@@ -49,6 +51,7 @@ Operational doctor directory for viewing doctor profiles, verification status, a
 | POST | `/api/doctors` | Add doctor (admin) |
 | PATCH | `/api/doctors/:id/verify` | Verify doctor |
 | PATCH | `/api/doctors/:id/status` | Toggle status |
+
 
 ---
 
@@ -61,10 +64,12 @@ Operational doctor directory for viewing doctor profiles, verification status, a
 | doctor_profiles | SELECT | Doctor specialty, license, credentials |
 | doctor_schedules | SELECT | Doctor availability schedules |
 
+
 ### API Endpoints
 | Endpoint | Method | DB Operation |
 | -------- | ------ | ------------ |
 | GET /api/doctors | GET | SELECT users JOIN doctor_profiles JOIN doctor_schedules WHERE role='doctor' |
+
 
 ### Deployment
 

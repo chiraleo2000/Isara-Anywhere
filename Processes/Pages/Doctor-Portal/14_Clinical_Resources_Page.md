@@ -26,6 +26,7 @@ Medical guidelines, protocols, and research papers for healthcare professionals.
 | reference | เอกสารอ้างอิง | Reference materials |
 
 
+
 ---
 
 
@@ -45,6 +46,7 @@ Medical guidelines, protocols, and research papers for healthcare professionals.
 | case-studies | กรณีศึกษา | Case Studies |
 
 
+
 ---
 
 
@@ -55,6 +57,7 @@ Medical guidelines, protocols, and research papers for healthcare professionals.
 | RAG Knowledge Base | Clinical resources indexed for AI search |
 | AI Chat Assistant | Doctors query guidelines via chat |
 | Document Analysis | AI analyze uploaded PDF guidelines |
+
 
 
 ---
@@ -79,6 +82,7 @@ See [Clinical_Resources_&_Medical_Library_Workflows.md](../../Processes/Clinical
 | DELETE | `/api/content/clinical/:id` | Delete resource |
 | POST | `/api/content/clinical/:id/review` | Approve/reject |
 | GET | `/api/content/tags/clinical` | Get tags |
+
 
 
 ---
@@ -110,6 +114,7 @@ See [Clinical_Resources_&_Medical_Library_Workflows.md](../../Processes/Clinical
 
 
 
+
 ### API Endpoints
 
 | Endpoint | Method | DB Operation |
@@ -118,6 +123,7 @@ See [Clinical_Resources_&_Medical_Library_Workflows.md](../../Processes/Clinical
 | POST /api/content/clinical | POST | INSERT clinical_resources; INSERT knowledge_base |
 | PUT /api/content/clinical/:id | PUT | UPDATE clinical_resources WHERE id |
 | POST /api/content/clinical/:id/review | POST | UPDATE clinical_resources SET status WHERE id |
+
 
 
 

@@ -74,6 +74,7 @@ Manage patient queue, confirm appointments with meeting links, and launch Jitsi 
 | assigned | มอบหมายแล้ว | Admin assigned to doctor |
 
 
+
 ---
 
 
@@ -149,6 +150,7 @@ Displays completed meetings with AI-generated SOAP summaries awaiting doctor val
 | Validation Status | 🟡 Pending / ✅ Approved / ✏️ Edited / ❌ Rejected |
 
 
+
 ---
 
 
@@ -190,6 +192,7 @@ Doctors can invite additional participants to create Microsoft Teams-like multi-
 | Guest (relative/friend) | 👥 | Video/audio, chat only | Guest URL |
 | Invited Doctor | 👨‍⚕️ | Video/audio, chat, clinical notes access | Doctor URL |
 | Admin | 🔧 | Video/audio, chat, meeting management | Admin URL |
+
 
 
 ---
@@ -282,6 +285,7 @@ When doctor confirms an appointment:
 
 
 
+
 ### Jitsi Configuration
 
 | Setting | Value |
@@ -293,6 +297,7 @@ When doctor confirms an appointment:
 | Microphone | Default ON |
 | Recording | Enabled |
 | Chat | Always available |
+
 
 
 ---
@@ -425,6 +430,7 @@ Step 9: Data appears in Patient Dashboard + Timeline + Health History
 | POST | `/api/meetings/:id/patient-instruction` | Generate Patient Instruction Sheet |
 
 
+
 ---
 
 
@@ -438,6 +444,7 @@ Step 9: Data appears in Patient Dashboard + Timeline + Health History
 | Real-time Streaming | Socket.IO on Meeting Server (port 3020) | Self-hosted |
 | Database | PostgreSQL (izara_phase1) | Self-hosted |
 | Chat | Jitsi built-in + Socket.IO capture | FREE |
+
 
 
 ---
@@ -482,12 +489,14 @@ Step 9: Data appears in Patient Dashboard + Timeline + Health History
 
 
 
+
 ### API Endpoints
 | Endpoint | Method | DB Operation |
 | -------- | ------ | ------------ |
 | POST /api/meetings/start | POST | INSERT meeting_records; UPDATE appointments SET status |
 | POST /api/meetings/:id/end | POST | UPDATE meeting_records SET ended_at; trigger AI summary |
 | POST /api/meetings/:id/transcript | POST | INSERT meeting_transcripts; INSERT transcriptions_embeddings |
+
 
 
 

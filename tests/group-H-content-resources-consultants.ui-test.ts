@@ -43,7 +43,7 @@ test.describe('Group H — Content, Resources & Consultants', () => {
       }).first();
       await expect(createBtn, 'Create content button').toBeVisible({ timeout: 8_000 });
       await createBtn.click();
-      await doctor.page.waitForTimeout(2_000);
+      await doctor.page.waitForTimeout(500);
       await snap(doctor.page, 'H02-create-form', 'group-H');
       console.log('  ✅ H02: Content creation form opened');
     });
@@ -84,8 +84,8 @@ test.describe('Group H — Content, Resources & Consultants', () => {
         hasText: /Cancel|ยกเลิก|Close|ปิด|Back|กลับ|Discard/i,
       }).first();
       if (await cancelBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
-        await cancelBtn.click();
-        await doctor.page.waitForTimeout(2_000);
+        await cancelBtn.click({ force: true, timeout: 12_000 });
+        await doctor.page.waitForTimeout(500);
       } else {
         // Navigate back to content list
         await navDoctor(doctor.page, 'medical-content', 'H04-back');
@@ -95,14 +95,22 @@ test.describe('Group H — Content, Resources & Consultants', () => {
     });
 
     await test.step('H05 — Browse content list', async () => {
-      const dataCount = await assertHasData(doctor.page, 'H05');
+      // Clear any leftover search text from H03 form fill that may have landed in search bar
+      const searchInput = doctor.page.locator(
+        'input[type="search"], input[type="text"], input[placeholder*="search" i], input[placeholder*="ค้นหา"]'
+      ).first();
+      if (await searchInput.isVisible({ timeout: 3_000 }).catch(() => false)) {
+        await searchInput.fill('');
+        await doctor.page.waitForTimeout(500);
+      }
+      const dataCount = await assertHasData(doctor.page, 'H05', 1);
       // Click first article if available
       const article = doctor.page.locator('[class*="card"], [class*="item"], tr').filter({
         hasText: /article|บทความ|health|สุขภาพ|medical|content/i,
       }).first();
       if (await article.isVisible({ timeout: 5_000 }).catch(() => false)) {
         await article.click();
-        await doctor.page.waitForTimeout(2_000);
+        await doctor.page.waitForTimeout(500);
         await snap(doctor.page, 'H05-article-detail', 'group-H');
       }
       console.log(`  ✅ H05: Content list — ${dataCount} items`);
@@ -127,12 +135,12 @@ test.describe('Group H — Content, Resources & Consultants', () => {
     });
 
     await test.step('H07 — Browse resources list', async () => {
-      const dataCount = await assertHasData(doctor.page, 'H07');
+      const dataCount = await assertHasData(doctor.page, 'H07', 1);
       // Click first resource if available
       const resource = doctor.page.locator('[class*="card"], [class*="item"], tr').first();
       if (await resource.isVisible({ timeout: 3_000 }).catch(() => false) && dataCount > 0) {
         await resource.click();
-        await doctor.page.waitForTimeout(2_000);
+        await doctor.page.waitForTimeout(500);
         await snap(doctor.page, 'H07-resource-detail', 'group-H');
       }
       console.log(`  ✅ H07: Resources — ${dataCount} items`);
@@ -171,14 +179,14 @@ test.describe('Group H — Content, Resources & Consultants', () => {
     });
 
     await test.step('H11 — Browse articles', async () => {
-      const dataCount = await assertHasData(patient.page, 'H11');
-      // Click first article card
-      const article = patient.page.locator('[class*="card"], [class*="item"]').filter({
-        hasText: /article|health|สุขภาพ|บทความ|tip|คำแนะนำ/i,
-      }).first();
+      const dataCount = await assertHasData(patient.page, 'H11', 1);
+      // Click first article card — match ContentCard buttons (overflow-hidden) or data-testid
+      const article = patient.page
+        .locator('[data-testid="content-item"], main button[class*="overflow-hidden"], [class*="gap-6"] > button')
+        .first();
       if (await article.isVisible({ timeout: 5_000 }).catch(() => false)) {
         await article.click();
-        await patient.page.waitForTimeout(2_000);
+        await patient.page.waitForTimeout(500);
         await waitForContent(patient.page, 'H11-article');
         await snap(patient.page, 'H11-article-detail', 'group-H');
         console.log(`  ✅ H11: Article opened — ${dataCount} total`);

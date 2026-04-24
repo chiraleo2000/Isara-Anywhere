@@ -81,6 +81,7 @@ Get-Content scripts\database\izara-database.sql | docker exec -i izara-postgres 
 
 
 
+
 ## Notes
 
 

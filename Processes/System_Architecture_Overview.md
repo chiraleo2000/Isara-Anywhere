@@ -82,7 +82,6 @@ Izara Telemedicine is a **three-portal telemedicine platform** built for Thai he
 | Socket.IO Client | Real-time events |
 
 
-
 ### Backend
 
 | Technology | Purpose |
@@ -96,7 +95,6 @@ Izara Telemedicine is a **three-portal telemedicine platform** built for Thai he
 | node-pg | PostgreSQL client |
 
 
-
 ### AI & Video
 
 | Technology | Purpose |
@@ -105,7 +103,6 @@ Izara Telemedicine is a **three-portal telemedicine platform** built for Thai he
 | Jitsi Meet (meet.jit.si) | FREE video conferencing with lobby |
 | Web Speech API | FREE browser-native speech-to-text |
 | pgvector | RAG knowledge base similarity search |
-
 
 
 ### DevOps
@@ -117,7 +114,6 @@ Izara Telemedicine is a **three-portal telemedicine platform** built for Thai he
 | Cloud Build | CI/CD pipelines |
 | Artifact Registry | Container image storage |
 | Playwright | E2E testing (1,287 tests) |
-
 
 ---
 
@@ -144,7 +140,6 @@ Izara Telemedicine is a **three-portal telemedicine platform** built for Thai he
 | `/settings` | SettingsPage | App preferences |
 | `/timeline` | TimelinePage | Complete treatment history |
 | Header | NotificationBell | Real-time notifications |
-
 
 
 ### Doctor Portal (Port 3010) — 21 Pages
@@ -174,7 +169,6 @@ Izara Telemedicine is a **three-portal telemedicine platform** built for Thai he
 | (embed) | QueueManagement | Doctor/Admin | Real-time patient queue |
 
 
-
 ### Meeting Server (Port 3020) — Backend Only
 
 | Capability | Description |
@@ -184,7 +178,6 @@ Izara Telemedicine is a **three-portal telemedicine platform** built for Thai he
 | AI Summary Pipeline | Gemini generates EMR/summaries post-meeting |
 | Recording | Audio/video capture stored as BYTEA in PostgreSQL |
 | Socket.IO | Real-time meeting events |
-
 
 ---
 
@@ -261,15 +254,17 @@ App.tsx
 | API Cache | Custom hooks with useState | Per-component data fetching |
 
 
-
 ### Bilingual Support
 
 
 - **Primary:** Thai (ภาษาไทย) — all content Thai-first
 
+
 - **Secondary:** English — toggle in header
 
+
 - **Pattern:** Thai field names appear first in forms, English fallback
+
 
 - **Storage:** `preferences.language` in users table JSONB
 
@@ -305,11 +300,15 @@ server/
 
 - RESTful endpoints with `/api/` prefix
 
+
 - JWT Bearer authentication
+
 
 - Role-based middleware (patient / doctor / admin)
 
+
 - JSONB for flexible data structures
+
 
 - COALESCE for date field compatibility
 
@@ -326,11 +325,15 @@ server/
 
 - **37+ tables** in single `izara_phase1` database
 
+
 - **pgvector** for AI embedding similarity search
+
 
 - **LISTEN/NOTIFY** triggers for real-time sync
 
+
 - **BYTEA** storage for meeting recordings
+
 
 - **JSONB** extensively for flexible clinical data
 
@@ -381,7 +384,6 @@ server/
 | CDS Alerts | Prescribing | Gemini 2.5 Flash Lite | Drug interaction warnings |
 | RAG Search | AI chat query | pgvector + Gemini | Guideline-informed answers |
 | Document Analysis | PDF upload | Gemini 2.5 Flash Lite | Lab/document summary |
-
 
 
 ### RAG Architecture
@@ -455,7 +457,6 @@ Doctor asks clinical question
 | `lobby-request` | Client → Doctor | Patient waiting |
 | `lobby-admit` | Doctor → Server | Admit patient |
 
-
 ---
 
 
@@ -471,7 +472,6 @@ Doctor asks clinical question
 | Session Tracking | `sessions` table with IP + user-agent |
 | Account Lockout | 5 failed attempts → 15-min lock |
 | Password Reset | Time-limited tokens via email |
-
 
 
 ### Authorization (RBAC)
@@ -498,7 +498,6 @@ Public Routes: /login, /register, /reset-password
 | Doctor Access Control | Patient explicitly grants per-doctor access |
 | Consent Revocation | Patients can revoke at any time via PDPA page |
 
-
 ---
 
 
@@ -509,19 +508,25 @@ Public Routes: /login, /register, /reset-password
 
 ```powershell
 
+
 # Start all services
 docker compose up -d
+
 
 
 # Initialize database
 node scripts/database/db-tool.cjs --all
 
 
+
 # Access
+
 
 # Patient: <http://localhost:3005>
 
+
 # Doctor:  <http://localhost:3010>
+
 
 # pgAdmin: <http://localhost:5050>
 ```

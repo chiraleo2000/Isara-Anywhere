@@ -21,6 +21,7 @@
 | [Notification_Workflows_TH.md](Notification_Workflows_TH.md) | ระบบแจ้งเตือน | ✅ |
 
 
+
 ---
 
 
@@ -36,6 +37,7 @@
 
 
 
+
 ### บริการ Docker
 
 | บริการ | พอร์ต | วัตถุประสงค์ |
@@ -45,6 +47,7 @@
 | พอร์ทัลแพทย์ | 3010 | Frontend + Backend แพทย์ |
 | Meeting Server | 3020 | Jitsi + AI |
 | pgAdmin | 5050 | จัดการฐานข้อมูล |
+
 
 
 ---
@@ -140,6 +143,7 @@
 | ผู้ดูแลระบบ | <admin.test@izara.com> | YOUR_TEST_ADMIN_PASSWORD |
 | แพทย์ | <doctor.test@izara.com> | YOUR_TEST_DOCTOR_PASSWORD |
 | ผู้ป่วย | <demo.test@gmail.com> | YOUR_TEST_PASSWORD |
+
 
 
 ---

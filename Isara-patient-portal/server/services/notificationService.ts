@@ -17,7 +17,7 @@
  * 8. Onsite appointment → No meeting link, send symptoms to doctor via email/calendar
  */
 
-import { storage, GCS_BUCKETS } from '../index';
+import { BUCKETS as GCS_BUCKETS, readJSON, writeJSON } from '../utils/localStore';
 
 // Notification types
 export type NotificationType = 
@@ -64,35 +64,7 @@ export interface Notification {
 }
 
 // Helper functions
-async function readJSON(bucket: string, filePath: string): Promise<any> {
-  try {
-    // If GCS storage is not available (PostgreSQL mode), return null
-    if (!storage) {
-      console.log('[NotificationService] GCS not configured, returning empty notifications');
-      return null;
-    }
-    const file = storage.bucket(bucket).file(filePath);
-    const [contents] = await file.download();
-    return JSON.parse(contents.toString());
-  } catch (error: unknown) {
-    if (error.code === 404) {
-      return null;
-    }
-    throw error;
-  }
-}
-
-async function writeJSON(bucket: string, filePath: string, data: any): Promise<void> {
-  // If GCS storage is not available (PostgreSQL mode), skip writing
-  if (!storage) {
-    console.log('[NotificationService] GCS not configured, skipping notification write');
-    return;
-  }
-  const file = storage.bucket(bucket).file(filePath);
-  await file.save(JSON.stringify(data, null, 2), {
-    contentType: 'application/json',
-  });
-}
+// readJSON / writeJSON are imported from utils/localStore (local filesystem under ./data)
 
 // Helper functions to avoid nested ternaries in templates
 const getUrgencyLabel = (urgency: string): string => {
@@ -454,7 +426,7 @@ class NotificationService {
    * - Doctor-specific notifications for doctor portal (when recipient is a doctor)
    */
   async createNotification(notification: Omit<Notification, 'id' | 'status' | 'createdAt'>): Promise<Notification> {
-    const id = `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const id = `notif_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
     const fullNotification: Notification = {
       ...notification,
       id,

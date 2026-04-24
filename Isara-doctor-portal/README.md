@@ -55,6 +55,7 @@
 
 
 
+
 ### For Administrators 🔧
 
 | Feature | Description |
@@ -65,6 +66,7 @@
 | 📚 Content Management | Medical articles, clinical resources |
 | 🏥 Consultant Directory | Specialist management for referrals |
 | ⚙️ System Configuration | Specialties, appointment pools |
+
 
 
 ---
@@ -100,6 +102,7 @@ npm run dev             # Starts both frontend + backend
 | ------ | ------- | ---------- |
 | Doctor | `doctor.test@izara.com` | `IzaraDoctor@2024` |
 | Admin | `admin.test@izara.com` | `IzaraAdmin@2024` |
+
 
 
 ---
@@ -159,6 +162,7 @@ Isara-doctor-portal/
 | Admin | `GET /api/admin/stats`, `GET /api/admin/doctors/pending` |
 
 
+
 ---
 
 
@@ -171,6 +175,7 @@ Isara-doctor-portal/
 | `GEMINI_API_KEY` | Google Gemini AI API key |
 | `DATABASE_URL` | PostgreSQL connection string |
 | `JWT_SECRET` | JWT signing secret |
+
 
 
 ---

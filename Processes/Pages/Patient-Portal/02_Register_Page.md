@@ -53,6 +53,7 @@ New patient registration with a 2-step wizard: basic information and health info
 | ยืนยันรหัสผ่าน (Confirm) | Password | ✅ | Must match password |
 
 
+
 ---
 
 
@@ -70,6 +71,7 @@ New patient registration with a 2-step wizard: basic information and health info
 | ↳ ชื่อ (Contact Name) | Text | ❌ | — |
 | ↳ เบอร์โทร (Contact Phone) | Tel | ❌ | — |
 | ↳ ความสัมพันธ์ (Relationship) | Text | ❌ | — |
+
 
 
 ---
@@ -100,6 +102,7 @@ Step 9: Failure → Error message (e.g., "Email already registered")
 | Method | Endpoint | Purpose |
 | ------ | -------- | ------- |
 | POST | `/api/auth/register` | Create new patient account |
+
 
 
 
@@ -141,6 +144,7 @@ Step 9: Failure → Error message (e.g., "Email already registered")
 | Step 2 optional | Can skip health info entirely |
 
 
+
 ---
 
 
@@ -150,6 +154,7 @@ Step 9: Failure → Error message (e.g., "Email already registered")
 | ------ | ----------- |
 | Successful registration | → Dashboard (`/`) |
 | "Already have account" link | → Login Page (`/login`) |
+
 
 
 ---
@@ -180,10 +185,12 @@ Step 9: Failure → Error message (e.g., "Email already registered")
 
 
 
+
 ### API Endpoints
 | Endpoint | Method | DB Operation |
 | -------- | ------ | ------------ |
 | POST /api/auth/register | POST | INSERT users (role='patient', status='approved'); INSERT patient_profiles |
+
 
 
 

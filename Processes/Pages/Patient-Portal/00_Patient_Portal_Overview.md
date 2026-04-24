@@ -7,6 +7,7 @@
 
 ---
 
+
 ## 1. Technology Stack
 
 | Layer | Technology |
@@ -22,6 +23,7 @@
 | AI | Google Gemini 2.5 Flash Lite |
 
 ---
+
 
 ## 2. Route Map
 
@@ -45,6 +47,7 @@
 | `/timeline` | TimelinePage | ประวัติการรักษา | 🔒 Auth |
 
 ---
+
 
 ## 3. Layout Structure
 
@@ -72,17 +75,23 @@
 └──────────────┴──────────────────────────────────────────────────────────┘
 ```
 
+
 ### Mobile Layout
+
 
 - Sidebar hidden behind hamburger menu
 
+
 - Header: Hamburger · Logo · NotificationBell · Language · Avatar
+
 
 - Full-width content area
 
 ---
 
+
 ## 4. Sidebar Components
+
 
 ### Navigation Items (9 items)
 
@@ -96,31 +105,44 @@
 8. **🔒 PDPA & Living Will** → `/pdpa`
 9. **⚙️ ตั้งค่า** (Settings) → `/settings`
 
+
 ### MiniMapWidget
+
 
 - Compact healthcare facility types display (Hospital, Clinic, Pharmacy, Health Center)
 
+
 - Click → navigates to full Map page
+
 
 ### MiniCalendar
 
+
 - Monthly calendar with Thai/English month names
+
 
 - Buddhist/Gregorian year support
 
+
 - Today highlighted
+
 
 - Previous/next month navigation
 
+
 ### User Info
+
 
 - Avatar, name, email
 
+
 - Link to Profile page
+
 
 - Logout button
 
 ---
+
 
 ## 5. Authentication Flow
 
@@ -141,6 +163,7 @@
 
 ---
 
+
 ## 6. Global Features
 
 | Feature | Implementation |
@@ -153,6 +176,7 @@
 | **PDPA Compliance** | Consent management on login, data access audit |
 
 ---
+
 
 ## 7. Cross-Page Navigation Map
 
@@ -173,6 +197,7 @@ NotificationBell ──→ Appointment Detail / Meeting Join
 
 ---
 
+
 ## 8. AI Agent Improvement Opportunities
 
 | Area | Current | Future Improvement |
@@ -185,7 +210,9 @@ NotificationBell ──→ Appointment Detail / Meeting Join
 
 ---
 
+
 ## PostgreSQL Database Integration
+
 
 ### Tables Used
 
@@ -212,13 +239,18 @@ NotificationBell ──→ Appointment Detail / Meeting Join
 | living_will_versions | SELECT/INSERT | Living will version history |
 | password_resets | INSERT/UPDATE | Password reset token management |
 
+
 ### Backend Server
+
 
 - **Runtime:** Express.js TypeScript (index.ts, 16 route modules)
 
+
 - **Port:** 3005
 
+
 - **Database:** PostgreSQL izara_phase1
+
 
 ### API Endpoints
 
@@ -238,10 +270,14 @@ NotificationBell ──→ Appointment Detail / Meeting Join
 | /api/timeline/* | GET | appointments, emr, prescriptions, lab_orders, vital_signs SELECT |
 | /api/notifications/* | GET/PUT | notifications SELECT/UPDATE |
 
+
 ### Deployment
+
 
 - **Local Docker:** izara-postgres container (localhost:5433 external / 5432 internal) → database: izara_phase1
 
+
 - **Production:** GCE VM at 35.240.157.230:5432 → database: izara_phase1 (asia-southeast1)
+
 
 - **Service deployed via:** Cloud Run (gen2, CPU Boost) + Cloud Build CI/CD

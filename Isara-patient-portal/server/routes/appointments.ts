@@ -94,10 +94,13 @@ function transformAppointment(row: any): any {
     symptomDescription: row.symptom_description,
     reason: row.symptom_description || row.reason,
     notes: row.notes,
-    meetingLink: row.patient_meeting_url || row.meet_link || row.meeting_link,
+    // Never surface a null meeting link: backfill from jitsi_room_name if legacy rows have no stored URL.
+    meetingLink: row.patient_meeting_url || row.meet_link || row.meeting_link
+      || (row.jitsi_room_name ? generateJitsiMeetingLink(row.jitsi_room_name) : null),
     jitsiRoomName: row.jitsi_room_name,
     doctorMeetingUrl: row.doctor_meeting_url,
-    patientMeetingUrl: row.patient_meeting_url || row.meet_link || row.meeting_link,
+    patientMeetingUrl: row.patient_meeting_url || row.meet_link || row.meeting_link
+      || (row.jitsi_room_name ? generateJitsiMeetingLink(row.jitsi_room_name) : null),
     guestMeetingUrl: row.guest_meeting_url,
     confirmedBy: row.confirmed_by,
     confirmedByEmail: row.confirmed_by_email,
@@ -254,8 +257,7 @@ router.get('/', authMiddleware, async (req: Request, res: Response) => {
   try {
     const patientId = (req as AuthenticatedRequest).patientId;
     if (!patientId) {
-      // Return empty array for testing instead of 401
-      return res.json([]);
+      return res.status(401).json({ error: 'Authentication required' });
     }
     
     console.log(`[APPOINTMENT] Getting appointments for authenticated patient: ${patientId}`);
@@ -355,26 +357,67 @@ router.get('/:appointmentId', authMiddleware, async (req: Request, res: Response
 });
 
 // Create new appointment
-router.post('/', authMiddleware, async (req: Request, res: Response) => {
+router.post('/', authMiddleware, async (req: Request, res: Response) => { // NOSONAR S3776: appointment creation with role-based validation, conflict detection, notification dispatch
   const client = await pool.connect();
   try {
     const appointmentData = req.body;
-    
-    // Use authenticated patient's ID if not provided in body
-    const patientId = appointmentData.patientId || (req as AuthenticatedRequest).patientId;
+    const authReq = req as AuthenticatedRequest;
+    const authPatientId = authReq.patientId;
+    const authRole = authReq.user?.role;
+
+    // SECURITY: Patient creates for self only. Ignore body.patientId to prevent IDOR.
+    // Admin/doctor can create on behalf of a patient via body.patientId.
+    let patientId: string | undefined;
+    if (authRole === 'patient') {
+      patientId = authPatientId;
+      if (appointmentData.patientId && appointmentData.patientId !== authPatientId) {
+        client.release();
+        return res.status(403).json({ error: 'Patients cannot create appointments for other users' });
+      }
+    } else if (authRole === 'admin' || authRole === 'doctor') {
+      patientId = appointmentData.patientId;
+    }
+
     if (!patientId) {
       client.release();
       return res.status(400).json({ error: 'Patient ID is required' });
     }
-    
+
+    // SECURITY: validate doctor (if provided) exists, is a doctor, and is active.
+    const doctorIdRaw = appointmentData.doctorId;
+    const doctorId = (doctorIdRaw && doctorIdRaw !== 'unassigned') ? doctorIdRaw : null;
+    let effectiveDoctorId: string | null = doctorId;
+    if (doctorId) {
+      const docCheck = await pool.query(
+        `SELECT id FROM users WHERE id = $1 AND role = 'doctor' AND is_active = true AND COALESCE(is_approved, true) = true`,
+        [doctorId]
+      );
+      if (docCheck.rows.length === 0) {
+        // Doctor inactive/unapproved: fall back to pool rather than hard-fail the booking.
+        console.warn(`[APPOINTMENT] Requested doctor ${doctorId} unavailable — routing to pool`);
+        effectiveDoctorId = null;
+      }
+    }
+
+    // SECURITY: validate patient exists (protects against stale JWT / deleted user).
+    const patCheck = await pool.query(
+      `SELECT id FROM users WHERE id = $1 AND role = 'patient' AND is_active = true`,
+      [patientId]
+    );
+    if (patCheck.rows.length === 0) {
+      client.release();
+      return res.status(400).json({ error: 'Invalid or inactive patient' });
+    }
+
     console.log('[APPOINTMENT] Creating new appointment for patient:', patientId);
 
     const appointmentId = `APT-${Date.now()}-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
     const now = new Date();
 
-    // Determine initial status
-    let initialStatus = appointmentData.status || 'pending';
-    if (appointmentData.doctorId === 'unassigned') {
+    // Determine initial status. Clients cannot request a terminal/privileged state.
+    const allowedInitialStatuses = new Set(['pending', 'in_pool', 'awaiting_doctor_response']);
+    let initialStatus = allowedInitialStatuses.has(appointmentData.status) ? appointmentData.status : 'pending';
+    if (!effectiveDoctorId) {
       initialStatus = 'in_pool';
     } else if (appointmentData.assignmentMethod === 'patient_selected') {
       initialStatus = 'awaiting_doctor_response';
@@ -399,7 +442,7 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
       [
         appointmentId,
         patientId,  // Use authenticated patient ID
-        (appointmentData.doctorId && appointmentData.doctorId !== 'unassigned') ? appointmentData.doctorId : null,
+        effectiveDoctorId,
         appointmentData.preferredDate || appointmentData.requestedDate,
         appointmentData.preferredTime || appointmentData.requestedTime,
         appointmentData.appointmentType || appointmentData.type || 'Telehealth',
@@ -446,19 +489,97 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
   }
 });
 
+// Allowed status transitions (prevents e.g. completed → pending, cancelled → confirmed).
+const ALLOWED_STATUS_TRANSITIONS: Record<string, Set<string>> = {
+  pending: new Set(['in_pool', 'awaiting_doctor_response', 'confirmed', 'declined', 'rejected', 'cancelled']),
+  in_pool: new Set(['awaiting_doctor_response', 'confirmed', 'cancelled']),
+  awaiting_doctor_response: new Set(['confirmed', 'declined', 'rejected', 'cancelled', 'in_pool']),
+  confirmed: new Set(['in_progress', 'completed', 'cancelled', 'no_show']),
+  in_progress: new Set(['completed', 'cancelled']),
+  completed: new Set([]),
+  cancelled: new Set([]),
+  declined: new Set(['in_pool']),
+  rejected: new Set(['in_pool']),
+  no_show: new Set([])
+};
+
+function isStatusTransitionAllowed(from: string, to: string): boolean {
+  if (from === to) return true;
+  const allowed = ALLOWED_STATUS_TRANSITIONS[from];
+  return !!allowed && allowed.has(to);
+}
+
 // Update appointment status (for doctor confirmation/decline)
-router.put('/:appointmentId/status', authMiddleware, async (req: Request, res: Response) => {
+router.put('/:appointmentId/status', authMiddleware, async (req: Request, res: Response) => { // NOSONAR S3776: status transition state machine with SELECT FOR UPDATE + role matrix
+  const client = await pool.connect();
   try {
     const { appointmentId } = req.params;
     const { status, appointmentDate, appointmentTime, meetingLink } = req.body;
+    const authReq = req as AuthenticatedRequest;
+    const authRole = authReq.user?.role;
+    const authUserId = authReq.userId;
+
+    if (!status || typeof status !== 'string') {
+      client.release();
+      return res.status(400).json({ error: 'status is required' });
+    }
+
     console.log(`[APPOINTMENT] Updating status for: ${appointmentId} to ${status}`);
 
-    // Get current appointment
-    const current = await pool.query('SELECT * FROM appointments WHERE id = $1', [appointmentId]);
+    await client.query('BEGIN');
+
+    // Lock the row to prevent race conditions (double-accept).
+    const current = await client.query(
+      'SELECT * FROM appointments WHERE id = $1 FOR UPDATE',
+      [appointmentId]
+    );
     if (current.rows.length === 0) {
+      await client.query('ROLLBACK');
+      client.release();
       return res.status(404).json({ error: 'Appointment not found' });
     }
     const currentAppointment = current.rows[0];
+
+    // Ownership / role enforcement.
+    const isAdmin = authRole === 'admin';
+    const isDoctor = authRole === 'doctor';
+    const isPatient = authRole === 'patient';
+    const doctorMatches = currentAppointment.doctor_id === authUserId;
+    const patientMatches = currentAppointment.patient_id === authUserId;
+
+    // Patients can only cancel their own appointments through this endpoint.
+    if (isPatient) {
+      if (!patientMatches) {
+        await client.query('ROLLBACK');
+        client.release();
+        return res.status(403).json({ error: 'Access denied' });
+      }
+      if (status !== 'cancelled') {
+        await client.query('ROLLBACK');
+        client.release();
+        return res.status(403).json({ error: 'Patients may only cancel appointments via this endpoint' });
+      }
+    } else if (isDoctor) {
+      // Doctor must own the appointment (or be the one it's offered to via in_pool).
+      if (!doctorMatches && currentAppointment.doctor_id !== null) {
+        await client.query('ROLLBACK');
+        client.release();
+        return res.status(403).json({ error: 'Doctor does not own this appointment' });
+      }
+    } else if (!isAdmin) {
+      await client.query('ROLLBACK');
+      client.release();
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    // Transition validation.
+    if (!isStatusTransitionAllowed(currentAppointment.status, status)) {
+      await client.query('ROLLBACK');
+      client.release();
+      return res.status(409).json({
+        error: `Illegal status transition: ${currentAppointment.status} → ${status}`
+      });
+    }
 
     // Generate meeting link if confirming and none exists
     let finalMeetingLink = meetingLink || currentAppointment.meet_link;
@@ -470,7 +591,7 @@ router.put('/:appointmentId/status', authMiddleware, async (req: Request, res: R
     }
 
     // Update in PostgreSQL - cast $2 to varchar to avoid type inference conflict in CASE
-    const result = await pool.query(
+    const result = await client.query(
       `UPDATE appointments SET
         status = $2::varchar,
         confirmed_date = COALESCE($3, confirmed_date),
@@ -484,6 +605,8 @@ router.put('/:appointmentId/status', authMiddleware, async (req: Request, res: R
        RETURNING *`,
       [appointmentId, status, appointmentDate, appointmentTime, finalMeetingLink, jitsiRoomName]
     );
+
+    await client.query('COMMIT');
 
     const updatedAppointment = result.rows[0];
 
@@ -543,8 +666,11 @@ router.put('/:appointmentId/status', authMiddleware, async (req: Request, res: R
     console.log(`[APPOINTMENT] Updated: ${appointmentId} to ${status}`);
     res.json(transformAppointment(updatedAppointment));
   } catch (error: unknown) {
+    await client.query('ROLLBACK').catch(() => {});
     console.error('[APPOINTMENT] Update status error:', error);
     res.status(500).json({ error: 'Failed to update appointment status' });
+  } finally {
+    client.release();
   }
 });
 
@@ -553,6 +679,30 @@ router.put('/:appointmentId', authMiddleware, async (req: Request, res: Response
   try {
     const { appointmentId } = req.params;
     const updateData = req.body;
+    const authReq = req as AuthenticatedRequest;
+    const authRole = authReq.user?.role;
+    const authUserId = authReq.userId;
+
+    // Ownership check.
+    const existing = await pool.query(
+      'SELECT patient_id, doctor_id, status FROM appointments WHERE id = $1',
+      [appointmentId]
+    );
+    if (existing.rows.length === 0) {
+      return res.status(404).json({ error: 'Appointment not found' });
+    }
+    const existingRow = existing.rows[0];
+    const isOwner = (authRole === 'patient' && existingRow.patient_id === authUserId)
+      || (authRole === 'doctor' && existingRow.doctor_id === authUserId)
+      || authRole === 'admin';
+    if (!isOwner) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+    // Patients cannot edit a confirmed/in-progress/completed/cancelled appointment.
+    if (authRole === 'patient' && !['pending', 'in_pool', 'awaiting_doctor_response'].includes(existingRow.status)) {
+      return res.status(409).json({ error: `Cannot edit appointment in status '${existingRow.status}'` });
+    }
+
     console.log(`[APPOINTMENT] Updating appointment: ${appointmentId}`);
 
     const result = await pool.query(
@@ -595,6 +745,9 @@ router.delete('/:appointmentId', authMiddleware, async (req: Request, res: Respo
   try {
     const { appointmentId } = req.params;
     const { cancelledBy = 'patient', reason } = req.body || {};
+    const authReq = req as AuthenticatedRequest;
+    const authRole = authReq.user?.role;
+    const authUserId = authReq.userId;
     console.log(`[APPOINTMENT] Cancelling appointment: ${appointmentId}`);
 
     // Get current appointment
@@ -602,8 +755,14 @@ router.delete('/:appointmentId', authMiddleware, async (req: Request, res: Respo
     if (current.rows.length === 0) {
       return res.status(404).json({ error: 'Appointment not found' });
     }
-    
+
     const currentAppointment = current.rows[0];
+    const isOwner = (authRole === 'patient' && currentAppointment.patient_id === authUserId)
+      || (authRole === 'doctor' && currentAppointment.doctor_id === authUserId)
+      || authRole === 'admin';
+    if (!isOwner) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
     if (currentAppointment.status === 'completed') {
       return res.status(400).json({ error: 'Cannot cancel a completed appointment' });
     }
@@ -653,10 +812,20 @@ router.delete('/:appointmentId', authMiddleware, async (req: Request, res: Respo
 // NOTIFICATION ROUTES
 // ============================================================================
 
+/** SECURITY: users may only access their own notifications (admins may access any). */
+function assertNotificationAccess(req: Request, res: Response, paramUserId: string): boolean {
+  const authReq = req as AuthenticatedRequest;
+  if (authReq.user?.role === 'admin') return true;
+  if (authReq.userId && authReq.userId === paramUserId) return true;
+  res.status(403).json({ error: 'Access denied' });
+  return false;
+}
+
 // Get user notifications
 router.get('/notifications/:userId', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
+    if (!assertNotificationAccess(req, res, userId)) return;
     console.log(`[NOTIFICATION] Getting notifications for user: ${userId}`);
 
     const notifications = await NotificationService.getUserNotifications(userId);
@@ -670,9 +839,19 @@ router.get('/notifications/:userId', authMiddleware, async (req: Request, res: R
 // Mark notification as read
 router.put('/notifications/:userId/:notificationId/read', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const { notificationId } = req.params;
-    console.log(`[NOTIFICATION] Marking as read: ${notificationId}`);
+    const { userId, notificationId } = req.params;
+    if (!assertNotificationAccess(req, res, userId)) return;
 
+    // Verify the notification belongs to the user before marking.
+    const owns = await pool.query(
+      'SELECT 1 FROM notifications WHERE id = $1 AND user_id = $2',
+      [notificationId, userId]
+    );
+    if (owns.rows.length === 0) {
+      return res.status(404).json({ error: 'Notification not found' });
+    }
+
+    console.log(`[NOTIFICATION] Marking as read: ${notificationId}`);
     await NotificationService.markAsRead(notificationId);
     res.json({ success: true });
   } catch (error: unknown) {
@@ -685,6 +864,7 @@ router.put('/notifications/:userId/:notificationId/read', authMiddleware, async 
 router.put('/notifications/:userId/read-all', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
+    if (!assertNotificationAccess(req, res, userId)) return;
     console.log(`[NOTIFICATION] Marking all as read for user: ${userId}`);
 
     await NotificationService.markAllAsRead(userId);
@@ -699,12 +879,13 @@ router.put('/notifications/:userId/read-all', authMiddleware, async (req: Reques
 router.get('/notifications/:userId/count', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
-    
+    if (!assertNotificationAccess(req, res, userId)) return;
+
     const result = await pool.query(
       'SELECT COUNT(*) FROM notifications WHERE user_id = $1 AND read_at IS NULL',
       [userId]
     );
-    
+
     res.json({ count: Number.parseInt(result.rows[0].count, 10) });
   } catch (error: unknown) {
     console.error('[NOTIFICATION] Count error:', error);

@@ -1,6 +1,7 @@
 -- ============================================================================
 -- CLEANUP TEST-GENERATED DATA
 -- Removes all E2E test data, keeping only original seed data
+-- Works on both local (Docker) and cloud (GCE VM) databases
 -- ============================================================================
 
 BEGIN;
@@ -9,64 +10,65 @@ BEGIN;
 DELETE FROM sessions;
 DELETE FROM refresh_tokens;
 
--- 2. Clear meeting children (safe with CASCADE-like approach)
+-- 2. Clear meeting children FIRST (FK dependencies)
+DELETE FROM meeting_transcripts;
+DELETE FROM meeting_chats;
+DELETE FROM ai_validations;
 DELETE FROM meeting_records;
 
--- 3. Clear prescriptions
+-- 3. Clear prescriptions and lab orders
 DELETE FROM prescriptions;
+DELETE FROM lab_orders;
 
--- 4. Clear E2E test appointments (keep only seed APT-TEST-*)
-DELETE FROM appointments WHERE id NOT LIKE 'APT-TEST-%';
+-- 4. Clear EMR (references appointments via FK)
+DELETE FROM emr;
 
--- 5. Clear generated content (keep seed MC-001 to MC-009)
+-- 5. Clear ALL appointments (tests create their own)
+DELETE FROM appointments;
+
+-- 6. Clear generated content (keep seed MC-001 to MC-009)
 DELETE FROM medical_content WHERE id NOT LIKE 'MC-00%';
 
--- 6. Clear generated clinical_resources (keep seed CR-001 to CR-006)
+-- 7. Clear generated clinical_resources (keep seed CR-001 to CR-006)
 DELETE FROM clinical_resources WHERE id NOT LIKE 'CR-00%';
 
--- 7. Clear generated consultants (keep seed)
+-- 8. Clear generated consultants (keep seed)
 DELETE FROM consultants WHERE id NOT LIKE 'EXT-%' AND id NOT LIKE 'CONS-00%';
 
--- 8. Clean vital_signs - remove all for test users, keep only 1 per seed patient
-DELETE FROM vital_signs WHERE patient_id LIKE '%17%';
-DELETE FROM vital_signs WHERE id NOT IN (
-  SELECT DISTINCT ON (patient_id) id 
-  FROM vital_signs 
-  ORDER BY patient_id, measured_at ASC
-);
+-- 9. Clear ALL vital_signs (tests create their own)
+DELETE FROM vital_signs;
 
--- 9. Clean PHR for test users
-DELETE FROM phr WHERE patient_id LIKE '%17%';
+-- 10. Clear ALL notifications
+DELETE FROM notifications;
 
--- 10. Clean living wills for test users
-DELETE FROM living_wills WHERE patient_id LIKE '%17%';
+-- 11. Clean all child tables for non-core users/doctors
+DELETE FROM doctor_schedules WHERE doctor_id NOT IN ('DOC-TEST-001','DOC-SIRIPORN-001','DOC-SOMCHAI-001','DOC-PIYAWAT-001','DOC-KANNIKA-001');
+DELETE FROM doctor_profiles WHERE doctor_id NOT IN ('DOC-TEST-001','DOC-SIRIPORN-001','DOC-SOMCHAI-001','DOC-PIYAWAT-001','DOC-KANNIKA-001');
+DELETE FROM doctor_reviews;
 
--- 11. Clean notifications for test users
-DELETE FROM notifications WHERE user_id LIKE '%17%';
+-- 12. Clean PHR/living wills for non-core patients
+DELETE FROM phr WHERE patient_id NOT IN ('PATIENT-SOMCHAI','PATIENT-ANAN','PATIENT-DEMO');
+DELETE FROM living_wills WHERE patient_id NOT IN ('PATIENT-SOMCHAI','PATIENT-ANAN','PATIENT-DEMO');
 
--- 12. Clean all child tables for test users/doctors
-DELETE FROM doctor_schedules WHERE doctor_id LIKE '%17%';
-DELETE FROM doctor_profiles WHERE doctor_id LIKE '%17%';
-DELETE FROM doctor_reviews WHERE doctor_id LIKE '%17%' OR patient_id LIKE '%17%';
-DELETE FROM patient_profiles WHERE patient_id LIKE '%17%';
-DELETE FROM patient_consents WHERE patient_id LIKE '%17%';
-DELETE FROM device_tokens WHERE user_id LIKE '%17%';
-DELETE FROM push_subscriptions WHERE user_id LIKE '%17%';
-DELETE FROM notification_preferences WHERE user_id LIKE '%17%';
-DELETE FROM user_settings WHERE user_id LIKE '%17%';
-DELETE FROM user_api_connections WHERE user_id LIKE '%17%';
-DELETE FROM biometric_credentials WHERE user_id LIKE '%17%';
-DELETE FROM password_resets WHERE user_id LIKE '%17%';
-DELETE FROM sync_queue WHERE user_id LIKE '%17%';
-DELETE FROM lab_orders WHERE patient_id LIKE '%17%' OR doctor_id LIKE '%17%';
+-- 13. Clean all session/device/preference tables
+DELETE FROM patient_profiles;
+DELETE FROM patient_consents;
+DELETE FROM device_tokens;
+DELETE FROM push_subscriptions;
+DELETE FROM notification_preferences;
+DELETE FROM user_settings;
+DELETE FROM sync_queue;
+DELETE FROM password_resets;
+DELETE FROM biometric_credentials;
+DELETE FROM user_api_connections;
 
--- 13. Clean E2E generated doctors (keep seed 3 + JSON extra 2)
+-- 14. Clean E2E generated doctors (keep seed 3 + JSON extra 2)
 DELETE FROM doctors WHERE id NOT IN (
   'DOC-TEST-001','DOC-SIRIPORN-001','DOC-SOMCHAI-001',
   'DOC-PIYAWAT-001','DOC-KANNIKA-001'
 );
 
--- 14. Clean E2E generated users (keep 9 core users)
+-- 15. Clean E2E generated users (keep 9 core users)
 DELETE FROM users WHERE id NOT IN (
   'ADMIN-TEST-001','DOC-TEST-001','DOC-SOMCHAI-001','DOC-SIRIPORN-001',
   'PATIENT-SOMCHAI','PATIENT-ANAN','PATIENT-DEMO',

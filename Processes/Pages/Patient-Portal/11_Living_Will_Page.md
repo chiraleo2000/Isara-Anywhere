@@ -7,11 +7,13 @@
 
 ---
 
+
 ## 1. Purpose
 
 Create, manage, and share a legally-compliant Living Will (พินัยกรรมชีวิต) specifying medical treatment preferences when the patient cannot communicate. Includes digital signature, healthcare proxy designation, and PDPA-compliant doctor sharing.
 
 ---
+
 
 ## 2. Page Layout (4-Step Wizard)
 
@@ -32,7 +34,9 @@ Create, manage, and share a legally-compliant Living Will (พินัยกร
 
 ---
 
+
 ## 3. Step Details
+
 
 ### Step 1: Healthcare Proxy (ตัวแทนดูแลสุขภาพ)
 
@@ -52,6 +56,7 @@ Create, manage, and share a legally-compliant Living Will (พินัยกร
 │  ชื่อ: [____]  ความสัมพันธ์: [____]  เบอร์: [____]  [❌ ลบ]         │
 └─────────────────────────────────────────────────────────────────────┘
 ```
+
 
 ### Step 2: Treatment Preferences (ความต้องการการรักษา)
 
@@ -87,6 +92,7 @@ Create, manage, and share a legally-compliant Living Will (พินัยกร
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
+
 ### Step 3: Digital Signature (ลายเซ็นดิจิทัล)
 
 ```text
@@ -108,6 +114,7 @@ Create, manage, and share a legally-compliant Living Will (พินัยกร
 │  (Thai Electronic Transactions Act)                                 │
 └─────────────────────────────────────────────────────────────────────┘
 ```
+
 
 ### Step 4: Share with Doctors (แชร์กับแพทย์)
 
@@ -137,7 +144,9 @@ Create, manage, and share a legally-compliant Living Will (พินัยกร
 
 ---
 
+
 ## 4. Modals
+
 
 ### Doctor Selection Modal
 
@@ -152,6 +161,7 @@ Create, manage, and share a legally-compliant Living Will (พินัยกร
 │  [ปิด]                                  │
 └─────────────────────────────────────────┘
 ```
+
 
 ### Version History Modal
 
@@ -169,7 +179,9 @@ Create, manage, and share a legally-compliant Living Will (พินัยกร
 
 ---
 
+
 ## 5. Workflows
+
 
 ### Workflow 1: Create Living Will
 
@@ -194,6 +206,7 @@ Step 17: Living Will saved → Audit log entry created
 Step 18: Shared doctors can now view in PatientRecordViewer
 ```
 
+
 ### Workflow 2: Edit Existing Living Will
 
 ```text
@@ -204,6 +217,7 @@ Step 4: Modify any step
 Step 5: Save → Creates new version (old version preserved)
 Step 6: Audit log: LIVING_WILL_UPDATED
 ```
+
 
 ### Workflow 3: View Version History
 
@@ -217,6 +231,7 @@ Step 5: Rollback creates new version (non-destructive)
 
 ---
 
+
 ## 6. API Endpoints
 
 | Method | Endpoint | Purpose |
@@ -229,6 +244,7 @@ Step 5: Rollback creates new version (non-destructive)
 | GET | `/api/doctors` | Search doctors for sharing |
 
 ---
+
 
 ## 7. Doctor Portal Visibility
 
@@ -245,6 +261,7 @@ When shared, the Living Will appears in the PatientRecordViewer's PHR tab showin
 
 ---
 
+
 ## 8. Connections to Other Pages
 
 | Element | Destination |
@@ -255,23 +272,32 @@ When shared, the Living Will appears in the PatientRecordViewer's PHR tab showin
 
 ---
 
+
 ## 9. AI Agent Improvement Opportunities
+
 
 - **Guided creation**: AI walk patient through choices with explanations
 
+
 - **Legal compliance check**: AI verify document completeness
+
 
 - **Translation**: AI translate Living Will for multilingual families
 
+
 - **Reminder**: AI prompt periodic review of Living Will
 
+
 - **Template suggestions**: AI suggest common treatment preference combinations
+
 
 - **Family notification**: AI automated notification when Living Will is updated
 
 ---
 
+
 ## PostgreSQL Database Integration
+
 
 ### Tables Used
 
@@ -280,6 +306,7 @@ When shared, the Living Will appears in the PatientRecordViewer's PHR tab showin
 | living_wills | CRUD | Living Will document management |
 | living_will_versions | INSERT / SELECT | Version history for Living Will changes |
 | patient_consents | SELECT / UPDATE | Consent records linked to Living Will sharing |
+
 
 ### API Endpoints
 
@@ -290,10 +317,14 @@ When shared, the Living Will appears in the PatientRecordViewer's PHR tab showin
 | /api/phr/:id/living-will | PUT | UPDATE living_wills, INSERT living_will_versions |
 | /api/phr/:id/living-will/share | PUT | UPDATE living_wills (share settings), UPDATE patient_consents |
 
+
 ### Deployment
+
 
 - **Local Docker:** izara-postgres container (localhost:5433 external / 5432 internal) → database: izara_phase1
 
+
 - **Production:** GCE VM at 35.240.157.230:5432 → database: izara_phase1 (asia-southeast1)
+
 
 - **Service deployed via:** Cloud Run (gen2, CPU Boost) + Cloud Build CI/CD

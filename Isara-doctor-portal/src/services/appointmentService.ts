@@ -159,7 +159,7 @@ class AppointmentService {
       return { success: false, error: 'User is required to create an appointment' };
     }
 
-    const appointmentId = `apt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const appointmentId = `apt_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
 
     const appointment: Appointment = {
       id: appointmentId,

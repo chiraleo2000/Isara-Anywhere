@@ -7,11 +7,13 @@
 
 ---
 
+
 ## 1. Purpose
 
 Central health data management for patients — vital signs tracking, medication management, allergy records, and lifestyle data entry. All data stored in PostgreSQL.
 
 ---
+
 
 ## 2. Page Layout (5 Tabs)
 
@@ -31,7 +33,9 @@ Central health data management for patients — vital signs tracking, medication
 
 ---
 
+
 ## 3. Tab Details
+
 
 ### Tab 1: ภาพรวม (Overview)
 
@@ -52,6 +56,7 @@ Central health data management for patients — vital signs tracking, medication
 │  [บันทึกสัญญาณชีพ] [จัดการยา] [ดูประวัติแพ้ยา]                       │
 └─────────────────────────────────────────────────────────────────────┘
 ```
+
 
 ### Tab 2: สัญญาณชีพ (Vitals)
 
@@ -79,6 +84,7 @@ Central health data management for patients — vital signs tracking, medication
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
+
 ### Tab 3: ยา (Medications)
 
 ```text
@@ -104,6 +110,7 @@ Central health data management for patients — vital signs tracking, medication
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
+
 ### Tab 4: แพ้ยา (Allergies)
 
 ```text
@@ -119,6 +126,7 @@ Central health data management for patients — vital signs tracking, medication
 │  └──────────────────────────────────────────┘                       │
 └─────────────────────────────────────────────────────────────────────┘
 ```
+
 
 ### Tab 5: โปรไฟล์ (Profile/Lifestyle)
 
@@ -144,7 +152,9 @@ Central health data management for patients — vital signs tracking, medication
 
 ---
 
+
 ## 4. Workflows
+
 
 ### Workflow 1: Record Vital Signs
 
@@ -157,6 +167,7 @@ Step 5: New entry appears at top of history list
 Step 6: Overview tab stats update with new readings
 Step 7: Trend arrows update (↑ up / ↓ down / → same vs previous)
 ```
+
 
 ### Workflow 2: Manage Medications
 
@@ -171,6 +182,7 @@ Step 7: New medication appears in list as "Active"
 Step 8: Can mark medication as "Stopped" if discontinued
 ```
 
+
 ### Workflow 3: Update Lifestyle Data
 
 ```text
@@ -182,6 +194,7 @@ Step 5: Data saved and visible to authorized doctors
 ```
 
 ---
+
 
 ## 5. API Endpoints
 
@@ -195,6 +208,7 @@ Step 5: Data saved and visible to authorized doctors
 | PUT | `/api/phr/{userId}/profile` | Update profile/lifestyle |
 
 ---
+
 
 ## 6. Data Visible to Doctors
 
@@ -211,6 +225,7 @@ When PDPA consent is granted, doctors can see:
 
 ---
 
+
 ## 7. Connections to Other Pages
 
 | Element | Destination |
@@ -222,23 +237,32 @@ When PDPA consent is granted, doctors can see:
 
 ---
 
+
 ## 8. AI Agent Improvement Opportunities
+
 
 - **Smart vital interpretation**: AI analyze vital trends and alert on concerning patterns
 
+
 - **Medication interaction check**: AI cross-check all medications for interactions
+
 
 - **Auto-import**: AI extract vitals from wearable devices (Apple Health, Google Fit)
 
+
 - **Predictive health**: AI predict health risks from PHR trends
 
+
 - **Medication reminders**: AI generate personalized medication schedules
+
 
 - **Allergy severity classification**: AI categorize allergy severity automatically
 
 ---
 
+
 ## PostgreSQL Database Integration
+
 
 ### Tables Used
 
@@ -248,6 +272,7 @@ When PDPA consent is granted, doctors can see:
 | vital_signs | INSERT | Patient vital measurements (BP, HR, temp, weight) |
 | patient_profiles | SELECT / UPDATE | Patient demographic data linked to PHR |
 
+
 ### API Endpoints
 
 | Endpoint | Method | DB Operation |
@@ -256,14 +281,20 @@ When PDPA consent is granted, doctors can see:
 | /api/phr | POST | UPSERT phr |
 | /api/vital-signs | POST | INSERT vital_signs |
 
+
 ### Real-time Events
+
 
 - **NOTIFY:** phr_changes → Socket.IO PHR update notifications
 
+
 ### Deployment
+
 
 - **Local Docker:** izara-postgres container (localhost:5433 external / 5432 internal) → database: izara_phase1
 
+
 - **Production:** GCE VM at 35.240.157.230:5432 → database: izara_phase1 (asia-southeast1)
+
 
 - **Service deployed via:** Cloud Run (gen2, CPU Boost) + Cloud Build CI/CD

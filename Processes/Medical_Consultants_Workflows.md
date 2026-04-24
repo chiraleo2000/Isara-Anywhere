@@ -73,6 +73,7 @@ interface Consultant {
 | POST | `/api/consultants/:id/review` | Add rating/review | Doctor |
 | GET | `/api/consultants/specialties/list` | Get specialties list | All |
 
+
 ## Workflows
 
 ### 1. Admin: Add New Consultant
@@ -157,6 +158,7 @@ Data is persisted in GCS bucket: `izara-meta-data`
 | Missing required fields | "Please fill in required fields" | Complete form |
 | Unauthorized action | "Only admins can..." | Check user role |
 
+
 ## Correlation with Admin Users
 
 1. **Audit Trail**: All changes tracked with `createdBy`, `updatedBy` fields
@@ -176,6 +178,7 @@ Data is persisted in GCS bucket: `izara-meta-data`
 | **doctor_reviews** | Doctor ratings for consultants | id, doctor_id, patient_id (null for consultant reviews), appointment_id (null), rating (1-5), comment |
 | **users** | Creator/modifier identity | id, name, role (admin/doctor) |
 | **audit_logs** | All CRUD operations tracked | id, user_id, action, entity_type='consultant', entity_id, details (JSONB) |
+
 
 ### Data Flow: CRUD Operations
 
@@ -226,12 +229,14 @@ Doctor Portal (port 3010) — mainApiServer.cjs
 | POST | `/api/consultants/:id/availability` | UPDATE consultants SET is_available=NOT is_available |
 | POST | `/api/consultants/:id/review` | INSERT INTO doctor_reviews + UPDATE consultants (avg rating) |
 
+
 ### Deployment
 
 | Environment | Service | Database |
 | ----------- | ------- | -------- |
 | Local Docker | Doctor Portal (3010) | izara-postgres:5432 |
 | Production | Doctor Portal (Cloud Run, asia-southeast1) | 35.240.157.230:5432 |
+
 
 ### Scenario Coverage
 
@@ -244,3 +249,4 @@ Doctor Portal (port 3010) — mainApiServer.cjs
 | 5 | Rate consultant | Doctor | doctor_reviews, consultants |
 | 6 | View consultants list | Doctor | consultants (read) |
 | 7 | Filter by specialty | Doctor | consultants (read) |
+

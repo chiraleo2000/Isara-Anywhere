@@ -55,6 +55,7 @@ Admin-only page for managing doctor registrations: approve/reject new doctor acc
 | Remove | Remove from platform | Deactivated |
 
 
+
 ---
 
 
@@ -109,6 +110,7 @@ Step 5: Role updated immediately
 | POST | `/api/admin/doctors/:id/notification` | Send notification |
 
 
+
 ---
 
 
@@ -137,12 +139,14 @@ Step 5: Role updated immediately
 
 
 
+
 ### API Endpoints
 | Endpoint | Method | DB Operation |
 | -------- | ------ | ------------ |
 | GET /api/admin/doctors | GET | SELECT users JOIN doctor_profiles WHERE role='doctor' |
 | PUT /api/admin/doctors/:id/approve | PUT | UPDATE users SET status='approved' WHERE id |
 | PUT /api/admin/doctors/:id/reject | PUT | UPDATE users SET status='rejected' WHERE id |
+
 
 
 

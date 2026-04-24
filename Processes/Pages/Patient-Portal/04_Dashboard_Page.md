@@ -8,11 +8,13 @@
 
 ---
 
+
 ## 1. Purpose
 
 Central hub for patient activities — quick access to key features, upcoming appointments, notifications, health overview, and AI assistant.
 
 ---
+
 
 ## 2. Page Layout
 
@@ -51,7 +53,9 @@ Central hub for patient activities — quick access to key features, upcoming ap
 
 ---
 
+
 ## 3. Features & Actions
+
 
 ### 3.1 Quick Actions (4 cards)
 
@@ -62,23 +66,33 @@ Central hub for patient activities — quick access to key features, upcoming ap
 | Health Records | 💊 | ระเบียนสุขภาพ | Navigate to `/phr` |
 | Health Library | 📚 | คลังความรู้ | Navigate to `/health-library` |
 
+
 ### 3.2 Upcoming Appointments
+
 
 - Shows up to 3 non-cancelled appointments sorted by date
 
+
 - Each card displays: Doctor name, specialty, date/time, status
+
 
 - **Join Meeting** button for confirmed telehealth appointments (opens Jitsi)
 
+
 - **View Details** link to appointment detail page
+
 
 ### 3.3 Notifications Summary
 
+
 - Count of pending appointment responses
+
 
 - Quick link to full notification list
 
+
 ### 3.4 Health Studio Widget (HealthStudio component)
+
 
 #### Tab 1: ภาพรวมสุขภาพ (Health Overview)
 
@@ -89,31 +103,45 @@ Central hub for patient activities — quick access to key features, upcoming ap
 | BMI | Height + weight calculation | kg/m² value |
 | Treatment Count | Appointment history | Visit count |
 
+
 - AI Health Insight prompt → navigates to AI Doctor
+
 
 - Quick links to PHR and AI Doctor pages
 
+
 #### Tab 2: ผลการรักษา (Treatment Results)
+
 
 - TreatmentResults component with time filters (5 visits, 6mo, 1yr, all)
 
+
 - EMR cards with diagnosis, treatment plan, medications
+
 
 - Appointment cards with expandable details
 
+
 #### Tab 3: เนื้อหาสุขภาพ (Health Content)
+
 
 - MedicalContent widget with search, categories, article previews
 
+
 ### 3.5 AI Health Chat (AIHealthChat component — sticky)
+
 
 - Compact chat widget with expand/minimize
 
+
 - Quick question buttons (headache, heart-healthy foods, stress reduction)
+
 
 - Persistent chat history across sessions
 
+
 - 30-second auto-clear for inactive
+
 
 ### 3.6 Latest Appointment Result Widget (Meeting Outcome)
 
@@ -133,6 +161,7 @@ Central hub for patient activities — quick access to key features, upcoming ap
 └───────────────────────────────────────────────────────────────────┘
 ```
 
+
 ## Widget Details
 
 | Field | Data Source | Description |
@@ -144,29 +173,42 @@ Central hub for patient activities — quick access to key features, upcoming ap
 | อาการเฝ้าระวัง (Warning Signs) | EMR `warning_signs` | Red flags patient should watch for |
 | เอกสารคำแนะนำ (Instruction Sheet) | Generated PDF | Downloadable Patient Instruction Sheet |
 
+
 ## What Patient SEES in this widget
+
 
 - ✅ Chief complaint and diagnosis (patient-friendly Thai)
 
+
 - ✅ Treatment plan summary
+
 
 - ✅ Medications with instructions (วิธีกินยา)
 
+
 - ✅ Follow-up schedule
+
 
 - ✅ Warning signs to watch for
 
+
 - ✅ PDF download link for Patient Instruction Sheet
+
 
 ## What Patient does NOT see
 
+
 - ❌ Internal doctor notes
+
 
 - ❌ Raw AI outputs
 
+
 - ❌ Doctor-to-doctor communications
 
+
 - ❌ CDS alerts (internal)
+
 
 ### 3.7 Next Appointment Reminder with Meeting Link
 
@@ -186,21 +228,30 @@ Central hub for patient activities — quick access to key features, upcoming ap
 └───────────────────────────────────────────────────────────────────┘
 ```
 
+
 ## Features
+
 
 - Shows the nearest confirmed appointment prominently on dashboard
 
+
 - Meeting link available for confirmed telehealth appointments
+
 
 - Copy link button for easy sharing with relatives/friends
 
+
 - Guest invite button → share link via LINE, email, or SMS
+
 
 - Guests join via link without needing Isara account
 
+
 - Countdown timer appears when appointment is within 1 hour
 
+
 - "เข้าร่วมประชุม" button activates 10 minutes before scheduled time
+
 
 ### 3.8 Health Notifications Banner (New Results from Doctor)
 
@@ -218,6 +269,7 @@ Central hub for patient activities — quick access to key features, upcoming ap
 └───────────────────────────────────────────────────────────────────┘
 ```
 
+
 ## Notification Types Shown on Dashboard
 
 | Notification | Thai Message | Action |
@@ -229,7 +281,9 @@ Central hub for patient activities — quick access to key features, upcoming ap
 
 ---
 
+
 ## 4. Workflows
+
 
 ### Workflow 1: View Dashboard on Login
 
@@ -245,6 +299,7 @@ Step 5: HealthStudio loads with default Overview tab
 Step 6: AIHealthChat loads latest session
 ```
 
+
 ### Workflow 2: Join Upcoming Meeting
 
 ```text
@@ -253,6 +308,7 @@ Step 2: Clicks "Join Meeting" button
 Step 3: Opens Jitsi Meet URL in new tab
 Step 4: Patient enters lobby and waits for doctor admission
 ```
+
 
 ### Workflow 3: View Latest Meeting Results on Dashboard
 
@@ -272,6 +328,7 @@ Step 5: Patient clicks "ดาวน์โหลดเอกสารคำแ�
 Step 6: Patient clicks "ดูรายละเอียดทั้งหมด" → navigates to /appointments/:id
 ```
 
+
 ### Workflow 4: Share Meeting Link from Dashboard
 
 ```text
@@ -286,6 +343,7 @@ Step 5: Guest clicks link → enters LOBBY → doctor admits
 Step 6: No Isara account needed for guests
 ```
 
+
 ### Workflow 5: Quick AI Consultation
 
 ```text
@@ -297,6 +355,7 @@ Step 5: Patient can continue conversation or close
 ```
 
 ---
+
 
 ## 5. API Endpoints
 
@@ -315,6 +374,7 @@ Step 5: Patient can continue conversation or close
 
 ---
 
+
 ## 6. Sub-Components
 
 | Component | Purpose |
@@ -327,6 +387,7 @@ Step 5: Patient can continue conversation or close
 | `VitalsChart` | Sparkline vital signs chart |
 
 ---
+
 
 ## 7. Connections to Other Pages
 
@@ -343,21 +404,29 @@ Step 5: Patient can continue conversation or close
 
 ---
 
+
 ## 8. AI Agent Improvement Opportunities
+
 
 - **Personalized dashboard**: AI-curated content based on patient conditions
 
+
 - **Proactive alerts**: AI detect anomalies in vital trends and surface warnings
+
 
 - **Smart scheduling**: AI suggest optimal follow-up timing
 
+
 - **Health goal tracking**: AI-driven health improvement plans on dashboard
+
 
 - **Medication reminders**: AI-timed medication alerts integrated into dashboard
 
 ---
 
+
 ## PostgreSQL Database Integration
+
 
 ### Tables Used
 
@@ -367,16 +436,21 @@ Step 5: Patient can continue conversation or close
 | notifications | SELECT | Unread notification count |
 | medical_content | SELECT | Recent published health articles |
 
+
 ### API Endpoints
 
 | Endpoint | Method | DB Operation |
 | -------- | ------ | ------------ |
 | GET /api/dashboard | GET | SELECT appointments, notifications, medical_content for patient |
 
+
 ### Deployment
+
 
 - **Local Docker:** izara-postgres container (localhost:5433 external / 5432 internal) → database: izara_phase1
 
+
 - **Production:** GCE VM at 35.240.157.230:5432 → database: izara_phase1 (asia-southeast1)
+
 
 - **Service deployed via:** Cloud Run (gen2, CPU Boost) + Cloud Build CI/CD

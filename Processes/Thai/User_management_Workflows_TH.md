@@ -35,6 +35,7 @@ Izara Telemedicine ใช้ฐานข้อมูล PostgreSQL แบบร�
 
 
 
+
 ### บริการ Docker
 
 | บริการ | ชื่อ Container | พอร์ต | วัตถุประสงค์ |
@@ -43,6 +44,7 @@ Izara Telemedicine ใช้ฐานข้อมูล PostgreSQL แบบร�
 | พอร์ทัลผู้ป่วย | izara-patient-portal | 3005 | Frontend + Backend ผู้ป่วย |
 | พอร์ทัลแพทย์ | izara-doctor-portal | 3010 | Frontend + Backend แพทย์ |
 | pgAdmin | izara-pgadmin | 5050 | จัดการฐานข้อมูล |
+
 
 
 
@@ -55,6 +57,7 @@ Izara Telemedicine ใช้ฐานข้อมูล PostgreSQL แบบร�
 | ประเภทบทบาท | `patient` เท่านั้น | `doctor`, `admin` |
 | ระยะเวลา Session | ตาม Session | ตาม Session |
 | ที่เก็บข้อมูล | ตาราง `users` ใน PostgreSQL | ตาราง `users` ใน PostgreSQL |
+
 
 
 ---
@@ -176,6 +179,7 @@ CREATE TABLE patient_profiles (
 | ผู้ดูแลระบบ | `DOC-DEMO-001` หรือ `DOC-{...}` | `DOC-DEMO-001` |
 
 
+
 ---
 
 
@@ -194,6 +198,7 @@ CREATE TABLE patient_profiles (
 
 
 
+
 ### 3.2 การยืนยันตัวตนพอร์ทัลแพทย์ (`/auth/*`)
 
 | Method | Endpoint | คำอธิบาย | การเข้าถึง |
@@ -207,6 +212,7 @@ CREATE TABLE patient_profiles (
 
 
 
+
 ### 3.3 การจัดการผู้ดูแลระบบ (`/admin/*`)
 
 | Method | Endpoint | คำอธิบาย | การเข้าถึง |
@@ -215,6 +221,7 @@ CREATE TABLE patient_profiles (
 | POST | `/admin/approve-doctor` | อนุมัติการลงทะเบียนแพทย์ | ผู้ดูแลระบบ |
 | POST | `/admin/reject-doctor` | ปฏิเสธการลงทะเบียนแพทย์ | ผู้ดูแลระบบ |
 | POST | `/admin/update-role` | เปลี่ยนบทบาทผู้ใช้ (แพทย์↔ผู้ดูแล) | ผู้ดูแลระบบ |
+
 
 
 ---
@@ -325,6 +332,7 @@ CREATE TABLE patient_profiles (
 | **สถานะเริ่มต้น** | `is_active: true`, `is_approved: true` | `is_active: false`, `is_approved: false` |
 | **ต้องการการอนุมัติ** | ❌ ไม่ | ✅ ใช่ - ผู้ดูแลต้องอนุมัติ |
 | **เข้าสู่ระบบอัตโนมัติ** | ✅ ใช่ - เข้าสู่ระบบหลังลงทะเบียน | ❌ ไม่ - ต้องรอการอนุมัติ |
+
 
 
 
@@ -503,6 +511,7 @@ CREATE TABLE patient_profiles (
 
 
 
+
 ### 4.5 ผู้ดูแลระบบ: ปฏิเสธแพทย์
 
 ```text
@@ -591,6 +600,7 @@ CREATE TABLE patient_profiles (
 
 
 
+
 ### 5.2 การล็อคบัญชี
 
 หลังจากเข้าสู่ระบบผิดพลาด 5 ครั้ง:
@@ -623,6 +633,7 @@ WHERE email = $1;
 
 
 
+
 ### 5.4 ความปลอดภัย Session
 
 
@@ -652,6 +663,7 @@ WHERE email = $1;
 
 
 
+
 ### 6.2 สิทธิ์เข้าถึงพอร์ทัลแพทย์
 
 | คุณสมบัติ | แพทย์ | ผู้ดูแลระบบ |
@@ -667,6 +679,7 @@ WHERE email = $1;
 | อนุมัติการลงทะเบียน | ❌ | ✅ |
 | กำหนดบทบาท | ❌ | ✅ |
 | ดูสถิติ | ❌ | ✅ |
+
 
 
 
@@ -713,6 +726,7 @@ const canManageDoctors = user.admin_privileges?.canManageDoctors || user.is_admi
 
 
 
+
 ### 7.2 การ Seed ข้อมูล
 
 ```powershell
@@ -743,6 +757,7 @@ node cloud-db-tool.cjs seed
 
 
 
+
 ### 8.2 คอมโพเนนต์พอร์ทัลแพทย์
 
 | คอมโพเนนต์ | เส้นทาง | วัตถุประสงค์ |
@@ -751,6 +766,7 @@ node cloud-db-tool.cjs seed
 | `DoctorRegister` | `/pages/DoctorRegister.tsx` | ลงทะเบียนแพทย์ |
 | `AuthProvider` | `/components/common/AuthProvider.tsx` | จัดการสถานะการยืนยันตัวตน |
 | `AdminDoctorManagement` | `/pages/AdminDoctorManagement.tsx` | ผู้ดูแล: จัดการแพทย์ |
+
 
 
 ---
@@ -771,6 +787,7 @@ node cloud-db-tool.cjs seed
 | `LOGIN_ERROR` | 500 | เกิดข้อผิดพลาดของเซิร์ฟเวอร์ |
 
 
+
 ---
 
 
@@ -787,6 +804,7 @@ node cloud-db-tool.cjs seed
 | มอบสิทธิ์ผู้ดูแล | ผู้ดูแล | แพทย์ | role=admin, is_admin=true |
 | รีเซ็ตรหัสผ่าน | ใครก็ได้ | ทั้งสอง | อัปเดตรหัสผ่าน |
 | ออกจากระบบ | ใครก็ได้ | ทั้งสอง | ยกเลิก Session |
+
 
 
 ---

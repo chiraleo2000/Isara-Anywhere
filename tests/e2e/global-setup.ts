@@ -57,6 +57,28 @@ async function apiLogin(ctx: any, baseUrl: string, creds: { email: string; passw
   return '';
 }
 
+// ── Warmup — wake cold Cloud Run containers before auth ─────────────────────
+async function warmupPortal(ctx: any, url: string, label: string, maxRetries = 10): Promise<void> {
+  for (let i = 1; i <= maxRetries; i++) {
+    try {
+      const res = await ctx.get(`${url}/api/health`, { timeout: 15_000 });
+      if (res.status() === 200) {
+        console.log(`   ✅ ${label} warm (attempt ${i})`);
+        return;
+      }
+      console.log(`   ⏳ ${label} returned ${res.status()} (attempt ${i}/${maxRetries})`);
+    } catch (err: any) {
+      console.log(`   ⏳ ${label} not ready (attempt ${i}/${maxRetries}): ${err?.message?.slice(0, 80) || 'timeout'}`);
+    }
+    // Wait before retry — escalating backoff
+    let delay = 8_000;
+    if (i <= 2) delay = 3_000;
+    else if (i <= 4) delay = 5_000;
+    await new Promise(r => setTimeout(r, delay));
+  }
+  console.warn(`   ⚠️  ${label} did not respond after ${maxRetries} attempts — proceeding anyway`);
+}
+
 // ── Main ────────────────────────────────────────────────────────────────────
 async function globalSetup(_config: FullConfig) {
   console.log('\n🔐 GLOBAL SETUP — Authenticating all 5 users via API (ONE time)...');
@@ -65,6 +87,14 @@ async function globalSetup(_config: FullConfig) {
   const ctx = await request.newContext();
 
   try {
+    // ── Warmup: wake containers before attempting login ────────────
+    if (IS_CLOUD) {
+      console.log('  ☁️ Cloud mode — warming up containers...');
+      await warmupPortal(ctx, PATIENT_URL, 'Patient Portal');
+      await warmupPortal(ctx, DOCTOR_URL, 'Doctor Portal');
+      console.log('  ✅ Warmup complete — proceeding to authentication\n');
+    }
+
     // All 5 logins in parallel — FAST
     const [p1, p2, p3, doc, adm] = await Promise.all([
       apiLogin(ctx, PATIENT_URL, USERS.patient1),

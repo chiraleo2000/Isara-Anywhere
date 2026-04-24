@@ -2,7 +2,6 @@
  * Content Routes - PostgreSQL ONLY
  * Medical Content Library API
  * NO GCS - All data stored in PostgreSQL
- * DEMO MODE - Returns mock data when PostgreSQL is unavailable
  */
 
 import { Router, Request, Response } from 'express';
@@ -12,158 +11,6 @@ const { ContentService } = postgresDataService;
 const { pool } = postgresDataService;
 
 const router = Router();
-
-// ============================================================================
-// DEMO MODE - Mock content for cloud deployment without database
-// ============================================================================
-const DEMO_MODE = process.env.DEMO_MODE === 'true' || process.env.NODE_ENV === 'demo';
-
-// Check if database is available
-async function checkDbConnection(): Promise<boolean> {
-  try {
-    await pool.query('SELECT 1');
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-// Demo medical content
-const DEMO_MEDICAL_CONTENT = [
-  {
-    id: 'demo_article_001',
-    title: 'การดูแลสุขภาพประจำวัน',
-    titleThai: 'การดูแลสุขภาพประจำวัน',
-    titleEnglish: 'Daily Health Care Tips',
-    content: 'บทความเกี่ยวกับการดูแลสุขภาพประจำวันสำหรับทุกเพศทุกวัย...',
-    contentThai: 'บทความเกี่ยวกับการดูแลสุขภาพประจำวันสำหรับทุกเพศทุกวัย...',
-    contentEnglish: 'Article about daily health care for all ages...',
-    category: 'general-health',
-    type: 'article' as const,
-    tags: ['health', 'lifestyle', 'tips'],
-    author: 'Dr. Demo',
-    authorId: 'demo_doctor_001',
-    status: 'published',
-    viewCount: 150,
-    isFeatured: true,
-    readTime: 5,
-    imageUrl: 'https://images.unsplash.com/photo-1559757175-5700dde675bc?w=800',
-    thumbnail: 'https://images.unsplash.com/photo-1559757175-5700dde675bc?w=800',
-    publishedAt: new Date().toISOString(),
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  },
-  {
-    id: 'demo_article_002',
-    title: 'อาหารเพื่อสุขภาพ',
-    titleThai: 'อาหารเพื่อสุขภาพ',
-    titleEnglish: 'Healthy Eating Guide',
-    content: 'แนะนำการรับประทานอาหารที่ดีต่อสุขภาพ...',
-    contentThai: 'แนะนำการรับประทานอาหารที่ดีต่อสุขภาพ...',
-    contentEnglish: 'Guide to healthy eating habits...',
-    category: 'nutrition',
-    type: 'article' as const,
-    tags: ['nutrition', 'diet', 'healthy-eating'],
-    author: 'Dr. Demo',
-    authorId: 'demo_doctor_001',
-    status: 'published',
-    viewCount: 120,
-    isFeatured: false,
-    readTime: 7,
-    imageUrl: 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=800',
-    thumbnail: 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=800',
-    publishedAt: new Date().toISOString(),
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  },
-  {
-    id: 'demo_article_003',
-    title: 'การออกกำลังกายที่บ้าน',
-    titleThai: 'การออกกำลังกายที่บ้าน',
-    titleEnglish: 'Home Exercise Guide',
-    content: 'เคล็ดลับการออกกำลังกายที่บ้านสำหรับผู้ไม่มีเวลาไปฟิตเนส...',
-    contentThai: 'เคล็ดลับการออกกำลังกายที่บ้านสำหรับผู้ไม่มีเวลาไปฟิตเนส...',
-    contentEnglish: 'Tips for home exercise for busy people...',
-    category: 'exercise',
-    type: 'video' as const,
-    videoUrl: 'https://www.youtube.com/watch?v=example',
-    tags: ['exercise', 'home', 'fitness'],
-    author: 'Dr. Fitness',
-    authorId: 'demo_doctor_002',
-    status: 'published',
-    viewCount: 200,
-    isFeatured: true,
-    readTime: 10,
-    imageUrl: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800',
-    thumbnail: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800',
-    publishedAt: new Date().toISOString(),
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  },
-  {
-    id: 'demo_article_004',
-    title: 'การดูแลสุขภาพจิต',
-    titleThai: 'การดูแลสุขภาพจิต',
-    titleEnglish: 'Mental Health Care',
-    content: 'วิธีการดูแลสุขภาพจิตในยุคดิจิทัล...',
-    contentThai: 'วิธีการดูแลสุขภาพจิตในยุคดิจิทัล...',
-    contentEnglish: 'How to take care of mental health in digital age...',
-    category: 'mental-health',
-    type: 'article' as const,
-    tags: ['mental-health', 'stress', 'wellness'],
-    author: 'Dr. Mind',
-    authorId: 'demo_doctor_003',
-    status: 'published',
-    viewCount: 180,
-    isFeatured: false,
-    readTime: 8,
-    imageUrl: 'https://images.unsplash.com/photo-1499209974431-9dddcece7f88?w=800',
-    thumbnail: 'https://images.unsplash.com/photo-1499209974431-9dddcece7f88?w=800',
-    publishedAt: new Date().toISOString(),
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  }
-];
-
-// Demo clinical resources
-const DEMO_CLINICAL_RESOURCES = [
-  {
-    id: 'demo_resource_001',
-    title: 'Clinical Practice Guidelines',
-    titleThai: 'แนวทางเวชปฏิบัติ',
-    titleEnglish: 'Clinical Practice Guidelines',
-    content: 'Guidelines for clinical practice...',
-    contentThai: 'แนวทางเวชปฏิบัติสำหรับแพทย์...',
-    contentEnglish: 'Guidelines for clinical practice...',
-    category: 'guidelines',
-    specialty: 'internal-medicine',
-    guidelineYear: 2024,
-    source: 'Thai Medical Association',
-    status: 'published',
-    imageUrl: 'https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=800',
-    thumbnail: 'https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=800',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  },
-  {
-    id: 'demo_resource_002',
-    title: 'Medication Reference',
-    titleThai: 'ข้อมูลยา',
-    titleEnglish: 'Medication Reference',
-    content: 'Reference information about medications...',
-    contentThai: 'ข้อมูลอ้างอิงเกี่ยวกับยา...',
-    contentEnglish: 'Reference information about medications...',
-    category: 'medications',
-    specialty: 'pharmacy',
-    guidelineYear: 2024,
-    source: 'FDA Thailand',
-    status: 'published',
-    imageUrl: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=800',
-    thumbnail: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=800',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  }
-];
 
 // ============================================================================
 // MEDICAL CONTENT ROUTES (คลังความรู้สุขภาพ)
@@ -178,22 +25,6 @@ router.get('/medical', async (req: Request, res: Response) => {
     const { category, limit } = req.query;
     const limitNum = Number.parseInt(limit as string, 10) || 50;
     console.log(`[CONTENT] Getting medical content, category: ${typeof category === 'string' ? category : 'all'}`);
-
-    // Check if we should use demo mode
-    const useDemo = DEMO_MODE || !(await checkDbConnection());
-    if (useDemo) {
-      console.log('[CONTENT] Using DEMO MODE for medical content');
-      let articles = [...DEMO_MEDICAL_CONTENT];
-      if (category) {
-        articles = articles.filter(a => a.category === category);
-      }
-      return res.json({
-        articles: articles.slice(0, limitNum),
-        total: articles.length,
-        lastUpdated: new Date().toISOString(),
-        demoMode: true
-      });
-    }
 
     let query = `
       SELECT mc.*, u.name as author_name, u.name_thai as author_name_thai
@@ -249,14 +80,7 @@ router.get('/medical', async (req: Request, res: Response) => {
     });
   } catch (error: unknown) {
     console.error('[CONTENT] Get medical content error:', error);
-    // Fallback to demo content on error
-    console.log('[CONTENT] Fallback to DEMO content after error');
-    return res.json({
-      articles: DEMO_MEDICAL_CONTENT,
-      total: DEMO_MEDICAL_CONTENT.length,
-      lastUpdated: new Date().toISOString(),
-      demoMode: true
-    });
+    res.status(500).json({ error: 'Failed to fetch medical content' });
   }
 });
 
@@ -353,22 +177,6 @@ const clinicalResourcesHandler = async (req: Request, res: Response) => {
     const { category } = req.query;
     console.log(`[CONTENT] Getting clinical resources, category: ${typeof category === 'string' ? category : 'all'}`);
 
-    // Check if we should use demo mode
-    const useDemo = DEMO_MODE || !(await checkDbConnection());
-    if (useDemo) {
-      console.log('[CONTENT] Using DEMO MODE for clinical resources');
-      let resources = [...DEMO_CLINICAL_RESOURCES];
-      if (category) {
-        resources = resources.filter(r => r.category === category);
-      }
-      return res.json({
-        resources: resources,
-        categories: ['guidelines', 'medications'],
-        lastUpdated: new Date().toISOString(),
-        demoMode: true
-      });
-    }
-
     let query = `
       SELECT cr.*, u.name as author_name, u.name_thai as author_name_thai
       FROM clinical_resources cr
@@ -415,14 +223,7 @@ const clinicalResourcesHandler = async (req: Request, res: Response) => {
     });
   } catch (error: unknown) {
     console.error('[CONTENT] Get clinical resources error:', error);
-    // Fallback to demo content on error
-    console.log('[CONTENT] Fallback to DEMO clinical resources after error');
-    return res.json({
-      resources: DEMO_CLINICAL_RESOURCES,
-      categories: ['guidelines', 'medications'],
-      lastUpdated: new Date().toISOString(),
-      demoMode: true
-    });
+    res.status(500).json({ error: 'Failed to fetch clinical resources' });
   }
 };
 

@@ -7,11 +7,13 @@
 
 ---
 
+
 ## 1. Purpose
 
 PDPA (Personal Data Protection Act) compliance management — patients control their data sharing consent, manage doctor access permissions, and review data access audit logs.
 
 ---
+
 
 ## 2. Page Layout (3 Tabs)
 
@@ -29,7 +31,9 @@ PDPA (Personal Data Protection Act) compliance management — patients control t
 
 ---
 
+
 ## 3. Tab Details
+
 
 ### Tab 1: ตั้งค่าความเป็นส่วนตัว (Privacy Settings)
 
@@ -66,13 +70,18 @@ PDPA (Personal Data Protection Act) compliance management — patients control t
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
+
 ### Tab 2: การเข้าถึงของแพทย์ (Doctor Access)
+
 
 - Rendered via consent system and doctor search
 
+
 - Shows which doctors have access to patient's data
 
+
 - Manage individual doctor permissions
+
 
 ### Tab 3: ประวัติการเข้าถึง (Access History / Audit Log)
 
@@ -99,6 +108,7 @@ PDPA (Personal Data Protection Act) compliance management — patients control t
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
+
 ### Audit Event Types
 
 | Event | Icon | Description |
@@ -111,7 +121,9 @@ PDPA (Personal Data Protection Act) compliance management — patients control t
 
 ---
 
+
 ## 4. Workflows
+
 
 ### Workflow 1: Manage Consent Settings
 
@@ -124,6 +136,7 @@ Step 5: Audit log entry created for each change
 Step 6: Doctors' access updated immediately
 ```
 
+
 ### Workflow 2: Review Access History
 
 ```text
@@ -132,6 +145,7 @@ Step 2: GET /api/pdpa/audit-log
 Step 3: View chronological list of all data access events
 Step 4: Each entry shows: event type, who accessed, when, what data
 ```
+
 
 ### Workflow 3: Revoke All Consent
 
@@ -145,6 +159,7 @@ Step 6: Essential data consent remains (cannot be revoked)
 ```
 
 ---
+
 
 ## 5. API Endpoints
 
@@ -160,6 +175,7 @@ Step 6: Essential data consent remains (cannot be revoked)
 
 ---
 
+
 ## 6. Consent Categories
 
 | Category | Required | Description |
@@ -171,6 +187,7 @@ Step 6: Essential data consent remains (cannot be revoked)
 | marketing | ❌ No | Health news and updates |
 
 ---
+
 
 ## 7. Connections to Other Pages
 
@@ -184,23 +201,32 @@ Step 6: Essential data consent remains (cannot be revoked)
 
 ---
 
+
 ## 8. AI Agent Improvement Opportunities
+
 
 - **Consent recommendations**: AI explain impact of each consent choice
 
+
 - **Privacy dashboard**: AI-generated privacy health score
+
 
 - **Anomaly detection**: AI flag unusual data access patterns
 
+
 - **Auto-notifications**: AI alert when new doctor accesses data
 
+
 - **Consent expiry**: AI manage time-limited consent periods
+
 
 - **PDPA compliance report**: AI generate downloadable compliance report
 
 ---
 
+
 ## PostgreSQL Database Integration
+
 
 ### Tables Used
 
@@ -208,6 +234,7 @@ Step 6: Essential data consent remains (cannot be revoked)
 | ----- | --------- | ----------- |
 | patient_consents | SELECT/INSERT/UPDATE | PDPA consent records CRUD |
 | users | SELECT | User identity for consent association |
+
 
 ### API Endpoints
 
@@ -217,10 +244,14 @@ Step 6: Essential data consent remains (cannot be revoked)
 | POST /api/consents | POST | INSERT patient_consents |
 | PUT /api/consents/:id | PUT | UPDATE patient_consents WHERE id |
 
+
 ### Deployment
+
 
 - **Local Docker:** izara-postgres container (localhost:5433 external / 5432 internal) → database: izara_phase1
 
+
 - **Production:** GCE VM at 35.240.157.230:5432 → database: izara_phase1 (asia-southeast1)
+
 
 - **Service deployed via:** Cloud Run (gen2, CPU Boost) + Cloud Build CI/CD

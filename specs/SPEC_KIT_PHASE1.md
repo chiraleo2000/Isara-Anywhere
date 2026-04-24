@@ -43,6 +43,7 @@ All services share a PostgreSQL database (`izara_phase1`) with pgvector extensio
 
 
 
+
 ### 2.2 Appointments
 
 | Feature ID | Feature | Actor | Acceptance Criteria |
@@ -56,6 +57,7 @@ All services share a PostgreSQL database (`izara_phase1`) with pgvector extensio
 | APPT-007 | Appointment Pool | Doctor | Given unassigned appointments, When doctor views pool, Then can claim matching-specialty appointments |
 | APPT-008 | Queue Management | Doctor | Given today's confirmed appointments, When managing queue, Then call/skip/complete with wait-time tracking |
 | APPT-009 | Meeting Link | System | Given confirmed appointment, When meeting time approaches, Then Jitsi link generated and attached |
+
 
 
 
@@ -77,6 +79,7 @@ All services share a PostgreSQL database (`izara_phase1`) with pgvector extensio
 
 
 
+
 ### 2.4 Health Records
 
 | Feature ID | Feature | Actor | Acceptance Criteria |
@@ -94,6 +97,7 @@ All services share a PostgreSQL database (`izara_phase1`) with pgvector extensio
 
 
 
+
 ### 2.5 Living Will
 
 | Feature ID | Feature | Actor | Acceptance Criteria |
@@ -102,6 +106,7 @@ All services share a PostgreSQL database (`izara_phase1`) with pgvector extensio
 | LW-002 | Healthcare Proxy | Patient | Given living will, When designating proxy, Then proxy details stored |
 | LW-003 | PDPA Sharing | Patient | Given living will, When toggling sharing, Then consent-controlled doctor access |
 | LW-004 | Doctor View | Doctor | Given patient consent, When viewing patient record, Then living will visible (read-only) |
+
 
 
 
@@ -118,6 +123,7 @@ All services share a PostgreSQL database (`izara_phase1`) with pgvector extensio
 
 
 
+
 ### 2.7 AI Features
 
 | Feature ID | Feature | Actor | Acceptance Criteria |
@@ -127,6 +133,7 @@ All services share a PostgreSQL database (`izara_phase1`) with pgvector extensio
 | AI-003 | Document Analysis | Doctor | Given uploaded PDF, When analyzing, Then AI extracts medical entities and summarizes |
 | AI-004 | CDS Drug Check | System | Given medications, When checking interactions, Then flags contraindications and allergies |
 | AI-005 | Knowledge Base Search | Doctor | Given query, When searching, Then pgvector RAG returns relevant clinical resources |
+
 
 
 
@@ -142,6 +149,7 @@ All services share a PostgreSQL database (`izara_phase1`) with pgvector extensio
 
 
 
+
 ### 2.9 Other Features
 
 | Feature ID | Feature | Actor | Acceptance Criteria |
@@ -153,6 +161,7 @@ All services share a PostgreSQL database (`izara_phase1`) with pgvector extensio
 | SET-001 | Settings | Patient | Given settings page, When changing preferences, Then language/theme/notifications saved |
 | DASH-001 | Patient Dashboard | Patient | Given dashboard, When viewing, Then upcoming appointments, health overview, quick actions |
 | DASH-002 | Doctor Dashboard | Doctor | Given dashboard, When viewing, Then today's schedule, pending tasks, patient count |
+
 
 
 ---
@@ -196,6 +205,7 @@ All services share a PostgreSQL database (`izara_phase1`) with pgvector extensio
 
 
 
+
 ### Doctor Portal (localhost:3010)
 
 | Method | Endpoint | Auth | Purpose |
@@ -229,6 +239,7 @@ All services share a PostgreSQL database (`izara_phase1`) with pgvector extensio
 
 
 
+
 ### Meeting Server (localhost:3020)
 
 | Method | Endpoint | Auth | Purpose |
@@ -246,6 +257,7 @@ All services share a PostgreSQL database (`izara_phase1`) with pgvector extensio
 | POST | /api/ai/cds-check | Auth | CDS medication check |
 | POST | /api/ai/analyze-document | Auth | Document analysis |
 | GET | /api/ai/knowledge | Auth | Knowledge base search |
+
 
 
 ---
@@ -279,4 +291,5 @@ ai_validations, audit_logs
 | Maps | Google Maps JavaScript API | Paid (key) |
 | Container | Docker + Docker Compose | Free |
 | Cloud | Google Cloud Run | Pay-per-use |
+
 

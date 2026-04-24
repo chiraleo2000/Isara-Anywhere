@@ -41,6 +41,7 @@ IZARA Telemedicine consists of 3 main systems:
 | **Meeting Server** | `meeting-server.run.app` | Jitsi video meeting + Socket.IO server |
 
 
+
 **Technology Stack:** React + TypeScript, Node.js, PostgreSQL, Jitsi Meet, Gemini AI 2.5 Flash, Google Cloud Run
 
 ---
@@ -112,6 +113,7 @@ New patients can self-register through the ผู้ป่วย Portal.
 | **ผู้ป่วย** | Full ผู้ป่วย Portal — appointments, PHR, AI แพทย์ |
 | **แพทย์** | แพทย์ Portal — appointments, EMR, prescriptions, meetings |
 | **ผู้ดูแล** | แพทย์ Portal + ผู้ดูแล menu — doctor management, content approval |
+
 
 
 > 🔒 ผู้ป่วยs cannot access the แพทย์ Portal (API returns 401). JWT + role verification on every request.
@@ -243,6 +245,7 @@ The main page shows a comprehensive health overview:
 | **Cancelled** | ยกเลิก | ⬛ Black | Cancelled by patient or doctor |
 
 
+
 When **Confirmed** → notification + video link + **"Join Meeting"** button
 
 ![Appointment Confirmed](../screenshots/workflow/appointment-lifecycle/WF13-patient-appointment-confirmed.png)
@@ -330,6 +333,7 @@ When **Confirmed** → notification + video link + **"Join Meeting"** button
 | **Lab & Imaging** | ผลแลป/ภาพถ่าย | Lab results, X-ray, CT, MRI — AI analysis available |
 | **Profile** | ข้อมูลส่วนตัว | Height, weight, blood type, DOB |
 | **Lifestyle** | วิถีชีวิต | Diet, exercise, sleep, smoking, alcohol — AI recommendations |
+
 
 
 ![PHR Page](../screenshots/cloud/patient-portal/patient-06-phr.png)
@@ -455,6 +459,7 @@ When **Confirmed** → notification + video link + **"Join Meeting"** button
 
 
 
+
 ## Document สถานะ:
 
 - **Draft** — Created but not signed
@@ -487,6 +492,7 @@ Manage data privacy consent under ไทยland's Personal Data Protection Act:
 | PHR | Personal health records |
 | EMR | Electronic medical records |
 | Living Will | Advance directive documents |
+
 
 
 
@@ -544,6 +550,7 @@ Overview of all key information on one page:
 | Pending Prescriptions | Uncompleted prescriptions |
 | Unread Messages | Unread notifications |
 | Avg Wait Time (min) | Average patient wait time |
+
 
 
 
@@ -664,6 +671,7 @@ After the meeting, Gemini AI auto-generates:
 | **CDS** | การแจ้งเตือนปฏิกิริยาระหว่างยา, dosage checks, allergy contraindications |
 
 
+
 ![AI SOAP Summary](../screenshots/meeting-recording/MR06-ai-summary-soap.png)
 
 
@@ -674,6 +682,7 @@ After the meeting, Gemini AI auto-generates:
 | ✏️ **Edit** | Modify specific sections (S/O/A/P) before approval |
 | 🔄 **Regenerate** | Ask AI to regenerate with refined context |
 | ❌ **Reject** | Discard AI output → write manually |
+
 
 
 ![Post-Meeting การดำเนินการs](../screenshots/meeting-recording/MR07-post-meeting-actions.png)
@@ -702,6 +711,7 @@ Access from dashboard → **"Medical Record (รายงานเวชระ�
 | **O** (Objective) | Physical exam — vital signs, lab results |
 | **A** (Assessment) | Diagnosis — ICD-10 code + description |
 | **P** (Plan) | Treatment plan — medications, follow-up, referral |
+
 
 
 
@@ -883,6 +893,7 @@ Access from dashboard → purple AI button (bottom-right corner).
 | **CDS (Clinical Decision Support)** | Checks drug interactions, dosage, contraindications |
 
 
+
 > 🤖 Gemini AI Studio is a **clinical decision support tool** — not a diagnostician. แพทย์ verification required for all outputs.
 
 ---
@@ -947,6 +958,7 @@ Access from dashboard → purple AI button (bottom-right corner).
 | Approved | แพทย์ที่ใช้งาน |
 | Rejected | ใบสมัครที่ถูกปฏิเสธ |
 | ผู้ดูแลs | ผู้ใช้ที่มีสิทธิ์ผู้ดูแล |
+
 
 
 
@@ -1068,6 +1080,7 @@ Access from dashboard → purple AI button (bottom-right corner).
 | **Cancelled** | ยกเลิก | ⬛ Black | Cancelled by patient, doctor, or admin |
 
 
+
 ---
 
 
@@ -1115,6 +1128,7 @@ Access from dashboard → purple AI button (bottom-right corner).
 | **Rejected** | ❌ | false | false |
 
 
+
 > 📌 **Tip:** ผู้ดูแลs can also promote approved doctors to admin role or demote admins back to doctor
 
 ---
@@ -1132,6 +1146,7 @@ Access from dashboard → purple AI button (bottom-right corner).
 | **ผู้ป่วย's Relatives** | Shared link from patient | ใช่ (สร้างชื่อ + ล็อบบี้) |
 | **Other แพทย์s/ผู้ดูแล** | Token-based invite from doctor | ใช่ (ล็อบบี้) |
 | **External Guests** | Direct link (no account needed) | ใช่ (สร้างชื่อ + ล็อบบี้) |
+
 
 
 ---
@@ -1263,6 +1278,7 @@ The AI generates a structured ไทย-language SOAP note:
 | ❌ **Reject** | ยกเลิก AI → เขียนด้วยตนเอง |
 
 
+
 ![Post-Meeting การดำเนินการs](../screenshots/meeting-recording/MR07-post-meeting-actions.png)
 
 > 🔒 **Security:** ผู้ป่วยจะไม่ได้รับผลสรุป AI โดยตรง — แพทย์ต้องตรวจสอบและอนุมัติทุกครั้ง
@@ -1299,6 +1315,7 @@ The AI generates a structured ไทย-language SOAP note:
 | Drug Interactions | การแจ้งเตือนปฏิกิริยาระหว่างยา |
 | Dosage Alerts | ตรวจสอบขนาดยา/ข้อห้ามการแพ้ยา |
 | Guidelines | อ้างอิงแนวทางเวชปฏิบัติ (2024-2025) |
+
 
 
 ---
@@ -1343,6 +1360,7 @@ The AI generates a structured ไทย-language SOAP note:
 | Web Speech API | **$0** (FREE) |
 | Gemini AI | ~$0.001/1K tokens |
 | **Total per 15-min consultation** | **~$0.01-0.05** |
+
 
 
 ---
@@ -1409,6 +1427,7 @@ The AI generates a structured ไทย-language SOAP note:
 | **Push** | การแจ้งเตือนเบราว์เซอร์ (เรียลไทม์) |
 
 
+
 ---
 
 
@@ -1422,6 +1441,7 @@ The AI generates a structured ไทย-language SOAP note:
 | **ระบบ** | ยืนยันบัญชี, รีเซ็ตรหัสผ่าน, บำรุงรักษาระบบ |
 
 
+
 ---
 
 
@@ -1433,6 +1453,7 @@ The AI generates a structured ไทย-language SOAP note:
 | 1 ชั่วโมงก่อน | Push + In-App | อีก 1 ชั่วโมง ถึงเวลานัดหมาย |
 | 15 นาทีก่อน | Push + In-App | เตรียมพร้อม! ลิงก์ประชุมพร้อมแล้ว |
 | เรียลไทม์ | Push | แพทย์เริ่มห้องประชุมแล้ว คลิกเข้าร่วม |
+
 
 
 > 📌 **Tip:** ตั้งค่าการแจ้งเตือนได้ที่ ตั้งค่า → การแจ้งเตือน — เปิด/ปิดได้ตามประเภทและช่องทาง
@@ -1450,6 +1471,7 @@ The AI generates a structured ไทย-language SOAP note:
 | **ผู้ป่วย** | อ่านบทความที่เผยแพร่แล้วเท่านั้น |
 | **แพทย์** | สร้าง แก้ไข ลบบทความตัวเอง เผยแพร่ (โดยตรงหรือผ่านการอนุมัติ) |
 | **ผู้ดูแล** | CRUD ทั้งหมด + อนุมัติ/ปฏิเสธ + บันทึกตรวจสอบ |
+
 
 
 
@@ -1483,6 +1505,7 @@ The AI generates a structured ไทย-language SOAP note:
 | **แพทย์** | Create, edit own, submit for approval |
 | **ผู้ดูแล** | Approve/reject, view all including pending |
 | **ผู้ป่วย** | ❌ No access |
+
 
 
 **Categories:** Diagnosis Guidelines, Treatment Protocols, Pharmacology, Radiology, Laboratory, Pathology, Emergency Medicine, Nursing Guidelines, Research Papers, Case Studies
@@ -1556,6 +1579,7 @@ Navigate to **"PDPA & หนังสือแสดงเจตนา"** → **
 | SonarQube | Clean — no security vulnerabilities |
 
 
+
 ---
 
 
@@ -1566,6 +1590,7 @@ Navigate to **"PDPA & หนังสือแสดงเจตนา"** → **
 | **ผู้ป่วย** | ผู้ป่วย Portal | Own data only — PHR, appointments, AI, health library |
 | **แพทย์** | แพทย์ Portal | Treated patients' data (per PDPA), EMR, prescriptions |
 | **ผู้ดูแล** | แพทย์ Portal + ผู้ดูแล | System-wide — doctor management, content approval, all appointments |
+
 
 
 > 🔒 ผู้ป่วยไม่สามารถเข้า แพทย์ Portal ได้ — API ตอบ 401 ทุกครั้ง
@@ -1586,6 +1611,7 @@ Navigate to **"PDPA & หนังสือแสดงเจตนา"** → **
 | Forgot password | Use "Forgot Password" link → reset via email (link expires in 15 min) |
 
 
+
 ---
 
 
@@ -1597,6 +1623,7 @@ Navigate to **"PDPA & หนังสือแสดงเจตนา"** → **
 | Meeting link failed | Fallback notification sent — contact admin |
 | Can't book appointment | Ensure profile is complete — fill symptoms and select date/time |
 | แพทย์ declined | Appointment returns to pool — admin will re-assign another doctor |
+
 
 
 ---
@@ -1612,6 +1639,7 @@ Navigate to **"PDPA & หนังสือแสดงเจตนา"** → **
 | Video quality poor | Check internet speed — reduce camera resolution if needed |
 
 
+
 ---
 
 
@@ -1624,6 +1652,7 @@ Navigate to **"PDPA & หนังสือแสดงเจตนา"** → **
 | AI แพทย์ not responding | Check internet connection — Gemini API must be reachable |
 
 
+
 ---
 
 
@@ -1634,6 +1663,7 @@ Navigate to **"PDPA & หนังสือแสดงเจตนา"** → **
 | Not receiving notifications | Check Settings → Notifications — ensure toggle is ON |
 | No email received | Check spam folder — verify registered email is correct |
 | Push notifications blocked | Allow browser notifications in browser settings |
+
 
 
 ---
@@ -1650,6 +1680,7 @@ Navigate to **"PDPA & หนังสือแสดงเจตนา"** → **
 | **แพทย์ Portal** | React + TypeScript + Vite | 3010 |
 | **Meeting Server** | Express + Socket.IO | 3020 |
 | **Database** | PostgreSQL 18 + pgvector | 5433 |
+
 
 
 
@@ -1674,6 +1705,7 @@ Navigate to **"PDPA & หนังสือแสดงเจตนา"** → **
 | E2E Tests (Playwright) | 1,149 | 33 |
 | UI Tests (Playwright) | 516 | 14 |
 | **Total** | **3,678** | **105** |
+
 
 
 
@@ -1737,6 +1769,7 @@ Navigate to **"PDPA & หนังสือแสดงเจตนา"** → **
 | 10 | System | Send results to PHR/Timeline + notify patient | ![](../screenshots/cloud-workflows/health-records/WC20-patient-timeline.png) |
 
 
+
 ---
 
 
@@ -1761,6 +1794,7 @@ Navigate to **"PDPA & หนังสือแสดงเจตนา"** → **
 | 4 | ผู้ดูแล approves | คลิก "Approve" → status: **approved** → send notification | ![](../screenshots/cloud-workflows/admin-register-doctor/AR04-admin-approve-doctor.png) |
 | 5 | Promote to admin | (Optional) คลิก "Promote to ผู้ดูแล" → grant admin privileges | ![](../screenshots/cloud-workflows/admin-register-doctor/AR05-admin-promote-doctor.png) |
 | 6 | แพทย์ logs in | Login with registered email/password | ![](../screenshots/cloud-workflows/admin-register-doctor/AR06-new-admin-access.png) |
+
 
 
 > ⚠️ **Security:** Rejected or suspended doctors cannot log in. JWT is immediately revoked.
@@ -1794,6 +1828,7 @@ Navigate to **"PDPA & หนังสือแสดงเจตนา"** → **
 | Lobby Control | — | ✅ | — |
 | Mute Others | — | ✅ | — |
 | End Meeting for All | — | ✅ | — |
+
 
 
 
@@ -1846,6 +1881,7 @@ Guest/ผู้ป่วย enters link → Enter name + email → Wait in Lobby
 | **AI CDS** | แพทย์ | Drug interaction, dosage, allergy checks |
 | **AI Document Analysis** | แพทย์ | Extract data from PDF/images |
 | **AI Diagnosis Assist** | แพทย์ | Differential diagnosis suggestions |
+
 
 
 
@@ -1909,6 +1945,7 @@ AI generates → แพทย์ reviews → Approve / Edit / Regenerate / Rejec
 
 
 
+
 - Language toggle: ไทย ↔ English
 
 - เรียลไทม์ display in meeting sidebar
@@ -1937,6 +1974,7 @@ AI generates → แพทย์ reviews → Approve / Edit / Regenerate / Rejec
 | 📝 Content Submitted | แพทย์ submits article | ผู้ดูแล |
 | ⏰ Appointment Reminder | 24h & 1h before | ผู้ป่วย + แพทย์ |
 | 🚪 Lobby Request | Guest requests entry | แพทย์ |
+
 
 
 
@@ -1974,6 +2012,7 @@ AI generates → แพทย์ reviews → Approve / Edit / Regenerate / Rejec
 
 
 
+
 ### 11.3 Clinical Resources
 
 
@@ -2003,6 +2042,7 @@ AI generates → แพทย์ reviews → Approve / Edit / Regenerate / Rejec
 | **HTTPS** | TLS encryption on all Cloud Run services |
 | **Session Management** | Secure cookies + automatic expiration |
 | **CORS** | Restricted cross-origin resource sharing |
+
 
 
 
@@ -2124,6 +2164,7 @@ AI generates → แพทย์ reviews → Approve / Edit / Regenerate / Rejec
 | **Meeting Server** | `izara-meeting-server-dev-testing-*.run.app` | Jitsi video meeting management |
 | **Database** | PostgreSQL (Cloud SQL) | All data storage (PHR, EMR, appointments) |
 | **AI Engine** | Gemini 2.5 Flash | Medical AI features |
+
 
 
 ---

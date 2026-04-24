@@ -8,11 +8,13 @@
 
 ---
 
+
 ## 1. Purpose
 
 Central clinical hub with 3-column layout: Health Data (patient info), Health Meeting (investigation & treatment), and Health Studio (clinical tools). Provides real-time stats, AI pre-consultation summaries, and quick actions for the clinical workflow.
 
 ---
+
 
 ## 2. Page Layout (3 Columns)
 
@@ -51,6 +53,7 @@ Central clinical hub with 3-column layout: Health Data (patient info), Health Me
 
 ---
 
+
 ## 3. Dashboard Statistics (Top Bar)
 
 | Stat | Thai | Data Source | Description |
@@ -65,7 +68,9 @@ Central clinical hub with 3-column layout: Health Data (patient info), Health Me
 
 ---
 
+
 ## 4. Column 1: Health Data
+
 
 ### Patient List Tabs
 
@@ -75,21 +80,29 @@ Central clinical hub with 3-column layout: Health Data (patient info), Health Me
 | Doctor | Doctor's own patient panel |
 | Healthcare Team | Team members and shared patients |
 
+
 ### Patient Card Features
+
 
 - Name, age, gender
 
+
 - Status badge (pending, confirmed, in_progress)
+
 
 - Urgency level
 
+
 - Chief complaint preview
+
 
 - Click → loads patient in Column 2
 
 ---
 
+
 ## 5. Column 2: Health Meeting
+
 
 ### Tab: Investigation
 
@@ -116,7 +129,9 @@ Central clinical hub with 3-column layout: Health Data (patient info), Health Me
 └──────────────────────────────────────────────────────────────────┘
 ```
 
+
 ### Tab: Treatment
+
 
 #### Sub-tab: Protocols (Evidence-Based Guidelines)
 
@@ -127,25 +142,35 @@ Central clinical hub with 3-column layout: Health Data (patient info), Health Me
 | Dyslipidemia | ไขมันในเลือดสูง | ESC/EAS 2024-2025 |
 | Respiratory | โรคทางเดินหายใจ | GOLD/GINA 2024-2025 |
 
+
 #### Sub-tab: Prescribe
+
 
 - Quick prescription form with current medications displayed
 
+
 - Drug search, dosage, frequency, duration
+
 
 - Safety checks (allergy, interaction)
 
+
 #### Sub-tab: History
+
 
 - Previous prescriptions for the selected patient
 
+
 ### Tab: Refer
 
+
 - Referral workflow to specialists
+
 
 - Referral form with reason, urgency, notes
 
 ---
+
 
 ## 6. Column 3: Health Studio
 
@@ -162,7 +187,9 @@ Quick access modals navigating to the Patients page with category filter:
 
 ---
 
+
 ## 7. AI Features on Dashboard
+
 
 ### AI Pre-Consultation Summary
 
@@ -173,6 +200,7 @@ Output: Key findings, suggested questions, risk alerts
 Purpose: Help doctor prepare before meeting
 ```
 
+
 ### Man-in-the-Loop Validation
 
 ```text
@@ -180,6 +208,7 @@ Source: POST /api/ai/validation
 Actions: Approve / Reject / Use-in-EMR
 Purpose: Doctor validates all AI-generated content before use
 ```
+
 
 ### Jitsi Meeting Launch
 
@@ -191,6 +220,7 @@ Step 4: Doctor URL opens in new tab
 Step 5: Patient meeting link copied to clipboard
 Step 6: Patient receives notification with meeting link
 ```
+
 
 ### Health Meeting Results Column
 
@@ -212,6 +242,7 @@ Column 2 (Health Meeting) displays latest meeting results alongside investigatio
 │  [📋 Open EMR Editor] [📄 View Full Summary]                │
 └──────────────────────────────────────────────────────────────┘
 ```
+
 
 ### Pending Validation Quick Links
 
@@ -246,7 +277,9 @@ Top bar and sidebar quick links to items requiring doctor attention.
 
 ---
 
+
 ## 8. Workflows
+
 
 ### Workflow 1: Morning Dashboard Review
 
@@ -260,6 +293,7 @@ Step 6: Doctor reviews patient history and AI suggestions
 Step 7: Doctor prepares for consultation
 ```
 
+
 ### Workflow 2: Start Video Consultation
 
 ```text
@@ -271,6 +305,7 @@ Step 5: Patient joins from their portal via meeting link
 Step 6: Patient enters lobby → Doctor admits
 Step 7: Consultation begins with live transcription
 ```
+
 
 ### Workflow 3: Post-Consultation Documentation
 
@@ -285,6 +320,7 @@ Step 7: Signs EMR → Patient notified
 ```
 
 ---
+
 
 ## 9. API Endpoints
 
@@ -304,27 +340,38 @@ Step 7: Signs EMR → Patient notified
 
 ---
 
+
 ## 10. AI Agent Improvement Opportunities
+
 
 - **Smart patient prioritization**: AI sort queue by clinical urgency
 
+
 - **Auto-documentation**: AI draft full SOAP note from meeting transcript
+
 
 - **Decision support alerts**: AI surface critical drug interactions proactively
 
+
 - **Workflow optimization**: AI suggest optimal patient order for the day
+
 
 - **Real-time clinical copilot**: AI provide suggestions during consultation
 
+
 - **Pending action aggregation**: AI prioritize validation queue by urgency
 
+
 - **Pre-consultation insights**: AI surface relevant lab results and trends before meeting
+
 
 - **Meeting readiness check**: AI verify all prerequisites before meeting start
 
 ---
 
+
 ## PostgreSQL Database Integration
+
 
 ### Tables Used
 
@@ -335,6 +382,7 @@ Step 7: Signs EMR → Patient notified
 | notifications | SELECT | Unread notification count |
 | emr | SELECT | Recent EMR entries for quick access |
 
+
 ### API Endpoints
 
 | Endpoint | Method | DB Operation |
@@ -342,10 +390,14 @@ Step 7: Signs EMR → Patient notified
 | GET /api/dashboard/stats | GET | SELECT COUNT from appointments, users, notifications |
 | GET /api/appointments/today | GET | SELECT appointments WHERE date = TODAY AND doctor_id |
 
+
 ### Deployment
+
 
 - **Local Docker:** izara-postgres container (localhost:5433 external / 5432 internal) → database: izara_phase1
 
+
 - **Production:** GCE VM at 35.240.157.230:5432 → database: izara_phase1 (asia-southeast1)
+
 
 - **Service deployed via:** Cloud Run (gen2, CPU Boost) + Cloud Build CI/CD

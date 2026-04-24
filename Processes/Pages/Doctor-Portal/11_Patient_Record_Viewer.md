@@ -7,11 +7,13 @@
 
 ---
 
+
 ## 1. Purpose
 
 Comprehensive patient record viewer with 3 tabs (PHR, EMR, EHR) including Living Will display, self-entered health data, treatment history, and lab results.
 
 ---
+
 
 ## 2. Layout
 
@@ -33,7 +35,9 @@ Comprehensive patient record viewer with 3 tabs (PHR, EMR, EHR) including Living
 
 ---
 
+
 ## 3. PHR Tab (Personal Health Record)
+
 
 ### Living Will Card (Prominent at top)
 
@@ -57,6 +61,7 @@ Comprehensive patient record viewer with 3 tabs (PHR, EMR, EHR) including Living
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
+
 ### Patient Demographics
 
 | Field | Display |
@@ -65,6 +70,7 @@ Comprehensive patient record viewer with 3 tabs (PHR, EMR, EHR) including Living
 | Age | Calculated from DOB |
 | Gender | Male/Female |
 | Weight/Height/BMI | Latest readings |
+
 
 ### Self-Entered Health Data
 
@@ -78,6 +84,7 @@ Comprehensive patient record viewer with 3 tabs (PHR, EMR, EHR) including Living
 | Supplements | อาหารเสริม | List |
 | Alt. Treatments | การรักษาทางเลือก | Description |
 
+
 ### Device/Wearable Data
 
 | Data | Source |
@@ -90,23 +97,31 @@ Comprehensive patient record viewer with 3 tabs (PHR, EMR, EHR) including Living
 
 ---
 
+
 ## 4. EMR Tab (Electronic Medical Record)
+
 
 - Timeline of encounters with encounter type and date
 
+
 - Expandable cards showing SOAP details
+
 
 - Linked prescriptions and lab orders
 
 ---
 
+
 ## 5. EHR Tab (Electronic Health Record)
 
+
 - Comprehensive timeline including EMR + lab results + imaging
+
 
 - Cross-provider data aggregation
 
 ---
+
 
 ## 6. API Endpoints
 
@@ -120,19 +135,26 @@ Comprehensive patient record viewer with 3 tabs (PHR, EMR, EHR) including Living
 
 ---
 
+
 ## 7. AI Agent Improvement Opportunities
+
 
 - **Smart summarization**: AI generate concise patient summaries
 
+
 - **Risk scoring**: AI calculate comprehensive risk scores from all data
 
+
 - **Trend visualization**: AI-generated charts of key metrics over time
+
 
 - **Cross-reference**: AI link related findings across PHR/EMR/EHR
 
 ---
 
+
 ## PostgreSQL Database Integration
+
 
 ### Tables Used
 
@@ -146,6 +168,7 @@ Comprehensive patient record viewer with 3 tabs (PHR, EMR, EHR) including Living
 | living_wills | SELECT | Living will documents (read-only) |
 | patient_consents | SELECT | PDPA consent status (read-only) |
 
+
 ### API Endpoints
 
 | Endpoint | Method | DB Operation |
@@ -153,14 +176,20 @@ Comprehensive patient record viewer with 3 tabs (PHR, EMR, EHR) including Living
 | GET /api/patients/:id/phr | GET | SELECT phr, vital_signs WHERE patient_id |
 | GET /api/patients/:id/emr | GET | SELECT emr, prescriptions, lab_orders WHERE patient_id |
 
+
 ### Note
+
 
 - **Read-only aggregated view** — no INSERT/UPDATE operations from this page
 
+
 ### Deployment
+
 
 - **Local Docker:** izara-postgres container (localhost:5433 external / 5432 internal) → database: izara_phase1
 
+
 - **Production:** GCE VM at 35.240.157.230:5432 → database: izara_phase1 (asia-southeast1)
+
 
 - **Service deployed via:** Cloud Run (gen2, CPU Boost) + Cloud Build CI/CD

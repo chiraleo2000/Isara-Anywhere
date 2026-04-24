@@ -29,6 +29,7 @@ Izara Telemedicine ใช้ PostgreSQL เป็นฐานข้อมูล�
 
 
 
+
 ### รายละเอียดการเชื่อมต่อ
 
 ```text
@@ -424,6 +425,7 @@ CREATE INDEX ON knowledge_base USING ivfflat (embedding vector_cosine_ops);
 
 
 
+
 ### การควบคุมการเข้าถึง
 
 | บทบาท | ข้อมูลที่เข้าถึงได้ |
@@ -431,6 +433,7 @@ CREATE INDEX ON knowledge_base USING ivfflat (embedding vector_cosine_ops);
 | ผู้ป่วย | ข้อมูลของตนเองเท่านั้น |
 | แพทย์ | ผู้ป่วยที่ได้รับมอบหมาย |
 | ผู้ดูแลระบบ | ข้อมูลทั้งหมด |
+
 
 
 
@@ -489,6 +492,7 @@ volumes:
 | Vector Search | pgvector | AI knowledge search |
 | Session | PostgreSQL sessions | การยืนยันตัวตน |
 | Backup | pg_dump | การสำรองข้อมูล |
+
 
 
 ---

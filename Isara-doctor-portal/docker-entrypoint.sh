@@ -12,10 +12,13 @@ echo "Environment configured"
 # ---- Start Embedded PostgreSQL (only when no external DB is provided) ----
 if [ "${USE_EMBEDDED_PG:-false}" = "true" ] && [ -z "${DATABASE_URL}" ]; then
   echo "Starting embedded PostgreSQL..."
+  if [ -z "${DB_PASSWORD}" ]; then
+    echo "ERROR: DB_PASSWORD is required when USE_EMBEDDED_PG=true"
+    exit 1
+  fi
   export DB_HOST=localhost
   export DB_PORT=5432
   export DB_USER=postgres
-  export DB_PASSWORD="${DB_PASSWORD:-IzaraDb2024}"
   export DB_NAME="${DB_NAME:-izara_phase1}"
   export DATABASE_URL="postgresql://${DB_USER}:${DB_PASSWORD}@localhost:5432/${DB_NAME}"
 
@@ -69,14 +72,11 @@ else
   echo "Using external database: ${DB_HOST:-external}:${DB_PORT:-5432}"
 fi
 
-# Start GCS API server first
-echo "Starting GCS API server (port 3012)..."
-cd /app && NODE_ENV=production GCS_API_PORT=3012 PORT=3012 node /app/server/gcsApiServer.cjs &
-sleep 2
+# GCS API server removed — no GCS in this deployment.
 
 # Start Auth server
 echo "Starting Auth server (port 3011)..."
-cd /app && NODE_ENV=production AUTH_PORT=3011 GCS_API_URL=http://127.0.0.1:3012 node /app/server/authServer.cjs &
+cd /app && NODE_ENV=production AUTH_PORT=3011 node /app/server/authServer.cjs &
 sleep 3
 
 # Start Main API server (in background)

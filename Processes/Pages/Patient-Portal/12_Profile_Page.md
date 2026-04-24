@@ -7,11 +7,13 @@
 
 ---
 
+
 ## 1. Purpose
 
 View and edit patient personal profile information including avatar, contact details, and emergency contact.
 
 ---
+
 
 ## 2. Page Layout
 
@@ -44,6 +46,7 @@ View and edit patient personal profile information including avatar, contact det
 
 ---
 
+
 ## 3. Features & Actions
 
 | Feature | Description |
@@ -55,6 +58,7 @@ View and edit patient personal profile information including avatar, contact det
 | **Blood type selector** | Dropdown: A, B, AB, O variants |
 
 ---
+
 
 ## 4. Editable Fields
 
@@ -71,7 +75,9 @@ View and edit patient personal profile information including avatar, contact det
 
 ---
 
+
 ## 5. Workflows
+
 
 ### Workflow 1: View Profile
 
@@ -80,6 +86,7 @@ Step 1: Navigate to /profile
 Step 2: Profile data loaded from AuthContext
 Step 3: All fields displayed in read-only mode
 ```
+
 
 ### Workflow 2: Edit Profile
 
@@ -92,6 +99,7 @@ Step 5: PUT /api/auth/profile → Updates user record
 Step 6: AuthContext.updateUser() refreshes local state
 Step 7: Success notification shown
 ```
+
 
 ### Workflow 3: Change Avatar
 
@@ -106,6 +114,7 @@ Step 6: Avatar updates in header and sidebar
 
 ---
 
+
 ## 6. API Endpoints
 
 | Method | Endpoint | Purpose |
@@ -115,6 +124,7 @@ Step 6: Avatar updates in header and sidebar
 | POST | `/api/phr/profile/{userId}/avatar` | Upload avatar image |
 
 ---
+
 
 ## 7. Connections to Other Pages
 
@@ -127,19 +137,26 @@ Step 6: Avatar updates in header and sidebar
 
 ---
 
+
 ## 8. AI Agent Improvement Opportunities
+
 
 - **Profile completeness**: AI score profile completion and suggest missing fields
 
+
 - **Smart address**: AI auto-complete Thai addresses
 
+
 - **Photo validation**: AI verify avatar is appropriate
+
 
 - **Emergency contact verification**: AI verify emergency contact phone is reachable
 
 ---
 
+
 ## PostgreSQL Database Integration
+
 
 ### Tables Used
 
@@ -148,6 +165,7 @@ Step 6: Avatar updates in header and sidebar
 | users | SELECT / UPDATE | Patient account details |
 | patient_profiles | SELECT / UPDATE | Patient demographic and contact information |
 
+
 ### API Endpoints
 
 | Endpoint | Method | DB Operation |
@@ -155,10 +173,14 @@ Step 6: Avatar updates in header and sidebar
 | /api/profile | GET | SELECT users JOIN patient_profiles WHERE id = current |
 | /api/profile | PUT | UPDATE users, UPDATE patient_profiles |
 
+
 ### Deployment
+
 
 - **Local Docker:** izara-postgres container (localhost:5433 external / 5432 internal) → database: izara_phase1
 
+
 - **Production:** GCE VM at 35.240.157.230:5432 → database: izara_phase1 (asia-southeast1)
+
 
 - **Service deployed via:** Cloud Run (gen2, CPU Boost) + Cloud Build CI/CD

@@ -34,7 +34,6 @@ Izara Telemedicine uses a unified PostgreSQL database with two separate portals:
 | **Doctor Portal** | `localhost:3010` | Doctors, Admins | 3010 |
 
 
-
 ### Docker Services
 
 | Service | Container Name | Port | Purpose |
@@ -43,7 +42,6 @@ Izara Telemedicine uses a unified PostgreSQL database with two separate portals:
 | Patient Portal | izara-patient-portal | 3005 | Patient frontend + backend |
 | Doctor Portal | izara-doctor-portal | 3010 | Doctor frontend + backend |
 | pgAdmin | izara-pgadmin | 5050 | Database administration |
-
 
 
 ### Portal Comparison
@@ -55,7 +53,6 @@ Izara Telemedicine uses a unified PostgreSQL database with two separate portals:
 | Role Types | `patient` only | `doctor`, `admin` |
 | Session Duration | Session-based | Session-based |
 | Storage | PostgreSQL `users` table | PostgreSQL `users` table |
-
 
 ---
 
@@ -175,7 +172,6 @@ CREATE TABLE patient_profiles (
 | Doctor | `DOC-{TIMESTAMP}-{RANDOM}` | `DOC-1706123456-XYZ789` |
 | Admin | `DOC-DEMO-001` or `DOC-{...}` | `DOC-DEMO-001` |
 
-
 ---
 
 
@@ -193,7 +189,6 @@ CREATE TABLE patient_profiles (
 | GET | `/api/auth/me` | Get current user profile | Authenticated |
 
 
-
 ### 3.2 Doctor Portal Authentication (`/auth/*`)
 
 | Method | Endpoint | Description | Access |
@@ -206,7 +201,6 @@ CREATE TABLE patient_profiles (
 | POST | `/auth/reset-password` | Reset password with token | Public |
 
 
-
 ### 3.3 Admin Management (`/admin/*`)
 
 | Method | Endpoint | Description | Access |
@@ -215,7 +209,6 @@ CREATE TABLE patient_profiles (
 | POST | `/admin/approve-doctor` | Approve doctor registration | Admin |
 | POST | `/admin/reject-doctor` | Reject doctor registration | Admin |
 | POST | `/admin/update-role` | Change user role (doctor↔admin) | Admin |
-
 
 ---
 
@@ -325,7 +318,6 @@ CREATE TABLE patient_profiles (
 | **Initial Status** | `is_active: true`, `is_approved: true` | `is_active: false`, `is_approved: false` |
 | **Approval Required** | ❌ No | ✅ Yes - Admin must approve |
 | **Auto-Login** | ✅ Yes - Logged in after registration | ❌ No - Must wait for approval |
-
 
 
 ### 4.2.2 Doctor Registration States
@@ -501,7 +493,6 @@ CREATE TABLE patient_profiles (
 | **Role Management** | Promote doctor to admin or demote admin to doctor |
 
 
-
 ### 4.5 Admin: Reject Doctor
 
 ```text
@@ -589,7 +580,6 @@ CREATE TABLE patient_profiles (
 | General API | 500 requests | 15 minutes | Return 429 error |
 
 
-
 ### 5.2 Account Lockout
 
 After 5 failed login attempts:
@@ -597,7 +587,9 @@ After 5 failed login attempts:
 
 - Account is locked for 30 minutes
 
+
 - `locked_until` timestamp is set
+
 
 - Security event is logged
 
@@ -621,15 +613,17 @@ WHERE email = $1;
 | Min Length | 6 chars (patient) / 8 chars (doctor) |
 
 
-
 ### 5.4 Session Security
 
 
 - **Token Format**: 64-character cryptographic random hex string
 
+
 - **IP Binding**: Sessions track client IP address
 
+
 - **User-Agent**: Sessions track browser information
+
 
 - **Invalidation**: Sessions marked with `logged_out_at` on logout
 
@@ -650,7 +644,6 @@ WHERE email = $1;
 | Cancel Appointments | ✅ (own only) |
 
 
-
 ### 6.2 Doctor Portal Access
 
 | Feature | Doctor | Admin |
@@ -666,7 +659,6 @@ WHERE email = $1;
 | Approve Registrations | ❌ | ✅ |
 | Assign Roles | ❌ | ✅ |
 | View Analytics | ❌ | ✅ |
-
 
 
 ### 6.3 Admin Privileges (JSONB)
@@ -711,14 +703,15 @@ const canManageDoctors = user.admin_privileges?.canManageDoctors || user.is_admi
 | Patient Portal | `Anan.Khayanrian@gmail.com` | `P@ssw0rd` | Patient |
 
 
-
 ### 7.2 Seeding Data
 
 ```powershell
 
+
 # Seed database with test data
 cd scripts/database
 node seed-database.cjs
+
 
 
 # Or use cloud-db-tool
@@ -741,7 +734,6 @@ node cloud-db-tool.cjs seed
 | `AuthContext` | `/contexts/AuthContext.tsx` | Auth state management |
 
 
-
 ### 8.2 Doctor Portal Components
 
 | Component | Path | Purpose |
@@ -750,7 +742,6 @@ node cloud-db-tool.cjs seed
 | `DoctorRegister` | `/pages/DoctorRegister.tsx` | Doctor registration |
 | `AuthProvider` | `/components/common/AuthProvider.tsx` | Auth state management |
 | `AdminDoctorManagement` | `/pages/AdminDoctorManagement.tsx` | Admin: manage doctors |
-
 
 ---
 
@@ -769,7 +760,6 @@ node cloud-db-tool.cjs seed
 | `RATE_LIMIT_EXCEEDED` | 429 | Too many requests |
 | `LOGIN_ERROR` | 500 | Server error during login |
 
-
 ---
 
 
@@ -786,7 +776,6 @@ node cloud-db-tool.cjs seed
 | Grant Admin | Admin | Doctor | role=admin, is_admin=true |
 | Reset Password | Any | Both | Password updated |
 | Logout | Any | Both | Session invalidated |
-
 
 ---
 
@@ -811,7 +800,6 @@ This document reflects the current PostgreSQL-based implementation of Izara Tele
 | **patient_profiles** | Patient-specific data | patient_id, demographics (JSONB), emergency_contact (JSONB), insurance_info (JSONB) |
 | **doctor_profiles** | Doctor-specific data | doctor_id, specialty, sub_specialties (JSONB), qualifications, experience_years, hospital_name, department, languages (JSONB), rating, consultation_fee, is_available, schedule (JSONB) |
 | **audit_logs** | All user actions tracked | id, user_id, action, entity_type='user', details (JSONB), ip_address, user_agent |
-
 
 
 ### Authentication Data Flow
@@ -876,7 +864,6 @@ Patient Portal (port 3005)                 Doctor Portal (port 3010)
 | Production | Doctor Portal (Cloud Run) | Same | 35.240.157.230:5432 |
 
 
-
 ### Security Features in PostgreSQL
 
 | Feature | Implementation |
@@ -886,7 +873,6 @@ Patient Portal (port 3005)                 Doctor Portal (port 3010)
 | Account lockout | login_attempts counter, locked_until timestamp |
 | Audit trail | Every auth action logged to audit_logs |
 | PDPA compliance | patient_consents table for data consent |
-
 
 
 ### Scenario Coverage
@@ -904,4 +890,3 @@ Patient Portal (port 3005)                 Doctor Portal (port 3010)
 | 9 | Logout | Any | sessions (logged_out_at) |
 | 10 | Grant admin role | Admin | users (role='admin'), audit_logs |
 | 11 | Account lockout | System | users (login_attempts, locked_until) |
-

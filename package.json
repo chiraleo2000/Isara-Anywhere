@@ -1,6 +1,6 @@
 {
   "name": "isara-anywhere",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "description": "Izara Telemedicine Platform - Patient and Doctor Portals",
   "main": "index.js",
   "scripts": {
@@ -17,6 +17,11 @@
     "test:unit:api": "cd tests/unit && npm run test:api",
     "test:unit:notifications": "cd tests/unit && npm run test:notifications",
     "test:e2e": "npx playwright test",
+    "test:e2e:full": "npx playwright test",
+    "test:e2e:parallel": "npx playwright test --project=B-patient-portal --project=C-doctor-portal --project=G-livingwill-pdpa --project=H-content-resources --project=I-admin-notifications --project=J-ai-timeline-map",
+    "test:e2e:pipeline": "npx playwright test --project=D-appointments --project=E-meeting-clinical --project=F-phr-health-records --workers=1",
+    "test:e2e:auth": "npx playwright test --project=A-auth",
+    "test:e2e:coverage": "pwsh scripts/run-full-coverage.ps1",
     "seed": "node scripts/seedAllData.cjs",
     "seed:all": "node scripts/seedAllData.cjs"
   },
@@ -25,13 +30,13 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "@google-cloud/storage": "^7.18.0",
     "bcryptjs": "^3.0.3",
     "node-fetch": "^2.7.0",
     "pg": "^8.17.2",
     "socket.io-client": "^4.8.3"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.11.1",
     "@playwright/test": "^1.58.2",
     "@types/node": "^25.5.0"
   }

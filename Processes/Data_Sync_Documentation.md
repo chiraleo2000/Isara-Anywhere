@@ -6,13 +6,16 @@
 
 ---
 
+
 ## 📋 Overview
 
 Izara Telemedicine uses PostgreSQL as the primary database, deployed alongside the application portals in Docker containers. This document describes the data architecture, table structure, and data flow patterns.
 
 ---
 
+
 ## 🗄️ Database Configuration
+
 
 ### Docker Services
 
@@ -24,6 +27,7 @@ Izara Telemedicine uses PostgreSQL as the primary database, deployed alongside t
 | Meeting Server | izara-meeting-server | 3020 | Jitsi transcription + AI summary |
 | pgAdmin | izara-pgadmin | 5050 | Database administration |
 
+
 ### Connection Details
 
 ```text
@@ -34,13 +38,18 @@ Password: YOUR_TEST_PASSWORD
 Database: izara_phase1
 ```
 
+
 ### Database Extension
+
 
 - **pgvector** - For AI embedding storage and similarity search
 
+
 - **uuid-ossp** - UUID generation for primary keys
 
+
 - **pgcrypto** - Password hashing and encryption
+
 
 ### Production Deployment (Google Cloud)
 
@@ -77,6 +86,7 @@ Database: izara_phase1
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
+
 ### Database Initialization Scripts
 
 | Order | Script | Purpose |
@@ -87,7 +97,9 @@ Database: izara_phase1
 | 4 | `scripts/database/v2.2.0-notify-triggers.sql` | LISTEN/NOTIFY triggers |
 | 5 | `scripts/database/seed-dev-data.sql` | Test data (7 seed users) |
 
+
 ### Complete Table Inventory (37+ Tables)
+
 
 #### User Management (6 tables)
 
@@ -99,6 +111,7 @@ Database: izara_phase1
 | **device_tokens** | id, user_id, device_token, platform, device_name, is_active | Push notification devices |
 | **biometric_credentials** | id, user_id, credential_type, public_key, device_id, is_active | Biometric auth (Phase 2) |
 | **refresh_tokens** | id, user_id, token_hash, device_id, expires_at, is_revoked | JWT refresh rotation (Phase 2) |
+
 
 #### Patient Data (7 tables)
 
@@ -112,6 +125,7 @@ Database: izara_phase1
 | **patient_consents** | id, patient_id, consent_type, granted, doctor_id, data_types (JSONB), status | PDPA consent management |
 | **push_subscriptions** | id, user_id, appointment_reminders, medication_reminders, quiet_hours_start/end | Push notification preferences |
 
+
 #### Doctor Management (5 tables)
 
 | Table | Key Columns | Purpose |
@@ -122,6 +136,7 @@ Database: izara_phase1
 | **doctor_reviews** | id, doctor_id, patient_id, appointment_id, rating (1-5), comment | Patient feedback |
 | **consultants** | id, name, specialty, email, phone, hospital, languages (JSONB), is_available, rating, reviews (JSONB), admin_notes | External specialist directory |
 
+
 #### Appointments & Meetings (4 tables)
 
 | Table | Key Columns | Purpose |
@@ -130,6 +145,7 @@ Database: izara_phase1
 | **meeting_records** | id (UUID), appointment_id, doctor_id, patient_id, room_name, jitsi_domain, status, meeting_config (JSONB), transcript, ai_summary, ai_recommendations, section_summaries (JSONB), doctor_validation_status, patient_instructions, recording_data (BYTEA), duration_minutes | Video sessions + AI |
 | **meeting_transcripts** | id (UUID), meeting_record_id, speaker_id, speaker_role, speaker_name, content, language, confidence, start_time_seconds, is_final | STT segments |
 | **ai_chat_history** | id, user_id, session_id, role, content, context (JSONB), embedding (vector) | Chat with AI embeddings |
+
 
 #### Clinical Data (5 tables)
 
@@ -140,6 +156,7 @@ Database: izara_phase1
 | **lab_orders** | id, emr_id, appointment_id, patient_id, doctor_id, tests (JSONB), priority, results (JSONB), ai_analysis, status | Lab test orders |
 | **transcriptions_embeddings** | meeting_record_id, chunk_text, speaker_role, start/end_time_seconds, embedding (vector), metadata (JSONB) | Vectorized transcript chunks |
 | **ai_chat_memory** | id, user_id, memory_type, title, content, source_session_id, embedding (vector), relevance_score, is_active | Long-term AI memory |
+
 
 #### Content & Knowledge (6 tables)
 
@@ -152,6 +169,7 @@ Database: izara_phase1
 | **knowledge_base** | id, title, content, source, category, guideline_year, language, embedding (vector), is_active | RAG knowledge base |
 | **ai_document_analysis** | id, patient_id, doctor_id, document_type, filename, summary, key_findings (JSONB), abnormal_values (JSONB), validation_status | AI doc analysis |
 
+
 #### AI & Decision Support (3 tables)
 
 | Table | Key Columns | Purpose |
@@ -160,11 +178,13 @@ Database: izara_phase1
 | **ai_validations** | id, type, patient_id, doctor_id, decision (approved/rejected), content_snapshot, validated_at | Man-in-the-Loop log |
 | **notifications** | id (UUID), user_id, type, title, title_thai, message, message_thai, data (JSONB), read_at | User notifications |
 
+
 #### Audit (1 table)
 
 | Table | Key Columns | Purpose |
 | ----- | ----------- | ------- |
 | **audit_logs** | id, user_id, patient_id, action, entity_type, entity_id, details (JSONB), old_value (JSONB), new_value (JSONB), ip_address, user_agent, performed_by | Compliance audit trail |
+
 
 ### PostgreSQL LISTEN/NOTIFY Triggers
 
@@ -180,6 +200,7 @@ Database: izara_phase1
 | notify_meeting_change | meeting_records | INSERT, UPDATE | meeting:updated |
 
 ---
+
 
 ## 📊 Data Architecture
 
@@ -247,7 +268,9 @@ Database: izara_phase1
 
 ---
 
+
 ## 🔄 Data Flow Patterns
+
 
 ### 1. User Authentication Flow
 
@@ -276,6 +299,7 @@ Patient Login                          Doctor/Admin Login
 │  - created_at, last_login                       │
 └──────────────────────────────────────────────────┘
 ```
+
 
 ### 2. Appointment Data Flow
 
@@ -330,6 +354,7 @@ Patient Books Appointment
 └─────────────────┘
 ```
 
+
 ### 3. AI-Assisted EMR Flow (Phase 1 Feature)
 
 ```text
@@ -377,6 +402,7 @@ Video Meeting Completes
 └───────────────┘
 ```
 
+
 ### 4. Patient Instruction Sheet Generation
 
 ```text
@@ -414,6 +440,7 @@ Doctor Completes EMR
 
 ---
 
+
 ## 🔐 Access Control Matrix
 
 | Resource | Patient | Doctor | Admin |
@@ -430,7 +457,9 @@ Doctor Completes EMR
 
 ---
 
+
 ## 📡 API Endpoints
+
 
 ### Patient Portal (Port 3005)
 
@@ -443,6 +472,7 @@ Doctor Completes EMR
 | `/api/content/articles` | GET | PostgreSQL medical_content | Medical articles |
 | `/api/video-meeting` | POST | Jitsi API | Create meeting link |
 | `/api/patient-instructions/:id` | GET | PostgreSQL patient_instructions | View instruction sheet |
+
 
 ### Doctor Portal (Port 3010)
 
@@ -462,7 +492,9 @@ Doctor Completes EMR
 
 ---
 
+
 ## 🔍 Data Validation Rules
+
 
 ### Appointment Data
 
@@ -488,6 +520,7 @@ Doctor Completes EMR
 }
 ```
 
+
 ### EMR Data (SOAP Format)
 
 ```javascript
@@ -509,6 +542,7 @@ Doctor Completes EMR
 }
 ```
 
+
 ### AI Validation Record (Man-in-the-Loop)
 
 ```javascript
@@ -529,36 +563,47 @@ Doctor Completes EMR
 
 ---
 
+
 ## ✅ Testing Coverage
+
 
 ### Playwright Tests (26 tests)
 
+
 - Patient Portal: 10 tests
+
 
 - Doctor Portal: 10 tests
 
+
 - Admin workflows: 6 tests
+
 
 ### Run Tests
 
 ```powershell
+
 
 # Complete test suite (Playwright)
 cd Isara-doctor-portal
 npx playwright test
 
 
+
 # Specific test file
 npx playwright test tests/doctor-portal.spec.ts
+
 
 
 # With UI mode
 npx playwright test --ui
 
 
+
 # Debug mode
 npx playwright test --debug
 ```
+
 
 ### Test Users
 
@@ -572,31 +617,45 @@ npx playwright test --debug
 
 ---
 
+
 ## 🚀 Deployment Checklist
+
 
 ### Local Development
 
+
 - [ ] Docker containers running (postgres, patient-portal, doctor-portal, pgadmin)
+
 
 - [ ] Database seeded with `seed-local.sql`
 
+
 - [ ] Patient Portal accessible at <http://localhost:3005>
+
 
 - [ ] Doctor Portal accessible at <http://localhost:3010>
 
+
 - [ ] pgAdmin accessible at <http://localhost:5050>
+
 
 ### Production Deployment
 
+
 - [ ] Cloud Run services deployed
+
 
 - [ ] Cloud SQL PostgreSQL configured
 
+
 - [ ] Database seeded with `seed-cloud.sql`
+
 
 - [ ] Gemini API key configured
 
+
 - [ ] CORS and security headers configured
+
 
 - [ ] All Playwright tests pass
 
@@ -607,7 +666,9 @@ Phase 1: AI-Assisted Consultation with Man-in-the-Loop Validation
 
 ---
 
+
 ## 📝 Changelog — v1.6.0 (July 2026)
+
 
 ### Bug Fixes Applied
 
@@ -624,6 +685,7 @@ Phase 1: AI-Assisted Consultation with Man-in-the-Loop Validation
 | 9 | Specialties query references wrong table | `mainApiServer.cjs` | Changed `medical_consultants` → `consultants` |
 | 10 | Meeting transcript POST with undefined appointmentId | `MeetingRoom.tsx` | Guard against undefined `appointmentId` before REST save |
 | 11 | Validation errors silently logged | `MeetingResults.tsx` | Added user-facing `setError()` for regenerate and validation failures |
+
 
 ### Multi-Browser Playwright Configuration
 

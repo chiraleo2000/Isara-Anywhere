@@ -26,6 +26,7 @@ View and edit doctor/admin profile including avatar, contact info, specialty, an
 | Role badge | Shows doctor/admin role |
 
 
+
 ---
 
 
@@ -40,6 +41,7 @@ View and edit doctor/admin profile including avatar, contact info, specialty, an
 | Email | ❌ (display only) | — |
 
 
+
 ---
 
 
@@ -51,6 +53,7 @@ View and edit doctor/admin profile including avatar, contact info, specialty, an
 | PUT | `/api/auth/profile` | Update profile |
 | POST | `/api/auth/change-password` | Change password |
 | POST | `/api/auth/avatar` | Upload avatar |
+
 
 
 ---
@@ -79,11 +82,13 @@ View and edit doctor/admin profile including avatar, contact info, specialty, an
 
 
 
+
 ### API Endpoints
 | Endpoint | Method | DB Operation |
 | -------- | ------ | ------------ |
 | /api/profile | GET | SELECT users JOIN doctor_profiles WHERE id = current |
 | /api/profile | PUT | UPDATE users, UPDATE doctor_profiles |
+
 
 
 

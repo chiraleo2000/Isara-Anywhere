@@ -6,9 +6,11 @@
 
 ---
 
+
 ## Executive Summary
 
 This document outlines the implementation plan for adding Living Will functionality to both the Patient Portal and Doctor Portal with full PDPA compliance and consent-based sharing controls.
+
 
 ### Implementation Completed
 
@@ -23,7 +25,9 @@ This document outlines the implementation plan for adding Living Will functional
 
 ---
 
+
 ## 1. Patient Portal Implementation
+
 
 ### 1.1. Add Living Will Types to Shared Types
 
@@ -123,6 +127,7 @@ export interface LivingWillForDoctor {
 }
 ```
 
+
 ### 1.2. Create Living Will Form Component
 
 **File:** `Isara-patient-portal/src/components/health/LivingWillForm.tsx`
@@ -136,23 +141,31 @@ Key sections:
 5. Digital signature canvas
 6. Save/Cancel buttons
 
+
 ### 1.3. Create Living Will View Component
 
 **File:** `Isara-patient-portal/src/components/health/LivingWillView.tsx`
 
 Display existing Living Will with:
 
+
 - Status badge (Active/Revoked)
+
 
 - Statement display
 
+
 - Treatment preferences list
+
 
 - Representative contact
 
+
 - Share settings status
 
+
 - Edit/Revoke buttons
+
 
 ### 1.4. Add Living Will Tab to PHR Page
 
@@ -165,6 +178,7 @@ Add new tab:
   <LivingWillTab patientId={patientId} />
 </Tab>
 ```
+
 
 ### 1.5. Create API Routes
 
@@ -182,13 +196,16 @@ Add endpoints:
 
 ---
 
+
 ## 2. Doctor Portal Implementation
+
 
 ### 2.1. Add Living Will Types
 
 **File:** `Isara-doctor-portal/src/types/index.ts`
 
 Copy or import the Living Will types from shared types.
+
 
 ### 2.2. Update Patient Record Service
 
@@ -201,21 +218,28 @@ async getLivingWill(patientId: string): Promise<LivingWillForDoctor>
 async checkLivingWillAccess(patientId: string, doctorId: string): Promise<boolean>
 ```
 
+
 ### 2.3. Create Living Will Card Component
 
 **File:** `Isara-doctor-portal/src/components/LivingWillCard.tsx`
 
 Display Living Will in patient record with:
 
+
 - Prominent alert if exists and shared
+
 
 - Treatment preferences (clear refused/allowed list)
 
+
 - Representative contact
+
 
 - Private indicator if not shared
 
+
 - No document indicator if none exists
+
 
 ### 2.4. Update Patient Record Viewer
 
@@ -242,6 +266,7 @@ const PHRView = ({ phrData, patient }) => {
   );
 };
 ```
+
 
 ### 2.5. Add API Endpoint
 
@@ -292,7 +317,9 @@ app.get('/api/patients/:patientId/living-will', authMiddleware, async (req, res)
 
 ---
 
+
 ## 3. Testing Plan
+
 
 ### 3.1. Unit Tests
 
@@ -307,6 +334,7 @@ app.get('/api/patients/:patientId/living-will', authMiddleware, async (req, res)
 | Doctor access (not shared) | Returns { exists: true, isShared: false } |
 | Doctor access (no history) | Returns 403 error |
 | Admin access (shared) | Returns full Living Will |
+
 
 ### 3.2. E2E Tests
 
@@ -323,63 +351,92 @@ Scenarios:
 
 ---
 
+
 ## 4. Task Checklist
+
 
 ### Patient Portal
 
+
 - [ ] Add Living Will types to `sharedPHRTypes.ts`
+
 
 - [ ] Create `LivingWillForm.tsx` component
 
+
 - [ ] Create `LivingWillView.tsx` component
+
 
 - [ ] Create `LivingWillTab.tsx` wrapper component
 
+
 - [ ] Create `SignatureCanvas.tsx` component
+
 
 - [ ] Add Living Will tab to PHR page
 
+
 - [ ] Add API routes for Living Will CRUD
+
 
 - [ ] Add audit logging for Living Will actions
 
+
 - [ ] Add PDPA sharing controls
+
 
 - [ ] Write unit tests for Living Will APIs
 
+
 - [ ] Write E2E tests for patient workflows
+
 
 ### Doctor Portal
 
+
 - [ ] Add Living Will types to types file
+
 
 - [ ] Create `LivingWillCard.tsx` component
 
+
 - [ ] Update `PatientRecordViewer.tsx` with Living Will section
+
 
 - [ ] Update `patientRecordService.ts` with Living Will methods
 
+
 - [ ] Add API endpoint for fetching Living Will
+
 
 - [ ] Add access control logic (history check)
 
+
 - [ ] Add audit logging for Living Will access
+
 
 - [ ] Write unit tests for access control
 
+
 - [ ] Write E2E tests for doctor workflows
+
 
 ### Shared
 
+
 - [ ] Copy Living Will types to doctor portal
+
 
 - [ ] Update documentation
 
+
 - [ ] Create user guides
+
 
 - [ ] Test cross-portal workflow
 
 ---
+
 
 ## 5. Timeline
 
@@ -392,23 +449,31 @@ Scenarios:
 
 ---
 
+
 ## 6. Dependencies
+
 
 - Both portals running
 
+
 - GCS access configured
 
+
 - Authentication working
+
 
 - PDPA consent system in place
 
 ---
 
+
 ### End of Implementation Plan
 
 ---
 
+
 ## 7. PostgreSQL Database Schema
+
 
 ### Tables Used
 
@@ -418,6 +483,7 @@ Scenarios:
 | **living_will_versions** | Immutable version history | id, patient_id, version, data (JSONB snapshot), note |
 | **patient_consents** | PDPA consent records | id, patient_id, consent_type, granted, doctor_id, data_types (JSONB) |
 | **audit_logs** | Access/modification tracking | id, user_id, patient_id, action, entity_type, entity_id, details (JSONB) |
+
 
 ### Database Operations by Portal
 
@@ -435,6 +501,7 @@ Doctor Portal (port 3010) — mainApiServer.cjs
                                          + INSERT INTO audit_logs (action='view_living_will')
 ```
 
+
 ### Deployment
 
 | Environment | Database | Connection |
@@ -442,12 +509,17 @@ Doctor Portal (port 3010) — mainApiServer.cjs
 | Local Docker | izara-postgres container | postgres:5432 (internal), localhost:5433 (external) |
 | Production | GCE VM | 35.240.157.230:5432 (izara_phase1) |
 
+
 ### Dependencies (Updated)
+
 
 - Both portals running with PostgreSQL connection
 
+
 - PostgreSQL extensions: uuid-ossp, pgcrypto
 
+
 - Authentication via sessions table
+
 
 - PDPA consent system via patient_consents table

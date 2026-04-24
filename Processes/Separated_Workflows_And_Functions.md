@@ -8,51 +8,74 @@
 
 ---
 
+
 ## 📋 Table of Contents
+
 
 - [A. Authentication & User Management](#a-authentication--user-management)
 
+
 - [B. Appointment Workflow](#b-appointment-workflow)
+
 
 - [C. Video Meeting Workflow](#c-video-meeting-workflow)
 
+
 - [D. AI Processing Pipeline](#d-ai-processing-pipeline)
+
 
 - [E. EMR Documentation Workflow](#e-emr-documentation-workflow)
 
+
 - [F. Prescriptions Workflow](#f-prescriptions-workflow)
+
 
 - [G. Lab Orders Workflow](#g-lab-orders-workflow)
 
+
 - [H. PHR Management Workflow](#h-phr-management-workflow)
+
 
 - [I. Living Will Workflow](#i-living-will-workflow)
 
+
 - [J. PDPA Consent Workflow](#j-pdpa-consent-workflow)
+
 
 - [K. Content Management Workflow](#k-content-management-workflow)
 
+
 - [L. Clinical Resources Workflow](#l-clinical-resources-workflow)
+
 
 - [M. Medical Consultants Workflow](#m-medical-consultants-workflow)
 
+
 - [N. Notification Workflow](#n-notification-workflow)
+
 
 - [O. Doctor Registration & Approval Workflow](#o-doctor-registration--approval-workflow)
 
+
 - [P. Queue Management Workflow](#p-queue-management-workflow)
+
 
 - [Q. AI Health Chat (Patient)](#q-ai-health-chat-patient)
 
+
 - [R. AI Studio (Doctor)](#r-ai-studio-doctor)
 
+
 - [S. Timeline & History](#s-timeline--history)
+
 
 - [T. Map & Facility Finder](#t-map--facility-finder)
 
 ---
 
+
 ## A. Authentication & User Management
+
 
 ### A1. Patient Registration
 
@@ -74,19 +97,26 @@ Process:
 10. Return JWT token → auto-login
 ```
 
+
 ## Features
+
 
 - 2-step wizard with progress indicator
 
+
 - Thai/English bilingual form
+
 
 - Client-side validation (email format, password strength)
 
+
 - Server-side validation (email uniqueness)
+
 
 - Auto-login after registration
 
 ---
+
 
 ### A2. Patient Login
 
@@ -108,19 +138,26 @@ Process:
 10. Return JWT + user profile
 ```
 
+
 ## Features
+
 
 - Email/password login
 
+
 - Account lockout after 5 failures (15-min cooldown)
+
 
 - Session tracking with IP + user-agent
 
+
 - 3-hour session timeout
+
 
 - "Forgot Password" link → email flow
 
 ---
+
 
 ### A3. Doctor/Admin Login
 
@@ -137,15 +174,20 @@ Process:
 5. Role determines available features (doctor vs admin)
 ```
 
+
 ## Features
+
 
 - Same login flow as patient
 
+
 - Approval gate (admin must approve first)
+
 
 - Role-based redirect (doctor dashboard vs admin dashboard)
 
 ---
+
 
 ### A4. Password Reset
 
@@ -170,7 +212,9 @@ Process:
 
 ---
 
+
 ## B. Appointment Workflow
+
 
 ### B1. Patient Booking
 
@@ -195,19 +239,26 @@ Process:
 10. pg_notify → Socket.IO broadcast
 ```
 
+
 ## Features
+
 
 - Multi-step booking wizard
 
+
 - AI-assisted symptom analysis
+
 
 - Doctor selection (optional — can be pool)
 
+
 - Urgency triage
+
 
 - Thai/English symptom input
 
 ---
+
 
 ### B2. Admin Appointment Assignment
 
@@ -228,19 +279,26 @@ Process:
 6. INSERT notifications (doctor: new patient assigned)
 ```
 
+
 ## Features
+
 
 - AI specialty-to-doctor matching
 
+
 - Manual override
+
 
 - Reject with reason
 
+
 - Stats dashboard (pending/assigned/total)
+
 
 - Tab-based filtering
 
 ---
+
 
 ### B3. Doctor Appointment Claim (Pool)
 
@@ -261,6 +319,7 @@ Process:
 
 ---
 
+
 ### B4. Appointment Status State Machine
 
 ```text
@@ -275,7 +334,9 @@ pending ──→ in_pool ──→ ai_matched ──→ doctor_claimed ──�
 
 ---
 
+
 ## C. Video Meeting Workflow
+
 
 ### C1. Doctor Opens Meeting Room
 
@@ -296,19 +357,26 @@ Process:
 6. Doctor is HOST with full controls
 ```
 
+
 ## Features
+
 
 - Doctor as HOST (mute/kick/lobby control)
 
+
 - Lobby mode (patient waits for admission)
+
 
 - Guest invite links
 
+
 - Screen sharing
+
 
 - Chat within meeting
 
 ---
+
 
 ### C2. Patient Joins Meeting
 
@@ -327,6 +395,7 @@ Process:
 ```
 
 ---
+
 
 ### C3. Real-Time Transcription
 
@@ -347,6 +416,7 @@ Process:
 
 ---
 
+
 ### C4. Meeting Recording
 
 **Tables:** `meeting_records.recording_data` (BYTEA)
@@ -363,6 +433,7 @@ Process:
 ```
 
 ---
+
 
 ### C5. End Meeting
 
@@ -381,7 +452,9 @@ Process:
 
 ---
 
+
 ## D. AI Processing Pipeline
+
 
 ### D1. Post-Meeting AI Summary
 
@@ -404,6 +477,7 @@ Process:
 
 ---
 
+
 ### D2. AI Triage (Appointment Booking)
 
 **API:** `POST /api/ai/triage`
@@ -422,6 +496,7 @@ Process:
 
 ---
 
+
 ### D3. Pre-Consultation AI Summary
 
 **API:** Internal (Doctor Portal backend)
@@ -438,6 +513,7 @@ Process:
 ```
 
 ---
+
 
 ### D4. Patient Instruction Generation
 
@@ -462,6 +538,7 @@ Process:
 
 ---
 
+
 ### D5. Clinical Decision Support (CDS)
 
 **Tables:** `cds_logs`, `drugs`, `phr`
@@ -483,7 +560,9 @@ Process:
 
 ---
 
+
 ## E. EMR Documentation Workflow
+
 
 ### E1. AI-Assisted EMR Creation
 
@@ -509,19 +588,26 @@ Process:
 7. Status: draft → signed
 ```
 
+
 ## Features
+
 
 - SOAP format editor
 
+
 - AI pre-filled from transcript
+
 
 - ICD-10 code search
 
+
 - Digital signature
+
 
 - Man-in-the-Loop validation
 
 ---
+
 
 ### E2. EMR Signing
 
@@ -538,7 +624,9 @@ Process:
 
 ---
 
+
 ## F. Prescriptions Workflow
+
 
 ### F1. E-Prescribing
 
@@ -564,23 +652,32 @@ Process:
 11. Notification → patient
 ```
 
+
 ## Features
+
 
 - Real-time drug search
 
+
 - Allergy cross-check
+
 
 - Drug interaction warnings
 
+
 - Dosage form auto-complete
 
+
 - Multi-medication prescription
+
 
 - CDS audit trail
 
 ---
 
+
 ## G. Lab Orders Workflow
+
 
 ### G1. Lab & Imaging Orders
 
@@ -606,21 +703,29 @@ Process:
 7. Notification → patient ("Lab results ready")
 ```
 
+
 ## Features
+
 
 - Test catalog search
 
+
 - Priority levels
+
 
 - Normal range display
 
+
 - Flag indicators (H/L/C)
+
 
 - AI interpretation
 
 ---
 
+
 ## H. PHR Management Workflow
+
 
 ### H1. Vital Signs Recording
 
@@ -647,6 +752,7 @@ Process:
 
 ---
 
+
 ### H2. Medication Management
 
 **Pages:** `PHRPage.tsx` → Medications tab
@@ -663,6 +769,7 @@ Process:
 ```
 
 ---
+
 
 ### H3. Allergy Management
 
@@ -681,7 +788,9 @@ Process:
 
 ---
 
+
 ## I. Living Will Workflow
+
 
 ### I1. Living Will Creation (4-Step Wizard)
 
@@ -717,6 +826,7 @@ Final: INSERT living_wills + INSERT living_will_versions (v1)
 
 ---
 
+
 ### I2. Living Will Sharing
 
 ```text
@@ -729,7 +839,9 @@ Process:
 
 ---
 
+
 ## J. PDPA Consent Workflow
+
 
 ### J1. Privacy Consent Management
 
@@ -756,7 +868,9 @@ Tab 3: Access History
 
 ---
 
+
 ## K. Content Management Workflow
+
 
 ### K1. Medical Content Creation (Doctor)
 
@@ -781,6 +895,7 @@ Process:
 
 ---
 
+
 ### K2. Content Approval (Admin)
 
 **Pages:** `MedicalContent.tsx` (admin view)
@@ -799,7 +914,9 @@ Process:
 
 ---
 
+
 ## L. Clinical Resources Workflow
+
 
 ### L1. Resource Creation & RAG Integration
 
@@ -819,21 +936,29 @@ Process:
    d. Now searchable via AI RAG chat
 ```
 
+
 ## Resource Types
+
 
 - `guideline` — Clinical practice guidelines
 
+
 - `protocol` — Treatment protocols
+
 
 - `research` — Research papers
 
+
 - `template` — Clinical templates
+
 
 - `reference` — Reference materials
 
 ---
 
+
 ## M. Medical Consultants Workflow
+
 
 ### M1. Consultant Management (Admin)
 
@@ -852,6 +977,7 @@ Process:
 
 ---
 
+
 ### M2. Doctor Rating & Contact
 
 ```text
@@ -865,7 +991,9 @@ Process:
 
 ---
 
+
 ## N. Notification Workflow
+
 
 ### N1. In-App Notification Delivery
 
@@ -887,7 +1015,9 @@ Process:
 
 ---
 
+
 ## O. Doctor Registration & Approval Workflow
+
 
 ### O1. Doctor Registration
 
@@ -910,6 +1040,7 @@ Process:
 
 ---
 
+
 ### O2. Admin Approval
 
 **Pages:** `AdminDoctorManagement.tsx`
@@ -929,6 +1060,7 @@ Process:
 
 ---
 
+
 ### O3. Role Management
 
 ```text
@@ -941,7 +1073,9 @@ Process:
 
 ---
 
+
 ## P. Queue Management Workflow
+
 
 ### P1. Real-Time Patient Queue
 
@@ -963,7 +1097,9 @@ Process:
 
 ---
 
+
 ## Q. AI Health Chat (Patient)
+
 
 ### Q1. Patient AI Doctor
 
@@ -987,7 +1123,9 @@ Process:
 
 ---
 
+
 ## R. AI Studio (Doctor)
+
 
 ### R1. Gemini AI Chat for Doctors
 
@@ -1014,7 +1152,9 @@ Process:
 
 ---
 
+
 ## S. Timeline & History
+
 
 ### S1. Treatment Timeline
 
@@ -1040,7 +1180,9 @@ Process:
 
 ---
 
+
 ## T. Map & Facility Finder
+
 
 ### T1. Nearby Healthcare Map
 
@@ -1062,19 +1204,26 @@ Process:
 7. Click "Directions" → open Google Maps navigation
 ```
 
+
 ## Features
+
 
 - GPS geolocation
 
+
 - Radius filter (1, 5, 10, 15, 20 km)
+
 
 - Category filter
 
+
 - Facility details popup
+
 
 - Navigation link
 
 ---
+
 
 ## Reference: Document Cross-Links
 

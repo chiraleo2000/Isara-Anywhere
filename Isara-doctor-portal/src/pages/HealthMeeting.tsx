@@ -167,7 +167,7 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
   const isAdmin = !!(
     doctor.isAdmin === true ||
     doctor.role === 'admin' ||
-    (doctor as any).isAdmin === 'true' ||
+    doctor.isAdmin === 'true' ||
     doctor.email?.includes('admin')
   );
 
@@ -569,10 +569,10 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
           id: doctor.id,
           name: doctor.name || 'Dr. ' + doctor.email?.split('@')[0] || 'Doctor',
           role: 'doctor',
-          specialty: (doctor as any).specialty || 'General Practice',
+          specialty: doctor.specialty || 'General Practice',
           email: doctor.email || '',
           phone: '',
-          photo: (doctor as any).photo || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(doctor.id)}`,
+          photo: doctor.photo || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(doctor.id)}`,
           status: 'available',
         };
 

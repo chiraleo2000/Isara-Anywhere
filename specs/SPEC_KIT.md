@@ -23,6 +23,7 @@ Izara Telemedicine (อิสระ เทเลเมดิซิน) is a full
 
 
 
+
 ### 1.2 Key Metrics
 
 | Metric | Value |
@@ -34,6 +35,7 @@ Izara Telemedicine (อิสระ เทเลเมดิซิน) is a full
 | Doctor Portal Pages | 21 |
 | API Endpoints | 100+ |
 | Languages | Thai (primary) + English |
+
 
 
 ---
@@ -99,6 +101,7 @@ Client Request → Nginx (port 8080)
 | CI/CD | Google Cloud Build | Pay-per-use |
 
 
+
 ---
 
 
@@ -120,6 +123,7 @@ Client Request → Nginx (port 8080)
 
 
 
+
 ### 3.2 Appointments
 
 | ID | Feature | Actor | Status |
@@ -133,6 +137,7 @@ Client Request → Nginx (port 8080)
 | APPT-007 | Appointment Pool (doctor claims) | Doctor | ✅ |
 | APPT-008 | Queue Management (call/skip/complete) | Doctor | ✅ |
 | APPT-009 | Meeting Link Generation (Jitsi) | System | ✅ |
+
 
 
 
@@ -151,6 +156,7 @@ Client Request → Nginx (port 8080)
 | MEET-009 | CDS Alerts (drug interactions) | System | ✅ |
 | MEET-010 | Man-in-Loop AI Validation | Doctor | ✅ |
 | MEET-011 | In-Meeting Chat (Socket.IO) | All | ✅ |
+
 
 
 
@@ -173,6 +179,7 @@ Client Request → Nginx (port 8080)
 
 
 
+
 ### 3.5 Living Will & PDPA
 
 | ID | Feature | Actor | Status |
@@ -184,6 +191,7 @@ Client Request → Nginx (port 8080)
 | PDPA-001 | Consent Management (granular) | Patient | ✅ |
 | PDPA-002 | Doctor Access Control | Patient | ✅ |
 | PDPA-003 | Audit Log (all data access) | System | ✅ |
+
 
 
 
@@ -200,6 +208,7 @@ Client Request → Nginx (port 8080)
 
 
 
+
 ### 3.7 AI Features
 
 | ID | Feature | Actor | Status |
@@ -209,6 +218,7 @@ Client Request → Nginx (port 8080)
 | AI-003 | Document Analysis (PDF) | Doctor | ✅ |
 | AI-004 | CDS Drug Interaction Check | System | ✅ |
 | AI-005 | Knowledge Base RAG Search | Doctor | ✅ |
+
 
 
 
@@ -223,6 +233,7 @@ Client Request → Nginx (port 8080)
 | DASH-001 | Patient Dashboard | Patient | ✅ |
 | DASH-002 | Doctor Dashboard | Doctor | ✅ |
 | SET-001 | Patient Settings | Patient | ✅ |
+
 
 
 ---
@@ -253,6 +264,7 @@ Client Request → Nginx (port 8080)
 
 
 
+
 ### 4.2 Doctor Portal (21 pages)
 
 | # | Page | Route | Description |
@@ -278,6 +290,7 @@ Client Request → Nginx (port 8080)
 | 19 | Doctors Management | `/admin/doctor-list` | Active doctor listing |
 | 20 | Appointment Pool | `/pool` | Unassigned appointment claiming |
 | 21 | Queue Management | `/queue` | Today's patient queue |
+
 
 
 ---
@@ -401,6 +414,7 @@ users ──┬── patient_profiles ──── phr ──── vital_signs
 
 
 
+
 ### 6.2 Doctor Portal (localhost:3010) — 50+ endpoints
 
 | Category | Method | Endpoint | Auth |
@@ -433,6 +447,7 @@ users ──┬── patient_profiles ──── phr ──── vital_signs
 
 
 
+
 ### 6.3 Meeting Server (localhost:3020) — 15 endpoints
 
 | Category | Method | Endpoint | Auth |
@@ -450,6 +465,7 @@ users ──┬── patient_profiles ──── phr ──── vital_signs
 | AI | POST | `/api/ai/cds-check` | Auth |
 | AI | POST | `/api/ai/analyze-document` | Auth |
 | AI | GET | `/api/ai/knowledge` | Auth |
+
 
 
 ---
@@ -541,6 +557,7 @@ Doctor Creates Article (status: draft)
 | AI Safety | Man-in-the-Loop: doctor validates all AI outputs |
 
 
+
 ---
 
 
@@ -589,6 +606,7 @@ cd Izara-jitsi-server && gcloud builds submit --config=cloudbuild.yaml
 | Meeting Server | <https://izara-jitsi-meeting-portal-724889190329.asia-southeast1.run.app> |
 
 
+
 ---
 
 
@@ -601,6 +619,7 @@ cd Izara-jitsi-server && gcloud builds submit --config=cloudbuild.yaml
 
 
 
+
 ### Test Credentials
 
 | Role | Email | Password |
@@ -610,6 +629,7 @@ cd Izara-jitsi-server && gcloud builds submit --config=cloudbuild.yaml
 | Patient 3 | Anan.Khayanrian@gmail.com | P@ssw0rd |
 | Doctor | doctor.test@izara.com | IzaraDoctor@2024 |
 | Admin | admin.test@izara.com | IzaraAdmin@2024 |
+
 
 
 ---
@@ -626,4 +646,5 @@ cd Izara-jitsi-server && gcloud builds submit --config=cloudbuild.yaml
 | No imaging orders | Feature not implemented | Added imaging_orders table + full CRUD endpoints |
 | Cloud SQL cost | External Cloud SQL at $50+/month | Embedded PostgreSQL 16 directly in Cloud Run containers |
 | Dev environment cost | Separate dev-testing Cloud Run services | Removed dev environment; test locally, deploy to production |
+
 

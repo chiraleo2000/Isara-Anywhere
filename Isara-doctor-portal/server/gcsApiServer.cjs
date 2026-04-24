@@ -306,9 +306,10 @@ const jwt = require('jsonwebtoken');
 
 const GCS_JWT_SECRET = process.env.JWT_SECRET || process.env.VITE_JWT_SECRET;
 if (!GCS_JWT_SECRET) {
-  console.error('[GCS-API][SECURITY] CRITICAL: JWT_SECRET environment variable is not set.');
+  console.error('[GCS-API][SECURITY] FATAL: JWT_SECRET not set. Exiting.');
+  process.exit(1);
 }
-const GCS_JWT_SECRET_FINAL = GCS_JWT_SECRET || require('node:crypto').randomBytes(32).toString('hex');
+const GCS_JWT_SECRET_FINAL = GCS_JWT_SECRET;
 
 function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
@@ -327,6 +328,7 @@ function authenticateToken(req, res, next) {
     };
     next();
   } catch (error) {
+    console.warn('[GCS-API] Authentication failed:', error.message);
     return res.status(401).json({ error: 'Authentication failed' });
   }
 }
@@ -452,9 +454,9 @@ app.post('/api/storage/write', authenticateToken, async (req, res) => {
     if (makePublic) {
       try {
         await file.makePublic();
-      } catch (e) {
+      } catch (makePublicErr) {
         // Bucket might have uniform access
-        console.log('Could not make file public (bucket may have uniform access)');
+        console.log('Could not make file public (bucket may have uniform access):', makePublicErr.message);
       }
     }
 
@@ -478,7 +480,7 @@ app.post('/api/storage/upload', authenticateToken, upload.single('file'), async 
   try {
     // Handle JSON body with base64 data (for API tests)
     if (!req.file && req.body?.data) {
-      const { fileName, data, contentType, folder } = req.body;
+      const { fileName, contentType, folder } = req.body;
       const fileId = `${folder || 'uploads'}/${Date.now()}_${fileName || 'file.bin'}`;
       const fileUrl = `https://storage.izara.health/${fileId}`;
 
@@ -524,8 +526,8 @@ app.post('/api/storage/upload', authenticateToken, upload.single('file'), async 
     if (makePublic) {
       try {
         await file.makePublic();
-      } catch (e) {
-        console.log('Could not make file public');
+      } catch (makePublicErr) {
+        console.log('Could not make file public:', makePublicErr.message);
       }
     }
 
@@ -599,8 +601,8 @@ app.post('/api/storage/upload-base64', authenticateToken, async (req, res) => {
     if (makePublic) {
       try {
         await file.makePublic();
-      } catch (e) {
-        console.log('Could not make file public (may require bucket permissions)');
+      } catch (makePublicErr) {
+        console.log('Could not make file public (may require bucket permissions):', makePublicErr.message);
       }
     }
 
@@ -757,8 +759,9 @@ app.post('/api/storage/batch-write', authenticateToken, async (req, res) => {
 
           try {
             await file.makePublic();
-          } catch (e) {
-            // Ignore
+          } catch (makePublicErr) {
+            // Ignore: uniform-access buckets reject makePublic
+            console.debug('[GCS] batch makePublic skipped:', makePublicErr.message);
           }
 
           return {
@@ -817,7 +820,7 @@ async function writeGcsJson(bucketName, filePath, data) {
     contentType: 'application/json',
     metadata: { cacheControl: 'public, max-age=60' }
   });
-  try { await file.makePublic(); } catch (e) { /* ignore */ }
+  try { await file.makePublic(); } catch (makePublicErr) { console.debug('[GCS] writeGcsJson makePublic skipped:', makePublicErr.message); }
   return true;
 }
 
@@ -1471,6 +1474,7 @@ app.get('/api/consultants/specialties/list', async (req, res) => {
     }
     res.json({ specialties: data.specialties });
   } catch (error) {
+    console.error('[GCS-API] /specialties/list error:', error.message);
     res.status(500).json({ error: 'Failed to fetch specialties' });
   }
 });
@@ -1482,6 +1486,7 @@ app.get('/api/consultants/specialties', async (req, res) => {
     }
     res.json({ specialties: data.specialties });
   } catch (error) {
+    console.error('[GCS-API] /specialties error:', error.message);
     res.status(500).json({ error: 'Failed to fetch specialties' });
   }
 });
@@ -1966,8 +1971,6 @@ app.post('/api/notifications/emr-signed', async (req, res) => {
   try {
     const {
       patientId,
-      patientEmail,
-      patientName,
       doctorName,
       encounterDate,
       emrId,

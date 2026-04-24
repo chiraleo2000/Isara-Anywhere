@@ -39,6 +39,7 @@
 | H | Doctor Search & Dashboard | 12 | H01–H12 |
 
 
+
 **User Accounts:** ALL 5 (patient1, patient2, patient3, doctor, admin)
 
 
@@ -90,6 +91,7 @@
 | G | Cross-Portal Sync | 10 | G01–G10 |
 | H | Edge Cases | 10 | H01–H10 |
 | I | Doctor-Side Appointment Management | 12 | I01–I12 |
+
 
 
 **User Accounts:** ALL 5
@@ -152,6 +154,7 @@
 | J | PDPA & Living Will Extended | 8 | J01–J08 |
 
 
+
 **User Accounts:** ALL 5
 
 
@@ -198,6 +201,7 @@
 | H | Meeting Server Extended APIs | 12 | H01–H12 |
 
 
+
 **User Accounts:** ALL 5
 
 
@@ -239,6 +243,7 @@
 | G | Admin Management | 6 | G01–G06 |
 | H | Cross-Cutting UI | 6 | H01–H06 |
 | I | Content Extended & Admin Management | 12 | I01–I12 |
+
 
 
 **User Accounts:** ALL 5
@@ -283,6 +288,7 @@
 | H | AI Extended APIs & Notification Management | 12 | H01–H12 |
 
 
+
 **User Accounts:** ALL 5
 
 
@@ -320,6 +326,7 @@
 | E | Queue & Dashboard | 8 | E01–E08 |
 | F | Stress & Edge Cases | 8 | F01–F08 |
 | G | Queue Management & Cross-Portal Notifications | 10 | G01–G10 |
+
 
 
 **User Accounts:** ALL 5
@@ -360,6 +367,7 @@
 | H | Phase 2 Extended Features & Validation | 12 | H01–H12 |
 
 
+
 **User Accounts:** ALL 5
 
 
@@ -395,6 +403,7 @@
 | C | Meeting End & AI Summary | 5 | C01–C05 |
 | D | Man-in-the-Loop Validation | 5 | D01–D05 |
 | E | Multi-User UI Verification | 5 | E01–E05 |
+
 
 
 **User Accounts:** patient1, doctor, admin
@@ -460,6 +469,7 @@
 
 
 
+
 ### Doctor Portal Pages (from Processes/Pages/Doctor-Portal/)
 
 | # | Page | Status | Notes |
@@ -485,6 +495,7 @@
 | 19 | Doctors Management Page | ⚠️ Partial | Spec 05-G lists doctors. **Missing: doctor directory search UI, filter by specialty/status, verify badge display** |
 | 20 | Appointment Pool Management | ⚠️ Partial | Spec 02-A mentions appointment pool API. **Missing: pool tab UI (Pool/Awaiting Response/Claimed), claim button interaction, pool reason display** |
 | 21 | Queue Management | ⚠️ Partial | Spec 07-E,G tests queue API. **Missing: queue call/skip UI buttons, wait time display, priority badges, auto-polling indicator** |
+
 
 
 ---
@@ -662,6 +673,7 @@ Isara-mobile/
 
 
 
+
 ### 3.4 Mobile App Screens (from route structure)
 
 **Patient Tabs (5):** Home, Appointments, Health, AI Chat, Profile
@@ -692,6 +704,7 @@ Isara-mobile/
 | Prescribing | Modal page | Not visible |
 | Lab Orders | Modal page | Not visible |
 | Nursing Dashboard | Planned (Phase 2) | Not visible |
+
 
 
 The mobile app appears to be in **early development** with basic navigation scaffolding and route groups established, but significantly fewer screens than the web portals. The `apps/doctor/` and `apps/patient/` standalone variants have minimal screens (just `index.tsx` in tabs), suggesting either:
@@ -732,6 +745,7 @@ The shared packages (`@izara/api-client`, `@izara/shared`, `@izara/ui`) have `sr
 
 
 
+
 ### Doctor Portal Screenshots (11)
 
 | ID | Page | Screenshot File |
@@ -750,6 +764,7 @@ The shared packages (`@izara/api-client`, `@izara/shared`, `@izara/ui`) have `sr
 
 
 
+
 ### API Data Verification (16 tests, no screenshots)
 
 | ID | Test | Endpoint |
@@ -758,6 +773,7 @@ The shared packages (`@izara/api-client`, `@izara/shared`, `@izara/ui`) have `sr
 | API07-14 | Doctor appointments, consultants, content, resources, notifications, stats, doctors, meetings | Doctor Portal APIs |
 | API14b-14c | Meeting auto-record, meeting results | Meeting Server APIs |
 | API15-16 | Unauthenticated access returns 401 | Security verification |
+
 
 
 All screenshots saved to `screenshots/ui-pages/` (1280×720 viewport, full-page capture).
@@ -784,6 +800,7 @@ All screenshots saved to `screenshots/ui-pages/` (1280×720 viewport, full-page 
 
 
 
+
 ### Test Distribution by Feature Area
 
 | Area | Spec Files | ~Tests |
@@ -798,4 +815,5 @@ All screenshots saved to `screenshots/ui-pages/` (1280×720 viewport, full-page 
 | Phase 2 (HIS) | 08 | ~72 |
 | User Accounts & Demo Pages | 09 | ~91 |
 | Lab/Imaging/Map & v1.5.3 | 10 | ~70 |
+
 

@@ -199,7 +199,6 @@ ENV NODE_ENV=production
 ENV PORT=3005
 ENV GCP_PROJECT_ID=${GCP_PROJECT_ID:-izara-telemedicine}
 ENV GOOGLE_APPLICATION_CREDENTIALS=/app/credentials/service-account.json
-ENV DEMO_MODE=false
 ENV USE_POSTGRESQL=true
 ENV USE_EMBEDDED_PG=true
 ENV DB_HOST=localhost

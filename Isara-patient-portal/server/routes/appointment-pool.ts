@@ -16,7 +16,7 @@
  */
 
 import { Router, Request, Response } from 'express';
-import { storage, GCS_BUCKETS } from '../index';
+import { BUCKETS as GCS_BUCKETS, readJSON, writeJSON } from '../utils/localStore';
 import { authMiddleware } from '../middleware/auth';
 import { errMsg } from '../utils';
 
@@ -92,36 +92,7 @@ const DEFAULT_MEETING_RULES: MeetingTimeRules = {
 };
 
 // Helper functions
-async function readJSON(bucket: string, filePath: string): Promise<any> {
-  try {
-    // Check if storage is available (PostgreSQL mode disables GCS)
-    if (!storage) {
-      console.log('[APPOINTMENT-POOL] Storage is null (PostgreSQL mode) - returning empty data');
-      return null;
-    }
-    const file = storage.bucket(bucket).file(filePath);
-    const [contents] = await file.download();
-    return JSON.parse(contents.toString());
-  } catch (error: unknown) {
-    if (error && typeof error === 'object' && 'code' in error && (error as { code: number }).code === 404) {
-      return null;
-    }
-    console.error('[APPOINTMENT-POOL] readJSON error:', errMsg(error));
-    return null;
-  }
-}
-
-async function writeJSON(bucket: string, filePath: string, data: any): Promise<void> {
-  // Check if storage is available
-  if (!storage) {
-    console.log('[APPOINTMENT-POOL] Storage is null (PostgreSQL mode) - skipping write');
-    return;
-  }
-  const file = storage.bucket(bucket).file(filePath);
-  await file.save(JSON.stringify(data, null, 2), {
-    contentType: 'application/json',
-  });
-}
+// readJSON / writeJSON are imported from utils/localStore (local filesystem under ./data)
 
 // Specialty to symptom mapping for AI matching
 const SPECIALTY_SYMPTOM_MAP: Record<string, string[]> = {
@@ -273,7 +244,7 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
     } = req.body;
 
     const now = new Date();
-    const poolId = `pool_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const poolId = `pool_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
 
     // Match symptoms to specialties
     const matchedSpecialties = matchSymptomsToSpecialties(
@@ -665,7 +636,7 @@ router.post('/missed-meeting/:appointmentId', authMiddleware, async (req: Reques
       // Create new pool item for missed meeting
       const nextSlot = getNextWeekSameTime(appointment.appointmentDate, appointment.appointmentTime);
       
-      const poolId = `pool_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const poolId = `pool_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
       const newPoolItem: AppointmentPoolItem = {
         id: poolId,
         appointmentId,

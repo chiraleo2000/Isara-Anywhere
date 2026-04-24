@@ -1,7 +1,6 @@
 import 'dotenv/config';
 import express, { Express, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
-import { Storage } from '@google-cloud/storage';
 import path from 'node:path';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -20,7 +19,6 @@ import doctorRoutes from './routes/doctors';
 import pdpaRoutes from './routes/pdpa';
 import metadataRoutes from './routes/metadata';
 import aiRoutes from './routes/ai';
-import gcsRoutes from './routes/gcs';
 import googleServicesRoutes from './routes/google-services';
 import contentRoutes from './routes/content';
 import videoMeetingRoutes from './routes/video-meeting';
@@ -29,6 +27,7 @@ import settingsRoutes, { syncRouter as syncRoutes } from './routes/settings';
 import phase2Routes from './routes/phase2';
 import mapRoutes from './routes/map';
 import { startPgNotifyListener } from './pgNotifyListener';
+import { startAppointmentScheduler } from './cron/appointmentScheduler';
 import { authMiddleware, AuthenticatedRequest } from './middleware/auth';
 import postgresDataService from './services/postgresDataService';
 
@@ -38,61 +37,18 @@ const app: Express = express();
 const httpServer = createServer(app);
 const PORT = process.env.PORT || 3004;
 
-const GCS_BUCKETS = {
-  AUTH: process.env.GCS_BUCKET_AUTH || process.env.VITE_GCS_BUCKET_AUTH || 'izara-users-credentials',
-  PATIENT: process.env.GCS_BUCKET_PATIENT || process.env.VITE_GCS_BUCKET_PATIENT || 'izara-patients-data',
-  DOCTOR: process.env.GCS_BUCKET_DOCTOR || process.env.VITE_GCS_BUCKET_DOCTOR || 'izara-doctors-data',
-  APPOINTMENTS: process.env.GCS_BUCKET_APPOINTMENTS || process.env.VITE_GCS_BUCKET_APPOINTMENTS || 'izara-appointments',
-  METADATA: process.env.GCS_BUCKET_METADATA || process.env.VITE_GCS_BUCKET_METADATA || 'izara-meta-data',
-};
-
-function initializeStorage(): Storage {
-  const projectId = process.env.GCP_PROJECT_ID || process.env.VITE_GCP_PROJECT_ID || 'izara-telemedicine';
-  
-  // Check explicit env var first
-  if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-    const keyPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
-    if (fs.existsSync(keyPath)) {
-      console.log('Using GOOGLE_APPLICATION_CREDENTIALS:', keyPath);
-      return new Storage({ projectId, keyFilename: keyPath });
-    }
-  }
-  
-  // Check multiple credential paths
-  const credentialsPaths = [
-    path.join(__dirname, '../credentials/service-account.json'),
-    path.join(__dirname, '../../credentials/service-account.json'),
-    '/var/secrets/google/service-account.json',
-  ];
-  
-  for (const credPath of credentialsPaths) {
-    if (fs.existsSync(credPath)) {
-      console.log('Using credentials file:', credPath);
-      return new Storage({ projectId, keyFilename: credPath });
-    }
-  }
-  
-  console.log('Using Application Default Credentials (ADC/Workload Identity)');
-  return new Storage({ projectId });
-}
-
-// PostgreSQL is the PRIMARY and ONLY data store - NO GCS for data interaction
-// GCS is ONLY used for backup, not for live data
-const USE_POSTGRESQL = process.env.USE_POSTGRESQL?.toLowerCase() !== 'false'; // Default to PostgreSQL
-const USE_GCS = process.env.USE_GCS?.toLowerCase() === 'true' && !USE_POSTGRESQL; // Disabled unless explicitly enabled
+// PostgreSQL is the PRIMARY and ONLY data store. Auxiliary JSON blobs (legacy
+// notifications / metadata caches) are written to the local filesystem via
+// server/utils/localStore.ts under $DATA_DIR (default: ./data). No GCS.
+const USE_POSTGRESQL = true;
 
 console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 console.log('📊 Data Configuration:');
 console.log('   ✅ PostgreSQL: ENABLED (Primary Data Store)');
-console.log('   ❌ GCS: DISABLED (No GCS for data interaction)');
+console.log('   💾 Local FS (./data): secondary JSON store (no GCS)');
 console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
-// Storage is null - we don't use GCS for data
-// (kept as constant export for routes that check for availability)
-const storage: Storage | null = USE_GCS ? initializeStorage() : null;
-
-// Export storage instance for use in routes (may be null if PostgreSQL mode)
-export { storage, GCS_BUCKETS, USE_POSTGRESQL, USE_GCS };
+export { USE_POSTGRESQL };
 
 // Import OWASP Security Middleware
 import { errMsg } from './utils';
@@ -267,63 +223,14 @@ app.get('/api/health', (_req: Request, res: Response) => {
   });
 });
 
-// GCS connection check endpoint
-app.get('/api/health/gcs', async (_req: Request, res: Response) => {
-  try {
-    // If PostgreSQL mode is enabled, GCS is not primary storage
-    const activeStorage = storage;
-    if (USE_POSTGRESQL || !USE_GCS || !activeStorage) {
-      return res.json({
-        status: 'disabled',
-        message: 'GCS disabled - using PostgreSQL as primary storage',
-        timestamp: new Date().toISOString(),
-        buckets: Object.entries(GCS_BUCKETS).map(([name, bucketName]) => ({
-          name,
-          bucket: bucketName,
-          connected: false,
-          reason: 'PostgreSQL mode enabled'
-        }))
-      });
-    }
-
-    // Test connection to each bucket
-    const bucketStatus = await Promise.all(
-      Object.entries(GCS_BUCKETS).map(async ([name, bucketName]) => {
-        try {
-          const bucket = activeStorage.bucket(bucketName);
-          const [exists] = await bucket.exists();
-          return {
-            name,
-            bucket: bucketName,
-            connected: exists,
-          };
-        } catch (error: unknown) {
-          console.warn(`[GCS] Bucket check failed for ${name}:`, error);
-          return {
-            name,
-            bucket: bucketName,
-            connected: false,
-            error: errMsg(error),
-          };
-        }
-      })
-    );
-
-    const allConnected = bucketStatus.every(b => b.connected);
-
-    res.json({
-      status: allConnected ? 'healthy' : 'degraded',
-      timestamp: new Date().toISOString(),
-      buckets: bucketStatus,
-    });
-  } catch (error: unknown) {
-    console.error('[GCS] Health check failed:', error);
-    res.status(500).json({
-      status: 'unhealthy',
-      timestamp: new Date().toISOString(),
-      error: 'GCS health check failed',
-    });
-  }
+// Legacy /api/health/gcs endpoint — GCS is not used anymore (all data is in
+// PostgreSQL + local filesystem). Kept to avoid breaking old health probes.
+app.get('/api/health/gcs', (_req: Request, res: Response) => {
+  res.json({
+    status: 'disabled',
+    message: 'GCS is not used. Data lives in PostgreSQL + local filesystem.',
+    timestamp: new Date().toISOString(),
+  });
 });
 
 // ============================================================================
@@ -696,7 +603,6 @@ app.use('/api/doctors', doctorRoutes);
 app.use('/api/pdpa', pdpaRoutes);
 app.use('/api/metadata', metadataRoutes);
 app.use('/api/ai', aiRoutes);
-app.use('/api/gcs', gcsRoutes);
 app.use('/api/google', googleServicesRoutes);
 app.use('/api/content', contentRoutes);
 app.use('/api/video-meeting', videoMeetingRoutes);
@@ -1265,6 +1171,9 @@ try {
 
     // Start PG LISTEN/NOTIFY for cross-service sync
     startPgNotifyListener(pool, io);
+
+    // Start appointment reminder + no-show scheduler
+    startAppointmentScheduler(pool);
   });
 
   // ============================================================================

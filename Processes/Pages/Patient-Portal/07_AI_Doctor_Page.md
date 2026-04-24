@@ -7,6 +7,7 @@
 
 ---
 
+
 ## 1. Purpose
 
 AI-powered health assistant providing preliminary health advice, symptom assessment, and wellness guidance. Uses Google Gemini 2.5 Flash Lite with medical context.
@@ -14,6 +15,7 @@ AI-powered health assistant providing preliminary health advice, symptom assessm
 **⚠️ Disclaimer:** "AI provides preliminary advice only, not medical diagnosis. Always consult a healthcare professional."
 
 ---
+
 
 ## 2. Page Layout
 
@@ -56,7 +58,9 @@ AI-powered health assistant providing preliminary health advice, symptom assessm
 
 ---
 
+
 ## 3. Features & Actions
+
 
 ### 3.1 Chat Management
 
@@ -67,6 +71,7 @@ AI-powered health assistant providing preliminary health advice, symptom assessm
 | Delete Session | Removes chat session permanently |
 | Toggle Sidebar | Show/hide sidebar for more chat space |
 
+
 ### 3.2 Chat Interaction
 
 | Feature | Description |
@@ -76,6 +81,7 @@ AI-powered health assistant providing preliminary health advice, symptom assessm
 | AI Response | Streaming response with medical advice |
 | Typing Indicator | Animated dots while AI processes |
 | Message History | Persistent across sessions |
+
 
 ### 3.3 Quick Suggestion Topics
 
@@ -88,7 +94,9 @@ AI-powered health assistant providing preliminary health advice, symptom assessm
 
 ---
 
+
 ## 4. Workflows
+
 
 ### Workflow 1: Ask Health Question
 
@@ -103,6 +111,7 @@ Step 7: Session saved for future reference
 Step 8: Patient can continue asking follow-up questions
 ```
 
+
 ### Workflow 2: Start New Session
 
 ```text
@@ -112,6 +121,7 @@ Step 3: Chat area cleared with welcome message
 Step 4: Quick suggestions displayed
 Step 5: Previous session preserved in sidebar list
 ```
+
 
 ### Workflow 3: Review Past Conversations
 
@@ -124,6 +134,7 @@ Step 4: Can continue conversation from where it left off
 
 ---
 
+
 ## 5. API Endpoints
 
 | Method | Endpoint | Purpose |
@@ -135,6 +146,7 @@ Step 4: Can continue conversation from where it left off
 | DELETE | `/api/ai/chat/sessions/:id` | Delete session |
 
 ---
+
 
 ## 6. AI Response Format
 
@@ -150,6 +162,7 @@ Responses typically include:
 
 ---
 
+
 ## 7. Connections to Other Pages
 
 | Element | Destination |
@@ -161,25 +174,35 @@ Responses typically include:
 
 ---
 
+
 ## 8. AI Agent Improvement Opportunities
+
 
 - **Context-aware**: AI reads patient's PHR for personalized advice
 
+
 - **Image analysis**: AI analyze skin conditions, rashes from photos
+
 
 - **Medication queries**: AI check specific drug interactions for patient's medications
 
+
 - **Follow-up prompts**: AI proactively ask clarifying questions
+
 
 - **Escalation**: AI recommend booking appointment when symptoms are concerning
 
+
 - **Multilingual**: AI handle conversations in multiple languages simultaneously
+
 
 - **Voice input**: AI accept voice questions with speech-to-text
 
 ---
 
+
 ## 9. PostgreSQL Database Integration
+
 
 ### Tables Used
 
@@ -188,20 +211,27 @@ Responses typically include:
 | ai_chat_history | SELECT/INSERT | Patient AI health chat conversation logs |
 | knowledge_base | SELECT | RAG retrieval for medical knowledge responses |
 
+
 ### API Endpoints
 
 | Endpoint | Method | DB Operation |
 | -------- | ------ | ------------ |
 | POST /api/ai/health-chat | POST | SELECT knowledge_base (RAG); INSERT ai_chat_history |
 
+
 ### AI Engine
+
 
 - **Model:** Gemini 2.5 Flash Lite (Google AI)
 
+
 ### Deployment
+
 
 - **Local Docker:** izara-postgres container (localhost:5433 external / 5432 internal) → database: izara_phase1
 
+
 - **Production:** GCE VM at 35.240.157.230:5432 → database: izara_phase1 (asia-southeast1)
+
 
 - **Service deployed via:** Cloud Run (gen2, CPU Boost) + Cloud Build CI/CD

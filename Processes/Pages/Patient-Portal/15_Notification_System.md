@@ -7,11 +7,13 @@
 
 ---
 
+
 ## 1. Purpose
 
 Real-time notification system providing alerts for appointment updates, meeting links, EMR availability, and system events. Accessible from every page via the header bell icon.
 
 ---
+
 
 ## 2. UI Layout
 
@@ -44,7 +46,9 @@ Real-time notification system providing alerts for appointment updates, meeting 
 
 ---
 
+
 ## 3. Notification Types
+
 
 ### 3.1 Appointment Status Notifications
 
@@ -56,6 +60,7 @@ Real-time notification system providing alerts for appointment updates, meeting 
 | rescheduled | 🔄 | Orange | นัดหมายถูกเลื่อน (Appointment rescheduled) |
 | completed | 📅 | Emerald | นัดหมายเสร็จสิ้น |
 
+
 ### 3.2 Meeting-Related Notifications (Phase 1 — Telehealth)
 
 | Type | Icon | Color | Thai Message | Trigger |
@@ -65,6 +70,7 @@ Real-time notification system providing alerts for appointment updates, meeting 
 | meeting_reminder_15m | 🔔 | Orange | การนัดหมายจะเริ่มใน 15 นาที — เข้าร่วมได้เลย | 15 minutes before meeting |
 | meeting_started | 📹 | Teal | แพทย์เปิดห้องประชุมแล้ว — เข้าร่วมเลย | Doctor opens the meeting room |
 | meeting_ended | ✅ | Gray | การประชุมสิ้นสุดแล้ว — รอผลการตรวจจากแพทย์ | Meeting ends |
+
 
 ### 3.3 Post-Meeting Result Notifications
 
@@ -78,7 +84,9 @@ Real-time notification system providing alerts for appointment updates, meeting 
 
 ---
 
+
 ## 4. Features & Actions
+
 
 ### 4.1 Bell Icon
 
@@ -87,6 +95,7 @@ Real-time notification system providing alerts for appointment updates, meeting 
 | Unread badge | Red circle with count (shows "9+" for >9) |
 | Click | Toggle notification panel dropdown |
 | Polling | Auto-refresh every 30 seconds |
+
 
 ### 4.2 Notification Panel
 
@@ -98,6 +107,7 @@ Real-time notification system providing alerts for appointment updates, meeting 
 | Action links | Context-specific per notification type |
 | Max display | 10 notifications, "view all" link if more |
 | Click outside | Closes panel |
+
 
 ### 4.3 Action Links per Type
 
@@ -121,7 +131,9 @@ Real-time notification system providing alerts for appointment updates, meeting 
 
 ---
 
+
 ## 5. Workflows
+
 
 ### Workflow 1: Receive Notification
 
@@ -133,6 +145,7 @@ Step 4: Bell badge count increments
 Step 5: Patient clicks bell → Panel shows new notification at top
 Step 6: Notification shows with green unread indicator
 ```
+
 
 ### Workflow 2: Act on Notification
 
@@ -147,6 +160,7 @@ Step 4: Panel closes
 Step 5: Badge count decreases
 ```
 
+
 ### Workflow 3: Mark All as Read
 
 ```text
@@ -155,6 +169,7 @@ Step 2: PATCH /api/notifications/{userId}/read-all
 Step 3: All notifications lose unread indicator
 Step 4: Badge count resets to 0
 ```
+
 
 ### Workflow 4: Complete Meeting Notification Flow (End-to-End)
 
@@ -212,6 +227,7 @@ Step 11: New prescription issued
          Actions: [ดูรายละเอียดยา]
 ```
 
+
 ### Workflow 5: Meeting Status Change Notifications
 
 ```text
@@ -241,6 +257,7 @@ Status changes that trigger notifications:
 
 ---
 
+
 ## 6. Relative Time Display (Thai)
 
 | Time Range | Display |
@@ -251,6 +268,7 @@ Status changes that trigger notifications:
 | 1+ days | X วันที่แล้ว |
 
 ---
+
 
 ## 7. API Endpoints
 
@@ -265,6 +283,7 @@ Status changes that trigger notifications:
 
 ---
 
+
 ## 8. Notification Delivery Channels
 
 | Channel | Used For | Technology |
@@ -277,6 +296,7 @@ Status changes that trigger notifications:
 
 ---
 
+
 ## 9. Connections to Other Pages
 
 | Action | Destination |
@@ -288,29 +308,41 @@ Status changes that trigger notifications:
 
 ---
 
+
 ## 10. AI Agent Improvement Opportunities
+
 
 - **Priority sorting**: AI rank notifications by importance (meeting starting > results ready > general)
 
+
 - **Smart batching**: AI group related notifications (e.g., results + instruction sheet + follow-up)
+
 
 - **Push notifications**: AI determine when to use push vs in-app
 
+
 - **Predictive alerts**: AI notify before appointment (24h, 1h, 15min) — implemented in Phase 1
+
 
 - **Natural language summaries**: AI summarize notification clusters
 
+
 - **Action suggestions**: AI recommend next action based on notification
+
 
 - **Meeting prep reminders**: AI remind patient to prepare questions before telehealth meeting
 
+
 - **Result comprehension**: AI explain medical terms in notifications using patient-friendly language
+
 
 - **Follow-up compliance**: AI track if patient acknowledges results and follows up as scheduled
 
 ---
 
+
 ## PostgreSQL Database Integration
+
 
 ### Tables Used
 
@@ -319,6 +351,7 @@ Status changes that trigger notifications:
 | notifications | SELECT / UPDATE | Unread notifications, mark as read |
 | push_subscriptions | SELECT | Web push subscription endpoints for delivery |
 
+
 ### API Endpoints
 
 | Endpoint | Method | DB Operation |
@@ -326,15 +359,21 @@ Status changes that trigger notifications:
 | /api/notifications | GET | SELECT notifications WHERE patient_id = current ORDER BY created_at DESC |
 | /api/notifications/:id/read | PUT | UPDATE notifications SET read = true |
 
+
 ### Real-time Events
+
 
 - **Socket.IO:**
 otification:new → real-time push to connected clients
 
+
 ### Deployment
+
 
 - **Local Docker:** izara-postgres container (localhost:5433 external / 5432 internal) → database: izara_phase1
 
+
 - **Production:** GCE VM at 35.240.157.230:5432 → database: izara_phase1 (asia-southeast1)
+
 
 - **Service deployed via:** Cloud Run (gen2, CPU Boost) + Cloud Build CI/CD

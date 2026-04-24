@@ -368,7 +368,7 @@ const PendingTabPanel: React.FC<PendingTabPanelProps> = ({
   return (
     <div className="space-y-4">
       {doctors.map((doctor) => (
-        <div key={doctor.id} className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow bg-white">
+        <div key={doctor.id} data-testid="doctor-item" className="doctor-item card border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow bg-white">
           <div className="flex items-start justify-between">
             <div className="flex items-start gap-4">
               <div className="w-14 h-14 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xl font-bold">
@@ -447,7 +447,8 @@ const DoctorsTabPanel: React.FC<DoctorsTabPanelProps> = ({
         return (
           <div
             key={doctor.id}
-            className={`border rounded-lg p-6 hover:shadow-md transition-shadow bg-white ${
+            data-testid="doctor-item"
+            className={`doctor-item card border rounded-lg p-6 hover:shadow-md transition-shadow bg-white ${
               isAdmin ? 'border-purple-300 bg-purple-50/30' : 'border-gray-200'
             }`}
           >

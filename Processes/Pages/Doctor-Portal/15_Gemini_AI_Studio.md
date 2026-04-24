@@ -62,6 +62,7 @@ AI-powered medical assistant and clinical calculators accessible from any page v
 
 
 
+
 ### eGFR Calculator (CKD-EPI Formula)
 
 | Input | Description |
@@ -71,6 +72,7 @@ AI-powered medical assistant and clinical calculators accessible from any page v
 | Gender | Male / Female |
 | Race | For CKD-EPI adjustment |
 | **Output** | eGFR value + CKD stage |
+
 
 
 
@@ -90,6 +92,7 @@ AI-powered medical assistant and clinical calculators accessible from any page v
 | ------ | ----- | ------- |
 | Connected | 🟢 Green | Gemini API key configured and working |
 | Warning | 🟡 Yellow | API key missing (`VITE_GEMINI_API_KEY`) |
+
 
 
 ---
@@ -200,6 +203,7 @@ Gemini AI Studio processes meeting data from multiple sources for comprehensive 
 
 
 
+
 ### AI Processing Pipeline
 
 ```text
@@ -242,6 +246,7 @@ Man-in-the-Loop Validation
 | Clinical Calculator | On-demand | Patient vitals/labs | Immediate result, no validation needed |
 
 
+
 ---
 
 
@@ -260,6 +265,7 @@ Man-in-the-Loop Validation
 | GET | `/api/ai/meeting-sections/:id` | Get 30-min sectioned summaries |
 | POST | `/api/ai/calculate/bmi` | BMI calculation |
 | POST | `/api/ai/calculate/egfr` | eGFR calculation |
+
 
 
 ---
@@ -306,12 +312,14 @@ Man-in-the-Loop Validation
 
 
 
+
 ### API Endpoints
 | Endpoint | Method | DB Operation |
 | -------- | ------ | ------------ |
 | POST /api/ai/chat | POST | SELECT knowledge_base (RAG); INSERT ai_chat_history; UPDATE ai_chat_memory |
 | POST /api/ai/document-analysis | POST | INSERT ai_document_analysis |
 | POST /api/ai/meeting-summary | POST | SELECT transcriptions_embeddings; INSERT ai_chat_history |
+
 
 
 

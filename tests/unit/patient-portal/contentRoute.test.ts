@@ -2,7 +2,7 @@
  * ═══════════════════════════════════════════════════════════════════════
  * PATIENT PORTAL — Content Route Unit Tests
  * ═══════════════════════════════════════════════════════════════════════
- * Tests: server/routes/content.ts — articles, clinical resources, demo mode
+ * Tests: server/routes/content.ts — articles, clinical resources, filter/limit logic
  */
 import { describe, it, expect } from 'vitest';
 
@@ -11,23 +11,19 @@ import { describe, it, expect } from 'vitest';
 const VALID_CATEGORIES = ['general-health', 'nutrition', 'exercise', 'mental-health'];
 const VALID_CONTENT_TYPES = ['article', 'video'];
 
-const DEMO_MEDICAL_CONTENT = [
-  { id: 'demo-1', titleThai: 'การดูแลสุขภาพประจำวัน', category: 'general-health', type: 'article', isFeatured: true, viewCount: 250, readTime: 5 },
-  { id: 'demo-2', titleThai: 'โภชนาการที่ดี', category: 'nutrition', type: 'article', isFeatured: false, viewCount: 180, readTime: 7 },
-  { id: 'demo-3', titleThai: 'การออกกำลังกาย', category: 'exercise', type: 'video', isFeatured: true, viewCount: 320, readTime: 10 },
-  { id: 'demo-4', titleThai: 'สุขภาพจิตที่ดี', category: 'mental-health', type: 'article', isFeatured: false, viewCount: 150, readTime: 6 },
+const SAMPLE_MEDICAL_CONTENT = [
+  { id: 'a-1', titleThai: 'การดูแลสุขภาพประจำวัน', category: 'general-health', type: 'article', isFeatured: true, viewCount: 250, readTime: 5 },
+  { id: 'a-2', titleThai: 'โภชนาการที่ดี', category: 'nutrition', type: 'article', isFeatured: false, viewCount: 180, readTime: 7 },
+  { id: 'a-3', titleThai: 'การออกกำลังกาย', category: 'exercise', type: 'video', isFeatured: true, viewCount: 320, readTime: 10 },
+  { id: 'a-4', titleThai: 'สุขภาพจิตที่ดี', category: 'mental-health', type: 'article', isFeatured: false, viewCount: 150, readTime: 6 },
 ];
 
-const DEMO_CLINICAL_RESOURCES = [
+const SAMPLE_CLINICAL_RESOURCES = [
   { id: 'cr-1', title: 'Clinical Practice Guidelines', specialty: 'general', guidelineYear: 2024, source: 'MOH Thailand' },
   { id: 'cr-2', title: 'Drug Interactions Reference', specialty: 'pharmacy', guidelineYear: 2024, source: 'Thai FDA' },
 ];
 
-function isDemoMode(): boolean {
-  return process.env.DEMO_MODE === 'true' || process.env.NODE_ENV === 'demo';
-}
-
-function filterByCategory(content: typeof DEMO_MEDICAL_CONTENT, category?: string) {
+function filterByCategory(content: typeof SAMPLE_MEDICAL_CONTENT, category?: string) {
   if (!category) return content;
   return content.filter(c => c.category === category);
 }
@@ -73,31 +69,31 @@ describe('Patient Portal — Content Route', () => {
     });
   });
 
-  describe('C — Demo Content', () => {
-    it('C01 — has 4 demo articles', () => {
-      expect(DEMO_MEDICAL_CONTENT).toHaveLength(4);
+  describe('C — Sample Content Fixtures', () => {
+    it('C01 — has 4 sample articles', () => {
+      expect(SAMPLE_MEDICAL_CONTENT).toHaveLength(4);
     });
 
-    it('C02 — has 2 demo clinical resources', () => {
-      expect(DEMO_CLINICAL_RESOURCES).toHaveLength(2);
+    it('C02 — has 2 sample clinical resources', () => {
+      expect(SAMPLE_CLINICAL_RESOURCES).toHaveLength(2);
     });
 
-    it('C03 — all demo content has Thai titles', () => {
-      for (const item of DEMO_MEDICAL_CONTENT) {
+    it('C03 — all sample content has Thai titles', () => {
+      for (const item of SAMPLE_MEDICAL_CONTENT) {
         expect(item.titleThai).toBeTruthy();
         expect(typeof item.titleThai).toBe('string');
       }
     });
 
-    it('C04 — all categories covered in demo data', () => {
-      const cats = new Set(DEMO_MEDICAL_CONTENT.map(c => c.category));
+    it('C04 — all categories covered in sample data', () => {
+      const cats = new Set(SAMPLE_MEDICAL_CONTENT.map(c => c.category));
       for (const cat of VALID_CATEGORIES) {
         expect(cats.has(cat)).toBe(true);
       }
     });
 
     it('C05 — featured items have higher view counts', () => {
-      const featured = DEMO_MEDICAL_CONTENT.filter(c => c.isFeatured);
+      const featured = SAMPLE_MEDICAL_CONTENT.filter(c => c.isFeatured);
       expect(featured.length).toBeGreaterThan(0);
       for (const f of featured) {
         expect(f.viewCount).toBeGreaterThanOrEqual(200);
@@ -107,59 +103,59 @@ describe('Patient Portal — Content Route', () => {
 
   describe('D — Category Filter', () => {
     it('D01 — no filter returns all', () => {
-      const result = filterByCategory(DEMO_MEDICAL_CONTENT);
+      const result = filterByCategory(SAMPLE_MEDICAL_CONTENT);
       expect(result).toHaveLength(4);
     });
 
     it('D02 — filter by nutrition', () => {
-      const result = filterByCategory(DEMO_MEDICAL_CONTENT, 'nutrition');
+      const result = filterByCategory(SAMPLE_MEDICAL_CONTENT, 'nutrition');
       expect(result).toHaveLength(1);
       expect(result[0].category).toBe('nutrition');
     });
 
     it('D03 — unknown category returns empty', () => {
-      const result = filterByCategory(DEMO_MEDICAL_CONTENT, 'unknown');
+      const result = filterByCategory(SAMPLE_MEDICAL_CONTENT, 'unknown');
       expect(result).toHaveLength(0);
     });
   });
 
   describe('E — Result Limiting', () => {
     it('E01 — no limit returns all', () => {
-      const result = applyLimit(DEMO_MEDICAL_CONTENT);
+      const result = applyLimit(SAMPLE_MEDICAL_CONTENT);
       expect(result).toHaveLength(4);
     });
 
     it('E02 — limit=2 returns 2 items', () => {
-      const result = applyLimit(DEMO_MEDICAL_CONTENT, 2);
+      const result = applyLimit(SAMPLE_MEDICAL_CONTENT, 2);
       expect(result).toHaveLength(2);
     });
 
     it('E03 — limit=0 returns all', () => {
-      const result = applyLimit(DEMO_MEDICAL_CONTENT, 0);
+      const result = applyLimit(SAMPLE_MEDICAL_CONTENT, 0);
       expect(result).toHaveLength(4);
     });
 
     it('E04 — limit > length returns all', () => {
-      const result = applyLimit(DEMO_MEDICAL_CONTENT, 100);
+      const result = applyLimit(SAMPLE_MEDICAL_CONTENT, 100);
       expect(result).toHaveLength(4);
     });
   });
 
   describe('F — Clinical Resources', () => {
     it('F01 — each resource has specialty', () => {
-      for (const r of DEMO_CLINICAL_RESOURCES) {
+      for (const r of SAMPLE_CLINICAL_RESOURCES) {
         expect(r.specialty).toBeTruthy();
       }
     });
 
     it('F02 — guideline year is recent', () => {
-      for (const r of DEMO_CLINICAL_RESOURCES) {
+      for (const r of SAMPLE_CLINICAL_RESOURCES) {
         expect(r.guidelineYear).toBeGreaterThanOrEqual(2020);
       }
     });
 
     it('F03 — each resource has source attribution', () => {
-      for (const r of DEMO_CLINICAL_RESOURCES) {
+      for (const r of SAMPLE_CLINICAL_RESOURCES) {
         expect(r.source).toBeTruthy();
       }
     });

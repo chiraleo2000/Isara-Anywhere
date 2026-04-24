@@ -7,11 +7,13 @@
 
 ---
 
+
 ## 1. Purpose
 
 Create, manage, and publish health education content for patients. Thai-first bilingual content with admin approval workflow. Published content visible to patients in Health Knowledge Library.
 
 ---
+
 
 ## 2. Content Workflow
 
@@ -22,6 +24,7 @@ Edit Published Content → Re-triggers approval
 ```
 
 ---
+
 
 ## 3. Features by Role
 
@@ -37,6 +40,7 @@ Edit Published Content → Re-triggers approval
 
 ---
 
+
 ## 4. Content Fields (Bilingual)
 
 | Field | Thai (Primary*) | English (Optional) |
@@ -51,6 +55,7 @@ Edit Published Content → Re-triggers approval
 
 ---
 
+
 ## 5. Content Types
 
 | Type | Thai | Description |
@@ -62,11 +67,13 @@ Edit Published Content → Re-triggers approval
 
 ---
 
+
 ## 6. Workflow
 
 See [Medicine_Content_Processes.md](../../Processes/Medicine_Content_Processes.md) for complete workflow details.
 
 ---
+
 
 ## 7. API Endpoints
 
@@ -82,21 +89,29 @@ See [Medicine_Content_Processes.md](../../Processes/Medicine_Content_Processes.m
 
 ---
 
+
 ## 8. AI Agent Improvement Opportunities
+
 
 - **Content generation**: AI draft health articles from medical topics
 
+
 - **Translation**: AI auto-translate between Thai and English
+
 
 - **Quality scoring**: AI rate content readability and accuracy
 
+
 - **SEO optimization**: AI improve content discoverability
+
 
 - **Image generation**: AI create medical illustrations
 
 ---
 
+
 ## PostgreSQL Database Integration
+
 
 ### Tables Used
 
@@ -104,6 +119,7 @@ See [Medicine_Content_Processes.md](../../Processes/Medicine_Content_Processes.m
 | ----- | --------- | ----------- |
 | medical_content | SELECT/INSERT/UPDATE | Health articles CRUD with status workflow |
 | knowledge_base | INSERT/SELECT | AI indexing of content for RAG retrieval |
+
 
 ### API Endpoints
 
@@ -114,10 +130,14 @@ See [Medicine_Content_Processes.md](../../Processes/Medicine_Content_Processes.m
 | PUT /api/content/articles/:id | PUT | UPDATE medical_content WHERE id |
 | POST /api/content/:id/review | POST | UPDATE medical_content SET status WHERE id |
 
+
 ### Deployment
+
 
 - **Local Docker:** izara-postgres container (localhost:5433 external / 5432 internal) → database: izara_phase1
 
+
 - **Production:** GCE VM at 35.240.157.230:5432 → database: izara_phase1 (asia-southeast1)
+
 
 - **Service deployed via:** Cloud Run (gen2, CPU Boost) + Cloud Build CI/CD

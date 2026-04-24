@@ -54,6 +54,7 @@
 | 🌙 Dark Mode | System-wide dark theme support |
 
 
+
 ---
 
 
@@ -88,6 +89,7 @@ npm run dev:all         # Frontend + Backend
 | Patient 1 | `demo.test@gmail.com` | `P@ssw0rd` |
 | Patient 2 | `Somchai.Mankong@gmail.com` | `P@ssw0rd` |
 | Patient 3 | `Anan.Khayanrian@gmail.com` | `P@ssw0rd` |
+
 
 
 ---
@@ -149,6 +151,7 @@ Isara-patient-portal/
 | PDPA | `GET /api/pdpa/consent/:userId`, `POST /api/pdpa/consent` |
 
 
+
 ---
 
 
@@ -162,6 +165,7 @@ Isara-patient-portal/
 | `VITE_MEETING_SERVER_URL` | Jitsi meeting server URL |
 | `DATABASE_URL` | PostgreSQL connection string |
 | `PORT` | Server port (default: 3005) |
+
 
 
 ---

@@ -86,7 +86,6 @@ The complete patient experience from registration to post-consultation.
 | Privacy | PDPA | Manage consent, control doctor access, view audit trail |
 | Account | Profile/Settings | Edit info, change password, set notifications, theme/language |
 
-
 ---
 
 
@@ -391,7 +390,6 @@ Patient receives outcomes                 Ongoing care
 | 31 | Map (Healthcare) | ✅ Nearby Facilities | — | — |
 | 32 | Audit Trail | — | — | ✅ View |
 
-
 ---
 
 
@@ -410,7 +408,6 @@ Patient receives outcomes                 Ongoing care
 | Reset Password | Reset form | UPDATE users.password_hash, UPDATE password_resets.used | — |
 
 
-
 ### Appointment Actions
 
 | Action | Actor | Tables Affected | Notifications |
@@ -422,7 +419,6 @@ Patient receives outcomes                 Ongoing care
 | Confirm appointment | Doctor | UPDATE status='confirmed', generate Jitsi link | Patient notified |
 | Decline appointment | Doctor | UPDATE status='declined' | Patient + Admin notified |
 | Cancel appointment | Patient/Doctor | UPDATE status='cancelled' | Other party notified |
-
 
 
 ### Meeting Actions
@@ -437,7 +433,6 @@ Patient receives outcomes                 Ongoing care
 | Start recording | Doctor | UPDATE meeting_records | Socket: recording-started |
 | Stop recording | Doctor | UPDATE meeting_records (BYTEA) | Socket: recording-stopped |
 | End meeting | Doctor | UPDATE meeting_records.status | Socket: meeting-ended |
-
 
 
 ### Clinical Documentation Actions
@@ -455,7 +450,6 @@ Patient receives outcomes                 Ongoing care
 | Approve instructions | Doctor | UPDATE ai_validations | Patient notified |
 
 
-
 ### PHR Actions
 
 | Action | Actor | Tables Affected |
@@ -467,7 +461,6 @@ Patient receives outcomes                 Ongoing care
 | Create living will | Patient | INSERT living_wills |
 | Update living will | Patient | UPDATE living_wills, INSERT living_will_versions |
 | Share living will | Patient | UPDATE living_wills.is_shared_with_doctors |
-
 
 
 ### Content Management Actions
@@ -482,7 +475,6 @@ Patient receives outcomes                 Ongoing care
 | Approve resource | Admin | UPDATE clinical_resources (status:approved) | → RAG indexed |
 
 
-
 ### Admin-Only Actions
 
 | Action | Tables Affected | Description |
@@ -493,7 +485,6 @@ Patient receives outcomes                 Ongoing care
 | Toggle doctor status | UPDATE users.is_active | Enable/disable account |
 | Manage consultants | INSERT/UPDATE/DELETE consultants | Specialist directory |
 | View audit logs | SELECT audit_logs | Compliance review |
-
 
 ---
 

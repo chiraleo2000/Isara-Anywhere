@@ -7,6 +7,7 @@
 
 ---
 
+
 ## 📋 Table of Contents
 
 1. [Overview](#1-overview)
@@ -25,17 +26,24 @@
 
 ---
 
+
 ## 🆕 Version 3.0 Changes (January 2025)
+
 
 ### Thai-First Content Policy
 
+
 - **Primary Language**: Thai (ภาษาไทย) is now the default and required language
+
 
 - **Secondary Language**: English is optional for international accessibility
 
+
 - **Form UI**: Thai fields are displayed first and marked as required (*)
 
+
 - **Display Priority**: Thai content is shown as primary in all views
+
 
 ### Image Support in Content
 
@@ -55,29 +63,39 @@ Images are rendered inline with proper styling and captions.
 
 ---
 
+
 ## 1. Overview
 
 The medical content system consists of two main modules that serve different audiences:
 
+
 ### Medical Content (คลังความรู้สุขภาพ)
+
 
 - **Purpose**: Health education articles for patients
 
+
 - **Audience**: Patients (read-only), Doctors (CRUD), Admins (CRUD + Approve)
+
 
 - **Location**:
   - Doctor Portal: `MedicalContent.tsx` page
   - Patient Portal: `MedicalContentLibrary.tsx` → "คลังความรู้สุขภาพ" tab in Health Studio
 
+
 ### Clinical Resources (แหล่งข้อมูลทางการแพทย์)
+
 
 - **Purpose**: Medical guidelines, protocols, and research for healthcare professionals
 
+
 - **Audience**: Doctors only (with admin approval workflow)
+
 
 - **Location**: Doctor Portal: `ClinicalResources.tsx` page
 
 ---
+
 
 ## 2. System Architecture
 
@@ -116,7 +134,9 @@ The medical content system consists of two main modules that serve different aud
 
 ---
 
+
 ## 3. User Roles & Permissions
+
 
 ### Permission Matrix
 
@@ -129,6 +149,7 @@ The medical content system consists of two main modules that serve different aud
 | Admin | ✅ Full CRUD | ✅ Approve/Reject |
 | | ✅ Approve/Reject submissions | ✅ View all (including pending) |
 | | ✅ Audit log access | ✅ Audit log access |
+
 
 ### Role Capabilities
 
@@ -203,7 +224,9 @@ const adminCapabilities: ContentRoleCapabilities = {
 
 ---
 
+
 ## 4. Workflow Steps
+
 
 ### Medical Content Workflow (Patient-Facing)
 
@@ -230,6 +253,7 @@ const adminCapabilities: ContentRoleCapabilities = {
 │                                                                          │
 └──────────────────────────────────────────────────────────────────────────┘
 ```
+
 
 #### Step-by-Step Process
 
@@ -277,6 +301,7 @@ const adminCapabilities: ContentRoleCapabilities = {
 
 ---
 
+
 ### Clinical Resources Workflow (Doctor-Facing)
 
 ```text
@@ -301,6 +326,7 @@ const adminCapabilities: ContentRoleCapabilities = {
 │                                                                          │
 └──────────────────────────────────────────────────────────────────────────┘
 ```
+
 
 #### Step-by-Step Process (2)
 
@@ -348,7 +374,9 @@ const adminCapabilities: ContentRoleCapabilities = {
 
 ---
 
+
 ## 5. Data Structures
+
 
 ### Medical Content Article
 
@@ -413,6 +441,7 @@ interface MedicalContentArticle {
 }
 ```
 
+
 ### Clinical Resource Item
 
 ```typescript
@@ -468,6 +497,7 @@ interface ClinicalResourceItem {
   updatedAt: string;
 }
 ```
+
 
 ### Supporting Types
 
@@ -536,6 +566,7 @@ interface ContentAuditLog {
 
 ---
 
+
 ## 6. GCS Storage Structure
 
 ```text
@@ -561,6 +592,7 @@ izara-meta-data/                          # GCS Bucket
     ├── attachments/
     └── videos/
 ```
+
 
 ### Storage Schema Examples
 
@@ -588,7 +620,9 @@ izara-meta-data/                          # GCS Bucket
 
 ---
 
+
 ## 7. Cross-Portal Data Synchronization
+
 
 ### Sync Architecture
 
@@ -617,6 +651,7 @@ izara-meta-data/                          # GCS Bucket
 │                                                                         │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
+
 
 ### Sync Implementation
 
@@ -681,6 +716,7 @@ async function setupRealtimeSync(): Promise<void> {
 }
 ```
 
+
 ### Sync Data Flow Matrix
 
 | Action | Doctor Portal | GCS | Patient Portal |
@@ -695,7 +731,9 @@ async function setupRealtimeSync(): Promise<void> {
 
 ---
 
+
 ## 8. API Endpoints
+
 
 ### Medical Content APIs
 
@@ -729,6 +767,7 @@ POST   /api/content/medical/:id/share          // Increment share count
 GET    /api/content/medical/:id/audit-log      // Get audit history
 ```
 
+
 ### Clinical Resources APIs
 
 ```typescript
@@ -751,6 +790,7 @@ POST   /api/content/clinical/:id/review        // Approve/reject (admin)
 // Audit
 GET    /api/content/clinical/:id/audit-log     // Get audit history
 ```
+
 
 ### Request/Response Examples
 
@@ -803,7 +843,9 @@ POST /api/content/medical/:id/review
 
 ---
 
+
 ## 9. Content Categories
+
 
 ### Medical Content Categories (Fixed)
 
@@ -824,6 +866,7 @@ const MEDICAL_CONTENT_CATEGORIES = [
 ];
 ```
 
+
 ### Clinical Resources Categories (Fixed)
 
 ```typescript
@@ -843,9 +886,12 @@ const CLINICAL_RESOURCES_CATEGORIES = [
 
 ---
 
+
 ## 10. Implementation Guidelines
 
+
 ### For AI Agents / Developers
+
 
 #### When Adding New Content
 
@@ -888,6 +934,7 @@ const calculateReadTime = (content: string): number => {
 };
 ```
 
+
 #### When Updating Content
 
 ```typescript
@@ -919,6 +966,7 @@ const updateContent = (
   };
 };
 ```
+
 
 #### When Implementing Approval
 
@@ -975,7 +1023,9 @@ const handleApproval = async (
 
 ---
 
+
 ## 11. Patient Portal Access
+
 
 ### คลังความรู้สุขภาพ (Health Knowledge Library)
 
@@ -1008,6 +1058,7 @@ const handleApproval = async (
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
+
 ### Patient Content Filtering
 
 ```typescript
@@ -1028,7 +1079,9 @@ const getPatientVisibleContent = async (): Promise<MedicalContentArticle[]> => {
 
 ---
 
+
 ## 12. Developer Notes
+
 
 ### Critical Implementation Notes
 
@@ -1037,6 +1090,7 @@ const getPatientVisibleContent = async (): Promise<MedicalContentArticle[]> => {
 3. **Audit Logging**: Log ALL status changes for compliance
 4. **Version Control**: Always save previous version to history before updates
 5. **Thai Language**: All content should support bilingual fields (`title`, `titleTh`)
+
 
 ### File Locations
 
@@ -1055,6 +1109,7 @@ Patient Portal:
 Backend:
 └── server/gcsApiServer.cjs               # GCS API handling
 ```
+
 
 ### UI Components (MedicalContent.tsx)
 
@@ -1100,6 +1155,7 @@ The following UI components have been implemented to support the approval workfl
    - Lists all pending articles
    - Quick access to review each article
 
+
 ### Key Functions
 
 ```tsx
@@ -1116,27 +1172,38 @@ fetchPendingApprovals(): Promise<void>
 openApprovalModal(article: MedicalContentArticle): void
 ```
 
+
 ### Testing Checklist
+
 
 - [ ] Doctor can create draft content
 
+
 - [ ] Doctor can submit content for approval
+
 
 - [ ] Admin sees pending approvals
 
+
 - [ ] Admin can approve/reject with feedback
+
 
 - [ ] Published content appears in Patient Portal
 
+
 - [ ] Rejected content returns to draft with feedback
 
+
 - [ ] Audit log captures all actions
+
 
 - [ ] Version history preserved on updates
 
 ---
 
+
 ## 13. Future Enhancements
+
 
 ### Planned Features
 
@@ -1170,7 +1237,9 @@ openApprovalModal(article: MedicalContentArticle): void
 
 ---
 
+
 ## 📊 Quick Reference
+
 
 ### Content Status Flow
 
@@ -1182,11 +1251,15 @@ openApprovalModal(article: MedicalContentArticle): void
 | `rejected` | Needs revision | Author only | Edit, Resubmit |
 | `archived` | Hidden | Admin only | Restore |
 
+
 ### Key Contacts
+
 
 - **Platform Lead**: Platform team
 
+
 - **Technical Support**: Development team
+
 
 - **Content Policy**: Medical content review board
 
@@ -1197,7 +1270,9 @@ openApprovalModal(article: MedicalContentArticle): void
 
 ---
 
+
 ## 14. PostgreSQL Database Architecture
+
 
 ### Database Tables for Medicine Content
 
@@ -1209,6 +1284,7 @@ openApprovalModal(article: MedicalContentArticle): void
 | **icd10_codes** | Diagnosis codes reference | code (PK), description_english, description_thai, category, chapter |
 | **knowledge_base** | RAG-indexed content for AI | id, title, content, source, category, guideline_year, language, embedding (vector), is_active |
 | **audit_logs** | All content CRUD operations | id, user_id, action, entity_type, entity_id, details (JSONB) |
+
 
 ### Content Lifecycle Data Flow
 
@@ -1258,6 +1334,7 @@ Doctor Portal (port 3010)                        Patient Portal (port 3005)
 └──────────────────────────────────────────────────────────────────────────┘
 ```
 
+
 ### Cross-Portal Content Sync
 
 ```text
@@ -1285,6 +1362,7 @@ Doctor Portal (port 3010)                        Patient Portal (port 3005)
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
+
 ### Deployment Architecture
 
 | Environment | Service | Content Access | Database |
@@ -1293,6 +1371,7 @@ Doctor Portal (port 3010)                        Patient Portal (port 3005)
 | Local Docker | Patient Portal (3005) | Read published only | izara-postgres:5432 |
 | Local Docker | Meeting Server (3020) | Drug CDS + RAG queries | izara-postgres:5432 |
 | Production | All Cloud Run services | Same access per role | 35.240.157.230:5432 |
+
 
 ### API Endpoints with DB Operations
 
@@ -1306,6 +1385,7 @@ Doctor Portal (port 3010)                        Patient Portal (port 3005)
 | Patient | `/api/content/articles` | GET | SELECT FROM medical_content WHERE status='published' |
 | Patient | `/api/content/articles/:id` | GET | SELECT + UPDATE view_count |
 | Meeting | `/api/ai/cds-check` | POST | SELECT FROM drugs, knowledge_base |
+
 
 ### Scenario Coverage
 

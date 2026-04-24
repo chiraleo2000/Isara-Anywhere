@@ -49,6 +49,7 @@ Phase 2 transforms Izara from a telemedicine platform (Phase 1) into a **complet
 
 
 
+
 ### Clinical Task Workflow (Task 1–5)
 
 ```text
@@ -108,6 +109,7 @@ Task 5: Refer & Data Exchange
 
 
 
+
 ### Task 2: Healthcare Team — AI Dashboard & Consultation
 
 | Feature | Description | Status |
@@ -125,6 +127,7 @@ Task 5: Refer & Data Exchange
 
 
 
+
 ### Task 3: Investigation — Lab, Radiology, Pathology
 
 | Feature | Description | Status |
@@ -134,6 +137,7 @@ Task 5: Refer & Data Exchange
 | **Pathology Report** | Specimen details, gross/microscopic description, final diagnosis | New |
 | **Critical Value Alerts** | Auto-notify doctor when lab values exceed critical thresholds | New |
 | **AI Lab Analysis** | AI-assisted interpretation of lab results with trend analysis | Existing |
+
 
 
 
@@ -151,6 +155,7 @@ Task 5: Refer & Data Exchange
 
 
 
+
 ### Task 5: Refer & Data Exchange
 
 | Feature | Description | Status |
@@ -159,6 +164,7 @@ Task 5: Refer & Data Exchange
 | **FHIR-based HIE** | HL7 FHIR data exchange between Izara and hospital HIS | New |
 | **API Protocol (รพ.สต.)** | REST API for syncing with community health centers | New |
 | **SOS Emergency Call** | Real-time emergency alert from patient app to Nursing Dashboard | New |
+
 
 
 ---
@@ -422,6 +428,7 @@ CREATE INDEX IF NOT EXISTS idx_daily_log_patient ON daily_health_logs(patient_id
 | IZ-010 | นางวิมล คนขยัน | Mental Health | เครียดสะสม ปวดท้ายทอย | Sleep tracking + counseling |
 
 
+
 ---
 
 
@@ -640,6 +647,7 @@ System Prompt: "คุณคือผู้เชี่ยวชาญการ�
 | **PHI Encryption** | Radiology images, Lab results encrypted per-access by authorized RBAC role |
 
 
+
 ---
 
 
@@ -704,6 +712,7 @@ Real-time monitoring interface for nursing teams managing multiple patients:
 
 
 
+
 ### 6.3 Geriatric Screening Module
 
 Specialized assessment tools for elderly care facilities:
@@ -718,6 +727,7 @@ Specialized assessment tools for elderly care facilities:
 | **Depression Screen** | Thai GDS-15 | Geriatric Depression Scale (15-item Thai version) |
 | **Sarcopenia Risk** | SARC-F | Strength, Assistance walking, Rising from chair, Climbing, Falls |
 | **Pressure Ulcer Risk** | Braden Scale | Sensory perception, moisture, activity, mobility, nutrition, friction |
+
 
 
 ```text
@@ -746,6 +756,7 @@ Post-treatment monitoring for chronic patients and Home Care:
 
 
 
+
 ### 6.5 Predictive Health Analytics
 
 AI-powered long-term health risk analysis:
@@ -758,6 +769,7 @@ AI-powered long-term health risk analysis:
 | **Diabetic Complication** | HbA1c trend, glucose variability, foot exam | Complication risk score | Chronic disease management |
 | **Thai Element Imbalance** | Seasonal patterns, lifestyle data, symptom history | Element deviation forecast | CTM preventive care |
 | **Medication Adherence** | Refill patterns, self-reported compliance | Adherence % + risk flags | All chronic patients |
+
 
 
 
@@ -870,6 +882,7 @@ Complete Thai Traditional Medicine recording interface:
 | **System Status** | AI processing health, API connectivity, wearable sync status per site |
 
 
+
 ---
 
 
@@ -882,6 +895,7 @@ Complete Thai Traditional Medicine recording interface:
 | **Elderly Care** | ศูนย์ดูแลผู้สูงอายุ | Retirement Home / Home Care / Nursing | Geriatric Screening, Nursing Dashboard, SOS |
 | **Health Centers** | รพ.สต. | Sub-district Health Promoting Hospitals | HIS Integration, PHR sync, Referral |
 | **Hospital OPD** | แผนกผู้ป่วยนอก | Outpatient departments at all levels | Full EMR, Lab/Radiology/Pathology |
+
 
 
 ---
@@ -898,6 +912,7 @@ The Phase 2 MVP requires additional test specs to cover:
 | 18-phase2-investigation-treatment.spec.ts | ~75 | Lab/Radiology/Pathology reports, Herbal prescriptions |
 | 19-phase2-referral-emergency.spec.ts | ~65 | Referral workflow, SOS emergency, Queue management |
 | 20-phase2-network-hie-dashboard.spec.ts | ~70 | Clinic network, HIS data exchange, Admin dashboard |
+
 
 
 **Target: 1,932+ total tests** (1,572 existing + 360 new)
@@ -922,4 +937,5 @@ The Phase 2 MVP requires additional test specs to cover:
 | Payments | Stripe + PromptPay (Thai QR) | Consultation fee payment |
 | Testing | Playwright (E2E), 1,900+ tests | Comprehensive test coverage |
 | Security | AES-256, TLS 1.3, OAuth 2.0, JWT | PDPA/HIPAA compliant encryption |
+
 

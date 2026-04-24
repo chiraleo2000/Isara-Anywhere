@@ -77,17 +77,13 @@ const isProduction = process.env.NODE_ENV === 'production';
 // ============================================================================
 // JWT CONFIGURATION - MUST match mainApiServer.cjs
 // ============================================================================
-// SECURITY: No hardcoded fallback secrets
+// SECURITY: No hardcoded fallback secrets. Fail fast in every environment.
 const JWT_SECRET = process.env.JWT_SECRET || process.env.VITE_JWT_SECRET;
 if (!JWT_SECRET) {
-  if (process.env.NODE_ENV === 'production') {
-    console.error('[SECURITY] FATAL: JWT_SECRET not set in production. Exiting.');
-    process.exit(1);
-  }
-  console.error('[SECURITY] CRITICAL: JWT_SECRET not set in environment. Server may not function correctly.');
-  console.error('[SECURITY] Set JWT_SECRET environment variable before starting.');
+  console.error('[SECURITY] FATAL: JWT_SECRET not set. Generate one with `openssl rand -hex 32` and set it in .env. Exiting.');
+  process.exit(1);
 }
-const JWT_SECRET_FINAL = JWT_SECRET || 'izara-jwt-secret-key-phase1-2026';
+const JWT_SECRET_FINAL = JWT_SECRET;
 const JWT_ISSUER = process.env.JWT_ISSUER || 'izara-telemedicine';
 const JWT_EXPIRES_IN = '3h';
 const REFRESH_TOKEN_EXPIRES_DAYS = 30;
@@ -106,6 +102,7 @@ function authenticateToken(req, res, next) {
     req.user = decoded;
     next();
   } catch (error) {
+    console.warn('[AUTH] Token verification failed:', error.message);
     return res.status(403).json({ error: 'Invalid or expired token' });
   }
 }
@@ -1016,12 +1013,16 @@ app.post('/auth/logout', async (req, res) => {
       try {
         const decoded = jwt.verify(token, JWT_SECRET_FINAL);
         userId = decoded.userId;
-      } catch (_) {
+      } catch (verifyErr) {
         // Token may be expired — try decode without verification
+        console.debug('[AUTH] logout token verify failed, falling back to decode:', verifyErr.message);
         try {
           const decoded = jwt.decode(token);
           userId = decoded?.userId;
-        } catch (_e) { /* ignore */ }
+        } catch (decodeErr) {
+          console.debug('[AUTH] logout token decode failed:', decodeErr.message);
+          userId = null;
+        }
       }
 
       await pgInvalidateSession(token);
@@ -1678,7 +1679,7 @@ app.post('/auth/admin/reject-doctor', authenticateToken, requireAdmin, async (re
 // Auth-prefixed admin update role endpoint - PostgreSQL implementation
 app.post('/auth/admin/update-role', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const { userId, adminId, role } = req.body;
+    const { userId, role } = req.body;
     // Explicitly derive isAdmin from role to ensure consistency
     const isAdmin = role === 'admin';
 
@@ -2240,6 +2241,7 @@ app.get('/auth/verify', async (req, res) => {
       });
     } catch (jwtError) {
       // Both session and JWT verification failed
+      console.warn('[AUTH] Session + JWT verification failed:', jwtError.message);
       return res.status(401).json({ error: 'Invalid or expired session' });
     }
   } catch (error) {
@@ -2295,6 +2297,7 @@ app.get('/api/profile', async (req, res) => {
     try {
       decoded = jwt.verify(token, JWT_SECRET_FINAL);
     } catch (e) {
+      console.warn('[AUTH] Token verification failed:', e.message);
       return res.status(401).json({ error: 'Invalid or expired token' });
     }
 
@@ -2342,11 +2345,12 @@ const profileUpdateHandler = async (req, res) => {
     try {
       decoded = jwt.verify(token, JWT_SECRET_FINAL);
     } catch (e) {
+      console.warn('[AUTH] Token verification failed:', e.message);
       return res.status(401).json({ error: 'Invalid or expired token' });
     }
 
     const userId = decoded.userId || decoded.id;
-    const { avatarUrl, displayName, phone, specialization, bio } = req.body;
+    const { avatarUrl, displayName, phone, specialization } = req.body;
 
     console.log(`[AUTH] Updating profile for user: ${userId}`);
 
@@ -2422,6 +2426,7 @@ const getProfileHandler = async (req, res) => {
     try {
       decoded = jwt.verify(token, JWT_SECRET_FINAL);
     } catch (e) {
+      console.warn('[AUTH] Token verification failed:', e.message);
       return res.status(401).json({ error: 'Invalid or expired token' });
     }
     const userId = decoded.userId || decoded.id;
@@ -2469,6 +2474,7 @@ app.get('/auth/me', async (req, res) => {
     try {
       decoded = jwt.verify(token, JWT_SECRET_FINAL);
     } catch (e) {
+      console.warn('[AUTH] Token verification failed:', e.message);
       return res.status(401).json({ error: 'Invalid or expired token' });
     }
     const userId = decoded.userId || decoded.id;
@@ -2517,6 +2523,7 @@ app.post('/api/profile/avatar', async (req, res) => {
     try {
       decoded = jwt.verify(token, JWT_SECRET_FINAL);
     } catch (e) {
+      console.warn('[AUTH] Token verification failed:', e.message);
       return res.status(401).json({ error: 'Invalid or expired token' });
     }
 
@@ -2562,6 +2569,7 @@ app.post('/api/users/avatar', async (req, res) => {
     try {
       decoded = jwt.verify(token, JWT_SECRET_FINAL);
     } catch (e) {
+      console.warn('[AUTH] Token verification failed:', e.message);
       return res.status(401).json({ error: 'Invalid or expired token' });
     }
 
@@ -2642,6 +2650,7 @@ if (process.env.NODE_ENV !== 'production') {
         hasPassword: user.has_password
       });
     } catch (error) {
+      console.error('[AUTH] /test/check-user error:', error.message);
       res.status(500).json({ error: 'Internal server error' });
     }
   });

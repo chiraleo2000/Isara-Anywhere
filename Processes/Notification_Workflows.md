@@ -17,6 +17,7 @@
 | Push | Push Notification | Browser push notifications |
 | SMS | SMS | SMS notifications (future enhancement) |
 
+
 ### 1.2 ประเภทการแจ้งเตือน (Notification Types)
 
 ```text
@@ -167,6 +168,7 @@ notificationService.markAllAsRead(userId)               // อ่านทั้
 | NotificationPage | /notifications | ประวัติการแจ้งเตือน |
 | ToastNotification | Global | แจ้งเตือนแบบ popup |
 
+
 ### 4.2 Doctor Portal (พอร์ทัลแพทย์)
 
 | Component | Location | Thai Label |
@@ -174,6 +176,7 @@ notificationService.markAllAsRead(userId)               // อ่านทั้
 | NotificationBell | ResponsiveLayout | 🔔 การแจ้งเตือน |
 | AppointmentAlert | Dashboard | นัดหมายรอดำเนินการ |
 | PatientRequestBadge | Queue | คำขอนัดหมายใหม่ |
+
 
 ---
 
@@ -279,6 +282,7 @@ const config = {
 | Meeting Ready | 15 นาที ก่อน | Push + In-App | เตรียมพร้อม! ลิงก์ประชุมพร้อมแล้ว |
 | Doctor Started | Real-time | Push | แพทย์เริ่มห้องประชุมแล้ว คลิกเข้าร่วม |
 
+
 ### 7.2 Polling Interval
 
 - In-App Notifications: Poll ทุก 30 วินาที
@@ -374,6 +378,7 @@ interface DoctorNotificationPreferences {
 | dualPortalMeetingTests | 24 | 24 | 0 | ~3min |
 | emailNotificationTests | 4 | 1 | 0 | 10s |
 
+
 ### 10.3 Demo User Test Accounts
 
 ```text
@@ -398,6 +403,7 @@ Admin:    admin.test@izara.com    / YOUR_TEST_ADMIN_PASSWORD
 | Email Templates | ✅ Done | Thai templates ready |
 | E2E Test Coverage | ✅ Done | 100% pass rate |
 
+
 ### 11.2 Pending Enhancements
 
 | Feature | Status | Priority |
@@ -407,6 +413,7 @@ Admin:    admin.test@izara.com    / YOUR_TEST_ADMIN_PASSWORD
 | WebSocket Real-time | 📋 Future | Medium |
 | Line Official Account | 📋 Future | Low |
 | Push Notifications | 📋 Future | Low |
+
 
 ### 11.3 Recent Changes (January 2025)
 
@@ -519,6 +526,7 @@ Meeting Link Format:
 | **prescriptions** | Triggers prescription notifications | LISTEN/NOTIFY on INSERT, UPDATE |
 | **lab_orders** | Triggers lab result notifications | LISTEN/NOTIFY on INSERT, UPDATE |
 
+
 ### Notification Data Flow
 
 ```text
@@ -606,6 +614,7 @@ SELECT * FROM push_subscriptions WHERE user_id = $1;
 | Doctor | `/api/notifications/:id/read` | PUT | UPDATE notifications SET read_at=NOW() |
 | All | Socket.IO `notification:new` | — | Triggered by LISTEN notification_insert |
 
+
 ### Deployment
 
 | Environment | Service | Notification Role | Database |
@@ -614,6 +623,7 @@ SELECT * FROM push_subscriptions WHERE user_id = $1;
 | Local Docker | Doctor Portal (3010) | Receive doctor/admin notifications | izara-postgres:5432 |
 | Local Docker | Meeting Server (3020) | Create meeting notifications | izara-postgres:5432 |
 | Production | All Cloud Run services | Same roles | 35.240.157.230:5432 |
+
 
 ### Scenario Coverage
 
@@ -628,3 +638,4 @@ SELECT * FROM push_subscriptions WHERE user_id = $1;
 | 7 | Meeting starting | UPDATE meeting_records | notifications |
 | 8 | Patient reads notification | User action | notifications (read_at) |
 | 9 | Update push preferences | User action | push_subscriptions |
+

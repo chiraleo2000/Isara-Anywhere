@@ -62,6 +62,7 @@ Admin-only page for managing all appointment requests: auto-assign doctors using
 | Ophthalmology | ตา, สายตา, eye, vision |
 
 
+
 ---
 
 
@@ -218,6 +219,7 @@ Appointment Lifecycle Flow:
 | no_show | ไม่มา | No-show | ✅ |
 
 
+
 ---
 
 
@@ -247,6 +249,7 @@ Step 7: Admin approves or overrides assignment
 | < 60% | Manual assignment | Low confidence, admin should assign manually |
 
 
+
 ---
 
 
@@ -264,6 +267,7 @@ Step 7: Admin approves or overrides assignment
 | GET | `/api/meetings/:id/status` | Get meeting status for appointment |
 | GET | `/api/doctors/availability` | Check doctor schedule availability |
 | GET | `/api/doctors/workload` | Get doctor workload for load balancing |
+
 
 
 ---
@@ -303,11 +307,13 @@ Step 7: Admin approves or overrides assignment
 
 
 
+
 ### API Endpoints
 | Endpoint | Method | DB Operation |
 | -------- | ------ | ------------ |
 | GET /api/appointments | GET | SELECT appointments with all statuses (admin view) |
 | PUT /api/appointments/:id/assign | PUT | UPDATE appointments SET doctor_id, status WHERE id |
+
 
 
 

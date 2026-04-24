@@ -806,7 +806,8 @@ export const ClinicalResources: React.FC = () => {
               <button
                 key={resource.id}
                 onClick={() => setSelectedResource(resource)}
-                className={`w-full text-left p-4 border-b border-gray-200 hover:bg-gray-50 transition-colors ${selectedResource?.id === resource.id ? 'bg-emerald-50 border-l-4 border-emerald-600' : ''
+                data-testid="content-item"
+                className={`content-item card w-full text-left p-4 border-b border-gray-200 hover:bg-gray-50 transition-colors ${selectedResource?.id === resource.id ? 'bg-emerald-50 border-l-4 border-emerald-600' : ''
                   }`}
               >
                 <div className="flex items-start justify-between mb-2">

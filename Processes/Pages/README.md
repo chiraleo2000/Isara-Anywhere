@@ -138,6 +138,7 @@ Pages/
 | Meeting Server | <http://localhost:3020> | <https://izara-jitsi-meeting-portal-724889190329.asia-southeast1.run.app> |
 
 
+
 ---
 
 
@@ -155,6 +156,7 @@ Pages/
 | `Medicine_Content_Processes.md` | Patient: 08, Doctor: 13, 14 | Medical knowledge |
 | `Medical_Consultants_Workflows.md` | Doctor: 12 | Specialist directory |
 | `Data_Sync_Documentation.md` | All pages (database architecture) | PostgreSQL storage |
+
 
 
 ---
@@ -176,6 +178,7 @@ All page documentation now includes a **PostgreSQL Database Integration** sectio
 
 
 
+
 ### Page-to-Database Coverage
 
 | Portal | Pages | Tables Referenced | Key Data Flows |
@@ -183,6 +186,7 @@ All page documentation now includes a **PostgreSQL Database Integration** sectio
 | **Doctor Portal** | 22 pages | users, doctor_profiles, appointments, meeting_records, emr, prescriptions, lab_orders, ai_chat_history, medical_content, clinical_resources, consultants, drugs, cds_logs | Login → Dashboard → Schedule → Meeting → EMR → Prescribe → Lab Orders |
 | **Patient Portal** | 16 pages | users, patient_profiles, appointments, phr, vital_signs, living_wills, ai_chat_history, medical_content, notifications, patient_consents, push_subscriptions | Login → Register → Dashboard → Book Appointment → Join Meeting → View EMR/PHR |
 | **Meeting Server** | 1 page | meeting_records, meeting_transcripts, transcriptions_embeddings, appointments, emr, ai_validations, ai_chat_history, ai_chat_memory | Start Meeting → Transcribe → AI Summary → Man-in-the-Loop → EMR |
+
 
 
 
@@ -207,4 +211,5 @@ All page documentation now includes a **PostgreSQL Database Integration** sectio
 | 15 | Patient receives results | Patient/04_Dashboard, Patient/14_Timeline |
 | 16 | Patient downloads Instruction PDF | Patient/14_Timeline, Patient/05_Appointments |
 | 17 | Meeting notifications throughout | Patient/15_Notification_System |
+
 

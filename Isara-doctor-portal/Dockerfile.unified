@@ -23,10 +23,8 @@ ARG VITE_APP_ENV="production"
 # API URLs (internal for Cloud Run)
 ARG VITE_API_URL
 ARG VITE_AUTH_URL
-ARG VITE_GCS_API_URL
 ARG VITE_DOCTOR_URL
 ARG VITE_WEBSOCKET_URL
-ARG GCS_API_URL
 
 # GCP Configuration
 ARG VITE_GCP_PROJECT_ID=izara-telemedicine
@@ -35,13 +33,7 @@ ARG VITE_GCP_REGION=asia-southeast1
 # OAuth
 ARG VITE_GOOGLE_CLIENT_ID=724889190329-svf2733fjqklfic9tet9d2qkmhkgmu0l.apps.googleusercontent.com
 
-# Google Cloud Storage Buckets
-ARG VITE_GCS_BUCKET_AUTH=izara-users-credentials
-ARG VITE_GCS_BUCKET_CREDENTIALS=izara-users-credentials
-ARG VITE_GCS_BUCKET_DOCTOR=izara-doctors-data
-ARG VITE_GCS_BUCKET_PATIENT=izara-patients-data
-ARG VITE_GCS_BUCKET_APPOINTMENTS=izara-appointments
-ARG VITE_GCS_BUCKET_METADATA=izara-meta-data
+# (Google Cloud Storage buckets removed — PostgreSQL + local FS only)
 
 # Google APIs - These must be passed as build args from CI/CD or .env file
 # Example: docker build --build-arg VITE_GOOGLE_MAPS_API_KEY=$GOOGLE_MAPS_API_KEY ...
@@ -100,19 +92,11 @@ ENV VITE_APP_NAME=${VITE_APP_NAME} \
     VITE_APP_ENV=${VITE_APP_ENV} \
     VITE_API_URL=${VITE_API_URL} \
     VITE_AUTH_URL=${VITE_AUTH_URL} \
-    VITE_GCS_API_URL=${VITE_GCS_API_URL} \
     VITE_DOCTOR_URL=${VITE_DOCTOR_URL} \
     VITE_WEBSOCKET_URL=${VITE_WEBSOCKET_URL} \
-    GCS_API_URL=${GCS_API_URL} \
     VITE_GCP_PROJECT_ID=${VITE_GCP_PROJECT_ID} \
     VITE_GCP_REGION=${VITE_GCP_REGION} \
     VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID} \
-    VITE_GCS_BUCKET_AUTH=${VITE_GCS_BUCKET_AUTH} \
-    VITE_GCS_BUCKET_CREDENTIALS=${VITE_GCS_BUCKET_CREDENTIALS} \
-    VITE_GCS_BUCKET_DOCTOR=${VITE_GCS_BUCKET_DOCTOR} \
-    VITE_GCS_BUCKET_PATIENT=${VITE_GCS_BUCKET_PATIENT} \
-    VITE_GCS_BUCKET_APPOINTMENTS=${VITE_GCS_BUCKET_APPOINTMENTS} \
-    VITE_GCS_BUCKET_METADATA=${VITE_GCS_BUCKET_METADATA} \
     VITE_GOOGLE_CALENDAR_API_KEY=${VITE_GOOGLE_CALENDAR_API_KEY} \
     VITE_GOOGLE_MEET_API_KEY=${VITE_GOOGLE_MEET_API_KEY} \
     VITE_GOOGLE_MAPS_API_KEY=${VITE_GOOGLE_MAPS_API_KEY} \
@@ -179,6 +163,7 @@ COPY --from=frontend-builder /app/dist /usr/share/nginx/html
 # Database SQL is mounted from host via docker-compose volumes, not baked into image
 
 # Nginx configuration for reverse proxy (listen on 8080 for Cloud Run)
+# hadolint ignore=DL3059
 RUN printf '%s\n' \
 'server {' \
 '    listen 8080;' \
@@ -192,9 +177,10 @@ RUN printf '%s\n' \
 '        application/xml+rss application/javascript application/json;' \
 '    add_header X-Frame-Options "SAMEORIGIN" always;' \
 '    add_header X-Content-Type-Options "nosniff" always;' \
-'    add_header X-XSS-Protection "1; mode=block" always;' \
-'    add_header Permissions-Policy "camera=(self https://meet.jit.si), microphone=(self https://meet.jit.si), geolocation=(self)" always;' \
-'    add_header Content-Security-Policy "default-src '"'"'self'"'"' https:; script-src '"'"'self'"'"' '"'"'unsafe-inline'"'"' '"'"'unsafe-eval'"'"' https://meet.jit.si https://8x8.vc https://accounts.google.com; style-src '"'"'self'"'"' '"'"'unsafe-inline'"'"' https://fonts.googleapis.com; font-src '"'"'self'"'"' https://fonts.gstatic.com; img-src '"'"'self'"'"' data: blob: https:; connect-src '"'"'self'"'"' http://localhost:* ws://localhost:* wss://localhost:* https://*.googleapis.com https://*.run.app wss://*.run.app wss://meet.jit.si; frame-src '"'"'self'"'"' https://meet.jit.si https://8x8.vc https://accounts.google.com; media-src '"'"'self'"'"' blob: https: mediastream:; worker-src '"'"'self'"'"' blob:;" always;' \
+'    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;' \
+'    add_header Referrer-Policy "strict-origin-when-cross-origin" always;' \
+'    add_header Permissions-Policy "camera=(self \"https://meet.jit.si\"), microphone=(self \"https://meet.jit.si\"), geolocation=(self), payment=(), usb=()" always;' \
+'    add_header Content-Security-Policy "default-src '"'"'self'"'"' https:; script-src '"'"'self'"'"' '"'"'unsafe-inline'"'"' '"'"'unsafe-eval'"'"' https://meet.jit.si https://8x8.vc https://accounts.google.com; style-src '"'"'self'"'"' '"'"'unsafe-inline'"'"' https://fonts.googleapis.com; font-src '"'"'self'"'"' https://fonts.gstatic.com; img-src '"'"'self'"'"' data: blob: https:; connect-src '"'"'self'"'"' http://localhost:* ws://localhost:* wss://localhost:* https://*.googleapis.com https://*.run.app wss://*.run.app wss://meet.jit.si; frame-src '"'"'self'"'"' https://meet.jit.si https://8x8.vc https://accounts.google.com; frame-ancestors '"'"'self'"'"'; object-src '"'"'none'"'"'; base-uri '"'"'self'"'"'; form-action '"'"'self'"'"'; media-src '"'"'self'"'"' blob: https: mediastream:; worker-src '"'"'self'"'"' blob:;" always;' \
 '    location /health {' \
 '        access_log off;' \
 '        return 200 '"'"'{"status":"healthy","service":"izara-unified"}'"'"';' \
@@ -218,15 +204,6 @@ RUN printf '%s\n' \
 '        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;' \
 '        proxy_set_header X-Forwarded-Proto $scheme;' \
 '        proxy_cache_bypass $http_upgrade;' \
-'        proxy_intercept_errors off;' \
-'    }' \
-'    location /api/storage/ {' \
-'        proxy_pass http://127.0.0.1:3012/api/storage/;' \
-'        proxy_http_version 1.1;' \
-'        proxy_set_header Host $host;' \
-'        proxy_set_header X-Real-IP $remote_addr;' \
-'        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;' \
-'        proxy_set_header X-Forwarded-Proto $scheme;' \
 '        proxy_intercept_errors off;' \
 '    }' \
 '    location /api/consultants {' \
@@ -301,7 +278,6 @@ RUN printf '%s\n' \
 '    }' \
 '    location / {' \
 '        try_files $uri $uri/ /index.html;' \
-'        add_header Cache-Control "no-cache";' \
 '    }' \
 '    error_page 404 /index.html;' \
 '}' > /etc/nginx/http.d/default.conf && \
@@ -312,15 +288,9 @@ printf '%s\n' \
 '  AUTH_URL: "${VITE_AUTH_URL}",' \
 '  DOCTOR_URL: "${VITE_DOCTOR_URL}",' \
 '  WEBSOCKET_URL: "${VITE_WEBSOCKET_URL}",' \
-'  GCS_API_URL: "${GCS_API_URL}",' \
 '  GCP_PROJECT_ID: "${VITE_GCP_PROJECT_ID}",' \
 '  GCP_REGION: "${VITE_GCP_REGION}",' \
 '  GOOGLE_CLIENT_ID: "${VITE_GOOGLE_CLIENT_ID}",' \
-'  GCS_BUCKET_AUTH: "${VITE_GCS_BUCKET_AUTH}",' \
-'  GCS_BUCKET_DOCTOR: "${VITE_GCS_BUCKET_DOCTOR}",' \
-'  GCS_BUCKET_PATIENT: "${VITE_GCS_BUCKET_PATIENT}",' \
-'  GCS_BUCKET_APPOINTMENTS: "${VITE_GCS_BUCKET_APPOINTMENTS}",' \
-'  GCS_BUCKET_METADATA: "${VITE_GCS_BUCKET_METADATA}",' \
 '  GEMINI_API_KEY: "${VITE_GEMINI_API_KEY}",' \
 '  GEMINI_MODEL: "${VITE_GEMINI_MODEL}",' \
 '  MEETING_SERVER_URL: "${VITE_MEETING_SERVER_URL}",' \
@@ -346,20 +316,6 @@ printf '%s\n' \
 'stderr_logfile=/dev/stderr' \
 'stderr_logfile_maxbytes=0' \
 '' \
-'[program:gcs-api]' \
-'command=node /app/server/gcsApiServer.cjs' \
-'directory=/app' \
-'priority=20' \
-'autostart=true' \
-'autorestart=true' \
-'startsecs=5' \
-'startretries=3' \
-'environment=NODE_ENV="production",GCS_API_PORT="3012",PORT="3012"' \
-'stdout_logfile=/dev/stdout' \
-'stdout_logfile_maxbytes=0' \
-'stderr_logfile=/dev/stderr' \
-'stderr_logfile_maxbytes=0' \
-'' \
 '[program:auth-server]' \
 'command=node /app/server/authServer.cjs' \
 'directory=/app' \
@@ -368,7 +324,7 @@ printf '%s\n' \
 'autorestart=true' \
 'startsecs=5' \
 'startretries=3' \
-'environment=NODE_ENV="production",AUTH_PORT="3011",GCS_API_URL="http://127.0.0.1:3012",' \
+'environment=NODE_ENV="production",AUTH_PORT="3011",' \
 '    USE_POSTGRESQL="%(ENV_USE_POSTGRESQL)s",DB_HOST="%(ENV_DB_HOST)s",DB_NAME="%(ENV_DB_NAME)s",' \
 '    DB_USER="%(ENV_DB_USER)s",DB_PASSWORD="%(ENV_DB_PASSWORD)s",DB_PORT="%(ENV_DB_PORT)s"' \
 'stdout_logfile=/dev/stdout' \
@@ -384,7 +340,7 @@ printf '%s\n' \
 'autorestart=true' \
 'startsecs=5' \
 'startretries=3' \
-'environment=NODE_ENV="production",PORT="3009",GCS_API_URL="http://127.0.0.1:3012",GEMINI_API_KEY="%(ENV_GEMINI_API_KEY)s",' \
+'environment=NODE_ENV="production",PORT="3009",GEMINI_API_KEY="%(ENV_GEMINI_API_KEY)s",' \
 '    GEMINI_MODEL="%(ENV_GEMINI_MODEL)s",JITSI_DOMAIN="%(ENV_JITSI_DOMAIN)s",GOOGLE_SPEECH_API_KEY="%(ENV_GOOGLE_SPEECH_API_KEY)s",' \
 '    USE_POSTGRESQL="%(ENV_USE_POSTGRESQL)s",DB_HOST="%(ENV_DB_HOST)s",DB_NAME="%(ENV_DB_NAME)s",DB_USER="%(ENV_DB_USER)s",' \
 '    DB_PASSWORD="%(ENV_DB_PASSWORD)s",DB_PORT="%(ENV_DB_PORT)s"' \
@@ -418,14 +374,12 @@ RUN sed -i 's/\r$//' /docker-entrypoint.sh && \
 
 ENV NODE_ENV=production \
     PORT=8080 \
-    DEMO_MODE=false \
     USE_POSTGRESQL=true \
     USE_EMBEDDED_PG=false \
     DB_HOST=localhost \
     DB_PORT=5432 \
     DB_NAME=izara_phase1 \
-    DB_USER=postgres \
-    DB_PASSWORD=IzaraDb2024
+    DB_USER=postgres
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
   CMD curl -f http://localhost:8080/health || exit 1

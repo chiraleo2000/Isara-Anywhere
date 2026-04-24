@@ -7,11 +7,13 @@
 
 ---
 
+
 ## 1. Purpose
 
 Entry point for patient authentication. Provides login form, forgot password flow, and link to registration.
 
 ---
+
 
 ## 2. Page Layout
 
@@ -44,7 +46,9 @@ Entry point for patient authentication. Provides login form, forgot password flo
 
 ---
 
+
 ## 3. View Modes
+
 
 ### 3.1 Login Form (Default)
 
@@ -57,6 +61,7 @@ Entry point for patient authentication. Provides login form, forgot password flo
 | Register link | Text link | Navigates to `/register` |
 | PDPA notice | Footer text | Data protection statement |
 
+
 ### 3.2 Forgot Password
 
 | Element | Type | Details |
@@ -64,6 +69,7 @@ Entry point for patient authentication. Provides login form, forgot password flo
 | Email input | Text field | Required, email format |
 | Send reset link button | Button | Sends password reset email |
 | Back to login link | Text link | Returns to login form |
+
 
 ### 3.3 Reset Link Sent
 
@@ -75,7 +81,9 @@ Entry point for patient authentication. Provides login form, forgot password flo
 
 ---
 
+
 ## 4. Workflows
+
 
 ### Workflow 1: Standard Login
 
@@ -87,6 +95,7 @@ Step 4: POST /api/auth/login → Backend validates credentials
 Step 5: Success → Session created → Redirect to Dashboard (/)
 Step 6: Failure → Error message displayed ("อีเมลหรือรหัสผ่านไม่ถูกต้อง")
 ```
+
 
 ### Workflow 2: Forgot Password
 
@@ -103,6 +112,7 @@ Step 8: Clicks link → Redirects to /reset-password?token=xxx
 
 ---
 
+
 ## 5. API Endpoints
 
 | Method | Endpoint | Purpose |
@@ -112,6 +122,7 @@ Step 8: Clicks link → Redirects to /reset-password?token=xxx
 
 ---
 
+
 ## 6. Validation Rules
 
 | Field | Rule |
@@ -120,6 +131,7 @@ Step 8: Clicks link → Redirects to /reset-password?token=xxx
 | Password | Required, minimum length enforced |
 
 ---
+
 
 ## 7. Connections to Other Pages
 
@@ -131,19 +143,26 @@ Step 8: Clicks link → Redirects to /reset-password?token=xxx
 
 ---
 
+
 ## 8. AI Agent Improvement Opportunities
+
 
 - **Biometric login**: Face/fingerprint authentication
 
+
 - **Smart login**: Remember device, auto-fill
 
+
 - **Suspicious activity detection**: Alert on unusual login patterns
+
 
 - **Multi-factor authentication**: SMS/TOTP second factor
 
 ---
 
+
 ## PostgreSQL Database Integration
+
 
 ### Tables Used
 
@@ -152,16 +171,21 @@ Step 8: Clicks link → Redirects to /reset-password?token=xxx
 | users | SELECT | Query by email, verify password_hash |
 | sessions | INSERT | Create session token on successful login |
 
+
 ### API Endpoints
 
 | Endpoint | Method | DB Operation |
 | -------- | ------ | ------------ |
 | POST /api/auth/login | POST | SELECT users WHERE email; verify crypt(password, password_hash); INSERT sessions |
 
+
 ### Deployment
+
 
 - **Local Docker:** izara-postgres container (localhost:5433 external / 5432 internal) → database: izara_phase1
 
+
 - **Production:** GCE VM at 35.240.157.230:5432 → database: izara_phase1 (asia-southeast1)
+
 
 - **Service deployed via:** Cloud Run (gen2, CPU Boost) + Cloud Build CI/CD

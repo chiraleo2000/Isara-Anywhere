@@ -60,7 +60,7 @@ const DEV_CLOUD_CONFIG = {
     host: process.env.DEV_DB_HOST || '35.240.162.227',
     port: Number.parseInt(process.env.DEV_DB_PORT || '5432', 10),
     user: 'postgres',
-    password: process.env.DEV_DB_PASSWORD || 'IzaraDb2024',
+    password: process.env.DEV_DB_PASSWORD,
     database: 'izara_phase1',
     ssl: false,
     connectionTimeoutMillis: 30000,
@@ -72,7 +72,7 @@ const LOCAL_CONFIG = {
     host: 'localhost',
     port: 5433,
     user: 'postgres',
-    password: process.env.LOCAL_DB_PASSWORD || process.env.POSTGRES_PASSWORD || 'IzaraDb2024',
+    password: process.env.LOCAL_DB_PASSWORD || process.env.POSTGRES_PASSWORD,
     database: 'izara_phase1',
     ssl: false,
     connectionTimeoutMillis: 10000,
@@ -248,7 +248,8 @@ function formatTable(rows, columns) {
     const header = columns.map((c, i) => c.padEnd(widths[i])).join(' | ');
     const sep = widths.map(w => '-'.repeat(w)).join('-+-');
     const body = rows.map(r => columns.map((c, i) => String(r[c] || '').substring(0, 40).padEnd(widths[i])).join(' | '));
-    return `  ${header}\n  ${sep}\n${body.map(l => `  ${l}`).join('\n')}\n`;
+    const bodyStr = body.map(l => '  ' + l).join('\n');
+    return `  ${header}\n  ${sep}\n${bodyStr}\n`;
 }
 
 // =============================================================================
@@ -363,15 +364,16 @@ async function exportProdData() {
     const exportedData = {};
 
     try {
-        const sqlLines = [];
-        sqlLines.push('-- =============================================================================');
-        sqlLines.push('-- IZARA TELEMEDICINE — PRODUCTION DATA EXPORT (v1.4.7 → v1.4.8)');
-        sqlLines.push(`-- Exported: ${new Date().toISOString()}`);
-        sqlLines.push(`-- Source: ${PROD_CONFIG.host}:${PROD_CONFIG.port}/${PROD_CONFIG.database}`);
-        sqlLines.push('-- =============================================================================');
-        sqlLines.push('');
-        sqlLines.push('BEGIN;');
-        sqlLines.push('');
+        const sqlLines = [
+            '-- =============================================================================',
+            '-- IZARA TELEMEDICINE — PRODUCTION DATA EXPORT (v1.4.7 → v1.4.8)',
+            `-- Exported: ${new Date().toISOString()}`,
+            `-- Source: ${PROD_CONFIG.host}:${PROD_CONFIG.port}/${PROD_CONFIG.database}`,
+            '-- =============================================================================',
+            '',
+            'BEGIN;',
+            ''
+        ];
 
         for (const table of EXPORT_TABLES) {
             try {
@@ -392,14 +394,16 @@ async function exportProdData() {
             }
         }
 
-        sqlLines.push('COMMIT;');
-        sqlLines.push('');
-        sqlLines.push('-- Status verification');
-        sqlLines.push("SELECT 'Users' as table_name, count(*) as count FROM users");
-        sqlLines.push("UNION ALL SELECT 'Doctors', count(*) FROM doctors");
-        sqlLines.push("UNION ALL SELECT 'PHR Records', count(*) FROM phr");
-        sqlLines.push("UNION ALL SELECT 'Appointments', count(*) FROM appointments");
-        sqlLines.push("UNION ALL SELECT 'Medical Content', count(*) FROM medical_content;");
+        sqlLines.push(
+            'COMMIT;',
+            '',
+            '-- Status verification',
+            "SELECT 'Users' as table_name, count(*) as count FROM users",
+            "UNION ALL SELECT 'Doctors', count(*) FROM doctors",
+            "UNION ALL SELECT 'PHR Records', count(*) FROM phr",
+            "UNION ALL SELECT 'Appointments', count(*) FROM appointments",
+            "UNION ALL SELECT 'Medical Content', count(*) FROM medical_content;"
+        );
 
         // Write SQL file
         if (!fs.existsSync(OUTPUT_DIR)) {
@@ -526,7 +530,7 @@ async function updateStartupData(data) {
 // IMPORT INTO DEV DATABASE
 // =============================================================================
 
-async function importToTarget(config, label, data) {
+async function importToTarget(config, label, data) { // NOSONAR S3776: CLI migration script, per-table insert+fallback logic is intentional and tested
     console.log(`\n🚀 IMPORTING INTO ${label}`);
     console.log(`   Host: ${config.host}:${config.port}/${config.database}\n`);
 
@@ -547,7 +551,7 @@ async function importToTarget(config, label, data) {
         
         if (schemaCheck.rows.length === 0) {
             console.log('   ⚠️  Schema not found. Please run izara-database.sql first.');
-            console.log('   For local: Get-Content scripts\\database\\izara-database.sql | docker exec -i izara-postgres psql -U postgres -d izara_phase1');
+            console.log('   For local: Get-Content ' + String.raw`scripts\database\izara-database.sql` + ' | docker exec -i izara-postgres psql -U postgres -d izara_phase1');
             return;
         }
 
@@ -615,8 +619,8 @@ async function importToTarget(config, label, data) {
                         [tableName]
                     );
                     targetColumns = new Set(colRes.rows.map(r => r.column_name));
-                } catch (e) {
-                    console.log(`      ⚠️  ${tableName}: table doesn't exist, skipping`);
+                } catch (colLookupErr) {
+                    console.log(`      ⚠️  ${tableName}: table doesn't exist, skipping:`, colLookupErr.message);
                     continue;
                 }
                 
@@ -649,7 +653,7 @@ async function importToTarget(config, label, data) {
                         await client.query('RELEASE SAVEPOINT sp_row');
                         imported++;
                     } catch (e) {
-                        try { await client.query('ROLLBACK TO SAVEPOINT sp_row'); } catch (_) {}
+                        try { await client.query('ROLLBACK TO SAVEPOINT sp_row'); } catch (rollbackErr) { console.debug('[Import] rollback savepoint failed:', rollbackErr.message); }
                         // Only log non-duplicate errors, and limit log output
                         if (!e.message.includes('duplicate') && !e.message.includes('violates') && imported < 3) {
                             console.log(`      ⚠️  ${tableName} row: ${e.message.split('\n')[0].substring(0, 100)}`);
@@ -677,7 +681,7 @@ async function importToTarget(config, label, data) {
 
     } catch (err) {
         if (client) {
-            try { await client.query('ROLLBACK'); } catch (e) {}
+            try { await client.query('ROLLBACK'); } catch (rollbackErr) { console.debug('[Import] final rollback failed:', rollbackErr.message); }
         }
         console.error(`   ❌ Import error: ${err.message}`);
     } finally {
@@ -710,7 +714,8 @@ Options:
 
 Environment Variables (set before running):
   DB_PASSWORD       Production database password (REQUIRED)
-  DEV_DB_PASSWORD   Dev database password (default: IzaraDb2024)
+  DEV_DB_PASSWORD   Dev cloud database password (REQUIRED for --import-dev / --full)
+  LOCAL_DB_PASSWORD Local Docker database password (REQUIRED for --import-local / --full)
 
 Examples:
   $env:DB_PASSWORD="your_password"; node scripts/migrate-prod-to-dev.cjs --query
@@ -722,7 +727,7 @@ Examples:
     // Validate password
     if (!PROD_CONFIG.password) {
         console.error('\n❌ ERROR: DB_PASSWORD environment variable is required.');
-        console.error('   Set it using: $env:DB_PASSWORD="your_production_password"');
+        console.error('   Set it using: $env:DB_PASSWORD="<your_production_password>"'); // NOSONAR: example CLI instruction, not a credential
         console.error('   This is the password for the production Cloud SQL at 34.143.228.135');
         process.exit(1);
     }

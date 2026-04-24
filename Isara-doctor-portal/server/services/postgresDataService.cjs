@@ -740,7 +740,8 @@ const AppointmentService = {
   async getPendingCount(doctorId) {
     const result = await pool.query(
       `SELECT COUNT(*) as count FROM appointments 
-       WHERE doctor_id = $1 AND status = 'pending'`,
+       WHERE (doctor_id = $1 OR doctor_id IS NULL)
+       AND status IN ('pending', 'awaiting_doctor_response', 'assigned')`,
       [doctorId]
     );
     return Number.parseInt(result.rows[0].count, 10);

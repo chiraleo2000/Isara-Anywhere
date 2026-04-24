@@ -1,14 +1,14 @@
 # 🏥 Izara Telemedicine Platform
 
-![Version](<https://img.shields.io/badge/version-1.5.10-blue.svg)>
+![Version](<https://img.shields.io/badge/version-1.7.0-blue.svg)>
 ![License](<https://img.shields.io/badge/license-MIT-green.svg)>
 ![Platform](<https://img.shields.io/badge/platform-web-lightgrey.svg)>
 ![Node](<https://img.shields.io/badge/node-%3E%3D22.0.0-brightgreen.svg)>
 ![Database](<https://img.shields.io/badge/database-PostgreSQL%2018-blue.svg)>
 ![Docker](<https://img.shields.io/badge/docker-ready-blue.svg)>
-![Tests](<https://img.shields.io/badge/Unit%20tests-2%2C013%20passing-brightgreen.svg)>
-![Tests](<https://img.shields.io/badge/E2E%20tests-1%2C149%20passing-brightgreen.svg)>
-![Cloud UI](<https://img.shields.io/badge/UI%20tests-209%20passing-brightgreen.svg)>
+![Tests](<https://img.shields.io/badge/Unit%20tests-2%2C487%20passing-brightgreen.svg)>
+![Tests](<https://img.shields.io/badge/UI%20tests-44%20passing-brightgreen.svg)>
+![Cloud UI](<https://img.shields.io/badge/Cloud%20tests-226%20passing-brightgreen.svg)>
 ![Cloud Run](<https://img.shields.io/badge/Cloud%20Run-deployed-blue.svg)>
 ![Security](<https://img.shields.io/badge/security-SonarQube%20clean-green.svg)>
 ![TypeScript](<https://img.shields.io/badge/TypeScript-strict%20safe-blue.svg)>
@@ -33,7 +33,6 @@ The platform consists of three main services:
 | **Doctor Portal** | Clinical workflows, EMR/EHR management, prescriptions, admin tools | 3010 | Doctors, Nurses, Admins |
 | **Meeting Server** | Jitsi integration with live transcription & AI summaries | 3020 | Video Consultations |
 
-
 ---
 
 
@@ -51,8 +50,7 @@ The platform consists of three main services:
 | pgAdmin | <http://localhost:5050> |
 
 
-
-### Cloud Environment — Production (v1.5.10) (Google Cloud Run)
+### Cloud Environment — Production (v1.7.0) (Google Cloud Run)
 
 | Service | URL |
 | ------- | --- |
@@ -60,24 +58,26 @@ The platform consists of three main services:
 | Doctor Portal | <https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app> |
 | Meeting Server | <https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app> |
 
-
 ---
 
 
 ## 🧪 Testing
 
 
-### Test Architecture (v1.5.10)
+### Test Architecture (v1.7.0)
 
 
-#### Unit Tests (Vitest — 2,013 tests)
+#### Unit Tests (Vitest — 2,487 tests)
 
 
-- **58 test files** in `tests/unit/` — pure logic, no server required
+- **77 test files** in `tests/unit/` — pure logic, no server required
 
-- **Coverage areas**: Doctor portal (24 files), Patient portal (22 files), Meeting server (6 files), Security (2 files), Database (4 files)
+
+- **Coverage areas**: Doctor portal (24 files), Patient portal (22 files), Meeting server (6 files), Security (2 files), Database (4 files), Cross-portal (6 files), Utils (13 files)
+
 
 - **Framework**: Vitest 2.1.9, runs in ~4.3 seconds
+
 
 - **Run**: `cd tests/unit && npx vitest run`
 
@@ -87,13 +87,18 @@ The platform consists of three main services:
 
 - **33 E2E spec files** (01-31): comprehensive workflow, API, and UI testing
 
+
 - **1,149 total tests** across 33 spec files
+
 
 - **5 simultaneous demo user accounts** (patient1, patient2, patient3, doctor, admin)
 
+
 - **3 Playwright projects**: Local, Cloud, Cloud-Dev
 
+
 - **0 skipped tests** — every test must pass
+
 
 - **Serial + parallel execution** for workflow integrity
 
@@ -103,27 +108,39 @@ The platform consists of three main services:
 
 - **9 test files** in `tests/*.ui-test.ts` — local Docker & Cloud Run targets
 
+
 - **ui-pages**: 44 tests (14 patient + 12 doctor portal pages + 16 API + 2 auth)
+
 
 - **workflow-screenshots**: 25 tests (complete appointment lifecycle with screenshots)
 
+
 - **cloud-ui-screenshots**: 39 tests (14 patient + 12 doctor + 13 API health)
+
 
 - **meeting-multi-user**: 27 tests (3-browser parallel: admin + doctor + patient meeting flows)
 
+
 - **cloud-workflow-multiuser**: 42 tests (8 workflow sections: User Mgmt, Appointments, Health Records, Content, Notifications, Living Will, Medical Consultants, AI)
+
 
 - **meeting-recording**: 8 tests (recording controls, transcript, diarization, SOAP summary)
 
+
 - **admin-workflows**: 8 tests (user mgmt, doctor mgmt, appointment mgmt, system admin)
+
 
 - **post-meeting-actions**: 7 tests (EMR create, prescriptions, lab orders with forms)
 
+
 - **phr-ai-features**: 9 tests (PHR dashboard/records/vitals/timeline/living will + AI pre-consult/CDS/docs/SOAP)
+
 
 - **Headed mode** (1 worker, `slowMo: 300`, 1280×720 viewport)
 
+
 - **160 screenshots** saved to `screenshots/` across 35 subfolders
+
 
 - **Run**: `npx playwright test --project=UI-Verification --reporter=list`
 
@@ -170,10 +187,10 @@ The platform consists of three main services:
 | 31 | Meeting Recording Pipeline | ~25 | MediaRecorder, save-recording, AI SOAP, man-in-the-loop, multi-user |
 
 
-
 ### Run Tests
 
 ```powershell
+
 
 # ── Unit Tests (2,013 tests, ~4.3 seconds) ──
 cd tests/unit
@@ -182,24 +199,30 @@ npx vitest run --coverage    # With coverage report
 npx vitest watch             # Watch mode during development
 
 
+
 # ── E2E Tests (1,124 tests, requires Docker services running) ──
 cd tests/e2e
+
 
 
 # Run ALL Local tests
 $env:CI="true"; npx playwright test --project=Local --workers=6
 
 
+
 # Run ALL Cloud-Dev tests
 $env:TEST_ENV="cloud-dev"; npx playwright test --project="Cloud-Dev" --workers=2
+
 
 
 # Run specific spec
 npx playwright test "09-phase2" --project=Local
 
 
+
 # View HTML Report
 npx playwright show-report
+
 
 
 # ── UI Tests (209 tests, headed browser with screenshots) ──
@@ -227,7 +250,6 @@ npx playwright test tests/phr-ai-features.ui-test.ts       # 9 PHR + AI features
 | database | 4 | Schema validation, seed data, embedded PG, data integrity |
 
 
-
 ### Test Coverage — 17 Sections
 
 | Section | Coverage Area | Process Documents |
@@ -251,7 +273,6 @@ npx playwright test tests/phr-ai-features.ui-test.ts       # 9 PHR + AI features
 | Q | Phase 2 AI-HIS | CTM, Geriatric Screening, SOS, Nursing Dashboard |
 
 
-
 ### Test Credentials
 
 | Role | Email | Password |
@@ -261,7 +282,6 @@ npx playwright test tests/phr-ai-features.ui-test.ts       # 9 PHR + AI features
 | Patient 3 | `Anan.Khayanrian@gmail.com` | `P@ssw0rd` |
 | Doctor | `doctor.test@izara.com` | `IzaraDoctor@2024` |
 | Admin | `admin.test@izara.com` | `IzaraAdmin@2024` |
-
 
 ---
 
@@ -274,25 +294,36 @@ npx playwright test tests/phr-ai-features.ui-test.ts       # 9 PHR + AI features
 
 - 📅 **Appointment Booking** — Multi-step booking with AI symptom analysis
 
+
 - 📹 **Video Consultations** — Jitsi Meet integration (FREE, no account required)
+
 
 - 🎙️ **Live Transcription** — Real-time speech-to-text during consultations
 
+
 - 👥 **Invite Family Members** — External guests can join meetings via invite links
+
 
 - 📋 **Personal Health Records (PHR)** — Vitals, allergies, medications, lifestyle data
 
+
 - 🔔 **Real-time Notifications** — Appointment updates, meeting reminders
+
 
 - 🤖 **AI Health Assistant** — Powered by Google Gemini with chat history
 
+
 - 🗺️ **Healthcare Map** — Find nearby clinics/hospitals (1/5/10/15/20 km range)
+
 
 - 📚 **Medical Content Library** — Health education articles with images
 
+
 - 🌐 **Multi-language** — Thai (primary) and English
 
+
 - 📄 **Living Will** — Digital advance directive management
+
 
 - 🔒 **PDPA Consent** — Thailand's data protection compliance
 
@@ -302,23 +333,33 @@ npx playwright test tests/phr-ai-features.ui-test.ts       # 9 PHR + AI features
 
 - 📝 **Electronic Medical Records (EMR)** — Thai OPD card format with SOAP notes
 
+
 - 📹 **Video Meeting HOST Controls** — Doctor as moderator with lobby management
+
 
 - 🎥 **Meeting Transcription & AI Summary** — Automatic SOAP notes from transcripts
 
+
 - 👥 **Invite Specialists** — External consultants join via invite links
+
 
 - 💊 **E-Prescribing** — Drug interaction checks, medication management
 
+
 - 🧪 **Lab & Imaging Orders** — Complete diagnostic workflow
+
 
 - 📊 **Patient Queue Management** — Priority-based scheduling
 
+
 - 📚 **Clinical Resources** — Medical library and references
+
 
 - 🤖 **AI Clinical Copilot** — CDS, document analysis, pre-consultation summary
 
+
 - 📋 **Patient Instructions** — Auto-generated post-visit care sheets
+
 
 - 🔒 **Man-in-the-Loop AI** — Doctor reviews/validates all AI outputs
 
@@ -328,11 +369,15 @@ npx playwright test tests/phr-ai-features.ui-test.ts       # 9 PHR + AI features
 
 - 👥 **User Management** — Doctor, patient, and staff accounts
 
+
 - ✅ **Doctor Approval** — Pending doctor registration workflow
+
 
 - 📊 **Analytics Dashboard** — Appointment statistics and insights
 
+
 - ⚙️ **System Configuration** — Specialties, appointment pools
+
 
 - 📋 **Medical Consultant Management** — Specialist directory
 
@@ -343,7 +388,7 @@ npx playwright test tests/phr-ai-features.ui-test.ts       # 9 PHR + AI features
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────────┐
-│                     IZARA TELEMEDICINE v1.5.10                              │
+│                     IZARA TELEMEDICINE v1.7.0                              │
 ├──────────────────────────────────────────────────────────────────────────┤
 │   ┌─────────────────┐  ┌─────────────────┐  ┌────────────────────────┐   │
 │   │  Patient Portal │  │  Doctor Portal  │  │  Meeting Server        │   │
@@ -387,7 +432,6 @@ npx playwright test tests/phr-ai-features.ui-test.ts       # 9 PHR + AI features
 | Hosting | Google Cloud Run | Production |
 | CI/CD | Google Cloud Build | Automated deployment |
 
-
 ---
 
 
@@ -399,7 +443,9 @@ npx playwright test tests/phr-ai-features.ui-test.ts       # 9 PHR + AI features
 
 - Node.js >= 22.0.0
 
+
 - Docker & Docker Compose
+
 
 - Git
 
@@ -408,26 +454,34 @@ npx playwright test tests/phr-ai-features.ui-test.ts       # 9 PHR + AI features
 
 ```bash
 
+
 # 1. Clone
 git clone <https://github.com/chiraleo2000/Isara-Anywhere.git>
 cd Isara-Anywhere
 
 
+
 # 2. Copy environment file
 cp .env.docker.example .env.docker
 
+
 # Edit .env.docker with your API keys
+
 
 
 # 3. Start all services
 docker-compose up -d --build
 
 
+
 # 4. Access
+
 
 # Patient Portal: <http://localhost:3005>
 
+
 # Doctor Portal:  <http://localhost:3010>
+
 
 # pgAdmin:        <http://localhost:5050>
 ```
@@ -442,7 +496,6 @@ docker-compose up -d --build
 | `GOOGLE_SPEECH_API_KEY` | [Google Cloud Console](<https://console.cloud.google.com)> | Transcription |
 | `VITE_GOOGLE_CLIENT_ID` | [Google Cloud Console](<https://console.cloud.google.com)> | OAuth |
 
-
 ---
 
 
@@ -450,16 +503,20 @@ docker-compose up -d --build
 
 ```bash
 
+
 # Start all services
 docker-compose up -d --build
+
 
 
 # View logs
 docker-compose logs -f
 
 
+
 # Stop
 docker-compose down
+
 
 
 # Full reset (wipes database)
@@ -477,7 +534,6 @@ docker-compose down -v && docker-compose up -d --build
 | PostgreSQL | 5433 | Primary database |
 | pgAdmin | 5050 | Database UI |
 
-
 ---
 
 
@@ -488,14 +544,17 @@ docker-compose down -v && docker-compose up -d --build
 
 ```bash
 
+
 # Deploy Patient Portal
 cd Isara-patient-portal
 gcloud builds submit --config=cloudbuild.yaml
 
 
+
 # Deploy Doctor Portal
 cd Isara-doctor-portal
 gcloud builds submit --config=cloudbuild.yaml
+
 
 
 # Deploy Meeting Server
@@ -504,14 +563,13 @@ gcloud builds submit --config=cloudbuild.yaml
 ```
 
 
-### Cloud URLs (Production — v1.5.10)
+### Cloud URLs (Production — v1.7.0)
 
 | Service | URL |
 | ------- | --- |
 | Patient Portal | <https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app> |
 | Doctor Portal | <https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app> |
 | Meeting Server | <https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app> |
-
 
 
 ### No Dev Environment
@@ -600,46 +658,62 @@ Isara-Anywhere/
 | [Technical Documentation](Presentations/TECHNICAL_DOCUMENTATION.md) | Main technical reference |
 | [E2E Coverage Report](tests/E2E_COVERAGE_REPORT.md) | Per-spec E2E test coverage analysis |
 
-
 ---
 
 
-## 🔒 Security (v1.5.10 — SonarQube Clean)
+## 🔒 Security (v1.7.0 — SonarQube Clean)
 
 
 - **Authentication**: bcrypt password hashing (10 rounds), JWT + session tokens
 
+
 - **JWT Secrets**: Consistent `JWT_SECRET_FINAL` usage across all verify calls (sign/verify mismatch fixed)
+
 
 - **Password Policy**: Unified 12-character minimum with uppercase, lowercase, digit, and special character requirements across all portals
 
+
 - **Session Management**: Secure token-based sessions (24hr expiry)
+
 
 - **Rate Limiting**: 10 login attempts per 15 minutes
 
+
 - **OWASP Security Headers**: Helmet.js (CSP, XSS protection, HSTS, X-Frame, X-Content-Type)
+
 
 - **Permissions-Policy**: `camera=(self "<https://meet.jit.si")`,> `microphone=(self "<https://meet.jit.si")`> — scoped to Jitsi iframe only
 
+
 - **CSP Media Integration**: `frame-src meet.jit.si 8x8.vc`, `media-src mediastream:`, `worker-src blob:` for secure video conferencing
+
 
 - **Body Limits**: 10KB JSON payload limit to prevent DoS
 
+
 - **TypeScript Strict Safety**: Zero `error: any` in server code — all catch blocks use `error: unknown` with proper type narrowing
+
 
 - **SonarQube Compliance**: No S6551 (unsafe string interpolation), no S4325 (unnecessary type assertions), no non-null assertions in frontend
 
+
 - **Error Handling**: Global error handlers with sanitized error messages (no stack traces in production)
+
 
 - **IDOR Protection**: User-scoped data access enforcement
 
+
 - **Input Validation**: XSS prevention, SQL injection protection
+
 
 - **CORS**: Strict origin validation — no localhost in production, regex restricted to `izara-*` Cloud Run services
 
+
 - **Service Account Paths**: Credentials stored in `credentials/` directory (not in public/)
 
+
 - **PDPA Compliance**: Thailand's data protection standards
+
 
 - **Man-in-the-Loop AI**: Doctor validates all AI outputs before delivery
 
@@ -649,14 +723,35 @@ Isara-Anywhere/
 ## 📋 Changelog
 
 
+### v1.7.0 (April 24, 2026)
+
+
+- **Native PostgreSQL Support**: All `.env` files updated from Docker port 5433 to native PostgreSQL 18 port 5432 — no Docker dependency for local dev
+
+- **Unit Tests**: 2,487 passing (77 files) — up from 2,013
+
+- **UI E2E Tests**: 44 tests across 11 groups (A–K) — new structured test groups replacing old spec-based approach
+
+- **Doctor Auth Fixed**: Resolved stale authServer process causing bcrypt hash mismatch; now correctly starts on port 3011
+
+- **USER_GUIDE.md**: Updated to v1.7.0 with 24 April 2026 date, full Thai-language coverage
+
+- **Version Alignment**: All package.json, README badges, sonar-project.properties, and docs synced to v1.7.0
+
+- **Cloud Tests**: 226 passed, 32 skipped (by design), 0 failures
+
+
 ### v1.5.10 (March 29, 2026)
 
 
 - **User Guide Completion**: Full 13-section bilingual user guides (English + Thai) covering all workflows — consultation lifecycle, doctor onboarding, video meeting, AI features, recording/transcription, notifications, content management, security/PDPA, FAQ
 
+
 - **Version Alignment**: All package.json, README badges, and documentation synced to v1.5.10
 
+
 - **Test Suite**: 2,013 unit tests + 1,149 E2E tests + 209 UI tests = **3,371 total — 100% pass rate**
+
 
 - **Documentation**: Updated TECHNICAL_DOCUMENTATION.md, USER_GUIDE.md, USER_GUIDE_COMPACT.md with complete feature coverage
 
@@ -666,15 +761,21 @@ Isara-Anywhere/
 
 - **Meeting Recording Pipeline**: MediaRecorder API captures real audio during video consultations → base64 encoding → server-side Google Cloud Speech-to-Text with speaker diarization → AI SOAP summary generation
 
+
 - **Recording Server Endpoints**: 2 new endpoints — `POST /api/meetings/:id/save-recording` (audio → STT → DB), `POST /api/meetings/:id/stop-recording` (stop + socket event)
+
 
 - **Accessibility Fixes (axe/SonarQube)**: aria-labels on MeetingResults.tsx (textarea, close button, SVG), PatientMeetingRoom.tsx (invite inputs), MeetingRoom.tsx (chat input); inline styles → Tailwind CSS (`[transform:scaleX(-1)]`); html-diagrams/index.html (viewport meta, CSS class, `rel="noopener noreferrer"`)
 
+
 - **Nesting Depth Refactor**: Extracted `saveRecordingBlob` useCallback helper in MeetingRoom.tsx — both `toggleRecording` and `handleMeetingEnd` use shared helper, eliminating 4+ level nesting warnings
+
 
 - **E2E Test: Recording Pipeline** (Spec 31): New `31-meeting-recording-pipeline.spec.ts` — 25 tests in 5 sections (A: Appointment Setup, B: Recording Controls, C: Meeting End & AI Summary, D: Man-in-the-Loop Validation, E: Multi-User UI)
 
+
 - **UI Test Screenshots**: 52/52 passing (27 meeting-multi-user + 25 workflow-screenshots) — 122 total screenshots across 5 categories (cloud: 26, cloud-workflows: 28, meeting: 12, ui-pages: 26, workflow: 30)
+
 
 - **Unit Tests**: 2,013/2,013 passing across 58 files (meeting-server: 6 files/195 tests, doctor-portal: 24 files/830 tests)
 
@@ -684,27 +785,39 @@ Isara-Anywhere/
 
 - **Meeting System E2E Fix**: Complete end-to-end meeting pipeline — doctor validates AI summary (approve/edit/reject/regenerate), patient instructions auto-generated, consultation results delivered to patient portal with real-time polling
 
+
 - **Meeting Server Backend**: 4 new endpoints (`/validate`, `/delete`, `/patient-instruction`, `/consultation-result`), 9 new DB columns + `meeting_chats` table for chat persistence
+
 
 - **Doctor MeetingResults UI**: Full validation interface with approve/edit/reject/regenerate buttons, patient instruction generation, EMR navigation integration
 
+
 - **Patient Consultation Results**: `PatientMeetingRoom.tsx` polls for approved results every 10s, displays AI summary + patient instructions on meeting end
+
 
 - **UI Page Screenshots**: 25 full-page PNG screenshots captured via Playwright headed mode across all patient portal (14), doctor portal (11), and public (2) pages — saved to `screenshots/ui-pages/`
 
+
 - **Camera/Microphone Fix**: Fixed `Permissions-Policy: camera=(), microphone=()` that completely blocked camera/mic access in Cloud Run and Docker deployments — updated across 5 server files (mainApiServer.cjs, owasp-middleware.cjs, owasp-middleware.ts, nginx.conf, Dockerfile.unified)
+
 
 - **CSP Headers Updated**: Added `frame-src meet.jit.si 8x8.vc`, `connect-src *.run.app wss://*.run.app`, `media-src mediastream:`, `worker-src blob:` across 4 locations for secure Jitsi video conferencing
 
+
 - **Jitsi iframe Allow Attribute**: Explicit `allow="camera *; microphone *; display-capture *; autoplay *; clipboard-write *; encrypted-media *"` in both MeetingRoom.tsx and PatientMeetingRoom.tsx
+
 
 - **Zoom-like UX**: SVG icons for mic/camera/phone/record controls, 480×320 camera preview with mirror effect, Thai labels (ไมค์เปิด/กล้องเปิด), larger pre-join layout
 
+
 - **env-config.template.js**: Added MEETING_SERVER_URL and JITSI_DOMAIN environment variables for Docker/Cloud Run
+
 
 - **Cloud Tests**: 177/177 passing across 5 test suites — cloud-ui-screenshots (39), cloud-workflow-multiuser (42), meeting-multi-user (27), workflow-screenshots (25), ui-pages (44)
 
+
 - **Local UI Tests**: 44/44 passing — all portal pages verified with headed browser screenshots
+
 
 - **Cloud Deployment**: All 3 services deployed to Cloud Run v1.5.9 with updated CORS
 
@@ -714,13 +827,18 @@ Isara-Anywhere/
 
 - **SonarQube Full Clean**: Fixed all 26 remaining issues (S3776, S2004, S6853, S6582, S1128, S2068, S1854) across MeetingRoom.tsx, PatientMeetingRoom.tsx, cloud-workflow-multiuser, meeting-multi-user, workflow-screenshots
 
+
 - **Screenshot Restructuring**: All 4 test files now organize screenshots into per-workflow subdirectories (22 subdirectories total)
+
 
 - **Cognitive Complexity**: Extracted module-level helper functions from MeetingRoom.tsx (6 utilities) and PatientMeetingRoom.tsx (4 utilities) to reduce component complexity
 
+
 - **Cloud Tests**: 177/177 passing across 5 test suites — cloud-ui-screenshots (39), cloud-workflow-multiuser (42), meeting-multi-user (27), workflow-screenshots (25), ui-pages (44)
 
+
 - **Accessibility**: Added aria-labels to interactive video meeting controls (mic, camera, leave buttons)
+
 
 - **Version Bump**: All packages updated to v1.5.9
 
@@ -730,21 +848,30 @@ Isara-Anywhere/
 
 - **Cloud UI Screenshot Tests**: NEW — 39 tests capturing 26 full-page screenshots (14 Patient + 12 Doctor pages) on Cloud Run with 1920×1080 viewport + 13 Cloud API health checks
 
+
 - **Unit Tests Expanded**: 2,013 tests across 58 files (up from 1,814) — all 11 workflow test files enhanced with continuous chain sections (+199 new tests)
+
 
 - **E2E Tests Verified**: 1,124 Local + 667 Cloud tests — all passing on LOCAL and Cloud (100% pass rate)
 
+
 - **Cloud Workflow Tests**: 58/58 endpoints passing (100%) across all 11 workflows
+
 
 - **Continuous Workflow Chains**: Added step-by-step lifecycle chains to all workflow tests — appointment, user management, video meeting, health records, dashboard, notification, living will, data sync, PDPA, queue management, medical content
 
+
 - **SonarQube S6551 Fix**: Resolved 42 unsafe `String()` calls across content.ts, doctors.ts, gcs.ts, google-services.ts — proper `instanceof Error` + `typeof` narrowing
+
 
 - **SonarQube S6698 Fix**: Removed hardcoded PGPASSWORD pattern in e2e-test.ps1
 
+
 - **Cloud Build Fix**: Corrected Dockerfile path and build context in cloudbuild.yaml
 
+
 - **Cloud Deployment**: All 3 services deployed to Cloud Run — health checks passing, 667 Cloud E2E tests verified
+
 
 - **Documentation Updated**: All process docs, workflows, database schema updated to v1.5.9
 
@@ -754,11 +881,15 @@ Isara-Anywhere/
 
 - **SonarQube S6551 Fix**: Created `errMsg()` utility — replaced 109 unsafe inline error ternaries across 8 server files
 
+
 - **SonarQube S3776 Fix**: Reduced cognitive complexity in auth.ts, video-meeting.ts, postgresDataService.ts by extracting helper functions
+
 
 - **Unit Tests Expanded**: 2,013 tests across 58 files (up from 1,419/46) — all passing
 
+
 - **API Endpoints**: 38/38 GET endpoints + 4/4 write operations verified returning 200 OK
+
 
 - **Cloud Deployment**: All 3 Cloud Run services deployed v1.5.6 — health checks passing
 
@@ -768,17 +899,24 @@ Isara-Anywhere/
 
 - **TypeScript Strict Safety**: All server-side catch blocks use `error: unknown` with proper type narrowing (eliminated ~250 `error: any` patterns)
 
+
 - **SonarQube Clean**: Fixed S6551 (unsafe string interpolation), S4325 (unnecessary assertions), non-null assertions
+
 
 - **Codebase Restructuring**: Patient portal pages flattened from nested subfolders, server routes merged into 17 consolidated modules
 
+
 - **Error Handling**: Proper `instanceof Error` type guards throughout; named error variables (`dbError`, `aiError`, `insertError`) for clarity
+
 
 - **AuthenticatedRequest Interface**: Strongly-typed with explicit `patientId`, `userId`, and union role type
 
+
 - **Docker Deployment**: All 5 services (patient-portal, doctor-portal, meeting-server, postgres, pgadmin) healthy
 
+
 - **Cloud Deployment**: All 3 Cloud Run services deployed — health checks passing
+
 
 - **PostgreSQL 18**: Updated all documentation to reflect actual database version
 
@@ -788,7 +926,9 @@ Isara-Anywhere/
 
 - Security hardening: JWT sign/verify consistency, OWASP headers, unified password policies
 
+
 - Comprehensive test layer: 1,419 unit + 1,191 E2E = 2,610 tests at 100% pass rate (now 3,371 total in v1.5.10)
+
 
 - Phase 2 AI-HIS tables and endpoints
 
@@ -821,7 +961,9 @@ This project is licensed under the MIT License.
 
 - Healthcare technology innovation for Thailand
 
+
 - Focused on accessibility and user experience
+
 
 - PDPA-compliant data handling
 
@@ -830,6 +972,7 @@ This project is licensed under the MIT License.
 
 
 - 📧 Email: <chirapathleo.saeliM@gmail.com> / <chirapath.s@betimes.biz>
+
 
 - 🐛 Issues: [GitHub Issues](<https://github.com/chiraleo2000/Isara-Anywhere/issues)>
 

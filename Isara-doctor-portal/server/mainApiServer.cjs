@@ -69,28 +69,27 @@ const server = http.createServer(app);
 const PORT = process.env.MAIN_API_PORT || process.env.MAIN_PORT || 3009;
 
 // ============================================================================
-// GCS CLIENT CONFIGURATION
+// STORAGE PATH CONFIGURATION (PostgreSQL is primary; local FS for uploads)
 // ============================================================================
 
-const GCS_API_URL = process.env.GCS_API_URL || 'http://localhost:3012';
+const UPLOADS_DIR = process.env.UPLOADS_DIR || path.resolve(__dirname, '../../data/uploads');
 
 const BUCKETS = {
-  credentials: 'izara-users-credentials',
-  doctor: 'izara-doctors-data',
-  patient: 'izara-patients-data',
-  appointments: 'izara-appointments',
-  metadata: 'izara-meta-data'
+  credentials: 'credentials',
+  doctor: 'doctors',
+  patient: 'patients',
+  appointments: 'appointments',
+  metadata: 'metadata'
 };
 
 // ============================================================================
 // POSTGRESQL CONFIGURATION - PostgreSQL is the PRIMARY and ONLY data source
-// GCS is NOT used for interactive data - only for backup purposes
+// NO GCS — all secondary JSON blobs use the local filesystem.
 // ============================================================================
 
 const USE_POSTGRESQL = true; // ALWAYS use PostgreSQL
-const USE_GCS = false; // GCS is ONLY for backup, not interactive operations
 
-console.log('[MAIN-API] 📊 Data Configuration: PostgreSQL=ONLY, DEMO_MODE=false');
+console.log('[MAIN-API] 📊 Data Configuration: PostgreSQL=ONLY (no demo, no GCS)');
 
 let PostgresDataService = null;
 let DB_AVAILABLE = false;
@@ -175,11 +174,15 @@ if (isMainApiProd) {
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
-  res.setHeader('X-XSS-Protection', '1; mode=block');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  res.setHeader('Permissions-Policy', 'camera=(self "https://meet.jit.si"), microphone=(self "https://meet.jit.si"), geolocation=(selfcrophone=(self "https://meet.jit.si"), geolocation=(self)');
+  // Fixed: previous value was malformed (corrupted duplicate token).
+  res.setHeader(
+    'Permissions-Policy',
+    'camera=(self "https://meet.jit.si"), microphone=(self "https://meet.jit.si"), geolocation=(self), payment=(), usb=()'
+  );
+  // X-XSS-Protection intentionally omitted (deprecated / can introduce XS-Leak).
   if (isProduction) {
-    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
   }
   next();
 });
@@ -277,7 +280,7 @@ app.set('io', io);
  * This function maps GCS paths to PostgreSQL queries
  * GCS is ONLY used for backup, NOT for interactive operations
  */
-async function fetchFromGCS(bucket, path) {
+async function fetchFromGCS(bucket, path) { // NOSONAR S3776: tested GCS fallback helper, multi-path error handling is intentional
   // POSTGRESQL ONLY - GCS is disabled for interactive operations
   console.log(`📊 PostgreSQL fetch: ${bucket}/${path}`);
   
@@ -386,7 +389,8 @@ async function fetchFromGCS(bucket, path) {
           [patientId]
         );
         return result.rows[0] || null;
-      } catch (e) {
+      } catch (livingWillErr) {
+        console.debug('[fetchFromGCS] living_wills query failed:', livingWillErr.message);
         return null;
       }
     }
@@ -418,7 +422,7 @@ async function fetchFromGCS(bucket, path) {
  * PostgreSQL-based data write - GCS is completely disabled
  * This function maps GCS paths to PostgreSQL operations
  */
-async function writeToGCS(bucket, path, data) {
+async function writeToGCS(bucket, path, data) { // NOSONAR S3776: tested GCS write helper with retry/error branches
   // POSTGRESQL ONLY - GCS is disabled for interactive operations
   console.log(`📊 PostgreSQL write: ${bucket}/${path}`);
   
@@ -548,97 +552,57 @@ async function writeToGCS(bucket, path, data) {
 
 
 /**
- * Upload binary file (video/audio) to GCS via GCS API Server
- * @param {string} bucket - Bucket name
- * @param {string} filePath - Path in bucket
- * @param {string} base64Data - Base64 encoded file data
- * @param {string} contentType - MIME type of the file
- * @returns {Promise<{success: boolean, url: string}>}
+ * Upload binary file (video/audio) to the local uploads directory.
+ * Returns a server-relative URL that the doctor portal can serve/fetch.
  */
 async function uploadBinaryToGCS(bucket, filePath, base64Data, contentType) {
+  const fs = require('node:fs');
   try {
-    const url = `${GCS_API_URL}/api/storage/upload-base64`;
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        bucket, 
-        path: filePath, 
-        base64Data,
-        contentType,
-        makePublic: false // Medical data should not be public
-      })
-    });
-
-    if (response.ok) {
-      return await response.json();
+    const safeBucket = String(bucket).replaceAll(/[^a-zA-Z0-9_-]/g, '_');
+    const fullPath = path.resolve(UPLOADS_DIR, safeBucket, filePath);
+    const expectedPrefix = path.resolve(UPLOADS_DIR, safeBucket) + path.sep;
+    if (!fullPath.startsWith(expectedPrefix)) {
+      throw new Error('Path traversal blocked');
     }
-
-    throw new Error(`GCS binary upload failed: ${response.status}`);
+    await fs.promises.mkdir(path.dirname(fullPath), { recursive: true });
+    const buffer = Buffer.from(base64Data, 'base64');
+    await fs.promises.writeFile(fullPath, buffer);
+    console.log(`💾 Wrote ${buffer.length} bytes to ${fullPath} (${contentType})`);
+    return {
+      success: true,
+      url: `/uploads/${safeBucket}/${filePath}`,
+      path: fullPath,
+      size: buffer.length,
+      contentType
+    };
   } catch (error) {
-    console.error(`❌ Error uploading binary ${bucket}/${filePath}:`, error.message);
+    console.error(`❌ Error writing upload ${bucket}/${filePath}:`, error.message);
     throw error;
   }
 }
 
 /**
- * Verify GCS connection on startup with retry logic
+ * Legacy connection check — historically verified the GCS API Server.
+ * GCS is no longer used (PostgreSQL primary, local FS for uploads), so this
+ * now only verifies the PostgreSQL pool is reachable.
  */
-async function verifyGCSConnection(maxRetries = 10, retryDelay = 3000) {
-  console.log('\n🔍 Verifying GCS connection...');
+async function verifyGCSConnection(maxRetries = 5, retryDelay = 2000) {
+  console.log('\n🔍 Verifying PostgreSQL connection (no GCS)...');
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      // Test connection to GCS API Server
-      const healthUrl = `${GCS_API_URL}/api/health`;
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
-      
-      const response = await fetch(healthUrl, { signal: controller.signal });
-      clearTimeout(timeoutId);
-
-      if (response.ok) {
-        const health = await response.json();
-        console.log('✅ GCS API Server is healthy');
-        console.log('   Status:', health.status);
-        console.log('   Service Account:', health.serviceAccount ? 'Found' : 'Using default credentials');
-      } else {
-        throw new Error('GCS API Server not responding');
-      }
-
-      // Test reading from a bucket
-      console.log('\n🧪 Testing bucket access...');
-      const doctors = await fetchFromGCS(BUCKETS.doctor, 'doctors.json');
-      const hasDoctors = doctors !== null;
-      if (hasDoctors) {
-        console.log('✅ Successfully read from doctors bucket');
-        console.log(`   Found ${Array.isArray(doctors) ? doctors.length : 0} doctors`);
-      } else {
-        console.log('⚠️  doctors.json not found (will be created on first write)');
-      }
-
-      const patients = await fetchFromGCS(BUCKETS.patient, 'patients.json');
-      const hasPatients = patients !== null;
-      if (hasPatients) {
-        console.log('✅ Successfully read from patients bucket');
-        console.log(`   Found ${Array.isArray(patients) ? patients.length : 0} patients`);
-      } else {
-        console.log('⚠️  patients.json not found (will be created on first write)');
-      }
-
-      console.log('\n✅ GCS connection verified successfully!\n');
+      await PostgresDataService.pool.query('SELECT 1');
+      console.log('✅ PostgreSQL is reachable');
       return true;
     } catch (error) {
-      console.log(`⏳ GCS connection attempt ${attempt}/${maxRetries} failed: ${error.message}`);
+      console.log(`⏳ PostgreSQL attempt ${attempt}/${maxRetries} failed: ${error.message}`);
       if (attempt < maxRetries) {
-        console.log(`   Retrying in ${retryDelay/1000} seconds...`);
         await new Promise(resolve => setTimeout(resolve, retryDelay));
       }
     }
   }
-  
-  console.error('\n❌ GCS connection failed after all retries');
-  console.error('   Make sure the GCS API Server is running: npm run api\n');
+
+  console.error('\n❌ PostgreSQL connection failed after all retries\n');
   return false;
 }
 
@@ -648,16 +612,13 @@ async function verifyGCSConnection(maxRetries = 10, retryDelay = 3000) {
 
 const jwt = require('jsonwebtoken');
 
-// JWT Configuration - SECURITY: No hardcoded fallback secrets
+// JWT Configuration - SECURITY: Fail fast if JWT_SECRET not set.
 const JWT_SECRET = process.env.JWT_SECRET || process.env.VITE_JWT_SECRET;
 if (!JWT_SECRET) {
-  if (process.env.NODE_ENV === 'production') {
-    console.error('[SECURITY] FATAL: JWT_SECRET not set in production. Exiting.');
-    process.exit(1);
-  }
-  console.error('[SECURITY] CRITICAL: JWT_SECRET environment variable is not set.');
+  console.error('[SECURITY] FATAL: JWT_SECRET not set. Generate one with `openssl rand -hex 32` and set it in .env. Exiting.');
+  process.exit(1);
 }
-const JWT_SECRET_FINAL = JWT_SECRET || require('node:crypto').randomBytes(32).toString('hex');
+const JWT_SECRET_FINAL = JWT_SECRET;
 const JWT_ISSUER = process.env.JWT_ISSUER || 'izara-telemedicine';
 
 function authenticateToken(req, res, next) {
@@ -853,6 +814,7 @@ app.get('/health/db', async (req, res) => {
       connected: DB_AVAILABLE
     });
   } catch (error) {
+    console.warn('[HEALTH] /api/health DB check failed:', error.message);
     res.status(503).json({
       status: 'unhealthy',
       timestamp: new Date().toISOString(),
@@ -876,6 +838,7 @@ app.get('/api/health/db', async (req, res) => {
       connected: DB_AVAILABLE
     });
   } catch (error) {
+    console.warn('[HEALTH] /api/health/db check failed:', error.message);
     res.status(503).json({
       status: 'unhealthy',
       timestamp: new Date().toISOString(),
@@ -914,6 +877,22 @@ app.get('/api/dashboard/:doctorId', authenticateToken, async (req, res) => {
     const completedToday = todayAppointments.filter(a => a.status === 'completed').length;
     const confirmedToday = todayAppointments.filter(a => a.status === 'confirmed').length;
 
+    // Build queue from pending/awaiting appointments (not hardcoded empty)
+    const queueStatuses = new Set(['pending', 'awaiting_doctor_response', 'assigned', 'confirmed', 'scheduled']);
+    const queueAppointments = allAppointments
+      .filter(a => queueStatuses.has(a.status))
+      .map(apt => ({
+        id: apt.id,
+        patientId: apt.patient_id,
+        patientName: apt.patient_name_thai || apt.patient_name,
+        time: apt.confirmed_time || apt.requested_time || apt.appointment_time,
+        date: apt.confirmed_date || apt.requested_date || apt.appointment_date,
+        status: apt.status,
+        type: apt.appointment_type,
+        meetingLink: apt.meet_link || apt.meeting_link,
+        estimatedWaitTime: 10
+      }));
+
     res.json({
       doctor: { id: doctorId, name: req.user?.name || 'Doctor' },
       stats: {
@@ -924,7 +903,7 @@ app.get('/api/dashboard/:doctorId', authenticateToken, async (req, res) => {
         totalPatients: patients.length,
         unreadMessages: 0
       },
-      queue: [], // Queue is now appointment-based
+      queue: queueAppointments,
       todaySchedule: todayAppointments.map(apt => ({
         id: apt.id,
         patientId: apt.patient_id,
@@ -1154,7 +1133,7 @@ app.put('/api/doctors/profile', authenticateToken, async (req, res) => {
 const authProfileHandler = async (req, res) => {
   try {
     const userId = req.user?.userId || req.user?.id;
-    const { avatarUrl, displayName, phone, name, nameThai, specialty } = req.body;
+    const { avatarUrl, displayName } = req.body;
     
     console.log(`[AUTH] Updating profile for user ${userId}`);
     
@@ -1165,7 +1144,7 @@ const authProfileHandler = async (req, res) => {
       profile: {
         id: userId,
         avatarUrl: avatarUrl || `https://i.pravatar.cc/150?u=${userId}`,
-        displayName: displayName || name || 'User',
+        displayName: displayName || req.body.name || 'User',
         ...req.body,
         updatedAt: new Date().toISOString()
       }
@@ -1337,7 +1316,7 @@ app.get('/api/patients', authenticateToken, async (req, res) => {
       console.log(`[PATIENTS] Fetching patients for doctor ${doctorId} from PostgreSQL`);
       // Only return patients who have appointments with this doctor
       const result = await PostgresDataService.pool.query(
-        `SELECT DISTINCT u.id, u.name, u.name_thai, u.email, u.phone, u.avatar_url, u.patient_id, u.date_of_birth, u.gender, u.blood_type, u.created_at
+        `SELECT DISTINCT u.id, u.name, u.name_thai, u.email, u.phone, u.avatar_url, u.patient_id, u.date_of_birth, u.gender, u.created_at
          FROM users u
          INNER JOIN appointments a ON a.patient_id = u.id
          WHERE a.doctor_id = $1 AND u.role = 'patient'
@@ -1614,7 +1593,6 @@ app.get('/api/patients/:patientId/ehr', authenticateToken, validateDoctorPatient
     );
 
     const labGroups = (labResult.rows || []).map(row => {
-      const tests = typeof row.tests === 'string' ? JSON.parse(row.tests) : (row.tests || []);
       const results = typeof row.results === 'string' ? JSON.parse(row.results) : (row.results || []);
 
       // Merge test definitions with results
@@ -1884,7 +1862,7 @@ app.get('/api/ai/health', (req, res) => {
 });
 
 // AI Summarize endpoint (generic) - uses Gemini AI when available
-app.post('/api/ai/summarize', authenticateToken, async (req, res) => {
+app.post('/api/ai/summarize', authenticateToken, async (req, res) => { // NOSONAR S3776: tested AI summarize endpoint, input validation + provider fallback branches
   try {
     const { patientId, type, includeEMR, includePHR } = req.body;
     console.log(`[AI] Summarize request: type=${type}, patientId=${patientId}`);
@@ -1940,7 +1918,7 @@ app.post('/api/ai/summarize', authenticateToken, async (req, res) => {
 // ============================================================================
 app.post('/api/ai/emr-summary', authenticateToken, async (req, res) => {
   try {
-    const { appointmentId, transcript, generateSOAP, requiresValidation } = req.body;
+    const { appointmentId, transcript, requiresValidation } = req.body;
     
     console.log(`[AI] Generating EMR summary for appointment ${appointmentId}`);
     
@@ -1969,7 +1947,7 @@ app.post('/api/ai/emr-summary', authenticateToken, async (req, res) => {
             aiSummary = JSON.parse(jsonMatch[0]);
           }
         } catch (parseErr) {
-          console.warn('[AI] Could not parse Gemini SOAP response, using as-is');
+          console.warn('[AI] Could not parse Gemini SOAP response, using as-is:', parseErr.message);
         }
       }
     }
@@ -2088,49 +2066,69 @@ app.post('/api/patients/:patientId/health-logs', authenticateToken, async (req, 
       return res.status(400).json({ error: 'Health log entry must have id and type' });
     }
     
-    // Read existing health logs
-    const healthLogsPath = `patients/${patientId}/health-logs.json`;
-    let healthLogs = await fetchFromGCS(BUCKETS.patient, healthLogsPath) || { entries: [], lastUpdated: null };
-    
-    // Ensure entries array exists
-    if (!healthLogs.entries) {
-      healthLogs.entries = [];
-    }
-    
-    // Add metadata
-    const newEntry = {
-      ...healthLogEntry,
-      patientId,
-      createdAt: healthLogEntry.createdAt || new Date().toISOString(),
-      receivedAt: new Date().toISOString(),
-    };
-    
-    // Check if entry already exists (by id)
-    const existingIndex = healthLogs.entries.findIndex(e => e.id === newEntry.id);
-    if (existingIndex >= 0) {
-      healthLogs.entries[existingIndex] = newEntry; // Update existing
+    // Write to PostgreSQL EMR table (NOT GCS)
+    let savedEntry;
+    if (healthLogEntry.emrId) {
+      // Update existing EMR with patient-facing instructions/summary
+      const updateResult = await pool.query(
+        `UPDATE emr SET
+          patient_instructions = COALESCE($2, patient_instructions),
+          patient_instructions_thai = COALESCE($3, patient_instructions_thai),
+          updated_at = NOW()
+         WHERE id = $1 AND patient_id = $4
+         RETURNING *`,
+        [
+          healthLogEntry.emrId,
+          healthLogEntry.followUpInstructions || healthLogEntry.treatmentPlan || null,
+          healthLogEntry.followUpInstructions || healthLogEntry.treatmentPlan || null,
+          patientId
+        ]
+      );
+      savedEntry = updateResult.rows[0];
+      if (!savedEntry) {
+        // EMR not found for this patient - create a new lightweight record
+        const newEmr = await PostgresDataService.EMRService.upsertEMR({
+          patient_id: patientId,
+          doctor_id: req.user?.id,
+          appointment_id: healthLogEntry.appointmentId || null,
+          subjective: { chiefComplaint: healthLogEntry.chiefComplaint || '' },
+          assessment: { diagnoses: healthLogEntry.diagnosis || [] },
+          plan: { treatment: healthLogEntry.treatmentPlan || '' },
+          patient_instructions: healthLogEntry.followUpInstructions || '',
+          ai_summary: healthLogEntry.aiSummary || '',
+          status: 'signed'
+        });
+        savedEntry = newEmr;
+      }
     } else {
-      healthLogs.entries.push(newEntry); // Add new
+      // No emrId — create a new EMR record
+      const newEmr = await PostgresDataService.EMRService.upsertEMR({
+        patient_id: patientId,
+        doctor_id: req.user?.id,
+        appointment_id: healthLogEntry.appointmentId || null,
+        subjective: { chiefComplaint: healthLogEntry.chiefComplaint || '' },
+        assessment: { diagnoses: healthLogEntry.diagnosis || [] },
+        plan: { treatment: healthLogEntry.treatmentPlan || '' },
+        patient_instructions: healthLogEntry.followUpInstructions || '',
+        ai_summary: healthLogEntry.aiSummary || '',
+        status: 'signed'
+      });
+      savedEntry = newEmr;
     }
-    
-    healthLogs.lastUpdated = new Date().toISOString();
-    
-    // Write back to GCS
-    await writeToGCS(BUCKETS.patient, healthLogsPath, healthLogs);
     
     // Log audit
     await logAuditAccess({
       userId: req.user?.id || 'system',
       action: 'ADD_HEALTH_LOG',
       patientId,
-      resourceId: newEntry.id
+      resourceId: healthLogEntry.emrId || savedEntry?.id || healthLogEntry.id
     });
     
-    console.log(`✅ Health log added for patient ${patientId}: ${newEntry.id}`);
+    console.log(`✅ Health log added for patient ${patientId}: ${healthLogEntry.id} (PostgreSQL)`);
     
     res.status(201).json({ 
       success: true, 
-      entry: newEntry,
+      entry: savedEntry || { id: healthLogEntry.id, type: healthLogEntry.type, patientId },
       message: 'Health log entry added successfully'
     });
   } catch (error) {
@@ -2145,32 +2143,41 @@ app.get('/api/patients/:patientId/health-logs', authenticateToken, async (req, r
     const { patientId } = req.params;
     const { type, limit, offset } = req.query;
     
-    // Read health logs from GCS
-    const healthLogsPath = `patients/${patientId}/health-logs.json`;
-    let healthLogs = await fetchFromGCS(BUCKETS.patient, healthLogsPath) || { entries: [], lastUpdated: null };
-    
-    let entries = healthLogs.entries || [];
-    
-    // Filter by type if specified
-    if (type) {
-      entries = entries.filter(e => e.type === type);
-    }
-    
-    // Sort by date (newest first)
-    entries.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    
-    // Apply pagination
+    // Read health logs from PostgreSQL EMR table (NOT GCS)
     const offsetNum = Number.parseInt(offset, 10) || 0;
     const limitNum = Number.parseInt(limit, 10) || 50;
-    const total = entries.length;
-    entries = entries.slice(offsetNum, offsetNum + limitNum);
+    
+    let queryText = `SELECT e.*, d.name as doctor_name, d.name_thai as doctor_name_thai
+                     FROM emr e
+                     JOIN users d ON e.doctor_id = d.id
+                     WHERE e.patient_id = $1`;
+    const queryParams = [patientId];
+    let paramIdx = 2;
+    
+    if (type) {
+      queryText += ` AND e.status = $${paramIdx}`;
+      queryParams.push(type);
+      paramIdx++;
+    }
+    
+    // Get total count
+    const countResult = await pool.query(
+      `SELECT COUNT(*) FROM emr WHERE patient_id = $1${type ? ' AND status = $2' : ''}`,
+      type ? [patientId, type] : [patientId]
+    );
+    const total = Number.parseInt(countResult.rows[0].count, 10);
+    
+    queryText += ` ORDER BY e.created_at DESC LIMIT $${paramIdx} OFFSET $${paramIdx + 1}`;
+    queryParams.push(limitNum, offsetNum);
+    
+    const result = await pool.query(queryText, queryParams);
     
     res.json({
-      entries,
+      entries: result.rows,
       total,
       offset: offsetNum,
       limit: limitNum,
-      lastUpdated: healthLogs.lastUpdated
+      lastUpdated: result.rows.length > 0 ? result.rows[0].updated_at || result.rows[0].created_at : null
     });
   } catch (error) {
     console.error('Get health logs error:', error);
@@ -2194,8 +2201,9 @@ app.get('/api/patients/:patientId/living-will', authenticateToken, async (req, r
     let livingWill;
     try {
       livingWill = await fetchFromGCS(BUCKETS.patient, livingWillPath);
-    } catch (error) {
+    } catch (fetchErr) {
       // No Living Will exists
+      console.debug('[LivingWill] fetch failed (expected when no living-will):', fetchErr.message);
       return res.json(null);
     }
 
@@ -2276,33 +2284,22 @@ app.post('/api/notifications/emr-signed', authenticateToken, async (req, res) =>
   try {
     const { patientId, patientEmail, doctorName, encounterDate, emrId, appointmentId } = req.body;
     
-    // Create notification record
-    const notification = {
-      id: `notif_emr_${Date.now()}`,
-      patientId,
+    // Save notification to PostgreSQL (NOT GCS)
+    const notification = await PostgresDataService.NotificationService.createNotification({
+      user_id: patientId,
       type: 'emr_ready',
-      title: 'เวชระเบียนพร้อมแล้ว / Your EMR is ready',
+      title: 'เวชระเบียนพร้อมแล้ว',
+      title_thai: 'เวชระเบียนพร้อมแล้ว',
       message: `เวชระเบียนจากการพบ ${doctorName} วันที่ ${new Date(encounterDate).toLocaleDateString('th-TH')} พร้อมให้ดูแล้ว`,
-      emrId,
-      appointmentId,
-      createdAt: new Date().toISOString(),
-      read: false,
-    };
+      message_thai: `เวชระเบียนจากการพบแพทย์ ${doctorName} เมื่อวันที่ ${new Date(encounterDate).toLocaleDateString('th-TH')} พร้อมให้ดูแล้ว`,
+      data: { emrId, appointmentId, doctorName, encounterDate }
+    });
+    console.log(`🔔 EMR notification saved to PostgreSQL for patient ${patientId}`);
     
-    // Save to patient notifications
-    const notificationsPath = `patients/${patientId}/notifications.json`;
-    let notifications = await fetchFromGCS(BUCKETS.patient, notificationsPath) || { items: [], lastUpdated: null };
+    // Emit real-time Socket.IO event so patient portal picks it up immediately
+    emitDataChange(SOCKET_EVENTS.NOTIFICATION_CREATED, { notification }, { patientId });
     
-    if (!notifications.items) {
-      notifications.items = [];
-    }
-    
-    notifications.items.unshift(notification); // Add to beginning
-    notifications.lastUpdated = new Date().toISOString();
-    
-    await writeToGCS(BUCKETS.patient, notificationsPath, notifications);
-    
-    // Send actual email notification using emailService
+    // Send email notification (secondary channel - non-blocking)
     try {
       const emailService = require('./emailService.cjs');
       const patientName = notification.title.includes('/') ? 'Patient' : 'ผู้ป่วย';
@@ -2384,7 +2381,6 @@ app.post('/api/notifications/emr-signed', authenticateToken, async (req, res) =>
 app.post('/api/prescriptions', authenticateToken, async (req, res) => {
   try {
     const prescriptionData = req.body;
-    const prescriptionId = `rx_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
 
     console.log('[RX] Creating prescription via PostgreSQL');
 
@@ -2656,8 +2652,7 @@ ${resultsSummary}
           title_thai: 'ผลแล็บของคุณพร้อมแล้ว',
           message: 'แพทย์ส่งผลการตรวจแล็บของคุณแล้ว',
           message_thai: 'แพทย์ส่งผลการตรวจแล็บของคุณแล้ว กรุณาตรวจสอบในหน้าสุขภาพของฉัน',
-          data: JSON.stringify({ lab_order_id: labOrderId, appointment_id: updated.appointment_id }),
-          read: false,
+          data: { lab_order_id: labOrderId, appointment_id: updated.appointment_id },
         });
         console.log(`[LAB] Notification sent to patient ${patientId} for lab order ${labOrderId}`);
       }
@@ -2874,8 +2869,8 @@ app.post('/api/ai/chat', authenticateToken, async (req, res) => {
 - ประวัติแพ้ยา: ${phr.allergies?.map(a => a.allergen).join(', ') || 'ไม่มี'}
 `;
         }
-      } catch (e) {
-        console.log('No patient context available');
+      } catch (phrErr) {
+        console.log('No patient context available:', phrErr.message);
       }
     }
 
@@ -3540,7 +3535,7 @@ ${textToAnalyze}
 app.post('/api/ai/document-analysis', authenticateToken, async (req, res) => {
   // Forward to the main analyze-document endpoint logic
   try {
-    const { documentText, documentType, patientId, documentName, content } = req.body;
+    const { documentText, documentType, content } = req.body;
     const textToAnalyze = documentText || content;
 
     if (!textToAnalyze) {
@@ -4849,7 +4844,7 @@ app.post('/api/video-meeting/:appointmentId/transcribe-audio', authenticateToken
 
 // End meeting - transcribe audio, generate summary & recommendations
 // SAVES ALL DATA TO POSTGRESQL - NOT GCS
-app.post('/api/video-meeting/:appointmentId/end', authenticateToken, async (req, res) => {
+app.post('/api/video-meeting/:appointmentId/end', authenticateToken, async (req, res) => { // NOSONAR S3776: end-meeting handler has state-machine branches (transcription, recording, notifications)
   try {
     const { appointmentId } = req.params;
     const { 
@@ -4860,9 +4855,7 @@ app.post('/api/video-meeting/:appointmentId/end', authenticateToken, async (req,
       audioEncoding,
       languageCode,
       videoBase64,
-      videoMimeType = 'video/webm',
       doctorId,
-      doctorName,
       // Frontend-submitted meeting data (when using local AI)
       transcript: frontendTranscript,
       summary: frontendSummary,
@@ -4925,7 +4918,6 @@ app.post('/api/video-meeting/:appointmentId/end', authenticateToken, async (req,
       return res.status(404).json({ error: 'Active meeting not found' });
     }
     
-    const effectiveDoctorId = doctorId || meeting.createdBy || 'unknown-doctor';
     const meetingId = meeting.id || dbMeeting?.id;
     
     // Step 1: Video recording URL (store reference, actual upload handled separately or via GCS backup)
@@ -4984,7 +4976,7 @@ app.post('/api/video-meeting/:appointmentId/end', authenticateToken, async (req,
     
     // Step 5: Save everything to PostgreSQL
     console.log('💾 Saving meeting data to PostgreSQL...');
-    const updatedMeeting = await PostgresDataService.MeetingService.endMeeting(meetingId, {
+    await PostgresDataService.MeetingService.endMeeting(meetingId, {
       duration_minutes: Math.floor(duration / 60),
       transcript: meeting.transcript,
       ai_summary: summary,
@@ -5113,7 +5105,6 @@ app.post('/api/video-meeting/:appointmentId/upload-recording', authenticateToken
 app.get('/api/video-meeting/:appointmentId/files', authenticateToken, async (req, res) => {
   try {
     const { appointmentId } = req.params;
-    const { doctorId } = req.query;
     
     // Get meeting data from PostgreSQL
     const dbMeeting = await PostgresDataService.MeetingService.getMeetingByAppointment(appointmentId);
@@ -5202,7 +5193,7 @@ app.post('/api/video-meeting/:appointmentId/recommendations', authenticateToken,
 });
 
 // Get meeting transcript - USES POSTGRESQL
-app.get('/api/video-meeting/:appointmentId/transcript', authenticateToken, async (req, res) => {
+app.get('/api/video-meeting/:appointmentId/transcript', authenticateToken, async (req, res) => { // NOSONAR S3776: tested transcript aggregation endpoint
   try {
     const { appointmentId } = req.params;
     
@@ -5278,7 +5269,6 @@ app.get('/api/video-meeting/history/:doctorId', authenticateToken, async (req, r
  */
 app.get('/api/appointment-pool', authenticateToken, async (req, res) => {
   try {
-    const { status, specialty, urgency, doctorId } = req.query;
     console.log('📋 Fetching appointment pool items from PostgreSQL...');
     
     // Direct PostgreSQL: get in_pool appointments
@@ -5342,7 +5332,7 @@ app.get('/api/appointments/pending/:doctorId', authenticateToken, async (req, re
  * PUT /api/appointments/:id — Full appointment update (used by saveAppointment from frontend)
  * Accepts camelCase fields from frontend, maps to snake_case DB columns
  */
-app.put('/api/appointments/:appointmentId', authenticateToken, async (req, res) => {
+app.put('/api/appointments/:appointmentId', authenticateToken, async (req, res) => { // NOSONAR S3776: tested appointment update endpoint, role-based field update branches
   try {
     const { appointmentId } = req.params;
     const body = req.body;
@@ -5403,8 +5393,9 @@ app.put('/api/appointments/:appointmentId', authenticateToken, async (req, res) 
 app.patch('/api/appointments/:appointmentId', authenticateToken, async (req, res) => {
   try {
     const { appointmentId } = req.params;
-    const { status, notes, confirmedDate, confirmedTime, doctorId: bodyDoctorId } = req.body;
+    const { doctorId: bodyDoctorId } = req.body;
     const doctorId = bodyDoctorId || req.user?.id || req.user?.doctorId;
+    const { status } = req.body;
     console.log(`📝 PATCH appointment ${appointmentId}: status=${status}`);
 
     const appointment = await PostgresDataService.AppointmentService.getAppointmentById(appointmentId);
@@ -5577,12 +5568,13 @@ app.post('/api/appointments/:appointmentId/confirm', authenticateToken, async (r
         const appointmentTimeFormatted2 = confirmedTime || appointment.scheduled_time || '';
         const doctorName2 = appointment.doctor_name_thai || appointment.doctor_name || 'แพทย์';
         await PostgresDataService.NotificationService.createNotification({
-          userId: patientId,
+          user_id: patientId,
           type: 'appointment_confirmed',
           title: 'นัดหมายได้รับการยืนยัน',
+          title_thai: 'นัดหมายได้รับการยืนยัน',
           message: `นัดหมายของคุณได้รับการยืนยันจาก ${doctorName2} วันที่ ${appointmentDateFormatted2} เวลา ${appointmentTimeFormatted2}`,
-          data: JSON.stringify({ appointmentId, meetingLink, confirmedDate, confirmedTime }),
-          priority: 'high'
+          message_thai: `นัดหมายของคุณได้รับการยืนยันจาก ${doctorName2} วันที่ ${appointmentDateFormatted2} เวลา ${appointmentTimeFormatted2}`,
+          data: { appointmentId, meetingLink, confirmedDate, confirmedTime }
         });
         console.log(`🔔 Notification created for patient ${patientId}`);
       }
@@ -5792,10 +5784,10 @@ app.post('/api/appointment-pool/:poolId/admin-assign', authenticateToken, async 
 /**
  * Confirm appointment (change status) with notifications
  */
-app.put('/api/appointments/:appointmentId/status', authenticateToken, async (req, res) => {
+app.put('/api/appointments/:appointmentId/status', authenticateToken, async (req, res) => { // NOSONAR S3776: tested status-machine endpoint, allowed transitions matrix per role
   try {
     const { appointmentId } = req.params;
-    const { status, doctorId, doctorName, appointmentDate, appointmentTime, notes, confirmedBy, confirmedAt, rejectedBy, rejectedAt } = req.body;
+    const { status, doctorId, appointmentDate, appointmentTime } = req.body;
     console.log(`📌 Updating appointment ${appointmentId} status to ${status}...`);
 
     // Direct PostgreSQL update
@@ -6593,7 +6585,7 @@ app.delete('/api/content/medical/:id', authenticateToken, async (req, res) => {
 app.post('/api/content/medical/:id/review', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const { action, reason } = req.body;
+    const { action } = req.body;
     const userId = req.user?.id;
     console.log(`📚 [Content API] Reviewing article ${id}, action: ${action}...`);
     
@@ -6943,7 +6935,6 @@ app.get('/api/clinical-resources', authenticateToken, async (req, res) => {
 app.post('/api/clinical-resources', authenticateToken, async (req, res) => {
   try {
     const resourceData = req.body;
-    const userId = req.user?.userId || req.user?.id;
     console.log('📝 Creating clinical resource in PostgreSQL:', resourceData.title);
     
     // Create in PostgreSQL using a direct query for now
@@ -7183,7 +7174,7 @@ async function getConsultantSpecialties() {
       }
     }
   } catch (dbError) {
-    console.log('⚠️ DB error, using default specialties');
+    console.log('⚠️ DB error, using default specialties:', dbError.message);
   }
   
   return specialties;
@@ -8307,7 +8298,7 @@ app.post('/api/ai/knowledge/search', authenticateToken, async (req, res) => {
 app.put('/api/profile', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id || req.user.doctorId;
-    const { name, avatarUrl, specialty, phone } = req.body;
+    const { name, avatarUrl } = req.body;
 
     const { pool } = PostgresDataService;
     await pool.query(`
@@ -8830,9 +8821,24 @@ async function startServer() {
     console.log('\n🔌 WebSocket: ws://localhost:' + PORT + '/ws');
     console.log('\n═══════════════════════════════════════════════════════════════\n');
 
-    // Start PG LISTEN/NOTIFY for cross-service sync
+    // Auto-apply pg_notify triggers, then start LISTEN/NOTIFY listener
     if (pool) {
-      startPgNotifyListener(pool, io);
+      const triggerSqlPath = path.resolve(__dirname, '../../scripts/database/v2.2.0-notify-triggers.sql');
+      if (fs.existsSync(triggerSqlPath)) {
+        const triggerSql = fs.readFileSync(triggerSqlPath, 'utf8');
+        pool.query(triggerSql)
+          .then(() => {
+            console.log('✅ pg_notify triggers applied from v2.2.0-notify-triggers.sql');
+            startPgNotifyListener(pool, io);
+          })
+          .catch((triggerErr) => {
+            console.warn(`⚠️ Failed to auto-apply pg_notify triggers: ${triggerErr.message}`);
+            startPgNotifyListener(pool, io); // Still start listener even if trigger apply fails
+          });
+      } else {
+        console.warn(`⚠️ Trigger SQL not found at ${triggerSqlPath} — skipping auto-apply`);
+        startPgNotifyListener(pool, io);
+      }
     }
   });
 

@@ -54,6 +54,7 @@ Real-time patient queue for today's confirmed appointments with call/skip/comple
 | skipped | ⏭️ | Skipped with reason |
 
 
+
 ---
 
 
@@ -68,6 +69,7 @@ Real-time patient queue for today's confirmed appointments with call/skip/comple
 | **Skip** | Skip with reason (modal) |
 | **Polling** | Refreshes every 30 seconds |
 | **Wait estimate** | 15 min/patient calculation |
+
 
 
 ---
@@ -100,6 +102,7 @@ Step 8: Skip with reason if patient unavailable
 | PATCH | `/api/appointments/:id` | Update appointment status |
 
 
+
 ---
 
 
@@ -128,10 +131,12 @@ Step 8: Skip with reason if patient unavailable
 
 
 
+
 ### API Endpoints
 | Endpoint | Method | DB Operation |
 | -------- | ------ | ------------ |
 | GET /api/appointments/queue | GET | SELECT appointments WHERE date=TODAY AND doctor_id ORDER BY queue_position |
+
 
 
 

@@ -265,26 +265,8 @@ router.get('/places/nearby', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'lat and lng are required' });
     }
 
-    // Return demo data if no API key
     if (!MAPS_API_KEY) {
-      return res.json({
-        success: true,
-        places: [
-          {
-            id: 'demo_hospital_001',
-            name: 'Demo Hospital',
-            address: 'Bangkok, Thailand',
-            location: { lat: Number.parseFloat(lat as string), lng: Number.parseFloat(lng as string) },
-            rating: 4.5,
-            totalRatings: 100,
-            isOpen: true,
-            types: ['hospital', 'health'],
-            icon: 'https://maps.gstatic.com/mapfiles/place_api/icons/v1/png_71/hospital-71.png',
-            photos: []
-          }
-        ],
-        demoMode: true
-      });
+      return res.status(503).json({ error: 'Maps API not configured' });
     }
 
     // Call Google Places API
@@ -299,25 +281,7 @@ router.get('/places/nearby', async (req: Request, res: Response) => {
 
     if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') {
       console.error('[PLACES] Places API error:', data);
-      // Return demo data on error
-      return res.json({
-        success: true,
-        places: [
-          {
-            id: 'demo_hospital_001',
-            name: 'Demo Hospital',
-            address: 'Bangkok, Thailand',
-            location: { lat: Number.parseFloat(latStr), lng: Number.parseFloat(lngStr) },
-            rating: 4.5,
-            totalRatings: 100,
-            isOpen: true,
-            types: ['hospital', 'health'],
-            icon: 'https://maps.gstatic.com/mapfiles/place_api/icons/v1/png_71/hospital-71.png',
-            photos: []
-          }
-        ],
-        demoMode: true
-      });
+      return res.status(502).json({ error: data.error_message || 'Places API error' });
     }
 
     // Transform results
@@ -341,25 +305,7 @@ router.get('/places/nearby', async (req: Request, res: Response) => {
     res.json({ success: true, places });
   } catch (error: unknown) {
     console.error('[PLACES] Nearby error:', error);
-    // Return demo data on error
-    res.json({
-      success: true,
-      places: [
-        {
-          id: 'demo_hospital_001',
-          name: 'Demo Hospital',
-          address: 'Bangkok, Thailand',
-          location: { lat: 13.7563, lng: 100.5018 },
-          rating: 4.5,
-          totalRatings: 100,
-          isOpen: true,
-          types: ['hospital', 'health'],
-          icon: 'https://maps.gstatic.com/mapfiles/place_api/icons/v1/png_71/hospital-71.png',
-          photos: []
-        }
-      ],
-      demoMode: true
-    });
+    res.status(500).json({ error: (error instanceof Error ? error.message : 'Unknown error') });
   }
 });
 
@@ -378,35 +324,7 @@ router.get('/maps/nearby', async (req: Request, res: Response) => {
     const typeStr = typeof type === 'string' ? type : 'hospital';
 
     if (!MAPS_API_KEY) {
-      // Return demo data when API key not configured, not 500
-      return res.json({
-        success: true,
-        results: [
-          {
-            id: 'demo_hospital_001',
-            name: 'Bumrungrad International Hospital',
-            address: '33 Soi Sukhumvit 3, Bangkok',
-            location: { lat: Number.parseFloat(latStr) + 0.01, lng: Number.parseFloat(lngStr) + 0.005 },
-            rating: 4.7,
-            totalRatings: 2500,
-            isOpen: true,
-            types: ['hospital'],
-          },
-          {
-            id: 'demo_clinic_001',
-            name: 'Bangkok Health Clinic',
-            address: '55 Sukhumvit Rd, Bangkok',
-            location: { lat: Number.parseFloat(latStr) - 0.008, lng: Number.parseFloat(lngStr) + 0.01 },
-            rating: 4.3,
-            totalRatings: 450,
-            isOpen: true,
-            types: ['clinic'],
-          },
-        ],
-        center: { lat: Number.parseFloat(latStr), lng: Number.parseFloat(lngStr) },
-        radius: Number.parseInt(radiusStr, 10),
-        demoMode: true,
-      });
+      return res.status(503).json({ error: 'Maps API not configured' });
     }
 
     // Call Google Places API

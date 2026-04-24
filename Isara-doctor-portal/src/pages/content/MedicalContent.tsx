@@ -769,7 +769,8 @@ const MedicalContent: React.FC = () => {
         {filteredContent.map((item) => (
           <div
             key={item.id}
-            className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow group"
+            data-testid="content-item"
+            className="content-item card bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow group"
           >
             <div className="relative">
               <img

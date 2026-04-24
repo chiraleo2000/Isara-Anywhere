@@ -1,24 +1,11 @@
 import { Router, Request, Response } from 'express';
-import { storage, GCS_BUCKETS } from '../index';
+import { BUCKETS as GCS_BUCKETS, readJSON } from '../utils/localStore';
 import { authMiddleware } from '../middleware/auth';
 import { errMsg } from '../utils';
 
 const router = Router();
 
-// Helper function to read JSON from GCS
-async function readJSON(bucket: string, filePath: string): Promise<any> {
-  try {
-    if (!storage) throw new Error('GCS storage not initialized');
-    const file = storage.bucket(bucket).file(filePath);
-    const [contents] = await file.download();
-    return JSON.parse(contents.toString());
-  } catch (error: unknown) {
-    if (error && typeof error === 'object' && 'code' in error && (error as { code: number }).code === 404) {
-      throw new Error(`File not found: ${filePath}`);
-    }
-    throw error;
-  }
-}
+// readJSON is imported from utils/localStore (local filesystem under ./data)
 
 // Get medications database
 router.get('/medications', authMiddleware, async (_req: Request, res: Response) => {

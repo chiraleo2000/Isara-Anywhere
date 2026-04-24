@@ -26,6 +26,7 @@
 
 
 
+
 ### ข้อมูลประจำตัวทดสอบ
 
 | บทบาท | อีเมล | รหัสผ่าน | พอร์ทัล |
@@ -35,6 +36,7 @@
 | ผู้ป่วย | <Anan.Khayanrian@gmail.com> | YOUR_TEST_PASSWORD | localhost:3005 |
 | แพทย์ | <doctor.test@izara.com> | YOUR_TEST_DOCTOR_PASSWORD | localhost:3010 |
 | ผู้ดูแลระบบ | <admin.test@izara.com> | YOUR_TEST_ADMIN_PASSWORD | localhost:3010 |
+
 
 
 ---
@@ -59,6 +61,7 @@
 
 
 
+
 ### ผู้ใช้ทดสอบ
 
 | บทบาท | อีเมล | รหัสผ่าน | พอร์ทัล |
@@ -67,6 +70,7 @@
 | ผู้ป่วย | <demo.test@gmail.com> | YOUR_TEST_PASSWORD | localhost:3005 |
 | ญาติผู้ป่วย (demo2) | <demo2.test@gmail.com> | YOUR_TEST_PASSWORD | localhost:3005 |
 | ผู้ดูแล/แพทย์ Unit Test | <doctorunit.test@izara.com> | YOUR_TEST_PASSWORD | localhost:3010 |
+
 
 
 
@@ -81,6 +85,7 @@
 | แพทย์เฉพาะทาง | แพทย์ | <dr.cardio@privatehospital.co.th> |
 | ที่ปรึกษาแพทย์ | แพทย์ | <professor@university.ac.th> |
 | อื่นๆ | ทั้งสอง | <any.guest@anydomain.xyz> |
+
 
 
 
@@ -103,12 +108,14 @@
 
 
 
+
 ### Docker Images (v1.4.4)
 
 | พอร์ทัล | Image |
 | -------- | ------- |
 | พอร์ทัลผู้ป่วย | `asia-southeast1-docker.pkg.dev/izara-telemedicine/isara-anywhere-portals/isara-patient-portal:1.4.4` |
 | พอร์ทัลแพทย์ | `asia-southeast1-docker.pkg.dev/izara-telemedicine/isara-anywhere-portals/isara-doctor-portal:1.4.4` |
+
 
 
 
@@ -201,6 +208,7 @@
 | นัดติดตาม | Follow-up | นัดติดตามอาการ |
 | ฉุกเฉิน | Emergency | กรณีฉุกเฉิน |
 | หัตถการ | Procedure | ทำหัตถการ |
+
 
 
 ---
@@ -416,6 +424,7 @@
 | `no_show` | ไม่มา | No show |
 
 
+
 ---
 
 
@@ -433,6 +442,7 @@
 
 
 
+
 ### 5.2 แจ้งเตือนแพทย์
 
 | เหตุการณ์ | ช่องทาง | ข้อความ |
@@ -440,6 +450,7 @@
 | นัดหมายใหม่ | In-App | "มีนัดหมายใหม่รอการยืนยัน" |
 | ผู้ป่วยเข้าห้องรอ | In-App | "ผู้ป่วยรอเข้าร่วมประชุม" |
 | เอกสารรอตรวจสอบ | In-App | "มีเอกสาร AI รอการตรวจสอบ" |
+
 
 
 ---
@@ -460,6 +471,7 @@
 
 
 
+
 ### 6.2 การประชุม
 
 | Method | Endpoint | คำอธิบาย |
@@ -471,6 +483,7 @@
 
 
 
+
 ### 6.3 EMR
 
 | Method | Endpoint | คำอธิบาย |
@@ -479,6 +492,7 @@
 | POST | `/api/emr/:appointmentId` | สร้าง EMR |
 | PUT | `/api/emr/:appointmentId` | อัปเดต EMR |
 | POST | `/api/emr/:appointmentId/validate` | อนุมัติ EMR (Man-in-the-Loop) |
+
 
 
 ---

@@ -105,8 +105,14 @@ const createChatMessage = (role: 'user' | 'assistant', content: string): ChatMes
 };
 
 const getAppointmentDate = (appointment: any): string | null => {
-  const rawDate = appointment?.appointmentDate || appointment?.scheduledDate || appointment?.date;
-  return rawDate ? rawDate.split('T')[0] : null;
+  const rawDate = appointment?.appointmentDate || appointment?.appointment_date
+    || appointment?.confirmed_date || appointment?.confirmedDate
+    || appointment?.requested_date || appointment?.requestedDate
+    || appointment?.scheduledDate || appointment?.scheduled_date
+    || appointment?.date;
+  if (!rawDate) return null;
+  // Handle both ISO datetime and date-only strings
+  return typeof rawDate === 'string' ? rawDate.split('T')[0] : null;
 };
 
 const getDoctorAppointments = (appointments: any[], doctorId: string) => {
@@ -115,7 +121,8 @@ const getDoctorAppointments = (appointments: any[], doctorId: string) => {
     apt.doctor_id === doctorId ||
     apt.assignedDoctorId === doctorId ||
     apt.adminAssignedDoctorId === doctorId ||
-    apt.confirmedBy === doctorId
+    apt.confirmedBy === doctorId ||
+    (!apt.doctorId && !apt.doctor_id) // include unassigned/pool appointments
   );
 };
 
@@ -128,7 +135,7 @@ const getPendingConfirmationsCount = (appointments: any[]) => {
 };
 
 const getAssignedPatients = (patients: PatientRecord[], appointments: any[]) => {
-  const appointmentPatientIds = new Set(appointments.map((apt: any) => apt.patientId));
+  const appointmentPatientIds = new Set(appointments.map((apt: any) => apt.patientId || apt.patient_id));
   return patients.filter((patient: PatientRecord) => appointmentPatientIds.has(patient.id));
 };
 
@@ -139,7 +146,7 @@ const getPatientsByAppointmentStatus = (
 ) => {
   const statusSet = new Set(statuses);
   const patientIds = new Set(
-    appointments.filter((apt: any) => statusSet.has(apt.status)).map((apt: any) => apt.patientId)
+    appointments.filter((apt: any) => statusSet.has(apt.status)).map((apt: any) => apt.patientId || apt.patient_id)
   );
   return patients.filter((patient: PatientRecord) => patientIds.has(patient.id));
 };
@@ -148,7 +155,7 @@ const getUpcomingAppointments = (appointments: any[], today: string) => {
   return appointments
     .filter((apt: any) => {
       const aptDate = getAppointmentDate(apt);
-      const isActiveStatus = ['confirmed', 'scheduled'].includes(apt.status);
+      const isActiveStatus = ['confirmed', 'scheduled', 'pending', 'awaiting_doctor_response', 'assigned'].includes(apt.status);
       return isActiveStatus && aptDate && aptDate >= today;
     })
     .sort((a: any, b: any) => {
@@ -161,7 +168,7 @@ const getUpcomingAppointments = (appointments: any[], today: string) => {
 const getTodaysMeetings = (appointments: any[], today: string) => {
   return appointments.filter((apt: any) => {
     const aptDate = getAppointmentDate(apt);
-    const isActiveStatus = ['confirmed', 'scheduled'].includes(apt.status);
+    const isActiveStatus = ['confirmed', 'scheduled', 'pending', 'awaiting_doctor_response', 'assigned'].includes(apt.status);
     return isActiveStatus && aptDate === today;
   });
 };

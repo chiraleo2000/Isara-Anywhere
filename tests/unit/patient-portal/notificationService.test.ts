@@ -153,7 +153,7 @@ function createNotification(
   data?: Notification['data']
 ): Notification {
   return {
-    id: `NOTIF-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
+    id: `NOTIF-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
     type,
     recipientId,
     recipientEmail,

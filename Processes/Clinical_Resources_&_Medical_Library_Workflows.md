@@ -18,6 +18,7 @@ The Clinical Resources page provides access to medical guidelines, research pape
 | **AI Chat Assistant** | Doctors can query clinical guidelines via chat | ✅ |
 | **Document Analysis** | AI can analyze uploaded PDF guidelines | ✅ |
 
+
 ---
 
 ## Thai-First Content Policy
@@ -126,6 +127,7 @@ interface ClinicalResourceItem {
 | research | Research Papers | งานวิจัย |
 | case-studies | Case Studies | กรณีศึกษา |
 
+
 ## API Endpoints
 
 | Method | Endpoint | Description | Access |
@@ -139,6 +141,7 @@ interface ClinicalResourceItem {
 | POST | `/api/content/clinical/:id/review` | Approve/Reject | Admin |
 | GET | `/api/content/tags/clinical` | Get tags | All |
 | POST | `/api/content/tags/clinical` | Create tag | Doctor |
+
 
 ## Workflows
 
@@ -223,6 +226,7 @@ interface ClinicalResourceItem {
 | **audit_logs** | All create/update/approve/reject actions | user_id, action, entity_type='clinical_resource', entity_id, details (JSONB) |
 | **users** | Author and reviewer identity | id, name, name_thai, role (doctor/admin) |
 
+
 ### Data Flow: Create → Approve → AI Index
 
 ```text
@@ -282,6 +286,7 @@ Doctor queries AI about clinical guideline
 | Production | Doctor Portal | Cloud Run (asia-southeast1) | 35.240.157.230:5432 |
 | Production | Patient Portal | Cloud Run (asia-southeast1) | 35.240.157.230:5432 |
 
+
 ### pgvector Integration for RAG
 
 Clinical resources are embedded into vectors using Google Gemini for semantic search:
@@ -312,6 +317,7 @@ LIMIT 5;
 | 7 | Patient views resource | Patient | — (read) | clinical_resources |
 | 8 | CDS references guideline | Meeting Server | — (read) | knowledge_base |
 | 9 | Delete resource | Doctor (owner) | any → deleted | clinical_resources, knowledge_base, audit_logs |
+
 
 ### 7. Filter and Search
 
@@ -348,6 +354,7 @@ Data is persisted in GCS bucket: `izara-meta-data`
 | Missing required fields | Form validation | Complete form |
 | Cannot delete others' content | "Only the creator can delete" | Check ownership |
 | Content not pending | "Resource is not pending approval" | Check status |
+
 
 ## Correlation with Admin Users
 

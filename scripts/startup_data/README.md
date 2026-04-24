@@ -14,6 +14,7 @@ This folder contains JSON startup data files for initializing the Izara Telemedi
 
 
 
+
 ## Test Credentials
 
 
@@ -27,6 +28,7 @@ This folder contains JSON startup data files for initializing the Izara Telemedi
 
 
 
+
 ### Doctors
 
 | Email | Password | Name |
@@ -35,11 +37,13 @@ This folder contains JSON startup data files for initializing the Izara Telemedi
 
 
 
+
 ### Admins
 
 | Email | Password | Name |
 | --- | --- | --- |
 | <admin.test@izara.com> | YOUR_TEST_ADMIN_PASSWORD | ผู้ดูแลระบบ ทดสอบ |
+
 
 
 

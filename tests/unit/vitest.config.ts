@@ -123,6 +123,10 @@ const GROUP_ADMIN = [
 const GROUP_CROSS_PORTAL = [
   'cross-portal/dataSyncValidation.test.ts',
   'cross-portal/jwtCrossService.test.ts',
+  'cross-portal/multiPortalHelpers.test.ts',
+  'cross-portal/globalSetupLogic.test.ts',
+  'cross-portal/fixtureReliability.test.ts',
+  'cross-portal/authStateValidation.test.ts',
 ];
 
 // Build include list from TEST_GROUP env var (or run all)
@@ -164,7 +168,7 @@ export default defineConfig({
     },
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'text-summary', 'json-summary', 'html'],
+      reporter: ['text', 'text-summary', 'json-summary', 'html', 'lcov'],
       reportsDirectory: './coverage',
       include: [
         '../../Isara-doctor-portal/server/**/*.{ts,js,cjs,mjs}',
@@ -175,6 +179,13 @@ export default defineConfig({
       ],
       exclude: ['**/node_modules/**', '**/dist/**', '**/*.test.*', '**/*.spec.*'],
       all: true,
+      // Phase 4 CI gate: fail if coverage regresses below these floors.
+      thresholds: {
+        lines: 60,
+        functions: 55,
+        branches: 50,
+        statements: 60,
+      },
     },
   },
   resolve: {

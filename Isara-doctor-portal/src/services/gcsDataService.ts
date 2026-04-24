@@ -630,7 +630,7 @@ export async function addTimelineEntry(patientId: string, entry: any): Promise<G
   const timeline = await fetchPatientTimeline(patientId);
   timeline.push({
     ...entry,
-    id: `tl_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    id: `tl_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
     timestamp: new Date().toISOString(),
   });
   return savePatientTimeline(patientId, timeline);
@@ -650,7 +650,7 @@ export async function appendAuditLog(patientId: string, auditEntry: any): Promis
   const existingLog = await fetchAuditLogs(logId) || { entries: [] };
   existingLog.entries.push({
     ...auditEntry,
-    id: `audit_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    id: `audit_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
     timestamp: new Date().toISOString(),
   });
   return saveAuditLog(logId, existingLog);

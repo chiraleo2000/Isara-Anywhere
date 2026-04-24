@@ -132,17 +132,25 @@ export function securityHeaders() {
       "font-src 'self' https://fonts.gstatic.com; " +
       "img-src 'self' data: https: blob:; " +
       "connect-src 'self' http://localhost:* ws://localhost:* wss://localhost:* https://*.googleapis.com https://maps.googleapis.com https://*.run.app wss://*.run.app; " +
-      "frame-src 'self' https://meet.jit.si https://8x8.vc https://meet.jit.si https://8x8.vc https://meet.google.com https://accounts.google.com;"
+      "frame-src 'self' https://meet.jit.si https://8x8.vc https://meet.google.com https://accounts.google.com; " +
+      "frame-ancestors 'self'; " +
+      "object-src 'none'; " +
+      "base-uri 'self'; " +
+      "form-action 'self';"
     );
     
     res.setHeader('X-Frame-Options', 'SAMEORIGIN');
     res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader('X-XSS-Protection', '1; mode=block');
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-    res.setHeader('Permissions-Policy', 'camera=(self "https://meet.jit.si"), microphone=(self "https://meet.jit.si"si"), microphone=(self "https://meet.jit.si"), geolocation=(self)');
+    // Fixed: previous value was malformed (duplicated token + invalid syntax). Permissions-Policy uses () with space-separated origins.
+    res.setHeader(
+      'Permissions-Policy',
+      'camera=(self "https://meet.jit.si"), microphone=(self "https://meet.jit.si"), geolocation=(self), payment=(), usb=()'
+    );
+    // X-XSS-Protection intentionally omitted: deprecated and can introduce XS-Leak vulnerabilities.
     
     if (process.env.NODE_ENV === 'production') {
-      res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+      res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
     }
     
     res.removeHeader('X-Powered-By');

@@ -7,11 +7,13 @@
 
 ---
 
+
 ## 1. Purpose
 
 Order laboratory tests and imaging studies, view results with normal ranges and flag indicators (high/low/critical).
 
 ---
+
 
 ## 2. Layout
 
@@ -26,6 +28,7 @@ Order laboratory tests and imaging studies, view results with normal ranges and 
 │  └─────────────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────────────┘
 ```
+
 
 ### Order Tab
 
@@ -47,6 +50,7 @@ Order laboratory tests and imaging studies, view results with normal ranges and 
 │  [📤 Submit Order]                                                   │
 └──────────────────────────────────────────────────────────────────────┘
 ```
+
 
 ### Results Tab
 
@@ -71,6 +75,7 @@ Order laboratory tests and imaging studies, view results with normal ranges and 
 
 ---
 
+
 ## 3. Result Flag Indicators
 
 | Flag | Color | Description |
@@ -82,6 +87,7 @@ Order laboratory tests and imaging studies, view results with normal ranges and 
 
 ---
 
+
 ## 4. Order Statuses
 
 | Status | Color | Description |
@@ -92,7 +98,9 @@ Order laboratory tests and imaging studies, view results with normal ranges and 
 
 ---
 
+
 ## 5. Workflows
+
 
 ### Workflow 1: Order Lab Tests
 
@@ -106,6 +114,7 @@ Step 6: POST /api/lab-orders → Order created
 Step 7: Status: ordered
 ```
 
+
 ### Workflow 2: View Results
 
 ```text
@@ -118,6 +127,7 @@ Step 5: Doctor reviews and acts on findings
 
 ---
 
+
 ## 6. API Endpoints
 
 | Method | Endpoint | Purpose |
@@ -128,21 +138,29 @@ Step 5: Doctor reviews and acts on findings
 
 ---
 
+
 ## 7. AI Agent Improvement Opportunities
+
 
 - **Smart panel suggestions**: AI suggest tests based on diagnosis
 
+
 - **Result interpretation**: AI interpret complex lab panels
+
 
 - **Trend analysis**: AI identify concerning trends across multiple results
 
+
 - **Auto-alerting**: AI notify doctor of critical results immediately
+
 
 - **Cost optimization**: AI suggest most cost-effective test combinations
 
 ---
 
+
 ## PostgreSQL Database Integration
+
 
 ### Tables Used
 
@@ -152,6 +170,7 @@ Step 5: Doctor reviews and acts on findings
 | ai_document_analysis | INSERT/SELECT | AI analysis of uploaded lab result documents |
 | emr | SELECT/UPDATE | Link lab orders to EMR record |
 
+
 ### API Endpoints
 
 | Endpoint | Method | DB Operation |
@@ -159,14 +178,20 @@ Step 5: Doctor reviews and acts on findings
 | POST /api/lab-orders | POST | INSERT lab_orders |
 | PUT /api/lab-orders/:id/results | PUT | UPDATE lab_orders SET results; INSERT ai_document_analysis |
 
+
 ### Real-time Events
+
 
 - **NOTIFY:** lab_order_changes channel → Socket.IO lab result notifications
 
+
 ### Deployment
+
 
 - **Local Docker:** izara-postgres container (localhost:5433 external / 5432 internal) → database: izara_phase1
 
+
 - **Production:** GCE VM at 35.240.157.230:5432 → database: izara_phase1 (asia-southeast1)
+
 
 - **Service deployed via:** Cloud Run (gen2, CPU Boost) + Cloud Build CI/CD

@@ -7,11 +7,13 @@
 
 ---
 
+
 ## 1. Purpose
 
 Electronic prescription system with real-time drug search, allergy cross-checking, drug interaction warnings, and digital signature.
 
 ---
+
 
 ## 2. Layout
 
@@ -45,6 +47,7 @@ Electronic prescription system with real-time drug search, allergy cross-checkin
 
 ---
 
+
 ## 3. Prescription Fields (Per Drug)
 
 | Field | Options |
@@ -62,7 +65,9 @@ Electronic prescription system with real-time drug search, allergy cross-checkin
 
 ---
 
+
 ## 4. Safety Features
+
 
 ### Allergy Alert
 
@@ -72,6 +77,7 @@ Drug: Amoxicillin (Penicillin group)
 Patient allergy: Penicillin
 Action: BLOCKED - Cannot prescribe
 ```
+
 
 ### Drug Interaction Warning
 
@@ -84,7 +90,9 @@ Recommendation: Monitor INR closely or consider alternatives
 
 ---
 
+
 ## 5. Workflows
+
 
 ### Workflow: Create Prescription
 
@@ -105,6 +113,7 @@ Step 12: Patient notified of new prescription
 
 ---
 
+
 ## 6. API Endpoints
 
 | Method | Endpoint | Purpose |
@@ -117,21 +126,29 @@ Step 12: Patient notified of new prescription
 
 ---
 
+
 ## 7. AI Agent Improvement Opportunities
+
 
 - **AI dose calculation**: Adjust doses based on renal/hepatic function
 
+
 - **Smart drug selection**: AI suggest drugs based on diagnosis
+
 
 - **Formulary integration**: AI check insurance formulary coverage
 
+
 - **Adherence prediction**: AI predict medication adherence likelihood
+
 
 - **Alternative suggestions**: AI suggest equally effective lower-cost alternatives
 
 ---
 
+
 ## PostgreSQL Database Integration
+
 
 ### Tables Used
 
@@ -142,24 +159,33 @@ Step 12: Patient notified of new prescription
 | cds_logs | INSERT | Clinical Decision Support audit trail |
 | emr | SELECT/UPDATE | Link prescription to EMR record |
 
+
 ### API Endpoints
 
 | Endpoint | Method | DB Operation |
 | -------- | ------ | ------------ |
 | POST /api/prescriptions | POST | INSERT prescriptions; SELECT drugs for CDS check; INSERT cds_logs |
 
+
 ### Clinical Decision Support (CDS)
+
 
 - **Drug Interaction Check:** SELECT FROM drugs WHERE interactions overlap with patient's current medications
 
+
 - **Contraindication Check:** Cross-reference patient allergies and conditions
+
 
 - **Dosage Validation:** Verify dosage within safe range for patient profile
 
+
 ### Deployment
+
 
 - **Local Docker:** izara-postgres container (localhost:5433 external / 5432 internal) → database: izara_phase1
 
+
 - **Production:** GCE VM at 35.240.157.230:5432 → database: izara_phase1 (asia-southeast1)
+
 
 - **Service deployed via:** Cloud Run (gen2, CPU Boost) + Cloud Build CI/CD

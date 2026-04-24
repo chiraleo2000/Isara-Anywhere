@@ -167,6 +167,7 @@ node scripts/database/db-tool.cjs --help                          # Show all com
 | pgAdmin | <http://localhost:5050> | Cloud Run (auto-assigned) |
 
 
+
 ---
 
 
@@ -202,6 +203,7 @@ gcloud builds submit --config=../scripts/docker/cloudbuild-meeting-server.yaml .
 | `cloud-run/Dockerfile.*` + `cloudbuild-*.yaml` + `servers.json` + `vm-startup.sh` | `docker/` directory |
 | `cloud-run/init-scripts/` (duplicate SQL) | Removed (uses `database/izara-database.sql`) |
 | `cloud-run/migrate-dev-phase2.ps1` | `database/db-tool.cjs --migrate-phase2` |
+
 
 
 ---

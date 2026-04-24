@@ -11,12 +11,7 @@ export default defineConfig(({ mode }) => {
         strictPort: true,
         open: true,
         proxy: {
-          // Proxy /api/storage requests to GCS API server (storage operations)
-          '/api/storage': {
-            target: 'http://localhost:3012',
-            changeOrigin: true,
-            secure: false,
-          },
+          // /api/storage removed — GCS API server no longer exists.
           // Proxy /api/content requests to Main API server (medical content, clinical resources — PostgreSQL)
           '/api/content': {
             target: 'http://localhost:3009',

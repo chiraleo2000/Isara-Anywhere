@@ -136,7 +136,7 @@ test.describe('Group A — Auth & Access Verification', () => {
       await test.step(`${ep.name} health check`, async () => {
         const resp = await patient.page.request.get(ep.url, { timeout: 10_000 }).catch(() => null);
         if (resp) {
-          expect(resp.status(), `${ep.name} at ${ep.url}`).toBeLessThan(400);
+          expect(resp.status(), `${ep.name} at ${ep.url}`).toBe(200);
           console.log(`  ✅ A05: ${ep.name} — ${resp.status()}`);
         } else {
           console.log(`  ⚠️ A05: ${ep.name} — unreachable`);
@@ -180,5 +180,89 @@ test.describe('Group A — Auth & Access Verification', () => {
       console.log('  ✅ A07: Patient→Doctor route — network blocked');
     }
     await snap(patient.page, 'A07-role-isolation', 'group-A');
+  });
+
+  /* ── A08 — API data endpoints return 200 with actual data ───────── */
+  test('A08 — API data endpoints return 200 with data', async ({ portals }) => {
+    const { patient, doctor } = portals;
+
+    await test.step('Patient appointments API returns 200', async () => {
+      const token = await patient.page.evaluate(() => localStorage.getItem('auth_token') || '');
+      const resp = await patient.page.request.get(`${PATIENT_URL}/api/appointments`, {
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        timeout: 10_000,
+      }).catch(() => null);
+      expect(resp, 'Appointments API reachable').toBeTruthy();
+      if (resp) {
+        expect(resp.status(), 'Appointments must return 200').toBe(200);
+        console.log(`  ✅ A08: Patient appointments — ${resp.status()}`);
+      }
+    });
+
+    await test.step('Patient profile API returns 200', async () => {
+      const token = await patient.page.evaluate(() => localStorage.getItem('auth_token') || '');
+      const resp = await patient.page.request.get(`${PATIENT_URL}/api/auth/me`, {
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        timeout: 10_000,
+      }).catch(() => null);
+      expect(resp, 'Profile API reachable').toBeTruthy();
+      if (resp) {
+        expect(resp.status(), 'Profile must return 200').toBe(200);
+        console.log(`  ✅ A08: Patient profile — ${resp.status()}`);
+      }
+    });
+
+    await test.step('Doctor patients API returns 200', async () => {
+      const token = await doctor.page.evaluate(() => localStorage.getItem('token') || '');
+      const resp = await doctor.page.request.get(`${DOCTOR_URL}/api/patients`, {
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        timeout: 10_000,
+      }).catch(() => null);
+      if (resp) {
+        expect(resp.status(), 'Doctor patients API').toBeLessThan(400);
+        console.log(`  ✅ A08: Doctor patients — ${resp.status()}`);
+      }
+    });
+  });
+
+  /* ── A09 — Dashboard stats show non-zero data ──────────────────── */
+  test('A09 — Dashboard stats are populated', async ({ portals }) => {
+    const { patient, doctor } = portals;
+
+    await test.step('Patient dashboard has content', async () => {
+      const body = await patient.page.locator('body').innerText();
+      const hasData = /\d+/.test(body) && body.length > 200;
+      expect(hasData, 'Patient dashboard should have data/content').toBeTruthy();
+      await snap(patient.page, 'A09-patient-stats', 'group-A');
+      console.log(`  ✅ A09: Patient dashboard — ${body.length} chars`);
+    });
+
+    await test.step('Doctor dashboard has stats', async () => {
+      const body = await doctor.page.locator('body').innerText();
+      const hasData = /\d+/.test(body) && body.length > 200;
+      expect(hasData, 'Doctor dashboard should have stats').toBeTruthy();
+      await snap(doctor.page, 'A09-doctor-stats', 'group-A');
+      console.log(`  ✅ A09: Doctor dashboard — ${body.length} chars`);
+    });
+  });
+
+  /* ── A10 — DB health endpoints return connected status ─────────── */
+  test('A10 — Database health checks return 200', async ({ portals }) => {
+    const { patient } = portals;
+
+    for (const ep of [
+      { url: `${PATIENT_URL}/api/health`, name: 'Patient Health' },
+      { url: `${DOCTOR_URL}/api/health`, name: 'Doctor Health' },
+      { url: `${MEETING_URL}/api/health`, name: 'Meeting Health' },
+    ]) {
+      await test.step(`${ep.name} returns 200`, async () => {
+        const resp = await patient.page.request.get(ep.url, { timeout: 10_000 }).catch(() => null);
+        if (resp) {
+          expect(resp.status(), `${ep.name} must be 200`).toBe(200);
+          const json = await resp.json().catch(() => ({}));
+          console.log(`  ✅ A10: ${ep.name} — ${resp.status()} ${JSON.stringify(json).substring(0, 80)}`);
+        }
+      });
+    }
   });
 });

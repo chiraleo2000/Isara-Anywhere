@@ -8,11 +8,13 @@
 
 ---
 
+
 ## 1. Purpose
 
 Chronological timeline of all medical events — appointments, medications, lab results, procedures, and diagnoses — providing a complete treatment history at a glance.
 
 ---
+
 
 ## 2. Page Layout
 
@@ -55,6 +57,7 @@ Chronological timeline of all medical events — appointments, medications, lab 
 
 ---
 
+
 ## 3. Event Types
 
 | Type | Icon | Color | Thai Name |
@@ -69,6 +72,7 @@ Chronological timeline of all medical events — appointments, medications, lab 
 
 ---
 
+
 ## 4. Features & Actions
 
 | Feature | Description |
@@ -81,7 +85,9 @@ Chronological timeline of all medical events — appointments, medications, lab 
 
 ---
 
+
 ## 5. Workflows
+
 
 ### Workflow 1: Browse Treatment History
 
@@ -93,6 +99,7 @@ Step 4: Newest events displayed first
 Step 5: Scroll through chronological timeline
 ```
 
+
 ### Workflow 2: Filter by Event Type
 
 ```text
@@ -100,6 +107,7 @@ Step 1: Click filter button (e.g., "💊 ยา")
 Step 2: Only medication events displayed
 Step 3: Click "ทั้งหมด" to show all events again
 ```
+
 
 ### Workflow 3: View Event Details
 
@@ -115,6 +123,7 @@ Step 3: Shows relevant information based on event type:
         - Diagnosis: ICD-10 code, description, doctor
         - Instruction Sheet: PDF download, summary of instructions
 ```
+
 
 ### Workflow 4: View Completed Meeting Results in Timeline
 
@@ -148,6 +157,7 @@ Step 4: Patient clicks on consultation entry → expands to full details
 Step 5: Patient clicks "📥 ดาวน์โหลด PDF" → downloads instruction sheet
 ```
 
+
 ### Workflow 5: Download Patient Instruction Sheet from Timeline
 
 ```text
@@ -171,6 +181,7 @@ Step 5: PDF downloads with Thai content:
 
 ---
 
+
 ## 6. API Endpoints
 
 | Method | Endpoint | Purpose |
@@ -182,6 +193,7 @@ Step 5: PDF downloads with Thai content:
 | GET | `/api/appointments/:id/emr-summary` | Get patient-visible EMR summary |
 
 ---
+
 
 ## 7. Data Sources
 
@@ -197,6 +209,7 @@ Step 5: PDF downloads with Thai content:
 
 ---
 
+
 ## 8. Connections to Other Pages
 
 | From/To | Direction | Description |
@@ -207,6 +220,7 @@ Step 5: PDF downloads with Thai content:
 | Doctor EMR | ← | EMR data feeds diagnosis/procedure events |
 
 ---
+
 
 ## 9. Consultation Result Display (Patient-Friendly Format)
 
@@ -242,6 +256,7 @@ When a telehealth consultation is completed, the timeline shows results in patie
 └─────────────────────────────────────────────────────────────────┘
 ```
 
+
 ## Patient Data Privacy in Timeline
 
 | Visible to Patient | NOT Visible to Patient |
@@ -255,23 +270,32 @@ When a telehealth consultation is completed, the timeline shows results in patie
 
 ---
 
+
 ## 10. AI Agent Improvement Opportunities
+
 
 - **Smart summary**: AI generate overall health trajectory summary
 
+
 - **Trend analysis**: AI identify patterns in treatment history
+
 
 - **Predictive timeline**: AI forecast upcoming needed appointments/tests
 
+
 - **Export/Print**: AI format timeline for sharing with other providers
 
+
 - **Comparison view**: AI compare current vs past health metrics
+
 
 - **Event correlation**: AI link related events (diagnosis → medication → lab)
 
 ---
 
+
 ## PostgreSQL Database Integration
+
 
 ### Tables Used
 
@@ -283,20 +307,27 @@ When a telehealth consultation is completed, the timeline shows results in patie
 | lab_orders | SELECT | Lab order events in timeline |
 | vital_signs | SELECT | Vital sign entries in timeline |
 
+
 ### API Endpoints
 
 | Endpoint | Method | DB Operation |
 | -------- | ------ | ------------ |
 | GET /api/timeline | GET | SELECT appointments, emr, prescriptions, lab_orders, vital_signs WHERE patient_id ORDER BY date |
 
+
 ### Note
+
 
 - **Aggregated read-only timeline** combining data from 5 tables sorted chronologically
 
+
 ### Deployment
+
 
 - **Local Docker:** izara-postgres container (localhost:5433 external / 5432 internal) → database: izara_phase1
 
+
 - **Production:** GCE VM at 35.240.157.230:5432 → database: izara_phase1 (asia-southeast1)
+
 
 - **Service deployed via:** Cloud Run (gen2, CPU Boost) + Cloud Build CI/CD

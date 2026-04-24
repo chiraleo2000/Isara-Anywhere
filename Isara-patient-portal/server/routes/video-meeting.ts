@@ -25,16 +25,69 @@
  * STORAGE: PostgreSQL meeting_records table (NOT GCS or in-memory)
  */
 
-import { Router, Request, Response } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import crypto from 'node:crypto';
 import dotenv from 'dotenv';
-import { MeetingService } from '../services/postgresDataService';
+import postgresDataService, { MeetingService } from '../services/postgresDataService';
+import { authMiddleware, AuthenticatedRequest } from '../middleware/auth';
 import { errMsg } from '../utils';
+
+const { pool } = postgresDataService;
 
 // Load environment variables
 dotenv.config();
 
 const router = Router();
+
+// ============================================================================
+// SECURITY MIDDLEWARE — applied before any handler below.
+// - Public endpoints: /health, /config, /join-with-invite (uses invite token as auth)
+// - All other endpoints require a valid session.
+// - Endpoints scoped to /:appointmentId require the caller to be the patient,
+//   the assigned doctor, an admin, or a holder of a non-expired invite token.
+// ============================================================================
+
+const PUBLIC_PATHS = new Set(['/health', '/config', '/join-with-invite']);
+
+router.use((req: Request, res: Response, next: NextFunction) => {
+  if (PUBLIC_PATHS.has(req.path)) return next();
+  return authMiddleware(req, res, next);
+});
+
+router.param('appointmentId', async (req: Request, res: Response, next: NextFunction, appointmentId: string) => {
+  try {
+    const authReq = req as AuthenticatedRequest;
+    const role = authReq.user?.role;
+    if (role === 'admin') return next();
+
+    const ownershipResult = await pool.query(
+      'SELECT patient_id, doctor_id FROM appointments WHERE id = $1',
+      [appointmentId]
+    );
+    if (ownershipResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Appointment not found' });
+    }
+    const { patient_id, doctor_id } = ownershipResult.rows[0];
+    const uid = authReq.userId;
+    if (uid && (uid === patient_id || uid === doctor_id)) return next();
+
+    // Accept a valid guest invite token (header or query) scoped to this appointment.
+    const headerToken = req.headers['x-meeting-invite'];
+    const queryToken = typeof req.query?.inviteToken === 'string' ? req.query.inviteToken : undefined;
+    const inviteToken = (typeof headerToken === 'string' ? headerToken : undefined) || queryToken;
+    if (inviteToken && inviteTokens.has(inviteToken)) {
+      const invite = inviteTokens.get(inviteToken);
+      if (invite?.appointmentId === appointmentId && invite.expiresAt > new Date()) {
+        return next();
+      }
+    }
+
+    return res.status(403).json({ error: 'Access denied to this meeting' });
+  } catch (err) {
+    console.error('[VIDEO-MEETING] Access check error:', err);
+    return res.status(500).json({ error: 'Access check failed' });
+  }
+});
 
 // ============================================================================
 // CONFIGURATION - Works in both local development and Cloud Run production
@@ -561,6 +614,23 @@ router.post('/create', async (req: Request, res: Response) => {
     if (!appointmentId) {
       return res.status(400).json({ error: 'appointmentId is required' });
     }
+
+    // SECURITY: caller must be the appointment's patient/doctor or an admin.
+    const authReq = req as AuthenticatedRequest;
+    const role = authReq.user?.role;
+    if (role !== 'admin') {
+      const apptRow = await pool.query(
+        'SELECT patient_id, doctor_id FROM appointments WHERE id = $1',
+        [appointmentId]
+      );
+      if (apptRow.rows.length === 0) {
+        return res.status(404).json({ error: 'Appointment not found' });
+      }
+      const { patient_id, doctor_id } = apptRow.rows[0];
+      if (authReq.userId !== patient_id && authReq.userId !== doctor_id) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+    }
     
     // Check if meeting already exists in PostgreSQL
     let existingMeeting = null;
@@ -637,7 +707,7 @@ router.post('/create', async (req: Request, res: Response) => {
     } catch (dbError: unknown) {
       console.warn('⚠️ Meeting DB insert failed (FK constraint?), using in-memory:', errMsg(dbError));
       meeting = {
-        id: `meet-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
+        id: `meet-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
         appointment_id: appointmentId,
         room_id: roomName,
         status: 'waiting',
@@ -987,6 +1057,12 @@ router.post('/:appointmentId/transcribe-audio', async (req: Request, res: Respon
     
     if (!audioBase64) {
       return res.status(400).json({ error: 'audioBase64 is required' });
+    }
+
+    // SECURITY: cap audio payload at ~10 MB (base64 ~ 4/3 of raw size).
+    const MAX_BASE64_BYTES = 14 * 1024 * 1024; // ≈ 10 MB raw
+    if (typeof audioBase64 !== 'string' || audioBase64.length > MAX_BASE64_BYTES) {
+      return res.status(413).json({ error: 'Audio payload too large (max ~10 MB)' });
     }
     
     const meeting = Array.from(meetingSessions.values())

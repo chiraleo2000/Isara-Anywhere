@@ -7,6 +7,7 @@
 
 ---
 
+
 ## 1. Technology Stack
 
 | Layer | Technology |
@@ -25,6 +26,7 @@
 
 ---
 
+
 ## 2. User Roles
 
 | Role | Permissions |
@@ -33,6 +35,7 @@
 | **Admin** | All doctor permissions + manage doctors, approve registrations, manage all appointments, view all patients |
 
 ---
+
 
 ## 3. Route Map
 
@@ -53,6 +56,7 @@
 | `/admin/doctors` | AdminDoctorManagement | จัดการแพทย์ (Admin) | 🔒 Admin only |
 | `/admin/appointments` | AdminAppointmentManagement | จัดการนัดหมาย (Admin) | 🔒 Admin only |
 
+
 ### Modal Components (launched from DoctorPortal)
 
 | Modal | Component | Purpose |
@@ -65,6 +69,7 @@
 | Patient Record | PatientRecordViewer | PHR/EMR/EHR viewer |
 
 ---
+
 
 ## 4. Layout Structure
 
@@ -94,7 +99,9 @@
 
 ---
 
+
 ## 5. Navigation Items
+
 
 ### Doctor Navigation (9 items)
 
@@ -108,6 +115,7 @@
 8. **👤 โปรไฟล์** (Profile) → `/profile`
 9. **🚪 ออกจากระบบ** (Logout)
 
+
 ### Admin-Only Navigation (2 additional items)
 
 1. **👥 จัดการแพทย์** (Manage Doctors) → `/admin/doctors`
@@ -115,9 +123,11 @@
 
 ---
 
+
 ## 6. Side Panel System
 
 The DoctorPortal includes inline side panels:
+
 
 ### Quick Actions Panel (per patient)
 
@@ -129,6 +139,7 @@ The DoctorPortal includes inline side panels:
 | Order Lab | Opens CompleteLabOrders modal |
 | Start Consult | Opens VirtualMeeting modal |
 
+
 ### Results Panel (tabbed)
 
 | Tab | Content |
@@ -139,17 +150,23 @@ The DoctorPortal includes inline side panels:
 
 ---
 
+
 ## 7. AI FAB Button
+
 
 - Floating action button (bottom-right corner) on all pages
 
+
 - Click → Opens GeminiAIStudio modal
 
+
 - Provides AI chat + medical calculators from any page
+
 
 - Always accessible during clinical workflow
 
 ---
+
 
 ## 8. Authentication Flow
 
@@ -171,6 +188,7 @@ The DoctorPortal includes inline side panels:
 
 ---
 
+
 ## 9. Cross-Page Navigation Map
 
 ```text
@@ -191,6 +209,7 @@ Admin Dashboard ──→ Doctor Management (approve/reject)
 
 ---
 
+
 ## 10. AI Agent Improvement Opportunities
 
 | Area | Current | Future Improvement |
@@ -204,7 +223,9 @@ Admin Dashboard ──→ Doctor Management (approve/reject)
 
 ---
 
+
 ## PostgreSQL Database Integration
+
 
 ### Tables Used
 
@@ -241,13 +262,18 @@ Admin Dashboard ──→ Doctor Management (approve/reject)
 | patient_consents | SELECT | PDPA consent records |
 | password_resets | INSERT/UPDATE | Password reset token management |
 
+
 ### Backend Server
+
 
 - **Runtime:** Express.js CommonJS (mainApiServer.cjs)
 
+
 - **Port:** 3010
 
+
 - **Database:** PostgreSQL izara_phase1
+
 
 ### API Endpoints
 
@@ -268,10 +294,14 @@ Admin Dashboard ──→ Doctor Management (approve/reject)
 | /api/profile/* | GET/PUT | users, doctor_profiles SELECT/UPDATE |
 | /api/admin/* | GET/PUT | users, doctor_profiles admin operations |
 
+
 ### Deployment
+
 
 - **Local Docker:** izara-postgres container (localhost:5433 external / 5432 internal) → database: izara_phase1
 
+
 - **Production:** GCE VM at 35.240.157.230:5432 → database: izara_phase1 (asia-southeast1)
+
 
 - **Service deployed via:** Cloud Run (gen2, CPU Boost) + Cloud Build CI/CD

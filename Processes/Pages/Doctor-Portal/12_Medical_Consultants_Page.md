@@ -26,6 +26,7 @@ Specialist directory for patient referrals. Admin manages consultant profiles; d
 | Delete consultant | ❌ | ✅ |
 | Toggle availability | ❌ | ✅ |
 
+
 ---
 
 ## 3. Consultant Profile Fields
@@ -43,6 +44,7 @@ Specialist directory for patient referrals. Admin manages consultant profiles; d
 | Rating | Average star rating |
 | Available | Toggle (green/gray badge) |
 | Admin Notes | Internal notes (admin only) |
+
 
 ---
 
@@ -67,6 +69,7 @@ See [Medical_Consultants_Workflows.md](../../Processes/Medical_Consultants_Workf
 | POST | `/api/consultants/:id/review` | Add rating/review |
 | POST | `/api/consultants/:id/availability` | Toggle availability |
 
+
 ---
 
 ## 6. AI Agent Improvement Opportunities
@@ -88,6 +91,7 @@ See [Medical_Consultants_Workflows.md](../../Processes/Medical_Consultants_Workf
 | consultants | SELECT/INSERT/UPDATE/DELETE | Medical consultant directory CRUD |
 | doctor_reviews | SELECT/INSERT | Doctor review submissions and ratings |
 
+
 ### API Endpoints
 
 | Endpoint | Method | DB Operation |
@@ -97,6 +101,7 @@ See [Medical_Consultants_Workflows.md](../../Processes/Medical_Consultants_Workf
 | PUT /api/consultants/:id | PUT | UPDATE consultants WHERE id |
 | DELETE /api/consultants/:id | DELETE | DELETE consultants WHERE id |
 | POST /api/consultants/:id/review | POST | INSERT doctor_reviews |
+
 
 ### Deployment
 

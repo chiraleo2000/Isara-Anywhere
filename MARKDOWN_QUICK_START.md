@@ -4,7 +4,9 @@
 
 ---
 
+
 ## 🚀 60-Second Setup
+
 
 ### 1. Install (First Time Only)
 ```bash
@@ -12,16 +14,20 @@ npm install
 npm install -g markdownlint-cli
 ```
 
+
 ### 2. Check Files
 ```bash
+
 
 # Windows PowerShell
 .\scripts\markdown-validate.ps1 -Path ./Processes
 
 
+
 # macOS/Linux/Windows
 node scripts/markdown-fixer.js --check-only
 ```
+
 
 ### 3. Fix Issues
 ```bash
@@ -29,6 +35,7 @@ node scripts/markdown-fixer.js
 ```
 
 ---
+
 
 ## 📋 Common Commands
 
@@ -43,6 +50,7 @@ node scripts/markdown-fixer.js
 
 ---
 
+
 ## 🔑 Key Rules
 
 | Rule | Issue | Example |
@@ -55,35 +63,45 @@ node scripts/markdown-fixer.js
 
 ---
 
+
 ## 🆘 Quick Troubleshooting
+
 
 ### Issue: No such file or directory
 **Solution:** Ensure you're in project root: `cd Isara-Anywhere`
 
+
 ### Issue: Module not found
 **Solution:** Install dependencies: `npm install`
 
+
 ### Issue: PowerShell execution error
 **Solution:** Enable scripts: `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser`
+
 
 ### Issue: Still seeing errors after fix
 **Solution:** Run check to find remaining issues: `node scripts/markdown-fixer.js --check-only`
 
 ---
 
+
 ## 📊 Files Cleaned
 
 ✅ **87 total files processed**
 
+
 - 65 in Processes/ directory
 
+
 - 10 Portal pages
+
 
 - 12 Workflow documentation
 
 ✅ **590+ violations fixed**
 
 ---
+
 
 ## 🔗 Resources
 
@@ -97,6 +115,7 @@ node scripts/markdown-fixer.js
 
 ---
 
+
 ## ✨ Pro Tips
 
 1. **Before committing:** Always run `node scripts/markdown-fixer.js --check-only`
@@ -106,6 +125,7 @@ node scripts/markdown-fixer.js
 5. **CI/CD:** GitHub Actions automatically validates all PRs
 
 ---
+
 
 ## 📞 Need Help?
 

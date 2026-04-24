@@ -20,7 +20,6 @@ This document provides comprehensive UI/UX specifications for all pages across t
 | **Doctor Portal** | localhost:3010 | Doctor, Admin |
 
 
-
 ### User Role Matrix
 
 | Feature | Patient | Doctor | Admin |
@@ -32,7 +31,6 @@ This document provides comprehensive UI/UX specifications for all pages across t
 | AI Chat Assistant | Basic | Full | Full |
 | Approve Content | ❌ | ❌ | ✅ |
 | Manage Doctors | ❌ | ❌ | ✅ |
-
 
 ---
 
@@ -119,7 +117,6 @@ Central hub displaying today's appointments, pending tasks, notifications, and q
 | **เริ่มสนทนา** (Start Chat) | Opens AI Chat Assistant panel | Opens sidebar |
 | **อัปโหลด PDF/Lab** | Opens document upload modal | `POST /api/ai/analyze-document` |
 | **ดูทั้งหมด** (View All) | Navigate to pending validations | `/validations` |
-
 
 
 ### Workflows
@@ -216,7 +213,6 @@ Calendar view of all appointments with filtering, status management, and quick a
 | Cancelled | ❌ | ยกเลิก | Cancelled by patient/doctor |
 
 
-
 ### Actions & Buttons (2)
 
 | Button | Action | Backend API |
@@ -227,7 +223,6 @@ Calendar view of all appointments with filtering, status management, and quick a
 | **เริ่มประชุม** | Start Jitsi meeting as host | `POST /api/meetings/start` |
 | **ยกเลิกนัด** | Cancel appointment with reason | `PUT /api/appointments/:id/cancel` |
 | **เลื่อนนัด** | Reschedule appointment | `PUT /api/appointments/:id/reschedule` |
-
 
 ---
 
@@ -274,7 +269,6 @@ Patient directory with search, filtering, and comprehensive health record viewin
 | 🔵 | Low Risk | Normal vitals, no chronic conditions |
 | ⚠️ | Moderate Risk | Controlled chronic conditions |
 | 🔴 | High Risk | Multiple comorbidities, CDS alerts active |
-
 
 
 ### Patient Record Viewer (Modal/Page)
@@ -326,7 +320,6 @@ Patient directory with search, filtering, and comprehensive health record viewin
 | **เปิด EMR ใหม่** | Create new EMR for walk-in | `POST /api/emr` |
 | **อัปโหลดเอกสาร** | Upload PDF/lab for AI analysis | `POST /api/ai/analyze-document` |
 | **ดูรายละเอียด** (CDS) | View CDS recommendation details | Opens CDS modal |
-
 
 ---
 
@@ -390,7 +383,6 @@ Manage appointment queue, conduct video meetings, document EMR, and generate pat
 | EMR Editor | ✅ | SOAP format documentation |
 | AI Chat Assistant | ✅ | Side panel AI help |
 | Document Upload | ✅ | Lab/PDF for AI analysis |
-
 
 
 ### Post-Meeting Workflow
@@ -505,7 +497,6 @@ Directory of specialist consultants for referrals and second opinions.
 | Delete consultant | ❌ | ✅ |
 | Toggle availability | ❌ | ✅ |
 
-
 ---
 
 
@@ -584,7 +575,6 @@ Medical guidelines, protocols, and research papers for healthcare professionals 
 | emergency | เวชศาสตร์ฉุกเฉิน | Emergency protocols |
 
 
-
 ### UI Similar to Medical Content
 
 Same layout as Medical Content but:
@@ -592,7 +582,9 @@ Same layout as Medical Content but:
 
 - Only visible to doctors
 
+
 - Includes guideline year and source
+
 
 - References medical guidelines (KDIGO, ADA, etc.)
 
@@ -770,7 +762,6 @@ Overview of health status, upcoming appointments, and quick actions.
 | **⬇️ PDF** | Download patient instruction | Downloads PDF |
 | **ปรึกษา AI** | Navigate to AI chat | `/ai-chat` |
 
-
 ---
 
 
@@ -893,7 +884,6 @@ AI health assistant for basic health questions and symptom checking.
 | Medication Info | Drug information (non-prescriptive) |
 | Appointment Suggestion | Recommend when to see doctor |
 
-
 **Note:** Patient AI is limited compared to Doctor AI. No clinical decision support.
 
 ---
@@ -960,7 +950,6 @@ Personal Health Record management - vitals, medications, allergies.
 | Medications | ยา | Current medications |
 | Allergies | แพ้ยา/อาหาร | Allergy list |
 | Profile | โปรไฟล์ | Personal health profile |
-
 
 
 ### UI Layout - Vitals Tab
@@ -1062,19 +1051,23 @@ Manage data privacy consent and living will documentation.
 | Living Will | End-of-life care wishes |
 
 
-
 ### Living Will Features
 
 
 - Create/edit living will document
 
+
 - Treatment preferences (resuscitation, ventilation, etc.)
+
 
 - Designate healthcare representative
 
+
 - Share settings (private or share with doctors)
 
+
 - Digital signature
+
 
 - Audit trail
 
@@ -1102,7 +1095,6 @@ Find nearby hospitals, clinics, and pharmacies.
 | Distance Filter | Within X km |
 | Directions | Open in Google Maps |
 | Hospital Details | Hours, services, contact |
-
 
 ---
 
@@ -1145,7 +1137,6 @@ All pages verified on **Cloud Run** with full-page screenshots captured at **192
 | CP14 | Settings | `patient-14-settings.png` |
 
 
-
 ### Doctor Portal Cloud Screenshots (12 pages)
 
 | ID | Page | Screenshot File |
@@ -1164,7 +1155,6 @@ All pages verified on **Cloud Run** with full-page screenshots captured at **192
 | CD12 | Appointment Management | `doctor-12-appointment-management.png` |
 
 
-
 ### Cloud API Health Checks (13 endpoints)
 
 | ID | Endpoint | Status |
@@ -1172,7 +1162,6 @@ All pages verified on **Cloud Run** with full-page screenshots captured at **192
 | CAPI01–03 | Patient / Doctor / Meeting `/api/health` | 200 OK |
 | CAPI04–06 | Patient appointments / notifications / PHR | 200 OK |
 | CAPI07–13 | Doctor appointments / consultants / content / clinical / notifications / stats / doctors | 200 OK |
-
 
 
 ### Purpose (18)
@@ -1191,7 +1180,6 @@ Account and notification preferences.
 | Theme | Light/Dark mode |
 | Privacy | Data sharing settings |
 | Delete Account | Account deletion request |
-
 
 ---
 
@@ -1227,7 +1215,6 @@ All UI components MUST support dark mode. This includes:
 | **Buttons (Primary)** | Standard teal/blue | Same with adjusted hover |
 | **Modals/Popups** | White background | `bg-slate-800` |
 | **Navigation** | Light sidebar | Dark sidebar |
-
 
 
 ### Implementation Pattern
@@ -1271,7 +1258,6 @@ html.dark [class*="bg-gradient-to-"] {
 | ---------- | ------ | ------------- |
 | Thai | `th` | Default |
 | English | `en` | Option |
-
 
 
 ### How It Works (2)
@@ -1334,7 +1320,6 @@ const { t, language } = useSettings();
 | **Settings** | `settings.title`, `settings.theme`, `settings.language` |
 
 
-
 ## UX Guidelines
 
 
@@ -1343,7 +1328,9 @@ const { t, language } = useSettings();
 
 - Toggle location: Settings page AND navigation header
 
+
 - Icon: ☀️ for light mode, 🌙 for dark mode
+
 
 - Transition: Use `transition-colors duration-200` for smooth switching
 
@@ -1353,7 +1340,9 @@ const { t, language } = useSettings();
 
 - Toggle location: Settings page AND navigation header
 
+
 - Display: Flag icons or "TH/EN" text toggle
+
 
 - Instant: Changes should apply immediately without page reload
 
@@ -1364,6 +1353,7 @@ When navigating between steps (e.g., in appointment booking):
 
 
 - Always scroll to top when changing steps
+
 
 - Use smooth scrolling: `globalThis.scrollTo({ top: 0, behavior: 'smooth' })`
 
@@ -1390,7 +1380,6 @@ When navigating between steps (e.g., in appointment booking):
 | **Meetings** | `/api/meetings/:id/join` | GET | Get join URL |
 
 
-
 ## AI Endpoints (Phase 1)
 
 | Endpoint | Method | Description |
@@ -1403,7 +1392,6 @@ When navigating between steps (e.g., in appointment booking):
 | `/api/ai/patient-instruction` | POST | Generate patient instruction sheet |
 
 
-
 ## CDS Endpoints
 
 | Endpoint | Method | Description |
@@ -1411,7 +1399,6 @@ When navigating between steps (e.g., in appointment booking):
 | `/api/cds/check` | POST | Check for CDS alerts |
 | `/api/cds/alerts/:patientId` | GET | Get patient CDS alerts |
 | `/api/cds/logs` | GET/POST | CDS decision logs |
-
 
 
 ## Validation Endpoints (Man-in-the-Loop)
@@ -1422,7 +1409,6 @@ When navigating between steps (e.g., in appointment booking):
 | `/api/validations/:id/approve` | POST | Approve AI content |
 | `/api/validations/:id/reject` | POST | Reject with reason |
 | `/api/validations/:id/edit` | PUT | Edit before approve |
-
 
 ---
 
@@ -1444,7 +1430,6 @@ When navigating between steps (e.g., in appointment booking):
 | `notifications` | User notifications |
 
 
-
 ## AI/CDS Tables
 
 | Table | Description |
@@ -1454,7 +1439,6 @@ When navigating between steps (e.g., in appointment booking):
 | `cds_logs` | CDS decision logs |
 | `ai_document_analysis` | Document analysis results |
 | `patient_instructions` | Generated patient instructions |
-
 
 ---
 
@@ -1486,7 +1470,6 @@ When navigating between steps (e.g., in appointment booking):
 | Settings | SettingsPage.tsx | users, push_subscriptions | GET/PUT /api/settings |
 
 
-
 #### Doctor Portal Pages (port 3010)
 
 | Page | Component | Primary DB Tables | API Endpoints |
@@ -1507,7 +1490,6 @@ When navigating between steps (e.g., in appointment booking):
 | Admin: Users | AdminUsersPage.tsx | users, doctor_profiles | GET/PUT /api/admin/users |
 | Admin: Content Review | AdminContentPage.tsx | medical_content, clinical_resources | PUT /api/content/:id/review |
 | Notifications | NotificationsPage.tsx | notifications | GET /api/notifications |
-
 
 
 ### Deployment: Pages → Services → Database
@@ -1551,4 +1533,3 @@ When navigating between steps (e.g., in appointment booking):
 | Meeting panel | meeting:updated | meeting_records (NOTIFY) |
 | PHR timeline | phr:updated | phr (NOTIFY) |
 | Schedule calendar | schedule:updated | doctor_schedules (NOTIFY) |
-

@@ -16,6 +16,7 @@
 import {
   test, expect, assertFullHealth, snap,
   navDoctor, waitForContent, assertHasData,
+  PATIENT_URL, DOCTOR_URL,
 } from './helpers/multi-portal';
 
 test.describe('Group I — Admin, Users & Notifications', () => {
@@ -49,7 +50,7 @@ test.describe('Group I — Admin, Users & Notifications', () => {
       ).first();
       if (await searchInput.isVisible({ timeout: 5_000 }).catch(() => false)) {
         await searchInput.fill('demo');
-        await admin.page.waitForTimeout(2_000);
+        await admin.page.waitForTimeout(500);
         await snap(admin.page, 'I03-search-doctor', 'group-I');
         console.log('  ✅ I03: Searched "demo"');
       } else {
@@ -67,7 +68,7 @@ test.describe('Group I — Admin, Users & Notifications', () => {
       }).first();
       if (await card.isVisible({ timeout: 5_000 }).catch(() => false)) {
         await card.evaluate((el) => (el as HTMLElement).click());
-        await admin.page.waitForTimeout(2_000);
+        await admin.page.waitForTimeout(500);
         await waitForContent(admin.page, 'I04-detail');
         await snap(admin.page, 'I04-doctor-detail', 'group-I');
         console.log('  ✅ I04: Doctor profile opened');
@@ -107,7 +108,7 @@ test.describe('Group I — Admin, Users & Notifications', () => {
     });
 
     await test.step('I07 — Browse pending approvals', async () => {
-      const dataCount = await assertHasData(admin.page, 'I07');
+      const dataCount = await assertHasData(admin.page, 'I07', 1);
       await snap(admin.page, 'I07-pending-list', 'group-I');
       console.log(`  ✅ I07: Pending approvals — ${dataCount} items`);
     });
@@ -141,7 +142,7 @@ test.describe('Group I — Admin, Users & Notifications', () => {
       ).first();
       if (await bell.isVisible({ timeout: 5_000 }).catch(() => false)) {
         await bell.click();
-        await doctor.page.waitForTimeout(2_000);
+        await doctor.page.waitForTimeout(500);
         await snap(doctor.page, 'I10-doctor-notifications', 'group-I');
         console.log('  ✅ I10: Doctor notifications opened');
       } else {
@@ -156,7 +157,7 @@ test.describe('Group I — Admin, Users & Notifications', () => {
       ).first();
       if (await bell.isVisible({ timeout: 3_000 }).catch(() => false)) {
         await bell.click();
-        await patient.page.waitForTimeout(2_000);
+        await patient.page.waitForTimeout(500);
         await snap(patient.page, 'I11-patient-notifications', 'group-I');
         console.log('  ✅ I11: Patient notifications');
       } else {
@@ -177,11 +178,11 @@ test.describe('Group I — Admin, Users & Notifications', () => {
         const currentUrl = doctor.page.url();
         const match = currentUrl.match(/\/doctor\/([^/]+)/);
         const userId = match ? match[1] : '';
-        await doctor.page.goto(`http://localhost:3010/doctor/${userId}/profile`, {
+        await doctor.page.goto(`${DOCTOR_URL}/doctor/${userId}/profile`, {
           waitUntil: 'domcontentloaded', timeout: 15_000
         });
       }
-      await doctor.page.waitForTimeout(2_000);
+      await doctor.page.waitForTimeout(500);
       await assertFullHealth(doctor.page, 'I12');
       await snap(doctor.page, 'I12-doctor-profile', 'group-I');
       console.log('  ✅ I12: Doctor → Profile');
@@ -198,8 +199,8 @@ test.describe('Group I — Admin, Users & Notifications', () => {
 
     await test.step('I13 — All 3 portals authenticated', async () => {
       // Patient was idle during I1-I3, refresh to re-establish session
-      await patient.page.goto('http://localhost:3005', { waitUntil: 'domcontentloaded', timeout: 30_000 });
-      await patient.page.waitForTimeout(2_000);
+      await patient.page.goto(PATIENT_URL, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+      await patient.page.waitForTimeout(500);
 
       const pToken = await patient.page.evaluate(() => localStorage.getItem('auth_token'));
       const dToken = await doctor.page.evaluate(() => localStorage.getItem('token'));
@@ -211,14 +212,14 @@ test.describe('Group I — Admin, Users & Notifications', () => {
     });
 
     await test.step('I14 — Patient API health check', async () => {
-      const resp = await patient.page.request.get('http://localhost:3005/api/health');
-      expect(resp.status(), 'Patient API').toBeLessThan(400);
+      const resp = await patient.page.request.get(`${PATIENT_URL}/api/health`);
+      expect(resp.status(), 'Patient API').toBe(200);
       console.log(`  ✅ I14: Patient API — ${resp.status()}`);
     });
 
     await test.step('I15 — Doctor API health check', async () => {
-      const resp = await doctor.page.request.get('http://localhost:3010/api/health');
-      expect(resp.status(), 'Doctor API').toBeLessThan(400);
+      const resp = await doctor.page.request.get(`${DOCTOR_URL}/api/health`);
+      expect(resp.status(), 'Doctor API').toBe(200);
       console.log(`  ✅ I15: Doctor API — ${resp.status()}`);
     });
 

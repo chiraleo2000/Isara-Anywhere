@@ -88,6 +88,7 @@ Health education library providing medical articles, videos, guides, and infogra
 | preventive-care | การป้องกัน | Preventive Care |
 
 
+
 ---
 
 
@@ -103,6 +104,7 @@ Health education library providing medical articles, videos, guides, and infogra
 | **View tracking** | Auto-increment view count on article open |
 | **Tag display** | Clickable tags for related content |
 | **Video player** | YouTube iframe or HTML5 native video |
+
 
 
 ---
@@ -147,6 +149,7 @@ Step 7: Click "Back" to return to list
 | POST | `/api/content/medical/:id/view` | Track article view |
 
 
+
 ---
 
 
@@ -160,6 +163,7 @@ Step 7: Click "Back" to return to list
 | infographic | Visual health information | 📊 |
 
 
+
 ---
 
 
@@ -170,6 +174,7 @@ Step 7: Click "Back" to return to list
 | Dashboard Health Studio | → | Content tab shows articles |
 | Doctor Portal Medical Content | ← | Doctors create content here |
 | Admin approval | ← | Only approved content visible |
+
 
 
 ---
@@ -203,10 +208,12 @@ Step 7: Click "Back" to return to list
 
 
 
+
 ### API Endpoints
 | Endpoint | Method | DB Operation |
 | -------- | ------ | ------------ |
 | GET /api/content/articles | GET | SELECT medical_content WHERE status='published' |
+
 
 
 

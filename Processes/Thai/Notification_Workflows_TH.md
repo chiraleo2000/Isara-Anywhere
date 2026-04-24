@@ -21,6 +21,7 @@
 
 
 
+
 ### 1.2 ประเภทการแจ้งเตือน
 
 ```text
@@ -384,6 +385,7 @@ type NotificationType =
 
 
 
+
 ### 4.2 พอร์ทัลแพทย์
 
 | Component | ตำแหน่ง | ชื่อภาษาไทย |
@@ -392,6 +394,7 @@ type NotificationType =
 | AppointmentAlert | Dashboard | นัดหมายรอดำเนินการ |
 | PatientRequestBadge | Queue | คำขอนัดหมายใหม่ |
 | AIReviewBadge | Sidebar | เอกสารรอตรวจสอบ |
+
 
 
 
@@ -451,6 +454,7 @@ type NotificationType =
 | DELETE | `/api/notifications/:id` | ลบการแจ้งเตือน |
 | GET | `/api/notifications/settings` | ดูการตั้งค่า |
 | PUT | `/api/notifications/settings` | อัปเดตการตั้งค่า |
+
 
 
 
@@ -624,6 +628,7 @@ function showToast(notification: Notification) {
 | Real-time Updates | ✅ | WebSocket |
 | Toast Notifications | ✅ | แจ้งเตือนแบบ popup |
 | Notification Settings | ✅ | ผู้ใช้ปรับแต่งได้ |
+
 
 
 ---

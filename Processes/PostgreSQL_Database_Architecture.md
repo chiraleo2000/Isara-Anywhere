@@ -8,6 +8,7 @@
 
 ---
 
+
 ## 📋 Table of Contents
 
 1. [Database Overview](#1-database-overview)
@@ -24,9 +25,11 @@
 
 ---
 
+
 ## 1. Database Overview
 
 Izara Telemedicine uses a **single PostgreSQL 18 database** (`izara_phase1`) as the only data store. No GCS buckets, no Cloud SQL — PostgreSQL runs either as a Docker container (local dev) or a GCE VM (production). All portals connect to the same database.
+
 
 ### Key Facts
 
@@ -39,6 +42,7 @@ Izara Telemedicine uses a **single PostgreSQL 18 database** (`izara_phase1`) as 
 | Master Schema | `scripts/database/izara-database.sql` (v5.1.0) |
 | Seed Data | `scripts/database/seed-dev-data.sql` |
 | DB Tool | `scripts/database/db-tool.cjs` |
+
 
 ### Table Category Summary
 
@@ -55,7 +59,9 @@ Izara Telemedicine uses a **single PostgreSQL 18 database** (`izara_phase1`) as 
 
 ---
 
+
 ## 2. Extensions & Configuration
+
 
 ### Required PostgreSQL Extensions
 
@@ -65,7 +71,9 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";     -- Password hashing (bcrypt) and 
 CREATE EXTENSION IF NOT EXISTS "vector";       -- pgvector for AI embedding similarity search
 ```
 
+
 ### Connection Configuration
+
 
 #### Local Docker
 
@@ -76,6 +84,7 @@ User:     postgres
 Database: izara_phase1
 ```
 
+
 #### Production (Google Cloud GCE VM)
 
 ```text
@@ -85,6 +94,7 @@ User:     izara_user
 Database: izara_phase1
 Extensions: pgvector + pgcrypto + uuid-ossp
 ```
+
 
 ### Docker Services
 
@@ -98,7 +108,9 @@ Extensions: pgvector + pgcrypto + uuid-ossp
 
 ---
 
+
 ## 3. Deployment Architecture
+
 
 ### Local Development (Docker Compose)
 
@@ -126,6 +138,7 @@ Extensions: pgvector + pgcrypto + uuid-ossp
 │              └──────────────────────┘                                │
 └─────────────────────────────────────────────────────────────────────┘
 ```
+
 
 ### Production (Google Cloud)
 
@@ -157,9 +170,12 @@ Extensions: pgvector + pgcrypto + uuid-ossp
 
 ---
 
+
 ## 4. Complete Table Schema
 
+
 ### 4.1 User Management (6 Tables)
+
 
 #### `users` — Unified user table for all roles
 
@@ -201,6 +217,7 @@ CREATE TABLE users (
 );
 ```
 
+
 #### `sessions` — JWT session tracking
 
 | Column | Type | Description |
@@ -213,6 +230,7 @@ CREATE TABLE users (
 | expires_at | TIMESTAMPTZ | Token expiry |
 | logged_out_at | TIMESTAMPTZ | Explicit logout |
 
+
 #### `password_resets` — Password reset tokens
 
 | Column | Type | Description |
@@ -222,6 +240,7 @@ CREATE TABLE users (
 | token | VARCHAR(128) UNIQUE | Reset token |
 | expires_at | TIMESTAMPTZ | Token expiry |
 | used | BOOLEAN | Was it consumed |
+
 
 #### `device_tokens` — Push notification devices
 
@@ -233,6 +252,7 @@ CREATE TABLE users (
 | platform | VARCHAR(20) | ios/android/web |
 | is_active | BOOLEAN | Currently active |
 
+
 #### `biometric_credentials` — Biometric auth (Phase 2)
 
 | Column | Type | Description |
@@ -242,6 +262,7 @@ CREATE TABLE users (
 | credential_type | VARCHAR(50) | fingerprint/face |
 | public_key | TEXT | WebAuthn public key |
 | is_active | BOOLEAN | Currently active |
+
 
 #### `refresh_tokens` — JWT refresh rotation (Phase 2)
 
@@ -255,7 +276,9 @@ CREATE TABLE users (
 
 ---
 
+
 ### 4.2 Patient Data (7 Tables)
+
 
 #### `patient_profiles` — Patient demographics
 
@@ -265,6 +288,7 @@ CREATE TABLE users (
 | demographics | JSONB NOT NULL | Age, address, etc. |
 | emergency_contact | JSONB | Emergency info |
 | insurance_info | JSONB | Insurance details |
+
 
 #### `phr` — Personal Health Records
 
@@ -288,6 +312,7 @@ CREATE TABLE phr (
 );
 ```
 
+
 #### `vital_signs` — Individual vital measurements
 
 ```sql
@@ -308,6 +333,7 @@ CREATE TABLE vital_signs (
 );
 ```
 
+
 #### `living_wills` — Advance directives
 
 | Column | Type | Description |
@@ -323,6 +349,7 @@ CREATE TABLE vital_signs (
 | version | INTEGER | Version number |
 | audit_log | JSONB DEFAULT '[]' | Access trail |
 
+
 #### `living_will_versions` — Version history
 
 | Column | Type | Description |
@@ -332,6 +359,7 @@ CREATE TABLE vital_signs (
 | version | INTEGER NOT NULL | Version number |
 | data | JSONB NOT NULL | Full snapshot |
 | note | TEXT | Version note |
+
 
 #### `patient_consents` — PDPA consent management
 
@@ -344,6 +372,7 @@ CREATE TABLE vital_signs (
 | doctor_id | VARCHAR(50) | Specific doctor |
 | data_types | JSONB DEFAULT '["all"]' | Data scopes |
 | status | VARCHAR(20) | pending/active/revoked |
+
 
 #### `push_subscriptions` — Push notification preferences
 
@@ -358,7 +387,9 @@ CREATE TABLE vital_signs (
 
 ---
 
+
 ### 4.3 Doctor Management (5 Tables)
+
 
 #### `doctor_profiles` — Extended doctor information
 
@@ -380,6 +411,7 @@ CREATE TABLE doctor_profiles (
 );
 ```
 
+
 #### `doctors` — Patient-facing doctor listing
 
 | Column | Type | Description |
@@ -393,6 +425,7 @@ CREATE TABLE doctor_profiles (
 | rating | DECIMAL(2,1) | Average rating |
 | is_available | BOOLEAN | Currently available |
 
+
 #### `doctor_schedules` — Availability slots
 
 | Column | Type | Description |
@@ -405,6 +438,7 @@ CREATE TABLE doctor_profiles (
 | slot_duration_minutes | INTEGER DEFAULT 30 | Duration |
 | is_available | BOOLEAN | Is active |
 
+
 #### `doctor_reviews` — Patient ratings
 
 | Column | Type | Description |
@@ -415,6 +449,7 @@ CREATE TABLE doctor_profiles (
 | appointment_id | VARCHAR(50) | Related appointment |
 | rating | INTEGER (1-5) | Star rating |
 | comment | TEXT | Review text |
+
 
 #### `consultants` — External specialist directory
 
@@ -434,7 +469,9 @@ CREATE TABLE doctor_profiles (
 
 ---
 
+
 ### 4.4 Appointments & Meetings (4 Tables)
+
 
 #### `appointments` — Consultation scheduling
 
@@ -460,6 +497,7 @@ CREATE TABLE appointments (
 );
 ```
 
+
 ## Status State Machine
 
 ```text
@@ -467,6 +505,7 @@ pending → in_pool → ai_matched → doctor_claimed → confirmed → in_progr
    │         │                                                                    │
    └→ declined                                                              → cancelled
 ```
+
 
 #### `meeting_records` — Video consultation sessions
 
@@ -501,6 +540,7 @@ CREATE TABLE meeting_records (
 );
 ```
 
+
 #### `meeting_transcripts` — Speech-to-text segments
 
 | Column | Type | Description |
@@ -514,6 +554,7 @@ CREATE TABLE meeting_records (
 | confidence | DECIMAL(3,2) | STT confidence |
 | start_time_seconds | INTEGER | Segment start |
 | is_final | BOOLEAN DEFAULT true | Finalized |
+
 
 #### `ai_chat_history` — AI chat conversations
 
@@ -529,7 +570,9 @@ CREATE TABLE meeting_records (
 
 ---
 
+
 ### 4.5 Clinical Data (5 Tables)
+
 
 #### `emr` — Electronic Medical Records (SOAP)
 
@@ -553,6 +596,7 @@ CREATE TABLE emr (
 );
 ```
 
+
 #### `prescriptions` — E-Prescribing
 
 | Column | Type | Description |
@@ -566,6 +610,7 @@ CREATE TABLE emr (
 | pharmacy_instructions | TEXT | Pharmacist instructions |
 | cds_warnings | JSONB | Drug interaction warnings |
 | status | VARCHAR(20) | draft/signed/dispensed |
+
 
 #### `lab_orders` — Laboratory test orders
 
@@ -582,6 +627,7 @@ CREATE TABLE emr (
 | ai_analysis | TEXT | AI interpretation |
 | status | VARCHAR(20) | ordered/in_progress/completed |
 
+
 #### `transcriptions_embeddings` — Vectorized transcript chunks
 
 | Column | Type | Description |
@@ -593,6 +639,7 @@ CREATE TABLE emr (
 | end_time_seconds | INTEGER | End time |
 | embedding | vector(768) | Chunk embedding |
 | metadata | JSONB | Extra metadata |
+
 
 #### `ai_chat_memory` — Long-term AI memory
 
@@ -609,7 +656,9 @@ CREATE TABLE emr (
 
 ---
 
+
 ### 4.6 Content & Knowledge (6 Tables)
+
 
 #### `medical_content` — Patient education articles
 
@@ -625,6 +674,7 @@ CREATE TABLE emr (
 | author_id | VARCHAR(50) FK→users | Author (doctor) |
 | status | VARCHAR(20) | draft/pending/published |
 | view_count | INTEGER DEFAULT 0 | Read count |
+
 
 #### `clinical_resources` — Doctor reference materials
 
@@ -642,6 +692,7 @@ CREATE TABLE emr (
 | author_id | VARCHAR(50) FK→users | Author |
 | approved_by | VARCHAR(50) FK→users | Approver (admin) |
 
+
 #### `icd10_codes` — Diagnosis codes
 
 | Column | Type | Description |
@@ -651,6 +702,7 @@ CREATE TABLE emr (
 | description_thai | TEXT | Thai description |
 | category | VARCHAR(100) | Code category |
 | chapter | INTEGER | ICD-10 chapter |
+
 
 #### `drugs` — Drug reference database
 
@@ -667,6 +719,7 @@ CREATE TABLE emr (
 | pregnancy_category | VARCHAR(5) | Pregnancy risk |
 | renal_adjustment | JSONB | Renal dosing |
 
+
 #### `knowledge_base` — RAG knowledge base
 
 | Column | Type | Description |
@@ -679,6 +732,7 @@ CREATE TABLE emr (
 | language | VARCHAR(10) | th/en |
 | embedding | vector(768) | Content vector |
 | is_active | BOOLEAN | Active flag |
+
 
 #### `ai_document_analysis` — AI document analysis results
 
@@ -696,7 +750,9 @@ CREATE TABLE emr (
 
 ---
 
+
 ### 4.7 AI & Decision Support (3 Tables)
+
 
 #### `cds_logs` — Clinical Decision Support audit
 
@@ -713,6 +769,7 @@ CREATE TABLE emr (
 | guideline_source | VARCHAR(255) | Evidence source |
 | doctor_decision | VARCHAR(20) | accepted/rejected/modified |
 
+
 #### `ai_validations` — Man-in-the-Loop log
 
 | Column | Type | Description |
@@ -724,6 +781,7 @@ CREATE TABLE emr (
 | decision | VARCHAR(20) | approved/rejected |
 | content_snapshot | JSONB | Original AI content |
 | validated_at | TIMESTAMPTZ | Validation time |
+
 
 #### `notifications` — User notifications
 
@@ -741,7 +799,9 @@ CREATE TABLE emr (
 
 ---
 
+
 ### 4.8 Audit (1 Table)
+
 
 #### `audit_logs` — Compliance audit trail
 
@@ -761,6 +821,7 @@ CREATE TABLE emr (
 | performed_by | VARCHAR(50) | Actor reference |
 
 ---
+
 
 ## 5. Entity-Relationship Diagram
 
@@ -825,7 +886,9 @@ CREATE TABLE emr (
 
 ---
 
+
 ## 6. Data Flow Patterns
+
 
 ### 6.1 Authentication Flow
 
@@ -845,6 +908,7 @@ User → Portal → POST /api/auth/login
                         ▼
                  JWT Token → Client
 ```
+
 
 ### 6.2 Appointment → Meeting → EMR Flow
 
@@ -869,6 +933,7 @@ Patient Books        Admin/Doctor         Doctor Hosts        AI Processes
      │                    │                    │
      └────── Patient sees notification + instructions ────────────┘
 ```
+
 
 ### 6.3 Real-Time Sync via LISTEN/NOTIFY
 
@@ -895,6 +960,7 @@ Table UPDATE/INSERT
 
 ---
 
+
 ## 7. LISTEN/NOTIFY Real-Time Triggers
 
 | Trigger Name | Table | Events | Socket.IO Event |
@@ -907,6 +973,7 @@ Table UPDATE/INSERT
 | notify_schedule_change | doctor_schedules | INSERT, UPDATE, DELETE | `schedule:updated` |
 | notify_notification_insert | notifications | INSERT | `notification:new` |
 | notify_meeting_change | meeting_records | INSERT, UPDATE | `meeting:updated` |
+
 
 ### Trigger Example
 
@@ -933,7 +1000,9 @@ CREATE TRIGGER trg_appointment_change
 
 ---
 
+
 ## 8. Indexes & Performance
+
 
 ### Key Indexes
 
@@ -965,6 +1034,7 @@ CREATE INDEX idx_chat_embedding ON ai_chat_history USING hnsw (embedding vector_
 
 ---
 
+
 ## 9. Migration Scripts
 
 | Order | Script | Version | Purpose |
@@ -977,12 +1047,15 @@ CREATE INDEX idx_chat_embedding ON ai_chat_history USING hnsw (embedding vector_
 | 6 | `v2.2.0-notify-triggers.sql` | v2.2.0 | LISTEN/NOTIFY triggers |
 | 7 | `seed-dev-data.sql` | — | Test data (7 seed users) |
 
+
 ### DB Tool Commands
 
 ```powershell
 
+
 # All-in-one: fix schema + seed + verify
 node scripts/database/db-tool.cjs --all
+
 
 
 # Individual operations
@@ -991,9 +1064,11 @@ node scripts/database/db-tool.cjs --seed
 node scripts/database/db-tool.cjs --verify
 
 
+
 # Migrations
 node scripts/database/db-tool.cjs --migrate-phase2
 node scripts/database/db-tool.cjs --migrate-ai
+
 
 
 # Target environments
@@ -1002,6 +1077,7 @@ node scripts/database/db-tool.cjs --target dev-cloud --verify
 ```
 
 ---
+
 
 ## 10. Access Control Matrix
 
@@ -1023,30 +1099,38 @@ node scripts/database/db-tool.cjs --target dev-cloud --verify
 
 ---
 
+
 ## 11. Backup & Recovery
+
 
 ### Docker Volume Backup
 
 ```powershell
 
+
 # Backup PostgreSQL data
 docker exec izara-postgres pg_dump -U postgres izara_phase1 > backup_$(Get-Date -Format yyyyMMdd).sql
+
 
 
 # Restore
 Get-Content backup_20260401.sql | docker exec -i izara-postgres psql -U postgres -d izara_phase1
 ```
 
+
 ### Production Export/Import
 
 ```powershell
+
 
 # Export from production
 node scripts/database/db-tool.cjs --export
 
 
+
 # Import to local
 node scripts/database/db-tool.cjs --import-local
+
 
 
 # Import to dev cloud

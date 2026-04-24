@@ -80,6 +80,15 @@ VALUES ('PATIENT-DEMO', 'demo.test@gmail.com',
         'PATIENT-DEMO', true, true, true, 'approved')
 ON CONFLICT (id) DO NOTHING;
 
+-- Doctor: Pending Approval (for admin approval workflow testing)
+INSERT INTO users (id, email, password_hash, role, name, name_thai, doctor_id, medical_license_number, specialty, hospital_name, is_active, is_verified, is_approved, approval_status)
+VALUES ('DOC-PENDING-001', 'pending.doctor@izara.com',
+        '$2b$10$aPN6uhBrLoms36C8/017be2GWqUqaPJa6WaTaZ8LrnwAeaf3GajrO',
+        'doctor', 'Dr. Pending Approval', 'นพ. รอการอนุมัติ',
+        'DOC-PENDING-001', 'TH-MD-2024-999', 'General Practice', 'Provincial Hospital',
+        true, true, false, 'pending')
+ON CONFLICT (id) DO NOTHING;
+
 -- ──────────────────────────────────────────
 -- 2. DOCTORS TABLE
 -- ──────────────────────────────────────────
@@ -217,7 +226,8 @@ INSERT INTO notifications (user_id, type, title, title_thai, message, message_th
 VALUES
   ('PATIENT-SOMCHAI', 'appointment_confirmed', 'Appointment Confirmed', 'ยืนยันนัดหมายแล้ว', 'Your appointment has been confirmed', 'นัดหมายของคุณได้รับการยืนยันแล้ว', '{"appointmentId":"APT-SEED-001"}'::jsonb),
   ('PATIENT-ANAN',    'appointment_confirmed', 'Appointment Confirmed', 'ยืนยันนัดหมายแล้ว', 'Your appointment has been confirmed', 'นัดหมายของคุณได้รับการยืนยันแล้ว', '{"appointmentId":"APT-SEED-002"}'::jsonb),
-  ('DOC-TEST-001',    'appointment_requested', 'New Appointment Request', 'มีนัดหมายใหม่', 'Patient has requested an appointment', 'ผู้ป่วยขอนัดหมาย', '{"appointmentId":"APT-SEED-003"}'::jsonb);
+  ('DOC-TEST-001',    'appointment_requested', 'New Appointment Request', 'มีนัดหมายใหม่', 'Patient has requested an appointment', 'ผู้ป่วยขอนัดหมาย', '{"appointmentId":"APT-SEED-003"}'::jsonb),
+  ('ADMIN-TEST-001',  'doctor_registration', 'New Doctor Registration', 'แพทย์ใหม่ลงทะเบียน', 'Dr. Pending Approval has requested to join', 'นพ. รอการอนุมัติ ขอลงทะเบียน', '{"doctorId":"DOC-PENDING-001"}'::jsonb);
 
 -- ──────────────────────────────────────────
 -- 9. CONSULTANTS

@@ -8,17 +8,20 @@
 
 ---
 
+
 ## 1. Purpose
 
 Full video consultation experience with Jitsi Meet integration, recording consent, live transcription, AI-assisted clinical copilot, and post-meeting report generation.
 
 ---
 
+
 ## 2. Meeting States
 
 ```text
 time_check → consent → meeting → ended
 ```
+
 
 ### State 1: Time Check
 
@@ -34,6 +37,7 @@ time_check → consent → meeting → ended
 │  (Or: ⚠️ Too early / ❌ Too late → Auto-reschedule)         │
 └──────────────────────────────────────────────────────────────┘
 ```
+
 
 ### State 2: Consent
 
@@ -53,6 +57,7 @@ time_check → consent → meeting → ended
 │  [ยอมรับและเริ่มประชุม (Accept & Start)]                     │
 └──────────────────────────────────────────────────────────────┘
 ```
+
 
 ### State 3: Active Meeting
 
@@ -86,6 +91,7 @@ time_check → consent → meeting → ended
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
+
 ### State 4: Meeting Ended
 
 ```text
@@ -111,7 +117,9 @@ time_check → consent → meeting → ended
 
 ---
 
+
 ## 3. Features
+
 
 ### 3.1 Recording
 
@@ -120,6 +128,7 @@ time_check → consent → meeting → ended
 | Video recording | MediaRecorder API | WebM |
 | Upload | Cloud Storage service | Auto after meeting |
 | Transcription | Generated from recording | Text |
+
 
 ### 3.2 Live Transcription (LiveTranscription component)
 
@@ -134,6 +143,7 @@ time_check → consent → meeting → ended
 | Export | Download as .txt file |
 | Status | Color dot: green=listening, yellow=paused, red=error |
 
+
 ### 3.3 AI Clinical Copilot (AIChatCopilot component)
 
 | Feature | Description |
@@ -143,6 +153,7 @@ time_check → consent → meeting → ended
 | Real-time suggestions | AI provides suggestions during consultation |
 | Message types | Warning (yellow), Suggestion (green), Info (blue) |
 | Minimizable | FAB button when minimized |
+
 
 ### 3.4 HOST Controls (Doctor as Moderator)
 
@@ -177,6 +188,7 @@ The doctor is always the HOST/moderator of all meetings, with full control over 
 └──────────────────────────────────────────────────────────────┘
 ```
 
+
 #### HOST Control Actions
 
 | Control | API | Description |
@@ -189,6 +201,7 @@ The doctor is always the HOST/moderator of all meetings, with full control over 
 | Transcript STOP | `POST /api/meetings/:id/stop-transcription` | End transcription, compile full transcript |
 | Mute All | Jitsi External API | Mute all participant microphones |
 | End Meeting | Jitsi External API + backend | Close meeting room, trigger AI pipeline |
+
 
 ### 3.5 Multi-Party Participant Management
 
@@ -215,6 +228,7 @@ Supports Microsoft Teams-like multi-party meetings with role-based controls.
 └──────────────────────────────────────────────────────────────┘
 ```
 
+
 ### 3.6 Chat Integration During Meeting
 
 All chat messages are captured for post-meeting AI summary generation.
@@ -228,6 +242,7 @@ All chat messages are captured for post-meeting AI summary generation.
 | Chat Export | Download chat log as .txt after meeting |
 | Speaker Labels | 👨‍⚕️ Doctor / 🧑 Patient / 👥 Guest with color coding |
 
+
 ### 3.7 Screen Sharing for Medical Images
 
 | Feature | Description |
@@ -240,7 +255,9 @@ All chat messages are captured for post-meeting AI summary generation.
 
 ---
 
+
 ## 4. Workflows
+
 
 ### Workflow 1: Complete Video Consultation
 
@@ -260,6 +277,7 @@ Step 12: Doctor reviews AI report (Man-in-the-Loop)
 Step 13: Approves → Content available for EMR
 ```
 
+
 ### Workflow 2: Live Transcription During Meeting
 
 ```text
@@ -273,6 +291,7 @@ Step 7: Switch language (TH ↔ EN) as needed
 Step 8: On meeting end → POST /api/meetings/:id/stop-transcription
 Step 9: Full transcript compiled for AI summary
 ```
+
 
 ### Workflow 3: Multi-Party Meeting Management
 
@@ -288,6 +307,7 @@ Step 8:  All admitted participants visible in Participants Panel
 Step 9:  Doctor controls: mute individual/all, remove participant
 Step 10: All participants can use text chat (captured for AI summary)
 ```
+
 
 ### Workflow 4: Meeting End → AI Summary Pipeline
 
@@ -313,6 +333,7 @@ Step 11: Doctor reviews via Man-in-the-Loop validation (see Health Meeting page)
 Step 12: Approved summary → pre-fills EMR Editor for finalization
 ```
 
+
 ### Workflow 5: Real-Time Transcript Display
 
 ```text
@@ -334,6 +355,7 @@ Step 12: Full transcript compiled and stored
 ```
 
 ---
+
 
 ## 5. API Endpoints
 
@@ -358,6 +380,7 @@ Step 12: Full transcript compiled and stored
 
 ---
 
+
 ## 6. Meeting Technology Stack
 
 | Component | Technology | Cost | Details |
@@ -371,29 +394,41 @@ Step 12: Full transcript compiled and stored
 
 ---
 
+
 ## 7. AI Agent Improvement Opportunities
+
 
 - **Auto-dictation**: AI transcribe doctor's verbal notes directly to EMR fields
 
+
 - **Real-time diagnosis support**: AI suggest differential diagnosis during conversation
+
 
 - **Auto-summary**: AI generate meeting summary in real-time as conversation progresses
 
+
 - **Sentiment analysis**: AI detect patient distress or confusion
+
 
 - **Follow-up extraction**: AI automatically identify follow-up items from conversation
 
+
 - **Speaker diarization enhancement**: AI improve speaker identification accuracy
+
 
 - **Multi-language real-time translation**: AI translate between Thai and English in real-time
 
+
 - **Clinical keyword highlighting**: AI highlight medical terms in transcript for quick review
+
 
 - **Automatic section markers**: AI detect topic changes and mark 30-min summary boundaries
 
 ---
 
+
 ## PostgreSQL Database Integration
+
 
 ### Tables Used
 
@@ -402,24 +437,33 @@ Step 12: Full transcript compiled and stored
 | meeting_records | SELECT/UPDATE | Track meeting session state and duration |
 | meeting_transcripts | INSERT | Store transcript segments from Web Speech API |
 
+
 ### API Endpoints
 
 | Endpoint | Method | DB Operation |
 | -------- | ------ | ------------ |
 | Meeting server endpoints (port 3020) | POST | INSERT meeting_transcripts via Socket.IO |
 
+
 ### Integration
+
 
 - **Jitsi Meet:** iframe-based video conferencing
 
+
 - **Web Speech API:** Browser-native speech recognition
+
 
 - **Socket.IO:** Real-time transcript:segment event streaming
 
+
 ### Deployment
+
 
 - **Local Docker:** izara-postgres container (localhost:5433 external / 5432 internal) → database: izara_phase1
 
+
 - **Production:** GCE VM at 35.240.157.230:5432 → database: izara_phase1 (asia-southeast1)
+
 
 - **Service deployed via:** Cloud Run (gen2, CPU Boost) + Cloud Build CI/CD

@@ -51,6 +51,7 @@
 | ✅ Man-in-the-Loop | Doctor validates all AI outputs | — |
 
 
+
 ---
 
 
@@ -117,6 +118,7 @@ Izara-jitsi-server/
 
 
 
+
 ### Socket.IO Events
 
 | Event | Direction | Description |
@@ -128,6 +130,7 @@ Izara-jitsi-server/
 | `transcript-update` | Server → Client | Broadcast transcript |
 | `chat-update` | Server → Client | Broadcast chat message |
 | `meeting-ended` | Server → Client | Meeting end notification |
+
 
 
 ---
@@ -143,6 +146,7 @@ Izara-jitsi-server/
 | `GEMINI_MODEL` | gemini-2.5-flash-lite | AI model |
 | `DATABASE_URL` | — | PostgreSQL connection string |
 | `JWT_SECRET` | — | JWT signing secret |
+
 
 
 ---

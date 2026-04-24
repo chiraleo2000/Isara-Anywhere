@@ -1,11 +1,12 @@
 # 📊 IZARA Telemedicine Platform - Presentation Materials
 
-> **Version:** 1.5.10 | **Updated:** March 27, 2026
-> **Status:** Phase 1 Complete + SonarQube Clean — All Tests Passing (v1.5.10)
-> **Tests:** 2,013 Unit (Vitest) + 1,124 Local E2E (Playwright) + 215 Cloud Tests (Playwright) = **3,352 total — 100% Pass Rate**
+> **Version:** 1.7.0 | **Updated:** 24 April 2026
+> **Status:** Phase 1 + Phase 2 Complete — All Tests Passing (v1.7.0) — Native PostgreSQL Support
+> **Tests:** 2,487 Unit (Vitest, 77 files) + 44 Local UI Tests (Playwright, 11 groups A–K) + 226 Cloud Tests = **2,757 total — 100% Pass Rate**
 > **Code Quality:** SonarQube clean — zero `error: any`, strict TypeScript safety
 
 ---
+
 
 
 ## 📘 Documentation
@@ -25,7 +26,9 @@ This document covers:
 ---
 
 
+
 ## 🌐 Live URLs
+
 
 
 ### Local Environment (Docker)
@@ -37,6 +40,7 @@ This document covers:
 | Meeting Server | <http://localhost:3020> |
 | PostgreSQL | localhost:5433 |
 | pgAdmin | <http://localhost:5050> |
+
 
 
 
@@ -52,6 +56,7 @@ This document covers:
 
 
 ---
+
 
 
 ## 📁 Folder Structure
@@ -85,7 +90,9 @@ Presentations/
 ---
 
 
+
 ## 🛠️ Quick Usage
+
 
 
 ### View Diagrams
@@ -93,15 +100,18 @@ Presentations/
 Open **[html-diagrams/index.html](html-diagrams/index.html)** in your browser.
 
 
+
 ### Technical Overview
 
 Read **[TECHNICAL_DOCUMENTATION.md](TECHNICAL_DOCUMENTATION.md)**
+
 
 
 ### Database Schema
 
 View **[database/izara-complete-schema-v4.dbml](database/izara-complete-schema-v4.dbml)**
 (Visualize with [dbdiagram.io](<https://dbdiagram.io)> or VS Code DBML extension)
+
 
 
 ### Regenerate HTML Diagrams
@@ -111,12 +121,15 @@ View **[database/izara-complete-schema-v4.dbml](database/izara-complete-schema-v
 ```
 
 
+
 ### Run All Tests
 
 ```powershell
 
+
 # Unit tests (2,013 tests, ~4.3s)
 cd tests/unit && npx vitest run
+
 
 
 # E2E tests (1,124 tests, ~4.2 min, requires Docker)
@@ -124,6 +137,7 @@ cd tests/e2e && $env:CI="true"; npx playwright test --project=Local
 ```
 
 ---
+
 
 
 ## 🎯 Key Diagrams
@@ -147,6 +161,7 @@ cd tests/e2e && $env:CI="true"; npx playwright test --project=Local
 ---
 
 
+
 ## 📋 Test Credentials (5 Demo Accounts)
 
 | Role | Email | Password | Portal |
@@ -161,6 +176,7 @@ cd tests/e2e && $env:CI="true"; npx playwright test --project=Local
 ---
 
 
+
 ## 🔗 Service URLs
 
 | Service | Local | Cloud |
@@ -171,6 +187,7 @@ cd tests/e2e && $env:CI="true"; npx playwright test --project=Local
 
 
 ---
+
 
 
 ### Last Updated: March 27, 2026

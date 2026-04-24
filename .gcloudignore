@@ -1,0 +1,62 @@
+# Ignore node_modules — dependencies are installed inside Docker
+
+**/node_modules/
+
+# Test artifacts — NOT part of any Docker build context
+
+tests/
+test-results/
+screenshots/
+playwright-report/
+playwright.config.ts
+cypress.config.*
+*.test.ts
+*.spec.ts
+.build-log.txt
+
+# Git history
+
+.git/
+
+# IDE / editor files
+
+.vscode/
+.idea/
+*.swp
+
+# Docker files not needed in build context
+
+docker-compose.yml
+
+# Documentation
+
+docs/
+Presentations/
+Processes/
+Phase2/
+*.md
+!README.md
+
+# Scripts not needed for Docker build
+
+scripts/
+fixtures/
+specs/
+
+# Credentials (NEVER upload)
+
+credentials/
+
+# OS junk
+
+Thumbs.db
+.DS_Store
+
+# Build artifacts
+
+**/dist/
+**/build/
+
+# Recordings
+
+Izara-jitsi-server/recordings/
