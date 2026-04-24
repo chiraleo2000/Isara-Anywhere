@@ -20,7 +20,7 @@
 substitutions:
   _REGION: asia-southeast1
   _REGISTRY: asia-southeast1-docker.pkg.dev/izara-telemedicine/isara-anywhere-portals
-  _TAG: v1.7.1
+  _TAG: v1.7.2
   _DB_HOST: "35.240.157.230"
   _DB_PORT: "5432"
   _DB_NAME: izara_phase1

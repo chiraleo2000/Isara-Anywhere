@@ -1,6 +1,6 @@
 {
   "name": "izara-jitsi-server",
-  "version": "1.7.0",
+  "version": "1.7.2",
   "description": "Izara Jitsi Meeting Server - Video, Transcription (Web Speech API), AI Summary (Gemini)",
   "main": "server/index.js",
   "type": "module",
