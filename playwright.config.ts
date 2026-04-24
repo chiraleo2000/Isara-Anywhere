@@ -55,7 +55,7 @@ const sharedUse = {
   },
   browserName: 'chromium' as const,
   baseURL: IS_CLOUD
-    ? (process.env.CLOUD_PATIENT_URL || 'https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app')
+    ? (process.env.CLOUD_PATIENT_URL || 'https://izara-patient-portal-dev-testing-hvht4obouq-as.a.run.app')
     : 'http://localhost:3005',
 };
 

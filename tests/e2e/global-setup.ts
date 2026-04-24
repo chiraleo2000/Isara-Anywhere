@@ -14,10 +14,10 @@ import * as path from 'node:path';
 // ── URLs ────────────────────────────────────────────────────────────────────
 const IS_CLOUD = process.env.TEST_ENV === 'cloud';
 const PATIENT_URL = IS_CLOUD
-  ? (process.env.CLOUD_PATIENT_URL || 'https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app')
+  ? (process.env.CLOUD_PATIENT_URL || 'https://izara-patient-portal-dev-testing-hvht4obouq-as.a.run.app')
   : (process.env.LOCAL_PATIENT_URL || 'http://localhost:3005');
 const DOCTOR_URL = IS_CLOUD
-  ? (process.env.CLOUD_DOCTOR_URL || 'https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app')
+  ? (process.env.CLOUD_DOCTOR_URL || 'https://izara-doctor-portal-dev-testing-hvht4obouq-as.a.run.app')
   : (process.env.LOCAL_DOCTOR_URL || 'http://localhost:3010');
 
 // ── Credentials ─────────────────────────────────────────────────────────────

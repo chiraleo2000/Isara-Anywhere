@@ -6,7 +6,7 @@
     "fullyParallel": false,
     "globalSetup": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\tests\\e2e\\global-setup.ts",
     "globalTeardown": null,
-    "globalTimeout": 1800000,
+    "globalTimeout": 3600000,
     "grep": {},
     "grepInvert": null,
     "maxFailures": 10,
@@ -29,7 +29,7 @@
         "testMatch": [
           "group-A-auth-access.ui-test.ts"
         ],
-        "timeout": 300000
+        "timeout": 420000
       },
       {
         "outputDir": "C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/test-results",
@@ -45,7 +45,7 @@
         "testMatch": [
           "group-B-patient-portal.ui-test.ts"
         ],
-        "timeout": 300000
+        "timeout": 420000
       },
       {
         "outputDir": "C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/test-results",
@@ -61,7 +61,7 @@
         "testMatch": [
           "group-C-doctor-portal.ui-test.ts"
         ],
-        "timeout": 300000
+        "timeout": 420000
       },
       {
         "outputDir": "C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/test-results",
@@ -77,7 +77,7 @@
         "testMatch": [
           "group-G-livingwill-pdpa.ui-test.ts"
         ],
-        "timeout": 300000
+        "timeout": 420000
       },
       {
         "outputDir": "C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/test-results",
@@ -93,7 +93,7 @@
         "testMatch": [
           "group-H-content-resources-consultants.ui-test.ts"
         ],
-        "timeout": 300000
+        "timeout": 420000
       },
       {
         "outputDir": "C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/test-results",
@@ -109,7 +109,7 @@
         "testMatch": [
           "group-I-admin-users-notifications.ui-test.ts"
         ],
-        "timeout": 300000
+        "timeout": 420000
       },
       {
         "outputDir": "C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/test-results",
@@ -125,7 +125,7 @@
         "testMatch": [
           "group-J-ai-timeline-map.ui-test.ts"
         ],
-        "timeout": 300000
+        "timeout": 420000
       },
       {
         "outputDir": "C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/test-results",
@@ -141,7 +141,7 @@
         "testMatch": [
           "group-D-appointment-workflows.ui-test.ts"
         ],
-        "timeout": 300000
+        "timeout": 420000
       },
       {
         "outputDir": "C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/test-results",
@@ -157,7 +157,7 @@
         "testMatch": [
           "group-E-meeting-clinical.ui-test.ts"
         ],
-        "timeout": 300000
+        "timeout": 420000
       },
       {
         "outputDir": "C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/test-results",
@@ -173,7 +173,7 @@
         "testMatch": [
           "group-F-phr-health-records.ui-test.ts"
         ],
-        "timeout": 300000
+        "timeout": 420000
       },
       {
         "outputDir": "C:/Users/chira/Documents/Isara-telemed/Isara-Anywhere/test-results",
@@ -189,7 +189,7 @@
         "testMatch": [
           "group-K-accessibility.ui-test.ts"
         ],
-        "timeout": 300000
+        "timeout": 420000
       }
     ],
     "quiet": false,
@@ -245,7 +245,7 @@
               "tags": [],
               "tests": [
                 {
-                  "timeout": 300000,
+                  "timeout": 420000,
                   "annotations": [],
                   "expectedStatus": "passed",
                   "projectId": "D-appointments",
@@ -255,32 +255,32 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 16684,
+                      "duration": 12310,
                       "errors": [],
                       "stdout": [
                         {
                           "text": "\n🔧 FIXTURE SETUP — launching 3 browsers...\n"
                         },
                         {
-                          "text": "  🚀 Patient browser launched in 253ms\n"
+                          "text": "  🚀 Patient browser launched in 378ms\n"
                         },
                         {
-                          "text": "  🚀 Doctor browser launched in 274ms\n"
+                          "text": "  🚀 Doctor browser launched in 432ms\n"
                         },
                         {
-                          "text": "  🚀 Admin browser launched in 328ms\n"
+                          "text": "  🚀 Admin browser launched in 408ms\n"
                         },
                         {
-                          "text": "  📄 Patient navigated in 313ms → http://localhost:3005/\n"
+                          "text": "  📄 Patient navigated in 493ms → https://izara-patient-portal-dev-testing-hvht4obouq-as.a.run.app/\n"
                         },
                         {
-                          "text": "  📄 Doctor navigated in 1101ms → http://localhost:3010/doctor/DOC-TEST-001/dashboard\n"
+                          "text": "  📄 Doctor navigated in 470ms → https://izara-doctor-portal-dev-testing-hvht4obouq-as.a.run.app/doctor/DOC-TEST-001/dashboard\n"
                         },
                         {
-                          "text": "  📄 Admin navigated in 1748ms → http://localhost:3010/doctor/ADMIN-TEST-001/dashboard\n"
+                          "text": "  📄 Admin navigated in 526ms → https://izara-doctor-portal-dev-testing-hvht4obouq-as.a.run.app/doctor/ADMIN-TEST-001/dashboard\n"
                         },
                         {
-                          "text": "✅ FIXTURE SETUP complete in 6.2s\n\n"
+                          "text": "✅ FIXTURE SETUP complete in 3.7s\n\n"
                         },
                         {
                           "text": "  ✅ D01: Appointments list loaded\n"
@@ -301,7 +301,7 @@
                           "text": "  ✅ D06: Selected first available doctor\n"
                         },
                         {
-                          "text": "  ✅ D07: Pool appointment created via API — APT-1777008177515-D4DD574D (no doctor yet)\n"
+                          "text": "  ✅ D07: Pool appointment created via API — APT-1777017911486-69A444ED (no doctor yet)\n"
                         },
                         {
                           "text": "  ✅ D08: Appointments list after booking\n"
@@ -315,44 +315,44 @@
                       "steps": [
                         {
                           "title": "D01 — Navigate to Appointments list",
-                          "duration": 2882
+                          "duration": 1543
                         },
                         {
                           "title": "D02 — Check appointment filter tabs",
-                          "duration": 1102
+                          "duration": 892
                         },
                         {
                           "title": "D03 — Click Book New Appointment",
-                          "duration": 2140
+                          "duration": 1642
                         },
                         {
                           "title": "D04 — Fill symptom form",
-                          "duration": 2459
+                          "duration": 2135
                         },
                         {
                           "title": "D05 — Advance to next step",
-                          "duration": 1982
+                          "duration": 1448
                         },
                         {
                           "title": "D06 — Select doctor or skip to pool",
-                          "duration": 1675
+                          "duration": 1400
                         },
                         {
                           "title": "D07 — Submit appointment request (pool — no doctor assigned)",
-                          "duration": 378
+                          "duration": 292
                         },
                         {
                           "title": "D08 — Verify appointment appears in list",
-                          "duration": 2971
+                          "duration": 2831
                         }
                       ],
-                      "startTime": "2026-04-24T05:22:38.914Z",
+                      "startTime": "2026-04-24T08:04:59.856Z",
                       "annotations": [],
                       "attachments": [
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
-                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-D-appointment-workfl-6f54e-pointment-with-symptom-form-D-appointments\\test-finished-2.png"
+                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-D-appointment-workfl-6f54e-pointment-with-symptom-form-D-appointments\\test-finished-1.png"
                         },
                         {
                           "name": "screenshot",
@@ -362,7 +362,7 @@
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
-                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-D-appointment-workfl-6f54e-pointment-with-symptom-form-D-appointments\\test-finished-1.png"
+                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-D-appointment-workfl-6f54e-pointment-with-symptom-form-D-appointments\\test-finished-2.png"
                         }
                       ]
                     }
@@ -381,7 +381,7 @@
               "tags": [],
               "tests": [
                 {
-                  "timeout": 300000,
+                  "timeout": 420000,
                   "annotations": [],
                   "expectedStatus": "passed",
                   "projectId": "D-appointments",
@@ -391,7 +391,7 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 7363,
+                      "duration": 10621,
                       "errors": [],
                       "stdout": [
                         {
@@ -418,37 +418,37 @@
                       "steps": [
                         {
                           "title": "D09 — Navigate to Health Meeting",
-                          "duration": 1672
+                          "duration": 2350
                         },
                         {
                           "title": "D10 — Click through meeting queue tabs",
-                          "duration": 1978
+                          "duration": 3102
                         },
                         {
                           "title": "D11 — Navigate to Appointment Pool",
-                          "duration": 1539
+                          "duration": 2276
                         },
                         {
                           "title": "D12 — Navigate to Schedule",
-                          "duration": 1548
+                          "duration": 2015
                         },
                         {
                           "title": "D13 — Inspect schedule time slots",
-                          "duration": 208
+                          "duration": 471
                         }
                       ],
-                      "startTime": "2026-04-24T05:23:01.878Z",
+                      "startTime": "2026-04-24T08:05:15.882Z",
                       "annotations": [],
                       "attachments": [
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
-                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-D-appointment-workfl-93082-appointment-management-flow-D-appointments\\test-finished-1.png"
+                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-D-appointment-workfl-93082-appointment-management-flow-D-appointments\\test-finished-2.png"
                         },
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
-                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-D-appointment-workfl-93082-appointment-management-flow-D-appointments\\test-finished-2.png"
+                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-D-appointment-workfl-93082-appointment-management-flow-D-appointments\\test-finished-1.png"
                         },
                         {
                           "name": "screenshot",
@@ -472,7 +472,7 @@
               "tags": [],
               "tests": [
                 {
-                  "timeout": 300000,
+                  "timeout": 420000,
                   "annotations": [],
                   "expectedStatus": "passed",
                   "projectId": "D-appointments",
@@ -482,7 +482,7 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 7679,
+                      "duration": 9981,
                       "errors": [],
                       "stdout": [
                         {
@@ -492,10 +492,10 @@
                           "text": "  ✅ D15: Admin → Appointment Pool\n"
                         },
                         {
-                          "text": "  ✅ D15b: Found unassigned appointment: APT-1777006591232-2C8C3005 (status: in_pool)\n"
+                          "text": "  ✅ D15b: Found unassigned appointment: APT-1777017911486-69A444ED (status: in_pool)\n"
                         },
                         {
-                          "text": "  ✅ D15b: Admin assigned DOC-TEST-001 to appointment APT-1777006591232-2C8C3005\n"
+                          "text": "  ✅ D15b: Admin assigned DOC-TEST-001 to appointment APT-1777017911486-69A444ED\n"
                         },
                         {
                           "text": "  ✅ D16: Admin pool shows assignment data: true\n"
@@ -512,32 +512,32 @@
                       "steps": [
                         {
                           "title": "D14 — Navigate to Health Meeting",
-                          "duration": 1649
+                          "duration": 2786
                         },
                         {
                           "title": "D15 — Navigate to Appointment Pool",
-                          "duration": 1464
+                          "duration": 1619
                         },
                         {
                           "title": "D15b — Admin assigns unassigned appointment to doctor via API",
-                          "duration": 935
+                          "duration": 669
                         },
                         {
                           "title": "D16 — Verify assignment reflected in Admin pool view",
-                          "duration": 206
+                          "duration": 300
                         },
                         {
                           "title": "D17 — Admin → Health Meeting queue → verify appointment moved",
-                          "duration": 3067
+                          "duration": 4362
                         }
                       ],
-                      "startTime": "2026-04-24T05:23:09.353Z",
+                      "startTime": "2026-04-24T08:05:26.515Z",
                       "annotations": [],
                       "attachments": [
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
-                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-D-appointment-workfl-da095-oversight-doctor-assignment-D-appointments\\test-finished-1.png"
+                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-D-appointment-workfl-da095-oversight-doctor-assignment-D-appointments\\test-finished-3.png"
                         },
                         {
                           "name": "screenshot",
@@ -547,7 +547,7 @@
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
-                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-D-appointment-workfl-da095-oversight-doctor-assignment-D-appointments\\test-finished-3.png"
+                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-D-appointment-workfl-da095-oversight-doctor-assignment-D-appointments\\test-finished-1.png"
                         }
                       ]
                     }
@@ -566,7 +566,7 @@
               "tags": [],
               "tests": [
                 {
-                  "timeout": 300000,
+                  "timeout": 420000,
                   "annotations": [],
                   "expectedStatus": "passed",
                   "projectId": "D-appointments",
@@ -576,14 +576,14 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2942,
+                      "duration": 2363,
                       "errors": [],
                       "stdout": [
                         {
-                          "text": "  ✅ D18: Patient API — 4 appointments\n"
+                          "text": "  ✅ D18: Patient API — 2 appointments\n"
                         },
                         {
-                          "text": "  ✅ D19: Cross-portal sync verified — Doctor has 3 patient(s), 6 appointment(s)\n"
+                          "text": "  ✅ D19: Cross-portal sync verified — Doctor has 3 patient(s), 4 appointment(s)\n"
                         },
                         {
                           "text": "\n  🎉 D4 COMPLETE — Cross-portal sync\n\n"
@@ -594,21 +594,16 @@
                       "steps": [
                         {
                           "title": "D18 — Patient appointments API check",
-                          "duration": 166
+                          "duration": 73
                         },
                         {
                           "title": "D19 — Doctor sees assigned patient via API",
-                          "duration": 2233
+                          "duration": 2043
                         }
                       ],
-                      "startTime": "2026-04-24T05:23:17.119Z",
+                      "startTime": "2026-04-24T08:05:36.503Z",
                       "annotations": [],
                       "attachments": [
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-D-appointment-workfl-e2294-oss-portal-appointment-sync-D-appointments\\test-finished-1.png"
-                        },
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
@@ -618,6 +613,11 @@
                           "name": "screenshot",
                           "contentType": "image/png",
                           "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-D-appointment-workfl-e2294-oss-portal-appointment-sync-D-appointments\\test-finished-3.png"
+                        },
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-D-appointment-workfl-e2294-oss-portal-appointment-sync-D-appointments\\test-finished-1.png"
                         }
                       ]
                     }
@@ -636,7 +636,7 @@
               "tags": [],
               "tests": [
                 {
-                  "timeout": 300000,
+                  "timeout": 420000,
                   "annotations": [],
                   "expectedStatus": "passed",
                   "projectId": "D-appointments",
@@ -646,7 +646,7 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 11697,
+                      "duration": 16603,
                       "errors": [],
                       "stdout": [
                         {
@@ -670,29 +670,29 @@
                       "steps": [
                         {
                           "title": "D20 — Navigate to Doctor Dashboard",
-                          "duration": 5082
+                          "duration": 7500
                         },
                         {
                           "title": "D21 — Verify KPI cards show real data",
-                          "duration": 1071
+                          "duration": 1484
                         },
                         {
                           "title": "D22 — Verify dashboard updates are visible in UI (slow scroll)",
-                          "duration": 5037
+                          "duration": 7322
                         }
                       ],
-                      "startTime": "2026-04-24T05:23:20.139Z",
+                      "startTime": "2026-04-24T08:05:38.873Z",
                       "annotations": [],
                       "attachments": [
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
-                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-D-appointment-workfl-4e8c2-hows-appointment-queue-data-D-appointments\\test-finished-3.png"
+                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-D-appointment-workfl-4e8c2-hows-appointment-queue-data-D-appointments\\test-finished-2.png"
                         },
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
-                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-D-appointment-workfl-4e8c2-hows-appointment-queue-data-D-appointments\\test-finished-2.png"
+                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-D-appointment-workfl-4e8c2-hows-appointment-queue-data-D-appointments\\test-finished-3.png"
                         },
                         {
                           "name": "screenshot",
@@ -733,7 +733,7 @@
               "tags": [],
               "tests": [
                 {
-                  "timeout": 300000,
+                  "timeout": 420000,
                   "annotations": [],
                   "expectedStatus": "passed",
                   "projectId": "E-meeting-clinical",
@@ -743,32 +743,32 @@
                       "workerIndex": 9,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3011,
+                      "duration": 2126,
                       "errors": [],
                       "stdout": [
                         {
                           "text": "\n🔧 FIXTURE SETUP — launching 3 browsers...\n"
                         },
                         {
-                          "text": "  🚀 Patient browser launched in 264ms\n"
+                          "text": "  🚀 Patient browser launched in 338ms\n"
                         },
                         {
-                          "text": "  🚀 Doctor browser launched in 292ms\n"
+                          "text": "  🚀 Doctor browser launched in 359ms\n"
                         },
                         {
-                          "text": "  🚀 Admin browser launched in 309ms\n"
+                          "text": "  🚀 Admin browser launched in 327ms\n"
                         },
                         {
-                          "text": "  📄 Patient navigated in 214ms → http://localhost:3005/\n"
+                          "text": "  📄 Patient navigated in 1333ms → https://izara-patient-portal-dev-testing-hvht4obouq-as.a.run.app/\n"
                         },
                         {
-                          "text": "  📄 Doctor navigated in 1131ms → http://localhost:3010/doctor/DOC-TEST-001/dashboard\n"
+                          "text": "  📄 Doctor navigated in 476ms → https://izara-doctor-portal-dev-testing-hvht4obouq-as.a.run.app/doctor/DOC-TEST-001/dashboard\n"
                         },
                         {
-                          "text": "  📄 Admin navigated in 1327ms → http://localhost:3010/doctor/ADMIN-TEST-001/dashboard\n"
+                          "text": "  📄 Admin navigated in 519ms → https://izara-doctor-portal-dev-testing-hvht4obouq-as.a.run.app/doctor/ADMIN-TEST-001/dashboard\n"
                         },
                         {
-                          "text": "✅ FIXTURE SETUP complete in 5.0s\n\n"
+                          "text": "✅ FIXTURE SETUP complete in 4.0s\n\n"
                         },
                         {
                           "text": "  E01: Meeting server - 200\n"
@@ -785,18 +785,18 @@
                       "steps": [
                         {
                           "title": "E01 - Meeting server health",
-                          "duration": 382
+                          "duration": 1696
                         },
                         {
                           "title": "E02 - Patient portal API health",
-                          "duration": 90
+                          "duration": 88
                         },
                         {
                           "title": "E03 - Doctor portal API health",
-                          "duration": 382
+                          "duration": 94
                         }
                       ],
-                      "startTime": "2026-04-24T05:27:51.509Z",
+                      "startTime": "2026-04-24T08:29:04.837Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -807,12 +807,12 @@
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
-                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-E-meeting-clinical.u-9fe4f-ll-service-APIs-are-healthy-E-meeting-clinical\\test-finished-1.png"
+                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-E-meeting-clinical.u-9fe4f-ll-service-APIs-are-healthy-E-meeting-clinical\\test-finished-3.png"
                         },
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
-                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-E-meeting-clinical.u-9fe4f-ll-service-APIs-are-healthy-E-meeting-clinical\\test-finished-3.png"
+                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-E-meeting-clinical.u-9fe4f-ll-service-APIs-are-healthy-E-meeting-clinical\\test-finished-1.png"
                         }
                       ]
                     }
@@ -831,7 +831,7 @@
               "tags": [],
               "tests": [
                 {
-                  "timeout": 300000,
+                  "timeout": 420000,
                   "annotations": [],
                   "expectedStatus": "passed",
                   "projectId": "E-meeting-clinical",
@@ -841,7 +841,7 @@
                       "workerIndex": 9,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 7294,
+                      "duration": 6349,
                       "errors": [],
                       "stdout": [
                         {
@@ -860,16 +860,16 @@
                           "text": "  E08: Doctor -> Health Meeting page\n"
                         },
                         {
-                          "text": "  E09: Appointment APT-TEST-003 (status: pending)\n"
+                          "text": "  E09: Appointment APT-1777017911486-69A444ED (status: awaiting_doctor_response)\n"
                         },
                         {
-                          "text": "  E10: Meeting created - id: efeddfbb-c9c2-4364-996f-27bc47894ba6, room: izara-APT-TEST-003-mocgyz7n\n"
+                          "text": "  E10: Meeting created - id: 5bd7b3eb-b4be-4eca-babf-6cccf74654ae, room: izara-APT-17770179-mocnfy6u\n"
                         },
                         {
                           "text": "  E11: Meeting record - status: scheduled\n"
                         },
                         {
-                          "text": "  E12: All 4 URLs contain room izara-APT-TEST-003-mocgyz7n\n"
+                          "text": "  E12: All 4 URLs contain room izara-APT-17770179-mocnfy6u\n"
                         },
                         {
                           "text": "  E2 COMPLETE - Doctor clinical flow + meeting creation\n"
@@ -880,42 +880,42 @@
                       "steps": [
                         {
                           "title": "E04 - Navigate to Patients list",
-                          "duration": 1681
+                          "duration": 1606
                         },
                         {
                           "title": "E05 - Search for patient demo",
-                          "duration": 902
+                          "duration": 1002
                         },
                         {
                           "title": "E06 - Click patient card",
-                          "duration": 1420
+                          "duration": 1536
                         },
                         {
                           "title": "E07 - Verify clinical action buttons",
-                          "duration": 226
+                          "duration": 208
                         },
                         {
                           "title": "E08 - Navigate to Health Meeting page",
-                          "duration": 1603
+                          "duration": 1476
                         },
                         {
                           "title": "E09 - Get appointment ID from doctor API",
-                          "duration": 376
+                          "duration": 57
                         },
                         {
                           "title": "E10 - CREATE MEETING via Meeting Server API",
-                          "duration": 492
+                          "duration": 265
                         },
                         {
                           "title": "E11 - Verify meeting record via GET API",
-                          "duration": 45
+                          "duration": 55
                         },
                         {
                           "title": "E12 - Verify all meeting URLs contain correct room",
-                          "duration": 20
+                          "duration": 2
                         }
                       ],
-                      "startTime": "2026-04-24T05:27:59.625Z",
+                      "startTime": "2026-04-24T08:29:10.968Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -950,7 +950,7 @@
               "tags": [],
               "tests": [
                 {
-                  "timeout": 300000,
+                  "timeout": 420000,
                   "annotations": [],
                   "expectedStatus": "passed",
                   "projectId": "E-meeting-clinical",
@@ -960,7 +960,7 @@
                       "workerIndex": 9,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 4779,
+                      "duration": 3115,
                       "errors": [],
                       "stdout": [
                         {
@@ -970,13 +970,13 @@
                           "text": "  E14: Appointment detail opened\n"
                         },
                         {
-                          "text": "  E15: Patient meeting access - room: izara-APT-TEST-003-mocgyz7n\n"
+                          "text": "  E15: Patient meeting access - room: izara-APT-17770179-mocnfy6u\n"
                         },
                         {
-                          "text": "  E16: Patient meeting URL verified - room: izara-APT-TEST-003-mocgyz7n\n"
+                          "text": "  E16: Patient meeting URL verified - room: izara-APT-17770179-mocnfy6u\n"
                         },
                         {
-                          "text": "  E17: Patient API - 4 appointment(s)\n"
+                          "text": "  E17: Patient API - 2 appointment(s)\n"
                         },
                         {
                           "text": "  E3 COMPLETE - Patient appointment + meeting verification\n"
@@ -987,28 +987,33 @@
                       "steps": [
                         {
                           "title": "E13 - Appointments list with real data",
-                          "duration": 1929
+                          "duration": 1461
                         },
                         {
                           "title": "E14 - Click appointment card",
-                          "duration": 1711
+                          "duration": 1399
                         },
                         {
                           "title": "E15 - Patient can access meeting record via API",
-                          "duration": 357
+                          "duration": 117
                         },
                         {
                           "title": "E16 - Patient meeting URL has correct room",
-                          "duration": 29
+                          "duration": 2
                         },
                         {
                           "title": "E17 - Patient appointments API shows real data",
-                          "duration": 160
+                          "duration": 59
                         }
                       ],
-                      "startTime": "2026-04-24T05:28:07.054Z",
+                      "startTime": "2026-04-24T08:29:17.327Z",
                       "annotations": [],
                       "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-E-meeting-clinical.u-bb69a-t-meeting-room-verification-E-meeting-clinical\\test-finished-3.png"
+                        },
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
@@ -1018,11 +1023,6 @@
                           "name": "screenshot",
                           "contentType": "image/png",
                           "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-E-meeting-clinical.u-bb69a-t-meeting-room-verification-E-meeting-clinical\\test-finished-1.png"
-                        },
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-E-meeting-clinical.u-bb69a-t-meeting-room-verification-E-meeting-clinical\\test-finished-3.png"
                         }
                       ]
                     }
@@ -1041,7 +1041,7 @@
               "tags": [],
               "tests": [
                 {
-                  "timeout": 300000,
+                  "timeout": 420000,
                   "annotations": [],
                   "expectedStatus": "passed",
                   "projectId": "E-meeting-clinical",
@@ -1051,7 +1051,7 @@
                       "workerIndex": 9,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 5849,
+                      "duration": 5003,
                       "errors": [],
                       "stdout": [
                         {
@@ -1061,13 +1061,13 @@
                           "text": "  E19: Guest invite created - token: eyJhbGciOiJIUzI1NiIsInR5cCI6Ik...\n"
                         },
                         {
-                          "text": "  E20: Token validated - guest: Somchai Family, meeting: efeddfbb-c9c2-4364-996f-27bc47894ba6\n"
+                          "text": "  E20: Token validated - guest: Somchai Family, meeting: 5bd7b3eb-b4be-4eca-babf-6cccf74654ae\n"
                         },
                         {
-                          "text": "  E21: Guest lobby join - status: waiting, id: guest-e3c9e4dc\n"
+                          "text": "  E21: Guest lobby join - status: waiting, id: guest-6b194903\n"
                         },
                         {
-                          "text": "  E22: Token lobby join - participant: guest-3583e9f8, status: waiting\n"
+                          "text": "  E22: Token lobby join - participant: guest-8181886c, status: waiting\n"
                         },
                         {
                           "text": "  E23: Admin queue - appointment data visible: true\n"
@@ -1081,30 +1081,30 @@
                       "steps": [
                         {
                           "title": "E18 - Doctor navigates to Health Meeting queue",
-                          "duration": 953
+                          "duration": 962
                         },
                         {
                           "title": "E19 - Generate JWT guest invite token",
-                          "duration": 327
+                          "duration": 228
                         },
                         {
                           "title": "E20 - Validate guest invite token via API",
-                          "duration": 71
+                          "duration": 54
                         },
                         {
                           "title": "E21 - Guest lobby join via basic endpoint",
-                          "duration": 298
+                          "duration": 199
                         },
                         {
                           "title": "E22 - Guest lobby join via JWT token endpoint",
-                          "duration": 275
+                          "duration": 175
                         },
                         {
                           "title": "E23 - Admin sees meeting queue data",
-                          "duration": 3639
+                          "duration": 3303
                         }
                       ],
-                      "startTime": "2026-04-24T05:28:12.026Z",
+                      "startTime": "2026-04-24T08:29:20.456Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1139,7 +1139,7 @@
               "tags": [],
               "tests": [
                 {
-                  "timeout": 300000,
+                  "timeout": 420000,
                   "annotations": [],
                   "expectedStatus": "passed",
                   "projectId": "E-meeting-clinical",
@@ -1149,7 +1149,7 @@
                       "workerIndex": 9,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 583,
+                      "duration": 254,
                       "errors": [],
                       "stdout": [
                         {
@@ -1176,26 +1176,26 @@
                       "steps": [
                         {
                           "title": "E24 - Doctor meeting URL format verified",
-                          "duration": 26
+                          "duration": 3
                         },
                         {
                           "title": "E25 - Patient meeting URL format verified",
-                          "duration": 29
+                          "duration": 2
                         },
                         {
                           "title": "E26 - Guest meeting URL format verified",
-                          "duration": 27
+                          "duration": 2
                         },
                         {
                           "title": "E27 - Meeting record accessible from all 3 portals",
-                          "duration": 131
+                          "duration": 170
                         },
                         {
                           "title": "E28 - All 3 portals still authenticated",
-                          "duration": 36
+                          "duration": 7
                         }
                       ],
-                      "startTime": "2026-04-24T05:28:17.999Z",
+                      "startTime": "2026-04-24T08:29:25.470Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1206,12 +1206,12 @@
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
-                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-E-meeting-clinical.u-97ea4-s-cross-portal-verification-E-meeting-clinical\\test-finished-1.png"
+                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-E-meeting-clinical.u-97ea4-s-cross-portal-verification-E-meeting-clinical\\test-finished-3.png"
                         },
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
-                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-E-meeting-clinical.u-97ea4-s-cross-portal-verification-E-meeting-clinical\\test-finished-3.png"
+                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-E-meeting-clinical.u-97ea4-s-cross-portal-verification-E-meeting-clinical\\test-finished-1.png"
                         }
                       ]
                     }
@@ -1247,7 +1247,7 @@
               "tags": [],
               "tests": [
                 {
-                  "timeout": 300000,
+                  "timeout": 420000,
                   "annotations": [],
                   "expectedStatus": "passed",
                   "projectId": "A-auth",
@@ -1257,32 +1257,32 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 5067,
+                      "duration": 1986,
                       "errors": [],
                       "stdout": [
                         {
                           "text": "\n🔧 FIXTURE SETUP — launching 3 browsers...\n"
                         },
                         {
-                          "text": "  🚀 Patient browser launched in 253ms\n"
+                          "text": "  🚀 Patient browser launched in 65595ms\n"
                         },
                         {
-                          "text": "  🚀 Doctor browser launched in 248ms\n"
+                          "text": "  🚀 Doctor browser launched in 31585ms\n"
                         },
                         {
-                          "text": "  🚀 Admin browser launched in 305ms\n"
+                          "text": "  🚀 Admin browser launched in 587ms\n"
                         },
                         {
-                          "text": "  📄 Patient navigated in 227ms → http://localhost:3005/\n"
+                          "text": "  📄 Patient navigated in 558ms → https://izara-patient-portal-dev-testing-hvht4obouq-as.a.run.app/\n"
                         },
                         {
-                          "text": "  📄 Doctor navigated in 1421ms → http://localhost:3010/doctor/DOC-TEST-001/dashboard\n"
+                          "text": "  📄 Doctor navigated in 571ms → https://izara-doctor-portal-dev-testing-hvht4obouq-as.a.run.app/doctor/DOC-TEST-001/dashboard\n"
                         },
                         {
-                          "text": "  📄 Admin navigated in 1214ms → http://localhost:3010/doctor/ADMIN-TEST-001/dashboard\n"
+                          "text": "  📄 Admin navigated in 587ms → https://izara-doctor-portal-dev-testing-hvht4obouq-as.a.run.app/doctor/ADMIN-TEST-001/dashboard\n"
                         },
                         {
-                          "text": "✅ FIXTURE SETUP complete in 6.4s\n\n"
+                          "text": "✅ FIXTURE SETUP complete in 100.6s\n\n"
                         },
                         {
                           "text": "  ✅ A01: Patient dashboard — healthy\n"
@@ -1299,20 +1299,25 @@
                       "steps": [
                         {
                           "title": "Patient dashboard is healthy",
-                          "duration": 1469
+                          "duration": 515
                         },
                         {
                           "title": "Doctor dashboard is healthy",
-                          "duration": 1729
+                          "duration": 617
                         },
                         {
                           "title": "Admin dashboard is healthy",
-                          "duration": 1332
+                          "duration": 650
                         }
                       ],
-                      "startTime": "2026-04-24T05:22:12.448Z",
+                      "startTime": "2026-04-24T08:03:11.293Z",
                       "annotations": [],
                       "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-A-auth-access.ui-tes-e4639-s-loaded-healthy-after-auth-A-auth\\test-finished-1.png"
+                        },
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
@@ -1322,11 +1327,6 @@
                           "name": "screenshot",
                           "contentType": "image/png",
                           "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-A-auth-access.ui-tes-e4639-s-loaded-healthy-after-auth-A-auth\\test-finished-2.png"
-                        },
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-A-auth-access.ui-tes-e4639-s-loaded-healthy-after-auth-A-auth\\test-finished-1.png"
                         }
                       ]
                     }
@@ -1345,7 +1345,7 @@
               "tags": [],
               "tests": [
                 {
-                  "timeout": 300000,
+                  "timeout": 420000,
                   "annotations": [],
                   "expectedStatus": "passed",
                   "projectId": "A-auth",
@@ -1355,7 +1355,7 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1062,
+                      "duration": 296,
                       "errors": [],
                       "stdout": [
                         {
@@ -1364,7 +1364,7 @@
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-24T05:22:23.991Z",
+                      "startTime": "2026-04-24T08:04:54.444Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1375,12 +1375,12 @@
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
-                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-A-auth-access.ui-tes-2a1db-ent-portal-sidebar-complete-A-auth\\test-finished-2.png"
+                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-A-auth-access.ui-tes-2a1db-ent-portal-sidebar-complete-A-auth\\test-finished-1.png"
                         },
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
-                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-A-auth-access.ui-tes-2a1db-ent-portal-sidebar-complete-A-auth\\test-finished-1.png"
+                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-A-auth-access.ui-tes-2a1db-ent-portal-sidebar-complete-A-auth\\test-finished-2.png"
                         }
                       ]
                     }
@@ -1399,7 +1399,7 @@
               "tags": [],
               "tests": [
                 {
-                  "timeout": 300000,
+                  "timeout": 420000,
                   "annotations": [],
                   "expectedStatus": "passed",
                   "projectId": "A-auth",
@@ -1409,7 +1409,7 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1326,
+                      "duration": 572,
                       "errors": [],
                       "stdout": [
                         {
@@ -1418,7 +1418,7 @@
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-24T05:22:25.204Z",
+                      "startTime": "2026-04-24T08:04:54.758Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1429,12 +1429,12 @@
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
-                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-A-auth-access.ui-tes-920d2-tor-portal-sidebar-complete-A-auth\\test-finished-2.png"
+                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-A-auth-access.ui-tes-920d2-tor-portal-sidebar-complete-A-auth\\test-finished-1.png"
                         },
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
-                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-A-auth-access.ui-tes-920d2-tor-portal-sidebar-complete-A-auth\\test-finished-1.png"
+                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-A-auth-access.ui-tes-920d2-tor-portal-sidebar-complete-A-auth\\test-finished-2.png"
                         }
                       ]
                     }
@@ -1453,7 +1453,7 @@
               "tags": [],
               "tests": [
                 {
-                  "timeout": 300000,
+                  "timeout": 420000,
                   "annotations": [],
                   "expectedStatus": "passed",
                   "projectId": "A-auth",
@@ -1463,7 +1463,7 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1075,
+                      "duration": 421,
                       "errors": [],
                       "stdout": [
                         {
@@ -1472,7 +1472,7 @@
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-24T05:22:26.616Z",
+                      "startTime": "2026-04-24T08:04:55.343Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1483,12 +1483,12 @@
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
-                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-A-auth-access.ui-tes-e77ef-has-doctor-management-items-A-auth\\test-finished-2.png"
+                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-A-auth-access.ui-tes-e77ef-has-doctor-management-items-A-auth\\test-finished-1.png"
                         },
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
-                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-A-auth-access.ui-tes-e77ef-has-doctor-management-items-A-auth\\test-finished-1.png"
+                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-A-auth-access.ui-tes-e77ef-has-doctor-management-items-A-auth\\test-finished-2.png"
                         }
                       ]
                     }
@@ -1507,7 +1507,7 @@
               "tags": [],
               "tests": [
                 {
-                  "timeout": 300000,
+                  "timeout": 420000,
                   "annotations": [],
                   "expectedStatus": "passed",
                   "projectId": "A-auth",
@@ -1517,7 +1517,7 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 970,
+                      "duration": 793,
                       "errors": [],
                       "stdout": [
                         {
@@ -1535,18 +1535,18 @@
                       "steps": [
                         {
                           "title": "Patient API health check",
-                          "duration": 134
+                          "duration": 116
                         },
                         {
                           "title": "Doctor API health check",
-                          "duration": 331
+                          "duration": 327
                         },
                         {
                           "title": "Meeting API health check",
-                          "duration": 18
+                          "duration": 217
                         }
                       ],
-                      "startTime": "2026-04-24T05:22:27.773Z",
+                      "startTime": "2026-04-24T08:04:55.780Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1557,12 +1557,12 @@
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
-                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-A-auth-access.ui-tes-f448c-health-endpoints-return-200-A-auth\\test-finished-2.png"
+                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-A-auth-access.ui-tes-f448c-health-endpoints-return-200-A-auth\\test-finished-1.png"
                         },
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
-                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-A-auth-access.ui-tes-f448c-health-endpoints-return-200-A-auth\\test-finished-1.png"
+                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-A-auth-access.ui-tes-f448c-health-endpoints-return-200-A-auth\\test-finished-2.png"
                         }
                       ]
                     }
@@ -1581,7 +1581,7 @@
               "tags": [],
               "tests": [
                 {
-                  "timeout": 300000,
+                  "timeout": 420000,
                   "annotations": [],
                   "expectedStatus": "passed",
                   "projectId": "A-auth",
@@ -1591,7 +1591,7 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 628,
+                      "duration": 134,
                       "errors": [],
                       "stdout": [
                         {
@@ -1609,18 +1609,18 @@
                       "steps": [
                         {
                           "title": "Patient has auth_token",
-                          "duration": 21
+                          "duration": 5
                         },
                         {
                           "title": "Doctor has token",
-                          "duration": 21
+                          "duration": 4
                         },
                         {
                           "title": "Admin has token",
-                          "duration": 14
+                          "duration": 3
                         }
                       ],
-                      "startTime": "2026-04-24T05:22:28.820Z",
+                      "startTime": "2026-04-24T08:04:56.583Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -1631,12 +1631,12 @@
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
-                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-A-auth-access.ui-tes-10ff0-s-persist-in-all-3-browsers-A-auth\\test-finished-2.png"
+                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-A-auth-access.ui-tes-10ff0-s-persist-in-all-3-browsers-A-auth\\test-finished-1.png"
                         },
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
-                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-A-auth-access.ui-tes-10ff0-s-persist-in-all-3-browsers-A-auth\\test-finished-1.png"
+                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-A-auth-access.ui-tes-10ff0-s-persist-in-all-3-browsers-A-auth\\test-finished-2.png"
                         }
                       ]
                     }
@@ -1655,7 +1655,7 @@
               "tags": [],
               "tests": [
                 {
-                  "timeout": 300000,
+                  "timeout": 420000,
                   "annotations": [],
                   "expectedStatus": "passed",
                   "projectId": "A-auth",
@@ -1665,7 +1665,7 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1381,
+                      "duration": 304,
                       "errors": [],
                       "stdout": [
                         {
@@ -1674,14 +1674,9 @@
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-24T05:22:29.597Z",
+                      "startTime": "2026-04-24T08:04:56.728Z",
                       "annotations": [],
                       "attachments": [
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-A-auth-access.ui-tes-dbca7--blocked-from-doctor-portal-A-auth\\test-finished-2.png"
-                        },
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
@@ -1691,6 +1686,11 @@
                           "name": "screenshot",
                           "contentType": "image/png",
                           "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-A-auth-access.ui-tes-dbca7--blocked-from-doctor-portal-A-auth\\test-finished-1.png"
+                        },
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-A-auth-access.ui-tes-dbca7--blocked-from-doctor-portal-A-auth\\test-finished-2.png"
                         }
                       ]
                     }
@@ -1709,7 +1709,7 @@
               "tags": [],
               "tests": [
                 {
-                  "timeout": 300000,
+                  "timeout": 420000,
                   "annotations": [],
                   "expectedStatus": "passed",
                   "projectId": "A-auth",
@@ -1719,7 +1719,7 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 674,
+                      "duration": 302,
                       "errors": [],
                       "stdout": [
                         {
@@ -1737,25 +1737,20 @@
                       "steps": [
                         {
                           "title": "Patient appointments API returns 200",
-                          "duration": 44
+                          "duration": 62
                         },
                         {
                           "title": "Patient profile API returns 200",
-                          "duration": 39
+                          "duration": 57
                         },
                         {
                           "title": "Doctor patients API returns 200",
-                          "duration": 89
+                          "duration": 54
                         }
                       ],
-                      "startTime": "2026-04-24T05:22:31.083Z",
+                      "startTime": "2026-04-24T08:04:57.042Z",
                       "annotations": [],
                       "attachments": [
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-A-auth-access.ui-tes-64d42-points-return-200-with-data-A-auth\\test-finished-2.png"
-                        },
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
@@ -1765,6 +1760,11 @@
                           "name": "screenshot",
                           "contentType": "image/png",
                           "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-A-auth-access.ui-tes-64d42-points-return-200-with-data-A-auth\\test-finished-1.png"
+                        },
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-A-auth-access.ui-tes-64d42-points-return-200-with-data-A-auth\\test-finished-2.png"
                         }
                       ]
                     }
@@ -1783,7 +1783,7 @@
               "tags": [],
               "tests": [
                 {
-                  "timeout": 300000,
+                  "timeout": 420000,
                   "annotations": [],
                   "expectedStatus": "passed",
                   "projectId": "A-auth",
@@ -1793,14 +1793,14 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1662,
+                      "duration": 584,
                       "errors": [],
                       "stdout": [
                         {
-                          "text": "  ✅ A09: Patient dashboard — 1201 chars\n"
+                          "text": "  ✅ A09: Patient dashboard — 1071 chars\n"
                         },
                         {
-                          "text": "  ✅ A09: Doctor dashboard — 1687 chars\n"
+                          "text": "  ✅ A09: Doctor dashboard — 1578 chars\n"
                         }
                       ],
                       "stderr": [],
@@ -1808,21 +1808,16 @@
                       "steps": [
                         {
                           "title": "Patient dashboard has content",
-                          "duration": 499
+                          "duration": 144
                         },
                         {
                           "title": "Doctor dashboard has stats",
-                          "duration": 656
+                          "duration": 320
                         }
                       ],
-                      "startTime": "2026-04-24T05:22:31.828Z",
+                      "startTime": "2026-04-24T08:04:57.354Z",
                       "annotations": [],
                       "attachments": [
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-A-auth-access.ui-tes-e1f49-shboard-stats-are-populated-A-auth\\test-finished-2.png"
-                        },
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
@@ -1832,6 +1827,11 @@
                           "name": "screenshot",
                           "contentType": "image/png",
                           "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-A-auth-access.ui-tes-e1f49-shboard-stats-are-populated-A-auth\\test-finished-1.png"
+                        },
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-A-auth-access.ui-tes-e1f49-shboard-stats-are-populated-A-auth\\test-finished-2.png"
                         }
                       ]
                     }
@@ -1850,7 +1850,7 @@
               "tags": [],
               "tests": [
                 {
-                  "timeout": 300000,
+                  "timeout": 420000,
                   "annotations": [],
                   "expectedStatus": "passed",
                   "projectId": "A-auth",
@@ -1860,14 +1860,14 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 876,
+                      "duration": 287,
                       "errors": [],
                       "stdout": [
                         {
-                          "text": "  ✅ A10: Patient Health — 200 {\"status\":\"healthy\",\"timestamp\":\"2026-04-24T05:22:33.653Z\",\"service\":\"Izara Pati\n"
+                          "text": "  ✅ A10: Patient Health — 200 {\"status\":\"healthy\",\"timestamp\":\"2026-04-24T08:04:56.689Z\",\"service\":\"Izara Pati\n"
                         },
                         {
-                          "text": "  ✅ A10: Doctor Health — 200 {\"status\":\"healthy\",\"timestamp\":\"2026-04-24T05:22:34.009Z\",\"service\":\"Izara Doct\n"
+                          "text": "  ✅ A10: Doctor Health — 200 {\"status\":\"healthy\",\"timestamp\":\"2026-04-24T08:04:56.741Z\",\"service\":\"Izara Doct\n"
                         },
                         {
                           "text": "  ✅ A10: Meeting Health — 200 {\"status\":\"healthy\",\"service\":\"izara-jitsi-server\",\"version\":\"1.6.0\",\"timestamp\"\n"
@@ -1878,20 +1878,25 @@
                       "steps": [
                         {
                           "title": "Patient Health returns 200",
-                          "duration": 38
+                          "duration": 58
                         },
                         {
                           "title": "Doctor Health returns 200",
-                          "duration": 353
+                          "duration": 51
                         },
                         {
                           "title": "Meeting Health returns 200",
-                          "duration": 18
+                          "duration": 55
                         }
                       ],
-                      "startTime": "2026-04-24T05:22:33.571Z",
+                      "startTime": "2026-04-24T08:04:57.949Z",
                       "annotations": [],
                       "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-A-auth-access.ui-tes-4557a-se-health-checks-return-200-A-auth\\test-finished-1.png"
+                        },
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
@@ -1901,11 +1906,6 @@
                           "name": "screenshot",
                           "contentType": "image/png",
                           "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-A-auth-access.ui-tes-4557a-se-health-checks-return-200-A-auth\\test-finished-2.png"
-                        },
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-A-auth-access.ui-tes-4557a-se-health-checks-return-200-A-auth\\test-finished-1.png"
                         }
                       ]
                     }
@@ -1937,11 +1937,11 @@
           "specs": [
             {
               "title": "B — Patient navigates ALL pages via sidebar (continuous)",
-              "ok": true,
+              "ok": false,
               "tags": [],
               "tests": [
                 {
-                  "timeout": 300000,
+                  "timeout": 420000,
                   "annotations": [],
                   "expectedStatus": "passed",
                   "projectId": "B-patient-portal",
@@ -1950,141 +1950,55 @@
                     {
                       "workerIndex": 2,
                       "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 21273,
-                      "errors": [],
+                      "status": "timedOut",
+                      "duration": 8,
+                      "error": {
+                        "message": "\u001b[31mFixture \"portals\" timeout of 240000ms exceeded during setup.\u001b[39m",
+                        "stack": "\u001b[31mFixture \"portals\" timeout of 240000ms exceeded during setup.\u001b[39m\n    at C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\tests\\helpers\\multi-portal.ts:473:26",
+                        "location": {
+                          "file": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\tests\\helpers\\multi-portal.ts",
+                          "column": 26,
+                          "line": 473
+                        },
+                        "snippet": "\u001b[90m   at \u001b[39mhelpers\\multi-portal.ts:473\n\n\u001b[0m \u001b[90m 471 |\u001b[39m }\n \u001b[90m 472 |\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 473 |\u001b[39m \u001b[36mexport\u001b[39m \u001b[36mconst\u001b[39m test \u001b[33m=\u001b[39m base\u001b[33m.\u001b[39mextend\u001b[33m<\u001b[39m{}\u001b[33m,\u001b[39m { portals\u001b[33m:\u001b[39m \u001b[33mPortals\u001b[39m }\u001b[33m>\u001b[39m({\n \u001b[90m     |\u001b[39m                          \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 474 |\u001b[39m   portals\u001b[33m:\u001b[39m [\u001b[36masync\u001b[39m ({}\u001b[33m,\u001b[39m use) \u001b[33m=>\u001b[39m {\n \u001b[90m 475 |\u001b[39m     \u001b[36mconst\u001b[39m setupStart \u001b[33m=\u001b[39m \u001b[33mDate\u001b[39m\u001b[33m.\u001b[39mnow()\u001b[33m;\u001b[39m\n \u001b[90m 476 |\u001b[39m     console\u001b[33m.\u001b[39mlog(\u001b[32m'\\n🔧 FIXTURE SETUP — launching 3 browsers...'\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\tests\\helpers\\multi-portal.ts",
+                            "column": 26,
+                            "line": 473
+                          },
+                          "message": "\u001b[31mFixture \"portals\" timeout of 240000ms exceeded during setup.\u001b[39m\n\n\u001b[90m   at \u001b[39mhelpers\\multi-portal.ts:473\n\n\u001b[0m \u001b[90m 471 |\u001b[39m }\n \u001b[90m 472 |\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 473 |\u001b[39m \u001b[36mexport\u001b[39m \u001b[36mconst\u001b[39m test \u001b[33m=\u001b[39m base\u001b[33m.\u001b[39mextend\u001b[33m<\u001b[39m{}\u001b[33m,\u001b[39m { portals\u001b[33m:\u001b[39m \u001b[33mPortals\u001b[39m }\u001b[33m>\u001b[39m({\n \u001b[90m     |\u001b[39m                          \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 474 |\u001b[39m   portals\u001b[33m:\u001b[39m [\u001b[36masync\u001b[39m ({}\u001b[33m,\u001b[39m use) \u001b[33m=>\u001b[39m {\n \u001b[90m 475 |\u001b[39m     \u001b[36mconst\u001b[39m setupStart \u001b[33m=\u001b[39m \u001b[33mDate\u001b[39m\u001b[33m.\u001b[39mnow()\u001b[33m;\u001b[39m\n \u001b[90m 476 |\u001b[39m     console\u001b[33m.\u001b[39mlog(\u001b[32m'\\n🔧 FIXTURE SETUP — launching 3 browsers...'\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m\n\u001b[2m    at C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\tests\\helpers\\multi-portal.ts:473:26\u001b[22m"
+                        }
+                      ],
                       "stdout": [
                         {
                           "text": "\n🔧 FIXTURE SETUP — launching 3 browsers...\n"
                         },
                         {
-                          "text": "  🚀 Patient browser launched in 500ms\n"
+                          "text": "  🚀 Patient browser launched in 681ms\n"
                         },
                         {
-                          "text": "  🚀 Doctor browser launched in 329ms\n"
+                          "text": "  🚀 Doctor browser launched in 873ms\n"
                         },
                         {
-                          "text": "  🚀 Admin browser launched in 288ms\n"
-                        },
-                        {
-                          "text": "  📄 Patient navigated in 248ms → http://localhost:3005/\n"
-                        },
-                        {
-                          "text": "  📄 Doctor navigated in 1252ms → http://localhost:3010/doctor/DOC-TEST-001/dashboard\n"
-                        },
-                        {
-                          "text": "  📄 Admin navigated in 1279ms → http://localhost:3010/doctor/ADMIN-TEST-001/dashboard\n"
-                        },
-                        {
-                          "text": "✅ FIXTURE SETUP complete in 5.4s\n\n"
-                        },
-                        {
-                          "text": "  ✅ B01: Dashboard loaded\n"
-                        },
-                        {
-                          "text": "  ✅ B02: Appointments page\n"
-                        },
-                        {
-                          "text": "  ✅ B03: AI Doctor page\n"
-                        },
-                        {
-                          "text": "  ✅ B04: Health Library page\n"
-                        },
-                        {
-                          "text": "  ✅ B05: PHR page\n"
-                        },
-                        {
-                          "text": "  ✅ B06: Timeline page\n"
-                        },
-                        {
-                          "text": "  ✅ B07: Hospital Map page\n"
-                        },
-                        {
-                          "text": "  ✅ B08: Find Doctors page\n"
-                        },
-                        {
-                          "text": "  ✅ B09: PDPA & Living Will page\n"
-                        },
-                        {
-                          "text": "  ✅ B10: Settings page\n"
-                        },
-                        {
-                          "text": "  ✅ B11: Profile page\n"
-                        },
-                        {
-                          "text": "\n  🎉 GROUP B COMPLETE — Patient navigated 11 pages continuously\n\n"
+                          "text": "  🚀 Admin browser launched in 824ms\n"
                         }
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "steps": [
-                        {
-                          "title": "B01 — Dashboard loaded",
-                          "duration": 818
-                        },
-                        {
-                          "title": "B02 — Dashboard → Appointments",
-                          "duration": 1410
-                        },
-                        {
-                          "title": "B03 — Appointments → AI Doctor",
-                          "duration": 1333
-                        },
-                        {
-                          "title": "B04 — AI Doctor → Health Library",
-                          "duration": 2737
-                        },
-                        {
-                          "title": "B05 — Health Library → PHR",
-                          "duration": 2158
-                        },
-                        {
-                          "title": "B06 — PHR → Timeline",
-                          "duration": 1683
-                        },
-                        {
-                          "title": "B07 — Timeline → Hospital Map",
-                          "duration": 2094
-                        },
-                        {
-                          "title": "B08 — Map → Find Doctors",
-                          "duration": 1980
-                        },
-                        {
-                          "title": "B09 — Find Doctors → PDPA & Living Will",
-                          "duration": 1841
-                        },
-                        {
-                          "title": "B10 — PDPA → Settings",
-                          "duration": 1898
-                        },
-                        {
-                          "title": "B11 — Settings → Profile",
-                          "duration": 1850
-                        }
-                      ],
-                      "startTime": "2026-04-24T05:23:37.057Z",
+                      "startTime": "2026-04-24T08:06:38.485Z",
                       "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-B-patient-portal.ui--5dbc8-ges-via-sidebar-continuous--B-patient-portal\\test-finished-1.png"
-                        },
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-B-patient-portal.ui--5dbc8-ges-via-sidebar-continuous--B-patient-portal\\test-finished-2.png"
-                        },
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-B-patient-portal.ui--5dbc8-ges-via-sidebar-continuous--B-patient-portal\\test-finished-3.png"
-                        }
-                      ]
+                      "attachments": [],
+                      "errorLocation": {
+                        "file": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\tests\\helpers\\multi-portal.ts",
+                        "column": 26,
+                        "line": 473
+                      }
                     }
                   ],
-                  "status": "expected"
+                  "status": "unexpected"
                 }
               ],
               "id": "85d99d92b06c11a48899-23444bd173e7b4de01e6",
@@ -2115,7 +2029,7 @@
               "tags": [],
               "tests": [
                 {
-                  "timeout": 300000,
+                  "timeout": 420000,
                   "annotations": [],
                   "expectedStatus": "passed",
                   "projectId": "C-doctor-portal",
@@ -2125,32 +2039,32 @@
                       "workerIndex": 3,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 21384,
+                      "duration": 27040,
                       "errors": [],
                       "stdout": [
                         {
                           "text": "\n🔧 FIXTURE SETUP — launching 3 browsers...\n"
                         },
                         {
-                          "text": "  🚀 Patient browser launched in 331ms\n"
+                          "text": "  🚀 Patient browser launched in 378ms\n"
                         },
                         {
-                          "text": "  🚀 Doctor browser launched in 406ms\n"
+                          "text": "  🚀 Doctor browser launched in 413ms\n"
                         },
                         {
-                          "text": "  🚀 Admin browser launched in 337ms\n"
+                          "text": "  🚀 Admin browser launched in 2531ms\n"
                         },
                         {
-                          "text": "  📄 Patient navigated in 244ms → http://localhost:3005/\n"
+                          "text": "  📄 Patient navigated in 650ms → https://izara-patient-portal-dev-testing-hvht4obouq-as.a.run.app/\n"
                         },
                         {
-                          "text": "  📄 Doctor navigated in 1600ms → http://localhost:3010/doctor/DOC-TEST-001/dashboard\n"
+                          "text": "  📄 Doctor navigated in 1197ms → https://izara-doctor-portal-dev-testing-hvht4obouq-as.a.run.app/doctor/DOC-TEST-001/dashboard\n"
                         },
                         {
-                          "text": "  📄 Admin navigated in 4652ms → http://localhost:3010/doctor/ADMIN-TEST-001/dashboard\n"
+                          "text": "  📄 Admin navigated in 1433ms → https://izara-doctor-portal-dev-testing-hvht4obouq-as.a.run.app/doctor/ADMIN-TEST-001/dashboard\n"
                         },
                         {
-                          "text": "✅ FIXTURE SETUP complete in 11.1s\n\n"
+                          "text": "✅ FIXTURE SETUP complete in 13.0s\n\n"
                         },
                         {
                           "text": "  ✅ C01: Doctor dashboard loaded\n"
@@ -2185,38 +2099,38 @@
                       "steps": [
                         {
                           "title": "C01 — Dashboard loaded",
-                          "duration": 4294
+                          "duration": 4102
                         },
                         {
                           "title": "C02 — Dashboard → Schedule",
-                          "duration": 2258
+                          "duration": 2332
                         },
                         {
                           "title": "C03 — Schedule → Patients",
-                          "duration": 2292
+                          "duration": 2532
                         },
                         {
                           "title": "C04 — Patients → Health Meeting",
-                          "duration": 1976
+                          "duration": 2286
                         },
                         {
                           "title": "C05 — Health Meeting → Appointment Pool",
-                          "duration": 1719
+                          "duration": 1989
                         },
                         {
                           "title": "C06 — Appointment Pool → Medical Consultants",
-                          "duration": 1852
+                          "duration": 3287
                         },
                         {
                           "title": "C07 — Medical Consultants → Medical Content",
-                          "duration": 3824
+                          "duration": 7623
                         },
                         {
                           "title": "C08 — Medical Content → Clinical Resources",
-                          "duration": 2044
+                          "duration": 2368
                         }
                       ],
-                      "startTime": "2026-04-24T05:24:07.747Z",
+                      "startTime": "2026-04-24T08:11:36.861Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -2227,12 +2141,12 @@
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
-                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-C-doctor-portal.ui-t-6bd5e-L-sidebar-pages-continuous--C-doctor-portal\\test-finished-1.png"
+                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-C-doctor-portal.ui-t-6bd5e-L-sidebar-pages-continuous--C-doctor-portal\\test-finished-3.png"
                         },
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
-                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-C-doctor-portal.ui-t-6bd5e-L-sidebar-pages-continuous--C-doctor-portal\\test-finished-3.png"
+                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-C-doctor-portal.ui-t-6bd5e-L-sidebar-pages-continuous--C-doctor-portal\\test-finished-1.png"
                         }
                       ]
                     }
@@ -2251,7 +2165,7 @@
               "tags": [],
               "tests": [
                 {
-                  "timeout": 300000,
+                  "timeout": 420000,
                   "annotations": [],
                   "expectedStatus": "passed",
                   "projectId": "C-doctor-portal",
@@ -2261,7 +2175,7 @@
                       "workerIndex": 3,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 15594,
+                      "duration": 27620,
                       "errors": [],
                       "stdout": [
                         {
@@ -2297,38 +2211,38 @@
                       "steps": [
                         {
                           "title": "C09 — Admin dashboard loaded",
-                          "duration": 893
+                          "duration": 3075
                         },
                         {
                           "title": "C10 — Dashboard → Patients",
-                          "duration": 1690
+                          "duration": 2483
                         },
                         {
                           "title": "C11 — Patients → Schedule",
-                          "duration": 1633
+                          "duration": 2187
                         },
                         {
                           "title": "C12 — Schedule → Health Meeting",
-                          "duration": 1653
+                          "duration": 3323
                         },
                         {
                           "title": "C13 — Health Meeting → Manage Doctors (admin-only)",
-                          "duration": 1713
+                          "duration": 3731
                         },
                         {
                           "title": "C14 — Manage Doctors → Doctor Approval (admin-only)",
-                          "duration": 1757
+                          "duration": 3509
                         },
                         {
                           "title": "C15 — Doctor Approval → Medical Content",
-                          "duration": 3164
+                          "duration": 6631
                         },
                         {
                           "title": "C16 — Medical Content → Clinical Resources",
-                          "duration": 2610
+                          "duration": 2351
                         }
                       ],
-                      "startTime": "2026-04-24T05:24:40.334Z",
+                      "startTime": "2026-04-24T08:12:17.047Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -2339,12 +2253,12 @@
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
-                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-C-doctor-portal.ui-t-977e3-ding-admin-only-continuous--C-doctor-portal\\test-finished-2.png"
+                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-C-doctor-portal.ui-t-977e3-ding-admin-only-continuous--C-doctor-portal\\test-finished-1.png"
                         },
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
-                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-C-doctor-portal.ui-t-977e3-ding-admin-only-continuous--C-doctor-portal\\test-finished-1.png"
+                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-C-doctor-portal.ui-t-977e3-ding-admin-only-continuous--C-doctor-portal\\test-finished-2.png"
                         }
                       ]
                     }
@@ -2376,11 +2290,11 @@
           "specs": [
             {
               "title": "G1 — Patient PDPA privacy settings",
-              "ok": true,
+              "ok": false,
               "tags": [],
               "tests": [
                 {
-                  "timeout": 300000,
+                  "timeout": 420000,
                   "annotations": [],
                   "expectedStatus": "passed",
                   "projectId": "G-livingwill-pdpa",
@@ -2389,85 +2303,55 @@
                     {
                       "workerIndex": 4,
                       "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 14390,
-                      "errors": [],
+                      "status": "timedOut",
+                      "duration": 2,
+                      "error": {
+                        "message": "\u001b[31mFixture \"portals\" timeout of 240000ms exceeded during setup.\u001b[39m",
+                        "stack": "\u001b[31mFixture \"portals\" timeout of 240000ms exceeded during setup.\u001b[39m\n    at C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\tests\\helpers\\multi-portal.ts:473:26",
+                        "location": {
+                          "file": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\tests\\helpers\\multi-portal.ts",
+                          "column": 26,
+                          "line": 473
+                        },
+                        "snippet": "\u001b[90m   at \u001b[39mhelpers\\multi-portal.ts:473\n\n\u001b[0m \u001b[90m 471 |\u001b[39m }\n \u001b[90m 472 |\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 473 |\u001b[39m \u001b[36mexport\u001b[39m \u001b[36mconst\u001b[39m test \u001b[33m=\u001b[39m base\u001b[33m.\u001b[39mextend\u001b[33m<\u001b[39m{}\u001b[33m,\u001b[39m { portals\u001b[33m:\u001b[39m \u001b[33mPortals\u001b[39m }\u001b[33m>\u001b[39m({\n \u001b[90m     |\u001b[39m                          \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 474 |\u001b[39m   portals\u001b[33m:\u001b[39m [\u001b[36masync\u001b[39m ({}\u001b[33m,\u001b[39m use) \u001b[33m=>\u001b[39m {\n \u001b[90m 475 |\u001b[39m     \u001b[36mconst\u001b[39m setupStart \u001b[33m=\u001b[39m \u001b[33mDate\u001b[39m\u001b[33m.\u001b[39mnow()\u001b[33m;\u001b[39m\n \u001b[90m 476 |\u001b[39m     console\u001b[33m.\u001b[39mlog(\u001b[32m'\\n🔧 FIXTURE SETUP — launching 3 browsers...'\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\tests\\helpers\\multi-portal.ts",
+                            "column": 26,
+                            "line": 473
+                          },
+                          "message": "\u001b[31mFixture \"portals\" timeout of 240000ms exceeded during setup.\u001b[39m\n\n\u001b[90m   at \u001b[39mhelpers\\multi-portal.ts:473\n\n\u001b[0m \u001b[90m 471 |\u001b[39m }\n \u001b[90m 472 |\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 473 |\u001b[39m \u001b[36mexport\u001b[39m \u001b[36mconst\u001b[39m test \u001b[33m=\u001b[39m base\u001b[33m.\u001b[39mextend\u001b[33m<\u001b[39m{}\u001b[33m,\u001b[39m { portals\u001b[33m:\u001b[39m \u001b[33mPortals\u001b[39m }\u001b[33m>\u001b[39m({\n \u001b[90m     |\u001b[39m                          \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 474 |\u001b[39m   portals\u001b[33m:\u001b[39m [\u001b[36masync\u001b[39m ({}\u001b[33m,\u001b[39m use) \u001b[33m=>\u001b[39m {\n \u001b[90m 475 |\u001b[39m     \u001b[36mconst\u001b[39m setupStart \u001b[33m=\u001b[39m \u001b[33mDate\u001b[39m\u001b[33m.\u001b[39mnow()\u001b[33m;\u001b[39m\n \u001b[90m 476 |\u001b[39m     console\u001b[33m.\u001b[39mlog(\u001b[32m'\\n🔧 FIXTURE SETUP — launching 3 browsers...'\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m\n\u001b[2m    at C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\tests\\helpers\\multi-portal.ts:473:26\u001b[22m"
+                        }
+                      ],
                       "stdout": [
                         {
                           "text": "\n🔧 FIXTURE SETUP — launching 3 browsers...\n"
                         },
                         {
-                          "text": "  🚀 Patient browser launched in 363ms\n"
+                          "text": "  🚀 Patient browser launched in 710ms\n"
                         },
                         {
-                          "text": "  🚀 Doctor browser launched in 390ms\n"
+                          "text": "  🚀 Doctor browser launched in 1163ms\n"
                         },
                         {
-                          "text": "  🚀 Admin browser launched in 386ms\n"
-                        },
-                        {
-                          "text": "  📄 Patient navigated in 301ms → http://localhost:3005/\n"
-                        },
-                        {
-                          "text": "  📄 Doctor navigated in 1111ms → http://localhost:3010/doctor/DOC-TEST-001/dashboard\n"
-                        },
-                        {
-                          "text": "  📄 Admin navigated in 2216ms → http://localhost:3010/doctor/ADMIN-TEST-001/dashboard\n"
-                        },
-                        {
-                          "text": "✅ FIXTURE SETUP complete in 7.6s\n\n"
-                        },
-                        {
-                          "text": "  ✅ G01: PDPA page loaded\n"
-                        },
-                        {
-                          "text": "  ✅ G02: Explored 3 PDPA tabs\n"
-                        },
-                        {
-                          "text": "  ✅ G03: Privacy toggles: 2\n"
-                        },
-                        {
-                          "text": "\n  🎉 G1 COMPLETE — PDPA privacy settings\n\n"
+                          "text": "  🚀 Admin browser launched in 636ms\n"
                         }
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "steps": [
-                        {
-                          "title": "G01 — Navigate to PDPA page",
-                          "duration": 4003
-                        },
-                        {
-                          "title": "G02 — Explore PDPA tabs",
-                          "duration": 6340
-                        },
-                        {
-                          "title": "G03 — Toggle privacy switches",
-                          "duration": 2678
-                        }
-                      ],
-                      "startTime": "2026-04-24T05:25:03.688Z",
+                      "startTime": "2026-04-24T08:13:40.247Z",
                       "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-G-livingwill-pdpa.ui-c7c0e-tient-PDPA-privacy-settings-G-livingwill-pdpa\\test-finished-2.png"
-                        },
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-G-livingwill-pdpa.ui-c7c0e-tient-PDPA-privacy-settings-G-livingwill-pdpa\\test-finished-3.png"
-                        },
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-G-livingwill-pdpa.ui-c7c0e-tient-PDPA-privacy-settings-G-livingwill-pdpa\\test-finished-1.png"
-                        }
-                      ]
+                      "attachments": [],
+                      "errorLocation": {
+                        "file": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\tests\\helpers\\multi-portal.ts",
+                        "column": 26,
+                        "line": 473
+                      }
                     }
                   ],
-                  "status": "expected"
+                  "status": "unexpected"
                 }
               ],
               "id": "a30895a618f36d39fb98-e88fa2ee6f9b5c39ee9d",
@@ -2481,91 +2365,27 @@
               "tags": [],
               "tests": [
                 {
-                  "timeout": 300000,
+                  "timeout": 420000,
                   "annotations": [],
                   "expectedStatus": "passed",
                   "projectId": "G-livingwill-pdpa",
                   "projectName": "G-livingwill-pdpa",
                   "results": [
                     {
-                      "workerIndex": 4,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 7307,
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
                       "errors": [],
-                      "stdout": [
-                        {
-                          "text": "  ✅ G04: Living Will page\n"
-                        },
-                        {
-                          "text": "  ✅ G05: Step 1 — filled 0 fields\n"
-                        },
-                        {
-                          "text": "  ✅ G06: Step 2 — Treatment Preferences\n"
-                        },
-                        {
-                          "text": "  ✅ G07: Toggled 1 treatment preferences\n"
-                        },
-                        {
-                          "text": "  ✅ G08: Step 3 — Signature\n"
-                        },
-                        {
-                          "text": "  ✅ G09: No save button (may need more steps)\n"
-                        },
-                        {
-                          "text": "\n  🎉 G2 COMPLETE — Living Will form\n\n"
-                        }
-                      ],
+                      "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "steps": [
-                        {
-                          "title": "G04 — Navigate to Living Will",
-                          "duration": 3311
-                        },
-                        {
-                          "title": "G05 — Step 1: Fill representative info",
-                          "duration": 556
-                        },
-                        {
-                          "title": "G06 — Click Next to Step 2",
-                          "duration": 605
-                        },
-                        {
-                          "title": "G07 — Step 2: Toggle treatment preferences",
-                          "duration": 1189
-                        },
-                        {
-                          "title": "G08 — Advance to Step 3 (Signature)",
-                          "duration": 455
-                        },
-                        {
-                          "title": "G09 — Save or submit living will",
-                          "duration": 496
-                        }
-                      ],
-                      "startTime": "2026-04-24T05:25:25.734Z",
+                      "startTime": "2026-04-24T08:17:40.285Z",
                       "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-G-livingwill-pdpa.ui-d1d3a-tient-Living-Will-form-flow-G-livingwill-pdpa\\test-finished-2.png"
-                        },
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-G-livingwill-pdpa.ui-d1d3a-tient-Living-Will-form-flow-G-livingwill-pdpa\\test-finished-1.png"
-                        },
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-G-livingwill-pdpa.ui-d1d3a-tient-Living-Will-form-flow-G-livingwill-pdpa\\test-finished-3.png"
-                        }
-                      ]
+                      "attachments": []
                     }
                   ],
-                  "status": "expected"
+                  "status": "skipped"
                 }
               ],
               "id": "a30895a618f36d39fb98-c83f3539979d92a0a58a",
@@ -2579,84 +2399,27 @@
               "tags": [],
               "tests": [
                 {
-                  "timeout": 300000,
+                  "timeout": 420000,
                   "annotations": [],
                   "expectedStatus": "passed",
                   "projectId": "G-livingwill-pdpa",
                   "projectName": "G-livingwill-pdpa",
                   "results": [
                     {
-                      "workerIndex": 4,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 9737,
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
                       "errors": [],
-                      "stdout": [
-                        {
-                          "text": "  ✅ G10: Doctor → Patients\n"
-                        },
-                        {
-                          "text": "  ✅ G11: Patient record opened\n"
-                        },
-                        {
-                          "text": "  ✅ G12: Doctor → Meetings\n"
-                        },
-                        {
-                          "text": "  ✅ G13: Patient → Appointments\n"
-                        },
-                        {
-                          "text": "  ✅ G14: All 3 portals authenticated\n"
-                        },
-                        {
-                          "text": "\n  🎉 G3 COMPLETE — Cross-portal verification\n\n"
-                        }
-                      ],
+                      "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "steps": [
-                        {
-                          "title": "G10 — Doctor → Patients page",
-                          "duration": 1933
-                        },
-                        {
-                          "title": "G11 — Doctor clicks patient card",
-                          "duration": 3086
-                        },
-                        {
-                          "title": "G12 — Doctor → Meetings page",
-                          "duration": 2026
-                        },
-                        {
-                          "title": "G13 — Patient → Appointments (forward flow)",
-                          "duration": 2058
-                        },
-                        {
-                          "title": "G14 — All 3 portals still authenticated",
-                          "duration": 76
-                        }
-                      ],
-                      "startTime": "2026-04-24T05:25:33.224Z",
+                      "startTime": "2026-04-24T08:17:40.289Z",
                       "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-G-livingwill-pdpa.ui-baca4-atient-records-cross-portal-G-livingwill-pdpa\\test-finished-1.png"
-                        },
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-G-livingwill-pdpa.ui-baca4-atient-records-cross-portal-G-livingwill-pdpa\\test-finished-2.png"
-                        },
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-G-livingwill-pdpa.ui-baca4-atient-records-cross-portal-G-livingwill-pdpa\\test-finished-3.png"
-                        }
-                      ]
+                      "attachments": []
                     }
                   ],
-                  "status": "expected"
+                  "status": "skipped"
                 }
               ],
               "id": "a30895a618f36d39fb98-84a201684c63b6da04f7",
@@ -2687,7 +2450,7 @@
               "tags": [],
               "tests": [
                 {
-                  "timeout": 300000,
+                  "timeout": 420000,
                   "annotations": [],
                   "expectedStatus": "passed",
                   "projectId": "H-content-resources",
@@ -2697,32 +2460,32 @@
                       "workerIndex": 5,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 13983,
+                      "duration": 29566,
                       "errors": [],
                       "stdout": [
                         {
                           "text": "\n🔧 FIXTURE SETUP — launching 3 browsers...\n"
                         },
                         {
-                          "text": "  🚀 Patient browser launched in 273ms\n"
+                          "text": "  🚀 Patient browser launched in 435ms\n"
                         },
                         {
-                          "text": "  🚀 Doctor browser launched in 266ms\n"
+                          "text": "  🚀 Doctor browser launched in 344ms\n"
                         },
                         {
-                          "text": "  🚀 Admin browser launched in 574ms\n"
+                          "text": "  🚀 Admin browser launched in 5502ms\n"
                         },
                         {
-                          "text": "  📄 Patient navigated in 233ms → http://localhost:3005/\n"
+                          "text": "  📄 Patient navigated in 1086ms → https://izara-patient-portal-dev-testing-hvht4obouq-as.a.run.app/\n"
                         },
                         {
-                          "text": "  📄 Doctor navigated in 1092ms → http://localhost:3010/doctor/DOC-TEST-001/dashboard\n"
+                          "text": "  📄 Doctor navigated in 1740ms → https://izara-doctor-portal-dev-testing-hvht4obouq-as.a.run.app/doctor/DOC-TEST-001/dashboard\n"
                         },
                         {
-                          "text": "  📄 Admin navigated in 1957ms → http://localhost:3010/doctor/ADMIN-TEST-001/dashboard\n"
+                          "text": "  📄 Admin navigated in 1903ms → https://izara-doctor-portal-dev-testing-hvht4obouq-as.a.run.app/doctor/ADMIN-TEST-001/dashboard\n"
                         },
                         {
-                          "text": "✅ FIXTURE SETUP complete in 6.5s\n\n"
+                          "text": "✅ FIXTURE SETUP complete in 24.6s\n\n"
                         },
                         {
                           "text": "  ✅ H01: Doctor → Medical Content\n"
@@ -2748,32 +2511,32 @@
                       "steps": [
                         {
                           "title": "H01 — Navigate to Medical Content",
-                          "duration": 5127
+                          "duration": 9480
                         },
                         {
                           "title": "H02 — Open content creation form",
-                          "duration": 2152
+                          "duration": 7104
                         },
                         {
                           "title": "H03 — Fill content form fields",
-                          "duration": 2177
+                          "duration": 4292
                         },
                         {
                           "title": "H04 — Cancel/close creation form (dont submit test data)",
-                          "duration": 984
+                          "duration": 1905
                         },
                         {
                           "title": "H05 — Browse content list",
-                          "duration": 2195
+                          "duration": 4227
                         }
                       ],
-                      "startTime": "2026-04-24T05:25:48.954Z",
+                      "startTime": "2026-04-24T08:24:06.009Z",
                       "annotations": [],
                       "attachments": [
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
-                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-H-content-resources--967e2-ntent-creation-and-browsing-H-content-resources\\test-finished-3.png"
+                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-H-content-resources--967e2-ntent-creation-and-browsing-H-content-resources\\test-finished-1.png"
                         },
                         {
                           "name": "screenshot",
@@ -2783,7 +2546,7 @@
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
-                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-H-content-resources--967e2-ntent-creation-and-browsing-H-content-resources\\test-finished-1.png"
+                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-H-content-resources--967e2-ntent-creation-and-browsing-H-content-resources\\test-finished-3.png"
                         }
                       ]
                     }
@@ -2802,7 +2565,7 @@
               "tags": [],
               "tests": [
                 {
-                  "timeout": 300000,
+                  "timeout": 420000,
                   "annotations": [],
                   "expectedStatus": "passed",
                   "projectId": "H-content-resources",
@@ -2812,7 +2575,7 @@
                       "workerIndex": 5,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 7267,
+                      "duration": 11831,
                       "errors": [],
                       "stdout": [
                         {
@@ -2836,29 +2599,24 @@
                       "steps": [
                         {
                           "title": "H06 — Navigate to Clinical Resources",
-                          "duration": 2022
+                          "duration": 3689
                         },
                         {
                           "title": "H07 — Browse resources list",
-                          "duration": 944
+                          "duration": 1671
                         },
                         {
                           "title": "H08 — Navigate to Medical Consultants",
-                          "duration": 1867
+                          "duration": 3563
                         },
                         {
                           "title": "H09 — Navigate to Appointment Pool",
-                          "duration": 1872
+                          "duration": 2067
                         }
                       ],
-                      "startTime": "2026-04-24T05:26:09.518Z",
+                      "startTime": "2026-04-24T08:25:00.369Z",
                       "annotations": [],
                       "attachments": [
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-H-content-resources--c7646-l-resources-and-consultants-H-content-resources\\test-finished-3.png"
-                        },
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
@@ -2868,6 +2626,11 @@
                           "name": "screenshot",
                           "contentType": "image/png",
                           "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-H-content-resources--c7646-l-resources-and-consultants-H-content-resources\\test-finished-2.png"
+                        },
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-H-content-resources--c7646-l-resources-and-consultants-H-content-resources\\test-finished-3.png"
                         }
                       ]
                     }
@@ -2886,7 +2649,7 @@
               "tags": [],
               "tests": [
                 {
-                  "timeout": 300000,
+                  "timeout": 420000,
                   "annotations": [],
                   "expectedStatus": "passed",
                   "projectId": "H-content-resources",
@@ -2896,7 +2659,7 @@
                       "workerIndex": 5,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 9096,
+                      "duration": 15019,
                       "errors": [],
                       "stdout": [
                         {
@@ -2917,24 +2680,24 @@
                       "steps": [
                         {
                           "title": "H10 — Navigate to Health Library",
-                          "duration": 3247
+                          "duration": 8703
                         },
                         {
                           "title": "H11 — Browse articles",
-                          "duration": 2792
+                          "duration": 2903
                         },
                         {
                           "title": "H12 — Navigate to AI Doctor (forward flow)",
-                          "duration": 2325
+                          "duration": 2702
                         }
                       ],
-                      "startTime": "2026-04-24T05:26:16.923Z",
+                      "startTime": "2026-04-24T08:25:12.663Z",
                       "annotations": [],
                       "attachments": [
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
-                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-H-content-resources--7be17-ent-health-library-browsing-H-content-resources\\test-finished-3.png"
+                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-H-content-resources--7be17-ent-health-library-browsing-H-content-resources\\test-finished-2.png"
                         },
                         {
                           "name": "screenshot",
@@ -2944,7 +2707,7 @@
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
-                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-H-content-resources--7be17-ent-health-library-browsing-H-content-resources\\test-finished-2.png"
+                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-H-content-resources--7be17-ent-health-library-browsing-H-content-resources\\test-finished-3.png"
                         }
                       ]
                     }
@@ -2963,7 +2726,7 @@
               "tags": [],
               "tests": [
                 {
-                  "timeout": 300000,
+                  "timeout": 420000,
                   "annotations": [],
                   "expectedStatus": "passed",
                   "projectId": "H-content-resources",
@@ -2973,7 +2736,7 @@
                       "workerIndex": 5,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 7248,
+                      "duration": 11807,
                       "errors": [],
                       "stdout": [
                         {
@@ -2991,20 +2754,20 @@
                       "steps": [
                         {
                           "title": "H13 — Admin → Medical Content",
-                          "duration": 4488
+                          "duration": 8152
                         },
                         {
                           "title": "H14 — Admin → Clinical Resources",
-                          "duration": 2152
+                          "duration": 2890
                         }
                       ],
-                      "startTime": "2026-04-24T05:26:26.177Z",
+                      "startTime": "2026-04-24T08:25:27.916Z",
                       "annotations": [],
                       "attachments": [
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
-                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-H-content-resources--75479--—-Admin-content-management-H-content-resources\\test-finished-3.png"
+                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-H-content-resources--75479--—-Admin-content-management-H-content-resources\\test-finished-2.png"
                         },
                         {
                           "name": "screenshot",
@@ -3014,7 +2777,7 @@
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
-                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-H-content-resources--75479--—-Admin-content-management-H-content-resources\\test-finished-2.png"
+                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-H-content-resources--75479--—-Admin-content-management-H-content-resources\\test-finished-3.png"
                         }
                       ]
                     }
@@ -3050,7 +2813,7 @@
               "tags": [],
               "tests": [
                 {
-                  "timeout": 300000,
+                  "timeout": 420000,
                   "annotations": [],
                   "expectedStatus": "passed",
                   "projectId": "I-admin-notifications",
@@ -3060,32 +2823,32 @@
                       "workerIndex": 6,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 5514,
+                      "duration": 5565,
                       "errors": [],
                       "stdout": [
                         {
                           "text": "\n🔧 FIXTURE SETUP — launching 3 browsers...\n"
                         },
                         {
-                          "text": "  🚀 Patient browser launched in 266ms\n"
+                          "text": "  🚀 Patient browser launched in 402ms\n"
                         },
                         {
-                          "text": "  🚀 Doctor browser launched in 283ms\n"
+                          "text": "  🚀 Doctor browser launched in 461ms\n"
                         },
                         {
-                          "text": "  🚀 Admin browser launched in 257ms\n"
+                          "text": "  🚀 Admin browser launched in 407ms\n"
                         },
                         {
-                          "text": "  📄 Patient navigated in 228ms → http://localhost:3005/\n"
+                          "text": "  📄 Patient navigated in 480ms → https://izara-patient-portal-dev-testing-hvht4obouq-as.a.run.app/\n"
                         },
                         {
-                          "text": "  📄 Doctor navigated in 1189ms → http://localhost:3010/doctor/DOC-TEST-001/dashboard\n"
+                          "text": "  📄 Doctor navigated in 457ms → https://izara-doctor-portal-dev-testing-hvht4obouq-as.a.run.app/doctor/DOC-TEST-001/dashboard\n"
                         },
                         {
-                          "text": "  📄 Admin navigated in 803ms → http://localhost:3010/doctor/ADMIN-TEST-001/dashboard\n"
+                          "text": "  📄 Admin navigated in 797ms → https://izara-doctor-portal-dev-testing-hvht4obouq-as.a.run.app/doctor/ADMIN-TEST-001/dashboard\n"
                         },
                         {
-                          "text": "✅ FIXTURE SETUP complete in 3.7s\n\n"
+                          "text": "✅ FIXTURE SETUP complete in 3.8s\n\n"
                         },
                         {
                           "text": "  ✅ I01: Admin dashboard\n"
@@ -3111,26 +2874,26 @@
                       "steps": [
                         {
                           "title": "I01 — Admin → Dashboard",
-                          "duration": 2012
+                          "duration": 2052
                         },
                         {
                           "title": "I02 — Admin → Manage Doctors",
-                          "duration": 1579
+                          "duration": 1684
                         },
                         {
                           "title": "I03 — Search for doctor",
-                          "duration": 924
+                          "duration": 1053
                         },
                         {
                           "title": "I04 — Click doctor profile",
-                          "duration": 193
+                          "duration": 252
                         },
                         {
                           "title": "I05 — Check approve/reject buttons",
-                          "duration": 207
+                          "duration": 226
                         }
                       ],
-                      "startTime": "2026-04-24T05:26:40.296Z",
+                      "startTime": "2026-04-24T08:25:47.750Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3165,7 +2928,7 @@
               "tags": [],
               "tests": [
                 {
-                  "timeout": 300000,
+                  "timeout": 420000,
                   "annotations": [],
                   "expectedStatus": "passed",
                   "projectId": "I-admin-notifications",
@@ -3175,14 +2938,14 @@
                       "workerIndex": 6,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 5051,
+                      "duration": 5183,
                       "errors": [],
                       "stdout": [
                         {
                           "text": "  ✅ I06: Doctor Approval page\n"
                         },
                         {
-                          "text": "  ✅ I07: Pending approvals — 5 items\n"
+                          "text": "  ✅ I07: Pending approvals — 1 items\n"
                         },
                         {
                           "text": "  ✅ I08: Admin schedule\n"
@@ -3199,22 +2962,22 @@
                       "steps": [
                         {
                           "title": "I06 — Admin → Doctor Approval",
-                          "duration": 1432
+                          "duration": 1770
                         },
                         {
                           "title": "I07 — Browse pending approvals",
-                          "duration": 250
+                          "duration": 363
                         },
                         {
                           "title": "I08 — Admin → Schedule view",
-                          "duration": 1481
+                          "duration": 1483
                         },
                         {
                           "title": "I09 — Admin → Appointment Pool",
-                          "duration": 1446
+                          "duration": 1416
                         }
                       ],
-                      "startTime": "2026-04-24T05:26:49.539Z",
+                      "startTime": "2026-04-24T08:25:57.115Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3249,7 +3012,7 @@
               "tags": [],
               "tests": [
                 {
-                  "timeout": 300000,
+                  "timeout": 420000,
                   "annotations": [],
                   "expectedStatus": "passed",
                   "projectId": "I-admin-notifications",
@@ -3259,7 +3022,7 @@
                       "workerIndex": 6,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3351,
+                      "duration": 3402,
                       "errors": [],
                       "stdout": [
                         {
@@ -3280,29 +3043,29 @@
                       "steps": [
                         {
                           "title": "I10 — Doctor checks notification bell",
-                          "duration": 570
+                          "duration": 576
                         },
                         {
                           "title": "I11 — Patient checks notifications",
-                          "duration": 1180
+                          "duration": 973
                         },
                         {
                           "title": "I12 — Doctor → Profile (forward flow)",
-                          "duration": 1138
+                          "duration": 1590
                         }
                       ],
-                      "startTime": "2026-04-24T05:26:54.652Z",
+                      "startTime": "2026-04-24T08:26:02.312Z",
                       "annotations": [],
                       "attachments": [
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
-                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-I-admin-users-notifi-70762-otifications-across-portals-I-admin-notifications\\test-finished-1.png"
+                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-I-admin-users-notifi-70762-otifications-across-portals-I-admin-notifications\\test-finished-2.png"
                         },
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
-                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-I-admin-users-notifi-70762-otifications-across-portals-I-admin-notifications\\test-finished-2.png"
+                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-I-admin-users-notifi-70762-otifications-across-portals-I-admin-notifications\\test-finished-1.png"
                         },
                         {
                           "name": "screenshot",
@@ -3326,7 +3089,7 @@
               "tags": [],
               "tests": [
                 {
-                  "timeout": 300000,
+                  "timeout": 420000,
                   "annotations": [],
                   "expectedStatus": "passed",
                   "projectId": "I-admin-notifications",
@@ -3336,7 +3099,7 @@
                       "workerIndex": 6,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2300,
+                      "duration": 1782,
                       "errors": [],
                       "stdout": [
                         {
@@ -3357,18 +3120,18 @@
                       "steps": [
                         {
                           "title": "I13 — All 3 portals authenticated",
-                          "duration": 759
+                          "duration": 960
                         },
                         {
                           "title": "I14 — Patient API health check",
-                          "duration": 414
+                          "duration": 435
                         },
                         {
                           "title": "I15 — Doctor API health check",
-                          "duration": 386
+                          "duration": 165
                         }
                       ],
-                      "startTime": "2026-04-24T05:26:58.099Z",
+                      "startTime": "2026-04-24T08:26:05.861Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -3420,7 +3183,7 @@
               "tags": [],
               "tests": [
                 {
-                  "timeout": 300000,
+                  "timeout": 420000,
                   "annotations": [],
                   "expectedStatus": "passed",
                   "projectId": "J-ai-timeline-map",
@@ -3430,32 +3193,32 @@
                       "workerIndex": 7,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 6299,
+                      "duration": 3971,
                       "errors": [],
                       "stdout": [
                         {
                           "text": "\n🔧 FIXTURE SETUP — launching 3 browsers...\n"
                         },
                         {
-                          "text": "  🚀 Patient browser launched in 272ms\n"
+                          "text": "  🚀 Patient browser launched in 376ms\n"
                         },
                         {
-                          "text": "  🚀 Doctor browser launched in 323ms\n"
+                          "text": "  🚀 Doctor browser launched in 404ms\n"
                         },
                         {
-                          "text": "  🚀 Admin browser launched in 321ms\n"
+                          "text": "  🚀 Admin browser launched in 343ms\n"
                         },
                         {
-                          "text": "  📄 Patient navigated in 209ms → http://localhost:3005/\n"
+                          "text": "  📄 Patient navigated in 517ms → https://izara-patient-portal-dev-testing-hvht4obouq-as.a.run.app/\n"
                         },
                         {
-                          "text": "  📄 Doctor navigated in 722ms → http://localhost:3010/doctor/DOC-TEST-001/dashboard\n"
+                          "text": "  📄 Doctor navigated in 512ms → https://izara-doctor-portal-dev-testing-hvht4obouq-as.a.run.app/doctor/DOC-TEST-001/dashboard\n"
                         },
                         {
-                          "text": "  📄 Admin navigated in 755ms → http://localhost:3010/doctor/ADMIN-TEST-001/dashboard\n"
+                          "text": "  📄 Admin navigated in 549ms → https://izara-doctor-portal-dev-testing-hvht4obouq-as.a.run.app/doctor/ADMIN-TEST-001/dashboard\n"
                         },
                         {
-                          "text": "✅ FIXTURE SETUP complete in 3.2s\n\n"
+                          "text": "✅ FIXTURE SETUP complete in 3.4s\n\n"
                         },
                         {
                           "text": "  ✅ J01: AI Doctor page\n"
@@ -3467,7 +3230,7 @@
                           "text": "  ✅ J03: Submitted via Enter key\n"
                         },
                         {
-                          "text": "  ✅ J04: AI response visible: true (body: 693 chars)\n"
+                          "text": "  ✅ J04: AI response visible: true (body: 676 chars)\n"
                         },
                         {
                           "text": "\n  🎉 J1 COMPLETE — AI Doctor chat\n\n"
@@ -3478,28 +3241,28 @@
                       "steps": [
                         {
                           "title": "J01 — Navigate to AI Doctor",
-                          "duration": 2360
+                          "duration": 1544
                         },
                         {
                           "title": "J02 — Type symptom in chat input",
-                          "duration": 1316
+                          "duration": 873
                         },
                         {
                           "title": "J03 — Submit chat message",
-                          "duration": 1250
+                          "duration": 867
                         },
                         {
                           "title": "J04 — Verify AI response appeared",
-                          "duration": 826
+                          "duration": 586
                         }
                       ],
-                      "startTime": "2026-04-24T05:27:05.160Z",
+                      "startTime": "2026-04-24T08:28:35.709Z",
                       "annotations": [],
                       "attachments": [
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
-                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-J-ai-timeline-map.ui-aea8c--AI-Doctor-chat-interaction-J-ai-timeline-map\\test-finished-3.png"
+                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-J-ai-timeline-map.ui-aea8c--AI-Doctor-chat-interaction-J-ai-timeline-map\\test-finished-2.png"
                         },
                         {
                           "name": "screenshot",
@@ -3509,7 +3272,7 @@
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
-                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-J-ai-timeline-map.ui-aea8c--AI-Doctor-chat-interaction-J-ai-timeline-map\\test-finished-2.png"
+                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-J-ai-timeline-map.ui-aea8c--AI-Doctor-chat-interaction-J-ai-timeline-map\\test-finished-3.png"
                         }
                       ]
                     }
@@ -3528,7 +3291,7 @@
               "tags": [],
               "tests": [
                 {
-                  "timeout": 300000,
+                  "timeout": 420000,
                   "annotations": [],
                   "expectedStatus": "passed",
                   "projectId": "J-ai-timeline-map",
@@ -3538,7 +3301,7 @@
                       "workerIndex": 7,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 5637,
+                      "duration": 4456,
                       "errors": [],
                       "stdout": [
                         {
@@ -3559,29 +3322,29 @@
                       "steps": [
                         {
                           "title": "J05 — Navigate to Timeline",
-                          "duration": 1697
+                          "duration": 1390
                         },
                         {
                           "title": "J06 — Interact with timeline filters",
-                          "duration": 1674
+                          "duration": 1398
                         },
                         {
                           "title": "J07 — Scroll timeline content",
-                          "duration": 1791
+                          "duration": 1592
                         }
                       ],
-                      "startTime": "2026-04-24T05:27:14.785Z",
+                      "startTime": "2026-04-24T08:28:43.125Z",
                       "annotations": [],
                       "attachments": [
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
-                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-J-ai-timeline-map.ui-5736c-—-Patient-timeline-browsing-J-ai-timeline-map\\test-finished-3.png"
+                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-J-ai-timeline-map.ui-5736c-—-Patient-timeline-browsing-J-ai-timeline-map\\test-finished-2.png"
                         },
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
-                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-J-ai-timeline-map.ui-5736c-—-Patient-timeline-browsing-J-ai-timeline-map\\test-finished-2.png"
+                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-J-ai-timeline-map.ui-5736c-—-Patient-timeline-browsing-J-ai-timeline-map\\test-finished-3.png"
                         },
                         {
                           "name": "screenshot",
@@ -3605,7 +3368,7 @@
               "tags": [],
               "tests": [
                 {
-                  "timeout": 300000,
+                  "timeout": 420000,
                   "annotations": [],
                   "expectedStatus": "passed",
                   "projectId": "J-ai-timeline-map",
@@ -3615,7 +3378,7 @@
                       "workerIndex": 7,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 4736,
+                      "duration": 3304,
                       "errors": [],
                       "stdout": [
                         {
@@ -3636,20 +3399,25 @@
                       "steps": [
                         {
                           "title": "J08 — Navigate to Map",
-                          "duration": 2024
+                          "duration": 1434
                         },
                         {
                           "title": "J09 — Search for location",
-                          "duration": 998
+                          "duration": 878
                         },
                         {
                           "title": "J10 — Browse map results",
-                          "duration": 1096
+                          "duration": 908
                         }
                       ],
-                      "startTime": "2026-04-24T05:27:20.536Z",
+                      "startTime": "2026-04-24T08:28:47.590Z",
                       "annotations": [],
                       "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-J-ai-timeline-map.ui-22fc5-ent-map-and-location-search-J-ai-timeline-map\\test-finished-1.png"
+                        },
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
@@ -3659,11 +3427,6 @@
                           "name": "screenshot",
                           "contentType": "image/png",
                           "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-J-ai-timeline-map.ui-22fc5-ent-map-and-location-search-J-ai-timeline-map\\test-finished-2.png"
-                        },
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-J-ai-timeline-map.ui-22fc5-ent-map-and-location-search-J-ai-timeline-map\\test-finished-1.png"
                         }
                       ]
                     }
@@ -3682,7 +3445,7 @@
               "tags": [],
               "tests": [
                 {
-                  "timeout": 300000,
+                  "timeout": 420000,
                   "annotations": [],
                   "expectedStatus": "passed",
                   "projectId": "J-ai-timeline-map",
@@ -3692,7 +3455,7 @@
                       "workerIndex": 7,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 4818,
+                      "duration": 3309,
                       "errors": [],
                       "stdout": [
                         {
@@ -3725,33 +3488,33 @@
                       "steps": [
                         {
                           "title": "J11 — Navigate to Find Doctors",
-                          "duration": 1999
+                          "duration": 1402
                         },
                         {
                           "title": "J12 — Filter by specialty",
-                          "duration": 1211
+                          "duration": 893
                         },
                         {
                           "title": "J13 — Click doctor card",
-                          "duration": 1066
+                          "duration": 899
                         },
                         {
                           "title": "J14 — Final: all 3 portals authenticated",
-                          "duration": 58
+                          "duration": 6
                         }
                       ],
-                      "startTime": "2026-04-24T05:27:25.906Z",
+                      "startTime": "2026-04-24T08:28:50.904Z",
                       "annotations": [],
                       "attachments": [
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
-                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-J-ai-timeline-map.ui-3fa25-nd-doctors-and-final-checks-J-ai-timeline-map\\test-finished-3.png"
+                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-J-ai-timeline-map.ui-3fa25-nd-doctors-and-final-checks-J-ai-timeline-map\\test-finished-2.png"
                         },
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
-                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-J-ai-timeline-map.ui-3fa25-nd-doctors-and-final-checks-J-ai-timeline-map\\test-finished-2.png"
+                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-J-ai-timeline-map.ui-3fa25-nd-doctors-and-final-checks-J-ai-timeline-map\\test-finished-3.png"
                         },
                         {
                           "name": "screenshot",
@@ -3792,7 +3555,7 @@
               "tags": [],
               "tests": [
                 {
-                  "timeout": 300000,
+                  "timeout": 420000,
                   "annotations": [],
                   "expectedStatus": "passed",
                   "projectId": "F-phr-health-records",
@@ -3802,32 +3565,32 @@
                       "workerIndex": 10,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 30875,
+                      "duration": 24110,
                       "errors": [],
                       "stdout": [
                         {
                           "text": "\n🔧 FIXTURE SETUP — launching 3 browsers...\n"
                         },
                         {
-                          "text": "  🚀 Patient browser launched in 259ms\n"
+                          "text": "  🚀 Patient browser launched in 296ms\n"
                         },
                         {
-                          "text": "  🚀 Doctor browser launched in 280ms\n"
+                          "text": "  🚀 Doctor browser launched in 295ms\n"
                         },
                         {
-                          "text": "  🚀 Admin browser launched in 329ms\n"
+                          "text": "  🚀 Admin browser launched in 314ms\n"
                         },
                         {
-                          "text": "  📄 Patient navigated in 218ms → http://localhost:3005/\n"
+                          "text": "  📄 Patient navigated in 454ms → https://izara-patient-portal-dev-testing-hvht4obouq-as.a.run.app/\n"
                         },
                         {
-                          "text": "  📄 Doctor navigated in 773ms → http://localhost:3010/doctor/DOC-TEST-001/dashboard\n"
+                          "text": "  📄 Doctor navigated in 471ms → https://izara-doctor-portal-dev-testing-hvht4obouq-as.a.run.app/doctor/DOC-TEST-001/dashboard\n"
                         },
                         {
-                          "text": "  📄 Admin navigated in 791ms → http://localhost:3010/doctor/ADMIN-TEST-001/dashboard\n"
+                          "text": "  📄 Admin navigated in 521ms → https://izara-doctor-portal-dev-testing-hvht4obouq-as.a.run.app/doctor/ADMIN-TEST-001/dashboard\n"
                         },
                         {
-                          "text": "✅ FIXTURE SETUP complete in 3.3s\n\n"
+                          "text": "✅ FIXTURE SETUP complete in 2.9s\n\n"
                         },
                         {
                           "text": "  ✅ F01: PHR page loaded\n"
@@ -3842,13 +3605,7 @@
                           "text": "    → Tab: Allergies\n"
                         },
                         {
-                          "text": "    → Tab: Lab\n"
-                        },
-                        {
-                          "text": "    → Tab: Overview\n"
-                        },
-                        {
-                          "text": "  ✅ F02: Clicked through 5 PHR tabs\n"
+                          "text": "  ✅ F02: Clicked through 3 PHR tabs\n"
                         },
                         {
                           "text": "  ✅ F03: Vital Signs tab active\n"
@@ -3866,10 +3623,10 @@
                           "text": "  ✅ F07: Medications tab — content: true\n"
                         },
                         {
-                          "text": "  ✅ F08: Allergies tab — content: true\n"
+                          "text": "  ✅ F08: Allergies tab — content: false\n"
                         },
                         {
-                          "text": "  ✅ F09: Lab Results tab — content: true\n"
+                          "text": "  ✅ F09: Lab Results tab — content: false\n"
                         },
                         {
                           "text": "\n  🎉 F1 COMPLETE — Patient PHR with vital signs entry\n\n"
@@ -3880,44 +3637,49 @@
                       "steps": [
                         {
                           "title": "F01 — Navigate to PHR page",
-                          "duration": 2322
+                          "duration": 1536
                         },
                         {
                           "title": "F02 — Click through PHR tabs (stay on page)",
-                          "duration": 6067
+                          "duration": 3346
                         },
                         {
                           "title": "F03 — Switch to Vital Signs tab",
-                          "duration": 3143
+                          "duration": 2258
                         },
                         {
                           "title": "F04 — Open Add Vital Signs form",
-                          "duration": 1266
+                          "duration": 917
                         },
                         {
                           "title": "F05 — Fill vital signs data (7 fields)",
-                          "duration": 3234
+                          "duration": 3378
                         },
                         {
                           "title": "F06 — Save vital signs",
-                          "duration": 10931
+                          "duration": 10608
                         },
                         {
                           "title": "F07 — Switch to Medications tab (stay on page)",
-                          "duration": 1257
+                          "duration": 1009
                         },
                         {
                           "title": "F08 — Switch to Allergies tab (stay on page)",
-                          "duration": 1047
+                          "duration": 897
                         },
                         {
                           "title": "F09 — Switch to Lab Results tab (stay on page)",
-                          "duration": 1074
+                          "duration": 73
                         }
                       ],
-                      "startTime": "2026-04-24T05:28:23.056Z",
+                      "startTime": "2026-04-24T08:29:27.064Z",
                       "annotations": [],
                       "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-F-phr-health-records-94750-ation-and-vital-signs-entry-F-phr-health-records\\test-finished-2.png"
+                        },
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
@@ -3927,11 +3689,6 @@
                           "name": "screenshot",
                           "contentType": "image/png",
                           "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-F-phr-health-records-94750-ation-and-vital-signs-entry-F-phr-health-records\\test-finished-1.png"
-                        },
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-F-phr-health-records-94750-ation-and-vital-signs-entry-F-phr-health-records\\test-finished-2.png"
                         }
                       ]
                     }
@@ -3950,7 +3707,7 @@
               "tags": [],
               "tests": [
                 {
-                  "timeout": 300000,
+                  "timeout": 420000,
                   "annotations": [],
                   "expectedStatus": "passed",
                   "projectId": "F-phr-health-records",
@@ -3960,7 +3717,7 @@
                       "workerIndex": 10,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 4546,
+                      "duration": 4499,
                       "errors": [],
                       "stdout": [
                         {
@@ -3984,22 +3741,22 @@
                       "steps": [
                         {
                           "title": "F10 — Navigate to Patients",
-                          "duration": 1552
+                          "duration": 1699
                         },
                         {
                           "title": "F11 — Search for patient",
-                          "duration": 873
+                          "duration": 991
                         },
                         {
                           "title": "F12 — Click patient card",
-                          "duration": 1441
+                          "duration": 1516
                         },
                         {
                           "title": "F13 — Check patient health data visible",
-                          "duration": 229
+                          "duration": 214
                         }
                       ],
-                      "startTime": "2026-04-24T05:28:57.331Z",
+                      "startTime": "2026-04-24T08:29:54.128Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -4034,7 +3791,7 @@
               "tags": [],
               "tests": [
                 {
-                  "timeout": 300000,
+                  "timeout": 420000,
                   "annotations": [],
                   "expectedStatus": "passed",
                   "projectId": "F-phr-health-records",
@@ -4044,7 +3801,7 @@
                       "workerIndex": 10,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 7215,
+                      "duration": 5995,
                       "errors": [],
                       "stdout": [
                         {
@@ -4065,25 +3822,20 @@
                       "steps": [
                         {
                           "title": "F14 — Patient → PHR Overview → verify saved vitals",
-                          "duration": 3299
+                          "duration": 2285
                         },
                         {
                           "title": "F15 — Doctor → patient detail → verify PHR/health data",
-                          "duration": 3406
+                          "duration": 3610
                         },
                         {
                           "title": "F16 — All 3 portals still authenticated",
-                          "duration": 63
+                          "duration": 7
                         }
                       ],
-                      "startTime": "2026-04-24T05:29:02.016Z",
+                      "startTime": "2026-04-24T08:29:58.643Z",
                       "annotations": [],
                       "attachments": [
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-F-phr-health-records-eb7fd-ortal-PHR-data-verification-F-phr-health-records\\test-finished-1.png"
-                        },
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
@@ -4093,6 +3845,11 @@
                           "name": "screenshot",
                           "contentType": "image/png",
                           "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-F-phr-health-records-eb7fd-ortal-PHR-data-verification-F-phr-health-records\\test-finished-2.png"
+                        },
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\test-results\\group-F-phr-health-records-eb7fd-ortal-PHR-data-verification-F-phr-health-records\\test-finished-1.png"
                         }
                       ]
                     }
@@ -4128,7 +3885,7 @@
               "tags": [],
               "tests": [
                 {
-                  "timeout": 300000,
+                  "timeout": 420000,
                   "annotations": [],
                   "expectedStatus": "passed",
                   "projectId": "K-accessibility",
@@ -4138,12 +3895,12 @@
                       "workerIndex": 8,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 4475,
+                      "duration": 1415,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-24T05:27:35.395Z",
+                      "startTime": "2026-04-24T08:28:55.474Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -4168,7 +3925,7 @@
               "tags": [],
               "tests": [
                 {
-                  "timeout": 300000,
+                  "timeout": 420000,
                   "annotations": [],
                   "expectedStatus": "passed",
                   "projectId": "K-accessibility",
@@ -4178,12 +3935,12 @@
                       "workerIndex": 8,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 4839,
+                      "duration": 1283,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-24T05:27:40.359Z",
+                      "startTime": "2026-04-24T08:28:57.460Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -4208,7 +3965,7 @@
               "tags": [],
               "tests": [
                 {
-                  "timeout": 300000,
+                  "timeout": 420000,
                   "annotations": [],
                   "expectedStatus": "passed",
                   "projectId": "K-accessibility",
@@ -4218,12 +3975,12 @@
                       "workerIndex": 8,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2611,
+                      "duration": 4860,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-04-24T05:27:45.344Z",
+                      "startTime": "2026-04-24T08:28:58.754Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -4249,11 +4006,11 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-04-24T05:22:10.774Z",
-    "duration": 422051.195,
-    "expected": 44,
-    "skipped": 0,
-    "unexpected": 0,
+    "startTime": "2026-04-24T08:01:07.974Z",
+    "duration": 1737223.653,
+    "expected": 40,
+    "skipped": 2,
+    "unexpected": 2,
     "flaky": 0
   }
 }

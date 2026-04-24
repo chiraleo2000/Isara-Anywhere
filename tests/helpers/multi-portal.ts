@@ -24,18 +24,19 @@
 import { test as base, Page, BrowserContext, Browser, expect, chromium } from '@playwright/test';
 import * as path from 'node:path';
 import * as fs from 'node:fs';
+import { execSync } from 'node:child_process';
 
 // ── Constants ────────────────────────────────────────────────────────
 const IS_CLOUD = process.env.TEST_ENV === 'cloud';
 
 export const PATIENT_URL = IS_CLOUD
-  ? (process.env.CLOUD_PATIENT_URL || process.env.PATIENT_URL || process.env.PATIENT_PORTAL_URL || 'https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app')
+  ? (process.env.CLOUD_PATIENT_URL || process.env.PATIENT_URL || process.env.PATIENT_PORTAL_URL || 'https://izara-patient-portal-dev-testing-hvht4obouq-as.a.run.app')
   : (process.env.PATIENT_URL || process.env.PATIENT_PORTAL_URL || process.env.LOCAL_PATIENT_URL || 'http://localhost:3005');
 export const DOCTOR_URL = IS_CLOUD
-  ? (process.env.CLOUD_DOCTOR_URL || process.env.DOCTOR_URL || process.env.DOCTOR_PORTAL_URL || 'https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app')
+  ? (process.env.CLOUD_DOCTOR_URL || process.env.DOCTOR_URL || process.env.DOCTOR_PORTAL_URL || 'https://izara-doctor-portal-dev-testing-hvht4obouq-as.a.run.app')
   : (process.env.DOCTOR_URL || process.env.DOCTOR_PORTAL_URL || process.env.LOCAL_DOCTOR_URL || 'http://localhost:3010');
 export const MEETING_URL = IS_CLOUD
-  ? (process.env.CLOUD_MEETING_URL || process.env.MEETING_URL || process.env.MEETING_SERVER_URL || 'https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app')
+  ? (process.env.CLOUD_MEETING_URL || process.env.MEETING_URL || process.env.MEETING_SERVER_URL || 'https://izara-meeting-server-dev-testing-hvht4obouq-as.a.run.app')
   : (process.env.MEETING_URL || process.env.MEETING_SERVER_URL || process.env.LOCAL_MEETING_URL || 'http://localhost:3020');
 
 /** Navigation timeout — longer for cloud cold starts */
@@ -475,6 +476,14 @@ export const test = base.extend<{}, { portals: Portals }>({
     const setupStart = Date.now();
     console.log('\n🔧 FIXTURE SETUP — launching 3 browsers...');
 
+    // Kill any lingering Chrome processes from previous fixture teardown (cloud: workers=1)
+    if (IS_CLOUD) {
+      try {
+        execSync('taskkill /F /IM chrome.exe 2>NUL', { stdio: 'ignore' });
+        await new Promise(r => setTimeout(r, 3_000));
+      } catch { /* No chrome processes running — OK */ }
+    }
+
     const patientState = path.join(AUTH_DIR, 'patient1.json');
     const doctorState  = path.join(AUTH_DIR, 'doctor.json');
     const adminState   = path.join(AUTH_DIR, 'admin.json');
@@ -553,7 +562,9 @@ export const test = base.extend<{}, { portals: Portals }>({
 
     clearInterval(keepAlive);
     // Close with per-operation timeout to prevent teardown hang
-    const closeWithTimeout = (p: Promise<void>, label: string, ms = 10_000) =>
+    // Cloud: 30s timeout — browsers take longer to close over network
+    const CLOSE_TIMEOUT_MS = IS_CLOUD ? 30_000 : 10_000;
+    const closeWithTimeout = (p: Promise<void>, label: string, ms = CLOSE_TIMEOUT_MS) =>
       Promise.race([p, new Promise<void>(r => setTimeout(() => { console.log(`  ⚠ ${label} close timed out`); r(); }, ms))]);
     await Promise.all([
       closeWithTimeout(patientCtx.close().catch(() => {}), 'patientCtx'),
@@ -565,7 +576,7 @@ export const test = base.extend<{}, { portals: Portals }>({
       closeWithTimeout(doctorBrowser.close().catch(() => {}), 'doctorBrowser'),
       closeWithTimeout(adminBrowser.close().catch(() => {}), 'adminBrowser'),
     ]);
-  }, { scope: 'worker', timeout: 240_000 }],
+  }, { scope: 'worker', timeout: 360_000 }],
 });
 
 // ═══════════════════════════════════════════════════════════════════════
