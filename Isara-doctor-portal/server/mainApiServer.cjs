@@ -6109,7 +6109,7 @@ app.get('/api/prescriptions/pending/count/:doctorId', authenticateToken, async (
     }
     
     // Query PostgreSQL for prescriptions with status='pending' for this doctor
-    const result = await PostgresDataService.query(
+    const result = await PostgresDataService.pool.query(
       `SELECT COUNT(*) as count 
        FROM prescriptions 
        WHERE doctor_id = $1 
@@ -6138,7 +6138,7 @@ app.get('/api/prescriptions/pending/:doctorId', authenticateToken, async (req, r
     }
     
     // Query PostgreSQL for pending prescriptions
-    const result = await PostgresDataService.query(
+    const result = await PostgresDataService.pool.query(
       `SELECT * FROM prescriptions 
        WHERE doctor_id = $1 
        AND status = 'pending'

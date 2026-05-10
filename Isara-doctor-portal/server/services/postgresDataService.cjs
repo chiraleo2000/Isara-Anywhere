@@ -535,10 +535,10 @@ const PatientService = {
         [patientId]
       ),
       pool.query(
-        `SELECT id, 'emr' as type, consultation_date as event_date,
-                chief_complaint as description, status
+        `SELECT id, 'emr' as type, created_at as event_date,
+                COALESCE(subjective->>'chief_complaint', '') as description, status
          FROM emr WHERE patient_id = $1
-         ORDER BY consultation_date DESC LIMIT 20`,
+         ORDER BY created_at DESC LIMIT 20`,
         [patientId]
       ),
       pool.query(
