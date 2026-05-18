@@ -1,7 +1,7 @@
 /**
  * Izara Jitsi Meeting Server — Phase 1 Complete
  * 
- * Version: 1.6.0
+ * Version: 1.7.3
  * Updated: 2026-03-24
  * 
  * Main API server for:
@@ -495,7 +495,7 @@ app.get('/health', (req, res) => {
   res.json({
     status: 'ok',
     service: 'izara-jitsi-server',
-    version: '1.6.0',
+    version: '1.7.3',
     timestamp: new Date().toISOString(),
     database: dbAvailable ? 'connected' : 'disconnected',
     features: {
@@ -517,7 +517,7 @@ app.get('/api/health', (req, res) => {
   res.json({
     status: dbAvailable ? 'healthy' : 'degraded',
     service: 'izara-jitsi-server',
-    version: '1.6.0',
+    version: '1.7.3',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     jitsiDomain: JITSI_DOMAIN,
@@ -4278,7 +4278,7 @@ const startServer = async () => {
     server.listen(PORT, () => {
       console.log(`
 ╔════════════════════════════════════════════════════════════╗
-║     🎥 Izara Jitsi Meeting Server v1.6.0                        ║
+║     🎥 Izara Jitsi Meeting Server v1.7.3                        ║
 ╠════════════════════════════════════════════════════════════╣
 ║  Port:       ${PORT}                                          ║
 ║  Jitsi:      ${JITSI_DOMAIN}                               ║

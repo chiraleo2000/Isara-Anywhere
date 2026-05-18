@@ -1,6 +1,6 @@
 /**
  * Main API Server for Izara Doctor Portal
- * Version: 1.6.0
+ * Version: 1.7.3
  * Port: 3009
  *
  * Handles all clinical operations:
@@ -777,7 +777,7 @@ app.get('/api/health', (req, res) => {
     status: 'healthy',
     timestamp: new Date().toISOString(),
     service: 'Izara Doctor Portal API',
-    version: '1.6.0',
+    version: '1.7.3',
     port: PORT,
     features: {
       videoMeeting: 'Jitsi Meet (FREE)',
@@ -796,7 +796,7 @@ app.get('/health', (req, res) => {
     status: 'healthy',
     timestamp: new Date().toISOString(),
     service: 'Izara Doctor Portal API',
-    version: '1.6.0',
+    version: '1.7.3',
     port: PORT
   });
 });
@@ -8792,7 +8792,7 @@ app.get('/api/sync/pull', authenticateToken, async (req, res) => {
 
 async function startServer() {
   console.log('\n═══════════════════════════════════════════════════════════════');
-  console.log('🏥 IZARA DOCTOR PORTAL - MAIN API SERVER v1.6.0');
+  console.log('🏥 IZARA DOCTOR PORTAL - MAIN API SERVER v1.7.3');
   console.log('═══════════════════════════════════════════════════════════════\n');
 
   const { startPgNotifyListener } = require('./pgNotifyListener.cjs');
@@ -8800,7 +8800,7 @@ async function startServer() {
   // Start listening immediately for faster startup
   server.listen(PORT, '0.0.0.0', () => {
     console.log('═══════════════════════════════════════════════════════════════');
-    console.log(`🚀 Main API Server v1.6.0 running on http://localhost:${PORT}`);
+    console.log(`🚀 Main API Server v1.7.3 running on http://localhost:${PORT}`);
     console.log('═══════════════════════════════════════════════════════════════\n');
     console.log('📊 Storage: PostgreSQL + pgvector (PRIMARY)');
     console.log('🎥 Video: Jitsi Meet (FREE)');
