@@ -1,6 +1,6 @@
 {
   "name": "isara-anywhere",
-  "version": "1.7.2",
+  "version": "1.7.3",
   "description": "Izara Telemedicine Platform - Patient and Doctor Portals",
   "main": "index.js",
   "scripts": {
@@ -22,8 +22,8 @@
     "test:e2e:pipeline": "npx playwright test --project=D-appointments --project=E-meeting-clinical --project=F-phr-health-records --workers=1",
     "test:e2e:auth": "npx playwright test --project=A-auth",
     "test:e2e:coverage": "pwsh scripts/run-full-coverage.ps1",
-    "seed": "node scripts/seedAllData.cjs",
-    "seed:all": "node scripts/seedAllData.cjs"
+    "seed": "node scripts/database/db-tool.cjs --seed",
+    "seed:all": "node scripts/database/db-tool.cjs --all"
   },
   "keywords": [],
   "author": "",

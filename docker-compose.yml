@@ -1,7 +1,7 @@
 # ============================================================================
 # IZARA TELEMEDICINE - COMPLETE DOCKER COMPOSE
-# Version: 1.6.0
-# Updated: 2026-03-31
+# Version: 1.7.3
+# Updated: 2026-05-18
 # ============================================================================
 #
 # This docker-compose provides:
@@ -89,7 +89,7 @@ services:
       args:
         VITE_API_URL: http://localhost:3005
         VITE_APP_NAME: Izara Patient Portal
-        VITE_APP_VERSION: 1.6.0
+        VITE_APP_VERSION: 1.7.3
         VITE_APP_ENV: production
         VITE_USE_POSTGRESQL: "true"
         VITE_MEETING_SERVER_URL: http://localhost:3020
@@ -162,7 +162,7 @@ services:
         VITE_API_URL: http://localhost:3010
         VITE_AUTH_URL: http://localhost:3010/auth
         VITE_APP_NAME: Izara Doctor Portal
-        VITE_APP_VERSION: 1.6.0
+        VITE_APP_VERSION: 1.7.3
         VITE_APP_ENV: production
         VITE_USE_POSTGRESQL: "true"
         VITE_MEETING_SERVER_URL: http://localhost:3020

@@ -1,6 +1,6 @@
 # 🏥 Izara Telemedicine Platform
 
-![Version](<https://img.shields.io/badge/version-1.7.0-blue.svg)>
+![Version](<https://img.shields.io/badge/version-1.7.3-blue.svg)>
 ![License](<https://img.shields.io/badge/license-MIT-green.svg)>
 ![Platform](<https://img.shields.io/badge/platform-web-lightgrey.svg)>
 ![Node](<https://img.shields.io/badge/node-%3E%3D22.0.0-brightgreen.svg)>

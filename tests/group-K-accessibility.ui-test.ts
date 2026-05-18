@@ -4,8 +4,8 @@
  * Scans the primary public / post-login pages of both portals with axe-core
  * and fails the test on any "serious" or "critical" violation.
  *
- * We lazy-load @axe-core/playwright so the suite degrades gracefully when
- * the dev dependency is not yet installed (prints a single skip notice).
+ * @axe-core/playwright is a required dev dependency; the suite fails hard
+ * if it cannot be loaded (no silent skips).
  */
 import { test, expect, type Page } from '@playwright/test';
 
@@ -26,18 +26,13 @@ interface AxeResult {
   }>;
 }
 
-async function runAxe(page: Page): Promise<AxeResult | null> {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { default: AxeBuilder } = await import('@axe-core/playwright');
-    const builder = new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']);
-    return (await builder.analyze()) as unknown as AxeResult;
-  } catch (err) {
-    console.warn(
-      `[K-a11y] @axe-core/playwright not installed — skipping. Install with: npm i -D @axe-core/playwright. (${(err as Error).message})`
-    );
-    return null;
-  }
+async function runAxe(page: Page): Promise<AxeResult> {
+  // @axe-core/playwright is a required dev dependency. Any import failure is a
+  // hard error so the suite never silently degrades into a skip.
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { default: AxeBuilder } = await import('@axe-core/playwright');
+  const builder = new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']);
+  return (await builder.analyze()) as unknown as AxeResult;
 }
 
 function filterBlocking(r: AxeResult): AxeResult['violations'] {
@@ -51,8 +46,7 @@ test.describe('Group K — Accessibility (WCAG 2.1 AA)', () => {
     await page.goto(`${PATIENT_URL}/login`);
     await page.waitForLoadState('domcontentloaded');
     const results = await runAxe(page);
-    test.skip(!results, 'axe-core not installed');
-    const blocking = filterBlocking(results!);
+    const blocking = filterBlocking(results);
     if (blocking.length > 0) {
       console.error('[K1] violations:', JSON.stringify(blocking, null, 2));
     }
@@ -63,8 +57,7 @@ test.describe('Group K — Accessibility (WCAG 2.1 AA)', () => {
     await page.goto(`${DOCTOR_URL}/login`);
     await page.waitForLoadState('domcontentloaded');
     const results = await runAxe(page);
-    test.skip(!results, 'axe-core not installed');
-    const blocking = filterBlocking(results!);
+    const blocking = filterBlocking(results);
     if (blocking.length > 0) {
       console.error('[K2] violations:', JSON.stringify(blocking, null, 2));
     }
