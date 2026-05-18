@@ -1,10 +1,10 @@
 # ============================================================================
-# Izara Telemedicine — Root Cloud Build Configuration v1.6.0
+# Izara Telemedicine — Root Cloud Build Configuration v1.7.3
 # Orchestrates build & deploy of all 3 Cloud Run services
 #
 # Usage:
 #   gcloud builds submit . --config=cloudbuild.yaml
-#   gcloud builds submit . --config=cloudbuild.yaml --substitutions=_TAG=v1.7.0
+#   gcloud builds submit . --config=cloudbuild.yaml --substitutions=_TAG=v1.7.3
 #
 # Required Secret Manager secrets (run setup-cloud-build.ps1 first):
 #   jwt-secret, db-password, database-url, gemini-api-key, google-maps-api-key
@@ -20,7 +20,7 @@
 substitutions:
   _REGION: asia-southeast1
   _REGISTRY: asia-southeast1-docker.pkg.dev/izara-telemedicine/isara-anywhere-portals
-  _TAG: v1.7.2
+  _TAG: v1.7.3
   _DB_HOST: "35.240.157.230"
   _DB_PORT: "5432"
   _DB_NAME: izara_phase1
