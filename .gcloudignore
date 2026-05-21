@@ -37,9 +37,10 @@ Phase2/
 *.md
 !README.md
 
-# Scripts not needed for Docker build (but database scripts ARE needed for migrate builds)
-scripts/
-!scripts/database/**/*.sql
+# Scripts not needed for Docker build (but database scripts ARE needed for migrate builds).
+# NOTE: gitignore syntax forbids re-including children of an excluded directory, so we
+# exclude scripts/* (single-level glob) instead of scripts/, then re-include scripts/database/.
+scripts/*
 !scripts/database/
 fixtures/
 specs/
