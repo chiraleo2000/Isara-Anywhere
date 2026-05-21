@@ -39,6 +39,7 @@ Phase2/
 
 # Scripts not needed for Docker build (but database scripts ARE needed for migrate builds)
 scripts/
+!scripts/database/**/*.sql
 !scripts/database/
 fixtures/
 specs/
