@@ -1,0 +1,64 @@
+# Standalone DB migration build — applies SQL files from scripts/database/migrations/
+# and seeds SSO test users. Runs entirely inside Cloud Build (has network access to the DB).
+# Usage:
+#   gcloud builds submit . --config=cloudbuild-migrate.yaml --project=izara-telemedicine
+#
+# Auth: uses DATABASE_URL secret (same one Cloud Run services use, known to be valid).
+# This avoids drift between db-password and the actual Cloud SQL user/credentials.
+
+steps:
+  - id: apply-google-sub-migration
+    name: postgres:15-alpine
+    entrypoint: sh
+    args:
+      - -c
+      - |
+        set -e
+        echo "Applying google_sub migration..."
+        # Strip any stray CR/LF from secret value (Secret Manager sometimes appends a newline)
+        DB_URL=$$(printf %s "$$DATABASE_URL" | tr -d '\r\n')
+        psql "$$DB_URL" \
+          -v ON_ERROR_STOP=1 \
+          -f /workspace/scripts/database/migrations/2025-add-google-sub.sql
+        echo "Migration applied."
+    secretEnv: [DATABASE_URL]
+
+  - id: cleanup-google-sso-stubs
+    name: postgres:15-alpine
+    entrypoint: sh
+    args:
+      - -c
+      - |
+        set -e
+        echo "Cleaning up orphan !google-sso! stub rows..."
+        DB_URL=$$(printf %s "$$DATABASE_URL" | tr -d '\r\n')
+        psql "$$DB_URL" \
+          -c "DELETE FROM users WHERE password_hash='!google-sso!' AND id NOT IN ('PATIENT-SSO-STUB') AND created_at < NOW() - INTERVAL '1 hour';"
+        echo "Cleanup done."
+    secretEnv: [DATABASE_URL]
+    waitFor: [apply-google-sub-migration]
+
+  - id: seed-sso-test-users
+    name: postgres:15-alpine
+    entrypoint: sh
+    args:
+      - -c
+      - |
+        set -e
+        echo "Seeding SSO test users..."
+        DB_URL=$$(printf %s "$$DATABASE_URL" | tr -d '\r\n')
+        psql "$$DB_URL" \
+          -v ON_ERROR_STOP=1 \
+          -f /workspace/scripts/database/seed-sso-test-users.sql
+        echo "Seed done."
+    secretEnv: [DATABASE_URL]
+    waitFor: [cleanup-google-sso-stubs]
+
+availableSecrets:
+  secretManager:
+    - versionName: projects/izara-telemedicine/secrets/database-url/versions/latest
+      env: DATABASE_URL
+
+timeout: 300s
+options:
+  logging: CLOUD_LOGGING_ONLY

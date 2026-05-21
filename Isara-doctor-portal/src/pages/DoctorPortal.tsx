@@ -168,8 +168,9 @@ const DoctorPortal: React.FC = () => {
           />
         } />
 
-        {/* New Routes - Medical Consultants, Doctors, Medical Content, Health Meeting (Combined with Queue) */}
-        <Route path="medical-consultants" element={<MedicalConsultants />} />
+        {/* New Routes - Doctors, Medical Content, Health Meeting (Combined with Queue) */}
+        {/* Phase 1: Medical Consultants route disabled — to be rebuilt in Phase 2. */}
+        <Route path="medical-consultants" element={<Navigate to={`/doctor/${userId}/dashboard`} replace />} />
         <Route path="doctors" element={<DoctorsManagement />} />
         <Route path="medical-content" element={<MedicalContent />} />
         <Route path="health-meeting" element={<HealthMeeting doctor={user} />} />
@@ -194,7 +195,8 @@ const DoctorPortal: React.FC = () => {
         {/* Short aliases for convenience */}
         <Route path="content" element={<Navigate to={`/doctor/${userId}/medical-content`} replace />} />
         <Route path="resources" element={<Navigate to={`/doctor/${userId}/clinical-resources`} replace />} />
-        <Route path="consultants" element={<Navigate to={`/doctor/${userId}/medical-consultants`} replace />} />
+        {/* Phase 1: Medical Consultants disabled — alias also redirects to dashboard. */}
+        <Route path="consultants" element={<Navigate to={`/doctor/${userId}/dashboard`} replace />} />
         <Route path="ai-studio" element={<Navigate to={`/doctor/${userId}/dashboard`} replace />} />
 
         {/* Admin short aliases */}

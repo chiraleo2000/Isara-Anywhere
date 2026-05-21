@@ -264,7 +264,7 @@ function getMobileBaseNavItems(lang: string) {
     { id: 'patients', label: isTh ? 'ผู้ป่วย' : 'Patients', icon: ClipboardDocumentListIcon },
     { id: 'health-meeting', label: isTh ? 'นัดหมาย' : 'Meetings', icon: VideoCameraIcon },
     { id: 'appointment-pool', label: isTh ? 'กลุ่มนัดหมาย' : 'Appt Pool', icon: ClockIcon },
-    { id: 'medical-consultants', label: isTh ? 'ที่ปรึกษา' : 'Consults', icon: UserGroupIcon },
+    // Phase 1: 'medical-consultants' nav item disabled — to be rebuilt in Phase 2.
     { id: 'medical-content', label: isTh ? 'เนื้อหา' : 'Content', icon: BookOpenIcon },
     { id: 'clinical-resources', label: isTh ? 'ทรัพยากร' : 'Resources', icon: AcademicCapIcon },
   ];
@@ -419,7 +419,7 @@ function getDesktopNavItems(lang: string) {
     { id: 'patients', label: isTh ? 'ผู้ป่วย' : 'Patients', icon: ClipboardDocumentListIcon },
     { id: 'health-meeting', label: isTh ? 'นัดหมาย & ประชุม' : 'Appointments & Meetings', icon: VideoCameraIcon },
     { id: 'appointment-pool', label: isTh ? 'กลุ่มนัดหมาย' : 'Appointment Pool', icon: ClockIcon },
-    { id: 'medical-consultants', label: isTh ? 'ที่ปรึกษาแพทย์' : 'Medical Consultants', icon: UserGroupIcon },
+    // Phase 1: 'medical-consultants' nav item disabled — to be rebuilt in Phase 2.
     { id: 'medical-content', label: isTh ? 'เนื้อหาทางการแพทย์' : 'Medical Content', icon: BookOpenIcon },
     { id: 'clinical-resources', label: isTh ? 'ทรัพยากรทางคลินิก' : 'Clinical Resources', icon: AcademicCapIcon },
   ];
