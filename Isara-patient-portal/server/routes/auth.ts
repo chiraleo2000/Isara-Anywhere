@@ -1125,4 +1125,166 @@ router.get('/health/db', async (_req: Request, res: Response) => {
   }
 });
 
+// ============================================================================
+// GOOGLE SSO — verify ID token, auto-provision patient, issue session token
+// ============================================================================
+import { OAuth2Client } from 'google-auth-library';
+
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || process.env.VITE_GOOGLE_CLIENT_ID;
+const googleAuthClient = GOOGLE_CLIENT_ID ? new OAuth2Client(GOOGLE_CLIENT_ID) : null;
+
+if (!GOOGLE_CLIENT_ID) {
+  console.warn('[AUTH] GOOGLE_CLIENT_ID not set — Google SSO endpoint will return 503');
+}
+
+// Test seam: allow tests to inject a fake verifier without real Google calls.
+// Set process.env.GOOGLE_TOKEN_VERIFIER_FIXTURE to a JSON string of the payload
+// to return for any non-empty idToken (NEVER set in production).
+async function verifyGoogleIdToken(idToken: string): Promise<{ sub: string; email: string; emailVerified: boolean; name?: string; picture?: string } | null> {
+  const fixture = process.env.GOOGLE_TOKEN_VERIFIER_FIXTURE;
+  if (fixture && process.env.NODE_ENV !== 'production') {
+    // Two modes:
+    //   1) GOOGLE_TOKEN_VERIFIER_FIXTURE='1' (or 'true') -> parse idToken itself as JSON payload
+    //   2) GOOGLE_TOKEN_VERIFIER_FIXTURE='{...json...}' -> use env value as payload for every call
+    const useTokenAsPayload = fixture === '1' || fixture.toLowerCase() === 'true';
+    try {
+      const p = useTokenAsPayload ? JSON.parse(idToken) : JSON.parse(fixture);
+      if (!p?.sub || !p?.email) return null;
+      return { sub: p.sub, email: p.email, emailVerified: p.email_verified !== false, name: p.name, picture: p.picture };
+    } catch {
+      return null;
+    }
+  }
+  if (!googleAuthClient || !GOOGLE_CLIENT_ID) return null;
+  try {
+    const ticket = await googleAuthClient.verifyIdToken({ idToken, audience: GOOGLE_CLIENT_ID });
+    const p = ticket.getPayload();
+    if (!p?.sub || !p?.email) return null;
+    return { sub: p.sub, email: p.email, emailVerified: !!p.email_verified, name: p.name, picture: p.picture };
+  } catch (err) {
+    console.warn('[AUTH] Google token verification failed:', (err as Error).message);
+    return null;
+  }
+}
+
+router.post('/google-auth', authLimiter, async (req: Request, res: Response) => {
+  try {
+    const { idToken, portal } = req.body || {};
+    if (!idToken || typeof idToken !== 'string') {
+      return res.status(400).json({ error: 'idToken is required' });
+    }
+    if (!GOOGLE_CLIENT_ID && !process.env.GOOGLE_TOKEN_VERIFIER_FIXTURE) {
+      return res.status(503).json({ error: 'Google SSO not configured on server' });
+    }
+
+    const payload = await verifyGoogleIdToken(idToken);
+    if (!payload) {
+      return res.status(401).json({ error: 'Invalid Google token' });
+    }
+    if (!payload.emailVerified) {
+      return res.status(403).json({ error: 'Google email not verified' });
+    }
+
+    if (!dbAvailable) {
+      const ok = await checkDbConnection();
+      if (!ok) return res.status(503).json({ error: 'Database temporarily unavailable' });
+    }
+
+    const emailLower = payload.email.toLowerCase().trim();
+    const isDoctorPortal = portal === 'doctor';
+
+    // STRICT MODE: existing accounts only. Unknown email -> 404 NOT_REGISTERED.
+    const userRow = (await pool.query(
+      `SELECT id, patient_id, email, password_hash, name, name_thai, phone, avatar_url, date_of_birth, gender, role,
+              is_active, is_approved, approval_status
+       FROM users WHERE LOWER(email) = LOWER($1)`,
+      [emailLower]
+    )).rows[0];
+
+    if (!userRow) {
+      return res.status(404).json({
+        error: 'not_registered',
+        code: 'NOT_REGISTERED',
+        message: 'No account found for this Google email. Please register first.',
+        email: emailLower,
+      });
+    }
+
+    // Require a real password (reject Google-only stub accounts)
+    if (!userRow.password_hash || userRow.password_hash === '!google-sso!') {
+      return res.status(403).json({
+        error: 'password_not_set',
+        code: 'PASSWORD_NOT_SET',
+        message: 'Please complete registration with a username and password before using Google sign-in.',
+        email: emailLower,
+      });
+    }
+
+    // Existing user — link google_sub if missing (best-effort)
+    try {
+      await pool.query(
+        'UPDATE users SET google_sub = COALESCE(google_sub, $1) WHERE id = $2',
+        [payload.sub, userRow.id]
+      );
+    } catch (linkErr) {
+      console.warn('[AUTH/google] google_sub link skipped:', (linkErr as Error).message);
+    }
+
+    // Guards
+    if (!userRow.is_active) {
+      return res.status(403).json({ error: 'account_deactivated', code: 'ACCOUNT_DEACTIVATED', message: 'Account is deactivated' });
+    }
+    if (userRow.role === 'doctor' && (userRow.approval_status === 'pending' || userRow.is_approved === false)) {
+      return res.status(403).json({ error: 'pending_approval', code: 'PENDING_APPROVAL', message: 'Doctor account is awaiting admin approval', userId: userRow.id });
+    }
+    if (userRow.role === 'doctor' && userRow.approval_status === 'rejected') {
+      return res.status(403).json({ error: 'account_rejected', code: 'ACCOUNT_REJECTED', message: 'Account application was rejected' });
+    }
+    if (isDoctorPortal && userRow.role !== 'doctor' && userRow.role !== 'admin') {
+      return res.status(403).json({ error: 'role_mismatch', code: 'ROLE_MISMATCH', message: 'This Google account is not registered as a doctor' });
+    }
+
+    // Issue session (same shape as /login)
+    const sessionToken = generateSessionToken();
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+    await pool.query(
+      `UPDATE sessions SET expires_at = NOW(), logged_out_at = NOW()
+       WHERE user_id = $1 AND expires_at > NOW() AND logged_out_at IS NULL`,
+      [userRow.id]
+    );
+    await pool.query(
+      `INSERT INTO sessions (id, user_id, token, ip_address, user_agent, expires_at, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [`session_${Date.now()}`, userRow.id, sessionToken, req.ip || 'unknown',
+       req.headers['user-agent'] || 'unknown', expiresAt, now]
+    );
+    await pool.query('UPDATE users SET last_login = $1 WHERE id = $2', [now, userRow.id]);
+
+    console.log(`[AUTH/google] Login successful for ${emailLower} (role=${userRow.role})`);
+
+    return res.json({
+      success: true,
+      user: {
+        id: userRow.id,
+        patientId: userRow.patient_id || userRow.id,
+        name: userRow.name,
+        nameThai: userRow.name_thai,
+        email: userRow.email,
+        phone: userRow.phone,
+        avatarUrl: userRow.avatar_url || payload.picture || `https://i.pravatar.cc/150?u=${userRow.id}`,
+        dateOfBirth: userRow.date_of_birth,
+        gender: userRow.gender,
+        role: userRow.role,
+        updatedAt: now.toISOString(),
+      },
+      token: sessionToken,
+    });
+  } catch (error: unknown) {
+    console.error('[AUTH/google] error:', error);
+    res.status(500).json({ error: 'Google sign-in failed' });
+  }
+});
+
 export default router;

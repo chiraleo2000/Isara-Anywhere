@@ -65,6 +65,7 @@ export default defineConfig({
   retries: 0,
   workers,
   maxFailures: 10,
+  forbidOnly: true,
   // Increase fixture timeout to 3 min — 3 browser launches + navigations can be slow
   globalTimeout: IS_CLOUD ? 3_600_000 : 1_800_000,
   globalSetup: './tests/e2e/global-setup.ts',
@@ -136,6 +137,21 @@ export default defineConfig({
       name: 'K-accessibility',
       testMatch: 'group-K-accessibility.ui-test.ts',
       dependencies: ['A-auth'],
+    },
+
+    /* ── HARDENING + SSO (no data dependencies — API + UI smoke) ── */
+    {
+      name: 'M-hardening',
+      testMatch: 'group-M-hardening.ui-test.ts',
+    },
+    {
+      name: 'N-google-sso',
+      testMatch: 'group-N-google-sso.ui-test.ts',
+    },
+    {
+      name: 'O-sso-screenshots',
+      testMatch: 'group-O-sso-screenshots.ui-test.ts',
+      dependencies: ['N-google-sso'],
     },
   ],
 });

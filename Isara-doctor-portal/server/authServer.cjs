@@ -993,6 +993,180 @@ app.post('/auth/login',
   }
 });
 
+// =====================================================
+// GOOGLE SSO — verify ID token, enforce pending_approval, issue JWT
+// =====================================================
+const { OAuth2Client: GoogleOAuth2Client } = require('google-auth-library');
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || process.env.VITE_GOOGLE_CLIENT_ID;
+const googleClient = GOOGLE_CLIENT_ID ? new GoogleOAuth2Client(GOOGLE_CLIENT_ID) : null;
+if (!GOOGLE_CLIENT_ID) {
+  console.warn('[AUTH] GOOGLE_CLIENT_ID not set — /auth/google-auth will return 503');
+}
+
+async function verifyGoogleIdToken(idToken) {
+  const fixture = process.env.GOOGLE_TOKEN_VERIFIER_FIXTURE;
+  if (fixture && process.env.NODE_ENV !== 'production') {
+    // Mode 1: '1'/'true' -> parse idToken itself as JSON payload (per-request).
+    // Mode 2: env value is JSON -> always return that payload.
+    const useTokenAsPayload = fixture === '1' || fixture.toLowerCase() === 'true';
+    try {
+      const p = useTokenAsPayload ? JSON.parse(idToken) : JSON.parse(fixture);
+      if (!p || !p.sub || !p.email) return null;
+      return { sub: p.sub, email: p.email, emailVerified: p.email_verified !== false, name: p.name, picture: p.picture };
+    } catch {
+      return null;
+    }
+  }
+  if (!googleClient) return null;
+  try {
+    const ticket = await googleClient.verifyIdToken({ idToken, audience: GOOGLE_CLIENT_ID });
+    const p = ticket.getPayload();
+    if (!p || !p.sub || !p.email) return null;
+    return { sub: p.sub, email: p.email, emailVerified: !!p.email_verified, name: p.name, picture: p.picture };
+  } catch (err) {
+    console.warn('[AUTH] Google token verification failed:', err.message);
+    return null;
+  }
+}
+
+app.post('/auth/google-auth', async (req, res) => {
+  try {
+    const { idToken } = req.body || {};
+    if (!idToken || typeof idToken !== 'string') {
+      return res.status(400).json({ error: 'idToken is required', code: 'MISSING_TOKEN' });
+    }
+    if (!GOOGLE_CLIENT_ID && !process.env.GOOGLE_TOKEN_VERIFIER_FIXTURE) {
+      return res.status(503).json({ error: 'Google SSO not configured', code: 'SSO_DISABLED' });
+    }
+
+    const payload = await verifyGoogleIdToken(idToken);
+    if (!payload) {
+      return res.status(401).json({ error: 'Invalid Google token', code: 'INVALID_GOOGLE_TOKEN' });
+    }
+    if (!payload.emailVerified) {
+      return res.status(403).json({ error: 'Google email not verified', code: 'EMAIL_NOT_VERIFIED' });
+    }
+
+    const emailLower = payload.email.toLowerCase().trim();
+    const clientIP = getClientIP(req);
+    const clientUserAgent = req.headers['user-agent'] || '';
+
+    let user = await pgFindUserByEmail(emailLower);
+
+    if (!user) {
+      // STRICT MODE: existing accounts only. Unknown email -> 404 NOT_REGISTERED.
+      securityAuditLog({
+        event: 'GOOGLE_SSO_UNKNOWN_EMAIL',
+        severity: 'INFO',
+        email: emailLower, ip: clientIP, source: 'GoogleSSO',
+      });
+      return res.status(404).json({
+        error: 'not_registered',
+        code: 'NOT_REGISTERED',
+        message: 'No doctor account found for this Google email. Please register first.',
+        email: emailLower,
+      });
+    }
+
+    // Require a real password (reject Google-only stub accounts)
+    if (!user.password_hash || user.password_hash === '!google-sso!') {
+      return res.status(403).json({
+        error: 'password_not_set',
+        code: 'PASSWORD_NOT_SET',
+        message: 'Please complete registration with a username and password before using Google sign-in.',
+        email: emailLower,
+      });
+    }
+
+    // Existing user — link google_sub if missing (best-effort)
+    try {
+      await pgPool.query(
+        'UPDATE users SET google_sub = COALESCE(google_sub, $1), updated_at = NOW() WHERE id = $2',
+        [payload.sub, user.id]
+      );
+    } catch (linkErr) {
+      console.warn('[AUTH/google] google_sub link skipped:', linkErr.message);
+    }
+
+    if (user.role !== 'doctor' && user.role !== 'admin') {
+      return res.status(403).json({ error: 'This Google account is not registered as a doctor', code: 'ROLE_MISMATCH' });
+    }
+    if (user.is_active === false) {
+      return res.status(403).json({ error: 'Account is deactivated', code: 'ACCOUNT_DEACTIVATED' });
+    }
+    if (user.approval_status === 'pending' || user.is_approved === false) {
+      return res.status(403).json({
+        error: 'pending_approval',
+        code: 'PENDING_APPROVAL',
+        message: 'Doctor account is awaiting admin approval',
+        userId: user.id,
+      });
+    }
+    if (user.approval_status === 'rejected') {
+      return res.status(403).json({ error: 'Account has been rejected', code: 'ACCOUNT_REJECTED' });
+    }
+
+    // Issue JWT + session + refresh token (mirrors /auth/login)
+    const sessionResult = await pgCreateSession(
+      user.id, user.email, user.role, clientIP, clientUserAgent, null
+    );
+    if (!sessionResult) {
+      return res.status(500).json({ error: 'Failed to create session', code: 'SESSION_ERROR' });
+    }
+    const jwtToken = generateJWT(user);
+    const expiresAt = new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString();
+
+    const refreshTokenRaw = crypto.randomBytes(64).toString('hex');
+    const refreshTokenHash = crypto.createHash('sha256').update(refreshTokenRaw).digest('hex');
+    const refreshTokenExpires = new Date(Date.now() + REFRESH_TOKEN_EXPIRES_DAYS * 24 * 60 * 60 * 1000);
+    const refreshTokenId = `RT-${crypto.randomUUID().substring(0, 12)}`;
+    try {
+      await pgPool.query(
+        `INSERT INTO refresh_tokens (id, user_id, token_hash, device_id, expires_at, ip_address, user_agent)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [refreshTokenId, user.id, refreshTokenHash, null,
+         refreshTokenExpires, clientIP, clientUserAgent.substring(0, 500)]
+      );
+    } catch (rtErr) {
+      console.error('[AUTH/google] refresh token insert failed:', rtErr.message);
+    }
+
+    securityAuditLog({
+      event: 'GOOGLE_SSO_LOGIN_SUCCESS',
+      severity: 'INFO',
+      userId: user.id, email: emailLower, role: user.role, ip: clientIP, source: 'GoogleSSO',
+    });
+
+    return res.json({
+      success: true,
+      token: jwtToken,
+      refreshToken: refreshTokenRaw,
+      sessionToken: sessionResult.token,
+      user: sanitizeUser({
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        nameThai: user.name_thai || user.nameThai,
+        role: user.role,
+        doctorId: user.doctor_id || user.doctorId,
+        isAdmin: user.is_admin || user.isAdmin,
+        adminPrivileges: user.admin_privileges || user.adminPrivileges,
+        specialty: user.specialty,
+        hospitalName: user.hospital_name || user.hospitalName,
+        medicalLicenseNumber: user.medical_license || user.medicalLicenseNumber,
+      }),
+      expiresAt,
+      expiresIn: 10800,
+    });
+  } catch (error) {
+    console.error('[AUTH/google] error:', error);
+    securityAuditLog({
+      event: 'GOOGLE_SSO_ERROR', severity: 'HIGH', error: error.message, ip: getClientIP(req),
+    });
+    return res.status(500).json({ error: 'Google sign-in failed', code: 'GOOGLE_SSO_ERROR' });
+  }
+});
+
 // Logout - A07 Proper session termination (PostgreSQL-only)
 app.post('/auth/logout', async (req, res) => {
   try {

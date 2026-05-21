@@ -10,6 +10,7 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<boolean>;
+  loginWithGoogle: (idToken: string) => Promise<boolean>;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
   refreshUser: () => Promise<void>;
@@ -131,6 +132,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, [navigate]);
 
+  const loginWithGoogle = useCallback(async (idToken: string): Promise<boolean> => {
+    try {
+      setLoading(true);
+      const result = await authService.loginWithGoogle(idToken);
+      if (result.user) {
+        setUser(result.user);
+        const basePath = (result.user.role === 'doctor' || result.user.role === 'admin') ? '/doctor' : '/patient';
+        navigate(`${basePath}/${result.user.id}/dashboard`, { replace: true });
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Google login error:', error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  }, [navigate]);
+
   const logout = useCallback(async () => {
     try {
       await authService.logout();
@@ -165,11 +185,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     user,
     loading,
     login,
+    loginWithGoogle,
     logout,
     isAuthenticated: !!user,
     refreshUser,
     updateUser,
-  }), [user, loading, login, logout, refreshUser, updateUser]);
+  }), [user, loading, login, loginWithGoogle, logout, refreshUser, updateUser]);
 
   return (
     <AuthContext.Provider value={contextValue}>

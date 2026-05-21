@@ -70,16 +70,9 @@ test.describe('Group C — Doctor & Admin Portal Continuous Flow', () => {
       console.log('  ✅ C05: Appointment Pool page');
     });
 
-    await test.step('C06 — Appointment Pool → Medical Consultants', async () => {
-      await navDoctor(doctor.page, 'medical-consultants', 'C06');
-      await assertFullHealth(doctor.page, 'C06');
-      await snap(doctor.page, 'C06-medical-consultants', 'group-C');
-      const body = await doctor.page.locator('body').innerText();
-      expect(/consultant|ที่ปรึกษา|specialist|แพทย์|rating|review/i.test(body)).toBeTruthy();
-      console.log('  ✅ C06: Medical Consultants page');
-    });
+    // C06 — Medical Consultants — REMOVED in Phase 1 (page disabled, will be rebuilt in Phase 2)
 
-    await test.step('C07 — Medical Consultants → Medical Content', async () => {
+    await test.step('C07 — Appointment Pool → Medical Content', async () => {
       await navDoctor(doctor.page, 'medical-content', 'C07');
       await assertFullHealth(doctor.page, 'C07');
       await snap(doctor.page, 'C07-medical-content', 'group-C');

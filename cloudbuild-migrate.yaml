@@ -23,6 +23,38 @@ steps:
         echo "Migration applied."
     secretEnv: [DATABASE_URL]
 
+  - id: apply-appointment-columns-migration
+    name: postgres:15-alpine
+    entrypoint: sh
+    args:
+      - -c
+      - |
+        set -e
+        echo "Ensuring appointment meeting-link columns exist..."
+        DB_URL=$$(printf %s "$$DATABASE_URL" | tr -d '\r\n')
+        psql "$$DB_URL" \
+          -v ON_ERROR_STOP=1 \
+          -f /workspace/scripts/database/migrations/2025-ensure-appointment-columns.sql
+        echo "Column migration done."
+    secretEnv: [DATABASE_URL]
+    waitFor: [apply-google-sub-migration]
+
+  - id: apply-pg-notify-triggers
+    name: postgres:15-alpine
+    entrypoint: sh
+    args:
+      - -c
+      - |
+        set -e
+        echo "Applying PG NOTIFY triggers (v2.2.0)..."
+        DB_URL=$$(printf %s "$$DATABASE_URL" | tr -d '\r\n')
+        psql "$$DB_URL" \
+          -v ON_ERROR_STOP=1 \
+          -f /workspace/scripts/database/v2.2.0-notify-triggers.sql
+        echo "Triggers applied."
+    secretEnv: [DATABASE_URL]
+    waitFor: [apply-appointment-columns-migration]
+
   - id: cleanup-google-sso-stubs
     name: postgres:15-alpine
     entrypoint: sh
@@ -36,7 +68,7 @@ steps:
           -c "DELETE FROM users WHERE password_hash='!google-sso!' AND id NOT IN ('PATIENT-SSO-STUB') AND created_at < NOW() - INTERVAL '1 hour';"
         echo "Cleanup done."
     secretEnv: [DATABASE_URL]
-    waitFor: [apply-google-sub-migration]
+    waitFor: [apply-pg-notify-triggers]
 
   - id: seed-sso-test-users
     name: postgres:15-alpine

@@ -499,6 +499,74 @@ export class AuthService {
   }
 
   /**
+   * Sign in with Google (verifies ID token via /auth/google-auth).
+   * Throws an error with code `PENDING_APPROVAL` if the doctor account
+   * exists but has not been approved yet.
+   */
+  async loginWithGoogle(idToken: string): Promise<{ user: User; token: string }> {
+    if (!idToken) throw new Error('Google ID token is required');
+    console.log('\n========================================');
+    console.log('🔐 GOOGLE SSO LOGIN');
+    console.log('========================================');
+
+    const response = await fetch('/auth/google-auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ idToken }),
+    });
+
+    let result: any = {};
+    try { result = await response.json(); } catch { /* non-JSON body */ }
+
+    if (!response.ok) {
+      const code = result.code || result.error || 'GOOGLE_SSO_ERROR';
+      const message = result.message || result.error || 'Google sign-in failed';
+      const err = new Error(message) as Error & { code?: string; userId?: string; email?: string };
+      err.code = code;
+      err.userId = result.userId;
+      err.email = result.email;
+      throw err;
+    }
+
+    if (!result.user || !result.token) {
+      throw new Error('Invalid response from server');
+    }
+
+    const authUser = result.user;
+    const user: User = {
+      displayName: authUser.name || 'Doctor',
+      id: authUser.id,
+      email: authUser.email,
+      name: authUser.name || 'Doctor',
+      role: authUser.role || 'doctor',
+      doctorId: authUser.doctorId || authUser.id,
+      medicalLicenseNumber: authUser.medicalLicenseNumber || '',
+      isActive: authUser.isActive !== false,
+      emailVerified: authUser.emailVerified !== false,
+      avatarUrl: authUser.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(authUser.name || authUser.email)}`,
+      dateOfBirth: authUser.dateOfBirth,
+      phone: authUser.phone,
+      specialty: authUser.specialty,
+      preferences: authUser.preferences || {
+        theme: 'light',
+        language: 'th',
+        notifications: { email: true, sms: true, push: true },
+      },
+      isAdmin: authUser.isAdmin || false,
+      adminPrivileges: authUser.adminPrivileges || undefined,
+    };
+
+    this.saveLocalSession(user, result.token);
+    if (result.refreshToken) {
+      localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, result.refreshToken);
+    }
+    this.startTokenRefreshTimer(result.token);
+
+    console.log(`✅ Google SSO login successful: ${user.email}`);
+    return { user, token: result.token };
+  }
+
+  /**
    * Logout - clear local session
    */
   async logout(): Promise<void> {

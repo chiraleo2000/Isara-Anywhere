@@ -23,7 +23,7 @@
 substitutions:
   _REGION: asia-southeast1
   _REGISTRY: asia-southeast1-docker.pkg.dev/izara-telemedicine/isara-anywhere-portals
-  _TAG: v1.7.6
+  _TAG: v1.7.7
   # Google OAuth Client ID (also stored in Secret Manager as `google-client-id`).
   # Override at submit time: --substitutions=_GOOGLE_CLIENT_ID=xxx.apps.googleusercontent.com
   _GOOGLE_CLIENT_ID: "724889190329-svf2733fjqklfic9tet9d2qkmhkgmu0l.apps.googleusercontent.com"

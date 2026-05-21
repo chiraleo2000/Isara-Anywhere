@@ -1,5 +1,5 @@
-import { useState, FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect, FormEvent } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import {
   Eye, EyeOff, Mail, Lock, User, Phone, Calendar,
@@ -17,11 +17,14 @@ const GENDERS = [
 export default function RegisterPage() {
   const navigate = useNavigate();
   const { register } = useAuth();
+  const [searchParams] = useSearchParams();
+  const prefilledEmail = searchParams.get('email') || '';
+  const fromGoogle = searchParams.get('source') === 'google';
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({
     // Basic Info
     name: '',
-    email: '',
+    email: prefilledEmail,
     phone: '',
     dateOfBirth: '',
     gender: '',
@@ -42,6 +45,13 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Keep email field synced with query string changes (e.g., from Google SSO redirect)
+  useEffect(() => {
+    if (prefilledEmail) {
+      setForm((f) => (f.email === prefilledEmail ? f : { ...f, email: prefilledEmail }));
+    }
+  }, [prefilledEmail]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -442,6 +452,14 @@ export default function RegisterPage() {
         {renderStepIndicator()}
 
         <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8">
+          {fromGoogle && (
+            <div
+              data-testid="sso-register-banner"
+              className="mb-4 bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 rounded-lg text-sm"
+            >
+              No account was found for <strong>{prefilledEmail || 'your Google email'}</strong>. Please complete registration to link your Google sign-in.
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
               <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm flex items-center gap-2">

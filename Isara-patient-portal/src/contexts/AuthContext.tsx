@@ -7,6 +7,7 @@ interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
+  loginWithGoogle: (idToken: string) => Promise<void>;
   register: (data: RegisterInput) => Promise<void>;
   logout: () => Promise<void>;
   updateUser: (user: User) => void;
@@ -192,6 +193,24 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     saveAuth(data.user, data.token);
   };
 
+  const loginWithGoogle = async (idToken: string) => {
+    const res = await fetch(getApiUrl('/api/auth/google-auth'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ idToken, portal: 'patient' }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      const e = new Error(err.message || err.error || 'Google sign-in failed') as Error & { code?: string; email?: string; userId?: string };
+      e.code = err.code || err.error;
+      e.email = err.email;
+      e.userId = err.userId;
+      throw e;
+    }
+    const data = await res.json();
+    saveAuth(data.user, data.token);
+  };
+
   const register = async (input: RegisterInput) => {
     const res = await fetch(getApiUrl('/api/auth/register'), {
       method: 'POST',
@@ -230,6 +249,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     isLoading,
     isAuthenticated: !!user && !!token,
     login,
+    loginWithGoogle,
     register,
     logout,
     updateUser,

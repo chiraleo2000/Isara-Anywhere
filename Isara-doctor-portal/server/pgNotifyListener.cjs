@@ -90,6 +90,10 @@ async function startPgNotifyListener(pool, io) {
         if (payload.doctor_id) {
           io.to(`doctor-${payload.doctor_id}`).emit(event, payload);
           io.to(`queue-${payload.doctor_id}`).emit(event, payload);
+        } else if (payload.table === 'appointments') {
+          // in_pool / unassigned appointment — broadcast to all doctors/admins watching the queue
+          io.to('admin-notifications').emit('pool-updated', payload);
+          io.to('admin-notifications').emit(event, payload);
         }
         if (payload.patient_id) {
           io.to(`patient-${payload.patient_id}`).emit(event, payload);

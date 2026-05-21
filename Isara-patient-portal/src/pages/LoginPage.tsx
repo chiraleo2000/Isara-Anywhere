@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useSettings } from '../contexts/SettingsContext';
 import { Eye, EyeOff, Mail, Lock, ArrowLeft, CheckCircle, AlertCircle, Loader2, Sun, Moon, Globe } from 'lucide-react';
+import GoogleSignInButton from '../components/GoogleSignInButton';
 
 type ViewMode = 'login' | 'forgot-password' | 'reset-sent';
 
@@ -389,11 +390,33 @@ export default function LoginPage() {
           )}
 
           {viewMode === 'login' && (
-            <LoginFormView
-              tc={tc} email={email} setEmail={setEmail} password={password} setPassword={setPassword}
-              showPassword={showPassword} setShowPassword={setShowPassword} loading={loading}
-              handleLogin={handleLogin} switchToForgotPassword={switchToForgotPassword} t={t}
-            />
+            <>
+              <div className="mb-4 flex justify-center">
+                <GoogleSignInButton
+                  onSuccess={() => navigate('/dashboard')}
+                  onError={(msg) => setError(msg)}
+                  onNotRegistered={(em) => {
+                    const q = em ? `?email=${encodeURIComponent(em)}&source=google` : '?source=google';
+                    navigate(`/register${q}`);
+                  }}
+                  onPasswordNotSet={(em) => {
+                    setError('Please complete registration with a username and password before using Google sign-in.');
+                    const q = em ? `?email=${encodeURIComponent(em)}&source=google` : '?source=google';
+                    setTimeout(() => navigate(`/register${q}`), 1500);
+                  }}
+                />
+              </div>
+              <div className="flex items-center my-4">
+                <div className="flex-1 border-t border-gray-300 dark:border-gray-700" />
+                <span className="mx-3 text-xs text-gray-500">{t('auth.or') || 'OR'}</span>
+                <div className="flex-1 border-t border-gray-300 dark:border-gray-700" />
+              </div>
+              <LoginFormView
+                tc={tc} email={email} setEmail={setEmail} password={password} setPassword={setPassword}
+                showPassword={showPassword} setShowPassword={setShowPassword} loading={loading}
+                handleLogin={handleLogin} switchToForgotPassword={switchToForgotPassword} t={t}
+              />
+            </>
           )}
 
           {viewMode === 'forgot-password' && (

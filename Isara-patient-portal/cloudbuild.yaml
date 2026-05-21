@@ -2,6 +2,11 @@
 # Builds unified Docker image and deploys to Cloud Run
 # PostgreSQL runs on GCE VM (NOT Cloud SQL, NOT embedded PG)
 
+substitutions:
+  _TAG: v1.7.5-login-hotfix
+  _GOOGLE_CLIENT_ID: "724889190329-svf2733fjqklfic9tet9d2qkmhkgmu0l.apps.googleusercontent.com"
+  _MEETING_SERVER_URL: "https://izara-meeting-server-dev-testing-hvht4obouq-as.a.run.app"
+
 steps:
   # Build the unified Docker image
   - name: "gcr.io/cloud-builders/docker"
@@ -10,7 +15,7 @@ steps:
       - "-f"
       - "Dockerfile.unified"
       - "-t"
-      - "asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-patient-portal:v1.6.0"
+      - "asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-patient-portal:${_TAG}"
       - "-t"
       - "asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-patient-portal:latest"
       - "--build-arg"
@@ -19,6 +24,10 @@ steps:
       - "VITE_APP_VERSION=2.0.0"
       - "--build-arg"
       - "VITE_GCP_PROJECT_ID=$PROJECT_ID"
+      - "--build-arg"
+      - "VITE_GOOGLE_CLIENT_ID=${_GOOGLE_CLIENT_ID}"
+      - "--build-arg"
+      - "VITE_MEETING_SERVER_URL=${_MEETING_SERVER_URL}"
       - "."
     dir: "Isara-patient-portal"
 
@@ -35,7 +44,7 @@ steps:
       - "run"
       - "deploy"
       - "izara-patient-portal-dev-testing"
-      - "--image=asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-patient-portal:v1.6.0"
+      - "--image=asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-patient-portal:${_TAG}"
       - "--region=asia-southeast1"
       - "--platform=managed"
       - "--allow-unauthenticated"
@@ -46,12 +55,12 @@ steps:
       - "--max-instances=2"
       - "--timeout=300"
       - "--execution-environment=gen2"
-      - "--set-env-vars=NODE_ENV=production,USE_POSTGRESQL=true,VITE_USE_POSTGRESQL=true,DB_HOST=35.240.157.230,DB_PORT=5432,DB_NAME=izara_phase1,DB_USER=postgres,DB_SSL=false,MEETING_SERVER_URL=https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app,VITE_MEETING_SERVER_URL=https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app,GEMINI_MODEL=gemini-2.5-flash-lite,VITE_GCP_PROJECT_ID=$PROJECT_ID,VITE_GCP_REGION=asia-southeast1"
-      - "--set-secrets=VITE_GOOGLE_MAPS_API_KEY=google-maps-api-key:latest,VITE_GEMINI_API_KEY=gemini-api-key:latest,GEMINI_API_KEY=gemini-api-key:latest,DB_PASSWORD=db-password:latest,DATABASE_URL=database-url:latest,JWT_SECRET=jwt-secret:latest"
+      - "--set-env-vars=NODE_ENV=production,USE_POSTGRESQL=true,VITE_USE_POSTGRESQL=true,DB_HOST=35.240.157.230,DB_PORT=5432,DB_NAME=izara_phase1,DB_USER=postgres,DB_SSL=false,MEETING_SERVER_URL=${_MEETING_SERVER_URL},VITE_MEETING_SERVER_URL=${_MEETING_SERVER_URL},GEMINI_MODEL=gemini-2.5-flash-lite,VITE_GCP_PROJECT_ID=$PROJECT_ID,VITE_GCP_REGION=asia-southeast1"
+      - "--set-secrets=VITE_GOOGLE_MAPS_API_KEY=google-maps-api-key:latest,VITE_GEMINI_API_KEY=gemini-api-key:latest,GEMINI_API_KEY=gemini-api-key:latest,DB_PASSWORD=db-password:latest,DATABASE_URL=database-url:latest,JWT_SECRET=jwt-secret:latest,GOOGLE_CLIENT_ID=google-client-id:latest"
 
 # Store images in Artifact Registry
 images:
-  - "asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-patient-portal:v1.6.0"
+  - "asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-patient-portal:${_TAG}"
   - "asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-patient-portal:latest"
 
 # Build timeout (20 minutes)

@@ -5,6 +5,7 @@
  */
 import React, { useState } from 'react';
 import { useAuth } from '../../components/common/AuthProvider';
+import GoogleSignInButton from '../../components/GoogleSignInButton';
 
 // Email service for password reset and notifications
 const sendEmail = async (to: string, subject: string, body: string): Promise<boolean> => {
@@ -412,6 +413,31 @@ const LoginPage: React.FC = () => {
 
             {/* FORM */}
             {viewMode !== 'pending-approval' && (
+              <>
+                {viewMode === 'login' && (
+                  <div className="mb-4 flex flex-col items-center">
+                    <GoogleSignInButton
+                      onSuccess={() => { /* AuthProvider handles navigation */ }}
+                      onError={(msg) => setError(msg)}
+                      onPendingApproval={() => setViewMode('pending-approval')}
+                      onNotRegistered={(em) => {
+                        setError('No doctor account found for that Google email. Please register first.');
+                        if (em) setFormData({ ...formData, email: em });
+                        setViewMode('register');
+                      }}
+                      onPasswordNotSet={(em) => {
+                        setError('Please complete registration with a username and password before using Google sign-in.');
+                        if (em) setFormData({ ...formData, email: em });
+                        setViewMode('register');
+                      }}
+                    />
+                    <div className="flex items-center w-full mt-4">
+                      <div className="flex-1 border-t border-gray-200" />
+                      <span className="mx-3 text-xs text-gray-500">OR</span>
+                      <div className="flex-1 border-t border-gray-200" />
+                    </div>
+                  </div>
+                )}
               <form onSubmit={handleSubmit} className="space-y-5">
                 {/* NAME */}
                 {viewMode === 'register' && (
@@ -659,6 +685,7 @@ const LoginPage: React.FC = () => {
                   )}
                 </button>
               </form>
+              </>
             )}
 
             {/* Footer */}

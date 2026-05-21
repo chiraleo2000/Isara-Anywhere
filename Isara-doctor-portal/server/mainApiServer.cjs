@@ -240,6 +240,14 @@ io.on('connection', (socket) => {
     console.log(`Joined queue room for doctor ${doctorId}`);
   });
 
+  // Generic room join — allows frontend to subscribe to admin-notifications, etc.
+  socket.on('join', (room) => {
+    if (typeof room === 'string' && room.length < 100) {
+      socket.join(room);
+      console.log(`Socket ${socket.id} joined room: ${room}`);
+    }
+  });
+
   socket.on('disconnect', () => {
     console.log(`🔌 WebSocket client disconnected: ${socket.id}`);
   });
@@ -5278,7 +5286,7 @@ app.get('/api/appointment-pool', authenticateToken, async (req, res) => {
       FROM appointments a
       LEFT JOIN users u_pat ON a.patient_id = u_pat.id
       LEFT JOIN users u_doc ON a.doctor_id = u_doc.id
-      WHERE a.status = 'in_pool'`;
+      WHERE a.status IN ('in_pool', 'pending', 'awaiting_doctor_response')`;
     const params = [];
     let paramIdx = 1;
     

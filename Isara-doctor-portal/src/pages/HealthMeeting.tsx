@@ -167,7 +167,7 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
   const isAdmin = !!(
     doctor.isAdmin === true ||
     doctor.role === 'admin' ||
-    doctor.isAdmin === 'true' ||
+    String(doctor.isAdmin) === 'true' ||
     doctor.email?.includes('admin')
   );
 
@@ -220,14 +220,56 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Load all data on mount - ONLY ONCE, no auto-refresh interval
-  // Auto-refresh was causing performance issues and unnecessary API calls
-  // Data will refresh when user manually clicks Refresh or after confirming/declining appointments
+  // Load all data on mount + subscribe to real-time appointment events via Socket.IO
   useEffect(() => {
     console.log('[HealthMeeting] 🔄 Component mounted, loading data once...');
     loadAllData();
-    // NO interval - data refreshes on user actions only
-  }, []); // Load once on mount
+
+    // Real-time subscription: reconnect to doctor-portal Socket.IO backend for appointment events
+    let socket: any = null;
+    const connectSocket = async () => {
+      try {
+        const { io } = await import('socket.io-client');
+        const backendUrl = (import.meta as any).env?.VITE_API_URL || globalThis.location?.origin || '';
+        socket = io(backendUrl, { transports: ['websocket', 'polling'], reconnectionDelay: 3000 });
+
+        socket.on('connect', () => {
+          console.log('[HealthMeeting] 🔌 Socket.IO connected, joining rooms...');
+          if (doctor.id) socket.emit('join-doctor-room', doctor.id);
+          // Also join admin-notifications to catch in_pool / pool-updated events
+          socket.emit('join', 'admin-notifications');
+        });
+
+        // New appointment in pool (emitted by patient portal pgNotifyListener → doctor portal)
+        socket.on('pool-updated', () => {
+          console.log('[HealthMeeting] 📩 pool-updated received — reloading queue');
+          loadAllData();
+        });
+        socket.on('appointment-created', () => {
+          console.log('[HealthMeeting] 📩 appointment-created received — reloading queue');
+          loadAllData();
+        });
+        // Doctor receives update (e.g. patient cancelled)
+        socket.on('APPOINTMENT_UPDATED', () => {
+          console.log('[HealthMeeting] 📩 APPOINTMENT_UPDATED received — reloading data');
+          loadAllData();
+        });
+        socket.on('DATA_CHANGED', (payload: any) => {
+          if (payload?.table === 'appointments') {
+            console.log('[HealthMeeting] 📩 DATA_CHANGED appointments — reloading data');
+            loadAllData();
+          }
+        });
+      } catch (err) {
+        console.warn('[HealthMeeting] Socket.IO unavailable, using manual refresh only:', err);
+      }
+    };
+    connectSocket();
+
+    return () => {
+      if (socket) socket.disconnect();
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadAllData = async () => {
     setLoading(true);
@@ -267,12 +309,13 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
   };
 
   // Helper: Map raw appointment data to AppointmentRequest
+  // API returns snake_case columns (doctor_id, patient_id, etc.) — normalise to camelCase here
   const mapRawToAppointmentRequest = (apt: any): AppointmentRequest => ({
     id: apt.id,
-    patientId: apt.patientId || apt.userId || '',
-    patientName: apt.patientName || apt.user?.name || 'Unknown Patient',
-    patientEmail: apt.patientEmail || apt.email || '',
-    patientPhone: apt.patientPhone || apt.phone,
+    patientId: apt.patientId || apt.patient_id || apt.userId || '',
+    patientName: apt.patientName || apt.patient_name || apt.user?.name || 'Unknown Patient',
+    patientEmail: apt.patientEmail || apt.patient_email || apt.email || '',
+    patientPhone: apt.patientPhone || apt.patient_phone || apt.phone,
     requestedDate: apt.appointmentDate || apt.date || apt.preferredDates?.[0] || new Date().toISOString(),
     preferredTime: apt.appointmentTime || apt.time || apt.preferredTimeSlot || '',
     preferredDates: apt.preferredDates || [],
@@ -282,8 +325,8 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
     symptomDescription: apt.symptomDescription || apt.aiAnalysis || '',
     urgency: apt.urgency || 'normal',
     status: apt.status || 'pending',
-    assignedDoctorId: apt.assignedDoctorId || apt.doctorId,
-    assignedDoctorName: apt.assignedDoctorName || apt.doctorName,
+    assignedDoctorId: apt.assignedDoctorId || apt.doctorId || apt.doctor_id,
+    assignedDoctorName: apt.assignedDoctorName || apt.doctorName || apt.doctor_name,
     createdAt: apt.createdAt || new Date().toISOString(),
     updatedAt: apt.updatedAt,
     notes: apt.notes || '',
@@ -292,9 +335,14 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
   });
 
   // Helper: Check if appointment is assigned to current doctor
+  // NOTE: raw API rows use snake_case (doctor_id), mapped objects use camelCase (doctorId)
   const isAssignedToCurrentDoctor = (apt: any): boolean => {
+    // in_pool appointments (no doctor assigned) are visible to ALL doctors so they can claim them
+    const aptDoctorId = apt.doctorId || apt.doctor_id;
+    if (!aptDoctorId) return true;
+
     const doctorIdentifier = doctor.id || doctor.email;
-    return apt.doctorId === doctorIdentifier ||
+    return aptDoctorId === doctorIdentifier ||
       apt.assignedDoctorId === doctorIdentifier ||
       apt.adminAssignedDoctorId === doctorIdentifier ||
       apt.doctorEmail === doctor.email ||
@@ -527,7 +575,9 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
 
         // CRITICAL: Use EXACT SAME logic as Dashboard (lines 180-185 of DoctorDashboard.tsx)
         // This ensures both pages show the same appointments
+        // NOTE: raw API rows use snake_case; mapped objects use camelCase — check both
         const matchesDoctorById = apt.doctorId === doctor.id ||
+          apt.doctor_id === doctor.id ||
           apt.assignedDoctorId === doctor.id ||
           apt.adminAssignedDoctorId === doctor.id ||
           apt.confirmedBy === doctor.id;
@@ -535,15 +585,18 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
         // ALSO match by email as fallback (for doctors without userId in session)
         const matchesDoctorByEmail = doctor.email && (
           apt.doctorEmail === doctor.email ||
+          apt.doctor_email === doctor.email ||
           apt.assignedDoctorEmail === doctor.email ||
           apt.confirmedByEmail === doctor.email ||
+          apt.confirmed_by_email === doctor.email ||
           apt.doctorId === doctor.email ||
+          apt.doctor_id === doctor.email ||
           apt.assignedDoctorId === doctor.email ||
           apt.confirmedBy === doctor.email
         );
 
         const matches = matchesDoctorById || matchesDoctorByEmail;
-        console.log(`[HealthMeeting] 🔍 apt ${apt.id}: status=${apt.status}, doctorId=${apt.doctorId}, confirmedBy=${apt.confirmedBy} => doctorMatch=${matches}`);
+        console.log(`[HealthMeeting] 🔍 apt ${apt.id}: status=${apt.status}, doctorId=${apt.doctorId || apt.doctor_id}, confirmedBy=${apt.confirmedBy} => doctorMatch=${matches}`);
 
         return matches;
       });
@@ -555,12 +608,12 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
       const convertedMeetings: ScheduledMeeting[] = doctorAppointments.map((apt: any) => {
         // Build participant from patient info
         const patientParticipant: MeetingParticipant = {
-          id: apt.patientId || 'unknown',
-          name: apt.patientName || 'Unknown Patient',
+          id: apt.patientId || apt.patient_id || 'unknown',
+          name: apt.patientName || apt.patient_name || 'Unknown Patient',
           role: 'patient',
-          email: apt.patientEmail || apt.email || 'N/A',
-          phone: apt.patientPhone || apt.phone || 'N/A',
-          photo: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(apt.patientId || 'patient')}`,
+          email: apt.patientEmail || apt.patient_email || apt.email || 'N/A',
+          phone: apt.patientPhone || apt.patient_phone || apt.phone || 'N/A',
+          photo: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(apt.patientId || apt.patient_id || 'patient')}`,
           status: 'available',
         };
 
@@ -572,7 +625,7 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
           specialty: doctor.specialty || 'General Practice',
           email: doctor.email || '',
           phone: '',
-          photo: doctor.photo || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(doctor.id)}`,
+          photo: doctor.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(doctor.id)}`,
           status: 'available',
         };
 
@@ -580,10 +633,15 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
         const meetingStatus = getMeetingStatus(apt.status);
         const meetingType = getMeetingType(apt);
 
-        // Normalize date - handle both "2025-12-11" and "2025-12-11T00:00:00.000Z" formats
-        const rawDate = apt.appointmentDate || apt.date || apt.preferredDates?.[0] || new Date().toISOString();
+        // Normalize date — confirmed appointments use confirmed_date, fallback to requested/appointment dates
+        // Raw API rows use snake_case; handle both
+        const rawDate = apt.confirmed_date || apt.confirmedDate ||
+          apt.appointmentDate || apt.appointment_date ||
+          apt.date || apt.preferredDates?.[0] || new Date().toISOString();
         const appointmentDate = rawDate.split('T')[0];
-        const appointmentTime = apt.appointmentTime || apt.time || apt.preferredTimeSlot || '09:00';
+        const appointmentTime = apt.confirmed_time || apt.confirmedTime ||
+          apt.appointmentTime || apt.appointment_time ||
+          apt.time || apt.preferredTimeSlot || '09:00';
 
         return {
           id: apt.id || apt.appointmentId,
@@ -592,12 +650,13 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
           time: appointmentTime,
           duration: apt.duration || 30,
           // For doctors, prioritize doctorMeetingUrl (Jitsi host URL) over generic meetingLink
-          meetingLink: apt.doctorMeetingUrl || apt.meetingLink || apt.meetLink || `https://meet.jit.si/Izara-${apt.id || apt.appointmentId}`,
+          // NOTE: raw API rows use snake_case; normalise both here
+          meetingLink: apt.doctorMeetingUrl || apt.doctor_meeting_url || apt.meetingLink || apt.meeting_link || apt.meetLink || apt.meet_link || `https://meet.jit.si/Izara-${apt.id || apt.appointmentId}`,
           // Store all meeting URLs for reference
-          doctorMeetingUrl: apt.doctorMeetingUrl,
-          patientMeetingUrl: apt.patientMeetingUrl || apt.meetingLink,
-          guestMeetingUrl: apt.guestMeetingUrl,
-          jitsiRoomName: apt.jitsiRoomName || apt.meetCode,
+          doctorMeetingUrl: apt.doctorMeetingUrl || apt.doctor_meeting_url,
+          patientMeetingUrl: apt.patientMeetingUrl || apt.patient_meeting_url || apt.meetingLink || apt.meeting_link,
+          guestMeetingUrl: apt.guestMeetingUrl || apt.guest_meeting_url,
+          jitsiRoomName: apt.jitsiRoomName || apt.jitsi_room_name || apt.meetCode,
           participants: [patientParticipant, doctorParticipant],
           type: meetingType,
           status: meetingStatus,

@@ -57,6 +57,15 @@ async function apiLogin(ctx: any, baseUrl: string, creds: { email: string; passw
   return '';
 }
 
+// ── SSO test seam: allow fixture-based Google token verification locally ─────
+// This lets Group N tests POST a raw JSON idToken to the backend without
+// needing a real Google sign-in.  NEVER set on production Cloud Run — the
+// backends guard with `process.env.NODE_ENV !== 'production'`.
+if (!IS_CLOUD && !process.env.GOOGLE_TOKEN_VERIFIER_FIXTURE) {
+  process.env.GOOGLE_TOKEN_VERIFIER_FIXTURE = '1';
+  console.log('  🔑 Set GOOGLE_TOKEN_VERIFIER_FIXTURE=1 for local SSO tests');
+}
+
 // ── Warmup — wake cold Cloud Run containers before auth ─────────────────────
 async function warmupPortal(ctx: any, url: string, label: string, maxRetries = 10): Promise<void> {
   for (let i = 1; i <= maxRetries; i++) {

@@ -152,27 +152,110 @@ const pool = new Pool({
 
 // ========== CRITICAL: Pool error handler to prevent crashes ==========
 let dbAvailable = true;
-pool.on('error', (err) => {
-  console.error('❌ [Pool] Unexpected PostgreSQL error:', err.message);
-  dbAvailable = false;
-  // Attempt reconnection after 5 seconds
-  setTimeout(async () => {
+// Exponential backoff schedule for pool reconnection (ms)
+const RECONNECT_BACKOFFS_MS = [5000, 15000, 45000, 120000];
+let reconnectAttempt = 0;
+let reconnectTimer = null;
+
+function scheduleReconnect() {
+  if (reconnectTimer) return; // already scheduled
+  const delay = RECONNECT_BACKOFFS_MS[Math.min(reconnectAttempt, RECONNECT_BACKOFFS_MS.length - 1)];
+  reconnectTimer = setTimeout(async () => {
+    reconnectTimer = null;
     try {
       await pool.query('SELECT 1');
       dbAvailable = true;
+      reconnectAttempt = 0;
       console.log('✅ [Pool] Database reconnected');
+      // Notify any connected clients that DB is back
+      try { io?.emit?.('db-status', { status: 'connected' }); } catch { /* io may not exist yet */ }
     } catch (error_) {
-      console.error('❌ [Pool] Reconnection failed:', error_.message);
+      reconnectAttempt++;
+      console.error(`❌ [Pool] Reconnection attempt ${reconnectAttempt} failed:`, error_.message);
+      scheduleReconnect();
     }
-  }, 5000);
+  }, delay);
+}
+
+pool.on('error', (err) => {
+  console.error('❌ [Pool] Unexpected PostgreSQL error:', err.message);
+  dbAvailable = false;
+  try { io?.emit?.('db-status', { status: 'disconnected' }); } catch { /* io may not exist yet */ }
+  scheduleReconnect();
 });
 
-// Helper: safe DB query with fallback
+// Helper: safe DB query with fallback and retry on transient errors
+const TRANSIENT_PG_ERRORS = new Set(['ECONNRESET', 'ETIMEDOUT', '57P01', '57P02', '57P03', '08006', '08001']);
 async function safeQuery(text, params = []) {
   if (!dbAvailable) {
     throw new Error('Database temporarily unavailable');
   }
-  return pool.query(text, params);
+  let lastErr;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      return await pool.query(text, params);
+    } catch (err) {
+      lastErr = err;
+      const code = err.code || err.errno;
+      if (!TRANSIENT_PG_ERRORS.has(code)) break;
+      console.warn(`[safeQuery] transient error ${code}, retry ${attempt + 1}/2: ${(text || '').slice(0, 80)}`);
+      await new Promise(r => setTimeout(r, 200 * (attempt + 1)));
+    }
+  }
+  console.error('[safeQuery] failed:', {
+    code: lastErr?.code,
+    message: lastErr?.message,
+    sql: (text || '').slice(0, 120),
+    paramCount: params.length,
+  });
+  throw lastErr;
+}
+
+// ============================================================================
+// MEETING FK VALIDATION + ROOT-CAUSE-FRIENDLY ERROR MAPPING
+// ============================================================================
+
+/**
+ * Pre-validate that referenced appointment/doctor/patient rows exist before
+ * inserting a meeting record. Prevents the historical "silent in-memory only"
+ * failure mode where FK errors were swallowed and meetings vanished on restart.
+ */
+async function validateMeetingRefs({ appointmentId, doctorId, patientId }) {
+  const missing = [];
+  if (!dbAvailable) return { ok: false, missing: ['database_unavailable'], degraded: true };
+  const checks = [];
+  if (appointmentId) checks.push(['appointment', 'SELECT 1 FROM appointments WHERE id = $1', appointmentId]);
+  if (doctorId) checks.push(['doctor', 'SELECT 1 FROM users WHERE id = $1 AND role = \'doctor\'', doctorId]);
+  if (patientId) checks.push(['patient', 'SELECT 1 FROM users WHERE id = $1', patientId]);
+  for (const [name, sql, id] of checks) {
+    try {
+      const r = await pool.query(sql, [id]);
+      if (r.rows.length === 0) missing.push(`${name}:${id}`);
+    } catch (err) {
+      // Treat lookup error as non-blocking — INSERT will fail with a real FK error if applicable
+      console.warn(`[validateMeetingRefs] ${name} lookup failed:`, err.message);
+    }
+  }
+  return { ok: missing.length === 0, missing };
+}
+
+/** Map PG error codes to a clean HTTP response shape for meeting endpoints. */
+function mapMeetingDbError(err, requestId) {
+  if (err?.code === '23503') {
+    return { status: 400, body: { error: 'invalid_refs', message: 'Referenced appointment, doctor, or patient does not exist', detail: err.detail, requestId } };
+  }
+  if (err?.code === '23505') {
+    return { status: 409, body: { error: 'conflict', message: 'Meeting already exists for this appointment', detail: err.detail, requestId } };
+  }
+  if (err?.message === 'Database temporarily unavailable') {
+    return { status: 503, body: { error: 'database_unavailable', message: 'Meeting service temporarily unavailable', requestId } };
+  }
+  return { status: 500, body: { error: 'internal_error', message: 'Failed to process meeting request', requestId } };
+}
+
+/** Generate a short request id for tracing in client + server logs. */
+function newRequestId() {
+  return `req_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
 // Helper: sanitize HTML to prevent XSS in chat/text content
@@ -346,7 +429,7 @@ const server = http.createServer(app);
 const io = new SocketServer(server, {
   cors: {
     origin: (origin, callback) => {
-      if (!origin || ALLOWED_ORIGINS.includes(origin)) {
+      if (isOriginAllowed(origin)) {
         callback(null, true);
       } else if (isProduction) {
         console.warn(`⚠️ Blocked Socket.IO from origin: ${origin}`);
@@ -360,13 +443,14 @@ const io = new SocketServer(server, {
   }
 });
 
-// CORS - support web portals
-const ALLOWED_ORIGINS = process.env.CORS_ORIGINS?.split(',') || [
+// CORS - support web portals. Supports literal origins AND glob patterns with `*`
+// (e.g. `https://*.run.app`) via CORS_ORIGINS env var.
+const RAW_ALLOWED_ORIGINS = (process.env.CORS_ORIGINS?.split(',').map(s => s.trim()).filter(Boolean)) || [
   'http://localhost:3005', 'http://localhost:3010',
   'http://127.0.0.1:3005', 'http://127.0.0.1:3010',
 ];
 if (isProduction) {
-  ALLOWED_ORIGINS.push(
+  RAW_ALLOWED_ORIGINS.push(
     'https://izara-patient-portal-724889190329.asia-southeast1.run.app',
     'https://izara-doctor-portal-724889190329.asia-southeast1.run.app',
     'https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app',
@@ -374,10 +458,23 @@ if (isProduction) {
     'https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app'
   );
 }
+// Split into literal set + regex patterns for entries containing `*`
+const ALLOWED_ORIGIN_LITERALS = new Set(RAW_ALLOWED_ORIGINS.filter(o => !o.includes('*')));
+const ALLOWED_ORIGIN_PATTERNS = RAW_ALLOWED_ORIGINS
+  .filter(o => o.includes('*'))
+  .map(glob => new RegExp('^' + glob.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replaceAll('*', '.*') + '$'));
+// Back-compat export (kept as array for any module that imports it)
+const ALLOWED_ORIGINS = [...ALLOWED_ORIGIN_LITERALS];
+
+function isOriginAllowed(origin) {
+  if (!origin) return true; // curl / internal / same-origin
+  if (ALLOWED_ORIGIN_LITERALS.has(origin)) return true;
+  return ALLOWED_ORIGIN_PATTERNS.some(re => re.test(origin));
+}
+
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (curl, internal)
-    if (!origin || ALLOWED_ORIGINS.includes(origin)) {
+    if (isOriginAllowed(origin)) {
       callback(null, true);
     } else if (isProduction) {
       console.warn(`[CORS] Blocked origin: ${origin}`);
@@ -612,13 +709,49 @@ app.get('/api/meetings/active', async (req, res) => {
 
 // Create new meeting room (primary endpoint — requires auth)
 app.post('/api/meetings/create', authenticateToken, async (req, res) => {
+  const requestId = newRequestId();
   try {
     const { appointmentId, patientId, doctorId, patientName, doctorName, scheduledTime, guestInvites, roomName: providedRoomName } = req.body;
-    
+
+    // Pre-validate FK references so we fail fast with a clear 400 instead of
+    // silently falling back to in-memory storage (root cause of "meeting lost
+    // after restart" reports).
+    const refCheck = await validateMeetingRefs({ appointmentId, doctorId, patientId });
+    if (!refCheck.ok && !refCheck.degraded) {
+      console.warn(`[Meeting:${requestId}] invalid refs:`, refCheck.missing);
+      return res.status(400).json({
+        error: 'invalid_refs',
+        message: 'Cannot create meeting: referenced records do not exist',
+        missing: refCheck.missing,
+        requestId,
+      });
+    }
+
+    // Idempotency: if a meeting already exists for this appointment, return it
+    if (appointmentId) {
+      try {
+        const existing = await pool.query(
+          'SELECT * FROM meeting_records WHERE appointment_id = $1 ORDER BY created_at DESC LIMIT 1',
+          [appointmentId]
+        );
+        if (existing.rows.length > 0) {
+          const m = existing.rows[0];
+          console.log(`[Meeting:${requestId}] returning existing meeting ${m.id} for appointment ${appointmentId}`);
+          return res.json({
+            success: true, idempotent: true, meeting: m, meetingId: m.id,
+            roomName: m.room_name,
+            urls: { base: m.meeting_url, doctor: m.doctor_url, patient: m.patient_url, guest: m.guest_url },
+            requestId,
+          });
+        }
+      } catch (lookupErr) {
+        console.warn(`[Meeting:${requestId}] idempotency lookup failed:`, lookupErr.message);
+      }
+    }
+
     const meetingId = uuidv4();
-    // Use the doctor-provided room name if available (ensures patient joins the same room)
     const roomName = providedRoomName || `izara-${appointmentId?.substring(0, 12) || meetingId.substring(0, 8)}-${Date.now().toString(36)}`;
-    
+
     // Jitsi URL parameters
     const params = new URLSearchParams();
     params.set('config.prejoinPageEnabled', 'true');
@@ -633,29 +766,45 @@ app.post('/api/meetings/create', authenticateToken, async (req, res) => {
     params.set('config.localRecording.enabled', 'true');
     params.set('interfaceConfig.APP_NAME', 'Izara Telemedicine');
     params.set('interfaceConfig.SHOW_PROMOTIONAL_CLOSE_PAGE', 'false');
-    
+
     const meetingUrl = `https://${JITSI_DOMAIN}/${roomName}#${params.toString()}`;
     const doctorUrl = `${meetingUrl}&userInfo.displayName=${encodeURIComponent(doctorName || 'Doctor')}`;
     const patientUrl = `${meetingUrl}&userInfo.displayName=${encodeURIComponent(patientName || 'Patient')}`;
     const guestUrl = `${meetingUrl}&userInfo.displayName=Guest`;
-    
-    // Insert into database
-    const result = await pool.query(
-      `INSERT INTO meeting_records (
-        id, appointment_id, doctor_id, patient_id, room_name, jitsi_domain,
-        meeting_url, doctor_url, patient_url, guest_url, status, meeting_config, created_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW())
-      RETURNING *`,
-      [
-        meetingId, appointmentId, doctorId, patientId, roomName, JITSI_DOMAIN,
-        meetingUrl, doctorUrl, patientUrl, guestUrl, 'scheduled',
-        JSON.stringify({
-          lobbyEnabled: true, recordingEnabled: true, transcriptionEnabled: true,
-          scheduledTime, guestInvites: guestInvites || []
-        })
-      ]
-    );
-    
+
+    // Insert into database. If DB is degraded, still register in-memory so the
+    // meeting can start, but tell the caller persistence is degraded.
+    let persistedRow = null;
+    let persistedToDb = false;
+    if (dbAvailable) {
+      try {
+        const result = await pool.query(
+          `INSERT INTO meeting_records (
+            id, appointment_id, doctor_id, patient_id, room_name, jitsi_domain,
+            meeting_url, doctor_url, patient_url, guest_url, status, meeting_config, created_at
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW())
+          RETURNING *`,
+          [
+            meetingId, appointmentId, doctorId, patientId, roomName, JITSI_DOMAIN,
+            meetingUrl, doctorUrl, patientUrl, guestUrl, 'scheduled',
+            JSON.stringify({
+              lobbyEnabled: true, recordingEnabled: true, transcriptionEnabled: true,
+              scheduledTime, guestInvites: guestInvites || []
+            })
+          ]
+        );
+        persistedRow = result.rows[0];
+        persistedToDb = true;
+      } catch (insertErr) {
+        // FK / unique conflicts get a proper HTTP code; everything else 500.
+        const mapped = mapMeetingDbError(insertErr, requestId);
+        console.error(`[Meeting:${requestId}] insert failed (${insertErr.code}):`, insertErr.message);
+        return res.status(mapped.status).json(mapped.body);
+      }
+    } else {
+      console.warn(`[Meeting:${requestId}] DB unavailable — creating meeting in-memory only (will not survive restart)`);
+    }
+
     // Store guest invites if provided
     if (guestInvites && guestInvites.length > 0) {
       meetingInvites.set(meetingId, guestInvites.map(g => ({
@@ -663,87 +812,121 @@ app.post('/api/meetings/create', authenticateToken, async (req, res) => {
         role: g.role || 'guest', invitedAt: new Date().toISOString(), status: 'pending'
       })));
     }
-    
-    console.log(`[Meeting] Created meeting ${meetingId} for appointment ${appointmentId}`);
-    
-    // Store in activeMeetings for fallback
+
+    console.log(`[Meeting:${requestId}] created ${meetingId} for appointment ${appointmentId} (persisted=${persistedToDb})`);
+
+    // Store in activeMeetings for fast lookup + restart-rehydration
     activeMeetings.set(meetingId, {
       meetingId, appointmentId, roomName, status: 'scheduled',
       doctorId, patientId, createdAt: new Date().toISOString(),
       urls: { base: meetingUrl, doctor: doctorUrl, patient: patientUrl, guest: guestUrl }
     });
-    
+
     res.json({
       success: true,
-      meeting: result.rows[0],
+      persisted: persistedToDb,
+      meeting: persistedRow || {
+        id: meetingId, appointment_id: appointmentId, doctor_id: doctorId, patient_id: patientId,
+        room_name: roomName, meeting_url: meetingUrl, status: 'scheduled',
+      },
       meetingId,
       roomName,
-      urls: { base: meetingUrl, doctor: doctorUrl, patient: patientUrl, guest: guestUrl }
+      urls: { base: meetingUrl, doctor: doctorUrl, patient: patientUrl, guest: guestUrl },
+      requestId,
     });
-    
+
   } catch (error) {
-    console.error('[Meeting] Create error:', error);
-    if (error.code === '23503') {
-      return res.status(400).json({ error: 'Referenced record not found', detail: error.detail });
-    }
-    if (error.code === '23503') {
-      return res.status(400).json({ error: 'Referenced record not found', detail: error.detail });
-    }
-    if (error.code === '23503') {
-      return res.status(400).json({ error: 'Referenced record not found', detail: error.detail });
-    }
-    res.status(500).json({ error: 'Failed to create meeting' });
+    console.error(`[Meeting:${requestId}] unexpected error:`, error);
+    const mapped = mapMeetingDbError(error, requestId);
+    res.status(mapped.status).json(mapped.body);
   }
 });
 
 // Alias: /api/meeting/create (alternative endpoint — requires auth)
 app.post('/api/meeting/create', authenticateToken, async (req, res) => {
+  const requestId = newRequestId();
   try {
     const { appointmentId, patientId, doctorId, title, guestInvites } = req.body;
-    
+
+    // Same FK pre-validation as primary endpoint — no more silent in-memory fallback.
+    const refCheck = await validateMeetingRefs({ appointmentId, doctorId, patientId });
+    if (!refCheck.ok && !refCheck.degraded) {
+      return res.status(400).json({
+        error: 'invalid_refs',
+        message: 'Cannot create meeting: referenced records do not exist',
+        missing: refCheck.missing,
+        requestId,
+      });
+    }
+
+    // Idempotency for this alias too
+    if (appointmentId && dbAvailable) {
+      try {
+        const existing = await pool.query(
+          'SELECT id, room_name, meeting_url FROM meeting_records WHERE appointment_id = $1 ORDER BY created_at DESC LIMIT 1',
+          [appointmentId]
+        );
+        if (existing.rows.length > 0) {
+          const m = existing.rows[0];
+          return res.json({
+            success: true, idempotent: true, meetingId: m.id, roomName: m.room_name,
+            meetingUrl: m.meeting_url,
+            urls: { base: m.meeting_url, doctor: m.meeting_url, patient: m.meeting_url, guest: m.meeting_url },
+            requestId,
+          });
+        }
+      } catch { /* fall through */ }
+    }
+
     const meetingId = uuidv4();
     const roomName = `izara-${appointmentId?.substring(0, 12) || meetingId.substring(0, 8)}-${Date.now().toString(36)}`;
     const meetingUrl = `https://${JITSI_DOMAIN}/${roomName}`;
-    
-    try {
-      await pool.query(
-        `INSERT INTO meeting_records (
-          id, appointment_id, doctor_id, patient_id, room_name, jitsi_domain,
-          meeting_url, doctor_url, patient_url, guest_url, status, meeting_config, created_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW())
-        ON CONFLICT DO NOTHING`,
-        [
-          meetingId, appointmentId || null, doctorId || null, patientId || null,
-          roomName, JITSI_DOMAIN, meetingUrl, meetingUrl, meetingUrl, meetingUrl,
-          'scheduled', JSON.stringify({ title: title || 'Izara Consultation', guestInvites: guestInvites || [] })
-        ]
-      );
-    } catch (error_) {
-      console.log('[Meeting] DB insert skipped (FK):', error_.message);
+
+    let persistedToDb = false;
+    if (dbAvailable) {
+      try {
+        await pool.query(
+          `INSERT INTO meeting_records (
+            id, appointment_id, doctor_id, patient_id, room_name, jitsi_domain,
+            meeting_url, doctor_url, patient_url, guest_url, status, meeting_config, created_at
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW())`,
+          [
+            meetingId, appointmentId || null, doctorId || null, patientId || null,
+            roomName, JITSI_DOMAIN, meetingUrl, meetingUrl, meetingUrl, meetingUrl,
+            'scheduled', JSON.stringify({ title: title || 'Izara Consultation', guestInvites: guestInvites || [] })
+          ]
+        );
+        persistedToDb = true;
+      } catch (insertErr) {
+        const mapped = mapMeetingDbError(insertErr, requestId);
+        console.error(`[Meeting:${requestId}] alias insert failed (${insertErr.code}):`, insertErr.message);
+        return res.status(mapped.status).json(mapped.body);
+      }
     }
-    
+
     if (guestInvites && guestInvites.length > 0) {
       meetingInvites.set(meetingId, guestInvites.map(g => ({
         id: uuidv4(), meetingId, name: g.name, email: g.email,
         role: g.role || 'guest', invitedAt: new Date().toISOString(), status: 'pending'
       })));
     }
-    
-    // Store in activeMeetings for fallback
+
     activeMeetings.set(meetingId, {
       meetingId, appointmentId, roomName, status: 'scheduled',
       doctorId, patientId, createdAt: new Date().toISOString()
     });
-    
+
     res.json({
-      success: true, meetingId, roomName, meetingUrl,
+      success: true, persisted: persistedToDb, meetingId, roomName, meetingUrl,
       title: title || 'Izara Consultation',
-      urls: { base: meetingUrl, doctor: meetingUrl, patient: meetingUrl, guest: meetingUrl }
+      urls: { base: meetingUrl, doctor: meetingUrl, patient: meetingUrl, guest: meetingUrl },
+      requestId,
     });
-    
+
   } catch (error) {
-    console.error('[Meeting] Create error:', error);
-    res.status(500).json({ error: 'Failed to create meeting' });
+    console.error(`[Meeting:${requestId}] alias unexpected error:`, error);
+    const mapped = mapMeetingDbError(error, requestId);
+    res.status(mapped.status).json(mapped.body);
   }
 });
 
@@ -773,6 +956,46 @@ app.get('/api/meetings/:id', optionalAuth, async (req, res) => {
     console.error('[Meeting] Get error:', error);
     res.status(500).json({ error: 'Failed to get meeting' });
   }
+});
+
+// Diagnostic: Get meeting health (no auth) — used by clients + e2e tests to
+// distinguish "missing", "in-memory only", and "fully persisted" states.
+app.get('/api/meetings/:id/health', async (req, res) => {
+  const { id } = req.params;
+  let inDb = false;
+  let dbRow = null;
+  if (dbAvailable) {
+    try {
+      const r = await pool.query(
+        'SELECT id, status, created_at, started_at, ended_at FROM meeting_records WHERE id::text = $1 OR appointment_id = $1 LIMIT 1',
+        [id]
+      );
+      if (r.rows.length > 0) {
+        inDb = true;
+        dbRow = r.rows[0];
+      }
+    } catch (err) {
+      console.warn('[Meeting:health] DB lookup error:', err.message);
+    }
+  }
+  const memEntry = activeMeetings.get(id) || Array.from(activeMeetings.values()).find(m => m.appointmentId === id);
+  let lastEventAt = null;
+  try {
+    const session = activeTranscriptions.get(id);
+    if (session?.lastSegmentAt) lastEventAt = session.lastSegmentAt;
+  } catch { /* ignore */ }
+  res.json({
+    meetingId: id,
+    inDb,
+    inMemory: !!memEntry,
+    dbStatus: dbRow?.status || null,
+    memoryStatus: memEntry?.status || null,
+    startedAt: dbRow?.started_at || null,
+    endedAt: dbRow?.ended_at || null,
+    createdAt: dbRow?.created_at || memEntry?.createdAt || null,
+    lastEventAt,
+    databaseConnected: dbAvailable,
+  });
 });
 
 // Get meeting status (no auth)
@@ -4265,6 +4488,31 @@ const startServer = async () => {
       }, 15000); // Retry every 15 seconds
     }
     
+    // Rehydrate in-memory activeMeetings from DB so meetings survive restarts.
+    // Window: 24 hours covers typical consultation cycles.
+    if (dbAvailable) {
+      try {
+        const rehydrate = await pool.query(
+          `SELECT id, appointment_id, doctor_id, patient_id, room_name, status,
+                  meeting_url, doctor_url, patient_url, guest_url, created_at
+           FROM meeting_records
+           WHERE status IN ('scheduled','active','waiting','in_progress')
+             AND created_at > NOW() - INTERVAL '24 hours'`
+        );
+        for (const m of rehydrate.rows) {
+          activeMeetings.set(m.id, {
+            meetingId: m.id, appointmentId: m.appointment_id, roomName: m.room_name,
+            status: m.status, doctorId: m.doctor_id, patientId: m.patient_id,
+            createdAt: m.created_at?.toISOString?.() || m.created_at,
+            urls: { base: m.meeting_url, doctor: m.doctor_url, patient: m.patient_url, guest: m.guest_url },
+          });
+        }
+        console.log(`✅ Rehydrated ${rehydrate.rows.length} active meetings from DB`);
+      } catch (rehydrateErr) {
+        console.warn('⚠️ Meeting rehydration failed:', rehydrateErr.message);
+      }
+    }
+
     // Start PG LISTEN/NOTIFY listener for cross-portal real-time sync
     if (dbAvailable) {
       try {
@@ -4293,9 +4541,24 @@ const startServer = async () => {
       `);
     });
 
-    // Memory cleanup: purge stale in-memory data every 30 minutes
+    // Memory cleanup: purge stale in-memory data every 30 minutes.
+    // Prevents unbounded growth of activeMeetings / aux maps over long uptimes.
     setInterval(() => {
       const staleThreshold = Date.now() - 2 * 60 * 60 * 1000; // 2 hours
+      const prunedMeetingIds = [];
+
+      // Prune completed/ended meetings older than threshold
+      for (const [key, meeting] of activeMeetings.entries()) {
+        const endedAt = meeting?.endedAt || meeting?.completedAt;
+        const status = meeting?.status;
+        const stale = endedAt && new Date(endedAt).getTime() < staleThreshold;
+        const terminal = status === 'completed' || status === 'ended' || status === 'cancelled';
+        if (terminal && stale) {
+          activeMeetings.delete(key);
+          prunedMeetingIds.push(key);
+        }
+      }
+
       for (const [key, val] of activeTranscriptions.entries()) {
         if (val.startedAt && new Date(val.startedAt).getTime() < staleThreshold) {
           activeTranscriptions.delete(key);
@@ -4306,7 +4569,18 @@ const startServer = async () => {
           meetingChats.delete(key);
         }
       }
-      console.log(`[CLEANUP] Maps: transcriptions=${activeTranscriptions.size}, chats=${meetingChats.size}, invites=${meetingInvites.size}, mediaStatus=${participantMediaStatus.size}, consents=${meetingConsents.size}, lobbies=${meetingLobbies.size}`);
+
+      // Prune auxiliary maps keyed by a meetingId that no longer exists in activeMeetings
+      for (const meetingId of prunedMeetingIds) {
+        meetingChats.delete(meetingId);
+        activeTranscriptions.delete(meetingId);
+        meetingInvites.delete(meetingId);
+        meetingConsents.delete(meetingId);
+        meetingLobbies.delete(meetingId);
+        if (typeof participantMediaStatus?.delete === 'function') participantMediaStatus.delete(meetingId);
+      }
+
+      console.log(`[CLEANUP] Maps: meetings=${activeMeetings.size}, transcriptions=${activeTranscriptions.size}, chats=${meetingChats.size}, invites=${meetingInvites.size}, mediaStatus=${participantMediaStatus.size}, consents=${meetingConsents.size}, lobbies=${meetingLobbies.size}, prunedMeetings=${prunedMeetingIds.length}`);
     }, 30 * 60 * 1000);
   } catch (error) {
     console.error('❌ Failed to start server:', error);

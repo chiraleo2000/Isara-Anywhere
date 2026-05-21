@@ -146,12 +146,7 @@ test.describe('Group H — Content, Resources & Consultants', () => {
       console.log(`  ✅ H07: Resources — ${dataCount} items`);
     });
 
-    await test.step('H08 — Navigate to Medical Consultants', async () => {
-      await navDoctor(doctor.page, 'medical-consultants', 'H08');
-      await assertFullHealth(doctor.page, 'H08');
-      await snap(doctor.page, 'H08-consultants', 'group-H');
-      console.log('  ✅ H08: Medical Consultants');
-    });
+    // H08 — Medical Consultants — REMOVED in Phase 1 (page disabled, will be rebuilt in Phase 2)
 
     await test.step('H09 — Navigate to Appointment Pool', async () => {
       await navDoctor(doctor.page, 'appointment-pool', 'H09');
