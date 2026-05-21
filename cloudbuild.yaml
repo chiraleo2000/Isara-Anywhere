@@ -7,7 +7,10 @@
 #   gcloud builds submit . --config=cloudbuild.yaml --substitutions=_TAG=v1.7.3
 #
 # Required Secret Manager secrets (run setup-cloud-build.ps1 first):
-#   jwt-secret, db-password, database-url, gemini-api-key, google-maps-api-key
+#   jwt-secret, db-password, database-url, gemini-api-key, google-maps-api-key,
+#   google-client-id (Google OAuth Client ID for SSO — same value baked into
+#   the Vite bundle as VITE_GOOGLE_CLIENT_ID at build time and passed to the
+#   backends as GOOGLE_CLIENT_ID at runtime).
 #
 # Build flow:
 #   1. Build all 3 Docker images in parallel
@@ -20,7 +23,10 @@
 substitutions:
   _REGION: asia-southeast1
   _REGISTRY: asia-southeast1-docker.pkg.dev/izara-telemedicine/isara-anywhere-portals
-  _TAG: v1.7.3
+  _TAG: v1.7.6
+  # Google OAuth Client ID (also stored in Secret Manager as `google-client-id`).
+  # Override at submit time: --substitutions=_GOOGLE_CLIENT_ID=xxx.apps.googleusercontent.com
+  _GOOGLE_CLIENT_ID: "724889190329-svf2733fjqklfic9tet9d2qkmhkgmu0l.apps.googleusercontent.com"
   _DB_HOST: "35.240.157.230"
   _DB_PORT: "5432"
   _DB_NAME: izara_phase1
@@ -70,6 +76,8 @@ steps:
       - VITE_USE_POSTGRESQL=true
       - --build-arg
       - VITE_USE_GCS=false
+      - --build-arg
+      - VITE_GOOGLE_CLIENT_ID=${_GOOGLE_CLIENT_ID}
       - .
     dir: Isara-patient-portal
     waitFor: ["-"]
@@ -94,6 +102,8 @@ steps:
       - VITE_USE_POSTGRESQL=true
       - --build-arg
       - VITE_USE_GCS=false
+      - --build-arg
+      - VITE_GOOGLE_CLIENT_ID=${_GOOGLE_CLIENT_ID}
       - .
     dir: Isara-doctor-portal
     waitFor: ["-"]
@@ -146,7 +156,7 @@ steps:
       - --port=3020
       - --memory=1Gi
       - --cpu=1
-      - --min-instances=0
+      - --min-instances=1
       - --max-instances=2
       - --timeout=600
       - --cpu-boost
@@ -191,7 +201,7 @@ steps:
           --max-instances=2 \
           --timeout=300 \
           --set-env-vars="NODE_ENV=production,DB_HOST=${_DB_HOST},DB_PORT=${_DB_PORT},DB_NAME=${_DB_NAME},DB_USER=${_DB_USER},DB_SSL=false,USE_POSTGRESQL=true,VITE_USE_POSTGRESQL=true,GEMINI_MODEL=${_GEMINI_MODEL},GCP_PROJECT_ID=${PROJECT_ID},MEETING_SERVER_URL=$$MEETING_URL,VITE_MEETING_SERVER_URL=$$MEETING_URL" \
-          --set-secrets=GEMINI_API_KEY=gemini-api-key:latest,VITE_GEMINI_API_KEY=gemini-api-key:latest,DB_PASSWORD=db-password:latest,DATABASE_URL=database-url:latest,JWT_SECRET=jwt-secret:latest,VITE_GOOGLE_MAPS_API_KEY=google-maps-api-key:latest
+          --set-secrets=GEMINI_API_KEY=gemini-api-key:latest,VITE_GEMINI_API_KEY=gemini-api-key:latest,DB_PASSWORD=db-password:latest,DATABASE_URL=database-url:latest,JWT_SECRET=jwt-secret:latest,VITE_GOOGLE_MAPS_API_KEY=google-maps-api-key:latest,GOOGLE_CLIENT_ID=google-client-id:latest
     waitFor: [push-patient-portal, get-meeting-url]
 
   - id: deploy-doctor-portal
@@ -216,7 +226,7 @@ steps:
           --execution-environment=gen2 \
           --cpu-boost \
           --set-env-vars="NODE_ENV=production,DB_HOST=${_DB_HOST},DB_PORT=${_DB_PORT},DB_NAME=${_DB_NAME},DB_USER=${_DB_USER},DB_SSL=false,USE_POSTGRESQL=true,VITE_USE_POSTGRESQL=true,JITSI_DOMAIN=${_JITSI_DOMAIN},GEMINI_MODEL=${_GEMINI_MODEL},GCP_PROJECT_ID=${PROJECT_ID},MEETING_SERVER_URL=$$MEETING_URL,VITE_MEETING_SERVER_URL=$$MEETING_URL" \
-          --set-secrets=GEMINI_API_KEY=gemini-api-key:latest,VITE_GEMINI_API_KEY=gemini-api-key:latest,DB_PASSWORD=db-password:latest,DATABASE_URL=database-url:latest,JWT_SECRET=jwt-secret:latest
+          --set-secrets=GEMINI_API_KEY=gemini-api-key:latest,VITE_GEMINI_API_KEY=gemini-api-key:latest,DB_PASSWORD=db-password:latest,DATABASE_URL=database-url:latest,JWT_SECRET=jwt-secret:latest,GOOGLE_CLIENT_ID=google-client-id:latest
     waitFor: [push-doctor-portal, get-meeting-url]
 
   # ============================================================
