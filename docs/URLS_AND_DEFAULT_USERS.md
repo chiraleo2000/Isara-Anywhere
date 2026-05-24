@@ -63,17 +63,18 @@
 
 | Portal | Word (.docx) | Word PDF | PowerPoint (.pptx) | Slides PDF |
 | ------ | ------------ | -------- | ------------------ | ---------- |
-| **Patient** | [USER_GUIDE_PATIENT_WORD_TH.docx](USER_GUIDE_PATIENT_WORD_TH.docx) | [USER_GUIDE_PATIENT_WORD_TH.pdf](USER_GUIDE_PATIENT_WORD_TH.pdf) | [USER_GUIDE_PATIENT_PPT_TH.pptx](USER_GUIDE_PATIENT_PPT_TH.pptx) | [USER_GUIDE_PATIENT_PPT_TH.pdf](USER_GUIDE_PATIENT_PPT_TH.pdf) |
-| **Doctor / Admin** | [USER_GUIDE_DOCTOR_WORD_TH.docx](USER_GUIDE_DOCTOR_WORD_TH.docx) | [USER_GUIDE_DOCTOR_WORD_TH.pdf](USER_GUIDE_DOCTOR_WORD_TH.pdf) | [USER_GUIDE_DOCTOR_PPT_TH.pptx](USER_GUIDE_DOCTOR_PPT_TH.pptx) | [USER_GUIDE_DOCTOR_PPT_TH.pdf](USER_GUIDE_DOCTOR_PPT_TH.pdf) |
+| **Patient** | [USER_GUIDE_PATIENT_WORD_TH.docx](USER_GUIDE_PATIENT_WORD_TH.docx) | [USER_GUIDE_PATIENT_WORD_TH.pdf](USER_GUIDE_PATIENT_WORD_TH.pdf) · [GitHub](https://github.com/chiraleo2000/Isara-Anywhere/blob/main/docs/USER_GUIDE_PATIENT_WORD_TH.pdf) | [USER_GUIDE_PATIENT_PPT_TH.pptx](USER_GUIDE_PATIENT_PPT_TH.pptx) | [USER_GUIDE_PATIENT_PPT_TH.pdf](USER_GUIDE_PATIENT_PPT_TH.pdf) · [GitHub](https://github.com/chiraleo2000/Isara-Anywhere/blob/main/docs/USER_GUIDE_PATIENT_PPT_TH.pdf) |
+| **Doctor / Admin** | [USER_GUIDE_DOCTOR_WORD_TH.docx](USER_GUIDE_DOCTOR_WORD_TH.docx) | [USER_GUIDE_DOCTOR_WORD_TH.pdf](USER_GUIDE_DOCTOR_WORD_TH.pdf) · [GitHub](https://github.com/chiraleo2000/Isara-Anywhere/blob/main/docs/USER_GUIDE_DOCTOR_WORD_TH.pdf) | [USER_GUIDE_DOCTOR_PPT_TH.pptx](USER_GUIDE_DOCTOR_PPT_TH.pptx) | [USER_GUIDE_DOCTOR_PPT_TH.pdf](USER_GUIDE_DOCTOR_PPT_TH.pdf) · [GitHub](https://github.com/chiraleo2000/Isara-Anywhere/blob/main/docs/USER_GUIDE_DOCTOR_PPT_TH.pdf) |
 
-- **Word:** TH Sarabun New **16 pt** (มาตรฐานรายงานภาษาไทย)
-- **PowerPoint:** **FC Iconic** (หัวข้อ 32 pt · เนื้อหา 18 pt · บันทึกวิทยากร 16 pt)
+- **Word:** TH Sarabun New **16 pt** — ตารางจริง + **สารบัญ** (อัปเดต F9 ใน Word)
+- **PowerPoint:** **FC Iconic** — หนึ่งสไลด์ต่อขั้นตอน พร้อมตารางขั้นตอน + บันทึกวิทยากร 16 pt
 
 **Build & export**
 
 ```bash
-python scripts/build-portal-user-guides.py
-powershell -ExecutionPolicy Bypass -File scripts/export-user-guide-pdf.ps1
+npm run guides:all
+# or step-by-step:
+npm run guides:cleanup-old && npm run guides:enrich && npm run guides:build && npm run guides:pdf
 ```
 
 Requires Microsoft Word and PowerPoint on Windows to create the PDF files. Install **TH Sarabun New** and **FC Iconic** before opening `.docx` / `.pptx`.

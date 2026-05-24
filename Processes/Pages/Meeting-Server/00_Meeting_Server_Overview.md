@@ -28,7 +28,7 @@
 | อัปเดตหน้ากระบวนการ | `python scripts/enrich-process-pages.py --force-steps` |
 | ล้างข้อมูลทดสอบ (ไม่ re-seed demo) | `npm run cleanup:cloud-test-only` |
 | การทดสอบอัตโนมัติ | Playwright Groups A–Q + Vitest — `tests/PROCESS_COVERAGE_MATRIX.md` |
-| รุ่นเอกสารหน้ากระบวนการ | **ENRICH-4** (หลัง v1.7.33 — ล้าง demo + ขั้นตอนและคำอธิบายละเอียด) |
+| รุ่นเอกสารหน้ากระบวนการ | **ENRICH-6** (Word ตาราง+สารบัญ / PPT รายสไลด์+ตารางขั้นตอนครบ) |
 
 **โครงสร้างบังคับในแต่ละหน้า Processes/Pages:**
 
@@ -942,7 +942,7 @@ Production ใช้ `meet.jit.si` — บันทึกจากเบรา�
 - `jitsi-guest-container`
 - `insert-meeting-summary-emr-btn`
 
-*(รุ่นเอกสารหน้านี้: ENRICH-4 — อัปเดตหลังล้างข้อมูลทดสอบ cloud และ release v1.7.33)*
+*(รุ่นเอกสารหน้านี้: ENRICH-6 — คู่มือ Word ตาราง+สารบัญ / PPT FC Iconic รายหน้าละเอียด v1.7.33)*
 
 
 ## ขั้นตอนการใช้งาน (ละเอียด)

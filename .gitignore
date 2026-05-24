@@ -97,7 +97,13 @@ docs/USER_GUIDE_PATIENT_WORD_TH.md
 docs/USER_GUIDE_DOCTOR_WORD_TH.md
 docs/USER_GUIDE_PATIENT_PPT_TH.md
 docs/USER_GUIDE_DOCTOR_PPT_TH.md
-docs/USER_GUIDE_PATIENT_WORD_TH.pdf
-docs/USER_GUIDE_DOCTOR_WORD_TH.pdf
-docs/USER_GUIDE_PATIENT_PPT_TH.pdf
-docs/USER_GUIDE_DOCTOR_PPT_TH.pdf
+docs/USER_GUIDE_*_NEW.docx
+docs/USER_GUIDE_*_NEW.pptx
+docs/*.docx.building
+docs/*.pptx.building
+docs/USER_GUIDE_PPT_SCRIPT_TH.*
+docs/USER_GUIDE_WORD_REPORT_TH.*
+docs/*Portal_*Sample*
+docs/USER_GUIDE_PATIENT_TH.md
+docs/USER_GUIDE_DOCTOR_TH.md
+# PDF exports: committed under docs/USER_GUIDE_*_TH.pdf (user-maintained or npm run guides:pdf)

@@ -1,46 +1,56 @@
 #!/usr/bin/env pwsh
-# Export USER_GUIDE_*.docx / *.pptx in docs/ to matching PDF (requires Microsoft Word + PowerPoint).
+# Export canonical USER_GUIDE_*.docx / *.pptx to PDF (Word + PowerPoint required).
 $ErrorActionPreference = "Stop"
 $docs = Join-Path (Split-Path $PSScriptRoot -Parent) "docs"
 Set-Location $docs
 
-$wordPairs = @(
+function Resolve-SourceFile([string]$name) {
+    $path = Join-Path $docs $name
+    if (Test-Path $path) { return $path }
+    if ($name -match '^(.+)\.(docx|pptx)$') {
+        $alt = Join-Path $docs ($Matches[1] + "_NEW." + $Matches[2])
+        if (Test-Path $alt) {
+            Write-Host "  using $([IO.Path]::GetFileName($alt)) (canonical locked)" -ForegroundColor Yellow
+            return $alt
+        }
+    }
+    throw "Missing source: $name (and no _NEW fallback)"
+}
+
+$pairs = @(
     @("USER_GUIDE_PATIENT_WORD_TH.docx", "USER_GUIDE_PATIENT_WORD_TH.pdf"),
-    @("USER_GUIDE_DOCTOR_WORD_TH.docx", "USER_GUIDE_DOCTOR_WORD_TH.pdf")
-)
-$pptPairs = @(
+    @("USER_GUIDE_DOCTOR_WORD_TH.docx", "USER_GUIDE_DOCTOR_WORD_TH.pdf"),
     @("USER_GUIDE_PATIENT_PPT_TH.pptx", "USER_GUIDE_PATIENT_PPT_TH.pdf"),
     @("USER_GUIDE_DOCTOR_PPT_TH.pptx", "USER_GUIDE_DOCTOR_PPT_TH.pdf")
 )
 
-Write-Host "=== Export Word guides to PDF ===" -ForegroundColor Cyan
+Write-Host "=== Export Word guides to PDF (TH Sarabun New) ===" -ForegroundColor Cyan
 $word = New-Object -ComObject Word.Application
 $word.Visible = $false
-foreach ($p in $wordPairs) {
-    $src = Join-Path $docs $p[0]
+foreach ($p in $pairs[0..1]) {
+    $src = Resolve-SourceFile $p[0]
     $dst = Join-Path $docs $p[1]
-    if (-not (Test-Path $src)) { Write-Warning "Missing $src"; continue }
-    Write-Host "  $p[0] -> $p[1]"
+    Write-Host "  $([IO.Path]::GetFileName($src)) -> $($p[1])"
     $doc = $word.Documents.Open($src)
-    $doc.ExportAsFixedFormat($dst, 17) # wdExportFormatPDF
+    $doc.ExportAsFixedFormat($dst, 17)
     $doc.Close()
 }
 $word.Quit()
 [System.Runtime.Interopservices.Marshal]::ReleaseComObject($word) | Out-Null
 
-Write-Host "=== Export PowerPoint guides to PDF ===" -ForegroundColor Cyan
+Write-Host "=== Export PowerPoint guides to PDF (FC Iconic) ===" -ForegroundColor Cyan
 $pp = New-Object -ComObject PowerPoint.Application
 $pp.Visible = 0
-foreach ($p in $pptPairs) {
-    $src = Join-Path $docs $p[0]
+foreach ($p in $pairs[2..3]) {
+    $src = Resolve-SourceFile $p[0]
     $dst = Join-Path $docs $p[1]
-    if (-not (Test-Path $src)) { Write-Warning "Missing $src"; continue }
-    Write-Host "  $p[0] -> $p[1]"
+    Write-Host "  $([IO.Path]::GetFileName($src)) -> $($p[1])"
     $pres = $pp.Presentations.Open($src, $true, $true, $false)
-    $pres.SaveAs($dst, 32) # ppSaveAsPDF
+    $pres.SaveAs($dst, 32)
     $pres.Close()
 }
 $pp.Quit()
 [System.Runtime.Interopservices.Marshal]::ReleaseComObject($pp) | Out-Null
 
-Write-Host "Done. PDF files in docs/" -ForegroundColor Green
+Write-Host "Done. PDF files:" -ForegroundColor Green
+Get-ChildItem USER_GUIDE_*_TH.pdf | ForEach-Object { Write-Host "  $($_.Name) ($([math]::Round($_.Length/1MB,1)) MB)" }

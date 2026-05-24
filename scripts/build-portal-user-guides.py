@@ -372,6 +372,126 @@ def _add_para(doc, text: str, *, font=WORD_FONT, size=WORD_BODY_PT, bold=False, 
     return p
 
 
+def _apply_word_styles(doc) -> None:
+    from docx.shared import Pt
+
+    normal = doc.styles["Normal"]
+    normal.font.name = WORD_FONT
+    normal.font.size = Pt(WORD_BODY_PT)
+    for level, size in ((1, WORD_H1_PT), (2, WORD_H2_PT)):
+        st = doc.styles[f"Heading {level}"]
+        st.font.name = WORD_FONT
+        st.font.size = Pt(size)
+        st.font.bold = True
+
+
+def _add_heading(doc, text: str, level: int = 1):
+    from docx.enum.text import WD_LINE_SPACING
+    from docx.shared import Pt
+
+    p = doc.add_paragraph(text, style=f"Heading {level}")
+    size = WORD_H1_PT if level == 1 else WORD_H2_PT
+    for run in p.runs:
+        _set_run_font(run, WORD_FONT, size, bold=True)
+    p.paragraph_format.line_spacing_rule = WD_LINE_SPACING.MULTIPLE
+    p.paragraph_format.line_spacing = WORD_LINE_SPACING
+    return p
+
+
+def _add_word_table(doc, headers: list[str], rows: list[list[str]]) -> None:
+    from docx.enum.table import WD_TABLE_ALIGNMENT
+    from docx.shared import Pt
+
+    if not rows:
+        return
+    table = doc.add_table(rows=1 + len(rows), cols=len(headers))
+    table.style = "Table Grid"
+    table.alignment = WD_TABLE_ALIGNMENT.CENTER
+    for ci, header in enumerate(headers):
+        cell = table.rows[0].cells[ci]
+        cell.text = header
+        for para in cell.paragraphs:
+            para.paragraph_format.space_after = Pt(2)
+            for run in para.runs:
+                _set_run_font(run, WORD_FONT, WORD_BODY_PT, bold=True)
+    for ri, row in enumerate(rows):
+        for ci, val in enumerate(row):
+            cell = table.rows[ri + 1].cells[ci]
+            cell.text = str(val)
+            for para in cell.paragraphs:
+                para.paragraph_format.space_after = Pt(2)
+                for run in para.runs:
+                    _set_run_font(run, WORD_FONT, WORD_BODY_PT)
+    doc.add_paragraph()
+
+
+def _add_toc(doc) -> None:
+    from docx.oxml import OxmlElement
+    from docx.oxml.ns import qn
+
+    _add_heading(doc, "สารบัญ", level=1)
+    paragraph = doc.add_paragraph()
+    run = paragraph.add_run()
+    fld_begin = OxmlElement("w:fldChar")
+    fld_begin.set(qn("w:fldCharType"), "begin")
+    instr = OxmlElement("w:instrText")
+    instr.set(qn("xml:space"), "preserve")
+    instr.text = r'TOC \o "1-3" \h \z \u'
+    fld_sep = OxmlElement("w:fldChar")
+    fld_sep.set(qn("w:fldCharType"), "separate")
+    fld_end = OxmlElement("w:fldChar")
+    fld_end.set(qn("w:fldCharType"), "end")
+    run._r.append(fld_begin)
+    run._r.append(instr)
+    run._r.append(fld_sep)
+    run._r.append(fld_end)
+    _add_para(
+        doc,
+        "หมายเหตุ: เปิดใน Microsoft Word แล้วคลิกขวาที่สารบัญ → «อัปเดตฟิลด์» (หรือกด F9) เพื่อแสดงหมายเลขหน้า",
+        size=WORD_BODY_PT,
+    )
+
+
+def _role_label(portal: str) -> str:
+    return "ผู้ป่วย" if portal == "patient" else "แพทย์/ผู้ดูแล"
+
+
+def _section_pref(portal: str, section: str) -> str:
+    ctx = section_context(portal, section)
+    return ctx[3] if ctx else "Processes/Pages/"
+
+
+def _enriched_steps(s: Shot) -> list[str]:
+    """Expand each catalog step with verification sub-steps for Word/PPT tables."""
+    out: list[str] = []
+    for j, step in enumerate(s.steps, 1):
+        out.append(step)
+        out.append(f"ตรวจหน้าจอขั้นที่ {j}: {s.screen}")
+        if j == len(s.steps):
+            out.append("ตรวจ Network: HTTP 2xx, ไม่มี toast แดง, session/JWT ยังใช้ได้")
+            out.append("บันทึก appointmentId / meetingId จาก URL หรือ DevTools หากต้องส่งต่อ IT")
+    return out
+
+
+def _step_table_rows(s: Shot, portal: str, pref: str) -> list[list[str]]:
+    role = _role_label(portal)
+    rows: list[list[str]] = []
+    enriched = _enriched_steps(s)
+    for j, step in enumerate(enriched, 1):
+        is_check = step.startswith("ตรวจ") or step.startswith("บันทึก")
+        rows.append(
+            [
+                str(j),
+                step,
+                "ดำเนินการจนจบ — อย่าข้าม modal ยืนยัน" if not is_check else "ตรวจสอบตามข้อความ",
+                s.screen if not is_check else "HTTP 2xx / ไม่มี error banner",
+                role,
+                pref if j == 1 else "",
+            ]
+        )
+    return rows
+
+
 def build_docx_python(
     portal: str,
     shots: list[Shot],
@@ -389,67 +509,112 @@ def build_docx_python(
         return False
 
     doc = Document()
-    normal = doc.styles["Normal"]
-    normal.font.name = WORD_FONT
-    normal.font.size = Pt(WORD_BODY_PT)
+    _apply_word_styles(doc)
 
     title_p = doc.add_paragraph(doc_title)
     title_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
     _set_run_font(title_p.runs[0], WORD_FONT, WORD_TITLE_PT, bold=True)
+    sub = doc.add_paragraph("ระบบ Isara Anywhere — คู่มือการใช้งานฉบับภาษาไทย")
+    sub.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    _set_run_font(sub.runs[0], WORD_FONT, WORD_H1_PT, bold=True)
 
-    _add_para(doc, f"เวอร์ชัน {VERSION} | {DATE_TH} | {url}", size=WORD_BODY_PT)
-    _add_para(
+    _add_word_table(
         doc,
-        f"แบบอักษร {WORD_FONT} {WORD_BODY_PT} pt — มาตรฐานรายงานภาษาไทย | กลุ่มทดสอบ: {groups}",
+        ["รายการ", "รายละเอียด"],
+        [
+            ["เวอร์ชันระบบ", VERSION],
+            ["วันที่จัดทำ", DATE_TH],
+            ["URL (Cloud Dev-Testing)", url],
+            ["กลุ่มทดสอบ UI", groups],
+            ["จำนวนขั้นตอนในคู่มือ", str(len(shots))],
+            ["มาตรฐานรายงาน", f"{WORD_FONT} {WORD_BODY_PT} pt, ระยะบรรทัด {WORD_LINE_SPACING}"],
+        ],
+    )
+    _add_word_table(
+        doc,
+        ["ประเภทเอกสาร", "แบบอักษร", "ขนาดตัวอักษร"],
+        [
+            ["Word / รายงาน PDF", WORD_FONT, f"{WORD_BODY_PT} pt (เนื้อหา)"],
+            ["หัวข้อระดับ 1", WORD_FONT, f"{WORD_H1_PT} pt"],
+            ["หัวข้อระดับ 2", WORD_FONT, f"{WORD_H2_PT} pt (ตัวหนา)"],
+            ["ชื่อเรื่อง", WORD_FONT, f"{WORD_TITLE_PT} pt"],
+            ["PowerPoint", PPT_FONT, f"หัวข้อ {PPT_TITLE_PT} pt / เนื้อหา {PPT_BODY_PT} pt"],
+        ],
     )
     doc.add_page_break()
+    _add_toc(doc)
+    doc.add_page_break()
 
+    _add_heading(doc, "บทนำ", level=1)
     intro = PATIENT_PROCESS_INTRO if portal == "patient" else DOCTOR_PROCESS_INTRO
-    _add_para(doc, "บทนำ", font=WORD_FONT, size=WORD_H1_PT, bold=True)
     for block in intro.strip().split("\n"):
-        if block.strip():
-            _add_para(doc, block.strip())
+        line = block.strip()
+        if line and not line.startswith("|") and not line.startswith("-"):
+            _add_para(doc, line)
 
     current_section = ""
+    role = _role_label(portal)
     for i, s in enumerate(shots, 1):
         if s.section != current_section:
             current_section = s.section
             doc.add_page_break()
-            _add_para(doc, current_section, font=WORD_FONT, size=WORD_H1_PT, bold=True)
+            _add_heading(doc, current_section, level=1)
             ctx = section_context(portal, current_section)
             if ctx:
                 purpose, wf_steps, cautions, pref = ctx
                 _add_para(doc, "วัตถุประสงค์ของหมวด", bold=True)
                 _add_para(doc, purpose)
-                _add_para(doc, "ลำดับกระบวนการ", bold=True)
-                for ws in wf_steps:
-                    _add_para(doc, f"• {ws}")
-                _add_para(doc, "ข้อควรระวัง", bold=True)
-                for c in cautions:
-                    _add_para(doc, f"• {c}")
-                _add_para(doc, f"อ้างอิง: {pref}")
+                _add_word_table(
+                    doc,
+                    ["ลำดับ", "ขั้นตอนกระบวนการในระบบ"],
+                    [[str(n), ws] for n, ws in enumerate(wf_steps, 1)],
+                )
+                _add_word_table(
+                    doc,
+                    ["ข้อควรระวัง", "รายละเอียด"],
+                    [[str(n), c] for n, c in enumerate(cautions, 1)],
+                )
+                _add_para(doc, f"อ้างอิงกระบวนการ: {pref}", bold=True)
 
-        _add_para(doc, f"{i}. {s.title}", font=WORD_FONT, size=WORD_H2_PT, bold=True)
-        _add_para(doc, "วัตถุประสงค์ของขั้นตอน", bold=True)
-        _add_para(doc, s.script)
-        _add_para(doc, "ขั้นตอนการใช้งาน (ละเอียด)", bold=True)
-        for j, step in enumerate(s.steps, 1):
-            _add_para(doc, f"{j}. {step}")
-            _add_para(doc, "   ปฏิบัติ: ดำเนินการบนหน้าจอจนจบขั้นนี้")
-            _add_para(doc, f"   ตรวจสอบ: {s.screen} — ไม่มีข้อผิดพลาด HTTP 4xx/5xx")
-            _add_para(doc, f"   บทบาท: {'ผู้ป่วย' if portal == 'patient' else 'แพทย์/ผู้ดูแล'}")
-        _add_para(doc, "คำอธิบายเพิ่มเติม", bold=True)
-        _add_para(
+        _add_heading(doc, f"{i}. {s.title}", level=2)
+        _add_word_table(
             doc,
-            f"ขั้นตอน «{s.title}» สอดคล้อง Processes/Pages และกลุ่มทดสอบ {s.section}. "
-            f"เอกสารจัดทำด้วย {WORD_FONT} {WORD_BODY_PT} pt (มาตรฐานรายงานภาษาไทย).",
+            ["หัวข้อ", "รายละเอียด"],
+            [
+                ["กลุ่ม UI", s.section],
+                ["บทบาทผู้ใช้", role],
+                ["วัตถุประสงค์", s.script],
+                ["ภาพหน้าจอ", s.path],
+            ],
         )
-        _add_para(doc, "ผลลัพธ์ที่คาดหวัง", bold=True)
-        _add_para(doc, s.screen)
-        _add_para(doc, "บริบทกระบวนการ", bold=True)
+        pref = _section_pref(portal, s.section)
+        _add_word_table(
+            doc,
+            ["ลำดับ", "ขั้นตอน / รายละเอียด", "การปฏิบัติ", "การตรวจสอบ", "บทบาท", "อ้างอิง Processes"],
+            _step_table_rows(s, portal, pref),
+        )
+        ctx = section_context(portal, s.section)
+        cautions = ctx[2] if ctx else []
+        _add_word_table(
+            doc,
+            ["ผลลัพธ์ที่คาดหวัง", "รายละเอียด"],
+            [
+                ["หน้าจอ", s.screen],
+                ["API", "ไม่มี HTTP 4xx/5xx บนฟังก์ชันหลัก"],
+                ["ทดสอบ", "สอดคล้อง tests/SELECTORS.md และ Playwright"],
+                ["กระบวนการ", f"อ้างอิง {pref}"],
+            ],
+        )
+        if cautions:
+            _add_word_table(
+                doc,
+                ["ข้อควรปฏิบัติ", "คำอธิบาย"],
+                [[str(n), c] for n, c in enumerate(cautions[:3], 1)],
+            )
         _add_para(
             doc,
-            f"กลุ่ม {s.section} — ยืนยันด้วย UI test บน Cloud; ภาพ: {s.path}",
+            f"คำอธิบายเพิ่มเติม: ขั้นตอน «{s.title}» ผ่านการทดสอบ UI บน Cloud dev-testing "
+            f"(v{VERSION}) — จัดทำตามมาตรฐานรายงานภาษาไทย ({WORD_FONT} {WORD_BODY_PT} pt)",
         )
         img = REPO / s.path.replace("/", "\\") if "\\" in str(REPO) else REPO / s.path
         if img.is_file():
@@ -457,10 +622,38 @@ def build_docx_python(
                 doc.add_picture(str(img), width=Inches(6.2))
             except Exception as ex:
                 _add_para(doc, f"(ไม่สามารถแนบภาพ: {ex})")
+        doc.add_paragraph()
 
-    doc.save(str(docx_path))
+    doc.add_page_break()
+    _add_heading(doc, "ภาคผนวก — สรุป", level=1)
+    _add_word_table(
+        doc,
+        ["รายการ", "ค่า"],
+        [
+            ["จำนวนภาพในคู่มือ", str(len(shots))],
+            ["กลุ่มทดสอบ", groups],
+            ["เวอร์ชัน", VERSION],
+            ["วันที่", DATE_TH],
+        ],
+    )
+
+    tmp_docx = docx_path.with_suffix(".docx.building")
+    doc.save(str(tmp_docx))
+    try:
+        if docx_path.exists():
+            docx_path.unlink()
+        tmp_docx.replace(docx_path)
+    except OSError as ex:
+        alt = docx_path.with_name(docx_path.stem + "_NEW.docx")
+        tmp_docx.replace(alt)
+        print(
+            f"  DOCX: {alt} ({alt.stat().st_size // 1024} KB) — close {docx_path.name} and rename",
+            file=sys.stderr,
+        )
+        print(f"  (could not overwrite {docx_path}: {ex})", file=sys.stderr)
+        return True
     print(
-        f"  DOCX: {docx_path} ({docx_path.stat().st_size // 1024} KB, {WORD_FONT} {WORD_BODY_PT}pt)"
+        f"  DOCX: {docx_path} ({docx_path.stat().st_size // 1024} KB, {WORD_FONT} {WORD_BODY_PT}pt, TOC+tables)"
     )
     return True
 
@@ -548,6 +741,208 @@ def _ppt_set_font(paragraph, size_pt: int, bold: bool = False) -> None:
     paragraph.font.name = PPT_FONT
     paragraph.font.size = Pt(size_pt)
     paragraph.font.bold = bold
+
+
+def _ppt_fill_table(table, headers: list[str], rows: list[list[str]], font_pt: int) -> None:
+    for ci, header in enumerate(headers):
+        cell = table.cell(0, ci)
+        cell.text = header
+        _ppt_set_font(cell.text_frame.paragraphs[0], font_pt, bold=True)
+    for ri, row in enumerate(rows):
+        for ci, val in enumerate(row):
+            cell = table.cell(ri + 1, ci)
+            cell.text = str(val)[:200]
+            _ppt_set_font(cell.text_frame.paragraphs[0], max(font_pt - 2, 12))
+
+
+def build_pptx_from_shots(
+    shots: list[Shot],
+    out_path: Path,
+    portal: str,
+    url: str,
+    doc_title: str,
+) -> None:
+    from pptx import Presentation
+    from pptx.util import Inches, Pt
+
+    prs = Presentation()
+    prs.slide_width = Inches(13.333)
+    prs.slide_height = Inches(7.5)
+    blank = prs.slide_layouts[6]
+    role = _role_label(portal)
+    subtitle = "Patient Portal" if portal == "patient" else "Doctor & Admin Portal"
+    groups = UI_GROUPS_PATIENT if portal == "patient" else UI_GROUPS_DOCTOR
+
+    def add_title_slide(title: str, lines: list[str], notes: str = "") -> None:
+        slide = prs.slides.add_slide(blank)
+        box = slide.shapes.add_textbox(Inches(0.5), Inches(0.4), Inches(12.3), Inches(1.2))
+        p = box.text_frame.paragraphs[0]
+        p.text = title
+        _ppt_set_font(p, PPT_TITLE_PT, bold=True)
+        body = slide.shapes.add_textbox(Inches(0.6), Inches(1.6), Inches(12), Inches(5.2))
+        tf = body.text_frame
+        tf.word_wrap = True
+        for idx, line in enumerate(lines):
+            para = tf.paragraphs[0] if idx == 0 else tf.add_paragraph()
+            para.text = line
+            _ppt_set_font(para, PPT_BODY_PT)
+        if notes:
+            notes_tf = slide.notes_slide.notes_text_frame
+            notes_tf.text = notes
+            for para in notes_tf.paragraphs:
+                _ppt_set_font(para, PPT_NOTES_PT)
+
+    add_title_slide(
+        doc_title,
+        [
+            f"Isara Anywhere — {subtitle}",
+            f"v{VERSION} | {DATE_TH}",
+            f"แบบอักษร {PPT_FONT} | มาตรฐานสไลด์ภาษาไทย",
+            url,
+        ],
+        f"นำเสนอคู่มือ {doc_title} เวอร์ชัน {VERSION}",
+    )
+
+    overview = prs.slides.add_slide(blank)
+    tbox = overview.shapes.add_textbox(Inches(0.4), Inches(0.2), Inches(12.5), Inches(0.8))
+    tbox.text_frame.paragraphs[0].text = "ภาพรวมระบบและมาตรฐานเอกสาร"
+    _ppt_set_font(tbox.text_frame.paragraphs[0], PPT_SUBTITLE_PT, bold=True)
+    tbl = overview.shapes.add_table(6, 2, Inches(0.5), Inches(1.1), Inches(12.2), Inches(2.8)).table
+    _ppt_fill_table(
+        tbl,
+        ["รายการ", "รายละเอียด"],
+        [
+            ["URL", url],
+            ["กลุ่มทดสอบ", groups],
+            ["จำนวนสไลด์เนื้อหา", str(len(shots))],
+            ["Word", f"{WORD_FONT} {WORD_BODY_PT} pt"],
+            ["PowerPoint", PPT_FONT],
+        ],
+        PPT_BODY_PT,
+    )
+
+    current_section = ""
+    for i, s in enumerate(shots, 1):
+        if s.section != current_section:
+            current_section = s.section
+            ctx = section_context(portal, s.section)
+            if ctx:
+                purpose, wf_steps, cautions, pref = ctx
+                sec_lines = [purpose] + [f"{n}. {w}" for n, w in enumerate(wf_steps, 1)]
+                add_title_slide(
+                    f"หมวด: {s.section}",
+                    sec_lines[:6],
+                    " ".join(cautions) + f" อ้างอิง {pref}",
+                )
+
+        slide = prs.slides.add_slide(blank)
+        head = slide.shapes.add_textbox(Inches(0.35), Inches(0.12), Inches(12.6), Inches(0.75))
+        hp = head.text_frame.paragraphs[0]
+        hp.text = f"{i}. {s.title}"
+        _ppt_set_font(hp, PPT_SUBTITLE_PT, bold=True)
+
+        sub = slide.shapes.add_textbox(Inches(0.35), Inches(0.85), Inches(12.6), Inches(0.45))
+        sp = sub.text_frame.paragraphs[0]
+        sp.text = f"กลุ่ม {s.section} | {role} | วัตถุประสงค์: {s.script[:120]}"
+        _ppt_set_font(sp, PPT_BODY_PT - 2)
+
+        img_path = REPO / s.path.replace("/", "\\") if "\\" in str(REPO) else REPO / s.path
+        if img_path.is_file():
+            slide.shapes.add_picture(str(img_path), Inches(0.35), Inches(1.35), width=Inches(6.8))
+
+        pref = _section_pref(portal, s.section)
+        enriched = _enriched_steps(s)
+        step_rows = [
+            [str(j), st[:95], (s.screen[:35] if not st.startswith("ตรวจ") else "ตรวจ API/UI")[:35]]
+            for j, st in enumerate(enriched, 1)
+        ]
+        if not step_rows:
+            step_rows = [["1", s.script[:95], s.screen[:35]]]
+        rows_n = min(len(step_rows), 10)
+        font_pt = PPT_BODY_PT - 4 if rows_n > 7 else PPT_BODY_PT - 2
+        stbl = slide.shapes.add_table(
+            rows_n + 1,
+            3,
+            Inches(7.2),
+            Inches(1.3),
+            Inches(5.85),
+            Inches(min(3.6, 0.32 * (rows_n + 1))),
+        ).table
+        _ppt_fill_table(
+            stbl,
+            ["ลำดับ", "ขั้นตอน (ละเอียด)", "ตรวจสอบ"],
+            step_rows[:rows_n],
+            font_pt,
+        )
+        if len(enriched) > rows_n:
+            extra = slide.shapes.add_textbox(Inches(7.2), Inches(5.0), Inches(5.85), Inches(0.55))
+            ep = extra.text_frame.paragraphs[0]
+            ep.text = f"(ขั้นตอน {rows_n + 1}–{len(enriched)} ดูบันทึกวิทยากร)"
+            _ppt_set_font(ep, font_pt)
+
+        foot = slide.shapes.add_textbox(Inches(0.35), Inches(4.7), Inches(12.6), Inches(2.5))
+        ft = foot.text_frame
+        ft.word_wrap = True
+        detail_lines = [
+            f"ผลลัพธ์: {s.screen}",
+            f"วัตถุประสงค์: {s.script}",
+            "ตรวจ: HTTP 2xx, JWT/session, ไม่มี toast error",
+            f"อ้างอิง: {pref}",
+            f"ภาพ UI test: {s.path}",
+        ]
+        ctx = section_context(portal, s.section)
+        if ctx:
+            for c in ctx[2][:2]:
+                detail_lines.append(f"ข้อควรระวัง: {c}")
+        for idx, line in enumerate(detail_lines):
+            para = ft.paragraphs[0] if idx == 0 else ft.add_paragraph()
+            para.text = line
+            _ppt_set_font(para, PPT_BODY_PT - 2)
+
+        notes_parts = [
+            f"สไลด์ {i}: {s.title} | กลุ่ม {s.section}",
+            s.script,
+            "ขั้นตอนละเอียด:",
+            *[f"  {n}. {st}" for n, st in enumerate(enriched, 1)],
+            f"ผลลัพธ์: {s.screen}",
+            f"อ้างอิง {pref}",
+            f"Word: {WORD_FONT} {WORD_BODY_PT} pt (ตาราง+สารบัญ) | สไลด์: {PPT_FONT}",
+        ]
+        notes_tf = slide.notes_slide.notes_text_frame
+        notes_tf.text = "\n".join(notes_parts)
+        for para in notes_tf.paragraphs:
+            _ppt_set_font(para, PPT_NOTES_PT)
+
+    add_title_slide(
+        "สรุปและ Q&A",
+        [
+            f"ครบ {len(shots)} ขั้นตอนพร้อมภาพ UI tests",
+            f"{WORD_FONT} {WORD_BODY_PT} pt (Word) / {PPT_FONT} (สไลด์)",
+            "อ้างอิง Processes/Pages และ GATE0",
+        ],
+        "ขอบคุณ — เปิด Q&A",
+    )
+
+    tmp_pptx = out_path.with_suffix(".pptx.building")
+    prs.save(str(tmp_pptx))
+    try:
+        if out_path.exists():
+            out_path.unlink()
+        tmp_pptx.replace(out_path)
+    except OSError as ex:
+        alt = out_path.with_name(out_path.stem + "_NEW.pptx")
+        tmp_pptx.replace(alt)
+        print(f"  PPTX: {alt} — close {out_path.name} and rename ({ex})", file=sys.stderr)
+        out_path = alt
+    img_count = sum(
+        1
+        for s in shots
+        if (REPO / s.path.replace("/", "\\") if "\\" in str(REPO) else REPO / s.path).is_file()
+    )
+    print(
+        f"  PPTX: {out_path} ({len(prs.slides)} slides, {img_count} images, "
+        f"{PPT_FONT}, tables per slide, {out_path.stat().st_size // 1024} KB)"
+    )
 
 
 def build_pptx(slides: list[dict], out_path: Path, portal: str) -> None:
@@ -643,15 +1038,12 @@ def build_portal(portal: str) -> None:
 
     print(f"\n=== {portal.upper()} ({len(shots)} screenshots) ===")
 
+    # Intermediate .md is gitignored; deliverables are .docx / .pptx only
     word_out.write_text(word_md(portal, shots, url, groups), encoding="utf-8")
-    print(f"  MD Word: {word_out}")
-
     ppt_md_out.write_text(ppt_md(portal, shots, url), encoding="utf-8")
-    print(f"  MD PPT:  {ppt_md_out}")
 
     build_docx(word_out, docx_out, doc_title, portal, shots, url, groups)
-    slides = parse_ppt_slides(ppt_md_out.read_text(encoding="utf-8"))
-    build_pptx(slides, pptx_out, portal)
+    build_pptx_from_shots(shots, pptx_out, portal, url, doc_title)
 
 
 def main() -> int:
