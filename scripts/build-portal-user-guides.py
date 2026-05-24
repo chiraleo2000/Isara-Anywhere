@@ -150,8 +150,13 @@ def word_md(portal: str, shots: list[Shot], url: str, groups: str) -> str:
         ]
         for j, step in enumerate(s.steps, 1):
             lines.append(f"{j}. {step}")
+            lines.append(f"   - **ปฏิบัติ:** ดำเนินการตาม UI จนจบขั้นนี้ — อย่าข้าม modal ยืนยัน")
             lines.append(f"   - **ตรวจบนหน้าจอ:** {s.screen}")
             lines.append(f"   - **บทบาท:** {'ผู้ป่วย' if portal == 'patient' else 'แพทย์/ผู้ดูแล'}")
+            lines.append(
+                f"   - **รายละเอียด:** ขั้นที่ {j} ต้องสำเร็จก่อนขั้นถัดไป; บันทึก appointmentId/meetingId จาก Network หากต้องส่งต่อ IT"
+            )
+            lines.append("   - **ตรวจสอบ:** HTTP 2xx บน API หลัก; ไม่มี toast error")
         ctx = section_context(portal, s.section)
         if ctx:
             _, _, cautions, pref = ctx
@@ -294,7 +299,9 @@ def ppt_md(portal: str, shots: list[Shot], url: str) -> str:
             f"- วัตถุประสงค์: {s.script}",
             f"- ตรวจบนหน้าจอ: {s.screen}",
             "- ปฏิบัติทีละขั้น — อย่าข้าม modal ยืนยัน",
-            "- อ้างอิง: Processes/Pages + `tests/SELECTORS.md`",
+            "- บันทึก appointmentId/meetingId จาก URL หรือ DevTools เมื่อเกี่ยวข้อง",
+            "- ตรวจ HTTP 2xx และไม่มี toast แดงก่อนไปขั้นถัดไป",
+            "- อ้างอิง: Processes/Pages + `tests/SELECTORS.md` + `Processes/Appointment_Workflows.md`",
             "",
             "**สคริปต์บรรยาย:**",
             f'> "ต่อไปคือ {s.title} ในกลุ่ม {s.section}. {s.script} '

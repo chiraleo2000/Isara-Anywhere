@@ -1,7 +1,7 @@
 # 📄 Izara Telemedicine — Page-by-Page Documentation
 
-**Version:** 1.7.32
-**Last Updated:** 24 May 2026 (post security-hardening — TH Sarabun New 16 pt / FC Iconic, ENRICH-3 steps)
+**Version:** 1.7.33
+**Last Updated:** 24 May 2026 (post v1.7.33 — TH Sarabun New 16 pt / FC Iconic, ENRICH-4 steps)
 **Status:** ✅ Phase 1 Complete — Web Platform Documentation + Full DB Schema
 
 ---

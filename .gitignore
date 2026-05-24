@@ -91,3 +91,13 @@ test-logs/
 # Full-deck exports (regenerate locally; committed guides live under docs/)
 Presentations/IZARA_User_Guide.pdf
 Presentations/IZARA_User_Guide.docx
+
+# User guide build intermediates & PDF exports (source of truth: .docx / .pptx in docs/)
+docs/USER_GUIDE_PATIENT_WORD_TH.md
+docs/USER_GUIDE_DOCTOR_WORD_TH.md
+docs/USER_GUIDE_PATIENT_PPT_TH.md
+docs/USER_GUIDE_DOCTOR_PPT_TH.md
+docs/USER_GUIDE_PATIENT_WORD_TH.pdf
+docs/USER_GUIDE_DOCTOR_WORD_TH.pdf
+docs/USER_GUIDE_PATIENT_PPT_TH.pdf
+docs/USER_GUIDE_DOCTOR_PPT_TH.pdf

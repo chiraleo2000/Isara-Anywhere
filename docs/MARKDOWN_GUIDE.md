@@ -16,7 +16,7 @@ Enrich `Processes/Pages/**/*.md` with detailed steps: `python scripts/enrich-pro
 
 **After cloud / Code Breaker testing:** purge demo data only (no re-seed): `npm run cleanup:cloud-test-only`
 
-**Current doc build:** v1.7.32 · ENRICH-3 process pages · Word `TH Sarabun New` 16 pt · PPT `FC Iconic` 32/18/16 pt · หลัง `npm run cleanup:cloud-test-only`
+**Current doc build:** v1.7.33 · ENRICH-4 process pages · Word `TH Sarabun New` 16 pt · PPT `FC Iconic` 32/18/16 pt · หลัง `npm run cleanup:cloud-test-only`
 
 ---
 

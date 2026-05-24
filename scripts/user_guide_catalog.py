@@ -14,8 +14,8 @@ PATIENT_URL = (
 DOCTOR_URL = (
     "https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app"
 )
-VERSION = "1.7.32"
-DATE_TH = "23 พฤษภาคม 2569"
+VERSION = "1.7.33"
+DATE_TH = "24 พฤษภาคม 2569"
 
 
 @dataclass

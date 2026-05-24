@@ -26,7 +26,7 @@ DOC_STD = """## มาตรฐานเอกสาร (รายงานภ�
 | อัปเดตหน้ากระบวนการ | `python scripts/enrich-process-pages.py --force-steps` |
 | ล้างข้อมูลทดสอบ (ไม่ re-seed demo) | `npm run cleanup:cloud-test-only` |
 | การทดสอบอัตโนมัติ | Playwright Groups A–Q + Vitest — `tests/PROCESS_COVERAGE_MATRIX.md` |
-| รุ่นเอกสารหน้ากระบวนการ | **ENRICH-3** (หลัง v1.7.32-security-hardening — ล้าง demo + ขั้นตอนละเอียด) |
+| รุ่นเอกสารหน้ากระบวนการ | **ENRICH-4** (หลัง v1.7.33 — ล้าง demo + ขั้นตอนและคำอธิบายละเอียด) |
 
 **โครงสร้างบังคับในแต่ละหน้า Processes/Pages:**
 
@@ -39,7 +39,7 @@ DOC_STD = """## มาตรฐานเอกสาร (รายงานภ�
 STEPS_MARKER = "## ขั้นตอนการใช้งาน (ละเอียด)"
 EXPLAIN_MARKER = "## คำอธิบายและบริบท (รายงานภาษาไทย)"
 DOC_STD_MARKER = "## มาตรฐานเอกสาร"
-ENRICH_REV = "ENRICH-3"
+ENRICH_REV = "ENRICH-4"
 
 
 def sync_doc_standard(text: str) -> str:
@@ -282,7 +282,7 @@ def explanation_for_stem(stem: str, rel: str) -> str:
         parts.append(f"- {tid}")
     parts += [
         "",
-        f"*(รุ่นเอกสารหน้านี้: {ENRICH_REV} — อัปเดตหลังล้างข้อมูลทดสอบ cloud และ deploy v1.7.32-security-hardening)*",
+        f"*(รุ่นเอกสารหน้านี้: {ENRICH_REV} — อัปเดตหลังล้างข้อมูลทดสอบ cloud และ release v1.7.33)*",
     ]
     return "\n".join(parts)
 
@@ -293,6 +293,7 @@ def step_detail_bullets(step_text: str, rel: str, step_index: int = 0) -> list[s
         "ดำเนินการบนหน้าจอจนจบขั้นนี้ — อย่าข้ามขั้นที่มีการยืนยัน (confirm/modal)",
         "บันทึก `appointmentId` / `meetingId` จาก URL หรือ Network tab หากต้องส่งต่อทีมสนับสนุน",
         f"ลำดับขั้นที่ {step_index} ต้องสำเร็จก่อนขั้นถัดไป — หากล้มเหลวให้จับภาพหน้าจอและ requestId จาก Cloud Logging",
+        "จัดทำรายงาน/คู่มืออ้างอิง: Word ใช้ TH Sarabun New 16 pt (ระยะบรรทัด 1.15) — สไลด์ใช้ FC Iconic ตามมาตรฐานรายงานภาษาไทย",
     ]
     low = step_text.lower()
     if "jwt" in low or "login" in low or "เข้าสู่ระบบ" in step_text:

@@ -10,7 +10,7 @@
 
 Full-stack telemedicine for Thailand: video consultations (Jitsi), PHR/EMR, e-prescribing, AI clinical tools, appointment pool, and PDPA-aware data handling.
 
-**Quick links:** [Patient Word (TH)](docs/USER_GUIDE_PATIENT_WORD_TH.docx) · [Doctor Word (TH)](docs/USER_GUIDE_DOCTOR_WORD_TH.docx) · [Patient PPT (TH)](docs/USER_GUIDE_PATIENT_PPT_TH.pptx) · [Doctor PPT (TH)](docs/USER_GUIDE_DOCTOR_PPT_TH.pptx) · [Cloud access (TH)](docs/CLOUD_ACCESS_TH.md) · [Process pages](Processes/Pages/README.md) · [Markdown guide](docs/MARKDOWN_GUIDE.md)
+**Quick links:** [URLs & demo users](docs/URLS_AND_DEFAULT_USERS.md) · [Patient Word (TH)](docs/USER_GUIDE_PATIENT_WORD_TH.docx) · [Doctor Word (TH)](docs/USER_GUIDE_DOCTOR_WORD_TH.docx) · [Patient PPT (TH)](docs/USER_GUIDE_PATIENT_PPT_TH.pptx) · [Doctor PPT (TH)](docs/USER_GUIDE_DOCTOR_PPT_TH.pptx) · [Cloud access (TH)](docs/CLOUD_ACCESS_TH.md) · [Process pages](Processes/Pages/README.md) · [Markdown guide](docs/MARKDOWN_GUIDE.md)
 
 ---
 
@@ -256,10 +256,9 @@ Isara-Anywhere/
 
 | Document | Audience |
 | -------- | -------- |
-| [USER_GUIDE_PATIENT_TH.md](docs/USER_GUIDE_PATIENT_TH.md) | Patients (Thai) — summary |
+| [URLs & demo users + user guides](docs/URLS_AND_DEFAULT_USERS.md) | Cloud/local URLs, demo accounts, **Word / PPT / PDF** links |
 | [USER_GUIDE_PATIENT_WORD_TH.docx](docs/USER_GUIDE_PATIENT_WORD_TH.docx) | Patients — Word (**TH Sarabun New 16 pt**) |
 | [USER_GUIDE_PATIENT_PPT_TH.pptx](docs/USER_GUIDE_PATIENT_PPT_TH.pptx) | Patients — slides (**FC Iconic**) |
-| [USER_GUIDE_DOCTOR_TH.md](docs/USER_GUIDE_DOCTOR_TH.md) | Clinicians (Thai) — summary |
 | [USER_GUIDE_DOCTOR_WORD_TH.docx](docs/USER_GUIDE_DOCTOR_WORD_TH.docx) | Doctor/Admin — Word (**TH Sarabun New 16 pt**) |
 | [USER_GUIDE_DOCTOR_PPT_TH.pptx](docs/USER_GUIDE_DOCTOR_PPT_TH.pptx) | Doctor/Admin — slides (**FC Iconic**) |
 | [CLOUD_ACCESS_TH.md](docs/CLOUD_ACCESS_TH.md) | Cloud URLs & health checks |
@@ -274,13 +273,15 @@ Regenerate Word/PPT from passing UI screenshots:
 
 ```bash
 python scripts/build-portal-user-guides.py
+powershell -ExecutionPolicy Bypass -File scripts/export-user-guide-pdf.ps1
 ```
 
-Requires `python-docx` and `python-pptx`. Install **TH Sarabun New** and **FC Iconic** on the machine that opens the files for correct rendering.
+Requires `python-docx`, `python-pptx`, and Microsoft Word/PowerPoint (for PDF export). Install **TH Sarabun New** and **FC Iconic** on the machine that opens the files.
 
 ```powershell
-python scripts/enrich-process-pages.py
+python scripts/enrich-process-pages.py --force-steps
 python scripts/build-portal-user-guides.py
+powershell -File scripts/export-user-guide-pdf.ps1
 npm run cleanup:cloud-test   # after E2E — purge test rows + re-seed baseline demo
 ```
 
