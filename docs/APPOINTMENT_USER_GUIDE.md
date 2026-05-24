@@ -3,9 +3,10 @@
 
 ## Complete Workflow: From Booking to EMR & Lab Reports
 
-> **Cloud E2E Test Results: 21/21 PASSED (3.2 min)**
-> Tested on: `2026-04-03` | Environment: Google Cloud Run (asia-southeast1)
+> **Cloud E2E Test Results: Round 2 in progress (residual failure tracked in `CLOUD_E2E_BUG_REPORT.md`)**
+> Tested on: `2026-05-22` | Environment: Google Cloud Run (asia-southeast1)
 > Groups D + E + F — Serial execution, 1 worker, real cloud infrastructure
+> Version: 1.7.3 | Unit Tests: 2,524/2,524 ✅ | UI Tests: 15/15 ✅
 
 ---
 
@@ -35,11 +36,11 @@
 
 Izara Telemedicine provides a **complete appointment lifecycle** across three portals:
 
-| Portal | URL (Cloud) | User Types |
-| ---|---|--- |
-| **Patient Portal** | `izara-patient-portal-dev-testing-*.run.app` | Patients |
-| **Doctor Portal** | `izara-doctor-portal-dev-testing-*.run.app` | Doctors, Admins |
-| **Meeting Server** | `izara-meeting-dev-testing-*.run.app` | All (including Guests) |
+| Portal | URL (Cloud) | Port (Local) | User Types |
+| ---|---|---|--- |
+| **Patient Portal** | [izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app](https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app) | `localhost:3005` | Patients |
+| **Doctor Portal** | [izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app](https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app) | `localhost:3010` | Doctors, Admins |
+| **Meeting Server** | [izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app](https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app) | `localhost:3020` | All (including Guests) |
 
 
 ### End-to-End Flow

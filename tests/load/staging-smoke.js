@@ -21,9 +21,9 @@ import http from 'k6/http';
 import { check, sleep } from 'k6';
 import { Rate } from 'k6/metrics';
 
-const PATIENT = __ENV.PATIENT_URL || 'https://izara-patient-portal-dev-testing-hvht4obouq-as.a.run.app';
-const DOCTOR = __ENV.DOCTOR_URL || 'https://izara-doctor-portal-dev-testing-hvht4obouq-as.a.run.app';
-const MEETING = __ENV.MEETING_URL || 'https://izara-meeting-server-dev-testing-hvht4obouq-as.a.run.app';
+const PATIENT = __ENV.PATIENT_URL || 'https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app';
+const DOCTOR = __ENV.DOCTOR_URL || 'https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app';
+const MEETING = __ENV.MEETING_URL || 'https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app';
 
 export const errorRate = new Rate('errors');
 export const serverErrorRate = new Rate('server_errors');

@@ -73,7 +73,7 @@ const TARGET = getTarget();
 const DB_CONFIGS = {
     local: {
         host: process.env.DB_HOST || 'localhost',
-        port: Number.parseInt(process.env.DB_PORT || '5433'),
+        port: Number.parseInt(process.env.DB_PORT || '5432'),
         user: process.env.DB_USER || 'postgres',
         password: process.env.DB_PASSWORD || process.env.POSTGRES_PASSWORD || '',
         database: process.env.DB_NAME || 'izara_phase1',
@@ -82,7 +82,7 @@ const DB_CONFIGS = {
         max: 10
     },
     cloud: {
-        host: process.env.CLOUD_DB_HOST || '34.143.228.135',
+        host: process.env.CLOUD_DB_HOST || process.env.DEV_DB_HOST || '35.240.157.230',
         port: Number.parseInt(process.env.CLOUD_DB_PORT || '5432'),
         user: process.env.DB_USER || 'postgres',
         password: process.env.DB_PASSWORD || process.env.CLOUD_DB_PASSWORD,
@@ -92,7 +92,7 @@ const DB_CONFIGS = {
         max: 5
     },
     'dev-cloud': {
-        host: process.env.DEV_DB_HOST || '35.240.162.227',
+        host: process.env.DEV_DB_HOST || '35.240.157.230',
         port: Number.parseInt(process.env.DEV_DB_PORT || '5432'),
         user: 'postgres',
         password: process.env.DEV_DB_PASSWORD || '',
@@ -915,6 +915,8 @@ async function main() {
         console.log('  --fix-passwords    Update all password hashes');
         console.log('  --fix-profiles     Fix doctor/patient profile tables');
         console.log('  --seed             Seed database with demo data');
+        console.log('  --cleanup-test       Remove E2E test data then re-seed baseline demo');
+        console.log('  --cleanup-test-only  Remove E2E test data only (no re-seed)');
         console.log('  --verify           Verify data integrity');
         console.log('  --all              Run all fixes, seed, and verify\n');
         console.log('Migrations:');
@@ -1003,9 +1005,30 @@ async function main() {
             await fixPasswords(client);
         }
 
-        if (runAll || args.has('--seed')) {
+        if (args.has('--cleanup-test') || args.has('--cleanup-test-only')) {
+            console.log('\n🧹 CLEANING PLAYWRIGHT / E2E TEST DATA\n');
+            const sqlPath = path.join(__dirname, 'cleanup-test-data.sql');
+            const sql = fs.readFileSync(sqlPath, 'utf8');
+            await client.query(sql);
+            console.log('   ✅ cleanup-test-data.sql applied');
+        }
+
+        const shouldSeed =
+            !args.has('--cleanup-test-only') &&
+            (runAll || args.has('--seed') || args.has('--cleanup-test'));
+
+        if (shouldSeed) {
             console.log('\n🌱 SEEDING DATABASE\n');
             await seedDatabase(client);
+        }
+
+        if (args.has('--seed-sso') || args.has('--cleanup-test')) {
+            const ssoPath = path.join(__dirname, 'seed-sso-test-users.sql');
+            if (fs.existsSync(ssoPath)) {
+                console.log('\n🔐 SEEDING SSO TEST USERS (Group N)\n');
+                await client.query(fs.readFileSync(ssoPath, 'utf8'));
+                console.log('   ✅ seed-sso-test-users.sql applied');
+            }
         }
 
         if (args.has('--migrate-phase2')) {

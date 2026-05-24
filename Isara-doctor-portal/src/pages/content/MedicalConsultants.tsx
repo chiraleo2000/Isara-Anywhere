@@ -408,7 +408,7 @@ const MedicalConsultants: React.FC = () => {
     };
     loadData();
     return () => { mounted = false; };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   // ============================================================================
   // DATA NORMALIZATION (DB rows → frontend Consultant shape)

@@ -1,9 +1,7 @@
 /**
- * PG LISTEN/NOTIFY listener — Patient Portal
- * Subscribes to the PostgreSQL 'data_changes' channel and re-broadcasts
- * events via Socket.IO so the patient frontend receives cross-service updates.
+ * PG LISTEN/NOTIFY listener — Patient Portal (dedicated Client, not pooled).
  */
-import type { Pool, PoolClient } from 'pg';
+import { Client, type Pool } from 'pg';
 import type { Server as SocketServer } from 'socket.io';
 
 const TABLE_EVENT_MAP: Record<string, string> = {
@@ -19,7 +17,6 @@ const TABLE_EVENT_MAP: Record<string, string> = {
   clinical_resources: 'content:updated',
 };
 
-// The 10 triggers expected from v2.2.0-notify-triggers.sql
 const EXPECTED_TRIGGERS = [
   'trg_appointments_notify',
   'trg_emr_notify',
@@ -33,20 +30,31 @@ const EXPECTED_TRIGGERS = [
   'trg_clinical_resources_notify',
 ];
 
-/**
- * Verify that all PG NOTIFY triggers are deployed in the database.
- */
-async function verifyTriggers(client: PoolClient): Promise<void> {
+let notifyClient: Client | null = null;
+let listenPool: Pool | null = null;
+let listenIo: SocketServer | null = null;
+
+function clientConfigFromPool(pool: Pool) {
+  const o = pool.options;
+  return {
+    host: o.host,
+    port: o.port,
+    user: o.user,
+    password: o.password,
+    database: o.database,
+    ssl: o.ssl,
+  };
+}
+
+async function verifyTriggers(client: Client): Promise<void> {
   try {
     const result = await client.query(
-      `SELECT tgname FROM pg_trigger WHERE tgname LIKE 'trg_%_notify'`
+      `SELECT tgname FROM pg_trigger WHERE tgname LIKE 'trg_%_notify'`,
     );
     const deployed = new Set(result.rows.map((r: { tgname: string }) => r.tgname));
-    const missing = EXPECTED_TRIGGERS.filter(t => !deployed.has(t));
-
+    const missing = EXPECTED_TRIGGERS.filter((t) => !deployed.has(t));
     if (missing.length > 0) {
       console.warn(`⚠️  [PG_NOTIFY] Missing ${missing.length} trigger(s): ${missing.join(', ')}`);
-      console.warn('   → Run: scripts/database/v2.2.0-notify-triggers.sql to install them');
     } else {
       console.log(`✅ [PG_NOTIFY] All ${EXPECTED_TRIGGERS.length} triggers verified`);
     }
@@ -55,48 +63,78 @@ async function verifyTriggers(client: PoolClient): Promise<void> {
   }
 }
 
-export async function startPgNotifyListener(pool: Pool, io: SocketServer): Promise<void> {
-  let client: PoolClient | undefined;
-  try {
-    client = await pool.connect();
-    await client.query('LISTEN data_changes');
-    console.log('📡 PG LISTEN data_changes — connected (patient portal)');
+async function connectListen(pool: Pool, io: SocketServer): Promise<void> {
+  if (notifyClient) {
+    try {
+      notifyClient.removeAllListeners('notification');
+      notifyClient.removeAllListeners('error');
+      await notifyClient.end();
+    } catch {
+      /* ignore */
+    }
+    notifyClient = null;
+  }
 
-    // Verify triggers on startup
-    await verifyTriggers(client);
+  notifyClient = new Client(clientConfigFromPool(pool));
+  await notifyClient.connect();
+  await notifyClient.query('LISTEN data_changes');
+  console.log('📡 PG LISTEN data_changes — dedicated client (patient portal)');
 
-    client.on('notification', (msg) => {
-      if (msg.channel !== 'data_changes') return;
-      try {
-        const payload = JSON.parse(msg.payload || '{}');
-        const event = TABLE_EVENT_MAP[payload.table] || 'data:changed';
+  await verifyTriggers(notifyClient);
 
-        // Content tables: broadcast to all (no patient/doctor scope)
-        if (payload.table === 'medical_content' || payload.table === 'clinical_resources') {
-          const emitEvent = payload.status === 'published' ? 'content:published' : event;
-          io.emit(emitEvent, payload);
-          return;
-        }
+  notifyClient.on('notification', (msg) => {
+    if (msg.channel !== 'data_changes') return;
+    try {
+      const payload = JSON.parse(msg.payload || '{}');
+      const event = TABLE_EVENT_MAP[payload.table] || 'data:changed';
 
+      if (payload.table === 'medical_content' || payload.table === 'clinical_resources') {
+        const emitEvent = payload.status === 'published' ? 'content:published' : event;
+        io.emit(emitEvent, payload);
+        return;
+      }
+
+      if (payload.table === 'appointments') {
         if (payload.patient_id) {
           io.to(`patient-${payload.patient_id}`).emit(event, payload);
+          if (payload.operation === 'INSERT') {
+            io.to(`patient-${payload.patient_id}`).emit('appointment:created', payload);
+          }
         }
-        if (payload.doctor_id) {
-          io.to(`doctor-${payload.doctor_id}`).emit(event, payload);
-        }
-      } catch (err: unknown) {
-        console.error('[PG_NOTIFY] Parse/forward error:', (err as Error).message);
+        io.to('admin-notifications').emit('pool-updated', payload);
+        return;
       }
-    });
 
-    client.on('error', (err: Error) => {
-      console.error('[PG_NOTIFY] Connection error — will retry:', err.message);
-      try { client?.release(); } catch { /* ignore */ }
-      setTimeout(() => startPgNotifyListener(pool, io), 5000);
-    });
+      if (payload.patient_id) {
+        io.to(`patient-${payload.patient_id}`).emit(event, payload);
+      }
+      if (payload.doctor_id) {
+        io.to(`doctor-${payload.doctor_id}`).emit(event, payload);
+      }
+    } catch (err: unknown) {
+      console.error('[PG_NOTIFY] Parse/forward error:', (err as Error).message);
+    }
+  });
+
+  notifyClient.on('error', (err: Error) => {
+    console.error('[PG_NOTIFY] Connection error — will retry:', err.message);
+    setTimeout(() => {
+      if (listenPool && listenIo) {
+        connectListen(listenPool, listenIo).catch((e) =>
+          console.error('[PG_NOTIFY] Retry failed:', (e as Error).message),
+        );
+      }
+    }, 5000);
+  });
+}
+
+export async function startPgNotifyListener(pool: Pool, io: SocketServer): Promise<void> {
+  listenPool = pool;
+  listenIo = io;
+  try {
+    await connectListen(pool, io);
   } catch (err: unknown) {
     console.error('[PG_NOTIFY] Subscribe failed — will retry:', (err as Error).message);
-    if (client) { try { client.release(); } catch { /* ignore */ } }
     setTimeout(() => startPgNotifyListener(pool, io), 5000);
   }
 }

@@ -1,0 +1,58 @@
+{
+  "ledger": [
+    {
+      "round": 1,
+      "pass": true,
+      "steps": [
+        {
+          "label": "CB1-local-network",
+          "pass": true
+        },
+        {
+          "label": "CB1-lobby-regression",
+          "pass": true
+        },
+        {
+          "label": "CB1-cloud-lobby-reconnect",
+          "pass": true
+        }
+      ]
+    },
+    {
+      "round": 2,
+      "pass": true,
+      "steps": [
+        {
+          "label": "CB2-local-corruption",
+          "pass": true
+        },
+        {
+          "label": "CB2-cloud-corruption",
+          "pass": true
+        },
+        {
+          "label": "CB2-validation-unit",
+          "pass": true
+        }
+      ]
+    },
+    {
+      "round": 3,
+      "pass": true,
+      "steps": [
+        {
+          "label": "CB3-zero-exception",
+          "pass": true
+        },
+        {
+          "label": "CB3-cloud-meeting-lifecycle",
+          "pass": true
+        }
+      ]
+    }
+  ],
+  "r1": true,
+  "r2": true,
+  "r3": true,
+  "attempt": 1
+}

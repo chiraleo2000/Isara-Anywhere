@@ -62,7 +62,7 @@ Database: izara_phase1
 │  ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐      │
 │  │ Patient Portal    │  │ Doctor Portal     │  │ Meeting Server   │      │
 │  │ 1 CPU / 1 GB      │  │ 1 CPU / 1 GB      │  │ 1 CPU / 2 GB     │      │
-│  │ 0-2 instances     │  │ 0-2 instances     │  │ 0-2 instances    │      │
+│  │ 1-2 instances*    │  │ 1-2 instances*    │  │ 0-2 instances    │      │
 │  │ gen2 + CPU Boost  │  │ gen2 + CPU Boost  │  │ gen2 + CPU Boost │      │
 │  │ Timeout: 300s     │  │ Timeout: 300s     │  │ Timeout: 600s    │      │
 │  └────────┬─────────┘  └────────┬─────────┘  └────────┬────────┘      │
@@ -696,3 +696,54 @@ Phase 1: AI-Assisted Consultation with Man-in-the-Loop Validation
 | `Admin-Firefox` | Firefox | Admin | `<http://localhost:3010`> |
 
 New test spec: `tests/e2e/specs/32-cross-portal-sync.spec.ts` — validates all 11 fixes above.
+
+---
+
+## GATE 0 — Realtime sync on Cloud Run (May 2026)
+
+\* Patient + Doctor portals deploy with **`--min-instances=1`** so Socket.IO rooms stay warm during Gate validation. For horizontal scale, set **`REDIS_URL`** and use `socketRedisAdapter.cjs` on both portals (main API port 3009).
+
+| Channel | Implementation |
+|---------|----------------|
+| DB change | `pg_notify` on channel `data_changes` via `scripts/database/v2.2.0-notify-triggers.sql` |
+| LISTEN | Dedicated `pg.Client` in `pgNotifyListener` (not pooled `release()`) |
+| Emit | `io.to('doctor-{id}')`, `io.to('admin-notifications')`, `io.to('queue-{id}')` |
+| Doctor `/ws` | Nginx → **3009** main API (not 3011 auth) |
+
+Canonical appointment pool = PostgreSQL `appointments.status IN ('in_pool','pending','awaiting_doctor_response')` — no GCS pool file.
+
+See [`GATE0_IMPLEMENTATION_STATUS.md`](GATE0_IMPLEMENTATION_STATUS.md).
+
+---
+
+## Offline EMR localStorage sync (May 2026)
+
+When the doctor portal loses connectivity during EMR editing, drafts are queued in browser storage and flushed on reconnect.
+
+| Key | Structure | Behavior |
+|-----|-----------|----------|
+| `izara_emr_sync_queue` | JSON array of `{ id, payload, updatedAt }` | Upsert by `id`; failed server pushes remain until `flushQueue` succeeds |
+
+**Autosave:** 30s debounce before enqueue/API save (`tests/unit/doctor-portal/emrAutosave.test.ts`).
+
+**Tests:** `tests/unit/cross-portal/offlineEmrSync.test.ts`
+
+---
+
+## Appointment transactional rollback (interrupted booking)
+
+Patient booking uses PostgreSQL transactions so partial inserts do not leave corrupt pool/queue state if the client disconnects mid-request.
+
+**Tests:** `tests/unit/patient-portal/appointmentsRollback.test.ts` — validates rollback on simulated failure after slot lock.
+
+---
+
+## Meeting recording persistence (cloud)
+
+| Layer | Path |
+|-------|------|
+| Filesystem | `RECORDINGS_DIR` (Cloud Run: `/tmp/recordings`) |
+| Database | `meeting_records.recording_data` BYTEA + `recording_url` metadata |
+| Serve | `GET /api/recordings/:meetingId/:filename` — disk first, BYTEA fallback |
+
+See [`VIDEO_MEETING_JITSI_GEMINI.md`](VIDEO_MEETING_JITSI_GEMINI.md) and Group Q in [`TWO_ROUND_CLOUD_TESTING.md`](TWO_ROUND_CLOUD_TESTING.md).

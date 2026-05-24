@@ -30,10 +30,11 @@ This document describes the video meeting implementation using:
 ## Key Features
 
 
-### 1. Doctor as Meeting HOST
+### 1. Doctor as Meeting HOST (assigned doctor only)
 
 
-- **Only the Doctor can START the meeting** - Doctor acts as moderator/host
+- **Only the assigned doctor** can START the meeting — Doctor URL includes `config.moderator=true`; `meeting_config.hostRole = 'doctor'`
+- Admin and patient are **not** moderators (Teams/Zoom enterprise model)
 
 
 - Doctor controls lobby admission, recording, and meeting settings
@@ -148,9 +149,18 @@ This document describes the video meeting implementation using:
 
 
 - **Guest Join Pages** (public, no login required):
-  - Patient Portal: `/guest-join/:meetingId`
-  - Doctor Portal: `/guest-join/:meetingId`
+  - Patient Portal: `/guest-join/:meetingId` (optional `?name=` for E2E)
+  - Doctor Portal: `/guest-join/:meetingId` (same lobby flow)
+  - JWT invite: `/guest/join/:token` (24h, from `POST /api/meetings/:id/guest-invite`)
 
+- **Canonical invite URLs** (meeting server `buildGuestPortalUrls` — copy from API only, never hardcode doctor origin):
+  - `guestJoinUrl`: `{PATIENT_PORTAL_URL}/guest-join/{meetingKey}?name=...`
+  - `guestTokenUrl`: `{PATIENT_PORTAL_URL}/guest/join/{jwt}`
+  - `POST /api/meetings/:id/share-link` and `guest-invite` return both; Cloud Build sets `PATIENT_PORTAL_URL` after portal deploy.
+
+- **Guest video mount**: full-height `jitsi-guest-container`; wait for `host-ready` (poll + socket on **all room aliases** via `GET /socket-rooms`) before Jitsi External API; iframe sized 100%×70vh; retry on failure.
+- **Socket rooms**: `join-meeting` joins appointment id + meeting UUID + lobby aliases so `host-ready` and `lobby-update` reach guests.
+- **Post-meeting**: `save-recording` → `recording_url` (+ BYTEA); `/end` → Gemini summary → doctor dashboard `getMeetingFiles` → **Insert meeting summary into EMR**.
 
 - Doctor as HOST approves/rejects each participant from lobby (like Microsoft Teams)
 
@@ -1021,6 +1031,20 @@ MEETING_SERVER_URL=<http://localhost:3020>
 ```
 
 
+## Automated E2E (Group Q — cloud gate)
+
+| Step | Actor | Assertion |
+|------|--------|-----------|
+| Q01a | Doctor | `POST /api/meetings/create` with internal JWT (no Google/GitHub) |
+| Q01b–c | Doctor / Patient | Doctor in Jitsi; patient in `lobby-waiting-screen` only |
+| Q01d | Guest | `guest-name-input` + `guest-lobby-waiting` |
+| Q01e | Doctor | `admit-all-btn` → API status `admitted` |
+| Q01f | All 3 | 10s hold with media/iframe checks (fake camera/mic in CI) |
+| Q01g | Doctor | `end-meeting-btn` → results `completed` |
+| Q02 | Doctor | `recordingUrl` on disk + `recording-player` + `generate-summary-btn` (requires `GEMINI_API_KEY`) |
+
+See [TWO_ROUND_CLOUD_TESTING.md](TWO_ROUND_CLOUD_TESTING.md) and `tests/group-Q-meeting-lifecycle.ui-test.ts`.
+
 ## Docker Configuration
 
 
@@ -1535,3 +1559,53 @@ $$ LANGUAGE plpgsql;
 | 10 | Transcript embedded for RAG | Meeting Server | transcriptions_embeddings |
 | 11 | AI chat references past meetings | Doctor | ai_chat_history, transcriptions_embeddings |
 | 12 | Multi-party meeting (invitees) | Doctor+Guests | meeting_records, meeting_transcripts |
+
+---
+
+## Automated verification (Group Q — cloud P0)
+
+| Scenario | Test | Notes |
+|----------|------|-------|
+| Q01 — 3-party lifecycle | `tests/group-Q-meeting-lifecycle.ui-test.ts` | Doctor HOST via internal JWT; patient + guest `lobbyJoinUnauth`; doctor `lobbyAdmitAll`; **10s** hold (`MEETING_HOLD_MS`); optional `GET /api/meetings/:id/runtime` when `IZARA_DEV_TESTING=1` |
+| Q02 — Recording + Gemini | Same file, test Q02 | `POST .../save-recording` body **`audioBase64`** (not `recordingData`); immediate `GET .../results`; UI `data-testid`: `recording-player`, `generate-summary-btn`, `summary-structured` |
+| Meeting server contracts | `Izara-jitsi-server/tests/*.test.mjs` | `npm run test:meeting-server:contract` |
+| Selectors | `tests/SELECTORS.md` | `end-meeting-btn`, `recording-indicator`, `meeting-results` |
+
+**Run (after Group D + D-host):**
+
+```bash
+npm run test:e2e:meeting-lifecycle
+```
+
+**Cloud persistence (v1.7.22+):** `save-recording` dual-writes WebM to `RECORDINGS_DIR` (`/tmp/recordings` on Cloud Run) and PostgreSQL `meeting_records.recording_data` (BYTEA). `GET /api/recordings/:id/:file` serves disk first, then BYTEA fallback.
+
+**Error ledger:** `npm run ledger:cloud -- --round N` after each cloud run; fix only after `CLOUD_E2E_ERROR_LEDGER_ROUND{N}.md` exists.
+
+**No stubs on cloud:** Group Q must not use fake `save-recording` or stub `generate-summary` transcripts when `TEST_ENV=cloud`.
+
+---
+
+## Post-meeting pipeline (recording → transcript → AI summary)
+
+**Module:** `Izara-jitsi-server/server/postMeetingPipeline.js`
+
+| Stage | What happens | Failure handling |
+|-------|----------------|------------------|
+| Storage | Browser `save-recording` or Jibri webhook → `meetings/{doctorId}/{meetingId}/video.{ext}` + BYTEA + optional `GCS_BUCKET` | 50MB upload cap; WebM/MP4 header validation; 422 on interrupted capture |
+| Transcribe | Live `meeting_transcripts` first; else Google STT (≤50MB sync); else OpenAI Whisper (≤25MB) | Partial pipeline if no audio; `stage: partial` in `meeting_config.postMeetingPipeline` |
+| AI summary | Gemini clinical JSON + Thai SOAP narrative → `ai_summary`, `ai_summary_structured` | Socket `meeting-summary-ready`; doctor must validate before EMR |
+| UI | Doctor dashboard `GET /api/video-meeting/:appointmentId/files`; AI Summary tab | `summaryText` / `aiSummary`; pipeline status in `postMeetingPipeline` |
+
+**Production (meet.jit.si):** MediaRecorder → `POST /api/meetings/:id/save-recording` → `queuePostMeetingPipeline`. Jibri webhook is for future self-hosted Jitsi only.
+
+**APIs:**
+
+- `POST /api/meetings/:id/save-recording` — hierarchical storage + async pipeline
+- `POST /api/meetings/:id/end` — queues pipeline when recording exists but transcript/summary incomplete
+- `GET /api/meetings/:id/pipeline-status` — doctor-scoped progress
+- `POST /api/webhooks/jibri-recording` — `X-Jibri-Webhook-Secret` (self-hosted)
+- `GET /api/recordings/meetings/:doctorId/:meetingId/:filename` — isolated playback (Range requests)
+
+**Env:** `GEMINI_API_KEY`, `GCP_SERVICE_ACCOUNT_KEY` or `GOOGLE_APPLICATION_CREDENTIALS`, optional `OPENAI_API_KEY` (Whisper), `GCS_BUCKET`, `JIBRI_WEBHOOK_SECRET`, `POST_MEETING_PIPELINE_TIMEOUT_MS` (default 900000).
+
+**HIPAA / PDPA:** Recordings namespaced by `doctor_id`; playback and pipeline-status enforce `doctor_id === JWT user` (admin exempt). PHI in PostgreSQL BYTEA — restrict DB access; prefer GCS with CMEK for long-term archive.

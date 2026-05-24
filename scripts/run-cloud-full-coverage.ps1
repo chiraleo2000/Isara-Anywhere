@@ -1,0 +1,41 @@
+#!/usr/bin/env pwsh
+<#
+  Full cloud Playwright coverage — all groups A–P, headed UI + screenshots.
+  Orchestration: Playwright project dependencies (A first, D→E→F serial chain).
+#>
+param(
+    [int]$Workers = 1,
+    [switch]$SkipHealthGate
+)
+
+$ErrorActionPreference = "Stop"
+$root = Split-Path -Parent $PSScriptRoot
+Set-Location $root
+
+# After cloud:smoke passes, skip duplicate fixture health gate (avoids cold-start flake)
+if ($SkipHealthGate -or -not $env:E2E_SKIP_HEALTH_GATE) { $env:E2E_SKIP_HEALTH_GATE = '1' }
+$env:PW_HEADED = '1'
+
+$projects = @(
+    'A-auth',
+    'B-patient-portal', 'C-doctor-portal',
+    'G-livingwill-pdpa', 'H-content-resources', 'I-admin-notifications', 'J-ai-timeline-map',
+    'D-appointments', 'D-doctor-host', 'Q-meeting-lifecycle', 'E-meeting-clinical', 'F-phr-health-records', 'L-lab-ordering',
+    'K-accessibility',
+    'M-hardening', 'N-google-sso', 'O-sso-screenshots', 'P-workflow-screenshots'
+)
+
+$args = @('--workers', $Workers, '--headed') + ($projects | ForEach-Object { "--project=$_" })
+
+Write-Host "=== Cloud full coverage (headed) ===" -ForegroundColor Cyan
+Write-Host "Projects: $($projects -join ', ')" -ForegroundColor Gray
+
+& "$root/scripts/run-cloud-tests.ps1" @args
+$code = $LASTEXITCODE
+
+if ($code -eq 0) {
+    Write-Host "`n=== Regenerating portal user guides ===" -ForegroundColor Cyan
+    python "$root/scripts/build-portal-user-guides.py"
+}
+
+exit $code

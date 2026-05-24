@@ -437,7 +437,7 @@ export const CompleteEMREditor: React.FC<CompletEMREditorProps> = ({
           </div>
           <div className="flex items-center space-x-3">
             {/* Auto-save status */}
-            <div className="text-sm">
+            <div className="text-sm" data-testid="emr-autosave-status" data-status={autoSaveStatus}>
               {autoSaveStatus === 'saved' && (
                 <span className="text-green-600">✓ Saved</span>
               )}

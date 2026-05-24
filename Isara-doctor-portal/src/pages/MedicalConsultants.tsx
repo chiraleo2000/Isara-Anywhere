@@ -541,7 +541,7 @@ const MedicalConsultants: React.FC = () => {
     };
     loadData();
     return () => { mounted = false; };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   // ============================================================================
   // FILTERING

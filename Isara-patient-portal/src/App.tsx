@@ -91,13 +91,16 @@ function AppRoutes() {
       {/* Guest meeting join - public, no auth required */}
       <Route path="/guest-join/:meetingId" element={<GuestMeetingJoin />} />
       <Route path="/guest/join/:token" element={<GuestMeetingJoin />} />
+
+      {/* Full-screen meeting — public (no portal login); Izara lobby + doctor admit */}
+      <Route path="/meeting/:appointmentId" element={<PatientMeetingRoom />} />
+      <Route path="/join/:appointmentId" element={<PatientMeetingRoom />} />
       
       <Route path="/" element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
         <Route index element={<DashboardPage />} />
         <Route path="appointments" element={<AppointmentListPage />} />
         <Route path="appointments/book" element={<BookAppointmentPage />} />
         <Route path="appointments/:id" element={<AppointmentDetailPage />} />
-        <Route path="meeting/:appointmentId" element={<PatientMeetingRoom />} />
         <Route path="phr" element={<PHRPage />} />
         <Route path="ai-doctor" element={<AIDoctorPage />} />
         <Route path="health-library" element={<MedicalContentLibrary />} />

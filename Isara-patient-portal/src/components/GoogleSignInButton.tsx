@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { GoogleLogin, GoogleOAuthProvider, type CredentialResponse } from '@react-oauth/google';
 import { useAuth } from '../contexts/AuthContext';
+import { useGoogleClientId } from '../hooks/useGoogleClientId';
 
 interface Props {
   readonly onSuccess?: () => void;
@@ -16,8 +17,11 @@ interface Props {
 export default function GoogleSignInButton({ onSuccess, onError, onNotRegistered, onPasswordNotSet }: Props) {
   const { loginWithGoogle } = useAuth();
   const [busy, setBusy] = useState(false);
-  const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+  const { clientId, resolved } = useGoogleClientId();
 
+  if (!resolved) {
+    return <div className="w-full h-10 animate-pulse bg-gray-100 rounded-lg" data-testid="google-sso-loading" aria-hidden="true" />;
+  }
   if (!clientId) return null;
 
   const handleCredential = async (cred: CredentialResponse) => {

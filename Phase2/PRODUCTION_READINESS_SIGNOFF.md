@@ -65,9 +65,9 @@
 - `.gcloudignore` correctly excludes `tests/`, `node_modules/`, `docs/`, snapshots (22.2 MiB tarball vs 626 MiB pre-fix)
 
 - All 3 Cloud Run services healthy:
-  - `izara-patient-portal-dev-testing` → <https://izara-patient-portal-dev-testing-hvht4obouq-as.a.run.app>
-  - `izara-doctor-portal-dev-testing`  → <https://izara-doctor-portal-dev-testing-hvht4obouq-as.a.run.app>
-  - `izara-meeting-server-dev-testing` → <https://izara-meeting-server-dev-testing-hvht4obouq-as.a.run.app>
+  - `izara-patient-portal-dev-testing` → <https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app>
+  - `izara-doctor-portal-dev-testing`  → <https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app>
+  - `izara-meeting-server-dev-testing` → <https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app>
 
 ---
 

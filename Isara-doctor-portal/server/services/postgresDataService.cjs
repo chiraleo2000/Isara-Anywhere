@@ -741,7 +741,7 @@ const AppointmentService = {
     const result = await pool.query(
       `SELECT COUNT(*) as count FROM appointments 
        WHERE (doctor_id = $1 OR doctor_id IS NULL)
-       AND status IN ('pending', 'awaiting_doctor_response', 'assigned')`,
+       AND status IN ('in_pool', 'pending', 'awaiting_doctor_response', 'assigned')`,
       [doctorId]
     );
     return Number.parseInt(result.rows[0].count, 10);
@@ -1468,6 +1468,24 @@ const MeetingService = {
 // NOTIFICATION SERVICE
 // ============================================================================
 
+function normalizeNotificationRow(row) {
+  let data = row.data;
+  if (typeof data === 'string') {
+    try {
+      data = JSON.parse(data);
+    } catch {
+      data = {};
+    }
+  }
+  const payload = data && typeof data === 'object' ? data : {};
+  const appointmentId = payload.appointmentId ?? payload.appointment_id;
+  return {
+    ...row,
+    data: payload,
+    ...(appointmentId ? { appointmentId } : {}),
+  };
+}
+
 const NotificationService = {
   /**
    * Get user notifications
@@ -1480,7 +1498,7 @@ const NotificationService = {
     query += ' ORDER BY created_at DESC LIMIT 50';
 
     const result = await pool.query(query, [userId]);
-    return result.rows;
+    return result.rows.map(normalizeNotificationRow);
   },
 
   /**

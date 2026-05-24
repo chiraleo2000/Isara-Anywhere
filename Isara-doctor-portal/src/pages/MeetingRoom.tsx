@@ -56,7 +56,9 @@ const JITSI_DOMAIN = 'meet.jit.si';
 const MEETING_SERVER_URL = (() => {
   if (globalThis.window !== undefined) {
     const env = (globalThis as any).ENV;
-    if (env?.MEETING_SERVER_URL) return env.MEETING_SERVER_URL;
+    if (env?.MEETING_SERVER_URL && !String(env.MEETING_SERVER_URL).includes('localhost')) {
+      return env.MEETING_SERVER_URL;
+    }
   }
   return import.meta.env?.VITE_MEETING_SERVER_URL || 'http://localhost:3020';
 })();
@@ -222,7 +224,9 @@ const MeetingRoom: React.FC = () => {
               requireDisplayName: true,
               enableLobbyChat: true,
               fileRecordingsEnabled: false,
-              'localRecording.enabled': true,
+              'localRecording.enabled': false,
+              analytics: { disabled: true },
+              disableAnalytics: true,
               toolbarButtons: [
                 'microphone', 'camera', 'desktop', 'chat',
                 'raisehand', 'participants-pane', 'tileview',

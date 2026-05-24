@@ -26,6 +26,37 @@ console.log('[PHR] Production mode - PostgreSQL only');
 // PHR (Personal Health Records) ROUTES
 // ============================================================================
 
+function normalizeAllergiesForClient(raw: unknown): string[] {
+  if (raw == null) return [];
+  if (Array.isArray(raw)) {
+    return raw.flatMap((item) => {
+      if (typeof item === 'string') {
+        const trimmed = item.trim();
+        return trimmed ? [trimmed] : [];
+      }
+      if (item && typeof item === 'object') {
+        const rec = item as Record<string, unknown>;
+        const label = rec.allergen ?? rec.name ?? rec.label ?? rec.substance;
+        if (typeof label === 'string' && label.trim()) return [label.trim()];
+      }
+      return [];
+    });
+  }
+  if (typeof raw === 'string') {
+    const s = raw.trim();
+    if (!s) return [];
+    if (s.startsWith('[')) {
+      try {
+        return normalizeAllergiesForClient(JSON.parse(s));
+      } catch {
+        return s.split(/[,;|]/).map((part) => part.trim()).filter(Boolean);
+      }
+    }
+    return s.split(/[,;|]/).map((part) => part.trim()).filter(Boolean);
+  }
+  return [];
+}
+
 // Helper function to transform PHR from database format to frontend format
 function transformPHR(phr: any): any {
   if (!phr) return null;
@@ -41,7 +72,7 @@ function transformPHR(phr: any): any {
       gender: phr.demographics?.gender,
       ...phr.demographics
     },
-    allergies: phr.allergies || [],
+    allergies: normalizeAllergiesForClient(phr.allergies),
     chronicConditions: phr.chronic_conditions || [],
     medications: phr.medications || [],
     emergencyContacts: phr.emergency_contacts || [],
@@ -112,7 +143,7 @@ router.get('/lab-orders', authMiddleware, async (req: Request, res: Response) =>
     const result = await pool.query(
       `SELECT lo.*, u.name as doctor_name, u.name_thai as doctor_name_thai
        FROM lab_orders lo LEFT JOIN users u ON lo.doctor_id = u.id
-       WHERE lo.patient_id = $1 ORDER BY lo.created_at DESC`,
+       WHERE lo.patient_id = $1 ORDER BY COALESCE(lo.ordered_at, lo.ordered_date, lo.created_at) DESC`,
       [patientId]
     );
     res.json({ labOrders: result.rows, count: result.rows.length });
@@ -381,7 +412,7 @@ router.post('/:patientId/vitals', authMiddleware, async (req: Request, res: Resp
   try {
     const { patientId } = req.params;
     const vitalData = req.body;
-    console.log(`[PHR] Adding vital signs for patient: ${patientId}`, vitalData);
+    console.log(`[PHR] Adding vital signs for patient: ${patientId} (fields: ${Object.keys(vitalData || {}).length})`);
 
     // Convert frontend format to database format
     const dbVitalData = {
@@ -1173,7 +1204,7 @@ router.post('/vitals', authMiddleware, async (req: Request, res: Response) => {
     }
     
     const vitalData = req.body;
-    console.log(`[PHR] Adding vital signs for authenticated user: ${patientId}`, vitalData);
+    console.log(`[PHR] Adding vital signs for authenticated user: ${patientId} (fields: ${Object.keys(vitalData || {}).length})`);
 
     // Convert frontend format to database format
     const dbVitalData = {
@@ -1209,7 +1240,7 @@ router.post('/medications', authMiddleware, async (req: Request, res: Response) 
     }
     
     const medicationData = req.body;
-    console.log(`[PHR] Adding medication for authenticated user: ${patientId}`, medicationData);
+    console.log(`[PHR] Adding medication for authenticated user: ${patientId} (fields: ${Object.keys(medicationData || {}).length})`);
 
     const phr = await PHRService.getPHR(patientId);
     const medications = phr?.medications || [];

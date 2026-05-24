@@ -22,7 +22,8 @@ $ErrorActionPreference = 'Stop'
 # Resolve workspace root
 $workspace = (Get-Item "$PSScriptRoot\..").FullName
 $outputDir = Join-Path $workspace 'Presentations'
-$snapshotDir = Join-Path $workspace 'test-results\snapshots'
+$snapshotDir = Join-Path $workspace 'docs\screenshots'
+$legacySnapshotDir = Join-Path $workspace 'test-results\snapshots'
 $guideMarkdown = Join-Path $outputDir 'USER_GUIDE_GENERATED.md'
 
 if (-not (Test-Path $outputDir)) {
@@ -157,6 +158,10 @@ lang: "th"
 Write-Host "`n═══ Generating IZARA User Guide ═══" -ForegroundColor Cyan
 
 $screenshots = @()
+if ($IncludeScreenshots -and -not (Test-Path $snapshotDir) -and (Test-Path $legacySnapshotDir)) {
+    $snapshotDir = $legacySnapshotDir
+}
+
 if ($IncludeScreenshots -and (Test-Path $snapshotDir)) {
     $screenshots = Get-Screenshots -Dir $snapshotDir
     Write-Host "  Found $($screenshots.Count) screenshots in $snapshotDir" -ForegroundColor Gray

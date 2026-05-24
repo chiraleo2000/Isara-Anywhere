@@ -224,15 +224,24 @@ function createJitsiUrl(roomName: string, config: JitsiConfig, userInfo?: { name
   
   // Security - enable room passwords for medical privacy
   params.set('config.enableInsecureRoomNameWarning', 'false');
-  params.set('config.requireDisplayName', 'true');
+  if (userInfo?.name) {
+    params.set('userInfo.displayName', userInfo.name);
+    params.set('config.requireDisplayName', 'false');
+    params.set('config.prejoinPageEnabled', 'false');
+  } else {
+    params.set('config.requireDisplayName', 'true');
+  }
   
-  // Enable lobby for doctor approval
-  params.set('config.enableLobbyChat', 'true');
+  // Izara lobby handles admission — disable Jitsi moderator gate
+  params.set('config.enableLobby', 'false');
+  params.set('config.lobbyModeEnabled', 'false');
+  params.set('config.enableLobbyChat', 'false');
+  params.set('config.prejoinPageEnabled', 'false');
   
   // Recording configuration (free with Jitsi)
   if (config.enableRecording) {
     params.set('config.fileRecordingsEnabled', 'true');
-    params.set('config.localRecording.enabled', 'true');
+    params.set('config.localRecording.enabled', 'false');
     params.set('config.liveStreamingEnabled', 'false');
   }
   
@@ -259,12 +268,8 @@ function createJitsiUrl(roomName: string, config: JitsiConfig, userInfo?: { name
   params.set('interfaceConfig.DEFAULT_LOGO_URL', '');
   params.set('interfaceConfig.JITSI_WATERMARK_LINK', '');
   
-  // Pre-fill user info if provided
-  if (userInfo) {
-    params.set('userInfo.displayName', userInfo.name);
-    if (userInfo.email) {
-      params.set('userInfo.email', userInfo.email);
-    }
+  if (userInfo?.email) {
+    params.set('userInfo.email', userInfo.email);
   }
   
   return `https://${JITSI_DOMAIN}/${roomName}#${params.toString()}`;

@@ -176,7 +176,21 @@ const AIClinicalAssistant: React.FC<AIClinicalAssistantProps> = ({
 
   // Load pre-consultation summary when patient changes
   useEffect(() => {
-    const MEETING_SERVER = import.meta.env.VITE_MEETING_SERVER_URL || 'http://localhost:3020';
+    const MEETING_SERVER = (() => {
+      if (globalThis.window !== undefined) {
+        const env = (globalThis as any).ENV;
+        if (env?.MEETING_SERVER_URL && !String(env.MEETING_SERVER_URL).includes('localhost')) {
+          return env.MEETING_SERVER_URL;
+        }
+        const { origin, hostname } = globalThis.location;
+        if (hostname.includes('run.app')) {
+          return origin
+            .replace('izara-doctor-portal', 'izara-meeting-server')
+            .replace('izara-patient-portal', 'izara-meeting-server');
+        }
+      }
+      return import.meta.env.VITE_MEETING_SERVER_URL || 'http://localhost:3020';
+    })();
     const loadPreSummary = async () => {
       if (!patientId) return;
       

@@ -165,7 +165,10 @@ const getHighAccuracyLocation = (): Promise<{ lat: number; lng: number; accuracy
 /* ------------------------------------------------------------------ */
 async function fetchNearbyFromServer(lat: number, lng: number, radiusKm: number, lang: string): Promise<Facility[]> {
   const url = `/api/map/nearby?lat=${lat}&lng=${lng}&radius=${radiusKm}&lang=${lang}`;
-  const token = localStorage.getItem('token');
+  const token =
+    localStorage.getItem('token') ||
+    localStorage.getItem('authToken') ||
+    localStorage.getItem('auth_token');
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (token) headers.Authorization = `Bearer ${token}`;
   const resp = await fetch(url, { headers, signal: AbortSignal.timeout(35000) });
@@ -763,7 +766,6 @@ export default function MapPage() {
     })();
 
     return () => { cancelled = true; markersRef.current.forEach((m) => m.setMap(null)); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /* ---- Range change ---- */
@@ -775,7 +777,6 @@ export default function MapPage() {
     const z = zoomMap[range] || 12;
     mapInstance.current?.setZoom(z);
     leafletMap.current?.setZoom(z);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [range]);
 
   /* ---- Filter markers ---- */

@@ -10,6 +10,14 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../components/common/AuthProvider';
+import { getIzaraDisplayName } from '../../utils/jitsiDisplayName';
+import {
+  fetchMeetingJoinConfig,
+  getJitsiExternalApiOptions,
+  notifyHostPresent,
+  pickJitsiJwt,
+  resolveJitsiDomain,
+} from '../../utils/jitsiMeetingConfig';
 import { getToken } from '../../services/authServices';
 import meetingTimeService, { MeetingTimeCheck } from '../../services/meetingTimeService';
 
@@ -51,11 +59,19 @@ interface LobbyParticipant {
 
 type MeetingStatus = 'time_check' | 'consent' | 'pre_join' | 'ready' | 'in_progress' | 'ended';
 
-const JITSI_DOMAIN = 'meet.jit.si';
+const JITSI_DOMAIN = resolveJitsiDomain();
 const MEETING_SERVER_URL = (() => {
   if (globalThis.window !== undefined) {
     const env = (globalThis as any).ENV;
-    if (env?.MEETING_SERVER_URL) return env.MEETING_SERVER_URL;
+    if (env?.MEETING_SERVER_URL && !String(env.MEETING_SERVER_URL).includes('localhost')) {
+      return env.MEETING_SERVER_URL;
+    }
+    const { origin, hostname } = globalThis.location;
+    if (hostname.includes('run.app')) {
+      return origin
+        .replace('izara-doctor-portal', 'izara-meeting-server')
+        .replace('izara-patient-portal', 'izara-meeting-server');
+    }
   }
   return import.meta.env?.VITE_MEETING_SERVER_URL || 'http://localhost:3020';
 })();
@@ -98,6 +114,7 @@ const VirtualMeeting: React.FC = () => { // NOSONAR
   const { appointmentId } = useParams<{ appointmentId: string }>();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const doctorDisplayName = getIzaraDisplayName(user, 'Doctor');
 
   // Refs
   const jitsiContainerRef = useRef<HTMLDivElement>(null);
@@ -105,6 +122,8 @@ const VirtualMeeting: React.FC = () => { // NOSONAR
   const socketRef = useRef<any>(null);
   const roomNameRef = useRef<string>('');
   const meetingInfoRef = useRef<any>(null);
+  const jitsiJwtRef = useRef<string | undefined>(undefined);
+  const jitsiDomainRef = useRef(JITSI_DOMAIN);
   const durationTimerRef = useRef<NodeJS.Timeout | null>(null);
   const previewVideoRef = useRef<HTMLVideoElement>(null);
   const previewStreamRef = useRef<MediaStream | null>(null);
@@ -148,6 +167,19 @@ const VirtualMeeting: React.FC = () => { // NOSONAR
     try {
       let roomName = `izara-${appointmentId?.substring(0, 12) || 'quick'}-${Date.now().toString(36)}`;
       let meetingFound = false;
+      const parseMeetingUrl = (url?: string): { room?: string; jwt?: string } => {
+        if (!url) return {};
+        try {
+          const parsed = new URL(url);
+          const parts = parsed.pathname.split('/').filter(Boolean);
+          return {
+            room: parts[parts.length - 1] || undefined,
+            jwt: parsed.searchParams.get('jwt') || undefined,
+          };
+        } catch {
+          return {};
+        }
+      };
 
       // Try meeting server
       try {
@@ -156,7 +188,9 @@ const VirtualMeeting: React.FC = () => { // NOSONAR
           const data = await res.json();
           if (data.meeting) {
             meetingInfoRef.current = data.meeting;
-            roomName = data.meeting.room_name || roomName;
+            const parsed = parseMeetingUrl(data.meeting.doctor_url || data.meeting.meeting_url);
+            roomName = data.meeting.room_name || parsed.room || roomName;
+            jitsiJwtRef.current = pickJitsiJwt(null, parsed.jwt);
             meetingFound = true;
           }
         }
@@ -172,10 +206,28 @@ const VirtualMeeting: React.FC = () => { // NOSONAR
           if (createRes.ok) {
             const createData = await createRes.json();
             if (createData.meeting) meetingInfoRef.current = createData.meeting;
+            const parsed = parseMeetingUrl(
+              createData.urls?.doctor ||
+              createData.meeting?.doctor_url ||
+              createData.urls?.base ||
+              createData.meeting?.meeting_url,
+            );
+            roomName = createData.roomName || createData.meeting?.room_name || parsed.room || roomName;
+            jitsiJwtRef.current = pickJitsiJwt(null, createData.tokens?.doctor || parsed.jwt);
           }
         } catch { /* silent */ }
       }
 
+      const joinCfg = await fetchMeetingJoinConfig(
+        MEETING_SERVER_URL,
+        appointmentId || '',
+        'doctor',
+        undefined,
+        getToken(),
+      );
+      if (joinCfg?.roomName) roomName = joinCfg.roomName;
+      if (joinCfg?.domain) jitsiDomainRef.current = joinCfg.domain;
+      jitsiJwtRef.current = pickJitsiJwt(joinCfg);
       roomNameRef.current = roomName;
     } catch (err: any) {
       setError(err.message || 'Failed to initialize meeting');
@@ -230,7 +282,15 @@ const VirtualMeeting: React.FC = () => { // NOSONAR
         transports: ['websocket', 'polling'],
       });
 
-      socket.on('connect', () => console.log('[VirtualMeeting] Socket connected'));
+      socket.on('connect', () => {
+        console.log('[VirtualMeeting] Socket connected');
+        socket.emit('join-meeting', {
+          meetingId: appointmentId,
+          userName: user?.displayName || user?.name || 'Doctor',
+          role: 'doctor',
+        });
+        void notifyHostPresent(MEETING_SERVER_URL, appointmentId || '', getToken());
+      });
       socket.on('lobby-update', handleLobbyUpdate);
       socket.on('transcript-update', handleTranscriptUpdate);
       socket.on('chat-message', handleChatMessage);
@@ -284,7 +344,6 @@ const VirtualMeeting: React.FC = () => { // NOSONAR
     checkTimeWindow();
     const interval = setInterval(checkTimeWindow, 60000);
     return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [appointmentId, status]);
 
   // ============================================================================
@@ -331,42 +390,29 @@ const VirtualMeeting: React.FC = () => { // NOSONAR
 
   const joinMeeting = useCallback(async () => {
     stopPreviewStream();
+    void notifyHostPresent(MEETING_SERVER_URL, appointmentId || '', getToken());
     try {
       await loadJitsiScript();
       if (!jitsiContainerRef.current || !(globalThis as any).JitsiMeetExternalAPI) return;
 
-      const api = new (globalThis as any).JitsiMeetExternalAPI(JITSI_DOMAIN, {
+      const jitsiOpts = getJitsiExternalApiOptions('doctor', doctorDisplayName);
+      const api = new (globalThis as any).JitsiMeetExternalAPI(jitsiDomainRef.current || JITSI_DOMAIN, {
         roomName: roomNameRef.current,
+        jwt: jitsiJwtRef.current,
         parentNode: jitsiContainerRef.current,
         width: '100%', height: '100%',
         configOverwrite: {
-          prejoinPageEnabled: false,
+          ...jitsiOpts.configOverwrite,
           startWithAudioMuted: !micOn,
           startWithVideoMuted: !cameraOn,
-          enableClosePage: false,
-          disableDeepLinking: true,
-          defaultLanguage: 'th',
-          requireDisplayName: true,
-          enableLobbyChat: true,
-          lobbyModeEnabled: true,
-          toolbarButtons: ['microphone', 'camera', 'desktop', 'chat', 'raisehand', 'participants-pane', 'tileview', 'hangup', 'settings', 'select-background', 'toggle-camera', 'fullscreen'],
-          disableThirdPartyRequests: true,
-          enableWelcomePage: false,
-          hideConferenceSubject: false,
           subject: `Izara Consultation — ${appointmentId?.substring(0, 8) || 'Meeting'}`,
         },
         interfaceConfigOverwrite: {
-          APP_NAME: 'Izara Telemedicine',
-          SHOW_PROMOTIONAL_CLOSE_PAGE: false,
-          SHOW_JITSI_WATERMARK: false,
-          SHOW_WATERMARK_FOR_GUESTS: false,
-          SHOW_BRAND_WATERMARK: false,
+          ...jitsiOpts.interfaceConfigOverwrite,
           DEFAULT_REMOTE_DISPLAY_NAME: 'ผู้เข้าร่วม',
-          DEFAULT_LOCAL_DISPLAY_NAME: user?.displayName || user?.name || 'แพทย์',
-          TOOLBAR_ALWAYS_VISIBLE: true,
         },
         userInfo: {
-          displayName: user?.displayName || user?.name || 'Doctor',
+          displayName: doctorDisplayName,
           email: user?.email || '',
         },
       });
@@ -387,6 +433,7 @@ const VirtualMeeting: React.FC = () => { // NOSONAR
         if (socketRef.current?.connected) {
           socketRef.current.emit('join-meeting', { meetingId: appointmentId, userId: user?.id, role: 'doctor', userName: user?.displayName || user?.name || 'Doctor' });
         }
+        void notifyHostPresent(MEETING_SERVER_URL, appointmentId || '', getToken());
       });
 
       setStatus('ready');
@@ -821,7 +868,7 @@ const VirtualMeeting: React.FC = () => { // NOSONAR
   // ============================================================================
 
   return (
-    <div className="min-h-screen bg-gray-900 flex flex-col">
+    <div className="min-h-screen bg-gray-900 flex flex-col" data-testid="doctor-meeting-room">
       {/* Top bar */}
       <div className="bg-gray-800 text-white px-4 py-2 flex justify-between items-center border-b border-gray-700 shrink-0">
         <div className="flex items-center gap-3">
@@ -872,7 +919,7 @@ const VirtualMeeting: React.FC = () => { // NOSONAR
       {/* Main content */}
       <div className="flex-1 flex overflow-hidden">
         {/* Jitsi container */}
-        <div className="flex-1" ref={jitsiContainerRef} />
+        <div className="flex-1 min-h-[480px]" ref={jitsiContainerRef} data-testid="jitsi-meeting-container" />
 
         {/* Side panel */}
         {showPanel && (

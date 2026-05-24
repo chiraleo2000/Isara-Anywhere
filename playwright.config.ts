@@ -29,33 +29,46 @@
  *         ├── J (parallel)
  *         └── D (sequential) → E → F
  *
- * Workers: 4 for parallel groups, 1 enforced for D→E→F chain.
- * Each worker opens 3 browsers (patient=Chrome, doctor=Chrome, admin=Firefox).
+ * Workers: PW_WORKERS (default 1 local, 4 cloud) for parallel groups; D→E→F stay serial.
+ * Jitsi multi-party fixture (parallel launch): Patient=Chrome, Doctor=Chrome, Admin=Firefox.
  * ═══════════════════════════════════════════════════════════════════════
  */
 import { defineConfig } from '@playwright/test';
+import { chromiumLaunchArgs } from './tests/helpers/browser-matrix';
+
+const CLOUD_DEFAULTS = {
+  patient: 'https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app',
+  doctor: 'https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app',
+  meeting: 'https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app',
+};
 
 const IS_CLOUD = process.env.TEST_ENV === 'cloud';
-// Local: 1 worker — ensures only one 3-browser fixture instance runs at a time (avoids 6+ Chrome contention)
-const workers = Number.parseInt(process.env.PW_WORKERS || (IS_CLOUD ? '1' : '1'), 10);
+const FORCE_HEADED =
+  process.env.PW_HEADED === '1' ||
+  process.env.PW_HEADED === 'true';
+const USE_HEADLESS = process.env.PW_HEADLESS === '1' || (IS_CLOUD && !FORCE_HEADED);
+if (IS_CLOUD) {
+  process.env.CLOUD_PATIENT_URL ||= CLOUD_DEFAULTS.patient;
+  process.env.CLOUD_DOCTOR_URL ||= CLOUD_DEFAULTS.doctor;
+  process.env.CLOUD_MEETING_URL ||= CLOUD_DEFAULTS.meeting;
+}
+// Local default 1 worker (one 3-browser fixture). Set PW_WORKERS=4 to parallelize B/C/G/H/I/J.
+const workers = Number.parseInt(process.env.PW_WORKERS || (IS_CLOUD ? '4' : '1'), 10);
 
 const sharedUse = {
-  headless: false,
+  headless: USE_HEADLESS,
   viewport: { width: 1440, height: 900 } as const,
   screenshot: 'on' as const,
   trace: 'off' as const,
   actionTimeout: IS_CLOUD ? 20_000 : 15_000,
   navigationTimeout: IS_CLOUD ? 90_000 : 15_000,
   launchOptions: {
-    slowMo: IS_CLOUD ? 200 : 50,
-    args: [
-      '--start-maximized',
-      '--auto-accept-camera-and-microphone-capture',
-    ],
+    slowMo: USE_HEADLESS ? 0 : (IS_CLOUD ? 300 : 150),
+    args: chromiumLaunchArgs(USE_HEADLESS),
   },
   browserName: 'chromium' as const,
   baseURL: IS_CLOUD
-    ? (process.env.CLOUD_PATIENT_URL || 'https://izara-patient-portal-dev-testing-hvht4obouq-as.a.run.app')
+    ? (process.env.CLOUD_PATIENT_URL || 'https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app')
     : 'http://localhost:3005',
 };
 
@@ -122,14 +135,40 @@ export default defineConfig({
       dependencies: ['A-auth'],
     },
     {
+      name: 'D-doctor-host',
+      testMatch: 'group-D-doctor-host-workflow.ui-test.ts',
+      dependencies: ['D-appointments'],
+      use: {
+        channel: USE_HEADLESS ? undefined : (process.platform === 'win32' ? 'chrome' : undefined),
+      },
+    },
+    {
+      name: 'Q-meeting-lifecycle',
+      testMatch: 'group-Q-meeting-lifecycle.ui-test.ts',
+      dependencies: ['D-appointments', 'D-doctor-host'],
+      timeout: IS_CLOUD ? 900_000 : 600_000,
+    },
+    {
+      name: 'R1-code-breaker-network',
+      testMatch: 'group-R1-code-breaker-network.ui-test.ts',
+      dependencies: ['D-appointments'],
+      timeout: IS_CLOUD ? 600_000 : 300_000,
+    },
+    {
       name: 'E-meeting-clinical',
-      testMatch: 'group-E-meeting-clinical.ui-test.ts',
-      dependencies: ['D-appointments'],  // must run AFTER D creates appointments
+      testMatch: /group-E-(meeting-clinical|cross-browser-matrix)\.ui-test\.ts/,
+      dependencies: ['D-appointments', 'Q-meeting-lifecycle'],  // Q validates 3-party lifecycle before E clinical extras
+      // Jitsi multi-party: Chrome (patient) + Chrome (doctor) + Firefox (admin) — parallel launch in multi-portal.ts
     },
     {
       name: 'F-phr-health-records',
       testMatch: 'group-F-phr-health-records.ui-test.ts',
       dependencies: ['E-meeting-clinical'],  // must run AFTER E completes meeting
+    },
+    {
+      name: 'L-lab-ordering',
+      testMatch: 'group-L-lab-ordering.ui-test.ts',
+      dependencies: ['E-meeting-clinical'],
     },
 
     /* ── A11Y GATE (runs after auth, independent) ───────────────── */
@@ -151,7 +190,12 @@ export default defineConfig({
     {
       name: 'O-sso-screenshots',
       testMatch: 'group-O-sso-screenshots.ui-test.ts',
-      dependencies: ['N-google-sso'],
+      dependencies: ['A-auth'],
+    },
+    {
+      name: 'P-workflow-screenshots',
+      testMatch: 'group-P-workflow-screenshots.ui-test.ts',
+      dependencies: ['A-auth', 'D-appointments'],
     },
   ],
 });

@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useSettings } from '../contexts/SettingsContext';
@@ -6,6 +6,7 @@ import { appointmentService, doctorService, googleService } from '../lib/service
 import { Appointment, Doctor, AppointmentStatus } from '../types';
 import { Calendar, Clock, Video, MapPin, Plus, ChevronLeft, CalendarPlus, ExternalLink, FileText, AlertCircle, Activity, Pill, Stethoscope, CheckCircle2, Info, Mic, Image, Play } from 'lucide-react';
 import SymptomInputStep from '../components/SymptomInputStep';
+import { useRealtimeSync } from '../lib/useRealtimeSync';
 
 export function AppointmentListPage() {
   const { user } = useAuth();
@@ -34,11 +35,7 @@ export function AppointmentListPage() {
     viewDetails: { en: 'View Details', th: 'ดูรายละเอียด' },
   };
 
-  useEffect(() => {
-    if (user) loadAppointments();
-  }, [user]);
-
-  const loadAppointments = async () => {
+  const loadAppointments = useCallback(async () => {
     if (!user) return;
     try {
       const patientId = user.patientId || user.id;
@@ -49,7 +46,16 @@ export function AppointmentListPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (user) loadAppointments();
+  }, [user, loadAppointments]);
+
+  useRealtimeSync({
+    patientId: user?.patientId || user?.id,
+    onAppointmentChange: loadAppointments,
+  });
 
   const filteredAppointments = appointments
     .filter((apt) => {
@@ -711,7 +717,7 @@ export function BookAppointmentPage() {
         : new Date().toISOString().split('T')[0];
       const preferredTime = timeSlotTimeValues[form.preferredTimeSlot];
 
-      const appointment = await appointmentService.create({
+      await appointmentService.create({
         patientId,
         patientName: user.name,
         patientEmail: user.email,
@@ -739,35 +745,7 @@ export function BookAppointmentPage() {
         assignmentMethod: assignmentMethod,
       });
 
-      // If no doctor selected (skipDoctorSelection) or system assignment, add to pool
-      if (form.skipDoctorSelection) {
-        try {
-          await fetch('/api/appointment-pool', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
-            },
-            body: JSON.stringify({
-              appointmentId: appointment.id,
-              patientId,
-              patientName: user.name,
-              patientEmail: user.email,
-              requiredSpecialty: form.suggestedSpecialty || 'General Practitioner',
-              symptoms: [form.mainSymptom, ...form.additionalSymptoms].filter(Boolean),
-              symptomDescription: form.symptomDescription,
-              urgency: form.urgency,
-              preferredDates: form.preferredDates,
-              preferredTimeSlot: form.preferredTimeSlot,
-              appointmentType: form.type,
-              poolReason: 'no_doctor_selected',
-            }),
-          });
-        } catch (poolError) {
-          console.error('Failed to add to pool:', poolError);
-          // Appointment was still created, just not added to pool
-        }
-      }
+      // Pool is PostgreSQL-only: in_pool status set by POST /api/appointments (no GCS pool write)
 
       navigate('/appointments', {
         state: {

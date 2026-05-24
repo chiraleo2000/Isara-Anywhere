@@ -24,7 +24,7 @@ if (process.env.DATABASE_URL) {
 
 const poolOptions = {
   host: dbConfig.host || process.env.DB_HOST || 'localhost',
-  port: dbConfig.port || parseInt(process.env.DB_PORT || '5433'),
+  port: dbConfig.port || parseInt(process.env.DB_PORT || '5432'),
   database: dbConfig.database || process.env.DB_NAME || 'izara_phase1',
   user: dbConfig.user || process.env.DB_USER || 'postgres',
   password: dbConfig.password || process.env.DB_PASSWORD || '',

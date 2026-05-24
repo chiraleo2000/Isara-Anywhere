@@ -37,6 +37,12 @@ export default defineConfig(({ mode }) => {
             changeOrigin: true,
             secure: false,
           },
+          // Proxy Socket.IO WebSocket connections to Main API server
+          '/ws': {
+            target: 'http://localhost:3009',
+            ws: true,
+            changeOrigin: true,
+          },
         },
       },
       plugins: [react()],

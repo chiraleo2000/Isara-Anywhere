@@ -10,12 +10,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { getIzaraDisplayName } from '../../utils/jitsiDisplayName';
 
 const JITSI_DOMAIN = 'meet.jit.si';
 const MEETING_SERVER_URL = (() => {
   if (globalThis.window !== undefined) {
     const env = (globalThis as any).ENV;
-    if (env?.MEETING_SERVER_URL) return env.MEETING_SERVER_URL;
+    if (env?.MEETING_SERVER_URL && !String(env.MEETING_SERVER_URL).includes('localhost')) {
+      return env.MEETING_SERVER_URL;
+    }
   }
   return import.meta.env?.VITE_MEETING_SERVER_URL || 'http://localhost:3020';
 })();
@@ -46,7 +49,14 @@ function loadJitsiScript(): Promise<void> {
 async function fetchRoomName(appointmentId: string): Promise<string> {
   const fallback = `izara-${appointmentId.substring(0, 12)}-meeting`;
   try {
-    const res = await fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}`);
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 15_000);
+    let res: Response;
+    try {
+      res = await fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}`, { signal: ctrl.signal });
+    } finally {
+      clearTimeout(timer);
+    }
     if (res.ok) {
       const data = await res.json();
       if (data.meeting?.room_name) return data.meeting.room_name;
@@ -119,24 +129,23 @@ const PatientMeetingRoom: React.FC = () => {
       try {
         const roomName = await fetchRoomName(appointmentId || 'room');
 
-        // Load Jitsi script
         await loadJitsiScript();
+        await new Promise<void>(resolve => setTimeout(resolve, 150));
 
-        // Init Jitsi
         if (jitsiContainerRef.current && (globalThis as any).JitsiMeetExternalAPI) {
-          const patientName = user?.name || (user as any)?.displayName || 'Patient';
+          const patientName = getIzaraDisplayName(user, 'Patient');
           const api = new (globalThis as any).JitsiMeetExternalAPI(JITSI_DOMAIN, {
             roomName,
             parentNode: jitsiContainerRef.current,
             width: '100%',
             height: '100%',
             configOverwrite: {
-              prejoinPageEnabled: true,
+              prejoinPageEnabled: false,
               startWithAudioMuted: false,
               startWithVideoMuted: false,
               disableDeepLinking: true,
               defaultLanguage: 'th',
-              requireDisplayName: true,
+              requireDisplayName: false,
               enableLobbyChat: true,
               enableClosePage: false,
               disableThirdPartyRequests: true,
@@ -212,7 +221,7 @@ const PatientMeetingRoom: React.FC = () => {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-gray-900 text-white">
+    <div className="h-screen flex flex-col bg-gray-900 text-white" data-testid="patient-meeting-room">
       {/* Top Bar */}
       <div className="flex items-center justify-between px-4 py-2 bg-gray-800 border-b border-gray-700">
         <div className="flex items-center gap-3">

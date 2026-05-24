@@ -37,7 +37,10 @@ export default function MiniMapWidget() {
       setLocationReady(true);
       // Fetch real counts from server
       try {
-        const token = localStorage.getItem('token');
+        const token =
+          localStorage.getItem('token') ||
+          localStorage.getItem('authToken') ||
+          localStorage.getItem('auth_token');
         const headers: Record<string, string> = {};
         if (token) headers.Authorization = `Bearer ${token}`;
         const resp = await fetch(`/api/map/nearby?lat=${lat}&lng=${lng}&radius=5&lang=${language}`, { headers, signal: AbortSignal.timeout(15000) });

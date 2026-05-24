@@ -15,6 +15,7 @@
 import {
   test, expect, assertFullHealth, snap,
   PATIENT_URL, DOCTOR_URL, MEETING_URL,
+  ROLE_BROWSER_MATRIX, getRoleBrowserSpec,
 } from './helpers/multi-portal';
 
 test.describe('Group A — Auth & Access Verification', () => {
@@ -244,6 +245,47 @@ test.describe('Group A — Auth & Access Verification', () => {
       await snap(doctor.page, 'A09-doctor-stats', 'group-A');
       console.log(`  ✅ A09: Doctor dashboard — ${body.length} chars`);
     });
+  });
+
+  /* ── A11 — Multi-party browser matrix (Chrome / Edge / Firefox) ─ */
+  test('A11 — Cross-browser fixture uses role-specific engines', async ({ portals }) => {
+    expect(getRoleBrowserSpec('patient').browserName).toBe('chrome');
+    expect(getRoleBrowserSpec('doctor').browserName).toBe('edge');
+    expect(getRoleBrowserSpec('admin').browserName).toBe('firefox');
+    expect(getRoleBrowserSpec('admin').engine).toBe('firefox');
+
+    expect(portals.patient.browserName).toBe('chrome');
+    // Runtime browserName is Chromium-family label, even when channel is Edge.
+    expect(portals.doctor.browserName).toBe('chrome');
+    expect(portals.admin.browserName).toBe('firefox');
+
+    expect(portals.patient.browser.browserType().name()).toBe('chromium');
+    expect(portals.doctor.browser.browserType().name()).toBe('chromium');
+    expect(portals.admin.browser.browserType().name()).toBe('firefox');
+
+    const matrixRoles = Object.keys(ROLE_BROWSER_MATRIX);
+    expect(matrixRoles).toEqual(['patient', 'doctor', 'admin']);
+    console.log('  A11: Multi-party browsers verified — Patient/Doctor=Chrome, Admin=Firefox');
+  });
+
+  /* ── A12 — Doctor password-reset rate limit (Processes/Doctor-Portal/02_Reset) ─ */
+  test('A12 — Doctor reset-password rate limit returns 429 after threshold', async ({ request }) => {
+    const email = `rate-limit-test-${Date.now()}@invalid.example`;
+    let saw429 = false;
+    for (let i = 0; i < 7; i++) {
+      const resp = await request.post(`${DOCTOR_URL}/auth/request-password-reset`, {
+        data: { email },
+        timeout: 15_000,
+      });
+      if (resp.status() === 429) {
+        saw429 = true;
+        const body = await resp.json().catch(() => ({}));
+        expect(body.code || body.error).toBeTruthy();
+        break;
+      }
+    }
+    expect(saw429, 'Expected 429 after 5+ reset requests per hour per IP').toBe(true);
+    console.log('  A12: Password reset rate limit enforced');
   });
 
   /* ── A10 — DB health endpoints return connected status ─────────── */

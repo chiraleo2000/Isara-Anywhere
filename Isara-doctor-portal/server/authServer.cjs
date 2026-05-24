@@ -98,7 +98,19 @@ function authenticateToken(req, res, next) {
     return res.status(401).json({ error: 'Authentication required' });
   }
   try {
-    const decoded = jwt.verify(token, JWT_SECRET_FINAL);
+    let decoded;
+    try {
+      decoded = jwt.verify(token, JWT_SECRET_FINAL, {
+        issuer: JWT_ISSUER,
+        algorithms: ['HS256'],
+      });
+    } catch (issuerErr) {
+      if (process.env.IZARA_DEV_TESTING === '1') {
+        decoded = jwt.verify(token, JWT_SECRET_FINAL, { algorithms: ['HS256'] });
+      } else {
+        throw issuerErr;
+      }
+    }
     req.user = decoded;
     next();
   } catch (error) {
@@ -173,7 +185,7 @@ try {
     
     const poolOptions = {
       host: dbHost,
-      port: dbConfig.port || Number.parseInt(process.env.DB_PORT || '5433', 10),
+      port: dbConfig.port || Number.parseInt(process.env.DB_PORT || '5432', 10),
       database: dbConfig.database || process.env.DB_NAME || 'izara_phase1',
       user: dbConfig.user || process.env.DB_USER || 'postgres',
       password: dbConfig.password || process.env.DB_PASSWORD || '',
@@ -280,6 +292,7 @@ app.use(rateLimit({
 // Body parsing with size limits (A06 - Insecure Design)
 app.use(express.json({ limit: '10mb' })); // Reduced from 50mb
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(sanitizeRequestBody);
 
 // Request logging with timestamp
 app.use((req, res, next) => {
@@ -997,15 +1010,29 @@ app.post('/auth/login',
 // GOOGLE SSO — verify ID token, enforce pending_approval, issue JWT
 // =====================================================
 const { OAuth2Client: GoogleOAuth2Client } = require('google-auth-library');
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || process.env.VITE_GOOGLE_CLIENT_ID;
+const GOOGLE_CLIENT_ID = (process.env.GOOGLE_CLIENT_ID || process.env.VITE_GOOGLE_CLIENT_ID || '').replace(/\r?\n/g, '').trim();
 const googleClient = GOOGLE_CLIENT_ID ? new GoogleOAuth2Client(GOOGLE_CLIENT_ID) : null;
 if (!GOOGLE_CLIENT_ID) {
   console.warn('[AUTH] GOOGLE_CLIENT_ID not set — /auth/google-auth will return 503');
 }
 
+function isGoogleFixtureAllowed() {
+  if (!process.env.GOOGLE_TOKEN_VERIFIER_FIXTURE) return false;
+  if (process.env.NODE_ENV !== 'production') return true;
+  return process.env.IZARA_DEV_TESTING === '1' || process.env.IZARA_ALLOW_GOOGLE_SSO_FIXTURE === '1';
+}
+
+app.get('/auth/public-config', (req, res) => {
+  res.json({
+    googleClientId: GOOGLE_CLIENT_ID,
+    googleSsoEnabled: !!GOOGLE_CLIENT_ID,
+    devTestingFixture: isGoogleFixtureAllowed(),
+  });
+});
+
 async function verifyGoogleIdToken(idToken) {
   const fixture = process.env.GOOGLE_TOKEN_VERIFIER_FIXTURE;
-  if (fixture && process.env.NODE_ENV !== 'production') {
+  if (fixture && isGoogleFixtureAllowed()) {
     // Mode 1: '1'/'true' -> parse idToken itself as JSON payload (per-request).
     // Mode 2: env value is JSON -> always return that payload.
     const useTokenAsPayload = fixture === '1' || fixture.toLowerCase() === 'true';
@@ -1035,7 +1062,7 @@ app.post('/auth/google-auth', async (req, res) => {
     if (!idToken || typeof idToken !== 'string') {
       return res.status(400).json({ error: 'idToken is required', code: 'MISSING_TOKEN' });
     }
-    if (!GOOGLE_CLIENT_ID && !process.env.GOOGLE_TOKEN_VERIFIER_FIXTURE) {
+    if (!GOOGLE_CLIENT_ID && !isGoogleFixtureAllowed()) {
       return res.status(503).json({ error: 'Google SSO not configured', code: 'SSO_DISABLED' });
     }
 
@@ -1078,6 +1105,15 @@ app.post('/auth/google-auth', async (req, res) => {
       });
     }
 
+    if (user.google_sub && user.google_sub !== payload.sub) {
+      return res.status(409).json({
+        error: 'google_account_mismatch',
+        code: 'GOOGLE_ACCOUNT_MISMATCH',
+        message: 'บัญชี Google นี้ไม่ตรงกับบัญชีที่เคยเชื่อมไว้ กรุณาใช้บัญชี Google เดิมหรือเข้าสู่ระบบด้วยรหัสผ่าน',
+        email: emailLower,
+      });
+    }
+
     // Existing user — link google_sub if missing (best-effort)
     try {
       await pgPool.query(
@@ -1091,10 +1127,7 @@ app.post('/auth/google-auth', async (req, res) => {
     if (user.role !== 'doctor' && user.role !== 'admin') {
       return res.status(403).json({ error: 'This Google account is not registered as a doctor', code: 'ROLE_MISMATCH' });
     }
-    if (user.is_active === false) {
-      return res.status(403).json({ error: 'Account is deactivated', code: 'ACCOUNT_DEACTIVATED' });
-    }
-    if (user.approval_status === 'pending' || user.is_approved === false) {
+    if (user.approval_status === 'pending') {
       return res.status(403).json({
         error: 'pending_approval',
         code: 'PENDING_APPROVAL',
@@ -1104,6 +1137,17 @@ app.post('/auth/google-auth', async (req, res) => {
     }
     if (user.approval_status === 'rejected') {
       return res.status(403).json({ error: 'Account has been rejected', code: 'ACCOUNT_REJECTED' });
+    }
+    if (user.is_approved === false) {
+      return res.status(403).json({
+        error: 'pending_approval',
+        code: 'PENDING_APPROVAL',
+        message: 'Doctor account is awaiting admin approval',
+        userId: user.id,
+      });
+    }
+    if (user.is_active === false) {
+      return res.status(403).json({ error: 'Account is deactivated', code: 'ACCOUNT_DEACTIVATED' });
     }
 
     // Issue JWT + session + refresh token (mirrors /auth/login)

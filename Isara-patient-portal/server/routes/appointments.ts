@@ -4,6 +4,7 @@
  */
 
 import { Router, Request, Response, Application } from 'express';
+import type { PoolClient } from 'pg';
 import { authMiddleware, AuthenticatedRequest } from '../middleware/auth';
 import postgresDataService from '../services/postgresDataService';
 import crypto from 'node:crypto';
@@ -13,54 +14,99 @@ const { pool } = postgresDataService;
 
 const router = Router();
 
-/** Notify doctor/admin about a new appointment and broadcast via Socket.IO */
-async function broadcastNewAppointment(app: Application, appointment: Record<string, unknown>) {
-  const io = app.get('io');
+/** Insert appointment notifications in the same DB transaction as the appointment row */
+async function insertAppointmentNotificationsTx(
+  client: PoolClient,
+  appointment: Record<string, unknown>
+): Promise<void> {
   const doctorId = appointment.doctor_id as string | null;
+  const appointmentId = appointment.id as string;
+  const dataJson = JSON.stringify({ appointmentId });
 
   if (doctorId) {
-    await NotificationService.createNotification({
-      userId: doctorId,
-      type: 'appointment_requested',
-      title: 'New Appointment Request',
-      titleThai: 'มีนัดหมายใหม่',
-      message: 'Patient has requested an appointment',
-      messageThai: 'ผู้ป่วยขอนัดหมาย',
-      data: { appointmentId: appointment.id }
-    });
-    if (io) {
-      io.to(`doctor-${doctorId}`).emit('appointment-created', {
-        appointmentId: appointment.id, status: appointment.status
-      });
-    }
-  } else {
-    const admins = await pool.query(
-      "SELECT id FROM users WHERE role = 'admin' AND is_active = true"
+    await client.query(
+      `INSERT INTO notifications (id, user_id, type, title, title_thai, message, message_thai, data)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [
+        crypto.randomUUID(),
+        doctorId,
+        'appointment_requested',
+        'New Appointment Request',
+        'มีนัดหมายใหม่',
+        'Patient has requested an appointment',
+        'ผู้ป่วยขอนัดหมาย',
+        dataJson,
+      ]
     );
-    for (const admin of admins.rows) {
-      await NotificationService.createNotification({
-        userId: admin.id,
-        type: 'appointment_requested',
-        title: 'New Unassigned Appointment',
-        titleThai: 'นัดหมายใหม่รอมอบหมาย',
-        message: 'A new appointment is waiting to be assigned to a doctor',
-        messageThai: 'มีนัดหมายใหม่รอมอบหมายแพทย์',
-        data: { appointmentId: appointment.id }
-      });
-    }
-    if (io) {
-      io.to('admin-notifications').emit('pool-updated', {
-        appointmentId: appointment.id, status: appointment.status
-      });
-    }
+    return;
   }
 
-  if (io) {
-    io.emit('appointment-created', {
-      appointmentId: appointment.id,
-      doctorId,
-      status: appointment.status
-    });
+  const admins = await client.query(
+    "SELECT id FROM users WHERE role = 'admin' AND is_active = true"
+  );
+  for (const admin of admins.rows) {
+    await client.query(
+      `INSERT INTO notifications (id, user_id, type, title, title_thai, message, message_thai, data)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [
+        crypto.randomUUID(),
+        admin.id,
+        'appointment_requested',
+        'New Unassigned Appointment',
+        'นัดหมายใหม่รอมอบหมาย',
+        'A new appointment is waiting to be assigned to a doctor',
+        'มีนัดหมายใหม่รอมอบหมายแพทย์',
+        dataJson,
+      ]
+    );
+  }
+
+  const patientId = appointment.patient_id as string;
+  if (patientId) {
+    await client.query(
+      `INSERT INTO notifications (id, user_id, type, title, title_thai, message, message_thai, data)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [
+        crypto.randomUUID(),
+        patientId,
+        'appointment_requested',
+        'Appointment Request Submitted',
+        'ส่งคำขอนัดหมายแล้ว',
+        'Your appointment request has been submitted and is awaiting assignment',
+        'ส่งคำขอนัดหมายของคุณแล้ว กำลังรอการมอบหมายแพทย์',
+        dataJson,
+      ]
+    );
+  }
+}
+
+/** Socket.IO only — DB rows are committed with the appointment (NOTIFY is cross-portal primary path) */
+function emitAppointmentSockets(app: Application, appointment: Record<string, unknown>): void {
+  const io = app.get('io');
+  if (!io) return;
+
+  const doctorId = appointment.doctor_id as string | null;
+  const patientId = appointment.patient_id as string | null;
+  const payload = {
+    appointmentId: appointment.id,
+    id: appointment.id,
+    doctor_id: doctorId,
+    patient_id: patientId,
+    status: appointment.status,
+    table: 'appointments',
+    operation: 'INSERT',
+  };
+
+  if (doctorId) {
+    io.to(`doctor-${doctorId}`).emit('appointment:created', payload);
+    io.to(`doctor-${doctorId}`).emit('appointment-created', payload);
+    io.to(`queue-${doctorId}`).emit('appointment:created', payload);
+  } else {
+    io.to('admin-notifications').emit('pool-updated', payload);
+    io.to('admin-notifications').emit('appointment:created', payload);
+  }
+  if (patientId) {
+    io.to(`patient-${patientId}`).emit('appointment:created', payload);
   }
 }
 
@@ -87,7 +133,7 @@ function transformAppointment(row: any): any {
     requestedTime: row.requested_time,
     confirmedDate: row.confirmed_date,
     confirmedTime: row.confirmed_time,
-    type: row.appointment_type || 'Telehealth',
+    type: (row.appointment_type || 'telehealth').toLowerCase(),
     status: row.status,
     urgency: row.urgency_level,
     symptoms: row.symptoms,
@@ -133,24 +179,35 @@ function generateJitsiRoomName(appointmentId: string): string {
 /**
  * Generate Jitsi meeting URL with configuration
  */
-function generateJitsiMeetingLink(roomName: string): string {
+function generateJitsiMeetingLink(
+  roomName: string,
+  opts?: { displayName?: string; email?: string },
+): string {
   const params = new URLSearchParams();
   
   // Basic configuration
-  params.set('config.prejoinPageEnabled', 'true');
   params.set('config.startWithAudioMuted', 'false');
   params.set('config.startWithVideoMuted', 'false');
   params.set('config.enableClosePage', 'true');
   params.set('config.disableDeepLinking', 'true');
   params.set('config.defaultLanguage', 'th');
-  params.set('config.requireDisplayName', 'true');
+  if (opts?.displayName) {
+    params.set('userInfo.displayName', opts.displayName);
+    params.set('config.requireDisplayName', 'false');
+    params.set('config.prejoinPageEnabled', 'false');
+  } else {
+    params.set('config.prejoinPageEnabled', 'true');
+    params.set('config.requireDisplayName', 'true');
+  }
   
   // Lobby for doctor approval
-  params.set('config.enableLobbyChat', 'true');
+  params.set('config.enableLobby', 'false');
+  params.set('config.lobbyModeEnabled', 'false');
+  params.set('config.enableLobbyChat', 'false');
   
   // Recording
   params.set('config.fileRecordingsEnabled', 'true');
-  params.set('config.localRecording.enabled', 'true');
+  params.set('config.localRecording.enabled', 'false');
   
   // UI
   params.set('interfaceConfig.APP_NAME', 'Izara Telemedicine');
@@ -401,13 +458,17 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => { // NOS
 
     // SECURITY: validate patient exists (protects against stale JWT / deleted user).
     const patCheck = await pool.query(
-      `SELECT id FROM users WHERE id = $1 AND role = 'patient' AND is_active = true`,
+      `SELECT id, name, email FROM users WHERE id = $1 AND role = 'patient' AND is_active = true`,
       [patientId]
     );
     if (patCheck.rows.length === 0) {
       client.release();
       return res.status(400).json({ error: 'Invalid or inactive patient' });
     }
+    const patProfile = patCheck.rows[0];
+    const patientDisplayName = (
+      patProfile.name || patProfile.email?.split('@')[0] || 'Patient'
+    ).trim();
 
     console.log('[APPOINTMENT] Creating new appointment for patient:', patientId);
 
@@ -425,7 +486,10 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => { // NOS
 
     // Generate Jitsi meeting link
     const jitsiRoomName = generateJitsiRoomName(appointmentId);
-    const meetingLink = generateJitsiMeetingLink(jitsiRoomName);
+    const meetingLink = generateJitsiMeetingLink(jitsiRoomName, {
+      displayName: patientDisplayName,
+      email: patProfile.email,
+    });
 
     // BEGIN transaction — appointment insert + notification must be atomic
     await client.query('BEGIN');
@@ -445,7 +509,7 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => { // NOS
         effectiveDoctorId,
         appointmentData.preferredDate || appointmentData.requestedDate,
         appointmentData.preferredTime || appointmentData.requestedTime,
-        appointmentData.appointmentType || appointmentData.type || 'Telehealth',
+        (appointmentData.appointmentType || appointmentData.type || 'telehealth').toLowerCase(),
         initialStatus,
         appointmentData.urgency || 'normal',
         JSON.stringify(appointmentData.symptoms || []),
@@ -460,22 +524,13 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => { // NOS
 
     const appointment = result.rows[0];
 
+    await insertAppointmentNotificationsTx(client, appointment);
     await client.query('COMMIT');
 
-    // Broadcast notification OUTSIDE transaction — failure here should not roll back appointment
     try {
-      await broadcastNewAppointment(req.app, appointment);
-    } catch (notifError) {
-      console.error(`[APPOINTMENT] ⚠️ Notification broadcast failed for ${appointmentId}:`, notifError);
-      // Retry once after 2 seconds
-      setTimeout(async () => {
-        try {
-          await broadcastNewAppointment(req.app, appointment);
-          console.log(`[APPOINTMENT] ✅ Notification retry succeeded for ${appointmentId}`);
-        } catch (retryErr) {
-          console.error(`[APPOINTMENT] 🔴 CRITICAL: Notification retry also failed for ${appointmentId}:`, retryErr);
-        }
-      }, 2000);
+      emitAppointmentSockets(req.app, appointment);
+    } catch (socketErr) {
+      console.error(`[APPOINTMENT] ⚠️ Socket emit failed for ${appointmentId}:`, socketErr);
     }
 
     console.log(`[APPOINTMENT] Created: ${appointmentId} with meeting link: ${meetingLink}`);
@@ -587,7 +642,16 @@ router.put('/:appointmentId/status', authMiddleware, async (req: Request, res: R
     
     if (status === 'confirmed' && !finalMeetingLink) {
       jitsiRoomName = generateJitsiRoomName(appointmentId);
-      finalMeetingLink = generateJitsiMeetingLink(jitsiRoomName);
+      const patRow = await pool.query(
+        'SELECT name, email FROM users WHERE id = $1',
+        [currentAppointment.patient_id],
+      );
+      const p = patRow.rows[0];
+      const patientLabel = (p?.name || p?.email?.split('@')[0] || 'Patient').trim();
+      finalMeetingLink = generateJitsiMeetingLink(jitsiRoomName, {
+        displayName: patientLabel,
+        email: p?.email,
+      });
     }
 
     // Update in PostgreSQL - cast $2 to varchar to avoid type inference conflict in CASE
@@ -625,6 +689,21 @@ router.put('/:appointmentId/status', authMiddleware, async (req: Request, res: R
             meetingLink: finalMeetingLink 
           }
         });
+        if (finalMeetingLink) {
+          await NotificationService.createNotification({
+            userId: updatedAppointment.patient_id,
+            type: 'meeting_link_ready',
+            title: 'Meeting Link Ready',
+            titleThai: 'ลิงก์ประชุมพร้อมแล้ว',
+            message: `Your telehealth meeting link is ready: ${finalMeetingLink}`,
+            messageThai: 'ลิงก์เข้าร่วมการประชุมออนไลน์พร้อมแล้ว',
+            data: {
+              appointmentId: updatedAppointment.id,
+              meetingLink: finalMeetingLink,
+              meet_link: finalMeetingLink,
+            },
+          });
+        }
         console.log(`[NOTIFICATION] Sent confirmation to patient: ${updatedAppointment.patient_id}`);
       } else if (status === 'declined' || status === 'rejected') {
         await NotificationService.createNotification({

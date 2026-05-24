@@ -59,6 +59,8 @@ export const TASK_CONFIGS: Record<string, TaskConfig> = {
   }
 };
 
+let geminiConfigWarningLogged = false;
+
 class GeminiClinicalService {
   private readonly genAI: GoogleGenerativeAI | null = null;
   private readonly models: Map<string, GenerativeModel> = new Map();
@@ -66,15 +68,17 @@ class GeminiClinicalService {
 
   constructor() {
     if (!GEMINI_API_KEY || GEMINI_API_KEY === 'xxx') {
-      console.warn('⚠️ Gemini API key not configured - AI features will use fallback responses');
+      if (!geminiConfigWarningLogged && import.meta.env?.DEV) {
+        geminiConfigWarningLogged = true;
+        console.debug('[Gemini] API key not set in browser — server-side AI handles meeting summaries');
+      }
       this.isConfigured = false;
     } else {
       try {
         this.genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
         this.isConfigured = true;
-        console.log('✅ Gemini AI initialized successfully');
       } catch (error) {
-        console.error('❌ Failed to initialize Gemini AI:', error);
+        console.error('[Gemini] Failed to initialize:', error);
         this.isConfigured = false;
       }
     }

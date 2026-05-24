@@ -1,13 +1,29 @@
 # 📄 Izara Telemedicine — Page-by-Page Documentation
 
-**Version:** 1.6.0
-**Last Updated:** March 31, 2026
+**Version:** 1.7.32
+**Last Updated:** 24 May 2026 (post security-hardening — TH Sarabun New 16 pt / FC Iconic, ENRICH-3 steps)
 **Status:** ✅ Phase 1 Complete — Web Platform Documentation + Full DB Schema
 
 ---
 
+## มาตรฐานเอกสาร (ภาษาไทย)
+
+| ประเภท | แบบอักษร | ขนาด |
+|--------|----------|------|
+| รายงาน / คู่มือ Word | **TH Sarabun New** | เนื้อหา **16 pt**, หัวข้อ 18–22 pt, ระยะบรรทัด 1.15 |
+| สไลด์ PowerPoint | **FC Iconic** | หัวข้อ 32 pt, เนื้อหา 18 pt |
+
+ทุกหน้าในโฟลเดอร์นี้มี **§ มาตรฐานเอกสาร**, **§ คำอธิบายและบริบท (รายงานภาษาไทย)** และ **§ ขั้นตอนการใช้งาน (ละเอียด)** — อัปเดตด้วย `python scripts/enrich-process-pages.py --force-steps`
+
+คู่มือผู้ใช้: `docs/USER_GUIDE_*_WORD_TH.docx` · `docs/USER_GUIDE_*_PPT_TH.pptx` — สร้างด้วย `python scripts/build-portal-user-guides.py`
+
+**ล้างข้อมูลทดสอบ (ไม่ re-seed demo):** `npm run cleanup:cloud-test-only` — ใช้หลังรอบทดสอบ cloud / Code Breaker
+
+---
 
 ## 📋 Overview
+
+Each page spec includes **§ Automated verification** (test files, Playwright groups, `data-testid` refs, last verified date). Master registry: [tests/SELECTORS.md](../../tests/SELECTORS.md) · coverage: [tests/PROCESS_COVERAGE_MATRIX.md](../../tests/PROCESS_COVERAGE_MATRIX.md).
 
 This folder contains **comprehensive page-level documentation** for every page and major component across the Izara Telemedicine platform. Each document describes:
 

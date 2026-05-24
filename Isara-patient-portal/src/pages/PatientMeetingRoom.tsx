@@ -8,14 +8,30 @@
  * - Post-meeting: view AI summary when doctor approves
  */
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { getIzaraDisplayName } from '../utils/jitsiDisplayName';
+import {
+  connectMeetingSocket,
+  fetchMeetingJoinConfig,
+  getJitsiExternalApiOptions,
+  resolveJitsiDomain,
+  waitForHostReady,
+} from '../utils/jitsiMeetingConfig';
 
-const JITSI_DOMAIN = 'meet.jit.si';
+const JITSI_DOMAIN = resolveJitsiDomain();
 const MEETING_SERVER_URL = (() => {
   if (globalThis.window !== undefined) {
     const env = (globalThis as any).ENV;
-    if (env?.MEETING_SERVER_URL) return env.MEETING_SERVER_URL;
+    if (env?.MEETING_SERVER_URL && !String(env.MEETING_SERVER_URL).includes('localhost')) {
+      return env.MEETING_SERVER_URL;
+    }
+    const { origin, hostname } = globalThis.location;
+    if (hostname.includes('run.app')) {
+      return origin
+        .replace('izara-doctor-portal', 'izara-meeting-server')
+        .replace('izara-patient-portal', 'izara-meeting-server');
+    }
   }
   return import.meta.env?.VITE_MEETING_SERVER_URL || 'http://localhost:3020';
 })();
@@ -122,7 +138,7 @@ function getMediaStatusText(s: string): string {
 
 async function probeMediaDevices(): Promise<{ status: MediaDeviceStatus; stream: MediaStream | null }> {
   const ms: MediaDeviceStatus = { camera: 'checking', microphone: 'checking', cameraLabel: '', microphoneLabel: '' };
-  try {
+  const mediaPromise = (async () => {
     const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
     const vt = stream.getVideoTracks()[0];
     const at = stream.getAudioTracks()[0];
@@ -131,6 +147,19 @@ async function probeMediaDevices(): Promise<{ status: MediaDeviceStatus; stream:
     ms.cameraLabel = vt?.label || 'Camera';
     ms.microphoneLabel = at?.label || 'Microphone';
     return { status: ms, stream };
+  })();
+  const timeoutMs = 8_000;
+  try {
+    return await Promise.race([
+      mediaPromise,
+      new Promise<{ status: MediaDeviceStatus; stream: MediaStream | null }>((resolve) => {
+        setTimeout(() => {
+          ms.camera = 'unavailable';
+          ms.microphone = 'unavailable';
+          resolve({ status: ms, stream: null });
+        }, timeoutMs);
+      }),
+    ]);
   } catch (err: any) {
     ms.camera = err.name === 'NotAllowedError' ? 'denied' : 'unavailable';
     ms.microphone = err.name === 'NotAllowedError' ? 'denied' : 'unavailable';
@@ -139,8 +168,23 @@ async function probeMediaDevices(): Promise<{ status: MediaDeviceStatus; stream:
 }
 
 // NOSONAR - Large React component with meeting lifecycle states; further decomposition would split tightly-coupled state
+function guestParticipantId(appointmentId: string): string {
+  const key = `izara-patient-${appointmentId}`;
+  try {
+    let id = sessionStorage.getItem(key);
+    if (!id) {
+      id = `guest-${crypto.randomUUID().slice(0, 12)}`;
+      sessionStorage.setItem(key, id);
+    }
+    return id;
+  } catch {
+    return `guest-${appointmentId.slice(0, 8)}`;
+  }
+}
+
 const PatientMeetingRoom: React.FC = () => { // NOSONAR
   const { appointmentId } = useParams<{ appointmentId: string }>();
+  const [searchParams] = useSearchParams();
   const { user, token } = useAuth();
   const navigate = useNavigate();
 
@@ -148,10 +192,14 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
   const jitsiApiRef = useRef<any>(null);
   const socketRef = useRef<any>(null);
   const roomNameRef = useRef<string>('');
+  const jitsiDomainRef = useRef(JITSI_DOMAIN);
   const previewStreamRef = useRef<MediaStream | null>(null);
   const previewVideoRef = useRef<HTMLVideoElement>(null);
 
-  const [status, setStatus] = useState<'loading' | 'agreement' | 'pre_join' | 'ready' | 'in_meeting' | 'ended'>('loading');
+  const [status, setStatus] = useState<
+    'loading' | 'agreement' | 'pre_join' | 'lobby_waiting' | 'waiting_host' | 'ready' | 'in_meeting' | 'ended'
+  >('loading');
+  const [resolvedName, setResolvedName] = useState<string>('');
   const [transcripts, setTranscripts] = useState<TranscriptSegment[]>([]);
   const [showTranscript, setShowTranscript] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -185,8 +233,11 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
     validatedAt?: string;
   } | null>(null);
 
-  // Helper functions
-  const patientName = user?.name || (user as any)?.displayName || 'Patient';
+  const participantId = user?.id || guestParticipantId(appointmentId || 'room');
+  const patientName =
+    resolvedName ||
+    searchParams.get('name')?.trim() ||
+    getIzaraDisplayName(user, 'Patient');
 
   const stopPreviewStream = () => {
     if (previewStreamRef.current) {
@@ -238,31 +289,38 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
 
   // Lobby update handler (extracted to reduce nesting — S3776)
   const handleLobbyUpdate = useCallback((data: any) => {
-    if (data.participant?.participantId === user?.id) {
-      if (data.action === 'admit') setLobbyStatus('admitted');
-      else if (data.action === 'reject') setLobbyStatus('rejected');
+    const pid = data.participant?.participantId || data.participantId;
+    if (pid === participantId) {
+      if (data.action === 'admit') {
+        setLobbyStatus('admitted');
+        if (data.hostReady) setStatus((s) => (s === 'lobby_waiting' ? 'waiting_host' : s));
+      } else if (data.action === 'reject') {
+        setLobbyStatus('rejected');
+      }
     }
-  }, [user]);
+  }, [participantId]);
 
   const handleLobbyResponse = useCallback((data: any) => {
-    if (data.status === 'admitted') setLobbyStatus('admitted');
-    else if (data.status === 'waiting') setLobbyStatus('waiting');
+    if (data.status === 'admitted') {
+      setLobbyStatus('admitted');
+      setStatus((s) => (s === 'lobby_waiting' ? 'waiting_host' : s));
+    } else if (data.status === 'waiting') setLobbyStatus('waiting');
   }, []);
 
-  // Socket connection (extracted to reduce cognitive complexity — S3776)
   const connectPatientSocket = useCallback(async (appendTranscript: (data: TranscriptSegment) => void) => {
     try {
-      const { io } = await import('socket.io-client');
-      const socket = io(MEETING_SERVER_URL, { transports: ['websocket', 'polling'] });
-      socket.on('connect', () => {
-        socket.emit('join-meeting', {
-          meetingId: appointmentId,
-          userName: patientName,
-          role: 'patient',
-        });
-      });
+      const socket = await connectMeetingSocket(
+        MEETING_SERVER_URL,
+        appointmentId || '',
+        {
+          onHostReady: () => {
+            setStatus((s) => (s === 'waiting_host' || s === 'lobby_waiting' ? 'waiting_host' : s));
+          },
+          onLobbyUpdate: handleLobbyUpdate,
+        },
+        { userName: patientName, role: 'patient' },
+      );
       socket.on('transcript-update', appendTranscript);
-      socket.on('lobby-update', handleLobbyUpdate);
       socket.on('lobby-response', handleLobbyResponse);
       socketRef.current = socket;
     } catch {
@@ -279,6 +337,16 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
       try {
         const roomName = await fetchRoomName(appointmentId || 'room', token);
         roomNameRef.current = roomName;
+        const joinCfg = await fetchMeetingJoinConfig(
+          MEETING_SERVER_URL,
+          appointmentId || 'room',
+          'patient',
+          user ? undefined : patientName,
+          token,
+        );
+        if (joinCfg?.displayName) setResolvedName(joinCfg.displayName);
+        if (joinCfg?.roomName) roomNameRef.current = joinCfg.roomName;
+        if (joinCfg?.domain) jitsiDomainRef.current = joinCfg.domain;
         await checkMediaDevices();
         await connectPatientSocket(appendTranscript);
         setStatus('agreement');
@@ -299,19 +367,23 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
   }, [appointmentId, user]);
 
   const handleAgreeAndContinue = async () => {
+    setStatus('pre_join');
     try {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 10_000);
       await fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/consent`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          participantId: user?.id || 'unknown',
+          participantId,
           participantName: patientName,
           role: 'patient',
           consentRecording, consentTranscript, consentDataSharing,
         }),
+        signal: ctrl.signal,
       });
+      clearTimeout(timer);
     } catch { /* silent */ }
-    setStatus('pre_join');
   };
 
   const shareInviteLink = async () => {
@@ -327,7 +399,7 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
       });
       if (res.ok) {
         const data = await res.json();
-        setInviteLink(data.inviteLink);
+        setInviteLink(data.guestJoinUrl || data.inviteLink);
         setInviteName('');
         setInviteEmail('');
       }
@@ -340,69 +412,28 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
     }
   };
 
-  const joinMeeting = async () => {
-    stopPreviewStream();
+  const videoConnectStartedRef = useRef(false);
 
-    // Request lobby access from meeting server (doctor must approve)
-    try {
-      const lobbyRes = await fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/lobby/join`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({
-          participantName: patientName,
-          participantId: user?.id,
-          email: user?.email || '',
-          role: 'patient',
-        }),
-      });
-      if (lobbyRes.ok) {
-        const lobbyData = await lobbyRes.json();
-        if (lobbyData.status === 'admitted') {
-          setLobbyStatus('admitted');
-        } else {
-          setLobbyStatus('waiting');
-        }
-      }
-    } catch {
-      // If lobby endpoint unavailable, proceed directly (backward compatible)
-    }
-
+  const mountJitsiMeeting = useCallback(async () => {
     try {
       await loadJitsiScript();
       if (jitsiContainerRef.current && (globalThis as any).JitsiMeetExternalAPI) {
-        const api = new (globalThis as any).JitsiMeetExternalAPI(JITSI_DOMAIN, {
+        const jitsiOpts = getJitsiExternalApiOptions('patient', patientName);
+        const domain = jitsiDomainRef.current || JITSI_DOMAIN;
+        const api = new (globalThis as any).JitsiMeetExternalAPI(domain, {
           roomName: roomNameRef.current,
           parentNode: jitsiContainerRef.current,
           width: '100%',
           height: '100%',
           configOverwrite: {
-            prejoinPageEnabled: false,
+            ...jitsiOpts.configOverwrite,
             startWithAudioMuted: !micOn,
             startWithVideoMuted: !cameraOn,
-            disableDeepLinking: true,
-            defaultLanguage: 'th',
-            requireDisplayName: true,
-            enableLobbyChat: true,
-            enableClosePage: false,
-            disableThirdPartyRequests: true,
-            toolbarButtons: [
-              'microphone', 'camera', 'desktop', 'chat',
-              'raisehand', 'tileview', 'hangup', 'settings',
-              'select-background', 'fullscreen',
-            ],
             subject: 'Izara Consultation',
           },
           interfaceConfigOverwrite: {
-            APP_NAME: 'Izara Telemedicine',
-            SHOW_PROMOTIONAL_CLOSE_PAGE: false,
-            SHOW_JITSI_WATERMARK: false,
-            SHOW_BRAND_WATERMARK: false,
+            ...jitsiOpts.interfaceConfigOverwrite,
             DEFAULT_REMOTE_DISPLAY_NAME: 'แพทย์',
-            DEFAULT_LOCAL_DISPLAY_NAME: patientName,
-            TOOLBAR_ALWAYS_VISIBLE: true,
           },
           userInfo: {
             displayName: patientName,
@@ -431,11 +462,78 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
             setMeetingDuration(Math.floor((Date.now() - start) / 1000));
           }, 1000);
         });
-        setStatus('ready');
       }
     } catch (err: any) {
       setError(err.message);
     }
+  }, [patientName, micOn, cameraOn, user?.email, appointmentId]);
+
+  const connectVideoWhenReady = useCallback(async () => {
+    const hostReady = await waitForHostReady(MEETING_SERVER_URL, appointmentId || '', 120_000);
+    if (!hostReady) {
+      setError('รอแพทย์เข้าห้องประชุม — แพทย์ต้องเข้าก่อนจึงจะเชื่อมต่อวิดีโอได้');
+      return;
+    }
+    stopPreviewStream();
+    setStatus('ready');
+    await new Promise<void>(resolve => setTimeout(resolve, 150));
+    await mountJitsiMeeting();
+    setStatus('in_meeting');
+  }, [appointmentId, stopPreviewStream, mountJitsiMeeting]);
+
+  useEffect(() => {
+    if (lobbyStatus !== 'admitted') return;
+    if (status !== 'lobby_waiting' && status !== 'waiting_host') return;
+    if (videoConnectStartedRef.current) return;
+    videoConnectStartedRef.current = true;
+    setStatus('waiting_host');
+    void connectVideoWhenReady();
+  }, [lobbyStatus, status, connectVideoWhenReady]);
+
+  useEffect(() => {
+    videoConnectStartedRef.current = false;
+  }, [appointmentId]);
+
+  const joinMeeting = async () => {
+    setError(null);
+    setStatus('lobby_waiting');
+    setLobbyStatus('waiting');
+
+    try {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 10_000);
+      const lobbyRes = await fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/lobby/join`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          participantName: patientName,
+          participantId,
+          email: user?.email || '',
+          role: 'patient',
+        }),
+        signal: ctrl.signal,
+      });
+      clearTimeout(timer);
+      if (lobbyRes.ok) {
+        const lobbyData = await lobbyRes.json();
+        if (lobbyData.status === 'admitted') {
+          setLobbyStatus('admitted');
+          setStatus('waiting_host');
+        } else {
+          setLobbyStatus('waiting');
+        }
+        return;
+      }
+    } catch {
+      /* lobby unavailable — try direct connect */
+    }
+
+    setLobbyStatus('admitted');
+    setStatus('waiting_host');
+    void connectVideoWhenReady();
   };
 
   const fmt = (s: number) => {
@@ -444,7 +542,21 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
   };
 
   return (
-    <div className="h-screen flex flex-col bg-gray-900 text-white" data-lobby-status={lobbyStatus}>
+    <div
+      className="fixed inset-0 z-50 flex flex-col bg-gray-900 text-white min-h-screen"
+      data-lobby-status={lobbyStatus}
+      data-testid="patient-meeting-room"
+    >
+
+      {status === 'loading' && (
+        <div
+          className="flex-1 flex flex-col items-center justify-center"
+          data-testid="meeting-loading"
+        >
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-400 mb-4" />
+          <p className="text-gray-400 text-sm">กำลังเตรียมห้องประชุม...</p>
+        </div>
+      )}
 
       {/* ================================================================== */}
       {/* MEETING AGREEMENT SCREEN */}
@@ -690,9 +802,46 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
       )}
 
       {/* ================================================================== */}
-      {/* MAIN MEETING UI (after joining) — Teams-like */}
+      {/* LOBBY WAITING ROOM (Teams-like) */}
       {/* ================================================================== */}
-      {status !== 'pre_join' && status !== 'loading' && status !== 'agreement' && (
+      {status === 'lobby_waiting' && (
+        <div
+          className="flex-1 flex flex-col items-center justify-center bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900"
+          data-testid="lobby-waiting-screen"
+        >
+          <div className="max-w-md w-full px-8 text-center">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-yellow-600/20 flex items-center justify-center">
+              <span className="w-3 h-3 bg-yellow-400 rounded-full animate-pulse" />
+            </div>
+            <h1 className="text-2xl font-bold mb-2">ห้องรอ (Lobby)</h1>
+            <p className="text-gray-400 text-sm mb-6">
+              กรุณารอแพทย์อนุมัติก่อนเข้าห้องประชุม
+            </p>
+            <p className="text-yellow-400 text-sm animate-pulse">รอแพทย์อนุมัติ...</p>
+          </div>
+        </div>
+      )}
+
+      {status === 'waiting_host' && (
+        <div
+          className="flex-1 flex flex-col items-center justify-center bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900"
+          data-testid="host-waiting-screen"
+        >
+          <div className="max-w-md w-full px-8 text-center">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-blue-600/20 flex items-center justify-center">
+              <span className="w-3 h-3 bg-blue-400 rounded-full animate-pulse" />
+            </div>
+            <h1 className="text-2xl font-bold mb-2">กำลังเชื่อมต่อห้องประชุม</h1>
+            <p className="text-gray-400 text-sm mb-6">รอแพทย์เข้าห้องก่อน — ไม่ต้องล็อกอิน Jitsi</p>
+            <p className="text-blue-400 text-sm animate-pulse">ชื่อของคุณ: {patientName}</p>
+          </div>
+        </div>
+      )}
+
+      {/* ================================================================== */}
+      {/* MAIN MEETING UI (Jitsi iframe visible in ready / in_meeting) */}
+      {/* ================================================================== */}
+      {(status === 'ready' || status === 'in_meeting' || status === 'ended') && (
       <>
       {/* Compact Top Bar */}
       <div className="flex items-center justify-between px-4 py-1.5 bg-[#1b1b1b] border-b border-gray-800">
@@ -783,8 +932,12 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
             </button>
           </div>
         ) : (
-          <div className="relative flex-1 h-full">
-            <div ref={jitsiContainerRef} className={`${showTranscript ? 'flex-1' : 'w-full'} h-full`} />
+          <div className="relative flex-1 h-full min-h-[480px]">
+            <div
+              ref={jitsiContainerRef}
+              data-testid="jitsi-meeting-container"
+              className={`${showTranscript ? 'flex-1' : 'w-full'} h-full min-h-[480px]`}
+            />
             {lobbyStatus === 'rejected' && (
               <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-red-900/80 backdrop-blur-sm">
                 <div className="text-center space-y-4">

@@ -45,11 +45,11 @@ VALUES ('DOC-SSO-PENDING', 'DOC-SSO-PENDING',
         'pending-doctor@izara.test',
         '$2b$10$XQH/sLpUg3D9wT/Bm4VYJOpHIuOzfLrxvJqUq6Y9eU0qZJG6KQ.4S',
         'Pending Doctor', 'doctor',
-        false, false, true, 'pending',
+        true, false, true, 'pending',
         'TEST-LIC-002', 'General Practice', NOW(), NOW())
 ON CONFLICT (id) DO UPDATE SET
   email = EXCLUDED.email, password_hash = EXCLUDED.password_hash,
-  is_active = false, is_approved = false, approval_status = 'pending',
+  is_active = true, is_approved = false, approval_status = 'pending',
   updated_at = NOW();
 
 -- Rejected doctor (SSO → 403 account_rejected)

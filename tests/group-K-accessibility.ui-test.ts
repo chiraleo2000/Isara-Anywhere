@@ -8,9 +8,9 @@
  * if it cannot be loaded (no silent skips).
  */
 import { test, expect, type Page } from '@playwright/test';
+import { PATIENT_URL, DOCTOR_URL } from './helpers/multi-portal';
 
-const PATIENT_URL = process.env.PATIENT_URL || 'http://localhost:3005';
-const DOCTOR_URL = process.env.DOCTOR_URL || 'http://localhost:3010';
+const IS_CLOUD = process.env.TEST_ENV === 'cloud';
 
 const IGNORED_RULES = new Set<string>([
   // Jitsi iframe injects color-contrast failures we don't own.
@@ -65,10 +65,13 @@ test.describe('Group K — Accessibility (WCAG 2.1 AA)', () => {
   });
 
   test('K3 — Patient portal root page is keyboard-navigable', async ({ page }) => {
-    await page.goto(PATIENT_URL);
-    await page.waitForLoadState('domcontentloaded');
-    // Tab through first 10 focusable elements — must land on a real element.
-    for (let i = 0; i < 10; i++) {
+    await page.goto(`${PATIENT_URL}/login`, {
+      waitUntil: 'domcontentloaded',
+      timeout: IS_CLOUD ? 90_000 : 30_000,
+    });
+    const focusable = page.locator('a[href], button, input, select, textarea, [tabindex]:not([tabindex="-1"])');
+    await expect(focusable.first()).toBeVisible({ timeout: IS_CLOUD ? 30_000 : 15_000 });
+    for (let i = 0; i < 12; i++) {
       await page.keyboard.press('Tab');
     }
     const focused = await page.evaluate(() => {

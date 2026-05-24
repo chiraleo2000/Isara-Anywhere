@@ -83,7 +83,21 @@ interface MeetingResultsData {
 
 type TabType = 'summary' | 'transcript' | 'chat';
 
-const MEETING_SERVER_URL = import.meta.env.VITE_MEETING_SERVER_URL || 'http://localhost:3020';
+const MEETING_SERVER_URL = (() => {
+  if (globalThis.window !== undefined) {
+    const env = (globalThis as any).ENV;
+    if (env?.MEETING_SERVER_URL && !String(env.MEETING_SERVER_URL).includes('localhost')) {
+      return env.MEETING_SERVER_URL;
+    }
+    const { origin, hostname } = globalThis.location;
+    if (hostname.includes('run.app')) {
+      return origin
+        .replace('izara-doctor-portal', 'izara-meeting-server')
+        .replace('izara-patient-portal', 'izara-meeting-server');
+    }
+  }
+  return import.meta.env.VITE_MEETING_SERVER_URL || 'http://localhost:3020';
+})();
 
 const getToken = () => localStorage.getItem('token');
 const buildHeaders = (token: string | null) =>
@@ -220,7 +234,10 @@ const ChatTab: React.FC<{ messages: ChatMessage[] }> = ({ messages }) => {
 };
 
 /* ── Validation action helpers ────────────────────────────────── */
-async function regenerateSummary(lookupId: string): Promise<{ summary?: string }> {
+async function regenerateSummary(lookupId: string): Promise<{
+  summary?: string;
+  structured?: MeetingResultsData['summary']['structured'];
+}> {
   const res = await fetch(`${MEETING_SERVER_URL}/api/meetings/${lookupId}/generate-summary`, {
     method: 'POST',
     headers: buildHeaders(getToken()),
@@ -368,7 +385,7 @@ const SummaryTab: React.FC<{
       <div className="text-center py-12 text-gray-400">
         <p className="text-4xl mb-2">🧠</p>
         <p>ไม่มีสรุป AI — อาจเกิดจากการประชุมไม่มีบทสนทนา</p>
-        <button onClick={onRegenerate} disabled={!!actionLoading}
+        <button type="button" data-testid="generate-summary-btn" onClick={onRegenerate} disabled={!!actionLoading}
           className="mt-4 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 text-sm">
           {actionLoading === 'regenerate' ? 'กำลังสร้าง...' : '🔄 สร้างสรุป AI'}
         </button>
@@ -380,8 +397,18 @@ const SummaryTab: React.FC<{
     <div>
       <ValidationBanner requiresValidation={summary.requiresValidation} validatedAt={summary.validatedAt} validationStatus={validationStatus} />
 
-      {/* Structured SOAP Cards */}
-      {summary.structured && <StructuredSOAPCards structured={summary.structured} />}
+      {/* Structured SOAP Cards (or narrative fallback after generate-summary) */}
+      {(summary.structured || summary.text) && (
+        <div data-testid="summary-structured">
+          {summary.structured ? (
+            <StructuredSOAPCards structured={summary.structured} />
+          ) : (
+            <pre className="whitespace-pre-wrap text-sm text-gray-800 bg-gray-50 border rounded-lg p-3">
+              {summary.text}
+            </pre>
+          )}
+        </div>
+      )}
 
       {/* CDS Recommendations */}
       {summary.cds && <CDSSection cds={summary.cds} />}
@@ -427,7 +454,7 @@ const SummaryTab: React.FC<{
             className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 flex items-center gap-1 text-sm">
             {actionLoading === 'reject' ? '...' : '❌'} ปฏิเสธ
           </button>
-          <button onClick={onRegenerate} disabled={!!actionLoading}
+          <button type="button" data-testid="generate-summary-btn" onClick={onRegenerate} disabled={!!actionLoading}
             className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 flex items-center gap-1 text-sm">
             {actionLoading === 'regenerate' ? '...' : '🔄'} สร้างใหม่
           </button>
@@ -498,7 +525,19 @@ const MeetingResults: React.FC<MeetingResultsProps> = ({ meetingId, appointmentI
     try {
       const data = await regenerateSummary(lookupId);
       if (data.summary) {
-        setResults(prev => prev ? { ...prev, summary: { ...prev.summary, text: data.summary, validatedAt: null } } : prev);
+        setResults((prev) =>
+          prev
+            ? {
+                ...prev,
+                summary: {
+                  ...prev.summary,
+                  text: data.summary,
+                  structured: data.structured ?? prev.summary.structured,
+                  validatedAt: null,
+                },
+              }
+            : prev,
+        );
         setEditedSummary(data.summary);
         setValidationStatus(null);
         setIsEditing(false);
@@ -577,7 +616,7 @@ const MeetingResults: React.FC<MeetingResultsProps> = ({ meetingId, appointmentI
   const { meeting, transcript, summary, chat } = results;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" data-testid="meeting-results">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b bg-gradient-to-r from-emerald-600 to-teal-600 rounded-t-2xl text-white">
@@ -627,7 +666,7 @@ const MeetingResults: React.FC<MeetingResultsProps> = ({ meetingId, appointmentI
         </div>
 
         {/* Tab Content */}
-        <div className="flex-1 overflow-y-auto p-5">
+        <div className="flex-1 overflow-y-auto p-5" data-testid="transcript-panel">
           {activeTab === 'summary' && (
             <SummaryTab
               summary={summary}
@@ -652,8 +691,7 @@ const MeetingResults: React.FC<MeetingResultsProps> = ({ meetingId, appointmentI
         {meeting?.recordingUrl && (
           <div className="border-t px-5 py-3 bg-gray-50 flex items-center gap-3">
             <span className="text-sm text-gray-600">🎙️ บันทึกการประชุม:</span>
-            {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-            <audio controls preload="none" className="h-8 flex-1">
+            <audio data-testid="recording-player" controls preload="none" className="h-8 flex-1">
               <source src={`${MEETING_SERVER_URL}${meeting.recordingUrl}`} type="audio/webm" />
             </audio>
           </div>

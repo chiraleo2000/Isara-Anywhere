@@ -2,7 +2,9 @@
 
 This document details the full appointment workflow for Izara Telemedicine, covering video consultations, EMR documentation, and AI-assisted post-consultation features. This is the **core Phase 1 deliverable** covering the complete end-to-end flow: Appointment → Approval → Meeting (Microsoft Teams-like) → AI Summary → EMR → Patient Delivery.
 
-**Last Updated:** March 31, 2026 (v1.6.0 - PostgreSQL Database Architecture, Deployment Descriptions, Dataflow Coverage)
+**Last Updated:** May 22, 2026 (GATE 0 — PG pool sync, enterprise HOST roles)
+
+> **GATE 0:** Assigned doctor confirms and is Jitsi HOST; admin assigns only. Pool = PostgreSQL `in_pool` (not GCS). See [`GATE0_IMPLEMENTATION_STATUS.md`](GATE0_IMPLEMENTATION_STATUS.md).
 
 ---
 
@@ -1705,4 +1707,17 @@ Step 11: Embeddings → INSERT INTO transcriptions_embeddings (vectorized chunks
 | POST | `/api/meetings/:id/generate-summary` | AI summary generation | UPDATE meeting_records (ai_summary) |
 | POST | `/api/meetings/:id/validate` | Doctor validates AI output | UPDATE meeting_records, INSERT ai_validations |
 | POST | `/api/meetings/:id/end` | End meeting | UPDATE meeting_records SET status='completed' |
+
+---
+
+## PostgreSQL transactional rollback (interrupted booking)
+
+Patient booking runs inside a database transaction. If the client disconnects or the server errors after a slot lock but before commit, the transaction rolls back so:
+
+- No orphan `appointments` row remains in `in_pool` without valid slot metadata
+- Queue counters stay consistent with `appointments` status
+
+**Automated tests:** `tests/unit/patient-portal/appointmentsRollback.test.ts`, `tests/unit/patient-portal/appointmentSlotLock.test.ts`
+
+**Cloud validation:** Group D (`tests/group-D-appointment-workflows.ui-test.ts`) after `npm run verify:gate0`
 

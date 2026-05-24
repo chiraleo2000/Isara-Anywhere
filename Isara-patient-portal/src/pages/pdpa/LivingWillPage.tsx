@@ -928,6 +928,7 @@ function StepSignature({ canvasRef, form, startDrawing, draw, stopDrawing, clear
 
       <div className="border-2 border-dashed border-gray-300 rounded-xl p-2 mb-4 bg-gray-50">
         <canvas
+          data-testid="living-will-signature"
           ref={canvasRef as React.RefObject<HTMLCanvasElement>}
           width={500}
           height={200}
@@ -1444,7 +1445,7 @@ export default function LivingWillPage() {
 
   useEffect(() => {
     loadData();
-  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [user]);
 
   const handleRollback = async (versionId: string) => {
     await performRollback({

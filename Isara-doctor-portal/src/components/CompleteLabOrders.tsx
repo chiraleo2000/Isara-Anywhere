@@ -5,7 +5,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { PatientRecord, User } from '../types';
-import { getLabTests, getPatientLabOrders } from '../services/clinicalDataService';
+import { getLabTests } from '../services/clinicalDataService';
+import { fetchLabOrdersByPatient } from '../services/labOrderApi';
 
 interface LabTest {
   code: string;
@@ -60,6 +61,26 @@ const TEST_DEFAULTS: Record<string, { unit: string; low: string; high: string }>
 };
 
 /** Inline result entry form for an uncompleted lab order */
+interface LabReportDocument {
+  name: string;
+  type: string;
+  data: string;
+  size: number;
+}
+
+function readFileAsBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const raw = reader.result as string;
+      const base64 = raw.includes(',') ? raw.split(',')[1] : raw;
+      resolve(base64 || '');
+    };
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
+
 function ResultEntryForm({
   order,
   onResultsSubmitted,
@@ -70,6 +91,8 @@ function ResultEntryForm({
   const [isEditing, setIsEditing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [entries, setEntries] = useState<ResultEntry[]>([]);
+  const [reportDocuments, setReportDocuments] = useState<LabReportDocument[]>([]);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   // Initialize entries from the ordered tests
   const initEntries = () => {
@@ -109,11 +132,37 @@ function ResultEntryForm({
     });
   };
 
+  const handleReportFiles = async (files: FileList | null) => {
+    if (!files?.length) return;
+    setUploadError(null);
+    const next: LabReportDocument[] = [];
+    for (const file of Array.from(files)) {
+      if (!file.type.startsWith('image/') && file.type !== 'application/pdf') {
+        setUploadError('Only images (PNG/JPEG) and PDF lab reports are supported');
+        continue;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        setUploadError(`${file.name} exceeds 10MB limit`);
+        continue;
+      }
+      const data = await readFileAsBase64(file);
+      next.push({
+        name: file.name,
+        type: file.type,
+        data,
+        size: file.size,
+      });
+    }
+    if (next.length) {
+      setReportDocuments(prev => [...prev, ...next]);
+    }
+  };
+
   const handleSubmit = async () => {
-    // Validate — at least one result value entered
+    // Validate — at least one result value or attached report image
     const filled = entries.filter(e => e.value.trim() !== '');
-    if (filled.length === 0) {
-      alert('Please enter at least one test result');
+    if (filled.length === 0 && reportDocuments.length === 0) {
+      alert('Please enter at least one test result or attach a lab report image/PDF');
       return;
     }
 
@@ -136,12 +185,13 @@ function ResultEntryForm({
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ results }),
+        body: JSON.stringify({ results, documents: reportDocuments }),
       });
 
       if (!response.ok) throw new Error('Failed to save results');
       alert('✅ Lab results saved and patient notified!');
       setIsEditing(false);
+      setReportDocuments([]);
       await onResultsSubmitted();
     } catch (error) {
       console.error('Result submission error:', error);
@@ -260,6 +310,30 @@ function ResultEntryForm({
         ))}
       </div>
 
+      <div className="mt-4 p-3 bg-white rounded border border-dashed border-emerald-300">
+        <label htmlFor={`lab-report-upload-${order.id}`} className="block text-sm font-medium text-emerald-800 mb-2">
+          Attach lab report (image/PDF)
+        </label>
+        <input
+          id={`lab-report-upload-${order.id}`}
+          type="file"
+          accept="image/png,image/jpeg,image/webp,application/pdf"
+          multiple
+          onChange={e => void handleReportFiles(e.target.files)}
+          className="block w-full text-sm text-gray-600"
+        />
+        {uploadError && <p className="text-xs text-red-600 mt-1">{uploadError}</p>}
+        {reportDocuments.length > 0 && (
+          <ul className="mt-2 text-xs text-gray-600 space-y-1">
+            {reportDocuments.map(doc => (
+              <li key={`${doc.name}-${doc.size}`}>
+                📎 {doc.name} ({Math.round(doc.size / 1024)} KB)
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
       <button
         onClick={handleSubmit}
         disabled={submitting}
@@ -318,8 +392,8 @@ export const CompleteLabOrders: React.FC<CompleteLabOrdersProps> = ({
       setLabTestCatalog(tests as LabTest[]);
 
       if (patient) {
-        const orders = await getPatientLabOrders(patient.id);
-        setPastOrders(orders);
+        const orders = await fetchLabOrdersByPatient(patient.id);
+        setPastOrders(orders as typeof pastOrders);
       }
     }
     loadData();
@@ -377,7 +451,15 @@ export const CompleteLabOrders: React.FC<CompleteLabOrdersProps> = ({
         body: JSON.stringify(labOrder),
       });
       if (!response.ok) throw new Error('Failed to create lab order');
+      const data = await response.json();
       alert('✅ Lab order placed successfully!');
+      if (patient) {
+        const orders = await fetchLabOrdersByPatient(patient.id);
+        setPastOrders(orders as typeof pastOrders);
+      }
+      if (data?.labOrder?.id) {
+        console.log(`[LAB] Order created: ${data.labOrder.id}`);
+      }
     } catch (error) {
       console.error('Lab order error:', error);
       alert('❌ Failed to place lab order. Please try again.');
@@ -651,6 +733,21 @@ export const CompleteLabOrders: React.FC<CompleteLabOrdersProps> = ({
                           <div className="text-sm text-blue-700 whitespace-pre-line">{order.ai_analysis}</div>
                         </div>
                       )}
+                      {(() => {
+                        const docs = order.results?.documents
+                          || (typeof order.results === 'object' && !Array.isArray(order.results) ? order.results.documents : []);
+                        if (!docs?.length) return null;
+                        return (
+                          <div className="mt-3 p-3 bg-purple-50 border border-purple-200 rounded">
+                            <div className="text-sm font-medium text-purple-800 mb-2">📎 Attached reports:</div>
+                            <ul className="text-sm text-purple-700 space-y-1">
+                              {docs.map((doc: { id?: string; name: string; type?: string }) => (
+                                <li key={doc.id || doc.name}>{doc.name}{doc.type?.startsWith('image/') ? ' (image)' : ''}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        );
+                      })()}
                     </div>
                   )}
 
@@ -660,7 +757,7 @@ export const CompleteLabOrders: React.FC<CompleteLabOrdersProps> = ({
                       order={order}
                       onResultsSubmitted={async () => {
                         if (patient) {
-                          const orders = await getPatientLabOrders(patient.id);
+                          const orders = await fetchLabOrdersByPatient(patient.id);
                           setPastOrders(orders);
                         }
                       }}

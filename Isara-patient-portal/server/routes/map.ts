@@ -286,8 +286,19 @@ router.get('/nearby', async (req: Request, res: Response) => {
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('[MAP] Nearby search error:', message);
-    res.status(500).json({
-      error: 'Failed to search nearby facilities', message, facilities: [], total: 0,
+    // Graceful degradation: map UI should still render even when Overpass is unavailable.
+    res.json({
+      facilities: [],
+      total: 0,
+      byType: { hospital: 0, clinic: 0, pharmacy: 0, health_center: 0 },
+      source: 'fallback-empty',
+      center: {
+        lat: Number.parseFloat(req.query.lat as string) || 13.7563,
+        lng: Number.parseFloat(req.query.lng as string) || 100.5018,
+      },
+      radiusKm: Math.min(Number.parseFloat(req.query.radius as string) || 5, 50),
+      timestamp: new Date().toISOString(),
+      warning: message,
     });
   }
 });

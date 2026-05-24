@@ -286,7 +286,19 @@ app.get('/api/consultants', async (req: Request, res: Response) => {
         rating: c.rating || 4.5,
         available: c.is_available ?? true,
         experience: c.experience_years || 0,
-        languages: c.languages || ['Thai'],
+        languages: (() => {
+          const raw = c.languages;
+          if (Array.isArray(raw)) return raw.filter((l: unknown) => typeof l === 'string');
+          if (typeof raw === 'string') {
+            try {
+              const parsed = JSON.parse(raw);
+              return Array.isArray(parsed) ? parsed.filter((l: unknown) => typeof l === 'string') : ['Thai'];
+            } catch {
+              return raw.split(',').map((s: string) => s.trim()).filter(Boolean);
+            }
+          }
+          return ['Thai'];
+        })(),
         bio: c.bio || ''
       }));
     } catch (dbError: unknown) {

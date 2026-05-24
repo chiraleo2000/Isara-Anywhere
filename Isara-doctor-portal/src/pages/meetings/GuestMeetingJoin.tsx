@@ -1,38 +1,59 @@
 /**
  * GuestMeetingJoin.tsx — Public guest join page (Doctor Portal)
- * External users enter name and wait in lobby for host (doctor) approval.
+ * Patient, family, or admin may join as guest (camera/mic) after host admits.
  * Route: /guest-join/:meetingId  (public, outside ProtectedRoute)
  */
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useParams } from 'react-router-dom';
-import { io, Socket } from 'socket.io-client';
+import { useParams, useSearchParams } from 'react-router-dom';
+import type { Socket } from 'socket.io-client';
+import {
+  connectMeetingSocket,
+  isHostReady,
+  mountGuestJitsiMeeting,
+  resolveJitsiDomain,
+} from '../../utils/jitsiMeetingConfig';
 
-const JITSI_DOMAIN = 'meet.jit.si';
 const MEETING_SERVER_URL = (() => {
   if (globalThis.window !== undefined) {
     const env = (globalThis as any).ENV;
-    if (env?.MEETING_SERVER_URL) return env.MEETING_SERVER_URL;
+    if (env?.MEETING_SERVER_URL && !String(env.MEETING_SERVER_URL).includes('localhost')) {
+      return env.MEETING_SERVER_URL;
+    }
+    const { origin, hostname } = globalThis.location;
+    if (hostname.includes('run.app')) {
+      return origin
+        .replace('izara-doctor-portal', 'izara-meeting-server')
+        .replace('izara-patient-portal', 'izara-meeting-server');
+    }
   }
   return import.meta.env?.VITE_MEETING_SERVER_URL || 'http://localhost:3020';
 })();
 
-type GuestStatus = 'form' | 'joining' | 'waiting' | 'admitted' | 'rejected' | 'error';
+type GuestStatus = 'form' | 'joining' | 'waiting' | 'admitted' | 'in_meeting' | 'rejected' | 'error';
 
 const GuestMeetingJoin: React.FC = () => {
   const { meetingId } = useParams<{ meetingId: string }>();
-  const [guestName, setGuestName] = useState('');
+  const [searchParams] = useSearchParams();
+  const guestRoleLabel = searchParams.get('guestType') || searchParams.get('role') || 'guest';
+  const nameFromUrl = searchParams.get('name') || '';
+  const [guestName, setGuestName] = useState(nameFromUrl);
   const [status, setStatus] = useState<GuestStatus>('form');
   const [participantId, setParticipantId] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
   const [roomName, setRoomName] = useState('');
   const [waitSeconds, setWaitSeconds] = useState(0);
+  const [connectingVideo, setConnectingVideo] = useState(false);
+  const [hostReady, setHostReady] = useState(false);
+  const [videoError, setVideoError] = useState('');
+  const [mountAttempt, setMountAttempt] = useState(0);
+  const [jitsiIframeMounted, setJitsiIframeMounted] = useState(false);
   const socketRef = useRef<Socket | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const jitsiContainerRef = useRef<HTMLDivElement>(null);
   const jitsiApiRef = useRef<any>(null);
   const waitTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const autoJoinFromUrlRef = useRef(false);
 
-  // Resolve room name
   useEffect(() => {
     if (!meetingId) return;
     const fallback = `izara-${meetingId.substring(0, 12)}-meeting`;
@@ -42,22 +63,57 @@ const GuestMeetingJoin: React.FC = () => {
       .catch(() => setRoomName(fallback));
   }, [meetingId]);
 
-  // Socket.IO lobby events
   useEffect(() => {
-    if (!meetingId || !participantId) return;
-    const socket = io(MEETING_SERVER_URL, { transports: ['websocket', 'polling'] });
-    socketRef.current = socket;
-    socket.on('connect', () => socket.emit('join-room', meetingId));
-    socket.on('lobby-update', (data: any) => {
-      if (data.participant?.participantId === participantId) {
-        if (data.action === 'admit') setStatus('admitted');
-        if (data.action === 'reject') setStatus('rejected');
+    if (!meetingId) return;
+    let cancelled = false;
+    const setup = async () => {
+      const socket = await connectMeetingSocket(
+        MEETING_SERVER_URL,
+        meetingId,
+        {
+          onHostReady: () => { if (!cancelled) setHostReady(true); },
+          onLobbyUpdate: (data) => {
+            const pid = data.participant?.participantId;
+            if (!participantId || pid !== participantId) return;
+            if (data.action === 'admit') {
+              setStatus('admitted');
+              if (data.hostReady) setHostReady(true);
+            }
+            if (data.action === 'reject') setStatus('rejected');
+          },
+        },
+        { userName: guestName, role: 'guest' },
+      );
+      if (cancelled) {
+        socket.disconnect();
+        return;
       }
-    });
-    return () => { socket.disconnect(); socketRef.current = null; };
-  }, [meetingId, participantId]);
+      socketRef.current = socket;
+    };
+    void setup();
+    return () => {
+      cancelled = true;
+      socketRef.current?.disconnect();
+      socketRef.current = null;
+    };
+  }, [meetingId, guestName]);
 
-  // Polling fallback
+  useEffect(() => {
+    if (status !== 'admitted' && status !== 'in_meeting') return;
+    if (!meetingId) return;
+    let cancelled = false;
+    const check = async () => {
+      if (cancelled) return;
+      if (await isHostReady(MEETING_SERVER_URL, meetingId)) setHostReady(true);
+    };
+    void check();
+    const id = setInterval(() => void check(), 2000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [status, meetingId]);
+
   useEffect(() => {
     if (status !== 'waiting' || !meetingId || !participantId) return;
     pollRef.current = setInterval(async () => {
@@ -71,7 +127,6 @@ const GuestMeetingJoin: React.FC = () => {
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [status, meetingId, participantId]);
 
-  // Wait timer
   useEffect(() => {
     if (status === 'waiting') {
       setWaitSeconds(0);
@@ -82,45 +137,60 @@ const GuestMeetingJoin: React.FC = () => {
     return () => { if (waitTimerRef.current) clearInterval(waitTimerRef.current); };
   }, [status]);
 
-  // Launch Jitsi when admitted
-  useEffect(() => {
-    if (status !== 'admitted' || !roomName || jitsiApiRef.current) return;
-    const loadJitsi = () => {
-      if ((globalThis as any).JitsiMeetExternalAPI) {
-        initJitsi();
-      } else {
-        const script = document.createElement('script');
-        script.src = 'https://meet.jit.si/external_api.js';
-        script.onload = () => initJitsi();
-        document.head.appendChild(script);
+  const mountJitsi = useCallback(async () => {
+    if (!meetingId || !guestName.trim()) return;
+    setConnectingVideo(true);
+    setVideoError('');
+    try {
+      const ready = hostReady || (await isHostReady(MEETING_SERVER_URL, meetingId));
+      if (!ready) {
+        setVideoError('รอแพทย์เริ่มการประชุมก่อน (Waiting for doctor host…)');
+        return;
       }
-    };
-    const initJitsi = () => {
+      setHostReady(true);
+      let resolvedRoom = roomName;
+      if (!resolvedRoom) {
+        const meta = await fetch(`${MEETING_SERVER_URL}/api/meetings/${meetingId}`).then(r => r.json()).catch(() => null);
+        resolvedRoom = meta?.meeting?.room_name || `izara-${meetingId.substring(0, 12)}-meeting`;
+        setRoomName(resolvedRoom);
+      }
+      await new Promise<void>(r => requestAnimationFrame(() => requestAnimationFrame(() => r())));
       if (!jitsiContainerRef.current) return;
-      const api = new (globalThis as any).JitsiMeetExternalAPI(JITSI_DOMAIN, {
-        roomName,
-        parentNode: jitsiContainerRef.current,
-        width: '100%',
-        height: '100%',
-        userInfo: { displayName: guestName },
-        configOverwrite: {
-          startWithAudioMuted: true,
-          startWithVideoMuted: false,
-          prejoinPageEnabled: false,
-          disableDeepLinking: true,
-          toolbarButtons: ['microphone', 'camera', 'chat', 'raisehand', 'tileview', 'hangup'],
-        },
-        interfaceConfigOverwrite: {
-          DISABLE_JOIN_LEAVE_NOTIFICATIONS: false,
-          MOBILE_APP_PROMO: false,
-        },
+      jitsiApiRef.current?.dispose?.();
+      jitsiApiRef.current = null;
+      const api = await mountGuestJitsiMeeting({
+        meetingServerUrl: MEETING_SERVER_URL,
+        meetingId,
+        roomName: resolvedRoom,
+        displayName: guestName,
+        domain: resolveJitsiDomain(),
+        container: jitsiContainerRef.current,
+        startWithVideo: true,
+        startWithAudio: true,
+        hostReadyConfirmed: true,
       });
       jitsiApiRef.current = api;
-      api.addEventListener('readyToClose', () => setStatus('form'));
+      setJitsiIframeMounted(Boolean(jitsiContainerRef.current?.querySelector('iframe')));
+      api.addListener?.('videoConferenceJoined', () => setStatus('in_meeting'));
+      api.on?.('videoConferenceJoined', () => setStatus('in_meeting'));
+      api.on?.('readyToClose', () => setStatus('form'));
+      setStatus('in_meeting');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Cannot connect to video';
+      setVideoError(msg);
+    } finally {
+      setConnectingVideo(false);
+    }
+  }, [meetingId, roomName, guestName, hostReady]);
+
+  useEffect(() => {
+    if (status !== 'admitted' || !meetingId) return;
+    void mountJitsi();
+    return () => {
+      jitsiApiRef.current?.dispose?.();
+      jitsiApiRef.current = null;
     };
-    loadJitsi();
-    return () => { jitsiApiRef.current?.dispose(); jitsiApiRef.current = null; };
-  }, [status, roomName, guestName]);
+  }, [status, meetingId, mountAttempt, mountJitsi, hostReady]);
 
   const handleJoinLobby = useCallback(async () => {
     if (!guestName.trim() || !meetingId) return;
@@ -129,12 +199,15 @@ const GuestMeetingJoin: React.FC = () => {
       const res = await fetch(`${MEETING_SERVER_URL}/api/meetings/${meetingId}/lobby/join`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ participantName: guestName.trim() }),
+        body: JSON.stringify({
+          participantName: guestName.trim(),
+          role: guestRoleLabel === 'admin' ? 'admin' : 'guest',
+        }),
       });
       const data = await res.json();
       if (data.success) {
         setParticipantId(data.participantId);
-        setStatus('waiting');
+        setStatus(data.status === 'admitted' ? 'admitted' : 'waiting');
       } else {
         setErrorMsg(data.error || 'Failed to join lobby');
         setStatus('error');
@@ -143,7 +216,14 @@ const GuestMeetingJoin: React.FC = () => {
       setErrorMsg('Cannot connect to meeting server');
       setStatus('error');
     }
-  }, [guestName, meetingId]);
+  }, [guestName, meetingId, guestRoleLabel]);
+
+  useEffect(() => {
+    if (autoJoinFromUrlRef.current || !nameFromUrl.trim() || !meetingId) return;
+    if (status !== 'form') return;
+    autoJoinFromUrlRef.current = true;
+    void handleJoinLobby();
+  }, [meetingId, nameFromUrl, status, handleJoinLobby]);
 
   const formatWait = (s: number) => {
     const m = Math.floor(s / 60);
@@ -159,15 +239,58 @@ const GuestMeetingJoin: React.FC = () => {
     );
   }
 
-  // Admitted — show Jitsi
-  if (status === 'admitted') {
+  if (status === 'admitted' || status === 'in_meeting') {
+    const waitingHost =
+      !jitsiIframeMounted &&
+      status !== 'in_meeting' &&
+      !hostReady &&
+      !connectingVideo &&
+      !videoError;
     return (
-      <div className="min-h-screen bg-gray-900 flex flex-col">
-        <div className="bg-emerald-800 text-white px-4 py-2 flex items-center justify-between">
-          <span className="text-sm font-medium">🏥 Izara Meeting — {guestName} (Guest)</span>
-          <span className="text-xs text-green-300">✓ Admitted by Host</span>
+      <div className="min-h-screen bg-gray-900 flex flex-col" data-testid="guest-meeting-room">
+        <div className="bg-emerald-800 text-white px-4 py-2 flex items-center justify-between shrink-0">
+          <span className="text-sm font-medium">
+            Izara Meeting — {guestName} ({guestRoleLabel === 'admin' ? 'Admin Guest' : 'Guest'})
+          </span>
+          <span className="text-xs text-green-300">
+            {waitingHost ? 'Waiting for host…' : connectingVideo ? 'Connecting…' : status === 'in_meeting' ? '✓ In meeting' : 'Approved'}
+          </span>
         </div>
-        <div ref={jitsiContainerRef} className="flex-1" data-testid="jitsi-guest-container" />
+        <div className="relative flex-1 min-h-[70vh] w-full">
+          <div
+            ref={jitsiContainerRef}
+            className="absolute inset-0 w-full h-full min-h-[70vh]"
+            data-testid="jitsi-guest-container"
+          />
+          {(waitingHost || connectingVideo) && (
+            <div
+              className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-gray-900/90"
+              data-testid={waitingHost ? 'host-waiting-screen' : 'guest-connecting-overlay'}
+            >
+              <div className="animate-spin w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full mb-4" />
+              <p className="text-gray-200 text-center px-4">
+                {waitingHost
+                  ? 'รอแพทย์เริ่มการประชุม… / Waiting for doctor to start'
+                  : 'กำลังเชื่อมต่อวิดีโอ… / Connecting video'}
+              </p>
+            </div>
+          )}
+          {videoError && !connectingVideo && (
+            <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-gray-900/95 p-6">
+              <p className="text-red-300 text-center mb-4">{videoError}</p>
+              <button
+                type="button"
+                className="bg-emerald-600 text-white px-6 py-2 rounded-lg hover:bg-emerald-700"
+                onClick={() => {
+                  setMountAttempt(n => n + 1);
+                  void mountJitsi();
+                }}
+              >
+                ลองใหม่ / Retry
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     );
   }
@@ -175,28 +298,26 @@ const GuestMeetingJoin: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-emerald-950 to-gray-900 flex items-center justify-center p-4">
       <div className="bg-gray-800 rounded-2xl shadow-2xl p-8 max-w-md w-full border border-emerald-700/30" data-testid="guest-join-form">
-        {/* Header */}
         <div className="text-center mb-6">
           <div className="w-16 h-16 bg-emerald-900/50 rounded-full flex items-center justify-center mx-auto mb-4 border border-emerald-600/30">
             <span className="text-3xl">🏥</span>
           </div>
           <h1 className="text-2xl font-bold text-white">เข้าร่วมประชุม</h1>
-          <p className="text-emerald-400 mt-1 text-sm">Join Meeting as Guest</p>
-          <p className="text-xs text-gray-500 mt-2 font-mono">Meeting: {meetingId?.substring(0, 8)}...</p>
+          <p className="text-gray-400 mt-1 text-sm">Join Meeting as Guest</p>
+          <p className="text-xs text-gray-500 mt-2 font-mono">Meeting: {meetingId.substring(0, 8)}...</p>
         </div>
 
-        {/* Form */}
         {status === 'form' && (
           <div className="space-y-4">
             <div>
-              <label htmlFor="guest-name" className="block text-sm font-medium text-gray-300 mb-1">ชื่อของคุณ (Your Name)</label>
+              <label htmlFor="guest-name" className="block text-sm font-medium text-gray-300 mb-1">ชื่อของคุณ</label>
               <input
                 id="guest-name"
                 type="text"
                 value={guestName}
                 onChange={e => setGuestName(e.target.value)}
                 placeholder="Enter your name"
-                className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-lg"
+                className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white text-lg focus:ring-2 focus:ring-emerald-500"
                 data-testid="guest-name-input"
                 maxLength={100}
                 autoFocus
@@ -206,70 +327,45 @@ const GuestMeetingJoin: React.FC = () => {
             <button
               onClick={handleJoinLobby}
               disabled={!guestName.trim()}
-              className="w-full bg-emerald-600 text-white py-3 rounded-lg font-semibold text-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="w-full bg-emerald-600 text-white py-3 rounded-lg font-semibold text-lg hover:bg-emerald-700 disabled:opacity-50"
               data-testid="guest-join-btn"
             >
               ขอเข้าร่วม (Request to Join)
             </button>
-            <p className="text-xs text-gray-500 text-center">
-              แพทย์ (Host) จะอนุมัติก่อนเข้าห้องประชุม
-            </p>
           </div>
         )}
 
-        {/* Joining */}
         {status === 'joining' && (
           <div className="text-center py-8">
             <div className="animate-spin w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full mx-auto mb-4" />
-            <p className="text-gray-300">Connecting...</p>
+            <p className="text-gray-400">Connecting...</p>
           </div>
         )}
 
-        {/* Waiting */}
         {status === 'waiting' && (
-          <div className="text-center py-6" data-testid="guest-lobby-waiting">
-            <div className="w-20 h-20 bg-yellow-900/30 rounded-full flex items-center justify-center mx-auto mb-4 border border-yellow-600/30">
+          <div className="text-center py-6" data-testid="guest-lobby-waiting" data-participant-id={participantId || ''}>
+            <div className="w-20 h-20 bg-yellow-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
               <span className="text-4xl animate-pulse">⏳</span>
             </div>
             <h2 className="text-xl font-semibold text-white mb-2">รอการอนุมัติ</h2>
             <p className="text-gray-400 mb-1">Waiting for host to approve...</p>
             <p className="text-sm text-gray-500 font-mono">{formatWait(waitSeconds)}</p>
-            <div className="mt-4 bg-emerald-900/30 rounded-lg p-3 border border-emerald-700/20">
-              <p className="text-sm text-emerald-300">
-                <span className="font-semibold">{guestName}</span> — กำลังรอแพทย์อนุมัติเข้าห้องประชุม
-              </p>
-            </div>
           </div>
         )}
 
-        {/* Rejected */}
         {status === 'rejected' && (
           <div className="text-center py-6" data-testid="guest-lobby-rejected">
-            <div className="w-20 h-20 bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-4xl">❌</span>
-            </div>
             <h2 className="text-xl font-semibold text-red-400 mb-2">ถูกปฏิเสธ</h2>
-            <p className="text-gray-400 mb-4">Host declined your request</p>
-            <button
-              onClick={() => setStatus('form')}
-              className="bg-gray-700 text-gray-200 px-6 py-2 rounded-lg hover:bg-gray-600 transition-colors"
-            >
+            <button onClick={() => setStatus('form')} className="bg-gray-700 text-white px-6 py-2 rounded-lg">
               Try Again
             </button>
           </div>
         )}
 
-        {/* Error */}
         {status === 'error' && (
           <div className="text-center py-6">
-            <div className="w-20 h-20 bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-4xl">⚠️</span>
-            </div>
             <p className="text-red-400 mb-4">{errorMsg}</p>
-            <button
-              onClick={() => setStatus('form')}
-              className="bg-emerald-600 text-white px-6 py-2 rounded-lg hover:bg-emerald-700 transition-colors"
-            >
+            <button onClick={() => setStatus('form')} className="bg-emerald-600 text-white px-6 py-2 rounded-lg">
               Retry
             </button>
           </div>

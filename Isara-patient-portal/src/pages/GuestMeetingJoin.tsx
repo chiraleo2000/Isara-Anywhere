@@ -8,35 +8,56 @@
  *   /guest/join/:token         — JWT-based invite join (auto-validated)
  */
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useParams } from 'react-router-dom';
-import { io, Socket } from 'socket.io-client';
-
-const JITSI_DOMAIN = 'meet.jit.si';
+import { useParams, useSearchParams } from 'react-router-dom';
+import type { Socket } from 'socket.io-client';
+import {
+  connectMeetingSocket,
+  isHostReady,
+  mountGuestJitsiMeeting,
+  resolveJitsiDomain,
+} from '../utils/jitsiMeetingConfig';
 const MEETING_SERVER_URL = (() => {
   if (globalThis.window !== undefined) {
     const env = (globalThis as any).ENV;
-    if (env?.MEETING_SERVER_URL) return env.MEETING_SERVER_URL;
+    if (env?.MEETING_SERVER_URL && !String(env.MEETING_SERVER_URL).includes('localhost')) {
+      return env.MEETING_SERVER_URL;
+    }
+    const { origin, hostname } = globalThis.location;
+    if (hostname.includes('run.app')) {
+      return origin
+        .replace('izara-doctor-portal', 'izara-meeting-server')
+        .replace('izara-patient-portal', 'izara-meeting-server');
+    }
   }
   return import.meta.env?.VITE_MEETING_SERVER_URL || 'http://localhost:3020';
 })();
 
-type GuestStatus = 'form' | 'joining' | 'waiting' | 'admitted' | 'rejected' | 'error' | 'validating';
+type GuestStatus = 'form' | 'joining' | 'waiting' | 'admitted' | 'in_meeting' | 'rejected' | 'error' | 'validating';
 
 const GuestMeetingJoin: React.FC = () => {
   const { meetingId: paramMeetingId, token } = useParams<{ meetingId?: string; token?: string }>();
+  const [searchParams] = useSearchParams();
+  const guestRoleLabel = searchParams.get('guestType') || searchParams.get('role') || 'guest';
+  const nameFromUrl = searchParams.get('name') || '';
   const [meetingId, setMeetingId] = useState<string | undefined>(paramMeetingId);
-  const [guestName, setGuestName] = useState('');
+  const [guestName, setGuestName] = useState(nameFromUrl);
   const [status, setStatus] = useState<GuestStatus>(token ? 'validating' : 'form');
   const [tokenData, setTokenData] = useState<{ guestName: string; guestType: string; roomName: string | null } | null>(null);
   const [participantId, setParticipantId] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
   const [roomName, setRoomName] = useState('');
   const [waitSeconds, setWaitSeconds] = useState(0);
+  const [connectingVideo, setConnectingVideo] = useState(false);
+  const [hostReady, setHostReady] = useState(false);
+  const [videoError, setVideoError] = useState('');
+  const [mountAttempt, setMountAttempt] = useState(0);
+  const [jitsiIframeMounted, setJitsiIframeMounted] = useState(false);
   const socketRef = useRef<Socket | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const jitsiContainerRef = useRef<HTMLDivElement>(null);
   const jitsiApiRef = useRef<any>(null);
   const waitTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const autoJoinFromUrlRef = useRef(false);
 
   // Resolve Jitsi room name from meeting server
   useEffect(() => {
@@ -74,20 +95,58 @@ const GuestMeetingJoin: React.FC = () => {
     validate();
   }, [token, status]);
 
-  // Socket.IO for real-time lobby updates
+  // Socket.IO — all meeting room aliases (lobby + host-ready)
   useEffect(() => {
-    if (!meetingId || !participantId) return;
-    const socket = io(MEETING_SERVER_URL, { transports: ['websocket', 'polling'] });
-    socketRef.current = socket;
-    socket.on('connect', () => socket.emit('join-room', meetingId));
-    socket.on('lobby-update', (data: any) => {
-      if (data.participant?.participantId === participantId) {
-        if (data.action === 'admit') setStatus('admitted');
-        if (data.action === 'reject') setStatus('rejected');
+    if (!meetingId) return;
+    let cancelled = false;
+    const setup = async () => {
+      const socket = await connectMeetingSocket(
+        MEETING_SERVER_URL,
+        meetingId,
+        {
+          onHostReady: () => { if (!cancelled) setHostReady(true); },
+          onLobbyUpdate: (data) => {
+            const pid = data.participant?.participantId;
+            if (!participantId || pid !== participantId) return;
+            if (data.action === 'admit') {
+              setStatus('admitted');
+              if (data.hostReady) setHostReady(true);
+            }
+            if (data.action === 'reject') setStatus('rejected');
+          },
+        },
+        { userName: guestName, role: 'guest' },
+      );
+      if (cancelled) {
+        socket.disconnect();
+        return;
       }
-    });
-    return () => { socket.disconnect(); socketRef.current = null; };
-  }, [meetingId, participantId]);
+      socketRef.current = socket;
+    };
+    void setup();
+    return () => {
+      cancelled = true;
+      socketRef.current?.disconnect();
+      socketRef.current = null;
+    };
+  }, [meetingId, guestName]);
+
+  // Poll host-ready after lobby admit
+  useEffect(() => {
+    if (status !== 'admitted' && status !== 'in_meeting') return;
+    if (!meetingId) return;
+    let cancelled = false;
+    const check = async () => {
+      if (cancelled) return;
+      if (await isHostReady(MEETING_SERVER_URL, meetingId)) setHostReady(true);
+    };
+    void check();
+    const id = setInterval(() => void check(), 2000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [status, meetingId]);
 
   // Polling fallback — check lobby status every 3s
   useEffect(() => {
@@ -114,45 +173,60 @@ const GuestMeetingJoin: React.FC = () => {
     return () => { if (waitTimerRef.current) clearInterval(waitTimerRef.current); };
   }, [status]);
 
-  // Launch Jitsi when admitted
-  useEffect(() => {
-    if (status !== 'admitted' || !roomName || jitsiApiRef.current) return;
-    const loadJitsi = () => {
-      if ((globalThis as any).JitsiMeetExternalAPI) {
-        initJitsi();
-      } else {
-        const script = document.createElement('script');
-        script.src = 'https://meet.jit.si/external_api.js';
-        script.onload = () => initJitsi();
-        document.head.appendChild(script);
+  const mountJitsi = useCallback(async () => {
+    if (!meetingId || !guestName.trim()) return;
+    setConnectingVideo(true);
+    setVideoError('');
+    try {
+      const ready = hostReady || (await isHostReady(MEETING_SERVER_URL, meetingId));
+      if (!ready) {
+        setVideoError('รอแพทย์เริ่มการประชุมก่อน (Waiting for doctor host…)');
+        return;
       }
-    };
-    const initJitsi = () => {
+      setHostReady(true);
+      let resolvedRoom = roomName;
+      if (!resolvedRoom) {
+        const meta = await fetch(`${MEETING_SERVER_URL}/api/meetings/${meetingId}`).then(r => r.json()).catch(() => null);
+        resolvedRoom = meta?.meeting?.room_name || `izara-${meetingId.substring(0, 12)}-meeting`;
+        setRoomName(resolvedRoom);
+      }
+      await new Promise<void>(r => requestAnimationFrame(() => requestAnimationFrame(() => r())));
       if (!jitsiContainerRef.current) return;
-      const api = new (globalThis as any).JitsiMeetExternalAPI(JITSI_DOMAIN, {
-        roomName,
-        parentNode: jitsiContainerRef.current,
-        width: '100%',
-        height: '100%',
-        userInfo: { displayName: guestName },
-        configOverwrite: {
-          startWithAudioMuted: true,
-          startWithVideoMuted: false,
-          prejoinPageEnabled: false,
-          disableDeepLinking: true,
-          toolbarButtons: ['microphone', 'camera', 'chat', 'raisehand', 'tileview', 'hangup'],
-        },
-        interfaceConfigOverwrite: {
-          DISABLE_JOIN_LEAVE_NOTIFICATIONS: false,
-          MOBILE_APP_PROMO: false,
-        },
+      jitsiApiRef.current?.dispose?.();
+      jitsiApiRef.current = null;
+      const api = await mountGuestJitsiMeeting({
+        meetingServerUrl: MEETING_SERVER_URL,
+        meetingId,
+        roomName: resolvedRoom,
+        displayName: guestName,
+        domain: resolveJitsiDomain(),
+        container: jitsiContainerRef.current,
+        startWithVideo: true,
+        startWithAudio: true,
+        hostReadyConfirmed: true,
       });
       jitsiApiRef.current = api;
-      api.addEventListener('readyToClose', () => setStatus('form'));
+      setJitsiIframeMounted(Boolean(jitsiContainerRef.current?.querySelector('iframe')));
+      api.addListener?.('videoConferenceJoined', () => setStatus('in_meeting'));
+      api.on?.('videoConferenceJoined', () => setStatus('in_meeting'));
+      api.on?.('readyToClose', () => setStatus('form'));
+      setStatus('in_meeting');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Cannot connect to video';
+      setVideoError(msg);
+    } finally {
+      setConnectingVideo(false);
+    }
+  }, [meetingId, roomName, guestName, hostReady]);
+
+  useEffect(() => {
+    if (status !== 'admitted' || !meetingId) return;
+    void mountJitsi();
+    return () => {
+      jitsiApiRef.current?.dispose?.();
+      jitsiApiRef.current = null;
     };
-    loadJitsi();
-    return () => { jitsiApiRef.current?.dispose(); jitsiApiRef.current = null; };
-  }, [status, roomName, guestName]);
+  }, [status, meetingId, mountAttempt, mountJitsi, hostReady]);
 
   const handleJoinLobby = useCallback(async () => {
     if (!guestName.trim() || !meetingId) return;
@@ -171,7 +245,10 @@ const GuestMeetingJoin: React.FC = () => {
         res = await fetch(`${MEETING_SERVER_URL}/api/meetings/${meetingId}/lobby/join`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ participantName: guestName.trim() }),
+          body: JSON.stringify({
+          participantName: guestName.trim(),
+          role: guestRoleLabel === 'admin' ? 'admin' : 'guest',
+        }),
         });
       }
       const data = await res.json();
@@ -187,6 +264,14 @@ const GuestMeetingJoin: React.FC = () => {
       setStatus('error');
     }
   }, [guestName, meetingId, token]);
+
+  // Pre-filled ?name= — auto-submit lobby (E2E guest flow)
+  useEffect(() => {
+    if (autoJoinFromUrlRef.current || !nameFromUrl.trim() || !meetingId || token) return;
+    if (status !== 'form') return;
+    autoJoinFromUrlRef.current = true;
+    void handleJoinLobby();
+  }, [meetingId, nameFromUrl, token, status, handleJoinLobby]);
 
   const formatWait = (s: number) => {
     const m = Math.floor(s / 60);
@@ -214,15 +299,58 @@ const GuestMeetingJoin: React.FC = () => {
     );
   }
 
-  // Admitted — show Jitsi
-  if (status === 'admitted') {
+  if (status === 'admitted' || status === 'in_meeting') {
+    const waitingHost =
+      !jitsiIframeMounted &&
+      status !== 'in_meeting' &&
+      !hostReady &&
+      !connectingVideo &&
+      !videoError;
     return (
-      <div className="min-h-screen bg-gray-900 flex flex-col">
-        <div className="bg-gray-800 text-white px-4 py-2 flex items-center justify-between">
-          <span className="text-sm font-medium">🏥 Izara Meeting — {guestName} (Guest)</span>
-          <span className="text-xs text-green-400">✓ Admitted</span>
+      <div className="min-h-screen bg-gray-900 flex flex-col" data-testid="guest-meeting-room">
+        <div className="bg-gray-800 text-white px-4 py-2 flex items-center justify-between shrink-0">
+          <span className="text-sm font-medium">
+            Izara Meeting — {guestName} ({guestRoleLabel === 'admin' ? 'Admin Guest' : 'Guest'})
+          </span>
+          <span className="text-xs text-green-400">
+            {waitingHost ? 'Waiting for host…' : connectingVideo ? 'Connecting…' : status === 'in_meeting' ? '✓ In meeting' : 'Approved'}
+          </span>
         </div>
-        <div ref={jitsiContainerRef} className="flex-1" data-testid="jitsi-guest-container" />
+        <div className="relative flex-1 min-h-[70vh] w-full">
+          <div
+            ref={jitsiContainerRef}
+            className="absolute inset-0 w-full h-full min-h-[70vh]"
+            data-testid="jitsi-guest-container"
+          />
+          {(waitingHost || connectingVideo) && (
+            <div
+              className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-gray-900/90"
+              data-testid={waitingHost ? 'host-waiting-screen' : 'guest-connecting-overlay'}
+            >
+              <div className="animate-spin w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full mb-4" />
+              <p className="text-gray-200 text-center px-4">
+                {waitingHost
+                  ? 'รอแพทย์เริ่มการประชุม… / Waiting for doctor to start'
+                  : 'กำลังเชื่อมต่อวิดีโอ… / Connecting video'}
+              </p>
+            </div>
+          )}
+          {videoError && !connectingVideo && (
+            <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-gray-900/95 p-6">
+              <p className="text-red-300 text-center mb-4">{videoError}</p>
+              <button
+                type="button"
+                className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
+                onClick={() => {
+                  setMountAttempt((n) => n + 1);
+                  void mountJitsi();
+                }}
+              >
+                ลองใหม่ / Retry
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     );
   }
@@ -287,7 +415,7 @@ const GuestMeetingJoin: React.FC = () => {
 
         {/* Waiting in lobby */}
         {status === 'waiting' && (
-          <div className="text-center py-6" data-testid="guest-lobby-waiting">
+          <div className="text-center py-6" data-testid="guest-lobby-waiting" data-participant-id={participantId || ''}>
             <div className="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <span className="text-4xl animate-pulse">⏳</span>
             </div>

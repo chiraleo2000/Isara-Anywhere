@@ -118,7 +118,7 @@ export const PatientRecordViewer: React.FC<PatientRecordViewerProps> = ({
       loadTabData('phr');
     }
     return () => { patientRecordService.clearCache(); };
-  }, [patient.id, consentStatus]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [patient.id, consentStatus]);
 
   // Load tab data when switching (only if consent granted)
   useEffect(() => {

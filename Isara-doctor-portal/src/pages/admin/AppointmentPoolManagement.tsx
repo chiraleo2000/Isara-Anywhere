@@ -86,14 +86,18 @@ const AppointmentPoolManagement: React.FC = () => {
 
   // Fetch pool items
   const fetchPoolItems = useCallback(async () => {
-    if (!user?.specialty) return;
+    if (!user) return;
+    const isAdmin = user.role === 'admin' || (user as { isAdmin?: boolean }).isAdmin;
+    if (!isAdmin && !user.specialty) return;
     
     try {
       setLoading(true);
       setError(null);
 
-      // Fetch pool items matching doctor's specialty from doctor portal API
-      const response = await fetch(`${API_URL}/api/appointment-pool?specialty=${encodeURIComponent(user.specialty)}`, {
+      const poolUrl = isAdmin
+        ? `${API_URL}/api/appointment-pool`
+        : `${API_URL}/api/appointment-pool?specialty=${encodeURIComponent(user.specialty || '')}`;
+      const response = await fetch(poolUrl, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
         }
@@ -102,12 +106,15 @@ const AppointmentPoolManagement: React.FC = () => {
       if (response.ok) {
         const data = await response.json();
         // Ensure data is an array
-        const items = Array.isArray(data) ? data : [];
-        setPoolItems(items.filter((item: PoolItem) => 
-          item.poolStatus === 'pending' || 
-          item.poolStatus === 'ai_matched' ||
-          (item.poolStatus === 'doctor_claimed' && item.claimedByDoctorId === user.id)
-        ));
+        const items = Array.isArray(data) ? data : (data.items || []);
+        const visibleStatuses = new Set(['in_pool', 'pending', 'awaiting_doctor_response']);
+        setPoolItems(items.filter((item: PoolItem & { status?: string }) => {
+          const status = item.status || item.poolStatus;
+          if (visibleStatuses.has(status)) return true;
+          if (item.poolStatus === 'pending' || item.poolStatus === 'ai_matched') return true;
+          if (item.poolStatus === 'doctor_claimed' && item.claimedByDoctorId === user.id) return true;
+          return false;
+        }));
       } else {
         console.error('Failed to fetch pool items:', response.status);
         setPoolItems([]);
@@ -119,7 +126,7 @@ const AppointmentPoolManagement: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [user?.specialty, user?.id, API_URL]);
+  }, [user?.specialty, user?.id, user?.role, API_URL]);
 
   // Fetch appointments awaiting doctor response (patient-selected this doctor)
   const fetchAwaitingResponse = useCallback(async () => {
@@ -136,7 +143,7 @@ const AppointmentPoolManagement: React.FC = () => {
         const data = await response.json();
         const appointments = (data.appointments || data || [])
           .filter((apt: any) => 
-            apt.doctorId === user.id && 
+            (apt.doctorId === user.id || apt.doctor_id === user.id) && 
             apt.status === 'awaiting_doctor_response'
           );
         setPendingAppointments(appointments);
@@ -150,6 +157,39 @@ const AppointmentPoolManagement: React.FC = () => {
     fetchPoolItems();
     fetchAwaitingResponse();
   }, [fetchPoolItems, fetchAwaitingResponse]);
+
+  // Real-time refresh when patient books or admin assigns (PG NOTIFY → Socket.IO)
+  useEffect(() => {
+    const apiBase = API_URL || '';
+    const socketUrl = apiBase || globalThis.location.origin;
+    let socket: {
+      on: (e: string, fn: () => void) => void;
+      emit: (e: string, ...args: unknown[]) => void;
+      disconnect: () => void;
+    } | null = null;
+    (async () => {
+      try {
+        const { io } = await import('socket.io-client');
+        socket = io(socketUrl, { transports: ['websocket', 'polling'], path: '/ws', reconnectionDelay: 3000 });
+        const refresh = () => {
+          fetchPoolItems();
+          fetchAwaitingResponse();
+        };
+        socket.on('connect', () => {
+          socket!.emit('join', 'admin-notifications');
+        });
+        socket.on('pool-updated', refresh);
+        socket.on('appointment-created', refresh);
+        socket.on('appointment:created', refresh);
+        socket.on('appointment-updated', refresh);
+        socket.on('appointment:updated', refresh);
+        socket.on('data:changed', refresh);
+      } catch {
+        /* socket optional */
+      }
+    })();
+    return () => { socket?.disconnect(); };
+  }, [fetchPoolItems, fetchAwaitingResponse, API_URL]);
 
   // Claim appointment from pool
   const handleClaimAppointment = async () => {
@@ -193,19 +233,18 @@ const AppointmentPoolManagement: React.FC = () => {
 
     try {
       if (action === 'accept' && proposedDate && proposedTime) {
-        // Accept and confirm with proposed time
-        const response = await fetch(`${API_URL}/api/appointments/${appointmentId}/status`, {
-          method: 'PUT',
+        // Accept and confirm with proposed time (doctor-only confirm flow)
+        const response = await fetch(`${API_URL}/api/appointments/${appointmentId}/confirm`, {
+          method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
           },
           body: JSON.stringify({
-            status: 'confirmed',
-            appointmentDate: proposedDate,
-            appointmentTime: proposedTime,
-            confirmedBy: user.name,
-            confirmedAt: new Date().toISOString()
+            doctorId: user.id,
+            doctorEmail: user.email,
+            confirmedDate: proposedDate,
+            confirmedTime: proposedTime
           })
         });
 

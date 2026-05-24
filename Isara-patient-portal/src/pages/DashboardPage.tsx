@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useSettings } from '../contexts/SettingsContext';
 import { appointmentService } from '../lib/services';
+import { useRealtimeSync } from '../lib/useRealtimeSync';
 import { Appointment } from '../types';
 import { HealthStudio, AIHealthChat } from '../components/health';
 import {
@@ -29,14 +30,14 @@ interface AppointmentCardProps {
 }
 
 function getTypeLabel(type: string, isEnglish: boolean): string {
-  if (type === 'telehealth') return isEnglish ? 'Online' : 'ออนไลน์';
+  if (type?.toLowerCase() === 'telehealth') return isEnglish ? 'Online' : 'ออนไลน์';
   return isEnglish ? 'Hospital' : 'โรงพยาบาล';
 }
 
 function AppointmentCard({ apt, isDarkMode, isEnglish, formatDate, getStatusBadge }: AppointmentCardProps) {
   const typeLabel = getTypeLabel(apt.type, isEnglish);
-  const TypeIcon = apt.type === 'telehealth' ? Video : MapPin;
-  const showMeetingLink = apt.status === 'confirmed' && apt.type === 'telehealth' && apt.meetingLink;
+  const TypeIcon = apt.type?.toLowerCase() === 'telehealth' ? Video : MapPin;
+  const showMeetingLink = apt.status === 'confirmed' && apt.type?.toLowerCase() === 'telehealth' && apt.meetingLink;
 
   return (
     <Link
@@ -75,7 +76,7 @@ function AppointmentCard({ apt, isDarkMode, isEnglish, formatDate, getStatusBadg
       {showMeetingLink && (
         <div className={`mt-3 pt-3 border-t ${isDarkMode ? 'border-slate-700' : 'border-gray-200'}`}>
           <a
-            href={apt.meetingLink}
+            href={apt.meetingLink || '#'}
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
@@ -146,12 +147,7 @@ export default function DashboardPage() {
     { icon: BookOpen, label: t('dashboard.healthLibrary') || (isEnglish ? 'Health Library' : 'คลังความรู้สุขภาพ'), path: '/health-library', color: 'from-orange-500 to-orange-600' },
   ];
 
-
-  useEffect(() => {
-    if (user) loadData();
-  }, [user]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     if (!user) return;
     try {
       const patientId = user.patientId || user.id;
@@ -175,7 +171,18 @@ export default function DashboardPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (user) loadData();
+  }, [user, loadData]);
+
+  useRealtimeSync({
+    patientId: user?.patientId || user?.id,
+    onAppointmentChange: loadData,
+    onContentPublished: loadData,
+    onNotification: loadData,
+  });
 
   const formatDate = (date: string | Date) => {
     const locale = isEnglish ? 'en-US' : 'th-TH';
@@ -187,19 +194,24 @@ export default function DashboardPage() {
   };
 
   const getStatusBadge = (status: string) => {
+    const displayStatus = status === 'in_pool' ? 'pending' : status;
     const styles: Record<string, string> = {
       pending: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300',
+      in_pool: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300',
+      awaiting_doctor_response: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300',
       confirmed: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300',
       completed: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300',
     };
     return (
       <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${styles[status] || styles.pending}`}>
-        {t(`status.${status}`)}
+        {t(`status.${displayStatus}`) !== `status.${displayStatus}` ? t(`status.${displayStatus}`) : status}
       </span>
     );
   };
 
-  const pendingAppointments = appointments.filter((appointment) => appointment.status === 'pending');
+  const pendingAppointments = appointments.filter((appointment) =>
+    ['pending', 'in_pool', 'awaiting_doctor_response'].includes(appointment.status),
+  );
   const pendingAppointmentsCount = pendingAppointments.length;
 
   let appointmentContent = null;

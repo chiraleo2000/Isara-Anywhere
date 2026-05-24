@@ -1,0 +1,222 @@
+{
+  "consecutivePasses": 3,
+  "ledger": [
+    {
+      "round": 1,
+      "pass": true,
+      "steps": [
+        {
+          "label": "S1-meeting-contract",
+          "pass": true,
+          "code": 0,
+          "warnings": []
+        },
+        {
+          "label": "S2-post-meeting-pipeline",
+          "pass": true,
+          "code": 0,
+          "warnings": []
+        },
+        {
+          "label": "S3-security-hardening",
+          "pass": true,
+          "code": 0,
+          "warnings": []
+        },
+        {
+          "label": "S4-round2-chaos",
+          "pass": true,
+          "code": 0,
+          "warnings": []
+        },
+        {
+          "label": "S5-round3-diagnostics",
+          "pass": true,
+          "code": 0,
+          "warnings": []
+        },
+        {
+          "label": "S6-vitest-unit",
+          "pass": true,
+          "code": 0,
+          "warnings": []
+        },
+        {
+          "label": "S7-meeting-acceptance",
+          "pass": true,
+          "code": 0,
+          "warnings": []
+        },
+        {
+          "label": "S8-pipeline-rounds",
+          "pass": true,
+          "code": 0,
+          "warnings": []
+        },
+        {
+          "label": "S9-playwright-lobby-guest",
+          "pass": true,
+          "skipped": true
+        },
+        {
+          "label": "S10-playwright-pipeline",
+          "pass": true,
+          "skipped": true
+        },
+        {
+          "label": "S11-cloud-smoke",
+          "pass": true,
+          "code": 0,
+          "warnings": []
+        }
+      ],
+      "startedAt": "2026-05-24T01:52:08.865Z",
+      "endedAt": "2026-05-24T01:52:26.507Z"
+    },
+    {
+      "round": 2,
+      "pass": true,
+      "steps": [
+        {
+          "label": "S1-meeting-contract",
+          "pass": true,
+          "code": 0,
+          "warnings": []
+        },
+        {
+          "label": "S2-post-meeting-pipeline",
+          "pass": true,
+          "code": 0,
+          "warnings": []
+        },
+        {
+          "label": "S3-security-hardening",
+          "pass": true,
+          "code": 0,
+          "warnings": []
+        },
+        {
+          "label": "S4-round2-chaos",
+          "pass": true,
+          "code": 0,
+          "warnings": []
+        },
+        {
+          "label": "S5-round3-diagnostics",
+          "pass": true,
+          "code": 0,
+          "warnings": []
+        },
+        {
+          "label": "S6-vitest-unit",
+          "pass": true,
+          "code": 0,
+          "warnings": []
+        },
+        {
+          "label": "S7-meeting-acceptance",
+          "pass": true,
+          "code": 0,
+          "warnings": []
+        },
+        {
+          "label": "S8-pipeline-rounds",
+          "pass": true,
+          "code": 0,
+          "warnings": []
+        },
+        {
+          "label": "S9-playwright-lobby-guest",
+          "pass": true,
+          "skipped": true
+        },
+        {
+          "label": "S10-playwright-pipeline",
+          "pass": true,
+          "skipped": true
+        },
+        {
+          "label": "S11-cloud-smoke",
+          "pass": true,
+          "code": 0,
+          "warnings": []
+        }
+      ],
+      "startedAt": "2026-05-24T01:52:26.538Z",
+      "endedAt": "2026-05-24T01:52:44.246Z"
+    },
+    {
+      "round": 3,
+      "pass": true,
+      "steps": [
+        {
+          "label": "S1-meeting-contract",
+          "pass": true,
+          "code": 0,
+          "warnings": []
+        },
+        {
+          "label": "S2-post-meeting-pipeline",
+          "pass": true,
+          "code": 0,
+          "warnings": []
+        },
+        {
+          "label": "S3-security-hardening",
+          "pass": true,
+          "code": 0,
+          "warnings": []
+        },
+        {
+          "label": "S4-round2-chaos",
+          "pass": true,
+          "code": 0,
+          "warnings": []
+        },
+        {
+          "label": "S5-round3-diagnostics",
+          "pass": true,
+          "code": 0,
+          "warnings": []
+        },
+        {
+          "label": "S6-vitest-unit",
+          "pass": true,
+          "code": 0,
+          "warnings": []
+        },
+        {
+          "label": "S7-meeting-acceptance",
+          "pass": true,
+          "code": 0,
+          "warnings": []
+        },
+        {
+          "label": "S8-pipeline-rounds",
+          "pass": true,
+          "code": 0,
+          "warnings": []
+        },
+        {
+          "label": "S9-playwright-lobby-guest",
+          "pass": true,
+          "skipped": true
+        },
+        {
+          "label": "S10-playwright-pipeline",
+          "pass": true,
+          "skipped": true
+        },
+        {
+          "label": "S11-cloud-smoke",
+          "pass": true,
+          "code": 0,
+          "warnings": []
+        }
+      ],
+      "startedAt": "2026-05-24T01:52:44.246Z",
+      "endedAt": "2026-05-24T01:53:09.070Z"
+    }
+  ],
+  "completedAt": "2026-05-24T01:53:09.070Z"
+}

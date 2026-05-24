@@ -1,0 +1,40 @@
+{
+  "round": 1,
+  "timestamp": "2026-05-23T11:53:43.796Z",
+  "immutable": true,
+  "environment": {
+    "testEnv": "cloud",
+    "patientUrl": "",
+    "doctorUrl": "",
+    "meetingUrl": ""
+  },
+  "stats": {
+    "expected": 19,
+    "unexpected": 1,
+    "skipped": 0,
+    "durationMs": 277002.06
+  },
+  "failures": [
+    {
+      "group": "group-Q-meeting-lifecycle",
+      "testId": "Group Q - Meeting Lifecycle (3-party) > Q02 - Recording on disk/DB, dashboard playback, Gemini summary UI",
+      "project": "Q-meeting-lifecycle",
+      "service": "meeting",
+      "category": "recording",
+      "status": "failed",
+      "message": "Error: recordingUrl not available within 180000ms for meeting f206c681-db4e-4596-84a8-690b5397a3ad",
+      "stack": "Error: recordingUrl not available within 180000ms for meeting f206c681-db4e-4596-84a8-690b5397a3ad\n    at pollRecordingUrl (C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\tests\\helpers\\meeting-lifecycle-fixture.ts:160:9)\n    at C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\tests\\group-Q-meeting-lifecycle.ui-test.ts:252:28\n    at C:\\Users\\chira\\Documents\\Isara-telemed\\Isara-Anywhere\\tests\\group-Q-meeting-lifecycle.ui-test.ts:249:5",
+      "screenshotPath": [
+        "test-results\\group-A-auth-access.ui-tes-10ff0-s-persist-in-all-3-browsers-A-auth\\test-finished-1.png",
+        "test-results\\group-A-auth-access.ui-tes-10ff0-s-persist-in-all-3-browsers-A-auth\\test-finished-2.png",
+        "test-results\\group-A-auth-access.ui-tes-10ff0-s-persist-in-all-3-browsers-A-auth\\test-finished-3.png",
+        "test-results\\group-A-auth-access.ui-tes-1826a-returns-429-after-threshold-A-auth\\test-finished-1.png",
+        "test-results\\group-A-auth-access.ui-tes-1826a-returns-429-after-threshold-A-auth\\test-finished-2.png"
+      ],
+      "durationMs": 181089,
+      "priority": "P0"
+    }
+  ],
+  "p0Count": 1,
+  "p1Count": 0
+}

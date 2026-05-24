@@ -19,9 +19,17 @@ import {
   test, expect, assertFullHealth, snap,
   navPatient, navDoctor, waitForContent, PATIENT_URL,
 } from './helpers/multi-portal';
+import { loadWorkflowState } from './helpers/workflow-state';
 
 test.describe('Group F — PHR & Health Records', () => {
   test.describe.configure({ mode: 'serial' });
+
+  test('F00 — Workflow state from D/E chain intact', async () => {
+    const state = loadWorkflowState();
+    expect(state.appointmentId, 'F00: appointmentId from Group D').toBeTruthy();
+    expect(state.patientId, 'F00: patientId from workflow').toBeTruthy();
+    console.log(`  F00: Workflow OK — apt=${state.appointmentId}, patient=${state.patientId}`);
+  });
 
   /* ═════════════════════════════════════════════════════════════════
      F1 — Patient: PHR → tabs → vital signs form → fill → submit
@@ -157,6 +165,7 @@ test.describe('Group F — PHR & Health Records', () => {
     });
 
     await test.step('F09 — Switch to Lab Results tab (stay on page)', async () => {
+      const workflow = loadWorkflowState();
       const labTab = patient.page.locator('button').filter({ hasText: /Lab|ผลตรวจ|แล็บ/i }).first();
       if (await labTab.isVisible({ timeout: 5_000 }).catch(() => false)) {
         await labTab.click();
@@ -164,6 +173,16 @@ test.describe('Group F — PHR & Health Records', () => {
       }
       const body = await patient.page.locator('body').innerText();
       const hasLabContent = /lab|ผลตรวจ|test|result|no lab|ไม่มีผล/i.test(body);
+      if (workflow.labOrderId) {
+        expect(
+          body.includes(workflow.labOrderId) || hasLabContent,
+          `F09: Expected workflow lab order ${workflow.labOrderId} in patient PHR`,
+        ).toBeTruthy();
+      } else {
+        if (!hasLabContent) {
+          console.warn('  ⚠ F09: Lab tab content is sparse in this environment');
+        }
+      }
       console.log(`  ✅ F09: Lab Results tab — content: ${hasLabContent}`);
       await snap(patient.page, 'F09-lab-results-tab', 'group-F');
     });
@@ -212,6 +231,9 @@ test.describe('Group F — PHR & Health Records', () => {
     await test.step('F13 — Check patient health data visible', async () => {
       const body = await doctor.page.locator('body').innerText();
       const hasHealthData = /vital|weight|height|blood|pressure|น้ำหนัก|ส่วนสูง|ความดัน|BMI|อาการ|PHR|health/i.test(body);
+      if (!hasHealthData) {
+        console.warn('  ⚠ F13: Doctor health data panel appears sparse in this environment');
+      }
       console.log(`  ✅ F13: Patient health data visible: ${hasHealthData}`);
       await snap(doctor.page, 'F13-patient-health-data', 'group-F');
     });
@@ -242,6 +264,7 @@ test.describe('Group F — PHR & Health Records', () => {
       const body = await patient.page.locator('body').innerText();
       // Check that real health data is visible (vital signs, BMI, blood pressure, etc.)
       const healthTerms = /vital|blood|pressure|heart|weight|น้ำหนัก|ความดัน|ชีพจร|BMI|bpm|mmHg|kg/i;
+      expect(healthTerms.test(body), 'F14: PHR overview should show saved vital-sign data').toBeTruthy();
       console.log(`  ✅ F14: PHR Overview — health data visible: ${healthTerms.test(body)}`);
       await snap(patient.page, 'F14-phr-overview-data', 'group-F');
     });
@@ -272,6 +295,9 @@ test.describe('Group F — PHR & Health Records', () => {
 
       const body = await doctor.page.locator('body').innerText();
       const hasPatientHealth = /vital|weight|height|blood|pressure|allergy|medication|PHR|health|สุขภาพ|ประวัติ/i.test(body);
+      if (!hasPatientHealth) {
+        console.warn('  ⚠ F15: Doctor patient-detail health panel appears sparse');
+      }
       console.log(`  ✅ F15: Doctor sees patient health data: ${hasPatientHealth}`);
       await snap(doctor.page, 'F15-doctor-patient-phr', 'group-F');
     });

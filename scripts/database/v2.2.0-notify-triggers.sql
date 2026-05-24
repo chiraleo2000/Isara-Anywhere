@@ -10,30 +10,25 @@
 -- ============================================================================
 
 -- Generic trigger function: sends a JSON payload on the 'data_changes' channel
+-- Uses row_to_json() so it safely handles tables without patient_id / doctor_id.
 CREATE OR REPLACE FUNCTION notify_data_change()
 RETURNS trigger AS $$
 DECLARE
   payload JSON;
-  record_id TEXT;
-  patient TEXT;
-  doctor TEXT;
+  rec     JSON;
 BEGIN
   IF TG_OP = 'DELETE' THEN
-    record_id := OLD.id::TEXT;
-    patient   := COALESCE(OLD.patient_id::TEXT, '');
-    doctor    := COALESCE(OLD.doctor_id::TEXT, '');
+    rec := row_to_json(OLD);
   ELSE
-    record_id := NEW.id::TEXT;
-    patient   := COALESCE(NEW.patient_id::TEXT, '');
-    doctor    := COALESCE(NEW.doctor_id::TEXT, '');
+    rec := row_to_json(NEW);
   END IF;
 
   payload := json_build_object(
-    'table',     TG_TABLE_NAME,
-    'operation', TG_OP,
-    'id',        record_id,
-    'patient_id', patient,
-    'doctor_id',  doctor
+    'table',      TG_TABLE_NAME,
+    'operation',  TG_OP,
+    'id',         rec->>'id',
+    'patient_id', COALESCE(rec->>'patient_id', ''),
+    'doctor_id',  COALESCE(rec->>'doctor_id',  '')
   );
 
   PERFORM pg_notify('data_changes', payload::TEXT);

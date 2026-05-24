@@ -78,6 +78,14 @@ const CloseIcon: React.FC<{ className?: string }> = ({ className }) => (
 // API Base URL - Empty string for relative paths in production (Cloud Run)
 const API_BASE = import.meta.env.VITE_API_URL || '';
 
+const getAuthHeaders = (): Record<string, string> => {
+  const token =
+    localStorage.getItem('token') ||
+    localStorage.getItem('authToken') ||
+    localStorage.getItem('auth_token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
+
 // Extracted sub-component to reduce complexity and fix nested ternary
 const NotificationList: React.FC<{
   notifications: Notification[];
@@ -169,7 +177,9 @@ export const DoctorNotificationBell: React.FC<DoctorNotificationBellProps> = ({
     
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE}/api/notifications/doctor/${user.id}`);
+      const response = await fetch(`${API_BASE}/api/notifications/doctor/${user.id}`, {
+        headers: getAuthHeaders(),
+      });
       if (response.ok) {
         const data = await response.json();
         const notifs = data.notifications || [];
@@ -213,7 +223,10 @@ export const DoctorNotificationBell: React.FC<DoctorNotificationBellProps> = ({
   // Mark notification as read
   const handleMarkAsRead = async (notificationId: string) => {
     try {
-      await fetch(`${API_BASE}/api/notifications/${notificationId}/read`, { method: 'PUT' });
+      await fetch(`${API_BASE}/api/notifications/${notificationId}/read`, {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+      });
     } catch (error) {
       console.error('Error marking notification as read:', error);
     }
@@ -229,7 +242,10 @@ export const DoctorNotificationBell: React.FC<DoctorNotificationBellProps> = ({
     if (!user?.id) return;
     
     try {
-      await fetch(`${API_BASE}/api/notifications/doctor/${user.id}/read-all`, { method: 'PUT' });
+      await fetch(`${API_BASE}/api/notifications/doctor/${user.id}/read-all`, {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+      });
     } catch (error) {
       console.error('Error marking all as read:', error);
     }

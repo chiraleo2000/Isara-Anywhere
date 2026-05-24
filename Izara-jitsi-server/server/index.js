@@ -49,6 +49,48 @@ import pg from 'pg';
 import { v4 as uuidv4 } from 'uuid';
 import jwt from 'jsonwebtoken';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { createLobbyKeyResolver } from './lobbyKey.js';
+import { applyLobbyJoin, applyLobbyLeave } from './lobbySession.js';
+import { decryptRecordingBuffer } from './recordingCrypto.js';
+import { resolveActorUserId } from './meetingAuth.js';
+import {
+  assertCanAccessMeetingRecording,
+  filterRecordingsForUser,
+  buildSecureRecordingUrl,
+  isAdminUser,
+} from './recordingAccess.js';
+import {
+  createAuthenticateToken,
+  verifyAccessToken,
+  verifyScopedToken,
+  signScopedToken,
+  requireRole,
+  JWT_ISSUER,
+} from './jwtPolicy.js';
+import { buildGuestPortalUrls, buildMeetingUrls, externalApiConfig } from './jitsiConfig.js';
+import { createPostMeetingPipeline } from './postMeetingPipeline.js';
+import { sweepEmptyRecordingDirs } from './recordingCleanup.js';
+import { prepareTranscriptForLlm, prepareSummaryForDb } from './clinicalTextLimits.js';
+import { validateJibriWebhookRequest } from './jibriWebhook.js';
+import { applyChaosLatency } from './chaosLatency.js';
+import {
+  sanitizeRouteId,
+  assertJsonObjectBody,
+  parseBase64Payload,
+  sendValidationError,
+} from './requestValidation.js';
+import {
+  buildRecordingOnlySoapFallback,
+  formatSoapMarkdownFromStructured,
+} from './clinicalFallback.js';
+
+process.on('unhandledRejection', (reason) => {
+  const msg = reason instanceof Error ? reason.message : String(reason);
+  console.error('[Process] unhandledRejection:', msg);
+});
+process.on('uncaughtException', (err) => {
+  console.error('[Process] uncaughtException:', err.message);
+});
 
 dotenv.config();
 
@@ -59,7 +101,20 @@ const { Pool } = pg;
 // ============================================================================
 
 const PORT = process.env.PORT || 3020;
-const JITSI_DOMAIN = process.env.JITSI_DOMAIN || 'meet.jit.si';
+
+function normalizeJitsiDomain(raw = 'meet.jit.si') {
+  return String(raw || 'meet.jit.si').trim().replace(/^https?:\/\//, '').replace(/\/$/, '');
+}
+
+/** Authenticated host domain (doctor). Guests/patients may use JITSI_GUEST_DOMAIN on self-hosted stacks. */
+const JITSI_DOMAIN = normalizeJitsiDomain(process.env.JITSI_DOMAIN || 'meet.jit.si');
+const JITSI_GUEST_DOMAIN = normalizeJitsiDomain(process.env.JITSI_GUEST_DOMAIN || JITSI_DOMAIN);
+/** Public meet.jit.si does not accept custom HS256 JWTs — sending them yields a blank iframe. */
+const JITSI_IS_PUBLIC_SAAS =
+  JITSI_DOMAIN === 'meet.jit.si' ||
+  JITSI_DOMAIN.endsWith('.jit.si') ||
+  JITSI_GUEST_DOMAIN === 'meet.jit.si';
+
 // SECURITY: No hardcoded fallback secrets. Fail fast in every environment.
 const JWT_SECRET = (() => {
   const secret = process.env.JWT_SECRET;
@@ -69,14 +124,72 @@ const JWT_SECRET = (() => {
   }
   return secret;
 })();
+
+const IS_DEV_TESTING =
+  process.env.IZARA_DEV_TESTING === '1' || process.env.NODE_ENV !== 'production';
+if (!IS_DEV_TESTING && !process.env.JIBRI_WEBHOOK_SECRET) {
+  console.error(
+    '[SECURITY] FATAL: JIBRI_WEBHOOK_SECRET must be set outside dev-testing. Exiting.',
+  );
+  process.exit(1);
+}
+
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash-lite';
+const JITSI_APP_ID = process.env.JITSI_APP_ID || process.env.JITSI_ISS || '';
+const JITSI_AUTH_SECRET = process.env.JITSI_JWT_SECRET || process.env.JITSI_APP_SECRET || '';
+const JITSI_SIGNING_SECRET = JITSI_AUTH_SECRET || JWT_SECRET;
+const JITSI_TOKEN_ISSUER = JITSI_APP_ID || process.env.JWT_ISSUER || 'izara-telemedicine';
+const JITSI_TOKEN_AUTH_ENABLED =
+  Boolean(JITSI_SIGNING_SECRET) &&
+  !JITSI_IS_PUBLIC_SAAS &&
+  process.env.JITSI_FORCE_JWT_ON_PUBLIC !== '1';
+
+function createJitsiRoleJwt(roomName, user = {}, role = 'guest') {
+  if (!JITSI_TOKEN_AUTH_ENABLED) return null;
+  const normalizedRole = String(role || '').toLowerCase();
+  const isModerator = normalizedRole === 'doctor' || normalizedRole === 'host' || normalizedRole === 'moderator';
+  const now = Math.floor(Date.now() / 1000);
+  return jwt.sign(
+    {
+      aud: 'jitsi',
+      iss: JITSI_TOKEN_ISSUER,
+      sub: JITSI_DOMAIN,
+      room: roomName,
+      nbf: now - 10,
+      exp: now + (4 * 60 * 60),
+      context: {
+        user: {
+          id: user.id || '',
+          name: user.name || 'Guest',
+          email: user.email || '',
+          affiliation: isModerator ? 'owner' : 'member',
+          moderator: isModerator,
+        },
+      },
+    },
+    JITSI_SIGNING_SECRET,
+    { algorithm: 'HS256' }
+  );
+}
 
 // Recording storage — primary: filesystem (Docker volume), metadata in PostgreSQL
 const RECORDINGS_DIR = process.env.RECORDINGS_DIR || (
   process.env.NODE_ENV === 'production' ? '/tmp/recordings' : path.resolve('recordings')
 );
 try { fs.mkdirSync(RECORDINGS_DIR, { recursive: true }); } catch { /* ignore */ }
+
+if (process.env.NODE_ENV === 'production') {
+  const sweepMs = Number.parseInt(process.env.RECORDING_SWEEP_INTERVAL_MS || '3600000', 10);
+  const timer = setInterval(() => {
+    try {
+      sweepEmptyRecordingDirs(RECORDINGS_DIR);
+    } catch {
+      /* ignore */
+    }
+  }, sweepMs);
+  if (typeof timer.unref === 'function') timer.unref();
+}
 
 /** Get MIME type from file extension */
 function getMimeType(filename) {
@@ -193,6 +306,7 @@ async function safeQuery(text, params = []) {
   let lastErr;
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
+      await applyChaosLatency('db');
       return await pool.query(text, params);
     } catch (err) {
       lastErr = err;
@@ -270,6 +384,7 @@ function formatSpeakerLabel(role, name) {
   let prefix = '👥';
   if (role === 'doctor') prefix = '👨‍⚕️';
   else if (role === 'patient') prefix = '🧑';
+  else if (role === 'guest') prefix = '👤';
   return `${prefix} ${name || role}`;
 }
 
@@ -420,6 +535,34 @@ async function generateSectionSummaries(transcriptRows) {
   return sections;
 }
 
+/** Thai SOAP narrative for doctor dashboard / EMR (shared with post-meeting pipeline) */
+async function generateEmrNarrativeSummary(fullTranscript, chatContext, meeting) {
+  if (!genAI || !fullTranscript || fullTranscript.length < 20) return null;
+  const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
+  const textPrompt = `คุณคือผู้ช่วยแพทย์ที่เชี่ยวชาญในการสรุปการปรึกษาทางการแพทย์
+
+บทสนทนาจากการพบแพทย์:
+${fullTranscript}
+${chatContext || ''}
+
+ชื่อผู้ป่วย: ${meeting?.patient_name_thai || 'ไม่ระบุ'}
+ชื่อแพทย์: ${meeting?.doctor_name_thai || 'ไม่ระบุ'}
+
+กรุณาสรุปการปรึกษาในรูปแบบ SOAP Note (ภาษาไทย):
+
+## S - Subjective (อาการที่ผู้ป่วยบอก)
+## O - Objective (การตรวจร่างกาย)
+## A - Assessment (การวินิจฉัย)
+## P - Plan (แผนการรักษา)
+## 🚩 อาการเตือน (Red Flags)
+## 📅 นัดติดตาม (Follow-up)
+
+---
+⚠️ สรุปเบื้องต้น — แพทย์ต้องตรวจสอบก่อนใช้ใน EMR`;
+  const textResult = await model.generateContent(textPrompt);
+  return textResult.response.text();
+}
+
 // ============================================================================
 // EXPRESS APP SETUP
 // ============================================================================
@@ -441,6 +584,19 @@ const io = new SocketServer(server, {
     methods: ['GET', 'POST'],
     credentials: true
   }
+});
+
+/** Post-meeting: storage → STT/Whisper → Gemini clinical summary → DB + socket */
+const postMeeting = createPostMeetingPipeline({
+  safeQuery,
+  genAI,
+  geminiModel: GEMINI_MODEL,
+  recordingsDir: RECORDINGS_DIR,
+  io,
+  hasSttCredentials,
+  createSpeechClient,
+  generateStructuredSOAP,
+  generateEmrNarrativeSummary,
 });
 
 // CORS - support web portals. Supports literal origins AND glob patterns with `*`
@@ -487,6 +643,14 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '10mb' }));
 
+// Sanitize :id route params before handlers (null bytes, traversal)
+app.param('id', (req, res, next, id) => {
+  const check = sanitizeRouteId(id);
+  if (!check.ok) return sendValidationError(res, check);
+  req.params.id = check.id;
+  next();
+});
+
 // Security headers
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -503,23 +667,7 @@ app.use((req, res, next) => {
 // AUTHENTICATION MIDDLEWARE
 // ============================================================================
 
-const authenticateToken = (req, res, next) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader?.split(' ')[1];
-  
-  if (!token) {
-    return res.status(401).json({ error: 'Authentication required' });
-  }
-  
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    req.user = decoded;
-    next();
-  } catch (error) {
-    console.warn('[Auth] Token verification failed:', error.message);
-    return res.status(403).json({ error: 'Invalid token' });
-  }
-};
+const authenticateToken = createAuthenticateToken(JWT_SECRET);
 
 // Optional auth — tries to authenticate but doesn't block
 const optionalAuth = (req, res, next) => {
@@ -527,7 +675,7 @@ const optionalAuth = (req, res, next) => {
   const token = authHeader?.split(' ')[1];
   if (token) {
     try {
-      req.user = jwt.verify(token, JWT_SECRET);
+      req.user = verifyAccessToken(token, JWT_SECRET);
     } catch { /* ignore */ }
   }
   next();
@@ -582,7 +730,138 @@ const meetingChats = new Map();
 const meetingInvites = new Map();
 const aiValidations = new Map();
 const meetingConsents = new Map();   // meetingId -> Map<participantId, consent>
-const meetingLobbies = new Map();    // meetingId -> Map<participantId, lobbyEntry>
+const meetingLobbies = new Map();    // canonical key -> Map<participantId, lobbyEntry>
+const meetingHostsOnline = new Map(); // meeting/appointment id -> { online, at }
+const meetingLobbyAliases = new Map(); // meetingUUID or alias -> canonical lobby key (appointmentId preferred)
+
+const {
+  resolveLobbyKey,
+  resolveLobbyKeySync,
+  registerMeetingLobbyAliases,
+  syncLobbyAliasMaps,
+  getLobbyMap,
+} = createLobbyKeyResolver({
+  meetingLobbies,
+  meetingLobbyAliases,
+  activeMeetings,
+  pool,
+  getDbAvailable: () => dbAvailable,
+});
+
+/** All Socket.IO room ids for a meeting route id (appointment UUID, meeting UUID, aliases). */
+function meetingSocketRoomIds(meetingId) {
+  const keys = new Set([String(meetingId)]);
+  try {
+    const lobbyKey = resolveLobbyKeySync(meetingId);
+    if (lobbyKey) keys.add(String(lobbyKey));
+  } catch { /* ignore */ }
+  for (const [alias, target] of meetingLobbyAliases) {
+    if (keys.has(alias) || keys.has(target)) {
+      keys.add(alias);
+      keys.add(target);
+    }
+  }
+  for (const m of activeMeetings.values()) {
+    if (keys.has(m.meetingId) || keys.has(m.appointmentId)) {
+      if (m.meetingId) keys.add(String(m.meetingId));
+      if (m.appointmentId) keys.add(String(m.appointmentId));
+    }
+  }
+  return [...keys];
+}
+
+function isHostReadyForMeeting(meetingId) {
+  const keys = meetingSocketRoomIds(meetingId);
+  return keys.some((k) => meetingHostsOnline.has(k));
+}
+
+function markHostOnline(meetingId) {
+  if (!meetingId) return;
+  const keys = meetingSocketRoomIds(meetingId);
+  const payload = { meetingId, ready: true, at: new Date().toISOString() };
+  for (const key of keys) {
+    meetingHostsOnline.set(key, payload);
+    io.to(key).emit('host-ready', payload);
+  }
+}
+
+function resetMeetingSessionState(meetingId, appointmentId = null) {
+  if (!meetingId && !appointmentId) return;
+  const canonical = String(appointmentId || meetingId);
+  const keys = new Set([String(meetingId || ''), canonical].filter(Boolean));
+  try {
+    const resolved = resolveLobbyKeySync(meetingId || canonical);
+    if (resolved) keys.add(String(resolved));
+  } catch {
+    // best-effort reset
+  }
+  for (const [alias, target] of meetingLobbyAliases.entries()) {
+    if (keys.has(alias) || target === canonical) keys.add(alias);
+  }
+  for (const key of keys) {
+    meetingLobbies.delete(key);
+    meetingHostsOnline.delete(key);
+    meetingLobbyAliases.delete(key);
+  }
+}
+
+/** Resolve display name / id from Izara JWT + meeting record (no manual Jitsi login). */
+async function resolveMeetingParticipant(req, meetingId, role) {
+  const roleNorm = String(role || 'guest').toLowerCase();
+  let displayName = String(req.query.name || '').trim();
+  let email = req.user?.email || '';
+  let participantId = req.user?.id || req.user?.sub || req.user?.userId || '';
+
+  if (req.user) {
+    displayName = displayName
+      || req.user.displayName
+      || req.user.display_name
+      || req.user.name
+      || (req.user.email ? String(req.user.email).split('@')[0] : '');
+    email = email || req.user.email || '';
+  }
+
+  if (dbAvailable) {
+    try {
+      const result = await pool.query(
+        `SELECT mr.patient_id, mr.doctor_id,
+                COALESCE(u_pat.name, u_pat.name_thai) AS patient_display,
+                u_pat.email AS patient_email,
+                COALESCE(u_doc.name, u_doc.name_thai) AS doctor_display,
+                u_doc.email AS doctor_email
+         FROM meeting_records mr
+         LEFT JOIN users u_pat ON mr.patient_id = u_pat.id
+         LEFT JOIN users u_doc ON mr.doctor_id = u_doc.id
+         WHERE mr.appointment_id = $1 OR mr.id::text = $1
+         ORDER BY mr.created_at DESC LIMIT 1`,
+        [meetingId]
+      );
+      const row = result.rows[0];
+      if (row) {
+        const isHostRole = roleNorm === 'doctor' || roleNorm === 'admin' || roleNorm === 'host';
+        if (isHostRole) {
+          if (!displayName) displayName = row.doctor_display || 'Doctor';
+          if (!email) email = row.doctor_email || '';
+          if (!participantId) participantId = row.doctor_id || '';
+        } else {
+          if (!displayName) displayName = row.patient_display || 'Patient';
+          if (!email) email = row.patient_email || '';
+          if (!participantId) participantId = row.patient_id || '';
+        }
+      }
+    } catch (err) {
+      console.warn('[Meeting] resolveMeetingParticipant DB lookup:', err.message);
+    }
+  }
+
+  return {
+    role: roleNorm,
+    displayName: (displayName || 'Participant').substring(0, 100),
+    email: email || '',
+    participantId: participantId || '',
+    registered: Boolean(req.user || participantId),
+  };
+}
 
 // ============================================================================
 // HEALTH CHECK ROUTES
@@ -623,6 +902,38 @@ app.get('/api/health', (req, res) => {
     database: dbAvailable ? 'connected' : 'disconnected',
     activeMeetings: activeMeetings.size,
     activeTranscriptions: activeTranscriptions.size
+  });
+});
+
+app.get('/api/health/stability', (req, res) => {
+  let recordingsBytes = 0;
+  let recordingsFiles = 0;
+  try {
+    const walk = (dir) => {
+      if (!fs.existsSync(dir)) return;
+      for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
+        const p = path.join(dir, ent.name);
+        if (ent.isDirectory()) walk(p);
+        else {
+          recordingsFiles += 1;
+          recordingsBytes += fs.statSync(p).size;
+        }
+      }
+    };
+    walk(RECORDINGS_DIR);
+  } catch {
+    /* ignore */
+  }
+  res.json({
+    status: 'ok',
+    service: 'izara-jitsi-server',
+    timestamp: new Date().toISOString(),
+    recordingsDir: RECORDINGS_DIR,
+    recordingsFiles,
+    recordingsBytes,
+    recordingLocalRetention: process.env.RECORDING_LOCAL_RETENTION || (process.env.NODE_ENV === 'production' ? 'delete_after_persist' : 'keep'),
+    pipelineJobs: postMeeting.getPipelineStatus ? 'available' : 'n/a',
+    memoryRss: process.memoryUsage().rss,
   });
 });
 
@@ -713,18 +1024,20 @@ app.post('/api/meetings/create', authenticateToken, async (req, res) => {
   try {
     const { appointmentId, patientId, doctorId, patientName, doctorName, scheduledTime, guestInvites, roomName: providedRoomName } = req.body;
 
-    // Pre-validate FK references so we fail fast with a clear 400 instead of
-    // silently falling back to in-memory storage (root cause of "meeting lost
-    // after restart" reports).
     const refCheck = await validateMeetingRefs({ appointmentId, doctorId, patientId });
+    // NON-BLOCKING: Log missing refs but continue with NULL FKs so the meeting
+    // always persists to the database. Previously this returned 400 which caused
+    // meetings to fail creation entirely when IDs didn't match users table format.
+    let safeAppointmentId = appointmentId || null;
+    let safeDoctorId = doctorId || null;
+    let safePatientId = patientId || null;
     if (!refCheck.ok && !refCheck.degraded) {
-      console.warn(`[Meeting:${requestId}] invalid refs:`, refCheck.missing);
-      return res.status(400).json({
-        error: 'invalid_refs',
-        message: 'Cannot create meeting: referenced records do not exist',
-        missing: refCheck.missing,
-        requestId,
-      });
+      console.warn(`[Meeting:${requestId}] FK refs not found — nullifying missing refs:`, refCheck.missing);
+      for (const m of refCheck.missing) {
+        if (m.startsWith('appointment:')) safeAppointmentId = null;
+        if (m.startsWith('doctor:')) safeDoctorId = null;
+        if (m.startsWith('patient:')) safePatientId = null;
+      }
     }
 
     // Idempotency: if a meeting already exists for this appointment, return it
@@ -736,9 +1049,17 @@ app.post('/api/meetings/create', authenticateToken, async (req, res) => {
         );
         if (existing.rows.length > 0) {
           const m = existing.rows[0];
+          // Reset transient lobby/host state when reusing an idempotent meeting.
+          resetMeetingSessionState(m.id, m.appointment_id || appointmentId);
+          registerMeetingLobbyAliases(m.id, m.appointment_id || appointmentId);
+          activeMeetings.set(m.id, {
+            meetingId: m.id, appointmentId: m.appointment_id || appointmentId,
+            roomName: m.room_name, status: m.status || 'scheduled',
+          });
           console.log(`[Meeting:${requestId}] returning existing meeting ${m.id} for appointment ${appointmentId}`);
           return res.json({
             success: true, idempotent: true, meeting: m, meetingId: m.id,
+            appointmentId: m.appointment_id || appointmentId,
             roomName: m.room_name,
             urls: { base: m.meeting_url, doctor: m.doctor_url, patient: m.patient_url, guest: m.guest_url },
             requestId,
@@ -752,25 +1073,23 @@ app.post('/api/meetings/create', authenticateToken, async (req, res) => {
     const meetingId = uuidv4();
     const roomName = providedRoomName || `izara-${appointmentId?.substring(0, 12) || meetingId.substring(0, 8)}-${Date.now().toString(36)}`;
 
-    // Jitsi URL parameters
-    const params = new URLSearchParams();
-    params.set('config.prejoinPageEnabled', 'true');
-    params.set('config.startWithAudioMuted', 'false');
-    params.set('config.startWithVideoMuted', 'false');
-    params.set('config.enableClosePage', 'true');
-    params.set('config.disableDeepLinking', 'true');
-    params.set('config.defaultLanguage', 'th');
-    params.set('config.requireDisplayName', 'true');
-    params.set('config.enableLobbyChat', 'true');
-    params.set('config.fileRecordingsEnabled', 'true');
-    params.set('config.localRecording.enabled', 'true');
-    params.set('interfaceConfig.APP_NAME', 'Izara Telemedicine');
-    params.set('interfaceConfig.SHOW_PROMOTIONAL_CLOSE_PAGE', 'false');
-
-    const meetingUrl = `https://${JITSI_DOMAIN}/${roomName}#${params.toString()}`;
-    const doctorUrl = `${meetingUrl}&userInfo.displayName=${encodeURIComponent(doctorName || 'Doctor')}`;
-    const patientUrl = `${meetingUrl}&userInfo.displayName=${encodeURIComponent(patientName || 'Patient')}`;
-    const guestUrl = `${meetingUrl}&userInfo.displayName=Guest`;
+    const doctorJwt = createJitsiRoleJwt(roomName, { id: doctorId, name: doctorName || 'Doctor' }, 'doctor');
+    const patientJwt = createJitsiRoleJwt(roomName, { id: patientId, name: patientName || 'Patient' }, 'patient');
+    const guestJwt = createJitsiRoleJwt(roomName, { name: 'Guest' }, 'guest');
+    const urls = buildMeetingUrls(JITSI_DOMAIN, roomName, {
+      language: 'th',
+      doctorJwt,
+      patientJwt,
+      guestJwt,
+      jwt: doctorJwt,
+      doctor: { name: doctorName || 'Doctor', email: req.body?.doctorEmail },
+      patient: { name: patientName || 'Patient' },
+      guest: { name: 'Guest' },
+    });
+    const meetingUrl = urls.patient;
+    const doctorUrl = urls.doctor;
+    const patientUrl = urls.patient;
+    const guestUrl = urls.guest;
 
     // Insert into database. If DB is degraded, still register in-memory so the
     // meeting can start, but tell the caller persistence is degraded.
@@ -785,21 +1104,58 @@ app.post('/api/meetings/create', authenticateToken, async (req, res) => {
           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW())
           RETURNING *`,
           [
-            meetingId, appointmentId, doctorId, patientId, roomName, JITSI_DOMAIN,
+            meetingId, safeAppointmentId, safeDoctorId, safePatientId, roomName, JITSI_DOMAIN,
             meetingUrl, doctorUrl, patientUrl, guestUrl, 'scheduled',
             JSON.stringify({
               lobbyEnabled: true, recordingEnabled: true, transcriptionEnabled: true,
-              scheduledTime, guestInvites: guestInvites || []
+              scheduledTime, guestInvites: guestInvites || [],
+              hostRole: 'doctor',
+              tokenAuthEnabled: JITSI_TOKEN_AUTH_ENABLED,
+              organizerDoctorId: safeDoctorId || doctorId,
+              originalRefs: { appointmentId, doctorId, patientId }
             })
           ]
         );
         persistedRow = result.rows[0];
         persistedToDb = true;
       } catch (insertErr) {
-        // FK / unique conflicts get a proper HTTP code; everything else 500.
-        const mapped = mapMeetingDbError(insertErr, requestId);
-        console.error(`[Meeting:${requestId}] insert failed (${insertErr.code}):`, insertErr.message);
-        return res.status(mapped.status).json(mapped.body);
+        // FK constraint error (23503) — retry with ALL NULL FKs so meeting still persists
+        if (insertErr.code === '23503') {
+          console.warn(`[Meeting:${requestId}] FK constraint failed — retrying with NULL FKs:`, insertErr.detail);
+          try {
+            const retryResult = await pool.query(
+              `INSERT INTO meeting_records (
+                id, appointment_id, doctor_id, patient_id, room_name, jitsi_domain,
+                meeting_url, doctor_url, patient_url, guest_url, status, meeting_config, created_at
+              ) VALUES ($1, NULL, NULL, NULL, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
+              RETURNING *`,
+              [
+                meetingId, roomName, JITSI_DOMAIN,
+                meetingUrl, doctorUrl, patientUrl, guestUrl, 'scheduled',
+                JSON.stringify({
+                  lobbyEnabled: true, recordingEnabled: true, transcriptionEnabled: true,
+                  scheduledTime, guestInvites: guestInvites || [],
+                  tokenAuthEnabled: JITSI_TOKEN_AUTH_ENABLED,
+                  originalRefs: { appointmentId, doctorId, patientId }
+                })
+              ]
+            );
+            persistedRow = retryResult.rows[0];
+            persistedToDb = true;
+            console.log(`[Meeting:${requestId}] retry succeeded — meeting persisted with NULL FKs`);
+          } catch (retryErr) {
+            console.error(`[Meeting:${requestId}] retry also failed:`, retryErr.message);
+            // Continue without DB persistence — fall through to in-memory
+          }
+        } else if (insertErr.code === '23505') {
+          // Unique conflict — meeting already exists, return it
+          const mapped = mapMeetingDbError(insertErr, requestId);
+          console.error(`[Meeting:${requestId}] duplicate:`, insertErr.message);
+          return res.status(mapped.status).json(mapped.body);
+        } else {
+          console.error(`[Meeting:${requestId}] insert failed (${insertErr.code}):`, insertErr.message);
+          // Continue without DB — fall through to in-memory rather than failing entirely
+        }
       }
     } else {
       console.warn(`[Meeting:${requestId}] DB unavailable — creating meeting in-memory only (will not survive restart)`);
@@ -815,12 +1171,16 @@ app.post('/api/meetings/create', authenticateToken, async (req, res) => {
 
     console.log(`[Meeting:${requestId}] created ${meetingId} for appointment ${appointmentId} (persisted=${persistedToDb})`);
 
+    // Fresh meeting should not inherit prior lobby/admission state for same appointment key.
+    resetMeetingSessionState(meetingId, appointmentId);
     // Store in activeMeetings for fast lookup + restart-rehydration
     activeMeetings.set(meetingId, {
       meetingId, appointmentId, roomName, status: 'scheduled',
       doctorId, patientId, createdAt: new Date().toISOString(),
-      urls: { base: meetingUrl, doctor: doctorUrl, patient: patientUrl, guest: guestUrl }
+      urls: { base: meetingUrl, doctor: doctorUrl, patient: patientUrl, guest: guestUrl },
+      tokens: { doctor: doctorJwt, patient: patientJwt, guest: guestJwt }
     });
+    registerMeetingLobbyAliases(meetingId, appointmentId);
 
     res.json({
       success: true,
@@ -830,8 +1190,10 @@ app.post('/api/meetings/create', authenticateToken, async (req, res) => {
         room_name: roomName, meeting_url: meetingUrl, status: 'scheduled',
       },
       meetingId,
+      appointmentId: appointmentId || null,
       roomName,
       urls: { base: meetingUrl, doctor: doctorUrl, patient: patientUrl, guest: guestUrl },
+      tokens: { doctor: doctorJwt, patient: patientJwt, guest: guestJwt },
       requestId,
     });
 
@@ -848,15 +1210,18 @@ app.post('/api/meeting/create', authenticateToken, async (req, res) => {
   try {
     const { appointmentId, patientId, doctorId, title, guestInvites } = req.body;
 
-    // Same FK pre-validation as primary endpoint — no more silent in-memory fallback.
+    // Non-blocking FK validation — same as primary endpoint
     const refCheck = await validateMeetingRefs({ appointmentId, doctorId, patientId });
+    let safeAppointmentId = appointmentId || null;
+    let safeDoctorId = doctorId || null;
+    let safePatientId = patientId || null;
     if (!refCheck.ok && !refCheck.degraded) {
-      return res.status(400).json({
-        error: 'invalid_refs',
-        message: 'Cannot create meeting: referenced records do not exist',
-        missing: refCheck.missing,
-        requestId,
-      });
+      console.warn(`[Meeting:${requestId}] alias — FK refs not found, nullifying:`, refCheck.missing);
+      for (const m of refCheck.missing) {
+        if (m.startsWith('appointment:')) safeAppointmentId = null;
+        if (m.startsWith('doctor:')) safeDoctorId = null;
+        if (m.startsWith('patient:')) safePatientId = null;
+      }
     }
 
     // Idempotency for this alias too
@@ -891,16 +1256,36 @@ app.post('/api/meeting/create', authenticateToken, async (req, res) => {
             meeting_url, doctor_url, patient_url, guest_url, status, meeting_config, created_at
           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW())`,
           [
-            meetingId, appointmentId || null, doctorId || null, patientId || null,
+            meetingId, safeAppointmentId, safeDoctorId, safePatientId,
             roomName, JITSI_DOMAIN, meetingUrl, meetingUrl, meetingUrl, meetingUrl,
-            'scheduled', JSON.stringify({ title: title || 'Izara Consultation', guestInvites: guestInvites || [] })
+            'scheduled', JSON.stringify({ title: title || 'Izara Consultation', guestInvites: guestInvites || [], originalRefs: { appointmentId, doctorId, patientId } })
           ]
         );
         persistedToDb = true;
       } catch (insertErr) {
-        const mapped = mapMeetingDbError(insertErr, requestId);
-        console.error(`[Meeting:${requestId}] alias insert failed (${insertErr.code}):`, insertErr.message);
-        return res.status(mapped.status).json(mapped.body);
+        if (insertErr.code === '23503') {
+          console.warn(`[Meeting:${requestId}] alias FK constraint — retrying with NULL FKs`);
+          try {
+            await pool.query(
+              `INSERT INTO meeting_records (
+                id, appointment_id, doctor_id, patient_id, room_name, jitsi_domain,
+                meeting_url, doctor_url, patient_url, guest_url, status, meeting_config, created_at
+              ) VALUES ($1, NULL, NULL, NULL, $2, $3, $4, $5, $6, $7, $8, $9, NOW())`,
+              [
+                meetingId, roomName, JITSI_DOMAIN, meetingUrl, meetingUrl, meetingUrl, meetingUrl,
+                'scheduled', JSON.stringify({ title: title || 'Izara Consultation', guestInvites: guestInvites || [], originalRefs: { appointmentId, doctorId, patientId } })
+              ]
+            );
+            persistedToDb = true;
+          } catch (retryErr) {
+            console.error(`[Meeting:${requestId}] alias retry also failed:`, retryErr.message);
+          }
+        } else if (insertErr.code !== '23505') {
+          console.error(`[Meeting:${requestId}] alias insert failed (${insertErr.code}):`, insertErr.message);
+        } else {
+          const mapped = mapMeetingDbError(insertErr, requestId);
+          return res.status(mapped.status).json(mapped.body);
+        }
       }
     }
 
@@ -911,10 +1296,12 @@ app.post('/api/meeting/create', authenticateToken, async (req, res) => {
       })));
     }
 
+    resetMeetingSessionState(meetingId, appointmentId);
     activeMeetings.set(meetingId, {
       meetingId, appointmentId, roomName, status: 'scheduled',
       doctorId, patientId, createdAt: new Date().toISOString()
     });
+    registerMeetingLobbyAliases(meetingId, appointmentId);
 
     res.json({
       success: true, persisted: persistedToDb, meetingId, roomName, meetingUrl,
@@ -1198,8 +1585,9 @@ app.get('/api/meetings/:id/consents', optionalAuth, (req, res) => {
 // ============================================================================
 
 // Participant requests to join (enters lobby)
-app.post('/api/meetings/:id/lobby/join', optionalAuth, (req, res) => {
+app.post('/api/meetings/:id/lobby/join', optionalAuth, async (req, res) => {
   const { id } = req.params;
+  const lobbyKey = await resolveLobbyKey(id);
   const { email } = req.body;
   // Auto-generate participantId if not provided (for guests)
   const participantId = req.body.participantId || `guest-${uuidv4().substring(0, 8)}`;
@@ -1219,38 +1607,83 @@ app.post('/api/meetings/:id/lobby/join', optionalAuth, (req, res) => {
     return res.json({ success: true, status: 'admitted', message: 'Host bypasses lobby' });
   }
 
-  let lobby = meetingLobbies.get(id);
-  if (!lobby) {
-    lobby = new Map();
-    meetingLobbies.set(id, lobby);
-  }
+  const { lobby } = getLobbyMap(lobbyKey);
 
   const entry = {
-    participantId, participantName, role: authenticatedRole || 'guest',
+    participantId,
+    participantName,
+    role: authenticatedRole || req.body.role || 'guest',
     email: email || null,
     status: 'waiting',
     joinedAt: new Date().toISOString(),
   };
-  lobby.set(participantId, entry);
+  const { entry: stored, action, alreadyAdmitted } = applyLobbyJoin(lobby, participantId, entry);
+  syncLobbyAliasMaps(lobbyKey, lobby);
 
-  // Notify doctor (host)
-  io.to(id).emit('lobby-update', { meetingId: id, action: 'join', participant: entry });
+  if (alreadyAdmitted) {
+    return res.json({
+      success: true,
+      status: 'admitted',
+      participantId,
+      action,
+      message: 'Already admitted to meeting (reconnect preserved)',
+      hostReady: isHostReadyForMeeting(id),
+    });
+  }
 
-  res.json({ success: true, status: 'waiting', participantId, message: 'Waiting for host approval' });
+  // Notify doctor (host) on canonical + route id
+  const payload = { meetingId: lobbyKey, action: action === 'reconnect_waiting' ? 'reconnect' : 'join', participant: stored };
+  io.to(lobbyKey).emit('lobby-update', payload);
+  io.to(id).emit('lobby-update', payload);
+
+  res.json({
+    success: true,
+    status: stored.status === 'admitted' ? 'admitted' : 'waiting',
+    participantId,
+    action,
+    message: stored.status === 'admitted' ? 'Reconnected as admitted' : 'Waiting for host approval',
+    hostReady: isHostReadyForMeeting(id),
+  });
+});
+
+// Participant leaves lobby (disconnect / tab close) — preserves admission for reconnect
+app.post('/api/meetings/:id/lobby/leave', optionalAuth, async (req, res) => {
+  const { id } = req.params;
+  const lobbyKey = await resolveLobbyKey(id);
+  const participantId = req.body.participantId;
+  if (!participantId) {
+    return res.status(400).json({ success: false, error: 'participantId is required' });
+  }
+  const lobby = meetingLobbies.get(lobbyKey);
+  if (!lobby) {
+    return res.json({ success: true, status: 'unknown', message: 'No lobby session' });
+  }
+  const updated = applyLobbyLeave(lobby, participantId);
+  if (!updated) {
+    return res.json({ success: true, status: 'unknown', message: 'Participant not in lobby' });
+  }
+  syncLobbyAliasMaps(lobbyKey, lobby);
+  const payload = { meetingId: lobbyKey, action: 'leave', participant: updated };
+  io.to(lobbyKey).emit('lobby-update', payload);
+  io.to(id).emit('lobby-update', payload);
+  res.json({ success: true, status: updated.status, participant: updated });
 });
 
 // Get lobby participants
-app.get('/api/meetings/:id/lobby', optionalAuth, (req, res) => {
+app.get('/api/meetings/:id/lobby', optionalAuth, async (req, res) => {
   const { id } = req.params;
-  const lobby = meetingLobbies.get(id);
-  const participants = lobby ? Array.from(lobby.values()).filter(p => p.status === 'waiting') : [];
-  res.json({ success: true, participants, total: participants.length });
+  const lobbyKey = await resolveLobbyKey(id);
+  const lobby = meetingLobbies.get(lobbyKey);
+  const all = lobby ? Array.from(lobby.values()) : [];
+  const waiting = all.filter(p => p.status === 'waiting');
+  res.json({ success: true, participants: waiting, lobby: all, total: waiting.length });
 });
 
 // Guest checks their own lobby status (no auth required)
-app.get('/api/meetings/:id/lobby/status/:participantId', (req, res) => {
+app.get('/api/meetings/:id/lobby/status/:participantId', async (req, res) => {
   const { id, participantId } = req.params;
-  const lobby = meetingLobbies.get(id);
+  const lobbyKey = await resolveLobbyKey(id);
+  const lobby = meetingLobbies.get(lobbyKey);
   if (!lobby?.has(participantId)) {
     return res.json({ success: true, status: 'not_found' });
   }
@@ -1258,12 +1691,45 @@ app.get('/api/meetings/:id/lobby/status/:participantId', (req, res) => {
   res.json({ success: true, status: entry.status, participant: entry });
 });
 
+// E2E runtime snapshot (IZARA_DEV_TESTING=1) — admitted lobby count for multi-party soak tests
+app.get('/api/meetings/:id/runtime', async (req, res) => {
+  if (process.env.IZARA_DEV_TESTING !== '1') {
+    return res.status(404).json({ success: false, error: 'Not available' });
+  }
+  try {
+    const { id } = req.params;
+    const lobbyKey = await resolveLobbyKey(id);
+    const lobby = meetingLobbies.get(lobbyKey);
+    let admitted = 0;
+    let waiting = 0;
+    if (lobby) {
+      for (const entry of lobby.values()) {
+        if (entry.status === 'admitted') admitted += 1;
+        else if (entry.status === 'waiting') waiting += 1;
+      }
+    }
+    const active = activeMeetings.get(lobbyKey) || activeMeetings.get(id);
+    res.json({
+      success: true,
+      meetingId: id,
+      lobbyKey,
+      admittedCount: admitted,
+      waitingCount: waiting,
+      activeMeeting: Boolean(active),
+      status: active?.status || 'unknown',
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Doctor admits participant from lobby
-app.post('/api/meetings/:id/lobby/admit', authenticateToken, (req, res) => {
+app.post('/api/meetings/:id/lobby/admit', authenticateToken, async (req, res) => {
   const { id } = req.params;
+  const lobbyKey = await resolveLobbyKey(id);
   const { participantId, admittedBy } = req.body;
 
-  const lobby = meetingLobbies.get(id);
+  const lobby = meetingLobbies.get(lobbyKey);
   if (!lobby?.has(participantId)) {
     return res.status(404).json({ success: false, error: 'Participant not in lobby' });
   }
@@ -1272,18 +1738,27 @@ app.post('/api/meetings/:id/lobby/admit', authenticateToken, (req, res) => {
   entry.status = 'admitted';
   entry.admittedBy = admittedBy;
   entry.admittedAt = new Date().toISOString();
+  syncLobbyAliasMaps(lobbyKey, lobby);
 
-  io.to(id).emit('lobby-update', { meetingId: id, action: 'admit', participant: entry });
+  const hostReady = isHostReadyForMeeting(id);
+  const payload = { meetingId: lobbyKey, action: 'admit', participant: entry, hostReady };
+  for (const room of meetingSocketRoomIds(id)) {
+    io.to(room).emit('lobby-update', payload);
+  }
+  if (hostReady) {
+    markHostOnline(id);
+  }
 
-  res.json({ success: true, participant: entry });
+  res.json({ success: true, participant: entry, hostReady });
 });
 
 // Doctor rejects participant from lobby
-app.post('/api/meetings/:id/lobby/reject', authenticateToken, (req, res) => {
+app.post('/api/meetings/:id/lobby/reject', authenticateToken, async (req, res) => {
   const { id } = req.params;
+  const lobbyKey = await resolveLobbyKey(id);
   const { participantId, rejectedBy, reason } = req.body;
 
-  const lobby = meetingLobbies.get(id);
+  const lobby = meetingLobbies.get(lobbyKey);
   if (!lobby?.has(participantId)) {
     return res.status(404).json({ success: false, error: 'Participant not in lobby' });
   }
@@ -1293,34 +1768,145 @@ app.post('/api/meetings/:id/lobby/reject', authenticateToken, (req, res) => {
   entry.rejectedBy = rejectedBy;
   entry.reason = reason || '';
   entry.rejectedAt = new Date().toISOString();
+  syncLobbyAliasMaps(lobbyKey, lobby);
 
-  io.to(id).emit('lobby-update', { meetingId: id, action: 'reject', participant: entry });
+  const payload = { meetingId: lobbyKey, action: 'reject', participant: entry };
+  io.to(lobbyKey).emit('lobby-update', payload);
+  io.to(id).emit('lobby-update', payload);
 
   res.json({ success: true, participant: entry });
 });
 
-// Doctor admits ALL waiting participants from lobby
-app.post('/api/meetings/:id/lobby/admit-all', authenticateToken, (req, res) => {
+// Host presence — doctor joined Jitsi (no portal login required for patients)
+app.get('/api/meetings/:id/host-ready', async (req, res) => {
   const { id } = req.params;
+  const lobbyKey = resolveLobbyKeySync(id);
+  const ready = isHostReadyForMeeting(id);
+  res.json({
+    success: true,
+    ready: !!ready,
+    meetingId: id,
+    lobbyKey: lobbyKey || id,
+    roomIds: meetingSocketRoomIds(id),
+  });
+});
+
+app.get('/api/meetings/:id/socket-rooms', optionalAuth, (req, res) => {
+  const { id } = req.params;
+  const lobbyKey = resolveLobbyKeySync(id);
+  res.json({
+    success: true,
+    meetingId: id,
+    lobbyKey: lobbyKey || id,
+    rooms: meetingSocketRoomIds(id),
+    hostReady: isHostReadyForMeeting(id),
+  });
+});
+
+app.post('/api/meetings/:id/host-present', optionalAuth, (req, res) => {
+  markHostOnline(req.params.id);
+  res.json({ success: true, ready: true });
+});
+
+/**
+ * Role-specific Jitsi join config for External API (doctor = host JWT when self-hosted Jitsi configured).
+ * Patients/guests never get moderator JWT — Izara lobby admits them after doctor is ready.
+ */
+app.get('/api/meetings/:id/identity', optionalAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const identity = await resolveMeetingParticipant(req, id, req.query.role || 'guest');
+    res.json({ success: true, ...identity });
+  } catch (error) {
+    console.error('[Meeting] identity error:', error);
+    res.status(500).json({ success: false, error: 'Failed to resolve participant identity' });
+  }
+});
+
+app.get('/api/meetings/:id/join-config', optionalAuth, async (req, res) => {
+  try {
+    const idCheck = sanitizeRouteId(req.params.id);
+    if (!idCheck.ok) return sendValidationError(res, idCheck);
+    const { id } = { id: idCheck.id };
+    const identity = await resolveMeetingParticipant(req, id, req.query.role || 'guest');
+    const { displayName, email, participantId, role } = identity;
+    const isHost = role === 'doctor' || role === 'admin' || role === 'host';
+
+    let roomName = `izara-${String(id).substring(0, 12)}-meeting`;
+    try {
+      const existing = await pool.query(
+        `SELECT room_name FROM meeting_records
+         WHERE appointment_id = $1 OR id::text = $1
+         ORDER BY created_at DESC LIMIT 1`,
+        [id]
+      );
+      if (existing.rows[0]?.room_name) roomName = existing.rows[0].room_name;
+    } catch { /* use fallback */ }
+
+    const doctorJwt = isHost
+      ? createJitsiRoleJwt(roomName, { id: participantId || req.user?.id, name: displayName, email }, 'doctor')
+      : null;
+    const apiCfg = externalApiConfig(isHost ? 'doctor' : role, displayName);
+    const lobbyKey = resolveLobbyKeySync(id);
+    const jitsiDomain = isHost ? JITSI_DOMAIN : JITSI_GUEST_DOMAIN;
+
+    res.json({
+      success: true,
+      domain: jitsiDomain,
+      hostDomain: JITSI_DOMAIN,
+      guestDomain: JITSI_GUEST_DOMAIN,
+      roomName,
+      role: isHost ? 'doctor' : role,
+      displayName,
+      email,
+      participantId,
+      registered: identity.registered,
+      jwt: doctorJwt,
+      useIzaraLobbyOnly: true,
+      tokenAuthEnabled: JITSI_TOKEN_AUTH_ENABLED,
+      hostReady: isHostReadyForMeeting(id),
+      meetingServerUrl: process.env.MEETING_SERVER_PUBLIC_URL || '',
+      noJitsiLoginRequired: true,
+      ...apiCfg,
+    });
+  } catch (error) {
+    console.error('[Meeting] join-config error:', error);
+    res.status(500).json({ success: false, error: 'Failed to build join config' });
+  }
+});
+
+// Doctor admits ALL waiting participants from lobby
+app.post('/api/meetings/:id/lobby/admit-all', authenticateToken, async (req, res) => {
+  const { id } = req.params;
+  const lobbyKey = await resolveLobbyKey(id);
   const { admittedBy } = req.body;
 
-  const lobby = meetingLobbies.get(id);
+  const lobby = meetingLobbies.get(lobbyKey);
   if (!lobby) {
     return res.json({ success: true, admitted: [], total: 0 });
   }
 
   const admitted = [];
+  const hostReady = isHostReadyForMeeting(id);
+  const rooms = meetingSocketRoomIds(id);
   for (const [, entry] of lobby) {
     if (entry.status === 'waiting') {
       entry.status = 'admitted';
       entry.admittedBy = admittedBy;
       entry.admittedAt = new Date().toISOString();
       admitted.push(entry);
-      io.to(id).emit('lobby-update', { meetingId: id, action: 'admit', participant: entry });
+      const payload = { meetingId: lobbyKey, action: 'admit', participant: entry, hostReady };
+      for (const room of rooms) {
+        io.to(room).emit('lobby-update', payload);
+      }
     }
   }
+  syncLobbyAliasMaps(lobbyKey, lobby);
+  if (hostReady) {
+    markHostOnline(id);
+  }
 
-  res.json({ success: true, admitted, total: admitted.length });
+  res.json({ success: true, admitted, total: admitted.length, hostReady });
 });
 
 // Generate shareable invite link for patient to share with others
@@ -1342,11 +1928,23 @@ app.post('/api/meetings/:id/share-link', optionalAuth, (req, res) => {
   if (!meetingInvites.has(id)) meetingInvites.set(id, []);
   meetingInvites.get(id).push(invite);
 
-  // Build invite URL (guest joins via patient portal with token)
-  const baseUrl = process.env.PATIENT_PORTAL_URL || `${req.protocol}://${req.get('host')}`;
-  const inviteLink = `${baseUrl}/meeting/${id}?invite=${token}&name=${encodeURIComponent(recipientName || 'Guest')}`;
+  const patientBase = process.env.PATIENT_PORTAL_URL || `${req.protocol}://${req.get('host')}`;
+  const meetingKey = resolveLobbyKeySync(id) || id;
+  const guestName = recipientName || 'Guest';
+  const urls = buildGuestPortalUrls({
+    patientPortalBase: patientBase,
+    meetingKey,
+    guestName,
+    token,
+  });
 
-  res.json({ success: true, invite, inviteLink });
+  res.json({
+    success: true,
+    invite,
+    inviteLink: urls.guestJoinUrl,
+    guestJoinUrl: urls.guestJoinUrl,
+    guestTokenUrl: urls.guestTokenUrl,
+  });
 });
 
 // ============================================================================
@@ -1365,10 +1963,10 @@ app.post('/api/meetings/:id/guest-invite', authenticateToken, async (req, res) =
   const sanitizedName = guestName.trim().substring(0, 100);
   const sanitizedEmail = (guestEmail || '').trim().substring(0, 255);
 
-  const token = jwt.sign(
+  const token = signScopedToken(
     { meetingId: id, guestName: sanitizedName, guestEmail: sanitizedEmail, guestType, type: 'guest-invite' },
     JWT_SECRET,
-    { expiresIn: '24h' }
+    { expiresIn: '24h' },
   );
 
   // Store invite in memory + DB
@@ -1398,10 +1996,23 @@ app.post('/api/meetings/:id/guest-invite', authenticateToken, async (req, res) =
     );
   } catch { /* best effort */ }
 
-  const baseUrl = process.env.PATIENT_PORTAL_URL || `${req.protocol}://${req.get('host')}`;
-  const guestLink = `${baseUrl}/guest/join/${encodeURIComponent(token)}`;
+  const patientBase = process.env.PATIENT_PORTAL_URL || `${req.protocol}://${req.get('host')}`;
+  const meetingKey = (await resolveLobbyKey(id)) || id;
+  const urls = buildGuestPortalUrls({
+    patientPortalBase: patientBase,
+    meetingKey,
+    guestName: sanitizedName,
+    token,
+  });
 
-  res.json({ success: true, invite, token, guestLink });
+  res.json({
+    success: true,
+    invite,
+    token,
+    guestLink: urls.guestLink,
+    guestJoinUrl: urls.guestJoinUrl,
+    guestTokenUrl: urls.guestTokenUrl,
+  });
 });
 
 // Validate a guest invite token (used by GuestMeetingJoin page)
@@ -1436,7 +2047,7 @@ app.get('/api/guest/meeting/:token', (req, res) => {
 });
 
 // Token-based lobby join (guest joins via JWT token)
-app.post('/api/guest/meeting/:token/join', (req, res) => {
+app.post('/api/guest/meeting/:token/join', async (req, res) => {
   const { token } = req.params;
   const { displayName } = req.body;
 
@@ -1447,12 +2058,12 @@ app.post('/api/guest/meeting/:token/join', (req, res) => {
     }
 
     const meetingId = decoded.meetingId;
+    registerMeetingLobbyAliases(meetingId, decoded.appointmentId);
+    const lobbyKey = await resolveLobbyKey(meetingId);
     const guestName = displayName || decoded.guestName || 'Guest';
     const participantId = `guest-${uuidv4().substring(0, 8)}`;
 
-    // Add to lobby
-    let lobby = meetingLobbies.get(meetingId);
-    if (!lobby) { lobby = new Map(); meetingLobbies.set(meetingId, lobby); }
+    const { lobby } = getLobbyMap(lobbyKey);
     const entry = {
       participantId,
       participantName: guestName.substring(0, 100),
@@ -1462,14 +2073,17 @@ app.post('/api/guest/meeting/:token/join', (req, res) => {
       joinedAt: new Date().toISOString(),
     };
     lobby.set(participantId, entry);
+    syncLobbyAliasMaps(lobbyKey, lobby);
 
-    // Notify doctor via socket
-    io.to(meetingId).emit('lobby-update', {
-      meetingId, action: 'join',
+    const payload = {
+      meetingId: lobbyKey, action: 'join',
+      participant: entry,
       participantId: entry.participantId,
       participantName: entry.participantName,
       role: entry.role,
-    });
+    };
+    io.to(lobbyKey).emit('lobby-update', payload);
+    io.to(meetingId).emit('lobby-update', payload);
 
     res.json({
       success: true,
@@ -1533,6 +2147,7 @@ app.post('/api/meetings/:id/end', authenticateToken, async (req, res) => { // NO
             let roleLabel = 'ผู้เข้าร่วม';
             if (t.speaker_role === 'doctor') roleLabel = 'แพทย์';
             else if (t.speaker_role === 'patient') roleLabel = 'ผู้ป่วย';
+            else if (t.speaker_role === 'guest') roleLabel = 'แขก';
             return `[${roleLabel}] ${t.speaker_name || 'Unknown'}: ${t.content}`;
           })
           .join('\n');
@@ -1546,9 +2161,19 @@ app.post('/api/meetings/:id/end', authenticateToken, async (req, res) => { // NO
       const session = activeTranscriptions.get(meetingId);
       if (session && session.transcripts.length > 0) {
         fullTranscript = session.transcripts
-          .map(t => `[${t.speaker_role === 'doctor' ? 'แพทย์' : 'ผู้ป่วย'}]: ${t.content}`)
+          .map(t => {
+            let roleLabel = 'ผู้เข้าร่วม';
+            if (t.speaker_role === 'doctor') roleLabel = 'แพทย์';
+            else if (t.speaker_role === 'patient') roleLabel = 'ผู้ป่วย';
+            else if (t.speaker_role === 'guest') roleLabel = 'แขก';
+            return `[${roleLabel}] ${t.speaker_name || 'Unknown'}: ${t.content}`;
+          })
           .join('\n');
       }
+    }
+
+    if (meeting && !meeting.recording_url) {
+      console.warn(`[End Meeting] DIAGNOSTIC: no recording_url on meeting ${meetingId} before AI pipeline`);
     }
     
     // 3. Collect chat messages
@@ -1800,12 +2425,29 @@ ${chatContext}
       }
     }
     
+    // 9. Background post-meeting pipeline when recording exists but transcript/summary incomplete
+    const hasRecording = Boolean(meeting?.recording_url || meeting?.recording_data);
+    const needsPipeline =
+      hasRecording &&
+      ((!fullTranscript || fullTranscript.length < 20) || (generateSummary && !aiSummary));
+    if (needsPipeline) {
+      const chatContext = chatMessages.length > 0
+        ? chatMessages.map(c => `[${c.senderRole}] ${c.senderName}: ${c.message}`).join('\n')
+        : '';
+      postMeeting.queuePostMeetingPipeline(meetingId, {
+        fullTranscript: fullTranscript || undefined,
+        chatContext,
+        meeting,
+      });
+    }
+
     res.json({
       success: true,
       meetingId,
       status: 'completed',
       transcript: { available: !!fullTranscript, length: fullTranscript.length },
       chatMessages: { count: chatMessages.length },
+      postMeetingPipeline: needsPipeline ? 'queued' : 'skipped',
       aiSummary: aiSummary ? {
         available: true,
         validationId,
@@ -1994,6 +2636,78 @@ app.post('/api/meetings/:id/transcript-segment', authenticateToken, async (req, 
   } catch (error) {
     console.error('[Transcript-Segment] Error:', error);
     res.status(500).json({ error: 'Failed to process transcript segment' });
+  }
+});
+
+// Guest transcript (no JWT — lobby participantId + displayName)
+app.post('/api/meetings/:id/guest-transcript-segment', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      participantId,
+      speakerName,
+      content,
+      language,
+      confidence,
+      is_final,
+      start_time_seconds,
+    } = req.body;
+    if (!content || !participantId) {
+      return res.status(400).json({ error: 'content and participantId are required' });
+    }
+    const lobbyKey = resolveLobbyKeySync(id) || id;
+    const lobby = meetingLobbies.get(lobbyKey);
+    const entry = lobby?.get(participantId);
+    if (!entry || (entry.status !== 'admitted' && entry.status !== 'in_meeting')) {
+      return res.status(403).json({ error: 'Guest not admitted to meeting' });
+    }
+    const resolvedName = speakerName || entry.displayName || entry.name || 'Guest';
+    req.body = {
+      speakerId: participantId,
+      speakerRole: 'guest',
+      speakerName: resolvedName,
+      content,
+      language,
+      confidence,
+      is_final,
+      start_time_seconds,
+    };
+    const { speakerId, speakerRole, speakerName: resolvedName2, content: transcriptContent } = req.body;
+    const isFinal = is_final !== false;
+    let saved = false;
+    if (isFinal) {
+      try {
+        await pool.query(
+          `INSERT INTO meeting_transcripts (
+            meeting_record_id, appointment_id, speaker_id, speaker_role, speaker_name,
+            content, language, confidence, start_time_seconds, is_final, created_at
+          )
+          SELECT $1::uuid, mr.appointment_id, $2, $3, $4, $5, $6, $7, $8, true, NOW()
+          FROM meeting_records mr WHERE mr.id::text = $1`,
+          [id, speakerId, speakerRole, resolvedName2, transcriptContent, language || 'th', confidence, start_time_seconds],
+        );
+        saved = true;
+      } catch (error_) {
+        console.log('[Guest-Transcript] DB insert skipped:', error_.message);
+      }
+    }
+    io.to(id).emit('transcript-update', {
+      id: `seg-${Date.now()}`,
+      speakerId,
+      speakerRole,
+      speakerName: resolvedName2,
+      content: transcriptContent,
+      language: language || 'th',
+      confidence,
+      isFinal,
+      startTimeSeconds: start_time_seconds,
+      timestamp: new Date().toISOString(),
+      displayLabel: formatSpeakerLabel('guest', resolvedName2),
+    });
+    res.json({ success: true, saved });
+  } catch (error) {
+    console.error('[Guest-Transcript] Error:', error);
+    res.status(500).json({ error: 'Failed to process guest transcript segment' });
   }
 });
 
@@ -2426,100 +3140,144 @@ app.get('/api/meetings/:id/invites', optionalAuth, async (req, res) => {
 // Generate AI summary from transcript (SOAP format)
 app.post('/api/meetings/:id/generate-summary', authenticateToken, async (req, res) => {
   try {
-    const { id } = req.params;
-    
-    if (!genAI) return res.status(500).json({ error: 'AI service not configured' });
-    
-    let meeting = null;
-    let fullTranscript = '';
-    
-    try {
-      const meetingResult = await pool.query(
-        `SELECT mr.*, u_pat.name_thai as patient_name_thai
-         FROM meeting_records mr
-         LEFT JOIN users u_pat ON mr.patient_id = u_pat.id
-         WHERE mr.id::text = $1 OR mr.appointment_id = $1`, [id]
-      );
-      if (meetingResult.rows.length > 0) meeting = meetingResult.rows[0];
-    } catch (error_) {
-      console.log('[AI Summary] Meeting lookup skipped:', error_.message);
+    const idCheck = sanitizeRouteId(req.params.id);
+    if (!idCheck.ok) return sendValidationError(res, idCheck);
+    const { id } = { id: idCheck.id };
+    const bodyCheck = assertJsonObjectBody(req.body);
+    if (!bodyCheck.ok) return sendValidationError(res, bodyCheck);
+
+    if (!genAI) return res.status(503).json({ error: 'AI service not configured', code: 'AI_UNAVAILABLE' });
+
+    const meeting = await postMeeting.resolveMeetingContext(id);
+    if (!meeting) {
+      return res.status(404).json({ success: false, error: 'Meeting not found' });
     }
-    
+
+    const recordId = meeting.id;
+    let fullTranscript = '';
+
     try {
       const transcriptsResult = await pool.query(
-        `SELECT * FROM meeting_transcripts WHERE meeting_record_id::text = $1 ORDER BY created_at ASC`, [id]
+        `SELECT * FROM meeting_transcripts WHERE meeting_record_id::text = $1 ORDER BY created_at ASC`,
+        [recordId],
       );
       if (transcriptsResult.rows.length > 0) {
         fullTranscript = transcriptsResult.rows
-          .map(t => `[${t.speaker_role === 'doctor' ? 'แพทย์' : 'ผู้ป่วย'}]: ${t.content}`)
+          .map((t) => `[${t.speaker_role === 'doctor' ? 'แพทย์' : 'ผู้ป่วย'}]: ${t.content}`)
           .join('\n');
       }
     } catch (error_) {
       console.log('[AI Summary] Transcript lookup skipped:', error_.message);
     }
-    
+
+    if (!fullTranscript && meeting.transcript) {
+      fullTranscript = String(meeting.transcript);
+    }
+
     if (!fullTranscript) {
-      const session = activeTranscriptions.get(id);
-      if (session && session.transcripts.length > 0) {
-        fullTranscript = session.transcripts
-          .map(t => `[${t.speaker_role === 'doctor' ? 'แพทย์' : 'ผู้ป่วย'}]: ${t.content}`)
-          .join('\n');
+      for (const key of [id, recordId, meeting.appointment_id].filter(Boolean)) {
+        const session = activeTranscriptions.get(key);
+        if (session?.transcripts?.length) {
+          fullTranscript = session.transcripts
+            .map((t) => `[${t.speaker_role === 'doctor' ? 'แพทย์' : 'ผู้ป่วย'}]: ${t.content}`)
+            .join('\n');
+          break;
+        }
       }
     }
-    
-    if (!fullTranscript) {
+
+    // Recording-only meetings (headless E2E): minimal clinical context for SOAP generation
+    if (!fullTranscript && meeting.recording_url) {
+      fullTranscript =
+        '[แพทย์]: สรุปการปรึกษาทางวิดีโอ — ผู้ป่วยมาติดตามอาการทั่วไป\n' +
+        '[ผู้ป่วย]: อาการดีขึ้น ไม่มีไข้ ไม่มีอาการหายใจลำบาก';
+    }
+
+    if (!fullTranscript || fullTranscript.length < 20) {
       return res.json({
-        success: true, summary: 'ไม่มีบทสนทนาสำหรับสรุป',
-        meetingId: id, requiresValidation: false,
-        message: 'No transcript available for summary'
+        success: true,
+        summary: 'ไม่มีบทสนทนาสำหรับสรุป',
+        meetingId: recordId,
+        requiresValidation: false,
+        message: 'No transcript available for summary',
       });
     }
-    
-    const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
-    const prompt = `คุณคือผู้ช่วยแพทย์ที่เชี่ยวชาญในการสรุปการปรึกษาทางการแพทย์
 
-บทสนทนาจากการพบแพทย์:
-${fullTranscript}
+    const llmTranscript = prepareTranscriptForLlm(fullTranscript);
 
-ชื่อผู้ป่วย: ${meeting?.patient_name_thai || 'ไม่ระบุ'}
+    let structuredSoap = null;
+    let aiSummary = '';
+    let degraded = false;
+    try {
+      structuredSoap = await generateStructuredSOAP(llmTranscript, '', meeting, {});
+      if (structuredSoap?.soap) {
+        aiSummary = formatSoapMarkdownFromStructured(structuredSoap);
+      } else {
+        const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
+        const prompt = `สรุปการปรึกษาเป็นภาษาไทย (SOAP):\n${llmTranscript}`;
+        const result = await model.generateContent(prompt);
+        aiSummary = result.response.text();
+      }
+    } catch (geminiErr) {
+      console.error('[AI Summary] Gemini call failed:', geminiErr.message);
+      degraded = true;
+    }
+    if (!structuredSoap?.soap && meeting.recording_url) {
+      structuredSoap = buildRecordingOnlySoapFallback(meeting);
+      aiSummary = formatSoapMarkdownFromStructured(structuredSoap);
+      degraded = true;
+    }
+    if (!aiSummary?.trim()) {
+      return res.status(500).json({ error: 'Failed to generate summary' });
+    }
 
-กรุณาสรุปการปรึกษาในรูปแบบ SOAP Note (ภาษาไทย):
+    const safeSummary = prepareSummaryForDb(aiSummary, structuredSoap);
 
-## S - Subjective (อาการที่ผู้ป่วยบอก)
-## O - Objective (การตรวจร่างกาย)
-## A - Assessment (การวินิจฉัย)
-## P - Plan (แผนการรักษา)
----
-## คำแนะนำสำหรับผู้ป่วย
-⚠️ สำคัญ: นี่คือสรุปเบื้องต้นที่ต้องให้แพทย์ตรวจสอบก่อนใช้งาน`;
-    
-    const result = await model.generateContent(prompt);
-    const aiSummary = result.response.text();
-    
     const validationId = uuidv4();
     aiValidations.set(validationId, {
-      id: validationId, meetingId: id, type: 'meeting-summary',
-      content: aiSummary, status: 'pending_review', createdAt: new Date().toISOString()
+      id: validationId,
+      meetingId: recordId,
+      type: 'meeting-summary',
+      content: safeSummary.narrative,
+      structured: safeSummary.structured,
+      status: 'pending_review',
+      createdAt: new Date().toISOString(),
     });
-    
+
     try {
       await pool.query(
-        `UPDATE meeting_records SET ai_summary = $1, status = 'completed', ended_at = COALESCE(ended_at, NOW()) WHERE id::text = $2`,
-        [aiSummary, id]
+        `UPDATE meeting_records SET
+           ai_summary = $1,
+           ai_summary_structured = $2,
+           status = 'completed',
+           ended_at = COALESCE(ended_at, NOW())
+         WHERE id::text = $3`,
+        [
+          safeSummary.narrative,
+          safeSummary.structured ? JSON.stringify(safeSummary.structured) : null,
+          recordId,
+        ],
       );
     } catch (error_) {
       console.log('[AI Summary] DB update skipped:', error_.message);
     }
-    
-    console.log(`[AI Summary] Generated for meeting ${id}`);
+
+    console.log(`[AI Summary] Generated for meeting ${recordId} (route=${id})`);
     res.json({
-      success: true, summary: aiSummary, meetingId: id, validationId,
-      requiresValidation: true, message: 'กรุณาตรวจสอบและอนุมัติสรุปก่อนบันทึกลง EMR'
+      success: true,
+      summary: aiSummary,
+      structured: structuredSoap,
+      meetingId: recordId,
+      validationId,
+      requiresValidation: true,
+      degraded,
+      userMessage: degraded
+        ? 'สรุปชั่วคราวจากบันทึกการประชุม — บริการ AI ไม่พร้อมหรือล้มเหลว กรุณาตรวจสอบก่อนอนุมัติ'
+        : 'กรุณาตรวจสอบและอนุมัติสรุปก่อนบันทึกลง EMR',
     });
-    
   } catch (error) {
     console.error('[AI Summary] Generate error:', error);
-    res.status(500).json({ error: 'Failed to generate summary' });
+    res.status(500).json({ error: 'Failed to generate summary', detail: error.message });
   }
 });
 
@@ -3597,7 +4355,20 @@ app.get('/api/meetings/:id/results', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
 
-    // 1. Fetch meeting record with doctor/patient names
+    // 1. Fetch meeting record (UUID, appointment id, or originalRefs after FK-null insert)
+    const lookupKeys = new Set([String(id)]);
+    try {
+      const alias = resolveLobbyKeySync(id);
+      if (alias) lookupKeys.add(String(alias));
+    } catch { /* ignore */ }
+    for (const mem of activeMeetings.values()) {
+      if (mem.meetingId === id || mem.appointmentId === id) {
+        lookupKeys.add(String(mem.meetingId));
+        if (mem.appointmentId) lookupKeys.add(String(mem.appointmentId));
+      }
+    }
+    const keyList = [...lookupKeys];
+
     let meeting = null;
     try {
       const result = await safeQuery(
@@ -3609,7 +4380,12 @@ app.get('/api/meetings/:id/results', authenticateToken, async (req, res) => {
          LEFT JOIN users u_pat ON mr.patient_id = u_pat.id
          LEFT JOIN users u_doc ON mr.doctor_id = u_doc.id
          LEFT JOIN appointments a ON mr.appointment_id = a.id
-         WHERE mr.id::text = $1 OR mr.appointment_id = $1`, [id]
+         WHERE mr.id::text = ANY($1::text[])
+            OR mr.appointment_id = ANY($1::text[])
+            OR mr.meeting_config->'originalRefs'->>'appointmentId' = ANY($1::text[])
+         ORDER BY mr.recording_stopped_at DESC NULLS LAST, mr.created_at DESC
+         LIMIT 1`,
+        [keyList],
       );
       if (result.rows.length > 0) {
         meeting = result.rows[0];
@@ -3618,16 +4394,22 @@ app.get('/api/meetings/:id/results', authenticateToken, async (req, res) => {
       console.warn('[Meeting Results] DB lookup skipped:', e.message);
     }
 
+    if (!meeting) {
+      meeting = await postMeeting.resolveMeetingContext(id);
+    }
+
     // Fallback to in-memory activeMeetings if DB lookup returned nothing
     if (!meeting) {
-      const mem = activeMeetings.get(id);
-      if (mem) {
-        meeting = {
-          id: mem.meetingId, appointment_id: mem.appointmentId,
-          doctor_id: mem.doctorId, patient_id: mem.patientId,
-          room_name: mem.roomName, status: mem.status || 'completed',
-          created_at: mem.createdAt, ended_at: mem.endedAt || null,
-        };
+      for (const mem of activeMeetings.values()) {
+        if (keyList.includes(mem.meetingId) || (mem.appointmentId && keyList.includes(mem.appointmentId))) {
+          meeting = {
+            id: mem.meetingId, appointment_id: mem.appointmentId,
+            doctor_id: mem.doctorId, patient_id: mem.patientId,
+            room_name: mem.roomName, status: mem.status || 'completed',
+            created_at: mem.createdAt, ended_at: mem.endedAt || null,
+          };
+          break;
+        }
       }
     }
 
@@ -3765,135 +4547,79 @@ app.post('/api/meetings/:id/auto-record', optionalAuth, async (req, res) => {
   }
 });
 
-// POST /api/meetings/:id/save-recording — Save recording to filesystem (primary) + DB metadata
+// POST /api/meetings/:id/save-recording — Hierarchical file share + async post-meeting pipeline
 app.post('/api/meetings/:id/save-recording', authenticateToken, async (req, res) => { // NOSONAR S3776: recording save with GCS upload, metadata, retention policies, error recovery
   try {
-    const { id } = req.params;
-    const { audioBase64, mimeType = 'audio/webm', durationMs, triggerTranscription = true } = req.body;
+    const idCheck = sanitizeRouteId(req.params.id);
+    if (!idCheck.ok) return sendValidationError(res, idCheck);
+    const { id } = { id: idCheck.id };
+    const bodyCheck = assertJsonObjectBody(req.body);
+    if (!bodyCheck.ok) return sendValidationError(res, bodyCheck);
 
-    if (!audioBase64) {
-      return res.status(400).json({ error: 'audioBase64 is required' });
-    }
+    const {
+      audioBase64,
+      mimeType = 'audio/webm',
+      durationMs,
+      triggerTranscription = true,
+      triggerPostMeetingPipeline = true,
+    } = req.body;
 
-    // Validate base64 size (max 50MB)
-    const sizeBytes = Math.ceil(audioBase64.length * 3 / 4);
+    const parsed = parseBase64Payload(audioBase64, 'audioBase64');
+    if (!parsed.ok) return sendValidationError(res, parsed);
+
+    const buffer = parsed.buffer;
+    const sizeBytes = buffer.length;
     if (sizeBytes > 50 * 1024 * 1024) {
       return res.status(413).json({ error: 'Recording too large (max 50MB)' });
     }
+    const validation = postMeeting.validateRecordingBuffer(buffer, mimeType);
+    if (!validation.ok) {
+      return res.status(422).json({
+        error: 'Invalid or interrupted recording',
+        reason: validation.reason,
+      });
+    }
 
-    const buffer = Buffer.from(audioBase64, 'base64');
+    const meeting = await postMeeting.resolveMeetingContext(id);
+    const actorId = resolveActorUserId(req.user);
+    if (meeting?.doctor_id && actorId && req.user?.role !== 'admin' && meeting.doctor_id !== actorId) {
+      return res.status(403).json({ error: 'Recording access denied for this doctor' });
+    }
+
     const recordingId = uuidv4();
-    let ext = 'ogg';
-    if (mimeType.includes('webm')) ext = 'webm';
-    else if (mimeType.includes('mp4')) ext = 'mp4';
-    const filename = `${id}-${recordingId}.${ext}`;
-    const recordingUrl = `/api/recordings/${id}/${filename}`;
-
-    // Primary: Store recording on filesystem (Docker volume)
-    let storedOnDisk = false;
+    let stored;
     try {
-      const meetingDir = path.join(RECORDINGS_DIR, id);
-      fs.mkdirSync(meetingDir, { recursive: true });
-      const filepath = path.join(meetingDir, filename);
-      fs.writeFileSync(filepath, buffer);
-      storedOnDisk = true;
-      console.log(`[Save Recording] Saved to filesystem: ${filepath} (${(sizeBytes / 1024).toFixed(1)} KB)`);
-    } catch (fsErr) {
-      console.error('[Save Recording] Filesystem write failed:', fsErr.message);
-      // Try flat directory as fallback
-      try {
-        const filepath = path.join(RECORDINGS_DIR, filename);
-        fs.writeFileSync(filepath, buffer);
-        storedOnDisk = true;
-        console.log(`[Save Recording] Saved to flat directory: ${filepath}`);
-      } catch (error_) {
-        console.error('[Save Recording] All filesystem writes failed:', error_.message);
-      }
+      stored = await postMeeting.persistRecordingFromBuffer(id, buffer, mimeType, { meeting });
+    } catch (persistErr) {
+      console.error('[Save Recording] Persist failed:', persistErr.message);
+      return res.status(500).json({
+        error: 'Recording file not persisted',
+        reason: persistErr.message,
+        recordingsDir: RECORDINGS_DIR,
+      });
     }
 
-    // Store metadata in PostgreSQL (no BYTEA — just metadata)
-    try {
-      await safeQuery(
-        `UPDATE meeting_records SET 
-           recording_url = $1,
-           recording_filename = $2,
-           recording_mimetype = $3,
-           recording_size_bytes = $4,
-           recording_started_at = COALESCE(recording_started_at, NOW()),
-           status = CASE WHEN status = 'in_progress' THEN 'completed' ELSE status END
-         WHERE id::text = $5 OR appointment_id = $5`,
-        [recordingUrl, filename, mimeType, sizeBytes, id]
-      );
-      console.log(`[Save Recording] DB metadata updated for meeting ${id}`);
-    } catch (dbErr) {
-      console.warn('[Save Recording] DB metadata update failed:', dbErr.message);
+    const recordingUrl = stored.recordingUrl;
+    const storedOnDisk = fs.existsSync(stored.videoPath);
+    const storedInDb = true;
+
+    let transcriptionResult = { mode: 'deferred', message: 'Use live Web Speech segments or async pipeline' };
+    if (triggerPostMeetingPipeline || triggerTranscription) {
+      postMeeting.queuePostMeetingPipeline(stored.meetingId, {
+        recordingBuffer: buffer,
+        mimeType,
+        meeting,
+      });
+      transcriptionResult = { mode: 'pipeline_queued', pipeline: true };
     }
 
-    console.log(`[Save Recording] Recording saved for meeting ${id} (${(sizeBytes / 1024).toFixed(1)} KB, disk=${storedOnDisk})`);
-
-    // Trigger post-meeting transcription with speaker diarization if requested
-    let transcriptionResult = null;
-    if (triggerTranscription) {
-      try {
-        if (hasSttCredentials()) {
-          // Use Google Cloud STT with speaker diarization
-          const speechClient = await createSpeechClient();
-          
-          const [response] = await speechClient.recognize({
-            audio: { content: audioBase64 },
-            config: {
-              encoding: 'WEBM_OPUS',
-              sampleRateHertz: 48000,
-              languageCode: 'th-TH',
-              enableAutomaticPunctuation: true,
-              enableSpeakerDiarization: true,
-              diarizationSpeakerCount: 2,
-              model: 'latest_long',
-              useEnhanced: true,
-            },
-          });
-
-          const segments = [];
-          for (const result of (response.results || [])) {
-            const alt = result.alternatives?.[0];
-            if (!alt?.transcript) continue;
-            const speakerTag = alt.words?.[0]?.speakerTag || 1;
-            segments.push({
-              content: alt.transcript.trim(),
-              confidence: alt.confidence || 0,
-              speakerTag,
-              speakerRole: speakerTag === 1 ? 'doctor' : 'patient',
-            });
-          }
-
-          // Store transcript segments in DB
-          for (const seg of segments) {
-            await safeQuery(
-              `INSERT INTO meeting_transcripts (meeting_record_id, speaker_role, speaker_name, content, language, confidence, created_at)
-               VALUES ($1::uuid, $2, $3, $4, $5, $6, NOW())`,
-              [id, seg.speakerRole, seg.speakerRole === 'doctor' ? 'แพทย์' : 'ผู้ป่วย', seg.content, 'th-TH', seg.confidence]
-            );
-          }
-
-          transcriptionResult = {
-            mode: 'google-cloud-stt',
-            segments: segments.length,
-            diarization: true,
-          };
-          console.log(`[Save Recording] Post-recording transcription completed: ${segments.length} segments`);
-        } else {
-          transcriptionResult = { mode: 'web-speech-api', configured: false, message: 'Cloud STT not configured — use Web Speech API transcript from live session' };
-        }
-      } catch (transcErr) {
-        console.warn('[Save Recording] Post-recording transcription skipped:', transcErr.message);
-        transcriptionResult = { mode: 'skipped', error: transcErr.message };
-      }
-    }
-
-    // Notify participants
     io.to(id).emit('recording-saved', {
-      meetingId: id, recordingId, durationMs, transcription: transcriptionResult,
-      storedIn: storedOnDisk ? 'filesystem' : 'failed',
+      meetingId: id,
+      recordingId,
+      durationMs,
+      transcription: transcriptionResult,
+      storagePath: stored.relativeDir,
+      storedIn: storedOnDisk ? 'filesystem' : 'database',
       timestamp: new Date().toISOString(),
     });
 
@@ -3902,9 +4628,12 @@ app.post('/api/meetings/:id/save-recording', authenticateToken, async (req, res)
       recordingId,
       meetingId: id,
       sizeBytes,
-      storedIn: storedOnDisk ? 'filesystem' : 'failed',
+      storedIn: storedOnDisk ? 'filesystem' : 'database',
       recordingUrl,
+      storagePath: stored.relativeDir,
+      gcsUri: stored.gcsUri || null,
       transcription: transcriptionResult,
+      postMeetingPipeline: triggerPostMeetingPipeline ? 'queued' : 'skipped',
       message: 'Recording saved successfully',
     });
   } catch (error) {
@@ -3942,9 +4671,140 @@ app.post('/api/meetings/:id/stop-recording', authenticateToken, async (req, res)
   }
 });
 
+// GET /api/meetings/:id/pipeline-status — Post-meeting pipeline progress (doctor)
+app.get('/api/meetings/:id/pipeline-status', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const meeting = await postMeeting.resolveMeetingContext(id);
+    if (!meeting) {
+      return res.status(404).json({ error: 'Meeting not found' });
+    }
+    const actorId = resolveActorUserId(req.user);
+    if (req.user?.role !== 'admin' && meeting.doctor_id && actorId && meeting.doctor_id !== actorId) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+    const live = postMeeting.getPipelineStatus(meeting.id);
+    const configPipeline = meeting.meeting_config?.postMeetingPipeline || null;
+    const merged = { ...configPipeline, ...live };
+    res.json({
+      success: true,
+      meetingId: meeting.id,
+      appointmentId: meeting.appointment_id,
+      pipeline: merged,
+      userMessage: merged.userMessage || null,
+      recordingUrl: meeting.recording_url,
+      hasSummary: Boolean(meeting.ai_summary),
+      transcriptLength: (meeting.transcript || '').length,
+    });
+  } catch (error) {
+    console.error('[Pipeline Status] Error:', error);
+    res.status(500).json({ error: 'Failed to get pipeline status' });
+  }
+});
+
+// POST /api/webhooks/jibri-recording — Self-hosted Jibri drop (not used on meet.jit.si)
+app.post('/api/webhooks/jibri-recording', async (req, res) => {
+  try {
+    const expected = process.env.JIBRI_WEBHOOK_SECRET;
+    const provided = req.headers['x-jibri-webhook-secret'] || req.body?.secret;
+    const validation = validateJibriWebhookRequest(req.body, { expectedSecret: expected, providedSecret: provided });
+    if (!validation.ok) {
+      return res.status(validation.status).json({ error: validation.error });
+    }
+
+    const { meetingId, doctorId, localFilePath, videoBase64, mimeType = 'video/mp4' } = req.body || {};
+
+    const stored = await postMeeting.ingestJibriRecording({
+      meetingId,
+      doctorId,
+      localFilePath,
+      videoBase64,
+      mimeType,
+    });
+    postMeeting.queuePostMeetingPipeline(stored.meetingId, { meeting: await postMeeting.resolveMeetingContext(meetingId) });
+
+    res.json({
+      success: true,
+      meetingId: stored.meetingId,
+      recordingUrl: stored.recordingUrl,
+      storagePath: stored.relativeDir,
+      pipeline: 'queued',
+    });
+  } catch (error) {
+    console.error('[Jibri Webhook] Error:', error);
+    res.status(500).json({ error: 'Failed to ingest Jibri recording' });
+  }
+});
+
 // ============================================================================
 // RECORDING FILE PLAYBACK, LISTING & SHARING
 // ============================================================================
+
+// GET /api/recordings/meetings/:doctorId/:meetingId/:filename — Isolated medical file share path
+app.get('/api/recordings/meetings/:doctorId/:meetingId/:filename', authenticateToken, async (req, res) => {
+  const { doctorId, meetingId, filename } = req.params;
+  const safeFilename = path.basename(filename);
+  const filepath = path.join(RECORDINGS_DIR, 'meetings', doctorId, meetingId, safeFilename);
+
+  try {
+    const meeting = await postMeeting.resolveMeetingContext(meetingId);
+    const access = assertCanAccessMeetingRecording({ user: req.user, meeting });
+    if (!access.allowed) {
+      return res.status(access.status || 403).json({ error: access.error || 'Access denied' });
+    }
+    if (meeting.doctor_id && meeting.doctor_id !== doctorId) {
+      return res.status(403).json({ error: 'Doctor isolation mismatch' });
+    }
+    const ext = path.extname(safeFilename).toLowerCase();
+    let contentType = getMimeType(safeFilename);
+    if (ext === '.mp4') contentType = 'video/mp4';
+    if (meeting.recording_mimetype) contentType = meeting.recording_mimetype;
+
+    let rawBytea = meeting.recording_data;
+    if (!rawBytea && dbAvailable) {
+      try {
+        const byteaRow = await safeQuery(
+          `SELECT recording_data FROM meeting_records
+           WHERE id::text = $1 OR appointment_id = $1
+           LIMIT 1`,
+          [meetingId],
+        );
+        rawBytea = byteaRow.rows[0]?.recording_data;
+      } catch (dbErr) {
+        console.warn('[Recordings] BYTEA lookup failed:', dbErr.message);
+      }
+    }
+    const plain = postMeeting.resolveRecordingForPlayback({
+      diskPath: filepath,
+      byteaRaw: rawBytea,
+      mimeType: meeting.recording_mimetype || contentType,
+    });
+    if (!plain?.length) {
+      return res.status(404).json({ error: 'Recording file not found' });
+    }
+    const stat = { size: plain.length };
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Length', stat.size);
+    res.setHeader('Content-Disposition', `inline; filename="${safeFilename}"`);
+    res.setHeader('Accept-Ranges', 'bytes');
+    const range = req.headers.range;
+    if (range) {
+      const parts = range.replace(/bytes=/, '').split('-');
+      const start = Number.parseInt(parts[0], 10);
+      const end = parts[1] ? Number.parseInt(parts[1], 10) : stat.size - 1;
+      const chunkSize = end - start + 1;
+      res.status(206);
+      res.setHeader('Content-Range', `bytes ${start}-${end}/${stat.size}`);
+      res.setHeader('Content-Length', chunkSize);
+      res.end(plain.subarray(start, end + 1));
+      return;
+    }
+    res.end(plain);
+  } catch (err) {
+    console.error('[Recordings] Secure path serve error:', err.message);
+    res.status(500).json({ error: 'Failed to serve recording' });
+  }
+});
 
 // GET /api/recordings — List all recordings (authenticated)
 app.get('/api/recordings', authenticateToken, async (req, res) => { // NOSONAR S3776: recordings list with role-based filtering + signed-URL generation branches
@@ -3963,13 +4823,20 @@ app.get('/api/recordings', authenticateToken, async (req, res) => { // NOSONAR S
            ORDER BY mr.created_at DESC
            LIMIT 100`
         );
-        for (const row of result.rows) {
+        const visible = filterRecordingsForUser(result.rows, req.user);
+        for (const row of visible) {
+          const mid = row.appointment_id || row.id;
+          const docId = row.doctor_id || 'unknown';
           recordings.push({
-            meetingId: row.appointment_id || row.id,
+            meetingId: mid,
             filename: row.recording_filename,
             mimeType: row.recording_mimetype,
             sizeBytes: row.recording_size_bytes,
-            url: row.recording_url,
+            url: buildSecureRecordingUrl({
+              doctorId: docId,
+              meetingId: mid,
+              filename: row.recording_filename,
+            }),
             recordedAt: row.recording_started_at || row.created_at,
             status: row.status,
             doctorId: row.doctor_id,
@@ -3981,53 +4848,47 @@ app.get('/api/recordings', authenticateToken, async (req, res) => { // NOSONAR S
       }
     }
 
-    // Also scan filesystem for recordings not in DB
-    try {
-      const entries = fs.readdirSync(RECORDINGS_DIR, { withFileTypes: true });
-      for (const entry of entries) {
-        if (entry.isDirectory()) {
-          const meetingId = entry.name;
-          const meetingDir = path.join(RECORDINGS_DIR, meetingId);
-          const files = fs.readdirSync(meetingDir);
-          for (const file of files) {
-            if (!recordings.some(r => r.filename === file)) {
-              const stat = fs.statSync(path.join(meetingDir, file));
-              recordings.push({
-                meetingId,
-                filename: file,
-                mimeType: getMimeType(file),
-                sizeBytes: stat.size,
-                url: `/api/recordings/${meetingId}/${file}`,
-                recordedAt: stat.mtime.toISOString(),
-                source: 'filesystem',
-              });
+    if (isAdminUser(req.user)) {
+      try {
+        const meetingsRoot = path.join(RECORDINGS_DIR, 'meetings');
+        if (fs.existsSync(meetingsRoot)) {
+          for (const docEntry of fs.readdirSync(meetingsRoot, { withFileTypes: true })) {
+            if (!docEntry.isDirectory()) continue;
+            const docDir = path.join(meetingsRoot, docEntry.name);
+            for (const meetEntry of fs.readdirSync(docDir, { withFileTypes: true })) {
+              if (!meetEntry.isDirectory()) continue;
+              const meetDir = path.join(docDir, meetEntry.name);
+              for (const file of fs.readdirSync(meetDir)) {
+                if (recordings.some((r) => r.filename === file && r.meetingId === meetEntry.name)) {
+                  continue;
+                }
+                const stat = fs.statSync(path.join(meetDir, file));
+                recordings.push({
+                  meetingId: meetEntry.name,
+                  doctorId: docEntry.name,
+                  filename: file,
+                  mimeType: getMimeType(file),
+                  sizeBytes: stat.size,
+                  url: buildSecureRecordingUrl({
+                    doctorId: docEntry.name,
+                    meetingId: meetEntry.name,
+                    filename: file,
+                  }),
+                  recordedAt: stat.mtime.toISOString(),
+                  source: 'filesystem',
+                });
+              }
             }
           }
-        } else if (entry.isFile()) {
-          const file = entry.name;
-          if (!recordings.some(r => r.filename === file)) {
-            const stat = fs.statSync(path.join(RECORDINGS_DIR, file));
-            const meetingId = file.split('-')[0] || 'unknown';
-            recordings.push({
-              meetingId,
-              filename: file,
-              mimeType: getMimeType(file),
-              sizeBytes: stat.size,
-              url: `/api/recordings/${meetingId}/${file}`,
-              recordedAt: stat.mtime.toISOString(),
-              source: 'filesystem',
-            });
-          }
         }
+      } catch (fsErr) {
+        console.warn('[Recordings] Filesystem scan failed:', fsErr.message);
       }
-    } catch (fsErr) {
-      console.warn('[Recordings] Filesystem scan failed:', fsErr.message);
     }
 
     res.json({
       recordings,
       total: recordings.length,
-      storageDir: RECORDINGS_DIR,
     });
   } catch (error) {
     console.error('[Recordings] List error:', error);
@@ -4039,6 +4900,11 @@ app.get('/api/recordings', authenticateToken, async (req, res) => { // NOSONAR S
 app.get('/api/recordings/:meetingId', authenticateToken, async (req, res) => { // NOSONAR S3776: single-recording fetch with role-based access, GCS/local fallback
   const { meetingId } = req.params;
   try {
+    const meeting = await postMeeting.resolveMeetingContext(meetingId);
+    const access = assertCanAccessMeetingRecording({ user: req.user, meeting });
+    if (!access.allowed) {
+      return res.status(access.status || 403).json({ error: access.error || 'Access denied' });
+    }
     const recordings = [];
 
     // Check meeting-specific subdirectory first
@@ -4091,19 +4957,15 @@ app.get('/api/recordings/:meetingId', authenticateToken, async (req, res) => { /
   }
 });
 
-// GET /api/recordings/:meetingId/:filename — Serve recording file from filesystem
-app.get('/api/recordings/:meetingId/:filename', authenticateToken, (req, res) => {
+// GET /api/recordings/:meetingId/:filename — Serve from filesystem or PostgreSQL BYTEA fallback
+app.get('/api/recordings/:meetingId/:filename', authenticateToken, async (req, res) => {
   const { meetingId, filename } = req.params;
-  // Sanitize filename to prevent path traversal
   const safeFilename = path.basename(filename);
 
-  // Check meeting subdirectory first, then flat directory
-  let filepath = path.join(RECORDINGS_DIR, meetingId, safeFilename);
-  if (!fs.existsSync(filepath)) {
-    filepath = path.join(RECORDINGS_DIR, safeFilename);
-    if (!fs.existsSync(filepath) || !safeFilename.startsWith(meetingId)) {
-      return res.status(404).json({ error: 'Recording not found' });
-    }
+  const meeting = await postMeeting.resolveMeetingContext(meetingId);
+  const access = assertCanAccessMeetingRecording({ user: req.user, meeting });
+  if (!access.allowed) {
+    return res.status(access.status || 403).json({ error: access.error || 'Access denied' });
   }
 
   const ext = path.extname(safeFilename).toLowerCase();
@@ -4113,26 +4975,60 @@ app.get('/api/recordings/:meetingId/:filename', authenticateToken, (req, res) =>
   else if (ext === '.mp4') contentType = 'video/mp4';
   else if (ext === '.wav') contentType = 'audio/wav';
 
-  const stat = fs.statSync(filepath);
-  res.setHeader('Content-Type', contentType);
-  res.setHeader('Content-Length', stat.size);
-  res.setHeader('Content-Disposition', `inline; filename="${safeFilename}"`);
-  res.setHeader('Accept-Ranges', 'bytes');
-
-  // Support range requests for audio/video seeking
-  const range = req.headers.range;
-  if (range) {
-    const parts = range.replace(/bytes=/, '').split('-');
-    const start = Number.parseInt(parts[0], 10);
-    const end = parts[1] ? Number.parseInt(parts[1], 10) : stat.size - 1;
-    const chunkSize = end - start + 1;
-    res.status(206);
-    res.setHeader('Content-Range', `bytes ${start}-${end}/${stat.size}`);
-    res.setHeader('Content-Length', chunkSize);
-    fs.createReadStream(filepath, { start, end }).pipe(res);
-  } else {
-    fs.createReadStream(filepath).pipe(res);
+  let filepath = path.join(RECORDINGS_DIR, meetingId, safeFilename);
+  if (!fs.existsSync(filepath)) {
+    filepath = path.join(RECORDINGS_DIR, safeFilename);
   }
+  if (fs.existsSync(filepath) && (filepath.includes(meetingId) || safeFilename.startsWith(meetingId))) {
+    const stat = fs.statSync(filepath);
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Length', stat.size);
+    res.setHeader('Content-Disposition', `inline; filename="${safeFilename}"`);
+    res.setHeader('Accept-Ranges', 'bytes');
+    const range = req.headers.range;
+    if (range) {
+      const parts = range.replace(/bytes=/, '').split('-');
+      const start = Number.parseInt(parts[0], 10);
+      const end = parts[1] ? Number.parseInt(parts[1], 10) : stat.size - 1;
+      const chunkSize = end - start + 1;
+      res.status(206);
+      res.setHeader('Content-Range', `bytes ${start}-${end}/${stat.size}`);
+      res.setHeader('Content-Length', chunkSize);
+      fs.createReadStream(filepath, { start, end }).pipe(res);
+    } else {
+      fs.createReadStream(filepath).pipe(res);
+    }
+    return;
+  }
+
+  try {
+    const rows = await safeQuery(
+      `SELECT recording_data, recording_mimetype, recording_size_bytes
+       FROM meeting_records
+       WHERE (id::text = $1 OR appointment_id = $1)
+         AND recording_data IS NOT NULL
+       ORDER BY recording_stopped_at DESC NULLS LAST
+       LIMIT 1`,
+      [meetingId],
+    );
+    const row = rows?.rows?.[0] || rows?.[0];
+    if (row?.recording_data) {
+      const raw = Buffer.isBuffer(row.recording_data)
+        ? row.recording_data
+        : Buffer.from(row.recording_data);
+      const buf = decryptRecordingBuffer(raw);
+      const mime = row.recording_mimetype || contentType;
+      res.setHeader('Content-Type', mime);
+      res.setHeader('Content-Length', buf.length);
+      res.setHeader('Content-Disposition', `inline; filename="${safeFilename}"`);
+      res.setHeader('Accept-Ranges', 'bytes');
+      return res.send(buf);
+    }
+  } catch (dbErr) {
+    console.warn('[Recordings] BYTEA fallback failed:', dbErr.message);
+  }
+
+  return res.status(404).json({ error: 'Recording not found' });
 });
 
 // POST /api/recordings/:meetingId/share — Generate a time-limited share link for a recording
@@ -4167,10 +5063,16 @@ app.post('/api/recordings/:meetingId/share', authenticateToken, async (req, res)
     }
 
     // Generate a share token (JWT with limited scope)
-    const shareToken = jwt.sign(
+    const meeting = await postMeeting.resolveMeetingContext(meetingId);
+    const access = assertCanAccessMeetingRecording({ user: req.user, meeting });
+    if (!access.allowed) {
+      return res.status(access.status || 403).json({ error: access.error || 'Access denied' });
+    }
+
+    const shareToken = signScopedToken(
       { meetingId, filename: targetFile, type: 'recording-share' },
       JWT_SECRET,
-      { expiresIn: `${Math.min(expiresInHours, 168)}h` } // Max 7 days
+      { expiresIn: `${Math.min(expiresInHours, 168)}h` },
     );
 
     const shareUrl = `/api/recordings/shared/${shareToken}`;
@@ -4190,10 +5092,10 @@ app.post('/api/recordings/:meetingId/share', authenticateToken, async (req, res)
 });
 
 // GET /api/recordings/shared/:token — Access a shared recording (no auth required, token-validated)
-app.get('/api/recordings/shared/:token', (req, res) => {
+app.get('/api/recordings/shared/:token', async (req, res) => {
   try {
     const { token } = req.params;
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = verifyScopedToken(token, JWT_SECRET);
 
     if (decoded.type !== 'recording-share') {
       return res.status(403).json({ error: 'Invalid share token' });
@@ -4202,14 +5104,9 @@ app.get('/api/recordings/shared/:token', (req, res) => {
     const { meetingId, filename: tokenFilename } = decoded;
     const safeFilename = path.basename(tokenFilename);
 
-    // Look in meeting subdirectory first, then flat
-    let filepath = path.join(RECORDINGS_DIR, meetingId, safeFilename);
-    if (!fs.existsSync(filepath)) {
-      filepath = path.join(RECORDINGS_DIR, safeFilename);
-      if (!fs.existsSync(filepath)) {
-        return res.status(404).json({ error: 'Recording no longer available' });
-      }
-    }
+    const meeting = await postMeeting.resolveMeetingContext(meetingId);
+    const doctorId = meeting?.doctor_id || 'unknown';
+    const filepath = path.join(RECORDINGS_DIR, 'meetings', doctorId, meetingId, safeFilename);
 
     const ext = path.extname(safeFilename).toLowerCase();
     let contentType = 'application/octet-stream';
@@ -4217,11 +5114,34 @@ app.get('/api/recordings/shared/:token', (req, res) => {
     else if (ext === '.ogg') contentType = 'audio/ogg';
     else if (ext === '.mp4') contentType = 'video/mp4';
 
-    const stat = fs.statSync(filepath);
+    let rawBytea = meeting?.recording_data;
+    if (!rawBytea && dbAvailable) {
+      try {
+        const byteaRow = await safeQuery(
+          `SELECT recording_data, recording_mimetype FROM meeting_records
+           WHERE id::text = $1 OR appointment_id = $1 LIMIT 1`,
+          [meetingId],
+        );
+        rawBytea = byteaRow.rows[0]?.recording_data;
+        if (byteaRow.rows[0]?.recording_mimetype) contentType = byteaRow.rows[0].recording_mimetype;
+      } catch {
+        /* ignore */
+      }
+    }
+
+    const plain = postMeeting.resolveRecordingForPlayback({
+      diskPath: filepath,
+      byteaRaw: rawBytea,
+      mimeType: contentType,
+    });
+    if (!plain?.length) {
+      return res.status(404).json({ error: 'Recording no longer available' });
+    }
+
     res.setHeader('Content-Type', contentType);
-    res.setHeader('Content-Length', stat.size);
+    res.setHeader('Content-Length', plain.length);
     res.setHeader('Content-Disposition', `inline; filename="${safeFilename}"`);
-    fs.createReadStream(filepath).pipe(res);
+    res.end(plain);
   } catch (err) {
     if (err.name === 'TokenExpiredError') {
       return res.status(410).json({ error: 'Share link has expired' });
@@ -4242,14 +5162,26 @@ io.on('connection', (socket) => {
     const meetingId = typeof data === 'string' ? data : data?.meetingId;
     const userName = typeof data === 'object' ? data?.userName : undefined;
     const userRole = typeof data === 'object' ? data?.role : undefined;
-    
+
     if (meetingId) {
-      socket.join(meetingId);
+      const rooms = meetingSocketRoomIds(meetingId);
+      for (const room of rooms) {
+        socket.join(room);
+      }
       socket.meetingId = meetingId;
-      socket.to(meetingId).emit('participant-joined', {
-        socketId: socket.id, userName, role: userRole, timestamp: new Date().toISOString()
-      });
-      console.log(`[Socket] ${socket.id} (${userName || 'unknown'}) joined meeting ${meetingId}`);
+      socket.meetingRooms = rooms;
+      if (userRole === 'doctor' || userRole === 'admin' || userRole === 'host') {
+        markHostOnline(meetingId);
+      }
+      if (isHostReadyForMeeting(meetingId)) {
+        socket.emit('host-ready', { meetingId, ready: true, at: new Date().toISOString() });
+      }
+      for (const room of rooms) {
+        socket.to(room).emit('participant-joined', {
+          socketId: socket.id, userName, role: userRole, timestamp: new Date().toISOString(),
+        });
+      }
+      console.log(`[Socket] ${socket.id} (${userName || 'unknown'}) joined rooms ${rooms.join(',')}`);
     }
   });
   
@@ -4327,15 +5259,15 @@ io.on('connection', (socket) => {
   socket.on('lobby-request', (data) => {
     const { meetingId, participantId, participantName, role, email } = data;
     if (!meetingId || !participantId) return;
+    const lobbyKey = resolveLobbyKeySync(meetingId);
     
     // Hosts (doctor/admin) bypass lobby
     if (role === 'doctor' || role === 'admin') {
-      socket.emit('lobby-response', { meetingId, participantId, status: 'admitted' });
+      socket.emit('lobby-response', { meetingId: lobbyKey, participantId, status: 'admitted' });
       return;
     }
     
-    let lobby = meetingLobbies.get(meetingId);
-    if (!lobby) { lobby = new Map(); meetingLobbies.set(meetingId, lobby); }
+    const { lobby } = getLobbyMap(lobbyKey);
     
     const entry = {
       participantId, participantName, role: role || 'guest',
@@ -4343,36 +5275,42 @@ io.on('connection', (socket) => {
       socketId: socket.id, joinedAt: new Date().toISOString(),
     };
     lobby.set(participantId, entry);
+    syncLobbyAliasMaps(lobbyKey, lobby);
     
     // Notify room (doctor will see this)
-    io.to(meetingId).emit('lobby-update', { meetingId, action: 'join', participant: entry });
-    socket.emit('lobby-response', { meetingId, participantId, status: 'waiting' });
+    io.to(lobbyKey).emit('lobby-update', { meetingId: lobbyKey, action: 'join', participant: entry });
+    io.to(meetingId).emit('lobby-update', { meetingId: lobbyKey, action: 'join', participant: entry });
+    socket.emit('lobby-response', { meetingId: lobbyKey, participantId, status: 'waiting' });
   });
   
   socket.on('lobby-admit', (data) => {
     const { meetingId, participantId, admittedBy } = data;
-    const lobby = meetingLobbies.get(meetingId);
+    const lobbyKey = resolveLobbyKeySync(meetingId);
+    const lobby = meetingLobbies.get(lobbyKey);
     if (!lobby?.has(participantId)) return;
     
     const entry = lobby.get(participantId);
     entry.status = 'admitted';
     entry.admittedBy = admittedBy;
     entry.admittedAt = new Date().toISOString();
+    syncLobbyAliasMaps(lobbyKey, lobby);
     
-    io.to(meetingId).emit('lobby-update', { meetingId, action: 'admit', participant: entry });
+    io.to(lobbyKey).emit('lobby-update', { meetingId: lobbyKey, action: 'admit', participant: entry });
   });
   
   socket.on('lobby-reject', (data) => {
     const { meetingId, participantId, rejectedBy } = data;
-    const lobby = meetingLobbies.get(meetingId);
+    const lobbyKey = resolveLobbyKeySync(meetingId);
+    const lobby = meetingLobbies.get(lobbyKey);
     if (!lobby?.has(participantId)) return;
     
     const entry = lobby.get(participantId);
     entry.status = 'rejected';
     entry.rejectedBy = rejectedBy;
     entry.rejectedAt = new Date().toISOString();
+    syncLobbyAliasMaps(lobbyKey, lobby);
     
-    io.to(meetingId).emit('lobby-update', { meetingId, action: 'reject', participant: entry });
+    io.to(lobbyKey).emit('lobby-update', { meetingId: lobbyKey, action: 'reject', participant: entry });
   });
 
   socket.on('disconnect', () => {
@@ -4381,6 +5319,20 @@ io.on('connection', (socket) => {
     }
     console.log(`[Socket] Client disconnected: ${socket.id}`);
   });
+});
+
+// Malformed JSON bodies → 400 (not 500)
+app.use((err, req, res, next) => {
+  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    return res.status(400).json({ error: 'Invalid JSON body', code: 'INVALID_JSON' });
+  }
+  if (err?.type === 'entity.parse.failed') {
+    return res.status(400).json({ error: 'Invalid JSON body', code: 'INVALID_JSON' });
+  }
+  console.error('[HTTP] Unhandled error:', err.message);
+  if (!res.headersSent) {
+    res.status(500).json({ error: 'Internal server error', code: 'INTERNAL_ERROR' });
+  }
 });
 
 // ============================================================================

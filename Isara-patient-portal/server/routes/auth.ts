@@ -1130,19 +1130,34 @@ router.get('/health/db', async (_req: Request, res: Response) => {
 // ============================================================================
 import { OAuth2Client } from 'google-auth-library';
 
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || process.env.VITE_GOOGLE_CLIENT_ID;
+const GOOGLE_CLIENT_ID = (process.env.GOOGLE_CLIENT_ID || process.env.VITE_GOOGLE_CLIENT_ID || '').replace(/\r?\n/g, '').trim();
 const googleAuthClient = GOOGLE_CLIENT_ID ? new OAuth2Client(GOOGLE_CLIENT_ID) : null;
 
 if (!GOOGLE_CLIENT_ID) {
   console.warn('[AUTH] GOOGLE_CLIENT_ID not set — Google SSO endpoint will return 503');
 }
 
+/** Dev-testing Cloud Run: allow Playwright fixture tokens without real Google round-trip */
+function isGoogleFixtureAllowed(): boolean {
+  if (!process.env.GOOGLE_TOKEN_VERIFIER_FIXTURE) return false;
+  if (process.env.NODE_ENV !== 'production') return true;
+  return process.env.IZARA_DEV_TESTING === '1' || process.env.IZARA_ALLOW_GOOGLE_SSO_FIXTURE === '1';
+}
+
+router.get('/public-config', (_req: Request, res: Response) => {
+  res.json({
+    googleClientId: GOOGLE_CLIENT_ID,
+    googleSsoEnabled: !!GOOGLE_CLIENT_ID,
+    devTestingFixture: isGoogleFixtureAllowed(),
+  });
+});
+
 // Test seam: allow tests to inject a fake verifier without real Google calls.
 // Set process.env.GOOGLE_TOKEN_VERIFIER_FIXTURE to a JSON string of the payload
 // to return for any non-empty idToken (NEVER set in production).
 async function verifyGoogleIdToken(idToken: string): Promise<{ sub: string; email: string; emailVerified: boolean; name?: string; picture?: string } | null> {
   const fixture = process.env.GOOGLE_TOKEN_VERIFIER_FIXTURE;
-  if (fixture && process.env.NODE_ENV !== 'production') {
+  if (fixture && isGoogleFixtureAllowed()) {
     // Two modes:
     //   1) GOOGLE_TOKEN_VERIFIER_FIXTURE='1' (or 'true') -> parse idToken itself as JSON payload
     //   2) GOOGLE_TOKEN_VERIFIER_FIXTURE='{...json...}' -> use env value as payload for every call
@@ -1173,7 +1188,7 @@ router.post('/google-auth', authLimiter, async (req: Request, res: Response) => 
     if (!idToken || typeof idToken !== 'string') {
       return res.status(400).json({ error: 'idToken is required' });
     }
-    if (!GOOGLE_CLIENT_ID && !process.env.GOOGLE_TOKEN_VERIFIER_FIXTURE) {
+    if (!GOOGLE_CLIENT_ID && !isGoogleFixtureAllowed()) {
       return res.status(503).json({ error: 'Google SSO not configured on server' });
     }
 
@@ -1195,7 +1210,7 @@ router.post('/google-auth', authLimiter, async (req: Request, res: Response) => 
 
     // STRICT MODE: existing accounts only. Unknown email -> 404 NOT_REGISTERED.
     const userRow = (await pool.query(
-      `SELECT id, patient_id, email, password_hash, name, name_thai, phone, avatar_url, date_of_birth, gender, role,
+      `SELECT id, patient_id, email, password_hash, google_sub, name, name_thai, phone, avatar_url, date_of_birth, gender, role,
               is_active, is_approved, approval_status
        FROM users WHERE LOWER(email) = LOWER($1)`,
       [emailLower]
@@ -1216,6 +1231,15 @@ router.post('/google-auth', authLimiter, async (req: Request, res: Response) => 
         error: 'password_not_set',
         code: 'PASSWORD_NOT_SET',
         message: 'Please complete registration with a username and password before using Google sign-in.',
+        email: emailLower,
+      });
+    }
+
+    if (userRow.google_sub && userRow.google_sub !== payload.sub) {
+      return res.status(409).json({
+        error: 'google_account_mismatch',
+        code: 'GOOGLE_ACCOUNT_MISMATCH',
+        message: 'บัญชี Google นี้ไม่ตรงกับบัญชีที่เคยเชื่อมไว้ กรุณาใช้บัญชี Google เดิมหรือเข้าสู่ระบบด้วยรหัสผ่าน',
         email: emailLower,
       });
     }

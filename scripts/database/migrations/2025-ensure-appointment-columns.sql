@@ -55,4 +55,10 @@ CREATE TABLE IF NOT EXISTS notifications (
 );
 
 -- done
+-- Lab orders columns (doctor portal creates; patient PHR reads)
+ALTER TABLE lab_orders ADD COLUMN IF NOT EXISTS ordered_date TIMESTAMP WITH TIME ZONE;
+ALTER TABLE lab_orders ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE lab_orders ADD COLUMN IF NOT EXISTS result_date TIMESTAMP WITH TIME ZONE;
+ALTER TABLE lab_orders ADD COLUMN IF NOT EXISTS notes TEXT;
+
 SELECT 'appointment columns migration completed' AS result;

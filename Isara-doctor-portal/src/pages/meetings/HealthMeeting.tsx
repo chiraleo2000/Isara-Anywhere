@@ -40,7 +40,15 @@ import MeetingResults from './MeetingResults';
 const MEETING_SERVER_URL = (() => {
   if (globalThis.window !== undefined) {
     const env = (globalThis as any).ENV;
-    if (env?.MEETING_SERVER_URL) return env.MEETING_SERVER_URL;
+    if (env?.MEETING_SERVER_URL && !String(env.MEETING_SERVER_URL).includes('localhost')) {
+      return env.MEETING_SERVER_URL;
+    }
+    const { origin, hostname } = globalThis.location;
+    if (hostname.includes('run.app')) {
+      return origin
+        .replace('izara-doctor-portal', 'izara-meeting-server')
+        .replace('izara-patient-portal', 'izara-meeting-server');
+    }
   }
   return import.meta.env?.VITE_MEETING_SERVER_URL || 'http://localhost:3020';
 })();
@@ -239,6 +247,18 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
   const [preConsultData, setPreConsultData] = useState<Record<string, any>>({});
   const [preConsultLoading, setPreConsultLoading] = useState<string | null>(null);
 
+  const normalizeSymptoms = (value: unknown): string[] => {
+    if (Array.isArray(value)) return value.map((v) => String(v)).filter(Boolean);
+    if (typeof value === 'string') return value.split(',').map((v) => v.trim()).filter(Boolean);
+    if (value && typeof value === 'object') {
+      const obj = value as Record<string, unknown>;
+      if (Array.isArray(obj.list)) return obj.list.map((v) => String(v)).filter(Boolean);
+      if (typeof obj.main === 'string') return [obj.main];
+      return Object.values(obj).map((v) => String(v)).filter(Boolean);
+    }
+    return [];
+  };
+
   const handlePreConsultation = async (apt: any) => {
     const aptId = apt.id;
     setPreConsultLoading(aptId);
@@ -260,14 +280,48 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
     }
   };
 
-  // Load all data on mount - ONLY ONCE, no auto-refresh interval
-  // Auto-refresh was causing performance issues and unnecessary API calls
-  // Data will refresh when user manually clicks Refresh or after confirming/declining appointments
+  // Load on mount + real-time refresh when patients book or admin assigns (PG NOTIFY → Socket.IO)
   useEffect(() => {
-    console.log('[HealthMeeting] 🔄 Component mounted, loading data once...');
+    console.log('[HealthMeeting] 🔄 Component mounted, loading data...');
     loadAllData();
-    // NO interval - data refreshes on user actions only
-  }, []); // Load once on mount
+
+    let socket: { on: (e: string, fn: (...args: unknown[]) => void) => void; emit: (e: string, ...args: unknown[]) => void; disconnect: () => void } | null = null;
+    const connectSocket = async () => {
+      try {
+        const { io } = await import('socket.io-client');
+        const backendUrl = (import.meta as { env?: { VITE_API_URL?: string } }).env?.VITE_API_URL
+          || globalThis.location?.origin
+          || '';
+        socket = io(backendUrl, { path: '/ws', transports: ['websocket', 'polling'], reconnectionDelay: 3000 });
+
+        socket.on('connect', () => {
+          console.log('[HealthMeeting] 🔌 Socket.IO connected');
+          if (doctor.id) {
+            socket!.emit('join-doctor-room', doctor.id);
+            socket!.emit('join-queue-room', doctor.id);
+          }
+          socket!.emit('join', 'admin-notifications');
+        });
+
+        const reload = () => {
+          console.log('[HealthMeeting] 📩 realtime event — reloading queue');
+          loadAllData();
+        };
+        socket.on('pool-updated', reload);
+        socket.on('appointment:created', reload);
+        socket.on('appointment-created', reload);
+        socket.on('appointment:updated', reload);
+        socket.on('data:changed', (payload: { table?: string }) => {
+          if (payload?.table === 'appointments') reload();
+        });
+      } catch (err) {
+        console.warn('[HealthMeeting] Socket.IO unavailable:', err);
+      }
+    };
+    connectSocket();
+
+    return () => { socket?.disconnect(); };
+  }, []);
 
   const loadAllData = async () => {
     setLoading(true);
@@ -307,7 +361,9 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
   };
 
   // Helper: Map raw appointment data to AppointmentRequest
-  const mapRawToAppointmentRequest = (apt: any): AppointmentRequest => ({
+  const mapRawToAppointmentRequest = (apt: any): AppointmentRequest => {
+    const normalizedSymptoms = normalizeSymptoms(apt.symptoms);
+    return ({
     id: apt.id,
     patientId: apt.patientId || apt.patient_id || apt.userId || '',
     patientName: apt.patientName || apt.patient_name || apt.patient_name_thai || apt.user?.name || 'Unknown Patient',
@@ -317,8 +373,8 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
     preferredTime: apt.appointmentTime || apt.appointment_time || apt.requested_time || apt.time || apt.preferredTimeSlot || '',
     preferredDates: apt.preferredDates || apt.preferred_dates || [],
     preferredTimeSlot: apt.preferredTimeSlot || apt.preferred_time_slot || '',
-    reason: apt.reason || apt.mainSymptom || apt.main_symptom || (apt.symptoms?.join(', ')) || 'Consultation',
-    symptoms: apt.symptoms || [],
+    reason: apt.reason || apt.mainSymptom || apt.main_symptom || normalizedSymptoms.join(', ') || 'Consultation',
+    symptoms: normalizedSymptoms,
     symptomDescription: apt.symptomDescription || apt.symptom_description || apt.aiAnalysis || apt.ai_analysis || '',
     urgency: apt.urgency || 'normal',
     status: apt.status || 'pending',
@@ -330,9 +386,12 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
     requiredSpecialty: apt.requiredSpecialty || apt.required_specialty || apt.suggestedSpecialty || apt.suggested_specialty || '',
     poolStatus: apt.poolStatus || apt.pool_status || 'pending',
   });
+  };
 
   // Helper: Check if appointment is assigned to current doctor
   const isAssignedToCurrentDoctor = (apt: any): boolean => {
+    // Doctors should still see unassigned pool requests so they can claim/accept from queue workflows.
+    if (!apt.doctorId && !apt.assignedDoctorId && !apt.adminAssignedDoctorId) return true;
     const doctorIdentifier = doctor.id || doctor.email;
     return apt.doctorId === doctorIdentifier ||
       apt.assignedDoctorId === doctorIdentifier ||
@@ -341,13 +400,48 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
       apt.assignedDoctorEmail === doctor.email;
   };
 
+  /** Assigned doctor confirms; admin only triages (assign), not confirm on doctor's behalf */
+  const canConfirmAppointment = (request: AppointmentRequest): boolean => {
+    if (isAdmin) {
+      if (request.status === 'awaiting_doctor_response' && request.assignedDoctorId) {
+        return false;
+      }
+      return request.status === 'in_pool' || request.status === 'pending';
+    }
+    return (
+      isAssignedToCurrentDoctor(request) &&
+      ['awaiting_doctor_response', 'pending', 'assigned', 'in_pool'].includes(request.status)
+    );
+  };
+
   // Load Pending Queue - ALL appointments awaiting confirmation (pending, in_pool, awaiting_doctor_response)
   // This replaces the old "Patient Pool" tab - shows appointments from ALL dates, not just today
   const loadPendingQueue = async () => {
     try {
-      // CRITICAL: Bypass cache to get fresh data
-      clearCache();
-      const appointments = await fetchAllAppointments();
+      // Prefer appointment-pool API for real queue state (PG source-of-truth).
+      const apiBase = (import.meta as { env?: { VITE_API_URL?: string } }).env?.VITE_API_URL || '';
+      const token = localStorage.getItem('token') || '';
+      let appointments: any[] = [];
+      try {
+        const poolResp = await fetch(`${apiBase}/api/appointment-pool`, {
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
+        if (poolResp.ok) {
+          const poolData = await poolResp.json();
+          appointments = Array.isArray(poolData) ? poolData : (poolData.appointments || []);
+        }
+      } catch {
+        // Fall back to appointments API below
+      }
+
+      if (!appointments.length) {
+        // CRITICAL: Bypass cache to get fresh data
+        clearCache();
+        appointments = await fetchAllAppointments();
+      }
 
       // Filter for appointments awaiting confirmation
       // For Admin: ALL pending/in_pool appointments (regardless of doctor assignment)
@@ -495,11 +589,14 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
 
       // Filter for pending appointments assigned to this doctor
       const pending = allAppointments.filter((apt: any) => {
-        const matchesDoctor = apt.doctorId === doctor.id ||
+        const matchesDoctor =
+          (!apt.doctorId && !apt.assignedDoctorId && !apt.adminAssignedDoctorId) ||
+          apt.doctorId === doctor.id ||
           apt.assignedDoctorId === doctor.id ||
           apt.adminAssignedDoctorId === doctor.id;
         // Pending = needs doctor confirmation (assigned but not yet confirmed)
         const needsConfirmation = apt.status === 'pending' ||
+          apt.status === 'in_pool' ||
           apt.status === 'awaiting_doctor_response' ||
           apt.status === 'assigned';
         return matchesDoctor && needsConfirmation;
@@ -618,7 +715,7 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
 
         return {
           id: apt.id || apt.appointmentId,
-          title: apt.title || apt.reason || apt.symptoms?.join(', ') || 'Medical Consultation',
+          title: apt.title || apt.reason || normalizeSymptoms(apt.symptoms).join(', ') || 'Medical Consultation',
           date: appointmentDate,
           time: appointmentTime,
           duration: apt.duration || 30,
@@ -632,7 +729,7 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
           participants: [patientParticipant, doctorParticipant],
           type: meetingType,
           status: meetingStatus,
-          notes: apt.notes || apt.symptomDescription || apt.symptoms?.join(', ') || '',
+          notes: apt.notes || apt.symptomDescription || normalizeSymptoms(apt.symptoms).join(', ') || '',
         };
       });
 
@@ -759,15 +856,18 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
 
       // Security settings
       'config.enableInsecureRoomNameWarning': 'false',
-      'config.requireDisplayName': 'true',
+      'config.requireDisplayName': 'false',
 
-      // LOBBY FEATURE - Doctor must approve participants (HOST CONTROL)
-      'config.enableLobby': 'true',
-      'config.hideLobbyButton': 'false',
+      // Izara lobby (API) — Jitsi built-in lobby disabled on meet.jit.si
+      'config.enableLobby': 'false',
+      'config.lobbyModeEnabled': 'false',
+      'config.enableLobbyChat': 'false',
 
-      // Recording (local recording enabled)
-      'config.fileRecordingsEnabled': 'true',
-      'config.localRecording.enabled': 'true',
+      // Server-side Jibri only — no browser local recording (disk + log noise)
+      'config.fileRecordingsEnabled': 'false',
+      'config.localRecording.enabled': 'false',
+      'config.disableAnalytics': 'true',
+      'config.analytics.disabled': 'true',
       'config.liveStreamingEnabled': 'false',
 
       // Disable Jitsi transcription - we use Gemini AI instead
@@ -792,7 +892,7 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
     // DOCTOR URL - Automatically becomes moderator/host
     // First person to join with this URL becomes the host
     const doctorConfig = new URLSearchParams(baseConfig);
-    doctorConfig.set('userInfo.displayName', doctor.name || 'Doctor');
+    doctorConfig.set('userInfo.displayName', doctor.displayName || doctor.name || 'Doctor');
     if (doctor.email) {
       doctorConfig.set('userInfo.email', doctor.email);
     }
@@ -807,7 +907,8 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
 
     // GUEST URL - For family members or other consultants (lobby applies)
     const guestConfig = new URLSearchParams(baseConfig);
-    guestConfig.set('config.requireDisplayName', 'true');
+    guestConfig.set('config.requireDisplayName', 'false');
+    guestConfig.set('userInfo.displayName', 'Guest');
     const guestUrl = `https://${JITSI_DOMAIN}/${roomName}#${guestConfig.toString()}`;
 
     // Primary meeting link (generic - doctor should use doctorUrl)
@@ -928,7 +1029,7 @@ Izara Telehealth Team
 
       // Step 1: Generate Jitsi meeting links (with doctor URL as host, patient URL, and guest URL)
       console.log('📹 Generating Jitsi Meet links...');
-      const meetingDetails = generateMeetingLink(selectedAppointment.id);
+      let meetingDetails = generateMeetingLink(selectedAppointment.id);
       console.log('✅ Jitsi Meet room created:', meetingDetails.meetCode);
       console.log('✅ Doctor URL (Host):', meetingDetails.doctorUrl?.substring(0, 80) + '...');
       console.log('✅ Patient URL:', meetingDetails.patientUrl?.substring(0, 80) + '...');
@@ -1090,7 +1191,33 @@ Izara Telehealth Team
           }),
         });
         if (meetingServerRes.ok) {
-          console.log('✅ Meeting registered with meeting server');
+          const meetingServerBody = await meetingServerRes.json().catch(() => ({} as any));
+          const doctorUrlFromServer = meetingServerBody?.urls?.doctor || meetingServerBody?.meeting?.doctor_url;
+          const patientUrlFromServer = meetingServerBody?.urls?.patient || meetingServerBody?.meeting?.patient_url;
+          const guestUrlFromServer = meetingServerBody?.urls?.guest || meetingServerBody?.meeting?.guest_url;
+          const roomFromServer = meetingServerBody?.roomName || meetingServerBody?.meeting?.room_name || meetingDetails.meetCode;
+          if (doctorUrlFromServer || patientUrlFromServer) {
+            meetingDetails = {
+              ...meetingDetails,
+              doctorUrl: doctorUrlFromServer || meetingDetails.doctorUrl,
+              patientUrl: patientUrlFromServer || meetingDetails.patientUrl,
+              guestUrl: guestUrlFromServer || meetingDetails.guestUrl,
+              meetCode: roomFromServer,
+            };
+            await saveAppointment({
+              ...verifiedApt,
+              meetingLink: meetingDetails.patientUrl || meetingDetails.meetLink,
+              doctorMeetingUrl: meetingDetails.doctorUrl,
+              patientMeetingUrl: meetingDetails.patientUrl,
+              guestMeetingUrl: meetingDetails.guestUrl,
+              jitsiRoomName: meetingDetails.meetCode,
+              meetCode: meetingDetails.meetCode,
+              updatedAt: new Date().toISOString(),
+            });
+            console.log('✅ Meeting registered with meeting server (tokenized host URL applied)');
+          } else {
+            console.log('✅ Meeting registered with meeting server');
+          }
         } else {
           console.warn('⚠️ Meeting server registration returned:', meetingServerRes.status);
         }
@@ -1262,6 +1389,7 @@ Izara Telehealth Team
         </div>
       )}
 
+      <div data-testid="health-meeting-page">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
         <div>
@@ -1287,7 +1415,7 @@ Izara Telehealth Team
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <div className={`rounded-xl shadow-lg p-4 border-2 border-amber-500 ${hmDarkCard(isDark)}`}>
-          <div className="text-3xl font-bold text-amber-600">
+          <div className="text-3xl font-bold text-amber-600" data-testid="queue-count">
             {pendingQueue.length}
           </div>
           <div className={`text-sm ${hmDarkSubtext(isDark)}`}>Awaiting Confirmation</div>
@@ -1384,7 +1512,7 @@ Izara Telehealth Team
             </button>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-4" data-testid="queue-list">
             {pendingQueue.length === 0 ? (
               <div className="text-center py-12 text-gray-500">
                 <div className="text-6xl mb-4"></div>
@@ -1482,6 +1610,7 @@ Izara Telehealth Team
 
                     {/* Action Buttons */}
                     <div className="flex flex-col gap-2 min-w-[160px]">
+                      {canConfirmAppointment(request) && (
                       <button
                         onClick={() => {
                           setSelectedAppointment(request);
@@ -1494,6 +1623,12 @@ Izara Telehealth Team
                       >
                         ✓ Confirm Appointment
                       </button>
+                      )}
+                      {isAdmin && request.status === 'awaiting_doctor_response' && request.assignedDoctorId && (
+                        <p className="text-xs text-gray-500 text-center px-1">
+                          รอแพทย์ที่ได้รับมอบหมายยืนยัน (HOST)
+                        </p>
+                      )}
 
                       {/* Admin can ALWAYS assign/reassign to any doctor */}
                       {isAdmin && (
@@ -1614,6 +1749,8 @@ Izara Telehealth Team
                       )}
                       {/* View Meeting Results (Teams-like) */}
                       <button
+                        data-testid="meeting-history-row"
+                        data-appointment-id={apt.id}
                         onClick={() => { setMeetingResultsId(apt.id); setShowMeetingResults(true); }}
                         className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm transition-colors flex items-center gap-1"
                       >
@@ -1981,7 +2118,7 @@ Izara Telehealth Team
               <div className="space-y-1 text-sm">
                 <p><span className="text-gray-500">Name:</span> <span className="font-medium">{selectedAppointment.patientName || 'Unknown'}</span></p>
                 <p><span className="text-gray-500">Email:</span> {selectedAppointment.patientEmail || selectedAppointment.email || 'N/A'}</p>
-                <p><span className="text-gray-500">Reason:</span> {selectedAppointment.reason || selectedAppointment.symptoms?.join(', ') || 'General consultation'}</p>
+                <p><span className="text-gray-500">Reason:</span> {selectedAppointment.reason || normalizeSymptoms(selectedAppointment.symptoms).join(', ') || 'General consultation'}</p>
               </div>
             </div>
 
@@ -2124,6 +2261,7 @@ Izara Telehealth Team
           }}
         />
       )}
+      </div>
     </div>
   );
 };

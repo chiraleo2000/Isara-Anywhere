@@ -13,7 +13,7 @@ substitutions:
   _DB_USER: postgres
   _GEMINI_MODEL: gemini-2.5-flash-lite
   _PATIENT_SVC: izara-patient-portal-dev-testing
-  _MEETING_URL: "https://izara-meeting-server-dev-testing-hvht4obouq-as.a.run.app"
+  _MEETING_URL: "https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app"
 
 steps:
   - id: build-patient-portal

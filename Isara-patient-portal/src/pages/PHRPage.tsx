@@ -4,6 +4,7 @@ import { useSettings } from '../contexts/SettingsContext';
 import { phrService, labOrderService, imagingOrderService } from '../lib/services';
 import { PersonalHealthRecord, VitalSigns, Medication, User, LifestyleData } from '../types';
 import { Heart, Activity, Pill, AlertTriangle, Plus, Edit3, Save, X, TrendingUp, TrendingDown, Minus, Scale, Thermometer, Droplet, User as UserIcon, FileText, FlaskConical, Image as ImageIcon } from 'lucide-react';
+import { normalizeAllergiesList } from '../utils/healthListNormalize';
 
 type TabId = 'overview' | 'vitals' | 'medications' | 'allergies' | 'lab-imaging' | 'profile';
 
@@ -811,6 +812,7 @@ function AllergiesTab({
 }: AllergiesTabProps) {
   const { theme, language } = useSettings();
   const isDark = theme === 'dark';
+  const allergyList = normalizeAllergiesList(allergies);
   
   const labels = {
     title: { en: 'Allergies', th: 'การแพ้' },
@@ -855,9 +857,9 @@ function AllergiesTab({
         </div>
       )}
 
-      {allergies?.length ? (
+      {allergyList.length > 0 ? (
         <div className="flex flex-wrap gap-2">
-          {allergies.map((allergy) => (
+          {allergyList.map((allergy) => (
             <span key={allergy} className={`px-4 py-2 rounded-full border flex items-center gap-2 ${isDark ? 'bg-red-900/30 text-red-300 border-red-700' : 'bg-red-50 text-red-700 border-red-200'}`}>
               <AlertTriangle className="w-4 h-4" />
               {allergy}
@@ -1663,20 +1665,27 @@ function PHRPage() {
     if (!user || !newAllergy.trim()) return;
     setSaving(true);
     try {
-      const currentAllergies = user.allergies || [];
-      if (currentAllergies.includes(newAllergy.trim())) {
+      const trimmed = newAllergy.trim();
+      const currentAllergies = normalizeAllergiesList(phr?.allergies ?? user?.allergies);
+      if (currentAllergies.includes(trimmed)) {
         alert('มีการแพ้นี้อยู่แล้ว');
-        setSaving(false);
         return;
       }
 
-      // Update user allergies
+      const updatedAllergies = [...currentAllergies, trimmed];
+      await phrService.update(user.id, {
+        ...phr,
+        allergies: updatedAllergies,
+        updatedAt: new Date(),
+      });
+
       if (updateUser) {
-        updateUser({ ...user, allergies: [...currentAllergies, newAllergy.trim()] });
+        updateUser({ ...user, allergies: updatedAllergies });
       }
 
       setShowAddAllergy(false);
       setNewAllergy('');
+      await loadData();
     } catch (e) {
       console.error(e);
       alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
@@ -1824,7 +1833,7 @@ function PHRPage() {
     ),
     allergies: (
       <AllergiesTab
-        allergies={phr?.allergies || user?.allergies}
+        allergies={normalizeAllergiesList(phr?.allergies ?? user?.allergies)}
         showAddAllergy={showAddAllergy}
         setShowAddAllergy={setShowAddAllergy}
         newAllergy={newAllergy}

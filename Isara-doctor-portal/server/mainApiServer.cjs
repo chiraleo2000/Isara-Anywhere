@@ -221,6 +221,35 @@ const io = new Server(server, {
 });
 
 const { SOCKET_EVENTS } = require('./socketEvents.cjs');
+const {
+  mapAppointmentToQueueCard,
+  mapAppointmentToPoolItem,
+} = require('./appointmentQueueMapper.cjs');
+
+/** Emit appointment events to admin, doctor, and queue rooms */
+function emitAppointmentSync(io, event, payload, opts = {}) {
+  if (!io) return;
+  const { appointmentId, doctor_id: doctorId, patient_id: patientId } = payload;
+  if (doctorId) {
+    io.to(`doctor-${doctorId}`).emit(event, payload);
+    io.to(`queue-${doctorId}`).emit(event, payload);
+  } else if (payload.table === 'appointments' || appointmentId) {
+    io.to('pool-watchers').emit('pool-updated', payload);
+    io.to('pool-watchers').emit(event, payload);
+    io.to('admin-notifications').emit('pool-updated', payload);
+    io.to('admin-notifications').emit(event, payload);
+    if (payload.operation === 'INSERT') {
+      io.to('pool-watchers').emit(SOCKET_EVENTS.APPOINTMENT_CREATED, payload);
+      io.to('admin-notifications').emit(SOCKET_EVENTS.APPOINTMENT_CREATED, payload);
+    }
+  }
+  if (patientId) {
+    io.to(`patient-${patientId}`).emit(event, payload);
+  }
+  if (opts.broadcast) {
+    io.emit(event, payload);
+  }
+}
 
 io.on('connection', (socket) => {
   console.log(`🔌 WebSocket client connected: ${socket.id}`);
@@ -886,7 +915,7 @@ app.get('/api/dashboard/:doctorId', authenticateToken, async (req, res) => {
     const confirmedToday = todayAppointments.filter(a => a.status === 'confirmed').length;
 
     // Build queue from pending/awaiting appointments (not hardcoded empty)
-    const queueStatuses = new Set(['pending', 'awaiting_doctor_response', 'assigned', 'confirmed', 'scheduled']);
+    const queueStatuses = new Set(['in_pool', 'pending', 'awaiting_doctor_response', 'assigned', 'confirmed', 'scheduled']);
     const queueAppointments = allAppointments
       .filter(a => queueStatuses.has(a.status))
       .map(apt => ({
@@ -1658,6 +1687,25 @@ app.post('/api/emr', authenticateToken, async (req, res) => {
   try {
     const emrData = req.body;
     console.log('[EMR] Creating EMR in PostgreSQL');
+
+    if (emrData == null || typeof emrData !== 'object' || Array.isArray(emrData)) {
+      return res.status(400).json({ error: 'Request body must be a JSON object', code: 'INVALID_BODY' });
+    }
+    if (!emrData.patientId || !emrData.appointmentId) {
+      return res.status(400).json({
+        error: 'patientId and appointmentId are required',
+        code: 'VALIDATION_ERROR',
+      });
+    }
+    const badField = ['patientId', 'appointmentId', 'doctorId'].find(
+      (k) => emrData[k] != null && /[\x00-\x08\x0b\x0c\x0e-\x1f]/.test(String(emrData[k])),
+    );
+    if (badField) {
+      return res.status(400).json({
+        error: `Invalid characters in ${badField}`,
+        code: 'VALIDATION_ERROR',
+      });
+    }
     
     if (!DB_AVAILABLE) {
       return res.status(503).json({ 
@@ -3812,7 +3860,7 @@ app.patch('/api/appointments/:id/assign', authenticateToken, async (req, res) =>
     }
 
     const { id: appointmentId } = req.params;
-    const { doctor_id } = req.body;
+    const doctor_id = req.body?.doctor_id || req.body?.doctorId;
 
     if (!doctor_id) {
       return res.status(400).json({ error: 'doctor_id is required' });
@@ -3831,7 +3879,7 @@ app.patch('/api/appointments/:id/assign', authenticateToken, async (req, res) =>
              status = 'awaiting_doctor_response',
              notes = COALESCE(notes, '') || $3,
              updated_at = NOW()
-         WHERE id = $1 AND doctor_id IS NULL
+         WHERE id = $1 AND doctor_id IS NULL AND status IN ('in_pool', 'pending')
          RETURNING *`,
         [
           appointmentId,
@@ -3845,11 +3893,12 @@ app.patch('/api/appointments/:id/assign', authenticateToken, async (req, res) =>
         return res.status(400).json({ error: 'Appointment not found or already assigned' });
       }
 
-      // 3. Create notification for the assigned doctor
+      // 3. Create notification for the assigned doctor (same transaction as appointment update)
       await client.query(
-        `INSERT INTO notifications (user_id, type, title, title_thai, message, message_thai, data)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        `INSERT INTO notifications (id, user_id, type, title, title_thai, message, message_thai, data)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
         [
+          crypto.randomUUID(),
           doctor_id,
           'appointment_assigned',
           'New Appointment Assigned',
@@ -3874,11 +3923,23 @@ app.patch('/api/appointments/:id/assign', authenticateToken, async (req, res) =>
 
       await client.query('COMMIT');
 
-      // 5. Emit WebSocket event
+      // 5. Emit WebSocket event to assigned doctor + admin pool
       const io = req.app.get('io');
+      const row = updateResult.rows[0];
+      const syncPayload = {
+        appointmentId,
+        id: appointmentId,
+        action: 'admin_assigned',
+        doctor_id,
+        patient_id: row.patient_id,
+        status: row.status,
+        table: 'appointments',
+        operation: 'UPDATE',
+      };
       if (io) {
-        io.emit('appointment-updated', { appointmentId, action: 'assigned', doctor_id });
-        io.emit('pool-updated', { appointmentId, action: 'admin_assigned', doctor_id });
+        emitAppointmentSync(io, SOCKET_EVENTS.APPOINTMENT_UPDATED, syncPayload, { broadcast: false });
+        emitAppointmentSync(io, 'pool-updated', syncPayload);
+        emitAppointmentSync(io, 'appointment-updated', syncPayload);
       }
 
       console.log(`[Admin Assign] Appointment ${appointmentId} → Doctor ${doctor_id} by Admin ${req.user.id}`);
@@ -4238,6 +4299,11 @@ const crypto = require('node:crypto');
 
 // Jitsi Meet Configuration (FREE) - Works in both local and Cloud Run
 const JITSI_DOMAIN = process.env.JITSI_DOMAIN || process.env.VITE_JITSI_DOMAIN || 'meet.jit.si';
+const JITSI_APP_ID = process.env.JITSI_APP_ID || process.env.JITSI_ISS || '';
+const JITSI_AUTH_SECRET = process.env.JITSI_JWT_SECRET || process.env.JITSI_APP_SECRET || '';
+const JITSI_SIGNING_SECRET = JITSI_AUTH_SECRET || JWT_SECRET_FINAL;
+const JITSI_TOKEN_ISSUER = JITSI_APP_ID || process.env.JWT_ISSUER || 'izara-telemedicine';
+const JITSI_TOKEN_AUTH_ENABLED = Boolean(JITSI_SIGNING_SECRET);
 
 // Google Cloud Speech-to-Text API Configuration
 const GOOGLE_SPEECH_API_KEY = process.env.GOOGLE_SPEECH_API_KEY ||
@@ -4270,6 +4336,34 @@ function generateMeetingRoomName(appointmentId) {
   return `Izara-${appointmentId.substring(0, 8)}-${hash}`;
 }
 
+function createJitsiRoleJwt(roomName, user = {}, role = 'guest') {
+  if (!JITSI_TOKEN_AUTH_ENABLED) return null;
+  const normalizedRole = String(role || '').toLowerCase();
+  const isModerator = normalizedRole === 'doctor' || normalizedRole === 'host' || normalizedRole === 'moderator';
+  const now = Math.floor(Date.now() / 1000);
+  return jwt.sign(
+    {
+      aud: 'jitsi',
+      iss: JITSI_TOKEN_ISSUER,
+      sub: JITSI_DOMAIN,
+      room: roomName,
+      nbf: now - 10,
+      exp: now + (4 * 60 * 60),
+      context: {
+        user: {
+          id: user.id || '',
+          name: user.name || 'Guest',
+          email: user.email || '',
+          affiliation: isModerator ? 'owner' : 'member',
+          moderator: isModerator,
+        },
+      },
+    },
+    JITSI_SIGNING_SECRET,
+    { algorithm: 'HS256' }
+  );
+}
+
 /**
  * Create Jitsi Meet URL with configuration
  */
@@ -4283,11 +4377,21 @@ function createJitsiMeetUrl(roomName, config = {}) {
   params.set('config.disableDeepLinking', 'true');
   params.set('config.defaultLanguage', config.language || 'th');
   params.set('config.enableInsecureRoomNameWarning', 'false');
-  params.set('config.requireDisplayName', 'true');
+  params.set('config.enableLobby', 'false');
+  params.set('config.lobbyModeEnabled', 'false');
+  params.set('config.enableLobbyChat', 'false');
+  if (config.displayName) {
+    params.set('userInfo.displayName', config.displayName);
+    params.set('config.requireDisplayName', 'false');
+    params.set('config.prejoinPageEnabled', 'false');
+  } else {
+    params.set('config.requireDisplayName', 'true');
+  }
   
   if (config.enableRecording) {
-    params.set('config.fileRecordingsEnabled', 'true');
-    params.set('config.localRecording.enabled', 'true');
+    params.set('config.fileRecordingsEnabled', 'false');
+    params.set('config.localRecording.enabled', 'false');
+    params.set('config.disableAnalytics', 'true');
   }
   
   const toolbarButtons = [
@@ -4300,14 +4404,18 @@ function createJitsiMeetUrl(roomName, config = {}) {
   params.set('interfaceConfig.SHOW_CHROME_EXTENSION_BANNER', 'false');
   params.set('interfaceConfig.MOBILE_APP_PROMO', 'false');
   
-  if (config.displayName) {
-    params.set('userInfo.displayName', config.displayName);
-  }
   if (config.email) {
     params.set('userInfo.email', config.email);
   }
   
-  return `https://${JITSI_DOMAIN}/${roomName}#${params.toString()}`;
+  const role = config.role || (config.isHost ? 'doctor' : 'guest');
+  const jwtToken = createJitsiRoleJwt(roomName, {
+    id: config.userId,
+    name: config.displayName,
+    email: config.email,
+  }, role);
+  const jwtQuery = jwtToken ? `?jwt=${encodeURIComponent(jwtToken)}` : '';
+  return `https://${JITSI_DOMAIN}/${roomName}${jwtQuery}#${params.toString()}`;
 }
 
 /**
@@ -4595,6 +4703,7 @@ app.post('/api/video-meeting/create', authenticateToken, async (req, res) => {
       return res.json({ 
         success: true, 
         meeting: existingMeeting, 
+        hostRole: 'doctor',
         urls: {
           doctor: existingMeeting.doctor_url,
           patient: existingMeeting.patient_url,
@@ -4609,14 +4718,36 @@ app.post('/api/video-meeting/create', authenticateToken, async (req, res) => {
       .find(m => m.appointmentId === appointmentId && m.status !== 'ended');
     
     if (existingMeeting) {
-      return res.json({ success: true, meeting: existingMeeting, message: 'Existing meeting found' });
+      return res.json({
+        success: true,
+        meeting: existingMeeting,
+        hostRole: 'doctor',
+        urls: {
+          doctor: existingMeeting.doctorUrl || existingMeeting.doctor_url || existingMeeting.jitsiUrl,
+          patient: existingMeeting.patientUrl || existingMeeting.patient_url || existingMeeting.jitsiUrl,
+          generic: existingMeeting.jitsiUrl || existingMeeting.meeting_url,
+        },
+        message: 'Existing meeting found',
+      });
     }
     
     const roomName = generateMeetingRoomName(appointmentId);
-    const jitsiUrl = createJitsiMeetUrl(roomName, { enableRecording, language });
-    const doctorUrl = createJitsiMeetUrl(roomName, { displayName: doctorName || 'Doctor', enableRecording, language, isHost: true });
-    const patientUrl = createJitsiMeetUrl(roomName, { displayName: patientName || 'Patient', language });
-    const guestUrl = createJitsiMeetUrl(roomName, { language });
+    const jitsiUrl = createJitsiMeetUrl(roomName, { enableRecording, language, role: 'guest' });
+    const doctorUrl = createJitsiMeetUrl(roomName, {
+      displayName: doctorName || 'Doctor',
+      enableRecording,
+      language,
+      isHost: true,
+      role: 'doctor',
+      userId: doctorId,
+    });
+    const patientUrl = createJitsiMeetUrl(roomName, {
+      displayName: patientName || 'Patient',
+      language,
+      role: 'patient',
+      userId: patientId,
+    });
+    const guestUrl = createJitsiMeetUrl(roomName, { language, role: 'guest' });
     
     // Save meeting to PostgreSQL (non-fatal if FK constraints fail, e.g. test appointment IDs)
     let dbMeeting;
@@ -4675,6 +4806,7 @@ app.post('/api/video-meeting/create', authenticateToken, async (req, res) => {
     res.json({
       success: true,
       meeting: { id: meeting.id, appointmentId, roomName, status: meeting.status },
+      hostRole: 'doctor',
       urls: { doctor: doctorUrl, patient: patientUrl, generic: jitsiUrl },
       config: { jitsiDomain: JITSI_DOMAIN, roomName, enableRecording }
     });
@@ -5129,15 +5261,36 @@ app.get('/api/video-meeting/:appointmentId/files', authenticateToken, async (req
     try { if (typeof transcript === 'string') transcript = JSON.parse(transcript); } catch {}
     try { if (typeof summary === 'string') summary = JSON.parse(summary); } catch {}
     try { if (typeof recommendations === 'string') recommendations = JSON.parse(recommendations); } catch {}
-    
+
+    const summaryText =
+      typeof summary === 'string' ? summary
+        : summary?.text || summary?.summary || summary?.narrative
+          || (typeof dbMeeting.ai_summary === 'string' ? dbMeeting.ai_summary : null)
+          || null;
+
+    const meetingServerBase = process.env.MEETING_SERVER_URL || process.env.VITE_MEETING_SERVER_URL || '';
+    let recordingUrl = dbMeeting.recording_url || null;
+    if (recordingUrl && recordingUrl.startsWith('/') && meetingServerBase) {
+      recordingUrl = `${meetingServerBase.replace(/\/$/, '')}${recordingUrl}`;
+    }
+
+    let pipeline = null;
+    try {
+      const mc = typeof dbMeeting.meeting_config === 'string'
+        ? JSON.parse(dbMeeting.meeting_config)
+        : dbMeeting.meeting_config;
+      pipeline = mc?.postMeetingPipeline || null;
+    } catch { /* ignore */ }
+
     res.json({
       success: true,
       appointmentId,
       meetingId: dbMeeting.id,
       duration: dbMeeting.duration_minutes,
       endedAt: dbMeeting.ended_at,
+      postMeetingPipeline: pipeline,
       files: {
-        video: dbMeeting.recording_url || null,
+        video: recordingUrl,
         transcript: transcript ? 'stored_in_database' : null,
         summary: summary ? 'stored_in_database' : null,
         recommendations: recommendations ? 'stored_in_database' : null
@@ -5148,6 +5301,9 @@ app.get('/api/video-meeting/:appointmentId/files', authenticateToken, async (req
       },
       transcript,
       summary,
+      summaryText,
+      aiSummary: summaryText,
+      recordingUrl,
       recommendations
     });
   } catch (error) {
@@ -5277,11 +5433,12 @@ app.get('/api/video-meeting/history/:doctorId', authenticateToken, async (req, r
  */
 app.get('/api/appointment-pool', authenticateToken, async (req, res) => {
   try {
+    const { urgency, specialty } = req.query;
+    const isAdmin = req.user.role === 'admin' || req.user.isAdmin;
     console.log('📋 Fetching appointment pool items from PostgreSQL...');
-    
-    // Direct PostgreSQL: get in_pool appointments
-    let query = `SELECT a.*, 
-      u_pat.name as patient_name, u_pat.name_thai as patient_name_thai,
+
+    let query = `SELECT a.*,
+      u_pat.name as patient_name, u_pat.name_thai as patient_name_thai, u_pat.email as patient_email,
       u_doc.name as doctor_name, u_doc.name_thai as doctor_name_thai
       FROM appointments a
       LEFT JOIN users u_pat ON a.patient_id = u_pat.id
@@ -5289,20 +5446,35 @@ app.get('/api/appointment-pool', authenticateToken, async (req, res) => {
       WHERE a.status IN ('in_pool', 'pending', 'awaiting_doctor_response')`;
     const params = [];
     let paramIdx = 1;
-    
+
+    // Doctors see unassigned in_pool (+ optionally specialty filter via notes/symptoms)
+    if (!isAdmin && req.user.role === 'doctor') {
+      query += ` AND ((a.doctor_id IS NULL AND a.status IN ('in_pool', 'pending')) OR a.doctor_id = $${paramIdx})`;
+      params.push(req.user.id);
+      paramIdx++;
+    }
+
     if (urgency) {
       query += ` AND a.urgency_level = $${paramIdx}`;
       params.push(urgency);
       paramIdx++;
     }
-    
-    query += ` ORDER BY 
+
+    if (specialty && typeof specialty === 'string' && specialty.length > 0) {
+      query += ` AND (a.notes ILIKE $${paramIdx} OR a.symptom_description ILIKE $${paramIdx} OR a.symptoms::text ILIKE $${paramIdx})`;
+      params.push(`%${specialty}%`);
+      paramIdx++;
+    }
+
+    query += ` ORDER BY
       CASE a.urgency_level WHEN 'emergency' THEN 0 WHEN 'urgent' THEN 1 ELSE 2 END,
       a.created_at ASC`;
-    
+
     const result = await PostgresDataService.pool.query(query, params);
-    let poolItems = result.rows || [];
-    
+    const poolItems = (result.rows || [])
+      .map(mapAppointmentToPoolItem)
+      .filter(Boolean);
+
     console.log(`✅ Returning ${poolItems.length} pool items`);
     res.json(poolItems);
   } catch (error) {
@@ -5323,7 +5495,8 @@ app.get('/api/appointments/pending/:doctorId', authenticateToken, async (req, re
     const allAppointments = await PostgresDataService.AppointmentService.getDoctorAppointments(doctorId);
     
     const pendingAppointments = allAppointments.filter(apt => {
-      return apt.status === 'pending' || 
+      return apt.status === 'in_pool' ||
+             apt.status === 'pending' || 
              apt.status === 'awaiting_doctor_response' || 
              apt.status === 'assigned';
     });
@@ -5460,9 +5633,29 @@ app.post('/api/appointments/:appointmentId/confirm', authenticateToken, async (r
       });
     }
     
-    // For flexibility: Allow any doctor to confirm if not yet assigned
-    // Use email as fallback when doctor has no system userId
-    const effectiveDoctorId = appointment.doctor_id || doctorId || doctorEmail;
+    const isAdmin = req.user?.role === 'admin' || req.user?.isAdmin;
+    if (isAdmin) {
+      return res.status(403).json({
+        error: 'Admin cannot confirm appointment; assigned doctor must confirm',
+        code: 'DOCTOR_CONFIRM_REQUIRED'
+      });
+    }
+
+    const assignedDoctorId = appointment.doctor_id;
+    const doctorMatches =
+      !assignedDoctorId ||
+      assignedDoctorId === doctorId ||
+      assignedDoctorId === req.user?.id ||
+      assignedDoctorId === req.user?.doctorId;
+    if (!doctorMatches) {
+      return res.status(403).json({
+        error: 'Only the assigned doctor can confirm this appointment',
+        code: 'ASSIGNED_DOCTOR_ONLY'
+      });
+    }
+
+    // If appointment has no doctor yet, confirming doctor becomes owner.
+    const effectiveDoctorId = assignedDoctorId || doctorId || doctorEmail;
     
     // Generate meeting links for telehealth appointments
     let meetingLink = appointment.meet_link || null;
@@ -5584,6 +5777,17 @@ app.post('/api/appointments/:appointmentId/confirm', authenticateToken, async (r
           message_thai: `นัดหมายของคุณได้รับการยืนยันจาก ${doctorName2} วันที่ ${appointmentDateFormatted2} เวลา ${appointmentTimeFormatted2}`,
           data: { appointmentId, meetingLink, confirmedDate, confirmedTime }
         });
+        if (meetingLink) {
+          await PostgresDataService.NotificationService.createNotification({
+            user_id: patientId,
+            type: 'meeting_link_ready',
+            title: 'ลิงก์ประชุมพร้อมแล้ว',
+            title_thai: 'ลิงก์ประชุมพร้อมแล้ว',
+            message: `คุณสามารถเข้าร่วมการประชุมออนไลน์ได้ที่ลิงก์ที่แนบมา`,
+            message_thai: `คุณสามารถเข้าร่วมการประชุมออนไลน์ได้ที่ลิงก์ที่แนบมา`,
+            data: { appointmentId, meetingLink, meet_link: meetingLink, confirmedDate, confirmedTime }
+          });
+        }
         console.log(`🔔 Notification created for patient ${patientId}`);
       }
     } catch (notifError) {
@@ -5696,27 +5900,41 @@ app.post('/api/appointment-pool/:poolId/claim', authenticateToken, async (req, r
     console.log(`📌 Doctor ${doctorId} claiming pool item ${poolId}...`);
 
     // Direct PostgreSQL: claim appointment from pool by updating it
+    const claimDoctorId = doctorId || req.user.id;
     const result = await PostgresDataService.pool.query(
-      `UPDATE appointments SET 
+      `UPDATE appointments SET
         doctor_id = $2,
-        status = 'confirmed',
+        status = 'awaiting_doctor_response',
         requested_date = COALESCE($3, requested_date),
         requested_time = COALESCE($4, requested_time),
         notes = COALESCE(notes, '') || $5,
         updated_at = NOW()
-       WHERE id = $1 AND status = 'in_pool'
+       WHERE id = $1 AND status IN ('in_pool', 'pending') AND (doctor_id IS NULL OR doctor_id = $2)
        RETURNING *`,
-      [poolId, doctorId, proposedDate || null, proposedTime || null, 
-       `\n[Claimed by ${doctorName || doctorId}]`]
+      [poolId, claimDoctorId, proposedDate || null, proposedTime || null,
+       `\n[Claimed by ${doctorName || claimDoctorId}]`]
     );
-    
+
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Pool item not found or no longer available' });
     }
 
-    // Emit WebSocket event
+    const row = result.rows[0];
     const io = req.app.get('io');
-    if (io) io.emit('pool-updated', { poolId, action: 'claimed', doctorId });
+    const syncPayload = {
+      appointmentId: poolId,
+      id: poolId,
+      action: 'claimed',
+      doctor_id: claimDoctorId,
+      patient_id: row.patient_id,
+      status: row.status,
+      table: 'appointments',
+      operation: 'UPDATE',
+    };
+    if (io) {
+      emitAppointmentSync(io, 'pool-updated', syncPayload);
+      emitAppointmentSync(io, SOCKET_EVENTS.APPOINTMENT_UPDATED, syncPayload);
+    }
 
     console.log(`✅ Pool item ${poolId} claimed by doctor ${doctorId}`);
     res.json({
@@ -5735,9 +5953,16 @@ app.post('/api/appointment-pool/:poolId/claim', authenticateToken, async (req, r
  */
 app.post('/api/appointment-pool/:poolId/admin-assign', authenticateToken, async (req, res) => {
   try {
+    if (req.user.role !== 'admin' && !req.user.isAdmin) {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
     const { poolId } = req.params;
-    const { doctorId, doctorName, assignedDate, assignedTime, adminId, adminName } = req.body;
-    console.log(`📌 Admin ${adminId} assigning pool item ${poolId} to doctor ${doctorId}...`);
+    const doctorId = req.body?.doctorId || req.body?.doctor_id;
+    const { doctorName, assignedDate, assignedTime, adminId, adminName } = req.body;
+    if (!doctorId) {
+      return res.status(400).json({ error: 'doctorId or doctor_id is required' });
+    }
+    console.log(`📌 Admin ${adminId || req.user.id} assigning pool item ${poolId} to doctor ${doctorId}...`);
 
     // Direct PostgreSQL: admin-assign appointment from pool
     const result = await PostgresDataService.pool.query(
@@ -5748,7 +5973,7 @@ app.post('/api/appointment-pool/:poolId/admin-assign', authenticateToken, async 
         requested_time = COALESCE($4, requested_time),
         notes = COALESCE(notes, '') || $5,
         updated_at = NOW()
-       WHERE id = $1 AND status = 'in_pool'
+       WHERE id = $1 AND status IN ('in_pool', 'pending')
        RETURNING *`,
       [poolId, doctorId, assignedDate || null, assignedTime || null, 
        `\n[Admin-assigned by ${adminName || adminId} to ${doctorName || doctorId}]`]
@@ -5758,9 +5983,23 @@ app.post('/api/appointment-pool/:poolId/admin-assign', authenticateToken, async 
       return res.status(404).json({ error: 'Pool item not found or no longer in pool' });
     }
 
-    // Emit WebSocket event
+    const row = result.rows[0];
     const io = req.app.get('io');
-    if (io) io.emit('pool-updated', { poolId, action: 'admin_assigned', doctorId, adminId });
+    const syncPayload = {
+      appointmentId: poolId,
+      id: poolId,
+      action: 'admin_assigned',
+      doctor_id: doctorId,
+      patient_id: row.patient_id,
+      status: row.status,
+      adminId,
+      table: 'appointments',
+      operation: 'UPDATE',
+    };
+    if (io) {
+      emitAppointmentSync(io, 'pool-updated', syncPayload);
+      emitAppointmentSync(io, SOCKET_EVENTS.APPOINTMENT_UPDATED, syncPayload);
+    }
 
     // Create notification for the assigned doctor (via local PostgreSQL, not GCS)
     try {
@@ -5795,15 +6034,43 @@ app.post('/api/appointment-pool/:poolId/admin-assign', authenticateToken, async 
 app.put('/api/appointments/:appointmentId/status', authenticateToken, async (req, res) => { // NOSONAR S3776: tested status-machine endpoint, allowed transitions matrix per role
   try {
     const { appointmentId } = req.params;
-    const { status, doctorId, appointmentDate, appointmentTime } = req.body;
+    const { status, doctorId, doctor_id, appointmentDate, appointmentTime, notes } = req.body;
     console.log(`📌 Updating appointment ${appointmentId} status to ${status}...`);
+
+    const isAdmin = req.user?.role === 'admin' || req.user?.isAdmin;
+    if (status === 'confirmed' && isAdmin) {
+      return res.status(403).json({
+        error: 'Admin cannot confirm appointment; assigned doctor must confirm',
+        code: 'DOCTOR_CONFIRM_REQUIRED'
+      });
+    }
+
+    if (status === 'confirmed') {
+      const current = await PostgresDataService.AppointmentService.getAppointmentById(appointmentId);
+      if (!current) {
+        return res.status(404).json({ error: 'Appointment not found' });
+      }
+      const reqDoctorId = doctorId || doctor_id || req.user?.id || req.user?.doctorId;
+      const assignedDoctorId = current.doctor_id;
+      const canConfirm =
+        !assignedDoctorId ||
+        assignedDoctorId === reqDoctorId ||
+        assignedDoctorId === req.user?.id ||
+        assignedDoctorId === req.user?.doctorId;
+      if (!canConfirm) {
+        return res.status(403).json({
+          error: 'Only assigned doctor can confirm appointment',
+          code: 'ASSIGNED_DOCTOR_ONLY'
+        });
+      }
+    }
 
     // Direct PostgreSQL update
     const setClauses = ['status = $2', 'updated_at = NOW()'];
     const params = [appointmentId, status];
     let paramIdx = 3;
     
-    if (doctorId) { setClauses.push(`doctor_id = $${paramIdx}`); params.push(doctorId); paramIdx++; }
+    if (doctorId || doctor_id) { setClauses.push(`doctor_id = $${paramIdx}`); params.push(doctorId || doctor_id); paramIdx++; }
     if (appointmentDate) { setClauses.push(`requested_date = $${paramIdx}`); params.push(appointmentDate); paramIdx++; }
     if (appointmentTime) { setClauses.push(`requested_time = $${paramIdx}`); params.push(appointmentTime); paramIdx++; }
     if (notes) { setClauses.push(`notes = COALESCE(notes, '') || $${paramIdx}`); params.push('\n' + notes); paramIdx++; }
@@ -5821,7 +6088,7 @@ app.put('/api/appointments/:appointmentId/status', authenticateToken, async (req
     const patientId = appointment.patient_id;
 
     // Generate Jitsi meeting link for online appointments when confirmed
-    if (status === 'confirmed' && (appointment.appointment_type === 'online' || appointment.appointment_type === 'telehealth')) {
+    if (status === 'confirmed' && ['online', 'telehealth', 'Telehealth'].includes(appointment.appointment_type)) {
       try {
         const roomName = `izara-${appointmentId.substring(0, 12)}-${Date.now().toString(36)}`;
         const meetingLink = `https://${process.env.JITSI_DOMAIN || 'meet.jit.si'}/${roomName}`;
@@ -5865,6 +6132,18 @@ app.put('/api/appointments/:appointmentId/status', authenticateToken, async (req
           message: notifMessage,
           data: { appointmentId, status }
         });
+        const meetLink = appointment.meet_link || null;
+        if (status === 'confirmed' && meetLink) {
+          await PostgresDataService.NotificationService.createNotification({
+            user_id: patientId,
+            type: 'meeting_link_ready',
+            title: 'ลิงก์ประชุมพร้อมแล้ว',
+            title_thai: 'ลิงก์ประชุมพร้อมแล้ว',
+            message: 'ลิงก์เข้าร่วมการประชุมออนไลน์พร้อมแล้ว',
+            message_thai: 'ลิงก์เข้าร่วมการประชุมออนไลน์พร้อมแล้ว',
+            data: { appointmentId, meetingLink: meetLink, meet_link: meetLink, status }
+          });
+        }
       }
     } catch (notifError) {
       console.error('⚠️ Notification error (non-blocking):', notifError.message);
@@ -6298,6 +6577,41 @@ app.put('/api/notifications/:id/read', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('❌ Mark notification read error:', error);
     res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Legacy paths used by DoctorNotificationBell (same PostgreSQL store as /api/notifications)
+app.get('/api/notifications/doctor/:doctorId', authenticateToken, async (req, res) => {
+  try {
+    const { doctorId } = req.params;
+    const userId = req.user?.userId || req.user?.id;
+    if (doctorId !== userId && req.user?.role !== 'admin') {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+    const notifications = await PostgresDataService.NotificationService.getUserNotifications(doctorId, false);
+    res.json({
+      doctorId,
+      notifications: notifications || [],
+      lastUpdated: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('❌ Doctor notifications fetch error:', error);
+    res.status(500).json({ error: 'Failed to fetch notifications' });
+  }
+});
+
+app.put('/api/notifications/doctor/:doctorId/read-all', authenticateToken, async (req, res) => {
+  try {
+    const { doctorId } = req.params;
+    const userId = req.user?.userId || req.user?.id;
+    if (doctorId !== userId && req.user?.role !== 'admin') {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+    await PostgresDataService.NotificationService.markAllAsRead(doctorId);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('❌ Doctor mark-all-read error:', error);
+    res.json({ success: true });
   }
 });
 
@@ -8330,6 +8644,28 @@ app.put('/api/profile', authenticateToken, async (req, res) => {
 });
 
 /**
+ * GET /api/storage/read?bucket=patient&path=patients.json
+ * PostgreSQL-backed read (GCS API server is not started in unified Cloud Run).
+ */
+app.get('/api/storage/read', authenticateToken, async (req, res) => {
+  try {
+    const bucket = typeof req.query.bucket === 'string' ? req.query.bucket : '';
+    const filePath = typeof req.query.path === 'string' ? req.query.path : '';
+    if (!bucket || !filePath) {
+      return res.status(400).json({ error: 'Missing bucket or path parameter' });
+    }
+    const data = await fetchFromGCS(bucket, filePath);
+    if (data === null || data === undefined) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+    res.json(data);
+  } catch (error) {
+    console.error('Storage read error:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
  * GET /api/storage/health
  * Check storage service health (Profile Image Upload)
  */
@@ -8804,6 +9140,8 @@ async function startServer() {
   console.log('═══════════════════════════════════════════════════════════════\n');
 
   const { startPgNotifyListener } = require('./pgNotifyListener.cjs');
+  const { attachRedisAdapter } = require('./socketRedisAdapter.cjs');
+  attachRedisAdapter(io).catch((err) => console.warn('[WS] Redis adapter init:', err.message));
 
   // Start listening immediately for faster startup
   server.listen(PORT, '0.0.0.0', () => {

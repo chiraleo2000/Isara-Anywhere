@@ -1477,7 +1477,7 @@ export default function LivingWillPage() {
 
   useEffect(() => {
     loadData();
-  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [user]);
 
   const handleRollback = async (versionId: string) => {
     await performRollback({

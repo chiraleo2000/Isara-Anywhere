@@ -29,7 +29,25 @@ import {
   fetchUnreadNotificationsCount
 } from '../services/apiDataService';
 import { meetingService } from '../services/apiServices';
+import { getToken } from '../services/authServices';
 import { geminiClinicalService } from '../services/geminiClinicalService';
+import { useRealtimeSync } from '../services/useRealtimeSync';
+
+const MEETING_SERVER_URL = (() => {
+  if (globalThis.window !== undefined) {
+    const env = (globalThis as { ENV?: { MEETING_SERVER_URL?: string } }).ENV;
+    if (env?.MEETING_SERVER_URL && !String(env.MEETING_SERVER_URL).includes('localhost')) {
+      return env.MEETING_SERVER_URL;
+    }
+    const { origin, hostname } = globalThis.location;
+    if (hostname.includes('run.app')) {
+      return origin
+        .replace('izara-doctor-portal', 'izara-meeting-server')
+        .replace('izara-patient-portal', 'izara-meeting-server');
+    }
+  }
+  return import.meta.env?.VITE_MEETING_SERVER_URL || 'http://localhost:3020';
+})();
 
 // ============================================================================
 // INTERFACES
@@ -128,6 +146,7 @@ const getDoctorAppointments = (appointments: any[], doctorId: string) => {
 
 const getPendingConfirmationsCount = (appointments: any[]) => {
   return appointments.filter((apt: any) =>
+    apt.status === 'in_pool' ||
     apt.status === 'awaiting_doctor_response' ||
     apt.status === 'assigned' ||
     (apt.status === 'pending' && (apt.assignedDoctorId || apt.adminAssignedDoctorId))
@@ -155,7 +174,7 @@ const getUpcomingAppointments = (appointments: any[], today: string) => {
   return appointments
     .filter((apt: any) => {
       const aptDate = getAppointmentDate(apt);
-      const isActiveStatus = ['confirmed', 'scheduled', 'pending', 'awaiting_doctor_response', 'assigned'].includes(apt.status);
+      const isActiveStatus = ['confirmed', 'scheduled', 'in_pool', 'pending', 'awaiting_doctor_response', 'assigned'].includes(apt.status);
       return isActiveStatus && aptDate && aptDate >= today;
     })
     .sort((a: any, b: any) => {
@@ -168,7 +187,7 @@ const getUpcomingAppointments = (appointments: any[], today: string) => {
 const getTodaysMeetings = (appointments: any[], today: string) => {
   return appointments.filter((apt: any) => {
     const aptDate = getAppointmentDate(apt);
-    const isActiveStatus = ['confirmed', 'scheduled', 'pending', 'awaiting_doctor_response', 'assigned'].includes(apt.status);
+    const isActiveStatus = ['confirmed', 'scheduled', 'in_pool', 'pending', 'awaiting_doctor_response', 'assigned'].includes(apt.status);
     return isActiveStatus && aptDate === today;
   });
 };
@@ -262,6 +281,7 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
   const [patients, setPatients] = useState<PatientRecord[]>([]);
   const [aiHistorySummary, setAiHistorySummary] = useState('');
   const [aiMeetingSummary, setAiMeetingSummary] = useState('');
+  const [meetingPipelineStatus, setMeetingPipelineStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
 
@@ -305,13 +325,9 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
   const [isLoadingAI, setIsLoadingAI] = useState(false);
   const [aiValidationStatus, setAiValidationStatus] = useState<'pending' | 'approved' | 'rejected'>('pending');
 
-  // Load dashboard data on mount and auto-refresh every 30 seconds
+  // Load dashboard on mount (realtime hook added after loadDashboardData)
   useEffect(() => {
     loadDashboardData();
-    const refreshInterval = setInterval(() => {
-      loadDashboardData();
-    }, 30_000); // Refresh every 30 seconds
-    return () => clearInterval(refreshInterval);
   }, [doctor.id]);
 
   // Load patient clinical data when patient is selected
@@ -341,16 +357,8 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
       // Filter appointments for this doctor (additional client-side filter if needed)
       const doctorAppointments = getDoctorAppointments(allAppointments, doctor.id);
 
-      console.log('[Dashboard] Doctor appointments:', doctorAppointments.length);
-      console.log('[Dashboard] Doctor ID:', doctor.id);
-      if (doctorAppointments.length > 0) {
-        console.log('[Dashboard] Appointment details:', doctorAppointments.map((a: any) => ({
-          id: a.id,
-          status: a.status,
-          doctorId: a.doctorId,
-          confirmedBy: a.confirmedBy,
-          appointmentDate: a.appointmentDate
-        })));
+      if (import.meta.env?.DEV) {
+        console.debug('[Dashboard] appointments', doctorAppointments.length, 'doctor', doctor.id);
       }
       
       // Count pending confirmations
@@ -434,8 +442,69 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
     }
   };
 
-  /** Extracted: load meeting summary for a patient (reduces nesting in loadPatientClinicalData) */
-  const loadMeetingSummary = async (patientId: string) => {
+  useRealtimeSync({
+    doctorId: doctor.id,
+    isAdmin: doctor.role === 'admin' || (doctor as { isAdmin?: boolean }).isAdmin,
+    onAppointmentChange: () => { loadDashboardData(); },
+    onQueueChange: () => { loadDashboardData(); },
+  });
+
+  const formatPipelineStatusLabel = (stage: string, userMessage?: string | null): string => {
+    if (userMessage?.trim()) return userMessage.trim();
+    const labels: Record<string, string> = {
+      storage: language === 'th' ? 'กำลังบันทึกไฟล์ประชุม...' : 'Saving meeting recording...',
+      transcribing: language === 'th' ? 'กำลังถอดเสียง (Whisper/STT)...' : 'Transcribing audio...',
+      summarizing: language === 'th' ? 'กำลังสรุป AI (Gemini)...' : 'Generating AI summary...',
+      completed: language === 'th' ? 'สรุป AI พร้อมแล้ว' : 'AI summary ready',
+      failed:
+        language === 'th'
+          ? 'สรุป AI ยังไม่พร้อม — ลองสร้างใหม่หรือใช้ transcript สด'
+          : 'AI summary unavailable — retry or use live transcript',
+      partial:
+        language === 'th'
+          ? 'มีบันทึกแต่สรุปยังไม่ครบ — ตรวจสอบ transcript'
+          : 'Recording saved — summary incomplete',
+      pending: language === 'th' ? 'รอประมวลผลหลังประชุม...' : 'Waiting for post-meeting processing...',
+    };
+    return labels[stage] || stage;
+  };
+
+  const pollPostMeetingPipeline = async (appointmentId: string, patientId: string) => {
+    const token = getToken();
+    if (!token?.trim()) return;
+    const maxPolls = 90;
+    for (let i = 0; i < maxPolls; i++) {
+      try {
+        const res = await fetch(`${MEETING_SERVER_URL}/api/meetings/${appointmentId}/pipeline-status`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) break;
+        const data = (await res.json()) as {
+          pipeline?: { stage?: string; userMessage?: string };
+          userMessage?: string;
+          hasSummary?: boolean;
+        };
+        const stage = data.pipeline?.stage || 'pending';
+        const userMessage = data.userMessage || data.pipeline?.userMessage;
+        if (stage === 'failed' || stage === 'partial') {
+          setMeetingPipelineStatus(formatPipelineStatusLabel(stage, userMessage));
+          return;
+        }
+        setMeetingPipelineStatus(formatPipelineStatusLabel(stage, userMessage));
+        if (data.hasSummary || stage === 'completed') {
+          setMeetingPipelineStatus(formatPipelineStatusLabel('completed'));
+          await loadMeetingSummary(patientId, false);
+          return;
+        }
+      } catch {
+        /* retry */
+      }
+      await new Promise<void>((r) => setTimeout(r, 3000));
+    }
+  };
+
+  /** Load meeting summary for AI Summary tab (EMR reports) */
+  const loadMeetingSummary = async (patientId: string, allowPipelinePoll = true) => {
     try {
       const patientAppointments = upcomingAppointments.filter(apt =>
         apt.patientId === patientId &&
@@ -449,12 +518,44 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
       const recentAppointment = sortedAppointments[0];
       const meetingData = await meetingService.getMeetingFiles(recentAppointment.id, doctor.id);
 
-      if (meetingData.success && meetingData.summary) {
-        const summaryText = typeof meetingData.summary === 'string'
-          ? meetingData.summary
-          : JSON.stringify(meetingData.summary, null, 2);
+      const md = meetingData as {
+        summary?: unknown;
+        summaryText?: string;
+        aiSummary?: string;
+        recordingUrl?: string;
+        postMeetingPipeline?: { stage?: string };
+      };
+      const pipelineStage = md.postMeetingPipeline?.stage;
+      if (pipelineStage && !['completed', 'failed', 'partial'].includes(pipelineStage)) {
+        setMeetingPipelineStatus(pipelineStage);
+      }
+
+      const summaryPayload =
+        md.summaryText ||
+        md.aiSummary ||
+        md.summary ||
+        (meetingData as { files?: { summary?: unknown } }).files?.summary;
+      if (meetingData.success && summaryPayload) {
+        let summaryText = '';
+        if (typeof summaryPayload === 'string') {
+          summaryText = summaryPayload;
+        } else if (summaryPayload && typeof summaryPayload === 'object') {
+          const o = summaryPayload as { text?: string; summary?: string; narrative?: string };
+          summaryText = o.text || o.summary || o.narrative || JSON.stringify(summaryPayload, null, 2);
+        } else {
+          summaryText = JSON.stringify(summaryPayload, null, 2);
+        }
         setAiMeetingSummary(summaryText);
-        console.log('📋 Loaded meeting summary from GCS:', meetingData);
+        setMeetingPipelineStatus('completed');
+        return;
+      }
+
+      if (
+        allowPipelinePoll &&
+        meetingData.success &&
+        (md.recordingUrl || pipelineStage === 'transcribing' || pipelineStage === 'summarizing' || pipelineStage === 'storage')
+      ) {
+        void pollPostMeetingPipeline(recentAppointment.id, patientId);
       }
     } catch (meetingError) {
       console.warn('ℹ️ No meeting summary found for patient:', patientId, meetingError);
@@ -496,9 +597,16 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
     
     setIsLoadingAI(true);
     try {
+      const token = getToken();
       const response = await fetch(`/api/ai/pre-summary/${patientId}`, {
-        headers: { 'Content-Type': 'application/json' }
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
       });
+      if (response.status === 401 || response.status === 403) {
+        return;
+      }
       const data = await response.json();
       
       if (data.success && data.data) {
@@ -525,7 +633,9 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
         setAiValidationStatus('pending');
       }
     } catch (error) {
-      console.error('Failed to load AI pre-summary:', error);
+      if (import.meta.env?.DEV) {
+        console.debug('AI pre-summary skipped:', (error as Error)?.message);
+      }
     } finally {
       setIsLoadingAI(false);
     }
@@ -569,10 +679,21 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
       alert('⚠️ กรุณาอนุมัติ AI สรุปก่อนใช้งานใน EMR');
       return;
     }
-    
+
     // Navigate to EMR editor with pre-filled data
     if (selectedPatientId) {
       navigate(`/doctor/${doctor.id}/patients/${selectedPatientId}/emr?ai_summary=${encodeURIComponent(aiHistorySummary)}`);
+    }
+  };
+
+  const handleInsertMeetingSummaryToEMR = () => {
+    const text = aiMeetingSummary.trim();
+    if (!text) {
+      alert(language === 'th' ? 'ยังไม่มีสรุปจากการประชุม' : 'No meeting AI summary available');
+      return;
+    }
+    if (selectedPatientId) {
+      navigate(`/doctor/${doctor.id}/patients/${selectedPatientId}/emr?ai_summary=${encodeURIComponent(text)}`);
     }
   };
 
@@ -1964,15 +2085,37 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
                 </div>
                 <h3 className={`text-sm font-bold ${tc('text-purple-300', 'text-purple-700')}`}>{labels.aiMeetingSummary[language]}</h3>
                 <span className="px-2 py-0.5 text-xs bg-blue-100 text-blue-700 rounded-full">Transcript</span>
+                {meetingPipelineStatus && !meetingPipelineStatus.includes('พร้อมแล้ว') && !meetingPipelineStatus.toLowerCase().includes('ready') && (
+                  <span
+                    className={`px-2 py-0.5 text-xs rounded-full ${
+                      meetingPipelineStatus.includes('ยังไม่พร้อม') || meetingPipelineStatus.includes('unavailable')
+                        ? 'bg-red-100 text-red-800'
+                        : 'bg-amber-100 text-amber-800 animate-pulse'
+                    }`}
+                    data-testid="meeting-pipeline-status"
+                  >
+                    {meetingPipelineStatus}
+                  </span>
+                )}
               </div>
               <textarea
                 value={aiMeetingSummary}
                 onChange={(e) => setAiMeetingSummary(e.target.value)}
                 placeholder={language === 'th' ? 'AI จะสรุปจากการถอดเสียงระหว่าง Video Consultation...' : 'AI will summarize from video transcription...'}
                 aria-label="AI Meeting Summary"
+                data-testid="dashboard-meeting-ai-summary"
                 className={`w-full p-2 border rounded text-xs focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none ${tc('bg-gray-700 border-gray-600 text-white placeholder-gray-400', 'bg-white border-gray-300 text-gray-900')}`}
                 rows={4}
               />
+              <button
+                type="button"
+                onClick={handleInsertMeetingSummaryToEMR}
+                disabled={!aiMeetingSummary.trim() || !selectedPatientId}
+                data-testid="insert-meeting-summary-emr-btn"
+                className="mt-2 w-full px-3 py-1.5 bg-purple-600 text-white rounded text-xs font-medium hover:bg-purple-700 disabled:opacity-50"
+              >
+                📝 {language === 'th' ? 'ใส่สรุปการประชุมใน EMR' : 'Insert meeting summary into EMR'}
+              </button>
             </div>
           </div>
 

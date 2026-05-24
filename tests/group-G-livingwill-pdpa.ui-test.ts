@@ -52,21 +52,34 @@ test.describe('Group G — Living Will & PDPA', () => {
       console.log(`  ✅ G02: Explored ${tabCount} PDPA tabs`);
     });
 
-    await test.step('G03 — Toggle privacy switches', async () => {
-      const toggles = patient.page.locator(
-        'input[type="checkbox"], [role="switch"], button[role="switch"], label:has(input[type="checkbox"])'
-      );
-      const toggleCount = await toggles.count();
-      if (toggleCount > 0) {
-        const first = toggles.first();
-        await first.click();
+    await test.step('G03 — Toggle privacy switches (data-testid)', async () => {
+      const consentToggle = patient.page.getByTestId(/^pdpa-consent-toggle-/).first();
+      const cloud = process.env.TEST_ENV === 'cloud';
+      const hasToggle = await consentToggle.isVisible({ timeout: cloud ? 30_000 : 5_000 }).catch(() => false);
+      if (hasToggle) {
+        await consentToggle.click();
         await patient.page.waitForTimeout(1_000);
-        // Click again to toggle back
-        await first.click();
-        await patient.page.waitForTimeout(500);
+        await consentToggle.click();
+        console.log('  G03: PDPA consent toggle exercised');
+      } else {
+        const anySwitch = patient.page.locator('input[type="checkbox"], [role="switch"]').first();
+        if (await anySwitch.isVisible({ timeout: 5_000 }).catch(() => false)) {
+          await anySwitch.click();
+          console.log('  G03: PDPA fallback checkbox toggled');
+        }
       }
       await snap(patient.page, 'G03-privacy-toggles', 'group-G');
-      console.log(`  ✅ G03: Privacy toggles: ${toggleCount}`);
+    });
+
+    await test.step('G03b — Audit log tab visible', async () => {
+      const auditTab = patient.page.locator('button, [role="tab"]').filter({
+        hasText: /Audit|ประวัติ|History/i,
+      }).first();
+      if (await auditTab.isVisible({ timeout: 5_000 }).catch(() => false)) {
+        await auditTab.click();
+        await expect(patient.page.getByTestId('pdpa-audit-log')).toBeVisible({ timeout: 10_000 });
+      }
+      console.log('  G03b: PDPA audit log panel');
     });
 
     console.log('\n  🎉 G1 COMPLETE — PDPA privacy settings\n');

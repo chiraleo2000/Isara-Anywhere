@@ -27,6 +27,7 @@ import DoctorsManagement from './content/DoctorsManagement';
 import MedicalContent from './content/MedicalContent';
 import HealthMeeting from './meetings/HealthMeeting';
 import MeetingRoom from './meetings/MeetingRoom';
+import MeetingResultsPage from './meetings/MeetingResultsPage';
 import AdminDoctorManagement from './admin/AdminDoctorManagement';
 import AdminAppointmentManagement from './admin/AdminAppointmentManagement';
 import AppointmentPoolManagement from './admin/AppointmentPoolManagement';
@@ -176,6 +177,7 @@ const DoctorPortal: React.FC = () => {
         <Route path="health-meeting" element={<HealthMeeting doctor={user} />} />
         <Route path="appointment-pool" element={<AppointmentPoolManagement />} />
         <Route path="meeting/:appointmentId" element={<MeetingRoom />} />
+        <Route path="meeting/:appointmentId/results" element={<MeetingResultsPage />} />
         <Route path="virtual-meeting/:appointmentId" element={<VirtualMeeting />} />
 
         {/* Admin Only Routes */}

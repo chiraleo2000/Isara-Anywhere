@@ -364,7 +364,7 @@ export const Tooltip: React.FC<TooltipProps> = ({ content, children, position = 
 
   return (
     // Tooltip wrapper - hover/focus behavior for showing tooltip content
-    <span // eslint-disable-line jsx-a11y/no-static-element-interactions, jsx-a11y/no-noninteractive-tabindex
+    <span
       className="relative inline-block"
       onMouseEnter={() => setIsVisible(true)}
       onMouseLeave={() => setIsVisible(false)}

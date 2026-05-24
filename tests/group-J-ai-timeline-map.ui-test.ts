@@ -30,6 +30,12 @@ test.describe('Group J — AI Doctor, Timeline, Map & Find Doctors', () => {
     await test.step('J01 — Navigate to AI Doctor', async () => {
       await navPatient(patient.page, '/ai-doctor', 'J01');
       await assertFullHealth(patient.page, 'J01');
+      const bookLink = patient.page.locator('a[href*="appointments"], button').filter({
+        hasText: /นัด|book|appointment/i,
+      }).first();
+      if (await bookLink.isVisible({ timeout: 5_000 }).catch(() => false)) {
+        console.log('  J01: AI triage handoff control visible');
+      }
       await snap(patient.page, 'J01-ai-doctor', 'group-J');
       const body = await patient.page.locator('body').innerText();
       expect(/AI|Doctor|หมอ|chat|ถาม|symptom|อาการ/i.test(body)).toBeTruthy();

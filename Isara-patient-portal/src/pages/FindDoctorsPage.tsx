@@ -6,6 +6,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSettings } from '../contexts/SettingsContext';
+import { normalizeLanguagesList, normalizeRating } from '../utils/healthListNormalize';
 
 const API_BASE = '';
 
@@ -65,18 +66,55 @@ function t(language: string, th: string, en: string): string {
 }
 
 function StarRating({ rating }: Readonly<{ rating: number }>) {
+  const safeRating = normalizeRating(rating, 0);
+  const rounded = Math.round(safeRating);
   return (
     <div className="flex items-center gap-0.5">
       {[1, 2, 3, 4, 5].map((s) => (
         <StarIcon
           key={s}
-          filled={s <= Math.round(rating)}
-          className={`w-4 h-4 ${s <= Math.round(rating) ? 'text-yellow-400' : 'text-gray-300'}`}
+          filled={s <= rounded}
+          className={`w-4 h-4 ${s <= rounded ? 'text-yellow-400' : 'text-gray-300'}`}
         />
       ))}
-      <span className="ml-1 text-sm text-gray-600 dark:text-gray-400">{rating.toFixed(1)}</span>
+      <span className="ml-1 text-sm text-gray-600 dark:text-gray-400">{safeRating.toFixed(1)}</span>
     </div>
   );
+}
+
+function normalizeConsultant(raw: Record<string, unknown>): Consultant {
+  const name =
+    (typeof raw.name === 'string' && raw.name) ||
+    (typeof raw.name_thai === 'string' && raw.name_thai) ||
+    'Unknown';
+  const specialty =
+    (typeof raw.specialty === 'string' && raw.specialty) ||
+    (typeof raw.specialty_thai === 'string' && raw.specialty_thai) ||
+    'General Practice';
+  return {
+    id: String(raw.id ?? ''),
+    name,
+    specialty,
+    hospital:
+      (typeof raw.hospital === 'string' && raw.hospital) ||
+      (typeof raw.hospital_thai === 'string' && raw.hospital_thai) ||
+      '',
+    phone: typeof raw.phone === 'string' ? raw.phone : '',
+    email: typeof raw.email === 'string' ? raw.email : '',
+    avatarUrl:
+      (typeof raw.avatarUrl === 'string' && raw.avatarUrl) ||
+      (typeof raw.avatar_url === 'string' && raw.avatar_url) ||
+      `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=10b981&color=fff&size=80`,
+    rating: normalizeRating(raw.rating, 4.5),
+    available: Boolean(raw.available ?? raw.is_available ?? true),
+    experience: Number(raw.experience ?? raw.experience_years ?? 0) || 0,
+    languages: normalizeLanguagesList(raw.languages),
+    bio: typeof raw.bio === 'string' ? raw.bio : '',
+  };
+}
+
+function safeLower(value: unknown): string {
+  return (typeof value === 'string' ? value : String(value ?? '')).toLowerCase();
 }
 
 // ─── Doctor Profile Modal ───
@@ -144,7 +182,7 @@ function DoctorProfileModal({
 
             <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
               <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t(language, 'ภาษา', 'Languages')}</p>
-              <p className="text-gray-900 dark:text-white">{doctor.languages?.join(', ') || 'Thai'}</p>
+              <p className="text-gray-900 dark:text-white">{normalizeLanguagesList(doctor.languages).join(', ')}</p>
             </div>
 
             {doctor.bio && (
@@ -228,7 +266,7 @@ function DoctorCard({
         </div>
 
         <div className="mt-3 flex flex-wrap gap-1">
-          {(doctor.languages || ['Thai']).slice(0, 3).map((lang) => (
+          {normalizeLanguagesList(doctor.languages).slice(0, 3).map((lang) => (
             <span key={lang} className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded text-xs">
               {lang}
             </span>
@@ -284,13 +322,25 @@ export default function FindDoctorsPage() {
     try {
       setLoading(true);
       setError(null);
-      const token = localStorage.getItem('token') || '';
-      const res = await fetch(`${API_BASE}/api/doctors`, {
-        headers: { Authorization: `Bearer ${token}` }
+      const token =
+        localStorage.getItem('token') ||
+        localStorage.getItem('authToken') ||
+        localStorage.getItem('auth_token') ||
+        '';
+      const res = await fetch(`${API_BASE}/api/consultants`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (!res.ok) throw new Error('Failed to load doctors');
       const data = await res.json();
-      setDoctors(Array.isArray(data) ? data : data.consultants || data.doctors || []);
+      const rawList = Array.isArray(data)
+        ? data
+        : data.consultants || data.doctors || [];
+      setDoctors(
+        (Array.isArray(rawList) ? rawList : [])
+          .filter((row) => row && typeof row === 'object')
+          .map((row) => normalizeConsultant(row as Record<string, unknown>))
+          .filter((c) => c.id && c.name)
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
@@ -306,10 +356,10 @@ export default function FindDoctorsPage() {
     const term = searchTerm.toLowerCase();
     return doctors.filter((d) => {
       const matchSearch = !term
-        || d.name.toLowerCase().includes(term)
-        || d.specialty.toLowerCase().includes(term)
-        || (d.hospital || '').toLowerCase().includes(term)
-        || (d.bio || '').toLowerCase().includes(term);
+        || safeLower(d.name).includes(term)
+        || safeLower(d.specialty).includes(term)
+        || safeLower(d.hospital).includes(term)
+        || safeLower(d.bio).includes(term);
       const matchSpecialty = !selectedSpecialty || d.specialty === selectedSpecialty;
       const matchAvail = !showAvailableOnly || d.available;
       return matchSearch && matchSpecialty && matchAvail;

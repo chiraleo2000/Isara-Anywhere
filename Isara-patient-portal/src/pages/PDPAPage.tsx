@@ -208,6 +208,7 @@ function ConsentsTab({ consents, saving, handleToggleConsent, labels, language, 
                 )}
               </div>
               <button
+                data-testid={`pdpa-consent-toggle-${consent.id}`}
                 onClick={() => handleToggleConsent(consent.id, !consent.granted)}
                 disabled={consent.required || saving === consent.id}
                 className={`relative w-14 h-7 rounded-full transition-colors ${consent.granted ? 'bg-emerald-500' : cls.toggleOff
@@ -546,7 +547,7 @@ interface AuditTabProps {
 
 function AuditTab({ auditLog, labels, language, cls, formatDate }: Readonly<AuditTabProps>) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" data-testid="pdpa-audit-log">
       <div className={`rounded-2xl border overflow-hidden ${cls.cardBg}`}>
         {auditLog.length === 0 ? (
           <div className="p-8 text-center">

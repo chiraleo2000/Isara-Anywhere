@@ -5,6 +5,17 @@ import { GoogleOAuthProvider } from '@react-oauth/google';
 import './index.css';
 import App from './App';
 
+if (typeof globalThis !== 'undefined') {
+  globalThis.addEventListener('unhandledrejection', (event) => {
+    const reason = event.reason as Error | undefined;
+    const msg = reason?.message || String(event.reason ?? '');
+    if (/abort|cancelled|network|fetch failed|socket/i.test(msg)) {
+      event.preventDefault();
+      if (import.meta.env?.DEV) console.debug('[unhandledrejection]', msg);
+    }
+  });
+}
+
 const rootElement = document.getElementById('root');
 if (!rootElement) {
   throw new Error("Could not find root element to mount to");

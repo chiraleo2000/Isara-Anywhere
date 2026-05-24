@@ -3,9 +3,9 @@
 # PostgreSQL runs on GCE VM (NOT Cloud SQL, NOT embedded PG)
 
 substitutions:
-  _TAG: v1.7.5-login-hotfix
+  _TAG: v1.7.18
   _GOOGLE_CLIENT_ID: "724889190329-svf2733fjqklfic9tet9d2qkmhkgmu0l.apps.googleusercontent.com"
-  _MEETING_SERVER_URL: "https://izara-meeting-server-dev-testing-hvht4obouq-as.a.run.app"
+  _MEETING_SERVER_URL: "https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app"
 
 steps:
   # Build the unified Docker image
@@ -29,7 +29,6 @@ steps:
       - "--build-arg"
       - "VITE_MEETING_SERVER_URL=${_MEETING_SERVER_URL}"
       - "."
-    dir: "Isara-patient-portal"
 
   # Push image to Artifact Registry
   - name: "gcr.io/cloud-builders/docker"
@@ -55,7 +54,7 @@ steps:
       - "--max-instances=2"
       - "--timeout=300"
       - "--execution-environment=gen2"
-      - "--set-env-vars=NODE_ENV=production,USE_POSTGRESQL=true,VITE_USE_POSTGRESQL=true,DB_HOST=35.240.157.230,DB_PORT=5432,DB_NAME=izara_phase1,DB_USER=postgres,DB_SSL=false,MEETING_SERVER_URL=${_MEETING_SERVER_URL},VITE_MEETING_SERVER_URL=${_MEETING_SERVER_URL},GEMINI_MODEL=gemini-2.5-flash-lite,VITE_GCP_PROJECT_ID=$PROJECT_ID,VITE_GCP_REGION=asia-southeast1"
+      - "--set-env-vars=NODE_ENV=production,USE_POSTGRESQL=true,VITE_USE_POSTGRESQL=true,DB_HOST=35.240.157.230,DB_PORT=5432,DB_NAME=izara_phase1,DB_USER=postgres,DB_SSL=false,MEETING_SERVER_URL=${_MEETING_SERVER_URL},VITE_MEETING_SERVER_URL=${_MEETING_SERVER_URL},GEMINI_MODEL=gemini-2.5-flash-lite,VITE_GCP_PROJECT_ID=$PROJECT_ID,VITE_GCP_REGION=asia-southeast1,IZARA_DEV_TESTING=1,GOOGLE_TOKEN_VERIFIER_FIXTURE=1"
       - "--set-secrets=VITE_GOOGLE_MAPS_API_KEY=google-maps-api-key:latest,VITE_GEMINI_API_KEY=gemini-api-key:latest,GEMINI_API_KEY=gemini-api-key:latest,DB_PASSWORD=db-password:latest,DATABASE_URL=database-url:latest,JWT_SECRET=jwt-secret:latest,GOOGLE_CLIENT_ID=google-client-id:latest"
 
 # Store images in Artifact Registry

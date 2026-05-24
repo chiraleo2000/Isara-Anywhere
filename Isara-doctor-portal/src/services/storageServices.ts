@@ -5,7 +5,7 @@
  */
 
 import { ChatSession, StorageFile, StorageUploadOptions, Appointment, HealthRecord, Herb, Doctor } from '../types';
-import * as authService from './simpleAuth';
+import * as authService from './authServices';
 import config from './config';
 import {
   fetchAllDoctors,

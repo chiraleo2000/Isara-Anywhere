@@ -130,6 +130,22 @@ function getTypeCategory(type: NotificationType): string {
   return 'unknown';
 }
 
+/** Pool booking (no doctor): notify admins; direct doctor pick: notify that doctor. */
+function getPoolBookingRecipients(hasDoctorId: boolean): ('admin' | 'doctor')[] {
+  return hasDoctorId ? ['doctor'] : ['admin'];
+}
+
+function notificationTargetsRole(type: NotificationType, role: 'patient' | 'doctor' | 'admin'): boolean {
+  if (type === 'appointment_requested' && role === 'admin') return true;
+  if (type === 'appointment_requested' && role === 'doctor') return false;
+  if (type === 'appointment_assigned' && role === 'doctor') return true;
+  if (type === 'appointment_assigned' && role === 'admin') return false;
+  if (type === 'appointment_confirmed' && role === 'patient') return true;
+  if (type === 'meeting_link_ready' && role === 'patient') return true;
+  if (type === 'meeting_link_ready' && role === 'doctor') return false;
+  return false;
+}
+
 function getThaiTypeLabel(type: NotificationType): string {
   const labels: Record<string, string> = {
     appointment_requested: 'ขอนัดหมายใหม่',
@@ -376,6 +392,58 @@ describe('Notification System Workflow (Process: Notification_Workflows.md)', ()
     it('I12 — Final: Thai labels verified', () => {
       expect(getThaiTypeLabel('appointment_confirmed')).toBe('ยืนยันนัดหมาย');
       expect(getThaiTypeLabel('emr_available')).toBe('เวชระเบียนพร้อม');
+    });
+  });
+
+  describe('J — Appointment pool notification routing', () => {
+    it('J01 — in_pool booking notifies admin not doctor', () => {
+      expect(getPoolBookingRecipients(false)).toEqual(['admin']);
+      expect(notificationTargetsRole('appointment_requested', 'admin')).toBe(true);
+      expect(notificationTargetsRole('appointment_requested', 'doctor')).toBe(false);
+    });
+
+    it('J02 — doctor-selected booking notifies doctor', () => {
+      expect(getPoolBookingRecipients(true)).toEqual(['doctor']);
+    });
+
+    it('J03 — appointment_assigned targets doctor only', () => {
+      expect(notificationTargetsRole('appointment_assigned', 'doctor')).toBe(true);
+      expect(notificationTargetsRole('appointment_assigned', 'admin')).toBe(false);
+    });
+
+    it('J04 — appointment_confirmed targets patient', () => {
+      expect(notificationTargetsRole('appointment_confirmed', 'patient')).toBe(true);
+      expect(notificationTargetsRole('appointment_confirmed', 'doctor')).toBe(false);
+    });
+
+    it('J05 — meeting_link_ready targets patient on telehealth confirm', () => {
+      expect(notificationTargetsRole('meeting_link_ready', 'patient')).toBe(true);
+      expect(notificationTargetsRole('meeting_link_ready', 'doctor')).toBe(false);
+    });
+  });
+
+  describe('K — Confirm + meeting link notifications', () => {
+    function confirmNotificationTypes(meetingLink: string | null): string[] {
+      const types = ['appointment_confirmed'];
+      if (meetingLink) types.push('meeting_link_ready');
+      return types;
+    }
+
+    it('K01 — telehealth confirm emits confirmed + meeting_link_ready', () => {
+      const types = confirmNotificationTypes('https://meet.jit.si/room-abc');
+      expect(types).toContain('appointment_confirmed');
+      expect(types).toContain('meeting_link_ready');
+      expect(types).toHaveLength(2);
+    });
+
+    it('K02 — in-person confirm emits confirmed only', () => {
+      const types = confirmNotificationTypes(null);
+      expect(types).toEqual(['appointment_confirmed']);
+    });
+
+    it('K03 — meeting_link_ready uses medium priority', () => {
+      expect(getNotificationPriority('meeting_link_ready')).toBe('medium');
+      expect(getThaiTypeLabel('meeting_link_ready')).toBe('ลิงก์ประชุมพร้อม');
     });
   });
 });

@@ -10,7 +10,7 @@ steps:
       - "-f"
       - "Dockerfile.unified"
       - "-t"
-      - "asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-doctor-portal:v1.6.0"
+      - "asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-doctor-portal:v1.7.16"
       - "-t"
       - "asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-doctor-portal:latest"
       - "--build-arg"
@@ -34,7 +34,7 @@ steps:
       - "run"
       - "deploy"
       - "izara-doctor-portal-dev-testing"
-      - "--image=asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-doctor-portal:v1.6.0"
+      - "--image=asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-doctor-portal:v1.7.16"
       - "--region=asia-southeast1"
       - "--platform=managed"
       - "--allow-unauthenticated"
@@ -46,12 +46,12 @@ steps:
       - "--timeout=300"
       - "--cpu-boost"
       - "--execution-environment=gen2"
-      - "--set-env-vars=NODE_ENV=production,USE_POSTGRESQL=true,VITE_USE_POSTGRESQL=true,DB_HOST=35.240.157.230,DB_PORT=5432,DB_NAME=izara_phase1,DB_USER=postgres,DB_SSL=false,MEETING_SERVER_URL=https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app,VITE_MEETING_SERVER_URL=https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app,JITSI_DOMAIN=meet.jit.si,GEMINI_MODEL=gemini-2.5-flash-lite,VITE_GCP_PROJECT_ID=$PROJECT_ID,VITE_GCP_REGION=asia-southeast1"
+      - "--set-env-vars=NODE_ENV=production,USE_POSTGRESQL=true,VITE_USE_POSTGRESQL=true,DB_HOST=35.240.157.230,DB_PORT=5432,DB_NAME=izara_phase1,DB_USER=postgres,DB_SSL=false,MEETING_SERVER_URL=https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app,VITE_MEETING_SERVER_URL=https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app,JITSI_DOMAIN=meet.jit.si,GEMINI_MODEL=gemini-2.5-flash-lite,VITE_GCP_PROJECT_ID=$PROJECT_ID,VITE_GCP_REGION=asia-southeast1,IZARA_DEV_TESTING=1,GOOGLE_TOKEN_VERIFIER_FIXTURE=1"
       - "--set-secrets=GEMINI_API_KEY=gemini-api-key:latest,VITE_GEMINI_API_KEY=gemini-api-key:latest,DB_PASSWORD=db-password:latest,DATABASE_URL=database-url:latest,JWT_SECRET=jwt-secret:latest"
 
 # Store images in Artifact Registry
 images:
-  - "asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-doctor-portal:v1.6.0"
+  - "asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-doctor-portal:v1.7.16"
   - "asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-doctor-portal:latest"
 
 # Build timeout (20 minutes)

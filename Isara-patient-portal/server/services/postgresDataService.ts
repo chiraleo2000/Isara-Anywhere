@@ -73,7 +73,7 @@ const poolConfig: PoolConfig = {
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: isProduction ? 30000 : 5000, // 30s for Cloud SQL, 5s for local
   host: dbHost,
-  port: dbConfig.port || Number.parseInt(process.env.DB_PORT || '5433', 10),
+  port: dbConfig.port || Number.parseInt(process.env.DB_PORT || '5432', 10),
   ssl: useSSL ? { rejectUnauthorized: false } : false, // SSL only when explicitly enabled
 };
 
@@ -1045,6 +1045,25 @@ export const LivingWillService = {
 // NOTIFICATION SERVICE
 // ============================================================================
 
+function normalizeNotificationRow(row: Record<string, unknown>): Record<string, unknown> {
+  let data = row.data;
+  if (typeof data === 'string') {
+    try {
+      data = JSON.parse(data);
+    } catch {
+      data = {};
+    }
+  }
+  const payload = (data && typeof data === 'object' ? data : {}) as Record<string, unknown>;
+  const appointmentId =
+    payload.appointmentId ?? payload.appointment_id ?? undefined;
+  return {
+    ...row,
+    data: payload,
+    ...(appointmentId ? { appointmentId } : {}),
+  };
+}
+
 export const NotificationService = {
   /**
    * Get user notifications
@@ -1057,7 +1076,9 @@ export const NotificationService = {
     query += ' ORDER BY created_at DESC LIMIT 50';
 
     const result = await pool.query(query, [userId]);
-    return result.rows;
+    return result.rows.map((row) =>
+      normalizeNotificationRow(row as Record<string, unknown>)
+    );
   },
 
   /**
@@ -1795,7 +1816,7 @@ const LabOrderService = {
        FROM lab_orders lo
        LEFT JOIN users u_doc ON lo.doctor_id = u_doc.id
        WHERE lo.patient_id = $1
-       ORDER BY lo.created_at DESC`,
+       ORDER BY COALESCE(lo.ordered_at, lo.ordered_date, lo.created_at) DESC`,
       [patientId]
     );
     return result.rows;

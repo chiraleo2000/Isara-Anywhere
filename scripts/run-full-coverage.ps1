@@ -76,7 +76,8 @@ Write-Host "╚═════════════════════�
 Write-Host ""
 Write-Info "Workers:     $Workers"
 Write-Info "Mode:        $(if ($Sequential) { 'ALL SEQUENTIAL' } else { 'Parallel B,C,G,H,I,J + Sequential D→E→F' })"
-Write-Info "Groups:      $($selectedGroups -join ', ')"
+ Write-Info "Groups:      $($selectedGroups -join ', ')"
+ Write-Info "Browsers:    Patient=Chrome, Doctor=Chrome, Admin=Firefox (parallel fixture)"
 Write-Info "Timeout:     $($Timeout / 1000)s per test"
 Write-Separator
 

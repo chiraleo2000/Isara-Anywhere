@@ -137,7 +137,6 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
       </div>
 
       {/* Drop Zone */}
-      {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
       <div
         onDragEnter={handleDrag}
         onDragLeave={handleDrag}

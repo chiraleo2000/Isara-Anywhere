@@ -8,17 +8,25 @@
  * ═══════════════════════════════════════════════════════════════════════════════
  */
 import { request, FullConfig } from '@playwright/test';
+import { execSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import {
+  assertAuthTokensPresent,
+  waitForPortalServices,
+} from '../helpers/service-readiness';
 
 // ── URLs ────────────────────────────────────────────────────────────────────
 const IS_CLOUD = process.env.TEST_ENV === 'cloud';
 const PATIENT_URL = IS_CLOUD
-  ? (process.env.CLOUD_PATIENT_URL || 'https://izara-patient-portal-dev-testing-hvht4obouq-as.a.run.app')
+  ? (process.env.CLOUD_PATIENT_URL || 'https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app')
   : (process.env.LOCAL_PATIENT_URL || 'http://localhost:3005');
 const DOCTOR_URL = IS_CLOUD
-  ? (process.env.CLOUD_DOCTOR_URL || 'https://izara-doctor-portal-dev-testing-hvht4obouq-as.a.run.app')
+  ? (process.env.CLOUD_DOCTOR_URL || 'https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app')
   : (process.env.LOCAL_DOCTOR_URL || 'http://localhost:3010');
+const MEETING_URL = IS_CLOUD
+  ? (process.env.CLOUD_MEETING_URL || 'https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app')
+  : (process.env.LOCAL_MEETING_URL || 'http://localhost:3020');
 
 // ── Credentials ─────────────────────────────────────────────────────────────
 const USERS = {
@@ -57,35 +65,42 @@ async function apiLogin(ctx: any, baseUrl: string, creds: { email: string; passw
   return '';
 }
 
-// ── SSO test seam: allow fixture-based Google token verification locally ─────
-// This lets Group N tests POST a raw JSON idToken to the backend without
-// needing a real Google sign-in.  NEVER set on production Cloud Run — the
-// backends guard with `process.env.NODE_ENV !== 'production'`.
-if (!IS_CLOUD && !process.env.GOOGLE_TOKEN_VERIFIER_FIXTURE) {
+// ── SSO test seam: fixture JSON idTokens for Group N API tests ───────────────
+// Local: always on. Cloud dev-testing (*-dev-testing Cloud Run): server must
+// expose IZARA_DEV_TESTING=1 + GOOGLE_TOKEN_VERIFIER_FIXTURE=1 (see cloudbuild.yaml).
+if (!process.env.GOOGLE_TOKEN_VERIFIER_FIXTURE) {
   process.env.GOOGLE_TOKEN_VERIFIER_FIXTURE = '1';
-  console.log('  🔑 Set GOOGLE_TOKEN_VERIFIER_FIXTURE=1 for local SSO tests');
+  console.log(`  🔑 GOOGLE_TOKEN_VERIFIER_FIXTURE=1 (${IS_CLOUD ? 'cloud dev-testing' : 'local'})`);
 }
 
-// ── Warmup — wake cold Cloud Run containers before auth ─────────────────────
-async function warmupPortal(ctx: any, url: string, label: string, maxRetries = 10): Promise<void> {
-  for (let i = 1; i <= maxRetries; i++) {
+const PORTAL_SERVICES = [
+  { name: 'Patient Portal', baseUrl: PATIENT_URL },
+  { name: 'Doctor Portal', baseUrl: DOCTOR_URL },
+  { name: 'Meeting Server', baseUrl: MEETING_URL, healthPath: '/health' },
+];
+
+/** Apply idempotent SQL migrations on existing Docker Postgres (init scripts only run once). */
+function ensureLocalDbMigrations(): void {
+  if (IS_CLOUD || process.env.E2E_SKIP_DB_MIGRATE === '1') return;
+  const migrationDir = path.join(__dirname, '../../scripts/database/migrations');
+  const files = [
+    '2025-add-google-sub.sql',
+    '2025-ensure-appointment-columns.sql',
+  ];
+  for (const file of files) {
+    const migrationPath = path.join(migrationDir, file);
+    if (!fs.existsSync(migrationPath)) continue;
     try {
-      const res = await ctx.get(`${url}/api/health`, { timeout: 15_000 });
-      if (res.status() === 200) {
-        console.log(`   ✅ ${label} warm (attempt ${i})`);
-        return;
-      }
-      console.log(`   ⏳ ${label} returned ${res.status()} (attempt ${i}/${maxRetries})`);
-    } catch (err: any) {
-      console.log(`   ⏳ ${label} not ready (attempt ${i}/${maxRetries}): ${err?.message?.slice(0, 80) || 'timeout'}`);
+      execSync('docker exec -i izara-postgres psql -U postgres -d izara_phase1 -v ON_ERROR_STOP=1', {
+        input: fs.readFileSync(migrationPath),
+        stdio: ['pipe', 'pipe', 'pipe'],
+        timeout: 15_000,
+      });
+      console.log(`  ✅ DB migration: ${file}`);
+    } catch (err) {
+      console.warn(`  ⚠️  DB migration skipped (${file}):`, (err as Error).message?.slice(0, 120));
     }
-    // Wait before retry — escalating backoff
-    let delay = 8_000;
-    if (i <= 2) delay = 3_000;
-    else if (i <= 4) delay = 5_000;
-    await new Promise(r => setTimeout(r, delay));
   }
-  console.warn(`   ⚠️  ${label} did not respond after ${maxRetries} attempts — proceeding anyway`);
 }
 
 // ── Main ────────────────────────────────────────────────────────────────────
@@ -96,13 +111,16 @@ async function globalSetup(_config: FullConfig) {
   const ctx = await request.newContext();
 
   try {
-    // ── Warmup: wake containers before attempting login ────────────
-    if (IS_CLOUD) {
-      console.log('  ☁️ Cloud mode — warming up containers...');
-      await warmupPortal(ctx, PATIENT_URL, 'Patient Portal');
-      await warmupPortal(ctx, DOCTOR_URL, 'Doctor Portal');
-      console.log('  ✅ Warmup complete — proceeding to authentication\n');
-    }
+    console.log('  ⏳ Waiting for portal services (health probes)...');
+    const maxAttempts = IS_CLOUD ? 20 : 15;
+    const { ready, failed } = await waitForPortalServices(ctx, PORTAL_SERVICES, {
+      maxAttempts,
+      strict: process.env.E2E_SKIP_HEALTH_GATE !== '1',
+    });
+    console.log(`  ✅ Ready: ${ready.join(', ') || 'none'}`);
+    if (failed.length) console.warn(`  ⚠️  Not ready: ${failed.join(', ')}`);
+
+    ensureLocalDbMigrations();
 
     // All 5 logins in parallel — FAST
     const [p1, p2, p3, doc, adm] = await Promise.all([
@@ -177,6 +195,9 @@ async function globalSetup(_config: FullConfig) {
         JSON.stringify(storageState, null, 2),
       );
     }
+
+    const tokens = { patient1: p1, patient2: p2, patient3: p3, doctor: doc, admin: adm };
+    assertAuthTokensPresent(tokens, ['patient1', 'doctor', 'admin']);
 
     const ok = (t: string) => t ? '✅' : '❌';
     console.log(`   ${ok(p1)} patient1 | ${ok(p2)} patient2 | ${ok(p3)} patient3 | ${ok(doc)} doctor | ${ok(adm)} admin`);

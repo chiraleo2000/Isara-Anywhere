@@ -19,6 +19,9 @@ import { Router, Request, Response } from 'express';
 import { BUCKETS as GCS_BUCKETS, readJSON, writeJSON } from '../utils/localStore';
 import { authMiddleware } from '../middleware/auth';
 import { errMsg } from '../utils';
+import postgresDataService from '../services/postgresDataService';
+
+const { pool: pgPool } = postgresDataService;
 
 const router = Router();
 
@@ -182,37 +185,19 @@ function isWithinMeetingWindow(appointmentDate: string, appointmentTime: string,
 
 router.get('/', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const { status, specialty, urgency } = req.query;
-    
-    let poolItems = await readJSON(GCS_BUCKETS.APPOINTMENTS, 'appointment-pool/pool.json') || [];
-
-    // Filter by status
-    if (status) {
-      poolItems = poolItems.filter((item: AppointmentPoolItem) => item.poolStatus === status);
-    }
-
-    // Filter by specialty
-    if (specialty) {
-      poolItems = poolItems.filter((item: AppointmentPoolItem) => 
-        item.matchedSpecialties.includes(specialty as string) || item.requiredSpecialty === specialty
-      );
-    }
-
-    // Filter by urgency
+    const { urgency } = req.query;
+    let query = `SELECT a.*, u.name as patient_name, u.email as patient_email
+      FROM appointments a
+      LEFT JOIN users u ON a.patient_id = u.id
+      WHERE a.status IN ('in_pool', 'pending', 'awaiting_doctor_response')`;
+    const params: string[] = [];
     if (urgency) {
-      poolItems = poolItems.filter((item: AppointmentPoolItem) => item.urgency === urgency);
+      query += ` AND a.urgency_level = $1`;
+      params.push(String(urgency));
     }
-
-    // Sort by urgency and creation date
-    poolItems.sort((a: AppointmentPoolItem, b: AppointmentPoolItem) => {
-      const urgencyOrder = { emergency: 0, urgent: 1, normal: 2 };
-      if (urgencyOrder[a.urgency] !== urgencyOrder[b.urgency]) {
-        return urgencyOrder[a.urgency] - urgencyOrder[b.urgency];
-      }
-      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-    });
-
-    res.json(poolItems);
+    query += ` ORDER BY a.created_at ASC`;
+    const result = await pgPool.query(query, params);
+    res.json(result.rows);
   } catch (error: unknown) {
     console.error('Get pool error:', error);
     res.status(500).json({ error: errMsg(error) });
@@ -220,84 +205,19 @@ router.get('/', authMiddleware, async (req: Request, res: Response) => {
 });
 
 /**
- * Add appointment to pool
+ * Deprecated: pool rows are created via POST /api/appointments (status in_pool).
  */
 router.post('/', authMiddleware, async (req: Request, res: Response) => {
-  try {
-    const {
-      appointmentId,
-      patientId,
-      patientName,
-      patientEmail,
-      originalDoctorId,
-      originalDoctorName,
-      requiredSpecialty,
-      symptoms,
-      symptomDescription,
-      urgency,
-      preferredDates,
-      preferredTimeSlot,
-      appointmentType,
-      poolReason,
-      originalAppointmentDate,
-      originalAppointmentTime
-    } = req.body;
-
-    const now = new Date();
-    const poolId = `pool_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
-
-    // Match symptoms to specialties
-    const matchedSpecialties = matchSymptomsToSpecialties(
-      symptoms || [],
-      symptomDescription || requiredSpecialty || ''
-    );
-
-    const poolItem: AppointmentPoolItem = {
-      id: poolId,
-      appointmentId,
-      patientId,
-      patientName,
-      patientEmail,
-      originalDoctorId,
-      originalDoctorName,
-      requiredSpecialty: requiredSpecialty || matchedSpecialties[0],
-      matchedSpecialties,
-      symptoms: symptoms || [],
-      symptomDescription,
-      urgency: urgency || 'normal',
-      preferredDates: preferredDates || [],
-      preferredTimeSlot: preferredTimeSlot || 'morning',
-      appointmentType: appointmentType || 'telehealth',
-      poolReason: poolReason || 'no_doctor_selected',
-      poolStatus: 'pending',
-      adminApprovalRequired: poolReason === 'meeting_missed' || poolReason === 'rescheduled',
-      missedCount: poolReason === 'meeting_missed' ? 1 : 0,
-      maxMissedAttempts: DEFAULT_MEETING_RULES.maxMissedAttempts,
-      originalAppointmentDate,
-      originalAppointmentTime,
-      createdAt: now.toISOString(),
-      updatedAt: now.toISOString()
-    };
-
-    // Read existing pool
-    let pool = await readJSON(GCS_BUCKETS.APPOINTMENTS, 'appointment-pool/pool.json') || [];
-    pool.push(poolItem);
-
-    // Write updated pool
-    await writeJSON(GCS_BUCKETS.APPOINTMENTS, 'appointment-pool/pool.json', pool);
-
-    // Also save individual pool item
-    await writeJSON(GCS_BUCKETS.APPOINTMENTS, `appointment-pool/items/${poolId}.json`, poolItem);
-
-    res.json({
+  const { appointmentId } = req.body;
+  if (appointmentId) {
+    return res.json({
       success: true,
-      poolItem,
-      message: 'Appointment added to pool successfully'
+      deprecated: true,
+      message: 'Pool is stored in PostgreSQL appointments table; use POST /api/appointments',
+      appointmentId,
     });
-  } catch (error: unknown) {
-    console.error('Add to pool error:', error);
-    res.status(500).json({ error: errMsg(error) });
   }
+  res.status(400).json({ error: 'appointmentId required; create appointment via POST /api/appointments first' });
 });
 
 /**

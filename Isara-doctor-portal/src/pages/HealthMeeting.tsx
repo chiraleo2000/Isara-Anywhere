@@ -231,7 +231,7 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
       try {
         const { io } = await import('socket.io-client');
         const backendUrl = (import.meta as any).env?.VITE_API_URL || globalThis.location?.origin || '';
-        socket = io(backendUrl, { transports: ['websocket', 'polling'], reconnectionDelay: 3000 });
+        socket = io(backendUrl, { path: '/ws', transports: ['websocket', 'polling'], reconnectionDelay: 3000 });
 
         socket.on('connect', () => {
           console.log('[HealthMeeting] 🔌 Socket.IO connected, joining rooms...');
@@ -245,18 +245,24 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
           console.log('[HealthMeeting] 📩 pool-updated received — reloading queue');
           loadAllData();
         });
+        // 'appointment:created' is what the doctor-portal backend/pgNotifyListener emits
+        socket.on('appointment:created', () => {
+          console.log('[HealthMeeting] 📩 appointment:created received — reloading queue');
+          loadAllData();
+        });
+        // Keep legacy hyphen-style for any other emitter
         socket.on('appointment-created', () => {
           console.log('[HealthMeeting] 📩 appointment-created received — reloading queue');
           loadAllData();
         });
-        // Doctor receives update (e.g. patient cancelled)
-        socket.on('APPOINTMENT_UPDATED', () => {
-          console.log('[HealthMeeting] 📩 APPOINTMENT_UPDATED received — reloading data');
+        // Doctor receives update (e.g. patient cancelled, new assignment)
+        socket.on('appointment:updated', () => {
+          console.log('[HealthMeeting] 📩 appointment:updated received — reloading data');
           loadAllData();
         });
-        socket.on('DATA_CHANGED', (payload: any) => {
+        socket.on('data:changed', (payload: any) => {
           if (payload?.table === 'appointments') {
-            console.log('[HealthMeeting] 📩 DATA_CHANGED appointments — reloading data');
+            console.log('[HealthMeeting] 📩 data:changed appointments — reloading data');
             loadAllData();
           }
         });
@@ -269,7 +275,7 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
     return () => {
       if (socket) socket.disconnect();
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   const loadAllData = async () => {
     setLoading(true);
@@ -787,7 +793,7 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
 
       // Security settings
       'config.enableInsecureRoomNameWarning': 'false',
-      'config.requireDisplayName': 'true',
+      'config.requireDisplayName': 'false',
 
       // LOBBY FEATURE - Doctor must approve participants (HOST CONTROL)
       'config.enableLobby': 'true',
@@ -795,7 +801,8 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
 
       // Recording (local recording enabled)
       'config.fileRecordingsEnabled': 'true',
-      'config.localRecording.enabled': 'true',
+      'config.localRecording.enabled': 'false',
+      'config.disableAnalytics': 'true',
       'config.liveStreamingEnabled': 'false',
 
       // Disable Jitsi transcription - we use Gemini AI instead
@@ -820,7 +827,7 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
     // DOCTOR URL - Automatically becomes moderator/host
     // First person to join with this URL becomes the host
     const doctorConfig = new URLSearchParams(baseConfig);
-    doctorConfig.set('userInfo.displayName', doctor.name || 'Doctor');
+    doctorConfig.set('userInfo.displayName', doctor.displayName || doctor.name || 'Doctor');
     if (doctor.email) {
       doctorConfig.set('userInfo.email', doctor.email);
     }
@@ -835,7 +842,8 @@ const HealthMeeting: React.FC<HealthMeetingProps> = ({ doctor }) => {
 
     // GUEST URL - For family members or other consultants (lobby applies)
     const guestConfig = new URLSearchParams(baseConfig);
-    guestConfig.set('config.requireDisplayName', 'true');
+    guestConfig.set('config.requireDisplayName', 'false');
+    guestConfig.set('userInfo.displayName', 'Guest');
     const guestUrl = `https://${JITSI_DOMAIN}/${roomName}#${guestConfig.toString()}`;
 
     // Primary meeting link (generic - doctor should use doctorUrl)
@@ -1603,10 +1611,10 @@ Izara Telehealth Team
                       >
                         🎥 Start Meeting (In-App)
                       </button>
-                      {/* Open in External Tab */}
-                      {meeting.doctorMeetingUrl && (
+                      {/* Open in External Tab — use doctorMeetingUrl (host link) or fall back to generic meetingLink */}
+                      {(meeting.doctorMeetingUrl || meeting.meetingLink) && (
                         <button
-                          onClick={() => window.open(meeting.doctorMeetingUrl, '_blank')}
+                          onClick={() => window.open(meeting.doctorMeetingUrl || meeting.meetingLink, '_blank')}
                           className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-colors flex items-center gap-1"
                         >
                           🔗 Open Jitsi (New Tab)

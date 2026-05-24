@@ -17,7 +17,8 @@ param(
     [switch]$UnitOnly,
     [switch]$E2EOnly,
     [switch]$SkipGate,
-    [switch]$WithCoverage
+    [switch]$WithCoverage,
+    [switch]$Cloud
 )
 
 $ErrorActionPreference = 'Stop'
@@ -69,25 +70,34 @@ if (-not $UnitOnly) {
 
     Write-Step "PHASE 2: PLAYWRIGHT E2E TESTS (Non-Headless, Parallel)"
 
-    # Check if services are running
-    $services = @(
-        @{ Name = "Patient Portal"; Url = "http://localhost:3005" },
-        @{ Name = "Doctor Portal";  Url = "http://localhost:3010" },
-        @{ Name = "Meeting Server"; Url = "http://localhost:3020" }
-    )
-
-    foreach ($svc in $services) {
-        try {
-            $r = Invoke-WebRequest -Uri $svc.Url -TimeoutSec 5 -UseBasicParsing -ErrorAction SilentlyContinue
-            Write-Pass "$($svc.Name) is running ($($svc.Url))"
-        } catch {
-            Write-Warn "$($svc.Name) NOT reachable at $($svc.Url)"
+    if ($Cloud) {
+        $env:TEST_ENV = "cloud"
+        $env:CLOUD_PATIENT_URL = "https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app"
+        $env:CLOUD_DOCTOR_URL = "https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app"
+        $env:CLOUD_MEETING_URL = "https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app"
+        node scripts/cloud-smoke.mjs
+        if ($LASTEXITCODE -ne 0) { Write-Fail "Cloud smoke failed"; exit 1 }
+        Write-Pass "Cloud smoke passed"
+    } else {
+        $services = @(
+            @{ Name = "Patient Portal"; Url = "http://localhost:3005" },
+            @{ Name = "Doctor Portal";  Url = "http://localhost:3010" },
+            @{ Name = "Meeting Server"; Url = "http://localhost:3020" }
+        )
+        foreach ($svc in $services) {
+            try {
+                Invoke-WebRequest -Uri $svc.Url -TimeoutSec 5 -UseBasicParsing -ErrorAction SilentlyContinue | Out-Null
+                Write-Pass "$($svc.Name) is running ($($svc.Url))"
+            } catch {
+                Write-Warn "$($svc.Name) NOT reachable at $($svc.Url)"
+            }
         }
     }
 
-    Write-Host "  Running: npx playwright test --workers=3"
+    $pwCmd = if ($Cloud) { "npx playwright test --workers=1" } else { "npx playwright test --workers=3" }
+    Write-Host "  Running: $pwCmd"
     try {
-        npx playwright test --workers=3
+        Invoke-Expression $pwCmd
         if ($LASTEXITCODE -eq 0) {
             Write-Pass "All E2E tests passed"
             $e2ePassed = $true

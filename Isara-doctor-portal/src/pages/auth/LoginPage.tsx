@@ -464,6 +464,7 @@ const LoginPage: React.FC = () => {
                   </label>
                   <input
                     id="login-email"
+                    data-testid="login-email"
                     type="email"
                     required
                     value={formData.email}
@@ -556,6 +557,7 @@ const LoginPage: React.FC = () => {
                     <div className="relative">
                       <input
                         id="login-password"
+                        data-testid="login-password"
                         type={showPassword ? 'text' : 'password'}
                         required
                         value={formData.password}
@@ -642,6 +644,7 @@ const LoginPage: React.FC = () => {
                 {/* SUBMIT BUTTON */}
                 <button
                   type="submit"
+                  data-testid="login-submit"
                   disabled={isSubmitting}
                   className="w-full py-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 disabled:from-gray-400 disabled:to-gray-400 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all transform hover:scale-105 disabled:transform-none disabled:cursor-not-allowed"
                 >

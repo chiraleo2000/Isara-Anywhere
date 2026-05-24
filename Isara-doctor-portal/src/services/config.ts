@@ -8,7 +8,7 @@ function getDefaultWebSocketUrl(): string {
     const protocol = globalThis.location.protocol === 'https:' ? 'wss:' : 'ws:';
     return `${protocol}//${globalThis.location.host}/ws`;
   }
-  return 'ws://localhost:3011/ws';
+  return 'ws://localhost:3009/ws';
 }
 
 export const config = {

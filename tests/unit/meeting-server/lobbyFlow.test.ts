@@ -74,6 +74,28 @@ function validateJoinPermission(
   return { allowed: true };
 }
 
+/** Teams-style: guests/patients wait until HOST admits (no doctor in admitted set). */
+function hostPresentInLobby(participants: LobbyParticipant[]): boolean {
+  return participants.some(p => (p.role === 'doctor' || p.role === 'admin') && p.status === 'admitted');
+}
+
+function admitAllWaiting(participants: LobbyParticipant[], decidedBy: string): LobbyParticipant[] {
+  return participants.map(p =>
+    p.status === 'waiting'
+      ? { ...p, status: 'admitted' as const }
+      : p,
+  );
+}
+
+function countWaitingByRole(participants: LobbyParticipant[], role: LobbyParticipant['role']): number {
+  return participants.filter(p => p.status === 'waiting' && p.role === role).length;
+}
+
+/** Resolve lobby map key: appointmentId preferred over meetingUUID (mirrors meeting-server). */
+function resolveLobbyKey(meetingId: string, appointmentId: string | null): string {
+  return appointmentId || meetingId;
+}
+
 // --- Test Data ---
 const DEFAULT_CONFIG: MeetingConfig = {
   lobbyEnabled: true,
@@ -172,5 +194,81 @@ describe('Lobby — Join Permission', () => {
 
   it('LB16 — host can join even before active', () => {
     expect(validateJoinPermission('doctor', true, 'created').allowed).toBe(true);
+  });
+});
+
+describe('Lobby — HOST absent & multi-guest (Teams-style)', () => {
+  it('LB17 — no host in lobby until doctor admitted', () => {
+    const guestsOnly: LobbyParticipant[] = [
+      { id: 'g1', name: 'Guest 1', role: 'guest', joinedAt: '', status: 'waiting' },
+      { id: 'g2', name: 'Guest 2', role: 'guest', joinedAt: '', status: 'waiting' },
+      { id: 'p1', name: 'Patient', role: 'patient', joinedAt: '', status: 'waiting' },
+    ];
+    expect(hostPresentInLobby(guestsOnly)).toBe(false);
+    expect(getWaitingParticipants(guestsOnly)).toHaveLength(3);
+  });
+
+  it('LB18 — admit-all admits every waiting participant', () => {
+    const mixed: LobbyParticipant[] = [
+      { id: 'g1', name: 'G1', role: 'guest', joinedAt: '', status: 'waiting' },
+      { id: 'g2', name: 'G2', role: 'guest', joinedAt: '', status: 'waiting' },
+      { id: 'p1', name: 'P', role: 'patient', joinedAt: '', status: 'waiting' },
+    ];
+    const after = admitAllWaiting(mixed, 'DOC-001');
+    expect(getWaitingParticipants(after)).toHaveLength(0);
+    expect(getAdmittedCount(after)).toBe(3);
+  });
+
+  it('LB19 — two guests waiting simultaneously', () => {
+    const lobby: LobbyParticipant[] = [
+      { id: 'g1', name: 'Guest A', role: 'guest', joinedAt: '', status: 'waiting' },
+      { id: 'g2', name: 'Guest B', role: 'guest', joinedAt: '', status: 'waiting' },
+    ];
+    expect(countWaitingByRole(lobby, 'guest')).toBe(2);
+    expect(countWaitingByRole(lobby, 'patient')).toBe(0);
+  });
+
+  it('LB20 — guest before host: patient stays waiting when only guests admitted', () => {
+    const partial: LobbyParticipant[] = [
+      { id: 'g1', name: 'G1', role: 'guest', joinedAt: '', status: 'admitted' },
+      { id: 'p1', name: 'P', role: 'patient', joinedAt: '', status: 'waiting' },
+    ];
+    expect(hostPresentInLobby(partial)).toBe(false);
+    expect(getWaitingParticipants(partial)).toHaveLength(1);
+  });
+
+  it('LB21 — resolveLobbyKey prefers appointmentId', () => {
+    expect(resolveLobbyKey('uuid-meeting', 'APT-001')).toBe('APT-001');
+    expect(resolveLobbyKey('uuid-meeting', null)).toBe('uuid-meeting');
+  });
+
+  it('LB22 — reject removes participant from waiting list', () => {
+    const lobby: LobbyParticipant[] = [
+      { id: 'g1', name: 'G1', role: 'guest', joinedAt: '', status: 'waiting' },
+      { id: 'g2', name: 'G2', role: 'guest', joinedAt: '', status: 'waiting' },
+    ];
+    const rejected = processLobbyDecision(lobby[1], { participantId: 'g2', action: 'reject', decidedBy: 'doc' });
+    const updated = lobby.map(p => (p.id === 'g2' ? rejected : p));
+    expect(getWaitingParticipants(updated)).toHaveLength(1);
+    expect(updated.find(p => p.id === 'g2')?.status).toBe('rejected');
+  });
+
+  it('LB23 — admit-one leaves other guests waiting', () => {
+    const lobby: LobbyParticipant[] = [
+      { id: 'g1', name: 'G1', role: 'guest', joinedAt: '', status: 'waiting' },
+      { id: 'g2', name: 'G2', role: 'guest', joinedAt: '', status: 'waiting' },
+    ];
+    const admitted = processLobbyDecision(lobby[0], { participantId: 'g1', action: 'admit', decidedBy: 'doc' });
+    const updated = lobby.map(p => (p.id === 'g1' ? admitted : p));
+    expect(getAdmittedCount(updated)).toBe(1);
+    expect(getWaitingParticipants(updated)).toHaveLength(1);
+    expect(getWaitingParticipants(updated)[0].id).toBe('g2');
+  });
+
+  it('LB24 — doctor role auto-admitted; guest never', () => {
+    const doc: LobbyParticipant = { id: 'd1', name: 'Doc', role: 'doctor', joinedAt: '', status: 'waiting' };
+    const guest: LobbyParticipant = { id: 'g1', name: 'G', role: 'guest', joinedAt: '', status: 'waiting' };
+    expect(shouldAutoAdmit(doc, DEFAULT_CONFIG)).toBe(true);
+    expect(shouldAutoAdmit(guest, DEFAULT_CONFIG)).toBe(false);
   });
 });

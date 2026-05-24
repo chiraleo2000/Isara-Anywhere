@@ -28,11 +28,14 @@ import path from 'node:path';
 
 // ── File lists per logical group ────────────────────────────────────────
 const GROUP_AUTH = [
+  'doctor-portal/authServer.http.test.ts',
   'doctor-portal/authServer.test.ts',
   'doctor-portal/config.test.ts',
   'patient-portal/authRoute.test.ts',
   'patient-portal/authMiddleware.test.ts',
   'patient-portal/auth-context.test.ts',
+  'patient-portal/registerRoute.test.ts',
+  'patient-portal/resetPasswordRoute.test.ts',
 ];
 const GROUP_APPOINTMENTS = [
   'doctor-portal/appointmentService.test.ts',
@@ -42,8 +45,16 @@ const GROUP_APPOINTMENTS = [
   'patient-portal/appointmentWorkflow.test.ts',
   'patient-portal/bookAppointment.test.ts',
   'patient-portal/appointmentDetail.test.ts',
+  'patient-portal/appointmentTypeFix.test.ts',   // regression tests for case-normalisation fix
+  'patient-portal/appointmentSlotLock.test.ts',
+  'patient-portal/appointmentsRollback.test.ts',
+  'patient-portal/guestMeetingJoin.test.ts',
+  'doctor-portal/appointmentPoolManagement.test.ts',
 ];
 const GROUP_CLINICAL = [
+  'doctor-portal/emrAutosave.test.ts',
+  'doctor-portal/prescribingAllergy.test.ts',
+  'doctor-portal/queueSocket.test.ts',
   'doctor-portal/emrService.test.ts',
   'doctor-portal/emr-clinical.test.ts',
   'doctor-portal/healthRecordsEmrWorkflow.test.ts',
@@ -56,6 +67,7 @@ const GROUP_CLINICAL = [
   'patient-portal/livingWillWorkflow.test.ts',
   'patient-portal/pdpaRoute.test.ts',
   'patient-portal/pdpaWorkflow.test.ts',
+  'patient-portal/pdpaAudit.integration.test.ts',
 ];
 const GROUP_CONTENT = [
   'doctor-portal/medicalContentWorkflow.test.ts',
@@ -70,13 +82,22 @@ const GROUP_MEETING = [
   'meeting-server/aiSummary.test.ts',
   'meeting-server/meeting-ai-features.test.ts',
   'meeting-server/lobbyFlow.test.ts',
+  'meeting-server/lobbyKeyResolve.test.ts',
   'meeting-server/transcriptionFlow.test.ts',
+  'meeting-server/joinConfigAcceptance.test.ts',
+  'meeting-server/meetingCreateAcceptance.test.ts',
+  'meeting-server/hostReadyGate.test.ts',
+  'meeting-server/meetingRuntimeApi.test.ts',
+  'meeting-server/jibriWebhook.test.ts',
   'doctor-portal/meetingTimeService.test.ts',
+  'doctor-portal/virtualMeetingWorkflow.test.ts',
   'patient-portal/videoMeetingRoute.test.ts',
+  'cross-portal/jitsiMeetingConfig.test.ts',
 ];
 const GROUP_AI = [
   'doctor-portal/geminiService.test.ts',
   'patient-portal/aiRoute.test.ts',
+  'patient-portal/aiTriage.test.ts',
 ];
 const GROUP_API = [
   'doctor-portal/apiEndpoints.test.ts',
@@ -108,6 +129,7 @@ const GROUP_PATIENT_WORKFLOWS = [
   'patient-portal/mapPage.test.ts',
 ];
 const GROUP_DATABASE = [
+  'database/appointmentTx.integration.test.ts',
   'database/data-validation.test.ts',
   'database/embeddedPg.test.ts',
   'database/schema-validation.test.ts',
@@ -121,12 +143,17 @@ const GROUP_ADMIN = [
   'doctor-portal/adminAppointmentManagement.test.ts',
 ];
 const GROUP_CROSS_PORTAL = [
+  'cross-portal/syncQueue.integration.test.ts',
+  'cross-portal/offlineEmrSync.test.ts',
+  'cross-portal/workflowContract.test.ts',
   'cross-portal/dataSyncValidation.test.ts',
   'cross-portal/jwtCrossService.test.ts',
   'cross-portal/multiPortalHelpers.test.ts',
   'cross-portal/globalSetupLogic.test.ts',
   'cross-portal/fixtureReliability.test.ts',
   'cross-portal/authStateValidation.test.ts',
+  'cross-portal/browserMatrix.test.ts',
+  'cross-portal/serviceReadiness.test.ts',
 ];
 
 // Build include list from TEST_GROUP env var (or run all)

@@ -397,6 +397,25 @@ if (!USE_GCS) {
   });
 }
 
+/** When GCS object is missing, serve canonical lists from PostgreSQL (cloud dev-testing). */
+async function readStoragePostgresFallback(filePath) {
+  try {
+    const pg = require('./services/postgresDataService.cjs');
+    if (filePath === 'patients.json') {
+      return await pg.PatientService.getAllPatients();
+    }
+    if (filePath === 'doctors.json' || filePath === 'doctors/index.json') {
+      return await pg.AuthService.getAllDoctors();
+    }
+    if (filePath === 'appointments.json' || filePath === 'appointments/appointments.json') {
+      return await pg.AppointmentService.getAllAppointments();
+    }
+  } catch (err) {
+    console.warn(`PostgreSQL storage fallback for ${filePath}:`, err.message);
+  }
+  return null;
+}
+
 // GCS-enabled storage endpoints (only registered when USE_GCS=true)
 if (USE_GCS) {
 // Read JSON from GCS
@@ -415,6 +434,11 @@ app.get('/api/storage/read', authenticateToken, async (req, res) => {
 
     const [exists] = await file.exists();
     if (!exists) {
+      const pgData = await readStoragePostgresFallback(filePath);
+      if (pgData !== null) {
+        console.log(`\u2705 Read (PG fallback): ${bucketName}/${filePath}`);
+        return res.json(pgData);
+      }
       return res.status(404).json({ error: 'File not found' });
     }
 

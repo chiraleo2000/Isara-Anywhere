@@ -1,7 +1,7 @@
 {
   "name": "izara-doctor-portal",
   "private": true,
-  "version": "1.7.3",
+  "version": "1.7.33",
   "description": "Izara Telemedicine Doctor Portal - AI-assisted clinical workflows, EMR/EHR management, and video consultations",
   "type": "module",
   "scripts": {
@@ -42,7 +42,6 @@
     "bucket": "ultra-mason-473703-h8_uploads"
   },
   "dependencies": {
-    "@faker-js/faker": "^9.3.0",
     "@google/generative-ai": "^0.21.0",
     "@headlessui/react": "^1.7.17",
     "@react-oauth/google": "^0.13.5",
@@ -68,6 +67,7 @@
     "socket.io-client": "^4.7.2"
   },
   "devDependencies": {
+    "@faker-js/faker": "^9.3.0",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
@@ -84,8 +84,10 @@
     "chromedriver": "^143.0.0",
     "concurrently": "^8.2.2",
     "eslint": "^8.55.0",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.5",
+    "eslint-plugin-sonarjs": "^4.0.3",
     "jsdom": "^28.1.0",
     "postcss": "^8.4.32",
     "selenium-webdriver": "^4.39.0",

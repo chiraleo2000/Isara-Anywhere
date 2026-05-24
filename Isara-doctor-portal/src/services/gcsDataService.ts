@@ -13,9 +13,22 @@
  */
 
 import { GcsBucketType } from './config';
+import { getToken } from './authServices';
 
 // GCS API Server URL (proxied by Vite in development)
 const GCS_API_BASE = '/api/storage';
+
+function storageRequestHeaders(contentType = 'application/json'): HeadersInit {
+  const headers: Record<string, string> = {
+    Accept: 'application/json',
+    'Content-Type': contentType,
+  };
+  const token = getToken();
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  return headers;
+}
 
 // ============================================================================
 // TYPES
@@ -124,9 +137,7 @@ export async function fetchFromGCS<T>(
   try {
     const response = await fetch(apiUrl, {
       method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-      },
+      headers: storageRequestHeaders(),
     });
 
     if (!response.ok) {
@@ -171,7 +182,10 @@ export async function existsInGCS(bucket: GcsBucketType, path: string): Promise<
   const apiUrl = `${GCS_API_BASE}/read?bucket=${encodeURIComponent(bucket)}&path=${encodeURIComponent(path)}`;
 
   try {
-    const response = await fetch(apiUrl, { method: 'GET' });
+    const response = await fetch(apiUrl, {
+      method: 'GET',
+      headers: storageRequestHeaders(),
+    });
     return response.ok;
   } catch {
     return false;
@@ -203,9 +217,7 @@ export async function writeToGCS<T>(
   try {
     const response = await fetch(apiUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: storageRequestHeaders(),
       body: JSON.stringify({
         bucket: bucket, // Use bucket type, server will resolve to actual bucket name
         path: path,
@@ -255,9 +267,7 @@ export async function deleteFromGCS(
   try {
     const response = await fetch(apiUrl, {
       method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: storageRequestHeaders(),
       body: JSON.stringify({
         bucket: bucket, // Use bucket type, server will resolve to actual bucket name
         path: path,

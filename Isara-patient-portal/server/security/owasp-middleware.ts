@@ -125,21 +125,25 @@ export function verifyResourceOwnership(resourceIdParam = 'id') {
 
 export function securityHeaders() {
   return (req: Request, res: Response, next: NextFunction) => {
-    res.setHeader('Content-Security-Policy', 
+    res.setHeader('Content-Security-Policy',
       "default-src 'self' https:; " +
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://maps.googleapis.com https://accounts.google.com; " +
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://maps.googleapis.com https://accounts.google.com https://meet.jit.si; " +
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
       "font-src 'self' https://fonts.gstatic.com; " +
       "img-src 'self' data: https: blob:; " +
-      "connect-src 'self' http://localhost:* https://*.googleapis.com https://maps.googleapis.com; " +
-      "frame-src 'self' https://meet.google.com https://accounts.google.com;"
+      "connect-src 'self' http://localhost:* ws://localhost:* wss://localhost:* https://*.googleapis.com https://maps.googleapis.com https://meet.jit.si wss://meet.jit.si https://*.run.app wss://*.run.app; " +
+      "frame-src 'self' https://meet.jit.si https://8x8.vc https://meet.google.com https://accounts.google.com; " +
+      "media-src 'self' blob: https: mediastream:; worker-src 'self' blob:;"
     );
     
     res.setHeader('X-Frame-Options', 'SAMEORIGIN');
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('X-XSS-Protection', '1; mode=block');
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-    res.setHeader('Permissions-Policy', 'camera=(self), microphone=(self), geolocation=(self)');
+    res.setHeader(
+      'Permissions-Policy',
+      'camera=(self "https://meet.jit.si"), microphone=(self "https://meet.jit.si"), geolocation=(self), payment=(), usb=()'
+    );
     
     if (process.env.NODE_ENV === 'production') {
       res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');

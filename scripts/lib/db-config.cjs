@@ -45,7 +45,7 @@ const PASSWORD_HASHES = {
 function getLocalConfig() {
     return {
         host: process.env.DB_HOST || 'localhost',
-        port: Number.parseInt(process.env.DB_PORT || '5433'),
+        port: Number.parseInt(process.env.DB_PORT || '5432'),
         user: process.env.DB_USER || 'postgres',
         password: process.env.DB_PASSWORD || process.env.POSTGRES_PASSWORD || '',
         database: process.env.DB_NAME || 'izara_phase1',
@@ -70,7 +70,7 @@ function getCloudConfig() {
     }
 
     return {
-        host: process.env.CLOUD_DB_HOST || '34.143.228.135',
+        host: process.env.CLOUD_DB_HOST || process.env.DEV_DB_HOST || '35.240.157.230',
         port: Number.parseInt(process.env.CLOUD_DB_PORT || '5432'),
         user: process.env.DB_USER || 'postgres',
         password: password,

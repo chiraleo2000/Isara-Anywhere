@@ -37,14 +37,14 @@ async function snap(page: import('@playwright/test').Page, name: string) {
 test.describe('Group O - SSO UI screenshots', () => {
 
   test('O1 - patient login with Google button', async ({ page }) => {
-    await page.goto(`${PATIENT_URL}/login`);
-    await page.waitForLoadState('networkidle').catch(() => {});
+    await page.goto(`${PATIENT_URL}/login`, { waitUntil: 'domcontentloaded', timeout: 90_000 });
+    await page.locator('[data-testid="google-sso-container"]').waitFor({ state: 'visible', timeout: 45_000 });
     await snap(page, 'patient-login-with-google.png');
   });
 
   test('O2 - doctor login with Google button', async ({ page }) => {
-    await page.goto(`${DOCTOR_URL}/login`);
-    await page.waitForLoadState('networkidle').catch(() => {});
+    await page.goto(`${DOCTOR_URL}/login`, { waitUntil: 'domcontentloaded', timeout: 90_000 });
+    await page.locator('[data-testid="google-sso-container"]').waitFor({ state: 'visible', timeout: 45_000 });
     await snap(page, 'doctor-login-with-google.png');
   });
 
