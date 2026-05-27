@@ -1,15 +1,15 @@
 # การเข้าถึงระบบ (Cloud — dev-testing)
 
 > อัปเดต: 27 พฤษภาคม 2569 | Environment: Google Cloud Run (asia-southeast1) | Project: izara-telemedicine  
-> **Source repo:** v1.7.33 · **Cloud Run image tag:** v1.7.12 (deployed 2026-05-27)
+> **Source repo:** v1.7.33 · **Cloud Run image tag:** v1.7.33 (deployed 2026-05-27)
 
 ## บริการที่ให้บริการ (URL ที่ใช้งานจริง)
 
 | Service | URL | Revision | Image |
 | ------- | --- | -------- | ----- |
-| Patient Portal | https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app | 00107-nmv | v1.7.12 |
-| Doctor Portal | https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app | 00132-ts6 | v1.7.12 |
-| Meeting Server | https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app | latest | v1.7.12 |
+| Patient Portal | https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app | 00107-nmv | v1.7.33 |
+| Doctor Portal | https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app | 00132-ts6 | v1.7.33 |
+| Meeting Server | https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app | 00181-m9b | v1.7.33 |
 
 **Login**
 

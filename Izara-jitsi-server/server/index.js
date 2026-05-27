@@ -83,6 +83,8 @@ import {
   buildRecordingOnlySoapFallback,
   formatSoapMarkdownFromStructured,
 } from './clinicalFallback.js';
+import { registerHealthRoutes } from './routes/healthRoutes.js';
+import { registerSocketHandlers } from './socketHandlers.js';
 
 process.on('unhandledRejection', (reason) => {
   const msg = reason instanceof Error ? reason.message : String(reason);
@@ -864,114 +866,27 @@ async function resolveMeetingParticipant(req, meetingId, role) {
 }
 
 // ============================================================================
-// HEALTH CHECK ROUTES
+// HEALTH CHECK ROUTES (extracted — routes/healthRoutes.js)
 // ============================================================================
 
-app.get('/health', (req, res) => {
-  res.json({
-    status: 'ok',
-    service: 'izara-jitsi-server',
-    version: '1.7.3',
-    timestamp: new Date().toISOString(),
-    database: dbAvailable ? 'connected' : 'disconnected',
-    features: {
-      jitsi: true,
-      transcription: 'web-speech-api',
-      ai: !!genAI,
-      chat: true,
-      guestInvites: true,
-      lobby: true,
-      consent: true,
-      shareLinks: true,
-      recording: true,
-      recordingStorage: 'filesystem'
-    }
-  });
-});
-
-app.get('/api/health', (req, res) => {
-  res.json({
-    status: dbAvailable ? 'healthy' : 'degraded',
-    service: 'izara-jitsi-server',
-    version: '1.7.3',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    jitsiDomain: JITSI_DOMAIN,
-    aiEnabled: !!genAI,
-    aiModel: GEMINI_MODEL,
-    database: dbAvailable ? 'connected' : 'disconnected',
-    activeMeetings: activeMeetings.size,
-    activeTranscriptions: activeTranscriptions.size
-  });
-});
-
-app.get('/api/health/stability', (req, res) => {
-  let recordingsBytes = 0;
-  let recordingsFiles = 0;
-  try {
-    const walk = (dir) => {
-      if (!fs.existsSync(dir)) return;
-      for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
-        const p = path.join(dir, ent.name);
-        if (ent.isDirectory()) walk(p);
-        else {
-          recordingsFiles += 1;
-          recordingsBytes += fs.statSync(p).size;
-        }
-      }
-    };
-    walk(RECORDINGS_DIR);
-  } catch {
-    /* ignore */
-  }
-  res.json({
-    status: 'ok',
-    service: 'izara-jitsi-server',
-    timestamp: new Date().toISOString(),
-    recordingsDir: RECORDINGS_DIR,
-    recordingsFiles,
-    recordingsBytes,
-    recordingLocalRetention: process.env.RECORDING_LOCAL_RETENTION || (process.env.NODE_ENV === 'production' ? 'delete_after_persist' : 'keep'),
-    pipelineJobs: postMeeting.getPipelineStatus ? 'available' : 'n/a',
-    memoryRss: process.memoryUsage().rss,
-  });
+registerHealthRoutes(app, {
+  get dbAvailable() { return dbAvailable; },
+  genAI,
+  JITSI_DOMAIN,
+  GEMINI_MODEL,
+  activeMeetings,
+  activeTranscriptions,
+  pool,
+  setDbAvailable: (v) => { dbAvailable = v; },
+  RECORDINGS_DIR,
+  postMeeting,
+  fs,
+  path,
 });
 
 // ============================================================================
 // MEETING MANAGEMENT ROUTES
 // ============================================================================
-
-// GET /api/health/db - Database health check
-app.get('/api/health/db', async (req, res) => {
-  try {
-    await pool.query('SELECT 1');
-    dbAvailable = true;
-    res.json({ status: 'healthy', database: 'connected' });
-  } catch (error) {
-    dbAvailable = false;
-    res.status(503).json({ status: 'degraded', database: 'disconnected', error: error.message });
-  }
-});
-
-// GET /api/config - Jitsi configuration
-app.get('/api/config', (req, res) => {
-  res.json({
-    jitsiDomain: JITSI_DOMAIN,
-    prejoinEnabled: true,
-    enableRecording: true,
-    enableTranscription: true,
-    aiEnabled: !!genAI,
-    aiModel: GEMINI_MODEL,
-    features: {
-      videoConferencing: true,
-      screenSharing: true,
-      chat: true,
-      recording: true,
-      transcription: true,
-      aiSummary: !!genAI
-    }
-  });
-});
 
 // GET /api/meetings - List all meetings (must be before /:id) — requires auth
 app.get('/api/meetings', authenticateToken, async (req, res) => {
@@ -5152,173 +5067,22 @@ app.get('/api/recordings/shared/:token', async (req, res) => {
 });
 
 // ============================================================================
-// SOCKET.IO FOR REAL-TIME COMMUNICATION
+// SOCKET.IO (extracted — socketHandlers.js)
 // ============================================================================
 
-io.on('connection', (socket) => {
-  console.log(`[Socket] Client connected: ${socket.id}`);
-  
-  socket.on('join-meeting', (data) => {
-    const meetingId = typeof data === 'string' ? data : data?.meetingId;
-    const userName = typeof data === 'object' ? data?.userName : undefined;
-    const userRole = typeof data === 'object' ? data?.role : undefined;
-
-    if (meetingId) {
-      const rooms = meetingSocketRoomIds(meetingId);
-      for (const room of rooms) {
-        socket.join(room);
-      }
-      socket.meetingId = meetingId;
-      socket.meetingRooms = rooms;
-      if (userRole === 'doctor' || userRole === 'admin' || userRole === 'host') {
-        markHostOnline(meetingId);
-      }
-      if (isHostReadyForMeeting(meetingId)) {
-        socket.emit('host-ready', { meetingId, ready: true, at: new Date().toISOString() });
-      }
-      for (const room of rooms) {
-        socket.to(room).emit('participant-joined', {
-          socketId: socket.id, userName, role: userRole, timestamp: new Date().toISOString(),
-        });
-      }
-      console.log(`[Socket] ${socket.id} (${userName || 'unknown'}) joined rooms ${rooms.join(',')}`);
-    }
-  });
-  
-  socket.on('leave-meeting', (meetingId) => {
-    socket.leave(meetingId);
-    socket.to(meetingId).emit('participant-left', {
-      socketId: socket.id, timestamp: new Date().toISOString()
-    });
-    console.log(`[Socket] ${socket.id} left meeting ${meetingId}`);
-  });
-  
-  socket.on('transcript-segment', async (data) => {
-    const { meetingId, speakerId, speakerRole, speakerName, content, language, confidence, isFinal, startTimeSeconds } = data;
-    const isSegmentFinal = isFinal !== false;
-    try {
-      // Only persist final segments to database
-      if (isSegmentFinal) {
-        await pool.query(
-          `INSERT INTO meeting_transcripts (meeting_record_id, speaker_id, speaker_role, speaker_name, content, language, confidence, start_time_seconds, is_final)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, true)`,
-          [meetingId, speakerId, speakerRole, speakerName, content, language || 'th', confidence, startTimeSeconds]
-        );
-        
-        const session = activeTranscriptions.get(meetingId);
-        if (session?.isActive && !session.isPaused) {
-          session.transcripts.push({ speaker_id: speakerId, speaker_role: speakerRole, speaker_name: speakerName, content, language: language || 'th', start_time_seconds: startTimeSeconds, timestamp: new Date() });
-        }
-      }
-      
-      // Broadcast to all room participants (both interim and final)
-      io.to(meetingId).emit('transcript-update', {
-        speakerId, speakerRole, speakerName, content, language,
-        isFinal: isSegmentFinal, startTimeSeconds,
-        timestamp: new Date().toISOString(),
-      });
-    } catch (error) {
-      console.error('[Socket] Transcript segment error:', error);
-      // Still broadcast even if DB save failed
-      io.to(meetingId).emit('transcript-update', { speakerId, speakerRole, speakerName, content, isFinal: isSegmentFinal, timestamp: new Date().toISOString() });
-    }
-  });
-  
-  socket.on('chat-message', (data) => {
-    const { meetingId, senderId, senderName, senderRole, message } = data;
-    const chatMsg = {
-      id: uuidv4(), meetingId, senderId, senderName, senderRole,
-      message, type: 'text', timestamp: new Date().toISOString()
-    };
-    if (!meetingChats.has(meetingId)) meetingChats.set(meetingId, []);
-    meetingChats.get(meetingId).push(chatMsg);
-    io.to(meetingId).emit('chat-message', chatMsg);
-  });
-  
-  socket.on('meeting-status', (data) => {
-    const { meetingId, status } = data;
-    io.to(meetingId).emit('meeting-status', { meetingId, status, timestamp: new Date().toISOString() });
-  });
-
-  socket.on('media-update', (data) => {
-    const { meetingId, userId, userName, role, camera, microphone } = data;
-    if (meetingId) {
-      let roomMedia = participantMediaStatus.get(meetingId);
-      if (!roomMedia) { roomMedia = new Map(); participantMediaStatus.set(meetingId, roomMedia); }
-      roomMedia.set(userId || socket.id, {
-        userId: userId || socket.id, userName, role, camera, microphone,
-        lastUpdated: new Date().toISOString(),
-      });
-      io.to(meetingId).emit('participant-media-update', {
-        userId: userId || socket.id, userName, role, camera, microphone,
-        timestamp: new Date().toISOString(),
-      });
-    }
-  });
-  
-  socket.on('lobby-request', (data) => {
-    const { meetingId, participantId, participantName, role, email } = data;
-    if (!meetingId || !participantId) return;
-    const lobbyKey = resolveLobbyKeySync(meetingId);
-    
-    // Hosts (doctor/admin) bypass lobby
-    if (role === 'doctor' || role === 'admin') {
-      socket.emit('lobby-response', { meetingId: lobbyKey, participantId, status: 'admitted' });
-      return;
-    }
-    
-    const { lobby } = getLobbyMap(lobbyKey);
-    
-    const entry = {
-      participantId, participantName, role: role || 'guest',
-      email: email || null, status: 'waiting',
-      socketId: socket.id, joinedAt: new Date().toISOString(),
-    };
-    lobby.set(participantId, entry);
-    syncLobbyAliasMaps(lobbyKey, lobby);
-    
-    // Notify room (doctor will see this)
-    io.to(lobbyKey).emit('lobby-update', { meetingId: lobbyKey, action: 'join', participant: entry });
-    io.to(meetingId).emit('lobby-update', { meetingId: lobbyKey, action: 'join', participant: entry });
-    socket.emit('lobby-response', { meetingId: lobbyKey, participantId, status: 'waiting' });
-  });
-  
-  socket.on('lobby-admit', (data) => {
-    const { meetingId, participantId, admittedBy } = data;
-    const lobbyKey = resolveLobbyKeySync(meetingId);
-    const lobby = meetingLobbies.get(lobbyKey);
-    if (!lobby?.has(participantId)) return;
-    
-    const entry = lobby.get(participantId);
-    entry.status = 'admitted';
-    entry.admittedBy = admittedBy;
-    entry.admittedAt = new Date().toISOString();
-    syncLobbyAliasMaps(lobbyKey, lobby);
-    
-    io.to(lobbyKey).emit('lobby-update', { meetingId: lobbyKey, action: 'admit', participant: entry });
-  });
-  
-  socket.on('lobby-reject', (data) => {
-    const { meetingId, participantId, rejectedBy } = data;
-    const lobbyKey = resolveLobbyKeySync(meetingId);
-    const lobby = meetingLobbies.get(lobbyKey);
-    if (!lobby?.has(participantId)) return;
-    
-    const entry = lobby.get(participantId);
-    entry.status = 'rejected';
-    entry.rejectedBy = rejectedBy;
-    entry.rejectedAt = new Date().toISOString();
-    syncLobbyAliasMaps(lobbyKey, lobby);
-    
-    io.to(lobbyKey).emit('lobby-update', { meetingId: lobbyKey, action: 'reject', participant: entry });
-  });
-
-  socket.on('disconnect', () => {
-    if (socket.meetingId) {
-      socket.to(socket.meetingId).emit('participant-left', { socketId: socket.id, timestamp: new Date().toISOString() });
-    }
-    console.log(`[Socket] Client disconnected: ${socket.id}`);
-  });
+registerSocketHandlers(io, {
+  meetingSocketRoomIds,
+  markHostOnline,
+  isHostReadyForMeeting,
+  resolveLobbyKeySync,
+  getLobbyMap,
+  syncLobbyAliasMaps,
+  meetingLobbies,
+  pool,
+  activeTranscriptions,
+  participantMediaStatus,
+  meetingChats,
+  uuidv4,
 });
 
 // Malformed JSON bodies → 400 (not 500)

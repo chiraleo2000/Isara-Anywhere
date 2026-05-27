@@ -36,7 +36,7 @@ async function main() {
   const suites = [
     await run('npm', ['run', 'test:security-hardening'], { label: 'security-hardening' }),
     await run('npm', ['run', 'test:meeting-server:contract'], { label: 'meeting-server-contract' }),
-    await run('npm', ['run', 'test:round3-diagnostics'], { label: 'round3-diagnostics' }),
+    await run('npm', ['run', 'test:unit:meeting-acceptance'], { label: 'meeting-acceptance' }),
     await run('npm', ['test'], { cwd: path.join(root, 'tests', 'unit'), label: 'vitest-unit-2620' }),
     await run('npx', [
       'vitest',

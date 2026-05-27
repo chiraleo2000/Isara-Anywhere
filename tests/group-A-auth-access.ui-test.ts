@@ -288,6 +288,27 @@ test.describe('Group A — Auth & Access Verification', () => {
     console.log('  A12: Password reset rate limit enforced');
   });
 
+  /* ── A2b — Patient register + reset-password shells (no 5xx) ───── */
+  test('A2b — Patient register and reset-password UI', async ({ browser }) => {
+    const ctx = await browser.newContext();
+    const page = await ctx.newPage();
+    try {
+      await page.goto(`${PATIENT_URL}/register`, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+      await assertFullHealth(page, 'A2b/register');
+      await expect(page.locator('#register-email')).toBeVisible({ timeout: 10_000 });
+
+      await page.goto(`${PATIENT_URL}/reset-password`, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+      await assertFullHealth(page, 'A2b/reset-password');
+      await expect(
+        page.getByText(/โทเค็น|รีเซ็ตรหัสผ่าน|reset password/i).first(),
+      ).toBeVisible({ timeout: 10_000 });
+
+      await snap(page, 'A2b-auth-registration', 'group-A');
+    } finally {
+      await ctx.close();
+    }
+  });
+
   /* ── A10 — DB health endpoints return connected status ─────────── */
   test('A10 — Database health checks return 200', async ({ portals }) => {
     const { patient } = portals;

@@ -12,7 +12,7 @@
  * ═══════════════════════════════════════════════════════════════════════
  */
 import {
-  test, expect, assertFullHealth, snap, navDoctor,
+  test, expect, assertFullHealth, snap, navDoctor, DOCTOR_URL,
 } from './helpers/multi-portal';
 
 test.describe('Group C — Doctor & Admin Portal Continuous Flow', () => {
@@ -156,6 +156,22 @@ test.describe('Group C — Doctor & Admin Portal Continuous Flow', () => {
       await assertFullHealth(admin.page, 'C16');
       await snap(admin.page, 'C16-admin-resources', 'group-C');
       console.log('  ✅ C16: Admin → Clinical Resources');
+    });
+
+    await test.step('C17 — Doctor profile page (page 16)', async () => {
+      const { doctor } = portals;
+      const userId = await doctor.page.evaluate(() => {
+        const m = window.location.pathname.match(/\/doctor\/([^/]+)/);
+        return m?.[1] || '';
+      });
+      if (userId) {
+        await doctor.page.goto(`${DOCTOR_URL}/doctor/${userId}/profile`, {
+          waitUntil: 'domcontentloaded',
+          timeout: 30_000,
+        });
+        await assertFullHealth(doctor.page, 'C17-profile');
+        await snap(doctor.page, 'C17-doctor-profile', 'group-C');
+      }
     });
 
     console.log('\n  🎉 C2 COMPLETE — Admin navigated 8 pages including admin-only\n');

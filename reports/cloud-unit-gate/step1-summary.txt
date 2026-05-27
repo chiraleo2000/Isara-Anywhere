@@ -1,0 +1,23 @@
+﻿=== Step 1 Cloud Gate + UI Showup ===
+Date: 2026-05-27
+Commit: 91204491e9e0f92336daf3845204d6880bf4c312
+
+Unit gate (test:cloud:unit-gate): PASS
+  - test:unit: 2630 passed
+  - test:unit:meeting-acceptance: 30 passed
+  - test:security-hardening: PASS
+  - test:meeting-server:contract: 78 passed
+  - cloud:smoke: 3/3 health
+  - verify:gate0: G1-G5 PASS
+
+UI showup (headed, cloud, BASELINE_VISUAL=1): PASS
+  - A-auth: 13 passed
+  - S-responsive-mobile: 3 passed
+  - S-responsive-tablet: 3 passed
+  - S-responsive-desktop: 3 passed
+  - Total: 22 passed
+  - Screenshots: test-results/pre-debug/, docs/screenshots/
+
+ledger:pre-debug --env cloud: 22 passed, 0 failed
+
+Redeploy: skipped (test-only fixes)

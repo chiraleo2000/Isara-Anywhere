@@ -1,6 +1,16 @@
 # Process Documentation → Test Coverage Matrix
 
-**Last updated:** 2026-05-23 (Cloud hardening — dual-round ledger + Group Q production assertions)  
+**Last updated:** 2026-05-27 (Cloud unit gate + Group S responsive + auth/register contracts)
+
+## UX plan checklist (2026-05-27)
+
+- [x] Patient register UI + validation (`group-A` A2b)
+- [x] Patient reset-password UI (`group-A` A2b)
+- [x] Patient direct-route deep links PHR/profile/settings/timeline (`group-S` S03, `group-B`)
+- [x] Guest/pre-join meeting access UI (`group-E` E10j)
+- [x] Doctor profile page navigation (`group-C` C17)
+- [x] Mobile / tablet / desktop layout stability (`group-S` + `S-responsive-*` projects)
+- [x] Unit payload contracts auth + join (`authPayloadContract`, `meetingJoinContract`)  
 **Canonical contract:** [Processes/FULL_WORKFLOW_CONTRACT.md](../Processes/FULL_WORKFLOW_CONTRACT.md)
 
 | Column | Meaning |
@@ -34,7 +44,7 @@
 | Doctor-Portal/13_Medical_Content | Content | medicalContentWorkflow | H | covered | P2 | group-H |
 | Doctor-Portal/14_Clinical_Resources | Content | clinicalResources | H | covered | P2 | group-H |
 | Doctor-Portal/15_Gemini_AI_Studio | AI | geminiService | J | covered | P2 | group-J |
-| Doctor-Portal/16_Doctor_Profile | Auth | — | C | missing | P2 | — |
+| Doctor-Portal/16_Doctor_Profile | Auth | meetingJoinContract | C | covered | P2 | group-C/C17-doctor-profile |
 | Doctor-Portal/17_Admin_Appointment_Management | Admin | adminAppointmentManagement | D, I | covered | P1 | group-D/D14-admin-meeting |
 | Doctor-Portal/18_Admin_Doctor_Management | Admin | adminDoctorManagement | I | covered | P1 | group-A/C03 |
 | Doctor-Portal/19_Doctors_Management | Admin | adminDoctorManagement | I | partial | P2 | — |
@@ -50,8 +60,8 @@
 | Patient-Portal/00_Patient_Portal_Overview | Auth | authRoute, auth-context | A, B | covered | P2 | group-A/A01-patient-dashboard |
 | Patient-Portal/00_Overview | Auth | authRoute, auth-context | A, B | covered | P2 | group-A/A01-patient-dashboard |
 | Patient-Portal/01_Login | Auth | authRoute | A, B | covered | P1 | group-A |
-| Patient-Portal/02_Register | Auth | registerRoute | B | partial | P1 | — |
-| Patient-Portal/03_Reset_Password | Auth | resetPasswordRoute | B | partial | P1 | — |
+| Patient-Portal/02_Register | Auth | authPayloadContract | A | covered | P1 | group-A/A2b-auth-registration |
+| Patient-Portal/03_Reset_Password | Auth | authPayloadContract | A | covered | P1 | group-A/A2b-auth-registration |
 | Patient-Portal/04_Dashboard | Workflows | dashboardWorkflow | B | covered | P1 | group-A/A01-patient-dashboard |
 | Patient-Portal/05_Appointments | Appointments | appointmentWorkflow, appointmentSlotLock.test.ts | D, E, Q | covered | P0 | group-D/D01-appointments-list |
 | Patient-Portal/06_PHR | Clinical | phrRoute | F | partial | P0 | group-F/F01-phr-page |

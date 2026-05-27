@@ -392,12 +392,13 @@ export const MobileNav: React.FC<MobileNavProps> = ({
               <button
                 key={item.id}
                 onClick={() => onNavigate(item.id)}
-                className={`flex flex-col items-center justify-center py-2 transition-colors ${
+                aria-current={currentView === item.id ? 'page' : undefined}
+                className={`flex flex-col items-center justify-center min-h-11 py-2 px-1 transition-colors ${
                   getBottomNavItemClass(currentView === item.id, isDarkMode)
                 }`}
               >
-                <Icon className="w-6 h-6" />
-                <span className="text-xs mt-1">{item.label}</span>
+                <Icon className="w-6 h-6 shrink-0" />
+                <span className="text-[10px] mt-0.5 truncate max-w-full text-center leading-tight">{item.label}</span>
               </button>
             );
           })}
@@ -663,9 +664,10 @@ export const ResponsiveLayout: React.FC<ResponsiveLayoutProps> = ({
 
       {/* Main Content */}
       <main
+        data-testid="main-content"
         className={`
           ${isMobile ? 'pt-16 pb-20' : 'lg:pl-64'}
-          min-h-screen overflow-y-auto
+          min-h-screen overflow-y-auto overflow-x-hidden max-w-full
           ${isDarkMode ? 'bg-gray-900 text-white' : ''}
         `}
       >

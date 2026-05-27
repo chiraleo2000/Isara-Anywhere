@@ -43,10 +43,21 @@ const CLOUD_DEFAULTS = {
 };
 
 const IS_CLOUD = process.env.TEST_ENV === 'cloud';
+const BASELINE_VISUAL =
+  process.env.BASELINE_VISUAL === '1' ||
+  process.env.BASELINE_VISUAL === 'true';
 const FORCE_HEADED =
   process.env.PW_HEADED === '1' ||
-  process.env.PW_HEADED === 'true';
-const USE_HEADLESS = process.env.PW_HEADLESS === '1' || (IS_CLOUD && !FORCE_HEADED);
+  process.env.PW_HEADED === 'true' ||
+  BASELINE_VISUAL;
+const USE_HEADLESS =
+  process.env.PW_HEADLESS === '1' ||
+  (IS_CLOUD && !FORCE_HEADED && !BASELINE_VISUAL);
+const BASELINE_SCREENSHOT =
+  BASELINE_VISUAL ? ('on' as const) : ('only-on-failure' as const);
+const PRE_DEBUG_OUTPUT = BASELINE_VISUAL
+  ? 'test-results/pre-debug'
+  : 'test-results';
 if (IS_CLOUD) {
   process.env.CLOUD_PATIENT_URL ||= CLOUD_DEFAULTS.patient;
   process.env.CLOUD_DOCTOR_URL ||= CLOUD_DEFAULTS.doctor;
@@ -58,7 +69,7 @@ const workers = Number.parseInt(process.env.PW_WORKERS || (IS_CLOUD ? '4' : '1')
 const sharedUse = {
   headless: USE_HEADLESS,
   viewport: { width: 1440, height: 900 } as const,
-  screenshot: 'on' as const,
+  screenshot: BASELINE_SCREENSHOT,
   trace: 'off' as const,
   actionTimeout: IS_CLOUD ? 20_000 : 15_000,
   navigationTimeout: IS_CLOUD ? 90_000 : 15_000,
@@ -72,8 +83,15 @@ const sharedUse = {
     : 'http://localhost:3005',
 };
 
+const RESPONSIVE_VIEWPORTS = {
+  mobile: { width: 390, height: 844 },
+  tablet: { width: 768, height: 1024 },
+  desktop: { width: 1440, height: 900 },
+} as const;
+
 export default defineConfig({
   testDir: './tests',
+  outputDir: PRE_DEBUG_OUTPUT,
   timeout: IS_CLOUD ? 420_000 : 300_000,
   retries: 0,
   workers,
@@ -196,6 +214,35 @@ export default defineConfig({
       name: 'P-workflow-screenshots',
       testMatch: 'group-P-workflow-screenshots.ui-test.ts',
       dependencies: ['A-auth', 'D-appointments'],
+    },
+
+    /* ── RESPONSIVE LAYOUT (headed baseline / viewport matrix) ─── */
+    {
+      name: 'S-responsive-mobile',
+      testMatch: 'group-S-responsive.ui-test.ts',
+      dependencies: ['A-auth'],
+      use: {
+        ...sharedUse,
+        viewport: RESPONSIVE_VIEWPORTS.mobile,
+      },
+    },
+    {
+      name: 'S-responsive-tablet',
+      testMatch: 'group-S-responsive.ui-test.ts',
+      dependencies: ['A-auth'],
+      use: {
+        ...sharedUse,
+        viewport: RESPONSIVE_VIEWPORTS.tablet,
+      },
+    },
+    {
+      name: 'S-responsive-desktop',
+      testMatch: 'group-S-responsive.ui-test.ts',
+      dependencies: ['A-auth'],
+      use: {
+        ...sharedUse,
+        viewport: RESPONSIVE_VIEWPORTS.desktop,
+      },
     },
   ],
 });

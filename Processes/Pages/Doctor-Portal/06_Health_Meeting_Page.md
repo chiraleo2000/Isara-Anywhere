@@ -22,7 +22,7 @@
 | อัปเดตหน้ากระบวนการ | `python scripts/enrich-process-pages.py --force-steps` |
 | ล้างข้อมูลทดสอบ (ไม่ re-seed demo) | `npm run cleanup:cloud-test-only` |
 | การทดสอบอัตโนมัติ | Playwright Groups A–Q + Vitest — `tests/PROCESS_COVERAGE_MATRIX.md` |
-| รุ่นเอกสารหน้ากระบวนการ | **ENRICH-7** (Word TH Sarabun New 16 pt / PPT FC Iconic / โครงสร้างเทคนิค docs/) |
+| รุ่นเอกสารหน้ากระบวนการ | **ENRICH-9** (Word TH Sarabun New 16 pt / PPT FC Iconic — ขั้นตอน 8–12 รายการ + คำอธิบายเชิงรายงานทุกหน้า) |
 | โครงสร้างเทคนิค (สถาปัตยกรรม) | `docs/TECHNICAL_ARCHITECTURE_WORD_TH.docx`, `docs/TECHNICAL_ARCHITECTURE_PPT_TH.pptx`, `docs/diagrams.drawio` |
 | สร้างเอกสารโครงสร้างเทคนิค | `python scripts/build-technical-architecture-docs.py` |
 
@@ -592,7 +592,7 @@ Step 9: Data appears in Patient Dashboard + Timeline + Health History
 - `jitsi-guest-container`
 - `insert-meeting-summary-emr-btn`
 
-*(รุ่นเอกสารหน้านี้: ENRICH-7 — คู่มือ Word ตาราง+สารบัญ / PPT FC Iconic รายหน้าละเอียด v1.7.33)*
+*(รุ่นเอกสารหน้านี้: ENRICH-9 — คู่มือ Word ตาราง+สารบัญ / PPT FC Iconic รายหน้าละเอียด v1.7.33)*
 
 
 ## ขั้นตอนการใช้งาน (ละเอียด)

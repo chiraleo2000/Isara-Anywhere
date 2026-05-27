@@ -27,6 +27,7 @@ import {
   pickJitsiJwt,
   resolveJitsiDomain,
 } from '../../utils/jitsiMeetingConfig';
+import { JitsiMeetingShell } from '../../features/meeting/components/JitsiMeetingShell';
 
 // Helper: get auth headers for meeting server API calls
 function getAuthHeaders(): Record<string, string> {
@@ -1277,7 +1278,8 @@ const MeetingRoom: React.FC = () => { // NOSONAR
   };
 
   return (
-    <div className="h-screen flex flex-col bg-gray-900 text-white min-h-screen" data-testid="doctor-meeting-room">
+    <JitsiMeetingShell className="min-h-[100dvh] max-h-[100dvh] h-[100dvh]">
+    <div className="h-full flex flex-1 flex-col min-h-0 bg-gray-900 text-white" data-testid="doctor-meeting-room">
 
       {meetingState.status === 'loading' && (
         <div
@@ -1347,7 +1349,7 @@ const MeetingRoom: React.FC = () => { // NOSONAR
               <button
                 onClick={handleAgreeAndContinue}
                 disabled={!consentRecording || !consentTranscript || !consentDataSharing}
-                className="w-full py-4 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed rounded-xl text-lg font-bold transition-all shadow-lg"
+                className="w-full min-h-11 py-4 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed rounded-xl text-lg font-bold transition-all shadow-lg"
                 data-testid="agree-continue-btn"
               >
                 ยอมรับและดำเนินการต่อ
@@ -2078,6 +2080,7 @@ const MeetingRoom: React.FC = () => { // NOSONAR
       </>
       )}
     </div>
+    </JitsiMeetingShell>
   );
 };
 

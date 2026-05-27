@@ -26,7 +26,7 @@ DOC_STD = """## มาตรฐานเอกสาร (รายงานภ�
 | อัปเดตหน้ากระบวนการ | `python scripts/enrich-process-pages.py --force-steps` |
 | ล้างข้อมูลทดสอบ (ไม่ re-seed demo) | `npm run cleanup:cloud-test-only` |
 | การทดสอบอัตโนมัติ | Playwright Groups A–Q + Vitest — `tests/PROCESS_COVERAGE_MATRIX.md` |
-| รุ่นเอกสารหน้ากระบวนการ | **ENRICH-7** (Word TH Sarabun New 16 pt / PPT FC Iconic / โครงสร้างเทคนิค docs/) |
+| รุ่นเอกสารหน้ากระบวนการ | **ENRICH-9** (Word TH Sarabun New 16 pt / PPT FC Iconic — ขั้นตอน 8–12 รายการ + คำอธิบายเชิงรายงานทุกหน้า) |
 | โครงสร้างเทคนิค (สถาปัตยกรรม) | `docs/TECHNICAL_ARCHITECTURE_WORD_TH.docx`, `docs/TECHNICAL_ARCHITECTURE_PPT_TH.pptx`, `docs/diagrams.drawio` |
 | สร้างเอกสารโครงสร้างเทคนิค | `python scripts/build-technical-architecture-docs.py` |
 
@@ -41,7 +41,7 @@ DOC_STD = """## มาตรฐานเอกสาร (รายงานภ�
 STEPS_MARKER = "## ขั้นตอนการใช้งาน (ละเอียด)"
 EXPLAIN_MARKER = "## คำอธิบายและบริบท (รายงานภาษาไทย)"
 DOC_STD_MARKER = "## มาตรฐานเอกสาร"
-ENRICH_REV = "ENRICH-7"
+ENRICH_REV = "ENRICH-9"
 
 
 def sync_doc_standard(text: str) -> str:
@@ -205,12 +205,16 @@ def steps_for_stem(stem: str, rel: str) -> list[str]:
             "ซิงค์ผลลัพธ์ไปพอร์ทัล",
         ]
     return [
-        f"เข้าสู่ระบบพอร์ทัล{'ผู้ป่วย' if portal == 'patient' else 'แพทย์/ผู้ดูแล'}",
-        f"เปิดหน้า «{stem.replace('_', ' ')}» จากเมนูหลัก",
-        "ดำเนินการตามฟอร์มบนหน้าจอทีละขั้น",
-        "ตรวจข้อความแจ้งเตือนและสถานะ API",
-        "ยืนยันผลลัพธ์กับข้อมูลใน PostgreSQL (เมื่อเกี่ยวข้อง)",
-        "บันทึกหรือส่งต่อขั้นตอนถัดไปตาม workflow",
+        f"เข้าสู่ระบบพอร์ทัล{'ผู้ป่วย' if portal == 'patient' else 'แพทย์/ผู้ดูแล'} — ตรวจ URL และ HTTPS",
+        f"เปิดหน้า «{stem.replace('_', ' ')}» จากเมนูหลัก — รอโหลด SPA จนไม่มี spinner ค้าง",
+        "อ่านคำอธิบายบนหน้าจอและข้อความ PDPA/คำเตือนที่เกี่ยวข้อง",
+        "กรอกหรือเลือกข้อมูลตามฟอร์ม — ใช้ `data-testid` ใน tests/SELECTORS.md เป็นจุดอ้างอิง",
+        "กดปุ่มบันทึก/ยืนยัน — ตรวจ Network tab: HTTP 2xx และ JSON `success`",
+        "หากได้ข้อความผิดพลาด: อ่าน `message` / `code` จาก API ไม่รีเฟรชซ้ำโดยไม่จำเป็น",
+        "ยืนยันผลลัพธ์บน UI (รายการ/สถานะ/KPI) ตรงกับที่คาดหวังใน § ผลลัพธ์ที่คาดหวัง",
+        "ตรวจข้อมูลใน PostgreSQL หรือแดชบอร์ดฝั่งตรงข้าม (เมื่อ workflow ข้ามพอร์ทัล)",
+        "จับภาพหน้าจอหรือรัน Playwright headed (`BASELINE_VISUAL=1`) สำหรับ baseline",
+        "บันทึกหรือส่งต่อขั้นตอนถัดไปตาม Processes/ ที่อ้างอิง",
     ]
 
 

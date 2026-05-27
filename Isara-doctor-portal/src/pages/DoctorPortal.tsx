@@ -26,7 +26,7 @@ import MedicalConsultants from './content/MedicalConsultants';
 import DoctorsManagement from './content/DoctorsManagement';
 import MedicalContent from './content/MedicalContent';
 import HealthMeeting from './meetings/HealthMeeting';
-import MeetingRoom from './meetings/MeetingRoom';
+import { MeetingRoom } from '../features/meeting';
 import MeetingResultsPage from './meetings/MeetingResultsPage';
 import AdminDoctorManagement from './admin/AdminDoctorManagement';
 import AdminAppointmentManagement from './admin/AdminAppointmentManagement';
@@ -192,7 +192,9 @@ const DoctorPortal: React.FC = () => {
 
         <Route path="clinical-resources" element={<ClinicalResources />} />
         <Route path="profile" element={<DoctorProfilePage onBack={() => navigate(`/doctor/${userId}/dashboard`)} />} />
-        <Route path="test-ui" element={<TestHarness doctor={user} patients={patients} />} />
+        {import.meta.env.DEV && (
+          <Route path="test-ui" element={<TestHarness doctor={user} patients={patients} />} />
+        )}
 
         {/* Short aliases for convenience */}
         <Route path="content" element={<Navigate to={`/doctor/${userId}/medical-content`} replace />} />

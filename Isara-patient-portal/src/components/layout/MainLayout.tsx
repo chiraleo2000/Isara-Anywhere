@@ -1,3 +1,4 @@
+/** @deprecated Unused — App routes use `components/MainLayout.tsx`. Kept for reference only. */
 import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSettings } from '../../contexts/SettingsContext';

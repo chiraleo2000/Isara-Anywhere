@@ -18,6 +18,7 @@ import {
   resolveJitsiDomain,
   waitForHostReady,
 } from '../utils/jitsiMeetingConfig';
+import { JitsiMeetingShell } from '../features/meeting/JitsiMeetingShell';
 
 const JITSI_DOMAIN = resolveJitsiDomain();
 const MEETING_SERVER_URL = (() => {
@@ -542,8 +543,9 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
   };
 
   return (
+    <JitsiMeetingShell className="fixed inset-0 z-50 min-h-[100dvh] max-h-[100dvh]">
     <div
-      className="fixed inset-0 z-50 flex flex-col bg-gray-900 text-white min-h-screen"
+      className="flex flex-1 flex-col min-h-0 bg-gray-900 text-white"
       data-lobby-status={lobbyStatus}
       data-testid="patient-meeting-room"
     >
@@ -615,7 +617,7 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
               <button
                 onClick={handleAgreeAndContinue}
                 disabled={!consentRecording || !consentTranscript || !consentDataSharing}
-                className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-600 disabled:cursor-not-allowed rounded-xl text-lg font-bold transition-all shadow-lg"
+                className="w-full min-h-11 py-4 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-600 disabled:cursor-not-allowed rounded-xl text-lg font-bold transition-all shadow-lg"
                 data-testid="agree-continue-btn"
               >
                 ยอมรับและดำเนินการต่อ
@@ -926,7 +928,7 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
 
             <button
               onClick={() => navigate('/appointments')}
-              className="px-8 py-3 bg-emerald-600 hover:bg-emerald-700 rounded-xl font-medium transition shadow-lg"
+              className="min-h-11 px-8 py-3 bg-emerald-600 hover:bg-emerald-700 rounded-xl font-medium transition shadow-lg"
             >
               กลับหน้านัดหมาย
             </button>
@@ -988,6 +990,7 @@ const PatientMeetingRoom: React.FC = () => { // NOSONAR
       </>
       )}
     </div>
+    </JitsiMeetingShell>
   );
 };
 

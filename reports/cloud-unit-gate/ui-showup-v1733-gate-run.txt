@@ -1,0 +1,11 @@
+Mobile UI + Cloud v1.7.33 deploy gate — 2026-05-27
+
+Pre-deploy:  test:cloud:unit-gate PASS (2630 unit + 30 meeting + security + 78 contract + smoke + gate0)
+Deploy:      npm run cloud:deploy -- -Tag v1.7.33 SUCCESS (build 428d7179)
+Post-deploy: test:cloud:unit-gate PASS
+UI showup:   test:gate:ui-showup PASS (22/22 Playwright headed cloud)
+
+Cloud images:
+  izara-patient-portal:v1.7.33
+  izara-doctor-portal:v1.7.33
+  izara-jitsi-meeting:v1.7.33

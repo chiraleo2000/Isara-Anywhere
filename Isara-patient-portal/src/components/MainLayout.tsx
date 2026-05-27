@@ -21,7 +21,7 @@ import {
   Users,
 } from 'lucide-react';
 import MiniMapWidget from './MiniMapWidget';
-import { useState } from 'react';
+import { useState, useLayoutEffect } from 'react';
 
 // Mini Calendar Component - With dark mode and i18n support
 function MiniCalendar() {
@@ -117,6 +117,14 @@ function navItemClass(isActive: boolean, isDark: boolean): string {
   return `flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${stateClass}`;
 }
 
+function bottomNavItemClass(isActive: boolean, isDark: boolean): string {
+  const base = 'flex flex-col items-center justify-center min-h-11 py-2 px-1 transition-colors';
+  if (isActive) {
+    return `${base} text-emerald-600 dark:text-emerald-400`;
+  }
+  return `${base} ${isDark ? 'text-gray-400' : 'text-gray-500'}`;
+}
+
 /** Theme classes for MainLayout — extracted to reduce cognitive complexity */
 function getLayoutClasses(isDark: boolean) {
   return {
@@ -142,6 +150,22 @@ export default function MainLayout() {
   };
 
   // Navigation items with language support
+  const mobileBottomNav = [
+    { icon: Home, label: t(language, 'หน้าหลัก', 'Home'), path: '/' },
+    { icon: Calendar, label: t(language, 'นัดหมาย', 'Appts'), path: '/appointments' },
+    { icon: MessageCircle, label: t(language, 'AI', 'AI'), path: '/ai-doctor' },
+    { icon: FileText, label: t(language, 'PHR', 'PHR'), path: '/phr' },
+    { icon: Settings, label: t(language, 'ตั้งค่า', 'Settings'), path: '/settings' },
+  ];
+
+  useLayoutEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    const mainContent = document.querySelector('[data-testid="main-content"]');
+    if (mainContent instanceof HTMLElement) {
+      mainContent.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    }
+  }, [location.pathname]);
+
   const navItems = [
     { icon: Home, label: t(language, 'หน้าหลัก', 'Home'), path: '/' },
     { icon: Calendar, label: t(language, 'นัดหมาย', 'Appointments'), path: '/appointments' },
@@ -186,8 +210,8 @@ export default function MainLayout() {
             })}
           </nav>
 
-          {/* Mini Map & Calendar Widgets */}
-          <div className="px-4 pb-2 space-y-3">
+          {/* Mini Map & Calendar Widgets — desktop sidebar only */}
+          <div className="hidden lg:block px-4 pb-2 space-y-3">
             <MiniMapWidget />
             <MiniCalendar />
           </div>
@@ -237,7 +261,7 @@ export default function MainLayout() {
         />
       )}
 
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 max-w-full overflow-x-hidden">
         <header className={`sticky top-0 z-30 border-b px-4 py-3 lg:hidden ${tc.headerBg}`}>
           <div className="flex items-center justify-between">
             <button
@@ -282,9 +306,37 @@ export default function MainLayout() {
           </div>
         </header>
 
-        <main className={`flex-1 p-4 lg:p-6 overflow-auto ${tc.mainBg}`}>
+        <main
+          data-testid="main-content"
+          className={`flex-1 p-4 lg:p-6 overflow-y-auto overflow-x-hidden max-w-full min-w-0 pb-20 lg:pb-6 ${tc.mainBg}`}
+        >
           <Outlet />
         </main>
+
+        <nav
+          className={`lg:hidden fixed bottom-0 left-0 right-0 z-40 border-t ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}
+          aria-label={t(language, 'เมนูหลัก', 'Main navigation')}
+        >
+          <div className="grid grid-cols-5 gap-1 max-w-full">
+            {mobileBottomNav.map((item) => {
+              const isActive = isActivePath(location.pathname, item.path);
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  onClick={() => setSidebarOpen(false)}
+                  className={bottomNavItemClass(isActive, isDarkMode)}
+                  aria-current={isActive ? 'page' : undefined}
+                >
+                  <item.icon className="w-6 h-6 shrink-0" />
+                  <span className="text-[10px] mt-0.5 truncate max-w-full text-center leading-tight">
+                    {item.label}
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        </nav>
       </div>
     </div>
   );

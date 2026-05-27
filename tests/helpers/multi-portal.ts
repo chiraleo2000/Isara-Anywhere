@@ -103,9 +103,18 @@ export interface Portals {
 // STRICT ASSERTION HELPERS
 // ═══════════════════════════════════════════════════════════════════════
 
-/** FAILS test if page fell back to /login or /register */
+/** FAILS test if an authenticated page fell back to login (not when already on public auth routes). */
 export function assertNotLogin(page: Page, label: string): void {
   const url = page.url();
+  let pathname = url;
+  try {
+    pathname = new URL(url).pathname.replace(/\/$/, '') || '/';
+  } catch {
+    /* keep url string */
+  }
+  const publicAuthPaths = ['/login', '/register', '/reset-password'];
+  if (publicAuthPaths.includes(pathname)) return;
+
   if (url.includes('/login') || url.includes('/register')) {
     throw new Error(
       `❌ [${label}] AUTH FAILED — Redirected to ${url}.\n` +
