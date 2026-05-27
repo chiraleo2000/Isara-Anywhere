@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 VERSION = "1.7.33"
-DATE_TH = "24 พฤษภาคม 2569"
+DATE_TH = "27 พฤษภาคม 2569"
 
 # Word: มาตรฐานรายงานภาษาไทย (TH Sarabun New 16 pt — กรมประชาสัมพันธ์ / ราชการ)
 WORD_FONT = "TH Sarabun New"

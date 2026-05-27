@@ -10,7 +10,7 @@
 
 Full-stack telemedicine for Thailand: video consultations (Jitsi), PHR/EMR, e-prescribing, AI clinical tools, appointment pool, and PDPA-aware data handling.
 
-**Quick links:** [URLs & demo users](docs/URLS_AND_DEFAULT_USERS.md) · [Patient Word (TH)](docs/USER_GUIDE_PATIENT_WORD_TH.docx) · [Doctor Word (TH)](docs/USER_GUIDE_DOCTOR_WORD_TH.docx) · [Patient PPT (TH)](docs/USER_GUIDE_PATIENT_PPT_TH.pptx) · [Doctor PPT (TH)](docs/USER_GUIDE_DOCTOR_PPT_TH.pptx) · [Cloud access (TH)](docs/CLOUD_ACCESS_TH.md) · [Process pages](Processes/Pages/README.md) · [Markdown guide](docs/MARKDOWN_GUIDE.md)
+**Quick links:** [URLs & demo users](docs/URLS_AND_DEFAULT_USERS.md) · [Technical diagrams (draw.io)](docs/diagrams.drawio) · [Architecture slides (Sarabun 16pt)](docs/TECHNICAL_ARCHITECTURE_SLIDES.html) · [Architecture Word TH](docs/TECHNICAL_ARCHITECTURE_WORD_TH.docx) · [Architecture PPT TH (FC Iconic)](docs/TECHNICAL_ARCHITECTURE_PPT_TH.pptx) · [Patient Word (TH)](docs/USER_GUIDE_PATIENT_WORD_TH.docx) · [Doctor Word (TH)](docs/USER_GUIDE_DOCTOR_WORD_TH.docx) · [Patient PPT (TH)](docs/USER_GUIDE_PATIENT_PPT_TH.pptx) · [Doctor PPT (TH)](docs/USER_GUIDE_DOCTOR_PPT_TH.pptx) · [Cloud access (TH)](docs/CLOUD_ACCESS_TH.md) · [Process pages](Processes/Pages/README.md) · [Markdown guide](docs/MARKDOWN_GUIDE.md)
 
 ---
 
@@ -26,17 +26,19 @@ Full-stack telemedicine for Thailand: video consultations (Jitsi), PHR/EMR, e-pr
 
 ## Access URLs
 
-### Cloud (dev-testing) — release **v1.7.33**
+### Cloud (dev-testing) — source **v1.7.33** · deployed image **v1.7.12** (2026-05-27)
 
 | Service | URL | Login |
 | ------- | --- | ----- |
-| **Patient Portal** | https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app | [Open](https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app/login) |
-| **Doctor Portal** | https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app | [Open](https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app/login) |
-| **Meeting Server** | https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app | API / health only |
+| **Patient Portal** | https://izara-patient-portal-dev-testing-hvht4obouq-as.a.run.app | [Open](https://izara-patient-portal-dev-testing-hvht4obouq-as.a.run.app/login) |
+| **Doctor Portal** | https://izara-doctor-portal-dev-testing-hvht4obouq-as.a.run.app | [Open](https://izara-doctor-portal-dev-testing-hvht4obouq-as.a.run.app/login) |
+| **Meeting Server** | https://izara-meeting-server-dev-testing-hvht4obouq-as.a.run.app | API / health only |
 
-| Service | Image tag |
-| ------- | --------- |
-| All three Cloud Run services | `v1.7.33` (or latest `v1.7.32-security-hardening` until redeploy) |
+| Service | Cloud Run revision | Image tag | DB |
+| ------- | ------------------ | --------- | -- |
+| Patient | `00107-nmv` | `v1.7.12` | Cloud SQL `izara-postgres-server` |
+| Doctor | `00132-ts6` | `v1.7.12` | Cloud SQL · port **8080** (nginx unified) |
+| Meeting | latest | `v1.7.12` | Cloud SQL |
 
 Region: `asia-southeast1` · Project: `izara-telemedicine`. Health: `npm run cloud:smoke`. Details: [docs/CLOUD_ACCESS_TH.md](docs/CLOUD_ACCESS_TH.md).
 

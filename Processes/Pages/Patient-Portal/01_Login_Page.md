@@ -21,7 +21,9 @@
 | อัปเดตหน้ากระบวนการ | `python scripts/enrich-process-pages.py --force-steps` |
 | ล้างข้อมูลทดสอบ (ไม่ re-seed demo) | `npm run cleanup:cloud-test-only` |
 | การทดสอบอัตโนมัติ | Playwright Groups A–Q + Vitest — `tests/PROCESS_COVERAGE_MATRIX.md` |
-| รุ่นเอกสารหน้ากระบวนการ | **ENRICH-6** (Word ตาราง+สารบัญ / PPT รายสไลด์+ตารางขั้นตอนครบ) |
+| รุ่นเอกสารหน้ากระบวนการ | **ENRICH-7** (Word TH Sarabun New 16 pt / PPT FC Iconic / โครงสร้างเทคนิค docs/) |
+| โครงสร้างเทคนิค (สถาปัตยกรรม) | `docs/TECHNICAL_ARCHITECTURE_WORD_TH.docx`, `docs/TECHNICAL_ARCHITECTURE_PPT_TH.pptx`, `docs/diagrams.drawio` |
+| สร้างเอกสารโครงสร้างเทคนิค | `python scripts/build-technical-architecture-docs.py` |
 
 **โครงสร้างบังคับในแต่ละหน้า Processes/Pages:**
 
@@ -266,7 +268,7 @@ Step 8: Clicks link → Redirects to /reset-password?token=xxx
 - `login-submit`
 - `google-sign-in-btn`
 
-*(รุ่นเอกสารหน้านี้: ENRICH-6 — คู่มือ Word ตาราง+สารบัญ / PPT FC Iconic รายหน้าละเอียด v1.7.33)*
+*(รุ่นเอกสารหน้านี้: ENRICH-7 — คู่มือ Word ตาราง+สารบัญ / PPT FC Iconic รายหน้าละเอียด v1.7.33)*
 
 
 ## ขั้นตอนการใช้งาน (ละเอียด)

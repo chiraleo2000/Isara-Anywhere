@@ -307,18 +307,20 @@ if (-not $SkipBuild) {
 }
 
 Write-Step "Deploying Doctor Portal ($SVC_DOCTOR)..."
+# Matches Cloud Run revision izara-doctor-portal-dev-testing-00104-7zj (2026-05-23)
 gcloud run deploy $SVC_DOCTOR `
     --image=$IMG_DOCTOR `
     --region=$REGION `
     --platform=managed `
     --allow-unauthenticated `
     --port=8080 `
-    --memory=2Gi `
-    --cpu=2 `
+    --memory=1Gi `
+    --cpu=1 `
     --min-instances=0 `
-    --max-instances=10 `
+    --max-instances=2 `
     --timeout=300 `
-    --set-env-vars="NODE_ENV=production,DATABASE_URL=$DATABASE_URL,DB_HOST=$PG_HOST,DB_PORT=5432,DB_NAME=$DB_NAME,DB_USER=$DB_USER,DB_PASSWORD=$DB_PASSWORD,DB_SSL=false,USE_POSTGRESQL=true,VITE_USE_POSTGRESQL=true,MEETING_SERVER_URL=$MEETING_URL,VITE_MEETING_SERVER_URL=$MEETING_URL,GEMINI_API_KEY=$GEMINI_API_KEY,GEMINI_MODEL=gemini-2.5-flash-lite,JWT_SECRET=$JWT_SECRET,JITSI_DOMAIN=meet.jit.si,GOOGLE_SPEECH_API_KEY=" `
+    --set-env-vars="NODE_ENV=production,USE_POSTGRESQL=true,VITE_USE_POSTGRESQL=true,DB_HOST=$PG_HOST,DB_PORT=5432,DB_NAME=$DB_NAME,DB_USER=$DB_USER,DB_SSL=false,MEETING_SERVER_URL=$MEETING_URL,VITE_MEETING_SERVER_URL=$MEETING_URL,JITSI_DOMAIN=meet.jit.si,GEMINI_MODEL=gemini-2.5-flash-lite,GCP_PROJECT_ID=$PROJECT_ID,IZARA_DEV_TESTING=1,GOOGLE_TOKEN_VERIFIER_FIXTURE=1" `
+    --set-secrets="GEMINI_API_KEY=gemini-api-key:latest,VITE_GEMINI_API_KEY=gemini-api-key:latest,DB_PASSWORD=db-password:latest,DATABASE_URL=database-url:latest,JWT_SECRET=jwt-secret:latest,GOOGLE_CLIENT_ID=google-client-id:latest" `
     --execution-environment=gen2 `
     --cpu-boost `
     --quiet

@@ -1,16 +1,21 @@
-# Cloud Build configuration for Izara Doctor Portal v1.6.0
-# Builds unified Docker image and deploys to Cloud Run
-# PostgreSQL runs on GCE VM (NOT Cloud SQL, NOT embedded PG)
+# Cloud Build — Izara Doctor Portal (dev-testing)
+# Aligned with Cloud Run revision izara-doctor-portal-dev-testing-00132-ts6 (2026-05-27)
+# Image tag: v1.7.12 · Cloud SQL · nginx :8080 → :3011 auth/ws, :3009 API
+
+substitutions:
+  _TAG: v1.7.12
+  _CLOUDSQL: "izara-telemedicine:asia-southeast1:izara-postgres-server"
+  _DB_HOST: "/cloudsql/izara-telemedicine:asia-southeast1:izara-postgres-server"
+  _MEETING_SERVER_URL: "https://izara-meeting-server-dev-testing-hvht4obouq-as.a.run.app"
 
 steps:
-  # Build the unified Docker image
   - name: "gcr.io/cloud-builders/docker"
     args:
       - "build"
       - "-f"
       - "Dockerfile.unified"
       - "-t"
-      - "asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-doctor-portal:v1.7.16"
+      - "asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-doctor-portal:${_TAG}"
       - "-t"
       - "asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-doctor-portal:latest"
       - "--build-arg"
@@ -21,43 +26,39 @@ steps:
       - "VITE_GCP_PROJECT_ID=$PROJECT_ID"
       - "."
 
-  # Push image to Artifact Registry
   - name: "gcr.io/cloud-builders/docker"
     args:
       - "push"
       - "--all-tags"
       - "asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-doctor-portal"
 
-  # Deploy to Cloud Run with external PostgreSQL VM (NO Cloud SQL, NO embedded PG)
   - name: "gcr.io/cloud-builders/gcloud"
     args:
       - "run"
       - "deploy"
       - "izara-doctor-portal-dev-testing"
-      - "--image=asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-doctor-portal:v1.7.16"
+      - "--image=asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-doctor-portal:${_TAG}"
       - "--region=asia-southeast1"
       - "--platform=managed"
       - "--allow-unauthenticated"
       - "--port=8080"
       - "--memory=1Gi"
       - "--cpu=1"
-      - "--min-instances=0"
+      - "--min-instances=1"
       - "--max-instances=2"
       - "--timeout=300"
       - "--cpu-boost"
       - "--execution-environment=gen2"
-      - "--set-env-vars=NODE_ENV=production,USE_POSTGRESQL=true,VITE_USE_POSTGRESQL=true,DB_HOST=35.240.157.230,DB_PORT=5432,DB_NAME=izara_phase1,DB_USER=postgres,DB_SSL=false,MEETING_SERVER_URL=https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app,VITE_MEETING_SERVER_URL=https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app,JITSI_DOMAIN=meet.jit.si,GEMINI_MODEL=gemini-2.5-flash-lite,VITE_GCP_PROJECT_ID=$PROJECT_ID,VITE_GCP_REGION=asia-southeast1,IZARA_DEV_TESTING=1,GOOGLE_TOKEN_VERIFIER_FIXTURE=1"
-      - "--set-secrets=GEMINI_API_KEY=gemini-api-key:latest,VITE_GEMINI_API_KEY=gemini-api-key:latest,DB_PASSWORD=db-password:latest,DATABASE_URL=database-url:latest,JWT_SECRET=jwt-secret:latest"
+      - "--add-cloudsql-instances=${_CLOUDSQL}"
+      - "--set-env-vars=NODE_ENV=production,USE_EMBEDDED_PG=false,CLOUDSQL_INSTANCE=${_CLOUDSQL},DB_HOST=${_DB_HOST},DB_PORT=5432,DB_NAME=izara_phase1,DB_USER=postgres,DB_SSL=true,USE_POSTGRESQL=true,VITE_USE_POSTGRESQL=true,JITSI_DOMAIN=meet.jit.si,GEMINI_MODEL=gemini-2.5-flash-lite,GCP_PROJECT_ID=$PROJECT_ID,MEETING_SERVER_URL=${_MEETING_SERVER_URL},VITE_MEETING_SERVER_URL=${_MEETING_SERVER_URL},IZARA_DEV_TESTING=1,GOOGLE_TOKEN_VERIFIER_FIXTURE=1,NODE_OPTIONS=--max-old-space-size=768 --max-semi-space-size=64,UV_THREADPOOL_SIZE=4,AUTH_NODE_OPTIONS=--max-old-space-size=256 --max-semi-space-size=32,MAIN_NODE_OPTIONS=--max-old-space-size=448 --max-semi-space-size=48"
+      - "--set-secrets=GEMINI_API_KEY=gemini-api-key:latest,VITE_GEMINI_API_KEY=gemini-api-key:latest,DB_PASSWORD=db-password:latest,DATABASE_URL=database-url:latest,JWT_SECRET=jwt-secret:latest,GOOGLE_CLIENT_ID=google-client-id:latest"
 
-# Store images in Artifact Registry
 images:
-  - "asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-doctor-portal:v1.7.16"
+  - "asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-doctor-portal:${_TAG}"
   - "asia-southeast1-docker.pkg.dev/$PROJECT_ID/isara-anywhere-portals/izara-doctor-portal:latest"
 
-# Build timeout (20 minutes)
 timeout: "1200s"
 
-# Build options
 options:
   logging: CLOUD_LOGGING_ONLY
   machineType: "E2_HIGHCPU_8"

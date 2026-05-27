@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>โครงสร้างทางเทคนิค — Izara Anywhere</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #f5f7fa;
+      --card: #ffffff;
+      --accent: #1565c0;
+      --accent2: #2e7d32;
+      --text: #212121;
+      --muted: #546e7a;
+      --border: #cfd8dc;
+      --body-pt: 16pt;
+      --h1-pt: 22pt;
+      --h2-pt: 18pt;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "TH Sarabun New", "Sarabun", sans-serif;
+      font-size: var(--body-pt);
+      line-height: 1.15;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      overflow: hidden;
+    }
+    .deck { height: 100%; }
+    .slide {
+      display: none;
+      height: 100%;
+      padding: 2rem 3rem 4.5rem;
+      overflow-y: auto;
+      background: var(--card);
+      max-width: 1100px;
+      margin: 0 auto;
+      box-shadow: 0 0 24px rgba(0,0,0,0.08);
+    }
+    .slide.active { display: block; animation: fade 0.3s ease; }
+    @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+    h1 {
+      font-size: var(--h1-pt);
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 0.4rem;
+      line-height: 1.2;
+    }
+    h2 {
+      font-size: var(--h2-pt);
+      font-weight: 600;
+      color: var(--accent2);
+      margin: 1rem 0 0.5rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.25rem;
+    }
+    .meta { font-size: var(--body-pt); color: var(--muted); margin-bottom: 1rem; }
+    .std {
+      background: #e3f2fd;
+      border-left: 4px solid var(--accent);
+      padding: 0.6rem 1rem;
+      margin-bottom: 1rem;
+      font-size: var(--body-pt);
+    }
+    p, li { font-size: var(--body-pt); line-height: 1.15; margin: 0.35rem 0; }
+    ul, ol { margin: 0.4rem 0 0.6rem 1.5rem; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0.6rem 0;
+      font-size: var(--body-pt);
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 0.35rem 0.6rem;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: #e8eaf6; font-weight: 600; }
+    .ref {
+      margin-top: 1.5rem;
+      padding: 0.5rem 0.75rem;
+      background: #fff8e1;
+      font-size: calc(var(--body-pt) - 1pt);
+      color: #5d4037;
+    }
+    .title-slide { text-align: center; padding-top: 15vh; }
+    .title-slide h1 { font-size: 28pt; }
+    nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #fff;
+      border-top: 1px solid var(--border);
+      padding: 0.6rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 10;
+      font-size: var(--body-pt);
+    }
+    nav button {
+      font-family: inherit;
+      font-size: var(--body-pt);
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      padding: 0.4rem 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    nav button:disabled { opacity: 0.4; cursor: not-allowed; }
+    code { font-size: 14pt; background: #eceff1; padding: 0 0.2rem; }
+    @media print {
+      body { overflow: visible; height: auto; }
+      .slide { display: block !important; page-break-after: always; box-shadow: none; max-width: none; }
+      nav { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="deck" id="deck">
+
+    <section class="slide title-slide active">
+      <h1>โครงสร้างทางเทคนิค — Izara Anywhere</h1>
+      <p class="meta">อิสระ เทเลเมดิซิน · v1.7.33 · 27 พฤษภาคม 2569</p>
+      <div class="std">
+        มาตรฐานรายงานภาษาไทย: เนื้อหา <strong>TH Sarabun New / Sarabun 16 pt</strong> ระยะบรรทัด 1.15 ·
+        PowerPoint ใช้ <strong>FC Iconic</strong> (สร้างจาก <code>npm run guides:technical</code>)
+      </div>
+      <p>แผนภาพ: <code>docs/diagrams.drawio</code> (10 หน้า) · บันทึกวิทยากร: <code>TECHNICAL_ARCHITECTURE_SLIDES.md</code></p>
+    </section>
+
+    <section class="slide">
+      <h1>วัตถุประสงค์และหลักการ</h1>
+      <ol>
+        <li><strong>Man-in-the-Loop</strong> — แพทย์อนุมัติทุกผลลัพธ์ทางคลินิกจาก AI ก่อนส่งถึงผู้ป่วย</li>
+        <li><strong>PDPA</strong> — ความยินยอม การแยกสิทธิ์ และบันทึก audit</li>
+        <li><strong>ข้อมูลรวมศูนย์</strong> — PostgreSQL <code>izara_phase1</code> เป็นหลัก (Phase 1 ไม่ใช้ GCS สำหรับ EMR)</li>
+        <li><strong>พร้อม Cloud</strong> — Cloud Run + GCE PostgreSQL สำหรับ dev-testing</li>
+      </ol>
+      <p class="ref"><strong>draw.io:</strong> หน้า 1 System Architecture</p>
+    </section>
+
+    <section class="slide">
+      <h1>สามพอร์ทัลและพอร์ตบริการ</h1>
+      <table>
+        <tr><th>พอร์ทัล</th><th>เทคโนโลยี</th><th>พอร์ต (local)</th><th>ขั้นตรวจสอบ</th></tr>
+        <tr><td>Patient</td><td>React+Vite+Express</td><td>3005</td><td><code>/health</code> โหลดแดชบอร์ด</td></tr>
+        <tr><td>Doctor</td><td>nginx+Node unified</td><td>3010 / Cloud 8080</td><td>auth :3011, API :3009, ws→3011</td></tr>
+        <tr><td>Meeting</td><td>Express+Socket.IO</td><td>3020</td><td>สร้างห้อง lobby ได้</td></tr>
+      </table>
+      <p class="ref"><strong>Processes:</strong> <code>00_Patient_Portal_Overview.md</code>, <code>00_Doctor_Portal_Overview.md</code></p>
+    </section>
+
+    <section class="slide">
+      <h1>ชั้นงานสถาปัตยกรรม (5 ชั้น)</h1>
+      <table>
+        <tr><th>ลำดับ</th><th>ชั้น</th><th>ขั้นปฏิบัติโดยย่อ</th></tr>
+        <tr><td>1</td><td>Client</td><td>เปิด HTTPS → โหลด SPA → (วิดีโอ) Jitsi WebRTC</td></tr>
+        <tr><td>2</td><td>Portal</td><td>ล็อกอิน → JWT/session → เรียก REST <code>/api/*</code></td></tr>
+        <tr><td>3</td><td>Real-time</td><td>DB NOTIFY → pgNotifyListener → Socket.IO push</td></tr>
+        <tr><td>4</td><td>Data</td><td>postgresDataService → CRUD ตาราง izara_phase1</td></tr>
+        <tr><td>5</td><td>External</td><td>Gemini / Maps / OAuth เมื่อฟีเจอร์เรียก</td></tr>
+      </table>
+    </section>
+
+    <section class="slide">
+      <h1>เครือข่ายคลาวด์ (GCP)</h1>
+      <p>โครงการ <code>izara-telemedicine</code> · ภูมิภาค <code>asia-southeast1</code></p>
+      <ul>
+        <li>Cloud Run: patient / doctor / meeting (dev-testing)</li>
+        <li>GCE PostgreSQL <strong>35.240.157.230:5432</strong> — ไม่ใช้ Cloud SQL</li>
+        <li>Secret Manager: jwt, database-url, gemini, google-client-id</li>
+        <li>Artifact Registry + cloudbuild → deploy</li>
+      </ul>
+      <p class="ref"><strong>draw.io:</strong> หน้า 9 Cloud Network · <code>docs/CLOUD_ACCESS_TH.md</code></p>
+    </section>
+
+    <section class="slide">
+      <h1>การเชื่อมต่อบริการ</h1>
+      <ol>
+        <li>HTTPS — เบราว์เซอร์ → Cloud Run</li>
+        <li>TCP 5432 — ทุกพอร์ทัล → PostgreSQL (firewall จำกัด)</li>
+        <li>WebRTC — Client ↔ meet.jit.si</li>
+        <li>REST — Patient/Doctor → Meeting Server</li>
+        <li>WebSocket — Socket.IO (คิว, แจ้งเตือน)</li>
+        <li>HTTPS — Gemini (สรุป EMR, แชตสุขภาพ)</li>
+      </ol>
+      <p><strong>สำคัญ:</strong> <code>MEETING_SERVER_URL</code> ต้องตรงกันทุก service หลัง deploy</p>
+    </section>
+
+    <section class="slide">
+      <h1>โครงสร้างฐานข้อมูล (กลุ่มตาราง)</h1>
+      <table>
+        <tr><th>กลุ่ม</th><th>ตาราง</th><th>กระบวนการที่เกี่ยวข้อง</th></tr>
+        <tr><td>ตัวตน</td><td>users, sessions</td><td>ล็อกอิน อนุมัติแพทย์</td></tr>
+        <tr><td>ผู้ป่วย</td><td>phr, living_wills, patient_consents</td><td>PHR PDPA</td></tr>
+        <tr><td>นัดหมาย</td><td>appointments</td><td>Pool ยืนยัน สถานะ</td></tr>
+        <tr><td>คลินิก</td><td>emr, prescriptions, lab_orders</td><td>พบแพทย์ หลังประชุม</td></tr>
+        <tr><td>ประชุม</td><td>meeting_records, meeting_transcripts</td><td>วิดีโอ STT</td></tr>
+      </table>
+      <p class="ref">Schema: <code>scripts/database/izara-database.sql</code> · draw.io หน้า 8</p>
+    </section>
+
+    <section class="slide">
+      <h1>กระบวนการจองนัด — ขั้น 1–6</h1>
+      <table>
+        <tr><th>ขั้น</th><th>ผู้ปฏิบัติ</th><th>การปฏิบัติ</th><th>ตาราง/ระบบ</th></tr>
+        <tr><td>1</td><td>ผู้ป่วย</td><td>ล็อกอิน + PDPA</td><td>users, patient_consents</td></tr>
+        <tr><td>2</td><td>ผู้ป่วย</td><td>จองนัด</td><td>appointments</td></tr>
+        <tr><td>3</td><td>แพทย์/แอดมิน</td><td>Pool / จัดสรร</td><td>doctor_id</td></tr>
+        <tr><td>4</td><td>แพทย์</td><td>ยืนยัน</td><td>status=confirmed</td></tr>
+        <tr><td>5</td><td>ระบบ</td><td>NOTIFY + Socket.IO</td><td>แดชบอร์ด</td></tr>
+        <tr><td>6</td><td>แพทย์</td><td>อ่านสรุป AI</td><td>Gemini + phr/emr</td></tr>
+      </table>
+      <p class="ref"><code>Processes/Appointment_Workflows.md</code></p>
+    </section>
+
+    <section class="slide">
+      <h1>วิดีโอคอลและหลังพบ — ขั้น 7–12</h1>
+      <table>
+        <tr><th>ขั้น</th><th>การปฏิบัติ</th><th>ผลลัพธ์</th></tr>
+        <tr><td>7</td><td>ผู้ป่วยเข้า Jitsi lobby</td><td>รอ HOST</td></tr>
+        <tr><td>8</td><td>แพทย์ HOST เริ่มประชุม อนุมัติแขก</td><td>admitted</td></tr>
+        <tr><td>9</td><td>วิดีโอ + STT + แชท</td><td>meeting_transcripts</td></tr>
+        <tr><td>10</td><td>postMeetingPipeline</td><td>emr draft</td></tr>
+        <tr><td>11</td><td>แพทย์ validate EMR/Rx/lab</td><td>ลงนาม</td></tr>
+        <tr><td>12</td><td>ผู้ป่วยดู timeline / คำแนะนำ</td><td>notifications</td></tr>
+      </table>
+      <p>สถานะ: pending → in_pool → assigned → confirmed → in_meeting → completed</p>
+      <p class="ref">draw.io หน้า 3, 4, 10 · <code>VIDEO_MEETING_JITSI_GEMINI.md</code></p>
+    </section>
+
+    <section class="slide">
+      <h1>PHR · EMR · Man-in-the-Loop</h1>
+      <ul>
+        <li><strong>PHR</strong> — ผู้ป่วยจัดการข้อมูลส่วนตน (แพ้ยา ยา สัญญาณชีพ หนังสือเจตนา)</li>
+        <li><strong>EMR</strong> — SOAP JSONB โดยแพทย์</li>
+        <li><strong>AI</strong> — ร่างจาก transcript; <code>requires_validation</code> จนลงนาม</li>
+        <li><strong>RAG</strong> — pgvector ค้นหาแนวทางคลินิก</li>
+      </ul>
+      <p class="ref">draw.io หน้า 5 Health Records</p>
+    </section>
+
+    <section class="slide">
+      <h1>ความปลอดภัยและ Real-time</h1>
+      <ul>
+        <li>RBAC — patient / doctor / admin</li>
+        <li>Auth — JWT, bcrypt, rate limit</li>
+        <li>OWASP — CSP, security headers</li>
+        <li>NOTIFY → Socket.IO — คิวและนัด</li>
+        <li>audit_logs — การกระทำสำคัญ</li>
+      </ul>
+      <p class="ref">draw.io หน้า 2, 7</p>
+    </section>
+
+    <section class="slide">
+      <h1>เอกสาร การ deploy และล้างข้อมูลทดสอบ</h1>
+      <table>
+        <tr><th>งาน</th><th>คำสั่ง / ไฟล์</th></tr>
+        <tr><td>Local</td><td><code>docker-compose up -d --build</code></td></tr>
+        <tr><td>Cloud doctor</td><td><code>Isara-doctor-portal/cloudbuild.yaml</code></td></tr>
+        <tr><td>ล้าง demo (ไม่ re-seed)</td><td><code>npm run cleanup:cloud-test-only</code> — ต้องมี DB_PASSWORD ใน .env</td></tr>
+        <tr><td>อัปเดตหน้า Processes</td><td><code>python scripts/enrich-process-pages.py --force-steps</code></td></tr>
+        <tr><td>สร้าง Word/PPT โครงสร้างเทคนิค</td><td><code>npm run guides:technical</code></td></tr>
+      </table>
+      <p class="ref">Word: <code>TECHNICAL_ARCHITECTURE_WORD_TH.docx</code> · PPT: <code>TECHNICAL_ARCHITECTURE_PPT_TH.pptx</code> (FC Iconic)</p>
+    </section>
+
+  </div>
+
+  <nav>
+    <button type="button" id="prev" disabled>← ก่อนหน้า</button>
+    <span id="counter">1 / 12</span>
+    <button type="button" id="next">ถัดไป →</button>
+  </nav>
+  <script>
+    const slides = document.querySelectorAll(".slide");
+    let i = 0;
+    const prev = document.getElementById("prev");
+    const next = document.getElementById("next");
+    const counter = document.getElementById("counter");
+    function show(n) {
+      i = Math.max(0, Math.min(n, slides.length - 1));
+      slides.forEach((s, j) => s.classList.toggle("active", j === i));
+      counter.textContent = (i + 1) + " / " + slides.length;
+      prev.disabled = i === 0;
+      next.disabled = i === slides.length - 1;
+    }
+    prev.onclick = () => show(i - 1);
+    next.onclick = () => show(i + 1);
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowRight" || e.key === " ") { e.preventDefault(); if (i < slides.length - 1) show(i + 1); }
+      if (e.key === "ArrowLeft") { e.preventDefault(); if (i > 0) show(i - 1); }
+    });
+  </script>
+</body>
+</html>

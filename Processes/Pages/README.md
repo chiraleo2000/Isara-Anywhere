@@ -1,7 +1,7 @@
 # 📄 Izara Telemedicine — Page-by-Page Documentation
 
 **Version:** 1.7.33
-**Last Updated:** 24 May 2026 (v1.7.33 — Word ตาราง+สารบัญ / PPT FC Iconic รายสไลด์, ENRICH-6)
+**Last Updated:** 27 May 2026 (v1.7.33 — ENRICH-7: TH Sarabun New 16 pt / FC Iconic / โครงสร้างเทคนิค)
 **Status:** ✅ Phase 1 Complete — Web Platform Documentation + Full DB Schema
 
 ---
@@ -15,9 +15,11 @@
 
 ทุกหน้าในโฟลเดอร์นี้มี **§ มาตรฐานเอกสาร**, **§ คำอธิบายและบริบท (รายงานภาษาไทย)** และ **§ ขั้นตอนการใช้งาน (ละเอียด)** — อัปเดตด้วย `python scripts/enrich-process-pages.py --force-steps`
 
-คู่มือผู้ใช้: `docs/USER_GUIDE_*_WORD_TH.docx` · `docs/USER_GUIDE_*_PPT_TH.pptx` — สร้างด้วย `python scripts/build-portal-user-guides.py`
+คู่มือผู้ใช้: `docs/USER_GUIDE_*_WORD_TH.docx` · `docs/USER_GUIDE_*_PPT_TH.pptx` — `python scripts/build-portal-user-guides.py`
 
-**ล้างข้อมูลทดสอบ (ไม่ re-seed demo):** `npm run cleanup:cloud-test-only` — ใช้หลังรอบทดสอบ cloud / Code Breaker
+โครงสร้างเทคนิค: `docs/TECHNICAL_ARCHITECTURE_WORD_TH.docx` · `docs/TECHNICAL_ARCHITECTURE_PPT_TH.pptx` · `docs/diagrams.drawio` · `docs/TECHNICAL_ARCHITECTURE_SLIDES.html` — `npm run guides:technical`
+
+**ล้างข้อมูลทดสอบ (ไม่ re-seed demo):** `npm run cleanup:cloud-test-only` — ต้องมี `DB_PASSWORD` ถูกต้องใน `.env`
 
 ---
 

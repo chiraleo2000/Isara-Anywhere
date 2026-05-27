@@ -1,6 +1,6 @@
 # Markdown validation guide
 
-**Izara Telemedicine** · Last updated: May 23, 2026
+**Izara Telemedicine** · Last updated: 27 May 2026 (พ.ศ. 2569)
 
 Automated checks keep documentation consistent across `Processes/`, `docs/`, and portal READMEs.
 
@@ -11,12 +11,14 @@ Automated checks keep documentation consistent across `Processes/`, `docs/`, and
 | Word reports / user guides (`.docx`) | **TH Sarabun New** | Body **16 pt**, headings 18–22 pt, line spacing **1.15** |
 | PowerPoint (`.pptx`) | **FC Iconic** | Title **32 pt**, body **18 pt**, speaker notes **16 pt** |
 
-Generate guides: `python scripts/build-portal-user-guides.py`  
-Enrich `Processes/Pages/**/*.md` with detailed steps: `python scripts/enrich-process-pages.py --force-steps`
+Generate user guides: `python scripts/build-portal-user-guides.py`  
+Generate **technical architecture** Word/PPT: `npm run guides:technical` → `docs/TECHNICAL_ARCHITECTURE_WORD_TH.docx`, `docs/TECHNICAL_ARCHITECTURE_PPT_TH.pptx`  
+Enrich `Processes/Pages/**/*.md` with detailed steps: `python scripts/enrich-process-pages.py --force-steps`  
+HTML slides (Sarabun 16 pt): `docs/TECHNICAL_ARCHITECTURE_SLIDES.html` · Speaker notes: `docs/TECHNICAL_ARCHITECTURE_SLIDES.md` · Diagrams: `docs/diagrams.drawio`
 
-**After cloud / Code Breaker testing:** purge demo data only (no re-seed): `npm run cleanup:cloud-test-only`
+**After cloud / Code Breaker testing:** purge demo data only (no re-seed): `npm run cleanup:cloud-test-only` (requires valid `DB_PASSWORD` in `.env`)
 
-**Current doc build:** v1.7.33 · ENRICH-5 · Word tables+TOC · PPT per-slide detail · Word `TH Sarabun New` 16 pt · PPT `FC Iconic` 32/18/16 pt · หลัง `npm run cleanup:cloud-test-only`
+**Current doc build:** v1.7.33 · ENRICH-7 · Word `TH Sarabun New` 16 pt · PPT `FC Iconic` 32/18/16 pt · Technical deck 15 slides · หลัง `cleanup:cloud-test-only` เมื่อ DB พร้อม
 
 ---
 
