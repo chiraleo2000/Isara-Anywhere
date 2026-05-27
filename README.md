@@ -30,9 +30,9 @@ Full-stack telemedicine for Thailand: video consultations (Jitsi), PHR/EMR, e-pr
 
 | Service | URL | Login |
 | ------- | --- | ----- |
-| **Patient Portal** | https://izara-patient-portal-dev-testing-hvht4obouq-as.a.run.app | [Open](https://izara-patient-portal-dev-testing-hvht4obouq-as.a.run.app/login) |
-| **Doctor Portal** | https://izara-doctor-portal-dev-testing-hvht4obouq-as.a.run.app | [Open](https://izara-doctor-portal-dev-testing-hvht4obouq-as.a.run.app/login) |
-| **Meeting Server** | https://izara-meeting-server-dev-testing-hvht4obouq-as.a.run.app | API / health only |
+| **Patient Portal** | https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app | [Open](https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app/login) |
+| **Doctor Portal** | https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app | [Open](https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app/login) |
+| **Meeting Server** | https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app | API / health only |
 
 | Service | Cloud Run revision | Image tag | DB |
 | ------- | ------------------ | --------- | -- |

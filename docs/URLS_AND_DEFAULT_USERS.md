@@ -12,7 +12,7 @@
 | **Doctor Portal** | https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app | https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app/login |
 | **Meeting Server** | https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app | API / health only (`/health`) |
 
-**Image tag (Cloud Run):** `v1.7.33`
+**Image tag (Cloud Run):** `v1.7.12` (source repo v1.7.33)
 
 **Health check:** `npm run cloud:smoke`
 

@@ -6,7 +6,7 @@ substitutions:
   _TAG: v1.7.12
   _CLOUDSQL: "izara-telemedicine:asia-southeast1:izara-postgres-server"
   _DB_HOST: "/cloudsql/izara-telemedicine:asia-southeast1:izara-postgres-server"
-  _MEETING_SERVER_URL: "https://izara-meeting-server-dev-testing-hvht4obouq-as.a.run.app"
+  _MEETING_SERVER_URL: "https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app"
 
 steps:
   - name: "gcr.io/cloud-builders/docker"
