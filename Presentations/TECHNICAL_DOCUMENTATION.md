@@ -1,11 +1,11 @@
 # Izara Telemedicine Platform - Technical Documentation
 
-> **Version:** 1.7.0 (Updated 24 April 2026)
-> **Status:** Phase 1 + Phase 2 Complete — All Tests Passing (v1.7.0) — Native PostgreSQL 18 Support
+> **Version:** 1.7.37 (Updated 28 May 2026)
+> **Status:** Phase 1 + Phase 2 Complete — Cloud gates green on dev-testing
 > **Database:** PostgreSQL 18 + pgvector (42 tables, port 5432 native)
 > **Stack:** PostgreSQL / Express / React / Jitsi / Gemini AI / Google Cloud
-> **Tests:** 2,487 Unit Tests (Vitest, 77 files) + 44 UI Tests (Playwright, groups A–K) + 226 Cloud Tests = **2,757 total — 100% Pass Rate**
-> **Code Quality:** SonarQube clean — zero `error: any`, strict TypeScript safety, 31/31 API endpoints verified
+> **Tests:** **2,645** Unit (Vitest, 114 files) + **41** Gate UI (A-auth + 7 responsive viewports) + GATE0 API — **100% pass** on last full run
+> **Code Quality:** SonarLint + `npm run sonar:lint` (eslint sonarjs, app-scan); see [UNIT_TEST_UI_COVERAGE.md](../docs/UNIT_TEST_UI_COVERAGE.md)
 
 ---
 
@@ -524,14 +524,22 @@ services:
 
 
 
-### 7.1 Test Summary (March 27, 2026)
+### 7.1 Test Summary (May 28, 2026 — v1.7.37)
 
 | Layer | Framework | Files / Specs | Tests | Duration |
 | --- | --- | --- | --- | --- |
-| **Unit Tests** | Vitest 2.1.9 | 58 files | 2,013 | ~4.3s |
-| **E2E — Local Desktop** | Playwright 1.58 | 32 specs | 1,124 | ~4.2 min |
-| **Cloud Tests** | Playwright 1.58 | 10 specs | 215 | ~8.0 min |
-| **TOTAL** | | **58 unit + 32 local + 10 cloud** | **3,352** | **100% Pass** |
+| **Unit Tests** | Vitest 2.1 | 114 files | **2,645** | ~6s |
+| **Quality gate** | sonar:lint + coverage | — | — | ~1 min |
+| **Cloud unit gate** | Vitest + smoke + GATE0 | — | API G1–G5 | ~1 min |
+| **Cloud UI showup** | Playwright 1.58 (headed) | A + 7×S | **41** | ~3–11 min |
+| **E2E (extended)** | Playwright | 32+ specs | 1,100+ | optional full suite |
+
+**Cross-reference:** [docs/UNIT_TEST_UI_COVERAGE.md](../docs/UNIT_TEST_UI_COVERAGE.md) (unit domains → UI screenshots). **Diagram:** [html-diagrams/17-testing-quality-gate.html](html-diagrams/17-testing-quality-gate.html). **Log:** `reports/unit/v1.7.37-full-unit-run.log`.
+
+```powershell
+npm run test:unit:report    # full unit run + markdown report
+npm run test:gate:ui-showup # cloud screenshots -> docs/screenshots/group-A, group-S
+```
 
 
 

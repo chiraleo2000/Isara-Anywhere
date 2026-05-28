@@ -1,9 +1,10 @@
 # 📊 IZARA Telemedicine Platform - Presentation Materials
 
-> **Version:** 1.7.0 | **Updated:** 24 April 2026
-> **Status:** Phase 1 + Phase 2 Complete — All Tests Passing (v1.7.0) — Native PostgreSQL Support
-> **Tests:** 2,487 Unit (Vitest, 77 files) + 44 Local UI Tests (Playwright, 11 groups A–K) + 226 Cloud Tests = **2,757 total — 100% Pass Rate**
-> **Code Quality:** SonarQube clean — zero `error: any`, strict TypeScript safety
+> **Version:** 1.7.37 | **Updated:** 28 May 2026
+> **Status:** Cloud dev-testing green — rev `00137-zdl`
+> **Tests:** **2,645** unit (114 files) + **41** gate UI (A-auth + 7 viewports) + GATE0 — see [docs/UNIT_TEST_UI_COVERAGE.md](../docs/UNIT_TEST_UI_COVERAGE.md)
+> **Diagrams:** [html-diagrams/17-testing-quality-gate.html](html-diagrams/17-testing-quality-gate.html) — unit ↔ UI ↔ cloud connections
+> **Code Quality:** SonarLint IDE + `npm run sonar:lint`
 
 ---
 

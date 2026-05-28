@@ -3,10 +3,11 @@
 
 ## Presentation Script & Guide
 
-> **Version:** 1.7.0 | **Date:** April 2026
-> **Status:** Phase 1 + Phase 2 Complete — All Tests Passing (v1.7.0)
+> **Version:** 1.7.37 | **Date:** May 2026
+> **Status:** 2645 unit tests + 41 cloud UI gate tests passing; rev `00137-zdl`
 > **Duration:** 30-45 minutes
 > **Audience:** Stakeholders, Technical Team, Medical Staff
+> **Visuals:** [html-diagrams/17-testing-quality-gate.html](html-diagrams/17-testing-quality-gate.html) | [UNIT_TEST_UI_COVERAGE.md](../docs/UNIT_TEST_UI_COVERAGE.md)
 
 ---
 

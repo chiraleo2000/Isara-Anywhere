@@ -3,8 +3,8 @@
 
 from __future__ import annotations
 
-VERSION = "1.7.33"
-DATE_TH = "27 พฤษภาคม 2569"
+VERSION = "1.7.37"
+DATE_TH = "28 พฤษภาคม 2569"
 
 # Each slide: title, body lines (bullet strings), notes (speaker), optional table (headers, rows)
 SLIDES: list[dict] = [
@@ -168,13 +168,31 @@ SLIDES: list[dict] = [
         "notes": "draw.io หน้า 2 User Management, หน้า 7 Notification",
     },
     {
+        "title": "การทดสอบและคุณภาพ (v1.7.37)",
+        "table": (
+            ["ชั้น", "เครื่องมือ", "ผลลัพธ์"],
+            [
+                ["Unit", "Vitest 114 ไฟล์", "2645 tests ผ่าน"],
+                ["Sonar", "SonarLint + sonar:lint", "server/ รวมใน Sonar sources"],
+                ["Cloud API", "verify:gate0", "G1–G5 นัดหมาย"],
+                ["Cloud UI", "Playwright A + 7 viewports", "41 tests + screenshots"],
+                ["เอกสาร", "UNIT_TEST_UI_COVERAGE.md", "แมป unit → ภาพ UI"],
+            ],
+        ),
+        "body": [
+            "แผนภาพ: Presentations/html-diagrams/17-testing-quality-gate.html",
+            "ภาพหน้าจอ: docs/screenshots/group-A, group-S, workflows/*",
+        ],
+        "notes": "npm run test:unit:report และ test:gate:ui-showup",
+    },
+    {
         "title": "การ deploy และเอกสารอ้างอิง",
         "body": [
             "Local: docker-compose up — Patient :3005 Doctor :3010 Meeting :3020",
-            "Cloud: Isara-doctor-portal/cloudbuild.yaml หรือ scripts/deploy/cloud.ps1",
+            "Cloud: npm run cloud:deploy -- -Tag v1.7.37 + traffic shift",
             "ล้างข้อมูลทดสอบ: npm run cleanup:cloud-test-only",
             "Processes/Pages/** — ขั้นตอนละเอียดต่อหน้าจอ",
-            "สร้างคู่มือ: python scripts/build-technical-architecture-docs.py",
+            "สร้างคู่มือ: npm run guides:technical (TH Sarabun 16pt, FC Iconic PPT)",
         ],
         "notes": "README.md, docs/CLOUD_ACCESS_TH.md, docs/diagrams.drawio",
     },

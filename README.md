@@ -322,6 +322,7 @@ SonarLint: open repo root; uses [`sonar-project.properties`](sonar-project.prope
 - Unit tests: sanitize middleware regression, PHR timeline degraded mode, responsive breakpoints
 - Patient `/api/phr/:id/timeline` returns 200 `[]` for demo patients on DB errors (fixes cloud S03 500)
 - Responsive UI: doctor login/dashboard padding, ResponsiveLayout mobile gutters, patient 44px touch nav
+- **Docs:** [docs/UNIT_TEST_UI_COVERAGE.md](docs/UNIT_TEST_UI_COVERAGE.md) (2645 unit + UI screenshots), diagram [Presentations/html-diagrams/17-testing-quality-gate.html](Presentations/html-diagrams/17-testing-quality-gate.html), TH Word/PPT via `npm run guides:technical`
 
 ### v1.7.18 (May 22, 2026)
 

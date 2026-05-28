@@ -1,6 +1,8 @@
-# E2E Test Coverage Report — v1.5.9
+# E2E Test Coverage Report — v1.7.37
 
-**Generated:** 2026-03-22
+> **See also:** [UNIT_TEST_COVERAGE_REPORT.md](UNIT_TEST_COVERAGE_REPORT.md) and [docs/UNIT_TEST_UI_COVERAGE.md](../docs/UNIT_TEST_UI_COVERAGE.md) for the latest full unit run + UI screenshot mapping.
+
+**Generated:** 2026-03-22 (E2E detail); unit baseline updated 2026-05-28
 **Framework:** Playwright 1.58.2 (TypeScript)
 **Total Spec Files:** 33 E2E + 5 UI Test Files
 **Total Tests:** ~1,149 E2E + 96 Local UI + 81 Cloud UI = ~1,326

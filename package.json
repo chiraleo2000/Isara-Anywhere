@@ -8,6 +8,7 @@
     "test:unit": "cd tests/unit && npm test",
     "test:unit:watch": "cd tests/unit && npm run test:watch",
     "test:unit:coverage": "cd tests/unit && npm run test:coverage",
+    "test:unit:report": "node scripts/aggregate-unit-test-report.mjs",
     "test:unit:auth": "cd tests/unit && npm run test:auth",
     "test:unit:appointments": "cd tests/unit && npm run test:appointments",
     "test:unit:clinical": "cd tests/unit && npm run test:clinical",
