@@ -666,12 +666,12 @@ export const ResponsiveLayout: React.FC<ResponsiveLayoutProps> = ({
       <main
         data-testid="main-content"
         className={`
-          ${isMobile ? 'pt-16 pb-20' : 'lg:pl-64'}
-          min-h-screen overflow-y-auto overflow-x-hidden max-w-full
+          ${isMobile ? 'pt-16 pb-20 px-3' : 'lg:pl-64 px-4 md:px-6'}
+          min-h-screen min-h-[100dvh] overflow-y-auto overflow-x-hidden max-w-full min-w-0
           ${isDarkMode ? 'bg-gray-900 text-white' : ''}
         `}
       >
-        {children}
+        <div className="w-full min-w-0 max-w-full">{children}</div>
       </main>
     </div>
   );

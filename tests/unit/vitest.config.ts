@@ -115,6 +115,8 @@ const GROUP_NOTIFICATIONS = [
 ];
 const GROUP_SECURITY = [
   'doctor-portal/owaspMiddleware.test.ts',
+  'doctor-portal/sanitizeRequestBody.middleware.test.ts',
+  'doctor-portal/authLoginResponse.test.ts',
   'doctor-portal/auditLogService.test.ts',
   'patient-portal/owasp-middleware.test.ts',
   'security/corsAndRateLimiting.test.ts',
@@ -200,6 +202,7 @@ export default defineConfig({
       include: [
         '../../Isara-doctor-portal/server/**/*.{ts,js,cjs,mjs}',
         '../../Isara-doctor-portal/src/services/**/*.{ts,tsx}',
+        '../../Isara-doctor-portal/src/utils/**/*.{ts,tsx}',
         '../../Isara-patient-portal/server/**/*.{ts,js,cjs,mjs}',
         '../../Isara-patient-portal/src/services/**/*.{ts,tsx}',
         '../../Izara-jitsi-server/server/**/*.{ts,js,cjs,mjs}',

@@ -12,4 +12,10 @@
 
 **Redeploy:** `v1.7.36-doctor-sanitize-fix` → revision `izara-doctor-portal-dev-testing-00136-n8t` (100% traffic).
 
+| `Isara-patient-portal/server/routes/phr.ts` | Cloud timeline 500 for PATIENT-DEMO | Per-segment `safeTimelineQuery`; demo → `[]` with 200 |
+| Unit + Sonar | Coverage gate, middleware regression | `sanitizeRequestBody.middleware.test.ts`, `npm run sonar:lint` |
+| UI | Limited mobile polish visibility | ResponsiveLayout/LoginPage/DoctorDashboard/MainLayout padding |
+
+**Redeploy (v1.7.37):** `npm run cloud:deploy -- -Tag v1.7.37` + traffic shift to new doctor revision.
+
 Commit at Step 1 gate: see `step1-summary.txt` first line.

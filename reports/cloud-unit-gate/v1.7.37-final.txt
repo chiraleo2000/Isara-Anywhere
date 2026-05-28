@@ -1,0 +1,8 @@
+v1.7.37 quality patch — 2026-05-28
+
+Unit: 2645 passed (114 files)
+Cloud unit gate: PASS (smoke + GATE0 G1-G5)
+Sonar: sonar-project.properties includes server/; npm run sonar:lint
+New tests: sanitizeRequestBody.middleware, authMiddleware.mount, responsiveLayout.logic, phrTimeline.route, mainLayout.nav
+
+Pending after deploy: traffic shift to new doctor revision, optional test:gate:ui-showup

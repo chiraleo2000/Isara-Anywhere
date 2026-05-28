@@ -187,7 +187,7 @@ const LoginPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen min-h-[100dvh] bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 flex items-center justify-center px-3 py-4 sm:p-6 relative overflow-x-hidden">
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 left-0 w-full h-full">
@@ -197,7 +197,7 @@ const LoginPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="max-w-5xl w-full relative z-10">
+      <div className="max-w-5xl w-full min-w-0 relative z-10">
         <div className="grid md:grid-cols-2 gap-8 items-center">
 
           {/* LEFT SIDE - BRANDING & INFO */}

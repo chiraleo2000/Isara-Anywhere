@@ -9,7 +9,7 @@ function registerDoctorHealthRoutes(app, deps) {
       status: 'healthy',
       timestamp: new Date().toISOString(),
       service: 'Izara Doctor Portal API',
-      version: '1.7.3',
+      version: '1.7.37',
       port: PORT,
       features: {
         videoMeeting: 'Jitsi Meet (FREE)',
@@ -27,7 +27,7 @@ function registerDoctorHealthRoutes(app, deps) {
       status: 'healthy',
       timestamp: new Date().toISOString(),
       service: 'Izara Doctor Portal API',
-      version: '1.7.3',
+      version: '1.7.37',
       port: PORT,
     });
   });

@@ -1850,11 +1850,11 @@ export const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
   }
 
   return (
-    <div className={`min-h-full flex flex-col overflow-y-auto ${tc('bg-gray-900', 'bg-gray-50')}`}>
+    <div className={`min-h-full flex flex-col overflow-y-auto overflow-x-hidden min-w-0 max-w-full ${tc('bg-gray-900', 'bg-gray-50')}`}>
       {/* ============================================================================ */}
       {/* DASHBOARD OVERVIEW - TOP KPI CARDS */}
       {/* ============================================================================ */}
-      <div className={`px-6 py-4 border-b ${tc('bg-gray-800 border-gray-700', 'bg-white border-gray-200')}`}>
+      <div className={`px-3 sm:px-6 py-4 border-b min-w-0 ${tc('bg-gray-800 border-gray-700', 'bg-white border-gray-200')}`}>
         <div className="flex items-center justify-between mb-4">
           <div>
             <h1 className={`text-2xl font-bold ${tc('text-white', 'text-gray-900')}`}>{labels.doctorDashboard[language]}</h1>

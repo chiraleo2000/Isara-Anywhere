@@ -118,7 +118,7 @@ function navItemClass(isActive: boolean, isDark: boolean): string {
 }
 
 function bottomNavItemClass(isActive: boolean, isDark: boolean): string {
-  const base = 'flex flex-col items-center justify-center min-h-11 py-2 px-1 transition-colors';
+  const base = 'flex flex-col items-center justify-center min-h-[44px] py-2 px-1 transition-colors';
   if (isActive) {
     return `${base} text-emerald-600 dark:text-emerald-400`;
   }

@@ -613,6 +613,27 @@ router.get('/:patientId/health-logs/:entryId', authMiddleware, async (req: Reque
 // MEDICAL TIMELINE - PostgreSQL
 // ============================================================================
 
+function isDemoTimelinePatient(patientId: string): boolean {
+  const id = String(patientId || '').toUpperCase();
+  return id === 'PATIENT-DEMO' || id.startsWith('PATIENT-DEMO');
+}
+
+async function safeTimelineQuery<T>(
+  patientId: string,
+  label: string,
+  fn: () => Promise<T>,
+  fallback: T,
+): Promise<T> {
+  try {
+    return await fn();
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.warn(`[PHR] Timeline segment "${label}" skipped for ${patientId}:`, msg);
+    if (isDemoTimelinePatient(patientId)) return fallback;
+    throw err;
+  }
+}
+
 // Get patient timeline (aggregated from appointments, EMR, prescriptions, lab orders)
 router.get('/:patientId/timeline', authMiddleware, async (req: Request, res: Response) => {
   try {
@@ -625,14 +646,20 @@ router.get('/:patientId/timeline', authMiddleware, async (req: Request, res: Res
 
     // Get appointments
     if (!type || type === 'appointment' || type === 'all') {
-      const appointments = await pool.query(
-        `SELECT a.*, u.name as doctor_name, u.name_thai as doctor_name_thai
+      const appointments = await safeTimelineQuery(
+        patientId,
+        'appointments',
+        () =>
+          pool.query(
+            `SELECT a.*, u.name as doctor_name, u.name_thai as doctor_name_thai
          FROM appointments a
          LEFT JOIN users u ON a.doctor_id = u.id
          WHERE a.patient_id = $1 AND a.status IN ('completed', 'confirmed')
          ORDER BY COALESCE(a.confirmed_date, a.requested_date) DESC
          LIMIT 50`,
-        [patientId]
+            [patientId],
+          ),
+        { rows: [] as any[] },
       );
       appointments.rows.forEach((apt: any) => {
         timeline.push({
@@ -644,21 +671,27 @@ router.get('/:patientId/timeline', authMiddleware, async (req: Request, res: Res
           description: apt.symptoms?.join(', ') || apt.symptom_description || '',
           doctorName: apt.doctor_name_thai || apt.doctor_name,
           status: apt.status,
-          data: apt
+          data: apt,
         });
       });
     }
 
     // Get EMR/Diagnoses
     if (!type || type === 'diagnosis' || type === 'all') {
-      const emrs = await pool.query(
-        `SELECT e.*, u.name as doctor_name, u.name_thai as doctor_name_thai
+      const emrs = await safeTimelineQuery(
+        patientId,
+        'emr',
+        () =>
+          pool.query(
+            `SELECT e.*, u.name as doctor_name, u.name_thai as doctor_name_thai
          FROM emr e
          LEFT JOIN users u ON e.doctor_id = u.id
          WHERE e.patient_id = $1 AND e.status = 'signed'
          ORDER BY e.created_at DESC
          LIMIT 50`,
-        [patientId]
+            [patientId],
+          ),
+        { rows: [] as any[] },
       );
       emrs.rows.forEach((emr: any) => {
         const diagnoses = emr.assessment?.diagnoses || [];
@@ -670,21 +703,27 @@ router.get('/:patientId/timeline', authMiddleware, async (req: Request, res: Res
           titleThai: 'ผลการวินิจฉัย',
           description: diagnoses.map((d: any) => d.name || d.description).join(', ') || 'ผลตรวจ',
           doctorName: emr.doctor_name_thai || emr.doctor_name,
-          data: emr
+          data: emr,
         });
       });
     }
 
     // Get prescriptions
     if (!type || type === 'medication' || type === 'all') {
-      const prescriptions = await pool.query(
-        `SELECT p.*, u.name as doctor_name, u.name_thai as doctor_name_thai
+      const prescriptions = await safeTimelineQuery(
+        patientId,
+        'prescriptions',
+        () =>
+          pool.query(
+            `SELECT p.*, u.name as doctor_name, u.name_thai as doctor_name_thai
          FROM prescriptions p
          LEFT JOIN users u ON p.doctor_id = u.id
          WHERE p.patient_id = $1
          ORDER BY p.created_at DESC
          LIMIT 50`,
-        [patientId]
+            [patientId],
+          ),
+        { rows: [] as any[] },
       );
       prescriptions.rows.forEach((rx: any) => {
         const meds = rx.medications || [];
@@ -696,21 +735,27 @@ router.get('/:patientId/timeline', authMiddleware, async (req: Request, res: Res
           titleThai: 'ใบสั่งยา',
           description: meds.map((m: any) => m.name || m.drug_name).join(', ') || 'ยาที่สั่ง',
           doctorName: rx.doctor_name_thai || rx.doctor_name,
-          data: rx
+          data: rx,
         });
       });
     }
 
     // Get lab orders
     if (!type || type === 'lab' || type === 'all') {
-      const labOrders = await pool.query(
-        `SELECT l.*, u.name as doctor_name, u.name_thai as doctor_name_thai
+      const labOrders = await safeTimelineQuery(
+        patientId,
+        'lab_orders',
+        () =>
+          pool.query(
+            `SELECT l.*, u.name as doctor_name, u.name_thai as doctor_name_thai
          FROM lab_orders l
          LEFT JOIN users u ON l.doctor_id = u.id
          WHERE l.patient_id = $1
          ORDER BY l.ordered_at DESC
          LIMIT 50`,
-        [patientId]
+            [patientId],
+          ),
+        { rows: [] as any[] },
       );
       labOrders.rows.forEach((lab: any) => {
         const tests = lab.tests || [];
@@ -723,7 +768,7 @@ router.get('/:patientId/timeline', authMiddleware, async (req: Request, res: Res
           description: tests.map((t: any) => t.name || t.test_name).join(', ') || 'การตรวจทางห้องปฏิบัติการ',
           doctorName: lab.doctor_name_thai || lab.doctor_name,
           status: lab.status,
-          data: lab
+          data: lab,
         });
       });
     }
@@ -734,6 +779,9 @@ router.get('/:patientId/timeline', authMiddleware, async (req: Request, res: Res
     res.json(timeline);
   } catch (error: unknown) {
     console.error('[PHR] Get timeline error:', error);
+    if (isDemoTimelinePatient(String(req.params.patientId))) {
+      return res.json([]);
+    }
     res.status(500).json({ error: 'Failed to fetch timeline' });
   }
 });

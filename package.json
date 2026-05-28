@@ -1,6 +1,6 @@
 {
   "name": "isara-anywhere",
-  "version": "1.7.33",
+  "version": "1.7.37",
   "description": "Izara Telemedicine Platform - Patient and Doctor Portals",
   "main": "index.js",
   "scripts": {
@@ -54,6 +54,8 @@
     "verify:deps": "npm ci && cd tests/unit && npm ci && cd ../.. && cd Isara-patient-portal && npm ci && cd ../Isara-doctor-portal && npm ci && cd ../Izara-jitsi-server && npm ci && cd ..",
     "ledger:pre-debug": "node scripts/aggregate-pre-debug-baseline.mjs",
     "security:app-scan": "node scripts/security/app-security-scan.mjs",
+    "sonar:lint": "node scripts/sonar/run-quality-gate.mjs",
+    "test:quality:gate": "npm run test:unit:coverage && npm run test:security-hardening && npm run test:meeting-server:contract && npm run sonar:lint",
     "test:cloud:hardening:round1": "pwsh scripts/run-two-round-cloud-hardening.ps1 -Round 1",
     "test:cloud:hardening:round2": "pwsh scripts/run-two-round-cloud-hardening.ps1 -Round 2",
     "ledger:cloud": "node scripts/aggregate-cloud-error-ledger.mjs",

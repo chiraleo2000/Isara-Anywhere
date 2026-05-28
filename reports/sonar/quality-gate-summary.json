@@ -1,0 +1,35 @@
+{
+  "generatedAt": "2026-05-28T15:26:55.382Z",
+  "projectVersion": "1.7.37",
+  "passed": true,
+  "steps": [
+    {
+      "name": "unit-coverage",
+      "ok": true,
+      "durationMs": 7882,
+      "exitCode": 0
+    },
+    {
+      "name": "eslint-deep-doctor",
+      "ok": true,
+      "exitCode": 2,
+      "note": "warn-only gate"
+    },
+    {
+      "name": "eslint-deep-patient",
+      "ok": true,
+      "exitCode": 2,
+      "note": "warn-only gate"
+    },
+    {
+      "name": "app-security-scan",
+      "ok": true,
+      "durationMs": 563,
+      "exitCode": 0
+    }
+  ],
+  "sonarLint": {
+    "hint": "Use SonarLint in IDE with sonar-project.properties at repo root (Connected Mode optional).",
+    "sources": "Isara-*-portal/src+server, Izara-jitsi-server/server"
+  }
+}
