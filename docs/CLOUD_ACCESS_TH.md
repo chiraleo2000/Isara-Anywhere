@@ -7,9 +7,9 @@
 
 | Service | URL | Revision | Image |
 | ------- | --- | -------- | ----- |
-| Patient Portal | https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app | latest | v1.7.34-doctor-auth-fix |
+| Patient Portal | https://izara-patient-portal-dev-testing-724889190329.asia-southeast1.run.app | latest | v1.7.36-doctor-sanitize-fix |
 | Doctor Portal | https://izara-doctor-portal-dev-testing-724889190329.asia-southeast1.run.app | 00136-n8t | v1.7.36-doctor-sanitize-fix |
-| Meeting Server | https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app | latest | v1.7.34-doctor-auth-fix |
+| Meeting Server | https://izara-meeting-server-dev-testing-724889190329.asia-southeast1.run.app | latest | v1.7.36-doctor-sanitize-fix |
 
 **Login**
 
