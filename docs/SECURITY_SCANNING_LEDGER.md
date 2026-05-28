@@ -3,7 +3,8 @@
 | ID | Date | Scanner | Codebase | Severity | OWASP | Location | Status |
 |----|------|---------|----------|----------|-------|----------|--------|
 | SEC-001 | 2026-05-27 | app-security-scan | doctor/patient/jitsi | Low | A05 | CORS `callback(null, true)` dev fallbacks (15 warn, 0 error) | Accepted risk (dev-testing) |
-| SEC-002 | 2026-05-27 | npm audit:prod | all portals | — | A06 | Run `npm run audit:prod` | Open — triage per portal lockfile |
+| SEC-002 | 2026-05-27 | npm audit:prod | all portals | Moderate | A06 | 7 moderate (google-cloud deps); no high | Accepted — monitor |
+| SEC-003 | 2026-05-28 | fix auth | doctor | High | A07 | `sanitizeRequestBody()` mount — login 504 | Fixed in v1.7.36-doctor-sanitize-fix |
 
 ## Commands (local)
 

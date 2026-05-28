@@ -1,6 +1,6 @@
 ﻿node : 
-At C:\Users\chira\AppData\Local\Temp\ps-script-204b1ed6-c3d3-42cf-8f51-019ad206b10c.ps1:102 char:309
-+ ... atient.txt; node scripts/lint/eslint.deep-scan.cjs --portal jitsi 2>& ...
+At C:\Users\chira\AppData\Local\Temp\ps-script-204b1ed6-c3d3-42cf-8f51-019ad206b10c.ps1:102 char:71
++ ... -Anywhere"; node scripts/lint/eslint.deep-scan.cjs --portal doctor 2> ...
 +                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     + CategoryInfo          : NotSpecified: (:String) [], RemoteException
     + FullyQualifiedErrorId : NativeCommandError
@@ -12,7 +12,7 @@ ESLint: 8.57.1
 Error: Failed to load parser '@typescript-eslint/parser' declared in '--config': Cannot find module 
 '@typescript-eslint/parser'
 Require stack:
-- C:\Users\chira\Documents\Isara-telemed\Isara-Anywhere\scripts\lint\.eslint.deep.jitsi.cjs
+- C:\Users\chira\Documents\Isara-telemed\Isara-Anywhere\scripts\lint\.eslint.deep.doctor.cjs
     at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)
     at Function.resolve (node:internal/modules/helpers:157:19)
     at Object.resolve (C:\Users\chira\Documents\Isara-telemed\Isara-Anywhere\Isara-doctor-portal\node_modules\@eslint\e

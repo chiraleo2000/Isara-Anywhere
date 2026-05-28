@@ -26,9 +26,13 @@ if (-not $env:CLOUD_MEETING_URL) {
 Write-Host "Gate UI showup (headed, cloud) - screenshots -> test-results/pre-debug/" -ForegroundColor Cyan
 npx playwright test `
   --project=A-auth `
-  --project=S-responsive-mobile `
-  --project=S-responsive-tablet `
-  --project=S-responsive-desktop `
+  --project=S-phone-xs `
+  --project=S-phone-sm `
+  --project=S-phone-md `
+  --project=S-phone-lg `
+  --project=S-tablet-sm `
+  --project=S-tablet-md `
+  --project=S-tablet-lg `
   --headed `
   --workers=1
 exit $LASTEXITCODE

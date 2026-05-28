@@ -22,7 +22,12 @@ async function apiLogin(baseUrl, email, password) {
       const resp = await fetch(`${baseUrl}${loginPath}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({
+          email,
+          password,
+          deviceId: process.env.VERIFY_DEVICE_ID || 'gate0-verify',
+          userAgent: 'gate0-verify-script/1.0',
+        }),
       });
       if (resp.ok) {
         const d = await resp.json();

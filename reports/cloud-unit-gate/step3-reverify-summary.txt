@@ -1,0 +1,10 @@
+Step 3 reverify — 2026-05-28
+Doctor revision: izara-doctor-portal-dev-testing-00136-n8t
+Tag: v1.7.36-doctor-sanitize-fix
+
+- npm run test:unit — 2630 passed
+- npm run test:cloud:unit-gate — PASS (smoke + verify:gate0)
+- npm run test:gate:ui-showup — 41 passed (A-auth + 7 S viewports, 11.1m)
+- POST /auth/login doctor+admin — 200 (<600ms)
+
+Screenshots: test-results/pre-debug/

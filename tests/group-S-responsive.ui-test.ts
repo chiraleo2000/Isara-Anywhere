@@ -32,4 +32,20 @@ test.describe('Group S — Responsive layout stability', () => {
     }
     await snap(patient.page, 'S03-patient-deep-routes', 'group-S');
   });
+
+  test('S04 — Doctor dashboard deep views', async ({ portals }) => {
+    const { doctor } = portals;
+    const views = ['schedule', 'patients', 'health-meeting', 'profile'];
+    for (const view of views) {
+      await doctor.page.evaluate((v) => {
+        const w = globalThis as unknown as { __doctorNavigate?: (x: string) => void };
+        if (typeof w.__doctorNavigate === 'function') w.__doctorNavigate(v);
+      }, view).catch(() => {});
+      await doctor.page.waitForTimeout(500);
+      await assertNoHorizontalScroll(doctor.page);
+    }
+    await assertFullHealth(doctor.page, 'S04-doctor');
+    await assertMainContentVisible(doctor.page);
+    await snap(doctor.page, 'S04-doctor-deep-views', 'group-S');
+  });
 });

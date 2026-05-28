@@ -290,9 +290,24 @@ app.use(rateLimit({
 }));
 
 // Body parsing with size limits (A06 - Insecure Design)
-app.use(express.json({ limit: '10mb' })); // Reduced from 50mb
+app.use(express.json({
+  limit: '10mb',
+  verify: (req, _res, buf) => {
+    req.rawBody = buf;
+  },
+}));
+app.use((err, req, res, next) => {
+  if (err && (err.type === 'entity.parse.failed' || err instanceof SyntaxError)) {
+    return res.status(400).json({
+      error: 'Invalid JSON in request body',
+      code: 'INVALID_JSON',
+      requestId: req.requestId,
+    });
+  }
+  return next(err);
+});
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-app.use(sanitizeRequestBody);
+app.use(sanitizeRequestBody());
 
 // Request logging with timestamp
 app.use((req, res, next) => {
@@ -449,12 +464,14 @@ async function pgCreateSession(userId, email, role, ip, userAgent, deviceId) {
     const token = crypto.randomBytes(32).toString('hex');
     const expiresAt = new Date(Date.now() + 3 * 60 * 60 * 1000); // 3 hours (matches JWT_EXPIRES_IN)
     
-    // Invalidate all previous active sessions for this user to prevent cross-device contamination
-    await pgPool.query(
-      `UPDATE sessions SET expires_at = NOW(), logged_out_at = NOW()
-       WHERE user_id = $1 AND expires_at > NOW() AND logged_out_at IS NULL`,
-      [userId]
-    );
+    // Invalidate prior sessions in background (mass UPDATE can exceed nginx 30s proxy timeout)
+    pgPool
+      .query(
+        `UPDATE sessions SET expires_at = NOW(), logged_out_at = NOW()
+         WHERE user_id = $1 AND expires_at > NOW() AND logged_out_at IS NULL`,
+        [userId]
+      )
+      .catch((err) => console.warn('[AUTH] Session invalidation skipped:', err.message));
 
     const result = await pgPool.query(
       `INSERT INTO sessions (id, user_id, token, expires_at, ip_address, user_agent)
@@ -867,8 +884,16 @@ app.post('/auth/login',
     
     console.log('[AUTH] Using PostgreSQL for login');
     
-    // Find user by email
-    const user = await pgFindUserByEmail(email);
+    // Find user by email (bounded wait — nginx proxy_read_timeout is 30s)
+    const user = await Promise.race([
+      pgFindUserByEmail(email),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('user lookup timeout')), 12000)
+      ),
+    ]).catch((lookupErr) => {
+      console.error('[AUTH] User lookup failed:', lookupErr.message);
+      return null;
+    });
       
       if (!user) {
         trackLoginAttempt(email, false);
@@ -921,22 +946,28 @@ app.post('/auth/login',
       // Reset login attempts on success
       await pgUpdateLoginAttempts(user.id, 0, null);
       
-      // Create session for session tracking (optional)
+      // Create session for session tracking (optional; must not block login past nginx proxy timeout)
       const clientIP = getClientIP(req);
-      const sessionResult = await pgCreateSession(
-        user.id, 
-        user.email, 
-        user.role, 
-        clientIP, 
-        clientUserAgent || req.headers['user-agent'],
-        deviceId
-      );
-      
-      if (!sessionResult) {
-        return res.status(500).json({ error: 'Failed to create session', code: 'SESSION_ERROR' });
+      let sessionResult = null;
+      try {
+        sessionResult = await Promise.race([
+          pgCreateSession(
+            user.id,
+            user.email,
+            user.role,
+            clientIP,
+            clientUserAgent || req.headers['user-agent'],
+            deviceId
+          ),
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('session create timeout')), 8000)
+          ),
+        ]);
+      } catch (sessionErr) {
+        console.warn('[AUTH] Session create skipped:', sessionErr.message);
       }
       
-      // Generate JWT token for API authentication
+      // Generate JWT token for API authentication (session row is optional for API auth)
       const jwtToken = generateJWT(user);
       const expiresAt = new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString(); // 3 hours
 
@@ -975,7 +1006,7 @@ app.post('/auth/login',
         success: true,
         token: jwtToken, // JWT token for API authentication
         refreshToken: refreshTokenRaw, // Refresh token for silent renewal
-        sessionToken: sessionResult.token, // Session token for session management
+        sessionToken: sessionResult?.token ?? null, // Session token for session management
         user: sanitizeUser({
           id: user.id,
           email: user.email,

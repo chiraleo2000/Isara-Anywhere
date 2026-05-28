@@ -83,11 +83,27 @@ const sharedUse = {
     : 'http://localhost:3005',
 };
 
+/** 5" phone through 13" tablet matrix (Group S). */
 const RESPONSIVE_VIEWPORTS = {
-  mobile: { width: 390, height: 844 },
-  tablet: { width: 768, height: 1024 },
+  phoneXs: { width: 320, height: 568 },
+  phoneSm: { width: 360, height: 780 },
+  phoneMd: { width: 390, height: 844 },
+  phoneLg: { width: 430, height: 932 },
+  tabletSm: { width: 600, height: 960 },
+  tabletMd: { width: 768, height: 1024 },
+  tabletLg: { width: 1024, height: 1366 },
   desktop: { width: 1440, height: 900 },
 } as const;
+
+const RESPONSIVE_PROJECTS = [
+  { name: 'S-phone-xs', viewport: RESPONSIVE_VIEWPORTS.phoneXs },
+  { name: 'S-phone-sm', viewport: RESPONSIVE_VIEWPORTS.phoneSm },
+  { name: 'S-phone-md', viewport: RESPONSIVE_VIEWPORTS.phoneMd },
+  { name: 'S-phone-lg', viewport: RESPONSIVE_VIEWPORTS.phoneLg },
+  { name: 'S-tablet-sm', viewport: RESPONSIVE_VIEWPORTS.tabletSm },
+  { name: 'S-tablet-md', viewport: RESPONSIVE_VIEWPORTS.tabletMd },
+  { name: 'S-tablet-lg', viewport: RESPONSIVE_VIEWPORTS.tabletLg },
+] as const;
 
 export default defineConfig({
   testDir: './tests',
@@ -216,33 +232,15 @@ export default defineConfig({
       dependencies: ['A-auth', 'D-appointments'],
     },
 
-    /* ── RESPONSIVE LAYOUT (headed baseline / viewport matrix) ─── */
-    {
-      name: 'S-responsive-mobile',
+    /* ── RESPONSIVE LAYOUT (7 viewports: 5" phone – 13" tablet) ─── */
+    ...RESPONSIVE_PROJECTS.map((rp) => ({
+      name: rp.name,
       testMatch: 'group-S-responsive.ui-test.ts',
       dependencies: ['A-auth'],
       use: {
         ...sharedUse,
-        viewport: RESPONSIVE_VIEWPORTS.mobile,
+        viewport: rp.viewport,
       },
-    },
-    {
-      name: 'S-responsive-tablet',
-      testMatch: 'group-S-responsive.ui-test.ts',
-      dependencies: ['A-auth'],
-      use: {
-        ...sharedUse,
-        viewport: RESPONSIVE_VIEWPORTS.tablet,
-      },
-    },
-    {
-      name: 'S-responsive-desktop',
-      testMatch: 'group-S-responsive.ui-test.ts',
-      dependencies: ['A-auth'],
-      use: {
-        ...sharedUse,
-        viewport: RESPONSIVE_VIEWPORTS.desktop,
-      },
-    },
+    })),
   ],
 });

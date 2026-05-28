@@ -50,6 +50,8 @@
     "test:unit:baseline": "npm run test:unit:auth && npm run test:unit:appointments && npm run test:unit:meeting && npm run test:unit:meeting-acceptance",
     "test:cloud:unit-gate": "npm run test:unit && npm run test:unit:meeting-acceptance && npm run test:security-hardening && npm run test:meeting-server:contract && npm run cloud:smoke && npm run verify:gate0",
     "test:gate:ui-showup": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-gate-ui-showup.ps1",
+    "test:gate:responsive-cloud": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"$env:TEST_ENV='cloud'; $env:BASELINE_VISUAL='1'; $env:PW_HEADED='1'; $env:PW_WORKERS='1'; npx playwright test --project=S-phone-xs --project=S-phone-sm --project=S-phone-md --project=S-phone-lg --project=S-tablet-sm --project=S-tablet-md --project=S-tablet-lg --headed --workers=1\"",
+    "verify:deps": "npm ci && cd tests/unit && npm ci && cd ../.. && cd Isara-patient-portal && npm ci && cd ../Isara-doctor-portal && npm ci && cd ../Izara-jitsi-server && npm ci && cd ..",
     "ledger:pre-debug": "node scripts/aggregate-pre-debug-baseline.mjs",
     "security:app-scan": "node scripts/security/app-security-scan.mjs",
     "test:cloud:hardening:round1": "pwsh scripts/run-two-round-cloud-hardening.ps1 -Round 1",

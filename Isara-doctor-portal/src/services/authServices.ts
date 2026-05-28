@@ -413,66 +413,91 @@ export class AuthService {
         }),
       });
 
-      // Check response body before parsing
       const responseText = await response.text();
-      let result;
-      
+      const contentType = response.headers.get('content-type') || '';
+      const trimmed = responseText.trim();
+
+      if (!trimmed) {
+        throw new Error(
+          response.ok
+            ? 'Empty response from auth server. Please try again.'
+            : `Auth server error (${response.status}). Please try again.`,
+        );
+      }
+
+      const looksLikeHtml = trimmed.startsWith('<') || trimmed.startsWith('<!');
+      if (looksLikeHtml || (!contentType.includes('json') && !trimmed.startsWith('{') && !trimmed.startsWith('['))) {
+        console.error('❌ Auth server returned non-JSON:', response.status, trimmed.slice(0, 200));
+        throw new Error(
+          'Auth service returned an unexpected response. Check your connection or try again in a moment.',
+        );
+      }
+
+      let result: Record<string, unknown>;
       try {
-        result = responseText ? JSON.parse(responseText) : {};
+        result = JSON.parse(trimmed) as Record<string, unknown>;
       } catch (parseError) {
-        console.error('❌ Failed to parse auth server response:', responseText, parseError);
+        console.error('❌ Failed to parse auth server response:', trimmed.slice(0, 300), parseError);
         throw new Error('Server response was not valid JSON. Please try again.');
       }
 
       if (!response.ok || !result.success) {
-        console.error('❌ Auth server login failed:', result.error || result.message);
-        throw new Error(result.error || result.message || 'Invalid email or password');
+        const errMsg =
+          (typeof result.error === 'string' && result.error) ||
+          (typeof result.message === 'string' && result.message) ||
+          (typeof result.code === 'string' ? `Login failed (${result.code})` : '') ||
+          'Invalid email or password';
+        console.error('❌ Auth server login failed:', errMsg);
+        throw new Error(errMsg);
       }
 
       console.log('✅ Auth server returned success');
 
-      // Auth server returns user and token
-      const { user: authUser, token: authToken } = result;
+      const authUser = result.user as Record<string, unknown>;
+      const authToken = result.token as string;
 
       // Map auth server response to our User type
       // Auth server returns: id, email, role, doctorId, medicalLicenseNumber, isActive, 
       // emailVerified, name, phone, dateOfBirth, avatarUrl, specialty, preferences, isAdmin, adminPrivileges
+      const userName = String(authUser.name || 'Doctor');
+      const userEmail = String(authUser.email || emailKey);
       const user: User = {
-        displayName: authUser.name || 'Doctor',
-        id: authUser.id,
-        email: authUser.email,
-        name: authUser.name || 'Doctor',
-        role: authUser.role || 'doctor',
-        doctorId: authUser.doctorId || authUser.id,
-        medicalLicenseNumber: authUser.medicalLicenseNumber || '',
+        displayName: userName,
+        id: String(authUser.id || ''),
+        email: userEmail,
+        name: userName,
+        role: (authUser.role as User['role']) || 'doctor',
+        doctorId: String(authUser.doctorId || authUser.id || ''),
+        medicalLicenseNumber: String(authUser.medicalLicenseNumber || ''),
         isActive: authUser.isActive !== false,
         emailVerified: authUser.emailVerified !== false,
-        avatarUrl: authUser.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(authUser.name || authUser.email)}`,
-        dateOfBirth: authUser.dateOfBirth,
-        phone: authUser.phone,
-        specialty: authUser.specialty,
-        preferences: authUser.preferences || {
+        avatarUrl: String(authUser.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(userName || userEmail)}`),
+        dateOfBirth: authUser.dateOfBirth as string | undefined,
+        phone: authUser.phone as string | undefined,
+        specialty: authUser.specialty as string | undefined,
+        preferences: (authUser.preferences as User['preferences']) || {
           theme: 'light',
           language: 'th',
           notifications: { email: true, sms: true, push: true },
         },
         // Admin privileges - CRITICAL for admin functionality
-        isAdmin: authUser.isAdmin || false,
-        adminPrivileges: authUser.adminPrivileges || undefined,
+        isAdmin: Boolean(authUser.isAdmin),
+        adminPrivileges: authUser.adminPrivileges as User['adminPrivileges'],
       };
 
       // Log admin status for debugging
-      if (authUser.isAdmin) {
-        console.log('👑 Admin user logged in:', authUser.email);
-        console.log('🔑 Admin privileges:', JSON.stringify(authUser.adminPrivileges));
+      if (user.isAdmin) {
+        console.log('👑 Admin user logged in:', user.email);
+        console.log('🔑 Admin privileges:', JSON.stringify(user.adminPrivileges));
       }
 
       // Save session locally
       this.saveLocalSession(user, authToken);
 
       // Store refresh token and start auto-refresh timer
-      if (result.refreshToken) {
-        localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, result.refreshToken);
+      const refreshToken = result.refreshToken;
+      if (typeof refreshToken === 'string' && refreshToken) {
+        localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
       }
       this.startTokenRefreshTimer(authToken);
 

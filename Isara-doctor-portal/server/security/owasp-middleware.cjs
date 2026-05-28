@@ -348,6 +348,20 @@ function sanitizeInput(input, type = 'general') {
 /**
  * Validate and sanitize request body
  */
+/** Fields that must not run command/SQL regex (passwords, browser UA, tokens). */
+const INJECTION_CHECK_SKIP_FIELDS = new Set([
+  'password',
+  'userAgent',
+  'deviceId',
+  'refreshToken',
+  'idToken',
+  'credential',
+  'token',
+  'sessionToken',
+  'code',
+  'clientSecret',
+]);
+
 function sanitizeRequestBody(allowedFields = []) {
   return (req, res, next) => {
     if (req.body && typeof req.body === 'object') {
@@ -361,6 +375,10 @@ function sanitizeRequestBody(allowedFields = []) {
 
         // Sanitize based on value type
         if (typeof value === 'string') {
+          if (INJECTION_CHECK_SKIP_FIELDS.has(key)) {
+            sanitizedBody[key] = value.trim();
+            continue;
+          }
           // Check for injection attempts
           for (const [patternName, pattern] of Object.entries(SANITIZATION_PATTERNS)) {
             if (pattern.test(value)) {
