@@ -4,7 +4,7 @@
 ## Presentation Script & Guide
 
 > **Version:** 1.7.37 | **Date:** May 2026
-> **Status:** 2645 unit tests + 41 cloud UI gate tests passing; rev `00137-zdl`
+> **Status:** 2646 unit tests + 41 cloud UI gate tests passing; doctor `00137-zdl`, patient `00112-mrm`
 > **Duration:** 30-45 minutes
 > **Audience:** Stakeholders, Technical Team, Medical Staff
 > **Visuals:** [html-diagrams/17-testing-quality-gate.html](html-diagrams/17-testing-quality-gate.html) | [UNIT_TEST_UI_COVERAGE.md](../docs/UNIT_TEST_UI_COVERAGE.md)

@@ -21,7 +21,7 @@ export function registerHealthRoutes(app, deps) {
     res.json({
       status: 'ok',
       service: 'izara-jitsi-server',
-      version: '1.7.3',
+      version: '1.7.37',
       timestamp: new Date().toISOString(),
       database: dbOk() ? 'connected' : 'disconnected',
       features: {
@@ -43,7 +43,7 @@ export function registerHealthRoutes(app, deps) {
     res.json({
       status: dbOk() ? 'healthy' : 'degraded',
       service: 'izara-jitsi-server',
-      version: '1.7.3',
+      version: '1.7.37',
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
       jitsiDomain: JITSI_DOMAIN,

@@ -30,3 +30,5 @@ ules\@eslint\eslintrc\dist\eslintrc.cjs:2850:16)
     at createCLIConfigArray (C:\Users\chira\Documents\Isara-telemed\Isara-Anywhere\Isara-patient-portal\node_modules\@e
 slint\eslintrc\dist\eslintrc.cjs:3660:35)
 exit=2
+exit=2
+exit=2

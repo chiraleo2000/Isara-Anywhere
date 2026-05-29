@@ -303,7 +303,7 @@ npm run cleanup:cloud-test   # after E2E — purge test rows + re-seed baseline 
 ## Quality gates (v1.7.37+)
 
 ```powershell
-npm run test:unit              # 2645+ Vitest tests
+npm run test:unit              # 2646 Vitest tests
 npm run test:unit:coverage     # lcov for SonarLint
 npm run sonar:lint             # coverage + eslint sonarjs + app-scan
 npm run test:quality:gate      # full local quality gate
@@ -322,7 +322,7 @@ SonarLint: open repo root; uses [`sonar-project.properties`](sonar-project.prope
 - Unit tests: sanitize middleware regression, PHR timeline degraded mode, responsive breakpoints
 - Patient `/api/phr/:id/timeline` returns 200 `[]` for demo patients on DB errors (fixes cloud S03 500)
 - Responsive UI: doctor login/dashboard padding, ResponsiveLayout mobile gutters, patient 44px touch nav
-- **Docs:** [docs/UNIT_TEST_UI_COVERAGE.md](docs/UNIT_TEST_UI_COVERAGE.md) (2645 unit + UI screenshots), diagram [Presentations/html-diagrams/17-testing-quality-gate.html](Presentations/html-diagrams/17-testing-quality-gate.html), TH Word/PPT via `npm run guides:technical`
+- **Docs:** [docs/UNIT_TEST_UI_COVERAGE.md](docs/UNIT_TEST_UI_COVERAGE.md) (2646 unit + UI screenshots), diagram [Presentations/html-diagrams/17-testing-quality-gate.html](Presentations/html-diagrams/17-testing-quality-gate.html), TH Word/PPT via `npm run guides:technical`
 
 ### v1.7.18 (May 22, 2026)
 

@@ -782,7 +782,7 @@ router.get('/health', (req: Request, res: Response) => {
   res.json({
     status: 'healthy',
     service: 'Jitsi Meet + Web Speech API + Gemini AI Video Meeting Service v1.7.3',
-    version: '1.7.3',
+    version: '1.7.37',
     timestamp: new Date().toISOString(),
     config: {
       jitsiDomain: JITSI_DOMAIN,

@@ -1,6 +1,6 @@
 {
   "name": "izara-patient-portal",
-  "version": "1.7.33",
+  "version": "1.7.37",
   "type": "module",
   "scripts": {
     "dev": "vite",

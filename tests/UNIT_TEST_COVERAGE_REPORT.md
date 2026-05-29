@@ -1,13 +1,13 @@
 # Unit Test + UI Screenshot Coverage — v1.7.37
 
-> Generated: 2026-05-28T15:57:56.187Z | Full run log: [reports/unit/v1.7.37-full-unit-run.log](reports/unit/v1.7.37-full-unit-run.log)
+> Generated: 2026-05-28T16:23:41.340Z | Full run log: [reports/unit/v1.7.37-full-unit-run.log](reports/unit/v1.7.37-full-unit-run.log)
 
 ## Summary
 
 | Metric | Value |
 |--------|-------|
 | Unit test files passed | 114 |
-| Unit tests passed | 2645 |
+| Unit tests passed | 2646 |
 | Run status | PASS |
 | UI screenshot folders | 15 |
 | UI PNG artifacts | 188 |

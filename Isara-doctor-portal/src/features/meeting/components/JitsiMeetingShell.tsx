@@ -14,7 +14,7 @@ export const JitsiMeetingShell: React.FC<JitsiMeetingShellProps> = ({
 }) => (
   <div
     data-testid={testId}
-    className={`w-full max-w-full overflow-x-hidden min-h-0 flex flex-col ${className}`}
+    className={`w-full max-w-full overflow-x-hidden min-h-[100dvh] flex flex-col pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] ${className}`}
   >
     {children}
   </div>

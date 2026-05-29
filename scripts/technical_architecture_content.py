@@ -172,7 +172,7 @@ SLIDES: list[dict] = [
         "table": (
             ["ชั้น", "เครื่องมือ", "ผลลัพธ์"],
             [
-                ["Unit", "Vitest 114 ไฟล์", "2645 tests ผ่าน"],
+                ["Unit", "Vitest 114 ไฟล์", "2646 tests ผ่าน"],
                 ["Sonar", "SonarLint + sonar:lint", "server/ รวมใน Sonar sources"],
                 ["Cloud API", "verify:gate0", "G1–G5 นัดหมาย"],
                 ["Cloud UI", "Playwright A + 7 viewports", "41 tests + screenshots"],
@@ -182,14 +182,15 @@ SLIDES: list[dict] = [
         "body": [
             "แผนภาพ: Presentations/html-diagrams/17-testing-quality-gate.html",
             "ภาพหน้าจอ: docs/screenshots/group-A, group-S, workflows/*",
+            "Patient Cloud Run: revision 00112-mrm — PHR timeline PATIENT-DEMO 200 (ไม่มี 500 ใน S03)",
         ],
-        "notes": "npm run test:unit:report และ test:gate:ui-showup",
+        "notes": "npm run test:unit:report และ test:gate:ui-showup; หลัง deploy ต้อง shift traffic",
     },
     {
         "title": "การ deploy และเอกสารอ้างอิง",
         "body": [
             "Local: docker-compose up — Patient :3005 Doctor :3010 Meeting :3020",
-            "Cloud: npm run cloud:deploy -- -Tag v1.7.37 + traffic shift",
+            "Cloud: npm run cloud:deploy -- -Tag v1.7.37 + gcloud update-traffic (patient 00112-mrm)",
             "ล้างข้อมูลทดสอบ: npm run cleanup:cloud-test-only",
             "Processes/Pages/** — ขั้นตอนละเอียดต่อหน้าจอ",
             "สร้างคู่มือ: npm run guides:technical (TH Sarabun 16pt, FC Iconic PPT)",

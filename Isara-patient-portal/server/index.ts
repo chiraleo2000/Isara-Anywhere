@@ -193,7 +193,7 @@ app.get('/health', async (_req: Request, res: Response) => {
       status: 'healthy',
       timestamp: new Date().toISOString(),
       service: 'Izara Patient Portal API',
-      version: '1.7.3',
+      version: '1.7.37',
       security: 'OWASP Top 10:2025 Compliant'
     });
   } catch {
@@ -201,7 +201,7 @@ app.get('/health', async (_req: Request, res: Response) => {
       status: 'unhealthy',
       timestamp: new Date().toISOString(),
       service: 'Izara Patient Portal API',
-      version: '1.7.3'
+      version: '1.7.37'
     });
   }
 });
@@ -212,7 +212,7 @@ app.get('/api/health', (_req: Request, res: Response) => {
     status: 'healthy',
     timestamp: new Date().toISOString(),
     service: 'Izara Patient Portal API',
-    version: '1.7.3',
+    version: '1.7.37',
     security: 'OWASP Top 10:2025 Compliant',
     features: {
       videoMeeting: 'Jitsi Meet (FREE)',

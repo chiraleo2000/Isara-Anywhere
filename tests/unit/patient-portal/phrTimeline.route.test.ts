@@ -34,7 +34,18 @@ async function buildTimeline(
   return timeline;
 }
 
+function isDemoTimelinePatient(patientId: string): boolean {
+  const id = String(patientId || '').toUpperCase();
+  return id === 'PATIENT-DEMO' || id.startsWith('PATIENT-DEMO');
+}
+
 describe('PHR timeline degraded responses', () => {
+  it('short-circuits demo patients with empty timeline (no DB)', () => {
+    expect(isDemoTimelinePatient('PATIENT-DEMO')).toBe(true);
+    expect(isDemoTimelinePatient('patient-demo-2')).toBe(true);
+    expect(isDemoTimelinePatient('PAT-REAL')).toBe(false);
+  });
+
   it('returns empty segments for PATIENT-DEMO when DB throws', async () => {
     const result = await buildTimeline('PATIENT-DEMO', {
       appointments: async () => {

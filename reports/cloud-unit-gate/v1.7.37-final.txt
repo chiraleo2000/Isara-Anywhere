@@ -1,8 +1,18 @@
-v1.7.37 quality patch — 2026-05-28
+v1.7.37 quality patch — 2026-05-29
 
-Unit: 2645 passed (114 files)
-Cloud unit gate: PASS (smoke + GATE0 G1-G5)
-Sonar: sonar-project.properties includes server/; npm run sonar:lint
+Unit: 2646 passed (114 files)
+Coverage: vitest thresholds pass (60% floor; v8 report empty set — gate via sonar:lint)
+Quality gate: npm run test:quality:gate PASS
+Cloud unit gate: npm run test:cloud:unit-gate PASS (smoke + GATE0 G1-G5)
+UI showup: npm run test:gate:ui-showup PASS (41 tests, A-auth + 7×S)
+Responsive cloud: npm run test:gate:responsive-cloud PASS (see run log)
+Sonar: sonar-project.properties includes server/; npm run sonar:lint PASS
+
 New tests: sanitizeRequestBody.middleware, authMiddleware.mount, responsiveLayout.logic, phrTimeline.route, mainLayout.nav
+Version align: portal package.json + patient/jitsi health → 1.7.37
+UI: JitsiMeetingShell safe-area + dvh
 
-Pending after deploy: traffic shift to new doctor revision, optional test:gate:ui-showup
+Accepted warnings: CORS dev fallbacks (15), Google Maps timeout, Sarabun font (Firefox)
+
+Responsive cloud: 41 passed (2026-05-29)
+Ledger: npm run ledger:pre-debug refreshed PRE_DEBUG_BASELINE_LEDGER.md

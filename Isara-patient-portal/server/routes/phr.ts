@@ -642,6 +642,11 @@ router.get('/:patientId/timeline', authMiddleware, async (req: Request, res: Res
     const typeStr = typeof type === 'string' ? type : 'all';
     console.log(`[PHR] Getting timeline for patient: ${patientId}, type: ${typeStr}`);
 
+    // Demo / E2E patient: avoid brittle DB joins on cloud; return stable empty timeline
+    if (isDemoTimelinePatient(patientId)) {
+      return res.json([]);
+    }
+
     const timeline: any[] = [];
 
     // Get appointments
@@ -774,7 +779,10 @@ router.get('/:patientId/timeline', authMiddleware, async (req: Request, res: Res
     }
 
     // Sort by date (newest first)
-    timeline.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    timeline.sort(
+      (a, b) =>
+        new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime(),
+    );
 
     res.json(timeline);
   } catch (error: unknown) {

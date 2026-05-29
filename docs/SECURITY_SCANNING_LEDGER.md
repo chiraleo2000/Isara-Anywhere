@@ -6,7 +6,8 @@
 | SEC-002 | 2026-05-27 | npm audit:prod | all portals | Moderate | A06 | 7 moderate (google-cloud deps); no high | Accepted — monitor |
 | SEC-003 | 2026-05-28 | fix auth | doctor | High | A07 | `sanitizeRequestBody()` mount — login 504 | Fixed in v1.7.36-doctor-sanitize-fix |
 | SEC-004 | 2026-05-28 | sonar:lint | all | — | — | `npm run sonar:lint` + IDE SonarLint; 15 CORS warns | Accepted dev-testing |
-| SEC-005 | 2026-05-28 | phr timeline | patient | Med | A10 | PATIENT-DEMO timeline 500 | Fixed v1.7.37 degraded `[]` |
+| SEC-005 | 2026-05-28 | phr timeline | patient | Med | A10 | PATIENT-DEMO timeline 500 | Fixed v1.7.37; verified cloud rev `00112-mrm` (traffic shift 2026-05-28) |
+| SEC-006 | 2026-05-29 | baseline v1.7.37 | all | — | — | Re-scan: 2646 unit pass, app-scan 15 CORS warn, audit:prod 7 moderate (jitsi uuid) | Accepted — see SEC-001/002 |
 
 ## Commands (local)
 

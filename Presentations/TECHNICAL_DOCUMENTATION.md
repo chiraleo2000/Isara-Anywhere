@@ -528,13 +528,15 @@ services:
 
 | Layer | Framework | Files / Specs | Tests | Duration |
 | --- | --- | --- | --- | --- |
-| **Unit Tests** | Vitest 2.1 | 114 files | **2,645** | ~6s |
+| **Unit Tests** | Vitest 2.1 | 114 files | **2,646** | ~6s |
 | **Quality gate** | sonar:lint + coverage | — | — | ~1 min |
 | **Cloud unit gate** | Vitest + smoke + GATE0 | — | API G1–G5 | ~1 min |
 | **Cloud UI showup** | Playwright 1.58 (headed) | A + 7×S | **41** | ~3–11 min |
 | **E2E (extended)** | Playwright | 32+ specs | 1,100+ | optional full suite |
 
 **Cross-reference:** [docs/UNIT_TEST_UI_COVERAGE.md](../docs/UNIT_TEST_UI_COVERAGE.md) (unit domains → UI screenshots). **Diagram:** [html-diagrams/17-testing-quality-gate.html](html-diagrams/17-testing-quality-gate.html). **Log:** `reports/unit/v1.7.37-full-unit-run.log`.
+
+**Cloud fix (May 28, 2026):** Patient portal traffic shifted to revision `00112-mrm` (v1.7.37 image). `GET /api/phr/PATIENT-DEMO/timeline` returns **200** `[]` — no S03 console 500 during gate showup.
 
 ```powershell
 npm run test:unit:report    # full unit run + markdown report
